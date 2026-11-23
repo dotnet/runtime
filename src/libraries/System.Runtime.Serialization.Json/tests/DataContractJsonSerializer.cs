@@ -7,6 +7,7 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -1510,6 +1511,14 @@ public static partial class DataContractJsonSerializerTests
     }
 
     [Fact]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicFields, typeof(Tuple<int>))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicFields, typeof(Tuple<int, int>))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicFields, typeof(Tuple<int, int, int>))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicFields, typeof(Tuple<int, int, int, int>))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicFields, typeof(Tuple<int, int, int, int, int>))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicFields, typeof(Tuple<int, int, int, int, int, int>))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicFields, typeof(Tuple<int, int, int, int, int, int, int>))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicFields, typeof(Tuple<int, int, int, int, int, int, int, Tuple<int>>))]
     public static void DCJS_Tuple()
     {
         DCJS_Tuple1();
@@ -1579,6 +1588,7 @@ public static partial class DataContractJsonSerializerTests
     }
 
     [Fact]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicFields, typeof(Queue<int>))]
     public static void DCJS_GenericQueue()
     {
         Queue<int> value = new Queue<int>();
@@ -1592,6 +1602,7 @@ public static partial class DataContractJsonSerializerTests
     }
 
     [Fact]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicFields, typeof(Stack<int>))]
     public static void DCJS_GenericStack()
     {
         var value = new Stack<int>();
@@ -1607,6 +1618,7 @@ public static partial class DataContractJsonSerializerTests
     }
 
     [Fact]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicFields, typeof(Queue))]
     public static void DCJS_Queue()
     {
         var value = new Queue();
@@ -1621,6 +1633,7 @@ public static partial class DataContractJsonSerializerTests
     }
 
     [Fact]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicFields, typeof(Stack))]
     public static void DCJS_Stack()
     {
         var value = new Stack();
@@ -1759,6 +1772,7 @@ public static partial class DataContractJsonSerializerTests
     }
 
     [Fact]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicFields, typeof(ReadOnlyCollection<string>))]
     public static void DCJS_ReadOnlyCollection()
     {
         List<string> list = new List<string>() { "Foo", "Bar" };
@@ -1770,6 +1784,7 @@ public static partial class DataContractJsonSerializerTests
     }
 
     [Fact]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicFields, typeof(ReadOnlyDictionary<string, int>))]
     public static void DCJS_ReadOnlyDictionary()
     {
         var dict = new Dictionary<string, int>();
@@ -3011,6 +3026,7 @@ public static partial class DataContractJsonSerializerTests
     }
 
     [Fact]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicFields, typeof(ReadOnlyDictionary<string, int>))]
     public static void DCJS_ReadOnlyDictionaryCausingDuplicateInvalidDataContract()
     {
         var dict = new Dictionary<string, int>();

@@ -4,6 +4,8 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.Serialization;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Xml;
 
 namespace System.Runtime.Serialization.Json
@@ -25,6 +27,100 @@ namespace System.Runtime.Serialization.Json
         }
 
         internal XmlDictionaryReaderQuotas? ReaderQuotas => dictionaryReader?.Quotas;
+
+        internal override async ValueTask<object> ReadReferencePrimitiveContentAsync<TPrimitiveKind>(CancellationToken cancellationToken)
+        {
+            if (typeof(TPrimitiveKind) == typeof(ReflectionPlan.QualifiedValue))
+            {
+                return ParseQualifiedName(await ReadContentAsStringAsync(cancellationToken).ConfigureAwait(false));
+            }
+
+            return await base.ReadReferencePrimitiveContentAsync<TPrimitiveKind>(cancellationToken).ConfigureAwait(false);
+        }
+
+        internal override ValueTask<T> ReadPrimitiveContentAsync<T>(CancellationToken cancellationToken)
+        {
+            return typeof(T) == typeof(char) || typeof(T) == typeof(DateTime) || typeof(T) == typeof(ulong)
+                ? ReadJsonPrimitiveContentAsync<T>(cancellationToken)
+                : base.ReadPrimitiveContentAsync<T>(cancellationToken);
+        }
+
+        private async ValueTask<T> ReadJsonPrimitiveContentAsync<T>(CancellationToken cancellationToken) where T : struct
+        {
+            if (typeof(T) == typeof(char))
+            {
+                return (T)(object)XmlConvert.ToChar(await ReadContentAsStringAsync(cancellationToken).ConfigureAwait(false));
+            }
+            if (typeof(T) == typeof(DateTime))
+            {
+                return (T)(object)ParseJsonDate(await ReadContentAsStringAsync(cancellationToken).ConfigureAwait(false), _dateTimeFormat);
+            }
+            if (typeof(T) == typeof(ulong))
+            {
+                string value = await ReadContentAsStringAsync(cancellationToken).ConfigureAwait(false);
+                try
+                {
+                    return (T)(object)ulong.Parse(value, NumberStyles.Float, NumberFormatInfo.InvariantInfo);
+                }
+                catch (Exception exception) when (exception is ArgumentException or FormatException or OverflowException)
+                {
+                    throw XmlExceptionHelper.CreateConversionException(value, "UInt64", exception);
+                }
+            }
+
+            return await base.ReadPrimitiveContentAsync<T>(cancellationToken).ConfigureAwait(false);
+        }
+
+        internal override async ValueTask<object> ReadContentAsAnyTypeAsync(Type valueType, CancellationToken cancellationToken)
+        {
+            if (valueType == typeof(char))
+            {
+                return XmlConvert.ToChar(await ReadContentAsStringAsync(cancellationToken).ConfigureAwait(false));
+            }
+            if (valueType == typeof(DateTime))
+            {
+                return ParseJsonDate(await ReadContentAsStringAsync(cancellationToken).ConfigureAwait(false), _dateTimeFormat);
+            }
+            if (valueType == typeof(XmlQualifiedName))
+            {
+                return ParseQualifiedName(await ReadContentAsStringAsync(cancellationToken).ConfigureAwait(false));
+            }
+            if (valueType == typeof(ulong))
+            {
+                string value = await ReadContentAsStringAsync(cancellationToken).ConfigureAwait(false);
+                try
+                {
+                    return ulong.Parse(value, NumberStyles.Float, NumberFormatInfo.InvariantInfo);
+                }
+                catch (Exception exception) when (exception is ArgumentException or FormatException or OverflowException)
+                {
+                    throw XmlExceptionHelper.CreateConversionException(value, "UInt64", exception);
+                }
+            }
+
+            return await base.ReadContentAsAnyTypeAsync(valueType, cancellationToken).ConfigureAwait(false);
+        }
+
+        internal override async ValueTask<byte[]> ReadContentAsBase64Async(CancellationToken cancellationToken)
+        {
+            int quota = dictionaryReader?.Quotas.MaxArrayLength ?? XmlDictionaryReaderQuotas.Max.MaxArrayLength;
+            byte[] bytes = new byte[Math.Min(32, quota)];
+            int count = 0;
+            while (await IsStartElementAsync(JsonGlobals.itemDictionaryString, XmlDictionaryString.Empty, cancellationToken).ConfigureAwait(false))
+            {
+                if (count == quota)
+                {
+                    XmlExceptionHelper.ThrowMaxArrayLengthExceeded(dictionaryReader ?? XmlDictionaryReader.CreateDictionaryReader(reader), quota);
+                }
+                if (count == bytes.Length)
+                {
+                    Array.Resize(ref bytes, Math.Min(quota, bytes.Length <= quota / 2 ? Math.Max(1, bytes.Length * 2) : quota));
+                }
+                bytes[count++] = await ReadPrimitiveElementAsync<byte>(cancellationToken).ConfigureAwait(false);
+            }
+
+            return XmlObjectSerializerReadContext.TrimArraySize(bytes, count);
+        }
 
         private DateTimeArrayJsonHelperWithString DateTimeArrayHelper =>
             _dateTimeArrayHelper ??= new DateTimeArrayJsonHelperWithString(_dateTimeFormat);

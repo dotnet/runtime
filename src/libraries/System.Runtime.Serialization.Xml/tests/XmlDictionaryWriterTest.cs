@@ -911,6 +911,76 @@ public static class XmlDictionaryWriterTest
     };
 
     [Theory]
+    [InlineData("text")]
+    [InlineData("binary")]
+    [DynamicDependency("WritePrimitiveValueAsync``1(System.Object)", "System.Xml.XmlDictionaryWriter", "System.Private.DataContractSerialization")]
+    public static async Task AsyncWriter_TaggedSmallScalars_PreserveCanonicalRepresentation(string format)
+    {
+        object[] values = { 'Z', byte.MaxValue, sbyte.MinValue, short.MinValue, ushort.MaxValue, uint.MaxValue };
+        using MemoryStream expected = new MemoryStream();
+        using MemoryStream expectedCanonical = new MemoryStream();
+        using (XmlDictionaryWriter writer = CreateSyncWriter(format, expected))
+        {
+            writer.WriteStartElement("root");
+            writer.StartCanonicalization(expectedCanonical, includeComments: false, inclusivePrefixes: null);
+            foreach (object value in values)
+            {
+                writer.WriteStartElement("item");
+                writer.WriteStartAttribute("value");
+                WriteValue(writer, value);
+                writer.WriteEndAttribute();
+                WriteValue(writer, value);
+                writer.WriteEndElement();
+            }
+            writer.EndCanonicalization();
+            writer.WriteEndElement();
+        }
+
+        using AsyncOnlyWriteStream output = new AsyncOnlyWriteStream();
+        using AsyncOnlyWriteStream canonical = new AsyncOnlyWriteStream();
+        XmlDictionaryWriter asynchronous = await CreateAsyncWriter(format, output, new UTF8Encoding(false));
+        await asynchronous.WriteStartElementAsync(null, "root", null);
+        await InvokeWriterAsync(asynchronous, "StartCanonicalizationAsync",
+            new[] { typeof(Stream), typeof(bool), typeof(string[]), typeof(CancellationToken) },
+            canonical, false, null, CancellationToken.None);
+        MethodInfo writePrimitive = typeof(XmlDictionaryWriter).GetMethods(BindingFlags.Instance | BindingFlags.NonPublic)
+            .Single(method => method.Name == "WritePrimitiveValueAsync" && method.IsGenericMethodDefinition && method.GetParameters().Length == 1);
+        foreach (object value in values)
+        {
+            MethodInfo write = writePrimitive.MakeGenericMethod(value.GetType());
+            await asynchronous.WriteStartElementAsync(null, "item", null);
+            await InvokeWriterAsync(asynchronous, "WriteStartAttributeAsync",
+                new[] { typeof(string), typeof(string), typeof(string), typeof(CancellationToken) },
+                null, "value", null, CancellationToken.None);
+            await ((Task)write.Invoke(asynchronous, new[] { value })).ConfigureAwait(false);
+            await InvokeWriterAsync(asynchronous, "WriteEndAttributeAsync", new[] { typeof(CancellationToken) }, CancellationToken.None);
+            await ((Task)write.Invoke(asynchronous, new[] { value })).ConfigureAwait(false);
+            await asynchronous.WriteEndElementAsync();
+        }
+        await InvokeWriterAsync(asynchronous, "EndCanonicalizationAsync", new[] { typeof(CancellationToken) }, CancellationToken.None);
+        await asynchronous.WriteEndElementAsync();
+        await asynchronous.DisposeAsync();
+        Assert.Equal(expected.ToArray(), output.Bytes);
+        Assert.Equal(expectedCanonical.ToArray(), canonical.Bytes);
+        Assert.True(output.AsyncWrites > 0);
+        Assert.True(canonical.AsyncWrites > 0);
+
+        static void WriteValue(XmlDictionaryWriter writer, object value)
+        {
+            switch (value)
+            {
+                case char item: writer.WriteValue((int)item); break;
+                case byte item: writer.WriteValue(item); break;
+                case sbyte item: writer.WriteValue(item); break;
+                case short item: writer.WriteValue(item); break;
+                case ushort item: writer.WriteValue(item); break;
+                case uint item: writer.WriteValue((long)item); break;
+                default: throw new InvalidOperationException();
+            }
+        }
+    }
+
+    [Theory]
     [InlineData("text", false)]
     [InlineData("binary", false)]
     [InlineData("text", true)]

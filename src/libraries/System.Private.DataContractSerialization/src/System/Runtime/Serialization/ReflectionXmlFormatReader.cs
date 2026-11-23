@@ -7,9 +7,11 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Reflection.Emit;
 using System.Runtime.Serialization.DataContracts;
 using System.Security;
+using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Schema;
 
@@ -17,92 +19,199 @@ namespace System.Runtime.Serialization
 {
     internal sealed class ReflectionXmlClassReader
     {
-        private readonly ClassDataContract _classContract;
-        private readonly ReflectionReader _reflectionReader;
+        private readonly SyncReflectionClassReader _readClass;
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public ReflectionXmlClassReader(ClassDataContract classDataContract)
         {
-            Debug.Assert(classDataContract != null);
-            _classContract = classDataContract;
-            _reflectionReader = new ReflectionXmlReader();
+            _readClass = new SyncReflectionXmlReader().GenerateClassReader<SyncReflectionSerialization>(classDataContract, classDataContract.MemberNames, classDataContract.MemberNamespaces);
         }
 
         [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public object ReflectionReadClass(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext? context, XmlDictionaryString[]? memberNames, XmlDictionaryString[]? memberNamespaces)
         {
-            return _reflectionReader.ReflectionReadClass(xmlReader, context, memberNames, memberNamespaces, _classContract);
+            Debug.Assert(context is not null);
+            return _readClass(xmlReader, context);
         }
     }
 
     internal sealed class ReflectionXmlCollectionReader
     {
-        private readonly ReflectionReader _reflectionReader = new ReflectionXmlReader();
+        private readonly SyncReflectionValueReader _readCollection;
+
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        internal ReflectionXmlCollectionReader(CollectionDataContract collectionContract, bool? isGetOnlyCollection)
+        {
+            _readCollection = new SyncReflectionXmlReader().GenerateCollectionReader<SyncReflectionSerialization>(collectionContract, collectionContract.CollectionItemName, collectionContract.Namespace, isGetOnlyCollection);
+        }
 
         [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public object ReflectionReadCollection(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, XmlDictionaryString itemName, XmlDictionaryString itemNamespace, CollectionDataContract collectionContract)
         {
-            return _reflectionReader.ReflectionReadCollection(xmlReader, context, itemName, itemNamespace/*itemNamespace*/, collectionContract);
+            return _readCollection(xmlReader, context)!;
         }
 
         [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public void ReflectionReadGetOnlyCollection(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, XmlDictionaryString itemName, XmlDictionaryString itemNs, CollectionDataContract collectionContract)
         {
-            _reflectionReader.ReflectionReadGetOnlyCollection(xmlReader, context, itemName, itemNs, collectionContract);
+            _readCollection(xmlReader, context);
         }
     }
 
-    internal sealed class ReflectionXmlReader : ReflectionReader
+    internal sealed partial class ReflectionXmlReader : ReflectionReader
     {
         [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        protected override void ReflectionReadMembers(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, XmlDictionaryString[] memberNames, XmlDictionaryString[]? memberNamespaces, ClassDataContract classContract, ref object obj)
+        protected override ReflectionValueReader CreateDictionaryItemReader<TMode>(CollectionDataContract collectionContract)
         {
-            Debug.Assert(memberNamespaces != null);
+            DataContract itemContract = collectionContract.ItemContract;
+            return (reader, context) =>
+            {
+                context.ReadAttributes(reader);
+                return TMode.ReadXmlValue(itemContract, reader, context);
+            };
+        }
 
-            int memberCount = classContract.MemberNames!.Length;
-            context.IncrementItemCount(memberCount);
-            int memberIndex = -1;
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        protected override ReflectionCollectionBodyReader WrapCollectionBodyReader<TMode>(CollectionDataContract collectionContract, ReflectionCollectionBodyReader body) => body;
+
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        protected override ReflectionObjectReader CreateMembersReader<TMode>(ClassDataContract classContract, ReflectionObjectReader[] members, XmlDictionaryString[]? memberNames, XmlDictionaryString[]? memberNamespaces)
+        {
+            Debug.Assert(memberNames is not null && memberNamespaces is not null);
+            int memberCount = members.Length;
+            Debug.Assert(memberCount == memberNames.Length);
             int firstRequiredMember;
-            _ = GetRequiredMembers(classContract, out firstRequiredMember);
-            bool hasRequiredMembers = (firstRequiredMember < memberCount);
-            int requiredIndex = hasRequiredMembers ? firstRequiredMember : -1;
-            DataMember[] members = new DataMember[memberCount];
-            int reflectedMemberCount = ReflectionGetMembers(classContract, members);
-            Debug.Assert(reflectedMemberCount == memberCount, "The value returned by ReflectionGetMembers() should equal to memberCount.");
-            ExtensionDataObject? extensionData = null;
+            bool[] requiredMembers = GetRequiredMembers(classContract, out firstRequiredMember);
+            int[] nextRequiredMember = new int[memberCount + 1];
+            nextRequiredMember[memberCount] = memberCount;
+            for (int i = memberCount - 1; i >= 0; i--)
+            {
+                nextRequiredMember[i] = requiredMembers[i] ? i : nextRequiredMember[i + 1];
+            }
+            if (firstRequiredMember < memberCount)
+            {
+                return classContract.HasExtensionData
+                    ? CreateMembersReader<TMode, ReflectionPlan.Enabled, ReflectionPlan.Enabled>(members, memberNames, memberNamespaces, firstRequiredMember, nextRequiredMember)
+                    : CreateMembersReader<TMode, ReflectionPlan.Enabled, ReflectionPlan.Disabled>(members, memberNames, memberNamespaces, firstRequiredMember, nextRequiredMember);
+            }
 
-            if (classContract.HasExtensionData)
+            return classContract.HasExtensionData
+                ? CreateMembersReader<TMode, ReflectionPlan.Disabled, ReflectionPlan.Enabled>(members, memberNames, memberNamespaces, firstRequiredMember, nextRequiredMember)
+                : CreateMembersReader<TMode, ReflectionPlan.Disabled, ReflectionPlan.Disabled>(members, memberNames, memberNamespaces, firstRequiredMember, nextRequiredMember);
+        }
+
+        private static ReflectionObjectReader CreateMembersReader<TMode, TRequiredMembers, TExtensionData>(
+            ReflectionObjectReader[] members, XmlDictionaryString[] memberNames, XmlDictionaryString[] memberNamespaces,
+            int firstRequiredMember, int[] nextRequiredMember)
+            where TMode : struct, IReflectionSerialization
+            where TRequiredMembers : struct
+            where TExtensionData : struct
+        {
+            // Mixed member operations keep the profiled loop instead of adding object-valued async handoffs.
+            if (RuntimeFeature.IsDynamicCodeCompiled && typeof(TExtensionData) == typeof(ReflectionPlan.Disabled) && members.Length != 0 &&
+                Array.TrueForAll(members, static member => member.Target is IPrimitiveMemberReader))
+            {
+                ReflectionObjectReader[] remaining = new ReflectionObjectReader[members.Length + 1];
+                for (int i = 0; i < remaining.Length; i++)
+                {
+                    int memberIndex = i - 1;
+                    remaining[i] = (reader, context, obj) =>
+                    {
+                        if (typeof(TMode) == typeof(SyncReflectionSerialization))
+                        {
+                            return new ValueTask<object>(ReadMembersSync<TRequiredMembers, TExtensionData>(
+                                reader, context, obj, members, memberNames, memberNamespaces, firstRequiredMember, nextRequiredMember,
+                                memberIndex, initialize: false));
+                        }
+
+                        return ReadMembers<TMode, TRequiredMembers, TExtensionData>(
+                            reader, context, obj, members, memberNames, memberNamespaces, firstRequiredMember, nextRequiredMember,
+                            memberIndex, initialize: false);
+                    };
+                }
+
+                return ReflectionReaderPipeline.Compile(members, memberNames, memberNamespaces, nextRequiredMember, remaining);
+            }
+
+            if (typeof(TMode) == typeof(SyncReflectionSerialization))
+            {
+                return (reader, context, obj) =>
+                {
+                    return new ValueTask<object>(ReadMembersSync<TRequiredMembers, TExtensionData>(
+                        reader, context, obj, members, memberNames, memberNamespaces, firstRequiredMember, nextRequiredMember));
+                };
+            }
+            return (reader, context, obj) => ReadMembers<TMode, TRequiredMembers, TExtensionData>(
+                reader, context, obj, members, memberNames, memberNamespaces, firstRequiredMember, nextRequiredMember);
+        }
+
+        private static async ValueTask<object> ReadMembers<TMode, TRequiredMembers, TExtensionData>(
+            XmlReaderDelegator reader, XmlObjectSerializerReadContext context, object obj,
+            ReflectionObjectReader[] members, XmlDictionaryString[] memberNames, XmlDictionaryString[] memberNamespaces,
+            int firstRequiredMember, int[] nextRequiredMember, int memberIndex = -1, bool initialize = true)
+            where TMode : struct, IReflectionSerialization
+            where TRequiredMembers : struct
+            where TExtensionData : struct
+        {
+            int memberCount = members.Length;
+            if (initialize)
+                context.IncrementItemCount(memberCount);
+            int requiredIndex = memberIndex < 0 ? firstRequiredMember : nextRequiredMember[memberIndex + 1];
+            ExtensionDataObject? extensionData = null;
+            if (typeof(TExtensionData) == typeof(ReflectionPlan.Enabled))
             {
                 extensionData = new ExtensionDataObject();
                 ((IExtensibleDataObject)obj).ExtensionData = extensionData;
             }
-
-            while (true)
+            while (reader.NodeType == XmlNodeType.Element ||
+                reader.NodeType != XmlNodeType.EndElement && await TMode.MoveToNextElement(reader).ConfigureAwait(false))
             {
-                if (!XmlObjectSerializerReadContext.MoveToNextElement(xmlReader))
+                int index = memberIndex + 1;
+                if (index >= memberCount || !reader.IsLocalName(memberNames[index]) ||
+                    !reader.IsNamespaceUri(memberNamespaces[index]))
                 {
-                    return;
+                    if (typeof(TRequiredMembers) == typeof(ReflectionPlan.Enabled))
+                    {
+                        index = await TMode.GetMemberIndexWithRequiredMembers(reader, context, memberNames, memberNamespaces, memberIndex, requiredIndex, extensionData).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        index = await TMode.GetMemberIndex(reader, context, memberNames, memberNamespaces, memberIndex, extensionData).ConfigureAwait(false);
+                    }
                 }
-                if (hasRequiredMembers)
+                if (index < memberCount)
                 {
-                    memberIndex = context.GetMemberIndexWithRequiredMembers(xmlReader, memberNames, memberNamespaces, memberIndex, requiredIndex, extensionData);
-                }
-                else
-                {
-                    memberIndex = context.GetMemberIndex(xmlReader, memberNames, memberNamespaces, memberIndex, extensionData);
-                }
-
-                // GetMemberIndex returns memberNames.Length if member not found
-                if (memberIndex < members.Length)
-                {
-                    ReflectionReadMember(xmlReader, context, classContract, ref obj, memberIndex, members);
-                    requiredIndex = memberIndex + 1;
+                    memberIndex = index;
+                    ValueTask<object> value = ReadMember(members[index], reader, context, obj);
+                    if (value.IsCompletedSuccessfully)
+                        obj = value.Result;
+                    else
+                        obj = await value.ConfigureAwait(false);
+                    if (typeof(TRequiredMembers) == typeof(ReflectionPlan.Enabled))
+                    {
+                        requiredIndex = nextRequiredMember[index + 1];
+                    }
                 }
             }
+            if (typeof(TRequiredMembers) == typeof(ReflectionPlan.Enabled) && requiredIndex < memberCount)
+            {
+                XmlObjectSerializerReadContext.ThrowRequiredMemberMissingException(reader, memberIndex, requiredIndex, memberNames);
+            }
+            return obj;
         }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static ValueTask<object> ReadMember(ReflectionObjectReader member, XmlReaderDelegator reader,
+            XmlObjectSerializerReadContext context, object obj) =>
+            member(reader, context, obj);
 
         protected override string GetClassContractNamespace(ClassDataContract classContract)
         {
@@ -117,15 +226,6 @@ namespace System.Runtime.Serialization
         protected override string GetCollectionContractNamespace(CollectionDataContract collectionContract)
         {
             return collectionContract.XmlName.Namespace;
-        }
-
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
-        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        protected override object? ReflectionReadDictionaryItem(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, CollectionDataContract collectionContract)
-        {
-            Debug.Assert(collectionContract.Kind == CollectionKind.Dictionary || collectionContract.Kind == CollectionKind.GenericDictionary);
-            context.ReadAttributes(xmlReader);
-            return collectionContract.ItemContract.ReadXmlValue(xmlReader, context);
         }
 
         private static bool[] GetRequiredMembers(ClassDataContract contract, out int firstRequiredMember)
@@ -150,4 +250,5 @@ namespace System.Runtime.Serialization
             return memberCount;
         }
     }
+
 }

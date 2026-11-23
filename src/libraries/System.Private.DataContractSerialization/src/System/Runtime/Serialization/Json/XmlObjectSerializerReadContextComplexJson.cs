@@ -12,11 +12,12 @@ using System.Xml;
 
 namespace System.Runtime.Serialization.Json
 {
-    internal sealed class XmlObjectSerializerReadContextComplexJson : XmlObjectSerializerReadContextComplex
+    internal sealed partial class XmlObjectSerializerReadContextComplexJson : XmlObjectSerializerReadContextComplex
     {
         private string? _extensionDataValueType;
         private readonly DateTimeFormat? _dateTimeFormat;
         private readonly bool _useSimpleDictionaryFormat;
+        internal JsonDictionaryFormat ReflectionDictionaryFormat { get; }
 
         internal XmlObjectSerializerReadContextComplexJson(DataContractJsonSerializer serializer, DataContract rootTypeDataContract)
 #pragma warning disable SYSLIB0050 // StreamingContext ctor is obsolete
@@ -27,6 +28,7 @@ namespace System.Runtime.Serialization.Json
             this.serializerKnownTypeList = serializer.knownTypeList;
             _dateTimeFormat = serializer.DateTimeFormat;
             _useSimpleDictionaryFormat = serializer.UseSimpleDictionaryFormat;
+            ReflectionDictionaryFormat = _useSimpleDictionaryFormat ? JsonDictionaryFormat.Simple : JsonDictionaryFormat.Array;
         }
 
         internal static XmlObjectSerializerReadContextComplexJson CreateContext(DataContractJsonSerializer serializer, DataContract rootTypeDataContract)
@@ -118,8 +120,13 @@ namespace System.Runtime.Serialization.Json
 
         private static IDataNode ReadNumericalPrimitiveExtensionDataValue(XmlReaderDelegator xmlReader)
         {
+            return CreateNumericalPrimitiveExtensionDataValue(xmlReader.ReadContentAsString());
+        }
+
+        private static IDataNode CreateNumericalPrimitiveExtensionDataValue(string value)
+        {
             TypeCode type;
-            object numericalValue = JsonObjectDataContract.ParseJsonNumber(xmlReader.ReadContentAsString(), out type);
+            object numericalValue = JsonObjectDataContract.ParseJsonNumber(value, out type);
             return type switch
             {
                 TypeCode.Byte => new DataNode<byte>((byte)numericalValue),

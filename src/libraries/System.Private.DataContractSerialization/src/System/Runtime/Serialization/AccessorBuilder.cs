@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
@@ -16,7 +17,7 @@ namespace System.Runtime.Serialization
 {
     internal static class FastInvokerBuilder
     {
-        public delegate void Setter(ref object obj, object? value);
+        public delegate object Setter(object obj, object? value);
         public delegate object? Getter(object obj);
 
         private delegate void StructSetDelegate<T, TArg>(ref T obj, TArg value);
@@ -80,11 +81,14 @@ namespace System.Runtime.Serialization
             }
             else if (memberInfo is FieldInfo fieldInfo)
             {
-                return (obj) =>
+                if (CanCompileFieldAccess(fieldInfo))
                 {
-                    var value = fieldInfo.GetValue(obj);
-                    return value;
-                };
+                    ParameterExpression obj = Expression.Parameter(typeof(object), nameof(obj));
+                    return Expression.Lambda<Getter>(
+                        Expression.Convert(CreateFieldExpression(fieldInfo, obj), typeof(object)), obj).Compile();
+                }
+
+                return fieldInfo.GetValue;
             }
             else
             {
@@ -107,20 +111,32 @@ namespace System.Runtime.Serialization
                     {
                         if (propInfo.Name == "Key")
                         {
-                            return (ref object obj, object? val) =>
+                            return (obj, val) =>
                             {
                                 ((IKeyValue)obj).Key = val;
+                                return obj;
                             };
                         }
                         else
                         {
-                            return (ref object obj, object? val) =>
+                            return (obj, val) =>
                             {
                                 ((IKeyValue)obj).Value = val;
+                                return obj;
                             };
                         }
                     }
 
+                    if (RuntimeFeature.IsDynamicCodeCompiled && declaringType.IsValueType)
+                    {
+                        ParameterExpression obj = Expression.Parameter(typeof(object), nameof(obj));
+                        ParameterExpression value = Expression.Parameter(typeof(object), nameof(value));
+                        return Expression.Lambda<Setter>(
+                            Expression.Block(
+                                Expression.Call(Expression.Unbox(obj, declaringType), propInfo.SetMethod!, Expression.Convert(value, propertyType)),
+                                obj),
+                            obj, value).Compile();
+                    }
                     // If either of the arguments to MakeGenericMethod is a valuetype, this is going to cause JITting.
                     // Only JIT if dynamic code is supported.
                     if (RuntimeFeature.IsDynamicCodeSupported || (!declaringType.IsValueType && !propertyType.IsValueType))
@@ -132,9 +148,10 @@ namespace System.Runtime.Serialization
                     }
                     else
                     {
-                        return (ref object obj, object? val) =>
+                        return (obj, val) =>
                         {
                             propInfo.SetValue(obj, val);
+                            return obj;
                         };
                     }
                 }
@@ -145,15 +162,80 @@ namespace System.Runtime.Serialization
             }
             else if (memberInfo is FieldInfo fieldInfo)
             {
-                return (ref object obj, object? val) =>
+                if (!fieldInfo.IsInitOnly && !fieldInfo.IsLiteral && CanCompileFieldAccess(fieldInfo))
+                {
+                    ParameterExpression obj = Expression.Parameter(typeof(object), nameof(obj));
+                    ParameterExpression value = Expression.Parameter(typeof(object), nameof(value));
+                    return Expression.Lambda<Setter>(
+                        Expression.Block(
+                            Expression.Assign(CreateFieldExpression(fieldInfo, obj), Expression.Convert(value, fieldInfo.FieldType)),
+                            obj),
+                        obj, value).Compile();
+                }
+
+                return (obj, val) =>
                 {
                     fieldInfo.SetValue(obj, val);
+                    return obj;
                 };
             }
             else
             {
                 throw new InvalidOperationException(SR.Format(SR.InvalidMember, DataContract.GetClrTypeFullName(memberInfo.DeclaringType!), memberInfo.Name));
             }
+        }
+
+        private static bool CanCompileFieldAccess(FieldInfo fieldInfo) =>
+            RuntimeFeature.IsDynamicCodeCompiled &&
+            // Expression compilation does not emit volatile field access prefixes.
+            !fieldInfo.GetRequiredCustomModifiers().Contains(typeof(IsVolatile));
+
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        internal static Func<object, T, object> CreateTypedSetter<T>(DataMember member)
+        {
+            if (RuntimeFeature.IsDynamicCodeCompiled)
+            {
+                ParameterExpression obj = Expression.Parameter(typeof(object), nameof(obj));
+                ParameterExpression value = Expression.Parameter(typeof(T), nameof(value));
+                Expression? assignment = CreateSetterExpression(member.MemberInfo, obj, value);
+                if (assignment is not null)
+                    return Expression.Lambda<Func<object, T, object>>(Expression.Block(assignment, obj), obj, value).Compile();
+            }
+
+            Setter fallback = member.Setter;
+            return (obj, value) => fallback(obj, value);
+        }
+
+        internal static Expression? CreateSetterExpression(MemberInfo member, Expression obj, Expression value) =>
+            member switch
+            {
+                FieldInfo field when !field.IsInitOnly && !field.IsLiteral && CanCompileFieldAccess(field) =>
+                    Expression.Assign(CreateFieldExpression(field, obj), value),
+                PropertyInfo property when property.SetMethod is MethodInfo setter && property.GetIndexParameters().Length == 0 =>
+                    Expression.Call(setter.IsStatic ? null :
+                        property.DeclaringType!.IsValueType ? Expression.Unbox(obj, property.DeclaringType) :
+                        Expression.Convert(obj, property.DeclaringType), setter, value),
+                _ => null
+            };
+
+        internal static Expression? CreateGetterExpression(MemberInfo member, Expression obj)
+        {
+            if (member is FieldInfo field && CanCompileFieldAccess(field))
+                return CreateFieldExpression(field, obj);
+            if (member is PropertyInfo property && property.GetMethod is MethodInfo getter &&
+                property.GetIndexParameters().Length == 0 && !property.PropertyType.IsByRef)
+                return Expression.Call(Expression.Convert(obj, property.DeclaringType!), getter);
+
+            return null;
+        }
+
+        private static MemberExpression CreateFieldExpression(FieldInfo fieldInfo, Expression obj)
+        {
+            Type declaringType = fieldInfo.DeclaringType!;
+            // Unbox addresses the existing boxed struct instead of mutating a copy.
+            Expression? instance = fieldInfo.IsStatic ? null :
+                declaringType.IsValueType ? Expression.Unbox(obj, declaringType) : Expression.Convert(obj, declaringType);
+            return Expression.Field(instance, fieldInfo);
         }
 
         private static object Make<T>() where T : new()
@@ -191,20 +273,21 @@ namespace System.Runtime.Serialization
             {
                 var setMethod = propInfo.SetMethod!.CreateDelegate<StructSetDelegate<DeclaringType, PropertyType>>();
 
-                return (ref object obj, object? val) =>
+                return (obj, val) =>
                 {
                     var unboxed = (DeclaringType)obj;
                     setMethod(ref unboxed, (PropertyType)val!);
-                    obj = unboxed!;
+                    return unboxed!;
                 };
             }
             else
             {
                 var setMethod = propInfo.SetMethod!.CreateDelegate<Action<DeclaringType, PropertyType>>();
 
-                return (ref object obj, object? val) =>
+                return (obj, val) =>
                 {
                     setMethod((DeclaringType)obj, (PropertyType)val!);
+                    return obj;
                 };
             }
         }

@@ -17,7 +17,7 @@ using System.Xml;
 
 namespace System.Runtime.Serialization
 {
-    internal class XmlObjectSerializerWriteContextComplex : XmlObjectSerializerWriteContext
+    internal partial class XmlObjectSerializerWriteContextComplex : XmlObjectSerializerWriteContext
     {
         private readonly ISerializationSurrogateProvider? _serializationSurrogateProvider;
 

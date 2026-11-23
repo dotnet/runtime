@@ -12,7 +12,7 @@ using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.
 
 namespace System.Runtime.Serialization.Json
 {
-    internal sealed class JsonXmlDataContract : JsonDataContract
+    internal sealed partial class JsonXmlDataContract : JsonDataContract
     {
         [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
@@ -26,21 +26,7 @@ namespace System.Runtime.Serialization.Json
         public override object? ReadJsonValueCore(XmlReaderDelegator jsonReader, XmlObjectSerializerReadContextComplexJson? context)
         {
             string xmlContent = jsonReader.ReadElementContentAsString();
-
-            DataContractSerializer dataContractSerializer = new DataContractSerializer(TraditionalDataContract.UnderlyingType,
-                GetKnownTypesFromContext(context, context?.SerializerKnownTypeList), 1, false, false); //  maxItemsInObjectGraph //  ignoreExtensionDataObject //  preserveObjectReferences
-
-            StringStream stream = new(xmlContent, Encoding.UTF8);
-            object? xmlValue;
-            XmlDictionaryReaderQuotas? quotas = ((JsonReaderDelegator)jsonReader).ReaderQuotas;
-            if (quotas == null)
-            {
-                xmlValue = dataContractSerializer.ReadObject(stream);
-            }
-            else
-            {
-                xmlValue = dataContractSerializer.ReadObject(XmlDictionaryReader.CreateTextReader(stream, quotas));
-            }
+            object? xmlValue = DeserializeXmlValue(xmlContent, jsonReader, context);
             context?.AddNewObject(xmlValue);
             return xmlValue;
         }
@@ -49,14 +35,7 @@ namespace System.Runtime.Serialization.Json
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public override void WriteJsonValueCore(XmlWriterDelegator jsonWriter, object obj, XmlObjectSerializerWriteContextComplexJson? context, RuntimeTypeHandle declaredTypeHandle)
         {
-            DataContractSerializer dataContractSerializer = new DataContractSerializer(Type.GetTypeFromHandle(declaredTypeHandle)!,
-                GetKnownTypesFromContext(context, context?.SerializerKnownTypeList), 1, false, false); //  maxItemsInObjectGraph //  ignoreExtensionDataObject //  preserveObjectReferences
-
-            MemoryStream memoryStream = new MemoryStream();
-            dataContractSerializer.WriteObject(memoryStream, obj);
-            memoryStream.Position = 0;
-            string serialized = new StreamReader(memoryStream).ReadToEnd();
-            jsonWriter.WriteString(serialized);
+            jsonWriter.WriteString(SerializeXmlValue(obj, context, declaredTypeHandle));
         }
 
         private static List<Type> GetKnownTypesFromContext(XmlObjectSerializerContext? context, IList<Type>? serializerKnownTypeList)

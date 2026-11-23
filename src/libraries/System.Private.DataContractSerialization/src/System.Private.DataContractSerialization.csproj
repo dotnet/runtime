@@ -19,11 +19,14 @@
     <Compile Include="$(CommonPath)System\NotImplemented.cs" Link="Common\System\NotImplemented.cs" />
     <Compile Include="$(CommonPath)System\HexConverter.cs" Link="Common\System\HexConverter.cs" />
     <Compile Include="$(RuntimeSerializationSources)\AccessorBuilder.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\AsyncXmlSerializableServices.cs" />
     <Compile Include="$(RuntimeSerializationSources)\Attributes.cs" />
     <Compile Include="$(RuntimeSerializationSources)\BitFlagsGenerator.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\BufferedXmlReader.cs" />
     <Compile Include="$(RuntimeSerializationSources)\CodeGenerator.cs" />
     <Compile Include="$(RuntimeSerializationSources)\ClassDataContract.cs" />
     <Compile Include="$(RuntimeSerializationSources)\CollectionDataContract.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\DataContract.Async.cs" />
     <Compile Include="$(RuntimeSerializationSources)\DataContract.cs" />
     <Compile Include="$(RuntimeSerializationSources)\DateTimeOffsetAdapter.cs" />
     <Compile Include="$(RuntimeSerializationSources)\DictionaryGlobals.cs" />
@@ -50,6 +53,7 @@
     <Compile Include="$(RuntimeSerializationSources)\PrimitiveDataContract.cs" />
     <Compile Include="$(RuntimeSerializationSources)\ReflectionClassWriter.cs" />
     <Compile Include="$(RuntimeSerializationSources)\ReflectionReader.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\ReflectionSerialization.Async.cs" />
     <Compile Include="$(RuntimeSerializationSources)\ReflectionSerialization.cs" />
     <Compile Include="$(RuntimeSerializationSources)\ReflectionXmlFormatReader.cs" />
     <Compile Include="$(RuntimeSerializationSources)\ReflectionXmlFormatWriter.cs" />
@@ -58,6 +62,7 @@
     <Compile Include="$(RuntimeSerializationSources)\SchemaImporter.cs" />
     <Compile Include="$(RuntimeSerializationSources)\ScopedKnownTypes.cs" />
     <Compile Include="$(RuntimeSerializationSources)\SerializationOption.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\SerializationStream.cs" />
     <Compile Include="$(RuntimeSerializationSources)\SpecialTypeDataContract.cs" />
     <Compile Include="$(RuntimeSerializationSources)\XmlDataContract.cs" />
     <Compile Include="$(RuntimeSerializationSources)\XmlFormatGeneratorStatics.cs" />
@@ -65,14 +70,20 @@
     <Compile Include="$(RuntimeSerializationSources)\XmlFormatWriterGenerator.cs" />
     <Compile Include="$(RuntimeSerializationSources)\XmlObjectSerializer.cs" />
     <Compile Include="$(RuntimeSerializationSources)\XmlObjectSerializerContext.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\XmlObjectSerializerReadContext.Async.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\XmlObjectSerializerReadContext.ExtensionData.Async.cs" />
     <Compile Include="$(RuntimeSerializationSources)\XmlObjectSerializerReadContext.cs" />
     <Compile Include="$(RuntimeSerializationSources)\XmlObjectSerializerReadContextComplex.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\XmlObjectSerializerWriteContext.Async.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\XmlObjectSerializerWriteContext.ExtensionData.Async.cs" />
     <Compile Include="$(RuntimeSerializationSources)\XmlObjectSerializerWriteContext.cs" />
     <Compile Include="$(RuntimeSerializationSources)\XmlObjectSerializerWriteContextComplex.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\XmlReaderDelegator.Async.cs" />
     <Compile Include="$(RuntimeSerializationSources)\XmlReaderDelegator.cs" />
     <Compile Include="$(RuntimeSerializationSources)\XmlSerializableReader.cs" />
     <Compile Include="$(RuntimeSerializationSources)\XmlSerializableServices.cs" />
     <Compile Include="$(RuntimeSerializationSources)\XmlSerializableWriter.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\XmlWriterDelegator.Async.cs" />
     <Compile Include="$(RuntimeSerializationSources)\XmlWriterDelegator.cs" />
     <Compile Include="$(RuntimeSerializationSources)\XPathQueryGenerator.cs" />
     <Compile Include="$(RuntimeSerializationSources)\XsdDataContractExporter.cs" />
@@ -123,6 +134,7 @@
     <Compile Include="$(JsonSources)\JsonByteArrayDataContract.cs" />
     <Compile Include="$(JsonSources)\JsonClassDataContract.cs" />
     <Compile Include="$(JsonSources)\JsonCollectionDataContract.cs" />
+    <Compile Include="$(JsonSources)\JsonDataContract.Async.cs" />
     <Compile Include="$(JsonSources)\JsonDataContract.cs" />
     <Compile Include="$(JsonSources)\JsonEncodingStreamWrapper.cs" />
     <Compile Include="$(JsonSources)\JsonEnumDataContract.cs" />
@@ -135,15 +147,19 @@
     <Compile Include="$(JsonSources)\JsonQNameDataContract.cs" />
     <Compile Include="$(JsonSources)\JsonReaderDelegator.cs" />
     <Compile Include="$(JsonSources)\JsonReaderWriterFactory.cs" />
+    <Compile Include="$(JsonSources)\JsonWriterDelegator.Async.cs" />
     <Compile Include="$(JsonSources)\JsonWriterDelegator.cs" />
     <Compile Include="$(JsonSources)\JsonStringDataContract.cs" />
     <Compile Include="$(JsonSources)\JsonUriDataContract.cs" />
+    <Compile Include="$(JsonSources)\JsonXmlDataContract.Async.cs" />
     <Compile Include="$(JsonSources)\JsonXmlDataContract.cs" />
     <Compile Include="$(JsonSources)\ReflectionJsonFormatReader.cs" />
     <Compile Include="$(JsonSources)\ReflectionJsonFormatWriter.cs" />
     <Compile Include="$(JsonSources)\XmlJsonReader.cs" />
     <Compile Include="$(JsonSources)\XmlJsonWriter.cs" />
+    <Compile Include="$(JsonSources)\XmlObjectSerializerReadContextComplexJson.Async.cs" />
     <Compile Include="$(JsonSources)\XmlObjectSerializerReadContextComplexJson.cs" />
+    <Compile Include="$(JsonSources)\XmlObjectSerializerWriteContextComplexJson.Async.cs" />
     <Compile Include="$(JsonSources)\XmlObjectSerializerWriteContextComplexJson.cs" />
     <Compile Include="$(CommonPath)System\CodeDom\CodeTypeReference.cs" />
     <Compile Include="$(CommonPath)System\CodeDom\CodeTypeReferenceCollection.cs" />
@@ -164,6 +180,7 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.NonGeneric\src\System.Collections.NonGeneric.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.Specialized\src\System.Collections.Specialized.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Linq\src\System.Linq.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Linq.Expressions\src\System.Linq.Expressions.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Memory\src\System.Memory.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Reflection.Emit.ILGeneration\src\System.Reflection.Emit.ILGeneration.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Reflection.Emit.Lightweight\src\System.Reflection.Emit.Lightweight.csproj" />

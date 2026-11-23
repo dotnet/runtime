@@ -8,6 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.Serialization.DataContracts;
 using System.Security;
+using System.Threading;
 using System.Xml;
 
 using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContracts.DataContract>;
@@ -28,6 +29,8 @@ namespace System.Runtime.Serialization
         private readonly bool _ignoreExtensionDataObject;
         private readonly DataContractResolver? _dataContractResolver;
         private KnownTypeDataContractResolver? _knownTypeResolver;
+
+        internal CancellationToken CancellationToken { get; set; }
 
         internal XmlObjectSerializerContext(XmlObjectSerializer serializer, int maxItemsInObjectGraph, StreamingContext streamingContext, bool ignoreExtensionDataObject,
                                             DataContractResolver? dataContractResolver)

@@ -1745,7 +1745,8 @@ namespace System.Xml
         }
 
         internal Task WriteXmlPrimitiveValueAsync<T>(object value) where T : struct =>
-            WriteXmlPrimitiveValueAsyncCore<T>(value);
+            typeof(T) == typeof(ReflectionPlan.StringValue)
+                ? WriteStringAsync((string)value) : WriteXmlPrimitiveValueAsyncCore<T>(value);
 
         private async Task WriteXmlPrimitiveValueAsyncCore<T>(object value) where T : struct
         {
@@ -1801,8 +1802,10 @@ namespace System.Xml
         private Task WriteTextPrimitiveElementAsync<T>(
             string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, object value) where T : struct
         {
-            long valueSize = XmlUTF8NodeWriter.GetPrimitiveBufferSize<T>();
-            if (valueSize != 0 &&
+            long valueSize = typeof(T) == typeof(ReflectionPlan.StringValue)
+                ? _writer is XmlUTF8NodeWriter textNode ? textNode.GetEscapedTextMaximumBytes((string)value, inAttribute: false) : 0
+                : XmlUTF8NodeWriter.GetPrimitiveBufferSize<T>();
+            if ((valueSize != 0 || typeof(T) == typeof(ReflectionPlan.StringValue)) &&
                 TryGetBufferedPrimitiveElement(prefix, localName, namespaceUri, valueSize,
                 out XmlUTF8NodeWriter? textWriter, out string? actualPrefix, out int maximumBytes))
             {
@@ -1858,7 +1861,9 @@ namespace System.Xml
                 _nsMgr.LookupNamespace(prefix) == ns.Value ? prefix : null;
             if (actualPrefix is null)
                 return null;
-            long valueSize = XmlBinaryNodeWriter.GetPrimitiveBufferSize<TPrimitive>();
+            long valueSize = typeof(TPrimitive) == typeof(ReflectionPlan.StringValue)
+                ? 5 + (long)XmlStreamNodeWriter.MaxUtf8BytesPerChar * ((string)(object)value!).Length
+                : XmlBinaryNodeWriter.GetPrimitiveBufferSize<TPrimitive>();
             if (valueSize == 0)
                 return null;
             byte[] nameBytes = name.ToUTF8();
@@ -1925,7 +1930,10 @@ namespace System.Xml
                 node.WriteBufferedStartElement(prefix, nameBytes);
             else
                 node.WriteStartElement(prefix, name);
-            node.WritePrimitiveValue<TPrimitive, TValue>(value);
+            if (typeof(TPrimitive) != typeof(ReflectionPlan.StringValue) || ((string)(object)value!).Length != 0)
+            {
+                node.WritePrimitiveValue<TPrimitive, TValue>(value);
+            }
             node.WriteEndElement(prefix, name.Value);
             _writeState = WriteState.Content;
         }
@@ -2061,7 +2069,8 @@ namespace System.Xml
             PreStartElementAsyncCheck(localName.Value);
             AutoComplete(WriteState.Element);
             // Buffered scalars with an existing ASCII prefix cannot change scope or call user encoders.
-            bool needsScope = prefix.Length > 1 || prefix.Length == 1 && prefix[0] >= 0x80;
+            bool needsScope = typeof(TPrimitive) == typeof(ReflectionPlan.StringValue) ||
+                prefix.Length > 1 || prefix.Length == 1 && prefix[0] >= 0x80;
             byte[] localNameBytes = localName.ToUTF8();
             if (!needsScope)
             {
@@ -2073,10 +2082,14 @@ namespace System.Xml
             element.Prefix = prefix;
             element.LocalName = localName.Value;
             writer.WriteBufferedStartElement(prefix, localNameBytes);
-            writer.WriteEndStartElement(false);
-            _writeState = WriteState.Content;
-            writer.WritePrimitiveValue<TPrimitive, TValue>(value);
-            writer.WriteBufferedEndElement(prefix, localNameBytes);
+            bool emptyString = typeof(TPrimitive) == typeof(ReflectionPlan.StringValue) && ((string)(object)value!).Length == 0;
+            writer.WriteEndStartElement(emptyString);
+            if (!emptyString)
+            {
+                _writeState = WriteState.Content;
+                writer.WritePrimitiveValue<TPrimitive, TValue>(value);
+                writer.WriteBufferedEndElement(prefix, localNameBytes);
+            }
             ExitScope();
             _writeState = WriteState.Content;
         }

@@ -6,7 +6,7 @@ using System.Xml;
 
 namespace System.Runtime.Serialization.Json
 {
-    internal sealed class JsonWriterDelegator : XmlWriterDelegator
+    internal sealed partial class JsonWriterDelegator : XmlWriterDelegator
     {
         private readonly DateTimeFormat? _dateTimeFormat;
 
@@ -118,6 +118,27 @@ namespace System.Runtime.Serialization.Json
         }
 
 
+        internal override void WriteBooleanArray(bool[] value, XmlDictionaryString itemName, XmlDictionaryString? itemNamespace) =>
+            WriteJsonBooleanArray(value, itemName, itemNamespace);
+
+        internal override void WriteDateTimeArray(DateTime[] value, XmlDictionaryString itemName, XmlDictionaryString? itemNamespace) =>
+            WriteJsonDateTimeArray(value, itemName, itemNamespace);
+
+        internal override void WriteDecimalArray(decimal[] value, XmlDictionaryString itemName, XmlDictionaryString? itemNamespace) =>
+            WriteJsonDecimalArray(value, itemName, itemNamespace);
+
+        internal override void WriteInt32Array(int[] value, XmlDictionaryString itemName, XmlDictionaryString? itemNamespace) =>
+            WriteJsonInt32Array(value, itemName, itemNamespace);
+
+        internal override void WriteInt64Array(long[] value, XmlDictionaryString itemName, XmlDictionaryString? itemNamespace) =>
+            WriteJsonInt64Array(value, itemName, itemNamespace);
+
+        internal override void WriteSingleArray(float[] value, XmlDictionaryString itemName, XmlDictionaryString? itemNamespace) =>
+            WriteJsonSingleArray(value, itemName, itemNamespace);
+
+        internal override void WriteDoubleArray(double[] value, XmlDictionaryString itemName, XmlDictionaryString? itemNamespace) =>
+            WriteJsonDoubleArray(value, itemName, itemNamespace);
+
         internal void WriteJsonBooleanArray(bool[] value, XmlDictionaryString itemName, XmlDictionaryString? itemNamespace)
         {
             for (int i = 0; i < value.Length; i++)
@@ -172,6 +193,25 @@ namespace System.Runtime.Serialization.Json
 
         private void WriteDateTimeInDefaultFormat(DateTime value)
         {
+            CheckDateTimeRange(value);
+            writer.WriteString(JsonGlobals.DateTimeStartGuardReader);
+            writer.WriteValue((value.ToUniversalTime().Ticks - JsonGlobals.unixEpochTicks) / 10000);
+
+            switch (value.Kind)
+            {
+                case DateTimeKind.Unspecified:
+                case DateTimeKind.Local:
+                    TimeSpan ts = TimeZoneInfo.Local.GetUtcOffset(value.ToLocalTime());
+                    writer.WriteString(string.Create(CultureInfo.InvariantCulture, $"{ts.Hours:+00;-00}{ts.Minutes:00;00}"));
+                    break;
+                case DateTimeKind.Utc:
+                    break;
+            }
+            writer.WriteString(JsonGlobals.DateTimeEndGuardReader);
+        }
+
+        private static void CheckDateTimeRange(DateTime value)
+        {
             // ToUniversalTime() truncates dates to DateTime.MaxValue or DateTime.MinValue instead of throwing
             // This will break round-tripping of these dates (see
             if (value.Kind != DateTimeKind.Utc)
@@ -199,22 +239,6 @@ namespace System.Runtime.Serialization.Json
                 }
             }
 
-            writer.WriteString(JsonGlobals.DateTimeStartGuardReader);
-            writer.WriteValue((value.ToUniversalTime().Ticks - JsonGlobals.unixEpochTicks) / 10000);
-
-            switch (value.Kind)
-            {
-                case DateTimeKind.Unspecified:
-                case DateTimeKind.Local:
-                    // +"zzzz";
-                    //TimeSpan ts = TimeZone.CurrentTimeZone.GetUtcOffset(value.ToLocalTime());
-                    TimeSpan ts = TimeZoneInfo.Local.GetUtcOffset(value.ToLocalTime());
-                    writer.WriteString(string.Create(CultureInfo.InvariantCulture, $"{ts.Hours:+00;-00}{ts.Minutes:00;00}"));
-                    break;
-                case DateTimeKind.Utc:
-                    break;
-            }
-            writer.WriteString(JsonGlobals.DateTimeEndGuardReader);
         }
 
         internal void WriteJsonSingleArray(float[] value, XmlDictionaryString itemName, XmlDictionaryString? itemNamespace)

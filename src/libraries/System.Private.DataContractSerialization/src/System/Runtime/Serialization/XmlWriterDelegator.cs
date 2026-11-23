@@ -2,13 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization.DataContracts;
 using System.Xml;
 
 
 namespace System.Runtime.Serialization
 {
-    internal class XmlWriterDelegator
+    internal partial class XmlWriterDelegator
     {
         protected XmlWriter writer;
         protected XmlDictionaryWriter? dictionaryWriter;
@@ -247,6 +248,47 @@ namespace System.Runtime.Serialization
         internal void WriteEndElementPrimitive()
         {
             writer.WriteEndElement();
+        }
+
+        // Writes a primitive member element without boxing. Text XML writers format directly into their buffer;
+        // every other writer uses the same virtual value writers as the individual WriteX(value, name, ns) methods.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void WriteTypedPrimitiveElement<T>(T value, XmlDictionaryString name, XmlDictionaryString? ns) where T : struct
+        {
+            if (this is not Json.JsonWriterDelegator && dictionaryWriter is XmlBaseWriter xmlWriter &&
+                xmlWriter.TryWriteTypedPrimitiveElement(name, ns, value))
+                return;
+
+            WriteStartElementPrimitive(name, ns);
+            if (typeof(T) == typeof(bool))
+                WriteBoolean(Unsafe.As<T, bool>(ref value));
+            else if (typeof(T) == typeof(char))
+                WriteChar(Unsafe.As<T, char>(ref value));
+            else if (typeof(T) == typeof(byte))
+                WriteUnsignedByte(Unsafe.As<T, byte>(ref value));
+            else if (typeof(T) == typeof(sbyte))
+                WriteSignedByte(Unsafe.As<T, sbyte>(ref value));
+            else if (typeof(T) == typeof(short))
+                WriteShort(Unsafe.As<T, short>(ref value));
+            else if (typeof(T) == typeof(ushort))
+                WriteUnsignedShort(Unsafe.As<T, ushort>(ref value));
+            else if (typeof(T) == typeof(int))
+                WriteInt(Unsafe.As<T, int>(ref value));
+            else if (typeof(T) == typeof(uint))
+                WriteUnsignedInt(Unsafe.As<T, uint>(ref value));
+            else if (typeof(T) == typeof(long))
+                WriteLong(Unsafe.As<T, long>(ref value));
+            else if (typeof(T) == typeof(float))
+                WriteFloat(Unsafe.As<T, float>(ref value));
+            else if (typeof(T) == typeof(double))
+                WriteDouble(Unsafe.As<T, double>(ref value));
+            else if (typeof(T) == typeof(decimal))
+                WriteDecimal(Unsafe.As<T, decimal>(ref value));
+            else if (typeof(T) == typeof(DateTime))
+                WriteDateTime(Unsafe.As<T, DateTime>(ref value));
+            else
+                throw new NotSupportedException();
+            WriteEndElementPrimitive();
         }
 
         internal WriteState WriteState
@@ -705,7 +747,7 @@ namespace System.Runtime.Serialization
                 dictionaryWriter.WriteQualifiedName(localName, ns);
         }
 
-        internal void WriteBooleanArray(bool[] value, XmlDictionaryString itemName, XmlDictionaryString itemNamespace)
+        internal virtual void WriteBooleanArray(bool[] value, XmlDictionaryString itemName, XmlDictionaryString? itemNamespace)
         {
             if (dictionaryWriter == null)
             {
@@ -720,7 +762,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        internal void WriteDateTimeArray(DateTime[] value, XmlDictionaryString itemName, XmlDictionaryString itemNamespace)
+        internal virtual void WriteDateTimeArray(DateTime[] value, XmlDictionaryString itemName, XmlDictionaryString? itemNamespace)
         {
             if (dictionaryWriter == null)
             {
@@ -735,7 +777,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        internal void WriteDecimalArray(decimal[] value, XmlDictionaryString itemName, XmlDictionaryString itemNamespace)
+        internal virtual void WriteDecimalArray(decimal[] value, XmlDictionaryString itemName, XmlDictionaryString? itemNamespace)
         {
             if (dictionaryWriter == null)
             {
@@ -750,7 +792,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        internal void WriteInt32Array(int[] value, XmlDictionaryString itemName, XmlDictionaryString itemNamespace)
+        internal virtual void WriteInt32Array(int[] value, XmlDictionaryString itemName, XmlDictionaryString? itemNamespace)
         {
             if (dictionaryWriter == null)
             {
@@ -765,7 +807,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        internal void WriteInt64Array(long[] value, XmlDictionaryString itemName, XmlDictionaryString itemNamespace)
+        internal virtual void WriteInt64Array(long[] value, XmlDictionaryString itemName, XmlDictionaryString? itemNamespace)
         {
             if (dictionaryWriter == null)
             {
@@ -780,7 +822,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        internal void WriteSingleArray(float[] value, XmlDictionaryString itemName, XmlDictionaryString itemNamespace)
+        internal virtual void WriteSingleArray(float[] value, XmlDictionaryString itemName, XmlDictionaryString? itemNamespace)
         {
             if (dictionaryWriter == null)
             {
@@ -795,7 +837,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        internal void WriteDoubleArray(double[] value, XmlDictionaryString itemName, XmlDictionaryString itemNamespace)
+        internal virtual void WriteDoubleArray(double[] value, XmlDictionaryString itemName, XmlDictionaryString? itemNamespace)
         {
             if (dictionaryWriter == null)
             {

@@ -10,12 +10,24 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Serialization.DataContracts;
 using System.Security;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Xml;
 
 using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContracts.DataContract>;
 
 namespace System.Runtime.Serialization
 {
+    /// <summary>Provides methods for serializing and deserializing objects as XML.</summary>
+    /// <remarks>
+    /// Asynchronous operations do not make serialization callbacks, property accessors, or custom serialization methods asynchronous.
+    /// Cancellation cannot preempt these methods. It can leave partial output or an advanced reader position; operations are not rolled back.
+    /// Caller-supplied XML readers and writers must support asynchronous operations to obtain asynchronous I/O.
+    /// Stream operations on built-in serializers pass cancellation to the underlying I/O and leave the caller's stream open.
+    /// Built-in serializers capture their configured surrogate provider and date-time settings when an asynchronous operation begins.
+    /// Custom XML values can require memory proportional to that value while their synchronous custom methods run against a buffer.
+    /// Base asynchronous implementations preserve compatibility with existing subclasses by invoking their synchronous overrides.
+    /// </remarks>
     public abstract class XmlObjectSerializer
     {
         [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
@@ -259,6 +271,223 @@ namespace System.Runtime.Serialization
             writer.WriteAttributeBool(Globals.XsiPrefix, DictionaryGlobals.XsiNilLocalName, DictionaryGlobals.SchemaInstanceNamespace, true);
         }
 
+        internal static Task WriteRootElementAsync(XmlWriterDelegator writer, DataContract contract, XmlDictionaryString? name, XmlDictionaryString? ns, bool needsContractNsAtRoot)
+        {
+            if (name is null)
+            {
+                if (!contract.HasRoot)
+                {
+                    return Task.CompletedTask;
+                }
+                name = contract.TopLevelElementName!;
+                ns = contract.TopLevelElementNamespace;
+            }
+
+            string? prefix = ReferenceEquals(ns, DictionaryGlobals.SerializationNamespace) && !contract.IsPrimitive
+                ? Globals.SerPrefix
+                : contract is QNameDataContract && ns is not null && ns.Value.Length > 0 ? Globals.ElementPrefix : null;
+            Task start = writer.WriteStartElementAsync(prefix, name, ns);
+            return !needsContractNsAtRoot ? start :
+                start.IsCompletedSuccessfully ? writer.WriteNamespaceDeclAsync(contract.Namespace) :
+                AwaitRootElementNamespaceAsync(start, writer, contract.Namespace);
+        }
+
+        private static async Task AwaitRootElementNamespaceAsync(Task start, XmlWriterDelegator writer, XmlDictionaryString ns)
+        {
+            await start.ConfigureAwait(false);
+            await writer.WriteNamespaceDeclAsync(ns).ConfigureAwait(false);
+        }
+
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        internal virtual Task InternalWriteObjectAsync(XmlWriterDelegator writer, object? graph, DataContractResolver? dataContractResolver)
+        {
+            Task start = InternalWriteStartObjectAsync(writer, graph);
+            if (!start.IsCompletedSuccessfully)
+                return AwaitObjectStartAsync(start, writer, graph, dataContractResolver);
+            Task content = InternalWriteObjectContentAsync(writer, graph, dataContractResolver);
+            if (!content.IsCompletedSuccessfully)
+                return AwaitObjectContentAsync(content, writer);
+
+            return InternalWriteEndObjectAsync(writer);
+        }
+
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        private async Task AwaitObjectStartAsync(Task start, XmlWriterDelegator writer, object? graph, DataContractResolver? dataContractResolver)
+        {
+            await start.ConfigureAwait(false);
+            await InternalWriteObjectContentAsync(writer, graph, dataContractResolver).ConfigureAwait(false);
+            await InternalWriteEndObjectAsync(writer).ConfigureAwait(false);
+        }
+
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        private async Task AwaitObjectContentAsync(Task content, XmlWriterDelegator writer)
+        {
+            await content.ConfigureAwait(false);
+            await InternalWriteEndObjectAsync(writer).ConfigureAwait(false);
+        }
+
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        internal virtual Task InternalWriteStartObjectAsync(XmlWriterDelegator writer, object? graph)
+        {
+            InternalWriteStartObject(writer, graph);
+            return Task.CompletedTask;
+        }
+
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        internal virtual Task InternalWriteObjectContentAsync(XmlWriterDelegator writer, object? graph, DataContractResolver? dataContractResolver)
+        {
+            InternalWriteObjectContent(writer, graph);
+            return Task.CompletedTask;
+        }
+
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        internal virtual Task InternalWriteEndObjectAsync(XmlWriterDelegator writer)
+        {
+            InternalWriteEndObject(writer);
+            return Task.CompletedTask;
+        }
+
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        internal virtual ValueTask<object?> InternalReadObjectAsync(XmlReaderDelegator reader, bool verifyObjectName, DataContractResolver? dataContractResolver) =>
+            new ValueTask<object?>(InternalReadObject(reader, verifyObjectName, dataContractResolver));
+
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        internal Task WriteObjectHandleExceptionsAsync(XmlWriterDelegator writer, object? graph, DataContractResolver? dataContractResolver = null) =>
+            writer.RunAsyncOperation((Serializer: this, Graph: graph, Resolver: dataContractResolver),
+                static (writer, state) => state.Serializer.WriteObjectHandleExceptionsAsyncCore(writer, state.Graph, state.Resolver));
+
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        private async Task WriteObjectHandleExceptionsAsyncCore(XmlWriterDelegator writer, object? graph, DataContractResolver? dataContractResolver)
+        {
+            writer.CancellationToken.ThrowIfCancellationRequested();
+            using XmlWriterDelegator.AsyncOperationScope operation = writer.EnterAsyncOperation();
+            try
+            {
+                await InternalWriteObjectAsync(writer, graph, dataContractResolver).ConfigureAwait(false);
+                writer.CancellationToken.ThrowIfCancellationRequested();
+            }
+            catch (XmlException ex)
+            {
+                throw CreateSerializationException(GetTypeInfoError(SR.ErrorSerializing, GetSerializeType(graph), ex), ex);
+            }
+            catch (FormatException ex)
+            {
+                throw CreateSerializationException(GetTypeInfoError(SR.ErrorSerializing, GetSerializeType(graph), ex), ex);
+            }
+        }
+
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        internal Task WriteStartObjectHandleExceptionsAsync(XmlWriterDelegator writer, object? graph) =>
+            writer.RunAsyncOperation((Serializer: this, Graph: graph),
+                static (writer, state) => state.Serializer.WriteStartObjectHandleExceptionsAsyncCore(writer, state.Graph));
+
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        private async Task WriteStartObjectHandleExceptionsAsyncCore(XmlWriterDelegator writer, object? graph)
+        {
+            writer.CancellationToken.ThrowIfCancellationRequested();
+            using XmlWriterDelegator.AsyncOperationScope operation = writer.EnterAsyncOperation();
+            try
+            {
+                await InternalWriteStartObjectAsync(writer, graph).ConfigureAwait(false);
+                writer.CancellationToken.ThrowIfCancellationRequested();
+            }
+            catch (XmlException ex)
+            {
+                throw CreateSerializationException(GetTypeInfoError(SR.ErrorWriteStartObject, GetSerializeType(graph), ex), ex);
+            }
+            catch (FormatException ex)
+            {
+                throw CreateSerializationException(GetTypeInfoError(SR.ErrorWriteStartObject, GetSerializeType(graph), ex), ex);
+            }
+        }
+
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        internal Task WriteObjectContentHandleExceptionsAsync(XmlWriterDelegator writer, object? graph) =>
+            writer.RunAsyncOperation((Serializer: this, Graph: graph),
+                static (writer, state) => state.Serializer.WriteObjectContentHandleExceptionsAsyncCore(writer, state.Graph));
+
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        private async Task WriteObjectContentHandleExceptionsAsyncCore(XmlWriterDelegator writer, object? graph)
+        {
+            writer.CancellationToken.ThrowIfCancellationRequested();
+            using XmlWriterDelegator.AsyncOperationScope operation = writer.EnterAsyncOperation();
+            try
+            {
+                if (writer.WriteState != WriteState.Element)
+                {
+                    throw CreateSerializationException(SR.Format(SR.XmlWriterMustBeInElement, writer.WriteState));
+                }
+                await InternalWriteObjectContentAsync(writer, graph, null).ConfigureAwait(false);
+                writer.CancellationToken.ThrowIfCancellationRequested();
+            }
+            catch (XmlException ex)
+            {
+                throw CreateSerializationException(GetTypeInfoError(SR.ErrorSerializing, GetSerializeType(graph), ex), ex);
+            }
+            catch (FormatException ex)
+            {
+                throw CreateSerializationException(GetTypeInfoError(SR.ErrorSerializing, GetSerializeType(graph), ex), ex);
+            }
+        }
+
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        internal Task WriteEndObjectHandleExceptionsAsync(XmlWriterDelegator writer) =>
+            writer.RunAsyncOperation(this, static (writer, serializer) => serializer.WriteEndObjectHandleExceptionsAsyncCore(writer));
+
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        private async Task WriteEndObjectHandleExceptionsAsyncCore(XmlWriterDelegator writer)
+        {
+            writer.CancellationToken.ThrowIfCancellationRequested();
+            using XmlWriterDelegator.AsyncOperationScope operation = writer.EnterAsyncOperation();
+            try
+            {
+                await InternalWriteEndObjectAsync(writer).ConfigureAwait(false);
+                writer.CancellationToken.ThrowIfCancellationRequested();
+            }
+            catch (XmlException ex)
+            {
+                throw CreateSerializationException(GetTypeInfoError(SR.ErrorWriteEndObject, null, ex), ex);
+            }
+            catch (FormatException ex)
+            {
+                throw CreateSerializationException(GetTypeInfoError(SR.ErrorWriteEndObject, null, ex), ex);
+            }
+        }
+
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        internal async Task<object?> ReadObjectHandleExceptionsAsync(XmlReaderDelegator reader, bool verifyObjectName, DataContractResolver? dataContractResolver = null)
+        {
+            reader.CancellationToken.ThrowIfCancellationRequested();
+            try
+            {
+                return await InternalReadObjectAsync(reader, verifyObjectName, dataContractResolver).ConfigureAwait(false);
+            }
+            catch (XmlException ex)
+            {
+                throw CreateSerializationException(GetTypeInfoError(SR.ErrorDeserializing, GetDeserializeType(), ex), ex);
+            }
+            catch (FormatException ex)
+            {
+                throw CreateSerializationException(GetTypeInfoError(SR.ErrorDeserializing, GetDeserializeType(), ex), ex);
+            }
+        }
+
         internal static bool IsContractDeclared(DataContract contract, DataContract declaredContract)
         {
             return (object.ReferenceEquals(contract.Name, declaredContract.Name) && object.ReferenceEquals(contract.Namespace, declaredContract.Namespace))
@@ -469,6 +698,8 @@ namespace System.Runtime.Serialization
         {
             return null;
         }
+
+        internal virtual XmlObjectSerializer CreateAsyncOperationSnapshot() => this;
 
 #pragma warning disable SYSLIB0050 // IFormatterConverter is obsolete
         internal static IFormatterConverter FormatterConverter => field ??= new FormatterConverter();

@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization.DataContracts;
 using System.Text;
 using System.Xml;
@@ -14,11 +15,13 @@ using System.Xml.Serialization;
 
 namespace System.Runtime.Serialization.Json
 {
-    internal sealed class XmlObjectSerializerWriteContextComplexJson : XmlObjectSerializerWriteContextComplex
+    internal sealed partial class XmlObjectSerializerWriteContextComplexJson : XmlObjectSerializerWriteContextComplex
     {
+        private static readonly ConditionalWeakTable<DataContract, DataContract> s_aotDictionaryItemContracts = new();
         private readonly EmitTypeInformation _emitXsiType;
         private bool _perCallXsiTypeAlreadyEmitted;
         private readonly bool _useSimpleDictionaryFormat;
+        internal JsonDictionaryFormat ReflectionDictionaryFormat { get; }
 
         internal static XmlObjectSerializerWriteContextComplexJson CreateContext(DataContractJsonSerializer serializer, DataContract rootTypeDataContract)
         {
@@ -35,6 +38,7 @@ namespace System.Runtime.Serialization.Json
             this.serializerKnownTypeList = serializer.knownTypeList;
             this.serializeReadOnlyTypes = serializer.SerializeReadOnlyTypes;
             _useSimpleDictionaryFormat = serializer.UseSimpleDictionaryFormat;
+            ReflectionDictionaryFormat = _useSimpleDictionaryFormat ? JsonDictionaryFormat.Simple : JsonDictionaryFormat.Array;
         }
 
         internal IList<Type>? SerializerKnownTypeList
@@ -360,6 +364,10 @@ namespace System.Runtime.Serialization.Json
                 oldItemContract.UnderlyingType.IsGenericType &&
                 (oldItemContract.UnderlyingType.GetGenericTypeDefinition() == typeof(KeyValue<,>)))
             {
+                if (!RuntimeFeature.IsDynamicCodeSupported)
+                {
+                    return s_aotDictionaryItemContracts.GetValue(oldItemContract, static contract => new ClassDataContract(contract.UnderlyingType));
+                }
                 return DataContract.GetDataContract(oldItemContract.UnderlyingType);
             }
             return oldItemContract;

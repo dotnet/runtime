@@ -7,6 +7,7 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -1715,6 +1716,7 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicConstructors, typeof(Exception))]
     public static void DCS_ExceptionObject()
     {
         var value = new Exception("Test Exception");
@@ -1742,6 +1744,7 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicConstructors, typeof(Exception))]
     public static void DCS_ExceptionMessageWithSpecialChars()
     {
         var value = new Exception("Test Exception<>&'\"");
@@ -1755,6 +1758,7 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicConstructors, typeof(Exception))]
     public static void DCS_InnerExceptionMessageWithSpecialChars()
     {
         var value = new Exception("", new Exception("Test Exception<>&'\""));
@@ -1804,6 +1808,14 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicFields, typeof(Tuple<int>))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicFields, typeof(Tuple<int, int>))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicFields, typeof(Tuple<int, int, int>))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicFields, typeof(Tuple<int, int, int, int>))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicFields, typeof(Tuple<int, int, int, int, int>))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicFields, typeof(Tuple<int, int, int, int, int, int>))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicFields, typeof(Tuple<int, int, int, int, int, int, int>))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicFields, typeof(Tuple<int, int, int, int, int, int, int, Tuple<int>>))]
     public static void DCS_Tuple()
     {
         DCS_Tuple1();
@@ -1873,6 +1885,7 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicFields, typeof(Queue<int>))]
     public static void DCS_GenericQueue()
     {
         Queue<int> value = new Queue<int>();
@@ -1886,6 +1899,7 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicFields, typeof(Stack<int>))]
     public static void DCS_GenericStack()
     {
         var value = new Stack<int>();
@@ -1901,6 +1915,7 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicFields, typeof(Queue))]
     public static void DCS_Queue()
     {
         var value = new Queue();
@@ -1915,6 +1930,7 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicFields, typeof(Stack))]
     public static void DCS_Stack()
     {
         var value = new Stack();
@@ -2147,6 +2163,7 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicFields, typeof(ReadOnlyCollection<string>))]
     public static void DCS_ReadOnlyCollection()
     {
         List<string> list = new List<string>() { "Foo", "Bar" };
@@ -2158,6 +2175,7 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicFields, typeof(ReadOnlyDictionary<string, int>))]
     public static void DCS_ReadOnlyDictionary()
     {
         var dict = new Dictionary<string, int>();
@@ -4082,6 +4100,17 @@ public static partial class DataContractSerializerTests
             DataContractResolver = new SerializationTestTypes.SimpleResolver()
         };
 
+        Assert.NotEmpty(Enum.GetValues<SerializationTestTypes.MyEnum>());
+        Assert.NotEmpty(Enum.GetValues<SerializationTestTypes.MyEnum1>());
+        Assert.NotEmpty(Enum.GetValues<SerializationTestTypes.MyEnum2>());
+        Assert.NotEmpty(Enum.GetValues<SerializationTestTypes.MyEnum3>());
+        Assert.NotEmpty(Enum.GetValues<SerializationTestTypes.MyEnum4>());
+        Assert.NotEmpty(Enum.GetValues<SerializationTestTypes.MyEnum7>());
+        Assert.NotEmpty(Enum.GetValues<SerializationTestTypes.MyEnum8>());
+        Assert.NotEmpty(Enum.GetValues<SerializationTestTypes.MyPrivateEnum1>());
+        Assert.NotEmpty(Enum.GetValues<SerializationTestTypes.MyPrivateEnum2>());
+        Assert.NotEmpty(Enum.GetValues<SerializationTestTypes.MyPrivateEnum3>());
+
         foreach (var type in typelist)
         {
             var possibleValues = Enum.GetValues(type);
@@ -4112,6 +4141,7 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicFields, typeof(Queue<string>))]
     public static void DCS_KnownSerializableTypes_Queue_1()
     {
         Queue<string> q = new Queue<string>();
@@ -4125,6 +4155,7 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicFields, typeof(Stack<string>))]
     public static void DCS_KnownSerializableTypes_Stack_1()
     {
         Stack<string> stk = new Stack<string>();
@@ -4138,6 +4169,7 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicFields, typeof(ReadOnlyCollection<string>))]
     public static void DCS_KnownSerializableTypes_ReadOnlyCollection_1()
     {
         ReadOnlyCollection<string> roc = new ReadOnlyCollection<string>(new string[] { "one", "two", "three", "four" });
@@ -4150,6 +4182,7 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicFields, typeof(ReadOnlyDictionary<string, int>))]
     public static void DCS_KnownSerializableTypes_ReadOnlyDictionary_2()
     {
         ReadOnlyDictionary<string, int> rod = new ReadOnlyDictionary<string, int>(new Dictionary<string, int> { { "one", 1 }, { "two", 22 }, { "three", 333 }, { "four", 4444 } });
@@ -4165,6 +4198,7 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicFields, typeof(Queue))]
     public static void DCS_KnownSerializableTypes_Queue()
     {
         Queue q = new Queue();
@@ -4178,6 +4212,7 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicFields, typeof(Stack))]
     public static void DCS_KnownSerializableTypes_Stack()
     {
         Stack stk = new Stack();
@@ -4207,6 +4242,15 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicFields, typeof(Tuple<string>))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicFields, typeof(Tuple<string, string>))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicFields, typeof(Tuple<string, string, string>))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicFields, typeof(Tuple<string, string, string, string>))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicFields, typeof(Tuple<string, string, string, string, string>))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicFields, typeof(Tuple<string, string, string, string, string, string>))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicFields, typeof(Tuple<string, string, string, string, string, string, string>))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicFields, typeof(Tuple<int, int, string>))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicFields, typeof(Tuple<string, string, string, string, string, string, string, Tuple<int, int, string>>))]
     public static void DCS_KnownSerializableTypes_Tuples()
     {
         Tuple<string> t1 = new Tuple<string>("first");

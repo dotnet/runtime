@@ -265,6 +265,7 @@ namespace System.Xml
         internal void WriteBufferedPrimitiveElement<TPrimitive, TValue>(string prefix, byte[] localName, TValue value)
             where TPrimitive : struct
         {
+            Debug.Assert(typeof(TPrimitive) != typeof(ReflectionPlan.StringValue));
             Debug.Assert(prefix.Length == 0 || prefix.Length == 1 && prefix[0] < 0x80);
             byte[] buffer = StreamBuffer;
             int offset = BufferOffset;
@@ -1001,6 +1002,12 @@ namespace System.Xml
 
         internal void WritePrimitiveValue<TPrimitive, TValue>(TValue value) where TPrimitive : struct
         {
+            if (typeof(TPrimitive) == typeof(ReflectionPlan.StringValue))
+            {
+                WriteEscapedText((string)(object)value!);
+                return;
+            }
+
             Debug.Assert(GetPrimitiveBufferSize<TPrimitive>() <= StreamBuffer.Length - BufferOffset);
             Advance(FormatPrimitiveValue<TPrimitive, TValue>(value, StreamBuffer, BufferOffset));
         }

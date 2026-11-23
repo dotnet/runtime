@@ -38,7 +38,7 @@ namespace System.Runtime.Serialization.Json
                             JsonFormatClassReaderDelegate tempDelegate;
                             if (DataContractSerializer.Option == SerializationOption.ReflectionOnly)
                             {
-                                tempDelegate = new ReflectionJsonClassReader(TraditionalClassDataContract).ReflectionReadClass;
+                                tempDelegate = new ReflectionJsonClassReader(TraditionalClassDataContract, MemberNames).ReflectionReadClass;
                             }
                             else
                             {
@@ -69,7 +69,7 @@ namespace System.Runtime.Serialization.Json
                             JsonFormatClassWriterDelegate tempDelegate;
                             if (DataContractSerializer.Option == SerializationOption.ReflectionOnly)
                             {
-                                tempDelegate = new ReflectionJsonFormatWriter().ReflectionWriteClass;
+                                tempDelegate = new ReflectionJsonFormatWriter(TraditionalClassDataContract, MemberNames).ReflectionWriteClass;
                             }
                             else
                             {

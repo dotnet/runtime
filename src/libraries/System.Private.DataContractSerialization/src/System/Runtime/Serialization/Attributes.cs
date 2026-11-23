@@ -40,6 +40,8 @@ namespace System.Runtime.Serialization
         internal void Read(XmlReaderDelegator reader)
         {
             Reset();
+            if (reader.AttributeCount == 0)
+                return;
 
             while (reader.MoveToNextAttribute())
             {

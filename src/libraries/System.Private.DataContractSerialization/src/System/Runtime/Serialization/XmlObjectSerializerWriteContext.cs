@@ -20,7 +20,7 @@ using ExtensionDataObject = System.Object;
 
 namespace System.Runtime.Serialization
 {
-    internal class XmlObjectSerializerWriteContext : XmlObjectSerializerContext
+    internal partial class XmlObjectSerializerWriteContext : XmlObjectSerializerContext
     {
         private ObjectReferenceStack _byValObjectsInScope;
         private XmlSerializableWriter? _xmlSerializableWriter;
@@ -84,6 +84,13 @@ namespace System.Runtime.Serialization
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal void InternalSerializeReference(XmlWriterDelegator xmlWriter, object obj, bool isDeclaredType, bool writeXsiType, int declaredTypeID, RuntimeTypeHandle declaredTypeHandle)
         {
+            // Below the cycle-check depth, reference handling is a no-op unless object references are preserved.
+            if ((!preserveObjectReferences || IsGetOnlyCollection) && xmlWriter.depth < depthToCheckCyclicReference)
+            {
+                InternalSerialize(xmlWriter, obj, isDeclaredType, writeXsiType, declaredTypeID, declaredTypeHandle);
+                return;
+            }
+
             if (!OnHandleReference(xmlWriter, obj, true /*canContainCyclicReference*/))
                 InternalSerialize(xmlWriter, obj, isDeclaredType, writeXsiType, declaredTypeID, declaredTypeHandle);
             OnEndHandleReference(xmlWriter, obj, true /*canContainCyclicReference*/);
@@ -374,6 +381,11 @@ namespace System.Runtime.Serialization
 
         internal virtual bool OnHandleReference(XmlWriterDelegator xmlWriter, object obj, bool canContainCyclicReference)
         {
+            return HandleReferenceScope(xmlWriter, obj, canContainCyclicReference);
+        }
+
+        private bool HandleReferenceScope(XmlWriterDelegator xmlWriter, object obj, bool canContainCyclicReference)
+        {
             if (xmlWriter.depth < depthToCheckCyclicReference)
                 return false;
             if (canContainCyclicReference)
@@ -427,7 +439,7 @@ namespace System.Runtime.Serialization
             IncrementCollectionCount(xmlWriter, collection.Count);
         }
 
-        private void IncrementCollectionCount(XmlWriterDelegator xmlWriter, int size)
+        internal void IncrementCollectionCount(XmlWriterDelegator xmlWriter, int size)
         {
             IncrementItemCount(size);
             WriteArraySize(xmlWriter, size);
@@ -477,7 +489,7 @@ namespace System.Runtime.Serialization
             WriteIXmlSerializable(xmlWriter, obj, new XmlSerializableWriter());
         }
 
-        private static void WriteIXmlSerializable(XmlWriterDelegator xmlWriter, object obj, XmlSerializableWriter xmlSerializableWriter)
+        internal static void WriteIXmlSerializable(XmlWriterDelegator xmlWriter, object obj, XmlSerializableWriter xmlSerializableWriter)
         {
             xmlSerializableWriter.BeginWrite(xmlWriter.Writer, obj);
             IXmlSerializable? xmlSerializable = obj as IXmlSerializable;

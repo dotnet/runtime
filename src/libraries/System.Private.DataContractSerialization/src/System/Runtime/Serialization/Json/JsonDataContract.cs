@@ -1,22 +1,25 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.DataContracts;
+using System.Threading;
 using System.Xml;
 
 using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContracts.DataContract>;
 
 namespace System.Runtime.Serialization.Json
 {
-    internal class JsonDataContract
+    internal partial class JsonDataContract
     {
+        private protected const int DictionaryFormatCount = 2;
+
         private readonly JsonDataContractCriticalHelper _helper;
 
         [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
@@ -36,6 +39,22 @@ namespace System.Runtime.Serialization.Json
         protected JsonDataContractCriticalHelper Helper => _helper;
 
         protected DataContract TraditionalDataContract => _helper.TraditionalDataContract;
+
+        private protected bool HasDictionaryFormatVariants => _helper.HasDictionaryFormatVariants;
+
+        private protected void PublishDictionaryFormatPlan<TDelegate>(TDelegate?[] plans, int format, TDelegate plan)
+            where TDelegate : Delegate
+        {
+            if (HasDictionaryFormatVariants)
+            {
+                Volatile.Write(ref plans[format], plan);
+            }
+            else
+            {
+                Volatile.Write(ref plans[(int)JsonDictionaryFormat.Array], plan);
+                Volatile.Write(ref plans[(int)JsonDictionaryFormat.Simple], plan);
+            }
+        }
 
         private DataContractDictionary? KnownDataContracts => _helper.KnownDataContracts;
 
@@ -146,22 +165,19 @@ namespace System.Runtime.Serialization.Json
 
         internal class JsonDataContractCriticalHelper
         {
-            private static readonly object s_cacheLock = new object();
-            private static readonly object s_createDataContractLock = new object();
-
-            private static JsonDataContract[] s_dataContractCache = new JsonDataContract[32];
-            private static int s_dataContractID;
-
-            private static readonly ConcurrentDictionary<nint, int> s_typeToIDCache = new();
+            private static readonly ConditionalWeakTable<DataContract, JsonDataContract> s_dataContractCache = new ConditionalWeakTable<DataContract, JsonDataContract>();
             private DataContractDictionary? _knownDataContracts;
             private readonly DataContract _traditionalDataContract;
             private readonly string _typeName;
+            internal bool HasDictionaryFormatVariants { get; }
 
             [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             internal JsonDataContractCriticalHelper(DataContract traditionalDataContract)
             {
                 _traditionalDataContract = traditionalDataContract;
+                HasDictionaryFormatVariants = traditionalDataContract is CollectionDataContract
+                    { Kind: CollectionKind.Dictionary or CollectionKind.GenericDictionary };
                 AddCollectionItemContractsToKnownDataContracts();
                 _typeName = string.IsNullOrEmpty(traditionalDataContract.Namespace.Value) ? traditionalDataContract.Name.Value : string.Concat(traditionalDataContract.Name.Value, JsonGlobals.NameValueSeparatorString, XmlObjectSerializerWriteContextComplexJson.TruncateDefaultDataContractNamespace(traditionalDataContract.Namespace.Value));
             }
@@ -176,104 +192,29 @@ namespace System.Runtime.Serialization.Json
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             public static JsonDataContract GetJsonDataContract(DataContract traditionalDataContract)
             {
-                int id = JsonDataContractCriticalHelper.GetId(traditionalDataContract.UnderlyingType.TypeHandle);
-                JsonDataContract dataContract = s_dataContractCache[id];
-                if (dataContract == null)
-                {
-                    dataContract = CreateJsonDataContract(id, traditionalDataContract);
-                    s_dataContractCache[id] = dataContract;
-                }
-                return dataContract;
-            }
-
-            internal static int GetId(RuntimeTypeHandle typeHandle)
-            {
-                if (s_typeToIDCache.TryGetValue(typeHandle.Value, out int id))
-                    return id;
-
-                lock (s_cacheLock)
-                {
-                    return s_typeToIDCache.GetOrAdd(typeHandle.Value, static _ =>
-                    {
-                        int nextId = s_dataContractID++;
-                        if (nextId >= s_dataContractCache.Length)
-                        {
-                            int newSize = (nextId < int.MaxValue / 2) ? nextId * 2 : int.MaxValue;
-                            if (newSize <= nextId)
-                            {
-                                Debug.Fail("DataContract cache overflow");
-                                throw new SerializationException(SR.DataContractCacheOverflow);
-                            }
-                            Array.Resize<JsonDataContract>(ref s_dataContractCache, newSize);
-                        }
-                        return nextId;
-                    });
-                }
+                return s_dataContractCache.GetValue(traditionalDataContract, static contract => CreateJsonDataContract(contract));
             }
 
             [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-            private static JsonDataContract CreateJsonDataContract(int id, DataContract traditionalDataContract)
+            private static JsonDataContract CreateJsonDataContract(DataContract traditionalDataContract)
             {
-                lock (s_createDataContractLock)
+                Type type = traditionalDataContract.GetType();
+                return type switch
                 {
-                    JsonDataContract dataContract = s_dataContractCache[id];
-                    if (dataContract == null)
-                    {
-                        Type traditionalDataContractType = traditionalDataContract.GetType();
-                        if (traditionalDataContractType == typeof(ObjectDataContract))
-                        {
-                            dataContract = new JsonObjectDataContract(traditionalDataContract);
-                        }
-                        else if (traditionalDataContractType == typeof(StringDataContract))
-                        {
-                            dataContract = new JsonStringDataContract((StringDataContract)traditionalDataContract);
-                        }
-                        else if (traditionalDataContractType == typeof(UriDataContract))
-                        {
-                            dataContract = new JsonUriDataContract((UriDataContract)traditionalDataContract);
-                        }
-                        else if (traditionalDataContractType == typeof(QNameDataContract))
-                        {
-                            dataContract = new JsonQNameDataContract((QNameDataContract)traditionalDataContract);
-                        }
-                        else if (traditionalDataContractType == typeof(ByteArrayDataContract))
-                        {
-                            dataContract = new JsonByteArrayDataContract((ByteArrayDataContract)traditionalDataContract);
-                        }
-                        else if (traditionalDataContract.IsPrimitive ||
-                            traditionalDataContract.UnderlyingType == typeof(XmlQualifiedName))
-                        {
-                            dataContract = new JsonDataContract(traditionalDataContract);
-                        }
-                        else if (traditionalDataContractType == typeof(ClassDataContract))
-                        {
-                            dataContract = new JsonClassDataContract((ClassDataContract)traditionalDataContract);
-                        }
-                        else if (traditionalDataContractType == typeof(EnumDataContract))
-                        {
-                            dataContract = new JsonEnumDataContract((EnumDataContract)traditionalDataContract);
-                        }
-                        else if ((traditionalDataContractType == typeof(GenericParameterDataContract)) ||
-                            (traditionalDataContractType == typeof(SpecialTypeDataContract)))
-                        {
-                            dataContract = new JsonDataContract(traditionalDataContract);
-                        }
-                        else if (traditionalDataContractType == typeof(CollectionDataContract))
-                        {
-                            dataContract = new JsonCollectionDataContract((CollectionDataContract)traditionalDataContract);
-                        }
-                        else if (traditionalDataContractType == typeof(XmlDataContract))
-                        {
-                            dataContract = new JsonXmlDataContract((XmlDataContract)traditionalDataContract);
-                        }
-                        else
-                        {
-                            throw new ArgumentException(SR.Format(SR.JsonTypeNotSupportedByDataContractJsonSerializer, traditionalDataContract.UnderlyingType), nameof(traditionalDataContract));
-                        }
-                    }
-                    return dataContract;
-                }
+                    _ when type == typeof(ObjectDataContract) => new JsonObjectDataContract(traditionalDataContract),
+                    _ when type == typeof(StringDataContract) => new JsonStringDataContract((StringDataContract)traditionalDataContract),
+                    _ when type == typeof(UriDataContract) => new JsonUriDataContract((UriDataContract)traditionalDataContract),
+                    _ when type == typeof(QNameDataContract) => new JsonQNameDataContract((QNameDataContract)traditionalDataContract),
+                    _ when type == typeof(ByteArrayDataContract) => new JsonByteArrayDataContract((ByteArrayDataContract)traditionalDataContract),
+                    _ when traditionalDataContract.IsPrimitive || traditionalDataContract.UnderlyingType == typeof(XmlQualifiedName) => new JsonDataContract(traditionalDataContract),
+                    _ when type == typeof(ClassDataContract) => new JsonClassDataContract((ClassDataContract)traditionalDataContract),
+                    _ when type == typeof(EnumDataContract) => new JsonEnumDataContract((EnumDataContract)traditionalDataContract),
+                    _ when type == typeof(GenericParameterDataContract) || type == typeof(SpecialTypeDataContract) => new JsonDataContract(traditionalDataContract),
+                    _ when type == typeof(CollectionDataContract) => new JsonCollectionDataContract((CollectionDataContract)traditionalDataContract),
+                    _ when type == typeof(XmlDataContract) => new JsonXmlDataContract((XmlDataContract)traditionalDataContract),
+                    _ => throw new ArgumentException(SR.Format(SR.JsonTypeNotSupportedByDataContractJsonSerializer, traditionalDataContract.UnderlyingType), nameof(traditionalDataContract))
+                };
             }
 
             [RequiresDynamicCode(DataContract.SerializerAOTWarning)]

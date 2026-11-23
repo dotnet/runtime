@@ -64,9 +64,9 @@ namespace System.Runtime.Serialization
 
             [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-            private static XmlFormatClassWriterDelegate CreateReflectionXmlFormatClassWriterDelegate()
+            private static XmlFormatClassWriterDelegate CreateReflectionXmlFormatClassWriterDelegate(ClassDataContract classContract)
             {
-                return new ReflectionXmlFormatWriter().ReflectionWriteClass;
+                return new ReflectionXmlFormatWriter(classContract).ReflectionWriteClass;
             }
 
             [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
@@ -75,7 +75,7 @@ namespace System.Runtime.Serialization
             {
                 if (DataContractSerializer.Option == SerializationOption.ReflectionOnly)
                 {
-                    return CreateReflectionXmlFormatClassWriterDelegate();
+                    return CreateReflectionXmlFormatClassWriterDelegate(classContract);
                 }
                 else
                 {
@@ -108,9 +108,9 @@ namespace System.Runtime.Serialization
 
             [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-            private static XmlFormatCollectionWriterDelegate CreateReflectionXmlFormatCollectionWriterDelegate()
+            private static XmlFormatCollectionWriterDelegate CreateReflectionXmlFormatCollectionWriterDelegate(CollectionDataContract collectionContract)
             {
-                return ReflectionXmlFormatWriter.ReflectionWriteCollection;
+                return ReflectionXmlFormatWriter.CreateCollectionWriter(collectionContract);
             }
 
             [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
@@ -119,7 +119,7 @@ namespace System.Runtime.Serialization
             {
                 if (DataContractSerializer.Option == SerializationOption.ReflectionOnly)
                 {
-                    return CreateReflectionXmlFormatCollectionWriterDelegate();
+                    return CreateReflectionXmlFormatCollectionWriterDelegate(collectionContract);
                 }
                 else
                 {

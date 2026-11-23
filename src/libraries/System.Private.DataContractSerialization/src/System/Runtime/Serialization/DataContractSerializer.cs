@@ -4,9 +4,12 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization.DataContracts;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Xml;
 
 using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContracts.DataContract>;
@@ -195,8 +198,31 @@ namespace System.Runtime.Serialization
 
         internal ISerializationSurrogateProvider? SerializationSurrogateProvider
         {
-            get { return _serializationSurrogateProvider; }
-            set { _serializationSurrogateProvider = value; }
+            get { return Volatile.Read(ref _serializationSurrogateProvider); }
+            set { Volatile.Write(ref _serializationSurrogateProvider, value); }
+        }
+
+        internal override DataContractSerializer CreateAsyncOperationSnapshot()
+        {
+            return new DataContractSerializer(this, SerializationSurrogateProvider);
+        }
+
+        private DataContractSerializer(DataContractSerializer serializer, ISerializationSurrogateProvider? surrogateProvider)
+        {
+            _rootType = serializer._rootType;
+            _rootContract = Volatile.Read(ref serializer._rootContract);
+            _needsContractNsAtRoot = serializer._needsContractNsAtRoot;
+            _rootName = serializer._rootName;
+            _rootNamespace = serializer._rootNamespace;
+            _maxItemsInObjectGraph = serializer._maxItemsInObjectGraph;
+            _ignoreExtensionDataObject = serializer._ignoreExtensionDataObject;
+            _preserveObjectReferences = serializer._preserveObjectReferences;
+            _knownTypeCollection = serializer._knownTypeCollection;
+            _knownTypeList = serializer._knownTypeList;
+            _knownDataContracts = serializer._knownDataContracts;
+            _dataContractResolver = serializer._dataContractResolver;
+            _serializationSurrogateProvider = surrogateProvider;
+            _serializeReadOnlyTypes = serializer._serializeReadOnlyTypes;
         }
 
         public bool PreserveObjectReferences
@@ -225,12 +251,14 @@ namespace System.Runtime.Serialization
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get
             {
-                if (_rootContract == null)
+                DataContract? contract = Volatile.Read(ref _rootContract);
+                if (contract is null)
                 {
-                    _rootContract = DataContract.GetDataContract((_serializationSurrogateProvider == null) ? _rootType : GetSurrogatedType(_serializationSurrogateProvider, _rootType));
-                    _needsContractNsAtRoot = CheckIfNeedsContractNsAtRoot(_rootName, _rootNamespace, _rootContract);
+                    contract = DataContract.GetDataContract((_serializationSurrogateProvider == null) ? _rootType : GetSurrogatedType(_serializationSurrogateProvider, _rootType));
+                    _needsContractNsAtRoot = CheckIfNeedsContractNsAtRoot(_rootName, _rootNamespace, contract);
+                    Volatile.Write(ref _rootContract, contract);
                 }
-                return _rootContract;
+                return contract;
             }
         }
 
@@ -357,6 +385,83 @@ namespace System.Runtime.Serialization
 
         [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        internal override Task InternalWriteStartObjectAsync(XmlWriterDelegator writer, object? graph) =>
+            WriteRootElementAsync(writer, RootContract, _rootName, _rootNamespace, _needsContractNsAtRoot);
+
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        internal override Task InternalWriteObjectContentAsync(XmlWriterDelegator writer, object? graph, DataContractResolver? dataContractResolver)
+        {
+            if (MaxItemsInObjectGraph == 0)
+            {
+                throw CreateSerializationException(SR.Format(SR.ExceededMaxItemsQuota, MaxItemsInObjectGraph));
+            }
+
+            DataContract contract = RootContract;
+            Type declaredType = contract.UnderlyingType;
+            Type graphType = graph?.GetType() ?? declaredType;
+            if (_serializationSurrogateProvider is not null)
+            {
+                graph = SurrogateToDataContractType(_serializationSurrogateProvider, graph, declaredType, ref graphType);
+            }
+            dataContractResolver ??= DataContractResolver;
+
+            if (graph is null)
+            {
+                if (IsRootXmlAny(_rootName, contract))
+                {
+                    throw CreateSerializationException(SR.Format(SR.IsAnyCannotBeNull, declaredType));
+                }
+                return writer.WriteAttributeBoolAsync(Globals.XsiPrefix, DictionaryGlobals.XsiNilLocalName, DictionaryGlobals.SchemaInstanceNamespace, true);
+            }
+
+            XmlObjectSerializerWriteContext context = XmlObjectSerializerWriteContext.CreateContext(this, RootContract, dataContractResolver);
+            context.InitializeAsync(writer, writer.CancellationToken);
+            if (declaredType == graphType)
+            {
+                if (contract.CanContainReferences)
+                {
+                    Task prefix = context.HandleGraphAtTopLevelAsync(writer, graph, contract);
+                    return prefix.IsCompletedSuccessfully
+                        ? context.SerializeWithoutXsiTypeAsync(contract, writer, graph, declaredType.TypeHandle)
+                        : AwaitRootPrefixAndSerializeAsync(prefix, context, contract, writer, graph, declaredType.TypeHandle);
+                }
+
+                return contract.WriteXmlValueAsync(writer, graph, context, writer.CancellationToken);
+            }
+
+            return WriteDerivedObjectContentAsync(writer, graph, context, contract, declaredType, graphType);
+        }
+
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        private static async Task AwaitRootPrefixAndSerializeAsync(Task prefix, XmlObjectSerializerWriteContext context,
+            DataContract contract, XmlWriterDelegator writer, object graph, RuntimeTypeHandle declaredHandle)
+        {
+            await prefix.ConfigureAwait(false);
+            await context.SerializeWithoutXsiTypeAsync(contract, writer, graph, declaredHandle).ConfigureAwait(false);
+        }
+
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        private async Task WriteDerivedObjectContentAsync(XmlWriterDelegator writer, object graph,
+            XmlObjectSerializerWriteContext context, DataContract contract, Type declaredType, Type graphType)
+        {
+            if (IsRootXmlAny(_rootName, contract))
+            {
+                throw CreateSerializationException(SR.Format(SR.IsAnyCannotBeSerializedAsDerivedType, graphType, contract.UnderlyingType));
+            }
+            contract = GetDataContract(contract, declaredType, graphType);
+            if (contract.CanContainReferences)
+            {
+                await context.HandleGraphAtTopLevelAsync(writer, graph, contract).ConfigureAwait(false);
+            }
+            await context.OnHandleIsReferenceAsync(writer, contract, graph).ConfigureAwait(false);
+            await context.SerializeWithXsiTypeAtTopLevelAsync(contract, writer, graph, declaredType.TypeHandle, graphType).ConfigureAwait(false);
+        }
+
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override void InternalWriteObjectContent(XmlWriterDelegator writer, object? graph)
         {
             InternalWriteObjectContent(writer, graph, null);
@@ -449,6 +554,11 @@ namespace System.Runtime.Serialization
 
         [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        internal override Task InternalWriteEndObjectAsync(XmlWriterDelegator writer) =>
+            IsRootXmlAny(_rootName, RootContract) ? Task.CompletedTask : writer.WriteEndElementAsync();
+
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override object? InternalReadObject(XmlReaderDelegator xmlReader, bool verifyObjectName)
         {
             return InternalReadObject(xmlReader, verifyObjectName, null);
@@ -501,6 +611,62 @@ namespace System.Runtime.Serialization
             XmlObjectSerializerReadContext context = XmlObjectSerializerReadContext.CreateContext(this, contract, dataContractResolver);
 
             return context.InternalDeserialize(xmlReader, _rootType, contract, null, null);
+        }
+
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        internal override async ValueTask<object?> InternalReadObjectAsync(XmlReaderDelegator reader, bool verifyObjectName, DataContractResolver? dataContractResolver)
+        {
+            if (MaxItemsInObjectGraph == 0)
+            {
+                throw CreateSerializationException(SR.Format(SR.ExceededMaxItemsQuota, MaxItemsInObjectGraph));
+            }
+            dataContractResolver ??= DataContractResolver;
+
+            XmlNodeType nodeType = await reader.MoveToContentAsync(reader.CancellationToken).ConfigureAwait(false);
+            if (verifyObjectName)
+            {
+                if (nodeType != XmlNodeType.Element || !InternalIsStartObject(reader))
+                {
+                    XmlDictionaryString? expectedName = _rootName ?? RootContract.TopLevelElementName;
+                    XmlDictionaryString? expectedNamespace = _rootName is null ? RootContract.TopLevelElementNamespace : _rootNamespace;
+                    throw CreateSerializationExceptionWithReaderDetails(SR.Format(SR.ExpectingElement, expectedNamespace, expectedName), reader);
+                }
+            }
+            else if (nodeType != XmlNodeType.Element)
+            {
+                throw CreateSerializationExceptionWithReaderDetails(SR.Format(SR.ExpectingElementAtDeserialize, XmlNodeType.Element), reader);
+            }
+
+            DataContract contract = RootContract;
+            if (IsRootXmlAny(_rootName, contract))
+            {
+                return await XmlObjectSerializerReadContext.ReadRootIXmlSerializableAsync(
+                    reader, (XmlDataContract)contract, isMemberType: false, reader.CancellationToken).ConfigureAwait(false);
+            }
+
+            XmlObjectSerializerReadContext context = XmlObjectSerializerReadContext.CreateContext(this, contract, dataContractResolver);
+            context.InitializeAsync(reader, reader.CancellationToken);
+            if (contract.IsPrimitive && ReferenceEquals(contract.UnderlyingType, _rootType))
+            {
+                context.attributes!.Reset();
+                if (!contract.UnderlyingType.IsValueType)
+                {
+                    context.ReadAttributes(reader);
+                    if (context.attributes.Ref != Globals.NewObjectId)
+                    {
+                        throw CreateSerializationException(SR.Format(SR.CannotDeserializeRefAtTopLevel, context.attributes.Ref));
+                    }
+                    if (context.attributes.XsiNil)
+                    {
+                        await reader.SkipAsync(reader.CancellationToken).ConfigureAwait(false);
+                        return null;
+                    }
+                }
+                return await contract.ReadXmlValueAsync(reader, context, reader.CancellationToken).ConfigureAwait(false);
+            }
+
+            return await context.InternalDeserializeAsync(reader, _rootType, contract, null, null).ConfigureAwait(false);
         }
 
         [RequiresDynamicCode(DataContract.SerializerAOTWarning)]

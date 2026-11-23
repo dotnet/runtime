@@ -16,7 +16,7 @@ using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.
 
 namespace System.Runtime.Serialization
 {
-    internal class XmlObjectSerializerReadContext : XmlObjectSerializerContext
+    internal partial class XmlObjectSerializerReadContext : XmlObjectSerializerContext
     {
         internal Attributes? attributes;
         private XmlSerializableReader? _xmlSerializableReader;
@@ -141,7 +141,20 @@ namespace System.Runtime.Serialization
             if (TryHandleNullOrRef(reader, name, ns, dataContract.UnderlyingType, ref retObj))
                 return retObj;
 
-            bool knownTypesAddedInCurrentScope = false;
+            dataContract = ResolveDataContractForRead(reader, declaredType, dataContract, out bool knownTypesAddedInCurrentScope);
+            object? obj = ReadDataContractValue(dataContract, reader);
+            if (knownTypesAddedInCurrentScope)
+            {
+                scopedKnownTypes.Pop();
+            }
+            return obj;
+        }
+
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        private DataContract ResolveDataContractForRead(XmlReaderDelegator reader, Type declaredType, DataContract dataContract, out bool knownTypesAddedInCurrentScope)
+        {
+            knownTypesAddedInCurrentScope = false;
             if (dataContract.KnownDataContracts?.Count > 0)
             {
                 scopedKnownTypes.Push(dataContract.KnownDataContracts);
@@ -182,16 +195,7 @@ namespace System.Runtime.Serialization
                 }
             }
 
-            if (knownTypesAddedInCurrentScope)
-            {
-                object? obj = ReadDataContractValue(dataContract, reader);
-                scopedKnownTypes.Pop();
-                return obj;
-            }
-            else
-            {
-                return ReadDataContractValue(dataContract, reader);
-            }
+            return dataContract;
         }
 
         private bool ReplaceScopedKnownTypesTop(DataContractDictionary? knownDataContracts, bool knownTypesAddedInCurrentScope)
@@ -337,6 +341,13 @@ namespace System.Runtime.Serialization
             Debug.Assert(attributes != null);
 
             AddNewObjectWithId(attributes.Id, obj);
+        }
+
+        internal void AddNewValue<T>(T value) where T : struct
+        {
+            Debug.Assert(attributes is not null);
+            if (attributes.Id != Globals.NewObjectId || _extensionDataReader?.UnderlyingExtensionDataReader is not null)
+                AddNewObjectWithId(attributes.Id, value);
         }
 
         internal void AddNewObjectWithId(string id, object? obj)
@@ -506,7 +517,8 @@ namespace System.Runtime.Serialization
 
         [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        internal static object? ReadIXmlSerializable(XmlSerializableReader xmlSerializableReader, XmlReaderDelegator xmlReader, XmlDataContract xmlDataContract, bool isMemberType)
+        internal static object? ReadIXmlSerializable(XmlSerializableReader xmlSerializableReader, XmlReaderDelegator xmlReader, XmlDataContract xmlDataContract, bool isMemberType,
+            CreateXmlSerializableDelegate? createXmlSerializable = null)
         {
             object? obj = null;
             xmlSerializableReader.BeginRead(xmlReader);
@@ -528,7 +540,7 @@ namespace System.Runtime.Serialization
             }
             else
             {
-                IXmlSerializable xmlSerializable = xmlDataContract.CreateXmlSerializableDelegate();
+                IXmlSerializable xmlSerializable = (createXmlSerializable ?? xmlDataContract.CreateXmlSerializableDelegate)();
                 xmlSerializable.ReadXml(xmlSerializableReader);
                 obj = xmlSerializable;
             }

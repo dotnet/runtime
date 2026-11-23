@@ -1429,6 +1429,82 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
+        internal bool TryWritePrimitiveElement<TPrimitive, TValue>(XmlDictionaryString name, TValue value,
+            [NotNullWhen(true)] out Task? operation, JsonWriterDelegator? dateTimeWriter = null) where TPrimitive : struct
+        {
+            operation = null;
+            // Includes the individual buffer reservations in the default date formatter.
+            const int DefaultDateTimeMaximumBytes = 128;
+            int valueSize = typeof(TPrimitive) == typeof(DateTime)
+                ? dateTimeWriter is { UsesDefaultDateTimeFormat: true } ? DefaultDateTimeMaximumBytes : 0
+                : typeof(TPrimitive) == typeof(char) ? 0 : XmlUTF8NodeWriter.GetPrimitiveBufferSize<TPrimitive>();
+            long maximumBytes = 8 + GetEscapedJsonStringMaximumBytes(name.Value) +
+                (typeof(TPrimitive) == typeof(ReflectionPlan.StringValue) ? GetEscapedJsonStringMaximumBytes((string)(object)value!) : valueSize);
+            if (_indent || !_nodeWriter.CanWriteBufferedValues || maximumBytes > _nodeWriter.StreamBuffer.Length ||
+                (valueSize == 0 && typeof(TPrimitive) != typeof(ReflectionPlan.StringValue)))
+                return false;
+            if (_nodeWriter.HasBufferSpace((int)maximumBytes))
+            {
+                WriteBufferedPrimitiveElement<TPrimitive, TValue>(name, value, dateTimeWriter);
+                operation = Task.CompletedTask;
+            }
+            else
+            {
+                operation = WriteBufferedPrimitiveElementAsync<TPrimitive, TValue>(name, value, (int)maximumBytes, dateTimeWriter);
+            }
+            return true;
+        }
+
+        internal bool TryWriteDataTypeAttribute(string? prefix, string name, string? ns, string? value)
+        {
+            if (name != JsonGlobals.typeString || _serverTypeValue is not null || _indent ||
+                !_nodeWriter.CanWriteBufferedValues || !_nodeWriter.HasBufferSpace(JsonGlobals.nullString.Length))
+                return false;
+
+            WriteAttributeString(prefix, name, ns, value);
+            return true;
+        }
+
+        private Task WriteBufferedPrimitiveElementAsync<TPrimitive, TValue>(XmlDictionaryString name, TValue value,
+            int maximumBytes, JsonWriterDelegator? dateTimeWriter) where TPrimitive : struct
+        {
+            Task operation = _nodeWriter.EnsureBufferAsync(maximumBytes);
+            if (!operation.IsCompletedSuccessfully)
+                return AwaitBufferAndWritePrimitiveElement<TPrimitive, TValue>(operation, name, value, dateTimeWriter);
+
+            WriteBufferedPrimitiveElement<TPrimitive, TValue>(name, value, dateTimeWriter);
+            return Task.CompletedTask;
+        }
+
+        private async Task AwaitBufferAndWritePrimitiveElement<TPrimitive, TValue>(Task operation, XmlDictionaryString name,
+            TValue value, JsonWriterDelegator? dateTimeWriter) where TPrimitive : struct
+        {
+            await operation.ConfigureAwait(false);
+            WriteBufferedPrimitiveElement<TPrimitive, TValue>(name, value, dateTimeWriter);
+        }
+
+        private void WriteBufferedPrimitiveElement<TPrimitive, TValue>(XmlDictionaryString name, TValue value,
+            JsonWriterDelegator? dateTimeWriter) where TPrimitive : struct
+        {
+            WriteStartElement(null, name.Value, null);
+            if (typeof(TPrimitive) == typeof(ReflectionPlan.StringValue))
+            {
+                WriteString((string)(object)value!);
+            }
+            else if (typeof(TPrimitive) == typeof(DateTime))
+            {
+                Debug.Assert(dateTimeWriter is not null);
+                dateTimeWriter.WriteDateTime((DateTime)(object)value!);
+            }
+            else
+            {
+                _dataType = typeof(TPrimitive) == typeof(bool) ? JsonDataType.Boolean : JsonDataType.Number;
+                StartText();
+                _nodeWriter.WritePrimitiveValue<TPrimitive, TValue>(value);
+            }
+            WriteEndElement();
+        }
+
         internal async Task WriteJsonPrimitiveValueAsync<T>(object value) where T : struct
         {
             if (IsClosed)

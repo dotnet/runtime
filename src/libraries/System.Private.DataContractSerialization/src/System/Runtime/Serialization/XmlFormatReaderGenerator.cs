@@ -162,9 +162,9 @@ namespace System.Runtime.Serialization
 
             [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-            private static XmlFormatCollectionReaderDelegate CreateReflectionXmlCollectionReader()
+            private static XmlFormatCollectionReaderDelegate CreateReflectionXmlCollectionReader(CollectionDataContract collectionContract)
             {
-                return new ReflectionXmlCollectionReader().ReflectionReadCollection;
+                return new ReflectionXmlCollectionReader(collectionContract, false).ReflectionReadCollection;
             }
 
             [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
@@ -173,7 +173,7 @@ namespace System.Runtime.Serialization
             {
                 if (DataContractSerializer.Option == SerializationOption.ReflectionOnly)
                 {
-                    return CreateReflectionXmlCollectionReader();
+                    return CreateReflectionXmlCollectionReader(collectionContract);
                 }
                 else
                 {
@@ -187,9 +187,9 @@ namespace System.Runtime.Serialization
 
             [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-            private static XmlFormatGetOnlyCollectionReaderDelegate CreateReflectionReadGetOnlyCollectionReader()
+            private static XmlFormatGetOnlyCollectionReaderDelegate CreateReflectionReadGetOnlyCollectionReader(CollectionDataContract collectionContract)
             {
-                return new ReflectionXmlCollectionReader().ReflectionReadGetOnlyCollection;
+                return new ReflectionXmlCollectionReader(collectionContract, true).ReflectionReadGetOnlyCollection;
             }
 
             [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
@@ -198,7 +198,7 @@ namespace System.Runtime.Serialization
             {
                 if (DataContractSerializer.Option == SerializationOption.ReflectionOnly)
                 {
-                    return CreateReflectionReadGetOnlyCollectionReader();
+                    return CreateReflectionReadGetOnlyCollectionReader(collectionContract);
                 }
                 else
                 {

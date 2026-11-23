@@ -5,16 +5,20 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.Serialization.DataContracts;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Serialization;
 
 namespace System.Runtime.Serialization
 {
-    internal class XmlReaderDelegator
+    internal partial class XmlReaderDelegator
     {
         protected XmlReader reader;
         protected XmlDictionaryReader? dictionaryReader;
         protected bool isEndOfEmptyElement;
+
+        internal CancellationToken CancellationToken { get; set; }
 
         public XmlReaderDelegator(XmlReader reader)
         {
@@ -27,6 +31,161 @@ namespace System.Runtime.Serialization
         internal XmlReader UnderlyingReader
         {
             get { return reader; }
+        }
+
+        internal ValueTask<bool> ReadAsync(CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            reader.MoveToElement();
+            if (reader.IsEmptyElement && !isEndOfEmptyElement)
+            {
+                isEndOfEmptyElement = true;
+                return new ValueTask<bool>(true);
+            }
+
+            isEndOfEmptyElement = false;
+            if (reader is ExtensionDataReader || reader.GetType() == typeof(XmlNodeReader))
+            {
+                return new ValueTask<bool>(reader.Read());
+            }
+            return dictionaryReader is not null
+                ? dictionaryReader.ReadAsync(cancellationToken)
+                : new ValueTask<bool>(reader.ReadAsync());
+        }
+
+        internal ValueTask<XmlNodeType> MoveToContentAsync(CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (isEndOfEmptyElement)
+            {
+                return new ValueTask<XmlNodeType>(XmlNodeType.EndElement);
+            }
+            if (reader.NodeType is XmlNodeType.Element or XmlNodeType.EndElement)
+            {
+                return new ValueTask<XmlNodeType>(reader.NodeType);
+            }
+            if (reader is XmlBaseReader baseReader)
+            {
+                return baseReader.MoveToContentAsync(cancellationToken);
+            }
+
+            return MoveToContentSlowAsync(cancellationToken);
+        }
+
+        private async ValueTask<XmlNodeType> MoveToContentSlowAsync(CancellationToken cancellationToken)
+        {
+            reader.MoveToElement();
+            while (NodeType is XmlNodeType.None or XmlNodeType.ProcessingInstruction or XmlNodeType.Comment or XmlNodeType.Whitespace or XmlNodeType.SignificantWhitespace)
+            {
+                if (!await ReadAsync(cancellationToken).ConfigureAwait(false))
+                {
+                    break;
+                }
+            }
+            return NodeType;
+        }
+
+        internal ValueTask<bool> IsStartElementAsync(CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (isEndOfEmptyElement || reader.NodeType == XmlNodeType.EndElement)
+                return new ValueTask<bool>(false);
+            if (reader.NodeType == XmlNodeType.Element)
+                return new ValueTask<bool>(true);
+
+            return IsStartElementSlowAsync(cancellationToken);
+        }
+
+        private async ValueTask<bool> IsStartElementSlowAsync(CancellationToken cancellationToken) =>
+            await MoveToContentAsync(cancellationToken).ConfigureAwait(false) == XmlNodeType.Element;
+
+        internal ValueTask<bool> IsStartElementAsync(XmlDictionaryString name, XmlDictionaryString ns, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (isEndOfEmptyElement || reader.NodeType == XmlNodeType.EndElement)
+                return new ValueTask<bool>(false);
+            if (reader.NodeType == XmlNodeType.Element)
+                return new ValueTask<bool>(IsLocalName(name) && IsNamespaceUri(ns));
+
+            return IsStartElementSlowAsync(name, ns, cancellationToken);
+        }
+
+        private async ValueTask<bool> IsStartElementSlowAsync(XmlDictionaryString name, XmlDictionaryString ns, CancellationToken cancellationToken) =>
+            await IsStartElementSlowAsync(cancellationToken).ConfigureAwait(false) && IsLocalName(name) && IsNamespaceUri(ns);
+
+        internal ValueTask ReadEndElementAsync(CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (NodeType != XmlNodeType.EndElement)
+                return ReadEndElementSlowAsync(cancellationToken);
+
+            ValueTask<bool> next = ReadAsync(cancellationToken);
+            if (next.IsCompletedSuccessfully)
+            {
+                next.GetAwaiter().GetResult();
+                return ValueTask.CompletedTask;
+            }
+
+            return AwaitEndElementRead(next);
+        }
+
+        private static async ValueTask AwaitEndElementRead(ValueTask<bool> next) =>
+            await next.ConfigureAwait(false);
+
+        private async ValueTask ReadEndElementSlowAsync(CancellationToken cancellationToken)
+        {
+            if (await MoveToContentAsync(cancellationToken).ConfigureAwait(false) != XmlNodeType.EndElement)
+            {
+                throw XmlObjectSerializerReadContext.CreateUnexpectedStateException(XmlNodeType.EndElement, this);
+            }
+            await ReadAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        internal async ValueTask SkipAsync(CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (isEndOfEmptyElement)
+            {
+                await ReadAsync(cancellationToken).ConfigureAwait(false);
+                return;
+            }
+            if (reader is XmlBaseReader baseReader)
+            {
+                await baseReader.SkipAsync(cancellationToken).ConfigureAwait(false);
+                return;
+            }
+            if (reader is ExtensionDataReader || reader.GetType() == typeof(XmlNodeReader))
+            {
+                reader.Skip();
+                return;
+            }
+            await reader.SkipAsync().ConfigureAwait(false);
+        }
+
+        internal ValueTask<string> ReadContentAsStringAsync(CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (isEndOfEmptyElement)
+            {
+                return new ValueTask<string>(string.Empty);
+            }
+            if (reader is ExtensionDataReader || reader.GetType() == typeof(XmlNodeReader))
+            {
+                return new ValueTask<string>(reader.ReadContentAsString());
+            }
+            return dictionaryReader is not null
+                ? dictionaryReader.ReadContentAsStringAsync(cancellationToken)
+                : new ValueTask<string>(reader.ReadContentAsStringAsync());
+        }
+
+        internal async ValueTask<object> ReadElementContentAsAsync(Type type, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (reader is XmlBaseReader baseReader)
+            {
+                return await baseReader.ReadElementContentAsAsync(type, null, cancellationToken).ConfigureAwait(false);
+            }
+            return await reader.ReadElementContentAsAsync(type, null!).ConfigureAwait(false);
         }
 
         internal ExtensionDataReader? UnderlyingExtensionDataReader
@@ -587,6 +746,54 @@ namespace System.Runtime.Serialization
         {
             // Strictly parse the expected TimeOnly format. No timezone/offset allowed.
             return TimeOnly.ParseExact(s, "HH:mm:ss.FFFFFFF", DateTimeFormatInfo.InvariantInfo, DateTimeStyles.AllowLeadingWhite | DateTimeStyles.AllowTrailingWhite);
+        }
+
+        internal T ReadPrimitiveElement<T>() where T : struct
+        {
+            if (isEndOfEmptyElement)
+                ThrowNotAtElement();
+
+            if (typeof(T) == typeof(byte) || typeof(T) == typeof(sbyte) ||
+                typeof(T) == typeof(short) || typeof(T) == typeof(ushort) ||
+                typeof(T) == typeof(char) && reader is XmlBinaryReader or XmlUTF8TextReader)
+                return ConvertPrimitiveElement<T>(ReadPrimitiveElement<int>());
+            if (typeof(T) == typeof(uint))
+                return (T)(object)ToUInt32(ReadPrimitiveElement<long>());
+
+            if (typeof(T) == typeof(bool) || typeof(T) == typeof(int) || typeof(T) == typeof(long) ||
+                typeof(T) == typeof(float) || typeof(T) == typeof(double) ||
+                typeof(T) == typeof(decimal) || typeof(T) == typeof(DateTime))
+            {
+                if (reader is XmlBinaryReader binaryReader)
+                    return binaryReader.ReadPrimitiveElement<T>();
+                if (reader is XmlUTF8TextReader textReader && textReader.TryReadBufferedPrimitiveElement(out T value) ||
+                    typeof(T) != typeof(DateTime) && reader is Json.XmlJsonReader jsonReader && jsonReader.TryReadBufferedPrimitiveElement(out value))
+                {
+                    Read();
+                    return value;
+                }
+            }
+
+            if (typeof(T) == typeof(bool))
+                return (T)(object)ReadElementContentAsBoolean();
+            if (typeof(T) == typeof(char))
+                return (T)(object)ReadElementContentAsChar();
+            if (typeof(T) == typeof(int))
+                return (T)(object)ReadElementContentAsInt();
+            if (typeof(T) == typeof(long))
+                return (T)(object)ReadElementContentAsLong();
+            if (typeof(T) == typeof(ulong))
+                return (T)(object)ReadElementContentAsUnsignedLong();
+            if (typeof(T) == typeof(float))
+                return (T)(object)ReadElementContentAsFloat();
+            if (typeof(T) == typeof(double))
+                return (T)(object)ReadElementContentAsDouble();
+            if (typeof(T) == typeof(decimal))
+                return (T)(object)ReadElementContentAsDecimal();
+            if (typeof(T) == typeof(DateTime))
+                return (T)(object)ReadElementContentAsDateTime();
+
+            throw CreateInvalidPrimitiveTypeException(typeof(T));
         }
 
         internal int ReadElementContentAsInt()

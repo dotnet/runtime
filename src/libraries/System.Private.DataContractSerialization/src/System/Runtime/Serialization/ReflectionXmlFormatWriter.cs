@@ -8,218 +8,123 @@ using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.Serialization.DataContracts;
+using System.Threading.Tasks;
 using System.Xml;
 
 namespace System.Runtime.Serialization
 {
     internal sealed class ReflectionXmlFormatWriter
     {
-        private readonly ReflectionXmlClassWriter _reflectionClassWriter = new ReflectionXmlClassWriter();
+        private readonly SyncReflectionWriter _writeClass;
+
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        internal ReflectionXmlFormatWriter(ClassDataContract classContract)
+        {
+            _writeClass = new SyncReflectionXmlClassWriter().GenerateClassWriter<SyncReflectionSerialization>(classContract, null);
+        }
 
         [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public void ReflectionWriteClass(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context, ClassDataContract classContract)
         {
-            _reflectionClassWriter.ReflectionWriteClass(xmlWriter, obj, context, classContract, null/*memberNames*/);
+            _writeClass(xmlWriter, obj, context);
         }
 
         [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        public static void ReflectionWriteCollection(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context, CollectionDataContract collectionDataContract)
+        internal static XmlFormatCollectionWriterDelegate CreateCollectionWriter(CollectionDataContract collectionContract)
         {
-            XmlDictionaryString ns = collectionDataContract.Namespace;
-            XmlDictionaryString itemName = collectionDataContract.CollectionItemName;
-
-            if (collectionDataContract.ChildElementNamespace != null)
-            {
-                xmlWriter.WriteNamespaceDecl(collectionDataContract.ChildElementNamespace);
-            }
-
-            if (collectionDataContract.Kind == CollectionKind.Array)
-            {
-                context.IncrementArrayCount(xmlWriter, (Array)obj);
-                Type itemType = collectionDataContract.ItemType;
-                if (!ReflectionTryWritePrimitiveArray(xmlWriter, obj, itemType, itemName, ns))
-                {
-                    Array array = (Array)obj;
-                    PrimitiveDataContract? primitiveContract = PrimitiveDataContract.GetPrimitiveDataContract(itemType);
-                    for (int i = 0; i < array.Length; ++i)
-                    {
-                        ReflectionXmlClassWriter.ReflectionWriteStartElement(xmlWriter, itemType, ns, ns.Value, itemName.Value);
-                        ReflectionXmlClassWriter.ReflectionWriteValue(xmlWriter, context, itemType, array.GetValue(i), false, primitiveContract);
-                        ReflectionXmlClassWriter.ReflectionWriteEndElement(xmlWriter);
-                    }
-                }
-            }
-            else
-            {
-                collectionDataContract.IncrementCollectionCount(xmlWriter, obj, context);
-
-                IEnumerator enumerator = collectionDataContract.GetEnumeratorForCollection(obj);
-                PrimitiveDataContract? primitiveContractForType = PrimitiveDataContract.GetPrimitiveDataContract(collectionDataContract.UnderlyingType);
-
-                if (primitiveContractForType != null && primitiveContractForType.UnderlyingType != typeof(object))
-                {
-                    while (enumerator.MoveNext())
-                    {
-                        object current = enumerator.Current;
-                        context.IncrementItemCount(1);
-                        primitiveContractForType.WriteXmlElement(xmlWriter, current, context, itemName, ns);
-                    }
-                }
-                else
-                {
-                    Type elementType = collectionDataContract.GetCollectionElementType();
-                    bool isDictionary = collectionDataContract.Kind == CollectionKind.Dictionary || collectionDataContract.Kind == CollectionKind.GenericDictionary;
-                    while (enumerator.MoveNext())
-                    {
-                        object current = enumerator.Current;
-                        context.IncrementItemCount(1);
-                        ReflectionXmlClassWriter.ReflectionWriteStartElement(xmlWriter, elementType, ns, ns.Value, itemName.Value);
-                        if (isDictionary)
-                        {
-                            collectionDataContract.ItemContract.WriteXmlValue(xmlWriter, current, context);
-                        }
-                        else
-                        {
-                            ReflectionXmlClassWriter.ReflectionWriteValue(xmlWriter, context, elementType, current, false, primitiveContractForParamType: null);
-                        }
-
-                        ReflectionXmlClassWriter.ReflectionWriteEndElement(xmlWriter);
-                    }
-                }
-            }
+            SyncReflectionWriter write = new SyncReflectionXmlClassWriter().GenerateCollectionWriter<SyncReflectionSerialization>(collectionContract);
+            return (writer, obj, context, contract) => write(writer, obj, context);
         }
 
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
-        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        private static bool ReflectionTryWritePrimitiveArray(XmlWriterDelegator xmlWriter, object obj, Type itemType, XmlDictionaryString collectionItemName, XmlDictionaryString itemNamespace)
-        {
-            PrimitiveDataContract? primitiveContract = PrimitiveDataContract.GetPrimitiveDataContract(itemType);
-            if (primitiveContract == null)
-                return false;
-
-            switch (Type.GetTypeCode(itemType))
-            {
-                case TypeCode.Boolean:
-                    xmlWriter.WriteBooleanArray((bool[])obj, collectionItemName, itemNamespace);
-                    break;
-                case TypeCode.DateTime:
-                    xmlWriter.WriteDateTimeArray((DateTime[])obj, collectionItemName, itemNamespace);
-                    break;
-                case TypeCode.Decimal:
-                    xmlWriter.WriteDecimalArray((decimal[])obj, collectionItemName, itemNamespace);
-                    break;
-                case TypeCode.Int32:
-                    xmlWriter.WriteInt32Array((int[])obj, collectionItemName, itemNamespace);
-                    break;
-                case TypeCode.Int64:
-                    xmlWriter.WriteInt64Array((long[])obj, collectionItemName, itemNamespace);
-                    break;
-                case TypeCode.Single:
-                    xmlWriter.WriteSingleArray((float[])obj, collectionItemName, itemNamespace);
-                    break;
-                case TypeCode.Double:
-                    xmlWriter.WriteDoubleArray((double[])obj, collectionItemName, itemNamespace);
-                    break;
-                default:
-                    return false;
-            }
-
-            return true;
-        }
     }
 
     internal sealed class ReflectionXmlClassWriter : ReflectionClassWriter
     {
+        protected override XmlDictionaryString GetCollectionItemName(CollectionDataContract collectionContract) => collectionContract.CollectionItemName;
+        protected override XmlDictionaryString GetCollectionNamespace(CollectionDataContract collectionContract) => collectionContract.Namespace;
+
         [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        protected override int ReflectionWriteMembers(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context, ClassDataContract classContract, ClassDataContract derivedMostClassContract, int childElementIndex, XmlDictionaryString[]? emptyStringArray)
+        protected override ReflectionValueWriter CreateCollectionItemWriter<TMode>(CollectionDataContract collectionContract)
         {
-            int memberCount = (classContract.BaseClassContract == null) ? 0 :
-                ReflectionWriteMembers(xmlWriter, obj, context, classContract.BaseClassContract, derivedMostClassContract, childElementIndex, emptyStringArray);
-
-            childElementIndex += memberCount;
-
-            XmlDictionaryString[] memberNames = classContract.MemberNames!;
-            XmlDictionaryString ns = classContract.Namespace;
-            context.IncrementItemCount(classContract.Members!.Count);
-            for (int i = 0; i < classContract.Members.Count; i++, memberCount++)
+            bool isArray = collectionContract.Kind == CollectionKind.Array;
+            Type elementType = isArray ? collectionContract.ItemType : collectionContract.GetCollectionElementType();
+            ReflectionValueWriter writeValue;
+            if (collectionContract.Kind is CollectionKind.Dictionary or CollectionKind.GenericDictionary)
             {
-                DataMember member = classContract.Members[i];
-                Type memberType = member.MemberType;
-                if (member.IsGetOnlyCollection)
-                {
-                    context.StoreIsGetOnlyCollection();
-                }
-                else
-                {
-                    context.ResetIsGetOnlyCollection();
-                }
-
-                bool shouldWriteValue = true;
-                object? memberValue = null;
-                if (!member.EmitDefaultValue)
-                {
-                    memberValue = ReflectionGetMemberValue(obj, member);
-                    object? defaultValue = XmlFormatGeneratorStatics.GetDefaultValue(memberType);
-                    if ((memberValue == null && defaultValue == null)
-                        || (memberValue != null && memberValue.Equals(defaultValue)))
-                    {
-                        shouldWriteValue = false;
-
-                        if (member.IsRequired)
-                        {
-                            XmlObjectSerializerWriteContext.ThrowRequiredMemberMustBeEmitted(member.Name, classContract.UnderlyingType);
-                        }
-                    }
-                }
-
-                if (shouldWriteValue)
-                {
-                    bool writeXsiType = CheckIfMemberHasConflict(member, classContract, derivedMostClassContract);
-                    memberValue ??= ReflectionGetMemberValue(obj, member);
-                    PrimitiveDataContract? primitiveContract = member.MemberPrimitiveContract;
-
-                    if (writeXsiType || !ReflectionTryWritePrimitive(xmlWriter, context, memberValue, memberNames[i + childElementIndex] /*name*/, ns, primitiveContract))
-                    {
-                        ReflectionWriteStartElement(xmlWriter, memberType, ns, ns.Value, member.Name);
-                        if (classContract.ChildElementNamespaces![i + childElementIndex] != null)
-                        {
-                            var nsChildElement = classContract.ChildElementNamespaces[i + childElementIndex]!;
-                            xmlWriter.WriteNamespaceDecl(nsChildElement);
-                        }
-                        ReflectionWriteValue(xmlWriter, context, memberType, memberValue, writeXsiType, primitiveContractForParamType: null);
-                        ReflectionWriteEndElement(xmlWriter);
-                    }
-
-                    if (classContract.HasExtensionData)
-                    {
-                        context.WriteExtensionData(xmlWriter, ((IExtensibleDataObject)obj).ExtensionData, memberCount);
-                    }
-                }
-            }
-
-            return memberCount;
-        }
-
-        public static void ReflectionWriteStartElement(XmlWriterDelegator xmlWriter, Type type, XmlDictionaryString ns, string namespaceLocal, string nameLocal)
-        {
-            bool needsPrefix = NeedsPrefix(type, ns);
-
-            if (needsPrefix)
-            {
-                xmlWriter.WriteStartElement(Globals.ElementPrefix, nameLocal, namespaceLocal);
+                DataContract itemContract = collectionContract.ItemContract;
+                writeValue = (writer, value, context) => TMode.WriteXmlValue(itemContract, writer, value!, context);
             }
             else
             {
-                xmlWriter.WriteStartElement(nameLocal, namespaceLocal);
+                PrimitiveDataContract? primitiveContract = isArray ? PrimitiveDataContract.GetPrimitiveDataContract(elementType) : null;
+                writeValue = CreateValueWriter<TMode>(elementType, false, primitiveContract);
             }
+
+            XmlDictionaryString name = collectionContract.CollectionItemName;
+            XmlDictionaryString ns = collectionContract.Namespace;
+            string? prefix = NeedsPrefix(elementType, ns) ? Globals.ElementPrefix : null;
+            if (elementType == typeof(string))
+            {
+                if (typeof(TMode) == typeof(SyncReflectionSerialization))
+                {
+                    return (writer, value, context) =>
+                    {
+                        context.WriteString(writer, (string?)value, name, ns);
+                        return Task.CompletedTask;
+                    };
+                }
+
+                return (writer, value, context) =>
+                    context.WriteReferencePrimitiveElementAsync<ReflectionPlan.StringValue>(
+                        writer, value, typeof(string), name, ns, null);
+            }
+            return (writer, value, context) =>
+                ReflectionSerialization.WriteElement<TMode>(writer, value, context, writeValue, prefix, name, ns);
         }
 
-        public static void ReflectionWriteEndElement(XmlWriterDelegator xmlWriter)
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        protected override ReflectionWriter WrapCollectionWriter<TMode>(CollectionDataContract collectionContract, ReflectionWriter? count, ReflectionWriter body)
         {
-            xmlWriter.WriteEndElement();
+            if (collectionContract.ChildElementNamespace is XmlDictionaryString childNamespace)
+            {
+                ReflectionWriter declare = (writer, obj, context) => TMode.WriteNamespaceDecl(writer, childNamespace);
+                if (count is not null)
+                {
+                    return ReflectionSerialization.CreateWriterSequence(new[] { declare, count, body });
+                }
+
+                return Compose(declare, body);
+            }
+
+            return count is null ? body : Compose(count, body);
+        }
+
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        protected override ReflectionMemberValueWriter CreateMemberValueWriter<TMode>(ClassDataContract classContract, ClassDataContract rootContract, DataMember member, XmlDictionaryString[]? memberNames, int memberIndex)
+        {
+            XmlDictionaryString name = rootContract.MemberNames![memberIndex];
+            XmlDictionaryString ns = classContract.Namespace;
+            bool writeXsiType = CheckIfMemberHasConflict(member, classContract, rootContract);
+            PrimitiveDataContract? primitiveContract = member.MemberPrimitiveContract;
+            if (!writeXsiType && primitiveContract is not null && primitiveContract.UnderlyingType != typeof(object))
+            {
+                return CreatePrimitiveElementWriter<TMode>(primitiveContract, name, ns);
+            }
+            if (!writeXsiType && TryCreateNullablePrimitiveElementWriter<TMode>(member.MemberType, name, ns) is ReflectionMemberValueWriter nullableWriter)
+            {
+                return nullableWriter;
+            }
+
+            ReflectionValueWriter writeValue = CreateValueWriter<TMode>(member.MemberType, writeXsiType, null);
+            string? prefix = NeedsPrefix(member.MemberType, ns) ? Globals.ElementPrefix : null;
+            XmlDictionaryString? childNamespace = classContract.ChildElementNamespaces![memberIndex];
+            return ReflectionSerialization.CreateElementWriter<TMode>(writeValue, prefix, name, ns, childNamespace);
         }
 
         private static bool NeedsPrefix(Type type, XmlDictionaryString? ns)

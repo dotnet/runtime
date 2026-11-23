@@ -82,7 +82,8 @@ namespace System.Xml
 
         internal void WritePrimitiveValue<TPrimitive, TValue>(TValue value) where TPrimitive : struct
         {
-            if (typeof(TPrimitive) == typeof(bool)) WriteBoolText((bool)(object)value!);
+            if (typeof(TPrimitive) == typeof(ReflectionPlan.StringValue)) WriteText((string)(object)value!);
+            else if (typeof(TPrimitive) == typeof(bool)) WriteBoolText((bool)(object)value!);
             else if (XmlDictionaryWriter.IsInt32Primitive<TPrimitive>()) WriteInt32Text(XmlDictionaryWriter.GetInt32Primitive<TPrimitive, TValue>(value));
             else if (typeof(TPrimitive) == typeof(uint)) WriteInt64Text((uint)(object)value!);
             else if (typeof(TPrimitive) == typeof(long)) WriteInt64Text((long)(object)value!);
