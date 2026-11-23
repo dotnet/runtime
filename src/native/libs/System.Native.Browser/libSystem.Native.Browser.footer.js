@@ -43,6 +43,11 @@ function libDotnetFactory() {
         $DOTNET__postset: "DOTNET.selfInitialize()",
         SystemJS_GetLocaleInfo__sig: "ppipipip",
         SystemJS_RandomBytes__sig: "ipi",
+        SystemJS_RejectMainPromise__sig: "vpipi",
+        ds_rt_websocket_create__sig: "ip",
+        ds_rt_websocket_send__sig: "iipi",
+        ds_rt_websocket_recv__sig: "iipi",
+        ds_rt_browser_performance_measure__sig: "vpd",
     };
 
     for (const exportName of Reflect.ownKeys(exports)) {
