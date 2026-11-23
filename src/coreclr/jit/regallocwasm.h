@@ -78,12 +78,16 @@ struct Interval
     int       start;
     int       end;
     regNumber virtReg;
+    unsigned  trackedIdx;
+
+    // Assigned later by the allocator
     regNumber physReg;
 
-    Interval(regNumber virtReg)
+    Interval(regNumber virtReg, unsigned trackedIdx)
         : start(INT_MAX)
         , end(INT_MIN)
         , virtReg(virtReg)
+        , trackedIdx(trackedIdx)
         , physReg(REG_NA)
     {
     }
@@ -155,6 +159,23 @@ public:
     void checkForDNER(unsigned lclNum, LclVarDsc* varDsc);
 
 private:
+    struct PhysicalRegBank
+    {
+        unsigned DeclaredCount;
+        unsigned IndexBase;
+        unsigned Index;
+
+        // Create a new phys reg in the regbank for the given virtReg
+        regNumber AllocPhysReg(regNumber virtReg, bool relative)
+        {
+            WasmValueType type         = WasmRegToType(virtReg);
+            unsigned      physRegIndex = Index++;
+            DeclaredCount++;
+            regNumber physReg = MakeWasmReg(physRegIndex, type, relative);
+            return physReg;
+        }
+    };
+
     LIR::Range& CurrentRange();
 
     void      IdentifyCandidates();
@@ -188,34 +209,15 @@ private:
     regNumber RequestInternalRegister(GenTree* node, var_types type);
     void      ConsumeTemporaryRegForOperand(GenTree* operand DEBUGARG(const char* reason));
 
-    void BuildIntervals();
+    void         BuildIntervals();
     unsigned int ComputeIndexBase(FuncInfoDsc* funcInfo, regNumber spVirtReg, regNumber fpVirtReg);
-    void BuildFuncIntervals(FuncInfoDsc* funcInfo, PerFuncletData* funcletData);
-    void DumpIntervals();
-
-    struct PhysicalRegBank
-    {
-        unsigned DeclaredCount;
-        unsigned IndexBase;
-        unsigned Index;
-
-
-        // Create a new phys reg in the regbank for the given virtReg
-        regNumber AllocPhysReg(regNumber virtReg) {
-            WasmValueType type         = WasmRegToType(virtReg);
-            unsigned      physRegIndex = Index++;
-            DeclaredCount++;
-            regNumber physReg                    = MakeWasmReg(physRegIndex, type);
-            return physReg;
-        }
-
-    };
+    void         BuildFuncIntervals(FuncInfoDsc* funcInfo, PerFuncletData* funcletData);
+    void         DumpIntervals();
 
     void ResolveReferences();
-    void AssignIntervals(jitstd::vector<Interval*>* intervals, PhysicalRegBank* regBankByType);
+    void AssignIntervals(jitstd::vector<Interval*>& intervals, PhysicalRegBank* regBankByType);
 
     void PublishAllocationResults();
-
 };
 
 using RegAllocImpl = WasmRegAlloc;

@@ -8,9 +8,12 @@
 
 using RegNumUnderlyingType                               = regNumberSmall;
 static const RegNumUnderlyingType WASM_REG_TYPE_BITS     = 3;
+static const RegNumUnderlyingType WASM_REG_REL_BITS      = 1;
 static const RegNumUnderlyingType WASM_REG_TYPE_SHIFT    = 8 * sizeof(RegNumUnderlyingType) - WASM_REG_TYPE_BITS;
+static const RegNumUnderlyingType WASM_REG_REL_SHIFT     = WASM_REG_TYPE_SHIFT - WASM_REG_REL_BITS;
 static const RegNumUnderlyingType WASM_REG_TYPE_MASK     = ~0u << WASM_REG_TYPE_SHIFT;
-static const unsigned             WASM_LOCAL_INDEX_LIMIT = WASM_REG_TYPE_MASK;
+static const RegNumUnderlyingType WASM_REG_REL_MASK      = ((1u << WASM_REG_REL_BITS) - 1) << WASM_REG_REL_SHIFT;
+static const unsigned             WASM_LOCAL_INDEX_LIMIT = WASM_REG_REL_MASK - 1;
 
 static_assert(sizeof(RegNumUnderlyingType) >= sizeof(unsigned));
 static_assert(((static_cast<RegNumUnderlyingType>(WasmValueType::Count) - 1) >> WASM_REG_TYPE_BITS) == 0);
@@ -20,28 +23,13 @@ static_assert(((static_cast<RegNumUnderlyingType>(WasmValueType::Count) - 1) >> 
 //
 // Arguments:
 //    index - The index of the WASM local
-//    type  - Its type, must be directly mappable to the WASM type system
-//
-// Return Value:
-//    'regNumber' representing a tuple of '(index, type)'.
-//
-regNumber MakeWasmReg(unsigned index, var_types type)
-{
-    WasmValueType wasmType = TypeToWasmValueType(type);
-    return MakeWasmReg(index, wasmType);
-}
-
-//------------------------------------------------------------------------
-// MakeWasmReg: Create a register number representing a WASM local.
-//
-// Arguments:
-//    index - The index of the WASM local
 //    type  - Its type
+//    isRelative - Whether the index is relative to some base (default: false)
 //
 // Return Value:
 //    'regNumber' representing a tuple of '(index, type)'.
 //
-regNumber MakeWasmReg(unsigned index, WasmValueType type)
+regNumber MakeWasmReg(unsigned index, WasmValueType type, bool isRelative)
 {
     assert((WasmValueType::Invalid < type) && (type < WasmValueType::Count));
 
@@ -50,8 +38,30 @@ regNumber MakeWasmReg(unsigned index, WasmValueType type)
     {
         IMPL_LIMITATION("Too many locals");
     }
-    RegNumUnderlyingType regValue = index | (static_cast<RegNumUnderlyingType>(type) << WASM_REG_TYPE_SHIFT);
+    RegNumUnderlyingType regValue = index | (isRelative ? (1u << WASM_REG_REL_SHIFT) : 0) |
+                                    (static_cast<RegNumUnderlyingType>(type) << WASM_REG_TYPE_SHIFT);
     return static_cast<regNumber>(regValue);
+}
+
+//------------------------------------------------------------------------
+// MakeWasmReg: Create a register number representing a WASM local.
+//
+// Arguments:
+//    index - The index of the WASM local
+//    type  - Its type, must be directly mappable to the WASM type system
+//    isRelative - Whether the index is relative to a base (default: false)
+//
+// Return Value:
+//    'regNumber' representing a tuple of '(index, type)'.
+//
+// Notes:
+//    isRelative is only used by the wasm register allocator to indicate whether a local
+//    is relative to an index base. This is because we don't know the exact final counts of locals while allocating.
+//    It has no effect on the actual encoding of the register number outside the allocator.
+regNumber MakeWasmReg(unsigned index, var_types type, bool isRelative)
+{
+    WasmValueType wasmType = TypeToWasmValueType(type);
+    return MakeWasmReg(index, wasmType, isRelative);
 }
 
 //------------------------------------------------------------------------
@@ -174,7 +184,22 @@ unsigned UnpackWasmReg(regNumber reg, WasmValueType* pType)
     {
         *pType = static_cast<WasmValueType>(regValue >> WASM_REG_TYPE_SHIFT);
     }
-    return regValue & ~WASM_REG_TYPE_MASK;
+    return regValue & ~WASM_REG_TYPE_MASK & ~WASM_REG_REL_MASK;
+}
+
+bool genIsRelativeReg(regNumber reg)
+{
+    RegNumUnderlyingType regValue = static_cast<RegNumUnderlyingType>(reg);
+    return (regValue & WASM_REG_REL_MASK) != 0;
+}
+
+regNumber ResolveRegOffset(regNumber reg, unsigned offset)
+{
+    assert(genIsRelativeReg(reg));
+    WasmValueType type;
+    unsigned      index = UnpackWasmReg(reg, &type);
+    index += offset;
+    return MakeWasmReg(index, type, false);
 }
 
 //------------------------------------------------------------------------

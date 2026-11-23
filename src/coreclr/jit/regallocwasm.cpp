@@ -1068,7 +1068,7 @@ void WasmRegAlloc::BuildFuncIntervals(FuncInfoDsc* funcInfo, PerFuncletData* fun
         if (isIntervalCandidate(varDsc, funcletData))
         {
             regNumber virtReg = varDsc->GetRegNum();
-            interval          = new (m_compiler->getAllocator(CMK_LSRA_Interval)) Interval(virtReg);
+            interval          = new (m_compiler->getAllocator(CMK_LSRA_Interval)) Interval(virtReg, i);
         }
         funcletData->m_intervals[i] = interval;
     }
@@ -1270,7 +1270,7 @@ unsigned int WasmRegAlloc::ComputeIndexBase(FuncInfoDsc* funcInfo, regNumber spV
 
             // Filter funclets take an additional argument for the exception object. Otherwise,
             // the only args for a funclet should be (SP, FP) = (local 0, local 1)
-            indexBase             = ehDsc->HasCatchHandler() ? 3 : 2;
+            indexBase = ehDsc->HasCatchHandler() ? 3 : 2;
         }
 
         break;
@@ -1282,30 +1282,30 @@ unsigned int WasmRegAlloc::ComputeIndexBase(FuncInfoDsc* funcInfo, regNumber spV
     return indexBase;
 }
 
-void WasmRegAlloc::AssignIntervals(jitstd::vector<Interval*>* intervals, PhysicalRegBank* regBankMap)
+void WasmRegAlloc::AssignIntervals(jitstd::vector<Interval*>& intervals, PhysicalRegBank* regBankMap)
 {
-    struct PhysRegPool
-    {
-        jitstd::vector<regNumber>* Regs;
-    };
-
-    PhysRegPool physRegPoolMap[static_cast<unsigned>(WasmValueType::Count)]{};
+    jitstd::list<regNumber>* physRegPoolMap[static_cast<unsigned>(WasmValueType::Count)]{};
     for (WasmValueType type = WasmValueType::First; type < WasmValueType::Count; ++type)
     {
-        physRegPoolMap[static_cast<unsigned>(type)].Regs = new (m_compiler->getAllocator(CMK_LSRA)) jitstd::vector<regNumber>(m_compiler->getAllocator(CMK_LSRA));
+        physRegPoolMap[static_cast<unsigned>(type)] =
+            new (m_compiler->getAllocator(CMK_LSRA)) jitstd::list<regNumber>(m_compiler->getAllocator(CMK_LSRA));
     }
 
-    auto numAvail = [&](WasmValueType type) 
-    {
-        return physRegPoolMap[static_cast<unsigned>(type)].Regs->size();
+    auto releaseIntervalReg = [&](Interval* interval) {
+        assert(genIsValidReg(interval->physReg));
+        WasmValueType type = WasmRegToType(interval->physReg);
+        physRegPoolMap[static_cast<unsigned>(type)]->push_back(interval->physReg);
     };
 
-    auto nextReg = [&](WasmValueType type) 
-    {
-        jitstd::vector<regNumber>* regs = physRegPoolMap[static_cast<unsigned>(type)].Regs;
+    auto numAvail = [&](WasmValueType type) {
+        return physRegPoolMap[static_cast<unsigned>(type)]->size();
+    };
+
+    auto nextReg = [&](WasmValueType type) {
+        jitstd::list<regNumber>* regs = physRegPoolMap[static_cast<unsigned>(type)];
         assert(!regs->empty());
-        regNumber reg = regs->back();
-        regs->pop_back();
+        regNumber reg = regs->front();
+        regs->pop_front();
         return reg;
     };
 
@@ -1317,31 +1317,35 @@ void WasmRegAlloc::AssignIntervals(jitstd::vector<Interval*>* intervals, Physica
     auto expireOld = [&](Interval* current) {
         while (activeQueue.Size() > 0 && activeQueue.Top()->end <= current->start)
         {
-            JITDUMP("Expiring interval [%d, %d]:virtReg%d\n", activeQueue.Top()->start, activeQueue.Top()->end, activeQueue.Top()->virtReg);
+            JITDUMP("Expiring interval [%d, %d]:virtReg $%d\n", activeQueue.Top()->start, activeQueue.Top()->end,
+                    WasmRegToIndex(activeQueue.Top()->virtReg));
             Interval* interval = activeQueue.Top();
             activeQueue.Pop();
             assert(genIsValidReg(interval->physReg));
-            physRegPoolMap[static_cast<unsigned>(WasmRegToType(interval->virtReg))].Regs->push_back(interval->physReg);
+            releaseIntervalReg(interval);
         }
     };
 
-    jitstd::sort(intervals->begin(), intervals->end(), [](Interval* a, Interval* b) {
+    jitstd::sort(intervals.begin(), intervals.end(), [](Interval* a, Interval* b) {
         return a->start < b->start;
     });
 
-    for (Interval* interval : *intervals)
+    for (Interval* interval : intervals)
     {
-        JITDUMP("Assigning reg for interval: [%d, %d]:virtReg %d\n", interval->start, interval->end, interval->virtReg);
+        assert(interval->physReg == REG_NA && genIsValidReg(interval->virtReg));
         expireOld(interval);
         WasmValueType type = WasmRegToType(interval->virtReg);
         if (numAvail(type) == 0)
         {
-            interval->physReg = regBankMap[static_cast<unsigned>(type)].AllocPhysReg(interval->virtReg);
+            interval->physReg =
+                regBankMap[static_cast<unsigned>(type)].AllocPhysReg(interval->virtReg, /*relative=*/true);
         }
         else
         {
             interval->physReg = nextReg(type);
         }
+        JITDUMP("Assigning (relative) reg for interval: [%d, %d]:virtReg $%d = $%d\n", interval->start, interval->end,
+                WasmRegToIndex(interval->virtReg), WasmRegToIndex(interval->physReg));
 
         activeQueue.Push(interval);
     }
@@ -1360,11 +1364,11 @@ void WasmRegAlloc::ResolveReferences()
         regNumber* Regs;
         unsigned   Count;
     };
-    TemporaryRegBank temporaryRegBankByType[static_cast<unsigned>(WasmValueType::Count)];
+    TemporaryRegBank temporaryRegMap[static_cast<unsigned>(WasmValueType::Count)];
     for (WasmValueType type = WasmValueType::First; type < WasmValueType::Count; ++type)
     {
         TemporaryRegStack& temporaryRegs          = m_temporaryRegs[static_cast<unsigned>(type)];
-        TemporaryRegBank&  allocatedTemporaryRegs = temporaryRegBankByType[static_cast<unsigned>(type)];
+        TemporaryRegBank&  allocatedTemporaryRegs = temporaryRegMap[static_cast<unsigned>(type)];
         assert((temporaryRegs.Count == 0) && "Some temporary regs were not consumed/released");
 
         allocatedTemporaryRegs.Count = temporaryRegs.MaxCount;
@@ -1392,7 +1396,7 @@ void WasmRegAlloc::ResolveReferences()
         //
         m_currentFunclet = funcInfo->GetFuncletIdx(m_compiler);
 
-        PhysicalRegBank regBankByType[static_cast<unsigned>(WasmValueType::Count)]{};
+        PhysicalRegBank physRegMap[static_cast<unsigned>(WasmValueType::Count)]{};
 
         const bool            inFunclet = funcInfo->funKind != FuncKind::FUNC_ROOT;
         PerFuncletData* const data      = m_perFuncletData[m_currentFunclet];
@@ -1416,8 +1420,7 @@ void WasmRegAlloc::ResolveReferences()
             return false;
         };
 
-        auto allocABIReg = [&](regNumber virtReg, LclVarDsc* varDsc) 
-        {
+        auto allocABIReg = [&](regNumber virtReg, LclVarDsc* varDsc) {
             assert(isABIReg(virtReg, varDsc));
 
             regNumber physReg = REG_NA;
@@ -1454,11 +1457,11 @@ void WasmRegAlloc::ResolveReferences()
                 // ABI registers in the funclets
                 if (virtReg == spVirtReg)
                 {
-                    physReg = MakeWasmReg(0, TypeToWasmValueType(TYP_I_IMPL));
+                    physReg = MakeWasmReg(0, TypeToWasmValueType(TYP_I_IMPL), /*relative=*/false);
                 }
                 else if (virtReg == fpVirtReg)
                 {
-                    physReg = MakeWasmReg(1, TypeToWasmValueType(TYP_I_IMPL));
+                    physReg = MakeWasmReg(1, TypeToWasmValueType(TYP_I_IMPL), /*relative=*/false);
                 }
             }
 
@@ -1466,7 +1469,8 @@ void WasmRegAlloc::ResolveReferences()
             // a new phys reg now
             if (physReg == REG_NA)
             {
-                physReg = regBankByType[static_cast<unsigned>(WasmRegToType(virtReg))].AllocPhysReg(virtReg);
+                physReg = physRegMap[static_cast<unsigned>(WasmRegToType(virtReg))].AllocPhysReg(virtReg,
+                                                                                                    /*relative=*/true);
             }
 
             assert(genIsValidReg(physReg));
@@ -1510,39 +1514,81 @@ void WasmRegAlloc::ResolveReferences()
             }
         }
 
-        // At this point, physRegBankByType should reflect the declaration count necessary for all locals needed to home
-        // ABI parameters. Each local index remains relative to the IndexBase, which is unset at this point. We can't set it
-        // until we know how many locals we will actually need. Therefore, the below regNum assignments for enregistered locals
-        // represent Wasm-type relative local indices. Assign (index relative) physical registers to each interval
-        jitstd::vector<Interval*>* intervals = new (m_compiler->getAllocator(CMK_LSRA)) jitstd::vector<Interval*>(m_compiler->getAllocator());
-        for (size_t i = 0; i < intervals->size(); i++)
-        {
-            if (data->m_intervals[i] != nullptr)
-            {
-                intervals->push_back(data->m_intervals[i]);
-            }
-        }
-        AssignIntervals(intervals, regBankByType);
-
-        //
-        // We will update the LclVarDsc at the end of this method to be the assignments
-        // for the main method.
+        // At this point, physRegBankByType should reflect the declaration count necessary for any extra locals needed
+        // for ABI parameters. Each local index remains relative to the IndexBase, which is unset at this point. We
+        // can't set it until we know how many locals we will actually need. Once we have the final local count, we will
+        // resolve the indices to their actual physical register assignments. At this point we will update the LclVarDsc
+        // at the end of this method to be the assignments for the main method.
         //
         // Then when codegen calls back to the allocator via recordVarLocationsAtStartOfBB
         // we will either verify the assignments are correct for the block, or update them
         // using the per-funclet mappings kept in the per-funclet m_physicalRegAssignments.
         //
 
+        // Assign registers to intervals to assign homes for the enregistered locals
+        jitstd::vector<Interval*> intervals(m_compiler->getAllocator(CMK_LSRA));
+        for (size_t i = 0; i < data->m_intervals.size(); i++)
+        {
+            if (data->m_intervals[i] != nullptr)
+            {
+                intervals.push_back(data->m_intervals[i]);
+            }
+        }
+        AssignIntervals(intervals, physRegMap);
 
         // Allocate temporary regs to physical regs for each wasm value type
         for (WasmValueType type = WasmValueType::First; type < WasmValueType::Count; ++type)
         {
-            TemporaryRegBank& regs = temporaryRegBankByType[static_cast<unsigned>(type)];
+            TemporaryRegBank& regs = temporaryRegMap[static_cast<unsigned>(type)];
             for (unsigned i = 0; i < regs.Count; i++)
             {
-                // TODO: allocate temp regs
-//                regs.Regs[i] = allocPhysReg(regs.Regs[i], nullptr);
+                regs.Regs[i] = physRegMap[static_cast<unsigned>(type)].AllocPhysReg(regs.Regs[i], /*relative=*/true);
             }
+        }
+
+        // At this point, we know how many physical registers are needed for the number of enregistered locals +
+        // temporary registers; We can now adjust the IndexBase for each local group to reflect the actual number of
+        // physical registers needed, and re-write the index-relative local indices to reflect the final physical
+        // register indices.
+
+        for (WasmValueType type = WasmValueType::First; type < WasmValueType::Count; ++type)
+        {
+            PhysicalRegBank& physRegs = physRegMap[static_cast<unsigned>(type)];
+            physRegs.IndexBase = indexBase; // iteration 0: pre-computed index base from the number of ABI registers
+            physRegs.Index += indexBase;
+            indexBase += physRegs.DeclaredCount;
+            JITDUMP("Type: %s, IndexBase: %d, Index: %d, DeclaredCount: %d\n", WasmValueTypeName(type),
+                    physRegs.IndexBase, physRegs.Index, physRegs.DeclaredCount);
+        }
+
+        for (Interval* interval : intervals)
+        {
+            assert(genIsValidReg(interval->physReg));
+            PhysicalRegBank& physRegs = physRegMap[static_cast<unsigned>(WasmRegToType(interval->physReg))];
+            interval->physReg         = ResolveRegOffset(interval->physReg, physRegs.IndexBase);
+            data->m_physicalRegAssignments[interval->trackedIdx] = interval->physReg;
+        }
+
+        for (WasmValueType type = WasmValueType::First; type < WasmValueType::Count; ++type)
+        {
+            TemporaryRegBank& regs     = temporaryRegMap[static_cast<unsigned>(type)];
+            PhysicalRegBank&  physRegs = physRegMap[static_cast<unsigned>(type)];
+            for (unsigned i = 0; i < regs.Count; i++)
+            {
+                regs.Regs[i] = ResolveRegOffset(regs.Regs[i], physRegs.IndexBase);
+            }
+        }
+
+        if (data->m_spReg != REG_NA && genIsRelativeReg(data->m_spReg))
+        {
+            data->m_spReg =
+                ResolveRegOffset(data->m_spReg, physRegMap[static_cast<unsigned>(WasmValueType::I)].IndexBase);
+        }
+
+        if (data->m_fpReg != REG_NA && genIsRelativeReg(data->m_fpReg))
+        {
+            data->m_fpReg =
+                ResolveRegOffset(data->m_fpReg, physRegMap[static_cast<unsigned>(WasmValueType::I)].IndexBase);
         }
 
         // Now remap all remaining virtual register references.
@@ -1575,11 +1621,12 @@ void WasmRegAlloc::ResolveReferences()
                     assert(!node->OperIsLocal() || !m_compiler->lvaGetDesc(node->AsLclVarCommon())->lvIsRegCandidate());
                     WasmValueType type;
                     unsigned      index = UnpackWasmReg(node->GetRegNum(), &type);
-                    physReg             = temporaryRegBankByType[static_cast<unsigned>(type)].Regs[index];
+                    physReg             = temporaryRegMap[static_cast<unsigned>(type)].Regs[index];
                 }
 
                 if (physReg != REG_NA)
                 {
+                    assert(!genIsRelativeReg(physReg));
                     node->SetRegNum(physReg);
                 }
 
@@ -1594,7 +1641,7 @@ void WasmRegAlloc::ResolveReferences()
                     {
                         WasmValueType type;
                         unsigned      index   = UnpackWasmReg(internalRegs->GetAt(i), &type);
-                        regNumber     physReg = temporaryRegBankByType[static_cast<unsigned>(type)].Regs[index];
+                        regNumber     physReg = temporaryRegMap[static_cast<unsigned>(type)].Regs[index];
                         internalRegs->SetAt(i, physReg);
                     }
                 }
@@ -1612,7 +1659,7 @@ void WasmRegAlloc::ResolveReferences()
 
         for (WasmValueType type = WasmValueType::First; type < WasmValueType::Count; ++type)
         {
-            PhysicalRegBank& physRegs = regBankByType[static_cast<unsigned>(type)];
+            PhysicalRegBank& physRegs = physRegMap[static_cast<unsigned>(type)];
             assert(physRegs.Index <= physRegs.IndexBase + physRegs.DeclaredCount);
             if (physRegs.DeclaredCount != 0)
             {
@@ -1631,8 +1678,6 @@ void WasmRegAlloc::ResolveReferences()
         }
     }
 
-    // TODO: increment the indexBase for each declared physical register type.
-
     // Set all lcl var assignments to the main method's allocations.
     //
     const jitstd::vector<regNumber>& mainFuncAssignment = m_perFuncletData[ROOT_FUNC_IDX]->m_physicalRegAssignments;
@@ -1643,6 +1688,7 @@ void WasmRegAlloc::ResolveReferences()
 
         if (genIsValidReg(assignedReg))
         {
+            assert(!genIsRelativeReg(assignedReg));
             varDsc->SetRegNum(mainFuncAssignment[varIndex]);
 
             // While register allocations are fixed per-funclet, they are unlikely
