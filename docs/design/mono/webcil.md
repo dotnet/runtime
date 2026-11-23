@@ -208,6 +208,33 @@ the relocation scheme in its own code, reducing the volume of code needed in eac
 images into linear memory, as well as for allowing for efficient storage of 128 bit vector constants
 within the binary.)
 
+##### Memory64 IL-only wrappers
+
+For a memory64 (wasm64) host, the version 2 IL-only wrapper imports an `i64` memory and an
+immutable `i64` `__memory_base` global. The destination pointer parameter of `getWebcilSize` is
+also `i64`. The host supplies `__memory_base` as an immutable `WebAssembly.Global` with value
+type `i64` and a JavaScript `BigInt` value.
+
+``` wat
+(module
+  (import "webcil" "memory" (memory (;0;) i64 1))
+  (import "webcil" "__memory_base" (global (;0;) i64))
+  (global (export "webcilVersion") i32 (i32.const 2))
+  (func (export "getWebcilSize") (param $destPtr i64) (result)
+    local.get $destPtr
+    i32.const 0
+    i32.const 4
+    memory.init 0)
+  (data "\0f\00\00\00") ;; data segment 0: payloadSize - passive
+  (data (global.get 0) "webcil Payload\cc")) ;; data segment 1: active at __memory_base
+```
+
+The wrapper version remains 2, and `webcilVersion` remains an `i32` global. Both data segments,
+the Webcil payload format, and the 4-byte payload alignment within the module are unchanged.
+In particular, `payloadSize` is still a little-endian `u32`; `getWebcilSize` writes those same
+4 bytes, and its `memory.init` source offset and length operands remain `i32`.
+Memory64 is not supported by the passive version 0 wrapper.
+
 ##### WASI host composition
 
 WASI hosts use offline composition rather than instantiating R2R modules at runtime.

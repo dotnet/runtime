@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import type { VoidPtr, CharPtr, NativePointer } from "../types";
+import Wasm64 from "consts:wasm64";
 
 export const globalThisAny = globalThis as any;
 export const ENVIRONMENT_IS_NODE = typeof process === "object" && typeof process.versions === "object" && typeof process.versions.node === "string";
@@ -14,4 +15,4 @@ export const VoidPtrNull: VoidPtr = <VoidPtr><any>0;
 export const CharPtrNull: CharPtr = <CharPtr><any>0;
 export const NativePointerNull: NativePointer = <NativePointer><any>0;
 export const browserVirtualAppBase = "/"; // keep in sync other places that define browserVirtualAppBase
-export const sizeOfPtr = 4;
+export const sizeOfPtr = Wasm64 ? 8 : 4;

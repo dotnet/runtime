@@ -80,6 +80,7 @@ export type EmsAmbientSymbolsType = EmscriptenModuleInternal & {
     HEAP16: Int16Array;
     HEAP32: Int32Array;
     HEAP64: BigInt64Array;
+    HEAPU64: BigUint64Array;
     HEAPU8: Uint8Array;
     HEAPU16: Uint16Array;
     HEAPU32: Uint32Array;

@@ -28,8 +28,8 @@
 
   <Target Name="PrepareBrowserHost"
           DependsOnTargets="ResolveRuntimeFilesFromLocalBuild;ResolveLibrariesRuntimeFilesFromLocalBuild">
-    <Error Condition="'$(TargetOS)' != 'browser' or '$(TargetArchitecture)' != 'wasm' or '$(RuntimeFlavor)' != 'CoreCLR'"
-           Text="The prebuilt browserhost requires CoreCLR for browser-wasm." />
+    <Error Condition="'$(TargetOS)' != 'browser' or '$(TargetsWasmArch)' != 'true' or '$(RuntimeFlavor)' != 'CoreCLR'"
+           Text="The prebuilt browserhost requires CoreCLR for browser-wasm or browser-wasm64." />
     <ItemGroup>
       <_BrowserHostNativeFile Include="@(RuntimeFiles->WithMetadataValue('IsNative', 'true'));@(LibrariesRuntimeFiles->WithMetadataValue('IsNative', 'true'))"
                               Exclude="$(LibrariesSharedFrameworkDir)dotnet.native.js"

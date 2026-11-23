@@ -41,6 +41,15 @@ function libDotnetFactory() {
         },
         $DOTNET__deps: commonDeps,
         $DOTNET__postset: "DOTNET.selfInitialize()",
+        // Emscripten converts memory64 BigInt pointers and intptr_t handles to/from JS numbers only
+        // for imports with a 'p' in their __sig. Keep these in sync with entrypoints.c; 'p' is i32 on wasm32.
+        SystemJS_GetLocaleInfo__sig: "ppipipip",
+        SystemJS_RandomBytes__sig: "ipi",
+        SystemJS_RejectMainPromise__sig: "vpipi",
+        ds_rt_websocket_create__sig: "ip",
+        ds_rt_websocket_send__sig: "iipi",
+        ds_rt_websocket_recv__sig: "iipi",
+        ds_rt_browser_performance_measure__sig: "vpd",
     };
 
     for (const exportName of Reflect.ownKeys(exports)) {
