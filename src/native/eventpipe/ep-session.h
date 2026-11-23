@@ -168,9 +168,11 @@ ep_session_add_session_provider (
 void
 ep_session_disable (EventPipeSession *session);
 
+// A final flush requires the session to be unpublished and all in-flight writers to have completed.
 bool
 ep_session_write_all_buffers_to_file (
 	EventPipeSession *session,
+	bool is_final_flush,
 	bool *events_written);
 
 // If a session is non-synchronous (i.e. a file, pipe, etc) WriteEvent will

@@ -10,6 +10,7 @@
 //
 
 #include "common.h"
+#include <minipal/thread.h>
 #include "CLREventBase.h"
 #include "vars.hpp"
 #include "eeconfig.h"
@@ -118,11 +119,11 @@ void _MulticoreJitTrace(const char * format, ...)
 
     int len;
 
-    len  =  sprintf_s(buffer,       ARRAY_SIZE(buffer),       "Mcj TID %04x: ", GetCurrentThreadId());
+    len  =  sprintf_s(buffer,       ARRAY_SIZE(buffer),       "Mcj TID %04zx: ", minipal_get_current_thread_id());
     len += _vsnprintf_s(buffer + len, ARRAY_SIZE(buffer) - len, format, args);
     len +=  sprintf_s(buffer + len, ARRAY_SIZE(buffer) - len, ", (time=%d ms)\r\n", (unsigned)minipal_lowres_ticks() - s_startTick);
 
-    OutputDebugStringA(buffer);
+    OutputDebugStringUtf8(buffer);
 #endif
 
     va_end(args);
@@ -795,9 +796,9 @@ HRESULT MulticoreJitModuleEnumerator::EnumerateLoadedModules(AppDomain * pDomain
 
     AppDomain::AssemblyIterator appIt = pDomain->IterateAssembliesEx((AssemblyIterationFlags)(kIncludeLoaded | kIncludeExecution));
 
-    CollectibleAssemblyHolder<Assembly *> pAssembly;
+    CollectibleAssemblyHolder pAssembly;
 
-    while (appIt.Next(pAssembly.This()) && SUCCEEDED(hr))
+    while (appIt.Next(&pAssembly) && SUCCEEDED(hr))
     {
         {
             hr = HandleAssembly(pAssembly);

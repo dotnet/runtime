@@ -83,6 +83,7 @@ public static class DiagnosticIds
     public const string DuplicateEntryPoint = "ILA0063";
     public const string InstanceEntryPoint = "ILA0064";
     public const string DuplicateExportedType = "ILA0065";
+    public const string UnassignedVTableSlot = "ILA0066";
 }
 
 internal static class DiagnosticMessageTemplates
@@ -156,4 +157,5 @@ internal static class DiagnosticMessageTemplates
     public const string InstanceEntryPoint = "Entry point method must be static";
     public const string DuplicateField = "Duplicate field definition '{0}'";
     public const string DuplicateExportedType = "Duplicate exported type '{0}'";
+    public const string UnassignedVTableSlot = "Synthesized VTable entry has unassigned slot {0}";
 }

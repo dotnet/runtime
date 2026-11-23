@@ -11,6 +11,7 @@
 #define DEBUGGER_H_
 
 #include <windows.h>
+#include <minipal/thread.h>
 
 #include <utilcode.h>
 
@@ -349,7 +350,7 @@ inline DWORD UnsafeGetConfigDWORD(const CLRConfig::ConfigDWORDInfo & info)
 
 bool ThisIsHelperThreadWorker(void);
 bool ThisIsTempHelperThread();
-bool ThisIsTempHelperThread(DWORD tid);
+bool ThisIsTempHelperThread(size_t tid);
 
 #ifdef _DEBUG
 
@@ -2136,30 +2137,6 @@ public:
                                       TypeHandle th,
                                       DebuggerIPCE_ExpandedTypeData *res);
 
-    class TypeDataWalk
-    {
-        DebuggerIPCE_TypeArgData *m_curdata;
-        unsigned int m_remaining;
-
-    public:
-        TypeDataWalk(DebuggerIPCE_TypeArgData *pData, unsigned int nData)
-        {
-            m_curdata = pData;
-            m_remaining = nData;
-        }
-
-
-        // These are for type arguments in the funceval case.
-        // They throw COMPLUS exceptions if they fail, so can only be used during funceval.
-        void ReadTypeHandles(unsigned int nTypeArgs, TypeHandle *pRes);
-        TypeHandle ReadInstantiation(Module *pModule, mdTypeDef tok, unsigned int nTypeArgs);
-        TypeHandle ReadTypeHandle();
-
-        BOOL Finished() { LIMITED_METHOD_CONTRACT; return m_remaining == 0; }
-        DebuggerIPCE_TypeArgData *ReadOne() { LIMITED_METHOD_CONTRACT; if (m_remaining) { m_remaining--; return m_curdata++; } else return NULL; }
-
-    };
-
     void GetAndSendTransitionStubInfo(CORDB_ADDRESS_TYPE *stubAddress);
 
     void SendBreakpoint(Thread *thread, T_CONTEXT *context,
@@ -2332,14 +2309,62 @@ private:
         c->DoNotCallDirectlyPrivateUnlock();
     }
 #else // DACCESS_COMPILE
-    static void AcquireDebuggerLock(Debugger *c);
-    static void ReleaseDebuggerLock(Debugger *c);
+    static void AcquireDebuggerLock(Debugger *c) { SUPPORTS_DAC; }
+    static void ReleaseDebuggerLock(Debugger *c) { SUPPORTS_DAC; }
 #endif // DACCESS_COMPILE
 
 
+    struct DebuggerLockHolderTraits final
+    {
+        using Type = Debugger*;
+        static constexpr Type Default() { return NULL; }
+        static void Free(Type debugger) noexcept
+        {
+            STATIC_CONTRACT_WRAPPER;
+#ifndef DACCESS_COMPILE
+            if (debugger != NULL)
+                ReleaseDebuggerLock(debugger);
+#endif // !DACCESS_COMPILE
+        }
+    };
+
 public:
-    // define type for DebuggerLockHolder
-    typedef DacHolder<Debugger *, Debugger::AcquireDebuggerLock, Debugger::ReleaseDebuggerLock> DebuggerLockHolder;
+    class DebuggerLockHolder final
+    {
+        Debugger* const m_debugger;
+        LifetimeHolder<DebuggerLockHolderTraits> m_lock;
+
+    public:
+        DebuggerLockHolder(Debugger* debugger, BOOL acquire = TRUE)
+            : m_debugger(debugger)
+        {
+            WRAPPER_NO_CONTRACT;
+            SUPPORTS_DAC;
+            if (acquire)
+                Acquire();
+        }
+
+        void Acquire()
+        {
+            WRAPPER_NO_CONTRACT;
+            SUPPORTS_DAC;
+            _ASSERTE(static_cast<Debugger*>(m_lock) == NULL);
+            if (m_debugger != NULL)
+            {
+                AcquireDebuggerLock(m_debugger);
+                m_lock = m_debugger;
+            }
+        }
+
+        void Release()
+        {
+            WRAPPER_NO_CONTRACT;
+            m_lock.Free();
+        }
+
+        DebuggerLockHolder(const DebuggerLockHolder&) = delete;
+        DebuggerLockHolder& operator=(const DebuggerLockHolder&) = delete;
+    };
 
     void LockForEventSending(DebuggerLockHolder *dbgLockHolder);
     void UnlockFromEventSending(DebuggerLockHolder *dbgLockHolder);
@@ -2385,7 +2410,7 @@ public:
         }
         else
         {
-            return (GetCurrentThreadId() == m_mutexOwner);
+            return (minipal_get_current_thread_id() == m_mutexOwner);
         }
     }
 #endif // _DEBUG_IMPL
@@ -2536,11 +2561,8 @@ public:
     HRESULT FuncEvalCleanup(DebuggerEval *debuggerEvalKey);
 
 #ifndef DACCESS_COMPILE
-    virtual bool ReadFuncEvalTypeHandles(
-        DebuggerEval* pDE, TypeHandle* pTypes, uint32_t count);
     virtual void* AllocateFuncEvalExternalResult(DebuggerEval* pDE, TypeHandle resultType);
     virtual void ProtectFuncEvalByRefResult(DebuggerEval* pDE, TypeHandle resultType);
-    virtual TypeHandle GetFuncEvalArgumentType(DebuggerEval* pDE, UINT32 index);
     virtual BOOL ReadFuncEvalPrimitiveRegister(
         DebuggerEval* pDE, UINT32 index, UINT64* pValue);
     virtual void WriteFuncEvalRegister(
@@ -2586,8 +2608,32 @@ public:
 
 #endif // DACCESS_COMPILE
 
-    // define type for DebuggerDataLockHolder
-    typedef DacHolder<Debugger *, Debugger::AcquireDebuggerDataLock, Debugger::ReleaseDebuggerDataLock> DebuggerDataLockHolder;
+private:
+    struct DebuggerDataLockHolderTraits final
+    {
+        using Type = Debugger*;
+        static constexpr Type Default() { return NULL; }
+        static void Free(Type debugger) noexcept
+        {
+            STATIC_CONTRACT_WRAPPER;
+#ifndef DACCESS_COMPILE
+            if (debugger != NULL)
+                ReleaseDebuggerDataLock(debugger);
+#endif // !DACCESS_COMPILE
+        }
+    };
+
+public:
+    using DebuggerDataLockHolder = LifetimeHolder<DebuggerDataLockHolderTraits>;
+
+    static DebuggerDataLockHolder TakeDebuggerDataLock(Debugger* debugger)
+    {
+        WRAPPER_NO_CONTRACT;
+        SUPPORTS_DAC;
+        if (debugger != NULL)
+            AcquireDebuggerDataLock(debugger);
+        return DebuggerDataLockHolder(debugger);
+    }
 
 #ifdef _DEBUG
     // Use for asserts
@@ -2627,7 +2673,7 @@ public:
     void SetModuleDefaultJMCStatus(Module * pRuntimeModule, bool fStatus);
 
 #ifndef DACCESS_COMPILE
-    static DWORD GetThreadIdHelper(Thread *pThread);
+    static SIZE_T GetThreadIdHelper(Thread *pThread);
 #endif // DACCESS_COMPILE
 
 private:
@@ -2821,10 +2867,10 @@ private:
 
 #ifdef _DEBUG
     // Ownership tracking for debugging.
-    DWORD                 m_mutexOwner;
+    size_t                m_mutexOwner;
 
     // Tid that last called LockForEventSending.
-    DWORD                 m_tidLockedForEventSending;
+    size_t                m_tidLockedForEventSending;
 #endif
     LONG                  m_threadsAtUnsafePlaces;
     Volatile<BOOL>        m_jitAttachInProgress;
@@ -3294,8 +3340,20 @@ private:
 };
 
 
-typedef Wrapper<DebuggerExternalMemoryOwner*, DoNothing<DebuggerExternalMemoryOwner*>,
-    DeleteInteropSafe<DebuggerExternalMemoryOwner>> DebuggerExternalMemoryOwnerHolder;
+template<class T>
+struct DebuggerInteropSafeDeleteTraits final
+{
+    using Type = T*;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type value) noexcept
+    {
+        STATIC_CONTRACT_WRAPPER;
+        if (value != NULL)
+            DeleteInteropSafe(value);
+    }
+};
+
+using DebuggerExternalMemoryOwnerHolder = LifetimeHolder<DebuggerInteropSafeDeleteTraits<DebuggerExternalMemoryOwner>>;
 
 // Persistent roots for a raw byref result, owned by DebuggerEval through cleanup.
 class DebuggerFuncEvalResult
@@ -3311,8 +3369,7 @@ private:
     ExternalMemoryHandle* m_resultHandle;
 };
 
-typedef Wrapper<DebuggerFuncEvalResult*, DoNothing<DebuggerFuncEvalResult*>,
-    DeleteInteropSafe<DebuggerFuncEvalResult>> DebuggerFuncEvalResultHolder;
+using DebuggerFuncEvalResultHolder = LifetimeHolder<DebuggerInteropSafeDeleteTraits<DebuggerFuncEvalResult>>;
 
 class DebuggerEval
 {
@@ -3382,13 +3439,6 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         return (DebuggerIPCE_FuncEvalArgData*) (m_argData + m_genericArgsNodeCount * sizeof(DebuggerIPCE_TypeArgData));
-    }
-
-    WCHAR *GetNewStringArgData()
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(m_evalType == DB_IPCE_FET_NEW_STRING);
-        return (WCHAR*)m_argData;
     }
 
     ~DebuggerEval()
@@ -3698,7 +3748,7 @@ HANDLE OpenWin32EventOrThrow(
 //   SuspendComplete
 //
 // @todo- we could also assert that:
-// - m_tidLockedForEventSending = GetCurrentThreadId();
+// - m_tidLockedForEventSending = minipal_get_current_thread_id();
 #define SENDEVENT_CONTRACT_ITEMS \
     GC_NOTRIGGER; \
     MODE_PREEMPTIVE; \

@@ -259,9 +259,6 @@ enum PAL_HashAlgorithm: Int32 {
     case sha256 = 3
     case sha384 = 4
     case sha512 = 5
-    case sha3_256 = 6
-    case sha3_384 = 7
-    case sha3_512 = 8
 }
 
 enum HKDFError: Error {
@@ -301,21 +298,6 @@ public func AppleCryptoNative_HKDFExpand(
                 return HKDF<SHA384>.expand(pseudoRandomKey: prk, info: info, outputByteCount: destinationLengthInt)
             case .sha512:
                 return HKDF<SHA512>.expand(pseudoRandomKey: prk, info: info, outputByteCount: destinationLengthInt)
-            case .sha3_256:
-                guard #available(macOS 26.0, iOS 26.0, tvOS 26.0, macCatalyst 26.0, *) else {
-                    throw HKDFError.unknownHashAlgorithm
-                }
-                return HKDF<SHA3_256>.expand(pseudoRandomKey: prk, info: info, outputByteCount: destinationLengthInt)
-            case .sha3_384:
-                guard #available(macOS 26.0, iOS 26.0, tvOS 26.0, macCatalyst 26.0, *) else {
-                    throw HKDFError.unknownHashAlgorithm
-                }
-                return HKDF<SHA3_384>.expand(pseudoRandomKey: prk, info: info, outputByteCount: destinationLengthInt)
-            case .sha3_512:
-                guard #available(macOS 26.0, iOS 26.0, tvOS 26.0, macCatalyst 26.0, *) else {
-                    throw HKDFError.unknownHashAlgorithm
-                }
-                return HKDF<SHA3_512>.expand(pseudoRandomKey: prk, info: info, outputByteCount: destinationLengthInt)
         }
     }
 
@@ -363,21 +345,6 @@ public func AppleCryptoNative_HKDFExtract(
                 return HKDF<SHA384>.extract(inputKeyMaterial: key, salt: salt)
             case .sha512:
                 return HKDF<SHA512>.extract(inputKeyMaterial: key, salt: salt)
-            case .sha3_256:
-                guard #available(macOS 26.0, iOS 26.0, tvOS 26.0, macCatalyst 26.0, *) else {
-                    throw HKDFError.unknownHashAlgorithm
-                }
-                return HKDF<SHA3_256>.extract(inputKeyMaterial: key, salt: salt)
-            case .sha3_384:
-                guard #available(macOS 26.0, iOS 26.0, tvOS 26.0, macCatalyst 26.0, *) else {
-                    throw HKDFError.unknownHashAlgorithm
-                }
-                return HKDF<SHA3_384>.extract(inputKeyMaterial: key, salt: salt)
-            case .sha3_512:
-                guard #available(macOS 26.0, iOS 26.0, tvOS 26.0, macCatalyst 26.0, *) else {
-                    throw HKDFError.unknownHashAlgorithm
-                }
-                return HKDF<SHA3_512>.extract(inputKeyMaterial: key, salt: salt)
         }
     }
 
@@ -428,21 +395,6 @@ public func AppleCryptoNative_HKDFDeriveKey(
                 return HKDF<SHA384>.deriveKey(inputKeyMaterial: key, salt: salt, info: info, outputByteCount: destinationLengthInt)
             case .sha512:
                 return HKDF<SHA512>.deriveKey(inputKeyMaterial: key, salt: salt, info: info, outputByteCount: destinationLengthInt)
-            case .sha3_256:
-                guard #available(macOS 26.0, iOS 26.0, tvOS 26.0, macCatalyst 26.0, *) else {
-                    throw HKDFError.unknownHashAlgorithm
-                }
-                return HKDF<SHA3_256>.deriveKey(inputKeyMaterial: key, salt: salt, info: info, outputByteCount: destinationLengthInt)
-            case .sha3_384:
-                guard #available(macOS 26.0, iOS 26.0, tvOS 26.0, macCatalyst 26.0, *) else {
-                    throw HKDFError.unknownHashAlgorithm
-                }
-                return HKDF<SHA3_384>.deriveKey(inputKeyMaterial: key, salt: salt, info: info, outputByteCount: destinationLengthInt)
-            case .sha3_512:
-                guard #available(macOS 26.0, iOS 26.0, tvOS 26.0, macCatalyst 26.0, *) else {
-                    throw HKDFError.unknownHashAlgorithm
-                }
-                return HKDF<SHA3_512>.deriveKey(inputKeyMaterial: key, salt: salt, info: info, outputByteCount: destinationLengthInt)
         }
     }
 

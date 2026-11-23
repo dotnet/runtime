@@ -12,6 +12,7 @@
 #include "runtimedetails.h"
 #include "logging.h"
 #include "jitdebugger.h"
+#include <minipal/thread.h>
 
 // JIT debugging is broken due to utilcode changes to support LongFile. We need to re-copy
 // or adjust the implementation of the below functions so they link properly.
@@ -25,11 +26,12 @@
 
 int DbgBreakCheck(const char* szFile, int iLine, const char* szExpr)
 {
-    LogError("SuperPMI: Assert Failure (PID %d, Thread %d/%x)\n"
+    DWORD pid = minipal_get_current_process_id();
+    LogError("SuperPMI: Assert Failure (PID %d, Thread %zu/%zx)\n"
              "%s\n"
              "\n"
              "%s, Line: %d\n",
-             GetCurrentProcessId(), GetCurrentThreadId(), GetCurrentThreadId(), szExpr, szFile, iLine);
+             pid, minipal_get_current_thread_id(), minipal_get_current_thread_id(), szExpr, szFile, iLine);
 
     return 1;
 }
@@ -404,8 +406,8 @@ int DbgBreakCheck(const char* szFile, int iLine, const char* szExpr)
     sprintf_s(dialogText, sizeof(dialogText),
               "%s\n\n%s, Line: %d\n\nAbort - Kill program\nRetry - Debug\nIgnore - Keep running\n", szExpr, szFile,
               iLine);
-    sprintf_s(dialogTitle, sizeof(dialogTitle), "SuperPMI: Assert Failure (PID %d, Thread %d/%x)        ",
-              GetCurrentProcessId(), GetCurrentThreadId(), GetCurrentThreadId());
+    sprintf_s(dialogTitle, sizeof(dialogTitle), "SuperPMI: Assert Failure (PID %d, Thread %zu/%zx)        ",
+              GetCurrentProcessId(), minipal_get_current_thread_id(), minipal_get_current_thread_id());
 
     // Tell user there was an error.
     int ret = MessageBoxA(NULL, dialogText, dialogTitle, MB_ABORTRETRYIGNORE | MB_ICONEXCLAMATION | MB_TOPMOST);

@@ -17,17 +17,11 @@ using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
-    public class MethodFixupSignature : Signature
+    public class MethodFixupSignature : GCRefMapSignature
     {
         private readonly ReadyToRunFixupKind _fixupKind;
 
         private readonly MethodWithToken _method;
-
-        private byte[] _gcRefMap;
-
-        internal bool EmitGCRefMap { get; set; }
-
-        public override int Offset => _gcRefMap?.Length ?? 0;
 
         public MethodFixupSignature(
             ReadyToRunFixupKind fixupKind,
@@ -48,6 +42,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         }
 
         public MethodDesc Method => _method.Method;
+        internal bool IsReadyToRunEntry => _fixupKind == ReadyToRunFixupKind.MethodEntry_ReadyToRun;
+
+        internal bool RequiresEagerActivation =>
+            _fixupKind is ReadyToRunFixupKind.MethodEntry or ReadyToRunFixupKind.MethodEntry_ReadyToRun;
+
         public bool IsInstantiatingStub { get; }
 
         public override int ClassCode => 150063499;
@@ -58,15 +57,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public bool NeedsInstantiationArg => _method.ConstrainedType?.IsCanonicalSubtype(CanonicalFormKind.Any) ?? false;
 
-        internal byte[] GetGCRefMap(NodeFactory factory)
+        protected override void BuildGCRefMap(GCRefMapBuilder builder)
         {
-            if (_gcRefMap is null)
-            {
-                GCRefMapBuilder builder = new GCRefMapBuilder(factory.Target, relocsOnly: false);
-                builder.GetCallRefMap(Method, IsUnboxingStub || IsInstantiatingStub);
-                _gcRefMap = builder.Builder.ToObjectData().Data;
-            }
-            return _gcRefMap;
+            builder.GetCallRefMap(Method, IsUnboxingStub || IsInstantiatingStub);
         }
 
         protected override void ComputeNonRelocationBasedDependencies(DependencySink sink, NodeFactory factory)

@@ -8,6 +8,7 @@
 // (class Thread, class ThreadStore, etc.). They should be eventually refactored into class ThreadSuspend.
 
 #include "common.h"
+#include <minipal/instructioncache.h>
 #include "CLREventBase.h"
 
 #include "threadsuspend.h"
@@ -1083,7 +1084,7 @@ void Thread::SetAbortEndTime(ULONGLONG endTime, BOOL fRudeAbort)
     LIMITED_METHOD_CONTRACT;
 
     {
-        AbortRequestLockHolder lh(this);
+        AbortRequestLockHolder lh = TakeAbortRequestLock();
         if (fRudeAbort)
         {
             if (endTime < m_RudeAbortEndTime)
@@ -1127,7 +1128,7 @@ Thread::UserAbort(EEPolicy::ThreadAbortTypes abortType, DWORD timeout)
 
     BOOL fHoldingThreadStoreLock = ThreadStore::HoldingThreadStore();
 
-    AbortControlHolder AbortController(this);
+    AbortControlHolder AbortController = TakeAbortControl();
 
     // Swap in timeout
     if (timeout != INFINITE)
@@ -1637,7 +1638,7 @@ void Thread::MarkThreadForAbort(EEPolicy::ThreadAbortTypes abortType)
     }
     CONTRACTL_END;
 
-    AbortRequestLockHolder lh(this);
+    AbortRequestLockHolder lh = TakeAbortRequestLock();
 
 #ifdef _DEBUG
     if (abortType == EEPolicy::TA_Rude)
@@ -1724,7 +1725,7 @@ void Thread::UnmarkThreadForAbort(EEPolicy::ThreadAbortTypes abortType /* = EEPo
     }
     CONTRACTL_END;
 
-    AbortRequestLockHolder lh(this);
+    AbortRequestLockHolder lh = TakeAbortRequestLock();
 
     if (m_AbortType > (DWORD)abortType)
     {
@@ -3291,7 +3292,7 @@ void ThreadSuspend::SuspendAllThreads()
         // We will not do this often though, since this can introduce arbitrary delays.
         if (usecsSinceYield > 1000)
         {
-            SwitchToThread();
+            minipal_switch_to_thread(0);
             usecsSinceYield = 0;
         }
     }
@@ -3408,14 +3409,12 @@ void Thread::Hijack()
 
 #if defined(FEATURE_HIJACK) && !defined(TARGET_UNIX)
     {
-        Thread::WorkingOnThreadContextHolder workingOnThreadContext(this);
-
         // Note that pTargetThread->HandledJITCase is not a simple predicate - it actually will hijack the thread if that's possible.
         // So HandledJITCase can do one of these:
         //   - Return TRUE, in which case it's our responsibility to redirect the thread
         //   - Return FALSE after hijacking the thread - we shouldn't try to redirect
         //   - Return FALSE but not hijack the thread - there's nothing we can do either
-        if (workingOnThreadContext.Acquired() && HandledJITCase())
+        if (!HasActivePatchSkip() && HandledJITCase())
         {
             // Thread is in cooperative state and stopped in interruptible code.
             // Redirect thread so we can capture a good thread context
@@ -3487,7 +3486,7 @@ void Thread::CommitGCStressInstructionUpdate()
 
 #endif
 
-        FlushInstructionCache(GetCurrentProcess(), (LPCVOID)pbDestCode, 4);
+        minipal_flush_instruction_cache((LPCVOID)pbDestCode, 4);
     }
 }
 
@@ -3734,8 +3733,7 @@ BOOL Thread::HandleJITCaseForAbort()
 
     _ASSERTE(ThreadStore::HoldingThreadStore());
 
-    WorkingOnThreadContextHolder workingOnThreadContext(this);
-    if (!workingOnThreadContext.Acquired())
+    if (HasActivePatchSkip())
     {
         return FALSE;
     }
@@ -3991,8 +3989,7 @@ bool Thread::SysStartSuspendForDebug(AppDomain *pAppDomain)
 #if !defined(DISABLE_THREADSUSPEND) && defined(FEATURE_HIJACK) && !defined(TARGET_UNIX)
             if (UseContextBasedThreadRedirection())
             {
-                WorkingOnThreadContextHolder workingOnThreadContext(thread);
-                if (workingOnThreadContext.Acquired() && thread->HandledJITCase())
+                if (!thread->HasActivePatchSkip() && thread->HandledJITCase())
                 {
                     // Redirect thread so we can capture a good thread context
                     // (GetThreadContext is not sufficient, due to an OS bug).
@@ -4231,8 +4228,7 @@ RetrySuspension:
         else
         {
             _ASSERTE(str == STR_Success);
-            WorkingOnThreadContextHolder workingOnThreadContext(thread);
-            if (workingOnThreadContext.Acquired() && thread->HandledJITCase())
+            if (!thread->HasActivePatchSkip() && thread->HandledJITCase())
             {
                 // Redirect thread so we can capture a good thread context
                 // (GetThreadContext is not sufficient, due to an OS bug).
@@ -4520,10 +4516,10 @@ void Thread::HijackThread(ExecutionState *esb X86_ARG(ReturnKind returnKind) X86
     }
 
     // Don't hijack if a profiler stackwalk is in progress
-    HijackLockHolder hijackLockHolder(this);
-    if (!hijackLockHolder.Acquired())
+    HijackLockHolder hijackLockHolder;
+    if (!TryAcquireHijackLock(hijackLockHolder))
     {
-        STRESS_LOG3(LF_SYNC, LL_INFO100, "Thread::HijackThread(%p to %p): Early out - !hijackLockHolder.Acquired. State=%x.\n", this, pvHijackAddr, (ThreadState)m_State);
+        STRESS_LOG3(LF_SYNC, LL_INFO100, "Thread::HijackThread(%p to %p): Early out - hijack lock unavailable. State=%x.\n", this, pvHijackAddr, (ThreadState)m_State);
         return;
     }
 
@@ -4880,7 +4876,17 @@ void STDCALL OnHijackWorker(HijackArgs * pArgs)
     g_SuspendStatistics.cntHijackTrap++;
 #endif // TIME_SUSPEND
 
+    // CommonTripThread can raise a thread abort, which must be dispatched to the managed code that we return to, as
+    // in HandleSuspensionForInterruptedThread.
+    INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(&frame);
+    INSTALL_MANAGED_EXCEPTION_DISPATCHER;
+    INSTALL_UNWIND_AND_CONTINUE_HANDLER;
+
     CommonTripThread();
+
+    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+    UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
 
 #ifdef _DEBUG
     if (g_pConfig->FastGCStressLevel()) {
@@ -5769,8 +5775,7 @@ void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext)
     // an activation safe point.
     _ASSERTE(CheckActivationSafePoint(ip));
 
-    Thread::WorkingOnThreadContextHolder workingOnThreadContext(pThread);
-    if (!workingOnThreadContext.Acquired())
+    if (pThread->HasActivePatchSkip())
         return;
 
 #if defined(DEBUGGING_SUPPORTED) && defined(TARGET_WINDOWS)

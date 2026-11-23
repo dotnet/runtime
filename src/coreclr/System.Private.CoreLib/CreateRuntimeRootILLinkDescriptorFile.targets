@@ -16,8 +16,6 @@
   <ItemGroup>
     <_ILLinkDescriptorsFilePaths Include="$(ILLinkDirectory)ILLink.Descriptors.Shared.xml" />
     <_ILLinkDescriptorsFilePaths Condition="'$(TargetsWindows)' == 'true'" Include="$(ILLinkDirectory)ILLink.Descriptors.Windows.xml" />
-    <_ILLinkDescriptorsFilePaths Include="$(ILLinkDirectory)ILLink.Descriptors.Debug.xml"
-                                 Condition="'$(Configuration)' == 'Debug' or '$(Configuration)' == 'Checked'" />
     <_ILLinkDescriptorsFilePaths Include="$(CoreLibSharedDir)ILLink\ILLink.Descriptors.Shared.xml" />
   </ItemGroup>
 
@@ -35,7 +33,7 @@
              Condition="'$(ILLinkTasksAssembly)' != ''" />
   <Target Name="_CreateILLinkRuntimeRootDescriptorFile"
           DependsOnTargets="_CombineILLinkTrimXmlFilePaths;ResolveProjectReferences"
-          Inputs="$(_NamespaceFilePath);$(_MscorlibFilePath);$(_CortypeFilePath);$(_RexcepFilePath);$(_ILLinkDescriptorsIntermediatePath)"
+          Inputs="$(MSBuildThisFileFullPath);$(ILLinkTasksAssembly);$(_NamespaceFilePath);$(_MscorlibFilePath);$(_CortypeFilePath);$(_RexcepFilePath);$(_ILLinkDescriptorsIntermediatePath)"
           Outputs="$(_ILLinkRuntimeRootDescriptorFilePath)">
     <Message Text="Generating ILLink roots file: $(_ILLinkRuntimeRootDescriptorFilePath)" />
     <CreateRuntimeRootILLinkDescriptorFile NamespaceFilePath="$(_NamespaceFilePath)"

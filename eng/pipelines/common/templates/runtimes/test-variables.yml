@@ -84,15 +84,11 @@ variables:
     - name: timeoutPerTestCollectionInMinutes
       value: 120
 
-  - name: runtimeFlavorArgs
+  - name: useNativeAotRuntimeArg
     value: ''
 
-  - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
-    - name: runtimeFlavorArgs
-      value: '-mono'
-
   - ${{ if and(eq(parameters.runtimeFlavor, 'coreclr'), eq(parameters.useNativeAOTRuntime, true), in(parameters.osGroup, 'ios', 'iossimulator', 'tvos', 'tvossimulator', 'maccatalyst')) }}:
-    - name: runtimeFlavorArgs
+    - name: useNativeAotRuntimeArg
       value: '-nativeaot'
 
   - name: runtimeVariantArg

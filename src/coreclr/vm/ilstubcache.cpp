@@ -22,6 +22,7 @@ ILStubCache::ILStubCache(LoaderAllocator *pAllocator)
     : m_crst(CrstStubCache, CRST_UNSAFE_ANYMODE)
     , m_pAllocator(pAllocator)
     , m_pStubMT(NULL)
+    , m_pCollectibleStubResolvers(NULL)
 {
     WRAPPER_NO_CONTRACT;
 }
@@ -98,6 +99,16 @@ MethodDesc* ILStubCache::CreateAndLinkNewILStubMethodDesc(LoaderAllocator* pAllo
     pResolver->SetStubMethodDesc(pStubMD);
 
     pResolver->FinalizeILStub(pStubLinker);
+
+    if (pAllocator->IsCollectible())
+    {
+        // The stub may never be compiled, so its compile-time state
+        // may need to be freed when the LoaderAllocator is unloaded.
+        ILStubCache* pCache = pAllocator->GetILStubCache();
+        CrstHolder ch(&pCache->m_crst);
+        pResolver->m_pNextCollectibleResolver = pCache->m_pCollectibleStubResolvers;
+        pCache->m_pCollectibleStubResolvers = pResolver;
+    }
 
     return pStubMD;
 }
@@ -699,6 +710,28 @@ void ILStubCache::AddMethodDescChunkWithLockTaken(MethodDesc *pMD)
     CrstHolder ch(&m_crst);
 
     pMD->GetMethodTable()->GetClass()->AddChunkIfItHasNotBeenAdded(pMD->GetMethodDescChunk());
+#endif // DACCESS_COMPILE
+}
+
+void ILStubCache::FreeCollectibleStubsCompileTimeState()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+#ifndef DACCESS_COMPILE
+    // This method doesn't take m_crst, because it's only called from LoaderAllocator::Terminate,
+    // when nothing can create or use the stubs anymore.
+    for (ILStubResolver* pResolver = m_pCollectibleStubResolvers;
+        pResolver != NULL;
+        pResolver = pResolver->m_pNextCollectibleResolver)
+    {
+        pResolver->FreeCompileTimeState();
+    }
 #endif // DACCESS_COMPILE
 }
 

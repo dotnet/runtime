@@ -70,6 +70,25 @@ namespace ILCompiler.DependencyAnalysisFramework
         public abstract event Action<int> ComputingDependencyPhaseChange;
 
         /// <summary>
+        /// Occurs before marking completes, when all currently available dependencies have been processed.
+        /// </summary>
+        /// <remarks>
+        /// Subscribers may publish additional dependencies and resume marking in the current dependency phase.
+        /// The event can occur repeatedly; subscribers must tolerate subsequent callbacks after marking resumes.
+        /// </remarks>
+        public abstract event Action DependencyAnalysisQuiesced;
+
+        /// <summary>
+        /// Publishes additional static dependencies of an already marked node.
+        /// </summary>
+        /// <remarks>
+        /// Call before marking completes, after the node's static dependencies have been computed.
+        /// This adds to the marked graph; previously published dependencies are not retracted.
+        /// </remarks>
+        /// <param name="node">An already marked node whose static dependencies have been updated.</param>
+        public abstract void RevisitStaticDependencies(DependencyNodeCore<DependencyContextType> node);
+
+        /// <summary>
         /// Used to walk all nodes that should be emitted to a log. Not intended for other purposes.
         /// </summary>
         /// <param name="logNodeVisitor"></param>

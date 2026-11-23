@@ -316,23 +316,28 @@ namespace System.Runtime
 #else
             Exception? e = id switch
             {
+#if !TARGET_WASM
                 ExceptionIDs.AccessViolation => new AccessViolationException(),
-                ExceptionIDs.Arithmetic => new ArithmeticException(),
+#endif
                 ExceptionIDs.AmbiguousImplementation => new AmbiguousImplementationException(),
                 ExceptionIDs.ArrayTypeMismatch => new ArrayTypeMismatchException(),
+#if !TARGET_WASM
                 ExceptionIDs.DataMisaligned => new DataMisalignedException(),
                 ExceptionIDs.DivideByZero => new DivideByZeroException(),
+#endif
                 ExceptionIDs.EntrypointNotFound => new EntryPointNotFoundException(),
                 ExceptionIDs.IndexOutOfRange => new IndexOutOfRangeException(),
                 ExceptionIDs.InvalidCast => new InvalidCastException(),
                 ExceptionIDs.NullReference => new NullReferenceException(),
                 ExceptionIDs.OutOfMemory => new OutOfMemoryException(),
+#if !TARGET_WASM
                 ExceptionIDs.Overflow => new OverflowException(),
 #pragma warning disable CS0618 // ExecutionEngineException is obsolete
                 ExceptionIDs.IllegalInstruction => new ExecutionEngineException("Illegal instruction: Attempted to execute an instruction code not defined by the processor."),
                 ExceptionIDs.PrivilegedInstruction => new ExecutionEngineException("Privileged instruction: Attempted to execute an instruction code that cannot be executed in user mode."),
                 ExceptionIDs.InPageError => new ExecutionEngineException("In page error: Attempted to access a memory page that is not present, and the system is unable to load the page. For example, this exception might occur if a network connection is lost while running a program over a network."),
 #pragma warning restore CS0618
+#endif
                 _ => null
             };
 #endif
@@ -383,28 +388,6 @@ namespace System.Runtime
         // the stack is crawlable from within these functions.
         [StackTraceHidden]
         [DebuggerHidden]
-        [RuntimeExport("RhExceptionHandling_ThrowClasslibOverflowException")]
-        public static void ThrowClasslibOverflowException(IntPtr address)
-        {
-            // Throw the overflow exception defined by the classlib, using the return address of the asm helper
-            // to find the correct classlib.
-
-            throw GetClasslibException(ExceptionIDs.Overflow, address);
-        }
-
-        [StackTraceHidden]
-        [DebuggerHidden]
-        [RuntimeExport("RhExceptionHandling_ThrowClasslibDivideByZeroException")]
-        public static void ThrowClasslibDivideByZeroException(IntPtr address)
-        {
-            // Throw the divide by zero exception defined by the classlib, using the return address of the asm helper
-            // to find the correct classlib.
-
-            throw GetClasslibException(ExceptionIDs.DivideByZero, address);
-        }
-
-        [StackTraceHidden]
-        [DebuggerHidden]
         [RuntimeExport("RhExceptionHandling_FailedAllocation")]
         public static void FailedAllocation(MethodTable* pEEType, bool fIsOverflow)
         {
@@ -447,6 +430,7 @@ namespace System.Runtime
 #endif
 #endif // NATIVEAOT
 
+#if !TARGET_WASM
         private enum HwExceptionCode : uint
         {
             STATUS_NATIVEAOT_NULL_REFERENCE = 0x00000000u,
@@ -460,6 +444,7 @@ namespace System.Runtime
             STATUS_INTEGER_OVERFLOW = 0xC0000095u,
             STATUS_PRIVILEGED_INSTRUCTION = 0xC0000096u,
         }
+#endif
         [StructLayout(LayoutKind.Explicit, Size = AsmOffsets.SIZEOF__PAL_LIMITED_CONTEXT)]
         public struct PAL_LIMITED_CONTEXT
         {
@@ -587,6 +572,7 @@ namespace System.Runtime
             return pExInfo != null ? pExInfo->ThrownException : null;
         }
 
+#if !TARGET_WASM
         //
         // Called by RhpThrowHwEx
         //
@@ -674,6 +660,7 @@ namespace System.Runtime
             FallbackFailFast(RhFailFastReason.InternalError, null);
 #endif
         }
+#endif
 
         private const uint MaxTryRegionIdx = 0xFFFFFFFFu;
 
@@ -957,17 +944,11 @@ namespace System.Runtime
             //
             // ------------------------------------------------
             exInfo._idxCurClause = catchingTryRegionIdx;
-#if TARGET_AMD64 || TARGET_ARM64
             UIntPtr funcletCallerSP;
             byte* pResumeIP = InternalCalls.CallEHFunclet(
                 exceptionObj, pCatchHandler, frameIter.RegisterSet, &funcletCallerSP);
             InternalCalls.RhpPopExInfo(ref exInfo, frameIter.SP);
             InternalCalls.RhpResumeAfterCatch(frameIter.RegisterSet, pResumeIP);
-#else
-            InternalCalls.RhpCallCatchFunclet(
-                exceptionObj, pCatchHandler, frameIter.RegisterSet, ref exInfo);
-            // currently, RhpCallCatchFunclet will resume after the catch
-#endif
             Debug.Fail("unreachable");
             FallbackFailFast(RhFailFastReason.InternalError, null);
 #endif // !NATIVEAOT
@@ -1101,14 +1082,9 @@ namespace System.Runtime
 #if NATIVEAOT
                     try
                     {
-#if TARGET_AMD64 || TARGET_ARM64
                         UIntPtr funcletCallerSP;
                         shouldInvokeHandler =
                             InternalCalls.CallEHFilterFunclet(exception, frameIter.RegisterSet, pFilterFunclet, &funcletCallerSP) != 0;
-#else
-                        shouldInvokeHandler =
-                            InternalCalls.RhpCallFilterFunclet(exception, pFilterFunclet, frameIter.RegisterSet);
-#endif
                     }
                     catch when (true)
                     {
@@ -1254,12 +1230,8 @@ namespace System.Runtime
 
                 byte* pFinallyHandler = ehClause._handlerAddress;
                 exInfo._idxCurClause = curIdx;
-#if TARGET_AMD64 || TARGET_ARM64
                 UIntPtr funcletCallerSP;
                 InternalCalls.CallEHFunclet(null, pFinallyHandler, exInfo._frameIter.RegisterSet, &funcletCallerSP);
-#else
-                InternalCalls.RhpCallFinallyFunclet(pFinallyHandler, exInfo._frameIter.RegisterSet);
-#endif
                 exInfo._idxCurClause = MaxTryRegionIdx;
             }
         }
