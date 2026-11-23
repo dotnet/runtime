@@ -50,6 +50,7 @@
     <Compile Include="$(RuntimeSerializationSources)\PrimitiveDataContract.cs" />
     <Compile Include="$(RuntimeSerializationSources)\ReflectionClassWriter.cs" />
     <Compile Include="$(RuntimeSerializationSources)\ReflectionReader.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\ReflectionSerialization.cs" />
     <Compile Include="$(RuntimeSerializationSources)\ReflectionXmlFormatReader.cs" />
     <Compile Include="$(RuntimeSerializationSources)\ReflectionXmlFormatWriter.cs" />
     <Compile Include="$(RuntimeSerializationSources)\SchemaExporter.cs" />
@@ -103,6 +104,7 @@
     <Compile Include="$(XmlSources)\XmlExceptionHelper.cs" />
     <Compile Include="$(XmlSources)\XmlNodeWriter.cs" />
     <Compile Include="$(XmlSources)\XmlSigningNodeWriter.cs" />
+    <Compile Include="$(XmlSources)\XmlStreamIO.cs" />
     <Compile Include="$(XmlSources)\XmlStreamNodeWriter.cs" />
     <Compile Include="$(XmlSources)\XmlUTF8TextReader.cs" />
     <Compile Include="$(XmlSources)\XmlUTF8TextWriter.cs" />
@@ -150,6 +152,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\gen\System.Private.DataContractSerialization.Generators.csproj"
+                      ReferenceOutputAssembly="false"
+                      OutputItemType="Analyzer" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Text.RegularExpressions\gen\System.Text.RegularExpressions.Generator.csproj"
                       ReferenceOutputAssembly="false"
                       SetTargetFramework="TargetFramework=netstandard2.0"
@@ -176,5 +181,11 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.Xml.XDocument\src\System.Xml.XDocument.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Xml.XmlSerializer\src\System.Xml.XmlSerializer.csproj" />
   </ItemGroup>
+
+  <Target Name="AddSyncReaderGeneratorCompileInputs" BeforeTargets="CoreCompile">
+    <ItemGroup>
+      <CustomAdditionalCompileInputs Include="@(Analyzer)" />
+    </ItemGroup>
+  </Target>
 
 </Project>

@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Serialization;
 using System.Text;
+using System.Threading;
 using System.Xml;
 
 namespace System.Xml
@@ -19,6 +20,7 @@ namespace System.Xml
         private readonly string _value;
         private readonly int _key;
         private byte[]? _buffer;
+        private long _escapedAttributeMaximumBytes = -1;
         private static readonly EmptyStringDictionary s_emptyStringDictionary = new EmptyStringDictionary();
 
         public XmlDictionaryString(IXmlDictionary dictionary, string value, int key)
@@ -76,6 +78,19 @@ namespace System.Xml
         internal byte[] ToUTF8()
         {
             return _buffer ??= System.Text.Encoding.UTF8.GetBytes(_value);
+        }
+
+        internal long GetEscapedAttributeMaximumBytes(XmlUTF8NodeWriter writer)
+        {
+            Debug.Assert(writer.CanWriteBufferedContractElements);
+            long maximumBytes = Volatile.Read(ref _escapedAttributeMaximumBytes);
+            if (maximumBytes < 0)
+            {
+                maximumBytes = writer.GetEscapedTextMaximumBytes(_value, inAttribute: true);
+                Volatile.Write(ref _escapedAttributeMaximumBytes, maximumBytes);
+            }
+
+            return maximumBytes;
         }
 
         public override string ToString()

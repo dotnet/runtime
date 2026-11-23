@@ -8,6 +8,8 @@ using System.IO;
 using System.Runtime;
 using System.Runtime.Serialization;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Xml;
 
 namespace System.Runtime.Serialization.Json
@@ -176,6 +178,12 @@ namespace System.Runtime.Serialization.Json
 
         private bool WrittenNameWithMapping => (_nameState & NameState.WrittenNameWithMapping) == NameState.WrittenNameWithMapping;
 
+        internal override CancellationToken CancellationToken
+        {
+            get => _nodeWriter.CancellationToken;
+            set => _nodeWriter.CancellationToken = value;
+        }
+
         public override void Close()
         {
             if (!IsClosed)
@@ -212,6 +220,42 @@ namespace System.Runtime.Serialization.Json
                 ThrowClosed();
             }
             _nodeWriter.Flush();
+        }
+
+        public override Task FlushAsync()
+        {
+            if (IsClosed)
+                ThrowClosed();
+            return _nodeWriter.FlushAsync();
+        }
+
+        protected override async ValueTask DisposeAsyncCore()
+        {
+            if (IsClosed)
+                return;
+            try
+            {
+                await WriteEndDocumentAsync().ConfigureAwait(false);
+            }
+            finally
+            {
+                try
+                {
+                    await _nodeWriter.FlushAsync().ConfigureAwait(false);
+                }
+                finally
+                {
+                    try
+                    {
+                        await _nodeWriter.CloseAsync().ConfigureAwait(false);
+                    }
+                    finally
+                    {
+                        _writeState = WriteState.Closed;
+                        _depth = 0;
+                    }
+                }
+            }
         }
 
         public override string? LookupPrefix(string ns)
@@ -252,6 +296,35 @@ namespace System.Runtime.Serialization.Json
             _nodeWriter.SetOutput(stream, ownsStream, encoding);
             InitializeWriter();
         }
+
+        internal async ValueTask SetOutputAsync(Stream stream, Encoding encoding, bool ownsStream, CancellationToken cancellationToken)
+        {
+            ArgumentNullException.ThrowIfNull(stream);
+            ArgumentNullException.ThrowIfNull(encoding);
+            cancellationToken.ThrowIfCancellationRequested();
+            if (encoding.WebName != Encoding.UTF8.WebName)
+                stream = await JsonEncodingStreamWrapper.CreateWriterAsync(stream, encoding, cancellationToken).ConfigureAwait(false);
+            else
+                encoding = null!;
+            _nodeWriter ??= new JsonNodeWriter();
+            _nodeWriter.SetOutput(stream, ownsStream, encoding);
+            InitializeWriter();
+        }
+
+        private static void CheckBufferBounds(Array buffer, int index, int count)
+        {
+            ArgumentNullException.ThrowIfNull(buffer);
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
+            if (count > buffer.Length - index)
+                throw new ArgumentOutOfRangeException(nameof(count), SR.Format(SR.JsonSizeExceedsRemainingBufferSpace, buffer.Length - index));
+        }
+
+        internal override Task WriteArrayAsync(string? prefix, string localName, string? namespaceUri, Array array, int offset, int count) =>
+            throw new NotSupportedException(SR.JsonWriteArrayNotSupported);
+
+        internal override Task WriteArrayAsync(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, Array array, int offset, int count) =>
+            throw new NotSupportedException(SR.JsonWriteArrayNotSupported);
 
         public override void WriteArray(string? prefix, string localName, string? namespaceUri, bool[] array, int offset, int count)
         {
@@ -369,6 +442,13 @@ namespace System.Runtime.Serialization.Json
             _nodeWriter.WriteBase64Text(buffer, 0, buffer, index, count);
         }
 
+        public override async Task WriteBase64Async(byte[] buffer, int index, int count)
+        {
+            CheckBufferBounds(buffer, index, count);
+            await StartTextAsync().ConfigureAwait(false);
+            await _nodeWriter.WriteBase64TextAsync(buffer, 0, buffer, index, count).ConfigureAwait(false);
+        }
+
         public override void WriteBinHex(byte[] buffer, int index, int count)
         {
             ArgumentNullException.ThrowIfNull(buffer);
@@ -385,15 +465,33 @@ namespace System.Runtime.Serialization.Json
             WriteEscapedJsonString(DataContractSerializer.BinHexEncoding.GetString(buffer, index, count));
         }
 
+        public override async Task WriteBinHexAsync(byte[] buffer, int index, int count)
+        {
+            CheckBufferBounds(buffer, index, count);
+            await StartTextAsync().ConfigureAwait(false);
+            const int chunkSize = 256;
+            while (count > 0)
+            {
+                int chunk = Math.Min(count, chunkSize);
+                await WriteEscapedJsonStringAsync(DataContractSerializer.BinHexEncoding.GetString(buffer, index, chunk)).ConfigureAwait(false);
+                index += chunk;
+                count -= chunk;
+            }
+        }
+
         public override void WriteCData(string? text)
         {
             WriteString(text);
         }
 
+        public override Task WriteCDataAsync(string? text) => WriteStringAsync(text);
+
         public override void WriteCharEntity(char ch)
         {
             WriteString(ch.ToString());
         }
+
+        public override Task WriteCharEntityAsync(char ch) => WriteStringAsync(ch.ToString());
 
         public override void WriteChars(char[] buffer, int index, int count)
         {
@@ -410,14 +508,43 @@ namespace System.Runtime.Serialization.Json
             WriteString(new string(buffer, index, count));
         }
 
+        public override Task WriteCharsAsync(char[] buffer, int index, int count)
+        {
+            CheckBufferBounds(buffer, index, count);
+            return WriteStringAsync(new string(buffer, index, count));
+        }
+
         public override void WriteComment(string? text)
         {
             throw new NotSupportedException(SR.Format(SR.JsonMethodNotSupported, "WriteComment"));
         }
 
+        public override Task WriteCommentAsync(string? text) =>
+            throw new NotSupportedException(SR.Format(SR.JsonMethodNotSupported, nameof(WriteComment)));
+
         public override void WriteDocType(string name, string? pubid, string? sysid, string? subset)
         {
             throw new NotSupportedException(SR.Format(SR.JsonMethodNotSupported, "WriteDocType"));
+        }
+
+        public override Task WriteDocTypeAsync(string name, string? pubid, string? sysid, string? subset) =>
+            throw new NotSupportedException(SR.Format(SR.JsonMethodNotSupported, nameof(WriteDocType)));
+
+        private JsonDataType GetDataType(string? text)
+        {
+            JsonDataType dataType = text switch
+            {
+                JsonGlobals.numberString => JsonDataType.Number,
+                JsonGlobals.stringString => JsonDataType.String,
+                JsonGlobals.arrayString => JsonDataType.Array,
+                JsonGlobals.objectString => JsonDataType.Object,
+                JsonGlobals.nullString => JsonDataType.Null,
+                JsonGlobals.booleanString => JsonDataType.Boolean,
+                _ => throw new XmlException(SR.Format(SR.JsonUnexpectedAttributeValue, text))
+            };
+            if (dataType != JsonDataType.Object)
+                ThrowIfServerTypeWritten(text!);
+            return dataType;
         }
 
         public override void WriteEndAttribute()
@@ -436,46 +563,7 @@ namespace System.Runtime.Serialization.Json
 
             if (_isWritingDataTypeAttribute)
             {
-                switch (_attributeText)
-                {
-                    case JsonGlobals.numberString:
-                        {
-                            ThrowIfServerTypeWritten(JsonGlobals.numberString);
-                            _dataType = JsonDataType.Number;
-                            break;
-                        }
-                    case JsonGlobals.stringString:
-                        {
-                            ThrowIfServerTypeWritten(JsonGlobals.stringString);
-                            _dataType = JsonDataType.String;
-                            break;
-                        }
-                    case JsonGlobals.arrayString:
-                        {
-                            ThrowIfServerTypeWritten(JsonGlobals.arrayString);
-                            _dataType = JsonDataType.Array;
-                            break;
-                        }
-                    case JsonGlobals.objectString:
-                        {
-                            _dataType = JsonDataType.Object;
-                            break;
-                        }
-                    case JsonGlobals.nullString:
-                        {
-                            ThrowIfServerTypeWritten(JsonGlobals.nullString);
-                            _dataType = JsonDataType.Null;
-                            break;
-                        }
-                    case JsonGlobals.booleanString:
-                        {
-                            ThrowIfServerTypeWritten(JsonGlobals.booleanString);
-                            _dataType = JsonDataType.Boolean;
-                            break;
-                        }
-                    default:
-                        throw new XmlException(SR.Format(SR.JsonUnexpectedAttributeValue, _attributeText));
-                }
+                _dataType = GetDataType(_attributeText);
 
                 _attributeText = null;
                 _isWritingDataTypeAttribute = false;
@@ -517,6 +605,41 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
+        protected override async Task WriteEndAttributeAsync()
+        {
+            if (IsClosed)
+                ThrowClosed();
+            if (!HasOpenAttribute)
+                throw new XmlException(SR.JsonNoMatchingStartAttribute);
+            if (_isWritingDataTypeAttribute)
+            {
+                _dataType = GetDataType(_attributeText);
+                _attributeText = null;
+                _isWritingDataTypeAttribute = false;
+                if (!IsWritingNameWithMapping || WrittenNameWithMapping)
+                    await WriteDataTypeServerTypeAsync().ConfigureAwait(false);
+            }
+            else if (_isWritingServerTypeAttribute)
+            {
+                _serverTypeValue = _attributeText;
+                _attributeText = null;
+                _isWritingServerTypeAttribute = false;
+                if ((!IsWritingNameWithMapping || WrittenNameWithMapping) && _dataType == JsonDataType.Object)
+                    await WriteServerTypeAttributeAsync().ConfigureAwait(false);
+            }
+            else if (IsWritingNameAttribute)
+            {
+                await WriteJsonElementNameAsync(_attributeText!).ConfigureAwait(false);
+                _attributeText = null;
+                _nameState = NameState.IsWritingNameWithMapping | NameState.WrittenNameWithMapping;
+                await WriteDataTypeServerTypeAsync().ConfigureAwait(false);
+            }
+            else
+            {
+                WriteEndAttribute();
+            }
+        }
+
         public override void WriteEndDocument()
         {
             if (IsClosed)
@@ -532,7 +655,18 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
-        public override void WriteEndElement()
+        public override async Task WriteEndDocumentAsync()
+        {
+            if (IsClosed)
+                ThrowClosed();
+            if (_nodeType != JsonNodeType.None)
+            {
+                while (_depth > 0)
+                    await WriteEndElementAsync().ConfigureAwait(false);
+            }
+        }
+
+        private void CheckEndElement()
         {
             if (IsClosed)
             {
@@ -547,7 +681,11 @@ namespace System.Runtime.Serialization.Json
             {
                 throw new XmlException(SR.Format(SR.JsonOpenAttributeMustBeClosedFirst, "WriteEndElement"));
             }
+        }
 
+        public override void WriteEndElement()
+        {
+            CheckEndElement();
             _endElementBuffer = false;
 
             JsonNodeType token = ExitScope();
@@ -639,15 +777,93 @@ namespace System.Runtime.Serialization.Json
             _wroteServerTypeAttribute = false;
         }
 
+        private async Task WriteClosingIndentAsync()
+        {
+            if (_indent)
+            {
+                if (_nodeType == JsonNodeType.Element)
+                    await _nodeWriter.WriteTextAsync(" ").ConfigureAwait(false);
+                else
+                {
+                    await WriteNewLineAsync().ConfigureAwait(false);
+                    await WriteIndentAsync().ConfigureAwait(false);
+                }
+            }
+        }
+
+        public override Task WriteEndElementAsync()
+        {
+            if (!_indent && _nodeWriter.CanWriteBufferedValues && _nodeWriter.HasBufferSpace(4))
+            {
+                WriteEndElement();
+                return Task.CompletedTask;
+            }
+            return WriteEndElementAsyncCore();
+        }
+
+        private async Task WriteEndElementAsyncCore()
+        {
+            CheckEndElement();
+            _endElementBuffer = false;
+            JsonNodeType token = ExitScope();
+            if (token == JsonNodeType.Collection)
+            {
+                _indentLevel--;
+                await WriteClosingIndentAsync().ConfigureAwait(false);
+                await _nodeWriter.WriteTextAsync("]").ConfigureAwait(false);
+                token = ExitScope();
+            }
+            else if (_nodeType == JsonNodeType.QuotedText)
+            {
+                await _nodeWriter.WriteTextAsync("\"").ConfigureAwait(false);
+            }
+            else if (_nodeType == JsonNodeType.Element)
+            {
+                if (_dataType == JsonDataType.None && _serverTypeValue is not null)
+                    throw new XmlException(SR.Format(SR.JsonMustSpecifyDataType, JsonGlobals.typeString, JsonGlobals.objectString, JsonGlobals.serverTypeString));
+                if (IsWritingNameWithMapping && !WrittenNameWithMapping)
+                    throw new XmlException(SR.Format(SR.JsonMustSpecifyDataType, JsonGlobals.itemString, string.Empty, JsonGlobals.itemString));
+                if (_dataType is JsonDataType.None or JsonDataType.String)
+                    await _nodeWriter.WriteTextAsync("\"\"").ConfigureAwait(false);
+            }
+            if (_depth != 0)
+            {
+                if (token == JsonNodeType.Element)
+                {
+                    _endElementBuffer = true;
+                }
+                else if (token == JsonNodeType.Object)
+                {
+                    _indentLevel--;
+                    await WriteClosingIndentAsync().ConfigureAwait(false);
+                    await _nodeWriter.WriteTextAsync("}").ConfigureAwait(false);
+                    if (_depth > 0 && _scopes![_depth] == JsonNodeType.Element)
+                    {
+                        ExitScope();
+                        _endElementBuffer = true;
+                    }
+                }
+            }
+            _dataType = JsonDataType.None;
+            _nodeType = JsonNodeType.EndElement;
+            _nameState = NameState.None;
+            _wroteServerTypeAttribute = false;
+        }
+
         public override void WriteEntityRef(string name)
         {
             throw new NotSupportedException(SR.Format(SR.JsonMethodNotSupported, "WriteEntityRef"));
         }
 
+        public override Task WriteEntityRefAsync(string name) =>
+            throw new NotSupportedException(SR.Format(SR.JsonMethodNotSupported, nameof(WriteEntityRef)));
+
         public override void WriteFullEndElement()
         {
             WriteEndElement();
         }
+
+        public override Task WriteFullEndElementAsync() => WriteEndElementAsync();
 
         public override void WriteProcessingInstruction(string name, string? text)
         {
@@ -667,6 +883,12 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
+        public override Task WriteProcessingInstructionAsync(string name, string? text)
+        {
+            WriteProcessingInstruction(name, text);
+            return Task.CompletedTask;
+        }
+
         public override void WriteQualifiedName(string localName, string? ns)
         {
             ArgumentNullException.ThrowIfNull(localName);
@@ -679,10 +901,21 @@ namespace System.Runtime.Serialization.Json
             base.WriteQualifiedName(localName, ns ?? string.Empty);
         }
 
+        public override Task WriteQualifiedNameAsync(string localName, string? ns)
+        {
+            ArgumentNullException.ThrowIfNull(localName);
+            if (localName.Length == 0)
+                throw new ArgumentException(SR.JsonInvalidLocalNameEmpty, nameof(localName));
+            return base.WriteQualifiedNameAsync(localName, ns ?? string.Empty);
+        }
+
         public override void WriteRaw(string data)
         {
             WriteString(data);
         }
+
+        public override Task WriteRawAsync(string data) => WriteStringAsync(data);
+        public override Task WriteRawAsync(char[] buffer, int index, int count) => WriteCharsAsync(buffer, index, count);
 
         public override void WriteRaw(char[] buffer, int index, int count)
         {
@@ -805,6 +1038,12 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
+        protected override Task WriteStartAttributeAsync(string? prefix, string localName, string? ns)
+        {
+            WriteStartAttribute(prefix, localName, ns);
+            return Task.CompletedTask;
+        }
+
         public override void WriteStartDocument(bool standalone)
         {
             // In XML, writes the XML declaration with the version "1.0" and the standalone attribute.
@@ -824,7 +1063,15 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
-        public override void WriteStartElement(string? prefix, string localName, string? ns)
+        public override Task WriteStartDocumentAsync()
+        {
+            WriteStartDocument();
+            return Task.CompletedTask;
+        }
+
+        public override Task WriteStartDocumentAsync(bool standalone) => WriteStartDocumentAsync();
+
+        private void CheckStartElement(string? prefix, string localName, string? ns)
         {
             ArgumentNullException.ThrowIfNull(localName);
 
@@ -858,7 +1105,11 @@ namespace System.Runtime.Serialization.Json
             {
                 throw new XmlException(SR.JsonMultipleRootElementsNotAllowedOnWriter);
             }
+        }
 
+        public override void WriteStartElement(string? prefix, string localName, string? ns)
+        {
+            CheckStartElement(prefix, localName, ns);
             switch (_nodeType)
             {
                 case JsonNodeType.None:
@@ -933,6 +1184,64 @@ namespace System.Runtime.Serialization.Json
             _nodeType = JsonNodeType.Element;
         }
 
+        public override Task WriteStartElementAsync(string? prefix, string localName, string? ns)
+        {
+            ArgumentNullException.ThrowIfNull(localName);
+            long maximumBytes = 4 + GetEscapedJsonStringMaximumBytes(localName);
+            if (!_indent && _nodeWriter.CanWriteBufferedValues &&
+                maximumBytes <= _nodeWriter.StreamBuffer.Length &&
+                _nodeWriter.HasBufferSpace((int)maximumBytes))
+            {
+                WriteStartElement(prefix, localName, ns);
+                return Task.CompletedTask;
+            }
+            return WriteStartElementAsyncCore(prefix, localName, ns);
+        }
+
+        private async Task WriteStartElementAsyncCore(string? prefix, string localName, string? ns)
+        {
+            CheckStartElement(prefix, localName, ns);
+            switch (_nodeType)
+            {
+                case JsonNodeType.None:
+                    if (!localName.Equals(JsonGlobals.rootString))
+                        throw new XmlException(SR.Format(SR.JsonInvalidRootElementName, localName, JsonGlobals.rootString));
+                    EnterScope(JsonNodeType.Element);
+                    break;
+                case JsonNodeType.Element:
+                case JsonNodeType.EndElement:
+                    if (_nodeType == JsonNodeType.Element && _dataType is not (JsonDataType.Array or JsonDataType.Object))
+                        throw new XmlException(SR.JsonNodeTypeArrayOrObjectNotSpecified);
+                    if (_nodeType == JsonNodeType.EndElement && _endElementBuffer)
+                        await _nodeWriter.WriteTextAsync(",").ConfigureAwait(false);
+                    if (_indent)
+                    {
+                        await WriteNewLineAsync().ConfigureAwait(false);
+                        await WriteIndentAsync().ConfigureAwait(false);
+                    }
+                    if (!IsWritingCollection)
+                    {
+                        if (_nameState != NameState.IsWritingNameWithMapping)
+                            await WriteJsonElementNameAsync(localName).ConfigureAwait(false);
+                    }
+                    else if (!localName.Equals(JsonGlobals.itemString))
+                    {
+                        throw new XmlException(SR.Format(SR.JsonInvalidItemNameForArrayElement, localName, JsonGlobals.itemString));
+                    }
+                    EnterScope(JsonNodeType.Element);
+                    break;
+                default:
+                    throw new XmlException(SR.JsonInvalidStartElementCall);
+            }
+            _isWritingDataTypeAttribute = false;
+            _isWritingServerTypeAttribute = false;
+            _isWritingXmlnsAttribute = false;
+            _wroteServerTypeAttribute = false;
+            _serverTypeValue = null;
+            _dataType = JsonDataType.None;
+            _nodeType = JsonNodeType.Element;
+        }
+
         public override void WriteString(string? text)
         {
             if (HasOpenAttribute && (text != null))
@@ -952,10 +1261,42 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
+        public override Task WriteStringAsync(string? text)
+        {
+            long maximumBytes = 1 + GetEscapedJsonStringMaximumBytes(text);
+            if (_nodeWriter.CanWriteBufferedValues && maximumBytes <= _nodeWriter.StreamBuffer.Length &&
+                _nodeWriter.HasBufferSpace((int)maximumBytes))
+            {
+                WriteString(text);
+                return Task.CompletedTask;
+            }
+            return WriteStringAsyncCore(text);
+        }
+
+        private async Task WriteStringAsyncCore(string? text)
+        {
+            if (HasOpenAttribute && text is not null)
+            {
+                _attributeText += text;
+            }
+            else
+            {
+                text ??= string.Empty;
+                if (!((_dataType is JsonDataType.Array or JsonDataType.Object || _nodeType == JsonNodeType.EndElement) && XmlConverter.IsWhitespace(text)))
+                {
+                    await StartTextAsync().ConfigureAwait(false);
+                    await WriteEscapedJsonStringAsync(text).ConfigureAwait(false);
+                }
+            }
+        }
+
         public override void WriteSurrogateCharEntity(char lowChar, char highChar)
         {
             WriteString(new string([highChar, lowChar]));
         }
+
+        public override Task WriteSurrogateCharEntityAsync(char lowChar, char highChar) =>
+            WriteStringAsync(new string([highChar, lowChar]));
 
         public override void WriteValue(bool value)
         {
@@ -1047,6 +1388,56 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
+        internal override async Task WriteValueAsync(object value)
+        {
+            ArgumentNullException.ThrowIfNull(value);
+            if (IsClosed)
+                ThrowClosed();
+            if (value is Array array)
+            {
+                JsonDataType oldDataType = _dataType;
+                _dataType = JsonDataType.String;
+                await StartTextAsync().ConfigureAwait(false);
+                for (int i = 0; i < array.Length; i++)
+                {
+                    if (i != 0)
+                        await _nodeWriter.WriteTextAsync(" ").ConfigureAwait(false);
+                    object? item = array.GetValue(i);
+                    ArgumentNullException.ThrowIfNull(item);
+                    if (item is Array)
+                        throw new ArgumentException(SR.JsonNestedArraysNotSupported, nameof(value));
+                    await WriteValueAsync(item).ConfigureAwait(false);
+                }
+                _dataType = oldDataType;
+            }
+            else if (value is IStreamProvider provider)
+            {
+                await base.WriteValueAsync(provider).ConfigureAwait(false);
+            }
+            else if (value is string or XmlDictionaryString)
+            {
+                await WriteStringAsync(GetValueText(value)).ConfigureAwait(false);
+            }
+            else if (value is bool or int or long or ulong or float or double or decimal or DateTime or UniqueId or Guid or TimeSpan)
+            {
+                await StartTextAsync().ConfigureAwait(false);
+                await _nodeWriter.WriteValueAsync(value).ConfigureAwait(false);
+            }
+            else
+            {
+                await WriteStringAsync(GetValueText(value)).ConfigureAwait(false);
+            }
+        }
+
+        internal async Task WriteJsonPrimitiveValueAsync<T>(object value) where T : struct
+        {
+            if (IsClosed)
+                ThrowClosed();
+
+            await StartTextAsync().ConfigureAwait(false);
+            await _nodeWriter.WritePrimitiveValueAsync<T>(value).ConfigureAwait(false);
+        }
+
         public override void WriteWhitespace(string? ws)
         {
             if (IsClosed)
@@ -1062,6 +1453,32 @@ namespace System.Runtime.Serialization.Json
             }
 
             WriteString(ws);
+        }
+
+        public override Task WriteWhitespaceAsync(string? ws)
+        {
+            if (IsClosed)
+                ThrowClosed();
+            ArgumentNullException.ThrowIfNull(ws);
+            int position = ws.AsSpan().IndexOfAnyExcept(" \t\r\n");
+            if (position >= 0)
+                throw new ArgumentException(SR.Format(SR.JsonOnlyWhitespace, ws[position].ToString(), nameof(WriteWhitespace)), nameof(ws));
+            return WriteStringAsync(ws);
+        }
+
+        internal override Task WriteXmlAttributeAsync(string localName, string? value) =>
+            throw new NotSupportedException(SR.Format(SR.JsonMethodNotSupported, nameof(WriteXmlAttribute)));
+
+        internal override Task WriteXmlnsAttributeAsync(string? prefix, string namespaceUri)
+        {
+            WriteXmlnsAttribute(prefix, namespaceUri);
+            return Task.CompletedTask;
+        }
+
+        internal override Task WriteXmlnsAttributeAsync(string? prefix, XmlDictionaryString namespaceUri)
+        {
+            WriteXmlnsAttribute(prefix, namespaceUri);
+            return Task.CompletedTask;
         }
 
         public override void WriteXmlAttribute(string localName, string? value)
@@ -1179,7 +1596,7 @@ namespace System.Runtime.Serialization.Json
             return (c == '\u0085' || c == '\u2028' || c == '\u2029');
         }
 
-        private void StartText()
+        private JsonNodeType GetTextNodeType()
         {
             if (HasOpenAttribute)
             {
@@ -1198,26 +1615,30 @@ namespace System.Runtime.Serialization.Json
                 throw new XmlException(SR.Format(SR.JsonMustSpecifyDataType, JsonGlobals.itemString, string.Empty, JsonGlobals.itemString));
             }
 
-            if ((_dataType == JsonDataType.String) ||
-                (_dataType == JsonDataType.None))
+            JsonNodeType nextNodeType = _dataType switch
             {
-                CheckText(JsonNodeType.QuotedText);
-                if (_nodeType != JsonNodeType.QuotedText)
-                {
-                    WriteJsonQuote();
-                }
-                _nodeType = JsonNodeType.QuotedText;
-            }
-            else if ((_dataType == JsonDataType.Number) ||
-                (_dataType == JsonDataType.Boolean))
-            {
-                CheckText(JsonNodeType.StandaloneText);
-                _nodeType = JsonNodeType.StandaloneText;
-            }
-            else
-            {
-                ThrowInvalidAttributeContent();
-            }
+                JsonDataType.String or JsonDataType.None => JsonNodeType.QuotedText,
+                JsonDataType.Number or JsonDataType.Boolean => JsonNodeType.StandaloneText,
+                _ => throw new XmlException(SR.Format(SR.JsonCannotWriteTextAfterNonTextAttribute, _dataType.ToString().ToLowerInvariant()))
+            };
+            CheckText(nextNodeType);
+            return nextNodeType;
+        }
+
+        private void StartText()
+        {
+            JsonNodeType nextNodeType = GetTextNodeType();
+            if (nextNodeType == JsonNodeType.QuotedText && _nodeType != JsonNodeType.QuotedText)
+                WriteJsonQuote();
+            _nodeType = nextNodeType;
+        }
+
+        private async Task StartTextAsync()
+        {
+            JsonNodeType nextNodeType = GetTextNodeType();
+            if (nextNodeType == JsonNodeType.QuotedText && _nodeType != JsonNodeType.QuotedText)
+                await _nodeWriter.WriteTextAsync("\"").ConfigureAwait(false);
+            _nodeType = nextNodeType;
         }
 
         private void ThrowIfServerTypeWritten(string dataTypeSpecified)
@@ -1225,18 +1646,6 @@ namespace System.Runtime.Serialization.Json
             if (_serverTypeValue != null)
             {
                 throw new XmlException(SR.Format(SR.JsonInvalidDataTypeSpecifiedForServerType, JsonGlobals.typeString, dataTypeSpecified, JsonGlobals.serverTypeString, JsonGlobals.objectString));
-            }
-        }
-
-        private void ThrowInvalidAttributeContent()
-        {
-            if (HasOpenAttribute)
-            {
-                throw new XmlException(SR.JsonInvalidMethodBetweenStartEndAttribute);
-            }
-            else
-            {
-                throw new XmlException(SR.Format(SR.JsonCannotWriteTextAfterNonTextAttribute, _dataType.ToString().ToLowerInvariant()));
             }
         }
 
@@ -1287,6 +1696,34 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
+        private async Task WriteDataTypeServerTypeAsync()
+        {
+            if (_dataType == JsonDataType.None)
+                return;
+            switch (_dataType)
+            {
+                case JsonDataType.Array:
+                    EnterScope(JsonNodeType.Collection);
+                    await _nodeWriter.WriteTextAsync("[").ConfigureAwait(false);
+                    _indentLevel++;
+                    break;
+                case JsonDataType.Object:
+                    EnterScope(JsonNodeType.Object);
+                    await _nodeWriter.WriteTextAsync("{").ConfigureAwait(false);
+                    _indentLevel++;
+                    break;
+                case JsonDataType.Null:
+                    await _nodeWriter.WriteTextAsync(JsonGlobals.nullString).ConfigureAwait(false);
+                    break;
+            }
+            if (_serverTypeValue is not null)
+                await WriteServerTypeAttributeAsync().ConfigureAwait(false);
+        }
+
+        private static long GetEscapedJsonStringMaximumBytes(string? value) =>
+            // A six-character escape reserves eighteen UTF-8 bytes before writing its six ASCII bytes.
+            12 + 6L * (value?.Length ?? 0);
+
         private unsafe void WriteEscapedJsonString(string str)
         {
             fixed (char* chars = str)
@@ -1335,6 +1772,30 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
+        private async Task WriteEscapedJsonStringAsync(string value)
+        {
+            int start = 0;
+            for (int i = 0; i < value.Length; i++)
+            {
+                char ch = value[i];
+                if (CharacterNeedsEscaping(ch) || IsUnicodeNewlineCharacter(ch))
+                {
+                    await _nodeWriter.WriteTextAsync(value.AsMemory(start, i - start)).ConfigureAwait(false);
+                    string escaped = ch switch
+                    {
+                        < WHITESPACE => s_escapedJsonStringTable[ch],
+                        FORWARD_SLASH => "\\/",
+                        JsonGlobals.QuoteChar => "\\\"",
+                        BACK_SLASH => "\\\\",
+                        _ => "\\u" + ((int)ch).ToString("x4", CultureInfo.InvariantCulture)
+                    };
+                    await _nodeWriter.WriteTextAsync(escaped).ConfigureAwait(false);
+                    start = i + 1;
+                }
+            }
+            await _nodeWriter.WriteTextAsync(value.AsMemory(start)).ConfigureAwait(false);
+        }
+
         private void WriteIndent()
         {
             for (int i = 0; i < _indentLevel; i++)
@@ -1342,6 +1803,14 @@ namespace System.Runtime.Serialization.Json
                 _nodeWriter.WriteText(_indentChars!);
             }
         }
+
+        private async Task WriteIndentAsync()
+        {
+            for (int i = 0; i < _indentLevel; i++)
+                await _nodeWriter.WriteTextAsync(_indentChars!).ConfigureAwait(false);
+        }
+
+        private Task WriteNewLineAsync() => _nodeWriter.WriteTextAsync("\r\n");
 
         private void WriteNewLine()
         {
@@ -1359,6 +1828,15 @@ namespace System.Runtime.Serialization.Json
             {
                 _nodeWriter.WriteText(WHITESPACE);
             }
+        }
+
+        private async Task WriteJsonElementNameAsync(string localName)
+        {
+            await _nodeWriter.WriteTextAsync("\"").ConfigureAwait(false);
+            await WriteEscapedJsonStringAsync(localName).ConfigureAwait(false);
+            await _nodeWriter.WriteTextAsync("\":").ConfigureAwait(false);
+            if (_indent)
+                await _nodeWriter.WriteTextAsync(" ").ConfigureAwait(false);
         }
 
         private void WriteJsonQuote()
@@ -1450,6 +1928,19 @@ namespace System.Runtime.Serialization.Json
             _wroteServerTypeAttribute = true;
         }
 
+        private async Task WriteServerTypeAttributeAsync()
+        {
+            string? value = _serverTypeValue;
+            JsonDataType oldDataType = _dataType;
+            NameState oldNameState = _nameState;
+            await WriteStartElementAsync(null, JsonGlobals.serverTypeString, null).ConfigureAwait(false);
+            await WriteStringAsync(value).ConfigureAwait(false);
+            await WriteEndElementAsync().ConfigureAwait(false);
+            _dataType = oldDataType;
+            _nameState = oldNameState;
+            _wroteServerTypeAttribute = true;
+        }
+
         private void WriteValue(ulong value)
         {
             StartText();
@@ -1479,6 +1970,7 @@ namespace System.Runtime.Serialization.Json
 
         private sealed class JsonNodeWriter : XmlUTF8NodeWriter
         {
+            internal bool CanWriteBufferedValues => CanUseBufferedUtf8Encoding;
             internal unsafe void WriteChars(char* chars, int charCount)
             {
                 base.UnsafeWriteUTF8Chars(chars, charCount);

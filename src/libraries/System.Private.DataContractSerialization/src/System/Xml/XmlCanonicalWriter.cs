@@ -8,6 +8,8 @@ using System.IO;
 using System.Runtime;
 using System.Runtime.Serialization;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 
 namespace System.Xml
@@ -52,6 +54,12 @@ namespace System.Xml
 
         public XmlCanonicalWriter()
         {
+        }
+
+        internal CancellationToken CancellationToken
+        {
+            get => _writer.CancellationToken;
+            set => _writer.CancellationToken = value;
         }
 
         public void SetOutput(Stream stream, bool includeComments, string[]? inclusivePrefixes)
@@ -108,6 +116,12 @@ namespace System.Xml
             _writer.Flush();
         }
 
+        public Task FlushAsync()
+        {
+            ThrowIfClosed();
+            return _writer.FlushAsync();
+        }
+
         public void Close()
         {
             _writer?.Close();
@@ -127,10 +141,18 @@ namespace System.Xml
             _inclusivePrefixes = null;
         }
 
+        public ValueTask CloseAsync()
+        {
+            Close();
+            return default;
+        }
+
         [SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "This class is should roughly mirror the XmlNodeWriter API where this is an instance method.")]
         public void WriteDeclaration()
         {
         }
+
+        public Task WriteDeclarationAsync() => Task.CompletedTask;
 
         public void WriteComment(string value)
         {
@@ -141,6 +163,13 @@ namespace System.Xml
             {
                 _writer.WriteComment(value);
             }
+        }
+
+        public Task WriteCommentAsync(string value)
+        {
+            ArgumentNullException.ThrowIfNull(value);
+            ThrowIfClosed();
+            return _includeComments ? _writer.WriteCommentAsync(value) : Task.CompletedTask;
         }
 
         [MemberNotNull(nameof(_scopes))]
@@ -200,6 +229,21 @@ namespace System.Xml
                     }
                 }
             }
+        }
+
+        public Task WriteStartElementAsync(string prefix, string localName)
+        {
+            CancellationToken.ThrowIfCancellationRequested();
+            WriteStartElement(prefix, localName);
+            return Task.CompletedTask;
+        }
+
+        public Task WriteStartElementAsync(byte[] prefixBuffer, int prefixOffset, int prefixLength,
+            byte[] localNameBuffer, int localNameOffset, int localNameLength)
+        {
+            CancellationToken.ThrowIfCancellationRequested();
+            WriteStartElement(prefixBuffer, prefixOffset, prefixLength, localNameBuffer, localNameOffset, localNameLength);
+            return Task.CompletedTask;
         }
 
         public void WriteStartElement(byte[] prefixBuffer, int prefixOffset, int prefixLength, byte[] localNameBuffer, int localNameOffset, int localNameLength)
@@ -271,38 +315,7 @@ namespace System.Xml
             _writer.WriteStartElement(_elementBuffer, _element.prefixOffset, _element.prefixLength, _elementBuffer, _element.localNameOffset, _element.localNameLength);
             for (int i = _scopes![_depth - 1].xmlnsAttributeCount; i < _xmlnsAttributeCount; i++)
             {
-                // Check if this prefix with the same namespace has already been rendered.
-                int j = i - 1;
-                bool alreadyReferred = false;
-                while (j >= 0)
-                {
-                    Debug.Assert(_xmlnsBuffer != null);
-                    if (Equals(_xmlnsBuffer, _xmlnsAttributes![i].prefixOffset, _xmlnsAttributes[i].prefixLength, _xmlnsBuffer, _xmlnsAttributes[j].prefixOffset, _xmlnsAttributes[j].prefixLength))
-                    {
-                        // Check if the namespace is also equal.
-                        if (Equals(_xmlnsBuffer, _xmlnsAttributes[i].nsOffset, _xmlnsAttributes[i].nsLength, _xmlnsBuffer, _xmlnsAttributes[j].nsOffset, _xmlnsAttributes[j].nsLength))
-                        {
-                            // We have found the prefix with the same namespace occur before. See if this has been
-                            // referred.
-                            if (_xmlnsAttributes[j].referred)
-                            {
-                                // This has been referred previously. So we don't have
-                                // to output the namespace again.
-                                alreadyReferred = true;
-                                break;
-                            }
-                        }
-                        else
-                        {
-                            // The prefix is the same, but the namespace value has changed. So we have to
-                            // output this namespace.
-                            break;
-                        }
-                    }
-                    --j;
-                }
-
-                if (!alreadyReferred)
+                if (!IsNamespaceAlreadyRendered(i))
                 {
                     WriteXmlnsAttribute(ref _xmlnsAttributes![i]);
                 }
@@ -328,6 +341,56 @@ namespace System.Xml
             _elementBuffer = null;
         }
 
+        private bool IsNamespaceAlreadyRendered(int index)
+        {
+            for (int i = index - 1; i >= 0; i--)
+            {
+                if (Equals(_xmlnsBuffer!, _xmlnsAttributes![index].prefixOffset, _xmlnsAttributes[index].prefixLength,
+                    _xmlnsBuffer!, _xmlnsAttributes[i].prefixOffset, _xmlnsAttributes[i].prefixLength))
+                {
+                    if (!Equals(_xmlnsBuffer!, _xmlnsAttributes[index].nsOffset, _xmlnsAttributes[index].nsLength,
+                        _xmlnsBuffer!, _xmlnsAttributes[i].nsOffset, _xmlnsAttributes[i].nsLength))
+                        return false;
+                    if (_xmlnsAttributes[i].referred)
+                        return true;
+                }
+            }
+            return false;
+        }
+
+        public async Task WriteEndStartElementAsync(bool isEmpty)
+        {
+            ThrowIfClosed();
+            // Canonicalization buffers only the start tag so attributes can be sorted.
+            _elementWriter.Flush();
+            _elementBuffer = _elementStream.GetBuffer();
+            _inStartElement = false;
+            ResolvePrefixes();
+            await _writer.WriteStartElementAsync(_elementBuffer, _element.prefixOffset, _element.prefixLength,
+                _elementBuffer, _element.localNameOffset, _element.localNameLength).ConfigureAwait(false);
+            for (int i = _scopes![_depth - 1].xmlnsAttributeCount; i < _xmlnsAttributeCount; i++)
+            {
+                if (!IsNamespaceAlreadyRendered(i) && _xmlnsAttributes![i].referred)
+                {
+                    XmlnsAttribute attribute = _xmlnsAttributes[i];
+                    await _writer.WriteXmlnsAttributeAsync(_xmlnsBuffer!, attribute.prefixOffset, attribute.prefixLength,
+                        _xmlnsBuffer!, attribute.nsOffset, attribute.nsLength).ConfigureAwait(false);
+                }
+            }
+            if (_attributeCount > 1)
+                SortAttributes();
+            for (int i = 0; i < _attributeCount; i++)
+                await _writer.WriteTextAsync(_elementBuffer, _attributes![i].offset, _attributes[i].length).ConfigureAwait(false);
+            await _writer.WriteEndStartElementAsync(false).ConfigureAwait(false);
+            if (isEmpty)
+            {
+                await _writer.WriteEndElementAsync(_elementBuffer, _element.prefixOffset, _element.prefixLength,
+                    _elementBuffer, _element.localNameOffset, _element.localNameLength).ConfigureAwait(false);
+                EndElement();
+            }
+            _elementBuffer = null;
+        }
+
         public void WriteEndElement(string prefix, string localName)
         {
             ArgumentNullException.ThrowIfNull(prefix);
@@ -335,6 +398,15 @@ namespace System.Xml
 
             ThrowIfClosed();
             _writer.WriteEndElement(prefix, localName);
+            EndElement();
+        }
+
+        public async Task WriteEndElementAsync(string prefix, string localName)
+        {
+            ArgumentNullException.ThrowIfNull(prefix);
+            ArgumentNullException.ThrowIfNull(localName);
+            ThrowIfClosed();
+            await _writer.WriteEndElementAsync(prefix, localName).ConfigureAwait(false);
             EndElement();
         }
 
@@ -375,6 +447,20 @@ namespace System.Xml
             _xmlnsOffset += xmlnsAttribute.nsLength;
             xmlnsAttribute.referred = false;
             AddXmlnsAttribute(ref xmlnsAttribute);
+        }
+
+        public Task WriteXmlnsAttributeAsync(string prefix, string ns)
+        {
+            CancellationToken.ThrowIfCancellationRequested();
+            WriteXmlnsAttribute(prefix, ns);
+            return Task.CompletedTask;
+        }
+
+        public Task WriteXmlnsAttributeAsync(byte[] prefixBuffer, int prefixOffset, int prefixLength, byte[] nsBuffer, int nsOffset, int nsLength)
+        {
+            CancellationToken.ThrowIfCancellationRequested();
+            WriteXmlnsAttribute(prefixBuffer, prefixOffset, prefixLength, nsBuffer, nsOffset, nsLength);
+            return Task.CompletedTask;
         }
 
         [MemberNotNull(nameof(_xmlnsAttributes))]
@@ -429,6 +515,21 @@ namespace System.Xml
             _elementWriter.WriteStartAttribute(prefix, localName);
         }
 
+        public Task WriteStartAttributeAsync(string prefix, string localName)
+        {
+            CancellationToken.ThrowIfCancellationRequested();
+            WriteStartAttribute(prefix, localName);
+            return Task.CompletedTask;
+        }
+
+        public Task WriteStartAttributeAsync(byte[] prefixBuffer, int prefixOffset, int prefixLength,
+            byte[] localNameBuffer, int localNameOffset, int localNameLength)
+        {
+            CancellationToken.ThrowIfCancellationRequested();
+            WriteStartAttribute(prefixBuffer, prefixOffset, prefixLength, localNameBuffer, localNameOffset, localNameLength);
+            return Task.CompletedTask;
+        }
+
         public void WriteStartAttribute(byte[] prefixBuffer, int prefixOffset, int prefixLength, byte[] localNameBuffer, int localNameOffset, int localNameLength)
         {
             ArgumentNullException.ThrowIfNull(prefixBuffer);
@@ -466,13 +567,26 @@ namespace System.Xml
             AddAttribute(ref _attribute);
         }
 
+        public Task WriteEndAttributeAsync()
+        {
+            CancellationToken.ThrowIfCancellationRequested();
+            WriteEndAttribute();
+            return Task.CompletedTask;
+        }
+
         public void WriteCharEntity(int ch)
         {
             ThrowIfClosed();
             if (ch <= char.MaxValue)
             {
-                char[] chars = new char[1] { (char)ch };
-                WriteEscapedText(chars, 0, 1);
+                if (_depth > 0)
+                {
+                    ReadOnlySpan<char> chars = [(char)ch];
+                    if (_inStartElement)
+                        _elementWriter.WriteEscapedText(chars);
+                    else
+                        _writer.WriteEscapedText(chars);
+                }
             }
             else
             {
@@ -539,6 +653,53 @@ namespace System.Xml
                     _writer.WriteEscapedText(chars, offset, count);
                 }
             }
+        }
+
+        public Task WriteEscapedTextAsync(string value)
+        {
+            ArgumentNullException.ThrowIfNull(value);
+            ThrowIfClosed();
+            if (_depth == 0)
+                return Task.CompletedTask;
+            if (_inStartElement)
+            {
+                _elementWriter.WriteEscapedText(value);
+                return Task.CompletedTask;
+            }
+            return _writer.WriteEscapedTextAsync(value);
+        }
+
+        public Task WriteEscapedTextAsync(char[] chars, int offset, int count)
+        {
+            ThrowIfClosed();
+            if (_depth == 0)
+                return Task.CompletedTask;
+            if (_inStartElement)
+            {
+                _elementWriter.WriteEscapedText(chars, offset, count);
+                return Task.CompletedTask;
+            }
+            return _writer.WriteEscapedTextAsync(chars, offset, count);
+        }
+
+        public Task WriteEscapedTextAsync(byte[] bytes, int offset, int count)
+        {
+            ArgumentNullException.ThrowIfNull(bytes);
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
+            if (offset > bytes.Length)
+                throw new ArgumentOutOfRangeException(nameof(offset), SR.Format(SR.OffsetExceedsBufferSize, bytes.Length));
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
+            if (count > bytes.Length - offset)
+                throw new ArgumentOutOfRangeException(nameof(count), SR.Format(SR.SizeExceedsRemainingBufferSpace, bytes.Length - offset));
+            ThrowIfClosed();
+            if (_depth == 0)
+                return Task.CompletedTask;
+            if (_inStartElement)
+            {
+                _elementWriter.WriteEscapedText(bytes, offset, count);
+                return Task.CompletedTask;
+            }
+            return _writer.WriteEscapedTextAsync(bytes, offset, count);
         }
 
         public void WriteText(int ch)
@@ -609,6 +770,106 @@ namespace System.Xml
             {
                 _writer.WriteText(chars, offset, count);
             }
+        }
+
+        public Task WriteTextAsync(string value)
+        {
+            ArgumentNullException.ThrowIfNull(value);
+            if (value.Length == 0)
+                return Task.CompletedTask;
+            if (_inStartElement)
+            {
+                _elementWriter.WriteText(value);
+                return Task.CompletedTask;
+            }
+            return _writer.WriteTextAsync(value);
+        }
+
+        public Task WriteTextAsync(char[] chars, int offset, int count)
+        {
+            ThrowIfClosed();
+            ArgumentNullException.ThrowIfNull(chars);
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
+            if (offset > chars.Length)
+                throw new ArgumentOutOfRangeException(nameof(offset), SR.Format(SR.OffsetExceedsBufferSize, chars.Length));
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
+            if (count > chars.Length - offset)
+                throw new ArgumentOutOfRangeException(nameof(count), SR.Format(SR.SizeExceedsRemainingBufferSpace, chars.Length - offset));
+            if (_inStartElement)
+            {
+                _elementWriter.WriteText(chars, offset, count);
+                return Task.CompletedTask;
+            }
+            return _writer.WriteTextAsync(chars, offset, count);
+        }
+
+        public Task WriteTextAsync(byte[] bytes, int offset, int count)
+        {
+            ThrowIfClosed();
+            ArgumentNullException.ThrowIfNull(bytes);
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
+            if (offset > bytes.Length)
+                throw new ArgumentOutOfRangeException(nameof(offset), SR.Format(SR.OffsetExceedsBufferSize, bytes.Length));
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
+            if (count > bytes.Length - offset)
+                throw new ArgumentOutOfRangeException(nameof(count), SR.Format(SR.SizeExceedsRemainingBufferSpace, bytes.Length - offset));
+            if (_inStartElement)
+            {
+                _elementWriter.WriteText(bytes, offset, count);
+                return Task.CompletedTask;
+            }
+            return _writer.WriteTextAsync(bytes, offset, count);
+        }
+
+        public Task WriteCharEntityAsync(int ch) =>
+            ch <= char.MaxValue ? WriteEscapedTextAsync(((char)ch).ToString()) : WriteTextAsync(char.ConvertFromUtf32(ch));
+
+        public Task WriteEscapedTextAsync(ReadOnlyMemory<char> value)
+        {
+            ThrowIfClosed();
+            if (_depth == 0)
+                return Task.CompletedTask;
+            if (_inStartElement)
+            {
+                _elementWriter.WriteEscapedText(value.Span);
+                return Task.CompletedTask;
+            }
+            return _writer.WriteEscapedTextAsync(value);
+        }
+
+        public Task WriteEscapedTextAsync(ReadOnlyMemory<byte> value)
+        {
+            ThrowIfClosed();
+            if (_depth == 0)
+                return Task.CompletedTask;
+            if (_inStartElement)
+            {
+                _elementWriter.WriteEscapedText(value.Span);
+                return Task.CompletedTask;
+            }
+            return _writer.WriteEscapedTextAsync(value);
+        }
+
+        public Task WriteTextAsync(ReadOnlyMemory<char> value)
+        {
+            ThrowIfClosed();
+            if (_inStartElement)
+            {
+                _elementWriter.WriteText(value.Span);
+                return Task.CompletedTask;
+            }
+            return _writer.WriteTextAsync(value);
+        }
+
+        public Task WriteTextAsync(ReadOnlyMemory<byte> value)
+        {
+            ThrowIfClosed();
+            if (_inStartElement)
+            {
+                _elementWriter.WriteText(value.Span);
+                return Task.CompletedTask;
+            }
+            return _writer.WriteTextAsync(value);
         }
 
         private void ThrowIfClosed()

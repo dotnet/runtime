@@ -7,6 +7,8 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.Serialization; // For SR
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 
 namespace System.Xml
@@ -18,7 +20,7 @@ namespace System.Xml
     // ASSUMPTION (Microsoft): The byte buffer is large enough to hold the declaration
     // ASSUMPTION (Microsoft): The buffer manipulation methods (FillBuffer/Compare/etc.) will only be used to parse the declaration
     //                      during construction.
-    internal sealed class EncodingStreamWrapper : Stream
+    internal sealed partial class EncodingStreamWrapper : Stream, IXmlAsyncStreamWriter
     {
         private enum SupportedEncoding
         {
@@ -49,21 +51,46 @@ namespace System.Xml
         private int _byteCount;
 
         private readonly byte[] _byteBuffer = new byte[1];
+        private CancellationToken _writeCancellationToken;
+
+        CancellationToken IXmlAsyncStreamWriter.WriteCancellationToken
+        {
+            get => _writeCancellationToken;
+            set => _writeCancellationToken = value;
+        }
 
         // Reading constructor
         public EncodingStreamWrapper(Stream stream, Encoding? encoding)
+            : this(stream)
+        {
+            InitializeReaderSync(encoding);
+        }
+
+        private EncodingStreamWrapper(Stream stream)
+        {
+            _isReading = true;
+            _stream = stream;
+        }
+
+        internal static async ValueTask<Stream> CreateReaderAsync(Stream stream, Encoding? encoding, CancellationToken cancellationToken)
+        {
+            EncodingStreamWrapper wrapper = new EncodingStreamWrapper(stream);
+            await wrapper.InitializeReader<AsyncXmlStreamIO>(encoding, cancellationToken).ConfigureAwait(false);
+            return wrapper;
+        }
+
+        private async ValueTask InitializeReader<TMode>(Encoding? encoding, CancellationToken cancellationToken)
+            where TMode : struct, IXmlStreamIO
         {
             try
             {
-                _isReading = true;
-                _stream = stream;
-
                 // Decode the expected encoding
                 SupportedEncoding expectedEnc = GetSupportedEncoding(encoding);
 
                 // Get the byte order mark so we can determine the encoding
                 // May want to try to delay allocating everything until we know the BOM
-                SupportedEncoding declEnc = ReadBOMEncoding(encoding == null);
+                SupportedEncoding declEnc = await ReadBOMEncoding<TMode>(encoding is null, cancellationToken).ConfigureAwait(false);
+                EnsureByteBuffer();
 
                 // Check that the expected encoding matches the decl encoding.
                 if (expectedEnc != SupportedEncoding.None && expectedEnc != declEnc)
@@ -73,22 +100,22 @@ namespace System.Xml
                 if (declEnc == SupportedEncoding.UTF8)
                 {
                     // Fastpath: UTF-8 BOM, No declaration
-                    FillBuffer(2);
+                    await FillBuffer<TMode>(2, cancellationToken).ConfigureAwait(false);
                     if (_bytes[_byteOffset + 1] != '?' || _bytes[_byteOffset] != '<')
                     {
                         return;
                     }
 
-                    FillBuffer(BufferLength);
+                    await FillBuffer<TMode>(BufferLength, cancellationToken).ConfigureAwait(false);
                     CheckUTF8DeclarationEncoding(_bytes, _byteOffset, _byteCount, declEnc, expectedEnc);
                 }
                 else
                 {
                     // Convert to UTF-8
                     EnsureBuffers();
-                    FillBuffer((BufferLength - 1) * 2);
+                    await FillBuffer<TMode>((BufferLength - 1) * 2, cancellationToken).ConfigureAwait(false);
                     SetReadDocumentEncoding(declEnc);
-                    CleanupCharBreak();
+                    await CleanupCharBreak<TMode>(cancellationToken).ConfigureAwait(false);
                     int count = _encoding.GetChars(_bytes, _byteOffset, _byteCount, _chars, 0);
                     _byteOffset = 0;
                     _byteCount = DataContractSerializer.ValidatingUTF8.GetBytes(_chars, 0, count, _bytes, 0);
@@ -187,40 +214,34 @@ namespace System.Xml
             }
         }
 
-        [MemberNotNull(nameof(_bytes))]
-        private SupportedEncoding ReadBOMEncoding(bool notOutOfBand)
+        internal static async ValueTask<Stream> CreateWriterAsync(Stream stream, Encoding encoding, bool emitBOM, CancellationToken cancellationToken)
         {
-            int b1 = _stream.ReadByte();
-            int b2 = _stream.ReadByte();
-            int b3 = _stream.ReadByte();
-            int b4 = _stream.ReadByte();
+            cancellationToken.ThrowIfCancellationRequested();
+            EncodingStreamWrapper wrapper = new EncodingStreamWrapper(stream, encoding, emitBOM: false);
+            if (emitBOM && wrapper._encodingCode != SupportedEncoding.UTF8)
+            {
+                byte[] preamble = encoding.GetPreamble();
+                if (preamble.Length != 0)
+                {
+                    await stream.WriteAsync(preamble, 0, preamble.Length, cancellationToken).ConfigureAwait(false);
+                }
+            }
+            return wrapper;
+        }
+
+        private async ValueTask<SupportedEncoding> ReadBOMEncoding<TMode>(bool notOutOfBand, CancellationToken cancellationToken)
+            where TMode : struct, IXmlStreamIO
+        {
+            EnsureByteBuffer();
+            int count = await TMode.ReadAtLeast(_stream, _bytes.AsMemory(0, 4), cancellationToken).ConfigureAwait(false);
 
             // Premature end of stream
-            if (b4 == -1)
+            if (count < 4)
                 throw new XmlException(SR.UnexpectedEndOfFile);
 
             int preserve;
-            SupportedEncoding e = ReadBOMEncoding((byte)b1, (byte)b2, (byte)b3, (byte)b4, notOutOfBand, out preserve);
-
-            EnsureByteBuffer();
-            switch (preserve)
-            {
-                case 1:
-                    _bytes[0] = (byte)b4;
-                    break;
-
-                case 2:
-                    _bytes[0] = (byte)b3;
-                    _bytes[1] = (byte)b4;
-                    break;
-
-                case 4:
-                    _bytes[0] = (byte)b1;
-                    _bytes[1] = (byte)b2;
-                    _bytes[2] = (byte)b3;
-                    _bytes[3] = (byte)b4;
-                    break;
-            }
+            SupportedEncoding e = ReadBOMEncoding(_bytes[0], _bytes[1], _bytes[2], _bytes[3], notOutOfBand, out preserve);
+            _bytes.AsSpan(4 - preserve, preserve).CopyTo(_bytes);
             _byteCount = preserve;
 
             return e;
@@ -277,12 +298,13 @@ namespace System.Xml
             return e;
         }
 
-        private void FillBuffer(int count)
+        private async ValueTask FillBuffer<TMode>(int count, CancellationToken cancellationToken)
+            where TMode : struct, IXmlStreamIO
         {
             count -= _byteCount;
             if (count > 0)
             {
-                _byteCount += _stream.ReadAtLeast(_bytes.AsSpan(_byteOffset + _byteCount, count), count, throwOnEndOfStream: false);
+                _byteCount += await TMode.ReadAtLeast(_stream, _bytes.AsMemory(_byteOffset + _byteCount, count), cancellationToken).ConfigureAwait(false);
             }
         }
 
@@ -572,6 +594,24 @@ namespace System.Xml
             _stream.Flush();
         }
 
+        public override Task FlushAsync(CancellationToken cancellationToken) => _stream.FlushAsync(cancellationToken);
+
+        public override async ValueTask DisposeAsync()
+        {
+            try
+            {
+                if (_stream.CanWrite)
+                {
+                    await _stream.FlushAsync(_writeCancellationToken).ConfigureAwait(false);
+                }
+            }
+            finally
+            {
+                await _stream.DisposeAsync().ConfigureAwait(false);
+                GC.SuppressFinalize(this);
+            }
+        }
+
         public override int ReadByte()
         {
             if (_byteCount == 0 && _encodingCode == SupportedEncoding.UTF8)
@@ -605,7 +645,7 @@ namespace System.Xml
                         return 0;
 
                     // Fix up incomplete chars
-                    CleanupCharBreak();
+                    CleanupCharBreakSync();
 
                     // Change encoding
                     int charCount = _encoding!.GetChars(_bytes, 0, _byteCount, _chars, 0);
@@ -628,7 +668,51 @@ namespace System.Xml
             }
         }
 
-        private void CleanupCharBreak()
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
+            ReadAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask();
+
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (buffer.IsEmpty)
+            {
+                return 0;
+            }
+
+            try
+            {
+                if (_byteCount == 0)
+                {
+                    if (_encodingCode == SupportedEncoding.UTF8)
+                    {
+                        return await _stream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
+                    }
+                    Debug.Assert(_bytes is not null && _chars is not null);
+                    _byteOffset = 0;
+                    _byteCount = await _stream.ReadAsync(_bytes.AsMemory(0, (_chars.Length - 1) * 2), cancellationToken).ConfigureAwait(false);
+                    if (_byteCount == 0)
+                    {
+                        return 0;
+                    }
+                    await CleanupCharBreak<AsyncXmlStreamIO>(cancellationToken).ConfigureAwait(false);
+                    int charCount = _encoding!.GetChars(_bytes, 0, _byteCount, _chars, 0);
+                    _byteCount = Encoding.UTF8.GetBytes(_chars, 0, charCount, _bytes, 0);
+                }
+
+                int count = Math.Min(buffer.Length, _byteCount);
+                _bytes.AsMemory(_byteOffset, count).CopyTo(buffer);
+                _byteOffset += count;
+                _byteCount -= count;
+                return count;
+            }
+            catch (DecoderFallbackException ex)
+            {
+                throw new XmlException(SR.XmlInvalidBytes, ex);
+            }
+        }
+
+        private async ValueTask CleanupCharBreak<TMode>(CancellationToken cancellationToken)
+            where TMode : struct, IXmlStreamIO
         {
             Debug.Assert(_bytes != null);
 
@@ -637,11 +721,11 @@ namespace System.Xml
             // Read on 2 byte boundaries
             if ((_byteCount % 2) != 0)
             {
-                int b = _stream.ReadByte();
-                if (b < 0)
+                int read = await TMode.ReadAtLeast(_stream, _bytes.AsMemory(max, 1), cancellationToken).ConfigureAwait(false);
+                if (read == 0)
                     throw new XmlException(SR.UnexpectedEndOfFile);
 
-                _bytes[max++] = (byte)b;
+                max++;
                 _byteCount++;
             }
 
@@ -657,12 +741,9 @@ namespace System.Xml
             }
             if ((w & 0xDC00) != 0xDC00 && w >= 0xD800 && w <= 0xDBFF)  // First 16-bit number of surrogate pair
             {
-                int b1 = _stream.ReadByte();
-                int b2 = _stream.ReadByte();
-                if (b2 < 0)
+                int read = await TMode.ReadAtLeast(_stream, _bytes.AsMemory(max, 2), cancellationToken).ConfigureAwait(false);
+                if (read < 2)
                     throw new XmlException(SR.UnexpectedEndOfFile);
-                _bytes[max++] = (byte)b1;
-                _bytes[max++] = (byte)b2;
                 _byteCount += 2;
             }
         }
@@ -703,6 +784,29 @@ namespace System.Xml
                 _stream.Write(_bytes, 0, _byteCount);
                 offset += size;
                 count -= size;
+            }
+        }
+
+        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
+            WriteAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask();
+
+        public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (_encodingCode == SupportedEncoding.UTF8)
+            {
+                await _stream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
+                return;
+            }
+
+            Debug.Assert(_bytes is not null && _chars is not null);
+            while (!buffer.IsEmpty)
+            {
+                int size = Math.Min(_chars.Length, buffer.Length);
+                int charCount = _dec!.GetChars(buffer.Span.Slice(0, size), _chars, false);
+                int byteCount = _enc!.GetBytes(_chars, 0, charCount, _bytes, 0, false);
+                await _stream.WriteAsync(_bytes.AsMemory(0, byteCount), cancellationToken).ConfigureAwait(false);
+                buffer = buffer.Slice(size);
             }
         }
 

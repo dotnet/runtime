@@ -8,18 +8,25 @@ using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Serialization;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Xml
 {
+    internal interface IXmlAsyncStreamWriter
+    {
+        CancellationToken WriteCancellationToken { get; set; }
+    }
+
     internal abstract class XmlStreamNodeWriter : XmlNodeWriter
     {
         private readonly byte[] _buffer;
         private int _offset;
         private bool _ownsStream;
         private const int bufferLength = 512;
-        private const int maxBytesPerChar = 3;
+        protected internal const int MaxUtf8BytesPerChar = 3;
         private Encoding? _encoding;
+        protected bool CanUseBufferedUtf8Encoding { get; private set; }
 
         protected XmlStreamNodeWriter()
         {
@@ -32,13 +39,30 @@ namespace System.Xml
             OutputStream = stream;
             _ownsStream = ownsStream;
             _offset = 0;
+            if (stream is IXmlAsyncStreamWriter asyncStream)
+                asyncStream.WriteCancellationToken = CancellationToken;
 
             if (encoding != null)
                 _encoding = encoding;
+            CanUseBufferedUtf8Encoding = _encoding is null ||
+                _encoding.GetType().Assembly == typeof(Encoding).Assembly &&
+                (_encoding.EncoderFallback is EncoderExceptionFallback ||
+                    _encoding.EncoderFallback is EncoderReplacementFallback { MaxCharCount: <= 1 });
         }
 
         // Getting/Setting the Stream exists for fragmenting
         public Stream OutputStream { get; set; }
+
+        internal sealed override CancellationToken CancellationToken
+        {
+            get => base.CancellationToken;
+            set
+            {
+                base.CancellationToken = value;
+                if (OutputStream is IXmlAsyncStreamWriter asyncStream)
+                    asyncStream.WriteCancellationToken = value;
+            }
+        }
 
         // StreamBuffer/BufferOffset exists only for the BinaryWriter to fix up nodes
         public byte[] StreamBuffer
@@ -89,6 +113,7 @@ namespace System.Xml
 
         protected async Task<BytesWithOffset> GetBufferAsync(int count)
         {
+            CancellationToken.ThrowIfCancellationRequested();
             int offset;
             Debug.Assert(count >= 0 && count <= bufferLength);
             int bufferOffset = _offset;
@@ -115,6 +140,32 @@ namespace System.Xml
         {
             Debug.Assert(_offset + count <= bufferLength);
             _offset += count;
+        }
+
+        protected internal bool HasBufferSpace(int count)
+        {
+            // Buffered synchronous encoders must reserve their worst-case output without flushing the stream.
+            CancellationToken.ThrowIfCancellationRequested();
+            return (uint)count <= (uint)(bufferLength - _offset);
+        }
+
+        protected void WriteBufferedByte(byte value)
+        {
+            Debug.Assert(_offset < bufferLength);
+            _buffer[_offset++] = value;
+        }
+
+        protected void WriteBufferedBytes(ReadOnlySpan<byte> value)
+        {
+            Debug.Assert(value.Length <= bufferLength - _offset);
+            value.CopyTo(_buffer.AsSpan(_offset));
+            Advance(value.Length);
+        }
+
+        protected void WriteBufferedUTF8Chars(string value)
+        {
+            int written = (_encoding ?? DataContractSerializer.ValidatingUTF8).GetBytes(value.AsSpan(), _buffer.AsSpan(_offset));
+            Advance(written);
         }
 
         private void EnsureByte()
@@ -225,6 +276,54 @@ namespace System.Xml
             }
         }
 
+        public Task WriteBytesAsync(ReadOnlyMemory<byte> bytes)
+        {
+            if (HasBufferSpace(bytes.Length))
+            {
+                bytes.Span.CopyTo(_buffer.AsSpan(_offset));
+                Advance(bytes.Length);
+                return Task.CompletedTask;
+            }
+
+            return WriteBytesAsyncCore(bytes);
+        }
+
+        private async Task WriteBytesAsyncCore(ReadOnlyMemory<byte> bytes)
+        {
+            CancellationToken.ThrowIfCancellationRequested();
+            if (bytes.Length < bufferLength)
+            {
+                BytesWithOffset destination = await GetBufferAsync(bytes.Length).ConfigureAwait(false);
+                bytes.Span.CopyTo(destination.Bytes.AsSpan(destination.Offset));
+                Advance(bytes.Length);
+            }
+            else
+            {
+                await FlushBufferAsync().ConfigureAwait(false);
+                if (MemoryMarshal.TryGetArray(bytes, out ArraySegment<byte> segment))
+                {
+                    await OutputStream.WriteAsync(segment.Array!, segment.Offset, segment.Count, CancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    await OutputStream.WriteAsync(bytes, CancellationToken).ConfigureAwait(false);
+                }
+            }
+        }
+
+        protected internal void EnsureBuffer(int count)
+        {
+            CancellationToken.ThrowIfCancellationRequested();
+            if (_offset + count > bufferLength)
+                FlushBuffer();
+        }
+
+        protected internal Task EnsureBufferAsync(int count)
+        {
+            CancellationToken.ThrowIfCancellationRequested();
+            return _offset + count <= bufferLength ? Task.CompletedTask : FlushBufferAsync();
+        }
+
         protected void WriteBytes(ReadOnlySpan<byte> bytes)
         {
             if (bytes.Length < bufferLength)
@@ -274,6 +373,62 @@ namespace System.Xml
             }
         }
 
+        protected Task WriteUTF8CharsAsync(ReadOnlyMemory<char> value)
+        {
+            if (CanUseBufferedUtf8Encoding && value.Length <= bufferLength / MaxUtf8BytesPerChar && HasBufferSpace(value.Length * MaxUtf8BytesPerChar))
+            {
+                int written = (_encoding ?? DataContractSerializer.ValidatingUTF8).GetBytes(value.Span, _buffer.AsSpan(_offset));
+                Advance(written);
+                return Task.CompletedTask;
+            }
+
+            return WriteUTF8CharsAsyncCore(value);
+        }
+
+        private async Task WriteUTF8CharsAsyncCore(ReadOnlyMemory<char> value)
+        {
+            CancellationToken.ThrowIfCancellationRequested();
+            const int charChunkSize = bufferLength / MaxUtf8BytesPerChar;
+            while (!value.IsEmpty)
+            {
+                int count = Math.Min(value.Length, charChunkSize);
+                if (count < value.Length && char.IsHighSurrogate(value.Span[count - 1]))
+                {
+                    count--;
+                }
+                BytesWithOffset destination = await GetBufferAsync(count * MaxUtf8BytesPerChar).ConfigureAwait(false);
+                int written = (_encoding ?? DataContractSerializer.ValidatingUTF8).GetBytes(value.Span.Slice(0, count), destination.Bytes.AsSpan(destination.Offset));
+                Advance(written);
+                value = value.Slice(count);
+            }
+        }
+
+        protected async Task WriteUnicodeCharsAsync(ReadOnlyMemory<char> value)
+        {
+            const int charChunkSize = bufferLength / sizeof(char);
+            while (!value.IsEmpty)
+            {
+                int count = Math.Min(value.Length, charChunkSize);
+                if (count < value.Length && char.IsHighSurrogate(value.Span[count - 1]))
+                {
+                    count--;
+                }
+                BytesWithOffset destination = await GetBufferAsync(count * sizeof(char)).ConfigureAwait(false);
+                if (BitConverter.IsLittleEndian)
+                {
+                    value.Span.Slice(0, count).CopyTo(MemoryMarshal.Cast<byte, char>(destination.Bytes.AsSpan(destination.Offset)));
+                }
+                else
+                {
+                    BinaryPrimitives.ReverseEndianness(
+                        MemoryMarshal.Cast<char, short>(value.Span.Slice(0, count)),
+                        MemoryMarshal.Cast<byte, short>(destination.Bytes.AsSpan(destination.Offset, count * sizeof(char))));
+                }
+                Advance(count * sizeof(char));
+                value = value.Slice(count);
+            }
+        }
+
         protected void WriteUTF8Bytes(ReadOnlySpan<byte> value)
         {
             if (value.Length < bufferLength)
@@ -291,14 +446,14 @@ namespace System.Xml
 
         protected unsafe void UnsafeWriteUTF8Chars(char* chars, int charCount)
         {
-            const int charChunkSize = bufferLength / maxBytesPerChar;
+            const int charChunkSize = bufferLength / MaxUtf8BytesPerChar;
             while (charCount > charChunkSize)
             {
                 int offset;
                 int chunkSize = charChunkSize;
                 if ((int)(chars[chunkSize - 1] & 0xFC00) == 0xD800) // This is a high surrogate
                     chunkSize--;
-                byte[] buffer = GetBuffer(chunkSize * maxBytesPerChar, out offset);
+                byte[] buffer = GetBuffer(chunkSize * MaxUtf8BytesPerChar, out offset);
                 Advance(UnsafeGetUTF8Chars(chars, chunkSize, buffer, offset));
                 charCount -= chunkSize;
                 chars += chunkSize;
@@ -306,7 +461,7 @@ namespace System.Xml
             if (charCount > 0)
             {
                 int offset;
-                byte[] buffer = GetBuffer(charCount * maxBytesPerChar, out offset);
+                byte[] buffer = GetBuffer(charCount * MaxUtf8BytesPerChar, out offset);
                 Advance(UnsafeGetUTF8Chars(chars, charCount, buffer, offset));
             }
         }
@@ -351,7 +506,7 @@ namespace System.Xml
 
         protected unsafe int UnsafeGetUTF8Length(char* chars, int charCount)
         {
-            // Length will always be at least ( 128 / maxBytesPerChar) = 42
+            // Length will always be at least (128 / MaxUtf8BytesPerChar) = 42
             return (_encoding ?? DataContractSerializer.ValidatingUTF8).GetByteCount(chars, charCount);
         }
 
@@ -401,16 +556,14 @@ namespace System.Xml
             }
         }
 
-        protected virtual Task FlushBufferAsync()
+        protected virtual async Task FlushBufferAsync()
         {
+            CancellationToken.ThrowIfCancellationRequested();
             if (_offset != 0)
             {
-                var task = OutputStream.WriteAsync(_buffer, 0, _offset);
+                await OutputStream.WriteAsync(_buffer, 0, _offset, CancellationToken).ConfigureAwait(false);
                 _offset = 0;
-                return task;
             }
-
-            return Task.CompletedTask;
         }
 
         public override void Flush()
@@ -422,7 +575,7 @@ namespace System.Xml
         public override async Task FlushAsync()
         {
             await FlushBufferAsync().ConfigureAwait(false);
-            await OutputStream.FlushAsync().ConfigureAwait(false);
+            await AsyncXmlStreamIO.Flush(OutputStream, CancellationToken).ConfigureAwait(false);
         }
 
         public override void Close()
@@ -434,6 +587,16 @@ namespace System.Xml
                     OutputStream.Dispose();
                 }
                 OutputStream = null!;
+            }
+        }
+
+        public override async ValueTask CloseAsync()
+        {
+            Stream? stream = OutputStream;
+            OutputStream = null!;
+            if (stream is not null && _ownsStream)
+            {
+                await stream.DisposeAsync().ConfigureAwait(false);
             }
         }
     }

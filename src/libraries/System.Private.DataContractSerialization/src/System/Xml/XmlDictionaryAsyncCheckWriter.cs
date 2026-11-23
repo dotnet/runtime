@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Xml
@@ -16,11 +17,70 @@ namespace System.Xml
     {
         private readonly XmlDictionaryWriter _coreWriter;
         private Task? _lastTask;
+        private bool _startingSerialization;
 
         public XmlDictionaryAsyncCheckWriter(XmlDictionaryWriter writer)
         {
-            Debug.Assert(writer is IXmlTextWriterInitializer);
+            Debug.Assert(writer is not null);
             _coreWriter = writer;
+        }
+
+        internal override CancellationToken CancellationToken
+        {
+            get => CoreWriter.CancellationToken;
+            set
+            {
+                CheckAsync();
+                CoreWriter.CancellationToken = value;
+            }
+        }
+
+        internal ValueTask RunCheckedWithCancellationAsync<TState>(TState state, CancellationToken cancellationToken,
+            Func<XmlDictionaryWriter, TState, Task> operation)
+        {
+            CheckAsync();
+            return new ValueTask(SetLastTask(CoreWriter.RunWithCancellationAsync(state, cancellationToken, operation).AsTask()));
+        }
+
+        internal Task WriteCheckedPrimitiveElementAsync<T>(string? prefix, XmlDictionaryString name,
+            XmlDictionaryString? ns, object value) where T : struct
+        {
+            CheckAsync();
+            return SetLastTask(CoreWriter.WritePrimitiveElementAsync<T>(prefix, name, ns, value));
+        }
+
+        internal Task RunSerializationAsync<TState>(TState state, Func<XmlDictionaryWriter, TState, Task> operation)
+        {
+            try
+            {
+                CheckAsync();
+            }
+            catch (InvalidOperationException exception)
+            {
+                return Task.FromException(exception);
+            }
+            _startingSerialization = true;
+            try
+            {
+                return SetLastTask(operation(CoreWriter, state));
+            }
+            finally
+            {
+                _startingSerialization = false;
+            }
+        }
+
+        internal Task WriteCheckedArrayAsync<T>(string? prefix, XmlDictionaryString name,
+            XmlDictionaryString? ns, T[] value, int offset, int count) where T : struct
+        {
+            CheckAsync();
+            return SetLastTask(CoreWriter.WriteArrayAsync(prefix, name, ns, value, offset, count));
+        }
+
+        internal override ValueTask CloseAsync(CancellationToken cancellationToken)
+        {
+            CheckAsync();
+            return new ValueTask(SetLastTask(CoreWriter.CloseAsync(cancellationToken).AsTask()));
         }
 
         internal XmlDictionaryWriter CoreWriter
@@ -34,7 +94,7 @@ namespace System.Xml
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void CheckAsync()
         {
-            if (_lastTask != null && !_lastTask.IsCompleted)
+            if (_startingSerialization || _lastTask != null && !_lastTask.IsCompleted)
             {
                 throw new InvalidOperationException(SR.XmlAsyncIsRunningException);
             }
@@ -340,6 +400,18 @@ namespace System.Xml
             CoreWriter.WriteStartAttribute(prefix, localName, ns);
         }
 
+        protected override Task WriteStartAttributeAsync(string? prefix, string localName, string? ns)
+        {
+            CheckAsync();
+            return SetLastTask(CoreWriter.WriteStartAttributeAsyncInternal(prefix, localName, ns));
+        }
+
+        protected override Task WriteEndAttributeAsync()
+        {
+            CheckAsync();
+            return SetLastTask(CoreWriter.WriteEndAttributeAsyncInternal());
+        }
+
         public override void WriteStartDocument()
         {
             CheckAsync();
@@ -446,6 +518,96 @@ namespace System.Xml
         {
             CheckAsync();
             CoreWriter.WriteValue(value);
+        }
+
+        public override void WriteValue(DateTime value)
+        {
+            CheckAsync();
+            CoreWriter.WriteValue(value);
+        }
+
+        public override Task WriteValueAsync(IStreamProvider value)
+        {
+            CheckAsync();
+            return SetLastTask(CoreWriter.WriteValueAsync(value));
+        }
+
+        internal override Task WriteValueAsync(object value)
+        {
+            CheckAsync();
+            return SetLastTask(CoreWriter.WriteValueAsync(value));
+        }
+
+        internal Task WriteCheckedPrimitiveValueAsync<T>(object value) where T : struct
+        {
+            CheckAsync();
+            return SetLastTask(CoreWriter.WritePrimitiveValueAsync<T>(value));
+        }
+
+        internal override Task WriteStartElementAsync(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri)
+        {
+            CheckAsync();
+            return SetLastTask(CoreWriter.WriteStartElementAsync(prefix, localName, namespaceUri));
+        }
+
+        internal override Task WriteStartAttributeAsync(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri)
+        {
+            CheckAsync();
+            return SetLastTask(CoreWriter.WriteStartAttributeAsync(prefix, localName, namespaceUri));
+        }
+
+        internal override Task WriteStringAsync(XmlDictionaryString? value)
+        {
+            CheckAsync();
+            return SetLastTask(CoreWriter.WriteStringAsync(value));
+        }
+
+        internal override Task WriteQualifiedNameAsync(XmlDictionaryString localName, XmlDictionaryString? namespaceUri)
+        {
+            CheckAsync();
+            return SetLastTask(CoreWriter.WriteQualifiedNameAsync(localName, namespaceUri));
+        }
+
+        internal override Task WriteXmlAttributeAsync(string localName, string? value)
+        {
+            CheckAsync();
+            return SetLastTask(CoreWriter.WriteXmlAttributeAsync(localName, value));
+        }
+
+        internal override Task WriteXmlnsAttributeAsync(string? prefix, string namespaceUri)
+        {
+            CheckAsync();
+            return SetLastTask(CoreWriter.WriteXmlnsAttributeAsync(prefix, namespaceUri));
+        }
+
+        internal override Task WriteXmlnsAttributeAsync(string? prefix, XmlDictionaryString namespaceUri)
+        {
+            CheckAsync();
+            return SetLastTask(CoreWriter.WriteXmlnsAttributeAsync(prefix, namespaceUri));
+        }
+
+        internal override Task WriteArrayAsync(string? prefix, string localName, string? namespaceUri, Array array, int offset, int count)
+        {
+            CheckAsync();
+            return SetLastTask(CoreWriter.WriteArrayAsync(prefix, localName, namespaceUri, array, offset, count));
+        }
+
+        internal override Task WriteArrayAsync(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, Array array, int offset, int count)
+        {
+            CheckAsync();
+            return SetLastTask(CoreWriter.WriteArrayAsync(prefix, localName, namespaceUri, array, offset, count));
+        }
+
+        internal override Task StartCanonicalizationAsync(Stream stream, bool includeComments, string[]? inclusivePrefixes)
+        {
+            CheckAsync();
+            return SetLastTask(CoreWriter.StartCanonicalizationAsync(stream, includeComments, inclusivePrefixes));
+        }
+
+        internal override Task EndCanonicalizationAsync()
+        {
+            CheckAsync();
+            return SetLastTask(CoreWriter.EndCanonicalizationAsync());
         }
 
         public override void WriteValue(bool value)
@@ -694,7 +856,16 @@ namespace System.Xml
         protected override void Dispose(bool disposing)
         {
             CheckAsync();
-            CoreWriter.Dispose();
+            if (disposing)
+            {
+                CoreWriter.Dispose();
+            }
+        }
+
+        protected override ValueTask DisposeAsyncCore()
+        {
+            CheckAsync();
+            return new ValueTask(SetLastTask(CoreWriter.DisposeAsync().AsTask()));
         }
 
         public void SetOutput(Stream stream, Encoding encoding, bool ownsStream)

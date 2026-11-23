@@ -13,6 +13,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace System.Xml
 {
@@ -31,6 +32,66 @@ namespace System.Xml
         private AttributeValue _attributeValue;
         private const int maxBytesPerChar = 3;
         private int _textNodeOffset;
+
+        internal bool CanWriteBufferedContractElements => _dictionary is null && _session is null;
+
+        internal static long GetNameMaximumBytes(string value) => 5 + (long)MaxUtf8BytesPerChar * value.Length;
+
+        internal static long GetElementPrefixMaximumBytes(string prefix) =>
+            prefix.Length == 0 || prefix.Length == 1 && char.IsAsciiLetterLower(prefix[0]) ? 0 : GetNameMaximumBytes(prefix);
+
+        internal void WriteBufferedStartElement(string? prefix, byte[] localName)
+        {
+            Debug.Assert(CanWriteBufferedContractElements);
+            if (localName.Length < 128 &&
+                (string.IsNullOrEmpty(prefix) || prefix.Length == 1 && char.IsAsciiLetterLower(prefix[0])))
+            {
+                byte[] buffer = GetBuffer(2 + localName.Length, out int offset);
+                buffer[offset] = string.IsNullOrEmpty(prefix)
+                    ? (byte)XmlBinaryNodeType.ShortElement
+                    : (byte)((int)XmlBinaryNodeType.PrefixElementA + prefix[0] - 'a');
+                buffer[offset + 1] = (byte)localName.Length;
+                localName.AsSpan().CopyTo(buffer.AsSpan(offset + 2));
+                Advance(2 + localName.Length);
+                _textNodeOffset = -1;
+                return;
+            }
+            if (string.IsNullOrEmpty(prefix))
+            {
+                WriteNode(XmlBinaryNodeType.ShortElement);
+            }
+            else if (prefix.Length == 1 && char.IsAsciiLetterLower(prefix[0]))
+            {
+                WritePrefixNode(XmlBinaryNodeType.PrefixElementA, prefix[0] - 'a');
+            }
+            else
+            {
+                WriteNode(XmlBinaryNodeType.Element);
+                WriteName(prefix);
+            }
+            WriteMultiByteInt32(localName.Length);
+            WriteBytes(localName, 0, localName.Length);
+        }
+
+        internal static int GetPrimitiveBufferSize<T>() where T : struct =>
+            typeof(T) == typeof(bool) ? 1 :
+            XmlDictionaryWriter.IsInt32Primitive<T>() || typeof(T) == typeof(float) ? 1 + sizeof(int) :
+            typeof(T) == typeof(uint) || typeof(T) == typeof(long) || typeof(T) == typeof(double) ||
+            typeof(T) == typeof(DateTime) ? 1 + sizeof(long) :
+            typeof(T) == typeof(decimal) ? 1 + sizeof(decimal) : 0;
+
+        internal void WritePrimitiveValue<TPrimitive, TValue>(TValue value) where TPrimitive : struct
+        {
+            if (typeof(TPrimitive) == typeof(bool)) WriteBoolText((bool)(object)value!);
+            else if (XmlDictionaryWriter.IsInt32Primitive<TPrimitive>()) WriteInt32Text(XmlDictionaryWriter.GetInt32Primitive<TPrimitive, TValue>(value));
+            else if (typeof(TPrimitive) == typeof(uint)) WriteInt64Text((uint)(object)value!);
+            else if (typeof(TPrimitive) == typeof(long)) WriteInt64Text((long)(object)value!);
+            else if (typeof(TPrimitive) == typeof(float)) WriteFloatText((float)(object)value!);
+            else if (typeof(TPrimitive) == typeof(double)) WriteDoubleText((double)(object)value!);
+            else if (typeof(TPrimitive) == typeof(decimal)) WriteDecimalText((decimal)(object)value!);
+            else if (typeof(TPrimitive) == typeof(DateTime)) WriteDateTimeText((DateTime)(object)value!);
+            else throw new UnreachableException();
+        }
 
         public XmlBinaryNodeWriter()
         {
@@ -55,6 +116,33 @@ namespace System.Xml
         {
             WriteByte((byte)nodeType);
             _textNodeOffset = -1;
+        }
+
+        private async Task WriteNodeAsync(XmlBinaryNodeType nodeType)
+        {
+            await WriteByteAsync((byte)nodeType).ConfigureAwait(false);
+            _textNodeOffset = -1;
+        }
+
+        private async Task WriteMultiByteInt32Async(int value)
+        {
+            await EnsureBufferAsync(5).ConfigureAwait(false);
+            WriteMultiByteInt32(value);
+        }
+
+        private async Task WriteNameAsync(string value)
+        {
+            if (value.Length < 128 / maxBytesPerChar)
+            {
+                await EnsureBufferAsync(1 + value.Length * maxBytesPerChar).ConfigureAwait(false);
+                WriteName(value);
+            }
+            else
+            {
+                int byteCount = DataContractSerializer.ValidatingUTF8.GetByteCount(value);
+                await WriteMultiByteInt32Async(byteCount).ConfigureAwait(false);
+                await WriteUTF8CharsAsync(value.AsMemory()).ConfigureAwait(false);
+            }
         }
 
         private void WroteAttributeValue()
@@ -141,6 +229,49 @@ namespace System.Xml
 
         public override void WriteDeclaration()
         {
+        }
+
+        public override Task WriteDeclarationAsync() => Task.CompletedTask;
+
+        public override async Task WriteStartElementAsync(string? prefix, string localName)
+        {
+            if (string.IsNullOrEmpty(prefix))
+            {
+                await WriteNodeAsync(XmlBinaryNodeType.ShortElement).ConfigureAwait(false);
+            }
+            else if (prefix.Length == 1 && char.IsAsciiLetterLower(prefix[0]))
+            {
+                await WriteNodeAsync((XmlBinaryNodeType)((int)XmlBinaryNodeType.PrefixElementA + prefix[0] - 'a')).ConfigureAwait(false);
+            }
+            else
+            {
+                await WriteNodeAsync(XmlBinaryNodeType.Element).ConfigureAwait(false);
+                await WriteNameAsync(prefix).ConfigureAwait(false);
+            }
+            await WriteNameAsync(localName).ConfigureAwait(false);
+        }
+
+        public override async Task WriteStartElementAsync(string? prefix, XmlDictionaryString localName)
+        {
+            if (!TryGetKey(localName, out int key))
+            {
+                await WriteStartElementAsync(prefix, localName.Value).ConfigureAwait(false);
+                return;
+            }
+            if (string.IsNullOrEmpty(prefix))
+            {
+                await WriteNodeAsync(XmlBinaryNodeType.ShortDictionaryElement).ConfigureAwait(false);
+            }
+            else if (prefix.Length == 1 && char.IsAsciiLetterLower(prefix[0]))
+            {
+                await WriteNodeAsync((XmlBinaryNodeType)((int)XmlBinaryNodeType.PrefixDictionaryElementA + prefix[0] - 'a')).ConfigureAwait(false);
+            }
+            else
+            {
+                await WriteNodeAsync(XmlBinaryNodeType.DictionaryElement).ConfigureAwait(false);
+                await WriteNameAsync(prefix).ConfigureAwait(false);
+            }
+            await WriteMultiByteInt32Async(key).ConfigureAwait(false);
         }
 
         public override void WriteStartElement(string? prefix, string localName)
@@ -235,6 +366,19 @@ namespace System.Xml
             }
         }
 
+        public override Task WriteEndStartElementAsync(bool isEmpty) =>
+            isEmpty ? WriteEndElementAsync(null, string.Empty) : Task.CompletedTask;
+
+        public override Task WriteEndElementAsync(string? prefix, string localName)
+        {
+            if (_textNodeOffset != -1)
+            {
+                WriteEndElement();
+                return Task.CompletedTask;
+            }
+            return WriteNodeAsync(XmlBinaryNodeType.EndElement);
+        }
+
         public override void WriteStartAttribute(string prefix, string localName)
         {
             if (prefix.Length == 0)
@@ -305,6 +449,72 @@ namespace System.Xml
             _textNodeOffset = -1;
         }
 
+        public override async Task WriteStartAttributeAsync(string prefix, string localName)
+        {
+            if (prefix.Length == 0)
+            {
+                await WriteNodeAsync(XmlBinaryNodeType.ShortAttribute).ConfigureAwait(false);
+            }
+            else if (prefix.Length == 1 && char.IsAsciiLetterLower(prefix[0]))
+            {
+                await WriteNodeAsync((XmlBinaryNodeType)((int)XmlBinaryNodeType.PrefixAttributeA + prefix[0] - 'a')).ConfigureAwait(false);
+            }
+            else
+            {
+                await WriteNodeAsync(XmlBinaryNodeType.Attribute).ConfigureAwait(false);
+                await WriteNameAsync(prefix).ConfigureAwait(false);
+            }
+            await WriteNameAsync(localName).ConfigureAwait(false);
+            _inAttribute = true;
+            _wroteAttributeValue = false;
+        }
+
+        public override async Task WriteStartAttributeAsync(string prefix, XmlDictionaryString localName)
+        {
+            if (!TryGetKey(localName, out int key))
+            {
+                await WriteStartAttributeAsync(prefix, localName.Value).ConfigureAwait(false);
+                return;
+            }
+            if (prefix.Length == 0)
+            {
+                await WriteNodeAsync(XmlBinaryNodeType.ShortDictionaryAttribute).ConfigureAwait(false);
+            }
+            else if (prefix.Length == 1 && char.IsAsciiLetterLower(prefix[0]))
+            {
+                await WriteNodeAsync((XmlBinaryNodeType)((int)XmlBinaryNodeType.PrefixDictionaryAttributeA + prefix[0] - 'a')).ConfigureAwait(false);
+            }
+            else
+            {
+                await WriteNodeAsync(XmlBinaryNodeType.DictionaryAttribute).ConfigureAwait(false);
+                await WriteNameAsync(prefix).ConfigureAwait(false);
+            }
+            await WriteMultiByteInt32Async(key).ConfigureAwait(false);
+            _inAttribute = true;
+            _wroteAttributeValue = false;
+        }
+
+        public override async Task WriteEndAttributeAsync()
+        {
+            _inAttribute = false;
+            if (!_wroteAttributeValue)
+            {
+                if (_attributeValue.Text is string text)
+                    await WriteTextAsync(text).ConfigureAwait(false);
+                else if (_attributeValue.DictionaryText is XmlDictionaryString dictionaryText)
+                    await WriteTextAsync(dictionaryText).ConfigureAwait(false);
+                else if (_attributeValue.TryGetBytes(out ArraySegment<byte> bytes))
+                    await WriteBase64TextAsync(Array.Empty<byte>(), 0, bytes.Array!, bytes.Offset, bytes.Count).ConfigureAwait(false);
+                else
+                {
+                    await EnsureBufferAsync(1).ConfigureAwait(false);
+                    WriteEmptyText();
+                }
+                _attributeValue.Clear();
+            }
+            _textNodeOffset = -1;
+        }
+
         public override void WriteXmlnsAttribute(string? prefix, string ns)
         {
             if (string.IsNullOrEmpty(prefix))
@@ -341,6 +551,27 @@ namespace System.Xml
                     WriteDictionaryString(key);
                 }
             }
+        }
+
+        public override async Task WriteXmlnsAttributeAsync(string? prefix, string ns)
+        {
+            await WriteNodeAsync(string.IsNullOrEmpty(prefix) ? XmlBinaryNodeType.ShortXmlnsAttribute : XmlBinaryNodeType.XmlnsAttribute).ConfigureAwait(false);
+            if (!string.IsNullOrEmpty(prefix))
+                await WriteNameAsync(prefix).ConfigureAwait(false);
+            await WriteNameAsync(ns).ConfigureAwait(false);
+        }
+
+        public override async Task WriteXmlnsAttributeAsync(string? prefix, XmlDictionaryString ns)
+        {
+            if (!TryGetKey(ns, out int key))
+            {
+                await WriteXmlnsAttributeAsync(prefix, ns.Value).ConfigureAwait(false);
+                return;
+            }
+            await WriteNodeAsync(string.IsNullOrEmpty(prefix) ? XmlBinaryNodeType.ShortDictionaryXmlnsAttribute : XmlBinaryNodeType.DictionaryXmlnsAttribute).ConfigureAwait(false);
+            if (!string.IsNullOrEmpty(prefix))
+                await WriteNameAsync(prefix).ConfigureAwait(false);
+            await WriteMultiByteInt32Async(key).ConfigureAwait(false);
         }
 
         private bool TryGetKey(XmlDictionaryString s, out int key)
@@ -440,6 +671,14 @@ namespace System.Xml
         {
             WriteText(value);
         }
+
+        public override async Task WriteCommentAsync(string text)
+        {
+            await WriteNodeAsync(XmlBinaryNodeType.Comment).ConfigureAwait(false);
+            await WriteNameAsync(text).ConfigureAwait(false);
+        }
+
+        public override Task WriteCDataAsync(string text) => WriteTextAsync(text);
 
         private void WriteEmptyText()
         {
@@ -544,6 +783,33 @@ namespace System.Xml
             }
         }
 
+        private async Task WriteTextNodeWithLengthAsync(XmlBinaryNodeType nodeType, int length)
+        {
+            await EnsureBufferAsync(length < 256 ? 2 : length < 65536 ? 3 : 5).ConfigureAwait(false);
+            WriteTextNodeWithLength(nodeType, length);
+        }
+
+        public override async Task WriteBase64TextAsync(byte[] trailBytes, int trailByteCount, byte[] buffer, int offset, int count)
+        {
+            if (_inAttribute)
+            {
+                _attributeValue.WriteBase64Text(trailBytes, trailByteCount, buffer, offset, count);
+                return;
+            }
+            int length = checked(trailByteCount + count);
+            if (length == 0)
+            {
+                await EnsureBufferAsync(1).ConfigureAwait(false);
+                WriteEmptyText();
+                return;
+            }
+            await WriteTextNodeWithLengthAsync(XmlBinaryNodeType.Bytes8Text, length).ConfigureAwait(false);
+            if (trailByteCount != 0)
+                await WriteBytesAsync(trailBytes.AsMemory(0, trailByteCount)).ConfigureAwait(false);
+            if (count != 0)
+                await WriteBytesAsync(buffer.AsMemory(offset, count)).ConfigureAwait(false);
+        }
+
         public override void WriteText(XmlDictionaryString value)
         {
             if (_inAttribute)
@@ -563,6 +829,57 @@ namespace System.Xml
                     WriteDictionaryString(key);
                 }
             }
+        }
+
+        public override async Task WriteTextAsync(XmlDictionaryString value)
+        {
+            if (_inAttribute)
+            {
+                _attributeValue.WriteText(value);
+                return;
+            }
+            if (!TryGetKey(value, out int key))
+            {
+                await WriteTextAsync(value.Value).ConfigureAwait(false);
+                return;
+            }
+            await EnsureBufferAsync(1).ConfigureAwait(false);
+            WriteTextNode(XmlBinaryNodeType.DictionaryText);
+            await WriteMultiByteInt32Async(key).ConfigureAwait(false);
+        }
+
+        public override async Task WriteTextAsync(ReadOnlyMemory<char> value)
+        {
+            if (_inAttribute)
+            {
+                _attributeValue.WriteText(value.ToString());
+                return;
+            }
+            if (value.Length <= byte.MaxValue / maxBytesPerChar)
+            {
+                int size = value.Length == 0 || (value.Length == 1 && value.Span[0] is '0' or '1')
+                    ? 1 : 2 + value.Length * maxBytesPerChar;
+                await EnsureBufferAsync(size).ConfigureAwait(false);
+                WriteTextImpl(value.Span);
+                return;
+            }
+            int byteCount = DataContractSerializer.ValidatingUTF8.GetByteCount(value.Span);
+            if (byteCount / 2 > value.Length)
+            {
+                await WriteTextNodeWithLengthAsync(XmlBinaryNodeType.UnicodeChars8Text, checked(value.Length * sizeof(char))).ConfigureAwait(false);
+                await WriteUnicodeCharsAsync(value).ConfigureAwait(false);
+            }
+            else
+            {
+                await WriteTextNodeWithLengthAsync(XmlBinaryNodeType.Chars8Text, byteCount).ConfigureAwait(false);
+                await WriteUTF8CharsAsync(value).ConfigureAwait(false);
+            }
+        }
+
+        public override async Task WriteTextAsync(ReadOnlyMemory<byte> value)
+        {
+            await WriteTextNodeWithLengthAsync(XmlBinaryNodeType.Chars8Text, value.Length).ConfigureAwait(false);
+            await WriteBytesAsync(value).ConfigureAwait(false);
         }
 
         public override void WriteText(string value)
@@ -703,6 +1020,10 @@ namespace System.Xml
             WriteText(chars, offset, count);
         }
 
+        public override Task WriteEscapedTextAsync(ReadOnlyMemory<char> value) => WriteTextAsync(value);
+        public override Task WriteEscapedTextAsync(ReadOnlyMemory<byte> value) => WriteTextAsync(value);
+        public override Task WriteEscapedTextAsync(XmlDictionaryString value) => WriteTextAsync(value);
+
         public override void WriteCharEntity(int ch)
         {
             if (ch > char.MaxValue)
@@ -715,6 +1036,86 @@ namespace System.Xml
                 char castChar = (char)ch;
                 WriteTextImpl(new ReadOnlySpan<char>(in castChar));
             }
+        }
+
+        public override Task WriteCharEntityAsync(int ch)
+        {
+            if (ch > char.MaxValue)
+            {
+                _ = new SurrogateChar(ch);
+            }
+            return WriteCharEntityCoreAsync(ch);
+        }
+
+        private async Task WriteCharEntityCoreAsync(int ch)
+        {
+            if (!_inAttribute)
+            {
+                int size = ch is '0' or '1' ? 1 : 2 + (ch > char.MaxValue ? 2 : 1) * maxBytesPerChar;
+                await EnsureBufferAsync(size).ConfigureAwait(false);
+            }
+            WriteCharEntity(ch);
+        }
+
+        private static int GetInt32Size(int value) =>
+            value is 0 or 1 ? 1 : value == (sbyte)value ? 2 : value == (short)value ? 3 : 5;
+
+        private static int GetInt64Size(long value) => value == (int)value ? GetInt32Size((int)value) : 9;
+
+        private static int GetFloatSize(float value) =>
+            value >= short.MinValue && value <= short.MaxValue && (int)value == value ? GetInt32Size((int)value) : 5;
+
+        public override Task WriteValueAsync(object value) => value switch
+        {
+            bool => WritePrimitiveValueAsync<bool>(value),
+            int => WritePrimitiveValueAsync<int>(value),
+            long => WritePrimitiveValueAsync<long>(value),
+            ulong => WritePrimitiveValueAsync<ulong>(value),
+            float => WritePrimitiveValueAsync<float>(value),
+            double => WritePrimitiveValueAsync<double>(value),
+            decimal => WritePrimitiveValueAsync<decimal>(value),
+            DateTime => WritePrimitiveValueAsync<DateTime>(value),
+            Guid => WritePrimitiveValueAsync<Guid>(value),
+            TimeSpan => WritePrimitiveValueAsync<TimeSpan>(value),
+            UniqueId uniqueId when uniqueId.IsGuid => WriteUniqueIdValueAsync(uniqueId),
+            _ => WriteTextAsync(XmlDictionaryWriter.GetValueText(value))
+        };
+
+        private async Task WriteUniqueIdValueAsync(UniqueId value)
+        {
+            await EnsureBufferAsync(17).ConfigureAwait(false);
+            WriteUniqueIdText(value);
+        }
+
+        public override async Task WritePrimitiveValueAsync<T>(object value)
+        {
+            int size = typeof(T) == typeof(bool) ? 1
+                : XmlDictionaryWriter.IsInt32Primitive<T>() ? GetInt32Size(XmlDictionaryWriter.GetInt32Primitive<T>(value))
+                : typeof(T) == typeof(uint) ? GetInt64Size((uint)value)
+                : typeof(T) == typeof(long) ? GetInt64Size((long)value)
+                : typeof(T) == typeof(ulong) ? (ulong)value <= long.MaxValue ? GetInt64Size((long)(ulong)value) : 9
+                : typeof(T) == typeof(float) ? GetFloatSize((float)value)
+                : typeof(T) == typeof(double) ? (float)(double)value == (double)value ? GetFloatSize((float)(double)value) : 9
+                : typeof(T) == typeof(decimal) || typeof(T) == typeof(Guid) ? 17
+                : typeof(T) == typeof(DateTime) || typeof(T) == typeof(TimeSpan) ? 9
+                : 0;
+            if (size == 0)
+            {
+                await WriteTextAsync(XmlDictionaryWriter.GetPrimitiveValueText<T>(value)).ConfigureAwait(false);
+                return;
+            }
+            await EnsureBufferAsync(size).ConfigureAwait(false);
+            if (typeof(T) == typeof(bool)) WriteBoolText((bool)value);
+            else if (XmlDictionaryWriter.IsInt32Primitive<T>()) WriteInt32Text(XmlDictionaryWriter.GetInt32Primitive<T>(value));
+            else if (typeof(T) == typeof(uint)) WriteInt64Text((uint)value);
+            else if (typeof(T) == typeof(long)) WriteInt64Text((long)value);
+            else if (typeof(T) == typeof(ulong)) WriteUInt64Text((ulong)value);
+            else if (typeof(T) == typeof(float)) WriteFloatText((float)value);
+            else if (typeof(T) == typeof(double)) WriteDoubleText((double)value);
+            else if (typeof(T) == typeof(decimal)) WriteDecimalText((decimal)value);
+            else if (typeof(T) == typeof(DateTime)) WriteDateTimeText((DateTime)value);
+            else if (typeof(T) == typeof(Guid)) WriteGuidText((Guid)value);
+            else if (typeof(T) == typeof(TimeSpan)) WriteTimeSpanText((TimeSpan)value);
         }
 
         public override void WriteFloatText(float f)
@@ -838,6 +1239,147 @@ namespace System.Xml
             _inList = false;
             _wroteAttributeValue = true;
             WriteNode(XmlBinaryNodeType.EndListText);
+        }
+
+        public override async Task WriteStartListTextAsync()
+        {
+            await EnsureBufferAsync(1).ConfigureAwait(false);
+            WriteStartListText();
+        }
+
+        public override Task WriteListSeparatorAsync() => Task.CompletedTask;
+
+        public override async Task WriteEndListTextAsync()
+        {
+            await EnsureBufferAsync(1).ConfigureAwait(false);
+            WriteEndListText();
+        }
+
+        public Task WriteArrayNodeAsync() => WriteNodeAsync(XmlBinaryNodeType.Array);
+
+        public Task WriteArrayAsync(Array array, int offset, int count)
+        {
+            (XmlBinaryNodeType nodeType, int size) = GetArrayTypeInfo(array);
+            if ((long)count * size + 6 <= StreamBuffer.Length - BufferOffset)
+            {
+                WriteBufferedArray(array, offset, count, nodeType);
+                return Task.CompletedTask;
+            }
+
+            return WriteArrayAsyncCore(array, offset, count, nodeType, size);
+        }
+
+        internal static (XmlBinaryNodeType NodeType, int Size) GetArrayTypeInfo(Array array) =>
+            array switch
+            {
+                bool[] => (XmlBinaryNodeType.BoolTextWithEndElement, sizeof(byte)),
+                short[] => (XmlBinaryNodeType.Int16TextWithEndElement, sizeof(short)),
+                int[] => (XmlBinaryNodeType.Int32TextWithEndElement, sizeof(int)),
+                long[] => (XmlBinaryNodeType.Int64TextWithEndElement, sizeof(long)),
+                float[] => (XmlBinaryNodeType.FloatTextWithEndElement, sizeof(float)),
+                double[] => (XmlBinaryNodeType.DoubleTextWithEndElement, sizeof(double)),
+                decimal[] => (XmlBinaryNodeType.DecimalTextWithEndElement, 16),
+                DateTime[] => (XmlBinaryNodeType.DateTimeTextWithEndElement, sizeof(long)),
+                Guid[] => (XmlBinaryNodeType.GuidTextWithEndElement, 16),
+                TimeSpan[] => (XmlBinaryNodeType.TimeSpanTextWithEndElement, sizeof(long)),
+                _ => throw new NotSupportedException(SR.Format(SR.XmlMethodNotSupported, nameof(WriteArrayAsync)))
+            };
+
+        internal void WriteBufferedArray(Array array, int offset, int count, XmlBinaryNodeType nodeType)
+        {
+            WriteArrayInfo(nodeType, count);
+            WriteArrayBlock(array, offset, count);
+        }
+
+        private async Task WriteArrayAsyncCore(Array array, int offset, int count, XmlBinaryNodeType nodeType, int size)
+        {
+            await WriteNodeAsync(nodeType).ConfigureAwait(false);
+            await WriteMultiByteInt32Async(count).ConfigureAwait(false);
+            while (count > 0)
+            {
+                int chunk = Math.Min(StreamBuffer.Length / size, count);
+                await EnsureBufferAsync(chunk * size).ConfigureAwait(false);
+                WriteArrayBlock(array, offset, chunk);
+                offset += chunk;
+                count -= chunk;
+            }
+        }
+
+        private void WriteRawArrayBlock<T>(T[] array, int offset, int count) where T : unmanaged
+        {
+            ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
+            byte[] destination = GetBuffer(bytes.Length, out int destinationOffset);
+            bytes.CopyTo(destination.AsSpan(destinationOffset));
+            Advance(bytes.Length);
+        }
+
+        private void WriteArrayBlock(Array array, int offset, int count)
+        {
+            switch (array)
+            {
+                case bool[] values: WriteRawArrayBlock(values, offset, count); break;
+                case short[] values when BitConverter.IsLittleEndian: WriteRawArrayBlock(values, offset, count); break;
+                case int[] values when BitConverter.IsLittleEndian: WriteRawArrayBlock(values, offset, count); break;
+                case long[] values when BitConverter.IsLittleEndian: WriteRawArrayBlock(values, offset, count); break;
+                case float[] values when BitConverter.IsLittleEndian: WriteRawArrayBlock(values, offset, count); break;
+                case double[] values when BitConverter.IsLittleEndian: WriteRawArrayBlock(values, offset, count); break;
+                case decimal[] values when BitConverter.IsLittleEndian: WriteRawArrayBlock(values, offset, count); break;
+                case Guid[] values when BitConverter.IsLittleEndian: WriteRawArrayBlock(values, offset, count); break;
+                case short[] values:
+                    foreach (short value in values.AsSpan(offset, count))
+                        WriteRaw(BinaryPrimitives.ReverseEndianness(value));
+                    break;
+                case int[] values:
+                    foreach (int value in values.AsSpan(offset, count))
+                        WriteRaw(BinaryPrimitives.ReverseEndianness(value));
+                    break;
+                case long[] values:
+                    foreach (long value in values.AsSpan(offset, count))
+                        WriteInt64(value);
+                    break;
+                case float[] values:
+                    foreach (float value in values.AsSpan(offset, count))
+                    {
+                        BinaryPrimitives.WriteSingleLittleEndian(GetBuffer(sizeof(float), out int position).AsSpan(position), value);
+                        Advance(sizeof(float));
+                    }
+                    break;
+                case double[] values:
+                    foreach (double value in values.AsSpan(offset, count))
+                    {
+                        BinaryPrimitives.WriteDoubleLittleEndian(GetBuffer(sizeof(double), out int position).AsSpan(position), value);
+                        Advance(sizeof(double));
+                    }
+                    break;
+                case decimal[] values:
+                    Span<int> bits = stackalloc int[4];
+                    foreach (decimal value in values.AsSpan(offset, count))
+                    {
+                        decimal.TryGetBits(value, bits, out _);
+                        Span<byte> destination = GetBuffer(16, out int position).AsSpan(position, 16);
+                        BinaryPrimitives.WriteInt32LittleEndian(destination, bits[3]);
+                        BinaryPrimitives.WriteInt32LittleEndian(destination.Slice(4), bits[2]);
+                        BinaryPrimitives.WriteInt32LittleEndian(destination.Slice(8), bits[0]);
+                        BinaryPrimitives.WriteInt32LittleEndian(destination.Slice(12), bits[1]);
+                        Advance(16);
+                    }
+                    break;
+                case DateTime[] values:
+                    foreach (DateTime value in values.AsSpan(offset, count))
+                        WriteInt64(value.ToBinary());
+                    break;
+                case Guid[] values:
+                    foreach (Guid value in values.AsSpan(offset, count))
+                    {
+                        value.TryWriteBytes(GetBuffer(16, out int position).AsSpan(position, 16));
+                        Advance(16);
+                    }
+                    break;
+                case TimeSpan[] values:
+                    foreach (TimeSpan value in values.AsSpan(offset, count))
+                        WriteInt64(value.Ticks);
+                    break;
+            }
         }
 
         public void WriteArrayNode()
@@ -1032,9 +1574,45 @@ namespace System.Xml
             }
         }
 
+        public override async Task WriteQualifiedNameAsync(string prefix, XmlDictionaryString localName)
+        {
+            if (prefix.Length == 0)
+            {
+                await WriteTextAsync(localName).ConfigureAwait(false);
+            }
+            else if (prefix.Length == 1 && char.IsAsciiLetterLower(prefix[0]) && TryGetKey(localName, out int key))
+            {
+                await EnsureBufferAsync(2).ConfigureAwait(false);
+                WriteTextNodeWithInt8(XmlBinaryNodeType.QNameDictionaryText, (byte)(prefix[0] - 'a'));
+                await WriteMultiByteInt32Async(key).ConfigureAwait(false);
+            }
+            else
+            {
+                await WriteTextAsync(prefix).ConfigureAwait(false);
+                await WriteTextAsync(":").ConfigureAwait(false);
+                await WriteTextAsync(localName).ConfigureAwait(false);
+            }
+        }
+
         protected override void FlushBuffer()
         {
             base.FlushBuffer();
+            _textNodeOffset = -1;
+        }
+
+        protected override Task FlushBufferAsync()
+        {
+            Task operation = base.FlushBufferAsync();
+            if (!operation.IsCompletedSuccessfully)
+                return AwaitFlushBufferAsync(operation);
+
+            _textNodeOffset = -1;
+            return operation;
+        }
+
+        private async Task AwaitFlushBufferAsync(Task operation)
+        {
+            await operation.ConfigureAwait(false);
             _textNodeOffset = -1;
         }
 
@@ -1044,11 +1622,31 @@ namespace System.Xml
             _attributeValue.Clear();
         }
 
+        public override async ValueTask CloseAsync()
+        {
+            try
+            {
+                await base.CloseAsync().ConfigureAwait(false);
+            }
+            finally
+            {
+                _attributeValue.Clear();
+            }
+        }
+
         private struct AttributeValue
         {
             private string? _captureText;
             private XmlDictionaryString? _captureXText;
             private MemoryStream? _captureStream;
+
+            public string? Text => _captureText;
+            public XmlDictionaryString? DictionaryText => _captureXText;
+            public bool TryGetBytes(out ArraySegment<byte> bytes)
+            {
+                bytes = default;
+                return _captureStream is not null && _captureStream.TryGetBuffer(out bytes);
+            }
 
             public void Clear()
             {
@@ -1256,6 +1854,79 @@ namespace System.Xml
             _writer.WriteArrayNode();
             WriteStartElement(prefix, localName, namespaceUri);
             WriteEndElement();
+        }
+
+        internal override async Task WriteArrayAsync(string? prefix, string localName, string? namespaceUri, Array array, int offset, int count)
+        {
+            if (Signing)
+            {
+                await base.WriteArrayAsync(prefix, localName, namespaceUri, array, offset, count).ConfigureAwait(false);
+                return;
+            }
+            CheckArrayBounds(array, offset, count);
+            if (count > 0)
+            {
+                await StartArrayAsync(count).ConfigureAwait(false);
+                await _writer.WriteArrayNodeAsync().ConfigureAwait(false);
+                await WriteStartElementAsync(prefix, localName, namespaceUri).ConfigureAwait(false);
+                await WriteEndElementAsync().ConfigureAwait(false);
+                await _writer.WriteArrayAsync(array, offset, count).ConfigureAwait(false);
+            }
+        }
+
+        internal override Task WriteArrayAsync(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, Array array, int offset, int count)
+        {
+            if (!Signing)
+            {
+                CheckArrayBounds(array, offset, count);
+                if (count > 0)
+                {
+                    (XmlBinaryNodeType nodeType, int size) = XmlBinaryNodeWriter.GetArrayTypeInfo(array);
+                    if (TryGetBufferedBinaryArraySpace(prefix, localName, namespaceUri, 6L + (long)count * size, out int maximumBytes))
+                    {
+                        if (_writer.HasBufferSpace(maximumBytes))
+                        {
+                            WriteBufferedArray(prefix, localName, namespaceUri, array, offset, count, nodeType);
+                            return Task.CompletedTask;
+                        }
+                        return WriteBufferedArrayAsync(prefix, localName, namespaceUri, array, offset, count, nodeType, maximumBytes);
+                    }
+                }
+            }
+
+            return WriteArrayAsyncCore(prefix, localName, namespaceUri, array, offset, count);
+        }
+
+        private void WriteBufferedArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri,
+            Array array, int offset, int count, XmlBinaryNodeType nodeType)
+        {
+            WriteStartArray(prefix, localName, namespaceUri, count);
+            _writer.WriteBufferedArray(array, offset, count, nodeType);
+        }
+
+        private async Task WriteBufferedArrayAsync(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri,
+            Array array, int offset, int count, XmlBinaryNodeType nodeType, int maximumBytes)
+        {
+            await _writer.EnsureBufferAsync(maximumBytes).ConfigureAwait(false);
+            WriteBufferedArray(prefix, localName, namespaceUri, array, offset, count, nodeType);
+        }
+
+        private async Task WriteArrayAsyncCore(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, Array array, int offset, int count)
+        {
+            if (Signing)
+            {
+                await base.WriteArrayAsync(prefix, localName, namespaceUri, array, offset, count).ConfigureAwait(false);
+                return;
+            }
+            CheckArrayBounds(array, offset, count);
+            if (count > 0)
+            {
+                await StartArrayAsync(count).ConfigureAwait(false);
+                await _writer.WriteArrayNodeAsync().ConfigureAwait(false);
+                await WriteStartElementAsync(prefix, localName, namespaceUri).ConfigureAwait(false);
+                await WriteEndElementAsync().ConfigureAwait(false);
+                await _writer.WriteArrayAsync(array, offset, count).ConfigureAwait(false);
+            }
         }
 
         private void WriteArray(string? prefix, string localName, string? namespaceUri,

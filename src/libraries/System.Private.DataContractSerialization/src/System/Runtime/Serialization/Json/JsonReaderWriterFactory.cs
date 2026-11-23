@@ -6,6 +6,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Xml;
 
 namespace System.Runtime.Serialization.Json
@@ -70,6 +72,14 @@ namespace System.Runtime.Serialization.Json
             XmlJsonWriter writer = new XmlJsonWriter(indent, indentChars);
             writer.SetOutput(stream, encoding, ownsStream);
             return writer;
+        }
+
+        internal static async ValueTask<XmlDictionaryWriter> CreateJsonWriterAsync(Stream stream, Encoding encoding, bool ownsStream,
+            bool indent, string? indentChars, CancellationToken cancellationToken)
+        {
+            XmlJsonWriter writer = new XmlJsonWriter(indent, indentChars);
+            await writer.SetOutputAsync(stream, encoding, ownsStream, cancellationToken).ConfigureAwait(false);
+            return new XmlDictionaryAsyncCheckWriter(writer);
         }
     }
 }

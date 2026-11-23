@@ -7,8 +7,10 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Xml
@@ -43,6 +45,23 @@ namespace System.Xml
             _nsMgr = new NamespaceManager();
             _writeState = WriteState.Start;
             _documentState = DocumentState.None;
+        }
+
+        internal override CancellationToken CancellationToken
+        {
+            get => _nodeWriter.CancellationToken;
+            set
+            {
+                _nodeWriter.CancellationToken = value;
+                if (_signingWriter is not null)
+                {
+                    _signingWriter.CancellationToken = value;
+                }
+                if (_textFragmentWriter is not null)
+                {
+                    _textFragmentWriter.CancellationToken = value;
+                }
+            }
         }
 
         protected void SetOutput(XmlStreamNodeWriter writer)
@@ -106,6 +125,49 @@ namespace System.Xml
                 _textFragmentWriter?.Close();
                 _oldWriter = null;
                 _oldStream = null;
+            }
+        }
+
+        protected override async ValueTask DisposeAsyncCore()
+        {
+            if (IsClosed)
+            {
+                return;
+            }
+            try
+            {
+                await FinishDocumentAsync().ConfigureAwait(false);
+                await AutoCompleteAsync(WriteState.Closed).ConfigureAwait(false);
+                await _writer.FlushAsync().ConfigureAwait(false);
+            }
+            finally
+            {
+                _writeState = WriteState.Closed;
+                _nsMgr.Close();
+                if (_depth != 0)
+                {
+                    _elements = null;
+                    _depth = 0;
+                }
+                _attributeValue = null;
+                _attributeLocalName = null;
+                try
+                {
+                    await _nodeWriter.CloseAsync().ConfigureAwait(false);
+                }
+                finally
+                {
+                    if (_signingWriter is not null)
+                    {
+                        await _signingWriter.CloseAsync().ConfigureAwait(false);
+                    }
+                    if (_textFragmentWriter is not null)
+                    {
+                        await _textFragmentWriter.CloseAsync().ConfigureAwait(false);
+                    }
+                    _oldWriter = null;
+                    _oldStream = null;
+                }
             }
         }
 
@@ -190,6 +252,18 @@ namespace System.Xml
             {
                 _nsMgr.AddNamespaceIfNotDeclared(prefix, ns.Value, ns);
             }
+        }
+
+        internal override Task WriteXmlnsAttributeAsync(string? prefix, string namespaceUri)
+        {
+            WriteXmlnsAttribute(prefix, namespaceUri);
+            return Task.CompletedTask;
+        }
+
+        internal override Task WriteXmlnsAttributeAsync(string? prefix, XmlDictionaryString namespaceUri)
+        {
+            WriteXmlnsAttribute(prefix, namespaceUri);
+            return Task.CompletedTask;
         }
 
         private void StartAttribute([AllowNull] ref string prefix, string localName, string? ns, XmlDictionaryString? xNs)
@@ -299,6 +373,32 @@ namespace System.Xml
             if (!_isXmlnsAttribute)
             {
                 _writer.WriteStartAttribute(prefix, localName!);
+            }
+        }
+
+        protected override async Task WriteStartAttributeAsync(string? prefix, string localName, string? namespaceUri)
+        {
+            if (_writeState == WriteState.Attribute)
+            {
+                await WriteEndAttributeAsync().ConfigureAwait(false);
+            }
+            StartAttribute(ref prefix, localName, namespaceUri, null);
+            if (!_isXmlnsAttribute)
+            {
+                await _writer.WriteStartAttributeAsync(prefix, localName).ConfigureAwait(false);
+            }
+        }
+
+        internal override async Task WriteStartAttributeAsync(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri)
+        {
+            if (_writeState == WriteState.Attribute)
+            {
+                await WriteEndAttributeAsync().ConfigureAwait(false);
+            }
+            StartAttribute(ref prefix, localName?.Value!, namespaceUri?.Value, namespaceUri);
+            if (!_isXmlnsAttribute)
+            {
+                await _writer.WriteStartAttributeAsync(prefix, localName!).ConfigureAwait(false);
             }
         }
 
@@ -448,6 +548,20 @@ namespace System.Xml
             EndComment();
         }
 
+        public override async Task WriteCommentAsync(string? text)
+        {
+            if (IsClosed)
+                ThrowClosed();
+            if (_writeState == WriteState.Attribute)
+                throw new InvalidOperationException(SR.Format(SR.XmlInvalidWriteState, nameof(WriteComment), WriteState.ToString()));
+            text ??= string.Empty;
+            if (text.Contains("--") || text.EndsWith('-'))
+                throw new ArgumentException(SR.XmlInvalidCommentChars, nameof(text));
+            await FlushElementAsync().ConfigureAwait(false);
+            await FlushBase64Async().ConfigureAwait(false);
+            await _writer.WriteCommentAsync(text).ConfigureAwait(false);
+        }
+
         public override void WriteFullEndElement()
         {
             if (IsClosed)
@@ -461,6 +575,18 @@ namespace System.Xml
 
             AutoComplete(WriteState.Content);
             WriteEndElement();
+        }
+
+        public override async Task WriteFullEndElementAsync()
+        {
+            if (IsClosed)
+                ThrowClosed();
+            if (_writeState == WriteState.Attribute)
+                await WriteEndAttributeAsync().ConfigureAwait(false);
+            if (_writeState != WriteState.Element && _writeState != WriteState.Content)
+                throw new InvalidOperationException(SR.Format(SR.XmlInvalidWriteState, nameof(WriteFullEndElement), WriteState.ToString()));
+            await AutoCompleteAsync(WriteState.Content).ConfigureAwait(false);
+            await WriteEndElementAsync().ConfigureAwait(false);
         }
 
         public override void WriteCData(string? text)
@@ -482,10 +608,27 @@ namespace System.Xml
             }
         }
 
+        public override async Task WriteCDataAsync(string? text)
+        {
+            if (IsClosed)
+                ThrowClosed();
+            if (_writeState == WriteState.Attribute)
+                throw new InvalidOperationException(SR.Format(SR.XmlInvalidWriteState, nameof(WriteCData), WriteState.ToString()));
+            if (!string.IsNullOrEmpty(text))
+            {
+                await StartContentAsync().ConfigureAwait(false);
+                await FlushBase64Async().ConfigureAwait(false);
+                await _writer.WriteCDataAsync(text).ConfigureAwait(false);
+            }
+        }
+
         public override void WriteDocType(string name, string? pubid, string? sysid, string? subset)
         {
             throw new NotSupportedException(SR.Format(SR.XmlMethodNotSupported, "WriteDocType"));
         }
+
+        public override Task WriteDocTypeAsync(string name, string? pubid, string? sysid, string? subset) =>
+            throw new NotSupportedException(SR.Format(SR.XmlMethodNotSupported, nameof(WriteDocType)));
 
         private void StartElement(ref string? prefix, string localName, string? ns, XmlDictionaryString? xNs)
         {
@@ -537,7 +680,9 @@ namespace System.Xml
 
             if (_documentState == DocumentState.Epilog)
                 throw new InvalidOperationException(SR.XmlOnlyOneRoot);
-            ArgumentException.ThrowIfNullOrEmpty(localName);
+            ArgumentNullException.ThrowIfNull(localName);
+            if (localName.Length == 0)
+                throw new ArgumentException(SR.InvalidLocalNameEmpty, nameof(localName));
             if (_writeState == WriteState.Attribute)
                 throw new InvalidOperationException(SR.Format(SR.XmlInvalidWriteState, "WriteStartElement", WriteState.ToString()));
         }
@@ -591,13 +736,115 @@ namespace System.Xml
         public override Task WriteStartElementAsync(string? prefix, string localName, string? namespaceUri)
         {
             PreStartElementAsyncCheck(localName);
+            if (_trailByteCount == 0 && _writer is XmlUTF8NodeWriter { CanWriteBufferedContractElements: true } textWriter)
+            {
+                long maximumBytes = GetStartElementMaximumBytes(textWriter, prefix, localName, namespaceUri);
+                if (maximumBytes <= textWriter.StreamBuffer.Length)
+                {
+                    if (textWriter.HasBufferSpace((int)maximumBytes))
+                    {
+                        WriteStartElement(prefix, localName, namespaceUri);
+                        return Task.CompletedTask;
+                    }
+
+                    return WriteBufferedStartElementAsync(textWriter, prefix, localName, namespaceUri, (int)maximumBytes);
+                }
+            }
+
             return StartElementAndWriteStartElementAsync(prefix, localName, namespaceUri);
+        }
+
+        private long GetStartElementMaximumBytes(XmlUTF8NodeWriter writer, string? prefix, string localName, string? namespaceUri)
+        {
+            string actualPrefix = prefix ?? (namespaceUri is null ? string.Empty : _nsMgr.LookupPrefix(namespaceUri)) ?? string.Empty;
+            return GetPendingElementMaximumBytes(writer) + 2 +
+                (long)XmlStreamNodeWriter.MaxUtf8BytesPerChar * (actualPrefix.Length + (long)localName.Length);
+        }
+
+        private long GetPendingElementMaximumBytes(XmlUTF8NodeWriter writer) =>
+            _writeState == WriteState.Element ? 1 + _nsMgr.GetPendingNamespaceMaximumBytes(writer) : 0;
+
+        private async Task WriteBufferedStartElementAsync(XmlUTF8NodeWriter writer, string? prefix,
+            string localName, string? namespaceUri, int maximumBytes)
+        {
+            await writer.EnsureBufferAsync(maximumBytes).ConfigureAwait(false);
+            WriteStartElement(prefix, localName, namespaceUri);
         }
 
         public override void WriteStartElement(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri)
         {
             StartElement(ref prefix, localName.Value, namespaceUri?.Value, namespaceUri);
             _writer.WriteStartElement(prefix, localName);
+        }
+
+        internal override Task WriteStartElementAsync(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri)
+        {
+            PreStartElementAsyncCheck(localName.Value);
+            if (_writer is XmlBinaryNodeWriter { CanWriteBufferedContractElements: true } binaryWriter &&
+                _trailByteCount == 0)
+            {
+                string actualPrefix = prefix ?? (namespaceUri is null ? string.Empty : _nsMgr.LookupPrefix(namespaceUri.Value)) ?? string.Empty;
+                byte[] nameBytes = localName.ToUTF8();
+                long maximumBytes = 1 + XmlBinaryNodeWriter.GetElementPrefixMaximumBytes(actualPrefix) +
+                    (nameBytes.Length == localName.Value.Length ? 5L + nameBytes.Length : XmlBinaryNodeWriter.GetNameMaximumBytes(localName.Value)) +
+                    (_writeState == WriteState.Element ? _nsMgr.GetPendingNamespaceMaximumBytes(binaryWriter) : 0);
+                if (maximumBytes <= binaryWriter.StreamBuffer.Length)
+                {
+                    if (binaryWriter.HasBufferSpace((int)maximumBytes))
+                    {
+                        WriteBufferedBinaryStartElement(binaryWriter, prefix, localName, namespaceUri);
+                        return Task.CompletedTask;
+                    }
+                    return WriteBufferedBinaryStartElementAsync(binaryWriter, prefix, localName, namespaceUri, (int)maximumBytes);
+                }
+            }
+            if (_trailByteCount == 0 && _writer is XmlUTF8NodeWriter { CanWriteBufferedContractElements: true } textWriter)
+            {
+                long maximumBytes = GetStartElementMaximumBytes(textWriter, prefix, localName.Value, namespaceUri?.Value);
+                if (maximumBytes <= textWriter.StreamBuffer.Length)
+                {
+                    if (textWriter.HasBufferSpace((int)maximumBytes))
+                    {
+                        WriteStartElement(prefix, localName, namespaceUri);
+                        return Task.CompletedTask;
+                    }
+
+                    return WriteBufferedStartElementAsync(textWriter, prefix, localName, namespaceUri, (int)maximumBytes);
+                }
+            }
+
+            return WriteStartElementAsyncCore(prefix, localName, namespaceUri);
+        }
+
+        private async Task WriteBufferedBinaryStartElementAsync(XmlBinaryNodeWriter writer, string? prefix,
+            XmlDictionaryString localName, XmlDictionaryString? namespaceUri, int maximumBytes)
+        {
+            await writer.EnsureBufferAsync(maximumBytes).ConfigureAwait(false);
+            WriteBufferedBinaryStartElement(writer, prefix, localName, namespaceUri);
+        }
+
+        private void WriteBufferedBinaryStartElement(XmlBinaryNodeWriter writer, string? prefix,
+            XmlDictionaryString localName, XmlDictionaryString? namespaceUri)
+        {
+            StartElement(ref prefix, localName.Value, namespaceUri?.Value, namespaceUri);
+            byte[] nameBytes = localName.ToUTF8();
+            if (nameBytes.Length == localName.Value.Length)
+                writer.WriteBufferedStartElement(prefix, nameBytes);
+            else
+                writer.WriteStartElement(prefix, localName);
+        }
+
+        private async Task WriteStartElementAsyncCore(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri)
+        {
+            prefix = await StartElementAsync(prefix, localName.Value, namespaceUri?.Value, namespaceUri).ConfigureAwait(false);
+            await _writer.WriteStartElementAsync(prefix, localName).ConfigureAwait(false);
+        }
+
+        private async Task WriteBufferedStartElementAsync(XmlUTF8NodeWriter writer, string? prefix,
+            XmlDictionaryString localName, XmlDictionaryString? namespaceUri, int maximumBytes)
+        {
+            await writer.EnsureBufferAsync(maximumBytes).ConfigureAwait(false);
+            WriteStartElement(prefix, localName, namespaceUri);
         }
 
         public override void WriteEndElement()
@@ -635,7 +882,51 @@ namespace System.Xml
             if (_depth == 0)
                 throw new InvalidOperationException(SR.Format(SR.XmlInvalidDepth, "WriteEndElement", _depth.ToString(CultureInfo.InvariantCulture)));
 
+            if (_writer is XmlBinaryNodeWriter { CanWriteBufferedContractElements: true } binaryWriter &&
+                _trailByteCount == 0 && _writeState != WriteState.Attribute)
+            {
+                long maximumBytes = 1 + (_writeState == WriteState.Element ? _nsMgr.GetPendingNamespaceMaximumBytes(binaryWriter) : 0);
+                if (maximumBytes <= binaryWriter.StreamBuffer.Length)
+                {
+                    if (binaryWriter.HasBufferSpace((int)maximumBytes))
+                    {
+                        WriteEndElement();
+                        return Task.CompletedTask;
+                    }
+                    return WriteBufferedBinaryEndElementAsync(binaryWriter, (int)maximumBytes);
+                }
+            }
+            if (_trailByteCount == 0 && _writeState != WriteState.Attribute && _writer is XmlUTF8NodeWriter { CanWriteBufferedContractElements: true } textWriter)
+            {
+                Element element = _elements![_depth];
+                long maximumBytes = _writeState == WriteState.Element
+                    ? 2 + _nsMgr.GetPendingNamespaceMaximumBytes(textWriter)
+                    : 4 + (long)XmlStreamNodeWriter.MaxUtf8BytesPerChar * ((element.Prefix?.Length ?? 0) + (long)element.LocalName!.Length);
+                if (maximumBytes <= textWriter.StreamBuffer.Length)
+                {
+                    if (textWriter.HasBufferSpace((int)maximumBytes))
+                    {
+                        WriteEndElement();
+                        return Task.CompletedTask;
+                    }
+
+                    return WriteBufferedEndElementAsync(textWriter, (int)maximumBytes);
+                }
+            }
+
             return WriteEndElementAsyncImpl();
+        }
+
+        private async Task WriteBufferedBinaryEndElementAsync(XmlBinaryNodeWriter writer, int maximumBytes)
+        {
+            await writer.EnsureBufferAsync(maximumBytes).ConfigureAwait(false);
+            WriteEndElement();
+        }
+
+        private async Task WriteBufferedEndElementAsync(XmlUTF8NodeWriter writer, int maximumBytes)
+        {
+            await writer.EnsureBufferAsync(maximumBytes).ConfigureAwait(false);
+            WriteEndElement();
         }
 
         private async Task WriteEndElementAsyncImpl()
@@ -643,10 +934,10 @@ namespace System.Xml
             if (_writeState == WriteState.Attribute)
                 await WriteEndAttributeAsync().ConfigureAwait(false);
 
-            FlushBase64();
+            await FlushBase64Async().ConfigureAwait(false);
             if (_writeState == WriteState.Element)
             {
-                _nsMgr.DeclareNamespaces(_writer);
+                await _nsMgr.DeclareNamespacesAsync(_writer).ConfigureAwait(false);
                 await _writer.WriteEndStartElementAsync(true).ConfigureAwait(false);
             }
             else
@@ -727,6 +1018,20 @@ namespace System.Xml
                 throw new InvalidOperationException(SR.XmlIllegalOutsideRoot);
         }
 
+        private async Task StartContentAsync(string value)
+        {
+            await FlushElementAsync().ConfigureAwait(false);
+            if (_depth == 0)
+                VerifyWhitespace(value);
+        }
+
+        private async Task StartContentAsync(char[] chars, int offset, int count)
+        {
+            await FlushElementAsync().ConfigureAwait(false);
+            if (_depth == 0)
+                VerifyWhitespace(chars, offset, count);
+        }
+
         protected void StartContent(char ch)
         {
             FlushElement();
@@ -794,10 +1099,10 @@ namespace System.Xml
             _writer.WriteEndStartElement(false);
         }
 
-        private Task EndStartElementAsync()
+        private async Task EndStartElementAsync()
         {
-            _nsMgr.DeclareNamespaces(_writer);
-            return _writer.WriteEndStartElementAsync(false);
+            await _nsMgr.DeclareNamespacesAsync(_writer).ConfigureAwait(false);
+            await _writer.WriteEndStartElementAsync(false).ConfigureAwait(false);
         }
 
         public override string? LookupPrefix(string ns)
@@ -838,6 +1143,20 @@ namespace System.Xml
             WriteString(localName);
         }
 
+        public override async Task WriteQualifiedNameAsync(string localName, string? ns)
+        {
+            if (IsClosed)
+                ThrowClosed();
+            ArgumentException.ThrowIfNullOrEmpty(localName);
+            string prefix = GetQualifiedNamePrefix(ns ?? string.Empty, null);
+            if (prefix.Length != 0)
+            {
+                await WriteStringAsync(prefix).ConfigureAwait(false);
+                await WriteStringAsync(":").ConfigureAwait(false);
+            }
+            await WriteStringAsync(localName).ConfigureAwait(false);
+        }
+
         public override void WriteQualifiedName(XmlDictionaryString localName, XmlDictionaryString? namespaceUri)
         {
             if (IsClosed)
@@ -857,6 +1176,25 @@ namespace System.Xml
                 StartContent();
                 _writer.WriteQualifiedName(prefix, localName);
                 EndContent();
+            }
+        }
+
+        internal override async Task WriteQualifiedNameAsync(XmlDictionaryString localName, XmlDictionaryString? namespaceUri)
+        {
+            if (IsClosed)
+                ThrowClosed();
+            ArgumentNullException.ThrowIfNull(localName);
+            if (localName.Value.Length == 0)
+                throw new ArgumentException(SR.InvalidLocalNameEmpty, nameof(localName));
+            namespaceUri ??= XmlDictionaryString.Empty;
+            string prefix = GetQualifiedNamePrefix(namespaceUri.Value, namespaceUri);
+            await FlushBase64Async().ConfigureAwait(false);
+            if (_attributeValue is not null)
+                WriteAttributeText(string.Concat(prefix, ":", namespaceUri.Value));
+            if (!_isXmlnsAttribute)
+            {
+                await StartContentAsync().ConfigureAwait(false);
+                await _writer.WriteQualifiedNameAsync(prefix, localName).ConfigureAwait(false);
             }
         }
 
@@ -881,6 +1219,19 @@ namespace System.Xml
             WriteStartDocument();
         }
 
+        public override Task WriteStartDocumentAsync()
+        {
+            if (IsClosed)
+                ThrowClosed();
+            if (_writeState != WriteState.Start)
+                throw new InvalidOperationException(SR.Format(SR.XmlInvalidWriteState, nameof(WriteStartDocument), WriteState.ToString()));
+            _writeState = WriteState.Prolog;
+            _documentState = DocumentState.Document;
+            return _writer.WriteDeclarationAsync();
+        }
+
+        public override Task WriteStartDocumentAsync(bool standalone) => WriteStartDocumentAsync();
+
 
         public override void WriteProcessingInstruction(string name, string? text)
         {
@@ -899,6 +1250,17 @@ namespace System.Xml
             _writer.WriteDeclaration();
         }
 
+        public override Task WriteProcessingInstructionAsync(string name, string? text)
+        {
+            if (IsClosed)
+                ThrowClosed();
+            if (name != "xml")
+                throw new ArgumentException(SR.XmlProcessingInstructionNotSupported, nameof(name));
+            if (_writeState != WriteState.Start)
+                throw new InvalidOperationException(SR.XmlInvalidDeclaration);
+            return _writer.WriteDeclarationAsync();
+        }
+
         private void FinishDocument()
         {
             if (_writeState == WriteState.Attribute)
@@ -912,6 +1274,18 @@ namespace System.Xml
             }
         }
 
+        private async Task FinishDocumentAsync()
+        {
+            if (_writeState == WriteState.Attribute)
+            {
+                await WriteEndAttributeAsync().ConfigureAwait(false);
+            }
+            while (_depth > 0)
+            {
+                await WriteEndElementAsync().ConfigureAwait(false);
+            }
+        }
+
         public override void WriteEndDocument()
         {
             if (IsClosed)
@@ -921,6 +1295,17 @@ namespace System.Xml
                 throw new InvalidOperationException(SR.XmlNoRootElement);
 
             FinishDocument();
+            _writeState = WriteState.Start;
+            _documentState = DocumentState.End;
+        }
+
+        public override async Task WriteEndDocumentAsync()
+        {
+            if (IsClosed)
+                ThrowClosed();
+            if (_writeState == WriteState.Start || _writeState == WriteState.Prolog)
+                throw new InvalidOperationException(SR.XmlNoRootElement);
+            await FinishDocumentAsync().ConfigureAwait(false);
             _writeState = WriteState.Start;
             _documentState = DocumentState.End;
         }
@@ -942,6 +1327,9 @@ namespace System.Xml
             throw new NotSupportedException(SR.Format(SR.XmlMethodNotSupported, "WriteEntityRef"));
         }
 
+        public override Task WriteEntityRefAsync(string name) =>
+            throw new NotSupportedException(SR.Format(SR.XmlMethodNotSupported, nameof(WriteEntityRef)));
+
         public override void WriteName(string name)
         {
             if (IsClosed)
@@ -950,10 +1338,15 @@ namespace System.Xml
             WriteString(name);
         }
 
+        public override Task WriteNameAsync(string name) => WriteStringAsync(name);
+
         public override void WriteNmToken(string name)
         {
             throw new NotSupportedException(SR.Format(SR.XmlMethodNotSupported, "WriteNmToken"));
         }
+
+        public override Task WriteNmTokenAsync(string name) =>
+            throw new NotSupportedException(SR.Format(SR.XmlMethodNotSupported, nameof(WriteNmToken)));
 
         public override void WriteWhitespace(string? whitespace)
         {
@@ -968,6 +1361,16 @@ namespace System.Xml
             }
 
             WriteString(whitespace);
+        }
+
+        public override Task WriteWhitespaceAsync(string? ws)
+        {
+            if (IsClosed)
+                ThrowClosed();
+            ArgumentNullException.ThrowIfNull(ws);
+            if (ws.AsSpan().ContainsAnyExcept(" \t\r\n"))
+                throw new ArgumentException(SR.XmlOnlyWhitespace, nameof(ws));
+            return WriteStringAsync(ws);
         }
 
         public override void WriteString(string? value)
@@ -1016,6 +1419,78 @@ namespace System.Xml
             }
         }
 
+        public override Task WriteStringAsync(string? text)
+        {
+            if (IsClosed)
+                ThrowClosed();
+            text ??= string.Empty;
+            return text.Length > 0 || _inList ? WriteStringAsyncImpl(text, null, raw: false) : Task.CompletedTask;
+        }
+
+        internal override Task WriteStringAsync(XmlDictionaryString? value)
+        {
+            if (IsClosed)
+                ThrowClosed();
+            ArgumentNullException.ThrowIfNull(value);
+            return value.Value.Length > 0 ? WriteStringAsyncImpl(value.Value, value, raw: false) : Task.CompletedTask;
+        }
+
+        private Task WriteStringAsyncImpl(string value, XmlDictionaryString? dictionaryValue, bool raw)
+        {
+            if (_trailByteCount == 0 && _writer is XmlUTF8NodeWriter { CanWriteBufferedContractElements: true } textWriter)
+            {
+                long maximumBytes = GetPendingElementMaximumBytes(textWriter) +
+                    (raw ? (long)XmlStreamNodeWriter.MaxUtf8BytesPerChar * value.Length
+                        : textWriter.GetEscapedTextMaximumBytes(value, _writeState == WriteState.Attribute));
+                if (maximumBytes <= textWriter.StreamBuffer.Length)
+                {
+                    if (textWriter.HasBufferSpace((int)maximumBytes))
+                    {
+                        WriteBufferedString(value, dictionaryValue, raw);
+                        return Task.CompletedTask;
+                    }
+
+                    return WriteBufferedStringAsync(textWriter, value, dictionaryValue, raw, (int)maximumBytes);
+                }
+            }
+
+            return WriteStringAsyncCore(value, dictionaryValue, raw);
+        }
+
+        private void WriteBufferedString(string value, XmlDictionaryString? dictionaryValue, bool raw)
+        {
+            if (raw)
+                WriteRaw(value);
+            else if (dictionaryValue is not null)
+                WriteString(dictionaryValue);
+            else
+                WriteString(value);
+        }
+
+        private async Task WriteBufferedStringAsync(XmlUTF8NodeWriter writer, string value,
+            XmlDictionaryString? dictionaryValue, bool raw, int maximumBytes)
+        {
+            await writer.EnsureBufferAsync(maximumBytes).ConfigureAwait(false);
+            WriteBufferedString(value, dictionaryValue, raw);
+        }
+
+        private async Task WriteStringAsyncCore(string value, XmlDictionaryString? dictionaryValue, bool raw)
+        {
+            await FlushBase64Async().ConfigureAwait(false);
+            if (_attributeValue is not null)
+                WriteAttributeText(value);
+            if (!_isXmlnsAttribute)
+            {
+                await StartContentAsync(value).ConfigureAwait(false);
+                if (raw)
+                    await _writer.WriteTextAsync(value).ConfigureAwait(false);
+                else if (dictionaryValue is not null)
+                    await _writer.WriteEscapedTextAsync(dictionaryValue).ConfigureAwait(false);
+                else
+                    await _writer.WriteEscapedTextAsync(value).ConfigureAwait(false);
+            }
+        }
+
         public override void WriteChars(char[] chars, int offset, int count)
         {
             if (IsClosed)
@@ -1041,6 +1516,34 @@ namespace System.Xml
                     StartContent(chars, offset, count);
                     _writer.WriteEscapedText(chars, offset, count);
                     EndContent();
+                }
+            }
+        }
+
+        public override Task WriteCharsAsync(char[] buffer, int index, int count) =>
+            WriteCharsAsyncImpl(buffer, index, count, raw: false);
+
+        private async Task WriteCharsAsyncImpl(char[] chars, int offset, int count, bool raw)
+        {
+            if (IsClosed)
+                ThrowClosed();
+            ArgumentNullException.ThrowIfNull(chars);
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
+            if (count > chars.Length - offset)
+                throw new ArgumentOutOfRangeException(nameof(count), SR.Format(SR.SizeExceedsRemainingBufferSpace, chars.Length - offset));
+            if (count > 0)
+            {
+                await FlushBase64Async().ConfigureAwait(false);
+                if (_attributeValue is not null)
+                    WriteAttributeText(new string(chars, offset, count));
+                if (!_isXmlnsAttribute)
+                {
+                    await StartContentAsync(chars, offset, count).ConfigureAwait(false);
+                    if (raw)
+                        await _writer.WriteTextAsync(chars, offset, count).ConfigureAwait(false);
+                    else
+                        await _writer.WriteEscapedTextAsync(chars, offset, count).ConfigureAwait(false);
                 }
             }
         }
@@ -1097,6 +1600,17 @@ namespace System.Xml
             }
         }
 
+        public override Task WriteRawAsync(string data)
+        {
+            if (IsClosed)
+                ThrowClosed();
+            data ??= string.Empty;
+            return data.Length > 0 ? WriteStringAsyncImpl(data, null, raw: true) : Task.CompletedTask;
+        }
+
+        public override Task WriteRawAsync(char[] buffer, int index, int count) =>
+            WriteCharsAsyncImpl(buffer, index, count, raw: true);
+
         public override void WriteCharEntity(char ch)
         {
             if (IsClosed)
@@ -1138,6 +1652,39 @@ namespace System.Xml
             }
         }
 
+        public override async Task WriteCharEntityAsync(char ch)
+        {
+            if (IsClosed)
+                ThrowClosed();
+            if (char.IsSurrogate(ch))
+                throw new ArgumentException(SR.XmlMissingLowSurrogate, nameof(ch));
+            if (_attributeValue is not null)
+                WriteAttributeText(ch.ToString());
+            if (!_isXmlnsAttribute)
+            {
+                await FlushElementAsync().ConfigureAwait(false);
+                if (_depth == 0)
+                    VerifyWhitespace(ch);
+                await FlushBase64Async().ConfigureAwait(false);
+                await _writer.WriteCharEntityAsync(ch).ConfigureAwait(false);
+            }
+        }
+
+        public override async Task WriteSurrogateCharEntityAsync(char lowChar, char highChar)
+        {
+            if (IsClosed)
+                ThrowClosed();
+            SurrogateChar ch = new SurrogateChar(lowChar, highChar);
+            if (_attributeValue is not null)
+                WriteAttributeText(new string([highChar, lowChar]));
+            if (!_isXmlnsAttribute)
+            {
+                await StartContentAsync().ConfigureAwait(false);
+                await FlushBase64Async().ConfigureAwait(false);
+                await _writer.WriteCharEntityAsync(ch.Char).ConfigureAwait(false);
+            }
+        }
+
         public override void WriteValue(object value)
         {
             if (IsClosed)
@@ -1161,6 +1708,377 @@ namespace System.Xml
             {
                 WritePrimitiveValue(value);
             }
+        }
+
+        internal override async Task WriteValueAsync(object value)
+        {
+            if (IsClosed)
+                ThrowClosed();
+            ArgumentNullException.ThrowIfNull(value);
+            if (value is Array array)
+            {
+                await WriteListValueAsync(array).ConfigureAwait(false);
+            }
+            else if (value is string text)
+            {
+                await WriteStringAsync(text).ConfigureAwait(false);
+            }
+            else if (value is XmlDictionaryString dictionaryText)
+            {
+                await WriteStringAsync(dictionaryText).ConfigureAwait(false);
+            }
+            else if (value is bool or int or long or ulong or float or double or decimal or DateTime or UniqueId or Guid or TimeSpan)
+            {
+                await FlushBase64Async().ConfigureAwait(false);
+                if (_attributeValue is not null)
+                    WriteAttributeText(GetValueText(value));
+                if (!_isXmlnsAttribute)
+                {
+                    await StartContentAsync().ConfigureAwait(false);
+                    await _writer.WriteValueAsync(value).ConfigureAwait(false);
+                }
+            }
+            else
+            {
+                await base.WriteValueAsync(value).ConfigureAwait(false);
+            }
+        }
+
+        internal Task WriteXmlPrimitiveValueAsync<T>(object value) where T : struct =>
+            WriteXmlPrimitiveValueAsyncCore<T>(value);
+
+        private async Task WriteXmlPrimitiveValueAsyncCore<T>(object value) where T : struct
+        {
+            if (IsClosed)
+                ThrowClosed();
+
+            await FlushBase64Async().ConfigureAwait(false);
+            if (_attributeValue is not null)
+                WriteAttributeText(GetPrimitiveValueText<T>(value));
+            if (!_isXmlnsAttribute)
+            {
+                await StartContentAsync().ConfigureAwait(false);
+                await _writer.WritePrimitiveValueAsync<T>(value).ConfigureAwait(false);
+            }
+        }
+
+        private async Task WriteListValueAsync(Array array)
+        {
+            await FlushBase64Async().ConfigureAwait(false);
+            await StartContentAsync().ConfigureAwait(false);
+            await _writer.WriteStartListTextAsync().ConfigureAwait(false);
+            _inList = true;
+            try
+            {
+                for (int i = 0; i < array.Length; i++)
+                {
+                    if (i != 0)
+                        await _writer.WriteListSeparatorAsync().ConfigureAwait(false);
+                    object? value = array.GetValue(i);
+                    ArgumentNullException.ThrowIfNull(value);
+                    if (value is Array)
+                        throw new ArgumentException(SR.XmlNestedArraysNotSupported, nameof(value));
+                    await WriteValueAsync(value).ConfigureAwait(false);
+                }
+            }
+            finally
+            {
+                _inList = false;
+            }
+            await _writer.WriteEndListTextAsync().ConfigureAwait(false);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal Task WriteXmlPrimitiveElementAsync<T>(
+            string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, object value) where T : struct
+        {
+            if (_writer is XmlBinaryNodeWriter binaryWriter &&
+                TryWriteBinaryPrimitiveElement<T, object>(binaryWriter, prefix, localName, namespaceUri, value) is Task binaryOperation)
+                return binaryOperation;
+            return WriteTextPrimitiveElementAsync<T>(prefix, localName, namespaceUri, value);
+        }
+
+        private Task WriteTextPrimitiveElementAsync<T>(
+            string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, object value) where T : struct
+        {
+            long valueSize = XmlUTF8NodeWriter.GetPrimitiveBufferSize<T>();
+            if (valueSize != 0 &&
+                TryGetBufferedPrimitiveElement(prefix, localName, namespaceUri, valueSize,
+                out XmlUTF8NodeWriter? textWriter, out string? actualPrefix, out int maximumBytes))
+            {
+                if (textWriter.HasBufferSpace(maximumBytes))
+                {
+                    WriteBufferedPrimitiveElement<T, object>(textWriter, actualPrefix, localName, value);
+                    return Task.CompletedTask;
+                }
+
+                return WriteBufferedPrimitiveElementAsync<T, object>(textWriter, actualPrefix, localName, value, maximumBytes);
+            }
+
+            return WritePrimitiveElementAsyncFallback<T>(prefix, localName, namespaceUri, value);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        protected internal Task WriteTypedPrimitiveElementAsync<T>(
+            string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, T value) where T : struct
+        {
+            if (_writer is XmlBinaryNodeWriter binaryWriter &&
+                TryWriteBinaryPrimitiveElement<T, T>(binaryWriter, prefix, localName, namespaceUri, value) is Task binaryOperation)
+                return binaryOperation;
+            return WriteTypedTextPrimitiveElementAsync(prefix, localName, namespaceUri, value);
+        }
+
+        private Task WriteTypedTextPrimitiveElementAsync<T>(
+            string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, T value) where T : struct
+        {
+            int valueSize = XmlUTF8NodeWriter.GetPrimitiveBufferSize<T>();
+            if (valueSize != 0 && TryGetBufferedPrimitiveElement(prefix, localName, namespaceUri, valueSize,
+                out XmlUTF8NodeWriter? textWriter, out string? actualPrefix, out int maximumBytes))
+            {
+                if (textWriter.HasBufferSpace(maximumBytes))
+                {
+                    WriteBufferedPrimitiveElement<T, T>(textWriter, actualPrefix, localName, value);
+                    return Task.CompletedTask;
+                }
+
+                return WriteBufferedPrimitiveElementAsync<T, T>(textWriter, actualPrefix, localName, value, maximumBytes);
+            }
+
+            return WritePrimitiveElementAsyncFallback<T>(prefix, localName, namespaceUri, value);
+        }
+
+        private Task? TryWriteBinaryPrimitiveElement<TPrimitive, TValue>(XmlBinaryNodeWriter node,
+            string? prefix, XmlDictionaryString name, XmlDictionaryString? ns, TValue value)
+            where TPrimitive : struct
+        {
+            if (!node.CanWriteBufferedContractElements || _trailByteCount != 0 || _depth == 0 ||
+                _writeState is not (WriteState.Element or WriteState.Content) || ns is null)
+                return null;
+            string? actualPrefix = prefix is null ? _nsMgr.LookupPrefix(ns.Value) :
+                _nsMgr.LookupNamespace(prefix) == ns.Value ? prefix : null;
+            if (actualPrefix is null)
+                return null;
+            long valueSize = XmlBinaryNodeWriter.GetPrimitiveBufferSize<TPrimitive>();
+            if (valueSize == 0)
+                return null;
+            byte[] nameBytes = name.ToUTF8();
+            bool asciiName = nameBytes.Length == name.Value.Length;
+            long size = 2 + XmlBinaryNodeWriter.GetElementPrefixMaximumBytes(actualPrefix) +
+                (asciiName ? 5L + nameBytes.Length : XmlBinaryNodeWriter.GetNameMaximumBytes(name.Value)) + valueSize +
+                (_writeState == WriteState.Element ? _nsMgr.GetPendingNamespaceMaximumBytes(node) : 0);
+            if (size > node.StreamBuffer.Length)
+                return null;
+            if (node.HasBufferSpace((int)size))
+            {
+                WriteBinaryPrimitiveElement<TPrimitive, TValue>(node, actualPrefix, name, ns, value);
+                return Task.CompletedTask;
+            }
+            return WriteBinaryPrimitiveElementAsync<TPrimitive, TValue>(node, actualPrefix, name, ns, value, (int)size);
+        }
+
+        private Task WriteBinaryPrimitiveElementAsync<TPrimitive, TValue>(XmlBinaryNodeWriter node,
+            string prefix, XmlDictionaryString name, XmlDictionaryString ns, TValue value, int maximumBytes)
+            where TPrimitive : struct
+        {
+            Task operation = node.EnsureBufferAsync(maximumBytes);
+            if (!operation.IsCompletedSuccessfully)
+                return AwaitBufferAndWriteBinaryPrimitiveElement<TPrimitive, TValue>(operation, node, prefix, name, ns, value);
+
+            WriteBinaryPrimitiveElement<TPrimitive, TValue>(node, prefix, name, ns, value);
+            return Task.CompletedTask;
+        }
+
+        private async Task AwaitBufferAndWriteBinaryPrimitiveElement<TPrimitive, TValue>(Task operation, XmlBinaryNodeWriter node,
+            string prefix, XmlDictionaryString name, XmlDictionaryString ns, TValue value) where TPrimitive : struct
+        {
+            await operation.ConfigureAwait(false);
+            WriteBinaryPrimitiveElement<TPrimitive, TValue>(node, prefix, name, ns, value);
+        }
+
+        protected bool TryGetBufferedBinaryArraySpace(string? prefix, XmlDictionaryString name, XmlDictionaryString? ns,
+            long payloadSize, out int maximumBytes)
+        {
+            maximumBytes = 0;
+            if (_writer is not XmlBinaryNodeWriter { CanWriteBufferedContractElements: true } node ||
+                _trailByteCount != 0 || _depth == 0 || _writeState is not (WriteState.Element or WriteState.Content) || ns is null)
+                return false;
+            string? actualPrefix = prefix is null ? _nsMgr.LookupPrefix(ns.Value) :
+                _nsMgr.LookupNamespace(prefix) == ns.Value ? prefix : null;
+            if (actualPrefix is null)
+                return false;
+            long size = payloadSize + 3 + XmlBinaryNodeWriter.GetElementPrefixMaximumBytes(actualPrefix) +
+                XmlBinaryNodeWriter.GetNameMaximumBytes(name.Value) +
+                (_writeState == WriteState.Element ? _nsMgr.GetPendingNamespaceMaximumBytes(node) : 0);
+            if (size > node.StreamBuffer.Length)
+                return false;
+            maximumBytes = (int)size;
+            return true;
+        }
+
+        private void WriteBinaryPrimitiveElement<TPrimitive, TValue>(XmlBinaryNodeWriter node,
+            string prefix, XmlDictionaryString name, XmlDictionaryString ns, TValue value) where TPrimitive : struct
+        {
+            PreStartElementAsyncCheck(name.Value);
+            AutoComplete(WriteState.Element);
+            byte[] nameBytes = name.ToUTF8();
+            if (nameBytes.Length == name.Value.Length)
+                node.WriteBufferedStartElement(prefix, nameBytes);
+            else
+                node.WriteStartElement(prefix, name);
+            node.WritePrimitiveValue<TPrimitive, TValue>(value);
+            node.WriteEndElement(prefix, name.Value);
+            _writeState = WriteState.Content;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal bool TryWriteTypedPrimitiveElement<T>(XmlDictionaryString localName, XmlDictionaryString? namespaceUri, T value)
+            where T : struct
+        {
+            int valueSize = XmlUTF8NodeWriter.GetPrimitiveBufferSize<T>();
+            if (valueSize == 0 || !TryGetBufferedPrimitiveElement(null, localName, namespaceUri, valueSize,
+                out XmlUTF8NodeWriter? textWriter, out string? actualPrefix, out int maximumBytes))
+                return false;
+
+            textWriter.EnsureBuffer(maximumBytes);
+            WriteBufferedPrimitiveElement<T, T>(textWriter, actualPrefix, localName, value);
+            return true;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private bool TryGetBufferedPrimitiveElement(string? prefix, XmlDictionaryString localName,
+            XmlDictionaryString? namespaceUri, long valueSize, [NotNullWhen(true)] out XmlUTF8NodeWriter? textWriter,
+            [NotNullWhen(true)] out string? actualPrefix, out int maximumBytes)
+        {
+            textWriter = _writer as XmlUTF8NodeWriter;
+            actualPrefix = null;
+            maximumBytes = 0;
+            if (textWriter is null || !textWriter.CanWriteBufferedContractElements || _trailByteCount != 0 || _depth == 0 ||
+                _writeState is not (WriteState.Element or WriteState.Content) ||
+                namespaceUri is null)
+                return false;
+
+            actualPrefix = prefix is null
+                ? _nsMgr.LookupPrefix(namespaceUri.Value)
+                : _nsMgr.LookupNamespace(prefix) == namespaceUri.Value ? prefix : null;
+            if (actualPrefix is null)
+                return false;
+            long size = GetBufferedPrimitiveElementMaximumBytes(actualPrefix, localName, valueSize) +
+                (_writeState == WriteState.Element ? 1 + _nsMgr.GetPendingNamespaceMaximumBytes(textWriter) : 0);
+            if (size > textWriter.StreamBuffer.Length)
+                return false;
+            maximumBytes = (int)size;
+
+            return true;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static long GetBufferedPrimitiveElementMaximumBytes(string prefix, XmlDictionaryString name, long valueSize)
+        {
+            long prefixSize = prefix.Length == 0 ? 0 :
+                prefix.Length == 1 && prefix[0] < 0x80 ? 2 : 1 + (long)XmlStreamNodeWriter.MaxUtf8BytesPerChar * prefix.Length;
+            return "<></>"u8.Length + 2L * (prefixSize + name.ToUTF8().Length) + valueSize;
+        }
+
+        protected bool TryWriteBufferedPrimitiveArray<T>(string? prefix, XmlDictionaryString localName,
+            XmlDictionaryString? namespaceUri, T[] array, int offset, int count, [NotNullWhen(true)] out Task? operation)
+            where T : struct
+        {
+            Debug.Assert(count > 0);
+            operation = null;
+            int valueSize = XmlUTF8NodeWriter.GetPrimitiveBufferSize<T>();
+            if (valueSize == 0 || !TryGetBufferedPrimitiveElement(prefix, localName, namespaceUri, valueSize,
+                out XmlUTF8NodeWriter? nodeWriter, out string? actualPrefix, out int maximumBytes) ||
+                actualPrefix.Length > 1 || actualPrefix.Length == 1 && actualPrefix[0] >= 0x80)
+                return false;
+
+            int elementSize = (int)GetBufferedPrimitiveElementMaximumBytes(actualPrefix, localName, valueSize);
+            operation = WriteBufferedPrimitiveArrayItems(nodeWriter, actualPrefix, localName, array,
+                offset, offset + count, maximumBytes, elementSize, first: true);
+            return true;
+        }
+
+        private Task WriteBufferedPrimitiveArrayItems<T>(XmlUTF8NodeWriter nodeWriter, string prefix, XmlDictionaryString name,
+            T[] array, int next, int end, int maximumBytes, int elementSize, bool first) where T : struct
+        {
+            byte[] nameBytes = name.ToUTF8();
+            for (int i = next; i < end; i++)
+            {
+                T value = array[i];
+                if (!nodeWriter.HasBufferSpace(maximumBytes))
+                {
+                    Task pending = nodeWriter.EnsureBufferAsync(maximumBytes);
+                    if (!pending.IsCompletedSuccessfully)
+                        return AwaitBufferedPrimitiveArrayItems(pending, nodeWriter, prefix, name, value, array, i + 1, end, elementSize);
+                }
+
+                if (first)
+                    WriteBufferedPrimitiveElement<T, T>(nodeWriter, prefix, name, value);
+                else
+                    nodeWriter.WriteBufferedPrimitiveElement<T, T>(prefix, nameBytes, value);
+                first = false;
+                maximumBytes = elementSize;
+            }
+
+            return Task.CompletedTask;
+        }
+
+        private async Task AwaitBufferedPrimitiveArrayItems<T>(Task pending, XmlUTF8NodeWriter nodeWriter, string prefix, XmlDictionaryString name,
+            T value, T[] array, int next, int end, int elementSize) where T : struct
+        {
+            await pending.ConfigureAwait(false);
+            WriteBufferedPrimitiveElement<T, T>(nodeWriter, prefix, name, value);
+            byte[] nameBytes = name.ToUTF8();
+            for (int i = next; i < end; i++)
+            {
+                value = array[i];
+                await nodeWriter.EnsureBufferAsync(elementSize).ConfigureAwait(false);
+                nodeWriter.WriteBufferedPrimitiveElement<T, T>(prefix, nameBytes, value);
+            }
+        }
+
+        private Task WriteBufferedPrimitiveElementAsync<TPrimitive, TValue>(XmlUTF8NodeWriter writer, string prefix,
+            XmlDictionaryString localName, TValue value, int maximumBytes) where TPrimitive : struct
+        {
+            Task operation = writer.EnsureBufferAsync(maximumBytes);
+            if (!operation.IsCompletedSuccessfully)
+                return AwaitBufferAndWritePrimitiveElement<TPrimitive, TValue>(operation, writer, prefix, localName, value);
+
+            WriteBufferedPrimitiveElement<TPrimitive, TValue>(writer, prefix, localName, value);
+            return Task.CompletedTask;
+        }
+
+        private async Task AwaitBufferAndWritePrimitiveElement<TPrimitive, TValue>(Task operation, XmlUTF8NodeWriter writer,
+            string prefix, XmlDictionaryString localName, TValue value) where TPrimitive : struct
+        {
+            await operation.ConfigureAwait(false);
+            WriteBufferedPrimitiveElement<TPrimitive, TValue>(writer, prefix, localName, value);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void WriteBufferedPrimitiveElement<TPrimitive, TValue>(XmlUTF8NodeWriter writer, string prefix,
+            XmlDictionaryString localName, TValue value) where TPrimitive : struct
+        {
+            PreStartElementAsyncCheck(localName.Value);
+            AutoComplete(WriteState.Element);
+            // Buffered scalars with an existing ASCII prefix cannot change scope or call user encoders.
+            bool needsScope = prefix.Length > 1 || prefix.Length == 1 && prefix[0] >= 0x80;
+            byte[] localNameBytes = localName.ToUTF8();
+            if (!needsScope)
+            {
+                _writeState = WriteState.Content;
+                writer.WriteBufferedPrimitiveElement<TPrimitive, TValue>(prefix, localNameBytes, value);
+                return;
+            }
+            Element element = EnterScope();
+            element.Prefix = prefix;
+            element.LocalName = localName.Value;
+            writer.WriteBufferedStartElement(prefix, localNameBytes);
+            writer.WriteEndStartElement(false);
+            _writeState = WriteState.Content;
+            writer.WritePrimitiveValue<TPrimitive, TValue>(value);
+            writer.WriteBufferedEndElement(prefix, localNameBytes);
+            ExitScope();
+            _writeState = WriteState.Content;
         }
 
         protected void WritePrimitiveValue(object value)
@@ -1455,6 +2373,21 @@ namespace System.Xml
             WriteRaw(DataContractSerializer.BinHexEncoding.GetString(buffer, offset, count));
         }
 
+        public override async Task WriteBinHexAsync(byte[] buffer, int index, int count)
+        {
+            if (IsClosed)
+                ThrowClosed();
+            EnsureBufferBounds(buffer, index, count);
+            const int byteChunkSize = 256;
+            while (count > 0)
+            {
+                int chunk = Math.Min(count, byteChunkSize);
+                await WriteRawAsync(DataContractSerializer.BinHexEncoding.GetString(buffer, index, chunk)).ConfigureAwait(false);
+                index += chunk;
+                count -= chunk;
+            }
+        }
+
         public override void WriteBase64(byte[] buffer, int offset, int count)
         {
             if (IsClosed)
@@ -1516,7 +2449,23 @@ namespace System.Xml
 
             EnsureBufferBounds(buffer, offset, count);
 
+            if (TryReserveBinaryContent(5L + _trailByteCount + count))
+            {
+                WriteBase64(buffer, offset, count);
+                return Task.CompletedTask;
+            }
+
             return WriteBase64AsyncImpl(buffer, offset, count);
+        }
+
+        private bool TryReserveBinaryContent(long valueSize)
+        {
+            if (_writer is not XmlBinaryNodeWriter { CanWriteBufferedContractElements: true } node ||
+                _depth == 0 || _writeState is not (WriteState.Element or WriteState.Content))
+                return false;
+            long maximumBytes = valueSize +
+                (_writeState == WriteState.Element ? _nsMgr.GetPendingNamespaceMaximumBytes(node) : 0);
+            return maximumBytes <= node.StreamBuffer.Length && node.HasBufferSpace((int)maximumBytes);
         }
 
         private async Task WriteBase64AsyncImpl(byte[] buffer, int offset, int count)
@@ -1603,6 +2552,30 @@ namespace System.Xml
             if (!Signing)
                 throw new InvalidOperationException(SR.XmlCanonicalizationNotStarted);
             _signingWriter!.Flush();
+            _writer = _signingWriter.NodeWriter;
+        }
+
+        internal override async Task StartCanonicalizationAsync(Stream stream, bool includeComments, string[]? inclusivePrefixes)
+        {
+            if (IsClosed)
+                ThrowClosed();
+            if (Signing)
+                throw new InvalidOperationException(SR.XmlCanonicalizationStarted);
+            await FlushElementAsync().ConfigureAwait(false);
+            _signingWriter ??= CreateSigningNodeWriter();
+            _signingWriter.SetOutput(_writer, stream, includeComments, inclusivePrefixes);
+            _signingWriter.CancellationToken = CancellationToken;
+            _writer = _signingWriter;
+            SignScope(_signingWriter.CanonicalWriter);
+        }
+
+        internal override async Task EndCanonicalizationAsync()
+        {
+            if (IsClosed)
+                ThrowClosed();
+            if (!Signing)
+                throw new InvalidOperationException(SR.XmlCanonicalizationNotStarted);
+            await _signingWriter!.FlushAsync().ConfigureAwait(false);
             _writer = _signingWriter.NodeWriter;
         }
 
@@ -1756,7 +2729,18 @@ namespace System.Xml
             _trailByteCount = 0;
         }
 
-        private async Task FlushTrailBytesAsync()
+        private Task FlushTrailBytesAsync()
+        {
+            if (TryReserveBinaryContent(5L + _trailByteCount))
+            {
+                FlushTrailBytes();
+                return Task.CompletedTask;
+            }
+
+            return FlushTrailBytesAsyncCore();
+        }
+
+        private async Task FlushTrailBytesAsyncCore()
         {
             Debug.Assert(_trailBytes != null);
 
@@ -1820,6 +2804,20 @@ namespace System.Xml
             if (_writeState == WriteState.Attribute)
                 throw new InvalidOperationException(SR.Format(SR.XmlInvalidWriteState, "WriteStartElement", WriteState.ToString()));
             AutoComplete(WriteState.Content);
+        }
+
+        protected async Task StartArrayAsync(int count)
+        {
+            if (IsClosed)
+                ThrowClosed();
+            await FlushBase64Async().ConfigureAwait(false);
+            if (_documentState == DocumentState.Epilog)
+                throw new InvalidOperationException(SR.XmlOnlyOneRoot);
+            if (_documentState == DocumentState.Document && count > 1 && _depth == 0)
+                throw new InvalidOperationException(SR.XmlOnlyOneRoot);
+            if (_writeState == WriteState.Attribute)
+                throw new InvalidOperationException(SR.Format(SR.XmlInvalidWriteState, nameof(WriteStartElement), WriteState.ToString()));
+            await AutoCompleteAsync(WriteState.Content).ConfigureAwait(false);
         }
 
         private string GeneratePrefix(string ns, XmlDictionaryString? xNs)
@@ -2008,7 +3006,14 @@ namespace System.Xml
                 _lang = null;
             }
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public void DeclareNamespaces(XmlNodeWriter writer)
+            {
+                if (_nsCount > 0 && _namespaces![_nsCount - 1].Depth == _depth)
+                    DeclareNamespacesCore(writer);
+            }
+
+            private void DeclareNamespacesCore(XmlNodeWriter writer)
             {
                 int i = _nsCount;
                 while (i > 0)
@@ -2027,6 +3032,55 @@ namespace System.Xml
                         writer.WriteXmlnsAttribute(nameSpace.Prefix, nameSpace.Uri!);
                     i++;
                 }
+            }
+
+            public async Task DeclareNamespacesAsync(XmlNodeWriter writer)
+            {
+                int i = _nsCount;
+                while (i > 0 && _namespaces![i - 1].Depth == _depth)
+                {
+                    i--;
+                }
+                while (i < _nsCount)
+                {
+                    Namespace nameSpace = _namespaces![i++];
+                    if (nameSpace.UriDictionaryString is not null)
+                        await writer.WriteXmlnsAttributeAsync(nameSpace.Prefix, nameSpace.UriDictionaryString).ConfigureAwait(false);
+                    else
+                        await writer.WriteXmlnsAttributeAsync(nameSpace.Prefix, nameSpace.Uri!).ConfigureAwait(false);
+                }
+            }
+
+            internal long GetPendingNamespaceMaximumBytes(XmlUTF8NodeWriter writer)
+            {
+                long maximumBytes = 0;
+                for (int i = _nsCount - 1; i >= 0 && _namespaces![i].Depth == _depth; i--)
+                {
+                    Namespace ns = _namespaces![i];
+                    string uri = ns.UriDictionaryString?.Value ?? ns.Uri!;
+                    long uriMaximumBytes = writer.CanWriteBufferedContractElements && ns.UriDictionaryString is XmlDictionaryString dictionaryUri
+                        ? dictionaryUri.GetEscapedAttributeMaximumBytes(writer)
+                        : writer.GetEscapedTextMaximumBytes(uri, inAttribute: true);
+                    maximumBytes += 10 + (long)XmlStreamNodeWriter.MaxUtf8BytesPerChar * (ns.Prefix?.Length ?? 0) + uriMaximumBytes;
+                    if (maximumBytes > writer.StreamBuffer.Length)
+                        return maximumBytes;
+                }
+
+                return maximumBytes;
+            }
+
+            internal long GetPendingNamespaceMaximumBytes(XmlBinaryNodeWriter writer)
+            {
+                long maximumBytes = 0;
+                for (int i = _nsCount - 1; i >= 0 && _namespaces![i].Depth == _depth; i--)
+                {
+                    Namespace ns = _namespaces![i];
+                    maximumBytes += 1 + XmlBinaryNodeWriter.GetNameMaximumBytes(ns.Prefix ?? string.Empty) +
+                        XmlBinaryNodeWriter.GetNameMaximumBytes(ns.UriDictionaryString?.Value ?? ns.Uri!);
+                    if (maximumBytes > writer.StreamBuffer.Length)
+                        break;
+                }
+                return maximumBytes;
             }
 
             public void EnterScope()
@@ -2191,10 +3245,17 @@ namespace System.Xml
                 _lastNameSpace = null;
             }
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public string? LookupPrefix(string ns)
             {
                 if (_lastNameSpace != null && _lastNameSpace.Uri == ns)
                     return _lastNameSpace.Prefix;
+
+                return LookupPrefixCore(ns);
+            }
+
+            private string? LookupPrefixCore(string ns)
+            {
                 int nsCount = _nsCount;
                 for (int i = nsCount - 1; i >= _nsTop; i--)
                 {

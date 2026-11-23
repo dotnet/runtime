@@ -4,9 +4,13 @@
 using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Reflection;
+using System.Runtime.ExceptionServices;
 using System.Runtime.Serialization;
+using System.Runtime.Serialization.Json;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -15,6 +19,1371 @@ using Xunit;
 
 public static class XmlDictionaryWriterTest
 {
+    [Theory]
+    [InlineData("01020304-0506-0708-090a-0b0c0d0e0f10")]
+    [InlineData("ffffffff-ffff-ffff-ffff-ffffffffffff")]
+    [InlineData("00000000-0000-0000-0000-000000000000")]
+    public static void UniqueId_GuidConversions_PreserveByteOrder(string text)
+    {
+        Guid guid = new Guid(text);
+        UniqueId fromGuid = new UniqueId(guid);
+        UniqueId fromBytes = new UniqueId(guid.ToByteArray());
+        Assert.Equal(fromBytes.ToString(), fromGuid.ToString());
+        Assert.Equal(guid != Guid.Empty, fromGuid.TryGetGuid(out Guid actual));
+        Assert.Equal(guid, actual);
+        Assert.Equal(fromBytes.TryGetGuid(out Guid expected), fromGuid.TryGetGuid(out actual));
+        Assert.Equal(expected, actual);
+
+        UniqueId nonGuid = new UniqueId("urn:not-a-guid");
+        Assert.False(nonGuid.TryGetGuid(out actual));
+        Assert.Equal(Guid.Empty, actual);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(497)]
+    [InlineData(510)]
+    [InlineData(1024)]
+    public static async Task BinaryWriter_CharEntitiesAsync_RoundTripWithAsyncOnlyStream(int length)
+    {
+        using AsyncOnlyWriteStream output = new AsyncOnlyWriteStream();
+        XmlDictionaryWriter writer = await CreateAsyncWriter("binary", output, Encoding.UTF8);
+        await writer.WriteStartElementAsync(null, "root", null);
+        await InvokeWriterAsync(writer, "WriteStartAttributeAsync",
+            new[] { typeof(string), typeof(string), typeof(string), typeof(CancellationToken) },
+            null, "attribute", null, CancellationToken.None);
+        await writer.WriteCharEntityAsync('<');
+        await writer.WriteCharEntityAsync('0');
+        await writer.WriteSurrogateCharEntityAsync('\ude42', '\ud83d');
+        await InvokeWriterAsync(writer, "WriteEndAttributeAsync", new[] { typeof(CancellationToken) }, CancellationToken.None);
+        string prefix = new string('x', length);
+        await writer.WriteStringAsync(prefix);
+        await writer.WriteCharEntityAsync('<');
+        await writer.WriteCharEntityAsync('0');
+        await writer.WriteCharEntityAsync('1');
+        await writer.WriteCharEntityAsync('\u00e9');
+        await writer.WriteSurrogateCharEntityAsync('\ude42', '\ud83d');
+        await writer.WriteEndElementAsync();
+        await writer.FlushAsync();
+        Assert.True(output.AsyncWrites > 0);
+
+        using XmlDictionaryReader reader = XmlDictionaryReader.CreateBinaryReader(output.Bytes, XmlDictionaryReaderQuotas.Max);
+        reader.MoveToContent();
+        Assert.Equal("<0\U0001f642", reader.GetAttribute("attribute"));
+        Assert.Equal(prefix + "<01\u00e9\U0001f642", reader.ReadElementContentAsString());
+        await writer.DisposeAsync();
+    }
+
+    [Fact]
+    public static async Task BinaryWriter_CharEntityAsync_CancelsSuspendedFlush()
+    {
+        using AsyncOnlyWriteStream output = new AsyncOnlyWriteStream
+        {
+            WriteGate = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously)
+        };
+        XmlDictionaryWriter writer = await CreateAsyncWriter("binary", output, Encoding.UTF8);
+        await writer.WriteStartElementAsync(null, "root", null);
+        using CancellationTokenSource cancellation = new CancellationTokenSource();
+        Task pending = null;
+        for (int i = 0; i < 1024; i++)
+        {
+            Task operation = InvokeWriterAsync(writer, "WriteCharEntityAsync",
+                new[] { typeof(char), typeof(CancellationToken) }, '\u00e9', cancellation.Token);
+            if (!operation.IsCompleted)
+            {
+                pending = operation;
+                break;
+            }
+            await operation;
+        }
+
+        Assert.NotNull(pending);
+        await output.WriteStarted.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        Assert.Equal(cancellation.Token, output.LastWriteToken);
+        cancellation.Cancel();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => pending);
+    }
+
+    [Theory]
+    [InlineData("urn:uuid:01020304-0506-0708-090a-0b0c0d0e0f10")]
+    [InlineData("urn:uuid:00000000-0000-0000-0000-000000000000")]
+    [InlineData("urn:custom<&\u00e9")]
+    public static void TextWriter_UniqueId_PreservesRepresentation(string value)
+    {
+        UniqueId identifier = new UniqueId(value);
+        foreach (UniqueId candidate in identifier.IsGuid
+            ? new[] { identifier, new UniqueId(new Guid(value.Substring(9))) }
+            : new[] { identifier })
+        {
+            using MemoryStream output = new MemoryStream();
+            using (XmlDictionaryWriter writer = XmlDictionaryWriter.CreateTextWriter(output, Encoding.UTF8, ownsStream: false))
+            {
+                writer.WriteStartElement("r");
+                writer.WriteValue(candidate);
+                writer.WriteEndElement();
+            }
+            using XmlReader reader = XmlReader.Create(new MemoryStream(output.ToArray()));
+            reader.MoveToContent();
+            Assert.Equal(value, reader.ReadElementContentAsString());
+        }
+    }
+
+    [Theory]
+    [InlineData(0, "\ufffe", "&#xFFFE;")]
+    [InlineData(7, "\ufffe", "&#xFFFE;")]
+    [InlineData(7, "\uffff", "&#xFFFF;")]
+    [InlineData(7, "\ufffe\uffff&", "&#xFFFE;&#xFFFF;&amp;")]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.PublicMethods,
+        "System.Xml.XmlUTF8NodeWriter", "System.Private.DataContractSerialization")]
+    public static void Utf8NodeWriter_EscapedByteSlice_UsesSliceBounds(int offset, string value, string expected)
+    {
+        Type type = typeof(XmlDictionaryWriter).Assembly.GetType("System.Xml.XmlUTF8NodeWriter", throwOnError: true);
+        object writer = Activator.CreateInstance(type);
+        using MemoryStream output = new MemoryStream();
+        type.GetMethod("SetOutput", new[] { typeof(Stream), typeof(bool), typeof(Encoding) })
+            .Invoke(writer, new object[] { output, false, null });
+        byte[] text = Encoding.UTF8.GetBytes(value);
+        byte[] buffer = Enumerable.Repeat((byte)'!', offset + text.Length + 7).ToArray();
+        text.CopyTo(buffer, offset);
+        type.GetMethod("WriteEscapedText", new[] { typeof(byte[]), typeof(int), typeof(int) })
+            .Invoke(writer, new object[] { buffer, offset, text.Length });
+        type.GetMethod("Flush").Invoke(writer, null);
+        Assert.Equal(expected, Encoding.UTF8.GetString(output.ToArray()));
+    }
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.PublicMethods,
+        "System.Xml.XmlCanonicalWriter", "System.Private.DataContractSerialization")]
+    public static async Task CanonicalWriter_MemoryAttributeSlices_PreserveEscaping(bool bytes, bool escaped)
+    {
+        Type type = typeof(XmlDictionaryWriter).Assembly.GetType("System.Xml.XmlCanonicalWriter", throwOnError: true);
+        object writer = Activator.CreateInstance(type);
+        using MemoryStream output = new MemoryStream();
+        type.GetMethod("SetOutput").Invoke(writer, new object[] { output, false, null });
+        type.GetMethod("WriteStartElement", new[] { typeof(string), typeof(string) })
+            .Invoke(writer, new object[] { "", "r" });
+        type.GetMethod("WriteStartAttribute", new[] { typeof(string), typeof(string) })
+            .Invoke(writer, new object[] { "", "a" });
+        string value = escaped ? "h\u00e9\ud83d\ude42<&\"\r\t\n" : "h\u00e9\ud83d\ude42";
+        Type memoryType = bytes ? typeof(ReadOnlyMemory<byte>) : typeof(ReadOnlyMemory<char>);
+        object memory = bytes
+            ? (object)new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes("prefix" + value + "suffix"), 6, Encoding.UTF8.GetByteCount(value))
+            : ("prefix" + value + "suffix").AsMemory(6, value.Length);
+        await (Task)type.GetMethod(escaped ? "WriteEscapedTextAsync" : "WriteTextAsync", new[] { memoryType })
+            .Invoke(writer, new[] { memory });
+        type.GetMethod("WriteEndAttribute").Invoke(writer, null);
+        type.GetMethod("WriteEndStartElement").Invoke(writer, new object[] { true });
+        type.GetMethod("Flush").Invoke(writer, null);
+        string expected = escaped ? "h\u00e9\ud83d\ude42&lt;&amp;&quot;&#xD;&#x9;&#xA;" : value;
+        Assert.Equal($"<r a=\"{expected}\"></r>", Encoding.UTF8.GetString(output.ToArray()));
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(170)]
+    [InlineData(513)]
+    [InlineData(2049)]
+    public static async Task XmlBaseWriter_LongNames_UseOnlyAsyncWrites(int length)
+    {
+        string name = "n" + new string('\u00e9', length);
+        using AsyncOnlyWriteStream stream = new AsyncOnlyWriteStream();
+        XmlDictionaryWriter writer = XmlDictionaryWriter.CreateTextWriter(stream, Encoding.UTF8, ownsStream: false);
+        await writer.WriteStartElementAsync(null, name, null);
+        await writer.WriteStartElementAsync(null, "child", null);
+        await writer.WriteEndElementAsync();
+        await writer.WriteEndElementAsync();
+        await writer.FlushAsync();
+        Assert.Equal($"<{name}><child/></{name}>", Encoding.UTF8.GetString(stream.Bytes));
+        Assert.True(stream.AsyncWrites > 0);
+    }
+
+    [Theory]
+    [InlineData("\ud800")]
+    [InlineData("\udfff")]
+    [InlineData("\ud801\udc37")]
+    public static async Task AsyncWriter_PrimitiveDictionaryNames_PreserveUtf16Validation(string name)
+    {
+        XmlDictionary dictionary = new XmlDictionary();
+        XmlDictionaryString root = dictionary.Add("root");
+        XmlDictionaryString item = dictionary.Add(name);
+        XmlDictionaryString ns = dictionary.Add("urn:primitive");
+        Encoding encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+        using MemoryStream expected = new MemoryStream();
+        XmlDictionaryWriter baseline = XmlDictionaryWriter.CreateTextWriter(expected, encoding, ownsStream: false);
+        baseline.WriteStartElement(null, root, ns);
+        Exception expectedError = Record.Exception(() =>
+        {
+            baseline.WriteStartElement(null, item, ns);
+            baseline.WriteValue(42);
+            baseline.WriteEndElement();
+            baseline.WriteEndElement();
+            baseline.Flush();
+        });
+
+        using AsyncOnlyWriteStream output = new AsyncOnlyWriteStream();
+        XmlDictionaryWriter writer = XmlDictionaryWriter.CreateTextWriter(output, encoding, ownsStream: false);
+        await InvokeWriterAsync(writer, "WriteStartElementAsync",
+            new[] { typeof(string), typeof(XmlDictionaryString), typeof(XmlDictionaryString), typeof(CancellationToken) },
+            null, root, ns, CancellationToken.None);
+        MethodInfo method = typeof(XmlDictionaryWriter).GetMethods(BindingFlags.Instance | BindingFlags.NonPublic)
+            .Single(candidate => candidate.Name == "WritePrimitiveElementAsync" &&
+                candidate.IsGenericMethodDefinition && candidate.GetParameters().Length == 4);
+        Func<string, XmlDictionaryString, XmlDictionaryString, object, Task> write =
+            method.MakeGenericMethod(typeof(int)).CreateDelegate<Func<string, XmlDictionaryString, XmlDictionaryString, object, Task>>(writer);
+        Exception actualError = await Record.ExceptionAsync(() => write(null, item, ns, 42));
+        if (expectedError is not null)
+        {
+            Assert.IsType(expectedError.GetType(), actualError);
+        }
+        else
+        {
+            Assert.Null(actualError);
+            await writer.WriteEndElementAsync();
+            await writer.FlushAsync();
+            Assert.Equal(expected.ToArray(), output.Bytes);
+        }
+    }
+
+    private sealed class AsyncOnlyWriteStream : Stream
+    {
+        private readonly MemoryStream _output = new MemoryStream();
+
+        public byte[] Bytes => _output.ToArray();
+        public int AsyncWrites { get; private set; }
+        public int AsyncFlushes { get; private set; }
+        public int AsyncDisposals { get; private set; }
+        public int SyncDisposals { get; private set; }
+        public CancellationToken LastWriteToken { get; private set; }
+        public CancellationToken LastFlushToken { get; private set; }
+        public TaskCompletionSource<bool> WriteStarted { get; } = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        public TaskCompletionSource<bool> FlushStarted { get; } = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        public TaskCompletionSource<bool> WriteGate { get; set; }
+        public TaskCompletionSource<bool> FlushGate { get; set; }
+        public IOException WriteFailure { get; set; }
+        public IOException FlushFailure { get; set; }
+        public IOException DisposeFailure { get; set; }
+        public override bool CanRead => false;
+        public override bool CanWrite => true;
+        public override bool CanSeek => false;
+        public override long Length => throw new NotSupportedException();
+        public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+        public override void SetLength(long value) => throw new NotSupportedException();
+        public override int Read(byte[] buffer, int offset, int count) => throw new InvalidOperationException("Synchronous read.");
+        public override void Write(byte[] buffer, int offset, int count) => throw new InvalidOperationException("Synchronous write.");
+        public override void Write(ReadOnlySpan<byte> buffer) => throw new InvalidOperationException("Synchronous write.");
+        public override void WriteByte(byte value) => throw new InvalidOperationException("Synchronous write.");
+        public override void Flush() => throw new InvalidOperationException("Synchronous flush.");
+        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
+            WriteAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask();
+
+        public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            LastWriteToken = cancellationToken;
+            WriteStarted.TrySetResult(true);
+            await Task.Yield();
+            if (WriteGate is not null)
+                await WriteGate.Task.WaitAsync(cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
+            if (WriteFailure is not null)
+                throw WriteFailure;
+            AsyncWrites++;
+            _output.Write(buffer.Span);
+        }
+
+        public override async Task FlushAsync(CancellationToken cancellationToken)
+        {
+            LastFlushToken = cancellationToken;
+            FlushStarted.TrySetResult(true);
+            await Task.Yield();
+            if (FlushGate is not null)
+                await FlushGate.Task.WaitAsync(cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
+            if (FlushFailure is not null)
+                throw FlushFailure;
+            AsyncFlushes++;
+        }
+
+        public override async ValueTask DisposeAsync()
+        {
+            await Task.Yield();
+            AsyncDisposals++;
+            if (DisposeFailure is not null)
+                throw DisposeFailure;
+            GC.SuppressFinalize(this);
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                SyncDisposals++;
+                _output.Dispose();
+            }
+            base.Dispose(disposing);
+        }
+    }
+
+    private static Encoding GetWriterEncoding(string name) => name switch
+    {
+        "utf16" => Encoding.Unicode,
+        "utf16be" => Encoding.BigEndianUnicode,
+        _ => new UTF8Encoding(false)
+    };
+
+    private static async Task<XmlDictionaryWriter> CreateAsyncWriter(string format, Stream stream, Encoding encoding,
+        bool ownsStream = false, IXmlDictionary dictionary = null, bool indent = false, CancellationToken cancellationToken = default)
+    {
+        Type declaringType = format == "json" ? typeof(JsonReaderWriterFactory) : typeof(XmlDictionaryWriter);
+        string methodName = format switch
+        {
+            "binary" => "CreateBinaryWriterAsync",
+            "json" => "CreateJsonWriterAsync",
+            _ => "CreateTextWriterAsync"
+        };
+        object[] arguments = format switch
+        {
+            "binary" => new object[] { stream, dictionary, null, ownsStream, cancellationToken },
+            "json" => new object[] { stream, encoding, ownsStream, indent, "  ", cancellationToken },
+            _ => new object[] { stream, encoding, ownsStream, cancellationToken }
+        };
+        MethodInfo method = declaringType.GetMethod(methodName, BindingFlags.Static | BindingFlags.NonPublic);
+        Assert.NotNull(method);
+        return await (ValueTask<XmlDictionaryWriter>)method.Invoke(null, arguments);
+    }
+
+    private static Task InvokeWriterAsync(XmlDictionaryWriter writer, string methodName, Type[] parameterTypes, params object[] arguments)
+    {
+        MethodInfo method = typeof(XmlDictionaryWriter).GetMethod(methodName, BindingFlags.Instance | BindingFlags.NonPublic,
+            binder: null, types: parameterTypes, modifiers: null);
+        Assert.NotNull(method);
+        object result;
+        try
+        {
+            result = method.Invoke(writer, arguments);
+        }
+        catch (TargetInvocationException ex) when (ex.InnerException is not null)
+        {
+            ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
+            throw;
+        }
+        return result switch
+        {
+            Task task => task,
+            ValueTask task => task.AsTask(),
+            _ => throw new InvalidOperationException("Unexpected async writer return type.")
+        };
+    }
+
+    private static Task WriteValueAsync(XmlDictionaryWriter writer, object value, CancellationToken cancellationToken = default) =>
+        InvokeWriterAsync(writer, "WriteValueAsync", new[] { typeof(object), typeof(CancellationToken) }, value, cancellationToken);
+
+    private static Task WriteArrayAsync(XmlDictionaryWriter writer, Array array, int offset, int count, CancellationToken cancellationToken = default) =>
+        InvokeWriterAsync(writer, "WriteArrayAsync", new[] { typeof(string), typeof(string), typeof(string), typeof(Array), typeof(int), typeof(int), typeof(CancellationToken) },
+            null, "a", null, array, offset, count, cancellationToken);
+
+    private static Task FlushWriterAsync(XmlDictionaryWriter writer, CancellationToken cancellationToken) =>
+        InvokeWriterAsync(writer, "FlushAsync", new[] { typeof(CancellationToken) }, cancellationToken);
+
+    private static Task CloseWriterAsync(XmlDictionaryWriter writer, CancellationToken cancellationToken) =>
+        InvokeWriterAsync(writer, "CloseAsync", new[] { typeof(CancellationToken) }, cancellationToken);
+
+    [Theory]
+    [InlineData("utf8")]
+    [InlineData("utf16")]
+    [InlineData("utf16be")]
+    public static async Task AsyncWriter_TextOperations_MatchSynchronousOutput(string encodingName)
+    {
+        Encoding encoding = GetWriterEncoding(encodingName);
+        string prefix = "p" + new string('\u00e9', 170);
+        string localName = "n" + new string('\u00e9', 513);
+        string ns = "urn:" + new string('\u00e9', 600);
+        string text = string.Concat(Enumerable.Repeat("a<&\"\t\r\n\u00e9\U0001f642", 160));
+        byte[] bytes = GetByteArray(2051);
+        XmlDictionary dictionary = new XmlDictionary();
+        XmlDictionaryString dictionaryName = dictionary.Add(localName);
+        XmlDictionaryString dictionaryNamespace = dictionary.Add(ns);
+        using MemoryStream expected = new MemoryStream();
+        using (XmlDictionaryWriter writer = XmlDictionaryWriter.CreateTextWriter(expected, encoding, ownsStream: false))
+        {
+            writer.WriteStartDocument();
+            writer.WriteStartElement(prefix, dictionaryName, dictionaryNamespace);
+            writer.WriteAttributeString("xml", "lang", null, "en");
+            writer.WriteAttributeString(null, "attribute", null, text);
+            writer.WriteStartElement("child");
+            writer.WriteString(text);
+            writer.WriteChars(text.ToCharArray(), 1, text.Length - 1);
+            writer.WriteBase64(bytes, 0, 1000);
+            writer.WriteBase64(bytes, 1000, bytes.Length - 1000);
+            writer.WriteString("tail");
+            writer.WriteCharEntity('<');
+            writer.WriteSurrogateCharEntity('\ude42', '\ud83d');
+            writer.WriteCData("CDATA \u00e9\U0001f642");
+            writer.WriteComment("comment");
+            writer.WriteRaw("&gt;");
+            writer.WriteBinHex(bytes, 0, bytes.Length);
+            writer.WriteEndElement();
+            writer.WriteFullEndElement();
+            writer.WriteEndDocument();
+        }
+        using AsyncOnlyWriteStream output = new AsyncOnlyWriteStream();
+        XmlDictionaryWriter asyncWriter = await CreateAsyncWriter("text", output, encoding);
+        await asyncWriter.WriteStartDocumentAsync();
+        await InvokeWriterAsync(asyncWriter, "WriteStartElementAsync",
+            new[] { typeof(string), typeof(XmlDictionaryString), typeof(XmlDictionaryString), typeof(CancellationToken) },
+            prefix, dictionaryName, dictionaryNamespace, CancellationToken.None);
+        await asyncWriter.WriteAttributeStringAsync("xml", "lang", null, "en");
+        await asyncWriter.WriteAttributeStringAsync(null, "attribute", null, text);
+        await asyncWriter.WriteStartElementAsync(null, "child", null);
+        await asyncWriter.WriteStringAsync(text);
+        await asyncWriter.WriteCharsAsync(text.ToCharArray(), 1, text.Length - 1);
+        await asyncWriter.WriteBase64Async(bytes, 0, 1000);
+        await asyncWriter.WriteBase64Async(bytes, 1000, bytes.Length - 1000);
+        await asyncWriter.WriteStringAsync("tail");
+        await asyncWriter.WriteCharEntityAsync('<');
+        await asyncWriter.WriteSurrogateCharEntityAsync('\ude42', '\ud83d');
+        await asyncWriter.WriteCDataAsync("CDATA \u00e9\U0001f642");
+        await asyncWriter.WriteCommentAsync("comment");
+        await asyncWriter.WriteRawAsync("&gt;");
+        await asyncWriter.WriteBinHexAsync(bytes, 0, bytes.Length);
+        await asyncWriter.WriteEndElementAsync();
+        await asyncWriter.WriteFullEndElementAsync();
+        await asyncWriter.WriteEndDocumentAsync();
+        await asyncWriter.DisposeAsync();
+        Assert.Equal(expected.ToArray(), output.Bytes);
+        Assert.True(output.AsyncWrites > 1);
+        Assert.True(output.AsyncFlushes > 0);
+        Assert.Equal(0, output.AsyncDisposals);
+        using XmlDictionaryReader reader = XmlDictionaryReader.CreateTextReader(output.Bytes, 0, output.Bytes.Length, encoding, XmlDictionaryReaderQuotas.Max, null);
+        Assert.Equal(localName, reader.MoveToContent() == XmlNodeType.Element ? reader.LocalName : null);
+        Assert.Equal(ns, reader.NamespaceURI);
+        Assert.Equal(text, reader.GetAttribute("attribute"));
+    }
+
+    [Fact]
+    public static async Task AsyncWriter_NamespaceAndBase64Tail_DoNotUseSynchronousIO()
+    {
+        using AsyncOnlyWriteStream output = new AsyncOnlyWriteStream();
+        XmlDictionaryWriter writer = XmlDictionaryWriter.CreateTextWriter(output, new UTF8Encoding(false), ownsStream: false);
+        string ns = "urn:" + new string('x', 2049);
+        await writer.WriteStartElementAsync("p", "root", ns);
+        await writer.WriteStartElementAsync(null, "child", string.Empty);
+        await writer.WriteBase64Async(new byte[] { 1 }, 0, 1);
+        await writer.WriteEndElementAsync();
+        await writer.WriteEndElementAsync();
+        await writer.FlushAsync();
+        Assert.Equal($"<p:root xmlns:p=\"{ns}\"><child>AQ==</child></p:root>", Encoding.UTF8.GetString(output.Bytes));
+        await writer.DisposeAsync();
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(400)]
+    public static async Task AsyncWriter_BinaryBase64Segments_PreserveBufferBoundaries(int namespaceLength)
+    {
+        int[] lengths = { 0, 1, 2, 3, 4, 5, 8, 127, 128, 255, 256, 501, 502, 503, 504, 505, 506, 507, 508, 509, 510, 511, 512, 513, 1025 };
+        using AsyncOnlyWriteStream output = new AsyncOnlyWriteStream();
+        XmlDictionaryWriter writer = await CreateAsyncWriter("binary", output, Encoding.UTF8);
+        await writer.WriteStartElementAsync(null, "root", "urn:" + new string('n', namespaceLength));
+        foreach (int length in lengths)
+        {
+            byte[] bytes = GetByteArray(length);
+            await writer.WriteStartElementAsync(null, "item", string.Empty);
+            int first = Math.Min(1, length);
+            await writer.WriteBase64Async(bytes, 0, first);
+            await writer.WriteBase64Async(bytes, first, length - first);
+            await writer.WriteEndElementAsync();
+        }
+        await writer.WriteEndElementAsync();
+        await writer.FlushAsync();
+        Assert.True(output.AsyncWrites > 1);
+        using XmlDictionaryReader reader = XmlDictionaryReader.CreateBinaryReader(output.Bytes, XmlDictionaryReaderQuotas.Max);
+        reader.ReadStartElement();
+        foreach (int length in lengths)
+            Assert.Equal(GetByteArray(length), reader.ReadElementContentAsBase64());
+        reader.ReadEndElement();
+        Assert.True(reader.EOF);
+    }
+
+    public static IEnumerable<object[]> AsyncBinaryValues()
+    {
+        object[] values =
+        {
+            false, true, 0, 1, -128, 127, -129, 32767, 32768, int.MaxValue, long.MinValue, ulong.MaxValue,
+            1.23456788f, float.NaN, float.NegativeInfinity, 1.0 / 3.0, double.PositiveInfinity,
+            decimal.MinValue, new decimal(0x20212223, 0x10111213, 0x01020304, true, 0x1b),
+            new DateTime(2022, 8, 26, 12, 34, 56, DateTimeKind.Utc),
+            TimeSpan.MaxValue, new Guid("01020304-0506-0708-090a-0b0c0d0e0f10"),
+            new UniqueId(new Guid("01020304-0506-0708-090a-0b0c0d0e0f10")),
+            new UniqueId("urn:" + new string('\u00e9', 513)),
+            new string('\u00e9', 85), new string('\u4e00', 86), new string('\u4e00', 2049)
+        };
+        foreach (object value in values)
+            yield return new[] { value };
+    }
+
+    [Theory]
+    [MemberData(nameof(AsyncBinaryValues))]
+    public static async Task AsyncWriter_BinaryValues_PreserveTypedBytes(object value)
+    {
+        using MemoryStream expected = new MemoryStream();
+        using (XmlDictionaryWriter writer = XmlDictionaryWriter.CreateBinaryWriter(expected, null, null, ownsStream: false))
+        {
+            writer.WriteStartElement("value");
+            writer.WriteValue(value);
+            writer.WriteEndElement();
+        }
+        using AsyncOnlyWriteStream output = new AsyncOnlyWriteStream();
+        XmlDictionaryWriter asyncWriter = await CreateAsyncWriter("binary", output, Encoding.UTF8);
+        await asyncWriter.WriteStartElementAsync(null, "value", null);
+        await WriteValueAsync(asyncWriter, value);
+        await asyncWriter.WriteEndElementAsync();
+        await asyncWriter.DisposeAsync();
+        Assert.Equal(expected.ToArray(), output.Bytes);
+        using XmlDictionaryReader expectedReader = XmlDictionaryReader.CreateBinaryReader(expected.ToArray(), XmlDictionaryReaderQuotas.Max);
+        using XmlDictionaryReader actualReader = XmlDictionaryReader.CreateBinaryReader(output.Bytes, XmlDictionaryReaderQuotas.Max);
+        expectedReader.ReadStartElement("value");
+        actualReader.ReadStartElement("value");
+        Assert.Equal(expectedReader.ValueType, actualReader.ValueType);
+        Assert.Equal(expectedReader.ReadContentAsString(), actualReader.ReadContentAsString());
+    }
+
+    public static IEnumerable<object[]> AsyncBinaryArrays()
+    {
+        const int length = 205;
+        Array[] arrays =
+        {
+            Enumerable.Range(0, length).Select(i => i % 2 == 0).ToArray(),
+            Enumerable.Range(0, length).Select(i => (short)(i * 127 - 16384)).ToArray(),
+            Enumerable.Range(0, length).Select(i => i * 65537 - 65536).ToArray(),
+            Enumerable.Range(0, length).Select(i => long.MinValue + i * 65537L).ToArray(),
+            Enumerable.Range(0, length).Select(i => i / 3.0f).ToArray(),
+            Enumerable.Range(0, length).Select(i => i / 3.0).ToArray(),
+            Enumerable.Range(0, length).Select(i => i / 3.0m).ToArray(),
+            Enumerable.Range(0, length).Select(i => new DateTime(2022, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddTicks(i)).ToArray(),
+            Enumerable.Range(0, length).Select(i => new Guid(i, 2, 3, new byte[] { 4, 5, 6, 7, 8, 9, 10, 11 })).ToArray(),
+            Enumerable.Range(0, length).Select(i => TimeSpan.FromTicks(long.MinValue + i)).ToArray()
+        };
+        foreach (Array array in arrays)
+            yield return new object[] { array };
+    }
+
+    private static void WriteArray(XmlDictionaryWriter writer, Array array, int offset, int count)
+    {
+        switch (array)
+        {
+            case bool[] values: writer.WriteArray(null, "a", null, values, offset, count); break;
+            case short[] values: writer.WriteArray(null, "a", null, values, offset, count); break;
+            case int[] values: writer.WriteArray(null, "a", null, values, offset, count); break;
+            case long[] values: writer.WriteArray(null, "a", null, values, offset, count); break;
+            case float[] values: writer.WriteArray(null, "a", null, values, offset, count); break;
+            case double[] values: writer.WriteArray(null, "a", null, values, offset, count); break;
+            case decimal[] values: writer.WriteArray(null, "a", null, values, offset, count); break;
+            case DateTime[] values: writer.WriteArray(null, "a", null, values, offset, count); break;
+            case Guid[] values: writer.WriteArray(null, "a", null, values, offset, count); break;
+            case TimeSpan[] values: writer.WriteArray(null, "a", null, values, offset, count); break;
+            default: throw new InvalidOperationException();
+        }
+    }
+
+    private static int ReadArray(XmlDictionaryReader reader, Array array)
+    {
+        return array switch
+        {
+            bool[] values => reader.ReadArray("a", string.Empty, values, 0, values.Length),
+            short[] values => reader.ReadArray("a", string.Empty, values, 0, values.Length),
+            int[] values => reader.ReadArray("a", string.Empty, values, 0, values.Length),
+            long[] values => reader.ReadArray("a", string.Empty, values, 0, values.Length),
+            float[] values => reader.ReadArray("a", string.Empty, values, 0, values.Length),
+            double[] values => reader.ReadArray("a", string.Empty, values, 0, values.Length),
+            decimal[] values => reader.ReadArray("a", string.Empty, values, 0, values.Length),
+            DateTime[] values => reader.ReadArray("a", string.Empty, values, 0, values.Length),
+            Guid[] values => reader.ReadArray("a", string.Empty, values, 0, values.Length),
+            TimeSpan[] values => reader.ReadArray("a", string.Empty, values, 0, values.Length),
+            _ => throw new InvalidOperationException()
+        };
+    }
+
+    [Theory]
+    [MemberData(nameof(AsyncBinaryArrays))]
+    public static async Task AsyncWriter_BinaryArrays_PreservePackedRepresentation(Array array)
+    {
+        const int offset = 1;
+        int count = array.Length - 2;
+        using MemoryStream expected = new MemoryStream();
+        using (XmlDictionaryWriter writer = XmlDictionaryWriter.CreateBinaryWriter(expected, null, null, ownsStream: false))
+        {
+            writer.WriteStartElement("root");
+            WriteArray(writer, array, offset, count);
+            writer.WriteEndElement();
+        }
+        using AsyncOnlyWriteStream output = new AsyncOnlyWriteStream();
+        XmlDictionaryWriter asyncWriter = await CreateAsyncWriter("binary", output, Encoding.UTF8);
+        await asyncWriter.WriteStartElementAsync(null, "root", null);
+        await WriteArrayAsync(asyncWriter, array, offset, count);
+        await asyncWriter.WriteEndElementAsync();
+        await asyncWriter.DisposeAsync();
+        Assert.Equal(expected.ToArray(), output.Bytes);
+        using XmlDictionaryReader reader = XmlDictionaryReader.CreateBinaryReader(output.Bytes, XmlDictionaryReaderQuotas.Max);
+        reader.ReadStartElement("root");
+        Assert.True(reader.IsStartArray(out Type elementType));
+        Assert.Equal(array.GetType().GetElementType(), elementType);
+        Array actual = Array.CreateInstance(elementType, count);
+        Assert.Equal(count, ReadArray(reader, actual));
+        Assert.Equal(array.Cast<object>().Skip(offset).Take(count), actual.Cast<object>());
+    }
+
+    [Theory]
+    [InlineData("utf8", false)]
+    [InlineData("utf16", false)]
+    [InlineData("utf16be", false)]
+    [InlineData("utf8", true)]
+    [InlineData("utf16", true)]
+    [InlineData("utf16be", true)]
+    public static async Task AsyncWriter_JsonMappedNamesAndChunks_MatchSynchronousOutput(string encodingName, bool indent)
+    {
+        Encoding encoding = GetWriterEncoding(encodingName);
+        string mappedName = "mapped /\"\n" + new string('\u00e9', 513);
+        string text = string.Concat(Enumerable.Repeat("a\"/\\\t\u0085\u2028\u2029\U0001f642", 170));
+        string serverType = "type:" + new string('\u00e9', 600);
+        byte[] bytes = GetByteArray(1025);
+        using MemoryStream expected = new MemoryStream();
+        using (XmlDictionaryWriter writer = JsonReaderWriterFactory.CreateJsonWriter(expected, encoding, ownsStream: false, indent, "  "))
+        {
+            writer.WriteStartElement("root");
+            writer.WriteAttributeString("type", "object");
+            writer.WriteAttributeString("__type", serverType);
+            writer.WriteStartElement("p", "item", "item");
+            writer.WriteAttributeString("item", mappedName);
+            writer.WriteString(text);
+            writer.WriteEndElement();
+            writer.WriteStartElement("array");
+            writer.WriteAttributeString("type", "array");
+            writer.WriteStartElement("item");
+            writer.WriteAttributeString("type", "number");
+            writer.WriteValue(123456789L);
+            writer.WriteEndElement();
+            writer.WriteStartElement("item");
+            writer.WriteAttributeString("type", "boolean");
+            writer.WriteValue(true);
+            writer.WriteEndElement();
+            writer.WriteStartElement("item");
+            writer.WriteBase64(bytes, 0, bytes.Length);
+            writer.WriteEndElement();
+            writer.WriteStartElement("item");
+            writer.WriteAttributeString("type", "null");
+            writer.WriteEndElement();
+            writer.WriteEndElement();
+            writer.WriteEndElement();
+        }
+        using AsyncOnlyWriteStream output = new AsyncOnlyWriteStream();
+        XmlDictionaryWriter asyncWriter = await CreateAsyncWriter("json", output, encoding, indent: indent);
+        await asyncWriter.WriteStartElementAsync(null, "root", null);
+        await asyncWriter.WriteAttributeStringAsync(null, "type", null, "object");
+        await asyncWriter.WriteAttributeStringAsync(null, "__type", null, serverType);
+        await asyncWriter.WriteStartElementAsync("p", "item", "item");
+        await asyncWriter.WriteAttributeStringAsync(null, "item", null, mappedName);
+        await asyncWriter.WriteStringAsync(text.Substring(0, 300));
+        await asyncWriter.WriteCharsAsync(text.ToCharArray(), 300, text.Length - 300);
+        await asyncWriter.WriteEndElementAsync();
+        await asyncWriter.WriteStartElementAsync(null, "array", null);
+        await asyncWriter.WriteAttributeStringAsync(null, "type", null, "array");
+        await asyncWriter.WriteStartElementAsync(null, "item", null);
+        await asyncWriter.WriteAttributeStringAsync(null, "type", null, "number");
+        await WriteValueAsync(asyncWriter, 123456789L);
+        await asyncWriter.WriteEndElementAsync();
+        await asyncWriter.WriteStartElementAsync(null, "item", null);
+        await asyncWriter.WriteAttributeStringAsync(null, "type", null, "boolean");
+        await WriteValueAsync(asyncWriter, true);
+        await asyncWriter.WriteEndElementAsync();
+        await asyncWriter.WriteStartElementAsync(null, "item", null);
+        await asyncWriter.WriteBase64Async(bytes, 0, bytes.Length);
+        await asyncWriter.WriteEndElementAsync();
+        await asyncWriter.WriteStartElementAsync(null, "item", null);
+        await asyncWriter.WriteAttributeStringAsync(null, "type", null, "null");
+        await asyncWriter.WriteEndElementAsync();
+        await asyncWriter.WriteEndElementAsync();
+        await asyncWriter.WriteEndElementAsync();
+        await asyncWriter.DisposeAsync();
+        Assert.Equal(expected.ToArray(), output.Bytes);
+        Assert.True(output.AsyncWrites > 1);
+        Assert.True(output.AsyncFlushes > 0);
+        using XmlDictionaryReader expectedReader = JsonReaderWriterFactory.CreateJsonReader(expected.ToArray(), 0, (int)expected.Length,
+            encoding, XmlDictionaryReaderQuotas.Max, null);
+        using XmlDictionaryReader actualReader = JsonReaderWriterFactory.CreateJsonReader(output.Bytes, 0, output.Bytes.Length,
+            encoding, XmlDictionaryReaderQuotas.Max, null);
+        expectedReader.MoveToContent();
+        actualReader.MoveToContent();
+        Assert.Equal(expectedReader.ReadOuterXml(), actualReader.ReadOuterXml());
+    }
+
+    [Fact]
+    public static async Task AsyncWriter_BinaryDictionaryNamesAndAttributeChunks_PreserveKeys()
+    {
+        XmlDictionary dictionary = new XmlDictionary();
+        XmlDictionaryString root = dictionary.Add("root");
+        XmlDictionaryString ns = dictionary.Add("urn:" + new string('\u00e9', 513));
+        XmlDictionaryString name = dictionary.Add("n" + new string('\u00e9', 513));
+        XmlDictionaryString value = dictionary.Add(new string('\u4e00', 513));
+        XmlDictionaryString qName = dictionary.Add("qualified");
+        XmlDictionaryString qNs = dictionary.Add("urn:qualified");
+        byte[] bytes = GetByteArray(2051);
+        using MemoryStream expected = new MemoryStream();
+        using (XmlDictionaryWriter writer = XmlDictionaryWriter.CreateBinaryWriter(expected, dictionary, null, ownsStream: false))
+        {
+            writer.WriteStartElement("p", root, ns);
+            writer.WriteXmlnsAttribute("q", qNs);
+            writer.WriteStartAttribute(null, name, XmlDictionaryString.Empty);
+            writer.WriteString(value);
+            writer.WriteString("suffix");
+            writer.WriteEndAttribute();
+            writer.WriteStartElement(null, name, XmlDictionaryString.Empty);
+            writer.WriteQualifiedName(qName, qNs);
+            writer.WriteValue(new object[] { 42, true, string.Empty, "tail" });
+            writer.WriteBase64(bytes, 0, 1000);
+            writer.WriteBase64(bytes, 1000, bytes.Length - 1000);
+            writer.WriteEndElement();
+            writer.WriteEndElement();
+        }
+        using AsyncOnlyWriteStream output = new AsyncOnlyWriteStream();
+        XmlDictionaryWriter asyncWriter = await CreateAsyncWriter("binary", output, Encoding.UTF8, dictionary: dictionary);
+        await InvokeWriterAsync(asyncWriter, "WriteStartElementAsync",
+            new[] { typeof(string), typeof(XmlDictionaryString), typeof(XmlDictionaryString), typeof(CancellationToken) },
+            "p", root, ns, CancellationToken.None);
+        await InvokeWriterAsync(asyncWriter, "WriteXmlnsAttributeAsync", new[] { typeof(string), typeof(XmlDictionaryString), typeof(CancellationToken) },
+            "q", qNs, CancellationToken.None);
+        await InvokeWriterAsync(asyncWriter, "WriteStartAttributeAsync",
+            new[] { typeof(string), typeof(XmlDictionaryString), typeof(XmlDictionaryString), typeof(CancellationToken) },
+            null, name, XmlDictionaryString.Empty, CancellationToken.None);
+        await InvokeWriterAsync(asyncWriter, "WriteStringAsync", new[] { typeof(XmlDictionaryString), typeof(CancellationToken) }, value, CancellationToken.None);
+        await asyncWriter.WriteStringAsync("suffix");
+        await InvokeWriterAsync(asyncWriter, "WriteEndAttributeAsync", new[] { typeof(CancellationToken) }, CancellationToken.None);
+        await InvokeWriterAsync(asyncWriter, "WriteStartElementAsync",
+            new[] { typeof(string), typeof(XmlDictionaryString), typeof(XmlDictionaryString), typeof(CancellationToken) },
+            null, name, XmlDictionaryString.Empty, CancellationToken.None);
+        await InvokeWriterAsync(asyncWriter, "WriteQualifiedNameAsync", new[] { typeof(XmlDictionaryString), typeof(XmlDictionaryString), typeof(CancellationToken) },
+            qName, qNs, CancellationToken.None);
+        await WriteValueAsync(asyncWriter, new object[] { 42, true, string.Empty, "tail" });
+        await asyncWriter.WriteBase64Async(bytes, 0, 1000);
+        await asyncWriter.WriteBase64Async(bytes, 1000, bytes.Length - 1000);
+        await asyncWriter.WriteEndElementAsync();
+        await asyncWriter.WriteEndElementAsync();
+        await asyncWriter.DisposeAsync();
+        Assert.Equal(expected.ToArray(), output.Bytes);
+        using XmlDictionaryReader expectedReader = XmlDictionaryReader.CreateBinaryReader(expected.ToArray(), 0, (int)expected.Length,
+            dictionary, XmlDictionaryReaderQuotas.Max);
+        using XmlDictionaryReader actualReader = XmlDictionaryReader.CreateBinaryReader(output.Bytes, 0, output.Bytes.Length,
+            dictionary, XmlDictionaryReaderQuotas.Max);
+        expectedReader.MoveToContent();
+        actualReader.MoveToContent();
+        Assert.Equal(expectedReader.ReadOuterXml(), actualReader.ReadOuterXml());
+    }
+
+    [Theory]
+    [InlineData("text")]
+    [InlineData("binary")]
+    [InlineData("json")]
+    public static async Task AsyncWriter_TypedOverloadsAndCompoundAttributes_AreTokenAware(string format)
+    {
+        XmlDictionary dictionary = new XmlDictionary();
+        XmlDictionaryString attributeName = dictionary.Add(format == "json" ? "type" : "attribute");
+        string attributeValue = format == "json" ? "object" : new string('\u00e9', 513);
+        object[] values =
+        {
+            true, int.MaxValue, long.MinValue, ulong.MaxValue, 1.25f, 1.0 / 3.0, 1.25m,
+            new DateTime(2022, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+            new DateTimeOffset(2022, 1, 1, 0, 0, 0, TimeSpan.FromHours(2)),
+            new Guid("01020304-0506-0708-090a-0b0c0d0e0f10"),
+            TimeSpan.FromDays(1), new UniqueId("urn:identifier"), "text", dictionary.Add("dictionary text")
+        };
+        using MemoryStream expected = new MemoryStream();
+        using (XmlDictionaryWriter syncWriter = CreateSyncWriter(format, expected))
+        {
+            syncWriter.WriteStartElement("root");
+            syncWriter.WriteAttributeString(null, attributeName, null, attributeValue);
+            foreach (object value in values)
+            {
+                syncWriter.WriteStartElement("value");
+                if (format == "json" && value is bool or int or long or ulong or float or double or decimal)
+                    syncWriter.WriteAttributeString("type", value is bool ? "boolean" : "number");
+                syncWriter.WriteValue(value);
+                syncWriter.WriteEndElement();
+            }
+            syncWriter.WriteEndElement();
+        }
+        using AsyncOnlyWriteStream output = new AsyncOnlyWriteStream();
+        using CancellationTokenSource cancellation = new CancellationTokenSource();
+        XmlDictionaryWriter writer = await CreateAsyncWriter(format, output, new UTF8Encoding(false));
+        await writer.WriteStartElementAsync(null, "root", null);
+        await InvokeWriterAsync(writer, "WriteAttributeStringAsync",
+            new[] { typeof(string), typeof(XmlDictionaryString), typeof(XmlDictionaryString), typeof(string), typeof(CancellationToken) },
+            null, attributeName, null, attributeValue, cancellation.Token);
+        foreach (object value in values)
+        {
+            await writer.WriteStartElementAsync(null, "value", null);
+            if (format == "json" && value is bool or int or long or ulong or float or double or decimal)
+                await InvokeWriterAsync(writer, "WriteAttributeStringAsync",
+                    new[] { typeof(string), typeof(string), typeof(string), typeof(string), typeof(CancellationToken) },
+                    null, "type", null, value is bool ? "boolean" : "number", cancellation.Token);
+            await InvokeWriterAsync(writer, "WriteValueAsync", new[] { value.GetType(), typeof(CancellationToken) }, value, cancellation.Token);
+            await writer.WriteEndElementAsync();
+        }
+        await writer.WriteEndElementAsync();
+        await FlushWriterAsync(writer, cancellation.Token);
+        Assert.Equal(cancellation.Token, output.LastWriteToken);
+        Assert.Equal(cancellation.Token, output.LastFlushToken);
+        Assert.Equal(expected.ToArray(), output.Bytes);
+        await writer.DisposeAsync();
+    }
+
+    [Theory]
+    [InlineData("text", false)]
+    [InlineData("binary", false)]
+    [InlineData("text", true)]
+    [InlineData("binary", true)]
+    public static async Task AsyncWriter_QualifiedNameAttribute_RegistersNamespaceAsynchronously(string format, bool dictionaryNames)
+    {
+        XmlDictionary dictionary = new XmlDictionary();
+        XmlDictionaryString attributeName = dictionary.Add("type");
+        XmlDictionaryString attributeNamespace = dictionary.Add("urn:attribute");
+        XmlDictionaryString valueName = dictionary.Add("Value");
+        XmlDictionaryString valueNamespace = dictionary.Add("urn:value");
+        string text = new string('\u00e9', 2049);
+        using MemoryStream expected = new MemoryStream();
+        using (XmlDictionaryWriter syncWriter = format == "binary"
+            ? XmlDictionaryWriter.CreateBinaryWriter(expected, dictionary, null, ownsStream: false)
+            : CreateSyncWriter(format, expected))
+        {
+            syncWriter.WriteStartElement("root");
+            if (dictionaryNames)
+            {
+                syncWriter.WriteStartAttribute("i", attributeName, attributeNamespace);
+                syncWriter.WriteQualifiedName(valueName, valueNamespace);
+            }
+            else
+            {
+                syncWriter.WriteStartAttribute("i", attributeName.Value, attributeNamespace.Value);
+                syncWriter.WriteQualifiedName(valueName.Value, valueNamespace.Value);
+            }
+            syncWriter.WriteEndAttribute();
+            syncWriter.WriteString(text);
+            syncWriter.WriteEndElement();
+        }
+        using AsyncOnlyWriteStream output = new AsyncOnlyWriteStream();
+        using CancellationTokenSource cancellation = new CancellationTokenSource();
+        XmlDictionaryWriter writer = await CreateAsyncWriter(format, output, new UTF8Encoding(false), dictionary: dictionary);
+        await writer.WriteStartElementAsync(null, "root", null);
+        if (dictionaryNames)
+            await InvokeWriterAsync(writer, "WriteAttributeQualifiedNameAsync",
+                new[] { typeof(string), typeof(XmlDictionaryString), typeof(XmlDictionaryString), typeof(XmlDictionaryString), typeof(XmlDictionaryString), typeof(CancellationToken) },
+                "i", attributeName, attributeNamespace, valueName, valueNamespace, cancellation.Token);
+        else
+            await InvokeWriterAsync(writer, "WriteAttributeQualifiedNameAsync",
+                new[] { typeof(string), typeof(string), typeof(string), typeof(string), typeof(string), typeof(CancellationToken) },
+                "i", attributeName.Value, attributeNamespace.Value, valueName.Value, valueNamespace.Value, cancellation.Token);
+        await InvokeWriterAsync(writer, "WriteStringAsync", new[] { typeof(string), typeof(CancellationToken) }, text, cancellation.Token);
+        await writer.WriteEndElementAsync();
+        await FlushWriterAsync(writer, cancellation.Token);
+        Assert.Equal(expected.ToArray(), output.Bytes);
+        Assert.True(output.AsyncWrites > 1);
+        await writer.DisposeAsync();
+        using XmlDictionaryReader reader = format == "binary"
+            ? XmlDictionaryReader.CreateBinaryReader(output.Bytes, 0, output.Bytes.Length, dictionary, XmlDictionaryReaderQuotas.Max)
+            : XmlDictionaryReader.CreateTextReader(output.Bytes, XmlDictionaryReaderQuotas.Max);
+        reader.MoveToContent();
+        string qualifiedName = reader.GetAttribute("type", "urn:attribute");
+        Assert.NotNull(qualifiedName);
+        string[] parts = qualifiedName.Split(':');
+        Assert.Equal(2, parts.Length);
+        Assert.Equal("Value", parts[1]);
+        Assert.Equal("urn:value", reader.LookupNamespace(parts[0]));
+    }
+
+    private static XmlDictionaryWriter CreateSyncWriter(string format, Stream stream, bool ownsStream = false) => format switch
+    {
+        "binary" => XmlDictionaryWriter.CreateBinaryWriter(stream, null, null, ownsStream),
+        "json" => JsonReaderWriterFactory.CreateJsonWriter(stream, new UTF8Encoding(false), ownsStream),
+        _ => XmlDictionaryWriter.CreateTextWriter(stream, new UTF8Encoding(false), ownsStream)
+    };
+
+    [Theory]
+    [InlineData("text", false)]
+    [InlineData("binary", false)]
+    [InlineData("text", true)]
+    [InlineData("binary", true)]
+    public static async Task AsyncWriter_Canonicalization_MatchesSynchronousOutput(string format, bool includeComments)
+    {
+        string attribute = string.Concat(Enumerable.Repeat("\"<&\t\r\n\u4e00\U0001f642", 100));
+        string text = new string('\u4e00', 2049) + "\r\n\U0001f642";
+        byte[] bytes = GetByteArray(2051);
+        int[] array = { -1, 0, 1, int.MaxValue };
+        using MemoryStream expected = new MemoryStream();
+        using MemoryStream expectedCanonical = new MemoryStream();
+        using (XmlDictionaryWriter writer = CreateSyncWriter(format, expected))
+        {
+            writer.WriteStartElement("p", "root", "urn:root");
+            writer.WriteXmlnsAttribute("z", "urn:z");
+            writer.StartCanonicalization(expectedCanonical, includeComments, new[] { "z" });
+            writer.WriteStartElement("p", "child", "urn:root");
+            writer.WriteAttributeString("z", "last", "urn:z", attribute);
+            writer.WriteAttributeString(null, "first", null, "value");
+            writer.WriteString(text);
+            writer.WriteCData("CDATA <&>\r\n");
+            writer.WriteComment("comment");
+            writer.WriteBase64(bytes, 0, 1000);
+            writer.WriteBase64(bytes, 1000, bytes.Length - 1000);
+            writer.WriteValue(1.0 / 3.0);
+            writer.WriteValue(42);
+            writer.WriteArray(null, "a", null, array, 0, array.Length);
+            writer.WriteEndElement();
+            writer.EndCanonicalization();
+            writer.WriteEndElement();
+        }
+        using AsyncOnlyWriteStream output = new AsyncOnlyWriteStream();
+        using AsyncOnlyWriteStream canonical = new AsyncOnlyWriteStream();
+        XmlDictionaryWriter asyncWriter = await CreateAsyncWriter(format, output, new UTF8Encoding(false));
+        await asyncWriter.WriteStartElementAsync("p", "root", "urn:root");
+        await InvokeWriterAsync(asyncWriter, "WriteXmlnsAttributeAsync", new[] { typeof(string), typeof(string), typeof(CancellationToken) },
+            "z", "urn:z", CancellationToken.None);
+        await InvokeWriterAsync(asyncWriter, "StartCanonicalizationAsync", new[] { typeof(Stream), typeof(bool), typeof(string[]), typeof(CancellationToken) },
+            canonical, includeComments, new[] { "z" }, CancellationToken.None);
+        await asyncWriter.WriteStartElementAsync("p", "child", "urn:root");
+        await asyncWriter.WriteAttributeStringAsync("z", "last", "urn:z", attribute);
+        await asyncWriter.WriteAttributeStringAsync(null, "first", null, "value");
+        await asyncWriter.WriteStringAsync(text);
+        await asyncWriter.WriteCDataAsync("CDATA <&>\r\n");
+        await asyncWriter.WriteCommentAsync("comment");
+        await asyncWriter.WriteBase64Async(bytes, 0, 1000);
+        await asyncWriter.WriteBase64Async(bytes, 1000, bytes.Length - 1000);
+        await WriteValueAsync(asyncWriter, 1.0 / 3.0);
+        await InvokeWriterAsync(asyncWriter, "WriteValueAsync", new[] { typeof(int), typeof(CancellationToken) }, 42, CancellationToken.None);
+        await WriteArrayAsync(asyncWriter, array, 0, array.Length);
+        await asyncWriter.WriteEndElementAsync();
+        await InvokeWriterAsync(asyncWriter, "EndCanonicalizationAsync", new[] { typeof(CancellationToken) }, CancellationToken.None);
+        await asyncWriter.WriteEndElementAsync();
+        await asyncWriter.DisposeAsync();
+        Assert.Equal(expected.ToArray(), output.Bytes);
+        Assert.Equal(expectedCanonical.ToArray(), canonical.Bytes);
+        Assert.True(output.AsyncWrites > 1);
+        Assert.True(canonical.AsyncWrites > 1);
+        Assert.True(canonical.AsyncFlushes > 0);
+        Assert.Equal(0, canonical.AsyncDisposals);
+    }
+
+    [Theory]
+    [InlineData("text", false)]
+    [InlineData("binary", false)]
+    [InlineData("json", false)]
+    [InlineData("text", true)]
+    [InlineData("binary", true)]
+    [InlineData("json", true)]
+    public static async Task AsyncWriter_CancellationAndGuards_PreserveBufferedOutput(string format, bool cancelFlush)
+    {
+        using AsyncOnlyWriteStream output = new AsyncOnlyWriteStream();
+        XmlDictionaryWriter writer = await CreateAsyncWriter(format, output, new UTF8Encoding(false));
+        await writer.WriteStartElementAsync(null, "root", null);
+        await writer.WriteStringAsync("before");
+        using CancellationTokenSource cancellation = new CancellationTokenSource();
+        if (cancelFlush)
+            output.FlushGate = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        else
+            output.WriteGate = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        Task pending = FlushWriterAsync(writer, cancellation.Token);
+        await (cancelFlush ? output.FlushStarted.Task : output.WriteStarted.Task);
+        Assert.False(pending.IsCompleted);
+        Assert.Throws<InvalidOperationException>(() => writer.WriteString("overlap"));
+        Assert.Throws<InvalidOperationException>(() => writer.Close());
+        await Assert.ThrowsAsync<InvalidOperationException>(() => writer.WriteStringAsync("overlap"));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => WriteValueAsync(writer, 42));
+        cancellation.Cancel();
+        OperationCanceledException error = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => pending);
+        Assert.Equal(cancellation.Token, error.CancellationToken);
+        Assert.Equal(cancellation.Token, cancelFlush ? output.LastFlushToken : output.LastWriteToken);
+        output.WriteGate = null;
+        output.FlushGate = null;
+        await writer.WriteStringAsync("after");
+        await writer.WriteEndElementAsync();
+        await writer.DisposeAsync();
+        using MemoryStream expected = new MemoryStream();
+        using (XmlDictionaryWriter syncWriter = CreateSyncWriter(format, expected))
+        {
+            syncWriter.WriteStartElement("root");
+            syncWriter.WriteString("before");
+            if (cancelFlush)
+                syncWriter.Flush();
+            syncWriter.WriteString("after");
+            syncWriter.WriteEndElement();
+        }
+        Assert.Equal(expected.ToArray(), output.Bytes);
+        Assert.Equal(CancellationToken.None, output.LastFlushToken);
+    }
+
+    [Theory]
+    [InlineData("text")]
+    [InlineData("binary")]
+    [InlineData("json")]
+    public static async Task AsyncWriter_PreCanceledOperation_DoesNotMutateState(string format)
+    {
+        using AsyncOnlyWriteStream output = new AsyncOnlyWriteStream();
+        using CancellationTokenSource cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+        XmlDictionaryWriter writer = await CreateAsyncWriter(format, output, new UTF8Encoding(false));
+        Task operation = WriteValueAsync(writer, 42, cancellation.Token);
+        Assert.True(operation.IsCanceled);
+        Assert.False(operation.IsFaulted);
+        OperationCanceledException exception = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => operation);
+        Assert.Equal(cancellation.Token, exception.CancellationToken);
+        Assert.Equal(WriteState.Start, writer.WriteState);
+        Assert.Empty(output.Bytes);
+        await writer.WriteStartElementAsync(null, "root", null);
+        await writer.WriteStringAsync("value");
+        await writer.DisposeAsync();
+        Assert.NotEmpty(output.Bytes);
+        Assert.Equal(CancellationToken.None, output.LastWriteToken);
+    }
+
+    [Theory]
+    [InlineData("text", false)]
+    [InlineData("binary", false)]
+    [InlineData("json", false)]
+    [InlineData("text", true)]
+    [InlineData("binary", true)]
+    [InlineData("json", true)]
+    public static async Task AsyncWriter_IOFaults_PropagateAndDoNotLoseBuffer(string format, bool failFlush)
+    {
+        using AsyncOnlyWriteStream output = new AsyncOnlyWriteStream();
+        XmlDictionaryWriter writer = await CreateAsyncWriter(format, output, new UTF8Encoding(false));
+        await writer.WriteStartElementAsync(null, "root", null);
+        await writer.WriteStringAsync("value");
+        IOException expectedError = new IOException("Injected async I/O failure.");
+        if (failFlush)
+            output.FlushFailure = expectedError;
+        else
+            output.WriteFailure = expectedError;
+        Assert.Same(expectedError, await Assert.ThrowsAsync<IOException>(() => writer.FlushAsync()));
+        output.WriteFailure = null;
+        output.FlushFailure = null;
+        await writer.FlushAsync();
+        await writer.WriteEndElementAsync();
+        await writer.DisposeAsync();
+        using MemoryStream expected = new MemoryStream();
+        using (XmlDictionaryWriter syncWriter = CreateSyncWriter(format, expected))
+        {
+            syncWriter.WriteStartElement("root");
+            syncWriter.WriteString("value");
+            syncWriter.Flush();
+            syncWriter.WriteEndElement();
+        }
+        Assert.Equal(expected.ToArray(), output.Bytes);
+    }
+
+    [Theory]
+    [InlineData("text", false)]
+    [InlineData("binary", false)]
+    [InlineData("json", false)]
+    [InlineData("text", true)]
+    [InlineData("binary", true)]
+    [InlineData("json", true)]
+    public static async Task AsyncWriter_Disposal_FinalizesAndPreservesOwnership(string format, bool ownsStream)
+    {
+        using AsyncOnlyWriteStream output = new AsyncOnlyWriteStream();
+        XmlDictionaryWriter writer = await CreateAsyncWriter(format, output, new UTF8Encoding(false), ownsStream);
+        await writer.WriteStartElementAsync(null, "root", null);
+        await writer.WriteStringAsync("value");
+        await writer.DisposeAsync();
+        await writer.DisposeAsync();
+        Assert.Equal(WriteState.Closed, writer.WriteState);
+        Assert.Equal(ownsStream ? 1 : 0, output.AsyncDisposals);
+        Assert.Equal(0, output.SyncDisposals);
+        Assert.True(output.AsyncFlushes > 0);
+        using MemoryStream expected = new MemoryStream();
+        using (XmlDictionaryWriter syncWriter = CreateSyncWriter(format, expected))
+        {
+            syncWriter.WriteStartElement("root");
+            syncWriter.WriteString("value");
+        }
+        Assert.Equal(expected.ToArray(), output.Bytes);
+    }
+
+    [Fact]
+    public static async Task AsyncWriter_BinaryArrayAfterDisposal_IsRejected()
+    {
+        using AsyncOnlyWriteStream output = new AsyncOnlyWriteStream();
+        XmlDictionaryWriter writer = await CreateAsyncWriter("binary", output, new UTF8Encoding(false));
+        await writer.WriteStartElementAsync(null, "root", null);
+        await writer.DisposeAsync();
+        byte[] expected = output.Bytes;
+        await Assert.ThrowsAsync<InvalidOperationException>(() => WriteArrayAsync(writer, new int[] { 1 }, 0, 1));
+        Assert.Equal(expected, output.Bytes);
+        Assert.Equal(WriteState.Closed, writer.WriteState);
+    }
+
+    [Theory]
+    [InlineData("text")]
+    [InlineData("binary")]
+    [InlineData("json")]
+    public static async Task AsyncWriter_CanceledDisposal_StillClosesOwnedStream(string format)
+    {
+        using AsyncOnlyWriteStream output = new AsyncOnlyWriteStream();
+        XmlDictionaryWriter writer = await CreateAsyncWriter(format, output, new UTF8Encoding(false), ownsStream: true);
+        await writer.WriteStartElementAsync(null, "root", null);
+        await writer.WriteStringAsync("value");
+        using CancellationTokenSource cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => CloseWriterAsync(writer, cancellation.Token));
+        Assert.Equal(WriteState.Closed, writer.WriteState);
+        Assert.Equal(1, output.AsyncDisposals);
+        Assert.Equal(0, output.SyncDisposals);
+    }
+
+    [Theory]
+    [InlineData("text")]
+    [InlineData("binary")]
+    [InlineData("json")]
+    public static async Task AsyncWriter_DisposalFault_LeavesWriterClosed(string format)
+    {
+        using AsyncOnlyWriteStream output = new AsyncOnlyWriteStream();
+        IOException expected = new IOException("Injected async disposal failure.");
+        output.DisposeFailure = expected;
+        XmlDictionaryWriter writer = await CreateAsyncWriter(format, output, new UTF8Encoding(false), ownsStream: true);
+        await writer.WriteStartElementAsync(null, "root", null);
+        await writer.WriteStringAsync("value");
+        Assert.Same(expected, await Assert.ThrowsAsync<IOException>(() => writer.DisposeAsync().AsTask()));
+        Assert.Equal(WriteState.Closed, writer.WriteState);
+        Assert.Equal(1, output.AsyncDisposals);
+        await writer.DisposeAsync();
+        Assert.Equal(1, output.AsyncDisposals);
+    }
+
+    [Theory]
+    [InlineData("utf16")]
+    [InlineData("utf16be")]
+    public static async Task AsyncWriter_Initialization_IsCancelableAndWritesBOMAsynchronously(string encodingName)
+    {
+        Encoding encoding = GetWriterEncoding(encodingName);
+        using AsyncOnlyWriteStream canceledOutput = new AsyncOnlyWriteStream();
+        using CancellationTokenSource canceled = new CancellationTokenSource();
+        canceled.Cancel();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => CreateAsyncWriter("text", canceledOutput, encoding, cancellationToken: canceled.Token));
+        Assert.Empty(canceledOutput.Bytes);
+        Assert.Equal(0, canceledOutput.AsyncDisposals);
+        using AsyncOnlyWriteStream output = new AsyncOnlyWriteStream();
+        using CancellationTokenSource cancellation = new CancellationTokenSource();
+        XmlDictionaryWriter writer = await CreateAsyncWriter("text", output, encoding, cancellationToken: cancellation.Token);
+        Assert.Equal(encoding.GetPreamble(), output.Bytes);
+        Assert.Equal(cancellation.Token, output.LastWriteToken);
+        await writer.WriteStartElementAsync(null, "root", null);
+        await writer.DisposeAsync();
+    }
+
+    [Fact]
+    public static async Task AsyncWriter_ExternalXmlWriter_ForwardsProtectedAsyncAttributes()
+    {
+        string text = new string('\u00e9', 2049) + "<&\U0001f642";
+        XmlWriterSettings settings = new XmlWriterSettings { Async = true, Encoding = new UTF8Encoding(false), CloseOutput = false };
+        using AsyncOnlyWriteStream output = new AsyncOnlyWriteStream();
+        XmlWriter core = XmlWriter.Create(output, settings);
+        XmlDictionaryWriter writer = XmlDictionaryWriter.CreateDictionaryWriter(core);
+        await writer.WriteStartElementAsync(null, "root", null);
+        await writer.WriteAttributeStringAsync(null, "attribute", null, text);
+        await writer.WriteStringAsync(text);
+        await writer.WriteEndElementAsync();
+        await writer.DisposeAsync();
+        using MemoryStream expected = new MemoryStream();
+        settings.Async = false;
+        using (XmlWriter syncWriter = XmlWriter.Create(expected, settings))
+        {
+            syncWriter.WriteStartElement("root");
+            syncWriter.WriteAttributeString("attribute", text);
+            syncWriter.WriteString(text);
+            syncWriter.WriteEndElement();
+        }
+        Assert.Equal(expected.ToArray(), output.Bytes);
+        Assert.True(output.AsyncWrites > 0);
+        Assert.Equal(0, output.AsyncDisposals);
+    }
+
+    [Fact]
+    public static async Task AsyncWriter_ExternalSynchronousXmlWriter_DoesNotFallback()
+    {
+        using AsyncOnlyWriteStream output = new AsyncOnlyWriteStream();
+        XmlWriter core = XmlWriter.Create(output, new XmlWriterSettings { Async = false, Encoding = new UTF8Encoding(false), CloseOutput = false });
+        XmlDictionaryWriter writer = XmlDictionaryWriter.CreateDictionaryWriter(core);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => writer.WriteStartElementAsync(null, "root", null));
+        Assert.Empty(output.Bytes);
+        Assert.Equal(0, output.AsyncWrites);
+    }
+
+    private sealed class AsyncOnlyReadStream : Stream
+    {
+        private readonly MemoryStream _input;
+
+        public AsyncOnlyReadStream(byte[] bytes) => _input = new MemoryStream(bytes, writable: false);
+        public int AsyncReads { get; private set; }
+        public CancellationToken LastToken { get; private set; }
+        public override bool CanRead => true;
+        public override bool CanWrite => false;
+        public override bool CanSeek => false;
+        public override long Length => throw new NotSupportedException();
+        public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+        public override void SetLength(long value) => throw new NotSupportedException();
+        public override void Flush() => throw new InvalidOperationException("Synchronous flush.");
+        public override void Write(byte[] buffer, int offset, int count) => throw new InvalidOperationException("Synchronous write.");
+        public override int Read(byte[] buffer, int offset, int count) => throw new InvalidOperationException("Synchronous read.");
+        public override int Read(Span<byte> buffer) => throw new InvalidOperationException("Synchronous read.");
+        public override int ReadByte() => throw new InvalidOperationException("Synchronous read.");
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
+            ReadAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask();
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            await Task.Yield();
+            cancellationToken.ThrowIfCancellationRequested();
+            AsyncReads++;
+            LastToken = cancellationToken;
+            return _input.Read(buffer.Span);
+        }
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+                _input.Dispose();
+            base.Dispose(disposing);
+        }
+    }
+
+    private sealed class AsyncStreamProvider : IStreamProvider
+    {
+        public AsyncStreamProvider(byte[] bytes) => Stream = new AsyncOnlyReadStream(bytes);
+        public AsyncOnlyReadStream Stream { get; }
+        public int Releases { get; private set; }
+        public Stream GetStream() => Stream;
+        public void ReleaseStream(Stream stream)
+        {
+            Assert.Same(Stream, stream);
+            Releases++;
+            stream.Dispose();
+        }
+    }
+
+    [Theory]
+    [InlineData("text", 0)]
+    [InlineData("binary", 0)]
+    [InlineData("json", 0)]
+    [InlineData("text", 1)]
+    [InlineData("binary", 1)]
+    [InlineData("json", 1)]
+    [InlineData("text", 2)]
+    [InlineData("binary", 2)]
+    [InlineData("json", 2)]
+    public static async Task AsyncWriter_StreamProvider_UsesAsyncReadsAndAlwaysReleases(string format, int failure)
+    {
+        byte[] bytes = GetByteArray(2051);
+        AsyncStreamProvider provider = new AsyncStreamProvider(bytes);
+        using AsyncOnlyWriteStream output = new AsyncOnlyWriteStream();
+        using CancellationTokenSource cancellation = new CancellationTokenSource();
+        XmlDictionaryWriter writer = await CreateAsyncWriter(format, output, new UTF8Encoding(false));
+        await writer.WriteStartElementAsync(null, "root", null);
+        IOException expectedError = new IOException("Injected provider write failure.");
+        if (failure == 1)
+            output.WriteFailure = expectedError;
+        else if (failure == 2)
+            output.WriteGate = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        Task operation = WriteValueAsync(writer, provider, cancellation.Token);
+        if (failure == 1)
+            Assert.Same(expectedError, await Assert.ThrowsAsync<IOException>(() => operation));
+        else if (failure == 2)
+        {
+            await output.WriteStarted.Task;
+            cancellation.Cancel();
+            OperationCanceledException error = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => operation);
+            Assert.Equal(cancellation.Token, error.CancellationToken);
+        }
+        else
+        {
+            await operation;
+        }
+        Assert.Equal(1, provider.Releases);
+        Assert.True(provider.Stream.AsyncReads > 0);
+        Assert.Equal(cancellation.Token, provider.Stream.LastToken);
+        output.WriteFailure = null;
+        output.WriteGate = null;
+        await writer.DisposeAsync();
+        if (failure == 0)
+        {
+            using MemoryStream expected = new MemoryStream();
+            using (XmlDictionaryWriter syncWriter = CreateSyncWriter(format, expected))
+            {
+                syncWriter.WriteStartElement("root");
+                syncWriter.WriteBase64(bytes, 0, 256);
+                syncWriter.WriteBase64(bytes, 256, bytes.Length - 256);
+            }
+            Assert.Equal(expected.ToArray(), output.Bytes);
+        }
+    }
+
+    [Theory]
+    [InlineData("text", "utf16")]
+    [InlineData("text", "utf16be")]
+    [InlineData("json", "utf16")]
+    [InlineData("json", "utf16be")]
+    public static async Task AsyncWriter_Transcoding_DisposesOwnedStreamAfterFlushFailure(string format, string encodingName)
+    {
+        using AsyncOnlyWriteStream output = new AsyncOnlyWriteStream();
+        XmlDictionaryWriter writer = await CreateAsyncWriter(format, output, GetWriterEncoding(encodingName), ownsStream: true);
+        await writer.WriteStartElementAsync(null, "root", null);
+        await writer.WriteStringAsync("\u4e00\U0001f642");
+        IOException expected = new IOException("Injected transcoding flush failure.");
+        output.FlushFailure = expected;
+        Assert.Same(expected, await Assert.ThrowsAsync<IOException>(() => writer.DisposeAsync().AsTask()));
+        Assert.Equal(WriteState.Closed, writer.WriteState);
+        Assert.Equal(1, output.AsyncDisposals);
+        Assert.Equal(0, output.SyncDisposals);
+    }
+
+    [Theory]
+    [InlineData("text", "utf16")]
+    [InlineData("text", "utf16be")]
+    [InlineData("json", "utf16")]
+    [InlineData("json", "utf16be")]
+    public static async Task AsyncWriter_Transcoding_CanceledDisposal_DoesNotFlushWithoutToken(string format, string encodingName)
+    {
+        using AsyncOnlyWriteStream output = new AsyncOnlyWriteStream();
+        XmlDictionaryWriter writer = await CreateAsyncWriter(format, output, GetWriterEncoding(encodingName), ownsStream: true);
+        await writer.WriteStartElementAsync(null, "root", null);
+        await writer.WriteStringAsync(new string('\u4e00', 2049));
+        byte[] before = output.Bytes;
+        using CancellationTokenSource cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+        OperationCanceledException error = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => CloseWriterAsync(writer, cancellation.Token));
+        Assert.Equal(cancellation.Token, error.CancellationToken);
+        Assert.Equal(cancellation.Token, output.LastFlushToken);
+        Assert.Equal(before, output.Bytes);
+        Assert.Equal(1, output.AsyncDisposals);
+        Assert.Equal(0, output.SyncDisposals);
+    }
+
+    [Fact]
+    public static async Task AsyncWriter_InvalidBinaryUnicode_MatchesSynchronousFailure()
+    {
+        string value = new string('a', 85) + "\ud800";
+        using MemoryStream expected = new MemoryStream();
+        using (XmlDictionaryWriter syncWriter = XmlDictionaryWriter.CreateBinaryWriter(expected, null, null, ownsStream: false))
+        {
+            syncWriter.WriteStartElement("root");
+            Assert.Throws<EncoderFallbackException>(() => syncWriter.WriteString(value));
+        }
+        using AsyncOnlyWriteStream output = new AsyncOnlyWriteStream();
+        XmlDictionaryWriter writer = await CreateAsyncWriter("binary", output, Encoding.UTF8);
+        await writer.WriteStartElementAsync(null, "root", null);
+        await Assert.ThrowsAsync<EncoderFallbackException>(() => writer.WriteStringAsync(value));
+        await writer.DisposeAsync();
+        Assert.Equal(expected.ToArray(), output.Bytes);
+    }
+
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public static void XmlBaseWriter_WriteBase64Async()
     {

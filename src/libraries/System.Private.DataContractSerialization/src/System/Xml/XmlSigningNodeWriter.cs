@@ -5,6 +5,8 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.Serialization;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Xml
 {
@@ -19,6 +21,17 @@ namespace System.Xml
         public XmlSigningNodeWriter(bool text)
         {
             _text = text;
+        }
+
+        internal override CancellationToken CancellationToken
+        {
+            get => base.CancellationToken;
+            set
+            {
+                base.CancellationToken = value;
+                _writer.CancellationToken = value;
+                _signingWriter.CancellationToken = value;
+            }
         }
 
         public void SetOutput(XmlNodeWriter writer, Stream stream, bool includeComments, string[]? inclusivePrefixes)
@@ -56,10 +69,247 @@ namespace System.Xml
             _signingWriter.Flush();
         }
 
+        public override async Task FlushAsync()
+        {
+            await _writer.FlushAsync().ConfigureAwait(false);
+            await _signingWriter.FlushAsync().ConfigureAwait(false);
+        }
+
         public override void Close()
         {
             _writer.Close();
             _signingWriter.Close();
+        }
+
+        public override async ValueTask CloseAsync()
+        {
+            try
+            {
+                await _writer.CloseAsync().ConfigureAwait(false);
+            }
+            finally
+            {
+                _signingWriter.Close();
+            }
+        }
+
+        public override Task WriteDeclarationAsync() => _writer.WriteDeclarationAsync();
+
+        public override async Task WriteCommentAsync(string text)
+        {
+            await _writer.WriteCommentAsync(text).ConfigureAwait(false);
+            await _signingWriter.WriteCommentAsync(text).ConfigureAwait(false);
+        }
+
+        public override async Task WriteCDataAsync(string text)
+        {
+            await _writer.WriteCDataAsync(text).ConfigureAwait(false);
+            await _signingWriter.WriteEscapedTextAsync(text).ConfigureAwait(false);
+        }
+
+        public override async Task WriteStartElementAsync(string? prefix, string localName)
+        {
+            Debug.Assert(prefix is not null);
+            await _writer.WriteStartElementAsync(prefix, localName).ConfigureAwait(false);
+            _signingWriter.WriteStartElement(prefix, localName);
+        }
+
+        public override async Task WriteStartElementAsync(string? prefix, XmlDictionaryString localName)
+        {
+            Debug.Assert(prefix is not null);
+            await _writer.WriteStartElementAsync(prefix, localName).ConfigureAwait(false);
+            _signingWriter.WriteStartElement(prefix, localName.Value);
+        }
+
+        public override async Task WriteEndStartElementAsync(bool isEmpty)
+        {
+            await _writer.WriteEndStartElementAsync(isEmpty).ConfigureAwait(false);
+            await _signingWriter.WriteEndStartElementAsync(isEmpty).ConfigureAwait(false);
+        }
+
+        public override async Task WriteEndElementAsync(string? prefix, string localName)
+        {
+            Debug.Assert(prefix is not null);
+            await _writer.WriteEndElementAsync(prefix, localName).ConfigureAwait(false);
+            await _signingWriter.WriteEndElementAsync(prefix, localName).ConfigureAwait(false);
+        }
+
+        public override async Task WriteXmlnsAttributeAsync(string? prefix, string ns)
+        {
+            Debug.Assert(prefix is not null);
+            await _writer.WriteXmlnsAttributeAsync(prefix, ns).ConfigureAwait(false);
+            _signingWriter.WriteXmlnsAttribute(prefix, ns);
+        }
+
+        public override async Task WriteXmlnsAttributeAsync(string? prefix, XmlDictionaryString ns)
+        {
+            Debug.Assert(prefix is not null);
+            await _writer.WriteXmlnsAttributeAsync(prefix, ns).ConfigureAwait(false);
+            _signingWriter.WriteXmlnsAttribute(prefix, ns.Value);
+        }
+
+        public override async Task WriteStartAttributeAsync(string prefix, string localName)
+        {
+            await _writer.WriteStartAttributeAsync(prefix, localName).ConfigureAwait(false);
+            _signingWriter.WriteStartAttribute(prefix, localName);
+        }
+
+        public override async Task WriteStartAttributeAsync(string prefix, XmlDictionaryString localName)
+        {
+            await _writer.WriteStartAttributeAsync(prefix, localName).ConfigureAwait(false);
+            _signingWriter.WriteStartAttribute(prefix, localName.Value);
+        }
+
+        public override async Task WriteEndAttributeAsync()
+        {
+            await _writer.WriteEndAttributeAsync().ConfigureAwait(false);
+            _signingWriter.WriteEndAttribute();
+        }
+
+        public override async Task WriteCharEntityAsync(int ch)
+        {
+            await _writer.WriteCharEntityAsync(ch).ConfigureAwait(false);
+            await _signingWriter.WriteCharEntityAsync(ch).ConfigureAwait(false);
+        }
+
+        public override async Task WriteEscapedTextAsync(string value)
+        {
+            await _writer.WriteEscapedTextAsync(value).ConfigureAwait(false);
+            await _signingWriter.WriteEscapedTextAsync(value).ConfigureAwait(false);
+        }
+
+        public override async Task WriteEscapedTextAsync(XmlDictionaryString value)
+        {
+            await _writer.WriteEscapedTextAsync(value).ConfigureAwait(false);
+            await _signingWriter.WriteEscapedTextAsync(value.Value).ConfigureAwait(false);
+        }
+
+        public override async Task WriteEscapedTextAsync(char[] chars, int offset, int count)
+        {
+            await _writer.WriteEscapedTextAsync(chars, offset, count).ConfigureAwait(false);
+            await _signingWriter.WriteEscapedTextAsync(chars, offset, count).ConfigureAwait(false);
+        }
+
+        public override async Task WriteEscapedTextAsync(byte[] bytes, int offset, int count)
+        {
+            await _writer.WriteEscapedTextAsync(bytes, offset, count).ConfigureAwait(false);
+            await _signingWriter.WriteEscapedTextAsync(bytes, offset, count).ConfigureAwait(false);
+        }
+
+        public override async Task WriteEscapedTextAsync(ReadOnlyMemory<char> value)
+        {
+            await _writer.WriteEscapedTextAsync(value).ConfigureAwait(false);
+            await _signingWriter.WriteEscapedTextAsync(value).ConfigureAwait(false);
+        }
+
+        public override async Task WriteEscapedTextAsync(ReadOnlyMemory<byte> value)
+        {
+            await _writer.WriteEscapedTextAsync(value).ConfigureAwait(false);
+            await _signingWriter.WriteEscapedTextAsync(value).ConfigureAwait(false);
+        }
+
+        public override async Task WriteTextAsync(string value)
+        {
+            await _writer.WriteTextAsync(value).ConfigureAwait(false);
+            await _signingWriter.WriteTextAsync(value).ConfigureAwait(false);
+        }
+
+        public override async Task WriteTextAsync(XmlDictionaryString value)
+        {
+            await _writer.WriteTextAsync(value).ConfigureAwait(false);
+            await _signingWriter.WriteTextAsync(value.Value).ConfigureAwait(false);
+        }
+
+        public override async Task WriteTextAsync(char[] chars, int offset, int count)
+        {
+            await _writer.WriteTextAsync(chars, offset, count).ConfigureAwait(false);
+            await _signingWriter.WriteTextAsync(chars, offset, count).ConfigureAwait(false);
+        }
+
+        public override async Task WriteTextAsync(byte[] bytes, int offset, int count)
+        {
+            await _writer.WriteTextAsync(bytes, offset, count).ConfigureAwait(false);
+            await _signingWriter.WriteTextAsync(bytes, offset, count).ConfigureAwait(false);
+        }
+
+        public override async Task WriteTextAsync(ReadOnlyMemory<char> value)
+        {
+            await _writer.WriteTextAsync(value).ConfigureAwait(false);
+            await _signingWriter.WriteTextAsync(value).ConfigureAwait(false);
+        }
+
+        public override async Task WriteTextAsync(ReadOnlyMemory<byte> value)
+        {
+            await _writer.WriteTextAsync(value).ConfigureAwait(false);
+            await _signingWriter.WriteTextAsync(value).ConfigureAwait(false);
+        }
+
+        public override async Task WriteValueAsync(object value)
+        {
+            string text = XmlDictionaryWriter.GetValueText(value);
+            if (_text)
+                await _writer.WriteTextAsync(text).ConfigureAwait(false);
+            else
+                await _writer.WriteValueAsync(value).ConfigureAwait(false);
+            await _signingWriter.WriteTextAsync(text).ConfigureAwait(false);
+        }
+
+        public override async Task WritePrimitiveValueAsync<T>(object value)
+        {
+            string text = XmlDictionaryWriter.GetPrimitiveValueText<T>(value);
+            if (_text)
+                await _writer.WriteTextAsync(text).ConfigureAwait(false);
+            else
+                await _writer.WritePrimitiveValueAsync<T>(value).ConfigureAwait(false);
+            await _signingWriter.WriteTextAsync(text).ConfigureAwait(false);
+        }
+
+        public override Task WriteStartListTextAsync() => _writer.WriteStartListTextAsync();
+
+        public override async Task WriteListSeparatorAsync()
+        {
+            await _writer.WriteListSeparatorAsync().ConfigureAwait(false);
+            await _signingWriter.WriteTextAsync(" ").ConfigureAwait(false);
+        }
+
+        public override Task WriteEndListTextAsync() => _writer.WriteEndListTextAsync();
+
+        public override async Task WriteBase64TextAsync(byte[] trailBytes, int trailByteCount, byte[] buffer, int offset, int count)
+        {
+            if (trailByteCount > 0)
+                await WriteBase64TextAsync(trailBytes, 0, trailByteCount).ConfigureAwait(false);
+            await WriteBase64TextAsync(buffer, offset, count).ConfigureAwait(false);
+            if (!_text)
+                await _writer.WriteBase64TextAsync(trailBytes, trailByteCount, buffer, offset, count).ConfigureAwait(false);
+        }
+
+        private async Task WriteBase64TextAsync(byte[] buffer, int offset, int count)
+        {
+            _base64Chars ??= new byte[512];
+            Base64Encoding encoding = DataContractSerializer.Base64Encoding;
+            while (count > 0)
+            {
+                int byteCount = Math.Min(_base64Chars.Length / 4 * 3, count);
+                if (byteCount >= 3)
+                    byteCount -= byteCount % 3;
+                int charCount = encoding.GetChars(buffer, offset, byteCount, _base64Chars, 0);
+                await _signingWriter.WriteTextAsync(_base64Chars, 0, charCount).ConfigureAwait(false);
+                if (_text)
+                    await _writer.WriteTextAsync(_base64Chars, 0, charCount).ConfigureAwait(false);
+                offset += byteCount;
+                count -= byteCount;
+            }
+        }
+
+        public override async Task WriteQualifiedNameAsync(string prefix, XmlDictionaryString localName)
+        {
+            await _writer.WriteQualifiedNameAsync(prefix, localName).ConfigureAwait(false);
+            if (prefix.Length != 0)
+            {
+                await _signingWriter.WriteTextAsync(prefix).ConfigureAwait(false);
+                await _signingWriter.WriteTextAsync(":").ConfigureAwait(false);
+            }
+            await _signingWriter.WriteTextAsync(localName.Value).ConfigureAwait(false);
         }
 
         public override void WriteDeclaration()

@@ -55,8 +55,12 @@ namespace System.Xml
         {
         }
 
-        public UniqueId(Guid guid) : this(guid.ToByteArray())
+        public UniqueId(Guid guid)
         {
+            Span<byte> bytes = stackalloc byte[guidLength];
+            guid.TryWriteBytes(bytes);
+            _idLow = BinaryPrimitives.ReadInt64LittleEndian(bytes);
+            _idHigh = BinaryPrimitives.ReadInt64LittleEndian(bytes.Slice(8));
         }
 
         public UniqueId(byte[] guid) : this(guid, 0)
@@ -212,7 +216,7 @@ namespace System.Xml
             return count;
         }
 
-        private unsafe void ToSpan(Span<char> chars)
+        internal unsafe void ToSpan(Span<char> chars)
         {
             if (_s != null)
             {
@@ -263,14 +267,16 @@ namespace System.Xml
 
         public bool TryGetGuid(out Guid guid)
         {
-            byte[] buffer = new byte[guidLength];
-            if (!TryGetGuid(buffer, 0))
+            if (!IsGuid)
             {
                 guid = Guid.Empty;
                 return false;
             }
 
-            guid = new Guid(buffer);
+            Span<byte> bytes = stackalloc byte[guidLength];
+            BinaryPrimitives.WriteInt64LittleEndian(bytes, _idLow);
+            BinaryPrimitives.WriteInt64LittleEndian(bytes.Slice(8), _idHigh);
+            guid = new Guid(bytes);
             return true;
         }
 
