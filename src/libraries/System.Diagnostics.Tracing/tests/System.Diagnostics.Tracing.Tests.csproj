@@ -9,6 +9,10 @@
     <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetPlatformIdentifier)' == 'browser'">
+    <!-- Required by the diagnostics runtime flavor introduced by https://github.com/dotnet/runtime/pull/137014. -->
+    <EnableDiagnostics>true</EnableDiagnostics>
+  </PropertyGroup>
   <!-- Windows only files -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="BasicEventSourceTest\Harness\EtwListener.cs" />

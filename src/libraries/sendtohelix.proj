@@ -84,13 +84,14 @@
       </_BaseProjectsToBuild>
     </ItemGroup>
 
-    <!-- For BuildWasmApps we want to build the project 4 times, with: TestUsingWorkloads=true, and TestUsingWorkloads=false and WasmEnableWebcil=true and WasmEnableWebcil=false-->
+    <!-- BuildWasmApps covers workload, WebCIL, and asset-fingerprinting combinations. -->
     <ItemGroup Condition="'@(_Scenarios -> AnyHaveMetadataValue('Identity', 'buildwasmapps'))' == 'true'">
       <_TestUsingWorkloadsValues Include="false" />
       <_TestUsingWorkloadsValues Include="true" />
+      <_TestUsingWebcilValues Include="true;false" Condition="'$(TargetOS)' == 'browser'" />
       <_TestUsingFingerprintingValues Include="true;false" Condition="'$(TargetOS)' == 'browser'" />
 
-      <!-- now make the cartesian product of true and false values for two categories -->
+      <!-- now make the cartesian product of true and false values for three categories -->
       <_TestUsingCrossProductValuesTemp Include="@(_TestUsingWorkloadsValues)">
         <Workloads>%(_TestUsingWorkloadsValues.Identity)</Workloads>
         <BundlerFriendly>false</BundlerFriendly>

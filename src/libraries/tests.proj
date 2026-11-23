@@ -36,7 +36,7 @@
     <RunLongRunningWasmTests Condition="'$(RunLongRunningWasmTests)' == ''">false</RunLongRunningWasmTests>
 
     <!-- Don't build samples, and functional tests on EAT, AOT, WBT, and Debugger lanes -->
-    <RunWasmSamples Condition="'$(RunSmokeTestsOnly)' != 'true' and '$(RunHighAOTResourceRequiringTestsOnly)' != 'true' and '$(TargetOS)' == 'browser' and '$(BuildAOTTestsOnHelix)' != 'true' and  '$(TestWasmBuildTests)' != 'true'">true</RunWasmSamples>
+    <RunWasmSamples Condition="'$(RunSmokeTestsOnly)' != 'true' and '$(RunHighAOTResourceRequiringTestsOnly)' != 'true' and '$(TargetOS)' == 'browser' and '$(TestWasmBuildTests)' != 'true'">true</RunWasmSamples>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'browser'">
@@ -340,7 +340,7 @@
   </ItemGroup>
 
   <!-- Aggressive Trimming related failures -->
-  <ItemGroup Condition="('$(TargetOS)' == 'browser' and '$(BuildAOTTestsOnHelix)' == 'true' and '$(RunDisabledWasmTests)' != 'true') or ('$(TargetsAppleMobile)' == 'true' and '$(BuildTestsOnHelix)' == 'true')">
+  <ItemGroup Condition="'$(TargetsAppleMobile)' == 'true' and '$(BuildTestsOnHelix)' == 'true'">
     <!-- Issue: https://github.com/dotnet/runtime/issues/50724 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.DependencyInjection\tests\DI.Tests\Microsoft.Extensions.DependencyInjection.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Logging.EventSource\tests\Microsoft.Extensions.Logging.EventSource.Tests.csproj" />
