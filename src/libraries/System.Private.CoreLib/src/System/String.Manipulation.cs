@@ -2322,7 +2322,7 @@ namespace System
                 Vector128<ushort> v2 = Vector128.Create((ushort)c2);
                 Vector128<ushort> v3 = Vector128.Create((ushort)c3);
 
-                if (Sse2.IsSupported && PackedSpanHelpers.CanUsePackedIndexOf(c) && PackedSpanHelpers.CanUsePackedIndexOf(c2) && PackedSpanHelpers.CanUsePackedIndexOf(c3))
+                if (PackedSpanHelpers.PackedIndexOfIsSupported && PackedSpanHelpers.CanUsePackedIndexOf(c) && PackedSpanHelpers.CanUsePackedIndexOf(c2) && PackedSpanHelpers.CanUsePackedIndexOf(c3))
                 {
                     // Process in double chunks & check if either chunk is likely to contain matches at once.
                     // If we get multiple matches in a single chunk, we assume they're likely to be close &

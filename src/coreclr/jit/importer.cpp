@@ -11400,7 +11400,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 /******************************** NYI *******************************/
 
             case 0xCC:
+#ifdef HOST_WINDOWS
                 OutputDebugStringA("CLR: Invalid x86 breakpoint in IL stream\n");
+#endif // HOST_WINDOWS
                 FALLTHROUGH;
 
             case CEE_ILLEGAL:
@@ -13810,38 +13812,21 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
     }
 
     // Inspect callee's arguments (and the actual values at the callsite for them)
-    CORINFO_SIG_INFO        sig    = info.compMethodInfo->args;
-    CORINFO_ARG_LIST_HANDLE sigArg = sig.args;
-
-    CallArg* argUse = pInlineInfo == nullptr ? nullptr : pInlineInfo->iciCall->AsCall()->gtArgs.Args().begin().GetArg();
-
-    for (unsigned i = 0; i < info.compMethodInfo->args.numArgs; i++)
+    if (pInlineInfo != nullptr)
     {
-        if ((argUse != nullptr) && (argUse->GetWellKnownArg() == WellKnownArg::ThisPointer))
+        // impInlineInitVars has already matched the IL arguments with the
+        // call arguments and recorded their signature types.
+        const unsigned firstArg = pInlineInfo->iciCall->gtArgs.HasThisPointer() ? 1 : 0;
+        for (unsigned argNum = firstArg; argNum < pInlineInfo->argCnt; argNum++)
         {
-            argUse = argUse->GetNext();
-        }
+            const InlLclVarInfo& lclInfo = pInlineInfo->lclVarInfo[argNum];
+            GenTree*             argNode = pInlineInfo->inlArgInfo[argNum].arg->GetEarlyNode();
 
-        CORINFO_CLASS_HANDLE sigClass;
-        CorInfoType          corType = strip(info.compCompHnd->getArgType(&sig, sigArg, &sigClass));
-        GenTree*             argNode = argUse == nullptr ? nullptr : argUse->GetEarlyNode();
+            if (varTypeIsStruct(lclInfo.lclTypeInfo))
+            {
+                inlineResult->Note(InlineObservation::CALLEE_ARG_STRUCT);
+            }
 
-        if (corType == CORINFO_TYPE_CLASS)
-        {
-            sigClass = info.compCompHnd->getArgClass(&sig, sigArg);
-        }
-        else if (corType == CORINFO_TYPE_VALUECLASS)
-        {
-            inlineResult->Note(InlineObservation::CALLEE_ARG_STRUCT);
-        }
-        else if (corType == CORINFO_TYPE_BYREF)
-        {
-            sigClass = info.compCompHnd->getArgClass(&sig, sigArg);
-            corType  = info.compCompHnd->getChildType(sigClass, &sigClass);
-        }
-
-        if (argNode != nullptr)
-        {
             bool                 isExact   = false;
             bool                 isNonNull = false;
             CORINFO_CLASS_HANDLE argCls    = gtGetClassHandle(argNode, &isExact, &isNonNull);
@@ -13852,14 +13837,14 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
                 if (isExact && !isArgValueType)
                 {
                     inlineResult->Note(InlineObservation::CALLSITE_ARG_EXACT_CLS);
-                    if ((argCls != sigClass) && (sigClass != nullptr))
+                    if ((argCls != lclInfo.lclTypeHandle) && (lclInfo.lclTypeHandle != NO_CLASS_HANDLE))
                     {
                         // .. but the signature accepts a less concrete type.
                         inlineResult->Note(InlineObservation::CALLSITE_ARG_EXACT_CLS_SIG_IS_NOT);
                     }
                 }
                 // Arg is a reference type in the signature and a boxed value type was passed.
-                else if (isArgValueType && (corType == CORINFO_TYPE_CLASS))
+                else if (isArgValueType && (lclInfo.lclTypeInfo == TYP_REF))
                 {
                     inlineResult->Note(InlineObservation::CALLSITE_ARG_BOXED);
                 }
@@ -13869,9 +13854,20 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
             {
                 inlineResult->Note(InlineObservation::CALLSITE_ARG_CONST);
             }
-            argUse = argUse->GetNext();
         }
-        sigArg = info.compCompHnd->getArgNext(sigArg);
+    }
+    else
+    {
+        CORINFO_SIG_INFO*       sig    = &info.compMethodInfo->args;
+        CORINFO_ARG_LIST_HANDLE sigArg = sig->args;
+        for (unsigned i = 0; i < sig->numArgs; i++, sigArg = info.compCompHnd->getArgNext(sigArg))
+        {
+            CORINFO_CLASS_HANDLE sigClass;
+            if (strip(info.compCompHnd->getArgType(sig, sigArg, &sigClass)) == CORINFO_TYPE_VALUECLASS)
+            {
+                inlineResult->Note(InlineObservation::CALLEE_ARG_STRUCT);
+            }
+        }
     }
 
     // Note if the callee's return type is a value type

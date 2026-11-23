@@ -15,6 +15,9 @@
 #include "posterror.h"
 #include <type_traits>
 #include "minipal/time.h"
+#ifdef HOST_UNIX
+#include <dlfcn.h>
+#endif
 
 #ifndef DACCESS_COMPILE
 #if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
@@ -552,7 +555,7 @@ struct NativeLibraryHandleTraits final
             return;
 
 #ifdef HOST_UNIX
-        PAL_FreeLibraryDirect(h);
+        dlclose(h);
 #else
         FreeLibrary(h);
 #endif
@@ -802,5 +805,10 @@ inline UINT32 FastMod(UINT32 value, UINT32 divisor, UINT64 multiplier)
     return highbits;
 }
 #endif
+
+//******************************************************************************
+// Returns the number of processors that a process has been configured to run on
+//******************************************************************************
+int GetCurrentProcessCpuCount();
 
 #endif /* _H_UTIL */

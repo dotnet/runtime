@@ -79,8 +79,7 @@ namespace
             return false;
         }
 
-        return Check(GetCurrentProcessId() == static_cast<uint32_t>(getpid()),
-            "PAL process ID does not match the host process");
+        return true;
     }
 
     void InitializeServices(const char* reportRootPath, bool enableLifecycle)

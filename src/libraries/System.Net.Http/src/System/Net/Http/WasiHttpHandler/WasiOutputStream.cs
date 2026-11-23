@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using WasiHttpWorld;
@@ -13,7 +14,7 @@ using static WasiHttpWorld.wit.Imports.wasi.io.v0_2_8.IStreamsImports;
 namespace System.Net.Http
 {
     // on top of https://github.com/WebAssembly/wasi-io/blob/main/wit/streams.wit
-    internal sealed class WasiOutputStream : Stream
+    internal sealed class WasiOutputStream : HttpBaseStream
     {
         private OutputStream stream; // owned by this instance
         private OutgoingBody body; // owned by this instance
@@ -24,7 +25,6 @@ namespace System.Net.Http
 
         public override bool CanRead => false;
         public override bool CanWrite => true;
-        public override bool CanSeek => false;
 
         public WasiOutputStream(OutgoingBody body)
         {
@@ -60,53 +60,37 @@ namespace System.Net.Http
             base.Dispose(disposing);
         }
 
-        public override async Task WriteAsync(
-            byte[] bytes,
-            int offset,
-            int length,
-            CancellationToken cancellationToken
-        )
+        public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
             ObjectDisposedException.ThrowIf(isClosed, this);
-            var limit = offset + length;
-            var flushing = false;
+            bool flushing = false;
             while (true)
             {
-                var count = (int)stream.CheckWrite();
+                int count = (int)stream.CheckWrite();
                 if (count == 0)
                 {
                     await WaitAsync(stream.Subscribe(), cancellationToken).ConfigureAwait(false);
-                    ObjectDisposedException.ThrowIf(isClosed, this);
                 }
-                else if (offset == limit)
+                else if (!buffer.IsEmpty)
                 {
-                    if (flushing)
-                    {
-                        return;
-                    }
-                    else
-                    {
-                        stream.Flush();
-                        flushing = true;
-                    }
+                    ReadOnlyMemory<byte> chunk = buffer.Slice(0, Math.Min(count, buffer.Length));
+                    // TODO: is there a more efficient option than copying here?
+                    // Do we need to change the binding generator to accept
+                    // e.g. `Span`s?
+                    byte[] bytes = MemoryMarshal.TryGetArray(chunk, out ArraySegment<byte> segment) && segment.Offset == 0 && segment.Count == segment.Array!.Length
+                        ? segment.Array
+                        : chunk.ToArray();
+                    stream.Write(bytes);
+                    buffer = buffer.Slice(chunk.Length);
+                }
+                else if (!flushing)
+                {
+                    stream.Flush();
+                    flushing = true;
                 }
                 else
                 {
-                    var min = Math.Min(count, limit - offset);
-                    if (offset == 0 && min == bytes.Length)
-                    {
-                        stream.Write(bytes);
-                    }
-                    else
-                    {
-                        // TODO: is there a more efficient option than copying here?
-                        // Do we need to change the binding generator to accept
-                        // e.g. `Span`s?
-                        var copy = new byte[min];
-                        Array.Copy(bytes, offset, copy, 0, min);
-                        stream.Write(copy);
-                    }
-                    offset += min;
+                    return;
                 }
             }
         }
@@ -126,56 +110,17 @@ namespace System.Net.Http
             ObjectDisposedException.ThrowIf(isClosed, this);
         }
 
-        public override ValueTask WriteAsync(
-            ReadOnlyMemory<byte> buffer,
-            CancellationToken cancellationToken = default
-        )
+        public override void Write(byte[] buffer, int offset, int count)
         {
-            // TODO: avoid copy when possible and use ArrayPool when not
-            var copy = new byte[buffer.Length];
-            buffer.Span.CopyTo(copy);
-            return new ValueTask(WriteAsync(copy, 0, buffer.Length, cancellationToken));
-        }
+            ValidateBufferArguments(buffer, offset, count);
 
-        #region PlatformNotSupported
-
-        public override void Flush()
-        {
-            // ignore
-            //
-            // Note that flushing a `wasi:io/streams/output-stream` is an
-            // asynchronous operation, so it's not clear how we would
-            // implement it here instead of taking care of it as part of
-            // `WriteAsync`.
-        }
-
-        public override long Seek(long offset, SeekOrigin origin)
-        {
+            // WASI HTTP streams currently support only non-blocking (asynchronous) I/O. TODO https://github.com/dotnet/runtime/issues/137564
             throw new PlatformNotSupportedException();
         }
 
-        public override void SetLength(long length)
-        {
-            throw new PlatformNotSupportedException();
-        }
+        public override int Read(Span<byte> buffer) => throw new NotSupportedException();
 
-        public override int Read(byte[] buffer, int offset, int length)
-        {
-            throw new PlatformNotSupportedException();
-        }
-
-        public override void Write(byte[] buffer, int offset, int length)
-        {
-            throw new PlatformNotSupportedException();
-        }
-
-        public override long Length => throw new PlatformNotSupportedException();
-        public override long Position
-        {
-            get => throw new PlatformNotSupportedException();
-            set => throw new PlatformNotSupportedException();
-        }
-
-        #endregion
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken) =>
+            ValueTask.FromException<int>(new NotSupportedException());
     }
 }

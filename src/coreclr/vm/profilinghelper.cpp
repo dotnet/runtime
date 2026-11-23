@@ -111,6 +111,7 @@
 #include "profilinghelper.h"
 #include "profilinghelper.inl"
 #include <minipal/memorybarrierprocesswide.h>
+#include <minipal/thread.h>
 
 
 #ifdef FEATURE_PROFAPI_ATTACH_DETACH
@@ -154,7 +155,7 @@ void CurrentProfilerStatus::Set(ProfilerStatus newProfStatus)
         // profiler in one thread could request a detach, while the CLR in another
         // thread is transitioning the profiler from kProfStatusInitializing* to
         // kProfStatusActive
-        CRITSEC_Holder csh(ProfilingAPIUtility::GetStatusCrst());
+        CRITSEC_Holder csh = ClrTakeCriticalSection(ProfilingAPIUtility::GetStatusCrst());
 
         // Based on what the old status is, verify the new status is a legal transition.
         switch(m_profStatus)
@@ -260,10 +261,12 @@ void ProfilingAPIUtility::AppendSupplementaryInformation(int iStringResource, SS
     StackSString supplementaryInformationUtf8;
     supplementaryInformation.ConvertToUTF8(supplementaryInformationUtf8);
 
+    DWORD pid = minipal_get_current_process_id();
+
     pString->AppendUTF8("  ");
     pString->AppendPrintf(
         supplementaryInformationUtf8.GetUTF8(),
-        GetCurrentProcessId(),
+        pid,
         iStringResource);
 }
 
@@ -1183,7 +1186,7 @@ HRESULT ProfilingAPIUtility::LoadProfiler(
     {
         // Now we register the profiler, from this point on we need to worry about
         // synchronization
-        CRITSEC_Holder csh(s_csStatus);
+        CRITSEC_Holder csh = ClrTakeCriticalSection(s_csStatus);
 
         // Check if this profiler is notification only and load as appropriate
         BOOL notificationOnly = FALSE;
@@ -1556,7 +1559,7 @@ void ProfilingAPIUtility::TerminateProfiling(ProfilerInfo *pProfilerInfo)
     {
         // We're modifying status and possibly unloading the profiler DLL below, so
         // serialize this code with any other loading / unloading / detaching code.
-        CRITSEC_Holder csh(s_csStatus);
+        CRITSEC_Holder csh = ClrTakeCriticalSection(s_csStatus);
 
 
 #ifdef FEATURE_PROFAPI_ATTACH_DETACH

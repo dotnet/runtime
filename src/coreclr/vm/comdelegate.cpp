@@ -1350,8 +1350,7 @@ LPVOID COMDelegate::ConvertToCallback(OBJECTREF pDelegateObj)
 
             pUMEntryThunk = UMEntryThunkData::CreateUMEntryThunk();
 
-            Holder<UMEntryThunkData *, DoNothing, UMEntryThunkData::FreeUMEntryThunk> umHolder;
-            umHolder.Assign(pUMEntryThunk);
+            UMEntryThunkDataHolder umHolder(pUMEntryThunk);
 
             OBJECTHANDLE objhnd;
             PCODE pManagedTargetForDiagnostics;
@@ -1378,7 +1377,7 @@ LPVOID COMDelegate::ConvertToCallback(OBJECTREF pDelegateObj)
             }
             else
             {
-                umHolder.SuppressRelease();
+                umHolder.Detach();
             }
 
             _ASSERTE(pUMEntryThunk != NULL);
@@ -1645,11 +1644,6 @@ extern "C" void QCALLTYPE Delegate_Construct(MethodTable* pDelegateMT, MethodTab
     BEGIN_QCALL;
 
     _ASSERTE(pDelegateMT != NULL);
-
-    // Programmers could feed garbage data to DelegateConstruct().
-    // It's difficult to validate a method code pointer, but at least we'll
-    // try to catch the easy garbage.
-    _ASSERTE(isMemoryReadable(method, 1));
 
     MethodTable* pMTTarg = pTargetMT;
     MethodTable* pDelMT = pDelegateMT;
@@ -2031,7 +2025,7 @@ extern "C" PCODE QCALLTYPE Delegate_GetMulticastInvokeSlow(MethodTable* pDelegat
         ILCodeLabel *nextDelegate = pCode->NewCodeLabel();
 
         // initialize counter
-        pCode->EmitLDC(0);
+        pCode->EmitLDC_I4(0);
         pCode->EmitSTLOC(dwLoopCounterNum);
 
         //Label_nextDelegate:
@@ -2042,11 +2036,10 @@ extern "C" PCODE QCALLTYPE Delegate_GetMulticastInvokeSlow(MethodTable* pDelegat
         ILCodeLabel *debuggerCheckEnd = pCode->NewCodeLabel();
 
         // Call MulticastDebuggerTraceHelper only if we have a controller subscribing to the event
-        pCode->EmitLDC((DWORD_PTR)&g_multicastDelegateTraceActiveCount);
-        pCode->EmitCONV_I();
+        pCode->EmitLDC_I((DWORD_PTR)&g_multicastDelegateTraceActiveCount);
         pCode->EmitLDIND_I4();
         // g_multicastDelegateTraceActiveCount != 0
-        pCode->EmitLDC(0);
+        pCode->EmitLDC_I4(0);
         pCode->EmitCEQ();
         pCode->EmitBRFALSE(invokeTraceHelper);
 
@@ -2073,7 +2066,7 @@ extern "C" PCODE QCALLTYPE Delegate_GetMulticastInvokeSlow(MethodTable* pDelegat
 
         // increment counter
         pCode->EmitLDLOC(dwLoopCounterNum);
-        pCode->EmitLDC(1);
+        pCode->EmitLDC_I4(1);
         pCode->EmitADD();
         pCode->EmitSTLOC(dwLoopCounterNum);
 

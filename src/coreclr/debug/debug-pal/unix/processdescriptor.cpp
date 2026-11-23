@@ -3,18 +3,26 @@
 
 #include <pal.h>
 #include <unistd.h>
-#include <fcntl.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <limits.h>
-#include <pal_assert.h>
+#include <minipal/thread.h>
+#include <minipal/transportname.h>
 #include "processdescriptor.h"
 
 ProcessDescriptor ProcessDescriptor::FromCurrentProcess()
 {
-#ifdef __APPLE__
-    return Create(GetCurrentProcessId(), PAL_GetApplicationGroupId());
-#else
-    return Create(GetCurrentProcessId(), nullptr);
-#endif
+    return Create(minipal_get_current_process_id(), nullptr);
+}
+
+void GetTransportPipeName(
+    char *name,
+    DWORD id,
+    const char *applicationGroupId,
+    const char *suffix)
+{
+    minipal_get_transport_name(
+        name,
+        MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH,
+        "clr-debug-pipe",
+        id,
+        applicationGroupId,
+        suffix);
 }

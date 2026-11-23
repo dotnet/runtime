@@ -826,7 +826,8 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
         if (!treatLikeCall && (argx->gtFlags & GTF_EXCEPT) && (argCount > 1) && comp->opts.compDbgCode)
         {
             exceptionFlags = comp->gtCollectExceptions(argx);
-            if ((exceptionFlags & (ExceptionSetFlags::IndexOutOfRangeException |
+            if ((exceptionFlags & (ExceptionSetFlags::IndexOutOfRangeException | ExceptionSetFlags::ArgumentException |
+                                   ExceptionSetFlags::ArgumentOutOfRangeException |
                                    ExceptionSetFlags::OverflowException)) != ExceptionSetFlags::None)
             {
                 for (CallArg& otherArg : Args())
@@ -2886,6 +2887,26 @@ void Compiler::fgMoveOpsLeft(GenTree* tree)
 #endif
 
 //------------------------------------------------------------------------
+// fgTreeMayModifyLocal: Check whether evaluating a tree may modify a local.
+//
+// Arguments:
+//    tree   - The tree to check
+//    lclNum - The local
+//
+// Return Value:
+//    True if evaluating the tree may modify the local.
+//
+bool Compiler::fgTreeMayModifyLocal(GenTree* tree, unsigned lclNum)
+{
+    if ((tree->gtFlags & (GTF_ASG | GTF_CALL)) == 0)
+    {
+        return false;
+    }
+
+    return lvaGetDesc(lclNum)->IsAddressExposed() || gtHasRef(tree, lclNum);
+}
+
+//------------------------------------------------------------------------
 // fgMorphIndexAddr: Expand a GT_INDEX_ADDR node and fully morph the child operands.
 //
 // We expand the GT_INDEX_ADDR node into a larger tree that evaluates the array
@@ -2982,7 +3003,8 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
         //
         if (((arrRef->gtFlags & (GTF_ASG | GTF_CALL | GTF_GLOB_REF)) != 0) ||
             gtComplexityExceeds(arrRef, MAX_ARR_COMPLEXITY, countNode) || arrRef->OperIs(GT_LCL_FLD) ||
-            (arrRef->OperIs(GT_LCL_VAR) && lvaIsLocalImplicitlyAccessedByRef(arrRef->AsLclVar()->GetLclNum())))
+            (arrRef->OperIs(GT_LCL_VAR) && (lvaIsLocalImplicitlyAccessedByRef(arrRef->AsLclVar()->GetLclNum()) ||
+                                            fgTreeMayModifyLocal(index, arrRef->AsLclVar()->GetLclNum()))))
         {
             unsigned arrRefTmpNum = lvaGrabTemp(true DEBUGARG("arr expr"));
             arrRefDefn            = gtNewTempStore(arrRefTmpNum, arrRef);
@@ -11369,7 +11391,7 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree, bool* optAssertionPropD
                     op1->ChangeOper(GT_MUL);
 
                     add->AsIntCon()->SetIconValue(imul);
-                    fgValueNumberTreeConst(add);
+                    fgUpdateConstTreeValueNumber(add);
                 }
             }
 
@@ -12840,7 +12862,11 @@ void Compiler::fgKillDependentAssertionsSingle(unsigned lclNum DEBUGARG(GenTree*
 {
     // Active dependent assertions are killed here
     //
-    ASSERT_TP killed = GetAssertionDep(lclNum);
+    ASSERT_TP killed = optAssertionDep->Get(lclNum);
+    if (BitVecOps::MayBeUninit(killed))
+    {
+        return;
+    }
 
 #ifdef DEBUG
     bool hasKills = !BitVecOps::IsEmptyIntersection(apTraits, apLocal, killed);
@@ -13300,13 +13326,16 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
 
             if (block->hasProfileWeight())
             {
+                // A self-edge can change the block weight as we visit its successors.
+                weight_t blockWeight = block->bbWeight;
+
                 // Use unique successor edges, as duplicate jump table entries share an edge.
                 for (FlowEdge* const succEdge : block->SuccEdges())
                 {
                     BasicBlock* const targetBlock = succEdge->getDestinationBlock();
                     if (targetBlock->hasProfileWeight())
                     {
-                        targetBlock->decreaseBBProfileWeight(succEdge->getLikelyWeight());
+                        targetBlock->decreaseBBProfileWeight(succEdge->getLikelihood() * blockWeight);
                         profileInconsistent |= (targetBlock->NumSucc() > 0);
                     }
                 }
@@ -15899,7 +15928,15 @@ bool Compiler::fgMorphArrayOpsStmt(MorphMDArrayTempCache* pTempCache, BasicBlock
             unsigned rank      = arrElem->gtArrRank;
 
             // We are going to multiply reference the array object; create a new local var if necessary.
-            if (arrObj->OperIs(GT_LCL_VAR))
+            // A local can be reused only if evaluating the indices cannot modify it.
+            bool canReuseArrLcl = arrObj->OperIs(GT_LCL_VAR);
+            for (unsigned i = 0; canReuseArrLcl && anyIdxWithSideEffects && (i < rank); i++)
+            {
+                canReuseArrLcl =
+                    !m_compiler->fgTreeMayModifyLocal(arrElem->gtArrInds[i], arrObj->AsLclVar()->GetLclNum());
+            }
+
+            if (canReuseArrLcl)
             {
                 arrLcl = arrObj->AsLclVar()->GetLclNum();
             }

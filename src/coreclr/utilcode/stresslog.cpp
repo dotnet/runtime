@@ -11,12 +11,23 @@
 #include "eventtracebase.h"
 #endif // !SELF_NO_HOST
 #include "minipal/time.h"
+#include "minipal/thread.h"
 
 #if defined(MEMORY_MAPPED_STRESSLOG) && !defined(HOST_WINDOWS)
 #include <dn-stdio.h>
 #include <sys/mman.h>
 #include <unistd.h>
 #endif
+
+#ifndef HOST_WINDOWS
+#include <dlfcn.h>
+#ifdef __APPLE__
+#include <mach-o/dyld.h>
+#include <mach-o/loader.h>
+#elif !defined(TARGET_WASM)
+#include <link.h>
+#endif
+#endif // !HOST_WINDOWS
 
  #if !defined(STRESS_LOG_READONLY)
 #ifdef HOST_WINDOWS
@@ -36,7 +47,6 @@ thread_local bool t_triedToCreateThreadStressLog;
    variable-speed CPUs (for power management), this is not accurate, but may
    be good enough.
 */
-FORCEINLINE
 #ifdef HOST_WINDOWS
 __declspec(naked)
 #else
@@ -152,6 +162,32 @@ void StressLog::Leave(CRITSEC_COOKIE) {
     DecCantAllocCount();
 }
 
+namespace
+{
+    struct StressLogLockHolderTraits final
+    {
+        using Type = CRITSEC_COOKIE;
+        static constexpr Type Default() { return NULL; }
+        static void Free(Type cookie) noexcept
+        {
+            STATIC_CONTRACT_WRAPPER;
+            if (cookie != NULL)
+                StressLog::Leave(cookie);
+        }
+    };
+
+    using StressLogLockHolder = LifetimeHolder<StressLogLockHolderTraits>;
+
+    StressLogLockHolder TakeStressLogLock()
+    {
+        STATIC_CONTRACT_WRAPPER;
+        CRITSEC_COOKIE cookie = StressLog::theLog.lock;
+        if (cookie != NULL)
+            StressLog::Enter(cookie);
+        return StressLogLockHolder(cookie);
+    }
+}
+
 void ReplacePid(LPCWSTR original, LPWSTR replaced, size_t replacedLength)
 {
     // if the string "{pid}" occurs in the logFilename,
@@ -166,7 +202,7 @@ void ReplacePid(LPCWSTR original, LPWSTR replaced, size_t replacedLength)
         wcsncpy_s(replaced, replacedLength, original, pidInx);
 
         // append the string representation of the PID
-        DWORD pid = GetCurrentProcessId();
+        DWORD pid = minipal_get_current_process_id();
         WCHAR pidStr[20];
         FormatInteger(pidStr, ARRAY_SIZE(pidStr), "%u", pid);
         wcscat_s(replaced, replacedLength, pidStr);
@@ -326,6 +362,107 @@ void StressLog::Initialize(unsigned facilities, unsigned level, unsigned maxByte
     AddModule((uint8_t*)moduleBase);
 }
 
+#ifndef HOST_WINDOWS
+struct CopyModuleDataParam
+{
+    uint8_t* destination_buffer_start;
+    uint8_t* destination_buffer_end;
+    uint8_t* module_base;
+    int result;
+};
+
+static void HandleImageRange(uint8_t* source_start, size_t size, CopyModuleDataParam* param)
+{
+    uint8_t* source_end = source_start + size;
+    if (param->destination_buffer_start != NULL)
+    {
+        size_t offset = source_start - param->module_base;
+        uint8_t* destination_start = param->destination_buffer_start + offset;
+        uint8_t* destination_end   = destination_start + size;
+        _ASSERTE(destination_end <= param->destination_buffer_end);
+        if (destination_end <= param->destination_buffer_end)
+        {
+            memcpy(destination_start, source_start, size);
+        }
+    }
+    param->result = max(param->result, (int)(source_end - param->module_base));
+}
+
+#if !defined(__APPLE__) && !defined(TARGET_WASM)
+static int CopyModuleDataCallback(struct dl_phdr_info *info, size_t size, void *data)
+{
+    CopyModuleDataParam* param = (CopyModuleDataParam*)data;
+    if (info->dlpi_addr == (size_t)param->module_base)
+    {
+        for (int j = 0; j < info->dlpi_phnum; j++)
+        {
+            if (info->dlpi_phdr[j].p_type == PT_LOAD)
+            {
+                Elf32_Word size = info->dlpi_phdr[j].p_memsz;
+                uint8_t* source_start = (uint8_t*)(info->dlpi_addr + info->dlpi_phdr[j].p_vaddr);
+                HandleImageRange(source_start, size, param);
+            }
+        }
+        return 1;
+    }
+    return 0;
+}
+#endif
+
+// Copies the loaded segments of the module at moduleBase into the destination buffer (if any)
+// at their offsets from the module base, and returns the size of the image.
+static int CopyModuleData(void* moduleBase, uint8_t* destinationBufferStart, uint8_t* destinationBufferEnd)
+{
+    CopyModuleDataParam param;
+    param.module_base = (uint8_t*)moduleBase;
+    param.destination_buffer_start = destinationBufferStart;
+    param.destination_buffer_end = destinationBufferEnd;
+    param.result = 0;
+#if defined(__APPLE__)
+    uint32_t count = _dyld_image_count();
+    for (uint32_t i = 0; i < count; i++)
+    {
+        const struct mach_header * header = _dyld_get_image_header(i);
+        Dl_info info;
+        if (dladdr((void*)header, &info) != 0 && info.dli_fbase == moduleBase)
+        {
+            intptr_t slide = _dyld_get_image_vmaddr_slide(i);
+
+            struct load_command * cmd = (struct load_command * )((char * ) header + sizeof(struct mach_header));
+            if(header->magic == MH_MAGIC_64)
+            {
+                cmd = (struct load_command*)((char *)header + sizeof(struct mach_header_64));
+            }
+
+            for (uint32_t j = 0; j < header -> ncmds; j++)
+            {
+                if (cmd -> cmd == LC_SEGMENT)
+                {
+                    struct segment_command * seg = (struct segment_command *) cmd;
+                    size_t size = seg->vmsize;
+                    uint8_t* source_start = (uint8_t*)(seg->vmaddr + slide);
+                    HandleImageRange(source_start, size, &param);
+                }
+                else if (cmd -> cmd == LC_SEGMENT_64)
+                {
+                    struct segment_command_64 * seg = (struct segment_command_64 * ) cmd;
+                    size_t size = seg->vmsize;
+                    uint8_t* source_start = (uint8_t*)(seg->vmaddr + slide);
+                    HandleImageRange(source_start, size, &param);
+                }
+                cmd = (struct load_command*)((uint8_t*)cmd + cmd->cmdsize);
+            }
+        }
+    }
+#elif defined(TARGET_WASM)
+    _ASSERTE(!"CopyModuleData not implemented for wasm");
+#else
+    dl_iterate_phdr(CopyModuleDataCallback, &param);
+#endif
+    return param.result;
+}
+#endif // !HOST_WINDOWS
+
 void StressLog::AddModule(uint8_t* moduleBase)
 {
 #ifdef TARGET_WASM
@@ -387,7 +524,7 @@ void StressLog::AddModule(uint8_t* moduleBase)
         destination_end = &hdr->moduleImage[64*1024*1024];
     }
 #endif //MEMORY_MAPPED_STRESSLOG
-    theLog.modules[moduleIndex].size = PAL_CopyModuleData(moduleBase, destination, destination_end);
+    theLog.modules[moduleIndex].size = CopyModuleData(moduleBase, destination, destination_end);
 #ifdef MEMORY_MAPPED_STRESSLOG
     if (hdr != nullptr)
     {
@@ -403,9 +540,10 @@ void StressLog::Terminate(BOOL fProcessDetach) {
 
     theLog.facilitiesToLog = 0;
 
-    StressLogLockHolder lockh(theLog.lock, FALSE);
+    StressLogLockHolder lockh;
     if (!fProcessDetach) {
-        lockh.Acquire(); lockh.Release();       // The Enter() Leave() forces a memory barrier on weak memory model systems
+        lockh = TakeStressLogLock();
+        lockh.Free();            // The Enter() Leave() forces a memory barrier on weak memory model systems
                                 // we want all the other threads to notice that facilitiesToLog is now zero
 
                 // This is not strictly threadsafe, since there is no way of ensuring when all the
@@ -413,7 +551,7 @@ void StressLog::Terminate(BOOL fProcessDetach) {
                 // and there are no blocking operations in logMsg, simply sleeping will ensure
                 // that everyone gets out.
         minipal_sleep(2);
-        lockh.Acquire();
+        lockh = TakeStressLogLock();
     }
 
     // Free the log memory
@@ -426,7 +564,7 @@ void StressLog::Terminate(BOOL fProcessDetach) {
     }
 
     if (!fProcessDetach) {
-        lockh.Release();
+        lockh.Free();
     }
 
 #if !defined (STRESS_LOG_READONLY) && defined(HOST_WINDOWS)
@@ -480,7 +618,7 @@ ThreadStressLog* StressLog::CreateThreadStressLog() {
         return NULL;
     }
 
-    StressLogLockHolder lockh(theLog.lock, FALSE);
+    StressLogLockHolder lockh;
 
     class NestedCaller
     {
@@ -507,7 +645,7 @@ ThreadStressLog* StressLog::CreateThreadStressLog() {
         // Acquiring the lack can throw an OOM exception the first time its called on a thread. We go
         // ahead and try to provoke that now, before we've altered the list of available stress logs, and bail if
         // we fail.
-        lockh.Acquire();
+        lockh = TakeStressLogLock();
         nested.Mark();
 
         // ClrFlsSetValue can throw an OOM exception the first time its called on a thread for a given slot. We go
@@ -616,7 +754,7 @@ ThreadStressLog* StressLog::CreateThreadStressLogHelper() {
     else
     {
         // recycle old thread msg
-        msgs->threadId = GetCurrentThreadId();
+        msgs->threadId = minipal_get_current_thread_id();
         StressLogChunk* slc = msgs->chunkListHead;
         while (true)
         {
@@ -793,7 +931,7 @@ FORCEINLINE void ThreadStressLog::LogMsg(unsigned facility, int cArgs, const cha
     curPtr = msg;
 
 #ifdef _DEBUG
-    if (!IsValid () || threadId != GetCurrentThreadId ())
+    if (!IsValid () || threadId != minipal_get_current_thread_id())
         DebugBreak();
 #endif // _DEBUG
 #endif //DACCESS_COMPILE

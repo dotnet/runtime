@@ -10,6 +10,7 @@
 
 
 #include "common.h"
+#include <minipal/thread.h>
 #include "dbginterface.h"
 #include "dllimport.h"
 #include "eeconfig.h"
@@ -1720,7 +1721,7 @@ EncApproxFieldDescIterator::EncApproxFieldDescIterator(MethodTable *pMT, int ite
 #ifndef DACCESS_COMPILE
     // can't fixup for EnC on the debugger thread
     _ASSERTE(g_pDebugInterface == nullptr ||
-             (g_pDebugInterface->GetRCThreadId() != GetCurrentThreadId()) || !(m_flags & FixUpEncFields));
+             (g_pDebugInterface->GetRCThreadId() != (DWORD)minipal_get_current_thread_id()) || !(m_flags & FixUpEncFields));
 #endif
 
     m_pCurrListElem = NULL;
@@ -1782,7 +1783,7 @@ PTR_FieldDesc EncApproxFieldDescIterator::Next()
     // this list. Can't simply fixup the field always because loading triggers GC and many
     // code paths can't tolerate that.
     _ASSERTE( !(pFD->NeedsFixup()) ||
-              (g_pDebugInterface != nullptr && g_pDebugInterface->GetRCThreadId() == GetCurrentThreadId()) );
+              (g_pDebugInterface != nullptr && g_pDebugInterface->GetRCThreadId() == (DWORD)minipal_get_current_thread_id()) );
 #endif
 
     return dac_cast<PTR_FieldDesc>(pFD);

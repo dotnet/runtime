@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "stdafx.h"
+#include <minipal/thread.h>
 #include "primitives.h"
 #include <float.h>
 #include <tls.h>
@@ -1468,17 +1469,17 @@ HRESULT CordbThread::SetIP(bool fCanSetIPOnly,
     event.SetIP.fIsIL = fIsIL;
 
 
-    LOG((LF_CORDB, LL_INFO10000, "[%x] CT::SIP: Info:thread:0x%zx"
+    LOG((LF_CORDB, LL_INFO10000, "[%zx] CT::SIP: Info:thread:0x%zx"
         "mod:0x%zx  MethodDef:0x%x offset:0x%zx  il?:0x%x\n",
-         GetCurrentThreadId(),
+         minipal_get_current_thread_id(),
          (size_t)VmPtrToCookie(m_vmThreadToken),
          (size_t)VmPtrToCookie(vmAssembly),
          pNativeCode->GetMetadataToken(),
          offset,
          fIsIL));
 
-    LOG((LF_CORDB, LL_INFO10000, "[%x] CT::SIP: sizeof(DebuggerIPCEvent):0x%zx **********\n",
-        GetCurrentThreadId(), sizeof(DebuggerIPCEvent)));
+    LOG((LF_CORDB, LL_INFO10000, "[%zx] CT::SIP: sizeof(DebuggerIPCEvent):0x%zx **********\n",
+        minipal_get_current_thread_id(), sizeof(DebuggerIPCEvent)));
 
     HRESULT hr = GetProcess()->m_cordb->SendIPCEvent(GetProcess(), &event, sizeof(DebuggerIPCEvent));
 
@@ -3665,10 +3666,11 @@ void CordbUnmanagedThread::SetupForSkipBreakpoint(NativePatch * pNativePatch)
 #endif
 
     // Replace the BP w/ the opcode.
-    RemoveRemotePatch(GetProcess(), pNativePatch->pAddress, pNativePatch->opcode);
+    HRESULT hr = RemoveRemotePatch(GetProcess(), pNativePatch->pAddress, pNativePatch->opcode);
+    SIMPLIFYING_ASSUMPTION_SUCCEEDED(hr);
 
     // Enable the SS flag & Adjust IP.
-    HRESULT hr = this->EnableSSAfterBP();
+    hr = this->EnableSSAfterBP();
     SIMPLIFYING_ASSUMPTION(SUCCEEDED(hr));
 
 
@@ -3700,7 +3702,8 @@ void CordbUnmanagedThread::FixupForSkipBreakpoint()
     // Only reapply the int3 if it hasn't been removed yet.
     if (GetProcess()->GetNativePatch(m_pPatchSkipAddress) != NULL)
     {
-        ApplyRemotePatch(GetProcess(), m_pPatchSkipAddress);
+        HRESULT hr = ApplyRemotePatch(GetProcess(), m_pPatchSkipAddress);
+        SIMPLIFYING_ASSUMPTION_SUCCEEDED(hr);
         STRESS_LOG1(LF_CORDB, LL_INFO100, "CUT::FixupSetupSkip. addr=%p\n", m_pPatchSkipAddress);
     }
     else
@@ -3798,6 +3801,62 @@ Exit:
 }
 
 //-----------------------------------------------------------------------------
+// Write patch bytes into target code. Code pages are normally not writable
+// (for example, W^X executable views are mapped PAGE_EXECUTE_READ), so if the
+// direct write fails, temporarily make the bytes writable and restore the
+// original protection afterward.
+//-----------------------------------------------------------------------------
+template<typename T>
+static HRESULT WriteRemotePatchBytes(CordbProcess * pProcess, const void * pRemoteAddress, const T * pValue)
+{
+    CORDB_ADDRESS address = PTR_TO_CORDB_ADDRESS(pRemoteAddress);
+    HANDLE hProcess = pProcess->UnsafeGetProcessHandle();
+    void * baseAddress = const_cast<void *>(pRemoteAddress);
+
+    HRESULT hr = pProcess->SafeWriteStruct(address, pValue);
+    if (FAILED(hr))
+    {
+        DWORD oldProt;
+        if (!VirtualProtectEx(hProcess, baseAddress, sizeof(T), PAGE_EXECUTE_READWRITE, &oldProt))
+        {
+            // Copy-on-write privatizes the page. That is safe for image-backed code, but for a mapped
+            // section it would detach this view from any other view of the same section (for example
+            // the RW view of a W^X double mapping), so later writes through that view would no longer
+            // be visible here. Only fall back to copy-on-write for images.
+            MEMORY_BASIC_INFORMATION mbi;
+            if ((VirtualQueryEx(hProcess, pRemoteAddress, &mbi, sizeof(mbi)) == 0) ||
+                (mbi.Type != MEM_IMAGE) ||
+                !VirtualProtectEx(hProcess, baseAddress, sizeof(T), PAGE_EXECUTE_WRITECOPY, &oldProt))
+            {
+                LOG((LF_CORDB, LL_INFO1000, "RS WriteRemotePatchBytes - VirtualProtectEx failed address=0x%p gle=%d writeHr=0x%x\n",
+                    pRemoteAddress, GetLastError(), hr));
+                return hr;
+            }
+        }
+
+        hr = pProcess->SafeWriteStruct(address, pValue);
+        LOG((LF_CORDB, LL_INFO10000, "RS WriteRemotePatchBytes - retried write after changing protection address=0x%p oldProt=0x%x hr=0x%x\n",
+            pRemoteAddress, oldProt, hr));
+        DWORD unusedProt;
+        if (!VirtualProtectEx(hProcess, baseAddress, sizeof(T), oldProt, &unusedProt))
+        {
+            // Don't fail here: the write result is authoritative, and failing after a successful
+            // write would leave a patch in the target that our bookkeeping doesn't know about.
+            LOG((LF_CORDB, LL_INFO1000, "RS WriteRemotePatchBytes - restoring protection failed address=0x%p gle=%d\n",
+                pRemoteAddress, GetLastError()));
+            _ASSERTE(!"RS WriteRemotePatchBytes - failed to restore code page protection");
+        }
+    }
+
+    if (SUCCEEDED(hr))
+    {
+        FlushInstructionCache(hProcess, baseAddress, sizeof(T));
+    }
+
+    return hr;
+}
+
+//-----------------------------------------------------------------------------
 // Inject an int3 at the given remote address
 //-----------------------------------------------------------------------------
 
@@ -3812,9 +3871,7 @@ HRESULT ApplyRemotePatch(CordbProcess * pProcess, const void * pRemoteAddress)
     const BYTE patch = 0;
     PORTABILITY_ASSERT("NYI: ApplyRemotePatch for this platform");
 #endif
-    HRESULT hr = pProcess->SafeWriteStruct(PTR_TO_CORDB_ADDRESS(pRemoteAddress), &patch);
-    SIMPLIFYING_ASSUMPTION_SUCCEEDED(hr);
-    return S_OK;
+    return WriteRemotePatchBytes(pProcess, pRemoteAddress, &patch);
 }
 
 
@@ -3838,8 +3895,13 @@ HRESULT ApplyRemotePatch(CordbProcess * pProcess, const void * pRemoteAddress, P
         return hr;
     }
 
+    hr = ApplyRemotePatch(pProcess, pRemoteAddress);
+    if (FAILED(hr))
+    {
+        return hr;
+    }
+
     *pOpcode = (PRD_TYPE) opcode;
-    ApplyRemotePatch(pProcess, pRemoteAddress);
     return S_OK;
 }
 
@@ -3859,11 +3921,20 @@ HRESULT RemoveRemotePatch(CordbProcess * pProcess, const void * pRemoteAddress, 
     PORTABILITY_ASSERT("NYI: RemoveRemotePatch for this platform");
 #endif
 
-    pProcess->SafeWriteStruct(PTR_TO_CORDB_ADDRESS(pRemoteAddress), &opcode2);
+    HRESULT hr = WriteRemotePatchBytes(pProcess, pRemoteAddress, &opcode2);
+    if (FAILED(hr))
+    {
+        // This may fail because the module has been unloaded.  In which case, the patch is also
+        // gone so it makes sense to return success. A failed query is not evidence of that.
+        MEMORY_BASIC_INFORMATION mbi;
+        if ((VirtualQueryEx(pProcess->UnsafeGetProcessHandle(), pRemoteAddress, &mbi, sizeof(mbi)) != 0) &&
+            (mbi.State != MEM_COMMIT))
+        {
+            return S_OK;
+        }
+    }
 
-    // This may fail because the module has been unloaded.  In which case, the patch is also
-    // gone so it makes sense to return success.
-    return S_OK;
+    return hr;
 }
 #endif // FEATURE_INTEROP_DEBUGGING
 
@@ -7481,35 +7552,30 @@ HRESULT CordbJITILFrame::GetNativeVariable(CordbType *type,
         break;
 
     case ICorDebugInfo::VLT_REG_REG:
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
         {
-            const ICorDebugInfo::RegNum lowReg  = pNativeVarInfo->loc.vlRegReg.vlrrReg1;
-            const ICorDebugInfo::RegNum highReg = pNativeVarInfo->loc.vlRegReg.vlrrReg2;
-            const bool lowIsFloat  = lowReg >= ICorDebugInfo::REGNUM_FP_FIRST;
-            const bool highIsFloat = highReg >= ICorDebugInfo::REGNUM_FP_FIRST;
+            const CorDebugRegister lowReg = m_nativeFrame->ConvertJitRegToCorDebugRegister(
+                pNativeVarInfo->loc.vlRegReg.vlrrReg1);
+            const CorDebugRegister highReg = m_nativeFrame->ConvertJitRegToCorDebugRegister(
+                pNativeVarInfo->loc.vlRegReg.vlrrReg2);
+            IDacDbiInterface::TargetInfo targetInfo;
+            IfFailThrow(GetProcess()->GetTargetInfo(&targetInfo));
+            const bool lowIsFloat =
+                (targetInfo.arch == IDacDbiInterface::kArchAMD64 && lowReg >= REGISTER_AMD64_XMM0 && lowReg <= REGISTER_AMD64_XMM15) ||
+                (targetInfo.arch == IDacDbiInterface::kArchArm64 && lowReg >= REGISTER_ARM64_V0 && lowReg <= REGISTER_ARM64_V31);
+            const bool highIsFloat =
+                (targetInfo.arch == IDacDbiInterface::kArchAMD64 && highReg >= REGISTER_AMD64_XMM0 && highReg <= REGISTER_AMD64_XMM15) ||
+                (targetInfo.arch == IDacDbiInterface::kArchArm64 && highReg >= REGISTER_ARM64_V0 && highReg <= REGISTER_ARM64_V31);
 
             if (lowIsFloat || highIsFloat)
             {
-                // AMD64/ARM64 extend RegNum with FP registers (XMM/V), so
-                // VLT_REG_REG can represent mixed int/fp pairs. FP register
-                // indices for GetLocalTwoRegisterValue are 0-based.
                 hr = m_nativeFrame->GetLocalTwoRegisterValue(
-                    lowIsFloat ? (CorDebugRegister)(REGISTER_AMD64_XMM0 + (lowReg - ICorDebugInfo::REGNUM_FP_FIRST))
-                               : m_nativeFrame->ConvertJitRegToCorDebugRegister(lowReg),
-                    lowIsFloat,
-                    highIsFloat ? (CorDebugRegister)(REGISTER_AMD64_XMM0 + (highReg - ICorDebugInfo::REGNUM_FP_FIRST))
-                                : m_nativeFrame->ConvertJitRegToCorDebugRegister(highReg),
-                    highIsFloat,
-                    type,
-                    ppValue);
-                break;
+                    lowReg, lowIsFloat, highReg, highIsFloat, type, ppValue);
+            }
+            else
+            {
+                hr = m_nativeFrame->GetLocalDoubleRegisterValue(highReg, lowReg, type, ppValue);
             }
         }
-#endif
-        hr = m_nativeFrame->GetLocalDoubleRegisterValue(
-                            m_nativeFrame->ConvertJitRegToCorDebugRegister(pNativeVarInfo->loc.vlRegReg.vlrrReg2),
-                            m_nativeFrame->ConvertJitRegToCorDebugRegister(pNativeVarInfo->loc.vlRegReg.vlrrReg1),
-                            type, ppValue);
         break;
 
     case ICorDebugInfo::VLT_REG_STK:

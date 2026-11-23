@@ -50,8 +50,11 @@ internal sealed partial class GrammarActions
                 _typedefs[type.Alias] = new TypedefEntry.Type(ResolveClassName(type.Type));
                 break;
             case MemberTypedefDeclarationValue member:
-                _typedefs[member.Alias] =
-                    new TypedefEntry.Member(MaterializeMemberReference(member.Member));
+                _typedefs[member.Alias] = new TypedefEntry.Member(member.Member switch
+                {
+                    MethodMemberReferenceValue { Method: TokenMethodReferenceValue token } => new EntityRegistry.LiteralTokenEntity(token.Token),
+                    _ => MaterializeMemberReference(member.Member)
+                });
                 break;
             case CustomAttributeTypedefDeclarationValue customAttribute:
                 EntityRegistry.CustomAttributeEntity attribute =

@@ -2451,8 +2451,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshal.NoCom.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ComEventsHelpers.NoCom.cs" />
   </ItemGroup>
-  <!-- CoreCLR uses PAL layer that emulates Windows API on Unix. This is bridge for that PAL layer. See issue dotnet/runtime/#31721. -->
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' or '$(FeatureCoreCLR)'=='true'">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetEnvironmentVariable.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.GetEnvironmentVariable.cs</Link>
     </Compile>
@@ -2537,10 +2536,10 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetTimeZoneData.Wasm.cs" Condition="'$(TargetsWasi)' == 'true' or '$(TargetsBrowser)' == 'true'">
       <Link>Common\src\Interop\Unix\System.Native\Interop.GetTimeZoneData.Wasm.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetEnv.cs">
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetEnv.cs" Condition="'$(FeatureMono)' == 'true'">
       <Link>Common\Interop\Unix\System.Native\Interop.GetEnv.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetEnviron.cs">
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetEnviron.cs" Condition="'$(FeatureMono)' == 'true'">
       <Link>Common\Interop\Unix\System.Native\Interop.GetEnviron.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetHostName.cs">
@@ -2616,6 +2615,7 @@
       <Link>Common\Interop\Unix\System.Native\Interop.MountPoints.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Linux\procfs\Interop.ProcMountInfo.cs" Link="Common\Interop\Linux\procfs\Interop.ProcMountInfo.cs" />
+    <Compile Include="$(CommonPath)Interop\Linux\procfs\Interop.ProcMountInfo.GetFileSystemTypeForPath.cs" Link="Common\Interop\Linux\procfs\Interop.ProcMountInfo.GetFileSystemTypeForPath.cs" />
     <Compile Include="$(CommonPath)Interop\Linux\procfs\Interop.ProcMountInfo.TryParseMountInfoLine.cs" Link="Common\Interop\Linux\procfs\Interop.ProcMountInfo.TryParseMountInfoLine.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Open.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.Open.cs</Link>
@@ -2741,7 +2741,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Environment.OSVersion.OSX.cs" Condition="'$(IsApplePlatform)' == 'true' AND '$(TargetsMacCatalyst)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Environment.OSVersion.MacCatalyst.cs" Condition="'$(TargetsMacCatalyst)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Environment.GetFolderPathCore.Unix.cs" Condition="'$(IsiOSLike)' != 'true' and '$(TargetsAndroid)' != 'true' and '$(TargetsLinuxBionic)' != 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Environment.Variables.Unix.cs" Condition="'$(FeatureCoreCLR)' != 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Environment.Variables.Native.cs" Condition="'$(FeatureMono)' != 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Environment.Variables.Unix.cs" Condition="'$(FeatureMono)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CalendarData.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureData.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureInfo.Unix.cs" />
