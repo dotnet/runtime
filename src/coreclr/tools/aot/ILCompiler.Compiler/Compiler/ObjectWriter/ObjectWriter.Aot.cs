@@ -70,6 +70,12 @@ namespace ILCompiler.ObjectWriter
             return typeIndex;
         }
 
+        // The this parameter has the same type as the object pointer of the method declaration.
+        private protected uint GetThisVarTypeIndex(MethodDesc method)
+        {
+            return _userDefinedTypeDescriptor.GetThisTypeIndex(method.OwningType);
+        }
+
         private protected abstract ITypesDebugInfoWriter CreateDebugInfoBuilder();
 
         private protected abstract void EmitDebugFunctionInfo(

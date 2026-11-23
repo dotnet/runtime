@@ -178,6 +178,13 @@ public class Program
             return 16;
         }
 
+        // The this parameter is a pointer, like the object pointer of the member function declaration.
+        if (!CheckThisParameterIsPointer(llvmDwarfDumpPath, nameof(ThisTestClass.GetValueFromClass)) ||
+            !CheckThisParameterIsPointer(llvmDwarfDumpPath, nameof(ThisTestStruct.GetValueFromStruct)))
+        {
+            return 17;
+        }
+
         return 100;
     }
 
@@ -191,6 +198,8 @@ public class Program
         GC.KeepAlive(new int[] { 1, 2, 3 });
         GetValue(new TestInterfaceImplementation());
         GC.KeepAlive((object)TestEnum.Second);
+        new ThisTestClass { Value = 21 }.GetValueFromClass();
+        new ThisTestStruct { Value = 21 }.GetValueFromStruct();
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -277,6 +286,41 @@ public class Program
             return Convert.ToUInt64(value, 16);
         }
     }
+
+    private static bool CheckThisParameterIsPointer(string llvmDwarfDumpPath, string methodName)
+    {
+        ProcessTextOutput result = RunLlvmDwarfDump(llvmDwarfDumpPath, "--debug-info", "--show-children", $"--name={methodName}");
+
+        // The declaration of the method has an unnamed this parameter, its definition has a parameter named this.
+        bool insideParameter = false;
+        bool isThis = false;
+        foreach (string rawLine in result.StandardOutput.Split('\n'))
+        {
+            string line = rawLine.Trim();
+            if (line.Contains("DW_TAG_"))
+            {
+                insideParameter = line.EndsWith("DW_TAG_formal_parameter");
+                isThis = false;
+            }
+            else if (insideParameter && line.StartsWith("DW_AT_name"))
+            {
+                isThis = line.EndsWith("(\"this\")");
+            }
+            else if (isThis && line.StartsWith("DW_AT_type"))
+            {
+                if (!line.EndsWith("*\")"))
+                {
+                    Console.Error.WriteLine($"Unexpected type for the this parameter of {methodName}: {line}");
+                    return false;
+                }
+
+                return true;
+            }
+        }
+
+        Console.Error.WriteLine($"Could not find the this parameter of {methodName}.");
+        return false;
+    }
 }
 
 static class StaticFields
@@ -319,4 +363,20 @@ enum TestEnum
 {
     First,
     Second,
+}
+
+class ThisTestClass
+{
+    public int Value;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public int GetValueFromClass() => Value;
+}
+
+struct ThisTestStruct
+{
+    public int Value;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public int GetValueFromStruct() => Value;
 }
