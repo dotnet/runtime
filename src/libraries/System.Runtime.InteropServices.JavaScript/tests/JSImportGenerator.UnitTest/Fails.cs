@@ -136,6 +136,20 @@ namespace JSImportGenerator.Unit.Tests
                 }
                 """,
             ];
+            yield return
+            [
+                """
+                using System.Runtime.InteropServices.JavaScript;
+                partial class Outer
+                {
+                    private partial struct Inner
+                    {
+                        [JSExport]
+                        internal static void {|SYSLIB1076:Export|}() { }
+                    }
+                }
+                """,
+            ];
         }
 
         [Theory]

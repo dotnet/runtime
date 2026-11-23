@@ -17,9 +17,10 @@
        Remove only this compatibility target once execution-time forwarding flows through supported SDKs. -->
   <Target Name="_WasmConfigureTypeMapEntryAssembly"
           BeforeTargets="PrepareForILLink"
-          Condition="('$(UseMonoRuntime)' == 'false' or '$(RuntimeFlavor)' == 'CoreCLR') and '$(TypeMapEntryAssembly)' != '' and !$([System.String]::Copy('$(_ExtraTrimmerArgs)').Contains('--typemap-entry-assembly'))">
+          Condition="('$(UseMonoRuntime)' == 'false' or '$(RuntimeFlavor)' == 'CoreCLR') and '$(TypeMapEntryAssembly)' != '' and '$(_TypeMapEntryAssemblyForwarded)' != 'true'">
     <PropertyGroup>
       <_ExtraTrimmerArgs>$(_ExtraTrimmerArgs) --typemap-entry-assembly "$(TypeMapEntryAssembly)"</_ExtraTrimmerArgs>
+      <_TypeMapEntryAssemblyForwarded>true</_TypeMapEntryAssemblyForwarded>
     </PropertyGroup>
   </Target>
 </Project>

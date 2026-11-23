@@ -28,8 +28,9 @@ The output will include only necessary code to run your application. The framewo
 
 `TypeMapEntryAssembly` selects the assembly from which type-map discovery starts.
 It is forwarded to ILLink when targets execute, so SDK extensions can set it after
-the ILLink targets are imported. Library-mode applications without a managed entry
-point must provide this root to preserve their type-map entries.
+the ILLink targets are imported. When set, the property takes precedence over a
+raw `--typemap-entry-assembly` argument. Library-mode applications without a
+managed entry point must provide this root to preserve their type-map entries.
 
 ## Experimental task cache
 

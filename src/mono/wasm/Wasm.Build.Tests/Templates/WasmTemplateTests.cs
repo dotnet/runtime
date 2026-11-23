@@ -386,7 +386,12 @@ namespace Wasm.Build.Tests
         public async Task LibraryMode(bool useWasmSdk, bool isPublish)
         {
             var config = Configuration.Release;
-            ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.LibraryModeTestApp, "libraryMode");
+            const string ConflictingEntryAssembly = "ConflictingTypeMapRoot";
+            bool checkLinkerRoot = IsCoreClrRuntime && useWasmSdk && isPublish;
+            ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.LibraryModeTestApp, "libraryMode",
+                extraProperties: checkLinkerRoot
+                    ? $"<_ExtraTrimmerArgs>$(_ExtraTrimmerArgs) --typemap-entry-assembly {ConflictingEntryAssembly}</_ExtraTrimmerArgs>"
+                    : "");
             if (!useWasmSdk)
             {
                 UpdateFile($"{info.ProjectName}.csproj", new Dictionary<string, string>() {
@@ -401,7 +406,7 @@ namespace Wasm.Build.Tests
             else
                 BuildProject(info, config, new BuildOptions(AssertAppBundle: useWasmSdk));
 
-            if (IsCoreClrRuntime && useWasmSdk && isPublish)
+            if (checkLinkerRoot)
             {
                 SL.Build build = SL.BinaryLog.ReadBuild(Path.Combine(_logPath, $"{info.ProjectName}-publish.binlog"));
                 List<string> linkerArgs = [];
@@ -416,8 +421,9 @@ namespace Wasm.Build.Tests
                     });
                 });
                 string args = Assert.Single(linkerArgs);
-                Match entryAssembly = Assert.Single(Regex.Matches(args, """--typemap-entry-assembly\s+(?:"([^"]+)"|(\S+))""").Cast<Match>());
-                Assert.Equal(info.ProjectName, entryAssembly.Groups[1].Success ? entryAssembly.Groups[1].Value : entryAssembly.Groups[2].Value);
+                IEnumerable<string> entryAssemblies = Regex.Matches(args, """--typemap-entry-assembly\s+(?:"([^"]+)"|(\S+))""")
+                    .Select(static match => match.Groups[1].Success ? match.Groups[1].Value : match.Groups[2].Value);
+                Assert.Equal([ConflictingEntryAssembly, info.ProjectName], entryAssemblies);
             }
 
             if (useWasmSdk)

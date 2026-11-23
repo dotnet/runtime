@@ -26,6 +26,9 @@ namespace Microsoft.Interop.JavaScript
 
         internal static bool CanUseUnsafeAccessor(INamedTypeSymbol type)
         {
+            if (type.IsValueType)
+                return false;
+
             for (INamedTypeSymbol? current = type; current is not null; current = current.ContainingType)
             {
                 if (current.Arity != 0 || current.IsFileLocal)
@@ -311,7 +314,6 @@ namespace Microsoft.Interop.JavaScript
                 return (writer.ToString(), accessorRegistration, null, signature.QualifiedMethodName, signature.TypesHash, signatures);
             }
 
-            // Generic and file-local containing types cannot be targeted by this accessor.
             string registration = $"{Constants.JSFunctionSignatureGlobal}.{Constants.BindCSFunctionMethod}({CodeWriterHelpers.StringLiteral(signature.QualifiedMethodName)}, {signature.TypesHash.ToString(CultureInfo.InvariantCulture)}, {signatures});";
             string attribute = $"{Constants.DynamicDependencyAttributeGlobal}({CodeWriterHelpers.StringLiteral(signature.WrapperName)}, {CodeWriterHelpers.StringLiteral(signature.StubTypeFullName)}, {CodeWriterHelpers.StringLiteral(signature.AssemblyName)})";
 

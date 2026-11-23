@@ -324,6 +324,42 @@ namespace JSImportGenerator.Unit.Tests
         }
 
         [Theory]
+        [InlineData("private", false)]
+        [InlineData("protected", false)]
+        [InlineData("internal", true)]
+        public void NestedStructExportsUseReflectionOnlyWhenInaccessible(string accessibility, bool isAccessible)
+        {
+            string source = $$"""
+                using System.Runtime.InteropServices.JavaScript;
+                public partial class Outer
+                {
+                    {{accessibility}} partial struct Inner
+                    {
+                        [JSExport]
+                        internal static int Export(int value) => value;
+                    }
+                }
+                """;
+            Compilation compilation = TestUtils.CreateCompilation(source, allowUnsafe: true);
+            GeneratorDriver driver = CreateTrackedDriver(compilation);
+            driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out Compilation generated, out var diagnostics);
+            Assert.Empty(diagnostics);
+            TestUtils.AssertPostSourceGeneratorCompilation(generated);
+
+            string generatedSource = Assert.Single(driver.GetRunResult().GeneratedTrees).GetText().ToString();
+            Assert.DoesNotContain("UnsafeAccessorType(", generatedSource);
+            if (isAccessible)
+            {
+                Assert.Contains("&global::Outer.Inner.__Wrapper_Export_", generatedSource);
+            }
+            else
+            {
+                Assert.Contains("DynamicDependencyAttribute(\"__Wrapper_Export_", generatedSource);
+                Assert.DoesNotContain("&global::Outer.Inner.__Wrapper_Export_", generatedSource);
+            }
+        }
+
+        [Theory]
         [InlineData(false)]
         [InlineData(true)]
         public void ReferencedProvidersAreDiscoveredWithoutLocalExports(bool handwrittenProvider)

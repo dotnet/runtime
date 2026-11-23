@@ -82,12 +82,14 @@ Copyright (c) .NET Foundation. All rights reserved.
     <EnableTrimAnalyzer Condition="'$(EnableTrimAnalyzer)' == ''">false</EnableTrimAnalyzer>
   </PropertyGroup>
 
-  <!-- Targets imported after the SDK can provide the type-map entry assembly. -->
+  <!-- Targets imported after the SDK can provide the type-map entry assembly.
+       Append it last so the property wins over any raw linker argument. -->
   <Target Name="_ConfigureTypeMapEntryAssembly"
           BeforeTargets="PrepareForILLink"
-          Condition="'$(TypeMapEntryAssembly)' != '' and !$([System.String]::Copy('$(_ExtraTrimmerArgs)').Contains('--typemap-entry-assembly'))">
+          Condition="'$(TypeMapEntryAssembly)' != '' and '$(_TypeMapEntryAssemblyForwarded)' != 'true'">
     <PropertyGroup>
       <_ExtraTrimmerArgs>$(_ExtraTrimmerArgs) --typemap-entry-assembly "$(TypeMapEntryAssembly)"</_ExtraTrimmerArgs>
+      <_TypeMapEntryAssemblyForwarded>true</_TypeMapEntryAssemblyForwarded>
     </PropertyGroup>
   </Target>
 

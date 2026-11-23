@@ -43,7 +43,8 @@ Assemblies without a provider or legacy initializer return empty exports on Core
 Failed or reentrant binding releases unconsumed argument payloads without
 calling the generated wrapper; subsequent invocations can retry binding.
 Private and protected nested exports use managed unsafe accessors to their generated
-wrappers. Generic and file-local containing types retain the diagnostic and reflection fallback.
+wrappers when the declaring type is a reference type. Inaccessible value types and
+generic or file-local containing types use the diagnostic and reflection fallback.
 
 Wasm app build can run in two scenarios:
 
