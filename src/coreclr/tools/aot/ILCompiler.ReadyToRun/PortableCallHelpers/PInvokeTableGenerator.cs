@@ -78,9 +78,9 @@ namespace ILCompiler.PortableCallHelpers
 
             // Whole-module linkage includes every P/Invoke of the module.
             List<PInvokeInfo> emitted = pinvokes
-                .Where(l => modules.Contains(l.Module) || linkedEntryPoints.Contains(l))
+                .Where(pinvoke => modules.Contains(pinvoke.Module) || linkedEntryPoints.Contains(pinvoke))
                 .ToList();
-            modules.UnionWith(linkedEntryPoints.Select(l => l.Module));
+            modules.UnionWith(linkedEntryPoints.Select(pinvoke => pinvoke.Module));
 
             w.WriteLine(
                 """
@@ -98,7 +98,7 @@ namespace ILCompiler.PortableCallHelpers
             var linkedDecls = new List<string>();
             var globalNames = new HashSet<string>(StringComparer.Ordinal);
             var pinvokesGroupedByEntryPoint = emitted
-                                                .OrderBy(l => l.EntryPoint, StringComparer.Ordinal)
+                                                .OrderBy(pinvoke => pinvoke.EntryPoint, StringComparer.Ordinal)
                                                 .GroupBy(CEntryPoint, StringComparer.Ordinal);
 
             foreach (IGrouping<string, PInvokeInfo> group in pinvokesGroupedByEntryPoint)
@@ -163,16 +163,16 @@ namespace ILCompiler.PortableCallHelpers
             {
                 // the order here is not important, because we use hash tables, we want it to be stable though
                 List<string> imports = emitted
-                    .Where(l => l.Module == module && !l.Skip)
-                    .OrderBy(l => l.EntryPoint, StringComparer.Ordinal)
-                    .GroupBy(d => d.EntryPoint, StringComparer.Ordinal)
-                    .Select(l =>
+                    .Where(pinvoke => pinvoke.Module == module && !pinvoke.Skip)
+                    .OrderBy(pinvoke => pinvoke.EntryPoint, StringComparer.Ordinal)
+                    .GroupBy(pinvoke => pinvoke.EntryPoint, StringComparer.Ordinal)
+                    .Select(group =>
                     {
-                        PInvokeInfo p = l.First();
+                        PInvokeInfo p = group.First();
                         // The runtime resolver looks up by managed EntryPoint, which can differ from the
                         // C symbol: [WasmImportLinkage] mangles it per module.
                         string address = p.WasmLinkage ? CEntryPoint(p) : $"{linkedNamespace}::{CEntryPoint(p)}";
-                        return $"    {{ \"{EscapeLiteral(p.EntryPoint)}\", (void*)&{address} }}, // {ListRefs(l)}{w.NewLine}";
+                        return $"    {{ \"{EscapeLiteral(p.EntryPoint)}\", (void*)&{address} }}, // {ListRefs(group)}{w.NewLine}";
                     })
                     .ToList();
 
@@ -260,8 +260,8 @@ namespace ILCompiler.PortableCallHelpers
                 return false;
             }
 
-            static string ListRefs(IGrouping<string, PInvokeInfo> l)
-                => string.Join(", ", l.Select(c => ((EcmaAssembly)c.Method.Module).GetName().Name).Distinct().OrderBy(n => n, StringComparer.Ordinal));
+            static string ListRefs(IGrouping<string, PInvokeInfo> group)
+                => string.Join(", ", group.Select(c => ((EcmaAssembly)c.Method.Module).GetName().Name).Distinct().OrderBy(n => n, StringComparer.Ordinal));
         }
 
         private void EmitQCallTable(TextWriter w, TargetDetails target, List<PInvokeInfo> qcallImports)
