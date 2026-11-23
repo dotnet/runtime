@@ -11007,6 +11007,18 @@ void CEECodeGenInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,               /* IN
 #endif // FEATURE_CODE_VERSIONING
             }
 
+            // IL helpers that do not participate in tiering (e.g. [AggressiveOptimization] ones such as the managed
+            // allocation helpers) are already final once jitted: call the code directly, even while the tiering
+            // delay is active. On arm64 this keeps the call within the code heap (a direct `bl`, no jump stub).
+            if (!helperMD->IsEligibleForTieredCompilation() && helperMD->HasNativeCode())
+            {
+                finalTierAddr = (LPVOID)helperMD->GetNativeCode();
+                hlpFinalTierAddrTable[dynamicFtnNum] = finalTierAddr;
+                accessType = IAT_VALUE;
+                targetAddr = finalTierAddr;
+                goto exit;
+            }
+
             if (IndirectionAllowedForJitHelper(ftnNum))
             {
                 if (helperMD->IsVersionable())

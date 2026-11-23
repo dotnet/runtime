@@ -12315,7 +12315,13 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
 
                     if (strcmp(namespaceName, "CompilerServices") == 0)
                     {
-                        if (strcmp(className, "RuntimeHelpers") == 0)
+                        if (strcmp(className, "AllocHelpers") == 0)
+                        {
+                            // Any [Intrinsic] method on AllocHelpers is an allocation fast path that must be
+                            // compiled as partially interruptible (see Compiler::compMustBePartiallyInterruptible).
+                            result = NI_System_Runtime_CompilerServices_AllocHelpers;
+                        }
+                        else if (strcmp(className, "RuntimeHelpers") == 0)
                         {
                             if (strcmp(methodName, "CreateSpan") == 0)
                             {

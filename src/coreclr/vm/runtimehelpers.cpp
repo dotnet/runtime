@@ -97,6 +97,12 @@
 // Keep entries sorted by name using strcmp ordering for binary search.
 static const Entry s_RuntimeHelpers[] =
 {
+#ifdef FEATURE_MANAGED_ALLOC_HELPERS
+    DllImportEntry(AllocHelpersConfig_IsEnabled)
+    DllImportEntry(AllocHelpers_GetAllocContext)
+    {"AllocHelpers_NewObjectSlow", (void*)&RhpNew},
+    {"AllocHelpers_NewVariableSizeObjectSlow", (void*)&RhpNewVariableSizeObject},
+#endif // FEATURE_MANAGED_ALLOC_HELPERS
     DllImportEntry(AppContext_SetFirstChanceExceptionHandler)
     DllImportEntry(AppContext_TryGetHostPropertyValue)
     DllImportEntry(AppDomain_CreateDynamicAssembly)
