@@ -20,16 +20,16 @@
     <!-- Enable to remove prerelease label. -->
     <StabilizePackageVersion Condition="'$(StabilizePackageVersion)' == ''">false</StabilizePackageVersion>
     <DotNetFinalVersionKind Condition="'$(StabilizePackageVersion)' == 'true'">release</DotNetFinalVersionKind>
-    <!-- SdkVersionForWorkloadTesting is used to compute the sdk band and version for workload testing.
-         The published manifests are built in dotnet/sdk so these values are for testing purposes only.
-         Use an SDK-versioned VMR package if it is newer than the SDK specified in global.json. -->
+    <!-- The shared WebAssembly test harness, including CoreCLR tests without an installed workload,
+         uses this SDK independently of the repository bootstrap SDK.
+         Select the newer bootstrap/VMR SDK first, then apply the required browser restore floor below. -->
     <!-- NETCoreSdkVersion is normally set by the SDK, but for non-SDK projects we need extract from global.json -->
     <_GlobalJsonContent>$([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory)../global.json'))</_GlobalJsonContent>
     <_GlobalJsonSdkVersion Condition="'$(_GlobalJsonContent)' != ''">$([System.Text.RegularExpressions.Regex]::Match($(_GlobalJsonContent), '"sdk"\s*:\s*\{[^\}]*"version"\s*:\s*"([^"]+)"', System.Text.RegularExpressions.RegexOptions.Singleline).Groups[1].Value)</_GlobalJsonSdkVersion>
     <_DotnetSdkVersion>$(MicrosoftDotNetGenAPITaskPackageVersion)</_DotnetSdkVersion>
     <SdkVersionForWorkloadTesting Condition="$([System.String]::Compare('$(_GlobalJsonSdkVersion)', '$(_DotnetSdkVersion)')) &lt;= 0">$(_DotnetSdkVersion)</SdkVersionForWorkloadTesting>
     <SdkVersionForWorkloadTesting Condition="'$(SdkVersionForWorkloadTesting)' == ''">$(_GlobalJsonSdkVersion)</SdkVersionForWorkloadTesting>
-    <!-- Minimum SDK for the CoreCLR browser R2R restore default. -->
+    <!-- Older SDKs do not request Crossgen2 during restore for the runtime package's R2R publish default. -->
     <SdkVersionForWorkloadTesting Condition="$([System.String]::Compare('$(SdkVersionForWorkloadTesting)', '12.0.100-alpha.1.26565.104')) &lt; 0">12.0.100-alpha.1.26565.104</SdkVersionForWorkloadTesting>
     <SdkMajorVersion>$([System.String]::Copy('$(SdkVersionForWorkloadTesting)').Split('.')[0])</SdkMajorVersion>
     <SdkBandVersion>$(SdkMajorVersion).0.100</SdkBandVersion>

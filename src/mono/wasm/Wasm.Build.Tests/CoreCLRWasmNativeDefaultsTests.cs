@@ -8,10 +8,10 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
-using System.Text.Json;
 using System.Text.RegularExpressions;
 using Xunit;
 using Xunit.Abstractions;
+using SL = Microsoft.Build.Logging.StructuredLogger;
 
 #nullable enable
 
@@ -167,28 +167,50 @@ namespace Wasm.Build.Tests
                 aot: false,
                 TestAsset.WasmBasicTestApp,
                 "coreclr_r2r_defaults",
-                extraProperties: $"{readyToRunProperty}<WasmEnableWebcil>{webcil.ToString().ToLowerInvariant()}</WasmEnableWebcil>",
-                insertAtEnd: $$"""
-                    <Target Name="CheckReadyToRunDefaults" DependsOnTargets="_WasmCoreClrSelectR2RDirectories">
-                        <Error Condition="'$(PublishReadyToRun)' != '{{readyToRun ?? "true"}}'" Text="Unexpected publish R2R selection: $(PublishReadyToRun)" />
-                        <Error Condition="'$(_WasmUsePrebuiltReadyToRun)' != '{{expectPrebuilt.ToString().ToLowerInvariant()}}'" Text="Unexpected build R2R selection: $(_WasmUsePrebuiltReadyToRun)" />
-                        <Error Text="Stopping after validating ReadyToRun defaults" />
-                    </Target>
-                    """);
+                extraProperties: $"{readyToRunProperty}<WasmEnableWebcil>{webcil.ToString().ToLowerInvariant()}</WasmEnableWebcil>");
 
-            (string _, string output) = BuildProject(
-                info,
+            (_, string binlogPath) = BuildProjectWithoutAssert(
                 config,
-                new BuildOptions(ExpectSuccess: false, ExtraMSBuildArgs: "-t:CheckReadyToRunDefaults"));
+                info.ProjectName,
+                _defaultBuildOptions with
+                {
+                    ExtraMSBuildArgs = $"{_defaultBuildOptions.ExtraMSBuildArgs} -t:_WasmCoreClrSelectR2RDirectories"
+                });
 
-            Assert.Contains("Stopping after validating ReadyToRun defaults", output);
+            SL.Build build = SL.BinaryLog.ReadBuild(binlogPath);
+            SL.Project appBuild = GetAppProject("_WasmCoreClrSelectR2RDirectories");
+            Dictionary<string, string> properties = GetEvaluatedProperties(appBuild);
+            Assert.Equal(readyToRun ?? "true", properties["PublishReadyToRun"]);
+            Assert.Equal(expectPrebuilt.ToString().ToLowerInvariant(), properties["_WasmUsePrebuiltReadyToRun"]);
 
-            Assert.NotNull(_projectDir);
-            using JsonDocument assets = JsonDocument.Parse(File.ReadAllText(Path.Combine(_projectDir, "obj", "project.assets.json")));
-            bool restoresCrossgen2 = assets.RootElement.GetProperty("project").GetProperty("frameworks").EnumerateObject()
-                .SelectMany(framework => framework.Value.GetProperty("downloadDependencies").EnumerateArray())
-                .Any(dependency => dependency.GetProperty("name").GetString()?.StartsWith("Microsoft.NETCore.App.Crossgen2.", StringComparison.Ordinal) == true);
+            SL.Project appRestore = GetAppProject("_GenerateRestoreGraphProjectEntry");
+            Dictionary<string, string> restoreProperties = GetEvaluatedProperties(appRestore);
+            Assert.Equal("true", restoreProperties["ExcludeRestorePackageImports"], ignoreCase: true);
+            SL.Target frameworkReferences = Assert.Single(appRestore.Children.OfType<SL.Target>(),
+                target => target.Name == "ProcessFrameworkReferences");
+            bool restoresCrossgen2 = frameworkReferences.FindChildrenRecursive<SL.AddItem>(item => item.Name == "PackageDownload")
+                .SelectMany(item => item.Children.OfType<SL.Item>())
+                .Any(item => item.Text.StartsWith("Microsoft.NETCore.App.Crossgen2.", StringComparison.Ordinal));
             Assert.Equal(readyToRun is not "false", restoresCrossgen2);
+
+            SL.Project GetAppProject(string entryTarget) =>
+                Assert.Single(build.FindChildrenRecursive<SL.Project>(project =>
+                    string.Equals(project.ProjectFile, Path.Combine(_projectDir, $"{info.ProjectName}.csproj"),
+                        s_isWindows ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal) &&
+                    project.EntryTargets.Contains(entryTarget)));
+
+            Dictionary<string, string> GetEvaluatedProperties(SL.Project project)
+            {
+                SL.ProjectEvaluation evaluation = Assert.Single(build.FindChildrenRecursive<SL.ProjectEvaluation>(
+                    candidate => candidate.Id == project.EvaluationId));
+                SL.Folder propertyFolder = evaluation.FindChild<SL.Folder>("Properties");
+                Assert.NotNull(propertyFolder);
+                Dictionary<string, string> values = new(project.GlobalProperties, StringComparer.OrdinalIgnoreCase);
+                foreach (SL.Property property in propertyFolder.Children.OfType<SL.Property>())
+                    values[property.Name] = property.Value;
+                Assert.Equal(DefaultTargetFramework, values["TargetFramework"]);
+                return values;
+            }
         }
 
         [Theory]
@@ -197,6 +219,7 @@ namespace Wasm.Build.Tests
         [TestCategory("no-workload")]
         public void PublishPreloadSkipsNativeNestedPublish(bool nestedPublish)
         {
+            // Probe the scheduling contract without relinking: this flag models the native worker's target graph.
             ProjectInfo info = CopyTestAsset(
                 Configuration.Debug,
                 aot: false,
