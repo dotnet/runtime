@@ -6880,11 +6880,7 @@ public:
     PhaseStatus fgVNBasedIntrinsicExpansion();
     bool fgVNBasedIntrinsicExpansionForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call);
     bool fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call);
-    bool fgVNBasedIntrinsicExpansionForCall_ConstCharSetContains(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call);
-
-    bool isConstCharSetContainsHelper(CORINFO_METHOD_HANDLE method);
-    bool isConstCharSetContainsValueTypeHelper(CORINFO_METHOD_HANDLE method);
-    bool isConstCharSetContainsPackedHelper(CORINFO_METHOD_HANDLE method);
+    bool fgVNBasedIntrinsicExpansionForCall_ContainsValueType(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call);
 
     PhaseStatus fgLateCastExpansion();
     bool fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call);

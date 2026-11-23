@@ -1651,24 +1651,19 @@ PhaseStatus Compiler::fgVNBasedIntrinsicExpansion()
 //
 bool Compiler::fgVNBasedIntrinsicExpansionForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call)
 {
-    const bool isConstCharSetContains = isConstCharSetContainsHelper(call->gtCallMethHnd);
-    if (!call->IsSpecialIntrinsic() && !isConstCharSetContains)
+    if (!call->IsSpecialIntrinsic())
     {
         return false;
     }
 
-    if (call->IsSpecialIntrinsic())
+    NamedIntrinsic ni = lookupNamedIntrinsic(call->gtCallMethHnd);
+    if (ni == NI_System_Text_UTF8Encoding_UTF8EncodingSealed_ReadUtf8)
     {
-        NamedIntrinsic ni = lookupNamedIntrinsic(call->gtCallMethHnd);
-        if (ni == NI_System_Text_UTF8Encoding_UTF8EncodingSealed_ReadUtf8)
-        {
-            return fgVNBasedIntrinsicExpansionForCall_ReadUtf8(pBlock, stmt, call);
-        }
+        return fgVNBasedIntrinsicExpansionForCall_ReadUtf8(pBlock, stmt, call);
     }
-
-    if (isConstCharSetContains)
+    else if (ni == NI_System_SpanHelpers_ContainsValueType)
     {
-        return fgVNBasedIntrinsicExpansionForCall_ConstCharSetContains(pBlock, stmt, call);
+        return fgVNBasedIntrinsicExpansionForCall_ContainsValueType(pBlock, stmt, call);
     }
 
     // TODO: Expand IsKnownConstant here
@@ -1922,13 +1917,10 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
 }
 
 //------------------------------------------------------------------------------
-// fgVNBasedIntrinsicExpansionForCall_ConstCharSetContains: Fold a
-//    `SpanHelpers.ContainsValueType<T>`, `SpanHelpers.NonPackedContainsValueType<T>`
-//    or `PackedSpanHelpers.Contains` call whose data is a constant UTF-8/UTF-16
-//    literal into a range or set
-//    membership check. This covers `string.Contains(char)`,
-//    `ReadOnlySpan<char>.Contains(char)` and `ReadOnlySpan<byte>.Contains(byte)`
-//    without any managed-side intrinsic annotations.
+// fgVNBasedIntrinsicExpansionForCall_ContainsValueType: Fold a
+//    `SpanHelpers.ContainsValueType<T>` call whose data is a constant UTF-8/UTF-16
+//    literal into a range or set membership check. This covers `string.Contains(char)`,
+//    `ReadOnlySpan<char>.Contains(char)` and `ReadOnlySpan<byte>.Contains(byte)`.
 //
 // Arguments:
 //    pBlock - Block containing the call to expand (updated after splitting)
@@ -1938,8 +1930,8 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
 // Returns:
 //    True if expanded, false otherwise.
 //
-bool Compiler::fgVNBasedIntrinsicExpansionForCall_ConstCharSetContains(BasicBlock** pBlock, Statement* stmt,
-                                                                       GenTreeCall* call)
+bool Compiler::fgVNBasedIntrinsicExpansionForCall_ContainsValueType(BasicBlock** pBlock, Statement* stmt,
+                                                                    GenTreeCall* call)
 {
     if (call->gtArgs.CountUserArgs() != 3)
     {
@@ -1969,15 +1961,10 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ConstCharSetContains(BasicBloc
         return false;
     }
 
-    if (isConstCharSetContainsPackedHelper(call->gtCallMethHnd) && (elemSize != 2))
-    {
-        return false;
-    }
-
     ValueNum lenVN = vnStore->VNConservativeNormalValue(lengthArg->GetNode()->gtVNPair);
     if (!vnStore->IsVNConstant(lenVN))
     {
-        JITDUMP("ConstCharSetContains: length is not constant\n")
+        JITDUMP("ContainsValueType: length is not constant\n")
         return false;
     }
 
@@ -1985,14 +1972,14 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ConstCharSetContains(BasicBloc
     const size_t       len            = vnStore->CoercedConstantValue<size_t>(lenVN);
     if ((len == 0) || (len > MaxCharSetSize))
     {
-        JITDUMP("ConstCharSetContains: length is 0 or too big\n")
+        JITDUMP("ContainsValueType: length is 0 or too big\n")
         return false;
     }
 
     uint8_t* data = nullptr;
     if (!GetImmutableDataFromAddress(dataArg->GetNode(), (int)(len * elemSize), getAllocator(), &data))
     {
-        JITDUMP("ConstCharSetContains: data is not available at compile time\n")
+        JITDUMP("ContainsValueType: data is not available at compile time\n")
         return false;
     }
 
@@ -2022,7 +2009,7 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ConstCharSetContains(BasicBloc
     const unsigned span = (unsigned)(mx - mn);
     if (span > MaxCharSetSize - 1)
     {
-        JITDUMP("ConstCharSetContains: value range is too wide\n")
+        JITDUMP("ContainsValueType: value range is too wide\n")
         return false;
     }
 
@@ -2042,13 +2029,13 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ConstCharSetContains(BasicBloc
     constexpr unsigned MaxBitSetSpan = 31;
     if (!isContinuous && (span > MaxBitSetSpan))
     {
-        JITDUMP("ConstCharSetContains: value range is too wide for a bit set test\n")
+        JITDUMP("ContainsValueType: value range is too wide for a bit set test\n")
         return false;
     }
 
     if (lvaHaveManyLocals(0.75))
     {
-        JITDUMP("ConstCharSetContains: method has too many locals - bail out.\n")
+        JITDUMP("ContainsValueType: method has too many locals - bail out.\n")
         return false;
     }
 
@@ -2075,13 +2062,13 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ConstCharSetContains(BasicBloc
     // A late QMARK must be the data of a top-level local store.
     compQmarkRationalized = false;
 
-    unsigned resultTmp         = lvaGrabTemp(true DEBUGARG("ConstCharSetContains result"));
+    unsigned resultTmp         = lvaGrabTemp(true DEBUGARG("ContainsValueType result"));
     lvaTable[resultTmp].lvType = TYP_INT;
 
     GenTree* folded = nullptr;
     if (isContinuous)
     {
-        JITDUMP("ConstCharSetContains: folding into a range check\n")
+        JITDUMP("ContainsValueType: folding into a range check\n")
 
         // Emit the canonical unsigned range form:
         //     (uint)(value - mn) <= (mx - mn)
@@ -2094,7 +2081,7 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ConstCharSetContains(BasicBloc
     }
     else
     {
-        JITDUMP("ConstCharSetContains: folding into a bit set test\n")
+        JITDUMP("ContainsValueType: folding into a bit set test\n")
 
         // Fold `(uint)(value - mn) <= span && ((mask >> (uint)(value - mn)) & 1) != 0`.
         // The range check prevents shift-count wraparound for values outside the set.
@@ -2123,7 +2110,7 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ConstCharSetContains(BasicBloc
 
     DEBUG_DESTROY_NODE(call);
 
-    JITDUMP("ConstCharSetContains: successfully expanded!\n")
+    JITDUMP("ContainsValueType: successfully expanded!\n")
     return true;
 }
 
