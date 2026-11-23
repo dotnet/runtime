@@ -1391,7 +1391,7 @@ FCIMPL2(ContinuationObject*, AsyncHelpers_ResumeInterpreterContinuation, Continu
 FCIMPLEND
 #endif // TARGET_WASM
 
-static void DECLSPEC_NORETURN HandleInterpreterStackOverflow(InterpreterFrame* pInterpreterFrame, InterpMethodContextFrame* pFrame)
+static void DECLSPEC_NORETURN HandleInterpreterStackOverflow(InterpreterFrame* pInterpreterFrame)
 {
     CONTRACTL
     {
@@ -1401,16 +1401,17 @@ static void DECLSPEC_NORETURN HandleInterpreterStackOverflow(InterpreterFrame* p
     }
     CONTRACTL_END
 
+    CONTEXT ctx;
+    memset(&ctx, 0, sizeof(CONTEXT));
     pInterpreterFrame->SetIsFaulting(true);
+    pInterpreterFrame->SetContextToInterpMethodContextFrame(&ctx);
 
     EXCEPTION_RECORD exceptionRecord;
     memset(&exceptionRecord, 0, sizeof(EXCEPTION_RECORD));
     exceptionRecord.ExceptionCode = STATUS_STACK_OVERFLOW;
-    exceptionRecord.ExceptionAddress = (PVOID)pFrame->ip;
+    exceptionRecord.ExceptionAddress = (PVOID)GetIP(&ctx);
 
-    // This is a soft stack overflow, so there is no context record. Stack walks start at the
-    // InterpreterFrame, which switches to the interpreted frames.
-    EXCEPTION_POINTERS exceptionInfo = { &exceptionRecord, NULL };
+    EXCEPTION_POINTERS exceptionInfo = { &exceptionRecord, &ctx };
     EEPolicy::HandleFatalStackOverflow(&exceptionInfo);
 }
 
@@ -1581,7 +1582,7 @@ void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFr
     if (pFrame->pStack + pMethod->allocaSize > pThreadContext->pStackEnd)
     {
         pFrame->ip = ip;
-        HandleInterpreterStackOverflow(pInterpreterFrame, pFrame);
+        HandleInterpreterStackOverflow(pInterpreterFrame);
         UNREACHABLE();
     }
 
@@ -3813,7 +3814,7 @@ CALL_INTERP_METHOD:
                     if (stack + pMethod->allocaSize > pThreadContext->pStackEnd)
                     {
                         pFrame->ip = ip;
-                        HandleInterpreterStackOverflow(pInterpreterFrame, pFrame);
+                        HandleInterpreterStackOverflow(pInterpreterFrame);
                         UNREACHABLE();
                     }
                     pThreadContext->pStackPointer = stack + pMethod->allocaSize;
