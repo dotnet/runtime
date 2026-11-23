@@ -11266,6 +11266,31 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree, bool* optAssertionPropD
                 op2 = tree->gtOp2;
             }
         }
+
+        // Reassociation can expose (x + -y) + c after the inner add has been morphed.
+        // Use (x + c) - y so the offset can fold into an address without a separate negation.
+        if (varTypeIsIntegral(typ) && op1->TypeIs(typ) && op2->TypeIs(typ) && op2->IsCnsIntOrI() &&
+            !op2->IsIconHandle() && (op2->AsIntCon()->GetFieldSeq() == nullptr) && !op1->IsReverseOp() &&
+            !op1->IsPartOfAddressMode() && !tree->IsPartOfAddressMode())
+        {
+            GenTree* value = op1->gtGetOp1();
+            GenTree* neg   = op1->gtGetOp2();
+            if (value->OperIs(GT_NEG) && gtCanReorderWithoutTemp(value, neg))
+            {
+                std::swap(value, neg);
+            }
+
+            if (neg->OperIs(GT_NEG) && (genActualType(value) == typ) && (genActualType(neg) == typ))
+            {
+                op1->AsOp()->gtOp1 = value;
+                op1->AsOp()->gtOp2 = op2;
+                op1->SetAllEffectsFlags(value, op2);
+                tree->gtOp2 = neg->gtGetOp1();
+                tree->ChangeOper(GT_SUB);
+                DEBUG_DESTROY_NODE(neg);
+                return tree;
+            }
+        }
     }
 
 #endif

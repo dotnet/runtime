@@ -87,9 +87,29 @@ namespace CodeGenTests
             return x + y;
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int AddOffsetMinusValue(int x, int y)
+        {
+            // X64-NOT: neg
+            // X64: sub
+            return x + (31 - y);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int OffsetMinusValuePlusAddend(int x, int y)
+        {
+            // X64-NOT: neg
+            // X64: sub
+            return (31 - y) + x;
+        }
+
         [Fact]
         public static int TestEntryPoint()
         {
+            if (AddOffsetMinusValue(int.MaxValue, 30) != int.MinValue ||
+                OffsetMinusValuePlusAddend(int.MinValue, 32) != int.MaxValue)
+                return 0;
+
             // Int8
             if (Int8_Add(SByte.MaxValue, 15) != -114)
                 return 0;
