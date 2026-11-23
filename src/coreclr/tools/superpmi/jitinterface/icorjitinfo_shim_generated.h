@@ -11,1518 +11,1497 @@
     bool isIntrinsic(CORINFO_METHOD_HANDLE ftn) override
     {
         bool result{};
-        CallThenRecord(0, "isIntrinsic", &result,
+        CallThenRecord("isIntrinsic",
             [&]() { result = _original->isIntrinsic(ftn); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->isIntrinsic(_thisHandle, ppException, ftn); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->isIntrinsic(_thisHandle, ppException, ftn, result, exceptionCode); });
         return result;
     }
 
     bool canValueClassInstancePointerEscape(CORINFO_METHOD_HANDLE ftn) override
     {
         bool result{};
-        CallThenRecord(1, "canValueClassInstancePointerEscape", &result,
+        CallThenRecord("canValueClassInstancePointerEscape",
             [&]() { result = _original->canValueClassInstancePointerEscape(ftn); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->canValueClassInstancePointerEscape(_thisHandle, ppException, ftn); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->canValueClassInstancePointerEscape(_thisHandle, ppException, ftn, result, exceptionCode); });
         return result;
     }
 
     bool notifyMethodInfoUsage(CORINFO_METHOD_HANDLE ftn) override
     {
         bool result{};
-        CallThenRecord(2, "notifyMethodInfoUsage", &result,
+        CallThenRecord("notifyMethodInfoUsage",
             [&]() { result = _original->notifyMethodInfoUsage(ftn); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->notifyMethodInfoUsage(_thisHandle, ppException, ftn); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->notifyMethodInfoUsage(_thisHandle, ppException, ftn, result, exceptionCode); });
         return result;
     }
 
     uint32_t getMethodAttribs(CORINFO_METHOD_HANDLE ftn) override
     {
         uint32_t result{};
-        CallThenRecord(3, "getMethodAttribs", &result,
+        CallThenRecord("getMethodAttribs",
             [&]() { result = _original->getMethodAttribs(ftn); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getMethodAttribs(_thisHandle, ppException, ftn); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getMethodAttribs(_thisHandle, ppException, ftn, result, exceptionCode); });
         return result;
     }
 
     void setMethodAttribs(CORINFO_METHOD_HANDLE ftn, CorInfoMethodRuntimeFlags attribs) override
     {
-        CallThenRecord(4, "setMethodAttribs", nullptr,
+        CallThenRecord("setMethodAttribs",
             [&]() { _original->setMethodAttribs(ftn, attribs); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->setMethodAttribs(_thisHandle, ppException, ftn, attribs); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->setMethodAttribs(_thisHandle, ppException, ftn, attribs, exceptionCode); });
     }
 
     void getMethodSig(CORINFO_METHOD_HANDLE ftn, CORINFO_SIG_INFO* sig, CORINFO_CLASS_HANDLE memberParent) override
     {
-        CallThenRecord(5, "getMethodSig", nullptr,
+        CallThenRecord("getMethodSig",
             [&]() { _original->getMethodSig(ftn, sig, memberParent); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getMethodSig(_thisHandle, ppException, ftn, sig, memberParent); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getMethodSig(_thisHandle, ppException, ftn, sig, memberParent, exceptionCode); });
     }
 
     bool getMethodInfo(CORINFO_METHOD_HANDLE ftn, CORINFO_METHOD_INFO* info, CORINFO_CONTEXT_HANDLE context) override
     {
         bool result{};
-        CallThenRecord(6, "getMethodInfo", &result,
+        CallThenRecord("getMethodInfo",
             [&]() { result = _original->getMethodInfo(ftn, info, context); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getMethodInfo(_thisHandle, ppException, ftn, info, context); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getMethodInfo(_thisHandle, ppException, ftn, info, context, result, exceptionCode); });
         return result;
     }
 
     bool haveSameMethodDefinition(CORINFO_METHOD_HANDLE meth1Hnd, CORINFO_METHOD_HANDLE meth2Hnd) override
     {
         bool result{};
-        CallThenRecord(7, "haveSameMethodDefinition", &result,
+        CallThenRecord("haveSameMethodDefinition",
             [&]() { result = _original->haveSameMethodDefinition(meth1Hnd, meth2Hnd); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->haveSameMethodDefinition(_thisHandle, ppException, meth1Hnd, meth2Hnd); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->haveSameMethodDefinition(_thisHandle, ppException, meth1Hnd, meth2Hnd, result, exceptionCode); });
         return result;
     }
 
     CORINFO_CLASS_HANDLE getTypeDefinition(CORINFO_CLASS_HANDLE type) override
     {
         CORINFO_CLASS_HANDLE result{};
-        CallThenRecord(8, "getTypeDefinition", &result,
+        CallThenRecord("getTypeDefinition",
             [&]() { result = _original->getTypeDefinition(type); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getTypeDefinition(_thisHandle, ppException, type); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getTypeDefinition(_thisHandle, ppException, type, result, exceptionCode); });
         return result;
     }
 
     CorInfoInline canInline(CORINFO_METHOD_HANDLE callerHnd, CORINFO_METHOD_HANDLE calleeHnd) override
     {
         CorInfoInline result{};
-        CallThenRecord(9, "canInline", &result,
+        CallThenRecord("canInline",
             [&]() { result = _original->canInline(callerHnd, calleeHnd); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->canInline(_thisHandle, ppException, callerHnd, calleeHnd); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->canInline(_thisHandle, ppException, callerHnd, calleeHnd, result, exceptionCode); });
         return result;
     }
 
     void beginInlining(CORINFO_METHOD_HANDLE inlinerHnd, CORINFO_METHOD_HANDLE inlineeHnd) override
     {
-        CallThenRecord(10, "beginInlining", nullptr,
+        CallThenRecord("beginInlining",
             [&]() { _original->beginInlining(inlinerHnd, inlineeHnd); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->beginInlining(_thisHandle, ppException, inlinerHnd, inlineeHnd); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->beginInlining(_thisHandle, ppException, inlinerHnd, inlineeHnd, exceptionCode); });
     }
 
     void reportInliningDecision(CORINFO_METHOD_HANDLE inlinerHnd, CORINFO_METHOD_HANDLE inlineeHnd, CorInfoInline inlineResult, const char* reason) override
     {
-        CallThenRecord(11, "reportInliningDecision", nullptr,
+        CallThenRecord("reportInliningDecision",
             [&]() { _original->reportInliningDecision(inlinerHnd, inlineeHnd, inlineResult, reason); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->reportInliningDecision(_thisHandle, ppException, inlinerHnd, inlineeHnd, inlineResult, reason); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->reportInliningDecision(_thisHandle, ppException, inlinerHnd, inlineeHnd, inlineResult, reason, exceptionCode); });
     }
 
     bool canTailCall(CORINFO_METHOD_HANDLE callerHnd, CORINFO_METHOD_HANDLE declaredCalleeHnd, CORINFO_METHOD_HANDLE exactCalleeHnd, bool fIsTailPrefix) override
     {
         bool result{};
-        CallThenRecord(12, "canTailCall", &result,
+        CallThenRecord("canTailCall",
             [&]() { result = _original->canTailCall(callerHnd, declaredCalleeHnd, exactCalleeHnd, fIsTailPrefix); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->canTailCall(_thisHandle, ppException, callerHnd, declaredCalleeHnd, exactCalleeHnd, fIsTailPrefix); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->canTailCall(_thisHandle, ppException, callerHnd, declaredCalleeHnd, exactCalleeHnd, fIsTailPrefix, result, exceptionCode); });
         return result;
     }
 
     void reportTailCallDecision(CORINFO_METHOD_HANDLE callerHnd, CORINFO_METHOD_HANDLE calleeHnd, bool fIsTailPrefix, CorInfoTailCall tailCallResult, const char* reason) override
     {
-        CallThenRecord(13, "reportTailCallDecision", nullptr,
+        CallThenRecord("reportTailCallDecision",
             [&]() { _original->reportTailCallDecision(callerHnd, calleeHnd, fIsTailPrefix, tailCallResult, reason); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->reportTailCallDecision(_thisHandle, ppException, callerHnd, calleeHnd, fIsTailPrefix, tailCallResult, reason); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->reportTailCallDecision(_thisHandle, ppException, callerHnd, calleeHnd, fIsTailPrefix, tailCallResult, reason, exceptionCode); });
     }
 
     void getEHinfo(CORINFO_METHOD_HANDLE ftn, unsigned EHnumber, CORINFO_EH_CLAUSE* clause) override
     {
-        CallThenRecord(14, "getEHinfo", nullptr,
+        CallThenRecord("getEHinfo",
             [&]() { _original->getEHinfo(ftn, EHnumber, clause); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getEHinfo(_thisHandle, ppException, ftn, EHnumber, clause); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getEHinfo(_thisHandle, ppException, ftn, EHnumber, clause, exceptionCode); });
     }
 
     CORINFO_CLASS_HANDLE getMethodClass(CORINFO_METHOD_HANDLE method) override
     {
         CORINFO_CLASS_HANDLE result{};
-        CallThenRecord(15, "getMethodClass", &result,
+        CallThenRecord("getMethodClass",
             [&]() { result = _original->getMethodClass(method); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getMethodClass(_thisHandle, ppException, method); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getMethodClass(_thisHandle, ppException, method, result, exceptionCode); });
         return result;
     }
 
     void getMethodVTableOffset(CORINFO_METHOD_HANDLE method, unsigned* offsetOfIndirection, unsigned* offsetAfterIndirection, bool* isRelative) override
     {
-        CallThenRecord(16, "getMethodVTableOffset", nullptr,
+        CallThenRecord("getMethodVTableOffset",
             [&]() { _original->getMethodVTableOffset(method, offsetOfIndirection, offsetAfterIndirection, isRelative); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getMethodVTableOffset(_thisHandle, ppException, method, offsetOfIndirection, offsetAfterIndirection, isRelative); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getMethodVTableOffset(_thisHandle, ppException, method, offsetOfIndirection, offsetAfterIndirection, isRelative, exceptionCode); });
     }
 
     bool resolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO* info) override
     {
         bool result{};
-        CallThenRecord(17, "resolveVirtualMethod", &result,
+        CallThenRecord("resolveVirtualMethod",
             [&]() { result = _original->resolveVirtualMethod(info); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->resolveVirtualMethod(_thisHandle, ppException, info); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->resolveVirtualMethod(_thisHandle, ppException, info, result, exceptionCode); });
         return result;
     }
 
     CORINFO_METHOD_HANDLE getAsyncOtherVariant(CORINFO_METHOD_HANDLE ftn, bool* variantIsThunk) override
     {
         CORINFO_METHOD_HANDLE result{};
-        CallThenRecord(18, "getAsyncOtherVariant", &result,
+        CallThenRecord("getAsyncOtherVariant",
             [&]() { result = _original->getAsyncOtherVariant(ftn, variantIsThunk); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getAsyncOtherVariant(_thisHandle, ppException, ftn, variantIsThunk); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getAsyncOtherVariant(_thisHandle, ppException, ftn, variantIsThunk, result, exceptionCode); });
         return result;
     }
 
     CORINFO_CLASS_HANDLE getDefaultComparerClass(CORINFO_CLASS_HANDLE elemType) override
     {
         CORINFO_CLASS_HANDLE result{};
-        CallThenRecord(19, "getDefaultComparerClass", &result,
+        CallThenRecord("getDefaultComparerClass",
             [&]() { result = _original->getDefaultComparerClass(elemType); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getDefaultComparerClass(_thisHandle, ppException, elemType); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getDefaultComparerClass(_thisHandle, ppException, elemType, result, exceptionCode); });
         return result;
     }
 
     CORINFO_CLASS_HANDLE getDefaultEqualityComparerClass(CORINFO_CLASS_HANDLE elemType) override
     {
         CORINFO_CLASS_HANDLE result{};
-        CallThenRecord(20, "getDefaultEqualityComparerClass", &result,
+        CallThenRecord("getDefaultEqualityComparerClass",
             [&]() { result = _original->getDefaultEqualityComparerClass(elemType); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getDefaultEqualityComparerClass(_thisHandle, ppException, elemType); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getDefaultEqualityComparerClass(_thisHandle, ppException, elemType, result, exceptionCode); });
         return result;
     }
 
     CORINFO_CLASS_HANDLE getSZArrayHelperEnumeratorClass(CORINFO_CLASS_HANDLE elemType) override
     {
         CORINFO_CLASS_HANDLE result{};
-        CallThenRecord(21, "getSZArrayHelperEnumeratorClass", &result,
+        CallThenRecord("getSZArrayHelperEnumeratorClass",
             [&]() { result = _original->getSZArrayHelperEnumeratorClass(elemType); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getSZArrayHelperEnumeratorClass(_thisHandle, ppException, elemType); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getSZArrayHelperEnumeratorClass(_thisHandle, ppException, elemType, result, exceptionCode); });
         return result;
     }
 
     void expandRawHandleIntrinsic(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, CORINFO_GENERICHANDLE_RESULT* pResult) override
     {
-        CallThenRecord(22, "expandRawHandleIntrinsic", nullptr,
+        CallThenRecord("expandRawHandleIntrinsic",
             [&]() { _original->expandRawHandleIntrinsic(pResolvedToken, callerHandle, pResult); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->expandRawHandleIntrinsic(_thisHandle, ppException, pResolvedToken, callerHandle, pResult); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->expandRawHandleIntrinsic(_thisHandle, ppException, pResolvedToken, callerHandle, pResult, exceptionCode); });
     }
 
     bool isIntrinsicType(CORINFO_CLASS_HANDLE classHnd) override
     {
         bool result{};
-        CallThenRecord(23, "isIntrinsicType", &result,
+        CallThenRecord("isIntrinsicType",
             [&]() { result = _original->isIntrinsicType(classHnd); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->isIntrinsicType(_thisHandle, ppException, classHnd); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->isIntrinsicType(_thisHandle, ppException, classHnd, result, exceptionCode); });
         return result;
     }
 
     CorInfoCallConvExtension getUnmanagedCallConv(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* callSiteSig, bool* pSuppressGCTransition) override
     {
         CorInfoCallConvExtension result{};
-        CallThenRecord(24, "getUnmanagedCallConv", &result,
+        CallThenRecord("getUnmanagedCallConv",
             [&]() { result = _original->getUnmanagedCallConv(method, callSiteSig, pSuppressGCTransition); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getUnmanagedCallConv(_thisHandle, ppException, method, callSiteSig, pSuppressGCTransition); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getUnmanagedCallConv(_thisHandle, ppException, method, callSiteSig, pSuppressGCTransition, result, exceptionCode); });
         return result;
     }
 
     bool pInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* callSiteSig) override
     {
         bool result{};
-        CallThenRecord(25, "pInvokeMarshalingRequired", &result,
+        CallThenRecord("pInvokeMarshalingRequired",
             [&]() { result = _original->pInvokeMarshalingRequired(method, callSiteSig); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->pInvokeMarshalingRequired(_thisHandle, ppException, method, callSiteSig); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->pInvokeMarshalingRequired(_thisHandle, ppException, method, callSiteSig, result, exceptionCode); });
         return result;
     }
 
     bool satisfiesMethodConstraints(CORINFO_CLASS_HANDLE parent, CORINFO_METHOD_HANDLE method) override
     {
         bool result{};
-        CallThenRecord(26, "satisfiesMethodConstraints", &result,
+        CallThenRecord("satisfiesMethodConstraints",
             [&]() { result = _original->satisfiesMethodConstraints(parent, method); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->satisfiesMethodConstraints(_thisHandle, ppException, parent, method); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->satisfiesMethodConstraints(_thisHandle, ppException, parent, method, result, exceptionCode); });
         return result;
     }
 
     void getGSCookie(GSCookie* pCookieVal, GSCookie** ppCookieVal) override
     {
-        CallThenRecord(27, "getGSCookie", nullptr,
+        CallThenRecord("getGSCookie",
             [&]() { _original->getGSCookie(pCookieVal, ppCookieVal); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getGSCookie(_thisHandle, ppException, pCookieVal, ppCookieVal); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getGSCookie(_thisHandle, ppException, pCookieVal, ppCookieVal, exceptionCode); });
     }
 
     void setPatchpointInfo(PatchpointInfo* patchpointInfo) override
     {
-        RecordBefore(28, "setPatchpointInfo", nullptr, [&](CorInfoExceptionClass** ppException) { _callbacks->setPatchpointInfo(_thisHandle, ppException, patchpointInfo); });
+        RecordBefore("setPatchpointInfo", [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->setPatchpointInfo(_thisHandle, ppException, patchpointInfo, exceptionCode); });
         _original->setPatchpointInfo(patchpointInfo);
     }
 
     PatchpointInfo* getOSRInfo(unsigned* ilOffset) override
     {
         PatchpointInfo* result{};
-        CallThenRecord(29, "getOSRInfo", &result,
+        CallThenRecord("getOSRInfo",
             [&]() { result = _original->getOSRInfo(ilOffset); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getOSRInfo(_thisHandle, ppException, ilOffset); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getOSRInfo(_thisHandle, ppException, ilOffset, result, exceptionCode); });
         return result;
     }
 
     void resolveToken(CORINFO_RESOLVED_TOKEN* pResolvedToken) override
     {
-        CallThenRecord(30, "resolveToken", nullptr,
+        CallThenRecord("resolveToken",
             [&]() { _original->resolveToken(pResolvedToken); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->resolveToken(_thisHandle, ppException, pResolvedToken); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->resolveToken(_thisHandle, ppException, pResolvedToken, exceptionCode); });
     }
 
     void findSig(CORINFO_MODULE_HANDLE module, unsigned sigTOK, CORINFO_CONTEXT_HANDLE context, CORINFO_SIG_INFO* sig) override
     {
-        CallThenRecord(31, "findSig", nullptr,
+        CallThenRecord("findSig",
             [&]() { _original->findSig(module, sigTOK, context, sig); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->findSig(_thisHandle, ppException, module, sigTOK, context, sig); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->findSig(_thisHandle, ppException, module, sigTOK, context, sig, exceptionCode); });
     }
 
     void findCallSiteSig(CORINFO_MODULE_HANDLE module, unsigned methTOK, CORINFO_CONTEXT_HANDLE context, CORINFO_SIG_INFO* sig) override
     {
-        CallThenRecord(32, "findCallSiteSig", nullptr,
+        CallThenRecord("findCallSiteSig",
             [&]() { _original->findCallSiteSig(module, methTOK, context, sig); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->findCallSiteSig(_thisHandle, ppException, module, methTOK, context, sig); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->findCallSiteSig(_thisHandle, ppException, module, methTOK, context, sig, exceptionCode); });
     }
 
     CORINFO_CLASS_HANDLE getTokenTypeAsHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken) override
     {
         CORINFO_CLASS_HANDLE result{};
-        CallThenRecord(33, "getTokenTypeAsHandle", &result,
+        CallThenRecord("getTokenTypeAsHandle",
             [&]() { result = _original->getTokenTypeAsHandle(pResolvedToken); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getTokenTypeAsHandle(_thisHandle, ppException, pResolvedToken); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getTokenTypeAsHandle(_thisHandle, ppException, pResolvedToken, result, exceptionCode); });
         return result;
     }
 
     int getStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, char16_t* buffer, int bufferSize, int startIndex) override
     {
         int result{};
-        CallThenRecord(34, "getStringLiteral", &result,
+        CallThenRecord("getStringLiteral",
             [&]() { result = _original->getStringLiteral(module, metaTOK, buffer, bufferSize, startIndex); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getStringLiteral(_thisHandle, ppException, module, metaTOK, buffer, bufferSize, startIndex); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getStringLiteral(_thisHandle, ppException, module, metaTOK, buffer, bufferSize, startIndex, result, exceptionCode); });
         return result;
     }
 
     size_t printObjectDescription(CORINFO_OBJECT_HANDLE handle, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize) override
     {
         size_t result{};
-        CallThenRecord(35, "printObjectDescription", &result,
+        CallThenRecord("printObjectDescription",
             [&]() { result = _original->printObjectDescription(handle, buffer, bufferSize, pRequiredBufferSize); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->printObjectDescription(_thisHandle, ppException, handle, buffer, bufferSize, pRequiredBufferSize); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->printObjectDescription(_thisHandle, ppException, handle, buffer, bufferSize, pRequiredBufferSize, result, exceptionCode); });
         return result;
     }
 
     CorInfoType asCorInfoType(CORINFO_CLASS_HANDLE cls) override
     {
         CorInfoType result{};
-        CallThenRecord(36, "asCorInfoType", &result,
+        CallThenRecord("asCorInfoType",
             [&]() { result = _original->asCorInfoType(cls); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->asCorInfoType(_thisHandle, ppException, cls); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->asCorInfoType(_thisHandle, ppException, cls, result, exceptionCode); });
         return result;
     }
 
     const char* getClassNameFromMetadata(CORINFO_CLASS_HANDLE cls, const char** namespaceName) override
     {
         const char* result{};
-        CallThenRecord(37, "getClassNameFromMetadata", &result,
+        CallThenRecord("getClassNameFromMetadata",
             [&]() { result = _original->getClassNameFromMetadata(cls, namespaceName); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getClassNameFromMetadata(_thisHandle, ppException, cls, namespaceName); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getClassNameFromMetadata(_thisHandle, ppException, cls, namespaceName, result, exceptionCode); });
         return result;
     }
 
     CORINFO_CLASS_HANDLE getTypeInstantiationArgument(CORINFO_CLASS_HANDLE cls, unsigned index) override
     {
         CORINFO_CLASS_HANDLE result{};
-        CallThenRecord(38, "getTypeInstantiationArgument", &result,
+        CallThenRecord("getTypeInstantiationArgument",
             [&]() { result = _original->getTypeInstantiationArgument(cls, index); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getTypeInstantiationArgument(_thisHandle, ppException, cls, index); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getTypeInstantiationArgument(_thisHandle, ppException, cls, index, result, exceptionCode); });
         return result;
     }
 
     CORINFO_CLASS_HANDLE getMethodInstantiationArgument(CORINFO_METHOD_HANDLE ftn, unsigned index) override
     {
         CORINFO_CLASS_HANDLE result{};
-        CallThenRecord(39, "getMethodInstantiationArgument", &result,
+        CallThenRecord("getMethodInstantiationArgument",
             [&]() { result = _original->getMethodInstantiationArgument(ftn, index); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getMethodInstantiationArgument(_thisHandle, ppException, ftn, index); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getMethodInstantiationArgument(_thisHandle, ppException, ftn, index, result, exceptionCode); });
         return result;
     }
 
     size_t printClassName(CORINFO_CLASS_HANDLE cls, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize) override
     {
         size_t result{};
-        CallThenRecord(40, "printClassName", &result,
+        CallThenRecord("printClassName",
             [&]() { result = _original->printClassName(cls, buffer, bufferSize, pRequiredBufferSize); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->printClassName(_thisHandle, ppException, cls, buffer, bufferSize, pRequiredBufferSize); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->printClassName(_thisHandle, ppException, cls, buffer, bufferSize, pRequiredBufferSize, result, exceptionCode); });
         return result;
     }
 
     bool isValueClass(CORINFO_CLASS_HANDLE cls) override
     {
         bool result{};
-        CallThenRecord(41, "isValueClass", &result,
+        CallThenRecord("isValueClass",
             [&]() { result = _original->isValueClass(cls); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->isValueClass(_thisHandle, ppException, cls); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->isValueClass(_thisHandle, ppException, cls, result, exceptionCode); });
         return result;
     }
 
     bool isByRefLike(CORINFO_CLASS_HANDLE cls) override
     {
         bool result{};
-        CallThenRecord(42, "isByRefLike", &result,
+        CallThenRecord("isByRefLike",
             [&]() { result = _original->isByRefLike(cls); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->isByRefLike(_thisHandle, ppException, cls); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->isByRefLike(_thisHandle, ppException, cls, result, exceptionCode); });
         return result;
     }
 
     bool isSharedInst(CORINFO_CLASS_HANDLE cls) override
     {
         bool result{};
-        CallThenRecord(43, "isSharedInst", &result,
+        CallThenRecord("isSharedInst",
             [&]() { result = _original->isSharedInst(cls); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->isSharedInst(_thisHandle, ppException, cls); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->isSharedInst(_thisHandle, ppException, cls, result, exceptionCode); });
         return result;
     }
 
     uint32_t getClassAttribs(CORINFO_CLASS_HANDLE cls) override
     {
         uint32_t result{};
-        CallThenRecord(44, "getClassAttribs", &result,
+        CallThenRecord("getClassAttribs",
             [&]() { result = _original->getClassAttribs(cls); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getClassAttribs(_thisHandle, ppException, cls); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getClassAttribs(_thisHandle, ppException, cls, result, exceptionCode); });
         return result;
     }
 
     const char* getClassAssemblyName(CORINFO_CLASS_HANDLE cls) override
     {
         const char* result{};
-        CallThenRecord(45, "getClassAssemblyName", &result,
+        CallThenRecord("getClassAssemblyName",
             [&]() { result = _original->getClassAssemblyName(cls); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getClassAssemblyName(_thisHandle, ppException, cls); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getClassAssemblyName(_thisHandle, ppException, cls, result, exceptionCode); });
         return result;
     }
 
     void* LongLifetimeMalloc(size_t sz) override
     {
         void* result{};
-        CallThenRecord(46, "LongLifetimeMalloc", &result,
+        CallThenRecord("LongLifetimeMalloc",
             [&]() { result = _original->LongLifetimeMalloc(sz); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->LongLifetimeMalloc(_thisHandle, ppException, sz); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->LongLifetimeMalloc(_thisHandle, ppException, sz, result, exceptionCode); });
         return result;
     }
 
     void LongLifetimeFree(void* obj) override
     {
-        CallThenRecord(47, "LongLifetimeFree", nullptr,
+        CallThenRecord("LongLifetimeFree",
             [&]() { _original->LongLifetimeFree(obj); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->LongLifetimeFree(_thisHandle, ppException, obj); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->LongLifetimeFree(_thisHandle, ppException, obj, exceptionCode); });
     }
 
     bool getIsClassInitedFlagAddress(CORINFO_CLASS_HANDLE cls, CORINFO_CONST_LOOKUP* addr, int* offset) override
     {
         bool result{};
-        CallThenRecord(48, "getIsClassInitedFlagAddress", &result,
+        CallThenRecord("getIsClassInitedFlagAddress",
             [&]() { result = _original->getIsClassInitedFlagAddress(cls, addr, offset); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getIsClassInitedFlagAddress(_thisHandle, ppException, cls, addr, offset); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getIsClassInitedFlagAddress(_thisHandle, ppException, cls, addr, offset, result, exceptionCode); });
         return result;
     }
 
     void* getClassThreadStaticDynamicInfo(CORINFO_CLASS_HANDLE clr) override
     {
         void* result{};
-        CallThenRecord(49, "getClassThreadStaticDynamicInfo", &result,
+        CallThenRecord("getClassThreadStaticDynamicInfo",
             [&]() { result = _original->getClassThreadStaticDynamicInfo(clr); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getClassThreadStaticDynamicInfo(_thisHandle, ppException, clr); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getClassThreadStaticDynamicInfo(_thisHandle, ppException, clr, result, exceptionCode); });
         return result;
     }
 
     void* getClassStaticDynamicInfo(CORINFO_CLASS_HANDLE clr) override
     {
         void* result{};
-        CallThenRecord(50, "getClassStaticDynamicInfo", &result,
+        CallThenRecord("getClassStaticDynamicInfo",
             [&]() { result = _original->getClassStaticDynamicInfo(clr); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getClassStaticDynamicInfo(_thisHandle, ppException, clr); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getClassStaticDynamicInfo(_thisHandle, ppException, clr, result, exceptionCode); });
         return result;
     }
 
     bool getStaticBaseAddress(CORINFO_CLASS_HANDLE cls, bool isGc, CORINFO_CONST_LOOKUP* addr) override
     {
         bool result{};
-        CallThenRecord(51, "getStaticBaseAddress", &result,
+        CallThenRecord("getStaticBaseAddress",
             [&]() { result = _original->getStaticBaseAddress(cls, isGc, addr); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getStaticBaseAddress(_thisHandle, ppException, cls, isGc, addr); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getStaticBaseAddress(_thisHandle, ppException, cls, isGc, addr, result, exceptionCode); });
         return result;
     }
 
     unsigned getClassSize(CORINFO_CLASS_HANDLE cls) override
     {
         unsigned result{};
-        CallThenRecord(52, "getClassSize", &result,
+        CallThenRecord("getClassSize",
             [&]() { result = _original->getClassSize(cls); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getClassSize(_thisHandle, ppException, cls); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getClassSize(_thisHandle, ppException, cls, result, exceptionCode); });
         return result;
     }
 
     unsigned getHeapClassSize(CORINFO_CLASS_HANDLE cls) override
     {
         unsigned result{};
-        CallThenRecord(53, "getHeapClassSize", &result,
+        CallThenRecord("getHeapClassSize",
             [&]() { result = _original->getHeapClassSize(cls); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getHeapClassSize(_thisHandle, ppException, cls); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getHeapClassSize(_thisHandle, ppException, cls, result, exceptionCode); });
         return result;
     }
 
     bool canAllocateOnStack(CORINFO_CLASS_HANDLE cls) override
     {
         bool result{};
-        CallThenRecord(54, "canAllocateOnStack", &result,
+        CallThenRecord("canAllocateOnStack",
             [&]() { result = _original->canAllocateOnStack(cls); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->canAllocateOnStack(_thisHandle, ppException, cls); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->canAllocateOnStack(_thisHandle, ppException, cls, result, exceptionCode); });
         return result;
     }
 
     unsigned getClassAlignmentRequirement(CORINFO_CLASS_HANDLE cls, bool fDoubleAlignHint) override
     {
         unsigned result{};
-        CallThenRecord(55, "getClassAlignmentRequirement", &result,
+        CallThenRecord("getClassAlignmentRequirement",
             [&]() { result = _original->getClassAlignmentRequirement(cls, fDoubleAlignHint); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getClassAlignmentRequirement(_thisHandle, ppException, cls, fDoubleAlignHint); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getClassAlignmentRequirement(_thisHandle, ppException, cls, fDoubleAlignHint, result, exceptionCode); });
         return result;
     }
 
     unsigned getClassGClayout(CORINFO_CLASS_HANDLE cls, uint8_t* gcPtrs) override
     {
         unsigned result{};
-        CallThenRecord(56, "getClassGClayout", &result,
+        CallThenRecord("getClassGClayout",
             [&]() { result = _original->getClassGClayout(cls, gcPtrs); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getClassGClayout(_thisHandle, ppException, cls, gcPtrs); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getClassGClayout(_thisHandle, ppException, cls, gcPtrs, result, exceptionCode); });
         return result;
     }
 
     unsigned getClassNumInstanceFields(CORINFO_CLASS_HANDLE cls) override
     {
         unsigned result{};
-        CallThenRecord(57, "getClassNumInstanceFields", &result,
+        CallThenRecord("getClassNumInstanceFields",
             [&]() { result = _original->getClassNumInstanceFields(cls); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getClassNumInstanceFields(_thisHandle, ppException, cls); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getClassNumInstanceFields(_thisHandle, ppException, cls, result, exceptionCode); });
         return result;
     }
 
     CORINFO_FIELD_HANDLE getFieldInClass(CORINFO_CLASS_HANDLE clsHnd, int32_t num) override
     {
         CORINFO_FIELD_HANDLE result{};
-        CallThenRecord(58, "getFieldInClass", &result,
+        CallThenRecord("getFieldInClass",
             [&]() { result = _original->getFieldInClass(clsHnd, num); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getFieldInClass(_thisHandle, ppException, clsHnd, num); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getFieldInClass(_thisHandle, ppException, clsHnd, num, result, exceptionCode); });
         return result;
     }
 
     GetTypeLayoutResult getTypeLayout(CORINFO_CLASS_HANDLE typeHnd, CORINFO_TYPE_LAYOUT_NODE* treeNodes, size_t* numTreeNodes) override
     {
         GetTypeLayoutResult result{};
-        CallThenRecord(59, "getTypeLayout", &result,
+        CallThenRecord("getTypeLayout",
             [&]() { result = _original->getTypeLayout(typeHnd, treeNodes, numTreeNodes); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getTypeLayout(_thisHandle, ppException, typeHnd, treeNodes, numTreeNodes); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getTypeLayout(_thisHandle, ppException, typeHnd, treeNodes, numTreeNodes, result, exceptionCode); });
         return result;
     }
 
     bool checkMethodModifier(CORINFO_METHOD_HANDLE hMethod, const char* modifier, bool fOptional) override
     {
         bool result{};
-        CallThenRecord(60, "checkMethodModifier", &result,
+        CallThenRecord("checkMethodModifier",
             [&]() { result = _original->checkMethodModifier(hMethod, modifier, fOptional); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->checkMethodModifier(_thisHandle, ppException, hMethod, modifier, fOptional); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->checkMethodModifier(_thisHandle, ppException, hMethod, modifier, fOptional, result, exceptionCode); });
         return result;
     }
-
-    static const int Index_getNewHelper = 61;
 
     CorInfoHelpFunc getNewArrHelper(CORINFO_CLASS_HANDLE arrayCls) override
     {
         CorInfoHelpFunc result{};
-        CallThenRecord(62, "getNewArrHelper", &result,
+        CallThenRecord("getNewArrHelper",
             [&]() { result = _original->getNewArrHelper(arrayCls); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getNewArrHelper(_thisHandle, ppException, arrayCls); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getNewArrHelper(_thisHandle, ppException, arrayCls, result, exceptionCode); });
         return result;
     }
 
     CorInfoHelpFunc getCastingHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool fThrowing) override
     {
         CorInfoHelpFunc result{};
-        CallThenRecord(63, "getCastingHelper", &result,
+        CallThenRecord("getCastingHelper",
             [&]() { result = _original->getCastingHelper(pResolvedToken, fThrowing); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getCastingHelper(_thisHandle, ppException, pResolvedToken, fThrowing); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getCastingHelper(_thisHandle, ppException, pResolvedToken, fThrowing, result, exceptionCode); });
         return result;
     }
 
     CorInfoHelpFunc getSharedCCtorHelper(CORINFO_CLASS_HANDLE clsHnd) override
     {
         CorInfoHelpFunc result{};
-        CallThenRecord(64, "getSharedCCtorHelper", &result,
+        CallThenRecord("getSharedCCtorHelper",
             [&]() { result = _original->getSharedCCtorHelper(clsHnd); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getSharedCCtorHelper(_thisHandle, ppException, clsHnd); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getSharedCCtorHelper(_thisHandle, ppException, clsHnd, result, exceptionCode); });
         return result;
     }
 
     CORINFO_CLASS_HANDLE getTypeForBox(CORINFO_CLASS_HANDLE cls) override
     {
         CORINFO_CLASS_HANDLE result{};
-        CallThenRecord(65, "getTypeForBox", &result,
+        CallThenRecord("getTypeForBox",
             [&]() { result = _original->getTypeForBox(cls); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getTypeForBox(_thisHandle, ppException, cls); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getTypeForBox(_thisHandle, ppException, cls, result, exceptionCode); });
         return result;
     }
 
     CorInfoHelpFunc getBoxHelper(CORINFO_CLASS_HANDLE cls) override
     {
         CorInfoHelpFunc result{};
-        CallThenRecord(66, "getBoxHelper", &result,
+        CallThenRecord("getBoxHelper",
             [&]() { result = _original->getBoxHelper(cls); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getBoxHelper(_thisHandle, ppException, cls); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getBoxHelper(_thisHandle, ppException, cls, result, exceptionCode); });
         return result;
     }
 
     CorInfoHelpFunc getUnBoxHelper(CORINFO_CLASS_HANDLE cls) override
     {
         CorInfoHelpFunc result{};
-        CallThenRecord(67, "getUnBoxHelper", &result,
+        CallThenRecord("getUnBoxHelper",
             [&]() { result = _original->getUnBoxHelper(cls); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getUnBoxHelper(_thisHandle, ppException, cls); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getUnBoxHelper(_thisHandle, ppException, cls, result, exceptionCode); });
         return result;
     }
 
     CORINFO_OBJECT_HANDLE getRuntimeTypePointer(CORINFO_CLASS_HANDLE cls) override
     {
         CORINFO_OBJECT_HANDLE result{};
-        CallThenRecord(68, "getRuntimeTypePointer", &result,
+        CallThenRecord("getRuntimeTypePointer",
             [&]() { result = _original->getRuntimeTypePointer(cls); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getRuntimeTypePointer(_thisHandle, ppException, cls); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getRuntimeTypePointer(_thisHandle, ppException, cls, result, exceptionCode); });
         return result;
     }
 
     bool isObjectImmutable(CORINFO_OBJECT_HANDLE objPtr) override
     {
         bool result{};
-        CallThenRecord(69, "isObjectImmutable", &result,
+        CallThenRecord("isObjectImmutable",
             [&]() { result = _original->isObjectImmutable(objPtr); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->isObjectImmutable(_thisHandle, ppException, objPtr); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->isObjectImmutable(_thisHandle, ppException, objPtr, result, exceptionCode); });
         return result;
     }
 
     bool getStringChar(CORINFO_OBJECT_HANDLE strObj, int index, uint16_t* value) override
     {
         bool result{};
-        CallThenRecord(70, "getStringChar", &result,
+        CallThenRecord("getStringChar",
             [&]() { result = _original->getStringChar(strObj, index, value); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getStringChar(_thisHandle, ppException, strObj, index, value); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getStringChar(_thisHandle, ppException, strObj, index, value, result, exceptionCode); });
         return result;
     }
 
     CORINFO_CLASS_HANDLE getObjectType(CORINFO_OBJECT_HANDLE objPtr) override
     {
         CORINFO_CLASS_HANDLE result{};
-        CallThenRecord(71, "getObjectType", &result,
+        CallThenRecord("getObjectType",
             [&]() { result = _original->getObjectType(objPtr); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getObjectType(_thisHandle, ppException, objPtr); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getObjectType(_thisHandle, ppException, objPtr, result, exceptionCode); });
         return result;
     }
 
     bool getReadyToRunHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken, CorInfoHelpFunc id, CORINFO_METHOD_HANDLE callerHandle, CORINFO_CONST_LOOKUP* pLookup) override
     {
         bool result{};
-        CallThenRecord(72, "getReadyToRunHelper", &result,
+        CallThenRecord("getReadyToRunHelper",
             [&]() { result = _original->getReadyToRunHelper(pResolvedToken, id, callerHandle, pLookup); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getReadyToRunHelper(_thisHandle, ppException, pResolvedToken, id, callerHandle, pLookup); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getReadyToRunHelper(_thisHandle, ppException, pResolvedToken, id, callerHandle, pLookup, result, exceptionCode); });
         return result;
     }
 
     void getReadyToRunDelegateCtorHelper(CORINFO_RESOLVED_TOKEN* pTargetMethod, unsigned int targetConstraint, CORINFO_CLASS_HANDLE delegateType, CORINFO_METHOD_HANDLE callerHandle, CORINFO_LOOKUP* pLookup) override
     {
-        CallThenRecord(73, "getReadyToRunDelegateCtorHelper", nullptr,
+        CallThenRecord("getReadyToRunDelegateCtorHelper",
             [&]() { _original->getReadyToRunDelegateCtorHelper(pTargetMethod, targetConstraint, delegateType, callerHandle, pLookup); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getReadyToRunDelegateCtorHelper(_thisHandle, ppException, pTargetMethod, targetConstraint, delegateType, callerHandle, pLookup); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getReadyToRunDelegateCtorHelper(_thisHandle, ppException, pTargetMethod, targetConstraint, delegateType, callerHandle, pLookup, exceptionCode); });
     }
 
     CorInfoInitClassResult initClass(CORINFO_FIELD_HANDLE field, CORINFO_METHOD_HANDLE method, CORINFO_CONTEXT_HANDLE context) override
     {
         CorInfoInitClassResult result{};
-        CallThenRecord(74, "initClass", &result,
+        CallThenRecord("initClass",
             [&]() { result = _original->initClass(field, method, context); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->initClass(_thisHandle, ppException, field, method, context); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->initClass(_thisHandle, ppException, field, method, context, result, exceptionCode); });
         return result;
     }
 
     CORINFO_CLASS_HANDLE getBuiltinClass(CorInfoClassId classId) override
     {
         CORINFO_CLASS_HANDLE result{};
-        CallThenRecord(75, "getBuiltinClass", &result,
+        CallThenRecord("getBuiltinClass",
             [&]() { result = _original->getBuiltinClass(classId); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getBuiltinClass(_thisHandle, ppException, classId); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getBuiltinClass(_thisHandle, ppException, classId, result, exceptionCode); });
         return result;
     }
 
     CorInfoType getTypeForPrimitiveValueClass(CORINFO_CLASS_HANDLE cls) override
     {
         CorInfoType result{};
-        CallThenRecord(76, "getTypeForPrimitiveValueClass", &result,
+        CallThenRecord("getTypeForPrimitiveValueClass",
             [&]() { result = _original->getTypeForPrimitiveValueClass(cls); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getTypeForPrimitiveValueClass(_thisHandle, ppException, cls); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getTypeForPrimitiveValueClass(_thisHandle, ppException, cls, result, exceptionCode); });
         return result;
     }
 
     CorInfoType getTypeForPrimitiveNumericClass(CORINFO_CLASS_HANDLE cls) override
     {
         CorInfoType result{};
-        CallThenRecord(77, "getTypeForPrimitiveNumericClass", &result,
+        CallThenRecord("getTypeForPrimitiveNumericClass",
             [&]() { result = _original->getTypeForPrimitiveNumericClass(cls); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getTypeForPrimitiveNumericClass(_thisHandle, ppException, cls); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getTypeForPrimitiveNumericClass(_thisHandle, ppException, cls, result, exceptionCode); });
         return result;
     }
 
     bool canCast(CORINFO_CLASS_HANDLE child, CORINFO_CLASS_HANDLE parent) override
     {
         bool result{};
-        CallThenRecord(78, "canCast", &result,
+        CallThenRecord("canCast",
             [&]() { result = _original->canCast(child, parent); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->canCast(_thisHandle, ppException, child, parent); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->canCast(_thisHandle, ppException, child, parent, result, exceptionCode); });
         return result;
     }
 
     TypeCompareState compareTypesForCast(CORINFO_CLASS_HANDLE fromClass, CORINFO_CLASS_HANDLE toClass) override
     {
         TypeCompareState result{};
-        CallThenRecord(79, "compareTypesForCast", &result,
+        CallThenRecord("compareTypesForCast",
             [&]() { result = _original->compareTypesForCast(fromClass, toClass); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->compareTypesForCast(_thisHandle, ppException, fromClass, toClass); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->compareTypesForCast(_thisHandle, ppException, fromClass, toClass, result, exceptionCode); });
         return result;
     }
 
     TypeCompareState compareTypesForEquality(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2) override
     {
         TypeCompareState result{};
-        CallThenRecord(80, "compareTypesForEquality", &result,
+        CallThenRecord("compareTypesForEquality",
             [&]() { result = _original->compareTypesForEquality(cls1, cls2); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->compareTypesForEquality(_thisHandle, ppException, cls1, cls2); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->compareTypesForEquality(_thisHandle, ppException, cls1, cls2, result, exceptionCode); });
         return result;
     }
 
     bool isMoreSpecificType(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2) override
     {
         bool result{};
-        CallThenRecord(81, "isMoreSpecificType", &result,
+        CallThenRecord("isMoreSpecificType",
             [&]() { result = _original->isMoreSpecificType(cls1, cls2); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->isMoreSpecificType(_thisHandle, ppException, cls1, cls2); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->isMoreSpecificType(_thisHandle, ppException, cls1, cls2, result, exceptionCode); });
         return result;
     }
 
     bool isExactType(CORINFO_CLASS_HANDLE cls) override
     {
         bool result{};
-        CallThenRecord(82, "isExactType", &result,
+        CallThenRecord("isExactType",
             [&]() { result = _original->isExactType(cls); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->isExactType(_thisHandle, ppException, cls); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->isExactType(_thisHandle, ppException, cls, result, exceptionCode); });
         return result;
     }
 
     TypeCompareState isGenericType(CORINFO_CLASS_HANDLE cls) override
     {
         TypeCompareState result{};
-        CallThenRecord(83, "isGenericType", &result,
+        CallThenRecord("isGenericType",
             [&]() { result = _original->isGenericType(cls); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->isGenericType(_thisHandle, ppException, cls); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->isGenericType(_thisHandle, ppException, cls, result, exceptionCode); });
         return result;
     }
 
     TypeCompareState isNullableType(CORINFO_CLASS_HANDLE cls) override
     {
         TypeCompareState result{};
-        CallThenRecord(84, "isNullableType", &result,
+        CallThenRecord("isNullableType",
             [&]() { result = _original->isNullableType(cls); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->isNullableType(_thisHandle, ppException, cls); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->isNullableType(_thisHandle, ppException, cls, result, exceptionCode); });
         return result;
     }
-
-    static const int Index_isEnum = 85;
 
     CORINFO_CLASS_HANDLE getParentType(CORINFO_CLASS_HANDLE cls) override
     {
         CORINFO_CLASS_HANDLE result{};
-        CallThenRecord(86, "getParentType", &result,
+        CallThenRecord("getParentType",
             [&]() { result = _original->getParentType(cls); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getParentType(_thisHandle, ppException, cls); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getParentType(_thisHandle, ppException, cls, result, exceptionCode); });
         return result;
     }
 
     CorInfoType getChildType(CORINFO_CLASS_HANDLE clsHnd, CORINFO_CLASS_HANDLE* clsRet) override
     {
         CorInfoType result{};
-        CallThenRecord(87, "getChildType", &result,
+        CallThenRecord("getChildType",
             [&]() { result = _original->getChildType(clsHnd, clsRet); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getChildType(_thisHandle, ppException, clsHnd, clsRet); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getChildType(_thisHandle, ppException, clsHnd, clsRet, result, exceptionCode); });
         return result;
     }
 
     bool isSDArray(CORINFO_CLASS_HANDLE cls) override
     {
         bool result{};
-        CallThenRecord(88, "isSDArray", &result,
+        CallThenRecord("isSDArray",
             [&]() { result = _original->isSDArray(cls); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->isSDArray(_thisHandle, ppException, cls); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->isSDArray(_thisHandle, ppException, cls, result, exceptionCode); });
         return result;
     }
 
     unsigned getArrayRank(CORINFO_CLASS_HANDLE cls) override
     {
         unsigned result{};
-        CallThenRecord(89, "getArrayRank", &result,
+        CallThenRecord("getArrayRank",
             [&]() { result = _original->getArrayRank(cls); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getArrayRank(_thisHandle, ppException, cls); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getArrayRank(_thisHandle, ppException, cls, result, exceptionCode); });
         return result;
     }
 
     CorInfoArrayIntrinsic getArrayIntrinsicID(CORINFO_METHOD_HANDLE ftn) override
     {
         CorInfoArrayIntrinsic result{};
-        CallThenRecord(90, "getArrayIntrinsicID", &result,
+        CallThenRecord("getArrayIntrinsicID",
             [&]() { result = _original->getArrayIntrinsicID(ftn); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getArrayIntrinsicID(_thisHandle, ppException, ftn); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getArrayIntrinsicID(_thisHandle, ppException, ftn, result, exceptionCode); });
         return result;
     }
 
     void* getArrayInitializationData(CORINFO_FIELD_HANDLE field, uint32_t size) override
     {
         void* result{};
-        CallThenRecord(91, "getArrayInitializationData", &result,
+        CallThenRecord("getArrayInitializationData",
             [&]() { result = _original->getArrayInitializationData(field, size); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getArrayInitializationData(_thisHandle, ppException, field, size); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getArrayInitializationData(_thisHandle, ppException, field, size, result, exceptionCode); });
         return result;
     }
 
     CorInfoIsAccessAllowedResult canAccessClass(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, CORINFO_HELPER_DESC* pAccessHelper) override
     {
         CorInfoIsAccessAllowedResult result{};
-        CallThenRecord(92, "canAccessClass", &result,
+        CallThenRecord("canAccessClass",
             [&]() { result = _original->canAccessClass(pResolvedToken, callerHandle, pAccessHelper); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->canAccessClass(_thisHandle, ppException, pResolvedToken, callerHandle, pAccessHelper); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->canAccessClass(_thisHandle, ppException, pResolvedToken, callerHandle, pAccessHelper, result, exceptionCode); });
         return result;
     }
 
     size_t printFieldName(CORINFO_FIELD_HANDLE field, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize) override
     {
         size_t result{};
-        CallThenRecord(93, "printFieldName", &result,
+        CallThenRecord("printFieldName",
             [&]() { result = _original->printFieldName(field, buffer, bufferSize, pRequiredBufferSize); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->printFieldName(_thisHandle, ppException, field, buffer, bufferSize, pRequiredBufferSize); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->printFieldName(_thisHandle, ppException, field, buffer, bufferSize, pRequiredBufferSize, result, exceptionCode); });
         return result;
     }
 
     CORINFO_CLASS_HANDLE getFieldClass(CORINFO_FIELD_HANDLE field) override
     {
         CORINFO_CLASS_HANDLE result{};
-        CallThenRecord(94, "getFieldClass", &result,
+        CallThenRecord("getFieldClass",
             [&]() { result = _original->getFieldClass(field); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getFieldClass(_thisHandle, ppException, field); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getFieldClass(_thisHandle, ppException, field, result, exceptionCode); });
         return result;
     }
 
     CorInfoType getFieldType(CORINFO_FIELD_HANDLE field, CORINFO_CLASS_HANDLE* structType, CORINFO_CLASS_HANDLE fieldOwnerHint) override
     {
         CorInfoType result{};
-        CallThenRecord(95, "getFieldType", &result,
+        CallThenRecord("getFieldType",
             [&]() { result = _original->getFieldType(field, structType, fieldOwnerHint); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getFieldType(_thisHandle, ppException, field, structType, fieldOwnerHint); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getFieldType(_thisHandle, ppException, field, structType, fieldOwnerHint, result, exceptionCode); });
         return result;
     }
 
     unsigned getFieldOffset(CORINFO_FIELD_HANDLE field) override
     {
         unsigned result{};
-        CallThenRecord(96, "getFieldOffset", &result,
+        CallThenRecord("getFieldOffset",
             [&]() { result = _original->getFieldOffset(field); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getFieldOffset(_thisHandle, ppException, field); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getFieldOffset(_thisHandle, ppException, field, result, exceptionCode); });
         return result;
     }
 
     void getFieldInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, CORINFO_ACCESS_FLAGS flags, CORINFO_FIELD_INFO* pResult) override
     {
-        CallThenRecord(97, "getFieldInfo", nullptr,
+        CallThenRecord("getFieldInfo",
             [&]() { _original->getFieldInfo(pResolvedToken, callerHandle, flags, pResult); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getFieldInfo(_thisHandle, ppException, pResolvedToken, callerHandle, flags, pResult); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getFieldInfo(_thisHandle, ppException, pResolvedToken, callerHandle, flags, pResult, exceptionCode); });
     }
 
     uint32_t getThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field, bool isGCtype) override
     {
         uint32_t result{};
-        CallThenRecord(98, "getThreadLocalFieldInfo", &result,
+        CallThenRecord("getThreadLocalFieldInfo",
             [&]() { result = _original->getThreadLocalFieldInfo(field, isGCtype); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getThreadLocalFieldInfo(_thisHandle, ppException, field, isGCtype); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getThreadLocalFieldInfo(_thisHandle, ppException, field, isGCtype, result, exceptionCode); });
         return result;
     }
 
     void getThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo) override
     {
-        CallThenRecord(99, "getThreadLocalStaticBlocksInfo", nullptr,
+        CallThenRecord("getThreadLocalStaticBlocksInfo",
             [&]() { _original->getThreadLocalStaticBlocksInfo(pInfo); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getThreadLocalStaticBlocksInfo(_thisHandle, ppException, pInfo); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getThreadLocalStaticBlocksInfo(_thisHandle, ppException, pInfo, exceptionCode); });
     }
 
     void getThreadLocalStaticInfo_NativeAOT(CORINFO_THREAD_STATIC_INFO_NATIVEAOT* pInfo) override
     {
-        CallThenRecord(100, "getThreadLocalStaticInfo_NativeAOT", nullptr,
+        CallThenRecord("getThreadLocalStaticInfo_NativeAOT",
             [&]() { _original->getThreadLocalStaticInfo_NativeAOT(pInfo); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getThreadLocalStaticInfo_NativeAOT(_thisHandle, ppException, pInfo); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getThreadLocalStaticInfo_NativeAOT(_thisHandle, ppException, pInfo, exceptionCode); });
     }
 
     bool isFieldStatic(CORINFO_FIELD_HANDLE fldHnd) override
     {
         bool result{};
-        CallThenRecord(101, "isFieldStatic", &result,
+        CallThenRecord("isFieldStatic",
             [&]() { result = _original->isFieldStatic(fldHnd); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->isFieldStatic(_thisHandle, ppException, fldHnd); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->isFieldStatic(_thisHandle, ppException, fldHnd, result, exceptionCode); });
         return result;
     }
 
     int getArrayOrStringLength(CORINFO_OBJECT_HANDLE objHnd) override
     {
         int result{};
-        CallThenRecord(102, "getArrayOrStringLength", &result,
+        CallThenRecord("getArrayOrStringLength",
             [&]() { result = _original->getArrayOrStringLength(objHnd); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getArrayOrStringLength(_thisHandle, ppException, objHnd); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getArrayOrStringLength(_thisHandle, ppException, objHnd, result, exceptionCode); });
         return result;
     }
 
     void getBoundaries(CORINFO_METHOD_HANDLE ftn, unsigned int* cILOffsets, uint32_t** pILOffsets, ICorDebugInfo::BoundaryTypes* implicitBoundaries) override
     {
-        CallThenRecord(103, "getBoundaries", nullptr,
+        CallThenRecord("getBoundaries",
             [&]() { _original->getBoundaries(ftn, cILOffsets, pILOffsets, implicitBoundaries); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getBoundaries(_thisHandle, ppException, ftn, cILOffsets, pILOffsets, implicitBoundaries); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getBoundaries(_thisHandle, ppException, ftn, cILOffsets, pILOffsets, implicitBoundaries, exceptionCode); });
     }
 
     void setBoundaries(CORINFO_METHOD_HANDLE ftn, uint32_t cMap, ICorDebugInfo::OffsetMapping* pMap) override
     {
-        RecordBefore(104, "setBoundaries", nullptr, [&](CorInfoExceptionClass** ppException) { _callbacks->setBoundaries(_thisHandle, ppException, ftn, cMap, pMap); });
+        RecordBefore("setBoundaries", [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->setBoundaries(_thisHandle, ppException, ftn, cMap, pMap, exceptionCode); });
         _original->setBoundaries(ftn, cMap, pMap);
     }
 
     void getVars(CORINFO_METHOD_HANDLE ftn, uint32_t* cVars, ICorDebugInfo::ILVarInfo** vars, bool* extendOthers) override
     {
-        CallThenRecord(105, "getVars", nullptr,
+        CallThenRecord("getVars",
             [&]() { _original->getVars(ftn, cVars, vars, extendOthers); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getVars(_thisHandle, ppException, ftn, cVars, vars, extendOthers); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getVars(_thisHandle, ppException, ftn, cVars, vars, extendOthers, exceptionCode); });
     }
 
     void setVars(CORINFO_METHOD_HANDLE ftn, uint32_t cVars, ICorDebugInfo::NativeVarInfo* vars) override
     {
-        RecordBefore(106, "setVars", nullptr, [&](CorInfoExceptionClass** ppException) { _callbacks->setVars(_thisHandle, ppException, ftn, cVars, vars); });
+        RecordBefore("setVars", [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->setVars(_thisHandle, ppException, ftn, cVars, vars, exceptionCode); });
         _original->setVars(ftn, cVars, vars);
     }
 
     void reportRichMappings(ICorDebugInfo::InlineTreeNode* inlineTreeNodes, uint32_t numInlineTreeNodes, ICorDebugInfo::RichOffsetMapping* mappings, uint32_t numMappings) override
     {
-        CallThenRecord(107, "reportRichMappings", nullptr,
+        CallThenRecord("reportRichMappings",
             [&]() { _original->reportRichMappings(inlineTreeNodes, numInlineTreeNodes, mappings, numMappings); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->reportRichMappings(_thisHandle, ppException, inlineTreeNodes, numInlineTreeNodes, mappings, numMappings); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->reportRichMappings(_thisHandle, ppException, inlineTreeNodes, numInlineTreeNodes, mappings, numMappings, exceptionCode); });
     }
 
     void reportAsyncDebugInfo(ICorDebugInfo::AsyncInfo* asyncInfo, ICorDebugInfo::AsyncSuspensionPoint* suspensionPoints, ICorDebugInfo::AsyncContinuationVarInfo* vars, uint32_t numVars) override
     {
-        CallThenRecord(108, "reportAsyncDebugInfo", nullptr,
+        CallThenRecord("reportAsyncDebugInfo",
             [&]() { _original->reportAsyncDebugInfo(asyncInfo, suspensionPoints, vars, numVars); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->reportAsyncDebugInfo(_thisHandle, ppException, asyncInfo, suspensionPoints, vars, numVars); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->reportAsyncDebugInfo(_thisHandle, ppException, asyncInfo, suspensionPoints, vars, numVars, exceptionCode); });
     }
 
     void reportMetadata(const char* key, const void* value, size_t length) override
     {
-        CallThenRecord(109, "reportMetadata", nullptr,
+        CallThenRecord("reportMetadata",
             [&]() { _original->reportMetadata(key, value, length); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->reportMetadata(_thisHandle, ppException, key, value, length); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->reportMetadata(_thisHandle, ppException, key, value, length, exceptionCode); });
     }
 
     void* allocateArray(size_t cBytes) override
     {
         void* result{};
-        CallThenRecord(110, "allocateArray", &result,
+        CallThenRecord("allocateArray",
             [&]() { result = _original->allocateArray(cBytes); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->allocateArray(_thisHandle, ppException, cBytes); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->allocateArray(_thisHandle, ppException, cBytes, result, exceptionCode); });
         return result;
     }
 
     void freeArray(void* array) override
     {
-        CallThenRecord(111, "freeArray", nullptr,
+        CallThenRecord("freeArray",
             [&]() { _original->freeArray(array); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->freeArray(_thisHandle, ppException, array); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->freeArray(_thisHandle, ppException, array, exceptionCode); });
     }
 
     CORINFO_ARG_LIST_HANDLE getArgNext(CORINFO_ARG_LIST_HANDLE args) override
     {
         CORINFO_ARG_LIST_HANDLE result{};
-        CallThenRecord(112, "getArgNext", &result,
+        CallThenRecord("getArgNext",
             [&]() { result = _original->getArgNext(args); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getArgNext(_thisHandle, ppException, args); });
-        return result;
-    }
-
-    CorInfoTypeWithMod getArgType(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_HANDLE args, CORINFO_CLASS_HANDLE* vcTypeRet) override
-    {
-        CorInfoTypeWithMod result{};
-        CallThenRecord(113, "getArgType", &result,
-            [&]() { result = _original->getArgType(sig, args, vcTypeRet); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getArgType(_thisHandle, ppException, sig, args, vcTypeRet); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getArgNext(_thisHandle, ppException, args, result, exceptionCode); });
         return result;
     }
 
     int getExactClasses(CORINFO_CLASS_HANDLE baseType, int maxExactClasses, CORINFO_CLASS_HANDLE* exactClsRet) override
     {
         int result{};
-        CallThenRecord(114, "getExactClasses", &result,
+        CallThenRecord("getExactClasses",
             [&]() { result = _original->getExactClasses(baseType, maxExactClasses, exactClsRet); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getExactClasses(_thisHandle, ppException, baseType, maxExactClasses, exactClsRet); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getExactClasses(_thisHandle, ppException, baseType, maxExactClasses, exactClsRet, result, exceptionCode); });
         return result;
     }
 
     CORINFO_CLASS_HANDLE getArgClass(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_HANDLE args) override
     {
         CORINFO_CLASS_HANDLE result{};
-        CallThenRecord(115, "getArgClass", &result,
+        CallThenRecord("getArgClass",
             [&]() { result = _original->getArgClass(sig, args); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getArgClass(_thisHandle, ppException, sig, args); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getArgClass(_thisHandle, ppException, sig, args, result, exceptionCode); });
         return result;
     }
 
     CorInfoHFAElemType getHFAType(CORINFO_CLASS_HANDLE hClass) override
     {
         CorInfoHFAElemType result{};
-        CallThenRecord(116, "getHFAType", &result,
+        CallThenRecord("getHFAType",
             [&]() { result = _original->getHFAType(hClass); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getHFAType(_thisHandle, ppException, hClass); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getHFAType(_thisHandle, ppException, hClass, result, exceptionCode); });
         return result;
     }
 
     bool runWithErrorTrap(ICorJitInfo::errorTrapFunction function, void* parameter) override
     {
         bool result{};
-        CallThenRecord(117, "runWithErrorTrap", &result,
+        CallThenRecord("runWithErrorTrap",
             [&]() { result = _original->runWithErrorTrap(function, parameter); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->runWithErrorTrap(_thisHandle, ppException, function, parameter); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->runWithErrorTrap(_thisHandle, ppException, function, parameter, result, exceptionCode); });
         return result;
     }
 
-    static const int Index_runWithSPMIErrorTrap = 118;
-
     void getEEInfo(CORINFO_EE_INFO* pEEInfoOut) override
     {
-        CallThenRecord(119, "getEEInfo", nullptr,
+        CallThenRecord("getEEInfo",
             [&]() { _original->getEEInfo(pEEInfoOut); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getEEInfo(_thisHandle, ppException, pEEInfoOut); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getEEInfo(_thisHandle, ppException, pEEInfoOut, exceptionCode); });
     }
 
     void getAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfoOut) override
     {
-        CallThenRecord(120, "getAsyncInfo", nullptr,
+        CallThenRecord("getAsyncInfo",
             [&]() { _original->getAsyncInfo(pAsyncInfoOut); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getAsyncInfo(_thisHandle, ppException, pAsyncInfoOut); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getAsyncInfo(_thisHandle, ppException, pAsyncInfoOut, exceptionCode); });
     }
 
     CORINFO_METHOD_HANDLE getAwaitReturnCall(CORINFO_METHOD_HANDLE callerHandle, CORINFO_CONTEXT_HANDLE* contextHandle, CORINFO_LOOKUP* instArg) override
     {
         CORINFO_METHOD_HANDLE result{};
-        CallThenRecord(121, "getAwaitReturnCall", &result,
+        CallThenRecord("getAwaitReturnCall",
             [&]() { result = _original->getAwaitReturnCall(callerHandle, contextHandle, instArg); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getAwaitReturnCall(_thisHandle, ppException, callerHandle, contextHandle, instArg); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getAwaitReturnCall(_thisHandle, ppException, callerHandle, contextHandle, instArg, result, exceptionCode); });
         return result;
     }
 
     CORINFO_METHOD_HANDLE getAwaitAwaiterInContinuationCall(CORINFO_METHOD_HANDLE callerHandle, CORINFO_RESOLVED_TOKEN* pResolvedToken, bool isUnsafe, CORINFO_CONTEXT_HANDLE* contextHandle, CORINFO_LOOKUP* instArg) override
     {
         CORINFO_METHOD_HANDLE result{};
-        CallThenRecord(122, "getAwaitAwaiterInContinuationCall", &result,
+        CallThenRecord("getAwaitAwaiterInContinuationCall",
             [&]() { result = _original->getAwaitAwaiterInContinuationCall(callerHandle, pResolvedToken, isUnsafe, contextHandle, instArg); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getAwaitAwaiterInContinuationCall(_thisHandle, ppException, callerHandle, pResolvedToken, isUnsafe, contextHandle, instArg); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getAwaitAwaiterInContinuationCall(_thisHandle, ppException, callerHandle, pResolvedToken, isUnsafe, contextHandle, instArg, result, exceptionCode); });
         return result;
     }
 
     mdMethodDef getMethodDefFromMethod(CORINFO_METHOD_HANDLE hMethod) override
     {
         mdMethodDef result{};
-        CallThenRecord(123, "getMethodDefFromMethod", &result,
+        CallThenRecord("getMethodDefFromMethod",
             [&]() { result = _original->getMethodDefFromMethod(hMethod); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getMethodDefFromMethod(_thisHandle, ppException, hMethod); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getMethodDefFromMethod(_thisHandle, ppException, hMethod, result, exceptionCode); });
         return result;
     }
 
     size_t printMethodName(CORINFO_METHOD_HANDLE ftn, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize) override
     {
         size_t result{};
-        CallThenRecord(124, "printMethodName", &result,
+        CallThenRecord("printMethodName",
             [&]() { result = _original->printMethodName(ftn, buffer, bufferSize, pRequiredBufferSize); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->printMethodName(_thisHandle, ppException, ftn, buffer, bufferSize, pRequiredBufferSize); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->printMethodName(_thisHandle, ppException, ftn, buffer, bufferSize, pRequiredBufferSize, result, exceptionCode); });
         return result;
     }
 
     const char* getMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn, const char** className, const char** namespaceName, const char** enclosingClassNames, size_t maxEnclosingClassNames) override
     {
         const char* result{};
-        CallThenRecord(125, "getMethodNameFromMetadata", &result,
+        CallThenRecord("getMethodNameFromMetadata",
             [&]() { result = _original->getMethodNameFromMetadata(ftn, className, namespaceName, enclosingClassNames, maxEnclosingClassNames); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getMethodNameFromMetadata(_thisHandle, ppException, ftn, className, namespaceName, enclosingClassNames, maxEnclosingClassNames); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getMethodNameFromMetadata(_thisHandle, ppException, ftn, className, namespaceName, enclosingClassNames, maxEnclosingClassNames, result, exceptionCode); });
         return result;
     }
 
     unsigned getMethodHash(CORINFO_METHOD_HANDLE ftn) override
     {
         unsigned result{};
-        CallThenRecord(126, "getMethodHash", &result,
+        CallThenRecord("getMethodHash",
             [&]() { result = _original->getMethodHash(ftn); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getMethodHash(_thisHandle, ppException, ftn); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getMethodHash(_thisHandle, ppException, ftn, result, exceptionCode); });
         return result;
     }
 
     bool getSystemVAmd64PassStructInRegisterDescriptor(CORINFO_CLASS_HANDLE structHnd, SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr) override
     {
         bool result{};
-        CallThenRecord(127, "getSystemVAmd64PassStructInRegisterDescriptor", &result,
+        CallThenRecord("getSystemVAmd64PassStructInRegisterDescriptor",
             [&]() { result = _original->getSystemVAmd64PassStructInRegisterDescriptor(structHnd, structPassInRegDescPtr); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getSystemVAmd64PassStructInRegisterDescriptor(_thisHandle, ppException, structHnd, structPassInRegDescPtr); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getSystemVAmd64PassStructInRegisterDescriptor(_thisHandle, ppException, structHnd, structPassInRegDescPtr, result, exceptionCode); });
         return result;
     }
 
     void getSwiftLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_SWIFT_LOWERING* pLowering) override
     {
-        CallThenRecord(128, "getSwiftLowering", nullptr,
+        CallThenRecord("getSwiftLowering",
             [&]() { _original->getSwiftLowering(structHnd, pLowering); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getSwiftLowering(_thisHandle, ppException, structHnd, pLowering); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getSwiftLowering(_thisHandle, ppException, structHnd, pLowering, exceptionCode); });
     }
 
     void getFpStructLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_FPSTRUCT_LOWERING* pLowering) override
     {
-        CallThenRecord(129, "getFpStructLowering", nullptr,
+        CallThenRecord("getFpStructLowering",
             [&]() { _original->getFpStructLowering(structHnd, pLowering); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getFpStructLowering(_thisHandle, ppException, structHnd, pLowering); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getFpStructLowering(_thisHandle, ppException, structHnd, pLowering, exceptionCode); });
     }
 
     CorInfoWasmType getWasmLowering(CORINFO_CLASS_HANDLE structHnd) override
     {
         CorInfoWasmType result{};
-        CallThenRecord(130, "getWasmLowering", &result,
+        CallThenRecord("getWasmLowering",
             [&]() { result = _original->getWasmLowering(structHnd); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getWasmLowering(_thisHandle, ppException, structHnd); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getWasmLowering(_thisHandle, ppException, structHnd, result, exceptionCode); });
         return result;
     }
 
     uint32_t getAddressAlignment(void* address) override
     {
         uint32_t result{};
-        CallThenRecord(131, "getAddressAlignment", &result,
+        CallThenRecord("getAddressAlignment",
             [&]() { result = _original->getAddressAlignment(address); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getAddressAlignment(_thisHandle, ppException, address); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getAddressAlignment(_thisHandle, ppException, address, result, exceptionCode); });
         return result;
     }
 
     void getWasmWellKnownGlobals(CORINFO_WASM_WELLKNOWN_GLOBALS* pWellKnownGlobalsOut) override
     {
-        CallThenRecord(132, "getWasmWellKnownGlobals", nullptr,
+        CallThenRecord("getWasmWellKnownGlobals",
             [&]() { _original->getWasmWellKnownGlobals(pWellKnownGlobalsOut); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getWasmWellKnownGlobals(_thisHandle, ppException, pWellKnownGlobalsOut); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getWasmWellKnownGlobals(_thisHandle, ppException, pWellKnownGlobalsOut, exceptionCode); });
     }
 
     uint32_t getThreadTLSIndex(void** ppIndirection) override
     {
         uint32_t result{};
-        CallThenRecord(133, "getThreadTLSIndex", &result,
+        CallThenRecord("getThreadTLSIndex",
             [&]() { result = _original->getThreadTLSIndex(ppIndirection); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getThreadTLSIndex(_thisHandle, ppException, ppIndirection); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getThreadTLSIndex(_thisHandle, ppException, ppIndirection, result, exceptionCode); });
         return result;
     }
 
     int32_t* getAddrOfCaptureThreadGlobal(void** ppIndirection) override
     {
         int32_t* result{};
-        CallThenRecord(134, "getAddrOfCaptureThreadGlobal", &result,
+        CallThenRecord("getAddrOfCaptureThreadGlobal",
             [&]() { result = _original->getAddrOfCaptureThreadGlobal(ppIndirection); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getAddrOfCaptureThreadGlobal(_thisHandle, ppException, ppIndirection); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getAddrOfCaptureThreadGlobal(_thisHandle, ppException, ppIndirection, result, exceptionCode); });
         return result;
     }
 
-    static const int Index_getHelperFtn = 135;
-
     void getFunctionEntryPoint(CORINFO_METHOD_HANDLE ftn, CORINFO_CONST_LOOKUP* pResult, CORINFO_ACCESS_FLAGS accessFlags) override
     {
-        CallThenRecord(136, "getFunctionEntryPoint", nullptr,
+        CallThenRecord("getFunctionEntryPoint",
             [&]() { _original->getFunctionEntryPoint(ftn, pResult, accessFlags); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getFunctionEntryPoint(_thisHandle, ppException, ftn, pResult, accessFlags); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getFunctionEntryPoint(_thisHandle, ppException, ftn, pResult, accessFlags, exceptionCode); });
     }
 
     void getFunctionFixedEntryPoint(CORINFO_METHOD_HANDLE ftn, bool isUnsafeFunctionPointer, CORINFO_CONST_LOOKUP* pResult) override
     {
-        CallThenRecord(137, "getFunctionFixedEntryPoint", nullptr,
+        CallThenRecord("getFunctionFixedEntryPoint",
             [&]() { _original->getFunctionFixedEntryPoint(ftn, isUnsafeFunctionPointer, pResult); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getFunctionFixedEntryPoint(_thisHandle, ppException, ftn, isUnsafeFunctionPointer, pResult); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getFunctionFixedEntryPoint(_thisHandle, ppException, ftn, isUnsafeFunctionPointer, pResult, exceptionCode); });
     }
 
     CORINFO_MODULE_HANDLE embedModuleHandle(CORINFO_MODULE_HANDLE handle, void** ppIndirection) override
     {
         CORINFO_MODULE_HANDLE result{};
-        CallThenRecord(138, "embedModuleHandle", &result,
+        CallThenRecord("embedModuleHandle",
             [&]() { result = _original->embedModuleHandle(handle, ppIndirection); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->embedModuleHandle(_thisHandle, ppException, handle, ppIndirection); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->embedModuleHandle(_thisHandle, ppException, handle, ppIndirection, result, exceptionCode); });
         return result;
     }
 
     CORINFO_CLASS_HANDLE embedClassHandle(CORINFO_CLASS_HANDLE handle, void** ppIndirection) override
     {
         CORINFO_CLASS_HANDLE result{};
-        CallThenRecord(139, "embedClassHandle", &result,
+        CallThenRecord("embedClassHandle",
             [&]() { result = _original->embedClassHandle(handle, ppIndirection); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->embedClassHandle(_thisHandle, ppException, handle, ppIndirection); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->embedClassHandle(_thisHandle, ppException, handle, ppIndirection, result, exceptionCode); });
         return result;
     }
 
     CORINFO_METHOD_HANDLE embedMethodHandle(CORINFO_METHOD_HANDLE handle, void** ppIndirection) override
     {
         CORINFO_METHOD_HANDLE result{};
-        CallThenRecord(140, "embedMethodHandle", &result,
+        CallThenRecord("embedMethodHandle",
             [&]() { result = _original->embedMethodHandle(handle, ppIndirection); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->embedMethodHandle(_thisHandle, ppException, handle, ppIndirection); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->embedMethodHandle(_thisHandle, ppException, handle, ppIndirection, result, exceptionCode); });
         return result;
     }
 
     CORINFO_FIELD_HANDLE embedFieldHandle(CORINFO_FIELD_HANDLE handle, void** ppIndirection) override
     {
         CORINFO_FIELD_HANDLE result{};
-        CallThenRecord(141, "embedFieldHandle", &result,
+        CallThenRecord("embedFieldHandle",
             [&]() { result = _original->embedFieldHandle(handle, ppIndirection); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->embedFieldHandle(_thisHandle, ppException, handle, ppIndirection); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->embedFieldHandle(_thisHandle, ppException, handle, ppIndirection, result, exceptionCode); });
         return result;
     }
 
     void embedGenericHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool fEmbedParent, CORINFO_METHOD_HANDLE callerHandle, CORINFO_GENERICHANDLE_RESULT* pResult) override
     {
-        CallThenRecord(142, "embedGenericHandle", nullptr,
+        CallThenRecord("embedGenericHandle",
             [&]() { _original->embedGenericHandle(pResolvedToken, fEmbedParent, callerHandle, pResult); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->embedGenericHandle(_thisHandle, ppException, pResolvedToken, fEmbedParent, callerHandle, pResult); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->embedGenericHandle(_thisHandle, ppException, pResolvedToken, fEmbedParent, callerHandle, pResult, exceptionCode); });
     }
 
     void getLocationOfThisType(CORINFO_METHOD_HANDLE context, CORINFO_LOOKUP_KIND* pLookupKind) override
     {
-        CallThenRecord(143, "getLocationOfThisType", nullptr,
+        CallThenRecord("getLocationOfThisType",
             [&]() { _original->getLocationOfThisType(context, pLookupKind); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getLocationOfThisType(_thisHandle, ppException, context, pLookupKind); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getLocationOfThisType(_thisHandle, ppException, context, pLookupKind, exceptionCode); });
     }
 
     void getAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method, CORINFO_CONST_LOOKUP* pLookup) override
     {
-        CallThenRecord(144, "getAddressOfPInvokeTarget", nullptr,
+        CallThenRecord("getAddressOfPInvokeTarget",
             [&]() { _original->getAddressOfPInvokeTarget(method, pLookup); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getAddressOfPInvokeTarget(_thisHandle, ppException, method, pLookup); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getAddressOfPInvokeTarget(_thisHandle, ppException, method, pLookup, exceptionCode); });
     }
 
     void* GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig) override
     {
         void* result{};
-        CallThenRecord(145, "GetCookieForInterpreterCalliSig", &result,
+        CallThenRecord("GetCookieForInterpreterCalliSig",
             [&]() { result = _original->GetCookieForInterpreterCalliSig(szMetaSig); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->GetCookieForInterpreterCalliSig(_thisHandle, ppException, szMetaSig); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->GetCookieForInterpreterCalliSig(_thisHandle, ppException, szMetaSig, result, exceptionCode); });
         return result;
     }
 
     CORINFO_JUST_MY_CODE_HANDLE getJustMyCodeHandle(CORINFO_METHOD_HANDLE method, CORINFO_JUST_MY_CODE_HANDLE** ppIndirection) override
     {
         CORINFO_JUST_MY_CODE_HANDLE result{};
-        CallThenRecord(146, "getJustMyCodeHandle", &result,
+        CallThenRecord("getJustMyCodeHandle",
             [&]() { result = _original->getJustMyCodeHandle(method, ppIndirection); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getJustMyCodeHandle(_thisHandle, ppException, method, ppIndirection); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getJustMyCodeHandle(_thisHandle, ppException, method, ppIndirection, result, exceptionCode); });
         return result;
     }
 
     void GetProfilingHandle(bool* pbHookFunction, void** pProfilerHandle, bool* pbIndirectedHandles) override
     {
-        CallThenRecord(147, "GetProfilingHandle", nullptr,
+        CallThenRecord("GetProfilingHandle",
             [&]() { _original->GetProfilingHandle(pbHookFunction, pProfilerHandle, pbIndirectedHandles); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->GetProfilingHandle(_thisHandle, ppException, pbHookFunction, pProfilerHandle, pbIndirectedHandles); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->GetProfilingHandle(_thisHandle, ppException, pbHookFunction, pProfilerHandle, pbIndirectedHandles, exceptionCode); });
     }
 
     void getCallInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken, CORINFO_METHOD_HANDLE callerHandle, CORINFO_CALLINFO_FLAGS flags, CORINFO_CALL_INFO* pResult) override
     {
-        CallThenRecord(148, "getCallInfo", nullptr,
+        CallThenRecord("getCallInfo",
             [&]() { _original->getCallInfo(pResolvedToken, pConstrainedResolvedToken, callerHandle, flags, pResult); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getCallInfo(_thisHandle, ppException, pResolvedToken, pConstrainedResolvedToken, callerHandle, flags, pResult); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getCallInfo(_thisHandle, ppException, pResolvedToken, pConstrainedResolvedToken, callerHandle, flags, pResult, exceptionCode); });
     }
 
     bool getStaticFieldContent(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects) override
     {
         bool result{};
-        CallThenRecord(149, "getStaticFieldContent", &result,
+        CallThenRecord("getStaticFieldContent",
             [&]() { result = _original->getStaticFieldContent(field, buffer, bufferSize, valueOffset, ignoreMovableObjects); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getStaticFieldContent(_thisHandle, ppException, field, buffer, bufferSize, valueOffset, ignoreMovableObjects); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getStaticFieldContent(_thisHandle, ppException, field, buffer, bufferSize, valueOffset, ignoreMovableObjects, result, exceptionCode); });
         return result;
     }
 
     bool getObjectContent(CORINFO_OBJECT_HANDLE obj, uint8_t* buffer, int bufferSize, int valueOffset) override
     {
         bool result{};
-        CallThenRecord(150, "getObjectContent", &result,
+        CallThenRecord("getObjectContent",
             [&]() { result = _original->getObjectContent(obj, buffer, bufferSize, valueOffset); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getObjectContent(_thisHandle, ppException, obj, buffer, bufferSize, valueOffset); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getObjectContent(_thisHandle, ppException, obj, buffer, bufferSize, valueOffset, result, exceptionCode); });
         return result;
     }
 
     CORINFO_CLASS_HANDLE getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field, bool* pIsSpeculative) override
     {
         CORINFO_CLASS_HANDLE result{};
-        CallThenRecord(151, "getStaticFieldCurrentClass", &result,
+        CallThenRecord("getStaticFieldCurrentClass",
             [&]() { result = _original->getStaticFieldCurrentClass(field, pIsSpeculative); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getStaticFieldCurrentClass(_thisHandle, ppException, field, pIsSpeculative); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getStaticFieldCurrentClass(_thisHandle, ppException, field, pIsSpeculative, result, exceptionCode); });
         return result;
     }
 
     CORINFO_VARARGS_HANDLE getVarArgsHandle(CORINFO_SIG_INFO* pSig, CORINFO_METHOD_HANDLE methHnd, void** ppIndirection) override
     {
         CORINFO_VARARGS_HANDLE result{};
-        CallThenRecord(152, "getVarArgsHandle", &result,
+        CallThenRecord("getVarArgsHandle",
             [&]() { result = _original->getVarArgsHandle(pSig, methHnd, ppIndirection); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getVarArgsHandle(_thisHandle, ppException, pSig, methHnd, ppIndirection); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getVarArgsHandle(_thisHandle, ppException, pSig, methHnd, ppIndirection, result, exceptionCode); });
         return result;
     }
 
     InfoAccessType constructStringLiteral(CORINFO_MODULE_HANDLE module, unsigned int metaTok, void** ppValue) override
     {
         InfoAccessType result{};
-        CallThenRecord(153, "constructStringLiteral", &result,
+        CallThenRecord("constructStringLiteral",
             [&]() { result = _original->constructStringLiteral(module, metaTok, ppValue); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->constructStringLiteral(_thisHandle, ppException, module, metaTok, ppValue); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->constructStringLiteral(_thisHandle, ppException, module, metaTok, ppValue, result, exceptionCode); });
         return result;
     }
 
     InfoAccessType emptyStringLiteral(void** ppValue) override
     {
         InfoAccessType result{};
-        CallThenRecord(154, "emptyStringLiteral", &result,
+        CallThenRecord("emptyStringLiteral",
             [&]() { result = _original->emptyStringLiteral(ppValue); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->emptyStringLiteral(_thisHandle, ppException, ppValue); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->emptyStringLiteral(_thisHandle, ppException, ppValue, result, exceptionCode); });
         return result;
     }
 
     uint32_t getFieldThreadLocalStoreID(CORINFO_FIELD_HANDLE field, void** ppIndirection) override
     {
         uint32_t result{};
-        CallThenRecord(155, "getFieldThreadLocalStoreID", &result,
+        CallThenRecord("getFieldThreadLocalStoreID",
             [&]() { result = _original->getFieldThreadLocalStoreID(field, ppIndirection); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getFieldThreadLocalStoreID(_thisHandle, ppException, field, ppIndirection); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getFieldThreadLocalStoreID(_thisHandle, ppException, field, ppIndirection, result, exceptionCode); });
         return result;
     }
 
     CORINFO_METHOD_HANDLE GetDelegateCtor(CORINFO_METHOD_HANDLE methHnd, CORINFO_CLASS_HANDLE clsHnd, CORINFO_METHOD_HANDLE targetMethodHnd, DelegateCtorArgs* pCtorData) override
     {
         CORINFO_METHOD_HANDLE result{};
-        CallThenRecord(156, "GetDelegateCtor", &result,
+        CallThenRecord("GetDelegateCtor",
             [&]() { result = _original->GetDelegateCtor(methHnd, clsHnd, targetMethodHnd, pCtorData); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->GetDelegateCtor(_thisHandle, ppException, methHnd, clsHnd, targetMethodHnd, pCtorData); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->GetDelegateCtor(_thisHandle, ppException, methHnd, clsHnd, targetMethodHnd, pCtorData, result, exceptionCode); });
         return result;
     }
 
     void MethodCompileComplete(CORINFO_METHOD_HANDLE methHnd) override
     {
-        CallThenRecord(157, "MethodCompileComplete", nullptr,
+        CallThenRecord("MethodCompileComplete",
             [&]() { _original->MethodCompileComplete(methHnd); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->MethodCompileComplete(_thisHandle, ppException, methHnd); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->MethodCompileComplete(_thisHandle, ppException, methHnd, exceptionCode); });
     }
 
     bool getTailCallHelpers(CORINFO_RESOLVED_TOKEN* callToken, CORINFO_SIG_INFO* sig, CORINFO_GET_TAILCALL_HELPERS_FLAGS flags, CORINFO_TAILCALL_HELPERS* pResult) override
     {
         bool result{};
-        CallThenRecord(158, "getTailCallHelpers", &result,
+        CallThenRecord("getTailCallHelpers",
             [&]() { result = _original->getTailCallHelpers(callToken, sig, flags, pResult); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getTailCallHelpers(_thisHandle, ppException, callToken, sig, flags, pResult); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getTailCallHelpers(_thisHandle, ppException, callToken, sig, flags, pResult, result, exceptionCode); });
         return result;
     }
 
     CORINFO_CLASS_HANDLE getContinuationType(size_t dataSize, bool* objRefs, size_t objRefsSize) override
     {
         CORINFO_CLASS_HANDLE result{};
-        CallThenRecord(159, "getContinuationType", &result,
+        CallThenRecord("getContinuationType",
             [&]() { result = _original->getContinuationType(dataSize, objRefs, objRefsSize); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getContinuationType(_thisHandle, ppException, dataSize, objRefs, objRefsSize); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getContinuationType(_thisHandle, ppException, dataSize, objRefs, objRefsSize, result, exceptionCode); });
         return result;
     }
 
     CORINFO_METHOD_HANDLE getAsyncResumptionStub(void** entryPoint) override
     {
         CORINFO_METHOD_HANDLE result{};
-        CallThenRecord(160, "getAsyncResumptionStub", &result,
+        CallThenRecord("getAsyncResumptionStub",
             [&]() { result = _original->getAsyncResumptionStub(entryPoint); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getAsyncResumptionStub(_thisHandle, ppException, entryPoint); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getAsyncResumptionStub(_thisHandle, ppException, entryPoint, result, exceptionCode); });
         return result;
     }
 
     bool convertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool mustConvert) override
     {
         bool result{};
-        CallThenRecord(161, "convertPInvokeCalliToCall", &result,
+        CallThenRecord("convertPInvokeCalliToCall",
             [&]() { result = _original->convertPInvokeCalliToCall(pResolvedToken, mustConvert); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->convertPInvokeCalliToCall(_thisHandle, ppException, pResolvedToken, mustConvert); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->convertPInvokeCalliToCall(_thisHandle, ppException, pResolvedToken, mustConvert, result, exceptionCode); });
         return result;
     }
 
     bool notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bool supportEnabled, bool preserveNegativeDependency) override
     {
         bool result{};
-        CallThenRecord(162, "notifyInstructionSetUsage", &result,
+        CallThenRecord("notifyInstructionSetUsage",
             [&]() { result = _original->notifyInstructionSetUsage(instructionSet, supportEnabled, preserveNegativeDependency); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->notifyInstructionSetUsage(_thisHandle, ppException, instructionSet, supportEnabled, preserveNegativeDependency); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->notifyInstructionSetUsage(_thisHandle, ppException, instructionSet, supportEnabled, preserveNegativeDependency, result, exceptionCode); });
         return result;
     }
 
-    static const int Index_updateEntryPointForTailCall = 163;
-
     void allocMem(AllocMemArgs* pArgs) override
     {
-        CallThenRecord(164, "allocMem", nullptr,
+        CallThenRecord("allocMem",
             [&]() { _original->allocMem(pArgs); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->allocMem(_thisHandle, ppException, pArgs); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->allocMem(_thisHandle, ppException, pArgs, exceptionCode); });
     }
 
     void reserveUnwindInfo(bool isFunclet, bool isColdCode, uint32_t unwindSize) override
     {
-        CallThenRecord(165, "reserveUnwindInfo", nullptr,
+        CallThenRecord("reserveUnwindInfo",
             [&]() { _original->reserveUnwindInfo(isFunclet, isColdCode, unwindSize); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->reserveUnwindInfo(_thisHandle, ppException, isFunclet, isColdCode, unwindSize); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->reserveUnwindInfo(_thisHandle, ppException, isFunclet, isColdCode, unwindSize, exceptionCode); });
     }
 
     void allocUnwindInfo(uint8_t* pHotCode, uint8_t* pColdCode, uint32_t startOffset, uint32_t endOffset, uint32_t unwindSize, uint8_t* pUnwindBlock, CorJitFuncKind funcKind) override
     {
-        CallThenRecord(166, "allocUnwindInfo", nullptr,
+        CallThenRecord("allocUnwindInfo",
             [&]() { _original->allocUnwindInfo(pHotCode, pColdCode, startOffset, endOffset, unwindSize, pUnwindBlock, funcKind); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->allocUnwindInfo(_thisHandle, ppException, pHotCode, pColdCode, startOffset, endOffset, unwindSize, pUnwindBlock, funcKind); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->allocUnwindInfo(_thisHandle, ppException, pHotCode, pColdCode, startOffset, endOffset, unwindSize, pUnwindBlock, funcKind, exceptionCode); });
     }
 
     void* allocGCInfo(size_t size) override
     {
         void* result{};
-        CallThenRecord(167, "allocGCInfo", &result,
+        CallThenRecord("allocGCInfo",
             [&]() { result = _original->allocGCInfo(size); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->allocGCInfo(_thisHandle, ppException, size); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->allocGCInfo(_thisHandle, ppException, size, result, exceptionCode); });
         return result;
     }
 
     void setEHcount(unsigned cEH) override
     {
-        CallThenRecord(168, "setEHcount", nullptr,
+        CallThenRecord("setEHcount",
             [&]() { _original->setEHcount(cEH); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->setEHcount(_thisHandle, ppException, cEH); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->setEHcount(_thisHandle, ppException, cEH, exceptionCode); });
     }
 
     void setEHinfo(unsigned EHnumber, const CORINFO_EH_CLAUSE* clause) override
     {
-        CallThenRecord(169, "setEHinfo", nullptr,
+        CallThenRecord("setEHinfo",
             [&]() { _original->setEHinfo(EHnumber, clause); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->setEHinfo(_thisHandle, ppException, EHnumber, clause); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->setEHinfo(_thisHandle, ppException, EHnumber, clause, exceptionCode); });
     }
 
     bool logMsg(unsigned level, const char* fmt, va_list args) override
     {
         bool result{};
-        CallThenRecord(170, "logMsg", &result,
+        CallThenRecord("logMsg",
             [&]() { result = _original->logMsg(level, fmt, args); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->logMsg(_thisHandle, ppException, level, fmt, args); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->logMsg(_thisHandle, ppException, level, fmt, args, result, exceptionCode); });
         return result;
     }
 
     int doAssert(const char* szFile, int iLine, const char* szExpr) override
     {
-        int result{};
-        RecordBefore(171, "doAssert", &result, [&](CorInfoExceptionClass** ppException) { _callbacks->doAssert(_thisHandle, ppException, szFile, iLine, szExpr); });
-        result = _original->doAssert(szFile, iLine, szExpr);
-        return result;
+        RecordBefore("doAssert", [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->doAssert(_thisHandle, ppException, szFile, iLine, szExpr, exceptionCode); });
+        return _original->doAssert(szFile, iLine, szExpr);
     }
 
     void reportFatalError(CorJitResult result) override
     {
-        CallThenRecord(172, "reportFatalError", nullptr,
+        CallThenRecord("reportFatalError",
             [&]() { _original->reportFatalError(result); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->reportFatalError(_thisHandle, ppException, result); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->reportFatalError(_thisHandle, ppException, result, exceptionCode); });
     }
 
     JITINTERFACE_HRESULT getPgoInstrumentationResults(CORINFO_METHOD_HANDLE ftnHnd, ICorJitInfo::PgoInstrumentationSchema** pSchema, uint32_t* pCountSchemaItems, uint8_t** pInstrumentationData, ICorJitInfo::PgoSource* pPgoSource, bool* pDynamicPgo) override
     {
         JITINTERFACE_HRESULT result{};
-        CallThenRecord(173, "getPgoInstrumentationResults", &result,
+        CallThenRecord("getPgoInstrumentationResults",
             [&]() { result = _original->getPgoInstrumentationResults(ftnHnd, pSchema, pCountSchemaItems, pInstrumentationData, pPgoSource, pDynamicPgo); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getPgoInstrumentationResults(_thisHandle, ppException, ftnHnd, pSchema, pCountSchemaItems, pInstrumentationData, pPgoSource, pDynamicPgo); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getPgoInstrumentationResults(_thisHandle, ppException, ftnHnd, pSchema, pCountSchemaItems, pInstrumentationData, pPgoSource, pDynamicPgo, result, exceptionCode); });
         return result;
     }
 
     JITINTERFACE_HRESULT allocPgoInstrumentationBySchema(CORINFO_METHOD_HANDLE ftnHnd, ICorJitInfo::PgoInstrumentationSchema* pSchema, uint32_t countSchemaItems, uint8_t** pInstrumentationData) override
     {
         JITINTERFACE_HRESULT result{};
-        CallThenRecord(174, "allocPgoInstrumentationBySchema", &result,
+        CallThenRecord("allocPgoInstrumentationBySchema",
             [&]() { result = _original->allocPgoInstrumentationBySchema(ftnHnd, pSchema, countSchemaItems, pInstrumentationData); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->allocPgoInstrumentationBySchema(_thisHandle, ppException, ftnHnd, pSchema, countSchemaItems, pInstrumentationData); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->allocPgoInstrumentationBySchema(_thisHandle, ppException, ftnHnd, pSchema, countSchemaItems, pInstrumentationData, result, exceptionCode); });
         return result;
     }
 
     void recordCallSite(uint32_t instrOffset, CORINFO_SIG_INFO* callSig, CORINFO_METHOD_HANDLE methodHandle) override
     {
-        CallThenRecord(175, "recordCallSite", nullptr,
+        CallThenRecord("recordCallSite",
             [&]() { _original->recordCallSite(instrOffset, callSig, methodHandle); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->recordCallSite(_thisHandle, ppException, instrOffset, callSig, methodHandle); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->recordCallSite(_thisHandle, ppException, instrOffset, callSig, methodHandle, exceptionCode); });
     }
 
     void recordWasmManagedCallSig(CORINFO_SIG_INFO* callSig) override
     {
-        CallThenRecord(176, "recordWasmManagedCallSig", nullptr,
+        CallThenRecord("recordWasmManagedCallSig",
             [&]() { _original->recordWasmManagedCallSig(callSig); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->recordWasmManagedCallSig(_thisHandle, ppException, callSig); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->recordWasmManagedCallSig(_thisHandle, ppException, callSig, exceptionCode); });
     }
 
     void recordWasmVirtualFunctionPointerLookup(CORINFO_METHOD_HANDLE method) override
     {
-        CallThenRecord(177, "recordWasmVirtualFunctionPointerLookup", nullptr,
+        CallThenRecord("recordWasmVirtualFunctionPointerLookup",
             [&]() { _original->recordWasmVirtualFunctionPointerLookup(method); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->recordWasmVirtualFunctionPointerLookup(_thisHandle, ppException, method); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->recordWasmVirtualFunctionPointerLookup(_thisHandle, ppException, method, exceptionCode); });
     }
 
     void recordRelocation(void* location, void* locationRW, void* target, CorInfoReloc fRelocType, int32_t addlDelta) override
     {
-        CallThenRecord(178, "recordRelocation", nullptr,
+        CallThenRecord("recordRelocation",
             [&]() { _original->recordRelocation(location, locationRW, target, fRelocType, addlDelta); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->recordRelocation(_thisHandle, ppException, location, locationRW, target, fRelocType, addlDelta); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->recordRelocation(_thisHandle, ppException, location, locationRW, target, fRelocType, addlDelta, exceptionCode); });
     }
 
     CorInfoReloc getRelocTypeHint(void* target) override
     {
         CorInfoReloc result{};
-        CallThenRecord(179, "getRelocTypeHint", &result,
+        CallThenRecord("getRelocTypeHint",
             [&]() { result = _original->getRelocTypeHint(target); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getRelocTypeHint(_thisHandle, ppException, target); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getRelocTypeHint(_thisHandle, ppException, target, result, exceptionCode); });
         return result;
     }
 
     uint32_t getExpectedTargetArchitecture() override
     {
         uint32_t result{};
-        CallThenRecord(180, "getExpectedTargetArchitecture", &result,
+        CallThenRecord("getExpectedTargetArchitecture",
             [&]() { result = _original->getExpectedTargetArchitecture(); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getExpectedTargetArchitecture(_thisHandle, ppException); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getExpectedTargetArchitecture(_thisHandle, ppException, result, exceptionCode); });
         return result;
     }
 
     uint32_t getJitFlags(CORJIT_FLAGS* flags, uint32_t sizeInBytes) override
     {
         uint32_t result{};
-        CallThenRecord(181, "getJitFlags", &result,
+        CallThenRecord("getJitFlags",
             [&]() { result = _original->getJitFlags(flags, sizeInBytes); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getJitFlags(_thisHandle, ppException, flags, sizeInBytes); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getJitFlags(_thisHandle, ppException, flags, sizeInBytes, result, exceptionCode); });
         return result;
     }
 
     CORINFO_WASM_TYPE_SYMBOL_HANDLE getWasmTypeSymbol(CorInfoWasmType* types, size_t typesSize) override
     {
         CORINFO_WASM_TYPE_SYMBOL_HANDLE result{};
-        CallThenRecord(182, "getWasmTypeSymbol", &result,
+        CallThenRecord("getWasmTypeSymbol",
             [&]() { result = _original->getWasmTypeSymbol(types, typesSize); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getWasmTypeSymbol(_thisHandle, ppException, types, typesSize); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getWasmTypeSymbol(_thisHandle, ppException, types, typesSize, result, exceptionCode); });
         return result;
     }
 
     CORINFO_METHOD_HANDLE getSpecialCopyHelper(CORINFO_CLASS_HANDLE type) override
     {
         CORINFO_METHOD_HANDLE result{};
-        CallThenRecord(183, "getSpecialCopyHelper", &result,
+        CallThenRecord("getSpecialCopyHelper",
             [&]() { result = _original->getSpecialCopyHelper(type); },
-            [&](CorInfoExceptionClass** ppException) { _callbacks->getSpecialCopyHelper(_thisHandle, ppException, type); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getSpecialCopyHelper(_thisHandle, ppException, type, result, exceptionCode); });
         return result;
     }

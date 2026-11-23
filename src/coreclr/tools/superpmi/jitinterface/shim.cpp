@@ -7,9 +7,8 @@
 // propagate through native frames only, as they were thrown, which the runtime depends on (for example, to get the
 // managed exception object of a type load failure).
 //
-// The managed collector also calls the EE itself, to record more data, through the forwarders here. An exception
-// of such a call is caught where the call is made, and only its code goes to the managed collector, which records
-// it: the call that the JIT made succeeded, so the exception doesn't propagate.
+// The managed collector only records what it gets: the arguments and the result of each call, and the code of the
+// exception that the EE threw, if any. The few other queries of the EE that the recording needs are made here.
 
 #include <stdint.h>
 #include <stdio.h>
@@ -31,8 +30,7 @@
 
 static const WCHAR s_emptyMessage[1] = {};
 
-// The code of an exception that the EE threw for a call of the managed collector, or an error of the managed shim
-// itself. The errors are thrown as CapturedException*, so that the shim doesn't take the CorInfoExceptionClass* that
+// The code of an exception that the EE threw for a query of the shim itself, or an error of the managed shim. The errors are thrown as CapturedException*, so that the shim doesn't take the CorInfoExceptionClass* that
 // crossgen2's JIT-EE interface throws for its own.
 struct CapturedException : CorInfoExceptionClass
 {
@@ -93,22 +91,6 @@ static void RunCapturingException(CorInfoExceptionClass** ppException, F functio
     }
 }
 
-static bool Forward_runWithErrorTrap(ICorJitInfo* jitInfo, CorInfoExceptionClass** ppException, ICorJitInfo::errorTrapFunction function, void* parameter)
-{
-    bool result = false;
-    RunCapturingException(ppException, [&]() { result = jitInfo->runWithErrorTrap(function, parameter); });
-    return result;
-}
-
-static bool Forward_runWithSPMIErrorTrap(ICorJitInfo* jitInfo, CorInfoExceptionClass** ppException, ICorJitInfo::errorTrapFunction function, void* parameter)
-{
-    bool result = false;
-    RunCapturingException(ppException, [&]() { result = jitInfo->runWithSPMIErrorTrap(function, parameter); });
-    return result;
-}
-
-#include "icorjitinfo_forwarders_generated.h"
-
 #ifdef _MSC_VER
 // Runs 'call'. If it throws, calls 'recordException' with the code of the exception while the exception propagates:
 // the filter only records the code, so the exception isn't caught, and the frames that the exception unwinds are
@@ -150,65 +132,46 @@ static void CallRecordingException(FCall& call, FRecord& recordException)
 }
 #endif
 
-// The call that the JIT made, which the managed collector records: the managed OriginalJitInfo returns its result
-// (or throws, if it threw) instead of calling the EE again. The method of the call must take it, once, before it
-// calls any other method of OriginalJitInfo (see ShimInterop.PendingCall).
-struct PendingCall
-{
-    // The index of the method, or -1 when there is no pending call.
-    int32_t index;
-    int32_t taken;
-    uint32_t exceptionCode;
-    void* result;
-};
-
-// Called when the managed collector didn't take the pending call: it would have recorded something else than what
-// the JIT got. Doesn't return.
-typedef void (*PendingCallNotTakenCallback)(int32_t index);
-
-// Records updateEntryPointForTailCall, with the entry point from before the call, which the callback of the managed
-// JIT-EE interface doesn't get. Takes the pending call, and doesn't call the EE.
+// Records updateEntryPointForTailCall, with the entry point from before the call too.
 typedef void (*RecordUpdateEntryPointForTailCallCallback)(void* thisHandle, CorInfoExceptionClass** ppException,
-    CORINFO_CONST_LOOKUP* origEntryPoint, CORINFO_CONST_LOOKUP* entryPoint);
+    CORINFO_CONST_LOOKUP* origEntryPoint, CORINFO_CONST_LOOKUP* entryPoint, uint32_t exceptionCode);
+
+#include "icorjitinfo_recorder_generated.h"
 
 // Counts a call of the forwarding shims, with the name of the method.
 typedef void (*OnCallCallback)(const char* name);
 
-// The ICorJitInfo that the JIT gets from the shims. Each method calls the EE's, and then (Recording) the managed
-// collector to record the call; or (otherwise) only forwards the call, after counting it with onCall if any
-// (superpmi-shim-simple and superpmi-shim-counter). The EE's exceptions propagate from the EE to the JIT (and then to
-// the EE again) through native frames only: the managed collector records the call while the exception propagates,
-// but doesn't get it.
+// The ICorJitInfo that the JIT gets from the shims. Each method calls the EE's, and then (Recording) passes the
+// arguments and the result to the managed collector's recorder; or (otherwise) only forwards the call, after counting
+// it with onCall if any (superpmi-shim-simple and superpmi-shim-counter). The EE's exceptions propagate from the EE to
+// the JIT (and then to the EE again) through native frames only: the recorder gets the code of the exception while it
+// propagates, but not the exception.
 template <bool Recording>
 class ShimJitInfo : public ICorJitInfo
 {
     ICorJitInfo* _original;
     void* _thisHandle;
-    const JitInterfaceCallbacks* _callbacks;
-    PendingCallNotTakenCallback _notTaken;
+    const JitInfoRecorder* _recorder;
     RecordUpdateEntryPointForTailCallCallback _recordUpdateEntryPointForTailCall;
     OnCallCallback _onCall;
 
 public:
-    PendingCall pending;
-
-    ShimJitInfo(ICorJitInfo* original, PendingCallNotTakenCallback notTaken,
-        RecordUpdateEntryPointForTailCallCallback recordUpdateEntryPointForTailCall)
-        : _original(original), _thisHandle(nullptr), _callbacks(nullptr), _notTaken(notTaken),
-          _recordUpdateEntryPointForTailCall(recordUpdateEntryPointForTailCall), _onCall(nullptr), pending{-1, 0, 0, nullptr}
+    ShimJitInfo(ICorJitInfo* original, RecordUpdateEntryPointForTailCallCallback recordUpdateEntryPointForTailCall)
+        : _original(original), _thisHandle(nullptr), _recorder(nullptr),
+          _recordUpdateEntryPointForTailCall(recordUpdateEntryPointForTailCall), _onCall(nullptr)
     {
     }
 
     ShimJitInfo(ICorJitInfo* original, OnCallCallback onCall)
-        : _original(original), _thisHandle(nullptr), _callbacks(nullptr), _notTaken(nullptr),
-          _recordUpdateEntryPointForTailCall(nullptr), _onCall(onCall), pending{-1, 0, 0, nullptr}
+        : _original(original), _thisHandle(nullptr), _recorder(nullptr), _recordUpdateEntryPointForTailCall(nullptr),
+          _onCall(onCall)
     {
     }
 
-    void SetCollector(void* thisHandle, const JitInterfaceCallbacks* callbacks)
+    void SetCollector(void* thisHandle, const JitInfoRecorder* recorder)
     {
         _thisHandle = thisHandle;
-        _callbacks = callbacks;
+        _recorder = recorder;
     }
 
 private:
@@ -218,33 +181,24 @@ private:
             _onCall(name);
     }
 
+    // Has the managed collector record the call, with the code of the exception that the EE threw (0 if none).
     template <typename FCallback>
-    void Record(int index, void* result, uint32_t exceptionCode, FCallback& callback)
+    void Record(uint32_t exceptionCode, FCallback& callback)
     {
-        pending = {index, 0, exceptionCode, result};
         CorInfoExceptionClass* pException = nullptr;
-        callback(&pException);
-        bool taken = pending.taken != 0;
-        pending.index = -1;
-
+        callback(&pException, exceptionCode);
         if (pException == nullptr)
-        {
-            if (!taken)
-                _notTaken(index);
             return;
-        }
 
-        // An error of the collector itself (which may come before it took the call) escapes to the JIT, as the
-        // errors of the managed JIT-EE interface do; but not while an exception of the EE propagates. The exception
-        // of a call that the collector made to the EE itself, to record more data, is dropped: the call that the JIT
-        // made succeeded.
+        // An error of the collector escapes to the JIT, as the errors of the managed JIT-EE interface do; but not
+        // while an exception of the EE propagates.
         if (exceptionCode == 0 && Shim_IsError(pException))
             throw AsCaptured(pException);
         Shim_FreeException(pException);
     }
 
     template <typename FCall, typename FCallback>
-    void CallThenRecord(int index, const char* name, void* result, FCall call, FCallback callback)
+    void CallThenRecord(const char* name, FCall call, FCallback callback)
     {
         if constexpr (!Recording)
         {
@@ -253,20 +207,20 @@ private:
         }
         else
         {
-            auto recordException = [&](uint32_t code) { Record(index, result, code, callback); };
+            auto recordException = [&](uint32_t code) { Record(code, callback); };
             CallRecordingException(call, recordException);
-            Record(index, result, 0, callback);
+            Record(0, callback);
         }
     }
 
     // Records the call, which the caller then makes.
     template <typename FCallback>
-    void RecordBefore(int index, const char* name, void* result, FCallback callback)
+    void RecordBefore(const char* name, FCallback callback)
     {
         if constexpr (!Recording)
             OnCall(name);
         else
-            Record(index, result, 0, callback);
+            Record(0, callback);
     }
 
 public:
@@ -283,9 +237,9 @@ public:
         {
             CorInfoHelpFunc result{};
             bool hasSideEffects = false;
-            CallThenRecord(Index_getNewHelper, "getNewHelper", &result,
+            CallThenRecord("getNewHelper",
                 [&]() { result = _original->getNewHelper(classHandle, &hasSideEffects); },
-                [&](CorInfoExceptionClass** ppException) { _callbacks->getNewHelper(_thisHandle, ppException, classHandle, &hasSideEffects); });
+                [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getNewHelper(_thisHandle, ppException, classHandle, &hasSideEffects, result, exceptionCode); });
             if (pHasSideEffects != nullptr)
                 *pHasSideEffects = hasSideEffects;
             return result;
@@ -303,9 +257,9 @@ public:
         {
             TypeCompareState result{};
             CORINFO_CLASS_HANDLE tempUnderlyingType = nullptr;
-            CallThenRecord(Index_isEnum, "isEnum", &result,
+            CallThenRecord("isEnum",
                 [&]() { result = _original->isEnum(cls, &tempUnderlyingType); },
-                [&](CorInfoExceptionClass** ppException) { _callbacks->isEnum(_thisHandle, ppException, cls, &tempUnderlyingType); });
+                [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->isEnum(_thisHandle, ppException, cls, &tempUnderlyingType, result, exceptionCode); });
             if (underlyingType != nullptr)
                 *underlyingType = tempUnderlyingType;
             return result;
@@ -323,9 +277,9 @@ public:
         {
             CORINFO_CONST_LOOKUP nativeEntrypoint{};
             CORINFO_METHOD_HANDLE method = nullptr;
-            CallThenRecord(Index_getHelperFtn, "getHelperFtn", nullptr,
+            CallThenRecord("getHelperFtn",
                 [&]() { _original->getHelperFtn(ftnNum, &nativeEntrypoint, &method); },
-                [&](CorInfoExceptionClass** ppException) { _callbacks->getHelperFtn(_thisHandle, ppException, ftnNum, &nativeEntrypoint, &method); });
+                [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getHelperFtn(_thisHandle, ppException, ftnNum, &nativeEntrypoint, &method, exceptionCode); });
             if (pNativeEntrypoint != nullptr)
                 *pNativeEntrypoint = nativeEntrypoint;
             if (pMethod != nullptr)
@@ -333,13 +287,31 @@ public:
         }
     }
 
+    CorInfoTypeWithMod getArgType(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_HANDLE args, CORINFO_CLASS_HANDLE* vcTypeRet) override
+    {
+        CorInfoTypeWithMod result{};
+        CallThenRecord("getArgType",
+            [&]() { result = _original->getArgType(sig, args, vcTypeRet); },
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recorder->getArgType(_thisHandle, ppException, sig, args, vcTypeRet, result, exceptionCode); });
+
+        if constexpr (Recording)
+        {
+            // Records getArgClass too, for a "fat" method context. What it throws is dropped: the JIT didn't call it.
+            CorInfoExceptionClass* pException = nullptr;
+            RunCapturingException(&pException, [&]() { getArgClass(sig, args); });
+            if (pException != nullptr)
+                Shim_FreeException(pException);
+        }
+        return result;
+    }
+
     // The collector records the entry point from before the call too, with a callback of its own.
     void updateEntryPointForTailCall(CORINFO_CONST_LOOKUP* entryPoint) override
     {
         CORINFO_CONST_LOOKUP origEntryPoint = *entryPoint;
-        CallThenRecord(Index_updateEntryPointForTailCall, "updateEntryPointForTailCall", nullptr,
+        CallThenRecord("updateEntryPointForTailCall",
             [&]() { _original->updateEntryPointForTailCall(entryPoint); },
-            [&](CorInfoExceptionClass** ppException) { _recordUpdateEntryPointForTailCall(_thisHandle, ppException, &origEntryPoint, entryPoint); });
+            [&](CorInfoExceptionClass** ppException, uint32_t exceptionCode) { _recordUpdateEntryPointForTailCall(_thisHandle, ppException, &origEntryPoint, entryPoint, exceptionCode); });
     }
 
     // The collector's error trap for its own errors, which the EE's exceptions go through.
@@ -460,16 +432,57 @@ public:
 
 struct RecordingCompilerCallbacks
 {
-    // Starts recording the compilation: returns the handle of the managed JIT-EE interface, with its callbacks in
-    // *pJitInfoCallbacks; or null not to record it.
-    void* (*beginCompile)(void* thisHandle, ICorJitInfo* comp, PendingCall* pending, CORINFO_METHOD_INFO* info,
-        unsigned flags, const JitInterfaceCallbacks** pJitInfoCallbacks);
+    // Starts recording the compilation: returns the handle of the managed recorder, with its callbacks in *pRecorder;
+    // or null not to record it.
+    void* (*beginCompile)(void* thisHandle, ICorJitInfo* comp, CORINFO_METHOD_INFO* info, unsigned flags,
+        const JitInfoRecorder** pRecorder);
     // Ends recording the compilation, also when an exception escapes the JIT.
     void (*endCompile)(void* thisHandle, void* jitInfoHandle, CorJitResult result, uint8_t* nativeEntry, uint32_t nativeSizeOfCode);
     void (*setTargetOS)(void* thisHandle, CORINFO_OS os);
-    PendingCallNotTakenCallback pendingCallNotTaken;
     RecordUpdateEntryPointForTailCallCallback recordUpdateEntryPointForTailCall;
 };
+
+// Prints the name in full, with a buffer of the size that the first call requires, so that the method context
+// records all of it.
+template <typename FPrint>
+static void PrintInFull(FPrint print)
+{
+    char buffer[256];
+    size_t requiredSize = 0;
+    print(buffer, sizeof(buffer), &requiredSize);
+    if (requiredSize > sizeof(buffer))
+    {
+        std::string fullBuffer(requiredSize, '\0');
+        print(&fullBuffer[0], requiredSize, nullptr);
+    }
+}
+
+// Forces some extra data into the method context ("fat" method contexts), which ildump needs. What the EE throws
+// for these queries is dropped: the JIT didn't make them.
+static void RecordExtraData(ICorJitInfo* jitInfo, CORINFO_METHOD_INFO* info)
+{
+    CorInfoExceptionClass* pException = nullptr;
+    RunCapturingException(&pException, [&]() {
+        static const CorInfoClassId classIds[] = {
+            CLASSID_SYSTEM_OBJECT, CLASSID_TYPED_BYREF, CLASSID_TYPE_HANDLE, CLASSID_FIELD_HANDLE,
+            CLASSID_METHOD_HANDLE, CLASSID_STRING, CLASSID_RUNTIME_TYPE,
+        };
+        for (CorInfoClassId classId : classIds)
+            jitInfo->getBuiltinClass(classId);
+
+        CORINFO_CLASS_HANDLE ourClass = jitInfo->getMethodClass(info->ftn);
+        jitInfo->getClassAttribs(ourClass);
+        jitInfo->isValueClass(ourClass);
+        jitInfo->asCorInfoType(ourClass);
+
+        PrintInFull([&](char* buffer, size_t bufferSize, size_t* pRequiredBufferSize) {
+            return jitInfo->printClassName(ourClass, buffer, bufferSize, pRequiredBufferSize); });
+        PrintInFull([&](char* buffer, size_t bufferSize, size_t* pRequiredBufferSize) {
+            return jitInfo->printMethodName(info->ftn, buffer, bufferSize, pRequiredBufferSize); });
+    });
+    if (pException != nullptr)
+        Shim_FreeException(pException);
+}
 
 // The ICorJitCompiler of the collector, which compiles with the real JIT and records the JIT-EE calls of the
 // compilation with RecordingJitInfo. RecordingJitInfo calls the EE from native code before the managed collector
@@ -503,15 +516,16 @@ public:
     CorJitResult compileMethod(ICorJitInfo* comp, CORINFO_METHOD_INFO* info, unsigned flags, uint8_t** nativeEntry,
         uint32_t* nativeSizeOfCode) override
     {
-        RecordingJitInfo jitInfo(comp, _callbacks->pendingCallNotTaken, _callbacks->recordUpdateEntryPointForTailCall);
-        const JitInterfaceCallbacks* jitInfoCallbacks = nullptr;
-        void* jitInfoHandle = _callbacks->beginCompile(_thisHandle, comp, &jitInfo.pending, info, flags, &jitInfoCallbacks);
+        RecordingJitInfo jitInfo(comp, _callbacks->recordUpdateEntryPointForTailCall);
+        const JitInfoRecorder* recorder = nullptr;
+        void* jitInfoHandle = _callbacks->beginCompile(_thisHandle, comp, info, flags, &recorder);
         if (jitInfoHandle == nullptr)
             return _jit->compileMethod(comp, info, flags, nativeEntry, nativeSizeOfCode);
 
-        jitInfo.SetCollector(jitInfoHandle, jitInfoCallbacks);
+        jitInfo.SetCollector(jitInfoHandle, recorder);
         *nativeEntry = nullptr;
         *nativeSizeOfCode = 0;
+        RecordExtraData(&jitInfo, info);
 
         // Ends the recording when the JIT returns, or when an exception escapes it (as the destructors run while
         // the exception unwinds, also for the structured exceptions with /EHa).
@@ -653,19 +667,9 @@ extern "C" void Shim_EnableCallCounting(const char* fileName)
     CallCounter::s_counts = new std::unordered_map<const char*, long>();
 }
 
-extern "C" void* const* Shim_GetForwarders()
-{
-    return s_forwarders;
-}
-
 extern "C" CorInfoExceptionClass* Shim_AllocError(uint32_t code)
 {
     return new CapturedException(code, true);
-}
-
-extern "C" uint32_t Shim_GetExceptionCode(CorInfoExceptionClass* pException)
-{
-    return AsCaptured(pException)->code;
 }
 
 extern "C" bool Shim_IsError(CorInfoExceptionClass* pException)
@@ -698,21 +702,42 @@ extern "C" ICorJitHost* Shim_CreateJitHost(ICorJitHost* original, void* thisHand
     return new JitHostWrapper(original, thisHandle, callbacks);
 }
 
-// The error trap for the errors of the managed shim (as opposed to the EE's), for the collector's
-// runWithSPMIErrorTrap: it only catches the method context errors, and returns other exceptions in *ppException.
-extern "C" bool Shim_RunWithSPMIErrorTrap(CorInfoExceptionClass** ppException, ICorJitInfo::errorTrapFunction function,
-    void* parameter, uint32_t errorCode)
+// The name of the method and of its class (in *className), for the collection filter of the collector; null if
+// the EE throws. Not recorded.
+extern "C" const char* Shim_GetMethodNameFromMetadata(ICorJitInfo* comp, CORINFO_METHOD_HANDLE ftn, const char** className)
 {
-    RunCapturingException(ppException, [&]() { function(parameter); });
-    if (*ppException == nullptr)
-        return true;
+    const char* result = nullptr;
+    *className = nullptr;
+    CorInfoExceptionClass* pException = nullptr;
+    RunCapturingException(&pException, [&]() { result = comp->getMethodNameFromMetadata(ftn, className, nullptr, nullptr, 0); });
+    if (pException == nullptr)
+        return result;
 
-    if (Shim_IsError(*ppException) && AsCaptured(*ppException)->code == errorCode)
+    Shim_FreeException(pException);
+    *className = nullptr;
+    return nullptr;
+}
+
+// The length of the GC layout of the class, in pointers of the target (not of the host, so that cross-target
+// collections, such as wasm32 on an x64 host, record all of it), for the collector's getClassGClayout. Not recorded.
+// The EE answered getClassGClayout for the class, so these don't throw; if they do, the recording can't go on.
+extern "C" uint32_t Shim_GetClassGCLayoutLength(ICorJitInfo* comp, CORINFO_CLASS_HANDLE cls)
+{
+    uint32_t result = 0;
+    CorInfoExceptionClass* pException = nullptr;
+    RunCapturingException(&pException, [&]() {
+        uint32_t architecture = comp->getExpectedTargetArchitecture();
+        uint32_t pointerSize = (architecture == CORINFO_ARCH_X86 || architecture == CORINFO_ARCH_ARM ||
+            architecture == CORINFO_ARCH_WASM32) ? 4 : 8;
+        uint32_t size = comp->isValueClass(cls) ? comp->getClassSize(cls) : comp->getHeapClassSize(cls);
+        result = (size + pointerSize - 1) / pointerSize;
+    });
+    if (pException != nullptr)
     {
-        Shim_FreeException(*ppException);
-        *ppException = nullptr;
+        fprintf(stderr, "SuperPMI collector: the EE threw for the GC layout length of a class.\n");
+        abort();
     }
-    return false;
+    return result;
 }
 
 extern "C" int Shim_HostGetIntConfigValue(ICorJitHost* host, const char* name, int defaultValue)

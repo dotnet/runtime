@@ -93,7 +93,6 @@ internal sealed unsafe class CollectorJitCompiler
         beginCompile = &BeginCompileCallback,
         endCompile = &EndCompileCallback,
         setTargetOS = &SetTargetOSCallback,
-        pendingCallNotTaken = &PendingCallNotTakenCallback,
         recordUpdateEntryPointForTailCall = &CorInfoImpl.RecordUpdateEntryPointForTailCallCallback,
     });
 
@@ -120,24 +119,18 @@ internal sealed unsafe class CollectorJitCompiler
 
     private static CollectorJitCompiler Get(IntPtr thisHandle) => (CollectorJitCompiler)GCHandle.FromIntPtr(thisHandle).Target;
 
-    // Returns the handle of the JIT-EE interface that records the compilation, or 0 not to record it.
+    // Returns the handle of the recorder of the compilation, or 0 not to record it.
     [UnmanagedCallersOnly]
-    private static IntPtr BeginCompileCallback(IntPtr thisHandle, IntPtr comp, ShimInterop.PendingCall* pending, CORINFO_METHOD_INFO* info,
-        uint flags, IntPtr* pJitInfoCallbacks)
+    private static IntPtr BeginCompileCallback(IntPtr thisHandle, IntPtr comp, CORINFO_METHOD_INFO* info, uint flags, IntPtr* pRecorder)
     {
         try
         {
-            CorInfoImpl ourJitInfo = Get(thisHandle).beginCompile(comp, pending, info, flags);
+            CorInfoImpl ourJitInfo = Get(thisHandle).beginCompile(comp, info, flags);
             if (ourJitInfo == null)
                 return 0;
 
-            *pJitInfoCallbacks = CorInfoImpl.UnmanagedCallbacks;
+            *pRecorder = CorInfoImpl.RecorderCallbacks;
             return GCHandle.ToIntPtr(GCHandle.Alloc(ourJitInfo));
-        }
-        catch (EEException)
-        {
-            // The EE threw for a call that the collector made itself: the compilation isn't recorded.
-            return 0;
         }
         catch (Exception ex)
         {
@@ -168,29 +161,23 @@ internal sealed unsafe class CollectorJitCompiler
     [UnmanagedCallersOnly]
     private static void SetTargetOSCallback(IntPtr thisHandle, CORINFO_OS os) => Get(thisHandle)._currentOs = os;
 
-    [UnmanagedCallersOnly]
-    private static void PendingCallNotTakenCallback(int index)
-        => ShimInterop.Fail(new InvalidOperationException($"The collector didn't take the pending call to {OriginalJitInfo.GetMethodName(index)}"));
-
-    private CorInfoImpl beginCompile(IntPtr comp, ShimInterop.PendingCall* pending, CORINFO_METHOD_INFO* info, uint flags)
+    private CorInfoImpl beginCompile(IntPtr comp, CORINFO_METHOD_INFO* info, uint flags)
     {
-        var original = new OriginalJitInfo(comp, ShimInterop.Forwarders, pending);
-
         // See if we are filtering the collection (currently by simple substring match).
         if (Collector.CollectionFilter != null)
         {
-            byte* className = null;
-            byte* methodName = original.getMethodNameFromMetadata(info->ftn, &className, null, null, 0);
+            byte* className;
+            byte* methodName = ShimInterop.Shim_GetMethodNameFromMetadata(comp, info->ftn, &className);
             if (!Contains(methodName, Collector.CollectionFilter) && !Contains(className, Collector.CollectionFilter))
                 return null;
         }
 
         var mc = new MethodContext();
-        var ourJitInfo = new CorInfoImpl(this, original, mc);
+        var ourJitInfo = new CorInfoImpl(this, comp, mc);
 
+        // RecordingJitCompiler then records the extra data of a "fat" method context.
         mc.cr.recProcessName(ShimEnvironment.GetProcessCommandLine());
         mc.recCompileMethod(info, flags, _currentOs);
-        ourJitInfo.RecordExtraData(info);
 
         // Record data from the global context, if any.
         if (Collector.GlobalContext != null)
