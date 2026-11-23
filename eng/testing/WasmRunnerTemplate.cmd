@@ -1,9 +1,11 @@
 @echo off
-setlocal enabledelayedexpansion
+setlocal disabledelayedexpansion
 
 :: SetCommands defined in eng\testing\tests.wasm.targets
 [[SetCommands]]
 [[SetCommandsEcho]]
+
+if defined WASM_MAIN_JS set "MAIN_JS=--js-file=%WASM_MAIN_JS%"
 
 set EXECUTION_DIR=%~dp0
 if [%3] NEQ [] (
@@ -42,7 +44,7 @@ if /I [%XHARNESS_COMMAND%] == [test] (
     if [%JS_ENGINE%] == [] (
         set "JS_ENGINE=--engine^=V8"
     )
-    if [%MAIN_JS%] == [] (
+    if not defined MAIN_JS (
         set "MAIN_JS=--js-file^=test-main.mjs"
     )
 
@@ -72,8 +74,14 @@ if /I [%XHARNESS_COMMAND%] == [test] (
     )
 )
 
-if [%XHARNESS_ARGS%] == [] (
-    set "XHARNESS_ARGS=%JS_ENGINE% %JS_ENGINE_ARGS% %BROWSER_PATH% %MAIN_JS%"
+set "XHARNESS_MAIN_JS_ARG="
+if not defined XHARNESS_ARGS (
+    if defined WASM_MAIN_JS (
+        set "XHARNESS_ARGS=%JS_ENGINE% %JS_ENGINE_ARGS% %BROWSER_PATH%"
+        set XHARNESS_MAIN_JS_ARG="%MAIN_JS%"
+    ) else (
+        set "XHARNESS_ARGS=%JS_ENGINE% %JS_ENGINE_ARGS% %BROWSER_PATH% %MAIN_JS%"
+    )
 )
 
 if [%XUNIT_RANDOM_ORDER_SEED%] NEQ [] (
@@ -86,7 +94,7 @@ echo XHARNESS_OUT=%XHARNESS_OUT%
 echo XHARNESS_CLI_PATH=%XHARNESS_CLI_PATH%
 echo HARNESS_RUNNER=%HARNESS_RUNNER%
 echo XHARNESS_COMMAND=%XHARNESS_COMMAND%
-echo MAIN_JS=%MAIN_JS%
+echo "MAIN_JS=%MAIN_JS%"
 echo JS_ENGINE=%JS_ENGINE%
 echo JS_ENGINE_ARGS=%JS_ENGINE_ARGS%
 echo XHARNESS_ARGS=%XHARNESS_ARGS%
