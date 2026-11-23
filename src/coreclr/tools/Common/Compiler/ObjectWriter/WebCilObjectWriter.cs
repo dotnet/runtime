@@ -618,11 +618,20 @@ namespace ILCompiler.ObjectWriter
             dataSection.EmitToStream(outputFileStream);
         }
 
-        public void EmitSymbolMap(string path)
+        public void EmitSymbolMap(string primaryModulePath)
+        {
+            WriteSymbolMap(Path.ChangeExtension(primaryModulePath, ".symbols"), GetPartitionedFunctionNames(auxiliary: false));
+            if (_firstAuxiliaryFunctionIndex >= 0)
+            {
+                WriteSymbolMap(GetAuxiliarySymbolMapPath(primaryModulePath), GetPartitionedFunctionNames(auxiliary: true, includeSharedImports: true));
+            }
+        }
+
+        private static void WriteSymbolMap(string path, IEnumerable<WasmSymbol> symbols)
         {
             Console.WriteLine($"Emitting WebAssembly symbol map: {path}");
             using var writer = new StreamWriter(path, append: false, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
-            foreach (WasmSymbol symbol in _wasmSymbolManager.GetDefinitions(WasmIndexSpace.Function))
+            foreach (WasmSymbol symbol in symbols)
             {
                 writer.Write(symbol.Index.ToString(CultureInfo.InvariantCulture));
                 writer.Write(':');

@@ -188,10 +188,10 @@ public class R2RTestSuites
                 new(nameof(AuxiliaryModuleContainsProfileColdMethodBodies), [new CrossgenAssembly(input)])
                 {
                     Options = [Crossgen2Option.Composite, Crossgen2Option.Optimize],
-                    AdditionalArgs = ["--auxiliary-modules"],
+                    AdditionalArgs = ["--auxiliary-modules", "--wasm-debug-info=name,symbol-map"],
                     MibcMethods = [new(input.AssemblyName, "Webcil.WasmWebcilModule", "FixupLeaf")],
                     OutputFileExtension = ".wasm",
-                    Validate = WasmR2RAssert.AssertAuxiliaryModule,
+                    Validate = reader => WasmR2RAssert.AssertAuxiliaryModule(reader, checkSymbolMaps: true),
                 },
             ]));
     }

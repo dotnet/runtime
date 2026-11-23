@@ -180,12 +180,19 @@ namespace ILCompiler.DependencyAnalysis
             string wasmSymbolMapPath = format == ReadyToRunContainerFormat.Wasm
                 ? Path.ChangeExtension(_objectFilePath, ".symbols")
                 : null;
+            string auxiliarySymbolMapPath = format == ReadyToRunContainerFormat.Wasm && _nodeFactory.UsesAuxiliaryModules
+                ? WebCilObjectWriter.GetAuxiliarySymbolMapPath(_objectFilePath)
+                : null;
 
             try
             {
                 if (wasmSymbolMapPath is not null && File.Exists(wasmSymbolMapPath))
                 {
                     File.Delete(wasmSymbolMapPath);
+                }
+                if (auxiliarySymbolMapPath is not null && File.Exists(auxiliarySymbolMapPath))
+                {
+                    File.Delete(auxiliarySymbolMapPath);
                 }
 
                 var stopwatch = Stopwatch.StartNew();
@@ -211,7 +218,7 @@ namespace ILCompiler.DependencyAnalysis
                 if (objectWriter is WebCilObjectWriter webCilObjectWriter &&
                     (_wasmDebugInfo & WasmDebugInfo.SymbolMap) != 0)
                 {
-                    webCilObjectWriter.EmitSymbolMap(wasmSymbolMapPath);
+                    webCilObjectWriter.EmitSymbolMap(_objectFilePath);
                 }
 
                 if (_outputInfoBuilder is not null)
@@ -291,11 +298,14 @@ namespace ILCompiler.DependencyAnalysis
                     {
                     }
 
-                    if (wasmSymbolMapPath is not null)
+                    foreach (string symbolMapPath in new[] { wasmSymbolMapPath, auxiliarySymbolMapPath })
                     {
+                        if (symbolMapPath is null)
+                            continue;
+
                         try
                         {
-                            File.Delete(wasmSymbolMapPath);
+                            File.Delete(symbolMapPath);
                         }
                         catch
                         {

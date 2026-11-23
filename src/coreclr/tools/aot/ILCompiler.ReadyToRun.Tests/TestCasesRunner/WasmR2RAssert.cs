@@ -53,7 +53,7 @@ internal static class WasmR2RAssert
     /// Validates a composite image whose profile-cold method bodies were moved into a single auxiliary
     /// WebAssembly module, and the auxiliary module's ActivateModule export.
     /// </summary>
-    public static void AssertAuxiliaryModule(ReadyToRunReader reader)
+    public static void AssertAuxiliaryModule(ReadyToRunReader reader, bool checkSymbolMaps = false)
     {
         const int RuntimeFunctionEntrySize = sizeof(uint) * 2;
         const byte GlobalGetOpcode = 0x23;
@@ -136,6 +136,17 @@ internal static class WasmR2RAssert
 
         Assert.True(TryGetWasmSectionBounds(auxiliary, WasmSectionKind.Code, out offset, out end));
         uint functionCount = ReadWasmUleb32(auxiliary, ref offset, end);
+        if (checkSymbolMaps)
+        {
+            Assert.True(WasmSymbolMapHasExpectedFunctionNames(reader, out string diagnostic), diagnostic);
+            Assert.True(WasmSymbolMapHasExpectedFunctionNames(auxiliaryPath, auxiliaryImportedFunctions + functionCount, out diagnostic), diagnostic);
+            string[] primaryMap = File.ReadAllLines(Path.ChangeExtension(reader.Filename, ".symbols"));
+            string[] auxiliaryMap = File.ReadAllLines(Path.ChangeExtension(auxiliaryPath, ".symbols"));
+            AssertSymbolMapMatchesNameSection(primary, primaryMap);
+            AssertSymbolMapMatchesNameSection(auxiliary, auxiliaryMap);
+            Assert.Equal($"{activateModule.Index.ToString(CultureInfo.InvariantCulture)}:ActivateModule", auxiliaryMap[(int)activateModule.Index]);
+        }
+
         Assert.True(activateModule.Index >= auxiliaryImportedFunctions, "ActivateModule must be defined in the auxiliary module.");
         uint activationBodyIndex = activateModule.Index - auxiliaryImportedFunctions;
         Assert.True(activationBodyIndex < functionCount, "ActivateModule must have a body in the auxiliary module.");
@@ -158,6 +169,18 @@ internal static class WasmR2RAssert
         ImmutableArray<byte> instructions = ImmutableArray.Create(auxiliary[offset..bodyEnd]);
         var disassembler = new WasmDisassembler(instructions, 0, instructions.Length);
         Assert.Contains("table.init", disassembler.Disassemble(), StringComparison.Ordinal);
+
+        static void AssertSymbolMapMatchesNameSection(ReadOnlySpan<byte> image, string[] map)
+        {
+            Assert.True(TryGetWasmFunctionNameSubsection(image, out int offset, out int end));
+            uint count = ReadWasmUleb32(image, ref offset, end);
+            for (uint i = 0; i < count; i++)
+            {
+                uint index = ReadWasmUleb32(image, ref offset, end);
+                string name = ReadWasmName(image, ref offset, end);
+                Assert.Equal($"{index.ToString(CultureInfo.InvariantCulture)}:{name}", map[(int)index]);
+            }
+        }
     }
 
     public static void AssertFrameIdentityPrologs(WebcilImageReader reader)
@@ -545,8 +568,12 @@ internal static class WasmR2RAssert
         Dictionary<(string Module, string Name), WasmImportIndex> imports = ReadWasmImports(webcilReader);
         uint importedFunctionCount = CountWasmImports(imports, WasmImportKind.Function);
         uint definedFunctionCount = ReadWasmSectionEntryCount(webcilReader, WasmSectionKind.Function);
-        uint expectedCount = importedFunctionCount + definedFunctionCount;
-        string symbolMapPath = Path.ChangeExtension(reader.Filename, ".symbols");
+        return WasmSymbolMapHasExpectedFunctionNames(reader.Filename, importedFunctionCount + definedFunctionCount, out diagnostic);
+    }
+
+    private static bool WasmSymbolMapHasExpectedFunctionNames(string modulePath, uint expectedCount, out string diagnostic)
+    {
+        string symbolMapPath = Path.ChangeExtension(modulePath, ".symbols");
 
         if (!File.Exists(symbolMapPath))
         {

@@ -30,6 +30,7 @@ namespace ILCompiler.ObjectWriter
         private int _firstAuxiliaryFunctionIndex = -1;
         private int _auxiliarySlotStart;
         private int _auxiliarySlotCount;
+        private int _activationFunctionIndex;
 
         private protected override bool CanIdenticalMethodBodiesBeDeduplicated(ObjectNode left, ObjectNode right) =>
             (left is MethodWithGCInfo { IsAuxiliary: true }) ==
@@ -221,19 +222,15 @@ namespace ILCompiler.ObjectWriter
             auxiliaryCodeSection.SetEntryCount(functionCount - primaryFunctionCount + 1 /* ActivateModule() */);
 
             // Both modules use the same function imports, and ActivateModule is the last definition.
-            int activationFunctionIndex = functionImports + auxiliaryCodeSection.EntryCount - 1;
+            _activationFunctionIndex = functionImports + auxiliaryCodeSection.EntryCount - 1;
             MemoryStream auxiliaryExports = new();
-            WriteExport(auxiliaryExports, ActivateModuleExportName, WasmExportKind.Function, activationFunctionIndex);
+            WriteExport(auxiliaryExports, ActivateModuleExportName, WasmExportKind.Function, _activationFunctionIndex);
             WasmExternallyCountedSection auxiliaryExportSection = new(WasmSectionType.Export, auxiliaryExports, default, sectionIndex: -1);
             auxiliaryExportSection.SetEntryCount(1);
 
-            WasmNameSection? auxiliaryNameSection = null;
-            if (_emitNameSection)
-            {
-                List<WasmSymbol> names = new(GetPartitionedFunctionNames(auxiliary: true));
-                names.Add(new WasmSymbol(new Utf8String(ActivateModuleExportName), WasmIndexSpace.Function, activationFunctionIndex, IsImport: false, HasExplicitName: false));
-                auxiliaryNameSection = new WasmNameSection(names);
-            }
+            WasmNameSection? auxiliaryNameSection = _emitNameSection
+                ? new WasmNameSection(GetPartitionedFunctionNames(auxiliary: true))
+                : null;
 
             return new AuxiliaryPartition
             {
@@ -256,9 +253,7 @@ namespace ILCompiler.ObjectWriter
                 throw new InvalidOperationException("Auxiliary WebAssembly modules require a file output stream.");
 
             int[] tableFunctions = GetTableSlotFunctionIndices();
-            string auxiliaryPath = Path.Combine(
-                Path.GetDirectoryName(primaryFile.Name)!,
-                AuxiliaryModuleMetadataNode.GetAuxiliaryModuleFileName(primaryFile.Name, 0));
+            string auxiliaryPath = GetAuxiliaryModulePath(primaryFile.Name);
             using FileStream auxiliaryOutput = new FileStream(auxiliaryPath, FileMode.Create);
 
             EmitWasmHeader(auxiliaryOutput);
@@ -336,11 +331,21 @@ namespace ILCompiler.ObjectWriter
                 Block.End,
             ]);
 
-        private IEnumerable<WasmSymbol> GetPartitionedFunctionNames(bool auxiliary)
+        private static string GetAuxiliaryModulePath(string primaryModulePath) =>
+            Path.Combine(Path.GetDirectoryName(primaryModulePath)!,
+                AuxiliaryModuleMetadataNode.GetAuxiliaryModuleFileName(primaryModulePath, 0));
+
+        public static string GetAuxiliarySymbolMapPath(string primaryModulePath) =>
+            Path.ChangeExtension(GetAuxiliaryModulePath(primaryModulePath), ".symbols");
+
+        private IEnumerable<WasmSymbol> GetPartitionedFunctionNames(bool auxiliary, bool includeSharedImports = false)
         {
             foreach (WasmSymbol symbol in _wasmSymbolManager.GetDefinitions(WasmIndexSpace.Function))
-                if (IsAuxiliaryFunctionIndex(symbol.Index) == auxiliary)
+                if (IsAuxiliaryFunctionIndex(symbol.Index) == auxiliary || (includeSharedImports && symbol.IsImport))
                     yield return symbol with { Index = GetPartitionedFunctionIndex(symbol.Index) };
+
+            if (auxiliary)
+                yield return new WasmSymbol(new Utf8String(ActivateModuleExportName), WasmIndexSpace.Function, _activationFunctionIndex, IsImport: false, HasExplicitName: false);
         }
 
         private void WritePassiveElementSegment(Stream stream, int[] tableFunctions, int start, int count)

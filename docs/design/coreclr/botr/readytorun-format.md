@@ -951,6 +951,8 @@ The primary module's methods come first in `RuntimeFunctions`, and each auxiliar
 
 The host-facing exports `getWebcilSize` and `patchWebcilHeader` do not occupy shared function-table slots. When auxiliary module metadata is enabled, they are the first defined WebAssembly functions. In a split image, primary thunks precede compiled methods; auxiliary functions form a contiguous suffix of the function definitions and of the shared table slots. The `RuntimeFunctions` sentinel separately identifies the first compiled method's slot. A ReadyToRun image with no table entries, such as a composite forwarding image, advertises one reserved but uninitialized slot so the browser loader can distinguish it from an IL-only image.
 
+When `--wasm-debug-info` includes `symbol-map`, each emitted module has its own `.symbols` file with module-local WebAssembly function indices. For example, `app.wasm` and `app.1.wasm` use `app.symbols` and `app.1.symbols`, respectively.
+
 # Native Format
 
 Native format is set of encoding patterns that allow persisting type system data in a binary format that is
