@@ -2030,7 +2030,7 @@ extern "C" PCODE QCALLTYPE Delegate_GetMulticastInvokeSlow(MethodTable* pDelegat
         ILCodeLabel *nextDelegate = pCode->NewCodeLabel();
 
         // initialize counter
-        pCode->EmitLDC(0);
+        pCode->EmitLDC_I4(0);
         pCode->EmitSTLOC(dwLoopCounterNum);
 
         //Label_nextDelegate:
@@ -2041,11 +2041,10 @@ extern "C" PCODE QCALLTYPE Delegate_GetMulticastInvokeSlow(MethodTable* pDelegat
         ILCodeLabel *debuggerCheckEnd = pCode->NewCodeLabel();
 
         // Call MulticastDebuggerTraceHelper only if we have a controller subscribing to the event
-        pCode->EmitLDC((DWORD_PTR)&g_multicastDelegateTraceActiveCount);
-        pCode->EmitCONV_I();
+        pCode->EmitLDC_I((DWORD_PTR)&g_multicastDelegateTraceActiveCount);
         pCode->EmitLDIND_I4();
         // g_multicastDelegateTraceActiveCount != 0
-        pCode->EmitLDC(0);
+        pCode->EmitLDC_I4(0);
         pCode->EmitCEQ();
         pCode->EmitBRFALSE(invokeTraceHelper);
 
@@ -2072,7 +2071,7 @@ extern "C" PCODE QCALLTYPE Delegate_GetMulticastInvokeSlow(MethodTable* pDelegat
 
         // increment counter
         pCode->EmitLDLOC(dwLoopCounterNum);
-        pCode->EmitLDC(1);
+        pCode->EmitLDC_I4(1);
         pCode->EmitADD();
         pCode->EmitSTLOC(dwLoopCounterNum);
 
