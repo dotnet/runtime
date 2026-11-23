@@ -799,6 +799,12 @@ namespace System.Runtime.Serialization.DataContracts
             [MemberNotNull(nameof(Members))]
             [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+            [DynamicDependency("key", typeof(KeyValuePair<,>))]
+            [DynamicDependency("value", typeof(KeyValuePair<,>))]
+            [DynamicDependency("_Major", typeof(Version))]
+            [DynamicDependency("_Minor", typeof(Version))]
+            [DynamicDependency("_Build", typeof(Version))]
+            [DynamicDependency("_Revision", typeof(Version))]
             private void ImportDataMembers()
             {
                 Type type = UnderlyingType;

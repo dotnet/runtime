@@ -1108,8 +1108,11 @@ namespace System.Runtime.Serialization.DataContracts
             }
         }
 
+        // Null System.Type members still require validation of their declared type and its base contract.
         [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        [DynamicDependency("#ctor()", typeof(Type))]
+        [DynamicDependency("#ctor()", typeof(MemberInfo))]
         internal static bool IsTypeSerializable(Type type)
         {
             return IsTypeSerializable(type, null);

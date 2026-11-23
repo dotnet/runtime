@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization.DataContracts;
 using System.Xml;
 
@@ -755,12 +756,12 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:MakeGenericMethod",
-                Justification = "The call to MakeGenericMethod is safe due to the fact that XmlObjectSerializerWriteContext.GetDefaultValue is not annotated.")]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal static object? GetDefaultValue(Type type)
         {
-            return GetDefaultValueMethod.MakeGenericMethod(type).Invoke(null, Array.Empty<object>());
+            return type.IsValueType && Nullable.GetUnderlyingType(type) is null
+                ? RuntimeHelpers.GetUninitializedObject(type)
+                : null;
         }
 
         private static MethodInfo? s_getNullableValueMethod;
