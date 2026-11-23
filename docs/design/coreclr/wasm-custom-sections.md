@@ -42,18 +42,19 @@ The source is optional when a newer WebAssembly SDK resolves an older runtime pa
 it. Native relinking still succeeds in that version-skew scenario and retains the linker-generated
 build ID, but the final module has no `producers` section.
 
-Full repository builds link the prebuilt runtime before its pack exists. `WasmApp.InTree.targets`
-therefore generates an equivalent intermediate source; shipped workload targets consume only the
-runtime-pack source.
+Full repository builds link the prebuilt runtime before its pack exists. The in-tree fallback and
+runtime pack generate the source from `dotnet-producers.s.in` using the same runtime version.
+Shipped workload targets consume only the generated source from the runtime pack.
 
-Native links pass `--build-id`. Runtime-pack modules keep that ID when copied into applications,
-while an application relink creates a new file and a new ID. Emscripten and Binaryen preserve the
-linker ID through post-link transformations. When Binaryen emits a source map, it records the same
-value as `debugId`, preserving the module/debug-information association.
+Native links for .NET 12 and later pass `--build-id`. Runtime-pack modules keep that ID when copied
+into applications, while an application relink creates a new file and a new ID. Emscripten and
+Binaryen preserve the linker ID through post-link transformations. When Binaryen emits a source
+map, it records the same value as `debugId`, preserving the module/debug-information association.
 
 ## Managed Wasm writers
 
 `WebcilWasmWrapper` writes regular Webcil metadata directly while constructing the wrapper module.
+It records the converter assembly's informational version, not the application's version.
 
 `WasmObjectWriter` owns compiler producer encoding:
 

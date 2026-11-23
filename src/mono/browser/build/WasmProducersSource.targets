@@ -6,40 +6,12 @@
            Text="%24(_WasmProducersSourceRuntimeName) must be set before writing the WebAssembly producers source." />
     <Error Condition="'$(_WasmProducersSourceVersion)' == ''"
            Text="%24(_WasmProducersSourceVersion) must be set before writing the WebAssembly producers source." />
-    <ItemGroup>
-      <_WasmProducersSourceLine Include=".section .custom_section.producers,&quot;&quot;,@" />
-      <_WasmProducersSourceLine Include=".uleb128 2" />
-      <_WasmProducersSourceLine Include=".uleb128 .Ldotnet_producers_processed_by_field_end - .Ldotnet_producers_processed_by_field_start" />
-      <_WasmProducersSourceLine Include=".Ldotnet_producers_processed_by_field_start:" />
-      <_WasmProducersSourceLine Include=".ascii &quot;processed-by&quot;" />
-      <_WasmProducersSourceLine Include=".Ldotnet_producers_processed_by_field_end:" />
-      <_WasmProducersSourceLine Include=".uleb128 1" />
-      <_WasmProducersSourceLine Include=".uleb128 .Ldotnet_producers_processed_by_name_end - .Ldotnet_producers_processed_by_name_start" />
-      <_WasmProducersSourceLine Include=".Ldotnet_producers_processed_by_name_start:" />
-      <_WasmProducersSourceLine Include=".ascii &quot;$(_WasmProducersSourceRuntimeName)&quot;" />
-      <_WasmProducersSourceLine Include=".Ldotnet_producers_processed_by_name_end:" />
-      <_WasmProducersSourceLine Include=".uleb128 .Ldotnet_producers_processed_by_version_end - .Ldotnet_producers_processed_by_version_start" />
-      <_WasmProducersSourceLine Include=".Ldotnet_producers_processed_by_version_start:" />
-      <_WasmProducersSourceLine Include=".ascii &quot;$(_WasmProducersSourceVersion)&quot;" />
-      <_WasmProducersSourceLine Include=".Ldotnet_producers_processed_by_version_end:" />
-      <_WasmProducersSourceLine Include=".uleb128 .Ldotnet_producers_sdk_field_end - .Ldotnet_producers_sdk_field_start" />
-      <_WasmProducersSourceLine Include=".Ldotnet_producers_sdk_field_start:" />
-      <_WasmProducersSourceLine Include=".ascii &quot;sdk&quot;" />
-      <_WasmProducersSourceLine Include=".Ldotnet_producers_sdk_field_end:" />
-      <_WasmProducersSourceLine Include=".uleb128 1" />
-      <_WasmProducersSourceLine Include=".uleb128 .Ldotnet_producers_sdk_name_end - .Ldotnet_producers_sdk_name_start" />
-      <_WasmProducersSourceLine Include=".Ldotnet_producers_sdk_name_start:" />
-      <_WasmProducersSourceLine Include=".ascii &quot;.NET&quot;" />
-      <_WasmProducersSourceLine Include=".Ldotnet_producers_sdk_name_end:" />
-      <_WasmProducersSourceLine Include=".uleb128 .Ldotnet_producers_sdk_version_end - .Ldotnet_producers_sdk_version_start" />
-      <_WasmProducersSourceLine Include=".Ldotnet_producers_sdk_version_start:" />
-      <_WasmProducersSourceLine Include=".ascii &quot;$(_WasmProducersSourceVersion)&quot;" />
-      <_WasmProducersSourceLine Include=".Ldotnet_producers_sdk_version_end:" />
-    </ItemGroup>
     <MakeDir Directories="$([System.IO.Path]::GetDirectoryName('$(_WasmProducersSourcePath)'))" />
     <WriteLinesToFile
         File="$(_WasmProducersSourcePath)"
-        Lines="@(_WasmProducersSourceLine)"
+        Lines="$([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory)dotnet-producers.s.in')
+                    .Replace('{RuntimeName}', '$(_WasmProducersSourceRuntimeName)')
+                    .Replace('{Version}', '$(_WasmProducersSourceVersion)'))"
         Overwrite="true"
         WriteOnlyWhenDifferent="true" />
   </Target>

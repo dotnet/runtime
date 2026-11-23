@@ -3,7 +3,9 @@
 
 using System.IO;
 using System.IO.Compression;
+using System.Reflection;
 using System.Text;
+using Microsoft.NET.WebAssembly.Webcil;
 using Wasm.Build.Tests;
 using Xunit;
 using Xunit.Abstractions;
@@ -38,7 +40,7 @@ namespace Wasm.Build.NativeRebuild.Tests
                 isNativeBuild: true);
 
             string wasm = FindWasmAsset(GetBinFrameworkDir(config, forPublish: true), "dotnet.native");
-            AssertProducers(wasm, "CoreCLR");
+            AssertProducers(wasm, "CoreCLR", expectedVersion: s_buildEnv.GetRuntimePackVersion(DefaultTargetFramework));
             byte[]? buildId = ReadBuildId(wasm);
             Assert.NotNull(buildId);
             Assert.NotEmpty(buildId!);
@@ -93,26 +95,34 @@ namespace Wasm.Build.NativeRebuild.Tests
 
             string wasm = FindWasmAsset(GetBinFrameworkDir(config, forPublish: true), "dotnet.native");
             Assert.Null(ReadCustomSection(wasm, "producers"));
+            Assert.NotEmpty(Assert.IsType<byte[]>(ReadBuildId(wasm)));
         }
 
         [TestCategory("no-workload")]
         [ConditionalTheory(typeof(BuildTestBase), nameof(UseWebcil))]
-        [InlineData(Configuration.Release)]
-        public void Webcil_EmitsProducersAndHashBuildId(Configuration config)
+        [InlineData(null)]
+        [InlineData("9.9.9-app")]
+        public void Webcil_EmitsProducersAndHashBuildId(string? appProductVersion)
         {
-            ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.WasmBasicTestApp, "meta_webcil");
-            PublishProject(info, config, new PublishOptions(ExtraMSBuildArgs: "-p:_WasmDevel=true"),
-                isNativeBuild: false);
+            const Configuration Config = Configuration.Release;
+            string extraArgs = appProductVersion is null ? "-p:_WasmDevel=true" : $"-p:_WasmDevel=true -p:ProductVersion={appProductVersion}";
+            ProjectInfo info = CopyTestAsset(Config, aot: false, TestAsset.WasmBasicTestApp, $"meta_webcil_{appProductVersion ?? "default"}");
+            string converterVersion = typeof(WebcilWasmWrapper).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion;
 
-            string webcil = FindWasmAsset(GetBinFrameworkDir(config, forPublish: true), info.ProjectName);
-            AssertProducers(webcil, "WebCIL");
+            BuildProject(info, Config, new BuildOptions(ExtraMSBuildArgs: extraArgs), isNativeBuild: false);
+            string buildWebcil = FindWasmAsset(Path.Combine(GetObjDir(Config), "webcil"), info.ProjectName);
+            AssertProducers(buildWebcil, "WebCIL", expectedVersion: converterVersion);
+
+            PublishProject(info, Config, new PublishOptions(ExtraMSBuildArgs: extraArgs, UseCache: false), isNativeBuild: false);
+            string frameworkDirectory = GetBinFrameworkDir(Config, forPublish: true);
+            string webcil = FindWasmAsset(frameworkDirectory, info.ProjectName);
+            AssertProducers(webcil, "WebCIL", expectedVersion: converterVersion);
 
             // Each webcil gets a SHA-256 content hash (32 bytes).
             byte[]? buildId = ReadBuildId(webcil);
             Assert.NotNull(buildId);
             Assert.Equal(32, buildId!.Length);
 
-            string frameworkDirectory = GetBinFrameworkDir(config, forPublish: true);
             string frameworkWebcil = FindWasmAsset(frameworkDirectory, "System.Private.CoreLib");
             AssertProducers(frameworkWebcil, "WebCIL");
             string? frameworkBuildId = GetBuildIdHex(frameworkWebcil);
@@ -185,7 +195,9 @@ namespace Wasm.Build.NativeRebuild.Tests
             using Stream nativeWasmStream = nativeWasmEntry.Open();
             using var nativeWasm = new MemoryStream(checked((int)nativeWasmEntry.Length));
             nativeWasmStream.CopyTo(nativeWasm);
-            byte[]? nativeBuildId = ReadBuildId(nativeWasm.ToArray());
+            byte[] nativeWasmBytes = nativeWasm.ToArray();
+            AssertProducers(nativeWasmBytes, "CoreCLR", expectedVersion: runtimePackVersion);
+            byte[]? nativeBuildId = ReadBuildId(nativeWasmBytes);
             Assert.NotNull(nativeBuildId);
             Assert.NotEmpty(nativeBuildId!);
         }
@@ -201,19 +213,19 @@ namespace Wasm.Build.NativeRebuild.Tests
             return Assert.Single(Directory.GetFiles(frameworkDirectory, $"{baseName}.*.wasm"));
         }
 
-        private static void AssertProducers(string wasmPath, string expectedProcessedBy, bool requireVersion = false)
-            => AssertProducers(File.ReadAllBytes(wasmPath), expectedProcessedBy, requireVersion);
+        private static void AssertProducers(string wasmPath, string expectedProcessedBy, string? expectedVersion = null)
+            => AssertProducers(File.ReadAllBytes(wasmPath), expectedProcessedBy, expectedVersion: expectedVersion);
 
-        private static void AssertProducers(byte[] wasm, string expectedProcessedBy, bool requireVersion = false)
+        private static void AssertProducers(byte[] wasm, string expectedProcessedBy, bool requireVersion = false, string? expectedVersion = null)
         {
             byte[]? producers = ReadCustomSection(wasm, "producers");
             Assert.NotNull(producers);
 
-            AssertProducer(producers!, "processed-by", expectedProcessedBy, requireVersion);
-            AssertProducer(producers!, "sdk", ".NET", requireVersion);
+            AssertProducer(producers!, "processed-by", expectedProcessedBy, requireVersion, expectedVersion);
+            AssertProducer(producers!, "sdk", ".NET", requireVersion, expectedVersion);
         }
 
-        private static void AssertProducer(byte[] producers, string expectedField, string expectedName, bool requireVersion)
+        private static void AssertProducer(byte[] producers, string expectedField, string expectedName, bool requireVersion, string? expectedVersion)
         {
             int pos = 0;
             bool found = false;
@@ -230,7 +242,9 @@ namespace Wasm.Build.NativeRebuild.Tests
 
                     if (field == expectedField && name == expectedName)
                     {
-                        if (requireVersion)
+                        if (expectedVersion is not null)
+                            Assert.Equal(expectedVersion, version);
+                        else if (requireVersion)
                             Assert.NotEmpty(version);
                         found = true;
                     }

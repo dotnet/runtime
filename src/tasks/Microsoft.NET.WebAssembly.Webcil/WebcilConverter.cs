@@ -53,9 +53,6 @@ public class WebcilConverter
     /// <summary>When wrapping in WebAssembly, also emit the tool-conventions producers + build_id sections.</summary>
     public bool EmitMetadataSections { get; set; }
 
-    /// <summary>Version used for the producers section.</summary>
-    public string ProductVersion { get; set; } = string.Empty;
-
     private WebcilConverter(string inputPath, string outputPath, int webcilVersion)
     {
         if (webcilVersion != 0 && webcilVersion != 1)
@@ -94,7 +91,6 @@ public class WebcilConverter
             var wrapper = new WebcilWasmWrapper(memoryStream, selfInstalling: _webcilVersion >= 1)
             {
                 EmitMetadataSections = EmitMetadataSections,
-                ProductVersion = ProductVersion,
             };
             memoryStream.Seek(0, SeekOrigin.Begin);
             wrapper.WriteWasmWrappedWebcil(outputStream);

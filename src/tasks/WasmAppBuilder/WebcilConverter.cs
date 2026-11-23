@@ -43,13 +43,6 @@ public class WebcilConverter
         set => _converter.EmitMetadataSections = value;
     }
 
-    /// <summary>Version used for the producers section of the wrapped webcil module.</summary>
-    public string ProductVersion
-    {
-        get => _converter.ProductVersion;
-        set => _converter.ProductVersion = value;
-    }
-
     public void ConvertToWebcil()
     {
         Log.LogMessage(MessageImportance.Low, $"Converting to Webcil: input {_inputPath} output: {_outputPath}");

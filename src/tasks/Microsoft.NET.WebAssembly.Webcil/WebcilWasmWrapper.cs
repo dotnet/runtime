@@ -4,6 +4,7 @@
 using System;
 using System.IO;
 using System.Collections.Immutable;
+using System.Reflection;
 using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
@@ -59,15 +60,14 @@ public class WebcilWasmWrapper
     private readonly Stream _webcilPayloadStream;
     private readonly uint _webcilPayloadSize;
     private readonly bool _selfInstalling;
+    private static readonly string? s_converterVersion =
+        typeof(WebcilWasmWrapper).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
 
     /// <summary>
     /// When true, a WebAssembly tool-conventions <c>producers</c> section and a
     /// <c>build_id</c> section are appended to the wrapped module.
     /// </summary>
     public bool EmitMetadataSections { get; set; }
-
-    /// <summary>Version used for the <c>producers</c> <c>processed-by</c>/<c>sdk</c> fields.</summary>
-    public string ProductVersion { get; set; } = string.Empty;
 
     public WebcilWasmWrapper(Stream webcilPayloadStream)
         : this(webcilPayloadStream, selfInstalling: false)
@@ -109,11 +109,12 @@ public class WebcilWasmWrapper
 
     private void WriteProducersSection(Stream outputStream)
     {
+        string version = s_converterVersion ?? throw new InvalidOperationException("The Webcil converter assembly has no informational version.");
         using var payload = new MemoryStream();
         WriteName(payload, "producers");
         WriteULEB128(payload, 2);
-        WriteProducerField(payload, "processed-by", "WebCIL", ProductVersion);
-        WriteProducerField(payload, "sdk", ".NET", ProductVersion);
+        WriteProducerField(payload, "processed-by", "WebCIL", version);
+        WriteProducerField(payload, "sdk", ".NET", version);
         WriteCustomSection(outputStream, payload);
     }
 
