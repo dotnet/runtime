@@ -19989,7 +19989,7 @@ GenTree* Compiler::gtExtractSideEffectsFromUnusedNode(GenTree* node)
     }
 
     // When these values are unused, only their receiver null checks and operand effects remain.
-    if ((node->OperIs(GT_FIELD_ADDR) && node->AsFieldAddr()->IsInstance()) || node->OperIs(GT_ARR_LENGTH) ||
+    if ((node->OperIs(GT_FIELD_ADDR) && node->AsFieldAddr()->IsInstance()) ||
         (node->OperIs(GT_INTRINSIC) && (node->AsIntrinsic()->gtIntrinsicName == NI_System_Object_GetType)))
     {
         GenTree* obj = node->gtGetOp1();

@@ -746,6 +746,7 @@ GenTree* Lowering::LowerArrLength(GenTreeArrCommon* node)
 {
     GenTree* const arr       = node->ArrRef();
     int            lenOffset = 0;
+    noway_assert(arr->gtNext == node);
 
     switch (node->OperGet())
     {
@@ -754,6 +755,13 @@ GenTree* Lowering::LowerArrLength(GenTreeArrCommon* node)
             lenOffset = node->AsArrLen()->ArrLenOffset();
             noway_assert(lenOffset == OFFSETOF__CORINFO_Array__length ||
                          lenOffset == OFFSETOF__CORINFO_String__stringLen);
+            if (node->IsUnusedValue())
+            {
+                // Only the receiver null check is needed.
+                node->ChangeOper(GT_IND);
+                node->ChangeType(TYP_BYTE);
+                return node;
+            }
             break;
         }
 
@@ -772,8 +780,6 @@ GenTree* Lowering::LowerArrLength(GenTreeArrCommon* node)
     // Create the expression `*(array_addr + lenOffset)`
 
     GenTree* addr;
-    noway_assert(arr->gtNext == node);
-
     if (arr->OperIs(GT_CNS_INT) && (arr->AsIntCon()->IconValue() == 0))
     {
         // If the array is NULL, then we should get a NULL reference
