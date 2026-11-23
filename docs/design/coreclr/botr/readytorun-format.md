@@ -953,6 +953,8 @@ The host-facing exports `getWebcilSize` and `patchWebcilHeader` do not occupy sh
 
 When `--wasm-debug-info` includes `symbol-map`, each emitted module has its own `.symbols` file with module-local WebAssembly function indices. For example, `app.wasm` and `app.1.wasm` use `app.symbols` and `app.1.symbols`, respectively.
 
+When `--perfmap` is enabled, each emitted module has its own ReadyToRun perf map with byte ranges relative to that Wasm file. For example, with `--perfmap-format-version 1`, `app.wasm` and `app.1.wasm` use `app.ni.r2rmap` and `app.1.ni.r2rmap`, respectively.
+
 # Native Format
 
 Native format is set of encoding patterns that allow persisting type system data in a binary format that is

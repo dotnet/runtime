@@ -183,6 +183,53 @@ internal static class WasmR2RAssert
         }
     }
 
+    public static void AssertAuxiliaryPerfMaps(ReadyToRunReader reader)
+    {
+        string primaryPath = reader.Filename;
+        string auxiliaryPath = Path.ChangeExtension(primaryPath, ".1.wasm");
+        AssertPerfMap(primaryPath, "FixupLeaf", "AddIntegers");
+        AssertPerfMap(auxiliaryPath, "AddIntegers", "FixupLeaf");
+
+        static void AssertPerfMap(string modulePath, string expectedMethod, string otherModuleMethod)
+        {
+            string[] entries = File.ReadAllLines(Path.ChangeExtension(modulePath, ".ni.r2rmap"));
+            Assert.DoesNotContain(entries, entry => entry.Contains($"::{otherModuleMethod}(", StringComparison.Ordinal));
+            string[] method = Assert.Single(entries, entry => entry.Contains($"::{expectedMethod}(", StringComparison.Ordinal)).Split(' ', 3);
+            int mapOffset = int.Parse(method[0], NumberStyles.HexNumber, CultureInfo.InvariantCulture);
+            int mapLength = int.Parse(method[1], NumberStyles.HexNumber, CultureInfo.InvariantCulture);
+
+            byte[] image = File.ReadAllBytes(modulePath);
+            Assert.True(TryGetWasmFunctionNameSubsection(image, out int nameOffset, out int nameEnd));
+            uint nameCount = ReadWasmUleb32(image, ref nameOffset, nameEnd);
+            uint functionIndex = uint.MaxValue;
+            for (uint i = 0; i < nameCount; i++)
+            {
+                uint index = ReadWasmUleb32(image, ref nameOffset, nameEnd);
+                if (ReadWasmName(image, ref nameOffset, nameEnd).EndsWith($"__{expectedMethod}", StringComparison.Ordinal))
+                {
+                    functionIndex = index;
+                    break;
+                }
+            }
+            Assert.NotEqual(uint.MaxValue, functionIndex);
+
+            Assert.True(TryGetWasmSectionBounds(image, WasmSectionKind.Import, out int importOffset, out int importEnd));
+            uint imports = CountWasmImports(ReadWasmImportSection(image, ref importOffset, importEnd), WasmImportKind.Function);
+            Assert.True(TryGetWasmSectionBounds(image, WasmSectionKind.Code, out int offset, out int end));
+            uint functionCount = ReadWasmUleb32(image, ref offset, end);
+            Assert.InRange(functionIndex, imports, imports + functionCount - 1);
+            for (uint i = imports; i < functionIndex; i++)
+            {
+                uint size = ReadWasmUleb32(image, ref offset, end);
+                offset += (int)size;
+            }
+            int entryStart = offset;
+            uint bodySize = ReadWasmUleb32(image, ref offset, end);
+            Assert.Equal(entryStart, mapOffset);
+            Assert.Equal(offset - entryStart + (int)bodySize, mapLength);
+        }
+    }
+
     public static void AssertFrameIdentityPrologs(WebcilImageReader reader)
     {
         ReadOnlySpan<byte> image = reader.GetEntireImage().AsSpan();

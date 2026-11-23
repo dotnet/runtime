@@ -183,6 +183,7 @@ namespace ILCompiler.DependencyAnalysis
             string auxiliarySymbolMapPath = format == ReadyToRunContainerFormat.Wasm && _nodeFactory.UsesAuxiliaryModules
                 ? WebCilObjectWriter.GetAuxiliarySymbolMapPath(_objectFilePath)
                 : null;
+            string auxiliaryPerfMapPath = null;
 
             try
             {
@@ -270,7 +271,20 @@ namespace ILCompiler.DependencyAnalysis
                     {
                         path = Path.GetDirectoryName(_objectFilePath);
                     }
-                    _symbolFileBuilder.SavePerfMap(path, _perfMapFormatVersion, _objectFilePath);
+                    string primaryPerfMapPath = _symbolFileBuilder.GetPerfMapFilePath(path, _perfMapFormatVersion, _objectFilePath);
+                    if (auxiliarySymbolMapPath is not null)
+                    {
+                        auxiliaryPerfMapPath = _symbolFileBuilder.GetPerfMapFilePath(path, _perfMapFormatVersion,
+                            WebCilObjectWriter.GetAuxiliaryModulePath(_objectFilePath));
+                        File.Delete(auxiliaryPerfMapPath);
+                    }
+
+                    _symbolFileBuilder.SavePerfMap(primaryPerfMapPath, _perfMapFormatVersion);
+                    if (_outputInfoBuilder.HasAuxiliaryCode)
+                    {
+                        Debug.Assert(auxiliaryPerfMapPath is not null);
+                        _symbolFileBuilder.SavePerfMap(auxiliaryPerfMapPath, _perfMapFormatVersion, auxiliary: true);
+                    }
                 }
 
                 if (_profileFileBuilder != null)
@@ -298,7 +312,7 @@ namespace ILCompiler.DependencyAnalysis
                     {
                     }
 
-                    foreach (string symbolMapPath in new[] { wasmSymbolMapPath, auxiliarySymbolMapPath })
+                    foreach (string symbolMapPath in new[] { wasmSymbolMapPath, auxiliarySymbolMapPath, auxiliaryPerfMapPath })
                     {
                         if (symbolMapPath is null)
                             continue;

@@ -32,7 +32,7 @@ namespace ILCompiler.PEWriter
             new PdbWriter(pdbPath, PDBExtraData.None, _details).WritePDBData(dllFileName, _outputInfoBuilder.EnumerateMethods());
         }
 
-        public void SavePerfMap(string perfMapPath, int perfMapFormatVersion, string dllFileName)
+        internal string GetPerfMapFilePath(string perfMapPath, int perfMapFormatVersion, string imagePath)
         {
             string perfMapExtension;
             if (perfMapFormatVersion == PerfMapWriter.LegacyCrossgen1FormatVersion)
@@ -57,9 +57,13 @@ namespace ILCompiler.PEWriter
                 perfMapExtension = ".ni.r2rmap";
             }
 
-            string perfMapFileName = Path.Combine(perfMapPath, Path.GetFileNameWithoutExtension(dllFileName) + perfMapExtension);
+            return Path.Combine(perfMapPath, Path.GetFileNameWithoutExtension(imagePath) + perfMapExtension);
+        }
+
+        internal void SavePerfMap(string perfMapFileName, int perfMapFormatVersion, bool auxiliary = false)
+        {
             Console.WriteLine("Emitting PerfMap file: {0}", perfMapFileName);
-            PerfMapWriter.Write(perfMapFileName, perfMapFormatVersion, _outputInfoBuilder.EnumerateMethods(), _outputInfoBuilder.EnumerateInputAssemblies(), _details);
+            PerfMapWriter.Write(perfMapFileName, perfMapFormatVersion, _outputInfoBuilder.EnumerateMethods(auxiliary), _outputInfoBuilder.EnumerateInputAssemblies(), _details);
         }
     }
 }

@@ -122,7 +122,7 @@ namespace ILCompiler.ObjectWriter
             public required WasmExternallyCountedSection AuxiliaryCode;
             public required WasmExternallyCountedSection AuxiliaryExportSection;
             public WasmNameSection? AuxiliaryNameSection;
-            public Dictionary<ulong, ulong>? PrimaryCodeOffsetMap;
+            public required ulong CodeBoundary;
 
             public void Dispose()
             {
@@ -173,14 +173,6 @@ namespace ILCompiler.ObjectWriter
 
             int metadataRva = checked((int)ResolveSymbolRVA(webcilSections,
                 _definedSymbols[GetMangledName(_nodeFactory.AuxiliaryModuleMetadata)]));
-
-            Dictionary<ulong, ulong>? codeOffsetMap = null;
-            if (_outputInfoBuilder is not null)
-            {
-                codeOffsetMap = new(_codeOffsetMap.Count);
-                foreach (KeyValuePair<ulong, ulong> entry in _codeOffsetMap)
-                    codeOffsetMap[entry.Key] = Math.Min(entry.Value, (ulong)codeBoundary);
-            }
 
             // Create WASM section structures for the primary Function and Code sections
             MemoryStream primaryFunctionSectionData = new(functionEntries, 0, functionBoundary, writable: false);
@@ -240,14 +232,16 @@ namespace ILCompiler.ObjectWriter
                 AuxiliaryCode = auxiliaryCodeSection,
                 AuxiliaryExportSection = auxiliaryExportSection,
                 AuxiliaryNameSection = auxiliaryNameSection,
-                PrimaryCodeOffsetMap = codeOffsetMap,
+                CodeBoundary = (ulong)codeBoundary,
             };
 
             static int GetEntryStart(CodeBlob blob) =>
                 checked((int)(blob.Start - DwarfHelper.SizeOfULEB128((ulong)blob.Size)));
         }
 
-        private void EmitAuxiliaryModule(Stream primaryOutput, AuxiliaryPartition partition)
+        // Returns the byte offset in the auxiliary file of the first Code section entry's size prefix,
+        // after the section header and function count. This is the base offset for the auxiliary perf map.
+        private ulong EmitAuxiliaryModule(Stream primaryOutput, AuxiliaryPartition partition)
         {
             if (primaryOutput is not FileStream primaryFile)
                 throw new InvalidOperationException("Auxiliary WebAssembly modules require a file output stream.");
@@ -272,8 +266,10 @@ namespace ILCompiler.ObjectWriter
                 WritePassiveElementSegment(content, tableFunctions, _auxiliarySlotStart, _auxiliarySlotCount);
             });
 
+            ulong codeContentFileOffset = GetSectionContentFileOffset(auxiliaryOutput, partition.AuxiliaryCode);
             partition.AuxiliaryCode.EmitToStream(auxiliaryOutput);
             partition.AuxiliaryNameSection?.EmitToStream(auxiliaryOutput);
+            return codeContentFileOffset;
         }
 
         /// <summary>
@@ -331,7 +327,7 @@ namespace ILCompiler.ObjectWriter
                 Block.End,
             ]);
 
-        private static string GetAuxiliaryModulePath(string primaryModulePath) =>
+        internal static string GetAuxiliaryModulePath(string primaryModulePath) =>
             Path.Combine(Path.GetDirectoryName(primaryModulePath)!,
                 AuxiliaryModuleMetadataNode.GetAuxiliaryModuleFileName(primaryModulePath, 0));
 

@@ -524,7 +524,7 @@ namespace ILCompiler.ObjectWriter
             int codeSectionIndex = _sections.Contains(ObjectNodeSection.WasmCodeSection.Name)
                 ? _sections.GetSectionIndex(ObjectNodeSection.WasmCodeSection.Name)
                 : -1;
-            long codeContentFileOffset = 0;
+            ulong codeContentFileOffset = 0;
             foreach (int index in SectionEmitOrder)
             {
                 SectionDataEmitter section = _sections[index];
@@ -551,8 +551,7 @@ namespace ILCompiler.ObjectWriter
 
                 if (index == codeSectionIndex)
                 {
-                    // Function bodies begin after the section header and the (externally counted) entry-count prefix.
-                    codeContentFileOffset = outputFileStream.Position + (section.EncodeSize() - section.ContentReadStream.Length);
+                    codeContentFileOffset = GetSectionContentFileOffset(outputFileStream, section);
                 }
 
                 section.EmitToStream(outputFileStream);
@@ -571,6 +570,10 @@ namespace ILCompiler.ObjectWriter
                 nameSection.EmitToStream(outputFileStream);
             }
 
+            ulong auxiliaryCodeContentFileOffset = 0;
+            if (partition is not null)
+                auxiliaryCodeContentFileOffset = EmitAuxiliaryModule(outputFileStream, partition);
+
             if (_outputInfoBuilder is not null)
             {
                 // Populate the output section layout so OutputInfoBuilder.EnumerateMethods can resolve each
@@ -581,20 +584,20 @@ namespace ILCompiler.ObjectWriter
                     SectionDataEmitter emittedSection = partition is not null && i == codeSectionIndex
                         ? partition.PrimaryCodeSection
                         : _sections[i];
-                    ulong fileOffset = (i == codeSectionIndex) ? (ulong)codeContentFileOffset : 0;
+                    ulong fileOffset = (i == codeSectionIndex) ? codeContentFileOffset : 0;
                     _outputSectionLayout.Add(new OutputSection(
                         emittedSection.SectionName.ToString(), fileOffset, fileOffset, (ulong)emittedSection.ContentReadStream.Length));
                 }
 
                 if (codeSectionIndex >= 0)
                 {
-                    _outputInfoBuilder.RemapMethodNodeOffsets(codeSectionIndex, partition?.PrimaryCodeOffsetMap ?? _codeOffsetMap);
+                    _outputInfoBuilder.RemapMethodNodeOffsets(codeSectionIndex, _codeOffsetMap, partition?.CodeBoundary, auxiliaryCodeContentFileOffset);
                 }
             }
-
-            if (partition is not null)
-                EmitAuxiliaryModule(outputFileStream, partition);
         }
+
+        private static ulong GetSectionContentFileOffset(Stream stream, SectionDataEmitter section) =>
+            checked((ulong)(stream.Position + (section.EncodeSize() - section.ContentReadStream.Length)));
 
         /// <summary>
         /// Emits the Webcil payload at the end of the file to support ReadyToRun.
