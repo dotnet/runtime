@@ -2702,6 +2702,107 @@ namespace ILLink.Tasks.Tests
             Assert.NotEqual(before, after);
         }
 
+        [Fact]
+        public void CacheKeyCoversAllTaskParameters()
+        {
+            var parameterMutations = new Dictionary<string, (bool Cacheable, Action<OutputDirectoryTest> Mutate)>
+            {
+                [nameof(ILLink.AssemblyPaths)] = (true, test =>
+                {
+                    string extra = Path.Combine(test.Root, "inputs", "Extra.dll");
+                    WriteTestAssembly(extra);
+                    test.Task.AssemblyPaths = test.Task.AssemblyPaths.Append(new TaskItem(extra)).ToArray();
+                }),
+                [nameof(ILLink.ReferenceAssemblyPaths)] = (true, test =>
+                {
+                    string extra = Path.Combine(test.Root, "inputs", "ExtraRef.dll");
+                    WriteTestAssembly(extra);
+                    test.Task.ReferenceAssemblyPaths = test.Task.ReferenceAssemblyPaths.Append(new TaskItem(extra)).ToArray();
+                }),
+                [nameof(ILLink.RootAssemblyNames)] = (true, test =>
+                    test.Task.RootAssemblyNames = test.Task.RootAssemblyNames.Append(new TaskItem("ExtraRoot", new Dictionary<string, string> { { "RootMode", "all" } })).ToArray()),
+                [nameof(ILLink.OutputDirectory)] = (true, test =>
+                    test.Task.OutputDirectory = new TaskItem(Path.Combine(test.Root, "other-output"))),
+                [nameof(ILLink.SourceRoots)] = (true, test =>
+                    test.Task.SourceRoots = null),
+                [nameof(ILLink.NoWarn)] = (true, test => test.Task.NoWarn = "2026"),
+                [nameof(ILLink.Warn)] = (true, test => test.Task.Warn = "5"),
+                [nameof(ILLink.TreatWarningsAsErrors)] = (true, test => test.Task.TreatWarningsAsErrors = true),
+                [nameof(ILLink.SingleWarn)] = (true, test => test.Task.SingleWarn = true),
+                [nameof(ILLink.WarningsAsErrors)] = (true, test => test.Task.WarningsAsErrors = "2026"),
+                [nameof(ILLink.WarningsNotAsErrors)] = (true, test => test.Task.WarningsNotAsErrors = "2026"),
+                [nameof(ILLink.RootDescriptorFiles)] = (true, test =>
+                {
+                    string extra = Path.Combine(test.Root, "extra-roots.xml");
+                    File.WriteAllText(extra, "<linker/>");
+                    test.Task.RootDescriptorFiles = test.Task.RootDescriptorFiles.Append(new TaskItem(extra)).ToArray();
+                }),
+                [nameof(ILLink.BeforeFieldInit)] = (true, test => test.Task.BeforeFieldInit = false),
+                [nameof(ILLink.OverrideRemoval)] = (true, test => test.Task.OverrideRemoval = false),
+                [nameof(ILLink.UnreachableBodies)] = (true, test => test.Task.UnreachableBodies = false),
+                [nameof(ILLink.UnusedInterfaces)] = (true, test => test.Task.UnusedInterfaces = false),
+                [nameof(ILLink.IPConstProp)] = (true, test => test.Task.IPConstProp = false),
+                [nameof(ILLink.Sealer)] = (true, test => test.Task.Sealer = false),
+                [nameof(ILLink.FeatureSettings)] = (true, test =>
+                    test.Task.FeatureSettings = new ITaskItem[] { new TaskItem("TestFeature", new Dictionary<string, string> { { "Value", "true" } }) }),
+                [nameof(ILLink.KeepMetadata)] = (true, test =>
+                    test.Task.KeepMetadata = new ITaskItem[] { new TaskItem("parametername") }),
+                [nameof(ILLink.RemoveSymbols)] = (true, test => test.Task.RemoveSymbols = false),
+                [nameof(ILLink.PreserveSymbolPaths)] = (true, test => test.Task.PreserveSymbolPaths = true),
+                [nameof(ILLink.TrimMode)] = (true, test => test.Task.TrimMode = "copy"),
+                [nameof(ILLink.DefaultAction)] = (true, test => test.Task.DefaultAction = "skip"),
+                [nameof(ILLink.ExtraArgs)] = (true, test => test.Task.ExtraArgs = "--ignore-link-attributes true --feature TestFeature true"),
+                [nameof(ILLink.ILLinkPath)] = (true, test =>
+                {
+                    string copy = Path.Combine(test.Root, "tools", "illink-copy.dll");
+                    File.Copy(test.Task.ILLinkPath, copy);
+                    test.Task.ILLinkPath = copy;
+                }),
+                [nameof(ILLink.CustomData)] = (false, test =>
+                    test.Task.CustomData = new ITaskItem[] { new TaskItem("Key", new Dictionary<string, string> { { "Value", "Val" } }) }),
+                [nameof(ILLink.CustomSteps)] = (false, test =>
+                    test.Task.CustomSteps = new ITaskItem[] { new TaskItem("step.dll", new Dictionary<string, string> { { "Type", "StepType" } }) }),
+                [nameof(ILLink.DumpDependencies)] = (false, test => test.Task.DumpDependencies = true),
+                [nameof(ILLink.DependenciesFileFormat)] = (false, test => test.Task.DependenciesFileFormat = "xml"),
+            };
+
+            string[] declaredProperties = typeof(ILLink)
+                .GetProperties(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Instance)
+                .Select(p => p.Name)
+                .OrderBy(name => name, StringComparer.Ordinal)
+                .ToArray();
+            Assert.Equal(declaredProperties, parameterMutations.Keys.OrderBy(name => name, StringComparer.Ordinal).ToArray());
+
+            foreach (var (name, (cacheable, mutate)) in parameterMutations)
+            {
+                using var test = new OutputDirectoryTest();
+                string host = PrepareCacheKeyTest(test);
+                string beforeCommandLine = test.Task.GetCommandLineCommands();
+                string beforeResponse = test.Task.GetResponseFileCommands();
+                Assert.True(test.Task.TryGetCacheKey(host, out string beforeKey));
+
+                mutate(test);
+
+                string afterCommandLine = test.Task.GetCommandLineCommands();
+                string afterResponse = test.Task.GetResponseFileCommands();
+                if (name == nameof(ILLink.SourceRoots))
+                {
+                    Assert.Equal(beforeCommandLine, afterCommandLine);
+                    Assert.Equal(beforeResponse, afterResponse);
+                }
+                else
+                {
+                    Assert.True(beforeCommandLine != afterCommandLine || beforeResponse != afterResponse,
+                        $"Mutating {name} did not change generated tool arguments.");
+                }
+
+                bool afterCacheable = test.Task.TryGetCacheKey(host, out string afterKey);
+                Assert.Equal(cacheable, afterCacheable);
+                if (cacheable)
+                    Assert.NotEqual(beforeKey, afterKey);
+            }
+        }
+
         private sealed class CountingTaskItem(ITaskItem item) : ITaskItem
         {
             public int MappedPathReads { get; private set; }

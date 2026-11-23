@@ -24,6 +24,7 @@ namespace ILLink.Tasks.Tests
         public (string WorkingDirectory, string CommandLine, string ResponseFile)? CacheInvocation { get; private set; }
         internal InvocationDescription CacheDescription { get; private set; }
 
+        public string GetCommandLineCommands() => GenerateCommandLineCommands();
         public string GetResponseFileCommands() => GenerateResponseFileCommands();
 
         public bool TryGetCacheKey(string pathToTool, out string key)
