@@ -811,7 +811,7 @@ namespace R2RDump
                 _writer.Write(unwindInfo);
                 if (!isFunclet)
                 {
-                    ILCompiler.Reflection.ReadyToRun.Amd64.GcInfo gcInfo = new(reader, offset + unwindInfo.Size, _r2r.Machine, gcInfoVersion);
+                    BaseGcInfo gcInfo = ILCompiler.Reflection.ReadyToRun.Cdac.CdacGcInfo.Decode(reader, offset + unwindInfo.Size, _r2r.Machine, gcInfoVersion);
                     _writer.WriteLine("  GC info:");
                     _writer.Write(gcInfo);
                 }

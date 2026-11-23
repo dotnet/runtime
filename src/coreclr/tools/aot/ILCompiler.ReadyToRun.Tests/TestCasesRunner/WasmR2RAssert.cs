@@ -74,8 +74,8 @@ internal static class WasmR2RAssert
         RuntimeFunction root = method.RuntimeFunctions[0];
         RuntimeFunction funclet = Assert.Single(method.RuntimeFunctions, function => function.WasmIsFunclet);
         Assert.False(root.WasmIsFunclet);
-        ILCompiler.Reflection.ReadyToRun.Amd64.GcInfo gcInfo =
-            Assert.IsType<ILCompiler.Reflection.ReadyToRun.Amd64.GcInfo>(method.GcInfo);
+        ILCompiler.Reflection.ReadyToRun.Cdac.CdacGcInfo gcInfo =
+            Assert.IsType<ILCompiler.Reflection.ReadyToRun.Cdac.CdacGcInfo>(method.GcInfo);
         Assert.Equal(2u, gcInfo.StackBaseRegister);
 
         string dump = DumpSection(reader, section);

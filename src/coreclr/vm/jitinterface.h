@@ -419,12 +419,20 @@ public:
 
     CORINFO_VIRTUAL ~CEEInfo()
     {
-        LIMITED_METHOD_CONTRACT;
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_TRIGGERS;
+            MODE_ANY;
+        }
+        CONTRACTL_END;
 
 #if !defined(DACCESS_COMPILE)
         // Free all handles used by JIT
         if (m_pJitHandles != nullptr)
         {
+            // In preemptive mode, a GC relocating the handles' objects can write into a freed handle
+            GCX_COOP();
             OBJECTHANDLE* elements = m_pJitHandles->GetElements();
             unsigned count = m_pJitHandles->GetCount();
             for (unsigned i = 0; i < count; i++)

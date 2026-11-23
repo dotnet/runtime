@@ -1520,14 +1520,14 @@ public class R2RTestSuites
                     {
                         ReadyToRunMethod method = Assert.Single(R2RAssert.GetAllMethods(reader),
                             method => method.SignatureString.Contains(".StructGCFields(", StringComparison.Ordinal));
-                        ILCompiler.Reflection.ReadyToRun.Amd64.GcInfo gcInfo =
-                            Assert.IsType<ILCompiler.Reflection.ReadyToRun.Amd64.GcInfo>(method.GcInfo);
-                        Assert.True(gcInfo.SlotTable.NumUntracked >= 2);
-                        Assert.Contains(gcInfo.SlotTable.GcSlots,
+                        ILCompiler.Reflection.ReadyToRun.Cdac.CdacGcInfo gcInfo =
+                            Assert.IsType<ILCompiler.Reflection.ReadyToRun.Cdac.CdacGcInfo>(method.GcInfo);
+                        Assert.True(gcInfo.NumUntrackedSlots >= 2);
+                        Assert.Contains(gcInfo.Slots,
                             slot => (slot.Flags & GcSlotFlags.GC_SLOT_INTERIOR) != 0);
-                        Assert.Contains(gcInfo.SlotTable.GcSlots,
+                        Assert.Contains(gcInfo.Slots,
                             slot => (slot.Flags & GcSlotFlags.GC_SLOT_INTERIOR) == 0);
-                        Assert.All(gcInfo.SlotTable.GcSlots, slot =>
+                        Assert.All(gcInfo.Slots, slot =>
                             Assert.Equal(GcSlotFlags.GC_SLOT_PINNED, slot.Flags & GcSlotFlags.GC_SLOT_PINNED));
                     },
                 },
@@ -1997,11 +1997,11 @@ public class R2RTestSuites
 
             static void AssertFrameGcSlot(ReadyToRunMethod method, NativeVarInfo record)
             {
-                ILCompiler.Reflection.ReadyToRun.Amd64.GcInfo gcInfo =
-                    Assert.IsType<ILCompiler.Reflection.ReadyToRun.Amd64.GcInfo>(method.GcInfo);
-                Assert.Equal(0u, gcInfo.SlotTable.NumRegisters);
-                ILCompiler.Reflection.ReadyToRun.Amd64.GcSlotTable.GcSlot slot = Assert.Single(
-                    gcInfo.SlotTable.GcSlots,
+                ILCompiler.Reflection.ReadyToRun.Cdac.CdacGcInfo gcInfo =
+                    Assert.IsType<ILCompiler.Reflection.ReadyToRun.Cdac.CdacGcInfo>(method.GcInfo);
+                Assert.Equal(0u, gcInfo.NumRegisters);
+                ILCompiler.Reflection.ReadyToRun.Cdac.CdacGcSlot slot = Assert.Single(
+                    gcInfo.Slots,
                     candidate => candidate.StackSlot?.SpOffset == record.VariableLocation.Data2);
                 Assert.Equal(GcStackSlotBase.GC_FRAMEREG_REL, slot.StackSlot.Base);
             }

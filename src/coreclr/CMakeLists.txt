@@ -50,7 +50,6 @@ if(CLR_CMAKE_TARGET_WASI)
   add_compile_definitions(_WASI_EMULATED_SIGNAL)
   add_compile_definitions(_WASI_EMULATED_PROCESS_CLOCKS)
   add_compile_definitions(_WASI_EMULATED_MMAN)
-  add_compile_definitions(_WASI_EMULATED_GETPID)
   include_directories(BEFORE SYSTEM ${CMAKE_CURRENT_SOURCE_DIR}/pal/src/include/pal/wasi)
 endif()
 
@@ -217,7 +216,6 @@ if(CLR_CROSS_COMPONENTS_BUILD AND CLR_CMAKE_TARGET_ARCH_WASM)
   if (CLR_CMAKE_HOST_UNIX)
     include_directories("pal/inc")
     include_directories("pal/inc/rt")
-    include_directories("pal/src/safecrt")
     set (NATIVE_RESOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/nativeresources)
     include_directories(${NATIVE_RESOURCE_DIR})
 
@@ -268,7 +266,6 @@ add_subdirectory(gc)
 if (CLR_CMAKE_HOST_UNIX)
   include_directories("pal/inc")
   include_directories("pal/inc/rt")
-  include_directories("pal/src/safecrt")
 endif (CLR_CMAKE_HOST_UNIX)
 
 #------------------------------

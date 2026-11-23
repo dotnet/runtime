@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "stdafx.h"                     // Precompiled header key.
+#include <minipal/instructioncache.h>
 #include "loaderheap.h"
 #include "loaderheap_shared.h"
 #include "ex.h"
@@ -133,7 +134,7 @@ BOOL UnlockedInterleavedLoaderHeap::CommitPages(void* pData, size_t dwSizeToComm
 
     ExecutableWriterHolder<BYTE> codePageWriterHolder((BYTE*)pData, dwSizeToCommitPart, ExecutableAllocator::DoNotAddToCache);
     m_pConfig->CodePageGenerator(codePageWriterHolder.GetRW(), (BYTE*)pData, dwSizeToCommitPart);
-    FlushInstructionCache(GetCurrentProcess(), pData, dwSizeToCommitPart);
+    minipal_flush_instruction_cache(pData, dwSizeToCommitPart);
 
     return TRUE;
 }
