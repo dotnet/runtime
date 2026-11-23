@@ -5043,8 +5043,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     DoPhase(this, PHASE_LCLVARLIVENESS, &Compiler::fgLateLiveness);
 
 #ifdef TARGET_WASM
-    // Forward single-use local copies recorded by lowering, using the
-    // ref counts and last-use flags computed by late liveness.
+    // Forward single-use local copies and rematerialize single-use invariant
+    // locals recorded by lowering, using the ref counts and last-use flags
+    // computed by late liveness.
     //
     DoPhase(this, PHASE_WASM_FORWARD_LOCAL_COPIES, &Compiler::fgWasmForwardLocalCopies);
 

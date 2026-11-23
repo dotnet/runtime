@@ -3731,7 +3731,8 @@ PhaseStatus Compiler::fgWasmProfInstrument()
 }
 
 //-----------------------------------------------------------------------------
-// fgWasmForwardLocalCopies: forward single-use local-to-local copies.
+// fgWasmForwardLocalCopies: forward single-use local-to-local copies, and
+//   rematerialize single-use locals holding invariant values.
 //
 // Returns:
 //   suitable phase status
@@ -3743,6 +3744,9 @@ PhaseStatus Compiler::fgWasmProfInstrument()
 //   temps. The Wasm register allocator gives every candidate its own local and
 //   does not coalesce, so each copy would otherwise cost a local.get/local.set
 //   pair and a local.
+//
+//   Single-use locals holding constants or invariant loads are handled first,
+//   by fgWasmRematerializeInvariantLocals.
 //
 //   Only blocks recorded by lowering are visited. This runs after late liveness
 //   so that ref counts are exact, and keeps last-use flags up to date.
@@ -3985,23 +3989,16 @@ bool Compiler::fgWasmRematerializeInvariantLocals()
 
     CandidateMap candidates(getAllocator(CMK_Lower));
 
-    auto isLiveIntoEntry = [this](unsigned varIndex) {
-        if (VarSetOps::IsMember(this, fgFirstBB->bbLiveIn, varIndex))
+    // Locals live into the method entry or any handler entry.
+    VARSET_TP liveIntoEntries(VarSetOps::MakeCopy(this, fgFirstBB->bbLiveIn));
+    for (EHblkDsc* const HBtab : EHClauses(this))
+    {
+        VarSetOps::UnionD(this, liveIntoEntries, HBtab->ebdHndBeg->bbLiveIn);
+        if (HBtab->HasFilter())
         {
-            return true;
+            VarSetOps::UnionD(this, liveIntoEntries, HBtab->ebdFilter->bbLiveIn);
         }
-
-        for (EHblkDsc* const HBtab : EHClauses(this))
-        {
-            if (VarSetOps::IsMember(this, HBtab->ebdHndBeg->bbLiveIn, varIndex) ||
-                (HBtab->HasFilter() && VarSetOps::IsMember(this, HBtab->ebdFilter->bbLiveIn, varIndex)))
-            {
-                return true;
-            }
-        }
-
-        return false;
-    };
+    }
 
     for (BasicBlock* const block : m_wasmRematBlocks->BottomUpOrder())
     {
@@ -4031,7 +4028,8 @@ bool Compiler::fgWasmRematerializeInvariantLocals()
             if ((dsc->lvRefCnt() != 2) || !dsc->lvTracked || dsc->lvIsParam || dsc->lvIsStructField ||
                 dsc->lvIsOSRLocal || dsc->lvPromoted || dsc->IsAddressExposed() || dsc->lvImplicitlyReferenced ||
                 !varTypeIsEnregisterable(type) || varTypeIsStruct(type) || varTypeIsGC(type) || varTypeIsSmall(type) ||
-                (store->TypeGet() != type) || (genActualType(value) != type) || isLiveIntoEntry(dsc->lvVarIndex))
+                (store->TypeGet() != type) || (genActualType(value) != type) ||
+                VarSetOps::IsMember(this, liveIntoEntries, dsc->lvVarIndex))
             {
                 continue;
             }
@@ -4050,8 +4048,13 @@ bool Compiler::fgWasmRematerializeInvariantLocals()
 
     for (BasicBlock* const block : Blocks())
     {
+        if (candidates.GetCount() == 0)
+        {
+            break;
+        }
+
         LIR::Range& range = LIR::AsRange(block);
-        for (GenTree* node = range.FirstNode(); node != nullptr;)
+        for (GenTree* node = range.FirstNode(); (node != nullptr) && (candidates.GetCount() != 0);)
         {
             GenTree* const next = node->gtNext;
             Candidate      candidate;
