@@ -1748,6 +1748,25 @@ public class R2RTestSuites
             }
             AssertSafepointCovered(gcSlotIdentity, gcSlotRoot, markers);
 
+            // GC fields of an on-frame struct are untracked roots too, so they must also be pinned.
+            ReadyToRunMethod gcStructFields = GetMethod(methods, "GcStructFieldsAcrossSafepoint");
+            RuntimeFunction gcStructRoot = GetRoot(gcStructFields);
+            NativeVarInfo pair = AssertStackRecord(gcStructRoot, VariableType.Local, 0, VarLocType.VLT_STK);
+            AssertSafepointCovered(gcStructFields, gcStructRoot, pair);
+            ILCompiler.Reflection.ReadyToRun.Cdac.CdacGcInfo gcStructInfo =
+                Assert.IsType<ILCompiler.Reflection.ReadyToRun.Cdac.CdacGcInfo>(gcStructFields.GcInfo);
+            ILCompiler.Reflection.ReadyToRun.Cdac.CdacGcSlot[] pairFieldSlots = gcStructInfo.Slots
+                .Where(slot => slot.StackSlot is { } stackSlot
+                    && stackSlot.SpOffset >= pair.VariableLocation.Data2
+                    && stackSlot.SpOffset < pair.VariableLocation.Data2 + (3 * sizeof(int)))
+                .ToArray();
+            Assert.Equal(2, pairFieldSlots.Length);
+            Assert.All(pairFieldSlots, slot =>
+            {
+                Assert.Equal(GcStackSlotBase.GC_FRAMEREG_REL, slot.StackSlot.Base);
+                Assert.Equal(GcSlotFlags.GC_SLOT_PINNED | GcSlotFlags.GC_SLOT_UNTRACKED, slot.Flags);
+            });
+
             // Has a catch clause, so the JIT emits a try_table catch_ref that references the
             // imported restore-context exception tag.
             Assert.True(methods.Exists(method =>

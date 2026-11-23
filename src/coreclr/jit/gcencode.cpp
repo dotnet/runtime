@@ -4278,6 +4278,10 @@ void GCInfo::gcMakeRegPtrTable(
                     flags = (GcSlotFlags)(flags | GC_SLOT_INTERIOR);
                 }
 
+#ifdef TARGET_WASM
+                flags = static_cast<GcSlotFlags>(flags | GC_SLOT_PINNED);
+#endif // TARGET_WASM
+
                 GcStackSlotBase stackSlotBase = GC_SP_REL;
                 if (varDsc->lvFramePointerBased)
                 {
@@ -4315,6 +4319,10 @@ void GCInfo::gcMakeRegPtrTable(
                     flags = (GcSlotFlags)(flags | GC_SLOT_INTERIOR);
                 }
 
+#ifdef TARGET_WASM
+                flags = static_cast<GcSlotFlags>(flags | GC_SLOT_PINNED);
+#endif // TARGET_WASM
+
                 GcStackSlotBase stackSlotBase = GC_SP_REL;
                 if (m_compiler->isFramePointerUsed())
                 {
@@ -4342,6 +4350,10 @@ void GCInfo::gcMakeRegPtrTable(
                 // Or in GC_SLOT_INTERIOR for 'byref' pointer tracking
                 flags = (GcSlotFlags)(flags | GC_SLOT_INTERIOR);
             }
+
+#ifdef TARGET_WASM
+            flags = static_cast<GcSlotFlags>(flags | GC_SLOT_PINNED);
+#endif // TARGET_WASM
 
             GcStackSlotBase stackSlotBase = m_compiler->isFramePointerUsed() ? GC_FRAMEREG_REL : GC_SP_REL;
 

@@ -509,6 +509,28 @@ public static class WasmWebcilModule
         return result;
     }
 
+    private struct GcMarkerPair
+    {
+        public GcMarker? First;
+        public int Value;
+        public GcMarker? Second;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
+    public static int GcStructFieldsAcrossSafepoint(int value)
+    {
+        GcMarkerPair pair = default;
+        pair.First = new GcMarker(value);
+        pair.Value = value;
+        pair.Second = new GcMarker(value + 1);
+
+        CollectAtGcSafepoint();
+        int result = pair.First!.Value + pair.Second!.Value + pair.Value;
+        GC.KeepAlive(pair.First);
+        GC.KeepAlive(pair.Second);
+        return result;
+    }
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void TouchMarkerSlot(ref GcMarker? marker)
     {

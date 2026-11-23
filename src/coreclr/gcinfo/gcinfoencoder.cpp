@@ -577,6 +577,13 @@ template <typename GcInfoEncoding> GcSlotId TGcInfoEncoder<GcInfoEncoding>::GetS
 
     _ASSERTE( (flags & (GC_SLOT_IS_REGISTER | GC_SLOT_IS_DELETED)) == 0 );
 
+    if constexpr (GcInfoEncoding::USES_COMPACT_WASM_HEADER)
+    {
+        // The Wasm ABI requires GC references on the linear stack to be reported pinned; see
+        // docs/design/coreclr/botr/clr-abi.md, "GC References at Call Sites".
+        _ASSERTE((flags & (GC_SLOT_UNTRACKED | GC_SLOT_PINNED)) == (GC_SLOT_UNTRACKED | GC_SLOT_PINNED));
+    }
+
     if (!(TargetOS::IsApplePlatform && TargetArchitecture::IsArm64))
     {
         // the spOffset for the stack slot is required to be pointer size aligned
