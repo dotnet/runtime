@@ -97,18 +97,17 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return comparer.Compare(_helperCell, otherNode._helperCell);
         }
 
-        static CorInfoWasmType[] _helperTypeParams = new CorInfoWasmType[] { CorInfoWasmType.CORINFO_WASM_TYPE_I32, CorInfoWasmType.CORINFO_WASM_TYPE_I32, CorInfoWasmType.CORINFO_WASM_TYPE_I32, CorInfoWasmType.CORINFO_WASM_TYPE_I32, CorInfoWasmType.CORINFO_WASM_TYPE_I32 };
-
         protected override void EmitCode(NodeFactory factory, ref Wasm.WasmEmitter instructionEncoder, bool relocsOnly)
         {
             Debug.Assert(_thunkKind == ImportThunkKind.DelayLoadHelper);
-            Debug.Assert(!instructionEncoder.Is64Bit); // We currently only support 32-bit, and the thunk logic is currently tied to that assumption
+            WasmTargetPtr ptr = instructionEncoder.Ptr;
+            CorInfoWasmType ptrType = ptr.CorInfoType;
 
             // WASM-TODO! This is NOT an efficient way to implement this thunk. Currently it writes all the arguments to the stack, not just the ones which need to be saved for GC purposes.
             // At some point we'll want to only write the arguments which need GC tracking, and skip the save/restore for other arguments. This might require changes to code
             // which is currently architecture neutral on the VM side, so we should wait to do this until we have a better picture of how the VM and compiler sides will interact for this thunk.
 
-            ISymbolNode helperTypeIndex = factory.WasmTypeNode(_helperTypeParams);
+            ISymbolNode helperTypeIndex = factory.WasmTypeNode([ptrType, ptrType, ptrType, ptrType, CorInfoWasmType.CORINFO_WASM_TYPE_I32]);
 
             WasmThunkArgLayout layout = new WasmThunkArgLayout(_wasmSignature, _context);
 
@@ -121,25 +120,23 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             List<WasmExpr> expressions = new List<WasmExpr>();
             // local.get 0
             expressions.Add(Local.Get(0));
-            // i32.const {sizeOfStoredLocals}
-            expressions.Add(I32.Const(sizeOfStoredLocals));
-            // i32.sub
-            expressions.Add(I32.Sub);
+            expressions.Add(ptr.Const(sizeOfStoredLocals));
+            expressions.Add(ptr.Sub);
             // local.set 0
             expressions.Add(Local.Set(0));
 
             // Initialize m_ReturnAddress to 0 at offset 0 of the transition block
-            // The 0 is a marker that the actual return address is to be computed from the m_StackPointer at offset 4.
+            // The 0 indicates that the return address is computed from m_StackPointer.
             expressions.Add(Local.Get(0));
-            expressions.Add(I32.Const(0));
-            expressions.Add(I32.Store(0));
+            expressions.Add(ptr.Const(0));
+            expressions.Add(ptr.Store(0));
 
-            // Store the original caller's frame pointer (SP before allocation) at offset 4
+            // Store the original caller's frame pointer (SP before allocation).
             expressions.Add(Local.Get(0));
             expressions.Add(Local.Get(0));
-            expressions.Add(I32.Const(sizeOfStoredLocals));
-            expressions.Add(I32.Add);
-            expressions.Add(I32.Store(4));
+            expressions.Add(ptr.Const(sizeOfStoredLocals));
+            expressions.Add(ptr.Add);
+            expressions.Add(ptr.Store((ulong)ptr.Size));
 
             // Stash the arguments in the transition block
             foreach (WasmThunkArg arg in layout.Args)
@@ -156,10 +153,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                     // memory.fill: (dst, val, len) -> ()
                     expressions.Add(Local.Get(0));
-                    expressions.Add(I32.Const(arg.Offset));
-                    expressions.Add(I32.Add);
+                    expressions.Add(ptr.Const(arg.Offset));
+                    expressions.Add(ptr.Add);
                     expressions.Add(I32.Const(0));
-                    expressions.Add(I32.Const(fillSize));
+                    expressions.Add(ptr.Const(fillSize));
                     expressions.Add(Memory.Fill());
                     continue;
                 }
@@ -188,8 +185,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // Load the helper function address and dispatch
             // global.get {module base}
             expressions.Add(Global.Get(WebCilObjectWriter.ImageBaseGlobalIndex)); // Module base used to load the helper function address
-            expressions.Add(I32.LoadWithRVAOffset(_helperCell)); // Load the helper call function pointer from the helper cell, using a load with an RVA offset so that the helper cell can be left as a zero in the R2R image and fixed up at runtime. This avoids the need to emit a runtime relocation for the helper cell.
-            // call_indirect (i32, i32, i32, i32) -> (i32)
+            expressions.Add(ptr.LoadWithRVAOffset(_helperCell));
             expressions.Add(ControlFlow.CallIndirect(helperTypeIndex, 0));
 
             // local.set (PortableEntrypointThunk)  / At this point we can overwrite with the incoming portable entrypoint local, since the old value will no longer be used
@@ -198,10 +194,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // ;Setup sp arg for the final call, with the call address now coming from the portable entrypoint
             // local.get 0
             expressions.Add(Local.Get(0));
-            // i32.const {sizeofstoredlocals}
-            expressions.Add(I32.Const(sizeOfStoredLocals));
-            // i32.add
-            expressions.Add(I32.Add);
+            expressions.Add(ptr.Const(sizeOfStoredLocals));
+            expressions.Add(ptr.Add);
 
             // Reload the arguments for the final call
             foreach (WasmThunkArg arg in layout.Args)
@@ -227,8 +221,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // ; Load the actual target to jump to
             // local.get (PortableEntrypointThunk)
             expressions.Add(Local.Get(portableEntrypointLocalIndex));
-            // i32.load 0
-            expressions.Add(I32.Load(0));
+            expressions.Add(ptr.Load(0));
             // return_call_indirect (actual type index)  ; We can use return_call_index here, or call_index. Semantically they are identical
             expressions.Add(ControlFlow.CallIndirect(_typeNode, 0));
 

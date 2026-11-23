@@ -40,7 +40,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _helper = helper;
             _useVirtualCall = useVirtualCall;
             _useJumpableStub = useJumpableStub;
-            if (factory.Target.Architecture == TargetArchitecture.Wasm32)
+            if (factory.Target.IsWasm)
             {
                 _delayLoadHelper = factory.WasmImportThunkPortableEntrypoint(this);
             }

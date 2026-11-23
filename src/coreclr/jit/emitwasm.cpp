@@ -265,10 +265,11 @@ void emitter::emitAddressConstant(void* address)
     {
         emitImageBase();
     }
-    emitIns_I(INS_i32_const_address, EA_SET_FLG(EA_PTRSIZE, EA_CNS_RELOC_FLG), (cnsval_ssize_t)address);
+    emitIns_I((TARGET_POINTER_SIZE == 8) ? INS_i64_const_address : INS_i32_const_address,
+              EA_SET_FLG(EA_PTRSIZE, EA_CNS_RELOC_FLG), (cnsval_ssize_t)address);
     if (!m_compiler->IsNativeAot())
     {
-        emitIns(INS_i32_add);
+        emitIns((TARGET_POINTER_SIZE == 8) ? INS_i64_add : INS_i32_add);
     }
 }
 
@@ -301,10 +302,10 @@ void emitter::emitFuncletAddressConstant(cnsval_ssize_t funcletId)
         emitIns_I(INS_global_get, EA_HANDLE_CNS_RELOC,
                   (cnsval_ssize_t)(size_t)m_compiler->eeGetWasmWellKnownGlobals()->tableBase);
     }
-    emitIns_I(INS_i32_const_funcletptr, EA_PTRSIZE, (cnsval_ssize_t)funcletId);
+    emitIns_I((TARGET_POINTER_SIZE == 8) ? INS_i64_const_funcletptr : INS_i32_const_funcletptr, EA_PTRSIZE, funcletId);
     if (!m_compiler->IsNativeAot())
     {
-        emitIns(INS_i32_add);
+        emitIns((TARGET_POINTER_SIZE == 8) ? INS_i64_add : INS_i32_add);
     }
 }
 
@@ -328,14 +329,14 @@ void emitter::emitDataOffsetConstant(UNATIVE_OFFSET dataOffs)
     }
 
     instrDesc* id = emitNewInstrSC(EA_SET_FLG(EA_PTRSIZE, EA_CNS_RELOC_FLG), (cnsval_ssize_t)dataOffs);
-    id->idIns(INS_i32_const_dataoffs);
+    id->idIns((TARGET_POINTER_SIZE == 8) ? INS_i64_const_dataoffs : INS_i32_const_dataoffs);
     id->idInsFmt(IF_DATAOFFS);
     dispIns(id);
     appendToCurIG(id);
 
     if (!m_compiler->IsNativeAot())
     {
-        emitIns(INS_i32_add);
+        emitIns((TARGET_POINTER_SIZE == 8) ? INS_i64_add : INS_i32_add);
     }
 }
 
@@ -780,12 +781,9 @@ uint8_t emitter::GetWasmValueTypeCode(WasmValueType type)
     return typecode_mapping[static_cast<unsigned>(type)];
 }
 
-#ifdef TARGET_WASM
-// NOTE: Keep in sync with Relocation.cs
+// R2R relocations encode image-relative offsets and indices, not native pointers.
+// Keep their reserved width in sync with Relocation.cs.
 static const unsigned PADDED_RELOC_SIZE = 5;
-#else
-#error WASM64
-#endif
 
 unsigned emitter::instrDesc::idCodeSize() const
 {
@@ -1075,7 +1073,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             // signature occupies one pending slot until the function-index callback consumes it,
             // so another deferred call must not interleave these callbacks.
             // See #DeferredWasmCallRewriting for direct-call selection and indirect expansion.
-            dst += emitOutputOpcode(dst, INS_i32_const);
+            // The identity occupies the pointer-sized PEP parameter; on wasm64 its padded SLEB
+            // is sign-extended by i64.const, as for the method's own frame identity.
+            dst += emitOutputOpcode(dst, TARGET_POINTER_SIZE == 8 ? INS_i64_const : INS_i32_const);
             emitRecordRelocation(dst, reinterpret_cast<void*>(emitGetInsSC(id)),
                                  CorInfoReloc::WASM_METHOD_FRAME_IDENTITY_SLEB);
             dst += emitOutputPaddedReloc(dst);

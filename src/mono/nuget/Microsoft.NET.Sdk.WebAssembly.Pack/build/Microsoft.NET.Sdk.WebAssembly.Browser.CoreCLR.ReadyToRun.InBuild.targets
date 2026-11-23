@@ -31,6 +31,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmR2RTargetOS Condition="'$(TargetOS)' != ''">$(TargetOS)</_WasmR2RTargetOS>
       <_WasmR2RTargetOS Condition="'$(_WasmR2RTargetOS)' == ''">browser</_WasmR2RTargetOS>
       <_WasmR2RTargetArch Condition="'$(TargetArchitecture)' != ''">$(TargetArchitecture)</_WasmR2RTargetArch>
+      <_WasmR2RTargetArch Condition="'$(RuntimeIdentifier)' == 'browser-wasm64'">wasm64</_WasmR2RTargetArch>
       <_WasmR2RTargetArch Condition="'$(_WasmR2RTargetArch)' == ''">wasm</_WasmR2RTargetArch>
     </PropertyGroup>
 
