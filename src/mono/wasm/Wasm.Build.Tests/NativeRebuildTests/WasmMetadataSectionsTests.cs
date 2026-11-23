@@ -48,13 +48,29 @@ namespace Wasm.Build.NativeRebuild.Tests
 
         [TestCategory("no-workload")]
         [Theory]
-        [InlineData(Configuration.Release)]
-        public void NativeWasm_WithoutRelink_PreservesRuntimePackBuildId(Configuration config)
+        [InlineData(false)]
+        [InlineData(true)]
+        public void NativeWasm_WithoutRelink_UsesOnlyRuntimePackOutputAssets(bool publish)
         {
-            ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.WasmBasicTestApp, "meta_no_relink_id");
-            PublishProject(info, config, new PublishOptions(ExtraMSBuildArgs: "-p:_WasmDevel=true"), isNativeBuild: false);
+            const Configuration Config = Configuration.Release;
+            const string ExtraArgs = "-p:_WasmDevel=true";
+            ProjectInfo info = CopyTestAsset(Config, aot: false, TestAsset.WasmBasicTestApp, $"meta_no_relink_{publish}");
+            string frameworkDir;
+            if (publish)
+            {
+                PublishProject(info, Config, new PublishOptions(ExtraMSBuildArgs: ExtraArgs), isNativeBuild: false);
+                frameworkDir = GetBinFrameworkDir(Config, forPublish: true);
+                string publishDir = Path.Combine(GetBuildPaths(Config, forPublish: true).BinDir, "publish");
+                Assert.Empty(Directory.EnumerateFiles(publishDir, "dotnet-producers.s", SearchOption.AllDirectories));
+            }
+            else
+            {
+                BuildProject(info, Config, new BuildOptions(ExtraMSBuildArgs: ExtraArgs), isNativeBuild: false);
+                frameworkDir = WasmSdkBasedProjectProvider.GetMaterializedFrameworkDir(GetObjDir(Config));
+                Assert.Empty(Directory.EnumerateFiles(frameworkDir, "dotnet-producers.s"));
+            }
 
-            string wasm = FindWasmAsset(GetBinFrameworkDir(config, forPublish: true), "dotnet.native");
+            string wasm = FindWasmAsset(frameworkDir, "dotnet.native");
             byte[]? buildId = ReadBuildId(wasm);
             Assert.NotNull(buildId);
             Assert.NotEmpty(buildId!);

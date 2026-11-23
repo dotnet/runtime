@@ -44,7 +44,8 @@ build ID, but the final module has no `producers` section.
 
 Full repository builds link the prebuilt runtime before its pack exists. The in-tree fallback and
 runtime pack generate the source from `dotnet-producers.s.in` using the same runtime version.
-Shipped workload targets consume only the generated source from the runtime pack.
+Shipped workload targets read the generated source directly from the runtime pack. It is a
+native link input, not an asset in application build or publish output.
 
 Native links for .NET 12 and later pass `--build-id`. Runtime-pack modules keep that ID when copied
 into applications, while an application relink creates a new file and a new ID. Emscripten and
