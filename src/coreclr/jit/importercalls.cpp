@@ -1529,8 +1529,7 @@ DONE:
 
 DONE_CALL:
     // Collect value profiles in optimized instrumented tiers too, before wrapping inline candidates.
-    if (opts.IsInstrumented() && !compR2RPgoInstrumentation() && JitConfig.JitProfileValues() && call->IsCall() &&
-        call->AsCall()->IsSpecialIntrinsic())
+    if (opts.IsInstrumented() && JitConfig.JitProfileValues() && call->IsCall() && call->AsCall()->IsSpecialIntrinsic())
     {
         const NamedIntrinsic ni = lookupNamedIntrinsic(call->AsCall()->gtCallMethHnd);
         if ((ni == NI_System_SpanHelpers_Memmove) || (ni == NI_System_SpanHelpers_SequenceEqual))

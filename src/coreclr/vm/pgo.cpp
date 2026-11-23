@@ -255,6 +255,13 @@ void PgoManager::LogInstrumentationData()
 
             StackSArray<ICorJitInfo::PgoInstrumentationSchema> merged;
             StackSArray<UINT64> counters;
+            struct ValueSamples
+            {
+                const BYTE* data;
+                COUNT_T schemaIndex;
+                INT32 count;
+            };
+            StackSArray<ValueSamples> valueSamples;
             bool nonzero = false;
             bool exportedInterpreterProfile = false;
             bool haveBlocks = false;
@@ -301,13 +308,38 @@ void PgoManager::LogInstrumentationData()
                 for (COUNT_T k = 0; k < schema.GetCount(); k++)
                 {
                     ICorJitInfo::PgoInstrumentationSchema item = schema[k];
+                    using Kind = ICorJitInfo::PgoInstrumentationKind;
+                    const bool histogramCount = item.InstrumentationKind == Kind::ValueHistogramLongCount;
+                    const bool histogram = item.InstrumentationKind == Kind::ValueHistogram;
+                    UINT64 filled = 0;
+                    if (histogramCount)
+                    {
+                        if (item.Count != 1 || k + 1 == schema.GetCount() ||
+                            schema[k + 1].InstrumentationKind != Kind::ValueHistogram ||
+                            schema[k + 1].ILOffset != item.ILOffset)
+                            ThrowIncompatiblePgoSchemas(primary->header.method);
+                        filled = *reinterpret_cast<const UINT64*>(source->header.GetData() + item.Offset);
+                        if (filled == 0)
+                        {
+                            k++;
+                            continue;
+                        }
+                    }
+                    else if (histogram)
+                    {
+                        if (k == 0 || schema[k - 1].InstrumentationKind != Kind::ValueHistogramLongCount ||
+                            schema[k - 1].ILOffset != item.ILOffset || item.Count != ICorJitInfo::HandleHistogram32::SIZE)
+                            ThrowIncompatiblePgoSchemas(primary->header.method);
+                        filled = *reinterpret_cast<const UINT64*>(source->header.GetData() + schema[k - 1].Offset);
+                    }
                     haveBlocks |= item.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockLongCount;
                     haveEdges |= item.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeLongCount;
                     if (haveBlocks && haveEdges)
                         ThrowIncompatiblePgoSchemas(primary->header.method);
-                    bool counter = item.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockLongCount ||
+                    bool counter = histogramCount ||
+                        item.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockLongCount ||
                         item.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeLongCount;
-                    if ((!counter && item.InstrumentationKind != ICorJitInfo::PgoInstrumentationKind::NumRuns &&
+                    if ((!counter && !histogram && item.InstrumentationKind != ICorJitInfo::PgoInstrumentationKind::NumRuns &&
                         item.InstrumentationKind != ICorJitInfo::PgoInstrumentationKind::Version) || item.Count < 0 ||
                         (counter && item.Count == 0))
                         ThrowIncompatiblePgoSchemas(primary->header.method);
@@ -319,7 +351,7 @@ void PgoManager::LogInstrumentationData()
                         if (existing.InstrumentationKind == item.InstrumentationKind &&
                             existing.ILOffset == item.ILOffset && existing.Other == item.Other)
                         {
-                            if (existing.Count != item.Count || existing.Other != item.Other)
+                            if (!histogram && existing.Count != item.Count)
                                 ThrowIncompatiblePgoSchemas(primary->header.method);
                             break;
                         }
@@ -338,7 +370,17 @@ void PgoManager::LogInstrumentationData()
                         item.Offset = counters.GetCount() * sizeof(UINT64);
                         for (INT32 count = 0; count < (counter ? item.Count : 0); count++)
                             counters.Append(0);
+                        if (histogram)
+                            item.Count = 0;
                         merged.Append(item);
+                    }
+                    if (histogram)
+                    {
+                        INT32 count = static_cast<INT32>(min(filled, static_cast<UINT64>(schema[k].Count)));
+                        if (merged[match].Count > INT32_MAX - count)
+                            ThrowOutOfMemory();
+                        merged[match].Count += count;
+                        valueSamples.Append({source->header.GetData() + schema[k].Offset, match, count});
                     }
                     if (counter)
                     {
@@ -356,7 +398,38 @@ void PgoManager::LogInstrumentationData()
             }
             if (exportedInterpreterProfile || !nonzero)
                 continue;
-            SchemaWriterFunctor writer(reinterpret_cast<BYTE*>(counters.OpenRawBuffer()));
+
+            if (valueSamples.GetCount() != 0)
+            {
+                // Append filled samples, not uninitialized slots. Keep each count/table pair in schema order.
+                S_SIZE_T byteSize = S_SIZE_T(counters.GetCount()) * S_SIZE_T(sizeof(UINT64));
+                for (COUNT_T j = 0; j < merged.GetCount(); j++)
+                {
+                    ICorJitInfo::PgoInstrumentationSchema& item = merged[j];
+                    if (item.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::ValueHistogram)
+                    {
+                        if (byteSize.IsOverflow())
+                            ThrowOutOfMemory();
+                        item.Offset = byteSize.Value();
+                        byteSize = byteSize + S_SIZE_T(item.Count) * S_SIZE_T(sizeof(INT32));
+                        item.Count = 0;
+                    }
+                }
+                S_SIZE_T roundedSize = byteSize + S_SIZE_T(sizeof(UINT64) - 1);
+                if (roundedSize.IsOverflow())
+                    ThrowOutOfMemory();
+                counters.SetCount(static_cast<COUNT_T>(roundedSize.Value() / sizeof(UINT64)));
+            }
+            BYTE* mergedData = reinterpret_cast<BYTE*>(counters.OpenRawBuffer());
+            for (COUNT_T j = 0; j < valueSamples.GetCount(); j++)
+            {
+                const ValueSamples& samples = valueSamples[j];
+                ICorJitInfo::PgoInstrumentationSchema& item = merged[samples.schemaIndex];
+                memcpy(mergedData + item.Offset + static_cast<size_t>(item.Count) * sizeof(INT32),
+                    samples.data, static_cast<size_t>(samples.count) * sizeof(INT32));
+                item.Count += samples.count;
+            }
+            SchemaWriterFunctor writer(mergedData);
             for (COUNT_T j = 0; j < merged.GetCount(); j++)
             {
                 if (!writer(merged[j]))
@@ -921,6 +994,10 @@ BYTE* PgoManager::allocPgoInstrumentationFromR2RSchema(Module* imageModule, Meth
         item.Count = static_cast<INT32>(ReadPgoSchemaUInt32(record + 8));
         item.Other = static_cast<INT32>(ReadPgoSchemaUInt32(record + 12));
         UINT32 offset = ReadPgoSchemaUInt32(record + 16);
+        using Kind = ICorJitInfo::PgoInstrumentationKind;
+        if (previous.InstrumentationKind == Kind::ValueHistogramLongCount &&
+            item.InstrumentationKind != Kind::ValueHistogram)
+            COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
         switch (item.InstrumentationKind)
         {
             case ICorJitInfo::PgoInstrumentationKind::BasicBlockLongCount:
@@ -933,6 +1010,17 @@ BYTE* PgoManager::allocPgoInstrumentationFromR2RSchema(Module* imageModule, Meth
                 if (item.Count < 1 || item.ILOffset == -1 || item.Other == -1 ||
                     (item.ILOffset >= 0 && static_cast<UINT32>(item.ILOffset) >= ilHeader.GetCodeSize()) ||
                     (item.Other >= 0 && static_cast<UINT32>(item.Other) >= ilHeader.GetCodeSize()))
+                    COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+                break;
+            case Kind::ValueHistogramLongCount:
+                if (item.Count != 1 || item.Other != 0 || item.ILOffset < 0 ||
+                    static_cast<UINT32>(item.ILOffset) >= ilHeader.GetCodeSize() || i + 1 == recordCount)
+                    COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+                break;
+            case Kind::ValueHistogram:
+                if (previous.InstrumentationKind != Kind::ValueHistogramLongCount ||
+                    previous.ILOffset != item.ILOffset || item.Other != 0 ||
+                    item.Count != ICorJitInfo::HandleHistogram32::SIZE)
                     COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
                 break;
             case ICorJitInfo::PgoInstrumentationKind::NumRuns:
@@ -952,7 +1040,7 @@ BYTE* PgoManager::allocPgoInstrumentationFromR2RSchema(Module* imageModule, Meth
             recordBytes.Value() > UINT32_MAX)
             COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
         LayoutR2RPgoInstrumentationSchema(previous, &item);
-        if (item.Offset != offset || offset > UINT32_MAX - recordBytes.Value() || offset != storageEnd)
+        if (item.Offset != offset || offset > UINT32_MAX - recordBytes.Value() || offset < storageEnd)
             COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
         for (UINT32 j = 0; j < i; j++)
         {

@@ -208,7 +208,7 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
                 <PublishReadyToRun>true</PublishReadyToRun>
                 <PublishReadyToRunComposite>{composite.ToString().ToLowerInvariant()}</PublishReadyToRunComposite>
                 <PublishTrimmed>false</PublishTrimmed>
-                <WasmPgoInstrumentation Condition="'$(WasmBuildTestConsumePgo)' != 'true'">{pgoFilter}</WasmPgoInstrumentation>
+                <WasmPgoInstrumentation Condition="'$(WasmBuildTestConsumePgo)' != 'true'">{(pgoFilter == "all" ? "all" : pgoFilter + " System.MemoryExtensions:SequenceEqual")}</WasmPgoInstrumentation>
                 <WasmPerformanceInstrumentation Condition="'$(WasmBuildTestConsumePgo)' != 'true'">{(cpuSampling ? "all" : "")}</WasmPerformanceInstrumentation>
                 <_WasmBuildTestCompilerLogPath>$([System.IO.Path]::Combine('$(MSBuildProjectDirectory)', '$(WasmBuildTestCompilerLog)'))</_WasmBuildTestCompilerLogPath>
                 <PublishReadyToRunCrossgen2ExtraArgs>$(PublishReadyToRunCrossgen2ExtraArgs);--optimize;--parallelism:1;--codegenopt:JitDisasm=*WasmPgoScenarios:*;--codegenopt:JitStdOutFile=&quot;$(_WasmBuildTestCompilerLogPath)&quot;</PublishReadyToRunCrossgen2ExtraArgs>
@@ -520,6 +520,18 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
             ilZeroBackedge: config == Configuration.Release);
         AssertEdgeCounts(Assert.Single(methods, method => IsMethod(method, "SwitchEdges")), 10);
         AssertEdgeCounts(Assert.Single(methods, method => IsMethod(method, "ExceptionEdges")), 2);
+        JsonElement comparison = Assert.Single(allMethods, method => method.GetProperty("Method").GetString()!
+            .Contains("System.MemoryExtensions.SequenceEqual<int8>(", StringComparison.Ordinal));
+        JsonElement[] comparisonRecords = comparison.GetProperty("InstrumentationData").EnumerateArray().ToArray();
+        JsonElement sampleCount = Assert.Single(comparisonRecords,
+            record => record.GetProperty("InstrumentationKind").GetString() == "ValueHistogramLongCount");
+        JsonElement samples = Assert.Single(comparisonRecords,
+            record => record.GetProperty("InstrumentationKind").GetString() == "ValueHistogram");
+        Assert.Equal(sampleCount.GetProperty("ILOffset").GetInt32(), samples.GetProperty("ILOffset").GetInt32());
+        Assert.Equal(5L, sampleCount.GetProperty("Data").GetInt64());
+        Assert.Equal(new[] { "4", "4", "4", "8", "8" },
+            samples.GetProperty("Data").EnumerateArray().Select(sample => sample.GetString()).Order(StringComparer.Ordinal));
+        AssertEdgeCounts(Assert.Single(methods, method => IsMethod(method, "CompareBytes")), 5);
         JsonElement fallback = Assert.Single(allMethods, method =>
             method.GetProperty("Method").GetString()!.Contains("FallbackLibrary.WasmPgoScenarios.InterpOnly(", StringComparison.Ordinal));
         if (interpretedFallback)
@@ -554,7 +566,8 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
             Assert.False(method.TryGetProperty("ExclusiveWeight", out _), $"Counts must not become CPU sample weights: {method}");
 
             return method.GetProperty("InstrumentationData").EnumerateArray()
-                .Where(element => element.GetProperty("InstrumentationKind").GetString() is not ("Version" or "NumRuns")).ToArray();
+                .Where(element => element.GetProperty("InstrumentationKind").GetString() is not
+                    ("Version" or "NumRuns" or "ValueHistogramLongCount" or "ValueHistogram")).ToArray();
         }
 
         static void AssertEdgeCounts(JsonElement method, long entries, long? loopIterations = null, bool ilZeroBackedge = false)
@@ -622,6 +635,15 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
                         switchResult += SwitchEdges(i % 5);
                     if (switchResult != 24 || ExceptionEdges(false) + ExceptionEdges(true) != 18)
                         throw new Exception("Switch or exception profiling changed execution");
+                    sbyte[] left = new sbyte[8];
+                    sbyte[] right = new sbyte[8];
+                    right[7] = 1;
+                    for (int i = 0; i < 5; i++)
+                    {
+                        int length = i < 3 ? 4 : 8;
+                        if (CompareBytes(left, right, length) != (length == 4))
+                            throw new Exception("Value profiling changed the comparison");
+                    }
                     IntrinsicPgoCalls.ValidateCalls();
                     IntrinsicPgoCalls.DeferredFillCalls();
                     if (result != 159)
@@ -681,6 +703,10 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
                 }
 
                 public static int NeverCalled(int value) => value + 1;
+
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                public static bool CompareBytes(sbyte[] left, sbyte[] right, int length) =>
+                    ((ReadOnlySpan<sbyte>)left.AsSpan(0, length)).SequenceEqual(right.AsSpan(0, length));
 
                 [MethodImpl(MethodImplOptions.NoInlining)]
                 public static int SwitchEdges(int value)

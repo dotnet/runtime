@@ -1824,6 +1824,9 @@ namespace ILCompiler.Reflection.ReadyToRun
                 case ReadyToRunHelper.WasmProfSamplepoint:
                     builder.Append("WASM_PROF_SAMPLEPOINT");
                     break;
+                case ReadyToRunHelper.ValueProfile64:
+                    builder.Append("VALUE_PROFILE64");
+                    break;
 
                 case ReadyToRunHelper.GetCurrentManagedThreadId:
                     builder.Append("GET_CURRENT_MANAGED_THREAD_ID");

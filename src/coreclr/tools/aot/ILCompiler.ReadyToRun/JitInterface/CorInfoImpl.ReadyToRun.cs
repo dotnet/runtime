@@ -1427,6 +1427,10 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.WasmProfSamplepoint;
                     break;
 
+                case CorInfoHelpFunc.CORINFO_HELP_VALUEPROFILE64:
+                    id = ReadyToRunHelper.ValueProfile64;
+                    break;
+
                 case CorInfoHelpFunc.CORINFO_HELP_GETCURRENTMANAGEDTHREADID:
                     id = ReadyToRunHelper.GetCurrentManagedThreadId;
                     break;

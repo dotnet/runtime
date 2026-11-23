@@ -480,6 +480,12 @@ root compilation's counter width. The compiler can use the ordinary minimal
 prejit profiling option, but it cannot initialize counter values during
 compilation: the import cell resolves to runtime storage only when loaded.
 
+Instrumented R2R methods also collect sampled integer arguments at supported
+`Memmove` and `SequenceEqual` call sites. The value samples are exported in the
+same trace and MIBC as the edge counts. Pass crossgen2 `--codegenopt:JitProfileValues=0`
+to turn off value probes while retaining counts. Value collection does not add
+new Wasm constant-length optimizations.
+
 Run the published app in Chrome (or another supported browser), exercise representative
 workloads, and call:
 

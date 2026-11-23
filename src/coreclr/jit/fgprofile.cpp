@@ -438,6 +438,7 @@ public:
     void BuildSchemaElements(BasicBlock* block, Schema& schema) override;
     void Instrument(BasicBlock* block, Schema& schema, uint8_t* profileMemory) override;
 
+    static GenTree* GetR2RProfileAddress(Compiler* comp, uint8_t* importCell, size_t offset);
     static GenTree* CreateCounterIncrement(Compiler* comp,
                                            uint8_t*  counterBase,
                                            size_t    counterOffset,
@@ -688,6 +689,17 @@ void BlockCountInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8
 }
 
 //------------------------------------------------------------------------
+// BlockCountInstrumentor::GetR2RProfileAddress: resolve an import and a slot in its profile slab.
+//
+GenTree* BlockCountInstrumentor::GetR2RProfileAddress(Compiler* comp, uint8_t* importCell, size_t offset)
+{
+    assert(comp->compR2RPgoInstrumentation());
+    GenTree* base = comp->gtNewIndOfIconHandleNode(TYP_I_IMPL, reinterpret_cast<size_t>(importCell), GTF_ICON_BBC_PTR);
+    base->gtFlags |= GTF_IND_NONFAULTING;
+    return offset == 0 ? base : comp->gtNewOperNode(GT_ADD, TYP_I_IMPL, base, comp->gtNewIconNode(offset));
+}
+
+//------------------------------------------------------------------------
 // BlockCountInstrumentor::CreateCounterIncrement: create a tree that increments a profile counter.
 //
 // Arguments:
@@ -708,17 +720,10 @@ GenTree* BlockCountInstrumentor::CreateCounterIncrement(Compiler* comp,
     const bool scalable    = comp->opts.compPgoScalable;
 
     auto counterAddress = [comp, counterBase, &counterOffset]() -> GenTree* {
-#ifdef FEATURE_R2R_PGO
         if (comp->compR2RPgoInstrumentation())
         {
-            GenTree* base =
-                comp->gtNewIndOfIconHandleNode(TYP_I_IMPL, reinterpret_cast<size_t>(counterBase), GTF_ICON_BBC_PTR);
-            base->gtFlags |= GTF_IND_NONFAULTING;
-            return counterOffset == 0
-                       ? base
-                       : comp->gtNewOperNode(GT_ADD, TYP_I_IMPL, base, comp->gtNewIconNode(counterOffset));
+            return GetR2RProfileAddress(comp, counterBase, counterOffset);
         }
-#endif // FEATURE_R2R_PGO
         return comp->gtNewIconHandleNode(reinterpret_cast<size_t>(counterBase) + counterOffset, GTF_ICON_BBC_PTR);
     };
 
@@ -2296,9 +2301,6 @@ public:
         assert(*m_currentSchemaIndex + 2 <= (int)m_schema.size());
         const ICorJitInfo::PgoInstrumentationSchema& tableEntry = m_schema[*m_currentSchemaIndex + 1];
         assert((tableEntry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::ValueHistogram));
-        uint8_t* hist = &m_profileMemory[countEntry.Offset];
-        assert(hist != nullptr);
-
         *m_currentSchemaIndex += 2;
 
         GenTree** lenArgRef = &node->AsCall()->gtArgs.GetUserArgByIndex(2)->EarlyNodeRef();
@@ -2319,7 +2321,10 @@ public:
         GenTree*       storeLenToTemp = compiler->gtNewTempStore(lenTmpNum, *lenArgRef);
         GenTree*       lengthLocal    = compiler->gtNewLclvNode(lenTmpNum, genActualType(*lenArgRef));
         GenTreeOp* lengthNode = compiler->gtNewOperNode(GT_COMMA, lengthLocal->TypeGet(), storeLenToTemp, lengthLocal);
-        GenTree*   histNode   = compiler->gtNewIconNode(reinterpret_cast<ssize_t>(hist), TYP_I_IMPL);
+        GenTree*       histNode =
+            compiler->compR2RPgoInstrumentation()
+                      ? BlockCountInstrumentor::GetR2RProfileAddress(compiler, m_profileMemory, countEntry.Offset)
+                      : compiler->gtNewIconNode(reinterpret_cast<ssize_t>(m_profileMemory + countEntry.Offset), TYP_I_IMPL);
         unsigned   helper     = is32 ? CORINFO_HELP_VALUEPROFILE32 : CORINFO_HELP_VALUEPROFILE64;
         GenTreeCall* helperCallNode = compiler->gtNewHelperCallNode(helper, TYP_VOID, lengthNode, histNode);
 
@@ -2664,30 +2669,34 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
         }
     }
 
+    bool isSelected = true;
 #ifdef FEATURE_R2R_PGO
-    if (r2rPgo &&
-        !JitConfig.WasmPgoInstrumentation().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
+    if (r2rPgo)
+    {
+        isSelected = JitConfig.WasmPgoInstrumentation().contains(info.compMethodHnd, info.compClassHnd,
+                                                                 &info.compMethodInfo->args);
+    }
+#endif // FEATURE_R2R_PGO
+    if (!isSelected)
     {
         fgCountInstrumentor = new (this, CMK_Pgo) NonInstrumentor(this);
     }
+    else if (minimalProfiling && (fgBBcount < 2))
+    {
+        // Don't instrument small single-block methods.
+        JITDUMP("Not using any block profiling (fgBBcount < 2)\n");
+        fgCountInstrumentor = new (this, CMK_Pgo) NonInstrumentor(this);
+    }
+    else if (useEdgeProfiles)
+    {
+        JITDUMP("Using edge profiling\n");
+        fgCountInstrumentor = new (this, CMK_Pgo) EfficientEdgeCountInstrumentor(this, minimalProfiling);
+    }
     else
-#endif // FEATURE_R2R_PGO
-        if (minimalProfiling && (fgBBcount < 2))
-        {
-            // Don't instrument small single-block methods.
-            JITDUMP("Not using any block profiling (fgBBcount < 2)\n");
-            fgCountInstrumentor = new (this, CMK_Pgo) NonInstrumentor(this);
-        }
-        else if (useEdgeProfiles)
-        {
-            JITDUMP("Using edge profiling\n");
-            fgCountInstrumentor = new (this, CMK_Pgo) EfficientEdgeCountInstrumentor(this, minimalProfiling);
-        }
-        else
-        {
-            JITDUMP("Using block profiling, because %s\n", prejit ? "prejitting" : "edge profiling disabled");
-            fgCountInstrumentor = new (this, CMK_Pgo) BlockCountInstrumentor(this);
-        }
+    {
+        JITDUMP("Using block profiling, because %s\n", prejit ? "prejitting" : "edge profiling disabled");
+        fgCountInstrumentor = new (this, CMK_Pgo) BlockCountInstrumentor(this);
+    }
 
     // Enable class profiling by default, when jitting.
     // Todo: we may also want this on by default for prejitting.
@@ -2705,13 +2714,13 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
         fgHistogramInstrumentor = new (this, CMK_Pgo) NonInstrumentor(this);
     }
 
-    if (!prejit && JitConfig.JitProfileValues())
+    if (isSelected && (!prejit || r2rPgo) && JitConfig.JitProfileValues())
     {
         fgValueInstrumentor = new (this, CMK_Pgo) ValueInstrumentor(this);
     }
     else
     {
-        JITDUMP("Not doing generic profiling, because %s\n", prejit ? "prejit" : "DOTNET_JitProfileValues=0")
+        JITDUMP("Not doing value profiling\n")
         fgValueInstrumentor = new (this, CMK_Pgo) NonInstrumentor(this);
     }
 

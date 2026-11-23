@@ -257,6 +257,46 @@ public class WasmArgumentLayoutTests
     }
 
     [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void ReadyToRunValueProbesRespectConfiguration(bool enabled)
+    {
+        string directory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        Directory.CreateDirectory(directory);
+        try
+        {
+            string listingPath = Path.Combine(directory, "value-probes.jit.txt");
+            R2RCompilationResult result = new R2RDriver(_output).Compile(
+            [
+                TestPaths.SystemPrivateCoreLibPath,
+                "--reference", Path.Combine(TestPaths.LibrariesDir, "*.dll"),
+                "--targetos", TestPaths.TargetOS, "--targetarch", TestPaths.TargetArchitecture,
+                "--obj-format", "wasm", "--optimize", "--parallelism", "1",
+                "--singlemethodtypename", "System.MemoryExtensions",
+                "--singlemethodname", "SequenceEqual",
+                "--singlemethodindex", "2",
+                "--singlemethodgenericarg", "System.SByte",
+                "--codegenopt:WasmPgoInstrumentation=*",
+                $"--codegenopt:JitProfileValues={(enabled ? 1 : 0)}",
+                "--codegenopt:JitDisasm=System.MemoryExtensions:SequenceEqual",
+                $"--codegenopt:JitStdOutFile={listingPath}",
+                "--out", Path.Combine(directory, "value-probes.wasm"),
+            ]);
+            Assert.True(result.Success, result.StandardOutput + result.StandardError);
+            string listing = File.ReadAllText(listingPath);
+            Assert.Contains("i64.add", listing);
+            if (enabled)
+                Assert.Contains("CORINFO_HELP_VALUEPROFILE64", listing);
+            else
+                Assert.DoesNotContain("CORINFO_HELP_VALUEPROFILE64", listing);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Theory]
     [InlineData(7L, 1L)]
     [InlineData(21L, 3L)]
     public void EdgeProfileSeparatesEntryFromIlZeroBackedge(long loopCount, long exitCount)
