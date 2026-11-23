@@ -387,10 +387,16 @@ namespace Wasm.Build.Tests
         {
             var config = Configuration.Release;
             const string ConflictingEntryAssembly = "ConflictingTypeMapRoot";
+            const string RuntimeEntryAssembly = "System.Runtime";
+            const string RuntimeEntryOption = "System.Runtime.InteropServices.TypeMappingEntryAssembly";
             bool checkLinkerRoot = IsCoreClrRuntime && useWasmSdk && isPublish;
+            bool checkRuntimeRoot = IsCoreClrRuntime && useWasmSdk && !isPublish;
             ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.LibraryModeTestApp, "libraryMode",
                 extraProperties: checkLinkerRoot
                     ? $"<_ExtraTrimmerArgs>$(_ExtraTrimmerArgs) --typemap-entry-assembly {ConflictingEntryAssembly}</_ExtraTrimmerArgs>"
+                    : "",
+                extraItems: checkRuntimeRoot
+                    ? $"""<RuntimeHostConfigurationOption Include="{RuntimeEntryOption}" Value="{RuntimeEntryAssembly}" />"""
                     : "");
             if (!useWasmSdk)
             {
@@ -424,6 +430,14 @@ namespace Wasm.Build.Tests
                 IEnumerable<string> entryAssemblies = Regex.Matches(args, """--typemap-entry-assembly\s+(?:"([^"]+)"|(\S+))""")
                     .Select(static match => match.Groups[1].Success ? match.Groups[1].Value : match.Groups[2].Value);
                 Assert.Equal([ConflictingEntryAssembly, info.ProjectName], entryAssemblies);
+            }
+
+            if (checkRuntimeRoot)
+            {
+                WasmSdkBasedProjectProvider provider = GetProvider<WasmSdkBasedProjectProvider>();
+                string frameworkDirectory = GetBinFrameworkDir(config, forPublish: false);
+                var bootConfig = provider.GetBootJson(provider.GetBootConfigPath(frameworkDirectory));
+                Assert.Equal(RuntimeEntryAssembly, bootConfig.runtimeConfig.runtimeOptions.configProperties[RuntimeEntryOption].ToString());
             }
 
             if (useWasmSdk)

@@ -55,6 +55,20 @@ namespace Microsoft.Interop.JavaScript
             return true;
         }
 
+        private static bool HasErrorObsoleteContainingType(INamedTypeSymbol type)
+        {
+            for (INamedTypeSymbol? current = type; current is not null; current = current.ContainingType)
+            {
+                if (current.GetAttributes().Any(static attr => attr.ConstructorArguments is [_, { Value: true }]
+                    && attr.AttributeClass?.ToDisplayString() == "System.ObsoleteAttribute"))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         public static class StepNames
         {
             public const string CalculateStubInformation = nameof(CalculateStubInformation);
@@ -136,8 +150,10 @@ namespace Microsoft.Interop.JavaScript
             var signatureContext = JSSignatureContext.Create(symbol, environment, generatorDiagnostics, ct);
             ContainingSyntaxContext containingTypeContext = originalSyntax.GetContainingSyntaxContext();
 
+            bool canBindDirectly = IsReferenceableByMethodGroup(symbol.ContainingType)
+                && !HasErrorObsoleteContainingType(symbol.ContainingType);
             string? accessorTarget = null;
-            if (!IsReferenceableByMethodGroup(symbol.ContainingType) && CanUseUnsafeAccessor(symbol.ContainingType))
+            if (!canBindDirectly && CanUseUnsafeAccessor(symbol.ContainingType))
             {
                 var names = new List<string>();
                 for (INamedTypeSymbol? type = symbol.ContainingType; type is not null; type = type.ContainingType)
@@ -148,7 +164,7 @@ namespace Microsoft.Interop.JavaScript
                 accessorTarget = typeName + ", " + symbol.ContainingAssembly.Identity.GetDisplayName();
             }
             return new IncrementalStubGenerationContext(signatureContext, containingTypeContext, locations, jsExportData,
-                IsReferenceableByMethodGroup(symbol.ContainingType), accessorTarget);
+                canBindDirectly, accessorTarget);
         }
 
         private static void WriteProviderSource(

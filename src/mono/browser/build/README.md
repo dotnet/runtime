@@ -2,9 +2,11 @@
 
 This usually consists of taking the built assemblies, and related files, and generating an app bundle.
 
-CoreCLR Browser builds default the trimming discovery root `TypeMapEntryAssembly` to the
-application's assembly name. The JSExport provider linker descriptor preserves
-the native `BindAssemblyExports` entry point, which makes the type-map lookup
+CoreCLR Browser builds use `TypeMapEntryAssembly` as the type-map root for both
+the runtime and the linker. If it is unset, an explicit
+`System.Runtime.InteropServices.TypeMappingEntryAssembly` runtime host option
+takes precedence over the application's assembly name. The JSExport provider
+linker descriptor preserves the native `BindAssemblyExports` entry point, which makes the type-map lookup
 reachable even when JavaScript is the only caller of the application's exports.
 ILLink forwards this root at target execution time so late WebAssembly imports
 also work for library-mode applications without a managed entry point. Until that
@@ -23,8 +25,10 @@ JSExport maps in assemblies it already keeps. If reachable managed code does not
 keep a library used from JavaScript, the publishing project must root it, for
 example by passing a library-supplied `TrimmerRootDescriptor`. An embedded
 descriptor alone cannot keep its own assembly. Trimmed publication needs an
-ILLink version that supports local JSExport map discovery. Assembly-target
-attributes are not generated for JSExports; application-wide type-map queries
+SDK-selected ILLink version that supports local JSExport map discovery. The
+compatibility target only forwards the root; it does not select ILLink. An older
+linker can retain a library but remove its export map, leaving no exports to discover.
+Assembly-target attributes are not generated for JSExports; application-wide type-map queries
 still require explicit edges to discover entries in other assemblies.
 
 One generated provider per assembly uses the assembly name as its type-map key.
@@ -51,6 +55,8 @@ calling the generated wrapper; subsequent invocations can retry binding.
 Private and protected nested exports use managed unsafe accessors to their generated
 wrappers when the declaring type is a reference type. Inaccessible value types and
 generic or file-local containing types use the diagnostic and reflection fallback.
+Exports in error-obsolete types also avoid direct references to their declaring
+type, using an unsafe accessor or reflection as appropriate.
 
 Wasm app build can run in two scenarios:
 

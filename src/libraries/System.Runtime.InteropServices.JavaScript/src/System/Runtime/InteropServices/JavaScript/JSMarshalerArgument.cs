@@ -52,11 +52,7 @@ namespace System.Runtime.InteropServices.JavaScript
                     ToManagedContext.CreateCSOwnedProxy(slot.JSHandle);
                     break;
                 case MarshalerType.Task:
-                    ToManaged(out System.Threading.Tasks.Task<object?>? _, static (ref JSMarshalerArgument argument, out object? value) =>
-                    {
-                        argument.ReleaseJSExportArgument();
-                        value = null;
-                    });
+                    ReleaseJSExportPromise();
                     break;
             }
             slot = default;

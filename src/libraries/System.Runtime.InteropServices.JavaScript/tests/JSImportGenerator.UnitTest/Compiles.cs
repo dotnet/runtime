@@ -57,6 +57,26 @@ namespace JSImportGenerator.Unit.Tests
             TestUtils.AssertPostSourceGeneratorCompilation(newComp);
         }
 
+        [Theory]
+        [InlineData("class", false)]
+        [InlineData("struct", false)]
+        [InlineData("class", true)]
+        public void JSExportOnErrorObsoleteTypeCompiles(string typeKind, bool nested)
+        {
+            string export = $$"""
+                public partial {{typeKind}} Exports
+                {
+                    [System.Runtime.InteropServices.JavaScript.JSExport]
+                    public static int Export() => 42;
+                }
+                """;
+            string declaration = nested ? $"public partial class Outer {{ {export} }}" : export;
+            ValidateSnippets($"""
+                namespace Example;
+                [System.Obsolete("Use its replacement.", error: true)] {declaration}
+                """);
+        }
+
         [Fact]
         public void GeneratedLiteralsAndIdentifiersPreserveTheirValues()
         {

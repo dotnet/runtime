@@ -125,7 +125,8 @@ Managed JSON parsing remains the consumer's responsibility.
 without the WebAssembly SDK. CoreCLR trimmed publishing checks that the library
 is forwarded exactly once after a conflicting `--typemap-entry-assembly` argument
 in the publish binlog's `ILLink` task `ExtraArgs`, then invokes its JSExport without
-a managed entry point.
+a managed entry point. The untrimmed CoreCLR SDK build checks that an explicit
+type-map root in the runtime host configuration survives into the boot configuration.
 
 Blazor specific tests should be located in `Blazor` directory. New test classes are picked up automatically - the per-class Helix work item list is generated from the built test assembly, so there is no list to update. Annotate classes and test methods that only apply to one runtime with `[TestCategory("mono")]` or `[TestCategory("coreclr")]`, and they will be left out of the other flavor's runs. If you are adding a new test to an existing class, make sure it does not prolong the execution time significantly. Tests run on parallel on CI and having one class running much longer than the average prolongs the total execution time.
 

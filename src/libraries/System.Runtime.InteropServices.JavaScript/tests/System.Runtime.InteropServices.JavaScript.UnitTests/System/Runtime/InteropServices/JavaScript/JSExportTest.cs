@@ -117,6 +117,40 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(42, await JavaScriptTestHelper.InvokePayloadFailure(assemblyName, isAsync));
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
+        public async Task FailedBindingDrainsRejectedPromiseArgument()
+        {
+            string assemblyName = "PayloadFailure" + Guid.NewGuid().ToString("N");
+            string rejectionMessage = assemblyName + " rejected argument";
+            int unobserved = 0;
+            TaskScheduler.UnobservedTaskException += OnUnobserved;
+            try
+            {
+                PayloadFailureProvider.Register(assemblyName, isAsync: false, JSMarshalerType.Task(JSMarshalerType.Int32));
+                await JavaScriptTestHelper.InvokeRejectedPromiseBindingFailure(assemblyName, rejectionMessage);
+                for (int attempt = 0; attempt < 20 && Volatile.Read(ref unobserved) == 0; attempt++)
+                {
+                    await Task.Delay(50);
+                    GC.Collect();
+                    GC.WaitForPendingFinalizers();
+                }
+
+                Assert.Equal(0, Volatile.Read(ref unobserved));
+            }
+            finally
+            {
+                TaskScheduler.UnobservedTaskException -= OnUnobserved;
+            }
+
+            void OnUnobserved(object? sender, UnobservedTaskExceptionEventArgs args)
+            {
+                if (args.Exception.InnerException is JSException error && error.Message.Contains(rejectionMessage, StringComparison.Ordinal))
+                {
+                    Interlocked.Increment(ref unobserved);
+                }
+            }
+        }
+
         private sealed unsafe class PayloadFailureProvider(string assemblyName, bool isAsync, bool probeReentry = false) : JSExportProvider
         {
             internal string Name => $"[{assemblyName}]Payload:Invoke";
@@ -153,14 +187,14 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             internal static JSFunctionBinding CreateSignature(ReadOnlySpan<JSMarshalerType> types) => GetMethodSignature(null, types, null, null);
             internal static void FreeSignature(JSFunctionBinding signature) => FreeMethodSignatureBuffer(null, signature);
 
-            internal static void Register(string assemblyName, bool isAsync)
+            internal static void Register(string assemblyName, bool isAsync, JSMarshalerType? argumentType = null)
             {
                 Type contextType = typeof(JSExportProvider).Assembly.GetType("System.Runtime.InteropServices.JavaScript.JSProxyContext", throwOnError: true)!;
                 Type pendingType = contextType.GetNestedType("PendingJSExport", BindingFlags.NonPublic)!;
                 object context = contextType.GetMethod("AssertIsInteropThread", BindingFlags.Public | BindingFlags.Static)!.Invoke(null, null)!;
                 var provider = new PayloadFailureProvider(assemblyName, isAsync, probeReentry: true);
                 JSFunctionBinding signature = CreateSignature(
-                    [isAsync ? JSMarshalerType.Task(JSMarshalerType.Int32) : JSMarshalerType.Int32, JSMarshalerType.Array(JSMarshalerType.Byte)]);
+                    [isAsync ? JSMarshalerType.Task(JSMarshalerType.Int32) : JSMarshalerType.Int32, argumentType ?? JSMarshalerType.Array(JSMarshalerType.Byte)]);
                 try
                 {
                     object pending = Activator.CreateInstance(pendingType, BindingFlags.Instance | BindingFlags.NonPublic, null,

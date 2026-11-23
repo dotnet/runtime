@@ -23,7 +23,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(3, state2);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowserDomSupportedOrNodeJS), nameof(PlatformDetection.IsCoreCLR))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowserDomSupported), nameof(PlatformDetection.IsCoreCLR))]
         [InlineData(false)]
         [InlineData(true)]
         public static async Task CapturedExportCannotRunAfterDisposal(bool bindBeforeExit)

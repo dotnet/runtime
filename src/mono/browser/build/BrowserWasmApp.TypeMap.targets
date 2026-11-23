@@ -2,23 +2,36 @@
   <PropertyGroup>
     <_BrowserWasmAppTypeMapTargetsImported>true</_BrowserWasmAppTypeMapTargetsImported>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(UseMonoRuntime)' == 'false' or '$(RuntimeFlavor)' == 'CoreCLR'">
-    <TypeMapEntryAssembly Condition="'$(TypeMapEntryAssembly)' == ''">$(AssemblyName)</TypeMapEntryAssembly>
-  </PropertyGroup>
-
   <ItemGroup Condition="'$(UseMonoRuntime)' == 'false' or '$(RuntimeFlavor)' == 'CoreCLR'">
     <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.JSExportProvider.xml" />
-    <RuntimeHostConfigurationOption Remove="System.Runtime.InteropServices.TypeMappingEntryAssembly" />
-    <RuntimeHostConfigurationOption Include="System.Runtime.InteropServices.TypeMappingEntryAssembly"
-                                    Value="$(TypeMapEntryAssembly)" />
   </ItemGroup>
+
+  <!-- Resolve both roots before runtimeconfig inputs are hashed or the linker argument is generated. -->
+  <Target Name="_SetWasmTypeMapEntryAssembly"
+          BeforeTargets="_GenerateRuntimeConfigurationFilesInputCache;_ComputeManagedAssemblyToLink"
+          Condition="'$(UseMonoRuntime)' == 'false' or '$(RuntimeFlavor)' == 'CoreCLR'">
+    <ItemGroup>
+      <RuntimeHostConfigurationOption Remove="System.Runtime.InteropServices.TypeMappingEntryAssembly"
+                                      Condition="'$(TypeMapEntryAssembly)' != ''" />
+    </ItemGroup>
+    <PropertyGroup>
+      <TypeMapEntryAssembly Condition="'$(TypeMapEntryAssembly)' == ''">@(RuntimeHostConfigurationOption->WithMetadataValue('Identity', 'System.Runtime.InteropServices.TypeMappingEntryAssembly')->'%(Value)')</TypeMapEntryAssembly>
+      <TypeMapEntryAssembly Condition="'$(TypeMapEntryAssembly)' == ''">$(AssemblyName)</TypeMapEntryAssembly>
+    </PropertyGroup>
+    <ItemGroup>
+      <RuntimeHostConfigurationOption Include="System.Runtime.InteropServices.TypeMappingEntryAssembly"
+                                      Value="$(TypeMapEntryAssembly)"
+                                      Condition="'@(RuntimeHostConfigurationOption->WithMetadataValue('Identity', 'System.Runtime.InteropServices.TypeMappingEntryAssembly'))' == ''" />
+    </ItemGroup>
+  </Target>
 
   <!-- WASM-TODO: https://github.com/dotnet/runtime/issues/137651
        Remove only this compatibility target once execution-time forwarding flows through supported SDKs. -->
   <Target Name="_WasmConfigureTypeMapEntryAssembly"
           BeforeTargets="PrepareForILLink"
-          Condition="('$(UseMonoRuntime)' == 'false' or '$(RuntimeFlavor)' == 'CoreCLR') and '$(TypeMapEntryAssembly)' != '' and '$(_TypeMapEntryAssemblyForwarded)' != 'true'">
-    <PropertyGroup>
+          DependsOnTargets="_SetWasmTypeMapEntryAssembly"
+          Condition="'$(UseMonoRuntime)' == 'false' or '$(RuntimeFlavor)' == 'CoreCLR'">
+    <PropertyGroup Condition="'$(TypeMapEntryAssembly)' != '' and '$(_TypeMapEntryAssemblyForwarded)' != 'true'">
       <_ExtraTrimmerArgs>$(_ExtraTrimmerArgs) --typemap-entry-assembly "$(TypeMapEntryAssembly)"</_ExtraTrimmerArgs>
       <_TypeMapEntryAssemblyForwarded>true</_TypeMapEntryAssemblyForwarded>
     </PropertyGroup>

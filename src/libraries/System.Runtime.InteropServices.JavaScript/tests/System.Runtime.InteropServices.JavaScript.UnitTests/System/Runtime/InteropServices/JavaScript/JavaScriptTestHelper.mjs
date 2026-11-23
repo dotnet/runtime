@@ -647,6 +647,17 @@ export async function invokePayloadFailure(assemblyName, isAsync) {
     }
 }
 
+export async function invokeRejectedPromiseBindingFailure(assemblyName, rejectionMessage) {
+    const fn = (await App.runtime.getAssemblyExports(assemblyName)).Payload.Invoke;
+    try {
+        fn(Promise.reject(new Error(rejectionMessage)));
+    } catch (error) {
+        if (!error.message.includes("Payload binding failure")) throw error;
+        return;
+    }
+    throw new Error("Binding failure did not propagate");
+}
+
 export async function inspectRawExportCatalog(assemblyName, typeName) {
     let scope = await App.runtime.getAssemblyExports(assemblyName);
     for (const part of typeName.replace(/\//g, ".").split(".")) {

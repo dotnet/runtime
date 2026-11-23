@@ -1311,6 +1311,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("invokePayloadFailure", "JavaScriptTestHelper")]
         internal static partial Task<int> InvokePayloadFailure(string assemblyName, bool isAsync);
 
+        [JSImport("invokeRejectedPromiseBindingFailure", "JavaScriptTestHelper")]
+        internal static partial Task InvokeRejectedPromiseBindingFailure(string assemblyName, string rejectionMessage);
+
         [JSImport("probePayloadReentry", "JavaScriptTestHelper")]
         internal static partial void ProbePayloadReentry(string assemblyName);
 
