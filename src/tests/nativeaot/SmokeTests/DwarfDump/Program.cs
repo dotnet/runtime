@@ -168,6 +168,16 @@ public class Program
             return 15;
         }
 
+        // Enums, including boxed ones, are only described by an enumeration type.
+        ProcessTextOutput enumResult = RunLlvmDwarfDump(llvmDwarfDumpPath, "--debug-info", "--regex", $"--name=.*_{nameof(TestEnum)}$");
+        if (!enumResult.StandardOutput.Contains("DW_TAG_enumeration_type") ||
+            enumResult.StandardOutput.Contains("DW_TAG_class_type"))
+        {
+            Console.Error.WriteLine($"Unexpected debug info for {nameof(TestEnum)}:");
+            Console.Error.WriteLine(enumResult.StandardOutput);
+            return 16;
+        }
+
         return 100;
     }
 
@@ -180,6 +190,7 @@ public class Program
         new ThreadStaticHolder<string>().Set(42);
         GC.KeepAlive(new int[] { 1, 2, 3 });
         GetValue(new TestInterfaceImplementation());
+        GC.KeepAlive((object)TestEnum.Second);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -302,4 +313,10 @@ interface ITestInterface
 class TestInterfaceImplementation : ITestInterface
 {
     public int GetValue() => 42;
+}
+
+enum TestEnum
+{
+    First,
+    Second,
 }

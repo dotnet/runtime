@@ -113,7 +113,12 @@ namespace ILCompiler.ObjectWriter
                 // Ensure any allocated MethodTables have debug info
                 if (node is ConstructedEETypeNode methodTable)
                 {
-                    _userDefinedTypeDescriptor.GetTypeIndex(methodTable.Type, needsCompleteType: true);
+                    // Boxed enums are described by the enumeration type, describing them as a class with the
+                    // same name as the enumeration would make the name ambiguous for debuggers.
+                    if (methodTable.Type.IsEnum)
+                        _userDefinedTypeDescriptor.GetVariableTypeIndex(methodTable.Type);
+                    else
+                        _userDefinedTypeDescriptor.GetTypeIndex(methodTable.Type, needsCompleteType: true);
                 }
 
                 if (node is INodeWithDebugInfo debugNode and ISymbolDefinitionNode symbolDefinitionNode)
