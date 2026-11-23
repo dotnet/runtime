@@ -5,6 +5,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Strategies;
+using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace Microsoft.Win32.SafeHandles
@@ -42,9 +43,11 @@ namespace Microsoft.Win32.SafeHandles
 
         // not using bool? as it's not thread safe
         private NullableBool _supportsRandomAccess /* = NullableBool.Undefined */;
-        private NullableBool _isAsync /* = NullableBool.Undefined */;
         private bool _deleteOnClose;
         private bool _isLocked;
+        private NullableBool _isBlocking;
+        private UnixHandleAsyncContext? _asyncContext;
+        private UnixHandleAsyncContext.Operation? _cachedOp;
 
         public SafeFileHandle() : this(ownsHandle: true)
         {
@@ -56,24 +59,117 @@ namespace Microsoft.Win32.SafeHandles
             SetHandle(new IntPtr(-1));
         }
 
+        private SafeFileHandle(FileHandleType type, bool nonBlocking)
+            : this(ownsHandle: true)
+        {
+            _cachedFileType = (int)type;
+            _isBlocking = nonBlocking ? NullableBool.False : NullableBool.True;
+        }
+
         public bool IsAsync
         {
             get
             {
-                NullableBool isAsync = _isAsync;
-                if (isAsync == NullableBool.Undefined && !IsClosed)
+                NullableBool isBlocking = _isBlocking;
+                if (isBlocking != NullableBool.Undefined)
                 {
-                    if (Interop.Sys.Fcntl.GetIsNonBlocking(this, out bool isNonBlocking) != 0)
+                    return isBlocking == NullableBool.False;
+                }
+                // Match Windows behavior: IsAsync does not throw after Dispose.
+                if (IsClosed)
+                {
+                    return false;
+                }
+                try
+                {
+                    return !IsBlocking;
+                }
+                catch (ObjectDisposedException)
+                {
+                    return false;
+                }
+            }
+        }
+
+        // RegularFile and BlockDevices don't support non-blocking and do support random access.
+        // Perform read/write operations on the ThreadPool so that multiple can happen in parallel.
+        // Pipe and Socket support non-blocking and do not support random access.
+        // Character devices may support non-blocking and may support random access.
+        internal bool SupportsNonBlocking
+            => UnixHandleAsyncContext.IsSupported // Needed for readiness notifications.
+                && Type is FileHandleType.Socket or FileHandleType.Pipe or FileHandleType.CharacterDevice;
+        internal bool UseThreadPoolForAsync
+            => !SupportsNonBlocking;
+
+        internal bool IsBlocking
+        {
+            get
+            {
+                NullableBool isBlocking = _isBlocking;
+                if (isBlocking == NullableBool.Undefined)
+                {
+                    if (!SupportsNonBlocking)
                     {
-                        throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo(), Path);
+                        _isBlocking = NullableBool.True;
+                        return true;
                     }
 
-                    _isAsync = isAsync = isNonBlocking ? NullableBool.True : NullableBool.False;
+                    if (Interop.Sys.Fcntl.GetIsNonBlocking(this, out bool nonBlocking) != 0)
+                    {
+                        throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo());
+                    }
+
+                    _isBlocking = isBlocking = nonBlocking ? NullableBool.False : NullableBool.True;
                 }
 
-                return isAsync == NullableBool.True;
+                return isBlocking == NullableBool.True;
             }
-            private set => _isAsync = value ? NullableBool.True : NullableBool.False;
+        }
+
+        private void EnsureHandleNonBlocking()
+        {
+            Debug.Assert(SupportsNonBlocking);
+
+            if (_isBlocking != NullableBool.False)
+            {
+                if (Interop.Sys.Fcntl.SetIsNonBlocking(this, 1) != 0)
+                {
+                    throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo());
+                }
+                _isBlocking = NullableBool.False;
+            }
+        }
+
+        internal UnixHandleAsyncContext AsyncContext
+        {
+            get
+            {
+                if (_asyncContext == null)
+                {
+                    EnsureHandleNonBlocking();
+                    // No need to dispose a new context because it doesn't hold disposable resources until first use.
+                    Interlocked.CompareExchange(ref _asyncContext, new UnixHandleAsyncContext(this), null);
+                }
+                return _asyncContext!;
+            }
+        }
+
+        internal ReadOperation RentReadOperation()
+            => Interlocked.Exchange(ref _cachedOp, null) is ReadOperation cached ? cached : new ReadOperation(this);
+
+        internal WriteOperation RentWriteOperation()
+            => Interlocked.Exchange(ref _cachedOp, null) is WriteOperation cached ? cached : new WriteOperation(this);
+
+        internal void ReturnReadOperation(ReadOperation op)
+        {
+            op.Reset();
+            Volatile.Write(ref _cachedOp, op);
+        }
+
+        internal void ReturnWriteOperation(WriteOperation op)
+        {
+            op.Reset();
+            Volatile.Write(ref _cachedOp, op);
         }
 
         internal bool SupportsRandomAccess
@@ -142,6 +238,15 @@ namespace Microsoft.Win32.SafeHandles
             return handle;
         }
 
+        protected override void Dispose(bool disposing)
+        {
+            base.Dispose(disposing);
+
+            // If _asyncContext is null, it might get assigned but it isn't usable because we called base.Dispose.
+            // If there was a context that was used, this disposes it.
+            _asyncContext?.AbortAndDispose();
+        }
+
         protected override bool ReleaseHandle()
         {
             // If DeleteOnClose was requested when constructed, delete the file now.
@@ -183,8 +288,8 @@ namespace Microsoft.Win32.SafeHandles
         public static partial void CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle, bool asyncRead, bool asyncWrite)
         {
             // Allocate the handles first, so in case of OOM we don't leak any handles.
-            SafeFileHandle tempReadHandle = new();
-            SafeFileHandle tempWriteHandle = new();
+            SafeFileHandle tempReadHandle = new(FileHandleType.Pipe, nonBlocking: asyncRead);
+            SafeFileHandle tempWriteHandle = new(FileHandleType.Pipe, nonBlocking: asyncWrite);
 
             Interop.Sys.PipeFlags flags = Interop.Sys.PipeFlags.O_CLOEXEC;
             if (asyncRead)
@@ -214,10 +319,7 @@ namespace Microsoft.Win32.SafeHandles
             }
 
             tempReadHandle.SetHandle(readFd);
-            tempReadHandle.IsAsync = asyncRead;
-
             tempWriteHandle.SetHandle(writeFd);
-            tempWriteHandle.IsAsync = asyncWrite;
 
             readHandle = tempReadHandle;
             writeHandle = tempWriteHandle;
@@ -408,8 +510,6 @@ namespace Microsoft.Win32.SafeHandles
                 filePermissions = ((UnixFileMode)status.Mode) & PermissionMask;
             }
 
-            IsAsync = false; // Unix does not support O_NONBLOCK for regular files.
-
             // Lock the file if requested via FileShare.  This is only advisory locking. FileShare.None implies an exclusive
             // lock on the file and all other modes use a shared lock.  While this is not as granular as Windows, not mandatory,
             // and not atomic with file opening, it's better than nothing.
@@ -545,7 +645,11 @@ namespace Microsoft.Win32.SafeHandles
             }
         }
 
-        private bool GetCanSeekCore() => Interop.Sys.LSeek(this, 0, Interop.Sys.SeekWhence.SEEK_CUR) >= 0;
+        private bool GetCanSeekCore()
+        {
+            bool unseekable = Type is FileHandleType.Socket or FileHandleType.Pipe;
+            return !unseekable && Interop.Sys.LSeek(this, 0, Interop.Sys.SeekWhence.SEEK_CUR) >= 0;
+        }
 
         internal FileHandleType GetFileTypeCore()
         {
