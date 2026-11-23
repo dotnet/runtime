@@ -2,14 +2,19 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers;
 using System.Collections;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 using System.Runtime.Serialization; // For SR
 using System.Security;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Xml;
 
 
@@ -21,7 +26,7 @@ namespace System.Xml
         void SetInput(Stream stream, Encoding? encoding, XmlDictionaryReaderQuotas quotas, OnXmlDictionaryReaderClose? onClose);
     }
 
-    internal sealed class XmlUTF8TextReader : XmlBaseReader, IXmlLineInfo, IXmlTextReaderInitializer
+    internal sealed partial class XmlUTF8TextReader : XmlBaseReader, IXmlLineInfo, IXmlTextReaderInitializer
     {
         private const int MaxTextChunk = 2048;
 
@@ -31,6 +36,24 @@ namespace System.Xml
         private OnXmlDictionaryReaderClose? _onClose;
         private bool _buffered;
         private int _maxBytesPerRead;
+        private static readonly SearchValues<byte> s_textChars = CreateSearchValues(CharType.Text);
+        private static readonly SearchValues<byte> s_attributeTextChars = CreateSearchValues(CharType.AttributeText);
+
+        private static SearchValues<byte> CreateSearchValues(byte charType)
+        {
+            Span<byte> values = stackalloc byte[256];
+            int count = 0;
+            ReadOnlySpan<byte> charTypeMap = CharTypeMap;
+            for (int i = 0; i < charTypeMap.Length; i++)
+            {
+                if ((charTypeMap[i] & charType) != 0)
+                {
+                    values[count++] = (byte)i;
+                }
+            }
+            return SearchValues.Create(values.Slice(0, count));
+        }
+
         private static ReadOnlySpan<byte> CharTypeMap => // 256
             [
                 /*  0 (.) */
@@ -579,6 +602,18 @@ namespace System.Xml
             _buffered = false;
         }
 
+        internal async ValueTask SetInputAsync(Stream stream, Encoding? encoding, XmlDictionaryReaderQuotas quotas,
+            OnXmlDictionaryReaderClose? onClose, CancellationToken cancellationToken)
+        {
+            ArgumentNullException.ThrowIfNull(stream);
+
+            cancellationToken.ThrowIfCancellationRequested();
+            MoveToInitial(quotas, onClose);
+            stream = await EncodingStreamWrapper.CreateReaderAsync(stream, encoding, cancellationToken).ConfigureAwait(false);
+            BufferReader.SetBuffer(stream, null, null);
+            _buffered = false;
+        }
+
         private void MoveToInitial(XmlDictionaryReaderQuotas quotas, OnXmlDictionaryReaderClose? onClose)
         {
             MoveToInitial(quotas);
@@ -590,23 +625,49 @@ namespace System.Xml
         {
             _rowOffsets = null;
             base.Close();
+            CloseCallback();
+        }
+
+        internal override async ValueTask CloseAsync()
+        {
+            _rowOffsets = null;
+            try
+            {
+                await base.CloseAsync().ConfigureAwait(false);
+            }
+            finally
+            {
+                CloseCallback();
+            }
+        }
+
+        private void CloseCallback()
+        {
             OnXmlDictionaryReaderClose? onClose = _onClose;
             _onClose = null;
             onClose?.Invoke(this);
         }
 
-        private void SkipWhitespace()
+        private async ValueTask SkipWhitespace<TMode>(CancellationToken cancellationToken)
+            where TMode : struct, IXmlStreamIO
         {
-            while (!BufferReader.EndOfFile && (CharTypeMap[BufferReader.GetByte()] & CharType.Whitespace) != 0)
+            while (!await BufferReader.EndOfFileCore<TMode>(cancellationToken).ConfigureAwait(false))
+            {
+                byte ch = await BufferReader.GetByte<TMode>(cancellationToken).ConfigureAwait(false);
+                if ((CharTypeMap[ch] & CharType.Whitespace) == 0)
+                    break;
                 BufferReader.SkipByte();
+            }
         }
 
-        private void ReadDeclaration()
+        private async ValueTask ReadDeclaration<TMode>(CancellationToken cancellationToken)
+            where TMode : struct, IXmlStreamIO
         {
             if (!_buffered)
-                BufferElement();
+                await BufferElement<TMode>(cancellationToken).ConfigureAwait(false);
+            await BufferReader.EnsureBytes<TMode>(5, cancellationToken).ConfigureAwait(false);
             int offset;
-            byte[] buffer = BufferReader.GetBuffer(5, out offset);
+            byte[] buffer = BufferReader.GetBuffer(out offset, out _);
             if (buffer[offset + 0] != (byte)'?' ||
                 buffer[offset + 1] != (byte)'x' ||
                 buffer[offset + 2] != (byte)'m' ||
@@ -626,8 +687,8 @@ namespace System.Xml
             int localNameLength = 3;
 
             int valueOffset = BufferReader.Offset;
-            SkipWhitespace();
-            ReadAttributes();
+            await SkipWhitespace<TMode>(cancellationToken).ConfigureAwait(false);
+            await ReadAttributes<TMode>(cancellationToken).ConfigureAwait(false);
             int valueLength = BufferReader.Offset - valueOffset;
 
             // Backoff the spaces
@@ -639,7 +700,8 @@ namespace System.Xml
                 valueLength--;
             }
 
-            buffer = BufferReader.GetBuffer(2, out offset);
+            await BufferReader.EnsureBytes<TMode>(2, cancellationToken).ConfigureAwait(false);
+            buffer = BufferReader.GetBuffer(out offset, out _);
             if (buffer[offset + 0] != (byte)'?' ||
                 buffer[offset + 1] != (byte)'>')
             {
@@ -749,16 +811,26 @@ namespace System.Xml
             BufferReader.Advance(offset - prefixOffset);
         }
 
-        private static int ReadAttributeText(byte[] buffer, int offset, int offsetMax)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static int ReadAttributeText(ReadOnlySpan<byte> buffer)
         {
-            ReadOnlySpan<byte> charTypeMap = XmlUTF8TextReader.CharTypeMap;
-            int textOffset = offset;
-            while (offset < offsetMax && (charTypeMap[buffer[offset]] & CharType.AttributeText) != 0)
+            if (Vector128.IsHardwareAccelerated)
+            {
+                int end = buffer.IndexOfAnyExcept(s_attributeTextChars);
+                return end < 0 ? buffer.Length : end;
+            }
+
+            ReadOnlySpan<byte> charTypeMap = CharTypeMap;
+            int offset = 0;
+            while (offset < buffer.Length && (charTypeMap[buffer[offset]] & CharType.AttributeText) != 0)
+            {
                 offset++;
-            return offset - textOffset;
+            }
+            return offset;
         }
 
-        private void ReadAttributes()
+        private async ValueTask ReadAttributes<TMode>(CancellationToken cancellationToken)
+            where TMode : struct, IXmlStreamIO
         {
             int startOffset = 0;
             if (_buffered)
@@ -768,20 +840,20 @@ namespace System.Xml
             {
                 byte ch;
                 ReadQualifiedName(_prefix, _localName);
-                if (BufferReader.GetByte() != '=')
+                if (await BufferReader.GetByte<TMode>(cancellationToken).ConfigureAwait(false) != '=')
                 {
-                    SkipWhitespace();
-                    if (BufferReader.GetByte() != '=')
-                        XmlExceptionHelper.ThrowTokenExpected(this, "=", (char)BufferReader.GetByte());
+                    await SkipWhitespace<TMode>(cancellationToken).ConfigureAwait(false);
+                    if (await BufferReader.GetByte<TMode>(cancellationToken).ConfigureAwait(false) != '=')
+                        XmlExceptionHelper.ThrowTokenExpected(this, "=", (char)await BufferReader.GetByte<TMode>(cancellationToken).ConfigureAwait(false));
                 }
                 BufferReader.SkipByte();
-                byte quoteChar = BufferReader.GetByte();
+                byte quoteChar = await BufferReader.GetByte<TMode>(cancellationToken).ConfigureAwait(false);
                 if (quoteChar != '"' && quoteChar != '\'')
                 {
-                    SkipWhitespace();
-                    quoteChar = BufferReader.GetByte();
+                    await SkipWhitespace<TMode>(cancellationToken).ConfigureAwait(false);
+                    quoteChar = await BufferReader.GetByte<TMode>(cancellationToken).ConfigureAwait(false);
                     if (quoteChar != '"' && quoteChar != '\'')
-                        XmlExceptionHelper.ThrowTokenExpected(this, "\"", (char)BufferReader.GetByte());
+                        XmlExceptionHelper.ThrowTokenExpected(this, "\"", (char)quoteChar);
                 }
                 BufferReader.SkipByte();
                 bool escaped = false;
@@ -790,14 +862,14 @@ namespace System.Xml
                 {
                     int offset, offsetMax;
                     byte[] buffer = BufferReader.GetBuffer(out offset, out offsetMax);
-                    int length = ReadAttributeText(buffer, offset, offsetMax);
+                    int length = ReadAttributeText(buffer.AsSpan(offset, offsetMax - offset));
                     BufferReader.Advance(length);
-                    ch = BufferReader.GetByte();
+                    ch = await BufferReader.GetByte<TMode>(cancellationToken).ConfigureAwait(false);
                     if (ch == quoteChar)
                         break;
                     if (ch == '&')
                     {
-                        ReadCharRef();
+                        await ReadCharRef<TMode>(cancellationToken).ConfigureAwait(false);
                         escaped = true;
                     }
                     else if (ch == '\'' || ch == '"')
@@ -811,7 +883,7 @@ namespace System.Xml
                     }
                     else if (ch == 0xEF)
                     {
-                        ReadNonFFFE();
+                        await ReadNonFFFE<TMode>(cancellationToken).ConfigureAwait(false);
                     }
                     else
                     {
@@ -854,14 +926,14 @@ namespace System.Xml
                 attributeNode.QuoteChar = (char)quoteChar;
                 BufferReader.SkipByte();
 
-                ch = BufferReader.GetByte();
+                ch = await BufferReader.GetByte<TMode>(cancellationToken).ConfigureAwait(false);
 
                 bool space = false;
                 while ((CharTypeMap[ch] & CharType.Whitespace) != 0)
                 {
                     space = true;
                     BufferReader.SkipByte();
-                    ch = BufferReader.GetByte();
+                    ch = await BufferReader.GetByte<TMode>(cancellationToken).ConfigureAwait(false);
                 }
 
                 if (ch == '>' || ch == '/' || ch == '?')
@@ -895,10 +967,12 @@ namespace System.Xml
             return true;
         }
 
-        private void ReadNonFFFE()
+        private async ValueTask ReadNonFFFE<TMode>(CancellationToken cancellationToken)
+            where TMode : struct, IXmlStreamIO
         {
+            await BufferReader.EnsureBytes<TMode>(3, cancellationToken).ConfigureAwait(false);
             int off;
-            byte[] buff = BufferReader.GetBuffer(3, out off);
+            byte[] buff = BufferReader.GetBuffer(out off, out _);
             if (buff[off + 1] == 0xBF && (buff[off + 2] == 0xBE || buff[off + 2] == 0xBF))
             {
                 XmlExceptionHelper.ThrowXmlException(this, new XmlException(SR.XmlInvalidFFFE));
@@ -906,8 +980,12 @@ namespace System.Xml
             BufferReader.Advance(3);
         }
 
-        private void BufferElement()
+        private async ValueTask BufferElement<TMode>(CancellationToken cancellationToken)
+            where TMode : struct, IXmlStreamIO
         {
+            if (IsElementBuffered(requirePlainText: false))
+                return;
+
             int elementOffset = BufferReader.Offset;
             const int byteCount = 128;
             bool done = false;
@@ -916,9 +994,8 @@ namespace System.Xml
             {
                 int offset;
                 int offsetMax;
-                byte[] buffer = BufferReader.GetBuffer(byteCount, out offset, out offsetMax);
-                if (offset + byteCount != offsetMax)
-                    break;
+                offsetMax = await BufferReader.GetBuffer<TMode>(byteCount, cancellationToken).ConfigureAwait(false);
+                byte[] buffer = BufferReader.GetBuffer(out offset, out _);
                 for (int i = offset; i < offsetMax && !done; i++)
                 {
                     byte b = buffer[i];
@@ -937,29 +1014,151 @@ namespace System.Xml
                         }
                     }
                 }
-                BufferReader.Advance(byteCount);
+                if (!done)
+                {
+                    BufferReader.Advance(offsetMax - offset);
+                    await BufferReader.EnsureBytes<TMode>(1, cancellationToken).ConfigureAwait(false);
+                }
             }
             BufferReader.Offset = elementOffset;
         }
 
-        private new void ReadStartElement()
+        private bool IsElementBuffered(bool requirePlainText)
+        {
+            byte[] buffer = BufferReader.GetBuffer(out int offset, out int offsetMax);
+            byte quote = 0;
+            for (int i = offset; i < offsetMax; i++)
+            {
+                byte ch = buffer[i];
+                // Escaped or malformed content must retain the asynchronous refill path.
+                if (requirePlainText && (ch == '&' || ch >= 0x80))
+                    return false;
+                if (quote != 0)
+                {
+                    if (ch == quote)
+                        quote = 0;
+                }
+                else if (ch is (byte)'\'' or (byte)'"')
+                {
+                    quote = ch;
+                }
+                else if (ch == '>')
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private bool TryReadBufferedNode()
+        {
+            byte[] buffer = BufferReader.GetBuffer(out int offset, out int offsetMax);
+            if (offset >= offsetMax)
+                return false;
+
+            byte ch = buffer[offset];
+            if (ch == '<')
+            {
+                if (offsetMax - offset < 2)
+                    return false;
+                byte next = buffer[offset + 1];
+                if (next is (byte)'!' or (byte)'?')
+                    return false;
+                if (next == '/' ? !IsEndElementBuffered(buffer, offset + 2, offsetMax) :
+                    !IsElementBuffered(requirePlainText: true))
+                    return false;
+
+                // The complete plain-text tag is in memory; these generated methods cannot refill.
+                BufferReader.SkipByte();
+                if (next == '/')
+                {
+                    BufferReader.SkipByte();
+                    ReadEndElementContentSync();
+                }
+                else
+                    ReadStartElementContentSync();
+                return true;
+            }
+            if (OutsideRootElement || (CharTypeMap[ch] & CharType.Text) == 0)
+                return false;
+
+            int limit = _buffered ? offsetMax : Math.Min(offsetMax - offset, MaxTextChunk) + offset;
+            int length = ReadText(buffer.AsSpan(offset, limit - offset));
+            if (offset + length == limit && limit == offsetMax && offsetMax - offset < MaxTextChunk)
+                return false;
+
+            if (!_buffered)
+                length = BreakText(buffer, offset, length);
+            BufferReader.Advance(length);
+            if (offset < limit - 1 - length && buffer[offset + length] == '<' && buffer[offset + length + 1] != '!')
+                MoveToAtomicText().Value.SetValue(ValueHandleType.UTF8, offset, length);
+            else
+                MoveToComplexText().Value.SetValue(ValueHandleType.UTF8, offset, length);
+            return true;
+        }
+
+        internal bool TryReadBufferedPrimitiveElement<T>(out T value)
+        {
+            value = default!;
+            if (Node.NodeType != XmlNodeType.Element || Node.IsEmptyElement || Signing)
+                return false;
+            if (!_buffered)
+                BufferReader.SetWindow(ElementNode.BufferOffset, _maxBytesPerRead, deferCompaction: true);
+
+            byte[] buffer = BufferReader.GetBuffer(out int offset, out int offsetMax);
+            int limit = _buffered ? offsetMax : offset + Math.Min(offsetMax - offset, MaxTextChunk);
+            int length = ReadText(buffer.AsSpan(offset, limit - offset));
+            int end = offset + length;
+            if (length == 0 || limit - end < 3 || buffer[end] != '<' || buffer[end + 1] != '/' ||
+                !IsEndElementBuffered(buffer, end + 2, limit))
+                return false;
+
+            ValueHandle content = MoveToAtomicText().Value;
+            content.SetValue(ValueHandleType.UTF8, offset, length);
+            value = ConvertAtomicValue<T>(content);
+            BufferReader.Offset = end + 2;
+            ReadEndElementContentSync();
+            return true;
+        }
+
+        private bool IsEndElementBuffered(byte[] buffer, int offset, int limit)
+        {
+            int nameLength = ElementNode.NameLength;
+            if (limit - offset <= nameLength ||
+                !buffer.AsSpan(offset, nameLength).SequenceEqual(buffer.AsSpan(ElementNode.NameOffset, nameLength)))
+                return false;
+
+            offset += nameLength;
+            while (offset < limit && (CharTypeMap[buffer[offset]] & CharType.Whitespace) != 0)
+                offset++;
+            return offset < limit && buffer[offset] == '>';
+        }
+
+        private async ValueTask ReadStartElement<TMode>(CancellationToken cancellationToken)
+            where TMode : struct, IXmlStreamIO
         {
             if (!_buffered)
-                BufferElement();
+                await BufferElement<TMode>(cancellationToken).ConfigureAwait(false);
+            await ReadStartElementContent<TMode>(cancellationToken).ConfigureAwait(false);
+        }
+
+        private async ValueTask ReadStartElementContent<TMode>(CancellationToken cancellationToken)
+            where TMode : struct, IXmlStreamIO
+        {
             XmlElementNode elementNode = EnterScope();
             elementNode.NameOffset = BufferReader.Offset;
             ReadQualifiedName(elementNode.Prefix, elementNode.LocalName);
             elementNode.NameLength = BufferReader.Offset - elementNode.NameOffset;
-            byte ch = BufferReader.GetByte();
+            byte ch = await BufferReader.GetByte<TMode>(cancellationToken).ConfigureAwait(false);
             while ((CharTypeMap[ch] & CharType.Whitespace) != 0)
             {
                 BufferReader.SkipByte();
-                ch = BufferReader.GetByte();
+                ch = await BufferReader.GetByte<TMode>(cancellationToken).ConfigureAwait(false);
             }
             if (ch != '>' && ch != '/')
             {
-                ReadAttributes();
-                ch = BufferReader.GetByte();
+                await ReadAttributes<TMode>(cancellationToken).ConfigureAwait(false);
+                ch = await BufferReader.GetByte<TMode>(cancellationToken).ConfigureAwait(false);
             }
             elementNode.Namespace = LookupNamespace(elementNode.Prefix);
             bool isEmptyElement = false;
@@ -970,20 +1169,30 @@ namespace System.Xml
             }
             elementNode.IsEmptyElement = isEmptyElement;
             elementNode.ExitScope = isEmptyElement;
-            if (BufferReader.GetByte() != '>')
-                XmlExceptionHelper.ThrowTokenExpected(this, ">", (char)BufferReader.GetByte());
+            if (await BufferReader.GetByte<TMode>(cancellationToken).ConfigureAwait(false) != '>')
+                XmlExceptionHelper.ThrowTokenExpected(this, ">", (char)await BufferReader.GetByte<TMode>(cancellationToken).ConfigureAwait(false));
             BufferReader.SkipByte();
             elementNode.BufferOffset = BufferReader.Offset;
         }
 
-        private new void ReadEndElement()
+        private async ValueTask ReadEndElement<TMode>(CancellationToken cancellationToken)
+            where TMode : struct, IXmlStreamIO
         {
             BufferReader.SkipByte();
+            if (!_buffered)
+                await BufferElement<TMode>(cancellationToken).ConfigureAwait(false);
+            await ReadEndElementContent<TMode>(cancellationToken).ConfigureAwait(false);
+        }
+
+        private async ValueTask ReadEndElementContent<TMode>(CancellationToken cancellationToken)
+            where TMode : struct, IXmlStreamIO
+        {
             XmlElementNode elementNode = this.ElementNode;
             int nameOffset = elementNode.NameOffset;
             int nameLength = elementNode.NameLength;
             int offset;
-            byte[] buffer = BufferReader.GetBuffer(nameLength, out offset);
+            await BufferReader.EnsureBytes<TMode>(nameLength, cancellationToken).ConfigureAwait(false);
+            byte[] buffer = BufferReader.GetBuffer(out offset, out _);
             for (int i = 0; i < nameLength; i++)
             {
                 if (buffer[offset + i] != buffer[nameOffset + i])
@@ -993,34 +1202,35 @@ namespace System.Xml
                 }
             }
             BufferReader.Advance(nameLength);
-            if (BufferReader.GetByte() != '>')
+            if (await BufferReader.GetByte<TMode>(cancellationToken).ConfigureAwait(false) != '>')
             {
-                SkipWhitespace();
-                if (BufferReader.GetByte() != '>')
-                    XmlExceptionHelper.ThrowTokenExpected(this, ">", (char)BufferReader.GetByte());
+                await SkipWhitespace<TMode>(cancellationToken).ConfigureAwait(false);
+                if (await BufferReader.GetByte<TMode>(cancellationToken).ConfigureAwait(false) != '>')
+                    XmlExceptionHelper.ThrowTokenExpected(this, ">", (char)await BufferReader.GetByte<TMode>(cancellationToken).ConfigureAwait(false));
             }
             BufferReader.SkipByte();
             MoveToEndElement();
         }
 
-        private void ReadComment()
+        private async ValueTask ReadComment<TMode>(CancellationToken cancellationToken)
+            where TMode : struct, IXmlStreamIO
         {
             BufferReader.SkipByte();
-            if (BufferReader.GetByte() != '-')
-                XmlExceptionHelper.ThrowTokenExpected(this, "--", (char)BufferReader.GetByte());
+            if (await BufferReader.GetByte<TMode>(cancellationToken).ConfigureAwait(false) != '-')
+                XmlExceptionHelper.ThrowTokenExpected(this, "--", (char)await BufferReader.GetByte<TMode>(cancellationToken).ConfigureAwait(false));
             BufferReader.SkipByte();
             int commentOffset = BufferReader.Offset;
             while (true)
             {
                 while (true)
                 {
-                    byte b = BufferReader.GetByte();
+                    byte b = await BufferReader.GetByte<TMode>(cancellationToken).ConfigureAwait(false);
                     if (b == '-')
                         break;
                     if ((CharTypeMap[b] & CharType.Comment) == 0)
                     {
                         if (b == 0xEF)
-                            ReadNonFFFE();
+                            await ReadNonFFFE<TMode>(cancellationToken).ConfigureAwait(false);
                         else
                             XmlExceptionHelper.ThrowInvalidXml(this, b);
                     }
@@ -1031,7 +1241,8 @@ namespace System.Xml
                 }
 
                 int offset;
-                byte[] buffer = BufferReader.GetBuffer(3, out offset);
+                await BufferReader.EnsureBytes<TMode>(3, cancellationToken).ConfigureAwait(false);
+                byte[] buffer = BufferReader.GetBuffer(out offset, out _);
                 if (buffer[offset + 0] == (byte)'-' &&
                     buffer[offset + 1] == (byte)'-')
                 {
@@ -1046,10 +1257,12 @@ namespace System.Xml
             BufferReader.Advance(3);
         }
 
-        private void ReadCData()
+        private async ValueTask ReadCData<TMode>(CancellationToken cancellationToken)
+            where TMode : struct, IXmlStreamIO
         {
+            await BufferReader.EnsureBytes<TMode>(7, cancellationToken).ConfigureAwait(false);
             int offset;
-            byte[] buffer = BufferReader.GetBuffer(7, out offset);
+            byte[] buffer = BufferReader.GetBuffer(out offset, out _);
             if (buffer[offset + 0] != (byte)'[' ||
                 buffer[offset + 1] != (byte)'C' ||
                 buffer[offset + 2] != (byte)'D' ||
@@ -1067,16 +1280,17 @@ namespace System.Xml
                 byte b;
                 while (true)
                 {
-                    b = BufferReader.GetByte();
+                    b = await BufferReader.GetByte<TMode>(cancellationToken).ConfigureAwait(false);
                     if (b == ']')
                         break;
 
                     if (b == 0xEF)
-                        ReadNonFFFE();
+                        await ReadNonFFFE<TMode>(cancellationToken).ConfigureAwait(false);
                     else
                         BufferReader.SkipByte();
                 }
-                buffer = BufferReader.GetBuffer(3, out offset);
+                await BufferReader.EnsureBytes<TMode>(3, cancellationToken).ConfigureAwait(false);
+                buffer = BufferReader.GetBuffer(out offset, out _);
                 if (buffer[offset + 0] == (byte)']' &&
                     buffer[offset + 1] == (byte)']' &&
                     buffer[offset + 2] == (byte)'>')
@@ -1088,12 +1302,13 @@ namespace System.Xml
             BufferReader.Advance(3);
         }
 
-        private int ReadCharRef()
+        private async ValueTask<int> ReadCharRef<TMode>(CancellationToken cancellationToken)
+            where TMode : struct, IXmlStreamIO
         {
-            Debug.Assert(BufferReader.GetByte() == '&');
+            Debug.Assert(BufferReader.GetByte(BufferReader.Offset) == '&');
             int charEntityOffset = BufferReader.Offset;
             BufferReader.SkipByte();
-            while (BufferReader.GetByte() != ';')
+            while (await BufferReader.GetByte<TMode>(cancellationToken).ConfigureAwait(false) != ';')
                 BufferReader.SkipByte();
             BufferReader.SkipByte();
             int charEntityLength = BufferReader.Offset - charEntityOffset;
@@ -1104,7 +1319,8 @@ namespace System.Xml
         }
 
 
-        private void ReadWhitespace()
+        private async ValueTask ReadWhitespace<TMode>(CancellationToken cancellationToken)
+            where TMode : struct, IXmlStreamIO
         {
             byte[] buffer;
             int offset;
@@ -1118,7 +1334,8 @@ namespace System.Xml
             }
             else
             {
-                buffer = BufferReader.GetBuffer(MaxTextChunk, out offset, out offsetMax);
+                offsetMax = await BufferReader.GetBuffer<TMode>(MaxTextChunk, cancellationToken).ConfigureAwait(false);
+                buffer = BufferReader.GetBuffer(out offset, out _);
                 length = ReadWhitespace(buffer, offset, offsetMax);
                 length = BreakText(buffer, offset, length);
             }
@@ -1136,13 +1353,22 @@ namespace System.Xml
             return offset - wsOffset;
         }
 
-        private static int ReadText(byte[] buffer, int offset, int offsetMax)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static int ReadText(ReadOnlySpan<byte> buffer)
         {
-            ReadOnlySpan<byte> charTypeMap = XmlUTF8TextReader.CharTypeMap;
-            int textOffset = offset;
-            while (offset < offsetMax && (charTypeMap[buffer[offset]] & CharType.Text) != 0)
+            if (Vector128.IsHardwareAccelerated)
+            {
+                int end = buffer.IndexOfAnyExcept(s_textChars);
+                return end < 0 ? buffer.Length : end;
+            }
+
+            ReadOnlySpan<byte> charTypeMap = CharTypeMap;
+            int offset = 0;
+            while (offset < buffer.Length && (charTypeMap[buffer[offset]] & CharType.Text) != 0)
+            {
                 offset++;
-            return offset - textOffset;
+            }
+            return offset;
         }
 
         // Read Unicode codepoints 0xFvvv
@@ -1183,8 +1409,7 @@ namespace System.Xml
                         }
                         else
                         {
-                            // Get enough bytes for us to process next character, then go back to top of while loop
-                            BufferReader.GetBuffer(3, out _);
+                            XmlExceptionHelper.ThrowUnexpectedEndOfFile(this);
                         }
                     }
                 }
@@ -1232,8 +1457,11 @@ namespace System.Xml
             return length;
         }
 
-        private void ReadText(bool hasLeadingByteOf0xEF)
+        private async ValueTask ReadText<TMode>(bool hasLeadingByteOf0xEF, CancellationToken cancellationToken)
+            where TMode : struct, IXmlStreamIO
         {
+            if (hasLeadingByteOf0xEF)
+                await BufferReader.EnsureBytes<TMode>(3, cancellationToken).ConfigureAwait(false);
             byte[] buffer;
             int offset;
             int offsetMax;
@@ -1248,19 +1476,20 @@ namespace System.Xml
                 }
                 else
                 {
-                    length = ReadText(buffer, offset, offsetMax);
+                    length = ReadText(buffer.AsSpan(offset, offsetMax - offset));
                 }
             }
             else
             {
-                buffer = BufferReader.GetBuffer(MaxTextChunk, out offset, out offsetMax);
+                offsetMax = await BufferReader.GetBuffer<TMode>(MaxTextChunk, cancellationToken).ConfigureAwait(false);
+                buffer = BufferReader.GetBuffer(out offset, out _);
                 if (hasLeadingByteOf0xEF)
                 {
                     length = ReadTextAndWatchForInvalidCharacters(buffer, offset, offsetMax);
                 }
                 else
                 {
-                    length = ReadText(buffer, offset, offsetMax);
+                    length = ReadText(buffer.AsSpan(offset, offsetMax - offset));
                 }
                 length = BreakText(buffer, offset, length);
             }
@@ -1276,19 +1505,26 @@ namespace System.Xml
             }
         }
 
-        private void ReadEscapedText()
+        private async ValueTask ReadEscapedText<TMode>(CancellationToken cancellationToken)
+            where TMode : struct, IXmlStreamIO
         {
-            int ch = ReadCharRef();
+            int ch = await ReadCharRef<TMode>(cancellationToken).ConfigureAwait(false);
             if (ch < 256 && (CharTypeMap[ch] & CharType.Whitespace) != 0)
                 MoveToWhitespaceText().Value.SetCharValue(ch);
             else
                 MoveToComplexText().Value.SetCharValue(ch);
         }
 
-        public override bool Read()
+        internal override ValueTask<bool> ReadAsync(CancellationToken cancellationToken) =>
+            cancellationToken.IsCancellationRequested ? ValueTask.FromCanceled<bool>(cancellationToken) :
+                ReadCore<AsyncXmlStreamIO>(cancellationToken);
+
+        private ValueTask<bool> ReadCore<TMode>(CancellationToken cancellationToken)
+            where TMode : struct, IXmlStreamIO
         {
+            CheckReadMode<TMode>(cancellationToken);
             if (this.Node.ReadState == ReadState.Closed)
-                return false;
+                return new ValueTask<bool>(false);
 
             if (this.Node.CanMoveToElement)
             {
@@ -1297,50 +1533,74 @@ namespace System.Xml
                 MoveToElement();
             }
 
-            SignNode();
+            if (Signing)
+                return ReadSignedNode<TMode>(cancellationToken);
+
+            return ReadUnsignedNode<TMode>(cancellationToken);
+        }
+
+        private async ValueTask<bool> ReadSignedNode<TMode>(CancellationToken cancellationToken)
+            where TMode : struct, IXmlStreamIO
+        {
+            await SignNode<TMode>(cancellationToken).ConfigureAwait(false);
+            return await ReadUnsignedNode<TMode>(cancellationToken).ConfigureAwait(false);
+        }
+
+        private ValueTask<bool> ReadUnsignedNode<TMode>(CancellationToken cancellationToken)
+            where TMode : struct, IXmlStreamIO
+        {
             if (this.Node.ExitScope)
             {
                 ExitScope();
             }
             if (!_buffered)
-                BufferReader.SetWindow(ElementNode.BufferOffset, _maxBytesPerRead);
+                BufferReader.SetWindow(ElementNode.BufferOffset, _maxBytesPerRead, typeof(TMode) == typeof(AsyncXmlStreamIO));
 
-            if (BufferReader.EndOfFile)
+            if (typeof(TMode) == typeof(AsyncXmlStreamIO) && TryReadBufferedNode())
+                return new ValueTask<bool>(true);
+
+            return ReadNode<TMode>(cancellationToken);
+        }
+
+        private async ValueTask<bool> ReadNode<TMode>(CancellationToken cancellationToken)
+            where TMode : struct, IXmlStreamIO
+        {
+            if (await BufferReader.EndOfFileCore<TMode>(cancellationToken).ConfigureAwait(false))
             {
                 MoveToEndOfFile();
                 return false;
             }
-            byte ch = BufferReader.GetByte();
+            byte ch = await BufferReader.GetByte<TMode>(cancellationToken).ConfigureAwait(false);
             if (ch == (byte)'<')
             {
                 BufferReader.SkipByte();
-                ch = BufferReader.GetByte();
+                ch = await BufferReader.GetByte<TMode>(cancellationToken).ConfigureAwait(false);
                 if (ch == (byte)'/')
-                    ReadEndElement();
+                    await ReadEndElement<TMode>(cancellationToken).ConfigureAwait(false);
                 else if (ch == (byte)'!')
                 {
                     BufferReader.SkipByte();
-                    ch = BufferReader.GetByte();
+                    ch = await BufferReader.GetByte<TMode>(cancellationToken).ConfigureAwait(false);
                     if (ch == '-')
                     {
-                        ReadComment();
+                        await ReadComment<TMode>(cancellationToken).ConfigureAwait(false);
                     }
                     else
                     {
                         if (OutsideRootElement)
                             XmlExceptionHelper.ThrowXmlException(this, new XmlException(SR.XmlCDATAInvalidAtTopLevel));
 
-                        ReadCData();
+                        await ReadCData<TMode>(cancellationToken).ConfigureAwait(false);
                     }
                 }
                 else if (ch == (byte)'?')
-                    ReadDeclaration();
+                    await ReadDeclaration<TMode>(cancellationToken).ConfigureAwait(false);
                 else
-                    ReadStartElement();
+                    await ReadStartElement<TMode>(cancellationToken).ConfigureAwait(false);
             }
             else if ((CharTypeMap[ch] & CharType.SpecialWhitespace) != 0)
             {
-                ReadWhitespace();
+                await ReadWhitespace<TMode>(cancellationToken).ConfigureAwait(false);
             }
             else if (OutsideRootElement && ch != '\r')
             {
@@ -1348,25 +1608,27 @@ namespace System.Xml
             }
             else if ((CharTypeMap[ch] & CharType.Text) != 0)
             {
-                ReadText(false);
+                await ReadText<TMode>(false, cancellationToken).ConfigureAwait(false);
             }
             else if (ch == '&')
             {
-                ReadEscapedText();
+                await ReadEscapedText<TMode>(cancellationToken).ConfigureAwait(false);
             }
             else if (ch == '\r')
             {
                 BufferReader.SkipByte();
 
-                if (!BufferReader.EndOfFile && BufferReader.GetByte() == '\n')
-                    ReadWhitespace();
+                if (!await BufferReader.EndOfFileCore<TMode>(cancellationToken).ConfigureAwait(false) &&
+                    await BufferReader.GetByte<TMode>(cancellationToken).ConfigureAwait(false) == '\n')
+                    await ReadWhitespace<TMode>(cancellationToken).ConfigureAwait(false);
                 else
                     MoveToComplexText().Value.SetCharValue('\n');
             }
             else if (ch == ']')
             {
                 int offset;
-                byte[] buffer = BufferReader.GetBuffer(3, out offset);
+                await BufferReader.EnsureBytes<TMode>(3, cancellationToken).ConfigureAwait(false);
+                byte[] buffer = BufferReader.GetBuffer(out offset, out _);
                 if (buffer[offset + 0] == (byte)']' &&
                     buffer[offset + 1] == (byte)']' &&
                     buffer[offset + 2] == (byte)'>')
@@ -1379,7 +1641,7 @@ namespace System.Xml
             }
             else if (ch == 0xEF)  // Watch for invalid characters 0xfffe and 0xffff
             {
-                ReadText(true);
+                await ReadText<TMode>(true, cancellationToken).ConfigureAwait(false);
             }
             else
             {

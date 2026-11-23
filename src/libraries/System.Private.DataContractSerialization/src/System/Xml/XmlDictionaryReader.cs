@@ -3,21 +3,27 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Runtime.Serialization;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Xml;
 
 namespace System.Xml
 {
     public delegate void OnXmlDictionaryReaderClose(XmlDictionaryReader reader);
 
-    public abstract class XmlDictionaryReader : XmlReader
+    public abstract partial class XmlDictionaryReader : XmlReader
     {
         internal const int MaxInitialArrayLength = 65535;
+
+        internal virtual IDictionary<string, string>? GetNamespacesForSerialization() =>
+            this is IXmlNamespaceResolver resolver ? resolver.GetNamespacesInScope(XmlNamespaceScope.All) : null;
 
         public static XmlDictionaryReader CreateDictionaryReader(XmlReader reader)
         {
@@ -85,6 +91,14 @@ namespace System.Xml
             return reader;
         }
 
+        internal static ValueTask<XmlDictionaryReader> CreateBinaryReaderAsync(Stream stream, IXmlDictionary? dictionary,
+            XmlDictionaryReaderQuotas quotas, XmlBinaryReaderSession? session, OnXmlDictionaryReaderClose? onClose,
+            CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return new ValueTask<XmlDictionaryReader>(CreateBinaryReader(stream, dictionary, quotas, session, onClose));
+        }
+
         public static XmlDictionaryReader CreateTextReader(byte[] buffer, XmlDictionaryReaderQuotas quotas)
         {
             ArgumentNullException.ThrowIfNull(buffer);
@@ -119,6 +133,28 @@ namespace System.Xml
             XmlUTF8TextReader reader = new XmlUTF8TextReader();
             reader.SetInput(stream, encoding, quotas, onClose);
             return reader;
+        }
+
+        internal static async ValueTask<XmlDictionaryReader> CreateTextReaderAsync(Stream stream, Encoding? encoding,
+            XmlDictionaryReaderQuotas quotas, OnXmlDictionaryReaderClose? onClose, CancellationToken cancellationToken)
+        {
+            XmlUTF8TextReader reader = new XmlUTF8TextReader();
+            await reader.SetInputAsync(stream, encoding, quotas, onClose, cancellationToken).ConfigureAwait(false);
+            return reader;
+        }
+
+        internal virtual ValueTask<bool> ReadAsync(CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return new ValueTask<bool>(ReadAsync());
+        }
+
+        private protected ValueTask<bool> ReadWithMode<TMode>(CancellationToken cancellationToken)
+            where TMode : struct, IXmlStreamIO
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return typeof(TMode) == typeof(SyncXmlStreamIO) ?
+                new ValueTask<bool>(Read()) : ReadAsync(cancellationToken);
         }
 
         public static XmlDictionaryReader CreateMtomReader(Stream stream, Encoding encoding, XmlDictionaryReaderQuotas quotas)
@@ -355,6 +391,12 @@ namespace System.Xml
 
         internal byte[] ReadContentAsBase64(int maxByteArrayContentLength, int maxInitialCount)
         {
+            return ReadContentAsBase64CoreSync(maxByteArrayContentLength, maxInitialCount);
+        }
+
+        private protected async ValueTask<byte[]> ReadContentAsBase64Core<TMode>(int maxByteArrayContentLength, int maxInitialCount, CancellationToken cancellationToken)
+            where TMode : struct, IXmlStreamIO
+        {
             int length;
             if (TryGetBase64ContentLength(out length))
             {
@@ -367,7 +409,7 @@ namespace System.Xml
                     int read = 0;
                     while (read < length)
                     {
-                        int actual = ReadContentAsBase64(buffer, read, length - read);
+                        int actual = await ReadBinaryContentWithMode<TMode>(true, buffer, read, length - read, cancellationToken).ConfigureAwait(false);
                         if (actual == 0)
                             XmlExceptionHelper.ThrowBase64DataExpected(this);
                         read += actual;
@@ -375,7 +417,31 @@ namespace System.Xml
                     return buffer;
                 }
             }
-            return ReadContentAsBytes(true, maxByteArrayContentLength);
+            return await ReadContentAsBytes<TMode>(true, maxByteArrayContentLength, cancellationToken).ConfigureAwait(false);
+        }
+
+        internal virtual ValueTask<int> ReadContentAsBase64Async(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return new ValueTask<int>(ReadContentAsBase64Async(buffer, offset, count));
+        }
+
+        internal virtual ValueTask<int> ReadContentAsBinHexAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return new ValueTask<int>(ReadContentAsBinHexAsync(buffer, offset, count));
+        }
+
+        private ValueTask<int> ReadBinaryContentWithMode<TMode>(bool base64, byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            where TMode : struct, IXmlStreamIO
+        {
+            if (typeof(TMode) == typeof(SyncXmlStreamIO))
+            {
+                return new ValueTask<int>(base64 ? ReadContentAsBase64(buffer, offset, count) : ReadContentAsBinHex(buffer, offset, count));
+            }
+
+            return base64 ? ReadContentAsBase64Async(buffer, offset, count, cancellationToken) :
+                ReadContentAsBinHexAsync(buffer, offset, count, cancellationToken);
         }
 
         public override string ReadContentAsString()
@@ -385,6 +451,19 @@ namespace System.Xml
 
         protected string ReadContentAsString(int maxStringContentLength)
         {
+            return ReadContentAsStringCoreSync(maxStringContentLength);
+        }
+
+        internal virtual ValueTask<string> ReadContentAsStringAsync(CancellationToken cancellationToken) =>
+            ReadContentAsStringCore<AsyncXmlStreamIO>(Quotas.MaxStringContentLength, cancellationToken);
+
+        public override Task<string> ReadContentAsStringAsync() =>
+            ReadContentAsStringAsync(CancellationToken.None).AsTask();
+
+        private protected async ValueTask<string> ReadContentAsStringCore<TMode>(int maxStringContentLength, CancellationToken cancellationToken)
+            where TMode : struct, IXmlStreamIO
+        {
+            cancellationToken.ThrowIfCancellationRequested();
             StringBuilder? sb = null;
             string result = string.Empty;
             bool done = false;
@@ -393,14 +472,16 @@ namespace System.Xml
                 switch (this.NodeType)
                 {
                     case XmlNodeType.Attribute:
-                        result = this.Value;
+                        result = typeof(TMode) == typeof(SyncXmlStreamIO) ? this.Value :
+                            await GetValueAsync().ConfigureAwait(false);
                         break;
                     case XmlNodeType.Text:
                     case XmlNodeType.Whitespace:
                     case XmlNodeType.SignificantWhitespace:
                     case XmlNodeType.CDATA:
                         // merge text content
-                        string value = this.Value;
+                        string value = typeof(TMode) == typeof(SyncXmlStreamIO) ? this.Value :
+                            await GetValueAsync().ConfigureAwait(false);
                         if (result.Length == 0)
                         {
                             result = value;
@@ -436,7 +517,7 @@ namespace System.Xml
                 if (this.AttributeCount != 0)
                     ReadAttributeValue();
                 else
-                    Read();
+                    await ReadWithMode<TMode>(cancellationToken).ConfigureAwait(false);
             }
             if (sb != null)
                 result = sb.ToString();
@@ -498,10 +579,11 @@ namespace System.Xml
 
         protected byte[] ReadContentAsBinHex(int maxByteArrayContentLength)
         {
-            return ReadContentAsBytes(false, maxByteArrayContentLength);
+            return ReadContentAsBytesSync(false, maxByteArrayContentLength);
         }
 
-        private byte[] ReadContentAsBytes(bool base64, int maxByteArrayContentLength)
+        private protected async ValueTask<byte[]> ReadContentAsBytes<TMode>(bool base64, int maxByteArrayContentLength, CancellationToken cancellationToken)
+            where TMode : struct, IXmlStreamIO
         {
             byte[][] buffers = new byte[32][];
             byte[] buffer;
@@ -516,11 +598,7 @@ namespace System.Xml
                 int read = 0;
                 while (read < buffer.Length)
                 {
-                    int actual;
-                    if (base64)
-                        actual = ReadContentAsBase64(buffer, read, buffer.Length - read);
-                    else
-                        actual = ReadContentAsBinHex(buffer, read, buffer.Length - read);
+                    int actual = await ReadBinaryContentWithMode<TMode>(base64, buffer, read, buffer.Length - read, cancellationToken).ConfigureAwait(false);
                     if (actual == 0)
                         break;
                     read += actual;
@@ -554,6 +632,16 @@ namespace System.Xml
 
         public virtual int ReadContentAsChars(char[] chars, int offset, int count)
         {
+            return ReadContentAsCharsCoreSync(chars, offset, count);
+        }
+
+        internal ValueTask<int> ReadContentAsCharsAsync(char[] chars, int offset, int count, CancellationToken cancellationToken) =>
+            ReadContentAsCharsCore<AsyncXmlStreamIO>(chars, offset, count, cancellationToken);
+
+        private async ValueTask<int> ReadContentAsCharsCore<TMode>(char[] chars, int offset, int count, CancellationToken cancellationToken)
+            where TMode : struct, IXmlStreamIO
+        {
+            cancellationToken.ThrowIfCancellationRequested();
             int read = 0;
             while (true)
             {
@@ -564,7 +652,8 @@ namespace System.Xml
 
                 if (IsTextNode(nodeType))
                 {
-                    read = ReadValueChunk(chars, offset, count);
+                    read = typeof(TMode) == typeof(SyncXmlStreamIO) ? ReadValueChunk(chars, offset, count) :
+                        await ReadValueChunkAsync(chars, offset, count).ConfigureAwait(false);
 
                     if (read > 0)
                         break;
@@ -572,12 +661,12 @@ namespace System.Xml
                     if (nodeType == XmlNodeType.Attribute /* || inAttributeText */)
                         break;
 
-                    if (!Read())
+                    if (!await ReadWithMode<TMode>(cancellationToken).ConfigureAwait(false))
                         break;
                 }
                 else
                 {
-                    if (!Read())
+                    if (!await ReadWithMode<TMode>(cancellationToken).ConfigureAwait(false))
                         break;
                 }
             }
@@ -1320,6 +1409,11 @@ namespace System.Xml
                 _nsMgr = nsMgr;
             }
 
+            internal override IDictionary<string, string>? GetNamespacesForSerialization() =>
+                _nsMgr is not null ? _nsMgr.GetNamespacesInScope(XmlNamespaceScope.All) :
+                    _reader is XmlDictionaryReader dictionaryReader ? dictionaryReader.GetNamespacesForSerialization() :
+                        _reader is IXmlNamespaceResolver resolver ? resolver.GetNamespacesInScope(XmlNamespaceScope.All) : null;
+
             public override int AttributeCount
             {
                 get
@@ -1512,6 +1606,45 @@ namespace System.Xml
             {
                 return _reader.Read();
             }
+
+            public override Task<bool> ReadAsync() => _reader.ReadAsync();
+
+            public override Task<string> GetValueAsync() => _reader.GetValueAsync();
+
+            public override Task<XmlNodeType> MoveToContentAsync() => _reader.MoveToContentAsync();
+
+            public override Task SkipAsync() => _reader.SkipAsync();
+
+            public override Task<int> ReadValueChunkAsync(char[] buffer, int index, int count) =>
+                _reader.ReadValueChunkAsync(buffer, index, count);
+
+            public override Task<int> ReadContentAsBase64Async(byte[] buffer, int index, int count) =>
+                _reader.ReadContentAsBase64Async(buffer, index, count);
+
+            public override Task<int> ReadContentAsBinHexAsync(byte[] buffer, int index, int count) =>
+                _reader.ReadContentAsBinHexAsync(buffer, index, count);
+
+            public override Task<int> ReadElementContentAsBase64Async(byte[] buffer, int index, int count) =>
+                _reader.ReadElementContentAsBase64Async(buffer, index, count);
+
+            public override Task<int> ReadElementContentAsBinHexAsync(byte[] buffer, int index, int count) =>
+                _reader.ReadElementContentAsBinHexAsync(buffer, index, count);
+
+            public override Task<object> ReadContentAsObjectAsync() => _reader.ReadContentAsObjectAsync();
+
+            public override Task<object> ReadContentAsAsync(Type returnType, IXmlNamespaceResolver? namespaceResolver) =>
+                _reader.ReadContentAsAsync(returnType, namespaceResolver);
+
+            public override Task<string> ReadElementContentAsStringAsync() => _reader.ReadElementContentAsStringAsync();
+
+            public override Task<object> ReadElementContentAsObjectAsync() => _reader.ReadElementContentAsObjectAsync();
+
+            public override Task<object> ReadElementContentAsAsync(Type returnType, IXmlNamespaceResolver namespaceResolver) =>
+                _reader.ReadElementContentAsAsync(returnType, namespaceResolver);
+
+            public override Task<string> ReadInnerXmlAsync() => _reader.ReadInnerXmlAsync();
+
+            public override Task<string> ReadOuterXmlAsync() => _reader.ReadOuterXmlAsync();
 
             public override bool ReadAttributeValue()
             {

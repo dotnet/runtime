@@ -461,6 +461,7 @@ namespace System.Xml
         protected string ReadContentAsString(int maxStringContentLength) { throw null; }
         public virtual string ReadContentAsString(string[] strings, out int index) { throw null; }
         public virtual string ReadContentAsString(System.Xml.XmlDictionaryString[] strings, out int index) { throw null; }
+        public override System.Threading.Tasks.Task<string> ReadContentAsStringAsync() { throw null; }
         public virtual System.TimeSpan ReadContentAsTimeSpan() { throw null; }
         public virtual System.Xml.UniqueId ReadContentAsUniqueId() { throw null; }
         public virtual System.DateTime[] ReadDateTimeArray(string localName, string namespaceUri) { throw null; }

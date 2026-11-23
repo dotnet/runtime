@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <EnableAotAnalyzer>false</EnableAotAnalyzer>
+    <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\System.Runtime.Serialization.Xml\tests\XmlDictionaryReaderTests.cs" Link="XmlDictionaryReaderTests.cs" />
+    <Compile Include="..\..\System.Runtime.Serialization.Xml\tests\System.Xml\XmlBinaryNodeType.cs" Link="System.Xml\XmlBinaryNodeType.cs" />
+  </ItemGroup>
+</Project>

@@ -5,6 +5,8 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Serialization;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Xml
 {
@@ -64,7 +66,7 @@ namespace System.Xml
         ConstString
     }
 
-    internal sealed class ValueHandle
+    internal sealed partial class ValueHandle
     {
         private readonly XmlBufferReader _bufferReader;
         private ValueHandleType _type;
@@ -555,50 +557,95 @@ namespace System.Xml
 
         public void Sign(XmlSigningNodeWriter writer)
         {
+            SignSync(writer);
+        }
+
+        internal async ValueTask Sign<TMode>(XmlSigningNodeWriter writer, CancellationToken cancellationToken)
+            where TMode : struct, IXmlStreamIO
+        {
             switch (_type)
             {
                 case ValueHandleType.Int8:
                 case ValueHandleType.Int16:
                 case ValueHandleType.Int32:
-                    writer.WriteInt32Text(ToInt());
+                    if (typeof(TMode) == typeof(SyncXmlStreamIO))
+                        writer.WriteInt32Text(ToInt());
+                    else
+                        await writer.WriteValueAsync(ToInt()).ConfigureAwait(false);
                     break;
                 case ValueHandleType.Int64:
-                    writer.WriteInt64Text(GetInt64());
+                    if (typeof(TMode) == typeof(SyncXmlStreamIO))
+                        writer.WriteInt64Text(GetInt64());
+                    else
+                        await writer.WriteValueAsync(GetInt64()).ConfigureAwait(false);
                     break;
                 case ValueHandleType.UInt64:
-                    writer.WriteUInt64Text(GetUInt64());
+                    if (typeof(TMode) == typeof(SyncXmlStreamIO))
+                        writer.WriteUInt64Text(GetUInt64());
+                    else
+                        await writer.WriteValueAsync(GetUInt64()).ConfigureAwait(false);
                     break;
                 case ValueHandleType.Single:
-                    writer.WriteFloatText(GetSingle());
+                    if (typeof(TMode) == typeof(SyncXmlStreamIO))
+                        writer.WriteFloatText(GetSingle());
+                    else
+                        await writer.WriteValueAsync(GetSingle()).ConfigureAwait(false);
                     break;
                 case ValueHandleType.Double:
-                    writer.WriteDoubleText(GetDouble());
+                    if (typeof(TMode) == typeof(SyncXmlStreamIO))
+                        writer.WriteDoubleText(GetDouble());
+                    else
+                        await writer.WriteValueAsync(GetDouble()).ConfigureAwait(false);
                     break;
                 case ValueHandleType.Decimal:
-                    writer.WriteDecimalText(GetDecimal());
+                    if (typeof(TMode) == typeof(SyncXmlStreamIO))
+                        writer.WriteDecimalText(GetDecimal());
+                    else
+                        await writer.WriteValueAsync(GetDecimal()).ConfigureAwait(false);
                     break;
                 case ValueHandleType.DateTime:
-                    writer.WriteDateTimeText(ToDateTime());
+                    if (typeof(TMode) == typeof(SyncXmlStreamIO))
+                        writer.WriteDateTimeText(ToDateTime());
+                    else
+                        await writer.WriteValueAsync(ToDateTime()).ConfigureAwait(false);
                     break;
                 case ValueHandleType.Empty:
                     break;
                 case ValueHandleType.UTF8:
-                    writer.WriteEscapedText(_bufferReader.Buffer, _offset, _length);
+                    if (typeof(TMode) == typeof(SyncXmlStreamIO))
+                        writer.WriteEscapedText(_bufferReader.Buffer, _offset, _length);
+                    else
+                        await writer.WriteEscapedTextAsync(_bufferReader.Buffer, _offset, _length).ConfigureAwait(false);
                     break;
                 case ValueHandleType.Base64:
-                    writer.WriteBase64Text(_bufferReader.Buffer, 0, _bufferReader.Buffer, _offset, _length);
+                    if (typeof(TMode) == typeof(SyncXmlStreamIO))
+                        writer.WriteBase64Text(_bufferReader.Buffer, 0, _bufferReader.Buffer, _offset, _length);
+                    else
+                        await writer.WriteBase64TextAsync(_bufferReader.Buffer, 0, _bufferReader.Buffer, _offset, _length).ConfigureAwait(false);
                     break;
                 case ValueHandleType.UniqueId:
-                    writer.WriteUniqueIdText(ToUniqueId());
+                    if (typeof(TMode) == typeof(SyncXmlStreamIO))
+                        writer.WriteUniqueIdText(ToUniqueId());
+                    else
+                        await writer.WriteValueAsync(ToUniqueId()).ConfigureAwait(false);
                     break;
                 case ValueHandleType.Guid:
-                    writer.WriteGuidText(ToGuid());
+                    if (typeof(TMode) == typeof(SyncXmlStreamIO))
+                        writer.WriteGuidText(ToGuid());
+                    else
+                        await writer.WriteValueAsync(ToGuid()).ConfigureAwait(false);
                     break;
                 case ValueHandleType.TimeSpan:
-                    writer.WriteTimeSpanText(ToTimeSpan());
+                    if (typeof(TMode) == typeof(SyncXmlStreamIO))
+                        writer.WriteTimeSpanText(ToTimeSpan());
+                    else
+                        await writer.WriteValueAsync(ToTimeSpan()).ConfigureAwait(false);
                     break;
                 default:
-                    writer.WriteEscapedText(GetString());
+                    if (typeof(TMode) == typeof(SyncXmlStreamIO))
+                        writer.WriteEscapedText(GetString());
+                    else
+                        await writer.WriteEscapedTextAsync(GetString()).ConfigureAwait(false);
                     break;
             }
         }
@@ -827,6 +874,18 @@ namespace System.Xml
                 value = null;
                 return false;
             }
+        }
+
+        internal bool TryGetUtf8Bytes(out ReadOnlySpan<byte> bytes)
+        {
+            if (_type == ValueHandleType.UTF8)
+            {
+                bytes = _bufferReader.GetBuffer(out _, out _).AsSpan(_offset, _length);
+                return true;
+            }
+
+            bytes = default;
+            return false;
         }
 
         public bool TryGetByteArrayLength(out int length)

@@ -35,6 +35,14 @@ namespace System.Runtime.Serialization.Json
             return reader;
         }
 
+        internal static async ValueTask<XmlDictionaryReader> CreateJsonReaderAsync(Stream stream, Encoding? encoding,
+            XmlDictionaryReaderQuotas quotas, OnXmlDictionaryReaderClose? onClose, CancellationToken cancellationToken)
+        {
+            XmlJsonReader reader = new XmlJsonReader();
+            await reader.SetInputAsync(stream, encoding, quotas, onClose, cancellationToken).ConfigureAwait(false);
+            return reader;
+        }
+
         public static XmlDictionaryReader CreateJsonReader(byte[] buffer, int offset, int count, XmlDictionaryReaderQuotas quotas)
         {
             return CreateJsonReader(buffer, offset, count, null, quotas, null);

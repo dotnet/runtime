@@ -13,11 +13,13 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Xml;
 
 namespace System.Xml
 {
-    internal sealed class XmlBufferReader
+    internal sealed partial class XmlBufferReader
     {
         private readonly XmlDictionaryReader _reader;
         private Stream? _stream;
@@ -32,6 +34,7 @@ namespace System.Xml
         private char[]? _chars;
         private int _windowOffset;
         private int _windowOffsetMax;
+        private bool _streamAtEnd;
         private ValueHandle? _listValue;
         private static readonly XmlBufferReader s_empty = new XmlBufferReader(Array.Empty<byte>());
 
@@ -93,9 +96,18 @@ namespace System.Xml
             _offsetMax = offset + count;
             _dictionary = dictionary;
             _session = session;
+            _streamAtEnd = false;
         }
 
         public void Close()
+        {
+            CloseCoreSync();
+        }
+
+        internal ValueTask CloseAsync() => CloseCore<AsyncXmlStreamIO>();
+
+        private async ValueTask CloseCore<TMode>()
+            where TMode : struct, IXmlStreamIO
         {
             if (_streamBuffer != null && _streamBuffer.Length > 4096)
             {
@@ -103,8 +115,12 @@ namespace System.Xml
             }
             if (_stream != null)
             {
-                _stream.Dispose();
+                Stream stream = _stream;
                 _stream = null;
+                if (typeof(TMode) == typeof(SyncXmlStreamIO))
+                    stream.Dispose();
+                else
+                    await stream.DisposeAsync().ConfigureAwait(false);
             }
             _buffer = Array.Empty<byte>();
             _offset = 0;
@@ -113,6 +129,7 @@ namespace System.Xml
             _windowOffsetMax = 0;
             _dictionary = null;
             _session = null;
+            _streamAtEnd = false;
         }
 
         public bool EndOfFile
@@ -123,6 +140,8 @@ namespace System.Xml
             }
         }
 
+        internal bool BufferedEndOfFile => _offset == _offsetMax && (_stream is null || _streamAtEnd);
+
         public byte GetByte()
         {
             int offset = _offset;
@@ -130,6 +149,59 @@ namespace System.Xml
                 return _buffer[offset];
             else
                 return GetByteHard();
+        }
+
+        internal ValueTask<byte> GetByte<TMode>(CancellationToken cancellationToken)
+            where TMode : struct, IXmlStreamIO
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (_offset < _offsetMax)
+            {
+                return new ValueTask<byte>(_buffer[_offset]);
+            }
+            if (typeof(TMode) == typeof(SyncXmlStreamIO))
+            {
+                return new ValueTask<byte>(GetByte());
+            }
+
+            return GetByteAsync(cancellationToken);
+        }
+
+        internal ValueTask<int> TryGetByte<TMode>(CancellationToken cancellationToken)
+            where TMode : struct, IXmlStreamIO
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (_offset < _offsetMax)
+                return new ValueTask<int>(_buffer[_offset]);
+            if (typeof(TMode) == typeof(SyncXmlStreamIO))
+            {
+                GetBuffer(1, out int offset, out int offsetMax);
+                return new ValueTask<int>(offset < offsetMax ? _buffer[offset] : -1);
+            }
+
+            return TryGetByteAsync(cancellationToken);
+        }
+
+        private async ValueTask<int> TryGetByteAsync(CancellationToken cancellationToken)
+        {
+            int offsetMax = await GetBufferAsync(1, cancellationToken).ConfigureAwait(false);
+            return _offset < offsetMax ? _buffer[_offset] : -1;
+        }
+
+        private async ValueTask<byte> GetByteAsync(CancellationToken cancellationToken)
+        {
+            await EnsureBytesAsync(1, cancellationToken).ConfigureAwait(false);
+            return _buffer[_offset];
+        }
+
+        internal ValueTask<bool> EndOfFileCore<TMode>(CancellationToken cancellationToken)
+            where TMode : struct, IXmlStreamIO
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (_offset < _offsetMax)
+                return new ValueTask<bool>(false);
+            return typeof(TMode) == typeof(SyncXmlStreamIO) ?
+                new ValueTask<bool>(EndOfFile) : EndOfFileAsync(cancellationToken);
         }
 
         public void SkipByte()
@@ -166,6 +238,29 @@ namespace System.Xml
             return _buffer;
         }
 
+        internal ValueTask<int> GetBuffer<TMode>(int count, CancellationToken cancellationToken)
+            where TMode : struct, IXmlStreamIO
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (typeof(TMode) == typeof(SyncXmlStreamIO))
+            {
+                GetBuffer(count, out _, out int offsetMax);
+                return new ValueTask<int>(offsetMax);
+            }
+            if (_offset <= _offsetMax - count)
+            {
+                return new ValueTask<int>(_offset + count);
+            }
+
+            return GetBufferAsync(count, cancellationToken);
+        }
+
+        private async ValueTask<int> GetBufferAsync(int count, CancellationToken cancellationToken)
+        {
+            await TryEnsureBytesAsync(Math.Min(count, _windowOffsetMax - _offset), cancellationToken).ConfigureAwait(false);
+            return _offsetMax;
+        }
+
         public byte[] GetBuffer(out int offset, out int offsetMax)
         {
             offset = _offset;
@@ -195,7 +290,10 @@ namespace System.Xml
                 return TryEnsureBytes(1);
             int b = _stream.ReadByte();
             if (b == -1)
+            {
+                _streamAtEnd = true;
                 return false;
+            }
             _buffer[_offsetMax++] = (byte)b;
             return true;
         }
@@ -206,12 +304,78 @@ namespace System.Xml
                 XmlExceptionHelper.ThrowUnexpectedEndOfFile(_reader);
         }
 
+        internal ValueTask EnsureBytes<TMode>(int count, CancellationToken cancellationToken)
+            where TMode : struct, IXmlStreamIO
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (_stream is not null && count > _windowOffsetMax - _offset)
+            {
+                XmlExceptionHelper.ThrowMaxBytesPerReadExceeded(_reader, _reader.Quotas.MaxBytesPerRead);
+            }
+            if (_offset <= _offsetMax - count)
+            {
+                return ValueTask.CompletedTask;
+            }
+            if (typeof(TMode) == typeof(SyncXmlStreamIO))
+            {
+                EnsureBytes(count);
+                return ValueTask.CompletedTask;
+            }
+
+            return EnsureBytesAsync(count, cancellationToken);
+        }
+
         private bool TryEnsureBytes(int count)
         {
-            if (_stream == null)
+            if (_offset <= _offsetMax - count)
+            {
+                return true;
+            }
+            return TryEnsureBytesCoreSync(count);
+        }
+
+        internal ValueTask<bool> TryEnsureBytesAsync(int count, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (_offset <= _offsetMax - count)
+            {
+                return new ValueTask<bool>(true);
+            }
+
+            return TryEnsureBytesCore<AsyncXmlStreamIO>(count, cancellationToken);
+        }
+
+        internal async ValueTask EnsureBytesAsync(int count, CancellationToken cancellationToken)
+        {
+            if (!await TryEnsureBytesAsync(count, cancellationToken).ConfigureAwait(false))
+            {
+                XmlExceptionHelper.ThrowUnexpectedEndOfFile(_reader);
+            }
+        }
+
+        internal async ValueTask<bool> EndOfFileAsync(CancellationToken cancellationToken)
+        {
+            return _offset == _offsetMax && !await TryEnsureBytesAsync(1, cancellationToken).ConfigureAwait(false);
+        }
+
+        private async ValueTask<bool> TryEnsureBytesCore<TMode>(int count, CancellationToken cancellationToken)
+            where TMode : struct, IXmlStreamIO
+        {
+            if (_stream is null || _streamAtEnd)
                 return false;
 
             Debug.Assert(_offset <= int.MaxValue - count);
+            if (typeof(TMode) == typeof(AsyncXmlStreamIO) && count > _windowOffsetMax - _offset)
+            {
+                XmlExceptionHelper.ThrowMaxBytesPerReadExceeded(_reader, _reader.Quotas.MaxBytesPerRead);
+            }
+            if (typeof(TMode) == typeof(AsyncXmlStreamIO) && _buffer.Length < Math.Min(1024, _reader.Quotas.MaxBytesPerRead))
+            {
+                byte[] newBuffer = new byte[Math.Min(1024, _reader.Quotas.MaxBytesPerRead)];
+                System.Buffer.BlockCopy(_buffer, 0, newBuffer, 0, _offsetMax);
+                _buffer = newBuffer;
+                _streamBuffer = newBuffer;
+            }
 
             // The data could be coming from an untrusted source, so we use a standard
             // "multiply by 2" growth algorithm to avoid overly large memory utilization.
@@ -233,11 +397,22 @@ namespace System.Xml
                 }
                 int needed = newOffsetMax - _offsetMax;
                 Debug.Assert(needed > 0);
-                int read = _stream.ReadAtLeast(_buffer.AsSpan(_offsetMax, needed), needed, throwOnEndOfStream: false);
+                int read;
+                if (typeof(TMode) == typeof(SyncXmlStreamIO))
+                {
+                    read = await TMode.ReadAtLeast(_stream, _buffer.AsMemory(_offsetMax, needed), cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    // Read ahead only within the current quota window and already allocated buffer.
+                    int available = Math.Min(_buffer.Length, _windowOffsetMax) - _offsetMax;
+                    read = await TMode.Read(_stream, _buffer.AsMemory(_offsetMax, available), cancellationToken).ConfigureAwait(false);
+                }
                 _offsetMax += read;
 
-                if (read < needed)
+                if (typeof(TMode) == typeof(SyncXmlStreamIO) ? read < needed : read == 0)
                 {
+                    _streamAtEnd = true;
                     return false;
                 }
             } while (true);
@@ -265,13 +440,17 @@ namespace System.Xml
             bytes.CopyTo(_buffer.AsSpan(_offset, count));
         }
 
-        public void SetWindow(int windowOffset, int windowLength)
+        public void SetWindow(int windowOffset, int windowLength, bool deferCompaction = false)
         {
             // [0...elementOffset-1][elementOffset..offset][offset..offsetMax-1][offsetMax..buffer.Length]
             // ^--Elements, Attributes in scope
             //                      ^-- The node just consumed
             //                                             ^--Data buffered, not consumed
             //                                                                  ^--Unused space
+            // Ancestor names pin the buffer before windowOffset; compact relative to the reusable region.
+            if (deferCompaction && _offset - windowOffset < (_buffer.Length - windowOffset) / 2)
+                windowOffset = _offset;
+
             if (windowOffset > int.MaxValue - windowLength)
                 windowLength = int.MaxValue - windowOffset;
 
@@ -308,33 +487,113 @@ namespace System.Xml
             return offset;
         }
 
+        internal bool TryReadBytes(int count, out int offset)
+        {
+            Debug.Assert(count >= 0);
+            offset = _offset;
+            if (offset > _offsetMax - count)
+                return false;
+            _offset += count;
+            return true;
+        }
+
+        internal bool TryReadName(out int offset, out int length)
+        {
+            offset = _offset;
+            length = 0;
+            if (offset < _offsetMax)
+            {
+                int count = _buffer[offset];
+                if (count < 0x80 && count < _offsetMax - offset)
+                {
+                    offset++;
+                    length = count;
+                    _offset = offset + count;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        internal ValueTask<int> ReadBytes<TMode>(int count, CancellationToken cancellationToken)
+            where TMode : struct, IXmlStreamIO
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (_offset <= _offsetMax - count)
+            {
+                int offset = _offset;
+                Advance(count);
+                return new ValueTask<int>(offset);
+            }
+            if (typeof(TMode) == typeof(SyncXmlStreamIO))
+            {
+                if (_stream is not null && count > _windowOffsetMax - _offset)
+                    XmlExceptionHelper.ThrowMaxBytesPerReadExceeded(_reader, _reader.Quotas.MaxBytesPerRead);
+                return new ValueTask<int>(ReadBytes(count));
+            }
+
+            return ReadBytesCore<TMode>(count, cancellationToken);
+        }
+
+        private async ValueTask<int> ReadBytesCore<TMode>(int count, CancellationToken cancellationToken)
+            where TMode : struct, IXmlStreamIO
+        {
+            await EnsureBytes<TMode>(count, cancellationToken).ConfigureAwait(false);
+            int offset = _offset;
+            Advance(count);
+            return offset;
+        }
+
         public int ReadMultiByteUInt31()
         {
-            int i = GetByte();
+            return ReadMultiByteUInt31Sync();
+        }
+
+        internal ValueTask<int> ReadMultiByteUInt31<TMode>(CancellationToken cancellationToken)
+            where TMode : struct, IXmlStreamIO
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (typeof(TMode) == typeof(SyncXmlStreamIO) && GetByte() < 0x80)
+            {
+                return new ValueTask<int>(_buffer[_offset++]);
+            }
+            if (_offset < _offsetMax && _buffer[_offset] < 0x80)
+            {
+                return new ValueTask<int>(_buffer[_offset++]);
+            }
+
+            return ReadMultiByteUInt31Core<TMode>(cancellationToken);
+        }
+
+        private async ValueTask<int> ReadMultiByteUInt31Core<TMode>(CancellationToken cancellationToken)
+            where TMode : struct, IXmlStreamIO
+        {
+            int i = await GetByte<TMode>(cancellationToken).ConfigureAwait(false);
             Advance(1);
             if ((i & 0x80) == 0)
                 return i;
             i &= 0x7F;
 
-            int j = GetByte();
+            int j = await GetByte<TMode>(cancellationToken).ConfigureAwait(false);
             Advance(1);
             i |= ((j & 0x7F) << 7);
             if ((j & 0x80) == 0)
                 return i;
 
-            int k = GetByte();
+            int k = await GetByte<TMode>(cancellationToken).ConfigureAwait(false);
             Advance(1);
             i |= ((k & 0x7F) << 14);
             if ((k & 0x80) == 0)
                 return i;
 
-            int l = GetByte();
+            int l = await GetByte<TMode>(cancellationToken).ConfigureAwait(false);
             Advance(1);
             i |= ((l & 0x7F) << 21);
             if ((l & 0x80) == 0)
                 return i;
 
-            int m = GetByte();
+            int m = await GetByte<TMode>(cancellationToken).ConfigureAwait(false);
             Advance(1);
             i |= (m << 28);
             if ((m & 0xF8) != 0)
@@ -348,6 +607,72 @@ namespace System.Xml
             byte b = GetByte();
             Advance(1);
             return b;
+        }
+
+        internal ValueTask<int> ReadUInt8<TMode>(CancellationToken cancellationToken)
+            where TMode : struct, IXmlStreamIO
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (typeof(TMode) == typeof(SyncXmlStreamIO))
+                return new ValueTask<int>(ReadUInt8());
+            if (_offset < _offsetMax)
+                return new ValueTask<int>(_buffer[_offset++]);
+
+            return ReadUInt8Core<TMode>(cancellationToken);
+        }
+
+        private async ValueTask<int> ReadUInt8Core<TMode>(CancellationToken cancellationToken)
+            where TMode : struct, IXmlStreamIO
+        {
+            byte value = await GetByte<TMode>(cancellationToken).ConfigureAwait(false);
+            Advance(1);
+            return value;
+        }
+
+        internal ValueTask<int> ReadUInt16<TMode>(CancellationToken cancellationToken)
+            where TMode : struct, IXmlStreamIO
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (_offset <= _offsetMax - sizeof(ushort))
+                return new ValueTask<int>(ReadUInt16());
+            if (typeof(TMode) == typeof(SyncXmlStreamIO))
+            {
+                if (_stream is not null && sizeof(ushort) > _windowOffsetMax - _offset)
+                    XmlExceptionHelper.ThrowMaxBytesPerReadExceeded(_reader, _reader.Quotas.MaxBytesPerRead);
+                return new ValueTask<int>(ReadUInt16());
+            }
+
+            return ReadUInt16Core<TMode>(cancellationToken);
+        }
+
+        private async ValueTask<int> ReadUInt16Core<TMode>(CancellationToken cancellationToken)
+            where TMode : struct, IXmlStreamIO
+        {
+            await EnsureBytes<TMode>(sizeof(ushort), cancellationToken).ConfigureAwait(false);
+            return ReadUInt16();
+        }
+
+        internal ValueTask<int> ReadUInt31<TMode>(CancellationToken cancellationToken)
+            where TMode : struct, IXmlStreamIO
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (_offset <= _offsetMax - sizeof(int))
+                return new ValueTask<int>(ReadUInt31());
+            if (typeof(TMode) == typeof(SyncXmlStreamIO))
+            {
+                if (_stream is not null && sizeof(int) > _windowOffsetMax - _offset)
+                    XmlExceptionHelper.ThrowMaxBytesPerReadExceeded(_reader, _reader.Quotas.MaxBytesPerRead);
+                return new ValueTask<int>(ReadUInt31());
+            }
+
+            return ReadUInt31Core<TMode>(cancellationToken);
+        }
+
+        private async ValueTask<int> ReadUInt31Core<TMode>(CancellationToken cancellationToken)
+            where TMode : struct, IXmlStreamIO
+        {
+            await EnsureBytes<TMode>(sizeof(int), cancellationToken).ConfigureAwait(false);
+            return ReadUInt31();
         }
 
         public int ReadInt8()
@@ -476,9 +801,7 @@ namespace System.Xml
         {
             int offset;
             _ = GetBuffer(length, out offset);
-            char[] chars = GetCharBuffer(length);
-            int charCount = GetChars(offset, length, chars);
-            string value = new string(chars, 0, charCount);
+            string value = GetString(offset, length);
             Advance(length);
             return value;
         }
@@ -538,9 +861,7 @@ namespace System.Xml
 
         public string GetString(int offset, int length)
         {
-            char[] chars = GetCharBuffer(length);
-            int charCount = GetChars(offset, length, chars);
-            return new string(chars, 0, charCount);
+            return XmlConverter.ToString(_buffer, offset, length);
         }
 
         public string GetUnicodeString(int offset, int length)
@@ -815,30 +1136,18 @@ namespace System.Xml
 
         public bool Equals2(int offset1, int length1, byte[] buffer2)
         {
-            int length2 = buffer2.Length;
-            if (length1 != length2)
+            if (length1 != buffer2.Length)
                 return false;
-            byte[] buffer1 = _buffer;
-            for (int i = 0; i < length1; i++)
-            {
-                if (buffer1[offset1 + i] != buffer2[i])
-                    return false;
-            }
-            return true;
+
+            return _buffer.AsSpan(offset1, length1).SequenceEqual(buffer2);
         }
 
         public bool Equals2(int offset1, int length1, XmlBufferReader bufferReader2, int offset2, int length2)
         {
             if (length1 != length2)
                 return false;
-            byte[] buffer1 = _buffer;
-            byte[] buffer2 = bufferReader2._buffer;
-            for (int i = 0; i < length1; i++)
-            {
-                if (buffer1[offset1 + i] != buffer2[offset2 + i])
-                    return false;
-            }
-            return true;
+
+            return _buffer.AsSpan(offset1, length1).SequenceEqual(bufferReader2._buffer.AsSpan(offset2, length2));
         }
 
         public bool Equals2(int offset1, int length1, int offset2, int length2)
@@ -847,13 +1156,8 @@ namespace System.Xml
                 return false;
             if (offset1 == offset2)
                 return true;
-            byte[] buffer = _buffer;
-            for (int i = 0; i < length1; i++)
-            {
-                if (buffer[offset1 + i] != buffer[offset2 + i])
-                    return false;
-            }
-            return true;
+
+            return _buffer.AsSpan(offset1, length1).SequenceEqual(_buffer.AsSpan(offset2, length2));
         }
 
         public unsafe bool Equals2(int offset1, int length1, string s2)
@@ -1055,7 +1359,13 @@ namespace System.Xml
 
         public int ReadDictionaryKey()
         {
-            int key = ReadMultiByteUInt31();
+            return ReadDictionaryKeySync();
+        }
+
+        internal async ValueTask<int> ReadDictionaryKey<TMode>(CancellationToken cancellationToken)
+            where TMode : struct, IXmlStreamIO
+        {
+            int key = await ReadMultiByteUInt31<TMode>(cancellationToken).ConfigureAwait(false);
             if ((key & 1) != 0)
             {
                 if (_session == null)
@@ -1086,6 +1396,12 @@ namespace System.Xml
 
         public void ReadValue(XmlBinaryNodeType nodeType, ValueHandle value)
         {
+            ReadValueSync(nodeType, value);
+        }
+
+        internal async ValueTask ReadValue<TMode>(XmlBinaryNodeType nodeType, ValueHandle value, CancellationToken cancellationToken)
+            where TMode : struct, IXmlStreamIO
+        {
             switch (nodeType)
             {
                 case XmlBinaryNodeType.EmptyText:
@@ -1104,79 +1420,79 @@ namespace System.Xml
                     value.SetValue(ValueHandleType.False);
                     break;
                 case XmlBinaryNodeType.BoolText:
-                    value.SetValue(ReadUInt8() != 0 ? ValueHandleType.True : ValueHandleType.False);
+                    value.SetValue(await ReadUInt8<TMode>(cancellationToken).ConfigureAwait(false) != 0 ? ValueHandleType.True : ValueHandleType.False);
                     break;
                 case XmlBinaryNodeType.Chars8Text:
-                    ReadValue(value, ValueHandleType.UTF8, ReadUInt8());
+                    await ReadValue<TMode>(value, ValueHandleType.UTF8, await ReadUInt8<TMode>(cancellationToken).ConfigureAwait(false), cancellationToken).ConfigureAwait(false);
                     break;
                 case XmlBinaryNodeType.Chars16Text:
-                    ReadValue(value, ValueHandleType.UTF8, ReadUInt16());
+                    await ReadValue<TMode>(value, ValueHandleType.UTF8, await ReadUInt16<TMode>(cancellationToken).ConfigureAwait(false), cancellationToken).ConfigureAwait(false);
                     break;
                 case XmlBinaryNodeType.Chars32Text:
-                    ReadValue(value, ValueHandleType.UTF8, ReadUInt31());
+                    await ReadValue<TMode>(value, ValueHandleType.UTF8, await ReadUInt31<TMode>(cancellationToken).ConfigureAwait(false), cancellationToken).ConfigureAwait(false);
                     break;
                 case XmlBinaryNodeType.UnicodeChars8Text:
-                    ReadUnicodeValue(value, ReadUInt8());
+                    await ReadUnicodeValue<TMode>(value, await ReadUInt8<TMode>(cancellationToken).ConfigureAwait(false), cancellationToken).ConfigureAwait(false);
                     break;
                 case XmlBinaryNodeType.UnicodeChars16Text:
-                    ReadUnicodeValue(value, ReadUInt16());
+                    await ReadUnicodeValue<TMode>(value, await ReadUInt16<TMode>(cancellationToken).ConfigureAwait(false), cancellationToken).ConfigureAwait(false);
                     break;
                 case XmlBinaryNodeType.UnicodeChars32Text:
-                    ReadUnicodeValue(value, ReadUInt31());
+                    await ReadUnicodeValue<TMode>(value, await ReadUInt31<TMode>(cancellationToken).ConfigureAwait(false), cancellationToken).ConfigureAwait(false);
                     break;
                 case XmlBinaryNodeType.Bytes8Text:
-                    ReadValue(value, ValueHandleType.Base64, ReadUInt8());
+                    await ReadValue<TMode>(value, ValueHandleType.Base64, await ReadUInt8<TMode>(cancellationToken).ConfigureAwait(false), cancellationToken).ConfigureAwait(false);
                     break;
                 case XmlBinaryNodeType.Bytes16Text:
-                    ReadValue(value, ValueHandleType.Base64, ReadUInt16());
+                    await ReadValue<TMode>(value, ValueHandleType.Base64, await ReadUInt16<TMode>(cancellationToken).ConfigureAwait(false), cancellationToken).ConfigureAwait(false);
                     break;
                 case XmlBinaryNodeType.Bytes32Text:
-                    ReadValue(value, ValueHandleType.Base64, ReadUInt31());
+                    await ReadValue<TMode>(value, ValueHandleType.Base64, await ReadUInt31<TMode>(cancellationToken).ConfigureAwait(false), cancellationToken).ConfigureAwait(false);
                     break;
                 case XmlBinaryNodeType.DictionaryText:
-                    value.SetDictionaryValue(ReadDictionaryKey());
+                    value.SetDictionaryValue(await ReadDictionaryKey<TMode>(cancellationToken).ConfigureAwait(false));
                     break;
                 case XmlBinaryNodeType.UniqueIdText:
-                    ReadValue(value, ValueHandleType.UniqueId, ValueHandleLength.UniqueId);
+                    await ReadValue<TMode>(value, ValueHandleType.UniqueId, ValueHandleLength.UniqueId, cancellationToken).ConfigureAwait(false);
                     break;
                 case XmlBinaryNodeType.GuidText:
-                    ReadValue(value, ValueHandleType.Guid, ValueHandleLength.Guid);
+                    await ReadValue<TMode>(value, ValueHandleType.Guid, ValueHandleLength.Guid, cancellationToken).ConfigureAwait(false);
                     break;
                 case XmlBinaryNodeType.DecimalText:
-                    ReadValue(value, ValueHandleType.Decimal, ValueHandleLength.Decimal);
+                    await ReadValue<TMode>(value, ValueHandleType.Decimal, ValueHandleLength.Decimal, cancellationToken).ConfigureAwait(false);
                     break;
                 case XmlBinaryNodeType.Int8Text:
-                    ReadValue(value, ValueHandleType.Int8, ValueHandleLength.Int8);
+                    await ReadValue<TMode>(value, ValueHandleType.Int8, ValueHandleLength.Int8, cancellationToken).ConfigureAwait(false);
                     break;
                 case XmlBinaryNodeType.Int16Text:
-                    ReadValue(value, ValueHandleType.Int16, ValueHandleLength.Int16);
+                    await ReadValue<TMode>(value, ValueHandleType.Int16, ValueHandleLength.Int16, cancellationToken).ConfigureAwait(false);
                     break;
                 case XmlBinaryNodeType.Int32Text:
-                    ReadValue(value, ValueHandleType.Int32, ValueHandleLength.Int32);
+                    await ReadValue<TMode>(value, ValueHandleType.Int32, ValueHandleLength.Int32, cancellationToken).ConfigureAwait(false);
                     break;
                 case XmlBinaryNodeType.Int64Text:
-                    ReadValue(value, ValueHandleType.Int64, ValueHandleLength.Int64);
+                    await ReadValue<TMode>(value, ValueHandleType.Int64, ValueHandleLength.Int64, cancellationToken).ConfigureAwait(false);
                     break;
                 case XmlBinaryNodeType.UInt64Text:
-                    ReadValue(value, ValueHandleType.UInt64, ValueHandleLength.UInt64);
+                    await ReadValue<TMode>(value, ValueHandleType.UInt64, ValueHandleLength.UInt64, cancellationToken).ConfigureAwait(false);
                     break;
                 case XmlBinaryNodeType.FloatText:
-                    ReadValue(value, ValueHandleType.Single, ValueHandleLength.Single);
+                    await ReadValue<TMode>(value, ValueHandleType.Single, ValueHandleLength.Single, cancellationToken).ConfigureAwait(false);
                     break;
                 case XmlBinaryNodeType.DoubleText:
-                    ReadValue(value, ValueHandleType.Double, ValueHandleLength.Double);
+                    await ReadValue<TMode>(value, ValueHandleType.Double, ValueHandleLength.Double, cancellationToken).ConfigureAwait(false);
                     break;
                 case XmlBinaryNodeType.TimeSpanText:
-                    ReadValue(value, ValueHandleType.TimeSpan, ValueHandleLength.TimeSpan);
+                    await ReadValue<TMode>(value, ValueHandleType.TimeSpan, ValueHandleLength.TimeSpan, cancellationToken).ConfigureAwait(false);
                     break;
                 case XmlBinaryNodeType.DateTimeText:
-                    ReadValue(value, ValueHandleType.DateTime, ValueHandleLength.DateTime);
+                    await ReadValue<TMode>(value, ValueHandleType.DateTime, ValueHandleLength.DateTime, cancellationToken).ConfigureAwait(false);
                     break;
                 case XmlBinaryNodeType.StartListText:
-                    ReadList(value);
+                    await ReadList<TMode>(value, cancellationToken).ConfigureAwait(false);
                     break;
                 case XmlBinaryNodeType.QNameDictionaryText:
-                    ReadQName(value);
+                    await ReadQName<TMode>(value, cancellationToken).ConfigureAwait(false);
                     break;
                 default:
                     XmlExceptionHelper.ThrowInvalidBinaryFormat(_reader);
@@ -1184,33 +1500,55 @@ namespace System.Xml
             }
         }
 
-        private void ReadValue(ValueHandle value, ValueHandleType type, int length)
+        private ValueTask ReadValue<TMode>(ValueHandle value, ValueHandleType type, int length, CancellationToken cancellationToken)
+            where TMode : struct, IXmlStreamIO
         {
-            int offset = ReadBytes(length);
+            cancellationToken.ThrowIfCancellationRequested();
+            if (TryReadBytes(length, out int offset))
+            {
+                value.SetValue(type, offset, length);
+                return ValueTask.CompletedTask;
+            }
+            if (typeof(TMode) == typeof(SyncXmlStreamIO))
+            {
+                offset = ReflectionSerialization.Complete(ReadBytes<TMode>(length, cancellationToken));
+                value.SetValue(type, offset, length);
+                return ValueTask.CompletedTask;
+            }
+
+            return ReadValueCore<TMode>(value, type, length, cancellationToken);
+        }
+
+        private async ValueTask ReadValueCore<TMode>(ValueHandle value, ValueHandleType type, int length, CancellationToken cancellationToken)
+            where TMode : struct, IXmlStreamIO
+        {
+            int offset = await ReadBytes<TMode>(length, cancellationToken).ConfigureAwait(false);
             value.SetValue(type, offset, length);
         }
 
-        private void ReadUnicodeValue(ValueHandle value, int length)
+        private async ValueTask ReadUnicodeValue<TMode>(ValueHandle value, int length, CancellationToken cancellationToken)
+            where TMode : struct, IXmlStreamIO
         {
             if ((length & 1) != 0)
                 XmlExceptionHelper.ThrowInvalidBinaryFormat(_reader);
-            ReadValue(value, ValueHandleType.Unicode, length);
+            await ReadValue<TMode>(value, ValueHandleType.Unicode, length, cancellationToken).ConfigureAwait(false);
         }
 
-        private void ReadList(ValueHandle value)
+        private async ValueTask ReadList<TMode>(ValueHandle value, CancellationToken cancellationToken)
+            where TMode : struct, IXmlStreamIO
         {
             _listValue ??= new ValueHandle(this);
             int count = 0;
             int offset = this.Offset;
             while (true)
             {
-                XmlBinaryNodeType nodeType = GetNodeType();
+                XmlBinaryNodeType nodeType = (XmlBinaryNodeType)await GetByte<TMode>(cancellationToken).ConfigureAwait(false);
                 SkipNodeType();
                 if (nodeType == XmlBinaryNodeType.StartListText)
                     XmlExceptionHelper.ThrowInvalidBinaryFormat(_reader);
                 if (nodeType == XmlBinaryNodeType.EndListText)
                     break;
-                ReadValue(nodeType, _listValue);
+                await ReadValue<TMode>(nodeType, _listValue, cancellationToken).ConfigureAwait(false);
                 count++;
             }
             value.SetValue(ValueHandleType.List, offset, count);
@@ -1219,10 +1557,16 @@ namespace System.Xml
 
         public void ReadQName(ValueHandle value)
         {
-            int prefix = ReadUInt8();
+            ReadQNameSync(value);
+        }
+
+        internal async ValueTask ReadQName<TMode>(ValueHandle value, CancellationToken cancellationToken)
+            where TMode : struct, IXmlStreamIO
+        {
+            int prefix = await ReadUInt8<TMode>(cancellationToken).ConfigureAwait(false);
             if (prefix >= 26)
                 XmlExceptionHelper.ThrowInvalidBinaryFormat(_reader);
-            int key = ReadDictionaryKey();
+            int key = await ReadDictionaryKey<TMode>(cancellationToken).ConfigureAwait(false);
             value.SetQNameValue(prefix, key);
         }
 
