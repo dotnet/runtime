@@ -46,6 +46,8 @@
     <PublishReadyToRun>true</PublishReadyToRun>
     <!-- Disable crossgen on NetBSD, illumos, Solaris and Haiku for now. This can be revisited when we have full support. -->
     <PublishReadyToRun Condition="'$(TargetOS)' == 'netbsd' or '$(TargetOS)' == 'illumos' or '$(TargetOS)' == 'solaris' or '$(TargetOS)' == 'haiku'">false</PublishReadyToRun>
+    <!-- wasm64 runs on the interpreter until ReadyToRun support is added. -->
+    <PublishReadyToRun Condition="'$(TargetsWasm64)' == 'true'">false</PublishReadyToRun>
 
     <CrossgenTargetName Condition="!$(PublishReadyToRun)">CopyILCoreLib</CrossgenTargetName>
 
