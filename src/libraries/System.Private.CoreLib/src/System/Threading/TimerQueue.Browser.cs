@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -78,7 +77,6 @@ namespace System.Threading
         }
 
         // shortest time of all TimerQueues
-        [DynamicDependency("TimerHandler")] // https://github.com/dotnet/runtime/issues/101434
         private static unsafe void ReplaceNextTimer(long shortestDueTimeMs, long currentTimeMs)
         {
             if (shortestDueTimeMs == long.MaxValue)

@@ -18,11 +18,6 @@ A dotnet wasm app has some native wasm files (`dotnet.wasm`, and `dotnet.js`). H
     - dotnet.wasm is relinked with the native libraries, and updated pinvoke/icalls from the trimmed assemblies
     - if `RunAOTCompilation=true`, then the relinking includes AOT'ed assemblies
 
-Single-threaded CoreCLR Browser's native library requires the
-`SystemJS_ExecuteTimerCallback` export even when an app does not use managed
-timers. The Browser-specific CoreLib linker descriptor roots only
-`TimerQueue.TimerHandler`; trimming also preserves its reachable dependencies.
-
 ## `Build`
 
 Implementation:
