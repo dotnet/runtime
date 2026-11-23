@@ -62,6 +62,43 @@ namespace System.SpanTests
         }
 
         [Fact]
+        public static void FixedLengthSlices_ReturnFirstMismatch()
+        {
+            byte[] left = new byte[18];
+            byte[] right = new byte[19];
+            ReadOnlySpan<byte> a = left.AsSpan(1);
+            Span<byte> b = right.AsSpan(2);
+
+            for (int i = 0; i <= 16; i++)
+            {
+                b[i] = 0x80;
+                Assert.Equal(Math.Min(i, 4), a[..4].CommonPrefixLength(b[..8]));
+                Assert.Equal(Math.Min(i, 8), a[..16].CommonPrefixLength(b[..8]));
+                Assert.Equal(Math.Min(i, 16), a[..16].CommonPrefixLength(b[..16]));
+                for (int n = 0; n <= 16; n++)
+                {
+                    Assert.Equal(Math.Min(Math.Min(i, n), 8), a[..8].CommonPrefixLength(b[..n]));
+                }
+                b[i] = 0;
+            }
+        }
+
+        [Fact]
+        public static void FixedLengthSlices_ReturnElementCount()
+        {
+            ReadOnlySpan<uint> a = new uint[] { 1, 2, 3, 4 };
+            ReadOnlySpan<uint> b = new uint[] { 1, 3, 3, 4 };
+            Assert.Equal(1, a[..2].CommonPrefixLength(b[..2]));
+            Assert.Equal(2, a[..2].CommonPrefixLength(a[..2]));
+            Assert.Equal(1, a[..4].CommonPrefixLength(b[..4]));
+            Assert.Equal(4, a[..4].CommonPrefixLength(a[..4]));
+
+            ReadOnlySpan<float> x = new float[] { 0.0f, float.NaN };
+            ReadOnlySpan<float> y = new float[] { -0.0f, float.NaN };
+            Assert.Equal(2, x[..2].CommonPrefixLength(y[..2]));
+        }
+
+        [Fact]
         public static void PartialEquals_ReturnsPrefixLength_Byte()
         {
             byte[] arr1 = new byte[] { 1, 2, 3, 4, 5 };

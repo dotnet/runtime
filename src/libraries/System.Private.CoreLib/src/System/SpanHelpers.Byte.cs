@@ -1147,7 +1147,30 @@ namespace System
             return firstLength - secondLength;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static nuint CommonPrefixLength(ref byte first, ref byte second, nuint length)
+        {
+            if (RuntimeHelpers.IsKnownConstant(length))
+            {
+                if (length == sizeof(uint))
+                {
+                    uint different = LoadUInt(ref first) ^ LoadUInt(ref second);
+                    int bits = BitConverter.IsLittleEndian ? BitOperations.TrailingZeroCount(different) : BitOperations.LeadingZeroCount(different);
+                    return (uint)(bits >> 3);
+                }
+
+                if (length == sizeof(ulong))
+                {
+                    ulong different = Unsafe.ReadUnaligned<ulong>(ref first) ^ Unsafe.ReadUnaligned<ulong>(ref second);
+                    int bits = BitConverter.IsLittleEndian ? BitOperations.TrailingZeroCount(different) : BitOperations.LeadingZeroCount(different);
+                    return (uint)(bits >> 3);
+                }
+            }
+
+            return CommonPrefixLengthCore(ref first, ref second, length);
+        }
+
+        private static nuint CommonPrefixLengthCore(ref byte first, ref byte second, nuint length)
         {
             nuint i;
 
