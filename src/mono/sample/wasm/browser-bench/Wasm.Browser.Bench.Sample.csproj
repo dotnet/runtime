@@ -5,8 +5,6 @@
     <WasmCopyAppZipToHelixTestDir>false</WasmCopyAppZipToHelixTestDir>
     <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
-    <EnableAggressiveTrimming Condition="'$(EnableAOTAndTrimming)' != ''">$(EnableAOTAndTrimming)</EnableAggressiveTrimming>
-    <PublishTrimmed Condition="'$(EnableAOTAndTrimming)' != ''">$(EnableAOTAndTrimming)</PublishTrimmed>
     <WasmFingerprintAssets>false</WasmFingerprintAssets>
   </PropertyGroup>
 
