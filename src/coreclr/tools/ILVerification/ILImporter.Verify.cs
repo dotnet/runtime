@@ -90,7 +90,6 @@ namespace Internal.IL
         }
         Prefix _pendingPrefix;
         TypeDesc _constrained;
-        byte _noPrefixChecks;
 
         int _currentInstructionOffset;
 
@@ -599,22 +598,6 @@ namespace Internal.IL
         {
             if (!ValidationOnly)
                 Invalid(error);
-        }
-
-        // cpblk and initblk take addresses of type native int or & (III.3.30, III.3.36).
-        void CheckIsAddress(StackValue value)
-        {
-            Check(value.Kind == StackValueKind.NativeInt || value.Kind == StackValueKind.ByRef, VerifierError.StackByRef, value);
-        }
-
-        // Their size is an unsigned int32 and the initblk value an unsigned int8, so an int64 is not valid.
-        void CheckIsInt32OrNativeInt(StackValue value)
-        {
-            if (!Check(value.Kind == StackValueKind.Int32 || value.Kind == StackValueKind.NativeInt,
-                VerifierError.ExpectedIntegerType, value))
-            {
-                AbortBasicBlockVerification();
-            }
         }
 
         void CheckIsNumeric(StackValue value)
@@ -1568,40 +1551,13 @@ namespace Internal.IL
 
         void ImportJmp(int token)
         {
-            // jmp is never verifiable (III.3.37); the checks below are validity rules.
             Unverifiable(VerifierError.Unverifiable);
 
             var method = ResolveMethodToken(token);
-
-            if (_stackTop != 0)
-                Invalid(VerifierError.StackUnexpected, _stack[_stackTop - 1]);
-
-            Check(!_currentBasicBlock.TryIndex.HasValue && !_currentBasicBlock.FilterIndex.HasValue &&
-                !_currentBasicBlock.HandlerIndex.HasValue && !_method.IsSynchronized, VerifierError.JmpInsideER);
-
-            MethodSignature sig = method.Signature;
-            bool matches = sig.Flags == _methodSignature.Flags && sig.ReturnType == _methodSignature.ReturnType &&
-                sig.Length == _methodSignature.Length;
-            for (int i = 0; matches && i < sig.Length; i++)
-                matches = sig[i] == _methodSignature[i];
-
-            // The signature does not list an implicit 'this', which must also be passable to the target.
-            if (matches && !sig.IsStatic)
-            {
-                TypeDesc owner = method.OwningType;
-                matches = IsAssignable(StackValue.CreateFromType(_thisType),
-                    owner.IsValueType ? StackValue.CreateByRef(owner) : StackValue.CreateObjRef(owner));
-            }
-
-            if (!matches)
-                Invalid(VerifierError.StackUnexpected, method, _method);
         }
 
         void ImportCasting(ILOpcode opcode, int token)
         {
-            if (opcode == ILOpcode.castclass)
-                ConsumeNoPrefix(0x01);
-
             var type = ResolveTypeToken(token);
 
             var value = Pop();
@@ -1616,9 +1572,6 @@ namespace Internal.IL
         void ImportCall(ILOpcode opcode, int token)
         {
             FatalCheck(opcode != ILOpcode.calli, VerifierError.Unverifiable);
-
-            if (opcode == ILOpcode.callvirt)
-                ConsumeNoPrefix(0x04);
 
             TypeDesc constrained = null;
             bool tailCall = false;
@@ -1938,9 +1891,6 @@ namespace Internal.IL
 
         void ImportLdFtn(int token, ILOpcode opCode)
         {
-            if (opCode == ILOpcode.ldvirtftn)
-                ConsumeNoPrefix(0x04);
-
             MethodDesc method = ResolveMethodToken(token);
             Check(!method.IsConstructor, VerifierError.LdftnCtor);
 
@@ -2323,8 +2273,6 @@ namespace Internal.IL
         {
             ClearPendingPrefix(Prefix.Unaligned);
             ClearPendingPrefix(Prefix.Volatile);
-            if (!isStatic)
-                ConsumeNoPrefix(0x04);
 
             var field = ResolveFieldToken(token);
 
@@ -2407,8 +2355,6 @@ namespace Internal.IL
         {
             ClearPendingPrefix(Prefix.Unaligned);
             ClearPendingPrefix(Prefix.Volatile);
-            if (!isStatic)
-                ConsumeNoPrefix(0x04);
 
             var value = Pop();
             var field = ResolveFieldToken(token);
@@ -2640,8 +2586,6 @@ namespace Internal.IL
 
         void ImportLoadElement(TypeDesc elementType)
         {
-            ConsumeNoPrefix(0x06);
-
             var index = Pop();
             var array = Pop();
 
@@ -2669,15 +2613,11 @@ namespace Internal.IL
 
         void ImportStoreElement(int token)
         {
-            ConsumeNoPrefix(0x07);
             ImportStoreElement(ResolveTypeToken(token));
         }
 
         void ImportStoreElement(TypeDesc elementType)
         {
-            // Only stelem.ref and stelem <T> type-check the value.
-            ConsumeNoPrefix(elementType == null ? (byte)0x07 : (byte)0x06);
-
             var value = Pop();
             var index = Pop();
             var array = Pop();
@@ -2709,8 +2649,6 @@ namespace Internal.IL
 
         void ImportAddressOfElement(int token)
         {
-            ConsumeNoPrefix(0x07);
-
             var elementType = ResolveTypeToken(token);
 
             var index = Pop();
@@ -2777,9 +2715,6 @@ namespace Internal.IL
 
         void ImportUnbox(int token, ILOpcode opCode)
         {
-            if (opCode == ILOpcode.unbox)
-                ConsumeNoPrefix(0x01);
-
             var type = ResolveTypeToken(token);
 
             CheckIsObjRef(Pop());
@@ -2868,16 +2803,15 @@ namespace Internal.IL
             ClearPendingPrefix(Prefix.Unaligned);
             ClearPendingPrefix(Prefix.Volatile);
 
-            // cpblk is never verifiable (III.3.30); the checks below are validity rules.
             Unverifiable(VerifierError.Unverifiable);
 
             var size = Pop();
             var srcaddr = Pop();
             var dstaddr = Pop();
 
-            CheckIsAddress(srcaddr);
-            CheckIsAddress(dstaddr);
-            CheckIsInt32OrNativeInt(size);
+            CheckIsInteger(size);
+
+            // TODO: Validate srcaddr, dstaddr
         }
 
         void ImportInitBlk()
@@ -2885,16 +2819,16 @@ namespace Internal.IL
             ClearPendingPrefix(Prefix.Unaligned);
             ClearPendingPrefix(Prefix.Volatile);
 
-            // initblk is never verifiable (III.3.36); the checks below are validity rules.
             Unverifiable(VerifierError.Unverifiable);
 
             var size = Pop();
             var value = Pop();
             var addr = Pop();
 
-            CheckIsAddress(addr);
-            CheckIsInt32OrNativeInt(size);
-            CheckIsInt32OrNativeInt(value);
+            CheckIsInteger(size);
+            CheckIsInteger(value);
+
+            // TODO: Validate addr
         }
 
         void ImportRethrow()
@@ -2964,23 +2898,10 @@ namespace Internal.IL
 
         void ImportNoPrefix(byte mask)
         {
-            // no. is never verifiable (III.2.2); the next instruction checks its mask.
             Unverifiable(VerifierError.Unverifiable);
 
             CheckPendingPrefix(_pendingPrefix);
             _pendingPrefix |= Prefix.No;
-            _noPrefixChecks = mask;
-        }
-
-        // no. may only skip fault checks that the next instruction performs:
-        // typecheck 0x01, rangecheck 0x02, nullcheck 0x04 (III.2.2).
-        void ConsumeNoPrefix(byte checks)
-        {
-            if (HasPendingPrefix(Prefix.No))
-            {
-                Check((_noPrefixChecks & ~checks) == 0, VerifierError.NoPrefix);
-                ClearPendingPrefix(Prefix.No);
-            }
         }
 
         void ImportReadOnlyPrefix()
@@ -2999,7 +2920,6 @@ namespace Internal.IL
             Check((mask & Prefix.Volatile) == 0, VerifierError.Volatile);
             Check((mask & Prefix.ReadOnly) == 0, VerifierError.ReadOnly);
             Check((mask & Prefix.Constrained) == 0, VerifierError.Constrained);
-            Check((mask & Prefix.No) == 0, VerifierError.NoPrefix);
         }
 
         static bool HasIsExternalInit(MethodSignature signature)
