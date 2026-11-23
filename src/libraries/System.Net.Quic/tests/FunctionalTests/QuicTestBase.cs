@@ -254,6 +254,7 @@ namespace System.Net.Quic.Tests
                 }
                 if (serverTask.IsCompleted)
                 {
+                    // Observe any server fault even when there is no output helper.
                     AggregateException? serverException = serverTask.Exception;
                     _output?.WriteLine($"Server {(serverTask.IsCompletedSuccessfully ? "succeeded" : "failed with " + serverException)}");
                 }
