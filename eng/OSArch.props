@@ -10,7 +10,7 @@
     <_hostOS Condition="$([MSBuild]::IsOSPlatform('HAIKU'))">haiku</_hostOS>
     <_hostOS Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">windows</_hostOS>
     <HostOS>$(_hostOS)</HostOS>
-    <TargetOS Condition="'$(TargetOS)' == '' and '$(RuntimeIdentifier)' == 'browser-wasm'">browser</TargetOS>
+    <TargetOS Condition="'$(TargetOS)' == '' and ('$(RuntimeIdentifier)' == 'browser-wasm' or '$(RuntimeIdentifier)' == 'browser-wasm64')">browser</TargetOS>
     <TargetOS Condition="'$(TargetOS)' == ''">$(_hostOS)</TargetOS>
     <TargetsMobile Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'maccatalyst' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator' or '$(TargetOS)' == 'android' or '$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi'">true</TargetsMobile>
     <TargetsAppleMobile Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'maccatalyst' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator'">true</TargetsAppleMobile>
@@ -20,6 +20,7 @@
   <PropertyGroup Label="CalculateArch">
     <_hostArch>$([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant)</_hostArch>
     <BuildArchitecture Condition="'$(BuildArchitecture)' == ''">$(_hostArch)</BuildArchitecture>
+    <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and '$(RuntimeIdentifier)' == 'browser-wasm64'">wasm64</TargetArchitecture>
     <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and ('$(TargetOS)' == 'browser' or '$(RuntimeIdentifier)' == 'browser-wasm')">wasm</TargetArchitecture>
     <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and ('$(TargetOS)' == 'wasi' or '$(RuntimeIdentifier)' == 'wasi-wasm')">wasm</TargetArchitecture>
     <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and '$(_hostArch)' == 'arm'">arm</TargetArchitecture>
@@ -36,9 +37,10 @@
 
   <PropertyGroup>
     <!-- TargetArchitecture 'wasm' (as in the browser-wasm and wasi-wasm RIDs) is 32-bit WebAssembly.
-         TargetsWasm is 32-bit; TargetsWasmArch means any WebAssembly width. -->
+         TargetsWasmArch means any WebAssembly target; use TargetsWasm or TargetsWasm64 for width-specific logic. -->
     <TargetsWasm Condition="'$(TargetArchitecture)' == 'wasm'">true</TargetsWasm>
-    <TargetsWasmArch Condition="'$(TargetsWasm)' == 'true'">true</TargetsWasmArch>
+    <TargetsWasm64 Condition="'$(TargetArchitecture)' == 'wasm64'">true</TargetsWasm64>
+    <TargetsWasmArch Condition="'$(TargetsWasm)' == 'true' or '$(TargetsWasm64)' == 'true'">true</TargetsWasmArch>
   </PropertyGroup>
 
   <PropertyGroup>
