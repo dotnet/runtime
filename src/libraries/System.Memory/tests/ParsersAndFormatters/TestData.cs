@@ -396,6 +396,7 @@ namespace System.Buffers.Text.Tests
                 yield return "000000123.45";
                 yield return "0.000045";
                 yield return "000000123.000045";
+                yield return "1.2300";
 
                 yield return decimal.MinValue.ToString("G", CultureInfo.InvariantCulture);
                 yield return decimal.MaxValue.ToString("G", CultureInfo.InvariantCulture);
@@ -452,9 +453,24 @@ namespace System.Buffers.Text.Tests
                 yield return "0.66666666666666666666666666665";
                 yield return "0.6666666666666666666666666666500000000000000000000000000000000000000000000000000000000000000";
                 yield return "0.6666666666666666666666666666500000000000000000000";
+                yield return "76228501625444444444444444444.5";
+                yield return "76228501625444444444444444445.5";
+                yield return "76228501625444444444444444444.50001";
+                yield return "63732000000000900";
+                yield return "63732000000000900.000";
+                yield return "63732000000000908.000";
+                yield return "2001000000.0000000000";
+                yield return "2001000128.0000000000";
 
                 yield return "0.6666666666666666666666666666666666666666666666665";
                 yield return "0.9999999999999999999999999999999999999999999999999";
+
+                // Exponents combined with trailing zeros and decimal scale.
+                yield return "-0.000e-2";
+                yield return "1.2300e2";
+                yield return "625010.00e-4";
+                yield return "62500e-4";
+                yield return "637320000000009000e-1";
 
                 // Wacky case that's expected to yield "Decimal.MaxValue / 10"
                 // ( = 7922816251426433759354395034m (= High = 0x19999999, Mid = 0x99999999, Low = 0x9999999A))
@@ -488,6 +504,11 @@ namespace System.Buffers.Text.Tests
 
                 // Ensures that the NumberBuffer capacity is consistent with Desktop's.
                 yield return ".2222222222222222222222222222500000000000000000001";
+                yield return "0." + new string('0', 40) + "762285016254444444444444444445e69";
+                yield return "9007199254740997." + new string('0', 800) + "e0";
+                yield return "9007199254740997." + new string('0', 800) + "1e0";
+                yield return "16777217." + new string('0', 120) + "e0";
+                yield return "16777217." + new string('0', 120) + "1e0";
             }
         }
 
