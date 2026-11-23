@@ -326,7 +326,8 @@ void TLSIndexToMethodTableMap::MarkReusable(TLSIndex index)
 }
 
 #ifdef _DEBUG
-static DWORD s_threadStaticsInitDelayMs;
+// Written once during EE startup, but threads created earlier in startup can read it concurrently.
+static Volatile<DWORD> s_threadStaticsInitDelayMs;
 #endif // _DEBUG
 
 void InitializeThreadStaticData()
@@ -353,9 +354,10 @@ void InitializeCurrentThreadsStaticData(Thread* pThread)
 #ifdef _DEBUG
     // Widen the window in which other threads can observe published thread-static data
     // before its TLS spin lock is initialized.
-    if (s_threadStaticsInitDelayMs != 0)
+    DWORD delayMs = s_threadStaticsInitDelayMs.Load();
+    if (delayMs != 0)
     {
-        minipal_sleep(s_threadStaticsInitDelayMs);
+        minipal_sleep(delayMs);
     }
 #endif // _DEBUG
     t_ThreadStatics.pThread->m_TlsSpinLock.Init(LOCK_TLSDATA, FALSE);
