@@ -409,6 +409,12 @@ internal sealed partial class GrammarActions
             return ILOpCode.Unused;
         }
 
+        if (text == "no")
+        {
+            // The 'no.' prefix (ECMA-335 III.2.2) has no ILOpCode member.
+            return (ILOpCode)0xFE19;
+        }
+
         string normalized = text.Replace('.', '_');
         normalized = normalized switch
         {
