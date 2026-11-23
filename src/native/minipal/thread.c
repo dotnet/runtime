@@ -1,6 +1,23 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#ifdef HOST_WINDOWS
+
+#include "thread.h"
+#include <windows.h>
+
+size_t minipal_get_current_thread_id(void)
+{
+    return GetCurrentThreadId();
+}
+
+uint32_t minipal_get_current_process_id(void)
+{
+    return GetCurrentProcessId();
+}
+
+#else // HOST_WINDOWS
+
 #if defined(__linux__) && !defined(_GNU_SOURCE)
 // glibc declares pthread_setname_np only when _GNU_SOURCE is defined before <pthread.h>.
 #define _GNU_SOURCE
@@ -15,6 +32,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #if defined(__linux__)
 #include <sys/syscall.h>
@@ -45,6 +63,17 @@
 #if !defined(__wasm) || defined(_REENTRANT)
 PLATFORM_THREAD_LOCAL size_t minipal_cached_thread_id;
 #endif
+
+uint32_t minipal_get_current_process_id(void)
+{
+#ifdef __wasi__
+    // WASI has no process IDs. Return the same placeholder as wasi-libc's emulated getpid() and
+    // the managed Environment.ProcessId on WASI (see Environment.Browser.cs), so they agree.
+    return 42;
+#else
+    return (uint32_t)getpid();
+#endif
+}
 
 size_t minipal_get_current_thread_id_no_cache(void)
 {
@@ -112,3 +141,5 @@ int minipal_set_thread_name(pthread_t thread, const char* name)
 #endif
 #endif
 }
+
+#endif // HOST_WINDOWS

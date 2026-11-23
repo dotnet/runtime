@@ -9,28 +9,12 @@ extern "C" {
 #endif
 
 PALIMPORT
-HANDLE
-PALAPI
-OpenMutexA(
-       IN DWORD dwDesiredAccess,
-       IN BOOL bInheritHandle,
-       IN LPCSTR lpName);
-
-PALIMPORT
 HMODULE
 PALAPI
 LoadLibraryExA(
         IN LPCSTR lpLibFileName,
         IN /*Reserved*/ HANDLE hFile,
         IN DWORD dwFlags);
-
-PALIMPORT
-DWORD
-PALAPI
-GetModuleFileNameA(
-    IN HMODULE hModule,
-    OUT LPSTR lpFileName,
-    IN DWORD nSize);
 
 
 #ifdef  __cplusplus

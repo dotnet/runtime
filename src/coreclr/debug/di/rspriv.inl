@@ -493,7 +493,7 @@ inline ULONG CordbCommonBase::BaseReleaseEnforceExternal()
 inline bool RSLock::HasLock()
 {
     CONSISTENCY_CHECK_MSGF(IsInit(), ("RSLock '%s' not inited", m_szTag));
-    return m_tidOwner == ::GetCurrentThreadId();
+    return m_tidOwner == minipal_get_current_thread_id();
 }
 #endif
 
@@ -502,7 +502,7 @@ inline bool RSLock::HasLock()
 inline RSLock::RSLock()
 {
     m_eAttr = cLockUninit;
-    m_tidOwner = (DWORD)-1;
+    m_tidOwner = (size_t)-1;
 };
 
 inline RSLock::~RSLock()
@@ -559,7 +559,7 @@ inline void RSLock::Lock()
 
     minipal_mutex_enter(&m_lock);
 #ifdef _DEBUG
-    m_tidOwner = ::GetCurrentThreadId();
+    m_tidOwner = minipal_get_current_thread_id();
     m_count++;
 
     // Either count == 1 or we're re-entrant.
@@ -577,7 +577,7 @@ inline void RSLock::Unlock()
     _ASSERTE(m_count >= 0);
     if (m_count == 0)
     {
-        m_tidOwner = (DWORD)-1;
+        m_tidOwner = (size_t)-1;
     }
 #endif
 

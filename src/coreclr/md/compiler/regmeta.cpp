@@ -743,14 +743,14 @@ ErrExit:
 
 int DumpMD_Write(_In_ _In_z_ const char *str)
 {
-    OutputDebugStringA(str);
+    OutputDebugStringUtf8(str);
     return 0; // strlen(str);
 } // int DumpMD_Write()
 
 int DumpMD_WriteLine(_In_ _In_z_ const char *str)
 {
-    OutputDebugStringA(str);
-    OutputDebugStringA("\n");
+    OutputDebugStringUtf8(str);
+    OutputDebugStringUtf8("\n");
     return 0; // strlen(str);
 } // int DumpMD_Write()
 
@@ -772,7 +772,7 @@ int DumpMD_VWriteMarker(_In_ _In_z_ const char *str, va_list marker)
         va_end(markerCopy);
         i *= 2;
     }
-    OutputDebugStringA((LPCSTR)m_output.Ptr());
+    OutputDebugStringUtf8((LPCSTR)m_output.Ptr());
     return count;
 } // int DumpMD_VWriteMarker()
 

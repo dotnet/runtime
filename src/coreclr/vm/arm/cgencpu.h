@@ -9,6 +9,7 @@
 #define __cgencpu_h__
 
 #include "utilcode.h"
+#include <minipal/instructioncache.h>
 
 // preferred alignment for data
 #define DATA_ALIGNMENT 4
@@ -766,9 +767,9 @@ struct HijackArgs
 // Currently ClrFlushInstructionCache has no effect on X86
 //
 
-inline BOOL ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode, bool hasCodeExecutedBefore = false)
+inline void ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode, bool hasCodeExecutedBefore = false)
 {
-    return FlushInstructionCache(GetCurrentProcess(), pCodeAddr, sizeOfCode);
+    minipal_flush_instruction_cache(pCodeAddr, sizeOfCode);
 }
 
 //

@@ -1,23 +1,355 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/***
-*input.c - C formatted input, used by scanf, etc.
-*
-*Purpose:
-*       defines _input() to do formatted input; called from scanf(),
-*       etc. functions.
-*
-*Note:
-*       this file is included in safecrt.lib build directly, plese refer
-*       to safecrt_[w]input_s.c
-*******************************************************************************/
+// Unix implementations of the Microsoft CRT secure functions that shared CoreCLR code uses
+// (sprintf_s, _snprintf_s, vsprintf_s, _vsnprintf_s, sscanf_s, memcpy_s, memmove_s).
+// Windows gets these from its CRT. The behavior, including argument validation and the
+// debug-only fill of unused buffer space, matches the CRT.
 
-/* temporary work-around for compiler without 64-bit support */
+#include <assert.h>
+#include <ctype.h>
+#include <errno.h>
+#include <limits.h>
+#include <locale.h>
+#include <stdarg.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-#ifndef _INTEGRAL_MAX_BITS
-#define _INTEGRAL_MAX_BITS  64
-#endif  /* _INTEGRAL_MAX_BITS */
+#include <minipal/utils.h>
+
+#include "dn-safecrt.h"
+
+#define SAFECRT_EXPORT __attribute__ ((visibility ("default")))
+
+#ifndef _TRUNCATE
+#define _TRUNCATE ((size_t)-1)
+#endif
+
+// In debug builds the CRT fills (at most 8 elements of) the unused part of a destination buffer
+// with 0xFD, to catch reads past the written string.
+template <typename T>
+static void FillString(T* string, size_t size, size_t offset)
+{
+#ifdef _DEBUG
+    if (size != (size_t)-1 && size != INT_MAX && offset < size)
+    {
+        size_t count = (size - offset) < 8 ? (size - offset) : 8;
+        memset(string + offset, 0xFD, count * sizeof(T));
+    }
+#else
+    (void)string; (void)size; (void)offset;
+#endif
+}
+
+#if defined(__OpenBSD__)
+// OpenBSD's libc doesn't support the legacy %C/%S wide specifiers (glibc and the
+// other BSDs do). Rewrite them to %lc/%ls. Returns a malloc'd copy, or NULL on
+// failure (callers fall back to the original format).
+static char *TranslateWideFormatForOpenBSD(const char *format)
+{
+    size_t length = strlen(format);
+    // Each rewrite adds one 'l', so doubling is always enough.
+    char *translated = (char *)malloc(length * 2 + 1);
+    if (translated == NULL)
+    {
+        return NULL;
+    }
+
+    const char *in = format;
+    char *out = translated;
+    while (*in != '\0')
+    {
+        if (*in != '%')
+        {
+            *out++ = *in++;
+            continue;
+        }
+
+        *out++ = *in++;
+        if (*in == '%')
+        {
+            *out++ = *in++; // literal "%%"
+            continue;
+        }
+
+        // Skip flags, width, precision and length modifiers.
+        while (*in != '\0' && strchr("-+ #0123456789.*hlLwIqjzt", *in) != NULL)
+        {
+            *out++ = *in++;
+        }
+
+        if (*in == 'C')
+        {
+            *out++ = 'l';
+            *out++ = 'c';
+            in++;
+        }
+        else if (*in == 'S')
+        {
+            *out++ = 'l';
+            *out++ = 's';
+            in++;
+        }
+        else if (*in != '\0')
+        {
+            *out++ = *in++;
+        }
+    }
+    *out = '\0';
+
+    return translated;
+}
+
+static int safecrt_vsnprintf(char *string, size_t count, const char *format, va_list ap)
+{
+    char *translated = TranslateWideFormatForOpenBSD(format);
+    int retvalue = vsnprintf(string, count, translated != NULL ? translated : format, ap);
+    free(translated);
+    return retvalue;
+}
+
+#define SAFECRT_VSNPRINTF safecrt_vsnprintf
+#else // !defined(__OpenBSD__)
+#define SAFECRT_VSNPRINTF vsnprintf
+#endif // defined(__OpenBSD__)
+
+SAFECRT_EXPORT int vsprintf_s(char *string, size_t sizeInBytes, const char *format, va_list ap)
+{
+    if (format == NULL || string == NULL || sizeInBytes == 0)
+    {
+        errno = EINVAL;
+        return -1;
+    }
+
+    int retvalue = SAFECRT_VSNPRINTF(string, sizeInBytes, format, ap);
+    if (retvalue < 0)
+    {
+        string[0] = '\0';
+        FillString(string, sizeInBytes, 1);
+    }
+
+    if (retvalue > (int)sizeInBytes)
+    {
+        errno = ERANGE;
+        return -1;
+    }
+
+    if (retvalue >= 0)
+    {
+        FillString(string, sizeInBytes, retvalue + 1);
+    }
+
+    return retvalue;
+}
+
+SAFECRT_EXPORT int _vsnprintf_s(char *string, size_t sizeInBytes, size_t count, const char *format, va_list ap)
+{
+    if (format == NULL)
+    {
+        errno = EINVAL;
+        return -1;
+    }
+
+    if (count == 0 && string == NULL && sizeInBytes == 0)
+    {
+        // This case is allowed; nothing to do.
+        return 0;
+    }
+
+    if (string == NULL || sizeInBytes == 0)
+    {
+        errno = EINVAL;
+        return -1;
+    }
+
+    int retvalue;
+    int save_errno = errno;
+    if (sizeInBytes > count)
+    {
+        retvalue = SAFECRT_VSNPRINTF(string, count + 1, format, ap);
+        if (retvalue > (int)(count + 1))
+        {
+            // The string has been truncated.
+            FillString(string, sizeInBytes, count + 1);
+            if (errno == ERANGE)
+            {
+                errno = save_errno;
+            }
+            return -1;
+        }
+    }
+    else
+    {
+        retvalue = SAFECRT_VSNPRINTF(string, sizeInBytes, format, ap);
+        string[sizeInBytes - 1] = '\0';
+        // Truncation is allowed only when count == _TRUNCATE.
+        if (retvalue >= (int)sizeInBytes && count == _TRUNCATE)
+        {
+            if (errno == ERANGE)
+            {
+                errno = save_errno;
+            }
+            return -1;
+        }
+    }
+
+    if (retvalue < 0)
+    {
+        string[0] = '\0';
+        FillString(string, sizeInBytes, 1);
+        return -1;
+    }
+
+    FillString(string, sizeInBytes, retvalue + 1);
+    return retvalue;
+}
+
+SAFECRT_EXPORT int sprintf_s(char *string, size_t sizeInBytes, const char *format, ...)
+{
+    va_list arglist;
+    va_start(arglist, format);
+    int ret = vsprintf_s(string, sizeInBytes, format, arglist);
+    va_end(arglist);
+    return ret;
+}
+
+SAFECRT_EXPORT int _snprintf_s(char *string, size_t sizeInBytes, size_t count, const char *format, ...)
+{
+    va_list arglist;
+    va_start(arglist, format);
+    int ret = _vsnprintf_s(string, sizeInBytes, count, format, arglist);
+    va_end(arglist);
+    return ret;
+}
+
+SAFECRT_EXPORT errno_t memcpy_s(void *dst, size_t sizeInBytes, const void *src, size_t count)
+{
+    if (count == 0)
+    {
+        return 0;
+    }
+
+    if (dst == NULL)
+    {
+        errno = EINVAL;
+        return EINVAL;
+    }
+
+    if (src == NULL || sizeInBytes < count)
+    {
+        // Zero the destination buffer.
+        memset(dst, 0, sizeInBytes);
+        errno = (src == NULL) ? EINVAL : ERANGE;
+        return errno;
+    }
+
+    uintptr_t x = (uintptr_t)dst, y = (uintptr_t)src;
+    assert((x + count <= y) || (y + count <= x));
+    memcpy(dst, src, count);
+    return 0;
+}
+
+errno_t memmove_s(void *dst, size_t sizeInBytes, const void *src, size_t count)
+{
+    if (count == 0)
+    {
+        return 0;
+    }
+
+    if (dst == NULL || src == NULL)
+    {
+        errno = EINVAL;
+        return EINVAL;
+    }
+
+    if (sizeInBytes < count)
+    {
+        errno = ERANGE;
+        return ERANGE;
+    }
+
+    memmove(dst, src, count);
+    return 0;
+}
+
+//
+// sscanf_s: the narrow-character, secure build of the CRT's formatted input engine.
+//
+
+#ifdef EOF
+#undef EOF
+#endif
+#define EOF -1
+
+typedef char            _TCHAR;
+typedef unsigned char   _TUCHAR;
+#define _T(x)           x
+#define _TEOF           EOF
+
+// A string acting as the engine's input stream.
+typedef struct
+{
+    char* _ptr;
+    int _cnt;
+    char* _base;
+} miniFILE;
+
+#define _RESET_STRING(_String, _Size) FillString((_String), (_Size), 1);
+#define _FILL_STRING(_String, _Size, _Offset) FillString((_String), (_Size), (_Offset));
+
+static int _getc_nolock( miniFILE* inStream )
+{
+    int returnValue = EOF;
+
+    if ( ( inStream->_cnt ) >= ( int )( sizeof( char ) ) )
+    {
+        inStream->_cnt -= sizeof( char );
+        returnValue = ( int )( *( inStream->_ptr ) );
+        inStream->_ptr += sizeof( char );
+    }
+
+    return returnValue;
+}
+
+static int _ungetc_nolock( char inChar, miniFILE* inStream )
+{
+    int returnValue = EOF;
+
+    if ( ( size_t )( ( inStream->_ptr ) - ( inStream->_base ) ) >= ( sizeof( char ) ) )
+    {
+        inStream->_cnt += sizeof( char );
+        inStream->_ptr -= sizeof( char );
+        return ( int )inChar;
+    }
+
+    return returnValue;
+}
+
+#define _gettc_nolock(x)        _getc_nolock(x)
+#define _ungettc_nolock(x,y)    _ungetc_nolock(x,y)
+
+static void _safecrt_fassign(int flag, void* argument, char* number )
+{
+    if ( flag != 0 )    // double
+    {
+        double dblValue = strtod(number, NULL);
+        *( ( double* )argument ) = dblValue;
+    }
+    else                // float
+    {
+        float fltValue = strtof(number, NULL);
+        *( ( float* )argument ) = fltValue;
+    }
+}
+
+static int _minimal_chartowchar( char16_t* outWChar, const char* inChar )
+{
+    *outWChar = ( char16_t )( ( unsigned short )( ( unsigned char )( *inChar ) ) );
+    return 1;
+}
 
 #ifndef FALSE
 #define FALSE 0
@@ -41,23 +373,17 @@
 
 #define _FASSIGN(flag, argument, number, dec_point, locale) _safecrt_fassign((flag), (argument), (number))
 
-#if defined (UNICODE)
-#define ALLOC_TABLE 1
-#else  /* defined (UNICODE) */
-#define ALLOC_TABLE 0
-#endif  /* defined (UNICODE) */
-
 #define LEFT_BRACKET    ('[' | ('a' - 'A')) /* 'lowercase' version */
 
-static int __cdecl _hextodec(_TCHAR);
+static int _hextodec(_TCHAR);
 
 #define INC()           (++charcount, _inc(stream))
 #define UN_INC(chr)     (--charcount, _un_inc(chr, stream))
 #define EAT_WHITE()     _whiteout(&charcount, stream)
 
-static int __cdecl _inc(miniFILE *);
-static void __cdecl _un_inc(int, miniFILE *);
-static int __cdecl _whiteout(int *, miniFILE *);
+static int _inc(miniFILE *);
+static void _un_inc(int, miniFILE *);
+static int _whiteout(int *, miniFILE *);
 
 #undef _ISDIGIT
 #undef _ISXDIGIT
@@ -66,10 +392,6 @@ static int __cdecl _whiteout(int *, miniFILE *);
 #define _ISXDIGIT(chr)  isxdigit((unsigned char)chr)
 
 #define MUL10(x)        ( (((x)<<2) + (x))<<1 )
-
-
-#define LONGLONG_IS_INT64 1     /* 1 means long long is same as int64
-                                   0 means long long is same as long */
 
 /***
 *  int __check_float_string(size_t,size_t *, _TCHAR**, _TCHAR*, int*)
@@ -89,13 +411,12 @@ static int __check_float_string(size_t nFloatStrUsed,
                                 int *pmalloc_FloatStrFlag)
 {
     void *tmpPointer;
-    _ASSERTE(nFloatStrUsed<=(*pnFloatStrSz));
     if (nFloatStrUsed==(*pnFloatStrSz))
     {
         size_t newSize;
 
         // Will (*pnFloatStrSz) * 2 * sizeof(_TCHAR) overflow?
-        if ( *pnFloatStrSz > (SIZE_T_MAX / 2 / sizeof(_TCHAR)))
+        if ( *pnFloatStrSz > (SIZE_MAX / 2 / sizeof(_TCHAR)))
         {
             return FALSE;
         }
@@ -129,13 +450,6 @@ static int __check_float_string(size_t nFloatStrUsed,
 
 #define ASCII       32           /* # of bytes needed to hold 256 bits */
 
-#define SCAN_SHORT     0         /* also for FLOAT */
-#define SCAN_LONG      1         /* also for DOUBLE */
-#define SCAN_L_DOUBLE  2         /* only for LONG DOUBLE */
-
-#define SCAN_NEAR    0
-#define SCAN_FAR     1
-
 #define TABLESIZE    ASCII
 
 /***
@@ -168,8 +482,7 @@ static int __check_float_string(size_t nFloatStrUsed,
 
 #define _INTRN_LOCALE_CONV( x ) localeconv()
 
-#ifndef _UNICODE
-int __cdecl __tinput_s (miniFILE* stream, const _TUCHAR* format, va_list arglist)
+static int __tinput_s (miniFILE* stream, const _TUCHAR* format, va_list arglist)
 {
     _TCHAR floatstring[_CVTBUFSIZE + 1];
     _TCHAR *pFloatStr=floatstring;
@@ -178,17 +491,10 @@ int __cdecl __tinput_s (miniFILE* stream, const _TUCHAR* format, va_list arglist
     int malloc_FloatStrFlag=0;
 
     unsigned long number;               /* temp hold-value                   */
-#if ALLOC_TABLE
-    char *table = NULL;                 /* which chars allowed for %[]       */
-    int malloc_flag = 0;                /* is "table" allocated on the heap? */
-#else  /* ALLOC_TABLE */
     char AsciiTable[TABLESIZE];
     char *table = AsciiTable;
-#endif  /* ALLOC_TABLE */
 
-#if _INTEGRAL_MAX_BITS >= 64
     uint64_t num64 = 0LL;             /* temp for 64-bit integers          */
-#endif  /* _INTEGRAL_MAX_BITS >= 64    */
     void *pointer=NULL;                 /* points to user data receptacle    */
     void *start;                        /* indicate non-empty string         */
 
@@ -202,20 +508,16 @@ int __cdecl __tinput_s (miniFILE* stream, const _TUCHAR* format, va_list arglist
     int started;                        /* indicate good number              */
     int width;                          /* width of field                    */
     int widthset;                       /* user has specified width          */
-#ifdef _SECURE_SCANF
     size_t array_width = 0;
     size_t original_array_width = 0;
     int enomem = 0;
     int format_error = FALSE;
-#endif  /* _SECURE_SCANF */
 
 /* Neither coerceshort nor farone are need for the 386 */
 
     char done_flag;                     /* general purpose loop monitor      */
     char longone;                       /* 0 = SHORT, 1 = LONG, 2 = L_DOUBLE */
-#if _INTEGRAL_MAX_BITS >= 64
     int integer64;                      /* 1 for 64-bit integer, 0 otherwise */
-#endif  /* _INTEGRAL_MAX_BITS >= 64    */
     signed char widechar;               /* -1 = char, 0 = ????, 1 = char16_t  */
     char reject;                        /* %[^ABC] instead of %[ABC]         */
     char negative;                      /* flag for '-' detected             */
@@ -232,8 +534,11 @@ int __cdecl __tinput_s (miniFILE* stream, const _TUCHAR* format, va_list arglist
     _TUCHAR prevchar;
     _TCHAR tch;
 
-    _VALIDATE_RETURN( (format != NULL), EINVAL, EOF);
-    _VALIDATE_RETURN( (stream != NULL), EINVAL, EOF);
+    if (format == NULL || stream == NULL)
+    {
+        errno = EINVAL;
+        return EOF;
+    }
 
     /*
     count = # fields assigned
@@ -266,18 +571,14 @@ int __cdecl __tinput_s (miniFILE* stream, const _TUCHAR* format, va_list arglist
             number = 0;
             prevchar = 0;
             width = widthset = started = 0;
-#ifdef _SECURE_SCANF
             original_array_width = array_width = 0;
             enomem = 0;
-#endif  /* _SECURE_SCANF */
             fl_wchar_arg = done_flag = suppress = negative = reject = 0;
             widechar = 0;
 
             longone = 1;
 
-#if _INTEGRAL_MAX_BITS >= 64
             integer64 = 0;
-#endif  /* _INTEGRAL_MAX_BITS >= 64    */
 
             while (!done_flag) {
 
@@ -296,7 +597,6 @@ int __cdecl __tinput_s (miniFILE* stream, const _TUCHAR* format, va_list arglist
                             --widechar;         /* set widechar = -1 */
                             break;
 
-#if _INTEGRAL_MAX_BITS >= 64
                         case _T('z'):
                         case _T('I'):
                             if ( (*(format + 1) == _T('6')) &&
@@ -332,7 +632,6 @@ int __cdecl __tinput_s (miniFILE* stream, const _TUCHAR* format, va_list arglist
                                     num64 = 0;
                             }
                             goto DEFAULT_LABEL;
-#endif  /* _INTEGRAL_MAX_BITS >= 64    */
 
                         case _T('L') :
                         /*  ++longone;  */
@@ -348,14 +647,9 @@ int __cdecl __tinput_s (miniFILE* stream, const _TUCHAR* format, va_list arglist
                             if (*(format + 1) == _T('l'))
                             {
                                 ++format;
-#ifdef LONGLONG_IS_INT64
                                 ++integer64;
                                 num64 = 0;
                                 break;
-#else  /* LONGLONG_IS_INT64 */
-                                ++longone;
-                                /* NOBREAK */
-#endif  /* LONGLONG_IS_INT64 */
                             }
                             else
                             {
@@ -414,7 +708,6 @@ DEFAULT_LABEL:
             }
 
             if (!widthset || width) {
-#ifdef _SECURE_SCANF
                 if(!suppress && (comchr == _T('c') || comchr == _T('s') || comchr == LEFT_BRACKET)) {
 
                     va_copy(arglist, arglistsave);
@@ -442,7 +735,6 @@ DEFAULT_LABEL:
                         goto error_return;
                     }
                 }
-#endif  /* _SECURE_SCANF */
                 switch(comchr) {
 
                     case _T('c'):
@@ -472,14 +764,6 @@ DEFAULT_LABEL:
                         }
 
                         /* Allocate "table" on first %[] spec */
-#if ALLOC_TABLE
-                        if (table == NULL) {
-                            table = (char*)_malloc_crt(TABLESIZE);
-                            if ( table == NULL)
-                                goto error_return;
-                            malloc_flag = 1;
-                        }
-#endif  /* ALLOC_TABLE */
                         memset(table, 0, TABLESIZE);
 
                         if (LEFT_BRACKET == comchr)
@@ -542,12 +826,10 @@ scanit:
                          */
                         UN_INC(ch);
 
-#ifdef _SECURE_SCANF
                         /* One element is needed for '\0' for %s & %[ */
                         if(comchr != _T('c')) {
                             --array_width;
                         }
-#endif  /* _SECURE_SCANF */
                         while ( !widthset || width-- ) {
                             ch = INC();
                             if (
@@ -566,32 +848,26 @@ scanit:
                                 )
                             {
                                 if (!suppress) {
-#ifdef _SECURE_SCANF
                                     if(!array_width) {
                                         /* We have exhausted the user's buffer */
 
                                         enomem = 1;
                                         break;
                                     }
-#endif  /* _SECURE_SCANF */
                                     if (fl_wchar_arg) {
-                                        wctemp = W('?');
+                                        wctemp = u'?';
                                         char temp[2];
                                         temp[0] = (char) ch;
                                         _MBTOWC(&wctemp, temp, MB_CUR_MAX);
                                         *(char16_t UNALIGNED *)pointer = wctemp;
                                         /* just copy W('?') if mbtowc fails, errno is set by mbtowc */
                                         pointer = (char16_t *)pointer + 1;
-#ifdef _SECURE_SCANF
                                         --array_width;
-#endif  /* _SECURE_SCANF */
                                     } else
                                     {
                                     *(char *)pointer = (char)ch;
                                     pointer = (char *)pointer + 1;
-#ifdef _SECURE_SCANF
                                     --array_width;
-#endif  /* _SECURE_SCANF */
                                     }
                                 } /* suppress */
                                 else {
@@ -609,7 +885,6 @@ scanit:
                            assignment is not suppressed, null-terminate
                            output string if comchr != c */
 
-#ifdef _SECURE_SCANF
                         if(enomem) {
                             errno = ENOMEM;
                             /* In case of error, blank out the input buffer */
@@ -624,7 +899,6 @@ scanit:
 
                             goto error_return;
                         }
-#endif  /* _SECURE_SCANF */
 
                         if (start != pointer) {
                             if (!suppress) {
@@ -634,18 +908,14 @@ scanit:
                                     if (fl_wchar_arg)
                                     {
                                         *(char16_t UNALIGNED *)pointer = L'\0';
-#ifdef _SECURE_SCANF
                                         _FILL_STRING(((char16_t UNALIGNED *)start), original_array_width,
                                             ((char16_t UNALIGNED *)pointer - (char16_t UNALIGNED *)start + 1))
-#endif  /* _SECURE_SCANF */
                                     }
                                     else
                                     {
                                         *(char *)pointer = '\0';
-#ifdef _SECURE_SCANF
                                         _FILL_STRING(((char *)start), original_array_width,
                                             ((char *)pointer - (char *)start + 1))
-#endif  /* _SECURE_SCANF */
                                     }
                                 }
                             }
@@ -736,7 +1006,6 @@ d_incwidth:
                         }
 
 getnum:
-#if _INTEGRAL_MAX_BITS >= 64
                         if ( integer64 ) {
 
                             while (!done_flag) {
@@ -781,7 +1050,6 @@ getnum:
                                 num64 = (uint64_t )(-(int64_t)num64);
                         }
                         else {
-#endif  /* _INTEGRAL_MAX_BITS >= 64    */
                             while (!done_flag) {
 
                                 if (_T('x') == comchr || _T('p') == comchr)
@@ -822,9 +1090,7 @@ getnum:
 
                             if (negative)
                                 number = (unsigned long)(-(long)number);
-#if _INTEGRAL_MAX_BITS >= 64
                         }
-#endif  /* _INTEGRAL_MAX_BITS >= 64    */
                         if (_T('F')==comchr) /* expected ':' in long pointer */
                             started = 0;
 
@@ -833,11 +1099,9 @@ getnum:
 
                                 ++count;
 assign_num:
-#if _INTEGRAL_MAX_BITS >= 64
                                 if ( integer64 )
                                     *(int64_t UNALIGNED *)pointer = ( uint64_t )num64;
                                 else
-#endif  /* _INTEGRAL_MAX_BITS >= 64    */
                                 if (longone)
                                     *(int UNALIGNED *)pointer = (unsigned int)number;
                                 else
@@ -984,15 +1248,12 @@ f_incwidth2:
 
                         break;
 
-
                     default:    /* either found '%' or something else */
 
                         if ((int)*format != (int)ch) {
                             UN_INC(ch);
-#ifdef _SECURE_SCANF
                             /* error_return ASSERT's if format_error is true */
                                 format_error = TRUE;
-#endif  /* _SECURE_SCANF */
                             goto error_return;
                             }
                         else
@@ -1031,12 +1292,6 @@ f_incwidth2:
     }  /* WHILE (*format) */
 
 error_return:
-#if ALLOC_TABLE
-    if (malloc_flag == 1)
-    {
-        _free_crt(table);
-    }
-#endif  /* ALLOC_TABLE */
     if (malloc_FloatStrFlag == 1)
     {
         _free_crt(pFloatStr);
@@ -1046,38 +1301,36 @@ error_return:
         /* If any fields were matched or assigned, return count */
         return ( (count || match) ? count : EOF);
     else
-#ifdef _SECURE_SCANF
         if(format_error == TRUE) {
-            _VALIDATE_RETURN( ("Invalid Input Format" && 0), EINVAL, count);
+            errno = EINVAL;
+            return count;
         }
-#endif  /* _SECURE_SCANF */
         return count;
 
 }
-#endif // _UNICODE
 
 /* _hextodec() returns a value of 0-15 and expects a char 0-9, a-f, A-F */
 /* _inc() is the one place where we put the actual getc code. */
 /* _whiteout() returns the first non-blank character, as defined by isspace() */
 
-static int __cdecl _hextodec ( _TCHAR chr)
+static int _hextodec ( _TCHAR chr)
 {
     return _ISDIGIT(chr) ? chr : (chr & ~(_T('a') - _T('A'))) - _T('A') + 10 + _T('0');
 }
 
-static int __cdecl _inc(miniFILE* fileptr)
+static int _inc(miniFILE* fileptr)
 {
     return (_gettc_nolock(fileptr));
 }
 
-static void __cdecl _un_inc(int chr, miniFILE* fileptr)
+static void _un_inc(int chr, miniFILE* fileptr)
 {
     if (_TEOF != chr) {
         _ungettc_nolock((char)chr,fileptr);
     }
 }
 
-static int __cdecl _whiteout(int* counter, miniFILE* fileptr)
+static int _whiteout(int* counter, miniFILE* fileptr)
 {
     int ch;
 
@@ -1093,4 +1346,25 @@ static int __cdecl _whiteout(int* counter, miniFILE* fileptr)
     }
     while(_istspace((_TUCHAR)ch));
     return ch;
+}
+
+SAFECRT_EXPORT int sscanf_s(const char *string, const char *format, ...)
+{
+    if (string == NULL || format == NULL)
+    {
+        errno = EINVAL;
+        return EOF;
+    }
+
+    miniFILE str;
+    str._ptr = str._base = (char *)string;
+    size_t count = strlen(string);
+    // Old-style functions allow any large value to mean unbounded.
+    str._cnt = (count > INT_MAX) ? INT_MAX : (int)count;
+
+    va_list arglist;
+    va_start(arglist, format);
+    int ret = __tinput_s(&str, (const unsigned char *)format, arglist);
+    va_end(arglist);
+    return ret;
 }
