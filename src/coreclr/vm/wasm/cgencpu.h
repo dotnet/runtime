@@ -9,9 +9,13 @@
 #include "utilcode.h"
 
 // preferred alignment for data
+#ifdef TARGET_WASM64
+#define DATA_ALIGNMENT 8
+#define CODE_SIZE_ALIGN                         8
+#else
 #define DATA_ALIGNMENT 4
-
 #define CODE_SIZE_ALIGN                         4
+#endif
 #define LOG2SLOT                                LOG2_PTRSIZE
 
 #define BACK_TO_BACK_JUMP_ALLOCATE_SIZE         8   // # bytes to allocate for a back to back jump instruction

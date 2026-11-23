@@ -196,7 +196,7 @@ virtual-IP ranges bypass native thunk classification.
 | `Bucket` | `Keys` | `pointer` | Array of keys of `HashMapSlotsPerBucket` length |
 | `Bucket` | `Values` | `pointer` | Array of values of `HashMapSlotsPerBucket` length |
 | `CodeHeap` | `HeapType` | `uint8` | `uint8` discriminant identifying the concrete heap type |
-| `CodeHeapListNode` | `CLRPersonalityRoutine` | `pointer` | Address of the CLR personality routine; when non-null, this is the module base for a Windows dynamic function table |
+| `CodeHeapListNode` | `CLRPersonalityRoutine` | `pointer` | Optional; present only on 64-bit non-WebAssembly targets. When non-null, this is the module base for a Windows dynamic function table; otherwise use `MapBase` |
 | `CodeHeapListNode` | `EndAddress` | `pointer` | End address of the used portion of the code heap |
 | `CodeHeapListNode` | `HeaderMap` | `pointer` | Bit array used to find the start of methods - relative to `MapBase` |
 | `CodeHeapListNode` | `Heap` | `pointer` | Pointer to the `CodeHeap` object managed by this node |

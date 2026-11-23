@@ -519,11 +519,13 @@ PCODE Thread::VirtualUnwindCallFrame(T_CONTEXT* pContext,
 
     if (pFunctionEntry)
     {
-    #ifdef HOST_64BIT
+    #if defined(TARGET_WASMARCH)
+        UINT_PTR            EstablisherFrame;
+    #elif defined(HOST_64BIT)
         UINT64              EstablisherFrame;
-    #else  // HOST_64BIT
+    #else
         DWORD               EstablisherFrame;
-    #endif // HOST_64BIT
+    #endif
         PVOID               HandlerData;
 
 #if defined(TARGET_ARM64)

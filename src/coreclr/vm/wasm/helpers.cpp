@@ -162,7 +162,7 @@ void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
     {
         pRD->pCurrentContext->InterpreterIP = *(DWORD *)&m_pCallerReturnAddress;
         pRD->pCurrentContext->InterpreterSP = *(DWORD *)&m_pCallSiteSP;
-        pRD->pCurrentContext->InterpreterFP = *(DWORD *)&m_pCalleeSavedFP;
+        pRD->pCurrentContext->InterpreterFP = reinterpret_cast<TADDR>(m_pCalleeSavedFP);
     }
 
     SyncRegDisplayToCurrentContext(pRD);
@@ -224,16 +224,20 @@ __attribute__((naked)) void ThrowRtlRestoreContextTag()
 // value. Exported so every R2R webcil imports this same global (see libCorerun.js).
 // Single-threaded today; like __stack_pointer it becomes per-thread once wasm threads land.
 asm(".globl __async_continuation\n"
+#ifdef TARGET_64BIT
+    ".globaltype __async_continuation, i64\n"
+#else
     ".globaltype __async_continuation, i32\n"
+#endif
     "__async_continuation:\n");
 
-extern "C" __attribute__((naked)) uint32_t RuntimeAsync_LoadAsyncContinuation()
+extern "C" __attribute__((naked)) uintptr_t RuntimeAsync_LoadAsyncContinuation()
 {
     asm("global.get __async_continuation\n"
         "return\n" ::);
 }
 
-extern "C" __attribute__((naked)) void RuntimeAsync_StoreAsyncContinuation(uint32_t value)
+extern "C" __attribute__((naked)) void RuntimeAsync_StoreAsyncContinuation(uintptr_t value)
 {
     asm("local.get 0\n"
         "global.set __async_continuation\n"
@@ -289,28 +293,34 @@ VOID PALAPI RtlRestoreContext(IN PCONTEXT ContextRecord, IN PEXCEPTION_RECORD Ex
 // They set up a new stack frame for calling a function which provides the TERMINATE_R2R_STACK_WALK flag so that unwinds from the funclet terminate correctly.
 // then invoke the new funclet with SP pointing to the top of the new frame.
 // There are two versions of the function, one for funclets that need to pass a Throwable (catch/filter), and one for those that do not (finally/fault)
+#ifdef TARGET_WASM64
+#define WASM_FUNCLET_PTR "i64"
+#else
+#define WASM_FUNCLET_PTR "i32"
+#endif
 static __attribute__((naked)) UINT_PTR CallFuncletWithThrowable(UINT_PTR pFuncletToInvoke, TADDR fp, Object *pThrowable, UINT_PTR *pFuncletCallerSP)
 {
     asm ("global.get      __stack_pointer\n" // Capture original value of stack pointer
          "local.get       3\n"               // Get pFuncletCallerSP address to store the new stack pointer for the caller of the funclet
          "global.get      __stack_pointer\n" // Setup the frame chain, by allocating a new frame and adjusting the stack pointer to point to it. The frame size adjusts in units of 16 bytes.
-         "i32.const       16\n"
-         "i32.sub \n"
-         "i32.store       0\n"               // Store the updated stack pointer into pFuncletCallerSP
+         WASM_FUNCLET_PTR ".const 16\n"
+         WASM_FUNCLET_PTR ".sub\n"
+         WASM_FUNCLET_PTR ".store 0\n"      // Store the updated stack pointer into pFuncletCallerSP
          "local.get       3\n"               // Get pFuncletCallerSP address to load the value we just stored
-         "i32.load        0\n"               // Load the stack pointer for the caller of the funclet and store it in the new frame
+         WASM_FUNCLET_PTR ".load 0\n"       // Load the stack pointer for the caller of the funclet and store it in the new frame
          "local.tee       3\n"               // Tee the stack pointer into a local so that we can use it again.
 
          "global.set      __stack_pointer\n" // Update the global stack pointer
          "local.get       3\n"               // Get the stack pointer
-         "i32.const       " WASM_STRINGIFY(TERMINATE_R2R_STACK_WALK) "\n"
-         "i32.store       0\n"               // And save a terminator to the stack frame.
+         WASM_FUNCLET_PTR ".const " WASM_STRINGIFY(TERMINATE_R2R_STACK_WALK) "\n"
+         WASM_FUNCLET_PTR ".store 0\n"      // And save a terminator to the stack frame.
 
          "local.get       3\n"               // Get the stack pointer
          "local.get       1\n"               // Get the frame pointer argument for the original function
          "local.get       2\n"               // Get the exception object for the funclet
          "local.get       0\n"               // Get the funclet address to call
-         "call_indirect    __indirect_function_table, (i32, i32, i32) -> (i32)\n"
+         "call_indirect    __indirect_function_table, (" WASM_FUNCLET_PTR ", " WASM_FUNCLET_PTR ", "
+             WASM_FUNCLET_PTR ") -> (" WASM_FUNCLET_PTR ")\n"
          "local.set       0\n"               // Capture the return into a local so that we can return it after restoring the original stack pointer
          "global.set      __stack_pointer\n" // Restore the original stack pointer before returning to the caller of the funclet
          "local.get       0\n"               // Return the value from the funclet call
@@ -323,27 +333,28 @@ static __attribute__((naked)) UINT_PTR CallFuncletWithoutThrowable(UINT_PTR pFun
     asm ("global.get      __stack_pointer\n" // Capture original value of stack pointer
          "local.get       2\n"               // Get pFuncletCallerSP address to store the new stack pointer for the caller of the funclet
          "global.get      __stack_pointer\n" // Setup the frame chain, by allocating a new frame and adjusting the stack pointer to point to it. The frame size adjusts in units of 16 bytes.
-         "i32.const       16\n"
-         "i32.sub \n"
-         "i32.store       0\n"               // Store the updated stack pointer into pFuncletCallerSP
+         WASM_FUNCLET_PTR ".const 16\n"
+         WASM_FUNCLET_PTR ".sub\n"
+         WASM_FUNCLET_PTR ".store 0\n"      // Store the updated stack pointer into pFuncletCallerSP
          "local.get       2\n"               // Get pFuncletCallerSP address to load the value we just stored
-         "i32.load        0\n"               // Load the stack pointer for the caller of the funclet and store it in the new frame
+         WASM_FUNCLET_PTR ".load 0\n"       // Load the stack pointer for the caller of the funclet and store it in the new frame
          "local.tee       2\n"               // Tee the stack pointer into a local so that we can use it again.
 
          "global.set      __stack_pointer\n" // Update the global stack pointer
          "local.get       2\n"               // Get the stack pointer
-         "i32.const       " WASM_STRINGIFY(TERMINATE_R2R_STACK_WALK) "\n"
-         "i32.store       0\n"               // And save a terminator to the stack frame.
+         WASM_FUNCLET_PTR ".const " WASM_STRINGIFY(TERMINATE_R2R_STACK_WALK) "\n"
+         WASM_FUNCLET_PTR ".store 0\n"      // And save a terminator to the stack frame.
 
          "local.get       2\n"               // Get the stack pointer
          "local.get       1\n"               // Get the frame pointer argument for the original function
          "local.get       0\n"               // Get the funclet address to call
-         "call_indirect    __indirect_function_table, (i32, i32) -> ()\n"
+         "call_indirect    __indirect_function_table, (" WASM_FUNCLET_PTR ", " WASM_FUNCLET_PTR ") -> ()\n"
          "global.set      __stack_pointer\n" // Restore the original stack pointer before returning to the caller of the funclet
-         "i32.const       0\n"
+         WASM_FUNCLET_PTR ".const 0\n"
          "return\n"
           ::);
 }
+#undef WASM_FUNCLET_PTR
 
 EXTERN_C UINT_PTR CallEHFunclet(Object *pThrowable, UINT_PTR pFuncletToInvoke, CONTEXT *pContext, UINT_PTR *pFuncletCallerSP)
 {
@@ -508,7 +519,11 @@ EXTERN_C FCDECL0(void, RhpGcPoll);
 EXTERN_C __attribute__((naked)) void F_CALL_CONV RhpGcPoll(uintptr_t callersStackPointer, PCODE portableEntryPointContext)
 {
     asm(
+#ifdef TARGET_WASM64
+        "i64.const 0\n"
+#else
         "i32.const 0\n"
+#endif
         "i32.load %[g_TrapReturningThreads]\n"
         "if\n"
         "  global.get __stack_pointer\n"
@@ -709,11 +724,13 @@ RtlpGetFunctionEndAddress (
     return logicalVirtualIPLength + RUNTIME_FUNCTION__BeginAddress(FunctionEntry);
 }
 
+#ifndef HOST_64BIT
 EXTERN_C Thread * JIT_InitPInvokeFrame(InlinedCallFrame *pFrame)
 {
     PORTABILITY_ASSERT("JIT_InitPInvokeFrame is not implemented on wasm");
     return nullptr;
 }
+#endif
 
 void _DacGlobals::Initialize()
 {
@@ -913,12 +930,13 @@ namespace
             case ELEMENT_TYPE_I2: case ELEMENT_TYPE_U2:
             case ELEMENT_TYPE_I1: case ELEMENT_TYPE_U1:
             case ELEMENT_TYPE_BOOLEAN: case ELEMENT_TYPE_CHAR:
+                return { ConvertType::ToI32, 0 };
             case ELEMENT_TYPE_I: case ELEMENT_TYPE_U:
             case ELEMENT_TYPE_PTR: case ELEMENT_TYPE_BYREF:
             case ELEMENT_TYPE_FNPTR:
-            case ELEMENT_TYPE_CLASS: case ELEMENT_TYPE_STRING:
+            case ELEMENT_TYPE_OBJECT: case ELEMENT_TYPE_CLASS: case ELEMENT_TYPE_STRING:
             case ELEMENT_TYPE_ARRAY: case ELEMENT_TYPE_SZARRAY:
-                return { ConvertType::ToI32, 0 };
+                return { ConvertType::ToPointer, 0 };
             case ELEMENT_TYPE_I8: case ELEMENT_TYPE_U8:
                 return { ConvertType::ToI64, 0 };
             case ELEMENT_TYPE_R4:
@@ -989,34 +1007,8 @@ namespace
 
     static ConvertResult ConvertibleTo(CorElementType argType, MetaSig& sig, bool isReturn)
     {
-        // See https://github.com/WebAssembly/tool-conventions/blob/main/BasicCABI.md
         switch (argType)
         {
-            case ELEMENT_TYPE_BOOLEAN:
-            case ELEMENT_TYPE_CHAR:
-            case ELEMENT_TYPE_I1:
-            case ELEMENT_TYPE_U1:
-            case ELEMENT_TYPE_I2:
-            case ELEMENT_TYPE_U2:
-            case ELEMENT_TYPE_I4:
-            case ELEMENT_TYPE_U4:
-            case ELEMENT_TYPE_STRING:
-            case ELEMENT_TYPE_PTR:
-            case ELEMENT_TYPE_BYREF:
-            case ELEMENT_TYPE_CLASS:
-            case ELEMENT_TYPE_ARRAY:
-            case ELEMENT_TYPE_I:
-            case ELEMENT_TYPE_U:
-            case ELEMENT_TYPE_FNPTR:
-            case ELEMENT_TYPE_SZARRAY:
-                return { ConvertType::ToI32, 0 };
-            case ELEMENT_TYPE_I8:
-            case ELEMENT_TYPE_U8:
-                return { ConvertType::ToI64, 0 };
-            case ELEMENT_TYPE_R4:
-                return { ConvertType::ToF32, 0 };
-            case ELEMENT_TYPE_R8:
-                return { ConvertType::ToF64, 0 };
             case ELEMENT_TYPE_TYPEDBYREF:
             case ELEMENT_TYPE_VALUETYPE:
             {
@@ -1026,7 +1018,7 @@ namespace
                 return LowerTypeHandle(vt);
             }
             default:
-                return { ConvertType::NotConvertible, 0 };
+                return LowerPrimitiveType(argType);
         }
     }
 
@@ -1202,13 +1194,13 @@ namespace
         }
 
         if (wasmCallingConventionOnly)
-            pos += AppendWasmTypeCode(ConvertType::ToI32, keyBuffer, pos, maxSize);
+            pos += AppendWasmTypeCode(ConvertType::ToPointer, keyBuffer, pos, maxSize);
 
         if (sig.HasThis() && !stringConstructorFactory)
         {
             if (wasmCallingConventionOnly)
             {
-                pos += AppendWasmTypeCode(ConvertType::ToI32, keyBuffer, pos, maxSize);
+                pos += AppendWasmTypeCode(ConvertType::ToPointer, keyBuffer, pos, maxSize);
             }
             else
             {
@@ -1219,18 +1211,18 @@ namespace
         }
 
         if (hasReturnBuffer)
-            pos += AppendWasmTypeCode(ConvertType::ToI32, keyBuffer, pos, maxSize);
+            pos += AppendWasmTypeCode(ConvertType::ToPointer, keyBuffer, pos, maxSize);
 
         if (sig.HasGenericContextArg() && !suppressGenericContext)
         {
-            pos += AppendWasmTypeCode(ConvertType::ToI32, keyBuffer, pos, maxSize);
+            pos += AppendWasmTypeCode(ConvertType::ToPointer, keyBuffer, pos, maxSize);
         }
 
         if (sig.HasAsyncContinuation())
         {
             if (wasmCallingConventionOnly)
             {
-                pos += AppendWasmTypeCode(ConvertType::ToI32, keyBuffer, pos, maxSize);
+                pos += AppendWasmTypeCode(ConvertType::ToPointer, keyBuffer, pos, maxSize);
             }
             else
             {
@@ -1254,7 +1246,7 @@ namespace
                     case ConvertType::ToEmpty:
                         break;
                     case ConvertType::ToStruct:
-                        pos += AppendWasmTypeCode(ConvertType::ToI32, keyBuffer, pos, maxSize);
+                        pos += AppendWasmTypeCode(ConvertType::ToPointer, keyBuffer, pos, maxSize);
                         break;
                     case ConvertType::ToSlotsI64:
                     case ConvertType::ToSlotsV128:
@@ -1284,7 +1276,7 @@ namespace
         {
             if (wasmCallingConventionOnly)
             {
-                pos += AppendWasmTypeCode(ConvertType::ToI32, keyBuffer, pos, maxSize);
+                pos += AppendWasmTypeCode(ConvertType::ToPointer, keyBuffer, pos, maxSize);
             }
             else
             {
@@ -1341,7 +1333,6 @@ namespace
     static InterpreterCalliCookie ComputeCalliSigThunk(MetaSig& sig, bool stringConstructorFactory = false)
     {
         STANDARD_VM_CONTRACT;
-        _ASSERTE(sizeof(int32_t) == sizeof(void*));
 
         BYTE callConv = sig.GetCallingConvention();
         switch (callConv)
@@ -1396,7 +1387,6 @@ namespace
         }
         CONTRACTL_END;
 
-        _ASSERTE(sizeof(int32_t) == sizeof(void*));
 
         BYTE callConv = sig.GetCallingConvention();
         switch (callConv)
@@ -1932,12 +1922,12 @@ TADDR GetWasmFramePointerFromStackPointer(TADDR sp, PCODE controlPC)
 PEXCEPTION_ROUTINE
 RtlVirtualUnwind (
     _In_ DWORD HandlerType,
-    _In_ DWORD ImageBase,
-    _In_ DWORD ControlPc,
+    _In_ UINT_PTR ImageBase,
+    _In_ UINT_PTR ControlPc,
     _In_ PRUNTIME_FUNCTION FunctionEntry,
     __inout PT_CONTEXT ContextRecord,
     _Out_ PVOID *HandlerData,
-    _Out_ PDWORD EstablisherFrame,
+    _Out_ UINT_PTR *EstablisherFrame,
     __inout_opt PT_KNONVOLATILE_CONTEXT_POINTERS ContextPointers
     )
 {

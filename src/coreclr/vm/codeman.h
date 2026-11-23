@@ -570,7 +570,7 @@ struct HeapList
     size_t              maxCodeHeapSize;// Size of the entire contiguous block of memory
 
     PTR_LoaderAllocator pLoaderAllocator; // LoaderAllocator of HeapList
-#if defined(TARGET_64BIT)
+#if defined(TARGET_64BIT) && !defined(TARGET_WASMARCH)
     BYTE*               CLRPersonalityRoutine;  // jump thunk to personality routine, NULL if there is no personality routine (e.g. interpreter code heap)
 #endif
 
@@ -582,7 +582,7 @@ struct HeapList
 
     TADDR GetModuleBase()
     {
-#if defined(TARGET_64BIT)
+#if defined(TARGET_64BIT) && !defined(TARGET_WASMARCH)
         return (CLRPersonalityRoutine != NULL) ? (TADDR)CLRPersonalityRoutine : (TADDR)mapBase;
 #else
         return (TADDR)mapBase;
