@@ -1053,19 +1053,19 @@ private:
     int lvStkOffs; // stack offset of home in bytes.
 
 public:
+    bool IsOnUnknownSizeFrame(Compiler* compiler) const;
+
     int GetStackOffset() const
     {
-        assert(lvValueSize().IsExact() || lvIsOSRLocal);
+        assert(!IsOnUnknownSizeFrame(JitTls::GetCompiler()));
         return lvStkOffs;
     }
 
     void SetStackOffset(int offset)
     {
-        // If the local is a vector or a mask and has unknown size, we have to deal with VL
-        // scaled offsets and shouldn't be using this function. There is an exception for OSR
-        // locals, because OSR is a JIT only feature. We can derive an exact offset in this
-        // situation.
-        assert(lvValueSize().IsExact() || lvIsOSRLocal);
+        // Scalable locals normally use frame indices instead of byte offsets. OSR locals and
+        // fields of dependently promoted structs have fixed offsets in the traditional frame.
+        assert(!IsOnUnknownSizeFrame(JitTls::GetCompiler()));
         lvStkOffs = offset;
     }
 
@@ -4931,8 +4931,7 @@ public:
     //     True if the local has a stack home on the UnknownSizeFrame.
     bool lvaLocalIsOnUnknownSizeFrame(unsigned varNum)
     {
-        return lvaIsUnknownSizeLocal(varNum)
-        && !lvaIsOSRLocal(varNum) && !lvaIsFieldOfDependentlyPromotedStruct(lvaGetDesc(varNum));
+        return lvaGetDesc(varNum)->IsOnUnknownSizeFrame(this);
     }
 
     bool lvaHaveManyLocals(float percent = 1.0f) const;
