@@ -489,4 +489,7 @@
   <data name="ErrorWasmPgoRequiresIL" xml:space="preserve">
     <value>Wasm PGO instrumentation requires retained original IL bodies.</value>
   </data>
+  <data name="ErrorWasmPgoUnsupportedProbeOption" xml:space="preserve">
+    <value>Wasm PGO instrumentation supports only direct updates with one counter per probe. Remove the {0} override.</value>
+  </data>
 </root>

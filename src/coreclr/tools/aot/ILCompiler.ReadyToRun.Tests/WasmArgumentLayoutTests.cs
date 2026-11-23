@@ -210,7 +210,14 @@ public class WasmArgumentLayoutTests
     [InlineData("", 0, "JitCollect64BitCounts=0")]
     [InlineData("*", null, "JitCollect64BitCounts=0")]
     [InlineData("*", null, "jitcollect64bitcounts=00")]
-    public void InlineeProfilingPreservesInlining(string filter, int? expectedProbeCount, string? counterOption = null)
+    [InlineData("*", null, "JitInterlockedProfiling=1", "JitInterlockedProfiling")]
+    [InlineData("*", null, "jitscalableprofiling=01", "JitScalableProfiling")]
+    [InlineData("*", null, "JitCounterPadding=2", "JitCounterPadding")]
+    [InlineData("*", 2, "JitCounterPadding=1")]
+    [InlineData("*", 2, "JitScalableProfiling=0")]
+    [InlineData("", 0, "JitInterlockedProfiling=1")]
+    public void InlineeProfilingPreservesInlining(
+        string filter, int? expectedProbeCount, string? counterOption = null, string? unsupportedProbeOption = null)
     {
         string directory = Path.GetFullPath(Path.Combine("artifacts", "tmp", "inlinee-profiling", Path.GetRandomFileName()));
         Directory.CreateDirectory(directory);
@@ -250,8 +257,10 @@ public class WasmArgumentLayoutTests
             if (expectedProbeCount is null)
             {
                 Assert.False(result.Success);
-                Assert.Contains("Wasm PGO instrumentation requires 64-bit counters. Remove the JitCollect64BitCounts override or set it to 1.",
-                    result.StandardError);
+                string expectedError = unsupportedProbeOption is null
+                    ? "Wasm PGO instrumentation requires 64-bit counters. Remove the JitCollect64BitCounts override or set it to 1."
+                    : $"Wasm PGO instrumentation supports only direct updates with one counter per probe. Remove the {unsupportedProbeOption} override.";
+                Assert.Contains(expectedError, result.StandardError);
                 return;
             }
 

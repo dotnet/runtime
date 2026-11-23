@@ -480,28 +480,53 @@ namespace ILCompiler
                         throw new Exception(SR.ErrorStripILBodiesRequiresComposite);
                     }
 
+                    const string InterlockedOption = "JitInterlockedProfiling";
+                    const string ScalableOption = "JitScalableProfiling";
+                    const string PaddingOption = "JitCounterPadding";
                     bool wasmPgoInstrumentation = false;
                     bool use64BitCounts = true;
+                    bool useInterlocked = false;
+                    bool useScalable = false;
+                    bool usePadding = false;
                     foreach (string option in Get(_command.CodegenOptions))
                     {
-                        const string WasmPgoPrefix = "WasmPgoInstrumentation=";
-                        const string CountWidthPrefix = "JitCollect64BitCounts=";
-                        if (option.StartsWith(WasmPgoPrefix, StringComparison.OrdinalIgnoreCase))
+                        int equals = option.IndexOf('=');
+                        if (equals < 1)
+                            continue;
+
+                        ReadOnlySpan<char> name = option.AsSpan(0, equals);
+                        ReadOnlySpan<char> value = option.AsSpan(equals + 1);
+                        if (name.Equals("WasmPgoInstrumentation", StringComparison.OrdinalIgnoreCase))
                         {
-                            wasmPgoInstrumentation = option.Length > WasmPgoPrefix.Length;
+                            wasmPgoInstrumentation = !value.IsEmpty;
                             if (wasmPgoInstrumentation && Get(_command.StripILBodies))
                                 throw new CommandLineException(SR.ErrorWasmPgoRequiresIL);
+                            continue;
                         }
-                        else if (option.StartsWith(CountWidthPrefix, StringComparison.OrdinalIgnoreCase))
-                        {
-                            use64BitCounts = !int.TryParse(option.AsSpan(CountWidthPrefix.Length),
-                                NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out int value) || value != 0;
-                        }
+
+                        int? setting = int.TryParse(value, NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out int number)
+                            ? number : null;
+                        if (name.Equals("JitCollect64BitCounts", StringComparison.OrdinalIgnoreCase))
+                            use64BitCounts = setting != 0;
+                        else if (name.Equals(InterlockedOption, StringComparison.OrdinalIgnoreCase))
+                            useInterlocked = setting is > 0;
+                        else if (name.Equals(ScalableOption, StringComparison.OrdinalIgnoreCase))
+                            useScalable = setting is > 0;
+                        else if (name.Equals(PaddingOption, StringComparison.OrdinalIgnoreCase))
+                            usePadding = setting is > 1;
                     }
 
-                    if (typeSystemContext.Target.IsWasm && wasmPgoInstrumentation && !use64BitCounts)
+                    if (typeSystemContext.Target.IsWasm && wasmPgoInstrumentation)
                     {
-                        throw new CommandLineException(SR.ErrorWasmPgoRequires64BitCounts);
+                        if (!use64BitCounts)
+                            throw new CommandLineException(SR.ErrorWasmPgoRequires64BitCounts);
+
+                        string unsupportedOption = useInterlocked ? InterlockedOption
+                            : useScalable ? ScalableOption
+                            : usePadding ? PaddingOption
+                            : null;
+                        if (unsupportedOption is not null)
+                            throw new CommandLineException(string.Format(SR.ErrorWasmPgoUnsupportedProbeOption, unsupportedOption));
                     }
 
                     bool compileBubbleGenerics = Get(_command.CompileBubbleGenerics);
