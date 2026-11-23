@@ -933,6 +933,28 @@ namespace System.Runtime.Serialization.Xml.Tests
         }
 
         [Theory]
+        [InlineData("</valueSuffix>")]
+        [InlineData("</valueX>")]
+        [InlineData("</value X>")]
+        [InlineData("</value")]
+        public static async Task Reader_AsyncBufferedPrimitive_RejectsMalformedClosingTag(string closingTag)
+        {
+            byte[] document = Encoding.UTF8.GetBytes("<value>42" + closingTag);
+            using AsyncOnlyReadStream source = new AsyncOnlyReadStream(document, fragmentSize: 4096, blocked: false);
+            XmlDictionaryReader reader = await CreateAsyncReader("xml", source, Encoding.UTF8);
+            try
+            {
+                DataContractSerializer serializer = new DataContractSerializer(typeof(int), "value", string.Empty);
+                SerializationException exception = await Assert.ThrowsAsync<SerializationException>(() => serializer.ReadObjectAsync(reader));
+                Assert.IsType<XmlException>(exception.InnerException);
+            }
+            finally
+            {
+                await CloseReaderAsync(reader);
+            }
+        }
+
+        [Theory]
         [InlineData("xml", "<root a='1'b='2'/>")]
         [InlineData("xml", "<root>&missing;</root>")]
         [InlineData("xml", "<root><a></b></root>")]

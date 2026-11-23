@@ -39,6 +39,12 @@ namespace System.Runtime.Serialization
         public override bool IsStartObject(System.Xml.XmlReader reader) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
+        public override System.Threading.Tasks.Task<bool> IsStartObjectAsync(System.Xml.XmlDictionaryReader reader, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
+        public override System.Threading.Tasks.Task<bool> IsStartObjectAsync(System.Xml.XmlReader reader, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
         public override object? ReadObject(System.Xml.XmlDictionaryReader reader, bool verifyObjectName) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
@@ -51,10 +57,34 @@ namespace System.Runtime.Serialization
         public override object? ReadObject(System.Xml.XmlReader reader, bool verifyObjectName) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
+        public override System.Threading.Tasks.Task<object?> ReadObjectAsync(System.IO.Stream stream, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
+        public System.Threading.Tasks.Task<object?> ReadObjectAsync(System.Xml.XmlDictionaryReader reader, bool verifyObjectName, System.Runtime.Serialization.DataContractResolver? dataContractResolver, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
+        public override System.Threading.Tasks.Task<object?> ReadObjectAsync(System.Xml.XmlDictionaryReader reader, bool verifyObjectName, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
+        public override System.Threading.Tasks.Task<object?> ReadObjectAsync(System.Xml.XmlDictionaryReader reader, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
+        public override System.Threading.Tasks.Task<object?> ReadObjectAsync(System.Xml.XmlReader reader, bool verifyObjectName, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
+        public override System.Threading.Tasks.Task<object?> ReadObjectAsync(System.Xml.XmlReader reader, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
         public override void WriteEndObject(System.Xml.XmlDictionaryWriter writer) { }
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
         public override void WriteEndObject(System.Xml.XmlWriter writer) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
+        public override System.Threading.Tasks.Task WriteEndObjectAsync(System.Xml.XmlDictionaryWriter writer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
+        public override System.Threading.Tasks.Task WriteEndObjectAsync(System.Xml.XmlWriter writer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
         public void WriteObject(System.Xml.XmlDictionaryWriter writer, object? graph, System.Runtime.Serialization.DataContractResolver? dataContractResolver) { }
@@ -63,16 +93,40 @@ namespace System.Runtime.Serialization
         public override void WriteObject(System.Xml.XmlWriter writer, object? graph) { }
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
+        public override System.Threading.Tasks.Task WriteObjectAsync(System.IO.Stream stream, object? graph, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
+        public System.Threading.Tasks.Task WriteObjectAsync(System.Xml.XmlDictionaryWriter writer, object? graph, System.Runtime.Serialization.DataContractResolver? dataContractResolver, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
+        public override System.Threading.Tasks.Task WriteObjectAsync(System.Xml.XmlDictionaryWriter writer, object? graph, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
+        public override System.Threading.Tasks.Task WriteObjectAsync(System.Xml.XmlWriter writer, object? graph, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
         public override void WriteObjectContent(System.Xml.XmlDictionaryWriter writer, object? graph) { }
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
         public override void WriteObjectContent(System.Xml.XmlWriter writer, object? graph) { }
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
+        public override System.Threading.Tasks.Task WriteObjectContentAsync(System.Xml.XmlDictionaryWriter writer, object? graph, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
+        public override System.Threading.Tasks.Task WriteObjectContentAsync(System.Xml.XmlWriter writer, object? graph, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
         public override void WriteStartObject(System.Xml.XmlDictionaryWriter writer, object? graph) { }
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
         public override void WriteStartObject(System.Xml.XmlWriter writer, object? graph) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
+        public override System.Threading.Tasks.Task WriteStartObjectAsync(System.Xml.XmlDictionaryWriter writer, object? graph, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
+        public override System.Threading.Tasks.Task WriteStartObjectAsync(System.Xml.XmlWriter writer, object? graph, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
     }
     public static partial class DataContractSerializerExtensions
     {
@@ -116,6 +170,12 @@ namespace System.Runtime.Serialization
         public virtual bool IsStartObject(System.Xml.XmlReader reader) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
+        public virtual System.Threading.Tasks.Task<bool> IsStartObjectAsync(System.Xml.XmlDictionaryReader reader, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
+        public virtual System.Threading.Tasks.Task<bool> IsStartObjectAsync(System.Xml.XmlReader reader, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
         public virtual object? ReadObject(System.IO.Stream stream) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
@@ -131,10 +191,31 @@ namespace System.Runtime.Serialization
         public virtual object? ReadObject(System.Xml.XmlReader reader, bool verifyObjectName) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
+        public virtual System.Threading.Tasks.Task<object?> ReadObjectAsync(System.IO.Stream stream, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
+        public virtual System.Threading.Tasks.Task<object?> ReadObjectAsync(System.Xml.XmlDictionaryReader reader, bool verifyObjectName, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
+        public virtual System.Threading.Tasks.Task<object?> ReadObjectAsync(System.Xml.XmlDictionaryReader reader, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
+        public virtual System.Threading.Tasks.Task<object?> ReadObjectAsync(System.Xml.XmlReader reader, bool verifyObjectName, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
+        public virtual System.Threading.Tasks.Task<object?> ReadObjectAsync(System.Xml.XmlReader reader, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
         public abstract void WriteEndObject(System.Xml.XmlDictionaryWriter writer);
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
         public virtual void WriteEndObject(System.Xml.XmlWriter writer) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
+        public virtual System.Threading.Tasks.Task WriteEndObjectAsync(System.Xml.XmlDictionaryWriter writer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
+        public virtual System.Threading.Tasks.Task WriteEndObjectAsync(System.Xml.XmlWriter writer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
         public virtual void WriteObject(System.IO.Stream stream, object? graph) { }
@@ -146,16 +227,37 @@ namespace System.Runtime.Serialization
         public virtual void WriteObject(System.Xml.XmlWriter writer, object? graph) { }
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
+        public virtual System.Threading.Tasks.Task WriteObjectAsync(System.IO.Stream stream, object? graph, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
+        public virtual System.Threading.Tasks.Task WriteObjectAsync(System.Xml.XmlDictionaryWriter writer, object? graph, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
+        public virtual System.Threading.Tasks.Task WriteObjectAsync(System.Xml.XmlWriter writer, object? graph, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
         public abstract void WriteObjectContent(System.Xml.XmlDictionaryWriter writer, object? graph);
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
         public virtual void WriteObjectContent(System.Xml.XmlWriter writer, object? graph) { }
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
+        public virtual System.Threading.Tasks.Task WriteObjectContentAsync(System.Xml.XmlDictionaryWriter writer, object? graph, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
+        public virtual System.Threading.Tasks.Task WriteObjectContentAsync(System.Xml.XmlWriter writer, object? graph, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
         public abstract void WriteStartObject(System.Xml.XmlDictionaryWriter writer, object? graph);
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
         public virtual void WriteStartObject(System.Xml.XmlWriter writer, object? graph) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
+        public virtual System.Threading.Tasks.Task WriteStartObjectAsync(System.Xml.XmlDictionaryWriter writer, object? graph, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
+        public virtual System.Threading.Tasks.Task WriteStartObjectAsync(System.Xml.XmlWriter writer, object? graph, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
     }
     public static partial class XmlSerializableServices
     {
@@ -561,6 +663,7 @@ namespace System.Xml
         public static System.Xml.XmlDictionaryWriter CreateTextWriter(System.IO.Stream stream, System.Text.Encoding encoding) { throw null; }
         public static System.Xml.XmlDictionaryWriter CreateTextWriter(System.IO.Stream stream, System.Text.Encoding encoding, bool ownsStream) { throw null; }
         protected override void Dispose(bool disposing) { }
+        protected override System.Threading.Tasks.ValueTask DisposeAsyncCore() { throw null; }
         public virtual void EndCanonicalization() { }
         public virtual void StartCanonicalization(System.IO.Stream stream, bool includeComments, string[]? inclusivePrefixes) { }
         public virtual void WriteArray(string? prefix, string localName, string? namespaceUri, bool[] array, int offset, int count) { }

@@ -40,6 +40,234 @@ namespace System.Runtime.Serialization
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public abstract void WriteEndObject(XmlDictionaryWriter writer);
 
+        /// <summary>Writes an object to a stream asynchronously.</summary>
+        /// <param name="stream">The destination stream.</param>
+        /// <param name="graph">The object to serialize.</param>
+        /// <param name="cancellationToken">The token to monitor for cancellation.</param>
+        /// <returns>A task that represents the write operation.</returns>
+        /// <remarks>The stream remains open. Derived serializers that do not override this method execute their synchronous implementation.</remarks>
+        /// <exception cref="ArgumentNullException"><paramref name="stream"/> is <see langword="null"/>.</exception>
+        /// <exception cref="OperationCanceledException">Cancellation was requested.</exception>
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        public virtual Task WriteObjectAsync(Stream stream, object? graph, CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(stream);
+            cancellationToken.ThrowIfCancellationRequested();
+            WriteObject(stream, graph);
+            return Task.CompletedTask;
+        }
+
+        /// <summary>Writes an object using an XML writer asynchronously.</summary>
+        /// <param name="writer">The XML writer.</param>
+        /// <param name="graph">The object to serialize.</param>
+        /// <param name="cancellationToken">The token to monitor for cancellation.</param>
+        /// <returns>A task that represents the write operation.</returns>
+        /// <remarks>Cancellation is checked between XML operations and cannot interrupt an outstanding writer call. Derived serializers that do not override this method execute their synchronous implementation.</remarks>
+        /// <exception cref="ArgumentNullException"><paramref name="writer"/> is <see langword="null"/>.</exception>
+        /// <exception cref="OperationCanceledException">Cancellation was requested.</exception>
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        public virtual Task WriteObjectAsync(XmlWriter writer, object? graph, CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(writer);
+            cancellationToken.ThrowIfCancellationRequested();
+            WriteObject(writer, graph);
+            return Task.CompletedTask;
+        }
+
+        /// <inheritdoc cref="WriteObjectAsync(XmlWriter, object, CancellationToken)"/>
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        public virtual Task WriteObjectAsync(XmlDictionaryWriter writer, object? graph, CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(writer);
+            cancellationToken.ThrowIfCancellationRequested();
+            WriteObject(writer, graph);
+            return Task.CompletedTask;
+        }
+
+        /// <summary>Writes the opening XML element for an object asynchronously.</summary>
+        /// <param name="writer">The XML writer.</param>
+        /// <param name="graph">The object to serialize.</param>
+        /// <param name="cancellationToken">The token to monitor for cancellation.</param>
+        /// <returns>A task that represents the write operation.</returns>
+        /// <remarks>Derived serializers that do not override this method execute their synchronous implementation.</remarks>
+        /// <exception cref="ArgumentNullException"><paramref name="writer"/> is <see langword="null"/>.</exception>
+        /// <exception cref="OperationCanceledException">Cancellation was requested.</exception>
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        public virtual Task WriteStartObjectAsync(XmlWriter writer, object? graph, CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(writer);
+            cancellationToken.ThrowIfCancellationRequested();
+            WriteStartObject(writer, graph);
+            return Task.CompletedTask;
+        }
+
+        /// <inheritdoc cref="WriteStartObjectAsync(XmlWriter, object, CancellationToken)"/>
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        public virtual Task WriteStartObjectAsync(XmlDictionaryWriter writer, object? graph, CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(writer);
+            cancellationToken.ThrowIfCancellationRequested();
+            WriteStartObject(writer, graph);
+            return Task.CompletedTask;
+        }
+
+        /// <summary>Writes an object's XML content asynchronously.</summary>
+        /// <param name="writer">The XML writer positioned on the object's opening element.</param>
+        /// <param name="graph">The object to serialize.</param>
+        /// <param name="cancellationToken">The token to monitor for cancellation.</param>
+        /// <returns>A task that represents the write operation.</returns>
+        /// <remarks>Derived serializers that do not override this method execute their synchronous implementation.</remarks>
+        /// <exception cref="ArgumentNullException"><paramref name="writer"/> is <see langword="null"/>.</exception>
+        /// <exception cref="OperationCanceledException">Cancellation was requested.</exception>
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        public virtual Task WriteObjectContentAsync(XmlWriter writer, object? graph, CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(writer);
+            cancellationToken.ThrowIfCancellationRequested();
+            WriteObjectContent(writer, graph);
+            return Task.CompletedTask;
+        }
+
+        /// <inheritdoc cref="WriteObjectContentAsync(XmlWriter, object, CancellationToken)"/>
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        public virtual Task WriteObjectContentAsync(XmlDictionaryWriter writer, object? graph, CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(writer);
+            cancellationToken.ThrowIfCancellationRequested();
+            WriteObjectContent(writer, graph);
+            return Task.CompletedTask;
+        }
+
+        /// <summary>Writes the closing XML element for an object asynchronously.</summary>
+        /// <param name="writer">The XML writer.</param>
+        /// <param name="cancellationToken">The token to monitor for cancellation.</param>
+        /// <returns>A task that represents the write operation.</returns>
+        /// <remarks>Derived serializers that do not override this method execute their synchronous implementation.</remarks>
+        /// <exception cref="ArgumentNullException"><paramref name="writer"/> is <see langword="null"/>.</exception>
+        /// <exception cref="OperationCanceledException">Cancellation was requested.</exception>
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        public virtual Task WriteEndObjectAsync(XmlWriter writer, CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(writer);
+            cancellationToken.ThrowIfCancellationRequested();
+            WriteEndObject(writer);
+            return Task.CompletedTask;
+        }
+
+        /// <inheritdoc cref="WriteEndObjectAsync(XmlWriter, CancellationToken)"/>
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        public virtual Task WriteEndObjectAsync(XmlDictionaryWriter writer, CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(writer);
+            cancellationToken.ThrowIfCancellationRequested();
+            WriteEndObject(writer);
+            return Task.CompletedTask;
+        }
+
+        /// <summary>Reads an object from a stream asynchronously.</summary>
+        /// <param name="stream">The source stream.</param>
+        /// <param name="cancellationToken">The token to monitor for cancellation.</param>
+        /// <returns>A task whose result is the deserialized object.</returns>
+        /// <remarks>The stream remains open. Derived serializers that do not override this method execute their synchronous implementation.</remarks>
+        /// <exception cref="ArgumentNullException"><paramref name="stream"/> is <see langword="null"/>.</exception>
+        /// <exception cref="OperationCanceledException">Cancellation was requested.</exception>
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        public virtual Task<object?> ReadObjectAsync(Stream stream, CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(stream);
+            cancellationToken.ThrowIfCancellationRequested();
+            return Task.FromResult(ReadObject(stream));
+        }
+
+        /// <summary>Reads an object using an XML reader asynchronously.</summary>
+        /// <param name="reader">The XML reader.</param>
+        /// <param name="cancellationToken">The token to monitor for cancellation.</param>
+        /// <returns>A task whose result is the deserialized object.</returns>
+        /// <remarks>Cancellation is checked between XML operations and cannot interrupt an outstanding reader call. Derived serializers that do not override this method execute their synchronous implementation.</remarks>
+        /// <exception cref="ArgumentNullException"><paramref name="reader"/> is <see langword="null"/>.</exception>
+        /// <exception cref="OperationCanceledException">Cancellation was requested.</exception>
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        public virtual Task<object?> ReadObjectAsync(XmlReader reader, CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(reader);
+            cancellationToken.ThrowIfCancellationRequested();
+            return Task.FromResult(ReadObject(reader));
+        }
+
+        /// <inheritdoc cref="ReadObjectAsync(XmlReader, CancellationToken)"/>
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        public virtual Task<object?> ReadObjectAsync(XmlDictionaryReader reader, CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(reader);
+            cancellationToken.ThrowIfCancellationRequested();
+            return Task.FromResult(ReadObject(reader));
+        }
+
+        /// <summary>Reads an object using an XML reader asynchronously, optionally verifying its opening element.</summary>
+        /// <param name="reader">The XML reader.</param>
+        /// <param name="verifyObjectName"><see langword="true"/> to verify the opening element's name and namespace; otherwise, <see langword="false"/>.</param>
+        /// <param name="cancellationToken">The token to monitor for cancellation.</param>
+        /// <returns>A task whose result is the deserialized object.</returns>
+        /// <remarks>Derived serializers that do not override this method execute their synchronous implementation.</remarks>
+        /// <exception cref="ArgumentNullException"><paramref name="reader"/> is <see langword="null"/>.</exception>
+        /// <exception cref="OperationCanceledException">Cancellation was requested.</exception>
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        public virtual Task<object?> ReadObjectAsync(XmlReader reader, bool verifyObjectName, CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(reader);
+            cancellationToken.ThrowIfCancellationRequested();
+            return Task.FromResult(ReadObject(reader, verifyObjectName));
+        }
+
+        /// <inheritdoc cref="ReadObjectAsync(XmlReader, bool, CancellationToken)"/>
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        public virtual Task<object?> ReadObjectAsync(XmlDictionaryReader reader, bool verifyObjectName, CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(reader);
+            cancellationToken.ThrowIfCancellationRequested();
+            return Task.FromResult(ReadObject(reader, verifyObjectName));
+        }
+
+        /// <summary>Determines asynchronously whether the reader is positioned on an object's opening element.</summary>
+        /// <param name="reader">The XML reader.</param>
+        /// <param name="cancellationToken">The token to monitor for cancellation.</param>
+        /// <returns>A task whose result is <see langword="true"/> if the expected opening element is present; otherwise, <see langword="false"/>.</returns>
+        /// <remarks>Derived serializers that do not override this method execute their synchronous implementation.</remarks>
+        /// <exception cref="ArgumentNullException"><paramref name="reader"/> is <see langword="null"/>.</exception>
+        /// <exception cref="OperationCanceledException">Cancellation was requested.</exception>
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        public virtual Task<bool> IsStartObjectAsync(XmlReader reader, CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(reader);
+            cancellationToken.ThrowIfCancellationRequested();
+            return Task.FromResult(IsStartObject(reader));
+        }
+
+        /// <inheritdoc cref="IsStartObjectAsync(XmlReader, CancellationToken)"/>
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        public virtual Task<bool> IsStartObjectAsync(XmlDictionaryReader reader, CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(reader);
+            cancellationToken.ThrowIfCancellationRequested();
+            return Task.FromResult(IsStartObject(reader));
+        }
+
         [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public virtual void WriteObject(Stream stream, object? graph)

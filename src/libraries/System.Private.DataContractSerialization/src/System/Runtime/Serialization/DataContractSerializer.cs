@@ -285,11 +285,75 @@ namespace System.Runtime.Serialization
             WriteObjectHandleExceptions(new XmlWriterDelegator(writer), graph);
         }
 
+        /// <inheritdoc/>
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        public override Task WriteObjectAsync(XmlWriter writer, object? graph, CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(writer);
+            return CreateAsyncOperationSnapshot().WriteObjectHandleExceptionsAsync(new XmlWriterDelegator(writer) { CancellationToken = cancellationToken }, graph);
+        }
+
+        /// <inheritdoc/>
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        public override Task WriteObjectAsync(XmlDictionaryWriter writer, object? graph, CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(writer);
+            return CreateAsyncOperationSnapshot().WriteObjectHandleExceptionsAsync(new XmlWriterDelegator(writer) { CancellationToken = cancellationToken }, graph);
+        }
+
+        /// <inheritdoc/>
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        public override Task WriteObjectAsync(Stream stream, object? graph, CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(stream);
+            return CreateAsyncOperationSnapshot().WriteObjectToStreamAsync(stream, graph, cancellationToken);
+        }
+
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        private Task WriteObjectToStreamAsync(Stream stream, object? graph, CancellationToken cancellationToken)
+        {
+            if (cancellationToken.IsCancellationRequested)
+                return Task.FromCanceled(cancellationToken);
+            XmlDictionaryWriter writer = XmlDictionaryWriter.CreateTextWriter(
+                cancellationToken.CanBeCanceled ? new SerializationStream(stream, cancellationToken) : stream,
+                Encoding.UTF8, ownsStream: false);
+            Task serialization = WriteObjectHandleExceptionsAsync(new XmlWriterDelegator(writer) { CancellationToken = cancellationToken }, graph);
+            return serialization.IsCompletedSuccessfully ? writer.FlushAsync() : AwaitSerializationAndFlushAsync(serialization, writer);
+        }
+
+        private static async Task AwaitSerializationAndFlushAsync(Task serialization, XmlDictionaryWriter writer)
+        {
+            await serialization.ConfigureAwait(false);
+            await writer.FlushAsync().ConfigureAwait(false);
+        }
+
         [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public override void WriteStartObject(XmlWriter writer, object? graph)
         {
             WriteStartObjectHandleExceptions(new XmlWriterDelegator(writer), graph);
+        }
+
+        /// <inheritdoc/>
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        public override Task WriteStartObjectAsync(XmlWriter writer, object? graph, CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(writer);
+            return CreateAsyncOperationSnapshot().WriteStartObjectHandleExceptionsAsync(new XmlWriterDelegator(writer) { CancellationToken = cancellationToken }, graph);
+        }
+
+        /// <inheritdoc/>
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        public override Task WriteStartObjectAsync(XmlDictionaryWriter writer, object? graph, CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(writer);
+            return CreateAsyncOperationSnapshot().WriteStartObjectHandleExceptionsAsync(new XmlWriterDelegator(writer) { CancellationToken = cancellationToken }, graph);
         }
 
         [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
@@ -299,11 +363,47 @@ namespace System.Runtime.Serialization
             WriteObjectContentHandleExceptions(new XmlWriterDelegator(writer), graph);
         }
 
+        /// <inheritdoc/>
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        public override Task WriteObjectContentAsync(XmlWriter writer, object? graph, CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(writer);
+            return CreateAsyncOperationSnapshot().WriteObjectContentHandleExceptionsAsync(new XmlWriterDelegator(writer) { CancellationToken = cancellationToken }, graph);
+        }
+
+        /// <inheritdoc/>
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        public override Task WriteObjectContentAsync(XmlDictionaryWriter writer, object? graph, CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(writer);
+            return CreateAsyncOperationSnapshot().WriteObjectContentHandleExceptionsAsync(new XmlWriterDelegator(writer) { CancellationToken = cancellationToken }, graph);
+        }
+
         [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public override void WriteEndObject(XmlWriter writer)
         {
             WriteEndObjectHandleExceptions(new XmlWriterDelegator(writer));
+        }
+
+        /// <inheritdoc/>
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        public override Task WriteEndObjectAsync(XmlWriter writer, CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(writer);
+            return CreateAsyncOperationSnapshot().WriteEndObjectHandleExceptionsAsync(new XmlWriterDelegator(writer) { CancellationToken = cancellationToken });
+        }
+
+        /// <inheritdoc/>
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        public override Task WriteEndObjectAsync(XmlDictionaryWriter writer, CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(writer);
+            return CreateAsyncOperationSnapshot().WriteEndObjectHandleExceptionsAsync(new XmlWriterDelegator(writer) { CancellationToken = cancellationToken });
         }
 
         [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
@@ -334,11 +434,82 @@ namespace System.Runtime.Serialization
             WriteObjectHandleExceptions(new XmlWriterDelegator(writer), graph, dataContractResolver);
         }
 
+        /// <summary>Writes an object using a dictionary writer and the specified contract resolver asynchronously.</summary>
+        /// <param name="writer">The XML dictionary writer.</param>
+        /// <param name="graph">The object to serialize.</param>
+        /// <param name="dataContractResolver">The resolver for mapping runtime types to XML names, or <see langword="null"/> to use the configured resolver.</param>
+        /// <param name="cancellationToken">The token to monitor for cancellation.</param>
+        /// <returns>A task that represents the write operation.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="writer"/> is <see langword="null"/>.</exception>
+        /// <exception cref="OperationCanceledException">Cancellation was requested.</exception>
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        public Task WriteObjectAsync(XmlDictionaryWriter writer, object? graph, DataContractResolver? dataContractResolver, CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(writer);
+            return CreateAsyncOperationSnapshot().WriteObjectHandleExceptionsAsync(new XmlWriterDelegator(writer) { CancellationToken = cancellationToken }, graph, dataContractResolver);
+        }
+
         [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public override object? ReadObject(XmlReader reader)
         {
             return ReadObjectHandleExceptions(new XmlReaderDelegator(reader), true /*verifyObjectName*/);
+        }
+
+        /// <inheritdoc/>
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        public override Task<object?> ReadObjectAsync(XmlReader reader, CancellationToken cancellationToken = default) =>
+            ReadObjectAsync(reader, verifyObjectName: true, cancellationToken);
+
+        /// <inheritdoc/>
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        public override Task<object?> ReadObjectAsync(XmlDictionaryReader reader, CancellationToken cancellationToken = default) =>
+            ReadObjectAsync(reader, verifyObjectName: true, cancellationToken);
+
+        /// <inheritdoc/>
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        public override Task<object?> ReadObjectAsync(XmlReader reader, bool verifyObjectName, CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(reader);
+            return CreateAsyncOperationSnapshot().ReadObjectHandleExceptionsAsync(new XmlReaderDelegator(reader) { CancellationToken = cancellationToken }, verifyObjectName);
+        }
+
+        /// <inheritdoc/>
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        public override Task<object?> ReadObjectAsync(XmlDictionaryReader reader, bool verifyObjectName, CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(reader);
+            return CreateAsyncOperationSnapshot().ReadObjectHandleExceptionsAsync(new XmlReaderDelegator(reader) { CancellationToken = cancellationToken }, verifyObjectName);
+        }
+
+        /// <inheritdoc/>
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        public override Task<object?> ReadObjectAsync(Stream stream, CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(stream);
+            return CreateAsyncOperationSnapshot().ReadObjectFromStreamAsync(stream, cancellationToken);
+        }
+
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        private async Task<object?> ReadObjectFromStreamAsync(Stream stream, CancellationToken cancellationToken)
+        {
+            XmlDictionaryReader reader = await XmlDictionaryReader.CreateTextReaderAsync(
+                new SerializationStream(stream, cancellationToken), null, XmlDictionaryReaderQuotas.Max, null, cancellationToken).ConfigureAwait(false);
+            try
+            {
+                return await ReadObjectHandleExceptionsAsync(new XmlReaderDelegator(reader) { CancellationToken = cancellationToken }, verifyObjectName: true).ConfigureAwait(false);
+            }
+            finally
+            {
+                await ((XmlBaseReader)reader).CloseAsync().ConfigureAwait(false);
+            }
         }
 
         [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
@@ -353,6 +524,46 @@ namespace System.Runtime.Serialization
         public override bool IsStartObject(XmlReader reader)
         {
             return IsStartObjectHandleExceptions(new XmlReaderDelegator(reader));
+        }
+
+        /// <inheritdoc/>
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        public override Task<bool> IsStartObjectAsync(XmlReader reader, CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(reader);
+            return CreateAsyncOperationSnapshot().IsStartObjectAsyncCore(new XmlReaderDelegator(reader), cancellationToken);
+        }
+
+        /// <inheritdoc/>
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        public override Task<bool> IsStartObjectAsync(XmlDictionaryReader reader, CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(reader);
+            return CreateAsyncOperationSnapshot().IsStartObjectAsyncCore(new XmlReaderDelegator(reader), cancellationToken);
+        }
+
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        private async Task<bool> IsStartObjectAsyncCore(XmlReaderDelegator reader, CancellationToken cancellationToken)
+        {
+            try
+            {
+                if (await reader.MoveToContentAsync(cancellationToken).ConfigureAwait(false) != XmlNodeType.Element)
+                {
+                    return false;
+                }
+                return InternalIsStartObject(reader);
+            }
+            catch (XmlException ex)
+            {
+                throw CreateSerializationException(GetTypeInfoError(SR.ErrorIsStartObject, GetDeserializeType(), ex), ex);
+            }
+            catch (FormatException ex)
+            {
+                throw CreateSerializationException(GetTypeInfoError(SR.ErrorIsStartObject, GetDeserializeType(), ex), ex);
+            }
         }
 
         [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
@@ -374,6 +585,22 @@ namespace System.Runtime.Serialization
         public object? ReadObject(XmlDictionaryReader reader, bool verifyObjectName, DataContractResolver? dataContractResolver)
         {
             return ReadObjectHandleExceptions(new XmlReaderDelegator(reader), verifyObjectName, dataContractResolver);
+        }
+
+        /// <summary>Reads an object using a dictionary reader and the specified contract resolver asynchronously.</summary>
+        /// <param name="reader">The XML dictionary reader.</param>
+        /// <param name="verifyObjectName"><see langword="true"/> to verify the opening element's name and namespace; otherwise, <see langword="false"/>.</param>
+        /// <param name="dataContractResolver">The resolver for mapping XML names to runtime types, or <see langword="null"/> to use the configured resolver.</param>
+        /// <param name="cancellationToken">The token to monitor for cancellation.</param>
+        /// <returns>A task whose result is the deserialized object.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="reader"/> is <see langword="null"/>.</exception>
+        /// <exception cref="OperationCanceledException">Cancellation was requested.</exception>
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        public Task<object?> ReadObjectAsync(XmlDictionaryReader reader, bool verifyObjectName, DataContractResolver? dataContractResolver, CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(reader);
+            return CreateAsyncOperationSnapshot().ReadObjectHandleExceptionsAsync(new XmlReaderDelegator(reader) { CancellationToken = cancellationToken }, verifyObjectName, dataContractResolver);
         }
 
         [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
