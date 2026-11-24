@@ -3778,6 +3778,7 @@ namespace System
             number.Scale = digitsCount + decoded.UnbiasedExponent;
             number.IsNegative = decoded.Signed;
 
+            TrimTrailingFractionalZeros(ref number);
             return NumberToFloat<TFloat>(ref number);
         }
 

@@ -104,6 +104,7 @@ namespace System.Buffers.Text
                 bytesConsumed = 0;
                 return false;
             }
+            Number.TrimTrailingFractionalZeros(ref number);
             return true;
         }
 

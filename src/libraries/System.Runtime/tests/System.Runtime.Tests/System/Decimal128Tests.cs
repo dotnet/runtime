@@ -3896,6 +3896,37 @@ namespace System.Tests
             }
         }
 
+        [Theory]
+        [InlineData("2049.000000000000000000000000000000", 2048)]
+        [InlineData("2049.000000000000000000000000000001", 2050)]
+        [InlineData("-2049.000000000000000000000000000000", -2048)]
+        public static void ConvertToHalf_RoundsFractionalZeros(string input, int expected)
+        {
+            Decimal128 value = Decimal128.Parse(input, CultureInfo.InvariantCulture);
+            Assert.Equal((Half)expected, (Half)value);
+        }
+
+        [Theory]
+        [InlineData("2001000000.000000000000000000000000", 2000999936f)]
+        [InlineData("2001000000.000000000000000000000001", 2001000064f)]
+        [InlineData("-2001000000.000000000000000000000000", -2000999936f)]
+        [InlineData("2001000128.000000000000000000000000", 2001000192f)]
+        public static void ConvertToSingle_RoundsFractionalZeros(string input, float expected)
+        {
+            Decimal128 value = Decimal128.Parse(input, CultureInfo.InvariantCulture);
+            Assert.Equal(expected, (float)value);
+        }
+
+        [Theory]
+        [InlineData("9007199254740997.000000000000000000", 9007199254740996d)]
+        [InlineData("9007199254740997.000000000000000001", 9007199254740998d)]
+        [InlineData("-9007199254740997.000000000000000000", -9007199254740996d)]
+        public static void ConvertToDouble_RoundsFractionalZeros(string input, double expected)
+        {
+            Decimal128 value = Decimal128.Parse(input, CultureInfo.InvariantCulture);
+            Assert.Equal(expected, (double)value);
+        }
+
         [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]
         [MemberData(nameof(DecimalIeee754IntelTestData.Decimal128ToBinary), MemberType = typeof(DecimalIeee754IntelTestData))]
         public static void ConvertToBinary_IntelReferenceVectors(string binaryType, UInt128 value, ulong expected)

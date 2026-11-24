@@ -4,6 +4,7 @@
 using System.Linq;
 using System.Globalization;
 using System.Collections.Generic;
+using System.Numerics;
 
 namespace System.Buffers.Text.Tests
 {
@@ -396,6 +397,9 @@ namespace System.Buffers.Text.Tests
                 yield return "000000123.45";
                 yield return "0.000045";
                 yield return "000000123.000045";
+                yield return "1.2300";
+                yield return "-0.000e-2";
+                yield return "62500e-4";
 
                 yield return decimal.MinValue.ToString("G", CultureInfo.InvariantCulture);
                 yield return decimal.MaxValue.ToString("G", CultureInfo.InvariantCulture);
@@ -452,9 +456,39 @@ namespace System.Buffers.Text.Tests
                 yield return "0.66666666666666666666666666665";
                 yield return "0.6666666666666666666666666666500000000000000000000000000000000000000000000000000000000000000";
                 yield return "0.6666666666666666666666666666500000000000000000000";
+                yield return "76228501625444444444444444444.5";
+                yield return "-76228501625444444444444444444.5";
+                yield return "762285016254444444444444444445e-1";
+                yield return "76228501625444444444444444444.50001";
+                yield return "0." + new string('0', 40) + "762285016254444444444444444445e69";
+                yield return "0." + new string('0', 40) + "7622850162544444444444444444450001e69";
+                yield return "2001000000.0000000000";
+                yield return "2001000000.0000000001";
+                yield return "20010000000000000000e-10";
+                yield return "20010000000000000001e-10";
+                yield return "9007199254740997.0000";
+                yield return "9007199254740997.0001";
+                yield return "16777217." + new string('0', 120);
+                yield return "16777217." + new string('0', 120) + "1";
+                yield return "9007199254740997." + new string('0', 800);
+                yield return "9007199254740997." + new string('0', 800) + "1";
+                yield return "0." + new string('0', 115) + "1677721700000000000000e123";
 
                 yield return "0.6666666666666666666666666666666666666666666666665";
                 yield return "0.9999999999999999999999999999999999999999999999999";
+
+                // Exact midpoints near the normal/subnormal boundary, expressed as decimal digits.
+                string singleMidpoint = (((BigInteger.One << 24) - 3) * BigInteger.Pow(5, 150)).ToString(CultureInfo.InvariantCulture);
+                yield return singleMidpoint + "e-150";
+                yield return "." + singleMidpoint + "e-37";
+                yield return singleMidpoint + "0e-151";
+                yield return singleMidpoint + "1e-151";
+
+                string doubleMidpoint = (((BigInteger.One << 53) - 3) * BigInteger.Pow(5, 1075)).ToString(CultureInfo.InvariantCulture);
+                yield return doubleMidpoint + "e-1075";
+                yield return "." + doubleMidpoint + "e-307";
+                yield return doubleMidpoint + "0e-1076";
+                yield return doubleMidpoint + "1e-1076";
 
                 // Wacky case that's expected to yield "Decimal.MaxValue / 10"
                 // ( = 7922816251426433759354395034m (= High = 0x19999999, Mid = 0x99999999, Low = 0x9999999A))
