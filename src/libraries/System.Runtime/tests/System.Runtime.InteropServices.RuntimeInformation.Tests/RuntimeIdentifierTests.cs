@@ -15,7 +15,11 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
         {
             Assert.NotNull(RuntimeInformation.RuntimeIdentifier);
             Assert.Same(RuntimeInformation.RuntimeIdentifier, RuntimeInformation.RuntimeIdentifier);
-            Assert.EndsWith(RuntimeInformation.ProcessArchitecture.ToString(), RuntimeInformation.RuntimeIdentifier, StringComparison.OrdinalIgnoreCase);
+            // Architecture has no Wasm64 value; browser-wasm64 reports Architecture.Wasm.
+            string expectedArchitecture = RuntimeInformation.ProcessArchitecture == Architecture.Wasm && Environment.Is64BitProcess
+                ? "wasm64"
+                : RuntimeInformation.ProcessArchitecture.ToString();
+            Assert.EndsWith(expectedArchitecture, RuntimeInformation.RuntimeIdentifier, StringComparison.OrdinalIgnoreCase);
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
