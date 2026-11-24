@@ -18,6 +18,7 @@
     <ProjectReference Include="PREFIX\PrimitiveVT\helper.csproj" />
     <MergedWrapperProjectReference Include="PREFIX\unaligned\1\add_unaligned_1.ilproj" />
     <MergedWrapperProjectReference Include="PREFIX\unaligned\4\add_unaligned_4.ilproj" />
+    <MergedWrapperProjectReference Include="WasmRegalloc\WasmRegalloc.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Arrays\nintindexoutofrange.cs" />
