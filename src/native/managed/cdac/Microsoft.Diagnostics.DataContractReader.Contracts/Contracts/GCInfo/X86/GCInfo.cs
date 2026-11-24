@@ -29,7 +29,9 @@ public enum RegMask
 
 public record X86GCInfo : IGCInfoDecoder
 {
-    private const uint MINIMUM_SUPPORTED_GCINFO_VERSION = 4;
+    // Versions 1 through 4 share the same x86 encoding. Versions before 4 only occur in ReadyToRun
+    // images, which the cDAC never decodes; ILCompiler.Reflection.ReadyToRun (R2RDump) shares this decoder.
+    private const uint MINIMUM_SUPPORTED_GCINFO_VERSION = 1;
     private const uint MAXIMUM_SUPPORTED_GCINFO_VERSION = 5;
 
     private readonly Target _target;
@@ -91,7 +93,8 @@ public record X86GCInfo : IGCInfoDecoder
     private ImmutableArray<int> SortedTransitionOffsets => _sortedTransitionOffsets.Value;
     private readonly Lazy<ImmutableArray<int>> _sortedTransitionOffsets;
 
-    private ImmutableArray<NoGCRegion> NoGCRegions => _noGCRegions.Value;
+    // Internal (rather than private) so ILCompiler.Reflection.ReadyToRun can display the table.
+    internal ImmutableArray<NoGCRegion> NoGCRegions => _noGCRegions.Value;
     private readonly Lazy<ImmutableArray<NoGCRegion>> _noGCRegions;
 
     internal readonly record struct NoGCRegion(uint Offset, uint Size);

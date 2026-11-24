@@ -116,6 +116,7 @@
 //     boxing this describes this feature.
 
 #include "common.h"
+#include <minipal/thread.h>
 #include "CLREventBase.h"
 
 #include "vars.hpp"
@@ -256,7 +257,7 @@ HRESULT g_EEStartupStatus = S_OK;
 Volatile<BOOL> g_fEEStarted = FALSE;
 
 // The OS thread ID of the thread currently performing EE startup, or 0 if there is no such thread.
-DWORD   g_dwStartupThreadId = 0;
+size_t  g_startupThreadId = 0;
 
 // Event to synchronize EE shutdown.
 static CLREvent * g_pEEShutDownEvent;
@@ -308,13 +309,13 @@ HRESULT EnsureEEStarted()
             // And if EEStartup already failed before, we don't do it again.
             if (!g_fEEStarted && !g_fEEInit && SUCCEEDED (g_EEStartupStatus))
             {
-                g_dwStartupThreadId = GetCurrentThreadId();
+                g_startupThreadId = minipal_get_current_thread_id();
 
                 EEStartup();
                 bStarted=g_fEEStarted;
                 hr = g_EEStartupStatus;
 
-                g_dwStartupThreadId = 0;
+                g_startupThreadId = 0;
             }
             else
             {
@@ -350,7 +351,7 @@ HRESULT EnsureEEStarted()
         // is already affinitized by the code above.  So if we get that particular OS thread ID, we know for sure
         // we are really the startup thread.
         //
-        if (g_EEStartupLock.IsHeld() && g_dwStartupThreadId != GetCurrentThreadId())
+        if (g_EEStartupLock.IsHeld() && g_startupThreadId != minipal_get_current_thread_id())
         {
             DangerousNonHostedSpinLockHolder lockHolder = g_EEStartupLock.TakeLock();
         }

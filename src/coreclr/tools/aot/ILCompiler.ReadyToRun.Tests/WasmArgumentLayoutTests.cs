@@ -1954,7 +1954,7 @@ public class WasmArgumentLayoutTests
 
             string table = File.ReadAllText(Path.Combine(options.OutputDirectory, "callhelpers-pinvoke.cpp"));
             Assert.Contains("const void* ResolveRuntimeHelperEntrypoint(const char* name)", table);
-            Assert.Contains("DllImportEntry(Native_Test)", table);
+            Assert.Contains("{ \"Native_Test\", (void*)&direct_pinvoke::Native_Test }", table);
             Assert.DoesNotContain("{\"QCall\",", table);
             Assert.DoesNotContain("QCall_Unavailable", table);
             Assert.Contains("static const Entry s_RuntimeHelpers", table);
@@ -2042,7 +2042,7 @@ public class WasmArgumentLayoutTests
             Assert.True(exitCode == 0, log.ToString());
 
             string table = File.ReadAllText(Path.Combine(options.OutputDirectory, "callhelpers-pinvoke.cpp"));
-            Assert.Contains("DllImportEntry(Native_Test)", table);
+            Assert.Contains("{ \"Native_Test\", (void*)&direct_pinvoke::Native_Test }", table);
             Assert.Contains("const void* ResolveRuntimeHelperEntrypoint(const char* name)", table);
             Assert.DoesNotContain("static const Entry s_RuntimeHelpers", table);
             Assert.DoesNotContain("QCall_NonCoreLib", table);

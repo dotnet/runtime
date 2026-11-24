@@ -33,6 +33,44 @@ namespace ILCompiler.ReadyToRun.Tests;
 public class ReadyToRunLibraryRootProviderTests
 {
     [Theory]
+    [InlineData("System.Numerics", "Vector")]
+    [InlineData("System.Runtime.Intrinsics", "Vector64")]
+    [InlineData("System.Runtime.Intrinsics", "Vector128")]
+    [InlineData("System.Runtime.Intrinsics", "Vector256")]
+    [InlineData("System.Runtime.Intrinsics", "Vector512")]
+    public void PartialNoJitCompilationRootsVectorAccelerationQueries(string typeNamespace, string typeName)
+    {
+        ReadyToRunCompilerContext context = CreateContext(targetArchitecture: TargetArchitecture.Wasm32);
+        EcmaModule coreLib = (EcmaModule)context.SystemModule;
+        ReadyToRunSingleAssemblyCompilationModuleGroup group = new(new ReadyToRunCompilationModuleGroupConfig
+        {
+            Context = context,
+            CompilationModuleSet = [coreLib],
+            VersionBubbleModuleSet = [coreLib],
+            CrossModuleInlineable = [],
+            InstructionSetSupport = context.InstructionSetSupport,
+        });
+        context.SetCompilationGroup(group);
+        ProfileDataManager profile = new(new Logger(TextWriter.Null, isVerbose: false),
+            possibleReferenceModules: [coreLib], inputModules: [coreLib], versionBubbleModules: [coreLib],
+            crossModuleInlineModules: [], nonLocalGenericsHome: null, mibcFiles: [], parseRule: default,
+            callChainProfile: null, context: context, compilationGroup: group, embedPgoDataInR2RImage: false,
+            parseIbcData: false, canBeIncludedInCurrentCompilation: _ => true, synthesizeRandomPgoData: false);
+        group.ApplyProfileGuidedOptimizationData(profile, partial: true);
+
+        MethodDesc query = coreLib.GetType(Encoding.UTF8.GetBytes(typeNamespace), Encoding.UTF8.GetBytes(typeName))
+            .GetMethod("get_IsHardwareAccelerated"u8, null);
+        RecordingRootingServiceProvider roots = new();
+        new ReadyToRunHardwareIntrinsicRootProvider(context).AddCompilationRoots(roots);
+
+        Assert.False(profile.IsMethodInInputProfileData(query));
+        Assert.Contains(query, roots.Methods);
+        Assert.True(group.ContainsMethodBody(query, unboxingStub: false));
+        Assert.False(group.ContainsMethodBody(
+            context.GetWellKnownType(WellKnownType.Int32).GetMethod("GetHashCode"u8, null), unboxingStub: false));
+    }
+
+    [Theory]
     [InlineData(false, 0, WasmValueType.I32)]
     [InlineData(true, 0, WasmValueType.I32)]
     [InlineData(false, 2, WasmValueType.I32)]
