@@ -7,7 +7,7 @@
     <Features>$(Features);runtime-async=on</Features>
     <!-- This test launches crossgen2, skip when sanitizers are enabled. -->
     <CLRTestTargetUnsupported Condition="'$(EnableNativeSanitizers)' != ''">true</CLRTestTargetUnsupported>
-    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' == 'wasm' or '$(TargetArchitecture)' == 'wasm64'">true</CLRTestTargetUnsupported>
+    <CLRTestTargetUnsupported Condition="'$(TargetsWasm)' == 'true'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="helperv1/helper.csproj" />
