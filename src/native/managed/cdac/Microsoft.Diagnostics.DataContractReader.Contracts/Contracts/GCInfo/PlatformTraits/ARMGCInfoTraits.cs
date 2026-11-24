@@ -43,6 +43,10 @@ internal class ARMGCInfoTraits : IGCInfoTraits
 
     public static bool HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA => true;
 
+    public static int SIZE_OF_RETURN_KIND_IN_FAT_HEADER => 2;
+    public static int PSP_SYM_STACK_SLOT_ENCBASE => 5;
+    public static int SECURITY_OBJECT_STACK_SLOT_ENCBASE => 5;
+
     // Preserved (non-scratch): r4-r11 (and r14/LR is special)
     // Scratch: r0-r3, r12, r14
     public static bool IsScratchRegister(uint regNum) => regNum <= 3 || regNum == 12 || regNum == 14;
