@@ -5181,7 +5181,8 @@ GenTree* Compiler::optAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* tr
         updated = optWriteBarrierAssertionProp_StoreInd(assertions, tree->AsStoreInd());
     }
 
-    if (nonNull && !updated && (stmt != nullptr))
+    // A non-faulting NULLCHECK is still re-morphed so that morph can remove it.
+    if (nonNull && !updated && (stmt != nullptr) && !tree->OperIs(GT_NULLCHECK))
     {
         // Only flags changed; the statement's side effects are updated instead of re-morphing it.
         optAssertionPropagated                 = true;
