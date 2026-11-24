@@ -10,6 +10,8 @@ applyTo: "src/libraries/System.Net.Security/**"
 - AuthenticateAsClientAsync/AuthenticateAsServerAsync must not be called more than once; guard against re-authentication on an already-authenticated stream
 - SslStream read/write operations must handle TLS record boundaries — a single TLS record may span multiple inner stream reads
 - Renegotiation (TLS 1.2) and post-handshake auth (TLS 1.3) have different flows — do not conflate them
+- Enforce the `SslStream` exception contract consistently across roles and states: never forward empty/truncated handshake payloads into OS PALs (`IOException` for transport truncation, `AuthenticationException` for unexpected handshake states), rethrow user certificate callback exceptions via `ExceptionDispatchInfo.Throw` after flushing TLS alerts, and distinguish structurally invalid frames from semantically ignored extensions
+- Clone caller-supplied `X509ChainPolicy` unconditionally per handshake/session (including leaf-only handshakes with no intermediate certificates), and populate `ExtraStore` with captured peer intermediates only after assigning `chain.ChainPolicy`
 
 ## Certificate Validation
 
@@ -20,6 +22,7 @@ applyTo: "src/libraries/System.Net.Security/**"
 
 ## TLS Version and Cipher Handling
 
+- [Verified](../skills/build-and-test/SKILL.md#reporting-validation) specs at `rfc-editor.org/info/rfcN`: RFC 9846 TLS 1.3; obsolete RFC 8446 and 5246 (TLS 1.2) still describe supported-version compatibility
 - Default to the highest mutually supported TLS version — do not hardcode a specific version
 - SslProtocols.None means "let the OS decide" and is the preferred default
 - ALPN negotiation results must be checked after handshake — a mismatched protocol should fail early, not produce corrupt data
@@ -37,6 +40,8 @@ applyTo: "src/libraries/System.Net.Security/**"
 - TLS session resumption state must not leak across security boundaries (different hosts or certificate requirements)
 - CredentialCache and credential lifecycle must be managed carefully — stale credentials cause silent authentication failures
 - Do not cache negotiated security parameters beyond the lifetime of the owning SslStream
+- Enforce requested quality-of-service requirements strictly in modern authentication APIs (such as failing `NegotiateAuthentication` with `SecurityQosFailed` when required mutual auth/protection is not satisfied by the negotiated package, while preserving legacy `NegotiateStream` compatibility separately)
+- Always filter `System.Net.Security` test runs via `/p:XUnitClassName=...` to avoid slow external OCSP/revocation endpoints
 
 ## Performance
 

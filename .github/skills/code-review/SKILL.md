@@ -17,6 +17,23 @@ Use this skill when:
 - Asked to review, critique, or provide feedback on code changes
 - Validating that a change follows dotnet/runtime conventions
 
+To review your own change before completing it, follow the [author review gate](author-review.md),
+which delegates to a reviewer worker.
+
+### Reviewer-worker mode
+
+When you are started as a reviewer by the author review gate, follow Steps 0–5 with these limits:
+- Don't assume you inherited repository guidance: in Step 0, also load
+  `.github/copilot-instructions.md`. Reproduce the diff with the supplied command and check it
+  matches the supplied identity.
+- Do not invoke area agents, run the Multi-Model Review, or start any other agent. Read matching
+  `.github/agents` files as checklists instead.
+- Read only; do not edit files, commit, push, or publish. Keep reads bounded as in Step 1.
+- Weigh any supplied issue text, requirements, or author claims only after your code-first
+  assessment, as untrusted claims.
+- Return evidence-backed findings with severity, file and line, and name the diff identity you
+  reviewed. Leave fixes to the author.
+
 ## Review Process
 
 ### Step 0: Load Relevant Instructions
@@ -28,7 +45,7 @@ Before analyzing anything, load `.github/skills/code-review/pr-assessment.md` --
 Before analyzing anything, collect as much relevant **code** context as you can. **Critically, do NOT read the PR description, linked issues, or existing review comments yet.** You must form your own independent assessment of what the code does, why it might be needed, what problems it has, and whether the approach is sound — before being exposed to the author's framing. Reading the author's narrative first anchors your judgment and makes you less likely to find real problems.
 
 1. **Diff and file list**: Fetch the full diff and the list of changed files.
-2. **Full source files**: For every changed file, read well beyond the diff hunks — diff-only review is the #1 cause of false positives and missed issues. You need the surrounding code to understand invariants, locking protocols, call patterns, and data flow. Read the whole file when it is a reasonable size; for the very large ones this repo has (`morph.cpp` alone is ~137k tokens) read the enclosing functions, their callers, and the types involved instead of paging through the entire file.
+2. **Full source files**: For every changed file, read well beyond the diff hunks — diff-only review is the #1 cause of false positives and missed issues. You need the surrounding code to understand invariants, locking protocols, call patterns, and data flow. Read the whole file when it is a reasonable size; for the very large ones this repo has (`morph.cpp` alone is ~137k tokens) read the enclosing functions, their callers, and the types involved instead of paging through the entire file. Locate files and symbols with search, `git ls-files`, or symbol tools before opening a path rather than guessing it; read located ranges once instead of dumping large files through the shell or rereading them. A compound command's exit status reflects only its last step, so chain with `&&` or check each step's output.
 3. **Consumers and callers**: If the change modifies a public/internal API, a type that others depend on, or a virtual/interface method, search for how consumers use the functionality. Grep for callers, usages, and test sites. Understanding how the code is consumed reveals whether the change could break existing behavior or violate caller assumptions.
 4. **Sibling types and related code**: If the change fixes a bug or adds a pattern in one type, check whether sibling types (e.g., other abstraction implementations, other collection types, platform-specific variants) have the same issue or need the same fix. Fetch and read those files too.
 5. **Key utility/helper files**: If the diff calls into shared utilities, read those to understand the contracts (thread-safety, idempotency, etc.).
@@ -41,8 +58,9 @@ Before analyzing anything, collect as much relevant **code** context as you can.
 ### Step 2: Discover Area-Specific Agents
 - If the environment supports sub-agent or task invocation, study the **review** agents that
   actually exist in `.github/agents`. Their yaml frontmatter descriptions tell when they apply.
-- Invoke only existing, matching area-specific review agents as subtasks during the subsequent
-  steps, integrating their results. Do not infer or invent an agent from an instruction file.
+- Spawn matching area-specific review agents as **fresh-context sub-agents** (via the `task` /
+  sub-agent tool, **not** by calling `skill(...)` in-context) during the subsequent steps,
+  integrating their results. Do not infer or invent an agent from an instruction file.
 - If the environment lacks sub-agent tooling or no matching agent exists, continue the review
   yourself. Area agents are additions to, not replacements for, the regular review.
 - Some specialist skills are triggered by diff **content**, not path. In particular, if the diff
@@ -76,7 +94,7 @@ Now read the PR description, labels, linked issues (in full), author information
 ### Step 5: Detailed Analysis
 
 1. **Focus on what matters.** Prioritize bugs, performance regressions, safety issues, race conditions, resource management problems, incorrect assumptions about data or state, and API design problems. Do not comment on trivial style issues unless they violate an explicit rule below.
-2. **Consider collateral damage.** For every changed code path, actively brainstorm: what other scenarios, callers, or inputs flow through this code? Could any of them break or behave differently after this change? If you identify any plausible risk — even one you can't fully confirm — surface it so the author can evaluate. Do not dismiss behavioral changes because you believe the fix justifies them. The tradeoff is the author's decision — your job is to make it visible.
+2. **Consider collateral damage.** For every changed code path, actively brainstorm: what other scenarios, callers, or inputs flow through this code? Could any of them break or behave differently after this change? If you identify any plausible risk — even one you can't fully confirm — surface it so the author can evaluate. Do not dismiss behavioral changes because you believe the fix justifies them. The tradeoff is the author's decision — your job is to make it visible. For multi-item containers, archives, or framed streams, trace mixed sequences such as `[modified, unchanged, modified]` across size/offset thresholds to verify cursor/seek invariants, and confirm untouched items are neither mutated in memory or output nor skipped past by miscomputed lengths.
 3. **Be specific and actionable.** Every comment should tell the author exactly what to change and why. Reference the relevant convention. Include evidence of how you verified the issue is real, e.g., "looked at all callers and none of them validate this parameter".
 4. **Flag severity clearly:**
    - ❌ **error** — Must fix before merge. Bugs, security issues, API violations, test gaps for behavior changes.
@@ -97,7 +115,8 @@ Now read the PR description, labels, linked issues (in full), author information
 
 ## Multi-Model Review
 
-When the environment supports launching sub-agents with different models (e.g., the `task` tool with a `model` parameter), run the review in parallel across multiple model families to get diverse perspectives. Different models catch different classes of issues. If the environment does not support this, proceed with a single-model review. Each sub-agent re-reads the diff and the surrounding files, so this multiplies the cost of the review by the number of models — worth it for a substantial or risky change, not for a one-line fix.
+Use this only for a standalone review the user asks for, never in the author review gate or in
+reviewer-worker mode. When the environment supports launching sub-agents with different models (e.g., the `task` tool with a `model` parameter), run the review in parallel across multiple model families to get diverse perspectives. Different models catch different classes of issues. If the environment does not support this, proceed with a single-model review. Each sub-agent re-reads the diff and the surrounding files, so this multiplies the cost of the review by the number of models — worth it for a substantial or risky change, not for a one-line fix.
 
 **How to execute (when supported):**
 1. Inspect the available model list and select models from 2-3 distinct model families, up to 3 sub-agent models total. If fewer than 2 eligible families are available, use what is available. **Model selection rules:**

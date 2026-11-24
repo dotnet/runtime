@@ -26,6 +26,7 @@ Pull-request process — scope, benchmark evidence, API approval, backport — i
 ### Code Reuse & Deduplication
 
 - **Extract duplicated logic into shared helper methods.** Fix improvements inside shared helpers so all callers benefit.
+- **Audit sibling instances across the shared boundary.** When changing lifecycle, validation, exception wrapping, or telemetry semantics on one type, overload, or `Meter` instrument, search the enclosing component for all sibling instruments, overloads (such as `Stream` vs. path defaults), or PAL paths sharing the contract and update them consistently.
 - **Move shared code to shared files, not duplicated across runtimes.** When identical code exists across CoreCLR and NativeAOT, move it to the shared partition (using `#if !MONO` if needed).
 - **Use existing APIs instead of creating parallel ones.** Before introducing new types, enums, or helpers, check if existing ones serve the same purpose. Fix existing utilities rather than introducing duplicates.
 - **Delete dead code and unused declarations aggressively.** Remove dead code, unnecessary wrappers, obsolete fields, and unused variables when encountered or when the only caller changes. Also remove helper methods, enum values, function declarations, and resx strings left unused by a removal.
@@ -48,7 +49,7 @@ Pull-request process — scope, benchmark evidence, API approval, backport — i
 ## Documentation & Comments
 
 - **Comments should explain why, not restate code or history.** Delete comments like `// Get the types` that just duplicate the code in English. When rewriting logic, do not add source comments describing how the old or previous implementation worked. If explaining the previous implementation is useful, use the `annotate_diff_line` tool when available; otherwise omit that historical explanation. Comments in the code should explain the current implementation or why it behaves as it does.
-- **Delete or update obsolete comments when corresponding code changes.** Stale comments describing old behavior are worse than no comments. Update them when you touch the relevant code; leave unrelated stale comments to a dedicated cleanup pass.
+- **Delete or update obsolete comments when corresponding code changes.** Stale comments describing old behavior are worse than no comments. Update them when you touch the relevant code; leave unrelated stale comments to a dedicated cleanup pass. Preserve non-obvious "why" comments (spec invariants, security, encryption, or interop rationale) that still govern the surviving code when editing nearby lines.
 - **Track deferred work with GitHub issues and searchable TODOs.** Reference a tracking issue in TODO comments with a consistent prefix (e.g., `TODO-Async:`). Remove ancient TODOs that will never be addressed.
 - **Don't duplicate comments on interface implementations.** Documentation comments belong on the interface definition. Implementations should use `<inheritdoc/>` to avoid divergence.
 - **Add XML doc comments on all new public APIs.** These seed the official API documentation on learn.microsoft.com. Properties should start with "Gets the ..." or "Gets or sets the ...". Do not add XML docs to test code.

@@ -7,6 +7,8 @@ description: Generate and run ad hoc BenchmarkDotNet microbenchmarks to validate
 
 When you need to validate the performance impact of a code change, follow this process to write a BenchmarkDotNet benchmark and compare local baseline and changed builds.
 
+**When not to measure locally.** On a loaded or shared host (check load average or CPU contention first), don't run benchmarks: report performance as unmeasured or use @EgorBot. For an exact upstream backport that isn't performance-motivated, cite upstream's review instead of re-benchmarking unless the user asks; this is how the "could negatively impact performance" trigger in the root instructions applies to backports.
+
 ## Step 1: Write the Benchmark
 
 Create a BenchmarkDotNet benchmark that tests the specific operation being changed. Follow these guidelines:
@@ -157,6 +159,8 @@ dotnet run -c Release -- --filter "*" --coreRun "<baseline-corerun>" "<changed-c
 ```
 
 Use a BenchmarkDotNet version compatible with the repository's current target framework. If it fails with `GetRuntimeVersion not implemented for NotRecognized`, update BenchmarkDotNet to a compatible preview or nightly version.
+
+Target the scratch project at the newest framework the repo SDK supports, not the repo's in-development version: read `NETCoreAppMaximumVersion` from `.dotnet/sdk/*/Microsoft.NETCoreSdk.BundledVersions.props` (a higher target fails with NETSDK1045), and let `--coreRun` supply the locally built runtime. Compare Release testhosts only, and never disable BenchmarkDotNet's optimization validator; a validator error means the setup is wrong.
 
 Optionally, you can pass additional environment variables to the benchmark process using `--envvars`. For example, to enable JIT disassembly for a specific method:
 

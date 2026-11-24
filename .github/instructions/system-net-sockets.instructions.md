@@ -40,5 +40,7 @@ applyTo: "src/libraries/System.Net.Sockets/**"
 ## Error Handling
 
 - Map platform-specific error codes (WSA* on Windows, errno on Unix) to SocketException with the correct SocketError
-- Distinguish between transient errors (EWOULDBLOCK, EINTR) and fatal errors (ECONNREFUSED, ENETUNREACH) in retry logic
+- Distinguish between transient errors (EWOULDBLOCK, EINTR) and fatal errors (ECONNREFUSED, ENETUNREACH) in retry logic; non-blocking `Connect` returning `WouldBlock`/`InProgress` represents a pending async connect, not a failed connect in `SocketsTelemetry`
+- Audit synchronous and asynchronous PAL completion paths symmetrically (for example, connect-with-payload operations that complete inline vs. asynchronously must both flush buffered payloads and restore socket blocking state on every exit path)
+- When investigating intermittent or platform-specific socket test failures, verify blocking-mode restoration, buffered-send completion, and readiness state transitions before attributing the failure to a test race; always filter `System.Net.Sockets.Tests` runs via `/p:XUnitClassName=...`
 - SocketException.SocketErrorCode must be set correctly — callers depend on it for error classification

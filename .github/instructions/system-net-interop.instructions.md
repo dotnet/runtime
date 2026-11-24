@@ -1,5 +1,5 @@
 ---
-applyTo: "src/libraries/Common/src/Interop/Windows/HttpApi/**,src/libraries/Common/src/Interop/Windows/IpHlpApi/**,src/libraries/Common/src/Interop/Windows/WinHttp/**,src/libraries/Common/src/Interop/Windows/WinSock/**,src/libraries/Common/src/Interop/Unix/System.Native/**,src/libraries/Common/src/Interop/Unix/System.Net.Security.Native/**,src/native/libs/System.Native/pal_network*"
+applyTo: "src/libraries/Common/src/Interop/Windows/HttpApi/**,src/libraries/Common/src/Interop/Windows/IpHlpApi/**,src/libraries/Common/src/Interop/Windows/WinHttp/**,src/libraries/Common/src/Interop/Windows/WinSock/**,src/libraries/Common/src/Interop/Unix/System.Native/**,src/libraries/Common/src/Interop/Unix/System.Net.Security.Native/**,src/native/libs/System.Native/pal_network*,src/native/libs/System.Net.Security.Native*/**"
 ---
 
 # System.Net Interop — Folder-Specific Guidance
@@ -45,3 +45,4 @@ applyTo: "src/libraries/Common/src/Interop/Windows/HttpApi/**,src/libraries/Comm
 - Use portable POSIX APIs where possible; isolate platform-specific code behind #ifdef guards
 - Ensure all native allocations are freed on both success and error paths
 - Do not include system headers that are not available on all supported Unix platforms — check build on Linux, macOS, and FreeBSD
+- After rebuilding native shims with `./build.sh libs.native -rc release`, copy the updated `.dylib`/`.so` from `artifacts/bin/native/<tfm>-<os>-Release-<arch>/` into `artifacts/bin/testhost/<tfm>-<os>-Debug-<arch>/shared/Microsoft.NETCore.App/*/` before running managed `System.Net*` tests — `libs.native` alone does not refresh an existing `testhost`

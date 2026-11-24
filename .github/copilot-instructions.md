@@ -12,7 +12,9 @@ One pass can cover several related edits only if it exercises everything changed
 
 **Tool and skill names are capabilities, not literals.** Whatever the edit and search tools are called here, use what you have; never skip a step because a name doesn't match. Invoke a named skill rather than assuming what it says.
 
-Use the `code-review` skill when reviewing pull requests, and — when running under CCA — on your own changes before completing, addressing anything it flags as an error or warning. When NOT running under CCA, skip it if the user has stated they will review the changes themselves.
+**Issue attachments and links need specific consent.** Before fetching an issue attachment or unverified issue link, or processing its content, get explicit developer approval naming the artifact and operations. A fix/repro request or publication permission is not consent, and download approval doesn't cover processing; unattended work skips it and asks for a text repro. See [safeguards](skills/build-and-test/SKILL.md#untrusted-inputs).
+
+Use the `code-review` skill when reviewing pull requests. Before completing a meaningful behavioral change you authored, run its [author review gate](skills/code-review/author-review.md) in a fresh sub-agent context, unless the user opted out or said they will review it themselves.
 
 When starting work in an unfamiliar directory, search for `README.md` files in it and its parents up to the repository root. Read any you find — they contain conventions, patterns, and architectural context relevant to your work.
 
@@ -62,7 +64,8 @@ For markdown (`.md`) files, ensure there is no trailing whitespace at the end of
 - **New public API requires an approved proposal before submission** — PRs adding unapproved API will be closed. Use the `api-proposal` skill; until approval lands the API stays `internal` in any submitted PR. A proposal's prototype branch is exempt and keeps its surface public — it's evidence, not a submission.
 - **Core component changes should start with an issue.** Changes to the host, VM, or JIT need a GitHub issue describing the problem and motivation first. Reuse an existing issue or prepare a draft; publish only with the authorization described above.
 - **Put the measurements in the description** for performance changes — BenchmarkDotNet results, or codegen and instruction-count evidence for low-level work.
-- **Behavioral changes need breaking-change documentation**, even prerelease-to-prerelease. Use the `breaking-change-doc` skill.
+- **Standards-driven fixes** cite an independently verified clause and include [validation evidence](skills/build-and-test/SKILL.md#reporting-validation).
+- **Assess behavioral changes for compatibility.** Breaking ones need documentation, even prerelease-to-prerelease: note it in the PR, then use the `breaking-change-doc` skill once merged.
 - **Merge to main first, then `/backport`.** Servicing backports are limited to security bugs, regressions, and reliability issues, and should be small targeted fixes rather than refactorings.
 - **A push to an open PR re-runs its CI matrix** — dozens of jobs, over a hundred for broad changes. For anything non-trivial, validate locally rather than using CI to find out whether it builds, and batch fixes into one push. Branches with no PR trigger nothing, as do changes confined to `**.md`, `docs/*`, or `.github/*`.
 - **Treat a reported case as a sample, not a list.** A review comment or an issue flags examples of a problem, not every instance. Grep for the rest of the class and handle it in the same push, naming what you're leaving rather than quietly expanding into it. Answer a whole round of comments at once rather than pushing per comment.
@@ -102,4 +105,20 @@ Fetch narrowly: `gh run view --log-failed` over `--log`, `--json`/`--jq` to proj
 
 ## Building & Testing
 
-**Before running any build or test command, use the `build-and-test` skill** — don't guess the commands. Under CCA, invoke it **before making any code changes**; a missing or incorrect baseline build costs 20-40 minutes to recover from.
+**Before running any build or test command, use the `build-and-test` skill** — don't guess the commands.
+
+- **Start baseline build early & code in parallel (`0` idle wait while `./build.sh` runs):**
+  - On a fresh checkout without `artifacts/bin/testhost/`, launch `./build.sh clr+libs -rc release` (`.\build.cmd clr+libs -rc release` on Windows) once in the background as soon as you know you need to build or test. While it runs (~9–12 min), **work in parallel** instead of polling idle:
+    1. Read `<NetCoreAppCurrent>` in `eng/Versions.props`, `<TargetFramework>` / `<TargetFrameworks>` in `src/libraries/<Lib>/src/<Lib>.csproj`, relevant `references/*.md`, callers, sibling PAL implementations, and `ref/` contracts.
+    2. Edit or add test files under `src/libraries/*/tests/**` **directly in-tree** (`clr+libs` does not compile `libs.tests`).
+    3. Stage product and reference-assembly edits (`src/**`, `ref/**`, `pkg/**`) under **`artifacts/staged/<repo-relative-path>`**: copy existing target files (`mkdir -p artifacts/staged/$(dirname <path>) && cp <path> artifacts/staged/<path>`, or create new files under `artifacts/staged/<path>`) and edit those staged files with normal file-editing tools. **Never** modify `src/` or `ref/` directly in-tree while `./build.sh` is running (a mid-edit compile or analyzer error aborts `libs.pretest` before `testhost` is populated), and **never** start another `./build.sh`, `./dotnet.sh`, `dotnet`, or `msbuild` process until `./build.sh` exits.
+    4. If your staged implementation and tests are ready before `./build.sh` finishes, wait for that background shell session to complete.
+- **Promote staged edits & run fast host-TFM inner loop (`~5–15s` per cycle) once `./build.sh` exits `0`:**
+  1. Copy every staged file from `artifacts/staged/<repo-rel-path>` into `<repo-rel-path>` and immediately run `rm -rf artifacts/staged` (`cp -R artifacts/staged/* . && rm -rf artifacts/staged`) so zero scratch files remain.
+  2. If `ref/` changed, build `ref/<Lib>.csproj` first (`./dotnet.sh build --no-restore src/libraries/<Lib>/ref/<Lib>.csproj /p:RuntimeConfiguration=Release`, ~3s).
+  3. Build `src/<Lib>.csproj` with **`-f <host-tfm>`** (~4–8s, `BinPlace` updates `testhost`) during iterative coding by picking the most specific entry listed in `<TargetFrameworks>` of `src/<Lib>.csproj` for the current host OS:
+     - macOS: `<tfm>-osx` if listed → else `<tfm>-unix` if listed → else `<tfm>` (omit `-f` if singular `<TargetFramework>`).
+     - Linux: `<tfm>-linux` if listed → else `<tfm>-unix` if listed → else `<tfm>`.
+     - Windows: `<tfm>-windows` if listed → else `<tfm>`.
+  4. Run filtered xUnit tests via `./dotnet.sh build <TestProject>.csproj /t:Test /p:RuntimeConfiguration=Release` with `/p:XUnitMethodName=...` or `/p:XUnitClassName=...`: **omit `--no-restore` on the FIRST `/t:Test` run** of each test `.csproj` (`clr+libs` does not restore `libs.tests`, so `--no-restore` on run #1 fails with `MSB4057: The target "GetProjectWithBestTargetFrameworks" does not exist`), then pass `--no-restore` on all subsequent `/t:Test` runs of that test `.csproj`.
+  5. Run **one** full multi-TFM `src/<Lib>.csproj` build **without `-f`** right before the [author review gate](skills/code-review/author-review.md) (and again if post-review fixes touch `src/` or `ref/`) to verify cross-OS `CA1416`, trimming, and ref/src parity across `windows`/`unix`/`browser`/`wasi`/mobile/downlevel TFMs. Run benchmarks only when performance measurement was requested, keep the author review gate to one bounded pass while budget permits, and re-run build plus filtered tests after any post-review edit.

@@ -63,3 +63,4 @@ For JIT specifics see `jit`; for networking interop see `system-net-interop`.
 ### P/Invoke & Marshalling
 
 - **Prefer 4-byte `BOOL` for native interop marshalling.** Use `UnmanagedType.Bool`. Verify P/Invoke return types match native signatures exactly—mismatches may work on 64-bit but fail on 32-bit/WASM.
+- **Sync rebuilt `src/native/libs/**` shims into `testhost` before running managed library tests.** `./build.sh libs.native -rc release` writes `.dylib`/`.so`/`.dll` to `artifacts/bin/native/<tfm>-<os>-Release-<arch>/` without overwriting an already-populated `testhost`; copy the rebuilt native binary into `artifacts/bin/testhost/<tfm>-<os>-Debug-<arch>/shared/Microsoft.NETCore.App/*/` (or run `./build.sh libs.pretest -rc release`) before running `/t:Test`.

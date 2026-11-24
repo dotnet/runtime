@@ -4,6 +4,8 @@ applyTo: "src/libraries/System.Net.Quic/**"
 
 # System.Net.Quic — Folder-Specific Guidance
 
+- [Verified](../skills/build-and-test/SKILL.md#reporting-validation) specs at `rfc-editor.org/info/rfcN`: RFC 9000 transport, 9001 TLS, 9002 recovery; HTTP/3 mapping is RFC 9114 (System.Net.Http)
+
 ## MsQuic Interop
 
 - All MsQuic API calls go through the MsQuicApi function table — never call native exports directly
