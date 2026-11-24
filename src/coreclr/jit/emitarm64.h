@@ -199,6 +199,7 @@ bool OptimizePostIndexed(instruction ins, regNumber reg, ssize_t imm, emitAttr r
 
 // Try to fold the page offset of a preceding relocatable "add Rd,Rd,#:lo12:sym" (PAGEOFFSET_12A)
 // into a "ldr Rd,[Rd]" to form "ldr Rd,[Rd,#:lo12:sym]" (PAGEOFFSET_12L), removing the add.
+void emitPageOffsetLoad(emitAttr attr, regNumber reg, void* sym);
 bool TryFoldPageOffsetIntoLdr(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2);
 
 emitLclVarAddr* emitGetLclVarPairLclVar2(instrDesc* id)

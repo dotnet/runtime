@@ -11964,10 +11964,10 @@ void CEEJitInfo::recordRelocation(void *       location,
         //
         if (!FitsInI4(delta))
         {
-            if (m_fAllowRel32)
+            if (m_fAllowOptionalRelocs)
             {
                 //
-                // When m_fAllowRel32 == TRUE, the JIT will use RELATIVE32s for both data addresses and direct code targets.
+                // When m_fAllowOptionalRelocs == TRUE, the JIT will use RELATIVE32s for both data addresses and direct code targets.
                 // Since we cannot tell what the relocation is for, we have to defensively retry.
                 //
                 m_fJumpStubOverflow = TRUE;
@@ -11983,7 +11983,7 @@ void CEEJitInfo::recordRelocation(void *       location,
                 else
                 {
                     //
-                    // When m_fAllowRel32 == FALSE, the JIT will use a RELATIVE32s for direct code targets only.
+                    // When m_fAllowOptionalRelocs == FALSE, the JIT will use a RELATIVE32s for direct code targets only.
                     // Use jump stub.
                     //
                     delta = rel32UsingJumpStub(fixupLocation, (PCODE)target, m_pMethodBeingCompiled);
@@ -12105,7 +12105,25 @@ void CEEJitInfo::recordRelocation(void *       location,
         INT64 targetPage = (INT64)target & 0xFFFFFFFFFFFFF000LL;
         INT64 locationPage = (INT64)location & 0xFFFFFFFFFFFFF000LL;
         INT64 relPage = (INT64)(targetPage - locationPage);
-        INT32 imm21 = (INT32)(relPage >> 12) & 0x1FFFFF;
+        INT64 pages = relPage >> 12;
+#ifdef _DEBUG
+        static ConfigDWORD forcePageRelocOverflow;
+        if (m_fAllowOptionalRelocs &&
+            (PEDecoder::GetForceRelocs() || forcePageRelocOverflow.val(CLRConfig::INTERNAL_JitForcePageRelocOverflow)))
+        {
+            // Exercise the range check on the first pass. Optional relocs are disabled on retry.
+            pages = 1 << 20;
+        }
+#endif
+        if (m_fAllowOptionalRelocs && !FitsInArm64PageDelta(pages))
+        {
+            // The instruction address is known only after allocation. Discard this
+            // compilation and use absolute cell addresses on the retry.
+            m_fJumpStubOverflow = TRUE;
+            break;
+        }
+        _ASSERTE(FitsInArm64PageDelta(pages));
+        INT32 imm21 = (INT32)pages & 0x1FFFFF;
         PutArm64Rel21((UINT32 *)locationRW, imm21);
         break;
     }
@@ -12251,12 +12269,16 @@ CorInfoReloc CEEJitInfo::getRelocTypeHint(void * target)
     STANDARD_VM_CONTRACT;
 
 #if defined(TARGET_AMD64) || defined(TARGET_RISCV64)
-    if (m_fAllowRel32)
+    if (m_fAllowOptionalRelocs)
     {
         if (ExecutableAllocator::IsPreferredExecutableRange(target))
             return CorInfoReloc::RELATIVE32;
     }
-#endif // TARGET_AMD64 || TARGET_RISCV64
+#elif defined(TARGET_ARM64)
+    if (m_fAllowOptionalRelocs && IS_ALIGNED((SIZE_T)target, sizeof(void*)) &&
+        ExecutableAllocator::IsInPreferredPageRelativeRange(target))
+        return CorInfoReloc::ARM64_PAGEBASE_REL21;
+#endif
 
     // No hints
     return CorInfoReloc::NONE;
@@ -13395,7 +13417,7 @@ class JumpStubOverflowCheck final
 #endif // TARGET_AMD64 || TARGET_RISCV64
 
     BOOL _fForceJumpStubOverflow;
-    BOOL _fAllowRel32;
+    BOOL _fAllowOptionalRelocs;
     size_t _reserveForJumpStubs;
 #endif // defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)
 
@@ -13412,9 +13434,11 @@ public:
             _fForceJumpStubOverflow = TRUE;
 #endif
 
-        _fAllowRel32 = FALSE;
+        _fAllowOptionalRelocs = FALSE;
 #if defined(TARGET_AMD64) || defined(TARGET_RISCV64)
-        _fAllowRel32 = (g_fAllowRel32 | _fForceJumpStubOverflow) && g_pConfig->JitEnableOptionalRelocs();
+        _fAllowOptionalRelocs = (g_fAllowRel32 | _fForceJumpStubOverflow) && g_pConfig->JitEnableOptionalRelocs();
+#elif defined(TARGET_ARM64)
+        _fAllowOptionalRelocs = g_pConfig->JitEnableOptionalRelocs();
 #endif // TARGET_AMD64 || TARGET_RISCV64
 
         _reserveForJumpStubs = 0;
@@ -13430,12 +13454,12 @@ public:
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)
 #if defined(TARGET_AMD64) || defined(TARGET_RISCV64)
         if (_fForceJumpStubOverflow)
-            jitInfo.SetJumpStubOverflow(_fAllowRel32);
-        jitInfo.SetAllowRel32(_fAllowRel32);
+            jitInfo.SetJumpStubOverflow(_fAllowOptionalRelocs);
 #else
         if (_fForceJumpStubOverflow)
             jitInfo.SetJumpStubOverflow(_fForceJumpStubOverflow);
 #endif
+        jitInfo.SetAllowOptionalRelocs(_fAllowOptionalRelocs);
         jitInfo.SetReserveForJumpStubs(_reserveForJumpStubs);
 #endif // defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)
     }
@@ -13447,14 +13471,13 @@ public:
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)
         if (jitInfo.IsJumpStubOverflow())
         {
-            // Try again with fAllowRel32 == FALSE.
+            // Retry with optional PC-relative addressing disabled.
 
 #if defined(TARGET_AMD64) || defined(TARGET_RISCV64)
             // Disallow rel32 relocs in future.
             g_fAllowRel32 = FALSE;
-
-            _fAllowRel32 = FALSE;
 #endif // TARGET_AMD64 || TARGET_RISCV64
+            _fAllowOptionalRelocs = FALSE;
 #if defined(TARGET_ARM64)
             _fForceJumpStubOverflow = FALSE;
 #endif // TARGET_ARM64

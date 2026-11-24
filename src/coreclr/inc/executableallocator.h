@@ -239,6 +239,11 @@ public:
     // to use rel32 IP-relative addressing modes.
     static bool IsPreferredExecutableRange(void* p);
 
+#ifdef TARGET_ARM64
+    // Can ADRP reach the target from every page in the preferred code range?
+    static bool IsInPreferredPageRelativeRange(void* target);
+#endif
+
     // Reserve the specified amount of virtual address space for executable mapping.
     void* Reserve(size_t size);
 

@@ -52,6 +52,14 @@ bool ExecutableAllocator::IsPreferredExecutableRange(void*)
     return false;
 }
 
+#ifdef TARGET_ARM64
+bool ExecutableAllocator::IsInPreferredPageRelativeRange(void*)
+{
+    LIMITED_METHOD_CONTRACT;
+    return false;
+}
+#endif
+
 void* ExecutableAllocator::Reserve(size_t size)
 {
     LIMITED_METHOD_CONTRACT;
@@ -325,6 +333,21 @@ bool ExecutableAllocator::IsPreferredExecutableRange(void * p)
     LIMITED_METHOD_CONTRACT;
     return g_preferredRangeMin <= (BYTE *)p && (BYTE *)p < g_preferredRangeMax;
 }
+
+#ifdef TARGET_ARM64
+bool ExecutableAllocator::IsInPreferredPageRelativeRange(void* target)
+{
+    LIMITED_METHOD_CONTRACT;
+    if (g_preferredRangeMin >= g_preferredRangeMax)
+        return false;
+
+    // ADRP always uses 4 KiB pages, including on hosts with larger OS pages.
+    INT64 page = (INT64)((UINT_PTR)target >> 12);
+    INT64 first = (INT64)((UINT_PTR)g_preferredRangeMin >> 12);
+    INT64 last = (INT64)(((UINT_PTR)g_preferredRangeMax - 1) >> 12);
+    return FitsInArm64PageDelta(page - last) && FitsInArm64PageDelta(page - first);
+}
+#endif
 
 ExecutableAllocator* ExecutableAllocator::Instance() noexcept
 {

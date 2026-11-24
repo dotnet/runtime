@@ -2436,6 +2436,12 @@ inline bool FitsInRel21(INT32 val32)
     return (val32 >= 0) && (val32 <= 0x001FFFFF);
 }
 
+// Signed displacement in 4 KiB pages, before encoding the ADRP immediate.
+inline bool FitsInArm64PageDelta(INT64 pages)
+{
+    return pages >= -(1 << 20) && pages < (1 << 20);
+}
+
 //*****************************************************************************
 // Returns whether the offset fits into an Arm64 add instruction
 //*****************************************************************************

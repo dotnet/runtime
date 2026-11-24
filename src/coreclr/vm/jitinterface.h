@@ -824,11 +824,11 @@ public:
         m_usedUnwindInfos = 0;
     }
 
-#if defined(TARGET_AMD64) || defined(TARGET_RISCV64)
-    void SetAllowRel32(BOOL fAllowRel32)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)
+    void SetAllowOptionalRelocs(BOOL fAllowOptionalRelocs)
     {
         LIMITED_METHOD_CONTRACT;
-        m_fAllowRel32 = fAllowRel32;
+        m_fAllowOptionalRelocs = fAllowOptionalRelocs;
     }
 #endif
 
@@ -908,10 +908,8 @@ public:
           m_theUnwindBlock(NULL),
           m_totalUnwindInfos(0),
           m_usedUnwindInfos(0)
-#if defined(TARGET_AMD64) || defined(TARGET_RISCV64)
-        , m_fAllowRel32(FALSE)
-#endif
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)
+        , m_fAllowOptionalRelocs(FALSE)
         , m_fJumpStubOverflow(FALSE),
           m_reserveForJumpStubs(0)
 #endif
@@ -970,12 +968,10 @@ protected :
     ULONG                   m_totalUnwindInfos; // Number of RUNTIME_FUNCTION needed
     ULONG                   m_usedUnwindInfos;
 
-#if defined(TARGET_AMD64) || defined(TARGET_RISCV64)
-    BOOL                    m_fAllowRel32;      // Use 32-bit PC relative address modes
-#endif
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)
+    BOOL                    m_fAllowOptionalRelocs; // Allow optional PC-relative addressing
     BOOL                    m_fJumpStubOverflow;   // Overflow while trying to alocate jump stub slot within PC relative branch region
-                                                   // The code will need to be regenerated (with m_fRel32Allowed == FALSE for AMD64).
+                                                   // The code will need to be regenerated (with optional PC-relative addressing disabled).
     size_t                  m_reserveForJumpStubs; // Space to reserve for jump stubs when allocating code
 #endif
 

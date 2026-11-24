@@ -284,6 +284,9 @@ RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_JITMinOpts, W("JITMinOpts"), 0, "Forces Min
 // *Some* relocs are just opportunistic optimizations and can be non-deterministic - it might produce
 // noise for jit-diff like tools.
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_JitEnableOptionalRelocs, W("JitEnableOptionalRelocs"), 1, "Allow optional relocs")
+#ifdef TARGET_ARM64
+CONFIG_DWORD_INFO(INTERNAL_JitForcePageRelocOverflow, W("JitForcePageRelocOverflow"), 0, "Force optional ADRP relocations out of range on the first JIT attempt")
+#endif
 RETAIL_CONFIG_STRING_INFO(EXTERNAL_JitName, W("JitName"), "Primary jit to use")
 CONFIG_STRING_INFO(INTERNAL_JitPath, W("JitPath"), "Full path to primary jit to use")
 #if defined(ALLOW_SXS_JIT)
