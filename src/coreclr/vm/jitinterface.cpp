@@ -2729,9 +2729,21 @@ void CEEInfo::embedGenericHandle(
 {
     STANDARD_VM_CONTRACT;
 
-    INDEBUG(memset(pResult, 0xCC, sizeof(*pResult)));
-
     JIT_TO_EE_TRANSITION();
+
+    embedGenericHandleInternal(pResolvedToken, fEmbedParent, callerHandle, pResult);
+
+    EE_TO_JIT_TRANSITION();
+}
+
+void CEEInfo::embedGenericHandleInternal(CORINFO_RESOLVED_TOKEN* pResolvedToken,
+                                         bool fEmbedParent,
+                                         CORINFO_METHOD_HANDLE callerHandle,
+                                         CORINFO_GENERICHANDLE_RESULT* pResult)
+{
+    STANDARD_VM_CONTRACT;
+
+    INDEBUG(memset(pResult, 0xCC, sizeof(*pResult)));
 
     BOOL fRuntimeLookup;
     MethodDesc * pTemplateMD = NULL;
@@ -2835,8 +2847,6 @@ void CEEInfo::embedGenericHandle(
         pResult->lookup.constLookup.handle = pResult->compileTimeHandle;
         pResult->lookup.constLookup.accessType = IAT_VALUE;
     }
-
-    EE_TO_JIT_TRANSITION();
 }
 
 //
@@ -5543,6 +5553,9 @@ void CEEInfo::prepareCallLookups(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                           CORINFO_CALL_INFO* pCallInfo)
 {
     STANDARD_VM_CONTRACT;
+
+    JIT_TO_EE_TRANSITION();
+
     _ASSERTE(pCallInfo->sig.hasTypeArg() && pCallInfo->exactContextNeedsRuntimeLookup);
     _ASSERTE(pCallInfo->instParamLookup.lookupKind.runtimeLookupKind == CORINFO_LOOKUP_DEFERRED);
 
@@ -5557,8 +5570,10 @@ void CEEInfo::prepareCallLookups(CORINFO_RESOLVED_TOKEN* pResolvedToken,
     }
 
     CORINFO_GENERICHANDLE_RESULT embedInfo;
-    embedGenericHandle(lookupToken, embedParent, callerHandle, &embedInfo);
+    embedGenericHandleInternal(lookupToken, embedParent, callerHandle, &embedInfo);
     pCallInfo->instParamLookup = embedInfo.lookup;
+
+    EE_TO_JIT_TRANSITION();
 }
 
 

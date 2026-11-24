@@ -364,6 +364,11 @@ public:
 
     DWORD getMethodAttribsInternal (CORINFO_METHOD_HANDLE ftnHnd);
 
+    void embedGenericHandleInternal(CORINFO_RESOLVED_TOKEN* pResolvedToken,
+                                    bool fEmbedParent,
+                                    CORINFO_METHOD_HANDLE callerHandle,
+                                    CORINFO_GENERICHANDLE_RESULT* pResult);
+
     bool resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info);
 
     CORINFO_CLASS_HANDLE getDefaultComparerClassHelper(
