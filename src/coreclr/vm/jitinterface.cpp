@@ -5521,8 +5521,6 @@ void CEEInfo::getCallInfo(
         }
     }
 
-    EE_TO_JIT_TRANSITION();
-
     pResult->instParamLookup = {};
     if (pResult->sig.hasTypeArg() && pResult->exactContextNeedsRuntimeLookup)
     {
@@ -5535,6 +5533,8 @@ void CEEInfo::getCallInfo(
         pResult->instParamLookup.constLookup.handle =
             (CORINFO_GENERIC_HANDLE)((SIZE_T)pResult->contextHandle & ~CORINFO_CONTEXTFLAGS_MASK);
     }
+
+    EE_TO_JIT_TRANSITION();
 }
 
 void CEEInfo::prepareCallLookups(CORINFO_RESOLVED_TOKEN* pResolvedToken,
