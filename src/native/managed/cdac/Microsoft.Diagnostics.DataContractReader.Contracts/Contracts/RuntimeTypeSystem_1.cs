@@ -170,6 +170,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         IsAsyncVariant = 0x4,
         Thunk = 0x10,
         ReturnDroppingThunk = 0x20,
+        CovariantForwardingThunk = 0x40,
     }
 
     [Flags]
@@ -601,6 +602,170 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         classification = new SystemVAmd64EightByteClassification(first, second);
         return true;
     }
+
+    // ENREGISTERED_PARAMTYPE_MAXSIZE on RISC-V and LoongArch64.
+    private const uint FpStructMaxSize = 16;
+    // Reader-side guard against corrupted target data; native FlattenFields has no such limit.
+    private const int FpStructMaxNestingDepth = 16;
+
+    public bool TryGetFpStructInRegistersClassification(ITypeHandle typeHandle, out FpStructInRegistersClassification classification)
+    {
+        classification = default;
+
+        RuntimeInfoArchitecture arch = _target.Contracts.RuntimeInfo.GetTargetArchitecture();
+        if (arch is not (RuntimeInfoArchitecture.RiscV64 or RuntimeInfoArchitecture.LoongArch64))
+            return false;
+
+        if (!typeHandle.IsMethodTable() || GetNumInstanceFieldBytes(typeHandle) > FpStructMaxSize)
+            return false;
+
+        FpStructField[] fields = new FpStructField[2];
+        int count = 0;
+        if (!FlattenFpStructFields(typeHandle, 0, fields, ref count, 0))
+            return false;
+
+        if (count == 0 || (!fields[0].IsFloatingPoint && (count == 1 || !fields[1].IsFloatingPoint)))
+            return false; // no floating-point fields
+
+        if (count == 2 && fields[0].Offset > fields[1].Offset)
+            (fields[0], fields[1]) = (fields[1], fields[0]);
+
+        classification = new FpStructInRegistersClassification(fields[0], count == 2 ? fields[1] : null);
+        return true;
+    }
+
+    // Mirrors FlattenFields (managed layout) in src/coreclr/vm/methodtable.cpp.
+    private bool FlattenFpStructFields(ITypeHandle typeHandle, uint structOffset, FpStructField[] fields, ref int count, int depth)
+    {
+        if (depth >= FpStructMaxNestingDepth)
+            return false;
+
+        IRuntimeTypeSystem rts = this;
+        int elementIndex = count;
+        int numFields = 0;
+        uint occupiedBytesMap = 0;
+        CorElementType lastFieldType = default;
+        uint lastFieldOffset = 0;
+        uint lastFieldSize = 0;
+        foreach (TargetPointer fd in rts.GetFieldDescList(typeHandle))
+        {
+            if (rts.IsFieldDescStatic(fd))
+                continue;
+            numFields++;
+
+            CorElementType type = rts.GetFieldDescType(fd);
+            uint fieldOffset = rts.GetFieldDescOffset(fd, null);
+            ITypeHandle? nested = null;
+            uint size;
+            if (type == CorElementType.ValueType)
+            {
+                nested = rts.GetFieldDescApproxTypeHandle(fd);
+                if (nested is null || !nested.IsMethodTable())
+                    return false;
+                size = GetNumInstanceFieldBytes(nested);
+            }
+            else
+            {
+                size = GetFpStructPrimitiveFieldSize(type);
+                if (size == 0)
+                    return false;
+            }
+
+            uint startOffset = structOffset + fieldOffset;
+            uint endOffset = startOffset + size;
+            if (endOffset > FpStructMaxSize)
+                return false;
+
+            uint fieldOccupation = (~0u << (int)startOffset) ^ (~0u << (int)endOffset);
+            if ((occupiedBytesMap & fieldOccupation) != 0)
+                return false; // fields overlap, treat as union
+            occupiedBytesMap |= fieldOccupation;
+
+            lastFieldType = type;
+            lastFieldOffset = fieldOffset;
+            lastFieldSize = size;
+
+            if (nested is not null)
+            {
+                if (!FlattenFpStructFields(nested, startOffset, fields, ref count, depth + 1))
+                    return false;
+            }
+            else if (size <= (uint)_target.PointerSize)
+            {
+                if (count >= 2)
+                    return false; // too many fields
+                fields[count++] = new FpStructField(type is CorElementType.R4 or CorElementType.R8, (byte)size, startOffset);
+            }
+            else
+            {
+                return false; // field is too big
+            }
+        }
+
+        // Mirrors HasImpliedRepeatedFields: inline arrays, and fixed buffers (a single primitive or value-type
+        // field at offset 0 of a type with layout whose size is a multiple of the field size).
+        Data.EEClass eeClass = GetClassData(typeHandle);
+        bool hasImpliedRepeatedFields = eeClass.IsInlineArray
+            || (numFields == 1
+                && (IsCorPrimitiveType(lastFieldType) || lastFieldType == CorElementType.ValueType)
+                && lastFieldOffset == 0
+                && eeClass.HasLayout
+                && lastFieldSize != 0
+                && GetNumInstanceFieldBytes(typeHandle) % lastFieldSize == 0);
+        if (!hasImpliedRepeatedFields)
+            return true;
+
+        if (numFields != 1 || lastFieldSize == 0)
+            return false;
+
+        uint numElements = GetNumInstanceFieldBytes(typeHandle) / lastFieldSize;
+        int fieldsPerElement = count - elementIndex;
+        if (fieldsPerElement == 0)
+        {
+            // Only InlineArrays can have an empty struct element type; such arrays use the integer calling convention.
+            return !eeClass.IsInlineArray;
+        }
+
+        if (numElements > 2)
+            return false; // array has too many elements
+
+        if (numElements == 2)
+        {
+            if (count + fieldsPerElement > 2)
+                return false; // array has too many fields per element
+
+            FpStructField element = fields[elementIndex];
+            uint startOffset = element.Offset + element.Size;
+            uint endOffset = startOffset + element.Size;
+            uint fieldOccupation = (~0u << (int)startOffset) ^ (~0u << (int)endOffset);
+            if ((occupiedBytesMap & fieldOccupation) != 0)
+                return false; // duplicated array element overlaps with other fields
+
+            fields[count++] = element with { Offset = startOffset };
+        }
+
+        return true;
+    }
+
+    // Mirrors CorTypeInfo::Size_NoThrow for the element types FlattenFields can encounter outside value types.
+    private uint GetFpStructPrimitiveFieldSize(CorElementType type)
+        => type switch
+        {
+            CorElementType.Boolean or CorElementType.I1 or CorElementType.U1 => 1,
+            CorElementType.Char or CorElementType.I2 or CorElementType.U2 => 2,
+            CorElementType.I4 or CorElementType.U4 or CorElementType.R4 => 4,
+            CorElementType.I8 or CorElementType.U8 or CorElementType.R8 => 8,
+            CorElementType.I or CorElementType.U or CorElementType.Ptr or CorElementType.FnPtr
+                or CorElementType.Class or CorElementType.Object or CorElementType.String
+                or CorElementType.Array or CorElementType.SzArray or CorElementType.Byref => (uint)_target.PointerSize,
+            _ => 0,
+        };
+
+    // Mirrors CorTypeInfo::IsPrimitiveType_NoThrow.
+    private static bool IsCorPrimitiveType(CorElementType type)
+        => (type >= CorElementType.Boolean && type <= CorElementType.R8)
+            || type == CorElementType.I
+            || type == CorElementType.U;
 
     // only called on validated method tables, so we don't need to re-validate the EEClass
     private Data.EEClass GetClassData(ITypeHandle typeHandle)
@@ -1335,6 +1500,42 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return (auxData.Flags & (uint)MethodTableAuxiliaryFlags.IsNotFullyLoaded) == 0; // IsUnloaded
     }
 
+    private uint GetConstructedTypeHash(ITypeHandle? typeHandle, CorElementType elementType, ImmutableArray<ITypeHandle?> typeArguments, SignatureCallingConvention callConv)
+    {
+        // Match HashTypeKey in src/coreclr/vm/typehash.cpp. Module and array rank are not hashed.
+        uint hash = 5381;
+        if (elementType == CorElementType.GenericInst)
+        {
+            Debug.Assert(typeHandle is not null);
+            hash = Mix(hash, GetTypeDefToken(typeHandle));
+            foreach (ITypeHandle? argument in typeArguments)
+            {
+                Debug.Assert(argument is not null);
+                hash = Mix(hash, argument.Address.Value);
+            }
+        }
+        else if (elementType == CorElementType.FnPtr)
+        {
+            hash = Mix(hash, (uint)CorElementType.FnPtr);
+            hash = Mix(hash, (uint)callConv);
+            hash = Mix(hash, unchecked((uint)(typeArguments.Length - 1)));
+            foreach (ITypeHandle? argument in typeArguments)
+            {
+                Debug.Assert(argument is not null);
+                hash = Mix(hash, argument.Address.Value);
+            }
+        }
+        else
+        {
+            Debug.Assert(typeHandle is not null);
+            hash = Mix(hash, (uint)elementType);
+            hash = Mix(hash, typeHandle.Address.Value);
+        }
+        return hash;
+
+        static uint Mix(uint hash, ulong value) => unchecked((hash * 33) ^ (uint)value);
+    }
+
     ITypeHandle? IRuntimeTypeSystem.GetConstructedType(ITypeHandle? typeHandle, CorElementType corElementType, int rank, ImmutableArray<ITypeHandle?> typeArguments, SignatureCallingConvention callConv)
     {
         if (typeHandle is null && corElementType != CorElementType.FnPtr)
@@ -1357,7 +1558,8 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
         ModuleHandle moduleHandle = loaderContract.GetModuleHandleFromModulePtr(loaderModule);
         ITypeHandle potentialMatch;
-        foreach (TargetPointer ptr in loaderContract.GetAvailableTypeParams(moduleHandle))
+        uint hash = GetConstructedTypeHash(typeHandle, corElementType, typeArguments, callConv);
+        foreach (TargetPointer ptr in loaderContract.GetAvailableTypeParams(moduleHandle, hash))
         {
             potentialMatch = GetTypeHandle(ptr);
             if (corElementType == CorElementType.GenericInst)
@@ -1890,7 +2092,9 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         AsyncMethodFlags flags = GetAsyncMethodFlags(methodDescHandle);
         return IsWrapperStub(methodDesc) ||
             (flags.HasFlag(AsyncMethodFlags.Thunk) &&
-                (flags.HasFlag(AsyncMethodFlags.ReturnDroppingThunk) || !flags.HasFlag(AsyncMethodFlags.IsAsyncVariant)));
+                (flags.HasFlag(AsyncMethodFlags.ReturnDroppingThunk) ||
+                    flags.HasFlag(AsyncMethodFlags.CovariantForwardingThunk) ||
+                    !flags.HasFlag(AsyncMethodFlags.IsAsyncVariant)));
     }
 
     public bool IsDiagnosticsHiddenLCGMethod(MethodDescHandle methodDescHandle)
@@ -2103,11 +2307,18 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
         ITypeHandle methodTable = GetTypeHandle(methodDesc.MethodTable);
         ITypeHandle canonicalMethodTable = GetTypeHandle(GetCanonicalMethodTable(methodTable));
+        TargetPointer module = GetModule(methodTable);
+        AsyncMethodFlags methodFlags = ((IRuntimeTypeSystem)this).GetAsyncMethodFlags(methodDescHandle);
+        bool matchSlot = methodDesc.Slot != ushort.MaxValue &&
+            methodFlags.HasFlag(AsyncMethodFlags.IsAsyncVariant) &&
+            !methodFlags.HasFlag(AsyncMethodFlags.ReturnDroppingThunk);
 
         foreach (MethodDescHandle candidateHandle in GetIntroducedMethods(canonicalMethodTable))
         {
             MethodDesc candidate = _methodDescs[candidateHandle.Address];
-            if (candidate.Slot != methodDesc.Slot)
+            if (matchSlot ? candidate.Slot != methodDesc.Slot :
+                candidate.Token != methodDesc.Token ||
+                GetModule(GetTypeHandle(candidate.MethodTable)) != module)
                 continue;
 
             AsyncMethodFlags flags = ((IRuntimeTypeSystem)this).GetAsyncMethodFlags(candidateHandle);
@@ -2324,6 +2535,8 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             result |= AsyncMethodFlags.Thunk;
         if ((raw & AsyncMethodFlags_1.ReturnDroppingThunk) != 0)
             result |= AsyncMethodFlags.ReturnDroppingThunk;
+        if ((raw & AsyncMethodFlags_1.CovariantForwardingThunk) != 0)
+            result |= AsyncMethodFlags.CovariantForwardingThunk;
         return result;
     }
 

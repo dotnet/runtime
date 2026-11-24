@@ -45,6 +45,8 @@
 #include "gcenv.windows.inl"
 #endif
 
+extern bool s_forcedGCInProgress;
+
 namespace ETW
 {
     typedef  enum _GC_ROOT_KIND {

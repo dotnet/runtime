@@ -67,8 +67,6 @@ BOOL SkipToken = FALSE;
 BOOL neg = FALSE;
 BOOL newclass = FALSE;
 
-extern unsigned int g_uConsoleCP;
-
 struct VarName
 {
     char* name;

@@ -237,7 +237,7 @@ InProcCrashReportLifecycle::PrepareReportFile(
     clock_gettime(CLOCK_REALTIME, &now);
     uint64_t timestampNs = static_cast<uint64_t>(now.tv_sec) * NanosecondsPerSecond +
         static_cast<uint64_t>(now.tv_nsec);
-    uint32_t pid = static_cast<uint32_t>(GetCurrentProcessId());
+    uint32_t pid = static_cast<uint32_t>(getpid());
 
     // Delete the cached over-retention report (if any) before opening the temp
     // file, freeing a slot so the completed set stays at the bound. A later write
@@ -429,7 +429,7 @@ InProcCrashReportLifecycle::ProbeDirectoryWritable(const char* path)
     bool built =
         CrashReportStringUtils::AppendString(probePath, sizeof(probePath), &pos, path) &&
         CrashReportStringUtils::AppendString(probePath, sizeof(probePath), &pos, "/.probe-") &&
-        CrashReportStringUtils::AppendString(probePath, sizeof(probePath), &pos, formatter.FormatUnsignedDecimal(static_cast<uint64_t>(GetCurrentProcessId())));
+        CrashReportStringUtils::AppendString(probePath, sizeof(probePath), &pos, formatter.FormatUnsignedDecimal(static_cast<uint64_t>(getpid())));
 
     bool writable = false;
     if (built)

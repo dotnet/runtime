@@ -32,6 +32,7 @@ class Generics
         TestNameManglingCollisionRegression.Run();
         TestSimpleGVMScenarios.Run();
         TestAsyncGVMScenarios.Run();
+        TestCovariantReturnGvm.Run();
         TestGvmDelegates.Run();
         TestGvmDependencies.Run();
         TestGvmLookups.Run();
@@ -69,6 +70,7 @@ class Generics
         Test105397Regression.Run();
         Test105880Regression.Run();
         Test130028Regression.Run();
+        Test137774Regression.Run();
         TestInterfaceGenericCornerCase.Run();
         Test115442Regression.Run();
         TestInvokeMemberCornerCaseInGenerics.Run();
@@ -1620,6 +1622,197 @@ class Generics
         public virtual async Task AsyncGvm1<T>() => await AsyncGvm2<T>();
 
         public virtual async Task AsyncGvm2<T>() => await Task.CompletedTask;
+    }
+
+    class TestCovariantReturnGvm
+    {
+        class Atom { }
+
+        static string s_lastCalled;
+        static List<string> s_failures = new List<string>();
+
+        static string Record(string name)
+        {
+            s_lastCalled = name;
+            return name;
+        }
+
+        // Also called through Derived references, so the Derived overrides are reachable without GVM resolution
+        class Base
+        {
+            public virtual Task GetTask<T>() => Task.FromResult(Record("Base"));
+            public virtual object GetObject<T>() => Record("Base");
+            public virtual object NonGeneric() => Record("Base");
+        }
+
+        class Derived : Base
+        {
+            public override Task<string> GetTask<T>() => Task.FromResult(Record("Derived<" + typeof(T).Name + ">"));
+            public override string GetObject<T>() => Record("Derived<" + typeof(T).Name + ">");
+            public override string NonGeneric() => Record("Derived");
+        }
+
+        class SuperDerived : Derived
+        {
+            public override Task<string> GetTask<T>() => Task.FromResult(Record("SuperDerived<" + typeof(T).Name + ">"));
+            public override string GetObject<T>() => Record("SuperDerived<" + typeof(T).Name + ">");
+        }
+
+        // The overrides below are only ever called through the base slot, so they are only reachable through GVM resolution
+        class BaseOnly
+        {
+            public virtual Task GetTask<T>() => Task.FromResult(Record("BaseOnly"));
+            public virtual object GetObject<T>() => Record("BaseOnly");
+        }
+
+        class DerivedOnly : BaseOnly
+        {
+            public override Task<string> GetTask<T>() => Task.FromResult(Record("DerivedOnly<" + typeof(T).Name + ">"));
+            public override string GetObject<T>() => Record("DerivedOnly<" + typeof(T).Name + ">");
+        }
+
+        class GenericDerivedOnly<X> : BaseOnly
+        {
+            public override string GetObject<T>() => Record("GenericDerivedOnly<" + typeof(X).Name + ">.GetObject<" + typeof(T).Name + ">");
+        }
+
+        abstract class AbstractCovariantOnly : BaseOnly
+        {
+            public abstract override IEnumerable<char> GetObject<T>();
+        }
+
+        class DerivedFromAbstractCovariantOnly : AbstractCovariantOnly
+        {
+            public override string GetObject<T>() => Record("DerivedFromAbstractCovariantOnly<" + typeof(T).Name + ">");
+        }
+
+        class GenericBaseOnly<X>
+        {
+            public virtual object GetObject<T>() => Record("GenericBaseOnly");
+        }
+
+        class DerivedFromGenericBaseOnly : GenericBaseOnly<string>
+        {
+            public override string GetObject<T>() => Record("DerivedFromGenericBaseOnly<" + typeof(T).Name + ">");
+        }
+
+        interface IHasGvm
+        {
+            object GetObject<T>();
+        }
+
+        class InterfaceBase : IHasGvm
+        {
+            public virtual object GetObject<T>() => Record("InterfaceBase");
+        }
+
+        class InterfaceDerived : InterfaceBase
+        {
+            public override string GetObject<T>() => Record("InterfaceDerived<" + typeof(T).Name + ">");
+        }
+
+        static void Check(string scenario, string expected, object actual)
+        {
+            if (actual is Task<string> task)
+                actual = task.Result;
+
+            if (actual as string != expected || s_lastCalled != expected)
+                s_failures.Add($"{scenario}: expected '{expected}', got '{actual}' (last called '{s_lastCalled}')");
+
+            s_lastCalled = null;
+        }
+
+        static void CheckLastCalled(string scenario, string expected)
+        {
+            if (s_lastCalled != expected)
+                s_failures.Add($"{scenario}: expected '{expected}', last called '{s_lastCalled}'");
+
+            s_lastCalled = null;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static T Opaque<T>(T value) => value;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void CheckShared<T>(BaseOnly bo, IHasGvm i)
+        {
+            Check("Shared BaseOnly.GetTask", "DerivedOnly<" + typeof(T).Name + ">", bo.GetTask<T>());
+            Check("Shared BaseOnly.GetObject", "DerivedOnly<" + typeof(T).Name + ">", bo.GetObject<T>());
+            Check("Shared IHasGvm.GetObject", "InterfaceDerived<" + typeof(T).Name + ">", i.GetObject<T>());
+        }
+
+        // The calls are awaited directly so that runtime async uses the async variants of the GVMs
+        static async Task RunAsync()
+        {
+            Base b = Opaque<Base>(new Derived());
+            await b.GetTask<int>();
+            CheckLastCalled("Awaited Base.GetTask<int>", "Derived<Int32>");
+            await b.GetTask<Atom>();
+            CheckLastCalled("Awaited Base.GetTask<Atom>", "Derived<Atom>");
+
+            Derived d = Opaque(new Derived());
+            Check("Awaited Derived.GetTask<int>", "Derived<Int32>", await d.GetTask<int>());
+            Check("Awaited Derived.GetTask<Atom>", "Derived<Atom>", await d.GetTask<Atom>());
+
+            BaseOnly bo = Opaque<BaseOnly>(new DerivedOnly());
+            await bo.GetTask<int>();
+            CheckLastCalled("Awaited BaseOnly.GetTask<int>", "DerivedOnly<Int32>");
+            await bo.GetTask<Atom>();
+            CheckLastCalled("Awaited BaseOnly.GetTask<Atom>", "DerivedOnly<Atom>");
+        }
+
+        public static void Run()
+        {
+            Base b = Opaque<Base>(new Derived());
+            Check("Base.GetTask<int>", "Derived<Int32>", b.GetTask<int>());
+            Check("Base.GetTask<Atom>", "Derived<Atom>", b.GetTask<Atom>());
+            Check("Base.GetObject<int>", "Derived<Int32>", b.GetObject<int>());
+            Check("Base.GetObject<Atom>", "Derived<Atom>", b.GetObject<Atom>());
+            Check("Base.NonGeneric", "Derived", b.NonGeneric());
+
+            Derived d = Opaque(new Derived());
+            Check("Derived.GetTask<int>", "Derived<Int32>", d.GetTask<int>());
+            Check("Derived.GetTask<Atom>", "Derived<Atom>", d.GetTask<Atom>());
+            Check("Derived.GetObject<int>", "Derived<Int32>", d.GetObject<int>());
+            Check("Derived.GetObject<Atom>", "Derived<Atom>", d.GetObject<Atom>());
+
+            Base bs = Opaque<Base>(new SuperDerived());
+            Check("Base(SuperDerived).GetTask<int>", "SuperDerived<Int32>", bs.GetTask<int>());
+            Check("Base(SuperDerived).GetObject<Atom>", "SuperDerived<Atom>", bs.GetObject<Atom>());
+
+            Derived ds = Opaque<Derived>(new SuperDerived());
+            Check("Derived(SuperDerived).GetObject<int>", "SuperDerived<Int32>", ds.GetObject<int>());
+            Check("Derived(SuperDerived).GetTask<Atom>", "SuperDerived<Atom>", ds.GetTask<Atom>());
+
+            BaseOnly bo = Opaque<BaseOnly>(new DerivedOnly());
+            Check("BaseOnly.GetTask<int>", "DerivedOnly<Int32>", bo.GetTask<int>());
+            Check("BaseOnly.GetTask<Atom>", "DerivedOnly<Atom>", bo.GetTask<Atom>());
+            Check("BaseOnly.GetObject<int>", "DerivedOnly<Int32>", bo.GetObject<int>());
+            Check("BaseOnly.GetObject<Atom>", "DerivedOnly<Atom>", bo.GetObject<Atom>());
+
+            BaseOnly gbo = Opaque<BaseOnly>(new GenericDerivedOnly<Atom>());
+            Check("BaseOnly(GenericDerivedOnly).GetObject<int>", "GenericDerivedOnly<Atom>.GetObject<Int32>", gbo.GetObject<int>());
+            Check("BaseOnly(GenericDerivedOnly).GetObject<Atom>", "GenericDerivedOnly<Atom>.GetObject<Atom>", gbo.GetObject<Atom>());
+
+            BaseOnly abo = Opaque<BaseOnly>(new DerivedFromAbstractCovariantOnly());
+            Check("BaseOnly(DerivedFromAbstractCovariantOnly).GetObject<int>", "DerivedFromAbstractCovariantOnly<Int32>", abo.GetObject<int>());
+            Check("BaseOnly(DerivedFromAbstractCovariantOnly).GetObject<Atom>", "DerivedFromAbstractCovariantOnly<Atom>", abo.GetObject<Atom>());
+
+            GenericBaseOnly<string> gb = Opaque<GenericBaseOnly<string>>(new DerivedFromGenericBaseOnly());
+            Check("GenericBaseOnly.GetObject<int>", "DerivedFromGenericBaseOnly<Int32>", gb.GetObject<int>());
+            Check("GenericBaseOnly.GetObject<Atom>", "DerivedFromGenericBaseOnly<Atom>", gb.GetObject<Atom>());
+
+            IHasGvm i = Opaque<IHasGvm>(new InterfaceDerived());
+            Check("IHasGvm.GetObject<int>", "InterfaceDerived<Int32>", i.GetObject<int>());
+            Check("IHasGvm.GetObject<Atom>", "InterfaceDerived<Atom>", i.GetObject<Atom>());
+
+            CheckShared<Atom>(Opaque<BaseOnly>(new DerivedOnly()), Opaque<IHasGvm>(new InterfaceDerived()));
+
+            RunAsync().Wait();
+
+            if (s_failures.Count != 0)
+                throw new Exception(string.Join(Environment.NewLine, s_failures));
+        }
     }
 
     class TestGvmDelegates
@@ -4162,6 +4355,31 @@ class Generics
             }
 
             throw new Exception();
+        }
+    }
+
+    class Test137774Regression
+    {
+        public abstract class Base
+        {
+            public abstract T M<T>();
+        }
+
+        public class Mid<U> : Base
+        {
+            public override T M<T>() => default;
+        }
+
+        public sealed class Wrapper<U>(Mid<U> inner) : Base
+        {
+            public override T M<T>() => inner.M<T>();
+        }
+
+        public static void Run()
+        {
+            Base r = new Wrapper<string>(new Mid<string>());
+            if (r.M<int>() != 0)
+                throw new Exception();
         }
     }
 

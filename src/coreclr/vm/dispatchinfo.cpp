@@ -234,7 +234,7 @@ HRESULT DispatchMemberInfo::GetIDsOfParameters(_In_reads_(NumNames) WCHAR **astr
         {
             int NumParams = ParamArray->GetNumComponents();
             int cParams = 0;
-            NewArrayHolder< NewArrayHolder<WCHAR> > astrParamNames = new NewArrayHolder<WCHAR>[NumParams];
+            NewArrayHolder<WStringHolder> astrParamNames(new WStringHolder[NumParams]);
 
             // Go through and retrieve the names of all the components.
             for (cParams = 0; cParams < NumParams; cParams++)
@@ -478,7 +478,7 @@ LPWSTR DispatchMemberInfo::GetMemberName(OBJECTREF MemberInfoObj, ComMTMemberInf
     }
     CONTRACTL_END;
 
-    NewArrayHolder<WCHAR> strMemberName = NULL;
+    WStringHolder strMemberName;
     ComMTMethodProps *pMemberProps = NULL;
 
     struct { OBJECTREF MemberInfoObj; STRINGREF strObj; } gc;
@@ -512,8 +512,7 @@ LPWSTR DispatchMemberInfo::GetMemberName(OBJECTREF MemberInfoObj, ComMTMemberInf
     }
     GCPROTECT_END();
 
-    strMemberName.SuppressRelease();
-    return strMemberName;
+    return strMemberName.Detach();
 }
 
 void DispatchMemberInfo::DetermineMemberType()
@@ -2267,12 +2266,11 @@ BOOL DispatchInfo::SynchWithManagedView()
     CONTRACTL_END;
 
     HRESULT hr = S_OK;
-    NewArrayHolder<WCHAR> strMemberName = NULL;
-    NewHolder<ComMTMemberInfoMap> pMemberMap = NULL;
+    WStringHolder strMemberName;
+    NewHolder<ComMTMemberInfoMap> pMemberMap;
 
-    // This represents the new member to add and it is also used to determine if members have
-    // been added or not.
-    NewHolder<DispatchMemberInfo> pMemberToAdd = NULL;
+    NewHolder<DispatchMemberInfo> pMemberToAdd;
+    BOOL bMembersAdded = FALSE;
 
     Thread* pThread = SetupThreadNoThrow();
     if (pThread == NULL)
@@ -2402,19 +2400,20 @@ BOOL DispatchInfo::SynchWithManagedView()
                             SString sName(strMemberName);
                             pMemberToAdd = CreateDispatchMemberInfoInstance(MemberID, sName, CurrMemberInfoObj);
 
+                            // Add the member to the map. Note, the hash is unsynchronized, but we already have our lock
+                            // so we're okay.
+                            m_DispIDToMemberInfoMap.InsertValue(DispID2HashKey(MemberID), pMemberToAdd);
+
                             //
                             // Add the member to the end of the list.
                             //
 
-                            *ppNextMember = pMemberToAdd;
+                            *ppNextMember = pMemberToAdd.Detach();
 
                             // Update ppNextMember to be ready for the next new member.
                             ppNextMember = (*ppNextMember)->GetNextPtr();
 
-                            // Add the member to the map. Note, the hash is unsynchronized, but we already have our lock
-                            // so we're okay.
-                            m_DispIDToMemberInfoMap.InsertValue(DispID2HashKey(MemberID), pMemberToAdd);
-                            pMemberToAdd.SuppressRelease();
+                            bMembersAdded = TRUE;
                         }
                     }
                 }
@@ -2426,7 +2425,7 @@ BOOL DispatchInfo::SynchWithManagedView()
         // GC mode toggles back here
     }
     // Check to see if any new members were added to the expando object.
-    return pMemberToAdd ? TRUE : FALSE;
+    return bMembersAdded;
 
     // locks released and memory cleaned up here
 }
@@ -2589,13 +2588,12 @@ ComMTMemberInfoMap *DispatchInfo::GetMemberInfoMap()
     STANDARD_VM_CONTRACT;
 
     // Create the member info map.
-    NewHolder<ComMTMemberInfoMap> pMemberInfoMap (new ComMTMemberInfoMap(m_pMT));
+    NewHolder<ComMTMemberInfoMap> pMemberInfoMap(new ComMTMemberInfoMap(m_pMT));
 
     // Initialize it.
     pMemberInfoMap->Init(sizeof(void*));
 
-    pMemberInfoMap.SuppressRelease();
-    return pMemberInfoMap;
+    return pMemberInfoMap.Detach();
 }
 
 // Helper function to fill in an EXCEPINFO for an InvocationException.

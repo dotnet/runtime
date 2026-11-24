@@ -96,6 +96,9 @@ internal sealed class MemoryEnumerator
 
     private void EnumerateStatics()
     {
+        // Managed layout resolution needs the CoreLib assembly root when analyzing the resulting dump.
+        TryEnumerate(() => _collectorTarget.Target.Contracts.Loader.GetSystemAssembly());
+
         IRuntimeTypeSystem rts = _collectorTarget.Target.Contracts.RuntimeTypeSystem;
         rts.GetWellKnownMethodTable(WellKnownMethodTable.Array);
         rts.GetWellKnownMethodTable(WellKnownMethodTable.Canon);

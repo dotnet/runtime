@@ -26,8 +26,8 @@ namespace System.Diagnostics
                 // SAFETY: Must be GC protected.
                 internal byte** Homes;
                 // Native array of captured argument values.
-                // Contains literal values and GC handles.
-                internal ulong* CapturedArguments;
+                // Contains register value-type snapshots and GC handles.
+                internal NativeCapturedArgument* CapturedArguments;
                 internal void* TemporaryResultHandle;
                 internal void** ResultByRefs;
                 // Unboxed result data.
@@ -35,12 +35,28 @@ namespace System.Diagnostics
                 internal void* ResultData;
                 // GC Handle to result (if boxed).
                 internal IntPtr ResultHandle;
-                internal void* Module;
+                internal void* Assembly;
+                internal byte* TypeArguments;
+                internal void* EvaluationData;
+                internal nuint StringSize;
+                internal nuint ArrayRank;
                 internal uint ArgumentCount;
                 internal uint ParameterCount;
                 internal EvaluationFlags Flags;
-                internal uint MethodToken;
+                internal uint MemberToken;
                 internal uint GenericArgsCount;
+                internal uint GenericArgsNodeCount;
+                internal EvaluationKind Kind;
+            }
+
+            // Values must match DebuggerIPCE_FuncEvalType (DB_IPCE_FET_*) and native DebuggerFuncEvalKind.
+            internal enum EvaluationKind : uint
+            {
+                Normal,
+                NewObject,
+                NewObjectNoConstructor,
+                NewString,
+                NewArray,
             }
 
             [Flags]
@@ -63,14 +79,27 @@ namespace System.Diagnostics
             internal struct NativeArgument
             {
                 internal byte* Literal;
+                internal byte* TypeData;
                 internal uint ElementType;
                 internal ArgumentFlags Flags;
+                internal uint TypeNodeCount;
 
                 internal readonly bool IsLiteral => (Flags & ArgumentFlags.Literal) != 0;
                 internal readonly bool IsHandle => (Flags & ArgumentFlags.Handle) != 0;
                 internal readonly bool HasMemory => (Flags & ArgumentFlags.Memory) != 0;
                 internal readonly bool IsInRegister => !HasMemory && !IsLiteral;
                 internal readonly CorElementType Type => (CorElementType)ElementType;
+            }
+
+            internal struct NativeCapturedArgument
+            {
+#if BIGENDIAN
+                internal nuint High;
+                internal nuint Low;
+#else
+                internal nuint Low;
+                internal nuint High;
+#endif
             }
 
             private struct Argument
@@ -106,6 +135,20 @@ namespace System.Diagnostics
             [DebuggerHidden]
             internal static void Run(Context* context)
             {
+                switch (context->Kind)
+                {
+                    case EvaluationKind.NewObjectNoConstructor:
+                    case EvaluationKind.NewString:
+                    case EvaluationKind.NewArray:
+                        RunSimple(context);
+                        return;
+                    case EvaluationKind.Normal:
+                    case EvaluationKind.NewObject:
+                        break;
+                    default:
+                        throw new UnreachableException();
+                }
+
                 const int MaxStackArguments = 14;
                 int argumentCount = checked((int)context->ArgumentCount);
                 int storageCount = checked(argumentCount + 2);
@@ -139,6 +182,160 @@ namespace System.Diagnostics
             }
 
             [DebuggerHidden]
+            [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
+                Justification = "Debugger function evaluation constructs arrays from the target's actual runtime types.")]
+            private static void RunSimple(Context* context)
+            {
+                RuntimeType[] typeArguments = ReadTypeArguments(
+                    GetTypeData(context->TypeArguments, context->GenericArgsNodeCount),
+                    checked((int)context->GenericArgsCount));
+                object? result;
+                RuntimeType resultType;
+                switch (context->Kind)
+                {
+                    case EvaluationKind.NewObjectNoConstructor:
+                        resultType = ReadInstantiation(GetModule((nint)context->Assembly),
+                            (int)context->MemberToken, typeArguments, allowUninstantiated: true);
+                        if (resultType.ContainsGenericParameters)
+                        {
+                            throw new ArgumentException(SR.Argument_InvalidGenericArg);
+                        }
+
+                        ValidateConstructorType(resultType);
+                        InitializeType(resultType);
+                        PrepareResult(context, new QCallTypeHandle(ref resultType));
+                        if (resultType.IsByRefLike)
+                        {
+                            return;
+                        }
+
+                        // Initialization is explicit: raw allocation must not initialize additional base types
+                        // or substitute Nullable<T>'s underlying type.
+                        result = resultType.IsAbstract ? null :
+                            RuntimeTypeHandle.InternalAllocNoChecks(resultType.GetNativeTypeHandle().AsMethodTable());
+                        GC.KeepAlive(resultType);
+                        break;
+
+                    case EvaluationKind.NewString:
+                        result = context->EvaluationData is null || context->StringSize == 0
+                            ? string.Empty
+                            : new string((char*)context->EvaluationData, 0,
+                                checked((int)(context->StringSize / sizeof(char))));
+                        resultType = (RuntimeType)typeof(string);
+                        PrepareResult(context, new QCallTypeHandle(ref resultType));
+                        break;
+
+                    case EvaluationKind.NewArray:
+                        if (context->ArrayRank > 1)
+                        {
+                            throw new RankException(SR.Rank_MultiDimNotSupported);
+                        }
+                        if (typeArguments.Length != 1)
+                        {
+                            throw new ArgumentException(SR.Argument_InvalidGenericArg);
+                        }
+
+                        RuntimeType elementType = typeArguments[0];
+                        CorElementType element = elementType.GetCorElementType();
+                        if ((element < CorElementType.ELEMENT_TYPE_BOOLEAN || element > CorElementType.ELEMENT_TYPE_R8) &&
+                            !IsObject(element))
+                        {
+                            throw new ArgumentOutOfRangeException(null, SR.ArgumentOutOfRange_Enum);
+                        }
+
+                        // The debugger allocation protocol narrows the native-sized dimension to DWORD.
+                        int length = unchecked((int)(uint)*(nuint*)context->EvaluationData);
+                        if (length < 0)
+                        {
+                            throw new OverflowException();
+                        }
+
+                        result = Array.CreateInstance(elementType, length);
+                        resultType = (RuntimeType)result.GetType();
+                        PrepareResult(context, new QCallTypeHandle(ref resultType));
+                        break;
+
+                    default:
+                        throw new UnreachableException();
+                }
+
+                context->ResultHandle = GCHandle.ToIntPtr(GCHandle.Alloc(result));
+            }
+
+            private static void ValidateConstructorType(RuntimeType type)
+            {
+                if (type.IsInterface)
+                {
+                    throw new MemberAccessException(SR.Acc_CreateInterface);
+                }
+                if (type == typeof(string))
+                {
+                    throw new ArgumentException(SR.Argument_NoUninitializedStrings);
+                }
+            }
+
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2059:UnrecognizedReflectionPattern",
+                Justification = "The debugger explicitly requests initialization of a runtime type from the target.")]
+            private static void InitializeType(RuntimeType type) =>
+                RuntimeHelpers.RunClassConstructor(type.TypeHandle);
+
+            [DebuggerHidden]
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+                Justification = "The debugger supplies the MethodDef token and runtime generic arguments from the target's loaded metadata.")]
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:UnrecognizedReflectionPattern",
+                Justification = "The debugger supplies the target's actual runtime generic arguments.")]
+            private static MethodBase GetMethod(Context* context, RuntimeType[] typeArguments, out RuntimeType declaringType)
+            {
+                RuntimeModule module = GetModule((nint)context->Assembly);
+                MethodBase? method = module.ResolveMethod((int)context->MemberToken);
+                Debug.Assert(method is RuntimeMethodInfo or RuntimeConstructorInfo);
+                declaringType = RuntimeMethodHandle.GetDeclaringType((IRuntimeMethodInfo)method);
+                int classArgumentCount = declaringType.IsGenericType ? declaringType.GetGenericArguments().Length : 0;
+                int methodArgumentCount = method.IsGenericMethod ? method.GetGenericArguments().Length : 0;
+                if (classArgumentCount + methodArgumentCount != typeArguments.Length)
+                {
+                    throw new TargetParameterCountException();
+                }
+
+                if (classArgumentCount != 0)
+                {
+                    declaringType = (RuntimeType)declaringType.MakeGenericType(typeArguments[..classArgumentCount]);
+                }
+                if (methodArgumentCount != 0)
+                {
+                    IRuntimeMethodInfo owner = (IRuntimeMethodInfo)method;
+                    RuntimeType[] methodArguments = typeArguments[classArgumentCount..];
+                    RuntimeMethodHandleInternal handle = RuntimeMethodHandle.GetStubIfNeeded(
+                        IRuntimeMethodInfo.GetValue(owner), declaringType, methodArguments);
+                    method = RuntimeType.GetMethodBase(declaringType, handle);
+                    Debug.Assert(method is not null);
+                    GC.KeepAlive(owner);
+                    GC.KeepAlive(methodArguments);
+                }
+                else if (classArgumentCount != 0)
+                {
+                    method = (MethodBase)declaringType.GetMemberWithSameMetadataDefinitionAs(method);
+                }
+                if (method.ContainsGenericParameters)
+                {
+                    throw new ArgumentException(SR.Argument_InvalidGenericArg);
+                }
+
+                if (context->Kind == EvaluationKind.NewObject)
+                {
+                    ValidateConstructorType(declaringType);
+                    if (!method.IsConstructor)
+                    {
+                        throw new ArgumentException(SR.Arg_TargetMethodNotConstructor);
+                    }
+                }
+
+                InitializeType(declaringType);
+                context->ParameterCount = (uint)method.GetParametersAsSpan().Length;
+                return method;
+            }
+
+            [DebuggerHidden]
             private FunctionEvaluation(Context* context, void** storage)
             {
                 _context = context;
@@ -148,14 +345,10 @@ namespace System.Diagnostics
 
                 // Resolve the target only after capturing values; resolution can run its class initializer.
                 CapturePrimitiveArguments();
-                RuntimeType? declaringType = null;
-                IRuntimeMethodInfo? methodOwner = null;
-                GetMethod(context,
-                    ObjectHandleOnStack.Create(ref declaringType), ObjectHandleOnStack.Create(ref methodOwner));
-                Debug.Assert(declaringType is not null);
-                Debug.Assert(methodOwner is not null);
-                MethodBase? method = RuntimeType.GetMethodBase(declaringType, methodOwner);
-                Debug.Assert(method is RuntimeMethodInfo or RuntimeConstructorInfo);
+                RuntimeType[] typeArguments = ReadTypeArguments(
+                    GetTypeData(context->TypeArguments, context->GenericArgsNodeCount),
+                    checked((int)context->GenericArgsCount));
+                MethodBase method = GetMethod(context, typeArguments, out RuntimeType declaringType);
                 Debug.Assert(!IsNewObject() || method is RuntimeConstructorInfo);
 
                 Debug.Assert((ulong)context->ArgumentCount + (IsNewObject() ? 1UL : 0UL) ==
@@ -305,7 +498,7 @@ namespace System.Diagnostics
                             // where the same handle is passed as different arguments.
                             // COMPAT: This is only for reference-type object handles, not value type object handles.
                             // Value-type object handles mutate the underlying box directly.
-                            nuint handleValue = checked((nuint)_context->CapturedArguments[index]);
+                            nuint handleValue = _context->CapturedArguments[index].Low;
                             GCHandle handle = GCHandle.FromIntPtr((nint)handleValue);
                             if (!_handleAliasMap.TryGetValue(handle, out int aliasIndex))
                             {
@@ -328,9 +521,8 @@ namespace System.Diagnostics
                 {
                     if (!type.IsValueType && (isThis || !isByRef))
                     {
-                        RuntimeType? actualType = null;
-                        GetArgumentType(_context, (uint)index, ObjectHandleOnStack.Create(ref actualType));
-                        if (actualType is null || !actualType.IsValueType)
+                        RuntimeType actualType = ReadTypeArguments(GetTypeData(input.TypeData, input.TypeNodeCount), 1)[0];
+                        if (!actualType.IsValueType)
                         {
                             throw new ArgumentException(SR.Argument_BadObjRef);
                         }
@@ -347,7 +539,8 @@ namespace System.Diagnostics
                                 throw new NotSupportedException(SR.NotSupported_ByRefLike);
                             }
 
-                            value = actualType.Box(ref *(byte*)(_context->CapturedArguments + index));
+                            value = actualType.Box(ref ReadCapturedArgument(index,
+                                actualType.GetNativeTypeHandle().AsMethodTable()->GetNumInstanceFieldBytes()));
                         }
 
                         if (isThis && value is null)
@@ -373,7 +566,7 @@ namespace System.Diagnostics
                     }
                     else
                     {
-                        if (!type.IsValueType || type.GetNativeTypeHandle().AsMethodTable()->GetNumInstanceFieldBytes() > sizeof(ulong))
+                        if (!type.IsValueType || type.GetNativeTypeHandle().AsMethodTable()->GetNumInstanceFieldBytes() > sizeof(NativeCapturedArgument))
                         {
                             throw new ArgumentException(SR.Argument_BadObjRef);
                         }
@@ -385,7 +578,8 @@ namespace System.Diagnostics
                         }
                         else
                         {
-                            ref byte source = ref *(byte*)(_context->CapturedArguments + index);
+                            ref byte source = ref ReadCapturedArgument(index,
+                                type.GetNativeTypeHandle().AsMethodTable()->GetNumInstanceFieldBytes());
                             object temporary;
                             if (type.IsNullableOfT)
                             {
@@ -490,10 +684,10 @@ namespace System.Diagnostics
                 int index = slot + (_hasThis ? 0 : -1);
                 ref Argument argument = ref _arguments[index];
                 Debug.Assert(argument.IsTypedLocal);
-                Debug.Assert(argument.Input.HasMemory || sizeof(T) <= sizeof(ulong));
+                Debug.Assert(argument.Input.HasMemory || sizeof(T) <= sizeof(NativeCapturedArgument));
                 ref byte source = ref (argument.Input.HasMemory
                     ? ref ReadByteRef(index)
-                    : ref *(byte*)(_context->CapturedArguments + index));
+                    : ref ReadCapturedArgument(index, (uint)sizeof(T)));
                 storage = Unsafe.As<byte, T>(ref source);
                 SetStorage(slot, ref storage);
             }
@@ -592,6 +786,16 @@ namespace System.Diagnostics
                 return Unsafe.As<IntPtr, object>(ref _context->Interiors[index]);
             }
 
+            private ref byte ReadCapturedArgument(int index, uint size)
+            {
+                Debug.Assert(size <= sizeof(NativeCapturedArgument));
+                byte* address = (byte*)(_context->CapturedArguments + index);
+#if BIGENDIAN
+                address += sizeof(NativeCapturedArgument) - size;
+#endif
+                return ref *address;
+            }
+
             private void CapturePrimitiveArguments()
             {
                 for (int i = 0; i < _arguments.Length; i++)
@@ -615,7 +819,7 @@ namespace System.Diagnostics
 
                 if (input.IsHandle)
                 {
-                    return _context->CapturedArguments[index];
+                    return _context->CapturedArguments[index].Low;
                 }
 
                 if (input.IsInRegister)
@@ -689,7 +893,7 @@ namespace System.Diagnostics
 
             private void WriteArgument(int index, ref byte value, uint size)
             {
-                Debug.Assert(size <= sizeof(ulong));
+                Debug.Assert(size <= sizeof(NativeCapturedArgument));
                 ref Argument argument = ref _arguments[index];
                 NativeArgument input = argument.Input;
                 if (input.IsInRegister)
@@ -760,16 +964,8 @@ namespace System.Diagnostics
             }
 
             [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
-            [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DebugDebugger_GetFuncEvalMethod")]
-            private static partial void GetMethod(Context* context, ObjectHandleOnStack declaringType, ObjectHandleOnStack methodOwner);
-
-            [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
             [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DebugDebugger_PrepareFuncEvalResult")]
             private static partial void PrepareResult(Context* context, QCallTypeHandle resultType);
-
-            [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
-            [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DebugDebugger_GetFuncEvalArgumentType")]
-            private static partial void GetArgumentType(Context* context, uint index, ObjectHandleOnStack type);
 
             [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DebugDebugger_ReadFuncEvalPrimitiveRegister")]
             [SuppressGCTransition]

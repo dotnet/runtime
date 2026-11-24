@@ -143,6 +143,14 @@ namespace ILCompiler.DependencyAnalysisFramework
 
         public sealed override event Action<int> ComputingDependencyPhaseChange;
 
+        public sealed override event Action DependencyAnalysisQuiesced;
+
+        public sealed override void RevisitStaticDependencies(DependencyNodeCore<DependencyContextType> node)
+        {
+            Debug.Assert(!_markingCompleted && node.Marked && node.StaticDependenciesAreComputed);
+            AddStaticDependencies(node);
+        }
+
         private IEnumerable<DependencyNodeCore<DependencyContextType>> MarkedNodesEnumerable()
         {
             if (_markedNodesFinal != null)
@@ -329,6 +337,15 @@ namespace ILCompiler.DependencyAnalysisFramework
                         if (deferredDependenciesInCurrentPhase != null)
                         {
                             _deferredStaticDependencies.Remove(_currentDependencyPhase);
+                        }
+
+                        if (_deferredStaticDependencies.Count == 0)
+                        {
+                            DependencyAnalysisQuiesced?.Invoke();
+                            if (_markStack.Count != 0)
+                            {
+                                continue;
+                            }
                         }
 
                         // 2. Increment current dependency phase

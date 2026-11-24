@@ -172,6 +172,13 @@ namespace
         *((int32_t*)pRet) = (*fptr)(ARG_IND(0), ARG_I32(1), ARG_I32(2), ARG_I32(3), ARG_I32(4), ARG_I32(5), ARG_I32(6));
     }
 
+    NOINLINE static void CallFunc_S8_RetI32_PE(PCODE pPortableEntryPoint, int8_t* pArgs, int8_t* pRet)
+    {
+        alignas(16) int framePointer = TERMINATE_R2R_STACK_WALK;
+        int32_t (*fptr)(int*, int32_t, PCODE) = *(int32_t (**)(int*, int32_t, PCODE))(pPortableEntryPoint);
+        *((int32_t*)pRet) = (*fptr)(&framePointer, ARG_IND(0), pPortableEntryPoint);
+    }
+
     NOINLINE static void CallFunc_This_I32_RetI32_PE(PCODE pPortableEntryPoint, int8_t* pArgs, int8_t* pRet)
     {
         alignas(16) int framePointer = TERMINATE_R2R_STACK_WALK;
@@ -256,18 +263,6 @@ namespace
     {
         int32_t (*fptr)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t) = (int32_t (*)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t))pcode;
         *((int32_t*)pRet) = (*fptr)(ARG_I32(0), ARG_I32(1), ARG_I32(2), ARG_I32(3), ARG_I32(4), ARG_I32(5), ARG_I32(6));
-    }
-
-    static void CallFunc_I32_I32_I32_I32_I32_I32_I32_I32_RetI32(PCODE pcode, int8_t* pArgs, int8_t* pRet)
-    {
-        int32_t (*fptr)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t) = (int32_t (*)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t))pcode;
-        *((int32_t*)pRet) = (*fptr)(ARG_I32(0), ARG_I32(1), ARG_I32(2), ARG_I32(3), ARG_I32(4), ARG_I32(5), ARG_I32(6), ARG_I32(7));
-    }
-
-    static void CallFunc_I32_I32_I32_I32_I32_I32_I32_I32_I32_RetI32(PCODE pcode, int8_t* pArgs, int8_t* pRet)
-    {
-        int32_t (*fptr)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t) = (int32_t (*)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t))pcode;
-        *((int32_t*)pRet) = (*fptr)(ARG_I32(0), ARG_I32(1), ARG_I32(2), ARG_I32(3), ARG_I32(4), ARG_I32(5), ARG_I32(6), ARG_I32(7), ARG_I32(8));
     }
 
     static void CallFunc_I32_I32_I32_I32_I32_I32_I32_I32_I32_I32_I32_I32_I32_I32_RetI32(PCODE pcode, int8_t* pArgs, int8_t* pRet)
@@ -734,6 +729,7 @@ const StringToPortableSigThunk g_portableCallHelperThunks[] = {
     { "MiS8iiii", (void*)&CallFunc_S8_I32_I32_I32_I32_RetI32 },
     { "MiS8iiiii", (void*)&CallFunc_S8_I32_I32_I32_I32_I32_RetI32 },
     { "MiS8iiiiii", (void*)&CallFunc_S8_I32_I32_I32_I32_I32_I32_RetI32 },
+    { "MiS8p", (void*)&CallFunc_S8_RetI32_PE },
     { "MiTip", (void*)&CallFunc_This_I32_RetI32_PE },
     { "MiTp", (void*)&CallFunc_This_RetI32_PE },
     { "Mii", (void*)&CallFunc_I32_RetI32 },
@@ -748,8 +744,6 @@ const StringToPortableSigThunk g_portableCallHelperThunks[] = {
     { "Miiiiii", (void*)&CallFunc_I32_I32_I32_I32_I32_RetI32 },
     { "Miiiiiii", (void*)&CallFunc_I32_I32_I32_I32_I32_I32_RetI32 },
     { "Miiiiiiii", (void*)&CallFunc_I32_I32_I32_I32_I32_I32_I32_RetI32 },
-    { "Miiiiiiiii", (void*)&CallFunc_I32_I32_I32_I32_I32_I32_I32_I32_RetI32 },
-    { "Miiiiiiiiii", (void*)&CallFunc_I32_I32_I32_I32_I32_I32_I32_I32_I32_RetI32 },
     { "Miiiiiiiiiiiiiii", (void*)&CallFunc_I32_I32_I32_I32_I32_I32_I32_I32_I32_I32_I32_I32_I32_I32_RetI32 },
     { "Miiiiiiip", (void*)&CallFunc_I32_I32_I32_I32_I32_I32_RetI32_PE },
     { "Miiiiiip", (void*)&CallFunc_I32_I32_I32_I32_I32_RetI32_PE },

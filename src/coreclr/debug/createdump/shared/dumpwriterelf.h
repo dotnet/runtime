@@ -18,8 +18,6 @@
 
 #if defined(__x86_64__)
 #define ELF_ARCH  EM_X86_64
-#elif defined(__i386__)
-#define ELF_ARCH  EM_386
 #elif defined(__aarch64__)
 #define ELF_ARCH  EM_AARCH64
 #elif defined(__arm__)
@@ -85,16 +83,23 @@ private:
     size_t GetAuxvInfoSize() const { return sizeof(Nhdr) + 8 + m_processInfo.GetAuxvSize(); }
     size_t GetThreadInfoSize() const
     {
-        return (m_processInfo.Signal() != 0 ? (sizeof(Nhdr) + 8 + sizeof(siginfo_t)) : 0)
+        size_t size = (m_processInfo.Signal() != 0 ? (sizeof(Nhdr) + 8 + sizeof(siginfo_t)) : 0)
               + (m_processInfo.Threads().size() * ((sizeof(Nhdr) + 8 + sizeof(prstatus_t))
               + (sizeof(Nhdr) + 8 + sizeof(user_fpregs_struct))
-#if defined(__i386__)
-              + (sizeof(Nhdr) + 8 + sizeof(user_fpxregs_struct))
-#endif
 #if defined(__arm__) && defined(__VFP_FP__) && !defined(__SOFTFP__)
               + (sizeof(Nhdr) + 8 + sizeof(user_vfpregs_struct))
 #endif
         ));
+#if defined(__aarch64__) && defined(__linux__)
+        for (const ThreadSnapshot& thread : m_processInfo.Threads())
+        {
+            if (thread.HasPacMask())
+            {
+                size += sizeof(Nhdr) + 8 + sizeof(UserPacMask);
+            }
+        }
+#endif
+        return size;
     }
 };
 

@@ -774,9 +774,11 @@ void Compiler::AddContextArgsToAsyncCalls(BasicBlock* block)
             NewCallArg execCtxArg    = NewCallArg::Primitive(execCtx).WellKnown(WellKnownArg::AsyncExecutionContext);
             NewCallArg syncCtxArg = NewCallArg::Primitive(syncCtx).WellKnown(WellKnownArg::AsyncSynchronizationContext);
 
+            // Read the contexts after evaluating the arguments, which may contain async calls
+            // that define the resumed indicator.
             // The def is only ever present once, so keeping it outside leaves the rest as
             // a clean run of (resumed, exec context, sync context) triples, one per frame.
-            CallArg* insertAfter = call->gtArgs.PushFront(m_compiler, resumedDefArg);
+            CallArg* insertAfter = call->gtArgs.PushBack(m_compiler, resumedDefArg);
             insertAfter          = call->gtArgs.InsertAfter(m_compiler, insertAfter, resumedUseArg);
             insertAfter          = call->gtArgs.InsertAfter(m_compiler, insertAfter, execCtxArg);
             insertAfter          = call->gtArgs.InsertAfter(m_compiler, insertAfter, syncCtxArg);
@@ -2647,9 +2649,10 @@ bool AsyncTransformation::IsReusableSuspension(const AsyncState*          state,
 //
 void AsyncTransformation::HandleReusedSuspension(BasicBlock* callBlock, GenTreeCall* call)
 {
-    static const WellKnownArg argsToRemove[] = {WellKnownArg::AsyncAwaiter, WellKnownArg::AsyncResumedUse,
-                                                WellKnownArg::AsyncResumedDef, WellKnownArg::AsyncExecutionContext,
-                                                WellKnownArg::AsyncSynchronizationContext};
+    call->GetAsyncInfo().DefinesResumedIndicator = false;
+    static const WellKnownArg argsToRemove[]     = {WellKnownArg::AsyncAwaiter, WellKnownArg::AsyncResumedUse,
+                                                    WellKnownArg::AsyncResumedDef, WellKnownArg::AsyncExecutionContext,
+                                                    WellKnownArg::AsyncSynchronizationContext};
     for (WellKnownArg wka : argsToRemove)
     {
         // These can be duplicated: general async inlining adds one set of context args
@@ -3858,18 +3861,19 @@ void AsyncTransformation::CreateCheckAndSuspendAfterCall(BasicBlock*            
     *remainder = m_compiler->fgSplitBlockAfterNode(block, lastNode);
     JITDUMP("  Remainder is " FMT_BB "\n", (*remainder)->bbNum);
 
-    // For non-inlined calls adjust offset for the split. We have the exact
+    // When debug info is available, adjust the offset for the split. We have the exact
     // offset of the await call, so we can do better than
     // fgSplitBlockAfterNode. The previous block contains the call so add 1 to
     // include its start offset (the IL offsets are only used for range checks
     // in the backend, so having the offset be inside an IL instruction is ok.)
     DebugInfo di = call->GetAsyncInfo().CallAsyncDebugInfo.GetRoot();
-    DebugInfo par;
-    if (!di.GetParent(&par))
+    if (di.IsValid())
     {
+        // Scope tracking requires ordered ranges with a shared split boundary.
         IL_OFFSET awaitOffset    = di.GetLocation().GetOffset();
-        block->bbCodeOffsEnd     = awaitOffset + 1;
-        (*remainder)->bbCodeOffs = awaitOffset + 1;
+        IL_OFFSET splitOffset    = min(max(awaitOffset + 1, block->bbCodeOffs), (*remainder)->bbCodeOffsEnd);
+        block->bbCodeOffsEnd     = splitOffset;
+        (*remainder)->bbCodeOffs = splitOffset;
     }
 
     if (alwaysSuspends)
@@ -4080,6 +4084,7 @@ void AsyncTransformation::StoreResumedDef(BasicBlock* callBlock, GenTreeCall* ca
 
     LIR::AsRange(callBlock).Remove(resumedDef);
     call->gtArgs.RemoveUnsafe(resumedDefArg);
+    call->GetAsyncInfo().DefinesResumedIndicator = false;
 }
 
 //------------------------------------------------------------------------
@@ -4860,6 +4865,7 @@ GenTreeLclVarCommon* AsyncTransformation::FindAndRemoveCommonAsyncResumedDef()
         CallArg* arg = state.Call->gtArgs.FindWellKnownArg(WellKnownArg::AsyncResumedDef);
         LIR::AsRange(state.CallBlock).Remove(arg->GetNode());
         state.Call->gtArgs.RemoveUnsafe(arg);
+        state.Call->GetAsyncInfo().DefinesResumedIndicator = false;
     }
 
     return commonDef;

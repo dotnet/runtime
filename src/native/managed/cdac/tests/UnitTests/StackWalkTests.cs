@@ -24,13 +24,14 @@ public unsafe class StackWalkTests
     private const uint X86TransitionBlockSize = 7 * sizeof(uint);
 
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void FindGCRefMap_ResolvesImportRecord(bool inlineGCRefMap)
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public void FindGCRefMap_ResolvesImportRecord(bool inlineGCRefMap, bool compositeComponent)
     {
         (TestPlaceholderTarget target, _) = CreateX86TransitionFrameTarget(
             nameof(Data.ExternalMethodFrame), gcRefMap: [0x83, 0x05], hasMethodDesc: false,
-            inlineGCRefMap: inlineGCRefMap);
+            inlineGCRefMap: inlineGCRefMap, compositeComponent: compositeComponent);
 
         TargetPointer map = new FrameHelpers(target).FindGCRefMap(new TargetPointer(0x100108));
 
@@ -846,6 +847,7 @@ public unsafe class StackWalkTests
         return (builder.AddTypes(types).AddGlobals((frameType + "Identifier", 0x100), (Constants.Globals.ObjectToMethodTableUnmask, markedReceiver ? 3UL : 0UL))
             .AddMockContract<IRuntimeTypeSystem>(rts).AddMockContract(runtimeInfo)
             .AddMockContract(Mock.Of<IGC>()).AddMockContract(Mock.Of<IGCInfo>())
+            .AddMockContract(Mock.Of<IPlatformMetadata>())
             .AddMockContract(Mock.Of<IExecutionManager>()).Build(), rts);
 
         void AddMemory(uint address, byte[] data)
@@ -1207,7 +1209,8 @@ public unsafe class StackWalkTests
         string frameType, byte[]? gcRefMap, bool hasMethodDesc, byte[]? signatureBlob = null,
         uint? representativeMethodDescAddress = null, bool hasUnresolvedIndirection = false,
         RuntimeInfoArchitecture architecture = RuntimeInfoArchitecture.X86, bool hasCodeData = true,
-        bool hasGCRefMapField = true, bool? valueType = null, bool unboxing = false, bool inlineGCRefMap = true)
+        bool hasGCRefMapField = true, bool? valueType = null, bool unboxing = false, bool inlineGCRefMap = true,
+        bool compositeComponent = false)
     {
         MockTarget.Architecture arch = new() { IsLittleEndian = true, Is64Bit = false };
         TestPlaceholderTarget.Builder builder = new(arch);
@@ -1259,11 +1262,20 @@ public unsafe class StackWalkTests
             byte[] module = new byte[4];
             helpers.Write(module, 0x4000u);
             builder.MemoryBuilder.AddHeapFragment(new() { Address = 0x3000, Data = module, Name = "Module" });
-            byte[] r2rInfo = new byte[12];
-            helpers.Write(r2rInfo.AsSpan(0), ImageBase);
+            byte[] r2rInfo = new byte[16];
+            // A component assembly of a composite image leaves LoadedImageBase unset; the composite's info holds it.
+            helpers.Write(r2rInfo.AsSpan(0), compositeComponent ? 0u : ImageBase);
             helpers.Write(r2rInfo.AsSpan(4), 1u);
             helpers.Write(r2rInfo.AsSpan(8), 0x5000u);
+            helpers.Write(r2rInfo.AsSpan(12), compositeComponent ? 0x4100u : 0x4000u);
             builder.MemoryBuilder.AddHeapFragment(new() { Address = 0x4000, Data = r2rInfo, Name = "ReadyToRun info" });
+            if (compositeComponent)
+            {
+                byte[] compositeInfo = new byte[16];
+                helpers.Write(compositeInfo.AsSpan(0), ImageBase);
+                helpers.Write(compositeInfo.AsSpan(12), 0x4100u);
+                builder.MemoryBuilder.AddHeapFragment(new() { Address = 0x4100, Data = compositeInfo, Name = "Composite ReadyToRun info" });
+            }
             byte[] importSection = new byte[20];
             helpers.Write(importSection.AsSpan(0), ImportSectionRva);
             helpers.Write(importSection.AsSpan(4), 3u * sizeof(uint));
@@ -1339,7 +1351,8 @@ public unsafe class StackWalkTests
                 (nameof(X86Context.Ebp), 0), (nameof(X86Context.Ebx), 4), (nameof(X86Context.Edi), 8), (nameof(X86Context.Esi), 12)),
             [DataType.Module] = CreateTypeInfo((nameof(Data.Module.ReadyToRunInfo), 0)),
             [DataType.ReadyToRunInfo] = CreateTypeInfo(
-                (nameof(Data.ReadyToRunInfo.LoadedImageBase), 0), (nameof(Data.ReadyToRunInfo.NumImportSections), 4), (nameof(Data.ReadyToRunInfo.ImportSections), 8)),
+                (nameof(Data.ReadyToRunInfo.LoadedImageBase), 0), (nameof(Data.ReadyToRunInfo.NumImportSections), 4), (nameof(Data.ReadyToRunInfo.ImportSections), 8),
+                (nameof(Data.ReadyToRunInfo.CompositeInfo), 12)),
         };
         if (methodDescMap)
         {
@@ -1371,6 +1384,7 @@ public unsafe class StackWalkTests
             .AddMockContract(Mock.Of<IGC>())
             .AddMockContract(Mock.Of<IGCInfo>())
             .AddMockContract(runtimeInfo)
+            .AddMockContract(Mock.Of<IPlatformMetadata>())
             .Build();
         ContextHolder<X86Context> context = new()
         {
@@ -1381,6 +1395,160 @@ public unsafe class StackWalkTests
 
         static Target.TypeInfo CreateTypeInfo(params (string Name, int Offset)[] fields)
             => new() { Fields = fields.ToDictionary(f => f.Name, f => new Target.FieldInfo { Offset = f.Offset }) };
+    }
+
+    [Theory]
+    [InlineData(4u, false, 0x2FFCu, 0x2FF4u)]
+    [InlineData(5u, false, 0x2FFCu, 0x2FF4u)]
+    [InlineData(4u, true, 0x2008u, 0x2000u)]
+    [InlineData(5u, true, 0x2008u, 0x2000u)]
+    public void X86GcScannerAndStackWalk_ResolvePushedRootsAgainstCurrentFrame(
+        uint version, bool isFunclet, uint firstAddress, uint secondAddress)
+    {
+        TestPlaceholderTarget.Builder builder = new(new() { IsLittleEndian = true, Is64Bit = false });
+        TargetTestHelpers helpers = builder.MemoryBuilder.TargetTestHelpers;
+        const uint GcInfoAddress = 0x10000;
+        const uint ContextAddress = 0x11000;
+        ContextHolder<X86Context> context = new()
+        {
+            Context = new X86Context
+            {
+                ContextFlags = (uint)X86Context.ContextFlagsValues.CONTEXT_FULL,
+                Eip = 0x5003,
+                Esp = 0x2000,
+                Ebp = 0x3000,
+            },
+        };
+        builder.MemoryBuilder.AddHeapFragment(new() {         Address = ContextAddress, Data = context.GetBytes().ToArray(), Name = "Context" });
+        builder.MemoryBuilder.AddHeapFragment(new()
+        {
+            Address = GcInfoAddress,
+            Data = [64, 0x81, 0xBE, 0xBF, 0xC3, 0x40, 0x81, 0xB1, 0x91, 0xFF],
+            Name = "X86 GCInfo",
+        });
+        byte[] funcletStack = new byte[16];
+        helpers.Write(funcletStack.AsSpan(0), 0x1111u);
+        helpers.Write(funcletStack.AsSpan(8), 0x2222u);
+        helpers.Write(funcletStack.AsSpan(12), 0x6003u);
+        builder.MemoryBuilder.AddHeapFragment(new() { Address = 0x2000, Data = funcletStack, Name = "Funclet stack" });
+        byte[] parentStack = new byte[20];
+        helpers.Write(parentStack.AsSpan(0), 0x4444u);
+        helpers.Write(parentStack.AsSpan(8), 0x3333u);
+        helpers.Write(parentStack.AsSpan(12), 0x4000u);
+        helpers.Write(parentStack.AsSpan(16), 0x7000u);
+        builder.MemoryBuilder.AddHeapFragment(new() { Address = 0x2FF4, Data = parentStack, Name = "Parent stack" });
+
+        MockThreadBuilder threadBuilder = new(builder.MemoryBuilder);
+        MockThread thread = threadBuilder.AddThread(1, 1234);
+        thread.ExceptionTracker = 0;
+        ThreadData threadData = new()
+        {
+            ThreadAddress = new TargetPointer(thread.Address),
+            Frame = new TargetPointer(uint.MaxValue),
+            DebuggerFilterContext = new TargetPointer(ContextAddress),
+        };
+        builder.AddTypes(CreateThreadTypes(threadBuilder));
+        builder.AddTypes(new Dictionary<DataType, Target.TypeInfo>
+        {
+            [DataType.Array] = TypeWithField(nameof(Data.Array.NumComponents), 4),
+            [DataType.String] = TypeWithField(nameof(Data.String.StringLength), 4),
+            [DataType.Object] = TypeWithField(nameof(Data.Object.MethodTable), 0),
+        });
+        builder.AddGlobals((Constants.Globals.ObjectToMethodTableUnmask, 0));
+        Mock<IRuntimeInfo> runtimeInfo = new();
+        runtimeInfo.Setup(r => r.GetTargetArchitecture()).Returns(RuntimeInfoArchitecture.X86);
+        CodeBlockHandle codeBlock = new(new TargetPointer(0x5000));
+        CodeBlockHandle parentCodeBlock = new(new TargetPointer(0x6000));
+        TargetPointer gcInfo = new(GcInfoAddress);
+        Mock<IExecutionManager> executionManager = new();
+        executionManager.Setup(e => e.GetCodeBlockHandle(new TargetCodePointer(0x5003))).Returns(codeBlock);
+        executionManager.Setup(e => e.GetCodeBlockHandle(new TargetCodePointer(0x6003))).Returns(parentCodeBlock);
+        executionManager.Setup(e => e.GetStartAddress(codeBlock)).Returns(new TargetPointer(0x5000));
+        executionManager.Setup(e => e.GetStartAddress(parentCodeBlock)).Returns(new TargetPointer(0x6000));
+        executionManager.Setup(e => e.IsFunclet(codeBlock)).Returns(isFunclet);
+        executionManager.Setup(e => e.GetRelativeOffset(codeBlock)).Returns(new TargetNUInt(3));
+        executionManager.Setup(e => e.GetRelativeOffset(parentCodeBlock)).Returns(new TargetNUInt(3));
+        executionManager.Setup(e => e.GetGCInfo(codeBlock, out gcInfo, out version));
+        executionManager.Setup(e => e.GetGCInfo(parentCodeBlock, out gcInfo, out version));
+        TestPlaceholderTarget target = builder
+            .AddMockContract(runtimeInfo)
+            .AddMockContract(executionManager)
+            .AddMockContract(Mock.Of<IGC>())
+            .AddMockContract(Mock.Of<IRuntimeTypeSystem>())
+            .AddMockContract(Mock.Of<IPlatformMetadata>())
+            .AddMockContract(Mock.Of<IDebugger>())
+            .AddContract<IGCInfo>("c1")
+            .AddContract<IStackWalk>("c1")
+            .Build();
+        GcScanContext scan = new(target, resolveInteriorPointers: false);
+        scan.UpdateScanContext(context.StackPointer, context.InstructionPointer, TargetPointer.Null);
+        new GcScanner(target).EnumGcRefsForManagedFrame(
+            context, codeBlock, new() { IsActiveFrame = true, IsFunclet = isFunclet }, scan);
+        Assert.Equal(new ulong[] { firstAddress, secondAddress }, scan.StackRefs.Select(root => root.Address.Value));
+        Assert.Equal(isFunclet ? new ulong[] { 0x2222, 0x1111 } : new ulong[] { 0x3333, 0x4444 },
+            scan.StackRefs.Select(root => root.Object.Value));
+
+        IReadOnlyList<StackReferenceData> roots = target.Contracts.StackWalk.WalkStackReferences(threadData, resolveInteriorPointers: false);
+        Assert.Equal(new ulong[] { firstAddress, secondAddress }, roots.Select(root => root.Address.Value));
+        Assert.Equal(isFunclet ? new ulong[] { 0x2222, 0x1111 } : new ulong[] { 0x3333, 0x4444 },
+            roots.Select(root => root.Object.Value));
+
+        static Target.TypeInfo TypeWithField(string name, int offset)
+            => new() { Fields = new Dictionary<string, Target.FieldInfo> { [name] = new() { Offset = offset } } };
+    }
+
+    [Theory]
+    [InlineData(4u, false)]
+    [InlineData(5u, false)]
+    [InlineData(4u, true)]
+    [InlineData(5u, true)]
+    public void X86GSCookieOffsetMatchesUnwoundCallerStackPointer(uint version, bool varArgs)
+    {
+        TestPlaceholderTarget.Builder builder = new(new() { IsLittleEndian = true, Is64Bit = false });
+        TargetTestHelpers helpers = builder.MemoryBuilder.TargetTestHelpers;
+        const uint MethodStart = 0x5000;
+        const uint GcInfoAddress = 0x10000;
+        const uint FramePointer = 0x3000;
+        const uint Cookie = 0x1234;
+        builder.MemoryBuilder.AddHeapFragment(new()
+        {
+            Address = GcInfoAddress,
+            Data = varArgs
+                ? [64, 0x81, 0x85, 0xBE, 0xBF, 0x8A, 0xC8, 0x4A, 16, 0xFF]
+                : [64, 0x81, 0x85, 0xBE, 0xBF, 0x8A, 0x4A, 16, 0xFF],
+            Name = "X86 GCInfo",
+        });
+        byte[] stack = new byte[24];
+        helpers.Write(stack.AsSpan(0), Cookie);
+        helpers.Write(stack.AsSpan(16), 0x4000u);
+        helpers.Write(stack.AsSpan(20), 0x6000u);
+        builder.MemoryBuilder.AddHeapFragment(new() { Address = FramePointer - 16, Data = stack, Name = "Stack" });
+
+        CodeBlockHandle codeBlock = new(new TargetPointer(MethodStart));
+        TargetPointer gcInfoAddress = new(GcInfoAddress);
+        Mock<IExecutionManager> executionManager = new();
+        executionManager.Setup(e => e.GetCodeBlockHandle(new TargetCodePointer(MethodStart + 3))).Returns(codeBlock);
+        executionManager.Setup(e => e.GetGCInfo(codeBlock, out gcInfoAddress, out version));
+        executionManager.Setup(e => e.GetRelativeOffset(codeBlock)).Returns(new TargetNUInt(3));
+        executionManager.Setup(e => e.GetStartAddress(codeBlock)).Returns(new TargetPointer(MethodStart));
+        Mock<IRuntimeInfo> runtimeInfo = new();
+        runtimeInfo.Setup(r => r.GetTargetArchitecture()).Returns(RuntimeInfoArchitecture.X86);
+        TestPlaceholderTarget target = builder
+            .AddMockContract(executionManager)
+            .AddMockContract(runtimeInfo)
+            .AddContract<IGCInfo>("c1")
+            .Build();
+        IGCInfo gcInfo = target.Contracts.GCInfo;
+        IGCInfoHandle handle = gcInfo.DecodePlatformSpecificGCInfo(gcInfoAddress, version);
+        SpecialSlot cookie = Assert.IsType<SpecialSlot>(gcInfo.GetHeader(handle).GSCookie);
+        Assert.Equal(SpecialSlotBase.CallerStackPointer, cookie.Base);
+
+        X86Context context = new() { Eip = MethodStart + 3, Esp = FramePointer - 32, Ebp = FramePointer };
+        Assert.True(new Contracts.StackWalkHelpers.X86.X86Unwinder(target).Unwind(ref context));
+        Assert.Equal(FramePointer + (varArgs ? 8u : 16u), context.Esp);
+        uint cookieAddress = checked((uint)(context.Esp + (long)cookie.SpOffset));
+        Assert.Equal(FramePointer - 16, cookieAddress);
+        Assert.Equal(Cookie, target.Read<uint>(new TargetPointer(cookieAddress)));
     }
 
     [Fact]
@@ -1608,8 +1776,10 @@ public unsafe class StackWalkTests
         Assert.NotEqual(0u, context.ContextFlags & (uint)RISCV64Context.ContextFlagsValues.CONTEXT_UNWOUND_TO_CALL);
     }
 
-    [Fact]
-    public void ARM64Unwind_SaveAnyPair_RestoresCallerContext()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ARM64Unwind_SaveAnyPair_RestoresCallerContext(bool hasPac)
     {
         MockTarget.Architecture arch = new() { IsLittleEndian = true, Is64Bit = true };
         TestPlaceholderTarget.Builder targetBuilder = new(arch);
@@ -1623,6 +1793,7 @@ public unsafe class StackWalkTests
         const ulong SavedX19 = 0x1919_1919_1919_1919;
         const ulong SavedX20 = 0x2020_2020_2020_2020;
         const ulong ReturnAddress = 0x1234_5678_9abc_def0;
+        const ulong PacMask = 0xff7f_8000_0000_0000;
 
         Layout<MockRuntimeFunction> runtimeFunctionLayout = MockRuntimeFunction.CreateLayout(arch, includeEndAddress: false);
         byte[] runtimeFunctionData = new byte[runtimeFunctionLayout.Size];
@@ -1636,12 +1807,13 @@ public unsafe class StackWalkTests
             Name = "Runtime function",
         });
 
-        byte[] unwindData = new byte[2 * sizeof(uint)];
-        helpers.Write(unwindData.AsSpan(0, sizeof(uint)), 16u | (1u << 27));
+        byte[] unwindData = new byte[3 * sizeof(uint)];
+        helpers.Write(unwindData.AsSpan(0, sizeof(uint)), 16u | (2u << 27));
         unwindData[4] = 0xe7; // save_any
         unwindData[5] = 0x53; // p=1, x=0, r=19
         unwindData[6] = 0x00; // f=0, o=0
-        unwindData[7] = 0xe4; // end
+        unwindData[7] = hasPac ? (byte)0xfc : (byte)0xe4; // pac or end
+        unwindData[8] = 0xe4; // end
         targetBuilder.MemoryBuilder.AddHeapFragment(new MockMemorySpace.HeapFragment
         {
             Address = ImageBase + XdataRva,
@@ -1672,6 +1844,7 @@ public unsafe class StackWalkTests
                 [DataType.RuntimeFunction] = TargetTestHelpers.CreateTypeInfo(runtimeFunctionLayout),
             })
             .AddMockContract(executionManager.Object)
+            .AddMockContract(Mock.Of<IPlatformMetadata>(m => m.GetPointerAuthenticationMask() == PacMask))
             .Build();
 
         ARM64Context context = new()
@@ -1688,7 +1861,9 @@ public unsafe class StackWalkTests
         Assert.Equal(SavedX19, context.X19);
         Assert.Equal(SavedX20, context.X20);
         Assert.Equal(CurrentSp, context.Sp);
-        Assert.Equal(ReturnAddress, context.Pc);
+        ulong expectedReturnAddress = hasPac ? ReturnAddress & ~PacMask : ReturnAddress;
+        Assert.Equal(expectedReturnAddress, context.Lr);
+        Assert.Equal(expectedReturnAddress, context.Pc);
         Assert.NotEqual(0u, context.ContextFlags & (uint)ARM64Context.ContextFlagsValues.CONTEXT_UNWOUND_TO_CALL);
     }
 
@@ -1777,7 +1952,8 @@ public unsafe class StackWalkTests
         Action<MockFrameBuilder>? configureFrames = null,
         RuntimeInfoArchitecture? runtimeArchitecture = null,
         Action<TestPlaceholderTarget.Builder>? configureTarget = null,
-        IExecutionManager? executionManager = null)
+        IExecutionManager? executionManager = null,
+        IGCInfo? gcInfo = null)
     {
         TestPlaceholderTarget.Builder targetBuilder = new(arch);
         MockThreadBuilder threadBuilder = new(targetBuilder.MemoryBuilder);
@@ -1835,7 +2011,8 @@ public unsafe class StackWalkTests
             // IsExceptionHandlingHelperInlinedCallFrame / GetDebuggerEvalData, none of which
             // invoke ExecutionManager or GCInfo, so empty mocks satisfy construction.
             .AddMockContract(executionManager ?? Mock.Of<IExecutionManager>())
-            .AddMockContract(Mock.Of<IGCInfo>())
+            .AddMockContract(gcInfo ?? Mock.Of<IGCInfo>())
+            .AddMockContract(Mock.Of<IPlatformMetadata>())
             .Build();
     }
 
@@ -2223,6 +2400,75 @@ public unsafe class StackWalkTests
         Assert.Equal(icfAddr, stackWalk.GetFrameAddress(frames[^1]).Value);
     }
 
+    // InterpreterFrame.Continuation is absent from the data descriptor of older runtimes that
+    // support StackWalk version 1; scanning must then report nothing instead of failing.
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void InterpreterFrame_ReportsContinuationOnlyWhenDescriptorHasField(bool hasContinuationField)
+    {
+        const ulong ContinuationObject = 0x0123_4560;
+        ulong interpreterFrameAddr = 0;
+        int continuationOffset = 0;
+        MockFrameBuilder? frames = null;
+        TestPlaceholderTarget target = CreateTarget(
+            new MockTarget.Architecture { IsLittleEndian = true, Is64Bit = true },
+            _ => { },
+            frameBuilder => frames = frameBuilder,
+            configureTarget: targetBuilder =>
+            {
+                TargetTestHelpers helpers = targetBuilder.MemoryBuilder.TargetTestHelpers;
+                int pointerSize = helpers.PointerSize;
+                MockMemorySpace.BumpAllocator allocator = targetBuilder.MemoryBuilder.CreateAllocator(0x0020_0000, 0x0020_1000);
+
+                Layout<MockFramedMethodFrame> fmfLayout = frames!.FramedMethodFrameLayout;
+                int topOffset = fmfLayout.Size;
+                int isFaultingOffset = topOffset + pointerSize;
+                continuationOffset = isFaultingOffset + pointerSize;
+                Dictionary<string, Target.FieldInfo> interpreterFrameFields = new(TargetTestHelpers.CreateTypeInfo(fmfLayout).Fields)
+                {
+                    [nameof(Data.InterpreterFrame.TopInterpMethodContextFrame)] = new() { Offset = topOffset },
+                    [nameof(Data.InterpreterFrame.IsFaulting)] = new() { Offset = isFaultingOffset },
+                };
+                if (hasContinuationField)
+                    interpreterFrameFields["Continuation"] = new() { Offset = continuationOffset };
+
+                uint size = (uint)(continuationOffset + pointerSize);
+                MockMemorySpace.HeapFragment interpreterFrame = allocator.Allocate(size, "InterpreterFrame");
+                MockFramedMethodFrame fmf = fmfLayout.Create(interpreterFrame);
+                fmf.Identifier = MockFrameBuilder.InterpreterFrameIdentifierValue;
+                helpers.WritePointer(interpreterFrame.Data.AsSpan(continuationOffset, pointerSize), ContinuationObject);
+                interpreterFrameAddr = interpreterFrame.Address;
+
+                targetBuilder
+                    .AddMockContract(Mock.Of<IGC>())
+                    .AddMockContract(Mock.Of<IRuntimeTypeSystem>())
+                    .AddTypes(new Dictionary<DataType, Target.TypeInfo>
+                    {
+                        [DataType.InterpreterFrame] = new() { Fields = interpreterFrameFields, Size = size },
+                        [DataType.Array] = InterpGcTypeInfo(nameof(Data.Array.NumComponents)),
+                        [DataType.String] = InterpGcTypeInfo(nameof(Data.String.StringLength)),
+                        [DataType.Object] = InterpGcTypeInfo(nameof(Data.Object.MethodTable)),
+                    })
+                    .AddGlobals((Constants.Globals.ObjectToMethodTableUnmask, 0));
+            });
+
+        GcScanContext scanContext = new(target, resolveInteriorPointers: false);
+        new GcScanner(target).GcScanRoots(new TargetPointer(interpreterFrameAddr), scanContext);
+
+        if (hasContinuationField)
+        {
+            StackRefData reference = Assert.Single(scanContext.StackRefs);
+            Assert.Equal(interpreterFrameAddr + (ulong)continuationOffset, reference.Address.Value);
+            Assert.Equal(ContinuationObject, reference.Object.Value);
+            Assert.Equal(GcScanFlags.None, reference.Flags);
+        }
+        else
+        {
+            Assert.Empty(scanContext.StackRefs);
+        }
+    }
+
     // An interpreted P/Invoke pushes an active InlinedCallFrame whose CallSiteSP is the top
     // InterpMethodContextFrame of the owning InterpreterFrame that follows it. Like native
     // InlinedCallFrame::IsInInterpreter handling, the walk must move from that ICF to the
@@ -2307,7 +2553,7 @@ public unsafe class StackWalkTests
         if (seedFromNativeContext)
         {
             ContextHolder<WasmContext> nativeContext = new() { InstructionPointer = new TargetCodePointer(0x0009_9000) };
-            walk = stackWalk.CreateStackWalk(threadData, nativeContext.GetBytes());
+            walk = stackWalk.CreateStackWalk(threadData, nativeContext.GetBytes().ToArray());
         }
         else
         {
@@ -2771,8 +3017,7 @@ public unsafe class StackWalkTests
         => AddWasmR2RFunctions(targetBuilder, allocator, functionTableIndex, minVirtualIP, [(functionBeginAddress, frameSize)]);
 
     // Registers one R2R module whose RUNTIME_FUNCTIONs occupy consecutive function-table indices
-    // starting at minFunctionTableIndex. BeginAddress bit 31 marks a funclet; a frame size of 0
-    // leaves the unwind data unset.
+    // starting at minFunctionTableIndex. BeginAddress bit 31 marks a funclet.
     private static TargetPointer AddWasmR2RFunctions(
         TestPlaceholderTarget.Builder targetBuilder,
         MockMemorySpace.BumpAllocator allocator,
@@ -2802,14 +3047,11 @@ public unsafe class StackWalkTests
         {
             Span<byte> entry = runtimeFunctions.Data.AsSpan(i * (int)runtimeFunctionLayout.Stride, (int)runtimeFunctionLayout.Stride);
             helpers.Write(entry.Slice(runtimeFunctionLayout.Fields[nameof(Data.RuntimeFunction.BeginAddress)].Offset, sizeof(uint)), functions[i].BeginAddress);
-            if (functions[i].FrameSize != 0)
-            {
-                // Unwind data is the ULEB128 frame size, addressed as LoadedImageBase (0 here) + UnwindData.
-                Assert.True(functions[i].FrameSize < 0x80);
-                MockMemorySpace.HeapFragment unwindData = allocator.Allocate(1, "UnwindData");
-                unwindData.Data[0] = functions[i].FrameSize;
-                helpers.Write(entry.Slice(runtimeFunctionLayout.Fields[nameof(Data.RuntimeFunction.UnwindData)].Offset, sizeof(uint)), (uint)unwindData.Address);
-            }
+            Assert.True(functions[i].FrameSize < 0x80);
+            MockMemorySpace.HeapFragment unwindData = allocator.Allocate(2, "UnwindData");
+            unwindData.Data[0] = functions[i].FrameSize;
+            unwindData.Data[1] = 3;
+            helpers.Write(entry.Slice(runtimeFunctionLayout.Fields[nameof(Data.RuntimeFunction.UnwindData)].Offset, sizeof(uint)), (uint)unwindData.Address);
         }
 
         MockReadyToRunInfo r2rInfo = r2rInfoLayout.Create(allocator.Allocate((ulong)r2rInfoLayout.Size, "ReadyToRunInfo"));
@@ -3095,5 +3337,139 @@ public unsafe class StackWalkTests
 
         StackWalk_1 stackWalk = new(target);
         Assert.Equal(root, stackWalk.CallerStackPointer(context).Value);
+    }
+
+    // EnumGcRefsForManagedFrame on an interpreted frame mirrors TGcInfoDecoder<InterpreterGcInfoEncoding>::GetStackSlot
+    // (gcinfodecoder.cpp): the GC info is decoded with the interpreter encoding, stack slots are relative to the frame
+    // pointer (the InterpMethodContextFrame's pStack), and slots at or above the pStack of an active callee
+    // (pNext with a non-null ip) belong to the callee's argument area and are not reported by the caller.
+    private const ulong InterpGcBytecodeIp = 0x0005_1020;
+    private const ulong InterpGcStack = 0x0006_1000;
+    private const uint InterpGcStackBaseRegister = 8;
+
+    private static readonly LiveSlot[] InterpreterGcSlots =
+    [
+        new(IsRegister: false, RegisterNumber: 0, SpOffset: 0, SpBase: 2, GcFlags: 0),
+        new(IsRegister: false, RegisterNumber: 0, SpOffset: 8, SpBase: 2, GcFlags: 0),
+        new(IsRegister: false, RegisterNumber: 0, SpOffset: 16, SpBase: 2, GcFlags: 0x3), // conservatively reported argument slot
+        new(IsRegister: false, RegisterNumber: 0, SpOffset: 24, SpBase: 2, GcFlags: 0x3),
+        new(IsRegister: false, RegisterNumber: 0, SpOffset: 32, SpBase: 1, GcFlags: 0), // SP-relative: invalid for interpreter frames
+    ];
+
+    private static ulong InterpGcObject(int spOffset) => 0x0009_0000 + (ulong)spOffset;
+
+    // calleeIp: null for no callee (pNext == NULL); otherwise the ip of the callee InterpMethodContextFrame.
+    private static List<StackRefData> EnumerateInterpreterFrameGcRefs(ulong? calleeIp, ulong calleeStack, out Mock<IGCInfo> gcInfo)
+    {
+        MockTarget.Architecture arch = new() { IsLittleEndian = true, Is64Bit = true };
+        CodeBlockHandle cbh = new(new TargetPointer(0x0007_0000));
+        TargetPointer gcInfoAddress = new(0x0008_0000);
+        const uint GcVersion = 4;
+        const uint RelativeOffset = 0x20;
+
+        Mock<IExecutionManager> executionManager = new();
+        executionManager.Setup(e => e.GetCodeKind(new TargetCodePointer(InterpGcBytecodeIp))).Returns(CodeKind.Interpreter);
+        executionManager.Setup(e => e.GetRelativeOffset(cbh)).Returns(new TargetNUInt(RelativeOffset));
+        TargetPointer outGcInfo = gcInfoAddress;
+        uint outVersion = GcVersion;
+        executionManager.Setup(e => e.GetGCInfo(cbh, out outGcInfo, out outVersion));
+
+        IGCInfoHandle handle = Mock.Of<IGCInfoHandle>();
+        gcInfo = new();
+        gcInfo.Setup(g => g.DecodeInterpreterGCInfo(gcInfoAddress, GcVersion)).Returns(handle);
+        gcInfo.Setup(g => g.GetHeader(handle)).Returns(default(GCInfoHeader) with { StackBaseRegister = InterpGcStackBaseRegister });
+        gcInfo.Setup(g => g.EnumerateLiveSlots(handle, RelativeOffset, It.IsAny<GcSlotEnumerationOptions>())).Returns(InterpreterGcSlots);
+
+        ulong frame = 0;
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            threadBuilder => threadBuilder.AddThread(1, 1234),
+            frameBuilder =>
+            {
+                MockInterpMethodContextFrame current = frameBuilder.AddInterpMethodContextFrame(parentPtr: 0, ip: InterpGcBytecodeIp, stack: InterpGcStack);
+                if (calleeIp is ulong ip)
+                {
+                    MockInterpMethodContextFrame callee = frameBuilder.AddInterpMethodContextFrame(parentPtr: current.Address, ip: ip, stack: calleeStack);
+                    current.NextPtr = callee.Address;
+                }
+                frame = current.Address;
+            },
+            configureTarget: targetBuilder =>
+            {
+                // The interpreter stack holding the slots, each pointing at a distinct object.
+                MockMemorySpace.HeapFragment stack = new()
+                {
+                    Name = "Interpreter stack",
+                    Address = InterpGcStack,
+                    Data = new byte[48],
+                };
+                for (int offset = 0; offset < stack.Data.Length; offset += 8)
+                    targetBuilder.MemoryBuilder.TargetTestHelpers.WritePointer(stack.Data.AsSpan(offset, 8), InterpGcObject(offset));
+                targetBuilder.MemoryBuilder.AddHeapFragment(stack);
+                // GcScanContext's interior pointer resolver; not used since interior pointers are not resolved.
+                targetBuilder.AddMockContract(Mock.Of<IGC>());
+                targetBuilder.AddMockContract(Mock.Of<IRuntimeTypeSystem>());
+                targetBuilder.AddTypes(new Dictionary<DataType, Target.TypeInfo>
+                {
+                    [DataType.Array] = InterpGcTypeInfo(nameof(Data.Array.NumComponents)),
+                    [DataType.String] = InterpGcTypeInfo(nameof(Data.String.StringLength)),
+                    [DataType.Object] = InterpGcTypeInfo(nameof(Data.Object.MethodTable)),
+                });
+                targetBuilder.AddGlobals((Constants.Globals.ObjectToMethodTableUnmask, 0));
+            },
+            executionManager: executionManager.Object,
+            gcInfo: gcInfo.Object);
+
+        ContextHolder<RISCV64Context> context = new();
+        context.InstructionPointer = new TargetCodePointer(InterpGcBytecodeIp);
+        context.StackPointer = new TargetPointer(frame);
+        context.FramePointer = new TargetPointer(InterpGcStack);
+
+        GcScanContext scanContext = new(target, resolveInteriorPointers: false);
+        new GcScanner(target).EnumGcRefsForManagedFrame(context, cbh, new GcSlotEnumerationOptions { IsActiveFrame = false }, scanContext);
+        return scanContext.StackRefs;
+    }
+
+    private static Target.TypeInfo InterpGcTypeInfo(string field)
+        => new() { Fields = new Dictionary<string, Target.FieldInfo> { [field] = new Target.FieldInfo { Offset = 0 } } };
+
+    private static void AssertInterpreterSlots(List<StackRefData> refs, params int[] expectedOffsets)
+    {
+        Assert.Equal(expectedOffsets, refs.Select(r => r.Offset));
+        foreach (StackRefData r in refs)
+        {
+            Assert.Equal(InterpGcStack + (ulong)r.Offset, r.Address.Value);
+            Assert.Equal(InterpGcObject(r.Offset), r.Object.Value);
+            Assert.Equal((int)InterpGcStackBaseRegister, r.Register);
+        }
+    }
+
+    [Fact]
+    public void EnumGcRefs_InterpretedFrame_ReportsFrameRelativeSlots()
+    {
+        List<StackRefData> refs = EnumerateInterpreterFrameGcRefs(calleeIp: null, calleeStack: 0, out Mock<IGCInfo> gcInfo);
+
+        AssertInterpreterSlots(refs, 0, 8, 16, 24);
+        Assert.Equal(GcScanFlags.GC_CALL_INTERIOR | GcScanFlags.GC_CALL_PINNED, refs[2].Flags);
+        gcInfo.Verify(g => g.DecodeInterpreterGCInfo(It.IsAny<TargetPointer>(), It.IsAny<uint>()), Times.Once);
+        gcInfo.Verify(g => g.DecodePlatformSpecificGCInfo(It.IsAny<TargetPointer>(), It.IsAny<uint>()), Times.Never);
+    }
+
+    [Fact]
+    public void EnumGcRefs_InterpretedFrameWithActiveCallee_ExcludesCalleeArgumentArea()
+    {
+        List<StackRefData> refs = EnumerateInterpreterFrameGcRefs(calleeIp: 0x0005_2000, calleeStack: InterpGcStack + 16, out _);
+
+        AssertInterpreterSlots(refs, 0, 8);
+    }
+
+    [Fact]
+    public void EnumGcRefs_InterpretedFrameWithInactiveCallee_KeepsAllSlots()
+    {
+        // A callee InterpMethodContextFrame with a null ip is not executing (it is kept for reuse), so the
+        // caller still reports the slots above its pStack.
+        List<StackRefData> refs = EnumerateInterpreterFrameGcRefs(calleeIp: 0, calleeStack: InterpGcStack + 16, out _);
+
+        AssertInterpreterSlots(refs, 0, 8, 16, 24);
     }
 }

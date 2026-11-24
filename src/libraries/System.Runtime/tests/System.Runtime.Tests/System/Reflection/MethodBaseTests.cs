@@ -57,8 +57,6 @@ namespace System.Reflection.Tests
             MethodBase mbase = typeof(MethodBaseTests).GetMethod("MyOtherMethod", BindingFlags.Static | BindingFlags.Public);
             MethodBody mb = mbase.GetMethodBody();
             var il = mb.GetILAsByteArray();
-            if (il?.Length == 1 && il[0] == 0x2a) // ILStrip replaces method bodies with the 'ret' IL opcode i.e. 0x2a
-                throw new SkipTestException("The method body was processed using ILStrip.");
             var codeSize = mb.GetILAsByteArray().Length;
             Assert.True(mb.InitLocals);  // local variables are initialized
 
