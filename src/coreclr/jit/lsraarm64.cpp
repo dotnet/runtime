@@ -1159,6 +1159,11 @@ int LinearScan::BuildNode(GenTree* tree)
                 {
                     setDelayFree(comparandUse);
                 }
+                else
+                {
+                    // CAS uses the comparand register for its result.
+                    tgtPrefUse = comparandUse;
+                }
             }
 
             // Internals may not collide with target
