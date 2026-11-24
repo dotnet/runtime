@@ -300,6 +300,28 @@ namespace System.Collections.Concurrent.Tests
         }
 
         [Fact]
+        public static void Clear_AfterRemoval_DoesNotExposeOldItems()
+        {
+            var bag = new ConcurrentBag<int>(new[] { 1, 2, 3 });
+            Assert.True(bag.TryTake(out _));
+
+            bag.Clear();
+            Assert.Empty(bag);
+            Assert.False(bag.TryPeek(out _));
+            Assert.False(bag.TryTake(out _));
+
+            bag.Add(4);
+            bag.Add(5);
+            Assert.Equal(new[] { 4, 5 }, bag.OrderBy(item => item));
+            var remaining = new HashSet<int> { 4, 5 };
+            while (bag.TryTake(out int item))
+            {
+                Assert.True(remaining.Remove(item));
+            }
+            Assert.Empty(remaining);
+        }
+
+        [Fact]
         public static void Clear_DuringEnumeration_DoesntAffectEnumeration()
         {
             const int ExpectedCount = 100;

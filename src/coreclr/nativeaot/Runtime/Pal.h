@@ -275,8 +275,6 @@ HANDLE PalCreateLowMemoryResourceNotification();
 
 void PalAttachThread(void* thread);
 
-uint64_t PalGetCurrentOSThreadId();
-
 void PalPrintFatalError(const char* message);
 
 char* PalCopyTCharAsChar(const TCHAR* toCopy);
@@ -290,7 +288,6 @@ int32_t _stricmp(const char *string1, const char *string2);
 #endif // TARGET_UNIX
 
 uint16_t PalCaptureStackBackTrace(uint32_t arg1, uint32_t arg2, void* arg3, uint32_t* arg4);
-uint32_t PalGetCurrentProcessId();
 
 #ifdef UNICODE
 uint32_t PalGetEnvironmentVariable(_In_opt_ LPCWSTR lpName, _Out_writes_to_opt_(nSize, return + 1) LPWSTR lpBuffer, _In_ uint32_t nSize);

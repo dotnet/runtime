@@ -86,12 +86,12 @@ variables:
   # For container-backed queues, EOL refers to the target distro, not the host.
 
   # Linux x64
-  # Latest: Azure Linux 3.0 (EOL date unconfirmed)
+  # Latest: Azure Linux 4.0 (EOL date unconfirmed)
   - name: helix_linux_x64_latest
-    value: AzureLinux.3.Amd64.Open
+    value: AzureLinux.4.Amd64.Open
 
   - name: helix_linux_x64_latest_internal
-    value: AzureLinux.3.Amd64
+    value: AzureLinux.4.Amd64
 
   # Oldest: Ubuntu 24.04 (EOL: 2029-05)
   - name: helix_linux_x64_oldest

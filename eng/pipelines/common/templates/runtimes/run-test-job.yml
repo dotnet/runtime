@@ -249,13 +249,13 @@ jobs:
     # and directly unzip them there after download). Unfortunately the logic to copy
     # the native artifacts to the final test folders is dependent on availability of the
     # managed test artifacts. This step also generates the final test execution scripts.
-    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) copynativeonly $(logRootNameArg)Native $(testFilterArg) $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) -arch $(archType) $(priorityArg) $(librariesOverrideArg) $(codeFlowEnforcementArg) $(extraBuildArgs)
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) copynativeonly $(logRootNameArg)Native $(testFilterArg) $(useNativeAotRuntimeArg) $(crossgenArg) $(buildConfig) -arch $(archType) $(priorityArg) $(librariesOverrideArg) $(codeFlowEnforcementArg) $(extraBuildArgs)
       displayName: Copy native test components to test output folder
 
     # Compose the Core_Root folder containing all artifacts needed for running
     # CoreCLR tests. This step also compiles the framework using Crossgen2
     # in ReadyToRun jobs.
-    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) generatelayoutonly $(logRootNameArg)Layout $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) -arch $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg) $(runtimeVariantArg) -ci $(extraBuildArgs)
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) generatelayoutonly $(logRootNameArg)Layout $(useNativeAotRuntimeArg) $(crossgenArg) $(buildConfig) -arch $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg) $(runtimeVariantArg) -ci $(extraBuildArgs)
       displayName: Generate CORE_ROOT
 
     # Send tests to Helix
@@ -327,10 +327,6 @@ jobs:
             - no_tiered_compilation
             - interpmode1_no_tiered_compilation
             - interpmode1
-          ${{ elseif eq(parameters.runtimeFlavor, 'mono') }}:
-            # tiered compilation isn't done on mono yet
-            scenarios:
-            - normal
           ${{ elseif eq(variables['Build.Reason'], 'PullRequest') }}:
             scenarios:
             - no_tiered_compilation

@@ -19,6 +19,7 @@
 #define WIN32_LEAN_AND_MEAN
 #endif // WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#include <dn-safecrt.h>
 
 #ifdef INTERNAL_BUILD
 // There are a few features that reference Microsoft internal resources. We can't build these

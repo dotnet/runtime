@@ -6,7 +6,6 @@
     <_SampleProject Condition="'$(_SampleProject)' == ''">$(MSBuildProjectFile)</_SampleProject>
     <_SampleAssembly Condition="'$(_SampleAssembly)' == ''">$(TargetFileName)</_SampleAssembly>
     <_SampleProjectName>$([System.String]::Copy('$(_SampleProject)').Replace('.csproj',''))</_SampleProjectName>
-    <_MONO_LOG_LEVEL Condition="false">--env MONO_LOG_LEVEL=debug --env MONO_LOG_MASK=all</_MONO_LOG_LEVEL>
   </PropertyGroup>
 
   <Target Name="BuildSampleInTree"
@@ -19,10 +18,7 @@
       Outputs="
       bin/$(Configuration)/AppBundle/dotnet.native.wasm;
       ">
-    <PropertyGroup>
-      <_AOTFlag Condition="'$(RunAOTCompilation)' != ''">/p:RunAOTCompilation=$(RunAOTCompilation)</_AOTFlag>
-    </PropertyGroup>
-    <Exec Command="$(_Dotnet) publish -bl:publish.binlog /p:Configuration=$(Configuration) /p:TargetArchitecture=wasm /p:TargetOS=wasi $(_AOTFlag) $(_SampleProject)" />
+    <Exec Command="$(_Dotnet) publish -bl:publish.binlog /p:Configuration=$(Configuration) /p:TargetArchitecture=wasm /p:TargetOS=wasi $(_SampleProject)" />
   </Target>
 
   <Target Name="RunSampleWithWasmtime" DependsOnTargets="BuildSampleInTree">

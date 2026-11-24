@@ -26,7 +26,6 @@ set_target_properties(WasiHost-Static PROPERTIES OUTPUT_NAME WasiHost CLEAN_DIRE
 if (CLR_CMAKE_TARGET_WASI)
     target_compile_definitions(WasiHost-Static PRIVATE
         _WASI_EMULATED_MMAN
-        _WASI_EMULATED_GETPID
         _WASI_EMULATED_SIGNAL
         _WASI_EMULATED_PROCESS_CLOCKS)
 endif()

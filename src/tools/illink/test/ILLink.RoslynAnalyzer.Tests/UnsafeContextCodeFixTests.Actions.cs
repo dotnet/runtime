@@ -123,6 +123,26 @@ namespace ILLink.RoslynAnalyzer.Tests
         }
 
         [Fact]
+        public Task ExpressionFirstAction_KeepsExpressionBody()
+        {
+            return VerifyAsync("""
+                class C
+                {
+                    static unsafe int Get() => 0;
+
+                    int M() => {|CS9362:Get()|};
+                }
+                """, """
+                class C
+                {
+                    static unsafe int Get() => 0;
+
+                    int M() => /* SAFETY: To be audited */ unsafe(Get());
+                }
+                """, equivalenceKey: ExpressionFirstKey);
+        }
+
+        [Fact]
         public Task CallerArgumentExpression_NeverWrapsCapturedArgument()
         {
             // The lambda rules out a block, and a wrapper would change the captured message: no fix is offered.
@@ -286,7 +306,7 @@ namespace ILLink.RoslynAnalyzer.Tests
         }
 
         [Fact]
-        public Task HeaderOnlyIf_WrapsCondition()
+        public Task HeaderOnlyIf_LiftsOutVariableAndWrapsStatement()
         {
             return VerifyAsync("""
                 class C
@@ -308,8 +328,13 @@ namespace ILLink.RoslynAnalyzer.Tests
 
                     int M(bool ready)
                     {
-                        if (!ready || !/* SAFETY: To be audited */ unsafe(TryGet(out int value)))
-                            return 0;
+                        int value;
+                        // SAFETY: To be audited
+                        unsafe
+                        {
+                            if (!ready || !TryGet(out value))
+                                return 0;
+                        }
 
                         return value;
                     }

@@ -2187,9 +2187,8 @@ GenTreeCall* Compiler::impImportIndirectCall(CORINFO_SIG_INFO* sig, const DebugI
 
     GenTree* fptr = impPopStack().val;
 
-    // The function pointer is typically a sized to match the target pointer size
-    // However, stubgen IL optimization can change LDC.I8 to LDC.I4
-    // See ILCodeStream::LowerOpcode
+    // The function pointer is typically sized to match the target pointer size,
+    // but tolerate int32 values from IL producers that omit conv.i.
     assert(genActualType(fptr->gtType) == TYP_I_IMPL || genActualType(fptr->gtType) == TYP_INT);
 
 #ifdef DEBUG
@@ -4503,6 +4502,11 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 #endif
                 {
                     assert(sig->numArgs == 2);
+
+                    // Like a call, the atomic may modify memory, including address-exposed locals,
+                    // so spill pending reads that must observe the value before the update.
+                    impSpillSideEffects(true, stackState.esStackDepth - sig->numArgs DEBUGARG("Interlocked intrinsic"));
+
                     GenTree*   op2 = impPopStack().val;
                     GenTree*   op1 = impPopStack().val;
                     genTreeOps op  = (ni == NI_System_Threading_Interlocked_Or) ? GT_XORR : GT_XAND;
@@ -4542,6 +4546,10 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 
                 assert(callType != TYP_STRUCT);
                 assert(sig->numArgs == 3);
+
+                // Like a call, the atomic may modify memory, including address-exposed locals,
+                // so spill pending reads that must observe the value before the update.
+                impSpillSideEffects(true, stackState.esStackDepth - sig->numArgs DEBUGARG("Interlocked intrinsic"));
 
                 GenTree* op3 = impPopStack().val; // comparand
                 if (varTypeIsSmall(callType))
@@ -4586,6 +4594,10 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 assert(callType != TYP_STRUCT);
                 assert(sig->numArgs == 2);
                 assert((genTypeSize(retType) >= 4) || (ni == NI_System_Threading_Interlocked_Exchange));
+
+                // Like a call, the atomic may modify memory, including address-exposed locals,
+                // so spill pending reads that must observe the value before the update.
+                impSpillSideEffects(true, stackState.esStackDepth - sig->numArgs DEBUGARG("Interlocked intrinsic"));
 
                 GenTree* op2 = impPopStack().val;
                 GenTree* op1 = impPopStack().val;

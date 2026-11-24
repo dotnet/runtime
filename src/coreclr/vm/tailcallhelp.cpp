@@ -369,16 +369,15 @@ MethodDesc* TailCallHelp::CreateStoreArgsStub(TailCallInfo& info)
         pGcDesc = AllocateBlob(info.LoaderAllocator, gcDesc, gcDescLen);
     }
 
-    pCode->EmitLDC(info.ArgBufLayout.Size);
-    pCode->EmitLDC(DWORD_PTR(pGcDesc));
-    pCode->EmitCONV_I();
+    pCode->EmitLDC_I4(info.ArgBufLayout.Size);
+    pCode->EmitLDC_I(DWORD_PTR(pGcDesc));
     pCode->EmitCALL(METHOD__RUNTIME_HELPERS__ALLOC_TAILCALL_ARG_BUFFER, 2, 1);
     pCode->EmitSTLOC(bufferLcl);
 
     auto emitOffs = [&](UINT offs)
     {
         pCode->EmitLDLOC(bufferLcl);
-        pCode->EmitLDC(offs);
+        pCode->EmitLDC_I4(offs);
         pCode->EmitADD();
     };
 
@@ -487,14 +486,13 @@ MethodDesc* TailCallHelp::CreateCallTargetStub(const TailCallInfo& info)
     auto emitOffs = [&](UINT offs)
     {
         pCode->EmitLDARG(ARG_ARG_BUFFER);
-        pCode->EmitLDC(offs);
+        pCode->EmitLDC_I4(offs);
         pCode->EmitADD();
     };
 
     // pFrame->NextCall = 0;
     pCode->EmitLDARG(ARG_PTR_FRAME);
-    pCode->EmitLDC(0);
-    pCode->EmitCONV_U();
+    pCode->EmitLDC_I(0);
     pCode->EmitSTFLD(FIELD__PORTABLE_TAIL_CALL_FRAME__NEXT_CALL);
 
     // pFrame->TailCallAwareReturnAddress = NextCallReturnAddress();
@@ -519,7 +517,7 @@ MethodDesc* TailCallHelp::CreateCallTargetStub(const TailCallInfo& info)
         // argument is just a regular IntPtr on the stack. It is safe to stop reporting it only after the target method
         // takes over.
         pCode->EmitLDARG(ARG_ARG_BUFFER);
-        pCode->EmitLDC(info.ArgBufLayout.HasInstArg ? TAILCALLARGBUFFER_INSTARG_ONLY : TAILCALLARGBUFFER_INACTIVE);
+        pCode->EmitLDC_I4(info.ArgBufLayout.HasInstArg ? TAILCALLARGBUFFER_INSTARG_ONLY : TAILCALLARGBUFFER_INACTIVE);
         pCode->EmitSTIND_I4();
     }
 
