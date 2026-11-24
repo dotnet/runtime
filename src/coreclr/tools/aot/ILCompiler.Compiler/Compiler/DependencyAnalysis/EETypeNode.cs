@@ -128,6 +128,24 @@ namespace ILCompiler.DependencyAnalysis
                     return result;
             }
 
+            // A GVM can also override a GVM on a parent type through a MethodImpl while being newslot itself
+            // (e.g. a C# covariant return override). Such a method is its own slot defining method, so the check above
+            // does not catch it. Non-interface MethodImpls are the only way to do that.
+            if ((result & VirtualMethodAnalysisFlags.NeedsGvmEntries) != 0
+                && (result & VirtualMethodAnalysisFlags.InterestingForDynamicDependencies) == 0
+                && defType.GetTypeDefinition() is MetadataType typeDefinition)
+            {
+                foreach (MethodImplRecord methodImpl in typeDefinition.VirtualMethodImplsForType)
+                {
+                    if (methodImpl.Body.HasInstantiation && !methodImpl.Body.IsAbstract)
+                    {
+                        result |= VirtualMethodAnalysisFlags.InterestingForDynamicDependencies;
+                        Debug.Assert((result & VirtualMethodAnalysisFlags.AllFlags) == VirtualMethodAnalysisFlags.AllFlags);
+                        return result;
+                    }
+                }
+            }
+
             //
             // Check if the type implements any interface, where the method implementations could be on
             // base types.
@@ -161,7 +179,9 @@ namespace ILCompiler.DependencyAnalysis
                         // these all will be looked at for every unique generic virtual method call in the program.
                         // Having a long list of interesting types affects the compilation throughput heavily.
                         if (slotDecl.OwningType == defType ||
-                            defType.BaseType.ResolveInterfaceMethodTarget(method) != slotDecl)
+                            (method.Signature.IsStatic
+                                ? defType.BaseType.ResolveInterfaceMethodToStaticVirtualMethodOnType(method)
+                                : defType.BaseType.ResolveInterfaceMethodTarget(method)) != slotDecl)
                         {
                             result |= VirtualMethodAnalysisFlags.InterestingForDynamicDependencies
                                 | VirtualMethodAnalysisFlags.NeedsGvmEntries;

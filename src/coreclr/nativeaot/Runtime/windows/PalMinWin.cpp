@@ -7,6 +7,7 @@
 #include <errno.h>
 #include <minipal/environ.h>
 #include <minipal/utf8.h>
+#include <minipal/thread.h>
 
 #include "holder.h"
 
@@ -189,11 +190,6 @@ bool PalInit()
     InitializeCurrentProcessCpuCount();
 
     return true;
-}
-
-uint64_t PalGetCurrentOSThreadId()
-{
-    return GetCurrentThreadId();
 }
 
 #if !defined(FEATURE_PORTABLE_HELPERS) && !defined(FEATURE_RX_THUNKS)
@@ -1031,11 +1027,6 @@ uint16_t PalCaptureStackBackTrace(uint32_t arg1, uint32_t arg2, void* arg3, uint
     WORD res = ::RtlCaptureStackBackTrace(arg1, arg2, (PVOID*)arg3, &backTraceHash);
     *arg4 = backTraceHash;
     return res;
-}
-
-uint32_t PalGetCurrentProcessId()
-{
-    return static_cast<uint32_t>(::GetCurrentProcessId());
 }
 
 uint32_t PalGetEnvironmentVariable(_In_opt_ LPCWSTR lpName, _Out_writes_to_opt_(nSize, return + 1) LPWSTR lpBuffer, _In_ uint32_t nSize)

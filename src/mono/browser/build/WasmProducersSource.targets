@@ -1,0 +1,18 @@
+<Project>
+  <Target Name="_WriteWasmProducersSource">
+    <Error Condition="'$(_WasmProducersSourcePath)' == ''"
+           Text="%24(_WasmProducersSourcePath) must be set before writing the WebAssembly producers source." />
+    <Error Condition="'$(_WasmProducersSourceRuntimeName)' == ''"
+           Text="%24(_WasmProducersSourceRuntimeName) must be set before writing the WebAssembly producers source." />
+    <Error Condition="'$(_WasmProducersSourceVersion)' == ''"
+           Text="%24(_WasmProducersSourceVersion) must be set before writing the WebAssembly producers source." />
+    <MakeDir Directories="$([System.IO.Path]::GetDirectoryName('$(_WasmProducersSourcePath)'))" />
+    <WriteLinesToFile
+        File="$(_WasmProducersSourcePath)"
+        Lines="$([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory)dotnet-producers.s.in')
+                    .Replace('{RuntimeName}', '$(_WasmProducersSourceRuntimeName)')
+                    .Replace('{Version}', '$(_WasmProducersSourceVersion)'))"
+        Overwrite="true"
+        WriteOnlyWhenDifferent="true" />
+  </Target>
+</Project>

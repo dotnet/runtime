@@ -3198,13 +3198,23 @@ GenTree** GenTree::EffectiveUse(GenTree** use)
 //    lclNum - the local's number
 //
 // Return Value:
-//    Whether "tree" has any local nodes that refer to the local.
+//    Whether "tree" has any local nodes that refer to the local, or any nodes
+//    that define the local.
 //
-/* static */ bool Compiler::gtHasRef(GenTree* tree, unsigned lclNum)
+bool Compiler::gtHasRef(GenTree* tree, unsigned lclNum)
 {
     if (tree == nullptr)
     {
         return false;
+    }
+
+    auto visitDef = [lclNum](const auto& def) {
+        return def.GetLclNum() == lclNum ? GenTree::VisitResult::Abort : GenTree::VisitResult::Continue;
+    };
+
+    if (tree->VisitLogicalLocalDefs(this, visitDef) == GenTree::VisitResult::Abort)
+    {
+        return true;
     }
 
     if (tree->OperIsLeaf())
@@ -3223,11 +3233,6 @@ GenTree** GenTree::EffectiveUse(GenTree** use)
 
     if (tree->OperIsUnary())
     {
-        if (tree->OperIsLocalStore() && (tree->AsLclVarCommon()->GetLclNum() == lclNum))
-        {
-            return true;
-        }
-
         return gtHasRef(tree->AsUnOp()->gtGetOp1(), lclNum);
     }
 
@@ -3237,7 +3242,7 @@ GenTree** GenTree::EffectiveUse(GenTree** use)
     }
 
     bool result = false;
-    tree->VisitOperands([lclNum, &result](GenTree* operand) -> GenTree::VisitResult {
+    tree->VisitOperands([this, lclNum, &result](GenTree* operand) -> GenTree::VisitResult {
         if (gtHasRef(operand, lclNum))
         {
             result = true;
@@ -3267,8 +3272,7 @@ bool Compiler::gtHasLocalsWithAddrOp(GenTree* tree)
     {
         enum
         {
-            DoPreOrder    = true,
-            DoLclVarsOnly = true,
+            DoPreOrder = true,
         };
 
         LocalsWithAddrOpVisitor(Compiler* comp)
@@ -3276,10 +3280,25 @@ bool Compiler::gtHasLocalsWithAddrOp(GenTree* tree)
         {
         }
 
+        static bool HasAddrOp(LclVarDsc* varDsc)
+        {
+            return varDsc->lvHasLdAddrOp || varDsc->IsAddressExposed();
+        }
+
         fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
         {
-            LclVarDsc* varDsc = m_compiler->lvaGetDesc((*use)->AsLclVarCommon());
-            if (varDsc->lvHasLdAddrOp || varDsc->IsAddressExposed())
+            GenTree* node = *use;
+            if (node->OperIsAnyLocal())
+            {
+                return HasAddrOp(m_compiler->lvaGetDesc(node->AsLclVarCommon())) ? WALK_ABORT : WALK_CONTINUE;
+            }
+
+            auto visitDef = [=](const auto& def) {
+                return HasAddrOp(m_compiler->lvaGetDesc(def.GetLclNum())) ? GenTree::VisitResult::Abort
+                                                                          : GenTree::VisitResult::Continue;
+            };
+
+            if (node->VisitLogicalLocalDefs(m_compiler, visitDef) == GenTree::VisitResult::Abort)
             {
                 return WALK_ABORT;
             }
@@ -3309,8 +3328,7 @@ bool Compiler::gtHasAddressExposedLocals(GenTree* tree)
     {
         enum
         {
-            DoPreOrder    = true,
-            DoLclVarsOnly = true,
+            DoPreOrder = true,
         };
 
         Visitor(Compiler* comp)
@@ -3320,8 +3338,18 @@ bool Compiler::gtHasAddressExposedLocals(GenTree* tree)
 
         fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
         {
-            LclVarDsc* varDsc = m_compiler->lvaGetDesc((*use)->AsLclVarCommon());
-            if (varDsc->IsAddressExposed())
+            GenTree* node = *use;
+            if (node->OperIsAnyLocal())
+            {
+                return m_compiler->lvaGetDesc(node->AsLclVarCommon())->IsAddressExposed() ? WALK_ABORT : WALK_CONTINUE;
+            }
+
+            auto visitDef = [=](const auto& def) {
+                return m_compiler->lvaGetDesc(def.GetLclNum())->IsAddressExposed() ? GenTree::VisitResult::Abort
+                                                                                   : GenTree::VisitResult::Continue;
+            };
+
+            if (node->VisitLogicalLocalDefs(m_compiler, visitDef) == GenTree::VisitResult::Abort)
             {
                 return WALK_ABORT;
             }
@@ -8162,18 +8190,29 @@ bool Compiler::gtMayHaveStoreInterference(GenTree* treeWithStores, GenTree* tree
                 return WALK_SKIP_SUBTREES;
             }
 
-            if (node->OperIsLocalStore())
-            {
-                // Check up to 8 stores before we bail with a conservative
-                // answer. Avoids quadratic behavior in case we have a large
-                // number of stores (e.g. created by physical promotion or by
-                // call args morphing).
-                if ((m_numStoresChecked >= 8) ||
-                    m_compiler->gtTreeHasLocalRead(m_readTree, node->AsLclVarCommon()->GetLclNum()))
+            bool hasDefs  = false;
+            auto visitDef = [&](const auto& def) {
+                // Check up to 8 defining nodes before we bail with a
+                // conservative answer. Avoids quadratic behavior in case we
+                // have a large number of stores (e.g. created by physical
+                // promotion or by call args morphing).
+                if (!hasDefs && (m_numStoresChecked >= 8))
                 {
-                    return WALK_ABORT;
+                    return GenTree::VisitResult::Abort;
                 }
 
+                hasDefs = true;
+                return m_compiler->gtTreeHasLocalRead(m_readTree, def.GetLclNum()) ? GenTree::VisitResult::Abort
+                                                                                   : GenTree::VisitResult::Continue;
+            };
+
+            if (node->VisitLogicalLocalDefs(m_compiler, visitDef) == GenTree::VisitResult::Abort)
+            {
+                return WALK_ABORT;
+            }
+
+            if (hasDefs)
+            {
                 m_numStoresChecked++;
             }
 
@@ -8558,6 +8597,9 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
             case GT_SELECT_NEG:
             case GT_SELECT_INV:
             case GT_SELECT_INC:
+#endif
+#ifdef TARGET_WASM
+            case GT_WASM_SELECT:
 #endif
             case GT_SELECT:
             {
@@ -9353,6 +9395,15 @@ GenTree::VtablePtr GenTree::GetVtableForOper(genTreeOps oper)
             res = *reinterpret_cast<VtablePtr*>(&gt);
         }
         break;
+
+#ifdef TARGET_WASM
+        case GT_WASM_SELECT:
+        {
+            GenTreeConditional gt;
+            res = *reinterpret_cast<VtablePtr*>(&gt);
+        }
+        break;
+#endif
 
             // We don't need to handle GTSTRUCT_N for LclVarCommon, since all those allowed opers are specified
             // in their proper subtype. Similarly for GenTreeIndir.
@@ -12453,6 +12504,13 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
             assert(*m_edge != nullptr);
             m_advance = &GenTreeUseEdgeIterator::AdvanceConditional;
             return;
+#ifdef TARGET_WASM
+        case GT_WASM_SELECT:
+            m_edge = &m_node->AsConditional()->gtOp1;
+            assert(*m_edge != nullptr);
+            m_advance = &GenTreeUseEdgeIterator::AdvanceWasmSelect;
+            return;
+#endif
 
         // Binary nodes
         default:
@@ -12570,6 +12628,31 @@ void GenTreeUseEdgeIterator::AdvanceConditional()
 
     assert(*m_edge != nullptr);
 }
+
+#ifdef TARGET_WASM
+//------------------------------------------------------------------------
+// GenTreeUseEdgeIterator::AdvanceWasmSelect: produces the next operand in Wasm stack order.
+//
+void GenTreeUseEdgeIterator::AdvanceWasmSelect()
+{
+    GenTreeConditional* const select = m_node->AsConditional();
+    switch (m_state)
+    {
+        case 0:
+            m_edge  = &select->gtOp2;
+            m_state = 1;
+            break;
+        case 1:
+            m_edge    = &select->gtCond;
+            m_advance = &GenTreeUseEdgeIterator::Terminate;
+            break;
+        default:
+            unreached();
+    }
+
+    assert(*m_edge != nullptr);
+}
+#endif // TARGET_WASM
 
 //------------------------------------------------------------------------
 // GenTreeUseEdgeIterator::AdvanceBinOp: produces the next operand of a binary node and advances the state.
@@ -15251,10 +15334,22 @@ void Compiler::gtDispTree(GenTree*                    tree,
             break;
 
         case GT_SELECT:
+#ifdef TARGET_WASM
+        case GT_WASM_SELECT:
+#endif
             gtDispCommonEndLine(tree);
 
             if (!topOnly)
             {
+#ifdef TARGET_WASM
+                if (tree->OperIs(GT_WASM_SELECT))
+                {
+                    gtDispChild(tree->AsConditional()->gtOp1, indentStack, IIArc, childMsg, topOnly);
+                    gtDispChild(tree->AsConditional()->gtOp2, indentStack, IIArc, childMsg, topOnly);
+                    gtDispChild(tree->AsConditional()->gtCond, indentStack, IIArcBottom, childMsg, topOnly);
+                    break;
+                }
+#endif
                 gtDispChild(tree->AsConditional()->gtCond, indentStack, IIArc, childMsg, topOnly);
                 gtDispChild(tree->AsConditional()->gtOp1, indentStack, IIArc, childMsg, topOnly);
                 gtDispChild(tree->AsConditional()->gtOp2, indentStack, IIArcBottom, childMsg, topOnly);
