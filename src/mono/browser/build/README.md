@@ -3,9 +3,12 @@
 This usually consists of taking the built assemblies, and related files, and generating an app bundle.
 
 CoreCLR Browser builds use `TypeMapEntryAssembly` as the type-map root for both
-the runtime and the linker. If it is unset, an explicit
+the runtime and the linker. If it is unset, the
 `System.Runtime.InteropServices.TypeMappingEntryAssembly` runtime host option
-takes precedence over the application's assembly name. The JSExport provider
+in MSBuild takes precedence over the value in `runtimeconfig.template.json`
+(or the template selected by `UserRuntimeConfig`). If neither specifies a root,
+the application's assembly name is used. Changing the selected root reruns
+the linker on the next trimmed publish. The JSExport provider
 linker descriptor preserves the native `BindAssemblyExports` entry point, which makes the type-map lookup
 reachable even when JavaScript is the only caller of the application's exports.
 ILLink forwards this root at target execution time so late WebAssembly imports

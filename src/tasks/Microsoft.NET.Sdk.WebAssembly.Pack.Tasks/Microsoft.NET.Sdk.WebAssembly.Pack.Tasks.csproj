@@ -17,6 +17,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="..\Common\ReadWasmTypeMapEntryAssembly.cs" />
     <Compile Include="..\Common\Utils.cs" />
     <Compile Include="..\WasmAppBuilder\WebcilConverter.cs" />
     <Compile Include="..\WasmAppBuilder\LogAdapter.cs" />

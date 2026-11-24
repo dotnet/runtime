@@ -6,6 +6,15 @@
     <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.JSExportProvider.xml" />
   </ItemGroup>
 
+  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.ReadWasmTypeMapEntryAssembly"
+             AssemblyFile="$(_WebAssemblySdkTasksAssembly)"
+             TaskFactory="TaskHostFactory"
+             Condition="'$(_WebAssemblySdkTasksAssembly)' != '' and '$(RuntimeSrcDir)' == '' and '$(WasmBuildSupportDir)' == ''" />
+  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.ReadWasmTypeMapEntryAssembly"
+             AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)"
+             TaskFactory="TaskHostFactory"
+             Condition="'$(WasmAppBuilderTasksAssemblyPath)' != '' and ('$(_WebAssemblySdkTasksAssembly)' == '' or '$(RuntimeSrcDir)' != '' or '$(WasmBuildSupportDir)' != '')" />
+
   <!-- Resolve both roots before runtimeconfig inputs are hashed or the linker argument is generated. -->
   <Target Name="_SetWasmTypeMapEntryAssembly"
           BeforeTargets="_GenerateRuntimeConfigurationFilesInputCache;_ComputeManagedAssemblyToLink"
@@ -15,25 +24,53 @@
                                       Condition="'$(TypeMapEntryAssembly)' != ''" />
     </ItemGroup>
     <PropertyGroup>
+      <_WasmTypeMapHostOption>@(RuntimeHostConfigurationOption->WithMetadataValue('Identity', 'System.Runtime.InteropServices.TypeMappingEntryAssembly'))</_WasmTypeMapHostOption>
       <TypeMapEntryAssembly Condition="'$(TypeMapEntryAssembly)' == ''">@(RuntimeHostConfigurationOption->WithMetadataValue('Identity', 'System.Runtime.InteropServices.TypeMappingEntryAssembly')->'%(Value)')</TypeMapEntryAssembly>
+    </PropertyGroup>
+    <ReadWasmTypeMapEntryAssembly
+        Condition="'$(TypeMapEntryAssembly)' == '' and '$(_WasmTypeMapHostOption)' == '' and Exists('$(UserRuntimeConfig)')"
+        TemplatePath="$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '$(UserRuntimeConfig)'))">
+      <Output TaskParameter="EntryAssembly" PropertyName="_WasmTemplateTypeMapEntryAssembly" />
+    </ReadWasmTypeMapEntryAssembly>
+    <PropertyGroup>
+      <TypeMapEntryAssembly Condition="'$(TypeMapEntryAssembly)' == ''">$(_WasmTemplateTypeMapEntryAssembly)</TypeMapEntryAssembly>
       <TypeMapEntryAssembly Condition="'$(TypeMapEntryAssembly)' == ''">$(AssemblyName)</TypeMapEntryAssembly>
     </PropertyGroup>
     <ItemGroup>
       <RuntimeHostConfigurationOption Include="System.Runtime.InteropServices.TypeMappingEntryAssembly"
                                       Value="$(TypeMapEntryAssembly)"
-                                      Condition="'@(RuntimeHostConfigurationOption->WithMetadataValue('Identity', 'System.Runtime.InteropServices.TypeMappingEntryAssembly'))' == ''" />
+                                      Condition="'$(_WasmTypeMapHostOption)' == '' and '$(_WasmTemplateTypeMapEntryAssembly)' == ''" />
     </ItemGroup>
   </Target>
 
   <!-- WASM-TODO: https://github.com/dotnet/runtime/issues/137651
-       Remove only this compatibility target once execution-time forwarding flows through supported SDKs. -->
+       Remove these compatibility targets once root forwarding and incremental tracking flow through supported SDKs. -->
   <Target Name="_WasmConfigureTypeMapEntryAssembly"
           BeforeTargets="PrepareForILLink"
           DependsOnTargets="_SetWasmTypeMapEntryAssembly"
           Condition="'$(UseMonoRuntime)' == 'false' or '$(RuntimeFlavor)' == 'CoreCLR'">
     <PropertyGroup Condition="'$(TypeMapEntryAssembly)' != '' and '$(_TypeMapEntryAssemblyForwarded)' != 'true'">
-      <_ExtraTrimmerArgs>$(_ExtraTrimmerArgs) --typemap-entry-assembly "$(TypeMapEntryAssembly)"</_ExtraTrimmerArgs>
+      <_WasmTypeMapEntryAssemblyArgument>--typemap-entry-assembly "$(TypeMapEntryAssembly)"</_WasmTypeMapEntryAssemblyArgument>
+      <!-- Older targets may have already appended the explicit property at evaluation time. -->
+      <_ExtraTrimmerArgs Condition="!$(_ExtraTrimmerArgs.TrimEnd().EndsWith(' $(_WasmTypeMapEntryAssemblyArgument)'))">$(_ExtraTrimmerArgs) $(_WasmTypeMapEntryAssemblyArgument)</_ExtraTrimmerArgs>
       <_TypeMapEntryAssemblyForwarded>true</_TypeMapEntryAssemblyForwarded>
     </PropertyGroup>
+    <PropertyGroup Condition="'$(_ILLinkTypeMapEntryAssemblyCache)' == ''">
+      <_WasmTypeMapEntryAssemblyCache>$(_LinkSemaphore).typemap-entry-assembly</_WasmTypeMapEntryAssemblyCache>
+    </PropertyGroup>
+    <WriteLinesToFile File="$(_WasmTypeMapEntryAssemblyCache)" Lines="$([MSBuild]::Escape('TypeMapEntryAssembly=$(TypeMapEntryAssembly)'))"
+                      Overwrite="true" WriteOnlyWhenDifferent="true" Condition="'$(_WasmTypeMapEntryAssemblyCache)' != ''" />
+    <ItemGroup Condition="'$(_WasmTypeMapEntryAssemblyCache)' != ''">
+      <FileWrites Include="$(_WasmTypeMapEntryAssemblyCache)" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Older ILLink targets don't list the cache as an input. Invalidate their output explicitly. -->
+  <Target Name="_WasmInvalidateTypeMapEntryAssembly"
+          AfterTargets="PrepareForILLink"
+          Condition="'$(_WasmTypeMapEntryAssemblyCache)' != ''"
+          Inputs="$(_WasmTypeMapEntryAssemblyCache)"
+          Outputs="$(_LinkSemaphore)">
+    <Delete Files="$(_LinkSemaphore)" />
   </Target>
 </Project>
