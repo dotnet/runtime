@@ -153,6 +153,7 @@ namespace Internal.JitInterface
                 s_callbacks.getWasmLowering = &_getWasmLowering;
                 s_callbacks.getAddressAlignment = &_getAddressAlignment;
                 s_callbacks.getWasmWellKnownGlobals = &_getWasmWellKnownGlobals;
+                s_callbacks.reportWasmBranchHint = &_reportWasmBranchHint;
                 s_callbacks.getThreadTLSIndex = &_getThreadTLSIndex;
                 s_callbacks.getAddrOfCaptureThreadGlobal = &_getAddrOfCaptureThreadGlobal;
                 s_callbacks.getHelperFtn = &_getHelperFtn;
@@ -339,6 +340,7 @@ namespace Internal.JitInterface
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CorInfoWasmType> getWasmLowering;
             public delegate* unmanaged<IntPtr, IntPtr*, void*, uint> getAddressAlignment;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_WASM_WELLKNOWN_GLOBALS*, void> getWasmWellKnownGlobals;
+            public delegate* unmanaged<IntPtr, IntPtr*, uint, uint, byte, void> reportWasmBranchHint;
             public delegate* unmanaged<IntPtr, IntPtr*, void**, uint> getThreadTLSIndex;
             public delegate* unmanaged<IntPtr, IntPtr*, void**, int*> getAddrOfCaptureThreadGlobal;
             public delegate* unmanaged<IntPtr, IntPtr*, CorInfoHelpFunc, CORINFO_CONST_LOOKUP*, CORINFO_METHOD_STRUCT_**, void> getHelperFtn;
@@ -2354,6 +2356,20 @@ namespace Internal.JitInterface
             try
             {
                 _this.getWasmWellKnownGlobals(ref *pWellKnownGlobalsOut);
+            }
+            catch (Exception ex)
+            {
+                *ppException = _this.AllocException(ex);
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        private static void _reportWasmBranchHint(IntPtr thisHandle, IntPtr* ppException, uint functionOrdinal, uint codeOffset, byte isLikelyTaken)
+        {
+            var _this = GetThis(thisHandle);
+            try
+            {
+                _this.reportWasmBranchHint(functionOrdinal, codeOffset, isLikelyTaken != 0);
             }
             catch (Exception ex)
             {

@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
+using ILCompiler.DependencyAnalysis.Wasm;
 using Internal.JitInterface;
 using Internal.Pgo;
 using Internal.Text;
@@ -14,7 +15,7 @@ using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
-    public class MethodWithGCInfo : ObjectNode, IMethodBodyNode, INodeWithFunclets, IMethodCodeNodeWithTypeSignature
+    public class MethodWithGCInfo : ObjectNode, IMethodBodyNode, INodeWithFunclets, IMethodCodeNodeWithTypeSignature, INodeWithWasmBranchHints
     {
         // #PrecodeFixupMinimization
         //
@@ -63,6 +64,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private MethodDesc[] _inlinedMethods;
         private bool _lateTriggeredCompilation;
         private DependencyList _nonRelocationDependencies;
+        private List<WasmBranchHint> _wasmBranchHints;
 
         // Preserve activation imports not represented by the final direct-call
         // relocations. See #PrecodeFixupMinimization.
@@ -114,6 +116,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             GCInfoNode = new MethodGCInfoNode(this);
             _fixups = new List<ISymbolNode>();
             _method = methodDesc;
+        }
+
+        public IReadOnlyList<WasmBranchHint> WasmBranchHints =>
+            _wasmBranchHints is null ? Array.Empty<WasmBranchHint>() : _wasmBranchHints;
+
+        public void AddWasmBranchHint(WasmBranchHint branchHint)
+        {
+            _wasmBranchHints ??= new List<WasmBranchHint>();
+            _wasmBranchHints.Add(branchHint);
         }
 
         protected override void OnMarked(NodeFactory context)

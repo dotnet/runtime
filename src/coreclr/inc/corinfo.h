@@ -3279,6 +3279,13 @@ public:
     CORINFO_VIRTUAL void getWasmWellKnownGlobals(
         CORINFO_WASM_WELLKNOWN_GLOBALS* pWellKnownGlobalsOut
     ) CORINFO_PURE;
+
+    // Report a WebAssembly branch hint when compiling ReadyToRun code.
+    CORINFO_VIRTUAL void reportWasmBranchHint(
+        uint32_t functionOrdinal,
+        uint32_t codeOffset,
+        bool isLikelyTaken
+    ) CORINFO_PURE;
 };
 
 /*****************************************************************************

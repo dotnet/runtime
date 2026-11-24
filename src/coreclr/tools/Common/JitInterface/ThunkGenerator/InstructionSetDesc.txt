@@ -327,6 +327,7 @@ instructionset       ,Wasm32      ,WasmBase            ,         ,91     ,WasmBa
 instructionset       ,Wasm32      ,PackedSimd          ,         ,92     ,PackedSimd      ,simd128
 instructionset       ,Wasm32      ,                      ,       ,       ,Vector128       ,
 instructionset       ,Wasm32      ,RelaxedSimd         ,         ,97     ,RelaxedSimd     ,relaxed-simd
+instructionset       ,Wasm32      ,                      ,       ,       ,WasmBranchHints,branch-hints
 
 vectorinstructionset ,Wasm32      ,Vector128
 implication          ,Wasm32      ,Vector128   ,PackedSimd

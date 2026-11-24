@@ -54,9 +54,14 @@ namespace ILCompiler.ObjectWriter
             WasmObjectNodeSection.ExportSection.Name,
             WasmObjectNodeSection.ElementSection.Name,
             WasmObjectNodeSection.DataCountSection.Name,
+            // Code metadata must precede the code section: https://webassembly.github.io/branch-hinting/metadata/code/binary.html
+            "metadata.code.branch_hint",
             ObjectNodeSection.WasmCodeSection.Name,
             WasmObjectNodeSection.DataSection.Name,
         ];
+
+        private static readonly ObjectNodeSection WasmBranchHintsSection =
+            new("metadata.code.branch_hint", SectionType.Debug, needsAlign: false);
 
         private protected readonly Dictionary<string, WasmGlobal> _definedGlobals = new();
         /// <summary>Names of the writer-inserted stub functions, which are the only exported functions.</summary>
@@ -67,6 +72,7 @@ namespace ILCompiler.ObjectWriter
         private readonly Dictionary<Utf8String, int> _tableSlotIndices = [];
         private readonly List<Utf8String> _tableSlotFunctions = [];
         private readonly List<FoldedFunctionAlias> _foldedFunctionAliases = [];
+        private readonly Dictionary<int, List<WasmBranchHint>> _branchHintsByFunction = [];
         /// <summary>
         /// Maps symbol names to their location in the object file. These definitions do not encode
         /// logical WebAssembly indices and must not be used to resolve index relocations.
@@ -80,7 +86,7 @@ namespace ILCompiler.ObjectWriter
         /// </summary>
         private protected int MethodCount => _tableSlotFunctions.Count;
 
-        private int ActualFunctionCount => _wasmSymbolManager.GetDefinitionCount(WasmIndexSpace.Function);
+        private protected int ActualFunctionCount => _wasmSymbolManager.GetDefinitionCount(WasmIndexSpace.Function);
 
         private protected virtual bool ShouldDeduplicateFunctionBodies => false;
         private protected abstract string WasmProducerName { get; }
@@ -303,9 +309,11 @@ namespace ILCompiler.ObjectWriter
                 return;
             }
 
+            int functionDefinitionIndex = ActualFunctionCount;
             WriteSignatureIndexForFunction(node);
             RegisterFunctionSymbol(methodName);
             RegisterTableSlot(methodName, methodName);
+            RecordBranchHints(functionDefinitionIndex, node);
 
             if (!alternateName.IsNull)
             {
@@ -391,6 +399,145 @@ namespace ILCompiler.ObjectWriter
                 RegisterTableSlot(funcletName, funcletName);
                 RegisterStubIndexAndSignature(funcletSignature);
             }
+        }
+
+        private void RecordBranchHints(int functionDefinitionIndex, INodeWithTypeSignature node)
+        {
+            if (node is not INodeWithWasmBranchHints nodeWithHints)
+            {
+                return;
+            }
+
+            foreach (WasmBranchHint hint in nodeWithHints.WasmBranchHints)
+            {
+                int hintFunctionIndex = checked(functionDefinitionIndex + checked((int)hint.FunctionOrdinal));
+                if (!_branchHintsByFunction.TryGetValue(hintFunctionIndex, out List<WasmBranchHint> hints))
+                {
+                    hints = [];
+                    _branchHintsByFunction.Add(hintFunctionIndex, hints);
+                }
+
+                hints.Add(hint);
+            }
+        }
+
+        private protected readonly struct WasmCodeOffsetAdjustment
+        {
+            public WasmCodeOffsetAdjustment(uint endOffset, uint totalShrink)
+            {
+                EndOffset = endOffset;
+                TotalShrink = totalShrink;
+            }
+
+            public uint EndOffset { get; }
+            public uint TotalShrink { get; }
+        }
+
+        private protected void AdjustWasmBranchHintOffsets(
+            int functionDefinitionIndex,
+            IReadOnlyList<WasmCodeOffsetAdjustment> adjustments,
+            uint codeLength)
+        {
+            if (!_branchHintsByFunction.TryGetValue(functionDefinitionIndex, out List<WasmBranchHint> hints))
+            {
+                return;
+            }
+
+            for (int i = 0; i < hints.Count; i++)
+            {
+                WasmBranchHint hint = hints[i];
+                uint totalShrink = 0;
+                foreach (WasmCodeOffsetAdjustment adjustment in adjustments)
+                {
+                    if (hint.CodeOffset < adjustment.EndOffset)
+                    {
+                        break;
+                    }
+
+                    totalShrink = adjustment.TotalShrink;
+                }
+
+                if (hint.CodeOffset < totalShrink)
+                {
+                    throw new InvalidDataException("A Wasm branch hint offset precedes the relocation shrink applied to its function.");
+                }
+
+                uint adjustedOffset = hint.CodeOffset - totalShrink;
+                if (adjustedOffset >= codeLength)
+                {
+                    throw new InvalidDataException($"Wasm branch hint offset {adjustedOffset} is outside function {functionDefinitionIndex}.");
+                }
+
+                hints[i] = new WasmBranchHint(
+                    hint.FunctionOrdinal,
+                    adjustedOffset,
+                    hint.IsLikelyTaken);
+            }
+        }
+
+        private protected void WriteWasmBranchHints()
+        {
+            if (_branchHintsByFunction.Count == 0)
+            {
+                return;
+            }
+
+            byte[] payload = EncodeBranchHintSectionPayload(
+                _branchHintsByFunction,
+                _wasmSymbolManager.GetImportCount(WasmIndexSpace.Function),
+                ActualFunctionCount);
+            GetOrCreateSection(WasmBranchHintsSection).EmitData(payload);
+        }
+
+        internal static byte[] EncodeBranchHintSectionPayload(
+            Dictionary<int, List<WasmBranchHint>> hintsByFunction,
+            int functionImportCount,
+            int functionCount)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(functionImportCount);
+            ArgumentOutOfRangeException.ThrowIfNegative(functionCount);
+            if (hintsByFunction.Count == 0)
+            {
+                return Array.Empty<byte>();
+            }
+
+            using MemoryStream payload = new();
+            WriteULEB128(payload, (ulong)hintsByFunction.Count);
+            List<KeyValuePair<int, List<WasmBranchHint>>> functions = new(hintsByFunction);
+            functions.Sort(static (left, right) => left.Key.CompareTo(right.Key));
+            foreach (KeyValuePair<int, List<WasmBranchHint>> entry in functions)
+            {
+                if ((uint)entry.Key >= (uint)functionCount)
+                {
+                    throw new InvalidDataException($"Wasm branch hint references missing function definition {entry.Key}.");
+                }
+
+                List<WasmBranchHint> hints = entry.Value;
+                if (hints.Count == 0)
+                {
+                    throw new InvalidDataException($"Wasm branch hint function {entry.Key} has no hints.");
+                }
+
+                hints.Sort(static (left, right) => left.CodeOffset.CompareTo(right.CodeOffset));
+                for (int i = 1; i < hints.Count; i++)
+                {
+                    if (hints[i - 1].CodeOffset == hints[i].CodeOffset)
+                    {
+                        throw new InvalidDataException($"Duplicate Wasm branch hint at function {entry.Key}, offset {hints[i].CodeOffset}.");
+                    }
+                }
+
+                WriteULEB128(payload, checked((ulong)checked(functionImportCount + entry.Key)));
+                WriteULEB128(payload, (ulong)hints.Count);
+                foreach (WasmBranchHint hint in hints)
+                {
+                    WriteULEB128(payload, hint.CodeOffset);
+                    WriteULEB128(payload, 1);
+                    WriteULEB128(payload, hint.IsLikelyTaken ? 1UL : 0UL);
+                }
+            }
+
+            return payload.ToArray();
         }
 
         private protected static Utf8String GetFuncletName(Utf8String methodName, int index) =>

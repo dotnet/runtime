@@ -396,6 +396,34 @@ internal static class WasmR2RAssert
     public static bool WasmImageHasFunctionNameSection(WebcilImageReader reader) =>
         TryGetWasmFunctionNameSubsection(reader.GetEntireImage().AsSpan(), out _, out _);
 
+    public static bool WasmImageHasBranchHintSection(WebcilImageReader reader)
+    {
+        ReadOnlySpan<byte> image = reader.GetEntireImage().AsSpan();
+        if (image.Length < 8)
+            throw new BadImageFormatException("WASM image is shorter than its magic and version header.");
+
+        int offset = 8;
+        while (offset < image.Length)
+        {
+            byte sectionId = ReadWasmByte(image, ref offset, image.Length);
+            uint sectionSize = ReadWasmUleb32(image, ref offset, image.Length);
+            if (sectionSize > int.MaxValue || sectionSize > image.Length - offset)
+                throw new BadImageFormatException($"WASM section {sectionId} extends beyond the image boundary.");
+
+            int sectionEnd = offset + (int)sectionSize;
+            if (sectionId == 0)
+            {
+                int nameOffset = offset;
+                if (ReadWasmName(image, ref nameOffset, sectionEnd) == "metadata.code.branch_hint")
+                    return true;
+            }
+
+            offset = sectionEnd;
+        }
+
+        return false;
+    }
+
     public static bool WasmSymbolMapHasExpectedFunctionNames(ReadyToRunReader reader, out string diagnostic)
     {
         var webcilReader = (WebcilImageReader)reader.CompositeReader;

@@ -142,7 +142,8 @@ void emitter::emitIns_I(instruction ins, emitAttr attr, cnsval_ssize_t imm, bool
 //   imm         - immediate value (depth in control flow stack)
 //   targetBlock - block at that depth (may be null, in the case of jump table which doesn't target a real block)
 //
-void emitter::emitIns_J(instruction ins, emitAttr attr, cnsval_ssize_t imm, BasicBlock* targetBlock)
+void emitter::emitIns_J(
+    instruction ins, emitAttr attr, cnsval_ssize_t imm, BasicBlock* targetBlock, WasmBranchHint branchHint)
 {
     // Double eqz normalizes an i32 to 0/1, which br_if does not need.
     if ((ins == INS_br_if) && m_compiler->opts.OptimizationEnabled() && emitCanPeepholeLastIns() &&
@@ -180,6 +181,7 @@ void emitter::emitIns_J(instruction ins, emitAttr attr, cnsval_ssize_t imm, Basi
 
     id->idIns(ins);
     id->idInsFmt(fmt);
+    id->idSetWasmBranchHint(branchHint);
 
     if (m_debugInfoSize > 0 && targetBlock != nullptr)
     {
@@ -1322,6 +1324,21 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         emitDispIns(id, false, 0, true, emitCurCodeOffs(*dp), *dp, (dst - *dp), ig);
     }
 #endif
+
+    if (id->idIns() == INS_br_if)
+    {
+        WasmBranchHint const branchHint = id->idWasmBranchHint();
+        if (branchHint != WasmBranchHint::None)
+        {
+            FuncInfoDsc* const func                = m_compiler->funGetFunc(ig->igFuncIdx);
+            unsigned const     functionStartOffset = func->startLoc->CodeOffset(this);
+            unsigned const     instructionOffset   = emitCurCodeOffs(*dp);
+            assert(instructionOffset >= functionStartOffset + PADDED_RELOC_SIZE);
+
+            uint32_t const codeOffset = instructionOffset - functionStartOffset - PADDED_RELOC_SIZE;
+            m_compiler->recordWasmBranchHint(ig->igFuncIdx, codeOffset, branchHint == WasmBranchHint::LikelyTrue);
+        }
+    }
 
     *dp = dst;
     return sz;

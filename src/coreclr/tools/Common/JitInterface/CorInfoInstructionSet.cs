@@ -69,6 +69,7 @@ namespace Internal.JitInterface
         Wasm32_PackedSimd = InstructionSet_Wasm32.PackedSimd,
         Wasm32_Vector128 = InstructionSet_Wasm32.Vector128,
         Wasm32_RelaxedSimd = InstructionSet_Wasm32.RelaxedSimd,
+        Wasm32_WasmBranchHints = InstructionSet_Wasm32.WasmBranchHints,
         X64_X86Base = InstructionSet_X64.X86Base,
         X64_AVX = InstructionSet_X64.AVX,
         X64_AVX2 = InstructionSet_X64.AVX2,
@@ -230,6 +231,7 @@ namespace Internal.JitInterface
         PackedSimd = 2,
         Vector128 = 3,
         RelaxedSimd = 4,
+        WasmBranchHints = 5,
     }
 
     public enum InstructionSet_X64
@@ -1217,6 +1219,7 @@ namespace Internal.JitInterface
                     yield return new InstructionSetInfo("simd128", "PackedSimd", InstructionSet.Wasm32_PackedSimd, true);
                     yield return new InstructionSetInfo("Vector128", "", InstructionSet.Wasm32_Vector128, false);
                     yield return new InstructionSetInfo("relaxed-simd", "RelaxedSimd", InstructionSet.Wasm32_RelaxedSimd, true);
+                    yield return new InstructionSetInfo("branch-hints", "", InstructionSet.Wasm32_WasmBranchHints, true);
                     break;
 
                 case TargetArchitecture.X64:

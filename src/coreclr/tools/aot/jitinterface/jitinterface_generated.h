@@ -144,6 +144,7 @@ struct JitInterfaceCallbacks
     CorInfoWasmType (* getWasmLowering)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE structHnd);
     uint32_t (* getAddressAlignment)(void * thisHandle, CorInfoExceptionClass** ppException, void* address);
     void (* getWasmWellKnownGlobals)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_WASM_WELLKNOWN_GLOBALS* pWellKnownGlobalsOut);
+    void (* reportWasmBranchHint)(void * thisHandle, CorInfoExceptionClass** ppException, uint32_t functionOrdinal, uint32_t codeOffset, bool isLikelyTaken);
     uint32_t (* getThreadTLSIndex)(void * thisHandle, CorInfoExceptionClass** ppException, void** ppIndirection);
     int32_t* (* getAddrOfCaptureThreadGlobal)(void * thisHandle, CorInfoExceptionClass** ppException, void** ppIndirection);
     void (* getHelperFtn)(void * thisHandle, CorInfoExceptionClass** ppException, CorInfoHelpFunc ftnNum, CORINFO_CONST_LOOKUP* pNativeEntrypoint, CORINFO_METHOD_HANDLE* pMethod);
@@ -1494,6 +1495,16 @@ public:
 {
     CorInfoExceptionClass* pException = nullptr;
     _callbacks->getWasmWellKnownGlobals(_thisHandle, &pException, pWellKnownGlobalsOut);
+    if (pException != nullptr) throw pException;
+}
+
+    virtual void reportWasmBranchHint(
+          uint32_t functionOrdinal,
+          uint32_t codeOffset,
+          bool isLikelyTaken)
+{
+    CorInfoExceptionClass* pException = nullptr;
+    _callbacks->reportWasmBranchHint(_thisHandle, &pException, functionOrdinal, codeOffset, isLikelyTaken);
     if (pException != nullptr) throw pException;
 }
 

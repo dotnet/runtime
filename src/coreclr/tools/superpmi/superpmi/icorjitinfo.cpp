@@ -37,6 +37,12 @@ bool MyICJI::canValueClassInstancePointerEscape(CORINFO_METHOD_HANDLE ftn)
     return jitInstance->mc->repCanValueClassInstancePointerEscape(ftn);
 }
 
+void MyICJI::reportWasmBranchHint(uint32_t functionOrdinal, uint32_t codeOffset, bool isLikelyTaken)
+{
+    jitInstance->mc->cr->AddCall("reportWasmBranchHint");
+    jitInstance->mc->repReportWasmBranchHint(functionOrdinal, codeOffset, isLikelyTaken);
+}
+
 bool MyICJI::notifyMethodInfoUsage(CORINFO_METHOD_HANDLE ftn)
 {
     jitInstance->mc->cr->AddCall("notifyMethodInfoUsage");

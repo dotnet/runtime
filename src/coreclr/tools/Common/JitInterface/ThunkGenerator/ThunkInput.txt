@@ -308,6 +308,7 @@ FUNCTIONS
     CorInfoWasmType getWasmLowering(CORINFO_CLASS_HANDLE structHnd);
     uint32_t getAddressAlignment(void* address);
     void getWasmWellKnownGlobals(CORINFO_WASM_WELLKNOWN_GLOBALS* pWellKnownGlobalsOut);
+    void reportWasmBranchHint(uint32_t functionOrdinal, uint32_t codeOffset, bool isLikelyTaken);
     uint32_t getThreadTLSIndex(void                  **ppIndirection);
     int32_t * getAddrOfCaptureThreadGlobal(void                  **ppIndirection);
     void getHelperFtn (CorInfoHelpFunc ftnNum, CORINFO_CONST_LOOKUP* pNativeEntrypoint, CORINFO_METHOD_HANDLE *pMethod);

@@ -940,6 +940,10 @@ public:
 
     void dmpSigInstHandleMap(DWORD key, DWORDLONG value);
 
+    void recReportWasmBranchHint(uint32_t functionOrdinal, uint32_t codeOffset, bool isLikelyTaken);
+    void dmpReportWasmBranchHint(const DDD& key, DWORD value);
+    void repReportWasmBranchHint(uint32_t functionOrdinal, uint32_t codeOffset, bool isLikelyTaken);
+
     struct Environment
     {
         Environment() : getIntConfigValue(nullptr), getStringConfigValue(nullptr)
@@ -1250,6 +1254,7 @@ enum mcPackets
     Packet_GetAwaitAwaiterInContinuationCall = 242,
     Packet_IsByRefLike = 243,
     Packet_IsSharedInst = 244,
+    Packet_ReportWasmBranchHint = 245,
 };
 
 void SetDebugDumpVariables();

@@ -1311,6 +1311,16 @@ void WrapICorJitInfo::getWasmWellKnownGlobals(
     API_LEAVE(getWasmWellKnownGlobals);
 }
 
+void WrapICorJitInfo::reportWasmBranchHint(
+          uint32_t functionOrdinal,
+          uint32_t codeOffset,
+          bool isLikelyTaken)
+{
+    API_ENTER(reportWasmBranchHint);
+    wrapHnd->reportWasmBranchHint(functionOrdinal, codeOffset, isLikelyTaken);
+    API_LEAVE(reportWasmBranchHint);
+}
+
 uint32_t WrapICorJitInfo::getThreadTLSIndex(
           void** ppIndirection)
 {

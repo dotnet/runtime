@@ -501,6 +501,7 @@ namespace Internal.JitInterface
         private Dictionary<TypeDesc, bool> _preInitedTypes = new Dictionary<TypeDesc, bool>();
         private HashSet<MethodDesc> _synthesizedPgoDependencies;
         private List<(ISymbolNode Location, int Offset)> _wasmMethodVirtualIPFixups;
+        private List<WasmBranchHint> _wasmBranchHints;
         private WasmTypeNode _deferredWasmCallSignature;
         private Dictionary<MethodWithGCInfo, DelayLoadMethodImport> _deferredWasmActivationImports;
         public bool HasColdCode { get; private set; }
@@ -736,6 +737,15 @@ namespace Internal.JitInterface
                 HashCode hashCode = default(HashCode);
                 hashCode.AddBytes(_code);
                 hashCode.AddBytes(_roData);
+                if (_wasmBranchHints is not null)
+                {
+                    foreach (WasmBranchHint branchHint in _wasmBranchHints)
+                    {
+                        hashCode.Add(branchHint.FunctionOrdinal);
+                        hashCode.Add(branchHint.CodeOffset);
+                        hashCode.Add(branchHint.IsLikelyTaken);
+                    }
+                }
                 int functionOutputHashCode = hashCode.ToHashCode();
 
                 lock (_determinismTable)
@@ -830,6 +840,7 @@ namespace Internal.JitInterface
             ManagedHelperProbeResult result = default;
             _isCompilationProbe = !publishCode;
             _methodCodeNode = methodCodeNodeNeedingCode;
+            _wasmBranchHints = null;
 
             try
             {
@@ -917,6 +928,14 @@ namespace Internal.JitInterface
 
                 var compilationResult = CompileMethodInternal(methodCodeNodeNeedingCode, methodIL);
                 codeGotPublished = true;
+
+                if (publishCode && compilationResult == CompilationResult.CompilationComplete && _wasmBranchHints is not null)
+                {
+                    foreach (WasmBranchHint branchHint in _wasmBranchHints)
+                    {
+                        _methodCodeNode.AddWasmBranchHint(branchHint);
+                    }
+                }
 
                 if (compilationResult == CompilationResult.CompilationRetryRequested && logger.IsVerbose)
                 {
@@ -1794,6 +1813,17 @@ namespace Internal.JitInterface
             _methodCodeNode.SetCode(new ObjectNode.ObjectData(Array.Empty<byte>(), null, 1, Array.Empty<ISymbolDefinitionNode>()));
             _methodCodeNode.InitializeFrameInfos(Array.Empty<FrameInfo>());
             _methodCodeNode.InitializeColdFrameInfos(Array.Empty<FrameInfo>());
+        }
+
+        partial void HandleReportedWasmBranchHint(uint functionOrdinal, uint codeOffset, bool isLikelyTaken)
+        {
+            if (!_compilation.NodeFactory.Target.IsWasm || _isCompilationProbe)
+            {
+                return;
+            }
+
+            _wasmBranchHints ??= new List<WasmBranchHint>();
+            _wasmBranchHints.Add(new WasmBranchHint(functionOrdinal, codeOffset, isLikelyTaken));
         }
 
         private CorInfoHelpFunc getCastingHelper(ref CORINFO_RESOLVED_TOKEN pResolvedToken, bool fThrowing)

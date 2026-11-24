@@ -3604,6 +3604,13 @@ namespace Internal.JitInterface
         {
         }
 
+        private void reportWasmBranchHint(uint functionOrdinal, uint codeOffset, bool isLikelyTaken)
+        {
+            HandleReportedWasmBranchHint(functionOrdinal, codeOffset, isLikelyTaken);
+        }
+
+        partial void HandleReportedWasmBranchHint(uint functionOrdinal, uint codeOffset, bool isLikelyTaken);
+
 #pragma warning disable CA1822 // Mark members as static
         private void* allocateArray(nuint cBytes)
 #pragma warning restore CA1822 // Mark members as static

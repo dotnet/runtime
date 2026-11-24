@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 
@@ -28,6 +29,25 @@ namespace ILCompiler.DependencyAnalysis.Wasm
     {
         Const = 0x00,
         Mut = 0x01
+    }
+
+    public readonly struct WasmBranchHint
+    {
+        public WasmBranchHint(uint functionOrdinal, uint codeOffset, bool isLikelyTaken)
+        {
+            FunctionOrdinal = functionOrdinal;
+            CodeOffset = codeOffset;
+            IsLikelyTaken = isLikelyTaken;
+        }
+
+        public uint FunctionOrdinal { get; }
+        public uint CodeOffset { get; }
+        public bool IsLikelyTaken { get; }
+    }
+
+    public interface INodeWithWasmBranchHints
+    {
+        IReadOnlyList<WasmBranchHint> WasmBranchHints { get; }
     }
 
     public static class WasmValueTypeExtensions

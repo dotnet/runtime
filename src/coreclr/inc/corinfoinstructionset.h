@@ -73,6 +73,7 @@ enum CORINFO_InstructionSet
     InstructionSet_PackedSimd=2,
     InstructionSet_Vector128=3,
     InstructionSet_RelaxedSimd=4,
+    InstructionSet_WasmBranchHints=5,
 #endif // TARGET_WASM
 #ifdef TARGET_AMD64
     InstructionSet_X86Base=1,
@@ -804,6 +805,8 @@ inline const char *InstructionSetToString(CORINFO_InstructionSet instructionSet)
             return "Vector128";
         case InstructionSet_RelaxedSimd :
             return "RelaxedSimd";
+        case InstructionSet_WasmBranchHints :
+            return "WasmBranchHints";
 #endif // TARGET_WASM
 #ifdef TARGET_AMD64
         case InstructionSet_X86Base :
