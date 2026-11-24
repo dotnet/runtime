@@ -30,7 +30,8 @@ typedef enum
  * @param flags The severity of the message.
  * @param fmt The printf format string.
  * @param ... The format arguments.
- * @return The number of bytes written, or a negative value on failure.
+ * @return The number of bytes written. On non-Android platforms, a negative value indicates failure.
+ *         On Android, failures can result in zero or a partial byte count.
  */
 #define minipal_log_print_fatal(...) minipal_log_print(minipal_log_flags_fatal, __VA_ARGS__)
 #define minipal_log_print_error(...) minipal_log_print(minipal_log_flags_error, __VA_ARGS__)
@@ -44,7 +45,8 @@ int minipal_log_print(minipal_log_flags flags, const char* fmt, ... ) MINIPAL_AT
  * @param flags The severity of the message.
  * @param fmt The printf format string.
  * @param args The format arguments.
- * @return The number of bytes written, or a negative value on failure.
+ * @return The number of bytes written. On non-Android platforms, a negative value indicates failure.
+ *         On Android, failures can result in zero or a partial byte count.
  */
 #define minipal_log_vprint_fatal(...) minipal_log_vprint(minipal_log_flags_fatal, __VA_ARGS__)
 #define minipal_log_vprint_error(...) minipal_log_vprint(minipal_log_flags_error, __VA_ARGS__)
