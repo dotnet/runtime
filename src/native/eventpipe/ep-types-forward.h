@@ -209,7 +209,7 @@ typedef int64_t ep_system_timestamp_t;
 // Define the event pipe callback to match the ETW callback signature.
 typedef void (EP_CALLBACK_CALLTYPE *EventPipeCallback)(
 	const uint8_t *source_id,
-	unsigned long is_enabled,
+	uint32_t is_enabled,
 	uint8_t level,
 	uint64_t match_any_keywords,
 	uint64_t match_all_keywords,

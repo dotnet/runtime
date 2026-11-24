@@ -436,7 +436,7 @@ static
 void
 provider_invoke_callback_core (
 	EventPipeProviderCallbackData *provider_callback_data,
-	unsigned long control_code)
+	uint32_t control_code)
 {
 	EP_ASSERT (provider_callback_data != NULL);
 
