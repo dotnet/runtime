@@ -40,6 +40,8 @@
   <!-- Default memory settings shared by the prebuilt browserhost and app-level relinking. -->
   <PropertyGroup Condition="'$(TargetsBrowser)' == 'true'">
     <BrowserHostInitialHeapSize Condition="'$(BrowserHostInitialHeapSize)' == ''">33554432</BrowserHostInitialHeapSize>
+    <!-- memory64 lifts the 4 GB address limit, so wasm64 defaults to a larger maximum heap. -->
+    <BrowserHostMaximumHeapSize Condition="'$(BrowserHostMaximumHeapSize)' == '' and ('$(TargetArchitecture)' == 'wasm64' or '$(_CoreCLRBrowserArchitecture)' == 'wasm64')">17179869184</BrowserHostMaximumHeapSize>
     <BrowserHostMaximumHeapSize Condition="'$(BrowserHostMaximumHeapSize)' == ''">2147483648</BrowserHostMaximumHeapSize>
     <BrowserHostStackSize Condition="'$(BrowserHostStackSize)' == ''">2MB</BrowserHostStackSize>
   </PropertyGroup>
