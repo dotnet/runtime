@@ -482,7 +482,8 @@ namespace ILVerify
             {
                 var importer = new ILImporter(method, methodIL)
                 {
-                    SanityChecks = _verifierOptions.SanityChecks
+                    SanityChecks = _verifierOptions.SanityChecks,
+                    ValidationOnly = _verifierOptions.ValidationOnly
                 };
 
                 importer.ReportVerificationError = (args, code) =>
@@ -709,5 +710,11 @@ namespace ILVerify
         /// Respect IgnoresAccessChecksToAttribute. Off by default, since code that relies on it is not verifiable.
         /// </summary>
         public bool AllowIgnoresAccessChecksTo { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value that indicates whether the verifier checks only that the IL is valid, and skips some
+        /// rules that only verifiable IL must follow (ECMA-335 Partition III, 1.8).
+        /// </summary>
+        public bool ValidationOnly { get; set; }
     }
 }
