@@ -438,11 +438,8 @@ globalThis.getDotnetRuntime(0).collectPgoTrace({durationSeconds: 30})
 
 #### CoreCLR profile-guided ReadyToRun publishing
 
-`PublishReadyToRunPgoInstrumentation` enables 64-bit sparse-edge counters for
-selected CoreCLR ReadyToRun methods, including inlined bodies. It uses the
-standard MethodSet format:
-`all` is translated to `*`, `*` selects every method, and an empty value disables
-instrumentation. For example, `*MyApplication*:*` selects methods on matching types.
+Set `PublishReadyToRunPgoInstrumentation=true` to enable 64-bit sparse-edge
+counters for compiled CoreCLR ReadyToRun methods, including inlined bodies.
 This setting is independent of `WasmPerformanceInstrumentation`, which controls CPU
 sampling; either can be enabled alone or both can be enabled together.
 
@@ -454,7 +451,7 @@ If the project still defaults to Mono, set `UseMonoRuntime=false` separately.
   <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
   <PublishReadyToRun>true</PublishReadyToRun>
   <EnableDiagnostics>true</EnableDiagnostics>
-  <PublishReadyToRunPgoInstrumentation>all</PublishReadyToRunPgoInstrumentation>
+  <PublishReadyToRunPgoInstrumentation>true</PublishReadyToRunPgoInstrumentation>
 </PropertyGroup>
 ```
 
@@ -469,9 +466,9 @@ It does not substitute uninstrumented prebuilt framework images. The build rejec
 Mono, other runtime identifiers, threads, disabled diagnostics, non-ReadyToRun
 publishing, and development builds with this property set. Use a wasm-capable
 crossgen2 matching the runtime. Instrumented ReadyToRun images carry their counter
-schemas in section 129, using format 34.2. The SDK passes the filter through
-Crossgen2's `--pgo-instrumentation` switch. The switch preserves all original IL
-bodies even when `--strip-il-bodies` is also specified.
+schemas in section 129, using format 34.2. The SDK enables Crossgen2's
+`--pgo-instrumentation` switch. In composite builds, the switch preserves all
+original IL bodies even when `--strip-il-bodies` is also specified.
 
 Standalone Wasm cross-JITs enable the R2R profiling capability independently of
 the build host OS. Runtime counter storage and publishing remain limited to
@@ -491,7 +488,7 @@ same trace and MIBC as the edge counts. Pass crossgen2 `--codegenopt:JitProfileV
 to turn off value probes while retaining counts. Value collection does not add
 new Wasm constant-length optimizations.
 
-Selected methods also collect input types at eligible `isinst` and `castclass`
+Instrumented methods also collect input types at eligible `isinst` and `castclass`
 sites using the existing JIT type histograms. Pass crossgen2
 `--codegenopt:JitProfileCasts=0` to disable these probes. The profile does not
 include receiver or target histograms for virtual, interface, or delegate calls.
@@ -561,7 +558,7 @@ Disable producer instrumentation for the consumer publish and provide the measur
 ```
 
 ```console
-dotnet publish -c Release -p:PublishReadyToRunPgoInstrumentation=
+dotnet publish -c Release -p:PublishReadyToRunPgoInstrumentation=false
 ```
 
 Keep the same application IL and runtime-pack IL between producer and consumer.

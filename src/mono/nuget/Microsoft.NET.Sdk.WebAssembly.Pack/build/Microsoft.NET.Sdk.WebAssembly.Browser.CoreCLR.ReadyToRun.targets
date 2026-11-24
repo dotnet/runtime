@@ -19,11 +19,11 @@ Copyright (c) .NET Foundation. All rights reserved.
   </Target>
 
   <Target Name="_WasmCoreClrAddPgoInstrumentationToReadyToRun"
-          Condition="'$(PublishReadyToRunPgoInstrumentation.Trim())' != ''"
-          DependsOnTargets="_ConfigureReadyToRunPgoInstrumentation"
+          Condition="'$(PublishReadyToRunPgoInstrumentation)' == 'true'"
+          DependsOnTargets="_ValidateReadyToRunPgoInstrumentation"
           BeforeTargets="_PrepareForReadyToRunCompilation">
     <PropertyGroup>
-      <PublishReadyToRunCrossgen2ExtraArgs>$(PublishReadyToRunCrossgen2ExtraArgs);--pgo-instrumentation:&quot;$(_WasmPgoInstFilter)&quot;</PublishReadyToRunCrossgen2ExtraArgs>
+      <PublishReadyToRunCrossgen2ExtraArgs>$(PublishReadyToRunCrossgen2ExtraArgs);--pgo-instrumentation</PublishReadyToRunCrossgen2ExtraArgs>
     </PropertyGroup>
   </Target>
 

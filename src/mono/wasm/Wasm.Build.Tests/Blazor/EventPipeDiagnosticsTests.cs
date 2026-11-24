@@ -205,7 +205,7 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
                 <PublishReadyToRun>true</PublishReadyToRun>
                 <PublishReadyToRunComposite>true</PublishReadyToRunComposite>
                 <PublishTrimmed>false</PublishTrimmed>
-                <PublishReadyToRunPgoInstrumentation>*WasmPgoScenarios*:*</PublishReadyToRunPgoInstrumentation>
+                <PublishReadyToRunPgoInstrumentation>true</PublishReadyToRunPgoInstrumentation>
                 <PublishReadyToRunCrossgen2ExtraArgs>$(PublishReadyToRunCrossgen2ExtraArgs);--optimize;--parallelism:1;--codegenopt:JitDisasm=*WasmPgoScenarios:*;--codegenopt:JitStdOutFile=&quot;$(MSBuildProjectDirectory)/{CompilerLog}&quot;</PublishReadyToRunCrossgen2ExtraArgs>
                 """,
             extraItems: """
@@ -309,12 +309,12 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
     }
 
     [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
-    [InlineData(Configuration.Debug, false, "all", false)]
-    [InlineData(Configuration.Release, false, "all", true)]
-    [InlineData(Configuration.Release, true, "*WasmPgoScenarios*:*", false)]
+    [InlineData(Configuration.Debug, false, false)]
+    [InlineData(Configuration.Release, false, true)]
+    [InlineData(Configuration.Release, true, false)]
     [TestCategory("no-workload"), TestCategory("coreclr")]
     public async Task BlazorEventPipeTestWithSparseEdgePgoReadyToRun(
-        Configuration config, bool cpuSampling, string pgoFilter, bool composite)
+        Configuration config, bool cpuSampling, bool composite)
     {
         // Optimize crossgen2, not Csc: both publishes must retain the same configuration-specific IL.
         ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, "blazor_basic_block_pgo",
@@ -325,7 +325,8 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
                 <PublishReadyToRun>true</PublishReadyToRun>
                 <PublishReadyToRunComposite>{composite.ToString().ToLowerInvariant()}</PublishReadyToRunComposite>
                 <PublishTrimmed>false</PublishTrimmed>
-                <PublishReadyToRunPgoInstrumentation Condition="'$(WasmBuildTestConsumePgo)' != 'true'">{(pgoFilter == "all" ? "all" : pgoFilter + " System.MemoryExtensions:SequenceEqual")}</PublishReadyToRunPgoInstrumentation>
+                <PublishReadyToRunPgoInstrumentation Condition="'$(WasmBuildTestConsumePgo)' != 'true'">true</PublishReadyToRunPgoInstrumentation>
+                <PublishReadyToRunPgoInstrumentation Condition="'$(WasmBuildTestConsumePgo)' == 'true'">false</PublishReadyToRunPgoInstrumentation>
                 <WasmPerformanceInstrumentation Condition="'$(WasmBuildTestConsumePgo)' != 'true'">{(cpuSampling ? "all" : "")}</WasmPerformanceInstrumentation>
                 <_WasmBuildTestCompilerLogPath>$([System.IO.Path]::Combine('$(MSBuildProjectDirectory)', '$(WasmBuildTestCompilerLog)'))</_WasmBuildTestCompilerLogPath>
                 <PublishReadyToRunCrossgen2ExtraArgs>$(PublishReadyToRunCrossgen2ExtraArgs);--optimize;--parallelism:1;--codegenopt:JitDisasm=*WasmPgoScenarios:*;--codegenopt:JitStdOutFile=&quot;$(_WasmBuildTestCompilerLogPath)&quot;</PublishReadyToRunCrossgen2ExtraArgs>
@@ -404,8 +405,6 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
             {
                 Assert.Equal("", await page.EvaluateAsync<string>(
                     "globalThis.getDotnetRuntime(0).getConfig().environmentVariables.DOTNET_InterpPGO ?? ''"));
-                Assert.Equal("", await page.EvaluateAsync<string>(
-                    "globalThis.getDotnetRuntime(0).getConfig().environmentVariables.DOTNET_R2RPgoInstrumentation ?? ''"));
                 Assert.Equal(cpuSampling ? "*" : "", await page.EvaluateAsync<string>(
                     "globalThis.getDotnetRuntime(0).getConfig().environmentVariables.DOTNET_WasmPerformanceInstrumentation ?? ''"));
                 await SetupCounterPage(page, "basic-block.nettrace",
@@ -415,7 +414,7 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
             }));
 
         string mibcPath = CreateBasicBlockPgoProfile(info, config, buildOutput, tracePath, producerMvids,
-            broadFilter: pgoFilter == "all", interpretedFallback: !composite);
+            interpretedFallback: !composite);
         if (cpuSampling)
         {
             string cpuTrace = Path.Combine(info.LogPath, "basic-block-cpu.nettrace");
@@ -454,8 +453,6 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
         await RunForPublishWithWebServer(new BlazorRunOptions(config, CheckCounter: false, TimeoutSeconds: 60,
             Test: async page =>
             {
-                Assert.Equal("", await page.EvaluateAsync<string>(
-                    "globalThis.getDotnetRuntime(0).getConfig().environmentVariables.DOTNET_R2RPgoInstrumentation ?? ''"));
                 await page.Locator("text=Counter").ClickAsync();
                 for (int i = 0; i < 5; i++)
                     await page.Locator("text=\"Click me\"").ClickAsync();
@@ -477,7 +474,7 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
                 <PublishReadyToRun>true</PublishReadyToRun>
                 <PublishReadyToRunComposite>false</PublishReadyToRunComposite>
                 <PublishTrimmed>false</PublishTrimmed>
-                <PublishReadyToRunPgoInstrumentation Condition="'$(WasmBuildTestCastProfile)' == ''">*WasmPgoScenarios:ProfiledCast</PublishReadyToRunPgoInstrumentation>
+                <PublishReadyToRunPgoInstrumentation Condition="'$(WasmBuildTestCastProfile)' == ''">true</PublishReadyToRunPgoInstrumentation>
                 <PublishReadyToRunCrossgen2ExtraArgs>$(PublishReadyToRunCrossgen2ExtraArgs);--optimize;--parallelism:1;--codegenopt:JitDisasm=*WasmPgoScenarios:ProfiledCast;--codegenopt:JitStdOutFile=&quot;$(MSBuildProjectDirectory)/{CompilerLog}&quot;</PublishReadyToRunCrossgen2ExtraArgs>
                 """,
             extraItems: """
@@ -705,7 +702,7 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
     }
 
     private string CreateBasicBlockPgoProfile(ProjectInfo info, Configuration config, string buildOutput, string tracePath,
-        IReadOnlyDictionary<string, Guid> publishedMvids, bool broadFilter, bool interpretedFallback)
+        IReadOnlyDictionary<string, Guid> publishedMvids, bool interpretedFallback)
     {
         Assert.True(File.Exists(tracePath), $"Missing trace: {tracePath}");
         string referenceDir = CopyPgoReferences(info, config, buildOutput, publishedMvids, "basic-block-references");
@@ -788,17 +785,10 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
         Assert.Equal(2, generics.Length);
         AssertEdgeCounts(Assert.Single(generics, method => method.GetProperty("Method").GetString()!.Contains("__Canon", StringComparison.Ordinal)), 7);
         AssertEdgeCounts(Assert.Single(generics, method => method.GetProperty("Method").GetString()!.Contains("<int32>", StringComparison.Ordinal)), 6);
-        JsonElement[] outOfFilter = allMethods.Where(method => method.GetProperty("Method").GetString()!.Contains(
+        JsonElement deferredFill = Assert.Single(allMethods, method => method.GetProperty("Method").GetString()!.Contains(
             "BlazorBasicTestApp.IntrinsicPgoCalls.DeferredFillCalls(", StringComparison.Ordinal) &&
-            method.TryGetProperty("InstrumentationData", out _)).ToArray();
-        if (broadFilter)
-        {
-            AssertEdgeCounts(Assert.Single(outOfFilter), 1);
-        }
-        else
-        {
-            Assert.Empty(outOfFilter);
-        }
+            method.TryGetProperty("InstrumentationData", out _));
+        AssertEdgeCounts(deferredFill, 1);
 
         return mibcPath;
 
@@ -1066,6 +1056,7 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
     [InlineData("-p:PublishReadyToRun=false", "PublishReadyToRunPgoInstrumentation requires PublishReadyToRun=true", true)]
     [InlineData("-p:EnableDiagnostics=false", "PublishReadyToRunPgoInstrumentation requires EnableDiagnostics=true", true)]
     [InlineData("-p:WasmEnableThreads=true", "PublishReadyToRunPgoInstrumentation supports only single-threaded", true)]
+    [InlineData("-p:PublishReadyToRunPgoInstrumentation=all", "PublishReadyToRunPgoInstrumentation must be true or false", true)]
     [InlineData("", "PublishReadyToRunPgoInstrumentation is supported only when publishing", false)]
     [TestCategory("no-workload"), TestCategory("coreclr")]
     public void BlazorPgoRejectsUnsupportedConfiguration(string extraArgs, string expectedError, bool publish)
@@ -1075,7 +1066,7 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
                 <EnableDiagnostics>true</EnableDiagnostics>
                 <WasmEnableThreads>false</WasmEnableThreads>
                 <PublishReadyToRun>true</PublishReadyToRun>
-                <PublishReadyToRunPgoInstrumentation>all</PublishReadyToRunPgoInstrumentation>
+                <PublishReadyToRunPgoInstrumentation>true</PublishReadyToRunPgoInstrumentation>
                 """);
         string args = $"{GetPgoBuildArgs(Configuration.Debug)} {extraArgs}";
         (_, string output) = publish

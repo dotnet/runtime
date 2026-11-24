@@ -40,7 +40,7 @@ namespace ILCompiler
         private readonly bool _outNearInput;
         private readonly string _outputFilePath;
         private readonly string _generatePortableCallHelpers;
-        private readonly string _pgoInstrumentation;
+        private readonly bool _pgoInstrumentation;
 
         public Program(Crossgen2RootCommand command)
         {
@@ -50,7 +50,7 @@ namespace ILCompiler
             _outNearInput = Get(command.OutNearInput);
             _outputFilePath = Get(command.OutputFilePath);
             _generatePortableCallHelpers = Get(command.GeneratePortableCallHelpers);
-            _pgoInstrumentation = Get(command.PgoInstrumentation)?.Trim();
+            _pgoInstrumentation = Get(command.PgoInstrumentation);
 
             if (Get(command.WaitForDebugger))
             {
@@ -94,13 +94,9 @@ namespace ILCompiler
             bool targetIsSingleThreaded = Get(_command.TargetSingleThreaded)
                 ?? GetTargetIsSingleThreaded(targetArchitecture);
 
-            if (_pgoInstrumentation is not null)
-            {
-                if (_pgoInstrumentation.Length == 0)
-                    throw new CommandLineException(SR.ErrorPgoInstrumentationRequiresFilter);
-                if (targetOS != TargetOS.Browser || targetArchitecture != TargetArchitecture.Wasm32 || !targetIsSingleThreaded)
-                    throw new CommandLineException(SR.ErrorPgoInstrumentationRequiresBrowserWasm);
-            }
+            if (_pgoInstrumentation &&
+                (targetOS != TargetOS.Browser || targetArchitecture != TargetArchitecture.Wasm32 || !targetIsSingleThreaded))
+                throw new CommandLineException(SR.ErrorPgoInstrumentationRequiresBrowserWasm);
 
             // Crossgen2 is partial AOT and its pre-compiled methods can be thrown away at runtime if
             // they mismatch in required ISAs or computed layouts of structs. On targets that allow
@@ -485,7 +481,7 @@ namespace ILCompiler
                         }
                     }
 
-                    bool stripILBodies = _pgoInstrumentation is null && Get(_command.StripILBodies);
+                    bool stripILBodies = Get(_command.StripILBodies);
                     if (!composite && stripILBodies)
                     {
                         throw new Exception(SR.ErrorStripILBodiesRequiresComposite);
@@ -707,11 +703,8 @@ namespace ILCompiler
                     nodeFactoryFlags.GenerateUnboxingStubs = Get(_command.GenerateUnboxingStubs) ?? !typeSystemContext.TargetAllowsRuntimeCodeGeneration;
                     nodeFactoryFlags.StripInliningInfo = Get(_command.StripInliningInfo);
                     nodeFactoryFlags.StripDebugInfo = Get(_command.StripDebugInfo);
-                    nodeFactoryFlags.StripILBodies = stripILBodies;
-
-                    string[] codegenOptions = Get(_command.CodegenOptions);
-                    if (_pgoInstrumentation is not null)
-                        codegenOptions = [.. codegenOptions, $"R2RPgoInstrumentation={_pgoInstrumentation}"];
+                    nodeFactoryFlags.PgoInstrumentation = _pgoInstrumentation;
+                    nodeFactoryFlags.StripILBodies = stripILBodies && !_pgoInstrumentation;
 
                     builder
                         .UseMapFile(Get(_command.Map))
@@ -735,7 +728,7 @@ namespace ILCompiler
                         .UseImageBase(_imageBase)
                         .UseContainerFormat(format)
                         .UseILProvider(ilProvider)
-                        .UseBackendOptions(codegenOptions)
+                        .UseBackendOptions(Get(_command.CodegenOptions))
                         .UseLogger(logger)
                         .UseParallelism(Get(_command.Parallelism))
                         .UseResilience(Get(_command.Resilient))

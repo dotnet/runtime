@@ -72,6 +72,7 @@ namespace ILCompiler.DependencyAnalysis
         public bool StripInliningInfo;
         public bool StripDebugInfo;
         public bool StripILBodies;
+        public bool PgoInstrumentation;
         public HashSet<MethodDesc> CompiledMethodDefs;
     }
 
@@ -1221,7 +1222,7 @@ namespace ILCompiler.DependencyAnalysis
 
             ImportSectionsTable = new ImportSectionsTableNode(this);
             Header.Add(Internal.Runtime.ReadyToRunSectionType.ImportSections, ImportSectionsTable);
-            if (Target.IsWasm && !string.IsNullOrWhiteSpace(JitConfigProvider.Instance.GetStringConfigValue("R2RPgoInstrumentation")))
+            if (OptimizationFlags.PgoInstrumentation)
             {
                 PgoInstrumentationSchemas = new PgoInstrumentationSchemaTableNode();
                 Header.Add(Internal.Runtime.ReadyToRunSectionType.PgoInstrumentationSchemas, PgoInstrumentationSchemas);

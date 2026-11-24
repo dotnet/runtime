@@ -672,8 +672,10 @@ Copyright (c) .NET Foundation. All rights reserved.
   </Target>
 
   <Target Name="_ValidateReadyToRunPgoInstrumentation"
-          Condition="'$(PublishReadyToRunPgoInstrumentation.Trim())' != ''"
+          Condition="'$(PublishReadyToRunPgoInstrumentation)' != '' and '$(PublishReadyToRunPgoInstrumentation)' != 'false'"
           BeforeTargets="PrepareForBuild;_ResolveWasmConfiguration;_PrepareForReadyToRunCompilation">
+    <Error Condition="'$(PublishReadyToRunPgoInstrumentation)' != 'true'"
+           Text="PublishReadyToRunPgoInstrumentation must be true or false." />
     <Error Condition="'$(UseMonoRuntime)' != 'false' or '$(RuntimeIdentifier)' != 'browser-wasm'"
            Text="PublishReadyToRunPgoInstrumentation requires CoreCLR browser-wasm. Set UseMonoRuntime=false and RuntimeIdentifier=browser-wasm; Mono and other targets are not supported." />
     <Error Condition="'$(_IsPublishing)' != 'true' and '$(WasmBuildingForNestedPublish)' != 'true' and '$(WasmBuildOnlyAfterPublish)' != 'true' and '$(DeployOnBuild)' != 'true'"
@@ -684,15 +686,6 @@ Copyright (c) .NET Foundation. All rights reserved.
            Text="PublishReadyToRunPgoInstrumentation requires EnableDiagnostics=true so collectPgoTrace() can export the collected counts." />
     <Error Condition="'$(WasmEnableThreads)' == 'true'"
            Text="PublishReadyToRunPgoInstrumentation supports only single-threaded applications. Set WasmEnableThreads=false or clear PublishReadyToRunPgoInstrumentation." />
-  </Target>
-
-  <Target Name="_ConfigureReadyToRunPgoInstrumentation"
-          Condition="'$(PublishReadyToRunPgoInstrumentation.Trim())' != ''"
-          DependsOnTargets="_ValidateReadyToRunPgoInstrumentation">
-    <PropertyGroup>
-      <_WasmPgoInstFilter>$(PublishReadyToRunPgoInstrumentation.Trim())</_WasmPgoInstFilter>
-      <_WasmPgoInstFilter Condition="'$(_WasmPgoInstFilter)' == 'all'">*</_WasmPgoInstFilter>
-    </PropertyGroup>
   </Target>
 
   <Target Name="_AddWasmDiagnosticPortsEnvironmentVariable"

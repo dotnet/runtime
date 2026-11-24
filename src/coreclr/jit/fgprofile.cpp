@@ -2535,7 +2535,7 @@ void ValueInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8_t* p
 bool Compiler::compR2RPgoInstrumentation() const
 {
 #ifdef FEATURE_R2R_PGO
-    return IsAot() && opts.IsInstrumented() && !JitConfig.R2RPgoInstrumentation().isEmpty();
+    return IsAot() && opts.IsInstrumented();
 #else
     return false;
 #endif // FEATURE_R2R_PGO
@@ -2663,19 +2663,7 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
         }
     }
 
-    bool isSelected = true;
-#ifdef FEATURE_R2R_PGO
-    if (r2rPgo)
-    {
-        isSelected = JitConfig.R2RPgoInstrumentation().contains(info.compMethodHnd, info.compClassHnd,
-                                                                &info.compMethodInfo->args);
-    }
-#endif // FEATURE_R2R_PGO
-    if (!isSelected)
-    {
-        fgCountInstrumentor = new (this, CMK_Pgo) NonInstrumentor(this);
-    }
-    else if (minimalProfiling && (fgBBcount < 2))
+    if (minimalProfiling && (fgBBcount < 2))
     {
         // Don't instrument small single-block methods.
         JITDUMP("Not using any block profiling (fgBBcount < 2)\n");
@@ -2698,7 +2686,7 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
     const bool useClassProfiles    = (JitConfig.JitClassProfiling() > 0);
     const bool useDelegateProfiles = (JitConfig.JitDelegateProfiling() > 0);
     const bool useVTableProfiles   = (JitConfig.JitVTableProfiling() > 0);
-    fgR2RCastProfiling             = r2rPgo && isSelected && useClassProfiles && (JitConfig.JitProfileCasts() == 1);
+    fgR2RCastProfiling             = r2rPgo && useClassProfiles && (JitConfig.JitProfileCasts() == 1);
     if (fgR2RCastProfiling || (!prejit && (useClassProfiles || useDelegateProfiles || useVTableProfiles)))
     {
         fgHistogramInstrumentor = new (this, CMK_Pgo) HandleHistogramProbeInstrumentor(this);
@@ -2709,7 +2697,7 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
         fgHistogramInstrumentor = new (this, CMK_Pgo) NonInstrumentor(this);
     }
 
-    if (isSelected && (!prejit || r2rPgo) && JitConfig.JitProfileValues())
+    if ((!prejit || r2rPgo) && JitConfig.JitProfileValues())
     {
         fgValueInstrumentor = new (this, CMK_Pgo) ValueInstrumentor(this);
     }

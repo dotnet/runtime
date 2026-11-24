@@ -166,8 +166,8 @@ namespace ILCompiler
             new("--strip-debug-info") { Description = SR.StripDebugInfoOption };
         public Option<bool> StripILBodies { get; } =
             new("--strip-il-bodies") { Description = SR.StripILBodiesOption };
-        public Option<string> PgoInstrumentation { get; } =
-            new("--pgo-instrumentation") { Arity = ArgumentArity.ExactlyOne, Description = SR.PgoInstrumentationOption, HelpName = "filter" };
+        public Option<bool> PgoInstrumentation { get; } =
+            new("--pgo-instrumentation") { Description = SR.PgoInstrumentationOption };
         public Option<bool> SynthesizeRandomMibc { get; } =
             new("--synthesize-random-mibc");
 

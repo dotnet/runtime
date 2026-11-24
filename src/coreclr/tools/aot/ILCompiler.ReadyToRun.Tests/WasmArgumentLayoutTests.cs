@@ -150,7 +150,7 @@ public class WasmArgumentLayoutTests
                 "--out", Path.Combine(directory, "intrinsic.wasm"),
             ];
             if (instrument)
-                args.Add("--codegenopt:R2RPgoInstrumentation=*");
+                args.Add("--pgo-instrumentation");
             R2RCompilationResult result = new R2RDriver(_output).Compile(args);
             Assert.True(result.Success, result.StandardOutput + result.StandardError);
             string listing = File.ReadAllText(listingPath);
@@ -191,7 +191,7 @@ public class WasmArgumentLayoutTests
                 "--out", Path.Combine(directory, "setter.wasm"),
             ];
             if (instrument)
-                args.Add("--codegenopt:R2RPgoInstrumentation=*");
+                args.Add("--pgo-instrumentation");
             R2RCompilationResult result = new R2RDriver(_output).Compile(args);
             Assert.True(result.Success, result.StandardOutput + result.StandardError);
             string listing = File.ReadAllText(listingPath);
@@ -204,13 +204,11 @@ public class WasmArgumentLayoutTests
     }
 
     [Theory]
-    [InlineData("", 0)]
-    [InlineData(" ", 0)]
-    [InlineData("*", 2)]
-    [InlineData("Callbacks:Inlinee", 1)]
-    [InlineData("*", 0, "JitMinimalPrejitProfiling=1")]
-    [InlineData("*", 2, "JitCollect64BitCounts=0")]
-    public void InlineeProfilingPreservesInlining(string filter, int expectedProbeCount, string? counterOption = null)
+    [InlineData(false, 0)]
+    [InlineData(true, 2)]
+    [InlineData(true, 0, "JitMinimalPrejitProfiling=1")]
+    [InlineData(true, 2, "JitCollect64BitCounts=0")]
+    public void InlineeProfilingPreservesInlining(bool instrument, int expectedProbeCount, string? counterOption = null)
     {
         string directory = Path.GetFullPath(Path.Combine("artifacts", "tmp", "inlinee-profiling", Path.GetRandomFileName()));
         Directory.CreateDirectory(directory);
@@ -239,11 +237,12 @@ public class WasmArgumentLayoutTests
                 "--parallelism", "1",
                 "--singlemethodtypename", "Callbacks, InlineProfile",
                 "--singlemethodname", "Caller",
-                $"--codegenopt:R2RPgoInstrumentation={filter}",
                 "--codegenopt:JitDisasm=Callbacks:Caller",
                 $"--codegenopt:JitStdOutFile={listingPath}",
                 "--out", Path.Combine(directory, "caller.wasm"),
             ];
+            if (instrument)
+                args.Add("--pgo-instrumentation");
             if (counterOption is not null)
                 args.Add($"--codegenopt:{counterOption}");
             R2RCompilationResult result = new R2RDriver(_output).Compile(args);
@@ -260,9 +259,11 @@ public class WasmArgumentLayoutTests
     }
 
     [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public void PgoInstrumentationPreservesAllILWhenStrippingIsRequested(bool instrument)
+    [InlineData(true, true)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(false, false)]
+    public void PgoInstrumentationPreservesAllILWhenStrippingIsRequested(bool instrument, bool composite)
     {
         string directory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
         Directory.CreateDirectory(directory);
@@ -271,25 +272,34 @@ public class WasmArgumentLayoutTests
             string input = CompileCallbackAssembly("""
                 public static class Callbacks
                 {
-                    public static int Selected(int value) => value + 1;
-                    public static int Unselected(int value) => value - 1;
+                    public static int Increment(int value) => value + 1;
+                    public static int Decrement(int value) => value - 1;
                 }
                 """, Path.Combine(directory, "PgoIL.dll"), optimize: true);
             string listing = Path.Combine(directory, "pgo.jit.txt");
             List<string> args =
             [
                 input, "--reference", Path.Combine(TestPaths.LibrariesDir, "*.dll"),
-                "--targetos", "browser", "--targetarch", "wasm", "--composite", "--strip-il-bodies",
+                "--targetos", "browser", "--targetarch", "wasm", "--strip-il-bodies",
                 "--optimize", "--parallelism", "1",
                 "--codegenopt:JitDisasm=Callbacks:*", $"--codegenopt:JitStdOutFile={listing}",
                 "--out", Path.Combine(directory, "PgoIL.r2r.wasm"),
             ];
+            if (composite)
+                args.Add("--composite");
             if (instrument)
-                args.Add("--pgo-instrumentation:Callbacks:Selected");
+                args.Add("--pgo-instrumentation");
 
             R2RCompilationResult result = new R2RDriver(_output).Compile(args);
+            if (!composite)
+            {
+                Assert.False(result.Success, result.StandardOutput + result.StandardError);
+                Assert.Contains("--strip-il-bodies requires --composite.", result.StandardOutput + result.StandardError, StringComparison.Ordinal);
+                return;
+            }
+
             Assert.True(result.Success, result.StandardOutput + result.StandardError);
-            Assert.Equal(instrument ? 1 : 0, Regex.Matches(File.ReadAllText(listing), @"\bi64\.add\b").Count);
+            Assert.Equal(instrument ? 2 : 0, Regex.Matches(File.ReadAllText(listing), @"\bi64\.add\b").Count);
 
             using var original = new PEReader(File.OpenRead(input));
             MetadataReader originalMetadata = original.GetMetadataReader();
@@ -331,7 +341,7 @@ public class WasmArgumentLayoutTests
                 "--singlemethodname", "SequenceEqual",
                 "--singlemethodindex", "2",
                 "--singlemethodgenericarg", "System.SByte",
-                "--codegenopt:R2RPgoInstrumentation=*",
+                "--pgo-instrumentation",
                 $"--codegenopt:JitProfileValues={(enabled ? 1 : 0)}",
                 "--codegenopt:JitDisasm=System.MemoryExtensions:SequenceEqual",
                 $"--codegenopt:JitStdOutFile={listingPath}",
@@ -466,7 +476,7 @@ public class WasmArgumentLayoutTests
             ];
 
             string listing = instrument
-                ? CompileCountProfile(input, context, method, schema, directory, "--codegenopt:R2RPgoInstrumentation=*",
+                ? CompileCountProfile(input, context, method, schema, directory, "--pgo-instrumentation",
                     "--codegenopt:JitPropagateSynthesizedCountsToProfileData=1")
                 : CompileCountProfile(input, context, method, schema, directory);
             AssertCountProfile(listing, entryCount: 100, firstLikelihood: 0.3, secondLikelihood: 0.7);
@@ -686,7 +696,7 @@ public class WasmArgumentLayoutTests
                 "--optimize",
                 "--parallelism", "1",
                 "--codegenopt:JitNoInline=1",
-                "--codegenopt:R2RPgoInstrumentation=*",
+                "--pgo-instrumentation",
                 "--out", output,
             ];
             R2RCompilationResult result = new R2RDriver(_output).Compile(args);

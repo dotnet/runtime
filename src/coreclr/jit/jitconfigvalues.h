@@ -934,10 +934,6 @@ RELEASE_CONFIG_INTEGER(JitWasmFunclets, "JitWasmFunclets", 1)
 RELEASE_CONFIG_METHODSET(WasmPerformanceInstrumentation, "WasmPerformanceInstrumentation")
 #endif // defined(TARGET_WASM)
 
-#ifdef FEATURE_R2R_PGO
-RELEASE_CONFIG_METHODSET(R2RPgoInstrumentation, "R2RPgoInstrumentation") // Empty disables R2R instrumentation.
-#endif                                                                   // FEATURE_R2R_PGO
-
 // Allow to enregister locals with struct type.
 RELEASE_CONFIG_INTEGER(JitEnregStructLocals, "JitEnregStructLocals", 1)
 
