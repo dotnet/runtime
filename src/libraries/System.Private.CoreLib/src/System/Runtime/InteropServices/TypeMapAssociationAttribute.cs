@@ -9,7 +9,7 @@ namespace System.Runtime.InteropServices
     /// Create a type association between a type and its proxy.
     /// </summary>
     /// <typeparam name="TTypeMapGroup">Type map group</typeparam>
-    [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = true)]
+    [AttributeUsage(AttributeTargets.Assembly | AttributeTargets.Class, AllowMultiple = true)]
     public sealed class TypeMapAssociationAttribute<TTypeMapGroup> : Attribute
     {
         /// <summary>

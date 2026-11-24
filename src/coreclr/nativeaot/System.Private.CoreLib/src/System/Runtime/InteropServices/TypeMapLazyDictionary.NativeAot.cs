@@ -192,6 +192,13 @@ namespace System.Runtime.InteropServices
             return false;
         }
 
+        // The maps that start at an owner type are tables of the image of their own, identified by TypeMapOwnerScope<TTypeMapGroup, TTypeMapGroupOwner> instead of the group.
+        public static bool TryGetValue<TTypeMapGroup, TTypeMapGroupOwner, TValue>(string key, [MaybeNullWhen(false)] out TValue value)
+            => TryGetValue((RuntimeType)typeof(TypeMapOwnerScope<TTypeMapGroup, TTypeMapGroupOwner>), key, out value);
+
+        public static bool TryGetValue<TTypeMapGroup, TTypeMapGroupOwner, TValue>(Type key, [MaybeNullWhen(false)] out TValue value)
+            => TryGetValue((RuntimeType)typeof(TypeMapOwnerScope<TTypeMapGroup, TTypeMapGroupOwner>), key, out value);
+
         // A typed value flavor is only in the image if some call site asked for it.
         private static int FindValueFlavor<TValue>(GroupTable group, RuntimeType typeMapGroup)
         {

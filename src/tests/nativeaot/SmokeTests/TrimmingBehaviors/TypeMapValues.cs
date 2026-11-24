@@ -49,6 +49,12 @@ using System.Runtime.InteropServices;
 [assembly: TypeMap<TypeMapValues.MixedDirections>("mixed-ext", typeof(TypeMapValues.MixedExternalTarget))]
 [assembly: TypeMapAssociation<TypeMapValues.MixedDirections>(typeof(TypeMapValues.MixedProxySource), typeof(TypeMapValues.MixedProxyTarget))]
 
+// Entries that are declared on holder types: HolderA is linked from the assembly and chains HolderB (that links HolderA back),
+// HolderLocal is only reachable as an owner.
+[assembly: TypeMap<TypeMapValues.HolderGroup>("assembly", typeof(TypeMapValues.HolderAssemblyTarget))]
+[assembly: TypeMapTypeTarget<TypeMapValues.HolderGroup>(typeof(TypeMapValues.HolderA))]
+[assembly: TypeMapTypeTarget<TypeMapValues.HolderTypesGroup>(typeof(TypeMapValues.HolderA))]
+
 unsafe class TypeMapValues
 {
     public class ValuesOnly;
@@ -442,6 +448,72 @@ unsafe class TypeMapValues
         public static SmallValue Value => new SmallValue { X = 21 };
     }
 
+    public class HolderGroup;
+    public class HolderTypesGroup;
+
+    public class HolderAssemblyTarget : ITypeMapValue<SmallValue>
+    {
+        public static SmallValue Value => new SmallValue { X = 1 };
+    }
+
+    // Evaluated by the compiler, so the marker is not in the program.
+    public class HolderTarget : ITypeMapValue<SmallValue>
+    {
+        public static SmallValue Value
+        {
+            get
+            {
+                if (NeverTrue())
+                    Console.WriteLine("typemap-values-holder-folded-getter-marker");
+
+                return new SmallValue { X = 2 };
+            }
+        }
+    }
+
+    public class HolderTrimKeyUnused;
+
+    public class HolderTrimUnusedTarget : ITypeMapValue<SmallValue>
+    {
+        public static SmallValue Value => new SmallValue { X = 3 };
+    }
+
+    public class HolderBTarget : ITypeMapValue<SmallValue>
+    {
+        public static SmallValue Value => new SmallValue { X = 4 };
+    }
+
+    public class HolderLocalTarget : ITypeMapValue<SmallValue>
+    {
+        public static SmallValue Value => new SmallValue { X = 5 };
+    }
+
+    public class HolderTypesTarget;
+    public class HolderSource;
+    public class HolderLocalSource;
+
+    // Linked from the assembly. The entries of the group on the type, and the type that it links to.
+    [TypeMap<HolderGroup>("a", typeof(HolderTarget))]
+    [TypeMap<HolderGroup>("a-trim-unused", typeof(HolderTrimUnusedTarget), typeof(HolderTrimKeyUnused))]
+    [TypeMapAssociation<HolderGroup>(typeof(HolderSource), typeof(HolderTarget))]
+    [TypeMapTypeTarget<HolderGroup>(typeof(HolderB))]
+    [TypeMap<HolderTypesGroup>("t", typeof(HolderTypesTarget))]
+    // This entry is not part of the map of ValuesOnly: the type is not linked for that group.
+    [TypeMap<ValuesOnly>("holder-other-group", typeof(HolderTarget))]
+    public class HolderA;
+
+    // Links the type that links it.
+    [TypeMap<HolderGroup>("b", typeof(HolderBTarget))]
+    [TypeMapTypeTarget<HolderGroup>(typeof(HolderA))]
+    public class HolderB;
+
+    // Not linked from the assembly: only found by starting at it.
+    [TypeMap<HolderGroup>("local", typeof(HolderLocalTarget))]
+    [TypeMapAssociation<HolderGroup>(typeof(HolderLocalSource), typeof(HolderLocalTarget))]
+    public class HolderLocal;
+
+    public class HolderEmpty;
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     static void Consume(object o) { }
 
@@ -478,6 +550,8 @@ unsafe class TypeMapValues
         Consume(new ProxySourceNotImplemented());
         Consume(new AllProxySource());
         Consume(new MixedProxySource());
+        Consume(new HolderSource());
+        Consume(new HolderLocalSource());
         // Trim target of an external entry that is used.
         Consume(new TrimKeyUsed());
 
@@ -487,10 +561,53 @@ unsafe class TypeMapValues
         RunReferenceValues();
         RunTypesAndValues();
         RunMixedDirections();
+        RunHolders();
         RunEvaluation();
         RunNoMap();
 
         return 100;
+    }
+
+    static void RunHolders()
+    {
+        // The map of the group has the entries of the assembly and of the holder types that it links (transitively, also in a cycle). The type of the other group is not linked.
+        Check(TypeMapping.TryGetValue<HolderGroup, SmallValue>("assembly", out SmallValue value) && value.X == 1, "holders: assembly entry");
+        Check(TypeMapping.TryGetValue<HolderGroup, SmallValue>("a", out value) && value.X == 2, "holders: entry of the linked type");
+        Check(TypeMapping.TryGetValue<HolderGroup, SmallValue>("b", out value) && value.X == 4, "holders: entry of the chained type");
+        Check(TypeMapping.TryGetValue<HolderGroup, SmallValue>(Hide(typeof(HolderSource)), out value) && value.X == 2, "holders: proxy entry");
+        Check(!TypeMapping.TryGetValue<HolderGroup, SmallValue>("local", out _), "holders: the type that is not linked");
+        Check(!TypeMapping.TryGetValue<HolderGroup, SmallValue>(Hide(typeof(HolderLocalSource)), out _), "holders: proxy entry of the type that is not linked");
+        Check(!TypeMapping.TryGetValue<HolderGroup, SmallValue>("a-trim-unused", out _), "holders: unused trim target");
+        Check(!TypeMapping.TryGetValue<ValuesOnly, SmallValue>("holder-other-group", out _), "holders: entry of another group");
+
+        // The entries of the holder are also in the map of the type returning API.
+        Check(TypeMapping.GetOrCreateExternalTypeMapping<HolderTypesGroup>().TryGetValue("t", out Type type) && type.Name == nameof(HolderTypesTarget), "holders: type");
+
+        // The map that starts at an owner type has the entries of the type and of the types that it links, and nothing else.
+        Check(TypeMapping.TryGetValue<HolderGroup, HolderA, SmallValue>("a", out value) && value.X == 2, "owner: own entry");
+        Check(TypeMapping.TryGetValue<HolderGroup, HolderA, SmallValue>("b", out value) && value.X == 4, "owner: linked entry");
+        Check(!TypeMapping.TryGetValue<HolderGroup, HolderA, SmallValue>("assembly", out _), "owner: assembly entry");
+        Check(!TypeMapping.TryGetValue<HolderGroup, HolderA, SmallValue>("local", out _), "owner: other holder");
+        Check(!TypeMapping.TryGetValue<HolderGroup, HolderA, SmallValue>("a-trim-unused", out _), "owner: unused trim target");
+        Check(TypeMapping.TryGetValue<HolderGroup, HolderB, SmallValue>("a", out value) && value.X == 2, "owner: entry through the cycle");
+        Check(TypeMapping.TryGetValue<HolderGroup, HolderLocal, SmallValue>("local", out value) && value.X == 5, "owner: type that is not linked");
+        Check(!TypeMapping.TryGetValue<HolderGroup, HolderLocal, SmallValue>("a", out _), "owner: entry of the assembly holder");
+        Check(!TypeMapping.TryGetValue<HolderGroup, HolderEmpty, SmallValue>("a", out _), "owner: type without entries");
+        Check(TypeMapping.TryGetValue<ValuesOnly, HolderA, SmallValue>("holder-other-group", out value) && value.X == 2, "owner: entry of the type for another group");
+
+        Check(TypeMapping.TryGetValue<HolderGroup, HolderA, SmallValue>(Hide(typeof(HolderSource)), out value) && value.X == 2, "owner: proxy entry");
+        Check(TypeMapping.TryGetValue<HolderGroup, HolderLocal, SmallValue>(Hide(typeof(HolderLocalSource)), out value) && value.X == 5, "owner: proxy entry of the type that is not linked");
+        Check(!TypeMapping.TryGetValue<HolderGroup, HolderA, SmallValue>(Hide(typeof(HolderLocalSource)), out _), "owner: proxy entry of another holder");
+        Check(!TypeMapping.TryGetValue<HolderGroup, HolderLocal, SmallValue>(Hide(typeof(HolderSource)), out _), "owner: proxy entry of the assembly holder");
+
+        Check(ThrowsArgumentNull(() => TypeMapping.TryGetValue<HolderGroup, HolderA, SmallValue>((string)null, out _)), "owner: null string key");
+        Check(ThrowsArgumentNull(() => TypeMapping.TryGetValue<HolderGroup, HolderA, SmallValue>((Type)null, out _)), "owner: null type key");
+
+        // The holder types are only containers of attributes.
+        foreach (string name in new[] { nameof(HolderA), nameof(HolderB), nameof(HolderLocal), nameof(HolderEmpty), nameof(HolderTarget), nameof(HolderBTarget), nameof(HolderLocalTarget) })
+        {
+            Check(GetTypeSecretly(Hide(typeof(TypeMapValues)), name) == null, name + " is reflection visible");
+        }
     }
 
     static void RunValuesOnly()
@@ -640,6 +757,7 @@ unsafe class TypeMapValues
 
         Check(Count(Hide("typemap-values-compiled-") + Hide("getter-marker")) > 0, "image: the getter that is not evaluated is compiled");
         Check(Count(Hide("typemap-values-folded-") + Hide("getter-marker")) == 0, "image: the getter that is evaluated is not compiled");
+        Check(Count(Hide("typemap-values-holder-folded-") + Hide("getter-marker")) == 0, "image: the getter of the entry of a holder is not compiled");
     }
 
     static void RunSimpleValues()

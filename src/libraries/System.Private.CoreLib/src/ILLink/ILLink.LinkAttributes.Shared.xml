@@ -10,6 +10,9 @@
     <type fullname="System.Runtime.InteropServices.TypeMapAssemblyTargetAttribute`1">
       <attribute internal="RemoveAttributeInstances" />
     </type>
+    <type fullname="System.Runtime.InteropServices.TypeMapTypeTargetAttribute`1">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
   </assembly>
   <!-- The following attributes are only necessary when debugging is supported -->
   <assembly fullname="System.Private.CoreLib" feature="System.Diagnostics.Debugger.IsSupported" featurevalue="false">

@@ -455,6 +455,20 @@ namespace ILLink.Shared.TrimAnalysis
                     && calledMethod.HasParameterOfType((ParameterIndex)0, "System.Type")
                     => IntrinsicId.TypeMapping_TryGetValue_Proxy,
 
+                // static System.Runtime.InteropServices.TypeMapping.TryGetValue<TGroup, TOwner, TValue>(string, out TValue)
+                "TryGetValue" when calledMethod.IsDeclaredOnType("System.Runtime.InteropServices.TypeMapping")
+                    && calledMethod.IsStatic()
+                    && calledMethod.HasGenericArgumentsCount(3)
+                    && calledMethod.HasParameterOfType((ParameterIndex)0, "System.String")
+                    => IntrinsicId.TypeMapping_TryGetValue_Owner_External,
+
+                // static System.Runtime.InteropServices.TypeMapping.TryGetValue<TGroup, TOwner, TValue>(Type, out TValue)
+                "TryGetValue" when calledMethod.IsDeclaredOnType("System.Runtime.InteropServices.TypeMapping")
+                    && calledMethod.IsStatic()
+                    && calledMethod.HasGenericArgumentsCount(3)
+                    && calledMethod.HasParameterOfType((ParameterIndex)0, "System.Type")
+                    => IntrinsicId.TypeMapping_TryGetValue_Owner_Proxy,
+
                 _ => IntrinsicId.None,
             };
         }

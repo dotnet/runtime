@@ -95,5 +95,55 @@ namespace System.Runtime.InteropServices
             return TypeMapLazyDictionary.TryGetValue((RuntimeType)typeof(TTypeMapGroup), key, out value);
 #endif
         }
+
+        /// <summary>
+        /// Tries to get the value that the type mapped by a key in the external type map of a group provides, looking only at the entries that start at an owner type.
+        /// </summary>
+        /// <typeparam name="TTypeMapGroup">The type map group.</typeparam>
+        /// <typeparam name="TTypeMapGroupOwner">The type that starts the lookup. Only the entries declared on this type and on the types reachable from it through <see cref="TypeMapTypeTargetAttribute{TTypeMapGroup}"/> (transitively) are considered.</typeparam>
+        /// <typeparam name="TValue">The type of the value. The mapped type has to implement <see cref="ITypeMapValue{TValue}"/> for it.</typeparam>
+        /// <param name="key">The key of the external type map entry.</param>
+        /// <param name="value">When this method returns, contains the value provided by the mapped type if the key is found and the mapped type implements <see cref="ITypeMapValue{TValue}"/>; otherwise, the default value of <typeparamref name="TValue"/>. This parameter is treated as uninitialized.</param>
+        /// <returns><see langword="true" /> if the key is in the map and the mapped type provides a <typeparamref name="TValue"/>; otherwise, <see langword="false" />.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
+        /// <remarks>
+        /// The entries declared on the assembly and the entries of other types and libraries are not considered.
+        /// Trimming and AOT compilation treat calls to this method as an intrinsic, so <typeparamref name="TTypeMapGroup"/>, <typeparamref name="TTypeMapGroupOwner"/> and <typeparamref name="TValue"/> have to be known statically (they can't be, or contain, generic parameters).
+        /// </remarks>
+        [RequiresUnreferencedCode("Interop types may be removed by trimming")]
+        public static bool TryGetValue<TTypeMapGroup, TTypeMapGroupOwner, TValue>(string key, [MaybeNullWhen(false)] out TValue value)
+        {
+#if MONO
+            throw new NotSupportedException();
+#else
+            ArgumentNullException.ThrowIfNull(key);
+            return TypeMapLazyDictionary.TryGetValue<TTypeMapGroup, TTypeMapGroupOwner, TValue>(key, out value);
+#endif
+        }
+
+        /// <summary>
+        /// Tries to get the value that the type mapped by a key in the proxy type map of a group provides, looking only at the entries that start at an owner type.
+        /// </summary>
+        /// <typeparam name="TTypeMapGroup">The type map group.</typeparam>
+        /// <typeparam name="TTypeMapGroupOwner">The type that starts the lookup. Only the entries declared on this type and on the types reachable from it through <see cref="TypeMapTypeTargetAttribute{TTypeMapGroup}"/> (transitively) are considered.</typeparam>
+        /// <typeparam name="TValue">The type of the value. The mapped type has to implement <see cref="ITypeMapValue{TValue}"/> for it.</typeparam>
+        /// <param name="key">The key of the proxy type map entry.</param>
+        /// <param name="value">When this method returns, contains the value provided by the mapped type if the key is found and the mapped type implements <see cref="ITypeMapValue{TValue}"/>; otherwise, the default value of <typeparamref name="TValue"/>. This parameter is treated as uninitialized.</param>
+        /// <returns><see langword="true" /> if the key is in the map and the mapped type provides a <typeparamref name="TValue"/>; otherwise, <see langword="false" />.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
+        /// <remarks>
+        /// The entries declared on the assembly and the entries of other types and libraries are not considered.
+        /// Trimming and AOT compilation treat calls to this method as an intrinsic, so <typeparamref name="TTypeMapGroup"/>, <typeparamref name="TTypeMapGroupOwner"/> and <typeparamref name="TValue"/> have to be known statically (they can't be, or contain, generic parameters).
+        /// </remarks>
+        [RequiresUnreferencedCode("Interop types may be removed by trimming")]
+        public static bool TryGetValue<TTypeMapGroup, TTypeMapGroupOwner, TValue>(Type key, [MaybeNullWhen(false)] out TValue value)
+        {
+#if MONO
+            throw new NotSupportedException();
+#else
+            ArgumentNullException.ThrowIfNull(key);
+            return TypeMapLazyDictionary.TryGetValue<TTypeMapGroup, TTypeMapGroupOwner, TValue>(key, out value);
+#endif
+        }
     }
 }

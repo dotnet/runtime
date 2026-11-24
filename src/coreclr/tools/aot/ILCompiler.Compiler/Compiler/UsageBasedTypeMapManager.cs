@@ -149,11 +149,31 @@ namespace ILCompiler
 
         private Dictionary<TypeDesc, TypeMapMetadata.Map> _mapsByGroup;
 
-        private bool TryGetMap(TypeDesc typeMapGroup, out TypeMapMetadata.Map map)
+        // The maps that start at an owner type, by the type that identifies them (see CompilerTypeSystemContext.GetTypeMapOwnerScope).
+        private readonly ConcurrentDictionary<TypeDesc, TypeMapMetadata.Map> _ownerMaps = new();
+        private volatile bool _hasOwnerMaps;
+
+        private bool TryGetMap(NodeFactory factory, TypeDesc typeMapGroup, out TypeMapMetadata.Map map)
         {
+            var context = (CompilerTypeSystemContext)factory.TypeSystemContext;
+            if (context.IsTypeMapOwnerScope(typeMapGroup, out TypeDesc group, out TypeDesc ownerType))
+            {
+                // The map exists for any owner: an owner without entries has an empty map.
+                map = _ownerMaps.GetOrAdd(typeMapGroup, _ => ownerType.GetTypeDefinition() is EcmaType ecmaOwner
+                    ? TypeMapMetadata.CreateFromOwnerType(ecmaOwner, group, context.GeneratedAssembly)
+                    : new TypeMapMetadata.Map(group));
+                _hasOwnerMaps = true;
+                return true;
+            }
+
             _mapsByGroup ??= _typeMaps.Maps.ToDictionary(m => m.Key, m => m.Value);
             return _mapsByGroup.TryGetValue(typeMapGroup, out map);
         }
+
+        // The tables of the maps that start at an owner type are only known once the program is analyzed.
+        protected override bool CanBecomeNonEmpty => true;
+
+        internal override bool IsEmptyAtEmission => IsEmpty && !_hasOwnerMaps;
 
         private TypeMapValueFlavor CreateValueFlavor(NodeFactory factory, TypeDesc valueType)
             => new TypeMapValueFlavor(valueType, target => GetValueEvaluation(factory, target, valueType));
@@ -164,7 +184,7 @@ namespace ILCompiler
         /// </summary>
         internal DependencyNodeCore<NodeFactory> GetExternalValueFlavorNode(NodeFactory factory, TypeDesc typeMapGroup, TypeDesc valueType)
         {
-            if (!TryGetMap(typeMapGroup, out TypeMapMetadata.Map map))
+            if (!TryGetMap(factory, typeMapGroup, out TypeMapMetadata.Map map))
                 return null;
 
             return _externalValueFlavorNodes.GetOrAdd((typeMapGroup, valueType), key =>
@@ -182,7 +202,7 @@ namespace ILCompiler
         /// </summary>
         internal DependencyNodeCore<NodeFactory> GetProxyValueFlavorNode(NodeFactory factory, TypeDesc typeMapGroup, TypeDesc valueType)
         {
-            if (!TryGetMap(typeMapGroup, out TypeMapMetadata.Map map))
+            if (!TryGetMap(factory, typeMapGroup, out TypeMapMetadata.Map map))
                 return null;
 
             return _proxyValueFlavorNodes.GetOrAdd((typeMapGroup, valueType), key =>

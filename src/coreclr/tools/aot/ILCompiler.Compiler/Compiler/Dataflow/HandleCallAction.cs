@@ -585,6 +585,53 @@ namespace ILLink.Shared.TrimAnalysis
 #endif
                     break;
                 }
+                case IntrinsicId.TypeMapping_TryGetValue_Owner_External:
+                case IntrinsicId.TypeMapping_TryGetValue_Owner_Proxy:
+                {
+                    // TODO-ILTRIM: type maps
+#if !ILTRIM
+                    TypeDesc typeMapGroup = calledMethod.Method.Instantiation[0];
+                    TypeDesc ownerType = calledMethod.Method.Instantiation[1];
+                    TypeDesc valueType = calledMethod.Method.Instantiation[2];
+
+                    // We only support TryGetValue for a fully specified group, owner and value type.
+                    bool groupIsKnown = !typeMapGroup.ContainsSignatureVariables(treatGenericParameterLikeSignatureVariable: true);
+                    bool ownerIsKnown = !ownerType.ContainsSignatureVariables(treatGenericParameterLikeSignatureVariable: true);
+                    bool valueTypeIsKnown = !valueType.ContainsSignatureVariables(treatGenericParameterLikeSignatureVariable: true);
+                    if (!groupIsKnown)
+                    {
+                        _diagnosticContext.AddDiagnostic(DiagnosticId.TypeMapGroupTypeCannotBeStaticallyDetermined, typeMapGroup.GetDisplayName());
+                    }
+
+                    if (!ownerIsKnown)
+                    {
+                        _diagnosticContext.AddDiagnostic(DiagnosticId.TypeMapGroupTypeCannotBeStaticallyDetermined, ownerType.GetDisplayName());
+                    }
+
+                    if (!valueTypeIsKnown)
+                    {
+                        _diagnosticContext.AddDiagnostic(DiagnosticId.TypeMapGroupTypeCannotBeStaticallyDetermined, valueType.GetDisplayName());
+                    }
+
+                    if (groupIsKnown && ownerIsKnown && valueTypeIsKnown)
+                    {
+                        // The maps that start at an owner type are described in the image by a type that combines the group and the owner.
+                        TypeDesc scope = ((CompilerTypeSystemContext)typeMapGroup.Context).GetTypeMapOwnerScope(typeMapGroup, ownerType);
+                        if (scope is not null)
+                        {
+                            if (intrinsicId == IntrinsicId.TypeMapping_TryGetValue_Owner_External)
+                            {
+                                _reflectionMarker.Dependencies.Add(_reflectionMarker.Factory.ExternalTypeMapValuesRequest(scope, valueType), "TypeMapping.TryGetValue called on type with an owner");
+                            }
+                            else
+                            {
+                                _reflectionMarker.Dependencies.Add(_reflectionMarker.Factory.ProxyTypeMapValuesRequest(scope, valueType), "TypeMapping.TryGetValue called on type with an owner");
+                            }
+                        }
+                    }
+#endif
+                    break;
+                }
                 default:
                     return false;
             }

@@ -122,6 +122,29 @@ also left to the compiled code, as the interpreter replaces the values of the fi
 The values are evaluated once, by the first thing that needs them in the analysis phase (and the result is what the compilation phase emits), so both phases agree.
 Getters of value types that fell back are logged with `--verbose`. The result of the evaluation does not keep the interpreter alive.
 
+## Holder types and owner scopes
+
+The entries of a group can be declared on holder types (`TypeMapTypeTargetAttribute<TGroup>`, see [typemap.md](../../../../docs/design/features/typemap.md)).
+
+* `TypeMapMetadata` reads the type map attributes from *sources*: an assembly (as before) or a holder type. A `TypeMapTypeTarget` attribute of a source enqueues the holder it names for the same group, with the same
+pending map logic as the assembly targets (a holder can have attributes of other groups, they are kept as a pending map until the holder is reached for that group). The sources are identified by module and
+metadata handle, and each source is scanned once per group, so cycles are fine. A holder that is not an Ecma type (an array, for example) is ignored, like on CoreCLR. A holder that can't be resolved makes both maps of the group invalid, like an
+unresolved assembly target. In `Record` mode (ReadyToRun) the `TypeMapTypeTarget` attributes are ignored: the runtime reads the holders from the attributes. A `TypeMapAssemblyTarget` on a holder is ignored (the attribute is for assemblies).
+An attribute that fails to resolve only invalidates the map that it is for, so a bad entry on a holder for another group does not affect the group that traverses the holder.
+* The group tables of the image are the same as before: the entries of the holders are in the same table as the assembly level entries, with the same conditions, so `GetOrCreate*TypeMapping`, `TryGetValue<TGroup, TValue>` and the shared
+frozen table for a group used with both are unchanged. A program without holders has the same image as before.
+* `TryGetValue<TGroup, TOwner, TValue>` is its own pair of intrinsics (`TypeMapping_TryGetValue_Owner_External` and `..._Owner_Proxy`). The map that starts at an owner is described in the image by a table of its own, and the group key of
+that table is the type `TypeMapOwnerScope<TGroup, TOwner>` of System.Private.CoreLib (never instantiated): the compiler makes the scope type from the group and the owner, and everything that is keyed by the group (the request nodes, the flavor nodes,
+the hash table of the groups, the data tables of the values) is keyed by the scope type instead. The map of a scope is made by `TypeMapMetadata.CreateFromOwnerType`, which starts the scan at the owner: the assembly level entries and the other assemblies are not read.
+An owner without entries (or one that is not an Ecma type) has an empty map. The scope maps never have the `Types` flavor: only `TryGetValue` can ask for them.
+* The requests of the scope maps are the same nodes as the requests of the other maps (the group is the scope type), so the same evaluation of the getters is shared: a mapped type that is in the group table and in a scope table is evaluated once, and it has
+one data entry in each table that has it (the data is small, and a table has to be dense). Preinitialization of the values works the same for the entries of holders and scopes.
+* The sections of the image are emitted when the program has scope maps even if there are no assembly level type maps (the manager can't know before the analysis is done): `ShouldSkipEmittingObjectNode` of the section nodes makes a program without any
+type map keep not having the sections.
+
+At run time (`TypeMapLazyDictionary.NativeAot.cs`) the overloads with an owner use `typeof(TypeMapOwnerScope<TGroup, TOwner>)` as the group handle: the same lookup of the group, the same flavors and the same decoding of the values.
+A scope that was not requested at compile time (the call is not seen: through reflection or a delegate) throws the missing metadata exception like any other group.
+
 ## Runtime
 
 NativeAOT (`TypeMapLazyDictionary.NativeAot.cs`): the readers of the type valued maps (`GetOrCreate*TypeMapping`) read the state of the group, skip the descriptors of the typed value flavors and use the hash table, so an application that only
@@ -135,6 +158,10 @@ so there is no observable difference for existing code.
 CoreCLR (non AOT, and the trimmed case): reflection based. The lazy maps that exist for the attribute based type maps are reused (cached per group) and the getter
 of the mapped type is called through a cached open static generic helper (`T.Value` with `where T : ITypeMapValue<TValue>`). For ILLink and the Roslyn analyzer the new
 methods are treated like the existing ones (the group is seen, the generic arguments must be statically known). Mono: `NotSupportedException`, like the existing type map APIs.
+
+The CoreCLR lazy maps read the holder types too: after the assemblies are processed, the native reader (`TypeMapLazyDictionary_ProcessAttributes`) follows the `TypeMapTypeTarget` attributes of the assemblies it parsed (the type name is resolved
+relative to the assembly that declares the attribute) and reads the entries on each holder once (a set of the processed types). The overloads with an owner use `TypeMapLazyDictionary_ProcessAttributesFromType`, which starts at the owner type instead of at the
+assembly. The maps are cached per group and per (group, owner) with `ConditionalWeakTable`s.
 
 ## Known limits
 

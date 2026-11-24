@@ -384,5 +384,13 @@ namespace ILLink.Shared.TrimAnalysis
         /// <c>System.Runtime.InteropServices.TypeMapping.TryGetValue</c> overloads with a Type key (proxy type map).
         /// </summary>
         TypeMapping_TryGetValue_Proxy,
+        /// <summary>
+        /// <c>System.Runtime.InteropServices.TypeMapping.TryGetValue</c> overloads with an owner type and a string key (external type map).
+        /// </summary>
+        TypeMapping_TryGetValue_Owner_External,
+        /// <summary>
+        /// <c>System.Runtime.InteropServices.TypeMapping.TryGetValue</c> overloads with an owner type and a Type key (proxy type map).
+        /// </summary>
+        TypeMapping_TryGetValue_Owner_Proxy,
     }
 }
