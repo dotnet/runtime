@@ -6820,7 +6820,7 @@ PhaseStatus Compiler::optAssertionPropMain()
             {
                 // Perform VN based assertion prop before assertion gen.
                 Statement* nextStmt = optVNAssertionPropCurStmt(block, stmt);
-                madeChanges |= optAssertionPropagatedCurrentStmt;
+                madeChanges |= optAssertionPropagatedCurrentStmt || optAssertionPropNonFaultingCurrentStmt;
                 INDEBUG(madeChanges |= (baseTreeID != compGenTreeID));
 
                 // Propagation resulted in removal of the remaining stmts, perform it.
