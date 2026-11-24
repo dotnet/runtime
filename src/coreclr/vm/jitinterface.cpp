@@ -4886,6 +4886,40 @@ static void getMethodSigInternal(
     _ASSERTE( (IsMdStatic(ftn->GetAttrs()) == 0) == ((sigRet->callConv & CORINFO_CALLCONV_HASTHIS) != 0) );
 }
 
+// For a shared caller, compare the open interface constraint with the owner in the
+// call token. Comparing canonical handles would equate distinct method parameters.
+static bool HasDeclaredInterfaceConstraint(MethodDesc *pCaller, TypeHandle implementor, mdMemberRef callToken)
+{
+    STANDARD_VM_CONTRACT;
+
+    IMDInternalImport *pImport = pCaller->GetModule()->GetMDImport();
+    mdToken owner;
+    IfFailThrow(pImport->GetParentOfMemberRef(callToken, &owner));
+    if (TypeFromToken(owner) != mdtTypeSpec)
+        return false;
+
+    Instantiation args = pCaller->GetMethodInstantiation();
+    for (DWORD i = 0; i < args.GetNumArgs(); i++)
+    {
+        if (args[i] != implementor)
+            continue;
+
+        TypeHandle parameter = pCaller->LoadTypicalMethodDefinition()->GetMethodInstantiation()[i];
+        HENUMInternalHolder constraints(pImport);
+        constraints.EnumInit(mdtGenericParamConstraint, parameter.AsGenericVariable()->GetToken());
+        mdGenericParamConstraint constraint;
+        while (pImport->EnumNext(&constraints, &constraint))
+        {
+            mdToken param, type;
+            IfFailThrow(pImport->GetGenericParamConstraintProps(constraint, &param, &type));
+            if (type == owner)
+                return true;
+        }
+    }
+
+    return false;
+}
+
 /***********************************************************************/
 // return the address of a pointer to a callable stub that will do the
 // virtual or interface call
@@ -4933,6 +4967,7 @@ void CEEInfo::getCallInfo(
     BOOL fResolvedConstraint = FALSE;
     BOOL fForceUseRuntimeLookup = FALSE;
     BOOL fAbstractSVM = FALSE;
+    bool canPassDeclaredInterfaceContext = false;
 
     // The below may need to mutate the constrained token, in which case we
     // switch to this local copy to avoid mutating the in argument.
@@ -4995,10 +5030,16 @@ void CEEInfo::getCallInfo(
             }
         }
 
+        bool checkDeclaredDefault = fIsStaticVirtualMethod && (flags & CORINFO_CALLINFO_ALLOWINSTPARAM) &&
+            !(flags & CORINFO_CALLINFO_LDFTN) && pResolvedToken->tokenContext == METHOD_BEING_COMPILED_CONTEXT() &&
+            TypeFromToken(pResolvedToken->token) == mdtMemberRef && !IsDynamicScope(pResolvedToken->tokenScope) &&
+            GetModule(pResolvedToken->tokenScope) == GetMethod(callerHandle)->GetModule();
+        bool usesDeclaredSlot = false;
         MethodDesc * directMethod = constrainedType.GetMethodTable()->TryResolveConstraintMethodApprox(
             exactType,
             pMD,
-            &fForceUseRuntimeLookup);
+            &fForceUseRuntimeLookup,
+            checkDeclaredDefault ? &usesDeclaredSlot : NULL);
         if (directMethod
 #ifdef FEATURE_DEFAULT_INTERFACES
             && !directMethod->IsInterface() /* Could be a default interface method implementation */
@@ -5037,6 +5078,21 @@ void CEEInfo::getCallInfo(
             }
         }
 #endif
+        else if (directMethod == NULL && usesDeclaredSlot &&
+                 HasDeclaredInterfaceConstraint(GetMethod(callerHandle), constrainedType, pResolvedToken->token))
+        {
+            MethodDesc *body = pMD->IsInstantiatingStub() ? pMD->GetWrappedMethodDesc() : pMD;
+            if (body->RequiresInstMethodTableArg())
+            {
+                pMDAfterConstraintResolution = body;
+                fResolvedConstraint = TRUE;
+                fForceUseRuntimeLookup = FALSE;
+                // The method token already names the exact interface context this body needs.
+                // Keep its owner in exactType so lookup preparation can embed the token's parent.
+                canPassDeclaredInterfaceContext = true;
+            }
+            pResult->thisTransform = CORINFO_NO_THIS_TRANSFORM;
+        }
         else  if (constrainedType.IsValueType() && !fIsStaticVirtualMethod)
         {
             pResult->thisTransform = CORINFO_BOX_THIS;
@@ -5178,7 +5234,8 @@ void CEEInfo::getCallInfo(
         // which is generic numerics which will always resolve to exact valuetypes, it is not expected that
         // the complexity involved would be worth the risk. Other scenarios are not expected to be as performance
         // sensitive.
-        if (IsMdStatic(dwTargetMethodAttrs) && constrainedType != NULL && pResult->exactContextNeedsRuntimeLookup)
+        if (IsMdStatic(dwTargetMethodAttrs) && constrainedType != NULL && pResult->exactContextNeedsRuntimeLookup &&
+            !canPassDeclaredInterfaceContext)
         {
             allowInstParam = FALSE;
         }

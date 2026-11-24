@@ -8521,7 +8521,8 @@ MethodDesc *
 MethodTable::TryResolveConstraintMethodApprox(
     TypeHandle   thInterfaceType,
     MethodDesc * pInterfaceMD,
-    BOOL *       pfForceUseRuntimeLookup)   // = NULL
+    BOOL *       pfForceUseRuntimeLookup,
+    bool *       pUsesDeclaredStaticDefault)
 {
     CONTRACTL
     {
@@ -8531,9 +8532,12 @@ MethodTable::TryResolveConstraintMethodApprox(
     }
     CONTRACTL_END;
 
+    if (pUsesDeclaredStaticDefault != NULL)
+        *pUsesDeclaredStaticDefault = false;
+
     if (pInterfaceMD->IsStatic())
     {
-        return TryResolveStaticConstraintMethodApprox(thInterfaceType, pInterfaceMD, pfForceUseRuntimeLookup);
+        return TryResolveStaticConstraintMethodApprox(thInterfaceType, pInterfaceMD, pfForceUseRuntimeLookup, pUsesDeclaredStaticDefault);
     }
 
     // We can't resolve instance constraint calls effectively for reference types, and there's
@@ -8554,7 +8558,8 @@ MethodDesc *
 MethodTable::TryResolveStaticConstraintMethodApprox(
     TypeHandle   thInterfaceType,
     MethodDesc * pInterfaceMD,
-    BOOL *       pfForceUseRuntimeLookup)
+    BOOL *       pfForceUseRuntimeLookup,
+    bool *       pUsesDeclaredStaticDefault)
 {
     CONTRACTL
     {
@@ -8591,6 +8596,7 @@ MethodTable::TryResolveStaticConstraintMethodApprox(
         DWORD cPotentialMatchingInterfaces = 0;
         DWORD cCanonicalMatchingInterfaces = 0;
         bool targetsAgree = true;
+        bool allUseDeclaredSlot = true;
         TypeHandle thMatchingInterface;
         ResolveVirtualStaticMethodFlags candidateFlags = ResolveVirtualStaticMethodFlags::AllowNullResult;
         if (pInterfaceMT->HasVariance())
@@ -8621,6 +8627,10 @@ MethodTable::TryResolveStaticConstraintMethodApprox(
                 &uniqueResolution, CLASS_LOADED, &pCandidateOwner);
             if (!uniqueResolution)
                 pCandidate = NULL;
+
+            if (pUsesDeclaredStaticDefault != NULL &&
+                (pCandidate == NULL || pCandidateOwner != pDefinitionInterface || !pCandidate->HasSameMethodDefAs(pGenInterfaceMD)))
+                allUseDeclaredSlot = false;
 
             // Compare the complete owner instantiation, not just the method definition.
             if (pCandidate == NULL || (cPotentialMatchingInterfaces > 1 &&
@@ -8657,6 +8667,13 @@ MethodTable::TryResolveStaticConstraintMethodApprox(
 
             if (!fIsExactMethodResolved)
             {
+                // Each exact slot can use the same declared body with its own interface as context.
+                if (pUsesDeclaredStaticDefault != NULL)
+                    *pUsesDeclaredStaticDefault = allUseDeclaredSlot && IsValueType() && !HasInstantiation() &&
+                        !pInterfaceMT->HasVariance() && pInterfaceMT == pCanonInterfaceMT &&
+                        pInterfaceMT->IsSharedByGenericInstantiations() && !pInterfaceMD->HasMethodInstantiation() &&
+                        !pInterfaceMD->IsAbstract() && pInterfaceMD->GetMethodTable() == pInterfaceMT;
+
                 // Let the fallback handle defaults and exact variant matches.
                 pMD = NULL;
             }

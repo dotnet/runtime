@@ -403,6 +403,27 @@ namespace ILCompiler
             return false;
         }
 
+        // The shared body can also be reached with other type arguments. Require a caller
+        // constraint that guarantees this exact interface exists for every legal instantiation.
+        public static bool HasStaticInterfaceConstraint(this MethodDesc caller, TypeDesc implementor, MethodDesc slot)
+        {
+            Instantiation args = caller.Instantiation;
+            Instantiation parameters = caller.GetTypicalMethodDefinition().Instantiation;
+            for (int i = 0; i < args.Length; i++)
+            {
+                if (args[i] != implementor)
+                    continue;
+
+                foreach (TypeDesc constraint in ((GenericParameterDesc)parameters[i]).TypeConstraints)
+                {
+                    if (constraint.InstantiateSignature(caller.OwningType.Instantiation, args) == slot.OwningType)
+                        return true;
+                }
+            }
+
+            return false;
+        }
+
         public static MethodDesc TryResolveConstraintMethodApprox(this TypeDesc constrainedType, TypeDesc interfaceType, MethodDesc interfaceMethod, out bool forceRuntimeLookup)
         {
             DefaultInterfaceMethodResolution staticResolution = default;
@@ -417,7 +438,13 @@ namespace ILCompiler
         /// </summary>
         /// <returns>The resolved method or null if the constraint couldn't be resolved.</returns>
         public static MethodDesc TryResolveConstraintMethodApprox(this TypeDesc constrainedType, TypeDesc interfaceType, MethodDesc interfaceMethod, out bool forceRuntimeLookup, ref DefaultInterfaceMethodResolution staticResolution)
+            => TryResolveConstraintMethodApprox(constrainedType, interfaceType, interfaceMethod, out forceRuntimeLookup, ref staticResolution, out _);
+
+        // A null exact target can still have a known body. If every matching slot uses the
+        // declared default, NativeAOT can supply its exact owner from the call token.
+        public static MethodDesc TryResolveConstraintMethodApprox(this TypeDesc constrainedType, TypeDesc interfaceType, MethodDesc interfaceMethod, out bool forceRuntimeLookup, ref DefaultInterfaceMethodResolution staticResolution, out bool usesDeclaredStaticDefault)
         {
+            usesDeclaredStaticDefault = false;
             forceRuntimeLookup = false;
 
             // Interface method may or may not be fully canonicalized here.
@@ -427,7 +454,7 @@ namespace ILCompiler
 
             if (interfaceMethod.Signature.IsStatic)
             {
-                return TryResolveStaticConstraintMethodApprox(constrainedType, interfaceType, interfaceMethod, methodInstantiation, ref staticResolution);
+                return TryResolveStaticConstraintMethodApprox(constrainedType, interfaceType, interfaceMethod, methodInstantiation, ref staticResolution, out usesDeclaredStaticDefault);
             }
 
             // We can't resolve instance constraint calls effectively for reference types, and there's
@@ -440,8 +467,9 @@ namespace ILCompiler
             return TryResolveInstanceConstraintMethodApprox(constrainedType, interfaceType, interfaceMethod, methodInstantiation, out forceRuntimeLookup);
         }
 
-        private static MethodDesc TryResolveStaticConstraintMethodApprox(TypeDesc constrainedType, TypeDesc interfaceType, MethodDesc interfaceMethod, Instantiation methodInstantiation, ref DefaultInterfaceMethodResolution staticResolution)
+        private static MethodDesc TryResolveStaticConstraintMethodApprox(TypeDesc constrainedType, TypeDesc interfaceType, MethodDesc interfaceMethod, Instantiation methodInstantiation, ref DefaultInterfaceMethodResolution staticResolution, out bool usesDeclaredStaticDefault)
         {
+            usesDeclaredStaticDefault = false;
             // Resolve shared candidates on the definition form, before canonicalization merges
             // distinct type parameters. The fallback below instead needs the exact interface
             // instantiation, when available, so the interface scan runs on the type itself.
@@ -474,6 +502,7 @@ namespace ILCompiler
                 int canonicalMatchingInterfaces = 0;
                 TypeDesc matchingInterface = null;
                 bool targetsAgree = true;
+                bool allUseDeclaredSlot = true;
                 bool interfaceTypeHasVariance = interfaceType.HasVariance;
                 TypeDesc canonInterfaceType = interfaceType.ConvertToCanonForm(CanonicalFormKind.Specific);
                 DefType[] runtimeInterfaces = constrainedType.RuntimeInterfaces;
@@ -501,6 +530,8 @@ namespace ILCompiler
 
                     MethodDesc candidate = ResolveStaticVirtualCandidate(resolutionType, potentialInterfaceMethod)
                         ?? ResolveDefaultCandidate(resolutionType, potentialInterfaceMethod, out _);
+
+                    allUseDeclaredSlot &= candidate == potentialInterfaceMethod;
 
                     // Compare the full method, including its owning instantiation.
                     // Check the candidate before preserving a previous non-null result.
@@ -541,6 +572,14 @@ namespace ILCompiler
 
                     if (!isExactMethodResolved)
                     {
+                        // With an invariant interface, each matching slot has the same canonical
+                        // owner. If every candidate is its slot, only the exact owner varies.
+                        usesDeclaredStaticDefault = allUseDeclaredSlot && !interfaceTypeHasVariance &&
+                            constrainedType.IsValueType && !constrainedType.HasInstantiation && resolutionType == constrainedType &&
+                            interfaceType == genInterfaceMethod.OwningType && interfaceType.IsCanonicalSubtype(CanonicalFormKind.Specific) &&
+                            methodInstantiation.Length == 0 && genInterfaceMethod.IsVirtual && !genInterfaceMethod.IsAbstract &&
+                            genInterfaceMethod.RequiresInstMethodTableArg();
+
                         // Let the fallback handle defaults and exact variant matches.
                         method = null;
                     }

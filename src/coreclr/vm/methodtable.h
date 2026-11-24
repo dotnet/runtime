@@ -2529,14 +2529,16 @@ public:
     MethodDesc * TryResolveConstraintMethodApprox(
         TypeHandle   ownerType,
         MethodDesc * pMD,
-        BOOL *       pfForceUseRuntimeLookup = NULL);
+        BOOL *       pfForceUseRuntimeLookup = NULL,
+        bool *       pUsesDeclaredStaticDefault = NULL);
 
 private:
     // The static virtual and instance halves of TryResolveConstraintMethodApprox.
     MethodDesc * TryResolveStaticConstraintMethodApprox(
         TypeHandle   ownerType,
         MethodDesc * pMD,
-        BOOL *       pfForceUseRuntimeLookup);
+        BOOL *       pfForceUseRuntimeLookup,
+        bool *       pUsesDeclaredStaticDefault);
 
     MethodDesc * TryResolveInstanceConstraintMethodApprox(
         TypeHandle   ownerType,

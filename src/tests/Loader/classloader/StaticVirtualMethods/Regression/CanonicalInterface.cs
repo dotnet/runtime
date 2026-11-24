@@ -32,6 +32,23 @@ public class CanonicalInterface
         static virtual int Get() => -1;
     }
 
+    private interface IDefaultOwner<T>
+    {
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static virtual Type Owner() => typeof(T);
+    }
+
+    private readonly struct TwoDefaultOwners : IDefaultOwner<object>, IDefaultOwner<string> { }
+
+    private readonly struct OneDefaultOwner : IDefaultOwner<object>, IDefaultOwner<string>
+    {
+        static Type IDefaultOwner<string>.Owner() => typeof(int);
+    }
+
+    // TUnused and T canonicalize alike. The hidden argument must come from IDefaultOwner<T>.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Type ReadDefaultOwner<TFunc, TUnused, T>() where TFunc : struct, IDefaultOwner<T> => TFunc.Owner();
+
     private readonly struct SameResult : IResult<object>, IResult<string>, IResult<int>
     {
         public static int Get() => 42;
@@ -446,6 +463,11 @@ public class CanonicalInterface
         CheckInterfaceGeneric<int>(objectState);
         CheckInterfaceGeneric<object>(objectState);
         CheckInterfaceGeneric<string>(objectState);
+
+        Assert.Equal(typeof(string), ReadDefaultOwner<TwoDefaultOwners, object, string>());
+        Assert.Equal(typeof(object), ReadDefaultOwner<TwoDefaultOwners, string, object>());
+        Assert.Equal(typeof(int), ReadDefaultOwner<OneDefaultOwner, object, string>());
+        Assert.Equal(typeof(object), ReadDefaultOwner<OneDefaultOwner, string, object>());
 
         Assert.Equal(42, CallConvergent<SameResult, object>());
         Assert.Equal(42, CallConvergent<SameResult, string>());
