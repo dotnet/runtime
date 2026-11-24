@@ -26,7 +26,6 @@ static WCHAR* convert_path_to_utf16(const char* path)
 {
     if (path == NULL)
     {
-        SetLastError(ERROR_INVALID_PARAMETER);
         return NULL;
     }
 
@@ -34,27 +33,23 @@ static WCHAR* convert_path_to_utf16(const char* path)
     size_t pathLengthUtf16 = minipal_get_length_utf8_to_utf16(path, pathLength, MINIPAL_MB_NO_REPLACE_INVALID_CHARS);
     if (pathLength != 0 && pathLengthUtf16 == 0)
     {
-        SetLastError(ERROR_NO_UNICODE_TRANSLATION);
         return NULL;
     }
 
     if (pathLengthUtf16 >= SIZE_MAX / sizeof(WCHAR))
     {
-        SetLastError(ERROR_NOT_ENOUGH_MEMORY);
         return NULL;
     }
 
     WCHAR* pathUtf16 = (WCHAR*)malloc((pathLengthUtf16 + 1) * sizeof(WCHAR));
     if (pathUtf16 == NULL)
     {
-        SetLastError(ERROR_NOT_ENOUGH_MEMORY);
         return NULL;
     }
 
     if (minipal_convert_utf8_to_utf16(path, pathLength, (CHAR16_T*)pathUtf16, pathLengthUtf16, MINIPAL_MB_NO_REPLACE_INVALID_CHARS) != pathLengthUtf16)
     {
         free(pathUtf16);
-        SetLastError(ERROR_NO_UNICODE_TRANSLATION);
         return NULL;
     }
 
@@ -88,7 +83,6 @@ static bool initialize_owner_only_security_attributes(
     *tokenUser = (TOKEN_USER*)malloc(tokenUserLength);
     if (*tokenUser == NULL)
     {
-        SetLastError(ERROR_NOT_ENOUGH_MEMORY);
         return false;
     }
 
@@ -101,7 +95,6 @@ static bool initialize_owner_only_security_attributes(
     *acl = (ACL*)malloc(aclLength);
     if (*acl == NULL)
     {
-        SetLastError(ERROR_NOT_ENOUGH_MEMORY);
         return false;
     }
 
@@ -146,7 +139,6 @@ intptr_t minipal_create_owner_only_file_for_overwrite(const char* path)
     {
         if ((attributes & (FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_REPARSE_POINT)) != 0)
         {
-            SetLastError(ERROR_ALREADY_EXISTS);
             goto Exit;
         }
 
@@ -174,17 +166,13 @@ intptr_t minipal_create_owner_only_file_for_overwrite(const char* path)
         NULL);
 
 Exit:
+    free(acl);
+    free(tokenUser);
+    if (token != NULL)
     {
-        DWORD error = GetLastError();
-        free(acl);
-        free(tokenUser);
-        if (token != NULL)
-        {
-            CloseHandle(token);
-        }
-        free(pathUtf16);
-        SetLastError(error);
+        CloseHandle(token);
     }
+    free(pathUtf16);
 
     return (intptr_t)file;
 }
@@ -195,7 +183,6 @@ intptr_t minipal_create_owner_only_file_for_overwrite(const char* path)
 {
     if (path == NULL)
     {
-        errno = EINVAL;
         return -1;
     }
 
@@ -204,7 +191,6 @@ intptr_t minipal_create_owner_only_file_for_overwrite(const char* path)
     {
         if (!S_ISREG(fileStatus.st_mode))
         {
-            errno = EEXIST;
             return -1;
         }
 
@@ -227,9 +213,7 @@ intptr_t minipal_create_owner_only_file_for_overwrite(const char* path)
 #if !HAVE_O_CLOEXEC
     if (fd != -1 && fcntl(fd, F_SETFD, FD_CLOEXEC) == -1)
     {
-        int error = errno;
         close(fd);
-        errno = error;
         return -1;
     }
 #endif
