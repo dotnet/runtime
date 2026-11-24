@@ -7985,24 +7985,27 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
         // It is not the best place to do such simple arithmetic optimizations,
         // but it allows us to avoid `LEA(addr, 0)` nodes and doing that in morph
         // requires more changes. Delete that part if we get an expression optimizer.
-        if (op2->IsIntegralConst(0))
+        if (op2->IsIntegralConst(0) || (op1->IsIntegralConst(0) && !varTypeIsGC(op1)))
         {
+            GenTree* zero = op2->IsIntegralConst(0) ? op2 : op1;
+            GenTree* val  = (zero == op2) ? op1 : op2;
+
             JITDUMP("Lower: optimize val + 0: ");
             DISPNODE(node);
             JITDUMP("Replaced with: ");
-            DISPNODE(op1);
+            DISPNODE(val);
             if (BlockRange().TryGetUse(node, &use))
             {
-                use.ReplaceWith(op1);
+                use.ReplaceWith(val);
             }
             else
             {
-                op1->SetUnusedValue();
+                val->SetUnusedValue();
             }
             GenTree* next = node->gtNext;
-            BlockRange().Remove(op2);
+            BlockRange().Remove(zero);
             BlockRange().Remove(node);
-            JITDUMP("Remove [%06u], [%06u]\n", op2->gtTreeID, node->gtTreeID);
+            JITDUMP("Remove [%06u], [%06u]\n", zero->gtTreeID, node->gtTreeID);
             return next;
         }
 
