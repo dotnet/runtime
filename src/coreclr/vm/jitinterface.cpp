@@ -5237,12 +5237,11 @@ void CEEInfo::getCallInfo(
                 // constrained. call or constrained. ldftn case
                 entryKind = ConstrainedMethodEntrySlot;
             }
-            ComputeRuntimeLookupForSharedGenericToken(entryKind,
-                                                        pResolvedToken,
-                                                        pConstrainedResolvedToken,
-                                                        pMD,
-                                                        GetMethod(callerHandle),
-                                                        &pResult->codePointerLookup);
+            // Keep the entry kind until import requests the code pointer.
+            pResult->codePointerLookup = {};
+            pResult->codePointerLookup.lookupKind.needsRuntimeLookup = true;
+            pResult->codePointerLookup.lookupKind.runtimeLookupKind = CORINFO_LOOKUP_DEFERRED;
+            pResult->codePointerLookup.runtimeLookup.helper = (CorInfoHelpFunc)entryKind;
         }
         else
         {
@@ -5548,30 +5547,47 @@ void CEEInfo::getCallInfo(
 }
 
 void CEEInfo::prepareCallLookups(CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                          CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken,
-                          CORINFO_METHOD_HANDLE callerHandle,
-                          CORINFO_CALL_INFO* pCallInfo)
+                               CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken,
+                               CORINFO_METHOD_HANDLE callerHandle,
+                               CORINFO_CALL_INFO* pCallInfo)
 {
     STANDARD_VM_CONTRACT;
 
     JIT_TO_EE_TRANSITION();
 
-    _ASSERTE(pCallInfo->sig.hasTypeArg() && pCallInfo->exactContextNeedsRuntimeLookup);
-    _ASSERTE(pCallInfo->instParamLookup.lookupKind.runtimeLookupKind == CORINFO_LOOKUP_DEFERRED);
+    _ASSERTE(pCallInfo->kind == CORINFO_CALL_CODE_POINTER
+        ? (pCallInfo->codePointerLookup.lookupKind.needsRuntimeLookup
+            && pCallInfo->codePointerLookup.lookupKind.runtimeLookupKind == CORINFO_LOOKUP_DEFERRED)
+        : (pCallInfo->sig.hasTypeArg() && pCallInfo->exactContextNeedsRuntimeLookup));
 
-    bool embedParent = ((SIZE_T)pCallInfo->contextHandle & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS;
-    CORINFO_RESOLVED_TOKEN* lookupToken = pResolvedToken;
-    if (embedParent && pConstrainedResolvedToken != nullptr &&
-        (CORINFO_CLASS_HANDLE)((SIZE_T)pCallInfo->contextHandle & ~CORINFO_CONTEXTFLAGS_MASK) == pConstrainedResolvedToken->hClass)
+    if (pCallInfo->kind == CORINFO_CALL_CODE_POINTER)
     {
-        // The implementation needs the constrained type, not the interface in the method token.
-        lookupToken = pConstrainedResolvedToken;
-        embedParent = false;
-    }
+        DictionaryEntryKind entryKind = (DictionaryEntryKind)pCallInfo->codePointerLookup.runtimeLookup.helper;
+        _ASSERTE(entryKind == MethodEntrySlot || entryKind == ConstrainedMethodEntrySlot);
+        ComputeRuntimeLookupForSharedGenericToken(entryKind,
+                                                  pResolvedToken,
+                                                  pConstrainedResolvedToken,
+                                                  GetMethod(pResolvedToken->hMethod),
+                                                  GetMethod(callerHandle),
+                                                  &pCallInfo->codePointerLookup);
 
-    CORINFO_GENERICHANDLE_RESULT embedInfo;
-    embedGenericHandleInternal(lookupToken, embedParent, callerHandle, &embedInfo);
-    pCallInfo->instParamLookup = embedInfo.lookup;
+    }
+    else
+    {
+        bool embedParent = ((SIZE_T)pCallInfo->contextHandle & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS;
+        CORINFO_RESOLVED_TOKEN* lookupToken = pResolvedToken;
+        if (embedParent && pConstrainedResolvedToken != nullptr &&
+            (CORINFO_CLASS_HANDLE)((SIZE_T)pCallInfo->contextHandle & ~CORINFO_CONTEXTFLAGS_MASK) == pConstrainedResolvedToken->hClass)
+        {
+            // The implementation needs the constrained type, not the interface in the method token.
+            lookupToken = pConstrainedResolvedToken;
+            embedParent = false;
+        }
+
+        CORINFO_GENERICHANDLE_RESULT embedInfo;
+        embedGenericHandleInternal(lookupToken, embedParent, callerHandle, &embedInfo);
+        pCallInfo->instParamLookup = embedInfo.lookup;
+    }
 
     EE_TO_JIT_TRANSITION();
 }

@@ -5625,7 +5625,9 @@ protected:
 
     GenTree* impKeepAliveIntrinsic(GenTree* objToKeepAlive);
 
-    GenTree* impMethodPointer(CORINFO_CALL_INFO* pCallInfo);
+    GenTree* impMethodPointer(CORINFO_RESOLVED_TOKEN* pResolvedToken,
+                              CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken,
+                              CORINFO_CALL_INFO*      pCallInfo);
 
     GenTree* impTransformThis(GenTree*                thisPtr,
                               CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken,
@@ -5684,6 +5686,13 @@ public:
     {
         return impTokenToHandle(pResolvedToken, pRuntimeLookup, true);
     }
+
+    GenTree* impCallLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
+                               CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken,
+                               CORINFO_CALL_INFO* callInfo,
+                               CORINFO_LOOKUP* lookup,
+                               GenTreeFlags handleFlags,
+                               void* compileTimeHandle);
 
     GenTree* impLookupToTree(CORINFO_LOOKUP*         pLookup,
                              GenTreeFlags            flags,

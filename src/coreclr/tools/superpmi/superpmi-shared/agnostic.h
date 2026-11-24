@@ -480,6 +480,7 @@ struct Agnostic_PrepareCallLookups
     Agnostic_CORINFO_RESOLVED_TOKEN ConstrainedResolvedToken;
     DWORDLONG context;
     DWORDLONG callerHandle;
+    DWORD isCodePointer;
 };
 
 struct Agnostic_ExpandRawHandleIntrinsic

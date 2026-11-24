@@ -35,19 +35,14 @@ GenTree* Compiler::impGetInstParamArg(CORINFO_RESOLVED_TOKEN* pResolvedToken,
         return gtNewIconNode(0, TYP_REF);
     }
 
-    // Intrinsics and explicit context arguments have already bypassed this path.
-    if (callInfo->exactContextNeedsRuntimeLookup)
-    {
-        info.compCompHnd->prepareCallLookups(pResolvedToken, pConstrainedResolvedToken, info.compMethodHnd, callInfo);
-    }
-
     CORINFO_CONTEXT_HANDLE context       = callInfo->contextHandle;
     bool                   methodContext = ((SIZE_T)context & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD;
     CORINFO_GENERIC_HANDLE handle        = methodContext
                                                ? (CORINFO_GENERIC_HANDLE)((SIZE_T)context & ~CORINFO_CONTEXTFLAGS_MASK)
                                                : (CORINFO_GENERIC_HANDLE)eeGetClassFromContext(context);
     GenTreeFlags           flags         = methodContext ? GTF_ICON_METHOD_HDL : GTF_ICON_CLASS_HDL;
-    GenTree*               result        = impLookupToTree(&callInfo->instParamLookup, flags, handle);
+    GenTree*               result        = impCallLookupToTree(pResolvedToken, pConstrainedResolvedToken, callInfo,
+                                                               &callInfo->instParamLookup, flags, handle);
     if ((result != nullptr) && callInfo->instParamLookup.lookupKind.needsRuntimeLookup)
     {
         result =
@@ -698,7 +693,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 assert((sig->callConv & CORINFO_CALLCONV_MASK) != CORINFO_CALLCONV_VARARG);
                 assert((sig->callConv & CORINFO_CALLCONV_MASK) != CORINFO_CALLCONV_NATIVEVARARG);
 
-                GenTree* fptr = impLookupToTree(&callInfo->codePointerLookup, GTF_ICON_FTN_ADDR, callInfo->hMethod);
+                GenTree* fptr = impCallLookupToTree(pResolvedToken, pConstrainedResolvedToken, callInfo,
+                                                    &callInfo->codePointerLookup, GTF_ICON_FTN_ADDR, callInfo->hMethod);
 
                 if (compDonotInline())
                 {

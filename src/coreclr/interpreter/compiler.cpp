@@ -4487,8 +4487,30 @@ void InterpCompiler::EmitPushHelperCall(const CorInfoHelpFunc ftn, const CORINFO
     }
 }
 
+// Prepare the selected call lookup before pushing its value.
+void InterpCompiler::EmitPushCallLookup(CORINFO_RESOLVED_TOKEN* token, CORINFO_RESOLVED_TOKEN* constrainedToken,
+                                      CORINFO_CALL_INFO* callInfo, CORINFO_LOOKUP& lookup)
+{
+    assert((&lookup == &callInfo->instParamLookup) || (&lookup == &callInfo->codePointerLookup));
+    if (lookup.lookupKind.needsRuntimeLookup && (lookup.lookupKind.runtimeLookupKind == CORINFO_LOOKUP_DEFERRED))
+    {
+        m_compHnd->prepareCallLookups(token, constrainedToken, m_methodInfo->ftn, callInfo);
+    }
+    if (lookup.lookupKind.needsRuntimeLookup)
+    {
+        EmitPushCORINFO_LOOKUP(lookup);
+    }
+    else
+    {
+        assert(lookup.constLookup.accessType == IAT_VALUE);
+        EmitLoadPointer((intptr_t)lookup.constLookup.handle);
+    }
+}
+
 void InterpCompiler::EmitPushCORINFO_LOOKUP(const CORINFO_LOOKUP& lookup)
 {
+    // A lookup deferred by getCallInfo carries CORINFO_LOOKUP_DEFERRED until prepareCallLookups
+    // completes it. Reaching materialization in that state means prepareCallLookups was not called.
     assert(!lookup.lookupKind.needsRuntimeLookup ||
            (lookup.lookupKind.runtimeLookupKind != CORINFO_LOOKUP_DEFERRED));
 
@@ -4978,7 +5000,8 @@ void InterpCompiler::EmitLdftn(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool isVi
     {
         callInfoFlags = (CORINFO_CALLINFO_FLAGS)(CORINFO_CALLINFO_SECURITYCHECKS | CORINFO_CALLINFO_LDFTN);
     }
-    m_compHnd->getCallInfo(pResolvedToken, m_pConstrainedToken, m_methodInfo->ftn, callInfoFlags, &callInfo);
+    CORINFO_RESOLVED_TOKEN* pConstrainedToken = m_pConstrainedToken;
+    m_compHnd->getCallInfo(pResolvedToken, pConstrainedToken, m_methodInfo->ftn, callInfoFlags, &callInfo);
     m_pConstrainedToken = NULL;
 
     // This check really only applies to intrinsic Array.Address methods
@@ -5026,7 +5049,7 @@ void InterpCompiler::EmitLdftn(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool isVi
     }
     else
     {
-        EmitPushCORINFO_LOOKUP(callInfo.codePointerLookup);
+        EmitPushCallLookup(pResolvedToken, pConstrainedToken, &callInfo, callInfo.codePointerLookup);
     }
 }
 
@@ -5552,19 +5575,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             }
             else
             {
-                if (callInfo.exactContextNeedsRuntimeLookup)
-                {
-                    m_compHnd->prepareCallLookups(&resolvedCallToken, pConstrainedToken, m_methodInfo->ftn, &callInfo);
-                }
-                if (callInfo.instParamLookup.lookupKind.needsRuntimeLookup)
-                {
-                    EmitPushCORINFO_LOOKUP(callInfo.instParamLookup);
-                }
-                else
-                {
-                    assert(callInfo.instParamLookup.constLookup.accessType == IAT_VALUE);
-                    EmitLoadPointer((intptr_t)callInfo.instParamLookup.constLookup.handle);
-                }
+                EmitPushCallLookup(&resolvedCallToken, pConstrainedToken, &callInfo, callInfo.instParamLookup);
             }
             contextParamVar = (--m_pStackPointer)->var;
         }
@@ -5784,7 +5795,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
                 m_pLastNewIns->SetSVar(callArgs[0]);
             }
 
-            EmitPushCORINFO_LOOKUP(callInfo.codePointerLookup);
+            EmitPushCallLookup(&resolvedCallToken, pConstrainedToken, &callInfo, callInfo.codePointerLookup);
             m_pStackPointer--;
             int codePointerLookupResult = m_pStackPointer[0].var;
 

@@ -3442,8 +3442,11 @@ public:
             CORINFO_CALL_INFO       *pResult
             ) CORINFO_PURE;
 
-    // Completes the deferred instantiation argument lookup using the same tokens and caller
-    // that were passed to getCallInfo.
+    // Completes the runtime-dependent lookups of a call: instParamLookup for a call
+    // with sig.hasTypeArg() and exactContextNeedsRuntimeLookup, and codePointerLookup
+    // for a CORINFO_CALL_CODE_POINTER call whose lookup kind requires a runtime lookup.
+    // Other call information is unchanged.
+    // The tokens and caller must match the getCallInfo query that produced pCallInfo.
     CORINFO_VIRTUAL void prepareCallLookups(
             CORINFO_RESOLVED_TOKEN*       pResolvedToken,
             CORINFO_RESOLVED_TOKEN*       pConstrainedResolvedToken,

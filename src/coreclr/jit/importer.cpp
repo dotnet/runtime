@@ -1302,8 +1302,29 @@ GenTree* Compiler::impTokenToHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken,
     return result;
 }
 
+//------------------------------------------------------------------------
+// impCallLookupToTree: Prepare a call lookup on demand and materialize it.
+// The lookup must refer to the selected slot in callInfo, not a copy.
+//
+GenTree* Compiler::impCallLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
+                                       CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken,
+                                       CORINFO_CALL_INFO*      callInfo,
+                                       CORINFO_LOOKUP*         lookup,
+                                       GenTreeFlags            handleFlags,
+                                       void*                   compileTimeHandle)
+{
+    assert((lookup == &callInfo->instParamLookup) || (lookup == &callInfo->codePointerLookup));
+    if (lookup->lookupKind.needsRuntimeLookup && (lookup->lookupKind.runtimeLookupKind == CORINFO_LOOKUP_DEFERRED))
+    {
+        info.compCompHnd->prepareCallLookups(pResolvedToken, pConstrainedResolvedToken, info.compMethodHnd, callInfo);
+    }
+    return impLookupToTree(lookup, handleFlags, compileTimeHandle);
+}
+
 GenTree* Compiler::impLookupToTree(CORINFO_LOOKUP* pLookup, GenTreeFlags handleFlags, void* compileTimeHandle)
 {
+    // A lookup deferred by getCallInfo carries CORINFO_LOOKUP_DEFERRED until prepareCallLookups
+    // completes it. Reaching materialization in that state means prepareCallLookups was not called.
     assert(!pLookup->lookupKind.needsRuntimeLookup ||
            (pLookup->lookupKind.runtimeLookupKind != CORINFO_LOOKUP_DEFERRED));
 
@@ -1460,7 +1481,9 @@ GenTreeCall* Compiler::impReadyToRunHelperToTree(CORINFO_RESOLVED_TOKEN* pResolv
 }
 #endif
 
-GenTree* Compiler::impMethodPointer(CORINFO_CALL_INFO* pCallInfo)
+GenTree* Compiler::impMethodPointer(CORINFO_RESOLVED_TOKEN* pResolvedToken,
+                                    CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken,
+                                    CORINFO_CALL_INFO*      pCallInfo)
 {
     GenTree* op1 = nullptr;
 
@@ -1478,7 +1501,8 @@ GenTree* Compiler::impMethodPointer(CORINFO_CALL_INFO* pCallInfo)
             break;
 
         case CORINFO_CALL_CODE_POINTER:
-            op1 = impLookupToTree(&pCallInfo->codePointerLookup, GTF_ICON_FTN_ADDR, pCallInfo->hMethod);
+            op1 = impCallLookupToTree(pResolvedToken, pConstrainedResolvedToken, pCallInfo,
+                                      &pCallInfo->codePointerLookup, GTF_ICON_FTN_ADDR, pCallInfo->hMethod);
             break;
 
         default:
@@ -6580,9 +6604,10 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 #ifdef FEATURE_READYTORUN
         bool usingReadyToRunHelper = false;
 #endif
-        CORINFO_RESOLVED_TOKEN resolvedToken;
-        CORINFO_CALL_INFO      callInfo;
-        CORINFO_FIELD_INFO     fieldInfo;
+        CORINFO_RESOLVED_TOKEN  resolvedToken;
+        CORINFO_CALL_INFO       callInfo;
+        CORINFO_FIELD_INFO      fieldInfo;
+        CORINFO_RESOLVED_TOKEN* pLdftnConstrainedToken = nullptr;
 
         typeInfo tiRetVal = typeInfo(); // Default type info
 
@@ -8868,7 +8893,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 JITDUMP(" %08X", resolvedToken.token);
 
-                eeGetCallInfo(&resolvedToken, (prefixFlags & PREFIX_CONSTRAINED) ? &constrainedResolvedToken : nullptr,
+                pLdftnConstrainedToken = (prefixFlags & PREFIX_CONSTRAINED) ? &constrainedResolvedToken : nullptr;
+                eeGetCallInfo(&resolvedToken, pLdftnConstrainedToken,
                               CORINFO_CALLINFO_SECURITYCHECKS | CORINFO_CALLINFO_LDFTN, &callInfo);
 
                 // This check really only applies to intrinsic Array.Address methods
@@ -8881,7 +8907,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 impHandleAccessAllowed(callInfo.accessAllowed, &callInfo.callsiteCalloutHelper);
 
             DO_LDFTN:
-                op1 = impMethodPointer(&callInfo);
+                op1 = impMethodPointer(&resolvedToken, pLdftnConstrainedToken, &callInfo);
 
                 if (compDonotInline())
                 {
@@ -8907,7 +8933,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 JITDUMP(" %08X", resolvedToken.token);
 
-                eeGetCallInfo(&resolvedToken, nullptr /* constraint typeRef */,
+                pLdftnConstrainedToken = nullptr; // ldvirtftn has no constraint typeRef
+                eeGetCallInfo(&resolvedToken, pLdftnConstrainedToken,
                               CORINFO_CALLINFO_SECURITYCHECKS | CORINFO_CALLINFO_LDFTN | CORINFO_CALLINFO_CALLVIRT,
                               &callInfo);
 
