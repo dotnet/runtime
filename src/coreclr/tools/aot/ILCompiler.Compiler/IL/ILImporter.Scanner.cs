@@ -727,6 +727,7 @@ namespace Internal.IL
             bool resolvedConstraint = false;
             bool forceUseRuntimeLookup = false;
             DefaultInterfaceMethodResolution staticResolution = default;
+            MethodDesc runtimeDeterminedTarget = null;
 
             MethodDesc methodAfterConstraintResolution = method;
             if (_constrained != null)
@@ -754,6 +755,12 @@ namespace Internal.IL
                 }
 
                 MethodDesc directMethod = constrained.GetClosestDefType().TryResolveConstraintMethodApprox(method.OwningType, method, out forceUseRuntimeLookup, ref staticResolution);
+                if (directMethod != null && !forceUseRuntimeLookup && directMethod.IsCanonicalMethod(CanonicalFormKind.Any))
+                {
+                    runtimeDeterminedTarget = _constrained.TryGetRuntimeDeterminedConstrainedMethod(directMethod, runtimeDeterminedMethod.Instantiation);
+                    if (runtimeDeterminedTarget == null)
+                        directMethod = null;
+                }
                 if (directMethod != null)
                 {
                     // Either
@@ -850,24 +857,10 @@ namespace Internal.IL
                 }
                 else
                 {
-                    // We have the canonical version of the method - find the runtime determined version.
-                    Debug.Assert(targetMethod.OwningType.IsValueType || targetMethod.Signature.IsStatic);
+                    Debug.Assert(runtimeDeterminedTarget != null);
+                    _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.MethodEntry, runtimeDeterminedTarget), reason);
 
-                    MethodDesc targetOfLookup;
-                    if (_constrained.IsRuntimeDeterminedType)
-                        targetOfLookup = _compilation.TypeSystemContext.GetMethodForRuntimeDeterminedType(targetMethod.GetTypicalMethodDefinition(), (RuntimeDeterminedType)_constrained);
-                    else if (_constrained.HasInstantiation)
-                        targetOfLookup = _compilation.TypeSystemContext.GetMethodForInstantiatedType(targetMethod.GetTypicalMethodDefinition(), (InstantiatedType)_constrained);
-                    else
-                        targetOfLookup = targetMethod.GetMethodDefinition();
-                    if (targetOfLookup.HasInstantiation)
-                    {
-                        targetOfLookup = targetOfLookup.MakeInstantiatedMethod(runtimeDeterminedMethod.Instantiation);
-                    }
-                    Debug.Assert(targetOfLookup.GetCanonMethodTarget(CanonicalFormKind.Specific) == targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific));
-                    _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.MethodEntry, targetOfLookup), reason);
-
-                    targetForDelegate = targetOfLookup;
+                    targetForDelegate = runtimeDeterminedTarget;
                 }
             }
             else if (directCall && !allowInstParam && targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific).RequiresInstArg())

@@ -4,11 +4,12 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using TestLibrary;
 using Xunit;
 
 public class Runtime_134489
 {
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public static void TestEntryPoint()
     {
         Holder holder = new Holder();

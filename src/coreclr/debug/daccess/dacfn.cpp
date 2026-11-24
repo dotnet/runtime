@@ -81,7 +81,7 @@ DacWarning(_In_ char* format, ...)
     _vsnprintf_s(text, sizeof(text), _TRUNCATE, format, args);
     text[sizeof(text) - 1] = 0;
     va_end(args);
-    OutputDebugStringA(text);
+    OutputDebugStringUtf8(text);
 }
 
 void

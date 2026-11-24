@@ -843,7 +843,10 @@ namespace System.Collections.Concurrent
                     {
                         _headIndex = _tailIndex = StartIndex;
                         _addTakeCount = _stealCount = 0;
-                        Array.Clear(_array);
+                        if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+                        {
+                            Array.Clear(_array);
+                        }
                     }
                 }
             }

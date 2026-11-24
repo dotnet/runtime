@@ -1,5 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <!-- TODO: Remove once migrated to unsafe-v2. -->
+    <MemorySafetyRulesVersion>1</MemorySafetyRulesVersion>
     <RootNamespace>System.Runtime.Loader.Tests</RootNamespace>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -18,12 +20,11 @@
     <EnableAotAnalyzer>false</EnableAotAnalyzer>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(TargetOS)' == 'wasi' and '$(RuntimeFlavor)' == 'CoreCLR'">
+  <ItemGroup Condition="'$(TargetOS)' == 'wasi'">
     <WasmEnvironmentVariable Include="DOTNET_MODIFIABLE_ASSEMBLIES" Value="debug" />
   </ItemGroup>
 
-  <!-- ActiveIssue https://github.com/dotnet/runtime/issues/114526: hot reload tests deadlock on Mono -->
-  <ItemGroup Condition="'$(RuntimeFlavor)' != 'Mono' or '$(ContinuousIntegrationBuild)' != 'true' or '$(TargetOS)' != 'browser' or '$(OS)' == 'Windows_NT'">
+  <ItemGroup Condition="'$(ContinuousIntegrationBuild)' != 'true' or '$(TargetOS)' != 'browser' or '$(OS)' == 'Windows_NT'">
     <Compile Include="ApplyUpdateTest.cs" />
     <Compile Include="ApplyUpdateUtil.cs" />
     <Compile Include="MetadataUpdateHandlerAttributeTest.cs" />
@@ -76,7 +77,7 @@
   </ItemGroup>
 
   <!-- ActiveIssue https://github.com/dotnet/runtime/issues/114526: hot reload tests deadlock on Mono -->
-  <ItemGroup Condition="'$(RuntimeFlavor)' != 'Mono' or '$(ContinuousIntegrationBuild)' != 'true' or '$(TargetOS)' != 'browser' or '$(OS)' == 'Windows_NT'">
+  <ItemGroup Condition="'$(ContinuousIntegrationBuild)' != 'true' or '$(TargetOS)' != 'browser' or '$(OS)' == 'Windows_NT'">
     <!-- ApplyUpdate tests -->
     <ProjectReference Include="ApplyUpdate\System.Reflection.Metadata.ApplyUpdate.Test.AsyncMethodChange\System.Reflection.Metadata.ApplyUpdate.Test.AsyncMethodChange.csproj" />
     <ProjectReference Include="ApplyUpdate\System.Reflection.Metadata.ApplyUpdate.Test.CustomAttributeDelete\System.Reflection.Metadata.ApplyUpdate.Test.CustomAttributeDelete.csproj" />
@@ -127,7 +128,7 @@
   </Target>
 
   <Target Name="IncludeHotReloadDeltasInWasiBundle"
-          Condition="'$(TargetOS)' == 'wasi' and '$(RuntimeFlavor)' == 'CoreCLR'"
+          Condition="'$(TargetOS)' == 'wasi'"
           DependsOnTargets="GetCopyToOutputDirectoryItems"
           BeforeTargets="PrepareForWasiBuildApp">
     <ItemGroup>

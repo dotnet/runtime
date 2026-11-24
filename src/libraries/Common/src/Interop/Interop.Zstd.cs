@@ -45,29 +45,29 @@ internal static partial class Interop
 
         // Compression context management
         [LibraryImport(Libraries.CompressionNative)]
-        internal static partial SafeZstdCompressHandle ZSTD_createCCtx();
+        internal static unsafe partial SafeZstdCompressHandle ZSTD_createCCtx();
 
         [LibraryImport(Libraries.CompressionNative)]
-        internal static partial nuint ZSTD_freeCCtx(IntPtr cctx);
+        internal static unsafe partial nuint ZSTD_freeCCtx(IntPtr cctx);
 
         [LibraryImport(Libraries.CompressionNative)]
-        internal static partial SafeZstdDecompressHandle ZSTD_createDCtx();
+        internal static unsafe partial SafeZstdDecompressHandle ZSTD_createDCtx();
 
         [LibraryImport(Libraries.CompressionNative)]
-        internal static partial nuint ZSTD_freeDCtx(IntPtr dctx);
+        internal static unsafe partial nuint ZSTD_freeDCtx(IntPtr dctx);
 
         // Dictionary management
         [LibraryImport(Libraries.CompressionNative)]
         internal static unsafe partial SafeZstdCDictHandle ZSTD_createCDict_byReference(byte* dictBuffer, nuint dictSize, int compressionLevel);
 
         [LibraryImport(Libraries.CompressionNative)]
-        internal static partial nuint ZSTD_freeCDict(IntPtr cdict);
+        internal static unsafe partial nuint ZSTD_freeCDict(IntPtr cdict);
 
         [LibraryImport(Libraries.CompressionNative)]
         internal static unsafe partial SafeZstdDDictHandle ZSTD_createDDict_byReference(byte* dictBuffer, nuint dictSize);
 
         [LibraryImport(Libraries.CompressionNative)]
-        internal static partial nuint ZSTD_freeDDict(IntPtr ddict);
+        internal static unsafe partial nuint ZSTD_freeDDict(IntPtr ddict);
 
         // Dictionary training functions
         [LibraryImport(Libraries.CompressionNative)]
@@ -75,7 +75,7 @@ internal static partial class Interop
 
         // Compression functions
         [LibraryImport(Libraries.CompressionNative)]
-        internal static partial nuint ZSTD_compressBound(nuint srcSize);
+        internal static unsafe partial nuint ZSTD_compressBound(nuint srcSize);
 
         [LibraryImport(Libraries.CompressionNative)]
         internal static unsafe partial nuint ZSTD_compress2(SafeZstdCompressHandle cctx, byte* dst, nuint dstCapacity, byte* src, nuint srcSize);
@@ -98,56 +98,56 @@ internal static partial class Interop
 
         // Streaming decompression
         [LibraryImport(Libraries.CompressionNative)]
-        internal static partial nuint ZSTD_decompressStream(SafeZstdDecompressHandle dctx, ref ZstdOutBuffer output, ref ZstdInBuffer input);
+        internal static unsafe partial nuint ZSTD_decompressStream(SafeZstdDecompressHandle dctx, ref ZstdOutBuffer output, ref ZstdInBuffer input);
 
         [LibraryImport(Libraries.CompressionNative)]
-        internal static partial nuint ZSTD_DCtx_setParameter(SafeZstdDecompressHandle dctx, ZstdDParameter param, int value);
+        internal static unsafe partial nuint ZSTD_DCtx_setParameter(SafeZstdDecompressHandle dctx, ZstdDParameter param, int value);
 
         [LibraryImport(Libraries.CompressionNative)]
         internal static unsafe partial nuint ZSTD_DCtx_refPrefix(SafeZstdDecompressHandle dctx, byte* prefix, nuint prefixSize);
 
         [LibraryImport(Libraries.CompressionNative)]
-        internal static partial nuint ZSTD_DCtx_reset(SafeZstdDecompressHandle dctx, ZstdResetDirective reset);
+        internal static unsafe partial nuint ZSTD_DCtx_reset(SafeZstdDecompressHandle dctx, ZstdResetDirective reset);
 
         // Streaming compression
         [LibraryImport(Libraries.CompressionNative)]
-        internal static partial nuint ZSTD_compressStream2(SafeZstdCompressHandle cctx, ref ZstdOutBuffer output, ref ZstdInBuffer input, ZstdEndDirective endOp);
+        internal static unsafe partial nuint ZSTD_compressStream2(SafeZstdCompressHandle cctx, ref ZstdOutBuffer output, ref ZstdInBuffer input, ZstdEndDirective endOp);
 
         [LibraryImport(Libraries.CompressionNative)]
-        internal static partial nuint ZSTD_CCtx_setParameter(SafeZstdCompressHandle cctx, ZstdCParameter param, int value);
+        internal static unsafe partial nuint ZSTD_CCtx_setParameter(SafeZstdCompressHandle cctx, ZstdCParameter param, int value);
 
         [LibraryImport(Libraries.CompressionNative)]
         internal static unsafe partial nuint ZSTD_CCtx_refPrefix(SafeZstdCompressHandle cctx, byte* prefix, nuint prefixSize);
 
         [LibraryImport(Libraries.CompressionNative)]
-        internal static partial nuint ZSTD_CCtx_reset(SafeZstdCompressHandle cctx, ZstdResetDirective reset);
+        internal static unsafe partial nuint ZSTD_CCtx_reset(SafeZstdCompressHandle cctx, ZstdResetDirective reset);
 
         [LibraryImport(Libraries.CompressionNative)]
-        internal static partial nuint ZSTD_CCtx_setPledgedSrcSize(SafeZstdCompressHandle cctx, ulong pledgedSrcSize);
+        internal static unsafe partial nuint ZSTD_CCtx_setPledgedSrcSize(SafeZstdCompressHandle cctx, ulong pledgedSrcSize);
 
         // Compression level functions
         [LibraryImport(Libraries.CompressionNative)]
-        internal static partial int ZSTD_minCLevel();
+        internal static unsafe partial int ZSTD_minCLevel();
 
         [LibraryImport(Libraries.CompressionNative)]
-        internal static partial int ZSTD_maxCLevel();
+        internal static unsafe partial int ZSTD_maxCLevel();
 
         [LibraryImport(Libraries.CompressionNative)]
-        internal static partial int ZSTD_defaultCLevel();
+        internal static unsafe partial int ZSTD_defaultCLevel();
 
         // Error checking
         [LibraryImport(Libraries.CompressionNative)]
-        internal static partial uint ZSTD_isError(nuint result);
+        internal static unsafe partial uint ZSTD_isError(nuint result);
 
         [LibraryImport(Libraries.CompressionNative)]
-        internal static partial IntPtr ZSTD_getErrorName(nuint result);
+        internal static unsafe partial IntPtr ZSTD_getErrorName(nuint result);
 
         // Dictionary context functions
         [LibraryImport(Libraries.CompressionNative)]
-        internal static partial nuint ZSTD_DCtx_refDDict(SafeZstdDecompressHandle dctx, SafeZstdDDictHandle ddict);
+        internal static unsafe partial nuint ZSTD_DCtx_refDDict(SafeZstdDecompressHandle dctx, SafeZstdDDictHandle ddict);
 
         [LibraryImport(Libraries.CompressionNative)]
-        internal static partial nuint ZSTD_CCtx_refCDict(SafeZstdCompressHandle cctx, SafeZstdCDictHandle cdict);
+        internal static unsafe partial nuint ZSTD_CCtx_refCDict(SafeZstdCompressHandle cctx, SafeZstdCDictHandle cdict);
 
         // Enums and structures for streaming
         internal enum ZstdEndDirective
@@ -469,17 +469,17 @@ internal static partial class Interop
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal unsafe struct ZstdInBuffer
+        internal struct ZstdInBuffer
         {
-            internal byte* src;
+            internal unsafe byte* src;
             internal nuint size;
             internal nuint pos;
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal unsafe struct ZstdOutBuffer
+        internal struct ZstdOutBuffer
         {
-            internal byte* dst;
+            internal unsafe byte* dst;
             internal nuint size;
             internal nuint pos;
         }

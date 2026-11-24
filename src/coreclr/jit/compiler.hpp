@@ -4902,6 +4902,28 @@ GenTree::VisitResult GenTree::VisitLocalDef(
 template <typename TVisitor>
 GenTree::VisitResult GenTree::VisitLogicalLocalDefs(Compiler* comp, TVisitor visitor)
 {
+    if ((gtFlags & GTF_ASG) == 0)
+    {
+        return VisitResult::Continue;
+    }
+
+    return VisitLogicalLocalDefsInternal(comp, visitor);
+}
+
+//------------------------------------------------------------------------
+// VisitLogicalLocalDefsInternal: Visit logical locals being defined by this
+// node, without checking for GTF_ASG.
+//
+// Arguments:
+//   comp    - the compiler instance
+//   visitor - generic functor accepting a local definition provider
+//
+// Return Value:
+//   VisitResult::Abort if the functor aborted; otherwise VisitResult::Continue.
+//
+template <typename TVisitor>
+GenTree::VisitResult GenTree::VisitLogicalLocalDefsInternal(Compiler* comp, TVisitor visitor)
+{
     if (OperIs(GT_STORE_LCL_VAR))
     {
         return VisitLocalDef(comp, AsLclVarCommon(), visitor);
