@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <!-- Plural so static graph builds reach the netstandard2.0 build pinned by SetTargetFramework in eng/generators.targets. -->
+    <TargetFrameworks>netstandard2.0</TargetFrameworks>
     <CLSCompliant>false</CLSCompliant>
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
     <UsingToolXliff>true</UsingToolXliff>

@@ -92,17 +92,17 @@ extends:
             nameSuffix: StaticGraph
             # Restore with the regular build driver because Arcade's toolset bootstrap
             # projects aren't graph/isolate-safe, then build the graph-compatible subsets directly.
-            buildArgs: -s clr+libs.native -c Debug --restore
+            buildArgs: -s clr+libs.native+libs.sfx -c Debug --restore
             timeoutInMinutes: 180
             postBuildSteps:
             - script: |
                 set -ex
                 $(Build.SourcesDirectory)/.dotnet/dotnet msbuild $(Build.SourcesDirectory)/Build.proj \
-                  /t:Build /p:Subset=clr+libs.native /p:Configuration=Debug /p:RuntimeConfiguration=Debug \
+                  /t:Build /p:Subset=clr+libs.native+libs.sfx /p:Configuration=Debug /p:RuntimeConfiguration=Debug \
                   /p:Restore=false /p:Build=true /p:Ninja=true /p:TargetArchitecture=x64 /p:BuildArchitecture=x64 \
                   /p:ContinuousIntegrationBuild=true /p:FeatureDynamicCodeCompiled=true \
                   /graphBuild /isolateProjects /m:2 /nr:false
-              displayName: Build clr+libs.native subsets with static graph (/graphBuild /isolateProjects)
+              displayName: Build clr+libs.native+libs.sfx subsets with static graph (/graphBuild /isolateProjects)
             condition: >-
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
