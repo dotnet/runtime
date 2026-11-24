@@ -8530,7 +8530,7 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, AllocMemChunk* chunks)
                 BYTE* target = emitLoc->Valid() ? emitOffsetToPtr(emitLoc->CodeOffset(this)) : nullptr;
 #endif
                 aDstRW[i].Resume = (target_size_t)(uintptr_t)emitAsyncResumeStubEntryPoint;
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
                 // The method-relative virtual IP relocation supplies only the low 32 bits, so leave no
                 // host pointer bits in the rest of the pointer-sized field.
                 aDstRW[i].DiagnosticIP = 0;

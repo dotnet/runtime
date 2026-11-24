@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.Build.NoTargets">
 
   <Import Project="$(WasmPInvokeModulesPropsPath)"
-          Condition="'$(TargetsWasm)' == 'true'" />
+          Condition="'$(TargetsWasmArch)' == 'true'" />
 
   <ItemGroup>
     <ProjectReference Include="$(CoreClrProjectRoot)runtime.proj"

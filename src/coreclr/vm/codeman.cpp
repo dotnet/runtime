@@ -6196,7 +6196,7 @@ void ExecutionManager::Unload(LoaderAllocator *pLoaderAllocator)
 #endif // FEATURE_INTERPRETER
 }
 
-#if defined(HOST_64BIT) && !defined(TARGET_WASM)
+#if defined(HOST_64BIT) && !defined(TARGET_WASMARCH)
 // This method is used by the JIT and the runtime for PreStubs. It will return
 // the address of a short jump thunk that will jump to the 'target' address.
 // It is only needed when the target architecture has a perferred call instruction
@@ -6507,7 +6507,7 @@ DONE:
 
     return (PCODE)jumpStub;
 }
-#endif // HOST_64BIT && !TARGET_WASM
+#endif // HOST_64BIT && !TARGET_WASMARCH
 #endif // !DACCESS_COMPILE
 
 static void GetFuncletStartOffsetsHelper(PCODE pCodeStart, SIZE_T size, SIZE_T ofsAdj,
