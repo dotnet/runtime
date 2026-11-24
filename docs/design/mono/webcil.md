@@ -235,6 +235,40 @@ In particular, `payloadSize` is still a little-endian `u32`; `getWebcilSize` wri
 4 bytes, and its `memory.init` source offset and length operands remain `i32`.
 Memory64 is not supported by the passive version 0 wrapper.
 
+##### Memory64 ReadyToRun wrappers
+
+A memory64 ReadyToRun wrapper follows the same rules with pointer-sized `i64` values. It imports an
+`i64` memory, a table64 `__indirect_function_table` whose operands and element segment offset are
+`i64`, and `i64` `__memory_base` and `__table_base` globals. The runtime globals it imports, such as
+`__stack_pointer`, are also `i64`. The host supplies `__memory_base` and `__table_base` as immutable
+`i64` `WebAssembly.Global` values with JavaScript `BigInt` values.
+
+`patchWebcilHeader` takes `(param $d i64) (param $n i32)`. The `TableBase` field of the `WebcilHeader`
+stays a 32-bit value, so the function wraps `__table_base` to 32 bits with `i32.wrap_i64` before the
+`i32.store`. `payloadSize` and `tableSize` in data segment 0 remain little-endian `u32` values.
+
+``` wat
+;; ReadyToRun image, memory64.
+(module
+  (import "webcil" "memory" (memory (;0;) i64 1))
+  (import "webcil" "__stack_pointer" (global (;0;) (mut i64)))
+  (import "webcil" "__memory_base" (global (;1;) i64))
+  (import "webcil" "__table_base" (global (;2;) i64))
+  (import "webcil" "__indirect_function_table" (table (;0;) i64 1 funcref))
+  (func (export "patchWebcilHeader") (param $d i64) (param $n i32) (result)
+    local.get 1
+    i32.const 32
+    i32.ge_s
+    if
+     local.get 0
+     global.get 2
+     i32.wrap_i64
+     i32.store offset=28
+    end
+    )
+  (elem (;0;) (global.get 2) func 2)) ;; active at __table_base
+```
+
 ##### WASI host composition
 
 WASI hosts use offline composition rather than instantiating R2R modules at runtime.
