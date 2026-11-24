@@ -115,6 +115,15 @@ namespace ILCompiler
             new(CorInfoHelpFunc.CORINFO_HELP_ALLOC_CONTINUATION_CLASS, "System.Runtime.CompilerServices"u8, "AsyncHelpers"u8, "AllocContinuationClass"u8),
         ];
 
+        // Managed helpers the runtime looks up by name (to build dynamic dictionary lookup helpers)
+        // without a corresponding CorInfoHelpFunc. Kept separate from s_managedHelpers so that
+        // lookups by helper id never match them.
+        private static readonly ManagedHelperInfo[] s_runtimeManagedHelpers =
+        [
+            new(CorInfoHelpFunc.CORINFO_HELP_UNDEF, "System.Runtime.CompilerServices"u8, "GenericsHelpers"u8, "MethodWithSlotAndModule"u8),
+            new(CorInfoHelpFunc.CORINFO_HELP_UNDEF, "System.Runtime.CompilerServices"u8, "GenericsHelpers"u8, "ClassWithSlotAndModule"u8),
+        ];
+
         public void AddCompilationRoots(IRootingServiceProvider rootProvider)
         {
             // ARM32 and Arm64 call managed helpers through helper cells because direct calls have limited reach.
@@ -128,7 +137,8 @@ namespace ILCompiler
         }
 
         /// <summary>
-        /// Gets the distinct managed JIT helper methods implemented in CoreLib.
+        /// Gets the distinct managed JIT helper methods implemented in CoreLib, including the
+        /// helpers the runtime looks up by name.
         /// </summary>
         internal static HashSet<MethodDesc> GetManagedHelpers(ReadyToRunCompilerContext context)
         {
@@ -151,6 +161,14 @@ namespace ILCompiler
                     continue;
                 }
 
+                if (GetManagedHelper(context, helper) is MethodDesc method)
+                {
+                    helpers.Add(method);
+                }
+            }
+
+            foreach (ManagedHelperInfo helper in s_runtimeManagedHelpers)
+            {
                 if (GetManagedHelper(context, helper) is MethodDesc method)
                 {
                     helpers.Add(method);
