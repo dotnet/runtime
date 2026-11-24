@@ -90,7 +90,7 @@
     <WasmEnvironmentVariable Include="DOTNET_WasmPerformanceInstrumentation" Value="$(_WasmPerfInstFilter)" />
   </ItemGroup>
 
-  <!-- Task declarations: Both tasks live in WasmAppBuilder.dll -->
+  <!-- Tasks from WasmAppBuilder.dll -->
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.EmccCompile"
              AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)"
              TaskFactory="TaskHostFactory"
@@ -104,6 +104,10 @@
              TaskFactory="TaskHostFactory"
              Condition="'$(WasmAppBuilderTasksAssemblyPath)' != ''" />
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.ComputeWasmPInvokeModules"
+             AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)"
+             TaskFactory="TaskHostFactory"
+             Condition="'$(WasmAppBuilderTasksAssemblyPath)' != ''" />
+  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.WasmRegenerateBuildId"
              AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)"
              TaskFactory="TaskHostFactory"
              Condition="'$(WasmAppBuilderTasksAssemblyPath)' != ''" />
@@ -989,6 +993,8 @@
       <_WasmLinkDependencies Include="@(_CoreCLRJsLibrary)" />
       <_WasmLinkDependencies Include="$(_WasmLinkRsp)" />
       <_WasmLinkDependencies Include="$(_WasmOptArgsFile)" />
+      <_WasmLinkDependencies Include="$(WasmAppBuilderTasksAssemblyPath)"
+                             Condition="'$(WasmRunWasmOpt)' == 'true' and '$(_TargetingNET120OrLater)' == 'true'" />
     </ItemGroup>
 
     <WriteLinesToFile Lines="@(_EmccLinkStepArgs)" File="$(_WasmLinkRsp)" Overwrite="true" WriteOnlyWhenDifferent="true" />
@@ -1021,17 +1027,23 @@
     <Exec Command="&quot;$(_WasmOptPath)&quot; @(_WasmOptArgs, ' ') &quot;$(_WasmRelinkedWasmPath)&quot; -o &quot;$(_WasmRelinkedWasmPath)&quot;"
           IgnoreStandardErrorWarningFormat="true"
           EnvironmentVariables="@(EmscriptenEnvVars)"
-          ContinueOnError="ErrorAndContinue"
-          Condition="'$(WasmRunWasmOpt)' == 'true'">
-      <Output TaskParameter="ExitCode" PropertyName="_WasmOptExitCode" />
-    </Exec>
-    <!-- Do not leave an unoptimized link output that looks up to date to the next incremental build. -->
-    <Delete Files="$(_WasmRelinkedWasmPath)" Condition="'$(WasmRunWasmOpt)' == 'true' and '$(_WasmOptExitCode)' != '0'" />
+          WorkingDirectory="$(MSBuildProjectDirectory)"
+          Condition="'$(WasmRunWasmOpt)' == 'true'" />
+    <WasmRegenerateBuildId WasmPath="$(_WasmRelinkedWasmPath)"
+                           WorkingDirectory="$(MSBuildProjectDirectory)"
+                           WasmOptArguments="@(_WasmOptArgs, ' ')"
+                           Condition="'$(WasmRunWasmOpt)' == 'true' and '$(_TargetingNET120OrLater)' == 'true'" />
     <ItemGroup>
       <FileWrites Include="$(_WasmRelinkedWasmPath)" />
       <FileWrites Include="$(_WasmIntermediateOutputPath)dotnet.native.js" />
       <FileWrites Include="$(_WasmIntermediateOutputPath)dotnet.native.js.symbols" />
     </ItemGroup>
+    <OnError ExecuteTargets="_CoreCLRDeleteFailedOptimization" Condition="'$(WasmRunWasmOpt)' == 'true'" />
+  </Target>
+
+  <!-- Do not reuse a link output if optimization or build ID regeneration failed. -->
+  <Target Name="_CoreCLRDeleteFailedOptimization">
+    <Delete Files="$(_WasmRelinkedWasmPath)" />
   </Target>
 
   <!-- ======================== Complete Native Build ======================== -->
@@ -1108,7 +1120,11 @@
 
     <PropertyGroup>
       <_WasmReadyToRunPostProcessState>$(_WasmReadyToRunPostProcessState)WasmOpt=$(_WasmOptPath) @(_WasmR2RWasmOptArgs, ' ');</_WasmReadyToRunPostProcessState>
+      <_WasmReadyToRunPostProcessState Condition="'$(_TargetingNET120OrLater)' == 'true'">$(_WasmReadyToRunPostProcessState)RegenerateBuildId=$(WasmAppBuilderTasksAssemblyPath);</_WasmReadyToRunPostProcessState>
     </PropertyGroup>
+    <ItemGroup Condition="'$(_TargetingNET120OrLater)' == 'true'">
+      <_ReadyToRunCompilerInputs Include="$(WasmAppBuilderTasksAssemblyPath)" />
+    </ItemGroup>
   </Target>
 
   <!-- Each image gets a stamp touched after it is optimized: a recompiled image is newer than its stamp and is
@@ -1117,17 +1133,22 @@
   <Target Name="_WasmCoreClrOptimizeR2RImages"
           Condition="'$(_WasmOptPath)' != '' and '@(_WasmR2RImageToOptimize)' != ''"
           AfterTargets="_CreateR2RImages"
-          Inputs="@(_WasmR2RImageToOptimize)"
-          Outputs="@(_WasmR2RImageToOptimize->'%(FullPath).wasm-opt.stamp')">
+          Inputs="%(_WasmR2RImageToOptimize.FullPath)"
+          Outputs="%(_WasmR2RImageToOptimize.FullPath).wasm-opt.stamp">
     <Message Importance="High" Text="Running wasm-opt on @(_WasmR2RImageToOptimize->Count()) ReadyToRun image(s) with @(_WasmR2RWasmOptArgs, ' ')" />
     <Exec Command="&quot;$(_WasmOptPath)&quot; @(_WasmR2RWasmOptArgs, ' ') &quot;%(_WasmR2RImageToOptimize.FullPath)&quot; -o &quot;%(_WasmR2RImageToOptimize.FullPath).wasm-opt.tmp&quot;"
           IgnoreStandardErrorWarningFormat="true"
+          WorkingDirectory="$(MSBuildProjectDirectory)"
           StandardOutputImportance="Low" />
     <!-- wasm-opt re-encodes the module and moves the payload; tools such as R2RDump read it at its file offset. -->
-    <AlignWebcilPayload Files="@(_WasmR2RImageToOptimize->'%(FullPath).wasm-opt.tmp')" />
-    <Move SourceFiles="@(_WasmR2RImageToOptimize->'%(FullPath).wasm-opt.tmp')"
-          DestinationFiles="@(_WasmR2RImageToOptimize->'%(FullPath)')" />
-    <Touch Files="@(_WasmR2RImageToOptimize->'%(FullPath).wasm-opt.stamp')" AlwaysCreate="true" />
+    <AlignWebcilPayload Files="%(_WasmR2RImageToOptimize.FullPath).wasm-opt.tmp" />
+    <WasmRegenerateBuildId WasmPath="%(_WasmR2RImageToOptimize.FullPath).wasm-opt.tmp"
+                           WorkingDirectory="$(MSBuildProjectDirectory)"
+                           WasmOptArguments="@(_WasmR2RWasmOptArgs, ' ')"
+                           Condition="'$(_TargetingNET120OrLater)' == 'true'" />
+    <Move SourceFiles="%(_WasmR2RImageToOptimize.FullPath).wasm-opt.tmp"
+          DestinationFiles="%(_WasmR2RImageToOptimize.FullPath)" />
+    <Touch Files="%(_WasmR2RImageToOptimize.FullPath).wasm-opt.stamp" AlwaysCreate="true" />
   </Target>
 
 </Project>

@@ -48,9 +48,13 @@ Shipped workload targets read the generated source directly from the runtime pac
 native link input, not an asset in application build or publish output.
 
 Native links for .NET 12 and later pass `--build-id`. Runtime-pack modules keep that ID when copied
-into applications, while an application relink creates a new file and a new ID. Emscripten and
-Binaryen preserve the linker ID through post-link transformations. When Binaryen emits a source
-map, it records the same value as `debugId`, preserving the module/debug-information association.
+into applications. An application relink without the optional `WasmRunWasmOpt` pass keeps the
+linker ID. When that pass runs, Binaryen regenerates `dotnet.native.js.symbols` for the optimized
+function indices. The SDK replaces the input ID with a SHA-256 hash of the optimized module
+without its `build_id` section and updates `debugId` in any source map requested from Binaryen.
+When `WasmEmitSymbolMap` is enabled, publish stages the symbol map from the same relink as the
+module, rather than reusing the build-time map. These steps happen before asset fingerprinting
+and integrity hashes are generated.
 
 ## Managed Wasm writers
 
@@ -60,13 +64,13 @@ It records the converter assembly's informational version, not the application's
 `WasmObjectWriter` owns compiler producer encoding:
 
 - `WebCilObjectWriter` emits the producer section into final R2R Webcil, then appends its
-  content-hash build ID.
+  content-hash build ID. If an app publish optimizes the R2R image with `wasm-opt`, the SDK
+  regenerates its build ID after restoring payload alignment and before staging the image.
 - `WasmRelocatableObjectWriter` emits producer metadata into NativeAOT objects. Relocatable object
   order is significant: `producers` follows the mandatory `linking` section and precedes
   `reloc.*`. It is not entered in the linking symbol table and has no relocation bookkeeping.
 
-The final linker merges NativeAOT object producer sections and generates the final executable's
-build ID.
+WASI app linking and metadata on the final executable or component are out of scope.
 
 ## Browser SDK integration
 

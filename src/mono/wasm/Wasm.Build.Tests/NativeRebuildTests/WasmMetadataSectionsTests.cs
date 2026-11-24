@@ -1,10 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.IO;
 using System.IO.Compression;
 using System.Reflection;
+using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using Microsoft.NET.WebAssembly.Webcil;
 using Wasm.Build.Tests;
 using Xunit;
@@ -34,16 +37,52 @@ namespace Wasm.Build.NativeRebuild.Tests
         [InlineData(Configuration.Debug, true)]
         public void NativeWasm_Relink_EmitsProducersAndBuildId(Configuration config, bool runWasmOpt)
         {
-            ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.WasmBasicTestApp, "meta_relink_id");
-            PublishProject(info, config,
-                new PublishOptions(ExtraMSBuildArgs: $"-p:_WasmDevel=true -p:WasmBuildNative=true -p:WasmRunWasmOpt={runWasmOpt}"),
-                isNativeBuild: true);
+            ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.WasmBasicTestApp, "meta_relink_id",
+                extraItems: runWasmOpt
+                    ? """
+                      <WasmOptConfigurationFlags Include="-O$(TestWasmOptLevel)" />
+                      <WasmOptConfigurationFlags Include="--output-source-map=&quot;native source.map&quot;" Condition="'$(TestWasmOptLevel)' == '2'" />
+                      <WasmOptConfigurationFlags Include="-osm &quot;native source.map&quot;" Condition="'$(TestWasmOptLevel)' == 'z'" />
+                      """
+                    : "");
+            string extraArgs = $"-p:_WasmDevel=true -p:WasmBuildNative=true -p:WasmRunWasmOpt={runWasmOpt} -p:WasmEmitSymbolMap={runWasmOpt}";
+            string frameworkDir = Publish("-p:TestWasmOptLevel=2");
+            if (runWasmOpt)
+            {
+                (string initialId, string initialMap) = ReadOptimizedArtifacts(frameworkDir);
+                Directory.Delete(frameworkDir, recursive: true);
+                (string nextId, string nextMap) = ReadOptimizedArtifacts(Publish("-p:TestWasmOptLevel=z"));
+                Assert.NotEqual(initialMap, nextMap);
+                Assert.NotEqual(initialId, nextId);
+            }
+            else
+            {
+                Assert.NotEmpty(Assert.IsType<byte[]>(ReadBuildId(FindWasmAsset(frameworkDir, "dotnet.native"))));
+            }
 
-            string wasm = FindWasmAsset(GetBinFrameworkDir(config, forPublish: true), "dotnet.native");
-            AssertProducers(wasm, "CoreCLR", expectedVersion: s_buildEnv.GetRuntimePackVersion(DefaultTargetFramework));
-            byte[]? buildId = ReadBuildId(wasm);
-            Assert.NotNull(buildId);
-            Assert.NotEmpty(buildId!);
+            string Publish(string optimizerArgs)
+            {
+                PublishProject(info, config, new PublishOptions(ExtraMSBuildArgs: $"{extraArgs} {optimizerArgs}", UseCache: false, AssertAppBundle: !runWasmOpt),
+                    isNativeBuild: true);
+                string frameworkDirectory = GetBinFrameworkDir(config, forPublish: true);
+                AssertProducers(FindWasmAsset(frameworkDirectory, "dotnet.native"), "CoreCLR",
+                    expectedVersion: s_buildEnv.GetRuntimePackVersion(DefaultTargetFramework));
+                return frameworkDirectory;
+            }
+
+            (string Id, string SymbolMap) ReadOptimizedArtifacts(string frameworkDirectory)
+            {
+                string relinkDir = Path.Combine(GetObjDir(config), "wasm", "for-publish");
+                string publishedWasm = FindWasmAsset(frameworkDirectory, "dotnet.native");
+                Assert.Equal(File.ReadAllBytes(Path.Combine(relinkDir, "dotnet.native.wasm")), File.ReadAllBytes(publishedWasm));
+                string symbolMap = File.ReadAllText(Assert.Single(Directory.GetFiles(frameworkDirectory, "dotnet.native*.js.symbols")));
+                Assert.NotEmpty(symbolMap);
+                Assert.Equal(File.ReadAllText(Path.Combine(relinkDir, "dotnet.native.js.symbols")), symbolMap);
+                string buildId = AssertContentBuildId(publishedWasm, optimized: true);
+                using JsonDocument sourceMap = JsonDocument.Parse(File.ReadAllBytes(Path.Combine(_projectDir, "native source.map")));
+                Assert.Equal(buildId, sourceMap.RootElement.GetProperty("debugId").GetString());
+                return (buildId, symbolMap);
+            }
         }
 
         [TestCategory("no-workload")]
@@ -282,6 +321,31 @@ namespace Wasm.Build.NativeRebuild.Tests
             return sb.ToString();
         }
 
+        internal static string AssertContentBuildId(string wasmPath, bool optimized)
+        {
+            byte[] module = File.ReadAllBytes(wasmPath);
+            byte[] payload = Assert.IsType<byte[]>(ReadCustomSection(module, "build_id", out int buildIdStart));
+            Assert.Equal(module.Length, buildIdStart + GetBuildIdSectionLength(module, buildIdStart));
+
+            int position = 0;
+            Assert.Equal((uint)SHA256.HashSizeInBytes, ReadULEB128(payload, ref position));
+            byte[] id = payload[position..];
+            int hashedLength = buildIdStart;
+            if (!optimized)
+            {
+                Assert.NotNull(ReadCustomSection(module, "producers", out hashedLength));
+            }
+            Assert.Equal(SHA256.HashData(module.AsSpan(0, hashedLength)), id);
+            return Convert.ToHexStringLower(id);
+
+            static int GetBuildIdSectionLength(byte[] module, int start)
+            {
+                int position = start + 1;
+                uint size = ReadULEB128(module, ref position);
+                return position - start + checked((int)size);
+            }
+        }
+
         // The build_id payload is a WebAssembly vec(u8): a ULEB128 length followed by that many bytes.
         private static byte[]? ReadBuildId(string wasmPath)
         {
@@ -310,11 +374,16 @@ namespace Wasm.Build.NativeRebuild.Tests
             => ReadCustomSection(File.ReadAllBytes(wasmPath), sectionName);
 
         private static byte[]? ReadCustomSection(byte[] bytes, string sectionName)
+            => ReadCustomSection(bytes, sectionName, out _);
+
+        private static byte[]? ReadCustomSection(byte[] bytes, string sectionName, out int sectionStart)
         {
             byte[]? found = null;
+            sectionStart = -1;
             int pos = 8; // skip the 4-byte magic and 4-byte version
             while (pos < bytes.Length)
             {
+                int start = pos;
                 byte id = bytes[pos++];
                 uint size = ReadULEB128(bytes, ref pos);
                 int payloadStart = pos;
@@ -326,7 +395,11 @@ namespace Wasm.Build.NativeRebuild.Tests
                     string name = Encoding.UTF8.GetString(bytes, p, (int)nameLen);
                     p += (int)nameLen;
                     if (name == sectionName)
-                        found = bytes[p..payloadEnd]; // spec allows one; keep the last if duplicated
+                    {
+                        Assert.Null(found);
+                        found = bytes[p..payloadEnd];
+                        sectionStart = start;
+                    }
                 }
                 pos = payloadEnd;
             }
