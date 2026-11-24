@@ -160,7 +160,7 @@ System.Diagnostics.DiagnosticSource</PackageDescription>
   </ItemGroup>
 
   <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net12.0'))">
-    <Compile Include="$(CommonPath)Polyfills\TypePolyfills.GetInterfacesWithSameMetadataDefinitionAs.cs" Link="Common\Polyfills\TypePolyfills.GetInterfacesWithSameMetadataDefinitionAs.cs" />
+    <Compile Include="$(CommonPath)Polyfills\TypePolyfills.cs" Link="Common\Polyfills\TypePolyfills.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">

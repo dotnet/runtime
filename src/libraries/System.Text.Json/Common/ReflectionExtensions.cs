@@ -92,12 +92,8 @@ namespace System.Text.Json.Reflection
                 return type;
             }
 
-            foreach (Type typeToCheck in type.GetInterfacesWithSameMetadataDefinitionAs(interfaceType))
-            {
-                return typeToCheck;
-            }
-
-            return null;
+            Type[] interfaces = type.GetInterfacesWithSameMetadataDefinitionAs(interfaceType);
+            return interfaces.Length > 0 ? interfaces[0] : null;
         }
 
         public static bool IsImmutableDictionaryType(this Type type)

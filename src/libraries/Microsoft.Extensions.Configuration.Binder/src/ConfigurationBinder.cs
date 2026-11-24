@@ -1158,7 +1158,6 @@ namespace Microsoft.Extensions.Configuration
 
         private static Type? FindOpenGenericInterface(
             Type expected,
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
             Type actual)
         {
             if (actual.IsGenericType &&

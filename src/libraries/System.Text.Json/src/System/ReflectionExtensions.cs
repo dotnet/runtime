@@ -181,7 +181,7 @@ namespace System.Text.Json.Reflection
                     yield return iface;
                 }
 
-                // Note: do NOT yield break here. Type.GetInterfaces() does not include `type`
+                // Note: do NOT yield break here. Type.GetInterfacesWithSameMetadataDefinitionAs() does not include `type`
                 // itself, so when `type` IS the interface we're looking for, the fall-through
                 // to the BaseType walk below picks it up via the self-check on the first
                 // iteration (Type.BaseType returns null for interfaces, so the loop
