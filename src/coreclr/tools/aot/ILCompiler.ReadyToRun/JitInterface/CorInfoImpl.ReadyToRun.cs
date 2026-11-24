@@ -2479,7 +2479,7 @@ namespace Internal.JitInterface
                             useInstantiatingStub = true;
                         }
 
-                        ComputeRuntimeLookupForSharedGenericToken(entryKind, ref pResolvedToken, pConstrainedResolvedToken, originalMethod, HandleToObject(callerHandle), ref pResult->codePointerOrStubLookup);
+                        DeferCallLookup(ref pResult->codePointerOrStubLookup, (int)entryKind, ObjectToHandle(originalMethod));
                     }
                 }
                 else
@@ -2515,7 +2515,7 @@ namespace Internal.JitInterface
                     if (pResult->exactContextNeedsRuntimeLookup)
                     {
                         pResult->kind = CORINFO_CALL_KIND.CORINFO_CALL_CODE_POINTER;
-                        ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind.ConstrainedMethodEntrySlot, ref pResolvedToken, pConstrainedResolvedToken, originalMethod, HandleToObject(callerHandle), ref pResult->codePointerOrStubLookup);
+                        DeferCallLookup(ref pResult->codePointerOrStubLookup, (int)DictionaryEntryKind.ConstrainedMethodEntrySlot, ObjectToHandle(originalMethod));
                         useInstantiatingStub = true;
                     }
                     else
@@ -2562,9 +2562,7 @@ namespace Internal.JitInterface
 
                 if (pResult->exactContextNeedsRuntimeLookup)
                 {
-                    pResult->codePointerOrStubLookup.lookupKind.needsRuntimeLookup = true;
-                    pResult->codePointerOrStubLookup.lookupKind.runtimeLookupKind = CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_DEFERRED;
-                    pResult->codePointerOrStubLookup.runtimeLookup.signature = (void*)ObjectToHandle(originalMethod);
+                    DeferCallLookup(ref pResult->codePointerOrStubLookup, (int)DictionaryEntryKind.DispatchStubAddrSlot, ObjectToHandle(originalMethod));
                 }
                 else
                 {
@@ -3235,6 +3233,16 @@ namespace Internal.JitInterface
             Debug.Assert(typeHandleImport.RepresentsIndirectionCell);
             ppIndirection = (void*)ObjectToHandle(typeHandleImport);
             return null;
+        }
+
+        private void PrepareCodePointerOrStubLookup(ref CORINFO_RESOLVED_TOKEN token, CORINFO_RESOLVED_TOKEN* constrainedToken,
+            MethodDesc caller, ref CORINFO_LOOKUP lookup)
+        {
+            DictionaryEntryKind kind = (DictionaryEntryKind)lookup.runtimeLookup.helper;
+            MethodDesc method = (MethodDesc)HandleToObject(lookup.runtimeLookup.signature);
+            lookup = default;
+            ComputeRuntimeLookupForSharedGenericToken(kind, ref token,
+                kind == DictionaryEntryKind.DispatchStubAddrSlot ? null : constrainedToken, method, caller, ref lookup);
         }
 
         private void embedGenericHandle(ref CORINFO_RESOLVED_TOKEN pResolvedToken, bool fEmbedParent, CORINFO_METHOD_STRUCT_* callerHandle, ref CORINFO_GENERICHANDLE_RESULT pResult)

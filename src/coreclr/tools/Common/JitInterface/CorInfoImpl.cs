@@ -1099,19 +1099,27 @@ namespace Internal.JitInterface
             return corInfoType;
         }
 
+        private static void DeferCallLookup(ref CORINFO_LOOKUP lookup, int kind, void* target)
+        {
+            lookup = default;
+            lookup.lookupKind.needsRuntimeLookup = true;
+            lookup.lookupKind.runtimeLookupKind = CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_DEFERRED;
+            // The EE consumes these two fields when the JIT requests the lookup.
+            lookup.runtimeLookup.helper = (CorInfoHelpFunc)kind;
+            lookup.runtimeLookup.signature = target;
+        }
+
         private void prepareCallLookups(ref CORINFO_RESOLVED_TOKEN resolvedToken,
             CORINFO_RESOLVED_TOKEN* constrainedToken, CORINFO_METHOD_STRUCT_* caller, CORINFO_CALL_INFO* callInfo)
         {
-#if READYTORUN
-            if (callInfo->kind == CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_STUB)
+            if (callInfo->kind is CORINFO_CALL_KIND.CORINFO_CALL_CODE_POINTER or CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_STUB)
             {
-                Debug.Assert(callInfo->codePointerOrStubLookup.lookupKind.runtimeLookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_DEFERRED);
-                MethodDesc method = HandleToObject((CORINFO_METHOD_STRUCT_*)callInfo->codePointerOrStubLookup.runtimeLookup.signature);
-                ComputeRuntimeLookupForSharedGenericToken(Internal.ReadyToRunConstants.DictionaryEntryKind.DispatchStubAddrSlot,
-                    ref resolvedToken, null, method, HandleToObject(caller), ref callInfo->codePointerOrStubLookup);
+                ref CORINFO_LOOKUP lookup = ref callInfo->codePointerOrStubLookup;
+                Debug.Assert(lookup.lookupKind.runtimeLookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_DEFERRED);
+                PrepareCodePointerOrStubLookup(ref resolvedToken, constrainedToken, HandleToObject(caller), ref lookup);
                 return;
             }
-#endif
+
             Debug.Assert((callInfo->sig.callConv & CorInfoCallConv.CORINFO_CALLCONV_PARAMTYPE) != 0 && callInfo->exactContextNeedsRuntimeLookup);
             CORINFO_CONTEXT_STRUCT* context = callInfo->contextHandle;
             bool embedParent = ((nuint)context & (nuint)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_MASK) == (nuint)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_CLASS;
