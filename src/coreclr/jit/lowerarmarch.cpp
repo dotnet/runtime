@@ -1596,7 +1596,9 @@ bool Lowering::TryLowerSvePredicateBitwiseClear(GenTreeHWIntrinsic* node, NamedI
         }
     }
 
-    if ((notNode != nullptr) && op1->IsSveMaskOperand() && op2->IsSveMaskOperand())
+    // Vector zero operands are SVE mask operands even when SVE is not available.
+    if ((notNode != nullptr) && op1->CanBeSveMask() && op2->CanBeSveMask() &&
+        m_compiler->compOpportunisticallyDependsOn(InstructionSet_Sve))
     {
         // Reinterpreting a mask vector can change its element width. Removing the
         // conversion in that case would not preserve the replicated vector bits.

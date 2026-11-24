@@ -36158,10 +36158,10 @@ bool GenTree::CanDivOrModPossiblyOverflow(Compiler* comp) const
 #if defined(FEATURE_HW_INTRINSICS)
 #if defined(FEATURE_MASKED_HW_INTRINSICS) && defined(TARGET_ARM64)
 //------------------------------------------------------------------------
-// GenTree::IsSveMaskOperand:
+// GenTree::CanBeSveMask:
 //   Return true if this node can be represented directly as an SVE predicate.
 //
-bool GenTree::IsSveMaskOperand() const
+bool GenTree::CanBeSveMask() const
 {
     return OperIsConvertMaskToVector() || varTypeIsMask(this) || IsVectorZero();
 }
@@ -36462,7 +36462,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
         for (size_t i = firstVectorOperand; (i <= opCount) && canFold; i++)
         {
             GenTree* operand = tree->Op(i);
-            canFold          = operand->IsSveMaskOperand() &&
+            canFold          = operand->CanBeSveMask() &&
                       (!operand->OperIsConvertMaskToVector() ||
                        (genTypeSize(operand->AsHWIntrinsic()->GetSimdBaseType()) == genTypeSize(simdBaseType)));
         }
