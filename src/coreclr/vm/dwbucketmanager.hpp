@@ -83,6 +83,7 @@ DWORD GetCountBucketParamsForEvent(LPCWSTR wzEventName)
 #include <msodwwrap.h>
 #include "dbginterface.h"
 #include <sha1.h>
+#include <minipal/strings.h>
 
 //------------------------------------------------------------------------------
 // Description
@@ -998,7 +999,14 @@ int BaseBucketParamsManager::CopyStringToBucket(_Out_writes_(targetMaxLength) LP
         if (canonicalize)
         {
             // canonicalize filenames so that the same exceptions tend to the same buckets.
+#ifdef HOST_UNIX
+            for (WCHAR* p = pTargetParam; *p != W('\0'); p++)
+            {
+                *p = (WCHAR)minipal_tolower_invariant(*p);
+            }
+#else
             _wcslwr_s(pTargetParam, DW_MAX_BUCKETPARAM_CWC);
+#endif
         }
         return srcLen;
     }

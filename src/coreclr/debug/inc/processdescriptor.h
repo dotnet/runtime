@@ -34,4 +34,13 @@ struct ProcessDescriptor
     LPCSTR m_ApplicationGroupId;
 };
 
+#ifdef HOST_UNIX
+
+static const unsigned int MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH = MAX_PATH;
+
+// Builds a debugger transport pipe name from the process id.
+void GetTransportPipeName(char *name, DWORD id, const char *applicationGroupId, const char *suffix);
+
+#endif // HOST_UNIX
+
 #endif // _PROCESSDESCRIPTOR_H_

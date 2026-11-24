@@ -5,9 +5,6 @@
     <WasmPerformanceInstrumentation>all</WasmPerformanceInstrumentation>
     <MetricsSupport>true</MetricsSupport>
     <EventSourceSupport>true</EventSourceSupport>
-    <!--
-    <RunAOTCompilation>true</RunAOTCompilation>
-    -->
     <WasmNativeDebugSymbols>true</WasmNativeDebugSymbols>
     <WasmNativeStrip>false</WasmNativeStrip>
 

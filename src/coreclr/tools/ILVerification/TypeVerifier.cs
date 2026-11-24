@@ -24,7 +24,7 @@ namespace Internal.TypeVerifier
             private get;
         }
 
-        private void VerificationError(VerifierError error, params object[] args)
+        private void Invalid(VerifierError error, params object[] args)
         {
             ReportVerificationError(error, args);
         }
@@ -54,7 +54,7 @@ namespace Internal.TypeVerifier
             {
                 if (!type.IsObject && !type.IsModuleType && !type.IsInterface)
                 {
-                    VerificationError(VerifierError.InvalidBaseType, Format(type), Format(baseType));
+                    Invalid(VerifierError.InvalidBaseType, Format(type), Format(baseType));
                     return;
                 }
             }
@@ -66,7 +66,7 @@ namespace Internal.TypeVerifier
                     resolvedBaseType.IsInterface ||
                     !resolvedBaseType.IsDefType)
                 {
-                    VerificationError(VerifierError.InvalidBaseType, Format(type), Format(baseType));
+                    Invalid(VerifierError.InvalidBaseType, Format(type), Format(baseType));
                 }
             }
         }
@@ -135,7 +135,7 @@ namespace Internal.TypeVerifier
                 }
                 else
                 {
-                    VerificationError(VerifierError.InterfaceImplHasDuplicate, Format(type), Format(imo.InterfaceType, _module, imo.InterfaceImplementation));
+                    Invalid(VerifierError.InterfaceImplHasDuplicate, Format(type), Format(imo.InterfaceType, _module, imo.InterfaceImplementation));
                 }
             }
 
@@ -167,7 +167,7 @@ namespace Internal.TypeVerifier
 
                         if (resolvedMethod is null)
                         {
-                            VerificationError(VerifierError.InterfaceMethodNotImplemented, Format(type), Format(implementedInterface.InterfaceType, _module, implementedInterface.InterfaceImplementation), Format(method));
+                            Invalid(VerifierError.InterfaceMethodNotImplemented, Format(type), Format(implementedInterface.InterfaceType, _module, implementedInterface.InterfaceImplementation), Format(method));
                         }
                         else
                         {
@@ -194,7 +194,7 @@ namespace Internal.TypeVerifier
                 return true;
             }
 
-            VerificationError(error, Format(body), Format(declaration));
+            Invalid(error, Format(body), Format(declaration));
             return false;
         }
 
