@@ -29,7 +29,7 @@ public record BlazorRunOptions : RunOptions
         string                          BrowserPath             = "",
         string                          Locale                  = "en-US",
         int?                            ExpectedExitCode        = 0,
-        int?                            TimeoutSeconds          = 10,
+        int?                            TimeoutSeconds          = 60,
         string                          CustomBundleDir         = "",
         bool                            CheckCounter            = true,
         Func<IPage, Task>?              Test                    = null,
