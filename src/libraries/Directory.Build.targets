@@ -8,11 +8,13 @@
   </PropertyGroup>
 
   <!-- Static graph builds every inner build of a multi-targeted reference because the graph can't negotiate the
-       nearest target framework. Narrow source and reference projects to the target frameworks this build can pick: the current .NET
-       target framework, either platform neutral or for TargetOS and the platforms it falls back to in the RID graph.
-       Projects without such a target framework are left alone. -->
+       nearest target framework. Narrow source and reference projects to the target frameworks this build can pick:
+       the current .NET target framework, either platform neutral or for TargetOS and the platforms it falls back to in
+       the RID graph. Projects without such a target framework are left alone, as are builds for another
+       BuildTargetFramework, whose projects pick from the downlevel target frameworks. -->
   <PropertyGroup Condition="'$(IsGraphBuild)' == 'true' and
                             '$(BuildAllConfigurations)' != 'true' and
+                            ('$(BuildTargetFramework)' == '' or '$(BuildTargetFramework)' == '$(NetCoreAppCurrent)') and
                             ('$(IsSourceProject)' == 'true' or '$(IsReferenceAssemblyProject)' == 'true') and
                             '$(TargetFrameworks)' != ''">
     <_GraphTargetPlatforms>$(TargetOS)</_GraphTargetPlatforms>
@@ -26,9 +28,11 @@
     <_GraphAllTargetFrameworks>$([MSBuild]::Unescape($([System.Text.RegularExpressions.Regex]::Replace('$(TargetFrameworks)', '\s', ''))))</_GraphAllTargetFrameworks>
     <_GraphTargetFrameworks>$([MSBuild]::Unescape($([System.Text.RegularExpressions.Regex]::Replace(';$(_GraphAllTargetFrameworks);', ';(?!($(_GraphTargetFrameworkPattern));)[^;]*(?=;)', '').Trim(';'))))</_GraphTargetFrameworks>
     <TargetFrameworks Condition="'$(_GraphTargetFrameworks)' != ''">$(_GraphTargetFrameworks)</TargetFrameworks>
-    <!-- The outer build validates only the remaining inner builds against the contract, so suppressions for the
-         removed target frameworks are expected to be unnecessary. -->
-    <ApiCompatPermitUnnecessarySuppressions Condition="'$(_GraphTargetFrameworks)' != '' and '$(_GraphTargetFrameworks)' != '$(_GraphAllTargetFrameworks)'">true</ApiCompatPermitUnnecessarySuppressions>
+    <!-- A multi-targeted project validates its inner builds against the contract in the outer build, which a regular
+         build only runs for the projects it builds directly. Graph builds also run it for referenced projects, where
+         the removed target frameworks would leave their suppressions unnecessary, so skip it there like a regular
+         build does. -->
+    <ApiCompatValidateAssemblies Condition="'$(TargetFramework)' == '' and '$(_GraphTargetFrameworks)' != '' and '$(_GraphTargetFrameworks)' != '$(_GraphAllTargetFrameworks)'">false</ApiCompatValidateAssemblies>
   </PropertyGroup>
 
   <PropertyGroup>
