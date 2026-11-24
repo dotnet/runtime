@@ -19,7 +19,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe string FastAllocateString(nint length)
         {
-#if !TARGET_WASM
+#if TARGET_64BIT && !TARGET_WASM
             if (AllocHelpersConfig.s_enabled)
                 return AllocHelpers.NewString(TypeHandle.TypeHandleOf<string>().AsMethodTable(), length);
 #endif
