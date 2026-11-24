@@ -50,13 +50,18 @@ namespace ILCompiler
         }
 
         // Without runtime codegen, CoreLib's R2R image must contain code for every managed JIT helper.
+        // The helpers are only rooted when the version bubble includes CoreLib.
         private bool IsManagedJitHelper(MethodDesc method)
         {
+            ReadyToRunCompilerContext context = (ReadyToRunCompilerContext)method.Context;
+            if (!context.BubbleIncludesCoreModule)
+                return false;
+
             HashSet<MethodDesc> helpers = Volatile.Read(ref _managedJitHelpers);
             if (helpers is null)
             {
                 Interlocked.CompareExchange(ref _managedJitHelpers,
-                    ReadyToRunJitHelperRootProvider.GetManagedHelpers((ReadyToRunCompilerContext)method.Context), null);
+                    ReadyToRunJitHelperRootProvider.GetManagedHelpers(context), null);
                 helpers = _managedJitHelpers;
             }
 
