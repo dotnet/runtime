@@ -3,7 +3,7 @@
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <CLRTestPriority>1</CLRTestPriority>
     <!-- Wasm ReadyToRun requires composite images. -->
-    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' == 'wasm' or '$(TargetArchitecture)' == 'wasm64'">true</CLRTestTargetUnsupported>
+    <CLRTestTargetUnsupported Condition="'$(TargetsWasm)' == 'true'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="methodtokenmissingsignature.cs" />
