@@ -90,11 +90,6 @@
     <CLRTestTargetUnsupported Condition="'$(UseCodeFlowEnforcement)' != 'true'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
 
-  <!-- crossgen2 rejects wasm64 until ReadyToRun support is added, so tests that always crossgen can't run there. -->
-  <PropertyGroup Condition="'$(AlwaysUseCrossGen2)' == 'true' and '$(TargetsWasm64)' == 'true'">
-    <CLRTestTargetUnsupported>true</CLRTestTargetUnsupported>
-  </PropertyGroup>
-
   <!-- Determine if this project should be built or not -->
   <PropertyGroup>
     <BuildAllProjects Condition="'$(BuildAllProjects)' == ''">false</BuildAllProjects>
