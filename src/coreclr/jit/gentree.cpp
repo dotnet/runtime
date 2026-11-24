@@ -38314,8 +38314,11 @@ bool Compiler::gtCanSkipCovariantStoreCheck(GenTree* value, GenTree* array)
     CORINFO_CLASS_HANDLE arrayElementHandle = nullptr;
     CorInfoType          arrayElemType      = info.compCompHnd->getChildType(arrayHandle, &arrayElementHandle);
 
-    // Verify array type handle is really an array of ref type
-    assert(arrayElemType == CORINFO_TYPE_CLASS);
+    // The array may not be an array of ref type, e.g. in a mismatched GDV-guessed inlinee.
+    if ((arrayElemType != CORINFO_TYPE_CLASS) || (arrayElementHandle == NO_CLASS_HANDLE))
+    {
+        return false;
+    }
 
     // Check for exactly object[]
     if (arrayIsExact && (arrayElementHandle == impGetObjectClass()))
@@ -38326,7 +38329,7 @@ bool Compiler::gtCanSkipCovariantStoreCheck(GenTree* value, GenTree* array)
 
     const bool arrayTypeIsSealed = info.compCompHnd->isExactType(arrayElementHandle);
 
-    if ((!arrayIsExact && !arrayTypeIsSealed) || (arrayElementHandle == NO_CLASS_HANDLE))
+    if (!arrayIsExact && !arrayTypeIsSealed)
     {
         // Bail out if we don't know array's exact type
         return false;
