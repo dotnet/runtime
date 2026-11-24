@@ -4,6 +4,11 @@ WasmAppHost is used when `dotnet run` executes for projects targeting wasm.
 
 ## Command line arguments
 
+During the temporary CoreCLR worker-default coverage experiment, browser hosts
+apply `Cross-Origin-Opener-Policy: same-origin` and
+`Cross-Origin-Embedder-Policy: require-corp` to all responses, including directly
+served HTML and devserver endpoints. Revert this temporary default before shipping.
+
 - **--debug** | **-d**: Whether to start debug server. [More on debugging](../debugger/debugger.md).
 - **--host** | **-h**: A host configuration name.
 - **--runtime-config** | **-r**: A path for the runtimeconfig.json to use.

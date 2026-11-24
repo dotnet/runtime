@@ -26,9 +26,25 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public async Task TaskDelay0DoesNotYieldToBrowserLoop()
         {
             JavaScriptTestHelper.BeforeYield();
-            await Task.Delay(0);
-            Assert.False(JavaScriptTestHelper.IsSetTimeoutHit());
-            Assert.False(JavaScriptTestHelper.IsPromiseThenHit());
+            bool managedContinuationRan = false;
+            async Task MarkManagedYield()
+            {
+                await Task.Yield();
+                managedContinuationRan = true;
+            }
+            Task queued = MarkManagedYield();
+            Task delay = Task.Delay(0);
+            Assert.True(delay.IsCompletedSuccessfully);
+            await delay;
+            Assert.False(managedContinuationRan);
+            // The UI event loop runs independently when managed code is on a worker.
+            if (Environment.GetEnvironmentVariable("DOTNET_TEST_WITH_WORKER") != "1")
+            {
+                Assert.False(JavaScriptTestHelper.IsSetTimeoutHit());
+                Assert.False(JavaScriptTestHelper.IsPromiseThenHit());
+            }
+            await queued;
+            Assert.True(managedContinuationRan);
         }
 
         [Fact]

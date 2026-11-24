@@ -12,8 +12,8 @@ import { lookupJsOwnedObject } from "./gc-handles";
 export function isThenable(js_obj: any): boolean {
     // When using an external Promise library like Bluebird the Promise.resolve may not be sufficient
     // to identify the object as a Promise.
-    return Promise.resolve(js_obj) === js_obj ||
-        ((typeof js_obj === "object" || typeof js_obj === "function") && typeof js_obj.then === "function");
+    return js_obj !== null && (typeof js_obj === "object" || typeof js_obj === "function")
+        && typeof js_obj.then === "function";
 }
 
 export function wrapAsCancelablePromise<T>(fn: () => Promise<T>): ControllablePromise<T> {

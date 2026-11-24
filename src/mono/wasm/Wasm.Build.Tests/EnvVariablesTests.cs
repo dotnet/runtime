@@ -28,7 +28,20 @@ public class EnvVariablesTests : WasmTemplateTestsBase
 
         BuildProject(info, config, new BuildOptions(AssertAppBundle: false), isNativeBuild: false);
 
-        var result = await RunForBuildWithDotnetRun(new BrowserRunOptions(Configuration: config, TestScenario: "EnvVariablesTest"));
+        var options = new BrowserRunOptions(Configuration: config, TestScenario: "EnvVariablesTest")
+        {
+            ExecuteAfterLoaded = async (_, page) =>
+            {
+                if (!IsCoreClrRuntime)
+                    return;
+                Assert.True(await page.EvaluateAsync<bool>("crossOriginIsolated"));
+                var response = await page.APIRequest.GetAsync(page.Url);
+                Assert.Equal("same-origin", response.Headers["cross-origin-opener-policy"]);
+                Assert.Equal("require-corp", response.Headers["cross-origin-embedder-policy"]);
+                await response.DisposeAsync();
+            }
+        };
+        var result = await RunForBuildWithDotnetRun(options);
         Assert.Contains(result.TestOutput, m => m.Contains("foo=bar"));
         Assert.Contains(result.TestOutput, m => m.Contains("baz=boo"));
     }

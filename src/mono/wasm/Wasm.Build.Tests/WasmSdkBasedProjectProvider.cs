@@ -5,6 +5,7 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 using Microsoft.NET.Sdk.WebAssembly;
+using Microsoft.NET.WebAssembly.Webcil;
 using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
@@ -160,6 +161,7 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
         };
 
         string buildType = assertOptions.BuildOptions.IsPublish ? "publish" : "build";
+        bool runInWorker = GetBootJson(GetBootConfigPath(assertOptions.BinFrameworkDir)).runInWorker == true;
         var nativeFilesToCheck = new List<string>() { "dotnet.native.wasm", "dotnet.native.js" };
 
         foreach (string nativeFilename in nativeFilesToCheck)
@@ -169,9 +171,8 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
                 throw new XunitException($"Could not find {nativeFilename}. Actual files on disk: {string.Join($"{Environment.NewLine}  ", actualDotnetFiles.Values.Select(a => a.ActualPath).Order())}");
             }
             // For any *type*, check against the expected path
-            TestUtils.AssertSameFile(Path.Combine(srcDirForNativeFileToCompareAgainst, nativeFilename),
-                           actualDotnetFiles[nativeFilename].ActualPath,
-                           buildType);
+            AssertNativeFileMatchesSource(Path.Combine(srcDirForNativeFileToCompareAgainst, nativeFilename),
+                actualDotnetFiles[nativeFilename].ActualPath, runInWorker && nativeFilename == "dotnet.native.wasm", buildType);
 
             if (assertOptions.BuildOptions.ExpectedFileType != NativeFilesType.FromRuntimePack)
             {
@@ -229,6 +230,7 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
     ///   obj/{config}/{tfm}/fx/{name}/_framework/     → all materialized framework files: dotnet.runtime.js, dotnet.native.*, ICU, maps
     ///   obj/{config}/{tfm}/webcil/                   → assembly .wasm files (webcil-converted)
     ///   obj/{config}/{tfm}/wasm/for-build/           → native assets only when native build (AOT/relink)
+    ///   obj/{config}/{tfm}/wasm-shared/build/       → app-owned shared native image for worker hosting
     /// </summary>
     private void AssertBuildBundle(Configuration config, MSBuildOptions buildOptions, bool isUsingWorkloads, bool? isNativeBuild, string? runtimePackDir)
     {
@@ -237,6 +239,7 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
         string tfm = buildOptions.TargetFramework;
         string objDir = Path.Combine(ProjectDir!, "obj", config.ToString(), tfm);
         string webcilDir = Path.Combine(objDir, "webcil");
+        bool runInWorker = GetBootJson(GetBootConfigPath(objDir, "dotnet.js")).runInWorker == true;
 
         // Discover the materialized framework directory: obj/{config}/{tfm}/fx/{source-id}/_framework/
         string fxFrameworkDir = GetMaterializedFrameworkDir(objDir);
@@ -260,6 +263,7 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
         // --- Native assets: dotnet.native.* ---
         // For non-native builds, native files are materialized in fx/_framework/ from runtime pack.
         // For native builds (AOT/relink), they are rebuilt and placed in wasm/for-build/.
+        // Worker hosting stages a shared native image separately from either source.
         // CoreCLR WBT runs in NoWorkload mode but still performs per-app native relink via
         // BrowserWasmApp.CoreCLR.targets (imported by data/Local.Directory.Build.targets), so
         // treat CoreCLR as having native-rebuild capability regardless of isUsingWorkloads.
@@ -275,7 +279,10 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
 
         foreach (string file in nativeFiles)
         {
-            AssertFileExists(nativeDir, file);
+            string expectedDir = runInWorker && file == "dotnet.native.wasm"
+                ? Path.Combine(objDir, "wasm-shared", "build")
+                : nativeDir;
+            AssertFileExists(expectedDir, file);
             AssertFileNotExists(objDir, file, "obj root");
             if (!isNativeRebuild)
                 AssertFileNotExists(Path.Combine(objDir, "wasm", "for-build"), file, "wasm/for-build");
@@ -321,13 +328,22 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
                 "native");
             foreach (string nativeFilename in nativeFiles)
             {
-                string actualPath = Path.Combine(nativeDir, nativeFilename);
+                bool sharedNativeImage = runInWorker && nativeFilename == "dotnet.native.wasm";
+                string actualPath = Path.Combine(sharedNativeImage ? Path.Combine(objDir, "wasm-shared", "build") : nativeDir, nativeFilename);
                 if (expectedFileType == NativeFilesType.FromRuntimePack)
                 {
-                    TestUtils.AssertSameFile(Path.Combine(runtimeNativeDir, nativeFilename), actualPath, "build");
+                    AssertNativeFileMatchesSource(Path.Combine(runtimeNativeDir, nativeFilename), actualPath, sharedNativeImage, "build");
                 }
             }
         }
+    }
+
+    private static void AssertNativeFileMatchesSource(string source, string actual, bool shared, string label)
+    {
+        if (shared)
+            Assert.Equal(WasmMemory.MakeShared(File.ReadAllBytes(source)), File.ReadAllBytes(actual));
+        else
+            TestUtils.AssertSameFile(source, actual, label);
     }
 
     private static void AssertFileExists(string dir, string filename)

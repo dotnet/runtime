@@ -7,6 +7,7 @@ import { InternalExchangeIndex } from "../types";
 import GitHash from "consts:gitHash";
 
 import { dotnetUpdateInternals, dotnetUpdateInternalsSubscriber } from "./cross-module";
+import { initializeWorkerUI } from "./worker-ui";
 import {
     bindJSImportST, dynamicImport, getDotnetInstance, getGlobalThis, getProperty, getTypeOfProperty, hasProperty,
     invokeJSFunction, invokeJSImportST, setModuleImports, setProperty
@@ -14,10 +15,11 @@ import {
 import { bindCsFunction, getAssemblyExports } from "./invoke-cs";
 import { initializeMarshalersToJs, resolveOrRejectPromise } from "./marshal-to-js";
 import { initializeMarshalersToCs } from "./marshal-to-cs";
-import { forceDisposeProxies, getProxyCounts, releaseCSOwnedObject } from "./gc-handles";
+import { forceDisposeProxies, getProxyCounts, initializeRealmHandles, releaseCSOwnedObject } from "./gc-handles";
 import { cancelPromise } from "./cancelable-promise";
 import { loadLazyAssembly, loadSatelliteAssemblies } from "./lazy";
 import { jsInteropState } from "./marshal";
+import { createWorkerInterop, getCombinedProxyCounts, initializeErrorExchange } from "./worker-interop";
 import { initializeScheduling, abortInteropTimers } from "./scheduling";
 import { wsAbort, wsClose, wsCreate, wsGetState, wsOpen, wsReceive, wsSend } from "./web-socket";
 import {
@@ -36,24 +38,39 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
         throw new Error(`Mismatched git hashes between loader and runtime. Loader: ${runtimeApi.runtimeBuildInfo.gitHash}, Runtime: ${GitHash}`);
     }
 
+    const workerContext = internals[InternalExchangeIndex.WorkerRuntimeContext];
+    if (workerContext) dotnetUpdateInternals(internals, dotnetUpdateInternalsSubscriber);
+    if (workerContext?.role === "ui") {
+        dotnetUpdateInternals(internals, dotnetUpdateInternalsSubscriber);
+        initializeWorkerUI(internals);
+        jsInteropState.isWorkerUI = true;
+    }
+    if (workerContext) {
+        initializeRealmHandles(workerContext.role === "worker");
+        initializeErrorExchange(workerContext);
+    }
+
     const runtimeApiLocal: Partial<RuntimeAPI> = {
         getAssemblyExports,
         setModuleImports,
     };
-    Object.assign(runtimeApi, runtimeApiLocal);
-    Object.assign(runtimeApi.INTERNAL, {
-        hasProperty,
-        getTypeOfProperty,
-        getProperty,
-        setProperty,
-        getGlobalThis,
-        getDotnetInstance,
-        dynamicImport,
-        bindCsFunction,
-        loadSatelliteAssemblies,
-        loadLazyAssembly,
-        getProxyCounts,
+    if (workerContext?.role !== "worker") {
+        Object.assign(runtimeApi, runtimeApiLocal);
+        Object.assign(runtimeApi.INTERNAL.TARGET ??= {}, {
+            hasProperty,
+            getTypeOfProperty,
+            getProperty,
+            setProperty,
+            getGlobalThis,
+            getDotnetInstance,
+            dynamicImport,
+            bindCsFunction,
+            getProxyCounts,
+            forceDisposeProxies,
+        });
+    }
 
+    if (workerContext?.role !== "ui") Object.assign(runtimeApi.INTERNAL, {
         // WebSocket
         wsCreate,
         wsOpen,
@@ -81,8 +98,20 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
         httpGetResponseLength,
         httpGetStreamedResponseBytes,
     });
+    Object.assign(runtimeApi.INTERNAL ??= {}, workerContext?.role === "ui"
+        ? workerContext.local
+        : { loadLazyAssembly, loadSatelliteAssemblies });
+    if (workerContext?.role === "ui") {
+        Object.assign(runtimeApi.INTERNAL, {
+            collectCpuSamples: runtimeApi.collectCpuSamples,
+            collectMetrics: runtimeApi.collectMetrics,
+            collectGcDump: runtimeApi.collectGcDump,
+            collectPgoTrace: runtimeApi.collectPgoTrace,
+        });
+    }
+    Object.assign(runtimeApi.INTERNAL, { getProxyCounts, forceDisposeProxies });
 
-    internals[InternalExchangeIndex.RuntimeExportsTable] = runtimeExportsToTable({
+    const table = workerContext?.role === "worker" ? createWorkerInterop(workerContext) : runtimeExportsToTable({
         bindJSImportST,
         invokeJSImportST,
         releaseCSOwnedObject,
@@ -92,6 +121,12 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
         forceDisposeProxies,
         abortInteropTimers,
     });
+    internals[InternalExchangeIndex.RuntimeExportsTable] = table;
+    if (workerContext?.role === "worker") {
+        runtimeApi.INTERNAL.nativeBoundary = { role: "worker", getProxyCounts };
+        runtimeApi.INTERNAL.getProxyCounts = () => getCombinedProxyCounts(workerContext);
+        runtimeApi.INTERNAL.forceDisposeProxies = table[6];
+    }
     dotnetUpdateInternals(internals, dotnetUpdateInternalsSubscriber);
 
     initializeMarshalersToJs();

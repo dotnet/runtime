@@ -5,9 +5,13 @@ import replace from '@rollup/plugin-replace';
 import files from 'rollup-plugin-import-file';
 
 export default {
-   input: 'main.js',
+   input: {
+      main: 'main.js',
+      dotnet: '_framework/dotnet.js'
+   },
+   preserveEntrySignatures: 'strict',
    output: {
-      file: 'public/main.js',
+      dir: 'public',
       format: 'esm'
    },
    plugins: [

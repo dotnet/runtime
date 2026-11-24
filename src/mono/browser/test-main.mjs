@@ -153,6 +153,8 @@ function processArguments(incomingArguments, runArgs) {
             runArgs.interpreterPgo = true;
         } else if (currentArg == "--no-interpreter-pgo") {
             runArgs.interpreterPgo = false;
+        } else if (currentArg.startsWith("--test-module=")) {
+            runArgs.testModule = currentArg.substring("--test-module=".length);
         } else if (currentArg.startsWith("--fetch-random-delay=")) {
             const arg = currentArg.substring("--fetch-random-delay=".length);
             if (ENVIRONMENT_IS_WEB) {
@@ -313,9 +315,37 @@ async function run() {
         }
 
         configureRuntime(dotnet, runArgs);
+        if (ENVIRONMENT_IS_NODE || ENVIRONMENT_IS_SHELL) {
+            dotnet.withConfig({ runInWorker: false });
+        }
+        if (ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_WORKER && !ENVIRONMENT_IS_NODE) {
+            dotnet.withConfigLoaded(config => {
+                runArgs.runInWorker = config.runInWorker === true;
+                config.environmentVariables["DOTNET_TEST_WITH_WORKER"] = runArgs.runInWorker ? "1" : "0";
+                if (!runArgs.runInWorker) return;
+                config.forwardConsole = true;
+                config.appendElementOnExit = false;
+                mono_exit = (code, reason) => {
+                    App.runtime?.exit(code, reason);
+                    if (reason) console.error(reason);
+                    const done = document.createElement("label");
+                    done.id = "tests_done";
+                    done.textContent = String(code);
+                    document.body.appendChild(done);
+                    console.log(`WASM EXIT ${code}`);
+                };
+            });
+        }
 
         App.runtime = await dotnet.create();
         App.runArgs = runArgs
+        if (runArgs.runInWorker) {
+            console.log("test-main.mjs: dedicated worker runtime created");
+        }
+        if (runArgs.testModule) {
+            const testModule = await import(runArgs.testModule);
+            await testModule.setup(App.runtime);
+        }
 
         // after console proxy was setup, see https://github.com/dotnet/runtime/issues/101169
         if (ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_WORKER && isFirefox) {
@@ -354,8 +384,13 @@ async function run() {
                 const main_assembly_name = runArgs.applicationArguments[1];
                 const app_args = runArgs.applicationArguments.slice(2);
                 const now = Date.now();
-                const result = await App.runtime.runMain(main_assembly_name, app_args);
-                console.log(`test-main.mjs exiting ${app_args.length > 1 ? main_assembly_name + " " + app_args[0] : main_assembly_name} after ${(Date.now() - now) / 60000} minutes with result ${result} and linear memory ${App.runtime.Module.HEAPU8.length} bytes`);
+                const result = runArgs.runInWorker
+                    ? await App.runtime.runMainAndExit(main_assembly_name, app_args)
+                    : await App.runtime.runMain(main_assembly_name, app_args);
+                const memoryLength = runArgs.runInWorker
+                    ? App.runtime.INTERNAL.workerMemoryViews.refreshIfNeeded().u8.length
+                    : App.runtime.Module.HEAPU8.length;
+                console.log(`test-main.mjs exiting ${app_args.length > 1 ? main_assembly_name + " " + app_args[0] : main_assembly_name} after ${(Date.now() - now) / 60000} minutes with result ${result} and linear memory ${memoryLength} bytes`);
                 mono_exit(result);
             } catch (error) {
                 if (error.name != "ExitStatus") {

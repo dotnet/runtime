@@ -11,7 +11,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="11.0.0" />
+    <WasmEnvironmentVariable Include="__BLAZOR_WEBASSEMBLY_OUT_OF_PROCESS_RENDERER" Value="true" Condition="'$(UseMonoRuntime)' == 'false'" />
   </ItemGroup>
 
 </Project>

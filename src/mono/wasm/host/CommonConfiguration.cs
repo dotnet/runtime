@@ -23,7 +23,8 @@ internal sealed class CommonConfiguration
     public IEnumerable<string> HostArguments { get; init; }
     public bool Silent { get; private set; } = true;
     public bool UseStaticWebAssets { get; private set; }
-    public bool ApplyCopHeaders { get; private set; }
+    // Temporary worker-default coverage: isolate all browser app-host responses.
+    public bool ApplyCopHeaders { get; private set; } = true;
     public string? RuntimeConfigPath { get; private set; }
 
     private string? hostArg;

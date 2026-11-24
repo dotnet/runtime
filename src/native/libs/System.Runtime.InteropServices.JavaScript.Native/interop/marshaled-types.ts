@@ -7,6 +7,7 @@ import { dotnetApi, dotnetAssert, dotnetLoaderExports, dotnetLogger } from "./cr
 import { jsOwnedGcHandleSymbol, promiseHolderSymbol, teardownManagedProxy } from "./gc-handles";
 import { completeTask, getManagedStackTrace } from "./managed-exports";
 import { GCHandleNull, IMemoryView, MarshalerToCs } from "./types";
+import { jsInteropState } from "./marshal";
 import { isRuntimeRunning } from "./utils";
 
 export const enum MemoryViewType {
@@ -193,7 +194,7 @@ export class PromiseHolder extends ManagedObject {
         }
         dotnetAssert.check(!this.isResolved, "resolve could be called only once");
         dotnetAssert.check(!this.isDisposed, "resolve is already disposed.");
-        this.isResolved = true;
+        if (!jsInteropState.isWorkerUI) this.isResolved = true;
         this.completeTaskWrapper(data, null);
     }
 
@@ -207,7 +208,7 @@ export class PromiseHolder extends ManagedObject {
         }
         dotnetAssert.check(!this.isResolved, "reject could be called only once");
         dotnetAssert.check(!this.isDisposed, "resolve is already disposed.");
-        this.isResolved = true;
+        if (!jsInteropState.isWorkerUI) this.isResolved = true;
         this.completeTaskWrapper(null, reason);
     }
 
@@ -218,6 +219,14 @@ export class PromiseHolder extends ManagedObject {
         }
         dotnetAssert.check(!this.isResolved, "cancel could be called only once");
         dotnetAssert.check(!this.isDisposed, "resolve is already disposed.");
+
+        if (jsInteropState.isWorkerUI && this.isPostponed) {
+            const reason = new Error("OperationCanceledException") as any;
+            reason[promiseHolderSymbol] = this;
+            this.reason = reason;
+            this.data = null;
+            return;
+        }
 
         if (this.isPostponed) {
             // there was racing resolve/reject which was postponed, to retain valid GCHandle
@@ -248,6 +257,22 @@ export class PromiseHolder extends ManagedObject {
         try {
             dotnetAssert.check(!this.isPosted, "Promise is already posted to managed.");
             this.isPosted = true;
+
+            if (jsInteropState.isWorkerUI) {
+                this.isPostponed = true;
+                this.data = data;
+                this.reason = reason;
+                completeTask(this.gc_handle, null, null, this.res_converter, () => {
+                    this.isResolved = true;
+                    this.isPostponed = false;
+                    const result = { error: this.reason, data: this.data };
+                    this.data = null;
+                    this.reason = undefined;
+                    teardownManagedProxy(this, this.gc_handle, /*skipManaged: */ true);
+                    return result;
+                });
+                return;
+            }
 
             // we can unregister the GC handle just on JS side
             teardownManagedProxy(this, this.gc_handle, /*skipManaged: */ true);

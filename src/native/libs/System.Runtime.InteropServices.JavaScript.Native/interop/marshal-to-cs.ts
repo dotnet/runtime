@@ -297,7 +297,10 @@ export function marshalTaskToCs(arg: JSMarshalerArgument, value: Promise<any>, _
         (holder as any)[proxyDebugSymbol] = `PromiseHolder with GCHandle ${gcHandle}`;
     }
 
-    value.then(data => holder.resolve(data), reason => holder.reject(reason));
+    // On UI the managed caller is in another realm; inline thenables must not
+    // complete its Task before the initial import has returned.
+    const promise = jsInteropState.isWorkerUI ? Promise.resolve(value) : value;
+    promise.then(data => holder.resolve(data), reason => holder.reject(reason));
 }
 
 export function marshalExceptionToCs(arg: JSMarshalerArgument, value: any): void {
@@ -517,4 +520,3 @@ function checkViewType(elementType: MarshalerType, viewType: MemoryViewType) {
         throw new Error(`NotImplementedException ${elementType} `);
     }
 }
-

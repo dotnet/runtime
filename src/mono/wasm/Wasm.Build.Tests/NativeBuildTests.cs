@@ -21,13 +21,15 @@ namespace Wasm.Build.Tests
         }
 
         [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
-        [InlineData(Configuration.Release)]
+        [InlineData(false)]
+        [InlineData(true)]
         [TestCategory("native"), TestCategory("coreclr"), TestCategory("workload")]
-        public async Task NativeRelinkWithoutManagedTimers(Configuration config)
+        public async Task NativeRelinkWithoutManagedTimers(bool runInWorker)
         {
+            Configuration config = Configuration.Release;
             ProjectInfo info = CreateWasmTemplateProject(
                 Template.WasmBrowser, config, aot: false, "native_relink_without_timers",
-                extraProperties: "<WasmBuildNative>true</WasmBuildNative><PublishTrimmed>true</PublishTrimmed><WasmRunInWorker>false</WasmRunInWorker>");
+                extraProperties: $"<WasmBuildNative>true</WasmBuildNative><PublishTrimmed>true</PublishTrimmed><WasmRunInWorker>{runInWorker.ToString().ToLowerInvariant()}</WasmRunInWorker>");
             ReplaceFile("Program.cs", Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "SimpleSourceChange.cs"));
             ReplaceMainJsWithMinimalRunMain();
 

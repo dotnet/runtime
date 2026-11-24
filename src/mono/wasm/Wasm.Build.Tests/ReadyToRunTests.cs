@@ -592,6 +592,7 @@ namespace Wasm.Build.Tests
 
         private static void AssertPrebuiltFrameworkReadyToRun(string webcilDir, string buildOutput)
         {
+            bool runInWorker = ProjectProviderBase.ParseBootData(Path.Combine(Path.GetDirectoryName(webcilDir)!, "dotnet.js")).runInWorker == true;
             string? runtimePackDir = ProjectProviderBase.TryGetRuntimePackDirFromBuildOutput(buildOutput);
             Assert.NotNull(runtimePackDir);
             string prebuiltDir = Path.Combine(runtimePackDir!, "runtimes", "browser-wasm", "native", "r2r");
@@ -603,7 +604,12 @@ namespace Wasm.Build.Tests
             {
                 string prebuiltPath = Path.Combine(prebuiltDir, Path.GetFileName(webcilPath));
                 if (File.Exists(prebuiltPath))
-                    Assert.Equal(File.ReadAllBytes(prebuiltPath), File.ReadAllBytes(webcilPath));
+                {
+                    byte[] expected = File.ReadAllBytes(prebuiltPath);
+                    if (runInWorker)
+                        expected = WasmMemory.MakeShared(expected);
+                    Assert.Equal(expected, File.ReadAllBytes(webcilPath));
+                }
                 else
                     Assert.Equal(0, GetReadyToRunTableSize(webcilPath));
             }

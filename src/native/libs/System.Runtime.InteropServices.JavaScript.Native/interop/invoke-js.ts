@@ -54,8 +54,8 @@ function bindJsImport(signature: JSFunctionSignature): Function {
 
     dotnetLogger.debug(() => `Binding [JSImport] ${jsFunctionName} from ${jsModuleName} module`);
 
-    const fn = lookupJsImport(jsFunctionName, jsModuleName);
     const argsCount = getSignatureArgumentCount(signature);
+    const fn = lookupJsImport(jsFunctionName, jsModuleName);
 
     const argMarshalers: (BoundMarshalerToJs)[] = new Array(argsCount);
     const argCleanup: (Function | undefined)[] = new Array(argsCount);
@@ -127,6 +127,7 @@ function bindJsImport(signature: JSFunctionSignature): Function {
             jsInteropState.cspPolicy = true;
         }
     }
+
 
     (<any>wrappedFn)[importedJsFunctionSymbol] = closure;
 
@@ -230,8 +231,8 @@ function bindFn(closure: BindingClosureJS) {
         // TODO-MT: always false until threads are enabled, nothing sets ReceiverShouldFree yet
         const receiverShouldFree = isReceiverShouldFree(args);
         const mark = startMeasure();
+        const jsArgs = new Array(argsCount);
         try {
-            const jsArgs = new Array(argsCount);
             for (let index = 0; index < argsCount; index++) {
                 const marshaler = argMarshalers[index]!;
                 const jsArg = marshaler(args);
@@ -245,20 +246,17 @@ function bindFn(closure: BindingClosureJS) {
                 resConverter(args, jsResult);
             }
 
-            if (hasCleanup) {
-                for (let index = 0; index < argsCount; index++) {
-                    const cleanup = argCleanup[index];
-                    if (cleanup) {
-                        cleanup(jsArgs[index]);
-                    }
-                }
-            }
         } catch (ex) {
             // TODO-MT: once threads are enabled, an async import posted to another thread leaves the
             // caller awaiting the pre-created Task and it never reads this slot, so the failure has
             // to be delivered through the Task instead. See bind_fn in src/mono/browser/runtime.
             marshalExceptionToCs(<any>args, ex);
         } finally {
+            if (hasCleanup) {
+                for (let index = 0; index < argsCount; index++) {
+                    argCleanup[index]?.(jsArgs[index]);
+                }
+            }
             if (receiverShouldFree) {
                 Module._free(args as any);
             }
