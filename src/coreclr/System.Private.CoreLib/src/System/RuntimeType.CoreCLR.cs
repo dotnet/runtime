@@ -2643,19 +2643,19 @@ namespace System
                 interfaceType = interfaceType.GetGenericTypeDefinition();
             }
 
-            // Filter the cached interface list directly instead of copying it via GetInterfaces. The candidates are
+            // Filter the cached interface list directly instead of copying it via GetInterfaces. The interfaces are
             // runtime types, so comparing generic type definitions by reference is equivalent to
             // HasSameMetadataDefinitionAs and cheaper.
-            RuntimeType[] candidates = Cache.GetInterfaceList(MemberListType.All, null);
+            RuntimeType[] interfaces = Cache.GetInterfaceList(MemberListType.All, null);
 
             // Usually a single interface matches, which ListBuilder handles without allocating backing storage.
-            // Don't size it for every candidate: that would over-allocate when several interfaces match.
+            // Don't size it for every interface: that would over-allocate when several interfaces match.
             ListBuilder<Type> matches = default;
-            foreach (RuntimeType candidate in candidates)
+            foreach (RuntimeType implementedInterface in interfaces)
             {
-                if (ReferenceEquals(candidate.IsGenericType ? candidate.GetGenericTypeDefinition() : candidate, interfaceType))
+                if (ReferenceEquals(implementedInterface.IsGenericType ? implementedInterface.GetGenericTypeDefinition() : implementedInterface, interfaceType))
                 {
-                    matches.Add(candidate);
+                    matches.Add(implementedInterface);
                 }
             }
 

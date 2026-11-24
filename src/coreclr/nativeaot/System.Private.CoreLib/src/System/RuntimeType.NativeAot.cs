@@ -413,10 +413,10 @@ namespace System
             int count = pEEType->NumInterfaces;
             for (int i = 0; i < count; i++)
             {
-                MethodTable* pImplementedEEType = pEEType->InterfaceMap[i];
-                if ((pImplementedEEType->IsGeneric ? pImplementedEEType->GenericDefinition : pImplementedEEType) == pInterfaceEEType)
+                MethodTable* pImplementedInterface = pEEType->InterfaceMap[i];
+                if ((pImplementedInterface->IsGeneric ? pImplementedInterface->GenericDefinition : pImplementedInterface) == pInterfaceEEType)
                 {
-                    matches.Add(GetTypeFromMethodTable(pImplementedEEType));
+                    matches.Add(GetTypeFromMethodTable(pImplementedInterface));
                 }
             }
 

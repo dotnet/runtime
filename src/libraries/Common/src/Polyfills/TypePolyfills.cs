@@ -55,8 +55,7 @@ internal static partial class TypePolyfills
             int count = 0;
             foreach (Type implementedInterface in interfaces)
             {
-                if (implementedInterface == interfaceType ||
-                    (implementedInterface.IsGenericType && implementedInterface.GetGenericTypeDefinition() == interfaceType))
+                if ((implementedInterface.IsGenericType ? implementedInterface.GetGenericTypeDefinition() : implementedInterface) == interfaceType)
                 {
                     interfaces[count++] = implementedInterface;
                 }
