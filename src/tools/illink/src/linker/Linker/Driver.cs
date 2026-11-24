@@ -731,6 +731,14 @@ namespace Mono.Linker
 
                             continue;
 
+                        case "--pathmap":
+                            if (!GetStringParam(token, out string? physicalPath) ||
+                                !GetStringParam(token, out string? logicalPath))
+                                return -1;
+
+                            context.AddPathMap(physicalPath, logicalPath);
+                            continue;
+
                         case "--version":
                             Version();
                             return 1;
@@ -1549,6 +1557,7 @@ namespace Mono.Linker
             Console.WriteLine("  --warnaserror[+|-] WARN   Report specific warnings as errors");
             Console.WriteLine("  --singlewarn[+|-]         Show at most one analysis warning per assembly");
             Console.WriteLine("  --singlewarn[+|-] ASM     Show at most one analysis warning for a specific assembly");
+            Console.WriteLine("  --pathmap PHYSICAL LOGICAL Map physical path prefix to logical path prefix in diagnostics");
             Console.WriteLine("  --version                 Print the version number of the {0}", _linker);
 
             Console.WriteLine();

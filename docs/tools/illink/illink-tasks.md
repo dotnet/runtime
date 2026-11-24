@@ -62,9 +62,11 @@ assembly, the selected dotnet host executable, and the entire ILLink assembly.
 File contents are hashed on every invocation. Linker changes invalidate the cache even when
 the module version ID (MVID), file length, and timestamp are unchanged.
 `SourceRoots` with stable `MappedPath` metadata allow equivalent relative layouts in different
-clones/worktrees to share a key. Only known path-valued inputs and input/output identities are mapped for the key;
+clones/worktrees to share a key and are forwarded to ILLink via `--pathmap` so linker diagnostic
+origins use the same logical prefixes and can be cached and replayed verbatim. Only known
+path-valued inputs and input/output identities are mapped for the key;
 external paths remain absolute and argument/search-directory order is preserved.
-Tool arguments retain the task's original path values, independently of whether caching is enabled.
+Tool arguments retain the task's original input path values, independently of whether caching is enabled.
 Cache descriptions resolve relative paths against the caller's working directory and retain physical
 full paths; only key construction maps them to portable identities. Multiple roots, such as a checkout and a
 NuGet package directory, can be mapped independently. This does not change the working directory,

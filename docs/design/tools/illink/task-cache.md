@@ -21,8 +21,10 @@ maintenance commands.
 
 `ILLink` derives from the shared `CachedToolTask`, supplying `CacheConfiguration`, `DescribeInvocation`,
 and `ExecuteToolCore`. The base class checks whether caching is enabled before describing the invocation.
-Argument construction retains the task's ordinary `StringBuilder` flow and parameter order.
-Path values and extra arguments are passed through as supplied; cache identity does not alter
+Argument construction retains the task's ordinary `StringBuilder` flow and parameter order,
+forwarding any valid logical `SourceRoots` (`MappedPath`) as `--pathmap` arguments so linker
+diagnostic origins are path-independent and can be cached and replayed verbatim. Other path
+values and extra arguments are passed through as supplied; cache identity does not alter
 argument construction or the working directory.
 
 `DescribeInvocation` runs only when caching is enabled. It reads relevant task settings and item

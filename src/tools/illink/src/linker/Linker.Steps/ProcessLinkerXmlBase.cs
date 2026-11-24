@@ -44,6 +44,18 @@ namespace Mono.Linker.Steps
         protected readonly LinkContext _context;
 
         protected ProcessLinkerXmlBase(LinkContext context, Stream documentStream, string xmlDocumentLocation)
+            : this(context, documentStream, context.MapPath(xmlDocumentLocation), resource: null)
+        {
+        }
+
+        protected ProcessLinkerXmlBase(LinkContext context, Stream documentStream, EmbeddedResource resource, AssemblyDefinition resourceAssembly, string xmlDocumentLocation)
+            : this(context, documentStream, xmlDocumentLocation, (resource, resourceAssembly))
+        {
+            ArgumentNullException.ThrowIfNull(resource);
+            ArgumentNullException.ThrowIfNull(resourceAssembly);
+        }
+
+        private ProcessLinkerXmlBase(LinkContext context, Stream documentStream, string xmlDocumentLocation, (EmbeddedResource Resource, AssemblyDefinition Assembly)? resource)
         {
             _context = context;
             using (documentStream)
@@ -51,15 +63,7 @@ namespace Mono.Linker.Steps
                 _document = XDocument.Load(documentStream, LoadOptions.SetLineInfo).CreateNavigator();
             }
             _xmlDocumentLocation = xmlDocumentLocation;
-        }
-
-        protected ProcessLinkerXmlBase(LinkContext context, Stream documentStream, EmbeddedResource resource, AssemblyDefinition resourceAssembly, string xmlDocumentLocation)
-            : this(context, documentStream, xmlDocumentLocation)
-        {
-            ArgumentNullException.ThrowIfNull(resource);
-            ArgumentNullException.ThrowIfNull(resourceAssembly);
-
-            _resource = (resource, resourceAssembly);
+            _resource = resource;
         }
 
         protected virtual bool ShouldProcessElement(XPathNavigator nav) => FeatureSettings.ShouldProcessElement(nav, _context, _xmlDocumentLocation);

@@ -2542,10 +2542,11 @@ namespace ILLink.Tasks.Tests
             if (unsupportedArgs)
                 test.Task.ExtraArgs = "--help";
 
-            test.Task.GetResponseFileCommands();
-            Assert.Equal(0, root.MappedPathReads);
+            string response = test.Task.GetResponseFileCommands();
+            Assert.Contains("--pathmap", response);
+            Assert.Equal(1, root.MappedPathReads);
             Assert.Equal(!unsupportedArgs, test.Task.TryGetCacheKey(host, out _));
-            Assert.Equal(unsupportedArgs ? 0 : 1, root.MappedPathReads);
+            Assert.Equal(unsupportedArgs ? 2 : 3, root.MappedPathReads);
         }
 
         [Theory]
@@ -2785,22 +2786,80 @@ namespace ILLink.Tasks.Tests
 
                 string afterCommandLine = test.Task.GetCommandLineCommands();
                 string afterResponse = test.Task.GetResponseFileCommands();
-                if (name == nameof(ILLink.SourceRoots))
-                {
-                    Assert.Equal(beforeCommandLine, afterCommandLine);
-                    Assert.Equal(beforeResponse, afterResponse);
-                }
-                else
-                {
-                    Assert.True(beforeCommandLine != afterCommandLine || beforeResponse != afterResponse,
-                        $"Mutating {name} did not change generated tool arguments.");
-                }
+                Assert.True(beforeCommandLine != afterCommandLine || beforeResponse != afterResponse,
+                    $"Mutating {name} did not change generated tool arguments.");
 
                 bool afterCacheable = test.Task.TryGetCacheKey(host, out string afterKey);
                 Assert.Equal(cacheable, afterCacheable);
                 if (cacheable)
                     Assert.NotEqual(beforeKey, afterKey);
             }
+        }
+
+        [Fact]
+        public void TaskPathMapsDiagnosticOriginsAndSharesCachedWarningsAcrossRoots()
+        {
+            RemoteExecutor.Invoke(static () =>
+            {
+                using var first = new OutputDirectoryTest();
+                using var second = new OutputDirectoryTest();
+                string cacheDirectory = Path.Combine(first.Root, "cache");
+                Environment.SetEnvironmentVariable("ILLINK_EXPERIMENTAL_CACHE", "true");
+                Environment.SetEnvironmentVariable("ILLINK_EXPERIMENTAL_CACHE_PATH", cacheDirectory);
+
+                string descriptorContent = "<linker><assembly fullname=\"Input\"><type fullname=\"MissingExternalType\" /></assembly></linker>";
+                byte[] embeddedDescriptor = Encoding.UTF8.GetBytes("<linker><assembly fullname=\"Input\"><type fullname=\"MissingEmbeddedType\" /></assembly></linker>");
+                string firstInput = Path.Combine(first.Root, "Input.dll");
+                using (var assembly = Mono.Cecil.AssemblyDefinition.CreateAssembly(
+                    new Mono.Cecil.AssemblyNameDefinition("Input", new Version(1, 0)), "Input", Mono.Cecil.ModuleKind.Dll))
+                {
+                    var ctor = assembly.MainModule.ImportReference(
+                        typeof(AssemblyMetadataAttribute).GetConstructor(new[] { typeof(string), typeof(string) }));
+                    var attr = new Mono.Cecil.CustomAttribute(ctor);
+                    attr.ConstructorArguments.Add(new Mono.Cecil.CustomAttributeArgument(assembly.MainModule.TypeSystem.String, "IsTrimmable"));
+                    attr.ConstructorArguments.Add(new Mono.Cecil.CustomAttributeArgument(assembly.MainModule.TypeSystem.String, "invalid"));
+                    assembly.CustomAttributes.Add(attr);
+                    assembly.MainModule.Resources.Add(new Mono.Cecil.EmbeddedResource(
+                        "ILLink.Descriptors.xml", Mono.Cecil.ManifestResourceAttributes.Public, embeddedDescriptor));
+                    assembly.Write(firstInput);
+                }
+                File.WriteAllText(Path.Combine(first.Root, "descriptor.xml"), descriptorContent);
+                File.Copy(firstInput, Path.Combine(second.Root, "Input.dll"));
+                File.WriteAllText(Path.Combine(second.Root, "descriptor.xml"), descriptorContent);
+
+                foreach (var test in new[] { first, second })
+                {
+                    var task = new ILLink
+                    {
+                        BuildEngine = test.BuildEngine,
+                        SourceRoots = test.Task.SourceRoots,
+                        OutputDirectory = test.Task.OutputDirectory,
+                        ToolPath = test.Task.ToolPath,
+                        ToolExe = test.Task.ToolExe,
+                        ILLinkPath = test.Task.ILLinkPath,
+                        AssemblyPaths = new ITaskItem[] { new TaskItem(Path.Combine(test.Root, "Input.dll")) },
+                        ReferenceAssemblyPaths = new ITaskItem[] { new TaskItem(typeof(object).Assembly.Location) },
+                        RootAssemblyNames = new ITaskItem[] { new TaskItem("Input", new Dictionary<string, string> { { "RootMode", "library" } }) },
+                        RootDescriptorFiles = new ITaskItem[] { new TaskItem(Path.Combine(test.Root, "descriptor.xml")) },
+                        TrimMode = "partial",
+                        ExtraArgs = null
+                    };
+                    Assert.True(task.Execute(), string.Join(Environment.NewLine, test.BuildEngine.Errors.Select(e => e.Message)));
+                }
+
+                Assert.Contains(first.BuildEngine.Messages, message => message.Message.StartsWith("ILLink cache stored:"));
+                Assert.Contains(second.BuildEngine.Messages, message => message.Message.StartsWith("ILLink cache hit:"));
+
+                var firstWarnings = first.BuildEngine.Warnings.Select(w => (w.File, w.Code, w.Message)).ToArray();
+                var secondWarnings = second.BuildEngine.Warnings.Select(w => (w.File, w.Code, w.Message)).ToArray();
+                Assert.Equal(firstWarnings, secondWarnings);
+
+                Assert.Contains(firstWarnings, w => w.File == "/_/descriptor.xml" && w.Message.Contains("MissingExternalType"));
+                Assert.Contains(firstWarnings, w => w.File == "/_/Input.dll" && w.Message.Contains("IsTrimmable"));
+                Assert.Contains(firstWarnings, w => w.File.StartsWith("resource ILLink.Descriptors.xml in Input", StringComparison.Ordinal) && w.Message.Contains("MissingEmbeddedType"));
+                Assert.DoesNotContain(firstWarnings, w => w.File.Contains(first.Root, StringComparison.OrdinalIgnoreCase) || w.Message.Contains(first.Root, StringComparison.OrdinalIgnoreCase));
+                Assert.DoesNotContain(secondWarnings, w => w.File.Contains(first.Root, StringComparison.OrdinalIgnoreCase) || w.File.Contains(second.Root, StringComparison.OrdinalIgnoreCase));
+            }).Dispose();
         }
 
         private sealed class CountingTaskItem(ITaskItem item) : ITaskItem

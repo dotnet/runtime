@@ -297,6 +297,22 @@ namespace ILLink.Tasks
         }
 
 #nullable enable annotations
+        private SourceRootPathMap CreateSourceRootPathMap(out string? pathDependentReason)
+        {
+            try
+            {
+                var paths = new SourceRootPathMap(SourceRoots);
+                pathDependentReason = paths.HasLogicalRoots ? null : "no SourceRoots have logical MappedPath prefixes.";
+                return paths;
+            }
+            catch (Exception ex) when (ex is NotSupportedException or ArgumentException)
+            {
+                // Physical identities cannot collide, so ambiguous mappings only limit sharing.
+                pathDependentReason = ex.Message;
+                return new SourceRootPathMap(null);
+            }
+        }
+
         private protected override InvocationDescription? DescribeInvocation(string pathToTool, string responseFileCommands, string commandLineCommands)
         {
             if (CustomSteps?.Length > 0 || CustomData?.Length > 0 || DumpDependencies ||
@@ -324,19 +340,9 @@ namespace ILLink.Tasks
                     Log.LogMessage(MessageImportance.Low, "ILLink cache bypassed: extra arguments are not supported.");
                     return null;
                 }
-                SourceRootPathMap paths;
-                try
-                {
-                    paths = new SourceRootPathMap(SourceRoots);
-                    if (!paths.HasLogicalRoots)
-                        Log.LogMessage(MessageImportance.Low, "ILLink cache key is path-dependent: no SourceRoots have logical MappedPath prefixes.");
-                }
-                catch (Exception ex) when (ex is NotSupportedException or ArgumentException)
-                {
-                    // Physical identities cannot collide, so ambiguous mappings only limit sharing.
-                    Log.LogMessage(MessageImportance.Low, $"ILLink cache key is path-dependent: {ex.Message}");
-                    paths = new SourceRootPathMap(null);
-                }
+                SourceRootPathMap paths = CreateSourceRootPathMap(out string? pathDependentReason);
+                if (pathDependentReason is not null)
+                    Log.LogMessage(MessageImportance.Low, $"ILLink cache key is path-dependent: {pathDependentReason}");
                 string? outputDirectory = OutputDirectory is null ? null : GetFullInvocationPath(OutputDirectory.ItemSpec);
                 bool emitsSymbols = false;
                 var assemblies = new HashSet<string>(StringComparer.Ordinal);
@@ -870,6 +876,10 @@ namespace ILLink.Tasks
 
             if (PreserveSymbolPaths)
                 args.AppendLine("--preserve-symbol-paths");
+
+            SourceRootPathMap pathMap = CreateSourceRootPathMap(out _);
+            foreach (var (physical, logical) in pathMap.Roots)
+                args.Append("--pathmap ").Append(Quote(physical)).Append(' ').AppendLine(Quote(logical));
 
             if (CustomSteps != null)
             {

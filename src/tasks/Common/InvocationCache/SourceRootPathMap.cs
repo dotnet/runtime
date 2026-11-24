@@ -34,11 +34,17 @@ internal sealed class SourceRootPathMap
                 throw new NotSupportedException("Duplicate physical SourceRoots are not supported.");
             _roots.Add((physical, logical));
         }
-        _roots.Sort((left, right) => right.Physical.Length.CompareTo(left.Physical.Length));
+        _roots.Sort((left, right) =>
+        {
+            int lengthOrder = right.Physical.Length.CompareTo(left.Physical.Length);
+            return lengthOrder != 0 ? lengthOrder : string.CompareOrdinal(left.Logical, right.Logical);
+        });
         CheckMappings();
     }
 
     internal bool HasLogicalRoots => _roots.Count > 0;
+
+    internal IReadOnlyList<(string Physical, string Logical)> Roots => _roots;
 
     private void CheckMappings()
     {

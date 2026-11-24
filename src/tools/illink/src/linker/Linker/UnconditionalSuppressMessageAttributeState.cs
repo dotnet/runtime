@@ -344,7 +344,7 @@ namespace Mono.Linker
 
                         break;
                     default:
-                        _context.LogWarning(_context.GetAssemblyLocation(module.Assembly), DiagnosticId.InvalidScopeInUnconditionalSuppressMessage, info.Scope ?? "", module.Name, info.Target ?? "");
+                        _context.LogWarning(_context.GetMappedAssemblyLocation(module.Assembly), DiagnosticId.InvalidScopeInUnconditionalSuppressMessage, info.Scope ?? "", module.Name, info.Target ?? "");
                         break;
                 }
             }
