@@ -13,7 +13,8 @@ import { initPolyfillsLoader } from "./polyfills";
 import { validateEngineFeatures } from "./bootstrap";
 import { loaderCallbacks } from "./callbacks";
 import { getAppSettingsAssets } from "../appsettings";
-import { fetchAppSettings, nativeWasmReadyTime, compileDeferredR2R, wasmMemoryPromiseController } from "./assets";
+import { fetchAppSettings, nativeWasmReadyTime, prepareDeferredR2R, wasmMemoryPromiseController } from "./assets";
+import type { DeferredR2RPreparation } from "./assets";
 import { ENVIRONMENT_IS_WEB } from "../per-module";
 
 const runMainPromiseController = createPromiseCompletionSource<number>();
@@ -25,7 +26,7 @@ let downloadedIntoMemory = false;
 let configInitialized = false;
 let modulesAfterConfigLoadedCache: [JsAsset, Promise<any>][] = [];
 let deferredR2RPromise: Promise<void> | undefined;
-let deferredR2RCompiledModule: Promise<WebAssembly.Module> | undefined;
+let deferredR2RPreparedImage: Promise<DeferredR2RPreparation> | undefined;
 let deferredR2RCacheHit: Promise<boolean> | undefined;
 let deferredR2RHistory: { storage: Storage, key: string, hash: string } | undefined;
 let deferredR2RNativeFirst = false;
@@ -72,16 +73,19 @@ function queueDeferredR2R(): void {
     deferredR2RState.downloadQueuedTime = performance.now();
     const activationStart = startPerformanceMeasure(loaderConfig);
     const probeCache = readDeferredR2RHistory();
-    const compilation = compileDeferredR2R(assets[0], () => {
+    const preparation = prepareDeferredR2R(assets[0], () => {
         deferredR2RState.status = "downloading";
         deferredR2RState.downloadStartedTime = performance.now();
-    }, probeCache);
-    const compiledModule = deferredR2RCompiledModule = compilation.module.then(module => {
-        deferredR2RState.compiledTime = performance.now();
-        endPerformanceMeasure("dotnet.deferred-r2r.compile", activationStart);
-        return module;
+    }, probeCache, async response => {
+        await nativeModulePromiseController.promise;
+        await installDeferredR2R(response);
     });
-    deferredR2RCacheHit = compilation.cached.then(result => {
+    const preparedImage = deferredR2RPreparedImage = preparation.prepared.then(image => {
+        deferredR2RState.compiledTime = "module" in image ? performance.now() : deferredR2RState.instantiatedTime;
+        endPerformanceMeasure("dotnet.deferred-r2r.compile", activationStart);
+        return image;
+    });
+    deferredR2RCacheHit = preparation.cached.then(result => {
         if (probeCache) {
             deferredR2RState.cacheStatus = result.reason;
             if (!result.hit) updateDeferredR2RHistory(false);
@@ -100,10 +104,11 @@ function queueDeferredR2R(): void {
     });
 
     async function activate(): Promise<void> {
-        const [module] = await Promise.all([compiledModule, deferredR2RActivationGate.promise, deferredR2RCacheHit]);
+        const [image] = await Promise.all([preparedImage, deferredR2RActivationGate.promise, deferredR2RCacheHit]);
         if (!deferredR2RNativeFirst) {
+            if (!("module" in image)) throw new Error("Cannot activate a cached ReadyToRun image through the deferred path.");
             await delay(0);
-            await installDeferredR2R(module);
+            await installDeferredR2R(image);
             endPerformanceMeasure("dotnet.deferred-r2r.download-and-instantiate", activationStart);
             await delay(0);
             if (isExited()) throw new Error("Runtime exited during deferred ReadyToRun activation.");
@@ -118,12 +123,12 @@ function queueDeferredR2R(): void {
     }
 }
 
-async function installDeferredR2R(module: WebAssembly.Module): Promise<void> {
+async function installDeferredR2R(input: Response | { module: WebAssembly.Module }): Promise<void> {
     if (isExited()) throw new Error("Runtime exited before deferred ReadyToRun instantiation.");
     deferredR2RState.nativeWasmReadyTime = nativeWasmReadyTime;
     const memory = await wasmMemoryPromiseController.promise;
     const asset = loaderConfig.resources!.r2rAssembly![0];
-    await dotnetBrowserHostExports.instantiateWebcilModule(Promise.resolve({ module }), memory,
+    await dotnetBrowserHostExports.instantiateWebcilModule(Promise.resolve(input), memory,
         asset.virtualPath!, asset.tableSize, asset.payloadSize);
     deferredR2RState.instantiatedTime = performance.now();
     deferredR2RState.status = "activating";
@@ -354,7 +359,7 @@ async function initializeCoreCLR(): Promise<void> {
         deferredR2RNativeFirst = true;
         deferredR2RState.startupMode = "cached-native";
         deferredR2RState.activationMode = "eager";
-        await installDeferredR2R(await deferredR2RCompiledModule!);
+        await deferredR2RPreparedImage;
     }
     const start = startPerformanceMeasure(loaderConfig);
     const res = dotnetBrowserHostExports.initializeCoreCLR(!!assets?.length && !deferredR2RNativeFirst);

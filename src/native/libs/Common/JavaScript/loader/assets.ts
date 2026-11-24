@@ -168,16 +168,19 @@ export async function fetchAssembly(asset: AssemblyAsset, reportProgress = true)
     }
 }
 
-export function compileDeferredR2R(asset: AssemblyAsset, onDownloadStarted: () => void, probeCache: boolean):
-    { module: Promise<WebAssembly.Module>, cached: Promise<{ hit: boolean, reason: string }> } {
+export type DeferredR2RPreparation = { module: WebAssembly.Module } | { installed: true };
+
+export function prepareDeferredR2R(asset: AssemblyAsset, onDownloadStarted: () => void, probeCache: boolean,
+    onCachedResponse: (response: Response) => Promise<void>):
+    { prepared: Promise<DeferredR2RPreparation>, cached: Promise<{ hit: boolean, reason: string }> } {
     const assetInternal = prepareAssemblyAsset(asset);
     assetInternal.onDownloadStarted = onDownloadStarted;
     const cached = createPromiseCompletionSource<{ hit: boolean, reason: string }>();
-    const module = compile();
-    void module.catch(error => cached.reject(error));
-    return { module, cached: cached.promise };
+    const prepared = prepare();
+    void prepared.catch(error => cached.reject(error));
+    return { prepared, cached: cached.promise };
 
-    async function compile(): Promise<WebAssembly.Module> {
+    async function prepare(): Promise<DeferredR2RPreparation> {
         try {
             let response: Response | undefined;
             if (probeCache) {
@@ -207,16 +210,20 @@ export function compileDeferredR2R(asset: AssemblyAsset, onDownloadStarted: () =
             } else {
                 cached.resolve({ hit: false, reason: "not-probed" });
             }
-            if (!response?.ok) response = await loadResource(assetInternal);
+            if (response?.ok) {
+                await onCachedResponse(response);
+                return { installed: true };
+            }
+            response = await loadResource(assetInternal);
             if (!response.ok) {
                 throw new Error(`Failed to load deferred ReadyToRun image '${asset.name}'. HTTP status: ${response.status} ${response.statusText}`);
             }
             const contentType = response.headers?.get("Content-Type");
             if (typeof WebAssembly.compileStreaming === "function" && typeof globalThis.Response === "function" &&
                 response instanceof globalThis.Response && contentType === "application/wasm") {
-                return await WebAssembly.compileStreaming(response);
+                return { module: await WebAssembly.compileStreaming(response) };
             }
-            return await WebAssembly.compile(await response.arrayBuffer());
+            return { module: await WebAssembly.compile(await response.arrayBuffer()) };
         } finally {
             onDownloadedAsset(assetInternal, false);
         }

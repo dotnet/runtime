@@ -350,31 +350,65 @@ namespace Wasm.Build.Tests
                                 (() => {
                                     const original = globalThis.fetch.bind(globalThis);
                                     const gate = new Promise(resolve => { globalThis.deferredNormalR2RRelease = resolve; });
+                                    const cachedResponses = new WeakSet();
+                                    globalThis.deferredCachedR2RCalls = { compile: 0, instantiate: 0, beforeDotnetReady: false };
+                                    const compile = WebAssembly.compileStreaming.bind(WebAssembly);
+                                    WebAssembly.compileStreaming = response => {
+                                        if (cachedResponses.has(response)) deferredCachedR2RCalls.compile++;
+                                        return compile(response);
+                                    };
+                                    const instantiate = WebAssembly.instantiateStreaming.bind(WebAssembly);
+                                    WebAssembly.instantiateStreaming = (response, imports) => {
+                                        if (cachedResponses.has(response)) {
+                                            deferredCachedR2RCalls.instantiate++;
+                                            deferredCachedR2RCalls.beforeDotnetReady = !globalThis.deferredVmInitialized;
+                                        }
+                                        return instantiate(response, imports);
+                                    };
                                     globalThis.fetch = (input, init) => {
                                         const url = typeof input === "string" ? input : input.url;
                                         if (!url.includes(".r2r.") || !url.endsWith(".wasm")) return original(input, init);
                                         if (init?.cache === "only-if-cached")
                                             return caches.open("deferred-r2r-test").then(cache => cache.match(input))
-                                                .then(response => response ?? new Response("", { status: 504 }));
+                                                .then(response => {
+                                                    if (response?.ok) {
+                                                        if (location.search.includes("buffered-r2r")) {
+                                                            const headers = new Headers(response.headers);
+                                                            headers.set("Content-Type", "application/octet-stream");
+                                                            response = new Response(response.body, { headers });
+                                                        }
+                                                        cachedResponses.add(response);
+                                                    }
+                                                    return response ?? new Response("", { status: 504 });
+                                                });
                                         return gate.then(() => original(input, init));
                                     };
                                 })();
                                 """);
-                            await page.GotoAsync($"{baseUrl}?single-slot", new() { WaitUntil = WaitUntilState.Commit });
-                            await page.Locator(".page").WaitForAsync(new() { Timeout = InteractionTimeoutMs });
-                            uint[] first = await page.EvaluateAsync<uint[]>("""
-                                [deferredStartupProbe.value, deferredStartupProbe.interpreterData, deferredStartupProbe.flags & 4]
-                                """);
-                            Assert.Equal(42u, first[0]);
-                            Assert.Equal(0u, first[1]);
-                            Assert.Equal(0u, first[2]);
-                            await page.EvaluateAsync("deferredNormalR2RRelease()");
-                            await page.EvaluateAsync("getDotnetRuntime(0).INTERNAL.waitForDeferredR2R()");
-                            JsonElement cached = await page.EvaluateAsync<JsonElement>("getDotnetRuntime(0).INTERNAL.getDeferredR2RState()");
-                            Assert.Equal("cached-native", cached.GetProperty("startupMode").GetString());
-                            Assert.Equal("cache-hit", cached.GetProperty("cacheStatus").GetString());
-                            Assert.Equal("eager", cached.GetProperty("activationMode").GetString());
-                            await InteractAllPagesAsync(page);
+                            foreach (bool buffered in new[] { false, true })
+                            {
+                                await page.GotoAsync($"{baseUrl}?single-slot{(buffered ? "&buffered-r2r" : string.Empty)}",
+                                    new() { WaitUntil = WaitUntilState.Commit });
+                                await page.Locator(".page").WaitForAsync(new() { Timeout = InteractionTimeoutMs });
+                                uint[] first = await page.EvaluateAsync<uint[]>("""
+                                    [deferredStartupProbe.value, deferredStartupProbe.interpreterData, deferredStartupProbe.flags & 4]
+                                    """);
+                                Assert.Equal(42u, first[0]);
+                                Assert.Equal(0u, first[1]);
+                                Assert.Equal(0u, first[2]);
+                                int[] calls = await page.EvaluateAsync<int[]>("""
+                                    [deferredCachedR2RCalls.compile, deferredCachedR2RCalls.instantiate,
+                                        deferredCachedR2RCalls.beforeDotnetReady ? 1 : 0]
+                                    """);
+                                Assert.Equal(new[] { 0, buffered ? 0 : 1, buffered ? 0 : 1 }, calls);
+                                await page.EvaluateAsync("deferredNormalR2RRelease()");
+                                await page.EvaluateAsync("getDotnetRuntime(0).INTERNAL.waitForDeferredR2R()");
+                                JsonElement cached = await page.EvaluateAsync<JsonElement>("getDotnetRuntime(0).INTERNAL.getDeferredR2RState()");
+                                Assert.Equal("cached-native", cached.GetProperty("startupMode").GetString());
+                                Assert.Equal("cache-hit", cached.GetProperty("cacheStatus").GetString());
+                                Assert.Equal("eager", cached.GetProperty("activationMode").GetString());
+                                await InteractAllPagesAsync(page);
+                            }
                             await page.EvaluateAsync("""
                                 () => {
                                     for (const key of Object.keys(localStorage)) {

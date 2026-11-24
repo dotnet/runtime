@@ -22,8 +22,8 @@ bodies. Development builds and the existing publish modes are unchanged.
 The complete eager assembly closure is downloaded before runtime initialization. The
 compiled composite is listed separately in `resources.r2rAssembly` and enqueued directly
 after the eager assets in the same download throttler. Fetching and streaming compilation
-do not wait for eager completion, native Wasm or VM initialization. Its download slot is
-released after compilation consumes the response. Instantiation into shared memory and
+do not wait for eager completion, native Wasm or VM initialization. On the deferred path,
+its download slot is released after compilation consumes the response. Instantiation into shared memory and
 the function table on the deferred path waits for VM readiness and a browser turn. Image attachment publishes
 a readiness flag; methods prepared before
 arrival check it at their interpreter entry safepoint and activate on demand. The triggering
@@ -36,6 +36,12 @@ After successful attachment, the loader remembers the resource hash in app-scope
 local storage. On a later load of the same version, a same-origin HTTP-cache-only
 probe can select `startupMode: "cached-native"`: the cached image is installed before
 VM initialization and managed code starts through ordinary ReadyToRun dispatch.
+The cache-hit response goes directly to the existing Webcil installer as soon as the
+native host is ready. It reserves payload and table space before using
+`WebAssembly.instantiateStreaming`, without a separate `compileStreaming` pass or a
+second body read. Unsupported streaming or a non-Wasm MIME type uses the installer's
+existing buffered fallback. The download slot is released after installation consumes
+the cached response; VM initialization still waits for installation and the eager assets.
 A cache miss keeps deferred startup. Custom resource loaders, service-worker-controlled
 pages and cross-origin images conservatively use deferred startup. Storage access and
 probe failures are reported; this hint does not replace integrity or compatibility checks.
@@ -47,6 +53,9 @@ For prototype validation, `getDotnetRuntime(0).INTERNAL.waitForDeferredR2R()` aw
 image attachment and `INTERNAL.getDeferredR2RState()` reports startup mode, cache result,
 phase timings and live method-activation counters. Deferred startup uses `activationMode: "lazy"`;
 cached native-first startup uses `"eager"` and does not count lazy publications.
+For cached native-first startup, `compiledTime` is an upper bound at instantiation
+completion, and the `dotnet.deferred-r2r.compile` measure includes the combined
+compilation/installation work. Use browser compiler traces to separate those phases.
 Zero published methods at readiness is
 valid: unused methods need never activate. These are internal diagnostics, not supported
 public APIs; after runtime exit the getter retains its last observed counter snapshot.
