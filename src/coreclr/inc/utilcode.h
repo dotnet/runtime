@@ -11,6 +11,7 @@
 #define __UtilCode_h__
 
 #include <type_traits>
+#include <minipal/thread.h>
 #include <algorithm>
 #include <stdio.h>
 #include <limits.h>
@@ -2305,7 +2306,13 @@ HRESULT GetDebuggerSettingInfoWorker(_Out_writes_to_opt_(*pcchDebuggerString, *p
 
 void TrimWhiteSpace(__inout_ecount(*pcch)  LPCWSTR *pwsz, __inout LPDWORD pcch);
 
+#ifdef HOST_UNIX
+// There is no debugger channel for debug output outside Windows.
+#define OutputDebugString(x) ((void)0)
+#define OutputDebugStringUtf8(x) ((void)0)
+#else
 void OutputDebugStringUtf8(LPCUTF8 utf8str);
+#endif
 
 //*****************************************************************************
 // Convert a UTF8 string to Unicode, into a CQuickArray<WCHAR>.
@@ -2479,7 +2486,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         // not fiber for HOST_UNIX - use the regular thread ID
-        return (void *)(size_t)GetCurrentThreadId();
+        return (void *)minipal_get_current_thread_id();
     }
 
     static void* GetStackBase()

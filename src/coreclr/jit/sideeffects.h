@@ -72,8 +72,8 @@ public:
         Compiler* m_compiler;
         GenTree*  m_node;
         unsigned  m_flags;
-        unsigned  m_lclNum;
-        unsigned  m_lclOffs;
+        unsigned  m_readLclNum;
+        unsigned  m_readLclOffs;
 
     public:
         NodeInfo(Compiler* compiler, GenTree* node);
@@ -108,16 +108,58 @@ public:
             return (m_flags & ALIAS_WRITES_LCL_VAR) != 0;
         }
 
-        inline unsigned LclNum() const
+        inline unsigned ReadLclNum() const
         {
-            assert(IsLclVarRead() || IsLclVarWrite());
-            return m_lclNum;
+            assert(IsLclVarRead());
+            return m_readLclNum;
         }
 
-        inline unsigned LclOffs() const
+        inline unsigned ReadLclOffs() const
         {
-            assert(IsLclVarRead() || IsLclVarWrite());
-            return m_lclOffs;
+            assert(IsLclVarRead());
+            return m_readLclOffs;
+        }
+
+        template <typename TVisitor>
+        GenTree::VisitResult VisitLocalWrites(TVisitor visitor) const
+        {
+            assert(IsLclVarWrite());
+            bool                 anyDefs = false;
+            GenTree::VisitResult result  = m_node->VisitLogicalLocalDefs(m_compiler, [&](const auto& def) {
+                anyDefs = true;
+                return visitor(def);
+            });
+            if (anyDefs)
+            {
+                return result;
+            }
+
+            GenTree* location = m_node->OperIsIndir() ? m_node->AsIndir()->Addr() : m_node;
+            assert(location->OperIsAnyLocal());
+
+            struct IndirectLocalDef
+            {
+                GenTree*             m_node;
+                GenTreeLclVarCommon* m_local;
+
+                unsigned GetLclNum() const
+                {
+                    return m_local->GetLclNum();
+                }
+
+                ssize_t GetOffset(Compiler* compiler) const
+                {
+                    return m_local->GetLclOffs();
+                }
+
+                ValueSize GetSize(Compiler* compiler) const
+                {
+                    return ValueSize(genTypeSize(m_node));
+                }
+            };
+
+            const IndirectLocalDef def{m_node, location->AsLclVarCommon()};
+            return visitor(def);
         }
 
         inline bool WritesAnyLocation() const
@@ -133,14 +175,12 @@ public:
                 // exception-throwing nodes so we conservatively consider them
                 // globally visible.
 
-                LclVarDsc* const varDsc = m_compiler->lvaGetDesc(LclNum());
-
-                if (varDsc->lvTracked)
-                {
-                    return varDsc->IsLiveInOutOfHandler();
-                }
-
-                return m_compiler->compHndBBtabCount > 0;
+                return VisitLocalWrites([&](const auto& def) {
+                    LclVarDsc* varDsc = m_compiler->lvaGetDesc(def.GetLclNum());
+                    bool       liveInHandler =
+                        varDsc->lvTracked ? varDsc->IsLiveInOutOfHandler() : m_compiler->compHndBBtabCount > 0;
+                    return liveInHandler ? GenTree::VisitResult::Abort : GenTree::VisitResult::Continue;
+                }) == GenTree::VisitResult::Abort;
             }
 
             return false;

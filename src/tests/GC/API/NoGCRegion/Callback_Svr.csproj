@@ -2,12 +2,9 @@
   <PropertyGroup>
     <!-- Needed for CLRTestTargetUnsupported -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
-    <!-- Consider enable it for Mono whenever the implementation is ready -->
-    <!-- https://github.com/dotnet/runtime/issues/73167 -->
-    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' != 'coreclr'">true</CLRTestTargetUnsupported>
     <!-- TODO: Re-enable when CoreCLR WebAssembly supports server GC and managed threads.
          Tracked by https://github.com/dotnet/runtime/issues/131321. -->
-    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'">true</CLRTestTargetUnsupported>
+    <CLRTestTargetUnsupported Condition="'$(TargetOS)' == 'browser'">true</CLRTestTargetUnsupported>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup>
