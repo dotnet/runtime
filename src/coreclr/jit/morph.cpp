@@ -2450,7 +2450,16 @@ bool Compiler::fgTryMorphStructArg(CallArg* arg)
                     addr                  = gtNewOperNode(GT_ADD, indirAddr->TypeGet(), indirAddrDup, offsetNode);
                 }
 
-                return gtNewIndir(type, addr, argNode->gtFlags & GTF_IND_COPYABLE_FLAGS);
+                GenTree* indir = gtNewIndir(type, addr, argNode->gtFlags & GTF_IND_COPYABLE_FLAGS);
+
+                // A nonfaulting load may depend on a guarding check (e.g. from
+                // non-null assertion prop); keep it ordered after that guard.
+                if (((argNode->gtFlags & GTF_IND_NONFAULTING) != 0) && ((argNode->gtFlags & GTF_ORDER_SIDEEFF) != 0))
+                {
+                    indir->SetHasOrderingSideEffect();
+                }
+
+                return indir;
             }
         };
 
