@@ -168,22 +168,58 @@ export async function fetchAssembly(asset: AssemblyAsset, reportProgress = true)
     }
 }
 
-export async function compileDeferredR2R(asset: AssemblyAsset, onDownloadStarted: () => void): Promise<WebAssembly.Module> {
+export function compileDeferredR2R(asset: AssemblyAsset, onDownloadStarted: () => void, probeCache: boolean):
+    { module: Promise<WebAssembly.Module>, cached: Promise<{ hit: boolean, reason: string }> } {
     const assetInternal = prepareAssemblyAsset(asset);
     assetInternal.onDownloadStarted = onDownloadStarted;
-    try {
-        const response = await loadResource(assetInternal);
-        if (!response.ok) {
-            throw new Error(`Failed to load deferred ReadyToRun image '${asset.name}'. HTTP status: ${response.status} ${response.statusText}`);
+    const cached = createPromiseCompletionSource<{ hit: boolean, reason: string }>();
+    const module = compile();
+    void module.catch(error => cached.reject(error));
+    return { module, cached: cached.promise };
+
+    async function compile(): Promise<WebAssembly.Module> {
+        try {
+            let response: Response | undefined;
+            if (probeCache) {
+                let reason = "cache-unavailable";
+                const url = new URL(asset.resolvedUrl!, globalThis.document.baseURI);
+                if (assetInternal.cache === "force-cache" && !loadBootResourceCallback &&
+                    !assetInternal.pendingDownload && !assetInternal.buffer &&
+                    !globalThis.navigator.serviceWorker?.controller && url.origin === globalThis.location.origin &&
+                    (url.protocol === "http:" || url.protocol === "https:")) {
+                    assetInternal.cacheOnly = true;
+                    try {
+                        response = await loadResourceThrottle(assetInternal);
+                        reason = response.ok ? "cache-hit" : "cache-miss";
+                        if (!response.ok && response.status !== 504) {
+                            reason = "cache-response-error";
+                            dotnetLogger.warn(`Deferred ReadyToRun cache probe returned HTTP ${response.status}; using deferred loading.`);
+                        }
+                    } catch (error) {
+                        if (!(error instanceof TypeError)) throw error;
+                        reason = "cache-probe-error";
+                        dotnetLogger.warn("Deferred ReadyToRun cache-only probe failed; using validated deferred loading.", error);
+                    } finally {
+                        assetInternal.cacheOnly = false;
+                    }
+                }
+                cached.resolve({ hit: response?.ok === true, reason });
+            } else {
+                cached.resolve({ hit: false, reason: "not-probed" });
+            }
+            if (!response?.ok) response = await loadResource(assetInternal);
+            if (!response.ok) {
+                throw new Error(`Failed to load deferred ReadyToRun image '${asset.name}'. HTTP status: ${response.status} ${response.statusText}`);
+            }
+            const contentType = response.headers?.get("Content-Type");
+            if (typeof WebAssembly.compileStreaming === "function" && typeof globalThis.Response === "function" &&
+                response instanceof globalThis.Response && contentType === "application/wasm") {
+                return await WebAssembly.compileStreaming(response);
+            }
+            return await WebAssembly.compile(await response.arrayBuffer());
+        } finally {
+            onDownloadedAsset(assetInternal, false);
         }
-        const contentType = response.headers?.get("Content-Type");
-        if (typeof WebAssembly.compileStreaming === "function" && typeof globalThis.Response === "function" &&
-            response instanceof globalThis.Response && contentType === "application/wasm") {
-            return await WebAssembly.compileStreaming(response);
-        }
-        return await WebAssembly.compile(await response.arrayBuffer());
-    } finally {
-        onDownloadedAsset(assetInternal, false);
     }
 }
 
@@ -617,6 +653,12 @@ async function loadResourceFetch(asset: AssetEntryInternal): Promise<Response> {
             // Any other resource than configuration should provide integrity check
             fetchOptions.integrity = asset.hash;
         }
+    }
+
+    if (asset.cacheOnly) {
+        fetchOptions.cache = "only-if-cached";
+        fetchOptions.mode = "same-origin";
+        return globalThis.fetch(asset.resolvedUrl!, fetchOptions);
     }
 
     dotnetLogger.debug(`Attempting to download '${sanitizeUrl(asset.resolvedUrl!)}'`);

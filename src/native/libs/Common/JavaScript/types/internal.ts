@@ -60,6 +60,7 @@ export interface AssetEntryInternal extends AssetEntry {
     culture?: string
     priority?: boolean
     onDownloadStarted?: () => void
+    cacheOnly?: boolean
     shortName?: string
     inprogress?: boolean
     tableSize?: number

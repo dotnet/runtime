@@ -24,7 +24,7 @@ compiled composite is listed separately in `resources.r2rAssembly` and enqueued 
 after the eager assets in the same download throttler. Fetching and streaming compilation
 do not wait for eager completion, native Wasm or VM initialization. Its download slot is
 released after compilation consumes the response. Instantiation into shared memory and
-the function table waits for VM readiness and a browser turn. Image attachment publishes
+the function table on the deferred path waits for VM readiness and a browser turn. Image attachment publishes
 a readiness flag; methods prepared before
 arrival check it at their interpreter entry safepoint and activate on demand. The triggering
 invocation finishes interpreted, while subsequent calls can use ReadyToRun code. There is
@@ -32,12 +32,22 @@ no global prepared-method sweep or per-batch timer chain. Existing
 interpreted frames and suspended continuations keep their bytecode; there is no on-stack
 replacement.
 
+After successful attachment, the loader remembers the resource hash in app-scoped
+local storage. On a later load of the same version, a same-origin HTTP-cache-only
+probe can select `startupMode: "cached-native"`: the cached image is installed before
+VM initialization and managed code starts through ordinary ReadyToRun dispatch.
+A cache miss keeps deferred startup. Custom resource loaders, service-worker-controlled
+pages and cross-origin images conservatively use deferred startup. Storage access and
+probe failures are reported; this hint does not replace integrity or compatibility checks.
+
 Eager component stubs retain their composite owner identity, keeping cross-assembly
 field layouts compatible with the late code before its native image is available.
 
 For prototype validation, `getDotnetRuntime(0).INTERNAL.waitForDeferredR2R()` awaits full
-image attachment and `INTERNAL.getDeferredR2RState()` reports `activationMode: "lazy"`,
-phase timings and live method-activation counters. Zero published methods at readiness is
+image attachment and `INTERNAL.getDeferredR2RState()` reports startup mode, cache result,
+phase timings and live method-activation counters. Deferred startup uses `activationMode: "lazy"`;
+cached native-first startup uses `"eager"` and does not count lazy publications.
+Zero published methods at readiness is
 valid: unused methods need never activate. These are internal diagnostics, not supported
 public APIs; after runtime exit the getter retains its last observed counter snapshot.
 Late failures are fatal. Benchmarks must distinguish first-use activation
