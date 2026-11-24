@@ -396,6 +396,7 @@
     <Compile Include="..\..\Common\JitInterface\WasmLowering.cs" Link="JitInterface\WasmLowering.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyTrackingLevel.cs" Link="Compiler\DependencyTrackingLevel.cs" />
     <Compile Include="..\..\Common\Compiler\DevirtualizationManager.cs" Link="Compiler\DevirtualizationManager.cs" />
+    <Compile Include="..\..\Common\Compiler\DirectPInvokeSet.cs" Link="Compiler\DirectPInvokeSet.cs" />
     <Compile Include="..\..\Common\Compiler\FeatureSettings.cs" Link="Compiler\FeatureSettings.cs" />
     <Compile Include="..\..\Common\Compiler\HardwareIntrinsicHelpers.cs" Link="Compiler\HardwareIntrinsicHelpers.cs" />
     <Compile Include="..\..\Common\Compiler\ICompilationRootProvider.cs" Link="Compiler\ICompilationRootProvider.cs" />
@@ -612,6 +613,7 @@
     <Compile Include="Compiler\DependencyAnalysis\PInvokeMethodFixupNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\PInvokeModuleFixupNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ProxyTypeMapRequestNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\TypeLoaderArgumentGateNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ResourceDataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ResourceIndexNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\RuntimeImportMethodNode.cs" />
@@ -652,6 +654,7 @@
     <Compile Include="Compiler\DependencyAnalysis\TypeThreadStaticIndexNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\TypeMetadataMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\UnboxingStubNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\UnboxingStubMapNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\VirtualMethodUseNode.cs" Link="Compiler\DependencyAnalysis\VirtualMethodUseNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\SealedVTableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\StackTraceDocumentsNode.cs" />

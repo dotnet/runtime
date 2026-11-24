@@ -311,6 +311,38 @@ namespace System.Numerics.Tensors.Tests
 #endif
     }
 
+    public class SinCosTests
+    {
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(17)]
+        [InlineData(33)]
+        public void SinCos_CustomNumber(int length)
+        {
+            Complex[] values = new Complex[length];
+            for (int i = 0; i < length; i++)
+            {
+                values[i] = new Complex((i - 16) * 0.125, (i % 5 - 2) * 0.25);
+            }
+
+            for (int alias = 0; alias < 3; alias++)
+            {
+                TestComplex[] source = Array.ConvertAll(values, value => new TestComplex(value));
+                TestComplex[] sin = alias == 1 ? source : new TestComplex[length];
+                TestComplex[] cos = alias == 2 ? source : new TestComplex[length];
+
+                TensorPrimitives.SinCos<TestComplex>(source, sin, cos);
+
+                for (int i = 0; i < length; i++)
+                {
+                    Assert.Equal(new TestComplex(Complex.Sin(values[i])), sin[i]);
+                    Assert.Equal(new TestComplex(Complex.Cos(values[i])), cos[i]);
+                }
+            }
+        }
+    }
+
     // The tests for some types have been marked as OuterLoop simply to decrease inner loop testing time.
 
     public class DoubleGenericTensorPrimitives : GenericFloatingPointNumberTensorPrimitivesTests<double> { }
@@ -1518,18 +1550,123 @@ namespace System.Numerics.Tensors.Tests
         #endregion
 
         #region Span -> Destination,Destination
+        private static T? SinCosTolerance => IsFmaSupported
+            ? Helpers.DetermineTolerance<T>(doubleTolerance: 1e-14, floatTolerance: 1e-5f)
+            : Helpers.DetermineTolerance<T>(doubleTolerance: 1e-10, floatTolerance: 1e-4f);
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        [InlineData(4)]
+        [InlineData(5)]
+        [InlineData(6)]
+        public void SinCos_RangeReductionAndSpecialValues(int inputKind)
+        {
+            foreach (int length in Enumerable.Range(0, (Vector512<float>.Count * 2) + 2))
+            {
+                using BoundedMemory<T> source = CreateTensor(length);
+                using BoundedMemory<T> sinBuffer = CreateTensor(length + 1);
+                using BoundedMemory<T> cosBuffer = CreateTensor(length + 1);
+                (T Sin, T Cos)[] expected = new (T, T)[length];
+
+                for (int alias = 0; alias < 3; alias++)
+                {
+                    sinBuffer.Span.Fill(T.NegativeOne);
+                    cosBuffer.Span.Fill(T.NegativeOne);
+
+                    for (int i = 0; i < length; i++)
+                    {
+                        T value;
+                        switch (inputKind)
+                        {
+                            case 0:
+                                value = T.CreateChecked(i % 13 - 6) * T.CreateChecked(0.125);
+                                break;
+                            case 1:
+                                T boundary = T.CreateChecked(i % 17 - 8) * (T.Pi / T.CreateChecked(4));
+                                value = (i % 8) switch
+                                {
+                                    0 => T.NegativeZero,
+                                    1 => T.Zero,
+                                    _ => i % 2 == 0 ? T.BitDecrement(boundary) : T.BitIncrement(boundary),
+                                };
+                                break;
+                            case 2:
+                                T limit = T.CreateSaturating(5000000);
+                                value = (i % 4) switch
+                                {
+                                    0 => T.BitDecrement(limit),
+                                    1 => T.BitIncrement(limit),
+                                    2 => -T.BitDecrement(limit),
+                                    _ => -T.BitIncrement(limit),
+                                };
+                                break;
+                            case 3:
+                                value = (i % 7) switch
+                                {
+                                    0 => T.NaN,
+                                    1 => T.PositiveInfinity,
+                                    2 => T.NegativeInfinity,
+                                    3 => T.MaxValue,
+                                    4 => T.MinValue,
+                                    5 => T.NegativeZero,
+                                    _ => T.Zero,
+                                };
+                                break;
+                            case 4:
+                                value = (i % 6) switch
+                                {
+                                    0 => T.NegativeZero,
+                                    1 => T.Zero,
+                                    2 => T.Epsilon,
+                                    3 => -T.Epsilon,
+                                    4 => T.CreateChecked(1.0 / 32768),
+                                    _ => T.CreateChecked(-1.0 / 32768),
+                                };
+                                break;
+                            case 5:
+                                value = i == length - 1 ? T.MaxValue : T.CreateChecked(i % 17 - 8);
+                                break;
+                            default:
+                                T reducedLimit = T.BitDecrement(T.CreateSaturating(5000000));
+                                value = i % 2 == 0 ? reducedLimit : -reducedLimit;
+                                break;
+                        }
+
+                        source[i] = value;
+                        expected[i] = T.SinCos(value);
+                    }
+
+                    Span<T> sin = alias == 1 ? source.Span : sinBuffer.Span.Slice(0, length);
+                    Span<T> cos = alias == 2 ? source.Span : cosBuffer.Span.Slice(0, length);
+                    TensorPrimitives.SinCos<T>(source.Span, sin, cos);
+
+                    for (int i = 0; i < length; i++)
+                    {
+                        AssertEqualTolerance(expected[i].Sin, sin[i], SinCosTolerance);
+                        AssertEqualTolerance(expected[i].Cos, cos[i], SinCosTolerance);
+                    }
+
+                    Assert.Equal(T.NegativeOne, sinBuffer[length]);
+                    Assert.Equal(T.NegativeOne, cosBuffer[length]);
+                }
+            }
+        }
+
         public static IEnumerable<object[]> SpanDestinationDestinationFunctionsToTest()
         {
-            yield return Create(TensorPrimitives.SinCos, T.SinCos);
+            yield return Create(TensorPrimitives.SinCos, T.SinCos, SinCosTolerance);
             yield return Create(TensorPrimitives.SinCosPi, T.SinCosPi);
 
-            static object[] Create(SpanDestinationDestinationDelegate tensorPrimitivesMethod, Func<T, (T, T)> expectedMethod)
-                => new object[] { tensorPrimitivesMethod, expectedMethod };
+            static object[] Create(SpanDestinationDestinationDelegate tensorPrimitivesMethod, Func<T, (T, T)> expectedMethod, T? tolerance = null)
+                => new object[] { tensorPrimitivesMethod, expectedMethod, tolerance };
         }
 
         [Theory]
         [MemberData(nameof(SpanDestinationDestinationFunctionsToTest))]
-        public void SpanDestinationDestinationFunctions_AllLengths(SpanDestinationDestinationDelegate tensorPrimitivesMethod, Func<T, (T, T)> expectedMethod)
+        public void SpanDestinationDestinationFunctions_AllLengths(SpanDestinationDestinationDelegate tensorPrimitivesMethod, Func<T, (T, T)> expectedMethod, T? tolerance = null)
         {
             Assert.All(Helpers.TensorLengthsIncluding0, tensorLength =>
             {
@@ -1542,15 +1679,15 @@ namespace System.Numerics.Tensors.Tests
                 for (int i = 0; i < tensorLength; i++)
                 {
                     (T expected1, T expected2) = expectedMethod(x[i]);
-                    AssertEqualTolerance(expected1, destination1[i]);
-                    AssertEqualTolerance(expected2, destination2[i]);
+                    AssertEqualTolerance(expected1, destination1[i], tolerance);
+                    AssertEqualTolerance(expected2, destination2[i], tolerance);
                 }
             });
         }
 
         [Theory]
         [MemberData(nameof(SpanDestinationDestinationFunctionsToTest))]
-        public void SpanDestinationDestinationFunctions_InPlace(SpanDestinationDestinationDelegate tensorPrimitivesMethod, Func<T, (T, T)> expectedMethod)
+        public void SpanDestinationDestinationFunctions_InPlace(SpanDestinationDestinationDelegate tensorPrimitivesMethod, Func<T, (T, T)> expectedMethod, T? tolerance = null)
         {
             Assert.All(Helpers.TensorLengthsIncluding0, tensorLength =>
             {
@@ -1563,8 +1700,8 @@ namespace System.Numerics.Tensors.Tests
                 for (int i = 0; i < tensorLength; i++)
                 {
                     (T expected1, T expected2) = expectedMethod(xOrig[i]);
-                    AssertEqualTolerance(expected1, x[i]);
-                    AssertEqualTolerance(expected2, destination2[i]);
+                    AssertEqualTolerance(expected1, x[i], tolerance);
+                    AssertEqualTolerance(expected2, destination2[i], tolerance);
                 }
             });
 
@@ -1579,15 +1716,15 @@ namespace System.Numerics.Tensors.Tests
                 for (int i = 0; i < tensorLength; i++)
                 {
                     (T expected1, T expected2) = expectedMethod(xOrig[i]);
-                    AssertEqualTolerance(expected1, destination1[i]);
-                    AssertEqualTolerance(expected2, x[i]);
+                    AssertEqualTolerance(expected1, destination1[i], tolerance);
+                    AssertEqualTolerance(expected2, x[i], tolerance);
                 }
             });
         }
 
         [Theory]
         [MemberData(nameof(SpanDestinationDestinationFunctionsToTest))]
-        public void SpanDestinationDestinationFunctions_SpecialValues(SpanDestinationDestinationDelegate tensorPrimitivesMethod, Func<T, (T, T)> expectedMethod)
+        public void SpanDestinationDestinationFunctions_SpecialValues(SpanDestinationDestinationDelegate tensorPrimitivesMethod, Func<T, (T, T)> expectedMethod, T? tolerance = null)
         {
             Assert.All(Helpers.TensorLengths, tensorLength =>
             {
@@ -1601,8 +1738,8 @@ namespace System.Numerics.Tensors.Tests
                     for (int i = 0; i < tensorLength; i++)
                     {
                         (T expected1, T expected2) = expectedMethod(x[i]);
-                        AssertEqualTolerance(expected1, destination1[i]);
-                        AssertEqualTolerance(expected2, destination2[i]);
+                        AssertEqualTolerance(expected1, destination1[i], tolerance);
+                        AssertEqualTolerance(expected2, destination2[i], tolerance);
                     }
                 }, x);
             });
@@ -1610,7 +1747,7 @@ namespace System.Numerics.Tensors.Tests
 
         [Theory]
         [MemberData(nameof(SpanDestinationDestinationFunctionsToTest))]
-        public void SpanDestinationDestinationFunctions_ValueRange(SpanDestinationDestinationDelegate tensorPrimitivesMethod, Func<T, (T, T)> expectedMethod)
+        public void SpanDestinationDestinationFunctions_ValueRange(SpanDestinationDestinationDelegate tensorPrimitivesMethod, Func<T, (T, T)> expectedMethod, T? tolerance = null)
         {
             Assert.All(VectorLengthAndIteratedRange(ConvertFromSingle(-100f), ConvertFromSingle(100f), ConvertFromSingle(3f)), arg =>
             {
@@ -1624,18 +1761,18 @@ namespace System.Numerics.Tensors.Tests
                 (T expected1, T expected2) = expectedMethod(arg.Element);
                 foreach (T actual in dest1)
                 {
-                    AssertEqualTolerance(expected1, actual);
+                    AssertEqualTolerance(expected1, actual, tolerance);
                 }
                 foreach (T actual in dest2)
                 {
-                    AssertEqualTolerance(expected2, actual);
+                    AssertEqualTolerance(expected2, actual, tolerance);
                 }
             });
         }
 
         [Theory]
         [MemberData(nameof(SpanDestinationDestinationFunctionsToTest))]
-        public void SpanDestinationDestinationFunctions_ThrowsForTooShortDestination(SpanDestinationDestinationDelegate tensorPrimitivesMethod, Func<T, (T, T)> _)
+        public void SpanDestinationDestinationFunctions_ThrowsForTooShortDestination(SpanDestinationDestinationDelegate tensorPrimitivesMethod, Func<T, (T, T)> _, T? tolerance = null)
         {
             Assert.All(Helpers.TensorLengths, tensorLength =>
             {
@@ -1658,13 +1795,56 @@ namespace System.Numerics.Tensors.Tests
 
         [Theory]
         [MemberData(nameof(SpanDestinationDestinationFunctionsToTest))]
-        public void SpanDestinationDestinationFunctions_ThrowsForOverlappingInputsWithOutputs(SpanDestinationDestinationDelegate tensorPrimitivesMethod, Func<T, (T, T)> _)
+        public void SpanDestinationDestinationFunctions_ThrowsForOverlappingInputsWithOutputs(SpanDestinationDestinationDelegate tensorPrimitivesMethod, Func<T, (T, T)> _, T? tolerance = null)
         {
             T[] array = new T[10];
             Assert.Throws<ArgumentException>(() => tensorPrimitivesMethod(array.AsSpan(1, 2), array.AsSpan(0, 2), array.AsSpan(4, 2)));
             Assert.Throws<ArgumentException>(() => tensorPrimitivesMethod(array.AsSpan(1, 2), array.AsSpan(2, 2), array.AsSpan(4, 2)));
             Assert.Throws<ArgumentException>(() => tensorPrimitivesMethod(array.AsSpan(3, 2), array.AsSpan(0, 2), array.AsSpan(4, 2)));
             Assert.Throws<ArgumentException>(() => tensorPrimitivesMethod(array.AsSpan(5, 2), array.AsSpan(0, 2), array.AsSpan(4, 2)));
+        }
+
+        [Theory]
+        [MemberData(nameof(SpanDestinationDestinationFunctionsToTest))]
+        public void SpanDestinationDestinationFunctions_ThrowsForOverlappingOutputs(SpanDestinationDestinationDelegate tensorPrimitivesMethod, Func<T, (T, T)> _, T? tolerance = null)
+        {
+            foreach (int length in new[] { 1, 3, 5, 9, 17, 33 })
+            {
+                T[] source = new T[length];
+                T[] destination = new T[length * 2];
+                destination.AsSpan().Fill(T.NegativeOne);
+
+                foreach (int offset in new[] { 0, length / 2, length - 1 })
+                {
+                    Assert.Throws<ArgumentException>(() => tensorPrimitivesMethod(source, destination.AsSpan(0, length), destination.AsSpan(offset, length)));
+                    Assert.Throws<ArgumentException>(() => tensorPrimitivesMethod(source, destination.AsSpan(offset, length), destination.AsSpan(0, length)));
+                    Assert.All(destination, value => Assert.Equal(T.NegativeOne, value));
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(SpanDestinationDestinationFunctionsToTest))]
+        public void SpanDestinationDestinationFunctions_OverlappingUnusedDestinationSpace(SpanDestinationDestinationDelegate tensorPrimitivesMethod, Func<T, (T, T)> expectedMethod, T? tolerance = null)
+        {
+            foreach (int length in new[] { 0, 1, 3, 5, 9, 17, 33 })
+            {
+                using BoundedMemory<T> source = CreateAndFillTensor(length);
+                using BoundedMemory<T> destination = CreateTensor((length * 2) + 2);
+                destination.Span.Fill(T.NegativeOne);
+
+                tensorPrimitivesMethod(source.Span, destination.Span, destination.Span.Slice(length + 1));
+
+                for (int i = 0; i < length; i++)
+                {
+                    (T first, T second) = expectedMethod(source[i]);
+                    AssertEqualTolerance(first, destination[i], tolerance);
+                    AssertEqualTolerance(second, destination[length + 1 + i], tolerance);
+                }
+
+                Assert.Equal(T.NegativeOne, destination[length]);
+                Assert.Equal(T.NegativeOne, destination[(length * 2) + 1]);
+            }
         }
         #endregion
 

@@ -438,9 +438,7 @@ dottedNamePart returns [string Value]
 @init {_localctx.Value = string.Empty;}
 @after {_localctx.Value = Actions.ParseDottedNamePart(_localctx.Start);}
 :
-	ID
-	| INSTANCE
-	| SQSTRING
+	id
 	| DOTTEDNAME
 	| 'volatile'
 ;
@@ -544,7 +542,9 @@ finally {
 	}
 }
 
-mscorlib: '.mscorlib';
+mscorlib
+@after {Actions.ProcessCoreLibraryDirective();}
+: '.mscorlib';
 
 languageDecl returns [CILParser.LanguageDirectiveValue? Value, bool HasSyntaxError]
 locals [int InitialSyntaxErrorCount]

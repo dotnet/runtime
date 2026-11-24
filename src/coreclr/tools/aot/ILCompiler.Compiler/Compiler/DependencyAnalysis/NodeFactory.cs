@@ -132,6 +132,8 @@ namespace ILCompiler.DependencyAnalysis
 
         protected virtual bool CanFold(MethodDesc method) => false;
 
+        protected virtual bool RequiresAddressTakenTracking => false;
+
         public TypeMapManager TypeMapManager
         {
             get;
@@ -647,6 +649,11 @@ namespace ILCompiler.DependencyAnalysis
             _proxyTypeMapRequests = new NodeCache<TypeDesc, ProxyTypeMapRequestNode>(type =>
             {
                 return new ProxyTypeMapRequestNode(type);
+            });
+
+            _typeLoaderArgumentGates = new NodeCache<(TypeDesc, int), TypeLoaderArgumentGateNode>(key =>
+            {
+                return new TypeLoaderArgumentGateNode(key.Item1, key.Item2);
             });
 
             _analysisCharacteristics = new NodeCache<string, AnalysisCharacteristicNode>(c =>
@@ -1184,7 +1191,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public IMethodNode FatAddressTakenFunctionPointer(MethodDesc method, bool isUnboxingStub = false)
         {
-            if (!CanFold(method))
+            if (!RequiresAddressTakenTracking && !CanFold(method))
                 return FatFunctionPointer(method, isUnboxingStub);
 
             return _fatAddressTakenFunctionPointers.GetOrAdd(new MethodKey(method, isUnboxingStub));
@@ -1250,7 +1257,7 @@ namespace ILCompiler.DependencyAnalysis
         private NodeCache<MethodDesc, AddressTakenMethodNode> _addressTakenMethods;
         public IMethodNode AddressTakenMethodEntrypoint(MethodDesc method, bool unboxingStub = false)
         {
-            if (unboxingStub || !CanFold(method))
+            if (unboxingStub || (!RequiresAddressTakenTracking && !CanFold(method)))
                 return MethodEntrypoint(method, unboxingStub);
 
             return _addressTakenMethods.GetOrAdd(method);
@@ -1640,6 +1647,13 @@ namespace ILCompiler.DependencyAnalysis
         public ExternalTypeMapRequestNode ExternalTypeMapRequest(TypeDesc type)
         {
             return _externalTypeMapRequests.GetOrAdd(type);
+        }
+
+        private NodeCache<(TypeDesc, int), TypeLoaderArgumentGateNode> _typeLoaderArgumentGates;
+
+        public TypeLoaderArgumentGateNode TypeLoaderArgumentGate(TypeDesc type, int argumentIndex)
+        {
+            return _typeLoaderArgumentGates.GetOrAdd((type, argumentIndex));
         }
 
         private NodeCache<TypeDesc, ProxyTypeMapRequestNode> _proxyTypeMapRequests;

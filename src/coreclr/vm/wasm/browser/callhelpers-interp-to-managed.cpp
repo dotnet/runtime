@@ -172,6 +172,13 @@ namespace
         *((int32_t*)pRet) = (*fptr)(ARG_IND(0), ARG_I32(1), ARG_I32(2), ARG_I32(3), ARG_I32(4), ARG_I32(5), ARG_I32(6));
     }
 
+    NOINLINE static void CallFunc_S8_RetI32_PE(PCODE pPortableEntryPoint, int8_t* pArgs, int8_t* pRet)
+    {
+        alignas(16) int framePointer = TERMINATE_R2R_STACK_WALK;
+        int32_t (*fptr)(int*, int32_t, PCODE) = *(int32_t (**)(int*, int32_t, PCODE))(pPortableEntryPoint);
+        *((int32_t*)pRet) = (*fptr)(&framePointer, ARG_IND(0), pPortableEntryPoint);
+    }
+
     NOINLINE static void CallFunc_This_I32_RetI32_PE(PCODE pPortableEntryPoint, int8_t* pArgs, int8_t* pRet)
     {
         alignas(16) int framePointer = TERMINATE_R2R_STACK_WALK;
@@ -554,6 +561,12 @@ namespace
         (*fptr)(ARG_I32(0));
     }
 
+    static void CallFunc_I32_S8_I32_RetVoid(PCODE pcode, int8_t* pArgs, int8_t* pRet)
+    {
+        void (*fptr)(int32_t, int32_t, int32_t) = (void (*)(int32_t, int32_t, int32_t))pcode;
+        (*fptr)(ARG_I32(0), ARG_IND(1), ARG_I32(2));
+    }
+
     static void CallFunc_I32_S8_I32_I32_RetVoid(PCODE pcode, int8_t* pArgs, int8_t* pRet)
     {
         void (*fptr)(int32_t, int32_t, int32_t, int32_t) = (void (*)(int32_t, int32_t, int32_t, int32_t))pcode;
@@ -692,6 +705,7 @@ const StringToPortableSigThunk g_portableCallHelperThunks[] = {
     { "MiS8iiii", (void*)&CallFunc_S8_I32_I32_I32_I32_RetI32 },
     { "MiS8iiiii", (void*)&CallFunc_S8_I32_I32_I32_I32_I32_RetI32 },
     { "MiS8iiiiii", (void*)&CallFunc_S8_I32_I32_I32_I32_I32_I32_RetI32 },
+    { "MiS8p", (void*)&CallFunc_S8_RetI32_PE },
     { "MiTip", (void*)&CallFunc_This_I32_RetI32_PE },
     { "MiTp", (void*)&CallFunc_This_RetI32_PE },
     { "Mii", (void*)&CallFunc_I32_RetI32 },
@@ -753,6 +767,7 @@ const StringToPortableSigThunk g_portableCallHelperThunks[] = {
     { "Mvdiip", (void*)&CallFunc_F64_I32_I32_RetVoid_PE },
     { "Mvfiip", (void*)&CallFunc_F32_I32_I32_RetVoid_PE },
     { "Mvi", (void*)&CallFunc_I32_RetVoid },
+    { "MviS8i", (void*)&CallFunc_I32_S8_I32_RetVoid },
     { "MviS8ii", (void*)&CallFunc_I32_S8_I32_I32_RetVoid },
     { "Mvii", (void*)&CallFunc_I32_I32_RetVoid },
     { "MviiS8S8ii", (void*)&CallFunc_I32_I32_S8_S8_I32_I32_RetVoid },

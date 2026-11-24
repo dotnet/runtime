@@ -82,6 +82,26 @@ namespace System.Reflection.Runtime.MethodInfos
             return RuntimeParameters;
         }
 
+        internal RuntimeType[] ArgumentTypes
+        {
+            get
+            {
+                RuntimeType[]? argumentTypes = _lazyArgumentTypes;
+                if (argumentTypes is null)
+                {
+                    ReadOnlySpan<ParameterInfo> parameters = GetParametersAsSpan();
+                    argumentTypes = new RuntimeType[parameters.Length];
+                    for (int i = 0; i < argumentTypes.Length; i++)
+                    {
+                        argumentTypes[i] = (RuntimeType)parameters[i].ParameterType;
+                    }
+                    _lazyArgumentTypes = argumentTypes;
+                }
+
+                return argumentTypes;
+            }
+        }
+
         public abstract override bool HasSameMetadataDefinitionAs(MemberInfo other);
 
         public abstract override object Invoke(BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture);
@@ -195,5 +215,6 @@ namespace System.Reflection.Runtime.MethodInfos
         protected abstract MethodBaseInvoker UncachedMethodInvoker { get; }
 
         private volatile MethodBaseInvoker _lazyMethodInvoker;
+        private volatile RuntimeType[]? _lazyArgumentTypes;
     }
 }

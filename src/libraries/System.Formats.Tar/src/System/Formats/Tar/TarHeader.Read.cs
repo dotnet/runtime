@@ -381,13 +381,15 @@ namespace System.Formats.Tar
                 return null;
             }
 
+            // A size field that goes past the end of the archive is malformed: reject it before it
+            // reaches the seek that skips the data section, which would throw on the size itself.
+            if (archiveStream.CanSeek && _size > archiveStream.Length - archiveStream.Position)
+            {
+                throw new InvalidDataException(SR.TarSizeFieldExceedsStreamLength);
+            }
+
             if (copyData)
             {
-                if (archiveStream.CanSeek && _size > archiveStream.Length - archiveStream.Position)
-                {
-                    throw new InvalidDataException(SR.TarSizeFieldExceedsStreamLength);
-                }
-
                 MemoryStream copiedData = new MemoryStream();
                 await TarHelpers.CopyBytesCoreAsync<TAdapter>(archiveStream, copiedData, _size, cancellationToken).ConfigureAwait(false);
                 // Reset position pointer so the user can do the first DataStream read from the beginning

@@ -942,10 +942,13 @@ private:
 
     // The maximum possible value of the given "limit". If such a value could not be determined
     // return "false". For example: CORINFO_Array_MaxLength for array length.
-    bool GetLimitMax(Limit& limit, int* pMax);
+    bool GetLimitMax(const Limit& limit, int* pMax);
 
-    // Does the addition of the two limits overflow?
-    bool AddOverflows(Limit& limit1, Limit& limit2);
+    // The minimum possible value of the given "limit", or INT_MIN if it could not be determined.
+    static int GetLimitMin(const Limit& limit);
+
+    // Does the addition of the two ranges overflow (or underflow)?
+    bool AddOverflows(const Range& range1, const Range& range2);
 
     // Does the multiplication of the two limits overflow?
     bool MultiplyOverflows(Limit& limit1, Limit& limit2);
@@ -992,6 +995,15 @@ private:
     SearchPath* GetSearchPath();
     void        ClearSearchPath();
     SearchPath* m_pSearchPath;
+
+    // Separate search path for IsMonotonicallyIncreasing walks with rejectNegativeConst set,
+    // so that cycles visited without it are re-checked for negative constants.
+    SearchPath* GetRejectNegativeSearchPath();
+    bool        HasRejectNegativeSearchPath() const
+    {
+        return m_pRejectNegativeSearchPath != nullptr;
+    }
+    SearchPath* m_pRejectNegativeSearchPath;
 
     Compiler*     m_compiler;
     CompAllocator m_alloc;

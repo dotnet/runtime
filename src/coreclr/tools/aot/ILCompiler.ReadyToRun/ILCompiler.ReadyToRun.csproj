@@ -142,6 +142,7 @@
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_X86\X86Emitter.cs" Link="Compiler\DependencyAnalysis\Target_X86\X86Emitter.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyTrackingLevel.cs" Link="Compiler\DependencyTrackingLevel.cs" />
     <Compile Include="..\..\Common\Compiler\DevirtualizationManager.cs" Link="Compiler\DevirtualizationManager.cs" />
+    <Compile Include="..\..\Common\Compiler\DirectPInvokeSet.cs" Link="Compiler\DirectPInvokeSet.cs" />
     <Compile Include="..\..\Common\Compiler\DisplayNameHelpers.cs" Link="Compiler\DisplayNameHelpers.cs" />
     <Compile Include="..\..\Common\Compiler\ExternalTypeMapObjectNode.cs" Link="Compiler\DependencyAnalysis\ExternalTypeMapObjectNode.cs" />
     <Compile Include="..\..\Common\Compiler\FeatureSettings.cs" Link="Compiler\FeatureSettings.cs" />
@@ -258,6 +259,9 @@
     <Compile Include="Compiler\CompilationModuleGroup.ReadyToRun.cs" />
     <Compile Include="Compiler\CompositeImageSettings.cs" />
     <Compile Include="Compiler\CryptographicHashProvider.cs" />
+    <Compile Include="Compiler\DeferredWasmCallFinalizationPlan.cs" />
+    <Compile Include="Compiler\DeferredWasmCallProcessor.cs" />
+    <Compile Include="Compiler\DeferredWasmCallRewriter.cs" />
     <Compile Include="Compiler\DependencyAnalysis\AllMethodsOnTypeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ArrayInterfaceMethodsNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\InheritedVirtualMethodsNode.cs" />
@@ -277,6 +281,7 @@
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\CopiedMethodILNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\CopiedCorHeaderNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\CopiedStrongNameSignatureNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DeferredWasmCallNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DelayLoadHelperMethodImport.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ExceptionInfoLookupTableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRunCodegenNodeFactory.cs" />

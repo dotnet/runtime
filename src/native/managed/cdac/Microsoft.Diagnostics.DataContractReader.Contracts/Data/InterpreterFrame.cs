@@ -8,4 +8,6 @@ internal sealed partial class InterpreterFrame : IData<InterpreterFrame>
 {
     [Field] public partial TargetPointer TopInterpMethodContextFrame { get; }
     [Field] public partial bool IsFaulting { get; }
+    // Absent on runtimes that predate the descriptor entry, where it reads as null.
+    [FieldAddress("Continuation")] public partial TargetPointer? ContinuationAddress { get; }
 }

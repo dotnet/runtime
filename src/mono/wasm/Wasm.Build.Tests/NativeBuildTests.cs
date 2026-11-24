@@ -20,8 +20,24 @@ namespace Wasm.Build.Tests
         {
         }
 
+        [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+        [InlineData(Configuration.Release)]
+        [TestCategory("native"), TestCategory("coreclr"), TestCategory("workload")]
+        public async Task NativeRelinkWithoutManagedTimers(Configuration config)
+        {
+            ProjectInfo info = CreateWasmTemplateProject(
+                Template.WasmBrowser, config, aot: false, "native_relink_without_timers",
+                extraProperties: "<WasmBuildNative>true</WasmBuildNative><PublishTrimmed>true</PublishTrimmed><WasmRunInWorker>false</WasmRunInWorker>");
+            ReplaceFile("Program.cs", Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "SimpleSourceChange.cs"));
+            ReplaceMainJsWithMinimalRunMain();
+
+            PublishProject(info, config, new PublishOptions(AssertAppBundle: false), isNativeBuild: true);
+            await RunForPublishWithWebServer(new BrowserRunOptions(config, ExpectedExitCode: 55));
+        }
+
         [Theory]
         [BuildAndRun(aot: false)]
+        [TestCategory("wasm-opt")]
         public async Task SimpleNativeBuild(Configuration config, bool aot)
         {
             ProjectInfo info = CreateWasmTemplateProject(
@@ -38,6 +54,8 @@ namespace Wasm.Build.Tests
             ReplaceMainJsWithMinimalRunMain();
 
             (string _, string buildOutput) = PublishProject(info, config, isNativeBuild: true);
+            if (EnvironmentVariables.UseWasmOpt)
+                Assert.Contains("Running wasm-opt with", buildOutput);
             await RunForPublishWithWebServer(new BrowserRunOptions(config, ExpectedExitCode: 42));
         }
 

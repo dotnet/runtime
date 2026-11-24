@@ -9,6 +9,13 @@ namespace System
 {
     public static partial class AppContext
     {
+        // Reading these slots must not trigger AppContext's static constructor.
+        private static unsafe class ExceptionCallbacks
+        {
+            internal static volatile delegate*<object, void> s_firstChanceException;
+            internal static volatile delegate*<object, void> s_unhandledException;
+        }
+
         private static unsafe Dictionary<string, object?> InitializeDataStore()
         {
             uint count = RuntimeImports.RhGetKnobValues(out byte** keys, out byte** values);
@@ -24,8 +31,40 @@ namespace System
             return dataStore;
         }
 
+        static partial void SetFirstChanceExceptionHandler()
+        {
+            unsafe
+            {
+                ExceptionCallbacks.s_firstChanceException = &Callback;
+            }
+
+            static void Callback(object e) => OnFirstChanceException((Exception)e);
+        }
+
+        static partial void SetUnhandledExceptionHandler()
+        {
+            unsafe
+            {
+                ExceptionCallbacks.s_unhandledException = &OnUnhandledExceptionCore;
+            }
+        }
+
         [RuntimeExport("OnFirstChanceException")]
-        internal static void OnFirstChanceException(object e)
-            => OnFirstChanceException((Exception)e, sender: null);
+        internal static unsafe void OnFirstChanceException(object e)
+        {
+            delegate*<object, void> callback = ExceptionCallbacks.s_firstChanceException;
+            if (callback != null)
+                callback(e);
+        }
+
+        [RuntimeExport("OnUnhandledException")]
+        internal static unsafe void OnUnhandledException(object e)
+        {
+            RuntimeExceptionHelpers.SerializeCrashInfo(RhFailFastReason.UnhandledException, (e as Exception)?.Message, e as Exception);
+
+            delegate*<object, void> callback = ExceptionCallbacks.s_unhandledException;
+            if (callback != null)
+                callback(e);
+        }
     }
 }

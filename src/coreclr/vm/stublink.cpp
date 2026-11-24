@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "common.h"
+#include <minipal/instructioncache.h>
 
 #include "threads.h"
 #include "excep.h"
@@ -738,7 +739,7 @@ PCODE StubLinker::EmitStub(LoaderAllocator* pLoaderAllocator, StubCodeBlockKind 
 
     if (!m_fDataOnly)
     {
-        FlushInstructionCache(GetCurrentProcess(), pCode, globalsize);
+        minipal_flush_instruction_cache(pCode, globalsize);
     }
 
     _ASSERTE(m_fDataOnly || DbgIsExecutable(pCode, globalsize));

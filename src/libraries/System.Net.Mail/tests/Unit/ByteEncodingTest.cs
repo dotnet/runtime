@@ -91,6 +91,38 @@ namespace System.Net.Mime.Tests
             Assert.Equal(expected, MimeBasePart.IsFullyEncoded(value));
         }
 
+        [Theory]
+        [InlineData('\0', false)]
+        [InlineData('\t', false)]
+        [InlineData('\r', false)]
+        [InlineData('\n', false)]
+        [InlineData('\u001f', false)]
+        [InlineData(' ', false)]
+        [InlineData('!', true)]
+        [InlineData('~', true)]
+        [InlineData('\u007f', false)]
+        [InlineData('\u0080', false)]
+        [InlineData('\u00ff', false)]
+        [InlineData('\u0100', false)]
+        [InlineData('\ud800', false)]
+        [InlineData('\udfff', false)]
+        [InlineData('\uffff', false)]
+        public void EncodedWord_ValidatesPrintableAscii(char character, bool valid)
+        {
+            foreach (int length in new[] { 1, 16, 32, 64, 256 })
+            {
+                foreach (int position in new[] { 0, length / 2, length - 1 })
+                {
+                    string text = new string('a', position) + character + new string('a', length - position - 1);
+                    string value = $"=?utf-8?Q?{text}?=";
+
+                    Assert.Equal(valid, MimeBasePart.IsFullyEncoded(value));
+                    Assert.Equal(valid ? Encoding.UTF8 : null, MimeBasePart.DecodeEncoding(value));
+                    Assert.Equal(valid ? text : value, MimeBasePart.DecodeHeaderValue(value));
+                }
+            }
+        }
+
         [Fact]
         public void DecodeHeaderValue_OverlongEncodedWord_Decodes()
         {

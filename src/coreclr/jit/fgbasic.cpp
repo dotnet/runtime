@@ -165,13 +165,16 @@ void Compiler::fgConvertBBToThrowBB(BasicBlock* block)
     // Scrub this block from the pred lists of any successors
     bool profileInconsistent = false;
 
+    // A self-edge can change the block weight as we visit its successors.
+    weight_t const blockWeight = block->bbWeight;
+
     for (BasicBlock* const succBlock : block->Succs())
     {
         FlowEdge* const succEdge = fgRemoveAllRefPreds(succBlock, block);
 
         if (block->hasProfileWeight() && succBlock->hasProfileWeight())
         {
-            succBlock->decreaseBBProfileWeight(succEdge->getLikelyWeight());
+            succBlock->decreaseBBProfileWeight(succEdge->getLikelihood() * blockWeight);
             profileInconsistent |= (succBlock->NumSucc() > 0);
         }
     }

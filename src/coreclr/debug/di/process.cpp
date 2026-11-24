@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "stdafx.h"
+#include <minipal/thread.h>
 #include "CLREventBase.h"
 #include <clrdata.h>
 #include <minipal/time.h>
@@ -25,6 +26,7 @@
 
 #include "readonlydatatargetfacade.h"
 #include "metahost.h"
+#include <minipal/environ.h>
 
 // Defined in dbgutil; resolves a runtime export address from the data target.
 extern "C" bool TryGetSymbol(
@@ -454,16 +456,13 @@ IMDInternalImport * CordbProcess::LookupMetaDataFromDebuggerForSingleFile(
 
     ULONG32 cchLocalImagePath = MAX_LONGPATH;
     ULONG32 cchLocalImagePathRequired;
-    NewArrayHolder<WCHAR> pwszLocalFilePath = NULL;
+    WStringHolder pwszLocalFilePath;
     IMDInternalImport * pMDII = NULL;
 
     const HRESULT E_NSF_BUFFER = HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER);
     HRESULT hr = E_NSF_BUFFER;
     for(unsigned i=0; i<2 && hr == E_NSF_BUFFER; i++)
     {
-        if (pwszLocalFilePath != NULL)
-            pwszLocalFilePath.Release();
-
         if (NULL == (pwszLocalFilePath = new (nothrow) WCHAR[cchLocalImagePath+1]))
             ThrowHR(E_OUTOFMEMORY);
 
@@ -545,6 +544,50 @@ void CordbProcess::Free(void * p)
     delete [] ((BYTE *) p);
 }
 
+//---------------------------------------------------------------------------------------
+//
+// Instantiates a DacDbi interface from a DAC module. Shared by code:CordbProcess::CreateDacDbiInterface
+// and the cDAC probe in code:VerifyCDac.
+//
+//---------------------------------------------------------------------------------------
+HRESULT
+CordbProcess::InstantiateDacDbiInterface(HMODULE hDacModule,
+                                         ICorDebugDataTarget * pDataTarget,
+                                         CORDB_ADDRESS clrInstanceId,
+                                         IDacDbiInterface::IAllocator * pAllocator,
+                                         IDacDbiInterface::IMetaDataLookup * pMetaDataLookup,
+                                         IDacDbiInterface ** ppInterface,
+                                         IUnknown ** ppLegacyDac)
+{
+    // The cDAC needs the address of the runtime's contract descriptor to initialize. The legacy
+    // DAC only needs it if it wants to route through cdac or to compare results.
+    CLRDATA_ADDRESS contractDescriptorAddress = 0;
+    {
+        uint64_t address = 0;
+        if (TryGetSymbol(pDataTarget, clrInstanceId, "DotNetRuntimeContractDescriptor", &address))
+        {
+            contractDescriptorAddress = address;
+        }
+    }
+
+    typedef HRESULT (STDAPICALLTYPE * PFN_DacDbiInterfaceInstance)(
+        ICorDebugDataTarget *,
+        CORDB_ADDRESS,
+        CLRDATA_ADDRESS,
+        IDacDbiInterface::IAllocator *,
+        IDacDbiInterface::IMetaDataLookup *,
+        IDacDbiInterface **,
+        IUnknown **);
+
+    PFN_DacDbiInterfaceInstance pfnEntry = (PFN_DacDbiInterfaceInstance)GetProcAddress(hDacModule, "DacDbiInterfaceInstance");
+    if (!pfnEntry)
+    {
+        return HRESULT_FROM_GetLastError();
+    }
+
+    return pfnEntry(pDataTarget, clrInstanceId, contractDescriptorAddress, pAllocator, pMetaDataLookup, ppInterface, ppLegacyDac);
+}
+
 
 //---------------------------------------------------------------------------------------
 //
@@ -593,35 +636,9 @@ CordbProcess::CreateDacDbiInterface()
     IDacDbiInterface::IAllocator * pAllocator = this;
     IDacDbiInterface::IMetaDataLookup * pMetaDataLookup = this;
 
-    // The cDAC needs the address of the runtime's contract descriptor to initialize. The legacy
-    // DAC only needs it if it wants to route through cdac or to compare results.
-    CLRDATA_ADDRESS contractDescriptorAddress = 0;
-    {
-        uint64_t address = 0;
-        if (TryGetSymbol(m_pDACDataTarget, m_clrInstanceId, "DotNetRuntimeContractDescriptor", &address))
-        {
-            contractDescriptorAddress = address;
-        }
-    }
-
-    typedef HRESULT (STDAPICALLTYPE * PFN_DacDbiInterfaceInstance)(
-        ICorDebugDataTarget *,
-        CORDB_ADDRESS,
-        CLRDATA_ADDRESS,
-        IDacDbiInterface::IAllocator *,
-        IDacDbiInterface::IMetaDataLookup *,
-        IDacDbiInterface **,
-        IUnknown **);
-
     IDacDbiInterface* pInterfacePtr = NULL;
     IUnknown* pLegacyDac = NULL;
-    PFN_DacDbiInterfaceInstance pfnEntry = (PFN_DacDbiInterfaceInstance)GetProcAddress(m_hDacModule, "DacDbiInterfaceInstance");
-    if (!pfnEntry)
-    {
-        ThrowLastError();
-    }
-
-    hrStatus = pfnEntry(m_pDACDataTarget, m_clrInstanceId, contractDescriptorAddress, pAllocator, pMetaDataLookup, &pInterfacePtr, &pLegacyDac);
+    hrStatus = InstantiateDacDbiInterface(m_hDacModule, m_pDACDataTarget, m_clrInstanceId, pAllocator, pMetaDataLookup, &pInterfacePtr, &pLegacyDac);
     IfFailThrow(hrStatus);
 
     // We now have resources that need to be freed.
@@ -676,6 +693,14 @@ IDacDbiInterface * CordbProcess::GetDAC()
     // We should always have the DAC/DBI interface.
     _ASSERTE(m_pDacPrimitives != NULL);
     return m_pDacPrimitives;
+}
+
+HRESULT CordbProcess::ConvertJitRegNumToCorDebugRegister(ULONG32 jitRegNum, CorDebugRegister * pReg, BOOL * pIsAmbientSP)
+{
+    if (pReg == NULL)
+        return E_INVALIDARG;
+
+    return GetDAC()->ConvertJitRegNumToCorDebugRegister(jitRegNum, pReg, pIsAmbientSP);
 }
 
 HRESULT CordbProcess::GetTargetInfo(IDacDbiInterface::TargetInfo * pTargetInfo)
@@ -911,7 +936,8 @@ CordbProcess::CordbProcess(ULONG64 clrInstanceId,
     m_pEventChannel(NULL),
     m_fAssertOnTargetInconsistency(false),
     m_runtimeOffsetsInitialized(false),
-    m_writableMetadataUpdateMode(LegacyCompatPolicy)
+    m_writableMetadataUpdateMode(LegacyCompatPolicy),
+    m_ctxSize(0)
 #ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
     ,
     m_dwOutOfProcessStepping(0),
@@ -1504,6 +1530,19 @@ void CordbProcess::FreeDac()
         m_hDacModule.Free();
 #endif // HOST_UNIX
     }
+
+    m_ctxSize = 0;
+}
+
+ULONG32 CordbProcess::GetTargetContextSize()
+{
+    if (m_ctxSize == 0)
+    {
+        ULONG32 size = 0;
+        IfFailThrow(GetDAC()->GetTargetContextSize(UINT32_MAX, &size));
+        m_ctxSize = size;
+    }
+    return m_ctxSize;
 }
 
 IEventChannel * CordbProcess::GetEventChannel()
@@ -1900,11 +1939,11 @@ void SendAttachProcessWorkItem::Do()
     // The left-side will also mark itself as attached in response to this event.
     // We explicitly don't mark it as attached from the right-side because we want to let the left-side
     // synchronize first (to stop all running threads) before marking the debugger as attached.
-    LOG((LF_CORDB, LL_INFO1000, "[%x] CP::S: sending attach.\n", GetCurrentThreadId()));
+    LOG((LF_CORDB, LL_INFO1000, "[%zx] CP::S: sending attach.\n", minipal_get_current_thread_id()));
 
     hr = GetProcess()->SendIPCEvent(event, CorDBIPC_BUFFER_SIZE);
 
-    LOG((LF_CORDB, LL_INFO1000, "[%x] CP::S: sent attach.\n", GetCurrentThreadId()));
+    LOG((LF_CORDB, LL_INFO1000, "[%zx] CP::S: sent attach.\n", minipal_get_current_thread_id()));
 }
 
 //---------------------------------------------------------------------------------------
@@ -2250,7 +2289,7 @@ HRESULT CordbProcess::GetObjectInternal(CORDB_ADDRESS addr, ICorDebugObjectValue
                 {
                     hr = pNewObjectValue->QueryInterface(__uuidof(ICorDebugObjectValue), (void**)pObject);
                     if (SUCCEEDED(hr))
-                        pNewObjectValue.SuppressRelease();
+                        pNewObjectValue.Detach();
                 }
             }
         }
@@ -4329,6 +4368,27 @@ void CordbProcess::GetAssembliesInLoadOrder(
 }
 
 //---------------------------------------------------------------------------------------
+// Callback for code:ShimProcess::QueueFakeAssemblyAndModuleEvent.
+// Return Value: The assembly's module, or NULL if it isn't loaded yet.
+//
+CordbModule * CordbProcess::GetLoadedModuleForShim(ICorDebugAssembly * pAssembly)
+{
+    PUBLIC_API_ENTRY_FOR_SHIM(this);
+    RSLockHolder lockHolder(GetProcessLock());
+
+    CordbAssembly * pAssemblyInternal = static_cast<CordbAssembly *>(pAssembly);
+    VMPTR_Assembly vmAssembly = pAssemblyInternal->GetAssemblyPtr();
+    VMPTR_Module vmModule = VMPTR_Module::NullPtr();
+    BOOL isModuleLoaded = FALSE;
+    IfFailThrow(GetDAC()->GetModuleForAssembly(vmAssembly, &vmModule, &isModuleLoaded));
+    if (!isModuleLoaded)
+    {
+        return NULL;
+    }
+    return pAssemblyInternal->GetAppDomain()->LookupOrCreateModule(vmAssembly, vmModule);
+}
+
+//---------------------------------------------------------------------------------------
 // Callback to count the number of enumerations in a process.
 //
 // Arguments:
@@ -4475,7 +4535,7 @@ void CordbProcess::DispatchRCEvent()
 
                     {
                         // Release lock around the dispatch of the event
-                        RSInverseLockHolder inverseLockHolder(GetProcessLock());
+                        RSInverseLockHolder inverseLockHolder = RSLock::ReleaseForScope(GetProcessLock());
 
                         EX_TRY
                         {
@@ -4670,8 +4730,8 @@ void CordbProcess::RawDispatchEvent(
 #endif
     case DB_IPCE_USER_BREAKPOINT:
         {
-            STRESS_LOG1(LF_CORDB, LL_INFO1000, "[%x] RCET::DRCE: user breakpoint.\n",
-                 GetCurrentThreadId());
+            STRESS_LOG1(LF_CORDB, LL_INFO1000, "[%zx] RCET::DRCE: user breakpoint.\n",
+                 minipal_get_current_thread_id());
 
             _ASSERTE(pThread != NULL);
             _ASSERTE(pAppDomain != NULL);
@@ -4687,8 +4747,8 @@ void CordbProcess::RawDispatchEvent(
 
     case DB_IPCE_STEP_COMPLETE:
         {
-            STRESS_LOG1(LF_CORDB, LL_INFO1000, "[%x] RCET::DRCE: step complete.\n",
-                 GetCurrentThreadId());
+            STRESS_LOG1(LF_CORDB, LL_INFO1000, "[%zx] RCET::DRCE: step complete.\n",
+                 minipal_get_current_thread_id());
 
             _ASSERTE(pThread != NULL);
 
@@ -4719,8 +4779,8 @@ void CordbProcess::RawDispatchEvent(
 
     case DB_IPCE_EXCEPTION:
         {
-            STRESS_LOG1(LF_CORDB, LL_INFO1000, "[%x] RCET::DRCE: exception.\n",
-                 GetCurrentThreadId());
+            STRESS_LOG1(LF_CORDB, LL_INFO1000, "[%zx] RCET::DRCE: exception.\n",
+                 minipal_get_current_thread_id());
 
             _ASSERTE(pAppDomain != NULL);
 
@@ -4761,8 +4821,8 @@ void CordbProcess::RawDispatchEvent(
 
     case DB_IPCE_THREAD_DETACH:
         {
-            STRESS_LOG2(LF_CORDB, LL_INFO100, "[%x] RCET::HRCE: thread detach : ID=%x \n",
-                 GetCurrentThreadId(), dwVolatileThreadId);
+            STRESS_LOG2(LF_CORDB, LL_INFO100, "[%zx] RCET::HRCE: thread detach : ID=%x \n",
+                 minipal_get_current_thread_id(), dwVolatileThreadId);
 
             // If the runtime thread never entered managed code, there
             // won't be a CordbThread, and CreateThread was never
@@ -4788,7 +4848,7 @@ void CordbProcess::RawDispatchEvent(
                 m_userThreads.RemoveBase(VmPtrToCookie(pThread->m_vmThreadToken));
 
 
-                LOG((LF_CORDB, LL_INFO1000, "[%x] RCET::HRCE: sending thread detach.\n", GetCurrentThreadId()));
+                LOG((LF_CORDB, LL_INFO1000, "[%zx] RCET::HRCE: sending thread detach.\n", minipal_get_current_thread_id()));
 
                 {
                     PUBLIC_CALLBACK_IN_THIS_SCOPE(this, pLockHolder, pEvent);
@@ -4980,7 +5040,7 @@ void CordbProcess::RawDispatchEvent(
                 IfFailThrow(E_UNEXPECTED);
             }
 
-            NewArrayHolder<WCHAR> wszCategory(new WCHAR[cchCategory + 1]);
+            WStringHolder wszCategory(new WCHAR[cchCategory + 1]);
             ULONG32 cbRead;
             ULONG32 cbExpected = cchCategory * sizeof(WCHAR);
             IfFailThrow(m_pDACDataTarget->ReadVirtual(
@@ -4990,7 +5050,7 @@ void CordbProcess::RawDispatchEvent(
                 &cbRead));
             wszCategory[cchCategory] = W('\0');
 
-            NewArrayHolder<WCHAR> wszContent(new WCHAR[cchContent + 1]);
+            WStringHolder wszContent(new WCHAR[cchContent + 1]);
             cbExpected = cchContent * sizeof(WCHAR);
             IfFailThrow(m_pDACDataTarget->ReadVirtual(
                 pEvent->FirstLogMessage.szContent,
@@ -5256,8 +5316,8 @@ void CordbProcess::RawDispatchEvent(
         // EnC Remap opportunity
         case DB_IPCE_ENC_REMAP:
         {
-            LOG((LF_CORDB, LL_INFO1000, "[%x] RCET::DRCE: EnC Remap!.\n",
-                 GetCurrentThreadId()));
+            LOG((LF_CORDB, LL_INFO1000, "[%zx] RCET::DRCE: EnC Remap!.\n",
+                 minipal_get_current_thread_id()));
 
             _ASSERTE(NULL != pAppDomain);
 
@@ -5312,8 +5372,8 @@ void CordbProcess::RawDispatchEvent(
         // EnC Remap complete
         case DB_IPCE_ENC_REMAP_COMPLETE:
         {
-            LOG((LF_CORDB, LL_INFO1000, "[%x] RCET::DRCE: EnC Remap Complete!.\n",
-                 GetCurrentThreadId()));
+            LOG((LF_CORDB, LL_INFO1000, "[%zx] RCET::DRCE: EnC Remap Complete!.\n",
+                 minipal_get_current_thread_id()));
 
             _ASSERTE(NULL != pAppDomain);
 
@@ -5491,8 +5551,8 @@ void CordbProcess::RawDispatchEvent(
     default:
         _ASSERTE(!"Unknown event");
         LOG((LF_CORDB, LL_INFO1000,
-             "[%x] RCET::HRCE: Unknown event: 0x%08x\n",
-             GetCurrentThreadId(), static_cast<unsigned>(pEvent->type)));
+             "[%zx] RCET::HRCE: Unknown event: 0x%08x\n",
+             minipal_get_current_thread_id(), static_cast<unsigned>(pEvent->type)));
     }
 
 
@@ -5853,10 +5913,9 @@ HRESULT CordbProcess::IsOSSuspended(DWORD threadID, BOOL *pbSuspended)
 
 //
 // This routine reads a thread context from the process being debugged, taking into account the fact that the context
-// record may be a different size than the one we compiled with. On systems < NT5, then OS doesn't usually allocate
-// space for the extended registers. However, the CONTEXT struct that we compile with does have this space.
+// record may be a different size than the one we compiled with.
 //
-HRESULT CordbProcess::SafeReadThreadContext(LSPTR_CONTEXT pContext, DT_CONTEXT * pCtx)
+HRESULT CordbProcess::SafeReadThreadContext(CORDB_ADDRESS remoteContextAddr, ContextBuffer contextBuffer)
 {
     HRESULT hr = S_OK;
 
@@ -5865,9 +5924,13 @@ HRESULT CordbProcess::SafeReadThreadContext(LSPTR_CONTEXT pContext, DT_CONTEXT *
 
     EX_TRY
     {
+        ULONG32 fullContextSize = GetTargetContextSize();
+        if ((contextBuffer.pContextBytes == NULL) || (contextBuffer.contextSize < fullContextSize))
+        {
+            ThrowHR(E_INVALIDARG);
+        }
 
-        void *pRemoteContext = pContext.UnsafeGet();
-        TargetBuffer tbFull(pRemoteContext, sizeof(DT_CONTEXT));
+        TargetBuffer tbFull(remoteContextAddr, fullContextSize);
 
         // The context may have 2 parts:
         // 1. Base register, which are always present.
@@ -5875,32 +5938,30 @@ HRESULT CordbProcess::SafeReadThreadContext(LSPTR_CONTEXT pContext, DT_CONTEXT *
         //    in the flags.
 
         // At a minimum we have room for a whole context up to the extended registers.
-    #if defined(DT_CONTEXT_EXTENDED_REGISTERS)
-        ULONG32 minContextSize = offsetof(DT_CONTEXT, ExtendedRegisters);
-    #else
-        ULONG32 minContextSize = sizeof(DT_CONTEXT);
-    #endif
+        ULONG32 minContextSize;
+        IfFailThrow(GetDAC()->GetTargetContextSize(0, &minContextSize));
 
         // Read the minimum part.
         TargetBuffer tbMin = tbFull.SubBuffer(0, minContextSize);
-        SafeReadBuffer(tbMin, (BYTE*) pCtx);
+        SafeReadBuffer(tbMin, contextBuffer.pContextBytes);
 
-    #if defined(DT_CONTEXT_EXTENDED_REGISTERS)
-        void *pCurExtReg = (void*)((UINT_PTR)pCtx + minContextSize);
-        TargetBuffer tbExtended = tbFull.SubBuffer(minContextSize);
-
-        // Now, read the extended registers if the context contains them. If the context does not have extended registers,
-        // just set them to zero.
-        if (SUCCEEDED(hr) && (pCtx->ContextFlags & CONTEXT_EXTENDED_REGISTERS) == CONTEXT_EXTENDED_REGISTERS)
+        if (fullContextSize > minContextSize)
         {
-            SafeReadBuffer(tbExtended, (BYTE*) pCurExtReg);
-        }
-        else
-        {
-            memset(pCurExtReg, 0, tbExtended.cbSize);
-        }
-    #endif
+            void *pCurExtReg = (void*)((UINT_PTR)contextBuffer.pContextBytes + minContextSize);
+            TargetBuffer tbExtended = tbFull.SubBuffer(minContextSize);
 
+            BOOL hasExtendedRegisters = FALSE;
+            IfFailThrow(GetDAC()->ContextHasExtendedRegisters(contextBuffer, &hasExtendedRegisters));
+
+            if (hasExtendedRegisters)
+            {
+                SafeReadBuffer(tbExtended, (BYTE*) pCurExtReg);
+            }
+            else
+            {
+                memset(pCurExtReg, 0, tbExtended.cbSize);
+            }
+        }
     }
     EX_CATCH_HRESULT(hr);
     return hr;
@@ -5908,46 +5969,72 @@ HRESULT CordbProcess::SafeReadThreadContext(LSPTR_CONTEXT pContext, DT_CONTEXT *
 
 //
 // This routine writes a thread context to the process being debugged, taking into account the fact that the context
-// record may be a different size than the one we compiled with. On systems < NT5, then OS doesn't usually allocate
-// space for the extended registers. However, the CONTEXT struct that we compile with does have this space.
+// record may be a different size than the one we compiled with.
 //
-HRESULT CordbProcess::SafeWriteThreadContext(LSPTR_CONTEXT pContext, const DT_CONTEXT * pCtx)
+HRESULT CordbProcess::SafeWriteThreadContext(CORDB_ADDRESS remoteContextAddr, ContextBuffer contextBuffer)
+{
+    INTERNAL_API_ENTRY(this);
+    FAIL_IF_NEUTERED(this);
+
+    if ((contextBuffer.pContextBytes == NULL) || (contextBuffer.contextSize < GetTargetContextSize()))
+    {
+        return E_INVALIDARG;
+    }
+
+    HRESULT hr = S_OK;
+    EX_TRY
+    {
+        ULONG32 sizeToWrite;
+        BOOL hasExtendedRegisters = FALSE;
+        IfFailThrow(GetDAC()->ContextHasExtendedRegisters(contextBuffer, &hasExtendedRegisters));
+        IfFailThrow(GetDAC()->GetTargetContextSize(hasExtendedRegisters ? UINT32_MAX : 0, &sizeToWrite));
+
+        CORDB_ADDRESS pRemoteContext = remoteContextAddr;
+        BYTE * pCtxSource = contextBuffer.pContextBytes;
+
+    // 64 bit windows puts space for the first 6 stack parameters in the CONTEXT structure so that
+    // kernel to usermode transitions don't have to allocate a CONTEXT and do a separate sub rsp
+    // to allocate stack spill space for the arguments. This means that writing to P1Home - P6Home
+    // will overwrite the arguments of some function higher on the stack, very bad. Conceptually you
+    // can think of these members as not being part of the context, ie they don't represent something
+    // which gets saved or restored on context switches. They are just space we shouldn't overwrite.
+    // See issue 630276 for more details.
+#if defined TARGET_AMD64
+        pRemoteContext += offsetof(CONTEXT, ContextFlags); // immediately follows the 6 parameters P1-P6
+        pCtxSource += offsetof(CONTEXT, ContextFlags);
+        sizeToWrite -= offsetof(CONTEXT, ContextFlags);
+#endif
+
+        // Write the context.
+        TargetBuffer tb(pRemoteContext, sizeToWrite);
+        SafeWriteBuffer(tb, (const BYTE*) pCtxSource);
+    }
+    EX_CATCH_HRESULT(hr);
+
+    return hr;
+}
+
+HRESULT CordbProcess::SafeWriteThreadContext(CORDB_ADDRESS remoteContextAddr, T_CONTEXT * pCtx)
 {
     INTERNAL_API_ENTRY(this);
     FAIL_IF_NEUTERED(this);
 
     HRESULT hr = S_OK;
-    DWORD sizeToWrite = sizeof(DT_CONTEXT);
+    DWORD sizeToWrite = sizeof(T_CONTEXT);
 
-    BYTE * pRemoteContext = (BYTE*) pContext.UnsafeGet();
     BYTE * pCtxSource = (BYTE*) pCtx;
 
 
-#if defined(DT_CONTEXT_EXTENDED_REGISTERS)
-    // If our context has extended registers, then write the whole thing. Otherwise, just write the minimum part.
-    if ((pCtx->ContextFlags & DT_CONTEXT_EXTENDED_REGISTERS) != DT_CONTEXT_EXTENDED_REGISTERS)
+#if defined(TARGET_X86)
+    if ((pCtx->ContextFlags & CONTEXT_EXTENDED_REGISTERS) != CONTEXT_EXTENDED_REGISTERS)
     {
-        sizeToWrite = offsetof(DT_CONTEXT, ExtendedRegisters);
+        sizeToWrite = offsetof(T_CONTEXT, SegSs) + sizeof(pCtx->SegSs);
     }
-#endif
-
-// 64 bit windows puts space for the first 6 stack parameters in the CONTEXT structure so that
-// kernel to usermode transitions don't have to allocate a CONTEXT and do a separate sub rsp
-// to allocate stack spill space for the arguments. This means that writing to P1Home - P6Home
-// will overwrite the arguments of some function higher on the stack, very bad. Conceptually you
-// can think of these members as not being part of the context, ie they don't represent something
-// which gets saved or restored on context switches. They are just space we shouldn't overwrite.
-// See issue 630276 for more details.
-#if defined TARGET_AMD64
-    pRemoteContext += offsetof(CONTEXT, ContextFlags); // immediately follows the 6 parameters P1-P6
-    pCtxSource += offsetof(CONTEXT, ContextFlags);
-    sizeToWrite -= offsetof(CONTEXT, ContextFlags);
 #endif
 
     EX_TRY
     {
-        // Write the context.
-        TargetBuffer tb(pRemoteContext, sizeToWrite);
+        TargetBuffer tb(remoteContextAddr, sizeToWrite);
         SafeWriteBuffer(tb, (const BYTE*) pCtxSource);
     }
     EX_CATCH_HRESULT(hr);
@@ -5961,16 +6048,6 @@ HRESULT CordbProcess::GetThreadContext(DWORD threadID, ULONG32 contextSize, BYTE
     PUBLIC_REENTRANT_API_ENTRY(this);
     FAIL_IF_NEUTERED(this);
     LOG((LF_CORDB, LL_INFO10000, "CP::GTC: thread=0x%x\n", threadID));
-
-    DT_CONTEXT * pContext;
-
-    if (contextSize < sizeof(DT_CONTEXT))
-    {
-        LOG((LF_CORDB, LL_INFO10000, "CP::GTC: thread=0x%x, context size is invalid.\n", threadID));
-        return E_INVALIDARG;
-    }
-
-    pContext = reinterpret_cast<DT_CONTEXT *>(context);
 
     VALIDATE_POINTER_TO_OBJECT_ARRAY(context, BYTE, contextSize, true, true);
 
@@ -5989,7 +6066,13 @@ HRESULT CordbProcess::GetThreadContext(DWORD threadID, ULONG32 contextSize, BYTE
             return E_INVALIDARG;
         }
 
-        return ut->GetThreadContext((DT_CONTEXT*)context);
+        if (contextSize < sizeof(T_CONTEXT))
+        {
+            LOG((LF_CORDB, LL_INFO10000, "CP::GTC: thread=0x%x, context size is invalid.\n", threadID));
+            return E_INVALIDARG;
+        }
+
+        return ut->GetThreadContext(reinterpret_cast<T_CONTEXT *>(context));
 #else
         return E_NOTIMPL;
 #endif
@@ -6002,6 +6085,11 @@ HRESULT CordbProcess::GetThreadContext(DWORD threadID, ULONG32 contextSize, BYTE
         HRESULT hr = S_OK;
         EX_TRY
         {
+            if (contextSize < GetTargetContextSize())
+            {
+                LOG((LF_CORDB, LL_INFO10000, "CP::GTC: thread=0x%x, context size is invalid.\n", threadID));
+                return E_INVALIDARG;
+            }
             CordbThread* thread = this->TryLookupThreadByVolatileOSId(threadID);
             if (thread == NULL)
             {
@@ -6011,9 +6099,13 @@ HRESULT CordbProcess::GetThreadContext(DWORD threadID, ULONG32 contextSize, BYTE
             }
             else
             {
-                DT_CONTEXT* managedContext;
-                hr = thread->GetManagedContext(&managedContext);
-                *pContext = *managedContext;
+                ContextBuffer managedContext = {};
+                IfFailThrow(thread->GetManagedContext(&managedContext));
+                if (managedContext.contextSize > contextSize)
+                {
+                    ThrowHR(E_INVALIDARG);
+                }
+                memcpy(context, managedContext.pContextBytes, managedContext.contextSize);
             }
         }
         EX_CATCH_HRESULT(hr)
@@ -6034,13 +6126,11 @@ HRESULT CordbProcess::SetThreadContext(DWORD threadID, ULONG32 contextSize, BYTE
     FAIL_IF_NEUTERED(this);
     VALIDATE_POINTER_TO_OBJECT_ARRAY(context, BYTE, contextSize, true, true);
 
-    if (contextSize != sizeof(DT_CONTEXT))
+    if (contextSize != GetTargetContextSize())
     {
         LOG((LF_CORDB, LL_INFO10000, "CP::STC: thread=0x%x, context size is invalid.\n", threadID));
         return E_INVALIDARG;
     }
-
-    DT_CONTEXT* pContext = (DT_CONTEXT*)context;
 
     if (this->IsInteropDebugging())
     {
@@ -6058,7 +6148,13 @@ HRESULT CordbProcess::SetThreadContext(DWORD threadID, ULONG32 contextSize, BYTE
             return E_INVALIDARG;
         }
 
-        hr = ut->SetThreadContext(pContext);
+        if (contextSize < sizeof(T_CONTEXT))
+        {
+            LOG((LF_CORDB, LL_INFO10000, "CP::STC: thread=0x%x, context size is invalid.\n", threadID));
+            return E_INVALIDARG;
+        }
+
+        hr = ut->SetThreadContext(reinterpret_cast<T_CONTEXT *>(context));
 
         // Update the register set for the leaf-unmanaged chain so that it's consistent w/ the context.
         // We may not necessarily be synchronized, and so these frames may be stale. Even so, no harm done.
@@ -6100,7 +6196,8 @@ HRESULT CordbProcess::SetThreadContext(DWORD threadID, ULONG32 contextSize, BYTE
                 hr = E_INVALIDARG;
             }
 
-            hr = thread->SetManagedContext(pContext);
+            ContextBuffer contextBuffer = { context, contextSize };
+            hr = thread->SetManagedContext(contextBuffer);
         }
         EX_CATCH
         {
@@ -7078,7 +7175,7 @@ void CordbProcess::VerifyControlBlock()
 
 #ifdef _DEBUG
     char buf[MAX_LONGPATH];
-    DWORD len = GetEnvironmentVariableA("CORDBG_NotCompatibleTest", buf, sizeof(buf));
+    DWORD len = minipal_environ_get_variable("CORDBG_NotCompatibleTest", buf, sizeof(buf));
     _ASSERTE(len < sizeof(buf));
 
     if (len > 0)
@@ -7704,8 +7801,8 @@ void CordbProcess::DispatchUnmanagedOOBEvent()
         // Make sure we keep the thread alive while we're playing with it.
         RSSmartPtr<CordbUnmanagedThread> pRef(pUnmanagedThread);
 
-        LOG((LF_CORDB, LL_INFO10000, "[%x] CP::DUE: dispatching OOB unmanaged event %d for thread 0x%x\n",
-             GetCurrentThreadId(), pUnmanagedEvent->m_currentDebugEvent.dwDebugEventCode, pUnmanagedThread->m_id));
+        LOG((LF_CORDB, LL_INFO10000, "[%zx] CP::DUE: dispatching OOB unmanaged event %d for thread 0x%x\n",
+             minipal_get_current_thread_id(), pUnmanagedEvent->m_currentDebugEvent.dwDebugEventCode, pUnmanagedThread->m_id));
 
         m_dispatchingOOBEvent = true;
         pUnmanagedEvent->SetState(CUES_Dispatched);
@@ -7817,7 +7914,7 @@ HRESULT CordbProcess::StartSyncFromWin32Stop(BOOL * pfAsyncBreakSent)
                 return ErrWrapper(CORDBG_E_CANT_CALL_ON_THIS_THREAD);
             }
 
-            STRESS_LOG1(LF_CORDB, LL_INFO1000, "[%x] CP::SSFW32S: sending internal continue\n", GetCurrentThreadId());
+            STRESS_LOG1(LF_CORDB, LL_INFO1000, "[%zx] CP::SSFW32S: sending internal continue\n", minipal_get_current_thread_id());
 
             // Can't do this on the win32 event thread.
             _ASSERTE(!this->IsWin32EventThread());
@@ -7858,13 +7955,13 @@ HRESULT CordbProcess::StartSyncFromWin32Stop(BOOL * pfAsyncBreakSent)
             // if the process is sync'd or not. This is exactly what we want.
             hr = this->m_pShim->GetWin32EventThread()->SendUnmanagedContinue(this, cInternalUMContinue);
 
-            LOG((LF_CORDB, LL_INFO1000, "[%x] CP::SSFW32S: internal continue returned\n", GetCurrentThreadId()));
+            LOG((LF_CORDB, LL_INFO1000, "[%zx] CP::SSFW32S: internal continue returned\n", minipal_get_current_thread_id()));
 
             // Send an async break to the left side now that its running.
             DebuggerIPCEvent * pEvent = (DebuggerIPCEvent *) _alloca(CorDBIPC_BUFFER_SIZE);
             InitIPCEvent(pEvent, DB_IPCE_ASYNC_BREAK, false, VMPTR_AppDomain::NullPtr());
 
-            LOG((LF_CORDB, LL_INFO1000, "[%x] CP::SSFW32S: sending async stop\n", GetCurrentThreadId()));
+            LOG((LF_CORDB, LL_INFO1000, "[%zx] CP::SSFW32S: sending async stop\n", minipal_get_current_thread_id()));
 
             // If the process gets synchronized between the Unlock() and here, then this message will do nothing (Left
             // Side catches it) and we'll never get a response, and it won't hurt anything.
@@ -7875,13 +7972,13 @@ HRESULT CordbProcess::StartSyncFromWin32Stop(BOOL * pfAsyncBreakSent)
             // to sync.
             if (!m_helperThreadDead)
             {
-                STRESS_LOG1(LF_CORDB, LL_INFO1000, "[%x] CP::SSFW32S: sent async stop, waiting for event\n", GetCurrentThreadId());
+                STRESS_LOG1(LF_CORDB, LL_INFO1000, "[%zx] CP::SSFW32S: sent async stop, waiting for event\n", minipal_get_current_thread_id());
 
                 // If we got synchronized between the Unlock() and here its okay since m_stopWaitEvent is still high
                 // from the last sync.
                 DWORD dwWaitResult = SafeWaitForSingleObject(this, m_stopWaitEvent, INFINITE);
 
-                STRESS_LOG2(LF_CORDB, LL_INFO1000, "[%x] CP::SSFW32S: got event, %d\n", GetCurrentThreadId(), dwWaitResult);
+                STRESS_LOG2(LF_CORDB, LL_INFO1000, "[%zx] CP::SSFW32S: got event, %d\n", minipal_get_current_thread_id(), dwWaitResult);
 
                 _ASSERTE(dwWaitResult == WAIT_OBJECT_0);
             }
@@ -7922,9 +8019,9 @@ void CordbProcess::UnrecoverableError(HRESULT errorHR,
                                       const char *errorFile,
                                       unsigned int errorLine)
 {
-    LOG((LF_CORDB, LL_INFO10, "[%x] CP::UE: unrecoverable error 0x%08x "
+    LOG((LF_CORDB, LL_INFO10, "[%zx] CP::UE: unrecoverable error 0x%08x "
          "(%d) %s:%d\n",
-         GetCurrentThreadId(),
+         minipal_get_current_thread_id(),
          errorHR, errorCode, errorFile, errorLine));
 
     // We definitely want to know about any of these.
@@ -8060,8 +8157,8 @@ HRESULT CordbProcess::EnableLogMessages(BOOL fOnOff)
     hr = m_cordb->SendIPCEvent(this, event, CorDBIPC_BUFFER_SIZE);
     hr = WORST_HR(hr, event->hr);
 
-    LOG((LF_CORDB, LL_INFO10000, "[%x] CP::EnableLogMessages: EnableLogMessages=%d sent.\n",
-         GetCurrentThreadId(), fOnOff));
+    LOG((LF_CORDB, LL_INFO10000, "[%zx] CP::EnableLogMessages: EnableLogMessages=%d sent.\n",
+         minipal_get_current_thread_id(), fOnOff));
 
     return hr;
 }
@@ -8863,7 +8960,7 @@ void CordbProcess::FinishInitializeIPCChannelWorker()
 
     EX_TRY
     {
-        LOG((LF_CORDB, LL_INFO1000, "[%x] RCET::HFRCE: first event..., process %p\n", GetCurrentThreadId(), this));
+        LOG((LF_CORDB, LL_INFO1000, "[%zx] RCET::HFRCE: first event..., process %p\n", minipal_get_current_thread_id(), this));
 
         BOOL fBlockExists;
         GetEventBlock(&fBlockExists); // throws on error
@@ -8888,7 +8985,7 @@ void CordbProcess::FinishInitializeIPCChannelWorker()
         GetDCB()->m_rightSideIsWin32Debugger = IsInteropDebugging();
         UpdateLeftSideDCBField(&(GetDCB()->m_rightSideIsWin32Debugger), sizeof(GetDCB()->m_rightSideIsWin32Debugger));
 
-        LOG((LF_CORDB, LL_INFO1000, "[%x] RCET::HFRCE: ...went fine\n", GetCurrentThreadId()));
+        LOG((LF_CORDB, LL_INFO1000, "[%zx] RCET::HFRCE: ...went fine\n", minipal_get_current_thread_id()));
         _ASSERTE(SUCCEEDED(hr));
 
     } EX_CATCH_HRESULT(hr);
@@ -9056,7 +9153,7 @@ void inline CordbProcess::CopyRCEventFromIPCBlock(DebuggerIPCEvent * pLocalManag
 // Return true if this is the RCEvent thread, else false.
 bool CordbRCEventThread::IsRCEventThread()
 {
-    return (m_threadId == GetCurrentThreadId());
+    return (m_threadId == (DWORD)minipal_get_current_thread_id());
 }
 
 //---------------------------------------------------------------------------------------
@@ -9483,7 +9580,7 @@ void CordbRCEventThread::FlushQueuedEvents(CordbProcess* process)
 
     // Release lock before we call out to shim to Queue fake events.
     {
-        RSInverseLockHolder inverseLockHolder(process->GetProcessLock());
+        RSInverseLockHolder inverseLockHolder = RSLock::ReleaseForScope(process->GetProcessLock());
         {
             PUBLIC_CALLBACK_IN_THIS_SCOPE0_NO_LOCK(pProcess);
 
@@ -10378,7 +10475,7 @@ bool CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
         PRD_TYPE m_opcode = 0;
 
     public:
-        void Update(DT_CONTEXT * pContext)
+        void Update(T_CONTEXT * pContext)
         {
             this->m_lsContextAddr = (TADDR)pContext->Rcx;
             this->m_contextSize = (DWORD)pContext->Rdx;
@@ -10457,13 +10554,13 @@ bool CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
                 return CORDBG_E_BAD_THREAD_STATE;
             }
 
-            DT_CONTEXT context = { 0 };
+            T_CONTEXT context = { 0 };
             context.ContextFlags = CONTEXT_FULL;
 
             // we originally used GetDataTarget()->GetThreadContext, but
             // the implementation uses ShimLocalDataTarget::GetThreadContext which
             // depends on OpenThread which might fail with an Access Denied error (see note above)
-            BOOL success = ::GetThreadContext(m_hThread, (CONTEXT*)(&context));
+            BOOL success = ::GetThreadContext(m_hThread, &context);
             if (!success)
             {
                 return HRESULT_FROM_WIN32(GetLastError());
@@ -10613,39 +10710,11 @@ HRESULT CordbProcess::EnableInPlaceSingleStepping(UnmanagedThreadTracker * pCurT
     {
         return E_INVALIDARG;
     }
-    HANDLE hProcess = UnsafeGetProcessHandle();
-    LPVOID baseAddress = (LPVOID)(patchSkipAddr);
-    DWORD oldProt;
 
-    if (!VirtualProtectEx(hProcess,
-                        baseAddress,
-                        CORDbg_BREAK_INSTRUCTION_SIZE,
-                        PAGE_EXECUTE_READWRITE, &oldProt))
-    {
-        // we may be seeing unwriteable directly mapped executable memory.
-        // let's try copy-on-write instead,
-        if (!VirtualProtectEx(hProcess,
-            baseAddress,
-            CORDbg_BREAK_INSTRUCTION_SIZE,
-            PAGE_EXECUTE_WRITECOPY, &oldProt))
-        {
-            _ASSERTE(!"VirtualProtect of code page failed");
-            return HRESULT_FROM_GetLastError();
-        }
-    }
-
+    // RemoveRemotePatch makes the code page temporarily writable if needed.
     LOG((LF_CORDB, LL_INFO10000, "RS EnableInPlaceSingleStepping - address=0x%p opcode=0x%x\n", patchSkipAddr, opcode));
     HRESULT hr = RemoveRemotePatch(this, (void*)patchSkipAddr, opcode);
     IfFailRet(hr);
-
-    if (!VirtualProtectEx(hProcess,
-                baseAddress,
-                CORDbg_BREAK_INSTRUCTION_SIZE,
-                oldProt, &oldProt))
-    {
-        _ASSERTE(!"VirtualProtect of code page failed");
-        return HRESULT_FROM_GetLastError();
-    }
 
     pCurThread->SetPatchSkipAddress(patchSkipAddr);
 
@@ -10675,39 +10744,15 @@ bool CordbProcess::HandleInPlaceSingleStep(DWORD dwThreadId, PVOID pExceptionAdd
         curThread->GetThreadId() == dwThreadId &&
         curThread->IsInPlaceStepping())
     {
-        // this is an in-place step, so place the breakpoint instruction back to the patch location
-
-        HANDLE hProcess = UnsafeGetProcessHandle();
-        LPVOID baseAddress = (LPVOID)(curThread->GetPatchSkipAddress());
-        DWORD oldProt;
-
-        if (!VirtualProtectEx(hProcess,
-                            baseAddress,
-                            CORDbg_BREAK_INSTRUCTION_SIZE,
-                            PAGE_EXECUTE_READWRITE, &oldProt))
-        {
-            // we may be seeing unwriteable directly mapped executable memory.
-            // let's try copy-on-write instead,
-            if (!VirtualProtectEx(hProcess,
-                baseAddress,
-                CORDbg_BREAK_INSTRUCTION_SIZE,
-                PAGE_EXECUTE_WRITECOPY, &oldProt))
-            {
-                _ASSERTE(!"VirtualProtect of code page failed");
-                ThrowHR(HRESULT_FROM_GetLastError());
-            }
-        }
-
+        // this is an in-place step, so place the breakpoint instruction back to the patch location.
+        // ApplyRemotePatch makes the code page temporarily writable if needed. If it fails, still
+        // finish the step and resume the other threads so the process isn't left hung.
         HRESULT hr = ApplyRemotePatch(this, curThread->GetPatchSkipAddress());
-        IfFailThrow(hr);
-
-        if (!VirtualProtectEx(hProcess,
-            baseAddress,
-            CORDbg_BREAK_INSTRUCTION_SIZE,
-            oldProt, &oldProt))
+        if (FAILED(hr))
         {
-            _ASSERTE(!"VirtualProtect of code page failed");
-            ThrowHR(HRESULT_FROM_GetLastError());
+            STRESS_LOG2(LF_CORDB, LL_ERROR, "RS HandleInPlaceSingleStep - failed to reapply patch at %p, hr=0x%x\n",
+                curThread->GetPatchSkipAddress(), hr);
+            _ASSERTE(!"RS HandleInPlaceSingleStep - failed to reapply patch");
         }
 
         curThread->ClearPatchSkipAddress();
@@ -10987,7 +11032,7 @@ HRESULT CordbProcess::Filter(
             //    fired before the thread is created.
             //
             NewArrayHolder<BYTE> pManagedEventBuffer(new BYTE[CorDBIPC_BUFFER_SIZE]);
-            DebuggerIPCEvent * pManagedEvent = reinterpret_cast<DebuggerIPCEvent *>(pManagedEventBuffer.GetValue());
+            DebuggerIPCEvent * pManagedEvent = reinterpret_cast<DebuggerIPCEvent *>(static_cast<BYTE*>(pManagedEventBuffer));
 
             bool fOwner = CopyManagedEventFromTarget(pRecord, pManagedEvent);
             if (fOwner)
@@ -11957,9 +12002,9 @@ Reaction CordbProcess::TriageExcep1stChanceAndInit(CordbUnmanagedThread * pUnman
         // WFDE will pick it up) but before we realize it's one of ours.
         STRESS_LOG2(LF_CORDB, LL_INFO1000, "CP::TE1stCAI: Phantom Int3: Tid=0x%x, addr=%p\n", pEvent->dwThreadId, pExAddress);
 
-        DT_CONTEXT context;
+        T_CONTEXT context;
 
-        context.ContextFlags = DT_CONTEXT_FULL;
+        context.ContextFlags = CONTEXT_FULL;
 
         BOOL fSuccess = DbiGetThreadContext(pUnmanagedThread->m_handle, &context);
 
@@ -12451,11 +12496,9 @@ void CordbProcess::HandleDebugEventForInteropDebugging(const DEBUG_EVENT * pEven
     //Verify that GetThreadContext agrees with the exception address
     if (pEvent->dwDebugEventCode == EXCEPTION_DEBUG_EVENT)
     {
-        DT_CONTEXT tempDebugContext;
-        tempDebugContext.ContextFlags = DT_CONTEXT_FULL;
+        T_CONTEXT tempDebugContext;
+        tempDebugContext.ContextFlags = CONTEXT_FULL;
         DbiGetThreadContext(pUnmanagedThread->m_handle, &tempDebugContext);
-        CordbUnmanagedThread::LogContext(&tempDebugContext);
-
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
         const ULONG_PTR breakpointOpcodeSize = 1;
 #elif defined(TARGET_ARM64)
@@ -12640,11 +12683,11 @@ void CordbProcess::HandleDebugEventForInteropDebugging(const DEBUG_EVENT * pEven
         if(pUnmanagedThread->IsFirstChanceHijacked())
         {
             LOG((LF_CORDB, LL_INFO100000, "W32ET::W32EL: hijack complete will restore context...\n"));
-            DT_CONTEXT tempContext = { 0 };
-#if defined(DT_CONTEXT_EXTENDED_REGISTERS)
-            tempContext.ContextFlags = DT_CONTEXT_FULL | DT_CONTEXT_FLOATING_POINT | DT_CONTEXT_EXTENDED_REGISTERS;
+            T_CONTEXT tempContext = { 0 };
+#if defined(TARGET_X86)
+            tempContext.ContextFlags = CONTEXT_FULL | CONTEXT_FLOATING_POINT | CONTEXT_EXTENDED_REGISTERS;
 #else
-            tempContext.ContextFlags = DT_CONTEXT_FULL | DT_CONTEXT_FLOATING_POINT;
+            tempContext.ContextFlags = CONTEXT_FULL | CONTEXT_FLOATING_POINT;
 #endif
             HRESULT hr = pUnmanagedThread->GetThreadContext(&tempContext);
             _ASSERTE(SUCCEEDED(hr));
@@ -12727,7 +12770,7 @@ void CordbProcess::HandleDebugEventForInteropDebugging(const DEBUG_EVENT * pEven
                     _ASSERTE(fcd.pLeftSideContext != NULL);
                     LOG((LF_CORDB, LL_INFO10000, "W32ET::W32EL: updating LS context at 0x%p\n", fcd.pLeftSideContext));
                     // write the new context over the old one on the LS
-                    SafeWriteThreadContext(fcd.pLeftSideContext, &tempContext);
+                    SafeWriteThreadContext(fcd.pLeftSideContext.GetRawAddr(), &tempContext);
                 }
 
                 // Write the new Fcd data to the LS
@@ -13071,8 +13114,8 @@ void EnableDebugTrace(CordbUnmanagedThread *ut)
 
     // Get the context
     HRESULT hr = S_OK;
-    DT_CONTEXT context;
-    context.ContextFlags = DT_CONTEXT_FULL;
+    T_CONTEXT context;
+    context.ContextFlags = CONTEXT_FULL;
 
 
     hr = pProcess->GetThreadContext((DWORD) ut->m_id, sizeof(context), (BYTE*)&context);

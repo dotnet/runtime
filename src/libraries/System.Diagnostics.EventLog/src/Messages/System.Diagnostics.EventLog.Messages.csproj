@@ -7,5 +7,7 @@
     <EnableLibraryImportGenerator>false</EnableLibraryImportGenerator>
     <SkipIncludePolyfills>true</SkipIncludePolyfills>
     <SkipIncludeNullableAttributes>true</SkipIncludeNullableAttributes>
+    <!-- Must contain no types, but the updated memory safety rules make the compiler embed attribute types. -->
+    <MemorySafetyRulesVersion>1</MemorySafetyRulesVersion>
   </PropertyGroup>
 </Project>

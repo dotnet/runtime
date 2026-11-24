@@ -249,10 +249,11 @@ namespace System.Xml
             _offset += count;
         }
 
-        public void InsertBytes(byte[] buffer, int offset, int count)
+        public void InsertBytes(ReadOnlySpan<byte> bytes)
         {
             Debug.Assert(_stream != null);
-            if (_offsetMax > buffer.Length - count)
+            int count = bytes.Length;
+            if (_offsetMax > _buffer.Length - count)
             {
                 byte[] newBuffer = new byte[_offsetMax + count];
                 System.Buffer.BlockCopy(_buffer, 0, newBuffer, 0, _offsetMax);
@@ -261,7 +262,7 @@ namespace System.Xml
             }
             System.Buffer.BlockCopy(_buffer, _offset, _buffer, _offset + count, _offsetMax - _offset);
             _offsetMax += count;
-            System.Buffer.BlockCopy(buffer, offset, _buffer, _offset, count);
+            bytes.CopyTo(_buffer.AsSpan(_offset, count));
         }
 
         public void SetWindow(int windowOffset, int windowLength)

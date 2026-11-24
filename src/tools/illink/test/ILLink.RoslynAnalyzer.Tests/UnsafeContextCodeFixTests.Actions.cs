@@ -1,7 +1,7 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-#if DEBUG
+#if UNSAFE_MIGRATION
 using System.Threading.Tasks;
 using ILLink.CodeFix;
 using Microsoft.CodeAnalysis.Testing;
@@ -118,6 +118,26 @@ namespace ILLink.RoslynAnalyzer.Tests
                         int value = /* SAFETY: To be audited */ unsafe(Get());
                         return value;
                     }
+                }
+                """, equivalenceKey: ExpressionFirstKey);
+        }
+
+        [Fact]
+        public Task ExpressionFirstAction_KeepsExpressionBody()
+        {
+            return VerifyAsync("""
+                class C
+                {
+                    static unsafe int Get() => 0;
+
+                    int M() => {|CS9362:Get()|};
+                }
+                """, """
+                class C
+                {
+                    static unsafe int Get() => 0;
+
+                    int M() => /* SAFETY: To be audited */ unsafe(Get());
                 }
                 """, equivalenceKey: ExpressionFirstKey);
         }
@@ -286,7 +306,7 @@ namespace ILLink.RoslynAnalyzer.Tests
         }
 
         [Fact]
-        public Task HeaderOnlyIf_WrapsCondition()
+        public Task HeaderOnlyIf_LiftsOutVariableAndWrapsStatement()
         {
             return VerifyAsync("""
                 class C
@@ -308,8 +328,13 @@ namespace ILLink.RoslynAnalyzer.Tests
 
                     int M(bool ready)
                     {
-                        if (!ready || !/* SAFETY: To be audited */ unsafe(TryGet(out int value)))
-                            return 0;
+                        int value;
+                        // SAFETY: To be audited
+                        unsafe
+                        {
+                            if (!ready || !TryGet(out value))
+                                return 0;
+                        }
 
                         return value;
                     }
@@ -433,9 +458,10 @@ namespace ILLink.RoslynAnalyzer.Tests
         }
 
         [Fact]
-        public Task NotUpdatedMemorySafetyRules_NoFix()
+        public Task NotUpdatedMemorySafetyRules_Fixed()
         {
-            // Legacy rules also report CS9360 under the new language version, but only v2 code gets inner contexts.
+            // Legacy rules also report CS9360 under the new language version, e.g. in a file shared with a migrated
+            // assembly, so the same inner context fixes it.
             const string source = """
                 class C
                 {
@@ -445,7 +471,20 @@ namespace ILLink.RoslynAnalyzer.Tests
                     }
                 }
                 """;
-            return VerifyAsync(source, source, updatedMemorySafetyRules: false);
+            const string fixedSource = """
+                class C
+                {
+                    void M(int* p)
+                    {
+                        // SAFETY: To be audited
+                        unsafe
+                        {
+                            *p = 0;
+                        }
+                    }
+                }
+                """;
+            return VerifyAsync(source, fixedSource, updatedMemorySafetyRules: false);
         }
     }
 }

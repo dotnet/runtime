@@ -10,7 +10,7 @@ namespace CdacUsageGraph.Semantic;
 internal sealed class CdacSymbolMatcher
 {
     private readonly INamedTypeSymbol? _contractRegistry;
-    private readonly INamedTypeSymbol? _generatedLayoutSet;
+    private readonly INamedTypeSymbol? _generatedTypeLayout;
     private readonly INamedTypeSymbol? _iContract;
     private readonly IMethodSymbol? _readGlobalPointer;
     private readonly IMethodSymbol? _tryReadGlobalPointer;
@@ -23,8 +23,8 @@ internal sealed class CdacSymbolMatcher
     {
         _contractRegistry = compilation.GetTypeByMetadataName(
             CdacSymbols.ContractRegistryMetadataName);
-        _generatedLayoutSet = compilation.GetTypeByMetadataName(
-            CdacSymbols.GeneratedLayoutSetMetadataName);
+        _generatedTypeLayout = compilation.GetTypeByMetadataName(
+            CdacSymbols.GeneratedTypeLayoutMetadataName);
         _iContract = compilation.GetTypeByMetadataName(
             CdacSymbols.IContractMetadataName);
 
@@ -65,8 +65,8 @@ internal sealed class CdacSymbolMatcher
     public bool IsContractRegistry(ITypeSymbol? type) =>
         Matches(type, _contractRegistry);
 
-    public bool IsGeneratedLayoutSet(ITypeSymbol? type) =>
-        Matches(type, _generatedLayoutSet);
+    public bool IsGeneratedTypeLayout(ITypeSymbol? type) =>
+        Matches(type, _generatedTypeLayout);
 
     public bool IsContract(ITypeSymbol? type) =>
         Matches(type, _iContract) ||

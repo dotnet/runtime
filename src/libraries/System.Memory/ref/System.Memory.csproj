@@ -2,7 +2,6 @@
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Features>$(Features);updated-memory-safety-rules</Features>
   </PropertyGroup>
 
   <ItemGroup>

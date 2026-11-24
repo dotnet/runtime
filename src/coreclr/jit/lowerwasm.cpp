@@ -157,6 +157,38 @@ GenTree* Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
         verifyLclFldDoNotEnregister(storeLoc->GetLclNum());
     }
 
+    // Record blocks with local-to-local copies for fgWasmForwardLocalCopies.
+    if (m_compiler->opts.OptimizationEnabled() && storeLoc->OperIs(GT_STORE_LCL_VAR) &&
+        storeLoc->Data()->OperIs(GT_LCL_VAR))
+    {
+        ArrayStack<BasicBlock*>*& copyBlocks = m_compiler->m_wasmLocalCopyBlocks;
+        if (copyBlocks == nullptr)
+        {
+            copyBlocks = new (m_compiler, CMK_Lower) ArrayStack<BasicBlock*>(m_compiler->getAllocator(CMK_Lower));
+        }
+
+        if (copyBlocks->Empty() || (copyBlocks->Top() != m_block))
+        {
+            copyBlocks->Push(m_block);
+        }
+    }
+
+    // Record blocks with stores of invariant values for fgWasmRematerializeInvariantLocals.
+    if (m_compiler->opts.OptimizationEnabled() && storeLoc->OperIs(GT_STORE_LCL_VAR) &&
+        Compiler::fgWasmIsRematerializableValue(storeLoc->Data()))
+    {
+        ArrayStack<BasicBlock*>*& rematBlocks = m_compiler->m_wasmRematBlocks;
+        if (rematBlocks == nullptr)
+        {
+            rematBlocks = new (m_compiler, CMK_Lower) ArrayStack<BasicBlock*>(m_compiler->getAllocator(CMK_Lower));
+        }
+
+        if (rematBlocks->Empty() || (rematBlocks->Top() != m_block))
+        {
+            rematBlocks->Push(m_block);
+        }
+    }
+
     ContainCheckStoreLoc(storeLoc);
     return storeLoc->gtNext;
 }
@@ -415,8 +447,13 @@ void Lowering::LowerInitBlockStore(GenTreeBlk* blkNode)
     }
     else
     {
-        // Use the wasm `memory.fill` instruction.
+        // Use a native Wasm store or memory.fill.
         blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindNativeOpcode;
+        if (src->IsIntegralConst(0))
+        {
+            // Codegen picks the constant's type for scalar zero stores.
+            src->SetContained();
+        }
     }
 
     if ((blkNode->gtBlkOpKind != GenTreeBlk::BlkOpKindNativeOpcode) || ((blkNode->gtFlags & GTF_IND_NONFAULTING) == 0))
@@ -688,6 +725,43 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
 //
 void Lowering::ContainCheckSelect(GenTreeOp* node)
 {
+}
+
+//------------------------------------------------------------------------
+// TryMoveWasmSelectCondition: Move the condition tree to the top of the
+// Wasm value stack when it can be evaluated after both value operands.
+//
+void Lowering::TryMoveWasmSelectCondition(GenTreeConditional* select)
+{
+    GenTree* condition = select->gtCond;
+    if (condition->gtNext == select)
+    {
+        return;
+    }
+
+    bool               isClosed;
+    LIR::ReadOnlyRange range = BlockRange().GetTreeRange(condition, &isClosed);
+    if (!isClosed)
+    {
+        return;
+    }
+
+    for (GenTree* node : range)
+    {
+        if ((node->gtLIRFlags & LIR::Flags::MultiplyUsed) != 0)
+        {
+            return;
+        }
+    }
+
+    if (!IsRangeInvariantInRange(range.FirstNode(), range.LastNode(), select, nullptr))
+    {
+        return;
+    }
+
+    JITDUMP("Moving select condition to Wasm stack order\n");
+    LIR::Range conditionRange = BlockRange().Remove(std::move(range));
+    BlockRange().InsertBefore(select, std::move(conditionRange));
 }
 
 //------------------------------------------------------------------------
