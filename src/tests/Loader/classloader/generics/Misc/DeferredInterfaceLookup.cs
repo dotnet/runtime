@@ -27,9 +27,31 @@ public class DeferredInterfaceLookup
         return receiver.Choose();
     }
 
-    [Fact]
-    public static void TestEntryPoint()
+    private static Type Target<T>() => typeof(T);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Func<Type> Bind<T>() => new Func<Type>(Target<T>);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static unsafe delegate* managed<Type> Pointer<T>() => &Target<T>;
+
+    private readonly unsafe struct Holder
     {
+        public readonly delegate* managed<Type> Pointer;
+        public Holder(delegate* managed<Type> pointer) => Pointer = pointer;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static unsafe Holder Wrap<T>() => new Holder(&Target<T>);
+
+    [Fact]
+    public static unsafe void TestEntryPoint()
+    {
+        Assert.Equal(typeof(string), Bind<string>()());
+        Assert.Equal(typeof(object), Bind<object>()());
+        Assert.Equal(typeof(string), Pointer<string>()());
+        Assert.Equal(typeof(object), Wrap<object>().Pointer());
+
         for (int i = 0; i < 2; i++)
         {
             Assert.Equal(17, Dispatch<string>(new Choice<string>()));

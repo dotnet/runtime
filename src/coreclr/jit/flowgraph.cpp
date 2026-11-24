@@ -1141,38 +1141,12 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
             {
                 JITDUMP("optimized\n");
 
-                GenTree*       thisPointer       = call->gtArgs.GetThisArg()->GetNode();
-                GenTree*       targetObjPointers = call->gtArgs.GetArgByIndex(1)->GetNode();
-                CORINFO_LOOKUP pLookup;
-                info.compCompHnd->getReadyToRunDelegateCtorHelper(&ldftnToken->m_token, ldftnToken->m_tokenConstraint,
-                                                                  clsHnd, info.compMethodHnd, &pLookup);
-                if (!pLookup.lookupKind.needsRuntimeLookup)
+                GenTree*     thisPointer       = call->gtArgs.GetThisArg()->GetNode();
+                GenTree*     targetObjPointers = call->gtArgs.GetArgByIndex(1)->GetNode();
+                GenTreeCall* helper = impNativeAotDelegateCtor(clsHnd, ldftnToken, thisPointer, targetObjPointers);
+                if (helper != nullptr)
                 {
-                    call = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_DELEGATE_CTOR, TYP_VOID, thisPointer,
-                                               targetObjPointers);
-                    call->setEntryPoint(pLookup.constLookup);
-                }
-                else
-                {
-                    assert(oper != GT_FTN_ADDR);
-
-                    if (pLookup.lookupKind.runtimeLookupKind != CORINFO_LOOKUP_NOT_SUPPORTED)
-                    {
-                        assert((pLookup.runtimeLookup.indirections == CORINFO_USEHELPER) &&
-                               (pLookup.runtimeLookup.helper == CORINFO_HELP_READYTORUN_DELEGATE_CTOR));
-                        GenTree* ctxTree = getRuntimeContextTree(pLookup.lookupKind.runtimeLookupKind);
-                        call = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_DELEGATE_CTOR, TYP_VOID, thisPointer,
-                                                   targetObjPointers, ctxTree);
-                        call->setEntryPoint(pLookup.runtimeLookup.helperEntryPoint);
-                    }
-                    else
-                    {
-                        // Runtime does not support inlining of all shapes of runtime lookups
-                        // Inlining has to be aborted in such a case
-                        assert(compIsForInlining());
-                        compInlineResult->NoteFatal(InlineObservation::CALLSITE_GENERIC_DICTIONARY_LOOKUP);
-                        JITDUMP("not optimized, generic inlining restriction\n");
-                    }
+                    call = helper;
                 }
             }
             else

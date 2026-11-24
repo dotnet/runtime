@@ -1481,6 +1481,41 @@ GenTreeCall* Compiler::impReadyToRunHelperToTree(CORINFO_RESOLVED_TOKEN* pResolv
 }
 #endif
 
+#ifdef FEATURE_READYTORUN
+// Build the NativeAOT delegate constructor from the target token. The helper binds
+// the target itself, so it takes only the allocated delegate and the receiver.
+GenTreeCall* Compiler::impNativeAotDelegateCtor(CORINFO_CLASS_HANDLE clsHnd,
+                                                methodPointerInfo*   target,
+                                                GenTree*             delegateObj,
+                                                GenTree*             receiver)
+{
+    CORINFO_LOOKUP lookup;
+    info.compCompHnd->getReadyToRunDelegateCtorHelper(&target->m_token, target->m_tokenConstraint, clsHnd,
+                                                      info.compMethodHnd, &lookup);
+    if (!lookup.lookupKind.needsRuntimeLookup)
+    {
+        GenTreeCall* call = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_DELEGATE_CTOR, TYP_VOID, delegateObj, receiver);
+        call->setEntryPoint(lookup.constLookup);
+        return call;
+    }
+
+    if (lookup.lookupKind.runtimeLookupKind == CORINFO_LOOKUP_NOT_SUPPORTED)
+    {
+        assert(compIsForInlining());
+        compInlineResult->NoteFatal(InlineObservation::CALLSITE_GENERIC_DICTIONARY_LOOKUP);
+        return nullptr;
+    }
+
+    assert((lookup.runtimeLookup.indirections == CORINFO_USEHELPER) &&
+           (lookup.runtimeLookup.helper == CORINFO_HELP_READYTORUN_DELEGATE_CTOR));
+    GenTree*     context = getRuntimeContextTree(lookup.lookupKind.runtimeLookupKind);
+    GenTreeCall* call =
+        gtNewHelperCallNode(CORINFO_HELP_READYTORUN_DELEGATE_CTOR, TYP_VOID, delegateObj, receiver, context);
+    call->setEntryPoint(lookup.runtimeLookup.helperEntryPoint);
+    return call;
+}
+#endif
+
 GenTree* Compiler::impMethodPointer(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                     CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken,
                                     CORINFO_CALL_INFO*      pCallInfo)
@@ -6572,8 +6607,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
     signed jmpDist;
 
-    /* remember the start of the delegate creation sequence (used for verification) */
-    const BYTE* delegateCreateStart = nullptr;
+#ifdef FEATURE_READYTORUN
+    methodPointerInfo* delegateTarget = nullptr;
+#endif
 
     int  prefixFlags = 0;
     bool explicitTailCall, constraintCall, readonlyCall;
@@ -8907,19 +8943,38 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 impHandleAccessAllowed(callInfo.accessAllowed, &callInfo.callsiteCalloutHelper);
 
             DO_LDFTN:
-                op1 = impMethodPointer(&resolvedToken, pLdftnConstrainedToken, &callInfo);
+                mdToken constrainedToken     = prefixFlags & PREFIX_CONSTRAINED ? constrainedResolvedToken.token : 0;
+                methodPointerInfo* heapToken = impAllocateMethodPointerInfo(resolvedToken, constrainedToken);
+                assert(callInfo.hMethod != nullptr);
+                heapToken->m_token.hMethod = callInfo.hMethod;
 
+#ifdef FEATURE_READYTORUN
+                // Match the scanner's ldftn/newobj pair within this block. The delegate helper
+                // consumes the target token directly. A standalone ldftn still needs its entry point.
+                if (IsNativeAot() && !opts.compDbgCode && (opcode == CEE_LDFTN) &&
+                    (callInfo.kind == CORINFO_CALL_CODE_POINTER) && (impStackHeight() > 0) &&
+                    (impStackHeight() < info.compMaxStack) && impStackTop().val->TypeIs(TYP_REF) &&
+                    callInfo.codePointerLookup.lookupKind.needsRuntimeLookup &&
+                    (callInfo.codePointerLookup.lookupKind.runtimeLookupKind == CORINFO_LOOKUP_DEFERRED) &&
+                    (codeEndp - codeAddr >= (int)(2 * sizeof(mdToken) + 1)) &&
+                    (codeAddr[sizeof(mdToken)] == CEE_NEWOBJ))
+                {
+                    CORINFO_RESOLVED_TOKEN ctor;
+                    impResolveToken(codeAddr + sizeof(mdToken) + 1, &ctor, CORINFO_TOKENKIND_NewObj);
+                    if ((info.compCompHnd->getClassAttribs(ctor.hClass) & CORINFO_FLG_DELEGATE) != 0 &&
+                        (info.compCompHnd->getMethodAttribs(ctor.hMethod) & CORINFO_FLG_CONSTRUCTOR) != 0)
+                    {
+                        delegateTarget = heapToken;
+                        break;
+                    }
+                }
+#endif
+                op1 = impMethodPointer(&resolvedToken, pLdftnConstrainedToken, &callInfo);
                 if (compDonotInline())
                 {
                     return;
                 }
 
-                // Call info may have more precise information about the function than
-                // the resolved token.
-                mdToken constrainedToken     = prefixFlags & PREFIX_CONSTRAINED ? constrainedResolvedToken.token : 0;
-                methodPointerInfo* heapToken = impAllocateMethodPointerInfo(resolvedToken, constrainedToken);
-                assert(callInfo.hMethod != nullptr);
-                heapToken->m_token.hMethod = callInfo.hMethod;
                 impPushOnStack(op1, typeInfo(heapToken));
 
                 break;
@@ -9285,6 +9340,25 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         newObjThisPtr = gtNewLclvNode(lclNum, TYP_REF);
                     }
                 }
+#ifdef FEATURE_READYTORUN
+                if (delegateTarget != nullptr)
+                {
+                    assert(IsNativeAot() && (clsFlags & CORINFO_FLG_DELEGATE) && newObjThisPtr->OperIs(GT_LCL_VAR));
+                    GenTree*             receiver     = impPopStack().val;
+                    CORINFO_CLASS_HANDLE delegateType = info.compCompHnd->getMethodClass(callInfo.hMethod);
+                    GenTree* ctor = impNativeAotDelegateCtor(delegateType, delegateTarget, newObjThisPtr, receiver);
+                    if (ctor == nullptr)
+                    {
+                        return;
+                    }
+                    impAppendTree(ctor, CHECK_SPILL_ALL, impCurStmtDI);
+                    impPushOnStack(gtNewLclvNode(newObjThisPtr->AsLclVar()->GetLclNum(), TYP_REF),
+                                   typeInfo(resolvedToken.hClass));
+                    delegateTarget = nullptr;
+                    callTyp        = TYP_REF;
+                    break;
+                }
+#endif
                 goto CALL;
 
             case CEE_CALLI:

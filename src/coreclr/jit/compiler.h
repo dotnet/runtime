@@ -5384,6 +5384,12 @@ protected:
     void impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken);
     bool impImportAndPushBoxForNullable(CORINFO_RESOLVED_TOKEN* pResolvedToken);
 
+#ifdef FEATURE_READYTORUN
+    GenTreeCall* impNativeAotDelegateCtor(CORINFO_CLASS_HANDLE clsHnd,
+                                          methodPointerInfo*   target,
+                                          GenTree*             delegateObj,
+                                          GenTree*             receiver);
+#endif
     void impImportNewObjArray(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CALL_INFO* pCallInfo);
 
     bool impCanReorderWithNullCheck(GenTree* tree);
