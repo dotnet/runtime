@@ -40,6 +40,7 @@ namespace ILCompiler
         private readonly bool _outNearInput;
         private readonly string _outputFilePath;
         private readonly string _generatePortableCallHelpers;
+        private readonly string _pgoInstrumentation;
 
         public Program(Crossgen2RootCommand command)
         {
@@ -49,6 +50,7 @@ namespace ILCompiler
             _outNearInput = Get(command.OutNearInput);
             _outputFilePath = Get(command.OutputFilePath);
             _generatePortableCallHelpers = Get(command.GeneratePortableCallHelpers);
+            _pgoInstrumentation = Get(command.PgoInstrumentation)?.Trim();
 
             if (Get(command.WaitForDebugger))
             {
@@ -91,6 +93,14 @@ namespace ILCompiler
                 ?? GetTargetAllowsRuntimeCodeGeneration(targetOS, targetArchitecture);
             bool targetIsSingleThreaded = Get(_command.TargetSingleThreaded)
                 ?? GetTargetIsSingleThreaded(targetArchitecture);
+
+            if (_pgoInstrumentation is not null)
+            {
+                if (_pgoInstrumentation.Length == 0)
+                    throw new CommandLineException(SR.ErrorPgoInstrumentationRequiresFilter);
+                if (targetOS != TargetOS.Browser || targetArchitecture != TargetArchitecture.Wasm32 || !targetIsSingleThreaded)
+                    throw new CommandLineException(SR.ErrorPgoInstrumentationRequiresBrowserWasm);
+            }
 
             // Crossgen2 is partial AOT and its pre-compiled methods can be thrown away at runtime if
             // they mismatch in required ISAs or computed layouts of structs. On targets that allow
@@ -475,24 +485,10 @@ namespace ILCompiler
                         }
                     }
 
-                    if (!composite && Get(_command.StripILBodies))
+                    bool stripILBodies = _pgoInstrumentation is null && Get(_command.StripILBodies);
+                    if (!composite && stripILBodies)
                     {
                         throw new Exception(SR.ErrorStripILBodiesRequiresComposite);
-                    }
-
-                    if (typeSystemContext.Target.IsWasm && Get(_command.StripILBodies))
-                    {
-                        const string InstrumentationPrefix = "R2RPgoInstrumentation=";
-                        string[] options = Get(_command.CodegenOptions);
-                        for (int i = options.Length - 1; i >= 0; i--)
-                        {
-                            if (!options[i].StartsWith(InstrumentationPrefix, StringComparison.OrdinalIgnoreCase))
-                                continue;
-
-                            if (!options[i].AsSpan(InstrumentationPrefix.Length).IsWhiteSpace())
-                                throw new CommandLineException(SR.ErrorWasmPgoRequiresIL);
-                            break;
-                        }
                     }
 
                     bool compileBubbleGenerics = Get(_command.CompileBubbleGenerics);
@@ -711,7 +707,11 @@ namespace ILCompiler
                     nodeFactoryFlags.GenerateUnboxingStubs = Get(_command.GenerateUnboxingStubs) ?? !typeSystemContext.TargetAllowsRuntimeCodeGeneration;
                     nodeFactoryFlags.StripInliningInfo = Get(_command.StripInliningInfo);
                     nodeFactoryFlags.StripDebugInfo = Get(_command.StripDebugInfo);
-                    nodeFactoryFlags.StripILBodies = Get(_command.StripILBodies);
+                    nodeFactoryFlags.StripILBodies = stripILBodies;
+
+                    string[] codegenOptions = Get(_command.CodegenOptions);
+                    if (_pgoInstrumentation is not null)
+                        codegenOptions = [.. codegenOptions, $"R2RPgoInstrumentation={_pgoInstrumentation}"];
 
                     builder
                         .UseMapFile(Get(_command.Map))
@@ -735,7 +735,7 @@ namespace ILCompiler
                         .UseImageBase(_imageBase)
                         .UseContainerFormat(format)
                         .UseILProvider(ilProvider)
-                        .UseBackendOptions(Get(_command.CodegenOptions))
+                        .UseBackendOptions(codegenOptions)
                         .UseLogger(logger)
                         .UseParallelism(Get(_command.Parallelism))
                         .UseResilience(Get(_command.Resilient))

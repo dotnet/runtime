@@ -166,6 +166,8 @@ namespace ILCompiler
             new("--strip-debug-info") { Description = SR.StripDebugInfoOption };
         public Option<bool> StripILBodies { get; } =
             new("--strip-il-bodies") { Description = SR.StripILBodiesOption };
+        public Option<string> PgoInstrumentation { get; } =
+            new("--pgo-instrumentation") { Arity = ArgumentArity.ExactlyOne, Description = SR.PgoInstrumentationOption, HelpName = "filter" };
         public Option<bool> SynthesizeRandomMibc { get; } =
             new("--synthesize-random-mibc");
 
@@ -253,6 +255,7 @@ namespace ILCompiler
             Options.Add(StripInliningInfo);
             Options.Add(StripDebugInfo);
             Options.Add(StripILBodies);
+            Options.Add(PgoInstrumentation);
             Options.Add(SynthesizeRandomMibc);
             Options.Add(DeterminismStress);
 

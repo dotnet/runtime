@@ -10738,9 +10738,16 @@ void Compiler::impConsiderCallProbe(GenTreeCall* call, IL_OFFSET ilOffset)
 //
 Compiler::GDVProbeType Compiler::compClassifyGDVProbeType(GenTreeCall* call)
 {
-    if (!opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR) || IsAot())
+    if (!opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR))
     {
         return GDVProbeType::None;
+    }
+
+    const bool profileCast = (JitConfig.JitClassProfiling() > 0) && impIsCastHelperEligibleForClassProbe(call) &&
+                             (call->gtHandleHistogramProfileCandidateInfo != nullptr);
+    if (IsAot())
+    {
+        return profileCast ? GDVProbeType::ClassProfile : GDVProbeType::None;
     }
 
     bool createTypeHistogram = false;
@@ -10752,8 +10759,7 @@ Compiler::GDVProbeType Compiler::compClassifyGDVProbeType(GenTreeCall* call)
         // exact or not) have probes. For those helpers we do not use this
         // function to classify the probe type until after we have decided on
         // whether we probe them or not.
-        createTypeHistogram = createTypeHistogram || (impIsCastHelperEligibleForClassProbe(call) &&
-                                                      (call->gtHandleHistogramProfileCandidateInfo != nullptr));
+        createTypeHistogram = createTypeHistogram || profileCast;
     }
 
     bool createMethodHistogram = ((JitConfig.JitDelegateProfiling() > 0) && call->IsDelegateInvoke()) ||

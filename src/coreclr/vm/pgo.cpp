@@ -13,6 +13,23 @@
 #ifdef FEATURE_PGO
 
 #ifdef FEATURE_R2R_PGO
+static ICorJitInfo::PgoInstrumentationKind R2RHistogramTableKind(ICorJitInfo::PgoInstrumentationKind kind)
+{
+    using Kind = ICorJitInfo::PgoInstrumentationKind;
+    switch (kind)
+    {
+        case Kind::ValueHistogramLongCount: return Kind::ValueHistogram;
+        case Kind::HandleHistogramLongCount: return Kind::HandleHistogramTypes;
+        default: return Kind::None;
+    }
+}
+
+static bool IsR2RHistogramTable(ICorJitInfo::PgoInstrumentationKind kind)
+{
+    using Kind = ICorJitInfo::PgoInstrumentationKind;
+    return kind == Kind::ValueHistogram || kind == Kind::HandleHistogramTypes;
+}
+
 static void LayoutR2RPgoInstrumentationSchema(const ICorJitInfo::PgoInstrumentationSchema& previous,
     ICorJitInfo::PgoInstrumentationSchema* item)
 {
@@ -240,13 +257,13 @@ void PgoManager::LogInstrumentationData()
 
             StackSArray<ICorJitInfo::PgoInstrumentationSchema> merged;
             StackSArray<UINT64> counters;
-            struct ValueSamples
+            struct HistogramSamples
             {
                 const BYTE* data;
                 COUNT_T schemaIndex;
                 INT32 count;
             };
-            StackSArray<ValueSamples> valueSamples;
+            StackSArray<HistogramSamples> histogramSamples;
             bool nonzero = false;
             bool haveBlocks = false;
             bool haveEdges = false;
@@ -292,14 +309,15 @@ void PgoManager::LogInstrumentationData()
                 {
                     ICorJitInfo::PgoInstrumentationSchema item = schema[k];
                     using Kind = ICorJitInfo::PgoInstrumentationKind;
-                    const bool histogramCount = item.InstrumentationKind == Kind::ValueHistogramLongCount;
-                    const bool histogram = item.InstrumentationKind == Kind::ValueHistogram;
+                    const Kind tableKind = R2RHistogramTableKind(item.InstrumentationKind);
+                    const bool histogramCount = tableKind != Kind::None;
+                    const bool histogram = IsR2RHistogramTable(item.InstrumentationKind);
                     UINT64 filled = 0;
                     if (histogramCount)
                     {
                         if (item.Count != 1 || k + 1 == schema.GetCount() ||
-                            schema[k + 1].InstrumentationKind != Kind::ValueHistogram ||
-                            schema[k + 1].ILOffset != item.ILOffset)
+                            schema[k + 1].InstrumentationKind != tableKind ||
+                            schema[k + 1].ILOffset != item.ILOffset || schema[k + 1].Other != item.Other)
                             return false;
                         filled = *reinterpret_cast<const UINT64*>(source->header.GetData() + item.Offset);
                         if (filled == 0)
@@ -310,8 +328,9 @@ void PgoManager::LogInstrumentationData()
                     }
                     else if (histogram)
                     {
-                        if (k == 0 || schema[k - 1].InstrumentationKind != Kind::ValueHistogramLongCount ||
-                            schema[k - 1].ILOffset != item.ILOffset || item.Count != ICorJitInfo::HandleHistogram32::SIZE)
+                        if (k == 0 || R2RHistogramTableKind(schema[k - 1].InstrumentationKind) != item.InstrumentationKind ||
+                            schema[k - 1].ILOffset != item.ILOffset || schema[k - 1].Other != item.Other ||
+                            item.Count != ICorJitInfo::HandleHistogram32::SIZE)
                             return false;
                         filled = *reinterpret_cast<const UINT64*>(source->header.GetData() + schema[k - 1].Offset);
                     }
@@ -363,7 +382,7 @@ void PgoManager::LogInstrumentationData()
                         if (merged[match].Count > INT32_MAX - count)
                             ThrowOutOfMemory();
                         merged[match].Count += count;
-                        valueSamples.Append({source->header.GetData() + schema[k].Offset, match, count});
+                        histogramSamples.Append({source->header.GetData() + schema[k].Offset, match, count});
                     }
                     if (counter)
                     {
@@ -382,19 +401,22 @@ void PgoManager::LogInstrumentationData()
             if (!nonzero)
                 return true;
 
-            if (valueSamples.GetCount() != 0)
+            if (histogramSamples.GetCount() != 0)
             {
                 // Append filled samples, not uninitialized slots. Keep each count/table pair in schema order.
                 S_SIZE_T byteSize = S_SIZE_T(counters.GetCount()) * S_SIZE_T(sizeof(UINT64));
                 for (COUNT_T j = 0; j < merged.GetCount(); j++)
                 {
                     ICorJitInfo::PgoInstrumentationSchema& item = merged[j];
-                    if (item.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::ValueHistogram)
+                    if (IsR2RHistogramTable(item.InstrumentationKind))
                     {
-                        if (byteSize.IsOverflow())
+                        UINT alignment = InstrumentationKindToAlignment(item.InstrumentationKind);
+                        S_SIZE_T paddedSize = byteSize + S_SIZE_T(alignment - 1);
+                        if (paddedSize.IsOverflow())
                             ThrowOutOfMemory();
-                        item.Offset = byteSize.Value();
-                        byteSize = byteSize + S_SIZE_T(item.Count) * S_SIZE_T(sizeof(INT32));
+                        item.Offset = paddedSize.Value() & ~static_cast<size_t>(alignment - 1);
+                        byteSize = S_SIZE_T(item.Offset) +
+                            S_SIZE_T(item.Count) * S_SIZE_T(InstrumentationKindToSize(item.InstrumentationKind));
                         item.Count = 0;
                     }
                 }
@@ -404,12 +426,13 @@ void PgoManager::LogInstrumentationData()
                 counters.SetCount(static_cast<COUNT_T>(roundedSize.Value() / sizeof(UINT64)));
             }
             BYTE* mergedData = reinterpret_cast<BYTE*>(counters.GetElements());
-            for (COUNT_T j = 0; j < valueSamples.GetCount(); j++)
+            for (COUNT_T j = 0; j < histogramSamples.GetCount(); j++)
             {
-                const ValueSamples& samples = valueSamples[j];
+                const HistogramSamples& samples = histogramSamples[j];
                 ICorJitInfo::PgoInstrumentationSchema& item = merged[samples.schemaIndex];
-                memcpy(mergedData + item.Offset + static_cast<size_t>(item.Count) * sizeof(INT32),
-                    samples.data, static_cast<size_t>(samples.count) * sizeof(INT32));
+                size_t sampleSize = InstrumentationKindToSize(item.InstrumentationKind);
+                memcpy(mergedData + item.Offset + static_cast<size_t>(item.Count) * sampleSize,
+                    samples.data, static_cast<size_t>(samples.count) * sampleSize);
                 item.Count += samples.count;
             }
             SchemaWriterFunctor writer(mergedData);
@@ -989,8 +1012,8 @@ BYTE* PgoManager::allocPgoInstrumentationFromR2RSchema(Module* imageModule, Meth
         item.Other = static_cast<INT32>(ReadPgoSchemaUInt32(record + 12));
         UINT32 offset = ReadPgoSchemaUInt32(record + 16);
         using Kind = ICorJitInfo::PgoInstrumentationKind;
-        if (previous.InstrumentationKind == Kind::ValueHistogramLongCount &&
-            item.InstrumentationKind != Kind::ValueHistogram)
+        const Kind expectedTable = R2RHistogramTableKind(previous.InstrumentationKind);
+        if (expectedTable != Kind::None && item.InstrumentationKind != expectedTable)
             COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
         switch (item.InstrumentationKind)
         {
@@ -1007,13 +1030,17 @@ BYTE* PgoManager::allocPgoInstrumentationFromR2RSchema(Module* imageModule, Meth
                     COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
                 break;
             case Kind::ValueHistogramLongCount:
-                if (item.Count != 1 || item.Other != 0 || item.ILOffset < 0 ||
+            case Kind::HandleHistogramLongCount:
+                if (item.Count != 1 || item.ILOffset < 0 ||
+                    item.Other != (item.InstrumentationKind == Kind::HandleHistogramLongCount
+                        ? static_cast<INT32>(ICorJitInfo::HandleHistogram32::CLASS_FLAG) : 0) ||
                     static_cast<UINT32>(item.ILOffset) >= ilHeader.GetCodeSize() || i + 1 == recordCount)
                     COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
                 break;
             case Kind::ValueHistogram:
-                if (previous.InstrumentationKind != Kind::ValueHistogramLongCount ||
-                    previous.ILOffset != item.ILOffset || item.Other != 0 ||
+            case Kind::HandleHistogramTypes:
+                if (expectedTable != item.InstrumentationKind ||
+                    previous.ILOffset != item.ILOffset || previous.Other != item.Other ||
                     item.Count != ICorJitInfo::HandleHistogram32::SIZE)
                     COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
                 break;

@@ -486,7 +486,13 @@
   <data name="StripILBodiesOption" xml:space="preserve">
     <value>Replace IL method bodies of compiled methods with a throwing stub in composite R2R output assemblies.</value>
   </data>
-  <data name="ErrorWasmPgoRequiresIL" xml:space="preserve">
-    <value>Wasm PGO instrumentation requires retained original IL bodies.</value>
+  <data name="PgoInstrumentationOption" xml:space="preserve">
+    <value>Instrument methods matching the MethodSet filter for PGO. Use '*' for all methods. Preserves all IL bodies even with --strip-il-bodies.</value>
+  </data>
+  <data name="ErrorPgoInstrumentationRequiresBrowserWasm" xml:space="preserve">
+    <value>--pgo-instrumentation requires a single-threaded browser-wasm target.</value>
+  </data>
+  <data name="ErrorPgoInstrumentationRequiresFilter" xml:space="preserve">
+    <value>--pgo-instrumentation requires a non-empty method filter. Use '*' for all methods.</value>
   </data>
 </root>

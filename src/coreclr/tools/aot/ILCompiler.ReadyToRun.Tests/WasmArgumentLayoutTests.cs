@@ -11,6 +11,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
+using System.Reflection.PortableExecutable;
 using System.Text.RegularExpressions;
 
 using Microsoft.CodeAnalysis;
@@ -30,6 +31,7 @@ using TypeSystemMetadataEmitter = crossgen2::Internal.TypeSystem.TypeSystemMetad
 using ILCompiler.ReadyToRun.Tests.TestCasesRunner;
 using ReadyToRunReader = ILCompiler.Reflection.ReadyToRun.ReadyToRunReader;
 using SignatureFormattingOptions = ILCompiler.Reflection.ReadyToRun.SignatureFormattingOptions;
+using WebcilImageReader = ILCompiler.Reflection.ReadyToRun.WebcilImageReader;
 
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -81,8 +83,8 @@ public class WasmArgumentLayoutTests
             new() { InstrumentationKind = CompilerPgo.PgoInstrumentationKind.EdgeLongCount, Other = 24, Count = 1 },
             new() { InstrumentationKind = CompilerPgo.PgoInstrumentationKind.EdgeLongCount, ILOffset = 12, Count = 1 },
         ];
-        int edgeSize = PgoInstrumentationSchemaTableNode.Layout(edges);
-        int alternateSize = PgoInstrumentationSchemaTableNode.Layout(alternateEdges);
+        int edgeSize = PgoInstrumentationSchemaTableNode.Layout(edges, sizeof(uint));
+        int alternateSize = PgoInstrumentationSchemaTableNode.Layout(alternateEdges, sizeof(uint));
         PgoInstrumentationSchemaTableNode table = new();
         if (reverse)
             table.Add(alternateEdges, alternateSize);
@@ -117,9 +119,9 @@ public class WasmArgumentLayoutTests
             new() { InstrumentationKind = CompilerPgo.PgoInstrumentationKind.BasicBlockLongCount, Count = count },
         ];
         if (count == int.MaxValue)
-            Assert.Throws<OverflowException>(() => PgoInstrumentationSchemaTableNode.Layout(schema));
+            Assert.Throws<OverflowException>(() => PgoInstrumentationSchemaTableNode.Layout(schema, sizeof(uint)));
         else
-            Assert.Throws<InvalidOperationException>(() => PgoInstrumentationSchemaTableNode.Layout(schema));
+            Assert.Throws<InvalidOperationException>(() => PgoInstrumentationSchemaTableNode.Layout(schema, sizeof(uint)));
     }
 
     [Theory]
@@ -260,6 +262,58 @@ public class WasmArgumentLayoutTests
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
+    public void PgoInstrumentationPreservesAllILWhenStrippingIsRequested(bool instrument)
+    {
+        string directory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        Directory.CreateDirectory(directory);
+        try
+        {
+            string input = CompileCallbackAssembly("""
+                public static class Callbacks
+                {
+                    public static int Selected(int value) => value + 1;
+                    public static int Unselected(int value) => value - 1;
+                }
+                """, Path.Combine(directory, "PgoIL.dll"), optimize: true);
+            string listing = Path.Combine(directory, "pgo.jit.txt");
+            List<string> args =
+            [
+                input, "--reference", Path.Combine(TestPaths.LibrariesDir, "*.dll"),
+                "--targetos", "browser", "--targetarch", "wasm", "--composite", "--strip-il-bodies",
+                "--optimize", "--parallelism", "1",
+                "--codegenopt:JitDisasm=Callbacks:*", $"--codegenopt:JitStdOutFile={listing}",
+                "--out", Path.Combine(directory, "PgoIL.r2r.wasm"),
+            ];
+            if (instrument)
+                args.Add("--pgo-instrumentation:Callbacks:Selected");
+
+            R2RCompilationResult result = new R2RDriver(_output).Compile(args);
+            Assert.True(result.Success, result.StandardOutput + result.StandardError);
+            Assert.Equal(instrument ? 1 : 0, Regex.Matches(File.ReadAllText(listing), @"\bi64\.add\b").Count);
+
+            using var original = new PEReader(File.OpenRead(input));
+            MetadataReader originalMetadata = original.GetMetadataReader();
+            WebcilImageReader component = new(File.ReadAllBytes(Path.Combine(directory, "PgoIL.wasm")));
+            var emitted = component.GetStandaloneAssemblyMetadata();
+            foreach (MethodDefinitionHandle handle in originalMetadata.MethodDefinitions)
+            {
+                MethodDefinition definition = originalMetadata.GetMethodDefinition(handle);
+                byte[] expected = instrument
+                    ? original.GetMethodBody(definition.RelativeVirtualAddress).GetILBytes()!
+                    : [0xFE, 0x24];
+                int rva = emitted.MetadataReader.GetMethodDefinition(handle).RelativeVirtualAddress;
+                emitted.GetSectionData(rva, data => Assert.Equal(expected, MethodBodyBlock.Create(data).GetILBytes()));
+            }
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
     public void ReadyToRunValueProbesRespectConfiguration(bool enabled)
     {
         string directory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
@@ -336,7 +390,7 @@ public class WasmArgumentLayoutTests
             ];
 
             string profile = Path.Combine(directory, "profile.mibc");
-            WriteCountProfile(context, method, schema, profile);
+            WriteProfile(context, method, schema, profile);
 
             string listingPath = Path.Combine(directory, "loop.jit.txt");
             R2RCompilationResult result = new R2RDriver(_output).Compile(
@@ -425,11 +479,65 @@ public class WasmArgumentLayoutTests
         }
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void CastProfileDoesNotRequireUnreferencedTypes(bool localType)
+    {
+        string directory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        Directory.CreateDirectory(directory);
+        try
+        {
+            const string Sample = """
+                public sealed class Sample : System.IDisposable
+                {
+                    public void Dispose() { }
+                }
+                """;
+            const string Caller = """
+                public static class Callbacks
+                {
+                    public static System.IDisposable Cast(object input) => input as System.IDisposable;
+                }
+                """;
+            string input = CompileCallbackAssembly(localType ? Caller + Sample : Caller,
+                Path.Combine(directory, "CastProfile.dll"), optimize: true);
+            string sample = localType ? input : CompileCallbackAssembly(Sample, Path.Combine(directory, "ExternalSample.dll"));
+            ReadyToRunCompilerContext context = localType ? WasmTestHelpers.CreateContext(input) : WasmTestHelpers.CreateContext(input, sample);
+            EcmaModule module = (EcmaModule)context.GetModuleForSimpleName("CastProfile");
+            EcmaMethod method = (EcmaMethod)module.GetType(""u8, "Callbacks"u8).GetMethod("Cast"u8, null);
+            TypeDesc sampledType = ((EcmaModule)context.GetModuleForSimpleName(Path.GetFileNameWithoutExtension(sample)))
+                .GetType(""u8, "Sample"u8);
+            int castOffset = Array.IndexOf(Internal.IL.EcmaMethodIL.Create(method).GetILBytes(), (byte)ILOpCode.Isinst);
+            Assert.True(castOffset >= 0);
+            const int ClassFlag = unchecked((int)0x80000000);
+            List<CompilerPgo.PgoSchemaElem> schema =
+            [
+                new() { InstrumentationKind = CompilerPgo.PgoInstrumentationKind.BasicBlockLongCount, Count = 1, DataLong = 5 },
+                new() { InstrumentationKind = CompilerPgo.PgoInstrumentationKind.HandleHistogramLongCount,
+                    ILOffset = castOffset, Other = ClassFlag, Count = 1, DataLong = 5 },
+                new() { InstrumentationKind = CompilerPgo.PgoInstrumentationKind.HandleHistogramTypes,
+                    ILOffset = castOffset, Other = ClassFlag, Count = 5,
+                    DataObject = new object[] { sampledType, sampledType, sampledType, sampledType, sampledType } },
+            ];
+            string listing = CompileCountProfile(input, context, method, schema, directory,
+                "--reference", sample);
+            Assert.Contains("; ReadyToRun compilation", listing);
+            Assert.Contains("CORINFO_HELP_ISINSTANCEOF", listing);
+            Assert.Contains("; with Static PGO: fgCalledCount is 5", listing);
+            Assert.Equal(localType, Regex.IsMatch(listing, @"(?m)\bi32\.eq[ \t]*\r?$"));
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
     private string CompileCountProfile(string input, ReadyToRunCompilerContext context, EcmaMethod method,
         List<CompilerPgo.PgoSchemaElem> schema, string directory, params string[] instrumentationOptions)
     {
         string profile = Path.Combine(directory, "profile.mibc");
-        WriteCountProfile(context, method, schema, profile);
+        WriteProfile(context, method, schema, profile);
         string listingPath = Path.Combine(directory, "profile.jit.txt");
         string methodName = method.Name.ToString();
         R2RCompilationResult result = new R2RDriver(_output).Compile(
@@ -470,7 +578,7 @@ public class WasmArgumentLayoutTests
         Assert.Equal(secondLikelihood, double.Parse(branch.Groups[1].Value, CultureInfo.InvariantCulture));
     }
 
-    private static void WriteCountProfile(ReadyToRunCompilerContext context, EcmaMethod method,
+    private static void WriteProfile(ReadyToRunCompilerContext context, EcmaMethod method,
         List<CompilerPgo.PgoSchemaElem> schema, string profile)
     {
         string assemblyName = method.Module.Assembly.GetName().Name;
@@ -481,7 +589,7 @@ public class WasmArgumentLayoutTests
         group.Token(metadata.GetMethodRef(method));
         group.LoadString(metadata.GetUserStringHandle("InstrumentationDataStart"));
         CompilerPgo.PgoProcessor.EncodePgoData<object, object>(schema,
-            new CountProfileEmitter(metadata, group), emitAllElementsUnconditionally: true);
+            new ProfileEmitter(metadata, group), emitAllElementsUnconditionally: true);
         group.OpCode(ILOpCode.Pop);
         MethodDefinitionHandle groupHandle = metadata.AddGlobalMethod($"Assemblies_{assemblyName}", group, 8);
         InstructionEncoder dictionary = new(new BlobBuilder());
@@ -494,12 +602,12 @@ public class WasmArgumentLayoutTests
         metadata.SerializeToStream(stream);
     }
 
-    private sealed class CountProfileEmitter : CompilerPgo.IPgoEncodedValueEmitter<object, object>
+    private sealed class ProfileEmitter : CompilerPgo.IPgoEncodedValueEmitter<object, object>
     {
         private readonly TypeSystemMetadataEmitter _metadata;
         private readonly InstructionEncoder _il;
 
-        public CountProfileEmitter(TypeSystemMetadataEmitter metadata, InstructionEncoder il)
+        public ProfileEmitter(TypeSystemMetadataEmitter metadata, InstructionEncoder il)
         {
             _metadata = metadata;
             _il = il;
@@ -513,7 +621,11 @@ public class WasmArgumentLayoutTests
                 _il.LoadConstantI8(value);
         }
 
-        public void EmitType(object type, object previousValue) => throw new InvalidOperationException(nameof(EmitType));
+        public void EmitType(object type, object previousValue)
+        {
+            _il.OpCode(ILOpCode.Ldtoken);
+            _il.Token(_metadata.GetTypeRef(Assert.IsAssignableFrom<TypeDesc>(type)));
+        }
         public void EmitMethod(object method, object previousValue) => throw new InvalidOperationException(nameof(EmitMethod));
 
         public bool EmitDone()

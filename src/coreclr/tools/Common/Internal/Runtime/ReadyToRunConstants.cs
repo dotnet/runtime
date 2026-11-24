@@ -387,6 +387,7 @@ namespace Internal.ReadyToRunConstants
         R2RToInterpreter            = 0x118,
         WasmProfSamplepoint         = 0x119,
         ValueProfile64              = 0x11A,
+        ClassProfile64              = 0x11B,
 
         // **********************************************************************************************
         //

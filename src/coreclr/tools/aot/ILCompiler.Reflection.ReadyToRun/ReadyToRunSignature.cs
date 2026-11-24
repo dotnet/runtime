@@ -1827,6 +1827,9 @@ namespace ILCompiler.Reflection.ReadyToRun
                 case ReadyToRunHelper.ValueProfile64:
                     builder.Append("VALUE_PROFILE64");
                     break;
+                case ReadyToRunHelper.ClassProfile64:
+                    builder.Append("CLASS_PROFILE64");
+                    break;
 
                 case ReadyToRunHelper.GetCurrentManagedThreadId:
                     builder.Append("GET_CURRENT_MANAGED_THREAD_ID");

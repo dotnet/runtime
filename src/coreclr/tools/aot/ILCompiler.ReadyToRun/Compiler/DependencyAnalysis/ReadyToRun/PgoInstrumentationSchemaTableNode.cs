@@ -35,7 +35,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private readonly Dictionary<(MethodDesc Method, Entry Schema), PrecodeHelperImport> _imports = new();
         private Entry[] _orderedEntries;
 
-        internal static int Layout(Span<PgoInstrumentationSchema> schema)
+        internal static int Layout(Span<PgoInstrumentationSchema> schema, int pointerSize)
         {
             int offset = 0;
             foreach (ref PgoInstrumentationSchema record in schema)
@@ -43,8 +43,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 int size = record.InstrumentationKind switch
                 {
                     PgoInstrumentationKind.BasicBlockLongCount or PgoInstrumentationKind.EdgeLongCount or
-                        PgoInstrumentationKind.ValueHistogramLongCount => sizeof(long),
+                        PgoInstrumentationKind.ValueHistogramLongCount or PgoInstrumentationKind.HandleHistogramLongCount => sizeof(long),
                     PgoInstrumentationKind.ValueHistogram => sizeof(int),
+                    PgoInstrumentationKind.HandleHistogramTypes => pointerSize,
                     PgoInstrumentationKind.NumRuns or PgoInstrumentationKind.Version => 0,
                     _ => throw new NotSupportedException($"Unsupported R2R instrumentation kind: {record.InstrumentationKind}"),
                 };

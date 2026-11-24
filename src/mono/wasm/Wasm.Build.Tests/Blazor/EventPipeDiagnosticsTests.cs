@@ -205,7 +205,7 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
                 <PublishReadyToRun>true</PublishReadyToRun>
                 <PublishReadyToRunComposite>true</PublishReadyToRunComposite>
                 <PublishTrimmed>false</PublishTrimmed>
-                <WasmPgoInstrumentation>*WasmPgoScenarios*:*</WasmPgoInstrumentation>
+                <PublishReadyToRunPgoInstrumentation>*WasmPgoScenarios*:*</PublishReadyToRunPgoInstrumentation>
                 <PublishReadyToRunCrossgen2ExtraArgs>$(PublishReadyToRunCrossgen2ExtraArgs);--optimize;--parallelism:1;--codegenopt:JitDisasm=*WasmPgoScenarios:*;--codegenopt:JitStdOutFile=&quot;$(MSBuildProjectDirectory)/{CompilerLog}&quot;</PublishReadyToRunCrossgen2ExtraArgs>
                 """,
             extraItems: """
@@ -325,7 +325,7 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
                 <PublishReadyToRun>true</PublishReadyToRun>
                 <PublishReadyToRunComposite>{composite.ToString().ToLowerInvariant()}</PublishReadyToRunComposite>
                 <PublishTrimmed>false</PublishTrimmed>
-                <WasmPgoInstrumentation Condition="'$(WasmBuildTestConsumePgo)' != 'true'">{(pgoFilter == "all" ? "all" : pgoFilter + " System.MemoryExtensions:SequenceEqual")}</WasmPgoInstrumentation>
+                <PublishReadyToRunPgoInstrumentation Condition="'$(WasmBuildTestConsumePgo)' != 'true'">{(pgoFilter == "all" ? "all" : pgoFilter + " System.MemoryExtensions:SequenceEqual")}</PublishReadyToRunPgoInstrumentation>
                 <WasmPerformanceInstrumentation Condition="'$(WasmBuildTestConsumePgo)' != 'true'">{(cpuSampling ? "all" : "")}</WasmPerformanceInstrumentation>
                 <_WasmBuildTestCompilerLogPath>$([System.IO.Path]::Combine('$(MSBuildProjectDirectory)', '$(WasmBuildTestCompilerLog)'))</_WasmBuildTestCompilerLogPath>
                 <PublishReadyToRunCrossgen2ExtraArgs>$(PublishReadyToRunCrossgen2ExtraArgs);--optimize;--parallelism:1;--codegenopt:JitDisasm=*WasmPgoScenarios:*;--codegenopt:JitStdOutFile=&quot;$(_WasmBuildTestCompilerLogPath)&quot;</PublishReadyToRunCrossgen2ExtraArgs>
@@ -405,7 +405,7 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
                 Assert.Equal("", await page.EvaluateAsync<string>(
                     "globalThis.getDotnetRuntime(0).getConfig().environmentVariables.DOTNET_InterpPGO ?? ''"));
                 Assert.Equal("", await page.EvaluateAsync<string>(
-                    "globalThis.getDotnetRuntime(0).getConfig().environmentVariables.DOTNET_WasmPgoInstrumentation ?? ''"));
+                    "globalThis.getDotnetRuntime(0).getConfig().environmentVariables.DOTNET_R2RPgoInstrumentation ?? ''"));
                 Assert.Equal(cpuSampling ? "*" : "", await page.EvaluateAsync<string>(
                     "globalThis.getDotnetRuntime(0).getConfig().environmentVariables.DOTNET_WasmPerformanceInstrumentation ?? ''"));
                 await SetupCounterPage(page, "basic-block.nettrace",
@@ -455,11 +455,130 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
             Test: async page =>
             {
                 Assert.Equal("", await page.EvaluateAsync<string>(
-                    "globalThis.getDotnetRuntime(0).getConfig().environmentVariables.DOTNET_WasmPgoInstrumentation ?? ''"));
+                    "globalThis.getDotnetRuntime(0).getConfig().environmentVariables.DOTNET_R2RPgoInstrumentation ?? ''"));
                 await page.Locator("text=Counter").ClickAsync();
                 for (int i = 0; i < 5; i++)
                     await page.Locator("text=\"Click me\"").ClickAsync();
                 Assert.Equal("Current count: 159", await page.Locator("p[role='status']").InnerHTMLAsync());
+                await page.EvaluateAsync("console.log('WASM EXIT 0')");
+            }));
+    }
+
+    [ConditionalFact(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+    [TestCategory("no-workload"), TestCategory("coreclr")]
+    public async Task BlazorReadyToRunCastProfileRoundtrip()
+    {
+        const Configuration Config = Configuration.Debug;
+        const string CompilerLog = "cast-profile.jit.txt";
+        ProjectInfo info = CopyTestAsset(Config, aot: false, TestAsset.BlazorBasicTestApp, "blazor_cast_pgo",
+            extraProperties: $"""
+                <EnableDiagnostics>true</EnableDiagnostics>
+                <WasmEnableThreads>false</WasmEnableThreads>
+                <PublishReadyToRun>true</PublishReadyToRun>
+                <PublishReadyToRunComposite>false</PublishReadyToRunComposite>
+                <PublishTrimmed>false</PublishTrimmed>
+                <PublishReadyToRunPgoInstrumentation Condition="'$(WasmBuildTestCastProfile)' == ''">*WasmPgoScenarios:ProfiledCast</PublishReadyToRunPgoInstrumentation>
+                <PublishReadyToRunCrossgen2ExtraArgs>$(PublishReadyToRunCrossgen2ExtraArgs);--optimize;--parallelism:1;--codegenopt:JitDisasm=*WasmPgoScenarios:ProfiledCast;--codegenopt:JitStdOutFile=&quot;$(MSBuildProjectDirectory)/{CompilerLog}&quot;</PublishReadyToRunCrossgen2ExtraArgs>
+                """,
+            extraItems: """
+                <PublishReadyToRunPgoFiles Include="$(WasmBuildTestCastProfile)" Condition="'$(WasmBuildTestCastProfile)' != ''" />
+                """);
+
+        File.WriteAllText(Path.Combine(_projectDir, "WasmPgoScenarios.cs"), """
+            // Licensed to the .NET Foundation under one or more agreements.
+            // The .NET Foundation licenses this file to you under the MIT license.
+
+            using System;
+            using System.Runtime.CompilerServices;
+
+            namespace BlazorBasicTestApp;
+
+            internal static class WasmPgoScenarios
+            {
+                private interface ITarget { }
+                private sealed class CastHot : ITarget { }
+                private sealed class CastCold : ITarget { }
+
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                private static ITarget? ProfiledCast(object? input) => input as ITarget;
+
+                public static void CheckCast(int iteration)
+                {
+                    if (iteration >= 5)
+                    {
+                        if (ProfiledCast(null) is not null || ProfiledCast(new object()) is not null)
+                            throw new Exception("Cast did not preserve the null or miss path.");
+                    }
+                    else
+                    {
+                        object input = iteration < 4 ? new CastHot() : new CastCold();
+                        if (!ReferenceEquals(input, ProfiledCast(input)))
+                            throw new Exception("Cast did not return the input object.");
+                    }
+                }
+            }
+            """);
+        UpdateFile(Path.Combine("Pages", "Counter.razor"), new Dictionary<string, string>
+        {
+            ["currentCount++;"] = "BlazorBasicTestApp.WasmPgoScenarios.CheckCast(currentCount++);",
+        });
+
+        string buildArgs = GetPgoBuildArgs(Config);
+        (_, string buildOutput) = BlazorPublish(info, Config, new PublishOptions(UseCache: false, AssertAppBundle: false,
+            ExtraMSBuildArgs: buildArgs));
+        SaveCompilerLog(info, CompilerLog);
+        Assert.Contains("CORINFO_HELP_CLASSPROFILE64", GetCompilerMethodListing(CompilerLog, "ProfiledCast"));
+        string referenceDir = CopyPgoReferences(info, Config, buildOutput, GetPublishedModuleMvids(Config), "cast-references");
+
+        string tracePath = Path.Combine(info.LogPath, "cast.nettrace");
+        await RunForPublishWithWebServer(new BlazorRunOptions(Config, CheckCounter: false, TimeoutSeconds: 60,
+            Test: async page =>
+            {
+                await SetupCounterPage(page, "cast.nettrace",
+                    "globalThis.getDotnetRuntime(0).collectPgoTrace({ durationSeconds: 5.0 })", uploadTrace: false);
+                await ClickAndCollect(page, tracePath);
+                Assert.Equal("Current count: 5", await page.Locator("p[role='status']").InnerHTMLAsync());
+            }));
+
+        string tool = Path.Combine(AppContext.BaseDirectory, "dotnet-pgo", "dotnet-pgo.dll");
+        string profile = Path.Combine(info.LogPath, "cast.mibc");
+        string dump = Path.Combine(info.LogPath, "cast.json");
+        using (var command = new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false).WithWorkingDirectory(_projectDir))
+            command.ExecuteWithCapturedOutput($"exec \"{tool}\" create-mibc --trace \"{tracePath}\" --reference \"{Path.Combine(referenceDir, "*.dll")}\" --output \"{profile}\"").EnsureSuccessful();
+        using (var command = new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false).WithWorkingDirectory(_projectDir))
+            command.ExecuteWithCapturedOutput($"exec \"{tool}\" dump --input \"{profile}\" --output \"{dump}\"").EnsureSuccessful();
+        using (JsonDocument doc = JsonDocument.Parse(File.ReadAllText(dump)))
+        {
+            JsonElement method = Assert.Single(doc.RootElement.GetProperty("Methods").EnumerateArray(),
+                method => method.GetProperty("Method").GetString()!.Contains(".ProfiledCast(", StringComparison.Ordinal));
+            JsonElement[] schema = method.GetProperty("InstrumentationData").EnumerateArray().ToArray();
+            JsonElement count = Assert.Single(schema, record => record.GetProperty("InstrumentationKind").GetString() == "HandleHistogramLongCount");
+            JsonElement types = Assert.Single(schema, record => record.GetProperty("InstrumentationKind").GetString() == "HandleHistogramTypes");
+            Assert.Equal(5, count.GetProperty("Data").GetInt64());
+            Assert.Equal(count.GetProperty("ILOffset").GetInt32(), types.GetProperty("ILOffset").GetInt32());
+            string[] samples = types.GetProperty("Data").EnumerateArray().Select(value => value.GetString()!).ToArray();
+            Assert.Equal(5, samples.Length);
+            Assert.Equal(4, samples.Count(value => value.EndsWith("CastHot", StringComparison.Ordinal)));
+            Assert.Single(samples, value => value.EndsWith("CastCold", StringComparison.Ordinal));
+        }
+
+        Directory.Delete(GetBlazorBinFrameworkDir(Config, forPublish: true), recursive: true);
+        File.Delete(Path.Combine(_projectDir, CompilerLog));
+        BlazorPublish(info, Config, new PublishOptions(UseCache: false, AssertAppBundle: false, Label: "consume-cast-profile",
+            ExtraMSBuildArgs: $"{buildArgs} -p:WasmBuildTestCastProfile=\"{profile}\""));
+        File.Copy(Path.Combine(_projectDir, CompilerLog), Path.Combine(info.LogPath, "cast-consumed.jit.txt"));
+        string listing = GetCompilerMethodListing(CompilerLog, "ProfiledCast");
+        Assert.Contains("; ReadyToRun compilation", listing);
+        Assert.DoesNotContain("CORINFO_HELP_CLASSPROFILE64", listing);
+        Assert.Matches(@"(?m)^\s+i32\.eq\s*$", listing);
+        Assert.Contains("CORINFO_HELP_ISINSTANCEOFANY", listing);
+        await RunForPublishWithWebServer(new BlazorRunOptions(Config, CheckCounter: false, TimeoutSeconds: 60,
+            Test: async page =>
+            {
+                await page.Locator("text=Counter").ClickAsync();
+                for (int i = 0; i < 6; i++)
+                    await page.Locator("text=\"Click me\"").ClickAsync();
+                Assert.Equal("Current count: 6", await page.Locator("p[role='status']").InnerHTMLAsync());
                 await page.EvaluateAsync("console.log('WASM EXIT 0')");
             }));
     }
@@ -544,13 +663,12 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
         return modules;
     }
 
-    private string CreateBasicBlockPgoProfile(ProjectInfo info, Configuration config, string buildOutput, string tracePath,
-        IReadOnlyDictionary<string, Guid> publishedMvids, bool broadFilter, bool interpretedFallback)
+    private string CopyPgoReferences(ProjectInfo info, Configuration config, string buildOutput,
+        IReadOnlyDictionary<string, Guid> publishedMvids, string directoryName)
     {
-        Assert.True(File.Exists(tracePath), $"Missing trace: {tracePath}");
         string? runtimePack = ProjectProviderBase.TryGetRuntimePackDirFromBuildOutput(buildOutput);
         Assert.NotNull(runtimePack);
-        string referenceDir = Path.Combine(info.LogPath, "basic-block-references");
+        string referenceDir = Path.Combine(info.LogPath, directoryName);
         Directory.CreateDirectory(referenceDir);
 
         // The SDK's app TFM and the local runtime pack TFM may differ. Resolve references by the
@@ -582,6 +700,15 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
         }
         Assert.True(File.Exists(Path.Combine(referenceDir, "System.Private.CoreLib.dll")));
         Assert.True(File.Exists(Path.Combine(referenceDir, "BlazorBasicTestApp.dll")));
+
+        return referenceDir;
+    }
+
+    private string CreateBasicBlockPgoProfile(ProjectInfo info, Configuration config, string buildOutput, string tracePath,
+        IReadOnlyDictionary<string, Guid> publishedMvids, bool broadFilter, bool interpretedFallback)
+    {
+        Assert.True(File.Exists(tracePath), $"Missing trace: {tracePath}");
+        string referenceDir = CopyPgoReferences(info, config, buildOutput, publishedMvids, "basic-block-references");
         if (config == Configuration.Release)
         {
             using var stream = File.OpenRead(Path.Combine(referenceDir, "BlazorBasicTestApp.dll"));
@@ -936,10 +1063,10 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
     }
 
     [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
-    [InlineData("-p:PublishReadyToRun=false", "WasmPgoInstrumentation requires PublishReadyToRun=true", true)]
-    [InlineData("-p:EnableDiagnostics=false", "WasmPgoInstrumentation requires EnableDiagnostics=true", true)]
-    [InlineData("-p:WasmEnableThreads=true", "WasmPgoInstrumentation supports only single-threaded", true)]
-    [InlineData("", "WasmPgoInstrumentation is supported only when publishing", false)]
+    [InlineData("-p:PublishReadyToRun=false", "PublishReadyToRunPgoInstrumentation requires PublishReadyToRun=true", true)]
+    [InlineData("-p:EnableDiagnostics=false", "PublishReadyToRunPgoInstrumentation requires EnableDiagnostics=true", true)]
+    [InlineData("-p:WasmEnableThreads=true", "PublishReadyToRunPgoInstrumentation supports only single-threaded", true)]
+    [InlineData("", "PublishReadyToRunPgoInstrumentation is supported only when publishing", false)]
     [TestCategory("no-workload"), TestCategory("coreclr")]
     public void BlazorPgoRejectsUnsupportedConfiguration(string extraArgs, string expectedError, bool publish)
     {
@@ -948,7 +1075,7 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
                 <EnableDiagnostics>true</EnableDiagnostics>
                 <WasmEnableThreads>false</WasmEnableThreads>
                 <PublishReadyToRun>true</PublishReadyToRun>
-                <WasmPgoInstrumentation>all</WasmPgoInstrumentation>
+                <PublishReadyToRunPgoInstrumentation>all</PublishReadyToRunPgoInstrumentation>
                 """);
         string args = $"{GetPgoBuildArgs(Configuration.Debug)} {extraArgs}";
         (_, string output) = publish

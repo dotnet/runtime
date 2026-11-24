@@ -90,7 +90,7 @@
 //                only the return address, and the runtime preserves the callee-saved registers around the
 //                funclets that it calls
 // R2R Version 34.1 adds AuxiliaryModuleMetadata sections
-// R2R Version 34.2 adds PgoInstrumentationSchemas sections, indexed profile-storage fixups, and ValueProfile64.
+// R2R Version 34.2 adds PgoInstrumentationSchemas sections, indexed profile-storage fixups, ValueProfile64 and ClassProfile64.
 
 struct READYTORUN_CORE_HEADER
 {
@@ -549,6 +549,7 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_R2RToInterpreter          = 0x118,
     READYTORUN_HELPER_WasmProfSamplepoint       = 0x119,
     READYTORUN_HELPER_ValueProfile64            = 0x11A,
+    READYTORUN_HELPER_ClassProfile64            = 0x11B,
 };
 
 #include "readytoruninstructionset.h"

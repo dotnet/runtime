@@ -671,26 +671,26 @@ Copyright (c) .NET Foundation. All rights reserved.
            Text="The interval option is no longer supported in WasmPerformanceInstrumentation. Set DOTNET_EventPipeThreadSamplingRate using a WasmEnvironmentVariable item instead." />
   </Target>
 
-  <Target Name="_ValidateWasmPgoInstrumentation"
-          Condition="'$(WasmPgoInstrumentation.Trim())' != ''"
+  <Target Name="_ValidateReadyToRunPgoInstrumentation"
+          Condition="'$(PublishReadyToRunPgoInstrumentation.Trim())' != ''"
           BeforeTargets="PrepareForBuild;_ResolveWasmConfiguration;_PrepareForReadyToRunCompilation">
     <Error Condition="'$(UseMonoRuntime)' != 'false' or '$(RuntimeIdentifier)' != 'browser-wasm'"
-           Text="WasmPgoInstrumentation requires CoreCLR browser-wasm. Set UseMonoRuntime=false and RuntimeIdentifier=browser-wasm; Mono and other targets are not supported." />
+           Text="PublishReadyToRunPgoInstrumentation requires CoreCLR browser-wasm. Set UseMonoRuntime=false and RuntimeIdentifier=browser-wasm; Mono and other targets are not supported." />
     <Error Condition="'$(_IsPublishing)' != 'true' and '$(WasmBuildingForNestedPublish)' != 'true' and '$(WasmBuildOnlyAfterPublish)' != 'true' and '$(DeployOnBuild)' != 'true'"
-           Text="WasmPgoInstrumentation is supported only when publishing. Use dotnet publish with PublishReadyToRun=true to instrument the application and framework assemblies, or clear WasmPgoInstrumentation for a development build." />
+           Text="PublishReadyToRunPgoInstrumentation is supported only when publishing. Use dotnet publish with PublishReadyToRun=true to instrument the application and framework assemblies, or clear PublishReadyToRunPgoInstrumentation for a development build." />
     <Error Condition="'$(PublishReadyToRun)' != 'true'"
-           Text="WasmPgoInstrumentation requires PublishReadyToRun=true. Enable ReadyToRun publishing or clear WasmPgoInstrumentation." />
+           Text="PublishReadyToRunPgoInstrumentation requires PublishReadyToRun=true. Enable ReadyToRun publishing or clear PublishReadyToRunPgoInstrumentation." />
     <Error Condition="'$(EnableDiagnostics)' != 'true'"
-           Text="WasmPgoInstrumentation requires EnableDiagnostics=true so collectPgoTrace() can export the collected counts." />
+           Text="PublishReadyToRunPgoInstrumentation requires EnableDiagnostics=true so collectPgoTrace() can export the collected counts." />
     <Error Condition="'$(WasmEnableThreads)' == 'true'"
-           Text="WasmPgoInstrumentation supports only single-threaded applications. Set WasmEnableThreads=false or clear WasmPgoInstrumentation." />
+           Text="PublishReadyToRunPgoInstrumentation supports only single-threaded applications. Set WasmEnableThreads=false or clear PublishReadyToRunPgoInstrumentation." />
   </Target>
 
-  <Target Name="_ConfigureWasmPgoInstrumentation"
-          Condition="'$(WasmPgoInstrumentation.Trim())' != ''"
-          DependsOnTargets="_ValidateWasmPgoInstrumentation">
+  <Target Name="_ConfigureReadyToRunPgoInstrumentation"
+          Condition="'$(PublishReadyToRunPgoInstrumentation.Trim())' != ''"
+          DependsOnTargets="_ValidateReadyToRunPgoInstrumentation">
     <PropertyGroup>
-      <_WasmPgoInstFilter>$(WasmPgoInstrumentation.Trim())</_WasmPgoInstFilter>
+      <_WasmPgoInstFilter>$(PublishReadyToRunPgoInstrumentation.Trim())</_WasmPgoInstFilter>
       <_WasmPgoInstFilter Condition="'$(_WasmPgoInstFilter)' == 'all'">*</_WasmPgoInstFilter>
     </PropertyGroup>
   </Target>

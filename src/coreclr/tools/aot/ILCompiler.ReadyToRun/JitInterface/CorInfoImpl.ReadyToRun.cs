@@ -1431,6 +1431,10 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.ValueProfile64;
                     break;
 
+                case CorInfoHelpFunc.CORINFO_HELP_CLASSPROFILE64:
+                    id = ReadyToRunHelper.ClassProfile64;
+                    break;
+
                 case CorInfoHelpFunc.CORINFO_HELP_GETCURRENTMANAGEDTHREADID:
                     id = ReadyToRunHelper.GetCurrentManagedThreadId;
                     break;
@@ -3642,7 +3646,7 @@ namespace Internal.JitInterface
                     return HRESULT.E_NOTIMPL;
 
                 Span<PgoInstrumentationSchema> schema = new(pSchema, checked((int)countSchemaItems));
-                int size = PgoInstrumentationSchemaTableNode.Layout(schema);
+                int size = PgoInstrumentationSchemaTableNode.Layout(schema, _compilation.NodeFactory.Target.PointerSize);
                 PgoInstrumentationSchemaTableNode table = _compilation.NodeFactory.PgoInstrumentationSchemas;
                 PgoInstrumentationSchemaTableNode.Entry schemaEntry = table.Add(schema, size);
                 foreach (var existing in _wasmPgoCells)

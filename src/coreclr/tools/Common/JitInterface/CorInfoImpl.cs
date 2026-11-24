@@ -5243,7 +5243,10 @@ namespace Internal.JitInterface
                 {
 #pragma warning disable SA1001, SA1113, SA1115 // Commas should be spaced correctly
                     ComputeJitPgoInstrumentationSchema(ObjectToHandle, pgoResultsSchemas, out var nativeSchemas, _cachedMemoryStream
-#if !READYTORUN
+#if READYTORUN
+                        // A speculative type guard must not cause an otherwise compilable Wasm method to fall back.
+                        , _compilation.NodeFactory.Target.IsWasm ? _compilation.CompilationModuleGroup.VersionsWithTypeReference : null
+#else
                         , _compilation.CanReferenceConstructedMethodTable
 #endif
                         );

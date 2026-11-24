@@ -7250,6 +7250,7 @@ protected:
     Instrumentor* fgCountInstrumentor = nullptr;
     Instrumentor* fgHistogramInstrumentor = nullptr;
     Instrumentor* fgValueInstrumentor = nullptr;
+    bool          fgR2RCastProfiling = false;
 
     PhaseStatus fgPrepareToInstrumentMethod();
     PhaseStatus fgInstrumentMethod();
