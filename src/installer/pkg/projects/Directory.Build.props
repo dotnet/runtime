@@ -69,6 +69,8 @@
 
   <ItemGroup>
     <BuildRID Include="@(PackageRID)" />
+    <!-- SDK tool packages (ILCompiler) aren't built for these RIDs. -->
+    <BuildRID Remove="@(PackageRID->WithMetadataValue('SdkToolsSupported', 'false'))" Condition="'$(IsSdkToolPackage)' == 'true'" />
     <RestoreBuildRID Include="@(BuildRID)" Exclude="@(PackageRID->WithMetadataValue('IsOfficial', 'false'))" />
   </ItemGroup>
 
