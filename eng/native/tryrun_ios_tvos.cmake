@@ -9,12 +9,7 @@ set_cache_value(HAVE_SCHED_GETCPU_EXITCODE 1)
 # TODO: these are taken from macOS, check these whether they're correct for iOS
 # some of them are probably not used by what we use from NativeAOT so could be reduced
 set_cache_value(HAVE_CLOCK_REALTIME_EXITCODE 0)
-set_cache_value(HAVE_CLOCK_THREAD_CPUTIME_EXITCODE 0)
 set_cache_value(HAVE_PROCFS_CTL_EXITCODE 1)
 set_cache_value(HAVE_PROCFS_STAT_EXITCODE 1)
-set_cache_value(HAVE_PROCFS_STATM_EXITCODE 1)
 set_cache_value(HAVE_SCHED_GET_PRIORITY_EXITCODE 0)
-set_cache_value(MMAP_ANON_IGNORES_PROTECTION_EXITCODE 1)
-set_cache_value(ONE_SHARED_MAPPING_PER_FILEREGION_PER_PROCESS_EXITCODE 1)
-set_cache_value(REALPATH_SUPPORTS_NONEXISTENT_FILES_EXITCODE 1)
 set_cache_value(HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP_EXITCODE 1)

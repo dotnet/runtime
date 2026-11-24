@@ -102,8 +102,7 @@ namespace System.Threading.Tasks.Tests
     {
         // The test scenarios drive async work via Task.Run(...).GetAwaiter().GetResult() (see
         // RunScenarioAndFlush / RunScenario), which requires synchronous blocking waits. On
-        // single-threaded WASM this throws PlatformNotSupportedException from
-        // RuntimeFeature.ThrowIfMultithreadingIsNotSupported(), so gate the tests on both
+        // single-threaded WASM this throws PlatformNotSupportedException, so gate the tests on both
         // runtime async support and threading support.
         public static bool IsRuntimeAsyncAndThreadingSupported =>
             PlatformDetection.IsRuntimeAsyncSupported && PlatformDetection.IsMultithreadingSupported;

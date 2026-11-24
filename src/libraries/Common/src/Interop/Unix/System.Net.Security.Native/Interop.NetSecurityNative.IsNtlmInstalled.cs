@@ -17,15 +17,19 @@ internal static partial class Interop
         internal static partial bool IsGetNameAttributeSupported();
 
         [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint = "NetSecurityNative_EnsureGssInitialized")]
-        private static partial int EnsureGssInitialized();
+        private static unsafe partial int EnsureGssInitialized();
 
         private const string GssApiLibraryName = "libgssapi_krb5.so.2";
 
         static NetSecurityNative()
         {
-            if (EnsureGssInitialized() != 0)
+            // SAFETY: To be audited
+            unsafe
             {
-                throw new DllNotFoundException(GssApiLibraryName);
+                if (EnsureGssInitialized() != 0)
+                {
+                    throw new DllNotFoundException(GssApiLibraryName);
+                }
             }
         }
     }

@@ -65,7 +65,7 @@ namespace ILCompiler.DependencyAnalysis
         WASM_CLR_RESTORE_CONTEXT_EXCEPTION_TAG_LEB = 0x20B, // Wasm: an exception tag index encoded as a 5-byte varuint32. Used to refer to the CoreCLR restore context exception tag.
         WASM_METHOD_RELATIVE_VIRTUAL_IP_I32 = 0x20C, // Wasm: a method virtual IP relative to the image virtual IP base, stored as a 4-byte uint32.
         WASM_ASYNC_RESUME_INFO_DELTA_ULEB = 0x20D, // Wasm: an image-relative delta to an async resume info fixup chunk, encoded as ULEB128.
-        WASM_METHOD_FRAME_IDENTITY_SLEB = 0x20E, // Wasm: negative odd CoreLib runtime-function identity, encoded as SLEB128.
+        WASM_METHOD_FRAME_IDENTITY_SLEB = 0x20E, // Wasm: the current method's runtime-specific shadow-frame identity, encoded as a 5-byte varint32.
 
         //
         // Relocation operators related to TLS access
@@ -411,7 +411,7 @@ namespace ILCompiler.DependencyAnalysis
             return imm28;
         }
 
-        private static bool FitsInArm64Rel28(long imm28)
+        public static bool FitsInArm64Rel28(long imm28)
         {
             return (imm28 >= -0x08000000L) && (imm28 < 0x08000000L);
         }
@@ -651,12 +651,14 @@ namespace ILCompiler.DependencyAnalysis
                     PutArm64TlsRel12((uint*)location, (int)value);
                     break;
                 case RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A:
+                    PutArm64Rel12((uint*)location, (int)(value & 0xfff));
+                    break;
                 case RelocType.IMAGE_REL_AARCH64_TLSDESC_ADD_LO12:
                 case RelocType.IMAGE_REL_ARM64_TLS_SECREL_LOW12A:
                     PutArm64Rel12((uint*)location, (int)value);
                     break;
                 case RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12L:
-                    PutArm64Rel12Ldr((uint*)location, (int)value);
+                    PutArm64Rel12Ldr((uint*)location, (int)(value & 0xfff));
                     break;
                 case RelocType.IMAGE_REL_BASED_LOONGARCH64_PC:
                     PutLoongArch64PC12((uint*)location, value);

@@ -59,6 +59,7 @@ namespace ILCompiler
         private bool _hotColdSplitting;
         private bool _verifyGCModeTransitions;
         private WasmDebugInfo _wasmDebugInfo = WasmDebugInfo.NameSection;
+        private bool _enableDeferredWasmCalls = true;
         private CompositeImageSettings _compositeImageSettings;
         private ulong _imageBase;
         private NodeFactoryOptimizationFlags _nodeFactoryOptimizationFlags = new NodeFactoryOptimizationFlags();
@@ -228,6 +229,12 @@ namespace ILCompiler
             return this;
         }
 
+        public ReadyToRunCodegenCompilationBuilder UseDeferredWasmCalls(bool enable)
+        {
+            _enableDeferredWasmCalls = enable;
+            return this;
+        }
+
         public ReadyToRunCodegenCompilationBuilder UseCompositeImageSettings(CompositeImageSettings compositeImageSettings)
         {
             _compositeImageSettings = compositeImageSettings;
@@ -328,8 +335,12 @@ namespace ILCompiler
             IComparer<DependencyNodeCore<NodeFactory>> comparer = new SortableDependencyNode.ObjectNodeComparer(CompilerComparer.Instance);
             DependencyAnalyzerBase<NodeFactory> graph = CreateDependencyGraph(factory, comparer);
 
-            
-            List<CorJitFlag> corJitFlags = new List<CorJitFlag> { CorJitFlag.CORJIT_FLAG_DEBUG_INFO };
+            List<CorJitFlag> corJitFlags = new List<CorJitFlag>();
+            if (!_nodeFactoryOptimizationFlags.StripDebugInfo)
+            {
+                corJitFlags.Add(CorJitFlag.CORJIT_FLAG_DEBUG_INFO);
+            }
+
             if (_hotColdSplitting)
             {
                 corJitFlags.Add(CorJitFlag.CORJIT_FLAG_PROCSPLIT);
@@ -378,6 +389,21 @@ namespace ILCompiler
                 compilationRoots.Add(new ReadyToRunJitHelperRootProvider(_r2rContext));
             }
 
+            bool deferredWasmCalls = false;
+            if (_enableDeferredWasmCalls &&
+                _context.Target.Architecture == TargetArchitecture.Wasm32 && _optimizationMode != OptimizationMode.None)
+            {
+                foreach (EcmaModule compilationModule in inputModules)
+                {
+                    if (compilationModule == _r2rContext.SystemModule)
+                    {
+                        deferredWasmCalls = true;
+                        break;
+                    }
+                }
+            }
+
+            factory.DeferredImportPlacement = deferredWasmCalls ? new List<Import>() : null;
             return new ReadyToRunCodegenCompilation(
                 graph,
                 factory,
@@ -405,7 +431,8 @@ namespace ILCompiler
                 _customPESectionAlignment,
                 _verifyTypeAndFieldLayout,
                 _format,
-                _wasmDebugInfo);
+                _wasmDebugInfo,
+                deferredWasmCalls);
         }
     }
 }

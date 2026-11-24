@@ -77,6 +77,7 @@ public static unsafe class ThreadStateDestroyed
 
         ProcessStartInfo psi = new ProcessStartInfo(Environment.ProcessPath, arguments)
         {
+            InheritedHandles = [],
             RedirectStandardOutput = true,
             RedirectStandardError = true,
         };

@@ -124,11 +124,7 @@ It's possible to test various configurations by setting a combination of additio
 
 To build for AOT only mode, add `/p:RunAOTCompilation=true /p:MonoForceInterpreter=false` to a build command.
 
-2. AOT-LLVM
-
-To build for AOT-LLVM mode, add `/p:RunAOTCompilation=true /p:MonoForceInterpreter=false /p:MonoEnableLLVM=true` to a build command.
-
-3. Interpreter
+2. Interpreter
 
 To build for Interpreter mode, add `/p:RunAOTCompilation=false /p:MonoForceInterpreter=true` to a build command.
 

@@ -26,12 +26,24 @@ HRESULT ClassLoad::Initialize(IUnknown* pICorProfilerInfoUnk)
     return S_OK;
 }
 
+std::wstring ClassLoad::GetTypeName(ClassID classId)
+{
+    // GetClassIDName names every array "ArrayClass", so name arrays by their element type.
+    ClassID elementClassId = 0;
+    if (pCorProfilerInfo->IsArrayClass(classId, nullptr, &elementClassId, nullptr) == S_OK && elementClassId != 0)
+    {
+        return GetTypeName(elementClassId) + L"[]";
+    }
+
+    return GetClassIDName(classId).ToCStr();
+}
+
 HRESULT ClassLoad::ClassLoadStarted(ClassID classId)
 {
     SHUTDOWNGUARD();
 
     // Increment only UnloadLibrary.TestClass classes
-    std::wstring className = GetClassIDName(classId).ToCStr();
+    std::wstring className = GetTypeName(classId);
     if (className.find(L"UnloadLibrary.TestClass") != std::wstring::npos)
     {
         wprintf(L"ClassLoadStarted: %ls\n", className.c_str());
@@ -46,7 +58,7 @@ HRESULT ClassLoad::ClassLoadFinished(ClassID classId, HRESULT hrStatus)
     SHUTDOWNGUARD();
 
     // Increment only UnloadLibrary.TestClass classes
-    std::wstring className = GetClassIDName(classId).ToCStr();
+    std::wstring className = GetTypeName(classId);
     if (className.find(L"UnloadLibrary.TestClass") != std::wstring::npos)
     {
         _classLoadFinishedCount++;
@@ -60,7 +72,7 @@ HRESULT ClassLoad::ClassUnloadStarted(ClassID classId)
     SHUTDOWNGUARD();
 
     // Increment only UnloadLibrary.TestClass classes
-    std::wstring className = GetClassIDName(classId).ToCStr();
+    std::wstring className = GetTypeName(classId);
     if (className.find(L"UnloadLibrary.TestClass") != std::wstring::npos)
     {
         wprintf(L"ClassUnloadStarted: %ls\n", className.c_str());
@@ -75,7 +87,7 @@ HRESULT ClassLoad::ClassUnloadFinished(ClassID classID, HRESULT hrStatus)
     SHUTDOWNGUARD();
 
     // Increment only UnloadLibrary.TestClass classes
-    std::wstring className = GetClassIDName(classID).ToCStr();
+    std::wstring className = GetTypeName(classID);
     if (className.find(L"UnloadLibrary.TestClass") != std::wstring::npos)
     {
         _classUnloadFinishedCount++;
@@ -98,10 +110,11 @@ HRESULT ClassLoad::Shutdown()
         // - System.Collections.Generic.IReadOnlyList`1<UnloadLibrary.TestClass>
         // - System.Collections.Generic.List`1<UnloadLibrary.TestClass>
         // - System.Collections.Generic.ICollection`1<UnloadLibrary.TestClass>
+        // - UnloadLibrary.TestClass[] (List<T> stores its items in a T[])
         && (_classLoadStartedCount == _classLoadFinishedCount)
-        && (_classLoadStartedCount == 7)
+        && (_classLoadStartedCount == 8)
         && (_classUnloadStartedCount == _classUnloadFinishedCount)
-        && (_classUnloadStartedCount == 7))
+        && (_classUnloadStartedCount == 8))
     {
         printf("PROFILER TEST PASSES\n");
     }

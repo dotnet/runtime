@@ -6,7 +6,7 @@ using System.Linq;
 using System.Reflection.Metadata;
 using Antlr4.Runtime;
 
-namespace ILAssembler;
+namespace Microsoft.DotNet.ILAssembler;
 
 #pragma warning disable CA1822 // Parser actions are invoked through the per-parser GrammarActions instance.
 internal sealed partial class GrammarActions
@@ -139,7 +139,7 @@ internal sealed partial class GrammarActions
             _entityRegistry.CreateLazilyRecordedMemberReference(owner, methodReference.Name, signature);
         return methodSpecificationSignature is null
             ? memberReference
-            : _entityRegistry.GetOrCreateMethodSpecification(memberReference, methodSpecificationSignature);
+            : _entityRegistry.CreateMethodSpecification(memberReference, methodSpecificationSignature);
     }
 
     private EntityRegistry.EntityBase MaterializeFieldReference(FieldReferenceValue fieldReference)

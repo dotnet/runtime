@@ -112,6 +112,20 @@ namespace System.Net.Security.Tests
             Assert.Equal(NegotiateAuthenticationStatusCode.ContinueNeeded, statusCode);
         }
 
+        [ConditionalTheory(typeof(Capability), nameof(Capability.IsNtlmServerAvailable))]
+        [InlineData("Negotiate")]
+        [InlineData("NTLM")]
+        [InlineData("nTlM")]
+        public void ServerPackage_Supported_NTLM(string package)
+        {
+            using NegotiateAuthentication server = new(new NegotiateAuthenticationServerOptions { Package = package });
+            byte[] clientBlob = Convert.FromHexString("4e544c4d535350000100000033828ae2000000000000000000000000000000000601b01d0000000f");
+            byte[]? serverBlob = server.GetOutgoingBlob(clientBlob, out NegotiateAuthenticationStatusCode statusCode);
+
+            Assert.Equal(NegotiateAuthenticationStatusCode.ContinueNeeded, statusCode);
+            Assert.NotNull(serverBlob);
+        }
+
         [ConditionalFact(typeof(NegotiateAuthenticationTests), nameof(IsNtlmUnavailable))]
         public void Package_Unsupported_NTLM()
         {

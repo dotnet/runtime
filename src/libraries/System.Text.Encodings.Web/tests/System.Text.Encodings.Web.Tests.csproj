@@ -1,9 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <!-- TODO: Remove once migrated to unsafe-v2. -->
+    <MemorySafetyRulesVersion>1</MemorySafetyRulesVersion>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <UnicodeUcdVersion>16.0</UnicodeUcdVersion>
     <!-- CS3021: 'type' does not need a CLSCompliant attribute because the assembly does not have a CLSCompliant attribute -->
     <NoWarn Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">$(NoWarn);CS3021</NoWarn>
   </PropertyGroup>

@@ -72,9 +72,9 @@ public:
 
     uint64_t GetTotalAllocatedBytes();
 
-    size_t  GetLastGCStartTime(int generation);
-    size_t  GetLastGCDuration(int generation);
-    size_t  GetNow();
+    int64_t GetLastGCStartTime(int generation);
+    int64_t GetLastGCDuration(int generation);
+    int64_t GetNow();
 
     void  DiagTraceGCSegments ();
     void PublishObject(uint8_t* obj);

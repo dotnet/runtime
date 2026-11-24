@@ -12,7 +12,9 @@
 
 
 #include "palsuite.h"
+#include <dn-u16.h>
 #include "minipal/time.h"
+#include "minipal/utf8.h"
 
 const char* szTextFile = "text.txt";
 
@@ -24,13 +26,14 @@ WCHAR* convert(const char * aString)
 
     if (aString != nullptr)
     {
-        int size = MultiByteToWideChar(CP_ACP,0,aString,-1,NULL,0);
+        size_t length = strlen(aString) + 1;
+        size_t size = minipal_get_length_utf8_to_utf16(aString, length, 0);
         wideBuffer = (WCHAR*) malloc(size*sizeof(WCHAR));
         if (wideBuffer == NULL)
         {
             Fail("ERROR: Unable to allocate memory!\n");
         }
-        MultiByteToWideChar(CP_ACP,0,aString,-1,wideBuffer,size);
+        minipal_convert_utf8_to_utf16(aString, length, (CHAR16_T*)wideBuffer, size, 0);
     }
 
     return wideBuffer;
@@ -38,16 +41,14 @@ WCHAR* convert(const char * aString)
 
 char* convertC(const WCHAR * wString)
 {
-    int size;
-    char * MultiBuffer = NULL;
-
-    size = WideCharToMultiByte(CP_ACP,0,wString,-1,MultiBuffer,0,NULL,NULL);
-    MultiBuffer = (char*) malloc(size);
+    size_t length = u16_strlen(wString) + 1;
+    size_t size = minipal_get_length_utf16_to_utf8((const CHAR16_T*)wString, length, 0);
+    char * MultiBuffer = (char*) malloc(size);
     if (MultiBuffer == NULL)
     {
         Fail("ERROR: Unable to allocate memory!\n");
     }
-    WideCharToMultiByte(CP_ACP,0,wString,-1,MultiBuffer,size,NULL,NULL);
+    minipal_convert_utf16_to_utf8((const CHAR16_T*)wString, length, MultiBuffer, size, 0);
     return MultiBuffer;
 }
 
@@ -128,45 +129,6 @@ BOOL Cleanup(HANDLE *hArray, DWORD dwIndex)
  * 0 is returned on Error.
  */
 int
-mkAbsoluteFilenameW (
-    LPWSTR dirName,
-    DWORD dwDirLength,
-    LPCWSTR fileName,
-    DWORD dwFileLength,
-    LPWSTR absPathName )
-{
-    const WCHAR szPathDelimW[] = {'/','\0'};
-
-    DWORD sizeDN, sizeFN, sizeAPN;
-
-    sizeDN = wcslen( dirName );
-    sizeFN = wcslen( fileName );
-    sizeAPN = (sizeDN + 1 + sizeFN + 1);
-
-    /* ensure ((dirName + DELIM + fileName + \0) =< MAX_PATH ) */
-    if ( sizeAPN > MAX_PATH )
-    {
-	return ( 0 );
-    }
-
-    wcsncpy(absPathName, dirName, dwDirLength +1);
-    wcsncpy(absPathName, szPathDelimW, 2);
-    wcsncpy(absPathName, fileName, dwFileLength +1);
-
-    return (sizeAPN);
-
-}
-
-/*
- * Take two wide strings representing file and directory names
- * (dirName, fileName), join the strings with the appropriate path
- * delimiter and populate a wide character buffer (absPathName) with
- * the resulting string.
- *
- * Returns: The number of wide characters in the resulting string.
- * 0 is returned on Error.
- */
-int
 mkAbsoluteFilenameA (
     LPSTR dirName,
     DWORD dwDirLength,
@@ -196,20 +158,4 @@ mkAbsoluteFilenameA (
 
     return (sizeAPN);
 
-}
-
-BOOL
-DeleteFileW(
-        IN LPCWSTR lpFileName)
-{
-    _ASSERTE(lpFileName != NULL);
-
-    CHAR mbFileName[ MAX_PATH ];
-
-    if (WideCharToMultiByte( CP_ACP, 0, lpFileName, -1, mbFileName, sizeof(mbFileName), NULL, NULL ) != 0 )
-    {
-        return remove(mbFileName) == 0;
-    }
-
-    return FALSE;
 }

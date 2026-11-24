@@ -3,6 +3,8 @@
 
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.RemoteExecutor;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 // Disable warnings for ControlledExecution.Run
@@ -69,6 +71,31 @@ namespace System.Runtime.Tests
                 RunInfiniteLoop();
                 _finishedExecution = true;
             }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime), nameof(PlatformDetection.IsNotNativeAot), nameof(PlatformDetection.IsMultithreadingSupported))]
+        public void CancelRepeatedlyOnSameThread()
+        {
+            if (!RemoteExecutor.IsSupported)
+            {
+                throw new SkipTestException("RemoteExecutor is not supported on this platform.");
+            }
+
+            RemoteExecutor.Invoke(() =>
+            {
+                for (int i = 0; i < 3; i++)
+                {
+                    using var cts = new CancellationTokenSource();
+                    OperationCanceledException exception = Assert.Throws<OperationCanceledException>(() =>
+                        ControlledExecution.Run(() =>
+                        {
+                            cts.CancelAfter(100);
+                            // Avoid calls in the loop so cancellation requires thread activation.
+                            while (true) { }
+                        }, cts.Token));
+                    Assert.Equal(cts.Token, exception.CancellationToken);
+                }
+            }).Dispose();
         }
 
         // Tests that an infinite loop may be aborted, that the ThreadAbortException is automatically rethrown,
@@ -204,7 +231,8 @@ namespace System.Runtime.Tests
         }
 
         // Tests cancellation by the action itself
-//        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime), nameof(PlatformDetection.IsNotNativeAot))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime), nameof(PlatformDetection.IsNotNativeAot))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/135914", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void CancelItselfOutsideOfTryCatchFinally()
         {
             var cts = new CancellationTokenSource();

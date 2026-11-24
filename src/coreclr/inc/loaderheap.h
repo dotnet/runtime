@@ -202,7 +202,7 @@ typedef bool EnumPageRegionsCallback (PTR_VOID pvArgs, PTR_VOID pvAllocationBase
 #endif
     
 protected:
-    // Linked list of ClrVirtualAlloc'd pages
+    // Linked list of VirtualAlloc'd pages
     PTR_LoaderHeapBlock m_pFirstBlock;
 };
 
@@ -312,7 +312,7 @@ private:
     // Points to the end of the reserved region for the current block
     PTR_BYTE            m_pEndReservedRegion;
 
-    // When we need to ClrVirtualAlloc() MEM_RESERVE a new set of pages, number of bytes to reserve
+    // When we need to VirtualAlloc() MEM_RESERVE a new set of pages, number of bytes to reserve
     DWORD               m_dwReserveBlockSize;
 
     // When we need to commit pages from our reserved list, number of bytes to commit at a time
@@ -829,7 +829,7 @@ private:
         void *pResult;
         TaggedMemAllocPtr tmap;
 
-        CRITSEC_Holder csh(m_CriticalSection);
+        CRITSEC_Holder csh = ClrTakeCriticalSection(m_CriticalSection);
         pResult = UnlockedAllocMem(dwSize
 #ifdef _DEBUG
                                  , szFile
@@ -860,7 +860,7 @@ private:
         void *pResult;
         TaggedMemAllocPtr tmap;
 
-        CRITSEC_Holder csh(m_CriticalSection);
+        CRITSEC_Holder csh = ClrTakeCriticalSection(m_CriticalSection);
 
         pResult = UnlockedAllocMem_NoThrow(dwSize
 #ifdef _DEBUG
@@ -902,7 +902,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
-        CRITSEC_Holder csh(m_CriticalSection);
+        CRITSEC_Holder csh = ClrTakeCriticalSection(m_CriticalSection);
 
 
         TaggedMemAllocPtr tmap;
@@ -941,7 +941,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
-        CRITSEC_Holder csh(m_CriticalSection);
+        CRITSEC_Holder csh = ClrTakeCriticalSection(m_CriticalSection);
 
 
         TaggedMemAllocPtr tmap;
@@ -987,7 +987,7 @@ public:
                         )
     {
         WRAPPER_NO_CONTRACT;
-        CRITSEC_Holder csh(m_CriticalSection);
+        CRITSEC_Holder csh = ClrTakeCriticalSection(m_CriticalSection);
         UnlockedBackoutMem(pMem
                            , dwSize
 #ifdef _DEBUG
@@ -1005,21 +1005,21 @@ public:
     void ClearEvents()
     {
         WRAPPER_NO_CONTRACT;
-        CRITSEC_Holder csh(m_CriticalSection);
+        CRITSEC_Holder csh = ClrTakeCriticalSection(m_CriticalSection);
         UnlockedClearEvents();
     }
 
     void CompactEvents()
     {
         WRAPPER_NO_CONTRACT;
-        CRITSEC_Holder csh(m_CriticalSection);
+        CRITSEC_Holder csh = ClrTakeCriticalSection(m_CriticalSection);
         UnlockedCompactEvents();
     }
 
     void PrintEvents()
     {
         WRAPPER_NO_CONTRACT;
-        CRITSEC_Holder csh(m_CriticalSection);
+        CRITSEC_Holder csh = ClrTakeCriticalSection(m_CriticalSection);
         UnlockedPrintEvents();
     }
 #endif
@@ -1080,7 +1080,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
-        CRITSEC_Holder csh(m_CriticalSection);
+        CRITSEC_Holder csh = ClrTakeCriticalSection(m_CriticalSection);
 
 
         TaggedMemAllocPtr tmap;
@@ -1121,7 +1121,7 @@ public:
                         )
     {
         WRAPPER_NO_CONTRACT;
-        CRITSEC_Holder csh(m_CriticalSection);
+        CRITSEC_Holder csh = ClrTakeCriticalSection(m_CriticalSection);
         UnlockedBackoutStub(pMem
 #ifdef _DEBUG
                            , szFile
@@ -1138,21 +1138,21 @@ public:
     void ClearEvents()
     {
         WRAPPER_NO_CONTRACT;
-        CRITSEC_Holder csh(m_CriticalSection);
+        CRITSEC_Holder csh = ClrTakeCriticalSection(m_CriticalSection);
         UnlockedClearEvents();
     }
 
     void CompactEvents()
     {
         WRAPPER_NO_CONTRACT;
-        CRITSEC_Holder csh(m_CriticalSection);
+        CRITSEC_Holder csh = ClrTakeCriticalSection(m_CriticalSection);
         UnlockedCompactEvents();
     }
 
     void PrintEvents()
     {
         WRAPPER_NO_CONTRACT;
-        CRITSEC_Holder csh(m_CriticalSection);
+        CRITSEC_Holder csh = ClrTakeCriticalSection(m_CriticalSection);
         UnlockedPrintEvents();
     }
 #endif

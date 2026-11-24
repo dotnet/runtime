@@ -4,7 +4,12 @@
 typedef char16_t WCHAR;
 
 #include <dn-u16.h>
+#include <ctype.h>
+#include <errno.h>
+#include <limits.h>
+#include <stdlib.h>
 #include <string.h>
+#include <wctype.h>
 #include <minipal/strings.h>
 
 size_t u16_strlen(const WCHAR* str)
@@ -14,7 +19,13 @@ size_t u16_strlen(const WCHAR* str)
 
 int u16_strcmp(const WCHAR* str1, const WCHAR* str2)
 {
-    return u16_strncmp(str1, str2, 0x7fffffff);
+    int diff;
+    while ((diff = *str1 - *str2) == 0 && *str1 != (WCHAR)'\0')
+    {
+        str1++;
+        str2++;
+    }
+    return diff;
 }
 
 int u16_strncmp(const WCHAR* str1, const WCHAR* str2, size_t count)
@@ -28,6 +39,33 @@ int u16_strncmp(const WCHAR* str1, const WCHAR* str2, size_t count)
 
         // stop if we reach the end of the string
         if(str1[i] == (WCHAR)'\0')
+            break;
+    }
+    return diff;
+}
+
+int u16_stricmp(const WCHAR* str1, const WCHAR* str2)
+{
+    int diff;
+    while ((diff = (int)towlower(*str1) - (int)towlower(*str2)) == 0 && *str1 != (WCHAR)'\0')
+    {
+        str1++;
+        str2++;
+    }
+    return diff;
+}
+
+int u16_strnicmp(const WCHAR* str1, const WCHAR* str2, size_t count)
+{
+    int diff = 0;
+    for (size_t i = 0; i < count; i++)
+    {
+        diff = (int)towlower(str1[i]) - (int)towlower(str2[i]);
+        if (diff != 0)
+            break;
+
+        // stop if we reach the end of the string
+        if (str1[i] == (WCHAR)'\0')
             break;
     }
     return diff;
@@ -172,22 +210,98 @@ const WCHAR* u16_strrchr(const WCHAR* str, WCHAR ch)
     return last;
 }
 
-// Forward declare PAL function
-extern "C" uint32_t PAL_wcstoul(const WCHAR* nptr, WCHAR** endptr, int base);
-extern "C" uint64_t PAL__wcstoui64(const WCHAR* nptr, WCHAR** endptr, int base);
-extern "C" double PAL_wcstod(const WCHAR* nptr, WCHAR** endptr);
+// Narrows the leading ASCII characters of str into a malloc-ed buffer. Numbers consist of ASCII
+// characters only, so offsets into the buffer are also offsets into str.
+static char* narrow_ascii_prefix(const WCHAR* str)
+{
+    size_t length = 0;
+    while (str[length] != (WCHAR)'\0' && str[length] < 0x80)
+        length++;
+
+    char* buffer = (char*)malloc(length + 1);
+    if (buffer == nullptr)
+        return nullptr;
+
+    for (size_t i = 0; i < length; i++)
+        buffer[i] = (char)str[i];
+
+    buffer[length] = '\0';
+    return buffer;
+}
 
 uint32_t u16_strtoul(const WCHAR* nptr, WCHAR** endptr, int base)
 {
-    return PAL_wcstoul(nptr, endptr, base);
+    char* buffer = narrow_ascii_prefix(nptr);
+    if (buffer == nullptr)
+    {
+        if (endptr != nullptr)
+            *endptr = (WCHAR*)nptr;
+        return 0;
+    }
+
+    char* end;
+    unsigned long value = strtoul(buffer, &end, base);
+
+#if ULONG_MAX > UINT32_MAX
+    // The result is 32-bit like on Windows, where unsigned long is 32-bit. Positive values
+    // that don't fit saturate, negative values are truncated regardless of their magnitude.
+    if (value > UINT32_MAX)
+    {
+        const char* p = buffer;
+        while (isspace((unsigned char)*p))
+            p++;
+
+        if (*p != '-')
+        {
+            value = UINT32_MAX;
+            errno = ERANGE;
+        }
+    }
+#endif
+
+    if (endptr != nullptr)
+        *endptr = (WCHAR*)nptr + (end - buffer);
+
+    free(buffer);
+    return (uint32_t)value;
 }
 
 uint64_t u16_strtoui64(const WCHAR* nptr, WCHAR** endptr, int base)
 {
-    return PAL__wcstoui64(nptr, endptr, base);
+    char* buffer = narrow_ascii_prefix(nptr);
+    if (buffer == nullptr)
+    {
+        if (endptr != nullptr)
+            *endptr = (WCHAR*)nptr;
+        return 0;
+    }
+
+    char* end;
+    unsigned long long value = strtoull(buffer, &end, base);
+
+    if (endptr != nullptr)
+        *endptr = (WCHAR*)nptr + (end - buffer);
+
+    free(buffer);
+    return value;
 }
 
 double u16_strtod(const WCHAR* nptr, WCHAR** endptr)
 {
-    return PAL_wcstod(nptr, endptr);
+    char* buffer = narrow_ascii_prefix(nptr);
+    if (buffer == nullptr)
+    {
+        if (endptr != nullptr)
+            *endptr = (WCHAR*)nptr;
+        return 0.0;
+    }
+
+    char* end;
+    double value = strtod(buffer, &end);
+
+    if (endptr != nullptr)
+        *endptr = (WCHAR*)nptr + (end - buffer);
+
+    free(buffer);
+    return value;
 }

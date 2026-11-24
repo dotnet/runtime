@@ -5,6 +5,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
@@ -75,6 +77,9 @@ namespace Wasm.Build.Tests
             UpdateFile(Path.Combine("Common", "Program.cs"), s_mainReturns42);
 
             BuildProjectWithoutAssert(config, info.ProjectName, new PublishOptions(Label: "first"));
+            string linkedDir = Path.Combine(GetObjDir(config), "linked");
+            string[] firstLinkedAssemblies = Directory.GetFiles(linkedDir, "*.dll").Order(StringComparer.Ordinal).ToArray();
+            Assert.NotEmpty(firstLinkedAssemblies);
 
             // modify app source to trigger recompilation
             string programPath = Path.Combine(_projectDir, "Common", "Program.cs");
@@ -84,6 +89,7 @@ namespace Wasm.Build.Tests
             _testOutput.WriteLine($"Second publish binlog: {secondBinlog}");
 
             AssertTargetRan(secondBinlog, "GeneratePublishWasmBootJson");
+            Assert.Equal(firstLinkedAssemblies, Directory.GetFiles(linkedDir, "*.dll").Order(StringComparer.Ordinal).ToArray());
         }
 
         [Theory]
@@ -178,6 +184,48 @@ namespace Wasm.Build.Tests
             if (UseWebcil)
                 AssertTargetSkipped(secondBinlog, "_ConvertBuildDllsToWebcil");
         }
+
+		[Theory, TestCategory("coreclr"), TestCategory("no-workload")]
+		[InlineData(false)]
+		[InlineData(true)]
+		public void IncrementalIntegrityCheckConfiguration(bool publish)
+		{
+			Configuration config = Configuration.Debug;
+			ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.WasmBasicTestApp, "incremental_integrity",
+				extraProperties: "<PublishTrimmed>false</PublishTrimmed>");
+			int iteration = 0;
+			foreach (bool enableIntegrityCheck in new[] { true, false, true })
+			{
+				string args = $"-p:WasmEnableIntegrityCheck={enableIntegrityCheck.ToString().ToLowerInvariant()}";
+				string label = $"integrity_{iteration++}";
+				(_, string binlog) = publish
+					? BuildProjectWithoutAssert(config, info.ProjectName, new PublishOptions(UseCache: false, ExtraMSBuildArgs: args, Label: label))
+					: BuildProjectWithoutAssert(config, info.ProjectName, new BuildOptions(UseCache: false, ExtraMSBuildArgs: args, Label: label));
+				AssertTargetRan(binlog, publish ? "GeneratePublishWasmBootJson" : "_WriteBuildWasmBootJsonFile");
+				AssertWasmEndpointIntegrity(config, publish);
+				string frameworkDir = GetBinFrameworkDir(config, forPublish: publish);
+				string bootPath;
+				if (publish)
+				{
+					string wwwroot = Path.GetFullPath(Path.Combine(frameworkDir, ".."));
+					string html = File.ReadAllText(Path.Combine(wwwroot, "index.html"));
+					Match importMapMatch = Regex.Match(html, """<script type="importmap">(?<json>.*?)</script>""", RegexOptions.Singleline);
+					Assert.True(importMapMatch.Success, "The app's import map was not emitted.");
+					using JsonDocument importMap = JsonDocument.Parse(importMapMatch.Groups["json"].Value);
+					string bootUrl = Assert.IsType<string>(importMap.RootElement.GetProperty("imports").GetProperty("./_framework/dotnet.js").GetString());
+					bool hasIntegrity = importMap.RootElement.TryGetProperty("integrity", out JsonElement integrity)
+						&& integrity.TryGetProperty(bootUrl, out _);
+					Assert.True(hasIntegrity, "The import map must retain integrity when fetch integrity checks are disabled.");
+					bootPath = Path.GetFullPath(Path.Combine(wwwroot, bootUrl));
+				}
+				else
+				{
+					bootPath = GetProvider<WasmSdkBasedProjectProvider>().GetBootConfigPath(frameworkDir);
+				}
+				using JsonDocument document = JsonDocument.Parse(ProjectProviderBase.GetBootJsonContent(bootPath));
+				Assert.Equal(!enableIntegrityCheck, document.RootElement.GetProperty("disableIntegrityCheck").GetBoolean());
+			}
+		}
 
         private static void AssertTargetSkipped(string binlogPath, string targetName)
         {

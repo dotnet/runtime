@@ -7325,6 +7325,36 @@ namespace System.Runtime.Intrinsics.Arm
     }
     [System.CLSCompliantAttribute(false)]
     [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+    public abstract partial class SveAes : System.Runtime.Intrinsics.Arm.ArmBase
+    {
+        internal SveAes() { }
+        public static new bool IsSupported { get { throw null; } }
+        public static System.Numerics.Vector<byte> Decrypt(System.Numerics.Vector<byte> value, System.Numerics.Vector<byte> roundKey) { throw null; }
+        public static System.Numerics.Vector<byte> Encrypt(System.Numerics.Vector<byte> value, System.Numerics.Vector<byte> roundKey) { throw null; }
+        public static System.Numerics.Vector<byte> InverseMixColumns(System.Numerics.Vector<byte> value) { throw null; }
+        public static System.Numerics.Vector<byte> MixColumns(System.Numerics.Vector<byte> value) { throw null; }
+        public new abstract partial class Arm64 : System.Runtime.Intrinsics.Arm.ArmBase.Arm64
+        {
+            internal Arm64() { }
+            public static new bool IsSupported { get { throw null; } }
+        }
+    }
+    [System.CLSCompliantAttribute(false)]
+    [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+    public abstract partial class SvePmull128 : System.Runtime.Intrinsics.Arm.ArmBase
+    {
+        internal SvePmull128() { }
+        public static new bool IsSupported { get { throw null; } }
+        public static System.Numerics.Vector<ulong> PolynomialMultiplyWideningEven(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
+        public static System.Numerics.Vector<ulong> PolynomialMultiplyWideningOdd(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
+        public new abstract partial class Arm64 : System.Runtime.Intrinsics.Arm.ArmBase.Arm64
+        {
+            internal Arm64() { }
+            public static new bool IsSupported { get { throw null; } }
+        }
+    }
+    [System.CLSCompliantAttribute(false)]
+    [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public abstract partial class SveSm4 : System.Runtime.Intrinsics.Arm.ArmBase
     {
         internal SveSm4() { }
@@ -11549,6 +11579,8 @@ namespace System.Runtime.Intrinsics.Wasm
         public static Vector128<double> ReplaceScalar(Vector128<double> vector, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(1))] byte imm, double value) { throw null; }   // takes ImmLaneIdx2
         public static Vector128<nint> ReplaceScalar(Vector128<nint> vector, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(3))] byte imm, nint value) { throw null; }
         public static Vector128<nuint> ReplaceScalar(Vector128<nuint> vector, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(3))] byte imm, nuint value) { throw null; }
+        public static Vector128<sbyte> Shuffle(Vector128<sbyte> lower, Vector128<sbyte> upper, Vector128<sbyte> indices) { throw null; }
+        public static Vector128<byte> Shuffle(Vector128<byte> lower, Vector128<byte> upper, Vector128<byte> indices) { throw null; }
         public static Vector128<sbyte> Swizzle(Vector128<sbyte> vector, Vector128<sbyte> indices) { throw null; }
         public static Vector128<byte> Swizzle(Vector128<byte> vector, Vector128<byte> indices) { throw null; }
         public static Vector128<sbyte> Add(Vector128<sbyte> left, Vector128<sbyte> right) { throw null; }

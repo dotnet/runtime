@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 #include <stddef.h>
-#include "corjit.h"
-
 #include "interpreter.h"
 #include "compiler.h"
 #include "eeinterp.h"
@@ -65,12 +63,17 @@ static CORINFO_MODULE_HANDLE g_interpModule = NULL;
 #endif // FEATURE_DYNAMIC_CODE_COMPILED
 
 //****************************************************************************
-CorJitResult CILInterp::compileMethod(ICorJitInfo*         compHnd,
+CorJitResult CILInterp::compileMethod(ICorJitInfo*         comp,
                                    CORINFO_METHOD_INFO* methodInfo,
                                    unsigned             flags,
                                    uint8_t**            entryAddress,
                                    uint32_t*            nativeSizeOfCode)
 {
+#ifdef FEATURE_INTERPRETER_DIRECT_CALLS
+    COMP_HANDLE compHnd = static_cast<CInterpreterJitInfo*>(comp);
+#else
+    COMP_HANDLE compHnd = comp;
+#endif
 
     ArenaAllocatorWithDestructorT<InterpMemKindTraits> arenaAllocator;
 

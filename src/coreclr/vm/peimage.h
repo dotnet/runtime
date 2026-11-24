@@ -140,7 +140,8 @@ public:
     BOOL IsCompressed(INT64* uncompressedSize = NULL) const;
 
 #ifndef DACCESS_COMPILE
-    HANDLE GetFileHandle();
+    VMToOSInterface::MemoryMapHandle GetFileHandle();
+    // Callers already holding m_pLayoutLock pass false; external callers use the locking default.
     HRESULT TryOpenFile(bool takeLock = false);
 #endif
 
@@ -291,8 +292,8 @@ private:
     // If m_probeExtensionResult is valid, it takes precedence over m_path for loading.
     ProbeExtensionResult m_probeExtensionResult;
 
-    // valid handle if we tried to open the file/path and succeeded.
-    HANDLE m_hFile;
+    // Valid file descriptor or handle if opening the file/path succeeded.
+    VMToOSInterface::MemoryMapHandle m_hFile;
 
     DWORD m_dwPEKind;
     DWORD m_dwMachine;

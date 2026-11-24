@@ -182,6 +182,83 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         }
 
         [PlatformSpecific(TestPlatforms.Linux)]
+        [Theory]
+        [InlineData(50 * 1024, true)]
+        [InlineData(100 * 1024, false)]
+        public static void AiaDownloadSizeLimit(int extensionSize, bool expectedSuccess)
+        {
+            CertificateAuthority.BuildPrivatePki(
+                PkiOptions.CrlEverywhere,
+                out RevocationResponder responder,
+                out CertificateAuthority root,
+                out CertificateAuthority intermediate,
+                out X509Certificate2 endEntity,
+                pkiOptionsInSubject: false,
+                testName: Guid.NewGuid().ToString(),
+                intermediateExtensions: new[] { new X509Extension("1.2.3.4", new byte[extensionSize], false) });
+
+            using (responder)
+            using (root)
+            using (intermediate)
+            using (endEntity)
+            using (X509Certificate2 rootCert = root.CloneIssuerCert())
+            using (X509Certificate2 intermediateCert = intermediate.CloneIssuerCert())
+            using (ChainHolder holder = new ChainHolder())
+            {
+                Assert.Equal(expectedSuccess, intermediateCert.RawData.Length <= 100 * 1024);
+
+                X509Chain chain = holder.Chain;
+                chain.ChainPolicy.CustomTrustStore.Add(rootCert);
+                chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+                chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+                chain.ChainPolicy.VerificationTime = endEntity.NotBefore.AddMinutes(1);
+                chain.ChainPolicy.UrlRetrievalTimeout = DynamicRevocationTests.s_urlRetrievalLimit;
+
+                Assert.Equal(expectedSuccess, chain.Build(endEntity));
+                Assert.Equal(
+                    expectedSuccess ? X509ChainStatusFlags.NoError : X509ChainStatusFlags.PartialChain,
+                    chain.AllStatusFlags());
+            }
+        }
+
+        [PlatformSpecific(TestPlatforms.Linux)]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void CrlDownloadDoesNotUseAiaLimit()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                AppContext.SetData("System.Security.Cryptography.AiaDownloadLimit", 100);
+                CertificateAuthority.BuildPrivatePki(
+                    PkiOptions.CrlEverywhere,
+                    out RevocationResponder responder,
+                    out CertificateAuthority root,
+                    out CertificateAuthority intermediate,
+                    out X509Certificate2 endEntity,
+                    pkiOptionsInSubject: false,
+                    testName: Guid.NewGuid().ToString());
+
+                using (responder)
+                using (root)
+                using (intermediate)
+                using (endEntity)
+                using (X509Certificate2 rootCert = root.CloneIssuerCert())
+                using (X509Certificate2 intermediateCert = intermediate.CloneIssuerCert())
+                using (ChainHolder holder = new ChainHolder())
+                {
+                    X509Chain chain = holder.Chain;
+                    chain.ChainPolicy.CustomTrustStore.Add(rootCert);
+                    chain.ChainPolicy.ExtraStore.Add(intermediateCert);
+                    chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+                    chain.ChainPolicy.VerificationTime = endEntity.NotBefore.AddMinutes(1);
+                    chain.ChainPolicy.UrlRetrievalTimeout = DynamicRevocationTests.s_urlRetrievalLimit;
+
+                    Assert.True(chain.Build(endEntity));
+                    Assert.Equal(X509ChainStatusFlags.NoError, chain.AllStatusFlags());
+                }
+            }).Dispose();
+        }
+
+        [PlatformSpecific(TestPlatforms.Linux)]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void AiaIgnoresCertOverLimit()
         {

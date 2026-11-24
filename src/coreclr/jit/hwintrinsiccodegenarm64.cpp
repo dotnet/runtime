@@ -908,6 +908,10 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         {
             assert(m_compiler->compIsaSupportedDebugOnly(InstructionSet_Vector64));
         }
+        else if (node->GetSimdSize() == SIZE_UNKNOWN)
+        {
+            assert(m_compiler->compIsaSupportedDebugOnly(InstructionSet_VectorT));
+        }
         else
         {
             assert((node->GetSimdSize() == 12) || (node->GetSimdSize() == 16));
@@ -1194,26 +1198,24 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         {
             case NI_AdvSimd_AddWideningLower:
                 assert(varTypeIsIntegral(intrin.baseType));
-                if (intrin.op1->TypeIs(TYP_SIMD8))
+                if (node->GetAuxiliaryType() == intrin.baseType)
                 {
                     ins = varTypeIsUnsigned(intrin.baseType) ? INS_uaddl : INS_saddl;
                 }
                 else
                 {
-                    assert(intrin.op1->TypeIs(TYP_SIMD16));
                     ins = varTypeIsUnsigned(intrin.baseType) ? INS_uaddw : INS_saddw;
                 }
                 break;
 
             case NI_AdvSimd_SubtractWideningLower:
                 assert(varTypeIsIntegral(intrin.baseType));
-                if (intrin.op1->TypeIs(TYP_SIMD8))
+                if (node->GetAuxiliaryType() == intrin.baseType)
                 {
                     ins = varTypeIsUnsigned(intrin.baseType) ? INS_usubl : INS_ssubl;
                 }
                 else
                 {
-                    assert(intrin.op1->TypeIs(TYP_SIMD16));
                     ins = varTypeIsUnsigned(intrin.baseType) ? INS_usubw : INS_ssubw;
                 }
                 break;
@@ -2000,6 +2002,12 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_Vector_AsVector128Unsafe:
             case NI_Vector_GetLower:
                 GetEmitter()->emitIns_Mov(ins, emitSize, targetReg, op1Reg, /* canSkip */ true);
+                break;
+
+            case NI_Sve_AsVector:
+                // This NEON move performs an implicit zeroing of the upper bytes of the Z register,
+                // if VL > 128. See Arm ARM B1.4.3 (R_WKYLB)
+                GetEmitter()->emitIns_Mov(ins, EA_16BYTE, targetReg, op1Reg, false);
                 break;
 
             case NI_Vector_GetElement:
@@ -2884,6 +2892,14 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
+            case NI_Sve_And_Predicates:
+            case NI_Sve_BitwiseClear_Predicates:
+            {
+                assert(intrin.numOperands == 2);
+                GetEmitter()->emitInsSve_R_R_R_R(ins, emitSize, targetReg, op1Reg, op1Reg, op2Reg, INS_OPTS_SCALABLE_B);
+                break;
+            }
+
             case NI_Sve_CreateBreakAfterPropagateMask:
             case NI_Sve_CreateBreakBeforePropagateMask:
             {
@@ -3204,6 +3220,14 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 {
                     ins = varTypeIsUnsigned(intrin.baseType) ? INS_sve_usublt : INS_sve_ssublt;
                 }
+                GetEmitter()->emitInsSve_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
+                break;
+            }
+
+            case NI_SvePmull128_PolynomialMultiplyWideningEven:
+            case NI_SvePmull128_PolynomialMultiplyWideningOdd:
+            {
+                opt = INS_OPTS_SCALABLE_Q;
                 GetEmitter()->emitInsSve_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
                 break;
             }

@@ -3,7 +3,6 @@
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DefineConstants> $(DefineConstants);FEATURE_FAST_CREATE</DefineConstants>
     <NoWarn>$(NoWarn);CA1859</NoWarn>
     <!--
       Disable constant propagation so that methods referenced from ILLink.Substitutions.xml don't get inlined

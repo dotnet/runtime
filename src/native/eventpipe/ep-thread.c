@@ -4,6 +4,7 @@
 #if !defined(EP_INCLUDE_SOURCE_FILES) || defined(EP_FORCE_INCLUDE_SOURCE_FILES)
 
 #define EP_IMPL_THREAD_GETTER_SETTER
+#include "ep.h"
 #include "ep-buffer.h"
 #include "ep-buffer-manager.h"
 #include "ep-thread.h"
@@ -36,6 +37,7 @@ ep_thread_alloc (void)
 
 	instance->session_use_in_progress = UINT32_MAX;
 	instance->unregistered = 0;
+	instance->capturing_provider_state = false;
 
 	instance->buffer_wait_enqueued = 0;
 	instance->buffer_wait_queue_next_thread = NULL;
