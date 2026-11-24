@@ -29,8 +29,31 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
 
+#if AsyncApi
+[ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+#endif
 public static partial class DataContractSerializerTests
 {
+#if AsyncApi
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public static void DCS_TestApi_DoesNotFallbackForSynchronousXml(bool writing)
+    {
+        DataContractSerializer serializer = new DataContractSerializer(typeof(string));
+        if (writing)
+        {
+            using XmlWriter writer = XmlWriter.Create(new MemoryStream());
+            Assert.Throws<InvalidOperationException>(() => serializer.TestWriteObject(writer, "value"));
+        }
+        else
+        {
+            using XmlReader reader = XmlReader.Create(new StringReader("<string xmlns=\"http://schemas.microsoft.com/2003/10/Serialization/\">value</string>"));
+            Assert.Throws<InvalidOperationException>(() => serializer.TestReadObject(reader));
+        }
+    }
+#endif
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -110,10 +133,254 @@ public static partial class DataContractSerializerTests
         }
     }
 
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    public static async Task DCS_AsyncDeepBufferedGraph_RoundTrips(int format)
+    {
+        const int depth = 1025;
+        AsyncReferenceLink root = new AsyncReferenceLink();
+        AsyncReferenceLink tail = root;
+        for (int i = 1; i < depth; i++)
+        {
+            tail.Next = new AsyncReferenceLink();
+            tail = tail.Next;
+        }
+
+        XmlObjectSerializer serializer = format is 2
+            ? new DataContractJsonSerializer(typeof(AsyncReferenceLink))
+            : new DataContractSerializer(typeof(AsyncReferenceLink));
+        using AsyncOnlySerializationStream output = new AsyncOnlySerializationStream { CompleteIoSynchronously = true };
+        if (format is 1)
+        {
+            await using XmlDictionaryWriter writer = XmlDictionaryWriter.CreateBinaryWriter(output, null, null, ownsStream: false);
+            await serializer.WriteObjectAsync(writer, root);
+            await writer.FlushAsync();
+        }
+        else
+        {
+            await serializer.WriteObjectAsync(output, root);
+        }
+
+        byte[] bytes = output.Bytes;
+        using XmlDictionaryReader reader = format switch
+        {
+            0 => XmlDictionaryReader.CreateTextReader(bytes, XmlDictionaryReaderQuotas.Max),
+            1 => XmlDictionaryReader.CreateBinaryReader(bytes, XmlDictionaryReaderQuotas.Max),
+            2 => JsonReaderWriterFactory.CreateJsonReader(bytes, XmlDictionaryReaderQuotas.Max),
+            _ => throw new ArgumentOutOfRangeException(nameof(format))
+        };
+        AsyncReferenceLink result = Assert.IsType<AsyncReferenceLink>(await serializer.ReadObjectAsync(reader));
+        for (int i = 1; i < depth; i++)
+        {
+            result = Assert.IsType<AsyncReferenceLink>(result.Next);
+        }
+        Assert.Null(result.Next);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    public static async Task DCS_AsyncDeepPolymorphicCollections_RoundTrip(int format)
+    {
+        const int depth = 257;
+        AsyncPolymorphicNode root = new AsyncPolymorphicNode();
+        AsyncPolymorphicNode tail = root;
+        for (int i = 1; i < depth; i++)
+        {
+            AsyncPolymorphicNode next = new AsyncPolymorphicNode();
+            tail.Children.Add(next);
+            tail = next;
+        }
+
+        XmlObjectSerializer serializer = format is 2
+            ? new DataContractJsonSerializer(typeof(AsyncPolymorphicBase))
+            : new DataContractSerializer(typeof(AsyncPolymorphicBase), new DataContractSerializerSettings { PreserveObjectReferences = true });
+        using AsyncOnlySerializationStream output = new AsyncOnlySerializationStream { CompleteIoSynchronously = true };
+        if (format is 1)
+        {
+            await using XmlDictionaryWriter writer = XmlDictionaryWriter.CreateBinaryWriter(output, null, null, ownsStream: false);
+            await serializer.WriteObjectAsync(writer, root);
+            await writer.FlushAsync();
+        }
+        else
+        {
+            await serializer.WriteObjectAsync(output, root);
+        }
+
+        byte[] bytes = output.Bytes;
+        using XmlDictionaryReader reader = format switch
+        {
+            0 => XmlDictionaryReader.CreateTextReader(bytes, XmlDictionaryReaderQuotas.Max),
+            1 => XmlDictionaryReader.CreateBinaryReader(bytes, XmlDictionaryReaderQuotas.Max),
+            2 => JsonReaderWriterFactory.CreateJsonReader(bytes, XmlDictionaryReaderQuotas.Max),
+            _ => throw new ArgumentOutOfRangeException(nameof(format))
+        };
+        AsyncPolymorphicNode result = Assert.IsType<AsyncPolymorphicNode>(await serializer.ReadObjectAsync(reader));
+        for (int i = 1; i < depth; i++)
+        {
+            result = Assert.IsType<AsyncPolymorphicNode>(Assert.Single(result.Children));
+        }
+        Assert.Empty(result.Children);
+    }
+
+    [Theory]
+    [InlineData(0, false)]
+    [InlineData(1, false)]
+    [InlineData(2, false)]
+    [InlineData(0, true)]
+    [InlineData(1, true)]
+    [InlineData(2, true)]
+    public static async Task DCS_AsyncDeepBufferedGraph_DoesNotCaptureSynchronizationContext(int format, bool reading)
+    {
+        AsyncReferenceLink root = new AsyncReferenceLink();
+        AsyncReferenceLink tail = root;
+        for (int i = 1; i < 256; i++)
+        {
+            tail.Next = new AsyncReferenceLink();
+            tail = tail.Next;
+        }
+
+        XmlObjectSerializer serializer = format is 2
+            ? new DataContractJsonSerializer(typeof(AsyncReferenceLink))
+            : new DataContractSerializer(typeof(AsyncReferenceLink));
+        using MemoryStream input = new MemoryStream();
+        if (reading)
+        {
+            if (format is 1)
+            {
+                using XmlDictionaryWriter binaryWriter = XmlDictionaryWriter.CreateBinaryWriter(input, null, null, ownsStream: false);
+                serializer.WriteObject(binaryWriter, root);
+            }
+            else
+            {
+                serializer.WriteObject(input, root);
+            }
+        }
+
+        using AsyncOnlySerializationStream output = new AsyncOnlySerializationStream { CompleteIoSynchronously = true };
+        await using XmlDictionaryWriter writer = format is 1
+            ? XmlDictionaryWriter.CreateBinaryWriter(output, null, null, ownsStream: false)
+            : null;
+        byte[] bytes = input.ToArray();
+        using XmlDictionaryReader reader = !reading ? null : format switch
+        {
+            0 => XmlDictionaryReader.CreateTextReader(bytes, XmlDictionaryReaderQuotas.Max),
+            1 => XmlDictionaryReader.CreateBinaryReader(bytes, XmlDictionaryReaderQuotas.Max),
+            2 => JsonReaderWriterFactory.CreateJsonReader(bytes, XmlDictionaryReaderQuotas.Max),
+            _ => throw new ArgumentOutOfRangeException(nameof(format))
+        };
+        RecordingSynchronizationContext context = new RecordingSynchronizationContext();
+        SynchronizationContext previous = SynchronizationContext.Current;
+        Task operation;
+        try
+        {
+            SynchronizationContext.SetSynchronizationContext(context);
+            operation = reading
+                ? serializer.ReadObjectAsync(reader)
+                : writer is null ? serializer.WriteObjectAsync(output, root) : serializer.WriteObjectAsync(writer, root);
+        }
+        finally
+        {
+            SynchronizationContext.SetSynchronizationContext(previous);
+        }
+
+        await operation;
+        Assert.Equal(0, context.PostCount);
+    }
+
+    private sealed class RecordingSynchronizationContext : SynchronizationContext
+    {
+        private int _postCount;
+
+        public int PostCount => Volatile.Read(ref _postCount);
+
+        public override void Post(SendOrPostCallback callback, object state)
+        {
+            Interlocked.Increment(ref _postCount);
+            ThreadPool.QueueUserWorkItem(_ => callback(state));
+        }
+    }
+
+    private static bool IsThreadlessBrowser => OperatingSystem.IsBrowser() && !PlatformDetection.IsMultithreadingSupported;
+
+    [ConditionalTheory(typeof(DataContractSerializerTests), nameof(IsThreadlessBrowser))]
+    [InlineData(0, false)]
+    [InlineData(1, false)]
+    [InlineData(2, false)]
+    [InlineData(0, true)]
+    [InlineData(1, true)]
+    [InlineData(2, true)]
+    public static async Task DCS_AsyncDeepBufferedGraph_Cancellation(int format, bool reading)
+    {
+        AsyncReferenceLink root = new AsyncReferenceLink();
+        AsyncReferenceLink tail = root;
+        for (int i = 1; i < 256; i++)
+        {
+            tail.Next = new AsyncReferenceLink();
+            tail = tail.Next;
+        }
+
+        XmlObjectSerializer serializer = format is 2
+            ? new DataContractJsonSerializer(typeof(AsyncReferenceLink))
+            : new DataContractSerializer(typeof(AsyncReferenceLink));
+        using CancellationTokenSource source = new CancellationTokenSource();
+        if (reading)
+        {
+            using MemoryStream output = new MemoryStream();
+            if (format is 1)
+            {
+                using XmlDictionaryWriter writer = XmlDictionaryWriter.CreateBinaryWriter(output, null, null, ownsStream: false);
+                serializer.WriteObject(writer, root);
+            }
+            else
+            {
+                serializer.WriteObject(output, root);
+            }
+            byte[] bytes = output.ToArray();
+            using XmlDictionaryReader reader = format switch
+            {
+                0 => XmlDictionaryReader.CreateTextReader(bytes, XmlDictionaryReaderQuotas.Max),
+                1 => XmlDictionaryReader.CreateBinaryReader(bytes, XmlDictionaryReaderQuotas.Max),
+                2 => JsonReaderWriterFactory.CreateJsonReader(bytes, XmlDictionaryReaderQuotas.Max),
+                _ => throw new ArgumentOutOfRangeException(nameof(format))
+            };
+            Task<object> operation = serializer.ReadObjectAsync(reader, source.Token);
+            source.Cancel();
+            OperationCanceledException exception = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await operation);
+            Assert.Equal(source.Token, exception.CancellationToken);
+        }
+        else
+        {
+            using AsyncOnlySerializationStream output = new AsyncOnlySerializationStream { CompleteIoSynchronously = true };
+            await using XmlDictionaryWriter writer = format is 1
+                ? XmlDictionaryWriter.CreateBinaryWriter(output, null, null, ownsStream: false)
+                : null;
+            Task operation = writer is null
+                ? serializer.WriteObjectAsync(output, root, source.Token)
+                : serializer.WriteObjectAsync(writer, root, source.Token);
+            source.Cancel();
+            OperationCanceledException exception = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await operation);
+            Assert.Equal(source.Token, exception.CancellationToken);
+        }
+    }
+
     [DataContract]
     private sealed class AsyncReferenceLink
     {
         [DataMember] public AsyncReferenceLink Next { get; set; }
+    }
+
+    [DataContract]
+    [KnownType(typeof(AsyncPolymorphicNode))]
+    private abstract class AsyncPolymorphicBase { }
+
+    [DataContract]
+    private sealed class AsyncPolymorphicNode : AsyncPolymorphicBase
+    {
+        [DataMember] public List<AsyncPolymorphicBase> Children { get; set; } = new List<AsyncPolymorphicBase>();
     }
 
     [Theory]
@@ -2293,11 +2560,11 @@ public static partial class DataContractSerializerTests
         using MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(xml));
         if (missingRequired)
         {
-            Assert.Throws<SerializationException>(() => serializer.ReadObject(stream));
+            Assert.Throws<SerializationException>(() => serializer.TestReadObject(stream));
         }
         else
         {
-            CompiledRequiredMembers value = (CompiledRequiredMembers)serializer.ReadObject(stream);
+            CompiledRequiredMembers value = (CompiledRequiredMembers)serializer.TestReadObject(stream);
             Assert.Equal(3, value.A);
             Assert.Equal(0, value.B);
             Assert.Equal(9, value.C);
@@ -2373,18 +2640,18 @@ public static partial class DataContractSerializerTests
         if (binary)
         {
             using XmlDictionaryWriter writer = XmlDictionaryWriter.CreateBinaryWriter(stream, null, null, ownsStream: false);
-            serializer.WriteObject(writer, input);
+            serializer.TestWriteObject(writer, input);
             writer.Flush();
         }
         else
         {
-            serializer.WriteObject(stream, input);
+            serializer.TestWriteObject(stream, input);
         }
         stream.Position = 0;
         using XmlDictionaryReader reader = binary
             ? XmlDictionaryReader.CreateBinaryReader(stream, XmlDictionaryReaderQuotas.Max)
             : XmlDictionaryReader.CreateTextReader(stream, XmlDictionaryReaderQuotas.Max);
-        return (T)serializer.ReadObject(reader);
+        return (T)serializer.TestReadObject(reader);
     }
 
     [DataContract]
@@ -2465,15 +2732,15 @@ public static partial class DataContractSerializerTests
         object input = CreateInput(null);
         DataContractSerializer serializer = new DataContractSerializer(input.GetType());
         using MemoryStream stream = new MemoryStream();
-        serializer.WriteObject(stream, input);
+        serializer.TestWriteObject(stream, input);
         stream.Position = 0;
         Assert.Equal(inherited ? 1 : 0, XDocument.Load(stream).Root.Elements().Count());
 
         stream.SetLength(0);
-        Assert.Throws<InvalidDataContractException>(() => serializer.WriteObject(stream, CreateInput(new SuppressedInvalidContract())));
+        Assert.Throws<InvalidDataContractException>(() => serializer.TestWriteObject(stream, CreateInput(new SuppressedInvalidContract())));
 
         stream.SetLength(0);
-        serializer.WriteObject(stream, input);
+        serializer.TestWriteObject(stream, input);
         stream.Position = 0;
         Assert.Equal(inherited ? 1 : 0, XDocument.Load(stream).Root.Elements().Count());
 
@@ -2518,19 +2785,19 @@ public static partial class DataContractSerializerTests
         if (binary)
         {
             using XmlDictionaryWriter writer = XmlDictionaryWriter.CreateBinaryWriter(stream, null, null, ownsStream: false);
-            serializer.WriteObject(writer, new EmptyGetOnlyArrayContainer());
+            serializer.TestWriteObject(writer, new EmptyGetOnlyArrayContainer());
             writer.Flush();
         }
         else
         {
-            serializer.WriteObject(stream, new EmptyGetOnlyArrayContainer());
+            serializer.TestWriteObject(stream, new EmptyGetOnlyArrayContainer());
         }
 
         stream.Position = 0;
         using XmlDictionaryReader reader = binary
             ? XmlDictionaryReader.CreateBinaryReader(stream, XmlDictionaryReaderQuotas.Max)
             : XmlDictionaryReader.CreateTextReader(stream, XmlDictionaryReaderQuotas.Max);
-        EmptyGetOnlyArrayContainer output = (EmptyGetOnlyArrayContainer)serializer.ReadObject(reader);
+        EmptyGetOnlyArrayContainer output = (EmptyGetOnlyArrayContainer)serializer.TestReadObject(reader);
         Assert.Empty(output.Items);
     }
 
@@ -2569,19 +2836,19 @@ public static partial class DataContractSerializerTests
             if (binary)
             {
                 using XmlDictionaryWriter writer = XmlDictionaryWriter.CreateBinaryWriter(stream, null, null, ownsStream: false);
-                serializer.WriteObject(writer, values);
+                serializer.TestWriteObject(writer, values);
                 writer.Flush();
             }
             else
             {
-                serializer.WriteObject(stream, values);
+                serializer.TestWriteObject(stream, values);
             }
 
             stream.Position = 0;
             using XmlDictionaryReader reader = binary
                 ? XmlDictionaryReader.CreateBinaryReader(stream, XmlDictionaryReaderQuotas.Max)
                 : XmlDictionaryReader.CreateTextReader(stream, XmlDictionaryReaderQuotas.Max);
-            Array output = (Array)serializer.ReadObject(reader);
+            Array output = (Array)serializer.TestReadObject(reader);
             Assert.Equal(values.Cast<object>(), output.Cast<object>());
         }
     }
@@ -2607,19 +2874,19 @@ public static partial class DataContractSerializerTests
             if (binary)
             {
                 using XmlDictionaryWriter writer = XmlDictionaryWriter.CreateBinaryWriter(stream, null, null, ownsStream: false);
-                serializer.WriteObject(writer, input);
+                serializer.TestWriteObject(writer, input);
                 writer.Flush();
             }
             else
             {
-                serializer.WriteObject(stream, input);
+                serializer.TestWriteObject(stream, input);
             }
             Assert.Equal(new[] { "base serializing", "derived serializing", "base serialized", "derived serialized" }, input.Events);
 
             stream.Position = 0;
             CompiledGraphDerived output = (CompiledGraphDerived)(binary
-                ? serializer.ReadObject(XmlDictionaryReader.CreateBinaryReader(stream, XmlDictionaryReaderQuotas.Max))
-                : serializer.ReadObject(stream));
+                ? serializer.TestReadObject(XmlDictionaryReader.CreateBinaryReader(stream, XmlDictionaryReaderQuotas.Max))
+                : serializer.TestReadObject(stream));
             Assert.Equal(input.BaseValue, output.BaseValue);
             Assert.Equal(input.Text, output.Text);
             Assert.Equal(input.Value.Number, output.Value.Number);
@@ -2852,18 +3119,18 @@ public static partial class DataContractSerializerTests
             if (binary)
             {
                 using XmlDictionaryWriter writer = XmlDictionaryWriter.CreateBinaryWriter(stream, null, null, ownsStream: false);
-                serializer.WriteObject(writer, input);
+                serializer.TestWriteObject(writer, input);
                 writer.Flush();
             }
             else
             {
-                serializer.WriteObject(stream, input);
+                serializer.TestWriteObject(stream, input);
             }
 
             stream.Position = 0;
             CompiledGraphCollections output = (CompiledGraphCollections)(binary
-                ? serializer.ReadObject(XmlDictionaryReader.CreateBinaryReader(stream, XmlDictionaryReaderQuotas.Max))
-                : serializer.ReadObject(stream));
+                ? serializer.TestReadObject(XmlDictionaryReader.CreateBinaryReader(stream, XmlDictionaryReaderQuotas.Max))
+                : serializer.TestReadObject(stream));
             Assert.Equal(input.Values, output.Values);
             Assert.Equal(input.Items.Select(value => value.Number), output.Items.Select(value => value.Number));
             Assert.Equal(input.Items.Select(value => value.Optional), output.Items.Select(value => value.Optional));
@@ -2978,7 +3245,7 @@ public static partial class DataContractSerializerTests
         MemoryStream ms = new();
         DataContractSerializer dcs = new(dateTime.GetType());
         using (XmlDictionaryWriter writer = XmlDictionaryWriter.CreateBinaryWriter(ms, null, null, ownsStream: true))
-            dcs.WriteObject(writer, dateTime);
+            dcs.TestWriteObject(writer, dateTime);
         var serializedBytes = ms.ToArray();
         Assert.Equal(72, serializedBytes.Length);
     }
@@ -3037,7 +3304,7 @@ public static partial class DataContractSerializerTests
         MemoryStream ms = new();
         DataContractSerializer dcs = new(dateOnly.GetType());
         using (XmlDictionaryWriter writer = XmlDictionaryWriter.CreateBinaryWriter(ms, null, null, ownsStream: false))
-            dcs.WriteObject(writer, dateOnly);
+            dcs.TestWriteObject(writer, dateOnly);
         var serializedBytes = ms.ToArray();
         // DateOnly is still serialized as a string. It would require new API in XmlNodeWriter to generate specialized byte format.
         Assert.Equal(75, serializedBytes.Length);
@@ -3045,7 +3312,7 @@ public static partial class DataContractSerializerTests
         // Verify round trip
         ms.Position = 0;
         using var reader = XmlDictionaryReader.CreateBinaryReader(ms, null, XmlDictionaryReaderQuotas.Max, null, null);
-        var roundTrip = (DateOnly)dcs.ReadObject(reader)!;
+        var roundTrip = (DateOnly)dcs.TestReadObject(reader)!;
         Assert.Equal(dateOnly, roundTrip);
     }
 
@@ -3069,7 +3336,7 @@ public static partial class DataContractSerializerTests
         MemoryStream ms = new();
         DataContractSerializer dcs = new(timeOnly.GetType());
         using (XmlDictionaryWriter writer = XmlDictionaryWriter.CreateBinaryWriter(ms, null, null, ownsStream: false))
-            dcs.WriteObject(writer, timeOnly);
+            dcs.TestWriteObject(writer, timeOnly);
         var serializedBytes = ms.ToArray();
         // TimeOnly is still serialized as a string. It would require new API in XmlNodeWriter to generate specialized byte format.
         Assert.Equal(77, serializedBytes.Length);
@@ -3077,7 +3344,7 @@ public static partial class DataContractSerializerTests
         // Verify round trip
         ms.Position = 0;
         using var reader = XmlDictionaryReader.CreateBinaryReader(ms, null, XmlDictionaryReaderQuotas.Max, null, null);
-        var roundTrip = (TimeOnly)dcs.ReadObject(reader)!;
+        var roundTrip = (TimeOnly)dcs.TestReadObject(reader)!;
         Assert.Equal(timeOnly, roundTrip);
     }
 
@@ -3775,7 +4042,7 @@ public static partial class DataContractSerializerTests
         string baseline = @"<TypeWithEnumerableMembers xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><F1 xmlns:a=""http://schemas.microsoft.com/2003/10/Serialization/Arrays""><a:anyType i:type=""b:char"" xmlns:b=""http://schemas.microsoft.com/2003/10/Serialization/"">97</a:anyType><a:anyType i:type=""b:int"" xmlns:b=""http://www.w3.org/2001/XMLSchema"">45</a:anyType></F1><F2 xmlns:a=""http://schemas.microsoft.com/2003/10/Serialization/Arrays""><a:anyType i:type=""b:string"" xmlns:b=""http://www.w3.org/2001/XMLSchema"">a</a:anyType><a:anyType i:type=""b:string"" xmlns:b=""http://www.w3.org/2001/XMLSchema"">b</a:anyType><a:anyType i:type=""b:string"" xmlns:b=""http://www.w3.org/2001/XMLSchema"">c</a:anyType></F2><P1 xmlns:a=""http://schemas.microsoft.com/2003/10/Serialization/Arrays""><a:anyType i:type=""b:string"" xmlns:b=""http://www.w3.org/2001/XMLSchema"">x</a:anyType><a:anyType i:type=""b:string"" xmlns:b=""http://www.w3.org/2001/XMLSchema"">y</a:anyType></P1><P2 xmlns:a=""http://schemas.microsoft.com/2003/10/Serialization/Arrays""/><RO1 xmlns:a=""http://schemas.microsoft.com/2003/10/Serialization/Arrays""/></TypeWithEnumerableMembers>";
         using (MemoryStream ms = new MemoryStream())
         {
-            dcs.WriteObject(ms, x);
+            dcs.TestWriteObject(ms, x);
             ms.Position = 0;
 
             string actualOutput = new StreamReader(ms).ReadToEnd();
@@ -4210,7 +4477,7 @@ public static partial class DataContractSerializerTests
         {
             var myresolver = new MyResolver();
             var xmlWriter = XmlDictionaryWriter.CreateTextWriter(ms);
-            dcs.WriteObject(xmlWriter, value, myresolver);
+            dcs.TestWriteObject(xmlWriter, value, myresolver);
 
             xmlWriter.Flush();
             ms.Position = 0;
@@ -4221,7 +4488,7 @@ public static partial class DataContractSerializerTests
             ms.Position = 0;
             myresolver = new MyResolver();
             var xmlReader = XmlDictionaryReader.CreateTextReader(ms, XmlDictionaryReaderQuotas.Max);
-            MyType deserialized = (MyType)dcs.ReadObject(xmlReader, false, myresolver);
+            MyType deserialized = (MyType)dcs.TestReadObject(xmlReader, false, myresolver);
 
             Assert.NotNull(deserialized);
             Assert.True(deserialized.Value is MyOtherType, "deserialized.Value was not of MyOtherType.");
@@ -4388,7 +4655,7 @@ public static partial class DataContractSerializerTests
         var serializer = new DataContractSerializer(typeof(NullableRootDataContractStruct?));
 
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(xml));
-        var deserialized = (NullableRootDataContractStruct?)serializer.ReadObject(stream);
+        var deserialized = (NullableRootDataContractStruct?)serializer.TestReadObject(stream);
 
         Assert.True(deserialized.HasValue);
     }
@@ -4425,14 +4692,14 @@ public static partial class DataContractSerializerTests
         string serialized;
         using (var ms = new MemoryStream())
         {
-            serializer.WriteObject(ms, container);
+            serializer.TestWriteObject(ms, container);
             serialized = Encoding.UTF8.GetString(ms.ToArray());
         }
 
         DateTimeOffsetIXmlSerializableContainer deserialized;
         using (var ms = new MemoryStream(Encoding.UTF8.GetBytes(serialized)))
         {
-            deserialized = (DateTimeOffsetIXmlSerializableContainer)serializer.ReadObject(ms);
+            deserialized = (DateTimeOffsetIXmlSerializableContainer)serializer.TestReadObject(ms);
         }
 
         Assert.Equal(originalDate, deserialized.Date);
@@ -4991,9 +5258,9 @@ public static partial class DataContractSerializerTests
         List<Invalid_Class_No_Parameterless_Ctor> list = new List<Invalid_Class_No_Parameterless_Ctor>();
         MemoryStream ms = new MemoryStream();
         DataContractSerializer dcs = new DataContractSerializer(list.GetType());
-        dcs.WriteObject(ms, list);
+        dcs.TestWriteObject(ms, list);
         ms.Seek(0L, SeekOrigin.Begin);
-        List<Invalid_Class_No_Parameterless_Ctor> list2 = (List<Invalid_Class_No_Parameterless_Ctor>)dcs.ReadObject(ms);
+        List<Invalid_Class_No_Parameterless_Ctor> list2 = (List<Invalid_Class_No_Parameterless_Ctor>)dcs.TestReadObject(ms);
         Assert.True(list2.Count == 0, string.Format("Unexpected length {0}", list.Count));
     }
 
@@ -5010,7 +5277,7 @@ public static partial class DataContractSerializerTests
         MemoryStream ms = new MemoryStream();
         Assert.Throws<InvalidDataContractException>(() =>
         {
-            dcs.WriteObject(ms, c);
+            dcs.TestWriteObject(ms, c);
         });
     }
 
@@ -5073,7 +5340,7 @@ public static partial class DataContractSerializerTests
 
         DataContractJsonSerializer dcjs = new DataContractJsonSerializer(typeof(DateTimeOffset));
         MemoryStream stream = new MemoryStream();
-        dcjs.WriteObject(stream, value);
+        dcjs.TestWriteObject(stream, value);
     }
 
     [Fact]
@@ -5096,7 +5363,7 @@ public static partial class DataContractSerializerTests
         sw.Flush();
         ms.Seek(0, SeekOrigin.Begin);
 
-        TypeWithPropertyWithoutDefaultCtor deserializedValue = (TypeWithPropertyWithoutDefaultCtor)dcs.ReadObject(ms);
+        TypeWithPropertyWithoutDefaultCtor deserializedValue = (TypeWithPropertyWithoutDefaultCtor)dcs.TestReadObject(ms);
         Assert.Equal("Foo", deserializedValue.Name);
         Assert.Null(deserializedValue.MemberWithInvalidDataContract);
     }
@@ -5309,7 +5576,7 @@ public static partial class DataContractSerializerTests
         bool exceptionThrown = false;
         try
         {
-            serializer.ReadObject(new MemoryStream());
+            serializer.TestReadObject(new MemoryStream());
         }
         catch (Exception e)
         {
@@ -5343,13 +5610,13 @@ public static partial class DataContractSerializerTests
             var serializer = new DataContractSerializer(typeof(TypeWithTypeWithIntAndStringPropertyProperty), new DataContractSerializerSettings());
             if (shouldSucceed)
             {
-                var deserializedObject = (TypeWithTypeWithIntAndStringPropertyProperty)serializer.ReadObject(reader);
+                var deserializedObject = (TypeWithTypeWithIntAndStringPropertyProperty)serializer.TestReadObject(reader);
                 Assert.Equal(10, deserializedObject.ObjectProperty.SampleInt);
                 Assert.Equal("Sample string", deserializedObject.ObjectProperty.SampleString);
             }
             else
             {
-                Assert.Throws<SerializationException>(() => { serializer.ReadObject(reader); });
+                Assert.Throws<SerializationException>(() => { serializer.TestReadObject(reader); });
             }
         }
     }
@@ -5390,7 +5657,7 @@ public static partial class DataContractSerializerTests
     {
         Assert.Throws<InvalidDataContractException>(() =>
         {
-            (new DataContractSerializer(typeof (RecursiveCollection))).WriteObject(new MemoryStream(), new RecursiveCollection());
+            (new DataContractSerializer(typeof (RecursiveCollection))).TestWriteObject(new MemoryStream(), new RecursiveCollection());
         });
     }
 
@@ -6456,22 +6723,22 @@ public static partial class DataContractSerializerTests
 
         // A version that knows Prop2 reads the CDATA content as the member value.
         var directReader = XmlDictionaryReader.CreateTextReader(Encoding.UTF8.GetBytes(sourceXml), XmlDictionaryReaderQuotas.Max);
-        var direct = (CdataVersionedV2)new DataContractSerializer(typeof(CdataVersionedV2)).ReadObject(directReader);
+        var direct = (CdataVersionedV2)new DataContractSerializer(typeof(CdataVersionedV2)).TestReadObject(directReader);
         Assert.Equal("<InnerTag2></InnerTag2>", direct.Prop2);
 
         // A down-level version stores the unknown Prop2 (with CDATA) in ExtensionData. This used to
         // throw a SerializationException because CDATA content was not handled while reading extension data.
         var serV1 = new DataContractSerializer(typeof(CdataVersionedV1));
         var v1Reader = XmlDictionaryReader.CreateTextReader(Encoding.UTF8.GetBytes(sourceXml), XmlDictionaryReaderQuotas.Max);
-        var v1 = (CdataVersionedV1)serV1.ReadObject(v1Reader);
+        var v1 = (CdataVersionedV1)serV1.TestReadObject(v1Reader);
         Assert.Equal("hello", v1.Prop1);
         Assert.NotNull(v1.ExtensionData);
 
         // Round-trip the down-level object and read it back as the new version; Prop2 is preserved.
         var ms = new MemoryStream();
-        serV1.WriteObject(ms, v1);
+        serV1.TestWriteObject(ms, v1);
         ms.Position = 0;
-        var v2 = (CdataVersionedV2)new DataContractSerializer(typeof(CdataVersionedV2)).ReadObject(ms);
+        var v2 = (CdataVersionedV2)new DataContractSerializer(typeof(CdataVersionedV2)).TestReadObject(ms);
         Assert.Equal("hello", v2.Prop1);
         Assert.Equal("<InnerTag2></InnerTag2>", v2.Prop2);
     }
@@ -6486,7 +6753,7 @@ public static partial class DataContractSerializerTests
         // Serialize the PersonV2 object
         var ser = new DataContractSerializer(typeof(PersonV2));
         var ms1 = new MemoryStream();
-        ser.WriteObject(ms1, p2);
+        ser.TestWriteObject(ms1, p2);
 
         // Verify the payload
         ms1.Position = 0;
@@ -6500,7 +6767,7 @@ public static partial class DataContractSerializerTests
         ms1.Position = 0;
         var ser2 = new DataContractSerializer(typeof(Person));
         XmlDictionaryReader reader = XmlDictionaryReader.CreateTextReader(ms1, new XmlDictionaryReaderQuotas());
-        var p1 = (Person)ser2.ReadObject(reader, false);
+        var p1 = (Person)ser2.TestReadObject(reader, false);
 
         Assert.True(p1 != null, $"Variable {nameof(p1)} was null.");
         Assert.True(p1.ExtensionData != null, $"{nameof(p1.ExtensionData)} was null.");
@@ -6508,7 +6775,7 @@ public static partial class DataContractSerializerTests
 
         // Serialize the Person instance
         var ms2 = new MemoryStream();
-        ser2.WriteObject(ms2, p1);
+        ser2.TestWriteObject(ms2, p1);
 
         // Verify the payload
         ms2.Position = 0;
@@ -6743,10 +7010,10 @@ public static partial class DataContractSerializerTests
         string baseline = @"<CustomClass z:Id=""1"" i:type=""a:SerializationTestTypes.DCRVariations"" xmlns=""http://schemas.datacontract.org/2004/07/SerializationTestTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:z=""http://schemas.microsoft.com/2003/10/Serialization/"" xmlns:a=""http://schemas.datacontract.org/2004/07/""><unknownType1 z:Id=""2"" i:type=""a:SerializationTestTypes.Person""><Age>0</Age><Name i:nil=""true""/></unknownType1><unknownType2 z:Id=""3"" i:type=""a:SerializationTestTypes.SimpleDC""><Data i:nil=""true""/></unknownType2></CustomClass>";
 
         MemoryStream ms = new MemoryStream();
-        dcs1.WriteObject(ms, dcrVariationsGoing);
+        dcs1.TestWriteObject(ms, dcrVariationsGoing);
         CompareBaseline(baseline, ms);
         ms.Position = 0;
-        var dcrVariationsReturning = dcs2.ReadObject(ms);
+        var dcrVariationsReturning = dcs2.TestReadObject(ms);
         SerializationTestTypes.ComparisonHelper.CompareRecursively(dcrVariationsGoing, dcrVariationsReturning);
     }
 
@@ -6767,12 +7034,12 @@ public static partial class DataContractSerializerTests
 
         MemoryStream ms = new MemoryStream();
         var xmlWriter = XmlDictionaryWriter.CreateTextWriter(ms);
-        dcs.WriteObject(xmlWriter, dcrVariationsGoing, dcr1);
+        dcs.TestWriteObject(xmlWriter, dcrVariationsGoing, dcr1);
         xmlWriter.Flush();
         CompareBaseline(baseline, ms);
         ms.Position = 0;
         var xmlReader = XmlDictionaryReader.CreateTextReader(ms, XmlDictionaryReaderQuotas.Max);
-        var dcrVariationsReturning = dcs.ReadObject(xmlReader, false, dcr2);
+        var dcrVariationsReturning = dcs.TestReadObject(xmlReader, false, dcr2);
         SerializationTestTypes.ComparisonHelper.CompareRecursively(dcrVariationsGoing, dcrVariationsReturning);
     }
 
@@ -6794,12 +7061,12 @@ public static partial class DataContractSerializerTests
 
         MemoryStream ms = new MemoryStream();
         var xmlWriter = XmlDictionaryWriter.CreateTextWriter(ms);
-        dcs.WriteObject(xmlWriter, dcrVariationsGoing, dcr1);
+        dcs.TestWriteObject(xmlWriter, dcrVariationsGoing, dcr1);
         xmlWriter.Flush();
         CompareBaseline(baseline, ms);
         ms.Position = 0;
         var xmlReader = XmlDictionaryReader.CreateTextReader(ms, XmlDictionaryReaderQuotas.Max);
-        var dcrVariationsReturning = dcs.ReadObject(xmlReader, false);
+        var dcrVariationsReturning = dcs.TestReadObject(xmlReader, false);
         SerializationTestTypes.ComparisonHelper.CompareRecursively(dcrVariationsGoing, dcrVariationsReturning);
     }
 
@@ -6821,12 +7088,12 @@ public static partial class DataContractSerializerTests
 
         MemoryStream ms = new MemoryStream();
         var xmlWriter = XmlDictionaryWriter.CreateTextWriter(ms);
-        dcs.WriteObject(xmlWriter, dcrVariationsGoing);
+        dcs.TestWriteObject(xmlWriter, dcrVariationsGoing);
         xmlWriter.Flush();
         CompareBaseline(baseline, ms);
         ms.Position = 0;
         var xmlReader = XmlDictionaryReader.CreateTextReader(ms, XmlDictionaryReaderQuotas.Max);
-        var dcrVariationsReturning = dcs.ReadObject(xmlReader, false, dcr2);
+        var dcrVariationsReturning = dcs.TestReadObject(xmlReader, false, dcr2);
         SerializationTestTypes.ComparisonHelper.CompareRecursively(dcrVariationsGoing, dcrVariationsReturning);
     }
 
@@ -7844,9 +8111,9 @@ public static partial class DataContractSerializerTests
                 new NonSerializablePerson("Bob", 5),
             }
         };
-        dcs.WriteObject(ms, myFamily);
+        dcs.TestWriteObject(ms, myFamily);
         ms.Position = 0;
-        var newFamily = (Family)dcs.ReadObject(ms);
+        var newFamily = (Family)dcs.TestReadObject(ms);
         Assert.Equal(myFamily.Members.Length, newFamily.Members.Length);
         for (int i = 0; i < myFamily.Members.Length; ++i)
         {
@@ -7876,7 +8143,7 @@ public static partial class DataContractSerializerTests
                 stream1.WriteLine(TestFileData);
                 using (var memoryStream = new MemoryStream())
                 {
-                    dcs.WriteObject(memoryStream, stream1);
+                    dcs.TestWriteObject(memoryStream, stream1);
                     serializedStream = memoryStream.ToArray();
                 }
             }
@@ -7884,7 +8151,7 @@ public static partial class DataContractSerializerTests
             // Deserialize the stream
             using (var stream = new MemoryStream(serializedStream))
             {
-                using (var stream2 = (MyFileStream)dcs.ReadObject(stream))
+                using (var stream2 = (MyFileStream)dcs.TestReadObject(stream))
                 {
                     string fileData = stream2.ReadLine();
                     Assert.Equal(TestFileData, fileData);
@@ -8035,8 +8302,9 @@ public static partial class DataContractSerializerTests
 
         static void DeserializeObjectAndValidate(string input, byte[] expectedData, int expectedPosition, bool expectedExposable, bool expectedWritable)
         {
+            using XmlReader reader = CreateMemoryStreamTestReader(input);
             MemoryStream deserialized = (MemoryStream)new DataContractSerializer(typeof(MemoryStream))
-                .ReadObject(new XmlTextReader(new StringReader(input)));
+                .TestReadObject(reader);
 
             Assert.NotNull(deserialized);
             Assert.Equal(expectedData, deserialized.ToArray());
@@ -8075,8 +8343,18 @@ public static partial class DataContractSerializerTests
         static void DeserializeObjectAndThrow(string input)
         {
             // Might be ArgumentException, InvalidOperationException, etc. Honestly it doesn't matter.
-            Assert.ThrowsAny<Exception>(() => (MemoryStream)new DataContractSerializer(typeof(MemoryStream)).ReadObject(new XmlTextReader(new StringReader(input))));
+            using XmlReader reader = CreateMemoryStreamTestReader(input);
+            Assert.ThrowsAny<Exception>(() => (MemoryStream)new DataContractSerializer(typeof(MemoryStream)).TestReadObject(reader));
         }
+    }
+
+    private static XmlReader CreateMemoryStreamTestReader(string input)
+    {
+#if AsyncApi
+        return XmlReader.Create(new StringReader(input), new XmlReaderSettings { Async = true });
+#else
+        return new XmlTextReader(new StringReader(input));
+#endif
     }
 
     [Fact]
@@ -8090,7 +8368,7 @@ public static partial class DataContractSerializerTests
             MemoryStream ms = new MemoryStream();
             Assert.Throws<InvalidDataContractException>(() =>
             {
-                dcs.WriteObject(ms, o);
+                dcs.TestWriteObject(ms, o);
             });
         }
     }
@@ -8103,20 +8381,20 @@ public static partial class DataContractSerializerTests
         {
             DataContractSerializer dcs = new DataContractSerializer(td.Type);
             MemoryStream ms = new MemoryStream();
-            new DataContractSerializer(typeof(string)).WriteObject(ms, "test");
+            new DataContractSerializer(typeof(string)).TestWriteObject(ms, "test");
             ms.Seek(0L, SeekOrigin.Begin);
             if (td.Type.Equals(typeof(Invalid_Class_KnownType_Invalid_Type)))
             {
                 Assert.Throws<SerializationException>(() =>
                 {
-                    dcs.ReadObject(ms);
+                    dcs.TestReadObject(ms);
                 });
             }
             else
             {
                 Assert.Throws<InvalidDataContractException>(() =>
                 {
-                    dcs.ReadObject(ms);
+                    dcs.TestReadObject(ms);
                 });
             }
         }
@@ -8254,7 +8532,7 @@ public static partial class DataContractSerializerTests
     public static void DCS_DifferentCollectionsOfSameTypeAsKnownTypes()
     {
         Assert.Throws<InvalidOperationException>(() => {
-            (new DataContractSerializer(typeof(TypeWithKnownTypesOfCollectionsWithConflictingXmlName))).WriteObject(new MemoryStream(), new TypeWithKnownTypesOfCollectionsWithConflictingXmlName());
+            (new DataContractSerializer(typeof(TypeWithKnownTypesOfCollectionsWithConflictingXmlName))).TestWriteObject(new MemoryStream(), new TypeWithKnownTypesOfCollectionsWithConflictingXmlName());
         });
     }
 
@@ -8265,11 +8543,11 @@ public static partial class DataContractSerializerTests
         int maxStringContentLength = 1024;
         var type = new TypeA { Name = "BOOM!".PadLeft(maxStringContentLength + 1, ' ') };
         MemoryStream ms = new MemoryStream();
-        dcs.WriteObject(ms, type);
+        dcs.TestWriteObject(ms, type);
         ms.Position = 0;
         XmlDictionaryReader reader = XmlDictionaryReader.CreateTextReader(ms, new System.Xml.XmlDictionaryReaderQuotas() { MaxStringContentLength = maxStringContentLength });
 
-        Assert.Throws<System.Runtime.Serialization.SerializationException>(() => { dcs.ReadObject(reader); });
+        Assert.Throws<System.Runtime.Serialization.SerializationException>(() => { dcs.TestReadObject(reader); });
     }
 
     [Theory]
@@ -8279,7 +8557,7 @@ public static partial class DataContractSerializerTests
     {
         var serializer = new DataContractSerializer(typeof(MalformedPrefixObject));
 
-        SerializationException ex = Assert.Throws<SerializationException>(() => serializer.ReadObject(CreateMalformedPrefixStream(malformedElement)));
+        SerializationException ex = Assert.Throws<SerializationException>(() => serializer.TestReadObject(CreateMalformedPrefixStream(malformedElement)));
         Assert.IsType<XmlException>(ex.InnerException);
     }
 
@@ -8310,7 +8588,7 @@ public static partial class DataContractSerializerTests
         using (MemoryStream ms = new MemoryStream(bytesToDeserialize))
         {
             ms.Position = 0;
-            T deserialized = (T)dcs.ReadObject(ms);
+            T deserialized = (T)dcs.TestReadObject(ms);
 
             return deserialized;
         }

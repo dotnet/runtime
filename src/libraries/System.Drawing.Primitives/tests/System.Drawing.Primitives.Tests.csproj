@@ -20,6 +20,7 @@
              Link="Common\System\Diagnostics\DebuggerAttributes.cs" />
     <Compile Include="$(CommonTestPath)System\Runtime\Serialization\DataContractSerializerHelper.cs"
              Link="Common\System\Runtime\Serialization\DataContractSerializerHelper.cs" />
+    <Compile Include="$(CommonTestPath)System\Runtime\Serialization\SerializerTestApi.cs" Link="Common\System\Runtime\Serialization\SerializerTestApi.cs" />
     <Compile Include="$(CommonTestPath)System\Runtime\Serialization\Utils.cs"
              Link="Common\System\Runtime\Serialization\Utils.cs" />
   </ItemGroup>

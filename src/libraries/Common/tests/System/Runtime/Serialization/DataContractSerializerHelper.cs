@@ -26,7 +26,7 @@ namespace System.Runtime.Serialization.Tests
             T deserialized;
             using (MemoryStream ms = new MemoryStream())
             {
-                dcs.WriteObject(ms, value);
+                dcs.TestWriteObject(ms, value);
                 ms.Position = 0;
 
                 string actualOutput = new StreamReader(ms).ReadToEnd();
@@ -39,7 +39,7 @@ namespace System.Runtime.Serialization.Tests
                 }
 
                 ms.Position = 0;
-                deserialized = (T)dcs.ReadObject(ms);
+                deserialized = (T)dcs.TestReadObject(ms);
             }
 
             if (verifyBinaryRoundTrip)
@@ -65,11 +65,11 @@ namespace System.Runtime.Serialization.Tests
             using (MemoryStream ms = new MemoryStream())
             using (XmlDictionaryWriter binWriter = XmlDictionaryWriter.CreateBinaryWriter(ms))
             {
-                dcs.WriteObject(binWriter, value);
+                dcs.TestWriteObject(binWriter, value);
                 binWriter.Flush();
                 ms.Position = 0;
                 XmlDictionaryReader binReader = XmlDictionaryReader.CreateBinaryReader(ms, XmlDictionaryReaderQuotas.Max);
-                return (T)dcs.ReadObject(binReader);
+                return (T)dcs.TestReadObject(binReader);
             }
         }
     }

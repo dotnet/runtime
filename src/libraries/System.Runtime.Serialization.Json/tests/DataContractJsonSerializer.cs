@@ -24,6 +24,9 @@ using System.Xml.Serialization;
 using Xunit;
 using System.Runtime.Serialization.Tests;
 
+#if AsyncApi
+[ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+#endif
 public static partial class DataContractJsonSerializerTests
 {
     public static IEnumerable<object[]> AsyncPrimitiveValues()
@@ -764,11 +767,11 @@ public static partial class DataContractJsonSerializerTests
         using MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(json));
         if (invalid)
         {
-            Assert.Throws<SerializationException>(() => serializer.ReadObject(stream));
+            Assert.Throws<SerializationException>(() => serializer.TestReadObject(stream));
         }
         else
         {
-            CompiledRequiredJsonMembers value = (CompiledRequiredJsonMembers)serializer.ReadObject(stream);
+            CompiledRequiredJsonMembers value = (CompiledRequiredJsonMembers)serializer.TestReadObject(stream);
             Assert.Equal(3, value.A);
             Assert.Equal(0, value.B);
             Assert.Equal(9, value.C);
@@ -808,9 +811,9 @@ public static partial class DataContractJsonSerializerTests
         }
         DataContractJsonSerializer serializer = new DataContractJsonSerializer(typeof(Dictionary<AmbiguousParseKey, int>));
         using MemoryStream stream = new MemoryStream();
-        serializer.WriteObject(stream, input);
+        serializer.TestWriteObject(stream, input);
         stream.Position = 0;
-        Dictionary<AmbiguousParseKey, int> output = (Dictionary<AmbiguousParseKey, int>)serializer.ReadObject(stream);
+        Dictionary<AmbiguousParseKey, int> output = (Dictionary<AmbiguousParseKey, int>)serializer.TestReadObject(stream);
         Assert.Equal(input.Count, output.Count);
         if (populated)
         {
@@ -845,14 +848,14 @@ public static partial class DataContractJsonSerializerTests
                 Text = $"value {i}"
             };
             using MemoryStream stream = new MemoryStream();
-            serializer.WriteObject(stream, input);
+            serializer.TestWriteObject(stream, input);
             string json = Encoding.UTF8.GetString(stream.ToArray());
             Assert.Contains("\"base\":", json);
             Assert.Contains("\"child:name\":", json);
             Assert.Contains("\"raw\\\"name\":", json);
 
             stream.Position = 0;
-            CompiledJsonDerived output = (CompiledJsonDerived)serializer.ReadObject(stream);
+            CompiledJsonDerived output = (CompiledJsonDerived)serializer.TestReadObject(stream);
             Assert.Equal(input.BaseValue, output.BaseValue);
             Assert.Equal(input.Value.Number, output.Value.Number);
             Assert.Equal(input.Value.Optional, output.Value.Optional);
@@ -901,11 +904,11 @@ public static partial class DataContractJsonSerializerTests
             foreach (DataContractJsonSerializer serializer in new[] { first, second, first })
             {
                 using MemoryStream stream = new MemoryStream();
-                serializer.WriteObject(stream, input);
+                serializer.TestWriteObject(stream, input);
                 string json = Encoding.UTF8.GetString(stream.ToArray());
                 Assert.StartsWith(serializer.UseSimpleDictionaryFormat ? "{" : "[", json);
                 stream.Position = 0;
-                IDictionary<string, int?> output = (IDictionary<string, int?>)serializer.ReadObject(stream);
+                IDictionary<string, int?> output = (IDictionary<string, int?>)serializer.TestReadObject(stream);
                 Assert.Equal(input.OrderBy(pair => pair.Key), output.OrderBy(pair => pair.Key));
             }
         }
@@ -1207,7 +1210,7 @@ public static partial class DataContractJsonSerializerTests
                         sw.Write(pair.text);
                         sw.Flush();
                         ms.Position = 0;
-                        string actual = (string)serializer.ReadObject(ms);
+                        string actual = (string)serializer.TestReadObject(ms);
                         Assert.Equal(pair.value, actual);
                     }
                 }
@@ -1974,7 +1977,7 @@ public static partial class DataContractJsonSerializerTests
                 writer.Flush();
                 ms.Position = 0;
 
-                obj = (TypeWithSimpleDictionaryMember)serializer.ReadObject(ms);
+                obj = (TypeWithSimpleDictionaryMember)serializer.TestReadObject(ms);
             }
         }
 
@@ -2292,7 +2295,7 @@ public static partial class DataContractJsonSerializerTests
 
                 Assert.Throws<SerializationException>(() =>
                 {
-                    serializer.ReadObject(ms);
+                    serializer.TestReadObject(ms);
                 });
             }
         }
@@ -2328,12 +2331,12 @@ public static partial class DataContractJsonSerializerTests
         // Serialization-deserialization
         using (MemoryStream stream = new MemoryStream())
         {
-            dcjs.WriteObject(stream, obj);
+            dcjs.TestWriteObject(stream, obj);
             stream.Position = 0;
             var serializedStr = new StreamReader(stream).ReadToEnd();
 
             stream.Position = 0;
-            var obj2 = (TypeWithDateTimeStringProperty)dcjs.ReadObject(stream);
+            var obj2 = (TypeWithDateTimeStringProperty)dcjs.TestReadObject(stream);
             Assert.Equal(obj.DateTimeString, obj2.DateTimeString);
             Assert.Equal(obj.CurrentDateTime, obj2.CurrentDateTime);
         }
@@ -2346,7 +2349,7 @@ public static partial class DataContractJsonSerializerTests
             sw.WriteLine(@"{""DateTimeString"":""\/Date(1411072352108-0700)\/""}");
             sw.Flush();
             ms.Seek(0, SeekOrigin.Begin);
-            var result = (TypeWithDateTimeStringProperty)dcjs.ReadObject(ms);
+            var result = (TypeWithDateTimeStringProperty)dcjs.TestReadObject(ms);
             Assert.Equal(@"/Date(1411072352108-0700)/", result.DateTimeString);
         }
     }
@@ -2561,7 +2564,7 @@ public static partial class DataContractJsonSerializerTests
         stream.Seek(0, SeekOrigin.Begin);
 
         DataContractJsonSerializer dcjs = new DataContractJsonSerializer(typeof(object));
-        var deserializedValue = (object[])dcjs.ReadObject(stream);
+        var deserializedValue = (object[])dcjs.TestReadObject(stream);
         Assert.Equal(3, deserializedValue.Length);
         Assert.Equal("Foo", deserializedValue[0]);
         Assert.Equal(123, deserializedValue[1]);
@@ -2615,7 +2618,7 @@ public static partial class DataContractJsonSerializerTests
         var serializer = new DataContractJsonSerializer(typeof(object));
         Assert.Throws<SerializationException>(() =>
         {
-            serializer.ReadObject(new MemoryStream());
+            serializer.TestReadObject(new MemoryStream());
         });
     }
 
@@ -2663,7 +2666,7 @@ public static partial class DataContractJsonSerializerTests
         sw.Flush();
         ms.Seek(0, SeekOrigin.Begin);
 
-        TypeWithPropertyWithoutDefaultCtor deserializedValue = (TypeWithPropertyWithoutDefaultCtor)dcjs.ReadObject(ms);
+        TypeWithPropertyWithoutDefaultCtor deserializedValue = (TypeWithPropertyWithoutDefaultCtor)dcjs.TestReadObject(ms);
         Assert.Equal("Foo", deserializedValue.Name);
         Assert.Null(deserializedValue.MemberWithInvalidDataContract);
     }
@@ -2854,7 +2857,7 @@ public static partial class DataContractJsonSerializerTests
     {
         Assert.Throws<InvalidDataContractException>(() =>
         {
-            (new DataContractJsonSerializer(typeof(RecursiveCollection))).WriteObject(new MemoryStream(), new RecursiveCollection());
+            (new DataContractJsonSerializer(typeof(RecursiveCollection))).TestWriteObject(new MemoryStream(), new RecursiveCollection());
         });
     }
 
@@ -3224,7 +3227,7 @@ public static partial class DataContractJsonSerializerTests
             XmlDictionaryWriter writer = JsonReaderWriterFactory.CreateJsonWriter(mo, Encoding.UTF8);
             var serializer = new DataContractJsonSerializer(typeof(Person1));
             var sr = new StreamReader(mo);
-            serializer.WriteObject(writer, p);
+            serializer.TestWriteObject(writer, p);
             writer.Flush();
             mo.Position = 0;
             var output = sr.ReadToEnd();
@@ -3252,7 +3255,7 @@ public static partial class DataContractJsonSerializerTests
         // Auto-detected encoding (no encoding specified). This is the scenario from the bug report.
         using (var stream = new MemoryStream(bytes))
         {
-            var result = (Person1)serializer.ReadObject(stream);
+            var result = (Person1)serializer.TestReadObject(stream);
             Assert.Equal(value.Name, result.Name);
             Assert.Equal(value.Age, result.Age);
         }
@@ -3261,7 +3264,7 @@ public static partial class DataContractJsonSerializerTests
         using (var stream = new MemoryStream(bytes))
         {
             XmlDictionaryReader reader = JsonReaderWriterFactory.CreateJsonReader(stream, encoding, XmlDictionaryReaderQuotas.Max, null);
-            var result = (Person1)serializer.ReadObject(reader);
+            var result = (Person1)serializer.TestReadObject(reader);
             Assert.Equal(value.Name, result.Name);
             Assert.Equal(value.Age, result.Age);
         }
@@ -3276,7 +3279,7 @@ public static partial class DataContractJsonSerializerTests
         byte[] bytes = GetJsonBytesWithByteOrderMark(serializer, value, encoding);
 
         XmlDictionaryReader reader = JsonReaderWriterFactory.CreateJsonReader(bytes, 0, bytes.Length, XmlDictionaryReaderQuotas.Max);
-        var result = (Person1)serializer.ReadObject(reader);
+        var result = (Person1)serializer.TestReadObject(reader);
         Assert.Equal(value.Name, result.Name);
         Assert.Equal(value.Age, result.Age);
     }
@@ -3286,7 +3289,7 @@ public static partial class DataContractJsonSerializerTests
         string json;
         using (var utf8Stream = new MemoryStream())
         {
-            serializer.WriteObject(utf8Stream, value);
+            serializer.TestWriteObject(utf8Stream, value);
             json = Encoding.UTF8.GetString(utf8Stream.ToArray());
         }
 
@@ -3346,7 +3349,7 @@ public static partial class DataContractJsonSerializerTests
         // Serialize the PersonV2 object
         var ser = new DataContractJsonSerializer(typeof(PersonV2));
         var ms1 = new MemoryStream();
-        ser.WriteObject(ms1, p2);
+        ser.TestWriteObject(ms1, p2);
 
         // Verify the payload
         ms1.Position = 0;
@@ -3367,7 +3370,7 @@ public static partial class DataContractJsonSerializerTests
         // Deserialize the payload into a Person instance.
         ms1.Position = 0;
         var ser2 = new DataContractJsonSerializer(typeof(Person));
-        var p1 = (Person)ser2.ReadObject(ms1);
+        var p1 = (Person)ser2.TestReadObject(ms1);
 
         Assert.True(p1 != null, $"Variable {nameof(p1)} was null.");
         Assert.True(p1.ExtensionData != null, $"{nameof(p1.ExtensionData)} was null.");
@@ -3375,7 +3378,7 @@ public static partial class DataContractJsonSerializerTests
 
         // Serialize the Person instance
         var ms2 = new MemoryStream();
-        ser2.WriteObject(ms2, p1);
+        ser2.TestWriteObject(ms2, p1);
 
         // Verify the payload
         ms2.Position = 0;
@@ -3405,20 +3408,20 @@ public static partial class DataContractJsonSerializerTests
         string extendedContractJson;
         using (var memoryStream = new MemoryStream())
         {
-            new DataContractJsonSerializer(typeof(ContractExtended)).WriteObject(memoryStream, extendedData);
+            new DataContractJsonSerializer(typeof(ContractExtended)).TestWriteObject(memoryStream, extendedData);
             extendedContractJson = Encoding.UTF8.GetString(memoryStream.ToArray());
         }
 
         ContractGeneric reducedData;
         using (var memoryStream = new MemoryStream(Encoding.UTF8.GetBytes(extendedContractJson)))
         {
-            reducedData = (ContractGeneric)new DataContractJsonSerializer(typeof(ContractGeneric)).ReadObject(memoryStream);
+            reducedData = (ContractGeneric)new DataContractJsonSerializer(typeof(ContractGeneric)).TestReadObject(memoryStream);
         }
 
         string reducedContractJson;
         using (var memoryStream = new MemoryStream())
         {
-            new DataContractJsonSerializer(typeof(ContractGeneric)).WriteObject(memoryStream, reducedData);
+            new DataContractJsonSerializer(typeof(ContractGeneric)).TestWriteObject(memoryStream, reducedData);
             reducedContractJson = Encoding.UTF8.GetString(memoryStream.ToArray());
         }
 
@@ -3432,7 +3435,7 @@ public static partial class DataContractJsonSerializerTests
             XmlDictionaryWriter w = JsonReaderWriterFactory.CreateJsonWriter(ms);
             w.WriteStartElement("root");
             w.WriteAttributeString("type", "object");
-            serializer.WriteObject(w, value);
+            serializer.TestWriteObject(w, value);
             w.WriteEndElement();
             w.Flush();
             return Encoding.Default.GetString(ms.ToArray());
@@ -3576,7 +3579,7 @@ public static partial class DataContractJsonSerializerTests
         };
         var serializer = new DataContractJsonSerializer(typeof(DateTime), dcjsSettings);
         var ms = new MemoryStream();
-        serializer.WriteObject(ms, original);
+        serializer.TestWriteObject(ms, original);
         var serializedJsonValue = Encoding.UTF8.GetString(ms.ToArray());
         serializedJsonValue = serializedJsonValue.Replace("2011", "         2011");
         Assert.Throws<SerializationException>(() => DeserializeString<DateTime>(serializedJsonValue));
@@ -3949,7 +3952,7 @@ public static partial class DataContractJsonSerializerTests
                 object o = td.Instantiate();
                 DataContractJsonSerializer dcs = new DataContractJsonSerializer(o.GetType());
                 MemoryStream ms = new MemoryStream();
-                dcs.WriteObject(ms, o);
+                dcs.TestWriteObject(ms, o);
             });
         }
     }
@@ -3996,7 +3999,7 @@ public static partial class DataContractJsonSerializerTests
     public static void DCJS_DifferentCollectionsOfSameTypeAsKnownTypes()
     {
         Assert.Throws<InvalidOperationException>(() => {
-            (new DataContractSerializer(typeof(TypeWithKnownTypesOfCollectionsWithConflictingXmlName))).WriteObject(new MemoryStream(), new TypeWithKnownTypesOfCollectionsWithConflictingXmlName());
+            (new DataContractSerializer(typeof(TypeWithKnownTypesOfCollectionsWithConflictingXmlName))).TestWriteObject(new MemoryStream(), new TypeWithKnownTypesOfCollectionsWithConflictingXmlName());
         });
     }
 
@@ -4014,7 +4017,7 @@ public static partial class DataContractJsonSerializerTests
 
         using (MemoryStream ms = new MemoryStream())
         {
-            dcjs.WriteObject(ms, value);
+            dcjs.TestWriteObject(ms, value);
             ms.Position = 0;
 
             string actualOutput = new StreamReader(ms).ReadToEnd();
@@ -4028,7 +4031,7 @@ public static partial class DataContractJsonSerializerTests
             }
 
             ms.Position = 0;
-            T deserialized = (T)dcjs.ReadObject(ms);
+            T deserialized = (T)dcjs.TestReadObject(ms);
 
             return deserialized;
         }
@@ -4050,7 +4053,7 @@ public static partial class DataContractJsonSerializerTests
         using (MemoryStream ms = new MemoryStream(bytesToDeserialize))
         {
             ms.Position = 0;
-            T deserialized = (T)dcs.ReadObject(ms);
+            T deserialized = (T)dcs.TestReadObject(ms);
 
             return deserialized;
         }
@@ -4079,7 +4082,7 @@ public static partial class DataContractJsonSerializerTests
             {
                 writer = JsonReaderWriterFactory.CreateJsonWriter(ms, Encoding.UTF8, false, true);
             }
-            dcjs.WriteObject(writer, value);
+            dcjs.TestWriteObject(writer, value);
             writer.Flush();
             string actualOutput = Encoding.UTF8.GetString(ms.GetBuffer(), 0, (int)ms.Position);
             if (!skipStringCompare)
@@ -4089,7 +4092,7 @@ public static partial class DataContractJsonSerializerTests
                     Environment.NewLine, result.ErrorMessage, value, baseline, actualOutput));
             }
             ms.Position = 0;
-            T deserialized = (T)dcjs.ReadObject(ms);
+            T deserialized = (T)dcjs.TestReadObject(ms);
             return deserialized;
         }
     }
@@ -4122,9 +4125,9 @@ public static partial class DataContractJsonSerializerTests
                 new NonSerializablePerson("Bob", 5),
             }
         };
-        dcjs.WriteObject(ms, myFamily);
+        dcjs.TestWriteObject(ms, myFamily);
         ms.Position = 0;
-        var newFamily = (Family)dcjs.ReadObject(ms);
+        var newFamily = (Family)dcjs.TestReadObject(ms);
         Assert.Equal(myFamily.Members.Length, newFamily.Members.Length);
         for (int i = 0; i < myFamily.Members.Length; ++i)
         {
@@ -4154,7 +4157,7 @@ public static partial class DataContractJsonSerializerTests
                 stream1.WriteLine(TestFileData);
                 using (var memoryStream = new MemoryStream())
                 {
-                    dcjs.WriteObject(memoryStream, stream1);
+                    dcjs.TestWriteObject(memoryStream, stream1);
                     serializedStream = memoryStream.ToArray();
                 }
             }
@@ -4162,7 +4165,7 @@ public static partial class DataContractJsonSerializerTests
             // Deserialize the stream
             using (var stream = new MemoryStream(serializedStream))
             {
-                using (var stream2 = (MyFileStream)dcjs.ReadObject(stream))
+                using (var stream2 = (MyFileStream)dcjs.TestReadObject(stream))
                 {
                     string fileData = stream2.ReadLine();
                     Assert.Equal(TestFileData, fileData);

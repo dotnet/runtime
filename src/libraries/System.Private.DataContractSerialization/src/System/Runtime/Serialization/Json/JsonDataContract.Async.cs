@@ -21,10 +21,24 @@ internal partial class JsonDataContract
     {
         cancellationToken.ThrowIfCancellationRequested();
         Debug.Assert(cancellationToken == context.CancellationToken && cancellationToken == writer.CancellationToken);
-        return KnownDataContracts is null
-            ? WriteJsonValueCoreAsync(writer, value, context, declaredHandle)
-            : WriteJsonValueWithKnownTypesAsync(writer, value, context, declaredHandle);
+        if (!XmlObjectSerializerContext.TryEnterAsyncStack())
+            return YieldJsonValueWriteAsync(writer, value, context, declaredHandle, cancellationToken);
+        try
+        {
+            return KnownDataContracts is null
+                ? WriteJsonValueCoreAsync(writer, value, context, declaredHandle)
+                : WriteJsonValueWithKnownTypesAsync(writer, value, context, declaredHandle);
+        }
+        finally
+        {
+            XmlObjectSerializerContext.ExitAsyncStack();
+        }
     }
+
+    [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+    [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+    private Task YieldJsonValueWriteAsync(XmlWriterDelegator writer, object value, XmlObjectSerializerWriteContextComplexJson context, RuntimeTypeHandle declaredHandle, CancellationToken cancellationToken) =>
+        XmlObjectSerializerContext.YieldAsyncStack(() => WriteJsonValueAsync(writer, value, context, declaredHandle, cancellationToken));
 
     [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
     [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
@@ -72,8 +86,22 @@ internal partial class JsonDataContract
     {
         cancellationToken.ThrowIfCancellationRequested();
         Debug.Assert(cancellationToken == context.CancellationToken && cancellationToken == reader.CancellationToken);
-        return ReadJsonValueCoreAsync(reader, context);
+        if (!XmlObjectSerializerContext.TryEnterAsyncStack())
+            return YieldJsonValueReadAsync(reader, context, cancellationToken);
+        try
+        {
+            return ReadJsonValueCoreAsync(reader, context);
+        }
+        finally
+        {
+            XmlObjectSerializerContext.ExitAsyncStack();
+        }
     }
+
+    [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+    [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+    private ValueTask<object?> YieldJsonValueReadAsync(XmlReaderDelegator reader, XmlObjectSerializerReadContextComplexJson context, CancellationToken cancellationToken) =>
+        XmlObjectSerializerContext.YieldAsyncStack(() => ReadJsonValueAsync(reader, context, cancellationToken));
 
     [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
     [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]

@@ -24,8 +24,22 @@ public abstract partial class DataContract
         cancellationToken.ThrowIfCancellationRequested();
         Debug.Assert(cancellationToken == context.CancellationToken && cancellationToken == writer.CancellationToken);
         ReflectionWriter write = Volatile.Read(ref _asyncXmlWriter) ?? InitializeAsyncXmlWriter();
-        return write(writer, value, context);
+        if (!XmlObjectSerializerContext.TryEnterAsyncStack())
+            return YieldXmlValueWriteAsync(writer, value, context, cancellationToken);
+        try
+        {
+            return write(writer, value, context);
+        }
+        finally
+        {
+            XmlObjectSerializerContext.ExitAsyncStack();
+        }
     }
+
+    [RequiresDynamicCode(SerializerAOTWarning)]
+    [RequiresUnreferencedCode(SerializerTrimmerWarning)]
+    private Task YieldXmlValueWriteAsync(XmlWriterDelegator writer, object value, XmlObjectSerializerWriteContext context, CancellationToken cancellationToken) =>
+        XmlObjectSerializerContext.YieldAsyncStack(() => WriteXmlValueAsync(writer, value, context, cancellationToken));
 
     [RequiresDynamicCode(SerializerAOTWarning)]
     [RequiresUnreferencedCode(SerializerTrimmerWarning)]
@@ -63,8 +77,22 @@ public abstract partial class DataContract
             }
         }
 
-        return read(reader, context);
+        if (!XmlObjectSerializerContext.TryEnterAsyncStack())
+            return YieldXmlValueReadAsync(reader, context, cancellationToken);
+        try
+        {
+            return read(reader, context);
+        }
+        finally
+        {
+            XmlObjectSerializerContext.ExitAsyncStack();
+        }
     }
+
+    [RequiresDynamicCode(SerializerAOTWarning)]
+    [RequiresUnreferencedCode(SerializerTrimmerWarning)]
+    private ValueTask<object?> YieldXmlValueReadAsync(XmlReaderDelegator reader, XmlObjectSerializerReadContext context, CancellationToken cancellationToken) =>
+        XmlObjectSerializerContext.YieldAsyncStack(() => ReadXmlValueAsync(reader, context, cancellationToken));
 }
 
 internal static class AsyncDataContractOperations

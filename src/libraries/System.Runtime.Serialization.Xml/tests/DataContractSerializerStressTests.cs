@@ -4,6 +4,7 @@
 using SerializationTypes;
 using System.IO;
 using System.Runtime.Serialization;
+using System.Runtime.Serialization.Tests;
 using Xunit;
 
 
@@ -46,9 +47,9 @@ public static partial class DataContractSerializerTests
             {
                 Members = members
             };
-            dcs.WriteObject(ms, myFamily);
+            dcs.TestWriteObject(ms, myFamily);
             ms.Position = 0;
-            var newFamily = (FamilyForStress)dcs.ReadObject(ms);
+            var newFamily = (FamilyForStress)dcs.TestReadObject(ms);
             Assert.Equal(myFamily.Members.Length, newFamily.Members.Length);
             for (int i = 0; i < myFamily.Members.Length; ++i)
             {
@@ -88,9 +89,9 @@ public static partial class DataContractSerializerTests
         }
 
         MemoryStream ms = new MemoryStream();
-        dcs.WriteObject(ms, new FamilyForStress { Members = members });
+        dcs.TestWriteObject(ms, new FamilyForStress { Members = members });
         ms.Position = 0;
-        var resultMembers = ((FamilyForStress)dcs.ReadObject(ms)).Members;
+        var resultMembers = ((FamilyForStress)dcs.TestReadObject(ms)).Members;
 
         Assert.Equal(members.Length, resultMembers.Length);
         for (int i = 0; i < count; i++)

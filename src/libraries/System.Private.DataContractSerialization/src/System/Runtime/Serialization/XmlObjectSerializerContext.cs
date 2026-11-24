@@ -9,6 +9,7 @@ using System.Reflection;
 using System.Runtime.Serialization.DataContracts;
 using System.Security;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Xml;
 
 using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContracts.DataContract>;
@@ -17,6 +18,11 @@ namespace System.Runtime.Serialization
 {
     internal class XmlObjectSerializerContext
     {
+        // Deep graphs can exhaust the stack when asynchronous operations complete synchronously.
+        [ThreadStatic]
+        private static int t_asyncStackDepth;
+        private const int MaxAsyncStackDepth = 64;
+
         protected XmlObjectSerializer serializer;
         protected DataContract? rootTypeDataContract;
         internal ScopedKnownTypes scopedKnownTypes;
@@ -31,6 +37,65 @@ namespace System.Runtime.Serialization
         private KnownTypeDataContractResolver? _knownTypeResolver;
 
         internal CancellationToken CancellationToken { get; set; }
+
+        internal static bool TryEnterAsyncStack()
+        {
+            if (t_asyncStackDepth >= MaxAsyncStackDepth)
+                return false;
+            t_asyncStackDepth++;
+            return true;
+        }
+
+        internal static void ExitAsyncStack() => t_asyncStackDepth--;
+
+        internal static Task YieldAsyncStack(Func<Task> operation)
+        {
+            TaskCompletionSource completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            _ = ExecuteAsync();
+            return completion.Task;
+
+            async Task ExecuteAsync()
+            {
+                try
+                {
+                    await Task.CompletedTask.ConfigureAwait(ConfigureAwaitOptions.ForceYielding);
+                    await operation().ConfigureAwait(false);
+                    completion.SetResult();
+                }
+                catch (OperationCanceledException exception)
+                {
+                    completion.SetCanceled(exception.CancellationToken);
+                }
+                catch (Exception exception)
+                {
+                    completion.SetException(exception);
+                }
+            }
+        }
+
+        internal static ValueTask<T> YieldAsyncStack<T>(Func<ValueTask<T>> operation)
+        {
+            TaskCompletionSource<T> completion = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
+            _ = ExecuteAsync();
+            return new ValueTask<T>(completion.Task);
+
+            async Task ExecuteAsync()
+            {
+                try
+                {
+                    await Task.CompletedTask.ConfigureAwait(ConfigureAwaitOptions.ForceYielding);
+                    completion.SetResult(await operation().ConfigureAwait(false));
+                }
+                catch (OperationCanceledException exception)
+                {
+                    completion.SetCanceled(exception.CancellationToken);
+                }
+                catch (Exception exception)
+                {
+                    completion.SetException(exception);
+                }
+            }
+        }
 
         internal XmlObjectSerializerContext(XmlObjectSerializer serializer, int maxItemsInObjectGraph, StreamingContext streamingContext, bool ignoreExtensionDataObject,
                                             DataContractResolver? dataContractResolver)

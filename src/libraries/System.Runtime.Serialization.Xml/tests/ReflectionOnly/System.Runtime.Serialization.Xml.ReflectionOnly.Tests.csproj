@@ -9,6 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="$(CommonTestPath)System\Runtime\Serialization\SerializerTestApi.cs" Link="Common\System\Runtime\Serialization\SerializerTestApi.cs" />
     <Compile Include="$(CommonTestPath)System\Runtime\Serialization\Utils.cs" />
     <Compile Include="$(TestSourceFolder)..\DataContractSerializerStressTests.cs" />
     <None Include="$(TestSourceFolder)..\SerializationTypes.cs" />
