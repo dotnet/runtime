@@ -79,6 +79,7 @@ namespace System.Buffers.Text
 
             int startIndexNonLeadingDigitsBeforeDecimal = srcIndex;
 
+            int nzIndex = -1;
             while (srcIndex < source.Length)
             {
                 c = source[srcIndex];
@@ -89,16 +90,17 @@ namespace System.Buffers.Text
                     break;
                 }
 
-                srcIndex++;
-                digitCount++;
-
                 if (value != 0)
                 {
-                    lastNonZeroDigitIndex = digitCount - 1;
+                    nzIndex = digitCount;
                 }
+
+                srcIndex++;
+                digitCount++;
             }
             int numDigitsBeforeDecimal = srcIndex - startIndexDigitsBeforeDecimal;
             int numNonLeadingDigitsBeforeDecimal = srcIndex - startIndexNonLeadingDigitsBeforeDecimal;
+            lastNonZeroDigitIndex = nzIndex;
 
             Debug.Assert(dstIndex == 0);
             int numNonLeadingDigitsBeforeDecimalToCopy = Math.Min(numNonLeadingDigitsBeforeDecimal, maxDigitCount);
@@ -145,15 +147,16 @@ namespace System.Buffers.Text
                         break;
                     }
 
-                    srcIndex++;
-                    digitCount++;
-
                     if (value != 0)
                     {
-                        lastNonZeroDigitIndex = digitCount - 1;
+                        nzIndex = digitCount;
                     }
+
+                    srcIndex++;
+                    digitCount++;
                 }
                 numDigitsAfterDecimal = srcIndex - startIndexDigitsAfterDecimal;
+                lastNonZeroDigitIndex = nzIndex;
 
                 int numDigitsAfterDecimalToCopy = Math.Min(srcIndex - startIndexOfDigitsAfterDecimalToCopy, maxDigitCount - dstIndex);
                 source.Slice(startIndexOfDigitsAfterDecimalToCopy, numDigitsAfterDecimalToCopy).CopyTo(digits.Slice(dstIndex));
