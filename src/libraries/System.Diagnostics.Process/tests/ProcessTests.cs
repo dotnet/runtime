@@ -544,8 +544,13 @@ namespace System.Diagnostics.Tests
             }
             else
             {
-                IEnumerable<int> testProcessIds = Process.GetProcessesByName(RemoteExecutor.HostRunnerName).Select(p => p.Id);
-                Assert.Contains(_process.Id, testProcessIds);
+                // The child's name may transiently reflect the parent's thread name immediately
+                // after Process.Start if execve() hasn't finished updating it yet, so retry briefly.
+                RetryHelper.Execute(() =>
+                {
+                    IEnumerable<int> testProcessIds = Process.GetProcessesByName(RemoteExecutor.HostRunnerName).Select(p => p.Id);
+                    Assert.Contains(_process.Id, testProcessIds);
+                });
             }
         }
 
@@ -1152,9 +1157,16 @@ namespace System.Diagnostics.Tests
         {
             CreateDefaultProcess();
 
-            // Process.ProcessName drops the extension when it's exe.
-            string processName = RemoteExecutor.HostRunner.EndsWith(".exe") ?_process.ProcessName : Path.GetFileNameWithoutExtension(_process.ProcessName);
-            Assert.Equal(Path.GetFileNameWithoutExtension(RemoteExecutor.HostRunner), processName, StringComparer.OrdinalIgnoreCase);
+            // ProcessName may transiently reflect the parent's thread name immediately
+            // after Process.Start if execve() hasn't finished updating it yet, so retry briefly.
+            RetryHelper.Execute(() =>
+            {
+                _process.Refresh();
+
+                // Process.ProcessName drops the extension when it's exe.
+                string processName = RemoteExecutor.HostRunner.EndsWith(".exe") ? _process.ProcessName : Path.GetFileNameWithoutExtension(_process.ProcessName);
+                Assert.Equal(Path.GetFileNameWithoutExtension(RemoteExecutor.HostRunner), processName, StringComparer.OrdinalIgnoreCase);
+            });
         }
 
         [Fact]
@@ -1817,76 +1829,6 @@ namespace System.Diagnostics.Tests
             Assert.Throws<InvalidOperationException>(() => process.MainWindowHandle);
         }
 
-        [ConditionalFact(typeof(PlatformDetection),
-            nameof(PlatformDetection.IsNotWindowsNanoServer), // it needs Notepad
-            nameof(PlatformDetection.IsNotWindowsServerCore))] // explained in https://github.com/dotnet/runtime/pull/44972
-        [OuterLoop("Pops UI")]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        public void MainWindowHandle_GetWithGui_ShouldRefresh_Windows()
-        {
-            const string ExePath = "notepad.exe";
-            Assert.True(IsProgramInstalled(ExePath), "Notepad is not installed");
-
-            using (Process process = Process.Start(ExePath))
-            {
-                try
-                {
-                    for (int attempt = 0; attempt < 50; ++attempt)
-                    {
-                        process.Refresh();
-                        if (process.MainWindowHandle != IntPtr.Zero)
-                        {
-                            break;
-                        }
-
-                        Thread.Sleep(100);
-                    }
-
-                    Assert.NotEqual(IntPtr.Zero, process.MainWindowHandle);
-                }
-                finally
-                {
-                    process.Kill();
-                    Assert.True(process.WaitForExit(WaitInMS));
-                }
-            }
-        }
-
-        [ConditionalFact(typeof(PlatformDetection),
-            nameof(PlatformDetection.IsNotWindowsNanoServer), // it needs Notepad
-            nameof(PlatformDetection.IsNotWindowsServerCore))] // explained in https://github.com/dotnet/runtime/pull/44972
-        [OuterLoop("Pops UI")]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        public void MainWindowTitle_GetWithGui_ShouldRefresh_Windows()
-        {
-            const string ExePath = "notepad.exe";
-            Assert.True(IsProgramInstalled(ExePath), "Notepad is not installed");
-
-            using (Process process = Process.Start(new ProcessStartInfo(ExePath)))
-            {
-                try
-                {
-                    for (int attempt = 0; attempt < 50; ++attempt)
-                    {
-                        process.Refresh();
-                        if (process.MainWindowTitle != string.Empty)
-                        {
-                            break;
-                        }
-
-                        Thread.Sleep(100);
-                    }
-
-                    Assert.NotEqual(string.Empty, process.MainWindowTitle);
-                }
-                finally
-                {
-                    process.Kill();
-                    Assert.True(process.WaitForExit(WaitInMS));
-                }
-            }
-        }
-
         [Fact]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "libproc is not supported on iOS/tvOS")]
         public void RefreshResetsAllRefreshableFields()
@@ -2355,14 +2297,15 @@ namespace System.Diagnostics.Tests
 
             using (Process px = Process.Start(sleepCommandPathFileName, "600"))
             {
-                // Reading of long process names is flaky during process startup and shutdown.
-                // Wait a bit to skip over the period where the ProcessName is not reliable.
-                Thread.Sleep(100);
-
-                Process[] runningProcesses = Process.GetProcesses();
                 try
                 {
-                    Assert.Contains(runningProcesses, p => p.ProcessName == LongProcessName);
+                    // ProcessName may transiently reflect the parent's thread name immediately
+                    // after Process.Start if execve() hasn't finished updating it yet, so retry briefly.
+                    RetryHelper.Execute(() =>
+                    {
+                        Process[] runningProcesses = Process.GetProcesses();
+                        Assert.Contains(runningProcesses, p => p.ProcessName == LongProcessName);
+                    });
                 }
                 finally
                 {

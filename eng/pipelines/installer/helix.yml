@@ -1,4 +1,5 @@
 parameters:
+  useHelixMonitor: false
   archType: ''
   osGroup: ''
   creator: ''
@@ -7,6 +8,7 @@ parameters:
 steps:
   - template: /eng/common/templates/steps/send-to-helix.yml
     parameters:
+      UseHelixMonitor: ${{ parameters.useHelixMonitor }}
       DisplayNamePrefix: Send to Helix
       HelixProjectPath: src/installer/tests/helixpublish.proj
       ${{ if ne(parameters.osGroup, 'windows') }}:

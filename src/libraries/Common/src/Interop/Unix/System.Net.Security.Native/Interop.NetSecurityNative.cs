@@ -50,6 +50,7 @@ internal static partial class Interop
         [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint = "NetSecurityNative_AcquireAcceptorCred")]
         internal static partial Status AcquireAcceptorCred(
             out Status minorStatus,
+            PackageType packageType,
             out SafeGssCredHandle outputCredHandle);
 
         [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint = "NetSecurityNative_InitiateCredSpNego")]

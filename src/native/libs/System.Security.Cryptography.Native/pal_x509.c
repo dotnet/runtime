@@ -10,6 +10,8 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "openssl.h"
+
 c_static_assert(PAL_X509_V_OK == X509_V_OK);
 c_static_assert(PAL_X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT == X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT);
 c_static_assert(PAL_X509_V_ERR_UNABLE_TO_GET_CRL == X509_V_ERR_UNABLE_TO_GET_CRL);
@@ -611,7 +613,7 @@ int32_t CryptoNative_X509StackAddDirectoryStore(X509Stack* stack, char* storePat
     if (storeDir != NULL)
     {
         X509* cert;
-        X509Stack* tmpStack = sk_X509_new_null();
+        X509Stack* tmpStack = CryptoNative_NewX509Stack();
 
         if (tmpStack == NULL)
         {
@@ -1333,7 +1335,7 @@ int32_t CryptoNative_X509DecodeOcspToExpiration(const uint8_t* buf, int32_t len,
 
     if (store != NULL)
     {
-        bag = sk_X509_new_null();
+        bag = CryptoNative_NewX509Stack();
     }
 
     if (bag != NULL)

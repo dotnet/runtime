@@ -241,7 +241,7 @@ namespace System.IO.Tests
 
             var expectedEvents = files.Select(file => new FiredEvent(WatcherChangeTypes.Deleted, file.FileInWatchedDir));
 
-            Assert.Equal(expectedEvents, events);
+            AssertEventsEqual(expectedEvents, events);
         }
 
         private void FileMove_Multiple_FromUnwatchedToWatched(int filesCount)
@@ -267,7 +267,7 @@ namespace System.IO.Tests
             List<FiredEvent> events = ExpectEvents(watcher, filesCount, action);
             var expectedEvents = files.Select(file => new FiredEvent(WatcherChangeTypes.Created, file.FileInWatchedDir));
 
-            Assert.Equal(expectedEvents, events);
+            AssertEventsEqual(expectedEvents, events);
         }
 
         private void FileMove_FromUnwatchedToWatched(WatcherChangeTypes eventType)

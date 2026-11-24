@@ -6,7 +6,7 @@ import { toBase64StringImpl } from "./base64";
 import cwraps from "./cwraps";
 import { VoidPtr, CharPtr } from "./types/emscripten";
 import { mono_log_warn } from "./logging";
-import { forceThreadMemoryViewRefresh, free, localHeapViewU8, malloc } from "./memory";
+import { forceThreadMemoryViewRefresh, fixupPointer, free, localHeapViewU8, malloc } from "./memory";
 import { utf8ToString } from "./strings";
 const commands_received: any = new Map<number, CommandResponse>();
 commands_received.remove = function (key: number): CommandResponse {
@@ -42,12 +42,12 @@ export function mono_wasm_fire_debugger_agent_message_with_data_to_pause (base64
 }
 
 export function mono_wasm_fire_debugger_agent_message_with_data (data: number, len: number): void {
-    const base64String = toBase64StringImpl(new Uint8Array(localHeapViewU8().buffer, data, len));
+    const base64String = toBase64StringImpl(new Uint8Array(localHeapViewU8().buffer, fixupPointer(data, 0), len));
     mono_wasm_fire_debugger_agent_message_with_data_to_pause(base64String);
 }
 
 export function mono_wasm_add_dbg_command_received (res_ok: boolean, id: number, buffer: number, buffer_len: number): void {
-    const dbg_command = new Uint8Array(localHeapViewU8().buffer, buffer, buffer_len);
+    const dbg_command = new Uint8Array(localHeapViewU8().buffer, fixupPointer(buffer, 0), buffer_len);
     const base64String = toBase64StringImpl(dbg_command);
     const buffer_obj = {
         res_ok,

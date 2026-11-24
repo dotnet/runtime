@@ -1,4 +1,5 @@
 parameters:
+  useHelixMonitor: false
   buildConfig: ''
   archType: ''
   osGroup: ''
@@ -11,6 +12,7 @@ steps:
   # Build coreclr native test output and send to helix
   - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
     parameters:
+      useHelixMonitor: ${{ parameters.useHelixMonitor }}
       buildConfig: ${{ parameters.buildConfig }}
       archType: ${{ parameters.archType }}
       osGroup: ${{ parameters.osGroup }}

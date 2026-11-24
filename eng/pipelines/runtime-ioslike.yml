@@ -24,6 +24,8 @@ pr:
 
 variables:
   - template: /eng/pipelines/common/variables.yml
+  - name: enableHelixJobMonitor
+    value: true
 
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
@@ -31,8 +33,16 @@ extends:
     stages:
     - stage: Build
       jobs:
+      - ${{ if eq(variables['enableHelixJobMonitor'], true) }}:
+        - template: /eng/common/core-templates/job/helix-job-monitor.yml
+          parameters:
+            helixAccessToken: $(HelixApiAccessToken)
+            timeoutInMinutes: 540
+            allowNoHelixJobs: true
+
       - template: /eng/pipelines/extra-platforms/runtime-extra-platforms-ioslike.yml
         parameters:
+          useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
           isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
           isiOSLikeOnlyBuild: ${{ variables.isiOSLikeOnlyBuild }}
           isRollingBuild: ${{ variables.isRollingBuild }}

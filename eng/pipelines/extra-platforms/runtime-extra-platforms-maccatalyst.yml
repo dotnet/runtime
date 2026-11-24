@@ -4,6 +4,7 @@
 #   /azp run runtime-maccatalyst
 
 parameters:
+  useHelixMonitor: false
   isExtraPlatformsBuild: false
   isMacCatalystOnlyBuild: false
   isRollingBuild: false
@@ -40,6 +41,7 @@ jobs:
       postBuildSteps:
         - template: /eng/pipelines/libraries/helix.yml
           parameters:
+            useHelixMonitor: ${{ parameters.useHelixMonitor }}
             creator: dotnet-bot
             testRunNamePrefixSuffix: Mono_$(_BuildConfig)
 
@@ -87,6 +89,7 @@ jobs:
       postBuildSteps:
         - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
           parameters:
+            useHelixMonitor: ${{ parameters.useHelixMonitor }}
             creator: dotnet-bot
             testBuildArgs: /p:DevTeamProvisioning=adhoc /p:RunAOTCompilation=true /p:MonoForceInterpreter=true
             compileOnHelix: true
@@ -123,6 +126,7 @@ jobs:
       postBuildSteps:
         - template: /eng/pipelines/libraries/helix.yml
           parameters:
+            useHelixMonitor: ${{ parameters.useHelixMonitor }}
             creator: dotnet-bot
             interpreter: true
             testRunNamePrefixSuffix: Mono_$(_BuildConfig)
@@ -160,6 +164,7 @@ jobs:
       postBuildSteps:
         - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
           parameters:
+            useHelixMonitor: ${{ parameters.useHelixMonitor }}
             creator: dotnet-bot
             buildAllTestsAsStandalone: true
             testBuildArgs: tree nativeaot/SmokeTests /p:BuildNativeAOTRuntimePack=true
@@ -198,6 +203,7 @@ jobs:
       postBuildSteps:
         - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
           parameters:
+            useHelixMonitor: ${{ parameters.useHelixMonitor }}
             creator: dotnet-bot
             buildAllTestsAsStandalone: true
             testBuildArgs: tree nativeaot/SmokeTests /p:BuildNativeAOTRuntimePack=true /p:DevTeamProvisioning=adhoc /p:EnableAppSandbox=true

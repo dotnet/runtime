@@ -1087,8 +1087,10 @@ namespace System.Net.Sockets
 
             Debug.Assert(!acceptedSocketHandle.IsInvalid);
 
-            Socket socket = CreateAcceptSocket(acceptedSocketHandle, _rightEndPoint.Create(socketAddress));
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Accepted(socket, socket.RemoteEndPoint!, socket.LocalEndPoint);
+            // macOS can return accept() success with an empty remote sockaddr when the peer reset before accept.
+            EndPoint? remoteEndPoint = socketAddress.Size > 0 ? _rightEndPoint.Create(socketAddress) : null;
+            Socket socket = CreateAcceptSocket(acceptedSocketHandle, remoteEndPoint);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Accepted(socket, remoteEndPoint, socket.LocalEndPoint);
             return socket;
         }
 
@@ -3091,7 +3093,12 @@ namespace System.Net.Sockets
 
             ArgumentNullException.ThrowIfNull(e);
             EndPoint? endPointSnapshot = e.RemoteEndPoint;
-            if (e._socketAddress == null)
+
+            // e._socketAddress is normally created once and reused on every subsequent call for this
+            // SocketAsyncEventArgs. If the instance is being reused across sockets of different address
+            // families (e.g. an IPv4 socket, then an IPv6 one), the previous buffer may be too small for
+            // this socket's family, so it needs to be replaced rather than reused as-is.
+            if (e._socketAddress == null || e._socketAddress.Buffer.Length < SocketAddress.GetMaximumAddressSize(AddressFamily))
             {
                 if (endPointSnapshot is DnsEndPoint)
                 {
@@ -3115,7 +3122,7 @@ namespace System.Net.Sockets
                 {
                     endPointSnapshot = s_IPEndPointIPv6;
                 }
-                e._socketAddress ??= new SocketAddress(AddressFamily);
+                e._socketAddress = new SocketAddress(AddressFamily);
             }
 
             // DualMode sockets may have updated the endPointSnapshot, and it has to have the same AddressFamily as

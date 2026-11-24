@@ -35,7 +35,8 @@
 [bool]$warnAsError = if (Test-Path variable:warnAsError) { $warnAsError } else { $true }
 
 # Specifies semi-colon delimited list of warning codes that should not be treated as errors.
-[string]$warnNotAsError = if (Test-Path variable:warnNotAsError) { $warnNotAsError } else { '' }
+# Defaults to NuGet Audit warning codes NU1901-NU1904.
+[string]$warnNotAsError = if ((Test-Path variable:warnNotAsError) -and $warnNotAsError) { $warnNotAsError } else { 'NU1901;NU1902;NU1903;NU1904' }
 
 # Specifies which msbuild engine to use for build: 'vs', 'dotnet' or unspecified (determined based on presence of tools.vs in global.json).
 [string]$msbuildEngine = if (Test-Path variable:msbuildEngine) { $msbuildEngine } else { $null }
@@ -517,7 +518,7 @@ function InitializeXCopyMSBuild([string]$packageVersion, [bool]$install) {
     })
 
     if (!(Test-Path $packagePath)) {
-      Write-PipelineTelemetryError -Category 'InitializeToolset' -Message "See https://dev.azure.com/dnceng/internal/_wiki/wikis/DNCEng%20Services%20Wiki/1074/Updating-Microsoft.DotNet.Arcade.MSBuild.Xcopy-WAS-RoslynTools.MSBuild-(xcopy-msbuild)-generation?anchor=troubleshooting for help troubleshooting issues with XCopy MSBuild"
+      Write-PipelineTelemetryError -Category 'InitializeToolset' -Message "See https://dev.azure.com/dnceng/internal/_wiki/wikis/DNCEng%20Services%20Wiki/1857/Operations/FR/Updating-Microsoft.DotNet.Arcade.MSBuild.Xcopy-WAS-RoslynTools.MSBuild-(xcopy-msbuild)-generation?anchor=troubleshooting for help troubleshooting issues with XCopy MSBuild"
       throw
     }
     Unzip $packagePath $packageDir

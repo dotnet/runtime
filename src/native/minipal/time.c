@@ -39,6 +39,7 @@ int64_t minipal_lowres_ticks()
 #include <time.h>
 #include <sys/time.h>
 #include <errno.h>
+#include <sched.h>
 
 inline static void YieldProcessor(void);
 
@@ -126,6 +127,39 @@ int64_t minipal_lowres_ticks(void)
 }
 
 #endif // HOST_WINDOWS
+
+bool minipal_switch_to_thread(uint32_t switchCount)
+{
+    // Short yield loops avoid sleeps; prolonged contention must eventually
+    // sleep so that a lower-priority thread can make progress. These thresholds
+    // correspond to roughly the same spinning time on ARM and other CPUs.
+#if defined(HOST_ARM)
+    const uint32_t sleepStartThreshold = 5 * 1024;
+#else
+    const uint32_t sleepStartThreshold = 32 * 1024;
+#endif
+    if (switchCount >= sleepStartThreshold)
+    {
+#if HOST_WINDOWS
+        Sleep(1);
+#elif !defined(TARGET_WASM) || defined(FEATURE_MULTITHREADING)
+        struct timespec requested = { 0, 1000000 };
+        struct timespec remaining;
+        while (nanosleep(&requested, &remaining) != 0 && errno == EINTR)
+        {
+            requested = remaining;
+        }
+#endif
+    }
+
+#if HOST_WINDOWS
+    return SwitchToThread() != 0;
+#elif defined(TARGET_WASM) && !defined(FEATURE_MULTITHREADING)
+    return false;
+#else
+    return sched_yield() == 0;
+#endif
+}
 
 void minipal_microdelay(uint32_t usecs, uint32_t* usecsSinceYield)
 {

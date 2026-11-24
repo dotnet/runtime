@@ -958,7 +958,12 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
     }
     GCX_COOP();
     OBJECTREF throwable = ExInfo::CreateThrowable(ex.GetExceptionRecord(), FALSE);
-    DispatchManagedException(throwable, ex.GetContextRecord());
+    ExInfo exInfo(GetThread(), ex.GetExceptionRecord(), ex.GetContextRecord(), ExKind::Throw);
+    if (!ex.RecordsOnStack)
+    {
+        exInfo.TakeExceptionPointersOwnership(&ex);
+    }
+    DispatchManagedException(throwable, &exInfo);
 }
 
 #if defined(TARGET_AMD64) || defined(TARGET_X86)
@@ -1535,8 +1540,6 @@ VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, CONTEXT* pE
 
     GCPROTECT_BEGIN(throwable);
 
-   _ASSERTE(IsException(throwable->GetMethodTable()));
-
     Thread *pThread = GetThread();
 
     ULONG_PTR hr = GetHRFromThrowable(throwable);
@@ -1575,6 +1578,25 @@ VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, CONTEXT* pE
     }
 #endif // HOST_WINDOWS
 
+    DispatchManagedException(throwable, &exInfo);
+
+    GCPROTECT_END();
+
+    UNREACHABLE();
+}
+
+VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, ExInfo* pExInfo)
+{
+    STATIC_CONTRACT_THROWS;
+    STATIC_CONTRACT_GC_TRIGGERS;
+    STATIC_CONTRACT_MODE_COOPERATIVE;
+
+    GCPROTECT_BEGIN(throwable);
+
+    _ASSERTE(IsException(throwable->GetMethodTable()));
+
+    Thread *pThread = GetThread();
+
     if (pThread->IsAbortInitiated () && IsExceptionOfType(kThreadAbortException,&throwable))
     {
         pThread->ResetPreparingAbort();
@@ -1586,20 +1608,20 @@ VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, CONTEXT* pE
         }
     }
 
-    GCPROTECT_BEGIN(exInfo.m_exception);
+    GCPROTECT_BEGIN(pExInfo->m_exception);
 
     PREPARE_NONVIRTUAL_CALLSITE(METHOD__EH__RH_THROW_EX);
     DECLARE_ARGHOLDER_ARRAY(args, 2);
     args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(throwable);
-    args[ARGNUM_1] = PTR_TO_ARGHOLDER(&exInfo);
+    args[ARGNUM_1] = PTR_TO_ARGHOLDER(pExInfo);
 
     pThread->IncPreventAbort();
 
-    //Ex.RhThrowEx(throwable, &exInfo)
+    //Ex.RhThrowEx(throwable, pExInfo)
     CRITICAL_CALLSITE;
     CALL_MANAGED_METHOD_NORET(args)
 
-    DispatchExSecondPass(&exInfo);
+    DispatchExSecondPass(pExInfo);
 
     GCPROTECT_END();
     GCPROTECT_END();
@@ -3062,7 +3084,7 @@ PropagateForeignExceptionThroughNativeFrames(IN     PEXCEPTION_RECORD   pExcepti
 
 #endif // HOST_WINDOWS
 
-void CallCatchFunclet(OBJECTREF throwable, BYTE* pHandlerIP, REGDISPLAY* pvRegDisplay, ExInfo* exInfo)
+void CallCatchFunclet(BYTE* pHandlerIP, REGDISPLAY* pvRegDisplay, ExInfo* exInfo)
 {
     CONTRACTL
     {
@@ -3100,8 +3122,6 @@ void CallCatchFunclet(OBJECTREF throwable, BYTE* pHandlerIP, REGDISPLAY* pvRegDi
         pCodeManager->EnsureCallerContextIsValid(pvRegDisplay);
         _ASSERTE(exInfo->m_sfCallerOfActualHandlerFrame == GetSP(pvRegDisplay->pCallerContext));
 #endif
-        throwable = PossiblyUnwrapThrowable(throwable, exInfo->m_frameIter.m_crawl.GetAssembly());
-
         exInfo->m_csfEnclosingClause = CallerStackFrame::FromRegDisplay(exInfo->m_frameIter.m_crawl.GetRegisterSet());
 
         MethodDesc *pMD = exInfo->m_frameIter.m_crawl.GetFunction();
@@ -3111,12 +3131,15 @@ void CallCatchFunclet(OBJECTREF throwable, BYTE* pHandlerIP, REGDISPLAY* pvRegDi
 
         EH_LOG((LL_INFO100, "Calling catch funclet at %p\n", pHandlerIP));
 
+        OBJECTREF throwable = exInfo->GetThrowable();
+        throwable = PossiblyUnwrapThrowable(throwable, exInfo->m_frameIter.m_crawl.GetAssembly());
         dwResumePC = pCodeManager->CallFunclet(throwable, pHandlerIP, pvRegDisplay, exInfo, false /* isFilterFunclet */);
 
         FixContext(pvRegDisplay->pCurrentContext);
 
         // Profiler, debugger and ETW events
         exInfo->MakeCallbacksRelatedToHandler(false, pThread, pMD, &exInfo->m_ClauseForCatch, (DWORD_PTR)pHandlerIP, spForDebugger);
+
         SetIP(pvRegDisplay->pCurrentContext, dwResumePC);
         callerTargetSp = CallerStackFrame::FromRegDisplay(pvRegDisplay).SP;
     }
@@ -3124,17 +3147,15 @@ void CallCatchFunclet(OBJECTREF throwable, BYTE* pHandlerIP, REGDISPLAY* pvRegDi
     UINT_PTR targetSp = GetSP(pvRegDisplay->pCurrentContext);
     PopExplicitFrames(pThread, (void*)targetSp, (void*)callerTargetSp);
 
-    ExInfo* pExInfo = (PTR_ExInfo)pThread->GetExceptionState()->GetCurrentExceptionTracker();
-
 #ifdef HOST_WINDOWS
-    jmp_buf* pLongJmpBuf = pExInfo->m_pLongJmpBuf;
-    int longJmpReturnValue = pExInfo->m_longJmpReturnValue;
-    EXCEPTION_RECORD lastExceptionRecord = *pExInfo->m_ptrs.ExceptionRecord;
+    jmp_buf* pLongJmpBuf = exInfo->m_pLongJmpBuf;
+    int longJmpReturnValue = exInfo->m_longJmpReturnValue;
+    EXCEPTION_RECORD lastExceptionRecord = *exInfo->m_ptrs.ExceptionRecord;
 #endif // HOST_WINDOWS
 
 #ifdef HOST_UNIX
-    Interop::ManagedToNativeExceptionCallback propagateExceptionCallback = pExInfo->m_propagateExceptionCallback;
-    void* propagateExceptionContext = pExInfo->m_propagateExceptionContext;
+    Interop::ManagedToNativeExceptionCallback propagateExceptionCallback = exInfo->m_propagateExceptionCallback;
+    void* propagateExceptionContext = exInfo->m_propagateExceptionContext;
 #endif // HOST_UNIX
 
 #ifdef DEBUGGING_SUPPORTED
@@ -3170,6 +3191,8 @@ void CallCatchFunclet(OBJECTREF throwable, BYTE* pHandlerIP, REGDISPLAY* pvRegDi
         }
     }
 #endif // DEBUGGING_SUPPORTED
+
+    OBJECTREF throwable = exInfo->GetThrowable();
 
     ExInfo::PopExInfos(pThread, (void*)targetSp);
 
@@ -3341,8 +3364,6 @@ extern "C" CLR_BOOL QCALLTYPE CallFilterFunclet(QCall::ObjectHandleOnStack excep
     MarkInlinedCallFrameAsEHHelperCall(pFrame);
 
     ExInfo* pExInfo = (ExInfo*)pThread->GetExceptionState()->GetCurrentExceptionTracker();
-    OBJECTREF throwable = exceptionObj.Get();
-    throwable = PossiblyUnwrapThrowable(throwable, pExInfo->m_frameIter.m_crawl.GetAssembly());
 
     pExInfo->m_csfEnclosingClause = CallerStackFrame::FromRegDisplay(pExInfo->m_frameIter.m_crawl.GetRegisterSet());
     MethodDesc *pMD = pExInfo->m_frameIter.m_crawl.GetFunction();
@@ -3353,6 +3374,8 @@ extern "C" CLR_BOOL QCALLTYPE CallFilterFunclet(QCall::ObjectHandleOnStack excep
 
     EX_TRY
     {
+        OBJECTREF throwable = exceptionObj.Get();
+        throwable = PossiblyUnwrapThrowable(throwable, pExInfo->m_frameIter.m_crawl.GetAssembly());
         dwResult = pExInfo->m_frameIter.m_crawl.GetCodeManager()->CallFunclet(throwable, pFilterIP, pvRegDisplay, pExInfo, true /* isFilterFunclet */);
     }
     EX_CATCH
@@ -3366,6 +3389,7 @@ extern "C" CLR_BOOL QCALLTYPE CallFilterFunclet(QCall::ObjectHandleOnStack excep
 
     // Profiler, debugger and ETW events
     pExInfo->MakeCallbacksRelatedToHandler(false, pThread, pMD, &pExInfo->m_CurrentClause, (DWORD_PTR)pFilterIP, spForDebugger);
+
     END_QCALL;
 
     return dwResult == EXCEPTION_EXECUTE_HANDLER;
@@ -4332,7 +4356,7 @@ void DECLSPEC_NORETURN DispatchExSecondPass(ExInfo *pExInfo)
     // ------------------------------------------------
     pExInfo->m_idxCurClause = catchingTryRegionIdx;
 
-    CallCatchFunclet(pExInfo->m_exception, (BYTE *)pCatchHandler, pFrameIter->m_crawl.GetRegisterSet(), pExInfo);
+    CallCatchFunclet((BYTE *)pCatchHandler, pFrameIter->m_crawl.GetRegisterSet(), pExInfo);
     // CallCatchFunclet will resume after the catch and never return here.
     UNREACHABLE();
 }
@@ -4401,7 +4425,7 @@ VOID DECLSPEC_NORETURN ContinueExceptionInterceptionUnwind()
     // ------------------------------------------------
     if (unwoundReversePInvoke)
     {
-        CallCatchFunclet(pExInfo->m_exception, NULL, pExInfo->m_frameIter.m_crawl.GetRegisterSet(), pExInfo);
+        CallCatchFunclet(NULL, pExInfo->m_frameIter.m_crawl.GetRegisterSet(), pExInfo);
     }
     else
     {

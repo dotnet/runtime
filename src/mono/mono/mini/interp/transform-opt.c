@@ -1170,6 +1170,24 @@ insert_phi_nodes (TransformData *td)
 	}
 }
 
+static InterpInst*
+insert_tiering_def (TransformData *td, InterpBasicBlock *bb, InterpInst *prev_ins, int var_index)
+{
+	td->renamable_vars [td->vars [var_index].ext_index].ssa_fixed = TRUE;
+
+	InterpInst *def = interp_insert_ins_bb (td, bb, prev_ins, MINT_DEF_TIER_VAR);
+	def->sregs [0] = var_index;
+	def->dreg = var_index;
+	InterpVar *var_data = &td->vars [var_index];
+	if (!g_slist_find (var_data->declare_bbs, bb))
+		var_data->declare_bbs = g_slist_prepend (var_data->declare_bbs, bb);
+	if (td->verbose_level) {
+		g_print ("insert patchpoint var define in BB%d:\n\t", bb->index);
+		interp_dump_ins (def, td->data_items);
+	}
+	return def;
+}
+
 // Additional fixed vars, in addition to vars that are args to phi nodes
 static void
 insert_tiering_defs (TransformData *td)
@@ -1183,8 +1201,6 @@ insert_tiering_defs (TransformData *td)
 		for (unsigned int k = 0; k < td->renamable_vars_size; k++) {
 			int var_index = td->renamable_vars [k].var_index;
 			if (td->vars [var_index].il_global && mono_bitset_test_fast (bb->live_in_set, k)) {
-				td->renamable_vars [k].ssa_fixed = TRUE;
-
 				// Patchpoints introduce some complications since some variables have to be
 				// accessed from same offset between unoptimized and optimized methods.
 				//
@@ -1210,17 +1226,27 @@ insert_tiering_defs (TransformData *td)
 				// IL_VAR, the original one from BB0 and the one from patchpoint bblock from BB1. This
 				// will force a phi definition in BB2 and we will once again be force to access IL_VAR
 				// from the original offset that is equal to the one in unoptimized method.
-				InterpInst *def = interp_insert_ins_bb (td, bb, NULL, MINT_DEF_TIER_VAR);
-				def->sregs [0] = var_index;
-				def->dreg = var_index;
-				InterpVar *var_data = &td->vars [var_index];
-				// Record the new declaration for this var. Phi nodes insertion phase will account for this
-				if (!g_slist_find (var_data->declare_bbs, bb))
-					var_data->declare_bbs = g_slist_prepend (var_data->declare_bbs, bb);
-				if (td->verbose_level) {
-					g_print ("insert patchpoint var define in BB%d:\n\t", bb->index);
-					interp_dump_ins (def, td->data_items);
-				}
+				insert_tiering_def (td, bb, NULL, var_index);
+			}
+		}
+	}
+
+	// OSR in a finally handler can resume at its caller's continuation. EH blocks
+	// are outside the SSA CFG, so preserve the IL locals live across this return.
+	for (int i = 0; i < td->bblocks_count_no_eh; i++) {
+		InterpBasicBlock *bb = td->bblocks [i];
+		for (InterpInst *ins = bb->first_ins; ins != NULL; ins = ins->next) {
+			if (ins->opcode != MINT_TIER_PATCHPOINT_DATA)
+				continue;
+			InterpInst *call = ins->prev;
+			g_assert (call && call->opcode == MINT_CALL_HANDLER);
+			if (!td->clause_has_patchpoint [call->data [2]])
+				continue;
+			unsigned int k;
+			mono_bitset_foreach_bit (bb->live_out_set, k, td->renamable_vars_size) {
+				int var_index = td->renamable_vars [k].var_index;
+				if (td->vars [var_index].il_global)
+					ins = insert_tiering_def (td, bb, ins, var_index);
 			}
 		}
 	}

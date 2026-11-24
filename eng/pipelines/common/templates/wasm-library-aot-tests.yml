@@ -1,4 +1,5 @@
 parameters:
+  useHelixMonitor: false
   alwaysRun: false
   extraBuildArgs: ''
   extraHelixArguments: ''
@@ -21,6 +22,7 @@ jobs:
 - ${{ each platform in parameters.platforms }}:
   - template: /eng/pipelines/common/templates/wasm-library-tests.yml
     parameters:
+      useHelixMonitor: ${{ parameters.useHelixMonitor }}
       platforms:
         - ${{ platform }}
       nameSuffix: ${{ parameters.nameSuffix }}

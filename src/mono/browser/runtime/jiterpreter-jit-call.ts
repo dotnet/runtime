@@ -182,6 +182,11 @@ function getWasmTableEntry (index: number) {
 export function mono_interp_invoke_wasm_jit_call_trampoline (
     thunkIndex: number, ret_sp: number, sp: number, ftndesc: number, thrown: NativePointer
 ) {
+    ret_sp = ret_sp as any >>> 0 as any;
+    sp = sp as any >>> 0 as any;
+    ftndesc = ftndesc as any >>> 0 as any;
+    thrown = thrown as any >>> 0 as any;
+
     const thunk = <Function>getWasmTableEntry(thunkIndex);
     try {
         thunk(ret_sp, sp, ftndesc, thrown);
@@ -234,6 +239,11 @@ export function mono_interp_jit_wasm_jit_call_trampoline (
     method: MonoMethod, rmethod: VoidPtr, cinfo: VoidPtr,
     arg_offsets: VoidPtr, catch_exceptions: number
 ): void {
+    method = method as any >>> 0 as any;
+    rmethod = rmethod as any >>> 0 as any;
+    cinfo = cinfo as any >>> 0 as any;
+    arg_offsets = arg_offsets as any >>> 0 as any;
+
     // multiple cinfos can share the same target function, so for that scenario we want to
     //  use the same TrampolineInfo for all of them. if that info has already been jitted
     //  we want to immediately store its pointer into the cinfo, otherwise we add it to
@@ -296,7 +306,7 @@ export function mono_interp_flush_jitcall_queue (): void {
 
     let builder = trampBuilder;
     if (!builder) {
-        trampBuilder = builder = new WasmBuilder(0);
+        trampBuilder = builder = new WasmBuilder();
         // Function type for compiled trampolines
         builder.defineType(
             "trampoline",
@@ -316,7 +326,7 @@ export function mono_interp_flush_jitcall_queue (): void {
         builder.defineImportedFunction("i", "begin_catch", "begin_catch", true, getRawCwrap("mono_jiterp_begin_catch"));
         builder.defineImportedFunction("i", "end_catch", "end_catch", true, getRawCwrap("mono_jiterp_end_catch"));
     } else
-        builder.clear(0);
+        builder.clear();
 
     if (builder.options.wasmBytesLimit <= getCounter(JiterpCounter.BytesGenerated)) {
         cwraps.mono_jiterp_tlqueue_clear(JitQueue.JitCall);

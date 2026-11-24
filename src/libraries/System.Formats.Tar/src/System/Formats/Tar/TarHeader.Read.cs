@@ -145,13 +145,13 @@ namespace System.Formats.Tar
             }
 
             // The 'uid' header field only fits 8 bytes, or the user could've stored an override in the extended attributes
-            if (TarHelpers.TryGetStringAsBaseTenInteger(ExtendedAttributes, PaxEaUid, out int uid))
+            if (TarHelpers.TryGetStringAsUidGid(ExtendedAttributes, PaxEaUid, out int uid))
             {
                 _uid = uid;
             }
 
             // The 'gid' header field only fits 8 bytes, or the user could've stored an override in the extended attributes
-            if (TarHelpers.TryGetStringAsBaseTenInteger(ExtendedAttributes, PaxEaGid, out int gid))
+            if (TarHelpers.TryGetStringAsUidGid(ExtendedAttributes, PaxEaGid, out int gid))
             {
                 _gid = gid;
             }
@@ -397,8 +397,8 @@ namespace System.Formats.Tar
             {
                 _checksum = checksum,
                 _size = size,
-                _uid = TarHelpers.ParseNumeric<int>(buffer.Slice(FieldLocations.Uid, FieldLengths.Uid)),
-                _gid = TarHelpers.ParseNumeric<int>(buffer.Slice(FieldLocations.Gid, FieldLengths.Gid)),
+                _uid = TarHelpers.ParseUidGid(buffer.Slice(FieldLocations.Uid, FieldLengths.Uid)),
+                _gid = TarHelpers.ParseUidGid(buffer.Slice(FieldLocations.Gid, FieldLengths.Gid)),
                 _linkName = TarHelpers.ParseUtf8String(buffer.Slice(FieldLocations.LinkName, FieldLengths.LinkName))
             };
 
