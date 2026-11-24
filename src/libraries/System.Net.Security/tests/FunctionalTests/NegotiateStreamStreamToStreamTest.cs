@@ -60,7 +60,8 @@ namespace System.Net.Security.Tests
                 Assert.Equal(IsEncryptedAndSigned, client.IsEncrypted);
                 Assert.False(client.IsMutuallyAuthenticated);
                 Assert.False(client.IsServer);
-                Assert.Equal(IsEncryptedAndSigned, client.IsSigned);
+                // Windows may negotiate NTLM signing even when ProtectionLevel.None is requested.
+                Assert.True(client.IsSigned || !IsEncryptedAndSigned);
                 Assert.False(client.LeaveInnerStreamOpen);
 
                 IIdentity serverIdentity = client.RemoteIdentity;
@@ -77,7 +78,7 @@ namespace System.Net.Security.Tests
                 Assert.Equal(IsEncryptedAndSigned, server.IsEncrypted);
                 Assert.False(server.IsMutuallyAuthenticated);
                 Assert.True(server.IsServer);
-                Assert.Equal(IsEncryptedAndSigned, server.IsSigned);
+                Assert.Equal(client.IsSigned, server.IsSigned);
                 Assert.False(server.LeaveInnerStreamOpen);
 
                 IIdentity clientIdentity = server.RemoteIdentity;
@@ -156,7 +157,8 @@ namespace System.Net.Security.Tests
                 Assert.Equal(IsEncryptedAndSigned, client.IsEncrypted);
                 Assert.False(client.IsMutuallyAuthenticated);
                 Assert.False(client.IsServer);
-                Assert.Equal(IsEncryptedAndSigned, client.IsSigned);
+                // Windows may negotiate NTLM signing even when ProtectionLevel.None is requested.
+                Assert.True(client.IsSigned || !IsEncryptedAndSigned);
                 Assert.False(client.LeaveInnerStreamOpen);
 
                 IIdentity serverIdentity = client.RemoteIdentity;
@@ -173,7 +175,7 @@ namespace System.Net.Security.Tests
                 Assert.Equal(IsEncryptedAndSigned, server.IsEncrypted);
                 Assert.False(server.IsMutuallyAuthenticated);
                 Assert.True(server.IsServer);
-                Assert.Equal(IsEncryptedAndSigned, server.IsSigned);
+                Assert.Equal(client.IsSigned, server.IsSigned);
                 Assert.False(server.LeaveInnerStreamOpen);
 
                 IIdentity clientIdentity = server.RemoteIdentity;
