@@ -6196,7 +6196,7 @@ void ExecutionManager::Unload(LoaderAllocator *pLoaderAllocator)
 #endif // FEATURE_INTERPRETER
 }
 
-#ifdef HOST_64BIT
+#if defined(HOST_64BIT) && !defined(TARGET_WASM)
 // This method is used by the JIT and the runtime for PreStubs. It will return
 // the address of a short jump thunk that will jump to the 'target' address.
 // It is only needed when the target architecture has a perferred call instruction
@@ -6442,11 +6442,7 @@ DONE:
     _ASSERTE(((UINT_PTR)jumpStub & 7) == 0);
 #endif
 
-#ifdef TARGET_WASM64
-    UNREACHABLE_MSG("Wasm64 does not use native jump stubs");
-#else
     emitBackToBackJump(jumpStub, jumpStubRW, (void*) target);
-#endif
 
     PerfMap::LogStubs(__FUNCTION__, "emitBackToBackJump", (PCODE)jumpStub, BACK_TO_BACK_JUMP_ALLOCATE_SIZE, PerfMapStubType::IndividualWithinBlock);
 
@@ -6511,7 +6507,7 @@ DONE:
 
     return (PCODE)jumpStub;
 }
-#endif // HOST_64BIT
+#endif // HOST_64BIT && !TARGET_WASM
 #endif // !DACCESS_COMPILE
 
 static void GetFuncletStartOffsetsHelper(PCODE pCodeStart, SIZE_T size, SIZE_T ofsAdj,
