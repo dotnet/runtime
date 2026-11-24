@@ -648,8 +648,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                     }
                     else
                     {
-                        wasmInstParam = impGetInstParamArg(pResolvedToken, pConstrainedResolvedToken, callInfo, clsFlags,
-                                                          isReadonlyCall);
+                        wasmInstParam = impGetInstParamArg(pResolvedToken, pConstrainedResolvedToken, callInfo,
+                                                           clsFlags, isReadonlyCall);
                         if (wasmInstParam == nullptr)
                         {
                             assert(compDonotInline());
@@ -917,7 +917,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
             assert(opcode != CEE_CALLI);
 
-            instParam = impGetInstParamArg(pResolvedToken, pConstrainedResolvedToken, callInfo, clsFlags, isReadonlyCall);
+            instParam =
+                impGetInstParamArg(pResolvedToken, pConstrainedResolvedToken, callInfo, clsFlags, isReadonlyCall);
             if (instParam == nullptr)
             {
                 assert(compDonotInline());
