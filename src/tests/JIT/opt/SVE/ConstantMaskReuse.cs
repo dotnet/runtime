@@ -40,17 +40,14 @@ public class ConstantMaskReuse
         Consume(PTrueMultipleMixedSources(a, b, c));
         Consume(PTrueDifferentPatterns(a, b, c));
         Consume(PTrueDifferentElementSizes(a));
-        Consume(PTrueMultipleConversionTrueMask(mask1, mask2));
+        Consume(PTrueMultipleConvertVectorToMask(mask1, mask2));
         Consume(PTrueSeparatedByCall(a, b));
 
-        if (Sve2.IsSupported)
-        {
-            Vector<double> d = Vector.Create(42.0);
-            Vector<byte> e = Vector.Create((byte)42);
+        Vector<double> d = Vector.Create(42.0);
+        Vector<byte> e = Vector.Create((byte)42);
 
-            Consume(PTrueMultipleSve2Log2Negate(d));
-            Consume(PTrueMultipleSve2ZeroExtend8(e));
-        }
+        Consume(PTrueMultipleAbsNegate(d));
+        Consume(PTrueMultipleZeroExtend8(e));
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -104,7 +101,7 @@ public class ConstantMaskReuse
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static ulong PTrueMultipleConversionTrueMask(Vector<ulong> mask1, Vector<ulong> mask2)
+    private static ulong PTrueMultipleConvertVectorToMask(Vector<ulong> mask1, Vector<ulong> mask2)
     {
         //ARM64: ptrue {{p[0-9]+}}.d
         //ARM64-NOT: ptrue
@@ -204,17 +201,17 @@ public class ConstantMaskReuse
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static Vector<double> PTrueMultipleSve2Log2Negate(Vector<double> value)
+    private static Vector<double> PTrueMultipleAbsNegate(Vector<double> value)
     {
         //ARM64: ptrue {{p[0-9]+}}.d
         //ARM64-NOT: ptrue
-        Vector<long> exponent = Sve2.Log2(value);
-        Vector<long> scale = Sve.Negate(exponent);
-        return Sve.Scale(value, scale);
+        Vector<double> absolute = Sve.Abs(value);
+        Vector<double> negated = Sve.Negate(value);
+        return Sve.Add(absolute, negated);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static Vector<ushort> PTrueMultipleSve2ZeroExtend8(Vector<byte> value)
+    private static Vector<ushort> PTrueMultipleZeroExtend8(Vector<byte> value)
     {
         //ARM64: ptrue {{p[0-9]+}}.h
         //ARM64-NOT: ptrue

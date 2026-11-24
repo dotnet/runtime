@@ -24615,7 +24615,7 @@ GenTree* Compiler::gtNewSimdCvtVectorToMaskNode(var_types type, GenTree* op1, va
     return gtNewSimdHWIntrinsicNode(TYP_MASK, op1, NI_AVX512_ConvertVectorToMask, simdBaseType, simdSize);
 #elif defined(TARGET_ARM64)
     // ConvertVectorToMask uses cmpne which requires an embedded mask.
-    GenTree* trueMask = gtNewSimdHWIntrinsicNode(TYP_MASK, NI_Sve_ConversionTrueMask, simdBaseType, simdSize);
+    GenTree* trueMask = gtNewSimdTrueMaskNode(simdBaseType);
     return gtNewSimdHWIntrinsicNode(TYP_MASK, trueMask, op1, NI_Sve_ConvertVectorToMask, simdBaseType, simdSize);
 #else
 #error Unsupported platform
@@ -35494,7 +35494,11 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 #if defined(TARGET_XARCH)
         tryHandle = op->OperIsHWIntrinsic();
 #elif defined(TARGET_ARM64)
-        assert(op->OperIsHWIntrinsic(NI_Sve_ConversionTrueMask));
+        assert(op->OperIs(GT_CNS_MSK));
+        if (op2->IsCnsVec())
+        {
+            return gtFoldExprConvertVecCnsToMask(tree, op2->AsVecCon());
+        }
         op        = op2;
         tryHandle = op->OperIsHWIntrinsic();
 #endif // TARGET_ARM64
@@ -36958,10 +36962,6 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
             switch (ni)
             {
 #ifdef TARGET_ARM64
-                case NI_Sve_ConvertVectorToMask:
-                    resultNode = gtFoldExprConvertVecCnsToMask(tree, cnsNode->AsVecCon());
-                    break;
-
                 case NI_AdvSimd_MultiplyByScalar:
                 case NI_AdvSimd_Arm64_MultiplyByScalar:
                 {
