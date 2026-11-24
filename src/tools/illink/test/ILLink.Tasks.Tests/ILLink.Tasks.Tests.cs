@@ -1365,6 +1365,36 @@ namespace ILLink.Tasks.Tests
                 Assert.Contains(test.BuildEngine.Messages, message => message.Message.Contains("Path-shaped assembly"));
         }
 
+        [Fact]
+        public void CacheKeyAllowsRuntimeIgnoreSubstitutionsArgument()
+        {
+            using var test = new OutputDirectoryTest();
+            string host = PrepareCacheKeyTest(test);
+            test.Task.ExtraArgs = "--ignore-link-attributes true --ignore-substitutions true";
+
+            Assert.True(test.Task.TryGetCacheKey(host, out string withIgnore));
+
+            test.Task.ExtraArgs = "--ignore-link-attributes true --ignore-substitutions false";
+
+            Assert.True(test.Task.TryGetCacheKey(host, out string withoutIgnore));
+            Assert.NotEqual(withIgnore, withoutIgnore);
+        }
+
+        [Fact]
+        public void CacheKeyAllowsRuntimeFeatureArgument()
+        {
+            using var test = new OutputDirectoryTest();
+            string host = PrepareCacheKeyTest(test);
+            test.Task.ExtraArgs = "--ignore-link-attributes true --feature Feature.Switch false";
+
+            Assert.True(test.Task.TryGetCacheKey(host, out string disabled));
+
+            test.Task.ExtraArgs = "--ignore-link-attributes true --feature Feature.Switch true";
+
+            Assert.True(test.Task.TryGetCacheKey(host, out string enabled));
+            Assert.NotEqual(disabled, enabled);
+        }
+
         [Theory]
         [InlineData("--ignore-link-attributes false")]
         [InlineData("--help")]

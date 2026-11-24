@@ -374,34 +374,12 @@ STDMETHODIMP RegMeta::EnumExportedTypes(           // S_OK or error
         // instantiate a new ENUM.
         CMiniMdRW       *pMiniMd = &(m_pStgdb->m_MiniMd);
 
-        if (pMiniMd->HasDelete() &&
-            ((m_OptionValue.m_ImportOption & MDImportOptionAllExportedTypes) == 0))
-        {
-            IfFailGo( HENUMInternal::CreateDynamicArrayEnum( mdtExportedType, &pEnum) );
-
-            // add all Types to the dynamic array if name is not _Delete
-            for (ULONG index = 1; index <= pMiniMd->getCountExportedTypes(); index ++ )
-            {
-                ExportedTypeRec *pRec;
-                IfFailGo(pMiniMd->GetExportedTypeRecord(index, &pRec));
-                LPCSTR szTypeName;
-                IfFailGo(pMiniMd->getTypeNameOfExportedType(pRec, &szTypeName));
-                if (IsDeletedName(szTypeName))
-                {
-                    continue;
-                }
-                IfFailGo( HENUMInternal::AddElementToEnum(pEnum, TokenFromRid(index, mdtExportedType) ) );
-            }
-        }
-        else
-        {
-            // create the enumerator.
-            IfFailGo(HENUMInternal::CreateSimpleEnum(
-                mdtExportedType,
-                1,
-                pMiniMd->getCountExportedTypes() + 1,
-                &pEnum) );
-        }
+        // create the enumerator.
+        IfFailGo(HENUMInternal::CreateSimpleEnum(
+            mdtExportedType,
+            1,
+            pMiniMd->getCountExportedTypes() + 1,
+            &pEnum) );
 
         // set the output parameter.
         *ppmdEnum = pEnum;

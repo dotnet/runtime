@@ -58,7 +58,7 @@ namespace System
         {
             try
             {
-                OnFirstChanceException(*pException, AppDomain.CurrentDomain);
+                OnFirstChanceException(*pException);
             }
             catch
             {
@@ -66,7 +66,7 @@ namespace System
             }
         }
 
-        internal static void SetFirstChanceExceptionHandler()
+        static partial void SetFirstChanceExceptionHandler()
             => SetFirstChanceExceptionHandlerInternal();
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AppContext_SetFirstChanceExceptionHandler")]

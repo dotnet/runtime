@@ -33,6 +33,12 @@ namespace System.Reflection.Tests
         public static void MethodWithVoidPointer(void* vp) { }
     }
 
+    public unsafe class PointerTypeHolder
+    {
+        public static long* StaticField;
+        public int* Field;
+    }
+
     unsafe delegate void MethodDelegate(byte* ptr, int expected);
     unsafe delegate void MethodDelegateWithSystemPointer(Pointer ptr, int expected);
 
@@ -82,8 +88,10 @@ namespace System.Reflection.Tests
         public void PointerValueRoundtrips(int value)
         {
             void* ptr = unchecked((void*)value);
-            void* result = Pointer.Unbox(Pointer.Box(ptr, typeof(int*)));
+            object boxed = Pointer.Box(ptr, typeof(int*));
+            void* result = Pointer.Unbox(boxed);
             Assert.Equal((IntPtr)ptr, (IntPtr)result);
+            Assert.Equal((IntPtr)ptr, (IntPtr)((Pointer)boxed).Value);
         }
 
         public static IEnumerable<object[]> Pointers =>
@@ -95,6 +103,46 @@ namespace System.Reflection.Tests
                 new object[] { int.MaxValue },
                 new object[] { int.MinValue },
             };
+
+        public static IEnumerable<object[]> PointerTypes =>
+            new[]
+            {
+                new object[] { typeof(void*) },
+                new object[] { typeof(int*) },
+                new object[] { typeof(long*) },
+                new object[] { typeof(int**) },
+                new object[] { typeof(Guid*) },
+            };
+
+        [Theory]
+        [MemberData(nameof(PointerTypes))]
+        public void PointerProperties_ReturnsBoxedType(Type type)
+        {
+            Pointer pointer = (Pointer)Pointer.Box((void*)1, type);
+            Assert.Equal(type, pointer.PointerType);
+            Assert.Equal((IntPtr)1, (IntPtr)pointer.Value);
+        }
+
+        [Fact]
+        public void PointerProperties_StaticFieldGetValue()
+        {
+            PointerTypeHolder.StaticField = (long*)2;
+            FieldInfo field = typeof(PointerTypeHolder).GetField(nameof(PointerTypeHolder.StaticField));
+            Pointer pointer = Assert.IsType<Pointer>(field.GetValue(null));
+            Assert.Equal(typeof(long*), pointer.PointerType);
+            Assert.Equal((IntPtr)2, (IntPtr)pointer.Value);
+        }
+
+        [Fact]
+        public void PointerProperties_FieldGetValueDirect()
+        {
+            var obj = new PointerTypeHolder();
+            obj.Field = (int*)3;
+            FieldInfo field = typeof(PointerTypeHolder).GetField(nameof(PointerTypeHolder.Field));
+            Pointer pointer = Assert.IsType<Pointer>(field.GetValueDirect(__makeref(obj)));
+            Assert.Equal(typeof(int*), pointer.PointerType);
+            Assert.Equal((IntPtr)3, (IntPtr)pointer.Value);
+        }
 
         [Theory]
         [MemberData(nameof(Pointers))]
@@ -145,9 +193,11 @@ namespace System.Reflection.Tests
             obj.field = unchecked((int*)value);
             FieldInfo field = typeof(PointerHolder).GetField("field");
             object actualValue = field.GetValue(obj);
-            Assert.IsType<Pointer>(actualValue);
+            Pointer pointer = Assert.IsType<Pointer>(actualValue);
+            Assert.Equal(typeof(int*), pointer.PointerType);
             void* actualPointer = Pointer.Unbox(actualValue);
             Assert.Equal(value, unchecked((int)actualPointer));
+            Assert.Equal((IntPtr)actualPointer, (IntPtr)pointer.Value);
         }
 
         [Theory]
@@ -191,9 +241,11 @@ namespace System.Reflection.Tests
             obj.Property = unchecked((char*)value);
             PropertyInfo property = typeof(PointerHolder).GetProperty("Property");
             object actualValue = property.GetValue(obj);
-            Assert.IsType<Pointer>(actualValue);
+            Pointer pointer = Assert.IsType<Pointer>(actualValue);
+            Assert.Equal(typeof(char*), pointer.PointerType);
             void* actualPointer = Pointer.Unbox(actualValue);
             Assert.Equal(value, unchecked((int)actualPointer));
+            Assert.Equal((IntPtr)actualPointer, (IntPtr)pointer.Value);
         }
 
         [Theory]
@@ -260,9 +312,11 @@ namespace System.Reflection.Tests
             var obj = new PointerHolder();
             MethodInfo method = typeof(PointerHolder).GetMethod("Return");
             object actualValue = method.Invoke(obj, new object[] { value });
-            Assert.IsType<Pointer>(actualValue);
+            Pointer pointer = Assert.IsType<Pointer>(actualValue);
+            Assert.Equal(typeof(bool*), pointer.PointerType);
             void* actualPointer = Pointer.Unbox(actualValue);
             Assert.Equal(value, unchecked((int)actualPointer));
+            Assert.Equal((IntPtr)actualPointer, (IntPtr)pointer.Value);
         }
 
         [Theory]
@@ -360,9 +414,11 @@ namespace System.Reflection.Tests
             var obj = new PointerHolder();
             ReturnDelegate d = obj.Return;
             object actualValue = d.DynamicInvoke(value);
-            Assert.IsType<Pointer>(actualValue);
+            Pointer pointer = Assert.IsType<Pointer>(actualValue);
+            Assert.Equal(typeof(bool*), pointer.PointerType);
             void* actualPointer = Pointer.Unbox(actualValue);
             Assert.Equal(value, unchecked((int)actualPointer));
+            Assert.Equal((IntPtr)actualPointer, (IntPtr)pointer.Value);
         }
 
         [Theory]
@@ -372,9 +428,11 @@ namespace System.Reflection.Tests
             var obj = new PointerHolder();
             ReturnDelegateWithSystemPointer d = obj.ReturnWithSystemPointer;
             object actualValue = d.DynamicInvoke(value);
-            Assert.IsType<Pointer>(actualValue);
+            Pointer pointer = Assert.IsType<Pointer>(actualValue);
+            Assert.Equal(typeof(byte*), pointer.PointerType);
             void* actualPointer = Pointer.Unbox(actualValue);
             Assert.Equal(value, unchecked((int)actualPointer));
+            Assert.Equal((IntPtr)actualPointer, (IntPtr)pointer.Value);
         }
     }
 }

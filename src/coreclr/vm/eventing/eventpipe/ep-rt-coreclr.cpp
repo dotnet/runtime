@@ -193,9 +193,8 @@ ep_rt_coreclr_session_stopping (void)
 	// session, so ep_event_is_enabled_for_current_thread tests that session's mask and the events emitted by
 	// the flush route only to it (dotnet-pgo drops a method once data arrives after its final chunk, so a
 	// single destination is required).
-	extern EventPipeEvent *EventPipeEventJitInstrumentationDataVerbose;
-	if (EventPipeEventJitInstrumentationDataVerbose != NULL &&
-		ep_event_is_enabled_for_current_thread (EventPipeEventJitInstrumentationDataVerbose))
+	extern EventPipeEvent *EventPipeGetEventJitInstrumentationDataVerbose (void);
+	if (ep_event_is_enabled_for_current_thread (EventPipeGetEventJitInstrumentationDataVerbose ()))
 	{
 		EX_TRY
 		{

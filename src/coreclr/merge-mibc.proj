@@ -1,0 +1,79 @@
+<Project Sdk="Microsoft.Build.NoTargets">
+
+  <ItemGroup>
+    <ProjectReference Include="$(CoreClrProjectRoot)tools\dotnet-pgo\dotnet-pgo.csproj"
+                      Condition="'$(DotNetBuildSourceOnly)' != 'true'"
+                      OutputItemType="DotNetPgo" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <CustomAfterNoTargets>$(MSBuildThisFileDirectory)merge-mibc.targets</CustomAfterNoTargets>
+    <OSPlatformConfig>$(TargetOS).$(TargetArchitecture).$(Configuration)</OSPlatformConfig>
+    <BinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'coreclr', '$(OSPlatformConfig)'))</BinDir>
+    <DotNetCli>$([MSBuild]::NormalizePath('$(RepoRoot)', 'dotnet.sh'))</DotNetCli>
+    <DotNetCli Condition="'$(OS)' == 'Windows_NT'">$([MSBuild]::NormalizePath('$(RepoRoot)', 'dotnet.cmd'))</DotNetCli>
+    <MergedMibcPath>$([MSBuild]::NormalizePath('$(BinDir)', 'StandardOptimizationData.mibc'))</MergedMibcPath>
+    <_MergeMibcFilesCacheFile>$(MibcOptimizationDataDir)/$(TargetOS)/$(TargetArchitecture)/merge_mibc_files.cache</_MergeMibcFilesCacheFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <MergedMibcFile Include="$(MergedMibcPath)" />
+    <OptimizationMibcFile Include="$(MibcOptimizationDataDir)/$(TargetOS)/$(TargetArchitecture)/**/*.mibc" />
+  </ItemGroup>
+
+  <!-- Creates a hash file that changes whenever the input mibc file modification times change.
+       This will trigger a re-merge when updating to a new version of the optimization data,
+       even if the new timestamps are still days in the past. -->
+  <Target Name="GenerateMergeMibcFilesInputCache">
+    <ItemGroup>
+      <_MergeMibcFilesInputCache Include="@(OptimizationMibcFile)" />
+      <_MergeMibcFilesInputCache Include="@(DotNetPgo)" />
+      <_MergeMibcFilesInputCache Include="@(OptimizationMibcFile->'%(ModifiedTime)')" />
+    </ItemGroup>
+
+    <Hash ItemsToHash="@(_MergeMibcFilesInputCache)">
+      <Output TaskParameter="HashResult" PropertyName="_MergeMibcFilesInputCacheHash" />
+    </Hash>
+
+    <WriteLinesToFile
+      Lines="$(_MergeMibcFilesInputCacheHash)"
+      File="$(_MergeMibcFilesCacheFile)"
+      Overwrite="true"
+      WriteOnlyWhenDifferent="true" />
+
+    <ItemGroup>
+      <FileWrites Include="$(_MergeMibcFilesCacheFile)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="MergeMibcFiles"
+          DependsOnTargets="GenerateMergeMibcFilesInputCache"
+          Inputs="$(_MergeMibcFilesCacheFile);@(OptimizationMibcFile);@(DotNetPgo)"
+          Condition="'@(DotNetPgo)' != ''"
+          Outputs="@(MergedMibcFile)">
+    <PropertyGroup>
+      <DotNetPgoCmd>$(DotNetCli) @(DotNetPgo) merge</DotNetPgoCmd>
+      <DotNetPgoCmd>$(DotNetPgoCmd) -o:@(MergedMibcFile)</DotNetPgoCmd>
+      <DotNetPgoCmd>$(DotNetPgoCmd) @(OptimizationMibcFile->'-i:%(Identity)', ' ')</DotNetPgoCmd>
+      <DotNetPgoCmd>$(DotNetPgoCmd) --compressed false</DotNetPgoCmd> <!-- Signing service doesn't handle compressed mibc signing correctly. -->
+    </PropertyGroup>
+
+    <MakeDir Directories="$(BinDir)" />
+    <Message Importance="High" Text="$(DotNetPgoCmd)"/>
+    <Exec Command="$(DotNetPgoCmd)" />
+  </Target>
+
+  <Target Name="BuildMibcFile"
+          AfterTargets="CoreBuild"
+          DependsOnTargets="ResolveProjectReferences;MergeMibcFiles" />
+
+  <Target Name="GetMibcFile"
+          DependsOnTargets="BuildMibcFile"
+          Returns="@(MergedMibcFile)" />
+
+  <Target Name="CleanMibcFile"
+          AfterTargets="Clean">
+    <Delete Files="@(MergedMibcFile);$(_MergeMibcFilesCacheFile)" />
+  </Target>
+
+</Project>

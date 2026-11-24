@@ -15,12 +15,8 @@ variables:
   - name: buildProductRootFolderPath
     value: '$(Build.SourcesDirectory)/artifacts/bin/${{ parameters.runtimeFlavor }}/$(osGroup).$(archType).$(buildConfigUpper)'
 
-  - ${{ if ne(parameters.runtimeFlavor, 'mono') }}:
-    - name: managedGenericTestArtifactName
-      value: 'CoreCLRManagedTestArtifacts_AnyOS_AnyCPU_$(buildConfig)'
-  - ${{ else }}:
-    - name: managedGenericTestArtifactName
-      value: 'MonoManagedTestArtifacts_AnyOS_AnyCPU_$(buildConfig)'
+  - name: managedGenericTestArtifactName
+    value: 'CoreCLRManagedTestArtifacts_AnyOS_AnyCPU_$(buildConfig)'
 
   - name: managedTestArtifactRootFolderPath
     value: '$(binTestsPath)/$(osGroup).$(archType).$(buildConfigUpper)'

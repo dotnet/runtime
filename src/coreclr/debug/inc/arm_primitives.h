@@ -11,6 +11,7 @@
 
 #ifndef ARM_PRIMITIVES_H_
 #define ARM_PRIMITIVES_H_
+#include <minipal/instructioncache.h>
 
 //
 // Mapping from ICorDebugInfo register numbers to CorDebugRegister
@@ -37,8 +38,7 @@ inline void CORDbgSetInstructionExImpl(CORDB_ADDRESS_TYPE* address,
     LIMITED_METHOD_DAC_CONTRACT;
 
     *(PRD_TYPE *)address = instruction;
-    FlushInstructionCache(GetCurrentProcess(),
-                          address,
+    minipal_flush_instruction_cache(address,
                           sizeof(PRD_TYPE));
 }
 

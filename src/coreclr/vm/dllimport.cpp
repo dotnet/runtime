@@ -420,7 +420,7 @@ public:
             {
                 // We used to get LCID from current thread's culture here. The code
                 // was replaced by the hardcoded LCID_ENGLISH_US as requested by VSTO.
-                pcs->EmitLDC(0x0409); // LCID_ENGLISH_US
+                pcs->EmitLDC_I4(0x0409); // LCID_ENGLISH_US
             }
             else
             {
@@ -609,7 +609,7 @@ public:
                 if (!returnTheHRESULT)
                 {
                     pcsExceptionHandler->EmitPOP();
-                    pcsExceptionHandler->EmitLDC(0);
+                    pcsExceptionHandler->EmitLDC_I4(0);
                     pcsExceptionHandler->EmitCONV_T((CorElementType)nativeReturnElemType);
                 }
                 _ASSERTE(retvalLocalNum != (DWORD)-1);
@@ -639,8 +639,7 @@ public:
             break;
         case ELEMENT_TYPE_PTR:
             pcsExceptionHandler->EmitPOP();
-            pcsExceptionHandler->EmitLDC(0);
-            pcsExceptionHandler->EmitCONV_U();
+            pcsExceptionHandler->EmitLDC_I(0);
             _ASSERTE(retvalLocalNum != (DWORD)-1);
             pcsExceptionHandler->EmitSTLOC(retvalLocalNum);
             break;
@@ -655,7 +654,7 @@ public:
         case ELEMENT_TYPE_I:
         case ELEMENT_TYPE_U:
             pcsExceptionHandler->EmitPOP();
-            pcsExceptionHandler->EmitLDC(0);
+            pcsExceptionHandler->EmitLDC_I4(0);
             pcsExceptionHandler->EmitCONV_T((CorElementType)nativeReturnElemType);
             _ASSERTE(retvalLocalNum != (DWORD)-1);
             pcsExceptionHandler->EmitSTLOC(retvalLocalNum);
@@ -695,7 +694,7 @@ public:
                 // reverse interop needs to seed the return value if the
                 // managed function returns void but we're doing hresult
                 // swapping.
-                pcsUnmarshal->EmitLDC(S_OK);
+                pcsUnmarshal->EmitLDC_I4(S_OK);
             }
         }
 
@@ -820,7 +819,7 @@ public:
                 ILCodeLabel* pSkipThrowLabel = pcsDispatch->NewCodeLabel();
 
                 pcsDispatch->EmitDUP();
-                pcsDispatch->EmitLDC(0); // Compare against S_OK (i.e. 0).
+                pcsDispatch->EmitLDC_I4(0); // Compare against S_OK (i.e. 0).
                 pcsDispatch->EmitBGE(pSkipThrowLabel);
 
 #ifdef FEATURE_COMINTEROP
@@ -845,7 +844,7 @@ public:
                 }
 
                 pcsDispatch->EmitTHROW();
-                pcsDispatch->EmitLDC(0);   // keep the IL stack balanced across the branch and the fall-through
+                pcsDispatch->EmitLDC_I4(0);   // keep the IL stack balanced across the branch and the fall-through
                 pcsDispatch->EmitLabel(pSkipThrowLabel);
                 pcsDispatch->EmitPOP();
             }
@@ -860,7 +859,7 @@ public:
             pcsDispatch->EmitDUP();
             pcsDispatch->EmitBRFALSE(pSkipThrowLabel);
             pcsDispatch->EmitTHROW();
-            pcsDispatch->EmitLDC(0);   // keep the IL stack balanced across the branch and the fall-through
+            pcsDispatch->EmitLDC_I4(0);   // keep the IL stack balanced across the branch and the fall-through
             pcsDispatch->EmitLabel(pSkipThrowLabel);
             pcsDispatch->EmitPOP();
         }
@@ -1433,9 +1432,8 @@ public:
         CLRToCOMCallInfo* pComInfo = CLRToCOMCallInfo::FromMethodDesc(pTargetMD);
         _ASSERTE(pComInfo->m_pInterfaceMT != NULL);
 
-        pcsDispatch->EmitLDC((DWORD_PTR)pComInfo->m_pInterfaceMT);
-        pcsDispatch->EmitCONV_I();
-        pcsDispatch->EmitLDC(pComInfo->m_cachedComSlot);
+        pcsDispatch->EmitLDC_I((DWORD_PTR)pComInfo->m_pInterfaceMT);
+        pcsDispatch->EmitLDC_I4(pComInfo->m_cachedComSlot);
 
         pcsDispatch->EmitLDLOCA(m_slIL.GetTargetEntryPointLocalNum());
 
@@ -1624,7 +1622,7 @@ public:
         ILCodeStream *pcsMarshal = m_slIL.GetMarshalCodeStream();
 
         pcsMarshal->EmitLDLOC(m_argumentArrayLocalNum);
-        pcsMarshal->EmitLDC(paramIndex);
+        pcsMarshal->EmitLDC_I4(paramIndex);
         LocalDesc argTypeDesc(argType);
         pcsMarshal->EmitLDARG(paramIndex);
         if (pInfo->IsByRef())
@@ -1640,7 +1638,7 @@ public:
         pcsMarshal->EmitSTELEM_REF();
 
         pcsMarshal->EmitLDLOC(m_argumentTypeLocalNum);
-        pcsMarshal->EmitLDC(paramIndex);
+        pcsMarshal->EmitLDC_I4(paramIndex);
 
         pcsMarshal->EmitLDTOKEN(pcsMarshal->GetToken(argType));
         pcsMarshal->EmitCALL(METHOD__TYPE__GET_TYPE_FROM_HANDLE, 1, 1);
@@ -1650,8 +1648,8 @@ public:
         {
             // Mark this argument as by-ref in the argumentIsByRef array so the callee knows to copy back the value after the call.
             pcsMarshal->EmitLDLOC(m_argumentIsByRefArrayLocalNum);
-            pcsMarshal->EmitLDC(paramIndex);
-            pcsMarshal->EmitLDC(1);
+            pcsMarshal->EmitLDC_I4(paramIndex);
+            pcsMarshal->EmitLDC_I4(1);
             pcsMarshal->EmitSTELEM_I1();
 
             // We need to emit the code to copy back the results after the call.
@@ -1659,7 +1657,7 @@ public:
 
             pcsUnmarshal->EmitLDARG(paramIndex);
             pcsUnmarshal->EmitLDLOC(m_argumentArrayLocalNum);
-            pcsUnmarshal->EmitLDC(paramIndex);
+            pcsUnmarshal->EmitLDC_I4(paramIndex);
             pcsUnmarshal->EmitLDELEM_REF();
             pcsUnmarshal->EmitUNBOX_ANY(pcsUnmarshal->GetToken(argType));
             pcsUnmarshal->EmitSTIND_T(&argTypeDesc);
@@ -1681,7 +1679,7 @@ public:
             LocalDesc wrapperArrayType(ELEMENT_TYPE_I4);
             wrapperArrayType.MakeArray();
             m_wrapperArrayLocalNum = pcsMarshal->NewLocal(wrapperArrayType);
-            pcsMarshal->EmitLDC((DWORD)m_signature.NumFixedArgs());
+            pcsMarshal->EmitLDC_I4((DWORD)m_signature.NumFixedArgs());
             pcsMarshal->EmitNEWARR(pcsMarshal->GetToken(CoreLibBinder::GetClass(CLASS__INT32)));
             pcsMarshal->EmitSTLOC(m_wrapperArrayLocalNum);
 
@@ -1690,8 +1688,8 @@ public:
                 if (m_wrapperTypes[i] != 0)
                 {
                     pcsMarshal->EmitLDLOC(m_wrapperArrayLocalNum);
-                    pcsMarshal->EmitLDC(i);
-                    pcsMarshal->EmitLDC(m_wrapperTypes[i]);
+                    pcsMarshal->EmitLDC_I4(i);
+                    pcsMarshal->EmitLDC_I4(m_wrapperTypes[i]);
                     pcsMarshal->EmitSTELEM_I4();
                 }
             }
@@ -1730,7 +1728,7 @@ public:
             pcsDispatch->EmitLDSTR(SString(SString::Utf8, memberName));
         }
 
-        pcsDispatch->EmitLDC(binderFlags);
+        pcsDispatch->EmitLDC_I4(binderFlags);
         pcsDispatch->EmitLoadThis();
         pcsDispatch->EmitLDLOC(m_argumentArrayLocalNum);
         pcsDispatch->EmitLDLOC(m_argumentIsByRefArrayLocalNum);
@@ -1794,7 +1792,7 @@ private:
         LocalDesc arrayDesc(pMT);
         arrayDesc.MakeArray();
         DWORD localNum = pcs->NewLocal(arrayDesc);
-        pcs->EmitLDC(m_signature.NumFixedArgs());
+        pcs->EmitLDC_I4(m_signature.NumFixedArgs());
         pcs->EmitNEWARR(pcs->GetToken(pMT));
         pcs->EmitSTLOC(localNum);
         return localNum;
@@ -1983,7 +1981,7 @@ PInvokeStubLinker::PInvokeStubLinker(
     //
     // Add locals
     m_dwArgMarshalIndexLocalNum = NewLocal(ELEMENT_TYPE_I4);
-    m_pcsMarshal->EmitLDC(0);
+    m_pcsMarshal->EmitLDC_I4(0);
     m_pcsMarshal->EmitSTLOC(m_dwArgMarshalIndexLocalNum);
 
 #ifdef FEATURE_COMINTEROP
@@ -1994,7 +1992,7 @@ PInvokeStubLinker::PInvokeStubLinker(
     {
         m_dwTargetEntryPointLocalNum = NewLocal(ELEMENT_TYPE_I);
         m_dwTargetInterfacePointerLocalNum = NewLocal(ELEMENT_TYPE_I);
-        m_pcsSetup->EmitLoadNullPtr();
+        m_pcsSetup->EmitLDC_I(0);
         m_pcsSetup->EmitSTLOC(m_dwTargetInterfacePointerLocalNum);
     }
 #endif // FEATURE_COMINTEROP
@@ -2051,7 +2049,7 @@ void PInvokeStubLinker::EmitSetArgMarshalIndex(ILCodeStream* pcsEmit, UINT uArgI
     // value must always monotonically increase so we can use <=, >, etc.
     //
 
-    pcsEmit->EmitLDC(uArgIdx + 1);
+    pcsEmit->EmitLDC_I4(uArgIdx + 1);
     pcsEmit->EmitSTLOC(m_dwArgMarshalIndexLocalNum);
 }
 
@@ -2063,7 +2061,7 @@ void PInvokeStubLinker::EmitCheckForArgCleanup(ILCodeStream* pcsEmit, UINT uArgI
 
     // See EmitSetArgMarshalIndex.
     pcsEmit->EmitLDLOC(m_dwArgMarshalIndexLocalNum);
-    pcsEmit->EmitLDC(uArgIdx);
+    pcsEmit->EmitLDC_I4(uArgIdx);
 
     switch (branchKind)
     {
@@ -2159,8 +2157,8 @@ void PInvokeStubLinker::GenerateInteropParamException(ILCodeStream* pcsEmit)
 {
     STANDARD_VM_CONTRACT;
 
-    pcsEmit->EmitLDC(m_ErrorResID);
-    pcsEmit->EmitLDC(m_ErrorParamIdx);
+    pcsEmit->EmitLDC_I4(m_ErrorResID);
+    pcsEmit->EmitLDC_I4(m_ErrorParamIdx);
     pcsEmit->EmitCALL(METHOD__STUBHELPERS__THROW_INTEROP_PARAM_EXCEPTION, 2, 0);
 
     pcsEmit->EmitLDNULL();
@@ -2192,8 +2190,8 @@ void PInvokeStubLinker::GenerateInteropException(ILCodeStream* pcsEmit)
 {
     STANDARD_VM_CONTRACT;
 
-    pcsEmit->EmitLDC(static_cast<int>(m_ExceptionKind));
-    pcsEmit->EmitLDC(m_ExceptionResID);
+    pcsEmit->EmitLDC_I4(static_cast<int>(m_ExceptionKind));
+    pcsEmit->EmitLDC_I4(m_ExceptionResID);
     pcsEmit->EmitCALL(METHOD__STUBHELPERS__THROW_INTEROP_EXCEPTION, 2, 0);
 
     pcsEmit->EmitLDNULL();
@@ -2344,7 +2342,7 @@ void PInvokeStubLinker::Begin(DWORD dwStubFlags)
 
             m_pcsDispatch->EmitLoadSecretStubArgument(); // load UMEntryThunk*
 
-            m_pcsDispatch->EmitLDC(offsetof(UMEntryThunkData, m_pObjectHandle));
+            m_pcsDispatch->EmitLDC_I4(offsetof(UMEntryThunkData, m_pObjectHandle));
             m_pcsDispatch->EmitADD();
             m_pcsDispatch->EmitLDIND_I();      // get OBJECTHANDLE
             m_pcsDispatch->EmitLDIND_REF();    // get Delegate object
@@ -2497,7 +2495,7 @@ void PInvokeStubLinker::DoPInvoke(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
         else if (SF_IsCOMStub(dwStubFlags))
         {
             // this is a CLR -> COM call
-            // the target has been computed by StubHelpers::GetCOMIPFromRCW
+            // the target has been computed by StubHelpers_GetCOMIPFromRCW
             pcsEmit->EmitLDLOC(m_dwTargetEntryPointLocalNum);
         }
 #endif // FEATURE_COMINTEROP
@@ -2510,7 +2508,7 @@ void PInvokeStubLinker::DoPInvoke(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
         else if (SF_IsVarArgStub(dwStubFlags)) // vararg P/Invoke
         {
             pcsEmit->EmitLoadSecretStubArgument();
-            pcsEmit->EmitLDC(offsetof(PInvokeMethodDesc, m_pPInvokeTarget));
+            pcsEmit->EmitLDC_I4(offsetof(PInvokeMethodDesc, m_pPInvokeTarget));
             pcsEmit->EmitADD();
             pcsEmit->EmitLDIND_I();
         }
@@ -2524,13 +2522,11 @@ void PInvokeStubLinker::DoPInvoke(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
             void* pInvokeTarget = nullptr;
             if (PInvokeMethodDesc::TryGetResolvedPInvokeTarget(pTargetMD, &pInvokeTarget))
             {
-                pcsEmit->EmitLDC((DWORD_PTR)pInvokeTarget);
-                pcsEmit->EmitCONV_I();
+                pcsEmit->EmitLDC_I((DWORD_PTR)pInvokeTarget);
             }
             else
             {
-                pcsEmit->EmitLDC((DWORD_PTR)&pTargetMD->m_pPInvokeTarget);
-                pcsEmit->EmitCONV_I();
+                pcsEmit->EmitLDC_I((DWORD_PTR)&pTargetMD->m_pPInvokeTarget);
                 pcsEmit->EmitLDIND_I();
             }
         }
@@ -2546,7 +2542,7 @@ void PInvokeStubLinker::DoPInvoke(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
             int tokDelegate_methodPtr = pcsEmit->GetToken(CoreLibBinder::GetField(FIELD__DELEGATE__METHOD_PTR));
 
             pcsEmit->EmitLoadSecretStubArgument();
-            pcsEmit->EmitLDC(offsetof(UMEntryThunkData, m_pObjectHandle));
+            pcsEmit->EmitLDC_I4(offsetof(UMEntryThunkData, m_pObjectHandle));
             pcsEmit->EmitADD();
             pcsEmit->EmitLDIND_I();                    // Get OBJECTHANDLE
             pcsEmit->EmitLDIND_REF();                  // Get Delegate object
@@ -2559,7 +2555,7 @@ void PInvokeStubLinker::DoPInvoke(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
             // - direct reverse P/Invoke (CoreCLR hosting)
             pcsEmit->EmitLoadSecretStubArgument();
             CONSISTENCY_CHECK(0 == offsetof(UMEntryThunkData, m_pManagedTarget)); // if this changes, just add back the EmitLDC/EmitADD below
-            // pcsEmit->EmitLDC(offsetof(UMEntryThunkData, m_pManagedTarget));
+            // pcsEmit->EmitLDC_I4(offsetof(UMEntryThunkData, m_pManagedTarget));
             // pcsEmit->EmitADD();
             pcsEmit->EmitLDIND_I();  // Get UMEntryThunk::m_pManagedTarget
         }
@@ -2585,7 +2581,7 @@ void PInvokeStubLinker::EmitLogNativeArgument(ILCodeStream* pslILEmit, DWORD dwP
     else
     {
         // no secret argument
-        pslILEmit->EmitLoadNullPtr();
+        pslILEmit->EmitLDC_I(0);
     }
 
     pslILEmit->EmitLDLOC(dwPinnedLocal);
@@ -2612,21 +2608,19 @@ DWORD PInvokeStubLinker::EmitProfilerBeginTransitionCallback(ILCodeStream* pcsEm
         // so the MethodDesc to report is known at IL generation time.
         _ASSERTE(SF_IsForwardStub(dwStubFlags));
         _ASSERTE(pStubMD != NULL && pStubMD->IsCLRToCOMCall());
-        pcsEmit->EmitLDC((DWORD_PTR)pStubMD);
-        pcsEmit->EmitCONV_I();
+        pcsEmit->EmitLDC_I((DWORD_PTR)pStubMD);
     }
 #endif // FEATURE_COMINTEROP
     else if (SF_IsForwardPInvokeStub(dwStubFlags) && !SF_IsCALLIStub(dwStubFlags))
     {
         MethodDesc* pMD = GetTargetMD();
         _ASSERTE(pMD != NULL && pMD->IsPInvoke());
-        pcsEmit->EmitLDC((DWORD_PTR)pMD);
-        pcsEmit->EmitCONV_I();
+        pcsEmit->EmitLDC_I((DWORD_PTR)pMD);
     }
     else
     {
         // Some other stub without the MD as the secret parameter, so pass null.
-        pcsEmit->EmitLoadNullPtr();
+        pcsEmit->EmitLDC_I(0);
     }
 
     pcsEmit->EmitCALL(METHOD__STUBHELPERS__PROFILER_BEGIN_TRANSITION_CALLBACK, 1, 1);
@@ -2666,13 +2660,12 @@ void PInvokeStubLinker::EmitValidateLocal(ILCodeStream* pcsEmit, MethodDesc* pSt
         // so the MethodDesc to report is known at IL generation time.
         _ASSERTE(SF_IsForwardStub(dwStubFlags));
         _ASSERTE(pStubMD != NULL && pStubMD->IsCLRToCOMCall());
-        pcsEmit->EmitLDC((DWORD_PTR)pStubMD);
-        pcsEmit->EmitCONV_I();
+        pcsEmit->EmitLDC_I((DWORD_PTR)pStubMD);
     }
 #endif // FEATURE_COMINTEROP
     else
     {
-        pcsEmit->EmitLoadNullPtr();
+        pcsEmit->EmitLDC_I(0);
     }
 
     if (fIsByref)
@@ -5631,7 +5624,7 @@ namespace
                                                         iLCIDArg);
 
                                 // we successfully generated the IL stub
-                                sgh.SuppressRelease();
+                                sgh.Detach();
                             }
 
                             pEntry->m_hrResultCode = S_OK;
@@ -5922,7 +5915,7 @@ namespace
 
         if (pMD->IsQCall())
         {
-            void* pvTarget = (void*)QCallResolveDllImport(pMD->GetEntrypointName());
+            void* pvTarget = (void*)ResolveRuntimeHelperEntrypoint(pMD->GetEntrypointName());
 #ifdef _DEBUG
             CONSISTENCY_CHECK_MSGF(pvTarget != nullptr,
                 ("%s::%s is not registered in the QCall entrypoint table",
@@ -6980,7 +6973,7 @@ bool GenerateCopyConstructorHelper(MethodDesc* ftn, DynamicResolver** ppResolver
     }
     else
     {
-        pCode->EmitLDC(type.GetSize());
+        pCode->EmitLDC_I4(type.GetSize());
         pCode->EmitCPBLK();
     }
 

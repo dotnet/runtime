@@ -2,7 +2,6 @@ This is a list of failing PAL tests that need to be reviewed because.
 They should either be fixed or deleted if they are no longer applicable.
 
 debug_api/DebugBreak/test1/paltest_debugbreak_test1
-debug_api/OutputDebugStringA/test1/paltest_outputdebugstringa_test1
 exception_handling/pal_except/test1/paltest_pal_except_test1
 exception_handling/pal_except/test2/paltest_pal_except_test2
 exception_handling/pal_except/test3/paltest_pal_except_test3
@@ -24,14 +23,10 @@ exception_handling/PAL_TRY_EXCEPT_EX/test2/paltest_pal_try_except_ex_test2
 exception_handling/PAL_TRY_EXCEPT_EX/test3/paltest_pal_try_except_ex_test3
 exception_handling/PAL_TRY_LEAVE_FINALLY/test1/paltest_pal_try_leave_finally_test1
 filemapping_memmgt/FreeLibrary/test1/paltest_freelibrary_test1
-filemapping_memmgt/GetModuleFileNameA/test1/paltest_getmodulefilenamea_test1
 filemapping_memmgt/GetModuleFileNameW/test1/paltest_getmodulefilenamew_test1
 filemapping_memmgt/GetProcAddress/test1/paltest_getprocaddress_test1
 filemapping_memmgt/GetProcAddress/test2/paltest_getprocaddress_test2
 loader/LoadLibraryW/test1/paltest_loadlibraryw_test1
-miscellaneous/FormatMessageW/test4/paltest_formatmessagew_test4
-miscellaneous/FormatMessageW/test5/paltest_formatmessagew_test5
-miscellaneous/FormatMessageW/test6/paltest_formatmessagew_test6
 miscellaneous/InterLockedExchangeAdd/test1/paltest_interlockedexchangeadd_test1
 pal_specific/PAL_get_stdout/test1/paltest_pal_get_stdout_test1
 samples/test2/paltest_samples_test2
@@ -39,5 +34,4 @@ threading/CreateThread/test2/paltest_createthread_test2
 threading/DuplicateHandle/test9/paltest_duplicatehandle_test9
 threading/ExitThread/test2/paltest_exitthread_test2
 threading/GetCurrentProcess/test1/paltest_getcurrentprocess_test1
-threading/GetCurrentThreadId/test1/paltest_getcurrentthreadid_test1
 threading/TerminateProcess/test1/paltest_terminateprocess_test1

@@ -20,7 +20,6 @@
 #include "NativeContext.h"
 #include "HardwareExceptions.h"
 #include "PalCreateDump.h"
-#include "cgroupcpu.h"
 #include "threadstore.h"
 #include "thread.h"
 #include "threadstore.inl"
@@ -29,7 +28,9 @@
 #include "RhConfig.h"
 
 #include <unistd.h>
+#include <minipal/cgroup.h>
 #include <minipal/cpucount.h>
+#include "ProcessEnvironment.h"
 #include <sched.h>
 #include <sys/mman.h>
 #include <sys/types.h>
@@ -221,75 +222,22 @@ void InitializeCurrentProcessCpuCount()
     uint32_t count = 0;
 
     // If the configuration value has been set, it takes precedence. Otherwise, take into account
-    // process affinity and CPU quota limit, except for Android (explained below).
+    // process affinity and CPU quota limit.
 
     const unsigned int MAX_PROCESSOR_COUNT = 0xffff;
     uint64_t configValue;
-    int cpuPresentCount;
 
     if (g_pRhConfig->ReadConfigValue("PROCESSOR_COUNT", &configValue, true /* decimal */) &&
         0 < configValue && configValue <= MAX_PROCESSOR_COUNT)
     {
         count = configValue;
     }
-#ifdef HOST_ANDROID
-    // Android tries really hard to save power by powering off CPUs on SMP phones which
-    // means the normal way to query cpu count can underestimate the number of available CPUs.
-    else if ((cpuPresentCount = minipal_get_cpu_present_count()) > 0)
-    {
-        count = cpuPresentCount;
-
-        uint32_t cpuLimit;
-        if (GetCpuLimit(&cpuLimit) && cpuLimit < count)
-            count = cpuLimit;
-    }
-#endif
     else
     {
-#if HAVE_SCHED_GETAFFINITY
-
-        int configuredCpuCount = minipal_get_cpu_max_possible_count();
-        if (configuredCpuCount == -1)
-        {
-            // In the unlikely event that minipal_get_cpu_max_possible_count() fails, just assume a reasonable default maximum number of CPUs to avoid failing.
-            configuredCpuCount = CPU_SETSIZE;
-        }
-
-        int cpusToAllocate = std::max(configuredCpuCount, CPU_SETSIZE);
-        cpu_set_t* pCpuSet = CPU_ALLOC(cpusToAllocate);
-        if (pCpuSet != nullptr)
-        {
-            size_t cpuSetSize = CPU_ALLOC_SIZE(cpusToAllocate);
-            CPU_ZERO_S(cpuSetSize, pCpuSet);
-
-            int st = sched_getaffinity(getpid(), cpuSetSize, pCpuSet);
-            if (st == 0)
-            {
-                count = (uint32_t)CPU_COUNT_S(cpuSetSize, pCpuSet);
-            }
-            else
-            {
-                _ASSERTE(!"sched_getaffinity failed");
-            }
-
-            CPU_FREE(pCpuSet);
-        }
-        else
-        {
-            ASSERT("CPU_ALLOC failed!\n");
-        }
-
-        if (count == 0)
-        {
-            // If we failed to get the number of CPUs from sched_getaffinity, fall back to getting the total number of CPUs in the system.
-            count = GCToOSInterface::GetTotalProcessorCount();
-        }
-#else // HAVE_SCHED_GETAFFINITY
-        count = GCToOSInterface::GetTotalProcessorCount();
-#endif // HAVE_SCHED_GETAFFINITY
+        count = minipal_get_cpu_affinity_count();
 
         uint32_t cpuLimit;
-        if (GetCpuLimit(&cpuLimit) && cpuLimit < count)
+        if (minipal_cgroup_get_cpu_limit(&cpuLimit) && cpuLimit < count)
             count = cpuLimit;
     }
 
@@ -329,8 +277,6 @@ bool PalInit()
     {
         return false;
     }
-
-    InitializeCpuCGroup();
 
     InitializeCurrentProcessCpuCount();
 
@@ -543,7 +489,7 @@ bool PalSetCurrentThreadName(const char* name)
 {
     // Ignore requests to set the main thread name because
     // it causes the value returned by Process.ProcessName to change.
-    if ((pid_t)PalGetCurrentOSThreadId() != getpid())
+    if (minipal_get_current_thread_id() != minipal_get_current_process_id())
     {
         int setNameResult = minipal_set_thread_name(pthread_self(), name);
         (void)setNameResult; // used
@@ -721,28 +667,9 @@ void PalFlushInstructionCache(_In_ void* pAddress, size_t size)
 #endif
 }
 
-uint32_t PalGetCurrentProcessId()
-{
-    return getpid();
-}
-
 uint32_t PalGetEnvironmentVariable(const char * name, char * buffer, uint32_t size)
 {
-    const char* value = getenv(name);
-    if (value == NULL)
-    {
-        return 0;
-    }
-
-    size_t valueLen = strlen(value);
-    if (valueLen < size)
-    {
-        strcpy(buffer, value);
-        return valueLen;
-    }
-
-    // return required size including the null character or 0 if the size doesn't fit into uint32_t
-    return (valueLen < UINT32_MAX) ? (valueLen + 1) : 0;
+    return ProcessEnvironment_GetVariableUtf8(name, buffer, size);
 }
 
 uint16_t PalCaptureStackBackTrace(uint32_t arg1, uint32_t arg2, void* arg3, uint32_t* arg4)
@@ -998,9 +925,4 @@ int32_t PalGetModuleFileName(_Out_ const TCHAR** pModuleNameOut, HANDLE moduleBa
     *pModuleNameOut = dl.dli_fname;
     return strlen(dl.dli_fname);
 #endif // defined(HOST_WASM)
-}
-
-uint64_t PalGetCurrentOSThreadId()
-{
-    return (uint64_t)minipal_get_current_thread_id();
 }

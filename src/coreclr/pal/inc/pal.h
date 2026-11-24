@@ -246,7 +246,6 @@ VOID
 PALAPI
 PAL_SetCreateDumpCallback(
     IN PCREATEDUMP_CALLBACK callback);
-
 /// <summary>
 /// Callback invoked when a signal is received that will terminate the process.
 /// The callback should log the managed callstack for the signal.
@@ -299,38 +298,6 @@ PAL_GenerateCoreDump(
     INT cbErrorMessageBuffer);
 
 PALIMPORT
-BOOL
-PALAPI
-PAL_NotifyRuntimeStarted();
-
-PALIMPORT
-LPCSTR
-PALAPI
-PAL_GetApplicationGroupId();
-
-static const unsigned int MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH = MAX_PATH;
-
-PALIMPORT
-VOID
-PALAPI
-PAL_GetTransportName(
-    const unsigned int MAX_TRANSPORT_NAME_LENGTH,
-    OUT char *name,
-    IN const char *prefix,
-    IN DWORD id,
-    IN const char *applicationGroupId,
-    IN const char *suffix);
-
-PALIMPORT
-VOID
-PALAPI
-PAL_GetTransportPipeName(
-    OUT char *name,
-    IN DWORD id,
-    IN const char *applicationGroupId,
-    IN const char *suffix);
-
-PALIMPORT
 void
 PALAPI
 PAL_IgnoreProfileSignal(int signalNum);
@@ -346,37 +313,6 @@ VOID
 PALAPI
 PAL_UnregisterModule(
     IN HINSTANCE hInstance);
-
-PALIMPORT
-BOOL
-PALAPI
-PAL_ProbeMemory(
-    PVOID pBuffer,
-    DWORD cbBuffer,
-    BOOL fWriteAccess);
-
-PALIMPORT
-int
-PALAPI
-// Start the jitdump file
-PAL_PerfJitDump_Start(const char* path);
-
-PALIMPORT
-bool
-PALAPI
-PAL_PerfJitDump_IsStarted();
-
-PALIMPORT
-int
-PALAPI
-// Log a method to the jitdump file.
-PAL_PerfJitDump_LogMethod(void* pCode, size_t codeSize, const char* symbol, void* debugInfo, void* unwindInfo, bool reportCodeBlock);
-
-PALIMPORT
-int
-PALAPI
-// Finish the jitdump file
-PAL_PerfJitDump_Finish();
 
 /******************* winuser.h Entrypoints *******************************/
 
@@ -434,24 +370,9 @@ typedef struct _OVERLAPPED {
 #define STD_ERROR_HANDLE         ((DWORD)-12)
 
 PALIMPORT
-DWORD
-PALAPI
-GetCurrentProcessId();
-
-PALIMPORT
 HANDLE
 PALAPI
 GetCurrentProcess();
-
-PALIMPORT
-DWORD
-PALAPI
-GetCurrentThreadId();
-
-PALIMPORT
-size_t
-PALAPI
-PAL_GetCurrentOSThreadId();
 
 // To work around multiply-defined symbols in the Carbon framework.
 #define GetCurrentThread PAL_GetCurrentThread
@@ -503,11 +424,6 @@ DuplicateHandle(
         IN DWORD dwDesiredAccess,
         IN BOOL bInheritHandle,
         IN DWORD dwOptions);
-
-PALIMPORT
-BOOL
-PALAPI
-SwitchToThread();
 
 #define CREATE_SUSPENDED                  0x00000004
 #define STACK_SIZE_PARAM_IS_A_RESERVATION 0x00010000
@@ -1846,21 +1762,6 @@ PVOID
 PALAPI
 PAL_GetStackLimit();
 
-PALIMPORT
-DWORD
-PALAPI
-PAL_GetLogicalCpuCountFromOS();
-
-PALIMPORT
-DWORD
-PALAPI
-PAL_GetTotalCpuCount();
-
-PALIMPORT
-BOOL
-PALAPI
-PAL_GetCpuLimit(UINT* val);
-
 PALIMPORT BOOL PALAPI PAL_VirtualUnwind(CONTEXT *context);
 
 #define PAGE_NOACCESS                   0x01
@@ -1904,22 +1805,9 @@ PAL_LoadLibraryDirect(
         IN LPCWSTR lpLibFileName);
 
 PALIMPORT
-BOOL
-PALAPI
-PAL_FreeLibraryDirect(
-        IN NATIVE_LIBRARY_HANDLE dl_handle);
-
-PALIMPORT
 HMODULE
 PALAPI
 PAL_GetPalHostModule();
-
-PALIMPORT
-FARPROC
-PALAPI
-PAL_GetProcAddressDirect(
-        IN NATIVE_LIBRARY_HANDLE dl_handle,
-        IN LPCSTR lpProcName);
 
 PALIMPORT
 FARPROC
@@ -1948,40 +1836,12 @@ GetModuleFileNameW(
     OUT LPWSTR lpFileName,
     IN DWORD nSize);
 
-#ifdef UNICODE
 #define GetModuleFileName GetModuleFileNameW
-#else
-#define GetModuleFileName GetModuleFileNameA
-#endif
-
-// Get base address of the module containing a given symbol
-PALIMPORT
-LPCVOID
-PALAPI
-PAL_GetSymbolModuleBase(PVOID symbol);
-
-PALIMPORT
-int
-PALAPI
-PAL_CopyModuleData(PVOID moduleBase, PVOID destinationBufferStart, PVOID destinationBufferEnd);;
-
-PALIMPORT
-LPCSTR
-PALAPI
-PAL_GetLoadLibraryError();
 
 #define MoveMemory memmove
 #define CopyMemory memcpy
 #define FillMemory(Destination,Length,Fill) memset((Destination),(Fill),(Length))
 #define ZeroMemory(Destination,Length) memset((Destination),0,(Length))
-
-PALIMPORT
-BOOL
-PALAPI
-FlushInstructionCache(
-              IN HANDLE hProcess,
-              IN LPCVOID lpBaseAddress,
-              IN SIZE_T dwSize);
 
 #define EXCEPTION_NONCONTINUABLE 0x1
 #define EXCEPTION_UNWINDING 0x2
@@ -2038,70 +1898,12 @@ typedef struct _RUNTIME_FUNCTION {
 
 #define SYNCHRONIZE               (0x00100000L)
 
-PALIMPORT
-VOID
-PALAPI
-OutputDebugStringA(
-    IN LPCSTR lpOutputString);
-
-PALIMPORT
-VOID
-PALAPI
-OutputDebugStringW(
-    IN LPCWSTR lpOutputStrig);
-
-#ifdef UNICODE
-#define OutputDebugString OutputDebugStringW
-#else
-#define OutputDebugString OutputDebugStringA
-#endif
 
 PALIMPORT
 VOID
 PALAPI
 DebugBreak();
 
-PALIMPORT
-DWORD
-PALAPI
-GetEnvironmentVariableW(
-            IN LPCWSTR lpName,
-            OUT LPWSTR lpBuffer,
-            IN DWORD nSize);
-
-#ifdef UNICODE
-#define GetEnvironmentVariable GetEnvironmentVariableW
-#else
-#define GetEnvironmentVariable GetEnvironmentVariableA
-#endif
-
-PALIMPORT
-BOOL
-PALAPI
-SetEnvironmentVariableW(
-            IN LPCWSTR lpName,
-            IN LPCWSTR lpValue);
-
-#ifdef UNICODE
-#define SetEnvironmentVariable SetEnvironmentVariableW
-#else
-#define SetEnvironmentVariable SetEnvironmentVariableA
-#endif
-
-PALIMPORT
-LPWSTR
-PALAPI
-GetEnvironmentStringsW();
-
-#define GetEnvironmentStrings GetEnvironmentStringsW
-
-PALIMPORT
-BOOL
-PALAPI
-FreeEnvironmentStringsW(
-            IN LPWSTR);
-
-#define FreeEnvironmentStrings FreeEnvironmentStringsW
 
 PALIMPORT
 BOOL
@@ -2126,19 +1928,6 @@ RaiseFailFastException(
     IN PEXCEPTION_RECORD pExceptionRecord,
     IN PCONTEXT pContextRecord,
     IN DWORD dwFlags);
-
-PALIMPORT
-BOOL
-PALAPI
-QueryThreadCycleTime(
-    IN HANDLE ThreadHandle,
-    OUT PULONG64 CycleTime);
-
-PALIMPORT
-INT
-PALAPI
-PAL_nanosleep(
-    IN long timeInNs);
 
 typedef EXCEPTION_DISPOSITION (PALAPI_NOEXPORT *PVECTORED_EXCEPTION_HANDLER)(
                            struct _EXCEPTION_POINTERS *ExceptionPointers);
@@ -2604,28 +2393,9 @@ YieldProcessor()
 #endif
 }
 
-#define FORMAT_MESSAGE_ALLOCATE_BUFFER 0x00000100
-#define FORMAT_MESSAGE_IGNORE_INSERTS  0x00000200
 #define FORMAT_MESSAGE_FROM_STRING     0x00000400
 #define FORMAT_MESSAGE_FROM_SYSTEM     0x00001000
-#define FORMAT_MESSAGE_ARGUMENT_ARRAY  0x00002000
 #define FORMAT_MESSAGE_MAX_WIDTH_MASK  0x000000FF
-
-PALIMPORT
-DWORD
-PALAPI
-FormatMessageW(
-           IN DWORD dwFlags,
-           IN LPCVOID lpSource,
-           IN DWORD dwMessageId,
-           IN DWORD dwLanguageId,
-           OUT LPWSTR lpBffer,
-           IN DWORD nSize,
-           IN va_list *Arguments);
-
-#ifdef UNICODE
-#define FormatMessage FormatMessageW
-#endif
 
 
 PALIMPORT
@@ -2678,24 +2448,9 @@ PAL_InjectActivation(
 );
 
 typedef struct _SYSTEM_INFO {
-    WORD wProcessorArchitecture_PAL_Undefined;
-    WORD wReserved_PAL_Undefined; // NOTE: diff from winbase.h - no obsolete dwOemId union
-    DWORD dwPageSize;
-    LPVOID lpMinimumApplicationAddress;
-    LPVOID lpMaximumApplicationAddress;
-    DWORD_PTR dwActiveProcessorMask_PAL_Undefined;
     DWORD dwNumberOfProcessors;
-    DWORD dwProcessorType_PAL_Undefined;
     DWORD dwAllocationGranularity;
-    WORD wProcessorLevel_PAL_Undefined;
-    WORD wProcessorRevision_PAL_Undefined;
-} SYSTEM_INFO, *LPSYSTEM_INFO;
-
-PALIMPORT
-VOID
-PALAPI
-GetSystemInfo(
-          OUT LPSYSTEM_INFO lpSystemInfo);
+} SYSTEM_INFO;
 
 //
 // The types of events that can be logged.
@@ -2728,15 +2483,7 @@ GetSystemInfo(
 // errno_t is only defined when the Secure CRT Extensions library is available (which no standard library that we build with implements anyway)
 typedef int errno_t;
 
-PALIMPORT DLLEXPORT errno_t __cdecl memcpy_s(void *, size_t, const void *, size_t);
-PALIMPORT errno_t __cdecl memmove_s(void *, size_t, const void *, size_t);
-PALIMPORT DLLEXPORT int __cdecl _vsnprintf_s(char *, size_t, size_t, const char *, va_list);
-PALIMPORT DLLEXPORT int __cdecl _snprintf_s(char *, size_t, size_t, const char *, ...);
-PALIMPORT DLLEXPORT int __cdecl vsprintf_s(char *, size_t, const char *, va_list);
-PALIMPORT DLLEXPORT int __cdecl sprintf_s(char *, size_t, const char *, ... );
-PALIMPORT DLLEXPORT int __cdecl sscanf_s(const char *, const char *, ...);
 
-PALIMPORT errno_t __cdecl _wcslwr_s(WCHAR *, size_t sz);
 
 inline int _stricmp(const char* a, const char* b)
 {
@@ -2798,8 +2545,6 @@ unsigned int __cdecl _rotr(unsigned int value, int shift)
 }
 
 #endif // !__has_builtin(_rotr)
-
-PALIMPORT DLLEXPORT char * __cdecl PAL_getenv(const char *);
 
 #ifndef ERANGE
 #define ERANGE          34

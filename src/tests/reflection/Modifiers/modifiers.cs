@@ -2,13 +2,50 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using Xunit;
-using TestLibrary;
 
 public class Program
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/91381", typeof(Utilities), nameof(Utilities.IsNativeAot))]
+    // Modifiers on a generic parameter are read from the definition's signature, so they survive
+    // substitution, while the arguments of a substituted type have no signature and no modifiers.
+    [ActiveIssue("needs triage", TestRuntimes.Mono)]
+    [Fact]
+    public static void SubstitutedGenericParameters()
+    {
+        foreach (Type argument in new[] { typeof(int), typeof(List<int>) })
+        {
+            Type modOpt = Modified("ModOptOnGenericParameter", argument);
+            Assert.Same(argument, modOpt.UnderlyingSystemType);
+            Assert.Equal(new[] { typeof(FooModifier) }, modOpt.GetOptionalCustomModifiers());
+            Assert.Empty(modOpt.GetRequiredCustomModifiers());
+            if (argument.IsGenericType)
+            {
+                Type inner = modOpt.GetGenericArguments()[0];
+                Assert.Same(typeof(int), inner.UnderlyingSystemType);
+                Assert.Empty(inner.GetOptionalCustomModifiers());
+            }
+
+            Type modOptInArgument = Modified("ModOptInGenericArgument", argument);
+            Assert.Same(typeof(List<>).MakeGenericType(argument), modOptInArgument.UnderlyingSystemType);
+            Assert.Empty(modOptInArgument.GetOptionalCustomModifiers());
+            Type listArgument = modOptInArgument.GetGenericArguments()[0];
+            Assert.Same(argument, listArgument.UnderlyingSystemType);
+            Assert.Equal(new[] { typeof(FooModifier) }, listArgument.GetOptionalCustomModifiers());
+
+            Type modReqByRef = Modified("ModReqOnByRefGenericParameter", argument);
+            Assert.Same(argument.MakeByRefType(), modReqByRef.UnderlyingSystemType);
+            Type element = modReqByRef.GetElementType();
+            Assert.Same(argument, element.UnderlyingSystemType);
+            Assert.Equal(new[] { typeof(BarModifier) }, element.GetRequiredCustomModifiers());
+            Assert.Empty(element.GetOptionalCustomModifiers());
+        }
+
+        static Type Modified(string name, Type argument) =>
+            typeof(GenericModifiers).GetMethod(name).MakeGenericMethod(argument).GetParameters()[0].GetModifiedParameterType();
+    }
+
     [ActiveIssue("needs triage", TestRuntimes.Mono)]
     [Fact]
     public static unsafe int TestEntryPoint()

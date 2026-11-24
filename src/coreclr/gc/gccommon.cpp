@@ -280,6 +280,7 @@ void GCLog (const char *fmt, ... )
 }
 #endif //TRACE_GC && SIMPLE_DPRINTF
 
+#ifdef FEATURE_HOST_TRACE
 // We log initialization errors to the host to help with diagnostics. By default these will show up in stdout.
 // You can also redirect them to a file. See docs/design/features/host-tracing.md.
 void log_init_error_to_host (const char* format, ...)
@@ -291,6 +292,7 @@ void log_init_error_to_host (const char* format, ...)
     GCToEEInterface::LogErrorToHost (error_buf);
     va_end (args);
 }
+#endif // FEATURE_HOST_TRACE
 
 static double g_QPFus = 0.0;
 

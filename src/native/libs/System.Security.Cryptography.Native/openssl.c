@@ -695,6 +695,51 @@ BIO* CryptoNative_GetX509NameInfo(X509* x509, int32_t nameType, int32_t forIssue
     return NULL;
 }
 
+static int32_t CheckX509Hostname(X509* x509, const char* hostname, int32_t cchHostname, unsigned int flags)
+{
+    // OpenSSL 4.1 changed the default behavior of X509_check_host to always ignore the subject of a certificate and
+    // only consult the SAN. X509_CHECK_FLAG_ALWAYS_CHECK_SUBJECT can be used to change the lookup to consult the subject,
+    // but passing this unconditionally isn't the same as the previous behavior. This flag means always look at the subject,
+    // even if the SAN does not match.
+    // To match the previous behavior, we add the X509_CHECK_FLAG_ALWAYS_CHECK_SUBJECT lookup only if the SAN is absent.
+    if (OpenSSL_version_num() >= OPENSSL_VERSION_4_1_RTM)
+    {
+        bool hasDnsSan = false;
+        GENERAL_NAMES* san = (GENERAL_NAMES*)X509_get_ext_d2i(x509, NID_subject_alt_name, NULL, NULL);
+
+        if (san != NULL)
+        {
+            int count = sk_GENERAL_NAME_num(san);
+
+            for (int i = 0; i < count; i++)
+            {
+                // A DNS SAN suppresses CN fallback, even when it does not match.
+                if (sk_GENERAL_NAME_value(san, i)->type == GEN_DNS)
+                {
+                    hasDnsSan = true;
+                    break;
+                }
+            }
+
+            GENERAL_NAMES_free(san);
+        }
+
+        // X509_get_ext_d2i can return NULL for a number of reasons, including the extension being absent, or being
+        // malformed. This is indicated in the *crit value. However, previous versions of OpenSSL did not make a
+        // distinction for why the SAN could not be consulted, including being malformed.
+        // https://github.com/openssl/openssl/blob/67b5686b4419b4cb8caa502711c41815f5279751/crypto/x509/v3_utl.c#L904
+        // Therefore we won't make a distinction, either.
+
+        // If we don't have a SAN, then check the subject.
+        if (!hasDnsSan)
+        {
+            flags |= X509_CHECK_FLAG_ALWAYS_CHECK_SUBJECT;
+        }
+    }
+
+    return X509_check_host(x509, hostname, (size_t)cchHostname, flags, NULL);
+}
+
 /*
 Function:
 CheckX509Hostname
@@ -727,12 +772,7 @@ int32_t CryptoNative_CheckX509Hostname(X509* x509, const char* hostname, int32_t
         return 0;
     }
 
-    return X509_check_host(
-        x509,
-        hostname,
-        (size_t)cchHostname,
-        X509_CHECK_FLAG_NO_PARTIAL_WILDCARDS,
-        NULL);
+    return CheckX509Hostname(x509, hostname, cchHostname, X509_CHECK_FLAG_NO_PARTIAL_WILDCARDS);
 }
 
 /*
@@ -810,7 +850,7 @@ int32_t CryptoNative_CheckX509IpAddress(
     {
         // Windows compatibility: match the IP literal as text against DNS SANs,
         // falling back to CN only when no DNS SANs exist. Disable wildcard matching.
-        success = X509_check_host(x509, hostname, (size_t)cchHostname, X509_CHECK_FLAG_NO_WILDCARDS, NULL);
+        success = CheckX509Hostname(x509, hostname, cchHostname, X509_CHECK_FLAG_NO_WILDCARDS);
     }
 
     return success;

@@ -1536,7 +1536,7 @@ inline GenTreeCall* Compiler::gtNewHelperCallNode(
 {
     GenTreeCall* const result = gtNewCallNode(CT_HELPER, eeFindHelper(helper), type);
 
-    if (!s_helperCallProperties.NoThrow((CorInfoHelpFunc)helper))
+    if (!s_helperCallProperties.NoThrow((CorInfoHelpFunc)helper, IsNativeAot()))
     {
         result->gtFlags |= GTF_EXCEPT;
 
@@ -1599,7 +1599,7 @@ inline GenTreeCall* Compiler::gtNewVirtualFunctionLookupHelperCallNode(
 {
     GenTreeCall* const result = gtNewCallNode(CT_HELPER, eeFindHelper(helper), type);
 
-    if (!s_helperCallProperties.NoThrow((CorInfoHelpFunc)helper))
+    if (!s_helperCallProperties.NoThrow((CorInfoHelpFunc)helper, IsNativeAot()))
     {
         result->gtFlags |= GTF_EXCEPT;
 
@@ -4432,6 +4432,16 @@ GenTree::VisitResult GenTree::VisitOperandUses(TVisitor visitor)
             return visitor(&cond->gtOp2);
         }
 
+#ifdef TARGET_WASM
+        case GT_WASM_SELECT:
+        {
+            GenTreeConditional* const select = this->AsConditional();
+            RETURN_IF_ABORT(visitor(&select->gtOp1));
+            RETURN_IF_ABORT(visitor(&select->gtOp2));
+            return visitor(&select->gtCond);
+        }
+#endif
+
         default:
         {
             assert(!"unhandled special node");
@@ -4891,6 +4901,28 @@ GenTree::VisitResult GenTree::VisitLocalDef(
 //
 template <typename TVisitor>
 GenTree::VisitResult GenTree::VisitLogicalLocalDefs(Compiler* comp, TVisitor visitor)
+{
+    if ((gtFlags & GTF_ASG) == 0)
+    {
+        return VisitResult::Continue;
+    }
+
+    return VisitLogicalLocalDefsInternal(comp, visitor);
+}
+
+//------------------------------------------------------------------------
+// VisitLogicalLocalDefsInternal: Visit logical locals being defined by this
+// node, without checking for GTF_ASG.
+//
+// Arguments:
+//   comp    - the compiler instance
+//   visitor - generic functor accepting a local definition provider
+//
+// Return Value:
+//   VisitResult::Abort if the functor aborted; otherwise VisitResult::Continue.
+//
+template <typename TVisitor>
+GenTree::VisitResult GenTree::VisitLogicalLocalDefsInternal(Compiler* comp, TVisitor visitor)
 {
     if (OperIs(GT_STORE_LCL_VAR))
     {

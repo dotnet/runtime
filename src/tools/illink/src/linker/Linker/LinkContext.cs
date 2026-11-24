@@ -154,6 +154,10 @@ namespace Mono.Linker
 
         public bool IgnoreLinkAttributes { get; set; }
 
+        internal bool UpdateReferenceScopes { get; set; } = true;
+
+        internal bool HasLibraryRootAssembly { get; set; }
+
         public Dictionary<string, bool> FeatureSettings { get; init; }
 
         public List<PInvokeInfo> PInvokes { get; private set; }
