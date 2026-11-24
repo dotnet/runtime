@@ -117,6 +117,10 @@ namespace ILCompiler
 
         public void AddCompilationRoots(IRootingServiceProvider rootProvider)
         {
+            // ARM32 and Arm64 call managed helpers through helper cells because direct calls have limited reach.
+            if (context.Target.Architecture is TargetArchitecture.ARM or TargetArchitecture.ARM64)
+                return;
+
             foreach (MethodDesc method in GetManagedHelpers(context))
             {
                 RootMethod(rootProvider, method);
@@ -124,14 +128,11 @@ namespace ILCompiler
         }
 
         /// <summary>
-        /// Gets the distinct managed JIT helper methods that CoreLib's R2R image provides code for.
+        /// Gets the distinct managed JIT helper methods implemented in CoreLib.
         /// </summary>
         internal static HashSet<MethodDesc> GetManagedHelpers(ReadyToRunCompilerContext context)
         {
             var helpers = new HashSet<MethodDesc>();
-            if (context.Target.Architecture is TargetArchitecture.ARM or TargetArchitecture.ARM64)
-                return helpers;
-
             foreach (ManagedHelperInfo helper in s_managedHelpers)
             {
                 if (context.TargetIsSingleThreaded && helper.Helper is
