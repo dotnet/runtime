@@ -145,34 +145,12 @@ STDMETHODIMP RegMeta::EnumTypeDefs(
         // instantiating a new ENUM
         CMiniMdRW       *pMiniMd = &(m_pStgdb->m_MiniMd);
 
-        if (pMiniMd->HasDelete() &&
-            ((m_OptionValue.m_ImportOption & MDImportOptionAllTypeDefs) == 0))
-        {
-            IfFailGo( HENUMInternal::CreateDynamicArrayEnum( mdtTypeDef, &pEnum) );
-
-            // add all Types to the dynamic array if name is not _Delete
-            for (ULONG index = 2; index <= pMiniMd->getCountTypeDefs(); index ++ )
-            {
-                TypeDefRec *pRec;
-                IfFailGo(pMiniMd->GetTypeDefRecord(index, &pRec));
-                LPCSTR szTypeDefName;
-                IfFailGo(pMiniMd->getNameOfTypeDef(pRec, &szTypeDefName));
-                if (IsDeletedName(szTypeDefName))
-                {
-                    continue;
-                }
-                IfFailGo( HENUMInternal::AddElementToEnum(pEnum, TokenFromRid(index, mdtTypeDef) ) );
-            }
-        }
-        else
-        {
-            // create the enumerator
-            IfFailGo( HENUMInternal::CreateSimpleEnum(
-                mdtTypeDef,
-                2,
-                pMiniMd->getCountTypeDefs() + 1,
-                &pEnum) );
-        }
+        // create the enumerator
+        IfFailGo( HENUMInternal::CreateSimpleEnum(
+            mdtTypeDef,
+            2,
+            pMiniMd->getCountTypeDefs() + 1,
+            &pEnum) );
 
         // set the output parameter
         *ppmdEnum = pEnum;

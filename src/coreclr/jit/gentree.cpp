@@ -3198,13 +3198,23 @@ GenTree** GenTree::EffectiveUse(GenTree** use)
 //    lclNum - the local's number
 //
 // Return Value:
-//    Whether "tree" has any local nodes that refer to the local.
+//    Whether "tree" has any local nodes that refer to the local, or any nodes
+//    that define the local.
 //
-/* static */ bool Compiler::gtHasRef(GenTree* tree, unsigned lclNum)
+bool Compiler::gtHasRef(GenTree* tree, unsigned lclNum)
 {
     if (tree == nullptr)
     {
         return false;
+    }
+
+    auto visitDef = [lclNum](const auto& def) {
+        return def.GetLclNum() == lclNum ? GenTree::VisitResult::Abort : GenTree::VisitResult::Continue;
+    };
+
+    if (tree->VisitLogicalLocalDefs(this, visitDef) == GenTree::VisitResult::Abort)
+    {
+        return true;
     }
 
     if (tree->OperIsLeaf())
@@ -3223,11 +3233,6 @@ GenTree** GenTree::EffectiveUse(GenTree** use)
 
     if (tree->OperIsUnary())
     {
-        if (tree->OperIsLocalStore() && (tree->AsLclVarCommon()->GetLclNum() == lclNum))
-        {
-            return true;
-        }
-
         return gtHasRef(tree->AsUnOp()->gtGetOp1(), lclNum);
     }
 
@@ -3237,7 +3242,7 @@ GenTree** GenTree::EffectiveUse(GenTree** use)
     }
 
     bool result = false;
-    tree->VisitOperands([lclNum, &result](GenTree* operand) -> GenTree::VisitResult {
+    tree->VisitOperands([this, lclNum, &result](GenTree* operand) -> GenTree::VisitResult {
         if (gtHasRef(operand, lclNum))
         {
             result = true;
@@ -3267,8 +3272,7 @@ bool Compiler::gtHasLocalsWithAddrOp(GenTree* tree)
     {
         enum
         {
-            DoPreOrder    = true,
-            DoLclVarsOnly = true,
+            DoPreOrder = true,
         };
 
         LocalsWithAddrOpVisitor(Compiler* comp)
@@ -3276,10 +3280,25 @@ bool Compiler::gtHasLocalsWithAddrOp(GenTree* tree)
         {
         }
 
+        static bool HasAddrOp(LclVarDsc* varDsc)
+        {
+            return varDsc->lvHasLdAddrOp || varDsc->IsAddressExposed();
+        }
+
         fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
         {
-            LclVarDsc* varDsc = m_compiler->lvaGetDesc((*use)->AsLclVarCommon());
-            if (varDsc->lvHasLdAddrOp || varDsc->IsAddressExposed())
+            GenTree* node = *use;
+            if (node->OperIsAnyLocal())
+            {
+                return HasAddrOp(m_compiler->lvaGetDesc(node->AsLclVarCommon())) ? WALK_ABORT : WALK_CONTINUE;
+            }
+
+            auto visitDef = [=](const auto& def) {
+                return HasAddrOp(m_compiler->lvaGetDesc(def.GetLclNum())) ? GenTree::VisitResult::Abort
+                                                                          : GenTree::VisitResult::Continue;
+            };
+
+            if (node->VisitLogicalLocalDefs(m_compiler, visitDef) == GenTree::VisitResult::Abort)
             {
                 return WALK_ABORT;
             }
@@ -3309,8 +3328,7 @@ bool Compiler::gtHasAddressExposedLocals(GenTree* tree)
     {
         enum
         {
-            DoPreOrder    = true,
-            DoLclVarsOnly = true,
+            DoPreOrder = true,
         };
 
         Visitor(Compiler* comp)
@@ -3320,8 +3338,18 @@ bool Compiler::gtHasAddressExposedLocals(GenTree* tree)
 
         fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
         {
-            LclVarDsc* varDsc = m_compiler->lvaGetDesc((*use)->AsLclVarCommon());
-            if (varDsc->IsAddressExposed())
+            GenTree* node = *use;
+            if (node->OperIsAnyLocal())
+            {
+                return m_compiler->lvaGetDesc(node->AsLclVarCommon())->IsAddressExposed() ? WALK_ABORT : WALK_CONTINUE;
+            }
+
+            auto visitDef = [=](const auto& def) {
+                return m_compiler->lvaGetDesc(def.GetLclNum())->IsAddressExposed() ? GenTree::VisitResult::Abort
+                                                                                   : GenTree::VisitResult::Continue;
+            };
+
+            if (node->VisitLogicalLocalDefs(m_compiler, visitDef) == GenTree::VisitResult::Abort)
             {
                 return WALK_ABORT;
             }
@@ -8162,18 +8190,29 @@ bool Compiler::gtMayHaveStoreInterference(GenTree* treeWithStores, GenTree* tree
                 return WALK_SKIP_SUBTREES;
             }
 
-            if (node->OperIsLocalStore())
-            {
-                // Check up to 8 stores before we bail with a conservative
-                // answer. Avoids quadratic behavior in case we have a large
-                // number of stores (e.g. created by physical promotion or by
-                // call args morphing).
-                if ((m_numStoresChecked >= 8) ||
-                    m_compiler->gtTreeHasLocalRead(m_readTree, node->AsLclVarCommon()->GetLclNum()))
+            bool hasDefs  = false;
+            auto visitDef = [&](const auto& def) {
+                // Check up to 8 defining nodes before we bail with a
+                // conservative answer. Avoids quadratic behavior in case we
+                // have a large number of stores (e.g. created by physical
+                // promotion or by call args morphing).
+                if (!hasDefs && (m_numStoresChecked >= 8))
                 {
-                    return WALK_ABORT;
+                    return GenTree::VisitResult::Abort;
                 }
 
+                hasDefs = true;
+                return m_compiler->gtTreeHasLocalRead(m_readTree, def.GetLclNum()) ? GenTree::VisitResult::Abort
+                                                                                   : GenTree::VisitResult::Continue;
+            };
+
+            if (node->VisitLogicalLocalDefs(m_compiler, visitDef) == GenTree::VisitResult::Abort)
+            {
+                return WALK_ABORT;
+            }
+
+            if (hasDefs)
+            {
                 m_numStoresChecked++;
             }
 
@@ -8558,6 +8597,9 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
             case GT_SELECT_NEG:
             case GT_SELECT_INV:
             case GT_SELECT_INC:
+#endif
+#ifdef TARGET_WASM
+            case GT_WASM_SELECT:
 #endif
             case GT_SELECT:
             {
@@ -9159,6 +9201,16 @@ bool GenTree::OperSupportsOrderingSideEffect() const
         case GT_NONLOCAL_JMP:
         case GT_SWIFT_ERROR:
             return true;
+#ifdef FEATURE_HW_INTRINSICS
+        // Vector element access with a non-constant index is only in range due to
+        // its bounds check. Once that check is removed, the access must stay below
+        // whatever proved the index in range.
+        case GT_HWINTRINSIC:
+        {
+            NamedIntrinsic id = AsHWIntrinsic()->GetHWIntrinsicId();
+            return HWIntrinsicInfo::IsVectorGetElement(id) || (id == NI_Vector_WithElement);
+        }
+#endif // FEATURE_HW_INTRINSICS
         default:
             return false;
     }
@@ -9343,6 +9395,15 @@ GenTree::VtablePtr GenTree::GetVtableForOper(genTreeOps oper)
             res = *reinterpret_cast<VtablePtr*>(&gt);
         }
         break;
+
+#ifdef TARGET_WASM
+        case GT_WASM_SELECT:
+        {
+            GenTreeConditional gt;
+            res = *reinterpret_cast<VtablePtr*>(&gt);
+        }
+        break;
+#endif
 
             // We don't need to handle GTSTRUCT_N for LclVarCommon, since all those allowed opers are specified
             // in their proper subtype. Similarly for GenTreeIndir.
@@ -12443,6 +12504,13 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
             assert(*m_edge != nullptr);
             m_advance = &GenTreeUseEdgeIterator::AdvanceConditional;
             return;
+#ifdef TARGET_WASM
+        case GT_WASM_SELECT:
+            m_edge = &m_node->AsConditional()->gtOp1;
+            assert(*m_edge != nullptr);
+            m_advance = &GenTreeUseEdgeIterator::AdvanceWasmSelect;
+            return;
+#endif
 
         // Binary nodes
         default:
@@ -12560,6 +12628,31 @@ void GenTreeUseEdgeIterator::AdvanceConditional()
 
     assert(*m_edge != nullptr);
 }
+
+#ifdef TARGET_WASM
+//------------------------------------------------------------------------
+// GenTreeUseEdgeIterator::AdvanceWasmSelect: produces the next operand in Wasm stack order.
+//
+void GenTreeUseEdgeIterator::AdvanceWasmSelect()
+{
+    GenTreeConditional* const select = m_node->AsConditional();
+    switch (m_state)
+    {
+        case 0:
+            m_edge  = &select->gtOp2;
+            m_state = 1;
+            break;
+        case 1:
+            m_edge    = &select->gtCond;
+            m_advance = &GenTreeUseEdgeIterator::Terminate;
+            break;
+        default:
+            unreached();
+    }
+
+    assert(*m_edge != nullptr);
+}
+#endif // TARGET_WASM
 
 //------------------------------------------------------------------------
 // GenTreeUseEdgeIterator::AdvanceBinOp: produces the next operand of a binary node and advances the state.
@@ -15241,10 +15334,22 @@ void Compiler::gtDispTree(GenTree*                    tree,
             break;
 
         case GT_SELECT:
+#ifdef TARGET_WASM
+        case GT_WASM_SELECT:
+#endif
             gtDispCommonEndLine(tree);
 
             if (!topOnly)
             {
+#ifdef TARGET_WASM
+                if (tree->OperIs(GT_WASM_SELECT))
+                {
+                    gtDispChild(tree->AsConditional()->gtOp1, indentStack, IIArc, childMsg, topOnly);
+                    gtDispChild(tree->AsConditional()->gtOp2, indentStack, IIArc, childMsg, topOnly);
+                    gtDispChild(tree->AsConditional()->gtCond, indentStack, IIArcBottom, childMsg, topOnly);
+                    break;
+                }
+#endif
                 gtDispChild(tree->AsConditional()->gtCond, indentStack, IIArc, childMsg, topOnly);
                 gtDispChild(tree->AsConditional()->gtOp1, indentStack, IIArc, childMsg, topOnly);
                 gtDispChild(tree->AsConditional()->gtOp2, indentStack, IIArcBottom, childMsg, topOnly);
@@ -26101,6 +26206,12 @@ GenTree* Compiler::gtNewSimdGetElementNode(
         GenTree* index = fgMakeMultiUse(&op2);
         index          = addRangeCheckForHWIntrinsic(index, 0, immUpperBound);
         op2            = gtWrapWithSideEffects(index, op2, GTF_OBS_EFFECT);
+
+        // The bounds check may later be removed; keep the access ordered after
+        // whatever proved the index is in range.
+        GenTree* getElement = gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsicId, simdBaseType, simdSize);
+        getElement->SetHasOrderingSideEffect();
+        return getElement;
     }
 
     return gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsicId, simdBaseType, simdSize);
@@ -29295,6 +29406,31 @@ GenTree* Compiler::gtNewSimdShuffleVariableNode(
     size_t elementSize  = genTypeSize(simdBaseType);
     size_t elementCount = simdSize / elementSize;
 
+#if defined(TARGET_XARCH)
+    // The AVX2 fallbacks for 256-bit byte and short shuffles use op1 multiple times; preserve its value in a temp
+    // if op2 can modify it.
+    GenTree* op1Store    = nullptr;
+    bool     op1MultiUse = false;
+    if ((simdSize == 32) && !gtCanReorderWithoutTemp(op1, op2))
+    {
+        if (elementSize == 1)
+        {
+            op1MultiUse = !compOpportunisticallyDependsOn(InstructionSet_AVX512v2, isShuffleNative);
+        }
+        else if (elementSize == 2)
+        {
+            op1MultiUse = !compOpportunisticallyDependsOn(InstructionSet_AVX512, isShuffleNative);
+        }
+    }
+
+    if (op1MultiUse)
+    {
+        TempInfo temp = fgMakeTemp(op1);
+        op1           = temp.load;
+        op1Store      = temp.store;
+    }
+#endif
+
     // duplicate operand 2 for non-ShuffleNative implementation later
     // (also, on arm64, byte ShuffleNative is same as Shuffle)
     GenTree* op2DupSafe = nullptr;
@@ -29918,6 +30054,13 @@ GenTree* Compiler::gtNewSimdShuffleVariableNode(
     {
         assert(op2DupSafe == nullptr);
     }
+
+#if defined(TARGET_XARCH)
+    if (op1Store != nullptr)
+    {
+        retNode = gtNewOperNode(GT_COMMA, type, op1Store, retNode);
+    }
+#endif
 
     return retNode;
 }
@@ -31813,11 +31956,18 @@ GenTree* Compiler::gtNewSimdWithElementNode(
     if (rangeCheckNeeded)
     {
         // Evaluate op3's side effects before validating the index.
-        GenTree* index = fgMakeMultiUse(&op2);
+        GenTree* index =
+            (op3->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) != 0 ? fgInsertCommaFormTemp(&op2) : fgMakeMultiUse(&op2);
         GenTree* value = gtTreeHasSideEffects(op3, GTF_OBS_EFFECT) ? fgMakeMultiUse(&op3) : op3;
         index          = addRangeCheckForHWIntrinsic(index, 0, immUpperBound);
         value          = gtWrapWithSideEffects(value, index, GTF_OBS_EFFECT);
         op3            = gtWrapWithSideEffects(value, op3, GTF_OBS_EFFECT);
+
+        // The bounds check may later be removed; keep the access ordered after
+        // whatever proved the index is in range.
+        GenTree* withElement = gtNewSimdHWIntrinsicNode(type, op1, op2, op3, hwIntrinsicID, simdBaseType, simdSize);
+        withElement->SetHasOrderingSideEffect();
+        return withElement;
     }
 
     return gtNewSimdHWIntrinsicNode(type, op1, op2, op3, hwIntrinsicID, simdBaseType, simdSize);

@@ -13,6 +13,7 @@
 
 #include "stdlib.h"
 
+#ifdef TARGET_WINDOWS
 BOOL isMemoryReadable(const TADDR start, unsigned len)
 {
     CONTRACTL
@@ -21,12 +22,6 @@ BOOL isMemoryReadable(const TADDR start, unsigned len)
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
-
-#if !defined(DACCESS_COMPILE) && defined(TARGET_UNIX)
-
-    return PAL_ProbeMemory((PVOID)start, len, FALSE);
-
-#else // !DACCESS_COMPILE && TARGET_UNIX
 
     //
     // To accomplish this in a no-throw way, we have to touch each and every page
@@ -91,10 +86,10 @@ BOOL isMemoryReadable(const TADDR start, unsigned len)
     }
 
     return 1;
-#endif // !DACCESS_COMPILE && TARGET_UNIX
 }
 
 
+#ifdef TARGET_X86
 /*******************************************************************/
 /* check to see if 'retAddr' is a valid return address (it points to
    someplace that has a 'call' right before it), If possible it is
@@ -108,12 +103,6 @@ bool isRetAddr(TADDR retAddr, TADDR* whereCalled)
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
-
-    // don't waste time values clearly out of range
-    if (retAddr < (TADDR)BOT_MEMORY || retAddr > (TADDR)TOP_MEMORY)
-    {
-        return false;
-    }
 
     PTR_BYTE spot = PTR_BYTE(retAddr);
     if (!isMemoryReadable(dac_cast<TADDR>(spot) - 7, 7))
@@ -177,6 +166,8 @@ bool isRetAddr(TADDR retAddr, TADDR* whereCalled)
     // There are other cases, but I don't believe they are used.
     return(false);
 }
+#endif // TARGET_X86
+#endif // TARGET_WINDOWS
 
 /*
  * The remaining methods are included in debug builds only

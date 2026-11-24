@@ -30,6 +30,7 @@
 #define StressLog_h  1
 
 #include "log.h"
+#include <minipal/thread.h>
 
 #if defined(STRESS_LOG) && !defined(FEATURE_NO_STRESSLOG)
 #include "holder.h"
@@ -701,7 +702,7 @@ public:
     {
 #ifndef STRESS_LOG_READONLY
         //there is no need to zero buffers because we could handle garbage contents
-        threadId = GetCurrentThreadId ();
+        threadId = minipal_get_current_thread_id();
         isDead = FALSE;
         curWriteChunk = chunkListTail;
         curPtr = (StressMsg *)curWriteChunk->EndPtr ();

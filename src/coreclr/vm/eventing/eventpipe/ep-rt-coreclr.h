@@ -27,10 +27,12 @@
 #endif // HOST_WINDOWS
 
 #include "ProcessEnvironment.h"
+#include <minipal/cpucount.h>
 #include <minipal/guid.h>
 #include <minipal/strings.h>
 #include <minipal/time.h>
 #include <minipal.h>
+#include <minipal/thread.h>
 
 #ifdef TARGET_UNIX
 #include <sys/time.h>
@@ -1152,13 +1154,7 @@ ep_rt_thread_sleep (uint64_t ns)
 {
 #ifndef PERFTRACING_DISABLE_THREADS
 	STATIC_CONTRACT_NOTHROW;
-
-#ifdef TARGET_UNIX
-	PAL_nanosleep (ns);
-#else  //TARGET_UNIX
-	const uint32_t NUM_NANOSECONDS_IN_1_MS = 1000000;
-	minipal_sleep(static_cast<DWORD>(ns / NUM_NANOSECONDS_IN_1_MS));
-#endif //TARGET_UNIX
+	minipal_sleep (static_cast<uint32_t>(ns / 1'000'000));
 #endif // PERFTRACING_DISABLE_THREADS
 }
 
@@ -1168,7 +1164,7 @@ uint32_t
 ep_rt_current_process_get_id (void)
 {
 	STATIC_CONTRACT_NOTHROW;
-	return static_cast<uint32_t>(GetCurrentProcessId ());
+	return minipal_get_current_process_id();
 }
 
 static
@@ -1196,9 +1192,13 @@ ep_rt_processors_get_count (void)
 {
 	STATIC_CONTRACT_NOTHROW;
 
+#ifdef TARGET_UNIX
+	return static_cast<uint32_t>(minipal_get_cpu_affinity_count ());
+#else
 	SYSTEM_INFO sys_info = {};
 	GetSystemInfo (&sys_info);
 	return static_cast<uint32_t>(sys_info.dwNumberOfProcessors);
+#endif
 }
 
 static
@@ -1208,11 +1208,7 @@ ep_rt_current_thread_get_id (void)
 {
 	STATIC_CONTRACT_NOTHROW;
 
-#ifdef TARGET_UNIX
-	return static_cast<ep_rt_thread_id_t>(::PAL_GetCurrentOSThreadId ());
-#else
-	return static_cast<ep_rt_thread_id_t>(::GetCurrentThreadId ());
-#endif
+	return static_cast<ep_rt_thread_id_t>(minipal_get_current_thread_id ());
 }
 
 static
@@ -1485,7 +1481,7 @@ ep_rt_lock_acquire (ep_rt_lock_handle_t *lock)
 	{
 		if (lock) {
 			CrstBase::CrstHolderWithState holder (lock->lock);
-			holder.SuppressRelease ();
+			holder.Detach ();
 		}
 	}
 	EX_CATCH
@@ -1507,8 +1503,8 @@ ep_rt_lock_release (ep_rt_lock_handle_t *lock)
 	EX_TRY
 	{
 		if (lock) {
-			CrstBase::UnsafeCrstInverseHolder holder (lock->lock);
-			holder.SuppressRelease ();
+			CrstBase::UnsafeCrstInverseHolder holder = CrstBase::ReleaseForScope (lock->lock);
+			holder.SuppressAcquire ();
 		}
 	}
 	EX_CATCH

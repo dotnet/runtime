@@ -2140,6 +2140,8 @@ public:
 
     template <typename TVisitor>
     VisitResult VisitLogicalLocalDefs(Compiler* comp, TVisitor visitor);
+    template <typename TVisitor>
+    VisitResult VisitLogicalLocalDefsInternal(Compiler* comp, TVisitor visitor);
 
     bool HasAnyLocalDefs(Compiler* comp);
 
@@ -3036,6 +3038,9 @@ class GenTreeUseEdgeIterator final
     void AdvanceFieldList();
     void AdvancePhi();
     void AdvanceConditional();
+#ifdef TARGET_WASM
+    void AdvanceWasmSelect();
+#endif
 
     template <bool ReverseOperands>
     void AdvanceBinOp();

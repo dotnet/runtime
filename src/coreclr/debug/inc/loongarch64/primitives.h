@@ -12,6 +12,7 @@
 
 #ifndef PRIMITIVES_H_
 #define PRIMITIVES_H_
+#include <minipal/instructioncache.h>
 
 typedef const BYTE                  CORDB_ADDRESS_TYPE;
 typedef DPTR(CORDB_ADDRESS_TYPE)    PTR_CORDB_ADDRESS_TYPE;
@@ -135,8 +136,7 @@ inline void CORDbgSetInstruction(CORDB_ADDRESS_TYPE* address,
 
     TADDR ptraddr = dac_cast<TADDR>(address);
     *(PRD_TYPE *)ptraddr = instruction;
-    FlushInstructionCache(GetCurrentProcess(),
-                          address,
+    minipal_flush_instruction_cache(address,
                           sizeof(PRD_TYPE));
 }
 
@@ -173,8 +173,7 @@ inline void CORDbgSetInstructionExImpl(CORDB_ADDRESS_TYPE* address,
     LIMITED_METHOD_DAC_CONTRACT;
 
     *(PRD_TYPE *)address = instruction;
-    FlushInstructionCache(GetCurrentProcess(),
-                          address,
+    minipal_flush_instruction_cache(address,
                           sizeof(PRD_TYPE));
 }
 
