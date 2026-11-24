@@ -19,7 +19,6 @@
 #else
 #ifdef FEATURE_CORECLR
 #include <pal.h>
-#include "processdescriptor.h"
 #endif
 
 #ifndef ep_return_null_if_nok

@@ -1382,12 +1382,12 @@ namespace System.DirectoryServices.Protocols
                 timeout = default;
                 int iterationDelay = 1;
                 // Underlying native libraries don't support callback-based function, so we will instead use polling and
-                // use a Stopwatch to track the timeout manually.
-                Stopwatch watch = Stopwatch.StartNew();
+                // track the timeout manually.
+                long startTimestamp = Stopwatch.GetTimestamp();
                 while (true)
                 {
                     error = LdapPal.GetResultFromAsyncOperation(_ldapHandle, messageId, (int)resultType, timeout, ref ldapResult);
-                    if (error != 0 || (requestTimeOut != Threading.Timeout.InfiniteTimeSpan && watch.Elapsed > requestTimeOut))
+                    if (error != 0 || (requestTimeOut != Threading.Timeout.InfiniteTimeSpan && Stopwatch.GetElapsedTime(startTimestamp) > requestTimeOut))
                     {
                         break;
                     }
@@ -1397,7 +1397,6 @@ namespace System.DirectoryServices.Protocols
                         iterationDelay *= 2;
                     }
                 }
-                watch.Stop();
             }
 
             if (error != -1 && error != 0)

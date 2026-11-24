@@ -12,6 +12,7 @@
 **=========================================================*/
 
 #include <palsuite.h>
+#include <minipal/thread.h>
 
 #define NUM_TESTS 3
 
@@ -23,7 +24,7 @@ LONG completedThreadCount_CreateThread_test2 = 0;
 
 DWORD PALAPI Thread_CreateThread_test2( LPVOID lpParameter)
 {
-    dwThreadId1_CreateThread_test2[(DWORD)(SIZE_T)lpParameter] = GetCurrentThreadId();
+    dwThreadId1_CreateThread_test2[(DWORD)(SIZE_T)lpParameter] = (DWORD)minipal_get_current_thread_id();
     bResult_CreateThread_test2[(DWORD)(SIZE_T) lpParameter] = TRUE;
     InterlockedIncrement(&completedThreadCount_CreateThread_test2);
     return (DWORD)(SIZE_T) lpParameter;

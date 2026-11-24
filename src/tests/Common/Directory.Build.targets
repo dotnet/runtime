@@ -80,10 +80,6 @@
           TargetDir="WasmAppBuilder/"/>
 
         <RunTimeDependencyCopyLocal
-          Include="$(MonoTargetsTasksDir)publish\**"
-          TargetDir="WasmAppBuilder/"/>
-
-        <RunTimeDependencyCopyLocal
           Include="$(RepoRoot)\src\tests\Common\wasm-test-runner\WasmTestRunner.proj"
           TargetDir="wasm-test-runner/"/>
 
@@ -117,18 +113,6 @@
 
     <ItemGroup>
       <RunTimeDependencyCopyLocal Include="$(CoreDisToolsLibrary)" Condition="$(CopyCoreDisToolsToCoreRoot)" />
-    </ItemGroup>
-
-    <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and '$(IsDesktopOS)' == 'true' " >
-      <!-- Copy the mono version of the coreclr library and SPCL instead of the corceclr one -->
-      <RuntimeDependencyCopyLocal Remove="$(CoreCLRArtifactsPath)$(LibPrefix)coreclr$(LibSuffix)" />
-      <RuntimeDependencyCopyLocal Remove="$(CoreCLRArtifactsPath)System.Private.CoreLib.dll" />
-      <RuntimeDependencyCopyLocal Include="$(MonoArtifactsPath)$(LibPrefix)coreclr$(LibSuffix)" TargetDir="" />
-
-      <RuntimeDependencyCopyLocal Include="$(MonoArtifactsPath)/libmono-component-*" TargetDir=""  />
-      <RuntimeDependencyCopyLocal Include="$(MonoArtifactsPath)/*.dll" TargetDir="" />
-      <RuntimeDependencyCopyLocal Include="$(MonoArtifactsPath)/libc++.so.1" TargetDir="" Condition="Exists('$(MonoArtifactsPath)/libc++.so.1')" />
-      <RuntimeDependencyCopyLocal Include="$(MonoArtifactsPath)/libc++abi.so.1" TargetDir="" Condition="Exists('$(MonoArtifactsPath)/libc++abi.so.1')" />
     </ItemGroup>
 
     <Copy

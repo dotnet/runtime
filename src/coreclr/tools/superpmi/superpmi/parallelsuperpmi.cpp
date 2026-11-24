@@ -9,6 +9,7 @@
 #include "commandline.h"
 #include "errorhandling.h"
 #include "fileio.h"
+#include <minipal/cpucount.h>
 #include <minipal/random.h>
 
 #include <signal.h>
@@ -819,10 +820,14 @@ static bool GetTempFolderPath(char* tempPath)
 
 static int GetDefaultWorkerCount()
 {
+#ifdef HOST_UNIX
+    int count = minipal_get_cpu_affinity_count();
+#else
     SYSTEM_INFO sysinfo;
     GetSystemInfo(&sysinfo);
 
     int count = (int)sysinfo.dwNumberOfProcessors;
+#endif
 
     // If we ever execute on a machine which has more than MAXIMUM_WAIT_OBJECTS(64) CPU cores
     // we still can't spawn more than the max supported by WaitForMultipleObjects()

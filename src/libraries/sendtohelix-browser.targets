@@ -33,9 +33,8 @@
 
   <PropertyGroup>
     <_ShippingPackagesPath>$([MSBuild]::NormalizeDirectory($(ArtifactsDir), 'packages', $(Configuration), 'Shipping'))</_ShippingPackagesPath>
-    <WorkItemPrefix Condition="'$(WorkItemPrefix)' == '' and '$(RuntimeFlavor)' == 'CoreCLR'">$(Scenario)-CLR-ST-</WorkItemPrefix>
-    <WorkItemPrefix Condition="'$(WorkItemPrefix)' == '' and '$(WasmEnableThreads)' != 'true'">$(Scenario)-MONO-ST-</WorkItemPrefix>
-    <WorkItemPrefix Condition="'$(WorkItemPrefix)' == '' and '$(WasmEnableThreads)' == 'true'">$(Scenario)-MONO-MT-</WorkItemPrefix>
+    <WorkItemPrefix Condition="'$(WorkItemPrefix)' == '' and '$(WasmEnableThreads)' != 'true'">$(Scenario)-CLR-ST-</WorkItemPrefix>
+    <WorkItemPrefix Condition="'$(WorkItemPrefix)' == '' and '$(WasmEnableThreads)' == 'true'">$(Scenario)-CLR-MT-</WorkItemPrefix>
 
     <IsRunningLibraryTests Condition="'$(Scenario)' == 'WasmTestOnV8' or 
                                       '$(Scenario)' == 'WasmTestOnChrome' or 
@@ -188,8 +187,7 @@
          $(RuntimeFlavor) filters and generates consistently. The single work item lanes do not
          consult the generated list at all, so this is their only flavor filter.
          The workload/no-workload selection above still applies. -->
-    <_XUnitTraitArg Condition="'$(RuntimeFlavor)' == 'CoreCLR'">$(_XUnitTraitArg) -notrait category=mono</_XUnitTraitArg>
-    <_XUnitTraitArg Condition="'$(RuntimeFlavor)' != 'CoreCLR'">$(_XUnitTraitArg) -notrait category=coreclr</_XUnitTraitArg>
+    <_XUnitTraitArg>$(_XUnitTraitArg) -notrait category=mono</_XUnitTraitArg>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -285,10 +283,7 @@
          the raw pack layout as a correlation payload. -->
     <ItemGroup Condition="'$(NeedsEMSDK)' == 'true' and '$(RuntimeFlavor)' != 'CoreCLR'">
       <HelixCorrelationPayload Include="$(MicrosoftNetCoreAppRuntimePackDir)"    Destination="build/microsoft.netcore.app.runtime.browser-wasm" />
-      <HelixCorrelationPayload Include="$(MonoAOTCompilerDir)"                   Destination="build/MonoAOTCompiler" />
       <HelixCorrelationPayload Include="$(WasmBuildTargetsDir)"                  Destination="build/wasm-shared" />
-      <HelixCorrelationPayload Include="$(MonoAotCrossDir)"                      Destination="build/cross" />
-      <HelixCorrelationPayload Include="$(MonoTargetsTasksDir)"                  Destination="build/MonoTargetsTasks" />
     </ItemGroup>
 
     <!-- CoreCLR ReadyToRun: ship the wasm-aware Crossgen2Tasks shim (the wasm-container crossgen tasks) so the
