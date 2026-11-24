@@ -183,7 +183,13 @@ namespace System.Diagnostics.Tests
         public unsafe void Create_MarshalledPointer()
         {
             void* pMem = NativeMemory.Alloc(1);
-            Action del = Marshal.GetDelegateForFunctionPointer<Action>((nint)pMem);
+            Action del;
+            // SAFETY: To be audited
+            unsafe
+            {
+                del = Marshal.GetDelegateForFunctionPointer<Action>((nint)pMem);
+            }
+
             NativeMemory.Free(pMem);
 
             DiagnosticMethodInfo dmi = DiagnosticMethodInfo.Create(del);
