@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Threading;
 
 using Internal.ReadyToRunConstants;
 using Internal.TypeSystem;
@@ -57,15 +56,7 @@ namespace ILCompiler
             if (!context.BubbleIncludesCoreModule)
                 return false;
 
-            HashSet<MethodDesc> helpers = Volatile.Read(ref _managedJitHelpers);
-            if (helpers is null)
-            {
-                Interlocked.CompareExchange(ref _managedJitHelpers,
-                    ReadyToRunJitHelperRootProvider.GetManagedHelpers(context), null);
-                helpers = _managedJitHelpers;
-            }
-
-            return helpers.Contains(method);
+            return (_managedJitHelpers ??= ReadyToRunJitHelperRootProvider.GetManagedHelpers(context)).Contains(method);
         }
 
         public sealed override void ApplyProfileGuidedOptimizationData(ProfileDataManager profileGuidedCompileRestriction, bool partial)
