@@ -4967,7 +4967,7 @@ void CEEInfo::getCallInfo(
     BOOL fResolvedConstraint = FALSE;
     BOOL fForceUseRuntimeLookup = FALSE;
     BOOL fAbstractSVM = FALSE;
-    bool canPassDeclaredInterfaceContext = false;
+    bool usesDeclaredStaticDefault = false;
 
     // The below may need to mutate the constrained token, in which case we
     // switch to this local copy to avoid mutating the in argument.
@@ -5030,8 +5030,7 @@ void CEEInfo::getCallInfo(
             }
         }
 
-        bool checkDeclaredDefault = fIsStaticVirtualMethod && (flags & CORINFO_CALLINFO_ALLOWINSTPARAM) &&
-            !(flags & CORINFO_CALLINFO_LDFTN) && pResolvedToken->tokenContext == METHOD_BEING_COMPILED_CONTEXT() &&
+        bool checkDeclaredDefault = fIsStaticVirtualMethod && pResolvedToken->tokenContext == METHOD_BEING_COMPILED_CONTEXT() &&
             TypeFromToken(pResolvedToken->token) == mdtMemberRef && !IsDynamicScope(pResolvedToken->tokenScope) &&
             GetModule(pResolvedToken->tokenScope) == GetMethod(callerHandle)->GetModule();
         bool usesDeclaredSlot = false;
@@ -5089,7 +5088,7 @@ void CEEInfo::getCallInfo(
                 fForceUseRuntimeLookup = FALSE;
                 // The method token already names the exact interface context this body needs.
                 // Keep its owner in exactType so lookup preparation can embed the token's parent.
-                canPassDeclaredInterfaceContext = true;
+                usesDeclaredStaticDefault = true;
             }
             pResult->thisTransform = CORINFO_NO_THIS_TRANSFORM;
         }
@@ -5235,7 +5234,7 @@ void CEEInfo::getCallInfo(
         // the complexity involved would be worth the risk. Other scenarios are not expected to be as performance
         // sensitive.
         if (IsMdStatic(dwTargetMethodAttrs) && constrainedType != NULL && pResult->exactContextNeedsRuntimeLookup &&
-            !canPassDeclaredInterfaceContext)
+            (!usesDeclaredStaticDefault || (flags & CORINFO_CALLINFO_LDFTN)))
         {
             allowInstParam = FALSE;
         }
@@ -5271,7 +5270,10 @@ void CEEInfo::getCallInfo(
             pResult->kind = CORINFO_CALL_CODE_POINTER;
 
             DictionaryEntryKind entryKind;
-            if (constrainedType.IsNull() || ((flags & CORINFO_CALLINFO_CALLVIRT) && !constrainedType.IsValueType()))
+            // For the declared default, the original token identifies both the method and its exact owner.
+            // A callable entry can bind that context without resolving the constrained call again.
+            if (usesDeclaredStaticDefault || constrainedType.IsNull() ||
+                ((flags & CORINFO_CALLINFO_CALLVIRT) && !constrainedType.IsValueType()))
             {
                 // For reference types, the constrained type does not affect method resolution on a callvirt, and if there is no
                 // constraint, it doesn't effect it either

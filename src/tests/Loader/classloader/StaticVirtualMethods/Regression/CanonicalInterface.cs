@@ -49,6 +49,9 @@ public class CanonicalInterface
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static Type ReadDefaultOwner<TFunc, TUnused, T>() where TFunc : struct, IDefaultOwner<T> => TFunc.Owner();
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Func<Type> GetDefaultOwner<TFunc, T>() where TFunc : struct, IDefaultOwner<T> => TFunc.Owner;
+
     private readonly struct SameResult : IResult<object>, IResult<string>, IResult<int>
     {
         public static int Get() => 42;
@@ -468,6 +471,9 @@ public class CanonicalInterface
         Assert.Equal(typeof(object), ReadDefaultOwner<TwoDefaultOwners, string, object>());
         Assert.Equal(typeof(int), ReadDefaultOwner<OneDefaultOwner, object, string>());
         Assert.Equal(typeof(object), ReadDefaultOwner<OneDefaultOwner, string, object>());
+        Assert.Equal(typeof(string), GetDefaultOwner<TwoDefaultOwners, string>()());
+        Assert.Equal(typeof(object), GetDefaultOwner<TwoDefaultOwners, object>()());
+        Assert.Equal(typeof(int), GetDefaultOwner<OneDefaultOwner, string>()());
 
         Assert.Equal(42, CallConvergent<SameResult, object>());
         Assert.Equal(42, CallConvergent<SameResult, string>());
