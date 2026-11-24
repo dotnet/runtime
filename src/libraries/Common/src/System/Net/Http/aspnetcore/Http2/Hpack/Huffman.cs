@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #nullable enable
+using System.Buffers;
 using System.Diagnostics;
 using System.Threading;
 
@@ -665,8 +666,9 @@ namespace System.Net.Http.HPack
         /// </summary>
         /// <param name="src">The source byte array containing the encoded data.</param>
         /// <param name="dstArray">The destination byte array to store the decoded data.  This may grow if its size is insufficient.</param>
+        /// <param name="pool"> The pool <paramref name="dstArray"/> was rented from, or <see langword="null"/> if it was not rented.</param>
         /// <returns>The number of decoded symbols.</returns>
-        public static int Decode(ReadOnlySpan<byte> src, ref byte[] dstArray)
+        public static int Decode(ReadOnlySpan<byte> src, ref byte[] dstArray, ArrayPool<byte>? pool = null)
         {
             // The code below implements the decoding logic for an HPack huffman encoded literal values.
             // https://httpwg.org/specs/rfc7541.html#string.literal.representation
@@ -711,7 +713,7 @@ namespace System.Net.Http.HPack
                         // +---+---------------------------+-------------------------------+
                         if (j == dst.Length)
                         {
-                            Array.Resize(ref dstArray, dst.Length * 2);
+                            Grow(ref dstArray, pool);
                             dst = dstArray;
                         }
                         dst[j++] = (byte)lookupValue;
@@ -778,7 +780,7 @@ namespace System.Net.Http.HPack
 
                     if (j == dst.Length)
                     {
-                        Array.Resize(ref dstArray, dst.Length * 2);
+                        Grow(ref dstArray, pool);
                         dst = dstArray;
                     }
                     dst[j++] = (byte)lookupValue;
@@ -801,6 +803,20 @@ namespace System.Net.Http.HPack
             }
 
             return j;
+        }
+
+        private static void Grow(ref byte[] dstArray, ArrayPool<byte>? pool)
+        {
+            if (pool is null)
+            {
+                Array.Resize(ref dstArray, dstArray.Length * 2);
+                return;
+            }
+
+            byte[] newArray = pool.Rent(dstArray.Length * 2);
+            dstArray.AsSpan().CopyTo(newArray);
+            pool.Return(dstArray);
+            dstArray = newArray;
         }
     }
 }
