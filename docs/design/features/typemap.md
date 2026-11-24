@@ -247,6 +247,7 @@ Only the holders that the assembly level attributes of the assemblies that are s
 * `TryGetValue<TTypeMapGroup, TTypeMapGroupOwner, TValue>` starts at `TTypeMapGroupOwner` instead: it only considers the entries declared on that type and on the types reachable from it through
 `TypeMapTypeTargetAttribute<TTypeMapGroup>`, transitively. The assembly level entries, the `TypeMapAssemblyTargetAttribute` targets and the other libraries are not considered, and the owner does not have to be reachable from the assembly.
 This gives a library a local type map that doesn't need whole program analysis. The group, the owner and `TValue` have to be fully instantiated like for the other overloads.
+In NativeAOT a type that is used as the owner is visible to reflection (see typemap-typed-values.md); the holders that are only linked are not.
 The owner has to be a type that C# allows as a type argument: a `static` class can't be used (CS0718), so owner types that are meant for this overload can't be `static`.
 * Entries on a holder behave the same everywhere else: a holder entry is trimmed by the same rules as an assembly level entry, and the type map attributes are removed from the output of trimming tools.
 * The holders are not supported by ILLink and the Roslyn analyzer yet: ILLink doesn't read the attributes of the types, so a trimmed CoreCLR application doesn't have the entries of the holders.

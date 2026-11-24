@@ -492,6 +492,11 @@ unsafe class TypeMapValues
     public class HolderSource;
     public class HolderLocalSource;
 
+    public class HolderChainedTarget : ITypeMapValue<SmallValue>
+    {
+        public static SmallValue Value => new SmallValue { X = 6 };
+    }
+
     // Linked from the assembly. The entries of the group on the type, and the type that it links to.
     [TypeMap<HolderGroup>("a", typeof(HolderTarget))]
     [TypeMap<HolderGroup>("a-trim-unused", typeof(HolderTrimUnusedTarget), typeof(HolderTrimKeyUnused))]
@@ -502,10 +507,14 @@ unsafe class TypeMapValues
     [TypeMap<ValuesOnly>("holder-other-group", typeof(HolderTarget))]
     public class HolderA;
 
-    // Links the type that links it.
+    // Links the type that links it, and a type that is never used as an owner.
     [TypeMap<HolderGroup>("b", typeof(HolderBTarget))]
     [TypeMapTypeTarget<HolderGroup>(typeof(HolderA))]
+    [TypeMapTypeTarget<HolderGroup>(typeof(HolderChained))]
     public class HolderB;
+
+    [TypeMap<HolderGroup>("chained", typeof(HolderChainedTarget))]
+    public class HolderChained;
 
     // Not linked from the assembly: only found by starting at it.
     [TypeMap<HolderGroup>("local", typeof(HolderLocalTarget))]
@@ -574,6 +583,7 @@ unsafe class TypeMapValues
         Check(TypeMapping.TryGetValue<HolderGroup, SmallValue>("assembly", out SmallValue value) && value.X == 1, "holders: assembly entry");
         Check(TypeMapping.TryGetValue<HolderGroup, SmallValue>("a", out value) && value.X == 2, "holders: entry of the linked type");
         Check(TypeMapping.TryGetValue<HolderGroup, SmallValue>("b", out value) && value.X == 4, "holders: entry of the chained type");
+        Check(TypeMapping.TryGetValue<HolderGroup, SmallValue>("chained", out value) && value.X == 6, "holders: entry of the type that is chained twice");
         Check(TypeMapping.TryGetValue<HolderGroup, SmallValue>(Hide(typeof(HolderSource)), out value) && value.X == 2, "holders: proxy entry");
         Check(!TypeMapping.TryGetValue<HolderGroup, SmallValue>("local", out _), "holders: the type that is not linked");
         Check(!TypeMapping.TryGetValue<HolderGroup, SmallValue>(Hide(typeof(HolderLocalSource)), out _), "holders: proxy entry of the type that is not linked");
@@ -586,6 +596,7 @@ unsafe class TypeMapValues
         // The map that starts at an owner type has the entries of the type and of the types that it links, and nothing else.
         Check(TypeMapping.TryGetValue<HolderGroup, HolderA, SmallValue>("a", out value) && value.X == 2, "owner: own entry");
         Check(TypeMapping.TryGetValue<HolderGroup, HolderA, SmallValue>("b", out value) && value.X == 4, "owner: linked entry");
+        Check(TypeMapping.TryGetValue<HolderGroup, HolderA, SmallValue>("chained", out value) && value.X == 6, "owner: entry of a type that is linked twice");
         Check(!TypeMapping.TryGetValue<HolderGroup, HolderA, SmallValue>("assembly", out _), "owner: assembly entry");
         Check(!TypeMapping.TryGetValue<HolderGroup, HolderA, SmallValue>("local", out _), "owner: other holder");
         Check(!TypeMapping.TryGetValue<HolderGroup, HolderA, SmallValue>("a-trim-unused", out _), "owner: unused trim target");
@@ -603,11 +614,16 @@ unsafe class TypeMapValues
         Check(ThrowsArgumentNull(() => TypeMapping.TryGetValue<HolderGroup, HolderA, SmallValue>((string)null, out _)), "owner: null string key");
         Check(ThrowsArgumentNull(() => TypeMapping.TryGetValue<HolderGroup, HolderA, SmallValue>((Type)null, out _)), "owner: null type key");
 
-        // The holder types are only containers of attributes.
-        foreach (string name in new[] { nameof(HolderA), nameof(HolderB), nameof(HolderLocal), nameof(HolderEmpty), nameof(HolderTarget), nameof(HolderBTarget), nameof(HolderLocalTarget) })
+        // The holder types that are only linked are containers of attributes: they are not reflection visible, nor are the mapped types.
+        // The types that are used as owners are, because the lookup identifies its table with a type that is made of them.
+        string visible = "";
+        foreach (string name in new[] { nameof(HolderChained), nameof(HolderTarget), nameof(HolderBTarget), nameof(HolderLocalTarget), nameof(HolderChainedTarget) })
         {
-            Check(GetTypeSecretly(Hide(typeof(TypeMapValues)), name) == null, name + " is reflection visible");
+            if (GetTypeSecretly(Hide(typeof(TypeMapValues)), name) != null)
+                visible += name + " ";
         }
+
+        Check(visible.Length == 0, "reflection visible: " + visible);
     }
 
     static void RunValuesOnly()

@@ -139,6 +139,9 @@ the hash table of the groups, the data tables of the values) is keyed by the sco
 An owner without entries (or one that is not an Ecma type) has an empty map. The scope maps never have the `Types` flavor: only `TryGetValue` can ask for them.
 * The requests of the scope maps are the same nodes as the requests of the other maps (the group is the scope type), so the same evaluation of the getters is shared: a mapped type that is in the group table and in a scope table is evaluated once, and it has
 one data entry in each table that has it (the data is small, and a table has to be dense). Preinitialization of the values works the same for the entries of holders and scopes.
+* Reflection visibility: the holder types that are only linked with `TypeMapTypeTarget`, and the mapped types, are not visible to reflection (the holders are never in the graph as types). A type that is used as the group or as the owner of
+`TryGetValue<TGroup, TOwner, TValue>` is: the lookup identifies its table with a handle of `TypeMapOwnerScope<TGroup, TOwner>` that the code gets from a generic dictionary, and ILC makes such a type handle constructed, which has metadata, and that is
+the metadata of the type arguments too. (The group type of the other APIs is visible for the same reason.) Making the owner invisible needs a dictionary entry that is not a type handle, for example a lookup result that is the address of the table.
 * The sections of the image are emitted when the program has scope maps even if there are no assembly level type maps (the manager can't know before the analysis is done): `ShouldSkipEmittingObjectNode` of the section nodes makes a program without any
 type map keep not having the sections.
 

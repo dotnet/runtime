@@ -40,6 +40,7 @@ namespace ILCompiler
 
         internal bool IsTypeMapOwnerScope(TypeDesc type, out TypeDesc typeMapGroup, out TypeDesc ownerType)
         {
+            _typeMapOwnerScope ??= SystemModule.GetType("System.Runtime.InteropServices"u8, "TypeMapOwnerScope`2"u8, throwIfNotFound: false);
             if (type is InstantiatedType instantiated && _typeMapOwnerScope is not null && instantiated.GetTypeDefinition() == _typeMapOwnerScope)
             {
                 typeMapGroup = instantiated.Instantiation[0];

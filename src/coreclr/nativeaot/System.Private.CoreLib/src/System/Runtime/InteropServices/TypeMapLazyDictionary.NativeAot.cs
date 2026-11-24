@@ -50,9 +50,8 @@ namespace System.Runtime.InteropServices
         private static readonly ConcurrentDictionary<RuntimeTypeHandle, GroupTable> s_proxyGroups = new();
 
         // Finds the group in the image and returns the parser positioned after the state of the group.
-        private static NativeParser FindGroupState(ReadyToRunSectionType sectionType, RuntimeType typeMapGroup, out ExternalReferencesTable externalReferences, out uint flavors)
+        private static NativeParser FindGroupState(ReadyToRunSectionType sectionType, RuntimeTypeHandle typeMapGroupHandle, out ExternalReferencesTable externalReferences, out uint flavors)
         {
-            RuntimeTypeHandle typeMapGroupHandle = typeMapGroup.TypeHandle;
             foreach (TypeManagerHandle module in RuntimeAugments.GetLoadedModules())
             {
                 if (!TryGetNativeReaderForBlob(module, sectionType, out NativeReader typeMapReader))
@@ -89,11 +88,15 @@ namespace System.Runtime.InteropServices
                 }
             }
 
-            throw ReflectionCoreExecution.ExecutionEnvironment.CreateMissingMetadataException(typeMapGroup);
+            throw CreateMissingMetadataException(typeMapGroupHandle);
         }
 
+        // The group is only identified by its handle: a type of a map that starts at an owner type doesn't have to be (and is not) visible to reflection.
+        private static Exception CreateMissingMetadataException(RuntimeTypeHandle typeMapGroupHandle)
+            => ReflectionCoreExecution.ExecutionEnvironment.CreateMissingMetadataException(Type.GetTypeFromHandle(typeMapGroupHandle)!);
+
         // The state of a group with typed value flavors is followed by the count of the flavors, then (value type, data table + 1) per flavor.
-        private static GroupTable FindGroup(ReadyToRunSectionType sectionType, RuntimeType typeMapGroup)
+        private static GroupTable FindGroup(ReadyToRunSectionType sectionType, RuntimeTypeHandle typeMapGroup)
         {
             NativeParser entryParser = FindGroupState(sectionType, typeMapGroup, out ExternalReferencesTable externalReferences, out uint flavors);
 
@@ -113,7 +116,7 @@ namespace System.Runtime.InteropServices
         }
 
         // The readers of the type valued maps don't need the descriptors of the typed value flavors: they skip them.
-        private static NativeHashtable FindTypesTable(ReadyToRunSectionType sectionType, RuntimeType typeMapGroup, out ExternalReferencesTable externalReferences)
+        private static NativeHashtable FindTypesTable(ReadyToRunSectionType sectionType, RuntimeTypeHandle typeMapGroup, out ExternalReferencesTable externalReferences)
         {
             NativeParser entryParser = FindGroupState(sectionType, typeMapGroup, out externalReferences, out uint flavors);
 
@@ -133,22 +136,28 @@ namespace System.Runtime.InteropServices
             return new NativeHashtable(entryParser);
         }
 
-        private static GroupTable FindCachedGroupWithFlavor(ConcurrentDictionary<RuntimeTypeHandle, GroupTable> cache, ReadyToRunSectionType sectionType, RuntimeType typeMapGroup, uint flavor)
+        private static GroupTable FindCachedGroupWithFlavor(ConcurrentDictionary<RuntimeTypeHandle, GroupTable> cache, ReadyToRunSectionType sectionType, RuntimeTypeHandle typeMapGroup, uint flavor)
         {
-            GroupTable group = cache.GetOrAdd(typeMapGroup.TypeHandle, static (_, state) => FindGroup(state.SectionType, state.TypeMapGroup), (SectionType: sectionType, TypeMapGroup: typeMapGroup));
+            GroupTable group = cache.GetOrAdd(typeMapGroup, static (_, state) => FindGroup(state.SectionType, state.TypeMapGroup), (SectionType: sectionType, TypeMapGroup: typeMapGroup));
             RequireFlavor(group.Flavors, typeMapGroup, flavor);
             return group;
         }
 
-        private static void RequireFlavor(uint groupFlavors, RuntimeType typeMapGroup, uint flavor)
+        private static void RequireFlavor(uint groupFlavors, RuntimeTypeHandle typeMapGroup, uint flavor)
         {
             if ((groupFlavors & flavor) == 0)
             {
-                throw ReflectionCoreExecution.ExecutionEnvironment.CreateMissingMetadataException(typeMapGroup);
+                throw CreateMissingMetadataException(typeMapGroup);
             }
         }
 
         public static bool TryGetValue<TValue>(RuntimeType typeMapGroup, string key, [MaybeNullWhen(false)] out TValue value)
+            => TryGetValue(typeMapGroup.TypeHandle, key, out value);
+
+        public static bool TryGetValue<TValue>(RuntimeType typeMapGroup, Type key, [MaybeNullWhen(false)] out TValue value)
+            => TryGetValue(typeMapGroup.TypeHandle, key, out value);
+
+        private static bool TryGetValue<TValue>(RuntimeTypeHandle typeMapGroup, string key, [MaybeNullWhen(false)] out TValue value)
         {
             GroupTable group = FindCachedGroupWithFlavor(s_externalGroups, ReadyToRunSectionType.ExternalTypeMaps, typeMapGroup, ValuesFlavor);
             int flavor = FindValueFlavor<TValue>(group, typeMapGroup);
@@ -168,7 +177,7 @@ namespace System.Runtime.InteropServices
             return false;
         }
 
-        public static bool TryGetValue<TValue>(RuntimeType typeMapGroup, Type key, [MaybeNullWhen(false)] out TValue value)
+        private static bool TryGetValue<TValue>(RuntimeTypeHandle typeMapGroup, Type key, [MaybeNullWhen(false)] out TValue value)
         {
             GroupTable group = FindCachedGroupWithFlavor(s_proxyGroups, ReadyToRunSectionType.ProxyTypeMaps, typeMapGroup, ValuesFlavor);
             int flavor = FindValueFlavor<TValue>(group, typeMapGroup);
@@ -193,14 +202,15 @@ namespace System.Runtime.InteropServices
         }
 
         // The maps that start at an owner type are tables of the image of their own, identified by TypeMapOwnerScope<TTypeMapGroup, TTypeMapGroupOwner> instead of the group.
-        public static bool TryGetValue<TTypeMapGroup, TTypeMapGroupOwner, TValue>(string key, [MaybeNullWhen(false)] out TValue value)
-            => TryGetValue((RuntimeType)typeof(TypeMapOwnerScope<TTypeMapGroup, TTypeMapGroupOwner>), key, out value);
+        // The handle of the scope is used directly (a typeof of it would make the group and the owner visible to reflection).
+        public static unsafe bool TryGetValue<TTypeMapGroup, TTypeMapGroupOwner, TValue>(string key, [MaybeNullWhen(false)] out TValue value)
+            => TryGetValue(new RuntimeTypeHandle(MethodTable.Of<TypeMapOwnerScope<TTypeMapGroup, TTypeMapGroupOwner>>()), key, out value);
 
-        public static bool TryGetValue<TTypeMapGroup, TTypeMapGroupOwner, TValue>(Type key, [MaybeNullWhen(false)] out TValue value)
-            => TryGetValue((RuntimeType)typeof(TypeMapOwnerScope<TTypeMapGroup, TTypeMapGroupOwner>), key, out value);
+        public static unsafe bool TryGetValue<TTypeMapGroup, TTypeMapGroupOwner, TValue>(Type key, [MaybeNullWhen(false)] out TValue value)
+            => TryGetValue(new RuntimeTypeHandle(MethodTable.Of<TypeMapOwnerScope<TTypeMapGroup, TTypeMapGroupOwner>>()), key, out value);
 
         // A typed value flavor is only in the image if some call site asked for it.
-        private static int FindValueFlavor<TValue>(GroupTable group, RuntimeType typeMapGroup)
+        private static int FindValueFlavor<TValue>(GroupTable group, RuntimeTypeHandle typeMapGroup)
         {
             RuntimeTypeHandle valueType = typeof(TValue).TypeHandle;
             ValueFlavor[] valueFlavors = group.ValueFlavors!;
@@ -212,7 +222,7 @@ namespace System.Runtime.InteropServices
                 }
             }
 
-            throw ReflectionCoreExecution.ExecutionEnvironment.CreateMissingMetadataException(typeMapGroup);
+            throw CreateMissingMetadataException(typeMapGroup);
         }
 
         // The parser is positioned after the key of an entry: [type value] then one data per typed value flavor.
@@ -248,13 +258,13 @@ namespace System.Runtime.InteropServices
 
         public static IReadOnlyDictionary<string, Type> CreateExternalTypeMap(RuntimeType typeMapGroup)
         {
-            NativeHashtable table = FindTypesTable(ReadyToRunSectionType.ExternalTypeMaps, typeMapGroup, out ExternalReferencesTable externalReferences);
+            NativeHashtable table = FindTypesTable(ReadyToRunSectionType.ExternalTypeMaps, typeMapGroup.TypeHandle, out ExternalReferencesTable externalReferences);
             return new ExternalTypeMapDictionary(table, externalReferences);
         }
 
         public static IReadOnlyDictionary<Type, Type> CreateProxyTypeMap(RuntimeType typeMapGroup)
         {
-            NativeHashtable table = FindTypesTable(ReadyToRunSectionType.ProxyTypeMaps, typeMapGroup, out ExternalReferencesTable externalReferences);
+            NativeHashtable table = FindTypesTable(ReadyToRunSectionType.ProxyTypeMaps, typeMapGroup.TypeHandle, out ExternalReferencesTable externalReferences);
             return new AssociatedTypeMapDictionary(table, externalReferences);
         }
 
