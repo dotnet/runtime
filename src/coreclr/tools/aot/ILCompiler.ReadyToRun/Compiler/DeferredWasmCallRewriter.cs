@@ -36,8 +36,7 @@ namespace ILCompiler;
 // and map raw debug offsets before their final encoding.
 //
 // scratchLocals assigns one appended i32 PEP temporary per body, including
-// funclets. activationImports preserves the first import-time activation
-// token for each target, which need not match a surviving call site's token.
+// funclets.
 // _fixups and _fixupsInitialized lazily seed and reuse a per-method set for
 // deduplicating added precode fixups; Rewrite resets them between methods.
 //
@@ -66,13 +65,12 @@ internal sealed class DeferredWasmCallRewriter(ReadyToRunCodegenCompilation comp
     // Finalize one method's deferred calls and metadata, clearing reusable fixup
     // state even if rewriting fails.
     internal void Rewrite(
-        MethodWithGCInfo method, OffsetMapping[] locations = null, NativeVarInfo[] variables = null,
-        Dictionary<MethodWithGCInfo, DelayLoadMethodImport> activationImports = null)
+        MethodWithGCInfo method, OffsetMapping[] locations = null, NativeVarInfo[] variables = null)
     {
         Debug.Assert(_fixups.Count == 0);
         try
         {
-            RewriteCore(method, locations, variables, activationImports);
+            RewriteCore(method, locations, variables);
         }
         finally
         {
@@ -81,20 +79,14 @@ internal sealed class DeferredWasmCallRewriter(ReadyToRunCodegenCompilation comp
         }
     }
 
-    // Record the chosen call's activation requirements: preserve its import-time
-    // token for direct activation, or retain the fallback import for an indirect
-    // call. Keep eager imports reachable and deduplicate added precode entries.
-    private void SelectCall(
-        MethodWithGCInfo caller, DeferredWasmCallNode call, bool useDirectCall, bool isEager,
-        Dictionary<MethodWithGCInfo, DelayLoadMethodImport> activationImports)
+    // Prepare the selected direct body or retain the indirect invocation import.
+    // Keep eager imports reachable and deduplicate added precode entries.
+    private void SelectCall(MethodWithGCInfo caller, DeferredWasmCallNode call, bool useDirectCall, bool isEager)
     {
-        MethodWithToken activationToken = useDirectCall
-            ? (activationImports is null ? call.Fallback : activationImports[call.Target]).MethodWithToken
-            : default;
         Import import = useDirectCall
-            ? (Import)(isEager
-                ? compilation.SymbolNodeFactory.EagerReadyToRunMethodEntry(activationToken)
-                : compilation.SymbolNodeFactory.PrecodeReadyToRunMethodEntry(activationToken))
+            ? (isEager
+                ? compilation.SymbolNodeFactory.EagerReadyToRunMethodEntry(call.Method)
+                : compilation.SymbolNodeFactory.PrecodeReadyToRunMethodEntry(call.Method))
             : call.Fallback;
 
         if (import.Table.IsEager)
@@ -117,9 +109,7 @@ internal sealed class DeferredWasmCallRewriter(ReadyToRunCodegenCompilation comp
 
     // Take the relocation-only fast path only if every deferred call can remain
     // direct. Otherwise rebuild the body before changing any call relocation.
-    private void RewriteCore(
-        MethodWithGCInfo method, OffsetMapping[] locations, NativeVarInfo[] variables,
-        Dictionary<MethodWithGCInfo, DelayLoadMethodImport> activationImports)
+    private void RewriteCore(MethodWithGCInfo method, OffsetMapping[] locations, NativeVarInfo[] variables)
     {
         ObjectNode.ObjectData original = method.GetData(compilation.NodeFactory, relocsOnly: false);
         foreach (Relocation relocation in original.Relocs.AsSpan())
@@ -127,7 +117,7 @@ internal sealed class DeferredWasmCallRewriter(ReadyToRunCodegenCompilation comp
             if (relocation.Target is DeferredWasmCallNode call &&
                 !compilation.DeferredWasmCalls.CanUseDirectCall(method, call.Method, out _))
             {
-                RewriteWithIndirectCalls(method, original, locations, variables, activationImports);
+                RewriteWithIndirectCalls(method, original, locations, variables);
                 return;
             }
         }
@@ -140,7 +130,7 @@ internal sealed class DeferredWasmCallRewriter(ReadyToRunCodegenCompilation comp
                 AssertDeferredCall(original.Data, relocation.Offset);
                 bool direct = compilation.DeferredWasmCalls.CanUseDirectCall(method, call.Method, out DeferredWasmMethodFinalizationInfo info);
                 Debug.Assert(direct);
-                SelectCall(method, call, useDirectCall: true, info.IsEager, activationImports);
+                SelectCall(method, call, useDirectCall: true, info.IsEager);
                 relocation = new Relocation(relocation.RelocType, relocation.Offset, call.Target);
             }
         }
@@ -151,8 +141,7 @@ internal sealed class DeferredWasmCallRewriter(ReadyToRunCodegenCompilation comp
     // body, then apply them together so every relocation, frame boundary, and
     // debug offset uses the same original-to-final coordinate mapping.
     private void RewriteWithIndirectCalls(
-        MethodWithGCInfo method, ObjectNode.ObjectData original, OffsetMapping[] locations, NativeVarInfo[] variables,
-        Dictionary<MethodWithGCInfo, DelayLoadMethodImport> activationImports)
+        MethodWithGCInfo method, ObjectNode.ObjectData original, OffsetMapping[] locations, NativeVarInfo[] variables)
     {
         NodeFactory factory = compilation.NodeFactory;
         Relocation[] originalRelocations = original.Relocs ?? [];
@@ -167,7 +156,7 @@ internal sealed class DeferredWasmCallRewriter(ReadyToRunCodegenCompilation comp
                 Debug.Assert(relocation.RelocType == RelocType.WASM_FUNCTION_INDEX_LEB);
                 AssertDeferredCall(original.Data, relocation.Offset);
                 bool direct = compilation.DeferredWasmCalls.CanUseDirectCall(method, call.Method, out DeferredWasmMethodFinalizationInfo info);
-                SelectCall(method, call, direct, info.IsEager, activationImports);
+                SelectCall(method, call, direct, info.IsEager);
                 if (direct)
                 {
                     continue;

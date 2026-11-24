@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Optimize>true</Optimize>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <AlwaysUseCrossGen2>true</AlwaysUseCrossGen2>
+    <CrossGenTestSkipR2RDump>true</CrossGenTestSkipR2RDump>
+    <CLRTestTargetUnsupported Condition="'$(TargetOS)' != 'browser'">true</CLRTestTargetUnsupported>
+    <CompositeCrossGen2TestExtraArguments>--codegenopt:JitNoInline=1</CompositeCrossGen2TestExtraArguments>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="CanonicalActivation.cs" />
+    <Compile Include="test138199.cs" />
+    <CLRTestEnvironmentVariable Include="WholeProgramCompositeBuildMode" Value="1" />
+  </ItemGroup>
+</Project>

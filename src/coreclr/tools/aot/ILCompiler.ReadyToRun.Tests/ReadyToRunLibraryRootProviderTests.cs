@@ -254,11 +254,11 @@ public class ReadyToRunLibraryRootProviderTests
         Import import = new(table, new ReadyToRunHelperSignature(ReadyToRunHelper.Module));
         ReadyToRunSymbolNodeFactory symbols = (ReadyToRunSymbolNodeFactory)RuntimeHelpers.GetUninitializedObject(
             typeof(ReadyToRunSymbolNodeFactory));
-        List<MethodWithToken> selectedTokens = new();
+        List<MethodDesc> selectedBodies = new();
         SetField(symbols, eager ? "_eagerReadyToRunMethodEntries" : "_precodeReadyToRunMethodEntries",
-            new NodeCache<MethodWithToken, Import>(selectedToken =>
+            new NodeCache<MethodDesc, Import>(body =>
             {
-                selectedTokens.Add(selectedToken);
+                selectedBodies.Add(body);
                 return import;
             }));
         SetField(compilation, "<SymbolNodeFactory>k__BackingField", symbols);
@@ -266,14 +266,6 @@ public class ReadyToRunLibraryRootProviderTests
         SetField(fallback, "_localMethod", target);
         DeferredWasmCallNode call = new(fallback);
         WasmMethodFrameIdentityNode identity = new(factory, target);
-        MethodWithToken token = new(targetMethod, new ModuleToken(targetMethod.Module, targetMethod.Handle),
-            constrainedType: null, unboxing: false, genericContextObject: null);
-        SetField(fallback, "<MethodWithToken>k__BackingField",
-            new MethodWithToken(targetMethod, token.Token, constrainedType: targetMethod.OwningType,
-                unboxing: false, genericContextObject: null));
-        DelayLoadMethodImport activationImport = (DelayLoadMethodImport)RuntimeHelpers.GetUninitializedObject(typeof(DelayLoadMethodImport));
-        SetField(activationImport, "<MethodWithToken>k__BackingField", token);
-        Dictionary<MethodWithGCInfo, DelayLoadMethodImport> activationImports = new() { [target] = activationImport };
         Relocation[] relocations = new Relocation[1 + callCount * 2];
         relocations[0] = new(RelocType.WASM_METHOD_FRAME_IDENTITY_SLEB, 2, identity);
         for (int i = 0; i < callCount; i++)
@@ -312,7 +304,7 @@ public class ReadyToRunLibraryRootProviderTests
             caller.Fixups.Add(import);
         }
         DeferredWasmCallRewriter rewriter = new(compilation);
-        rewriter.Rewrite(caller, locations, variables, activationImports);
+        rewriter.Rewrite(caller, locations, variables);
 
         Assert.Same(original, caller.GetData(factory, relocsOnly: false));
         Assert.Same(frames, caller.FrameInfos);
@@ -325,7 +317,7 @@ public class ReadyToRunLibraryRootProviderTests
         }
         if (callCount != 0)
         {
-            Assert.Null(Assert.Single(selectedTokens).ConstrainedType);
+            Assert.Same(targetMethod, Assert.Single(selectedBodies));
             target.FinalizePrecodeFixups();
             caller.FinalizePrecodeFixups();
             if (eager)
@@ -347,7 +339,7 @@ public class ReadyToRunLibraryRootProviderTests
         MethodWithGCInfo nextCaller = new(targetMethod);
         nextCaller.SetCode(new ObjectNode.ObjectData(original.Data, repeatedRelocations, 16, [nextCaller]));
         nextCaller.InitializeFrameInfos(frames);
-        rewriter.Rewrite(nextCaller, activationImports: activationImports);
+        rewriter.Rewrite(nextCaller);
         if (callCount != 0)
         {
             Assert.Same(target, nextCaller.GetDirectCallTarget(2));

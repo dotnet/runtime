@@ -42,6 +42,8 @@
     <Compile Include="../../r2rdump/WasmDisassembler.cs" Link="TestCasesRunner/WasmDisassembler.cs" />
     <Compile Remove="TestCases/*/**/*.cs" />
     <EmbeddedResource Include="TestCases/**/*.cs" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
+    <EmbeddedResource Include="$(RepoRoot)src/tests/Regressions/coreclr/GitHub_138199/CanonicalActivation.cs"
+                      LogicalName="CanonicalActivation.cs" />
     <EmbeddedResource Include="$(LibrariesProjectRoot)System.Private.CoreLib/src/System/Runtime/SuppressReadyToRunCanonicalRootingAttribute.cs"
                       LogicalName="SuppressReadyToRunCanonicalRootingAttribute.cs" />
   </ItemGroup>

@@ -571,8 +571,7 @@ namespace Internal.JitInterface
 #if READYTORUN
             if (_compilation.DeferredWasmCalls is not null)
             {
-                _compilation.DeferredWasmCalls.InitializeMethodData(
-                    _methodCodeNode, _debugLocInfos, _debugVarInfos, _deferredWasmActivationImports);
+                _compilation.DeferredWasmCalls.InitializeMethodData(_methodCodeNode, _debugLocInfos, _debugVarInfos);
             }
             else
 #endif

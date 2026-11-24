@@ -43,8 +43,8 @@ internal readonly struct DeferredWasmMethodFinalizationInfo(int level, bool isEa
 // Merely compiling a method does not make it eager. Validation and data fixups
 // must run before eager method activation can permanently publish R2R code.
 //
-// _pendingMethods retains raw debug data and import-time activation tokens
-// until rewriting. _finalizedMethods records the level and eager status used
+// _pendingMethods retains raw debug data until rewriting.
+// _finalizedMethods records the level and eager status used
 // by call selection. _targets interns deferred call nodes across JIT workers,
 // which also populate distinct MethodData entries. Registration and
 // finalization are serialized around those workers. After calls and eager
@@ -70,7 +70,6 @@ internal sealed class DeferredWasmCallProcessor
     {
         internal OffsetMapping[] Locations;
         internal NativeVarInfo[] Variables;
-        internal Dictionary<MethodWithGCInfo, DelayLoadMethodImport> ActivationImports;
     }
 
     private NodeFactory NodeFactory => _compilation.NodeFactory;
@@ -106,16 +105,12 @@ internal sealed class DeferredWasmCallProcessor
         }
     }
 
-    // Retain unencoded debug offsets and the original activation tokens until
-    // call rewriting has established the final layout and activation paths.
-    internal void InitializeMethodData(
-        MethodWithGCInfo method, OffsetMapping[] locations, NativeVarInfo[] variables,
-        Dictionary<MethodWithGCInfo, DelayLoadMethodImport> activationImports)
+    // Retain unencoded debug offsets until call rewriting has established the final layout.
+    internal void InitializeMethodData(MethodWithGCInfo method, OffsetMapping[] locations, NativeVarInfo[] variables)
     {
         MethodData data = _pendingMethods[method];
         data.Locations = locations;
         data.Variables = variables;
-        data.ActivationImports = activationImports;
     }
 
     // Preserve the ordinary import when it cannot identify the same compiled
@@ -287,7 +282,7 @@ internal sealed class DeferredWasmCallProcessor
         if (!method.IsEmpty)
         {
             MethodData data = _pendingMethods[method];
-            _rewriter.Rewrite(method, data.Locations, data.Variables, data.ActivationImports);
+            _rewriter.Rewrite(method, data.Locations, data.Variables);
             method.FinalizePrecodeFixups(scratch: _fixupScratch);
         }
         _pendingMethods[method] = null;
@@ -342,14 +337,8 @@ internal sealed class DeferredWasmCallProcessor
             MethodWithGCInfo methodNode = NodeFactory.CompiledMethodNode(method);
             Debug.Assert(!methodNode.IsEmpty && !methodNode.IsAuxiliary);
 
-            MethodWithToken methodWithToken = new MethodWithToken(
-                method,
-                NodeFactory.Resolver.GetModuleTokenForMethod(method, allowDynamicallyCreatedReference: true, throwIfNotFound: true),
-                constrainedType: null,
-                unboxing: false,
-                genericContextObject: null);
             _dependencyGraph.AddRoot(
-                _compilation.SymbolNodeFactory.EagerReadyToRunMethodEntry(methodWithToken),
+                _compilation.SymbolNodeFactory.EagerReadyToRunMethodEntry(method),
                 "Eager-stage method is already activated");
 
             methodsToVisit.Push(methodNode);
@@ -369,7 +358,7 @@ internal sealed class DeferredWasmCallProcessor
                 // generated call does not contribute a direct-call edge.
                 if (fixup.Signature is MethodFixupSignature { IsReadyToRunEntry: true } signature)
                 {
-                    MethodDesc target = signature.Method.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                    MethodDesc target = signature.Method;
                     if (finalizedMethods.Contains(target))
                     {
                         MethodWithGCInfo targetNode = NodeFactory.CompiledMethodNode(target);

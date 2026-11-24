@@ -371,6 +371,55 @@ public class R2RTestSuites
     }
 
     [ConditionalTheory(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void WasmCanonicalMethodReadiness(bool direct)
+    {
+        CompiledAssembly input = new()
+        {
+            AssemblyName = "CanonicalActivation",
+            SourceResourceNames = ["CanonicalActivation.cs"],
+        };
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(WasmCanonicalMethodReadiness),
+            [
+                new("CanonicalActivation", [new CrossgenAssembly(input)])
+                {
+                    Options = [Crossgen2Option.Composite, Crossgen2Option.InputBubble, Crossgen2Option.Optimize],
+                    AdditionalArgs =
+                    [
+                        "--unrooted-input-file-paths", TestPaths.SystemPrivateCoreLibPath,
+                        "--codegenopt", "JitNoInline=1",
+                        .. direct ? Array.Empty<string>() : new[] { "--disable-deferred-wasm-calls" },
+                    ],
+                    OutputFileExtension = ".wasm",
+                    Validate = Validate,
+                },
+            ]));
+
+        void Validate(ReadyToRunReader reader)
+        {
+            SignatureFormattingOptions formattingOptions = new();
+            var disposeImports = reader.ImportSections.SelectMany(section => section.Entries)
+                .Where(entry => entry.Signature?.FixupKind is ReadyToRunFixupKind.MethodEntry_ReadyToRun or ReadyToRunFixupKind.MethodEntry)
+                .Select(entry => (entry.Signature!.FixupKind, Text: entry.Signature.ToString(formattingOptions)))
+                .Where(import => import.Text.Contains("CanonicalActivation.Enumerator`1<__Canon>.Dispose()", StringComparison.Ordinal));
+
+            var import = Assert.Single(disposeImports);
+            Assert.Equal(direct ? ReadyToRunFixupKind.MethodEntry_ReadyToRun : ReadyToRunFixupKind.MethodEntry, import.FixupKind);
+            if (direct)
+            {
+                Assert.DoesNotContain(" @ ", import.Text);
+                Assert.DoesNotContain("CanonicalActivation.Marker", import.Text);
+            }
+            else
+            {
+                Assert.Contains(" @ CanonicalActivation.Enumerator`1<CanonicalActivation.Marker>", import.Text);
+            }
+        }
+    }
+
+    [ConditionalTheory(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
     [InlineData(false)]
     [InlineData(true)]
     public void StartupEagerMethodsHaveNoPrecodeFixups(bool rootCoreLib)
