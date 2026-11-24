@@ -252,6 +252,8 @@ static SPMI_TARGET_ARCHITECTURE SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTUR
 static SPMI_TARGET_ARCHITECTURE SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTURE_RISCV64;
 #elif defined(TARGET_WASM)
 static SPMI_TARGET_ARCHITECTURE SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTURE_WASM32;
+#elif defined(TARGET_WASM64)
+static SPMI_TARGET_ARCHITECTURE SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTURE_WASM64;
 #else
 #error Unsupported architecture
 #endif

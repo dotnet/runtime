@@ -145,8 +145,8 @@
 #if defined(TARGET_RISCV64)
 #error Cannot define both TARGET_X86 and TARGET_RISCV64
 #endif
-#if defined(TARGET_WASM)
-#error Cannot define both TARGET_X86 and TARGET_WASM
+#if defined(TARGET_WASMARCH)
+#error Cannot define both TARGET_X86 and TARGET_WASMARCH
 #endif
 #elif defined(TARGET_AMD64)
 #if defined(TARGET_X86)
@@ -164,8 +164,8 @@
 #if defined(TARGET_RISCV64)
 #error Cannot define both TARGET_AMD64 and TARGET_RISCV64
 #endif
-#if defined(TARGET_WASM)
-#error Cannot define both TARGET_AMD64 and TARGET_WASM
+#if defined(TARGET_WASMARCH)
+#error Cannot define both TARGET_AMD64 and TARGET_WASMARCH
 #endif
 #elif defined(TARGET_ARM)
 #if defined(TARGET_X86)
@@ -183,8 +183,8 @@
 #if defined(TARGET_RISCV64)
 #error Cannot define both TARGET_ARM and TARGET_RISCV64
 #endif
-#if defined(TARGET_WASM)
-#error Cannot define both TARGET_ARM and TARGET_WASM
+#if defined(TARGET_WASMARCH)
+#error Cannot define both TARGET_ARM and TARGET_WASMARCH
 #endif
 #elif defined(TARGET_ARM64)
 #if defined(TARGET_X86)
@@ -202,8 +202,8 @@
 #if defined(TARGET_RISCV64)
 #error Cannot define both TARGET_ARM64 and TARGET_RISCV64
 #endif
-#if defined(TARGET_WASM)
-#error Cannot define both TARGET_ARM64 and TARGET_WASM
+#if defined(TARGET_WASMARCH)
+#error Cannot define both TARGET_ARM64 and TARGET_WASMARCH
 #endif
 #elif defined(TARGET_LOONGARCH64)
 #if defined(TARGET_X86)
@@ -221,8 +221,8 @@
 #if defined(TARGET_RISCV64)
 #error Cannot define both TARGET_LOONGARCH64 and TARGET_RISCV64
 #endif
-#if defined(TARGET_WASM)
-#error Cannot define both TARGET_LOONGARCH64 and TARGET_WASM
+#if defined(TARGET_WASMARCH)
+#error Cannot define both TARGET_LOONGARCH64 and TARGET_WASMARCH
 #endif
 #elif defined(TARGET_RISCV64)
 #if defined(TARGET_X86)
@@ -240,28 +240,31 @@
 #if defined(TARGET_LOONGARCH64)
 #error Cannot define both TARGET_RISCV64 and TARGET_LOONGARCH64
 #endif
-#if defined(TARGET_WASM)
-#error Cannot define both TARGET_RISCV64 and TARGET_WASM
+#if defined(TARGET_WASMARCH)
+#error Cannot define both TARGET_RISCV64 and TARGET_WASMARCH
 #endif
 
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
+#if defined(TARGET_WASM) == defined(TARGET_WASM64)
+#error TARGET_WASMARCH requires exactly one of TARGET_WASM and TARGET_WASM64
+#endif
 #if defined(TARGET_X86)
-#error Cannot define both TARGET_WASM and TARGET_X86
+#error Cannot define both TARGET_WASMARCH and TARGET_X86
 #endif
 #if defined(TARGET_AMD64)
-#error Cannot define both TARGET_WASM and TARGET_AMD64
+#error Cannot define both TARGET_WASMARCH and TARGET_AMD64
 #endif
 #if defined(TARGET_ARM)
-#error Cannot define both TARGET_WASM and TARGET_ARM
+#error Cannot define both TARGET_WASMARCH and TARGET_ARM
 #endif
 #if defined(TARGET_ARM64)
-#error Cannot define both TARGET_WASM and TARGET_ARM64
+#error Cannot define both TARGET_WASMARCH and TARGET_ARM64
 #endif
 #if defined(TARGET_LOONGARCH64)
-#error Cannot define both TARGET_WASM and TARGET_LOONGARCH64
+#error Cannot define both TARGET_WASMARCH and TARGET_LOONGARCH64
 #endif
 #if defined(TARGET_RISCV64)
-#error Cannot define both TARGET_WASM and TARGET_RISCV64
+#error Cannot define both TARGET_WASMARCH and TARGET_RISCV64
 #endif
 
 #else
@@ -277,7 +280,7 @@
 #endif // TARGET_ARM
 #ifdef TARGET_WASM
 #error Cannot define both TARGET_WASM and TARGET_64BIT
-#endif // TARGET_ARM
+#endif // TARGET_WASM
 #endif // TARGET_64BIT
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
