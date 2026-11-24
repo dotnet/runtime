@@ -387,10 +387,6 @@ namespace System
         public override Type[] GetInterfacesWithSameMetadataDefinitionAs(Type interfaceType)
         {
             ArgumentNullException.ThrowIfNull(interfaceType);
-            if (!interfaceType.IsInterface || interfaceType.IsConstructedGenericType)
-            {
-                throw new ArgumentException(SR.Arg_MustBeInterfaceOrGenericInterfaceDefinition, nameof(interfaceType));
-            }
 
             // The interfaces of a runtime type are runtime types, so an interfaceType that isn't a RuntimeType never matches.
             if (interfaceType is not RuntimeType runtimeInterfaceType)
@@ -403,6 +399,12 @@ namespace System
             if (pEEType == null || pEEType->IsGenericTypeDefinition || pInterfaceEEType == null)
             {
                 return base.GetInterfacesWithSameMetadataDefinitionAs(interfaceType);
+            }
+
+            // Any instantiation of a generic interface matches the same interfaces as its generic type definition.
+            if (pInterfaceEEType->IsGeneric)
+            {
+                pInterfaceEEType = pInterfaceEEType->GenericDefinition;
             }
 
             // Compare MethodTables directly and only create Type objects for the matches.

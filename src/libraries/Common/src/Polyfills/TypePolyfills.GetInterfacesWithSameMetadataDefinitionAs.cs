@@ -21,9 +21,10 @@ internal static partial class TypePolyfills
                 throw new ArgumentNullException(nameof(interfaceType));
             }
 
-            if (!interfaceType.IsInterface || interfaceType.IsConstructedGenericType)
+            // Any instantiation of a generic interface matches the same interfaces as its generic type definition.
+            if (interfaceType.IsConstructedGenericType)
             {
-                throw new ArgumentException(null, nameof(interfaceType));
+                interfaceType = interfaceType.GetGenericTypeDefinition();
             }
 
             Type[] interfaces = type.GetInterfaces();

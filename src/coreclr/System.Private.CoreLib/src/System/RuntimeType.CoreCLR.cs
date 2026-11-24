@@ -2630,14 +2630,22 @@ namespace System
         public override Type[] GetInterfacesWithSameMetadataDefinitionAs(Type interfaceType)
         {
             ArgumentNullException.ThrowIfNull(interfaceType);
-            if (!interfaceType.IsInterface || interfaceType.IsConstructedGenericType)
+
+            // The interfaces of a runtime type are runtime types, so an interfaceType that isn't a RuntimeType never matches.
+            if (interfaceType is not RuntimeType)
             {
-                throw new ArgumentException(SR.Arg_MustBeInterfaceOrGenericInterfaceDefinition, nameof(interfaceType));
+                return EmptyTypes;
+            }
+
+            // Any instantiation of a generic interface matches the same interfaces as its generic type definition.
+            if (interfaceType.IsConstructedGenericType)
+            {
+                interfaceType = interfaceType.GetGenericTypeDefinition();
             }
 
             // Filter the cached interface list directly instead of copying it via GetInterfaces. The candidates are
             // runtime types, so comparing generic type definitions by reference is equivalent to
-            // HasSameMetadataDefinitionAs and cheaper, and an interfaceType that isn't a RuntimeType never matches.
+            // HasSameMetadataDefinitionAs and cheaper.
             RuntimeType[] candidates = Cache.GetInterfaceList(MemberListType.All, null);
 
             // Usually a single interface matches, which ListBuilder handles without allocating backing storage.

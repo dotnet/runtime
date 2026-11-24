@@ -601,7 +601,8 @@ namespace System
         /// Searches for the interfaces implemented or inherited by the current <see cref="Type"/> that have the same metadata definition as the specified interface.
         /// </summary>
         /// <param name="interfaceType">
-        /// The interface to search for. This must be a generic interface type definition, such as <c>typeof(IList&lt;&gt;)</c>, or a non-generic interface.
+        /// The interface to search for. A generic interface type definition or any of its instantiations matches all the instantiations of that interface;
+        /// for example, both <c>typeof(IList&lt;&gt;)</c> and <c>typeof(IList&lt;int&gt;)</c> match <c>IList&lt;string&gt;</c>.
         /// </param>
         /// <returns>
         /// An array of the interfaces implemented or inherited by the current <see cref="Type"/> that have the same metadata definition as <paramref name="interfaceType"/>,
@@ -613,7 +614,6 @@ namespace System
         /// <para>Unlike <see cref="GetInterfaces"/>, this method is safe to use with trimming: an interface that can be identified by <paramref name="interfaceType"/> is not removed from the current <see cref="Type"/>.</para>
         /// </remarks>
         /// <exception cref="ArgumentNullException"><paramref name="interfaceType"/> is <see langword="null"/>.</exception>
-        /// <exception cref="ArgumentException"><paramref name="interfaceType"/> is not an interface, or is a constructed generic interface.</exception>
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2085:UnrecognizedReflectionPattern",
             Justification = "GetInterfaces technically requires all interfaces to be preserved, but this method only returns the interfaces " +
                             "with the same metadata definition as the specified interfaceType. If interfaceType exists, trimming kept " +
@@ -621,10 +621,6 @@ namespace System
         public virtual Type[] GetInterfacesWithSameMetadataDefinitionAs(Type interfaceType)
         {
             ArgumentNullException.ThrowIfNull(interfaceType);
-            if (!interfaceType.IsInterface || interfaceType.IsConstructedGenericType)
-            {
-                throw new ArgumentException(SR.Arg_MustBeInterfaceOrGenericInterfaceDefinition, nameof(interfaceType));
-            }
 
             // GetInterfaces returns a new array, so the matches can be moved to the front of it in place.
             Type[] interfaces = GetInterfaces();
