@@ -139,10 +139,11 @@ namespace System.Net.Http
                 _sendBuffer.Dispose();
             }
             // If the response receiving was offloaded to be done concurrently and not awaited within SendAsync (by calling connection.LogException),
-            // the _recvBuffer disposal is the responsibility of that offloaded task to prevent returning the buffer to the pool while it still might be in use.
+            // the _recvBuffer and _headerDecoder disposal is the responsibility of that offloaded task to prevent returning their buffers to the pool while they still might be in use.
             if (!_finishingBackgroundRead)
             {
                 _recvBuffer.Dispose();
+                _headerDecoder.Dispose();
             }
         }
 
@@ -439,6 +440,7 @@ namespace System.Net.Http
                 if (_finishingBackgroundRead)
                 {
                     _recvBuffer.Dispose();
+                    _headerDecoder.Dispose();
                 }
             }
         }
