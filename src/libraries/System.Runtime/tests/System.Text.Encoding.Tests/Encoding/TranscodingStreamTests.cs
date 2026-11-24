@@ -399,7 +399,6 @@ namespace System.Text.Tests
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134955", TestPlatforms.Wasi)]
         public Task ReadApm()
         {
             // Tests TranscodingStream.BeginRead / EndRead
@@ -897,7 +896,6 @@ namespace System.Text.Tests
         // Moq heavily utilizes RefEmit, which does not work on most aot workloads
         [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134955", TestPlatforms.Wasi)]
         public void WriteApm()
         {
             // Arrange

@@ -1312,6 +1312,7 @@ CDAC_TYPE_BEGIN(InterpreterFrame)
 CDAC_TYPE_INDETERMINATE(InterpreterFrame)
 CDAC_TYPE_FIELD(InterpreterFrame, T_POINTER, TopInterpMethodContextFrame, cdac_data<InterpreterFrame>::TopInterpMethodContextFrame)
 CDAC_TYPE_FIELD(InterpreterFrame, T_BOOL, IsFaulting, cdac_data<InterpreterFrame>::IsFaulting)
+CDAC_TYPE_FIELD(InterpreterFrame, T_POINTER, Continuation, cdac_data<InterpreterFrame>::Continuation)
 CDAC_TYPE_END(InterpreterFrame)
 #endif // FEATURE_INTERPRETER
 
@@ -1477,13 +1478,13 @@ CDAC_TYPE_SIZE(sizeof(FaultingExceptionFrame))
 CDAC_TYPE_FIELD(FaultingExceptionFrame, EXTERN_TYPE(Context), TargetContext, cdac_data<FaultingExceptionFrame>::TargetContext)
 CDAC_TYPE_END(FaultingExceptionFrame)
 
-#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
+#ifdef TARGET_X86
 CDAC_TYPE_BEGIN(TailCallFrame)
 CDAC_TYPE_SIZE(sizeof(TailCallFrame))
 CDAC_TYPE_FIELD(TailCallFrame, TYPE(CalleeSavedRegisters), CalleeSavedRegisters, cdac_data<TailCallFrame>::CalleeSavedRegisters)
 CDAC_TYPE_FIELD(TailCallFrame, TYPE(CodePointer), ReturnAddress, cdac_data<TailCallFrame>::ReturnAddress)
 CDAC_TYPE_END(TailCallFrame)
-#endif // TARGET_X86 && !UNIX_X86_ABI
+#endif // TARGET_X86
 
 // ArgumentRegisters struct is different on each platform
 CDAC_TYPE_BEGIN(ArgumentRegisters)

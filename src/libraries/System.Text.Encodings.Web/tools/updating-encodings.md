@@ -4,13 +4,9 @@
 
 This folder contains tools which allow updating the Unicode data within the __System.Text.Encodings.Web__ package. These data files come from the Unicode Consortium's web site (see https://www.unicode.org/Public/UCD/latest/) and are used to generate the `UnicodeRanges` class and the internal "defined characters" bitmap against which charaters to be escaped are checked.
 
-### Current implementation
-
-The current version of the Unicode data checked in is __16.0.0__. The archived files can be found at https://unicode.org/Public/16.0.0/.
-
 ### Updating the implementation
 
-Updating the implementation consists of three steps: checking in a new version of the Unicode data files (into the [runtime-assets](https://github.com/dotnet/runtime-assets) repo), generating the shared files used by the runtime and the unit tests, and pointing the unit test files to the correct version of the data files.
+Updating the implementation consists of two steps: checking in a new version of the Unicode data files (into the [runtime-assets](https://github.com/dotnet/runtime-assets) repo), and generating the shared files used by the runtime and the unit tests.
 
 As a prerequisite for updating the tools, you will need the _dotnet_ tool (version 3.1 or above) available from your local command prompt.
 
@@ -31,9 +27,3 @@ dotnet run -- "path_to_Blocks.txt" ../../src/System/Text/Unicode/UnicodeRanges.g
 ```
 
 5. Update the __ref__ APIs to reflect any new `UnicodeRanges` static properties which were added in the previous step, otherwise the unit test project will not be able to reference them. See https://github.com/dotnet/runtime/blob/main/docs/coding-guidelines/updating-ref-source.md for instructions on how to update the reference assemblies.
-
-6. Update the __src/libraries/System.Text.Encodings.Web/tests/System.Text.Encodings.Web.Tests.csproj__ file to reference the new __UnicodeData.txt__ file that was added to the [runtime-assets](https://github.com/dotnet/runtime-assets) repo in step (1). Open the .csproj file in a text editor and replace the `<UnicodeUcdVersion>` property value near the top of the file to reference the new UCD version being consumed.
-
-7. Finally, update the _Current implementation_ section at the beginning of this markdown file to reflect the version of the Unicode data files which were given to the tools. Remember also to update the URL within that section so that these data files can be easily accessed in the future.
-
-8. Commit to Git the __*.cs__, __*.csproj__, and __*.md__ files that were modified as part of the above process.

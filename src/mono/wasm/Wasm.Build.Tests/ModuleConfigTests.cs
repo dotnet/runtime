@@ -25,6 +25,22 @@ public class ModuleConfigTests : WasmTemplateTestsBase
     {
     }
 
+    [Fact]
+    public async Task ConfigLoadedCallbacks()
+    {
+        Configuration config = Configuration.Debug;
+        ProjectInfo info = CopyTestAsset(config, false, TestAsset.WasmBasicTestApp, "ModuleConfigTests_ConfigLoadedCallbacks");
+        PublishProject(info, config);
+
+        var result = await RunForPublishWithWebServer(new BrowserRunOptions(
+            Configuration: config,
+            TestScenario: "ConfigLoadedCallbacks"
+        ));
+
+        string[] expected = ["ConfigLoaded: first", "ConfigLoaded: second", "ConfigLoaded: ready"];
+        Assert.Equal(expected, result.TestOutput.Where(message => message.StartsWith("ConfigLoaded:", StringComparison.Ordinal)));
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -165,6 +181,68 @@ public class ModuleConfigTests : WasmTemplateTestsBase
             "There are assets without integrity hash"
         );
     }
+
+	[Theory, TestCategory("coreclr"), TestCategory("no-workload")]
+	[InlineData(false, null, null, true, true)]
+	[InlineData(true, null, null, true, true)]
+	[InlineData(false, true, null, true, true)]
+	[InlineData(true, true, null, true, true)]
+	[InlineData(false, false, null, true, true)]
+	[InlineData(true, false, null, true, true)]
+	[InlineData(false, true, true, true, true)]
+	[InlineData(true, false, false, true, true)]
+	[InlineData(true, null, null, false, true)]
+	[InlineData(true, true, null, false, true)]
+	[InlineData(true, null, null, true, false)]
+	public async Task FetchIntegrityConfiguration(bool publish, bool? enableIntegrityCheck, bool? disableIntegrityCheck, bool fingerprintAssets, bool preloadAssets)
+	{
+		Configuration config = Configuration.Debug;
+		ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.WasmBasicTestApp, "FetchIntegrity");
+		string args = $"-p:WasmFingerprintAssets={fingerprintAssets.ToString().ToLowerInvariant()} -p:WasmPreloadAssets={preloadAssets.ToString().ToLowerInvariant()}";
+		if (enableIntegrityCheck is bool enable)
+		{
+			args += $" -p:WasmEnableIntegrityCheck={enable.ToString().ToLowerInvariant()}";
+		}
+		if (publish)
+		{
+			PublishProject(info, config, new PublishOptions(AssertAppBundle: fingerprintAssets, ExtraMSBuildArgs: args));
+		}
+		else
+		{
+			BuildProject(info, config, new BuildOptions(ExtraMSBuildArgs: args));
+		}
+		AssertWasmEndpointIntegrity(config, publish);
+
+		var query = new NameValueCollection();
+		if (disableIntegrityCheck is bool disable)
+		{
+			query.Add("disableIntegrityCheck", disable.ToString().ToLowerInvariant());
+		}
+		var options = new BrowserRunOptions(config, TestScenario: "FetchIntegrity", BrowserQueryString: query);
+		RunResult result = publish
+			? await RunForPublishWithWebServer(options)
+			: await RunForBuildWithDotnetRun(options);
+		string[] preloads = result.TestOutput.Where(message => message.StartsWith("HTML preload integrity: ", StringComparison.Ordinal)).ToArray();
+		Assert.Equal(preloadAssets ? 1 : 0, preloads.Length);
+		Assert.All(preloads, message => Assert.StartsWith("HTML preload integrity: yes ", message, StringComparison.Ordinal));
+		string[] imports = result.TestOutput.Where(message => message.StartsWith("Import-map integrity: ", StringComparison.Ordinal)).ToArray();
+		if (fingerprintAssets || !publish)
+		{
+			Assert.Contains(imports, message => message.EndsWith("/dotnet.js", StringComparison.Ordinal));
+		}
+		Assert.All(imports, message => Assert.StartsWith("Import-map integrity: yes ", message, StringComparison.Ordinal));
+		bool expectIntegrity = disableIntegrityCheck is bool disableOverride ? !disableOverride : enableIntegrityCheck ?? false;
+		foreach (string phase in new[] { "prefetch", "create" })
+		{
+			string prefix = $"Fetch integrity ({phase}): ";
+			string[] fetches = result.TestOutput.Where(message => message.StartsWith(prefix, StringComparison.Ordinal)).ToArray();
+			string nativeFetch = Assert.Single(fetches.Where(message => message.Contains("/dotnet.native", StringComparison.Ordinal)));
+			Assert.Equal(!fingerprintAssets, nativeFetch.EndsWith("/dotnet.native.wasm", StringComparison.Ordinal));
+			Assert.Contains(fetches, message => message.Contains("System.Private.CoreLib", StringComparison.Ordinal));
+			string expected = prefix + (expectIntegrity ? "yes " : "no ");
+			Assert.All(fetches, message => Assert.StartsWith(expected, message, StringComparison.Ordinal));
+		}
+	}
 
     [Fact]
     public async Task BufferedAssetsTest()

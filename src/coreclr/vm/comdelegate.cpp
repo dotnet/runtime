@@ -188,15 +188,6 @@ public:
         // over a register we later need to shuffle down as well).
         if (m_currentGenRegIndex < m_argLocDesc->m_cGenReg)
         {
-#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-            if (7 < (m_currentGenRegIndex + m_argLocDesc->m_idxGenReg))
-            {
-                m_currentGenRegIndex++;
-                index = m_currentByteStackIndex;
-                m_currentByteStackIndex += TARGET_POINTER_SIZE;
-                return index;
-            }
-#endif
             index = m_argLocDesc->m_idxGenReg + m_currentGenRegIndex;
             m_currentGenRegIndex++;
 
@@ -515,7 +506,7 @@ BOOL GenerateShuffleArrayPortable(MethodDesc* pMethodSrc, MethodDesc *pMethodDst
         //   RDI->RSI, RDX->RCX, R8->RDX, R9->R8, stack[0]->R9, xmm0->xmm1, xmm1->xmm2, ... xmm6->xmm7, xmm7->stack[0], stack[1]->xmm0, stack[2]->stack[1], stack[3]->stack[2]
         // To prevent overwriting of slots before they are moved, we need to perform the shuffling in correct order
 
-        NewArrayHolder<ShuffleGraphNode> pGraphNodes = new ShuffleGraphNode[argSlots];
+        NewArrayHolder<ShuffleGraphNode> pGraphNodes(new ShuffleGraphNode[argSlots]);
 
         // Initialize the graph array
         for (unsigned int i = 0; i < argSlots; i++)
@@ -667,12 +658,7 @@ BOOL GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, SArray<S
 
     UINT stackSizeDelta;
 
-#ifdef UNIX_X86_ABI
-    // Stack does not shrink as UNIX_X86_ABI uses CDECL (instead of STDCALL).
-    stackSizeDelta = 0;
-#else
     stackSizeDelta = stackSizeSrc - stackSizeDst;
-#endif
 
     INT ofsSrc, ofsDst;
 
@@ -1364,8 +1350,7 @@ LPVOID COMDelegate::ConvertToCallback(OBJECTREF pDelegateObj)
 
             pUMEntryThunk = UMEntryThunkData::CreateUMEntryThunk();
 
-            Holder<UMEntryThunkData *, DoNothing, UMEntryThunkData::FreeUMEntryThunk> umHolder;
-            umHolder.Assign(pUMEntryThunk);
+            UMEntryThunkDataHolder umHolder(pUMEntryThunk);
 
             OBJECTHANDLE objhnd;
             PCODE pManagedTargetForDiagnostics;
@@ -1392,7 +1377,7 @@ LPVOID COMDelegate::ConvertToCallback(OBJECTREF pDelegateObj)
             }
             else
             {
-                umHolder.SuppressRelease();
+                umHolder.Detach();
             }
 
             _ASSERTE(pUMEntryThunk != NULL);
@@ -1659,11 +1644,6 @@ extern "C" void QCALLTYPE Delegate_Construct(MethodTable* pDelegateMT, MethodTab
     BEGIN_QCALL;
 
     _ASSERTE(pDelegateMT != NULL);
-
-    // Programmers could feed garbage data to DelegateConstruct().
-    // It's difficult to validate a method code pointer, but at least we'll
-    // try to catch the easy garbage.
-    _ASSERTE(isMemoryReadable(method, 1));
 
     MethodTable* pMTTarg = pTargetMT;
     MethodTable* pDelMT = pDelegateMT;
@@ -1991,7 +1971,7 @@ extern "C" MethodDesc* QCALLTYPE Delegate_GetMethodDesc(QCall::ObjectHandleOnSta
     return pMD;
 }
 
-FCIMPL1(MethodDesc*, COMDelegate::GetInvokeMethod, MethodTable* pDelegateMT)
+FCIMPL1(MethodDesc*, Delegate_GetInvokeMethod, MethodTable* pDelegateMT)
 {
     FCALL_CONTRACT;
     _ASSERTE(pDelegateMT != NULL);
@@ -2002,7 +1982,7 @@ FCIMPL1(MethodDesc*, COMDelegate::GetInvokeMethod, MethodTable* pDelegateMT)
 }
 FCIMPLEND
 
-FCIMPL1(PCODE, COMDelegate::GetMulticastInvoke, MethodTable* pDelegateMT)
+FCIMPL1(PCODE, Delegate_GetMulticastInvoke, MethodTable* pDelegateMT)
 {
     FCALL_CONTRACT;
     _ASSERTE(pDelegateMT != NULL);
@@ -2045,7 +2025,7 @@ extern "C" PCODE QCALLTYPE Delegate_GetMulticastInvokeSlow(MethodTable* pDelegat
         ILCodeLabel *nextDelegate = pCode->NewCodeLabel();
 
         // initialize counter
-        pCode->EmitLDC(0);
+        pCode->EmitLDC_I4(0);
         pCode->EmitSTLOC(dwLoopCounterNum);
 
         //Label_nextDelegate:
@@ -2056,11 +2036,10 @@ extern "C" PCODE QCALLTYPE Delegate_GetMulticastInvokeSlow(MethodTable* pDelegat
         ILCodeLabel *debuggerCheckEnd = pCode->NewCodeLabel();
 
         // Call MulticastDebuggerTraceHelper only if we have a controller subscribing to the event
-        pCode->EmitLDC((DWORD_PTR)&g_multicastDelegateTraceActiveCount);
-        pCode->EmitCONV_I();
+        pCode->EmitLDC_I((DWORD_PTR)&g_multicastDelegateTraceActiveCount);
         pCode->EmitLDIND_I4();
         // g_multicastDelegateTraceActiveCount != 0
-        pCode->EmitLDC(0);
+        pCode->EmitLDC_I4(0);
         pCode->EmitCEQ();
         pCode->EmitBRFALSE(invokeTraceHelper);
 
@@ -2087,7 +2066,7 @@ extern "C" PCODE QCALLTYPE Delegate_GetMulticastInvokeSlow(MethodTable* pDelegat
 
         // increment counter
         pCode->EmitLDLOC(dwLoopCounterNum);
-        pCode->EmitLDC(1);
+        pCode->EmitLDC_I4(1);
         pCode->EmitADD();
         pCode->EmitSTLOC(dwLoopCounterNum);
 

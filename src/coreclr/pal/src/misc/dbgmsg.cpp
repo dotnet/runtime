@@ -13,13 +13,9 @@ Abstract:
 /* PAL headers */
 
 #include "pal/thread.hpp"
-#include "pal/file.hpp"
 
 #include "config.h"
 #include "pal/dbgmsg.h"
-#include "pal/cruntime.h"
-#include "pal/file.h"
-#include "pal/environ.h"
 
 /* standard headers */
 
@@ -51,7 +47,6 @@ static const char FOPEN_FLAGS[] = "at";
 
 /* global and static variables */
 
-LPCWSTR W16_NULLSTRING = (LPCWSTR) "N\0U\0L\0L\0\0";
 
 DWORD dbg_channel_flags[DCI_LAST];
 BOOL g_Dbg_asserts_enabled;
@@ -74,7 +69,6 @@ static const char *dbg_channel_names[]=
     "THREAD",
     "EXCEPT",
     "CRT",
-    "UNICODE",
     "ARCH",
     "SYNC",
     "FILE",
@@ -466,27 +460,16 @@ int DBG_printf(DBG_CHANNEL_ID channel, DBG_LEVEL_ID level, BOOL bHeader,
     {
         va_list args;
         va_start(args, format);
-        INT result = _vsnprintf_s(buffer+output_size, DBG_BUFFER_SIZE-output_size, _TRUNCATE,
-                                  format, args);
+        INT result = vsnprintf(buffer+output_size, DBG_BUFFER_SIZE-output_size, format, args);
         va_end(args);
         if( result < 0 )
         {
-            // if we didn't get data from _vsnprintf_s, print an error and exit
-            if ( output_size == 0 || buffer[output_size] == '\0' )
-            {
-                fprintf(stderr, "ERROR : DBG_printf: vsnprintf_s failed errno:%d (%s)\n", errno, strerror(errno));
-                return 1;
-            }
-            else if (output_size < DBG_BUFFER_SIZE)
-            {
-                fprintf(stderr, "ERROR : DBG_printf: message truncated, vsnprintf_s failed errno:%d (%s)\n", errno, strerror(errno));
-                // do not return, print what we have
-            }
+            fprintf(stderr, "ERROR : DBG_printf: vsnprintf failed errno:%d (%s)\n", errno, strerror(errno));
+            return 1;
         }
-        else
-        {
-            output_size+=result;
-        }
+
+        // A result past the end of the buffer means the message was truncated; reported below.
+        output_size+=result;
     }
 
     if( output_size >= DBG_BUFFER_SIZE )
@@ -665,27 +648,10 @@ bool DBG_ShouldCheckStackAlignment()
 
     if (caMode == CheckAlignment_Uninitialized)
     {
-        char* checkAlignmentSettings;
-        bool shouldFreeCheckAlignmentSettings = false;
-        if (palEnvironment == nullptr)
-        {
-            // This function might be called before the PAL environment is initialized.
-            // In this case, use the system getenv instead.
-            checkAlignmentSettings = ::getenv(PAL_CHECK_ALIGNMENT_MODE);
-        }
-        else
-        {
-            checkAlignmentSettings = EnvironGetenv(PAL_CHECK_ALIGNMENT_MODE);
-            shouldFreeCheckAlignmentSettings = true;
-        }
+        const char* checkAlignmentSettings = getenv(PAL_CHECK_ALIGNMENT_MODE);
 
         caMode = checkAlignmentSettings ?
             (CheckAlignmentMode)atoi(checkAlignmentSettings) : CheckAlignment_Default;
-
-        if (checkAlignmentSettings && shouldFreeCheckAlignmentSettings)
-        {
-            free(checkAlignmentSettings);
-        }
     }
 
     return caMode == CheckAlignment_On;
@@ -723,11 +689,10 @@ void PAL_DisplayDialog(const char *szTitle, const char *szText)
 
     if (dispDialog == DisplayDialog_Uninitialized)
     {
-        char* displayDialog = EnvironGetenv(PAL_DISPLAY_DIALOG);
+        const char* displayDialog = getenv(PAL_DISPLAY_DIALOG);
         if (displayDialog)
         {
             int i = atoi(displayDialog);
-            free(displayDialog);
 
             switch (i)
             {
@@ -792,24 +757,4 @@ void PAL_DisplayDialog(const char *szTitle, const char *szText)
     }
 }
 
-/*++
-Function :
-    PAL_DisplayDialogFormatted
-
-    As above but takes a printf-style format string and insertion values to form the main text.
-
---*/
-void PAL_DisplayDialogFormatted(const char *szTitle, const char *szTextFormat, ...)
-{
-    va_list args;
-
-    va_start(args, szTextFormat);
-
-    const int cchBuffer = 4096;
-    char *szBuffer = (char*)alloca(cchBuffer);
-    _vsnprintf_s(szBuffer, cchBuffer, _TRUNCATE, szTextFormat, args);
-    PAL_DisplayDialog(szTitle, szBuffer);
-
-    va_end(args);
-}
 #endif // TARGET_OSX

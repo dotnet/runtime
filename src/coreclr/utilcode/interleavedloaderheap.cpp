@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "stdafx.h"                     // Precompiled header key.
+#include <minipal/instructioncache.h>
 #include "loaderheap.h"
 #include "loaderheap_shared.h"
 #include "ex.h"
@@ -133,7 +134,7 @@ BOOL UnlockedInterleavedLoaderHeap::CommitPages(void* pData, size_t dwSizeToComm
 
     ExecutableWriterHolder<BYTE> codePageWriterHolder((BYTE*)pData, dwSizeToCommitPart, ExecutableAllocator::DoNotAddToCache);
     m_pConfig->CodePageGenerator(codePageWriterHolder.GetRW(), (BYTE*)pData, dwSizeToCommitPart);
-    FlushInstructionCache(GetCurrentProcess(), pData, dwSizeToCommitPart);
+    minipal_flush_instruction_cache(pData, dwSizeToCommitPart);
 
     return TRUE;
 }
@@ -199,7 +200,7 @@ BOOL UnlockedInterleavedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
         return FALSE;
     }
 
-    NewHolder<LoaderHeapBlock> pNewBlock = new (nothrow) LoaderHeapBlock;
+    NewHolder<LoaderHeapBlock> pNewBlock{ new (nothrow) LoaderHeapBlock };
     if (pNewBlock == NULL)
     {
         return FALSE;
@@ -219,7 +220,6 @@ BOOL UnlockedInterleavedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
 
     m_dwTotalAlloc += dwSizeToCommit;
 
-    pNewBlock.SuppressRelease();
     pDataHolder.Detach();
 
     pNewBlock->dwVirtualSize    = dwSizeToReserve;
@@ -228,7 +228,7 @@ BOOL UnlockedInterleavedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
     pNewBlock->m_fReleaseMemory = TRUE;
 
     // Add to the linked list
-    m_pFirstBlock = pNewBlock;
+    m_pFirstBlock = pNewBlock.Detach();
 
     dwSizeToCommit /= 2;
 
@@ -283,7 +283,7 @@ BOOL UnlockedInterleavedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
         // Own the allocated thunks for automatic cleanup on the error paths below.
         ThunkMemoryHolder thunksHolder(newAllocatedThunks);
 
-        NewHolder<LoaderHeapBlock> pNewBlock = new (nothrow) LoaderHeapBlock;
+        NewHolder<LoaderHeapBlock> pNewBlock{ new (nothrow) LoaderHeapBlock };
         if (pNewBlock == NULL)
         {
             return FALSE;
@@ -305,7 +305,6 @@ BOOL UnlockedInterleavedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
 
         m_dwTotalAlloc += dwSizeToReserve;
 
-        pNewBlock.SuppressRelease();
         thunksHolder.Detach();
 
         pNewBlock->dwVirtualSize    = dwSizeToReserve;
@@ -314,7 +313,7 @@ BOOL UnlockedInterleavedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
         pNewBlock->m_fReleaseMemory = TRUE;
 
         // Add to the linked list
-        m_pFirstBlock = pNewBlock;
+        m_pFirstBlock = pNewBlock.Detach();
 
         m_pAllocPtr = (BYTE*)newAllocatedThunks;
         m_pPtrToEndOfCommittedRegion = m_pAllocPtr + GetStubCodePageSize();

@@ -116,11 +116,11 @@ HRESULT DbgTransportTarget::GetTransportForProcess(const ProcessDescriptor  *pPr
     if (entry == NULL)
     {
 
-       NewHolder<ProcessEntry> newEntry = new(nothrow) ProcessEntry();
+       NewHolder<ProcessEntry> newEntry(new(nothrow) ProcessEntry());
        if (newEntry == NULL)
            return E_OUTOFMEMORY;
 
-       NewHolder<DbgTransportSession> transport = new(nothrow) DbgTransportSession();
+       NewHolder<DbgTransportSession> transport(new(nothrow) DbgTransportSession());
        if (transport == NULL)
        {
            return E_OUTOFMEMORY;
@@ -170,7 +170,7 @@ HRESULT DbgTransportTarget::GetTransportForProcess(const ProcessDescriptor  *pPr
        newEntry->m_fStopPoller = false;
        newEntry->m_fPollerStarted = false;
 
-       if (pthread_create(&newEntry->m_pollerThread, nullptr, &ProcessExitPollerThread, newEntry.GetValue()) != 0)
+       if (pthread_create(&newEntry->m_pollerThread, nullptr, &ProcessExitPollerThread, static_cast<ProcessEntry*>(newEntry)) != 0)
        {
            transport->Shutdown();
            return E_FAIL;
@@ -187,10 +187,8 @@ HRESULT DbgTransportTarget::GetTransportForProcess(const ProcessDescriptor  *pPr
            return hr;
        }
 
-       entry = newEntry;
-       newEntry.SuppressRelease();
-       entry->m_transport = transport;
-       transport.SuppressRelease();
+       entry = newEntry.Detach();
+       entry->m_transport = transport.Detach();
        entry->m_cProcessRef = 0;
 
        // Adding new entry to the list.

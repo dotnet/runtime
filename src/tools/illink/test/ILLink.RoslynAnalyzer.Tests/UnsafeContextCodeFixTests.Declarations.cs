@@ -56,7 +56,7 @@ namespace ILLink.RoslynAnalyzer.Tests
         }
 
         [Fact]
-        public Task Stackalloc_RefStructBuilderArgument_UsesExpression()
+        public Task Stackalloc_RefStructBuilderArgument_UsesClosedBlock()
         {
             return VerifyAsync("""
                 using System;
@@ -95,9 +95,13 @@ namespace ILLink.RoslynAnalyzer.Tests
                 {
                     void M()
                     {
-                        var builder = new Builder(/* SAFETY: To be audited */ unsafe(stackalloc char[256]));
-                        builder.Append('a');
-                        builder.Append('b');
+                        // SAFETY: To be audited
+                        unsafe
+                        {
+                            var builder = new Builder(stackalloc char[256]);
+                            builder.Append('a');
+                            builder.Append('b');
+                        }
                     }
                 }
                 """);
@@ -157,9 +161,9 @@ namespace ILLink.RoslynAnalyzer.Tests
         }
 
         [Fact]
-        public Task Stackalloc_NestedScopeEscape_KeepsDeclaration()
+        public Task Stackalloc_NestedScopeEscape_GrowsBlockOverUses()
         {
-            // Neither a scoped split nor a proportionate closed block preserves `a`, so its declaration is kept.
+            // A scoped split would narrow `a`; grow the block over its uses instead.
             return VerifyAsync("""
                 using System;
                 using System.Runtime.CompilerServices;
@@ -197,10 +201,14 @@ namespace ILLink.RoslynAnalyzer.Tests
                         scoped Span<int> outer;
                         if (b)
                         {
-                            Span<int> a = length < 100 ? /* SAFETY: To be audited */ unsafe(stackalloc int[100]) : new int[length];
-                            outer = a;
-                            Use(a);
-                            Use(a);
+                            // SAFETY: To be audited
+                            unsafe
+                            {
+                                Span<int> a = length < 100 ? stackalloc int[100] : new int[length];
+                                outer = a;
+                                Use(a);
+                                Use(a);
+                            }
                         }
                     }
                 }
@@ -275,7 +283,7 @@ namespace ILLink.RoslynAnalyzer.Tests
         }
 
         [Fact]
-        public Task RefLocal_SafeLaterUses_UsesRefExpression()
+        public Task RefLocal_SafeLaterUses_UsesClosedBlock()
         {
             return VerifyAsync("""
                 class C
@@ -304,9 +312,13 @@ namespace ILLink.RoslynAnalyzer.Tests
 
                     void M(Entry* entries, int i, int value, int next)
                     {
-                        ref Entry entry = ref /* SAFETY: To be audited */ unsafe(entries[i]);
-                        entry.Value = value;
-                        entry.Next = next;
+                        // SAFETY: To be audited
+                        unsafe
+                        {
+                            ref Entry entry = ref entries[i];
+                            entry.Value = value;
+                            entry.Next = next;
+                        }
                     }
                 }
                 """);

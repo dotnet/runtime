@@ -603,35 +603,53 @@ namespace System.Reflection.Tests
             foreach (ConstructorInfo constructor in arrayType.GetConstructors())
             {
                 foreach (ParameterInfo parameter in constructor.GetParameters())
-                    Verify(parameter.ParameterType, parameter.GetModifiedParameterType());
+                    VerifyModifiedType(parameter.ParameterType, parameter.GetModifiedParameterType());
             }
 
             foreach (string name in new[] { "Get", "Set", "Address" })
             {
                 MethodInfo method = arrayType.GetMethod(name);
-                Verify(method.ReturnType, method.ReturnParameter.GetModifiedParameterType());
+                VerifyModifiedType(method.ReturnType, method.ReturnParameter.GetModifiedParameterType());
                 foreach (ParameterInfo parameter in method.GetParameters())
-                    Verify(parameter.ParameterType, parameter.GetModifiedParameterType());
+                    VerifyModifiedType(parameter.ParameterType, parameter.GetModifiedParameterType());
             }
+        }
 
-            static void Verify(Type expected, Type modified)
+        [Theory]
+        [InlineData(typeof(int[]))]
+        [InlineData(typeof(List<int>))]
+        [InlineData(typeof(Dictionary<string, List<int[]>>))]
+        public void GetModifiedParameterType_SubstitutedGenericParameters(Type argumentType)
+        {
+            MethodInfo classMethod = typeof(GenericClass<>).MakeGenericType(argumentType).GetMethod("GenericMethod");
+            MethodInfo genericMethod = typeof(ParameterInfoTests)
+                .GetMethod(nameof(ModifiedGenericMethod), BindingFlags.NonPublic | BindingFlags.Static)
+                .MakeGenericMethod(argumentType);
+
+            foreach (MethodInfo method in new[] { classMethod, genericMethod })
+                VerifyModifiedType(argumentType, method.GetParameters()[0].GetModifiedParameterType());
+        }
+
+        private static void ModifiedGenericMethod<T>(T value) { }
+
+        private static void VerifyModifiedType(Type expected, Type modified)
+        {
+            Assert.NotNull(modified);
+            Assert.NotSame(expected, modified);
+            Assert.Same(expected, modified.UnderlyingSystemType);
+            Assert.Empty(modified.GetRequiredCustomModifiers());
+            Assert.Empty(modified.GetOptionalCustomModifiers());
+            if (expected.HasElementType)
             {
-                Assert.NotSame(expected, modified);
-                Assert.Same(expected, modified.UnderlyingSystemType);
-                Assert.Empty(modified.GetRequiredCustomModifiers());
-                Assert.Empty(modified.GetOptionalCustomModifiers());
-                if (expected.HasElementType)
-                {
-                    Verify(expected.GetElementType(), modified.GetElementType());
-                }
-                else if (expected.IsGenericType)
-                {
-                    Type[] expectedArguments = expected.GetGenericArguments();
-                    Type[] modifiedArguments = modified.GetGenericArguments();
-                    Assert.Equal(expectedArguments.Length, modifiedArguments.Length);
-                    for (int i = 0; i < expectedArguments.Length; i++)
-                        Verify(expectedArguments[i], modifiedArguments[i]);
-                }
+                VerifyModifiedType(expected.GetElementType(), modified.GetElementType());
+            }
+            else if (expected.IsGenericType)
+            {
+                Type[] expectedArguments = expected.GetGenericArguments();
+                Type[] modifiedArguments = modified.GetGenericArguments();
+                Assert.Equal(expectedArguments.Length, modifiedArguments.Length);
+                for (int i = 0; i < expectedArguments.Length; i++)
+                    VerifyModifiedType(expectedArguments[i], modifiedArguments[i]);
             }
         }
 

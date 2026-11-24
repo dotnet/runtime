@@ -24,7 +24,7 @@ public interface IPlatformAgnosticContext
     public abstract void Clear();
     public abstract void ReadFromAddress(Target target, TargetPointer address);
     public abstract void FillFromBuffer(Span<byte> buffer);
-    public abstract byte[] GetBytes();
+    public abstract ReadOnlySpan<byte> GetBytes();
     public abstract IPlatformAgnosticContext Clone();
     public abstract bool TrySetRegister(string fieldName, TargetNUInt value);
     public abstract bool TryReadRegister(string fieldName, out TargetNUInt value);

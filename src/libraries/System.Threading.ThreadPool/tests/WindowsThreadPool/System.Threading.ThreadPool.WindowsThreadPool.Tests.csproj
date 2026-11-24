@@ -1,5 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <!-- TODO: Remove once migrated to unsafe-v2. -->
+    <MemorySafetyRulesVersion>1</MemorySafetyRulesVersion>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <!-- This test project is Windows only as it uses the Windows Threadpool -->
     <TargetFramework>$(NetCoreAppCurrent)-windows</TargetFramework>

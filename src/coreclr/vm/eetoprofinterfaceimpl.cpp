@@ -63,6 +63,7 @@
 // ======================================================================================
 
 #include "common.h"
+#include <minipal/thread.h>
 
 #ifdef PROFILING_SUPPORTED
 
@@ -554,11 +555,9 @@ HRESULT EEToProfInterfaceImpl::Init(
 
     m_csGCRefDataFreeList = csGCRefDataFreeList.Detach();
 
-    m_pFunctionIDHashTable = pFunctionIDHashTable.Extract();
-    pFunctionIDHashTable = NULL;
+    m_pFunctionIDHashTable = pFunctionIDHashTable.Detach();
 
-    m_pFunctionIDHashTableRWLock = pFunctionIDHashTableRWLock.Extract();
-    pFunctionIDHashTableRWLock = NULL;
+    m_pFunctionIDHashTableRWLock = pFunctionIDHashTableRWLock.Detach();
 
     return S_OK;
 }
@@ -1068,7 +1067,7 @@ UINT_PTR EEToProfInterfaceImpl::EEFunctionIDMapper(FunctionID funcId, BOOL * pbH
         // ClientID Hash table may throw OUTOFMEMORY exception, which is not expected by the caller.
         EX_TRY
         {
-            SimpleWriteLockHolder writeLockHolder(m_pFunctionIDHashTableRWLock);
+            SimpleWriteLockHolder writeLockHolder = SimpleRWLock::TakeWriteLock(m_pFunctionIDHashTableRWLock);
             m_pFunctionIDHashTable->AddOrReplace(functionIDAndClientID);
         }
         EX_CATCH
@@ -1132,7 +1131,7 @@ EEToProfInterfaceImpl::GCReferencesData * EEToProfInterfaceImpl::AllocateMovedRe
 
     // SCOPE: Lock m_csGCRefDataFreeList for access to the free list
     {
-        CRITSEC_Holder csh(m_csGCRefDataFreeList);
+        CRITSEC_Holder csh = ClrTakeCriticalSection(m_csGCRefDataFreeList);
 
         // Anything on the free list for us to grab?
         if (m_pGCRefDataFreeList != NULL)
@@ -1191,7 +1190,7 @@ void EEToProfInterfaceImpl::FreeMovedReferencesData(GCReferencesData * pData)
 
     // SCOPE: Lock m_csGCRefDataFreeList for access to the free list
     {
-        CRITSEC_Holder csh(m_csGCRefDataFreeList);
+        CRITSEC_Holder csh = ClrTakeCriticalSection(m_csGCRefDataFreeList);
         pData->pNext = m_pGCRefDataFreeList;
         m_pGCRefDataFreeList = pData;
     }
@@ -1343,7 +1342,7 @@ HRESULT EEToProfInterfaceImpl::EndMovedReferences(void * pHeapId)
     // Now we're done with the data block, we can shove it onto the free list
     // SCOPE: Lock m_csGCRefDataFreeList for access to the free list
     {
-        CRITSEC_Holder csh(m_csGCRefDataFreeList);
+        CRITSEC_Holder csh = ClrTakeCriticalSection(m_csGCRefDataFreeList);
         pData->pNext = m_pGCRefDataFreeList;
         m_pGCRefDataFreeList = pData;
     }
@@ -1402,7 +1401,7 @@ HRESULT EEToProfInterfaceImpl::AllocByClass(ObjectID objId, ClassID clsId, void 
 #ifdef _DEBUG
         // This is a slight attempt to make sure that this is never called in a multi-threaded
         // manner.  This heap walk should be done by one thread at a time only.
-        dwProcId = GetCurrentProcessId();
+        dwProcId = minipal_get_current_process_id();
 #endif
 
         // See if we've saved a data block from a previous GC
@@ -1425,7 +1424,7 @@ HRESULT EEToProfInterfaceImpl::AllocByClass(ObjectID objId, ClassID clsId, void 
         pData->hashTable.RemoveAll(true);
     }
 
-    _ASSERTE(dwProcId == GetCurrentProcessId());
+    _ASSERTE(dwProcId == minipal_get_current_process_id());
 
     if (!pData->hashTable.Update(clsId, [](AllocByClassEntry &entry) { entry.m_count++; }))
     {

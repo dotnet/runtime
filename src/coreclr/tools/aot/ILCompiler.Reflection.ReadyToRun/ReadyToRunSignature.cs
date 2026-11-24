@@ -1422,7 +1422,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                         builder.Append("Not Overridden");
                     }
 
-                    if (fixupType == ReadyToRunFixupKind.Check_TypeLayout)
+                    if (fixupType == ReadyToRunFixupKind.Check_VirtualFunctionOverride)
                         builder.Append(" (CHECK_VIRTUAL_FUNCTION_OVERRIDE)");
                     else
                         builder.Append(" (VERIFY_VIRTUAL_FUNCTION_OVERRIDE)");

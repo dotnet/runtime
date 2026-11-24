@@ -555,11 +555,18 @@ void ConvertedImageLayout::FreeImageParts()
     }
 }
 
-static void ReleaseImageParts(ConvertedImageLayout* layout)
+struct ImagePartsHolderTraits final
 {
-    WRAPPER_NO_CONTRACT;
-    layout->FreeImageParts();
-}
+    using Type = ConvertedImageLayout*;
+    static constexpr Type Default() { return NULL; }
+
+    static void Free(Type layout) noexcept
+    {
+        WRAPPER_NO_CONTRACT;
+        if (layout != NULL)
+            layout->FreeImageParts();
+    }
+};
 
 ConvertedImageLayout::ConvertedImageLayout(FlatImageLayout* source, bool disableMapping)
 {
@@ -574,7 +581,7 @@ ConvertedImageLayout::ConvertedImageLayout(FlatImageLayout* source, bool disable
     m_pOwner = source->m_pOwner;
     m_pExceptionDir = NULL;
     memset(m_imageParts, 0, sizeof(m_imageParts));
-    Holder<ConvertedImageLayout*, DoNothing, ReleaseImageParts> imagePartsHolder(this);
+    LifetimeHolder<ImagePartsHolderTraits> imagePartsHolder(this);
 
     bool relocationMustWriteCopy = false;
     void* loadedImage = NULL;
@@ -632,7 +639,7 @@ ConvertedImageLayout::ConvertedImageLayout(FlatImageLayout* source, bool disable
         }
 #endif //TARGET_X86
     }
-    imagePartsHolder.SuppressRelease();
+    imagePartsHolder.Detach();
 }
 
 ConvertedImageLayout::~ConvertedImageLayout()
@@ -756,10 +763,10 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
 
 #ifdef TARGET_WASM
         m_wasmData = new BYTE[static_cast<COUNT_T>(size)];
-        if (!VMToOSInterface::ReadFile(hFile, static_cast<uint64_t>(offset), m_wasmData.GetValue(),
+        if (!VMToOSInterface::ReadFile(hFile, static_cast<uint64_t>(offset), m_wasmData,
                 static_cast<size_t>(size)))
             ThrowHR(VMToOSInterface::GetLastMemoryMappingError());
-        addr = m_wasmData.GetValue();
+        addr = m_wasmData;
 #else
         VMToOSInterface::MemoryProtection mapProtection = isCompressed
             ? VMToOSInterface::MemoryProtection::ReadOnly
@@ -797,7 +804,7 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
                 EEFileLoadException::Throw(pOwner->GetPathForErrorMessages(), COR_E_BADIMAGEFORMAT);
 #ifdef TARGET_WASM
             NewArrayHolder<BYTE> anonView(new BYTE[static_cast<COUNT_T>(uncompressedSize)]);
-            void* uncompressed = anonView.GetValue();
+            void* uncompressed = anonView;
 #else
             void* uncompressed = VMToOSInterface::MapAnonymousMemory(static_cast<SIZE_T>(uncompressedSize),
                 VMToOSInterface::MemoryProtection::ReadWrite);
@@ -835,7 +842,7 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
 
             addr = uncompressed;
 #ifdef TARGET_WASM
-            m_wasmData = anonView.Extract();
+            m_wasmData = anonView.Detach();
 #else
             m_fileView = std::move(anonView);
             m_fileMapping.Reset();
@@ -878,8 +885,8 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner, const BYTE* array, COUNT_T siz
 #endif // TARGET_WINDOWS
 #ifdef TARGET_WASM
         m_wasmData = new BYTE[size];
-        memcpy(m_wasmData.GetValue(), array, size);
-        InitDecoders(m_wasmData.GetValue(), size);
+        memcpy(m_wasmData, array, size);
+        InitDecoders(m_wasmData, size);
 #else
         void* view = VMToOSInterface::MapAnonymousMemory(size, VMToOSInterface::MemoryProtection::ReadWrite,
             /* executableBacking */ true);

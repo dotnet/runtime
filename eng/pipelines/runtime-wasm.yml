@@ -33,4 +33,3 @@ extends:
           isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
           isWasmOnlyBuild: ${{ variables.isWasmOnlyBuild }}
           useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
-          excludeOptional: false

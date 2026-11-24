@@ -51,7 +51,6 @@ Available channels :
     THREAD  : Threading mechanism
     EXCEPT  : Structured Exception Handling functions
     CRT     : PAL implementation of the C Runtime Library functions
-    UNICODE : Unicode support API
     ARCH    : platform-dependent stuff
     SYNC    : Management of synchronization objects
     FILE    : File I/O API
@@ -166,7 +165,6 @@ typedef enum
     DCI_THREAD,
     DCI_EXCEPT,
     DCI_CRT,
-    DCI_UNICODE,
     DCI_ARCH,
     DCI_SYNC,
     DCI_FILE,
@@ -205,8 +203,6 @@ typedef enum
 
 /* extern variables */
 
-// Change W16_NULLSTRING to external variable to avoid multiple warnings showing up in prefast
-extern LPCWSTR W16_NULLSTRING;
 
 extern DWORD dbg_channel_flags[DCI_LAST];
 extern BOOL g_Dbg_asserts_enabled;
@@ -422,18 +418,8 @@ Function :
 
 --*/
 void PAL_DisplayDialog(const char *szTitle, const char *szText);
-
-/*++
-Function :
-    PAL_DisplayDialogFormatted
-
-    As above but takes a printf-style format string and insertion values to form the main text.
-
---*/
-void PAL_DisplayDialogFormatted(const char *szTitle, const char *szTextFormat, ...);
 #else // TARGET_OSX
 #define PAL_DisplayDialog(_szTitle, _szText)
-#define PAL_DisplayDialogFormatted(_szTitle, _szTextFormat, args...)
 #endif // TARGET_OSX
 
 #ifdef __cplusplus

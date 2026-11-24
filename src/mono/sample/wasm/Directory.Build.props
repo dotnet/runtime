@@ -46,12 +46,7 @@
     </ItemGroup>
   </Target>
 
-  <!-- RuntimeFlavor must be set before WasmApp.InTree.props so it imports the correct
-       flavor-specific props (BrowserWasmApp.props for Mono, nothing for CoreCLR).
-       Without this, Subsets.props defaults RuntimeFlavor to Mono for browser-wasm,
-       causing WasmApp.Common.props (Mono) to be imported even for CoreCLR builds. -->
   <PropertyGroup>
-    <RuntimeFlavor Condition="'$(Nested_RuntimeFlavor)' != ''">$(Nested_RuntimeFlavor)</RuntimeFlavor>
     <PublishReadyToRun Condition="'$(PublishReadyToRun)' == '' and '$(Nested_PublishReadyToRun)' != ''">$(Nested_PublishReadyToRun)</PublishReadyToRun>
     <PublishReadyToRunComposite Condition="'$(PublishReadyToRunComposite)' == '' and '$(Nested_PublishReadyToRunComposite)' != ''">$(Nested_PublishReadyToRunComposite)</PublishReadyToRunComposite>
     <PublishReadyToRun Condition="'$(PublishReadyToRun)' == ''">false</PublishReadyToRun>

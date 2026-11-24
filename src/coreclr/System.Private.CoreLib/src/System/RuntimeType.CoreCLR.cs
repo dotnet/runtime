@@ -3778,10 +3778,10 @@ namespace System
             }
         }
 
-        private CheckValueStatus TryChangeTypeSpecial(ref object value)
+        private unsafe CheckValueStatus TryChangeTypeSpecial(ref object value)
         {
             Pointer? pointer = value as Pointer;
-            RuntimeType srcType = pointer != null ? pointer.GetPointerType() : (RuntimeType)value.GetType();
+            RuntimeType srcType = pointer != null ? (RuntimeType)pointer.PointerType : (RuntimeType)value.GetType();
             if (!CanValueSpecialCast(srcType, this))
             {
                 return CheckValueStatus.ArgumentException;
@@ -3789,7 +3789,7 @@ namespace System
 
             if (pointer != null)
             {
-                value = pointer.GetPointerValue(); // Convert source pointer to IntPtr
+                value = (IntPtr)pointer.Value; // Convert source pointer to IntPtr
             }
             else
             {

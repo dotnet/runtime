@@ -11,6 +11,10 @@
 #include "clrversion.h"
 
 #include "strsafe.h"
+#ifdef TARGET_UNIX
+#include <limits.h>
+#include <unistd.h>
+#endif
 #define ASSERTE_ALL_BUILDS(expr) _ASSERTE_ALL_BUILDS((expr))
 
 WCHAR* EqualOrColon(_In_ __nullterminated WCHAR* szArg)
@@ -52,7 +56,6 @@ public:
 static DWORD    g_dwSubsystem=(DWORD)-1,g_dwComImageFlags=(DWORD)-1,g_dwFileAlignment=0,g_dwTestRepeat=0;
 static ULONGLONG   g_stBaseAddress=0;
 static size_t   g_stSizeOfStackReserve=0;
-extern unsigned int g_uConsoleCP;
 
 void MakeTestFile(_In_ __nullterminated char* szFileName)
 {
@@ -94,16 +97,27 @@ void MakeProperSourceFileName(_In_ __nullterminated WCHAR* wzOrigName,
         }
     }
     while(j);
-    WideCharToMultiByte(uCodePage,0,wzProperName,-1,szProperName,MAX_FILENAME_LENGTH*3-1,NULL,NULL);
+    minipal_convert_utf16_to_utf8((const CHAR16_T*)wzProperName,u16_strlen(wzProperName)+1,szProperName,MAX_FILENAME_LENGTH*3-1,0);
 }
 
 char* FullFileName(_In_ __nullterminated WCHAR* wzFileName, unsigned uCodePage)
 {
+#ifdef TARGET_UNIX
+    char szFileName[MAX_FILENAME_LENGTH*3];
+    minipal_convert_utf16_to_utf8((const CHAR16_T*)wzFileName,u16_strlen(wzFileName)+1,szFileName,MAX_FILENAME_LENGTH*3-1,0);
+    char szCwd[PATH_MAX];
+    char szFullPath[PATH_MAX + MAX_FILENAME_LENGTH*3];
+    if((szFileName[0] != '/') && (getcwd(szCwd, sizeof(szCwd)) != NULL))
+        sprintf_s(szFullPath, sizeof(szFullPath), "%s/%s", szCwd, szFileName);
+    else
+        strcpy_s(szFullPath, sizeof(szFullPath), szFileName);
+#else
     static WCHAR wzFullPath[MAX_FILENAME_LENGTH];
     WCHAR* pwz;
     GetFullPathName(wzFileName,MAX_FILENAME_LENGTH,wzFullPath,&pwz);
     char szFullPath[MAX_FILENAME_LENGTH*3];
-    WideCharToMultiByte(uCodePage,0,wzFullPath,-1,szFullPath,MAX_FILENAME_LENGTH*3-1,NULL,NULL);
+    minipal_convert_utf16_to_utf8((const CHAR16_T*)wzFullPath,u16_strlen(wzFullPath)+1,szFullPath,MAX_FILENAME_LENGTH*3-1,0);
+#endif
     char* sz = new char[strlen(szFullPath)+1];
     if(sz) strcpy_s(sz,strlen(szFullPath)+1,szFullPath);
     return sz;
@@ -140,7 +154,6 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
     memset(&cw,0,sizeof(Clockwork));
     cw.cBegin = minipal_lowres_ticks();
 
-    g_uConsoleCP = GetConsoleOutputCP();
     memset(wzOutputFilename,0,sizeof(wzOutputFilename));
     memset(wzPdbFilename, 0, sizeof(wzPdbFilename));
 
@@ -223,7 +236,8 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
 #endif
                 {
                     char szOpt[3 + 1] = { 0 };
-                    WideCharToMultiByte(uCodePage, 0, &argv[i][1], 3, szOpt, sizeof(szOpt), NULL, NULL);
+                    size_t cchOpt = u16_strlen(&argv[i][1]);
+                    minipal_convert_utf16_to_utf8((const CHAR16_T*)&argv[i][1], cchOpt < 3 ? cchOpt : 3, szOpt, sizeof(szOpt), 0);
                     if (!_stricmp(szOpt, "NOA"))
                     {
                         pAsm->m_fAutoInheritFromObject = FALSE;
@@ -257,9 +271,9 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
                               WCHAR wzSubOpt[8];
                               wcsncpy_s(wzSubOpt,8,pStr,3);
                               wzSubOpt[3] = 0;
-                              if(0 == _wcsicmp(wzSubOpt,W("OPT")))
+                              if(0 == u16_stricmp(wzSubOpt,W("OPT")))
                                 pAsm->m_dwIncludeDebugInfo = 0x3;
-                              else if(0 == _wcsicmp(wzSubOpt,W("IMP")))
+                              else if(0 == u16_stricmp(wzSubOpt,W("IMP")))
                                 pAsm->m_dwIncludeDebugInfo = 0x103;
                               else
                               {
@@ -319,7 +333,7 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
                         // We could change it to be longer, but that would affect the existing usability (ARM64 was
                         // added much later). Thus, just distinguish the two here.
                         char szOpt2[5 + 1] = { 0 };
-                        WideCharToMultiByte(uCodePage, 0, &argv[i][1], 5, szOpt2, sizeof(szOpt2), NULL, NULL);
+                        minipal_convert_utf16_to_utf8((const CHAR16_T*)&argv[i][1], cchOpt < 5 ? cchOpt : 5, szOpt2, sizeof(szOpt2), 0);
                         if (!_stricmp(szOpt2, "ARM"))
                         {
                             pAsm->m_dwCeeFileFlags &= ~ICEE_CREATE_MACHINE_MASK;
@@ -687,7 +701,7 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
                             {
                                 char szOutputFilename[MAX_FILENAME_LENGTH*3];
                                 memset(szOutputFilename,0,sizeof(szOutputFilename));
-                                WideCharToMultiByte(uCodePage,0,wzOutputFilename,-1,szOutputFilename,MAX_FILENAME_LENGTH*3-1,NULL,NULL);
+                                minipal_convert_utf16_to_utf8((const CHAR16_T*)wzOutputFilename,u16_strlen(wzOutputFilename)+1,szOutputFilename,MAX_FILENAME_LENGTH*3-1,0);
                                 pParser->msg(" --> '%s'\n", szOutputFilename);
                             }
                         }
@@ -889,13 +903,14 @@ int main(int argc, char* str[])
 
     WCHAR **argv = new WCHAR*[argc];
     for (int i = 0; i < argc; i++) {
-        int length = MultiByteToWideChar(CP_ACP, 0, str[i], -1, NULL, 0);
+        size_t cch = strlen(str[i]) + 1;
+        size_t length = minipal_get_length_utf8_to_utf16(str[i], cch, 0);
         ASSERTE_ALL_BUILDS(length != 0);
 
         LPWSTR result = new (nothrow) WCHAR[length];
         ASSERTE_ALL_BUILDS(result != NULL);
 
-        length = MultiByteToWideChar(CP_ACP, 0, str[i], -1, result, length);
+        length = minipal_convert_utf8_to_utf16(str[i], cch, (CHAR16_T*)result, length, 0);
         ASSERTE_ALL_BUILDS (length != 0);
 
         argv[i] = result;

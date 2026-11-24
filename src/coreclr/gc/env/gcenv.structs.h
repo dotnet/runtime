@@ -44,6 +44,8 @@ public:
 
 #else // TARGET_UNIX
 
+#include <minipal/thread.h>
+
 class EEThreadId
 {
     uint64_t m_uiId;
@@ -51,12 +53,12 @@ public:
 
     bool IsCurrentThread()
     {
-        return m_uiId == ::GetCurrentThreadId();
+        return m_uiId == (uint64_t)minipal_get_current_thread_id();
     }
 
     void SetToCurrentThread()
     {
-        m_uiId = ::GetCurrentThreadId();
+        m_uiId = (uint64_t)minipal_get_current_thread_id();
     }
 
     void Clear()

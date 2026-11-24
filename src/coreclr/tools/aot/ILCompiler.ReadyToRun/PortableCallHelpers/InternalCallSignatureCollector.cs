@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 
+using Internal.JitInterface;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
@@ -50,8 +51,10 @@ namespace ILCompiler.PortableCallHelpers
     internal sealed class InternalCallSignatureCollector(InteropLogger log)
     {
         private readonly Dictionary<string, MethodDesc> _signatures = [];
+        private readonly List<PInvokeInfo> _entrypoints = [];
 
         public IReadOnlyDictionary<string, MethodDesc> Signatures => _signatures;
+        public IReadOnlyList<PInvokeInfo> Entrypoints => _entrypoints;
 
         public void ScanType(EcmaType type)
         {
@@ -60,14 +63,19 @@ namespace ILCompiler.PortableCallHelpers
                 if (!method.IsInternalCall)
                     continue;
 
-                // String constructors never reach a signature-derived thunk. They are compiled as static
-                // factories ("String Ctor(args)", see WasmLowering.GetStringCtorActualSignature), and the
-                // runtime special-cases them in both directions with hardcoded keys before it consults
-                // this table: GetCookieForCalliSig and GetPortableEntryPointToInterpreterThunk in
-                // src/coreclr/vm/wasm/helpers.cpp. Emitting the declared "void .ctor(this, args)" shape
-                // here would only add entries nothing can look up.
-                if (method.IsConstructor && method.OwningType.IsWellKnownType(WellKnownType.String))
-                    continue;
+                if (HasStaticEntrypoint(type, method))
+                {
+                    string name = $"{type.Name.ToString()}_{method.Name.ToString()}";
+                    foreach (char character in name)
+                    {
+                        if (!char.IsAsciiLetterOrDigit(character) && character != '_')
+                            throw new LogAsErrorException($"InternalCall '{method}' has an unsupported native entrypoint name '{name}'.");
+                    }
+                    _entrypoints.Add(new PInvokeInfo(name, "QCall", (EcmaMethod)method, wasmLinkage: false));
+                }
+
+                // String constructors run as static factories, so they are keyed on that lowered signature.
+                bool isStringConstructor = method.IsConstructor && method.OwningType.IsWellKnownType(WellKnownType.String);
 
                 // A generic has no single signature to generate a thunk from, so the interpreter
                 // would find none at call time - and a release build does not even assert on the
@@ -82,7 +90,9 @@ namespace ILCompiler.PortableCallHelpers
                 {
                     // A managed signature: the lowering adds the 'T' for an instance method and the
                     // trailing 'p' for the portable entry point parameter.
-                    string signature = InteropSignature.GetMethodSignature(method);
+                    string signature = isStringConstructor
+                        ? WasmLowering.GetSignature(WasmLowering.GetStringCtorActualSignature(method.Signature), WasmLowering.LoweringFlags.None).SignatureString
+                        : InteropSignature.GetMethodSignature(method);
                     if (_signatures.TryAdd(signature, method))
                         log.Verbose($"Adding InternalCall signature {signature} for method '{type}.{method.Name.ToString()}'");
                 }
@@ -95,6 +105,20 @@ namespace ILCompiler.PortableCallHelpers
                     throw new LogAsErrorException($"Could not get the signature for InternalCall method '{type}::{method.Name.ToString()}': {ex.Message}");
                 }
             }
+
+        }
+
+        private static bool HasStaticEntrypoint(EcmaType type, MethodDesc method)
+        {
+            if (method.IsConstructor && type.IsDelegate)
+                return false;
+            if (type.IsWellKnownType(WellKnownType.String)
+                && (method.IsConstructor || method.Name == "FastAllocateString"u8))
+                return false;
+
+            return !(type.Namespace == "System.Runtime.CompilerServices"u8
+                && type.Name == "RuntimeHelpers"u8
+                && method.Name == "NewobjHelperDummy"u8);
         }
     }
 }

@@ -114,6 +114,9 @@ namespace System.Text.Json.Reflection
             }
         }
 
+        public static bool IsImmutableSortedDictionaryType(this Type type)
+            => type.IsImmutableDictionaryType() && GetBaseNameFromGenericType(type) == ImmutableSortedDictionaryGenericTypeName;
+
         public static bool IsImmutableEnumerableType(this Type type)
         {
             if (!type.IsGenericType || !type.Assembly.FullName!.StartsWith("System.Collections.Immutable", StringComparison.Ordinal))
