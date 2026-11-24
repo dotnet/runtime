@@ -69,8 +69,8 @@ entry assembly, for example
 `dotnet run` supplies the bundle and entry-assembly arguments itself. Wasmtime flags,
 such as `--dir`, remain before the module filename.
 The SDK's `managed/corerun` file is the per-app linked `wasihost`, not the CoreRun
-development runner. The generated runtime configuration identifies the runtime
-flavor, so the launcher does not need to discover assemblies or guess the layout.
+development runner. The launcher uses the CoreCLR bundle layout directly; it does
+not discover assemblies or select a runtime flavor.
 
 ## Command line arguments
 

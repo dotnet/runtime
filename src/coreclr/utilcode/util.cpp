@@ -17,6 +17,8 @@
 #include "cor.h"
 #include "corinfo.h"
 #include "volatile.h"
+#include <minipal/cpucount.h>
+#include <minipal/time.h>
 #include "mdfileformat.h"
 #include <configuration.h>
 
@@ -565,7 +567,7 @@ DWORD LCM(DWORD u, DWORD v)
         // Some other thread started initialization, just wait until complete
         while (VolatileLoad(&m_initialization) != -1)
         {
-            SwitchToThread();
+            minipal_switch_to_thread(0);
         }
     }
 }
@@ -780,120 +782,8 @@ int GetTotalProcessorCount()
         return g_SystemInfo.dwNumberOfProcessors;
     }
 #else // HOST_WINDOWS
-    return PAL_GetTotalCpuCount();
+    return minipal_get_cpu_total_count();
 #endif // HOST_WINDOWS
-}
-
-// The cached number of CPUs available for the current process
-static DWORD g_currentProcessCpuCount = 0;
-
-//******************************************************************************
-// Returns the number of processors that a process has been configured to run on
-//******************************************************************************
-int GetCurrentProcessCpuCount()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        CANNOT_TAKE_LOCK;
-    }
-    CONTRACTL_END;
-
-    if (g_currentProcessCpuCount > 0)
-        return g_currentProcessCpuCount;
-
-    DWORD count;
-
-    // If the configuration value has been set, it takes precedence. Otherwise, take into account
-    // process affinity and CPU quota limit.
-
-    DWORD configValue = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ProcessorCount);
-    const unsigned int MAX_PROCESSOR_COUNT = 0xffff;
-
-    if (0 < configValue && configValue <= MAX_PROCESSOR_COUNT)
-    {
-        count = configValue;
-    }
-    else
-    {
-#ifdef HOST_WINDOWS
-        CPUGroupInfo::EnsureInitialized();
-
-        if (CPUGroupInfo::CanEnableThreadUseAllCpuGroups())
-        {
-            count = CPUGroupInfo::GetNumActiveProcessors();
-        }
-        else
-        {
-            DWORD_PTR pmask, smask;
-
-            if (!GetProcessAffinityMask(GetCurrentProcess(), &pmask, &smask))
-            {
-                count = 1;
-            }
-            else
-            {
-                count = 0;
-
-                while (pmask)
-                {
-                    pmask &= (pmask - 1);
-                    count++;
-                }
-
-                // GetProcessAffinityMask can return pmask=0 and smask=0 on systems with more
-                // than 64 processors, which would leave us with a count of 0.  Since the GC
-                // expects there to be at least one processor to run on (and thus at least one
-                // heap), we'll return 64 here if count is 0, since there are likely a ton of
-                // processors available in that case.
-                if (count == 0)
-                    count = 64;
-            }
-        }
-
-        JOBOBJECT_CPU_RATE_CONTROL_INFORMATION cpuRateControl;
-
-        if (QueryInformationJobObject(NULL, JobObjectCpuRateControlInformation, &cpuRateControl,
-            sizeof(cpuRateControl), NULL))
-        {
-            const DWORD HardCapEnabled = JOB_OBJECT_CPU_RATE_CONTROL_ENABLE | JOB_OBJECT_CPU_RATE_CONTROL_HARD_CAP;
-            const DWORD MinMaxRateEnabled = JOB_OBJECT_CPU_RATE_CONTROL_ENABLE | JOB_OBJECT_CPU_RATE_CONTROL_MIN_MAX_RATE;
-            DWORD maxRate = 0;
-
-            if ((cpuRateControl.ControlFlags & HardCapEnabled) == HardCapEnabled)
-            {
-                maxRate = cpuRateControl.CpuRate;
-            }
-            else if ((cpuRateControl.ControlFlags & MinMaxRateEnabled) == MinMaxRateEnabled)
-            {
-                maxRate = cpuRateControl.MaxRate;
-            }
-
-            // The rate is the percentage times 100
-            const DWORD MAXIMUM_CPU_RATE = 10000;
-
-            if (0 < maxRate && maxRate < MAXIMUM_CPU_RATE)
-            {
-                DWORD cpuLimit = (maxRate * GetTotalProcessorCount() + MAXIMUM_CPU_RATE - 1) / MAXIMUM_CPU_RATE;
-                if (cpuLimit < count)
-                    count = cpuLimit;
-            }
-        }
-
-#else // HOST_WINDOWS
-        count = PAL_GetLogicalCpuCountFromOS();
-
-        uint32_t cpuLimit;
-        if (PAL_GetCpuLimit(&cpuLimit) && cpuLimit < count)
-            count = cpuLimit;
-#endif // HOST_WINDOWS
-    }
-
-    _ASSERTE(count > 0);
-    g_currentProcessCpuCount = count;
-
-    return count;
 }
 
 //=============================================================================
@@ -908,6 +798,7 @@ AssemblyNamesList::AssemblyNamesList(_In_ LPWSTR list)
 {
     CONTRACTL {
         THROWS;
+        GC_NOTRIGGER;
     } CONTRACTL_END;
 
     WCHAR prevChar = '?'; // dummy
@@ -961,6 +852,7 @@ AssemblyNamesList::~AssemblyNamesList()
     CONTRACTL
     {
         NOTHROW;
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
@@ -1620,9 +1512,9 @@ HRESULT Utf2Quick(
     CONTRACTL_END;
 
     HRESULT     hr = S_OK;              // A result.
-    int         iReqLen;                // Required additional length.
-    int         iActLen;
-    int         bAlloc = 0;             // If non-zero, allocation was required.
+    size_t      cchReq;                 // Required additional length.
+    size_t      cchAct;
+    bool        bAlloc = false;         // If true, allocation was required.
 
     if (iCurLen < 0 )
     {
@@ -1632,7 +1524,7 @@ HRESULT Utf2Quick(
 
     // Calculate the space available
     S_SIZE_T cchAvail = S_SIZE_T(rStr.MaxSize()) - S_SIZE_T(iCurLen);
-    if (cchAvail.IsOverflow() || cchAvail.Value() > INT_MAX)
+    if (cchAvail.IsOverflow())
     {
         _ASSERTE_MSG(false, "Integer overflow/underflow");
         return HRESULT_FROM_WIN32(ERROR_ARITHMETIC_OVERFLOW);
@@ -1645,21 +1537,31 @@ HRESULT Utf2Quick(
         _ASSERTE_MSG(false, "Integer overflow/underflow");
         return HRESULT_FROM_WIN32(ERROR_ARITHMETIC_OVERFLOW);
     }
-    iReqLen = MultiByteToWideChar(CP_UTF8, 0, pStr, -1, rNewStr, (int)(cchAvail.Value()));
+    size_t cchSrc = strlen(pStr) + 1;
+    cchReq = minipal_convert_utf8_to_utf16(pStr, cchSrc, (CHAR16_T*)rNewStr, cchAvail.Value(), 0);
 
     // If the buffer was too small, determine what is required.
-    if (iReqLen == 0)
-        bAlloc = iReqLen = MultiByteToWideChar(CP_UTF8, 0, pStr, -1, 0, 0);
+    if (cchReq == 0)
+    {
+        cchReq = minipal_get_length_utf8_to_utf16(pStr, cchSrc, 0);
+        bAlloc = true;
+    }
     // Resize the buffer.  If the buffer was large enough, this just sets the internal
     //  counter, but if it was too small, this will attempt a reallocation.  Note that
     //  the length includes the terminating W('/0').
-    IfFailGo(rStr.ReSizeNoThrow(iCurLen+iReqLen));
+    S_SIZE_T newSize = S_SIZE_T(iCurLen) + S_SIZE_T(cchReq);
+    if (newSize.IsOverflow())
+    {
+        _ASSERTE_MSG(false, "Integer overflow/underflow");
+        return HRESULT_FROM_WIN32(ERROR_ARITHMETIC_OVERFLOW);
+    }
+    IfFailGo(rStr.ReSizeNoThrow(newSize.Value()));
     // If we had to realloc, then do the conversion again, now that the buffer is
     //  large enough.
     if (bAlloc) {
         //recalculating cchAvail since MaxSize could have been changed.
         cchAvail = S_SIZE_T(rStr.MaxSize()) - S_SIZE_T(iCurLen);
-        if (cchAvail.IsOverflow() || cchAvail.Value() > INT_MAX)
+        if (cchAvail.IsOverflow())
         {
             _ASSERTE_MSG(false, "Integer overflow/underflow");
             return HRESULT_FROM_WIN32(ERROR_ARITHMETIC_OVERFLOW);
@@ -1672,8 +1574,8 @@ HRESULT Utf2Quick(
         _ASSERTE_MSG(false, "Integer overflow/underflow");
         return HRESULT_FROM_WIN32(ERROR_ARITHMETIC_OVERFLOW);
         }
-        iActLen = MultiByteToWideChar(CP_UTF8, 0, pStr, -1, rNewStr, (int)(cchAvail.Value()));
-        _ASSERTE(iReqLen == iActLen);
+        cchAct = minipal_convert_utf8_to_utf16(pStr, cchSrc, (CHAR16_T*)rNewStr, cchAvail.Value(), 0);
+        _ASSERTE(cchReq == cchAct);
     }
 ErrExit:
     return hr;
@@ -2222,7 +2124,7 @@ namespace Util
         if (err != ERROR_INSUFFICIENT_BUFFER || dwSize == 0)
             return s_Result.RecordAndReturnError((err == ERROR_SUCCESS) ? E_FAIL : HRESULT_FROM_WIN32(err));
 
-        NewArrayHolder<BYTE> pLabel = new (nothrow) BYTE[dwSize];
+        NewArrayHolder<BYTE> pLabel{ new (nothrow) BYTE[dwSize] };
         if (pLabel == NULL)
             return s_Result.RecordAndReturnError(E_OUTOFMEMORY);
 

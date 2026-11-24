@@ -99,6 +99,11 @@ partial interface IRuntimeTypeSystem : IContract
     // (used to decide how a struct is passed in registers), or false if the type has no such
     // classification (not applicable, or the runtime was not built with UNIX_AMD64_ABI).
     public virtual bool TryGetSystemVAmd64EightByteClassification(ITypeHandle typeHandle, out SystemVAmd64EightByteClassification classification);
+    // Returns how a value type is passed by the RISC-V / LoongArch64 hardware floating-point calling
+    // convention: one or two flattened fields (IsFloatingPoint, Size, Offset), at least one of them
+    // floating-point, ordered by offset. Returns false if the type is passed by the integer calling
+    // convention (including on other targets).
+    public virtual bool TryGetFpStructInRegistersClassification(ITypeHandle typeHandle, out FpStructInRegistersClassification classification);
     // True if the MethodTable represents a continuation type used by the async continuation feature
     public virtual bool IsContinuationWithoutMetadata(ITypeHandle typeHandle);
     // Returns the GC pointer runs for the method table as (offset, size) pairs. Each
@@ -696,6 +701,9 @@ static class RuntimeTypeSystem_1_Helpers
 | Name | Type | Purpose | Value |
 | --- | --- | --- | --- |
 | `TYPE_MASK_OFFSET` | int | The number of bits the type is shifted left in the field desc flags2 | `27` |
+| `ConstructedTypeHashSeed` | uint | Initial accumulator for the constructed-type hash | `5381` (`0x00001505`) |
+| `ConstructedTypeHashMultiplier` | uint | Multiplier applied before XORing each constructed-type hash input | `33` |
+| `FpStructMaxSize` | uint | Largest struct, in bytes, considered for floating-point register passing on RISC-V and LoongArch64 (`ENREGISTERED_PARAMTYPE_MAXSIZE`); larger structs use the integer calling convention | `16` |
 
 ```csharp
     private readonly Dictionary<TargetPointer, MethodTable_1> _methodTables;
@@ -787,6 +795,37 @@ static class RuntimeTypeSystem_1_Helpers
         // and populate 'classification' with one SystemVAmd64EightByte per eightbyte (First is always
         // present; Second is present only when numEightBytes > 1). Return true.
     }
+
+    // Mirrors MethodTable::GetFpStructInRegistersInfo (managed layout) in src/coreclr/vm/methodtable.cpp.
+    // Pseudocode:
+    //
+    //   TryGetFpStructInRegistersClassification(th):
+    //       if targetArch is not RISCV64/LOONGARCH64:     return false
+    //       if !th.IsMethodTable() or NumInstanceFieldBytes(th) > FpStructMaxSize: return false
+    //       fields = []
+    //       if !Flatten(th, 0, fields):                   return false
+    //       if no field in fields is floating-point:      return false
+    //       sort fields by offset; return (true, (fields[0], fields[1] if present))
+    //
+    //   Flatten(mt, structOffset, fields):
+    //       occupied = 0 (byte bitmap)
+    //       for each non-static field f of mt:
+    //           start = structOffset + GetFieldDescOffset(f); size = ValueType ? NumInstanceFieldBytes(f's type) : element size
+    //           if [start, start + size) overlaps occupied: return false    // union
+    //           occupied |= [start, start + size)
+    //           if f is ValueType:                    if !Flatten(f's type, start, fields): return false
+    //           else if size <= pointer size:         if fields.Count == 2: return false
+    //                                                 fields.Add((f is R4/R8, size, start))
+    //           else:                                 return false
+    //       if mt has implied repeated fields (IsInlineArray, or a single primitive/ValueType field at
+    //       offset 0 of a type with layout whose NumInstanceFieldBytes is a multiple of the field size):
+    //           n = NumInstanceFieldBytes(mt) / field size
+    //           if the element added no fields:       return !IsInlineArray(mt)
+    //           if n > 2:                             return false
+    //           if n == 2: if the element added 2 fields: return false
+    //                      duplicate the element field right after itself (fail if it overlaps occupied)
+    //       return true
+    public bool TryGetFpStructInRegistersClassification(ITypeHandle typeHandle, out FpStructInRegistersClassification classification) { ... }
 
     public bool IsFreeObjectMethodTable(ITypeHandle TypeHandle) => FreeObjectMethodTablePointer == TypeHandle.Address;
 
@@ -1330,7 +1369,8 @@ static class RuntimeTypeSystem_1_Helpers
         TargetPointer loaderModule = // see [link](https://github.com/dotnet/runtime/blob/e1979b72ccb5f916649f1d9949ef663254790c25/src/coreclr/vm/clsload.cpp#L78)
         ModuleHandle moduleHandle = loaderContract.GetModuleHandleFromModulePtr(loaderModule);
         ITypeHandle? potentialMatch = null;
-        foreach (TargetPointer ptr in loaderContract.GetAvailableTypeParams(moduleHandle))
+        uint hash = GetConstructedTypeHash(typeHandle, corElementType, typeArguments, callConv);
+        foreach (TargetPointer ptr in loaderContract.GetAvailableTypeParams(moduleHandle, hash))
         {
             potentialMatch = GetTypeHandle(ptr);
             if (corElementType == CorElementType.GenericInst)
@@ -1353,6 +1393,40 @@ static class RuntimeTypeSystem_1_Helpers
             }
         }
         return null;
+    }
+
+    // This is the runtime's HashTypeKey algorithm from src/coreclr/vm/typehash.cpp.
+    // Using this hash algorithm is NOT required for correctness; it only improves performance.
+    // Without a hash, lookup remains correct by iterating the entire table and comparing full type keys.
+    // When hash-based bucket filtering is used, the hash must match the runtime's algorithm.
+    // Arithmetic wraps to uint32.
+    // Module and array rank are not hashed, but are checked by full key comparison.
+    uint GetConstructedTypeHash(ITypeHandle? typeHandle, CorElementType kind,
+        ImmutableArray<ITypeHandle?> typeArguments, SignatureCallingConvention callConv)
+    {
+        uint hash = ConstructedTypeHashSeed;
+        if (kind == CorElementType.GenericInst)
+        {
+            hash = Mix(hash, GetTypeDefToken(typeHandle));
+            foreach (ITypeHandle argument in typeArguments)
+                hash = Mix(hash, argument.Address.Value);
+        }
+        else if (kind == CorElementType.FnPtr)
+        {
+            hash = Mix(hash, (uint)CorElementType.FnPtr);
+            hash = Mix(hash, (uint)callConv);
+            hash = Mix(hash, unchecked((uint)(typeArguments.Length - 1)));
+            foreach (ITypeHandle argument in typeArguments)
+                hash = Mix(hash, argument.Address.Value);
+        }
+        else
+        {
+            hash = Mix(hash, (uint)kind);
+            hash = Mix(hash, typeHandle.Address.Value);
+        }
+        return hash;
+
+        static uint Mix(uint hash, ulong value) => unchecked((hash * ConstructedTypeHashMultiplier) ^ (uint)value);
     }
 
     public ITypeHandle GetPrimitiveType(CorElementType typeCode)
@@ -2079,11 +2153,18 @@ Resolving the loaded async variant of an async thunk method:
         MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
         ITypeHandle methodTable = GetTypeHandle(methodDesc.MethodTable);
         ITypeHandle canonicalMethodTable = GetTypeHandle(GetCanonicalMethodTable(methodTable));
+        TargetPointer module = GetModule(methodTable);
+        AsyncMethodFlags methodFlags = GetAsyncMethodFlags(methodDescHandle);
+        bool matchSlot = methodDesc.Slot != ushort.MaxValue &&
+            methodFlags.HasFlag(AsyncMethodFlags.IsAsyncVariant) &&
+            !methodFlags.HasFlag(AsyncMethodFlags.ReturnDroppingThunk);
 
         foreach (MethodDescHandle candidateHandle in GetIntroducedMethods(canonicalMethodTable))
         {
             MethodDesc candidate = _methodDescs[candidateHandle.Address];
-            if (candidate.Slot != methodDesc.Slot)
+            if (matchSlot ? candidate.Slot != methodDesc.Slot :
+                candidate.Token != methodDesc.Token ||
+                GetModule(GetTypeHandle(candidate.MethodTable)) != module)
                 continue;
 
             AsyncMethodFlags flags = GetAsyncMethodFlags(candidateHandle);

@@ -12,6 +12,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     {
         private readonly NodeFactory _factory;
         private readonly MethodWithGCInfo _method;
+        internal MethodWithGCInfo Method => _method;
 
         public WasmMethodFrameIdentityNode(NodeFactory factory, MethodWithGCInfo method)
         {

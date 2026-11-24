@@ -87,12 +87,6 @@ namespace CorUnix
         HANDLE *phThread
         );
 
-    BOOL
-    GetThreadTimesInternal(
-        IN HANDLE hThread,
-        OUT LPFILETIME lpKernelTime,
-        OUT LPFILETIME lpUserTime);
-
 #if HAVE_MACH_EXCEPTIONS
 
     // Structure used to return data about a single handler to a caller.

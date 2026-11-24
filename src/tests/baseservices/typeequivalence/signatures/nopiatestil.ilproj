@@ -1,7 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
-  <PropertyGroup>
-    <MonoAotIncompatible>true</MonoAotIncompatible>
-  </PropertyGroup>
   <ItemGroup>
     <Compile Include="nopiatestil.il" />
     <ProjectReference Include="basetestclassesil.ilproj" />

@@ -23,7 +23,7 @@ public:
     MDInternalRW();
     virtual ~MDInternalRW();
     __checkReturn
-    HRESULT Init(LPVOID pData, ULONG cbData, int bReadOnly);
+    HRESULT Init(LPVOID pData, ULONG cbData, int bReadOnly, bool fIsDelta = false);
     __checkReturn
     HRESULT InitWithStgdb(IUnknown *pUnk, CLiteWeightStgdbRW *pStgdb);
     __checkReturn
@@ -549,16 +549,6 @@ public:
         ASSOCIATE_RECORD *pAssociateRec,    // [OUT] struct to fill for output
         ULONG       cAssociateRec);         // [IN] size of the buffer
 
-
-    //**********************************
-    // Get info about a PermissionSet.
-    //**********************************
-    __checkReturn
-    STDMETHODIMP GetPermissionSetProps(
-        mdPermission pm,                    // [IN] the permission token.
-        DWORD       *pdwAction,             // [OUT] CorDeclSecurity.
-        void const  **ppvPermission,        // [OUT] permission blob.
-        ULONG       *pcbPermission);        // [OUT] count of bytes of pvPermission.
 
     //****************************************
     // Get the String given the String token.

@@ -1,9 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.Json.Nodes;
 using Microsoft.Build.Framework;
 
@@ -11,17 +14,14 @@ namespace Microsoft.WebAssembly.Build.Tasks;
 
 public class WasiAppBuilder : WasmAppBuilderBaseTask
 {
-    public string RuntimeFlavor { get; set; } = "Mono";
     public bool IsSingleFileBundle { get; set; }
     public bool OutputSymbolsToAppBundle { get; set; }
+    public string? RuntimeConfigPropertiesSourcePath { get; set; }
 
     protected override bool ValidateArguments()
     {
         if (!base.ValidateArguments())
             return false;
-
-        if (RuntimeFlavor is not ("Mono" or "CoreCLR"))
-            throw new LogAsErrorException($"Unsupported runtime flavor '{RuntimeFlavor}'.");
 
         if (!InvariantGlobalization && !IsSingleFileBundle && (IcuDataFileNames == null || IcuDataFileNames.Length == 0))
             throw new LogAsErrorException($"{nameof(IcuDataFileNames)} property shouldn't be empty when {nameof(InvariantGlobalization)}=false");
@@ -108,6 +108,7 @@ public class WasiAppBuilder : WasmAppBuilderBaseTask
         File.WriteAllText(Path.Combine(tmpDir, "README.md"), "Backs the app's /tmp directory when it runs under a WASI host.\n");
 
         UpdateRuntimeConfigJson();
+        GenerateRuntimeConfigPropertiesSource();
         return !Log.HasLoggedErrors;
 
         bool DeployFiles(ITaskItem[] fileItems, string label)
@@ -142,8 +143,56 @@ public class WasiAppBuilder : WasmAppBuilderBaseTask
 
     protected override void AddToRuntimeConfig(JsonObject wasmHostProperties, JsonArray runtimeArgsArray, JsonArray perHostConfigs)
     {
-        wasmHostProperties["runtimeFlavor"] = RuntimeFlavor;
         if (IsSingleFileBundle)
             wasmHostProperties["singleFileBundle"] = true;
+    }
+
+    private void GenerateRuntimeConfigPropertiesSource()
+    {
+        if (string.IsNullOrEmpty(RuntimeConfigPropertiesSourcePath))
+            return;
+
+        Dictionary<string, string> properties = RuntimeConfigProperties.Read(
+            RuntimeConfigJsonPath,
+            "RUNTIME_IDENTIFIER",
+            "APP_CONTEXT_BASE_DIRECTORY",
+            "TRUSTED_PLATFORM_ASSEMBLIES",
+            "APP_PATHS",
+            "HOST_RUNTIME_CONTRACT");
+        KeyValuePair<string, string>[] sortedProperties = properties.OrderBy(property => property.Key, StringComparer.Ordinal).ToArray();
+
+        var source = new StringBuilder();
+        source.AppendLine("// Licensed to the .NET Foundation under one or more agreements.");
+        source.AppendLine("// The .NET Foundation licenses this file to you under the MIT license.");
+        source.AppendLine();
+        source.AppendLine("#include <cstddef>");
+        source.AppendLine();
+        source.AppendLine("extern \"C\"");
+        source.AppendLine("{");
+        source.AppendLine("extern const char* const g_runtimeconfig_keys[] =");
+        source.AppendLine("{");
+        foreach (KeyValuePair<string, string> property in sortedProperties)
+            source.Append("    ").Append(RuntimeConfigProperties.ToCStringLiteral(property.Key)).AppendLine(",");
+        source.AppendLine("    nullptr");
+        source.AppendLine("};");
+        source.AppendLine();
+        source.AppendLine("extern const char* const g_runtimeconfig_values[] =");
+        source.AppendLine("{");
+        foreach (KeyValuePair<string, string> property in sortedProperties)
+            source.Append("    ").Append(RuntimeConfigProperties.ToCStringLiteral(property.Value)).AppendLine(",");
+        source.AppendLine("    nullptr");
+        source.AppendLine("};");
+        source.AppendLine();
+        source.Append("extern const std::size_t g_runtimeconfig_property_count = ")
+            .Append(properties.Count.ToString(CultureInfo.InvariantCulture))
+            .AppendLine(";");
+        source.AppendLine("}");
+
+        string? directory = Path.GetDirectoryName(RuntimeConfigPropertiesSourcePath);
+        if (!string.IsNullOrEmpty(directory))
+            Directory.CreateDirectory(directory);
+
+        File.WriteAllText(RuntimeConfigPropertiesSourcePath, source.ToString());
+        _fileWrites.Add(RuntimeConfigPropertiesSourcePath);
     }
 }

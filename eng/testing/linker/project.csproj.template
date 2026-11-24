@@ -23,7 +23,6 @@
     <TargetFramework>{TargetFramework}</TargetFramework>
     <OutputType>Exe</OutputType>
     <NETCoreAppMaximumVersion>{NetCoreAppMaximumVersion}</NETCoreAppMaximumVersion>
-    <UseMonoRuntime>{UseMonoRuntime}</UseMonoRuntime>
     <RuntimeIdentifier>{RuntimeIdentifier}</RuntimeIdentifier>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 
@@ -32,14 +31,11 @@
     <UseNativeAotForComponents Condition="'$(PublishAot)' == 'true'">true</UseNativeAotForComponents>
 
     <!-- wasm specific -->
-    <MonoAOTCompilerDir>{MonoAOTCompilerDir}</MonoAOTCompilerDir>
     <MonoProjectRoot>{MonoProjectRoot}</MonoProjectRoot>
     <BrowserProjectRoot>{BrowserProjectRoot}</BrowserProjectRoot>
     <WasmProjectRoot>{WasmProjectRoot}</WasmProjectRoot>
     <WasiProjectRoot>{WasiProjectRoot}</WasiProjectRoot>
-    <MonoAOTCompilerTasksAssemblyPath>{MonoAOTCompilerTasksAssemblyPath}</MonoAOTCompilerTasksAssemblyPath>
     <WasmAppBuilderTasksAssemblyPath>{WasmAppBuilderTasksAssemblyPath}</WasmAppBuilderTasksAssemblyPath>
-    <MonoTargetsTasksAssemblyPath>{MonoTargetsTasksAssemblyPath}</MonoTargetsTasksAssemblyPath>
     <MicrosoftNetCoreAppRuntimePackRidDir>{MicrosoftNetCoreAppRuntimePackRidDir}</MicrosoftNetCoreAppRuntimePackRidDir>
     <_WebAssemblyPropsFile>{WasmSdkPackBuildPath}Microsoft.NET.Sdk.WebAssembly.Browser.props</_WebAssemblyPropsFile>
     <_WebAssemblyTargetsFile>{WasmSdkPackBuildPath}Microsoft.NET.Sdk.WebAssembly.Browser.targets</_WebAssemblyTargetsFile>

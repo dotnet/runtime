@@ -216,7 +216,9 @@
     <Compile Include="System\Runtime\CompilerServices\EagerStaticClassConstructionAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\RuntimeFeature.NativeAot.cs" />
     <Compile Include="System\Runtime\CompilerServices\StaticClassConstructionContext.cs" />
-    <Compile Include="System\Runtime\ExceptionIDs.cs" />
+    <Compile Include="$(RuntimeBasePath)System\Runtime\ExceptionIDs.cs">
+      <Link>System\Runtime\ExceptionIDs.cs</Link>
+    </Compile>
     <Compile Include="System\Runtime\ExceptionServices\ExceptionHandling.NativeAot.cs" />
     <Compile Include="System\Runtime\GCSettings.NativeAot.cs" />
     <Compile Include="System\Runtime\InteropServices\TypeMapLazyDictionary.NativeAot.cs" />
@@ -249,7 +251,8 @@
     <Compile Include="System\ModuleHandle.cs" />
     <Compile Include="System\RuntimeFieldHandle.cs" />
     <Compile Include="System\Text\StringBuilder.NativeAot.cs" />
-    <Compile Include="System\Threading\ManagedThreadId.cs" />
+    <Compile Include="System\Threading\ManagedThreadId.Multithreading.cs" Condition="'$(FeatureMultithreading)' == 'true'" />
+    <Compile Include="System\Threading\ManagedThreadId.SingleThreading.cs" Condition="'$(FeatureMultithreading)' != 'true'" />
     <Compile Include="System\Threading\Interlocked.cs" />
     <Compile Include="System\Threading\ObjectHeader.NativeAot.cs" />
     <Compile Include="System\Threading\SyncTable.cs" />
@@ -533,11 +536,8 @@
       <Link>Common\TransitionBlock.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(InPlaceRuntime)' == 'true' and '$(TargetsWasm)' != 'true'">
-    <Compile Include="$(IntermediatesDir)\nativeaot\Runtime\Full\AsmOffsets.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(InPlaceRuntime)' == 'true' and '$(TargetsWasm)' == 'true'">
-    <Compile Include="$(IntermediatesDir)\nativeaot\Runtime\Portable\AsmOffsetsPortable.cs" />
+  <ItemGroup Condition="'$(InPlaceRuntime)' == 'true'">
+    <Compile Include="$(IntermediatesDir)\nativeaot\Runtime\AsmOffsets.cs" />
   </ItemGroup>
 
   <Import Project="$(LibrariesProjectRoot)\System.Private.CoreLib\src\System.Private.CoreLib.Shared.projitems" Label="Shared" />

@@ -16,8 +16,7 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos'">
-    <RunAOTCompilation Condition="'$(RuntimeFlavor)' == 'Mono' ">true</RunAOTCompilation>
-    <UseNativeAOTRuntime Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(UseNativeAOTRuntime)' == ''">true</UseNativeAOTRuntime>
+    <UseNativeAOTRuntime Condition="'$(UseNativeAOTRuntime)' == ''">true</UseNativeAOTRuntime>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -35,14 +34,6 @@
     <!-- Reduce library test app size by trimming framework library features  -->
     <EnableUnsafeUTF7Encoding Condition="'$(EnableUnsafeUTF7Encoding)' == ''">false</EnableUnsafeUTF7Encoding>
     <UseSystemResourceKeys Condition="'$(UseSystemResourceKeys)' == ''">false</UseSystemResourceKeys>
-  </PropertyGroup>
-
-  <!-- Override default trimming switches for Apple mobile -->
-  <!-- TODO: https://github.com/dotnet/runtime/issues/124505 -->
-  <PropertyGroup Condition="'$(EnableAggressiveTrimming)' == 'true' and '$(TargetsAppleMobile)' == 'true' and '$(UseMonoRuntime)' == 'true'">
-    <DynamicCodeSupport Condition="'$(DynamicCodeSupport)' == '' and '$(MonoForceInterpreter)' != 'true'">false</DynamicCodeSupport>
-    <_DefaultValueAttributeSupport Condition="'$(OverrideDefaultValueAndDesignerHostSupport)' == 'true'">true</_DefaultValueAttributeSupport>
-    <_DesignerHostSupport Condition="'$(OverrideDefaultValueAndDesignerHostSupport)' == 'true'">true</_DesignerHostSupport>
   </PropertyGroup>
 
   <!-- When trimming non-exe projects, root the whole intermediate assembly.
@@ -88,10 +79,6 @@
           Condition="'$(TargetOS)' == 'browser'" />
   <Import Project="$(MSBuildThisFileDirectory)tests.wasi.targets"
           Condition="'$(TargetOS)' == 'wasi'" />
-
-  <PropertyGroup Condition="'$(RunAOTCompilation)' == 'true'">
-    <_MobileIntermediateOutputPath>$(IntermediateOutputPath)mobile</_MobileIntermediateOutputPath>
-  </PropertyGroup>
 
   <!-- This .targets file is also imported by the runtime Trimming tests, and we want to be able to manually configure trimming in them so this
   should be considered if we ever want to change the Condition of the ConfigureTrimming target -->

@@ -2,6 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Linq;
+#if NET
+using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.X86;
+#endif
 using System.Text;
 using Xunit;
 
@@ -273,6 +277,173 @@ namespace System.Buffers.Text.Tests
             Assert.Equal(expectedConsumed, consumed);
             Assert.Equal(decodedBytes.Length, decodedByteCount);
             Assert.True(Base64TestHelper.VerifyUrlDecodingCorrectness(expectedConsumed, decodedBytes.Length, source, decodedBytes));
+        }
+
+#if NET
+        [Theory]
+        [InlineData(false, OperationStatus.DestinationTooSmall, 40)]
+        [InlineData(true, OperationStatus.Done, 45)]
+        public void DecodingDoesNotWritePastDestination(bool trailingWhitespace, OperationStatus expectedStatus, int expectedConsumed)
+        {
+            if (!Avx2.IsSupported)
+            {
+                return;
+            }
+
+            string input = new string('A', trailingWhitespace ? 40 : 45) + (trailingWhitespace ? "     " : "");
+            byte[] utf8Source = Encoding.ASCII.GetBytes(input);
+            char[] charSource = input.ToCharArray();
+            // decodedLength - 2 bytes followed by a no-access page catches an overlong AVX2 store.
+            using BoundedMemory<byte> destination = BoundedMemory.Allocate<byte>(31, PoisonPagePlacement.After);
+
+            OperationStatus status = default;
+            int consumed = 0;
+            int written = 0;
+
+            for (int iteration = 0; iteration < 10_000; iteration++)
+            {
+                status = Base64Url.DecodeFromUtf8(utf8Source, destination.Span, out consumed, out written);
+            }
+
+            Assert.Equal(expectedStatus, status);
+            Assert.Equal(expectedConsumed, consumed);
+            Assert.Equal(30, written);
+
+            for (int iteration = 0; iteration < 10_000; iteration++)
+            {
+                status = Base64Url.DecodeFromChars(charSource, destination.Span, out consumed, out written);
+            }
+
+            Assert.Equal(expectedStatus, status);
+            Assert.Equal(expectedConsumed, consumed);
+            Assert.Equal(30, written);
+        }
+
+        [Fact]
+        public void DecodingDoesNotWritePastDestinationArm64()
+        {
+            if (!AdvSimd.Arm64.IsSupported)
+            {
+                return;
+            }
+
+            byte[] utf8Source = Enumerable.Repeat((byte)'A', 66).ToArray();
+            char[] charSource = new string('A', 66).ToCharArray();
+            // decodedLength - 2 bytes followed by a no-access page catches an overlong AdvSimd store.
+            using BoundedMemory<byte> destination = BoundedMemory.Allocate<byte>(47, PoisonPagePlacement.After);
+
+            OperationStatus status = default;
+            int consumed = 0;
+            int written = 0;
+
+            for (int iteration = 0; iteration < 10_000; iteration++)
+            {
+                status = Base64Url.DecodeFromUtf8(utf8Source, destination.Span, out consumed, out written);
+            }
+
+            Assert.Equal(OperationStatus.DestinationTooSmall, status);
+            Assert.Equal(60, consumed);
+            Assert.Equal(45, written);
+
+            for (int iteration = 0; iteration < 10_000; iteration++)
+            {
+                status = Base64Url.DecodeFromChars(charSource, destination.Span, out consumed, out written);
+            }
+
+            Assert.Equal(OperationStatus.DestinationTooSmall, status);
+            Assert.Equal(60, consumed);
+            Assert.Equal(45, written);
+        }
+#endif
+
+        [Fact]
+        public void DecodingDoesNotWritePastDestinationBoundaries()
+        {
+            const byte Sentinel = 0xA5;
+            const int MaxSourceLength = 300;
+
+            byte[] rawData = Enumerable.Range(0, Base64Url.GetMaxDecodedLength(MaxSourceLength))
+                .Select(i => (byte)((i % 127) + 1))
+                .ToArray();
+
+            for (int sourceLength = 1; sourceLength <= MaxSourceLength; sourceLength++)
+            {
+                int maxDecodedLength = Base64Url.GetMaxDecodedLength(sourceLength);
+                int minimumDestinationLength = Math.Max(0, maxDecodedLength - 3);
+                int validSourceLength = (sourceLength & 0x3) == 1 ? sourceLength - 1 : sourceLength;
+                byte[] utf8Source = new byte[sourceLength];
+                char[] charSource = new char[sourceLength];
+                byte[] reference = new byte[maxDecodedLength];
+
+                Assert.Equal(
+                    OperationStatus.Done,
+                    Base64Url.EncodeToUtf8(
+                        rawData.AsSpan(0, maxDecodedLength),
+                        utf8Source.AsSpan(0, validSourceLength),
+                        out int rawConsumed,
+                        out int encodedWritten));
+                Assert.Equal(maxDecodedLength, rawConsumed);
+                Assert.Equal(validSourceLength, encodedWritten);
+
+                if (validSourceLength != sourceLength)
+                {
+                    utf8Source[validSourceLength] = (byte)'A';
+                }
+
+                for (int i = 0; i < sourceLength; i++)
+                {
+                    charSource[i] = (char)utf8Source[i];
+                }
+
+                OperationStatus referenceStatus = Base64Url.DecodeFromUtf8(
+                    utf8Source,
+                    reference,
+                    out int referenceConsumed,
+                    out int referenceWritten);
+                Assert.True(reference.AsSpan(0, referenceWritten).SequenceEqual(rawData.AsSpan(0, referenceWritten)));
+
+                for (int destinationLength = minimumDestinationLength; destinationLength <= maxDecodedLength; destinationLength++)
+                {
+                    byte[] destination = new byte[destinationLength + 1];
+                    destination.AsSpan(0, destinationLength).Fill(0xCC);
+                    destination[destinationLength] = Sentinel;
+
+                    OperationStatus utf8Status = Base64Url.DecodeFromUtf8(
+                        utf8Source,
+                        destination.AsSpan(0, destinationLength),
+                        out int utf8Consumed,
+                        out int utf8Written);
+
+                    Assert.InRange(utf8Consumed, 0, sourceLength);
+                    Assert.InRange(utf8Written, 0, destinationLength);
+                    Assert.Equal(Sentinel, destination[destinationLength]);
+                    Assert.True(destination.AsSpan(0, utf8Written).SequenceEqual(reference.AsSpan(0, utf8Written)));
+
+                    destination.AsSpan(0, destinationLength).Fill(0xCC);
+                    destination[destinationLength] = Sentinel;
+
+                    OperationStatus charsStatus = Base64Url.DecodeFromChars(
+                        charSource,
+                        destination.AsSpan(0, destinationLength),
+                        out int charsConsumed,
+                        out int charsWritten);
+
+                    Assert.InRange(charsConsumed, 0, sourceLength);
+                    Assert.InRange(charsWritten, 0, destinationLength);
+                    Assert.Equal(Sentinel, destination[destinationLength]);
+                    Assert.Equal(utf8Status, charsStatus);
+                    Assert.Equal(utf8Consumed, charsConsumed);
+                    Assert.Equal(utf8Written, charsWritten);
+                    Assert.True(destination.AsSpan(0, charsWritten).SequenceEqual(reference.AsSpan(0, charsWritten)));
+
+                    if (destinationLength == maxDecodedLength)
+                    {
+                        Assert.Equal(referenceStatus, utf8Status);
+                        Assert.Equal(referenceConsumed, utf8Consumed);
+                        Assert.Equal(referenceWritten, utf8Written);
+                    }
+                }
+            }
         }
 
         [Theory]

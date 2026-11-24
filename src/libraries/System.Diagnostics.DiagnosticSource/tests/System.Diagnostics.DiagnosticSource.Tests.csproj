@@ -1,6 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <!-- TODO: Remove once migrated to unsafe-v2. -->
+    <MemorySafetyRulesVersion>1</MemorySafetyRulesVersion>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-browser;$(NetFrameworkCurrent)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
@@ -26,15 +28,19 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="$(CommonPath)Internal\Padding.cs" Link="Common\Internal\Padding.cs" />
     <Compile Include="$(CommonTestPath)System\Diagnostics\DebuggerAttributes.cs" Link="Common\System\Diagnostics\DebuggerAttributes.cs" />
     <Compile Include="..\src\System\Diagnostics\DsesSamplerBuilder.cs" Link="DsesSamplerBuilder.cs" />
     <Compile Include="..\src\System\Diagnostics\RateLimiter.cs" Link="RateLimiter.cs" />
     <Compile Include="..\src\System\Diagnostics\Helpers.cs" Link="Helpers.cs" />
+    <Compile Include="..\src\System\Diagnostics\Metrics\AggregationManager.cs" Link="AggregationManager.cs" />
     <Compile Include="..\src\System\Diagnostics\Metrics\Aggregator.cs" Link="Aggregator.cs" />
     <Compile Include="..\src\System\Diagnostics\Metrics\AggregatorStore.cs" Link="AggregatorStore.cs" />
     <Compile Include="..\src\System\Diagnostics\Metrics\Base2ExponentialHistogramAggregator.cs" Link="Base2ExponentialHistogramAggregator.cs" />
     <Compile Include="..\src\System\Diagnostics\Metrics\CircularBufferBuckets.cs" Link="CircularBufferBuckets.cs" />
+    <Compile Include="..\src\System\Diagnostics\Metrics\CounterAggregator.cs" Link="CounterAggregator.cs" />
     <Compile Include="..\src\System\Diagnostics\Metrics\ExponentialHistogramAggregator.cs" Link="ExponentialHistogramAggregator.cs" />
+    <Compile Include="..\src\System\Diagnostics\Metrics\InstrumentState.cs" Link="InstrumentState.cs" />
     <Compile Include="..\src\System\Diagnostics\Metrics\LastValueAggregator.cs" Link="LastValueAggregator.cs" />
     <Compile Include="..\src\System\Diagnostics\Metrics\ObjectSequence.cs" Link="ObjectSequence.cs" />
     <Compile Include="..\src\System\Diagnostics\Metrics\ObjectSequence.netcore.cs" Link="ObjectSequence.netcore.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
@@ -64,6 +70,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
     <Compile Include="HttpHandlerDiagnosticListenerTests.cs" />
     <Compile Include="ActivityDateTimeTests.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Configuration.cs" Link="Common\System\Net\Configuration.cs" />

@@ -3,7 +3,6 @@
 
 using System;
 using System.Linq;
-using System.Text.Json;
 
 namespace Microsoft.WebAssembly.AppHost;
 
@@ -13,12 +12,6 @@ internal sealed class WasiEngineArguments
     public CommonConfiguration CommonConfig { get; init; }
 
     public string[] AppArgs { get; init; }
-
-    public bool IsCoreClr => CommonConfig.HostProperties.RuntimeFlavor == "CoreCLR";
-
-    public bool IsSingleFileBundle =>
-        CommonConfig.HostProperties.Extra?.TryGetValue("singleFileBundle", out JsonElement singleFileValue) == true&&
-        singleFileValue.GetBoolean();
 
     public WasiEngineArguments(CommonConfiguration commonConfig)
     {
@@ -30,8 +23,5 @@ internal sealed class WasiEngineArguments
     {
         if (CommonConfig.Host is not WasmHost.Wasmtime)
             throw new ArgumentException($"Internal error: host {CommonConfig.Host} not supported as a jsengine");
-
-        if (CommonConfig.HostProperties.RuntimeFlavor is not (null or "Mono" or "CoreCLR"))
-            throw new CommandLineException($"Unsupported runtime flavor '{CommonConfig.HostProperties.RuntimeFlavor}'.");
     }
 }

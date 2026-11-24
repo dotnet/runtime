@@ -10,6 +10,9 @@
 //
 
 #include "common.h"
+#ifdef HOST_UNIX
+#include <dlfcn.h>
+#endif
 #include "excep.h"
 #include "dbginterface.h"
 #include "ecall.h"
@@ -1572,6 +1575,21 @@ ReturnKind MethodDesc::GetReturnKind()
     TypeHandle thValueType;
 
     MetaSig sig(this);
+    // R2R callers may leave the return type unloaded, and this stack-walk path cannot load it.
+    if (sig.GetReturnType() == ELEMENT_TYPE_VALUETYPE)
+    {
+        TypeHandle thRet = sig.GetReturnProps().GetTypeHandleThrowing(
+            sig.GetModule(),
+            sig.GetSigTypeContext(),
+            ClassLoader::DontLoadTypes,
+            CLASS_LOAD_APPROXPARENTS,
+            TRUE /* dropGenericArgumentLevel */);
+        if (thRet.IsNull())
+        {
+            return RT_Illegal;
+        }
+    }
+
     CorElementType et = sig.GetReturnTypeNormalized(&thValueType);
 
     switch (et)
@@ -3915,7 +3933,7 @@ LPVOID PInvokeMethodDesc::FindEntryPoint(NATIVE_LIBRARY_HANDLE hMod)
     char const * funcName = GetEntrypointName();
 
 #ifndef TARGET_WINDOWS
-    return reinterpret_cast<LPVOID>(PAL_GetProcAddressDirect(hMod, funcName));
+    return dlsym(hMod, funcName);
 #else
     // Handle ordinals.
     if (funcName[0] == '#')

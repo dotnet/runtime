@@ -940,6 +940,14 @@ public:
             // At least one used integer register passed.
             pLoc->m_idxGenReg = TransitionBlock::GetArgumentIndexFromOffset(argOffset);
             pLoc->m_cGenReg = cSlots;
+
+            if (pLoc->m_idxGenReg + cSlots > NUM_ARGUMENT_REGISTERS)
+            {
+                // Split argument, the head is passed in the last register and the tail in the first stack slot
+                pLoc->m_cGenReg = NUM_ARGUMENT_REGISTERS - pLoc->m_idxGenReg;
+                pLoc->m_byteStackIndex = 0;
+                pLoc->m_byteStackSize = (cSlots - pLoc->m_cGenReg) << 3;
+            }
         }
         else
         {
@@ -2033,7 +2041,6 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ComputeReturnFlags()
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
             if  (size <= ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE)
             {
-                assert(!thValueType.IsTypeDesc());
                 FpStructInRegistersInfo info = MethodTable::GetFpStructInRegistersInfo(thValueType);
                 flags |= info.flags << RETURN_FP_SIZE_SHIFT;
                 m_returnedFpFieldOffsets[0] = info.offset1st;
@@ -2418,17 +2425,6 @@ inline BOOL HasRetBuffArg(MetaSig * pSig)
     ArgIterator argit(pSig);
     return argit.HasRetBuffArg();
 }
-
-#ifdef UNIX_X86_ABI
-// For UNIX_X86_ABI and unmanaged function, we always need RetBuf if the return type is VALUETYPE
-inline BOOL HasRetBuffArgUnmanagedFixup(MetaSig * pSig)
-{
-    WRAPPER_NO_CONTRACT;
-    // We cannot just pSig->GetReturnType() here since it will return ELEMENT_TYPE_VALUETYPE for enums
-    CorElementType type = pSig->GetRetTypeHandleThrowing().GetInternalCorElementType();
-    return type == ELEMENT_TYPE_VALUETYPE;
-}
-#endif
 
 inline BOOL IsRetBuffPassedAsFirstArg()
 {

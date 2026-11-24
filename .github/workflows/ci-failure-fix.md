@@ -94,6 +94,13 @@ steps:
       name: scanner-kbe-candidates
       path: /tmp/gh-aw/agent
 
+pre-agent-steps:
+  - name: Initialize remediation state
+    shell: bash
+    run: |
+      mkdir -p /tmp/gh-aw/agent/dedup
+      : > /tmp/gh-aw/agent/coverage.txt
+
 safe-outputs:
   report-failure-as-issue: false
   report-failed-jobs: false
@@ -182,6 +189,8 @@ For every open `[ci-scan]` KBE in scope, converge on exactly one artifact:
 Walk the steps in order. Do not skip. Stop at Step 7.
 
 ### Step 1 — Orient
+
+The pre-agent setup has created `/tmp/gh-aw/agent/dedup/` and an empty `/tmp/gh-aw/agent/coverage.txt`. Use them directly without reinitializing them.
 
 Use the already-loaded `safeoutputs` MCP tools directly with their declared schemas; do not probe for a shell CLI with `command -v safeoutputs`, `which safeoutputs`, or CLI help. Keep startup shell checks to permitted commands, with `git status --short` and `git branch --show-current` in separate tool calls.
 

@@ -246,7 +246,6 @@ VOID
 PALAPI
 PAL_SetCreateDumpCallback(
     IN PCREATEDUMP_CALLBACK callback);
-
 /// <summary>
 /// Callback invoked when a signal is received that will terminate the process.
 /// The callback should log the managed callstack for the signal.
@@ -299,38 +298,6 @@ PAL_GenerateCoreDump(
     INT cbErrorMessageBuffer);
 
 PALIMPORT
-BOOL
-PALAPI
-PAL_NotifyRuntimeStarted();
-
-PALIMPORT
-LPCSTR
-PALAPI
-PAL_GetApplicationGroupId();
-
-static const unsigned int MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH = MAX_PATH;
-
-PALIMPORT
-VOID
-PALAPI
-PAL_GetTransportName(
-    const unsigned int MAX_TRANSPORT_NAME_LENGTH,
-    OUT char *name,
-    IN const char *prefix,
-    IN DWORD id,
-    IN const char *applicationGroupId,
-    IN const char *suffix);
-
-PALIMPORT
-VOID
-PALAPI
-PAL_GetTransportPipeName(
-    OUT char *name,
-    IN DWORD id,
-    IN const char *applicationGroupId,
-    IN const char *suffix);
-
-PALIMPORT
 void
 PALAPI
 PAL_IgnoreProfileSignal(int signalNum);
@@ -346,37 +313,6 @@ VOID
 PALAPI
 PAL_UnregisterModule(
     IN HINSTANCE hInstance);
-
-PALIMPORT
-BOOL
-PALAPI
-PAL_ProbeMemory(
-    PVOID pBuffer,
-    DWORD cbBuffer,
-    BOOL fWriteAccess);
-
-PALIMPORT
-int
-PALAPI
-// Start the jitdump file
-PAL_PerfJitDump_Start(const char* path);
-
-PALIMPORT
-bool
-PALAPI
-PAL_PerfJitDump_IsStarted();
-
-PALIMPORT
-int
-PALAPI
-// Log a method to the jitdump file.
-PAL_PerfJitDump_LogMethod(void* pCode, size_t codeSize, const char* symbol, void* debugInfo, void* unwindInfo, bool reportCodeBlock);
-
-PALIMPORT
-int
-PALAPI
-// Finish the jitdump file
-PAL_PerfJitDump_Finish();
 
 /******************* winuser.h Entrypoints *******************************/
 
@@ -421,39 +357,6 @@ typedef struct _SECURITY_ATTRIBUTES {
 #define INVALID_SET_FILE_POINTER   ((DWORD)-1)
 
 
-PALIMPORT
-HANDLE
-PALAPI
-CreateFileW(
-        IN LPCWSTR lpFileName,
-        IN DWORD dwDesiredAccess,
-        IN DWORD dwShareMode,
-        IN LPSECURITY_ATTRIBUTES lpSecurityAttributes,
-        IN DWORD dwCreationDisposition,
-        IN DWORD dwFlagsAndAttributes,
-        IN HANDLE hTemplateFile);
-
-#ifdef UNICODE
-#define CreateFile CreateFileW
-#else
-#define CreateFile CreateFileA
-#endif
-
-
-PALIMPORT
-DWORD
-PALAPI
-SearchPathW(
-    IN LPCWSTR lpPath,
-    IN LPCWSTR lpFileName,
-    IN LPCWSTR lpExtension,
-    IN DWORD nBufferLength,
-    OUT LPWSTR lpBuffer,
-    OUT LPWSTR *lpFilePart
-    );
-
-#define SearchPath  SearchPathW
-
 typedef struct _OVERLAPPED {
     ULONG_PTR Internal;
     ULONG_PTR InternalHigh;
@@ -462,26 +365,6 @@ typedef struct _OVERLAPPED {
     HANDLE  hEvent;
 } OVERLAPPED, *LPOVERLAPPED;
 
-PALIMPORT
-BOOL
-PALAPI
-WriteFile(
-      IN HANDLE hFile,
-      IN LPCVOID lpBuffer,
-      IN DWORD nNumberOfBytesToWrite,
-      OUT LPDWORD lpNumberOfBytesWritten,
-      IN LPOVERLAPPED lpOverlapped);
-
-PALIMPORT
-BOOL
-PALAPI
-ReadFile(
-     IN HANDLE hFile,
-     OUT LPVOID lpBuffer,
-     IN DWORD nNumberOfBytesToRead,
-     OUT LPDWORD lpNumberOfBytesRead,
-     IN LPOVERLAPPED lpOverlapped);
-
 #define STD_INPUT_HANDLE         ((DWORD)-10)
 #define STD_OUTPUT_HANDLE        ((DWORD)-11)
 #define STD_ERROR_HANDLE         ((DWORD)-12)
@@ -489,92 +372,7 @@ ReadFile(
 PALIMPORT
 HANDLE
 PALAPI
-GetStdHandle(
-         IN DWORD nStdHandle);
-
-PALIMPORT
-DWORD
-PALAPI
-SetFilePointer(
-           IN HANDLE hFile,
-           IN LONG lDistanceToMove,
-           IN PLONG lpDistanceToMoveHigh,
-           IN DWORD dwMoveMethod);
-
-PALIMPORT
-BOOL
-PALAPI
-SetFilePointerEx(
-           IN HANDLE hFile,
-           IN LARGE_INTEGER liDistanceToMove,
-           OUT PLARGE_INTEGER lpNewFilePointer,
-           IN DWORD dwMoveMethod);
-
-PALIMPORT
-DWORD
-PALAPI
-GetFileSize(
-        IN HANDLE hFile,
-        OUT LPDWORD lpFileSizeHigh);
-
-PALIMPORT
-BOOL
-PALAPI GetFileSizeEx(
-        IN   HANDLE hFile,
-        OUT  PLARGE_INTEGER lpFileSize);
-
-PALIMPORT
-BOOL
-PALAPI
-FlushFileBuffers(
-         IN HANDLE hFile);
-
-PALIMPORT
-UINT
-PALAPI
-GetConsoleOutputCP();
-
-PALIMPORT
-DWORD
-PALAPI
-GetFullPathNameW(
-         IN LPCWSTR lpFileName,
-         IN DWORD nBufferLength,
-         OUT LPWSTR lpBuffer,
-         OUT LPWSTR *lpFilePart);
-
-#ifdef UNICODE
-#define GetFullPathName GetFullPathNameW
-#else
-#define GetFullPathName GetFullPathNameA
-#endif
-
-PALIMPORT
-DWORD
-PALAPI
-GetTempPathA(
-         IN DWORD nBufferLength,
-         OUT LPSTR lpBuffer);
-
-PALIMPORT
-DWORD
-PALAPI
-GetCurrentProcessId();
-
-PALIMPORT
-HANDLE
-PALAPI
 GetCurrentProcess();
-
-PALIMPORT
-DWORD
-PALAPI
-GetCurrentThreadId();
-
-PALIMPORT
-size_t
-PALAPI
-PAL_GetCurrentOSThreadId();
 
 // To work around multiply-defined symbols in the Carbon framework.
 #define GetCurrentThread PAL_GetCurrentThread
@@ -627,11 +425,6 @@ DuplicateHandle(
         IN BOOL bInheritHandle,
         IN DWORD dwOptions);
 
-PALIMPORT
-BOOL
-PALAPI
-SwitchToThread();
-
 #define CREATE_SUSPENDED                  0x00000004
 #define STACK_SIZE_PARAM_IS_A_RESERVATION 0x00010000
 
@@ -670,141 +463,7 @@ PALAPI
 ResumeThread(
          IN HANDLE hThread);
 
-#ifdef HOST_X86
-
-//
-// ***********************************************************************************
-//
-// NOTE: These context definitions are replicated in ndp/clr/src/debug/inc/DbgTargetContext.h (for the
-// purposes manipulating contexts from different platforms during remote debugging). Be sure to keep those
-// definitions in sync if you make any changes here.
-//
-// ***********************************************************************************
-//
-
-#define SIZE_OF_80387_REGISTERS      80
-
-#define CONTEXT_i386            0x00010000
-#define CONTEXT_CONTROL         (CONTEXT_i386 | 0x00000001L) // SS:SP, CS:IP, FLAGS, BP
-#define CONTEXT_INTEGER         (CONTEXT_i386 | 0x00000002L) // AX, BX, CX, DX, SI, DI
-#define CONTEXT_SEGMENTS        (CONTEXT_i386 | 0x00000004L)
-#define CONTEXT_FLOATING_POINT  (CONTEXT_i386 | 0x00000008L) // 387 state
-#define CONTEXT_DEBUG_REGISTERS (CONTEXT_i386 | 0x00000010L)
-
-#define CONTEXT_FULL (CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_SEGMENTS)
-#define CONTEXT_EXTENDED_REGISTERS  (CONTEXT_i386 | 0x00000020L)
-#define CONTEXT_ALL (CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_SEGMENTS | CONTEXT_FLOATING_POINT | CONTEXT_DEBUG_REGISTERS | CONTEXT_EXTENDED_REGISTERS)
-
-#define MAXIMUM_SUPPORTED_EXTENSION     512
-
-#define CONTEXT_XSTATE (CONTEXT_i386 | 0x40L)
-
-#define CONTEXT_EXCEPTION_ACTIVE 0x8000000L
-#define CONTEXT_SERVICE_ACTIVE 0x10000000L
-#define CONTEXT_EXCEPTION_REQUEST 0x40000000L
-#define CONTEXT_EXCEPTION_REPORTING 0x80000000L
-
-//
-// This flag is set by the unwinder if it has unwound to a call
-// site, and cleared whenever it unwinds through a trap frame.
-// It is used by language-specific exception handlers to help
-// differentiate exception scopes during dispatching.
-//
-
-#define CONTEXT_UNWOUND_TO_CALL 0x20000000
-
-typedef struct _FLOATING_SAVE_AREA {
-    DWORD   ControlWord;
-    DWORD   StatusWord;
-    DWORD   TagWord;
-    DWORD   ErrorOffset;
-    DWORD   ErrorSelector;
-    DWORD   DataOffset;
-    DWORD   DataSelector;
-    BYTE    RegisterArea[SIZE_OF_80387_REGISTERS];
-    DWORD   Cr0NpxState;
-} FLOATING_SAVE_AREA;
-
-typedef struct _CONTEXT {
-    ULONG ContextFlags;
-
-    ULONG   Dr0; // UNDEFINED
-    ULONG   Dr1; // UNDEFINED
-    ULONG   Dr2; // UNDEFINED
-    ULONG   Dr3; // UNDEFINED
-    ULONG   Dr6; // UNDEFINED
-    ULONG   Dr7; // UNDEFINED
-
-    FLOATING_SAVE_AREA FloatSave;
-
-    ULONG   SegGs; // UNDEFINED
-    ULONG   SegFs; // UNDEFINED
-    ULONG   SegEs; // UNDEFINED
-    ULONG   SegDs; // UNDEFINED
-
-    ULONG   Edi;
-    ULONG   Esi;
-    ULONG   Ebx;
-    ULONG   Edx;
-    ULONG   Ecx;
-    ULONG   Eax;
-
-    ULONG   Ebp;
-    ULONG   Eip;
-    ULONG   SegCs;
-    ULONG   EFlags;
-    ULONG   Esp;
-    ULONG   SegSs;
-
-    UCHAR   ExtendedRegisters[MAXIMUM_SUPPORTED_EXTENSION];
-} CONTEXT, *PCONTEXT, *LPCONTEXT;
-
-typedef struct _KNONVOLATILE_CONTEXT {
-
-    DWORD Edi;
-    DWORD Esi;
-    DWORD Ebx;
-    DWORD Ebp;
-
-} KNONVOLATILE_CONTEXT, *PKNONVOLATILE_CONTEXT;
-
-typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
-
-    // The ordering of these fields should be aligned with that
-    // of corresponding fields in CONTEXT
-    //
-    // (See FillRegDisplay in inc/regdisp.h for details)
-    PDWORD Edi;
-    PDWORD Esi;
-    PDWORD Ebx;
-    PDWORD Edx;
-    PDWORD Ecx;
-    PDWORD Eax;
-
-    PDWORD Ebp;
-
-} KNONVOLATILE_CONTEXT_POINTERS, *PKNONVOLATILE_CONTEXT_POINTERS;
-
-
-//
-// Context Frame
-//
-//
-// The flags field within this record controls the contents of a CONTEXT
-// record.
-//
-// If the context record is used as an input parameter, then for each
-// portion of the context record controlled by a flag whose value is
-// set, it is assumed that such portion of the context record contains
-// valid context. If the context record is being used to modify a threads
-// context, then only that portion of the threads context is modified.
-//
-// If the context record is used as an output parameter to capture the
-// context of a thread, then only those portions of the thread's context
-// corresponding to set flags will be returned.
-//
-
-#elif defined(HOST_AMD64)
+#if defined(HOST_AMD64)
 
 // copied from winnt.h
 
@@ -2103,28 +1762,7 @@ PVOID
 PALAPI
 PAL_GetStackLimit();
 
-PALIMPORT
-DWORD
-PALAPI
-PAL_GetLogicalCpuCountFromOS();
-
-PALIMPORT
-DWORD
-PALAPI
-PAL_GetTotalCpuCount();
-
-PALIMPORT
-BOOL
-PALAPI
-PAL_GetCpuLimit(UINT* val);
-
-typedef BOOL(*UnwindReadMemoryCallback)(PVOID address, PVOID buffer, SIZE_T size);
-
 PALIMPORT BOOL PALAPI PAL_VirtualUnwind(CONTEXT *context);
-
-PALIMPORT BOOL PALAPI PAL_VirtualUnwindOutOfProc(CONTEXT *context, PULONG64 functionStart, SIZE_T baseAddress, UnwindReadMemoryCallback readMemoryCallback, bool *isSignalFrame);
-
-PALIMPORT BOOL PALAPI PAL_GetUnwindInfoSize(SIZE_T baseAddress, ULONG64 ehFrameHdrAddr, UnwindReadMemoryCallback readMemoryCallback, PULONG64 ehFrameStart, PULONG64 ehFrameSize);
 
 #define PAGE_NOACCESS                   0x01
 #define PAGE_READONLY                   0x02
@@ -2140,19 +1778,6 @@ PALIMPORT BOOL PALAPI PAL_GetUnwindInfoSize(SIZE_T baseAddress, ULONG64 ehFrameH
 #define MEM_RELEASE                     0x8000
 #define MEM_FREE                        0x10000
 
-PALIMPORT
-HANDLE
-PALAPI
-CreateFileMappingW(
-           IN HANDLE hFile,
-           IN LPSECURITY_ATTRIBUTES lpFileMappingAttributes,
-           IN DWORD flProtect,
-           IN DWORD dwMaxmimumSizeHigh,
-           IN DWORD dwMaximumSizeLow,
-           IN LPCWSTR lpName);
-
-#define CreateFileMapping CreateFileMappingW
-
 #define SECTION_QUERY       0x0001
 #define SECTION_MAP_WRITE   0x0002
 #define SECTION_MAP_READ    0x0004
@@ -2164,33 +1789,6 @@ CreateFileMappingW(
 #define FILE_MAP_COPY       SECTION_QUERY
 
 typedef INT_PTR (PALAPI_NOEXPORT *FARPROC)();
-
-PALIMPORT
-LPVOID
-PALAPI
-MapViewOfFile(
-          IN HANDLE hFileMappingObject,
-          IN DWORD dwDesiredAccess,
-          IN DWORD dwFileOffsetHigh,
-          IN DWORD dwFileOffsetLow,
-          IN SIZE_T dwNumberOfBytesToMap);
-
-PALIMPORT
-LPVOID
-PALAPI
-MapViewOfFileEx(
-          IN HANDLE hFileMappingObject,
-          IN DWORD dwDesiredAccess,
-          IN DWORD dwFileOffsetHigh,
-          IN DWORD dwFileOffsetLow,
-          IN SIZE_T dwNumberOfBytesToMap,
-          IN LPVOID lpBaseAddress);
-
-PALIMPORT
-BOOL
-PALAPI
-UnmapViewOfFile(
-        IN LPCVOID lpBaseAddress) noexcept;
 
 PALIMPORT
 HMODULE
@@ -2207,22 +1805,9 @@ PAL_LoadLibraryDirect(
         IN LPCWSTR lpLibFileName);
 
 PALIMPORT
-BOOL
-PALAPI
-PAL_FreeLibraryDirect(
-        IN NATIVE_LIBRARY_HANDLE dl_handle);
-
-PALIMPORT
 HMODULE
 PALAPI
 PAL_GetPalHostModule();
-
-PALIMPORT
-FARPROC
-PALAPI
-PAL_GetProcAddressDirect(
-        IN NATIVE_LIBRARY_HANDLE dl_handle,
-        IN LPCSTR lpProcName);
 
 PALIMPORT
 FARPROC
@@ -2251,78 +1836,12 @@ GetModuleFileNameW(
     OUT LPWSTR lpFileName,
     IN DWORD nSize);
 
-#ifdef UNICODE
 #define GetModuleFileName GetModuleFileNameW
-#else
-#define GetModuleFileName GetModuleFileNameA
-#endif
-
-// Get base address of the module containing a given symbol
-PALIMPORT
-LPCVOID
-PALAPI
-PAL_GetSymbolModuleBase(PVOID symbol);
-
-PALIMPORT
-int
-PALAPI
-PAL_CopyModuleData(PVOID moduleBase, PVOID destinationBufferStart, PVOID destinationBufferEnd);;
-
-PALIMPORT
-LPCSTR
-PALAPI
-PAL_GetLoadLibraryError();
 
 #define MoveMemory memmove
 #define CopyMemory memcpy
 #define FillMemory(Destination,Length,Fill) memset((Destination),(Fill),(Length))
 #define ZeroMemory(Destination,Length) memset((Destination),0,(Length))
-
-PALIMPORT
-BOOL
-PALAPI
-FlushInstructionCache(
-              IN HANDLE hProcess,
-              IN LPCVOID lpBaseAddress,
-              IN SIZE_T dwSize);
-
-#define MAX_LEADBYTES         12
-#define MAX_DEFAULTCHAR       2
-
-typedef struct _cpinfo {
-    UINT MaxCharSize;
-    BYTE DefaultChar[MAX_DEFAULTCHAR];
-    BYTE LeadByte[MAX_LEADBYTES];
-} CPINFO, *LPCPINFO;
-
-#define MB_PRECOMPOSED            0x00000001
-#define MB_ERR_INVALID_CHARS      0x00000008
-
-PALIMPORT
-int
-PALAPI
-MultiByteToWideChar(
-            IN UINT CodePage,
-            IN DWORD dwFlags,
-            IN LPCSTR lpMultiByteStr,
-            IN int cbMultiByte,
-            OUT LPWSTR lpWideCharStr,
-            IN int cchWideChar);
-
-#define WC_NO_BEST_FIT_CHARS      0x00000400
-
-PALIMPORT
-int
-PALAPI
-WideCharToMultiByte(
-            IN UINT CodePage,
-            IN DWORD dwFlags,
-            IN LPCWSTR lpWideCharStr,
-            IN int cchWideChar,
-            OUT LPSTR lpMultiByteStr,
-            IN int cbMultyByte,
-            IN LPCSTR lpDefaultChar,
-            OUT LPBOOL lpUsedDefaultChar);
 
 #define EXCEPTION_NONCONTINUABLE 0x1
 #define EXCEPTION_UNWINDING 0x2
@@ -2379,70 +1898,12 @@ typedef struct _RUNTIME_FUNCTION {
 
 #define SYNCHRONIZE               (0x00100000L)
 
-PALIMPORT
-VOID
-PALAPI
-OutputDebugStringA(
-    IN LPCSTR lpOutputString);
-
-PALIMPORT
-VOID
-PALAPI
-OutputDebugStringW(
-    IN LPCWSTR lpOutputStrig);
-
-#ifdef UNICODE
-#define OutputDebugString OutputDebugStringW
-#else
-#define OutputDebugString OutputDebugStringA
-#endif
 
 PALIMPORT
 VOID
 PALAPI
 DebugBreak();
 
-PALIMPORT
-DWORD
-PALAPI
-GetEnvironmentVariableW(
-            IN LPCWSTR lpName,
-            OUT LPWSTR lpBuffer,
-            IN DWORD nSize);
-
-#ifdef UNICODE
-#define GetEnvironmentVariable GetEnvironmentVariableW
-#else
-#define GetEnvironmentVariable GetEnvironmentVariableA
-#endif
-
-PALIMPORT
-BOOL
-PALAPI
-SetEnvironmentVariableW(
-            IN LPCWSTR lpName,
-            IN LPCWSTR lpValue);
-
-#ifdef UNICODE
-#define SetEnvironmentVariable SetEnvironmentVariableW
-#else
-#define SetEnvironmentVariable SetEnvironmentVariableA
-#endif
-
-PALIMPORT
-LPWSTR
-PALAPI
-GetEnvironmentStringsW();
-
-#define GetEnvironmentStrings GetEnvironmentStringsW
-
-PALIMPORT
-BOOL
-PALAPI
-FreeEnvironmentStringsW(
-            IN LPWSTR);
-
-#define FreeEnvironmentStrings FreeEnvironmentStringsW
 
 PALIMPORT
 BOOL
@@ -2467,19 +1928,6 @@ RaiseFailFastException(
     IN PEXCEPTION_RECORD pExceptionRecord,
     IN PCONTEXT pContextRecord,
     IN DWORD dwFlags);
-
-PALIMPORT
-BOOL
-PALAPI
-QueryThreadCycleTime(
-    IN HANDLE ThreadHandle,
-    OUT PULONG64 CycleTime);
-
-PALIMPORT
-INT
-PALAPI
-PAL_nanosleep(
-    IN long timeInNs);
 
 typedef EXCEPTION_DISPOSITION (PALAPI_NOEXPORT *PVECTORED_EXCEPTION_HANDLER)(
                            struct _EXCEPTION_POINTERS *ExceptionPointers);
@@ -2772,23 +2220,6 @@ Define_InterlockMethod(
     __atomic_exchange_n(Target, Value, __ATOMIC_ACQ_REL)
 )
 
-#if defined(HOST_X86)
-
-// 64-bit __atomic_exchange_n is not expanded as a compiler intrinsic on Linux x86.
-// Use inline implementation instead.
-
-inline LONGLONG InterlockedExchange64(LONGLONG volatile * Target, LONGLONG Value)
-{
-    LONGLONG Old;
-
-    do {
-        Old = *Target;
-    } while (__sync_val_compare_and_swap(Target, Old, Value) != Old);
-
-    return Old;
-}
-
-#else
 
 Define_InterlockMethod(
     LONGLONG,
@@ -2797,7 +2228,6 @@ Define_InterlockMethod(
     __atomic_exchange_n(Target, Value, __ATOMIC_ACQ_REL)
 )
 
-#endif
 
 
 /*++
@@ -2947,7 +2377,7 @@ VOID
 PALAPI
 YieldProcessor()
 {
-#if defined(HOST_X86) || defined(HOST_AMD64)
+#if defined(HOST_AMD64)
     __asm__ __volatile__(
         "rep\n"
         "nop");
@@ -2963,28 +2393,9 @@ YieldProcessor()
 #endif
 }
 
-#define FORMAT_MESSAGE_ALLOCATE_BUFFER 0x00000100
-#define FORMAT_MESSAGE_IGNORE_INSERTS  0x00000200
 #define FORMAT_MESSAGE_FROM_STRING     0x00000400
 #define FORMAT_MESSAGE_FROM_SYSTEM     0x00001000
-#define FORMAT_MESSAGE_ARGUMENT_ARRAY  0x00002000
 #define FORMAT_MESSAGE_MAX_WIDTH_MASK  0x000000FF
-
-PALIMPORT
-DWORD
-PALAPI
-FormatMessageW(
-           IN DWORD dwFlags,
-           IN LPCVOID lpSource,
-           IN DWORD dwMessageId,
-           IN DWORD dwLanguageId,
-           OUT LPWSTR lpBffer,
-           IN DWORD nSize,
-           IN va_list *Arguments);
-
-#ifdef UNICODE
-#define FormatMessage FormatMessageW
-#endif
 
 
 PALIMPORT
@@ -3037,24 +2448,9 @@ PAL_InjectActivation(
 );
 
 typedef struct _SYSTEM_INFO {
-    WORD wProcessorArchitecture_PAL_Undefined;
-    WORD wReserved_PAL_Undefined; // NOTE: diff from winbase.h - no obsolete dwOemId union
-    DWORD dwPageSize;
-    LPVOID lpMinimumApplicationAddress;
-    LPVOID lpMaximumApplicationAddress;
-    DWORD_PTR dwActiveProcessorMask_PAL_Undefined;
     DWORD dwNumberOfProcessors;
-    DWORD dwProcessorType_PAL_Undefined;
     DWORD dwAllocationGranularity;
-    WORD wProcessorLevel_PAL_Undefined;
-    WORD wProcessorRevision_PAL_Undefined;
-} SYSTEM_INFO, *LPSYSTEM_INFO;
-
-PALIMPORT
-VOID
-PALAPI
-GetSystemInfo(
-          OUT LPSYSTEM_INFO lpSystemInfo);
+} SYSTEM_INFO;
 
 //
 // The types of events that can be logged.
@@ -3087,31 +2483,7 @@ GetSystemInfo(
 // errno_t is only defined when the Secure CRT Extensions library is available (which no standard library that we build with implements anyway)
 typedef int errno_t;
 
-PALIMPORT DLLEXPORT errno_t __cdecl memcpy_s(void *, size_t, const void *, size_t);
-PALIMPORT errno_t __cdecl memmove_s(void *, size_t, const void *, size_t);
-PALIMPORT DLLEXPORT int __cdecl _wcsicmp(const WCHAR *, const WCHAR*);
-PALIMPORT int __cdecl _wcsnicmp(const WCHAR *, const WCHAR *, size_t);
-PALIMPORT DLLEXPORT int __cdecl _vsnprintf_s(char *, size_t, size_t, const char *, va_list);
-PALIMPORT DLLEXPORT int __cdecl _snprintf_s(char *, size_t, size_t, const char *, ...);
-PALIMPORT DLLEXPORT int __cdecl vsprintf_s(char *, size_t, const char *, va_list);
-PALIMPORT DLLEXPORT int __cdecl sprintf_s(char *, size_t, const char *, ... );
-PALIMPORT DLLEXPORT int __cdecl sscanf_s(const char *, const char *, ...);
 
-PALIMPORT DLLEXPORT size_t __cdecl PAL_wcslen(const WCHAR *);
-PALIMPORT DLLEXPORT int __cdecl PAL_wcscmp(const WCHAR*, const WCHAR*);
-PALIMPORT DLLEXPORT int __cdecl PAL_wcsncmp(const WCHAR *, const WCHAR *, size_t);
-PALIMPORT DLLEXPORT WCHAR * __cdecl PAL_wcscat(WCHAR *, const WCHAR *);
-PALIMPORT WCHAR * __cdecl PAL_wcscpy(WCHAR *, const WCHAR *);
-PALIMPORT WCHAR * __cdecl PAL_wcsncpy(WCHAR *, const WCHAR *, size_t);
-PALIMPORT DLLEXPORT const WCHAR * __cdecl PAL_wcschr(const WCHAR *, WCHAR);
-PALIMPORT DLLEXPORT const WCHAR * __cdecl PAL_wcsrchr(const WCHAR *, WCHAR);
-PALIMPORT DLLEXPORT WCHAR _WConst_return * __cdecl PAL_wcsstr(const WCHAR *, const WCHAR *);
-PALIMPORT DLLEXPORT ULONG __cdecl PAL_wcstoul(const WCHAR *, WCHAR **, int);
-PALIMPORT DLLEXPORT ULONGLONG __cdecl PAL__wcstoui64(const WCHAR *, WCHAR **, int);
-PALIMPORT DLLEXPORT double __cdecl PAL_wcstod(const WCHAR *, WCHAR **);
-
-PALIMPORT errno_t __cdecl _wcslwr_s(WCHAR *, size_t sz);
-PALIMPORT int __cdecl _wtoi(const WCHAR *);
 
 inline int _stricmp(const char* a, const char* b)
 {
@@ -3131,17 +2503,6 @@ inline char* _strdup(const char* a)
 // Define the MSVC implementation of the alloca concept.
 // As this allocates on the current stack frame, use a macro instead of an inline function.
 #define _alloca(x) alloca(x)
-
-#ifdef __cplusplus
-extern "C++" {
-inline WCHAR *PAL_wcschr(WCHAR* S, WCHAR C)
-        {return ((WCHAR *)PAL_wcschr((const WCHAR *)S, C)); }
-inline WCHAR *PAL_wcsrchr(WCHAR* S, WCHAR C)
-        {return ((WCHAR *)PAL_wcsrchr((const WCHAR *)S, C)); }
-inline WCHAR *PAL_wcsstr(WCHAR* S, const WCHAR* P)
-        {return ((WCHAR *)PAL_wcsstr((const WCHAR *)S, P)); }
-}
-#endif
 
 #if !__has_builtin(_rotl) && !defined(_rotl)
 /*++
@@ -3184,8 +2545,6 @@ unsigned int __cdecl _rotr(unsigned int value, int shift)
 }
 
 #endif // !__has_builtin(_rotr)
-
-PALIMPORT DLLEXPORT char * __cdecl PAL_getenv(const char *);
 
 #ifndef ERANGE
 #define ERANGE          34

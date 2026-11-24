@@ -62,7 +62,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(InPlaceRuntime)' == 'true'">
-    <Compile Include="$(IntermediatesDir)\nativeaot\Runtime\Full\AsmOffsets.cs" />
+    <Compile Include="$(IntermediatesDir)\nativeaot\Runtime\AsmOffsets.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CompilerCommonPath)\Internal\NativeFormat\NativeFormatReader.Primitives.cs">

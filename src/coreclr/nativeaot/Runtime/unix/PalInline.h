@@ -138,7 +138,7 @@ FORCEINLINE uint8_t PalInterlockedCompareExchange128(_Inout_ int64_t volatile *p
 
 FORCEINLINE void PalYieldProcessor()
 {
-#if defined(HOST_X86) || defined(HOST_AMD64)
+#if defined(HOST_AMD64)
     __asm__ __volatile__(
         "rep\n"
         "nop"

@@ -80,6 +80,7 @@
       - $(WasmEnableExceptionHandling)      - Enable support for the WASM post MVP Exception Handling runtime extension.
       - $(WasmEnableSIMD)                   - Enable support for the WASM post MVP SIMD runtime extension.
       - $(WasmEnableWebcil)                 - Enable conversion of assembly .dlls to Webcil wrapped in .wasm (default: true)
+      - $(WasmEnableIntegrityCheck)         - Opt in to integrity checks for resources fetched by the runtime loader.
       - $(WasmIncludeFullIcuData)           - Loads full ICU data (icudt.dat). Defaults to false. Only applicable when InvariantGlobalization=false.
       - $(WasmIcuDataFileName)              - Name/path of ICU globalization file loaded to app. Only when InvariantGloblization=false and WasmIncludeFullIcuData=false.
       - $(WasmAllowUndefinedSymbols)        - Controls whether undefined symbols are allowed or not,

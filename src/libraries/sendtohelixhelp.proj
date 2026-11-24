@@ -40,9 +40,8 @@
     <_workItemTimeout Condition="'$(_workItemTimeout)' == '' and '$(Scenario)' == 'interpmode1'">01:00:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(_workItemTimeout)' == '' and '$(TargetsAppleMobile)' == 'true'">01:15:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(_workItemTimeout)' == '' and '$(TargetOS)' == 'android'">00:30:00</_workItemTimeout>
-    <_workItemTimeout Condition="'$(_workItemTimeout)' == '' and '$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'CoreCLR' and ('$(TestScope)' == 'outerloop' or '$(TestScope)' == 'all')">04:30:00</_workItemTimeout>
-    <_workItemTimeout Condition="'$(_workItemTimeout)' == '' and '$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'CoreCLR'">01:30:00</_workItemTimeout>
-    <_workItemTimeout Condition="'$(_workItemTimeout)' == '' and '$(TargetOS)' == 'browser'">00:30:00</_workItemTimeout>
+    <_workItemTimeout Condition="'$(_workItemTimeout)' == '' and '$(TargetOS)' == 'browser' and ('$(TestScope)' == 'outerloop' or '$(TestScope)' == 'all')">04:30:00</_workItemTimeout>
+    <_workItemTimeout Condition="'$(_workItemTimeout)' == '' and '$(TargetOS)' == 'browser'">01:30:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(_workItemTimeout)' == '' and '$(TargetOS)' == 'wasi'">00:30:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(Scenario)' == '' and '$(_workItemTimeout)' == '' and ('$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm')">00:45:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(Scenario)' != '' and '$(_workItemTimeout)' == '' and ('$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm')">01:00:00</_workItemTimeout>
@@ -83,11 +82,6 @@
     <!-- XHarness telemetry not supported with custom WASM workloads yet -->
     <EnableXHarnessTelemetry Condition="'$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi'">false</EnableXHarnessTelemetry>
   </PropertyGroup>
-
-  <ItemGroup Condition="'$(MonoEnvOptions)' != ''">
-    <HelixPreCommand Condition="'$(WindowsShell)' == 'true'" Include="set MONO_ENV_OPTIONS='$(MonoEnvOptions)'" />
-    <HelixPreCommand Condition="'$(WindowsShell)' != 'true'" Include="export MONO_ENV_OPTIONS='$(MonoEnvOptions)'" />
-  </ItemGroup>
 
   <ItemGroup Condition="'$(WindowsShell)' == 'true'">
     <HelixPreCommand Include="taskkill.exe /f /im corerun.exe"/>
@@ -158,6 +152,7 @@
     <HelixCommandPrefixEnvVarItem Condition="'$(WasmEnableWebcil)' == 'false'" Include="WASM_ENABLE_WEBCIL=false" />
     <HelixCommandPrefixEnvVarItem Condition="'$(WasmFingerprintAssets)' == 'false'" Include="WASM_FINGERPRINT_ASSETS=false" />
     <HelixCommandPrefixEnvVarItem Condition="'$(WasmBundlerFriendlyBootConfig)' == 'true'" Include="WASM_BUNDLER_FRIENDLY_BOOT_CONFIG=true" />
+    <HelixCommandPrefixEnvVarItem Condition="'$(WasmRunWasmOpt)' == 'true'" Include="WASM_RUN_WASM_OPT=true" />
     <HelixCommandPrefixEnvVarItem Condition="'$(WorkloadsTestPreviousVersions)' == 'true'" Include="WORKLOADS_TEST_PREVIOUS_VERSIONS=true" />
   </ItemGroup>
 
@@ -225,15 +220,6 @@
       <HelixCommand Condition="'$(WindowsShell)' != 'true'">$(HelixCommand)./RunTests.sh</HelixCommand>
       <HelixCommand Condition="'$(WindowsShell)' != 'true' and '$(IncludeHelixCorrelationPayload)' == 'true'">$(HelixCommand) --runtime-path "$HELIX_CORRELATION_PAYLOAD"</HelixCommand>
     </PropertyGroup>
-
-    <!-- FIXME: is this used? -->
-    <PropertyGroup Condition="'$(RuntimeFlavor)' == 'Mono'">
-      <_MonoAotCrossCompilerPath>$([MSBuild]::NormalizePath($(MonoAotCrossDir), 'mono-aot-cross'))</_MonoAotCrossCompilerPath>
-      <_MonoAotCrossCompilerPath Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">$(_MonoAotCrossCompilerPath).exe</_MonoAotCrossCompilerPath>
-    </PropertyGroup>
-    <ItemGroup Condition="'$(RuntimeFlavor)' == 'Mono'">
-      <MonoAotCrossCompiler Include="$(_MonoAotCrossCompilerPath)" RuntimeIdentifier="$(TargetOS)-$(TargetArchitecture.ToLowerInvariant())" />
-    </ItemGroup>
   </Target>
 
   <!-- XUnitLogChecker required configuration -->
@@ -341,7 +327,7 @@
   <Target Name="PrintHelixQueues" Condition="'$(_StageHelixDependenciesOnly)' != 'true'">
     <Message Importance="High" Text="Using Queues: $(HelixTargetQueues)" />
     <Message Condition="'$(Scenario)' == 'BuildWasmApps'" Importance="High"
-             Text="Scenario: $(Scenario), TestUsingWorkloads: $(TestUsingWorkloads), WasmEnableWebcil: $(WasmEnableWebcil), WasmFingerprintAssets: $(WasmFingerprintAssets), WasmBundlerFriendlyBootConfig: $(WasmBundlerFriendlyBootConfig)" />
+             Text="Scenario: $(Scenario), TestUsingWorkloads: $(TestUsingWorkloads), WasmEnableWebcil: $(WasmEnableWebcil), WasmFingerprintAssets: $(WasmFingerprintAssets), WasmBundlerFriendlyBootConfig: $(WasmBundlerFriendlyBootConfig), WasmRunWasmOpt: $(WasmRunWasmOpt)" />
   </Target>
 
   <Target Name="PrintBuildTargetFramework" Condition="'$(_StageHelixDependenciesOnly)' != 'true'">
