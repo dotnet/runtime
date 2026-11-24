@@ -11,6 +11,7 @@
 #define RSPRIV_H
 
 #include <winwrap.h>
+#include <minipal/thread.h>
 #include <windows.h>
 
 #include <utilcode.h>
@@ -871,7 +872,7 @@ protected:
     ERSLockLevel m_level;
     int m_eAttr;        // Bitwise combination of ELockAttr values
     int m_count;
-    DWORD m_tidOwner;
+    size_t m_tidOwner;
     const char * m_szTag;
 
 #endif // #if debug
@@ -10154,7 +10155,7 @@ public:
 
     bool IsWin32EventThread()
     {
-        return (m_threadId == GetCurrentThreadId());
+        return (m_threadId == (DWORD)minipal_get_current_thread_id());
     }
 
     void Win32EventLoop();
@@ -10903,7 +10904,7 @@ protected:
     EThreadType m_eThreadType;
 
     // More debugging tidbits - tid that we're on, and a sanity checking cookie.
-    DWORD m_tid;
+    size_t m_tid;
     DWORD m_Cookie;
 
     enum ECookie

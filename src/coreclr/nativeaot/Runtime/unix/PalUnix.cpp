@@ -489,7 +489,7 @@ bool PalSetCurrentThreadName(const char* name)
 {
     // Ignore requests to set the main thread name because
     // it causes the value returned by Process.ProcessName to change.
-    if ((pid_t)PalGetCurrentOSThreadId() != getpid())
+    if (minipal_get_current_thread_id() != minipal_get_current_process_id())
     {
         int setNameResult = minipal_set_thread_name(pthread_self(), name);
         (void)setNameResult; // used
@@ -665,11 +665,6 @@ void PalFlushInstructionCache(_In_ void* pAddress, size_t size)
 #elif !defined(HOST_WASM)
     __builtin___clear_cache((char *)pAddress, (char *)pAddress + size);
 #endif
-}
-
-uint32_t PalGetCurrentProcessId()
-{
-    return getpid();
 }
 
 uint32_t PalGetEnvironmentVariable(const char * name, char * buffer, uint32_t size)
@@ -930,9 +925,4 @@ int32_t PalGetModuleFileName(_Out_ const TCHAR** pModuleNameOut, HANDLE moduleBa
     *pModuleNameOut = dl.dli_fname;
     return strlen(dl.dli_fname);
 #endif // defined(HOST_WASM)
-}
-
-uint64_t PalGetCurrentOSThreadId()
-{
-    return (uint64_t)minipal_get_current_thread_id();
 }

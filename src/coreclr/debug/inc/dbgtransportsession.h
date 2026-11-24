@@ -4,6 +4,7 @@
 
 #ifndef __DBG_TRANSPORT_SESSION_INCLUDED
 #define __DBG_TRANSPORT_SESSION_INCLUDED
+#include <minipal/thread.h>
 
 #ifndef RIGHT_SIDE_COMPILE
 #include <utilcode.h>
@@ -163,12 +164,8 @@ inline void DbgTransportLog(DbgTransportLogClass eClass, const char *szFormat, .
         vsprintf_s(szOutput, sizeof(szOutput), szFormat, args);
         va_end(args);
 
-        printf("%s  %04x: %s\n", DBG_TRANSPORT_LOG_PREFIX, GetCurrentThreadId(), szOutput);
+        printf("%s  %04zx: %s\n", DBG_TRANSPORT_LOG_PREFIX, minipal_get_current_thread_id(), szOutput);
         fflush(stdout);
-
-        char szDebugOutput[512];
-        sprintf_s(szDebugOutput, sizeof(szDebugOutput), "%s: %s\n", DBG_TRANSPORT_LOG_PREFIX, szOutput);
-        OutputDebugStringA(szDebugOutput);
     }
 #endif // _DEBUG
 }

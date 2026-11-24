@@ -559,13 +559,20 @@ namespace System.Threading
                 get
                 {
                     SharedMemoryManager<NamedMutexProcessDataBase>.Instance.VerifyCreationDeletionProcessLockIsLocked();
-                    return Volatile.Read(ref _namedMutexOwnershipChain) ?? AllocateOwnershipChain();
+                    return EnsureNamedMutexOwnershipChain();
+                }
+            }
 
-                    NamedMutexOwnershipChain AllocateOwnershipChain()
-                    {
-                        Interlocked.CompareExchange(ref _namedMutexOwnershipChain, new NamedMutexOwnershipChain(this._thread), null!);
-                        return _namedMutexOwnershipChain;
-                    }
+            // Allocates the chain if needed. Callers acquiring a named mutex must call this before acquiring the underlying lock so that
+            // an allocation failure cannot occur after the acquisition has been observable. Does not require the creation/deletion lock.
+            public NamedMutexOwnershipChain EnsureNamedMutexOwnershipChain()
+            {
+                return Volatile.Read(ref _namedMutexOwnershipChain) ?? AllocateOwnershipChain();
+
+                NamedMutexOwnershipChain AllocateOwnershipChain()
+                {
+                    Interlocked.CompareExchange(ref _namedMutexOwnershipChain, new NamedMutexOwnershipChain(this._thread), null!);
+                    return _namedMutexOwnershipChain;
                 }
             }
 #endif

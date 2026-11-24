@@ -192,63 +192,6 @@ static void FreeTHREAD(CPalThread *pThread)
 
 /*++
 Function:
-  GetCurrentThreadId
-
-See MSDN doc.
---*/
-DWORD
-PALAPI
-GetCurrentThreadId(
-            VOID)
-{
-    DWORD dwThreadId;
-
-    PERF_ENTRY(GetCurrentThreadId);
-    ENTRY("GetCurrentThreadId()\n");
-
-    //
-    // TODO: should do perf test to see how this compares
-    // with calling InternalGetCurrentThread (i.e., is our lookaside
-    // cache faster on average than pthread_self?)
-    //
-
-    dwThreadId = (DWORD)THREADSilentGetCurrentThreadId();
-
-    LOGEXIT("GetCurrentThreadId returns DWORD %#x\n", dwThreadId);
-    PERF_EXIT(GetCurrentThreadId);
-
-    return dwThreadId;
-}
-
-/*++
-Function:
-  PAL_GetCurrentOSThreadId
-
-Returns the current thread's OS thread ID.
-This API is functionally equivalent to GetCurrentThreadId, but does not truncate the return value to 32-bits.
-This is needed to ensure that we can provide the correct OS thread ID on platforms such as OSX that have a 64-bit thread ID.
---*/
-size_t
-PALAPI
-PAL_GetCurrentOSThreadId(
-            VOID)
-{
-    size_t threadId;
-
-    PERF_ENTRY(PAL_GetCurrentOSThreadId);
-    ENTRY("PAL_GetCurrentOSThreadId()\n");
-
-    threadId = THREADSilentGetCurrentThreadId();
-
-    LOGEXIT("PAL_GetCurrentOSThreadId returns %p\n", threadId);
-    PERF_EXIT(GetCurrentThreadId);
-
-    return threadId;
-}
-
-
-/*++
-Function:
   GetCurrentThread
 
 See MSDN doc.
@@ -266,32 +209,6 @@ PAL_GetCurrentThread(
 
     /* return a pseudo handle */
     return (HANDLE) hPseudoCurrentThread;
-}
-
-/*++
-Function:
-  SwitchToThread
-
-See MSDN doc.
---*/
-BOOL
-PALAPI
-SwitchToThread(
-    VOID)
-{
-    BOOL ret;
-
-    PERF_ENTRY(SwitchToThread);
-    ENTRY("SwitchToThread(VOID)\n");
-
-    /* sched_yield yields to another thread in the current process. This implementation
-       won't work well for cross-process synchronization. */
-    ret = (sched_yield() == 0);
-
-    LOGEXIT("SwitchToThread returns BOOL %d\n", ret);
-    PERF_EXIT(SwitchToThread);
-
-    return ret;
 }
 
 /*++
@@ -1026,7 +943,7 @@ SetThreadDescription(
     {
         // Ignore requests to set the main thread name because
         // it causes the value returned by Process.ProcessName to change.
-        if ((pid_t)pTargetThread->GetThreadId() != getpid())
+        if (pTargetThread->GetThreadId() != minipal_get_current_process_id())
         {
             nameSize = lpThreadDescription != NULL ? minipal_get_length_utf16_to_utf8((const CHAR16_T*)lpThreadDescription, minipal_u16_strlen((const CHAR16_T*)lpThreadDescription) + 1, 0) : 0;
             if (nameSize > 0)

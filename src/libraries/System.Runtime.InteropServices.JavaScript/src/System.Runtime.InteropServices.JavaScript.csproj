@@ -1,6 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <!-- TODO: Remove once migrated to unsafe-v2. -->
+    <MemorySafetyRulesVersion>1</MemorySafetyRulesVersion>
     <TargetFrameworks>$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
@@ -11,13 +13,11 @@
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' != 'browser'">SR.SystemRuntimeInteropServicesJavaScript_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
     <WasmEnableJsInteropByValue Condition="'$(TargetPlatformIdentifier)' == 'browser' and '$(WasmEnableJsInteropByValue)' == '' and '$(WasmEnableThreads)' == 'true'">true</WasmEnableJsInteropByValue>
-    <WasmEnableJsInteropByValue Condition="'$(TargetPlatformIdentifier)' == 'browser' and '$(WasmEnableJsInteropByValue)' == '' and '$(RuntimeFlavor)' == 'CoreCLR'">true</WasmEnableJsInteropByValue>
-    <WasmEnableJsInteropByValue Condition="'$(TargetPlatformIdentifier)' == 'browser' and '$(WasmEnableJsInteropByValue)' == ''">false</WasmEnableJsInteropByValue>
+    <WasmEnableJsInteropByValue Condition="'$(TargetPlatformIdentifier)' == 'browser' and '$(WasmEnableJsInteropByValue)' == ''">true</WasmEnableJsInteropByValue>
     <DefineConstants Condition="'$(WasmEnableThreads)' == 'true'">$(DefineConstants);FEATURE_WASM_MANAGED_THREADS</DefineConstants>
     <DefineConstants Condition="'$(WasmEnableJsInteropByValue)' == 'true'">$(DefineConstants);ENABLE_JS_INTEROP_BY_VALUE</DefineConstants>
-    <DefineConstants Condition="'$(RuntimeFlavor)' == 'Mono'">$(DefineConstants);MONO</DefineConstants>
-    <DefineConstants Condition="'$(RuntimeFlavor)' == 'CoreCLR'">$(DefineConstants);CORECLR</DefineConstants>
-    <DefineConstants Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(TargetArchitecture)' == 'wasm64'">$(DefineConstants);TARGET_WASM64</DefineConstants>
+    <DefineConstants>$(DefineConstants);CORECLR</DefineConstants>
+    <DefineConstants Condition="'$(TargetArchitecture)' == 'wasm64'">$(DefineConstants);TARGET_WASM64</DefineConstants>
     <EmitCompilerGeneratedFiles Condition="'$(Configuration)' == 'Debug' and '$(TargetPlatformIdentifier)' == 'browser'">true</EmitCompilerGeneratedFiles>
   </PropertyGroup>
 
@@ -27,12 +27,10 @@
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'browser'">
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs" Link="Common\DisableRuntimeMarshalling.cs" />
-    <Compile Include="$(CommonPath)Interop\Browser\Interop.Runtime.Mono.cs" Link="System\Runtime\InteropServices\JavaScript\Interop\Interop.Runtime.Mono.cs" Condition="'$(RuntimeFlavor)' == 'Mono'" />
-    <Compile Include="$(CommonPath)Interop\Browser\Interop.Runtime.CoreCLR.cs" Link="System\Runtime\InteropServices\JavaScript\Interop\Interop.Runtime.CoreCLR.cs" Condition="'$(RuntimeFlavor)' == 'CoreCLR'" />
-    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs" Link="System\Runtime\InteropServices\JavaScript\Interop\Interop.Libraries.cs" Condition="'$(RuntimeFlavor)' == 'CoreCLR'" />
+    <Compile Include="$(CommonPath)Interop\Browser\Interop.Runtime.CoreCLR.cs" Link="System\Runtime\InteropServices\JavaScript\Interop\Interop.Runtime.CoreCLR.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs" Link="System\Runtime\InteropServices\JavaScript\Interop\Interop.Libraries.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\Interop\JavaScriptImports.Generated.cs" />
-    <Compile Include="System\Runtime\InteropServices\JavaScript\Interop\JavaScriptExports.Mono.cs" Condition="'$(RuntimeFlavor)' == 'Mono'" />
-    <Compile Include="System\Runtime\InteropServices\JavaScript\Interop\JavaScriptExports.CoreCLR.cs" Condition="'$(RuntimeFlavor)' == 'CoreCLR'" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Interop\JavaScriptExports.CoreCLR.cs" />
 
     <Compile Include="System\Runtime\InteropServices\JavaScript\JSHost.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\JSMarshalerType.cs" />
@@ -43,8 +41,7 @@
     <Compile Include="System\Runtime\InteropServices\JavaScript\JSFunctionBinding.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\JSHostImplementation.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\JSHostImplementation.Exports.cs" />
-    <Compile Include="System\Runtime\InteropServices\JavaScript\JSHostImplementation.Mono.cs" Condition="'$(RuntimeFlavor)' == 'Mono'" />
-    <Compile Include="System\Runtime\InteropServices\JavaScript\JSHostImplementation.CoreCLR.cs" Condition="'$(RuntimeFlavor)' == 'CoreCLR'" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\JSHostImplementation.CoreCLR.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\JSHostImplementation.Types.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\JSMarshalerArgument.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\JSException.cs" />

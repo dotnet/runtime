@@ -4,6 +4,7 @@
 // codeman.cpp - a managment class for handling multiple code managers
 
 #include "common.h"
+#include <minipal/instructioncache.h>
 #include "jitinterface.h"
 #include "corjit.h"
 #include "jithost.h"
@@ -6183,7 +6184,7 @@ void ExecutionManager::Unload(LoaderAllocator *pLoaderAllocator)
     } CONTRACTL_END;
 
     // a size of 0 is a signal to Nirvana to flush the entire cache
-    FlushInstructionCache(GetCurrentProcess(),0,0);
+    minipal_flush_instruction_cache(0,0);
 
     JumpStubCache * pJumpStubCache = (JumpStubCache *) pLoaderAllocator->m_pJumpStubCache;
     if (pJumpStubCache != NULL)
