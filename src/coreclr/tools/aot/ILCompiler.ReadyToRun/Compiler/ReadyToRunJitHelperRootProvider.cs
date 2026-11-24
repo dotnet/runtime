@@ -117,10 +117,20 @@ namespace ILCompiler
 
         public void AddCompilationRoots(IRootingServiceProvider rootProvider)
         {
-            if (context.Target.Architecture is TargetArchitecture.ARM or TargetArchitecture.ARM64)
-                return;
+            foreach (MethodDesc method in GetManagedHelpers(context))
+            {
+                RootMethod(rootProvider, method);
+            }
+        }
 
-            var rootedMethods = new HashSet<MethodDesc>();
+        /// <summary>
+        /// Gets the distinct managed JIT helper methods that CoreLib's R2R image provides code for.
+        /// </summary>
+        internal static HashSet<MethodDesc> GetManagedHelpers(ReadyToRunCompilerContext context)
+        {
+            var helpers = new HashSet<MethodDesc>();
+            if (context.Target.Architecture is TargetArchitecture.ARM or TargetArchitecture.ARM64)
+                return helpers;
 
             foreach (ManagedHelperInfo helper in s_managedHelpers)
             {
@@ -140,12 +150,13 @@ namespace ILCompiler
                     continue;
                 }
 
-                MethodDesc method = GetManagedHelper(context, helper);
-                if (method is not null && rootedMethods.Add(method))
+                if (GetManagedHelper(context, helper) is MethodDesc method)
                 {
-                    RootMethod(rootProvider, method);
+                    helpers.Add(method);
                 }
             }
+
+            return helpers;
         }
 
         internal static MethodDesc GetManagedHelper(TypeSystemContext context, CorInfoHelpFunc helper)

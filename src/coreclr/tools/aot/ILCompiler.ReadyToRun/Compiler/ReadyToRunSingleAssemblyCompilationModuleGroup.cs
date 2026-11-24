@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Threading;
 
 using Internal.ReadyToRunConstants;
 using Internal.TypeSystem;
@@ -15,6 +16,7 @@ namespace ILCompiler
     {
         private ProfileDataManager _profileGuidedCompileRestriction;
         private bool _profileGuidedCompileRestrictionSet;
+        private HashSet<MethodDesc> _managedJitHelpers;
 
         public ReadyToRunSingleAssemblyCompilationModuleGroup(
             ReadyToRunCompilationModuleGroupConfig config) :
@@ -32,7 +34,8 @@ namespace ILCompiler
                 if (!_profileGuidedCompileRestriction.IsMethodInInputProfileData(method) &&
                     (((ReadyToRunCompilerContext)method.Context).TargetAllowsRuntimeCodeGeneration ||
                      (!HardwareIntrinsicHelpers.IsHardwareIntrinsic(method) &&
-                      !(method.IsIntrinsic && method.Name == "get_IsHardwareAccelerated"u8))))
+                      !(method.IsIntrinsic && method.Name == "get_IsHardwareAccelerated"u8) &&
+                      !IsManagedJitHelper(method))))
                     return false;
             }
 
@@ -44,6 +47,20 @@ namespace ILCompiler
             }
 
             return (ContainsType(method.OwningType) && VersionsWithMethodBody(method)) || CompileVersionBubbleGenericsIntoCurrentModule(method) || this.CrossModuleCompileable(method);
+        }
+
+        // Without runtime codegen, CoreLib's R2R image must contain code for every managed JIT helper.
+        private bool IsManagedJitHelper(MethodDesc method)
+        {
+            HashSet<MethodDesc> helpers = Volatile.Read(ref _managedJitHelpers);
+            if (helpers is null)
+            {
+                Interlocked.CompareExchange(ref _managedJitHelpers,
+                    ReadyToRunJitHelperRootProvider.GetManagedHelpers((ReadyToRunCompilerContext)method.Context), null);
+                helpers = _managedJitHelpers;
+            }
+
+            return helpers.Contains(method);
         }
 
         public sealed override void ApplyProfileGuidedOptimizationData(ProfileDataManager profileGuidedCompileRestriction, bool partial)
