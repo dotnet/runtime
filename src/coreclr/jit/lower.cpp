@@ -12156,7 +12156,7 @@ void Lowering::TransformUnusedIndirection(GenTreeIndir* ind, Compiler* m_compile
     // - On ARM64, use GT_NULLCHECK for a dead non-volatile indirection.
     // - On ARM, always use GT_IND.
     // - On XARCH, use GT_IND if we have a contained address, and GT_NULLCHECK otherwise.
-    // In all cases we try to preserve the original type and never make it wider to avoid AVEs.
+    // Preserve the access width or narrow it unless the address is known to have a full object header.
     // For structs we conservatively lower it to BYTE. For 8-byte primitives we lower it to TYP_INT
     // on XARCH as an optimization.
     //
@@ -12185,6 +12185,11 @@ void Lowering::TransformUnusedIndirection(GenTreeIndir* ind, Compiler* m_compile
     bool useNullCheck = false;
 #else  // TARGET_XARCH
     bool useNullCheck = !ind->Addr()->isContained();
+    if (TargetArchitecture::IsX64 && useNullCheck && ind->Addr()->TypeIs(TYP_REF))
+    {
+        // A dword compare on the object header avoids a REX prefix for some byte registers.
+        ind->ChangeType(TYP_INT);
+    }
     ind->ClearDontExtend();
 #endif // !TARGET_XARCH
 
