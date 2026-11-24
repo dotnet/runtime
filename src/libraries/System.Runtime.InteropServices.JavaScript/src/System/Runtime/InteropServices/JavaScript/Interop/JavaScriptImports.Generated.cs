@@ -8,11 +8,7 @@ namespace System.Runtime.InteropServices.JavaScript
 {
     internal static unsafe partial class JavaScriptImports
     {
-#if MONO
-        private const string TargetPrefix = "INTERNAL.";
-#else
         private const string TargetPrefix = "INTERNAL.TARGET.";
-#endif
         [JSImport(TargetPrefix + "hasProperty")]
         public static partial bool HasProperty(JSObject self, string propertyName);
         [JSImport(TargetPrefix + "getTypeOfProperty")]

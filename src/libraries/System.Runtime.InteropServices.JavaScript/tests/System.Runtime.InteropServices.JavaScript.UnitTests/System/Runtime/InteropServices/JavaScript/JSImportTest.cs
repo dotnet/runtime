@@ -409,7 +409,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/137011", TestPlatforms.Browser, TargetFrameworkMonikers.Any, TestRuntimes.Mono)]
         public void MemoryViewInteropThrowingImport() => MemoryViewInterop(fail: true);
 
         [Theory]

@@ -100,7 +100,7 @@ and do not require these isolation headers. Changing the property restages the
 application assets; do not patch files in the NuGet cache or published output.
 For this temporary coverage experiment, `WasmRunInWorker` defaults to true for
 Browser/CoreCLR. Set it to false to opt out. Revert the temporary default commit
-before shipping; Mono and other targets are unchanged. V8/Node test harnesses
+before shipping; only CoreCLR Browser is supported. V8/Node test harnesses
 explicitly select ordinary execution, including when a shared-asset archive is
 reused by browser and shell CI lanes.
 The property controls both worker startup and shared
