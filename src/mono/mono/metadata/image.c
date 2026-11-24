@@ -1253,30 +1253,6 @@ do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status, const MonoIma
 
 	mono_image_load_names (image);
 
-	if (!image->metadata_only) {
-		MonoTableInfo *methods = &image->tables [MONO_TABLE_METHOD];
-		guint32 rows = table_info_get_rows (methods);
-		if (rows) {
-			/* ECMA-335 II.22.26: MethodDef rows contain the method implementation flags. */
-			uintptr_t raw = (uintptr_t)image->raw_data;
-			uintptr_t heap = (uintptr_t)image->heap_tables.data;
-			uintptr_t table = (uintptr_t)methods->base;
-			if (heap < raw || heap - raw > image->raw_data_len ||
-			    image->heap_tables.size > image->raw_data_len - (heap - raw) ||
-			    table < heap || table - heap > image->heap_tables.size ||
-			    !methods->row_size || rows > (image->heap_tables.size - (table - heap)) / methods->row_size)
-				goto invalid_image;
-
-			for (guint32 i = 0; i < rows; ++i) {
-				if (mono_metadata_decode_row_col (methods, i, MONO_METHOD_IMPLFLAGS) & METHOD_IMPL_ATTRIBUTE_ASYNC) {
-					g_warning ("The assembly '%s' contains runtime-async methods, which are not supported by Mono.",
-					           image->assembly_name ? image->assembly_name : image->name);
-					goto invalid_image;
-				}
-			}
-		}
-	}
-
 done:
 	MONO_PROFILER_RAISE (image_loaded, (image));
 	if (status)

@@ -9879,10 +9879,9 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 	}
 	/* Make a copy of the argument/local info */
 	{
-		ERROR_DECL (error);
 		MonoInst **args, **locals;
 		MonoMethodSignature *sig;
-		MonoMethodHeader *header;
+		MonoMethodHeader *header = cfg->header;
 
 		sig = mono_method_signature_internal (method);
 		args = (MonoInst **)mono_mempool_alloc (acfg->mempool, sizeof (MonoInst*) * (sig->param_count + sig->hasthis));
@@ -9892,14 +9891,11 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 		}
 		cfg->args = args;
 
-		header = mono_method_get_header_checked (method, error);
-		mono_error_assert_ok (error); /* FIXME don't swallow the error */
 		locals = (MonoInst **)mono_mempool_alloc (acfg->mempool, sizeof (MonoInst*) * header->num_locals);
 		for (guint16 i = 0; i < header->num_locals; ++i) {
 			locals [i] = (MonoInst *)mono_mempool_alloc (acfg->mempool, sizeof (MonoInst));
 			memcpy (locals [i], cfg->locals [i], sizeof (MonoInst));
 		}
-		mono_metadata_free_mh (header);
 		cfg->locals = locals;
 	}
 
