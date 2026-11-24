@@ -344,7 +344,8 @@ namespace ILLink.Tasks
                 {
                     commandLineCommands,
                     responseFileCommands
-                }, InvocationOutputs.FromDirectory(TaskEnvironment.GetAbsolutePath(OutputDirectory.ItemSpec)));
+                }, InvocationOutputs.FromDirectory(TaskEnvironment.GetAbsolutePath(OutputDirectory.ItemSpec)),
+                    TaskEnvironment.ProjectDirectory);
 
                 void AddFile(string path) => files.Add(Path.GetFullPath(TaskEnvironment.GetAbsolutePath(path)));
 
@@ -531,7 +532,7 @@ namespace ILLink.Tasks
         protected override string GenerateCommandLineCommands()
         {
             var args = new StringBuilder();
-            var path = TaskEnvironment.GetAbsolutePath(ILLinkPath);
+            var path = ILLinkPath;
             args.Append(Quote(path));
             Log.LogMessage(MessageImportance.Normal, $"ILLink.Tasks path: {path}");
 
@@ -551,12 +552,11 @@ namespace ILLink.Tasks
         protected override string GenerateResponseFileCommands()
         {
             var args = new StringBuilder();
-            AbsolutePath projectDirectory = TaskEnvironment.ProjectDirectory;
 
             if (RootDescriptorFiles != null)
             {
                 foreach (var rootFile in RootDescriptorFiles)
-                    args.Append("-x ").AppendLine(Quote(new AbsolutePath(rootFile.ItemSpec, projectDirectory)));
+                    args.Append("-x ").AppendLine(Quote(rootFile.ItemSpec));
             }
 
             foreach (var assemblyItem in RootAssemblyNames)
@@ -603,7 +603,7 @@ namespace ILLink.Tasks
             HashSet<string> assemblyNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var assembly in AssemblyPaths)
             {
-                var assemblyPath = new AbsolutePath(assembly.ItemSpec, projectDirectory);
+                var assemblyPath = assembly.ItemSpec;
                 var assemblyName = Path.GetFileNameWithoutExtension(assemblyPath);
 
                 // If there are multiple paths with the same assembly name, only use the first one.
@@ -665,7 +665,7 @@ namespace ILLink.Tasks
             {
                 foreach (var assembly in ReferenceAssemblyPaths)
                 {
-                    var assemblyPath = new AbsolutePath(assembly.ItemSpec, projectDirectory);
+                    var assemblyPath = assembly.ItemSpec;
                     var assemblyName = Path.GetFileNameWithoutExtension(assemblyPath);
 
                     // Don't process references for which we already have
@@ -759,7 +759,7 @@ namespace ILLink.Tasks
                 foreach (var customStep in CustomSteps)
                 {
                     args.Append("--custom-step ");
-                    var stepPath = new AbsolutePath(customStep.ItemSpec, projectDirectory);
+                    var stepPath = customStep.ItemSpec;
                     var stepType = customStep.GetMetadata("Type");
                     if (stepType == null)
                         throw new ArgumentException("custom step requires \"Type\" metadata");
@@ -792,7 +792,7 @@ namespace ILLink.Tasks
 
             // Keep the tool's output directory consistent with the directory owned by the task.
             if (OutputDirectory is not null)
-                args.Append("-out ").AppendLine(Quote(new AbsolutePath(OutputDirectory.ItemSpec, projectDirectory)));
+                args.Append("-out ").AppendLine(Quote(OutputDirectory.ItemSpec));
 
             return args.ToString();
         }

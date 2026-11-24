@@ -69,10 +69,9 @@ namespace ILLink.Tasks.Tests
                 Assert.Equal(relativeHostPath ? "dotnet" : hostPath, startInfo.Environment["DOTNET_HOST_PATH"]);
                 Assert.Equal(index.ToString(), startInfo.Environment["ILLINK_TEST_ENVIRONMENT"]);
                 using var driver = task.CreateDriver();
-                Assert.Equal(
-                    new[] { Path.Combine(projectDirectory, "Assembly.dll"), Path.Combine(projectDirectory, "Reference.dll") },
-                    driver.GetReferenceAssemblies());
-                Assert.Equal(Path.Combine(projectDirectory, "linked"), driver.Context.OutputDirectory);
+                // Relative arguments are passed through and resolved by the tool's working directory.
+                Assert.Equal(new[] { "Assembly.dll", "Reference.dll" }, driver.GetReferenceAssemblies());
+                Assert.Equal("linked", driver.Context.OutputDirectory);
             })));
             Assert.Equal(processDirectory, Environment.CurrentDirectory);
             Assert.Equal(processHost, Environment.GetEnvironmentVariable("DOTNET_HOST_PATH"));
@@ -155,18 +154,18 @@ namespace ILLink.Tasks.Tests
                 Assert.Equal(BuildResultCode.Success, result.OverallResult);
                 Assert.Equal(Environment.ProcessId.ToString(), result.ProjectStateAfterBuild.GetPropertyValue("TaskProcessId"));
                 string response = result.ProjectStateAfterBuild.GetPropertyValue("ResponseFile");
-                Assert.Contains($"-reference \"{Path.Combine(projectDirectory, assemblyPath)}\"", response);
+                Assert.Contains($"-reference \"{ExpectedPath(assemblyPath)}\"", response);
                 Assert.Contains("--action copy \"Assembly\"", response);
                 Assert.Contains("--singlewarn- \"Assembly\"", response);
                 Assert.Contains("-a \"Assembly\"", response);
-                Assert.Contains($"-out \"{Path.Combine(projectDirectory, outputPath)}\"", response);
+                Assert.Contains($"-out \"{ExpectedPath(outputPath)}\"", response);
                 string command = result.ProjectStateAfterBuild.GetPropertyValue("CommandLine");
                 if (optionalInputs == true)
                 {
-                    Assert.Contains($"-reference \"{Path.Combine(projectDirectory, referencePath)}\"", response);
-                    Assert.Contains($"-x \"{Path.Combine(projectDirectory, descriptorPath)}\"", response);
-                    Assert.Contains($"--custom-step \"-MarkStep:Custom.Step,{Path.Combine(projectDirectory, stepPath)}\"", response);
-                    Assert.Equal($"\"{Path.Combine(projectDirectory, linkerPath)}\"", command);
+                    Assert.Contains($"-reference \"{ExpectedPath(referencePath)}\"", response);
+                    Assert.Contains($"-x \"{ExpectedPath(descriptorPath)}\"", response);
+                    Assert.Contains($"--custom-step \"-MarkStep:Custom.Step,{ExpectedPath(stepPath)}\"", response);
+                    Assert.Equal($"\"{ExpectedPath(linkerPath)}\"", command);
                 }
                 else
                 {
@@ -178,7 +177,8 @@ namespace ILLink.Tasks.Tests
                     Assert.Equal($"\"{defaultLinkerPath}\"", command);
                 }
 
-                string InputPath(string path) => ProjectCollection.Escape(absolutePaths ? Path.Combine(projectDirectory, path) : path);
+                string ExpectedPath(string path) => absolutePaths ? Path.Combine(projectDirectory, path) : path;
+                string InputPath(string path) => ProjectCollection.Escape(ExpectedPath(path));
             }
             finally
             {
@@ -279,7 +279,7 @@ namespace ILLink.Tasks.Tests
             {
                 var context = driver.Context;
 
-                var expectedReferences = assemblyPaths.Select(p => p.GetMetadata("FullPath"))
+                var expectedReferences = assemblyPaths.Select(p => p.ItemSpec)
                     .GroupBy(p => Path.GetFileNameWithoutExtension(p))
                     .Select(g => g.First());
                 var actualReferences = driver.GetReferenceAssemblies();
@@ -328,7 +328,7 @@ namespace ILLink.Tasks.Tests
             };
             using (var driver = task.CreateDriver())
             {
-                var expectedReferences = referenceAssemblyPaths.Select(Path.GetFullPath);
+                var expectedReferences = referenceAssemblyPaths;
                 var actualReferences = driver.GetReferenceAssemblies();
                 Assert.Equal(expectedReferences.OrderBy(a => a), actualReferences.OrderBy(a => a));
                 foreach (var reference in expectedReferences)
@@ -370,7 +370,7 @@ namespace ILLink.Tasks.Tests
             using (var driver = task.CreateDriver())
             {
                 var actualOutputDirectory = driver.Context.OutputDirectory;
-                Assert.Equal(Path.GetFullPath(outputDirectory), actualOutputDirectory);
+                Assert.Equal(outputDirectory, actualOutputDirectory);
             }
         }
 
@@ -385,7 +385,7 @@ namespace ILLink.Tasks.Tests
             using (var driver = task.CreateDriver())
             {
                 var actualDescriptors = driver.GetRootDescriptors();
-                Assert.Equal(rootDescriptorFiles.Select(Path.GetFullPath).OrderBy(f => f), actualDescriptors.OrderBy(f => f));
+                Assert.Equal(rootDescriptorFiles.OrderBy(f => f), actualDescriptors.OrderBy(f => f));
             }
         }
 
