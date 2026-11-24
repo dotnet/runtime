@@ -109,7 +109,21 @@ namespace ILCompiler.ObjectWriter
         public bool UseDwarf5 => _useDwarf5;
         public int FrameRegister => _frameRegister;
 
-        public uint ResolveOffset(uint typeIndex) => typeIndex == 0 ? 0u : _dwarfTypeOffsets[typeIndex - 1];
+        // References to a forward declaration that has a complete type are resolved to the complete type.
+        public uint ResolveOffset(uint typeIndex)
+        {
+            if (typeIndex == 0)
+            {
+                return 0;
+            }
+
+            if (_dwarfTypes[(int)typeIndex - 1] is DwarfClassTypeInfo { CompleteTypeIndex: not 0 } forwardDeclaration)
+            {
+                typeIndex = forwardDeclaration.CompleteTypeIndex;
+            }
+
+            return _dwarfTypeOffsets[typeIndex - 1];
+        }
 
         public void Write(
             SectionWriter infoSectionWriter,
@@ -204,8 +218,15 @@ namespace ILCompiler.ObjectWriter
                 int typeIndex = 0;
                 foreach (DwarfInfo type in _dwarfTypes)
                 {
-                    _dwarfTypeOffsets[typeIndex] = (uint)dwarfInfoWriter.Position;
-                    type.Dump(dwarfInfoWriter);
+                    // Debuggers find the complete type of a declaration by its name, but tools like dsymutil
+                    // only keep the types that are referenced. The declaration isn't emitted, and its references
+                    // are resolved to the complete type, so that the complete type is kept when it is used.
+                    if (type is not DwarfClassTypeInfo { CompleteTypeIndex: not 0 })
+                    {
+                        _dwarfTypeOffsets[typeIndex] = (uint)dwarfInfoWriter.Position;
+                        type.Dump(dwarfInfoWriter);
+                    }
+
                     typeIndex++;
                 }
 
@@ -441,12 +462,20 @@ namespace ILCompiler.ObjectWriter
             ClassTypeDescriptor classTypeDescriptor,
             ClassFieldsTypeDescriptor classFieldsTypeDescriptor,
             DataFieldDescriptor[] fields,
-            StaticDataFieldDescriptor[] statics)
+            StaticDataFieldDescriptor[] statics,
+            uint forwardDeclarationTypeIndex = 0)
         {
             var classInfo = new DwarfClassTypeInfo(classTypeDescriptor, classFieldsTypeDescriptor, fields, statics);
             _dwarfTypes.Add(classInfo);
             _staticFields.AddRange(classInfo.StaticVariables);
-            return (uint)_dwarfTypes.Count;
+            uint typeIndex = (uint)_dwarfTypes.Count;
+
+            if (forwardDeclarationTypeIndex != 0)
+            {
+                ((DwarfClassTypeInfo)_dwarfTypes[(int)forwardDeclarationTypeIndex - 1]).CompleteTypeIndex = typeIndex;
+            }
+
+            return typeIndex;
         }
 
         public uint GetMemberFunctionTypeIndex(MemberFunctionTypeDescriptor memberDescriptor, uint[] argumentTypes)

@@ -226,6 +226,9 @@ namespace ILCompiler.ObjectWriter
         private readonly List<DwarfStaticVariableInfo> _statics;
         private List<DwarfMemberFunction> _methods;
 
+        // The type index of the complete type of a forward declaration, if any.
+        public uint CompleteTypeIndex { get; set; }
+
         public DwarfClassTypeInfo(ClassTypeDescriptor typeDescriptor)
         {
             _isForwardDecl = true;
