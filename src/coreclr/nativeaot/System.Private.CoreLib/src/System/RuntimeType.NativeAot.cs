@@ -407,15 +407,12 @@ namespace System
 
             // Compare MethodTables directly and only create Type objects for the matches.
             // Usually a single interface matches, which ListBuilder handles without allocating backing storage.
-            bool isGenericTypeDefinition = pInterfaceEEType->IsGenericTypeDefinition;
             ListBuilder<Type> matches = default;
             int count = pEEType->NumInterfaces;
             for (int i = 0; i < count; i++)
             {
                 MethodTable* pImplementedEEType = pEEType->InterfaceMap[i];
-                if (isGenericTypeDefinition
-                    ? pImplementedEEType->IsGeneric && pImplementedEEType->GenericDefinition == pInterfaceEEType
-                    : pImplementedEEType == pInterfaceEEType)
+                if ((pImplementedEEType->IsGeneric ? pImplementedEEType->GenericDefinition : pImplementedEEType) == pInterfaceEEType)
                 {
                     matches.Add(GetTypeFromMethodTable(pImplementedEEType));
                 }

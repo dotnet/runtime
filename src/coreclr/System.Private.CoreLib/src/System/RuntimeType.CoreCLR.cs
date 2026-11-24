@@ -2639,16 +2639,13 @@ namespace System
             // runtime types, so comparing generic type definitions by reference is equivalent to
             // HasSameMetadataDefinitionAs and cheaper, and an interfaceType that isn't a RuntimeType never matches.
             RuntimeType[] candidates = Cache.GetInterfaceList(MemberListType.All, null);
-            bool isGenericTypeDefinition = interfaceType.IsGenericTypeDefinition;
 
             // Usually a single interface matches, which ListBuilder handles without allocating backing storage.
             // Don't size it for every candidate: that would over-allocate when several interfaces match.
             ListBuilder<Type> matches = default;
             foreach (RuntimeType candidate in candidates)
             {
-                if (isGenericTypeDefinition
-                    ? candidate.IsGenericType && ReferenceEquals(candidate.GetGenericTypeDefinition(), interfaceType)
-                    : ReferenceEquals(candidate, interfaceType))
+                if (ReferenceEquals(candidate.IsGenericType ? candidate.GetGenericTypeDefinition() : candidate, interfaceType))
                 {
                     matches.Add(candidate);
                 }
