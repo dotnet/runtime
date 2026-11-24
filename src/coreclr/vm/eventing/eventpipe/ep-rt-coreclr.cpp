@@ -202,14 +202,14 @@ ep_rt_coreclr_session_stopping (void)
 		EX_TRY
 		{
 			PgoManager::LogInstrumentationData ();
-#ifdef FEATURE_R2R_PGO
-			// Ordinary rundown runs after the runtime provider is disabled. Capture method/type
-			// identities now, including interpreted methods that have no counter allocation.
-			ETW::EnumerationLog::EnumerateForCaptureState ();
-#endif // FEATURE_R2R_PGO
 		}
 		EX_CATCH { }
 		EX_END_CATCH
+#ifdef FEATURE_R2R_PGO
+		// Ordinary rundown runs after the runtime provider is disabled. Capture method/type
+		// identities now, even if exporting counters failed or there were no counters.
+		ETW::EnumerationLog::EnumerateForCaptureState ();
+#endif // FEATURE_R2R_PGO
 	}
 #endif // FEATURE_PGO && PERFTRACING_DISABLE_THREADS
 }

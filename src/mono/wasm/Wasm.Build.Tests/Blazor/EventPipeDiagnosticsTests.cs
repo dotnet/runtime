@@ -16,6 +16,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Etlx;
+using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using Microsoft.NET.Sdk.WebAssembly;
 using Microsoft.NET.WebAssembly.Webcil;
 using Microsoft.Playwright;
@@ -189,6 +190,122 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
         ));
 
         ValidateInterpPgoTrace(info, config, "pgo.nettrace", "IncrementCount", instrumentInterpreter);
+    }
+
+    [ConditionalFact(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+    [TestCategory("no-workload"), TestCategory("coreclr")]
+    public async Task BlazorPgoTraceSkipsIncompatibleMethodProfiles()
+    {
+        const Configuration Config = Configuration.Debug;
+        const string CompilerLog = "pgo-mixed.jit.txt";
+        ProjectInfo info = CopyTestAsset(Config, aot: false, TestAsset.BlazorBasicTestApp, "blazor_mixed_pgo",
+            extraProperties: $"""
+                <EnableDiagnostics>true</EnableDiagnostics>
+                <WasmEnableThreads>false</WasmEnableThreads>
+                <PublishReadyToRun>true</PublishReadyToRun>
+                <PublishReadyToRunComposite>true</PublishReadyToRunComposite>
+                <PublishTrimmed>false</PublishTrimmed>
+                <WasmPgoInstrumentation>*WasmPgoScenarios*:*</WasmPgoInstrumentation>
+                <PublishReadyToRunCrossgen2ExtraArgs>$(PublishReadyToRunCrossgen2ExtraArgs);--optimize;--parallelism:1;--codegenopt:JitDisasm=*WasmPgoScenarios:*;--codegenopt:JitStdOutFile=&quot;$(MSBuildProjectDirectory)/{CompilerLog}&quot;</PublishReadyToRunCrossgen2ExtraArgs>
+                """,
+            extraItems: """
+                <WasmEnvironmentVariable Include="DOTNET_ReadyToRunExcludeList" Value="MixedProfileLibrary" />
+                <WasmEnvironmentVariable Include="DOTNET_InterpPGO" Value="1" />
+                <WasmEnvironmentVariable Include="DOTNET_InterpPGOMethods" Value="*WasmPgoScenarios:MixedProfileTarget" />
+                <Compile Remove="MixedProfileLibrary\**\*.cs" />
+                <ProjectReference Include="MixedProfileLibrary\MixedProfileLibrary.csproj" />
+                """);
+
+        string library = Path.Combine(_projectDir, "MixedProfileLibrary");
+        Directory.CreateDirectory(library);
+        File.WriteAllText(Path.Combine(library, "MixedProfileLibrary.csproj"), $"""
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFramework>{DefaultTargetFrameworkForBlazor}</TargetFramework>
+              </PropertyGroup>
+            </Project>
+            """);
+        File.WriteAllText(Path.Combine(library, "WasmPgoScenarios.cs"), """
+            // Licensed to the .NET Foundation under one or more agreements.
+            // The .NET Foundation licenses this file to you under the MIT license.
+
+            using System.Runtime.CompilerServices;
+
+            namespace MixedProfileLibrary;
+
+            public static class WasmPgoScenarios
+            {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                public static int MixedProfileTarget(int value) => value * 7;
+            }
+            """);
+        File.WriteAllText(Path.Combine(_projectDir, "WasmPgoScenarios.cs"), """
+            // Licensed to the .NET Foundation under one or more agreements.
+            // The .NET Foundation licenses this file to you under the MIT license.
+
+            using System.Runtime.CompilerServices;
+
+            namespace BlazorBasicTestApp;
+
+            internal static class WasmPgoScenarios
+            {
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                public static int UnrelatedProfileTarget(int value) => value + 1;
+
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                public static int MixedProfileCaller(int value) => MixedProfileLibrary.WasmPgoScenarios.MixedProfileTarget(value);
+            }
+            """);
+        UpdateFile(Path.Combine("Pages", "Counter.razor"), new Dictionary<string, string>
+        {
+            ["currentCount++;"] = """
+                int input = BlazorBasicTestApp.WasmPgoScenarios.UnrelatedProfileTarget(currentCount);
+                int inlined = BlazorBasicTestApp.WasmPgoScenarios.MixedProfileCaller(input);
+                var method = typeof(MixedProfileLibrary.WasmPgoScenarios).GetMethod(nameof(MixedProfileLibrary.WasmPgoScenarios.MixedProfileTarget))!;
+                currentCount = inlined + (int)method.Invoke(null, new object[] { input })!;
+                """
+        });
+
+        BlazorPublish(info, Config, new PublishOptions(UseCache: false, AssertAppBundle: false,
+            ExtraMSBuildArgs: GetPgoBuildArgs(Config)));
+        SaveCompilerLog(info, CompilerLog);
+        AssertCompilerInlines(CompilerLog, "MixedProfileCaller", 1);
+
+        string tracePath = Path.Combine(info.LogPath, "mixed.nettrace");
+        bool skippedIncompatibleProfile = false;
+        await RunForPublishWithWebServer(new BlazorRunOptions(Config, CheckCounter: false, TimeoutSeconds: 60,
+            OnConsoleMessage: (_, message) => skippedIncompatibleProfile |=
+                message.Contains("Skipping incompatible PGO instrumentation schemas", StringComparison.Ordinal),
+            Test: async page =>
+            {
+                await SetupCounterPage(page, "mixed.nettrace",
+                    "globalThis.getDotnetRuntime(0).collectPgoTrace({ durationSeconds: 5.0 })", uploadTrace: false);
+                await ClickAndCollect(page, tracePath);
+            }));
+
+        using var source = new EventPipeEventSource(tracePath);
+        long? mixedMethodId = null;
+        bool mixedProfileExported = false;
+        bool unrelatedProfileExported = false;
+        bool capturedMixedMethodIdentity = false;
+        source.Clr.All += data =>
+        {
+            if (data is MethodJittingStartedTraceData { MethodName: "MixedProfileTarget" } jit)
+                mixedMethodId = jit.MethodID;
+            else if (data is JitInstrumentationDataVerboseTraceData profile)
+            {
+                mixedProfileExported |= profile.MethodName == "MixedProfileTarget";
+                unrelatedProfileExported |= profile.MethodName == "UnrelatedProfileTarget";
+            }
+            else if (data is MethodDetailsTraceData details && unrelatedProfileExported)
+                capturedMixedMethodIdentity |= details.MethodID == mixedMethodId;
+        };
+        source.Process();
+        Assert.NotNull(mixedMethodId);
+        Assert.False(mixedProfileExported);
+        Assert.True(unrelatedProfileExported, "The unrelated method's profile was not exported.");
+        Assert.True(capturedMixedMethodIdentity, "The mixed method's identity was not captured after exporting profiles.");
+        Assert.True(skippedIncompatibleProfile, "The runtime did not report the incompatible profile.");
     }
 
     [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]

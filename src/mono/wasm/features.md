@@ -517,9 +517,13 @@ invocation profile.
 
 The publish property selects R2R instrumentation in crossgen2. It does not enable
 interpreter counter probes. The interpreter retains its separate, optional
-`DOTNET_InterpPGO` and `DOTNET_InterpPGOMethods` settings; they are not required for
-this workflow. Coarse interpreter block profiles must not be mixed with R2R
-edge profiles for the same method.
+`DOTNET_InterpPGO` and `DOTNET_InterpPGOMethods` settings. Leave `DOTNET_InterpPGO`
+off for normal R2R training: interpreter method discovery does not require
+counters. If both producers collect counters for the same method, for example
+when a method runs both as an R2R inlinee and in the interpreter, the runtime
+logs a diagnostic and omits that method's counters rather than mixing
+interpreter block counts with R2R edge counts. Other methods' profiles and
+interpreter method discovery are unaffected.
 
 Use the conversion option below to include metadata-backed interpreter methods
 from existing method-load/rundown events. These are method-presence roots for the

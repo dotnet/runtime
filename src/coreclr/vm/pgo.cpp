@@ -206,17 +206,6 @@ struct FILEHolderTraits final
 
 using FILEHolder = LifetimeHolder<FILEHolderTraits>;
 
-#ifdef FEATURE_R2R_PGO
-static void ThrowIncompatiblePgoSchemas(MethodDesc* method)
-{
-    STANDARD_VM_CONTRACT;
-    // The session-stop callback catches exceptions; keep rejected profiles visible to the collector.
-    minipal_log_print_error("Cannot export incompatible PGO instrumentation schemas for method token 0x%08x.\n",
-        method->GetMemberDef());
-    COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
-}
-#endif // FEATURE_R2R_PGO
-
 void PgoManager::LogInstrumentationData()
 {
     if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, JitInstrumentationDataVerbose))
@@ -245,13 +234,9 @@ void PgoManager::LogInstrumentationData()
                 groups.Add(headers[i]->header.method, i);
             }
         }
-        for (COUNT_T i = 0; i < headers.GetCount(); i++)
+        auto tryLogMethodProfile = [&headers, &next](COUNT_T i)
         {
             HeaderList* primary = headers[i];
-            COUNT_T first = UINT32_MAX;
-            groups.Lookup(primary->header.method, &first);
-            if (first != i)
-                continue;
 
             StackSArray<ICorJitInfo::PgoInstrumentationSchema> merged;
             StackSArray<UINT64> counters;
@@ -263,14 +248,13 @@ void PgoManager::LogInstrumentationData()
             };
             StackSArray<ValueSamples> valueSamples;
             bool nonzero = false;
-            bool exportedInterpreterProfile = false;
             bool haveBlocks = false;
             bool haveEdges = false;
             for (COUNT_T j = i; j != UINT32_MAX; j = next[j])
             {
                 HeaderList* source = headers[j];
                 if (source->header.codehash != primary->header.codehash || source->header.ilSize != primary->header.ilSize)
-                    ThrowIncompatiblePgoSchemas(primary->header.method);
+                    return false;
 
                 StackSArray<ICorJitInfo::PgoInstrumentationSchema> schema;
                 if (!ReadLivePgoInstrumentationSchema(source->header.GetData(),
@@ -280,7 +264,7 @@ void PgoManager::LogInstrumentationData()
                         schema.Append(item);
                         return true;
                     }))
-                    ThrowIncompatiblePgoSchemas(primary->header.method);
+                    return false;
 
                 bool interpreterProfile = false;
                 for (COUNT_T k = 0; k < schema.GetCount(); k++)
@@ -289,21 +273,20 @@ void PgoManager::LogInstrumentationData()
                 {
                     // Preserve the opt-in interpreter producer, but never mix its coarse blocks with R2R edges.
                     if (j != i || next[j] != UINT32_MAX)
-                        ThrowIncompatiblePgoSchemas(primary->header.method);
+                        return false;
                     SchemaWriterFunctor writer(source);
                     for (COUNT_T k = 0; k < schema.GetCount(); k++)
                     {
                         if (!writer(schema[k]))
-                            ThrowIncompatiblePgoSchemas(primary->header.method);
+                            return false;
                     }
                     if (!writer.writer.Finish())
-                        ThrowIncompatiblePgoSchemas(primary->header.method);
+                        return false;
                     ETW::MethodLog::LogMethodInstrumentationData(primary->header.method,
                         writer.byteData.GetCount(), writer.byteData.GetElements(),
                         writer.typeHandlesEncountered.GetElements(), writer.typeHandlesEncountered.GetCount(),
                         writer.methodsEncountered.GetElements(), writer.methodsEncountered.GetCount());
-                    exportedInterpreterProfile = true;
-                    break;
+                    return true;
                 }
                 for (COUNT_T k = 0; k < schema.GetCount(); k++)
                 {
@@ -317,7 +300,7 @@ void PgoManager::LogInstrumentationData()
                         if (item.Count != 1 || k + 1 == schema.GetCount() ||
                             schema[k + 1].InstrumentationKind != Kind::ValueHistogram ||
                             schema[k + 1].ILOffset != item.ILOffset)
-                            ThrowIncompatiblePgoSchemas(primary->header.method);
+                            return false;
                         filled = *reinterpret_cast<const UINT64*>(source->header.GetData() + item.Offset);
                         if (filled == 0)
                         {
@@ -329,20 +312,20 @@ void PgoManager::LogInstrumentationData()
                     {
                         if (k == 0 || schema[k - 1].InstrumentationKind != Kind::ValueHistogramLongCount ||
                             schema[k - 1].ILOffset != item.ILOffset || item.Count != ICorJitInfo::HandleHistogram32::SIZE)
-                            ThrowIncompatiblePgoSchemas(primary->header.method);
+                            return false;
                         filled = *reinterpret_cast<const UINT64*>(source->header.GetData() + schema[k - 1].Offset);
                     }
                     haveBlocks |= item.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockLongCount;
                     haveEdges |= item.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeLongCount;
                     if (haveBlocks && haveEdges)
-                        ThrowIncompatiblePgoSchemas(primary->header.method);
+                        return false;
                     bool counter = histogramCount ||
                         item.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockLongCount ||
                         item.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeLongCount;
                     if ((!counter && !histogram && item.InstrumentationKind != ICorJitInfo::PgoInstrumentationKind::NumRuns &&
                         item.InstrumentationKind != ICorJitInfo::PgoInstrumentationKind::Version) || item.Count < 0 ||
                         (counter && item.Count == 0))
-                        ThrowIncompatiblePgoSchemas(primary->header.method);
+                        return false;
 
                     COUNT_T match = 0;
                     for (; match < merged.GetCount(); match++)
@@ -352,7 +335,7 @@ void PgoManager::LogInstrumentationData()
                             existing.ILOffset == item.ILOffset && existing.Other == item.Other)
                         {
                             if (!histogram && existing.Count != item.Count)
-                                ThrowIncompatiblePgoSchemas(primary->header.method);
+                                return false;
                             break;
                         }
                     }
@@ -361,7 +344,7 @@ void PgoManager::LogInstrumentationData()
                     {
                         if (schema[previous].InstrumentationKind == item.InstrumentationKind &&
                             schema[previous].ILOffset == item.ILOffset && schema[previous].Other == item.Other)
-                            ThrowIncompatiblePgoSchemas(primary->header.method);
+                            return false;
                     }
 
                     if (match == merged.GetCount())
@@ -396,8 +379,8 @@ void PgoManager::LogInstrumentationData()
                     }
                 }
             }
-            if (exportedInterpreterProfile || !nonzero)
-                continue;
+            if (!nonzero)
+                return true;
 
             if (valueSamples.GetCount() != 0)
             {
@@ -420,7 +403,7 @@ void PgoManager::LogInstrumentationData()
                     ThrowOutOfMemory();
                 counters.SetCount(static_cast<COUNT_T>(roundedSize.Value() / sizeof(UINT64)));
             }
-            BYTE* mergedData = reinterpret_cast<BYTE*>(counters.OpenRawBuffer());
+            BYTE* mergedData = reinterpret_cast<BYTE*>(counters.GetElements());
             for (COUNT_T j = 0; j < valueSamples.GetCount(); j++)
             {
                 const ValueSamples& samples = valueSamples[j];
@@ -433,15 +416,26 @@ void PgoManager::LogInstrumentationData()
             for (COUNT_T j = 0; j < merged.GetCount(); j++)
             {
                 if (!writer(merged[j]))
-                    ThrowIncompatiblePgoSchemas(primary->header.method);
+                    return false;
             }
             if (!writer.writer.Finish())
-                ThrowIncompatiblePgoSchemas(primary->header.method);
-            counters.CloseRawBuffer();
+                return false;
             ETW::MethodLog::LogMethodInstrumentationData(primary->header.method,
                 writer.byteData.GetCount(), writer.byteData.GetElements(),
                 writer.typeHandlesEncountered.GetElements(), writer.typeHandlesEncountered.GetCount(),
                 writer.methodsEncountered.GetElements(), writer.methodsEncountered.GetCount());
+            return true;
+        };
+
+        for (COUNT_T i = 0; i < headers.GetCount(); i++)
+        {
+            MethodDesc* method = headers[i]->header.method;
+            COUNT_T first;
+            if (groups.Lookup(method, &first) && first == i && !tryLogMethodProfile(i))
+            {
+                minipal_log_print_error("Skipping incompatible PGO instrumentation schemas for method token 0x%08x.\n",
+                    method->GetMemberDef());
+            }
         }
 #else
         EnumeratePGOHeaders([](HeaderList *pgoData)
