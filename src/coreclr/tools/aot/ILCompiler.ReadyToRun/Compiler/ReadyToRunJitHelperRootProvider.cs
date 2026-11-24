@@ -115,9 +115,13 @@ namespace ILCompiler
             new(CorInfoHelpFunc.CORINFO_HELP_ALLOC_CONTINUATION_CLASS, "System.Runtime.CompilerServices"u8, "AsyncHelpers"u8, "AllocContinuationClass"u8),
         ];
 
-        // Managed helpers the runtime looks up by name (to build dynamic dictionary lookup helpers)
-        // without a corresponding CorInfoHelpFunc. Kept separate from s_managedHelpers so that
-        // lookups by helper id never match them.
+        // Managed helpers that only the VM calls. DynamicHelpers::GetDictionaryLookupHelper binds them
+        // through CoreLibBinder to implement CORINFO_HELP_RUNTIMEHANDLE_METHOD/CLASS lookups, so they
+        // have no CorInfoHelpFunc of their own. Nothing in IL references them, and GenericsHelpers is
+        // internal, so neither the visibility roots nor a profile is guaranteed to include them. On
+        // targets without runtime codegen, every R2R generic dictionary lookup that misses the inline
+        // fast path (heavily hit during startup) would then fall back to the interpreter for these helpers.
+        // Kept separate from s_managedHelpers so that lookups by helper id never match them.
         private static readonly ManagedHelperInfo[] s_runtimeManagedHelpers =
         [
             new(CorInfoHelpFunc.CORINFO_HELP_UNDEF, "System.Runtime.CompilerServices"u8, "GenericsHelpers"u8, "MethodWithSlotAndModule"u8),
