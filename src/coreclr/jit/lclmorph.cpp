@@ -251,8 +251,7 @@ LoopDefinitions::LocalDefinitionsMap* LoopDefinitions::GetOrCreateMap(FlowGraphN
     {
         enum
         {
-            DoPreOrder    = true,
-            DoLclVarsOnly = true,
+            DoPreOrder = true,
         };
 
         LocalsVisitor(Compiler* comp, LoopDefinitions::LocalDefinitionsMap* map)
@@ -263,13 +262,10 @@ LoopDefinitions::LocalDefinitionsMap* LoopDefinitions::GetOrCreateMap(FlowGraphN
 
         fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
         {
-            GenTreeLclVarCommon* lcl = (*use)->AsLclVarCommon();
-            if (!lcl->OperIsLocalStore())
-            {
-                return Compiler::WALK_CONTINUE;
-            }
-
-            m_map->Set(lcl->GetLclNum(), true, LocalDefinitionsMap::Overwrite);
+            (*use)->VisitLogicalLocalDefs(m_compiler, [this](const auto& def) {
+                m_map->Set(def.GetLclNum(), true, LocalDefinitionsMap::Overwrite);
+                return GenTree::VisitResult::Continue;
+            });
 
             return Compiler::WALK_CONTINUE;
         }

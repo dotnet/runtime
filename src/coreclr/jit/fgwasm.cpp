@@ -1698,6 +1698,17 @@ PhaseStatus Compiler::fgWasmControlFlow()
     }
 
     assert(dfsTree->IsForWasm());
+
+    // Layout below only covers blocks the DFS reaches; any other block would be
+    // emitted out of place and can produce an invalid function body.
+    //
+    if (dfsTree->GetPostOrderCount() != fgBBcount)
+    {
+        JITDUMP("\nWasm DFS reached %u of %u blocks\n", dfsTree->GetPostOrderCount(), fgBBcount);
+        NYI_WASM("Method has blocks not reachable from any wasm function entry");
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
     FlowGraphNaturalLoops* const loops = FlowGraphNaturalLoops::Find(dfsTree);
 
     // We should have transformed these away earlier

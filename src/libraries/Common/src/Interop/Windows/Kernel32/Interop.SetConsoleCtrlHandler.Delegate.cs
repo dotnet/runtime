@@ -9,7 +9,7 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
-        internal delegate bool ConsoleCtrlHandlerRoutine(int controlType);
+        internal delegate BOOL ConsoleCtrlHandlerRoutine(int controlType);
 
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Kernel32, SetLastError = true)]

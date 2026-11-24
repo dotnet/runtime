@@ -39,6 +39,9 @@ public class ConvertDllsToWebcil : Task
 
     public int WebcilVersion { get; set; }
 
+    /// <summary>Whether to emit producers and build_id sections in produced webcil modules.</summary>
+    public bool EmitMetadataSections { get; set; }
+
     /// <summary>
     /// Emits wrappers that import a memory64 (i64) memory, for browser-wasm64.
     /// </summary>
@@ -221,6 +224,7 @@ public class ConvertDllsToWebcil : Task
             var tmpWebcil = Path.Combine(tmpDir, webcilFileName);
             var logAdapter = new Microsoft.WebAssembly.Build.Tasks.LogAdapter(Log);
             var webcilWriter = Microsoft.WebAssembly.Build.Tasks.WebcilConverter.FromPortableExecutable(inputPath: dllFilePath, outputPath: tmpWebcil, logger: logAdapter, webcilVersion: WebcilVersion, memory64: Memory64);
+            webcilWriter.EmitMetadataSections = EmitMetadataSections;
             webcilWriter.ConvertToWebcil();
 
             if (!Directory.Exists(candidatePath))
