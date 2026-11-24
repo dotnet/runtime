@@ -68,7 +68,9 @@
   <Import Project="$(RepositoryEngineeringDir)PackageRids.props" />
 
   <ItemGroup>
-    <BuildRID Include="@(PackageRID)" />
+    <BuildRID Include="@(PackageRID)" Exclude="$(ExcludedBuildRIDs)" />
+    <!-- Keep the current RID available even when excluded from the published package list. -->
+    <BuildRID Include="@(PackageRID->WithMetadataValue('Identity', '$(TargetRid)'))" Exclude="@(BuildRID)" />
     <RestoreBuildRID Include="@(BuildRID)" Exclude="@(PackageRID->WithMetadataValue('IsOfficial', 'false'))" />
   </ItemGroup>
 

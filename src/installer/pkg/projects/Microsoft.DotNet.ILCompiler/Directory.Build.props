@@ -1,0 +1,8 @@
+<Project>
+  <PropertyGroup>
+    <!-- Bionic runtime targets do not have published ILCompiler host packages. -->
+    <ExcludedBuildRIDs>linux-bionic-*</ExcludedBuildRIDs>
+  </PropertyGroup>
+
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props, $(MSBuildThisFileDirectory)..))" />
+</Project>
