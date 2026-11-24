@@ -773,6 +773,9 @@ namespace System.Diagnostics.Tracing
 
             Debug.Assert(m_eventData != null);
             Debug.Assert(m_eventPipeProvider != null);
+            if (m_eventPipeProvider._eventProvider is EventPipeEventProvider { IsRegistered: false })
+                return;
+
             foreach (int metaKey in m_eventData.Keys)
             {
                 ref EventMetadata eventMetadata = ref CollectionsMarshal.GetValueRefOrNullRef(m_eventData, metaKey);

@@ -70,18 +70,26 @@ namespace System.Diagnostics.Tracing
             }
         }
 
+        internal bool IsRegistered => _provHandle != IntPtr.Zero;
+
         // Register an event provider.
         internal override unsafe void Register(Guid id, string name)
         {
             Debug.Assert(!_gcHandle.IsAllocated);
             _gcHandle = new GCHandle<EventPipeEventProvider>(this);
 
-            _provHandle = EventPipeInternal.CreateProvider(name, &Callback, (void*)GCHandle<EventPipeEventProvider>.ToIntPtr(_gcHandle));
-            if (_provHandle == 0)
+            try
             {
-                // Unable to create the provider.
-                _gcHandle.Dispose();
-                throw new OutOfMemoryException();
+                _provHandle = EventPipeInternal.CreateProvider(name, &Callback, (void*)GCHandle<EventPipeEventProvider>.ToIntPtr(_gcHandle));
+#if !(CORECLR && TARGET_BROWSER)
+                if (!IsRegistered)
+                    throw new OutOfMemoryException();
+#endif
+            }
+            finally
+            {
+                if (!IsRegistered)
+                    _gcHandle.Dispose();
             }
         }
 
@@ -135,7 +143,9 @@ namespace System.Diagnostics.Tracing
         internal override unsafe IntPtr DefineEventHandle(uint eventID, string eventName, long keywords, uint eventVersion, uint level,
             byte* pMetadata, uint metadataLength)
         {
-            return EventPipeInternal.DefineEvent(_provHandle, eventID, keywords, eventVersion, level, pMetadata, metadataLength);
+            return IsRegistered
+                ? EventPipeInternal.DefineEvent(_provHandle, eventID, keywords, eventVersion, level, pMetadata, metadataLength)
+                : IntPtr.Zero;
         }
 
         // Get or set the per-thread activity ID.
