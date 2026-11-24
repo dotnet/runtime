@@ -569,26 +569,29 @@ namespace System.Reflection
                     }
                 }
 
-                if (resultLocal != null && mi.ReturnType.IsByRef)
+                if (resultLocal != null)
                 {
-                    // Invoke returns a value, so return a reference to a copy of it in storage the proxy allocates.
-                    // return ref new T[] { (T)result }[0];
-                    Type elementType = mi.ReturnType.GetElementType()!;
-                    il.Emit(OpCodes.Ldc_I4_1);
-                    il.Emit(OpCodes.Newarr, elementType);
-                    il.Emit(OpCodes.Dup);
-                    il.Emit(OpCodes.Ldc_I4_0);
-                    il.Emit(OpCodes.Ldloc, resultLocal);
-                    Convert(_assembly, il, typeof(object), elementType, false);
-                    il.Emit(OpCodes.Stelem, elementType);
-                    il.Emit(OpCodes.Ldc_I4_0);
-                    il.Emit(OpCodes.Ldelema, elementType);
-                }
-                else if (resultLocal != null)
-                {
-                    // return (mi.ReturnType)result;
-                    il.Emit(OpCodes.Ldloc, resultLocal);
-                    Convert(_assembly, il, typeof(object), mi.ReturnType, false);
+                    if (mi.ReturnType.IsByRef)
+                    {
+                        // Invoke returns a value, so return a reference to a copy of it in storage the proxy allocates.
+                        // return ref new T[] { (T)result }[0];
+                        Type elementType = mi.ReturnType.GetElementType()!;
+                        il.Emit(OpCodes.Ldc_I4_1);
+                        il.Emit(OpCodes.Newarr, elementType);
+                        il.Emit(OpCodes.Dup);
+                        il.Emit(OpCodes.Ldc_I4_0);
+                        il.Emit(OpCodes.Ldloc, resultLocal);
+                        Convert(_assembly, il, typeof(object), elementType, false);
+                        il.Emit(OpCodes.Stelem, elementType);
+                        il.Emit(OpCodes.Ldc_I4_0);
+                        il.Emit(OpCodes.Ldelema, elementType);
+                    }
+                    else
+                    {
+                        // return (mi.ReturnType)result;
+                        il.Emit(OpCodes.Ldloc, resultLocal);
+                        Convert(_assembly, il, typeof(object), mi.ReturnType, false);
+                    }
                 }
 
                 il.Emit(OpCodes.Ret);
