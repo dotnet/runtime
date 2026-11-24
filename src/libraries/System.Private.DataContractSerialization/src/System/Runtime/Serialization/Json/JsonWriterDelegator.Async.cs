@@ -19,6 +19,15 @@ internal sealed partial class JsonWriterDelegator
 
     internal bool UsesDefaultDateTimeFormat => _dateTimeFormat is null;
 
+    internal override Task WriteStartElementAsync(string? prefix, string name, string? ns) =>
+        name is { Length: 0 } ? WriteEmptyNameStartElementAsync() : base.WriteStartElementAsync(prefix, name, ns);
+
+    private async Task WriteEmptyNameStartElementAsync()
+    {
+        await base.WriteStartElementAsync(null, JsonGlobals.itemString, JsonGlobals.itemString).ConfigureAwait(false);
+        await WriteAttributeStringAsync(null, JsonGlobals.itemString, null, string.Empty).ConfigureAwait(false);
+    }
+
     private async Task WriteJsonPrimitiveElementAsyncCore<T>(object value, XmlDictionaryString name, XmlDictionaryString? ns) where T : struct
     {
         await WriteStartElementPrimitiveAsync(name, ns).ConfigureAwait(false);

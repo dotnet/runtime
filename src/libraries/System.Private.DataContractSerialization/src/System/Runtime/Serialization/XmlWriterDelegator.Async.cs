@@ -63,7 +63,7 @@ internal partial class XmlWriterDelegator
         return CompleteElementOperation(operation, 1);
     }
 
-    internal Task WriteStartElementAsync(string? prefix, string name, string? ns)
+    internal virtual Task WriteStartElementAsync(string? prefix, string name, string? ns)
     {
         Task operation = AsyncWriter.WriteStartElementAsync(prefix, name, ns);
         return CompleteElementOperation(operation, 1);
