@@ -49,7 +49,7 @@ namespace System.Buffers.Text
 
             Number.NumberBuffer number = new Number.NumberBuffer(Number.NumberBufferKind.Decimal, stackalloc byte[Number.DecimalNumberBufferLength]);
 
-            if (!TryParseNumber(source, ref number, out bytesConsumed, options, out bool textUsedExponentNotation, out int lastNonZeroDigit))
+            if (!TryParseNumber(source, ref number, out bytesConsumed, options, out bool textUsedExponentNotation))
             {
                 value = default;
                 return false;
@@ -61,10 +61,6 @@ namespace System.Buffers.Text
                 bytesConsumed = 0;
                 return false;
             }
-
-            number.HasNonZeroTail = lastNonZeroDigit >= number.DigitsCount;
-            number.Digits[number.DigitsCount] = 0;
-            number.CheckConsistency();
 
             value = default;
 

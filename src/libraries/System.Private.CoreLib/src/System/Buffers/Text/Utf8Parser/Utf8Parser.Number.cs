@@ -13,8 +13,7 @@ namespace System.Buffers.Text
             AllowExponent = 0x00000001,
         }
 
-        /// <remarks>Caller must null-terminate number.Digits and set number.HasNonZeroTail after a successful parse.</remarks>
-        private static bool TryParseNumber(ReadOnlySpan<byte> source, ref Number.NumberBuffer number, out int bytesConsumed, ParseNumberOptions options, out bool textUsedExponentNotation, out int lastNonZeroDigitIndex)
+        private static bool TryParseNumber(ReadOnlySpan<byte> source, ref Number.NumberBuffer number, out int bytesConsumed, ParseNumberOptions options, out bool textUsedExponentNotation)
         {
             Debug.Assert(number.DigitsCount == 0);
             Debug.Assert(number.Scale == 0);
@@ -23,7 +22,6 @@ namespace System.Buffers.Text
 
             number.CheckConsistency();
             textUsedExponentNotation = false;
-            lastNonZeroDigitIndex = -1;
 
             if (source.Length == 0)
             {
@@ -35,6 +33,7 @@ namespace System.Buffers.Text
 
             int srcIndex = 0;
             int dstIndex = 0;
+            int nonZeroDigitEnd = 0;
 
             // Consume the leading sign if any.
             byte c = source[srcIndex];
@@ -74,12 +73,12 @@ namespace System.Buffers.Text
             if (srcIndex == source.Length)
             {
                 bytesConsumed = srcIndex;
+                number.CheckConsistency();
                 return true;
             }
 
             int startIndexNonLeadingDigitsBeforeDecimal = srcIndex;
 
-            int nzIndex = -1;
             while (srcIndex < source.Length)
             {
                 c = source[srcIndex];
@@ -90,17 +89,16 @@ namespace System.Buffers.Text
                     break;
                 }
 
-                if (value != 0)
-                {
-                    nzIndex = digitCount;
-                }
-
                 srcIndex++;
                 digitCount++;
+
+                if (value != 0)
+                {
+                    nonZeroDigitEnd = digitCount;
+                }
             }
             int numDigitsBeforeDecimal = srcIndex - startIndexDigitsBeforeDecimal;
             int numNonLeadingDigitsBeforeDecimal = srcIndex - startIndexNonLeadingDigitsBeforeDecimal;
-            lastNonZeroDigitIndex = nzIndex;
 
             Debug.Assert(dstIndex == 0);
             int numNonLeadingDigitsBeforeDecimalToCopy = Math.Min(numNonLeadingDigitsBeforeDecimal, maxDigitCount);
@@ -110,9 +108,7 @@ namespace System.Buffers.Text
 
             if (srcIndex == source.Length)
             {
-                number.DigitsCount = dstIndex;
-                bytesConsumed = srcIndex;
-                return true;
+                goto Done;
             }
 
             int numDigitsAfterDecimal = 0;
@@ -147,16 +143,15 @@ namespace System.Buffers.Text
                         break;
                     }
 
-                    if (value != 0)
-                    {
-                        nzIndex = digitCount;
-                    }
-
                     srcIndex++;
                     digitCount++;
+
+                    if (value != 0)
+                    {
+                        nonZeroDigitEnd = digitCount;
+                    }
                 }
                 numDigitsAfterDecimal = srcIndex - startIndexDigitsAfterDecimal;
-                lastNonZeroDigitIndex = nzIndex;
 
                 int numDigitsAfterDecimalToCopy = Math.Min(srcIndex - startIndexOfDigitsAfterDecimalToCopy, maxDigitCount - dstIndex);
                 source.Slice(startIndexOfDigitsAfterDecimalToCopy, numDigitsAfterDecimalToCopy).CopyTo(digits.Slice(dstIndex));
@@ -171,9 +166,7 @@ namespace System.Buffers.Text
                         return false;
                     }
 
-                    number.DigitsCount = dstIndex;
-                    bytesConsumed = srcIndex;
-                    return true;
+                    goto Done;
                 }
             }
 
@@ -185,9 +178,7 @@ namespace System.Buffers.Text
 
             if ((c & ~0x20u) != 'E')
             {
-                number.DigitsCount = dstIndex;
-                bytesConsumed = srcIndex;
-                return true;
+                goto Done;
             }
 
             //
@@ -292,8 +283,20 @@ namespace System.Buffers.Text
                 }
             }
 
+        Done:
+            number.HasNonZeroTail = nonZeroDigitEnd > dstIndex;
+            if (number.Kind == Number.NumberBufferKind.FloatingPoint &&
+                nonZeroDigitEnd < dstIndex &&
+                number.Scale < dstIndex)
+            {
+                // Trim trailing fractional zeros so we match Number.TryParseNumber.
+                dstIndex = Math.Max(nonZeroDigitEnd, number.Scale);
+            }
+
+            digits[dstIndex] = 0;
             number.DigitsCount = dstIndex;
             bytesConsumed = srcIndex;
+            number.CheckConsistency();
             return true;
         }
     }
