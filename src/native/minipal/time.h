@@ -71,4 +71,4 @@ uint64_t minipal_get_system_time(void);
 }
 #endif // __cplusplus
 
-#endif /* HAVE_MINIPAL_TIME_H */
+#endif // HAVE_MINIPAL_TIME_H

@@ -101,4 +101,4 @@ void minipal_log_sync_all(void);
 }
 #endif // __cplusplus
 
-#endif /* HAVE_MINIPAL_LOG_H */
+#endif // HAVE_MINIPAL_LOG_H

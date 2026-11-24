@@ -69,4 +69,4 @@ size_t minipal_convert_utf16_to_utf8(const CHAR16_T* source, size_t sourceLength
 }
 #endif // __cplusplus
 
-#endif /* HAVE_MINIPAL_UTF8_H */
+#endif // HAVE_MINIPAL_UTF8_H

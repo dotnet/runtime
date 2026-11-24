@@ -30,4 +30,4 @@ int32_t minipal_get_cryptographically_secure_random_bytes(uint8_t* buffer, int32
 #ifdef __cplusplus
 }
 #endif // __cplusplus
-#endif /* HAVE_MINIPAL_RANDOM_H */
+#endif // HAVE_MINIPAL_RANDOM_H

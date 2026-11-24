@@ -48,4 +48,4 @@ char** minipal_environ_get(void);
 }
 #endif
 
-#endif /* HAVE_MINIPAL_ENVIRON_H */
+#endif // HAVE_MINIPAL_ENVIRON_H

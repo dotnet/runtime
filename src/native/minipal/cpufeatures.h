@@ -91,4 +91,4 @@ bool minipal_detect_rosetta(void);
 }
 #endif // __cplusplus
 
-#endif
+#endif // HAVE_MINIPAL_CPUFEATURES_H

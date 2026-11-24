@@ -35,4 +35,4 @@ uint32_t minipal_xoshiro128pp_next(struct minipal_xoshiro128pp* pState);
 #ifdef __cplusplus
 }
 #endif // __cplusplus
-#endif /* HAVE_MINIPAL_XOSHIRO128PP_H */
+#endif // HAVE_MINIPAL_XOSHIRO128PP_H

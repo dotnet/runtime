@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#ifndef HAVE_MINIPAL_CONDITION_VARIABLE_H
-#define HAVE_MINIPAL_CONDITION_VARIABLE_H
+#ifndef HAVE_MINIPAL_CONDITIONVARIABLE_H
+#define HAVE_MINIPAL_CONDITIONVARIABLE_H
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -100,4 +100,4 @@ minipal_condition_variable_result minipal_condition_variable_wait_nonrecursive(
 }
 #endif // __cplusplus
 
-#endif // HAVE_MINIPAL_CONDITION_VARIABLE_H
+#endif // HAVE_MINIPAL_CONDITIONVARIABLE_H

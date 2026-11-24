@@ -39,4 +39,4 @@ size_t minipal_u16_strlen(const CHAR16_T* str);
 }
 #endif // __cplusplus
 
-#endif /* HAVE_MINIPAL_STRINGS_H */
+#endif // HAVE_MINIPAL_STRINGS_H
