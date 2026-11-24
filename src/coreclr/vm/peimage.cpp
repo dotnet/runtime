@@ -586,7 +586,7 @@ PTR_PEImageLayout PEImage::GetOrCreateLayout(DWORD imageLayoutMask)
     {
 #ifndef DACCESS_COMPILE
         GCX_PREEMP();
-        SimpleWriteLockHolder lock(m_pLayoutLock);
+        SimpleWriteLockHolder lock = SimpleRWLock::TakeWriteLock(m_pLayoutLock);
         pRetVal = GetOrCreateLayoutInternal(imageLayoutMask);
 #else
         // In DAC builds, we can't create any layouts - we must require that they already exist.
@@ -725,7 +725,7 @@ PTR_PEImage PEImage::CreateFromByteArray(const BYTE* array, COUNT_T size)
     PTR_PEImageLayout pLayout = PEImageLayout::CreateFromByteArray(pImage, array, size);
     _ASSERTE(!pLayout->IsMapped());
 
-    SimpleWriteLockHolder lock(pImage->m_pLayoutLock);
+    SimpleWriteLockHolder lock = SimpleRWLock::TakeWriteLock(pImage->m_pLayoutLock);
     pImage->SetLayout(IMAGE_FLAT,pLayout);
     return dac_cast<PTR_PEImage>(pImage.Detach());
 }
@@ -749,7 +749,7 @@ PTR_PEImage PEImage::CreateFromHMODULE(HMODULE hMod)
     {
         PTR_PEImageLayout pLayout = PEImageLayout::CreateFromHMODULE(hMod, pImage);
 
-        SimpleWriteLockHolder lock(pImage->m_pLayoutLock);
+        SimpleWriteLockHolder lock = SimpleRWLock::TakeWriteLock(pImage->m_pLayoutLock);
         pImage->SetLayout(IMAGE_LOADED, pLayout);
         if (pImage->m_pLayouts[IMAGE_FLAT] == NULL)
         {
@@ -789,7 +789,7 @@ HRESULT PEImage::TryOpenFile(bool takeLock)
 
     _ASSERTE(IsFile());
 
-    SimpleWriteLockHolder lock(m_pLayoutLock, takeLock);
+    SimpleWriteLockHolder lock = SimpleRWLock::TakeWriteLock(takeLock ? m_pLayoutLock : NULL);
 
     if (m_hFile != VMToOSInterface::InvalidFileHandle)
         return S_OK;

@@ -7,6 +7,7 @@
 //
 
 #include "common.h"
+#include <minipal/instructioncache.h>
 #include <inttypes.h>
 #include "riscv64singlestepper.h"
 
@@ -199,7 +200,7 @@ void RiscV64SingleStepper::Apply(T_CONTEXT *pCtx)
     pCtx->Pc = (uint64_t)m_rgCode;
 
     // Make sure the CPU sees the updated contents of the buffer.
-    FlushInstructionCache(GetCurrentProcess(), m_rgCode, kMaxCodeBuffer * sizeof(m_rgCode[0]));
+    minipal_flush_instruction_cache(m_rgCode, kMaxCodeBuffer * sizeof(m_rgCode[0]));
 
     // Done, set the state.
     m_state = Applied;

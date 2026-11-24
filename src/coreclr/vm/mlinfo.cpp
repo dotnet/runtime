@@ -3588,13 +3588,14 @@ bool IsUnsupportedTypedrefReturn(MetaSig& msig)
 
 #include "stubhelpers.h"
 
-extern "C" void QCALLTYPE StubHelpers_CreateCustomMarshaler(MethodDesc* pMD, mdToken paramToken, TypeHandle hndManagedType, QCall::ObjectHandleOnStack retObject, QCallExceptionStatus* qcallError)
+extern "C" void QCALLTYPE StubHelpers_CreateCustomMarshaler(MethodDesc* pMD, mdToken paramToken, EnregisteredTypeHandle pManagedType, QCall::ObjectHandleOnStack retObject, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
     BEGIN_QCALL;
 
     CustomMarshalerInfo* pCMInfo = NULL;
+    TypeHandle hndManagedType = TypeHandle::FromPtr(pManagedType);
 
     Module* pModule = pMD->GetModule();
     Assembly* pAssembly = pModule->GetAssembly();

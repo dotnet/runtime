@@ -233,7 +233,7 @@ namespace System.Net
 
         // Decodes the domain name into the destination buffer as a dotted string.
         // ACE-encoded labels (starting with "xn--") are converted back to Unicode.
-        public unsafe bool TryDecode(Span<char> destination, out int charsWritten)
+        public bool TryDecode(Span<char> destination, out int charsWritten)
         {
             charsWritten = 0;
 
@@ -283,7 +283,7 @@ namespace System.Net
         // Returns the character count of the decoded dotted-string representation.
         // For names containing ACE-encoded labels, this returns the length of the Unicode form.
         // Useful for sizing a destination buffer before calling TryDecode.
-        public unsafe int GetFormattedLength()
+        public int GetFormattedLength()
         {
             if (_isAce)
             {
@@ -359,7 +359,7 @@ namespace System.Net
             return true;
         }
 
-        public override unsafe string ToString()
+        public override string ToString()
         {
             Span<char> chars = stackalloc char[MaxEncodedLength + 1];
             bool success = TryDecode(chars, out int charsWritten);

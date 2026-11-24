@@ -38,9 +38,13 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
                 {
                     foreach (Meter meter in meterList)
                     {
-                        if (meter.Version == options.Version && DiagnosticsHelper.CompareTags(meter.Tags as IList<KeyValuePair<string, object?>>, options.Tags))
+                        // SAFETY: To be audited
+                        unsafe
                         {
-                            return meter;
+                            if (meter.Version == options.Version && DiagnosticsHelper.CompareTags(meter.Tags as IList<KeyValuePair<string, object?>>, options.Tags))
+                            {
+                                return meter;
+                            }
                         }
                     }
                 }

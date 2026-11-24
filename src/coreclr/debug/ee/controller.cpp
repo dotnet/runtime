@@ -11,6 +11,7 @@
 // cause the code,etc, to be silently ignored
 
 #include "stdafx.h"
+#include <minipal/instructioncache.h>
 #include "openum.h"
 #include "../inc/common.h"
 #include "eeconfig.h"
@@ -270,7 +271,7 @@ SharedPatchBypassBuffer* DebuggerControllerPatch::GetOrCreateSharedPatchBypassBu
     // Since we just created a new buffer of code, but the CPU caches code and may
     // not be aware of our changes. This should force the CPU to dump any cached
     // instructions it has in this region and load the new ones from memory
-    FlushInstructionCache(GetCurrentProcess(), patchBypassRW + CORDbg_BREAK_INSTRUCTION_SIZE,
+    minipal_flush_instruction_cache(patchBypassRW + CORDbg_BREAK_INSTRUCTION_SIZE,
     MAX_INSTRUCTION_LENGTH - CORDbg_BREAK_INSTRUCTION_SIZE);
 
     return m_pSharedPatchBypassBuffer;
@@ -3568,7 +3569,7 @@ void DebuggerController::DisableSingleStep()
 //
 void DebuggerController::ApplyTraceFlag(Thread *thread)
 {
-    LOG((LF_CORDB,LL_INFO1000, "DC::ApplyTraceFlag thread:0x%p [0x%0x]\n", thread, Debugger::GetThreadIdHelper(thread)));
+    LOG((LF_CORDB,LL_INFO1000, "DC::ApplyTraceFlag thread:0x%p [0x%0zx]\n", thread, Debugger::GetThreadIdHelper(thread)));
 
     CONTEXT *context;
     if(thread->GetInteropDebuggingHijacked())
@@ -3938,7 +3939,7 @@ void DebuggerController::EnableTraceCall(FramePointer maxFrame)
 
     ASSERT(m_thread != NULL);
 
-    LOG((LF_CORDB,LL_INFO1000, "DC::ETC maxFrame=%p, thread=0x%x\n",
+    LOG((LF_CORDB,LL_INFO1000, "DC::ETC maxFrame=%p, thread=0x%zx\n",
          maxFrame.GetSPValue(), Debugger::GetThreadIdHelper(m_thread)));
 
     // JMC stepper should never enabled this. (They should enable ME instead).
@@ -3983,7 +3984,7 @@ void DebuggerController::DisableTraceCall()
     {
         if (m_traceCall)
         {
-            LOG((LF_CORDB,LL_INFO1000, "DC::DTC thread=0x%x\n",
+            LOG((LF_CORDB,LL_INFO1000, "DC::DTC thread=0x%zx\n",
              Debugger::GetThreadIdHelper(m_thread)));
 
             g_pEEInterface->DisableTraceCall(m_thread);
@@ -4164,7 +4165,7 @@ void DebuggerController::EnableMethodEnter()
     CONTRACTL_END;
 
     ControllerLockHolder chController;
-    Debugger::DebuggerDataLockHolder chInfo(g_pDebugger);
+    Debugger::DebuggerDataLockHolder chInfo = Debugger::TakeDebuggerDataLock(g_pDebugger);
 
     // Both JMC + Traditional steppers may use MethodEnter.
     // For JMC, it's a core part of functionality. For Traditional steppers, we use it as a backstop
@@ -4196,7 +4197,7 @@ void DebuggerController::DisableMethodEnter()
     CONTRACTL_END;
 
     ControllerLockHolder chController;
-    Debugger::DebuggerDataLockHolder chInfo(g_pDebugger);
+    Debugger::DebuggerDataLockHolder chInfo = Debugger::TakeDebuggerDataLock(g_pDebugger);
 
     if (m_fEnableMethodEnter)
     {
@@ -8964,7 +8965,7 @@ TP_RESULT DebuggerThreadStarter::TriggerPatch(DebuggerControllerPatch *patch,
     Module *module = patch->key.module;
     BOOL managed = patch->IsManagedPatch();
 
-    LOG((LF_CORDB,LL_INFO1000, "DebuggerThreadStarter::TriggerPatch for thread 0x%x\n", Debugger::GetThreadIdHelper(thread)));
+    LOG((LF_CORDB,LL_INFO1000, "DebuggerThreadStarter::TriggerPatch for thread 0x%zx\n", Debugger::GetThreadIdHelper(thread)));
 
     if (module == NULL && managed)
     {
@@ -9505,7 +9506,7 @@ TP_RESULT DebuggerEnCBreakpoint::TriggerPatch(DebuggerControllerPatch *patch,
     EditAndContinueModule *pModule = (EditAndContinueModule*)module;
 
     // Release the controller lock for the rest of this method
-    CrstBase::UnsafeCrstInverseHolder inverseLock(&g_criticalSection);
+    CrstBase::UnsafeCrstInverseHolder inverseLock = CrstBase::ReleaseForScope(&g_criticalSection);
 
     // resumeIL is the IL offset in the new version of the method the debugger wants
     // to resume to.  We'll pass the address of this variable over to the right-side
@@ -9624,7 +9625,7 @@ TP_RESULT DebuggerEnCBreakpoint::HandleRemapComplete(DebuggerControllerPatch *pa
     LOG((LF_ENC, LL_ALWAYS, "DEnCBP::HRC: unlocking controller\n"));
 
     // Unlock the controller lock and dispatch the remap complete event
-    CrstBase::UnsafeCrstInverseHolder inverseLock(&g_criticalSection);
+    CrstBase::UnsafeCrstInverseHolder inverseLock = CrstBase::ReleaseForScope(&g_criticalSection);
 
     LOG((LF_ENC, LL_ALWAYS, "DEnCBP::HRC: sending RemapCompleteEvent\n"));
 

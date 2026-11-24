@@ -1580,13 +1580,13 @@ DispatchToken LoaderAllocator::GetDispatchToken(
         if (m_pFatTokenSetLock == NULL)
         {
             NewHolder<SimpleRWLock> pFatTokenSetLock{ new SimpleRWLock(COOPERATIVE_OR_PREEMPTIVE, LOCK_TYPE_DEFAULT) };
-            SimpleWriteLockHolder lock(pFatTokenSetLock);
+            SimpleWriteLockHolder lock = SimpleRWLock::TakeWriteLock(pFatTokenSetLock);
             NewHolder<FatTokenSet> pFatTokenSet{ new FatTokenSet };
 
             if (InterlockedCompareExchangeT(
                     &m_pFatTokenSetLock, static_cast<SimpleRWLock*>(pFatTokenSetLock), NULL) != NULL)
             {   // Someone beat us to it
-                lock.Release();
+                lock.Free();
                 // The holder will delete the lock.
             }
             else
@@ -1602,7 +1602,7 @@ DispatchToken LoaderAllocator::GetDispatchToken(
         //
 
         // Lookup
-        SimpleReadLockHolder rlock(m_pFatTokenSetLock);
+        SimpleReadLockHolder rlock = SimpleRWLock::TakeReadLock(m_pFatTokenSetLock);
         DispatchTokenFat key(typeId, slotNumber);
         DispatchTokenFat *pFat = m_pFatTokenSet->Lookup(&key);
         if (pFat != NULL)
@@ -1611,8 +1611,8 @@ DispatchToken LoaderAllocator::GetDispatchToken(
         }
         else
         {   // Create
-            rlock.Release();
-            SimpleWriteLockHolder wlock(m_pFatTokenSetLock);
+            rlock.Free();
+            SimpleWriteLockHolder wlock = SimpleRWLock::TakeWriteLock(m_pFatTokenSetLock);
 
             // Check to see if someone beat us to the punch between
             // releasing the read lock and taking the write lock.
@@ -1951,6 +1951,8 @@ void AssemblyLoaderAllocator::CleanupHandles()
         FreeTLSIndicesForLoaderAllocator(this);
     }
 #endif // FEATURE_MULTITHREADING
+
+    GCX_COOP();
 
     // This method doesn't take a lock around RemoveHead because it's supposed to
     // be called only from Terminate

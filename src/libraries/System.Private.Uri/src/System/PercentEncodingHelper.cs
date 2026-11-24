@@ -70,7 +70,14 @@ namespace System
 
             uint temp = fourByteBuffer; // make a copy so that the *copy* (not the original) is marked address-taken
 
-            if (Rune.DecodeFromUtf8(MemoryMarshal.AsBytes(new ReadOnlySpan<uint>(ref temp))[..bytesLeftInBuffer], out Rune rune, out bytesConsumed) == OperationStatus.Done)
+            scoped ReadOnlySpan<byte> tempBytes;
+            // SAFETY: To be audited
+            unsafe
+            {
+                tempBytes = MemoryMarshal.AsBytes(new ReadOnlySpan<uint>(ref temp));
+            }
+
+            if (Rune.DecodeFromUtf8(tempBytes[..bytesLeftInBuffer], out Rune rune, out bytesConsumed) == OperationStatus.Done)
             {
                 Debug.Assert(bytesConsumed >= 2, $"Rune.DecodeFromUtf8 consumed {bytesConsumed} bytes, likely indicating input was modified concurrently during UnescapePercentEncodedUTF8Sequence's execution");
 

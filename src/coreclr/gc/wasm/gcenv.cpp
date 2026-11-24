@@ -86,7 +86,7 @@ uint64_t GCToOSInterface::GetCurrentThreadIdForLogging()
 
 uint32_t GCToOSInterface::GetCurrentProcessId()
 {
-    return getpid();
+    return minipal_get_current_process_id();
 }
 
 bool GCToOSInterface::SetCurrentThreadIdealAffinity(uint16_t srcProcNo, uint16_t dstProcNo)

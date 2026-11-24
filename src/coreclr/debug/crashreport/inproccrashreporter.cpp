@@ -2187,7 +2187,7 @@ InProcCrashReporter::BeginConsoleReport(int signal)
         m_consoleWriter.WriteKeyValueStr("Cmdline", m_processName);
     }
 
-    m_consoleWriter.WriteKeyValueDecimal("pid", static_cast<uint64_t>(GetCurrentProcessId()));
+    m_consoleWriter.WriteKeyValueDecimal("pid", static_cast<uint64_t>(getpid()));
 
     m_consoleWriter.AppendStr("signal ");
     m_consoleWriter.AppendSignedDecimal(signal);
@@ -2251,7 +2251,7 @@ InProcCrashReporter::BeginJsonReport()
         m_jsonWriter.WriteString("process_name", m_processName);
     }
 
-    m_jsonWriter.WriteDecimalAsString("pid", static_cast<uint64_t>(GetCurrentProcessId()));
+    m_jsonWriter.WriteDecimalAsString("pid", static_cast<uint64_t>(getpid()));
 }
 
 bool

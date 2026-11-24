@@ -32,6 +32,7 @@
 #include <minipal/strings.h>
 #include <minipal/time.h>
 #include <minipal.h>
+#include <minipal/thread.h>
 
 #ifdef TARGET_UNIX
 #include <sys/time.h>
@@ -1163,7 +1164,7 @@ uint32_t
 ep_rt_current_process_get_id (void)
 {
 	STATIC_CONTRACT_NOTHROW;
-	return static_cast<uint32_t>(GetCurrentProcessId ());
+	return minipal_get_current_process_id();
 }
 
 static
@@ -1207,11 +1208,7 @@ ep_rt_current_thread_get_id (void)
 {
 	STATIC_CONTRACT_NOTHROW;
 
-#ifdef TARGET_UNIX
-	return static_cast<ep_rt_thread_id_t>(::PAL_GetCurrentOSThreadId ());
-#else
-	return static_cast<ep_rt_thread_id_t>(::GetCurrentThreadId ());
-#endif
+	return static_cast<ep_rt_thread_id_t>(minipal_get_current_thread_id ());
 }
 
 static
@@ -1484,7 +1481,7 @@ ep_rt_lock_acquire (ep_rt_lock_handle_t *lock)
 	{
 		if (lock) {
 			CrstBase::CrstHolderWithState holder (lock->lock);
-			holder.SuppressRelease ();
+			holder.Detach ();
 		}
 	}
 	EX_CATCH
@@ -1506,8 +1503,8 @@ ep_rt_lock_release (ep_rt_lock_handle_t *lock)
 	EX_TRY
 	{
 		if (lock) {
-			CrstBase::UnsafeCrstInverseHolder holder (lock->lock);
-			holder.SuppressRelease ();
+			CrstBase::UnsafeCrstInverseHolder holder = CrstBase::ReleaseForScope (lock->lock);
+			holder.SuppressAcquire ();
 		}
 	}
 	EX_CATCH
