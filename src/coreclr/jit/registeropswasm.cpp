@@ -269,6 +269,11 @@ const char* getRegName(regNumber reg)
         return "NA";
     }
 
+    if (reg == REG_STK)
+    {
+        return "STK";
+    }
+
     // TODO-Wasm: remove this hardcoded list workaround by refactoring this API.
     // clang-format off
     static const char* const s_names[] = {

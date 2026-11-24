@@ -10,7 +10,6 @@
 #include "regallocwasm.h"
 
 #include "lower.h" // for LowerRange()
-#include "fgwasm.h"
 
 RegAllocInterface* GetRegisterAllocator(Compiler* compiler)
 {
@@ -50,6 +49,7 @@ PhaseStatus WasmRegAlloc::doRegisterAllocation()
 //   bb - the basic block whose start is being processed
 //
 // Notes:
+
 //   This relies on m_currentFunclet to try and avoid work in some cases.
 //
 void WasmRegAlloc::recordVarLocationsAtStartOfBB(BasicBlock* bb)
@@ -1388,6 +1388,21 @@ void WasmRegAlloc::ResolveReferences()
         return genIsValidReg(virtReg) && (WasmRegToType(virtReg) == WasmRegToType(abiReg));
     };
 
+    auto mergeAssignments = [&](int destIdx, int srcIdx){
+        PerFuncletData* srcData = m_perFuncletData[srcIdx];
+        PerFuncletData* destData = m_perFuncletData[destIdx];
+
+        for (unsigned i = 0; i < m_compiler->lvaTrackedCount; i++)
+        {
+            regNumber srcAssigned = srcData->m_physicalRegAssignments[i];
+            regNumber destAssigned = destData->m_physicalRegAssignments[i];
+            if (srcAssigned != REG_STK && destAssigned == REG_STK)
+            {
+                destData->m_physicalRegAssignments[i] = srcAssigned;
+            }
+        }
+    };
+
     // Resolve funclet by funclet, in reverse order, so that we process the main method region last.
     //
     for (FuncInfoDsc* const funcInfo : m_compiler->Funcs().Reverse())
@@ -1514,13 +1529,13 @@ void WasmRegAlloc::ResolveReferences()
             }
         }
 
-        // At this point, physRegBankByType should reflect the declaration count necessary for any extra locals needed
-        // for ABI parameters. Each local index remains relative to the IndexBase, which is unset at this point. We
+        // At this point, physRegMap should reflect the declaration count necessary for any extra locals needed
+        // for ABI parameters. Each local index remains relative to the final IndexBase, which is unset at this point. We
         // can't set it until we know how many locals we will actually need. Once we have the final local count, we will
-        // resolve the indices to their actual physical register assignments. At this point we will update the LclVarDsc
-        // at the end of this method to be the assignments for the main method.
-        //
-        // Then when codegen calls back to the allocator via recordVarLocationsAtStartOfBB
+        // resolve the indices to their actual physical register assignments. 
+        // 
+        // At the end of this method, we will update the LclVarDsc
+        // to be the assignments for the main method. Then when codegen calls back to the allocator via recordVarLocationsAtStartOfBB
         // we will either verify the assignments are correct for the block, or update them
         // using the per-funclet mappings kept in the per-funclet m_physicalRegAssignments.
         //
@@ -1536,6 +1551,13 @@ void WasmRegAlloc::ResolveReferences()
         }
         AssignIntervals(intervals, physRegMap);
 
+        for (Interval* interval : intervals)
+        {
+            assert(genIsValidReg(interval->physReg));
+            PhysicalRegBank& physRegs = physRegMap[static_cast<unsigned>(WasmRegToType(interval->physReg))];
+            data->m_physicalRegAssignments[interval->trackedIdx] = interval->physReg;
+        }
+
         // Allocate temporary regs to physical regs for each wasm value type
         for (WasmValueType type = WasmValueType::First; type < WasmValueType::Count; ++type)
         {
@@ -1546,7 +1568,7 @@ void WasmRegAlloc::ResolveReferences()
             }
         }
 
-        // At this point, we know how many physical registers are needed for the number of enregistered locals +
+        // At this point, we know how many physical registers are needed for ABI + enregistered locals +
         // temporary registers; We can now adjust the IndexBase for each local group to reflect the actual number of
         // physical registers needed, and re-write the index-relative local indices to reflect the final physical
         // register indices.
@@ -1557,28 +1579,20 @@ void WasmRegAlloc::ResolveReferences()
             physRegs.IndexBase = indexBase; // iteration 0: pre-computed index base from the number of ABI registers
             physRegs.Index += indexBase;
             indexBase += physRegs.DeclaredCount;
-            JITDUMP("Type: %s, IndexBase: %d, Index: %d, DeclaredCount: %d\n", WasmValueTypeName(type),
-                    physRegs.IndexBase, physRegs.Index, physRegs.DeclaredCount);
         }
 
-        for (Interval* interval : intervals)
+        // Resolve relative local -> physical register assignments to their actual physical register indices.
+        for (unsigned i = 0; i < data->m_physicalRegAssignments.size(); i++)
         {
-            assert(genIsValidReg(interval->physReg));
-            PhysicalRegBank& physRegs = physRegMap[static_cast<unsigned>(WasmRegToType(interval->physReg))];
-            interval->physReg         = ResolveRegOffset(interval->physReg, physRegs.IndexBase);
-            data->m_physicalRegAssignments[interval->trackedIdx] = interval->physReg;
-        }
-
-        for (WasmValueType type = WasmValueType::First; type < WasmValueType::Count; ++type)
-        {
-            TemporaryRegBank& regs     = temporaryRegMap[static_cast<unsigned>(type)];
-            PhysicalRegBank&  physRegs = physRegMap[static_cast<unsigned>(type)];
-            for (unsigned i = 0; i < regs.Count; i++)
+            if (genIsRelativeReg(data->m_physicalRegAssignments[i]))
             {
-                regs.Regs[i] = ResolveRegOffset(regs.Regs[i], physRegs.IndexBase);
+                WasmValueType type = WasmRegToType(data->m_physicalRegAssignments[i]);
+                data->m_physicalRegAssignments[i] = ResolveRegOffset(data->m_physicalRegAssignments[i], physRegMap[static_cast<unsigned>(type)].IndexBase);
             }
         }
 
+        // Resolve SP and FP register relative offsets to their actual physical register indices if they haven't
+        // been adjusted already
         if (data->m_spReg != REG_NA && genIsRelativeReg(data->m_spReg))
         {
             data->m_spReg =
@@ -1589,6 +1603,17 @@ void WasmRegAlloc::ResolveReferences()
         {
             data->m_fpReg =
                 ResolveRegOffset(data->m_fpReg, physRegMap[static_cast<unsigned>(WasmValueType::I)].IndexBase);
+        }
+
+        // Resolve temporary register banks relative offsets to their actual physical register indices.
+        for (WasmValueType type = WasmValueType::First; type < WasmValueType::Count; ++type)
+        {
+            TemporaryRegBank& regs     = temporaryRegMap[static_cast<unsigned>(type)];
+            PhysicalRegBank&  physRegs = physRegMap[static_cast<unsigned>(type)];
+            for (unsigned i = 0; i < regs.Count; i++)
+            {
+                regs.Regs[i] = ResolveRegOffset(regs.Regs[i], physRegs.IndexBase);
+            }
         }
 
         // Now remap all remaining virtual register references.
@@ -1676,6 +1701,11 @@ void WasmRegAlloc::ResolveReferences()
             funcInfo->funWasmExnRefLocalIndex = indexBase;
             decls->push_back({WasmValueType::ExnRef, 1});
         }
+
+        // Copy any local -> reg mappings in this funclet to the root funclets if they don't exist there already.
+        // This allows us to ensure the root funclet knows about all reg assignments, 
+        // even for locals which may not ever be used in the root funclet.
+        mergeAssignments(ROOT_FUNC_IDX, m_currentFunclet);
     }
 
     // Set all lcl var assignments to the main method's allocations.
