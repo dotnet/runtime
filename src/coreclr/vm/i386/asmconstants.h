@@ -104,8 +104,14 @@ ASMCONSTANTS_C_ASSERT(Thread_m_pFrame == offsetof(Thread, m_pFrame))
 ASMCONSTANTS_C_ASSERT(Thread::TS_Hijacked == TS_Hijacked_ASM)
 #endif
 
-#define               OFFSETOF__RuntimeThreadLocals__ee_alloc_context 0
-ASMCONSTANTS_C_ASSERT(OFFSETOF__RuntimeThreadLocals__ee_alloc_context == offsetof(RuntimeThreadLocals, alloc_context));
+// Offset of the thread's ee_alloc_context within ThreadLocalData (t_ThreadStatics)
+#ifdef TARGET_WINDOWS
+#define               OFFSETOF__ThreadLocalData__ee_alloc_context 0x20
+#else
+#define               OFFSETOF__ThreadLocalData__ee_alloc_context 0x1C
+#endif
+ASMCONSTANTS_C_ASSERT(OFFSETOF__ThreadLocalData__ee_alloc_context == offsetof(ThreadLocalData, runtimeThreadLocals) +
+                                                                     offsetof(RuntimeThreadLocals, alloc_context));
 
 #ifdef TARGET_WINDOWS
 #define               OFFSETOF__ee_alloc_context__alloc_ptr 0x8

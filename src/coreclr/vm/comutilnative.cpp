@@ -870,7 +870,7 @@ FCIMPL0(INT64, GC_GetAllocatedBytesForCurrentThread)
 
     INT64 currentAllocated = 0;
     Thread *pThread = GetThread();
-    gc_alloc_context* ac = &t_runtime_thread_locals.alloc_context.m_GCAllocContext;
+    gc_alloc_context* ac = &GetRuntimeThreadLocals().alloc_context.m_GCAllocContext;
     currentAllocated = ac->alloc_bytes + ac->alloc_bytes_uoh - (ac->alloc_limit - ac->alloc_ptr);
 
     return currentAllocated;

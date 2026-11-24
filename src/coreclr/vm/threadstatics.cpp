@@ -32,8 +32,9 @@ static uint32_t g_NextNonCollectibleTlsSlot = NUMBER_OF_TLSOFFSETS_NOT_USED_IN_N
 static uint32_t g_directThreadLocalTLSBytesAvailable = EXTENDED_DIRECT_THREAD_LOCAL_SIZE;
 
 #ifdef TARGET_64BIT
-// See the comment on EXTENDED_DIRECT_THREAD_LOCAL_SIZE: keep libcoreclr's TLS footprint stable.
-static_assert(sizeof(ThreadLocalData) == 96, "Changing the size of ThreadLocalData changes the size of libcoreclr's TLS segment");
+// See the comment on ThreadLocalData::runtimeThreadLocals: keep libcoreclr's TLS footprint stable.
+static_assert(sizeof(ThreadLocalData) == 96 + sizeof(RuntimeThreadLocals), "Changing the size of ThreadLocalData changes the size of libcoreclr's TLS segment");
+static_assert(offsetof(ThreadLocalData, ExtendedDirectThreadLocalTLSData) % 8 == 0, "ExtendedDirectThreadLocalTLSData must be able to hold 8-byte aligned data");
 #endif
 
 static CrstStatic g_TLSCrst;
@@ -352,7 +353,6 @@ void InitializeCurrentThreadsStaticData(Thread* pThread)
     t_ThreadStatics.pThread->m_ThreadLocalDataPtr = &t_ThreadStatics;
     t_ThreadStatics.pThread->m_TlsSpinLock.Init(LOCK_TLSDATA, FALSE);
     t_ThreadStatics.managedThreadId = pThread->GetThreadId();
-    t_ThreadStatics.pAllocContext = &t_runtime_thread_locals.alloc_context;
 }
 
 void AllocateThreadStaticBoxes(MethodTable *pMT, PTRARRAYREF *ppRef)
@@ -768,8 +768,10 @@ void GetTLSIndexForThreadStatic(MethodTable* pMT, bool gcStatic, TLSIndex* pInde
             }
             else if (isAllocHelpers)
             {
-                // AllocHelpers.t_allocContext (its only thread static) is ThreadLocalData::pAllocContext.
-                newTLSIndex = TLSIndex(TLSIndexType::DirectOnThreadLocalData, offsetof(ThreadLocalData, pAllocContext) - OFFSETOF__CORINFO_Array__data);
+                // AllocHelpers.t_allocContext (its only thread static) is the first field of the thread's
+                // ee_alloc_context, which is embedded in ThreadLocalData.
+                static_assert(offsetof(RuntimeThreadLocals, alloc_context) == 0 && offsetof(ee_alloc_context, m_CombinedLimit) == 0);
+                newTLSIndex = TLSIndex(TLSIndexType::DirectOnThreadLocalData, offsetof(ThreadLocalData, runtimeThreadLocals) - OFFSETOF__CORINFO_Array__data);
                 usedDirectOnThreadLocalDataPath = true;
             }
             else

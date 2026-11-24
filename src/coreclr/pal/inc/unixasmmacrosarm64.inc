@@ -191,10 +191,10 @@
         EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr, 0x30
 #else
         PROLOG_SAVE_REG_PAIR_INDEXED      x0, lr, -0x10
-        INLINE_GET_TLS_VAR \target, C_FUNC(t_runtime_thread_locals)
+        INLINE_GET_TLS_VAR \target, C_FUNC(t_ThreadStatics)
 
-        .ifnc OFFSETOF__RuntimeThreadLocals__ee_alloc_context, 0
-                add     \target, \target, OFFSETOF__RuntimeThreadLocals__ee_alloc_context
+        .ifnc OFFSETOF__ThreadLocalData__ee_alloc_context, 0
+                add     \target, \target, OFFSETOF__ThreadLocalData__ee_alloc_context
         .endif
 
         EPILOG_RESTORE_REG_PAIR_INDEXED   x0, lr, 0x10

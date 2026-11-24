@@ -1179,7 +1179,7 @@ FCIMPL1(Object*, RuntimeTypeHandle_InternalAllocNoChecks_FastPath, MethodTable* 
     SIZE_T size = pMT->GetBaseSize();
     _ASSERTE(size % DATA_ALIGNMENT == 0);
 
-    ee_alloc_context* allocContext = &t_runtime_thread_locals.alloc_context;
+    ee_alloc_context* allocContext = &GetRuntimeThreadLocals().alloc_context;
     BYTE* allocPtr = allocContext->m_GCAllocContext.alloc_ptr;
     BYTE* limit = allocContext->getCombinedLimit();
 

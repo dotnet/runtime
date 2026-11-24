@@ -31,22 +31,22 @@ FASTCALL_ENDFUNC macro
     FuncNameReal endp
 endm
 
-t_runtime_thread_locals  TEXTEQU <?t_runtime_thread_locals@@3URuntimeThreadLocals@@A>
+t_ThreadStatics  TEXTEQU <?t_ThreadStatics@@3UThreadLocalData@@A>
 
 ; Inlined version of GetThreadEEAllocContext. Trashes trashReg
 INLINE_GET_ALLOC_CONTEXT_BASE macro destReg, trashReg
     ASSUME fs : NOTHING
 
     EXTERN __tls_index : DWORD
-    EXTERN t_runtime_thread_locals : DWORD
+    EXTERN t_ThreadStatics : DWORD
 
     mov     destReg, [__tls_index]
     mov     trashReg, fs:[__tls_array]
     mov     destReg, [trashReg + destReg * 4]
-    add     destReg, SECTIONREL t_runtime_thread_locals
+    add     destReg, SECTIONREL t_ThreadStatics
 endm
 
-OFFSETOF__ee_alloc_context  EQU OFFSETOF__RuntimeThreadLocals__ee_alloc_context
+OFFSETOF__ee_alloc_context  EQU OFFSETOF__ThreadLocalData__ee_alloc_context
 
 PUSH_COOP_PINVOKE_FRAME macro target
     ; push ebp-frame

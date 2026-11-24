@@ -11,12 +11,12 @@ namespace System.Runtime.CompilerServices
     // the runtime only installs them on linux arm64/loongarch64/riscv64 when the JIT can inline thread-static access
     // (see InitJITAllocationHelpers). Not compiled for WebAssembly.
     //
-    // The fast paths bump-allocate from the current thread's allocation context (ee_alloc_context, which lives in
-    // the native t_runtime_thread_locals). The runtime publishes a pointer to it in ThreadLocalData::pAllocContext,
-    // which is mapped onto the t_allocContext thread static below (the same mechanism as Thread.DirectOnThreadLocalData
-    // and ManagedThreadId), so the fast path is an inlined thread-static access + bump + MethodTable store, with no
-    // call into native code. If the allocation does not fit (or the thread's pointer is not set up yet), the existing
-    // native slow helpers are called.
+    // The fast paths bump-allocate from the current thread's allocation context (ee_alloc_context), which the runtime
+    // embeds in ThreadLocalData (t_ThreadStatics, the native block that also holds the managed thread statics). The
+    // t_allocContext thread static below is mapped onto its first field (the same mechanism as
+    // Thread.DirectOnThreadLocalData and ManagedThreadId), so the address of the allocation context is the address of
+    // that thread static: an inlined TLS base + constant, with no load and no call into native code. If the
+    // allocation does not fit (including a not yet initialized, all-zero context), the native slow helpers are called.
     //
     // GC SAFETY: between the update of alloc_ptr and the store of the MethodTable pointer (i.e. while the new object
     // is not yet a valid object), the thread must not be suspended for GC. This holds because:
@@ -49,11 +49,17 @@ namespace System.Runtime.CompilerServices
             public nint AllocPtr;
         }
 
-        // Must be the only thread static of this class: the runtime maps it onto ThreadLocalData::pAllocContext
-        // (see the TLSIndexType::DirectOnThreadLocalData handling in threadstatics.cpp). Null until the runtime has set
-        // up the thread's ThreadLocalData, in which case the fast paths fall back to the slow paths.
+        // Must be the only thread static of this class: the runtime maps it onto the first field (m_CombinedLimit) of
+        // the ee_alloc_context embedded in ThreadLocalData (see the TLSIndexType::DirectOnThreadLocalData handling in
+        // threadstatics.cpp). Only its address is used.
         [ThreadStatic]
-        private static EEAllocContext* t_allocContext;
+        private static nint t_allocContext;
+
+        private static EEAllocContext* AllocContext
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => (EEAllocContext*)Unsafe.AsPointer(ref t_allocContext);
+        }
 
         // Must match STRING_BASE_SIZE / SZARRAY_BASE_SIZE: object header + MethodTable* + length (+ terminator).
 #if TARGET_64BIT
@@ -85,22 +91,19 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private static object NewSFast(MethodTable* pMT)
         {
-            EEAllocContext* ctx = t_allocContext;
-            if (ctx != null)
+            EEAllocContext* ctx = AllocContext;
+            nuint size = pMT->BaseSize;
+            byte* p = (byte*)ctx->AllocPtr;
+            if (size <= (nuint)(ctx->CombinedLimit - p))
             {
-                nuint size = pMT->BaseSize;
-                byte* p = (byte*)ctx->AllocPtr;
-                if (size <= (nuint)(ctx->CombinedLimit - p))
-                {
-                    // No GC safe point from here until return.
-                    *(MethodTable**)p = pMT;
-                    // Re-read the object reference from the allocation context instead of reinterpreting `p`:
-                    // reinterpreting a local makes it address-exposed and forces a stack spill. The intervening
-                    // store keeps the JIT from CSE-ing this load with the load of `p` above.
-                    object obj = Unsafe.As<nint, object>(ref ctx->AllocPtr);
-                    ctx->AllocPtr = (nint)(p + size);
-                    return obj;
-                }
+                // No GC safe point from here until return.
+                *(MethodTable**)p = pMT;
+                // Re-read the object reference from the allocation context instead of reinterpreting `p`:
+                // reinterpreting a local makes it address-exposed and forces a stack spill. The intervening
+                // store keeps the JIT from CSE-ing this load with the load of `p` above.
+                object obj = Unsafe.As<nint, object>(ref ctx->AllocPtr);
+                ctx->AllocPtr = (nint)(p + size);
+                return obj;
             }
 
             return NewSFastSlow(pMT);
@@ -113,10 +116,10 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private static object NewArr1(MethodTable* pMT, nint length)
         {
-            EEAllocContext* ctx = t_allocContext;
+            EEAllocContext* ctx = AllocContext;
             // Limit the element count to the non-negative int range (as the native helper does); the slow
             // path throws OverflowException/OutOfMemoryException as appropriate.
-            if (ctx != null && (nuint)length <= int.MaxValue)
+            if ((nuint)length <= int.MaxValue)
             {
                 // Cannot overflow on 64-bit: BaseSize + 0xFFFF * 0x7FFFFFFF + 7 < 2^48.
                 ulong size = ((ulong)pMT->BaseSize + (ulong)pMT->ComponentSize * (ulong)length + (ulong)(sizeof(nint) - 1))
@@ -141,8 +144,8 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
         internal static string NewString(MethodTable* pMT, nint length)
         {
-            EEAllocContext* ctx = t_allocContext;
-            if (ctx != null && (nuint)length <= (nuint)string.MaxLength)
+            EEAllocContext* ctx = AllocContext;
+            if ((nuint)length <= (nuint)string.MaxLength)
             {
                 nuint size = ((nuint)StringBaseSize + (nuint)length * sizeof(char) + (nuint)(sizeof(nint) - 1))
                     & ~(nuint)(sizeof(nint) - 1);

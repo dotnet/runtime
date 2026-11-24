@@ -139,15 +139,15 @@ __PWTB_ArgumentRegister_FirstArg SETA __PWTB_ArgumentRegisters + 8
 ;-----------------------------------------------------------------------------
 ; Macros used for shared allocation helpers
 
-    SETALIAS t_runtime_thread_locals, ?t_runtime_thread_locals@@3URuntimeThreadLocals@@A
+    SETALIAS t_ThreadStatics, ?t_ThreadStatics@@3UThreadLocalData@@A
 
     MACRO
     INLINE_GET_ALLOC_CONTEXT_BASE $destReg, $trashReg
 
-        INLINE_GET_TLS_VAR $destReg, $trashReg, $t_runtime_thread_locals
+        INLINE_GET_TLS_VAR $destReg, $trashReg, $t_ThreadStatics
     MEND
 
-OFFSETOF__ee_alloc_context  EQU OFFSETOF__RuntimeThreadLocals__ee_alloc_context
+OFFSETOF__ee_alloc_context  EQU OFFSETOF__ThreadLocalData__ee_alloc_context
 
     MACRO
     PUSH_COOP_PINVOKE_FRAME $Target

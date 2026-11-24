@@ -918,7 +918,7 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
     // Do the actual stress work
     //
 
-    GCHeapUtilities::GetGCHeap()->StressHeap(&t_runtime_thread_locals.alloc_context.m_GCAllocContext);
+    GCHeapUtilities::GetGCHeap()->StressHeap(&GetRuntimeThreadLocals().alloc_context.m_GCAllocContext);
 
     // StressHeap can exit early w/o forcing a SuspendEE to trigger the instruction update
     // We can not rely on the return code to determine if the instruction update happened
@@ -1224,7 +1224,7 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
     // Do the actual stress work
     //
 
-    GCHeapUtilities::GetGCHeap()->StressHeap(&t_runtime_thread_locals.alloc_context.m_GCAllocContext);
+    GCHeapUtilities::GetGCHeap()->StressHeap(&GetRuntimeThreadLocals().alloc_context.m_GCAllocContext);
 
     // StressHeap can exit early w/o forcing a SuspendEE to trigger the instruction update
     // We can not rely on the return code to determine if the instruction update happened

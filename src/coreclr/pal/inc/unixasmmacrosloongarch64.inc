@@ -124,9 +124,9 @@
 
         // This instruction is recognized and potentially patched
         // by the linker (GD->IE/LE relaxation).
-        la.tls.desc  $a0, t_runtime_thread_locals
+        la.tls.desc  $a0, t_ThreadStatics
 
-        addi.d  \target, $tp, OFFSETOF__RuntimeThreadLocals__ee_alloc_context
+        addi.d  \target, $tp, OFFSETOF__ThreadLocalData__ee_alloc_context
         add.d  \target, \target, $a0
 
         // Restore $a0, $ra
