@@ -1,24 +1,18 @@
 ## About
 
-<!-- A description of the package and where one can find more documentation -->
-
 `Microsoft.Extensions.Logging.Configuration` provides configuration support for [Microsoft.Extensions.Logging](https://www.nuget.org/packages/Microsoft.Extensions.Logging/). It lets log level filter rules be read from an [IConfiguration](https://learn.microsoft.com/dotnet/api/microsoft.extensions.configuration.iconfiguration) source such as `appsettings.json`, and lets logger providers bind their options from their own configuration section.
 
 Applications built with the .NET Generic Host get this behavior automatically for the `Logging` configuration section, so the package is mainly used directly when configuring logging without the host, or when writing a custom logger provider.
 
 ## Key Features
 
-<!-- The key features of this package -->
-
 * Load log level filter rules, globally and per logger provider, from configuration.
 * Reload filter rules when the underlying configuration changes.
-* Provide the configuration section of a logger provider through `ILoggerProviderConfiguration<T>`, so providers can bind their options from it.
+* Provide each logger provider with its configuration section through `ILoggerProviderConfiguration<T>`, so providers can bind provider-specific options such as console formatter settings.
 
 ## How to Use
 
-<!-- A compelling example on how to use this package with code, as well as any specific guidelines for when to use the package -->
-
-The following example reads filter rules from configuration and applies them to the console logger. The in-memory values correspond to this `appsettings.json` content:
+The following example reads filter rules and console formatter options from configuration. The in-memory values correspond to this `appsettings.json` content:
 
 ```json
 {
@@ -30,6 +24,10 @@ The following example reads filter rules from configuration and applies them to 
     "Console": {
       "LogLevel": {
         "Sample": "Debug"
+      },
+      "FormatterName": "json",
+      "FormatterOptions": {
+        "TimestampFormat": "HH:mm:ss"
       }
     }
   }
@@ -47,6 +45,8 @@ IConfiguration configuration = new ConfigurationBuilder()
         ["Logging:LogLevel:Default"] = "Warning",
         ["Logging:LogLevel:Sample"] = "Information",
         ["Logging:Console:LogLevel:Sample"] = "Debug",
+        ["Logging:Console:FormatterName"] = "json",
+        ["Logging:Console:FormatterOptions:TimestampFormat"] = "HH:mm:ss",
     })
     .Build();
 
@@ -67,8 +67,6 @@ using (ILoggerFactory loggerFactory = LoggerFactory.Create(builder =>
 
 ## Main Types
 
-<!-- The main types provided in this library -->
-
 The main types provided by this library are:
 
 * `Microsoft.Extensions.Logging.LoggingBuilderExtensions`
@@ -80,15 +78,11 @@ The main types provided by this library are:
 
 ## Additional Documentation
 
-<!-- Links to further documentation. Remove conceptual documentation if not available for the library. -->
-
 * [Conceptual documentation](https://learn.microsoft.com/dotnet/core/extensions/logging#configure-logging)
 * [Implement a custom logging provider](https://learn.microsoft.com/dotnet/core/extensions/custom-logging-provider)
 * [API documentation](https://learn.microsoft.com/dotnet/api/microsoft.extensions.logging.configuration)
 
 ## Related Packages
-
-<!-- The related packages associated with this package -->
 
 * [Microsoft.Extensions.Logging](https://www.nuget.org/packages/Microsoft.Extensions.Logging)
 * [Microsoft.Extensions.Logging.Console](https://www.nuget.org/packages/Microsoft.Extensions.Logging.Console)
@@ -96,7 +90,5 @@ The main types provided by this library are:
 * [Microsoft.Extensions.Options.ConfigurationExtensions](https://www.nuget.org/packages/Microsoft.Extensions.Options.ConfigurationExtensions)
 
 ## Feedback & Contributing
-
-<!-- How to provide feedback on this package and contribute to it -->
 
 Microsoft.Extensions.Logging.Configuration is released as open source under the [MIT license](https://licenses.nuget.org/MIT). Bug reports and contributions are welcome at [the GitHub repository](https://github.com/dotnet/runtime).
