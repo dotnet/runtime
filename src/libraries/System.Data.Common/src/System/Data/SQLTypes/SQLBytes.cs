@@ -304,7 +304,7 @@ namespace System.Data.SqlTypes
             ArgumentOutOfRangeException.ThrowIfGreaterThan(offset, Length);
             ArgumentOutOfRangeException.ThrowIfNegative(offset);
 
-            ArgumentOutOfRangeException.ThrowIfGreaterThan(offsetInBuffer, Length);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(offsetInBuffer, buffer.Length);
             ArgumentOutOfRangeException.ThrowIfNegative(offsetInBuffer);
 
             ArgumentOutOfRangeException.ThrowIfNegative(count);
