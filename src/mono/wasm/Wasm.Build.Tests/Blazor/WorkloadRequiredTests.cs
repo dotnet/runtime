@@ -131,6 +131,28 @@ public class WorkloadRequiredTests : BlazorWasmTestBase
             : await RunForBuildWithDotnetRun(runOptions);
     }
 
+    [ConditionalFact(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+    [TestCategory("no-workload")]
+    public void CoreClrPrelinkedPublishWithoutBuildUsesMatchingNativeAssets()
+    {
+        Configuration config = Configuration.Debug;
+        ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, "coreclr_publish_without_build",
+            extraProperties: "<WasmEmitSymbolMap>true</WasmEmitSymbolMap>");
+        (string _, string output) = BuildProject(info, config, new BuildOptions(AssertAppBundle: false));
+        PublishProject(info, config, new PublishOptions(AssertAppBundle: false, UseCache: false, ExtraMSBuildArgs: "--no-build"));
+
+        string runtimePackDir = ProjectProviderBase.TryGetRuntimePackDirFromBuildOutput(output)
+            ?? throw new InvalidOperationException($"Could not resolve runtime pack from build output:{Environment.NewLine}{output}");
+        string productionDir = Path.Combine(runtimePackDir, "runtimes", BuildEnvironment.DefaultRuntimeIdentifier, "native");
+        string frameworkDir = GetBuildPaths(config, forPublish: true).BinFrameworkDir;
+        foreach (string extension in new[] { ".wasm", ".js", ".js.symbols" })
+        {
+            string actual = Assert.Single(Directory.GetFiles(frameworkDir, $"dotnet.native*{extension}"));
+            string expected = Path.Combine(productionDir, $"dotnet.native{extension}");
+            TestUtils.AssertSameFile(expected, actual, "publish --no-build");
+        }
+    }
+
     [Theory, TestCategory("no-workload")]
     [InlineData(Configuration.Debug)]
     [InlineData(Configuration.Release)]

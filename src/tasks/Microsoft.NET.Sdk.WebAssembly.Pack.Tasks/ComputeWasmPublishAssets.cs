@@ -183,21 +183,36 @@ public class ComputeWasmPublishAssets : Task
 
             if (!isDotNetJs && !isDotNetWasm)
             {
-                if (resolvedNativeAssetToPublish.TryGetValue(Path.GetFileName(asset.GetMetadata("OriginalItemSpec")), out var existing))
+                var fileName = Path.GetFileName(asset.GetMetadata("OriginalItemSpec"));
+                if (resolvedNativeAssetToPublish.TryGetValue(fileName, out var existing))
                 {
                     if (!resolvedPublishFilesToRemove.TryGetValue(existing.ItemSpec, out var removed))
                     {
-                        // This is a native asset like timezones.blat or similar that was not filtered and that needs to be updated
-                        // to a publish asset.
-                        ITaskItem newAsset = CreatePromotedAsset(asset);
-                        if (newAsset.ItemSpec != asset.ItemSpec)
-                            mappedFingerprintedAssets[asset.ItemSpec] = newAsset.ItemSpec;
+                        var symbolMap = fileName == "dotnet.native.js.symbols"
+                            ? WasmAotAssets.SingleOrDefault(a => a.GetMetadata("Filename") + a.GetMetadata("Extension") == fileName)
+                            : null;
+                        ITaskItem newAsset;
+                        if (symbolMap != null)
+                        {
+                            newAsset = new TaskItem(Path.GetFullPath(symbolMap.ItemSpec), asset.CloneCustomMetadata());
+                            newAsset.SetMetadata("OriginalItemSpec", symbolMap.ItemSpec);
+                            ApplyPublishProperties(newAsset);
+                            newAssets.Add(newAsset);
+                            Log.LogMessage(MessageImportance.Low, "Replacing symbol map '{0}' with publish map '{1}'.", asset.ItemSpec, newAsset.ItemSpec);
+                        }
+                        else
+                        {
+                            newAsset = CreatePromotedAsset(asset);
+                            if (newAsset.ItemSpec != asset.ItemSpec)
+                                mappedFingerprintedAssets[asset.ItemSpec] = newAsset.ItemSpec;
+
+                            promotedAssets.Add(newAsset);
+                            Log.LogMessage(MessageImportance.Low, "Promoting asset '{0}' to Publish asset.", asset.ItemSpec);
+                        }
 
                         nativeStaticWebAssets.Add(newAsset);
                         filesToRemove.Add(existing);
                         updateMap.Add(asset.ItemSpec, newAsset);
-                        promotedAssets.Add(newAsset);
-                        Log.LogMessage(MessageImportance.Low, "Promoting asset '{0}' to Publish asset.", asset.ItemSpec);
                     }
                     else
                     {
