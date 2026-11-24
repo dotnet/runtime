@@ -402,30 +402,26 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> traditionalCiphertext,
             Span<byte> destination)
         {
-            // draft-ietf-lamps-pq-composite-kem-19, 3.4
-            // ss = SHA3-256(mlkemSS || tradSS || tradCT || tradPK || Label)
-            //
-            // return ss
-
             int maxTraditionalPublicKeySize =
                 Algorithm.MaxEncapsulationKeySizeInBytes - AlgorithmDetails.MLKemAlgorithm.EncapsulationKeySizeInBytes;
 
             using (CryptoPoolLease lease = CryptoPoolLease.Rent(maxTraditionalPublicKeySize, skipClear: true))
-            using (IncrementalHash hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA3_256))
             {
                 int traditionalPublicKeySize = _traditionalKem.ExportPublicKey(lease.Span);
 
-                hash.AppendData(mlkemSharedSecret);
-                hash.AppendData(traditionalSharedSecret);
-                hash.AppendData(traditionalCiphertext);
-                hash.AppendData(lease.Span.Slice(0, traditionalPublicKeySize));
-                hash.AppendData(AlgorithmDetails.Label);
-
-                if (!hash.TryGetHashAndReset(destination, out int bytesWritten) || bytesWritten != destination.Length)
-                {
-                    Debug.Fail("SHA3-256 produced an unexpected output length.");
-                    throw new CryptographicException();
-                }
+                // draft-ietf-lamps-pq-composite-kem-13, 3.4
+                // ss = SHA3-256(mlkemSS || tradSS || tradCT || tradPK || Label)
+                //
+                // return ss
+                // This is the same as C2PRICombiner, so use it with the SHA3-256 algorithm.
+                CompositeMLKemCombiner.Combine(
+                    mlkemSharedSecret,
+                    traditionalSharedSecret,
+                    traditionalCiphertext,
+                    lease.Span.Slice(0, traditionalPublicKeySize),
+                    AlgorithmDetails.Label,
+                    HashAlgorithmName.SHA3_256,
+                    destination);
             }
         }
 

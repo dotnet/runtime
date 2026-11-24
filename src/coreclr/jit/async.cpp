@@ -774,9 +774,11 @@ void Compiler::AddContextArgsToAsyncCalls(BasicBlock* block)
             NewCallArg execCtxArg    = NewCallArg::Primitive(execCtx).WellKnown(WellKnownArg::AsyncExecutionContext);
             NewCallArg syncCtxArg = NewCallArg::Primitive(syncCtx).WellKnown(WellKnownArg::AsyncSynchronizationContext);
 
+            // Read the contexts after evaluating the arguments, which may contain async calls
+            // that define the resumed indicator.
             // The def is only ever present once, so keeping it outside leaves the rest as
             // a clean run of (resumed, exec context, sync context) triples, one per frame.
-            CallArg* insertAfter = call->gtArgs.PushFront(m_compiler, resumedDefArg);
+            CallArg* insertAfter = call->gtArgs.PushBack(m_compiler, resumedDefArg);
             insertAfter          = call->gtArgs.InsertAfter(m_compiler, insertAfter, resumedUseArg);
             insertAfter          = call->gtArgs.InsertAfter(m_compiler, insertAfter, execCtxArg);
             insertAfter          = call->gtArgs.InsertAfter(m_compiler, insertAfter, syncCtxArg);

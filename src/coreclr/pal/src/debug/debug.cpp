@@ -23,8 +23,6 @@ SET_DEFAULT_DEBUG_CHANNEL(DEBUG); // some headers have code with asserts, so do 
 #include "pal/stackstring.hpp"
 #include "pal/utils.h"
 #include <minipal/environ.h>
-#include <minipal/ospagesize.h>
-#include <minipal/utf8.h>
 
 #include <signal.h>
 #include <unistd.h>
@@ -54,10 +52,6 @@ SET_DEFAULT_DEBUG_CHANNEL(DEBUG); // some headers have code with asserts, so do 
 #endif
 #endif // __APPLE__
 
-#ifdef __EMSCRIPTEN__
-#include <emscripten/heap.h>
-#endif // __EMSCRIPTEN__
-
 #if HAVE_MACH_EXCEPTIONS
 #include "../exception/machexception.h"
 #endif // HAVE_MACH_EXCEPTIONS
@@ -72,7 +66,6 @@ extern "C" void DBG_DebugBreak_End();
 const BOOL DBG_ATTACH       = TRUE;
 const BOOL DBG_DETACH       = FALSE;
 #endif
-static const char PAL_OUTPUTDEBUGSTRING[]    = "PAL_OUTPUTDEBUGSTRING";
 
 #if defined(_DEBUG) && !defined(TARGET_IOS) && !defined(TARGET_TVOS)
 #define ENABLE_RUN_ON_DEBUG_BREAK 1
@@ -83,137 +76,6 @@ static const char PAL_RUN_ON_DEBUG_BREAK[]   = "PAL_RUN_ON_DEBUG_BREAK";
 #endif // ENABLE_RUN_ON_DEBUG_BREAK
 
 extern "C" {
-
-/*++
-Function:
-  FlushInstructionCache
-
-The FlushInstructionCache function flushes the instruction cache for
-the specified process.
-
-Remarks
-
-This is a no-op for x86 architectures where the instruction and data
-caches are coherent in hardware. For non-X86 architectures, this call
-usually maps to a kernel API to flush the D-caches on all processors.
-
-It is also no-op on wasm. We don't have a way to flush the instruction
-cache and it is also not needed.
-
---*/
-BOOL
-PALAPI
-FlushInstructionCache(
-        IN HANDLE hProcess,
-        IN LPCVOID lpBaseAddress,
-        IN SIZE_T dwSize)
-{
-    BOOL Ret;
-
-    PERF_ENTRY(FlushInstructionCache);
-    ENTRY("FlushInstructionCache (hProcess=%p, lpBaseAddress=%p dwSize=%d)\
-          \n", hProcess, lpBaseAddress, dwSize);
-
-    if (lpBaseAddress != NULL)
-    {
-        Ret = DBG_FlushInstructionCache(lpBaseAddress, dwSize);
-    }
-    else
-    {
-        Ret = TRUE;
-    }
-
-    LOGEXIT("FlushInstructionCache returns BOOL %d\n", Ret);
-    PERF_EXIT(FlushInstructionCache);
-    return Ret;
-}
-
-
-/*++
-Function:
-  OutputDebugStringA
-
-See MSDN doc.
---*/
-VOID
-PALAPI
-OutputDebugStringA(
-        IN LPCSTR lpOutputString)
-{
-    PERF_ENTRY(OutputDebugStringA);
-    ENTRY("OutputDebugStringA (lpOutputString=%p (%s))\n",
-          lpOutputString ? lpOutputString : "NULL",
-          lpOutputString ? lpOutputString : "NULL");
-
-    // As we don't support debug events, we are going to output the debug string
-    // to stderr instead of generating OUT_DEBUG_STRING_EVENT.
-    if ((lpOutputString != NULL) &&
-        (getenv(PAL_OUTPUTDEBUGSTRING) != NULL))
-    {
-        fprintf(stderr, "%s", lpOutputString);
-    }
-
-    LOGEXIT("OutputDebugStringA returns\n");
-    PERF_EXIT(OutputDebugStringA);
-}
-
-/*++
-Function:
-  OutputDebugStringW
-
-See MSDN doc.
---*/
-VOID
-PALAPI
-OutputDebugStringW(
-        IN LPCWSTR lpOutputString)
-{
-    CHAR *lpOutputStringA;
-    size_t strLen;
-
-    PERF_ENTRY(OutputDebugStringW);
-    ENTRY("OutputDebugStringW (lpOutputString=%p (%S))\n",
-          lpOutputString ? lpOutputString: W16_NULLSTRING,
-          lpOutputString ? lpOutputString: W16_NULLSTRING);
-
-    if (lpOutputString == NULL)
-    {
-        OutputDebugStringA("");
-        goto EXIT;
-    }
-
-    if ((strLen = minipal_get_length_utf16_to_utf8((const CHAR16_T*)lpOutputString, minipal_u16_strlen((const CHAR16_T*)lpOutputString) + 1, 0))
-        == 0)
-    {
-        ASSERT("failed to get wide chars length\n");
-        SetLastError(ERROR_INTERNAL_ERROR);
-        goto EXIT;
-    }
-
-    /* strLen includes the null terminator */
-    if ((lpOutputStringA = (LPSTR) malloc((strLen * sizeof(CHAR)))) == NULL)
-    {
-        ERROR("Insufficient memory available !\n");
-        SetLastError(ERROR_NOT_ENOUGH_MEMORY);
-        goto EXIT;
-    }
-
-    if(! minipal_convert_utf16_to_utf8((const CHAR16_T*)lpOutputString, minipal_u16_strlen((const CHAR16_T*)lpOutputString) + 1,
-                                       lpOutputStringA, strLen, 0))
-    {
-        ASSERT("failed to convert wide chars to multibytes\n");
-        SetLastError(ERROR_INTERNAL_ERROR);
-        free(lpOutputStringA);
-        goto EXIT;
-    }
-
-    OutputDebugStringA(lpOutputStringA);
-    free(lpOutputStringA);
-
-EXIT:
-    LOGEXIT("OutputDebugStringW returns\n");
-    PERF_EXIT(OutputDebugStringW);
-}
 
 #ifdef ENABLE_RUN_ON_DEBUG_BREAK
 /*
@@ -470,7 +332,7 @@ GetThreadContext(
         if (!pTargetThread->IsDummy())
         {
             ret = CONTEXT_GetThreadContext(
-                GetCurrentProcessId(),
+                gPID,
                 pTargetThread->GetPThreadSelf(),
                 lpContext
                 );
@@ -531,7 +393,7 @@ SetThreadContext(
         if (!pTargetThread->IsDummy())
         {
             ret = CONTEXT_SetThreadContext(
-                GetCurrentProcessId(),
+                gPID,
                 pTargetThread->GetPThreadSelf(),
                 lpContext
                 );
@@ -556,91 +418,5 @@ SetThreadContext(
 }
 
 
-/*++
-Function:
-  PAL_ProbeMemory
-
-Abstract
-
-Parameter
-  pBuffer : address of memory to validate
-  cbBuffer : size of memory region to validate
-  fWriteAccess : if true, validate writable access, else just readable.
-
-Return
-  true if memory is valid, false if not.
---*/
-BOOL
-PALAPI
-PAL_ProbeMemory(
-    PVOID pBuffer,
-    DWORD cbBuffer,
-    BOOL fWriteAccess)
-{
-#if defined(TARGET_BROWSER)
-    if ((uintptr_t)((PBYTE)pBuffer + cbBuffer) <= emscripten_get_heap_size())
-    {
-        return TRUE;
-    }
-    return FALSE;
-#else // TARGET_BROWSER
-    int fds[2];
-    int flags;
-
-    if (pipe(fds) != 0)
-    {
-        ASSERT("pipe failed: errno is %d (%s)\n", errno, strerror(errno));
-        return FALSE;
-    }
-
-    flags = fcntl(fds[0], F_GETFL, 0);
-    fcntl(fds[0], F_SETFL, flags | O_NONBLOCK);
-
-    flags = fcntl(fds[1], F_GETFL, 0);
-    fcntl(fds[1], F_SETFL, flags | O_NONBLOCK);
-
-    PVOID pEnd = (PBYTE)pBuffer + cbBuffer;
-    BOOL result = TRUE;
-
-    // Validate the first byte in the buffer, then validate the first byte on each page after that.
-    while (pBuffer < pEnd)
-    {
-        int written = write(fds[1], pBuffer, 1);
-        if (written == -1)
-        {
-            if (errno != EFAULT)
-            {
-                ASSERT("write failed: errno is %d (%s)\n", errno, strerror(errno));
-            }
-            result = FALSE;
-            break;
-        }
-        else
-        {
-            if (fWriteAccess)
-            {
-                int rd = read(fds[0], pBuffer, 1);
-                if (rd == -1)
-                {
-                    if (errno != EFAULT)
-                    {
-                        ASSERT("read failed: errno is %d (%s)\n", errno, strerror(errno));
-                    }
-                    result = FALSE;
-                    break;
-                }
-            }
-        }
-
-        // Round to the beginning of the next page
-        pBuffer = PVOID(ALIGN_DOWN((SIZE_T)pBuffer, minipal_getpagesize()) + minipal_getpagesize());
-    }
-
-    close(fds[0]);
-    close(fds[1]);
-
-    return result;
-#endif // TARGET_BROWSER
-}
 
 } // extern "C"

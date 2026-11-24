@@ -173,7 +173,9 @@ Thread * const CURRENT_THREAD = NULL;
 AppDomain* GetAppDomain();
 #endif //!DACCESS_COMPILE
 
+#ifdef TARGET_WINDOWS
 extern BOOL isMemoryReadable(const TADDR start, unsigned len);
+#endif
 
 FORCEINLINE void* memcpyNoGCRefs(void * dest, const void * src, size_t len)
 {

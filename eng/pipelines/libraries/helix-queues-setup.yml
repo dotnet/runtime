@@ -69,8 +69,7 @@ jobs:
 
         - ${{ if eq(parameters.jobParameters.testScope, 'outerloop') }}:
             # outerloop only CoreCLR
-            # TODO: Move to a bare Azure Linux 4 VM once it has libmsquic: https://github.com/dotnet/runtime/issues/137756
-            - (AzureLinux.4.0.Amd64.Open)AzureLinux.4.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-4.0-helix-amd64@sha256:ad2717f231981d3218538ac74169b1354367e1ce2bd479bbf0ada3573b1db8c1
+            - AzureLinux.4.Amd64.Open
 
         - ${{ if or(ne(parameters.jobParameters.isExtraPlatformsBuild, true), eq(parameters.jobParameters.includeAllPlatforms, true))}}:
             # inner and outer loop CoreCLR (general set)
@@ -113,8 +112,8 @@ jobs:
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
         - $(helix_macos_ios_simulator_arm64_internal)
 
-    # iOS/tvOS Simulator x64 & MacCatalyst x64
-    - ${{ if in(parameters.platform, 'iossimulator_x64', 'tvossimulator_x64', 'maccatalyst_x64') }}:
+    # MacCatalyst x64
+    - ${{ if eq(parameters.platform, 'maccatalyst_x64') }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
         - $(helix_macos_ios_simulator_x64)
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
