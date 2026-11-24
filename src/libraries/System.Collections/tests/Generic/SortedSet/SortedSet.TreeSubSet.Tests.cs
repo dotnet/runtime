@@ -46,6 +46,7 @@ namespace System.Collections.Tests
             // The other set's bounds fall outside the view. These must report false, not throw.
             Assert.False(view.IsSupersetOf(new SortedSet<int> { 1 }));
             Assert.False(view.IsSupersetOf(new SortedSet<int> { 2, 9 }));
+            Assert.False(view.IsSupersetOf(new SortedSet<int> { 4 }));
             Assert.False(view.IsProperSupersetOf(new SortedSet<int> { 1 }));
 
             // The same when the view is the argument rather than the instance.
@@ -54,7 +55,6 @@ namespace System.Collections.Tests
 
             // Results that are unaffected by the pruning fast path must not change.
             Assert.True(view.IsSupersetOf(new SortedSet<int> { 2, 3 }));
-            Assert.False(view.IsSupersetOf(new SortedSet<int> { 4 }));
             Assert.True(view.IsProperSupersetOf(new SortedSet<int> { 2 }));
             Assert.True(view.IsSubsetOf(set));
             Assert.True(view.IsProperSubsetOf(set));

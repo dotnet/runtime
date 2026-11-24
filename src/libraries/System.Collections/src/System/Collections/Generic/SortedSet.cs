@@ -1193,9 +1193,8 @@ namespace System.Collections.Generic
 
         private bool IsSubsetOfSortedSetWithSameComparer(SortedSet<T> asSorted)
         {
-            // The other set may itself be a view, in which case GetViewBetween would throw when this set's
-            // bounds fall outside it. The plain containment checks below handle that correctly.
-            SortedSet<T> prunedOther = asSorted.treeSubset == null ? asSorted.GetViewBetween(Min, Max) : asSorted;
+            // GetViewBetween on a view throws if the bounds fall outside the view, so skip the pruning for views.
+            SortedSet<T> prunedOther = asSorted is TreeSubSet ? asSorted : asSorted.GetViewBetween(Min, Max);
             foreach (T item in this)
             {
                 if (!prunedOther.Contains(item))
@@ -1242,9 +1241,8 @@ namespace System.Collections.Generic
             {
                 if (Count < asSorted.Count)
                     return false;
-                // This may itself be a view, in which case GetViewBetween would throw when the other set's
-                // bounds fall outside this view. The plain containment checks below handle that correctly.
-                SortedSet<T> pruned = treeSubset == null ? GetViewBetween(asSorted.Min, asSorted.Max) : this;
+                // GetViewBetween on a view throws if the bounds fall outside the view, so skip the pruning for views.
+                SortedSet<T> pruned = this is TreeSubSet ? this : GetViewBetween(asSorted.Min, asSorted.Max);
                 foreach (T item in asSorted)
                 {
                     if (!pruned.Contains(item))
@@ -1273,8 +1271,8 @@ namespace System.Collections.Generic
             {
                 if (asSorted.Count >= Count)
                     return false;
-                // See the note in IsSupersetOf: pruning is only safe when this is not a view.
-                SortedSet<T> pruned = treeSubset == null ? GetViewBetween(asSorted.Min, asSorted.Max) : this;
+                // GetViewBetween on a view throws if the bounds fall outside the view, so skip the pruning for views.
+                SortedSet<T> pruned = this is TreeSubSet ? this : GetViewBetween(asSorted.Min, asSorted.Max);
                 foreach (T item in asSorted)
                 {
                     if (!pruned.Contains(item))
