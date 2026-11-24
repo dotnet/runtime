@@ -1698,6 +1698,17 @@ PhaseStatus Compiler::fgWasmControlFlow()
     }
 
     assert(dfsTree->IsForWasm());
+
+    // Layout below only covers blocks the DFS reaches; any other block would be
+    // emitted out of place and can produce an invalid function body.
+    //
+    if (dfsTree->GetPostOrderCount() != fgBBcount)
+    {
+        JITDUMP("\nWasm DFS reached %u of %u blocks\n", dfsTree->GetPostOrderCount(), fgBBcount);
+        NYI_WASM("Method has blocks not reachable from any wasm function entry");
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
     FlowGraphNaturalLoops* const loops = FlowGraphNaturalLoops::Find(dfsTree);
 
     // We should have transformed these away earlier
@@ -3731,7 +3742,8 @@ PhaseStatus Compiler::fgWasmProfInstrument()
 }
 
 //-----------------------------------------------------------------------------
-// fgWasmForwardLocalCopies: forward single-use local-to-local copies.
+// fgWasmForwardLocalCopies: forward single-use local-to-local copies, and
+//   rematerialize single-use locals holding invariant values.
 //
 // Returns:
 //   suitable phase status
@@ -3744,14 +3756,24 @@ PhaseStatus Compiler::fgWasmProfInstrument()
 //   does not coalesce, so each copy would otherwise cost a local.get/local.set
 //   pair and a local.
 //
+//   Single-use locals holding constants or invariant loads are handled first,
+//   by fgWasmRematerializeInvariantLocals.
+//
 //   Only blocks recorded by lowering are visited. This runs after late liveness
 //   so that ref counts are exact, and keeps last-use flags up to date.
 //
 PhaseStatus Compiler::fgWasmForwardLocalCopies()
 {
-    if ((m_wasmLocalCopyBlocks == nullptr) || !opts.OptimizationEnabled() || !backendRequiresLocalVarLifetimes())
+    if (!opts.OptimizationEnabled() || !backendRequiresLocalVarLifetimes())
     {
         return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    bool modified = fgWasmRematerializeInvariantLocals();
+
+    if (m_wasmLocalCopyBlocks == nullptr)
+    {
+        return modified ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
     }
 
     struct PendingCopy
@@ -3791,7 +3813,6 @@ PhaseStatus Compiler::fgWasmForwardLocalCopies()
         pending.Pop();
     };
 
-    bool modified = false;
     for (BasicBlock* const block : m_wasmLocalCopyBlocks->BottomUpOrder())
     {
         if (block->HasFlag(BBF_REMOVED))
@@ -3917,6 +3938,187 @@ PhaseStatus Compiler::fgWasmForwardLocalCopies()
     }
 
     return modified ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
+}
+
+//-----------------------------------------------------------------------------
+// fgWasmIsRematerializableValue: check whether a value can be evaluated
+//   anywhere without changing its result or faulting.
+//
+// Arguments:
+//   node - the value
+//
+// Returns:
+//   true if the node is a constant, or an invariant, non-faulting load of
+//   an invariant address (such as a ReadyToRun handle)
+//
+bool Compiler::fgWasmIsRematerializableValue(GenTree* node)
+{
+    if (node->OperIsConst())
+    {
+        return true;
+    }
+
+    // Volatile loads have ordering side effects and must not move.
+    const GenTreeFlags invariantLoad = GTF_IND_INVARIANT | GTF_IND_NONFAULTING;
+    const GenTreeFlags unmovable     = GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF | GTF_IND_VOLATILE;
+    return node->OperIs(GT_IND) && ((node->gtFlags & invariantLoad) == invariantLoad) &&
+           ((node->gtFlags & unmovable) == 0) && node->AsIndir()->Addr()->IsInvariant();
+}
+
+//-----------------------------------------------------------------------------
+// fgWasmRematerializeInvariantLocals: move invariant values to the single
+//   use of the local they are stored to.
+//
+// Returns:
+//   true if the IR was modified
+//
+// Notes:
+//   Statement splitting, CSE and morph can leave "STORE_LCL_VAR<tmp>(V) ... LCL_VAR<tmp>"
+//   where V is a constant or an invariant load (see fgWasmIsRematerializableValue).
+//   Evaluating V at the use instead saves the store, the load of "tmp" and a Wasm local.
+//
+//   The def and use may be in different blocks. "tmp" must not be live into the method
+//   or a handler, so the single def reaches the use on every path. Uses in blocks with
+//   a higher weight than the def are skipped, so that hoisted values stay hoisted.
+//
+//   Runs after late liveness, so ref counts are exact.
+//
+bool Compiler::fgWasmRematerializeInvariantLocals()
+{
+    if (m_wasmRematBlocks == nullptr)
+    {
+        return false;
+    }
+
+    struct Candidate
+    {
+        BasicBlock*    Block;
+        GenTreeLclVar* Store;
+    };
+
+    using CandidateMap = JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, Candidate>;
+
+    CandidateMap candidates(getAllocator(CMK_Lower));
+
+    // Locals live into the method entry or any handler entry.
+    VARSET_TP liveIntoEntries(VarSetOps::MakeCopy(this, fgFirstBB->bbLiveIn));
+    for (EHblkDsc* const HBtab : EHClauses(this))
+    {
+        VarSetOps::UnionD(this, liveIntoEntries, HBtab->ebdHndBeg->bbLiveIn);
+        if (HBtab->HasFilter())
+        {
+            VarSetOps::UnionD(this, liveIntoEntries, HBtab->ebdFilter->bbLiveIn);
+        }
+    }
+
+    for (BasicBlock* const block : m_wasmRematBlocks->BottomUpOrder())
+    {
+        if (block->HasFlag(BBF_REMOVED))
+        {
+            continue;
+        }
+
+        for (GenTree* const node : LIR::AsRange(block))
+        {
+            if (!node->OperIs(GT_STORE_LCL_VAR))
+            {
+                continue;
+            }
+
+            GenTreeLclVar* const store = node->AsLclVar();
+            GenTree* const       value = store->Data();
+            if (!fgWasmIsRematerializableValue(value) || ((value->gtLIRFlags & LIR::Flags::MultiplyUsed) != 0))
+            {
+                continue;
+            }
+
+            LclVarDsc* const dsc  = lvaGetDesc(store);
+            var_types const  type = dsc->TypeGet();
+
+            // GC refs are excluded to keep GC reporting of Wasm locals unchanged.
+            if ((dsc->lvRefCnt() != 2) || !dsc->lvTracked || dsc->lvIsParam || dsc->lvIsStructField ||
+                dsc->lvIsOSRLocal || dsc->lvPromoted || dsc->IsAddressExposed() || dsc->lvImplicitlyReferenced ||
+                !varTypeIsEnregisterable(type) || varTypeIsStruct(type) || varTypeIsGC(type) || varTypeIsSmall(type) ||
+                (store->TypeGet() != type) || (genActualType(value) != type) ||
+                VarSetOps::IsMember(this, liveIntoEntries, dsc->lvVarIndex))
+            {
+                continue;
+            }
+
+            candidates.Set(store->GetLclNum(), {block, store}, CandidateMap::Overwrite);
+        }
+    }
+
+    if (candidates.GetCount() == 0)
+    {
+        return false;
+    }
+
+    VARSET_TP removed(VarSetOps::MakeEmpty(this));
+    bool      modified = false;
+
+    for (BasicBlock* const block : Blocks())
+    {
+        if (candidates.GetCount() == 0)
+        {
+            break;
+        }
+
+        LIR::Range& range = LIR::AsRange(block);
+        for (GenTree* node = range.FirstNode(); (node != nullptr) && (candidates.GetCount() != 0);)
+        {
+            GenTree* const next = node->gtNext;
+            Candidate      candidate;
+
+            if (node->OperIs(GT_LCL_VAR) && !node->isContained() &&
+                candidates.Lookup(node->AsLclVar()->GetLclNum(), &candidate) &&
+                (block->bbWeight <= candidate.Block->bbWeight) && (node->TypeGet() == candidate.Store->TypeGet()))
+            {
+                LIR::Range&        defRange   = LIR::AsRange(candidate.Block);
+                GenTree*           value      = candidate.Store->Data();
+                bool               isClosed   = false;
+                LIR::ReadOnlyRange valueRange = defRange.GetTreeRange(value, &isClosed);
+                LIR::Use           use;
+
+                if (isClosed && range.TryGetUse(node, &use))
+                {
+                    unsigned const lclNum = node->AsLclVar()->GetLclNum();
+                    JITDUMP("Rematerializing [%06u] from " FMT_BB " at [%06u] in " FMT_BB
+                            " in place of single-use V%02u\n",
+                            dspTreeID(value), candidate.Block->bbNum, dspTreeID(node), block->bbNum, lclNum);
+
+                    defRange.Remove(candidate.Store);
+                    LIR::Range moved = defRange.Remove(std::move(valueRange));
+                    range.InsertBefore(node, std::move(moved));
+
+                    value->gtLIRFlags |= (node->gtLIRFlags & LIR::Flags::MultiplyUsed);
+                    use.ReplaceWith(value);
+                    range.Remove(node);
+
+                    LclVarDsc* const dsc = lvaGetDesc(lclNum);
+                    dsc->setLvRefCnt(0);
+                    dsc->setLvRefCntWtd(0);
+                    VarSetOps::AddElemD(this, removed, dsc->lvVarIndex);
+                    candidates.Remove(lclNum);
+                    modified = true;
+                }
+            }
+
+            node = next;
+        }
+    }
+
+    if (modified)
+    {
+        // The rematerialized locals are no longer live anywhere.
+        for (BasicBlock* const block : Blocks())
+        {
+            VarSetOps::DiffD(this, block->bbLiveIn, removed);
+            VarSetOps::DiffD(this, block->bbLiveOut, removed);
+        }
+    }
+
+    return modified;
 }
 
 //-----------------------------------------------------------------------------

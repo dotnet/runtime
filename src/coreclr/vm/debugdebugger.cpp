@@ -10,6 +10,7 @@
 ===========================================================*/
 
 #include "common.h"
+#include <minipal/debugger.h>
 
 #include <object.h>
 #include "ceeload.h"

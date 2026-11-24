@@ -13,10 +13,12 @@ set(SOURCES
     mutex.c
     ospagesize.c
     guid.c
+    instructioncache.c
     random.c
     rwlock.c
     debugger.c
     strings.c
+    thread.c
     time.c
     unicodedata.c
     utf8.c
@@ -29,7 +31,7 @@ if(CLR_CMAKE_HOST_UNIX)
         cgroup.c
         cpucount.c
         cpuid.c
-        thread.c
+        transportname.c
     )
 endif()
 
@@ -42,6 +44,12 @@ if (WIN32)
     target_link_libraries(minipal_objects PUBLIC bcrypt)
 endif()
 
+if (CLR_CMAKE_HOST_NETBSD)
+    # transportname.c reads the process start time with kvm_getproc2.
+    find_library(KVM kvm)
+    target_link_libraries(minipal_objects PUBLIC ${KVM})
+endif()
+
 # Add a copy of the minipal object library with interprocedural optimization disabled
 # for NativeAOT scenarios, where we ship static libraries that need to be able to be run with
 # a variety of toolchain versions, not only the exact one we built with.
@@ -50,6 +58,10 @@ set_target_properties(aotminipal PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
 
 if (WIN32)
     target_link_libraries(aotminipal PUBLIC bcrypt)
+endif()
+
+if (CLR_CMAKE_HOST_NETBSD)
+    target_link_libraries(aotminipal PUBLIC ${KVM})
 endif()
 
 # Provide a static library for our shared library and executable scenarios

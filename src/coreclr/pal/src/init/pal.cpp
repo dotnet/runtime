@@ -26,6 +26,7 @@ SET_DEFAULT_DEBUG_CHANNEL(PAL); // some headers have code with asserts, so do th
 #include "pal/init.h"
 #include "pal/stackstring.hpp"
 #include <minipal/getexepath.h>
+#include <minipal/thread.h>
 #include <minipal/memorybarrierprocesswide.h>
 #include <minipal/descriptorlimit.h>
 
@@ -297,7 +298,7 @@ Initialize(
     if (init_count == 0)
     {
         // Set our pid.
-        gPID = getpid();
+        gPID = minipal_get_current_process_id();
 
         // Initialize the thread local storage
         if (FALSE == TLSInitialize())

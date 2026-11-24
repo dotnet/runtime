@@ -562,12 +562,21 @@ namespace System.Drawing.Primitives.Tests
 
             try
             {
-                Assert.Equal(1, SetSysColors(1, new int[] { element }, new int[] { newColorAbgr }));
+                // SAFETY: To be audited
+                unsafe
+                {
+                    Assert.Equal(1, SetSysColors(1, new int[] { element }, new int[] { newColorAbgr }));
+                }
+
                 Assert.Equal(newColorArgb, oldColor.ToArgb());
             }
             finally
             {
-                Assert.Equal(1, SetSysColors(1, new int[] { element }, new int[] { oldColorAbgr }));
+                // SAFETY: To be audited
+                unsafe
+                {
+                    Assert.Equal(1, SetSysColors(1, new int[] { element }, new int[] { oldColorAbgr }));
+                }
             }
         }
 
@@ -927,7 +936,7 @@ namespace System.Drawing.Primitives.Tests
             SystemKindOrder.Zip(AllKnownColors, (isSystemKind, color) => new[] { isSystemKind, color[0] });
 
         [DllImport("user32.dll", SetLastError = true)]
-        private static extern int SetSysColors(int cElements, int[] lpaElements, int[] lpaRgbValues);
+        private static unsafe extern int SetSysColors(int cElements, int[] lpaElements, int[] lpaRgbValues);
 
         private static int GetColorRefValue(Color color)
         {

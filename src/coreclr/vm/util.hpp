@@ -15,6 +15,9 @@
 #include "posterror.h"
 #include <type_traits>
 #include "minipal/time.h"
+#ifdef HOST_UNIX
+#include <dlfcn.h>
+#endif
 
 #ifndef DACCESS_COMPILE
 #if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
@@ -552,7 +555,7 @@ struct NativeLibraryHandleTraits final
             return;
 
 #ifdef HOST_UNIX
-        PAL_FreeLibraryDirect(h);
+        dlclose(h);
 #else
         FreeLibrary(h);
 #endif
