@@ -101,10 +101,15 @@ namespace Wasm.Build.Tests
                 : await RunForBuildWithDotnetRun(options);
             Assert.Contains("ordinary result: 42", result.TestOutput);
             Assert.DoesNotContain("unsupported body ran", result.TestOutput);
-            Assert.Contains(result.TestOutput, message =>
+            string diagnostic = Assert.Single(result.TestOutput, message =>
                 message.Contains("Mono does not support runtime-async method", StringComparison.Ordinal) &&
                 message.Contains("AsyncDependency:Unsupported", StringComparison.Ordinal) &&
                 message.Contains("assembly 'Library'", StringComparison.Ordinal));
+            // Stripped IL proves compilation, but only the generated throw body emits the AOT diagnostic.
+            if (aot)
+                Assert.Contains("(compiled with Mono AOT)", diagnostic, StringComparison.Ordinal);
+            else
+                Assert.DoesNotContain("(compiled with Mono AOT)", diagnostic, StringComparison.Ordinal);
         }
 
         private static void AssertRuntimeAsyncMethod(string assemblyPath, bool expectStripped)

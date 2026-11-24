@@ -7023,7 +7023,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	if (G_UNLIKELY (runtime_async)) {
 		MonoInst *literal [1], *args [2];
 		MonoClass *exception_class = mono_class_load_from_name (mono_defaults.corlib, "System", "PlatformNotSupportedException");
-		char *message = mini_get_runtime_async_error_message (method);
+		char *message = mini_get_runtime_async_error_message (method, TRUE);
 		EMIT_NEW_LDSTRLITCONST (cfg, literal [0], mono_mem_manager_strdup (cfg->mem_manager, message));
 		g_free (message);
 		EMIT_NEW_ICONST (cfg, args [0], m_class_get_type_token (exception_class));

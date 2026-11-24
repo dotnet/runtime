@@ -3383,7 +3383,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 
 	if (G_UNLIKELY (method->iflags & METHOD_IMPL_ATTRIBUTE_ASYNC)) {
 		if (!compile_aot) {
-			char *message = mini_get_runtime_async_error_message (method);
+			char *message = mini_get_runtime_async_error_message (method, FALSE);
 			mono_error_set_platform_not_supported (cfg->error, message);
 			g_free (message);
 			mono_cfg_set_exception (cfg, MONO_EXCEPTION_MONO_ERROR);

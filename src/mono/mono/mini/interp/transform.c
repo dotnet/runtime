@@ -10045,7 +10045,7 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 	error_init (error);
 
 	if (G_UNLIKELY (method->iflags & METHOD_IMPL_ATTRIBUTE_ASYNC)) {
-		char *message = mini_get_runtime_async_error_message (method);
+		char *message = mini_get_runtime_async_error_message (method, FALSE);
 		mono_error_set_platform_not_supported (error, message);
 		g_free (message);
 		return;
