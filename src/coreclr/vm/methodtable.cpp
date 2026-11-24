@@ -195,7 +195,7 @@ MethodTable::MethodData *MethodDataCache::Find(MethodTable *pMTDecl, MethodTable
     g_sdStats.m_cCacheLookups++;
 #endif
 
-    SimpleReadLockHolder lh(&m_lock);
+    SimpleReadLockHolder lh = SimpleRWLock::TakeReadLock(&m_lock);
 
     // Check the last touched entry.
     MethodData *pEntry = FindHelper(pMTDecl, pMTImpl, GetLastTouchedEntryIndex());
@@ -241,7 +241,7 @@ void MethodDataCache::Insert(MethodData *pMData)
         INSTANCE_CHECK;
     } CONTRACTL_END;
 
-    SimpleWriteLockHolder hLock(&m_lock);
+    SimpleWriteLockHolder hLock = SimpleRWLock::TakeWriteLock(&m_lock);
 
     UINT32 iMin = UINT32_MAX;
     UINT32 idxMin = UINT32_MAX;
@@ -273,7 +273,7 @@ void MethodDataCache::Clear()
     // should be suspended because this is called while unloading an
     // AppDomain at the SysSuspendEE stage. But, if someone calls it
     // outside of that context, we should be extra cautious.
-    SimpleWriteLockHolder lh(&m_lock);
+    SimpleWriteLockHolder lh = SimpleRWLock::TakeWriteLock(&m_lock);
 
     for (UINT32 i = 0; i < NumEntries(); i++) {
         Entry *pEntry = GetEntry(i);

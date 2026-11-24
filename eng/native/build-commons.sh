@@ -236,7 +236,7 @@ build_native()
             scan_build=scan-build
         fi
 
-        nextCommand="\"$__RepoRootDir/eng/native/gen-buildsys.sh\" \"$cmakeDir\" \"$intermediatesDir\" $hostArch $targetOS $__Compiler $__BuildType \"$generator\" $scan_build $cmakeArgs"
+        nextCommand="\"$__RepoRootDir/eng/native/gen-buildsys.sh\" \"$cmakeDir\" \"$intermediatesDir\" $hostArch $targetOS $__Compiler \"$generator\" $scan_build \"-DCMAKE_BUILD_TYPE=$__BuildType\" $cmakeArgs"
         echo "Invoking $nextCommand"
         eval $nextCommand
 

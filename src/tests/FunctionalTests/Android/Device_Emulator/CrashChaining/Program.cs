@@ -5,11 +5,9 @@ using System;
 using System.Runtime.InteropServices;
 
 /// <summary>
-/// Test that crash chaining preserves signal handlers during
-/// mono_handle_native_crash. When crash_chaining is enabled,
-/// mono_handle_native_crash should NOT reset SIGABRT etc. to SIG_DFL,
-/// because that would let secondary signals (e.g. FORTIFY aborts on
-/// other threads) kill the process before the crash can be chained.
+/// Test that runtime crash chaining preserves previously installed signal handlers.
+/// A secondary signal raised from a chained crash handler must reach the handler
+/// that was installed before the runtime initialized.
 /// </summary>
 public static class Program
 {

@@ -93,6 +93,40 @@ HRESULT MetaDataGetDispenser::ModuleLoadStarted(ModuleID moduleId)
         return E_FAIL;
     }
 
+    COMPtrHolder<IMetaDataEmit> pEmit;
+    hr = pDispenser->DefineScope(CLSID_CorMetaDataRuntime,
+                                0,
+                                IID_IMetaDataEmit,
+                                reinterpret_cast<IUnknown **>(&pEmit));
+    if (FAILED(hr))
+    {
+        _failures++;
+        printf("Failed to define metadata scope hr=0x%x\n", hr);
+        return hr;
+    }
+
+    hr = pEmit->ApplyEditAndContinue(pDispenser);
+    if (hr != E_NOTIMPL)
+    {
+        _failures++;
+        printf("IMetaDataEmit::ApplyEditAndContinue returned 0x%x, expected E_NOTIMPL\n", hr);
+        return E_FAIL;
+    }
+
+    for (CorImportOptions option : {MDImportOptionDefault, MDImportOptionAll})
+    {
+        VARIANT value = {};
+        V_VT(&value) = VT_UI4;
+        V_UI4(&value) = option;
+        hr = pDispenser->SetOption(MetaDataImportOption, &value);
+        if (hr != S_OK)
+        {
+            _failures++;
+            printf("SetOption(MetaDataImportOption, 0x%x) failed hr=0x%x\n", option, hr);
+            return E_FAIL;
+        }
+    }
+
     WCHAR filePath[STR_LENGTH];
     ULONG filePathLength;
     hr = pCorProfilerInfo->GetModuleInfo2(moduleId,

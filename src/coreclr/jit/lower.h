@@ -156,6 +156,7 @@ private:
 #ifdef TARGET_WASM
     void AddWasmPortableEntryPointArg(GenTreeCall* call, GenTree* value);
     void LowerPEPCall(GenTreeCall* call);
+    void TryMoveWasmSelectCondition(GenTreeConditional* select);
 #endif
     void MovePutArgNodesUpToCall(GenTreeCall* call);
     void MovePutArgUpToCall(GenTreeCall* call, GenTree* node);

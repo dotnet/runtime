@@ -45,7 +45,7 @@ namespace System.Security.Cryptography
             0x64, 0x09,
         ];
 
-        private ReadOnlySpan<byte> Order => Suite.KemAlgorithm switch
+        internal static ReadOnlySpan<byte> GetOrder(HpkeKem kem) => kem switch
         {
             HpkeKem.DHKEM_P256_HKDF_SHA256 => P256Order,
             HpkeKem.DHKEM_P384_HKDF_SHA384 => P384Order,
@@ -69,7 +69,7 @@ namespace System.Security.Cryptography
             Debug.Assert(_ecdh is null);
 
             if (decapsulationKey.Length != Suite.DecapsulationKeySizeInBytes ||
-                !IsValidScalar(decapsulationKey, Order))
+                !IsValidScalar(decapsulationKey, GetOrder(Suite.KemAlgorithm)))
             {
                 throw new CryptographicException(SR.Cryptography_NotValidPrivateKey);
             }
@@ -123,7 +123,7 @@ namespace System.Security.Cryptography
         {
             Debug.Assert(_ecdh is null);
 
-            ReadOnlySpan<byte> order = Order;
+            ReadOnlySpan<byte> order = GetOrder(Suite.KemAlgorithm);
             Debug.Assert(order.Length == Suite.KemMetadata.Nsk);
             byte[] privateKey = new byte[Suite.KemMetadata.Nsk];
             Span<byte> prkBuffer = stackalloc byte[PrkStackBufferSize];
@@ -245,7 +245,7 @@ namespace System.Security.Cryptography
         public override void Dispose() => _ecdh?.Dispose();
 
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
-        private static bool IsValidScalar(ReadOnlySpan<byte> scalar, ReadOnlySpan<byte> order)
+        internal static bool IsValidScalar(ReadOnlySpan<byte> scalar, ReadOnlySpan<byte> order)
         {
             // NoOptimization because the comparison must remain non-short-circuiting.
             //

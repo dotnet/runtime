@@ -3,11 +3,15 @@
   <Import Condition="'$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi'" Project="$(CommonTestPath)System/Net/Prerequisites/LocalEchoServer.props" />
 
   <PropertyGroup>
+    <!-- TODO: Remove once migrated to unsafe-v2. -->
+    <MemorySafetyRulesVersion>1</MemorySafetyRulesVersion>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
     <DefineConstants>$(DefineConstants);SYSNETHTTP_NO_OPENSSL;HTTP3</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-linux;$(NetCoreAppCurrent)-android;$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)-wasi;$(NetCoreAppCurrent)-osx</TargetFrameworks>
+    <!-- ActiveIssue https://github.com/dotnet/runtime/issues/137701 -->
+    <IgnoreForCI Condition="'$(TargetOS)' == 'android' and '$(TargetArchitecture)' == 'x64'">true</IgnoreForCI>
     <EnablePreviewFeatures>true</EnablePreviewFeatures>
     <!-- Tests exercise the experimental SocketsHttpHandler connection eviction control and HttpRequestMessage.ConnectionId (SYSLIB5008) APIs. -->
     <NoWarn>$(NoWarn);SYSLIB5008</NoWarn>
