@@ -500,7 +500,7 @@ namespace ILCompiler
                     }
 
                     MethodDesc candidate = ResolveStaticVirtualCandidate(resolutionType, potentialInterfaceMethod)
-                        ?? ResolveStaticDefaultCandidate(resolutionType, potentialInterfaceMethod, out _);
+                        ?? ResolveDefaultCandidate(resolutionType, potentialInterfaceMethod, out _);
 
                     // Compare the full method, including its owning instantiation.
                     // Check the candidate before preserving a previous non-null result.
@@ -616,7 +616,7 @@ namespace ILCompiler
                 MethodDesc result = ResolveStaticVirtualCandidate(constrainedType, exactInterfaceMethod);
                 if (result is null)
                 {
-                    result = ResolveStaticDefaultCandidate(constrainedType, exactInterfaceMethod, out DefaultInterfaceMethodResolution dimResolution);
+                    result = ResolveDefaultCandidate(constrainedType, exactInterfaceMethod, out DefaultInterfaceMethodResolution dimResolution);
                     staticResolution = dimResolution;
                 }
 
@@ -750,7 +750,8 @@ namespace ILCompiler
                             exactInterfaceMethod = context.GetMethodForInstantiatedType(
                                 genInterfaceMethod.GetTypicalMethodDefinition(), (InstantiatedType)interfaceType);
 
-                        method = constrainedType.ResolveVariantInterfaceMethodToVirtualMethodOnType(exactInterfaceMethod);
+                        method = constrainedType.ResolveVariantInterfaceMethodToVirtualMethodOnType(exactInterfaceMethod)
+                            ?? ResolveDefaultCandidate(constrainedType, exactInterfaceMethod, out _);
                     }
                 }
             }
@@ -773,8 +774,8 @@ namespace ILCompiler
             }
 
             //#TryResolveConstraintMethodApprox_DoNotReturnParentMethod
-            // Only return a method if the value type itself declares the method,
-            // otherwise we might get a method from Object or System.ValueType
+            // Callers pass an unboxed receiver to a resolved target. Inherited methods and
+            // instance default interface methods still require boxing.
             if (!method.OwningType.IsValueType)
             {
                 // Fall back to VSD
@@ -802,9 +803,10 @@ namespace ILCompiler
                 : type.ResolveInterfaceMethodToStaticVirtualMethodOnType(interfaceMethod);
         }
 
-        // The default-implementation complement of ResolveStaticVirtualCandidate. Partial
-        // resolutions (diamond, reabstraction) are reported but produce no candidate.
-        private static MethodDesc ResolveStaticDefaultCandidate(TypeDesc type, MethodDesc interfaceMethod, out DefaultInterfaceMethodResolution resolution)
+        // The default-interface-method complement to the virtual-candidate resolvers, shared by
+        // the static and instance halves. Partial resolutions (diamond, reabstraction) are
+        // reported but produce no candidate.
+        private static MethodDesc ResolveDefaultCandidate(TypeDesc type, MethodDesc interfaceMethod, out DefaultInterfaceMethodResolution resolution)
         {
             MethodDesc candidate;
             resolution = interfaceMethod.OwningType.HasVariance
