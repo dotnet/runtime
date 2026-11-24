@@ -39,11 +39,9 @@
     <_CoreCLRInvalidSIMD Condition="'$(WasmEnableSIMD)' != '' and '$(WasmEnableSIMD)' != 'true'">true</_CoreCLRInvalidSIMD>
     <WasmEnableExceptionHandling>true</WasmEnableExceptionHandling>
     <WasmEnableSIMD>true</WasmEnableSIMD>
-    <WasmEnableRelaxedSimd Condition="'$(WasmEnableRelaxedSimd)' == ''">false</WasmEnableRelaxedSimd>
     <WasmClang>emcc</WasmClang>
 
     <_WasmDefaultFlags>-fwasm-exceptions -sWASM_LEGACY_EXCEPTIONS=0 -msimd128</_WasmDefaultFlags>
-    <_WasmDefaultFlags Condition="'$(WasmEnableRelaxedSimd)' == 'true'">$(_WasmDefaultFlags) -mrelaxed-simd</_WasmDefaultFlags>
 
     <WasmBuildAppAfterThisTarget Condition="'$(WasmBuildAppAfterThisTarget)' == ''">Build</WasmBuildAppAfterThisTarget>
     <WasmTriggerPublishAppAfterThisTarget Condition="'$(WasmTriggerPublishAppAfterThisTarget)' == ''">Publish</WasmTriggerPublishAppAfterThisTarget>
@@ -73,12 +71,6 @@
     <!-- Executable extension for cross-platform compat (e.g., node.exe on Windows) -->
     <_ExeExt Condition="$([MSBuild]::IsOSPlatform('windows'))">.exe</_ExeExt>
   </PropertyGroup>
-
-  <ItemGroup Condition="'$(WasmEnableRelaxedSimd)' == 'true'">
-    <RuntimeHostConfigurationOption Include="System.Runtime.Intrinsics.Wasm.RelaxedSimd.IsSupported"
-                                    Value="true"
-                                    Trim="true" />
-  </ItemGroup>
 
   <!-- EmccInitialHeapSize is the documented browser property (src/mono/browser/README.md) and
        EmccTotalMemory is its legacy alias; the Mono path collapses both into WasmInitialHeapSize
@@ -133,11 +125,12 @@
   <Import Project="$(MSBuildThisFileDirectory)EmSdkRepo.Defaults.props"
           Condition="'$(EMSDK_PATH)' != '' and '$(EmscriptenSdkToolsPath)' == ''" />
 
-  <!-- Wasm features for wasm-opt over the relinked dotnet.native.wasm: the shared baseline from
-       native.wasm.targets plus CoreCLR's optional features. -->
+  <!-- Wasm features for wasm-opt over the relinked dotnet.native.wasm and ReadyToRun images: the shared
+       baseline from native.wasm.targets plus relaxed SIMD, which ReadyToRun images use when
+       PublishReadyToRunInstructionSet enables it. Enabling a feature only allows its instructions. -->
   <ItemGroup>
     <_WasmOptFeatureFlag Include="@(_WasmOptBaselineFeatureFlag)" />
-    <_WasmOptFeatureFlag Include="--enable-relaxed-simd" Condition="'$(WasmEnableRelaxedSimd)' == 'true'" />
+    <_WasmOptFeatureFlag Include="--enable-relaxed-simd" />
   </ItemGroup>
 
   <!-- Allow running/debugging from VS -->
@@ -152,6 +145,7 @@
           BeforeTargets="_CreateR2RImages">
     <ItemGroup>
       <_WasmReadyToRunPInvokeModule Remove="@(_WasmReadyToRunPInvokeModule)" />
+      <_WasmReadyToRunPInvokeList Remove="@(_WasmReadyToRunPInvokeList)" />
     </ItemGroup>
     <PropertyGroup>
       <_WasmIncludeCustomPInvokeModules>false</_WasmIncludeCustomPInvokeModules>
@@ -165,17 +159,21 @@
                                NativeLibraries="@(NativeLibrary)">
       <Output TaskParameter="Modules" ItemName="_WasmReadyToRunPInvokeModule" />
     </ComputeWasmPInvokeModules>
+    <ItemGroup Condition="'$(_WasmIncludeCustomPInvokeModules)' == 'true'">
+      <_WasmReadyToRunPInvokeModule Include="@(DirectPInvoke)" />
+      <_WasmReadyToRunPInvokeList Include="@(DirectPInvokeList)" />
+    </ItemGroup>
     <PropertyGroup>
       <_WasmReadyToRunPInvokeManifest>$([MSBuild]::NormalizePath('$(IntermediateOutputPath)', 'R2R', 'pinvoke-modules.txt'))</_WasmReadyToRunPInvokeManifest>
-      <_PublishReadyToRunCrossgen2ExtraArgs>$(_PublishReadyToRunCrossgen2ExtraArgs);@(_WasmReadyToRunPInvokeModule->'--directpinvoke:%(Identity)', ';')</_PublishReadyToRunCrossgen2ExtraArgs>
+      <_PublishReadyToRunCrossgen2ExtraArgs>$(_PublishReadyToRunCrossgen2ExtraArgs);@(_WasmReadyToRunPInvokeModule->'--directpinvoke:%(Identity)', ';');@(_WasmReadyToRunPInvokeList->'--directpinvokelist:%(FullPath)', ';')</_PublishReadyToRunCrossgen2ExtraArgs>
     </PropertyGroup>
     <MakeDir Directories="$([System.IO.Path]::GetDirectoryName('$(_WasmReadyToRunPInvokeManifest)'))" />
     <WriteLinesToFile File="$(_WasmReadyToRunPInvokeManifest)"
-                      Lines="@(_WasmReadyToRunPInvokeModule)"
+                      Lines="@(_WasmReadyToRunPInvokeModule);@(_WasmReadyToRunPInvokeList->'%(FullPath)')"
                       Overwrite="true"
                       WriteOnlyWhenDifferent="true" />
     <ItemGroup>
-      <_ReadyToRunCompilerInputs Include="$(_WasmReadyToRunPInvokeManifest)" />
+      <_ReadyToRunCompilerInputs Include="$(_WasmReadyToRunPInvokeManifest);@(_WasmReadyToRunPInvokeList)" />
       <FileWrites Include="$(_WasmReadyToRunPInvokeManifest)" />
     </ItemGroup>
   </Target>
@@ -211,6 +209,8 @@
            NativeLibrary items are converted to NativeFileReference items later in the
            flow (in _CoreCLRPrepareForNativeBuild) so we have to inspect both here. -->
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and (@(NativeFileReference->Count()) &gt; 0 or @(NativeLibrary->Count()) &gt; 0)">true</WasmBuildNative>
+      <!-- Direct P/Invokes are bound through the relinked call-helper table. -->
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and (@(DirectPInvoke->Count()) &gt; 0 or @(DirectPInvokeList->Count()) &gt; 0)">true</WasmBuildNative>
       <!-- TODO-WASM: At the moment we are skipping dotnet.native.wasm that always contain diagnostic-server.
       Related https://github.com/dotnet/runtime/issues/132772
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(EnableDiagnostics)' == 'true'">true</WasmBuildNative>
@@ -558,8 +558,6 @@
       <EmscriptenEnvVars Include="EM_FROZEN_CACHE=0" Condition="'$(WasmCachePath)' != '' and '$(WasmCachePath)' != '$(EmscriptenCacheSdkCacheDir)'" />
       <EmscriptenEnvVars Include="WASM_ENABLE_SIMD=1" />
       <EmscriptenEnvVars Include="WASM_ENABLE_EH=1" />
-      <EmscriptenEnvVars Include="WASM_ENABLE_RELAXED_SIMD=1" Condition="'$(WasmEnableRelaxedSimd)' == 'true'" />
-      <EmscriptenEnvVars Include="WASM_ENABLE_RELAXED_SIMD=0" Condition="'$(WasmEnableRelaxedSimd)' != 'true'" />
     </ItemGroup>
   </Target>
 
@@ -618,7 +616,6 @@
       <_EmccCommonFlags Include="-fwasm-exceptions" />
       <_EmccCommonFlags Include="-sWASM_LEGACY_EXCEPTIONS=0" />
       <_EmccCommonFlags Include="-msimd128" />
-      <_EmccCommonFlags Include="-mrelaxed-simd" Condition="'$(WasmEnableRelaxedSimd)' == 'true'" />
     </ItemGroup>
 
     <!-- Re-encoding without any pass grows the module, so default to -Oz unless the project's
@@ -720,6 +717,9 @@
                                NativeFileReferences="@(_WasmNativeFileForLinking);@(_WasmSourceFileToCompile)">
       <Output TaskParameter="Modules" ItemName="_WasmPInvokeModules" />
     </ComputeWasmPInvokeModules>
+    <ItemGroup>
+      <_WasmPInvokeModules Include="@(DirectPInvoke)" />
+    </ItemGroup>
 
     <!-- Managed assemblies to scan. An app bundle legitimately carries native payloads named .dll -
          per-architecture content shipped by a NuGet package is the usual case - and the generator
@@ -729,10 +729,11 @@
     </ItemGroup>
 
     <!-- With R2R the published .dll are webcil-in-wasm images MetadataLoadContext can't parse; scan the
-         trimmed IL (same closure crossgen used) instead. Gated on the linker dir only, because the nested
-         WasmNestedPublishApp build where this runs doesn't carry PublishReadyToRun. Remapped ahead of the
-         filter below, which reads PE headers and cannot make sense of webcil either. -->
-    <ItemGroup Condition="'$(IntermediateLinkDir)' != ''">
+         trimmed IL (same closure crossgen used) instead. Gated on trimming, not R2R, because the nested
+         WasmNestedPublishApp build where this runs doesn't carry PublishReadyToRun. Untrimmed publishes
+         must not use stale linker output. Remapped ahead of the filter below, which reads PE headers
+         and cannot make sense of webcil either. -->
+    <ItemGroup Condition="'$(PublishTrimmed)' == 'true' and '$(IntermediateLinkDir)' != ''">
       <_WasmBundledFileR2RRemap Include="@(_WasmBundledFile)" Condition="Exists('$(IntermediateLinkDir)%(FileName)%(Extension)')" />
       <_WasmBundledFile Remove="@(_WasmBundledFileR2RRemap)" />
       <_WasmBundledFile Include="@(_WasmBundledFileR2RRemap->'$(IntermediateLinkDir)%(FileName)%(Extension)')" />
@@ -741,15 +742,21 @@
     <FilterManagedAssemblies Assemblies="@(_WasmBundledFile)">
       <Output TaskParameter="ManagedAssemblies" ItemName="_WasmManagedAssemblies" />
     </FilterManagedAssemblies>
+    <ItemGroup>
+      <_WasmBundledCoreLib Include="@(_WasmBundledFile)" Condition="'%(FileName)%(Extension)' == 'System.Private.CoreLib.dll'" />
+    </ItemGroup>
 
     <!-- Locate System.Private.CoreLib in runtime pack if not already bundled -->
     <PropertyGroup>
       <_HasCoreLib Condition="'%(_WasmManagedAssemblies.FileName)%(_WasmManagedAssemblies.Extension)' == 'System.Private.CoreLib.dll'">true</_HasCoreLib>
       <!-- CoreCLR WASM ships CoreLib in the native directory, not the lib directory -->
-      <_CoreLibPath Condition="'$(_HasCoreLib)' != 'true'">$(MicrosoftNetCoreAppRuntimePackRidNativeDir)System.Private.CoreLib.dll</_CoreLibPath>
+      <_CoreLibPath Condition="'$(_HasCoreLib)' != 'true' and '$(PublishTrimmed)' == 'true' and '$(IntermediateLinkDir)' != '' and Exists('$(IntermediateLinkDir)System.Private.CoreLib.dll')">$(IntermediateLinkDir)System.Private.CoreLib.dll</_CoreLibPath>
+      <_CoreLibPath Condition="'$(_HasCoreLib)' != 'true' and '$(_CoreLibPath)' == ''">$(MicrosoftNetCoreAppRuntimePackRidNativeDir)System.Private.CoreLib.dll</_CoreLibPath>
       <_CoreLibPath Condition="'$(_HasCoreLib)' != 'true' and !Exists('$(_CoreLibPath)')">$([System.IO.Path]::Combine($(MicrosoftNetCoreAppRuntimePackRidLibTfmDir), 'System.Private.CoreLib.dll'))</_CoreLibPath>
     </PropertyGroup>
 
+    <Error Condition="'$(PublishTrimmed)' == 'true' and '$(_HasCoreLib)' != 'true' and '@(_WasmBundledCoreLib)' != '' and ('$(IntermediateLinkDir)' == '' or !Exists('$(IntermediateLinkDir)System.Private.CoreLib.dll'))"
+           Text="The bundled System.Private.CoreLib is not readable IL. Supply its post-trim IL through IntermediateLinkDir; call-helper generation must not substitute the untrimmed runtime-pack CoreLib." />
     <Error Condition="'$(_HasCoreLib)' != 'true' and !Exists('$(_CoreLibPath)')"
            Text="Could not find 'System.Private.CoreLib.dll' in the runtime pack at $(_CoreLibPath)" />
 
@@ -781,6 +788,7 @@
       <_Crossgen2GeneratorArg Include="--targetarch:wasm" />
       <_Crossgen2GeneratorArg Include="--generate-portable-callhelpers:$(_WasmIntermediateOutputPath)" />
       <_Crossgen2GeneratorArg Include="@(_WasmPInvokeModules->'--directpinvoke:%(Identity)')" />
+      <_Crossgen2GeneratorArg Include="@(DirectPInvokeList->'--directpinvokelist:%(FullPath)')" />
       <_Crossgen2GeneratorArg Include="@(_WasmManagedAssemblies->'%(FullPath)')" />
     </ItemGroup>
 

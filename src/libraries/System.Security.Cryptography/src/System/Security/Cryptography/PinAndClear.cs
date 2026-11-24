@@ -19,6 +19,20 @@ namespace System.Security.Cryptography
             };
         }
 
+        internal static PinAndClear CopyAndTrack(ReadOnlySpan<byte> data, out byte[] array)
+        {
+            byte[] buffer = new byte[data.Length];
+            PinnedGCHandle<byte[]> handle = new(buffer);
+            data.CopyTo(buffer);
+            array = buffer;
+
+            return new PinAndClear
+            {
+                _gcHandle = handle,
+                _data = buffer,
+            };
+        }
+
         public void Dispose()
         {
             Array.Clear(_data);

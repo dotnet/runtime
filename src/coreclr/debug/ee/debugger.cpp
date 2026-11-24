@@ -8,8 +8,16 @@
 //*****************************************************************************
 
 #include "stdafx.h"
+#include <minipal/debugger.h>
 #include "CLREventBase.h"
 #include <minipal/time.h>
+#include <minipal/thread.h>
+#if defined(TARGET_UNIX) && !defined(DACCESS_COMPILE)
+#include <fcntl.h>
+#include <semaphore.h>
+#include <minipal/transportname.h>
+#include "processdescriptor.h"
+#endif
 #include <minipal.h>
 #include "debugdebugger.h"
 #include "../inc/common.h"
@@ -371,8 +379,8 @@ void Debugger::DoNotCallDirectlyPrivateLock(void)
 {
     WRAPPER_NO_CONTRACT;
 
-    LOG((LF_CORDB,LL_INFO10000, "D::Lock acquire attempt by 0x%x\n",
-        GetCurrentThreadId()));
+    LOG((LF_CORDB,LL_INFO10000, "D::Lock acquire attempt by 0x%zx\n",
+        minipal_get_current_thread_id()));
 
     // Debugger lock is larger than both Controller & debugger-data locks.
     // So we should never try to take the D lock if we hold either of the others.
@@ -451,7 +459,7 @@ void Debugger::DoNotCallDirectlyPrivateLock(void)
         else
         {
             // unmanaged thread
-            _ASSERTE(m_mutexOwner == GetCurrentThreadId());
+            _ASSERTE(m_mutexOwner == minipal_get_current_thread_id());
         }
     }
 
@@ -463,12 +471,12 @@ void Debugger::DoNotCallDirectlyPrivateLock(void)
     else
     {
         // unmanaged thread
-        m_mutexOwner = GetCurrentThreadId();
+        m_mutexOwner = minipal_get_current_thread_id();
     }
 
     if (m_mutexCount == 1)
     {
-        LOG((LF_CORDB,LL_INFO10000, "D::Lock acquired by 0x%x\n", m_mutexOwner));
+        LOG((LF_CORDB,LL_INFO10000, "D::Lock acquired by 0x%zx\n", m_mutexOwner));
     }
 #endif
 
@@ -487,7 +495,7 @@ void Debugger::DoNotCallDirectlyPrivateUnlock(void)
     {
 #ifdef _DEBUG
         if (m_mutexCount == 1)
-            LOG((LF_CORDB,LL_INFO10000, "D::Unlock released by 0x%x\n",
+            LOG((LF_CORDB,LL_INFO10000, "D::Unlock released by 0x%zx\n",
                 m_mutexOwner));
 
         if(0 == --m_mutexCount)
@@ -823,7 +831,7 @@ Debugger::Debugger()
     InitDebugEventCounting();
 #endif
 
-    m_processId = GetCurrentProcessId();
+    m_processId = minipal_get_current_process_id();
 
     m_pForceCatchHandlerFoundEventsTable = new ForceCatchHandlerFoundTable();
     m_pCustomNotificationTable = new CustomNotificationTable();
@@ -1755,6 +1763,315 @@ void DebuggerStartUp::RaiseStartupNotification()
 #endif // !FEATURE_DBGIPC_TRANSPORT_VM
 }
 
+#ifdef TARGET_UNIX
+
+#ifdef __APPLE__
+// On macOS 26, sem_open fails if debugger and debugee are signed with different team ids.
+// Use fifos instead of semaphores to avoid this issue, https://github.com/dotnet/runtime/issues/116545
+#define ENABLE_RUNTIME_EVENTS_OVER_PIPES
+#endif // __APPLE__
+
+// The lowest common supported semaphore length, including null character
+// NetBSD-7.99.25: 15 characters
+// MacOSX 10.11: 31 -- Core 1.0 RC2 compatibility
+#if defined(__NetBSD__)
+#define CLR_SEM_MAX_NAMELEN 15
+#elif defined(__APPLE__)
+#define CLR_SEM_MAX_NAMELEN 31
+#elif defined(NAME_MAX)
+#define CLR_SEM_MAX_NAMELEN (NAME_MAX - 4)
+#else
+// On Solaris, MAXNAMLEN is 512, which is higher than MAX_PATH defined by pal.h
+#define CLR_SEM_MAX_NAMELEN MAX_PATH
+#endif
+
+static_assert(CLR_SEM_MAX_NAMELEN <= MAX_PATH);
+
+// Build the semaphore names using the PID and a value that can be used for distinguishing
+// between processes with the same PID (which ran at different times). This is to avoid
+// cases where a prior process with the same PID exited abnormally without having a chance
+// to clean up its semaphore. These names must match the ones dbgshim creates.
+// Note to anyone modifying these names in the future: Semaphore names on OS X are limited
+// to SEM_NAME_LEN characters, including null. SEM_NAME_LEN is 31 (at least on OS X 10.11).
+// NetBSD limits semaphore names to 15 characters, including null (at least up to 7.99.25).
+// Keep 31 length for Core 1.0 RC2 compatibility
+static const char* RuntimeStartupSemaphoreName = "st";
+static const char* RuntimeContinueSemaphoreName = "co";
+
+static void CreateSemaphoreName(char semName[CLR_SEM_MAX_NAMELEN], const char *semaphoreName, DWORD pid, UINT64 disambiguationKey)
+{
+#if defined(__NetBSD__)
+    int length = snprintf(semName, CLR_SEM_MAX_NAMELEN, "/clr%s%08llx", semaphoreName, (unsigned long long)((pid ^ disambiguationKey) & 0xffffffff));
+#else
+    int length = snprintf(semName, CLR_SEM_MAX_NAMELEN, "/clr%s%08x%016llx", semaphoreName, pid, (unsigned long long)disambiguationKey);
+#endif
+    _ASSERTE(length > 0 && length < CLR_SEM_MAX_NAMELEN);
+}
+
+#ifdef ENABLE_RUNTIME_EVENTS_OVER_PIPES
+static const char* RuntimeStartupPipeName = "st";
+static const char* RuntimeContinuePipeName = "co";
+
+#define PIPE_OPEN_RETRY_DELAY_MS 500
+
+typedef enum
+{
+    RuntimeEventsOverPipes_Disabled = 0,
+    RuntimeEventsOverPipes_Succeeded = 1,
+    RuntimeEventsOverPipes_Failed = 2,
+} RuntimeEventsOverPipes;
+
+typedef enum
+{
+    RuntimeEvent_Unknown = 0,
+    RuntimeEvent_Started = 1,
+    RuntimeEvent_Continue = 2,
+} RuntimeEvent;
+
+static int OpenPipe(const char* name, int mode)
+{
+    int fd = -1;
+    int flags = mode | O_NONBLOCK;
+
+#if defined(FD_CLOEXEC)
+    flags |= O_CLOEXEC;
+#endif
+
+    while (fd == -1)
+    {
+        fd = open(name, flags);
+        if (fd == -1)
+        {
+            if (mode == O_WRONLY && errno == ENXIO)
+            {
+                minipal_sleep(PIPE_OPEN_RETRY_DELAY_MS);
+                continue;
+            }
+            else if (errno == EINTR)
+            {
+                continue;
+            }
+            else
+            {
+                break;
+            }
+        }
+    }
+
+    if (fd != -1)
+    {
+        flags = fcntl(fd, F_GETFL);
+        if (flags != -1)
+        {
+            flags &= ~O_NONBLOCK;
+            if (fcntl(fd, F_SETFL, flags) == -1)
+            {
+                close(fd);
+                fd = -1;
+            }
+        }
+        else
+        {
+            close(fd);
+            fd = -1;
+        }
+    }
+
+    return fd;
+}
+
+static void ClosePipe(int fd)
+{
+    if (fd != -1)
+    {
+        while (close(fd) < 0 && errno == EINTR);
+    }
+}
+
+static RuntimeEventsOverPipes NotifyRuntimeUsingPipes()
+{
+    RuntimeEventsOverPipes result = RuntimeEventsOverPipes_Disabled;
+    char startupPipeName[MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH];
+    char continuePipeName[MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH];
+    int startupPipeFd = -1;
+    int continuePipeFd = -1;
+    size_t offset = 0;
+    DWORD pid = minipal_get_current_process_id();
+
+    GetTransportPipeName(continuePipeName, pid, nullptr, RuntimeContinuePipeName);
+
+    continuePipeFd = OpenPipe(continuePipeName, O_RDONLY);
+    if (continuePipeFd == -1)
+    {
+        // ENOENT or EACCES means that no debugger is waiting, so runtime events over pipes are disabled.
+        if (errno != ENOENT && errno != EACCES)
+        {
+            result = RuntimeEventsOverPipes_Failed;
+        }
+
+        goto exit;
+    }
+
+    GetTransportPipeName(startupPipeName, pid, nullptr, RuntimeStartupPipeName);
+
+    startupPipeFd = OpenPipe(startupPipeName, O_WRONLY);
+    if (startupPipeFd == -1)
+    {
+        if (errno != ENOENT && errno != EACCES)
+        {
+            result = RuntimeEventsOverPipes_Failed;
+        }
+
+        goto exit;
+    }
+
+    {
+        unsigned char event = (unsigned char)RuntimeEvent_Started;
+        unsigned char *buffer = &event;
+        int bytesToWrite = sizeof(event);
+        int bytesWritten = 0;
+
+        do
+        {
+            bytesWritten = write(startupPipeFd, buffer + offset, bytesToWrite - offset);
+            if (bytesWritten > 0)
+            {
+                offset += bytesWritten;
+            }
+        }
+        while ((bytesWritten > 0 && offset < bytesToWrite) || (bytesWritten == -1 && errno == EINTR));
+
+        if (offset != bytesToWrite)
+        {
+            goto exit;
+        }
+    }
+
+    {
+        unsigned char event = (unsigned char)RuntimeEvent_Unknown;
+        unsigned char *buffer = &event;
+        int bytesToRead = sizeof(event);
+        int bytesRead = 0;
+
+        offset = 0;
+        do
+        {
+            bytesRead = read(continuePipeFd, buffer + offset, bytesToRead - offset);
+            if (bytesRead > 0)
+            {
+                offset += bytesRead;
+            }
+        }
+        while ((bytesRead > 0 && offset < bytesToRead) || (bytesRead == -1 && errno == EINTR));
+
+        if (offset != bytesToRead || event != (unsigned char)RuntimeEvent_Continue)
+        {
+            goto exit;
+        }
+    }
+
+    result = RuntimeEventsOverPipes_Succeeded;
+
+exit:
+
+    if (startupPipeFd != -1)
+    {
+        ClosePipe(startupPipeFd);
+    }
+
+    if (continuePipeFd != -1)
+    {
+        ClosePipe(continuePipeFd);
+    }
+
+    return result;
+}
+#endif // ENABLE_RUNTIME_EVENTS_OVER_PIPES
+
+static bool NotifyRuntimeUsingSemaphores()
+{
+    char startupSemName[CLR_SEM_MAX_NAMELEN];
+    char continueSemName[CLR_SEM_MAX_NAMELEN];
+    sem_t *startupSem = SEM_FAILED;
+    sem_t *continueSem = SEM_FAILED;
+    bool launched = false;
+    DWORD pid = minipal_get_current_process_id();
+
+    // On failure the key is 0. Anyone else making the semaphore name is expected to fail too and use 0.
+    uint64_t processIdDisambiguationKey;
+    minipal_get_process_id_disambiguation_key(pid, &processIdDisambiguationKey);
+
+    CreateSemaphoreName(startupSemName, RuntimeStartupSemaphoreName, pid, processIdDisambiguationKey);
+    CreateSemaphoreName(continueSemName, RuntimeContinueSemaphoreName, pid, processIdDisambiguationKey);
+
+    // Open the debugger startup semaphore. If it doesn't exists, then we do nothing and return
+    startupSem = sem_open(startupSemName, 0);
+    if (startupSem == SEM_FAILED)
+    {
+        goto exit;
+    }
+
+    continueSem = sem_open(continueSemName, 0);
+    if (continueSem == SEM_FAILED)
+    {
+        _ASSERTE(!"sem_open(continueSemName) failed");
+        goto exit;
+    }
+
+    // Wake up the debugger waiting for startup
+    if (sem_post(startupSem) != 0)
+    {
+        _ASSERTE(!"sem_post(startupSem) failed");
+        goto exit;
+    }
+
+    // Now wait until the debugger's runtime startup notification is finished
+    while (sem_wait(continueSem) != 0)
+    {
+        if (EINTR == errno)
+        {
+            continue;
+        }
+        _ASSERTE(!"sem_wait(continueSem) failed");
+        goto exit;
+    }
+
+    // Returns that the runtime was successfully launched for debugging
+    launched = true;
+
+exit:
+    if (startupSem != SEM_FAILED)
+    {
+        sem_close(startupSem);
+    }
+    if (continueSem != SEM_FAILED)
+    {
+        sem_close(continueSem);
+    }
+    return launched;
+}
+
+static bool NotifyRuntimeStarted()
+{
+#ifdef ENABLE_RUNTIME_EVENTS_OVER_PIPES
+    // Test pipes as runtime event transport.
+    switch (NotifyRuntimeUsingPipes())
+    {
+    case RuntimeEventsOverPipes_Disabled:
+        return NotifyRuntimeUsingSemaphores();
+    case RuntimeEventsOverPipes_Succeeded:
+        return true;
+    case RuntimeEventsOverPipes_Failed:
+    default:
+        return false;
+    }
+#else
+    return NotifyRuntimeUsingSemaphores();
+#endif // ENABLE_RUNTIME_EVENTS_OVER_PIPES
+}
+
+#endif // TARGET_UNIX
+
 void DebuggerStartUp::WaitForContinueNotification()
 {
     STANDARD_VM_CONTRACT;
@@ -1763,7 +2080,7 @@ void DebuggerStartUp::WaitForContinueNotification()
     // Signal the debugger (via dbgshim) and wait until it is ready for us to
     // continue. This needs to be outside the lock and after the transport is
     // initialized.
-    if (PAL_NotifyRuntimeStarted())
+    if (NotifyRuntimeStarted())
     {
         // The runtime was successfully launched and attached so mark it now
         // so no notifications are missed especially the initial module load
@@ -2217,7 +2534,7 @@ HRESULT Debugger::RequestFavor(FAVORCALLBACK fp, void * pData)
     CONTRACTL_END;
 
     if (m_pRCThread == NULL ||
-        m_pRCThread->GetRCThreadId() == GetCurrentThreadId())
+        m_pRCThread->GetRCThreadId() == (DWORD)minipal_get_current_thread_id())
     {
         // Since favors are only used internally, we know that the helper should always be up and ready
         // to handle them. Also, since favors can be used in low-stack scenarios, there's not any
@@ -2653,7 +2970,7 @@ DebuggerMethodInfo *Debugger::GetOrCreateMethodInfo(Module *pModule, mdMethodDef
     // nor would it be useful for anything.
     ALLOW_DATATARGET_MISSING_MEMORY(
         // In case we don't have already, take it now.
-        DebuggerDataLockHolder debuggerDataLockHolder(this);
+        DebuggerDataLockHolder debuggerDataLockHolder = TakeDebuggerDataLock(this);
     );
 
     if (m_pMethodInfos != NULL)
@@ -5024,7 +5341,7 @@ DebuggerModule* Debugger::LookupOrCreateModule(Module* pModule)
     // the lock when actually using the DebuggerModule (since it won't be unloaded as long as there is a thread
     // in that appdomain). Many of our callers already have this lock, many don't.
     // We can take the lock anyways because it's reentrant.
-    DebuggerDataLockHolder ch(g_pDebugger); // need to traverse module list
+    DebuggerDataLockHolder ch = TakeDebuggerDataLock(g_pDebugger); // need to traverse module list
 
     DebuggerModule* dmod = NULL;
 
@@ -5071,7 +5388,7 @@ DebuggerModule* Debugger::AddDebuggerModule(Assembly * pAssembly)
     CONTRACTL_END;
 
     LOG((LF_CORDB, LL_INFO1000, "D::ADM asm=0x%p\n", pAssembly));
-    DebuggerDataLockHolder chInfo(this);
+    DebuggerDataLockHolder chInfo = TakeDebuggerDataLock(this);
 
     Module *     pRuntimeModule = pAssembly->GetModule();
 
@@ -5408,7 +5725,7 @@ void Debugger::TraceCall(const BYTE *code)
     // One threat is that our helper thread may be forced to execute a managed DLL main.
     // In that case, it's before the helper thread proc is even executed, so our conventional
     // IsHelperThread() checks are inadequate.
-    _ASSERTE((GetCurrentThreadId() != g_pRCThread->m_DbgHelperThreadOSTid) || !"You're running managed code on the helper thread");
+    _ASSERTE(((DWORD)minipal_get_current_thread_id() != g_pRCThread->m_DbgHelperThreadOSTid) || !"You're running managed code on the helper thread");
 
     _ASSERTE((g_pEEInterface->GetThreadFilterContext(pCurThread) == NULL) || !"Shouldn't run managed code w/ Filter-Context set");
 
@@ -5585,7 +5902,7 @@ void Debugger::SetModuleDefaultJMCStatus(Module * pRuntimeModule, bool fStatus)
 
     if (pTable != NULL)
     {
-        Debugger::DebuggerDataLockHolder debuggerDataLockHolder(g_pDebugger);
+        Debugger::DebuggerDataLockHolder debuggerDataLockHolder = Debugger::TakeDebuggerDataLock(g_pDebugger);
         for (DebuggerMethodInfoTable::Iterator iterator = pTable->Begin(), end = pTable->End();
              iterator != end; iterator++)
         {
@@ -6205,7 +6522,7 @@ void Debugger::LockForEventSending(DebuggerLockHolder *dbgLockHolder)
 #ifdef _DEBUG
      // Track our TID. We're not re-entrant.
     //_ASSERTE(m_tidLockedForEventSending == 0);
-    m_tidLockedForEventSending = GetCurrentThreadId();
+    m_tidLockedForEventSending = minipal_get_current_thread_id();
 #endif
 
 }
@@ -6226,7 +6543,7 @@ void Debugger::UnlockFromEventSending(DebuggerLockHolder *dbgLockHolder)
     CONTRACTL_END;
 
 #ifdef _DEBUG
-    //_ASSERTE(m_tidLockedForEventSending == GetCurrentThreadId());
+    //_ASSERTE(m_tidLockedForEventSending == minipal_get_current_thread_id());
     m_tidLockedForEventSending = 0;
 #endif
     if (dbgLockHolder != NULL)
@@ -6369,7 +6686,7 @@ void Debugger::InitDebuggerLaunchJitInfo(Thread * pThread, EXCEPTION_POINTERS * 
     s_DebuggerLaunchJitInfoContext = *pExceptionInfo->ContextRecord;
 
     s_DebuggerLaunchJitInfo.dwSize = sizeof(s_DebuggerLaunchJitInfo);
-    s_DebuggerLaunchJitInfo.dwThreadID = pThread == NULL ? GetCurrentThreadId() : pThread->GetOSThreadId();
+    s_DebuggerLaunchJitInfo.dwThreadID = pThread == NULL ? (DWORD)minipal_get_current_thread_id() : pThread->GetOSThreadId();
     s_DebuggerLaunchJitInfo.lpExceptionRecord = reinterpret_cast<ULONG64>(&s_DebuggerLaunchJitInfoExceptionRecord);
     s_DebuggerLaunchJitInfo.lpContextRecord = reinterpret_cast<ULONG64>(&s_DebuggerLaunchJitInfoContext);
     s_DebuggerLaunchJitInfo.lpExceptionAddress = s_DebuggerLaunchJitInfoExceptionRecord.ExceptionAddress != NULL ?
@@ -6607,7 +6924,7 @@ HRESULT Debugger::EDAHelper(PROCESS_INFORMATION *pProcessInfo)
     CONTRACTL_END;
 
 #ifndef TARGET_UNIX
-    LOG((LF_CORDB, LL_INFO10000, "D::EDA: thread 0x%x is launching the debugger.\n", GetCurrentThreadId()));
+    LOG((LF_CORDB, LL_INFO10000, "D::EDA: thread 0x%zx is launching the debugger.\n", minipal_get_current_thread_id()));
 
     _ASSERTE(HasLazyData());
 
@@ -7616,7 +7933,7 @@ bool Debugger::FirstChanceManagedException(Thread *pThread, SIZE_T currentIP, SI
     }
     CONTRACTL_END;
 
-    LOG((LF_CORDB, LL_INFO10000, "D::FCE: First chance exception, TID:0x%x, \n", GetThreadIdHelper(pThread)));
+    LOG((LF_CORDB, LL_INFO10000, "D::FCE: First chance exception, TID:0x%zx, \n", GetThreadIdHelper(pThread)));
 
     _ASSERTE(GetThreadNULLOk() != NULL);
 
@@ -8465,24 +8782,24 @@ int Debugger::NotifyUserOfFault(bool userBreakpoint, DebuggerLaunchSetting dls)
     if (!CORDebuggerAttached())
     {
         DWORD pid;
-        DWORD tid;
+        size_t tid;
 
-        pid = GetCurrentProcessId();
-        tid = GetCurrentThreadId();
+        pid = minipal_get_current_process_id();
+        tid = minipal_get_current_thread_id();
 
         DWORD flags = 0;
 
         CHAR const* msg;
         if (userBreakpoint)
         {
-            msg = "Application has encountered a user-defined breakpoint.\n\nProcess ID=0x%x (%d), Thread ID=0x%x (%d).\n\nClick ABORT to terminate the application.\nClick RETRY to debug the application.\nClick IGNORE to ignore the breakpoint.";
+            msg = "Application has encountered a user-defined breakpoint.\n\nProcess ID=0x%x (%d), Thread ID=0x%zx (%zu).\n\nClick ABORT to terminate the application.\nClick RETRY to debug the application.\nClick IGNORE to ignore the breakpoint.";
 #ifdef HOST_WINDOWS
             flags |= MB_ABORTRETRYIGNORE | MB_ICONEXCLAMATION;
 #endif
         }
         else
         {
-            msg = "Application has generated an exception that could not be handled.\n\nProcess ID=0x%x (%d), Thread ID=0x%x (%d).\n\nClick OK to terminate the application.\nClick CANCEL to debug the application.";
+            msg = "Application has generated an exception that could not be handled.\n\nProcess ID=0x%x (%d), Thread ID=0x%zx (%zu).\n\nClick OK to terminate the application.\nClick CANCEL to debug the application.";
 #ifdef HOST_WINDOWS
             flags |= MB_OKCANCEL | MB_ICONEXCLAMATION;
 #endif
@@ -8770,7 +9087,7 @@ void Debugger::ThreadCreated(Thread* pRuntimeThread)
     if (CORDBUnrecoverableError(this))
         return;
 
-    LOG((LF_CORDB, LL_INFO100, "D::TC: thread created for 0x%x. ******\n",
+    LOG((LF_CORDB, LL_INFO100, "D::TC: thread created for 0x%zx. ******\n",
          GetThreadIdHelper(pRuntimeThread)));
 
     // Sanity check the thread.
@@ -8818,13 +9135,13 @@ void Debugger::ThreadStarted(Thread* pRuntimeThread)
 
     if (pRuntimeThread->HasThreadStateNC(Thread::TSNC_DebuggerThreadStartSent))
     {
-        LOG((LF_CORDB, LL_INFO100, "D::TS: thread attach already sent, skipping : ID=%#x\n",
+        LOG((LF_CORDB, LL_INFO100, "D::TS: thread attach already sent, skipping : ID=%#zx\n",
              GetThreadIdHelper(pRuntimeThread)));
         return;
     }
     pRuntimeThread->SetThreadStateNC(Thread::TSNC_DebuggerThreadStartSent);
 
-    LOG((LF_CORDB, LL_INFO100, "D::TS: thread attach : ID=%#x AD:%p\n",
+    LOG((LF_CORDB, LL_INFO100, "D::TS: thread attach : ID=%#zx AD:%p\n",
          GetThreadIdHelper(pRuntimeThread), static_cast<void*>(AppDomain::GetCurrentDomain())));
 
     // We just need to send a VMPTR_Thread. The RS will get everything else it needs from DAC.
@@ -8929,7 +9246,7 @@ void Debugger::DetachThread(Thread *pRuntimeThread)
     _ASSERTE (pRuntimeThread != NULL);
 
 
-    LOG((LF_CORDB, LL_INFO100, "D::DT: thread detach : ID=%#x AD:%p.\n",
+    LOG((LF_CORDB, LL_INFO100, "D::DT: thread detach : ID=%#zx AD:%p.\n",
          GetThreadIdHelper(pRuntimeThread), AppDomain::GetCurrentDomain()));
 
 
@@ -9037,7 +9354,7 @@ BOOL Debugger::SuspendComplete(bool isEESuspendedForGC)
     // We do the EEH part when we get the Continue event.
     {
 #ifdef _DEBUG
-        //_ASSERTE(m_tidLockedForEventSending == GetCurrentThreadId());
+        //_ASSERTE(m_tidLockedForEventSending == minipal_get_current_thread_id());
         m_tidLockedForEventSending = 0;
 #endif
 
@@ -9396,7 +9713,7 @@ void Debugger::UnloadModule(Module* pRuntimeModule)
         // because JMC status is not maintained on a per-AppDomain basis and we don't
         // want to change the JMC behavior of the module in other domains.
         LOG((LF_CORDB, LL_EVERYTHING, "Setting all JMC methods to false:\n"));
-        DebuggerDataLockHolder debuggerDataLockHolder(this);
+        DebuggerDataLockHolder debuggerDataLockHolder = TakeDebuggerDataLock(this);
         DebuggerMethodInfoTable * pTable = GetMethodInfoTable();
         if (pTable != NULL)
         {
@@ -9415,7 +9732,7 @@ void Debugger::UnloadModule(Module* pRuntimeModule)
         // Delete the Left Side representation of the module.
         if (m_pModules != NULL)
         {
-            DebuggerDataLockHolder chInfo(this);
+            DebuggerDataLockHolder chInfo = TakeDebuggerDataLock(this);
             m_pModules->RemoveModule(pRuntimeModule);
         }
 
@@ -9489,7 +9806,7 @@ void Debugger::RemoveModuleReferences( Module* pModule )
 
         if (SUCCEEDED(hr))
         {
-            DebuggerDataLockHolder debuggerDataLockHolder(this);
+            DebuggerDataLockHolder debuggerDataLockHolder = TakeDebuggerDataLock(this);
 
             m_pMethodInfos->ClearMethodsOfModule(pModule);
 
@@ -10479,9 +10796,9 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
             Thread * pThread = pEvent->SetAllDebugState.vmThreadToken.GetRawPtr();
             CorDebugThreadState debugState = pEvent->SetAllDebugState.debugState;
 
-            LOG((LF_CORDB,LL_INFO10000,"HandleIPCE: SetAllDebugState: except thread 0x%p (ID:0x%x) to state 0x%x\n",
+            LOG((LF_CORDB,LL_INFO10000,"HandleIPCE: SetAllDebugState: except thread 0x%p (ID:0x%zx) to state 0x%x\n",
                  pThread,
-                 (pThread != NULL) ? GetThreadIdHelper(pThread) : 0,
+                 (pThread != NULL) ? GetThreadIdHelper(pThread) : (SIZE_T)0,
                  debugState));
 
             if (!IsAtProcessExit())
@@ -10653,7 +10970,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
 
             if (pMethodInfoTable != NULL)
             {
-                DebuggerDataLockHolder debuggerDataLockHolder(this);
+                DebuggerDataLockHolder debuggerDataLockHolder = TakeDebuggerDataLock(this);
 
                 for (DebuggerMethodInfoTable::Iterator iterator = pMethodInfoTable->Begin(), end = pMethodInfoTable->End();
                      iterator != end; iterator++)
@@ -10672,7 +10989,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
         {
 
             // Removes all DebuggerModules
-            DebuggerDataLockHolder ch(this);
+            DebuggerDataLockHolder ch = TakeDebuggerDataLock(this);
             m_pModules->Clear();
 
         }
@@ -10927,7 +11244,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
             }
             else
             {
-                DebuggerDataLockHolder debuggerDataLockHolder(this);
+                DebuggerDataLockHolder debuggerDataLockHolder = TakeDebuggerDataLock(this);
                 // This may be called on an unjitted method, so we may
                 // have to create the MethodInfo.
                 DebuggerMethodInfo * pMethodInfo = GetOrCreateMethodInfo(pModule, token);
@@ -11647,110 +11964,6 @@ HRESULT Debugger::BasicTypeInfoToTypeHandle(DebuggerIPCE_BasicTypeData *data, Ty
     return S_OK;
 }
 
-// Iterate through the type argument data, creating type handles as we go.
-void Debugger::TypeDataWalk::ReadTypeHandles(unsigned int nTypeArgs, TypeHandle *ppResults)
-{
-    WRAPPER_NO_CONTRACT;
-
-    for (unsigned int i = 0; i < nTypeArgs; i++)
-        ppResults[i] = ReadTypeHandle();
-    }
-
-TypeHandle Debugger::TypeDataWalk::ReadInstantiation(Module *pModule, mdTypeDef tok, unsigned int nTypeArgs)
-{
-    WRAPPER_NO_CONTRACT;
-
-    DWORD dwAllocSize;
-    if (!ClrSafeInt<DWORD>::multiply(nTypeArgs, sizeof(TypeHandle), dwAllocSize))
-    {
-        ThrowHR(COR_E_OVERFLOW);
-    }
-    TypeHandle * inst = (TypeHandle *) _alloca(dwAllocSize);
-    ReadTypeHandles(nTypeArgs, inst) ;
-    TypeHandle th = g_pEEInterface->LoadInstantiation(pModule, tok, nTypeArgs, inst);
-    if (th.IsNull())
-      COMPlusThrow(kArgumentException, W("Argument_InvalidGenericArg"));
-    return th;
-}
-
-TypeHandle Debugger::TypeDataWalk::ReadTypeHandle()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    DebuggerIPCE_TypeArgData * data = ReadOne();
-    if (!data)
-      COMPlusThrow(kArgumentException, W("Argument_InvalidGenericArg"));
-
-    LOG((LF_CORDB, LL_INFO10000,
-         "D::ETITTH: expanding right-side type to left-side type, ELEMENT_TYPE: %d.\n",
-         static_cast<CorElementType>(data->data.elementType)));
-
-    TypeHandle th;
-    CorElementType et = data->data.elementType;
-    switch (et)
-    {
-    case ELEMENT_TYPE_ARRAY:
-    case ELEMENT_TYPE_SZARRAY:
-    case ELEMENT_TYPE_PTR:
-    case ELEMENT_TYPE_BYREF:
-        if(data->numTypeArgs == (UINT)1)
-        {
-            TypeHandle typar = ReadTypeHandle();
-            switch (et)
-            {
-            case ELEMENT_TYPE_ARRAY:
-            case ELEMENT_TYPE_SZARRAY:
-                th = g_pEEInterface->LoadArrayType(data->data.elementType, typar, data->data.ArrayTypeData.arrayRank);
-                break;
-            case ELEMENT_TYPE_PTR:
-            case ELEMENT_TYPE_BYREF:
-                th = g_pEEInterface->LoadPointerOrByrefType(data->data.elementType, typar);
-                break;
-            default:
-                _ASSERTE(0);
-        }
-        }
-        break;
-
-    case ELEMENT_TYPE_CLASS:
-    case ELEMENT_TYPE_VALUETYPE:
-        {
-            DebuggerModule *pDebuggerModule = g_pDebugger->LookupOrCreateModule(data->data.ClassTypeData.vmAssembly);
-            th = ReadInstantiation(pDebuggerModule->GetRuntimeModule(), data->data.ClassTypeData.metadataToken, data->numTypeArgs);
-            break;
-        }
-
-    case ELEMENT_TYPE_FNPTR:
-        {
-            SIZE_T cbAllocSize;
-            if ((!ClrSafeInt<SIZE_T>::multiply(data->numTypeArgs, sizeof(TypeHandle), cbAllocSize)) ||
-                (cbAllocSize != (size_t)(cbAllocSize)))
-            {
-                _ASSERTE(COR_E_OVERFLOW);
-                cbAllocSize = UINT_MAX;
-            }
-            TypeHandle * inst = (TypeHandle *) _alloca(cbAllocSize);
-            ReadTypeHandles(data->numTypeArgs, inst) ;
-            th = g_pEEInterface->LoadFnptrType(inst, data->numTypeArgs);
-            break;
-        }
-
-    default:
-        th = g_pEEInterface->LoadElementType(data->data.elementType);
-        break;
-    }
-    if (th.IsNull())
-      COMPlusThrow(kArgumentNullException, W("ArgumentNull_Type"));
-    return th;
-
-}
-
 //
 // GetAndSendTransitionStubInfo figures out if an address is a stub
 // address and sends the result back to the right side.
@@ -12004,9 +12217,9 @@ HRESULT Debugger::DeoptimizeMethod(Module* pModule, mdMethodDef methodDef)
 
     // Now deoptimize anything that has inlined it in a R2R method
     AppDomain::AssemblyIterator assemblyIterator = SystemDomain::System()->DefaultDomain()->IterateAssembliesEx((AssemblyIterationFlags) (kIncludeLoaded | kIncludeExecution));
-    CollectibleAssemblyHolder<Assembly *> pAssembly;
+    CollectibleAssemblyHolder pAssembly;
     NativeImageInliningIterator inlinerIter;
-    while (assemblyIterator.Next(pAssembly.This()))
+    while (assemblyIterator.Next(&pAssembly))
     {
         Module *pCandidateModule = pAssembly->GetModule();
         if (pCandidateModule->HasReadyToRunInlineTrackingMap())
@@ -12262,7 +12475,7 @@ bool Debugger::IsThreadAtSafePlaceWorker(Thread *thread)
 #ifdef LOGGING
     if (!atSafePlace)
         LOG((LF_CORDB | LF_GC, LL_INFO1000,
-             "Thread 0x%x is not at a safe place.\n",
+             "Thread 0x%zx is not at a safe place.\n",
              GetThreadIdHelper(thread)));
 #endif
 
@@ -12307,11 +12520,11 @@ bool Debugger::IsThreadAtSafePlace(Thread *thread)
  * Helper for debugger to get an unique thread id
  *
  ******************************************************************************/
-DWORD Debugger::GetThreadIdHelper(Thread *pThread)
+SIZE_T Debugger::GetThreadIdHelper(Thread *pThread)
 {
     WRAPPER_NO_CONTRACT;
 
-    return pThread->GetOSThreadId();
+    return pThread->GetOSThreadId64();
 }
 
 //-----------------------------------------------------------------------------
@@ -12775,7 +12988,7 @@ HRESULT Debugger::AddFunction(MethodDesc* pMD, SIZE_T encVersion)
     }
     CONTRACTL_END;
 
-    DebuggerDataLockHolder debuggerDataLockHolder(this);
+    DebuggerDataLockHolder debuggerDataLockHolder = TakeDebuggerDataLock(this);
 
     LOG((LF_CORDB, LL_INFO10000, "D::AF: adding "
          "%s::%s to version %zu\n", pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, encVersion));
@@ -13332,26 +13545,26 @@ LONG Debugger::FirstChanceSuspendHijackWorker(CONTEXT *pContext,
     // at this point we know that there is an interop debugger attached. This makes it safe to send
     // flares
 #if DOSPEW
-    DWORD tid = GetCurrentThreadId();
+    size_t tid = minipal_get_current_thread_id();
 #endif
 
-    SPEW(fprintf(stderr, "0x%x D::FCHF: in first chance hijack filter.\n", tid));
-    SPEW(fprintf(stderr, "0x%x D::FCHF: pExceptionRecord=0x%p (%d), pContext=0x%p (%d)\n", tid, pExceptionRecord, sizeof(EXCEPTION_RECORD),
+    SPEW(fprintf(stderr, "0x%zx D::FCHF: in first chance hijack filter.\n", tid));
+    SPEW(fprintf(stderr, "0x%zx D::FCHF: pExceptionRecord=0x%p (%d), pContext=0x%p (%d)\n", tid, pExceptionRecord, sizeof(EXCEPTION_RECORD),
         pContext, sizeof(CONTEXT)));
 #if defined(TARGET_AMD64)
-    SPEW(fprintf(stderr, "0x%x D::FCHF: code=0x%08x, addr=0x%p, Rip=0x%p, Rsp=0x%p, EFlags=0x%08x\n",
+    SPEW(fprintf(stderr, "0x%zx D::FCHF: code=0x%08x, addr=0x%p, Rip=0x%p, Rsp=0x%p, EFlags=0x%08x\n",
         tid, pExceptionRecord->ExceptionCode, pExceptionRecord->ExceptionAddress, pContext->Rip, pContext->Rsp,
         pContext->EFlags));
 #elif defined(TARGET_X86)
-    SPEW(fprintf(stderr, "0x%x D::FCHF: code=0x%08x, addr=0x%08x, Eip=0x%08x, Esp=0x%08x, EFlags=0x%08x\n",
+    SPEW(fprintf(stderr, "0x%zx D::FCHF: code=0x%08x, addr=0x%08x, Eip=0x%08x, Esp=0x%08x, EFlags=0x%08x\n",
         tid, pExceptionRecord->ExceptionCode, pExceptionRecord->ExceptionAddress, pContext->Eip, pContext->Esp,
         pContext->EFlags));
 #elif defined(TARGET_ARM64)
-    SPEW(fprintf(stderr, "0x%x D::FCHF: code=0x%08x, addr=0x%08x, Pc=0x%p, Sp=0x%p, EFlags=0x%08x\n",
+    SPEW(fprintf(stderr, "0x%zx D::FCHF: code=0x%08x, addr=0x%08x, Pc=0x%p, Sp=0x%p, EFlags=0x%08x\n",
         tid, pExceptionRecord->ExceptionCode, pExceptionRecord->ExceptionAddress, pContext->Pc, pContext->Sp,
         pContext->EFlags));
 #elif defined(TARGET_LOONGARCH64)
-    SPEW(fprintf(stderr, "0x%x D::FCHF: code=0x%08x, addr=0x%08x, Pc=0x%p, Sp=0x%p\n",
+    SPEW(fprintf(stderr, "0x%zx D::FCHF: code=0x%08x, addr=0x%08x, Pc=0x%p, Sp=0x%p\n",
         tid, pExceptionRecord->ExceptionCode, pExceptionRecord->ExceptionAddress, pContext->Pc, pContext->Sp));
 #endif
 
@@ -13381,13 +13594,13 @@ LONG Debugger::FirstChanceSuspendHijackWorker(CONTEXT *pContext,
         fcd.action = HIJACK_ACTION_EXIT_UNHANDLED;
         fcd.debugCounter = 0;
 
-        SPEW(fprintf(stderr, "0x%x D::FCHF: Set debugger word to 0x%p.\n", tid, pFcd));
+        SPEW(fprintf(stderr, "0x%zx D::FCHF: Set debugger word to 0x%p.\n", tid, pFcd));
         g_pEEInterface->SetThreadDebuggerWord((VOID*)pFcd);
 
         // Signal the RS to tell us what to do
-        SPEW(fprintf(stderr, "0x%x D::FCHF: Signaling hijack started.\n", tid));
+        SPEW(fprintf(stderr, "0x%zx D::FCHF: Signaling hijack started.\n", tid));
         SignalHijackStarted();
-        SPEW(fprintf(stderr, "0x%x D::FCHF: Signaling hijack started complete. DebugCounter=0x%x\n", tid, (UINT)pFcd->debugCounter));
+        SPEW(fprintf(stderr, "0x%zx D::FCHF: Signaling hijack started complete. DebugCounter=0x%x\n", tid, (UINT)pFcd->debugCounter));
 
         if ((HijackAction)pFcd->action == HIJACK_ACTION_WAIT)
         {
@@ -13395,7 +13608,7 @@ LONG Debugger::FirstChanceSuspendHijackWorker(CONTEXT *pContext,
             // If we belong to the CLR, then we either:
             // - were a  M2U transition, in which case we should be in a different Hijack
             // - were a CLR exception in CLR code, in which case we should have continued and let the inproc handlers get it.
-            SPEW(fprintf(stderr, "0x%x D::FCHF: exception does not belong to the Runtime, pEEThread=0x%p, pContext=0x%p\n",
+            SPEW(fprintf(stderr, "0x%zx D::FCHF: exception does not belong to the Runtime, pEEThread=0x%p, pContext=0x%p\n",
                          tid, pEEThread, pContext));
 
             if (pEEThread != NULL)
@@ -13414,13 +13627,13 @@ LONG Debugger::FirstChanceSuspendHijackWorker(CONTEXT *pContext,
 
             // Wait for the continue. We may / may not have an EE Thread for this, (and we're definitely
             // not doing fiber-mode debugging), so just use a raw win32 API, and not some fancy fiber-safe call.
-            SPEW(fprintf(stderr, "0x%x D::FCHF: waiting for continue.\n", tid));
+            SPEW(fprintf(stderr, "0x%zx D::FCHF: waiting for continue.\n", tid));
             DWORD ret = g_pDebugger->m_pRCThread->GetLeftSideUnmanagedWaitEvent().Wait(INFINITE);
-            SPEW(fprintf(stderr, "0x%x D::FCHF: waiting for continue complete.\n", tid));
+            SPEW(fprintf(stderr, "0x%zx D::FCHF: waiting for continue complete.\n", tid));
 
             if (ret != WAIT_OBJECT_0)
             {
-                SPEW(fprintf(stderr, "0x%x D::FCHF: wait failed!\n", tid));
+                SPEW(fprintf(stderr, "0x%zx D::FCHF: wait failed!\n", tid));
             }
 
             if (pEEThread != NULL)
@@ -13436,22 +13649,22 @@ LONG Debugger::FirstChanceSuspendHijackWorker(CONTEXT *pContext,
             }
         }
 
-        SPEW(fprintf(stderr, "0x%x D::FCHF: signaling HijackComplete.\n", tid));
+        SPEW(fprintf(stderr, "0x%zx D::FCHF: signaling HijackComplete.\n", tid));
         SignalHijackComplete();
-        SPEW(fprintf(stderr, "0x%x D::FCHF: done signaling HijackComplete. DebugCounter=0x%x\n", tid, (UINT)pFcd->debugCounter));
+        SPEW(fprintf(stderr, "0x%zx D::FCHF: done signaling HijackComplete. DebugCounter=0x%x\n", tid, (UINT)pFcd->debugCounter));
 
         // we should know what we are about to do now
         _ASSERTE((HijackAction)pFcd->action != HIJACK_ACTION_WAIT);
 
         // cleanup from above
-        SPEW(fprintf(stderr, "0x%x D::FCHF: set debugger word = NULL.\n", tid));
+        SPEW(fprintf(stderr, "0x%zx D::FCHF: set debugger word = NULL.\n", tid));
         g_pEEInterface->SetThreadDebuggerWord(NULL);
 
     } // end can't stop region
 
     if ((HijackAction)pFcd->action == HIJACK_ACTION_EXIT_HANDLED)
     {
-        SPEW(fprintf(stderr, "0x%x D::FCHF: exiting with CONTINUE_EXECUTION\n", tid));
+        SPEW(fprintf(stderr, "0x%zx D::FCHF: exiting with CONTINUE_EXECUTION\n", tid));
 #if defined(OUT_OF_PROCESS_SETTHREADCONTEXT) && !defined(DACCESS_COMPILE)
         if (fIsVEH)
         {
@@ -13462,7 +13675,7 @@ LONG Debugger::FirstChanceSuspendHijackWorker(CONTEXT *pContext,
     }
     else
     {
-        SPEW(fprintf(stderr, "0x%x D::FCHF: exiting with CONTINUE_SEARCH\n", tid));
+        SPEW(fprintf(stderr, "0x%zx D::FCHF: exiting with CONTINUE_SEARCH\n", tid));
         _ASSERTE((HijackAction)pFcd->action == HIJACK_ACTION_EXIT_UNHANDLED);
         return EXCEPTION_CONTINUE_SEARCH;
     }
@@ -13472,7 +13685,7 @@ LONG Debugger::FirstChanceSuspendHijackWorker(CONTEXT *pContext,
 void GenericHijackFuncHelper()
 {
 #if DOSPEW
-    DWORD tid = GetCurrentThreadId();
+    size_t tid = minipal_get_current_thread_id();
 #endif
 
     // The Windows native break in thread does not have TLS storage allocated.
@@ -13484,11 +13697,11 @@ void GenericHijackFuncHelper()
     // (This makes places where we assert that we're in a CS region happy).
     CantStopHolder hCantStop(!debuggerBreakInThread);
 
-    SPEW(fprintf(stderr, "0x%x D::GHF: in generic hijack.\n", tid));
+    SPEW(fprintf(stderr, "0x%zx D::GHF: in generic hijack.\n", tid));
 
     // There is no need to setup any context pointer or interact with the Right Side in anyway. We simply wait for
     // the continue event to be set.
-    SPEW(fprintf(stderr, "0x%x D::GHF: waiting for continue.\n", tid));
+    SPEW(fprintf(stderr, "0x%zx D::GHF: waiting for continue.\n", tid));
 
     // If this thread has an EE thread and that EE thread has preemptive gc disabled, then mark that there is a
     // thread at an unsafe place and enable pgc. This will allow us to sync even with this thread hijacked.
@@ -13509,7 +13722,7 @@ void GenericHijackFuncHelper()
 
     if (ret != WAIT_OBJECT_0)
     {
-        SPEW(fprintf(stderr, "0x%x D::GHF: wait failed!\n", tid));
+        SPEW(fprintf(stderr, "0x%zx D::GHF: wait failed!\n", tid));
     }
 
     // Get the continue type. Non-zero means that the exception was not cleared by the Right Side and therefore has
@@ -13533,11 +13746,11 @@ void GenericHijackFuncHelper()
         g_pEEInterface->SetThreadDebuggerWord(NULL);
     }
 
-    SPEW(fprintf(stderr, "0x%x D::GHF: continued with %d.\n", tid, continueType));
+    SPEW(fprintf(stderr, "0x%zx D::GHF: continued with %d.\n", tid, continueType));
 
     if (continueType)
     {
-        SPEW(fprintf(stderr, "0x%x D::GHF: calling ExitProcess\n", tid));
+        SPEW(fprintf(stderr, "0x%zx D::GHF: calling ExitProcess\n", tid));
 
         // Continuing from a second chance exception without clearing the exception causes the process to
         // exit. Note: the continue type will only be non-zero if this hijack was setup for a second chance
@@ -14218,7 +14431,7 @@ HRESULT Debugger::FuncEvalSetup(DebuggerIPCE_FuncEvalInfo *pEvalInfo,
     *argDataArea = pDE->m_argData;
     *debuggerEvalKey = pDE;
 
-    LOG((LF_CORDB, LL_INFO100000, "D:FES for pDE:%p evalType:%d on thread %p, id=0x%x\n",
+    LOG((LF_CORDB, LL_INFO100000, "D:FES for pDE:%p evalType:%d on thread %p, id=0x%zx\n",
         pDE, pDE->m_evalType, pThread, GetThreadIdHelper(pThread)));
 
     return S_OK;
@@ -14262,7 +14475,7 @@ Debugger::FuncEvalAbort(
         pDE->m_aborting = DebuggerEval::FE_ABORT_NORMAL;
 
         LOG((LF_CORDB, LL_INFO1000,
-             "D::FEA: performing UserAbort on thread %p, id=0x%x\n",
+             "D::FEA: performing UserAbort on thread %p, id=0x%zx\n",
              pDE->m_thread, GetThreadIdHelper(pDE->m_thread)));
 
         if (!IsAtProcessExit() && !pDE->m_completed)
@@ -14329,7 +14542,7 @@ Debugger::FuncEvalRudeAbort(
         pDE->m_aborting = (DebuggerEval::FUNC_EVAL_ABORT_TYPE)(pDE->m_aborting | DebuggerEval::FE_ABORT_RUDE);
 
         LOG((LF_CORDB, LL_INFO1000,
-             "D::FEA: performing RudeAbort on thread %p, id=0x%x\n",
+             "D::FEA: performing RudeAbort on thread %p, id=0x%zx\n",
              pDE->m_thread, Debugger::GetThreadIdHelper(pDE->m_thread)));
 
         if (!IsAtProcessExit() && !pDE->m_completed)
@@ -14372,7 +14585,7 @@ HRESULT Debugger::FuncEvalCleanup(DebuggerEval *debuggerEvalKey)
 
     _ASSERTE(pDE->m_completed);
 
-    LOG((LF_CORDB, LL_INFO1000, "D::FEC: pDE:%p 0x%p, id=0x%x\n",
+    LOG((LF_CORDB, LL_INFO1000, "D::FEC: pDE:%p 0x%p, id=0x%zx\n",
          pDE, pDE->m_thread, GetThreadIdHelper(pDE->m_thread)));
 
     DeleteInteropSafeExecutable(pDE->m_bpInfoSegment);
@@ -14662,7 +14875,7 @@ void Debugger::DoHelperThreadDuty()
          "thread duty...\n"));
 
     // We're the temporary helper thread now.
-    DWORD dwMyTID = GetCurrentThreadId();
+    DWORD dwMyTID = (DWORD)minipal_get_current_thread_id();
     m_pRCThread->GetDCB()->m_temporaryHelperThreadId = dwMyTID;
 
     // Make sure the helper thread has something to wait on while
@@ -14975,7 +15188,7 @@ bool ThisIsHelperThreadWorker(void)
 
     // Even if we're not on the real helper thread, we may still be on a thread
     // pretending to be the helper. (Helper Duty, etc).
-    DWORD id = GetCurrentThreadId();
+    size_t id = minipal_get_current_thread_id();
 
     // Check for temporary helper thread.
     if (ThisIsTempHelperThread(id))
@@ -14999,16 +15212,16 @@ bool Debugger::ThisIsHelperThread(void)
 }
 
 // Check if we're the temporary helper thread. Have 2 forms of this, 1 that assumes the current
-// thread (but has the overhead of an extra call to GetCurrentThreadId() if we laready know the tid.
+// thread (but has the overhead of an extra call to minipal_get_current_thread_id() if we laready know the tid.
 bool ThisIsTempHelperThread()
 {
     WRAPPER_NO_CONTRACT;
 
-    DWORD id = GetCurrentThreadId();
+    size_t id = minipal_get_current_thread_id();
     return ThisIsTempHelperThread(id);
 }
 
-bool ThisIsTempHelperThread(DWORD tid)
+bool ThisIsTempHelperThread(size_t tid)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -15024,7 +15237,7 @@ bool ThisIsTempHelperThread(DWORD tid)
         {
             DWORD idTemp = pBlock->m_temporaryHelperThreadId;
 
-            if (tid == idTemp)
+            if ((DWORD)tid == idTemp)
             {
                 return true;
             }

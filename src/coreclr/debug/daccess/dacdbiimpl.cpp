@@ -8,6 +8,7 @@
 //*****************************************************************************
 
 #include "stdafx.h"
+#include <minipal/ospagesize.h>
 
 #include "dacdbiinterface.h"
 
@@ -4485,9 +4486,9 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::EnumerateAssembliesInAppDomain(VM
 
         // Pass the magical flags to the loader enumerator to get all Execution-only assemblies.
         iterator = pAppDomain->IterateAssembliesEx((AssemblyIterationFlags)(kIncludeLoading | kIncludeLoaded | kIncludeExecution));
-        CollectibleAssemblyHolder<Assembly *> pAssembly;
+        CollectibleAssemblyHolder pAssembly;
 
-        while (iterator.Next(pAssembly.This()))
+        while (iterator.Next(&pAssembly))
         {
             VMPTR_Assembly vmAssembly = VMPTR_Assembly::NullPtr();
             vmAssembly.SetHostPtr(pAssembly);
@@ -7180,10 +7181,7 @@ HeapData::~HeapData()
 LinearReadCache::LinearReadCache()
     : mCurrPageStart(0), mPageSize(0), mCurrPageSize(0), mPage(0)
 {
-    SYSTEM_INFO si;
-	GetSystemInfo(&si);
-
-    mPageSize = si.dwPageSize;
+    mPageSize = minipal_getpagesize();
     mPage = new (nothrow) BYTE[mPageSize];
 }
 

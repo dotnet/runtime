@@ -28,6 +28,7 @@ namespace System.Formats.Tar
             internal SortedDictionary<string, UnixFileMode>? PendingModes;
             internal Stack<(string, DateTimeOffset)> DirectoryModificationTimes;
             internal TarHardLinkMode HardLinkMode;
+            internal string? ResolvedDestinationDirectoryPath;
             // Allocated lazily on the first deferred symlink; most archives have none.
             internal Dictionary<FileId, (string SymlinkPath, string LinkTarget)>? PendingLinks;
 

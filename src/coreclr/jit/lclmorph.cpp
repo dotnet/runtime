@@ -251,8 +251,7 @@ LoopDefinitions::LocalDefinitionsMap* LoopDefinitions::GetOrCreateMap(FlowGraphN
     {
         enum
         {
-            DoPreOrder    = true,
-            DoLclVarsOnly = true,
+            DoPreOrder = true,
         };
 
         LocalsVisitor(Compiler* comp, LoopDefinitions::LocalDefinitionsMap* map)
@@ -263,13 +262,10 @@ LoopDefinitions::LocalDefinitionsMap* LoopDefinitions::GetOrCreateMap(FlowGraphN
 
         fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
         {
-            GenTreeLclVarCommon* lcl = (*use)->AsLclVarCommon();
-            if (!lcl->OperIsLocalStore())
-            {
-                return Compiler::WALK_CONTINUE;
-            }
-
-            m_map->Set(lcl->GetLclNum(), true, LocalDefinitionsMap::Overwrite);
+            (*use)->VisitLogicalLocalDefs(m_compiler, [this](const auto& def) {
+                m_map->Set(def.GetLclNum(), true, LocalDefinitionsMap::Overwrite);
+                return GenTree::VisitResult::Continue;
+            });
 
             return Compiler::WALK_CONTINUE;
         }
@@ -1499,9 +1495,15 @@ private:
 
                 if (isSuitableLocal)
                 {
-                    m_compiler->lvaSetHiddenBufferStructArg(lclNum);
-                    callUser->gtCallMoreFlags |= GTF_CALL_M_RETBUFFARG_LCLOPT;
-                    defSize = m_compiler->typGetObjLayout(callUser->gtRetClsHnd)->GetSize();
+                    // The return buffer may be wider than the local, e.g. if the address
+                    // of a promoted field was reinterpreted as a pointer to a larger struct.
+                    unsigned retSize = m_compiler->typGetObjLayout(callUser->gtRetClsHnd)->GetSize();
+                    if (!m_compiler->IsWideAccess(lclNum, val.Offset(), ValueSize(retSize)))
+                    {
+                        m_compiler->lvaSetHiddenBufferStructArg(lclNum);
+                        callUser->gtCallMoreFlags |= GTF_CALL_M_RETBUFFARG_LCLOPT;
+                        defSize = retSize;
+                    }
                 }
             }
             else if (callUser->IsAsync())

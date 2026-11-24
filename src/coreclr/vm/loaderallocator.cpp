@@ -387,7 +387,7 @@ LoaderAllocator * LoaderAllocator::GCLoaderAllocators_RemoveAssemblies(AppDomain
         CrstHolder chLoaderAllocatorReferencesLock(pAppDomain->GetLoaderAllocatorReferencesLock());
         CrstHolder chAssemblyListLock(pAppDomain->GetAssemblyListLock());
 
-        CollectibleAssemblyHolder<Assembly *> pAssembly;
+        CollectibleAssemblyHolder pAssembly;
 
 #ifdef ENABLE_LOG_LOADER_ALLOCATOR_CLEANUP
         // Debug logic for debugging the loader allocator gc.
@@ -395,7 +395,7 @@ LoaderAllocator * LoaderAllocator::GCLoaderAllocators_RemoveAssemblies(AppDomain
         i = pAppDomain->IterateAssembliesEx((AssemblyIterationFlags)(
             kIncludeExecution | kIncludeLoaded | kIncludeCollected));
 
-        while (i.Next_Unlocked(pAssembly.This()))
+        while (i.Next_Unlocked(&pAssembly))
         {
             if (pAssembly != NULL)
             {
@@ -418,7 +418,7 @@ LoaderAllocator * LoaderAllocator::GCLoaderAllocators_RemoveAssemblies(AppDomain
         i = pAppDomain->IterateAssembliesEx((AssemblyIterationFlags)(
             kIncludeExecution | kIncludeLoaded | kIncludeCollected));
 
-        while (i.Next_Unlocked(pAssembly.This()))
+        while (i.Next_Unlocked(&pAssembly))
         {
             if (pAssembly != NULL)
             {
@@ -441,7 +441,7 @@ LoaderAllocator * LoaderAllocator::GCLoaderAllocators_RemoveAssemblies(AppDomain
         i = pAppDomain->IterateAssembliesEx((AssemblyIterationFlags)(
             kIncludeExecution | kIncludeLoaded | kIncludeCollected));
 
-        while (i.Next_Unlocked(pAssembly.This()))
+        while (i.Next_Unlocked(&pAssembly))
         {
             if (pAssembly != NULL)
             {
@@ -1580,13 +1580,13 @@ DispatchToken LoaderAllocator::GetDispatchToken(
         if (m_pFatTokenSetLock == NULL)
         {
             NewHolder<SimpleRWLock> pFatTokenSetLock{ new SimpleRWLock(COOPERATIVE_OR_PREEMPTIVE, LOCK_TYPE_DEFAULT) };
-            SimpleWriteLockHolder lock(pFatTokenSetLock);
+            SimpleWriteLockHolder lock = SimpleRWLock::TakeWriteLock(pFatTokenSetLock);
             NewHolder<FatTokenSet> pFatTokenSet{ new FatTokenSet };
 
             if (InterlockedCompareExchangeT(
                     &m_pFatTokenSetLock, static_cast<SimpleRWLock*>(pFatTokenSetLock), NULL) != NULL)
             {   // Someone beat us to it
-                lock.Release();
+                lock.Free();
                 // The holder will delete the lock.
             }
             else
@@ -1602,7 +1602,7 @@ DispatchToken LoaderAllocator::GetDispatchToken(
         //
 
         // Lookup
-        SimpleReadLockHolder rlock(m_pFatTokenSetLock);
+        SimpleReadLockHolder rlock = SimpleRWLock::TakeReadLock(m_pFatTokenSetLock);
         DispatchTokenFat key(typeId, slotNumber);
         DispatchTokenFat *pFat = m_pFatTokenSet->Lookup(&key);
         if (pFat != NULL)
@@ -1611,8 +1611,8 @@ DispatchToken LoaderAllocator::GetDispatchToken(
         }
         else
         {   // Create
-            rlock.Release();
-            SimpleWriteLockHolder wlock(m_pFatTokenSetLock);
+            rlock.Free();
+            SimpleWriteLockHolder wlock = SimpleRWLock::TakeWriteLock(m_pFatTokenSetLock);
 
             // Check to see if someone beat us to the punch between
             // releasing the read lock and taking the write lock.
@@ -1951,6 +1951,8 @@ void AssemblyLoaderAllocator::CleanupHandles()
         FreeTLSIndicesForLoaderAllocator(this);
     }
 #endif // FEATURE_MULTITHREADING
+
+    GCX_COOP();
 
     // This method doesn't take a lock around RemoveHead because it's supposed to
     // be called only from Terminate
@@ -2325,9 +2327,9 @@ void LoaderAllocator::AllocateBytesForStaticVariables(DynamicStaticsInfo* pStati
                 // 3. We create the weak interior handle, and register it for cleanup (which can fail with an OOM) before updating the statics data to have the pointer
                 // 4. Registration for cleanup cannot trigger a GC
                 // 5. We then unconditionally set the statics pointer.
-                WeakInteriorHandleHolder weakHandleHolder = GetAppDomain()->CreateWeakInteriorHandle(ptrArray, &pStaticsInfo->m_pNonGCStatics);
-                RegisterHandleForCleanupLocked(weakHandleHolder.GetValue());
-                weakHandleHolder.SuppressRelease();
+                WeakInteriorHandleHolder weakHandleHolder(GetAppDomain()->CreateWeakInteriorHandle(ptrArray, &pStaticsInfo->m_pNonGCStatics));
+                RegisterHandleForCleanupLocked(static_cast<OBJECTHANDLE>(weakHandleHolder));
+                weakHandleHolder.Detach();
                 bool didUpdateStaticsPointer = pStaticsInfo->InterlockedUpdateStaticsPointer(/* isGCPointer */false, (TADDR)ptrArray->GetDataPtr(), isClassInitedByUpdatingStaticPointer);
                 _ASSERTE(didUpdateStaticsPointer);
             }
@@ -2405,9 +2407,9 @@ void LoaderAllocator::AllocateGCHandlesBytesForStaticVariables(DynamicStaticsInf
                 // 3. We create the weak interior handle, and register it for cleanup (which can fail with an OOM) before updating the statics data to have the pointer
                 // 4. Registration for cleanup cannot trigger a GC
                 // 5. We then unconditionally set the statics pointer.
-                WeakInteriorHandleHolder weakHandleHolder = GetAppDomain()->CreateWeakInteriorHandle(ptrArray, &pStaticsInfo->m_pGCStatics);
-                RegisterHandleForCleanupLocked(weakHandleHolder.GetValue());
-                weakHandleHolder.SuppressRelease();
+                WeakInteriorHandleHolder weakHandleHolder(GetAppDomain()->CreateWeakInteriorHandle(ptrArray, &pStaticsInfo->m_pGCStatics));
+                RegisterHandleForCleanupLocked(static_cast<OBJECTHANDLE>(weakHandleHolder));
+                weakHandleHolder.Detach();
                 bool didUpdateStaticsPointer = pStaticsInfo->InterlockedUpdateStaticsPointer(/* isGCPointer */true, (TADDR)ptrArray->GetDataPtr(), isClassInitedByUpdatingStaticPointer);
                 _ASSERTE(didUpdateStaticsPointer);
             }
@@ -2438,7 +2440,7 @@ bool LoaderAllocator::InsertObjectIntoFieldWithLifetimeOfCollectibleLoaderAlloca
     bool result = false;
 
     GCPROTECT_BEGIN(value);
-    LOADERHANDLEHolder keepAliveForCollectibleLifetime(AllocateHandle(value), this);
+    LOADERHANDLEHolder keepAliveForCollectibleLifetime({AllocateHandle(value), this});
 
     // At this point we are no longer allowed to trigger a GC.
     GCX_FORBID();
@@ -2457,14 +2459,14 @@ bool LoaderAllocator::InsertObjectIntoFieldWithLifetimeOfCollectibleLoaderAlloca
             // 3. We create the weak interior handle, and register it for cleanup (which can fail with an OOM) before updating the statics data to have the pointer
             // 4. Registration for cleanup cannot trigger a GC
             // 5. We then unconditionally set the statics pointer.
-            WeakInteriorHandleHolder weakHandleHolder = GetAppDomain()->CreateWeakInteriorHandle(value, pField);
-            RegisterHandleForCleanupLocked(weakHandleHolder.GetValue());
+            WeakInteriorHandleHolder weakHandleHolder(GetAppDomain()->CreateWeakInteriorHandle(value, pField));
+            RegisterHandleForCleanupLocked(static_cast<OBJECTHANDLE>(weakHandleHolder));
 
             // Cannot fail after here
             VolatileStore(pField, OBJECTREFToObject(value));
 
-            weakHandleHolder.SuppressRelease();
-            keepAliveForCollectibleLifetime.SuppressRelease();
+            weakHandleHolder.Detach();
+            keepAliveForCollectibleLifetime.Detach();
             result = true;
         }
     }

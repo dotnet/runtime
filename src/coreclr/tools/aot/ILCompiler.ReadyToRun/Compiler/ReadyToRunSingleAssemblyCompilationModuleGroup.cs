@@ -31,7 +31,8 @@ namespace ILCompiler
             {
                 if (!_profileGuidedCompileRestriction.IsMethodInInputProfileData(method) &&
                     (((ReadyToRunCompilerContext)method.Context).TargetAllowsRuntimeCodeGeneration ||
-                     !HardwareIntrinsicHelpers.IsHardwareIntrinsic(method)))
+                     (!HardwareIntrinsicHelpers.IsHardwareIntrinsic(method) &&
+                      !(method.IsIntrinsic && method.Name == "get_IsHardwareAccelerated"u8))))
                     return false;
             }
 

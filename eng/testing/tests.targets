@@ -4,8 +4,7 @@
     <RuntimeAsyncSupported Condition="'$(TargetOS)' != 'browser'
       and '$(TargetOS)' != 'wasi'
       and '$(TargetOS)' != 'android'
-      and '$(TargetsAppleMobile)' != 'true'
-      and '$(RuntimeFlavor)' != 'Mono'">true</RuntimeAsyncSupported>
+      and '$(TargetsAppleMobile)' != 'true'">true</RuntimeAsyncSupported>
   </PropertyGroup>
 
   <!-- Enable runtime async for all .NET 11+ test projects. -->
@@ -64,15 +63,6 @@
     <_withoutCategories Condition="'$(TestScope)' == '' or '$(TestScope)' == 'innerloop'">$(_withoutCategories);OuterLoop</_withoutCategories>
     <_withoutCategories Condition="!$(_withCategories.Contains('failing'))">$(_withoutCategories);failing</_withoutCategories>
   </PropertyGroup>
-
-  <!-- For both tests.mobile.targets and tests.wasm.targets -->
-  <PropertyGroup>
-    <_MonoAotCrossCompilerPath>$([MSBuild]::NormalizePath($(MonoAotCrossDir), 'mono-aot-cross'))</_MonoAotCrossCompilerPath>
-    <_MonoAotCrossCompilerPath Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">$(_MonoAotCrossCompilerPath).exe</_MonoAotCrossCompilerPath>
-  </PropertyGroup>
-  <ItemGroup>
-    <MonoAotCrossCompiler Include="$(_MonoAotCrossCompilerPath)" RuntimeIdentifier="$(TargetOS)-$(TargetArchitecture.ToLowerInvariant())" />
-  </ItemGroup>
 
   <PropertyGroup>
     <ArchiveTestsAfterTargets>PrepareForRun</ArchiveTestsAfterTargets>
@@ -182,7 +172,7 @@ TEST_ARCH=$(_AndroidArchitecture)
       <!-- Use runtime path only for the live built shared framework (NetCoreAppCurrent). -->
       <RunTestsCommand Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
                                   $([MSBuild]::VersionGreaterThanOrEquals($(TargetFrameworkVersion), '$(NETCoreAppCurrentVersion)'))">$(RunTestsCommand) --runtime-path "$(NetCoreAppCurrentTestHostPath.TrimEnd('\/'))"</RunTestsCommand>
-      <RunTestsCommand Condition="'$(TestRspFile)' != '' and '$(RuntimeFlavor)' != 'Mono'">$(RunTestsCommand) --rsp-file "$(TestRspFile)"</RunTestsCommand>
+      <RunTestsCommand Condition="'$(TestRspFile)' != ''">$(RunTestsCommand) --rsp-file "$(TestRspFile)"</RunTestsCommand>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(TargetsMobile)' == 'true'">

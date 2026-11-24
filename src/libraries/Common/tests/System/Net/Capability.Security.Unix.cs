@@ -25,8 +25,10 @@ namespace System.Net.Test.Common
         public static bool IsNtlmServerAvailable() =>
             !OperatingSystem.IsBrowser() &&
             !OperatingSystem.IsWasi() &&
-            // macOS advertises NTLM but does not support default NTLM acceptor credentials.
+            // Apple platforms advertise NTLM but do not support default NTLM acceptor credentials.
             !OperatingSystem.IsMacOS() &&
+            !OperatingSystem.IsMacCatalyst() &&
+            !OperatingSystem.IsIOS() &&
             CheckHasSystemNetSecurityNative() &&
             Interop.NetSecurityNative.IsNtlmInstalled();
 

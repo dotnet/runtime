@@ -14,6 +14,7 @@
 
 
 #include "common.h"
+#include <minipal/instructioncache.h>
 
 #ifdef HAVE_GCCOVER
 
@@ -868,7 +869,7 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
 
         // Must flush instruction cache before returning as instruction has been modified.
         // Note this needs to reach beyond the call by up to 4 bytes.
-        FlushInstructionCache(GetCurrentProcess(), (LPCVOID)instrPtr, 10);
+        minipal_flush_instruction_cache((LPCVOID)instrPtr, 10);
 
         // It's not GC safe point, the GC Stress instruction is
         // already committed and interrupt is already put at next instruction so we just return.
@@ -926,7 +927,7 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
         UpdateGCStressInstructionWithoutGC ();
 
     // Must flush instruction cache before returning as instruction has been modified.
-    FlushInstructionCache(GetCurrentProcess(), (LPCVOID)instrPtr, 4);
+    minipal_flush_instruction_cache((LPCVOID)instrPtr, 4);
 
     CONSISTENCY_CHECK(!pThread->HasPendingGCStressInstructionUpdate());
 
@@ -1149,11 +1150,11 @@ void GCCoverageInfo::SprinkleBreakpoints(
 
     safePointDecoder.EnumerateInterruptibleRanges(&replaceInterruptibleRangesWithGcStressInstr, this);
 
-    FlushInstructionCache(GetCurrentProcess(), (BYTE*)methodRegion.hotStartAddress, methodRegion.hotSize);
+    minipal_flush_instruction_cache((BYTE*)methodRegion.hotStartAddress, methodRegion.hotSize);
 
     if (methodRegion.coldSize > 0)
     {
-        FlushInstructionCache(GetCurrentProcess(), (BYTE*)methodRegion.coldStartAddress, methodRegion.coldSize);
+        minipal_flush_instruction_cache((BYTE*)methodRegion.coldStartAddress, methodRegion.coldSize);
     }
 }
 
@@ -1232,7 +1233,7 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
         UpdateGCStressInstructionWithoutGC ();
 
     // Must flush instruction cache before returning as instruction has been modified.
-    FlushInstructionCache(GetCurrentProcess(), (LPCVOID)instrPtr, 4);
+    minipal_flush_instruction_cache((LPCVOID)instrPtr, 4);
 
     assert(!pThread->HasPendingGCStressInstructionUpdate());
 
@@ -1317,7 +1318,7 @@ void RemoveGcCoverageInterrupt(TADDR instrPtr, BYTE * savedInstrPtr, GCCoverageI
     }
 #endif // TARGET_X86
 
-    FlushInstructionCache(GetCurrentProcess(), (LPCVOID)instrPtr, 4);
+    minipal_flush_instruction_cache((LPCVOID)instrPtr, 4);
 }
 
 // A managed thread (T) can race with the GC as follows:

@@ -63,9 +63,9 @@
 // QCall example - unmanaged part (do not replicate the comments into your actual QCall implementation):
 // -----------------------------------------------------------------------------------------------------
 //
-// The entrypoints of all QCalls has to be registered in tables in vm\qcallentrypoints.cpp using the DllImportEntry macro,
+// The entrypoints of all QCalls has to be registered in tables in vm\runtimehelpers.cpp using the DllImportEntry macro,
 // For example: DllImportEntry(FooNative_Bar)
-// WebAssembly instead generates the QCall table in callhelpers-pinvoke.cpp from the managed assembly closure.
+// WebAssembly generates the shared QCall/FCall table in callhelpers-pinvoke.cpp from the managed closure.
 //
 // extern "C" BOOL QCALLTYPE FooNative_Bar(
 //     int flags, LPCWSTR wszString, QCall::StringHandleOnStack retString, QCallExceptionStatus* qcallError)
@@ -380,6 +380,6 @@ public:
 
 typedef void* EnregisteredTypeHandle;
 
-extern const void* QCallResolveDllImport(const char* name);
+extern const void* ResolveRuntimeHelperEntrypoint(const char* name);
 
 #endif //__QCall_h__

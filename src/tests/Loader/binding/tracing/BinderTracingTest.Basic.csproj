@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <!-- https://github.com/dotnet/runtime/issues/57786 -->
-    <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'coreclr'">true</DisableProjectBuild>
+    <DisableProjectBuild>true</DisableProjectBuild>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="BinderTracingTest.Basic.cs" />

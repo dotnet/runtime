@@ -69,6 +69,7 @@ class Generics
         Test105397Regression.Run();
         Test105880Regression.Run();
         Test130028Regression.Run();
+        Test137774Regression.Run();
         TestInterfaceGenericCornerCase.Run();
         Test115442Regression.Run();
         TestInvokeMemberCornerCaseInGenerics.Run();
@@ -4162,6 +4163,31 @@ class Generics
             }
 
             throw new Exception();
+        }
+    }
+
+    class Test137774Regression
+    {
+        public abstract class Base
+        {
+            public abstract T M<T>();
+        }
+
+        public class Mid<U> : Base
+        {
+            public override T M<T>() => default;
+        }
+
+        public sealed class Wrapper<U>(Mid<U> inner) : Base
+        {
+            public override T M<T>() => inner.M<T>();
+        }
+
+        public static void Run()
+        {
+            Base r = new Wrapper<string>(new Mid<string>());
+            if (r.M<int>() != 0)
+                throw new Exception();
         }
     }
 

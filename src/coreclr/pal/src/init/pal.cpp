@@ -20,14 +20,13 @@ SET_DEFAULT_DEBUG_CHANNEL(PAL); // some headers have code with asserts, so do th
 #include "pal/process.h"
 #include "../thread/procprivate.hpp"
 #include "pal/module.h"
-#include "pal/environ.h"
 #include <minipal/utf8.h>
 #include "pal/utils.h"
 #include "pal/debug.h"
 #include "pal/init.h"
 #include "pal/stackstring.hpp"
-#include "pal/cgroup.h"
 #include <minipal/getexepath.h>
+#include <minipal/thread.h>
 #include <minipal/memorybarrierprocesswide.h>
 #include <minipal/descriptorlimit.h>
 
@@ -299,7 +298,7 @@ Initialize(
     if (init_count == 0)
     {
         // Set our pid.
-        gPID = getpid();
+        gPID = minipal_get_current_process_id();
 
         // Initialize the thread local storage
         if (FALSE == TLSInitialize())
@@ -338,15 +337,6 @@ Initialize(
         }
 #endif // FEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION
 
-        InitializeCGroup();
-
-        // Initialize the environment.
-        if (FALSE == EnvironInitialize())
-        {
-            palError = ERROR_PALINIT_ENV;
-            goto CLEANUP1;
-        }
-
         if (!minipal_increase_descriptor_limit())
         {
             ERROR("Unable to increase the file descriptor limit!\n");
@@ -361,7 +351,7 @@ Initialize(
         {
             ERROR("SEHInitializeMachExceptions failed!\n");
             palError = ERROR_PALINIT_INITIALIZE_MACH_EXCEPTION;
-            goto CLEANUP1;
+            goto CLEANUP1a;
         }
 #endif // HAVE_MACH_EXCEPTIONS
 
@@ -506,8 +496,6 @@ CLEANUP1b:
     // Cleanup initial thread data
 CLEANUP1a:
     // Cleanup global process data
-CLEANUP1:
-    CleanupCGroup();
 CLEANUP0a:
     TLSCleanup();
     ERROR("PAL_Initialize failed\n");

@@ -73,34 +73,12 @@ extends:
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: Release
-          runtimeFlavor: mono
-          platforms:
-          - linux_x64
-          jobParameters:
-            nameSuffix: Diagnostics_Mono
-            buildArgs: -s mono+libs+packs.product -c $(_BuildConfig) /p:DotNetBuildTests=false
-            timeoutInMinutes: 180
-            postBuildSteps:
-            - template: /eng/pipelines/common/upload-artifact-step.yml
-              parameters:
-                rootFolder: $(Build.SourcesDirectory)/artifacts/packages
-                includeRootFolder: false
-                archiveType: $(archiveType)
-                archiveExtension: $(archiveExtension)
-                tarCompression: $(tarCompression)
-                artifactName: RuntimeArtifacts_Mono_$(osGroup)_$(archType)_$(_BuildConfig)
-                displayName: Mono runtime packages
-
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: Release
-          runtimeFlavor: mono
+          runtimeFlavor: coreclr
           platforms:
           - browser_wasm_win
           jobParameters:
-            nameSuffix: Diagnostics_Mono_Browser
-            buildArgs: -s mono+libs+packs.product -c $(_BuildConfig) /p:BrowserHost=$(_hostedOs) /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOs) /p:WasmEnableThreads=false /p:DotNetBuildTests=false
+            nameSuffix: Diagnostics_CoreCLR_Browser
+            buildArgs: -s clr+libs+packs.product -c $(_BuildConfig) /p:BrowserHost=$(_hostedOs) /p:WasmEnableThreads=false /p:DotNetBuildTests=false
             timeoutInMinutes: 180
             postBuildSteps:
             - task: CopyFiles@2
