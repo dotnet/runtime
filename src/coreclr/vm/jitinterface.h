@@ -147,7 +147,6 @@ EXTERN_C FCDECL1(Object*, RhpNew, MethodTable* pMT);
 #if defined(TARGET_64BIT) && !defined(TARGET_WASM) && defined(FEATURE_MULTITHREADING)
 #define FEATURE_MANAGED_ALLOC_HELPERS
 extern bool g_fManagedAllocHelpers;
-EXTERN_C FCDECL0(void*, AllocHelpers_GetAllocContext);
 EXTERN_C FCDECL0(FC_BOOL_RET, AllocHelpersConfig_IsEnabled);
 #endif // TARGET_64BIT && !TARGET_WASM && FEATURE_MULTITHREADING
 EXTERN_C FCDECL2(Object*, RhpNewVariableSizeObject, MethodTable* pMT, INT_PTR size);

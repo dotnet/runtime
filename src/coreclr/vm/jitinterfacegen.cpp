@@ -35,17 +35,6 @@ static void SetJitHelperAuxiliarySymbol(CorInfoHelpFunc ftnNum, const char* name
 #ifdef FEATURE_MANAGED_ALLOC_HELPERS
 bool g_fManagedAllocHelpers = false;
 
-// AllocHelpers.EEAllocContext in CoreLib mirrors the start of ee_alloc_context.
-static_assert(offsetof(ee_alloc_context, m_CombinedLimit) == 0);
-static_assert(offsetof(ee_alloc_context, m_GCAllocContext) + offsetof(gc_alloc_context, alloc_ptr) == sizeof(void*));
-
-extern "C" FCIMPL0(void*, AllocHelpers_GetAllocContext)
-{
-    FCALL_CONTRACT;
-    return &t_runtime_thread_locals.alloc_context;
-}
-FCIMPLEND
-
 extern "C" FCIMPL0(FC_BOOL_RET, AllocHelpersConfig_IsEnabled)
 {
     FCALL_CONTRACT;

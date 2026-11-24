@@ -1377,6 +1377,10 @@ DEFINE_FIELD(GENERICCACHE, MAX_CACHE_SIZE, _maxCacheSize)
 DEFINE_CLASS(ALLOCHELPERS, CompilerServices, AllocHelpers)
 DEFINE_METHOD(ALLOCHELPERS, NEWSFAST,         NewSFast,                    NoSig)
 DEFINE_METHOD(ALLOCHELPERS, NEWARR_1,         NewArr1,                     NoSig)
+// AllocHelpers.EEAllocContext mirrors the start of ee_alloc_context (the managed struct is a prefix, hence NoClass)
+DEFINE_CLASS_U(CompilerServices,    AllocHelpers+EEAllocContext, NoClass)
+DEFINE_FIELD_U(CombinedLimit,       ee_alloc_context,       m_CombinedLimit)
+DEFINE_FIELD_U(AllocPtr,            ee_alloc_context,       m_GCAllocContext.alloc_ptr)
 #endif // TARGET_WASM
 #endif // TARGET_64BIT
 

@@ -12,9 +12,11 @@ namespace System.Runtime.CompilerServices
     // (see InitJITAllocationHelpers). Not compiled for WebAssembly.
     //
     // The fast paths bump-allocate from the current thread's allocation context (ee_alloc_context, which lives in
-    // the native t_runtime_thread_locals). A pointer to it is cached in a [ThreadStatic] so that the fast path is
-    // an inlined thread-static access + bump + MethodTable store, with no call into native code. If the allocation
-    // does not fit (or the cache is not initialized yet), the existing native slow helpers are called.
+    // the native t_runtime_thread_locals). The runtime publishes a pointer to it in ThreadLocalData::pAllocContext,
+    // which is mapped onto the t_allocContext thread static below (the same mechanism as Thread.DirectOnThreadLocalData
+    // and ManagedThreadId), so the fast path is an inlined thread-static access + bump + MethodTable store, with no
+    // call into native code. If the allocation does not fit (or the thread's pointer is not set up yet), the existing
+    // native slow helpers are called.
     //
     // GC SAFETY: between the update of alloc_ptr and the store of the MethodTable pointer (i.e. while the new object
     // is not yet a valid object), the thread must not be suspended for GC. This holds because:
@@ -47,6 +49,9 @@ namespace System.Runtime.CompilerServices
             public nint AllocPtr;
         }
 
+        // Must be the only thread static of this class: the runtime maps it onto ThreadLocalData::pAllocContext
+        // (see the TLSIndexType::DirectOnThreadLocalData handling in threadstatics.cpp). Null until the runtime has set
+        // up the thread's ThreadLocalData, in which case the fast paths fall back to the slow paths.
         [ThreadStatic]
         private static EEAllocContext* t_allocContext;
 
@@ -59,10 +64,6 @@ namespace System.Runtime.CompilerServices
         private const int ArrayLengthOffset = 4;
 #endif
 
-        /// <summary>Returns the address of the current thread's ee_alloc_context.</summary>
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern EEAllocContext* GetAllocContext();
-
         /// <summary>Native slow path for non-array objects (RhpNew).</summary>
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern object NewObjectSlow(MethodTable* pMT);
@@ -72,28 +73,10 @@ namespace System.Runtime.CompilerServices
         private static extern object NewVariableSizeObjectSlow(MethodTable* pMT, nint length);
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static EEAllocContext* InitAllocContext()
-        {
-            EEAllocContext* ctx = GetAllocContext();
-            t_allocContext = ctx;
-            return ctx;
-        }
+        private static object NewSFastSlow(MethodTable* pMT) => NewObjectSlow(pMT);
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static object NewSFastSlow(MethodTable* pMT)
-        {
-            if (t_allocContext == null)
-                InitAllocContext();
-            return NewObjectSlow(pMT);
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static object NewVariableSizeSlow(MethodTable* pMT, nint length)
-        {
-            if (t_allocContext == null)
-                InitAllocContext();
-            return NewVariableSizeObjectSlow(pMT, length);
-        }
+        private static object NewVariableSizeSlow(MethodTable* pMT, nint length) => NewVariableSizeObjectSlow(pMT, length);
 
         // CORINFO_HELP_NEWSFAST: non-finalizable, non-array object.
         // Not [NoInlining]: only ever called as a JIT helper (never from IL), and NoInlining would block the

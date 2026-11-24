@@ -99,7 +99,6 @@ static const Entry s_RuntimeHelpers[] =
 {
 #ifdef FEATURE_MANAGED_ALLOC_HELPERS
     DllImportEntry(AllocHelpersConfig_IsEnabled)
-    DllImportEntry(AllocHelpers_GetAllocContext)
     {"AllocHelpers_NewObjectSlow", (void*)&RhpNew},
     {"AllocHelpers_NewVariableSizeObjectSlow", (void*)&RhpNewVariableSizeObject},
 #endif // FEATURE_MANAGED_ALLOC_HELPERS

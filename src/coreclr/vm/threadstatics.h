@@ -84,7 +84,11 @@ struct InFlightTLSData
     OBJECTHANDLE hTLSData; // The TLS data for the static
 };
 
-#define EXTENDED_DIRECT_THREAD_LOCAL_SIZE 48
+// pAllocContext below was carved out of this area (previously 48 bytes) so that sizeof(ThreadLocalData), and with it
+// the size of libcoreclr's TLS segment, did not change: on linux, growing the TLS segment can push libcoreclr out of
+// glibc's static TLS surplus for dlopen'ed libraries, which makes the TLSDESC resolver dynamic and silently disables
+// the JIT's inlined thread-static access (CanJITOptimizeTLSAccess).
+#define EXTENDED_DIRECT_THREAD_LOCAL_SIZE 40
 
 struct ThreadLocalData
 {
@@ -96,6 +100,7 @@ struct ThreadLocalData
     PTR_Thread pThread; // This starts the region of ThreadLocalData which is referenceable by TLSIndexType::DirectOnThreadLocalData
     uint32_t managedThreadId;
     PTR_InFlightTLSData pInFlightData; // Points at the in-flight TLS data (TLS data that exists before the class constructor finishes running)
+    PTR_VOID pAllocContext; // Points at this thread's ee_alloc_context. Exposed to managed code as AllocHelpers.t_allocContext (FEATURE_MANAGED_ALLOC_HELPERS).
     BYTE ExtendedDirectThreadLocalTLSData[EXTENDED_DIRECT_THREAD_LOCAL_SIZE];
 };
 
