@@ -765,6 +765,7 @@ public unsafe class GCInfoTests
             contract.GetInterruptibleRanges(handle));
         Assert.False(contract.IsGcSafe(handle, 8));
         Assert.True(contract.IsGcSafe(handle, 12));
+        Assert.Equal(new X86GCInfo.NoGCRegion[] { new(8, 4) }, Assert.IsType<X86GCInfo>(handle).NoGCRegions);
     }
 
     [Theory]

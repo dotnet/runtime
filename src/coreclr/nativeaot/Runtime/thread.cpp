@@ -29,6 +29,7 @@
 #include "GcEnum.h"
 #include "NativeContext.h"
 #include "minipal/time.h"
+#include "minipal/thread.h"
 
 #ifndef DACCESS_COMPILE
 
@@ -231,7 +232,7 @@ void Thread::Construct()
     m_pTransitionFrame = TOP_OF_STACK_MARKER;
     m_pDeferredTransitionFrame = TOP_OF_STACK_MARKER;
 
-    m_threadId = PalGetCurrentOSThreadId();
+    m_threadId = minipal_get_current_thread_id();
 
 #if TARGET_WINDOWS
     m_hOSThread = INVALID_HANDLE_VALUE;

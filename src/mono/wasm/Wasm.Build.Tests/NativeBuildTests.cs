@@ -29,17 +29,12 @@ namespace Wasm.Build.Tests
             Configuration config = Configuration.Release;
             ProjectInfo info = CreateWasmTemplateProject(
                 Template.WasmBrowser, config, aot: false, "native_relink_without_timers",
-                extraProperties: $"<WasmBuildNative>true</WasmBuildNative><WasmRunInWorker>{runInWorker.ToString().ToLowerInvariant()}</WasmRunInWorker>");
-            UpdateFile("Program.cs", """
-                internal static class Program
-                {
-                    public static int Main() => 42;
-                }
-                """);
+                extraProperties: $"<WasmBuildNative>true</WasmBuildNative><PublishTrimmed>true</PublishTrimmed><WasmRunInWorker>{runInWorker.ToString().ToLowerInvariant()}</WasmRunInWorker>");
+            ReplaceFile("Program.cs", Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "SimpleSourceChange.cs"));
             ReplaceMainJsWithMinimalRunMain();
 
             PublishProject(info, config, new PublishOptions(AssertAppBundle: false), isNativeBuild: true);
-            await RunForPublishWithWebServer(new BrowserRunOptions(config, ExpectedExitCode: 42));
+            await RunForPublishWithWebServer(new BrowserRunOptions(config, ExpectedExitCode: 55));
         }
 
         [Theory]

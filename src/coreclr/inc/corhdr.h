@@ -139,7 +139,6 @@ typedef enum ReplacesCorHdrNumericDefines
     COR_VERSION_MAJOR_V2                =2,
     COR_VERSION_MAJOR                   =COR_VERSION_MAJOR_V2,
     COR_VERSION_MINOR                   =5,
-    COR_DELETED_NAME_LENGTH             =8,
     COR_VTABLEGAP_NAME_LENGTH           =8,
 
 // Maximum size of a NativeType descriptor.
@@ -259,14 +258,10 @@ typedef struct IMAGE_COR20_HEADER
 #define COR_ENUM_FIELD_NAME         "value__"
 #define COR_ENUM_FIELD_NAME_W       W("value__")
 
-// The predefined name for deleting a typeDef,MethodDef, FieldDef, Property and Event
-#define COR_DELETED_NAME_A          "_Deleted"
-#define COR_DELETED_NAME_W          W("_Deleted")
 #define COR_VTABLEGAP_NAME_A        "_VtblGap"
 #define COR_VTABLEGAP_NAME_W        W("_VtblGap")
 
 // We intentionally use strncmp so that we will ignore any suffix
-#define IsDeletedName(strName)      (strncmp(strName, COR_DELETED_NAME_A, COR_DELETED_NAME_LENGTH) == 0)
 #define IsVtblGapName(strName)      (strncmp(strName, COR_VTABLEGAP_NAME_A, COR_VTABLEGAP_NAME_LENGTH) == 0)
 
 // TypeDef/ExportedType attr bits, used by DefineTypeDef.
@@ -1409,19 +1404,18 @@ typedef enum CorErrorIfEmitOutOfOrder
 } CorErrorIfEmitOutOfOrder;
 
 
-// flags used in SetOption when pair with MetaDataImportOption guid
+// Legacy flags accepted with MetaDataImportOption. All records are enumerated regardless of these flags.
 typedef enum CorImportOptions
 {
-    MDImportOptionDefault       = 0x00000000,   // default to skip over deleted records
-    MDImportOptionAll           = 0xFFFFFFFF,   // Enumerate everything
-    MDImportOptionAllTypeDefs   = 0x00000001,   // all the typedefs including the deleted typedef
-    MDImportOptionAllMethodDefs = 0x00000002,   // all the methoddefs including the deleted ones
-    MDImportOptionAllFieldDefs  = 0x00000004,   // all the fielddefs including the deleted ones
-    MDImportOptionAllProperties = 0x00000008,   // all the properties including the deleted ones
-    MDImportOptionAllEvents     = 0x00000010,   // all the events including the deleted ones
-    MDImportOptionAllCustomAttributes = 0x00000020, // all the custom attributes including the deleted ones
-    MDImportOptionAllExportedTypes  = 0x00000040,   // all the ExportedTypes including the deleted ones
-
+    MDImportOptionDefault       = 0x00000000,
+    MDImportOptionAll           = 0xFFFFFFFF,
+    MDImportOptionAllTypeDefs   = 0x00000001,
+    MDImportOptionAllMethodDefs = 0x00000002,
+    MDImportOptionAllFieldDefs  = 0x00000004,
+    MDImportOptionAllProperties = 0x00000008,
+    MDImportOptionAllEvents     = 0x00000010,
+    MDImportOptionAllCustomAttributes = 0x00000020,
+    MDImportOptionAllExportedTypes  = 0x00000040,
 } CorImportOptions;
 
 
