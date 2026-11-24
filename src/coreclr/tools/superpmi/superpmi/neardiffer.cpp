@@ -552,12 +552,12 @@ bool NearDiffer::compareOffsets(
         return true;
     }
 
-    // For wasm32, recorded relocations are the source of truth: handles materialize
-    // as i32.const immediates with padded ULEB128/SLEB128 placeholders that the JIT
+    // For Wasm, recorded relocations are the source of truth: handles materialize
+    // as i32.const/i64.const immediates with padded ULEB128/SLEB128 placeholders that the JIT
     // separately records in a reloc table. Defer the "are these two distinct
     // immediates semantically equivalent" decision to a wasm-specific path that
     // consults the reloc tables instead of replaying generic IP-relative heuristics.
-    if (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_WASM32)
+    if (IsSpmiTargetWasm())
     {
         return compareOffsetsWasm(payload, blockOffset, instrLen, offset1, offset2);
     }
