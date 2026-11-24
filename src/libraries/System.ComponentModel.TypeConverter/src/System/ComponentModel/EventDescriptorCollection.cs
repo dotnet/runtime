@@ -249,6 +249,8 @@ namespace System.ComponentModel
         /// </summary>
         public IEnumerator GetEnumerator()
         {
+            EnsureEventsOwned();
+
             // We can only return an enumerator on the events we actually have.
             if (_events.Length == Count)
             {
