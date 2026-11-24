@@ -1193,7 +1193,9 @@ namespace System.Collections.Generic
 
         private bool IsSubsetOfSortedSetWithSameComparer(SortedSet<T> asSorted)
         {
-            SortedSet<T> prunedOther = asSorted.GetViewBetween(Min, Max);
+            // The other set may itself be a view, in which case GetViewBetween would throw when this set's
+            // bounds fall outside it. The plain containment checks below handle that correctly.
+            SortedSet<T> prunedOther = asSorted.treeSubset == null ? asSorted.GetViewBetween(Min, Max) : asSorted;
             foreach (T item in this)
             {
                 if (!prunedOther.Contains(item))
@@ -1240,7 +1242,9 @@ namespace System.Collections.Generic
             {
                 if (Count < asSorted.Count)
                     return false;
-                SortedSet<T> pruned = GetViewBetween(asSorted.Min, asSorted.Max);
+                // This may itself be a view, in which case GetViewBetween would throw when the other set's
+                // bounds fall outside this view. The plain containment checks below handle that correctly.
+                SortedSet<T> pruned = treeSubset == null ? GetViewBetween(asSorted.Min, asSorted.Max) : this;
                 foreach (T item in asSorted)
                 {
                     if (!pruned.Contains(item))
@@ -1269,7 +1273,8 @@ namespace System.Collections.Generic
             {
                 if (asSorted.Count >= Count)
                     return false;
-                SortedSet<T> pruned = GetViewBetween(asSorted.Min, asSorted.Max);
+                // See the note in IsSupersetOf: pruning is only safe when this is not a view.
+                SortedSet<T> pruned = treeSubset == null ? GetViewBetween(asSorted.Min, asSorted.Max) : this;
                 foreach (T item in asSorted)
                 {
                     if (!pruned.Contains(item))

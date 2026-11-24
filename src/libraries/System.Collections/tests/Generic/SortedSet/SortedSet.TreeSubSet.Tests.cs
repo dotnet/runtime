@@ -36,6 +36,29 @@ namespace System.Collections.Tests
             Assert.Equal(0, view.Count);
             Assert.Equal(new[] { 1, 4 }, set);
         }
+
+        [Fact]
+        public static void SetOperationChecksDoNotThrowWhenViewBoundsExcluded()
+        {
+            SortedSet<int> set = new SortedSet<int> { 1, 2, 3, 4 };
+            SortedSet<int> view = set.GetViewBetween(2, 3);
+
+            // The other set's bounds fall outside the view. These must report false, not throw.
+            Assert.False(view.IsSupersetOf(new SortedSet<int> { 1 }));
+            Assert.False(view.IsSupersetOf(new SortedSet<int> { 2, 9 }));
+            Assert.False(view.IsProperSupersetOf(new SortedSet<int> { 1 }));
+
+            // The same when the view is the argument rather than the instance.
+            Assert.False(new SortedSet<int> { 5 }.IsSubsetOf(view));
+            Assert.False(new SortedSet<int> { 5 }.IsProperSubsetOf(view));
+
+            // Results that are unaffected by the pruning fast path must not change.
+            Assert.True(view.IsSupersetOf(new SortedSet<int> { 2, 3 }));
+            Assert.False(view.IsSupersetOf(new SortedSet<int> { 4 }));
+            Assert.True(view.IsProperSupersetOf(new SortedSet<int> { 2 }));
+            Assert.True(view.IsSubsetOf(set));
+            Assert.True(view.IsProperSubsetOf(set));
+        }
     }
 
     public class SortedSet_TreeSubset_String_Tests : SortedSet_TreeSubset_Tests<string>
