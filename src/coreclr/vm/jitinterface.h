@@ -481,14 +481,7 @@ public:
             MODE_ANY;
         } CONTRACTL_END;
 
-        if (m_CodeHeaderRW != m_CodeHeader)
-            freeArrayInternal(m_CodeHeaderRW);
-
-        if (m_pOffsetMapping != NULL)
-            freeArrayInternal(m_pOffsetMapping);
-
-        if (m_pNativeVarInfo != NULL)
-            freeArrayInternal(m_pNativeVarInfo);
+        CEECodeGenInfo::ResetForJitRetry();
     }
 
     virtual void ResetForJitRetry()

@@ -60,6 +60,8 @@ namespace ILCompiler.ObjectWriter
         private static readonly ObjectNodeSection PDataSection = new ObjectNodeSection("pdata", SectionType.UnwindData);
         private SectionWriter _pdataSectionWriter;
 
+        private protected override bool LinkerPlacesRangeExtensionThunks => true;
+
         private protected override void CreateEhSections()
         {
             // Create .pdata
