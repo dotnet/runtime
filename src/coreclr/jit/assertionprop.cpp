@@ -5174,13 +5174,22 @@ GenTree* Compiler::optAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* tr
 {
     assert(tree->OperIsIndirOrArrMetaData());
 
-    bool updated = optNonNullAssertionProp_Ind(assertions, tree);
+    bool nonNull = optNonNullAssertionProp_Ind(assertions, tree);
+    bool updated = false;
     if (tree->OperIs(GT_STOREIND))
     {
-        updated |= optWriteBarrierAssertionProp_StoreInd(assertions, tree->AsStoreInd());
+        updated = optWriteBarrierAssertionProp_StoreInd(assertions, tree->AsStoreInd());
     }
 
-    if (updated)
+    if (nonNull && !updated && (stmt != nullptr))
+    {
+        // Only flags changed; the statement's side effects are updated instead of re-morphing it.
+        optAssertionPropagated                 = true;
+        optAssertionPropNonFaultingCurrentStmt = true;
+        return nullptr;
+    }
+
+    if (updated || nonNull)
     {
         return optAssertionProp_Update(tree, tree, stmt);
     }
@@ -6737,7 +6746,8 @@ Statement* Compiler::optVNAssertionPropCurStmt(BasicBlock* block, Statement* stm
 
     // Perform VN based assertion prop first, in case we don't find
     // anything in assertion gen.
-    optAssertionPropagatedCurrentStmt = false;
+    optAssertionPropagatedCurrentStmt      = false;
+    optAssertionPropNonFaultingCurrentStmt = false;
 
     VNAssertionPropVisitor visitor(this, block, stmt);
     visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
@@ -6745,6 +6755,10 @@ Statement* Compiler::optVNAssertionPropCurStmt(BasicBlock* block, Statement* stm
     if (optAssertionPropagatedCurrentStmt)
     {
         fgMorphBlockStmt(block, stmt DEBUGARG("optVNAssertionPropCurStmt"));
+    }
+    else if (optAssertionPropNonFaultingCurrentStmt)
+    {
+        gtUpdateStmtSideEffects(stmt);
     }
 
     // Check if propagation removed statements starting from current stmt.
@@ -6927,6 +6941,7 @@ PhaseStatus Compiler::optAssertionPropMain()
 
             optAssertionPropagatedCurrentStmt = false; // set to true if a assertion propagation took place
                                                        // and thus we must morph, set order, re-link
+            optAssertionPropNonFaultingCurrentStmt = false;
             for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
             {
                 optDumpAssertionIndices("Propagating ", assertions, " ");
@@ -7011,6 +7026,11 @@ PhaseStatus Compiler::optAssertionPropMain()
                         // NOTE: this is not valid for LocalAP as assertions may die in the middle of the block
                     }
                 }
+            }
+            else if (optAssertionPropNonFaultingCurrentStmt)
+            {
+                gtUpdateStmtSideEffects(stmt);
+                madeChanges = true;
             }
 
             // Check if propagation removed statements starting from current stmt.

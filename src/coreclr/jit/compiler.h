@@ -9362,6 +9362,9 @@ protected:
     bool optLocalAssertionProp;  // indicates that we are performing local assertion prop
     bool optAssertionPropagated; // set to true if we modified the trees
     bool optAssertionPropagatedCurrentStmt;
+    // Set when global assertion prop only made indirections non-faulting in the current statement,
+    // so its side effect flags need updating but it does not need re-morphing.
+    bool optAssertionPropNonFaultingCurrentStmt = false;
 #ifdef DEBUG
     GenTree* optAssertionPropCurrentTree;
 #endif
