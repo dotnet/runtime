@@ -5216,7 +5216,7 @@ bool Compiler::optAssertionIsNonNull(GenTree* op, ASSERT_VALARG_TP assertions)
     }
 
     // Fast path when we have a VN
-    if (!optLocalAssertionProp && vnStore->IsKnownNonNull(vnStore->VNConservativeNormalValue(op->gtVNPair)))
+    if (!optLocalAssertionProp && vnStore->IsKnownNonNull(optConservativeNormalVN(op)))
     {
         return true;
     }
