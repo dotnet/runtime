@@ -195,7 +195,7 @@ MethodTable::MethodData *MethodDataCache::Find(MethodTable *pMTDecl, MethodTable
     g_sdStats.m_cCacheLookups++;
 #endif
 
-    SimpleReadLockHolder lh(&m_lock);
+    SimpleReadLockHolder lh = SimpleRWLock::TakeReadLock(&m_lock);
 
     // Check the last touched entry.
     MethodData *pEntry = FindHelper(pMTDecl, pMTImpl, GetLastTouchedEntryIndex());
@@ -241,7 +241,7 @@ void MethodDataCache::Insert(MethodData *pMData)
         INSTANCE_CHECK;
     } CONTRACTL_END;
 
-    SimpleWriteLockHolder hLock(&m_lock);
+    SimpleWriteLockHolder hLock = SimpleRWLock::TakeWriteLock(&m_lock);
 
     UINT32 iMin = UINT32_MAX;
     UINT32 idxMin = UINT32_MAX;
@@ -273,7 +273,7 @@ void MethodDataCache::Clear()
     // should be suspended because this is called while unloading an
     // AppDomain at the SysSuspendEE stage. But, if someone calls it
     // outside of that context, we should be extra cautious.
-    SimpleWriteLockHolder lh(&m_lock);
+    SimpleWriteLockHolder lh = SimpleRWLock::TakeWriteLock(&m_lock);
 
     for (UINT32 i = 0; i < NumEntries(); i++) {
         Entry *pEntry = GetEntry(i);
@@ -472,9 +472,7 @@ PTR_MethodTable InterfaceInfo_t::GetApproxMethodTable(Module * pContainingModule
 {
     CONTRACTL
     {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
+        STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pItfMD));
         PRECONDITION(pItfMD->IsInterface());
         PRECONDITION(!ownerType.IsNull());
@@ -544,9 +542,7 @@ MethodDesc *MethodTable::GetMethodDescForComInterfaceMethod(MethodDesc *pItfMD)
 {
     CONTRACTL
     {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
+        STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pItfMD));
         PRECONDITION(pItfMD->IsInterface());
         PRECONDITION(IsComObjectType());
@@ -1724,6 +1720,7 @@ bool MethodTable::InterfaceMapIterator::CurrentInterfaceEquivalentTo(MethodTable
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(pMT->IsInterface()); // class we are looking up should be an interface
     }
     CONTRACTL_END;
@@ -1782,6 +1779,7 @@ BOOL MethodTable::ImplementsEquivalentInterface(MethodTable *pInterface)
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(pInterface->IsInterface()); // class we are looking up should be an interface
     }
     CONTRACTL_END;
@@ -1817,10 +1815,10 @@ MethodDesc *MethodTable::GetMethodDescForInterfaceMethod(MethodDesc *pInterfaceM
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(!pInterfaceMD->HasClassOrMethodInstantiation());
     }
     CONTRACTL_END;
-    WRAPPER_NO_CONTRACT;
 
     return GetMethodDescForInterfaceMethod(TypeHandle(pInterfaceMD->GetMethodTable()), pInterfaceMD, throwOnConflict);
 }
@@ -1832,6 +1830,7 @@ MethodDesc *MethodTable::GetMethodDescForInterfaceMethod(TypeHandle ownerType, M
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(!ownerType.IsNull());
         PRECONDITION(ownerType.GetMethodTable()->IsInterface());
         PRECONDITION(ownerType.GetMethodTable()->HasSameTypeDefAs(pInterfaceMD->GetMethodTable()));
@@ -3638,7 +3637,7 @@ void MethodTable::DoRunClassInitThrowing()
 
     ListLock *_pLock = pDomain->GetClassInitLock();
 
-    ListLockHolder pInitLock(_pLock);
+    ListLockHolder pInitLock = _pLock->TakeLock();
 
     // Check again
     if (IsClassInited())
@@ -3680,7 +3679,7 @@ void MethodTable::DoRunClassInitThrowing()
 
         // We need to release this lock because CreateTypeInitializationExceptionObject and fetching the TypeLoad exception can cause
         // managed code to re-enter into this codepath, causing a locking order violation.
-        pInitLock.Release();
+        pInitLock.Free();
 
         if (CoreLibBinder::GetException(kTypeInitializationException) != gc.pInitException->GetMethodTable())
         {
@@ -3744,12 +3743,11 @@ void MethodTable::DoRunClassInitThrowing()
         //nontrivial holder, might take a lock in destructor
         ListLockEntryHolder pEntry(ListLockEntry::Find(pInitLock, this, description));
 
-        ListLockEntryLockHolder pLock(pEntry, FALSE);
-
         // We have a list entry, we can release the global lock now
-        pInitLock.Release();
+        pInitLock.Free();
 
-        if (pLock.DeadlockAwareAcquire())
+        ListLockEntryLockHolder pLock;
+        if (pLock.DeadlockAwareAcquire(pEntry))
         {
             if (pEntry->m_hrResultCode == S_FALSE)
             {
@@ -3902,6 +3900,7 @@ void MethodTable::EnsureStaticDataAllocated()
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -3929,6 +3928,7 @@ bool MethodTable::IsClassInitedOrPreinited()
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -3946,6 +3946,7 @@ bool MethodTable::IsInitedIfStaticDataAllocated()
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -4486,6 +4487,7 @@ static void CheckForEquivalenceAndFullyLoadType(Module *pModule, mdToken token, 
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -5168,6 +5170,7 @@ MethodTable::FindEncodedMapDispatchEntry(
         // should never throw because lazy interface restore is disabled.
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
         INSTANCE_CHECK;
         PRECONDITION(CheckPointer(pEntry));
         PRECONDITION(typeID != TYPE_ID_THIS_CLASS);
@@ -5276,6 +5279,7 @@ BOOL MethodTable::FindDispatchEntryForCurrentType(UINT32 typeID,
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
         INSTANCE_CHECK;
         PRECONDITION(CheckPointer(pEntry));
         PRECONDITION(typeID != TYPE_ID_THIS_CLASS);
@@ -5740,6 +5744,7 @@ BOOL MethodTable::FindDefaultInterfaceImplementation(
         INSTANCE_CHECK;
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(CheckPointer(pInterfaceMD));
         PRECONDITION(CheckPointer(pInterfaceMT));
         PRECONDITION(CheckPointer(ppDefaultMethod));
@@ -5965,10 +5970,14 @@ DispatchSlot MethodTable::FindDispatchSlotForInterfaceMD(TypeHandle ownerType, M
 //      The mapping exists in this type, not a parent type.
 MethodDesc * MethodTable::ReverseInterfaceMDLookup(UINT32 slotNumber)
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         THROWS;
         GC_TRIGGERS;
-    } CONTRACTL_END;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
     DispatchMap::Iterator it(this);
     for (; it.IsValid(); it.Next())
     {
@@ -5996,10 +6005,13 @@ MethodDesc * MethodTable::ReverseInterfaceMDLookup(UINT32 slotNumber)
 //==========================================================================================
 UINT32 MethodTable::GetTypeID()
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         THROWS;
         GC_TRIGGERS;
-    } CONTRACTL_END;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     PTR_MethodTable pMT = PTR_MethodTable(this);
 
@@ -6273,7 +6285,7 @@ void MethodTable::GetGuid(GUID *pGuid, BOOL bGenerateIfNotFound, BOOL bClassic /
         }
 
         // Generate guid from name.
-        CorGuidFromNameW(pGuid, szName, cchName);
+        *pGuid = CorGuidFromNameW(szName, cchName);
 
         // Remeber we generated the guid from the type name.
         bGenerated = TRUE;
@@ -6566,10 +6578,13 @@ InteropMethodTableData *MethodTable::CreateComInteropData(AllocMemTracker *pamTr
 //==========================================================================================
 InteropMethodTableData *MethodTable::GetComInteropData()
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         THROWS;
         GC_TRIGGERS;
-    } CONTRACTL_END;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     _ASSERTE(GetAuxiliaryData()->IsPublished());
 
@@ -7150,9 +7165,9 @@ void MethodTable::InitMethodDataCache()
     _ASSERTE(s_pMethodDataCache == NULL);
 
     UINT32 cb = MethodDataCache::GetObjectSize(8);
-    NewArrayHolder<BYTE> hb(new BYTE[cb]);
-    s_pMethodDataCache = new (hb.GetValue()) MethodDataCache(8);
-    hb.SuppressRelease();
+    NewArrayHolder<BYTE> hb{ new BYTE[cb] };
+    s_pMethodDataCache = new (static_cast<BYTE*>(hb)) MethodDataCache(8);
+    hb.Detach();
 }
 
 //==========================================================================================
@@ -7243,8 +7258,8 @@ MethodTable::GetMethodDataHelper(
 #endif //_DEBUG
 
     // Can't cache, since this is a custom method used in BuildMethodTable
-    MethodDataWrapper hDecl(GetMethodData(pMTDecl, computeOptions));
-    MethodDataWrapper hImpl(GetMethodData(pMTImpl, computeOptions));
+    MethodDataHolder hDecl(GetMethodData(pMTDecl, computeOptions));
+    MethodDataHolder hImpl(GetMethodData(pMTImpl, computeOptions));
 
     MethodDataInterfaceImpl * pData = new ({ pMTDecl}) MethodDataInterfaceImpl(rgDeclTypeIDs, cDeclTypeIDs, hDecl, hImpl);
 
@@ -7288,7 +7303,7 @@ MethodTable::MethodData *MethodTable::GetMethodDataHelper(MethodTable *pMTDecl,
         }
         else {
             MethodDataHolder h(FindParentMethodDataHelper(pMTDecl));
-            pData = new ({pMTDecl}, computeOptions) MethodDataObject(pMTDecl, h.GetValue(), computeOptions);
+            pData = new ({pMTDecl}, computeOptions) MethodDataObject(pMTDecl, h, computeOptions);
         }
     }
     else {
@@ -8482,10 +8497,13 @@ MethodTable::TryResolveConstraintMethodApprox(
     MethodDesc * pInterfaceMD,
     BOOL *       pfForceUseRuntimeLookup)   // = NULL
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         THROWS;
         GC_TRIGGERS;
-    } CONTRACTL_END;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     if (pInterfaceMD->IsStatic())
     {
@@ -8823,8 +8841,9 @@ PTR_MethodTable MethodTable::InterfaceMapIterator::GetInterface(MethodTable* pMT
 {
     CONTRACTL
     {
-        GC_TRIGGERS;
         THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(m_i != (DWORD) -1 && m_i < m_count);
         PRECONDITION(CheckPointer(pMTOwner));
     }

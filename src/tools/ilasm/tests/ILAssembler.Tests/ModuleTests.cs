@@ -15,9 +15,8 @@ using System.Text;
 using System.Threading.Tasks;
 using Internal.IL;
 using Xunit;
-using DocumentCompilerTestHelpers = ILAssembler.Tests.DocumentCompilerTestHelpers;
 
-namespace ILAssembler.Tests
+namespace Microsoft.DotNet.ILAssembler.Tests
 {
     public class ModuleTests
     {
@@ -243,9 +242,8 @@ namespace ILAssembler.Tests
 
             using var pdbProvider = DocumentCompilerTestHelpers.GetPortablePdbReaderProvider(result);
             var pdbReader = pdbProvider.GetMetadataReader();
-            Assert.Contains(
-                "global.cs",
-                pdbReader.GetString(pdbReader.GetDocument(Assert.Single(pdbReader.Documents)).Name));
+            // The input file is the first document; the top-level .line file follows.
+            Assert.Equal(new[] { "test.il", "global.cs" }, pdbReader.Documents.Select(handle => pdbReader.GetString(pdbReader.GetDocument(handle).Name)));
         }
     }
 }

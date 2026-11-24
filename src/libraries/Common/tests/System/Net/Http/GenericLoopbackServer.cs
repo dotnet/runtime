@@ -171,6 +171,19 @@ namespace System.Net.Test.Common
         {
             await SendResponseBodyAsync(String.IsNullOrEmpty(content) ? new byte[0] : Encoding.ASCII.GetBytes(content), isFinal);
         }
+
+        internal static int AppendToBuffer(ref byte[] buffer, int length, ReadOnlySpan<byte> data)
+        {
+            const int ArrayMaxLength = 0X7FFFFFC7; // same as Array.MaxLength
+            int newLength = checked(length + data.Length);
+            if (newLength > buffer.Length)
+            {
+                Array.Resize(ref buffer, Math.Max(newLength, (int)Math.Min((long)buffer.Length * 2, ArrayMaxLength)));
+            }
+
+            data.CopyTo(buffer.AsSpan(length));
+            return newLength;
+        }
     }
 
     public class GenericLoopbackOptions

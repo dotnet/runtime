@@ -80,11 +80,7 @@ namespace System.Text.Json.Serialization
             if (_sequence.IsSingleSegment)
             {
                 reader = new Utf8JsonReader(
-#if NET
                     _sequence.FirstSpan,
-#else
-                    _sequence.First.Span,
-#endif
                     IsFinalBlock, jsonReaderState);
             }
             else
@@ -104,7 +100,7 @@ namespace System.Text.Json.Serialization
                 {
                     if (_sequence.First.Length >= JsonConstants.Utf8Bom.Length)
                     {
-                        if (_sequence.First.Span.StartsWith(JsonConstants.Utf8Bom))
+                        if (_sequence.FirstSpan.StartsWith(JsonConstants.Utf8Bom))
                         {
                             _sequence = _sequence.Slice((byte)JsonConstants.Utf8Bom.Length);
                         }

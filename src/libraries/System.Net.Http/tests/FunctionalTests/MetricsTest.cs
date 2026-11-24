@@ -550,15 +550,17 @@ namespace System.Net.Http.Functional.Tests
 
         private async Task RequestDuration_CustomTags_DiagnosticListener_Recorded_Core(string eventName)
         {
+            HttpResponseMessage? enrichmentResponse = null;
+
             FakeDiagnosticListenerObserver diagnosticListenerObserver = new(kv =>
             {
                 if (kv.Key == eventName)
                 {
                     HttpRequestMessage request = GetProperty<HttpRequestMessage>(kv.Value, "Request");
-                    HttpMetricsEnrichmentContext.AddCallback(request, static ctx =>
+                    HttpMetricsEnrichmentContext.AddCallback(request, ctx =>
                     {
                         ctx.AddCustomTag("observed?", "observed!");
-                        Assert.NotNull(ctx.Response);
+                        enrichmentResponse = ctx.Response;
                     });
                 }
             });
@@ -577,6 +579,7 @@ namespace System.Net.Http.Functional.Tests
                 });
 
                 using HttpResponseMessage response = await SendAsync(client, request);
+                Assert.Same(response, enrichmentResponse);
 
                 Measurement<double> m = Assert.Single(recorder.GetMeasurements());
                 VerifyRequestDuration(m, uri, UseVersion, 200);
@@ -918,7 +921,7 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Equal(1, timeInQueueRecorder.MeasurementCount);
                 int count = timeInQueueRecorder.MeasurementCount;
 
-                if (UseVersion.Major == 2)
+                if (UseVersion.Major >= 2)
                 {
                     Measurement<double> measurement = Assert.Single(timeInQueueRecorder.GetMeasurements());
                     VerifyTimeInQueue(InstrumentNames.TimeInQueue, measurement.Value, measurement.Tags.ToArray(), uri, UseVersion);
@@ -982,6 +985,11 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(true)]
         public Task UseIPAddressInTargetUri_NoProxy_RecordsHostHeaderAsServerAddress(bool useTls)
         {
+            if (useTls && !PlatformDetection.IsTlsSupported)
+            {
+                throw new SkipTestException("TLS is not supported on this platform.");
+            }
+
             if (UseVersion == HttpVersion30 && !useTls)
             {
                 throw new SkipTestException("No insecure connections with HTTP/3.");
@@ -1271,7 +1279,7 @@ namespace System.Net.Http.Functional.Tests
             }, new LoopbackServer.Options() { UseSsl = true });
         }
 
-        [ConditionalFact(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsTlsSupported))] // Also implies SocketsHttpHandler is supported.
         public async Task UseIPAddressInTargetUri_ProxyTunnel_RequestMetricsRecordUriHostAsServerAddress()
         {
             using LoopbackProxyServer proxyServer = LoopbackProxyServer.Create();

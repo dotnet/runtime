@@ -8,9 +8,12 @@ This contract encapsulates support for [ReJIT](../features/code-versioning.md) i
 public enum RejitState
 {
     Requested,
-    Active
+    Active,
+    Unknown,
 }
 ```
+
+`GetRejitState` returns `Unknown` for any ReJIT state value that the contract does not recognize.
 
 ```csharp
 bool IsEnabled();
@@ -93,7 +96,7 @@ RejitState GetRejitState(ILCodeVersionHandle codeVersion)
         {
             RejitFlags.kStateRequested => RejitState.Requested,
             RejitFlags.kStateActive => RejitState.Active,
-            _ => throw new NotImplementedException($"Unknown ReJIT state: {ilCodeVersionNode.RejitState}"),
+            _ => RejitState.Unknown,
         };
     }
 }

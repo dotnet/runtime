@@ -115,7 +115,7 @@ namespace Profiler.Tests
             ProcessStartInfo startInfo = new ProcessStartInfo();
             startInfo.FileName = program;
             startInfo.Arguments = arguments;
-            startInfo.UseShellExecute = false;
+            startInfo.InheritedHandles = [];
             startInfo.RedirectStandardOutput = true;
             startInfo.RedirectStandardError = true;
 

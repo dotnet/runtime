@@ -29,6 +29,7 @@
 #include "thread.inl"
 #include "volatile.h"
 #include "minipal/time.h"
+#include "minipal/thread.h"
 
 #ifdef STRESS_LOG
 
@@ -335,7 +336,7 @@ void ThreadStressLog::LogMsg ( uint32_t facility, int cArgs, const char* format,
         msg->args[i] = data;
     }
 
-    ASSERT(IsValid() && threadId == PalGetCurrentOSThreadId());
+    ASSERT(IsValid() && threadId == minipal_get_current_thread_id());
 }
 
 
@@ -343,7 +344,7 @@ void ThreadStressLog::Activate (Thread * pThread)
 {
     _ASSERTE(pThread != NULL);
     //there is no need to zero buffers because we could handle garbage contents
-    threadId = PalGetCurrentOSThreadId();
+    threadId = minipal_get_current_thread_id();
     isDead = FALSE;
     curWriteChunk = chunkListTail;
     curPtr = (StressMsg *)curWriteChunk->EndPtr ();

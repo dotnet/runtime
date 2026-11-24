@@ -605,7 +605,7 @@ namespace System.Globalization
         /// <summary>
         /// Titlecasing refers to a casing practice wherein the first letter of a word is an uppercase letter
         /// and the rest of the letters are lowercase.  The choice of which words to titlecase in headings
-        /// and titles is dependent on language and local conventions.  For example, "The Merry Wives of Windor"
+        /// and titles is dependent on language and local conventions.  For example, "The Merry Wives of Windsor"
         /// is the appropriate titlecasing of that play's name in English, with the word "of" not titlecased.
         /// In German, however, the title is "Die lustigen Weiber von Windsor," and both "lustigen" and "von"
         /// are not titlecased.  In French even fewer words are titlecased: "Les joyeuses commeres de Windsor."

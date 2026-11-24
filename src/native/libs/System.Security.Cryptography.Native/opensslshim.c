@@ -171,6 +171,24 @@ static void OpenLibraryOnce(void)
     // The ports version of OpenSSL is used over base where possible
     if (libssl == NULL)
     {
+        // OpenSSL 4.1 from ports
+        DlOpen(MAKELIB("20"));
+    }
+
+    if (libssl == NULL)
+    {
+        // OpenSSL 4.0 from ports
+        DlOpen(MAKELIB("19"));
+    }
+
+    if (libssl == NULL)
+    {
+        // OpenSSL 3.6 from ports
+        DlOpen(MAKELIB("18"));
+    }
+
+    if (libssl == NULL)
+    {
         // OpenSSL 3.5 from ports
         DlOpen(MAKELIB("17"));
     }
@@ -205,7 +223,19 @@ static void OpenLibraryOnce(void)
     }
 #elif defined(__OpenBSD__)
     // OpenBSD base is LibreSSL; load the OpenSSL ports build from /usr/local/lib/eopenssl<NN>.
-    // Probe the known package directories explicitly, preferring 3.x and trying 4.0 last.
+    // Probe the known package directories explicitly, newest versions first.
+    if (libssl == NULL)
+    {
+        // OpenSSL 4.1 from ports
+        DlOpenEOpenSsl("41");
+    }
+
+    if (libssl == NULL)
+    {
+        // OpenSSL 4.0 from ports
+        DlOpenEOpenSsl("40");
+    }
+
     if (libssl == NULL)
     {
         // OpenSSL 3.6 from ports
@@ -217,29 +247,21 @@ static void OpenLibraryOnce(void)
         // OpenSSL 3.5 from ports
         DlOpenEOpenSsl("35");
     }
-
-    if (libssl == NULL)
-    {
-        // OpenSSL 4.0 from ports (probed but not preferred)
-        DlOpenEOpenSsl("40");
-    }
 #endif
 
     if (libssl == NULL)
     {
-        // Prefer OpenSSL 3.x
+        DlOpen(MAKELIB("4"));
+    }
+
+    if (libssl == NULL)
+    {
         DlOpen(MAKELIB("3"));
     }
 
     if (libssl == NULL)
     {
         DlOpen(MAKELIB("1.1"));
-    }
-
-    // While it's still in alpha, OpenSSL 4 is probed, but not preferred.
-    if (libssl == NULL)
-    {
-        DlOpen(MAKELIB("4"));
     }
 }
 

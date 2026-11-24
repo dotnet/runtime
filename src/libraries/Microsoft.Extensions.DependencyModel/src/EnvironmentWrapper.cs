@@ -2,9 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-#if !NETFRAMEWORK
-using System.Runtime.InteropServices;
-#endif
 
 namespace Microsoft.Extensions.DependencyModel
 {
@@ -16,11 +13,6 @@ namespace Microsoft.Extensions.DependencyModel
 
         public object? GetAppContextData(string name) => AppDomain.CurrentDomain.GetData(name);
 
-        public bool IsWindows() =>
-#if NETFRAMEWORK
-            Environment.OSVersion.Platform == PlatformID.Win32NT;
-#else
-            RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-#endif
+        public bool IsWindows() => OperatingSystem.IsWindows();
     }
 }

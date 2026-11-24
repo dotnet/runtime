@@ -393,19 +393,20 @@ namespace System.Text.Json
             Debug.Assert(idx >= 0 && idx < source.Length);
             Debug.Assert(source[idx] == JsonConstants.BackSlash);
 
+            // Accumulate into a local rather than the out parameter, which lives in memory.
+            int writtenLocal = 0;
             if (!source.Slice(0, idx).TryCopyTo(destination))
             {
-                written = 0;
                 goto DestinationTooShort;
             }
 
-            written = idx;
+            writtenLocal = idx;
 
             while (true)
             {
                 Debug.Assert(source[idx] == JsonConstants.BackSlash);
 
-                if (written == destination.Length)
+                if (writtenLocal == destination.Length)
                 {
                     goto DestinationTooShort;
                 }
@@ -413,28 +414,28 @@ namespace System.Text.Json
                 switch (source[++idx])
                 {
                     case JsonConstants.Quote:
-                        destination[written++] = JsonConstants.Quote;
+                        destination[writtenLocal++] = JsonConstants.Quote;
                         break;
                     case (byte)'n':
-                        destination[written++] = JsonConstants.LineFeed;
+                        destination[writtenLocal++] = JsonConstants.LineFeed;
                         break;
                     case (byte)'r':
-                        destination[written++] = JsonConstants.CarriageReturn;
+                        destination[writtenLocal++] = JsonConstants.CarriageReturn;
                         break;
                     case JsonConstants.BackSlash:
-                        destination[written++] = JsonConstants.BackSlash;
+                        destination[writtenLocal++] = JsonConstants.BackSlash;
                         break;
                     case JsonConstants.Slash:
-                        destination[written++] = JsonConstants.Slash;
+                        destination[writtenLocal++] = JsonConstants.Slash;
                         break;
                     case (byte)'t':
-                        destination[written++] = JsonConstants.Tab;
+                        destination[writtenLocal++] = JsonConstants.Tab;
                         break;
                     case (byte)'b':
-                        destination[written++] = JsonConstants.BackSpace;
+                        destination[writtenLocal++] = JsonConstants.BackSpace;
                         break;
                     case (byte)'f':
-                        destination[written++] = JsonConstants.FormFeed;
+                        destination[writtenLocal++] = JsonConstants.FormFeed;
                         break;
                     default:
                         Debug.Assert(source[idx] == 'u', "invalid escape sequences must have already been caught by Utf8JsonReader.Read()");
@@ -485,14 +486,14 @@ namespace System.Text.Json
                         }
 
                         var rune = new Rune(scalar);
-                        bool success = rune.TryEncodeToUtf8(destination.Slice(written), out int bytesWritten);
+                        bool success = rune.TryEncodeToUtf8(destination.Slice(writtenLocal), out int bytesWritten);
                         if (!success)
                         {
                             goto DestinationTooShort;
                         }
 
                         Debug.Assert(bytesWritten <= 4);
-                        written += bytesWritten;
+                        writtenLocal += bytesWritten;
                         break;
                 }
 
@@ -510,7 +511,7 @@ namespace System.Text.Json
                         nextUnescapedSegmentLength = remaining.Length;
                     }
 
-                    if ((uint)(written + nextUnescapedSegmentLength) >= (uint)destination.Length)
+                    if ((uint)(writtenLocal + nextUnescapedSegmentLength) >= (uint)destination.Length)
                     {
                         goto DestinationTooShort;
                     }
@@ -519,20 +520,20 @@ namespace System.Text.Json
                     switch (nextUnescapedSegmentLength)
                     {
                         case 1:
-                            destination[written++] = source[idx++];
+                            destination[writtenLocal++] = source[idx++];
                             break;
                         case 2:
-                            destination[written++] = source[idx++];
-                            destination[written++] = source[idx++];
+                            destination[writtenLocal++] = source[idx++];
+                            destination[writtenLocal++] = source[idx++];
                             break;
                         case 3:
-                            destination[written++] = source[idx++];
-                            destination[written++] = source[idx++];
-                            destination[written++] = source[idx++];
+                            destination[writtenLocal++] = source[idx++];
+                            destination[writtenLocal++] = source[idx++];
+                            destination[writtenLocal++] = source[idx++];
                             break;
                         default:
-                            remaining.Slice(0, nextUnescapedSegmentLength).CopyTo(destination.Slice(written));
-                            written += nextUnescapedSegmentLength;
+                            remaining.Slice(0, nextUnescapedSegmentLength).CopyTo(destination.Slice(writtenLocal));
+                            writtenLocal += nextUnescapedSegmentLength;
                             idx += nextUnescapedSegmentLength;
                             break;
                     }
@@ -547,9 +548,11 @@ namespace System.Text.Json
             }
 
         Success:
+            written = writtenLocal;
             return true;
 
         DestinationTooShort:
+            written = writtenLocal;
             return false;
         }
     }

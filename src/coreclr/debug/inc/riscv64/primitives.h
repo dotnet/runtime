@@ -12,13 +12,10 @@
 
 #ifndef PRIMITIVES_H_
 #define PRIMITIVES_H_
+#include <minipal/instructioncache.h>
 
 typedef const BYTE                  CORDB_ADDRESS_TYPE;
 typedef DPTR(CORDB_ADDRESS_TYPE)    PTR_CORDB_ADDRESS_TYPE;
-
-// Each floating point register occupies a single 64-bit slot in the context, so FPRegister64 is one
-// ULONGLONG and Get64bitFPRegisters strides one slot per register.
-typedef ULONGLONG                   FPRegister64;
 
 // TODO-RISCV64-CQ: Update when it supports c and other extensions
 #define MAX_INSTRUCTION_LENGTH 4
@@ -88,13 +85,13 @@ constexpr CorDebugRegister g_JITToCorDbgReg[] =
     REGISTER_RISCV64_PC
 };
 
-inline void CORDbgSetIP(DT_CONTEXT *context, LPVOID ip) {
+inline void CORDbgSetIP(T_CONTEXT *context, LPVOID ip) {
     LIMITED_METHOD_CONTRACT;
 
     context->Pc = (DWORD64)ip;
 }
 
-inline CORDB_ADDRESS CORDbgGetSP(const DT_CONTEXT * context) {
+inline CORDB_ADDRESS CORDbgGetSP(const T_CONTEXT * context) {
     LIMITED_METHOD_CONTRACT;
 
     return (CORDB_ADDRESS)(context->Sp);
@@ -140,8 +137,7 @@ inline void CORDbgSetInstruction(CORDB_ADDRESS_TYPE* address,
 
     TADDR ptraddr = dac_cast<TADDR>(address);
     *(PRD_TYPE *)ptraddr = instruction;
-    FlushInstructionCache(GetCurrentProcess(),
-                          address,
+    minipal_flush_instruction_cache(address,
                           sizeof(PRD_TYPE));
 }
 
@@ -165,7 +161,7 @@ inline CorDebugRegister ConvertRegNumToCorDebugRegister(ICorDebugInfo::RegNum re
     return g_JITToCorDbgReg[reg];
 }
 
-inline LPVOID CORDbgGetIP(DT_CONTEXT *context)
+inline LPVOID CORDbgGetIP(T_CONTEXT *context)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -178,8 +174,7 @@ inline void CORDbgSetInstructionExImpl(CORDB_ADDRESS_TYPE* address,
     LIMITED_METHOD_DAC_CONTRACT;
 
     *(PRD_TYPE *)address = instruction;
-    FlushInstructionCache(GetCurrentProcess(),
-                          address,
+    minipal_flush_instruction_cache(address,
                           sizeof(PRD_TYPE));
 }
 
@@ -207,7 +202,7 @@ inline void CORDbgInsertBreakpointExImpl(UNALIGNED CORDB_ADDRESS_TYPE *address)
 // After a breakpoint exception, the CPU points to _after_ the break instruction.
 // Adjust the IP so that it points at the break instruction. This lets us patch that
 // opcode and re-execute what was underneath the bp.
-inline void CORDbgAdjustPCForBreakInstruction(DT_CONTEXT* pContext)
+inline void CORDbgAdjustPCForBreakInstruction(T_CONTEXT* pContext)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -224,13 +219,13 @@ inline bool AddressIsBreakpoint(CORDB_ADDRESS_TYPE* address)
 
 class Thread;
 // Enable single stepping.
-void SetSSFlag(DT_CONTEXT *pCtx, Thread *pThread);
+void SetSSFlag(T_CONTEXT *pCtx, Thread *pThread);
 
 // Disable single stepping
-void UnsetSSFlag(DT_CONTEXT *pCtx, Thread *pThread);
+void UnsetSSFlag(T_CONTEXT *pCtx, Thread *pThread);
 
 // Check if single stepping is enabled.
-bool IsSSFlagEnabled(DT_CONTEXT *pCtx, Thread *pThread);
+bool IsSSFlagEnabled(T_CONTEXT *pCtx, Thread *pThread);
 
 
 inline bool PRDIsEqual(PRD_TYPE p1, PRD_TYPE p2)

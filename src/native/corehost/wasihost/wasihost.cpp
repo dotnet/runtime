@@ -6,7 +6,6 @@
 // real wasi:cli/run main() instead of a JS driver.
 // See https://github.com/dotnet/runtime/issues/130129.
 
-#include <algorithm>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -48,6 +47,10 @@ namespace envvar
 // Statically linked at the per-app relink, so declared extern here (as browserhost does).
 extern "C"
 {
+    extern const char* const g_runtimeconfig_keys[];
+    extern const char* const g_runtimeconfig_values[];
+    extern const size_t g_runtimeconfig_property_count;
+
     int coreclr_initialize(
         const char* exePath,
         const char* appDomainFriendlyName,
@@ -85,6 +88,9 @@ extern "C" __attribute__((weak)) int32_t GlobalizationNative_LoadICUData(const c
 // Init properties, kept alive for the process so the runtime contract callback can serve them.
 static std::vector<std::string> s_property_keys;
 static std::vector<std::string> s_property_values;
+
+// Served on demand through the runtime contract (as corerun and hostpolicy do), not as an init property.
+static std::string s_entry_assembly_name;
 
 // R2R external-assembly probe search dirs, captured before coreclr_initialize so the probe callback
 // (invoked later by the runtime) can reach them.
@@ -159,108 +165,24 @@ static string_t build_tpa(const string_t& core_root, const string_t& core_librar
     return tpa_list.str();
 }
 
-// ECMA-335 compressed unsigned integer (II.23.2), as written by BlobBuilder.WriteCompressedInteger.
-static bool read_compressed_uint(const uint8_t*& cur, const uint8_t* end, uint32_t& value)
+// Appends the app's build-time-generated runtimeconfig configProperties (feature switches,
+// RuntimeHostConfigurationOption items, ...) to the init properties.
+static void add_runtimeconfig_properties()
 {
-    if (cur >= end)
-        return false;
-
-    uint8_t b = cur[0];
-    if ((b & 0x80) == 0)
+    for (size_t i = 0; i < g_runtimeconfig_property_count; ++i)
     {
-        value = b;
-        cur += 1;
-        return true;
+        s_property_keys.emplace_back(g_runtimeconfig_keys[i]);
+        s_property_values.emplace_back(g_runtimeconfig_values[i]);
     }
-
-    if ((b & 0xC0) == 0x80)
-    {
-        if (end - cur < 2)
-            return false;
-
-        value = (static_cast<uint32_t>(b & 0x3F) << 8) | cur[1];
-        cur += 2;
-        return true;
-    }
-
-    if ((b & 0xE0) == 0xC0)
-    {
-        if (end - cur < 4)
-            return false;
-
-        value = (static_cast<uint32_t>(b & 0x1F) << 24) | (static_cast<uint32_t>(cur[1]) << 16) | (static_cast<uint32_t>(cur[2]) << 8) | cur[3];
-        cur += 4;
-        return true;
-    }
-
-    return false;
 }
 
-// Length-prefixed UTF-8 string, as written by BlobBuilder.WriteSerializedString.
-static bool read_serialized_string(const uint8_t*& cur, const uint8_t* end, std::string& value)
+static size_t copy_runtime_property(const std::string& value, char* value_buffer, size_t value_buffer_size)
 {
-    uint32_t len;
-    if (!read_compressed_uint(cur, end, len) || static_cast<size_t>(end - cur) < len)
-        return false;
+    size_t len = value.length();
+    if (value_buffer != nullptr && value_buffer_size > len)
+        ::memcpy(value_buffer, value.c_str(), len + 1);
 
-    value.assign(reinterpret_cast<const char*>(cur), len);
-    cur += len;
-    return true;
-}
-
-// Appends the app's runtimeconfig configProperties (feature switches, RuntimeHostConfigurationOption
-// items, ...) to the init properties. Reads the runtimeconfig.bin that RuntimeConfigParserTask writes
-// (the same file Mono's WASI driver consumes): a compressed count followed by that many key/value
-// serialized strings. Properties already set by the host take precedence. A missing file is not an
-// error.
-static bool add_runtimeconfig_properties(const string_t& path)
-{
-    FILE* file = std::fopen(path.c_str(), "rb");
-    if (file == nullptr)
-        return true;
-
-    std::vector<uint8_t> data;
-    uint8_t buffer[4096];
-    size_t read;
-    while ((read = std::fread(buffer, 1, sizeof(buffer), file)) > 0)
-        data.insert(data.end(), buffer, buffer + read);
-
-    bool read_error = std::ferror(file) != 0;
-    std::fclose(file);
-
-    const uint8_t* cur = data.data();
-    const uint8_t* end = cur + data.size();
-    uint32_t count = 0;
-    bool valid = !read_error && read_compressed_uint(cur, end, count);
-    std::vector<std::string> keys;
-    std::vector<std::string> values;
-    for (uint32_t i = 0; valid && i < count; ++i)
-    {
-        std::string key;
-        std::string value;
-        valid = read_serialized_string(cur, end, key) && read_serialized_string(cur, end, value);
-        keys.push_back(std::move(key));
-        values.push_back(std::move(value));
-    }
-
-    if (!valid)
-    {
-        std::fprintf(stderr, "Failed to read runtime configuration from '%s'\n", path.c_str());
-        return false;
-    }
-
-    size_t host_property_count = s_property_keys.size();
-    for (size_t i = 0; i < keys.size(); ++i)
-    {
-        auto host_keys_end = s_property_keys.begin() + host_property_count;
-        if (std::find(s_property_keys.begin(), host_keys_end, keys[i]) != host_keys_end)
-            continue;
-
-        s_property_keys.push_back(std::move(keys[i]));
-        s_property_values.push_back(std::move(values[i]));
-    }
-
-    return true;
+    return len + 1;
 }
 
 static size_t HOST_CONTRACT_CALLTYPE get_runtime_property(
@@ -269,17 +191,13 @@ static size_t HOST_CONTRACT_CALLTYPE get_runtime_property(
     size_t value_buffer_size,
     void* /*contract_context*/)
 {
+    if (::strcmp(key, HOST_PROPERTY_ENTRY_ASSEMBLY_NAME) == 0)
+        return copy_runtime_property(s_entry_assembly_name, value_buffer, value_buffer_size);
+
     for (size_t i = 0; i < s_property_keys.size(); ++i)
     {
         if (s_property_keys[i] == key)
-        {
-            const std::string& value = s_property_values[i];
-            size_t len = value.length();
-            if (value_buffer != nullptr && value_buffer_size > len)
-                ::memcpy(value_buffer, value.c_str(), len + 1);
-
-            return len + 1;
-        }
+            return copy_runtime_property(s_property_values[i], value_buffer, value_buffer_size);
     }
 
     return (size_t)-1;
@@ -305,6 +223,7 @@ int main(int argc, char* argv[])
         string_t file;
         pal::split_path_to_dir_filename(entry_assembly, app_path, file);
         pal::ensure_trailing_delimiter(app_path);
+        s_entry_assembly_name = file.substr(0, file.rfind('.'));
     }
 
     string_t core_libs = pal::getenv(envvar::coreLibraries);
@@ -334,6 +253,11 @@ int main(int argc, char* argv[])
     s_property_keys.push_back(HOST_PROPERTY_APP_PATHS);
     s_property_values.push_back(app_path);
 
+    // Reserved for the host by _RuntimeConfigReservedProperties in WasiApp.targets, so runtimeconfig
+    // can't supply it.
+    s_property_keys.push_back("RUNTIME_IDENTIFIER");
+    s_property_values.push_back("wasi-wasm");
+
     // NATIVE_DLL_SEARCH_DIRECTORIES is intentionally not set: on wasi native libraries are
     // statically linked and every P/Invoke is resolved by the pinvoke_override (callhelpers) before
     // the runtime's native-library search runs, and wasm has no shared-library/dlopen support, so
@@ -353,11 +277,7 @@ int main(int argc, char* argv[])
         s_property_values.push_back(ss.str());
     }
 
-    // The app bundle places runtimeconfig.bin next to the entry assembly.
-    string_t runtimeconfig_path = app_path;
-    runtimeconfig_path.append(W("runtimeconfig.bin"));
-    if (!add_runtimeconfig_properties(runtimeconfig_path))
-        return -1;
+    add_runtimeconfig_properties();
 
     std::vector<const char*> property_keys;
     std::vector<const char*> property_values;

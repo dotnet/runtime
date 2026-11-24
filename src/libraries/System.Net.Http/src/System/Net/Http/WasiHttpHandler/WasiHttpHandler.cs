@@ -28,9 +28,14 @@ namespace System.Net.Http
 
         public async Task<HttpResponseMessage> SendRequestAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            if (request.RequestUri is null)
+            if (request.RequestUri is not { IsAbsoluteUri: true } requestUri)
             {
-                throw new ArgumentException();
+                throw new InvalidOperationException(SR.net_http_client_invalid_requesturi);
+            }
+
+            if (!string.Equals(requestUri.Scheme, Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase) && !string.Equals(requestUri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new NotSupportedException(SR.Format(SR.net_http_unsupported_requesturi_scheme, requestUri.Scheme));
             }
 
             try
@@ -42,15 +47,18 @@ namespace System.Net.Http
                 outgoingRequest.SetAuthority(WasiHttpInterop.ConvertAuthority(request.RequestUri));
                 outgoingRequest.SetPathWithQuery(request.RequestUri.PathAndQuery);
 
-#pragma warning disable CS4014 // intentionaly not awaited
+                // The request body is streamed concurrently with waiting for the response,
+                // which may arrive before the body has been fully sent.
 #pragma warning disable CA2025
-                SendContent(request.Content, outgoingRequest, cancellationToken);
+                Task sendContentTask = SendContent(request.Content, outgoingRequest, cancellationToken);
 #pragma warning restore CA2025
-#pragma warning restore CS4014
 
                 future = IOutgoingHandlerImports.Handle(outgoingRequest, null);
 
-                using var incomingResponse = await SendRequest(cancellationToken).ConfigureAwait(false);
+                using var incomingResponse = await SendRequest(sendContentTask, cancellationToken).ConfigureAwait(false);
+
+                // Observe failures that happen after the response has started arriving.
+                _ = sendContentTask.ContinueWith(static t => _ = t.Exception, CancellationToken.None, TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
 
                 ObjectDisposedException.ThrowIf(isDisposed, this);
                 cancellationToken.ThrowIfCancellationRequested();
@@ -78,8 +86,9 @@ namespace System.Net.Http
             }
         }
 
-        private async Task<IncomingResponse> SendRequest(CancellationToken cancellationToken)
+        private async Task<IncomingResponse> SendRequest(Task sendContentTask, CancellationToken cancellationToken)
         {
+            using var pollCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             try
             {
                 while (true)
@@ -100,7 +109,21 @@ namespace System.Net.Http
                     }
                     else
                     {
-                        await WasiHttpInterop.RegisterWasiPollable(future.Subscribe(), cancellationToken).ConfigureAwait(false);
+                        Task pollTask = WasiHttpInterop.RegisterWasiPollable(future.Subscribe(), pollCts.Token);
+                        if (!sendContentTask.IsCompleted)
+                        {
+                            await Task.WhenAny(pollTask, sendContentTask).ConfigureAwait(false);
+                        }
+
+                        if (!sendContentTask.IsCompletedSuccessfully && sendContentTask.IsCompleted)
+                        {
+                            // Sending the request content failed, so no response will arrive; fail the request with the content's exception.
+                            pollCts.Cancel();
+                            await pollTask.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+                            await sendContentTask.ConfigureAwait(false);
+                        }
+
+                        await pollTask.ConfigureAwait(false);
                     }
                 }
             }
@@ -119,8 +142,17 @@ namespace System.Net.Http
             if (content is not null)
             {
                 wasiOutputStream = new WasiOutputStream(outgoingRequest.Body()); // passing body ownership
-                await content.CopyToAsync(wasiOutputStream, cancellationToken).ConfigureAwait(false);
-                wasiOutputStream.Close();
+                try
+                {
+                    await content.CopyToAsync(wasiOutputStream, cancellationToken).ConfigureAwait(false);
+                }
+                catch (WitException)
+                {
+                    // The host stopped accepting the request body, for example because the server already responded.
+                    // The outcome of the request is reported through the response future.
+                    return;
+                }
+                wasiOutputStream.Finish();
             }
         }
 

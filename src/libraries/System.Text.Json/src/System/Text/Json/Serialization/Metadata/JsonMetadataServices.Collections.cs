@@ -4,6 +4,7 @@
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Text.Json.Reflection;
 using System.Text.Json.Serialization.Converters;
 
 namespace System.Text.Json.Serialization.Metadata
@@ -86,10 +87,14 @@ namespace System.Text.Json.Serialization.Metadata
         {
             ArgumentNullException.ThrowIfNull(createRangeFunc);
 
+            JsonConverter<TCollection> converter = typeof(TCollection).IsImmutableSortedDictionaryType()
+                ? new ImmutableSortedDictionaryOfTKeyTValueConverter<TCollection, TKey, TValue>()
+                : new ImmutableDictionaryOfTKeyTValueConverter<TCollection, TKey, TValue>();
+
             return CreateCore(
                 options,
                 collectionInfo,
-                new ImmutableDictionaryOfTKeyTValueConverter<TCollection, TKey, TValue>(),
+                converter,
                 createObjectWithArgs: createRangeFunc);
         }
 

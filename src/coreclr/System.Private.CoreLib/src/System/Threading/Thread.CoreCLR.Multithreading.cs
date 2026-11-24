@@ -10,6 +10,37 @@ namespace System.Threading
 {
     public sealed partial class Thread
     {
+        private const long EstimatedMemoryPressure = 20_000;
+
+        [UnmanagedCallersOnly]
+        private static unsafe void RegisterMemoryPressure(Exception* pException)
+        {
+            try
+            {
+                GC.AddMemoryPressure(EstimatedMemoryPressure);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+#if !TARGET_WINDOWS
+        internal WaitSubsystem.ThreadWaitInfo WaitInfo
+        {
+            get
+            {
+                return Volatile.Read(ref _waitInfo) ?? AllocateWaitInfo();
+
+                WaitSubsystem.ThreadWaitInfo AllocateWaitInfo()
+                {
+                    Interlocked.CompareExchange(ref _waitInfo, new WaitSubsystem.ThreadWaitInfo(this), null!);
+                    return _waitInfo;
+                }
+            }
+        }
+#endif
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern bool CatchAtSafePoint();
 
@@ -22,16 +53,25 @@ namespace System.Threading
             {
                 PollGCWorker();
             }
-
-            [MethodImpl(MethodImplOptions.NoInlining)]
-            static void PollGCWorker() => PollGCInternal();
         }
+
+        // The EventPipe stack walker recognizes this helper through the CoreLib binder
+        // so leading polling frames do not obscure the managed caller.
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void PollGCWorker() => PollGCInternal();
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_PollGC")]
         private static partial void PollGCInternal();
 
         /// <summary>Clean up the thread when it goes away.</summary>
-        ~Thread() => InternalFinalize(); // Delegate to the unmanaged portion.
+        ~Thread()
+        {
+            if (_DONT_USE_InternalThread != IntPtr.Zero)
+            {
+                InternalFinalize();
+                GC.RemoveMemoryPressure(EstimatedMemoryPressure);
+            }
+        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private extern void InternalFinalize();
@@ -40,6 +80,7 @@ namespace System.Threading
         {
             Thread _this = this;
             Initialize(ObjectHandleOnStack.Create(ref _this));
+            GC.AddMemoryPressure(EstimatedMemoryPressure);
         }
 
         [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]

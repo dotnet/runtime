@@ -635,6 +635,7 @@ namespace System.Net.Test.Common
         public async Task<byte[]> ReadBodyAsync(bool expectEndOfStream = false)
         {
             byte[] body = null;
+            int bodyLength = 0;
             Frame frame;
 
             do
@@ -658,21 +659,23 @@ namespace System.Net.Test.Common
                 {
                     DataFrame dataFrame = (DataFrame)frame;
 
-                    if (body == null)
+                    if (body is null)
                     {
                         body = dataFrame.Data.ToArray();
+                        bodyLength = body.Length;
                     }
                     else
                     {
-                        byte[] newBuffer = new byte[body.Length + dataFrame.Data.Length];
-
-                        body.CopyTo(newBuffer, 0);
-                        dataFrame.Data.Span.CopyTo(newBuffer.AsSpan(body.Length));
-                        body = newBuffer;
+                        bodyLength = GenericLoopbackConnection.AppendToBuffer(ref body, bodyLength, dataFrame.Data.Span);
                     }
                 }
             }
             while ((frame.Flags & FrameFlags.EndStream) == 0);
+
+            if (body is not null)
+            {
+                Array.Resize(ref body, bodyLength);
+            }
 
             return body;
         }

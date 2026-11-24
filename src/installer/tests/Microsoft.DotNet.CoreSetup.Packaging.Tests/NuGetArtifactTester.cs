@@ -10,6 +10,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Reflection.Metadata;
+using System.Reflection.PortableExecutable;
+using System.Runtime.CompilerServices;
 using System.Xml.Linq;
 using Xunit;
 
@@ -132,6 +135,34 @@ namespace Microsoft.DotNet.CoreSetup.Packaging.Tests
         public string ReadEntryContent(string entry)
         {
             return ReadEntryContent(_reader.GetEntry(entry));
+        }
+
+        public void ContainsReferenceAssembly(string entry)
+        {
+            using Stream stream = _reader.GetEntry(entry).Open();
+            using var image = new MemoryStream();
+            stream.CopyTo(image);
+            image.Position = 0;
+            using var peReader = new PEReader(image);
+            MetadataReader metadata = peReader.GetMetadataReader();
+            Assert.Contains(metadata.GetAssemblyDefinition().GetCustomAttributes(), handle =>
+            {
+                EntityHandle constructor = metadata.GetCustomAttribute(handle).Constructor;
+                if (constructor.Kind is not HandleKind.MemberReference)
+                {
+                    return false;
+                }
+
+                EntityHandle parent = metadata.GetMemberReference((MemberReferenceHandle)constructor).Parent;
+                if (parent.Kind is not HandleKind.TypeReference)
+                {
+                    return false;
+                }
+
+                TypeReference type = metadata.GetTypeReference((TypeReferenceHandle)parent);
+                return metadata.StringComparer.Equals(type.Name, nameof(ReferenceAssemblyAttribute)) &&
+                    metadata.StringComparer.Equals(type.Namespace, typeof(ReferenceAssemblyAttribute).Namespace);
+            });
         }
 
         public XDocument ReadEntryXDocument(string entry)

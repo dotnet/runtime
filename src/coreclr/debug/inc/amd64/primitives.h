@@ -11,6 +11,7 @@
 
 #ifndef PRIMITIVES_H_
 #define PRIMITIVES_H_
+#include <minipal/instructioncache.h>
 
 #ifndef CORDB_ADDRESS_TYPE
 typedef const BYTE                  CORDB_ADDRESS_TYPE;
@@ -20,8 +21,6 @@ typedef DPTR(CORDB_ADDRESS_TYPE)    PTR_CORDB_ADDRESS_TYPE;
 #ifndef PRD_TYPE
 #define PRD_TYPE                               DWORD_PTR
 #endif
-
-typedef M128A FPRegister64;
 
 // From section 1.1 of AMD64 Programmers Manual Vol 3.
 #define MAX_INSTRUCTION_LENGTH                 15
@@ -104,7 +103,7 @@ inline CorDebugRegister ConvertRegNumToCorDebugRegister(ICorDebugInfo::RegNum re
 //
 // inline function to access/modify the CONTEXT
 //
-inline LPVOID CORDbgGetIP(DT_CONTEXT* context)
+inline LPVOID CORDbgGetIP(T_CONTEXT* context)
 {
     CONTRACTL
     {
@@ -118,7 +117,7 @@ inline LPVOID CORDbgGetIP(DT_CONTEXT* context)
     return (LPVOID) context->Rip;
 }
 
-inline void CORDbgSetIP(DT_CONTEXT* context, LPVOID rip)
+inline void CORDbgSetIP(T_CONTEXT* context, LPVOID rip)
 {
     CONTRACTL
     {
@@ -132,7 +131,7 @@ inline void CORDbgSetIP(DT_CONTEXT* context, LPVOID rip)
     context->Rip = (DWORD64) rip;
 }
 
-inline CORDB_ADDRESS CORDbgGetSP(const DT_CONTEXT * context)
+inline CORDB_ADDRESS CORDbgGetSP(const T_CONTEXT * context)
 {
     CONTRACTL
     {
@@ -202,7 +201,7 @@ inline void CORDbgInsertBreakpoint(UNALIGNED CORDB_ADDRESS_TYPE *address)
     LIMITED_METHOD_CONTRACT;
 
     *((unsigned char*)address) = 0xCC; // int 3 (single byte patch)
-    FlushInstructionCache(GetCurrentProcess(), address, 1);
+    minipal_flush_instruction_cache(address, 1);
 
 }
 
@@ -214,12 +213,12 @@ inline void CORDbgSetInstruction(UNALIGNED CORDB_ADDRESS_TYPE* address,
 
     *((unsigned char*)address) =
         (unsigned char) instruction;    // setting one byte is important
-    FlushInstructionCache(GetCurrentProcess(), address, 1);
+    minipal_flush_instruction_cache(address, 1);
 
 }
 
 
-inline void CORDbgAdjustPCForBreakInstruction(DT_CONTEXT* pContext)
+inline void CORDbgAdjustPCForBreakInstruction(T_CONTEXT* pContext)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -233,19 +232,19 @@ inline bool AddressIsBreakpoint(CORDB_ADDRESS_TYPE *address)
     return *address == CORDbg_BREAK_INSTRUCTION;
 }
 
-inline void SetSSFlag(DT_CONTEXT *pContext)
+inline void SetSSFlag(T_CONTEXT *pContext)
 {
     _ASSERTE(pContext != NULL);
     pContext->EFlags |= 0x100;
 }
 
-inline void UnsetSSFlag(DT_CONTEXT *pContext)
+inline void UnsetSSFlag(T_CONTEXT *pContext)
 {
     _ASSERTE(pContext != NULL);
     pContext->EFlags &= ~0x100;
 }
 
-inline bool IsSSFlagEnabled(DT_CONTEXT * context)
+inline bool IsSSFlagEnabled(T_CONTEXT * context)
 {
     _ASSERTE(context != NULL);
     return (context->EFlags & 0x100) != 0;

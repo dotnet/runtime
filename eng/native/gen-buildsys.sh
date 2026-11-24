@@ -8,15 +8,14 @@ reporoot="$(cd "$scriptroot"/../..; pwd -P)"
 
 if [[ "$#" -lt 4 ]]; then
   echo "Usage..."
-  echo "gen-buildsys.sh <path to top level CMakeLists.txt> <path to intermediate directory> <Architecture> <Os> <compiler> [build flavor] [ninja] [scan-build] [cmakeargs]"
+  echo "gen-buildsys.sh <path to top level CMakeLists.txt> <path to intermediate directory> <Architecture> <Os> <compiler> [ninja] [scan-build] [cmakeargs]"
   echo "Specify the path to the top level CMake file."
   echo "Specify the path that the build system files are generated in."
   echo "Specify the host architecture (the architecture the built tools should run on)."
   echo "Specify the name of compiler (clang or gcc)."
-  echo "Optionally specify the build configuration (flavor.) Defaults to DEBUG."
   echo "Optionally specify 'scan-build' to enable build with clang static analyzer."
   echo "Use the Ninja generator instead of the Unix Makefiles generator."
-  echo "Pass additional arguments to CMake call."
+  echo "Pass additional arguments to CMake, such as -DCMAKE_BUILD_TYPE=Debug."
   exit 1
 fi
 
@@ -34,7 +33,6 @@ fi
 
 export CCC_CC CCC_CXX
 
-buildtype=DEBUG
 code_coverage=OFF
 build_tests=OFF
 scan_build=OFF
@@ -44,10 +42,6 @@ __UnprocessedCMakeArgs=()
 for i in "${@:6}"; do
     upperI="$(echo "$i" | tr "[:lower:]" "[:upper:]")"
     case "$upperI" in
-      # Possible build types are DEBUG, CHECKED, RELEASE, RELWITHDEBINFO.
-      DEBUG | CHECKED | RELEASE | RELWITHDEBINFO)
-      buildtype="$upperI"
-      ;;
       NINJA)
       generator=Ninja
       ;;
@@ -111,6 +105,20 @@ if [[ "$host_arch" == "wasm" ]]; then
         # The -C flag must be early in the command line to be effective
         cmake_extra_defines="-C $scriptroot/tryrun.browser.cmake $cmake_extra_defines"
     elif [[ "$target_os" == "wasi" ]]; then
+        # Like eng/AcquireWasiSdk.targets, only use $WASI_SDK_PATH when it is the expected version,
+        # so native code built here links with the runtime built by MSBuild.
+        if [[ -n "$WASI_SDK_PATH" ]]; then
+            wasi_sdk_expected_version="$(tr -d '[:space:]' < "$reporoot"/eng/wasm/wasi-sdk-version.txt)"
+            wasi_sdk_actual_version=
+            if [[ -f "$WASI_SDK_PATH/VERSION" ]]; then
+                read -r wasi_sdk_actual_version _ < "$WASI_SDK_PATH/VERSION"
+            fi
+            if [[ "$wasi_sdk_actual_version" != "$wasi_sdk_expected_version" ]] && \
+                wasi_sdk_cache_path="$(wasm_tool_cache_dir wasi-sdk "$reporoot"/eng/wasm/wasi-sdk-version.txt "$reporoot")"; then
+                echo "WASI_SDK_PATH is version '$wasi_sdk_actual_version', not '$wasi_sdk_expected_version'; using $wasi_sdk_cache_path"
+                export WASI_SDK_PATH="$wasi_sdk_cache_path"
+            fi
+        fi
         if [[ -z "$WASI_SDK_PATH" ]]; then
             if WASI_SDK_PATH="$(wasm_tool_cache_dir wasi-sdk "$reporoot"/eng/wasm/wasi-sdk-version.txt "$reporoot")"; then
                 export WASI_SDK_PATH
@@ -162,7 +170,6 @@ $cmake_command \
   "${cmake_fresh[@]}" \
   --no-warn-unused-cli \
   -G "$generator" \
-  "-DCMAKE_BUILD_TYPE=$buildtype" \
   "-DCMAKE_INSTALL_PREFIX=$__CMakeBinDir" \
   $cmake_extra_defines \
   "${__UnprocessedCMakeArgs[@]}" \

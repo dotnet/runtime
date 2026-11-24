@@ -206,7 +206,7 @@ namespace System.Buffers
                     return false;
                 }
 
-                if (Sse41.IsSupported || AdvSimd.Arm64.IsSupported)
+                if (Sse41.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported)
                 {
                     // If the probabilistic map is vectorized, we prefer it.
                     return true;

@@ -32,7 +32,7 @@ SET_DEFAULT_DEBUG_CHANNEL(EXCEPT); // some headers have code with asserts, so do
 #if !HAVE_MACH_EXCEPTIONS
 #include "pal/init.h"
 #include "pal/debug.h"
-#include "pal/virtual.h"
+#include <minipal/ospagesize.h>
 #include "pal/utils.h"
 
 #include <string.h>
@@ -218,7 +218,7 @@ BOOL SEHInitializeSignals(CorUnix::CPalThread *pthrCurrent, DWORD flags)
         // Allocate the minimal stack necessary for handling stack overflow
         int stackOverflowStackSize = ALIGN_UP(sizeof(SignalHandlerWorkerReturnPoint), 16) + 9 * 4096;
         // Align the size to virtual page size and add one virtual page as a stack guard
-        stackOverflowStackSize = ALIGN_UP(stackOverflowStackSize, GetVirtualPageSize()) + GetVirtualPageSize();
+        stackOverflowStackSize = ALIGN_UP(stackOverflowStackSize, minipal_getpagesize()) + minipal_getpagesize();
         int flags = MAP_ANONYMOUS | MAP_PRIVATE;
 #ifdef MAP_STACK
         flags |= MAP_STACK;
@@ -231,7 +231,7 @@ BOOL SEHInitializeSignals(CorUnix::CPalThread *pthrCurrent, DWORD flags)
 
 #ifndef TARGET_WASM
         // create a guard page for the alternate stack
-        int st = mprotect((void*)g_stackOverflowHandlerStack, GetVirtualPageSize(), PROT_NONE);
+        int st = mprotect((void*)g_stackOverflowHandlerStack, minipal_getpagesize(), PROT_NONE);
         if (st != 0)
         {
             munmap((void*)g_stackOverflowHandlerStack, stackOverflowStackSize);
@@ -316,9 +316,6 @@ void SEHCleanupSignals(bool isChildProcess)
         if (g_registered_signal_handlers)
         {
             restore_signal(SIGILL, &g_previous_sigill);
-#if !HAVE_MACH_EXCEPTIONS
-            restore_signal(SIGTRAP, &g_previous_sigtrap);
-#endif
             restore_signal(SIGFPE, &g_previous_sigfpe);
             restore_signal(SIGBUS, &g_previous_sigbus);
             restore_signal(SIGSEGV, &g_previous_sigsegv);
@@ -339,10 +336,21 @@ void SEHCleanupSignals(bool isChildProcess)
         }
     }
 
-    // Restore only the SIGABRT so that abort that ends up the process can actually end it
+    // Restore only the signals that abort() may use to end the process. The other
+    // hardware exception handlers stay installed so that threads that crash
+    // concurrently still go through them.
     if (g_registered_signal_handlers)
     {
         restore_signal(SIGABRT, &g_previous_sigabrt);
+#if !HAVE_MACH_EXCEPTIONS
+        // If SIGABRT doesn't end the process, glibc abort() falls back to a trap
+        // instruction. That happens when the process is PID 1, because the kernel
+        // drops SIGABRT for init when it has the default disposition. On architectures
+        // where that instruction raises SIGTRAP (arm64, loongarch64, riscv64), our
+        // handler would return to it and loop forever. With the original handler
+        // restored, the kernel ends the process.
+        restore_signal(SIGTRAP, &g_previous_sigtrap);
+#endif
     }
 }
 
@@ -548,7 +556,7 @@ static void sigfpe_handler(int code, siginfo_t *siginfo, void *context)
     invoke_previous_action(&g_previous_sigfpe, code, siginfo, context);
 }
 
-void UnmaskActivationSignal()
+void PALAPI PAL_UnmaskActivationSignal()
 {
     sigset_t signal_set;
     sigemptyset(&signal_set);
@@ -600,7 +608,7 @@ extern "C" void signal_handler_worker(int code, siginfo_t *siginfo, void *contex
         // Unmask the activation signal now that we are running on the original stack of the thread
         // except for the stack overflow case when we are actually running on a special stack overflow
         // stack.
-        UnmaskActivationSignal();
+        PAL_UnmaskActivationSignal();
     }
 
     returnPoint->returnFromHandler = common_signal_handler(code, siginfo, context, 2, (size_t)0, (size_t)siginfo->si_addr);
@@ -684,7 +692,7 @@ static void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
 
         // If the failure address is at most one page above or below the stack pointer,
         // we have a stack overflow.
-        if ((failureAddress - (sp - GetVirtualPageSize())) < 2 * GetVirtualPageSize())
+        if ((failureAddress - (sp - minipal_getpagesize())) < 2 * minipal_getpagesize())
         {
             if (GetCurrentPalThread())
             {
@@ -934,8 +942,8 @@ static void inject_activation_handler(int code, siginfo_t *siginfo, void *contex
 {
     // Only accept activations from the current process
     if (g_activationFunction != NULL && (siginfo->si_pid == getpid()
-#ifdef HOST_OSX
-    // On OSX si_pid is sometimes 0. It was confirmed by Apple to be expected, as the si_pid is tracked at the process level. So when multiple
+#ifdef HOST_APPLE
+    // On Apple platforms si_pid is sometimes 0. It was confirmed by Apple to be expected, as the si_pid is tracked at the process level. So when multiple
     // signals are in flight in the same process at the same time, it may be overwritten / zeroed.
     || siginfo->si_pid == 0
 #endif
@@ -952,7 +960,7 @@ static void inject_activation_handler(int code, siginfo_t *siginfo, void *contex
 
         ULONG contextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT;
 
-#if defined(HOST_AMD64) || defined(HOST_ARM64)
+#if defined(HOST_AMD64)
         contextFlags |= CONTEXT_XSTATE;
 #endif
 
@@ -1031,9 +1039,13 @@ PAL_ERROR InjectActivationInternal(CorUnix::CPalThread* pThread)
 
     if (status != 0)
     {
-        // Failure to send the signal is fatal. There are only two cases when sending
-        // the signal can fail. First, if the signal ID is invalid and second,
-        // if the thread doesn't exist anymore.
+        // Failure to send the signal is fatal. Sending the signal can fail if the signal ID
+        // is invalid, if the thread doesn't exist anymore, or if the environment denies
+        // sending signals to threads of this process (e.g. a restrictive AppArmor/seccomp
+        // policy returning EACCES or EPERM). Report the reason, since the resulting abort
+        // is otherwise very hard to diagnose.
+        fprintf(stderr, "Failed to inject activation signal %d into thread: %s (%d)\n",
+            INJECT_ACTIVATION_SIGNAL, strerror(status), status);
         PROCLogManagedCallstackForSignal(SIGABRT);
         PROCAbort();
     }
@@ -1142,7 +1154,7 @@ static bool common_signal_handler(int code, siginfo_t *siginfo, void *sigcontext
 
     ULONG contextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT;
 
-#if defined(HOST_AMD64) || defined(HOST_ARM64)
+#if defined(HOST_AMD64)
     contextFlags |= CONTEXT_XSTATE;
 #endif
 
