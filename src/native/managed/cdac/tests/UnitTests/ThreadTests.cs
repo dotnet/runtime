@@ -173,6 +173,24 @@ public unsafe class ThreadTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
+    public void GetThreadData_DoesNotReadExceptionInfo(MockTarget.Architecture arch)
+    {
+        MockThread? thread = null;
+        TestPlaceholderTarget target = CreateTarget(arch, threadBuilder =>
+        {
+            thread = threadBuilder.AddThread(1, 1234);
+            thread.ExceptionTracker = 0xDEAD;
+        });
+
+        ThreadData data = target.Contracts.Thread.GetThreadData(new TargetPointer(thread!.Address));
+
+        Assert.Equal(1u, data.Id);
+        Assert.Equal(new TargetNUInt(1234), data.OSId);
+        Assert.Throws<VirtualReadException>(() => target.Contracts.Thread.GetThreadExceptionData(new TargetPointer(thread.Address)));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
     public void ThreadWithoutThreadLocalDataPtr(MockTarget.Architecture arch)
     {
         // Runtimes built without FEATURE_MULTITHREADING omit Thread::ThreadLocalDataPtr and the
@@ -402,10 +420,10 @@ public unsafe class ThreadTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void GetThreadData_LastThrownObjectHandle_ActiveException(MockTarget.Architecture arch)
+    public void GetThreadExceptionData_LastThrownObjectHandle_ActiveException(MockTarget.Architecture arch)
     {
         // When an active exception is being dispatched (ExInfo has a non-null ThrownObject),
-        // GetThreadData should return a pseudo-handle to the ExInfo's ThrownObject field
+        // GetThreadExceptionData should return a pseudo-handle to the ExInfo's ThrownObject field
         // instead of the (potentially stale) m_LastThrownObjectHandle.
         MockThread? thread = null;
         MockExceptionInfo? exceptionInfo = null;
@@ -423,7 +441,7 @@ public unsafe class ThreadTests
             });
 
         IThread contract = target.Contracts.Thread;
-        ThreadData data = contract.GetThreadData(new TargetPointer(thread!.Address));
+        ThreadExceptionData data = contract.GetThreadExceptionData(new TargetPointer(thread!.Address));
         // Should return the pseudo-handle (address of ThrownObject field), not the stale handle
         Assert.NotEqual(TargetPointer.Null, data.LastThrownObjectHandle);
         Assert.NotEqual(new TargetPointer(0xDEAD_0001), data.LastThrownObjectHandle);
@@ -433,10 +451,10 @@ public unsafe class ThreadTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void GetThreadData_LastThrownObjectHandle_NoActiveException(MockTarget.Architecture arch)
+    public void GetThreadExceptionData_LastThrownObjectHandle_NoActiveException(MockTarget.Architecture arch)
     {
         // When no active exception is being dispatched (ExInfo ThrownObject is null),
-        // GetThreadData should fall back to m_LastThrownObjectHandle.
+        // GetThreadExceptionData should fall back to m_LastThrownObjectHandle.
         MockThread? thread = null;
         MockExceptionInfo? exceptionInfo = null;
         TargetPointer lastThrownHandle = new(0xCAFE_0001);
@@ -452,15 +470,15 @@ public unsafe class ThreadTests
             });
 
         IThread contract = target.Contracts.Thread;
-        ThreadData data = contract.GetThreadData(new TargetPointer(thread!.Address));
+        ThreadExceptionData data = contract.GetThreadExceptionData(new TargetPointer(thread!.Address));
         Assert.Equal(lastThrownHandle, data.LastThrownObjectHandle);
     }
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void GetThreadData_ExceptionInProgress_ExposesOSRecords(MockTarget.Architecture arch)
+    public void GetThreadExceptionData_ExceptionInProgress_ExposesOSRecords(MockTarget.Architecture arch)
     {
-        // When an exception is in progress (non-null tracker), GetThreadData exposes the
+        // When an exception is in progress (non-null tracker), GetThreadExceptionData exposes the
         // OS EXCEPTION_RECORD and CONTEXT pointers stored on the current ExInfo.
         MockThread? thread = null;
         TargetPointer osExceptionRecord = new(0xAAAA_0001);
@@ -474,19 +492,21 @@ public unsafe class ThreadTests
                 MockExceptionInfo exceptionInfo = threadBuilder.GetExceptionInfo(thread);
                 exceptionInfo.ExceptionRecord = (ulong)osExceptionRecord;
                 exceptionInfo.ContextRecord = (ulong)osContextRecord;
+                exceptionInfo.PreviousNestedInfo = 0x1234;
             });
 
         IThread contract = target.Contracts.Thread;
-        ThreadData data = contract.GetThreadData(new TargetPointer(thread!.Address));
+        ThreadExceptionData data = contract.GetThreadExceptionData(new TargetPointer(thread!.Address));
 
         Assert.True(data.IsExceptionInProgress);
         Assert.Equal(osExceptionRecord, data.OSExceptionRecord);
         Assert.Equal(osContextRecord, data.OSExceptionContextRecord);
+        Assert.Equal(new TargetPointer(0x1234), data.FirstNestedException);
     }
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void GetThreadData_NoExceptionInProgress_OSRecordsNull(MockTarget.Architecture arch)
+    public void GetThreadExceptionData_NoExceptionInProgress_OSRecordsNull(MockTarget.Architecture arch)
     {
         // When there is no current exception tracker, no exception is in progress and the
         // OS record pointers are null.
@@ -501,11 +521,57 @@ public unsafe class ThreadTests
             });
 
         IThread contract = target.Contracts.Thread;
-        ThreadData data = contract.GetThreadData(new TargetPointer(thread!.Address));
+        ThreadExceptionData data = contract.GetThreadExceptionData(new TargetPointer(thread!.Address));
 
         Assert.False(data.IsExceptionInProgress);
         Assert.Equal(TargetPointer.Null, data.OSExceptionRecord);
         Assert.Equal(TargetPointer.Null, data.OSExceptionContextRecord);
+        Assert.Equal(TargetPointer.Null, data.FirstNestedException);
+    }
+
+    public static IEnumerable<object[]> UnhandledExceptionData()
+    {
+        const uint IsUnhandled = 0x800;
+        const uint DebuggerInterceptInfo = 0x200;
+        foreach (object[] arch in new MockTarget.StdArch())
+        {
+            yield return [arch[0], true, true, 0u, false, false];
+            yield return [arch[0], true, true, IsUnhandled, false, true];
+            yield return [arch[0], true, true, IsUnhandled | DebuggerInterceptInfo, false, false];
+            yield return [arch[0], true, false, IsUnhandled, false, false];
+            yield return [arch[0], true, true, IsUnhandled | DebuggerInterceptInfo, true, true];
+            yield return [arch[0], false, false, 0u, false, false];
+            yield return [arch[0], false, false, 0u, true, true];
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(UnhandledExceptionData))]
+    public void GetThreadExceptionData_WithoutThreadLocals(
+        MockTarget.Architecture arch, bool hasTracker, bool hasThrownObject, uint flags, bool lastThrownIsUnhandled, bool expectedUnhandled)
+    {
+        MockThread? thread = null;
+        TestPlaceholderTarget target = CreateTarget(arch, threadBuilder =>
+        {
+            thread = threadBuilder.AddThread(1, 1234);
+            MockExceptionInfo exceptionInfo = threadBuilder.GetExceptionInfo(thread);
+            exceptionInfo.ThrownObject = hasThrownObject ? 0xABCDu : 0;
+            exceptionInfo.ExceptionFlags = flags;
+            thread.LastThrownObject = 0x5678;
+            thread.LastThrownObjectIsUnhandled = lastThrownIsUnhandled ? 1u : 0;
+            if (!hasTracker)
+                thread.ExceptionTracker = 0;
+            thread.RuntimeThreadLocals = 0xDEAD;
+        });
+
+        ThreadExceptionData data = target.Contracts.Thread.GetThreadExceptionData(new TargetPointer(thread!.Address));
+
+        Assert.Equal(new TargetPointer(thread.Address), data.ThreadAddress);
+        Assert.Equal(expectedUnhandled, data.HasUnhandledException);
+        Assert.Equal(lastThrownIsUnhandled, data.LastThrownObjectIsUnhandled);
+        Assert.Equal(hasTracker, data.IsExceptionInProgress);
+        if (!hasTracker || !hasThrownObject)
+            Assert.Equal(new TargetPointer(0x5678), data.LastThrownObjectHandle);
     }
 
     [Theory]

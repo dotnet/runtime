@@ -1249,7 +1249,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
                         if (notify is IXCLRDataExceptionNotification2 notify2)
                         {
                             IThread thread = _target.Contracts.Thread;
-                            Contracts.ThreadData threadData = thread.GetThreadData(exception.ThreadAddress);
+                            Contracts.ThreadExceptionData threadData = thread.GetThreadExceptionData(exception.ThreadAddress);
                             TargetPointer thrownObjectHandle = thread.GetCurrentExceptionHandle(exception.ThreadAddress);
                             ClrDataExceptionState exceptionState = new(
                                 _target,

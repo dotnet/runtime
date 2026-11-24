@@ -4463,6 +4463,7 @@ public sealed unsafe partial class SOSDacImpl
                 throw new ArgumentException();
             Contracts.IThread contract = _target.Contracts.Thread;
             Contracts.ThreadData threadData = contract.GetThreadData(thread.ToTargetPointer(_target));
+            Contracts.ThreadExceptionData exceptionData = contract.GetThreadExceptionData(thread.ToTargetPointer(_target));
             data->corThreadId = (int)threadData.Id;
             data->osThreadId = (int)threadData.OSId.Value;
             data->state = (int)threadData.State;
@@ -4477,9 +4478,9 @@ public sealed unsafe partial class SOSDacImpl
 
             data->lockCount = -1;   // Always set to -1 - lock count was .NET Framework and no longer needed
             data->pFrame = threadData.Frame.ToClrDataAddress(_target);
-            data->firstNestedException = threadData.FirstNestedException.ToClrDataAddress(_target);
+            data->firstNestedException = exceptionData.FirstNestedException.ToClrDataAddress(_target);
             data->teb = 0;    // TEB is no longer provided by the DAC - consumers should look it up from the OS thread ID
-            data->lastThrownObjectHandle = threadData.LastThrownObjectHandle.ToClrDataAddress(_target);
+            data->lastThrownObjectHandle = exceptionData.LastThrownObjectHandle.ToClrDataAddress(_target);
             data->nextThread = threadData.NextThread.ToClrDataAddress(_target);
         }
         catch (global::System.Exception ex)

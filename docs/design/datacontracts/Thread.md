@@ -53,17 +53,21 @@ record struct ThreadData (
     TargetPointer AllocContextPointer;
     TargetPointer AllocContextLimit;
     TargetPointer Frame;
-    TargetPointer FirstNestedException;
     TargetPointer ExposedObjectHandle;
-    TargetPointer LastThrownObjectHandle;
     TargetPointer CurrentCustomDebuggerNotificationHandle;
-    bool LastThrownObjectIsUnhandled;
-    bool HasUnhandledException;
     TargetPointer NextThread;
     TargetPointer ThreadHandle;
     bool IsInteropDebuggingHijacked;
     TargetPointer DebuggerFilterContext;
     TargetPointer GCFrame;
+);
+
+record struct ThreadExceptionData (
+    TargetPointer ThreadAddress,
+    TargetPointer FirstNestedException;
+    TargetPointer LastThrownObjectHandle;
+    bool LastThrownObjectIsUnhandled;
+    bool HasUnhandledException;
     bool IsExceptionInProgress;
     TargetPointer OSExceptionRecord;
     TargetPointer OSExceptionContextRecord;
@@ -83,12 +87,17 @@ enum DebuggerControlledThreadState
 ThreadStoreData GetThreadStoreData();
 ThreadStoreCounts GetThreadCounts();
 ThreadData GetThreadData(TargetPointer threadPointer);
+ThreadExceptionData GetThreadExceptionData(TargetPointer threadPointer);
 void SetDebuggerControlledThreadState(TargetPointer thread, DebuggerControlledThreadState state);
 void ResetDebuggerControlledThreadState(TargetPointer thread, DebuggerControlledThreadState state);
 void GetStackLimitData(TargetPointer threadPointer, out TargetPointer stackBase, out TargetPointer stackLimit, out TargetPointer frameAddress);
 TargetPointer IdToThread(uint id);
 TargetPointer GetThreadLocalStaticBase(TargetPointer threadPointer, TargetPointer tlsIndexPtr);
 ```
+
+`GetThreadData` reads ordinary thread state without reading the exception tracker or
+exception information. Call `GetThreadExceptionData` separately when exception state
+is needed; it does not read the thread's allocation context.
 
 ## Version 1
 
@@ -198,12 +207,6 @@ ThreadData GetThreadData(TargetPointer address)
 {
     var runtimeThread = new Thread(target, threadPointer);
 
-    // Thread::ExceptionTracker is the field holding the thread's current ExInfo pointer
-    TargetPointer exceptionTrackerAddr = target.ReadPointer(address + /* Thread::ExceptionTracker offset */);
-    TargetPointer firstNestedException = exceptionTrackerAddr != TargetPointer.Null
-        ? target.ReadPointer(exceptionTrackerAddr + /* ExceptionInfo::PreviousNestedInfo offset*/)
-        : TargetPointer.Null;
-
     TargetPointer allocContextPointer = TargetPointer.Null;
     TargetPointer allocContextLimit = TargetPointer.Null;
     TargetPointer threadLocals = target.ReadPointer(address + /* Thread::RuntimeThreadLocals offset */);
@@ -212,6 +215,34 @@ ThreadData GetThreadData(TargetPointer address)
         allocContextPointer = target.ReadPointer(threadLocals + /* RuntimeThreadLocals::AllocContext offset */ + /* GCAllocContext::Pointer offset */);
         allocContextLimit = target.ReadPointer(threadLocals + /* RuntimeThreadLocals::AllocContext offset */ + /* GCAllocContext::Limit offset */);
     }
+
+    ulong threadLinkoffset = ... // offset from Thread data descriptor
+
+    return new ThreadData(
+        ThreadAddress: address,
+        Id: target.Read<uint>(address + /* Thread::Id offset */),
+        OSId: target.ReadNUInt(address + /* Thread::OSId offset */),
+        State: (ThreadState)(target.Read<uint>(address + /* Thread::State offset */) & /* mask of wrapped ThreadState bits */),
+        PreemptiveGCDisabled: (target.Read<uint>(address + /* Thread::PreemptiveGCDisabled offset */) & 0x1) != 0,
+        AllocContextPointer: allocContextPointer,
+        AllocContextLimit: allocContextLimit,
+        Frame: target.ReadPointer(address + /* Thread::Frame offset */),
+        ExposedObjectHandle: target.ReadPointer(address + /* Thread::ExposedObject offset */),
+        CurrentCustomDebuggerNotificationHandle: target.ReadPointer(address + /* Thread::CurrentCustomDebuggerNotification offset */),
+        NextThread: target.ReadPointer(address + /* Thread::LinkNext offset */) - threadLinkoffset,
+        ThreadHandle: /* Thread::ThreadHandle if present, otherwise TargetPointer.Null */,
+        IsInteropDebuggingHijacked: target.Read<uint>(address + /* Thread::InteropDebuggingHijacked offset */) != 0,
+        DebuggerFilterContext: target.ReadPointer(address + /* Thread::DebuggerFilterContext offset */),
+        GCFrame: target.ReadPointer(address + /* Thread::GCFrame offset */));
+}
+
+ThreadExceptionData GetThreadExceptionData(TargetPointer address)
+{
+    TargetPointer exceptionTrackerAddr = target.ReadPointer(address + /* Thread::ExceptionTracker offset */);
+    TargetPointer firstNestedException = exceptionTrackerAddr != TargetPointer.Null
+        ? target.ReadPointer(exceptionTrackerAddr + /* ExceptionInfo::PreviousNestedInfo offset */)
+        : TargetPointer.Null;
+    bool hasUnhandledException = false;
 
     // Prefer the active exception from ExInfo (pseudo-handle to m_exception field).
     // After the removal of SetThrowable/m_hThrowable, m_LastThrownObjectHandle is only
@@ -223,6 +254,9 @@ ThreadData GetThreadData(TargetPointer address)
         if (thrownObject != TargetPointer.Null)
         {
             lastThrownObjectHandle = exceptionTrackerAddr + /* ExceptionInfo::ThrownObject field offset */;
+            uint flags = target.Read<uint>(exceptionTrackerAddr + /* ExceptionInfo::ExceptionFlags offset */);
+            hasUnhandledException = (flags & 0x800 /* IsUnhandled */) != 0
+                && (flags & 0x200 /* DebuggerInterceptInfo */) == 0;
         }
     }
     if (lastThrownObjectHandle == TargetPointer.Null)
@@ -230,7 +264,8 @@ ThreadData GetThreadData(TargetPointer address)
         lastThrownObjectHandle = target.ReadPointer(address + /* Thread::LastThrownObject offset */);
     }
 
-    ulong threadLinkoffset = ... // offset from Thread data descriptor
+    bool lastThrownObjectIsUnhandled = target.Read<uint>(address + /* Thread::LastThrownObjectIsUnhandled offset */) != 0;
+    hasUnhandledException |= lastThrownObjectIsUnhandled;
 
     // The OS-pushed EXCEPTION_RECORD / CONTEXT are reachable through the current
     // exception tracker (ExInfo). When there is no exception in progress the tracker
@@ -243,18 +278,12 @@ ThreadData GetThreadData(TargetPointer address)
         ? target.ReadPointer(exceptionTrackerAddr + /* ExceptionInfo::ContextRecord offset */)
         : TargetPointer.Null;
 
-    return new ThreadData(
-        Id: target.Read<uint>(address + /* Thread::Id offset */),
-        OSId: target.ReadNUInt(address + /* Thread::OSId offset */),
-        State: (ThreadState)(target.Read<uint>(address + /* Thread::State offset */) & /* mask of wrapped ThreadState bits */),
-        PreemptiveGCDisabled: (target.Read<uint>(address + /* Thread::PreemptiveGCDisabled offset */) & 0x1) != 0,
-        AllocContextPointer: allocContextPointer,
-        AllocContextLimit: allocContextLimit,
-        Frame: target.ReadPointer(address + /* Thread::Frame offset */),
+    return new ThreadExceptionData(
+        ThreadAddress: address,
         LastThrownObjectHandle : lastThrownObjectHandle,
         FirstNestedException : firstNestedException,
-        NextThread: target.ReadPointer(address + /* Thread::LinkNext offset */) - threadLinkOffset;
-        GCFrame: target.ReadPointer(address + /* Thread::GCFrame offset */),
+        LastThrownObjectIsUnhandled: lastThrownObjectIsUnhandled,
+        HasUnhandledException: hasUnhandledException,
         IsExceptionInProgress: isExceptionInProgress,
         OSExceptionRecord: osExceptionRecord,
         OSExceptionContextRecord: osExceptionContextRecord,
