@@ -1600,6 +1600,26 @@ void CodeGen::instGen_Set_Reg_To_Base_Plus_Imm(emitAttr       size,
     }
 }
 
+// MOVZ supplies zero halfwords and MOVN supplies all-ones halfwords for free.
+struct MoveWideFill
+{
+    unsigned zeros;
+    unsigned ones;
+};
+
+static MoveWideFill countMoveWideFill(ssize_t value, emitAttr size)
+{
+    MoveWideFill fill = {};
+    unsigned     bits = (size == EA_8BYTE) ? 64 : 32;
+    for (unsigned shift = 0; shift < bits; shift += 16)
+    {
+        uint16_t halfword = static_cast<uint16_t>(static_cast<uint64_t>(value) >> shift);
+        fill.zeros += halfword == 0;
+        fill.ones += halfword == UINT16_MAX;
+    }
+    return fill;
+}
+
 //  move an immediate value into an integer register
 void CodeGen::instGen_Set_Reg_To_Imm(emitAttr       size,
                                      regNumber      reg,
@@ -1643,22 +1663,15 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr       size,
             // with ones
 
             // Determine whether movn or movz will require the fewest instructions to populate the immediate
-            int preferMovn = 0;
-
-            for (int i = (immSize == EA_8BYTE) ? 48 : 16; i >= 0; i -= 16)
-            {
-                if (uint16_t(imm >> i) == 0xffff)
-                    ++preferMovn; // a single movk 0xffff could be skipped if movn was used
-                else if (uint16_t(imm >> i) == 0x0000)
-                    --preferMovn; // a single movk 0 could be skipped if movz was used
-            }
+            MoveWideFill fill       = countMoveWideFill(imm, immSize);
+            bool         preferMovn = fill.ones > fill.zeros;
 
             // Select the first instruction.  Any additional instruction will use movk
-            instruction ins = (preferMovn > 0) ? INS_movn : INS_movz;
+            instruction ins = preferMovn ? INS_movn : INS_movz;
 
             // Initial movz or movn will fill the remaining bytes with the skipVal
             // This can allow skipping filling a halfword
-            uint16_t skipVal = (preferMovn > 0) ? 0xffff : 0;
+            uint16_t skipVal = preferMovn ? 0xffff : 0;
 
             unsigned bits = (immSize == EA_8BYTE) ? 64 : 32;
 
@@ -1724,6 +1737,24 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                 if (tree->IsTlsIconHandle())
                 {
                     // no need to generate because we generate it as part of GT_CALL
+                    break;
+                }
+            }
+            else if (!m_compiler->IsAot() && !m_compiler->opts.compReloc && targetType == TYP_I_IMPL &&
+                     con->TypeIs(TYP_I_IMPL) &&
+                     con->IsIconHandle(GTF_ICON_CLASS_HDL, GTF_ICON_METHOD_HDL, GTF_ICON_FIELD_HDL, GTF_ICON_SCOPE_HDL,
+                                       GTF_ICON_STATIC_HDL, GTF_ICON_FTN_ADDR, GTF_ICON_CONST_PTR, GTF_ICON_GLOBAL_PTR,
+                                       GTF_ICON_STATIC_ADDR_PTR, GTF_ICON_STR_HDL, GTF_ICON_STATIC_BOX_PTR) &&
+                     !emitter::emitIns_valid_imm_for_mov(cnsVal, EA_8BYTE))
+            {
+                // ADRP + ADD wins only if the absolute address takes at least three instructions.
+                MoveWideFill fill = countMoveWideFill(cnsVal, EA_8BYTE);
+                if ((fill.zeros < 2) && (fill.ones < 2) &&
+                    (m_compiler->eeGetRelocTypeHint((void*)cnsVal) == CorInfoReloc::ARM64_PAGEBASE_REL21))
+                {
+                    GetEmitter()->emitIns_R_AI(INS_adrp, EA_PTR_DSP_RELOC, targetReg,
+                                               cnsVal DEBUGARG(con->GetTargetHandle()) DEBUGARG(con->gtFlags));
+                    regSet.verifyRegUsed(targetReg);
                     break;
                 }
             }

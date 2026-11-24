@@ -9085,7 +9085,7 @@ void emitter::emitIns_R_AI(instruction  ins,
         ins           = INS_add;
         fmt           = IF_DI_2A;
         instrDesc* id = emitNewInstr(attr);
-        assert(id->idIsReloc());
+        id->idSetIsDspReloc();
 
         id->idIns(ins);
         id->idInsFmt(fmt);
