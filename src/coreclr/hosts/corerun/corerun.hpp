@@ -384,7 +384,7 @@ public:
 #if defined(TARGET_APPLE)
 #include <mach-o/dyld.h>
 #include <mach-o/loader.h>
-#elif !defined(TARGET_WASM)
+#elif !defined(TARGET_WASMARCH)
 #include <link.h>
 #include <elf.h>
 #include <cstring>
@@ -433,14 +433,14 @@ namespace pal
     const char_t dir_delim = W('/');
     const char_t env_path_delim = W(':');
 
-#ifndef TARGET_WASM
+#ifndef TARGET_WASMARCH
 #if defined(__APPLE__)
     const char_t nativelib_ext[] = W(".dylib");
 #else // Various Linux-related OS-es
     const char_t nativelib_ext[] = W(".so");
 #endif
     const char_t coreclr_lib[] = W("libcoreclr");
-#endif // !TARGET_WASM
+#endif // !TARGET_WASMARCH
 
     inline int strcmp(const char_t* str1, const char_t* str2) { return ::strcmp(str1, str2); }
     inline size_t strlen(const char_t* str) { return ::strlen(str); }
@@ -633,7 +633,7 @@ namespace pal
 
     inline void* get_image_base(mod_t m, void* sym)
     {
-#ifndef TARGET_WASM
+#ifndef TARGET_WASMARCH
         Dl_info info;
         if (dladdr(sym, &info) != 0)
         {
@@ -679,7 +679,7 @@ namespace pal
 
             return image_size;
         }
-#elif !defined(TARGET_WASM)
+#elif !defined(TARGET_WASMARCH)
         ElfW(Ehdr)* ehdr = reinterpret_cast<ElfW(Ehdr)*>(base_address);
         if (std::memcmp(ehdr->e_ident, ELFMAG, SELFMAG) != 0)
             return 0;
@@ -711,7 +711,7 @@ namespace pal
 
     inline bool try_load_hostpolicy(pal::string_t mock_hostpolicy_value)
     {
-#ifndef TARGET_WASM
+#ifndef TARGET_WASMARCH
         if (!string_ends_with(mock_hostpolicy_value, pal::nativelib_ext))
             mock_hostpolicy_value.append(pal::nativelib_ext);
 
@@ -720,9 +720,9 @@ namespace pal
             pal::fprintf(stderr, W("Failed to load mock hostpolicy at path '%s'. Error: %s\n"), mock_hostpolicy_value.c_str(), dlerror());
 
         return hMod != nullptr;
-#else // !TARGET_WASM
+#else // !TARGET_WASMARCH
         return false;
-#endif // !TARGET_WASM
+#endif // !TARGET_WASMARCH
     }
 
     inline bool try_load_library(const pal::string_t& path, pal::mod_t& hMod)
@@ -745,7 +745,7 @@ namespace pal
 
     inline bool try_load_coreclr(const pal::string_t& core_root, pal::mod_t& hMod)
     {
-#ifndef TARGET_WASM
+#ifndef TARGET_WASMARCH
         pal::string_t coreclr_path = core_root;
         pal::ensure_trailing_delimiter(coreclr_path);
         coreclr_path.append(pal::coreclr_lib);
@@ -757,7 +757,7 @@ namespace pal
             pal::fprintf(stderr, W("Failed to load: '%s'. Error: %s\n"), coreclr_path.c_str(), dlerror());
             return false;
         }
-#endif // !TARGET_WASM
+#endif // !TARGET_WASMARCH
         return true;
     }
 }

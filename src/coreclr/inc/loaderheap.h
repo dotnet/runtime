@@ -156,7 +156,7 @@ struct LoaderHeapEvent;
 // When an interleaved LoaderHeap is constructed, this is the interleaving size
 inline UINT32 GetStubCodePageSize()
 {
-#if (defined(TARGET_ARM64) && defined(TARGET_UNIX)) || defined(TARGET_WASM)
+#if (defined(TARGET_ARM64) && defined(TARGET_UNIX)) || defined(TARGET_WASMARCH)
     return max(16*1024u, minipal_getpagesize());
 #elif defined(TARGET_ARM)
     return 4096; // ARM is special as the 32bit instruction set does not easily permit a 16KB offset

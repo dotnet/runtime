@@ -213,7 +213,7 @@ protected:
     void genCodeForFunclet(FuncInfoDsc* funcInfo);
     void genCodeForBlock(BasicBlock* block);
 
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
     ArrayStack<WasmInterval*>* wasmControlFlowStack      = nullptr;
     unsigned                   wasmCursor                = 0;
     unsigned                   wasmExtraControlFlowDepth = 0;
@@ -321,7 +321,7 @@ protected:
     }
 #endif
 
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
     void genJumpToThrowHlpBlk(SpecialCodeKind codeKind);
     void genCodeForBinaryOverflow(GenTreeOp* node);
 #else
@@ -505,7 +505,7 @@ protected:
 
 #endif // TARGET_ARM
 
-#if !defined(TARGET_X86) && !defined(TARGET_WASM)
+#if !defined(TARGET_X86) && !defined(TARGET_WASMARCH)
 
     // A set of information that is used by funclet prolog and epilog generation. It is collected once, before
     // funclet prologs and epilogs are generated, and used by all funclet prologs and epilogs, which must all be the
@@ -517,7 +517,7 @@ protected:
 
     FuncletFrameInfoDsc genFuncletInfo;
 
-#endif // !TARGET_X86, !TARGET_WASM
+#endif // !TARGET_X86, !TARGET_WASMARCH
 
 #if defined(TARGET_XARCH)
 
@@ -616,7 +616,7 @@ protected:
     void genAmd64EmitterUnitTestsCTEST();
 #endif
 
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
     void genWasmEmitterUnitTestsSimd();
 #endif
 
@@ -701,11 +701,11 @@ protected:
 
     IL_OFFSET siLastEndOffs; // IL offset of the (exclusive) end of the last block processed
 
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
     // Wasm opens its method-wide scopes in the first emitted block rather than relying on the
     // monotonic enter/exit cursors used by other targets.
     bool siWasmScopesOpened;
-#endif // defined(TARGET_WASM)
+#endif // defined(TARGET_WASMARCH)
 
     /*
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -767,7 +767,7 @@ protected:
     void genCodeForBinary(GenTreeOp* treeNode);
     bool genIsSameLocalVar(GenTree* tree1, GenTree* tree2);
 
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
     void genCodeForConstant(GenTree* treeNode);
 #if defined(FEATURE_SIMD)
     void genCodeForVectorConstant(GenTree* treeNode);
@@ -825,7 +825,7 @@ public:
             CHECK_NONE,
             CHECK_SMALL_INT_RANGE,
             CHECK_POSITIVE,
-#if defined(TARGET_64BIT) || defined(TARGET_WASM)
+#if defined(TARGET_64BIT) || defined(TARGET_WASMARCH)
             CHECK_UINT_RANGE,
             CHECK_POSITIVE_INT_RANGE,
             CHECK_INT_RANGE,
@@ -837,13 +837,13 @@ public:
             COPY,
             ZERO_EXTEND_SMALL_INT,
             SIGN_EXTEND_SMALL_INT,
-#if defined(TARGET_64BIT) || defined(TARGET_WASM)
+#if defined(TARGET_64BIT) || defined(TARGET_WASMARCH)
             ZERO_EXTEND_INT,
             SIGN_EXTEND_INT,
 #endif
             LOAD_ZERO_EXTEND_SMALL_INT,
             LOAD_SIGN_EXTEND_SMALL_INT,
-#if defined(TARGET_64BIT) || defined(TARGET_WASM)
+#if defined(TARGET_64BIT) || defined(TARGET_WASMARCH)
             LOAD_ZERO_EXTEND_INT,
             LOAD_SIGN_EXTEND_INT,
 #endif
@@ -1063,7 +1063,7 @@ protected:
 
 #endif // TARGET_ARM64
 
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
     void genHWIntrinsicJumpTableFallback(GenTreeHWIntrinsic* node, HWIntrinsic info);
 #endif
 
@@ -1168,11 +1168,11 @@ protected:
     void genCodeForSwap(GenTreeOp* tree);
     void genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode);
     void genCodeForPhysReg(GenTreePhysReg* tree);
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
     void           genCodeForFrameSize(GenTree* tree);
     cnsval_ssize_t genWasmMemargOffset(GenTree* addr);
     void           genWasmZeroInit(size_t size);
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
 #ifdef SWIFT_SUPPORT
     void genCodeForSwiftErrorReg(GenTree* tree);
 #endif // SWIFT_SUPPORT

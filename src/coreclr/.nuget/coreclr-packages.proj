@@ -28,7 +28,7 @@
     <ProjectReference Include="$(MonoProjectRoot)\nuget\Microsoft.NET.Runtime.WebAssembly.Wasi.Sdk\Microsoft.NET.Runtime.WebAssembly.Wasi.Sdk.pkgproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetsWasm)' == 'true'">
+  <ItemGroup Condition="'$(TargetsWasmArch)' == 'true'">
     <ProjectReference Include="$(MonoProjectRoot)\wasm\templates\Microsoft.NET.Runtime.WebAssembly.Templates.csproj" />
     <ProjectReference Include="$(MonoProjectRoot)\nuget\Microsoft.NET.Sdk.WebAssembly.Pack\Microsoft.NET.Sdk.WebAssembly.Pack.pkgproj" />
     <ProjectReference Include="$(MonoProjectRoot)\nuget\Microsoft.NET.Workload.Mono.Toolchain.Current.Manifest\Microsoft.NET.Workload.Mono.Toolchain.Current.Manifest.pkgproj" />

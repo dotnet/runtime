@@ -166,7 +166,7 @@ DWORD CONTEXTGetExceptionCodeForSignal(const siginfo_t *siginfo,
 // Mirrors that file's RaiseException: allocate EXCEPTION_RECORD + CONTEXT,
 // fill the record, throw PAL_SEHException (what RtlpRaiseException does on
 // Unix). The CONTEXT capture / PAL_VirtualUnwind step is skipped — already
-// guarded by #ifndef TARGET_WASM in seh-unwind.cpp.
+// guarded by #ifndef TARGET_WASMARCH in seh-unwind.cpp.
 extern "C" VOID PALAPI
 RaiseException(
     IN DWORD dwExceptionCode,

@@ -88,6 +88,6 @@ endif()
 # in a non-sanitized build.
 set_target_properties(minipal_sanitizer_support PROPERTIES EXCLUDE_FROM_ALL ON)
 
-if(CLR_CMAKE_TARGET_ARCH_WASM)
+if(CLR_CMAKE_TARGET_ARCH_WASMARCH)
     install(TARGETS minipal DESTINATION sharedFramework COMPONENT runtime)
-endif(CLR_CMAKE_TARGET_ARCH_WASM)
+endif(CLR_CMAKE_TARGET_ARCH_WASMARCH)

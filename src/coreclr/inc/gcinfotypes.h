@@ -919,7 +919,7 @@ struct X86GcInfoEncoding {
     static const bool HAS_INTERRUPTIBLE_RANGES = true;
 };
 
-#elif defined(TARGET_WASM) && !defined(TARGET_64BIT)
+#elif defined(TARGET_WASMARCH) && !defined(TARGET_64BIT)
 
 #ifndef TARGET_POINTER_SIZE
 #define TARGET_POINTER_SIZE 4   // equal to sizeof(void*) and the managed pointer size in bytes for this target

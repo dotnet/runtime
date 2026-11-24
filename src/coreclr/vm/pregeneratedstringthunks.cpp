@@ -7,7 +7,7 @@
 
 #ifndef DACCESS_COMPILE
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
 
 #include "stringthunkhash.h"
 #include "loaderallocator.hpp"
@@ -78,7 +78,7 @@ void ProcessInjectStringThunksFixup(ReadyToRunInfo * pR2RInfo, PCCOR_SIGNATURE p
         if (newEntryCount == 0)
             return;
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
         WebcilDecoder decoder;
         decoder.Init(dac_cast<void*>(pR2RInfo->GetImage()->GetBase()), pR2RInfo->GetImage()->GetVirtualSize());
         TADDR rvaBase = decoder.GetTableBaseOffset();
@@ -401,7 +401,7 @@ void ResolvePendingPortableEntryPointThunksGlobal()
 
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 
-#else // !TARGET_WASM
+#else // !TARGET_WASMARCH
 
 void InitializePregeneratedStringThunkHash()
 {
@@ -413,6 +413,6 @@ void ProcessInjectStringThunksFixup(ReadyToRunInfo * pR2RInfo, PCCOR_SIGNATURE p
     LIMITED_METHOD_CONTRACT;
 }
 
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
 
 #endif // !DACCESS_COMPILE

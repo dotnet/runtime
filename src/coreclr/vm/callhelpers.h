@@ -9,7 +9,7 @@
 #ifndef __CALLHELPERS_H__
 #define __CALLHELPERS_H__
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
 #include "wasm/callhelpers.hpp"
 #endif
 

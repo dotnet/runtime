@@ -41,7 +41,7 @@ namespace System.Runtime.InteropServices
                 Architecture.Arm
 #elif TARGET_ARM64
                 Architecture.Arm64
-#elif TARGET_WASM
+#elif TARGET_WASMARCH
                 Architecture.Wasm
 #elif TARGET_S390X
                 Architecture.S390x

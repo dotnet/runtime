@@ -48,7 +48,7 @@ endif()
 OPTION(CLR_CMAKE_ENABLE_CODE_COVERAGE "Enable code coverage" OFF)
 
 # WebAssembly targets are single-threaded unless threads are explicitly enabled.
-if(NOT DEFINED FEATURE_MULTITHREADING AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
+if(NOT DEFINED FEATURE_MULTITHREADING AND NOT CLR_CMAKE_TARGET_ARCH_WASMARCH)
   set(FEATURE_MULTITHREADING 1)
 endif()
 if(FEATURE_MULTITHREADING)
@@ -79,7 +79,7 @@ include(components.cmake)
 #---------------------------
 # Build the single file host
 #---------------------------
-if(NOT CLR_CROSS_COMPONENTS_BUILD AND NOT CLR_CMAKE_TARGET_APPLE_MOBILE AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
+if(NOT CLR_CROSS_COMPONENTS_BUILD AND NOT CLR_CMAKE_TARGET_APPLE_MOBILE AND NOT CLR_CMAKE_TARGET_ARCH_WASMARCH)
   set(CLR_SINGLE_FILE_HOST_ONLY 1)
   add_subdirectory(${CLR_SRC_NATIVE_DIR}/corehost/apphost/static Corehost.Static)
   add_dependencies(runtime singlefilehost)
@@ -202,7 +202,7 @@ endif(FEATURE_STANDALONE_GC)
 
 # For wasm cross-component builds, only the JIT and jitinterface are needed.
 # Skip subsystems (GC, VM, debug, etc.) that don't support wasm as a target.
-if(CLR_CROSS_COMPONENTS_BUILD AND CLR_CMAKE_TARGET_ARCH_WASM)
+if(CLR_CROSS_COMPONENTS_BUILD AND CLR_CMAKE_TARGET_ARCH_WASMARCH)
   include_directories("inc")
   include_directories("minipal")
   if (CLR_CMAKE_HOST_UNIX)
@@ -352,21 +352,21 @@ if (CLR_CMAKE_BUILD_TOOLS)
 endif(CLR_CMAKE_BUILD_TOOLS)
 add_subdirectory(gcinfo)
 
-if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
+if (NOT CLR_CMAKE_TARGET_ARCH_WASMARCH)
   add_subdirectory(jit)
 endif()
 
 add_subdirectory(vm)
 add_subdirectory(md)
 
-if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
+if (NOT CLR_CMAKE_TARGET_ARCH_WASMARCH)
   add_subdirectory(debug)
 endif()
 
 add_subdirectory(binder)
 add_subdirectory(dlls)
 
-if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
+if (NOT CLR_CMAKE_TARGET_ARCH_WASMARCH)
   add_subdirectory(unwinder)
   add_subdirectory(interop)
 endif()

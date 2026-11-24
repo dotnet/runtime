@@ -62,7 +62,7 @@
     <CrossgenTargetName>$(CrossgenTargetName);LinkCoreLibMachO</CrossgenTargetName>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetsWasm)' == 'true' and $(PublishReadyToRun)">
+  <PropertyGroup Condition="'$(TargetsWasmArch)' == 'true' and $(PublishReadyToRun)">
     <PublishReadyToRunContainerFormat>wasm</PublishReadyToRunContainerFormat>
     <CrossgenTargetName>CopyILCoreLib;$(CrossgenTargetName)</CrossgenTargetName>
   </PropertyGroup>

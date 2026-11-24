@@ -6,9 +6,9 @@
 #pragma hdrstop
 #endif
 
-#ifndef TARGET_WASM
+#ifndef TARGET_WASMARCH
 #error "This should be included only for Wasm"
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
 
 void Compiler::unwindBegProlog()
 {

@@ -92,7 +92,7 @@ namespace System
                     case ExceptionIDs.NullReference:
                         return new NullReferenceException();
 
-#if !TARGET_WASM
+#if !TARGET_WASMARCH
                     case ExceptionIDs.AccessViolation:
                         FailFast("Access Violation: Attempted to read or write protected memory. This is often an indication that other memory is corrupt. The application will be terminated since this platform does not support throwing an AccessViolationException.");
                         return null;

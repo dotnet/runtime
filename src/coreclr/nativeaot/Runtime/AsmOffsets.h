@@ -59,7 +59,7 @@ ASM_OFFSET(   44,    70, Thread, m_pvHijackedReturnAddress)
 #if defined(TARGET_ARM64)
 ASM_OFFSET(   48,    78, Thread, m_pSpForPacSign)
 ASM_OFFSET(   4c,    80, Thread, m_pExInfoStackHead)
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
 ASM_OFFSET(   40,    FF, Thread, m_pExInfoStackHead)
 #else
 ASM_OFFSET(   48,    78, Thread, m_pExInfoStackHead)

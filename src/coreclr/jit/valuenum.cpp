@@ -45,7 +45,7 @@ struct FloatTraits
     {
 #if defined(TARGET_XARCH)
         unsigned bits = 0xFFC00000u;
-#elif defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASM)
+#elif defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASMARCH)
         // WASM uses the canonical NaN payload, matching ARM.
         unsigned bits = 0x7FC00000u;
 #else
@@ -72,7 +72,7 @@ struct DoubleTraits
     {
 #if defined(TARGET_XARCH)
         unsigned long long bits = 0xFFF8000000000000ull;
-#elif defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASM)
+#elif defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASMARCH)
         // WASM uses the canonical NaN payload, matching ARM.
         unsigned long long bits = 0x7FF8000000000000ull;
 #else
@@ -98,7 +98,7 @@ struct DoubleTraits
 template <typename TFp, typename TFpTraits>
 TFp FpAdd(TFp value1, TFp value2)
 {
-#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASM)
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASMARCH)
     // If [value1] is negative infinity and [value2] is positive infinity
     //   the result is NaN.
     // If [value1] is positive infinity and [value2] is negative infinity
@@ -116,7 +116,7 @@ TFp FpAdd(TFp value1, TFp value2)
             return TFpTraits::NaN();
         }
     }
-#endif // TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64 || TARGET_WASM
+#endif // TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64 || TARGET_WASMARCH
 
     return value1 + value2;
 }
@@ -134,7 +134,7 @@ TFp FpAdd(TFp value1, TFp value2)
 template <typename TFp, typename TFpTraits>
 TFp FpSub(TFp value1, TFp value2)
 {
-#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASM)
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASMARCH)
     // If [value1] is positive infinity and [value2] is positive infinity
     //   the result is NaN.
     // If [value1] is negative infinity and [value2] is negative infinity
@@ -152,7 +152,7 @@ TFp FpSub(TFp value1, TFp value2)
             return TFpTraits::NaN();
         }
     }
-#endif // TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64 || TARGET_WASM
+#endif // TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64 || TARGET_WASMARCH
 
     return value1 - value2;
 }
@@ -170,7 +170,7 @@ TFp FpSub(TFp value1, TFp value2)
 template <typename TFp, typename TFpTraits>
 TFp FpMul(TFp value1, TFp value2)
 {
-#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASM)
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASMARCH)
     // From the ECMA standard:
     //
     // If [value1] is zero and [value2] is infinity
@@ -186,7 +186,7 @@ TFp FpMul(TFp value1, TFp value2)
     {
         return TFpTraits::NaN();
     }
-#endif // TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64 || TARGET_WASM
+#endif // TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64 || TARGET_WASMARCH
 
     return value1 * value2;
 }
@@ -204,7 +204,7 @@ TFp FpMul(TFp value1, TFp value2)
 template <typename TFp, typename TFpTraits>
 TFp FpDiv(TFp dividend, TFp divisor)
 {
-#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASM)
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASMARCH)
     // From the ECMA standard:
     //
     // If [dividend] is zero and [divisor] is zero
@@ -221,7 +221,7 @@ TFp FpDiv(TFp dividend, TFp divisor)
     {
         return TFpTraits::NaN();
     }
-#endif // TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64 || TARGET_WASM
+#endif // TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64 || TARGET_WASMARCH
 
     return dividend / divisor;
 }
@@ -8531,12 +8531,12 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
             case NI_X86Base_MoveMask:
             case NI_AVX_MoveMask:
             case NI_AVX2_MoveMask:
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
             case NI_PackedSimd_Bitmask:
 #endif
             {
 
-#if defined(FEATURE_MASKED_HW_INTRINSICS) || defined(TARGET_WASM)
+#if defined(FEATURE_MASKED_HW_INTRINSICS) || defined(TARGET_WASMARCH)
                 simdmask_t simdMaskVal;
 
                 switch (simdSize)
@@ -8577,7 +8577,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
                 assert(elemCount <= 32);
 
                 return VNForIntCon(static_cast<int32_t>(mask));
-#endif // FEATURE_MASKED_HW_INTRINSICS || TARGET_WASM
+#endif // FEATURE_MASKED_HW_INTRINSICS || TARGET_WASMARCH
             }
 
 #ifdef TARGET_XARCH
@@ -8635,7 +8635,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
 
                 return VNForLongCon(static_cast<int64_t>(result));
             }
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
 
 #endif // !TARGET_XARCH && !TARGET_ARM64
 
@@ -9856,7 +9856,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunTernary(
 
     switch (ni)
     {
-#if defined(TARGET_XARCH) || defined(TARGET_WASM)
+#if defined(TARGET_XARCH) || defined(TARGET_WASMARCH)
         case NI_Vector_ConditionalSelect:
 #elif defined(TARGET_ARM64)
         case NI_AdvSimd_BitwiseSelect:
@@ -10650,12 +10650,12 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
                     break;
                 }
 
-#if defined(TARGET_RISCV64) || defined(TARGET_WASM)
+#if defined(TARGET_RISCV64) || defined(TARGET_WASMARCH)
                 case NI_System_Math_MaxNative:
                 {
                     assert(typ == TypeOfVN(arg1VN));
                     double arg1Val = GetConstantDouble(arg1VN);
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
                     // WASM lowers MaxNative to a NaN-propagating max instruction.
                     res = FloatingPointUtils::maximum(arg0Val, arg1Val);
 #else
@@ -10668,7 +10668,7 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
                 {
                     assert(typ == TypeOfVN(arg1VN));
                     double arg1Val = GetConstantDouble(arg1VN);
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
                     // WASM lowers MinNative to a NaN-propagating min instruction.
                     res = FloatingPointUtils::minimum(arg0Val, arg1Val);
 #else
@@ -10676,7 +10676,7 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
 #endif
                     break;
                 }
-#endif // TARGET_RISCV64 || TARGET_WASM
+#endif // TARGET_RISCV64 || TARGET_WASMARCH
 
                 default:
                     // the above are the only binary math intrinsics at the time of this writing.
@@ -10702,12 +10702,12 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
                     break;
                 }
 
-#if defined(TARGET_RISCV64) || defined(TARGET_WASM)
+#if defined(TARGET_RISCV64) || defined(TARGET_WASMARCH)
                 case NI_System_Math_MaxNative:
                 {
                     assert(typ == TypeOfVN(arg1VN));
                     float arg1Val = GetConstantSingle(arg1VN);
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
                     // WASM lowers MaxNative to a NaN-propagating max instruction.
                     res = FloatingPointUtils::maximum(arg0Val, arg1Val);
 #else
@@ -10720,7 +10720,7 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
                 {
                     assert(typ == TypeOfVN(arg1VN));
                     float arg1Val = GetConstantSingle(arg1VN);
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
                     // WASM lowers MinNative to a NaN-propagating min instruction.
                     res = FloatingPointUtils::minimum(arg0Val, arg1Val);
 #else
@@ -10728,7 +10728,7 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
 #endif
                     break;
                 }
-#endif // TARGET_RISCV64 || TARGET_WASM
+#endif // TARGET_RISCV64 || TARGET_WASMARCH
 
                 case NI_System_Math_Pow:
                 {
@@ -10820,9 +10820,9 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
                 break;
 #endif // TARGET_RISCV64
 
-#if defined(TARGET_RISCV64) || defined(TARGET_WASM)
+#if defined(TARGET_RISCV64) || defined(TARGET_WASMARCH)
             case NI_System_Math_MaxNative:
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
                 // WASM lowers MaxNative to a NaN-propagating max instruction.
                 vnf = VNF_Max;
 #else
@@ -10831,14 +10831,14 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
                 break;
 
             case NI_System_Math_MinNative:
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
                 // WASM lowers MinNative to a NaN-propagating min instruction.
                 vnf = VNF_Min;
 #else
                 vnf = VNF_MinNumber;
 #endif
                 break;
-#endif // TARGET_RISCV64 || TARGET_WASM
+#endif // TARGET_RISCV64 || TARGET_WASMARCH
 
             case NI_System_Math_Pow:
                 vnf = VNF_Pow;
@@ -14943,14 +14943,14 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
 
     CallArg* curArg = args->Args().begin().GetArg();
 
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
     if (curArg->GetWellKnownArg() == WellKnownArg::WasmShadowStackPointer)
     {
         // Ignore the Wasm shadow stack pointer argument.
         //
         curArg = curArg->GetNext();
     }
-#endif // defined(TARGET_WASM)
+#endif // defined(TARGET_WASMARCH)
 
     if (nArgs == 0)
     {
@@ -15052,7 +15052,7 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
         call->gtVNPair = vnStore->VNPWithExc(call->gtVNPair, vnpExc);
     }
 
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
     if (!generateUniqueVN && (curArg != nullptr))
     {
         // We should have processed all arguments except for the PE arg, which we can ignore

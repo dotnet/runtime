@@ -56,7 +56,7 @@ inline bool compFeatureArgSplit()
 #define TARGET_READABLE_NAME "LOONGARCH64"
 #elif defined(TARGET_RISCV64)
 #define TARGET_READABLE_NAME "RISCV64"
-#elif defined(TARGET_WASM32)
+#elif defined(TARGET_WASM)
 #define TARGET_READABLE_NAME "WASM32"
 #else
 #error Unsupported or unset target architecture
@@ -89,7 +89,7 @@ inline bool compFeatureArgSplit()
 #define REGMASK_BITS              64
 #define CSE_CONST_SHARED_LOW_BITS 12
 
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
 #define REGMASK_BITS              32
 #define CSE_CONST_SHARED_LOW_BITS 12
 
@@ -108,10 +108,10 @@ inline bool compFeatureArgSplit()
 //                       be assigned during register allocation.
 //    REG_NA           - Used to indicate that a register is either not yet assigned or not required.
 //
-#if defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASM)
+#if defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASMARCH)
 enum _regNumber_enum : unsigned
 {
-#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASM)
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASMARCH)
 // LA64 and RV64 don't require JITREG_ workaround for Android (see register.h)
 #define REGDEF(name, rnum, mask, sname) REG_##name = rnum,
 #define REGALIAS(alias, realname)       REG_##alias = REG_##realname,
@@ -217,7 +217,7 @@ enum _regMask_enum : unsigned
 // be lost.
 
 typedef _regNumber_enum regNumber;
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
 typedef unsigned regNumberSmall; // An 'unlimited' number of registers.
 #else
 typedef unsigned char regNumberSmall;
@@ -419,7 +419,7 @@ public:
     }
 };
 
-#if defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASM)
+#if defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASMARCH)
 
 #define REGDEF(name, rnum, mask, sname)                                                                                \
     static constexpr regMaskTP RBM_##name =                                                                            \
@@ -600,7 +600,7 @@ static uint32_t BitScanForward(const regMaskTP& mask)
 #include "targetloongarch64.h"
 #elif defined(TARGET_RISCV64)
 #include "targetriscv64.h"
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
 #include "targetwasm.h"
 #else
 #error Unsupported or unset target architecture
@@ -1177,7 +1177,7 @@ static_assert(sizeof(target_ssize_t) == TARGET_POINTER_SIZE);
 // to represent these pointers.
 typedef ssize_t cnsval_ssize_t;
 typedef size_t  cnsval_size_t;
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
 // WebAssembly has native support for 64-bit constants even in 32-bit mode, so we need the
 //  ability to store long constants regardless of pointer size on host or target.
 typedef int64_t  cnsval_ssize_t;

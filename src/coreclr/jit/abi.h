@@ -365,7 +365,7 @@ typedef Arm32Classifier PlatformClassifier;
 typedef RiscV64Classifier PlatformClassifier;
 #elif defined(TARGET_LOONGARCH64)
 typedef LoongArch64Classifier PlatformClassifier;
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
 typedef WasmClassifier PlatformClassifier;
 #endif
 

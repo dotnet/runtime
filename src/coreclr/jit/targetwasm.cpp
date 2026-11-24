@@ -6,7 +6,7 @@
 #pragma hdrstop
 #endif
 
-#ifdef TARGET_WASM32
+#ifdef TARGET_WASM
 #define CPU_NAME "wasm32";
 #else
 #define CPU_NAME "wasm64";

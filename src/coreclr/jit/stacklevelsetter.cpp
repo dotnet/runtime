@@ -212,7 +212,7 @@ bool StackLevelSetter::MayUseThrowHelperBlock(GenTree* node)
         return true;
     }
 
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
     switch (node->OperGet())
     {
         case GT_NULLCHECK:
@@ -227,7 +227,7 @@ bool StackLevelSetter::MayUseThrowHelperBlock(GenTree* node)
         default:
             break;
     }
-#endif // defined(TARGET_WASM)
+#endif // defined(TARGET_WASMARCH)
 
     return false;
 }
@@ -270,7 +270,7 @@ void StackLevelSetter::SetThrowHelperBlocks(GenTree* node, BasicBlock* block)
             }
         }
         break;
-#elif defined(FEATURE_HW_INTRINSICS) && defined(TARGET_WASM)
+#elif defined(FEATURE_HW_INTRINSICS) && defined(TARGET_WASMARCH)
         case GT_HWINTRINSIC:
         {
             HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(node->AsHWIntrinsic()->GetHWIntrinsicId());
@@ -281,7 +281,7 @@ void StackLevelSetter::SetThrowHelperBlocks(GenTree* node, BasicBlock* block)
         }
         break;
 
-#endif // defined(FEATURE_HW_INTRINSICS) && (defined(TARGET_XARCH) || defined(TARGET_WASM))
+#endif // defined(FEATURE_HW_INTRINSICS) && (defined(TARGET_XARCH) || defined(TARGET_WASMARCH))
 
         case GT_INDEX_ADDR:
             if (node->AsIndexAddr()->IsBoundsChecked())
@@ -295,10 +295,10 @@ void StackLevelSetter::SetThrowHelperBlocks(GenTree* node, BasicBlock* block)
             break;
 
 #if defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) ||          \
-    defined(TARGET_WASM)
+    defined(TARGET_WASMARCH)
         case GT_DIV:
         case GT_UDIV:
-#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASM)
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASMARCH)
         case GT_MOD:
         case GT_UMOD:
 #endif
@@ -328,7 +328,7 @@ void StackLevelSetter::SetThrowHelperBlocks(GenTree* node, BasicBlock* block)
         break;
 #endif
 
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
         // TODO-WASM: add other opers that imply null checks
         case GT_NULLCHECK:
             SetThrowHelperBlock(SCK_NULL_CHECK, block);
@@ -349,7 +349,7 @@ void StackLevelSetter::SetThrowHelperBlocks(GenTree* node, BasicBlock* block)
                 SetThrowHelperBlock(SCK_NULL_CHECK, block);
             }
             break;
-#endif // defined(TARGET_WASM)
+#endif // defined(TARGET_WASMARCH)
 
         default: // Other opers can target throw only due to overflow.
             break;

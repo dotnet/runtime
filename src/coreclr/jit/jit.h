@@ -145,8 +145,8 @@
 #if defined(TARGET_RISCV64)
 #error Cannot define both TARGET_X86 and TARGET_RISCV64
 #endif
-#if defined(TARGET_WASM32)
-#error Cannot define both TARGET_X86 and TARGET_WASM32
+#if defined(TARGET_WASM)
+#error Cannot define both TARGET_X86 and TARGET_WASM
 #endif
 #elif defined(TARGET_AMD64)
 #if defined(TARGET_X86)
@@ -164,8 +164,8 @@
 #if defined(TARGET_RISCV64)
 #error Cannot define both TARGET_AMD64 and TARGET_RISCV64
 #endif
-#if defined(TARGET_WASM32)
-#error Cannot define both TARGET_AMD64 and TARGET_WASM32
+#if defined(TARGET_WASM)
+#error Cannot define both TARGET_AMD64 and TARGET_WASM
 #endif
 #elif defined(TARGET_ARM)
 #if defined(TARGET_X86)
@@ -183,8 +183,8 @@
 #if defined(TARGET_RISCV64)
 #error Cannot define both TARGET_ARM and TARGET_RISCV64
 #endif
-#if defined(TARGET_WASM32)
-#error Cannot define both TARGET_ARM and TARGET_WASM32
+#if defined(TARGET_WASM)
+#error Cannot define both TARGET_ARM and TARGET_WASM
 #endif
 #elif defined(TARGET_ARM64)
 #if defined(TARGET_X86)
@@ -202,8 +202,8 @@
 #if defined(TARGET_RISCV64)
 #error Cannot define both TARGET_ARM64 and TARGET_RISCV64
 #endif
-#if defined(TARGET_WASM32)
-#error Cannot define both TARGET_ARM64 and TARGET_WASM32
+#if defined(TARGET_WASM)
+#error Cannot define both TARGET_ARM64 and TARGET_WASM
 #endif
 #elif defined(TARGET_LOONGARCH64)
 #if defined(TARGET_X86)
@@ -221,8 +221,8 @@
 #if defined(TARGET_RISCV64)
 #error Cannot define both TARGET_LOONGARCH64 and TARGET_RISCV64
 #endif
-#if defined(TARGET_WASM32)
-#error Cannot define both TARGET_LOONGARCH64 and TARGET_WASM32
+#if defined(TARGET_WASM)
+#error Cannot define both TARGET_LOONGARCH64 and TARGET_WASM
 #endif
 #elif defined(TARGET_RISCV64)
 #if defined(TARGET_X86)
@@ -240,28 +240,28 @@
 #if defined(TARGET_LOONGARCH64)
 #error Cannot define both TARGET_RISCV64 and TARGET_LOONGARCH64
 #endif
-#if defined(TARGET_WASM32)
-#error Cannot define both TARGET_RISCV64 and TARGET_WASM32
+#if defined(TARGET_WASM)
+#error Cannot define both TARGET_RISCV64 and TARGET_WASM
 #endif
 
-#elif defined(TARGET_WASM32)
+#elif defined(TARGET_WASM)
 #if defined(TARGET_X86)
-#error Cannot define both TARGET_WASM32 and TARGET_X86
+#error Cannot define both TARGET_WASM and TARGET_X86
 #endif
 #if defined(TARGET_AMD64)
-#error Cannot define both TARGET_WASM32 and TARGET_AMD64
+#error Cannot define both TARGET_WASM and TARGET_AMD64
 #endif
 #if defined(TARGET_ARM)
-#error Cannot define both TARGET_WASM32 and TARGET_ARM
+#error Cannot define both TARGET_WASM and TARGET_ARM
 #endif
 #if defined(TARGET_ARM64)
-#error Cannot define both TARGET_WASM32 and TARGET_ARM64
+#error Cannot define both TARGET_WASM and TARGET_ARM64
 #endif
 #if defined(TARGET_LOONGARCH64)
-#error Cannot define both TARGET_WASM32 and TARGET_LOONGARCH64
+#error Cannot define both TARGET_WASM and TARGET_LOONGARCH64
 #endif
 #if defined(TARGET_RISCV64)
-#error Cannot define both TARGET_WASM32 and TARGET_RISCV64
+#error Cannot define both TARGET_WASM and TARGET_RISCV64
 #endif
 
 #else
@@ -275,8 +275,8 @@
 #ifdef TARGET_ARM
 #error Cannot define both TARGET_ARM and TARGET_64BIT
 #endif // TARGET_ARM
-#ifdef TARGET_WASM32
-#error Cannot define both TARGET_WASM32 and TARGET_64BIT
+#ifdef TARGET_WASM
+#error Cannot define both TARGET_WASM and TARGET_64BIT
 #endif // TARGET_ARM
 #endif // TARGET_64BIT
 
@@ -360,7 +360,7 @@ void* __cdecl operator new[](std::size_t size, std::align_val_t alignment, const
 #define DEBUGARG(x)
 #endif
 
-#if defined(DEBUG) || defined(TARGET_WASM)
+#if defined(DEBUG) || defined(TARGET_WASMARCH)
 #define INDEBUG_OR_WASM(x) x
 #else
 #define INDEBUG_OR_WASM(x)

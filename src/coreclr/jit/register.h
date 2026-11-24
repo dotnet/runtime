@@ -13,7 +13,7 @@
 #include "registerloongarch64.h"
 #elif defined(TARGET_RISCV64)
 #include "registerriscv64.h"
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
 #include "registerwasm.h"
 #else
 #error Unsupported or unset target architecture

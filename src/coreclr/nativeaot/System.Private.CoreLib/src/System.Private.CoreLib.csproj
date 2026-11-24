@@ -43,7 +43,7 @@
     <FeatureSharedLowLevelLock>true</FeatureSharedLowLevelLock>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetsWasm)' == 'true'">
+  <PropertyGroup Condition="'$(TargetsWasmArch)' == 'true'">
     <FeatureThunkPool>false</FeatureThunkPool>
 
     <!-- single thread -->
@@ -305,7 +305,7 @@
     <Compile Include="System\Threading\Thread.NativeAot.Windows.cs" />
     <Compile Include="System\Threading\ThreadPoolCallbackWrapper.NativeAot.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)'=='true' or '$(TargetsWasm)'=='true'">
+  <ItemGroup Condition="'$(TargetsUnix)'=='true' or '$(TargetsWasmArch)'=='true'">
     <Compile Include="System\Environment.NativeAot.Unix.cs" />
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.Unix.cs" />
     <Compile Include="System\Threading\Thread.NativeAot.Unix.cs" />
@@ -318,7 +318,7 @@
       <Link>Common\Interop\Unix\System.Native\Interop.Exit.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWasm)' == 'true'">
+  <ItemGroup Condition="'$(TargetsWasmArch)' == 'true'">
     <Compile Include="Internal\Runtime\UnboxingStubMap.cs" />
   </ItemGroup>
   <ItemGroup>

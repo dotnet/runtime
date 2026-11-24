@@ -15,7 +15,7 @@
 #include "gchelpers.inl"
 #include "arraynative.inl"
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
 extern "C" void SamplingProfiler_OnSamplepoint();
 #endif
 
@@ -349,7 +349,7 @@ void InvokeUnmanagedCalliWithTransition(PCODE ftn, InterpreterCalliCookie cookie
     inlinedCallFrame.Pop();
 }
 
-#ifndef TARGET_WASM
+#ifndef TARGET_WASMARCH
 #include "callstubgenerator.h"
 
 static CallStubHeader *UpdateCallStubForMethod(MethodDesc *pMD, PCODE target)
@@ -634,7 +634,7 @@ CallStubHeader *CreateNativeToInterpreterCallStub(InterpMethod* pInterpMethod)
 
     return pHeader;
 }
-#endif // !TARGET_WASM
+#endif // !TARGET_WASMARCH
 
 #ifdef _DEBUG
 void DBG_PrintInterpreterStack()
@@ -675,7 +675,7 @@ void DBG_PrintInterpreterStack()
 #endif // _DEBUG
 
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
 typedef void* (*HELPER_FTN_P_P)(int*, void*, int32_t);
 typedef void* (*HELPER_FTN_BOX_UNBOX)(int*, MethodTable*, void*, int32_t);
 typedef Object* (*HELPER_FTN_NEWARR)(int*, MethodTable*, intptr_t, int32_t);
@@ -731,7 +731,7 @@ __attribute__((noinline)) void Call_HELPER_FTN_V_PP(HELPER_FTN_V_PP helper, void
     helper(&framePointer, arg1, arg2, 0);
 }
 
-#else // TARGET_WASM
+#else // TARGET_WASMARCH
 typedef void* (*HELPER_FTN_P_P)(void*, int32_t);
 typedef void* (*HELPER_FTN_BOX_UNBOX)(MethodTable*, void*, int32_t);
 typedef Object* (*HELPER_FTN_NEWARR)(MethodTable*, intptr_t, int32_t);
@@ -748,7 +748,7 @@ typedef void (*HELPER_FTN_V_PP)(void*, void*, int32_t);
 #define Call_HELPER_FTN_P_PPIP(helper, arg1, arg2, arg3, arg4) helper(arg1, arg2, arg3, arg4, 0)
 #define Call_HELPER_FTN_V_PP(helper, arg1, arg2) helper(arg1, arg2, 0)
 
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
 #else // FEATURE_PORTABLE_ENTRYPOINTS
 typedef void* (*HELPER_FTN_P_P)(void*);
 typedef void* (*HELPER_FTN_BOX_UNBOX)(MethodTable*, void*);
@@ -975,7 +975,7 @@ NOINLINE static void InterpTryActivateDelayedR2RCode(InterpreterFrame* pInterpre
 
 // When enabled, each opcode dispatches directly to the next one via an indirect goto,
 // avoiding the overhead of the central switch dispatch.
-#if !defined(TARGET_WINDOWS) && !defined(TARGET_WASM) && !defined(DEBUG)
+#if !defined(TARGET_WINDOWS) && !defined(TARGET_WASMARCH) && !defined(DEBUG)
 #define USE_COMPUTED_GOTO 1
 #endif
 
@@ -1376,7 +1376,7 @@ extern "C" ContinuationObject* AsyncHelpers_ResumeInterpreterContinuationWorker(
     return (ContinuationObject*)OBJECTREFToObject(contRef);
 }
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
 FCIMPL2(ContinuationObject*, AsyncHelpers_ResumeInterpreterContinuation, ContinuationObject* cont, uint8_t* resultStorage)
 {
     STATIC_CONTRACT_WRAPPER;
@@ -1389,7 +1389,7 @@ FCIMPL2(ContinuationObject*, AsyncHelpers_ResumeInterpreterContinuation, Continu
     return AsyncHelpers_ResumeInterpreterContinuationWorker(cont, resultStorage, &transitionBlock);
 }
 FCIMPLEND
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
 
 static void DECLSPEC_NORETURN HandleInterpreterStackOverflow(InterpreterFrame* pInterpreterFrame)
 {

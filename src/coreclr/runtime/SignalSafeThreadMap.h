@@ -4,7 +4,7 @@
 #ifndef __SIGNALSAFETHREADMAP_H__
 #define __SIGNALSAFETHREADMAP_H__
 
-#if defined(TARGET_UNIX) && !defined(TARGET_WASM)
+#if defined(TARGET_UNIX) && !defined(TARGET_WASMARCH)
 
 //  Insert a thread into the signal-safe map.
 //  * osThread - The OS thread ID to insert.
@@ -22,6 +22,6 @@ void RemoveThreadFromSignalSafeMap(size_t osThread, void* pThread);
 // * return - A pointer to the thread object associated with the OS thread ID, or NULL if not found.
 void* FindThreadInSignalSafeMap(size_t osThread);
 
-#endif // TARGET_UNIX && !TARGET_WASM
+#endif // TARGET_UNIX && !TARGET_WASMARCH
 
 #endif // __SIGNALSAFETHREADMAP_H__

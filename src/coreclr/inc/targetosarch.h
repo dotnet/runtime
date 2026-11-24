@@ -47,7 +47,7 @@ public:
 #else
     static const bool Is64Bit = false;
 #endif
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
     static const bool IsWasm = true;
 #else
     static const bool IsWasm = false;
@@ -100,7 +100,7 @@ public:
     static const bool IsArmArch = false;
     static const bool IsLoongArch64 = false;
     static const bool IsRiscV64 = true;
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
     static const bool IsX86 = false;
     static const bool IsX64 = false;
     static const bool IsArm64 = false;

@@ -35,7 +35,10 @@
   </PropertyGroup>
 
   <PropertyGroup>
+    <!-- TargetArchitecture 'wasm' (as in the browser-wasm and wasi-wasm RIDs) is 32-bit WebAssembly.
+         TargetsWasm is 32-bit; TargetsWasmArch means any WebAssembly width. -->
     <TargetsWasm Condition="'$(TargetArchitecture)' == 'wasm'">true</TargetsWasm>
+    <TargetsWasmArch Condition="'$(TargetsWasm)' == 'true'">true</TargetsWasmArch>
   </PropertyGroup>
 
   <PropertyGroup>

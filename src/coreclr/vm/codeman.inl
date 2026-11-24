@@ -11,7 +11,7 @@ inline BOOL ExecutionManager::IsCollectibleMethod(const METHODTOKEN& MethodToken
 
 inline TADDR IJitManager::JitTokenToModuleRVABase(const METHODTOKEN& MethodToken)
 {
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
     if (MethodToken.m_pRangeSection->_flags & RangeSection::RANGE_SECTION_VIRTUALIP)
         return dac_cast<TADDR>(MethodToken.m_pRangeSection->_pR2RModule->GetReadyToRunInfo()->GetImage()->GetBase());
 #endif

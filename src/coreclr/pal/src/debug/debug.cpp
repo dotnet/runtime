@@ -289,7 +289,7 @@ Function:
 BOOL
 IsInDebugBreak(void *addr)
 {
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
     _ASSERT("IsInDebugBreak not implemented on wasm");
     return false;
 #else

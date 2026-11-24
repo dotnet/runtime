@@ -8,7 +8,7 @@
 #include <assert.h>
 #include <minipal/memorybarrierprocesswide.h>
 
-#ifndef HOST_WASM
+#ifndef HOST_WASMARCH
 #include <pthread.h>
 #include <stdio.h>
 #include <sys/mman.h>
@@ -87,7 +87,7 @@ static uint8_t* g_helperPage = NULL;
 
 static size_t s_pageSize = 0;
 #endif // HOST_APPLE
-#endif // !HOST_WASM
+#endif // !HOST_WASMARCH
 
 static bool s_initializedMemoryBarrierSuccessfullyInitialized = false;
 
@@ -98,7 +98,7 @@ bool minipal_initialize_memory_barrier_process_wide(void)
         return true;
     }
 
-#ifdef HOST_WASM
+#ifdef HOST_WASMARCH
     // browser/wasm is currently single threaded
 #elif defined(HOST_APPLE)
     // Apple platforms do not support membarrier, so we use a different mechanism
@@ -154,7 +154,7 @@ bool minipal_initialize_memory_barrier_process_wide(void)
             return false;
         }
     }
-#endif // !HOST_WASM && !HOST_APPLE
+#endif // !HOST_WASMARCH && !HOST_APPLE
 
     s_initializedMemoryBarrierSuccessfullyInitialized = true;
     return true;
@@ -165,7 +165,7 @@ void minipal_memory_barrier_process_wide(void)
 {
     assert(s_initializedMemoryBarrierSuccessfullyInitialized);
 
-#ifdef HOST_WASM
+#ifdef HOST_WASMARCH
     // browser/wasm is currently single threaded
 #elif defined(HOST_APPLE)
     int status;
@@ -209,7 +209,7 @@ void minipal_memory_barrier_process_wide(void)
         (void)status; // unused in release config
         assert(status == 0 && "Failed to unlock the flushProcessWriteBuffersMutex lock");
     }
-#else // !HOST_APPLE && !HOST_WASM
+#else // !HOST_APPLE && !HOST_WASMARCH
 #if HAVE_SYS_MEMBARRIER_H
     if (s_flushUsingMemBarrier)
     {
@@ -241,7 +241,7 @@ void minipal_memory_barrier_process_wide(void)
         status = pthread_mutex_unlock(&g_flushProcessWriteBuffersMutex);
         assert(status == 0 && "Failed to unlock the flushProcessWriteBuffersMutex lock");
     }
-#endif // !HOST_APPLE && !HOST_WASM
+#endif // !HOST_APPLE && !HOST_WASMARCH
 }
 #else // !HOST_WINDOWS
 

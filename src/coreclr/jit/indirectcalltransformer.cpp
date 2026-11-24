@@ -547,7 +547,7 @@ private:
         }
 
     private:
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
         const int FAT_POINTER_MASK = 0x80000000;
 #else
         const int FAT_POINTER_MASK = 0x2;

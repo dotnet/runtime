@@ -239,7 +239,7 @@ typedef GCAssert<FALSE>                 GCAssertPreemp;
 //
 // Do not confuse the exception-dispatcher macros above with
 // INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME/_CONTEXT. The latter are guarded by
-// `#if defined(FEATURE_INTERPRETER) && !defined(HOST_WASM)`, are no-ops on WASM, and are unrelated
+// `#if defined(FEATURE_INTERPRETER) && !defined(HOST_WASMARCH)`, are no-ops on WASM, and are unrelated
 // to this hazard.
 //
 // It is always correct to use the plain GCX_ holder when none of the above applies; the region
@@ -251,7 +251,7 @@ typedef GCAssert<FALSE>                 GCAssertPreemp;
 // does not contain an early return, break, continue, or goto out of the region. Such a jump
 // skips the _END macro and leaks the mode transition; restructure the code to fall out of the
 // region instead (for example by assigning to a result variable declared before the _BEGIN).
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
 // On WASM, this prevents the COOP transition from being triggered as part of RtlRestoreContext.
 // THERE MUST NOT BE A return, break, goto, or continue that escapes from a GCX_COOP_REGION_BEGIN/END block.
 #define GCX_COOP_REGION_BEGIN()         { GCX_COOP_NO_DTOR(); try { do {} while (0)
@@ -273,7 +273,7 @@ typedef GCAssert<FALSE>                 GCAssertPreemp;
 #define GCX_PREEMP_NO_DTOR_END()                        __gcHolder.Leave()
 #endif
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
 // On WASM, this prevents the PREEMP transition from being triggered as part of RtlRestoreContext.
 // See the comment on GCX_COOP_REGION_BEGIN above for when the region form must be used instead of
 // the plain GCX_PREEMP holder.
@@ -307,7 +307,7 @@ typedef GCAssert<FALSE>                 GCAssertPreemp;
 #define GCX_MAYBE_COOP_NO_DTOR_END()    __gcHolder.Leave();
 #endif
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
 // On WASM, this prevents the COOP transition from being triggered as part of RtlRestoreContext.
 // See the comment on GCX_COOP_REGION_BEGIN above for when the region form must be used instead of
 // the plain GCX_MAYBE_COOP holder.

@@ -10,6 +10,6 @@
 #include "lsra.h"
 #endif
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
 #include "regallocwasm.h"
 #endif

@@ -200,7 +200,7 @@ public:
                 return TYP_USHORT;
             case 4:
                 return TYP_INT;
-#if defined(TARGET_64BIT) || defined(TARGET_WASM)
+#if defined(TARGET_64BIT) || defined(TARGET_WASMARCH)
             case 8:
                 return TYP_LONG;
 #endif

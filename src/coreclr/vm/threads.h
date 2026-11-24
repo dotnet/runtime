@@ -453,7 +453,7 @@ extern thread_local bool t_gcModeSwitchPermitted;
 #define ASSERT_GC_MODE_SWITCH_PERMITTED()
 #endif // !DACCESS_COMPILE && _DEBUG
 
-#if defined(TARGET_WASM) && !defined(DACCESS_COMPILE) && defined(_DEBUG)
+#if defined(TARGET_WASMARCH) && !defined(DACCESS_COMPILE) && defined(_DEBUG)
 // True when a catch resuming into the frame at handlerFrameControlPC will call
 // CORINFO_HELP_JIT_RESUME_AFTER_CATCH, and so is able to lift a GC mode switch restriction
 // imposed for the duration of the restore-context unwind. See vm/wasm/helpers.cpp.
@@ -464,7 +464,7 @@ inline bool ResumeTargetVerifiesGCModeTransitions(PCODE handlerFrameControlPC)
     UNREFERENCED_PARAMETER(handlerFrameControlPC);
     return false;
 }
-#endif // TARGET_WASM && !DACCESS_COMPILE && _DEBUG
+#endif // TARGET_WASMARCH && !DACCESS_COMPILE && _DEBUG
 
 // #ThreadClass
 //

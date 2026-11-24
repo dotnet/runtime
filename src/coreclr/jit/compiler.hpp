@@ -2992,7 +2992,7 @@ inline unsigned Compiler::compMapILargNum(unsigned ILargNum)
 {
     assert(ILargNum < info.compILargsCount);
 
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
     if ((ILargNum >= lvaWasmSpArg) && (lvaWasmSpArg != BAD_VAR_NUM) && lvaGetDesc(lvaWasmSpArg)->lvIsParam)
     {
         ILargNum++;
@@ -4240,11 +4240,11 @@ bool Compiler::fgVarNeedsExplicitZeroInit(unsigned varNum, bool bbInALoop, bool 
         // Below conditions guarantee block initialization, which will initialize
         // all struct fields. If the logic for block initialization in CodeGen::genCheckUseBlockInit()
         // changes, these conditions need to be updated.
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
         // On WASM the prolog always uses a single memory.fill to zero any
         // locals that need initialization, regardless of size.
         return false;
-#else // !TARGET_WASM
+#else // !TARGET_WASMARCH
         unsigned stackHomeSize = lvaLclStackHomeSize(varNum);
 #ifdef TARGET_64BIT
 #if defined(TARGET_AMD64)
@@ -4260,7 +4260,7 @@ bool Compiler::fgVarNeedsExplicitZeroInit(unsigned varNum, bool bbInALoop, bool 
         {
             return false;
         }
-#endif // !TARGET_WASM
+#endif // !TARGET_WASMARCH
     }
 
     return !info.compInitMem || (varDsc->lvIsTemp && !varDsc->HasGCPtr());
@@ -4432,7 +4432,7 @@ GenTree::VisitResult GenTree::VisitOperandUses(TVisitor visitor)
             return visitor(&cond->gtOp2);
         }
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
         case GT_WASM_SELECT:
         {
             GenTreeConditional* const select = this->AsConditional();

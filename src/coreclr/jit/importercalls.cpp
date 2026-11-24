@@ -700,7 +700,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 assert((sig->callConv & CORINFO_CALLCONV_MASK) != CORINFO_CALLCONV_VARARG &&
                        (sig->callConv & CORINFO_CALLCONV_MASK) != CORINFO_CALLCONV_NATIVEVARARG);
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
                 // Wasm virtual calls that cannot use a pregenerated dispatch thunk (including the
                 // array Address accessor) come through LDVIRTFTN, which skips the shared hidden-arg
                 // handling below via the `goto DEVIRT`. Add the type-context arg here so the
@@ -728,7 +728,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
                     call->AsCall()->gtArgs.InsertInstParam(this, wasmInstParam);
                 }
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
 
                 goto DEVIRT;
             }
@@ -1253,10 +1253,10 @@ DEVIRT:
 
 DONE:
 
-#if defined(DEBUG) || defined(TARGET_WASM)
+#if defined(DEBUG) || defined(TARGET_WASMARCH)
     // In debug we want to be able to register callsites with the EE.
     assert(call->AsCall()->callSig == nullptr);
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
     call->AsCall()->callSig = new (this, CMK_ASTNode) CORINFO_SIG_INFO;
 #else
     call->AsCall()->callSig = new (this, CMK_DebugOnly) CORINFO_SIG_INFO;
@@ -3493,7 +3493,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             assert((LAST_NI_Vector + 1) == FIRST_NI_X86Base);
 #elif defined(TARGET_ARM64)
             assert((LAST_NI_Vector + 1) == FIRST_NI_AdvSimd);
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
             assert((LAST_NI_Vector + 1) == FIRST_NI_PackedSimd);
 #else
 #error Unsupported platform
@@ -5962,7 +5962,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 
     if (mustExpand && (retNode == nullptr))
     {
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
         NYI_WASM("Unhandled must expand intrinsic");
 #else
         assert(!"Unhandled must expand intrinsic, throwing NotImplementedException");
@@ -6950,7 +6950,7 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                 break;
             }
 
-#if !defined(TARGET_64BIT) && !defined(TARGET_WASM)
+#if !defined(TARGET_64BIT) && !defined(TARGET_WASMARCH)
             if (varTypeIsLong(baseType))
             {
                 // TODO-CQ: Adding long decomposition support is more complex
@@ -6959,7 +6959,7 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
 
                 break;
             }
-#endif // !defined(TARGET_64BIT) && !defined(TARGET_WASM)
+#endif // !defined(TARGET_64BIT) && !defined(TARGET_WASMARCH)
 
 #if defined(TARGET_RISCV64)
             if (compOpportunisticallyDependsOn(InstructionSet_Zbb))
@@ -6968,7 +6968,7 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                 result = new (this, GT_INTRINSIC) GenTreeIntrinsic(retType, op1, NI_PRIMITIVE_LeadingZeroCount,
                                                                    nullptr R2RARG(CORINFO_CONST_LOOKUP{IAT_VALUE}));
             }
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
             impPopStack();
             result = new (this, GT_INTRINSIC) GenTreeIntrinsic(retType, op1, NI_PRIMITIVE_LeadingZeroCount,
                                                                nullptr R2RARG(CORINFO_CONST_LOOKUP{IAT_VALUE}));
@@ -7077,7 +7077,7 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                 break;
             }
 #endif // !TARGET_64BIT
-#if defined(FEATURE_HW_INTRINSICS) && !defined(TARGET_WASM)
+#if defined(FEATURE_HW_INTRINSICS) && !defined(TARGET_WASMARCH)
             impPopStack();
 
             GenTree* op1Dup = nullptr;
@@ -7204,7 +7204,7 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                 break;
             }
 
-#if !defined(TARGET_64BIT) && !defined(TARGET_WASM)
+#if !defined(TARGET_64BIT) && !defined(TARGET_WASMARCH)
             if (varTypeIsLong(baseType))
             {
                 // TODO-CQ: Adding long decomposition support is more complex
@@ -7222,7 +7222,7 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                 result = new (this, GT_INTRINSIC) GenTreeIntrinsic(retType, op1, NI_PRIMITIVE_PopCount,
                                                                    nullptr R2RARG(CORINFO_CONST_LOOKUP{IAT_VALUE}));
             }
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
             impPopStack();
             result = new (this, GT_INTRINSIC)
                 GenTreeIntrinsic(retType, op1, NI_PRIMITIVE_PopCount, nullptr R2RARG(CORINFO_CONST_LOOKUP{IAT_VALUE}));
@@ -7290,7 +7290,7 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                 break;
             }
 
-#if !defined(TARGET_64BIT) && !defined(TARGET_WASM)
+#if !defined(TARGET_64BIT) && !defined(TARGET_WASMARCH)
             if (varTypeIsLong(baseType))
             {
                 // TODO-CQ: Adding long decomposition support is more complex
@@ -7299,7 +7299,7 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
 
                 break;
             }
-#endif // !defined(TARGET_64BIT) && !defined(TARGET_WASM)
+#endif // !defined(TARGET_64BIT) && !defined(TARGET_WASMARCH)
 
 #if defined(TARGET_RISCV64)
             if (compOpportunisticallyDependsOn(InstructionSet_Zbb))
@@ -7308,7 +7308,7 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                 result = new (this, GT_INTRINSIC) GenTreeIntrinsic(retType, op1, NI_PRIMITIVE_TrailingZeroCount,
                                                                    nullptr R2RARG(CORINFO_CONST_LOOKUP{IAT_VALUE}));
             }
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
             impPopStack();
             result = new (this, GT_INTRINSIC) GenTreeIntrinsic(retType, op1, NI_PRIMITIVE_TrailingZeroCount,
                                                                nullptr R2RARG(CORINFO_CONST_LOOKUP{IAT_VALUE}));
@@ -9783,7 +9783,7 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
             return false;
     }
 
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
 
     // TODO-WASM-CQ: we can likely support more intrinsics here
     switch (intrinsicName)
@@ -11610,7 +11610,7 @@ NamedIntrinsic Compiler::resolveNamedIntrinsic(CORINFO_METHOD_HANDLE method, Nam
         const char* platformNamespaceName = "System.Runtime.Intrinsics.X86";
 #elif defined(TARGET_ARM64)
         const char* platformNamespaceName = "System.Runtime.Intrinsics.Arm";
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
         const char* platformNamespaceName = "System.Runtime.Intrinsics.Wasm";
 #else
 #error Unsupported platform
@@ -12535,7 +12535,7 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         platformNamespaceName = ".X86";
 #elif defined(TARGET_ARM64)
                         platformNamespaceName = ".Arm";
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
                         platformNamespaceName = ".Wasm";
 #else
 #error Unsupported platform

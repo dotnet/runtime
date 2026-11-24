@@ -1017,7 +1017,7 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { NI_Illegal, NI_Illegal },                                 //      SvePmull128_Arm64
     { NI_Illegal, NI_Illegal },                                 //      SveSha3_Arm64
     { NI_Illegal, NI_Illegal },                                 //      SveSm4_Arm64
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
     { FIRST_NI_WasmBase, LAST_NI_WasmBase },                    // WasmBase
     { FIRST_NI_PackedSimd, LAST_NI_PackedSimd },                // PackedSimd
     { FIRST_NI_Vector, LAST_NI_Vector },                        // Vector128
@@ -1044,7 +1044,7 @@ static void ValidateHWIntrinsicInfo(CORINFO_InstructionSet isa, NamedIntrinsic n
         assert((info.simdSize == 8) || (info.simdSize == 16));
 #elif defined(TARGET_XARCH)
         assert((info.simdSize == 16) || (info.simdSize == 32) || (info.simdSize == 64));
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
         assert(info.simdSize == 16);
 #else
         unreached();
@@ -1054,7 +1054,7 @@ static void ValidateHWIntrinsicInfo(CORINFO_InstructionSet isa, NamedIntrinsic n
     if (info.numArgs != -1)
     {
         // We should only have an expected number of arguments
-#if defined(TARGET_ARM64) || defined(TARGET_XARCH) || defined(TARGET_WASM)
+#if defined(TARGET_ARM64) || defined(TARGET_XARCH) || defined(TARGET_WASMARCH)
         assert((info.numArgs >= 0) && (info.numArgs <= 5));
 #else
         unreached();
@@ -1086,7 +1086,7 @@ static void ValidateHWIntrinsicIsaRange(CORINFO_InstructionSet isa, const HWIntr
     {
         isa = InstructionSet_Vector;
     }
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
     if (isa == InstructionSet_Vector128)
     {
         isa = InstructionSet_Vector;
@@ -1287,7 +1287,7 @@ NamedIntrinsic HWIntrinsicInfo::resolveId(Compiler*              comp,
         if (isIsaSupported && comp->compSupportsHWIntrinsic(isa) &&
             (vectorByteLength <= comp->getPreferredVectorByteLength()))
         {
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
             // Wasm has no runtime ISA detection, so the compile-time ISA support is exact.
             return NI_IsSupported_True;
 #else
@@ -1529,7 +1529,7 @@ bool HWIntrinsicInfo::isImmOp(NamedIntrinsic id, const GenTree* op)
     {
         return false;
     }
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
     if (!HWIntrinsicInfo::HasImmediateOperand(id))
     {
         return false;
@@ -1616,7 +1616,7 @@ GenTree* Compiler::impSimdCreate(
     {
         GenTree* op1 = impStackTop().val;
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
         if (!(op1->IsIntegralConst() || op1->IsCnsFltOrDbl()))
         {
             // Vector*.Create(T) with a non-constant operand is not yet supported on Wasm.
@@ -1737,7 +1737,7 @@ GenTree* Compiler::impSimdCreate(
 
         return vecCon;
     }
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
     else
     {
         // non const Vector128.Create not yet implemented on Wasm
@@ -2345,7 +2345,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 #elif defined(TARGET_XARCH)
         immUpperBound   = HWIntrinsicInfo::lookupImmUpperBound(intrinsic);
         hasFullRangeImm = HWIntrinsicInfo::HasFullRangeImm(intrinsic);
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
         immUpperBound = HWIntrinsicInfo::lookupImmUpperBound(intrinsic, simdSize, simdBaseType);
 #endif
 
@@ -2419,7 +2419,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             if ((simdSize != 8) && (simdSize != 16) && (simdSize != SIZE_UNKNOWN))
 #elif defined(TARGET_XARCH)
             if ((simdSize != 16) && (simdSize != 32) && (simdSize != 64))
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
             if (simdSize != 16)
 #endif // TARGET_*
             {
@@ -2669,7 +2669,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                     op2 = addRangeCheckIfNeeded(intrinsic, op2, immLowerBound, immUpperBound);
                 }
                 else
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
                 // On WASM, PackedSimd.ReplaceScalar takes the lane immediate as the middle
                 // (op2) operand: ReplaceScalar(Vector128<T> vector, byte imm, T value). Other
                 // 3-arg PackedSimd immediate intrinsics (LoadScalarAndInsert, StoreSelectedScalar)
@@ -3100,7 +3100,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
                 }
 
                 retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseType, simdSize);
-#elif defined(TARGET_XARCH) || defined(TARGET_WASM)
+#elif defined(TARGET_XARCH) || defined(TARGET_WASMARCH)
                 if (varTypeIsSmall(simdBaseType))
                 {
 #if defined(TARGET_XARCH)
@@ -3117,7 +3117,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
                         assert(simdSize == 16);
                         intrinsic = NI_X86Base_AddSaturate;
                     }
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
                     intrinsic = NI_PackedSimd_AddSaturate;
 #else
 #error Unsupported platform
@@ -3243,7 +3243,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector_AsUInt32:
         case NI_Vector_AsUInt64:
         case NI_Vector_AsVector4:
-#if defined(TARGET_ARM64) || defined(TARGET_WASM)
+#if defined(TARGET_ARM64) || defined(TARGET_WASMARCH)
         case NI_Vector_AsVector:
 #endif
         {
@@ -3632,7 +3632,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
                 assert(simdSize == 8);
                 intrinsic = NI_AdvSimd_Arm64_ConvertToDoubleScalar;
             }
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
             // WASM SIMD has no i64/u64 to f64 lane conversion, so fall back to the software path
             return nullptr;
 #else
@@ -3676,7 +3676,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
             }
 #endif
 
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
             // WASM SIMD has no f64 to i64 lane conversion, so fall back to the software path
             return nullptr;
 #endif
@@ -3698,7 +3698,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
             }
 #endif
 
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
             // WASM SIMD has no f64 to i64 lane conversion, so fall back to the software path
             return nullptr;
 #endif
@@ -3752,7 +3752,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
             }
 #elif defined(TARGET_ARM64)
             intrinsic = (simdSize == SIZE_UNKNOWN) ? NI_Sve_ConvertToSingle : NI_AdvSimd_ConvertToSingle;
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
             intrinsic = NI_PackedSimd_ConvertToSingle;
 #else
             unreached();
@@ -3809,7 +3809,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
             }
 #endif
 
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
             // WASM SIMD has no f64 to u64 lane conversion, so fall back to the software path
             return nullptr;
 #endif
@@ -3831,7 +3831,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
             }
 #endif
 
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
             // WASM SIMD has no f64 to u64 lane conversion, so fall back to the software path
             return nullptr;
 #endif
@@ -3966,7 +3966,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
 
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
             // WASM has no native horizontal reduction, so import as Sum(left * right).
             retNode = gtNewSimdBinOpNode(GT_MUL, simdType, op1, op2, simdBaseType, simdSize);
             retNode = gtNewSimdSumNode(retType, retNode, simdBaseType, simdSize);
@@ -4066,7 +4066,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
                     unreached();
                 }
             }
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
             if (simdBaseType == TYP_FLOAT)
             {
                 simdBaseType = TYP_INT;
@@ -4118,7 +4118,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
 
             impSpillSideEffect(true,
                                stackState.esStackDepth - 2 DEBUGARG("Spilling op2 side effects for FusedMultiplyAdd"));
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
             // WASM SIMD has no fused-multiply-add; emulating it as a separate multiply and add would
             // round twice and break the single-rounding guarantee, so fall back to the software path
             return nullptr;
@@ -4136,7 +4136,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
 
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
             {
                 // An out-of-range constant lane index cannot be encoded by extract_lane, so
                 // fall back to the throwing software implementation. A non-constant index is
@@ -4154,7 +4154,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
                     }
                 }
             }
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
 
             op2 = impPopStack().val;
             op1 = impSIMDPopStack();
@@ -4451,7 +4451,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 1);
 
-#if defined(TARGET_ARM64) || defined(TARGET_WASM)
+#if defined(TARGET_ARM64) || defined(TARGET_WASMARCH)
             if (opts.OptimizationDisabled())
             {
                 // ARM64/WASM doesn't have aligned loads, but aligned loads are only validated to be
@@ -4477,7 +4477,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 1);
 
-#if defined(TARGET_ARM64) || defined(TARGET_WASM)
+#if defined(TARGET_ARM64) || defined(TARGET_WASMARCH)
             if (opts.OptimizationDisabled())
             {
                 // ARM64/WASM doesn't have aligned loads, but aligned loads are only validated to be
@@ -4630,7 +4630,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
             {
                 isFmaSupported = compExactlyDependsOn(InstructionSet_AVX2, true);
             }
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
             isFmaSupported = false;
 #endif
 
@@ -4842,7 +4842,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
                 intrinsic = NI_AdvSimd_ExtractNarrowingSaturateLower;
                 retNode   = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseType, simdSize);
             }
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
 
@@ -4901,7 +4901,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
                 break;
             }
 
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
             // WASM SIMD only supports shift-by-scalar, not a per-lane variable shift, so fall back to
             // the software path
             return nullptr;
@@ -4941,7 +4941,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
                 assert(simdSize == 8);
                 intrinsic = varTypeIsLong(simdBaseType) ? NI_AdvSimd_ShiftLogicalScalar : NI_AdvSimd_ShiftLogical;
             }
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
             // Unreachable: WASM bails out to the software path above, before the operands are popped
             return nullptr;
 #else
@@ -5033,7 +5033,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
             assert(sig->numArgs == 2);
             assert(retType == TYP_VOID);
 
-#if defined(TARGET_ARM64) || defined(TARGET_WASM)
+#if defined(TARGET_ARM64) || defined(TARGET_WASMARCH)
             if (opts.OptimizationDisabled())
             {
                 // ARM64/WASM doesn't have aligned stores, but aligned stores are only validated to be
@@ -5064,7 +5064,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
             assert(sig->numArgs == 2);
             assert(retType == TYP_VOID);
 
-#if defined(TARGET_ARM64) || defined(TARGET_WASM)
+#if defined(TARGET_ARM64) || defined(TARGET_WASMARCH)
             if (opts.OptimizationDisabled())
             {
                 // ARM64/WASM doesn't have aligned stores, but aligned stores are only validated to be
@@ -5156,7 +5156,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
                 }
 
                 retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseType, simdSize);
-#elif defined(TARGET_XARCH) || defined(TARGET_WASM)
+#elif defined(TARGET_XARCH) || defined(TARGET_WASMARCH)
                 if (varTypeIsSmall(simdBaseType))
                 {
 #if defined(TARGET_XARCH)
@@ -5173,7 +5173,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
                         assert(simdSize == 16);
                         intrinsic = NI_X86Base_SubtractSaturate;
                     }
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
                     intrinsic = NI_PackedSimd_SubtractSaturate;
 #else
 #error Unsupported platform
@@ -5384,7 +5384,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
                     return nullptr;
                 }
             }
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
             {
                 // An out-of-range constant lane index cannot be encoded by replace_lane, so
                 // fall back to the throwing software implementation. A non-constant index is

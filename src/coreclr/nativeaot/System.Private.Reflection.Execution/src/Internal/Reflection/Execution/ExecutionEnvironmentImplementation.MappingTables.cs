@@ -442,7 +442,7 @@ namespace Internal.Reflection.Execution
         // ldftn reverse lookup hash. Must be cleared and reset if the module list changes. (All sets to
         // this variable must happen under a lock)
         private volatile KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>[] _ldftnReverseLookup_InvokeMap;
-#if TARGET_WASM
+#if TARGET_WASMARCH
         // Virtual IPs and callable table indices are distinct, overlapping address spaces.
         private volatile KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>[] _startAddressReverseLookup_InvokeMap;
 #endif
@@ -452,7 +452,7 @@ namespace Internal.Reflection.Execution
         /// </summary>
         private KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>[] GetReverseLookups_InvokeMap(bool isFunctionPointer)
         {
-#if TARGET_WASM
+#if TARGET_WASMARCH
             KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>[] ldFtnReverseLookup = isFunctionPointer
                 ? _ldftnReverseLookup_InvokeMap : _startAddressReverseLookup_InvokeMap;
 #else
@@ -466,7 +466,7 @@ namespace Internal.Reflection.Execution
                     ldFtnReverseLookupBuilder.Add(new KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>(module, ComputeReverseLookup_InvokeMap(module, isFunctionPointer)));
                 }
                 ldFtnReverseLookup = ldFtnReverseLookupBuilder.ToArray();
-#if TARGET_WASM
+#if TARGET_WASMARCH
                 if (!isFunctionPointer)
                     _startAddressReverseLookup_InvokeMap = ldFtnReverseLookup;
                 else
@@ -577,7 +577,7 @@ namespace Internal.Reflection.Execution
                 RuntimeTypeHandle declaringTypeHandle = externalReferences.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
 
                 IntPtr entryMethodEntrypoint = externalReferences.GetFunctionPointerFromIndex(entryParser.GetUnsigned());
-#if TARGET_WASM
+#if TARGET_WASMARCH
                 if (!isFunctionPointer)
                 {
                     if ((entryFlags & InvokeTableFlags.HasVirtualIP) != 0)

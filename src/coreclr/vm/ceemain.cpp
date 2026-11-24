@@ -181,7 +181,7 @@
 #include "stringarraylist.h"
 #include "stubhelpers.h"
 #include "pregeneratedstringthunks.h"
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
 #include "wasm/helpers.hpp"
 #endif
 
@@ -695,7 +695,7 @@ void EEStartupHelper()
 
         Thread::StaticInitialize();
 
-#if defined(FEATURE_INTERPRETER) && !defined(TARGET_WASM)
+#if defined(FEATURE_INTERPRETER) && !defined(TARGET_WASMARCH)
         InitCallStubGenerator();
 #endif // FEATURE_INTERPRETER
 
@@ -722,9 +722,9 @@ void EEStartupHelper()
         InitializePendingThunkResolutionLock();
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
         InitializeWasmThunkCaches();
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
 
 #ifdef TARGET_UNIX
         ExecutableAllocator::InitPreferredRange();
@@ -910,7 +910,7 @@ void EEStartupHelper()
         // Initialize the debugging services. This must be done before any
         // EE thread objects are created, and before any classes or
         // modules are loaded.
-#ifndef TARGET_WASM
+#ifndef TARGET_WASMARCH
         InitializeDebugger(); // throws on error
 #endif
 #endif // DEBUGGING_SUPPORTED

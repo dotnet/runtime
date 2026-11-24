@@ -8578,7 +8578,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetTargetInfo(OUT TargetInfo * pT
     pTargetInfo->arch = kArchLoongArch64;
 #elif defined(TARGET_RISCV64)
     pTargetInfo->arch = kArchRiscV64;
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
     pTargetInfo->arch = kArchWasm;
 #else
     pTargetInfo->arch = kArchUnknown;

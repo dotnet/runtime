@@ -183,7 +183,7 @@ typedef uint8_t CODE_LOCATION;
     EXTERN_C _rettype F_CALL_CONV _method##_FCall (a, c, b) \
     {
 
-#elif defined(HOST_WASM)
+#elif defined(HOST_WASMARCH)
 
 #define FCDECL_RENAME(_rettype, _method, ...) \
     EXTERN_C _rettype _method##_IMPL FCALL_METHOD_ARGS_NO_METHOD_NAME(__VA_ARGS__);
@@ -271,7 +271,7 @@ typedef uint8_t CODE_LOCATION;
 #define FCDECL2_RAW(_rettype, _method, a, b) FCDECL2(_rettype, _method, a, b)
 #endif
 
-#ifdef HOST_WASM
+#ifdef HOST_WASMARCH
 
 #define WASM_WRAPPER_FUNC_INITIAL \
 { \
@@ -336,7 +336,7 @@ typedef uint8_t CODE_LOCATION;
     EXTERN_C FCDECL2_RAW(_rettype, _method, a, b) \
     {
 
-#else // HOST_WASM
+#else // HOST_WASMARCH
 
 #define FCIMPL_(_rettype, ...) \
     FCIMPL_RENAME(_rettype, __VA_ARGS__) \
@@ -349,7 +349,7 @@ typedef uint8_t CODE_LOCATION;
 #define FCIMPL4(_rettype, _method, a, b, c, d) FCIMPL_(_rettype, _method, a, b, c, d)
 #define FCIMPL5(_rettype, _method, a, b, c, d, e) FCIMPL_(_rettype, _method, a, b, c, d, e)
 
-#endif // HOST_WASM
+#endif // HOST_WASMARCH
 
 #ifndef FCIMPL2_RAW
 #define FCIMPL2_RAW(_rettype, _method, a, b) FCIMPL2(_rettype, _method, a, b)

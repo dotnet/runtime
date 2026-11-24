@@ -13,7 +13,7 @@
         <FeaturePortableTimer>true</FeaturePortableTimer>
     </PropertyGroup>
 
-    <PropertyGroup Condition="'$(TargetsWasm)' == 'true'">
+    <PropertyGroup Condition="'$(TargetsWasmArch)' == 'true'">
         <!--  OR '$(TargetsMobile)' == 'true' OR '$(TargetsLinuxBionic)' == 'true' -->
         <FeatureCorProfiler>false</FeatureCorProfiler>
     </PropertyGroup>
@@ -22,7 +22,7 @@
         <FeatureJavaMarshal>true</FeatureJavaMarshal>
     </PropertyGroup>
 
-    <PropertyGroup Condition="'$(TargetsWasm)' == 'true'">
+    <PropertyGroup Condition="'$(TargetsWasmArch)' == 'true'">
         <FeaturePortableEntryPoints>true</FeaturePortableEntryPoints>
         <FeaturePortableHelpers>true</FeaturePortableHelpers>
         <FeatureInterpreter>true</FeatureInterpreter>

@@ -12,7 +12,7 @@
  *
  ******************************************************************************/
 
-#ifndef TARGET_WASM
+#ifndef TARGET_WASMARCH
 #error Unexpected target type
 #endif
 

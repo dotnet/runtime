@@ -19,7 +19,7 @@
 // It defines sentinel symbols that are used to get the addresses of the start and end of global data
 // at runtime. The section names are platform-specific to match platform-specific linker conventions.
 //
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
 
 // Wasm currently supports a single compilation unit.
 extern "C" void* __Module;
@@ -28,7 +28,7 @@ extern "C" char __pdata_end;
 extern "C" bool RhRegisterWasmModule(void* pFunctions, uint32_t cbFunctions,
     void** pClasslibFunctions, uint32_t nClasslibFunctions);
 
-#else // TARGET_WASM
+#else // TARGET_WASMARCH
 
 #if defined(_MSC_VER)
 
@@ -112,7 +112,7 @@ static char& __unbox_z = __stop___unbox;
 
 #endif // _MSC_VER
 
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
 
 extern "C" bool RhInitialize(bool isLibrary);
 extern "C" void RhSetRuntimeInitializationCallback(int (*fPtr)());
@@ -220,7 +220,7 @@ static int InitializeRuntime()
 
     void * osModule = PalGetModuleHandleFromPointer((void*)&NATIVEAOT_ENTRYPOINT);
 
-#ifndef TARGET_WASM
+#ifndef TARGET_WASMARCH
     // TODO: pass struct with parameters instead of the large signature of RhRegisterOSModule
     if (!RhRegisterOSModule(
         osModule,
@@ -230,16 +230,16 @@ static int InitializeRuntime()
     {
         return -1;
     }
-#else // TARGET_WASM
+#else // TARGET_WASMARCH
     if (!RhRegisterWasmModule(
         &__pdata_start, (uint32_t)(&__pdata_end - &__pdata_start),
         (void**)&c_classlibFunctions, _countof(c_classlibFunctions)))
     {
         return -1;
     }
-#endif // !TARGET_WASM
+#endif // !TARGET_WASMARCH
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
     InitializeModules(osModule, &__Module, 1, (void **)&c_classlibFunctions, _countof(c_classlibFunctions));
 #else
     InitializeModules(osModule, __modules_a, (int)((__modules_z - __modules_a)), (void **)&c_classlibFunctions, _countof(c_classlibFunctions));

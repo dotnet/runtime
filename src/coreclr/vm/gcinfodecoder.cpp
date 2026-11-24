@@ -2219,7 +2219,7 @@ template <typename GcInfoEncoding> OBJECTREF* TGcInfoDecoder<GcInfoEncoding>::Ge
         _ASSERTE( GC_FRAMEREG_REL == spBase );
         _ASSERTE( NO_STACK_BASE_REGISTER != m_StackBaseRegister );
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
         // Wasm is a bit strange and when we do SetStackBaseRegister(REG_FPBASE)
         //  what that actually does is set it to REG_NA, which currently has the value 2.
         _ASSERTE( 2 == m_StackBaseRegister );
@@ -2231,7 +2231,7 @@ template <typename GcInfoEncoding> OBJECTREF* TGcInfoDecoder<GcInfoEncoding>::Ge
 
         pObjRef = (OBJECTREF*)(pFrameReg + spOffset);
 
-#else // TARGET_WASM
+#else // TARGET_WASMARCH
 
         SIZE_T * pFrameReg = (SIZE_T*) GetRegisterSlot(m_StackBaseRegister, pRD);
 
@@ -2246,7 +2246,7 @@ template <typename GcInfoEncoding> OBJECTREF* TGcInfoDecoder<GcInfoEncoding>::Ge
 #endif // TARGET_UNIX && !FEATURE_NATIVEAOT
 
         pObjRef = (OBJECTREF*)(*pFrameReg + spOffset);
-#endif // !TARGET_WASM
+#endif // !TARGET_WASMARCH
     }
 
     return pObjRef;

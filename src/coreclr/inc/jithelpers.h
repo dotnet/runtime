@@ -413,7 +413,7 @@
 
     // WASM EventPipe CPU-sampling samplepoint. Native helper (no managed fallback), auto-wrapped in a
     // PortableEntryPoint by getHelperFtnAddr. Never emitted on other targets; NULL keeps enum/table aligned.
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
     JITHELPER(CORINFO_HELP_WASM_PROF_SAMPLEPOINT, JIT_WasmProfSamplepoint, METHOD__NIL)
 #else
     JITHELPER(CORINFO_HELP_WASM_PROF_SAMPLEPOINT, NULL,                    METHOD__NIL)
