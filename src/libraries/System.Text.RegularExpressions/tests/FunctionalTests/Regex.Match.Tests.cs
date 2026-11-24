@@ -2719,6 +2719,11 @@ namespace System.Text.RegularExpressions.Tests
             string fullpattern = string.Concat(Enumerable.Repeat(begin, pattern_repetition)) + inner + string.Concat(Enumerable.Repeat(end, pattern_repetition));
             string fullinput = string.Concat(Enumerable.Repeat(input, input_repetition));
 
+            if (RegexHelpers.IsNonBacktracking(engine) && !expectNotSupported && !PlatformDetection.IsMultithreadingSupported)
+            {
+                throw new SkipTestException("Deep nesting with NonBacktracking hits threading APIs not supported on single-threaded WASM.");
+            }
+
             if (expectNotSupported)
             {
                 // NonBacktracking rejects deeply nested unbounded capturing loops via the
