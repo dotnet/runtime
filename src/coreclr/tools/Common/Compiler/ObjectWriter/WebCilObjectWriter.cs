@@ -37,15 +37,18 @@ namespace ILCompiler.ObjectWriter
         const int NumDataSegments = 2;
 
         private readonly bool _emitNameSection;
+        private readonly bool _emitPayloadOnly;
 
         public WebCilObjectWriter(
             NodeFactory factory,
             ObjectWritingOptions options,
             OutputInfoBuilder outputInfoBuilder,
-            bool emitNameSection)
+            bool emitNameSection,
+            bool emitPayloadOnly = false)
             : base(factory, options, outputInfoBuilder)
         {
             _emitNameSection = emitNameSection;
+            _emitPayloadOnly = emitPayloadOnly;
         }
 
         private Dictionary<SortableDependencyNode.ObjectNodeOrder, Utf8String> _wellKnownSymbols = new();
@@ -496,6 +499,41 @@ namespace ILCompiler.ObjectWriter
                 webcilHeader,
                 webcilSections,
                 ImageBaseOffsetExpr);
+
+            if (_emitPayloadOnly)
+            {
+                if (MethodCount != 2 || webcilPayloadSegment.MemoryAlignment > WebcilSectionAlignment)
+                {
+                    throw new InvalidOperationException("A bundled Webcil component must not contain native code or require alignment greater than 16 bytes.");
+                }
+
+                foreach ((int sectionIndex, List<SymbolicRelocation> relocations) in _resolvableRelocations)
+                {
+                    if (_sections[sectionIndex] is not WebcilSection)
+                    {
+                        continue;
+                    }
+
+                    foreach (SymbolicRelocation relocation in relocations)
+                    {
+                        if (relocation.Type is RelocType.WASM_TABLE_INDEX_I32 or RelocType.WASM_TABLE_INDEX_I64
+                            or RelocType.WASM_TABLE_INDEX_SLEB or RelocType.WASM_TABLE_INDEX_REL_I32)
+                        {
+                            throw new InvalidOperationException("A bundled Webcil component must not reference the Wasm function table.");
+                        }
+                    }
+                }
+
+                webcilPayloadSegment.EmitPayloadToStream(outputFileStream);
+                for (int i = 0; i < _sections.Count; i++)
+                {
+                    SectionDataEmitter section = _sections[i];
+                    ulong fileOffset = section is WebcilSection webcilSection ? webcilSection.Header.PointerToRawData : 0;
+                    _outputSectionLayout.Add(new OutputSection(
+                        section.SectionName.ToString(), fileOffset, fileOffset, (ulong)section.ContentReadStream.Length));
+                }
+                return;
+            }
 
             // Writing our memory import <- size of the webcil segment (for an accurate minimum size)
             WriteMemoryImport((ulong)webcilPayloadSegment.ContentSize);

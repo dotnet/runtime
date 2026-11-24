@@ -41,6 +41,7 @@ namespace ILCompiler
         private readonly ReadyToRunCompilerContext _r2rContext;
         private readonly IEnumerable<string> _inputFiles;
         private readonly string _compositeRootPath;
+        private string _webcilComponentBundlePath;
         private bool _generateMapFile;
         private bool _generateMapCsvFile;
         private bool _generatePdbFile;
@@ -241,6 +242,12 @@ namespace ILCompiler
             return this;
         }
 
+        public ReadyToRunCodegenCompilationBuilder UseWebcilComponentBundle(string path)
+        {
+            _webcilComponentBundlePath = path;
+            return this;
+        }
+
         public ReadyToRunCodegenCompilationBuilder UseImageBase(ulong imageBase)
         {
             _imageBase = imageBase;
@@ -432,7 +439,8 @@ namespace ILCompiler
                 _verifyTypeAndFieldLayout,
                 _format,
                 _wasmDebugInfo,
-                deferredWasmCalls);
+                deferredWasmCalls,
+                _webcilComponentBundlePath);
         }
     }
 }

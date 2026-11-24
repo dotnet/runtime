@@ -38,8 +38,8 @@ public sealed partial class WebcilReader : IDisposable
         }
         if (TryReadWasmWrapper(out var webcilInWasmOffset)) {
             _webcilInWasmOffset = webcilInWasmOffset;
-            _stream.Seek(_webcilInWasmOffset, SeekOrigin.Begin);
         }
+        _stream.Seek(_webcilInWasmOffset, SeekOrigin.Begin);
         if (!ReadHeader())
         {
             throw new BadImageFormatException("Stream does not contain a valid Webcil file", nameof(stream));

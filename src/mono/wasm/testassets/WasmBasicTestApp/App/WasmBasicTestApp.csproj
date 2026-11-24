@@ -9,6 +9,10 @@
     <NoWarn>$(NoWarn);CS0169</NoWarn>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(TestNoILLazyAssembly)' == 'true'">
+    <DefineConstants>$(DefineConstants);TEST_NO_IL_LAZY_ASSEMBLY</DefineConstants>
+  </PropertyGroup>
+
   <!-- Lazy loading test various extensions -->
   <PropertyGroup>
     <LazyAssemblyExtension Condition="'$(LazyLoadingTestExtension)' == 'dll'">.dll</LazyAssemblyExtension>
@@ -24,9 +28,14 @@
     <WasmEnvironmentVariable Include="baz" Value="boo" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TestNoILLazyAssembly)' == 'true'">
+    <ProjectReference Include="..\NoILLazyLibrary\NoILLazyLibrary.csproj" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TestLazyLoading)' == 'true'">
     <BlazorWebAssemblyLazyLoad Include="Json$(WasmAssemblyExtension)" />
     <BlazorWebAssemblyLazyLoad Include="LazyLibrary$(WasmAssemblyExtension)" />
+    <BlazorWebAssemblyLazyLoad Include="NoILLazyLibrary$(WasmAssemblyExtension)" Condition="'$(TestNoILLazyAssembly)' == 'true'" />
   </ItemGroup>
 
   <ItemGroup>

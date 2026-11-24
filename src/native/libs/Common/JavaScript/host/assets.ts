@@ -8,6 +8,7 @@ import { browserVirtualAppBase, sizeOfPtr } from "../per-module";
 
 const hasInstantiateStreaming = typeof WebAssembly !== "undefined" && typeof WebAssembly.instantiateStreaming === "function";
 const loadedAssemblies: Map<string, { ptr: number, length: number }> = new Map();
+const bundledAssemblyPaths: string[] = [];
 // Self-installing wrapper version; keep in sync with WebcilConstants.WASM_WRAPPER_VERSION_SELF_INSTALLING.
 const webcilWrapperVersion = 2;
 
@@ -49,13 +50,16 @@ export function registerDllBytes(bytes: Uint8Array, virtualPath: string, shortNa
     }
 }
 
-export async function instantiateWebcilModule(webcilPromise: Promise<Response>, memory: WebAssembly.Memory, virtualPath: string, tableSize?: number, payloadSize?: number): Promise<void> {
+export async function instantiateWebcilModule(webcilPromise: Promise<Response>, memory: WebAssembly.Memory, virtualPath: string, tableSize?: number, payloadSize?: number, isBundle?: boolean): Promise<void> {
     // Boot-config sizes let us reserve the payload and table ranges before streaming instantiation.
     // Assets without a tableSize are IL-only images.
     if (typeof payloadSize !== "number" || payloadSize === 0) {
         throw new Error(`Webcil asset '${virtualPath}' is missing payloadSize in the boot config.`);
     }
     const tableEntries = typeof tableSize === "number" ? tableSize : 0;
+    if (isBundle && tableEntries !== 0) {
+        throw new Error(`Webcil bundle '${virtualPath}' cannot require a function table.`);
+    }
 
     const res = await checkWebcilResponse(webcilPromise, virtualPath);
     let payloadPtr = 0;
@@ -71,7 +75,7 @@ export async function instantiateWebcilModule(webcilPromise: Promise<Response>, 
             const data = await res.arrayBuffer();
             instance = (await WebAssembly.instantiate(data, imports)).instance;
         }
-        finishWebcilInstance(instance, payloadPtr, payloadSize, tableEntries, virtualPath);
+        finishWebcilInstance(instance, payloadPtr, payloadSize, tableEntries, virtualPath, isBundle);
     } catch (err) {
         // Instantiation failed after the payload buffer was allocated; free it to avoid leaking
         // unmanaged memory. (A grown R2R table cannot be shrunk back, but a failed R2R instantiate is fatal.)
@@ -146,7 +150,7 @@ function buildWebcilImports(memory: WebAssembly.Memory, payloadPtr: number, tabl
 // Records the table base for R2R images and registers the loaded image for
 // BrowserHost_ExternalAssemblyProbe. The engine has already installed the payload (and table slice)
 // from the module's active segments during instantiation.
-function finishWebcilInstance(instance: WebAssembly.Instance, payloadPtr: number, payloadSize: number, tableSize: number, virtualPath: string): void {
+function finishWebcilInstance(instance: WebAssembly.Instance, payloadPtr: number, payloadSize: number, tableSize: number, virtualPath: string, isBundle?: boolean): void {
     const webcilVersion = (instance.exports.webcilVersion as WebAssembly.Global).value;
     if (webcilVersion !== webcilWrapperVersion) {
         throw new Error(`Webcil asset '${virtualPath}' has unsupported Webcil wrapper version ${webcilVersion}; expected ${webcilWrapperVersion}.`);
@@ -161,6 +165,11 @@ function finishWebcilInstance(instance: WebAssembly.Instance, payloadPtr: number
         patchWebcilHeader(payloadPtr, payloadSize);
     }
 
+    if (isBundle) {
+        registerWebcilBundle(payloadPtr, payloadSize, virtualPath);
+        return;
+    }
+
     const name = virtualPath.startsWith(browserVirtualAppBase)
         ? virtualPath.substring(browserVirtualAppBase.length)
         : virtualPath.substring(virtualPath.lastIndexOf("/") + 1);
@@ -169,15 +178,79 @@ function finishWebcilInstance(instance: WebAssembly.Instance, payloadPtr: number
     loadedAssemblies.set(name, { ptr: payloadPtr, length: payloadSize });
 }
 
+export function getBundledAssemblyPaths(): readonly string[] {
+    return bundledAssemblyPaths;
+}
+
+function findLoadedAssembly(path: string): { ptr: number, length: number } | undefined {
+    const lastSlash = path.lastIndexOf("/");
+    return loadedAssemblies.get(path) ?? (lastSlash >= 0 ? loadedAssemblies.get(path.substring(lastSlash + 1)) : undefined);
+}
+
+export function getLoadedAssemblyBytes(path: string): Uint8Array | undefined {
+    const assembly = findLoadedAssembly(path);
+    return assembly === undefined ? undefined : _ems_.HEAPU8.slice(assembly.ptr, assembly.ptr + assembly.length);
+}
+
+function registerWebcilBundle(payloadPtr: number, payloadSize: number, virtualPath: string): void {
+    const invalid = () => new Error(`Invalid Webcil bundle '${virtualPath}'.`);
+    if (payloadSize < 20) throw invalid();
+
+    const view = new DataView(_ems_.HEAPU8.buffer, payloadPtr, payloadSize);
+    if (view.getUint32(0, true) !== 0x42496257 || view.getUint16(4, true) !== 1 || view.getUint16(6, true) !== 0) throw invalid();
+
+    const count = view.getUint32(8, true);
+    const stringTableOffset = view.getUint32(12, true);
+    const stringTableSize = view.getUint32(16, true);
+    if (count > Math.floor((payloadSize - 20) / 16) ||
+        stringTableOffset < 20 + count * 16 ||
+        stringTableOffset > payloadSize ||
+        stringTableSize > payloadSize - stringTableOffset) throw invalid();
+
+    const stringsEnd = stringTableOffset + stringTableSize;
+    const decoder = new TextDecoder("utf-8", { fatal: true });
+    const names = new Set<string>();
+    const entries: { name: string, path: string, offset: number, size: number }[] = [];
+    for (let i = 0; i < count; i++) {
+        const entryOffset = 20 + i * 16;
+        const nameOffset = view.getUint32(entryOffset, true);
+        const nameLength = view.getUint32(entryOffset + 4, true);
+        const imageOffset = view.getUint32(entryOffset + 8, true);
+        const imageSize = view.getUint32(entryOffset + 12, true);
+        if (nameLength === 0 || nameOffset > stringTableSize || nameLength > stringTableSize - nameOffset ||
+            imageOffset % 16 !== 0 || imageOffset < stringsEnd || imageOffset > payloadSize ||
+            imageSize < 32 || imageSize > payloadSize - imageOffset ||
+            view.getUint32(imageOffset, true) !== 0x4c496257 ||
+            view.getUint16(imageOffset + 4, true) !== 1 || view.getUint16(imageOffset + 6, true) !== 0 ||
+            view.getUint32(imageOffset + 28, true) !== 0) throw invalid();
+
+        const name = decoder.decode(new Uint8Array(_ems_.HEAPU8.buffer, payloadPtr + stringTableOffset + nameOffset, nameLength));
+        if (!name.endsWith(".dll") || name.includes("\\") || name.split("").some(character => character.charCodeAt(0) < 0x20) ||
+            name.split("/").some(part => part === "" || part === "." || part === "..")) throw invalid();
+        const shortName = name.substring(name.lastIndexOf("/") + 1);
+        if (names.has(shortName.toLowerCase())) throw invalid();
+        names.add(shortName.toLowerCase());
+        entries.push({ name, path: browserVirtualAppBase + name, offset: imageOffset, size: imageSize });
+    }
+
+    const byOffset = [...entries].sort((a, b) => a.offset - b.offset);
+    for (let i = 1; i < byOffset.length; i++) {
+        if (byOffset[i - 1].size > byOffset[i].offset - byOffset[i - 1].offset) throw invalid();
+    }
+
+    for (const entry of entries) {
+        const assembly = { ptr: payloadPtr + entry.offset, length: entry.size };
+        const shortName = entry.name.substring(entry.name.lastIndexOf("/") + 1);
+        loadedAssemblies.set(entry.path, assembly);
+        loadedAssemblies.set(entry.name, assembly);
+        loadedAssemblies.set(shortName, assembly);
+        bundledAssemblyPaths.push(entry.path);
+    }
+}
+
 export function BrowserHost_ExternalAssemblyProbe(pathPtr: CharPtr, outDataStartPtr: VoidPtrPtr, outSize: VoidPtr): boolean {
     const path = _ems_.UTF8ArrayToString(_ems_.dotnetApi.localHeapViewU8(), pathPtr as any);
-    let assembly = loadedAssemblies.get(path);
-    if (!assembly) {
-        const lastSlash = path.lastIndexOf("/");
-        if (lastSlash >= 0) {
-            assembly = loadedAssemblies.get(path.substring(lastSlash + 1));
-        }
-    }
+    const assembly = findLoadedAssembly(path);
     if (assembly) {
         _ems_.HEAPU32[outDataStartPtr as any >>> 2] = assembly.ptr;
         // int64_t target

@@ -9,7 +9,7 @@ import { ENVIRONMENT_IS_NODE } from "../per-module";
 import GitHash from "consts:gitHash";
 
 import { runMain, runMainAndExit, initializeCoreCLR } from "./host";
-import { registerPdbBytes, instantiateWebcilModule, registerDllBytes, installVfsFile, loadIcuData, instantiateWasm, } from "./assets";
+import { getLoadedAssemblyBytes, registerPdbBytes, instantiateWebcilModule, registerDllBytes, installVfsFile, loadIcuData, instantiateWasm, } from "./assets";
 
 export function dotnetInitializeModule(internals: InternalExchange): void {
     if (!Array.isArray(internals)) throw new Error("Expected internals to be an array");
@@ -23,6 +23,7 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
         throw new Error(`Mismatched git hashes between loader and runtime. Loader: ${runtimeApi.runtimeBuildInfo.gitHash}, BrowserHost: ${GitHash}`);
     }
     Object.assign(runtimeApi, runtimeApiLocal);
+    runtimeApi.INTERNAL.getLoadedAssemblyBytes = getLoadedAssemblyBytes;
 
     internals[InternalExchangeIndex.BrowserHostExportsTable] = browserHostExportsToTable({
         registerDllBytes,

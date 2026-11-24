@@ -295,21 +295,15 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
             string file = fileInfo.Value.fullPath;
             string nameNoFingerprinting = fileInfo.Key;
             string[] filesMatchingName = GetFilesMatchingNameConsideringFingerprinting(file, nameNoFingerprinting);
-            if (filesMatchingName.Length > 1)
-            {
-                string? fileMatch = filesMatchingName.FirstOrDefault(f => f != file);
-                if (fileMatch != null)
-                {
-                    table.Add(nameNoFingerprinting, new FileStat(FullPath: fileMatch, Exists: true, LastWriteTimeUtc: File.GetLastWriteTimeUtc(fileMatch), Length: new FileInfo(fileMatch).Length));
-                }
-            }
-            if (filesMatchingName.Length == 0 || (filesMatchingName.Length == 1 && !File.Exists(file)))
+            // Prefer a newly fingerprinted file; publish may already have removed the superseded one.
+            string? fileMatch = filesMatchingName.FirstOrDefault(f => f != file) ?? filesMatchingName.FirstOrDefault();
+            if (fileMatch is null)
             {
                 table.Add(nameNoFingerprinting, new FileStat(FullPath: file, Exists: false, LastWriteTimeUtc: DateTime.MinValue, Length: 0));
             }
-            if (filesMatchingName.Length == 1 && File.Exists(file))
+            else
             {
-                table.Add(nameNoFingerprinting, new FileStat(FullPath: file, Exists: true, LastWriteTimeUtc: File.GetLastWriteTimeUtc(file), Length: new FileInfo(file).Length));
+                table.Add(nameNoFingerprinting, new FileStat(FullPath: fileMatch, Exists: true, LastWriteTimeUtc: File.GetLastWriteTimeUtc(fileMatch), Length: new FileInfo(fileMatch).Length));
             }
         }
         return table;
@@ -669,8 +663,11 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         string spcExpectedFilename = $"System.Private.CoreLib{WasmAssemblyExtension}";
 
         string? spcActualFilename = assets.coreAssembly.SingleOrDefault(a => a.virtualPath == spcExpectedFilename)?.name;
-        if (spcActualFilename is null)
+        WebcilAsset? bundle = assets.coreAssembly.SingleOrDefault(a => a.isBundle == true);
+        if (spcActualFilename is null && bundle is null)
             throw new XunitException($"Could not find an assembly named System.Private.CoreLib.* in {bootJsonPath}");
+        if (bundle is not null)
+            Assert.True(File.Exists(Path.Combine(options.BinFrameworkDir, bundle.name)), $"Could not find the Webcil component bundle '{bundle.name}'.");
 
         var bootJsonEntries = assets.jsModuleNative.Select(a => a.name)
             .Union(assets.wasmNative.Select(a => a.name))

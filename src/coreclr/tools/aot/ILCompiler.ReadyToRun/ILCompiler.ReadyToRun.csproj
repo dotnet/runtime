@@ -212,6 +212,7 @@
     <Compile Include="..\..\Common\Compiler\ObjectWriter\WasmFunctionBodyDeduplicator.cs" Link="Compiler\ObjectWriter\WasmFunctionBodyDeduplicator.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\WasmObjectWriter.cs" Link="Compiler\ObjectWriter\WasmObjectWriter.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\WebCilObjectWriter.cs" Link="Compiler\ObjectWriter\WebCilObjectWriter.cs" />
+    <Compile Include="..\..\Common\Compiler\ObjectWriter\WebcilBundleWriter.cs" Link="Compiler\ObjectWriter\WebcilBundleWriter.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\WasmSymbolManager.cs" Link="Compiler\ObjectWriter\WasmSymbolManager.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\WasmGlobalImports.cs" Link="Compiler\ObjectWriter\WasmGlobalImports.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\WasmNative.cs" Link="Compiler\ObjectWriter\WasmNative.cs" />
@@ -219,6 +220,7 @@
     <Compile Include="..\..\Common\Compiler\ObjectWriter\CodeDataLayoutMode.cs" Link="Compiler\ObjectWriter\CodeDataLayoutMode.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\WebcilEncoder.cs" Link="Compiler\ObjectWriter\WebcilEncoder.cs" />
     <Compile Include="..\..\Common\Wasm\Webcil.cs" Link="Internal\Webcil\Webcil.cs" />
+    <Compile Include="$(RepoRoot)src\tasks\Microsoft.NET.WebAssembly.Webcil\WebcilWasmWrapper.cs" Link="Internal\Webcil\WebcilWasmWrapper.cs" />
     <Compile Include="..\ILCompiler.Reflection.ReadyToRun\PEReaderExtensions.cs" Link="Reflection\PEReaderExtensions.cs" />
     <Compile Include="$(ToolsProjectRoot)illink\src\ILLink.Shared\ClosedAttribute.cs" Link="ILLink.Shared\ClosedAttribute.cs" />
     <Compile Include="$(ToolsProjectRoot)illink\src\ILLink.Shared\DynamicallyAccessedMemberTypesEx.cs" Link="ILLink.Shared\DynamicallyAccessedMemberTypesEx.cs" />

@@ -24,6 +24,7 @@ WARNING:   When setting properties based on their current state (for example:
 
     <!-- Crossgen2 testing is incompatible with the ilasm/ildasm round trip testing. -->
     <IlasmRoundTripIncompatible Condition="'$(AlwaysUseCrossGen2)' == 'true'">true</IlasmRoundTripIncompatible>
+    <_CLRTestWebcilBundleEnabled Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'coreclr' and '$(WasmBundleCompositeComponents)' != 'false'">true</_CLRTestWebcilBundleEnabled>
   </PropertyGroup>
 
   <!--
@@ -110,6 +111,13 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
       cp ./*.dll "$crossgen2InputDirectory/"
       rm "$crossgen2OutputDirectory"/composite-r2r.* 2>/dev/null
 
+      if [ "$(TargetOS)" == "browser" ] && ! rm -f "$PWD/composite-r2r.components.wasm"; then
+        echo "Failed to remove the previous Webcil component bundle" > "$compilationDoneFlagFile"
+        ReleaseLock
+        exit 1
+      fi
+
+      __WebcilComponentBundle=
       if [ ! -z ${CompositeBuildMode+x} ]%3B then
         if [ "$(CrossGen2OutputFormat)" != "wasm" ]; then
           # HACK: copy native shared shim libraries. Not needed on Windows.
@@ -118,6 +126,9 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
 
         ExtraCrossGen2Args+=" --composite"
         ExtraCrossGen2Args+=" $(CompositeCrossGen2TestExtraArguments)"
+        if [ "$(_CLRTestWebcilBundleEnabled)" == "true" ]; then
+          __WebcilComponentBundle="$PWD/composite-r2r.components.wasm"
+        fi
       fi
 
       ExtraCrossGen2Args+=" $(CrossGen2TestExtraArguments)"
@@ -165,6 +176,9 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
         echo -O >> "$__ResponseFile"
         echo --targetarch:$(TargetArchitecture) >> "$__ResponseFile"
         echo --targetos:$(TargetOS) >> "$__ResponseFile"
+        if [ -n "$__WebcilComponentBundle" ]; then
+            echo --webcil-component-bundle:"$__WebcilComponentBundle" >> "$__ResponseFile"
+        fi
         # Layout verification loads types early, which hides missing signature preparation under GC stress.
         if [ -z "$DOTNET_GCStress" ] || [ "$DOTNET_GCStress" == "0" ]; then
             echo --verify-type-and-field-layout >> "$__ResponseFile"
@@ -217,7 +231,11 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
         fi
 
         if [ $__cg2ExitCode -eq 0 ] && [ "$(CrossGenTestSkipR2RDump)" != "true" ]; then
-          if [ "$(CrossGen2OutputFormat)" == "wasm" ] && [ ! -z ${CompositeBuildMode+x} ]; then
+          if [ -n "$__WebcilComponentBundle" ]; then
+            echo "Running R2RDump: $__R2RDumpCommand --header --sc --in $__OutputFileFinal --out $__OutputFileFinal.r2rdump --val --rp $CORE_ROOT"
+            $__R2RDumpCommand --header --sc --in "$__OutputFileFinal" --out "$__OutputFileFinal.r2rdump" --val --rp "$CORE_ROOT"
+            __r2rDumpExitCode=$?
+          elif [ "$(CrossGen2OutputFormat)" == "wasm" ] && [ ! -z ${CompositeBuildMode+x} ]; then
             # The composite WASM output is a manifest, so validate each emitted R2R component.
             for dllFile in "${__InputFiles[@]}"; do
               __R2RDumpInput="$PWD/${dllFile##*/}"
@@ -272,7 +290,9 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
 
       if [ ! -z ${WholeProgramCompositeBuildMode+x} ] && [ $__cg2ExitCode -eq 0 ]; then
         cp "$__OutputFileFinal" "$R2RTestCoreRoot/"
-        if [ "$(CrossGen2OutputFormat)" == "wasm" ]%3B then
+        if [ -n "$__WebcilComponentBundle" ]; then
+          mv "$__WebcilComponentBundle" "$R2RTestCoreRoot/" || __cg2ExitCode=$?
+        elif [ "$(CrossGen2OutputFormat)" == "wasm" ]%3B then
           cp "$PWD/System.Private.CoreLib.wasm" "$R2RTestCoreRoot/"
         fi
       fi
@@ -390,9 +410,20 @@ if defined RunCrossGen2 (
     copy /y *.dll !crossgen2InputDirectory!\
     del !crossgen2OutputDirectory!\composite-r2r.* 2>nul
 
+    if "$(TargetOS)"=="browser" if exist "!scriptPath!composite-r2r.components.wasm" (
+        del /q "!scriptPath!composite-r2r.components.wasm"
+        if exist "!scriptPath!composite-r2r.components.wasm" (
+            echo Failed to remove the previous Webcil component bundle
+            set CrossGen2Status=1
+            goto :DoneCrossgen2Operations
+        )
+    )
+
+    set "__WebcilComponentBundle="
     if defined CompositeBuildMode (
         set ExtraCrossGen2Args=!ExtraCrossGen2Args! --composite
         set ExtraCrossGen2Args=!ExtraCrossGen2Args! $(CompositeCrossGen2TestExtraArguments)
+        if "$(_CLRTestWebcilBundleEnabled)"=="true" set "__WebcilComponentBundle=!scriptPath!\composite-r2r.components.wasm"
         if "$(CrossGen2OutputFormat)"=="wasm" (
             set __OutputFile=!scriptPath!\composite-r2r.wasm
         ) else (
@@ -445,6 +476,7 @@ if defined RunCrossGen2 (
     echo -o:!__OutputFile!>>!__ResponseFile!
     echo --targetarch:$(TargetArchitecture)>>!__ResponseFile!
     echo --targetos:$(TargetOS)>>!__ResponseFile!
+    if defined __WebcilComponentBundle echo --webcil-component-bundle:"!__WebcilComponentBundle!">>"!__ResponseFile!"
     rem Layout verification loads types early, which hides missing signature preparation under GC stress.
     set __VerifyLayout=1
     if defined DOTNET_GCStress if not "!DOTNET_GCStress!"=="0" set __VerifyLayout=
@@ -501,7 +533,7 @@ if defined RunCrossGen2 (
     if /i "$(CrossGenTestSkipR2RDump)"=="true" goto :DoneR2RDumpOperations
 
     set __R2RDumpInput=!__OutputFile!
-    if "$(CrossGen2OutputFormat)"=="wasm" (
+    if "$(CrossGen2OutputFormat)"=="wasm" if not defined __WebcilComponentBundle (
         REM The composite WASM output is a manifest, so validate each emitted R2R component.
         if defined CompositeBuildMode set __R2RDumpInput=
     )
@@ -530,7 +562,10 @@ if defined RunCrossGen2 (
     if !CrossGen2Status!==0 (
         if defined WholeProgramCompositeBuildMode (
             copy /y "!__OutputFile!" "!R2RTestCoreRoot!\"
-            if "$(CrossGen2OutputFormat)"=="wasm" (
+            if defined __WebcilComponentBundle (
+                move /y "!__WebcilComponentBundle!" "!R2RTestCoreRoot!\"
+                if errorlevel 1 set CrossGen2Status=!ERRORLEVEL!
+            ) else if "$(CrossGen2OutputFormat)"=="wasm" (
                 copy /y "!scriptPath!System.Private.CoreLib.wasm" "!R2RTestCoreRoot!\"
             )
         )

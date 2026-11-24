@@ -63,6 +63,9 @@ Copyright (c) .NET Foundation. All rights reserved.
   <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.ComputeWasmPublishAssets" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" TaskFactory="TaskHostFactory" />
   <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.ConvertDllsToWebcil" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" TaskFactory="TaskHostFactory" />
   <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.AttachWebcilSizes" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" TaskFactory="TaskHostFactory" />
+  <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.GetCompositeLazyExclusions" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" TaskFactory="TaskHostFactory" />
+  <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.ValidateCompositeLazyReferences" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" TaskFactory="TaskHostFactory" />
+  <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.FilterWebcilBundleComponents" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" TaskFactory="TaskHostFactory" />
 
   <PropertyGroup>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
@@ -406,6 +409,15 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmDllBuildCandidatesCulture Include="@(_WasmDllBuildCandidates)" Condition="'%(AssetTraitName)' == 'Culture'">
         <WebcilOutputPath>$(_WasmBuildWebcilPath)%(AssetTraitValue)/%(FileName).wasm</WebcilOutputPath>
       </_WasmDllBuildCandidatesCulture>
+    </ItemGroup>
+    <FilterWebcilBundleComponents Condition="'@(_WasmNestedPublishCompositeBundle)' != ''"
+                                  BundlePath="@(_WasmNestedPublishCompositeBundle)"
+                                  Candidates="@(_WasmDllBuildCandidatesNonCulture)">
+      <Output TaskParameter="UnbundledCandidates" ItemName="_WasmUnbundledDllBuildCandidatesNonCulture" />
+    </FilterWebcilBundleComponents>
+    <ItemGroup>
+      <_WasmDllBuildCandidatesNonCulture Remove="@(_WasmDllBuildCandidatesNonCulture)" Condition="'@(_WasmNestedPublishCompositeBundle)' != ''" />
+      <_WasmDllBuildCandidatesNonCulture Include="@(_WasmUnbundledDllBuildCandidatesNonCulture)" Condition="'@(_WasmNestedPublishCompositeBundle)' != ''" />
       <!-- Rebuild _WasmDllBuildCandidates with WebcilOutputPath metadata from both groups -->
       <_WasmDllBuildCandidates Remove="@(_WasmDllBuildCandidates)" />
       <_WasmDllBuildCandidates Include="@(_WasmDllBuildCandidatesNonCulture);@(_WasmDllBuildCandidatesCulture)" />
@@ -625,6 +637,30 @@ Copyright (c) .NET Foundation. All rights reserved.
       FingerprintPatterns="@(FingerprintPatterns);@(_WasmFingerprintPatterns)"
       BasePath="$(StaticWebAssetBasePath)"
     >
+      <Output TaskParameter="Assets" ItemName="WasmStaticWebAsset" />
+    </DefineStaticWebAssets>
+
+    <ItemGroup Condition="'@(_WasmNestedPublishCompositeBundle)' != ''">
+      <!-- Drop the MSBuild task output metadata; its OriginalItemSpec names the project file. -->
+      <_WasmCompositeBundleBuildCandidate Include="@(_WasmNestedPublishCompositeBundle->'%(FullPath)')" KeepMetadata="__none" />
+      <_WasmCompositeBundleBuildCandidate Update="@(_WasmCompositeBundleBuildCandidate)"
+                                          ContentRoot="%(RootDir)%(Directory)"
+                                          RelativePath="_framework/%(FileName)%(Extension)" />
+    </ItemGroup>
+    <DefineStaticWebAssets Condition="'@(_WasmCompositeBundleBuildCandidate)' != ''"
+      CandidateAssets="@(_WasmCompositeBundleBuildCandidate)"
+      SourceId="$(PackageId)"
+      SourceType="Computed"
+      AssetKind="Build"
+      AssetMode="All"
+      AssetRole="Primary"
+      AssetTraitName="WasmResource"
+      AssetTraitValue="webcilBundle"
+      CopyToOutputDirectory="$(_WasmFrameworkCopyToOutputDirectory)"
+      CopyToPublishDirectory="Never"
+      FingerprintCandidates="$(_WasmFingerprintAssets)"
+      FingerprintPatterns="@(FingerprintPatterns);@(_WasmFingerprintPatterns)"
+      BasePath="$(StaticWebAssetBasePath)">
       <Output TaskParameter="Assets" ItemName="WasmStaticWebAsset" />
     </DefineStaticWebAssets>
 
@@ -974,7 +1010,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       <StaticWebAssetEndpoint Include="@(_UpdatedWasmPreloadBuildAssetEndpoint)" />
     </ItemGroup>
   </Target>
-  <Target Name="_AddWasmPreloadPublishProperties" DependsOnTargets="_WasmConfigurePreload;_AddPublishWasmBootJsonToStaticWebAssets" BeforeTargets="GenerateStaticWebAssetsPublishManifest" Condition="'$(_WasmPreloadAssets)' == 'true'">
+  <Target Name="_AddWasmPreloadPublishProperties" DependsOnTargets="_WasmConfigurePreload;_AddPublishWasmBootJsonToStaticWebAssets" BeforeTargets="GenerateStaticWebAssetsPublishManifest" Condition="'$(_WasmPreloadAssets)' == 'true' and '$(WasmBuildingForNestedPublish)' != 'true'">
 
     <FilterStaticWebAssetEndpoints
       Endpoints="@(StaticWebAssetEndpoint)"
@@ -1001,6 +1037,18 @@ Copyright (c) .NET Foundation. All rights reserved.
     <PropertyGroup Condition="!Exists('$(UserRuntimeConfig)')">
       <UserRuntimeConfig>$(MSBuildThisFileDirectory)browser.runtimeconfig.template.json</UserRuntimeConfig>
     </PropertyGroup>
+  </Target>
+
+  <!-- Static web assets are copied outside ResolvedFileToPublish. Include framework outputs in publish
+       cleanup so a later publish removes stale fingerprinted assets and their compressed variants. -->
+  <Target Name="_TrackWasmFrameworkPublishOutputs"
+          BeforeTargets="_GetCurrentAndPriorPublishFileWrites"
+          DependsOnTargets="CopyStaticWebAssetsToPublishDirectory;_SplitPublishStaticWebAssetsByCopyOptions">
+    <ItemGroup>
+      <_WasmFrameworkPublishAsset Include="@(_PublishStaticWebAssetsTargetPath)"
+        Condition="('%(CopyToPublishDirectory)' == 'Always' or '%(CopyToPublishDirectory)' == 'PreserveNewest' or '%(CopyToPublishDirectory)' == 'IfDifferent') and $([System.String]::Copy('%(RelativePath)').StartsWith('_framework/'))" />
+      <_CurrentPublishFileWritesUnfiltered Include="@(_WasmFrameworkPublishAsset->'$(PublishDir)%(TargetPath)')" />
+    </ItemGroup>
   </Target>
 
   <!-- Publish targets and output directory messages start here -->
@@ -1111,13 +1159,11 @@ Copyright (c) .NET Foundation. All rights reserved.
     </ComputeWasmPublishAssets>
 
     <ItemGroup Condition="'$(UseMonoRuntime)' == 'false' and '$(PublishReadyToRun)' == 'true' and '$(PublishReadyToRunComposite)' == 'true'">
-      <_WasmCompositeCompilation Include="@(_ReadyToRunCompileList)"
-                                 Condition="'%(CreateCompositeImage)' == 'true'" />
+      <_WasmCompositeCompilation Include="@(_ReadyToRunCompileList->WithMetadataValue('CreateCompositeImage', 'true'))" />
       <_WasmCompositePublishCandidate Include="@(_WasmCompositeCompilation->'%(OutputR2RImage)')" KeepMetadata="OutputR2RImage" />
       <_WasmCompositePublishCandidate Update="@(_WasmCompositePublishCandidate)"
                                       ContentRoot="%(RootDir)%(Directory)"
                                       RelativePath="_framework/%(FileName)%(Extension)" />
-      <_WasmCompositeFingerprintPattern Include="WasmFiles" Pattern="*.wasm" Expression="#[.{fingerprint}]!" />
     </ItemGroup>
     <Error Condition="'$(UseMonoRuntime)' == 'false' and '$(PublishReadyToRun)' == 'true' and '$(PublishReadyToRunComposite)' == 'true' and '@(_WasmCompositePublishCandidate)' == ''"
            Text="Composite ReadyToRun compilation did not produce a composite WebAssembly image." />
@@ -1136,7 +1182,32 @@ Copyright (c) .NET Foundation. All rights reserved.
       CopyToOutputDirectory="Never"
       CopyToPublishDirectory="PreserveNewest"
       FingerprintCandidates="$(_WasmFingerprintAssets)"
-      FingerprintPatterns="@(_WasmCompositeFingerprintPattern)">
+      FingerprintPatterns="@(FingerprintPatterns);@(_WasmFingerprintPatterns)">
+      <Output TaskParameter="Assets" ItemName="_WasmCompositePublishStaticWebAsset" />
+    </DefineStaticWebAssets>
+
+    <ItemGroup Condition="'$(_WasmCompositeBundlePath)' != ''">
+      <_WasmCompositeBundlePublishCandidate Include="$(_WasmCompositeBundlePath)" />
+      <_WasmCompositeBundlePublishCandidate Update="@(_WasmCompositeBundlePublishCandidate)"
+                                            ContentRoot="%(RootDir)%(Directory)"
+                                            RelativePath="_framework/%(FileName)%(Extension)" />
+    </ItemGroup>
+    <Error Condition="'$(_WasmCompositeBundlePath)' != '' and !Exists('$(_WasmCompositeBundlePath)')"
+           Text="Composite ReadyToRun compilation did not produce the Webcil component bundle '$(_WasmCompositeBundlePath)'." />
+    <DefineStaticWebAssets Condition="'@(_WasmCompositeBundlePublishCandidate)' != ''"
+      CandidateAssets="@(_WasmCompositeBundlePublishCandidate)"
+      SourceId="$(PackageId)"
+      SourceType="Computed"
+      BasePath="$(StaticWebAssetBasePath)"
+      AssetKind="Publish"
+      AssetMode="All"
+      AssetRole="Primary"
+      AssetTraitName="WasmResource"
+      AssetTraitValue="webcilBundle"
+      CopyToOutputDirectory="Never"
+      CopyToPublishDirectory="PreserveNewest"
+      FingerprintCandidates="$(_WasmFingerprintAssets)"
+      FingerprintPatterns="@(FingerprintPatterns);@(_WasmFingerprintPatterns)">
       <Output TaskParameter="Assets" ItemName="_WasmCompositePublishStaticWebAsset" />
     </DefineStaticWebAssets>
 
@@ -1159,6 +1230,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmPublishWebcilStampLine Include="_WasmWebcilVersion=$(_WasmWebcilVersion)" />
       <_WasmPublishWebcilStampLine Include="PublishReadyToRun=$(PublishReadyToRun)" />
       <_WasmPublishWebcilStampLine Include="PublishReadyToRunComposite=$(PublishReadyToRunComposite)" />
+      <_WasmPublishWebcilStampLine Include="WasmBundleCompositeComponents=$(WasmBundleCompositeComponents)" />
       <_WasmPublishWebcilStampLine Include="PublishTrimmed=$(PublishTrimmed)" />
       <_WasmPublishWebcilStampLine Include="_WasmPublishPrebuiltR2RDirectory=$(_WasmPublishPrebuiltR2RDirectory)" />
       <_WasmPublishWebcilStampLine Include="PrebuiltR2R=%(_WasmPublishPrebuiltR2RInput.Identity)|%(_WasmPublishPrebuiltR2RInput.ModifiedTime)" />
@@ -1172,7 +1244,10 @@ Copyright (c) .NET Foundation. All rights reserved.
       <FileWrites Include="$(IntermediateOutputPath)wasm-webcil-publish.stamp" />
     </ItemGroup>
 
-    <ConvertDllsToWebcil Candidates="@(_NewWasmPublishStaticWebAssets)" IntermediateOutputPath="$(_WasmPublishTmpWebcilPath)" OutputPath="$(_WasmPublishWebcilPath)" IsEnabled="$(_WasmEnableWebcil)" WebcilVersion="$(_WasmWebcilVersion)" PrebuiltR2RDirectory="$(_WasmPublishPrebuiltR2RDirectory)" ConversionStamp="$(IntermediateOutputPath)wasm-webcil-publish.stamp">
+    <ItemGroup Condition="'$(UseMonoRuntime)' == 'false' and '$(PublishReadyToRun)' == 'true' and '$(PublishReadyToRunComposite)' == 'true'">
+      <_WasmCompositeLazyAssemblies Include="@(BlazorWebAssemblyLazyLoad)" />
+    </ItemGroup>
+    <ConvertDllsToWebcil Candidates="@(_NewWasmPublishStaticWebAssets)" IntermediateOutputPath="$(_WasmPublishTmpWebcilPath)" OutputPath="$(_WasmPublishWebcilPath)" IsEnabled="$(_WasmEnableWebcil)" WebcilVersion="$(_WasmWebcilVersion)" PrebuiltR2RDirectory="$(_WasmPublishPrebuiltR2RDirectory)" CompositeBundlePath="$(_WasmCompositeBundlePath)" CompositeLazyAssemblies="@(_WasmCompositeLazyAssemblies)" ConversionStamp="$(IntermediateOutputPath)wasm-webcil-publish.stamp">
       <Output TaskParameter="WebcilCandidates" ItemName="_NewWebcilPublishStaticWebAssetsCandidates" />
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
       <Output TaskParameter="FilesToTouch" ItemName="_WasmConvertedPublishWebcilOutputs" />

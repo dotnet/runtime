@@ -431,6 +431,9 @@ public class WebcilAsset : GeneralAsset
     /// </summary>
     [DataMember(EmitDefaultValue = false)]
     public bool? isCompositeImage { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
+    public bool? isBundle { get; set; }
 }
 
 [DataContract]

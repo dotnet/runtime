@@ -34,6 +34,8 @@ namespace ILCompiler
             new("--obj-format", "-f") { CustomParser = MakeOutputFormat, DefaultValueFactory = MakeOutputFormat, Description = SR.OutputFormat, HelpName = "arg" };
         public Option<string> CompositeRootPath { get; } =
             new("--compositerootpath", "--crp") { Description = SR.CompositeRootPath };
+        public Option<string> WebcilComponentBundle { get; } =
+            new("--webcil-component-bundle") { Description = SR.WebcilComponentBundle };
         public Option<bool> Optimize { get; } =
             new("--optimize", "-O") { Description = SR.EnableOptimizationsOption };
         public Option<bool> OptimizeDisabled { get; } =
@@ -187,6 +189,7 @@ namespace ILCompiler
             Options.Add(OutputFilePath);
             Options.Add(OutputFormat);
             Options.Add(CompositeRootPath);
+            Options.Add(WebcilComponentBundle);
             Options.Add(Optimize);
             Options.Add(OptimizeDisabled);
             Options.Add(OptimizeSpace);

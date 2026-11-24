@@ -162,6 +162,18 @@
   <data name="CompositeBuildMode" xml:space="preserve">
     <value>Emit a composite R2R image comprising a number of input assemblies</value>
   </data>
+  <data name="WebcilComponentBundle" xml:space="preserve">
+    <value>Emit composite Webcil component payloads in one self-installing Wasm bundle at the specified path.</value>
+  </data>
+  <data name="ErrorWebcilComponentBundleRequiresWasmComposite" xml:space="preserve">
+    <value>Error: --webcil-component-bundle requires a Wasm composite compilation.</value>
+  </data>
+  <data name="ErrorWebcilComponentBundlePathEmpty" xml:space="preserve">
+    <value>Error: --webcil-component-bundle requires a non-empty output path.</value>
+  </data>
+  <data name="ErrorWebcilComponentBundlePathCollision" xml:space="preserve">
+    <value>Error: the Webcil component bundle path must differ from every input and component or composite output path.</value>
+  </data>
   <data name="CompositeKeyFile" xml:space="preserve">
     <value>KeyFile(.snk) for specifying a Public Key for the composite image created</value>
   </data>

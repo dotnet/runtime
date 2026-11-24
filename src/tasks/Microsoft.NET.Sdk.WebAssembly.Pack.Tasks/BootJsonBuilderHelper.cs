@@ -213,7 +213,7 @@ namespace Microsoft.NET.Sdk.WebAssembly
             return intValue;
         }
 
-        public string TransformResourcesToAssets(BootJsonData config, bool bundlerFriendly = false, Dictionary<string, (int tableSize, int payloadSize)>? webcilSizes = null, HashSet<string>? compositeImages = null, bool useAppSettingsAssets = false, bool filesystemUsageDetected = false)
+        public string TransformResourcesToAssets(BootJsonData config, bool bundlerFriendly = false, Dictionary<string, (int tableSize, int payloadSize)>? webcilSizes = null, HashSet<string>? compositeImages = null, HashSet<string>? webcilBundles = null, bool useAppSettingsAssets = false, bool filesystemUsageDetected = false)
         {
             List<string> imports = [];
 
@@ -357,6 +357,8 @@ namespace Microsoft.NET.Sdk.WebAssembly
 
                 if (subFolder is null && compositeImages?.Contains(a.Key) == true)
                     asset.isCompositeImage = true;
+                if (subFolder is null && webcilBundles?.Contains(a.Key) == true)
+                    asset.isBundle = true;
 
                 if (bundlerFriendly)
                 {
