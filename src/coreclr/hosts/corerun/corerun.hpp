@@ -18,6 +18,7 @@
 #include <minipal/utils.h>
 #include <minipal/environ.h>
 #include <minipal/utf8.h>
+#include <minipal/thread.h>
 
 // Class used to perform specific actions.
 class platform_specific_actions;
@@ -493,7 +494,7 @@ namespace pal
 
     inline uint32_t get_process_id()
     {
-        return (uint32_t)getpid();
+        return minipal_get_current_process_id();
     }
 
     inline bool does_file_exist(const char_t* file_path)

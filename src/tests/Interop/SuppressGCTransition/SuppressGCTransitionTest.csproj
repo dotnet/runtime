@@ -3,7 +3,6 @@
     <!-- Needed for CMakeProjectReference -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-    <MonoAotIncompatible>true</MonoAotIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(InteropCommonDir)CheckGCMode.cs" />

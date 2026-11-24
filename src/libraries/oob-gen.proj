@@ -6,10 +6,13 @@
     <FilterTraversalProjectReferences>true</FilterTraversalProjectReferences>
   </PropertyGroup>
 
-  <!-- Reference all out-of-band generator projects. -->
+  <!-- Reference all out-of-band generator projects with the global properties libraries reference them with (see
+       generators.targets); otherwise the same generator builds twice, concurrently, into the same intermediate directory. -->
   <ItemGroup>
     <ProjectReference Include="$(MSBuildThisFileDirectory)*\gen\**\*.*proj"
-                      Exclude="@(ProjectExclusions)" />
+                      Exclude="@(ProjectExclusions)"
+                      GlobalPropertiesToRemove="LibrariesRuntimeFlavor;RuntimeFlavor"
+                      SetTargetFramework="TargetFramework=netstandard2.0" />
   </ItemGroup>
 
 </Project>

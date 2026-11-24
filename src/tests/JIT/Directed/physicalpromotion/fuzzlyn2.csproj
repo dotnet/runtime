@@ -2,7 +2,7 @@
   <PropertyGroup>
     <!-- Needed for CLRTestEnvironmentVariable -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
-    <DisableProjectBuild Condition="'$(TargetsMobile)' == 'true' and ('$(TargetsBrowser)' != 'true' or '$(RuntimeFlavor)' != 'coreclr')">true</DisableProjectBuild>
+    <DisableProjectBuild Condition="'$(TargetsMobile)' == 'true' and '$(TargetsBrowser)' != 'true'">true</DisableProjectBuild>
     <Optimize>True</Optimize>
   </PropertyGroup>
   <ItemGroup>

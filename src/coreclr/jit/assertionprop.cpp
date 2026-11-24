@@ -4018,7 +4018,13 @@ GenTree* Compiler::optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, GenTreeL
     ASSERT_TP filteredAssertions = assertions;
     if (optLocalAssertionProp)
     {
-        filteredAssertions = BitVecOps::Intersection(apTraits, GetAssertionDep(lclNum), filteredAssertions);
+        ASSERT_TP dep = optAssertionDep->Get(lclNum);
+        if (BitVecOps::MayBeUninit(dep))
+        {
+            // There are no assertions for this local
+            return nullptr;
+        }
+        filteredAssertions = BitVecOps::Intersection(apTraits, dep, filteredAssertions);
     }
     else if (!optAssertionHasAssertionsForVN(treeVN))
     {
@@ -4131,8 +4137,14 @@ GenTree* Compiler::optAssertionProp_LclFld(ASSERT_VALARG_TP assertions, GenTreeL
         return nullptr;
     }
 
-    const unsigned lclNum             = tree->GetLclNum();
-    ASSERT_TP      filteredAssertions = BitVecOps::Intersection(apTraits, GetAssertionDep(lclNum), assertions);
+    const unsigned lclNum = tree->GetLclNum();
+    ASSERT_TP      dep    = optAssertionDep->Get(lclNum);
+    if (BitVecOps::MayBeUninit(dep))
+    {
+        return nullptr;
+    }
+
+    ASSERT_TP filteredAssertions = BitVecOps::Intersection(apTraits, dep, assertions);
 
     BitVecOps::Iter iter(apTraits, filteredAssertions);
     unsigned        index = 0;
@@ -4529,7 +4541,13 @@ AssertionIndex Compiler::optLocalAssertionIsEqualOrNotEqual(
     noway_assert((op2Kind == O2K_CONST_INT) || (op2Kind == O2K_ZEROOBJ));
 
     assert(optLocalAssertionProp);
-    ASSERT_TP apDependent = BitVecOps::Intersection(apTraits, GetAssertionDep(lclNum), assertions);
+    ASSERT_TP dep = optAssertionDep->Get(lclNum);
+    if (BitVecOps::MayBeUninit(dep))
+    {
+        return NO_ASSERTION_INDEX;
+    }
+
+    ASSERT_TP apDependent = BitVecOps::Intersection(apTraits, dep, assertions);
 
     BitVecOps::Iter iter(apTraits, apDependent);
     unsigned        bvIndex = 0;
@@ -5234,8 +5252,14 @@ bool Compiler::optAssertionIsNonNull(GenTree* op, ASSERT_VALARG_TP assertions)
 
         // Find live assertions related to lclNum
         //
-        unsigned const lclNum      = op->AsLclVarCommon()->GetLclNum();
-        ASSERT_TP      apDependent = BitVecOps::Intersection(apTraits, GetAssertionDep(lclNum), assertions);
+        unsigned const lclNum = op->AsLclVarCommon()->GetLclNum();
+        ASSERT_TP      dep    = optAssertionDep->Get(lclNum);
+        if (BitVecOps::MayBeUninit(dep))
+        {
+            return false;
+        }
+
+        ASSERT_TP apDependent = BitVecOps::Intersection(apTraits, dep, assertions);
 
         // Scan those looking for a suitable assertion
         //

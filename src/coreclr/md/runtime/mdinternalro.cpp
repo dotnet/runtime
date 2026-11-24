@@ -42,7 +42,8 @@ HRESULT GetInternalWithRWFormat(
     ULONG       cbData,
     DWORD       flags,                  // [IN] MDInternal_OpenForRead or MDInternal_OpenForENC
     REFIID      riid,                   // [in] The interface desired.
-    void        **ppIUnk);              // [out] Return interface on success.
+    void        **ppIUnk,               // [out] Return interface on success.
+    bool        fIsDelta);              // Is this metadata being loaded to apply an EnC delta.
 
 // forward declaration
 __checkReturn
@@ -2574,29 +2575,6 @@ HRESULT MDInternalRO::GetAllAssociates(
 
 
 //*****************************************************************************
-// Get the Action and Permissions blob for a given PermissionSet.
-//*****************************************************************************
-__checkReturn
-HRESULT MDInternalRO::GetPermissionSetProps(
-    mdPermission pm,                    // [IN] the permission token.
-    DWORD       *pdwAction,             // [OUT] CorDeclSecurity.
-    void const  **ppvPermission,        // [OUT] permission blob.
-    ULONG       *pcbPermission)         // [OUT] count of bytes of pvPermission.
-{
-    HRESULT hr;
-    _ASSERTE(TypeFromToken(pm) == mdtPermission);
-    _ASSERTE(pdwAction && ppvPermission && pcbPermission);
-
-    DeclSecurityRec *pPerm;
-
-    IfFailRet(m_LiteWeightStgdb.m_MiniMd.GetDeclSecurityRecord(RidFromToken(pm), &pPerm));
-    *pdwAction = m_LiteWeightStgdb.m_MiniMd.getActionOfDeclSecurity(pPerm);
-    IfFailRet(m_LiteWeightStgdb.m_MiniMd.getPermissionSetOfDeclSecurity(pPerm, (const BYTE **)ppvPermission, pcbPermission));
-
-    return S_OK;
-} // MDInternalRO::GetPermissionSetProps
-
-//*****************************************************************************
 // Get the String given the String token.
 // Return a pointer to the string, or NULL in case of error.
 //*****************************************************************************
@@ -3244,7 +3222,7 @@ HRESULT MDInternalRO::ApplyEditAndContinue(
 
     IMDInternalImportENC *pDeltaMDImport = NULL;
 
-    IfFailGo(GetInternalWithRWFormat(pDeltaMD, cbDeltaMD, 0, IID_IMDInternalImportENC, (void**)&pDeltaMDImport));
+    IfFailGo(GetInternalWithRWFormat(pDeltaMD, cbDeltaMD, 0, IID_IMDInternalImportENC, (void**)&pDeltaMDImport, true));
 
     *ppv = this;
     IfFailGo(MDApplyEditAndContinue(ppv, pDeltaMDImport));
