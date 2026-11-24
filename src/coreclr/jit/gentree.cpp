@@ -3198,13 +3198,23 @@ GenTree** GenTree::EffectiveUse(GenTree** use)
 //    lclNum - the local's number
 //
 // Return Value:
-//    Whether "tree" has any local nodes that refer to the local.
+//    Whether "tree" has any local nodes that refer to the local, or any nodes
+//    that define the local.
 //
-/* static */ bool Compiler::gtHasRef(GenTree* tree, unsigned lclNum)
+bool Compiler::gtHasRef(GenTree* tree, unsigned lclNum)
 {
     if (tree == nullptr)
     {
         return false;
+    }
+
+    auto visitDef = [lclNum](const auto& def) {
+        return def.GetLclNum() == lclNum ? GenTree::VisitResult::Abort : GenTree::VisitResult::Continue;
+    };
+
+    if (tree->VisitLogicalLocalDefs(this, visitDef) == GenTree::VisitResult::Abort)
+    {
+        return true;
     }
 
     if (tree->OperIsLeaf())
@@ -3223,11 +3233,6 @@ GenTree** GenTree::EffectiveUse(GenTree** use)
 
     if (tree->OperIsUnary())
     {
-        if (tree->OperIsLocalStore() && (tree->AsLclVarCommon()->GetLclNum() == lclNum))
-        {
-            return true;
-        }
-
         return gtHasRef(tree->AsUnOp()->gtGetOp1(), lclNum);
     }
 
@@ -3237,7 +3242,7 @@ GenTree** GenTree::EffectiveUse(GenTree** use)
     }
 
     bool result = false;
-    tree->VisitOperands([lclNum, &result](GenTree* operand) -> GenTree::VisitResult {
+    tree->VisitOperands([this, lclNum, &result](GenTree* operand) -> GenTree::VisitResult {
         if (gtHasRef(operand, lclNum))
         {
             result = true;
@@ -3267,8 +3272,7 @@ bool Compiler::gtHasLocalsWithAddrOp(GenTree* tree)
     {
         enum
         {
-            DoPreOrder    = true,
-            DoLclVarsOnly = true,
+            DoPreOrder = true,
         };
 
         LocalsWithAddrOpVisitor(Compiler* comp)
@@ -3276,10 +3280,25 @@ bool Compiler::gtHasLocalsWithAddrOp(GenTree* tree)
         {
         }
 
+        static bool HasAddrOp(LclVarDsc* varDsc)
+        {
+            return varDsc->lvHasLdAddrOp || varDsc->IsAddressExposed();
+        }
+
         fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
         {
-            LclVarDsc* varDsc = m_compiler->lvaGetDesc((*use)->AsLclVarCommon());
-            if (varDsc->lvHasLdAddrOp || varDsc->IsAddressExposed())
+            GenTree* node = *use;
+            if (node->OperIsAnyLocal())
+            {
+                return HasAddrOp(m_compiler->lvaGetDesc(node->AsLclVarCommon())) ? WALK_ABORT : WALK_CONTINUE;
+            }
+
+            auto visitDef = [=](const auto& def) {
+                return HasAddrOp(m_compiler->lvaGetDesc(def.GetLclNum())) ? GenTree::VisitResult::Abort
+                                                                          : GenTree::VisitResult::Continue;
+            };
+
+            if (node->VisitLogicalLocalDefs(m_compiler, visitDef) == GenTree::VisitResult::Abort)
             {
                 return WALK_ABORT;
             }
@@ -3309,8 +3328,7 @@ bool Compiler::gtHasAddressExposedLocals(GenTree* tree)
     {
         enum
         {
-            DoPreOrder    = true,
-            DoLclVarsOnly = true,
+            DoPreOrder = true,
         };
 
         Visitor(Compiler* comp)
@@ -3320,8 +3338,18 @@ bool Compiler::gtHasAddressExposedLocals(GenTree* tree)
 
         fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
         {
-            LclVarDsc* varDsc = m_compiler->lvaGetDesc((*use)->AsLclVarCommon());
-            if (varDsc->IsAddressExposed())
+            GenTree* node = *use;
+            if (node->OperIsAnyLocal())
+            {
+                return m_compiler->lvaGetDesc(node->AsLclVarCommon())->IsAddressExposed() ? WALK_ABORT : WALK_CONTINUE;
+            }
+
+            auto visitDef = [=](const auto& def) {
+                return m_compiler->lvaGetDesc(def.GetLclNum())->IsAddressExposed() ? GenTree::VisitResult::Abort
+                                                                                   : GenTree::VisitResult::Continue;
+            };
+
+            if (node->VisitLogicalLocalDefs(m_compiler, visitDef) == GenTree::VisitResult::Abort)
             {
                 return WALK_ABORT;
             }
@@ -8162,18 +8190,29 @@ bool Compiler::gtMayHaveStoreInterference(GenTree* treeWithStores, GenTree* tree
                 return WALK_SKIP_SUBTREES;
             }
 
-            if (node->OperIsLocalStore())
-            {
-                // Check up to 8 stores before we bail with a conservative
-                // answer. Avoids quadratic behavior in case we have a large
-                // number of stores (e.g. created by physical promotion or by
-                // call args morphing).
-                if ((m_numStoresChecked >= 8) ||
-                    m_compiler->gtTreeHasLocalRead(m_readTree, node->AsLclVarCommon()->GetLclNum()))
+            bool hasDefs  = false;
+            auto visitDef = [&](const auto& def) {
+                // Check up to 8 defining nodes before we bail with a
+                // conservative answer. Avoids quadratic behavior in case we
+                // have a large number of stores (e.g. created by physical
+                // promotion or by call args morphing).
+                if (!hasDefs && (m_numStoresChecked >= 8))
                 {
-                    return WALK_ABORT;
+                    return GenTree::VisitResult::Abort;
                 }
 
+                hasDefs = true;
+                return m_compiler->gtTreeHasLocalRead(m_readTree, def.GetLclNum()) ? GenTree::VisitResult::Abort
+                                                                                   : GenTree::VisitResult::Continue;
+            };
+
+            if (node->VisitLogicalLocalDefs(m_compiler, visitDef) == GenTree::VisitResult::Abort)
+            {
+                return WALK_ABORT;
+            }
+
+            if (hasDefs)
+            {
                 m_numStoresChecked++;
             }
 
