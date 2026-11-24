@@ -36,7 +36,7 @@ The driver uses `PAL_InitializeDLL`, which does not install fatal-signal handler
 
 The Android `Shared` directory contains `android_log_interpose.c/.h` to capture compact reports from Android logging using `--wrap=__android_log_write`, forwarding calls to liblog through `__real___android_log_write`. Its `config.h` supplies CoreCLR platform/architecture definitions missing from AndroidAppBuilder. Desktop tests redirect stderr and get those definitions from the native test build, without a test-specific configuration header.
 
-The Apple projects live under `src/tests/FunctionalTests/iOS/InProcCrashReport`. Each scenario is a separate app and process, including OnDemand's final signal-report-first case. Their `Shared/CMakeLists.txt` imports the repository's native platform/compiler configuration and the shared fixture target. It links the matching product PAL and minipal archives into `libInProcCrashReportNative.dylib`, exporting only `InProcCrashReportTest_*`. The hosting CoreCLR is a different dylib with a different PAL instance. Do not link the fixture PAL into the app executable or substitute a macOS archive for an iOS, simulator, or Catalyst archive.
+The Apple projects live under `src/tests/FunctionalTests/AppleMobile/InProcCrashReport`. Each scenario is a separate app and process, including OnDemand's final signal-report-first case. Their `Shared/CMakeLists.txt` imports the repository's native platform/compiler configuration and the shared fixture target. It links the matching product PAL and minipal archives into `libInProcCrashReportNative.dylib`, exporting only `InProcCrashReportTest_*`. The hosting CoreCLR is a different dylib with a different PAL instance. Do not link the fixture PAL into the app executable or substitute an archive for a different Apple target.
 
 AppleAppBuilder's existing dylib resource packaging and signing handle the fixture. No Android native-source injection, ELF linker flags, copied reporter implementation, or builder extension is used. Native P/Invoke resolves the packaged dylib; OnDemand also exercises reverse P/Invoke on real managed threads. Apple uses the same stderr capture and Darwin `ucontext_t`/machine-context register initialization as desktop macOS.
 
@@ -75,13 +75,13 @@ The direct `corerun` command returns 100 on success, not shell exit code zero.
 
 ### Apple app bundles
 
-Build each target separately. `iossimulator` is not interchangeable with `ios` or `maccatalyst`.
+Build each Apple target separately; their product archives are not interchangeable.
 
 ```bash
-target=iossimulator # or maccatalyst or ios
+target=iossimulator # or ios, tvos, tvossimulator or maccatalyst
 ./build.sh clr+clr.runtime+libs+packs -os "$target" -arch arm64 -cross -c Release
 scenario=RichSigsegv
-project="src/tests/FunctionalTests/iOS/InProcCrashReport/$scenario/iOS.InProcCrashReport.$scenario.Test.csproj"
+project="src/tests/FunctionalTests/AppleMobile/InProcCrashReport/$scenario/InProcCrashReport.$scenario.Test.csproj"
 ./dotnet.sh build "$project" -c Release -t:Test \
   -p:TargetOS="$target" -p:TargetArchitecture=arm64 \
   -p:UseNativeAOTRuntime=false

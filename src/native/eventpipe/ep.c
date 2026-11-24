@@ -762,7 +762,7 @@ disable_holding_lock (
 			ep_session_wait_for_inflight_thread_ops (session);
 
 			bool ignored;
-			ep_session_write_all_buffers_to_file (session, &ignored); // Flush the buffers to the stream/file
+			ep_session_write_all_buffers_to_file (session, true, &ignored);
 
 			ep_volatile_store_number_of_sessions (ep_volatile_load_number_of_sessions () - 1);
 

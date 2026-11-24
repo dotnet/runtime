@@ -73,8 +73,6 @@ public:
                 _ASSERTE(!"Environment variable name too long.");
                 return {};
             }
-
-            *nameBuffer = '\0';
         }
         else
         {
@@ -88,17 +86,16 @@ public:
             }
 
             // Priority order is DOTNET_, then (CORECLR_ or COMPlus_).
-            strcpy_s(nameBuffer, ARRAY_SIZE(nameBuffer), DOTNET_PREFIX_A);
             fallbackPrefix = coreclrFallbackPrefix ? CORECLR_PREFIX_A : COMPLUS_PREFIX_A;
         }
 
-        strcat_s(nameBuffer, ARRAY_SIZE(nameBuffer), cfg);
+        // The lengths are validated above, so these cannot truncate.
+        snprintf(nameBuffer, ARRAY_SIZE(nameBuffer), "%s%s", noPrefix ? "" : DOTNET_PREFIX_A, cfg);
 
         LPCSTR val = getEnvFptr != NULL ? getEnvFptr(nameBuffer) : getenv(nameBuffer);
         if (val == NULL && fallbackPrefix != NULL)
         {
-            strcpy_s(nameBuffer, ARRAY_SIZE(nameBuffer), fallbackPrefix);
-            strcat_s(nameBuffer, ARRAY_SIZE(nameBuffer), cfg);
+            snprintf(nameBuffer, ARRAY_SIZE(nameBuffer), "%s%s", fallbackPrefix, cfg);
             val = getEnvFptr != NULL ? getEnvFptr(nameBuffer) : getenv(nameBuffer);
         }
 

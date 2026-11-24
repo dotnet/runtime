@@ -550,15 +550,17 @@ namespace System.Net.Http.Functional.Tests
 
         private async Task RequestDuration_CustomTags_DiagnosticListener_Recorded_Core(string eventName)
         {
+            HttpResponseMessage? enrichmentResponse = null;
+
             FakeDiagnosticListenerObserver diagnosticListenerObserver = new(kv =>
             {
                 if (kv.Key == eventName)
                 {
                     HttpRequestMessage request = GetProperty<HttpRequestMessage>(kv.Value, "Request");
-                    HttpMetricsEnrichmentContext.AddCallback(request, static ctx =>
+                    HttpMetricsEnrichmentContext.AddCallback(request, ctx =>
                     {
                         ctx.AddCustomTag("observed?", "observed!");
-                        Assert.NotNull(ctx.Response);
+                        enrichmentResponse = ctx.Response;
                     });
                 }
             });
@@ -577,6 +579,7 @@ namespace System.Net.Http.Functional.Tests
                 });
 
                 using HttpResponseMessage response = await SendAsync(client, request);
+                Assert.Same(response, enrichmentResponse);
 
                 Measurement<double> m = Assert.Single(recorder.GetMeasurements());
                 VerifyRequestDuration(m, uri, UseVersion, 200);

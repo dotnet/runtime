@@ -300,7 +300,7 @@ ILCodeStream::ILInstrEnum ILCodeStream::LowerOpcode(ILInstrEnum instr, ILStubLin
 
     switch (instr)
     {
-        case CEE_LDC_I8:
+        case CEE_LDC_I4:
         {
             if (uConst == (UINT_PTR)-1)
             {
@@ -315,11 +315,6 @@ ILCodeStream::ILInstrEnum ILCodeStream::LowerOpcode(ILInstrEnum instr, ILStubLin
             if (FitsInI1(uConst))
             {
                 instr = CEE_LDC_I4_S;
-            }
-            else
-            if (FitsInI4(uConst))
-            {
-                instr = CEE_LDC_I4;
             }
             break;
         }
@@ -1462,16 +1457,28 @@ void ILCodeStream::EmitLDARGA  (unsigned uArgIdx)
     }
     Emit(CEE_LDARGA, 1, uArgIdx);
 }
-void ILCodeStream::EmitLDC(DWORD_PTR uConst)
+void ILCodeStream::EmitLDC_I4(INT32 iConst)
 {
     WRAPPER_NO_CONTRACT;
-    Emit(
+    Emit(CEE_LDC_I4, 1, (UINT_PTR)(INT_PTR)iConst);
+}
+// Loads a constant as a native int. The constant is pushed with the shortest ldc
+// form and then converted with conv.i, so the stack type is always native int.
+// The conversion is needed since int32/int64/native int are different IL stack types.
+void ILCodeStream::EmitLDC_I(UINT_PTR uConst)
+{
+    WRAPPER_NO_CONTRACT;
 #ifdef TARGET_64BIT
-        CEE_LDC_I8
-#else
-        CEE_LDC_I4
-#endif
-        , 1, uConst);
+    if (!FitsInI4(uConst))
+    {
+        Emit(CEE_LDC_I8, 1, uConst);
+    }
+    else
+#endif // TARGET_64BIT
+    {
+        EmitLDC_I4((INT32)uConst);
+    }
+    EmitCONV_I();
 }
 void ILCodeStream::EmitLDC_R4(float fConst)
 {
@@ -1960,17 +1967,6 @@ void ILCodeStream::EmitLoadThis ()
     // so that we don't have to have a special method to
     // load arguments.
     EmitLDARG((unsigned)-1);
-}
-
-void ILCodeStream::EmitLoadNullPtr()
-{
-    WRAPPER_NO_CONTRACT;
-
-    // This is the correct way to load unmanaged zero pointer. EmitLDC(0) alone works
-    // fine in most cases but may lead to wrong code being generated on 64-bit if the
-    // flow graph is complex.
-    EmitLDC(0);
-    EmitCONV_I();
 }
 
 DWORD ILStubLinker::NewLocal(CorElementType typ)

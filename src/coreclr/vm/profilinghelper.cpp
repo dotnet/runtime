@@ -111,6 +111,7 @@
 #include "profilinghelper.h"
 #include "profilinghelper.inl"
 #include <minipal/memorybarrierprocesswide.h>
+#include <minipal/thread.h>
 
 
 #ifdef FEATURE_PROFAPI_ATTACH_DETACH
@@ -260,10 +261,12 @@ void ProfilingAPIUtility::AppendSupplementaryInformation(int iStringResource, SS
     StackSString supplementaryInformationUtf8;
     supplementaryInformation.ConvertToUTF8(supplementaryInformationUtf8);
 
+    DWORD pid = minipal_get_current_process_id();
+
     pString->AppendUTF8("  ");
     pString->AppendPrintf(
         supplementaryInformationUtf8.GetUTF8(),
-        GetCurrentProcessId(),
+        pid,
         iStringResource);
 }
 

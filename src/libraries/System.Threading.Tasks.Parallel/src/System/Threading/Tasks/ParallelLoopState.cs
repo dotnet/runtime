@@ -346,7 +346,7 @@ namespace System.Threading.Tasks
         }
     }
 
-    internal sealed unsafe class ParallelLoopStateFlags<TInt> : ParallelLoopStateFlags
+    internal sealed class ParallelLoopStateFlags<TInt> : ParallelLoopStateFlags
         where TInt : struct, IBinaryInteger<TInt>, IMinMaxValue<TInt>
     {
         // Records the lowest iteration at which a Break() has been called,
@@ -359,11 +359,19 @@ namespace System.Threading.Tasks
             {
                 if (typeof(TInt) == typeof(int))
                 {
-                    return Unsafe.BitCast<int, TInt>(Volatile.Read(ref Unsafe.As<TInt, int>(ref _lowestBreakIteration)));
+                    // SAFETY: To be audited
+                    unsafe
+                    {
+                        return Unsafe.BitCast<int, TInt>(Volatile.Read(ref Unsafe.As<TInt, int>(ref _lowestBreakIteration)));
+                    }
                 }
 
                 Debug.Assert(typeof(TInt) == typeof(long));
-                return Unsafe.BitCast<long, TInt>(Volatile.Read(ref Unsafe.As<TInt, long>(ref _lowestBreakIteration)));
+                // SAFETY: To be audited
+                unsafe
+                {
+                    return Unsafe.BitCast<long, TInt>(Volatile.Read(ref Unsafe.As<TInt, long>(ref _lowestBreakIteration)));
+                }
             }
         }
 

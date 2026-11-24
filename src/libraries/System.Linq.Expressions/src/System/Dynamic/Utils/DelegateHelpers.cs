@@ -27,11 +27,15 @@ namespace System.Dynamic.Utils
             }
             else
             {
-                return CreateObjectArrayDelegate(null, delegateType, handler);
+                // SAFETY: To be audited
+                unsafe
+                {
+                    return CreateObjectArrayDelegate(null, delegateType, handler);
+                }
 
                 [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "CreateObjectArrayDelegate")]
                 [MethodImpl(MethodImplOptions.NoInlining)]
-                static extern Delegate CreateObjectArrayDelegate(
+                static unsafe extern Delegate CreateObjectArrayDelegate(
                     [UnsafeAccessorType("Internal.Runtime.Augments.DynamicDelegateAugments, System.Private.CoreLib")] object? _,
                     Type delegateType,
                     Func<object?[], object?> invoker);
@@ -193,10 +197,14 @@ namespace System.Dynamic.Utils
                             // for example when running on CoreClr with PublishAot=true, this will allow IL to be emitted.
                             // If we are running on a runtime that really doesn't support dynamic code, like NativeAOT,
                             // CanEmitObjectArrayDelegate will be flipped to 'false', and this method won't be invoked.
-                            return ForceAllowDynamicCode(null);
+                            // SAFETY: To be audited
+                            unsafe
+                            {
+                                return ForceAllowDynamicCode(null);
+                            }
 
                             [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name="ForceAllowDynamicCode")]
-                            static extern IDisposable ForceAllowDynamicCode(AssemblyBuilder? _);
+                            static unsafe extern IDisposable ForceAllowDynamicCode(AssemblyBuilder? _);
                         }
                         return null;
                     }

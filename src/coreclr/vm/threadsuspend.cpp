@@ -8,6 +8,7 @@
 // (class Thread, class ThreadStore, etc.). They should be eventually refactored into class ThreadSuspend.
 
 #include "common.h"
+#include <minipal/instructioncache.h>
 #include "CLREventBase.h"
 
 #include "threadsuspend.h"
@@ -3291,7 +3292,7 @@ void ThreadSuspend::SuspendAllThreads()
         // We will not do this often though, since this can introduce arbitrary delays.
         if (usecsSinceYield > 1000)
         {
-            SwitchToThread();
+            minipal_switch_to_thread(0);
             usecsSinceYield = 0;
         }
     }
@@ -3485,7 +3486,7 @@ void Thread::CommitGCStressInstructionUpdate()
 
 #endif
 
-        FlushInstructionCache(GetCurrentProcess(), (LPCVOID)pbDestCode, 4);
+        minipal_flush_instruction_cache((LPCVOID)pbDestCode, 4);
     }
 }
 

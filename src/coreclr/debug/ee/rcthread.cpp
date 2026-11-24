@@ -12,6 +12,7 @@
 #include "stdafx.h"
 #include "CLREventBase.h"
 #include <minipal/time.h>
+#include <minipal/thread.h>
 #include "threadsuspend.h"
 
 #ifndef SM_REMOTESESSION
@@ -506,8 +507,8 @@ static LONG _debugFilter(LPEXCEPTION_POINTERS ep, PVOID pv)
 #if defined(_DEBUG)
     DebuggerIPCEvent *event = ((DebugFilterParam *)pv)->event;
 
-    DWORD pid = GetCurrentProcessId();
-    DWORD tid = GetCurrentThreadId();
+    DWORD pid = minipal_get_current_process_id();
+    size_t tid = minipal_get_current_thread_id();
 
     DebuggerIPCEventType type = (DebuggerIPCEventType) (event->type & DB_IPCE_TYPE_MASK);
 #endif // _DEBUG
@@ -533,7 +534,7 @@ static LONG _debugFilter(LPEXCEPTION_POINTERS ep, PVOID pv)
         EX_END_CATCH
 
         CONSISTENCY_CHECK_MSGF(false,
-            ("Unhandled exception on the helper thread.\nEvent=%s(0x%p)\nCode=0x%0x, Ip=0x%p, .cxr=%p, .exr=%p.\n pid=0x%x (%d), tid=0x%x (%d).\n-----\nStack of exception:\n%s\n----\n",
+            ("Unhandled exception on the helper thread.\nEvent=%s(0x%p)\nCode=0x%0x, Ip=0x%p, .cxr=%p, .exr=%p.\n pid=0x%x (%d), tid=0x%zx (%zu).\n-----\nStack of exception:\n%s\n----\n",
             IPCENames::GetName(type), type,
             ep->ExceptionRecord->ExceptionCode, GetIP(ep->ContextRecord), ep->ContextRecord, ep->ExceptionRecord,
             pid, pid, tid, tid,
@@ -659,7 +660,7 @@ void DebuggerRCThread::ThreadProc(void)
     // this, no other threads will ever become the temporary helper
     // thread.
     HelperThreadExitSignal helperThreadExitSignal = { m_helperThreadRunning, m_helperThreadExitedEvent };
-    m_pDCB->m_helperThreadId = GetCurrentThreadId();
+    m_pDCB->m_helperThreadId = (DWORD)minipal_get_current_thread_id();
     m_helperThreadRunning.Store(TRUE);
 
     LOG((LF_CORDB, LL_INFO1000, "DRCT::TP: helper thread id is 0x%x helperThreadId\n",
@@ -1672,7 +1673,7 @@ void DebuggerRCThread::DoFavor(FAVORCALLBACK fp, void * pData)
         {
             // If the helper thread calls this, we deadlock.
             // (Since we wait on an event that only the helper thread sets)
-            _ASSERTE(GetRCThreadId() != GetCurrentThreadId());
+            _ASSERTE(GetRCThreadId() != (DWORD)minipal_get_current_thread_id());
 
             SetFavorFnPtr(fp, pData);
 
