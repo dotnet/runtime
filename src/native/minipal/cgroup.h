@@ -15,6 +15,7 @@ extern "C"
 /**
  * Find the cgroups of the current process. The functions below call this when needed. It is not
  * thread-safe, so the runtime calls it during startup. Does nothing if it has already been called.
+ * cgroups exist only on Linux: elsewhere, the functions below do nothing or return false.
  */
 void minipal_cgroup_initialize(void);
 

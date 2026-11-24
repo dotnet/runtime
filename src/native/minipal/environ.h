@@ -16,7 +16,7 @@ extern "C" {
  * Get an environment variable (narrow string; ANSI code page on Windows).
  * Same return-value contract as Win32 GetEnvironmentVariableA.
  *
- * @param name The name of the variable.
+ * @param name The name of the variable, which must be non-empty and must not contain '='.
  * @param buffer Receives the value.
  * @param buffer_size Size of the buffer, including the null terminator.
  * @return 0 if not found; the length excluding null if the value fits in the buffer;
