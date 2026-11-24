@@ -1,7 +1,7 @@
 <Project>
 
   <PropertyGroup>
-    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'">true</CLRTestTargetUnsupported>
+    <CLRTestTargetUnsupported Condition="'$(TargetOS)' == 'browser'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
 
   <Target

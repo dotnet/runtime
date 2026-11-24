@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace System.Formats.Cbor
 {
@@ -15,6 +16,13 @@ namespace System.Formats.Cbor
         private const int DefaultMaxDepth = 1000;
         private const int DefaultCapacitySentinel = -1;
         private static readonly ArrayPool<byte> s_bufferPool = ArrayPool<byte>.Create();
+
+        // Conformance-mode behaviors
+        private readonly bool _requiresUniqueKeys;
+        private readonly bool _requiresSortedKeys;
+        private readonly bool _requiresDefiniteLengthItems;
+        private readonly bool _tracksMapKeys; // map key and value offsets are only needed by the unique and sorted key checks
+        private readonly Encoding _encoding;
 
         private byte[] _buffer;
         private int _offset;
@@ -84,6 +92,11 @@ namespace System.Formats.Cbor
             }
 
             ConformanceMode = conformanceMode;
+            _requiresUniqueKeys = CborConformanceModeHelpers.RequiresUniqueKeys(conformanceMode);
+            _requiresSortedKeys = CborConformanceModeHelpers.RequiresSortedKeys(conformanceMode);
+            _requiresDefiniteLengthItems = CborConformanceModeHelpers.RequiresDefiniteLengthItems(conformanceMode);
+            _tracksMapKeys = _requiresUniqueKeys || _requiresSortedKeys;
+            _encoding = CborConformanceModeHelpers.GetUtf8Encoding(conformanceMode);
             ConvertIndefiniteLengthEncodings = convertIndefiniteLengthEncodings;
             AllowMultipleRootLevelValues = allowMultipleRootLevelValues;
             MaxDepth = maxDepth < 0 ? DefaultMaxDepth : maxDepth;
@@ -124,6 +137,11 @@ namespace System.Formats.Cbor
             CborConformanceModeHelpers.Validate(conformanceMode);
 
             ConformanceMode = conformanceMode;
+            _requiresUniqueKeys = CborConformanceModeHelpers.RequiresUniqueKeys(conformanceMode);
+            _requiresSortedKeys = CborConformanceModeHelpers.RequiresSortedKeys(conformanceMode);
+            _requiresDefiniteLengthItems = CborConformanceModeHelpers.RequiresDefiniteLengthItems(conformanceMode);
+            _tracksMapKeys = _requiresUniqueKeys || _requiresSortedKeys;
+            _encoding = CborConformanceModeHelpers.GetUtf8Encoding(conformanceMode);
             ConvertIndefiniteLengthEncodings = convertIndefiniteLengthEncodings;
             AllowMultipleRootLevelValues = allowMultipleRootLevelValues;
             MaxDepth = DefaultMaxDepth;
@@ -368,7 +386,7 @@ namespace System.Formats.Cbor
             // Perform encoding fixups that require the current context and must be done before popping
             // NB map key sorting must happen _before_ indefinite-length patching
 
-            if (typeToPop == CborMajorType.Map)
+            if (_tracksMapKeys && typeToPop == CborMajorType.Map)
             {
                 CompleteMapWrite();
             }
@@ -394,7 +412,7 @@ namespace System.Formats.Cbor
         // Advance writer state after a data item has been written to the buffer
         private void AdvanceDataItemCounters()
         {
-            if (_currentMajorType == CborMajorType.Map)
+            if (_tracksMapKeys && _currentMajorType == CborMajorType.Map)
             {
                 if (_itemsWritten % 2 == 0)
                 {

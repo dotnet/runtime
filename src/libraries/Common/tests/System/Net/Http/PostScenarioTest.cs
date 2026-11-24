@@ -105,6 +105,12 @@ namespace System.Net.Http.Functional.Tests
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         public async Task PostSyncBlockingContentUsingChunkedEncoding_Success(Configuration.Http.RemoteServer remoteServer)
         {
+            if (IsWasiHttpHandler)
+            {
+                // WasiHttpHandler's request stream doesn't support synchronous writes.
+                return;
+            }
+
             await PostHelper(remoteServer, ExpectedContent, new SyncBlockingContent(ExpectedContent),
                 useContentLengthUpload: false, useChunkedEncodingUpload: true);
         }
@@ -165,6 +171,12 @@ namespace System.Net.Http.Functional.Tests
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         public async Task PostRewindableContentUsingAuth_NoPreAuthenticate_Success(Configuration.Http.RemoteServer remoteServer)
         {
+            if (IsWasiHttpHandler)
+            {
+                // WasiHttpHandler doesn't support Credentials or PreAuthenticate.
+                return;
+            }
+
             // Sync API supported only up to HTTP/1.1
             if (!TestAsync && remoteServer.HttpVersion.Major >= 2)
             {
@@ -181,6 +193,12 @@ namespace System.Net.Http.Functional.Tests
         [SkipOnPlatform(TestPlatforms.Browser, "PreAuthenticate not supported on Browser")]
         public async Task PostNonRewindableContentUsingAuth_NoPreAuthenticate_ThrowsHttpRequestException(Configuration.Http.RemoteServer remoteServer)
         {
+            if (IsWasiHttpHandler)
+            {
+                // WasiHttpHandler doesn't support Credentials or PreAuthenticate.
+                return;
+            }
+
             // Sync API supported only up to HTTP/1.1
             if (!TestAsync && remoteServer.HttpVersion.Major >= 2)
             {
@@ -198,6 +216,12 @@ namespace System.Net.Http.Functional.Tests
         [SkipOnPlatform(TestPlatforms.Browser, "PreAuthenticate not supported on Browser")]
         public async Task PostNonRewindableContentUsingAuth_PreAuthenticate_Success(Configuration.Http.RemoteServer remoteServer)
         {
+            if (IsWasiHttpHandler)
+            {
+                // WasiHttpHandler doesn't support Credentials or PreAuthenticate.
+                return;
+            }
+
             // Sync API supported only up to HTTP/1.1
             if (!TestAsync && remoteServer.HttpVersion.Major >= 2)
             {
@@ -247,7 +271,7 @@ namespace System.Net.Http.Functional.Tests
 
                     // Compute MD5 of request body data. This will be verified by the server when it
                     // receives the request.
-                    if (PlatformDetection.IsBrowser)
+                    if (PlatformDetection.IsBrowser || !PlatformDetection.IsMD5Supported)
                     {
                         // [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
                         requestContent.Headers.Add("Content-MD5-Skip", "browser");

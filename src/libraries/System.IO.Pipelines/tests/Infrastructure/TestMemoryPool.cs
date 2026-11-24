@@ -72,13 +72,14 @@ namespace System.IO.Pipelines
                 _pool.CheckDisposed();
                 Interlocked.Increment(ref _referenceCount);
 
-                if (!MemoryMarshal.TryGetArray(_owner.Memory, out ArraySegment<byte> segment))
-                {
-                    throw new InvalidOperationException();
-                }
-
+                // SAFETY: To be audited
                 unsafe
                 {
+                    if (!MemoryMarshal.TryGetArray(_owner.Memory, out ArraySegment<byte> segment))
+                    {
+                        throw new InvalidOperationException();
+                    }
+
                     try
                     {
                         if ((uint)elementIndex > (uint)segment.Count)
@@ -116,7 +117,11 @@ namespace System.IO.Pipelines
             protected override bool TryGetArray(out ArraySegment<byte> segment)
             {
                 _pool.CheckDisposed();
-                return MemoryMarshal.TryGetArray(_owner.Memory, out segment);
+                // SAFETY: To be audited
+                unsafe
+                {
+                    return MemoryMarshal.TryGetArray(_owner.Memory, out segment);
+                }
             }
 
             public override Memory<byte> Memory

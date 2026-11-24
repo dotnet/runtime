@@ -4,8 +4,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <TypeMapEntryAssembly>TypeMapLib5</TypeMapEntryAssembly>
-    <MonoAotIncompatible>true</MonoAotIncompatible>
-    <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'mono'">true</DisableProjectBuild>
     <IlcGenerateMstatFile>true</IlcGenerateMstatFile>
     <IlcGenerateDgmlFile>true</IlcGenerateDgmlFile>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>

@@ -45,12 +45,11 @@ namespace ILCompiler
         {
         }
 
-        public string GetDirectCallExternName(MethodDesc method)
+        public LinkageMetadata GetLinkageMetadata(MethodDesc method)
         {
-            bool directCall = _configuration.GenerateDirectCall(method, out string externName);
-            Debug.Assert(directCall);
-            Debug.Assert(externName != null);
-            return externName;
+            LinkageMetadata linkage = _configuration.GetLinkageMetadata(method);
+            Debug.Assert(linkage is not null);
+            return linkage;
         }
     }
 }

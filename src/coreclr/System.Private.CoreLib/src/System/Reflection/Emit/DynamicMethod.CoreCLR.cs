@@ -30,12 +30,23 @@ namespace System.Reflection.Emit
         private MethodAttributes _attributes;
         private CallingConventions _callingConvention;
         private RuntimeParameterInfo[]? _parameters;
+        private readonly bool _isDiagnosticsHidden;
 
         // needed to keep the object alive during jitting
         // assigned by the DynamicResolver ctor
         internal DynamicResolver? _resolver;
 
         internal bool _restrictedSkipVisibility;
+
+        internal bool IsDiagnosticsHidden => _isDiagnosticsHidden;
+
+        [RequiresDynamicCode("Creating a DynamicMethod requires dynamic code.")]
+        internal DynamicMethod(string name, Type? returnType, Type[]? parameterTypes,
+            Module module, bool skipVisibility, bool isDiagnosticsHidden)
+            : this(name, returnType, parameterTypes, module, skipVisibility)
+        {
+            _isDiagnosticsHidden = isDiagnosticsHidden;
+        }
 
         //
         // Delegate and method creation

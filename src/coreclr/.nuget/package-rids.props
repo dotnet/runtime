@@ -1,0 +1,21 @@
+<Project>
+  <PropertyGroup>
+    <SupportedPackageOSGroups Condition="'$(SupportedPackageOSGroups)' == ''">windows;osx;android;linux;freebsd;netbsd;openbsd;openharmony;illumos;solaris;haiku</SupportedPackageOSGroups>
+    <SupportedPackageOSGroups>;$(SupportedPackageOSGroups);</SupportedPackageOSGroups>
+    <_isSupportedOSGroup>true</_isSupportedOSGroup>
+    <_derivedPackageTargetOSGroup Condition="'$(_derivedPackageTargetOSGroup)' == '' and '$(TargetOS)' != ''">$(TargetOS)</_derivedPackageTargetOSGroup>
+    <_derivedPackageTargetOSGroup Condition="'$(_derivedPackageTargetOSGroup)' == ''">linux</_derivedPackageTargetOSGroup>
+    <_isSupportedOSGroup Condition="!$(SupportedPackageOSGroups.Contains(';$(_derivedPackageTargetOSGroup);'))">false</_isSupportedOSGroup>
+  </PropertyGroup>
+
+  <Import Project="$(RepositoryEngineeringDir)PackageRids.props" />
+
+  <ItemGroup>
+    <!-- Include custom build RIDs without advertising unsupported OS families. -->
+    <BuildRID Include="@(PackageRID)" Exclude="$(TargetRid)" />
+    <BuildRID Include="$(TargetRid)" Condition="'$(_isSupportedOSGroup)' == 'true' and '$(SdkToolsSupported)' == 'true'">
+      <Platform Condition="'$(TargetArchitecture)' == 'x64'">amd64</Platform>
+      <Platform Condition="'$(TargetArchitecture)' != 'x64'">$(TargetArchitecture)</Platform>
+    </BuildRID>
+  </ItemGroup>
+</Project>

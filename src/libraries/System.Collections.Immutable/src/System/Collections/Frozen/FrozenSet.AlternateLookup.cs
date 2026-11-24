@@ -14,7 +14,7 @@ namespace System.Collections.Frozen
         /// Gets an instance of a type that may be used to perform operations on a <see cref="FrozenSet{T}"/>
         /// using a <typeparamref name="TAlternate"/> instead of a <typeparamref name="T"/>.
         /// </summary>
-        /// <typeparam name="TAlternate">The alternate type of a item for performing lookups.</typeparam>
+        /// <typeparam name="TAlternate">The alternate type of an item for performing lookups.</typeparam>
         /// <returns>The created lookup instance.</returns>
         /// <exception cref="InvalidOperationException">This instance's comparer is not compatible with <typeparamref name="TAlternate"/>.</exception>
         /// <remarks>

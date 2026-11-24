@@ -321,6 +321,15 @@ HRESULT GetAppDomainStaticAddress::ClassUnloadStarted(ClassID classId)
 {
     SHUTDOWNGUARD();
 
+    // We don't care about array classes, so skip them.
+    CorElementType baseElemType;
+    ClassID        baseClassId;
+    ULONG          cRank;
+    if (pCorProfilerInfo->IsArrayClass(classId, &baseElemType, &baseClassId, &cRank) == S_OK)
+    {
+        return S_OK;
+    }
+
     lock_guard<mutex> guard(classADMapLock);
 
     mdTypeDef unloadClassToken;

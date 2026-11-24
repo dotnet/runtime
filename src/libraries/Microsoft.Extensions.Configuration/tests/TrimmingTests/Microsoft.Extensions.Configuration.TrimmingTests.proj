@@ -1,0 +1,18 @@
+<Project DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
+
+  <PropertyGroup>
+    <AdditionalProjectReferences>Microsoft.Extensions.Configuration</AdditionalProjectReferences>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <TestConsoleAppSourceFiles Include="ConfigurationReferencesDisabled.cs">
+      <EnabledFeatureSwitches>Microsoft.Extensions.Configuration.DisableConfigurationReferences</EnabledFeatureSwitches>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="ConfigurationReferencesEnabled.cs">
+      <DisabledFeatureSwitches>Microsoft.Extensions.Configuration.DisableConfigurationReferences</DisabledFeatureSwitches>
+    </TestConsoleAppSourceFiles>
+  </ItemGroup>
+
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
+</Project>

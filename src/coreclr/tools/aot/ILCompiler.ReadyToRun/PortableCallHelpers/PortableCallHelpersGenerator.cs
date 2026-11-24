@@ -18,7 +18,12 @@ namespace ILCompiler.PortableCallHelpers
     public sealed class PortableCallHelpersGeneratorOptions
     {
         public string OutputDirectory { get; init; }
+        /// <summary>
+        /// The statically linked P/Invoke targets, as <c>--directpinvoke</c> entries and
+        /// <c>--directpinvokelist</c> files. See <see cref="DirectPInvokeSet"/>.
+        /// </summary>
         public IReadOnlyList<string> PInvokeModules { get; init; } = [];
+        public IReadOnlyList<string> PInvokeModuleLists { get; init; } = [];
         public string TargetOS { get; init; }
     }
 
@@ -35,7 +40,7 @@ namespace ILCompiler.PortableCallHelpers
     ///
     /// Usage:
     ///   crossgen2 --generate-portable-callhelpers &lt;dir&gt; --targetos &lt;browser|wasi&gt; --targetarch wasm \
-    ///             --directpinvoke &lt;name&gt;... &lt;assembly&gt;...
+    ///             --directpinvoke &lt;module[!entrypoint]&gt;... &lt;assembly&gt;...
     /// </remarks>
     public static class PortableCallHelpersGenerator
     {
@@ -119,8 +124,11 @@ namespace ILCompiler.PortableCallHelpers
 
             var generator = new PInvokeTableGenerator(log);
 
+            foreach (PInvokeInfo entry in internalCallCollector.Entrypoints)
+                pinvokes.Add(entry);
+
             WriteIfDifferent(Path.Combine(options.OutputDirectory, PInvokeFileName), log,
-                w => generator.EmitPInvokeTable(w, context.Target, options.PInvokeModules, pinvokes));
+                w => generator.EmitPInvokeTable(w, context.Target, context.SystemModule, options.PInvokeModules, pinvokes, options.PInvokeModuleLists));
 
             WriteIfDifferent(Path.Combine(options.OutputDirectory, ReversePInvokeFileName), log,
                 w => generator.EmitNativeToInterp(w, callbacks));

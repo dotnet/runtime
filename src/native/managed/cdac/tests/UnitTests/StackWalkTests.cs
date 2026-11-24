@@ -3,19 +3,928 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
+using System.Reflection;
+using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
 using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 using Moq;
 using Xunit;
+using FrameType = Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers.FrameType;
+using ModuleHandle = Microsoft.Diagnostics.DataContractReader.Contracts.ModuleHandle;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
 public unsafe class StackWalkTests
 {
     private const uint X86TransitionBlockSize = 7 * sizeof(uint);
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public void FindGCRefMap_ResolvesImportRecord(bool inlineGCRefMap, bool compositeComponent)
+    {
+        (TestPlaceholderTarget target, _) = CreateX86TransitionFrameTarget(
+            nameof(Data.ExternalMethodFrame), gcRefMap: [0x83, 0x05], hasMethodDesc: false,
+            inlineGCRefMap: inlineGCRefMap, compositeComponent: compositeComponent);
+
+        TargetPointer map = new FrameHelpers(target).FindGCRefMap(new TargetPointer(0x100108));
+
+        Assert.Equal(inlineGCRefMap ? 0x100200UL : 0x100206UL, map.Value);
+    }
+
+    [Theory]
+    [InlineData(0x00, 0)]
+    [InlineData(0x01, 1)]
+    [InlineData(0x02, 2)]
+    [InlineData(0x07, 3)]
+    [InlineData(0x0f, 4)]
+    [InlineData(0x17, 5)]
+    [InlineData(0x1f, 6)]
+    [InlineData(0x67, 7)]
+    public void GCRefMapDecoder_ReadsSingleTokens(byte encoded, int expected)
+    {
+        GCRefMapDecoder decoder = new([encoded]);
+        Assert.Equal((GCRefMapToken)expected, decoder.ReadToken());
+    }
+
+    [Theory]
+    [InlineData(new byte[] { 0x57 }, false, 5)]
+    [InlineData(new byte[] { 0x5f }, false, 6)]
+    [InlineData(new byte[] { 0xe7, 0x08 }, false, 7)]
+    [InlineData(new byte[] { 0x57 }, true, 7)]
+    public void GCRefMapDecoder_ExtendedTokensDoNotConsumeExtraBits(byte[] blob, bool legacyTokens, int expected)
+    {
+        GCRefMapDecoder decoder = new(blob, legacyTokens: legacyTokens);
+        Assert.Equal((GCRefMapToken)expected, decoder.ReadToken());
+        Assert.Equal(1, decoder.CurrentPos);
+        Assert.Equal(GCRefMapToken.Ref, decoder.ReadToken());
+        Assert.Equal(2, decoder.CurrentPos);
+        Assert.True(decoder.AtEnd);
+    }
+
+    [Theory]
+    [InlineData("c1", 7)]
+    [InlineData("c2", 5)]
+    public void GCRefMapDecoder_TargetTokensUseContractVersion(string version, int expected)
+    {
+        (TestPlaceholderTarget target, _) = CreateX86TransitionFrameTarget(
+            nameof(FrameType.PrestubMethodFrame), gcRefMap: [0x57], hasMethodDesc: true);
+        ((TestPlaceholderTarget.TestContractRegistry)target.Contracts).SetVersion<IStackWalk>(version);
+
+        GCRefMapDecoder decoder = new(target, new TargetPointer(0x6200));
+        Assert.Equal((GCRefMapToken)expected, decoder.ReadToken());
+        Assert.Equal(GCRefMapToken.Ref, decoder.ReadToken());
+        Assert.Equal(2, decoder.CurrentPos);
+        Assert.True(decoder.AtEnd);
+    }
+
+    [Theory]
+    [InlineData(0u)]
+    [InlineData(1u)]
+    [InlineData(2u)]
+    [InlineData(3u)]
+    [InlineData(10u)]
+    [InlineData(11u)]
+    [InlineData(138u)]
+    [InlineData(139u)]
+    [InlineData(32906u)]
+    [InlineData(32907u)]
+    [InlineData(1000000u)]
+    public void DispatchMapDecoder_ReadsIntegerBoundaries(uint value)
+    {
+        TestPlaceholderTarget.Builder builder = new(new MockTarget.Architecture { IsLittleEndian = true, Is64Bit = false });
+        builder.MemoryBuilder.AddHeapFragment(new() { Address = 0x1000, Data = EncodeDispatchMap([value, 2, 139, 0]), Name = "Dispatch integers" });
+        DispatchMapDecoder decoder = new(builder.Build(), new TargetPointer(0x1000));
+        Assert.Equal(value, decoder.Read());
+        Assert.Equal(2u, decoder.Read());
+        Assert.Equal(139u, decoder.Read());
+        Assert.Equal(0u, decoder.Read());
+    }
+
+    [Theory]
+    [InlineData(new byte[] { 0x00 }, 0u)]
+    [InlineData(new byte[] { 0x80 }, 1u)]
+    [InlineData(new byte[] { 0xa0 }, 2u)]
+    [InlineData(new byte[] { 0xc0 }, 3u)]
+    [InlineData(new byte[] { 0xdc }, 10u)]
+    [InlineData(new byte[] { 0xe0, 0x00 }, 11u)]
+    [InlineData(new byte[] { 0xef, 0xe0 }, 138u)]
+    [InlineData(new byte[] { 0xf0, 0x00, 0x00 }, 139u)]
+    [InlineData(new byte[] { 0xf7, 0xff, 0xf0 }, 32906u)]
+    [InlineData(new byte[] { 0xf8, 0x00, 0x00, 0x00, 0x00 }, 32907u)]
+    public void DispatchMapDecoder_MatchesNativeIntegerEncoding(byte[] encoded, uint expected)
+    {
+        TestPlaceholderTarget.Builder builder = new(new MockTarget.Architecture { IsLittleEndian = true, Is64Bit = false });
+        builder.MemoryBuilder.AddHeapFragment(new() { Address = 0x1000, Data = encoded, Name = "Native DispatchMap integer" });
+        DispatchMapDecoder decoder = new(builder.Build(), new TargetPointer(0x1000));
+        Assert.Equal(expected, decoder.Read());
+    }
+
+    [Fact]
+    public void DispatchMapDecoder_RejectsInvalidPrefix()
+    {
+        TestPlaceholderTarget.Builder builder = new(new MockTarget.Architecture { IsLittleEndian = true, Is64Bit = false });
+        builder.MemoryBuilder.AddHeapFragment(new() { Address = 0x1000, Data = [0xfc], Name = "Invalid DispatchMap" });
+        DispatchMapDecoder decoder = new(builder.Build(), new TargetPointer(0x1000));
+        Assert.Throws<InvalidOperationException>(() => decoder.Read());
+    }
+
+    private static byte[] EncodeDispatchMap(uint[] values)
+    {
+        uint[] bases = [0, 1, 3, 11, 139, 32907];
+        List<int> bits = [];
+        foreach (uint value in values)
+        {
+            int ones = 0;
+            while (ones + 1 < bases.Length && value >= bases[ones + 1])
+                ones++;
+            for (int i = 0; i < ones; i++)
+                bits.Add(1);
+            bits.Add(0);
+            uint payload = value - bases[ones];
+            for (int i = (1 << ones) - 2; i >= 0; i--)
+                bits.Add((int)((payload >> i) & 1));
+        }
+        byte[] result = new byte[(bits.Count + 7) / 8];
+        for (int i = 0; i < bits.Count; i++)
+            result[i / 8] |= (byte)(bits[i] << (7 - i % 8));
+        return result;
+    }
+
+    [Theory]
+    [InlineData("declaration")]
+    [InlineData("overriding-declaration")]
+    [InlineData("same-type-declaration")]
+    [InlineData("alias-overriding")]
+    [InlineData("alias-target-overriding")]
+    [InlineData("alias-chain")]
+    [InlineData("alias-target")]
+    [InlineData("alias-split")]
+    [InlineData("interface")]
+    [InlineData("interface-negative")]
+    [InlineData("canonical-interface")]
+    [InlineData("interface-owner")]
+    [InlineData("interface-owner-implementation")]
+    [InlineData("interface-owner-ancestor")]
+    public void MethodGCRefMapLookup_FindsVirtualDeclaration(string scenario)
+    {
+        (TestPlaceholderTarget target, VirtualMapTypeSystem rts) = CreateVirtualMapTarget(scenario);
+        TargetPointer map = new MethodGCRefMapLookup(target, new FrameHelpers(target)).Find(
+            rts.GetMethodDescHandle(new TargetPointer(0x6000)), new TargetPointer(0x7200), dispatch: false);
+        Assert.Equal(0xa000UL, map.Value);
+    }
+
+    [Theory]
+    [InlineData(false, GenericContextLoc.None, 0xb200UL)]
+    [InlineData(true, GenericContextLoc.None, 0xa000UL)]
+    [InlineData(false, GenericContextLoc.InstArgMethodDesc, 0xa000UL)]
+    [InlineData(false, GenericContextLoc.InstArgMethodTable, 0xa000UL)]
+    public void MethodGCRefMapLookup_FiltersOverrideMapsByMetadata(bool genericMethod, GenericContextLoc context, ulong expectedMap)
+    {
+        (TestPlaceholderTarget target, VirtualMapTypeSystem rts) =
+            CreateVirtualMapTarget("overriding-fallback", overrideMap: [0xdd, 0x02]);
+        if (genericMethod)
+            rts.GenericMethods.Add(0x6200);
+        rts.MethodContexts[0x6200] = context;
+        Assert.Equal(expectedMap, new MethodGCRefMapLookup(target, new FrameHelpers(target)).Find(
+            rts.GetMethodDescHandle(new TargetPointer(0x6000)), new TargetPointer(0x7200), dispatch: false).Value);
+    }
+
+    [Theory]
+    [InlineData(false, 0xb200UL)]
+    [InlineData(true, 0xa000UL)]
+    public void MethodGCRefMapLookup_PrefersNearestNonUnboxingDeclaration(bool unboxing, ulong expectedMap)
+    {
+        (TestPlaceholderTarget target, VirtualMapTypeSystem rts) =
+            CreateVirtualMapTarget("overriding-fallback", overrideMap: [0xdd, 0x02]);
+        if (unboxing)
+            rts.UnboxingStubs.Add(0x6200);
+        Assert.Equal(expectedMap, new MethodGCRefMapLookup(target, new FrameHelpers(target)).Find(
+            rts.GetMethodDescHandle(new TargetPointer(0x6000)), new TargetPointer(0x7200), dispatch: false).Value);
+    }
+
+    [Theory]
+    [InlineData("nonvirtual-no-inherit")]
+    [InlineData("virtual-boundary")]
+    [InlineData("interface-parent")]
+    public void MethodGCRefMapLookup_DoesNotCrossSlotOrInterfaceBoundary(string scenario)
+    {
+        (TestPlaceholderTarget target, VirtualMapTypeSystem rts) = CreateVirtualMapTarget(scenario);
+        Assert.Equal(TargetPointer.Null, new MethodGCRefMapLookup(target, new FrameHelpers(target)).Find(
+            rts.GetMethodDescHandle(new TargetPointer(0x6000)), new TargetPointer(0x7200), dispatch: false));
+    }
+
+    [Theory]
+    [InlineData("nonvirtual-interface-collision")]
+    [InlineData("nonvirtual-alias-collision")]
+    public void MethodGCRefMapLookup_DoesNotBorrowForUnrelatedDerivedSlot(string scenario)
+    {
+        (TestPlaceholderTarget target, VirtualMapTypeSystem rts) = CreateVirtualMapTarget(scenario);
+        Assert.Equal(TargetPointer.Null, new MethodGCRefMapLookup(target, new FrameHelpers(target)).Find(
+            rts.GetMethodDescHandle(new TargetPointer(0x6000)), new TargetPointer(0x7200), dispatch: false));
+    }
+
+    [Theory]
+    [InlineData("same", true)]
+    [InlineData("thunk", true)]
+    [InlineData("token", false)]
+    [InlineData("module", false)]
+    [InlineData("canonical-type", false)]
+    [InlineData("async-variant", false)]
+    [InlineData("return-dropping", false)]
+    public void MethodGCRefMapLookup_MatchesMethodDefinitionAndCanonicalOwner(string difference, bool matches)
+    {
+        (TestPlaceholderTarget target, VirtualMapTypeSystem rts) = CreateVirtualMapTarget("interface");
+        rts.Methods[0x6500] = (0x7100, 0);
+        rts.Vtable[(0x7200, 1)] = 0x6500;
+        rts.MethodTokens[0x6000] = 0x06000001;
+        rts.MethodTokens[0x6500] = difference == "token" ? 0x06000002u : 0x06000001u;
+        if (difference is "module" or "canonical-type")
+            rts.Methods[0x6500] = (0x7200, 0);
+        if (difference == "module")
+        {
+            rts.Canonical[0x7200] = 0x7100;
+            rts.Modules[0x7200] = 0xc100;
+        }
+        rts.AsyncFlags[0x6500] = difference switch
+        {
+            "thunk" => AsyncMethodFlags.Thunk,
+            "async-variant" => AsyncMethodFlags.IsAsyncVariant,
+            "return-dropping" => AsyncMethodFlags.ReturnDroppingThunk,
+            _ => AsyncMethodFlags.None,
+        };
+        Assert.Equal(matches ? 0xa000UL : 0UL, new MethodGCRefMapLookup(target, new FrameHelpers(target)).Find(
+            rts.GetMethodDescHandle(new TargetPointer(0x6000)), new TargetPointer(0x7200), dispatch: false).Value);
+    }
+
+    [Theory]
+    [InlineData(nameof(FrameType.PrestubMethodFrame))]
+    [InlineData(nameof(FrameType.CallCountingHelperFrame))]
+    [InlineData(nameof(FrameType.StubDispatchFrame))]
+    public void TransitionFrame_ConsumesNativeMemoizedMapWithoutReceiverLookup(string frameType)
+    {
+        (TestPlaceholderTarget target, VirtualMapTypeSystem rts) = CreateVirtualMapTarget(
+            "overriding-declaration", frameType: frameType, unreadableThis: true, ownMap: true);
+        rts.Introduced.Clear();
+        Assert.Equal(0xa000UL, new FrameHelpers(target).GetGCRefMapForFrame(new TargetPointer(0x1000)).Value);
+        Assert.Equal(0xa000UL, target.ReadPointer(new TargetPointer(0x6008)).Value);
+    }
+
+    [Theory]
+    [InlineData(4u)]
+    [InlineData(12u)]
+    [InlineData(32u)]
+    public void MethodGCRefMapLookup_UsesDescribedAuxiliaryDataSize(uint auxiliarySize)
+    {
+        (TestPlaceholderTarget target, VirtualMapTypeSystem rts) =
+            CreateVirtualMapTarget("canonical-interface", auxiliarySize: auxiliarySize);
+        Assert.Equal(0xa000UL, new MethodGCRefMapLookup(target, new FrameHelpers(target)).Find(
+            rts.GetMethodDescHandle(new TargetPointer(0x6000)), new TargetPointer(0x7200), dispatch: false).Value);
+    }
+
+    [Theory]
+    [InlineData(false, GenericContextLoc.None, true)]
+    [InlineData(true, GenericContextLoc.None, false)]
+    [InlineData(false, GenericContextLoc.InstArgMethodDesc, false)]
+    [InlineData(false, GenericContextLoc.InstArgMethodTable, false)]
+    public void MethodGCRefMapLookup_FiltersBorrowedMapsByMetadata(bool genericMethod, GenericContextLoc context, bool expected)
+    {
+        (TestPlaceholderTarget target, VirtualMapTypeSystem rts) = CreateVirtualMapTarget("alias-chain");
+        if (genericMethod)
+            rts.GenericMethods.Add(0x6100);
+        rts.MethodContexts[0x6100] = context;
+        Assert.Equal(expected ? 0xa000UL : 0UL, new MethodGCRefMapLookup(target, new FrameHelpers(target)).Find(
+            rts.GetMethodDescHandle(new TargetPointer(0x6000)), new TargetPointer(0x7200), dispatch: false).Value);
+    }
+
+    [Theory]
+    [InlineData("alias-chain", 0xa000UL)]
+    [InlineData("interface", 0xa000UL)]
+    [InlineData("overriding-fallback", 0xb200UL)]
+    public void MethodGCRefMapLookup_DoesNotReadMapContents(string scenario, ulong expectedMap)
+    {
+        // Only the first byte is readable: lookup must not decode the map to validate its format.
+        (TestPlaceholderTarget target, VirtualMapTypeSystem rts) =
+            CreateVirtualMapTarget(scenario, map: [0xfd], overrideMap: [0xfd]);
+        Assert.Equal(expectedMap, new MethodGCRefMapLookup(target, new FrameHelpers(target)).Find(
+            rts.GetMethodDescHandle(new TargetPointer(0x6000)), new TargetPointer(0x7200), dispatch: false).Value);
+    }
+
+    [Theory]
+    [InlineData(false, false, GenericContextLoc.None, true)]
+    [InlineData(false, false, GenericContextLoc.InstArgMethodDesc, true)]
+    [InlineData(false, false, GenericContextLoc.InstArgMethodTable, true)]
+    [InlineData(false, true, GenericContextLoc.None, true)]
+    [InlineData(false, true, GenericContextLoc.InstArgMethodDesc, true)]
+    [InlineData(false, true, GenericContextLoc.InstArgMethodTable, true)]
+    [InlineData(true, false, GenericContextLoc.None, true)]
+    [InlineData(true, false, GenericContextLoc.InstArgMethodDesc, false)]
+    [InlineData(true, false, GenericContextLoc.InstArgMethodTable, false)]
+    [InlineData(true, true, GenericContextLoc.None, false)]
+    [InlineData(true, true, GenericContextLoc.InstArgMethodDesc, false)]
+    [InlineData(true, true, GenericContextLoc.InstArgMethodTable, false)]
+    public void MethodGCRefMapLookup_UsesExactEntryMapOnlyForCompatibleFrames(
+        bool dispatch, bool genericMethod, GenericContextLoc context, bool expected)
+    {
+        (TestPlaceholderTarget target, VirtualMapTypeSystem rts) = CreateVirtualMapTarget("declaration", ownMap: true);
+        rts.Introduced.Clear();
+        if (genericMethod)
+            rts.GenericMethods.Add(0x6000);
+        rts.MethodContexts[0x6000] = context;
+        TargetPointer result = new MethodGCRefMapLookup(target, new FrameHelpers(target)).Find(
+            rts.GetMethodDescHandle(new TargetPointer(0x6000)), TargetPointer.Null, dispatch);
+        Assert.Equal(expected ? 0xa000UL : 0UL, result.Value);
+    }
+
+    [Theory]
+    [InlineData(GenericContextLoc.InstArgMethodDesc)]
+    [InlineData(GenericContextLoc.InstArgMethodTable)]
+    public void MethodGCRefMapLookup_DispatchBorrowsInsteadOfUsingExactContextBodyMap(GenericContextLoc context)
+    {
+        (TestPlaceholderTarget target, VirtualMapTypeSystem rts) =
+            CreateVirtualMapTarget("overriding-fallback", ownMap: true, overrideMap: [0xdd, 0x02]);
+        rts.MethodContexts[0x6000] = context;
+        TargetPointer result = new MethodGCRefMapLookup(target, new FrameHelpers(target)).Find(
+            rts.GetMethodDescHandle(new TargetPointer(0x6000)), TargetPointer.Null, dispatch: true);
+        Assert.Equal(0xb200UL, result.Value);
+    }
+
+    [Theory]
+    [InlineData(false, GenericContextLoc.None, true)]
+    [InlineData(false, GenericContextLoc.InstArgMethodDesc, false)]
+    [InlineData(false, GenericContextLoc.InstArgMethodTable, false)]
+    [InlineData(true, GenericContextLoc.InstArgMethodTable, true)]
+    public void MethodGCRefMapLookup_ExcludesHiddenBodyArguments(bool dispatch, GenericContextLoc context, bool expected)
+    {
+        (TestPlaceholderTarget target, VirtualMapTypeSystem rts) = CreateVirtualMapTarget("declaration");
+        rts.MethodContexts[0x6000] = context;
+        MethodGCRefMapLookup lookup = new(target, new FrameHelpers(target));
+        TargetPointer result = lookup.Find(rts.GetMethodDescHandle(new TargetPointer(0x6000)), new TargetPointer(0x7200), dispatch);
+        Assert.Equal(expected ? 0xa000UL : 0UL, result.Value);
+        rts.GenericMethods.Add(0x6000);
+        Assert.Equal(TargetPointer.Null, lookup.Find(
+            rts.GetMethodDescHandle(new TargetPointer(0x6000)), new TargetPointer(0x7200), dispatch));
+    }
+
+    [Theory]
+    [InlineData("alias-chain", nameof(FrameType.PrestubMethodFrame))]
+    [InlineData("overriding-declaration", nameof(FrameType.PrestubMethodFrame))]
+    [InlineData("alias-overriding", nameof(FrameType.CallCountingHelperFrame))]
+    [InlineData("alias-target-overriding", nameof(FrameType.StubDispatchFrame))]
+    [InlineData("interface", nameof(FrameType.CallCountingHelperFrame))]
+    [InlineData("interface-owner", nameof(FrameType.StubDispatchFrame))]
+    [InlineData("interface-owner-implementation", nameof(FrameType.StubDispatchFrame))]
+    [InlineData("interface-owner-ancestor", nameof(FrameType.StubDispatchFrame))]
+    public void TransitionFrame_VirtualMapScanningAndX86Unwind(string scenario, string frameType)
+    {
+        (TestPlaceholderTarget target, _) = CreateVirtualMapTarget(scenario, frameType: frameType);
+        GcScanContext scan = new(target, resolveInteriorPointers: false);
+        scan.UpdateScanContext(new TargetPointer(0x2000), TargetCodePointer.Null, new TargetPointer(0x1000));
+        new GcScanner(target).GcScanRoots(new TargetPointer(0x1000), scan);
+        Assert.Equal(new ulong[] { 0x2014, 0x2010 }, scan.StackRefs.Select(reference => reference.Address.Value));
+        Assert.All(scan.StackRefs, reference => Assert.Equal(GcScanFlags.None, reference.Flags));
+
+        ContextHolder<X86Context> context = new() { Context = new X86Context { ContextFlags = (uint)X86Context.ContextFlagsValues.CONTEXT_FULL } };
+        new X86FrameHandler(target, context).HandleTransitionFrame(
+            target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(new TargetPointer(0x1000)));
+        AssertX86TransitionFrameContext(context, stackPopSlots: 1);
+    }
+
+    [Theory]
+    [InlineData(".ctor", 0, false, true)]
+    [InlineData(".ctor", 0, true, false)]
+    [InlineData(".ctor", 4, false, false)]
+    [InlineData("Method", 0, true, true)]
+    [InlineData("Method", 0, false, true)]
+    [InlineData("FastAllocateString", 0x80, true, false)]
+    public void TransitionFrame_ReceiverEligibilityDistinguishesStringAndArrayConstructors(
+        string name, ushort methodFlags, bool stringOwner, bool hasReceiver)
+    {
+        MetadataBuilder metadata = new();
+        metadata.AddModule(0, metadata.GetOrAddString("M"), default, default, default);
+        metadata.AddTypeDefinition(default, default, metadata.GetOrAddString("<Module>"), default,
+            MetadataTokens.FieldDefinitionHandle(1), MetadataTokens.MethodDefinitionHandle(1));
+        metadata.AddMethodDefinition(MethodAttributes.Public | MethodAttributes.RTSpecialName, default,
+            metadata.GetOrAddString(name), default, 0, MetadataTokens.ParameterHandle(1));
+        BlobBuilder image = new();
+        new MetadataRootBuilder(metadata).Serialize(image, 0, 0);
+        using MetadataReaderProvider provider = MetadataReaderProvider.FromMetadataImage(ImmutableArray.Create(image.ToArray()));
+        (TestPlaceholderTarget target, VirtualMapTypeSystem rts) = CreateVirtualMapTarget(
+            "interface", metadata: provider.GetMetadataReader(), unreadableThis: !hasReceiver, methodFlags: methodFlags);
+        if (stringOwner)
+            rts.StringTypes.Add(rts.Methods[0x6000].Owner);
+        Assert.Equal(hasReceiver ? 0xa000UL : 0UL,
+            new FrameHelpers(target).GetGCRefMapForFrame(new TargetPointer(0x1000)).Value);
+    }
+
+    [Fact]
+    public void TransitionFrame_DeclarationMapDoesNotReadReceiver()
+    {
+        (TestPlaceholderTarget target, _) = CreateVirtualMapTarget("declaration", unreadableThis: true);
+        Assert.Equal(0xa000UL, new FrameHelpers(target).GetGCRefMapForFrame(new TargetPointer(0x1000)).Value);
+    }
+
+    [Theory]
+    [InlineData("declaration", nameof(FrameType.PrestubMethodFrame))]
+    [InlineData("declaration", nameof(FrameType.CallCountingHelperFrame))]
+    [InlineData("declaration", nameof(FrameType.StubDispatchFrame))]
+    [InlineData("interface", nameof(FrameType.PrestubMethodFrame))]
+    [InlineData("interface", nameof(FrameType.CallCountingHelperFrame))]
+    [InlineData("interface", nameof(FrameType.StubDispatchFrame))]
+    public void TransitionFrame_X86UnwindUsesMetadataOrCachedMiss(string scenario, string frameType)
+    {
+        byte[] signatureMap = [0xdd, 0x02];
+        (TestPlaceholderTarget target, _) = CreateVirtualMapTarget(
+            scenario, frameType: frameType, unreadableThis: true, signatureMap: signatureMap,
+            cachedFrameMap: scenario == "interface" ? uint.MaxValue : 0);
+        ContextHolder<X86Context> context = new() { Context = new X86Context { ContextFlags = (uint)X86Context.ContextFlagsValues.CONTEXT_FULL } };
+
+        new X86FrameHandler(target, context).HandleTransitionFrame(
+            target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(new TargetPointer(0x1000)));
+
+        AssertX86TransitionFrameContext(context, stackPopSlots: 1);
+        Mock.Get(target.Contracts.CallingConvention).Verify(
+            callingConvention => callingConvention.TryComputeArgGCRefMapBlob(It.IsAny<MethodDescHandle>(), out signatureMap),
+            Times.Exactly(scenario == "interface" ? 1 : 0));
+    }
+
+    [Theory]
+    [InlineData(nameof(FrameType.PrestubMethodFrame))]
+    [InlineData(nameof(FrameType.CallCountingHelperFrame))]
+    [InlineData(nameof(FrameType.StubDispatchFrame))]
+    public void TransitionFrame_X86UnwindFindsReceiverMapBeforeFirstGC(string frameType)
+    {
+        byte[] signatureMap = [];
+        (TestPlaceholderTarget target, _) = CreateVirtualMapTarget(
+            "interface", frameType: frameType, signatureMap: signatureMap);
+        Mock<ICallingConvention> callingConvention = Mock.Get(target.Contracts.CallingConvention);
+        callingConvention.Setup(c => c.TryComputeArgGCRefMapBlob(It.IsAny<MethodDescHandle>(), out signatureMap)).Returns(false);
+        ContextHolder<X86Context> context = new() { Context = new X86Context { ContextFlags = (uint)X86Context.ContextFlagsValues.CONTEXT_FULL } };
+
+        new X86FrameHandler(target, context).HandleTransitionFrame(
+            target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(new TargetPointer(0x1000)));
+
+        AssertX86TransitionFrameContext(context, stackPopSlots: 1);
+        callingConvention.Verify(
+            c => c.TryComputeArgGCRefMapBlob(It.IsAny<MethodDescHandle>(), out signatureMap), Times.Never);
+    }
+
+    [Theory]
+    [InlineData(nameof(FrameType.PrestubMethodFrame), true)]
+    [InlineData(nameof(FrameType.CallCountingHelperFrame), true)]
+    [InlineData(nameof(FrameType.StubDispatchFrame), true)]
+    [InlineData(nameof(FrameType.PrestubMethodFrame), false)]
+    [InlineData(nameof(FrameType.CallCountingHelperFrame), false)]
+    [InlineData(nameof(FrameType.StubDispatchFrame), false)]
+    public void TransitionFrame_CachedLookupDoesNotReadRelocatedReceiver(string frameType, bool hasMap)
+    {
+        byte[] signatureMap = [0xdd, 0x02];
+        ulong cachedMap = hasMap ? 0xa000UL : uint.MaxValue;
+        (TestPlaceholderTarget target, _) = CreateVirtualMapTarget(
+            "interface", frameType: frameType, unreadableThis: true, signatureMap: signatureMap,
+            cachedFrameMap: cachedMap);
+        FrameHelpers helpers = new(target);
+
+        Assert.Equal(hasMap ? cachedMap : 0, helpers.GetGCRefMapForFrame(new TargetPointer(0x1000)).Value);
+
+        ContextHolder<X86Context> context = new() { Context = new X86Context { ContextFlags = (uint)X86Context.ContextFlagsValues.CONTEXT_FULL } };
+        new X86FrameHandler(target, context).HandleTransitionFrame(
+            target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(new TargetPointer(0x1000)));
+        AssertX86TransitionFrameContext(context, stackPopSlots: 1);
+
+        if (hasMap)
+        {
+            GcScanContext scan = new(target, resolveInteriorPointers: false);
+            scan.UpdateScanContext(new TargetPointer(0x2000), TargetCodePointer.Null, new TargetPointer(0x1000));
+            new GcScanner(target).GcScanRoots(new TargetPointer(0x1000), scan);
+            Assert.Equal(new ulong[] { 0x2014, 0x2010 }, scan.StackRefs.Select(reference => reference.Address.Value));
+        }
+
+        Mock.Get(target.Contracts.CallingConvention).Verify(
+            callingConvention => callingConvention.TryComputeArgGCRefMapBlob(It.IsAny<MethodDescHandle>(), out signatureMap),
+            Times.Exactly(hasMap ? 0 : 1));
+    }
+
+    [Theory]
+    [InlineData(nameof(FrameType.PrestubMethodFrame))]
+    [InlineData(nameof(FrameType.CallCountingHelperFrame))]
+    [InlineData(nameof(FrameType.StubDispatchFrame))]
+    public void TransitionFrame_UninitializedCacheDoesNotHideLookup(string frameType)
+    {
+        (TestPlaceholderTarget target, _) = CreateVirtualMapTarget(
+            "interface", frameType: frameType);
+
+        Assert.Equal(0xa000UL,
+            new FrameHelpers(target).GetGCRefMapForFrame(new TargetPointer(0x1000)).Value);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void TransitionFrame_CachedLookupUsesTargetPointerSize(MockTarget.Architecture arch)
+    {
+        ulong hit = arch.Is64Bit ? 0x1_0000_a000UL : 0xa000UL;
+        ulong miss = arch.Is64Bit ? ulong.MaxValue : uint.MaxValue;
+        foreach (ulong cachedMap in new[] { hit, miss })
+        {
+            TestPlaceholderTarget.Builder builder = new(arch);
+            TargetTestHelpers helpers = builder.MemoryBuilder.TargetTestHelpers;
+            int pointerSize = arch.Is64Bit ? sizeof(ulong) : sizeof(uint);
+            byte[] frame = new byte[4 * pointerSize];
+            helpers.WritePointer(frame, 0x100);
+            helpers.WritePointer(frame.AsSpan(2 * pointerSize), 0x6000);
+            helpers.WritePointer(frame.AsSpan(3 * pointerSize), cachedMap);
+            builder.MemoryBuilder.AddHeapFragment(new() { Address = 0x1000, Data = frame, Name = "Cached frame map" });
+            TestPlaceholderTarget target = builder.AddTypes(new Dictionary<DataType, Target.TypeInfo>
+                {
+                    [DataType.Frame] = new()
+                    {
+                        Fields = new Dictionary<string, Target.FieldInfo>
+                        {
+                            [nameof(Data.Frame.Identifier)] = new() { Offset = 0 },
+                        },
+                    },
+                    [DataType.FramedMethodFrame] = new()
+                    {
+                        Fields = new Dictionary<string, Target.FieldInfo>
+                        {
+                            [nameof(Data.FramedMethodFrame.TransitionBlockPtr)] = new() { Offset = pointerSize },
+                            [nameof(Data.FramedMethodFrame.MethodDescPtr)] = new() { Offset = 2 * pointerSize },
+                            [nameof(Data.FramedMethodFrame.CachedGCRefMap)] = new() { Offset = 3 * pointerSize },
+                        },
+                    },
+                    [DataType.MethodDesc] = new(),
+                })
+                .AddGlobals((nameof(FrameType.PrestubMethodFrame) + "Identifier", 0x100))
+                .AddMockContract(Mock.Of<IGC>())
+                .AddMockContract(Mock.Of<IGCInfo>())
+                .AddMockContract(Mock.Of<IExecutionManager>())
+                .Build();
+
+            Assert.Equal(cachedMap == miss ? 0 : cachedMap,
+                new FrameHelpers(target).GetGCRefMapForFrame(new TargetPointer(0x1000)).Value);
+        }
+    }
+
+    [Theory]
+    [InlineData("c1", false)]
+    [InlineData("c2", true)]
+    public void TransitionFrame_VirtualLookupUsesContractVersion(string version, bool virtualLookup)
+    {
+        (TestPlaceholderTarget target, _) = CreateVirtualMapTarget("declaration", unreadableThis: true);
+        ((TestPlaceholderTarget.TestContractRegistry)target.Contracts).SetVersion<IStackWalk>(version);
+        Assert.Equal(virtualLookup ? 0xa000UL : 0UL,
+            new FrameHelpers(target).GetGCRefMapForFrame(new TargetPointer(0x1000)).Value);
+    }
+
+    [Theory]
+    [InlineData("c1", false)]
+    [InlineData("c2", true)]
+    public void StubDispatchFrame_CachedMethodMapUsesContractVersion(string version, bool methodMap)
+    {
+        (TestPlaceholderTarget target, _) = CreateVirtualMapTarget(
+            "interface", map: [0xdd, 0x02],
+            frameType: nameof(FrameType.StubDispatchFrame), unreadableThis: true, ownMap: true);
+        ((TestPlaceholderTarget.TestContractRegistry)target.Contracts).SetVersion<IStackWalk>(version);
+        Assert.Equal(methodMap ? 0xa000UL : 0UL,
+            new FrameHelpers(target).GetGCRefMapForFrame(new TargetPointer(0x1000)).Value);
+    }
+
+    [Theory]
+    [InlineData("alias-chain")]
+    [InlineData("interface-owner")]
+    public void MethodGCRefMapLookup_IgnoresMissingVtableMethods(string scenario)
+    {
+        (TestPlaceholderTarget target, VirtualMapTypeSystem rts) = CreateVirtualMapTarget(scenario);
+        rts.Vtable.Clear();
+        Assert.Equal(TargetPointer.Null, new MethodGCRefMapLookup(target, new FrameHelpers(target)).Find(
+            rts.GetMethodDescHandle(new TargetPointer(0x6000)), new TargetPointer(0x7200), dispatch: false));
+    }
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public void TransitionFrame_MissingMetadataOnlyPreventsStringReceiverLookup(bool stringOwner, bool ownMap)
+    {
+        (TestPlaceholderTarget target, VirtualMapTypeSystem rts) = CreateVirtualMapTarget(
+            "interface", metadataMissing: true, unreadableThis: stringOwner, ownMap: ownMap);
+        if (stringOwner)
+            rts.StringTypes.Add(rts.Methods[0x6000].Owner);
+        Assert.Equal(!stringOwner || ownMap ? 0xa000UL : 0UL,
+            new FrameHelpers(target).GetGCRefMapForFrame(new TargetPointer(0x1000)).Value);
+    }
+
+    [Theory]
+    [InlineData(ArrayFunctionType.Get)]
+    [InlineData(ArrayFunctionType.Set)]
+    [InlineData(ArrayFunctionType.Address)]
+    public void TransitionFrame_ArrayAccessorsHaveReceiver(ArrayFunctionType function)
+    {
+        (TestPlaceholderTarget target, VirtualMapTypeSystem rts) = CreateVirtualMapTarget("interface", methodFlags: 4);
+        rts.ArrayFunction = function;
+        Assert.Equal(0xa000UL, new FrameHelpers(target).GetGCRefMapForFrame(new TargetPointer(0x1000)).Value);
+    }
+
+    [Fact]
+    public void TransitionFrame_MasksGCMarkedReceiverMethodTable()
+    {
+        (TestPlaceholderTarget target, _) = CreateVirtualMapTarget("interface", markedReceiver: true);
+        Assert.Equal(0xa000UL, new FrameHelpers(target).GetGCRefMapForFrame(new TargetPointer(0x1000)).Value);
+    }
+
+    [Theory]
+    [InlineData(0x80, false, false)]
+    [InlineData(4, false, false)]
+    [InlineData(0, true, false)]
+    [InlineData(0, false, true)]
+    public void TransitionFrame_ExcludedBodiesDoNotReadReceiver(ushort flags, bool generic, bool instantiationArgument)
+    {
+        (TestPlaceholderTarget target, VirtualMapTypeSystem rts) =
+            CreateVirtualMapTarget("interface", unreadableThis: true, methodFlags: flags);
+        if (generic)
+            rts.GenericMethods.Add(0x6000);
+        rts.MethodContexts[0x6000] = instantiationArgument ? GenericContextLoc.InstArgMethodTable : GenericContextLoc.None;
+        Assert.Equal(TargetPointer.Null, new FrameHelpers(target).GetGCRefMapForFrame(new TargetPointer(0x1000)));
+    }
+
+    private sealed record VirtualMapTypeHandle(TargetPointer Address) : ITypeHandle;
+
+    private sealed class VirtualMapTypeSystem : IRuntimeTypeSystem
+    {
+        internal readonly Dictionary<ulong, (ulong Owner, ushort Slot)> Methods = [];
+        internal readonly Dictionary<ulong, TargetPointer[]> Introduced = [];
+        internal readonly Dictionary<(ulong Owner, ushort Slot), ulong> Vtable = [];
+        internal readonly Dictionary<ulong, ulong> Canonical = [];
+        internal readonly HashSet<ulong> UnboxingStubs = [];
+        internal readonly HashSet<ulong> GenericMethods = [];
+        internal readonly HashSet<ulong> StringTypes = [];
+        internal readonly Dictionary<ulong, GenericContextLoc> MethodContexts = [];
+        internal readonly Dictionary<ulong, uint> MethodTokens = [];
+        internal readonly Dictionary<ulong, ulong> Modules = [];
+        internal readonly Dictionary<ulong, AsyncMethodFlags> AsyncFlags = [];
+        internal uint MethodToken = 0x06000000;
+        internal ArrayFunctionType ArrayFunction = ArrayFunctionType.Constructor;
+        public ITypeHandle GetTypeHandle(TargetPointer address) => new VirtualMapTypeHandle(address);
+        public MethodDescHandle GetMethodDescHandle(TargetPointer address) => new(address);
+        public TargetPointer GetMethodTable(MethodDescHandle method) => new(Methods[method.Address.Value].Owner);
+        public ushort GetSlotNumber(MethodDescHandle method) => Methods[method.Address.Value].Slot;
+        public bool IsUnboxingStub(MethodDescHandle method) => UnboxingStubs.Contains(method.Address.Value);
+        public bool IsValueType(ITypeHandle type) => false;
+        public bool IsString(ITypeHandle type) => StringTypes.Contains(type.Address.Value);
+        public uint GetMethodToken(MethodDescHandle method) => MethodTokens.GetValueOrDefault(method.Address.Value, MethodToken);
+        public TargetPointer GetModule(ITypeHandle type) => new(Modules.GetValueOrDefault(type.Address.Value, 0xc000UL));
+        public AsyncMethodFlags GetAsyncMethodFlags(MethodDescHandle method) => AsyncFlags.GetValueOrDefault(method.Address.Value);
+        public bool IsArrayMethod(MethodDescHandle method, out ArrayFunctionType function)
+        {
+            function = ArrayFunction;
+            return true;
+        }
+        public GenericContextLoc GetGenericContextLoc(MethodDescHandle method) => MethodContexts.GetValueOrDefault(method.Address.Value);
+        public ReadOnlySpan<ITypeHandle> GetGenericMethodInstantiation(MethodDescHandle method)
+            => GenericMethods.Contains(method.Address.Value) ? new ITypeHandle[] { new VirtualMapTypeHandle(new TargetPointer(0x7000)) } : [];
+        public IEnumerable<TargetPointer> GetIntroducedMethodDescs(ITypeHandle type)
+            => Introduced.GetValueOrDefault(type.Address.Value) ?? [];
+        public TargetPointer GetMethodDescForSlot(ITypeHandle type, ushort slot) => new(Vtable.GetValueOrDefault((type.Address.Value, slot)));
+        public TargetPointer GetCanonicalMethodTable(ITypeHandle type) => new(Canonical.GetValueOrDefault(type.Address.Value, type.Address.Value));
+    }
+
+    private static (TestPlaceholderTarget Target, VirtualMapTypeSystem RuntimeTypeSystem) CreateVirtualMapTarget(
+        string scenario, byte[]? map = null, string frameType = nameof(FrameType.PrestubMethodFrame),
+        MetadataReader? metadata = null, bool unreadableThis = false, bool metadataMissing = false, ushort methodFlags = 0,
+        bool markedReceiver = false, bool ownMap = false, uint auxiliarySize = 4, byte[]? overrideMap = null,
+        byte[]? signatureMap = null, ulong cachedFrameMap = 0)
+    {
+        TestPlaceholderTarget.Builder builder = new(new MockTarget.Architecture { IsLittleEndian = true, Is64Bit = false });
+        TargetTestHelpers helpers = builder.MemoryBuilder.TargetTestHelpers;
+        VirtualMapTypeSystem rts = new();
+        if (signatureMap is not null)
+        {
+            Mock<ICallingConvention> callingConvention = new(MockBehavior.Strict);
+            callingConvention.Setup(c => c.TryComputeArgGCRefMapBlob(It.IsAny<MethodDescHandle>(), out signatureMap)).Returns(true);
+            builder.AddMockContract(callingConvention);
+        }
+        if (metadata is not null || metadataMissing)
+        {
+            rts.MethodToken = 0x06000001;
+            ModuleHandle module = new(new TargetPointer(0xc000));
+            Mock<ILoader> loader = new(MockBehavior.Strict);
+            loader.Setup(l => l.GetModuleHandleFromModulePtr(module.Address)).Returns(module);
+            Mock<IEcmaMetadata> ecma = new(MockBehavior.Strict);
+            ecma.Setup(e => e.GetMetadata(module)).Returns(metadata);
+            builder.AddMockContract(loader).AddMockContract(ecma);
+        }
+        Dictionary<DataType, Target.TypeInfo> types = new()
+        {
+            [DataType.Array] = TypeInfo((nameof(Data.Array.NumComponents), 4)),
+            [DataType.String] = TypeInfo((nameof(Data.String.StringLength), 4)),
+            [DataType.MethodDesc] = TypeInfo((nameof(Data.MethodDesc.CodeData), 0), (nameof(Data.MethodDesc.Flags), 4)),
+            [DataType.MethodDescCodeData] = TypeInfo((nameof(Data.MethodDescCodeData.GCRefMap), 0)),
+            [DataType.MethodTable] = TypeInfo(
+                (nameof(Data.MethodTable.MTFlags), 0), (nameof(Data.MethodTable.MTFlags2), 4),
+                (nameof(Data.MethodTable.ParentMethodTable), 8), (nameof(Data.MethodTable.NumVirtuals), 12),
+                (nameof(Data.MethodTable.NumInterfaces), 14), (nameof(Data.MethodTable.AuxiliaryData), 16),
+                (nameof(Data.MethodTable.InterfaceMap), 20)),
+            [DataType.MethodTableAuxiliaryData] = new() { Size = auxiliarySize },
+            [DataType.Frame] = TypeInfo((nameof(Data.Frame.Identifier), 0)),
+            [DataType.FramedMethodFrame] = TypeInfo(
+                (nameof(Data.FramedMethodFrame.TransitionBlockPtr), 8), (nameof(Data.FramedMethodFrame.MethodDescPtr), 12),
+                (nameof(Data.FramedMethodFrame.CachedGCRefMap), 20)),
+            [DataType.StubDispatchFrame] = TypeInfo(
+                (nameof(Data.StubDispatchFrame.MethodDescPtr), 12), (nameof(Data.StubDispatchFrame.Indirection), 16)),
+            [DataType.TransitionBlock] = TypeInfo(
+                (nameof(Data.TransitionBlock.CalleeSavedRegisters), 0), (nameof(Data.TransitionBlock.ReturnAddress), 24),
+                (nameof(Data.TransitionBlock.ArgumentRegisters), 16)) with { Size = X86TransitionBlockSize },
+            [DataType.CalleeSavedRegisters] = TypeInfo(
+                (nameof(X86Context.Ebp), 0), (nameof(X86Context.Ebx), 4), (nameof(X86Context.Edi), 8), (nameof(X86Context.Esi), 12)),
+            [DataType.Object] = TypeInfo((nameof(Data.Object.MethodTable), 0)),
+        };
+        AddMemory(0xa000, map ?? [0xdd, 0x02]);
+        if (overrideMap is not null)
+            AddMemory(0xb200, overrideMap);
+        byte[] frame = new byte[24];
+        helpers.Write(frame, 0x100u);
+        helpers.Write(frame.AsSpan(8), 0x2000u);
+        helpers.Write(frame.AsSpan(12), 0x6000u);
+        helpers.Write(frame.AsSpan(20), checked((uint)cachedFrameMap));
+        AddMemory(0x1000, frame);
+        byte[] transition = new byte[X86TransitionBlockSize];
+        uint[] saved = [0x1111_1111, 0x2222_2222, 0x3333_3333, 0x4444_4444, 0xb100, 0xb000, 0x1234_5678];
+        if (unreadableThis)
+            saved[5] = 0xdeadbeef;
+        for (int i = 0; i < saved.Length; i++)
+            helpers.Write(transition.AsSpan(i * sizeof(uint)), saved[i]);
+        AddMemory(0x2000, transition);
+        byte[] receiver = new byte[4];
+        helpers.Write(receiver, markedReceiver ? 0x7201u : 0u);
+        AddMemory(0xb000, receiver);
+        AddMemory(0xb100, new byte[4]);
+
+        ushort bodySlot = scenario == "nonvirtual-no-inherit" ? (ushort)4 :
+            scenario is "virtual-boundary" or "nonvirtual-interface-collision" or "nonvirtual-alias-collision" ||
+                scenario.StartsWith("alias", StringComparison.Ordinal) ? (ushort)2 : (ushort)0;
+        bool interfaceOwner = scenario.StartsWith("interface-owner", StringComparison.Ordinal);
+        bool resolvedInterface = scenario is "interface-owner-implementation" or "interface-owner-ancestor";
+        bool overriding = scenario.Contains("overriding", StringComparison.Ordinal);
+        AddMethod(0x6000, interfaceOwner ? 0x8000u :
+            scenario.Contains("interface", StringComparison.Ordinal) || scenario == "nonvirtual-alias-collision" ? 0x7100u : 0x7200u, bodySlot, cached: ownMap);
+        AddMethod(0x6100, 0x7000, 0, cached: !scenario.Contains("interface", StringComparison.Ordinal) &&
+            scenario != "same-type-declaration" && (!overriding || scenario == "overriding-fallback"));
+        ushort parentSlot = scenario == "nonvirtual-no-inherit" ? (ushort)4 :
+            scenario == "virtual-boundary" ? (ushort)2 : overriding || scenario == "interface-owner-ancestor" ? (ushort)0 : (ushort)1;
+        AddMethod(0x6200, 0x7100, parentSlot,
+            cached: overriding || scenario is "nonvirtual-no-inherit" or "virtual-boundary" or "interface-owner-ancestor");
+        AddMethod(0x6300, 0x8000, 0, cached: !interfaceOwner && scenario != "interface-parent");
+        AddMethod(0x6400, 0x8100, scenario == "interface-negative" ? (ushort)1 : (ushort)0, cached: !resolvedInterface);
+        ushort implementationSlot = scenario is "nonvirtual-interface-collision" or "nonvirtual-alias-collision" ? (ushort)2 :
+            scenario == "interface-owner-ancestor" ? (ushort)0 : (ushort)3;
+        AddMethod(0x6500, 0x7200, implementationSlot, cached: scenario == "interface-owner-implementation");
+        if (scenario == "same-type-declaration")
+            AddMethod(0x6600, 0x7200, 0, cached: true);
+        AddType(0x7000, 0, 1);
+        AddType(0x7100, 0x7000, 2,
+            scenario is "alias-chain" or "alias-overriding" ? [1, 1, 0, 1] : null);
+        uint[]? derivedMap = scenario switch
+        {
+            "alias-chain" or "alias-overriding" => [1, 1, 1, 2],
+            "alias-target" or "alias-target-overriding" => [1, 1, 1, 0],
+            "alias-split" => [1, 1, 0, 2],
+            "nonvirtual-alias-collision" => [1, 1, 0, 2],
+            "interface" or "canonical-interface" or "interface-parent" => [2, 1, 1, 0, 0, 1],
+            "nonvirtual-interface-collision" or "interface-owner-implementation" or "interface-owner-ancestor" => [2, 1, 1, 0, 0, 2],
+            "interface-negative" => [2, 1, 2, 1, 0, 3, 0, 6],
+            "interface-owner" => [4, 1, 1, 0, 0, 2, 0, 1, 0, 0, 1],
+            _ => null,
+        };
+        AddType(0x7200, 0x7100, 4, scenario == "canonical-interface" ? null : derivedMap, interfaces: 2);
+        if (scenario == "canonical-interface")
+        {
+            AddType(0x7400, 0x7100, 4, derivedMap, interfaces: 2);
+            rts.Canonical[0x7200] = 0x7400;
+        }
+        AddType(0x8000, scenario == "interface-parent" ? 0x8100u : 0u, 1, isInterface: true);
+        AddType(0x8100, 0, 2, isInterface: true);
+        byte[] interfaces = new byte[8];
+        helpers.Write(interfaces, scenario == "interface-negative" ? 0x8100u : 0x8000u);
+        helpers.Write(interfaces.AsSpan(4), 0x8100u);
+        AddMemory(0x9000, interfaces);
+
+        for (ushort slot = 0; slot < 4; slot++)
+            rts.Vtable[(0x7200, slot)] = 0x6000;
+        if (scenario == "interface-negative")
+            rts.Vtable[(0x7200, 2)] = 0x6200;
+        if (scenario is "nonvirtual-interface-collision" or "nonvirtual-alias-collision")
+        {
+            rts.Vtable[(0x7200, 0)] = 0x6500;
+            rts.Vtable[(0x7200, 2)] = 0x6500;
+        }
+        if (scenario == "alias-split")
+            rts.Vtable[(0x7200, 0)] = 0x6100;
+        if (interfaceOwner)
+        {
+            rts.Vtable[(0x7200, 1)] = 0x6500;
+            rts.Vtable[(0x7200, 2)] = 0x6500;
+        }
+        Mock<IObject> objects = new(MockBehavior.Strict);
+        objects.Setup(o => o.GetMethodTableAddress(new TargetPointer(0xb000))).Returns(new TargetPointer(0x7200));
+        if (markedReceiver)
+        {
+            builder.AddContract<IObject>("c1").AddGlobals(
+                (Constants.Globals.SyncBlockIsHashOrSyncBlockIndex, 0), (Constants.Globals.SyncBlockIsHashCode, 0),
+                (Constants.Globals.SyncBlockHashCodeMask, 0), (Constants.Globals.SyncBlockIndexMask, 0));
+        }
+        else
+        {
+            builder.AddMockContract(objects);
+        }
+        Mock<IRuntimeInfo> runtimeInfo = new(MockBehavior.Strict);
+        runtimeInfo.Setup(r => r.GetTargetArchitecture()).Returns(RuntimeInfoArchitecture.X86);
+        return (builder.AddTypes(types).AddGlobals((frameType + "Identifier", 0x100), (Constants.Globals.ObjectToMethodTableUnmask, markedReceiver ? 3UL : 0UL))
+            .AddMockContract<IRuntimeTypeSystem>(rts).AddMockContract(runtimeInfo)
+            .AddMockContract(Mock.Of<IGC>()).AddMockContract(Mock.Of<IGCInfo>())
+            .AddMockContract(Mock.Of<IPlatformMetadata>())
+            .AddMockContract(Mock.Of<IExecutionManager>()).Build(), rts);
+
+        void AddMemory(uint address, byte[] data)
+            => builder.MemoryBuilder.AddHeapFragment(new() { Address = address, Data = data, Name = $"Virtual map data {address:x}" });
+
+        void AddMethod(uint address, uint owner, ushort slot, bool cached)
+        {
+            byte[] data = new byte[8];
+            helpers.Write(data, cached ? address + 8 : 0u);
+            if (address == 0x6000)
+                helpers.Write(data.AsSpan(4), methodFlags);
+            AddMemory(address, data);
+            if (cached)
+            {
+                byte[] codeData = new byte[4];
+                helpers.Write(codeData, address == 0x6200 && overrideMap is not null ? 0xb200u : 0xa000u);
+                AddMemory(address + 8, codeData);
+            }
+            rts.Methods[address] = (owner, slot);
+            rts.Introduced[owner] = [.. rts.Introduced.GetValueOrDefault(owner) ?? [], new TargetPointer(address)];
+        }
+
+        void AddType(uint address, uint parent, ushort virtuals, uint[]? dispatchMap = null, ushort interfaces = 0, bool isInterface = false)
+        {
+            byte[] data = new byte[24];
+            helpers.Write(data, isInterface ? 0x000c0000u : 0u);
+            helpers.Write(data.AsSpan(4), dispatchMap is null ? 0u : 4u);
+            helpers.Write(data.AsSpan(8), parent);
+            helpers.Write(data.AsSpan(12), virtuals);
+            helpers.Write(data.AsSpan(14), interfaces);
+            helpers.Write(data.AsSpan(16), address + 0x10000u);
+            helpers.Write(data.AsSpan(20), 0x9000u);
+            AddMemory(address, data);
+            if (dispatchMap is not null)
+                AddMemory(address + 0x10000 + auxiliarySize, EncodeDispatchMap(dispatchMap));
+        }
+
+        static Target.TypeInfo TypeInfo(params (string Name, int Offset)[] fields)
+            => new() { Fields = fields.ToDictionary(f => f.Name, f => new Target.FieldInfo { Offset = f.Offset }) };
+    }
+
+    [Theory]
+    [InlineData(nameof(Data.ExternalMethodFrame), false, false, false, false)]
+    [InlineData(nameof(Data.ExternalMethodFrame), true, false, false, true)]
+    [InlineData(nameof(Data.StubDispatchFrame), false, false, false, false)]
+    [InlineData(nameof(Data.StubDispatchFrame), true, false, false, false)]
+    [InlineData(nameof(FrameType.PrestubMethodFrame), false, true, false, true)]
+    [InlineData(nameof(FrameType.PrestubMethodFrame), true, false, false, false)]
+    [InlineData(nameof(FrameType.PrestubMethodFrame), true, true, true, false)]
+    [InlineData(nameof(FrameType.CallCountingHelperFrame), false, true, false, true)]
+    [InlineData(nameof(FrameType.CallCountingHelperFrame), true, false, false, false)]
+    [InlineData(nameof(FrameType.CallCountingHelperFrame), true, true, true, false)]
+    public void TransitionFrame_ThisUsesFrameReceiverKind(
+        string frameType, bool encodedInterior, bool valueType, bool unboxing, bool expectedInterior)
+    {
+        byte[] map = encodedInterior ? [0xfd, 0x02] : [0xdd, 0x02];
+        (TestPlaceholderTarget target, ContextHolder<X86Context> context) = CreateX86TransitionFrameTarget(
+            frameType, map, hasMethodDesc: true, valueType: valueType, unboxing: unboxing);
+        GcScanContext scanContext = new(target, resolveInteriorPointers: false);
+        scanContext.UpdateScanContext(new TargetPointer(0x2000), TargetCodePointer.Null, new TargetPointer(0x1000));
+        new GcScanner(target).GcScanRoots(new TargetPointer(0x1000), scanContext);
+
+        Assert.Collection(scanContext.StackRefs,
+            reference =>
+            {
+                Assert.Equal(0x2014UL, reference.Address.Value);
+                Assert.Equal(expectedInterior ? GcScanFlags.GC_CALL_INTERIOR : GcScanFlags.None, reference.Flags);
+            },
+            reference =>
+            {
+                Assert.Equal(0x2010UL, reference.Address.Value);
+                Assert.Equal(GcScanFlags.None, reference.Flags);
+            });
+        new X86FrameHandler(target, context).HandleTransitionFrame(
+            target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(new TargetPointer(0x1000)));
+        AssertX86TransitionFrameContext(context, stackPopSlots: 1);
+    }
 
     [Theory]
     [InlineData(false, new byte[] { 0x04, 0x05, 0x21, 0x02 }, uint.MaxValue)]
@@ -142,6 +1051,12 @@ public unsafe class StackWalkTests
     [InlineData(nameof(Data.StubDispatchFrame), new byte[] { 0x03 }, 3u, false)]
     [InlineData(nameof(Data.StubDispatchFrame), new byte[] { 0x0f }, 6u, false)]
     [InlineData(nameof(Data.StubDispatchFrame), new byte[] { 0x01 }, 1u, true)]
+    [InlineData(nameof(FrameType.PrestubMethodFrame), new byte[] { 0x00 }, 0u, true)]
+    [InlineData(nameof(FrameType.PrestubMethodFrame), new byte[] { 0x01 }, 1u, true)]
+    [InlineData(nameof(FrameType.PrestubMethodFrame), new byte[] { 0x0f }, 6u, true)]
+    [InlineData(nameof(FrameType.CallCountingHelperFrame), new byte[] { 0x00 }, 0u, true)]
+    [InlineData(nameof(FrameType.CallCountingHelperFrame), new byte[] { 0x01 }, 1u, true)]
+    [InlineData(nameof(FrameType.CallCountingHelperFrame), new byte[] { 0x0f }, 6u, true)]
     public void X86TransitionFrame_UsesGCRefMapForStackPop(string frameType, byte[] gcRefMap, uint stackPopSlots, bool hasMethodDesc)
     {
         (TestPlaceholderTarget target, ContextHolder<X86Context> context) =
@@ -159,6 +1074,8 @@ public unsafe class StackWalkTests
     [InlineData(nameof(Data.FramedMethodFrame))]
     [InlineData(nameof(Data.ExternalMethodFrame))]
     [InlineData(nameof(Data.StubDispatchFrame))]
+    [InlineData(nameof(FrameType.PrestubMethodFrame))]
+    [InlineData(nameof(FrameType.CallCountingHelperFrame))]
     public void X86TransitionFrame_UsesSignatureWhenGCRefMapUnavailable(string frameType)
     {
         (TestPlaceholderTarget target, ContextHolder<X86Context> context) =
@@ -170,6 +1087,59 @@ public unsafe class StackWalkTests
         AssertX86TransitionFrameContext(context, stackPopSlots: 2);
         Assert.Equal(0x1234_5678UL, new FrameHelpers(target).GetReturnAddress(
             target.ProcessedData.GetOrAdd<Data.Frame>(new TargetPointer(0x1000))).Value);
+    }
+
+    [Theory]
+    [InlineData(nameof(FrameType.PrestubMethodFrame), true, true, true)]
+    [InlineData(nameof(FrameType.PrestubMethodFrame), false, true, true)]
+    [InlineData(nameof(FrameType.PrestubMethodFrame), false, false, true)]
+    [InlineData(nameof(FrameType.PrestubMethodFrame), false, true, false)]
+    [InlineData(nameof(FrameType.CallCountingHelperFrame), true, true, true)]
+    [InlineData(nameof(FrameType.CallCountingHelperFrame), false, true, true)]
+    [InlineData(nameof(FrameType.CallCountingHelperFrame), false, false, true)]
+    [InlineData(nameof(FrameType.CallCountingHelperFrame), false, true, false)]
+    public void MethodDescFrame_ScansRootsWithCachedMapOrSignature(
+        string frameType, bool cachedMap, bool hasCodeData, bool hasGCRefMapField)
+    {
+        byte[] map = [0x24];
+        (TestPlaceholderTarget target, _) = CreateX86TransitionFrameTarget(
+            frameType, gcRefMap: cachedMap ? map : null, hasMethodDesc: true,
+            signatureBlob: cachedMap ? null : map, hasCodeData: hasCodeData, hasGCRefMapField: hasGCRefMapField);
+        GcScanContext scanContext = new(target, resolveInteriorPointers: false);
+        scanContext.UpdateScanContext(new TargetPointer(0x2000), TargetCodePointer.Null, new TargetPointer(0x1000));
+
+        new GcScanner(target).GcScanRoots(new TargetPointer(0x1000), scanContext);
+
+        Assert.Collection(scanContext.StackRefs,
+            reference =>
+            {
+                Assert.Equal(0x2014UL, reference.Address.Value);
+                Assert.Equal(0x2222_0000UL, reference.Object.Value);
+                Assert.Equal(GcScanFlags.None, reference.Flags);
+            },
+            reference =>
+            {
+                Assert.Equal(0x2010UL, reference.Address.Value);
+                Assert.Equal(0x1111_0000UL, reference.Object.Value);
+                Assert.Equal(GcScanFlags.GC_CALL_INTERIOR, reference.Flags);
+            });
+    }
+
+    [Theory]
+    [InlineData(nameof(FrameType.PrestubMethodFrame), new byte[] { 0 }, new ulong[] { })]
+    [InlineData(nameof(FrameType.CallCountingHelperFrame), new byte[] { 0 }, new ulong[] { })]
+    [InlineData(nameof(FrameType.PrestubMethodFrame), new byte[] { 0xe4, 0 }, new ulong[] { 0x2014, 0x2010, 0x201c })]
+    [InlineData(nameof(FrameType.CallCountingHelperFrame), new byte[] { 0xe4, 0 }, new ulong[] { 0x2014, 0x2010, 0x201c })]
+    public void MethodDescFrame_CachedMapsDoNotInspectSignature(string frameType, byte[] gcRefMap, ulong[] expectedSlots)
+    {
+        (TestPlaceholderTarget target, _) = CreateX86TransitionFrameTarget(
+            frameType, gcRefMap, hasMethodDesc: true);
+        GcScanContext scanContext = new(target, resolveInteriorPointers: false);
+        scanContext.UpdateScanContext(new TargetPointer(0x2000), TargetCodePointer.Null, new TargetPointer(0x1000));
+
+        new GcScanner(target).GcScanRoots(new TargetPointer(0x1000), scanContext);
+
+        Assert.Equal(expectedSlots, scanContext.StackRefs.Select(reference => reference.Address.Value));
     }
 
     [Theory]
@@ -238,7 +1208,9 @@ public unsafe class StackWalkTests
     private static (TestPlaceholderTarget Target, ContextHolder<X86Context> Context) CreateX86TransitionFrameTarget(
         string frameType, byte[]? gcRefMap, bool hasMethodDesc, byte[]? signatureBlob = null,
         uint? representativeMethodDescAddress = null, bool hasUnresolvedIndirection = false,
-        RuntimeInfoArchitecture architecture = RuntimeInfoArchitecture.X86)
+        RuntimeInfoArchitecture architecture = RuntimeInfoArchitecture.X86, bool hasCodeData = true,
+        bool hasGCRefMapField = true, bool? valueType = null, bool unboxing = false, bool inlineGCRefMap = true,
+        bool compositeComponent = false)
     {
         MockTarget.Architecture arch = new() { IsLittleEndian = true, Is64Bit = false };
         TestPlaceholderTarget.Builder builder = new(arch);
@@ -248,6 +1220,7 @@ public unsafe class StackWalkTests
         const uint ImageBase = 0x100000;
         const uint ImportSectionRva = 0x100;
         const uint GCRefMapRva = 0x200;
+        bool methodDescMap = frameType is nameof(FrameType.PrestubMethodFrame) or nameof(FrameType.CallCountingHelperFrame);
         TargetPointer indirection = new(ImageBase + ImportSectionRva + 2 * sizeof(uint));
 
         byte[] frameData = new byte[28];
@@ -264,30 +1237,71 @@ public unsafe class StackWalkTests
         helpers.Write(transitionBlock.AsSpan(4), 0x2222_2222u);
         helpers.Write(transitionBlock.AsSpan(8), 0x3333_3333u);
         helpers.Write(transitionBlock.AsSpan(12), 0x4444_4444u);
+        helpers.Write(transitionBlock.AsSpan(16), 0x1111_0000u);
+        helpers.Write(transitionBlock.AsSpan(20), 0x2222_0000u);
         helpers.Write(transitionBlock.AsSpan(24), 0x1234_5678u);
         builder.MemoryBuilder.AddHeapFragment(new() { Address = 0x2000, Data = transitionBlock, Name = "Transition block" });
+        byte[] stackArgument = new byte[sizeof(uint)];
+        helpers.Write(stackArgument, 0x3333_0000u);
+        builder.MemoryBuilder.AddHeapFragment(new() { Address = 0x201c, Data = stackArgument, Name = "Stack argument" });
 
         Mock<IExecutionManager> executionManager = new(MockBehavior.Strict);
-        if (gcRefMap is not null)
+        if (methodDescMap)
+        {
+            byte[] methodDesc = new byte[sizeof(uint)];
+            helpers.Write(methodDesc, hasCodeData ? 0x6100u : 0u);
+            builder.MemoryBuilder.AddHeapFragment(new() { Address = MethodDescAddress, Data = methodDesc, Name = "MethodDesc" });
+            byte[] codeData = new byte[sizeof(uint)];
+            helpers.Write(codeData, gcRefMap is not null ? 0x6200u : 0u);
+            builder.MemoryBuilder.AddHeapFragment(new() { Address = 0x6100, Data = codeData, Name = "MethodDesc code data" });
+            if (gcRefMap is not null)
+                builder.MemoryBuilder.AddHeapFragment(new() { Address = 0x6200, Data = gcRefMap, Name = "Cached GCRefMap" });
+        }
+        else if (gcRefMap is not null)
         {
             byte[] module = new byte[4];
             helpers.Write(module, 0x4000u);
             builder.MemoryBuilder.AddHeapFragment(new() { Address = 0x3000, Data = module, Name = "Module" });
-            byte[] r2rInfo = new byte[12];
-            helpers.Write(r2rInfo.AsSpan(0), ImageBase);
+            byte[] r2rInfo = new byte[16];
+            // A component assembly of a composite image leaves LoadedImageBase unset; the composite's info holds it.
+            helpers.Write(r2rInfo.AsSpan(0), compositeComponent ? 0u : ImageBase);
             helpers.Write(r2rInfo.AsSpan(4), 1u);
             helpers.Write(r2rInfo.AsSpan(8), 0x5000u);
+            helpers.Write(r2rInfo.AsSpan(12), compositeComponent ? 0x4100u : 0x4000u);
             builder.MemoryBuilder.AddHeapFragment(new() { Address = 0x4000, Data = r2rInfo, Name = "ReadyToRun info" });
+            if (compositeComponent)
+            {
+                byte[] compositeInfo = new byte[16];
+                helpers.Write(compositeInfo.AsSpan(0), ImageBase);
+                helpers.Write(compositeInfo.AsSpan(12), 0x4100u);
+                builder.MemoryBuilder.AddHeapFragment(new() { Address = 0x4100, Data = compositeInfo, Name = "Composite ReadyToRun info" });
+            }
             byte[] importSection = new byte[20];
             helpers.Write(importSection.AsSpan(0), ImportSectionRva);
             helpers.Write(importSection.AsSpan(4), 3u * sizeof(uint));
             importSection[11] = sizeof(uint);
-            helpers.Write(importSection.AsSpan(16), GCRefMapRva);
+            if (inlineGCRefMap)
+            {
+                const uint SignaturesRva = 0x180;
+                helpers.Write(importSection.AsSpan(8), (ushort)0x0008);
+                helpers.Write(importSection.AsSpan(12), SignaturesRva);
+                byte[] signatures = new byte[3 * sizeof(uint)];
+                helpers.Write(signatures.AsSpan(2 * sizeof(uint)), GCRefMapRva);
+                builder.MemoryBuilder.AddHeapFragment(new() { Address = ImageBase + SignaturesRva, Data = signatures, Name = "Import signatures" });
+            }
+            else
+            {
+                helpers.Write(importSection.AsSpan(16), GCRefMapRva);
+            }
             builder.MemoryBuilder.AddHeapFragment(new() { Address = 0x5000, Data = importSection, Name = "Import section" });
-            // The first two import entries have empty maps; select the third entry.
-            byte[] maps = new byte[6 + gcRefMap.Length];
-            helpers.Write(maps.AsSpan(0), 4u);
-            gcRefMap.CopyTo(maps, 6);
+            int mapOffset = inlineGCRefMap ? 0 : 6;
+            byte[] maps = new byte[mapOffset + gcRefMap.Length];
+            if (!inlineGCRefMap)
+            {
+                // Use the third import to exercise skipping the two preceding empty maps.
+                helpers.Write(maps.AsSpan(0), 4u);
+            }
+            gcRefMap.CopyTo(maps, mapOffset);
             builder.MemoryBuilder.AddHeapFragment(new() { Address = ImageBase + GCRefMapRva, Data = maps, Name = "GCRefMaps" });
             executionManager.Setup(e => e.FindReadyToRunModule(indirection)).Returns(new TargetPointer(0x3000));
         }
@@ -297,6 +1311,16 @@ public unsafe class StackWalkTests
         }
 
         Mock<IRuntimeTypeSystem> runtimeTypeSystem = new(MockBehavior.Strict);
+        if (valueType.HasValue)
+        {
+            MethodDescHandle method = new(new TargetPointer(MethodDescAddress));
+            Mock<ITypeHandle> type = new(MockBehavior.Strict);
+            runtimeTypeSystem.Setup(r => r.GetMethodDescHandle(new TargetPointer(MethodDescAddress))).Returns(method);
+            runtimeTypeSystem.Setup(r => r.GetMethodTable(method)).Returns(new TargetPointer(0x7000));
+            runtimeTypeSystem.Setup(r => r.GetTypeHandle(new TargetPointer(0x7000))).Returns(type.Object);
+            runtimeTypeSystem.Setup(r => r.IsValueType(type.Object)).Returns(valueType.Value);
+            runtimeTypeSystem.Setup(r => r.IsUnboxingStub(method)).Returns(unboxing);
+        }
         if (representativeMethodDescAddress.HasValue)
         {
             Mock<ITypeHandle> representativeType = new(MockBehavior.Strict);
@@ -314,18 +1338,30 @@ public unsafe class StackWalkTests
 
         Dictionary<DataType, Target.TypeInfo> types = new()
         {
+            [DataType.Array] = CreateTypeInfo((nameof(Data.Array.NumComponents), 4)),
+            [DataType.String] = CreateTypeInfo((nameof(Data.String.StringLength), 4)),
+            [DataType.Object] = CreateTypeInfo((nameof(Data.Object.MethodTable), 0)),
             [DataType.Frame] = CreateTypeInfo((nameof(Data.Frame.Identifier), 0)),
             [DataType.FramedMethodFrame] = CreateTypeInfo(
                 (nameof(Data.FramedMethodFrame.TransitionBlockPtr), 8), (nameof(Data.FramedMethodFrame.MethodDescPtr), 12)),
             [DataType.TransitionBlock] = CreateTypeInfo(
-                (nameof(Data.TransitionBlock.CalleeSavedRegisters), 0), (nameof(Data.TransitionBlock.ReturnAddress), 24)) with { Size = X86TransitionBlockSize },
+                (nameof(Data.TransitionBlock.CalleeSavedRegisters), 0), (nameof(Data.TransitionBlock.ReturnAddress), 24),
+                (nameof(Data.TransitionBlock.ArgumentRegisters), 16)) with { Size = X86TransitionBlockSize },
             [DataType.CalleeSavedRegisters] = CreateTypeInfo(
                 (nameof(X86Context.Ebp), 0), (nameof(X86Context.Ebx), 4), (nameof(X86Context.Edi), 8), (nameof(X86Context.Esi), 12)),
             [DataType.Module] = CreateTypeInfo((nameof(Data.Module.ReadyToRunInfo), 0)),
             [DataType.ReadyToRunInfo] = CreateTypeInfo(
-                (nameof(Data.ReadyToRunInfo.LoadedImageBase), 0), (nameof(Data.ReadyToRunInfo.NumImportSections), 4), (nameof(Data.ReadyToRunInfo.ImportSections), 8)),
+                (nameof(Data.ReadyToRunInfo.LoadedImageBase), 0), (nameof(Data.ReadyToRunInfo.NumImportSections), 4), (nameof(Data.ReadyToRunInfo.ImportSections), 8),
+                (nameof(Data.ReadyToRunInfo.CompositeInfo), 12)),
         };
-        if (frameType != nameof(Data.FramedMethodFrame))
+        if (methodDescMap)
+        {
+            types[DataType.MethodDesc] = CreateTypeInfo((nameof(Data.MethodDesc.CodeData), 0));
+            types[DataType.MethodDescCodeData] = hasGCRefMapField
+                ? CreateTypeInfo((nameof(Data.MethodDescCodeData.GCRefMap), 0))
+                : CreateTypeInfo();
+        }
+        if (frameType != nameof(Data.FramedMethodFrame) && !methodDescMap)
         {
             types[Enum.Parse<DataType>(frameType)] = CreateTypeInfo(
                 (nameof(Data.FramedMethodFrame.MethodDescPtr), 12), (nameof(Data.ExternalMethodFrame.Indirection), 16));
@@ -341,11 +1377,14 @@ public unsafe class StackWalkTests
         runtimeInfo.Setup(r => r.GetTargetArchitecture()).Returns(architecture);
         TestPlaceholderTarget target = builder
             .AddTypes(types)
-            .AddGlobals((frameType + "Identifier", FrameIdentifier))
+            .AddGlobals((frameType + "Identifier", FrameIdentifier), (Constants.Globals.ObjectToMethodTableUnmask, 0))
             .AddMockContract(executionManager)
             .AddMockContract(runtimeTypeSystem)
             .AddMockContract(callingConvention)
+            .AddMockContract(Mock.Of<IGC>())
+            .AddMockContract(Mock.Of<IGCInfo>())
             .AddMockContract(runtimeInfo)
+            .AddMockContract(Mock.Of<IPlatformMetadata>())
             .Build();
         ContextHolder<X86Context> context = new()
         {
@@ -356,6 +1395,160 @@ public unsafe class StackWalkTests
 
         static Target.TypeInfo CreateTypeInfo(params (string Name, int Offset)[] fields)
             => new() { Fields = fields.ToDictionary(f => f.Name, f => new Target.FieldInfo { Offset = f.Offset }) };
+    }
+
+    [Theory]
+    [InlineData(4u, false, 0x2FFCu, 0x2FF4u)]
+    [InlineData(5u, false, 0x2FFCu, 0x2FF4u)]
+    [InlineData(4u, true, 0x2008u, 0x2000u)]
+    [InlineData(5u, true, 0x2008u, 0x2000u)]
+    public void X86GcScannerAndStackWalk_ResolvePushedRootsAgainstCurrentFrame(
+        uint version, bool isFunclet, uint firstAddress, uint secondAddress)
+    {
+        TestPlaceholderTarget.Builder builder = new(new() { IsLittleEndian = true, Is64Bit = false });
+        TargetTestHelpers helpers = builder.MemoryBuilder.TargetTestHelpers;
+        const uint GcInfoAddress = 0x10000;
+        const uint ContextAddress = 0x11000;
+        ContextHolder<X86Context> context = new()
+        {
+            Context = new X86Context
+            {
+                ContextFlags = (uint)X86Context.ContextFlagsValues.CONTEXT_FULL,
+                Eip = 0x5003,
+                Esp = 0x2000,
+                Ebp = 0x3000,
+            },
+        };
+        builder.MemoryBuilder.AddHeapFragment(new() {         Address = ContextAddress, Data = context.GetBytes().ToArray(), Name = "Context" });
+        builder.MemoryBuilder.AddHeapFragment(new()
+        {
+            Address = GcInfoAddress,
+            Data = [64, 0x81, 0xBE, 0xBF, 0xC3, 0x40, 0x81, 0xB1, 0x91, 0xFF],
+            Name = "X86 GCInfo",
+        });
+        byte[] funcletStack = new byte[16];
+        helpers.Write(funcletStack.AsSpan(0), 0x1111u);
+        helpers.Write(funcletStack.AsSpan(8), 0x2222u);
+        helpers.Write(funcletStack.AsSpan(12), 0x6003u);
+        builder.MemoryBuilder.AddHeapFragment(new() { Address = 0x2000, Data = funcletStack, Name = "Funclet stack" });
+        byte[] parentStack = new byte[20];
+        helpers.Write(parentStack.AsSpan(0), 0x4444u);
+        helpers.Write(parentStack.AsSpan(8), 0x3333u);
+        helpers.Write(parentStack.AsSpan(12), 0x4000u);
+        helpers.Write(parentStack.AsSpan(16), 0x7000u);
+        builder.MemoryBuilder.AddHeapFragment(new() { Address = 0x2FF4, Data = parentStack, Name = "Parent stack" });
+
+        MockThreadBuilder threadBuilder = new(builder.MemoryBuilder);
+        MockThread thread = threadBuilder.AddThread(1, 1234);
+        thread.ExceptionTracker = 0;
+        ThreadData threadData = new()
+        {
+            ThreadAddress = new TargetPointer(thread.Address),
+            Frame = new TargetPointer(uint.MaxValue),
+            DebuggerFilterContext = new TargetPointer(ContextAddress),
+        };
+        builder.AddTypes(CreateThreadTypes(threadBuilder));
+        builder.AddTypes(new Dictionary<DataType, Target.TypeInfo>
+        {
+            [DataType.Array] = TypeWithField(nameof(Data.Array.NumComponents), 4),
+            [DataType.String] = TypeWithField(nameof(Data.String.StringLength), 4),
+            [DataType.Object] = TypeWithField(nameof(Data.Object.MethodTable), 0),
+        });
+        builder.AddGlobals((Constants.Globals.ObjectToMethodTableUnmask, 0));
+        Mock<IRuntimeInfo> runtimeInfo = new();
+        runtimeInfo.Setup(r => r.GetTargetArchitecture()).Returns(RuntimeInfoArchitecture.X86);
+        CodeBlockHandle codeBlock = new(new TargetPointer(0x5000));
+        CodeBlockHandle parentCodeBlock = new(new TargetPointer(0x6000));
+        TargetPointer gcInfo = new(GcInfoAddress);
+        Mock<IExecutionManager> executionManager = new();
+        executionManager.Setup(e => e.GetCodeBlockHandle(new TargetCodePointer(0x5003))).Returns(codeBlock);
+        executionManager.Setup(e => e.GetCodeBlockHandle(new TargetCodePointer(0x6003))).Returns(parentCodeBlock);
+        executionManager.Setup(e => e.GetStartAddress(codeBlock)).Returns(new TargetPointer(0x5000));
+        executionManager.Setup(e => e.GetStartAddress(parentCodeBlock)).Returns(new TargetPointer(0x6000));
+        executionManager.Setup(e => e.IsFunclet(codeBlock)).Returns(isFunclet);
+        executionManager.Setup(e => e.GetRelativeOffset(codeBlock)).Returns(new TargetNUInt(3));
+        executionManager.Setup(e => e.GetRelativeOffset(parentCodeBlock)).Returns(new TargetNUInt(3));
+        executionManager.Setup(e => e.GetGCInfo(codeBlock, out gcInfo, out version));
+        executionManager.Setup(e => e.GetGCInfo(parentCodeBlock, out gcInfo, out version));
+        TestPlaceholderTarget target = builder
+            .AddMockContract(runtimeInfo)
+            .AddMockContract(executionManager)
+            .AddMockContract(Mock.Of<IGC>())
+            .AddMockContract(Mock.Of<IRuntimeTypeSystem>())
+            .AddMockContract(Mock.Of<IPlatformMetadata>())
+            .AddMockContract(Mock.Of<IDebugger>())
+            .AddContract<IGCInfo>("c1")
+            .AddContract<IStackWalk>("c1")
+            .Build();
+        GcScanContext scan = new(target, resolveInteriorPointers: false);
+        scan.UpdateScanContext(context.StackPointer, context.InstructionPointer, TargetPointer.Null);
+        new GcScanner(target).EnumGcRefsForManagedFrame(
+            context, codeBlock, new() { IsActiveFrame = true, IsFunclet = isFunclet }, scan);
+        Assert.Equal(new ulong[] { firstAddress, secondAddress }, scan.StackRefs.Select(root => root.Address.Value));
+        Assert.Equal(isFunclet ? new ulong[] { 0x2222, 0x1111 } : new ulong[] { 0x3333, 0x4444 },
+            scan.StackRefs.Select(root => root.Object.Value));
+
+        IReadOnlyList<StackReferenceData> roots = target.Contracts.StackWalk.WalkStackReferences(threadData, resolveInteriorPointers: false);
+        Assert.Equal(new ulong[] { firstAddress, secondAddress }, roots.Select(root => root.Address.Value));
+        Assert.Equal(isFunclet ? new ulong[] { 0x2222, 0x1111 } : new ulong[] { 0x3333, 0x4444 },
+            roots.Select(root => root.Object.Value));
+
+        static Target.TypeInfo TypeWithField(string name, int offset)
+            => new() { Fields = new Dictionary<string, Target.FieldInfo> { [name] = new() { Offset = offset } } };
+    }
+
+    [Theory]
+    [InlineData(4u, false)]
+    [InlineData(5u, false)]
+    [InlineData(4u, true)]
+    [InlineData(5u, true)]
+    public void X86GSCookieOffsetMatchesUnwoundCallerStackPointer(uint version, bool varArgs)
+    {
+        TestPlaceholderTarget.Builder builder = new(new() { IsLittleEndian = true, Is64Bit = false });
+        TargetTestHelpers helpers = builder.MemoryBuilder.TargetTestHelpers;
+        const uint MethodStart = 0x5000;
+        const uint GcInfoAddress = 0x10000;
+        const uint FramePointer = 0x3000;
+        const uint Cookie = 0x1234;
+        builder.MemoryBuilder.AddHeapFragment(new()
+        {
+            Address = GcInfoAddress,
+            Data = varArgs
+                ? [64, 0x81, 0x85, 0xBE, 0xBF, 0x8A, 0xC8, 0x4A, 16, 0xFF]
+                : [64, 0x81, 0x85, 0xBE, 0xBF, 0x8A, 0x4A, 16, 0xFF],
+            Name = "X86 GCInfo",
+        });
+        byte[] stack = new byte[24];
+        helpers.Write(stack.AsSpan(0), Cookie);
+        helpers.Write(stack.AsSpan(16), 0x4000u);
+        helpers.Write(stack.AsSpan(20), 0x6000u);
+        builder.MemoryBuilder.AddHeapFragment(new() { Address = FramePointer - 16, Data = stack, Name = "Stack" });
+
+        CodeBlockHandle codeBlock = new(new TargetPointer(MethodStart));
+        TargetPointer gcInfoAddress = new(GcInfoAddress);
+        Mock<IExecutionManager> executionManager = new();
+        executionManager.Setup(e => e.GetCodeBlockHandle(new TargetCodePointer(MethodStart + 3))).Returns(codeBlock);
+        executionManager.Setup(e => e.GetGCInfo(codeBlock, out gcInfoAddress, out version));
+        executionManager.Setup(e => e.GetRelativeOffset(codeBlock)).Returns(new TargetNUInt(3));
+        executionManager.Setup(e => e.GetStartAddress(codeBlock)).Returns(new TargetPointer(MethodStart));
+        Mock<IRuntimeInfo> runtimeInfo = new();
+        runtimeInfo.Setup(r => r.GetTargetArchitecture()).Returns(RuntimeInfoArchitecture.X86);
+        TestPlaceholderTarget target = builder
+            .AddMockContract(executionManager)
+            .AddMockContract(runtimeInfo)
+            .AddContract<IGCInfo>("c1")
+            .Build();
+        IGCInfo gcInfo = target.Contracts.GCInfo;
+        IGCInfoHandle handle = gcInfo.DecodePlatformSpecificGCInfo(gcInfoAddress, version);
+        SpecialSlot cookie = Assert.IsType<SpecialSlot>(gcInfo.GetHeader(handle).GSCookie);
+        Assert.Equal(SpecialSlotBase.CallerStackPointer, cookie.Base);
+
+        X86Context context = new() { Eip = MethodStart + 3, Esp = FramePointer - 32, Ebp = FramePointer };
+        Assert.True(new Contracts.StackWalkHelpers.X86.X86Unwinder(target).Unwind(ref context));
+        Assert.Equal(FramePointer + (varArgs ? 8u : 16u), context.Esp);
+        uint cookieAddress = checked((uint)(context.Esp + (long)cookie.SpOffset));
+        Assert.Equal(FramePointer - 16, cookieAddress);
+        Assert.Equal(Cookie, target.Read<uint>(new TargetPointer(cookieAddress)));
     }
 
     [Fact]
@@ -583,8 +1776,10 @@ public unsafe class StackWalkTests
         Assert.NotEqual(0u, context.ContextFlags & (uint)RISCV64Context.ContextFlagsValues.CONTEXT_UNWOUND_TO_CALL);
     }
 
-    [Fact]
-    public void ARM64Unwind_SaveAnyPair_RestoresCallerContext()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ARM64Unwind_SaveAnyPair_RestoresCallerContext(bool hasPac)
     {
         MockTarget.Architecture arch = new() { IsLittleEndian = true, Is64Bit = true };
         TestPlaceholderTarget.Builder targetBuilder = new(arch);
@@ -598,6 +1793,7 @@ public unsafe class StackWalkTests
         const ulong SavedX19 = 0x1919_1919_1919_1919;
         const ulong SavedX20 = 0x2020_2020_2020_2020;
         const ulong ReturnAddress = 0x1234_5678_9abc_def0;
+        const ulong PacMask = 0xff7f_8000_0000_0000;
 
         Layout<MockRuntimeFunction> runtimeFunctionLayout = MockRuntimeFunction.CreateLayout(arch, includeEndAddress: false);
         byte[] runtimeFunctionData = new byte[runtimeFunctionLayout.Size];
@@ -611,12 +1807,13 @@ public unsafe class StackWalkTests
             Name = "Runtime function",
         });
 
-        byte[] unwindData = new byte[2 * sizeof(uint)];
-        helpers.Write(unwindData.AsSpan(0, sizeof(uint)), 16u | (1u << 27));
+        byte[] unwindData = new byte[3 * sizeof(uint)];
+        helpers.Write(unwindData.AsSpan(0, sizeof(uint)), 16u | (2u << 27));
         unwindData[4] = 0xe7; // save_any
         unwindData[5] = 0x53; // p=1, x=0, r=19
         unwindData[6] = 0x00; // f=0, o=0
-        unwindData[7] = 0xe4; // end
+        unwindData[7] = hasPac ? (byte)0xfc : (byte)0xe4; // pac or end
+        unwindData[8] = 0xe4; // end
         targetBuilder.MemoryBuilder.AddHeapFragment(new MockMemorySpace.HeapFragment
         {
             Address = ImageBase + XdataRva,
@@ -647,6 +1844,7 @@ public unsafe class StackWalkTests
                 [DataType.RuntimeFunction] = TargetTestHelpers.CreateTypeInfo(runtimeFunctionLayout),
             })
             .AddMockContract(executionManager.Object)
+            .AddMockContract(Mock.Of<IPlatformMetadata>(m => m.GetPointerAuthenticationMask() == PacMask))
             .Build();
 
         ARM64Context context = new()
@@ -663,7 +1861,9 @@ public unsafe class StackWalkTests
         Assert.Equal(SavedX19, context.X19);
         Assert.Equal(SavedX20, context.X20);
         Assert.Equal(CurrentSp, context.Sp);
-        Assert.Equal(ReturnAddress, context.Pc);
+        ulong expectedReturnAddress = hasPac ? ReturnAddress & ~PacMask : ReturnAddress;
+        Assert.Equal(expectedReturnAddress, context.Lr);
+        Assert.Equal(expectedReturnAddress, context.Pc);
         Assert.NotEqual(0u, context.ContextFlags & (uint)ARM64Context.ContextFlagsValues.CONTEXT_UNWOUND_TO_CALL);
     }
 
@@ -752,7 +1952,8 @@ public unsafe class StackWalkTests
         Action<MockFrameBuilder>? configureFrames = null,
         RuntimeInfoArchitecture? runtimeArchitecture = null,
         Action<TestPlaceholderTarget.Builder>? configureTarget = null,
-        IExecutionManager? executionManager = null)
+        IExecutionManager? executionManager = null,
+        IGCInfo? gcInfo = null)
     {
         TestPlaceholderTarget.Builder targetBuilder = new(arch);
         MockThreadBuilder threadBuilder = new(targetBuilder.MemoryBuilder);
@@ -810,7 +2011,8 @@ public unsafe class StackWalkTests
             // IsExceptionHandlingHelperInlinedCallFrame / GetDebuggerEvalData, none of which
             // invoke ExecutionManager or GCInfo, so empty mocks satisfy construction.
             .AddMockContract(executionManager ?? Mock.Of<IExecutionManager>())
-            .AddMockContract(Mock.Of<IGCInfo>())
+            .AddMockContract(gcInfo ?? Mock.Of<IGCInfo>())
+            .AddMockContract(Mock.Of<IPlatformMetadata>())
             .Build();
     }
 
@@ -1198,6 +2400,75 @@ public unsafe class StackWalkTests
         Assert.Equal(icfAddr, stackWalk.GetFrameAddress(frames[^1]).Value);
     }
 
+    // InterpreterFrame.Continuation is absent from the data descriptor of older runtimes that
+    // support StackWalk version 1; scanning must then report nothing instead of failing.
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void InterpreterFrame_ReportsContinuationOnlyWhenDescriptorHasField(bool hasContinuationField)
+    {
+        const ulong ContinuationObject = 0x0123_4560;
+        ulong interpreterFrameAddr = 0;
+        int continuationOffset = 0;
+        MockFrameBuilder? frames = null;
+        TestPlaceholderTarget target = CreateTarget(
+            new MockTarget.Architecture { IsLittleEndian = true, Is64Bit = true },
+            _ => { },
+            frameBuilder => frames = frameBuilder,
+            configureTarget: targetBuilder =>
+            {
+                TargetTestHelpers helpers = targetBuilder.MemoryBuilder.TargetTestHelpers;
+                int pointerSize = helpers.PointerSize;
+                MockMemorySpace.BumpAllocator allocator = targetBuilder.MemoryBuilder.CreateAllocator(0x0020_0000, 0x0020_1000);
+
+                Layout<MockFramedMethodFrame> fmfLayout = frames!.FramedMethodFrameLayout;
+                int topOffset = fmfLayout.Size;
+                int isFaultingOffset = topOffset + pointerSize;
+                continuationOffset = isFaultingOffset + pointerSize;
+                Dictionary<string, Target.FieldInfo> interpreterFrameFields = new(TargetTestHelpers.CreateTypeInfo(fmfLayout).Fields)
+                {
+                    [nameof(Data.InterpreterFrame.TopInterpMethodContextFrame)] = new() { Offset = topOffset },
+                    [nameof(Data.InterpreterFrame.IsFaulting)] = new() { Offset = isFaultingOffset },
+                };
+                if (hasContinuationField)
+                    interpreterFrameFields["Continuation"] = new() { Offset = continuationOffset };
+
+                uint size = (uint)(continuationOffset + pointerSize);
+                MockMemorySpace.HeapFragment interpreterFrame = allocator.Allocate(size, "InterpreterFrame");
+                MockFramedMethodFrame fmf = fmfLayout.Create(interpreterFrame);
+                fmf.Identifier = MockFrameBuilder.InterpreterFrameIdentifierValue;
+                helpers.WritePointer(interpreterFrame.Data.AsSpan(continuationOffset, pointerSize), ContinuationObject);
+                interpreterFrameAddr = interpreterFrame.Address;
+
+                targetBuilder
+                    .AddMockContract(Mock.Of<IGC>())
+                    .AddMockContract(Mock.Of<IRuntimeTypeSystem>())
+                    .AddTypes(new Dictionary<DataType, Target.TypeInfo>
+                    {
+                        [DataType.InterpreterFrame] = new() { Fields = interpreterFrameFields, Size = size },
+                        [DataType.Array] = InterpGcTypeInfo(nameof(Data.Array.NumComponents)),
+                        [DataType.String] = InterpGcTypeInfo(nameof(Data.String.StringLength)),
+                        [DataType.Object] = InterpGcTypeInfo(nameof(Data.Object.MethodTable)),
+                    })
+                    .AddGlobals((Constants.Globals.ObjectToMethodTableUnmask, 0));
+            });
+
+        GcScanContext scanContext = new(target, resolveInteriorPointers: false);
+        new GcScanner(target).GcScanRoots(new TargetPointer(interpreterFrameAddr), scanContext);
+
+        if (hasContinuationField)
+        {
+            StackRefData reference = Assert.Single(scanContext.StackRefs);
+            Assert.Equal(interpreterFrameAddr + (ulong)continuationOffset, reference.Address.Value);
+            Assert.Equal(ContinuationObject, reference.Object.Value);
+            Assert.Equal(GcScanFlags.None, reference.Flags);
+        }
+        else
+        {
+            Assert.Empty(scanContext.StackRefs);
+        }
+    }
+
     // An interpreted P/Invoke pushes an active InlinedCallFrame whose CallSiteSP is the top
     // InterpMethodContextFrame of the owning InterpreterFrame that follows it. Like native
     // InlinedCallFrame::IsInInterpreter handling, the walk must move from that ICF to the
@@ -1282,7 +2553,7 @@ public unsafe class StackWalkTests
         if (seedFromNativeContext)
         {
             ContextHolder<WasmContext> nativeContext = new() { InstructionPointer = new TargetCodePointer(0x0009_9000) };
-            walk = stackWalk.CreateStackWalk(threadData, nativeContext.GetBytes());
+            walk = stackWalk.CreateStackWalk(threadData, nativeContext.GetBytes().ToArray());
         }
         else
         {
@@ -1566,6 +2837,7 @@ public unsafe class StackWalkTests
         int icfSize = 0;
         ulong r2rFrame = 0;
         TargetPointer runtimeFunctionAddress = TargetPointer.Null;
+        int unwindInfoLookups = 0;
         TestPlaceholderTarget target = CreateTarget(
             wasmArch,
             threadBuilder => thread = threadBuilder.AddThread(1, 1234),
@@ -1605,7 +2877,11 @@ public unsafe class StackWalkTests
             executionManager: CreateInterpreterExecutionManager(
                 [],
                 managedIps: [R2RIp],
-                unwindInfo: () => (runtimeFunctionAddress, TargetPointer.Null)));
+                unwindInfo: () =>
+                {
+                    unwindInfoLookups++;
+                    return (runtimeFunctionAddress, TargetPointer.Null);
+                }));
 
         IStackWalk stackWalk = target.Contracts.StackWalk;
         ThreadData threadData = target.Contracts.Thread.GetThreadData(new TargetPointer(thread!.Address));
@@ -1618,6 +2894,7 @@ public unsafe class StackWalkTests
 
         Assert.Equal([(R2RIp, r2rFrame)], frameless);
         Assert.True(walked.Length <= 3, $"Walk did not terminate: {walked.Length} frames");
+        Assert.Equal(2, unwindInfoLookups);
     }
 
     private sealed class InterpreterExecutionManager : IExecutionManager
@@ -1740,8 +3017,7 @@ public unsafe class StackWalkTests
         => AddWasmR2RFunctions(targetBuilder, allocator, functionTableIndex, minVirtualIP, [(functionBeginAddress, frameSize)]);
 
     // Registers one R2R module whose RUNTIME_FUNCTIONs occupy consecutive function-table indices
-    // starting at minFunctionTableIndex. BeginAddress bit 31 marks a funclet; a frame size of 0
-    // leaves the unwind data unset.
+    // starting at minFunctionTableIndex. BeginAddress bit 31 marks a funclet.
     private static TargetPointer AddWasmR2RFunctions(
         TestPlaceholderTarget.Builder targetBuilder,
         MockMemorySpace.BumpAllocator allocator,
@@ -1771,14 +3047,11 @@ public unsafe class StackWalkTests
         {
             Span<byte> entry = runtimeFunctions.Data.AsSpan(i * (int)runtimeFunctionLayout.Stride, (int)runtimeFunctionLayout.Stride);
             helpers.Write(entry.Slice(runtimeFunctionLayout.Fields[nameof(Data.RuntimeFunction.BeginAddress)].Offset, sizeof(uint)), functions[i].BeginAddress);
-            if (functions[i].FrameSize != 0)
-            {
-                // Unwind data is the ULEB128 frame size, addressed as LoadedImageBase (0 here) + UnwindData.
-                Assert.True(functions[i].FrameSize < 0x80);
-                MockMemorySpace.HeapFragment unwindData = allocator.Allocate(1, "UnwindData");
-                unwindData.Data[0] = functions[i].FrameSize;
-                helpers.Write(entry.Slice(runtimeFunctionLayout.Fields[nameof(Data.RuntimeFunction.UnwindData)].Offset, sizeof(uint)), (uint)unwindData.Address);
-            }
+            Assert.True(functions[i].FrameSize < 0x80);
+            MockMemorySpace.HeapFragment unwindData = allocator.Allocate(2, "UnwindData");
+            unwindData.Data[0] = functions[i].FrameSize;
+            unwindData.Data[1] = 3;
+            helpers.Write(entry.Slice(runtimeFunctionLayout.Fields[nameof(Data.RuntimeFunction.UnwindData)].Offset, sizeof(uint)), (uint)unwindData.Address);
         }
 
         MockReadyToRunInfo r2rInfo = r2rInfoLayout.Create(allocator.Allocate((ulong)r2rInfoLayout.Size, "ReadyToRunInfo"));
@@ -2064,5 +3337,139 @@ public unsafe class StackWalkTests
 
         StackWalk_1 stackWalk = new(target);
         Assert.Equal(root, stackWalk.CallerStackPointer(context).Value);
+    }
+
+    // EnumGcRefsForManagedFrame on an interpreted frame mirrors TGcInfoDecoder<InterpreterGcInfoEncoding>::GetStackSlot
+    // (gcinfodecoder.cpp): the GC info is decoded with the interpreter encoding, stack slots are relative to the frame
+    // pointer (the InterpMethodContextFrame's pStack), and slots at or above the pStack of an active callee
+    // (pNext with a non-null ip) belong to the callee's argument area and are not reported by the caller.
+    private const ulong InterpGcBytecodeIp = 0x0005_1020;
+    private const ulong InterpGcStack = 0x0006_1000;
+    private const uint InterpGcStackBaseRegister = 8;
+
+    private static readonly LiveSlot[] InterpreterGcSlots =
+    [
+        new(IsRegister: false, RegisterNumber: 0, SpOffset: 0, SpBase: 2, GcFlags: 0),
+        new(IsRegister: false, RegisterNumber: 0, SpOffset: 8, SpBase: 2, GcFlags: 0),
+        new(IsRegister: false, RegisterNumber: 0, SpOffset: 16, SpBase: 2, GcFlags: 0x3), // conservatively reported argument slot
+        new(IsRegister: false, RegisterNumber: 0, SpOffset: 24, SpBase: 2, GcFlags: 0x3),
+        new(IsRegister: false, RegisterNumber: 0, SpOffset: 32, SpBase: 1, GcFlags: 0), // SP-relative: invalid for interpreter frames
+    ];
+
+    private static ulong InterpGcObject(int spOffset) => 0x0009_0000 + (ulong)spOffset;
+
+    // calleeIp: null for no callee (pNext == NULL); otherwise the ip of the callee InterpMethodContextFrame.
+    private static List<StackRefData> EnumerateInterpreterFrameGcRefs(ulong? calleeIp, ulong calleeStack, out Mock<IGCInfo> gcInfo)
+    {
+        MockTarget.Architecture arch = new() { IsLittleEndian = true, Is64Bit = true };
+        CodeBlockHandle cbh = new(new TargetPointer(0x0007_0000));
+        TargetPointer gcInfoAddress = new(0x0008_0000);
+        const uint GcVersion = 4;
+        const uint RelativeOffset = 0x20;
+
+        Mock<IExecutionManager> executionManager = new();
+        executionManager.Setup(e => e.GetCodeKind(new TargetCodePointer(InterpGcBytecodeIp))).Returns(CodeKind.Interpreter);
+        executionManager.Setup(e => e.GetRelativeOffset(cbh)).Returns(new TargetNUInt(RelativeOffset));
+        TargetPointer outGcInfo = gcInfoAddress;
+        uint outVersion = GcVersion;
+        executionManager.Setup(e => e.GetGCInfo(cbh, out outGcInfo, out outVersion));
+
+        IGCInfoHandle handle = Mock.Of<IGCInfoHandle>();
+        gcInfo = new();
+        gcInfo.Setup(g => g.DecodeInterpreterGCInfo(gcInfoAddress, GcVersion)).Returns(handle);
+        gcInfo.Setup(g => g.GetHeader(handle)).Returns(default(GCInfoHeader) with { StackBaseRegister = InterpGcStackBaseRegister });
+        gcInfo.Setup(g => g.EnumerateLiveSlots(handle, RelativeOffset, It.IsAny<GcSlotEnumerationOptions>())).Returns(InterpreterGcSlots);
+
+        ulong frame = 0;
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            threadBuilder => threadBuilder.AddThread(1, 1234),
+            frameBuilder =>
+            {
+                MockInterpMethodContextFrame current = frameBuilder.AddInterpMethodContextFrame(parentPtr: 0, ip: InterpGcBytecodeIp, stack: InterpGcStack);
+                if (calleeIp is ulong ip)
+                {
+                    MockInterpMethodContextFrame callee = frameBuilder.AddInterpMethodContextFrame(parentPtr: current.Address, ip: ip, stack: calleeStack);
+                    current.NextPtr = callee.Address;
+                }
+                frame = current.Address;
+            },
+            configureTarget: targetBuilder =>
+            {
+                // The interpreter stack holding the slots, each pointing at a distinct object.
+                MockMemorySpace.HeapFragment stack = new()
+                {
+                    Name = "Interpreter stack",
+                    Address = InterpGcStack,
+                    Data = new byte[48],
+                };
+                for (int offset = 0; offset < stack.Data.Length; offset += 8)
+                    targetBuilder.MemoryBuilder.TargetTestHelpers.WritePointer(stack.Data.AsSpan(offset, 8), InterpGcObject(offset));
+                targetBuilder.MemoryBuilder.AddHeapFragment(stack);
+                // GcScanContext's interior pointer resolver; not used since interior pointers are not resolved.
+                targetBuilder.AddMockContract(Mock.Of<IGC>());
+                targetBuilder.AddMockContract(Mock.Of<IRuntimeTypeSystem>());
+                targetBuilder.AddTypes(new Dictionary<DataType, Target.TypeInfo>
+                {
+                    [DataType.Array] = InterpGcTypeInfo(nameof(Data.Array.NumComponents)),
+                    [DataType.String] = InterpGcTypeInfo(nameof(Data.String.StringLength)),
+                    [DataType.Object] = InterpGcTypeInfo(nameof(Data.Object.MethodTable)),
+                });
+                targetBuilder.AddGlobals((Constants.Globals.ObjectToMethodTableUnmask, 0));
+            },
+            executionManager: executionManager.Object,
+            gcInfo: gcInfo.Object);
+
+        ContextHolder<RISCV64Context> context = new();
+        context.InstructionPointer = new TargetCodePointer(InterpGcBytecodeIp);
+        context.StackPointer = new TargetPointer(frame);
+        context.FramePointer = new TargetPointer(InterpGcStack);
+
+        GcScanContext scanContext = new(target, resolveInteriorPointers: false);
+        new GcScanner(target).EnumGcRefsForManagedFrame(context, cbh, new GcSlotEnumerationOptions { IsActiveFrame = false }, scanContext);
+        return scanContext.StackRefs;
+    }
+
+    private static Target.TypeInfo InterpGcTypeInfo(string field)
+        => new() { Fields = new Dictionary<string, Target.FieldInfo> { [field] = new Target.FieldInfo { Offset = 0 } } };
+
+    private static void AssertInterpreterSlots(List<StackRefData> refs, params int[] expectedOffsets)
+    {
+        Assert.Equal(expectedOffsets, refs.Select(r => r.Offset));
+        foreach (StackRefData r in refs)
+        {
+            Assert.Equal(InterpGcStack + (ulong)r.Offset, r.Address.Value);
+            Assert.Equal(InterpGcObject(r.Offset), r.Object.Value);
+            Assert.Equal((int)InterpGcStackBaseRegister, r.Register);
+        }
+    }
+
+    [Fact]
+    public void EnumGcRefs_InterpretedFrame_ReportsFrameRelativeSlots()
+    {
+        List<StackRefData> refs = EnumerateInterpreterFrameGcRefs(calleeIp: null, calleeStack: 0, out Mock<IGCInfo> gcInfo);
+
+        AssertInterpreterSlots(refs, 0, 8, 16, 24);
+        Assert.Equal(GcScanFlags.GC_CALL_INTERIOR | GcScanFlags.GC_CALL_PINNED, refs[2].Flags);
+        gcInfo.Verify(g => g.DecodeInterpreterGCInfo(It.IsAny<TargetPointer>(), It.IsAny<uint>()), Times.Once);
+        gcInfo.Verify(g => g.DecodePlatformSpecificGCInfo(It.IsAny<TargetPointer>(), It.IsAny<uint>()), Times.Never);
+    }
+
+    [Fact]
+    public void EnumGcRefs_InterpretedFrameWithActiveCallee_ExcludesCalleeArgumentArea()
+    {
+        List<StackRefData> refs = EnumerateInterpreterFrameGcRefs(calleeIp: 0x0005_2000, calleeStack: InterpGcStack + 16, out _);
+
+        AssertInterpreterSlots(refs, 0, 8);
+    }
+
+    [Fact]
+    public void EnumGcRefs_InterpretedFrameWithInactiveCallee_KeepsAllSlots()
+    {
+        // A callee InterpMethodContextFrame with a null ip is not executing (it is kept for reuse), so the
+        // caller still reports the slots above its pStack.
+        List<StackRefData> refs = EnumerateInterpreterFrameGcRefs(calleeIp: 0, calleeStack: InterpGcStack + 16, out _);
+
+        AssertInterpreterSlots(refs, 0, 8, 16, 24);
     }
 }

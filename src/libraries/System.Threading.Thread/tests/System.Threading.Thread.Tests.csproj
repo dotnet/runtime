@@ -1,5 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <!-- TODO: Remove once migrated to unsafe-v2. -->
+    <MemorySafetyRulesVersion>1</MemorySafetyRulesVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
@@ -20,5 +22,9 @@
     <ProjectReference Include="STAMain\STAMain.csproj" />
     <ProjectReference Include="MTAMain\MTAMain.csproj" />
     <ProjectReference Include="DefaultApartmentStateMain\DefaultApartmentStateMain.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Threading.cs" />
   </ItemGroup>
 </Project>

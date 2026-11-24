@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "common.h"
+
+#ifdef FEATURE_GCGENANALYSIS
 #include "genanalysis.h"
 #include "eventpipeadapter.h"
 
@@ -120,3 +122,5 @@ bool gcGenAnalysisDump = false;
     gcGenAnalysisTrace = false;
 #endif //FEATURE_EVENT_TRACE
 }
+
+#endif // FEATURE_GCGENANALYSIS

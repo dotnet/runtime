@@ -16,6 +16,7 @@
 #define __cgenx86_h__
 
 #include "utilcode.h"
+#include <minipal/instructioncache.h>
 
 // Given a return address retrieved during stackwalk,
 // this is the offset by which it should be decremented to lend somewhere in a call instruction.
@@ -50,7 +51,6 @@ class ComCallMethodDesc;
 
 #define ENREGISTERED_RETURNTYPE_MAXSIZE         8
 #define ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE 4
-#define CALLDESCR_ARGREGS                       1   // CallDescrWorker has ArgumentRegister parameter
 
 //**********************************************************************
 // Parameter size
@@ -355,17 +355,16 @@ struct HijackArgs
 // Currently ClrFlushInstructionCache has no effect on X86
 //
 
-inline BOOL ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode, bool hasCodeExecutedBefore = false)
+inline void ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode, bool hasCodeExecutedBefore = false)
 {
     if (hasCodeExecutedBefore)
     {
-        FlushInstructionCache(GetCurrentProcess(), pCodeAddr, sizeOfCode);
+        minipal_flush_instruction_cache(pCodeAddr, sizeOfCode);
     }
     else
     {
         MemoryBarrier();
     }
-    return TRUE;
 }
 
 //

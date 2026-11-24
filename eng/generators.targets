@@ -77,6 +77,24 @@
                       Condition="@(EnabledGenerators->AnyHaveMetadataValue('Identity', 'EventSourceGenerator'))" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Generator binaries run in the compiler and do not depend on the target runtime flavor. -->
+    <_GeneratorProjectReference Include="@(ProjectReference->WithMetadataValue('OutputItemType', 'Analyzer'))" />
+    <_GeneratorProjectReference Include="@(ProjectReference->WithMetadataValue('PackAsAnalyzer', 'true'))" />
+    <_GeneratorProjectReference Remove="@(_GeneratorProjectReference->WithMetadataValue('ReferenceOutputAssembly', 'true'))" />
+    <_GeneratorProjectReference Include="@(ProjectReference)"
+                                Condition="'$(IsGeneratorProject)' == 'true'" />
+    <_LibrariesGeneratorProjectReference Include="@(_GeneratorProjectReference)">
+      <IsLibrariesGenerator Condition="$([System.String]::Copy('%(FullPath)').StartsWith('$(LibrariesProjectRoot)')) and
+                                       $([System.String]::Copy('%(FullPath)').Contains('$([System.IO.Path]::DirectorySeparatorChar)gen$([System.IO.Path]::DirectorySeparatorChar)'))">true</IsLibrariesGenerator>
+    </_LibrariesGeneratorProjectReference>
+    <ProjectReference Update="@(_LibrariesGeneratorProjectReference->WithMetadataValue('IsLibrariesGenerator', 'true'))"
+                      GlobalPropertiesToRemove="%(GlobalPropertiesToRemove);LibrariesRuntimeFlavor;RuntimeFlavor"
+                      UndefineProperties="%(UndefineProperties);LibrariesRuntimeFlavor;RuntimeFlavor"
+                      SetConfiguration="Configuration=$(LibrariesConfiguration)"
+                      SetTargetFramework="TargetFramework=netstandard2.0" />
+  </ItemGroup>
+
   <Target Name="ConfigureGenerators"
           DependsOnTargets="ConfigureLibraryImportGenerator"
           BeforeTargets="CoreCompile" />

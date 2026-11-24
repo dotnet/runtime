@@ -1,5 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <!-- TODO: Remove once migrated to unsafe-v2. -->
+    <MemorySafetyRulesVersion>1</MemorySafetyRulesVersion>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.1;netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
   </PropertyGroup>
 
@@ -7,7 +9,8 @@
     <Compile Include="Microsoft.Extensions.Options.DataAnnotations.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
+                        $([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '11.0'))">
     <Compile Include="Microsoft.Extensions.Options.DataAnnotations.Async.cs" />
   </ItemGroup>
 

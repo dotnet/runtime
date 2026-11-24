@@ -51,6 +51,13 @@ namespace System
         {
             ArgumentOutOfRangeException.ThrowIfNegative(length);
 
+            if (value is null)
+            {
+                // We are sure value is bitwise equal to default(T) so we might be able to skip the Fill call. This benefits cases where
+                // RuntimeHelpers.IsReferenceOrContainsReferences<T>() is because then GC.AllocateUninitializedArray is zero initialized.
+                return new T[length];
+            }
+
             T[] array = GC.AllocateUninitializedArray<T>(length);
             Fill(array, value);
             return array;

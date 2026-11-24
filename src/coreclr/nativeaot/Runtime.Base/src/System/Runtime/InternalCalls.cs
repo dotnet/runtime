@@ -112,17 +112,6 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhBulkMoveWithWriteBarrier")]
         internal static extern unsafe void RhBulkMoveWithWriteBarrier(ref byte dmem, ref byte smem, nuint size);
 
-#if FEATURE_GC_STRESS
-        //
-        // internal calls for GC stress
-        //
-        [RuntimeImport(RuntimeLibrary, "RhpInitializeGcStress")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe void RhpInitializeGcStress();
-#endif // FEATURE_GC_STRESS
-
-        // WASM omits the native EH enumerator and StackFrameIterator implementation.
-#if !TARGET_WASM
         [RuntimeImport(RuntimeLibrary, "RhpEHEnumInitFromStackFrameIterator")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern unsafe bool RhpEHEnumInitFromStackFrameIterator(ref StackFrameIterator pFrameIter, out EH.MethodRegionInfo pMethodRegionInfo, void* pEHEnum);
@@ -130,7 +119,6 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhpEHEnumNext")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern unsafe bool RhpEHEnumNext(void* pEHEnum, void* pEHClause);
-#endif // !TARGET_WASM
 
         [RuntimeImport(RuntimeLibrary, "RhpGetClasslibFunctionFromCodeAddress")]
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -144,8 +132,6 @@ namespace System.Runtime
         // StackFrameIterator
         //
 
-        // WASM does not have the native register context required by this iterator.
-#if !TARGET_WASM
         [RuntimeImport(RuntimeLibrary, "RhpSfiInit")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern unsafe bool RhpSfiInit(ref StackFrameIterator pThis, void* pStackwalkCtx, bool instructionFault, bool* fIsExceptionIntercepted);
@@ -153,31 +139,34 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhpSfiNext")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern unsafe bool RhpSfiNext(ref StackFrameIterator pThis, uint* uExCollideClauseIdx, bool* fUnwoundReversePInvoke, bool* fIsExceptionIntercepted);
-#endif // !TARGET_WASM
 
         //
         // Miscellaneous helpers.
         //
 
-        [RuntimeImport(RuntimeLibrary, "RhpCallCatchFunclet")]
+        [RuntimeImport(RuntimeLibrary, "CallEHFunclet")]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe IntPtr RhpCallCatchFunclet(
-            object exceptionObj, byte* pHandlerIP, void* pvRegDisplay, ref EH.ExInfo exInfo);
+        internal static extern unsafe byte* CallEHFunclet(
+            object? exceptionObj, byte* pHandlerIP, void* pvRegDisplay, UIntPtr* pFuncletCallerSP);
 
-        [RuntimeImport(RuntimeLibrary, "RhpCallFinallyFunclet")]
+        [RuntimeImport(RuntimeLibrary, "RhpPopExInfo")]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe void RhpCallFinallyFunclet(byte* pHandlerIP, void* pvRegDisplay);
+        internal static extern unsafe void RhpPopExInfo(ref EH.ExInfo exInfo, UIntPtr resumeSP);
 
-        [RuntimeImport(RuntimeLibrary, "RhpCallFilterFunclet")]
+        [RuntimeImport(RuntimeLibrary, "RhpResumeAfterCatch")]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe bool RhpCallFilterFunclet(
-            object exceptionObj, byte* pFilterIP, void* pvRegDisplay);
+        internal static extern unsafe void RhpResumeAfterCatch(void* pvRegDisplay, byte* pResumeIP);
+
+        [RuntimeImport(RuntimeLibrary, "CallEHFilterFunclet")]
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern unsafe int CallEHFilterFunclet(
+            object exceptionObj, void* pvRegDisplay, byte* pFilterIP, UIntPtr* pFuncletCallerSP);
 
 #if FEATURE_OBJCMARSHAL
         [RuntimeImport(RuntimeLibrary, "RhpCallPropagateExceptionCallback")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern unsafe IntPtr RhpCallPropagateExceptionCallback(
-            IntPtr callbackContext, IntPtr callback, void* pvRegDisplay, ref EH.ExInfo exInfo, IntPtr pPreviousTransitionFrame);
+            IntPtr callbackContext, IntPtr callback, void* pvRegDisplay, IntPtr pPreviousTransitionFrame);
 #endif // FEATURE_OBJCMARSHAL
 
         [RuntimeImport(RuntimeLibrary, "RhpFallbackFailFast")]

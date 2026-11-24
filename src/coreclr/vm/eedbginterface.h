@@ -180,12 +180,6 @@ public:
     virtual MethodDesc *FindLoadedMethodRefOrDef(Module* pModule,
                                                    mdMemberRef memberRef) = 0;
 
-    virtual MethodDesc *LoadMethodDef(Module* pModule,
-                                      mdMethodDef methodDef,
-                                      DWORD numGenericArgs = 0,
-                                      TypeHandle *pGenericArgs = NULL,
-                                      TypeHandle *pOwnerType = NULL) = 0;
-
     // These will lookup a type, and if it's not loaded, return the null TypeHandle
     virtual TypeHandle FindLoadedClass(Module *pModule,
                                      mdTypeDef classToken) = 0;
@@ -206,28 +200,6 @@ public:
     virtual TypeHandle FindLoadedArrayType(CorElementType et,
                                            TypeHandle elemtype,
                                            unsigned rank) = 0;
-
-    // These will lookup a type, and if it's not loaded, will load and run
-    // the class init etc.
-    virtual TypeHandle LoadClass(Module *pModule,
-                               mdTypeDef classToken) = 0;
-
-    virtual TypeHandle LoadElementType(CorElementType et) = 0;
-
-    virtual TypeHandle LoadInstantiation(Module *pModule,
-                                         mdTypeDef typeDef,
-                                         DWORD ntypars,
-                                         TypeHandle *inst) = 0;
-
-    virtual TypeHandle LoadFnptrType(TypeHandle *inst,
-                                     DWORD ntypars) = 0;
-
-    virtual TypeHandle LoadPointerOrByrefType(CorElementType et,
-                                              TypeHandle elemtype) = 0;
-
-    virtual TypeHandle LoadArrayType(CorElementType et,
-                                     TypeHandle elemtype,
-                                     unsigned rank) = 0;
 
     __checkReturn
     virtual HRESULT GetMethodImplProps(Module *pModule,

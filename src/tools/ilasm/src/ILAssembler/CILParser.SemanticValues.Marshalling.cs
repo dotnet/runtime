@@ -7,7 +7,7 @@ using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
 using Antlr4.Runtime;
 
-namespace ILAssembler;
+namespace Microsoft.DotNet.ILAssembler;
 
 public partial class CILParser
 {

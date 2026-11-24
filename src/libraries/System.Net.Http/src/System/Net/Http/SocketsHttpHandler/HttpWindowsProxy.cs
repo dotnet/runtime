@@ -40,7 +40,8 @@ namespace System.Net.Http
                 // we register for change notifications so we can react to changes during lifetime.
                 if (Interop.Advapi32.RegNotifyChangeKeyValue(_internetSettingsRegistry.Handle, true, RegistrationFlags, _waitHandle.SafeWaitHandle, true) == 0)
                 {
-                    _registeredWaitHandle = ThreadPool.RegisterWaitForSingleObject(_waitHandle, RegistryChangeNotificationCallback, this, -1, false);
+                    // The shared proxy must not retain the initializing request's ExecutionContext.
+                    _registeredWaitHandle = ThreadPool.UnsafeRegisterWaitForSingleObject(_waitHandle, RegistryChangeNotificationCallback, this, -1, false);
                 }
             }
 

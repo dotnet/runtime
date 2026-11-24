@@ -96,16 +96,34 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         public override IEnumerable<FileSystemInfoBase> EnumerateFileSystemInfos()
         {
             var dict = new Dictionary<string, List<string>>();
+            int beginSegment = FullName.Length;
+            if (FullName[beginSegment - 1] != Path.DirectorySeparatorChar)
+            {
+                beginSegment++;
+            }
+
             foreach (string file in _files)
             {
-                if (!IsRootDirectory(FullName, file))
+                if (file.Length <= beginSegment ||
+                    file[beginSegment - 1] != Path.DirectorySeparatorChar ||
+                    !file.StartsWith(FullName, _comparisonType))
                 {
                     continue;
                 }
 
-                int endPath = file.Length;
-                int beginSegment = FullName.Length + 1;
-                int endSegment = file.IndexOfAny(DirectorySeparators, beginSegment, endPath - beginSegment);
+                // Windows extended paths can retain repeated separators after normalization.
+                int segmentStart = beginSegment;
+                while (segmentStart < file.Length && file[segmentStart] == Path.DirectorySeparatorChar)
+                {
+                    segmentStart++;
+                }
+
+                if (segmentStart == file.Length)
+                {
+                    continue;
+                }
+
+                int endSegment = file.IndexOfAny(DirectorySeparators, segmentStart);
 
                 if (endSegment == -1)
                 {
@@ -129,15 +147,6 @@ namespace Microsoft.Extensions.FileSystemGlobbing
             {
                 yield return new InMemoryDirectoryInfo(item.Key, item.Value, true, _comparisonType);
             }
-        }
-
-        private bool IsRootDirectory(string rootDir, string filePath)
-        {
-            int rootDirLength = rootDir.Length;
-
-            return filePath.StartsWith(rootDir, _comparisonType) &&
-                (rootDir[rootDirLength - 1] == Path.DirectorySeparatorChar ||
-                filePath.IndexOf(Path.DirectorySeparatorChar, rootDirLength) == rootDirLength);
         }
 
         /// <inheritdoc />

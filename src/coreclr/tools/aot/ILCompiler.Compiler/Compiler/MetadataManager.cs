@@ -72,10 +72,9 @@ namespace ILCompiler
         private readonly SortedSet<MetadataType> _typesWithThreadStaticsGenerated = new SortedSet<MetadataType>(CompilerComparer.Instance);
         private readonly SortedSet<TypeDesc> _typesWithEETypesGenerated = new SortedSet<TypeDesc>(TypeSystemComparer.Instance);
         private readonly SortedSet<TypeDesc> _typesWithConstructedEETypesGenerated = new SortedSet<TypeDesc>(TypeSystemComparer.Instance);
-        private readonly SortedSet<MethodDesc> _methodsGenerated = new SortedSet<MethodDesc>(TypeSystemComparer.Instance);
         private readonly SortedSet<MethodDesc> _reflectableMethods = new SortedSet<MethodDesc>(TypeSystemComparer.Instance);
-        private readonly SortedSet<GenericDictionaryNode> _genericDictionariesGenerated = new SortedSet<GenericDictionaryNode>(CompilerComparer.Instance);
         private readonly SortedSet<IMethodBodyNode> _methodBodiesGenerated = new SortedSet<IMethodBodyNode>(CompilerComparer.Instance);
+        private readonly SortedSet<UnboxingStubNode> _unboxingStubsGenerated = new SortedSet<UnboxingStubNode>(CompilerComparer.Instance);
         private readonly SortedSet<FrozenObjectNode> _frozenObjects = new SortedSet<FrozenObjectNode>(CompilerComparer.Instance);
         private readonly SortedSet<TypeGVMEntriesNode> _typeGVMEntries
             = new SortedSet<TypeGVMEntriesNode>(Comparer<TypeGVMEntriesNode>.Create((a, b) => TypeSystemComparer.Instance.Compare(a.AssociatedType, b.AssociatedType)));
@@ -228,6 +227,9 @@ namespace ILCompiler
             var stackTraceLineNumbersNode = new StackTraceLineNumbersNode(commonFixupsTableNode, stackTraceDocumentsNode);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.BlobIdStackTraceLineNumbers), stackTraceLineNumbersNode);
 
+            if (nodeFactory.Target.IsWasm)
+                header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.UnboxingStubMap), new UnboxingStubMapNode());
+
             var interfaceDispatchCellInfoNode = new InterfaceDispatchCellInfoSectionNode(nativeReferencesTableNode);
             header.Add(ReadyToRunSectionType.InterfaceDispatchCellInfoRegion, interfaceDispatchCellInfoNode);
 
@@ -272,19 +274,14 @@ namespace ILCompiler
                 _methodBodiesGenerated.Add(methodBodyNode);
             }
 
+            if (obj is UnboxingStubNode unboxingStub)
+                _unboxingStubsGenerated.Add(unboxingStub);
+
             IMethodNode methodNode = methodBodyNode;
             if (methodNode != null)
             {
                 if (AllMethodsCanBeReflectable && !IsReflectionBlocked(methodNode.Method))
                     _reflectableMethods.Add(methodNode.Method);
-            }
-
-            methodNode ??= obj as ShadowConcreteMethodNode;
-
-            if (methodNode != null)
-            {
-                _methodsGenerated.Add(methodNode.Method);
-                return;
             }
 
             var reflectedMethodNode = obj as ReflectedMethodNode;
@@ -315,12 +312,6 @@ namespace ILCompiler
             if (gvmEntryNode != null)
             {
                 _typeGVMEntries.Add(gvmEntryNode);
-            }
-
-            var dictionaryNode = obj as GenericDictionaryNode;
-            if (dictionaryNode != null)
-            {
-                _genericDictionariesGenerated.Add(dictionaryNode);
             }
 
             if (obj is DispatchCellNode dispatchCell)
@@ -1091,11 +1082,6 @@ namespace ILCompiler
             return _typeGVMEntries;
         }
 
-        internal IReadOnlyCollection<GenericDictionaryNode> GetCompiledGenericDictionaries()
-        {
-            return _genericDictionariesGenerated;
-        }
-
         internal IEnumerable<DefType> GetTypesWithStructMarshalling()
         {
             return _typesWithStructMarshalling;
@@ -1104,11 +1090,6 @@ namespace ILCompiler
         internal IEnumerable<DefType> GetTypesWithDelegateMarshalling()
         {
             return _typesWithDelegateMarshalling;
-        }
-
-        public IEnumerable<MethodDesc> GetCompiledMethods()
-        {
-            return _methodsGenerated;
         }
 
         public IEnumerable<MethodDesc> GetReflectableMethods()
@@ -1151,6 +1132,8 @@ namespace ILCompiler
         {
             return _methodBodiesGenerated;
         }
+
+        internal IEnumerable<UnboxingStubNode> GetUnboxingStubs() => _unboxingStubsGenerated;
 
         internal bool TypeGeneratesEEType(TypeDesc type)
         {

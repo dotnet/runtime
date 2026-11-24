@@ -25,6 +25,10 @@ namespace System.IO.Compression
         private BitFlagValues _generalPurposeBitFlag;
         private ZipCompressionMethod _storedCompressionMethod;
         private DateTimeOffset _lastModified;
+        // The LastWriteTime baked into this entry's on-disk ZipCrypto ciphertext, captured from the
+        // central directory. Used to validate/decrypt the existing ciphertext and to detect LastWriteTime
+        // changes made without re-encrypting.
+        private readonly DateTimeOffset _originalLastModified;
         private long _compressedSize;
         private long _uncompressedSize;
         private long _offsetOfLocalHeader;
@@ -44,6 +48,7 @@ namespace System.IO.Compression
         private List<ZipGenericExtraField>? _cdUnknownExtraFields;
         private byte[]? _cdTrailingExtraFieldData;
         private List<ZipGenericExtraField>? _lhUnknownExtraFields;
+        private bool _lhUsesZip64;
         private byte[]? _lhTrailingExtraFieldData;
         private byte[] _fileComment;
         private ZipEncryptionMethod _encryptionMethod;
@@ -116,6 +121,10 @@ namespace System.IO.Compression
             }
 
             _lastModified = new DateTimeOffset(ZipHelper.DosTimeToDateTime(cd.LastModified));
+            // Remember the time this entry was originally encrypted with, so we can detect an attempt
+            // to change LastWriteTime on a ZipCrypto entry without re-encrypting its data (which would
+            // make the password verification bytes inconsistent with the rewritten header).
+            _originalLastModified = _lastModified;
             _compressedSize = cd.CompressedSize;
             _uncompressedSize = cd.UncompressedSize;
             _externalFileAttr = cd.ExternalFileAttributes;
@@ -351,6 +360,12 @@ namespace System.IO.Compression
         /// Zip timestamp format, which supports a resolution of two seconds. If the data in the last write time field is not a valid Zip timestamp,
         /// an indicator value of 1980 January 1 at midnight will be returned.
         /// </summary>
+        /// <remarks>
+        /// For a ZipCrypto-encrypted entry that uses a data descriptor and is read from an existing archive in <see cref="ZipArchiveMode.Update"/>,
+        /// changing this property in a way that changes the password verification byte without also reopening the entry with its password to
+        /// rewrite its data will cause a <see cref="NotSupportedException"/> when the archive is disposed, because the existing encrypted data
+        /// can't be kept consistent with the new timestamp without re-encrypting.
+        /// </remarks>
         /// <exception cref="NotSupportedException">An attempt to set this property was made, but the ZipArchive that this entry belongs to was
         /// opened in read-only mode.</exception>
         /// <exception cref="ArgumentOutOfRangeException">An attempt was made to set this property to a value that cannot be represented in the
@@ -886,11 +901,16 @@ namespace System.IO.Compression
         }
 
         // should only throw an exception in extremely exceptional cases because it is called from dispose
-        internal unsafe void WriteCentralDirectoryFileHeader(bool forceWrite)
+        internal void WriteCentralDirectoryFileHeader(bool forceWrite)
         {
             if (WriteCentralDirectoryFileHeaderInitialize(forceWrite, out Zip64ExtraField? zip64ExtraField, out uint compressedSizeTruncated, out uint uncompressedSizeTruncated, out ushort extraFieldLength, out uint offsetOfLocalHeaderTruncated))
             {
-                Span<byte> cdStaticHeader = stackalloc byte[ZipCentralDirectoryFileHeader.BlockConstantSectionSize];
+                scoped Span<byte> cdStaticHeader;
+                // SAFETY: To be audited
+                unsafe
+                {
+                    cdStaticHeader = stackalloc byte[ZipCentralDirectoryFileHeader.BlockConstantSectionSize];
+                }
                 WriteCentralDirectoryFileHeaderPrepare(cdStaticHeader, compressedSizeTruncated, uncompressedSizeTruncated, extraFieldLength, offsetOfLocalHeaderTruncated);
 
                 _archive.ArchiveStream.Write(cdStaticHeader);
@@ -931,7 +951,7 @@ namespace System.IO.Compression
             if (_originallyInArchive)
             {
                 _archive.ArchiveStream.Seek(_offsetOfLocalHeader, SeekOrigin.Begin);
-                _lhUnknownExtraFields = ZipLocalFileHeader.GetExtraFields(_archive.ArchiveStream, out _lhTrailingExtraFieldData);
+                _lhUnknownExtraFields = ZipLocalFileHeader.GetExtraFields(_archive.ArchiveStream, out _lhTrailingExtraFieldData, out _lhUsesZip64);
             }
         }
 
@@ -1048,8 +1068,25 @@ namespace System.IO.Compression
                 return (byte)((_crc32 >> 24) & 0xFF);
             }
 
-            // If data descriptor IS used, the check byte is the MSB of the DOS time from the *local* header
-            return (byte)((ZipHelper.DateTimeToDosTime(_lastModified.DateTime) >> 8) & 0xFF);
+            // If data descriptor IS used, the check byte is the MSB of the DOS time from the *local* header.
+            // Use _originalLastModified (the time baked into the entry's on-disk ciphertext), not
+            // _lastModified, since LastWriteTime may have been changed since without re-encrypting.
+            return GetZipCryptoTimeCheckByte(_originalLastModified);
+        }
+
+        private static byte GetZipCryptoTimeCheckByte(DateTimeOffset timestamp) =>
+            (byte)(ZipHelper.DateTimeToDosTime(timestamp.DateTime) >> 8);
+
+        internal void ThrowIfZipCryptoLastWriteTimeChangedWithoutReencrypting()
+        {
+            if (_originallyInArchive
+                && Encryption == ZipEncryptionMethod.ZipCrypto
+                && (_generalPurposeBitFlag & BitFlagValues.DataDescriptor) != 0
+                && (Changes & ZipArchive.ChangeState.StoredData) == 0
+                && GetZipCryptoTimeCheckByte(_lastModified) != GetZipCryptoTimeCheckByte(_originalLastModified))
+            {
+                throw new NotSupportedException(SR.ZipCryptoLastWriteTimeChangeNotSupported);
+            }
         }
 
         private bool IsAesEncrypted => EncryptionMethod is ZipEncryptionMethod.Aes128 or ZipEncryptionMethod.Aes192 or ZipEncryptionMethod.Aes256;
@@ -1567,7 +1604,7 @@ namespace System.IO.Compression
         private bool ShouldUseZIP64 => AreSizesTooLarge || IsOffsetTooLarge;
         internal ZipEncryptionMethod Encryption { get => _encryptionMethod; private set => _encryptionMethod = value; }
 
-        private unsafe bool WriteLocalFileHeaderInitialize(bool isEmptyFile, bool forceWrite, bool preserveDataDescriptor, out Zip64ExtraField? zip64ExtraField, out uint compressedSizeTruncated, out uint uncompressedSizeTruncated, out ushort extraFieldLength, out uint crc32ToWrite)
+        private bool WriteLocalFileHeaderInitialize(bool isEmptyFile, bool forceWrite, bool preserveDataDescriptor, out Zip64ExtraField? zip64ExtraField, out uint compressedSizeTruncated, out uint uncompressedSizeTruncated, out ushort extraFieldLength, out uint crc32ToWrite)
         {
             // _entryname only gets set when we read in or call moveTo. MoveTo does a check, and
             // reading in should not be able to produce an entryname longer than ushort.MaxValue
@@ -1654,6 +1691,18 @@ namespace System.IO.Compression
                 }
             }
 
+            if ((!isEmptyFile && !_archive.ArchiveStream.CanSeek) || (preserveDataDescriptor && _lhUsesZip64))
+            {
+                // The final sizes are unknown and the header cannot be updated later.
+                // ZIP APPNOTE 4.3.9.2 allows Zip64 for any size and requires 64-bit
+                // descriptor sizes when a Zip64 extra field is present.
+                // Retained Zip64 descriptors also need to keep this declaration.
+                compressedSizeTruncated = ZipHelper.Mask32Bit;
+                uncompressedSizeTruncated = ZipHelper.Mask32Bit;
+                zip64ExtraField = new() { CompressedSize = 0, UncompressedSize = 0 };
+                VersionToExtractAtLeast(ZipVersionNeededValues.Zip64);
+            }
+
             // save offset
             _offsetOfLocalHeader = _archive.ArchiveStream.Position;
 
@@ -1701,10 +1750,10 @@ namespace System.IO.Compression
             {
                 if (preserveDataDescriptor)
                 {
-                    compressedSizeTruncated = 0;
-                    uncompressedSizeTruncated = 0;
+                    compressedSizeTruncated = zip64ExtraField is null ? 0 : ZipHelper.Mask32Bit;
+                    uncompressedSizeTruncated = compressedSizeTruncated;
 
-                    // zero the CRC/sizes since the real values live in the trailing descriptor that remains on disk.
+                    // The actual CRC and sizes are stored in the retained data descriptor.
                     crc32ToWrite = 0;
 
                     if (zip64ExtraField is not null)
@@ -1740,11 +1789,16 @@ namespace System.IO.Compression
         }
 
         // return value is true if we allocated an extra field for 64 bit headers, un/compressed size
-        private unsafe bool WriteLocalFileHeader(bool isEmptyFile, bool forceWrite, bool preserveDataDescriptor = false)
+        private bool WriteLocalFileHeader(bool isEmptyFile, bool forceWrite, bool preserveDataDescriptor = false)
         {
             if (WriteLocalFileHeaderInitialize(isEmptyFile, forceWrite, preserveDataDescriptor, out Zip64ExtraField? zip64ExtraField, out uint compressedSizeTruncated, out uint uncompressedSizeTruncated, out ushort extraFieldLength, out uint crc32ToWrite))
             {
-                Span<byte> lfStaticHeader = stackalloc byte[ZipLocalFileHeader.SizeOfLocalHeader];
+                scoped Span<byte> lfStaticHeader;
+                // SAFETY: To be audited
+                unsafe
+                {
+                    lfStaticHeader = stackalloc byte[ZipLocalFileHeader.SizeOfLocalHeader];
+                }
                 WriteLocalFileHeaderPrepare(lfStaticHeader, crc32ToWrite, compressedSizeTruncated, uncompressedSizeTruncated, extraFieldLength);
 
                 // write header
@@ -1772,7 +1826,7 @@ namespace System.IO.Compression
             return zip64ExtraField != null;
         }
 
-        private unsafe void WriteLocalFileHeaderAndDataIfNeeded(bool forceWrite)
+        private void WriteLocalFileHeaderAndDataIfNeeded(bool forceWrite)
         {
             // Check if the entry's stored data was actually modified (StoredData flag is set).
             // If _storedUncompressedData is loaded but StoredData is not set, it means the entry
@@ -1926,7 +1980,12 @@ namespace System.IO.Compression
                             _archive.ArchiveStream.Seek(
                                 _offsetOfLocalHeader + ZipLocalFileHeader.FieldLocations.GeneralPurposeBitFlags,
                                 SeekOrigin.Begin);
-                            Span<byte> flagBytes = stackalloc byte[2];
+                            scoped Span<byte> flagBytes;
+                            // SAFETY: To be audited
+                            unsafe
+                            {
+                                flagBytes = stackalloc byte[2];
+                            }
                             BinaryPrimitives.WriteUInt16LittleEndian(flagBytes, (ushort)savedFlags);
                             _archive.ArchiveStream.Write(flagBytes);
                             _archive.ArchiveStream.Seek(currentPos, SeekOrigin.Begin);
@@ -1987,10 +2046,15 @@ namespace System.IO.Compression
         // Using _offsetOfLocalHeader, seeks back to where CRC and sizes should be in the header,
         // writes them, then seeks back to where you started
         // Assumes that the stream is currently at the end of the data
-        private unsafe void WriteCrcAndSizesInLocalHeader(bool zip64HeaderUsed)
+        private void WriteCrcAndSizesInLocalHeader(bool zip64HeaderUsed)
         {
             // Buffer has been sized to the largest data payload required: the 64-bit data descriptor.
-            Span<byte> writeBuffer = stackalloc byte[Zip64DataDescriptorCrcAndSizesBufferLength];
+            scoped Span<byte> writeBuffer;
+            // SAFETY: To be audited
+            unsafe
+            {
+                writeBuffer = stackalloc byte[Zip64DataDescriptorCrcAndSizesBufferLength];
+            }
 
             WriteCrcAndSizesInLocalHeaderInitialize(zip64HeaderUsed, out long finalPosition, out bool pretendStreaming, out uint compressedSizeTruncated, out uint uncompressedSizeTruncated);
 
@@ -2109,13 +2173,18 @@ namespace System.IO.Compression
 
         }
 
-        // data descriptor can be 32-bit or 64-bit sizes. 32-bit is more compatible, so use that if possible
+        // Data descriptor sizes must match the format declared in the local header.
         // signature is optional but recommended by the spec
         private const int MaxSizeOfDataDescriptor = 24;
 
-        private unsafe void WriteDataDescriptor()
+        private void WriteDataDescriptor()
         {
-            Span<byte> dataDescriptor = stackalloc byte[MaxSizeOfDataDescriptor];
+            scoped Span<byte> dataDescriptor;
+            // SAFETY: To be audited
+            unsafe
+            {
+                dataDescriptor = stackalloc byte[MaxSizeOfDataDescriptor];
+            }
             int bytesToWrite = PrepareToWriteDataDescriptor(dataDescriptor);
             _archive.ArchiveStream.Write(dataDescriptor[..bytesToWrite]);
         }
@@ -2132,7 +2201,7 @@ namespace System.IO.Compression
             uint crcToWrite = IsAesEncrypted ? 0 : _crc32;
             BinaryPrimitives.WriteUInt32LittleEndian(dataDescriptor[ZipLocalFileHeader.ZipDataDescriptor.FieldLocations.Crc32..], crcToWrite);
 
-            if (AreSizesTooLarge)
+            if (AreSizesTooLarge || !_archive.ArchiveStream.CanSeek)
             {
                 BinaryPrimitives.WriteInt64LittleEndian(dataDescriptor[ZipLocalFileHeader.Zip64DataDescriptor.FieldLocations.CompressedSize..], _compressedSize);
                 BinaryPrimitives.WriteInt64LittleEndian(dataDescriptor[ZipLocalFileHeader.Zip64DataDescriptor.FieldLocations.UncompressedSize..], _uncompressedSize);
