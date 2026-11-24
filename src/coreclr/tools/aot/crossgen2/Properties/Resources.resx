@@ -486,13 +486,7 @@
   <data name="StripILBodiesOption" xml:space="preserve">
     <value>Replace IL method bodies of compiled methods with a throwing stub in composite R2R output assemblies.</value>
   </data>
-  <data name="ErrorWasmPgoRequires64BitCounts" xml:space="preserve">
-    <value>Wasm PGO instrumentation requires 64-bit counters. Remove the JitCollect64BitCounts override or set it to 1.</value>
-  </data>
   <data name="ErrorWasmPgoRequiresIL" xml:space="preserve">
     <value>Wasm PGO instrumentation requires retained original IL bodies.</value>
-  </data>
-  <data name="ErrorWasmPgoUnsupportedProbeOption" xml:space="preserve">
-    <value>Wasm PGO instrumentation supports only direct updates with one counter per probe. Remove the {0} override.</value>
   </data>
 </root>

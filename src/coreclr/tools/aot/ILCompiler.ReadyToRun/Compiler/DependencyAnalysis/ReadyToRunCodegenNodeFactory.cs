@@ -1221,7 +1221,7 @@ namespace ILCompiler.DependencyAnalysis
 
             ImportSectionsTable = new ImportSectionsTableNode(this);
             Header.Add(Internal.Runtime.ReadyToRunSectionType.ImportSections, ImportSectionsTable);
-            if (Target.IsWasm && !string.IsNullOrWhiteSpace(JitConfigProvider.Instance.GetStringConfigValue("WasmPgoInstrumentation")))
+            if (Target.IsWasm && !string.IsNullOrWhiteSpace(JitConfigProvider.Instance.GetStringConfigValue("R2RPgoInstrumentation")))
             {
                 PgoInstrumentationSchemas = new PgoInstrumentationSchemaTableNode();
                 Header.Add(Internal.Runtime.ReadyToRunSectionType.PgoInstrumentationSchemas, PgoInstrumentationSchemas);

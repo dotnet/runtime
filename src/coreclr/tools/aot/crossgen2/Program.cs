@@ -7,7 +7,6 @@ using System.CommandLine;
 using System.CommandLine.Parsing;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Reflection.Metadata;
@@ -481,54 +480,19 @@ namespace ILCompiler
                         throw new Exception(SR.ErrorStripILBodiesRequiresComposite);
                     }
 
-                    const string InterlockedOption = "JitInterlockedProfiling";
-                    const string ScalableOption = "JitScalableProfiling";
-                    const string PaddingOption = "JitCounterPadding";
-                    bool wasmPgoInstrumentation = false;
-                    bool use64BitCounts = true;
-                    bool useInterlocked = false;
-                    bool useScalable = false;
-                    bool usePadding = false;
-                    foreach (string option in Get(_command.CodegenOptions))
+                    if (typeSystemContext.Target.IsWasm && Get(_command.StripILBodies))
                     {
-                        int equals = option.IndexOf('=');
-                        if (equals < 1)
-                            continue;
-
-                        ReadOnlySpan<char> name = option.AsSpan(0, equals);
-                        ReadOnlySpan<char> value = option.AsSpan(equals + 1);
-                        if (name.Equals("WasmPgoInstrumentation", StringComparison.OrdinalIgnoreCase))
+                        const string InstrumentationPrefix = "R2RPgoInstrumentation=";
+                        string[] options = Get(_command.CodegenOptions);
+                        for (int i = options.Length - 1; i >= 0; i--)
                         {
-                            // Match the JIT, whose method set is empty for whitespace-only filters.
-                            wasmPgoInstrumentation = !value.IsWhiteSpace();
-                            if (wasmPgoInstrumentation && Get(_command.StripILBodies))
+                            if (!options[i].StartsWith(InstrumentationPrefix, StringComparison.OrdinalIgnoreCase))
+                                continue;
+
+                            if (!options[i].AsSpan(InstrumentationPrefix.Length).IsWhiteSpace())
                                 throw new CommandLineException(SR.ErrorWasmPgoRequiresIL);
-                            continue;
+                            break;
                         }
-
-                        int? setting = int.TryParse(value, NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out int number)
-                            ? number : null;
-                        if (name.Equals("JitCollect64BitCounts", StringComparison.OrdinalIgnoreCase))
-                            use64BitCounts = setting != 0;
-                        else if (name.Equals(InterlockedOption, StringComparison.OrdinalIgnoreCase))
-                            useInterlocked = setting is > 0;
-                        else if (name.Equals(ScalableOption, StringComparison.OrdinalIgnoreCase))
-                            useScalable = setting is > 0;
-                        else if (name.Equals(PaddingOption, StringComparison.OrdinalIgnoreCase))
-                            usePadding = setting is > 1;
-                    }
-
-                    if (typeSystemContext.Target.IsWasm && wasmPgoInstrumentation)
-                    {
-                        if (!use64BitCounts)
-                            throw new CommandLineException(SR.ErrorWasmPgoRequires64BitCounts);
-
-                        string unsupportedOption = useInterlocked ? InterlockedOption
-                            : useScalable ? ScalableOption
-                            : usePadding ? PaddingOption
-                            : null;
-                        if (unsupportedOption is not null)
-                            throw new CommandLineException(string.Format(SR.ErrorWasmPgoUnsupportedProbeOption, unsupportedOption));
                     }
 
                     bool compileBubbleGenerics = Get(_command.CompileBubbleGenerics);

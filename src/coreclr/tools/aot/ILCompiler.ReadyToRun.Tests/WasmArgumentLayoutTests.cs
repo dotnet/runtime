@@ -148,7 +148,7 @@ public class WasmArgumentLayoutTests
                 "--out", Path.Combine(directory, "intrinsic.wasm"),
             ];
             if (instrument)
-                args.Add("--codegenopt:WasmPgoInstrumentation=*");
+                args.Add("--codegenopt:R2RPgoInstrumentation=*");
             R2RCompilationResult result = new R2RDriver(_output).Compile(args);
             Assert.True(result.Success, result.StandardOutput + result.StandardError);
             string listing = File.ReadAllText(listingPath);
@@ -189,7 +189,7 @@ public class WasmArgumentLayoutTests
                 "--out", Path.Combine(directory, "setter.wasm"),
             ];
             if (instrument)
-                args.Add("--codegenopt:WasmPgoInstrumentation=*");
+                args.Add("--codegenopt:R2RPgoInstrumentation=*");
             R2RCompilationResult result = new R2RDriver(_output).Compile(args);
             Assert.True(result.Success, result.StandardOutput + result.StandardError);
             string listing = File.ReadAllText(listingPath);
@@ -207,18 +207,8 @@ public class WasmArgumentLayoutTests
     [InlineData("*", 2)]
     [InlineData("Callbacks:Inlinee", 1)]
     [InlineData("*", 0, "JitMinimalPrejitProfiling=1")]
-    [InlineData("*", 2, "JitCollect64BitCounts=1")]
-    [InlineData("", 0, "JitCollect64BitCounts=0")]
-    [InlineData("*", null, "JitCollect64BitCounts=0")]
-    [InlineData("*", null, "jitcollect64bitcounts=00")]
-    [InlineData("*", null, "JitInterlockedProfiling=1", "JitInterlockedProfiling")]
-    [InlineData("*", null, "jitscalableprofiling=01", "JitScalableProfiling")]
-    [InlineData("*", null, "JitCounterPadding=2", "JitCounterPadding")]
-    [InlineData("*", 2, "JitCounterPadding=1")]
-    [InlineData("*", 2, "JitScalableProfiling=0")]
-    [InlineData("", 0, "JitInterlockedProfiling=1")]
-    public void InlineeProfilingPreservesInlining(
-        string filter, int? expectedProbeCount, string? counterOption = null, string? unsupportedProbeOption = null)
+    [InlineData("*", 2, "JitCollect64BitCounts=0")]
+    public void InlineeProfilingPreservesInlining(string filter, int expectedProbeCount, string? counterOption = null)
     {
         string directory = Path.GetFullPath(Path.Combine("artifacts", "tmp", "inlinee-profiling", Path.GetRandomFileName()));
         Directory.CreateDirectory(directory);
@@ -247,7 +237,7 @@ public class WasmArgumentLayoutTests
                 "--parallelism", "1",
                 "--singlemethodtypename", "Callbacks, InlineProfile",
                 "--singlemethodname", "Caller",
-                $"--codegenopt:WasmPgoInstrumentation={filter}",
+                $"--codegenopt:R2RPgoInstrumentation={filter}",
                 "--codegenopt:JitDisasm=Callbacks:Caller",
                 $"--codegenopt:JitStdOutFile={listingPath}",
                 "--out", Path.Combine(directory, "caller.wasm"),
@@ -255,21 +245,11 @@ public class WasmArgumentLayoutTests
             if (counterOption is not null)
                 args.Add($"--codegenopt:{counterOption}");
             R2RCompilationResult result = new R2RDriver(_output).Compile(args);
-            if (expectedProbeCount is null)
-            {
-                Assert.False(result.Success);
-                string expectedError = unsupportedProbeOption is null
-                    ? "Wasm PGO instrumentation requires 64-bit counters. Remove the JitCollect64BitCounts override or set it to 1."
-                    : $"Wasm PGO instrumentation supports only direct updates with one counter per probe. Remove the {unsupportedProbeOption} override.";
-                Assert.Contains(expectedError, result.StandardError);
-                return;
-            }
-
             Assert.True(result.Success, result.StandardOutput + result.StandardError);
             string listing = File.ReadAllText(listingPath);
             Assert.Contains("; Assembly listing for method Callbacks:Caller", listing);
             Assert.DoesNotMatch(@"\b(?:deferred\.call|call_indirect|call)\b[^\r\n]*Callbacks:Inlinee", listing);
-            Assert.Equal(expectedProbeCount.Value, Regex.Matches(listing, @"\bi64\.add\b").Count);
+            Assert.Equal(expectedProbeCount, Regex.Matches(listing, @"\bi64\.add\b").Count);
         }
         finally
         {
@@ -297,7 +277,7 @@ public class WasmArgumentLayoutTests
                 "--singlemethodname", "SequenceEqual",
                 "--singlemethodindex", "2",
                 "--singlemethodgenericarg", "System.SByte",
-                "--codegenopt:WasmPgoInstrumentation=*",
+                "--codegenopt:R2RPgoInstrumentation=*",
                 $"--codegenopt:JitProfileValues={(enabled ? 1 : 0)}",
                 "--codegenopt:JitDisasm=System.MemoryExtensions:SequenceEqual",
                 $"--codegenopt:JitStdOutFile={listingPath}",
@@ -432,7 +412,7 @@ public class WasmArgumentLayoutTests
             ];
 
             string listing = instrument
-                ? CompileCountProfile(input, context, method, schema, directory, "--codegenopt:WasmPgoInstrumentation=*",
+                ? CompileCountProfile(input, context, method, schema, directory, "--codegenopt:R2RPgoInstrumentation=*",
                     "--codegenopt:JitPropagateSynthesizedCountsToProfileData=1")
                 : CompileCountProfile(input, context, method, schema, directory);
             AssertCountProfile(listing, entryCount: 100, firstLikelihood: 0.3, secondLikelihood: 0.7);
@@ -594,7 +574,7 @@ public class WasmArgumentLayoutTests
                 "--optimize",
                 "--parallelism", "1",
                 "--codegenopt:JitNoInline=1",
-                "--codegenopt:WasmPgoInstrumentation=*",
+                "--codegenopt:R2RPgoInstrumentation=*",
                 "--out", output,
             ];
             R2RCompilationResult result = new R2RDriver(_output).Compile(args);

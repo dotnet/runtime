@@ -438,7 +438,7 @@ public:
     void BuildSchemaElements(BasicBlock* block, Schema& schema) override;
     void Instrument(BasicBlock* block, Schema& schema, uint8_t* profileMemory) override;
 
-    static GenTree* GetR2RProfileAddress(Compiler* comp, uint8_t* importCell, size_t offset);
+    static GenTree* GetProfileAddress(Compiler* comp, uint8_t* profileBase, size_t offset);
     static GenTree* CreateCounterIncrement(Compiler* comp,
                                            uint8_t*  counterBase,
                                            size_t    counterOffset,
@@ -689,13 +689,18 @@ void BlockCountInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8
 }
 
 //------------------------------------------------------------------------
-// BlockCountInstrumentor::GetR2RProfileAddress: resolve an import and a slot in its profile slab.
+// BlockCountInstrumentor::GetProfileAddress: compute the address of a slot in the profile slab.
 //
-GenTree* BlockCountInstrumentor::GetR2RProfileAddress(Compiler* comp, uint8_t* importCell, size_t offset)
+GenTree* BlockCountInstrumentor::GetProfileAddress(Compiler* comp, uint8_t* profileBase, size_t offset)
 {
-    assert(comp->compR2RPgoInstrumentation());
-    GenTree* base = comp->gtNewIndOfIconHandleNode(TYP_I_IMPL, reinterpret_cast<size_t>(importCell), GTF_ICON_BBC_PTR);
-    base->gtFlags |= GTF_IND_NONFAULTING;
+    if (!comp->compR2RPgoInstrumentation())
+    {
+        return comp->gtNewIconHandleNode(reinterpret_cast<size_t>(profileBase) + offset, GTF_ICON_BBC_PTR);
+    }
+
+    // The import cell is fixed up before this code runs. Only the pointer, not the counters, is invariant.
+    GenTree* cell = comp->gtNewIconHandleNode(reinterpret_cast<size_t>(profileBase), GTF_ICON_BBC_PTR);
+    GenTree* base = comp->gtNewIndir(TYP_I_IMPL, cell, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
     return offset == 0 ? base : comp->gtNewOperNode(GT_ADD, TYP_I_IMPL, base, comp->gtNewIconNode(offset));
 }
 
@@ -719,14 +724,6 @@ GenTree* BlockCountInstrumentor::CreateCounterIncrement(Compiler* comp,
     const bool interlocked = comp->opts.compPgoInterlocked;
     const bool scalable    = comp->opts.compPgoScalable;
 
-    auto counterAddress = [comp, counterBase, &counterOffset]() -> GenTree* {
-        if (comp->compR2RPgoInstrumentation())
-        {
-            return GetR2RProfileAddress(comp, counterBase, counterOffset);
-        }
-        return comp->gtNewIconHandleNode(reinterpret_cast<size_t>(counterBase) + counterOffset, GTF_ICON_BBC_PTR);
-    };
-
     if (interlocked || scalable)
     {
         GenTree* result = nullptr;
@@ -734,7 +731,7 @@ GenTree* BlockCountInstrumentor::CreateCounterIncrement(Compiler* comp,
         if (interlocked)
         {
             // Form counter address
-            GenTree* addressNode = counterAddress();
+            GenTree* addressNode = GetProfileAddress(comp, counterBase, counterOffset);
 
             // Interlocked increment
             result = comp->gtNewAtomicNode(GT_XADD, countType, addressNode, comp->gtNewIconNode(1, countType));
@@ -749,7 +746,7 @@ GenTree* BlockCountInstrumentor::CreateCounterIncrement(Compiler* comp,
             }
 
             // Form counter address
-            GenTree* addressNode = counterAddress();
+            GenTree* addressNode = GetProfileAddress(comp, counterBase, counterOffset);
 
             // Scalable increment
             GenTree* scalableNode = comp->gtNewHelperCallNode((countType == TYP_INT) ? CORINFO_HELP_COUNTPROFILE32
@@ -774,16 +771,13 @@ GenTree* BlockCountInstrumentor::CreateCounterIncrement(Compiler* comp,
 
     // Read Basic-Block count value
     GenTree* valueNode =
-        comp->compR2RPgoInstrumentation()
-            ? comp->gtNewIndir(countType, counterAddress(), GTF_IND_NONFAULTING)
-            : comp->gtNewIndOfIconHandleNode(countType, reinterpret_cast<size_t>(counterBase) + counterOffset,
-                                             GTF_ICON_BBC_PTR);
+        comp->gtNewIndir(countType, GetProfileAddress(comp, counterBase, counterOffset), GTF_IND_NONFAULTING);
 
     // Increment value by 1
     GenTree* incValueNode = comp->gtNewOperNode(GT_ADD, countType, valueNode, comp->gtNewIconNode(1, countType));
 
     // Write new Basic-Block count value
-    GenTree* counterAddrNode = counterAddress();
+    GenTree* counterAddrNode = GetProfileAddress(comp, counterBase, counterOffset);
     GenTree* updateNode      = comp->gtNewStoreIndNode(countType, counterAddrNode, incValueNode);
     if (comp->compR2RPgoInstrumentation())
     {
@@ -2321,11 +2315,8 @@ public:
         GenTree*       storeLenToTemp = compiler->gtNewTempStore(lenTmpNum, *lenArgRef);
         GenTree*       lengthLocal    = compiler->gtNewLclvNode(lenTmpNum, genActualType(*lenArgRef));
         GenTreeOp* lengthNode = compiler->gtNewOperNode(GT_COMMA, lengthLocal->TypeGet(), storeLenToTemp, lengthLocal);
-        GenTree*   histNode =
-            compiler->compR2RPgoInstrumentation()
-                  ? BlockCountInstrumentor::GetR2RProfileAddress(compiler, m_profileMemory, countEntry.Offset)
-                  : compiler->gtNewIconNode(reinterpret_cast<ssize_t>(m_profileMemory + countEntry.Offset), TYP_I_IMPL);
-        unsigned     helper         = is32 ? CORINFO_HELP_VALUEPROFILE32 : CORINFO_HELP_VALUEPROFILE64;
+        GenTree*   histNode   = BlockCountInstrumentor::GetProfileAddress(compiler, m_profileMemory, countEntry.Offset);
+        unsigned   helper     = is32 ? CORINFO_HELP_VALUEPROFILE32 : CORINFO_HELP_VALUEPROFILE64;
         GenTreeCall* helperCallNode = compiler->gtNewHelperCallNode(helper, TYP_VOID, lengthNode, histNode);
 
         *lenArgRef = compiler->gtNewOperNode(GT_COMMA, lengthLocal->TypeGet(), helperCallNode,
@@ -2541,7 +2532,7 @@ void ValueInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8_t* p
 bool Compiler::compR2RPgoInstrumentation() const
 {
 #ifdef FEATURE_R2R_PGO
-    return IsAot() && opts.IsInstrumented() && !JitConfig.WasmPgoInstrumentation().isEmpty();
+    return IsAot() && opts.IsInstrumented() && !JitConfig.R2RPgoInstrumentation().isEmpty();
 #else
     return false;
 #endif // FEATURE_R2R_PGO
@@ -2673,8 +2664,8 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
 #ifdef FEATURE_R2R_PGO
     if (r2rPgo)
     {
-        isSelected = JitConfig.WasmPgoInstrumentation().contains(info.compMethodHnd, info.compClassHnd,
-                                                                 &info.compMethodInfo->args);
+        isSelected = JitConfig.R2RPgoInstrumentation().contains(info.compMethodHnd, info.compClassHnd,
+                                                                &info.compMethodInfo->args);
     }
 #endif // FEATURE_R2R_PGO
     if (!isSelected)

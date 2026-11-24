@@ -23,7 +23,7 @@ Copyright (c) .NET Foundation. All rights reserved.
           DependsOnTargets="_ConfigureWasmPgoInstrumentation"
           BeforeTargets="_PrepareForReadyToRunCompilation">
     <PropertyGroup>
-      <PublishReadyToRunCrossgen2ExtraArgs>$(PublishReadyToRunCrossgen2ExtraArgs);--codegenopt:WasmPgoInstrumentation=&quot;$(_WasmPgoInstFilter)&quot;</PublishReadyToRunCrossgen2ExtraArgs>
+      <PublishReadyToRunCrossgen2ExtraArgs>$(PublishReadyToRunCrossgen2ExtraArgs);--codegenopt:R2RPgoInstrumentation=&quot;$(_WasmPgoInstFilter)&quot;</PublishReadyToRunCrossgen2ExtraArgs>
     </PropertyGroup>
   </Target>
 

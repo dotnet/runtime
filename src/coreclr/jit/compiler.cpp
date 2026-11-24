@@ -2490,10 +2490,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
     if (compIsForInlining())
     {
-#ifdef TARGET_WASM
-        // Standalone and inlined bodies must agree on the R2R counter layout.
         opts.compCollect64BitCounts = impInlineRoot()->opts.compCollect64BitCounts;
-#endif // TARGET_WASM
         return;
     }
 
