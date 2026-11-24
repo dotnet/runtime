@@ -23,7 +23,8 @@ internal sealed partial class Dasm
         public uint HandlerOffset;
         public uint HandlerLength;
         public uint ClassTokenOrFilterOffset;
-        public bool IsFat;
+        // The clause as stored in the image (small or fat format), kept only for the /BYTES dump.
+        public byte[]? Bytes;
 
         // How the clause is printed: whether it starts a new .try, and whether it is put in the code (as nested blocks)
         // rather than listed after it.
@@ -77,9 +78,11 @@ internal sealed partial class Dasm
 
         if (!block.ExceptionRegions.IsEmpty)
         {
-            // MethodBodyBlock does not tell the format of the EH section, which follows the code (of a fat method)
-            // 4-byte aligned.
-            bool fat = (data[(FatMethodHeaderSize + code.Length + 3) & ~3] & SectionFatFormat) != 0;
+            // For /BYTES: the EH section follows the code (of a fat method) 4-byte aligned and ends the body; after
+            // its 4-byte header, the clauses all have the same size (small or fat format).
+            int ehSection = (FatMethodHeaderSize + code.Length + 3) & ~3;
+            int clauseSize = (block.Size - ehSection - 4) / block.ExceptionRegions.Length;
+            int clause = ehSection + 4;
             m.EH = new List<EHClause>();
             foreach (ExceptionRegion e in block.ExceptionRegions)
             {
@@ -96,8 +99,9 @@ internal sealed partial class Dasm
                         ExceptionRegionKind.Filter => (uint)e.FilterOffset,
                         _ => 0,
                     },
-                    IsFat = fat,
+                    Bytes = _options.ShowBytes ? data.Slice(clause, clauseSize).ToArray() : null,
                 });
+                clause += clauseSize;
             }
         }
 
@@ -172,7 +176,7 @@ internal sealed partial class Dasm
                     int c = sect + 4;
                     for (int i = 0; i < count; i++)
                     {
-                        EHClause e = new() { IsFat = fat };
+                        EHClause e = new() { Bytes = data.Slice(c, fat ? 24 : 12).ToArray() };
                         if (fat)
                         {
                             e.Kind = (ExceptionRegionKind)ReadUInt32(data, c);
@@ -235,7 +239,7 @@ internal sealed partial class Dasm
                 HandlerOffset = src.HandlerOffset,
                 HandlerLength = src.HandlerLength,
                 ClassTokenOrFilterOffset = src.ClassTokenOrFilterOffset,
-                IsFat = src.IsFat,
+                Bytes = src.Bytes,
             });
         }
 
@@ -253,7 +257,12 @@ internal sealed partial class Dasm
         if (tryInCode)
         {
             // A stable sort: clauses with the same try and handler blocks keep their order.
-            _ehInfo = _ehInfo.OrderBy(e => (int)e.TryOffset).ThenBy(e => (int)e.TryLength).ThenBy(e => (int)e.HandlerOffset).ThenBy(e => (int)e.HandlerLength).ToList();
+            _ehInfo = _ehInfo
+                .OrderBy(e => (int)e.TryOffset)
+                .ThenBy(e => (int)e.TryLength)
+                .ThenBy(e => (int)e.HandlerOffset)
+                .ThenBy(e => (int)e.HandlerLength)
+                .ToList();
 
             uint wasTryOffset = 0xFFFFFFFF, wasTryLength = 0xFFFFFFFF, lastOffset = 0xFFFFFFFF;
             int newTryBlock = 0;
@@ -304,32 +313,12 @@ internal sealed partial class Dasm
     {
         StringBuilder sb = new();
         sb.Append(Indent).Append("// HEX:");
-        if (e.IsFat)
+        foreach (byte b in e.Bytes!)
         {
-            foreach (uint v in new[] { (uint)e.Kind, e.TryOffset, e.TryLength, e.HandlerOffset, e.HandlerLength, e.ClassTokenOrFilterOffset })
-            {
-                AppendHexBytes(sb, v, 4);
-            }
-        }
-        else
-        {
-            AppendHexBytes(sb, (uint)e.Kind, 2);
-            AppendHexBytes(sb, e.TryOffset, 2);
-            AppendHexBytes(sb, e.TryLength, 1);
-            AppendHexBytes(sb, e.HandlerOffset, 2);
-            AppendHexBytes(sb, e.HandlerLength, 1);
-            AppendHexBytes(sb, e.ClassTokenOrFilterOffset, 4);
+            sb.Append(' ').Append(b.ToString("X2", CultureInfo.InvariantCulture));
         }
 
         PrintLine(COMMENT(sb.ToString()));
-
-        static void AppendHexBytes(StringBuilder sb, uint v, int n)
-        {
-            for (int i = 0; i < n; i++)
-            {
-                sb.Append(' ').Append(((byte)(v >> (8 * i))).ToString("X2", CultureInfo.InvariantCulture));
-            }
-        }
     }
 
     private void DumpOneEHInfo(EHClause e)

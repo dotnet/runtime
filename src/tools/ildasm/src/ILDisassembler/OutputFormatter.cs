@@ -51,10 +51,10 @@ internal interface IOutputFormatter
 
     string Epilog(string newLine);
 
-    // The lines around the title comment of the output, if any.
-    string? TitlePrefix { get; }
+    // The lines around the title comment of the output; empty when there are none.
+    string TitlePrefix { get; }
 
-    string? TitlePostfix { get; }
+    string TitlePostfix { get; }
 
     // Appends a printable character to the comment that shows the text of a byte array.
     void AppendCommentChar(StringBuilder sb, char c);
@@ -103,9 +103,9 @@ internal sealed class PlainTextFormatter : IOutputFormatter
 
     public string Epilog(string newLine) => "";
 
-    public string? TitlePrefix => null;
+    public string TitlePrefix => "";
 
-    public string? TitlePostfix => null;
+    public string TitlePostfix => "";
 
     public void AppendCommentChar(StringBuilder sb, char c) => sb.Append(c);
 
@@ -154,9 +154,9 @@ internal sealed class HtmlFormatter : IOutputFormatter
 
     public string Epilog(string newLine) => string.Join(newLine, "</PRE>", "</BODY>", "</HTML>", "");
 
-    public string? TitlePrefix => "<FONT SIZE=4><B>";
+    public string TitlePrefix => "<FONT SIZE=4><B>";
 
-    public string? TitlePostfix => "</B></FONT>";
+    public string TitlePostfix => "</B></FONT>";
 
     public void AppendCommentChar(StringBuilder sb, char c)
     {
@@ -224,9 +224,9 @@ internal sealed class RtfFormatter : IOutputFormatter
 
     public string Epilog(string newLine) => "}\n";
 
-    public string? TitlePrefix => null;
+    public string TitlePrefix => "";
 
-    public string? TitlePostfix => null;
+    public string TitlePostfix => "";
 
     public void AppendCommentChar(StringBuilder sb, char c)
     {

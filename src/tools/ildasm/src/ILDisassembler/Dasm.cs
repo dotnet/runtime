@@ -585,15 +585,15 @@ internal sealed partial class Dasm
     private void DumpPreamble()
     {
         PrintLine("");
-        if (_formatter.TitlePrefix is string titlePrefix)
+        if (_formatter.TitlePrefix.Length != 0)
         {
-            PrintLine(titlePrefix);
+            PrintLine(_formatter.TitlePrefix);
         }
 
         PrintLine(COMMENT("//  .NET IL Disassembler.  Version " + ProductVersion));
-        if (_formatter.TitlePostfix is string titlePostfix)
+        if (_formatter.TitlePostfix.Length != 0)
         {
-            PrintLine(titlePostfix);
+            PrintLine(_formatter.TitlePostfix);
         }
 
         PrintLine("");

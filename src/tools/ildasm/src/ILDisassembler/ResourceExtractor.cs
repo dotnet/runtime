@@ -27,6 +27,30 @@ internal sealed class ResourceExtractor : IMetadataDisassembler
 
     public DisassemblyPhase Phase => DisassemblyPhase.End;
 
+    // The PE resource directory format (IMAGE_RESOURCE_DIRECTORY, IMAGE_RESOURCE_DIRECTORY_ENTRY and
+    // IMAGE_RESOURCE_DATA_ENTRY in the PE/COFF specification).
+    private const int ResourceDirectorySize = 16;
+    private const int NumberOfNamedEntriesOffset = 12;
+    private const int NumberOfIdEntriesOffset = 14;
+    private const int ResourceDirectoryEntrySize = 8;
+    // In the name of an entry: the name is a string; in the offset of an entry: the entry is a subdirectory.
+    private const uint ResourceEntryHighBit = 0x80000000;
+    private const uint ResourceEntryOffsetMask = 0x7FFFFFFF;
+    private const int DataEntrySizeOffset = 4;
+
+    // The .res file format (RESOURCEHEADER): a type or name given by an ordinal is 0xFFFF followed by the ordinal.
+    private const uint ResOrdinalMarker = 0xFFFF;
+    // The size of a header whose type and name are both ordinals.
+    private const uint ResHeaderSize = 32;
+
+    private enum DumpResult
+    {
+        NoResources,
+        Created,
+        Corrupt,
+        CannotCreateFile,
+    }
+
     // The file name of the output, which a managed resource file cannot take.
     internal string OutputFileName => Path.GetFileName(_outputFilePath);
 
@@ -43,16 +67,15 @@ internal sealed class ResourceExtractor : IMetadataDisassembler
         // Whatever follows the last '.' of the whole path is replaced.
         int dot = _outputFilePath.LastIndexOf('.');
         string resFile = (dot < 0 ? _outputFilePath : _outputFilePath.Substring(0, dot)) + ".res";
-        uint ret = DumpResourceToFile(dasm, resFile);
-        switch (ret)
+        switch (DumpResourceToFile(dasm, resFile))
         {
-            case 1:
+            case DumpResult.Created:
                 dasm.PrintLine(dasm.COMMENT($"// WARNING: Created Win32 resource file {resFile}"));
                 break;
-            case 0xDFFFFFFF:
+            case DumpResult.Corrupt:
                 dasm.PrintError("// ERROR: Corrupt Win32 resources");
                 break;
-            case 0xEFFFFFFF:
+            case DumpResult.CannotCreateFile:
                 dasm.PrintError($"// ERROR: Unable to open file {resFile}");
                 break;
         }
@@ -60,8 +83,8 @@ internal sealed class ResourceExtractor : IMetadataDisassembler
 
     private sealed class ResourceNode
     {
-        public uint TypeId = 0xFFFF;
-        public uint NameId = 0xFFFF;
+        public uint TypeId = ResOrdinalMarker;
+        public uint NameId = ResOrdinalMarker;
         public ushort LangId;
         public string? Type;
         public string? Name;
@@ -69,86 +92,89 @@ internal sealed class ResourceExtractor : IMetadataDisassembler
         public uint DataSize;
     }
 
-    private uint DumpResourceToFile(Dasm dasm, string fileName)
+    private DumpResult DumpResourceToFile(Dasm dasm, string fileName)
     {
         DirectoryEntry dir = dasm.PE.PEHeaders.PEHeader!.ResourceTableDirectory;
         if (dir.RelativeVirtualAddress == 0 || dir.Size == 0)
         {
-            return 0;
+            return DumpResult.NoResources;
         }
 
         if (!dasm.TryGetBytesAtRva((uint)dir.RelativeVirtualAddress, -1, out ReadOnlySpan<byte> res))
         {
-            return 0;
+            return DumpResult.NoResources;
         }
 
         List<ResourceNode> nodes = new();
         try
         {
-            // IMAGE_RESOURCE_DIRECTORY: the number of named and of id entries, followed by the entries.
+            // The number of named and of id entries, which follow the directory.
             static ushort Count(ReadOnlySpan<byte> res, int dirOffset)
-                => (ushort)(BinaryPrimitives.ReadUInt16LittleEndian(res.Slice(dirOffset + 12)) + BinaryPrimitives.ReadUInt16LittleEndian(res.Slice(dirOffset + 14)));
+                => (ushort)(BinaryPrimitives.ReadUInt16LittleEndian(res.Slice(dirOffset + NumberOfNamedEntriesOffset))
+                    + BinaryPrimitives.ReadUInt16LittleEndian(res.Slice(dirOffset + NumberOfIdEntriesOffset)));
+
+            static int EntryOffset(int dirOffset, int index) => dirOffset + ResourceDirectorySize + index * ResourceDirectoryEntrySize;
 
             static ResourceNode Leaf(ReadOnlySpan<byte> res, uint tid, uint nid, uint lid, uint dataEntryOffset)
             {
                 ResourceNode n = new() { LangId = (ushort)lid };
-                if ((tid & 0x80000000) != 0)
+                if ((tid & ResourceEntryHighBit) != 0)
                 {
                     n.TypeId = 0;
-                    n.Type = ResString(res, (int)(tid & 0x7FFFFFFF));
+                    n.Type = ResString(res, (int)(tid & ResourceEntryOffsetMask));
                 }
                 else
                 {
-                    n.TypeId = 0xFFFF | ((tid & 0xFFFF) << 16);
+                    n.TypeId = ResOrdinalMarker | ((tid & 0xFFFF) << 16);
                 }
 
-                if ((nid & 0x80000000) != 0)
+                if ((nid & ResourceEntryHighBit) != 0)
                 {
                     n.NameId = 0;
-                    n.Name = ResString(res, (int)(nid & 0x7FFFFFFF));
+                    n.Name = ResString(res, (int)(nid & ResourceEntryOffsetMask));
                 }
                 else
                 {
-                    n.NameId = 0xFFFF | ((nid & 0xFFFF) << 16);
+                    n.NameId = ResOrdinalMarker | ((nid & 0xFFFF) << 16);
                 }
 
                 n.DataRva = BinaryPrimitives.ReadUInt32LittleEndian(res.Slice((int)dataEntryOffset));
-                n.DataSize = BinaryPrimitives.ReadUInt32LittleEndian(res.Slice((int)dataEntryOffset + 4));
+                n.DataSize = BinaryPrimitives.ReadUInt32LittleEndian(res.Slice((int)dataEntryOffset + DataEntrySizeOffset));
                 return n;
             }
 
             int nTypes = Count(res, 0);
             for (int i = 0; i < nTypes; i++)
             {
-                int te = 16 + i * 8;
+                int te = EntryOffset(0, i);
                 uint typeId = BinaryPrimitives.ReadUInt32LittleEndian(res.Slice(te));
                 uint typeOff = BinaryPrimitives.ReadUInt32LittleEndian(res.Slice(te + 4));
-                if ((typeOff & 0x80000000) == 0)
+                if ((typeOff & ResourceEntryHighBit) == 0)
                 {
                     nodes.Add(Leaf(res, typeId, 0, 0, typeOff));
                     continue;
                 }
 
-                int nameDir = (int)(typeOff & 0x7FFFFFFF);
+                int nameDir = (int)(typeOff & ResourceEntryOffsetMask);
                 int nNames = Count(res, nameDir);
                 for (int j = 0; j < nNames; j++)
                 {
-                    int ne = nameDir + 16 + j * 8;
+                    int ne = EntryOffset(nameDir, j);
                     uint nameId = BinaryPrimitives.ReadUInt32LittleEndian(res.Slice(ne));
                     uint nameOff = BinaryPrimitives.ReadUInt32LittleEndian(res.Slice(ne + 4));
-                    if ((nameOff & 0x80000000) == 0)
+                    if ((nameOff & ResourceEntryHighBit) == 0)
                     {
                         nodes.Add(Leaf(res, typeId, nameId, 0, nameOff));
                         continue;
                     }
 
-                    int langDir = (int)(nameOff & 0x7FFFFFFF);
+                    int langDir = (int)(nameOff & ResourceEntryOffsetMask);
                     int nLangs = Count(res, langDir);
                     for (int k = 0; k < nLangs; k++)
                     {
-                        int le = langDir + 16 + k * 8;
+                        int le = EntryOffset(langDir, k);
                         uint langOff = BinaryPrimitives.ReadUInt32LittleEndian(res.Slice(le + 4));
-                        if ((langOff & 0x80000000) == 0)
+                        if ((langOff & ResourceEntryHighBit) == 0)
                         {
                             nodes.Add(Leaf(res, typeId, nameId, BinaryPrimitives.ReadUInt32LittleEndian(res.Slice(le)), langOff));
                         }
@@ -158,12 +184,12 @@ internal sealed class ResourceExtractor : IMetadataDisassembler
         }
         catch (Exception e) when (e is ArgumentException or IndexOutOfRangeException)
         {
-            return 0xDFFFFFFF;
+            return DumpResult.Corrupt;
         }
 
         if (nodes.Count == 0)
         {
-            return 0;
+            return DumpResult.NoResources;
         }
 
         Stream f;
@@ -173,18 +199,18 @@ internal sealed class ResourceExtractor : IMetadataDisassembler
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
-            return 0xEFFFFFFF;
+            return DumpResult.CannotCreateFile;
         }
 
         using (f)
         using (BinaryWriter w = new(f))
         {
-            // Dummy leading header.
+            // An empty leading resource: data size 0, then a header with type and name ordinal 0.
             w.Write(0u);
-            w.Write(32u);
-            w.Write(0xFFFFu);
-            w.Write(0xFFFFu);
-            w.Write(new byte[16]);
+            w.Write(ResHeaderSize);
+            w.Write(ResOrdinalMarker);
+            w.Write(ResOrdinalMarker);
+            w.Write(new byte[ResHeaderSize - 16]);
             foreach (ResourceNode n in nodes)
             {
                 if (!dasm.TryGetBytesAtRva(n.DataRva, (int)n.DataSize, out ReadOnlySpan<byte> data))
@@ -192,7 +218,7 @@ internal sealed class ResourceExtractor : IMetadataDisassembler
                     continue;
                 }
 
-                uint headerSize = 32;
+                uint headerSize = ResHeaderSize;
                 if (n.Type is not null)
                 {
                     headerSize += (uint)((n.Type.Length + 1) * 2 - 4);
@@ -247,7 +273,7 @@ internal sealed class ResourceExtractor : IMetadataDisassembler
             }
         }
 
-        return 1;
+        return DumpResult.Created;
     }
 
     private static string ResString(ReadOnlySpan<byte> res, int offset)
