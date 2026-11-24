@@ -18,6 +18,8 @@ pr:
 
 variables:
   - template: /eng/pipelines/common/variables.yml
+  - name: enableHelixJobMonitor
+    value: true
   - template: /eng/pipelines/helix-platforms.yml
 
 extends:
@@ -26,15 +28,27 @@ extends:
     isOfficialBuild: false
     stages:
     - stage: Build
+      variables:
+      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+        - group: DotNet-HelixApi-Access
       jobs:
+      - ${{ if eq(variables['enableHelixJobMonitor'], true) }}:
+        - template: /eng/common/core-templates/job/helix-job-monitor.yml
+          parameters:
+            helixAccessToken: $(HelixApiAccessToken)
+            timeoutInMinutes: 540
+            allowNoHelixJobs: true
+
       - template: /eng/pipelines/coreclr/templates/jit-hardware-intrinsics-wasm.yml
         parameters:
+          useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
           platforms:
             - browser_wasm
           extraBuildArgs: /p:PublishReadyToRunInstructionSet=relaxed-simd
           testBuildArgs: '/p:PublishReadyToRunInstructionSet=relaxed-simd -test:JIT/HardwareIntrinsics/HardwareIntrinsics_Wasm_r.csproj -test:JIT/HardwareIntrinsics/HardwareIntrinsics_Wasm_ro.csproj'
       - template: /eng/pipelines/coreclr/templates/jit-hardware-intrinsics-wasm.yml
         parameters:
+          useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
           platforms:
             - wasi_wasm
           # Compiles CoreLib into each test composite, so the tests can use relaxed SIMD.

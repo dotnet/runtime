@@ -193,6 +193,7 @@ extends:
           jobParameters:
             testGroup: outerloop
             liveLibrariesBuildConfig: Release
+            useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
             targetos: windows
             targetarch: x86
 
@@ -209,6 +210,7 @@ extends:
           jobParameters:
             testGroup: outerloop
             liveLibrariesBuildConfig: Release
+            useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
             targetos: Linux
             targetarch: x64
 
@@ -225,6 +227,7 @@ extends:
           jobParameters:
             testGroup: outerloop
             liveLibrariesBuildConfig: Release
+            useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
             targetos: windows
             targetarch: x64
 
@@ -241,6 +244,7 @@ extends:
           jobParameters:
             testGroup: outerloop
             liveLibrariesBuildConfig: Release
+            useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
             targetos: Linux
             targetarch: arm
 
@@ -257,6 +261,7 @@ extends:
           jobParameters:
             testGroup: outerloop
             liveLibrariesBuildConfig: Release
+            useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
             targetos: Linux
             targetarch: arm64
 
@@ -273,5 +278,6 @@ extends:
           jobParameters:
             testGroup: outerloop
             liveLibrariesBuildConfig: Release
+            useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
             targetos: OSX
             targetarch: arm64

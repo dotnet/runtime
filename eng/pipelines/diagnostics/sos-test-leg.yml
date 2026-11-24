@@ -27,6 +27,7 @@ parameters:
   disableComponentGovernance: ''
   artifactSuffix: ''
   useCdacDumpCollectProvider: false
+  useHelixMonitor: false
 
 jobs:
 - template: /eng/common/${{ parameters.templatePath }}/job/job.yml
@@ -189,6 +190,7 @@ jobs:
           /restore
           /p:TreatWarningsAsErrors=false
           /t:Test
+          /p:EnableHelixJobMonitor=${{ parameters.useHelixMonitor }}
           /p:Configuration=$(_DiagnosticsConfiguration)
           /p:TargetArch=${{ parameters.archType }}
           /p:TargetOS=${{ replace(parameters.osGroup, 'windows', 'Windows_NT') }}

@@ -96,6 +96,8 @@ resources:
 
 variables:
   - template: /eng/pipelines/common/variables.yml
+  - name: enableHelixJobMonitor
+    value: true
   - template: /eng/pipelines/helix-platforms.yml
 
 schedules:
@@ -154,7 +156,17 @@ extends:
     # ----------------------------------------------------------------------
     - stage: SOSTests
       dependsOn: []
+      variables:
+      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+        - group: DotNet-HelixApi-Access
       jobs:
+      - ${{ if eq(variables['enableHelixJobMonitor'], true) }}:
+        - template: /eng/common/core-templates/job/helix-job-monitor.yml
+          parameters:
+            helixAccessToken: $(HelixApiAccessToken)
+            timeoutInMinutes: 540
+            allowNoHelixJobs: true
+
       # An empty suffix preserves the standard build and artifact names.
       - ${{ each suffix in split(',_EnumMemory', ',') }}:
         - template: /eng/pipelines/common/platform-matrix.yml
@@ -224,6 +236,7 @@ extends:
               nameSuffix: SOS${{ suffix }}
               artifactSuffix: ${{ suffix }}
               useCdacDumpCollectProvider: ${{ eq(suffix, '_EnumMemory') }}
+              useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
               isOfficialBuild: ${{ variables.isOfficialBuild }}
               timeoutInMinutes: 360
               dependsOnGlobalBuilds:
@@ -244,7 +257,17 @@ extends:
     # ----------------------------------------------------------------------
     - stage: CdacTests
       dependsOn: []
+      variables:
+      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+        - group: DotNet-HelixApi-Access
       jobs:
+      - ${{ if eq(variables['enableHelixJobMonitor'], true) }}:
+        - template: /eng/common/core-templates/job/helix-job-monitor.yml
+          parameters:
+            helixAccessToken: $(HelixApiAccessToken)
+            timeoutInMinutes: 540
+            allowNoHelixJobs: true
+
       # Shared per-platform build. Downstream jobs in this stage depend on
       # the per-platform build_<plat>_release_Build via job-level
       # dependsOnGlobalBuilds: - nameSuffix: Build.
@@ -274,6 +297,7 @@ extends:
         - template: /eng/pipelines/cdac/cdac-helix-test-leg.yml
           parameters:
             nameSuffix: CdacDumpTest
+            useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
             platforms: ${{ parameters.cdacDumpPlatforms }}
             prepareParameters:
               cdacTestConfig: Debug
@@ -304,7 +328,7 @@ extends:
             - template: /eng/pipelines/common/templates/runtimes/send-to-helix-inner-step.yml
               parameters:
                 displayName: 'Send cDAC Stress Tests to Helix'
-                sendParams: $(Build.SourcesDirectory)/src/native/managed/cdac/tests/StressTests/cdac-stress-helix.proj /t:Test /p:TargetOS=$(osGroup) /p:TargetArchitecture=$(archType) /p:HelixTargetQueues="$(CdacStressHelixQueue)" /p:TestHostPayload=$(StressTestHostRootDir) /p:StressTestsPayload=$(Build.SourcesDirectory)/artifacts/helixPayload/cdac-stress /bl:$(Build.SourcesDirectory)/artifacts/log/SendStressToHelix.binlog
+                sendParams: $(Build.SourcesDirectory)/src/native/managed/cdac/tests/StressTests/cdac-stress-helix.proj /t:Test /p:EnableHelixJobMonitor=${{ variables.enableHelixJobMonitor }} /p:TargetOS=$(osGroup) /p:TargetArchitecture=$(archType) /p:HelixTargetQueues="$(CdacStressHelixQueue)" /p:TestHostPayload=$(StressTestHostRootDir) /p:StressTestsPayload=$(Build.SourcesDirectory)/artifacts/helixPayload/cdac-stress /bl:$(Build.SourcesDirectory)/artifacts/log/SendStressToHelix.binlog
                 environment:
                   _Creator: dotnet-bot
                   SYSTEM_ACCESSTOKEN: $(System.AccessToken)
@@ -316,8 +340,9 @@ extends:
                 }
               displayName: 'Fail on test errors'
               condition: always()
-            # On failure, publish the testhost so the crash dumps Helix
-            # collects can be symbolicated (needs libcoreclr.so,
+            # With the Helix job monitor, test failures are only known after
+            # this job finishes. Publish the testhost for crash-dump symbolication
+            # on every submission (needs libcoreclr.so,
             # mscordaccore_universal, corerun + their .dbg/.pdb side files).
             - task: PublishPipelineArtifact@1
               inputs:
@@ -325,20 +350,22 @@ extends:
                 artifactName: 'TestHost_CdacStress_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_Attempt$(System.JobAttempt)'
               displayName: 'Publish TestHost for crash dump symbolication'
               continueOnError: true
-              condition: failed()
+              condition: or(failed(), ${{ eq(variables.enableHelixJobMonitor, true) }})
 
       # cDAC X-Plat Dump Generation -- xplat mode or schedule. Same template
       # as the single-leg dump tests, plus /p:DumpOnly=true so Helix only
       # generates and returns dumps (no in-process tests).
+      # Keep this leg synchronous: downstream jobs download its dump artifacts.
       - ${{ if or(eq(parameters.cdacDumpTestMode, 'xplat'), eq(variables['Build.Reason'], 'Schedule')) }}:
         - template: /eng/pipelines/cdac/cdac-helix-test-leg.yml
           parameters:
             nameSuffix: CdacXPlatDumpGen
+            useHelixMonitor: false
             platforms: ${{ parameters.cdacXPlatDumpPlatforms }}
             prepareParameters:
               cdacTestConfig: Debug
             sendDisplayName: 'Send cDAC Dump Gen to Helix'
-            sendParams: $(Build.SourcesDirectory)/src/native/managed/cdac/tests/DumpTests/cdac-dump-helix.proj /t:Test /p:DumpOnly=true /p:EnableHelixJobMonitor=false /p:TargetOS=$(osGroup) /p:TargetArchitecture=$(archType) /p:HelixTargetQueues="$(CdacHelixQueue)" /p:TestHostPayload=$(TestHostPayloadDir) /p:DumpTestsPayload=$(Build.SourcesDirectory)/artifacts/helixPayload/cdac /bl:$(Build.SourcesDirectory)/artifacts/log/SendDumpGenToHelix.binlog
+            sendParams: $(Build.SourcesDirectory)/src/native/managed/cdac/tests/DumpTests/cdac-dump-helix.proj /t:Test /p:DumpOnly=true /p:TargetOS=$(osGroup) /p:TargetArchitecture=$(archType) /p:HelixTargetQueues="$(CdacHelixQueue)" /p:TestHostPayload=$(TestHostPayloadDir) /p:DumpTestsPayload=$(Build.SourcesDirectory)/artifacts/helixPayload/cdac /bl:$(Build.SourcesDirectory)/artifacts/log/SendDumpGenToHelix.binlog
             failDisplayName: 'Fail on dump generation errors'
             failErrorMessage: 'One or more cDAC dump generation failures were detected. Failing the job.'
             publishDumpsArtifactName: CdacDumps_$(osGroup)_$(archType)
@@ -354,6 +381,7 @@ extends:
         - template: /eng/pipelines/cdac/cdac-helix-test-leg.yml
           parameters:
             nameSuffix: CdacXPlatDumpTest
+            useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
             platforms: ${{ parameters.cdacXPlatDumpPlatforms }}
             extraDependsOn:
               - ${{ each src in parameters.cdacXPlatDumpPlatforms }}:

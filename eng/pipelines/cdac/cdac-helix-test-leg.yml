@@ -7,7 +7,8 @@
 #   CdacXPlatDumpTests -- runs DumpTests against dumps from all source platforms
 #
 # All three: download the shared CdacBuild artifact, prepare a Helix payload,
-# send to Helix, fail the job if Helix reports failures. They differ in:
+# send to Helix, and report failures inline or through the Helix job monitor.
+# They differ in:
 #   - which platform list they fan out over
 #   - which Helix .proj they send
 #   - extra prepare-cdac-helix-steps parameters (skipDebuggeeCopy, etc.)
@@ -28,6 +29,9 @@ parameters:
   type: string
 - name: sendParams
   type: string
+- name: useHelixMonitor
+  type: boolean
+  default: false
 - name: prepareParameters
   type: object
   default: {}
@@ -82,14 +86,16 @@ jobs:
       - template: /eng/pipelines/common/templates/runtimes/send-to-helix-inner-step.yml
         parameters:
           displayName: ${{ parameters.sendDisplayName }}
-          sendParams: ${{ parameters.sendParams }}
+          sendParams: ${{ parameters.sendParams }} /p:EnableHelixJobMonitor=${{ parameters.useHelixMonitor }}
           environment:
             _Creator: dotnet-bot
             SYSTEM_ACCESSTOKEN: $(System.AccessToken)
             NUGET_PACKAGES: $(Build.SourcesDirectory)$(dir).packages
             ${{ if eq(parameters.nameSuffix, 'CdacXPlatDumpTest') }}:
               SourcePlatforms: ${{ join(';', parameters.platforms) }}
-      - ${{ if ne(parameters.publishDumpsArtifactName, '') }}:
+      # With the Helix job monitor, submissions leave dumps on Helix.
+      # Only synchronous legs download and publish dump artifacts.
+      - ${{ if and(ne(parameters.publishDumpsArtifactName, ''), not(parameters.useHelixMonitor)) }}:
         - task: PublishPipelineArtifact@1
           inputs:
             targetPath: $(Build.SourcesDirectory)/artifacts/helixresults

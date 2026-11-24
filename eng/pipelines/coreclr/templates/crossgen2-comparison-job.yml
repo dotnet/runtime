@@ -12,6 +12,7 @@ parameters:
   targetarch: ''
   targetos: ''
   liveLibrariesBuildConfig: ''
+  useHelixMonitor: false
 
 ### Crossgen-comparison job
 ###
@@ -154,6 +155,7 @@ jobs:
     - template: /eng/common/templates/steps/send-to-helix.yml
       parameters:
         DisplayNamePrefix: Run native crossgen and compare output to baseline
+        UseHelixMonitor: ${{ parameters.useHelixMonitor }}
         osGroup: ${{ parameters.osGroup }}
         HelixSource: $(_HelixSource)
         HelixType: 'test/crossgen-comparison/'
