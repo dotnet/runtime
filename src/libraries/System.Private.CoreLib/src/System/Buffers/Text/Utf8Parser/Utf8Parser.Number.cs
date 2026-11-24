@@ -13,7 +13,8 @@ namespace System.Buffers.Text
             AllowExponent = 0x00000001,
         }
 
-        private static bool TryParseNumber(ReadOnlySpan<byte> source, ref Number.NumberBuffer number, out int bytesConsumed, ParseNumberOptions options, out bool textUsedExponentNotation, out int numberOfTrailingZeros)
+        /// <remarks>Caller must null-terminate number.Digits and set number.HasNonZeroTail after a successful parse.</remarks>
+        private static bool TryParseNumber(ReadOnlySpan<byte> source, ref Number.NumberBuffer number, out int bytesConsumed, ParseNumberOptions options, out bool textUsedExponentNotation, out int lastNonZeroDigitIndex)
         {
             Debug.Assert(number.DigitsCount == 0);
             Debug.Assert(number.Scale == 0);
@@ -22,7 +23,7 @@ namespace System.Buffers.Text
 
             number.CheckConsistency();
             textUsedExponentNotation = false;
-            numberOfTrailingZeros = 0;
+            lastNonZeroDigitIndex = -1;
 
             if (source.Length == 0)
             {
@@ -73,13 +74,11 @@ namespace System.Buffers.Text
             if (srcIndex == source.Length)
             {
                 bytesConsumed = srcIndex;
-                number.CheckConsistency();
                 return true;
             }
 
             int startIndexNonLeadingDigitsBeforeDecimal = srcIndex;
 
-            int hasNonZeroTail = 0;
             while (srcIndex < source.Length)
             {
                 c = source[srcIndex];
@@ -93,24 +92,11 @@ namespace System.Buffers.Text
                 srcIndex++;
                 digitCount++;
 
-                if (digitCount > maxDigitCount)
+                if (value != 0)
                 {
-                    // For decimal and binary floating-point numbers, we only
-                    // need to store digits up to maxDigitCount. However, we still
-                    // need to keep track of whether any additional digits past
-                    // maxDigitCount were non-zero, as that can impact rounding
-                    // for an input that falls evenly between two representable
-                    // results.
-
-                    hasNonZeroTail |= value;
-                }
-                else
-                {
-                    numberOfTrailingZeros = value == 0 ? numberOfTrailingZeros + 1 : 0;
+                    lastNonZeroDigitIndex = digitCount - 1;
                 }
             }
-            number.HasNonZeroTail = (hasNonZeroTail != 0);
-
             int numDigitsBeforeDecimal = srcIndex - startIndexDigitsBeforeDecimal;
             int numNonLeadingDigitsBeforeDecimal = srcIndex - startIndexNonLeadingDigitsBeforeDecimal;
 
@@ -122,10 +108,8 @@ namespace System.Buffers.Text
 
             if (srcIndex == source.Length)
             {
-                digits[dstIndex] = 0;
                 number.DigitsCount = dstIndex;
                 bytesConsumed = srcIndex;
-                number.CheckConsistency();
                 return true;
             }
 
@@ -164,24 +148,11 @@ namespace System.Buffers.Text
                     srcIndex++;
                     digitCount++;
 
-                    if (digitCount > maxDigitCount)
+                    if (value != 0)
                     {
-                        // For decimal and binary floating-point numbers, we only
-                        // need to store digits up to maxDigitCount. However, we still
-                        // need to keep track of whether any additional digits past
-                        // maxDigitCount were non-zero, as that can impact rounding
-                        // for an input that falls evenly between two representable
-                        // results.
-
-                        hasNonZeroTail |= value;
-                    }
-                    else
-                    {
-                        numberOfTrailingZeros = value == 0 ? numberOfTrailingZeros + 1 : 0;
+                        lastNonZeroDigitIndex = digitCount - 1;
                     }
                 }
-                number.HasNonZeroTail = (hasNonZeroTail != 0);
-
                 numDigitsAfterDecimal = srcIndex - startIndexDigitsAfterDecimal;
 
                 int numDigitsAfterDecimalToCopy = Math.Min(srcIndex - startIndexOfDigitsAfterDecimalToCopy, maxDigitCount - dstIndex);
@@ -197,10 +168,8 @@ namespace System.Buffers.Text
                         return false;
                     }
 
-                    digits[dstIndex] = 0;
                     number.DigitsCount = dstIndex;
                     bytesConsumed = srcIndex;
-                    number.CheckConsistency();
                     return true;
                 }
             }
@@ -213,10 +182,8 @@ namespace System.Buffers.Text
 
             if ((c & ~0x20u) != 'E')
             {
-                digits[dstIndex] = 0;
                 number.DigitsCount = dstIndex;
                 bytesConsumed = srcIndex;
-                number.CheckConsistency();
                 return true;
             }
 
@@ -322,10 +289,8 @@ namespace System.Buffers.Text
                 }
             }
 
-            digits[dstIndex] = 0;
             number.DigitsCount = dstIndex;
             bytesConsumed = srcIndex;
-            number.CheckConsistency();
             return true;
         }
     }
