@@ -789,6 +789,9 @@ namespace System.Net.Http.Functional.Tests
 
                             var socketsHttpHandler = GetUnderlyingSocketsHttpHandler(handler);
                             socketsHttpHandler.MaxConnectionsPerServer = 1;
+                            // Avoid a retry (and an extra RequestHeadersStart) if the initial SETTINGS
+                            // lowers the stream limit while the pool has a temporary stream reservation.
+                            socketsHttpHandler.SetInitialHttp2MaxConcurrentStreams(1);
 
                             // Dummy request to establish connection and ensure that the MaxConcurrentStreams setting has been acknowledged
                             await client.GetStringAsync(uri);
