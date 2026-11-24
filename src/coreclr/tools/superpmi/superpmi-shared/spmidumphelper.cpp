@@ -241,8 +241,8 @@ std::string SpmiDumpHelper::DumpJitFlags(unsigned long long flags)
     AddFlag(RELOC);
     AddFlag(IL_STUB);
     AddFlag(PROCSPLIT);
-    AddFlag(BBINSTR);
-    AddFlag(BBINSTR_IF_LOOPS);
+    AddFlag(PGO_INSTR);
+    AddFlag(PGO_INSTR_IF_LOOPS);
     AddFlag(BBOPT);
     AddFlag(FRAMED);
     AddFlag(USE_PINVOKE_HELPERS);

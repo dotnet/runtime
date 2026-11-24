@@ -2937,7 +2937,7 @@ PhaseStatus Compiler::fgIncorporateProfileData()
 
     // Or run synthesis and save the data out as the actual profile data
     //
-    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR) &&
+    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PGO_INSTR) &&
         (JitConfig.JitPropagateSynthesizedCountsToProfileData() > 0))
     {
         JITDUMP("Synthesizing profile data and writing it out as the actual profile data\n");

@@ -1211,10 +1211,10 @@ const char* CorJitFlagToString(CORJIT_FLAGS::CorJitFlag flag)
         return "CORJIT_FLAG_IL_STUB";
     case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_PROCSPLIT:
         return "CORJIT_FLAG_PROCSPLIT";
-    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_BBINSTR:
-        return "CORJIT_FLAG_BBINSTR";
-    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_BBINSTR_IF_LOOPS:
-        return "CORJIT_FLAG_BBINSTR_IF_LOOPS";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_PGO_INSTR:
+        return "CORJIT_FLAG_PGO_INSTR";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_PGO_INSTR_IF_LOOPS:
+        return "CORJIT_FLAG_PGO_INSTR_IF_LOOPS";
     case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_BBOPT:
         return "CORJIT_FLAG_BBOPT";
     case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_FRAMED:

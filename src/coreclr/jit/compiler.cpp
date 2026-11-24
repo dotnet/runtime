@@ -4058,7 +4058,7 @@ const char* Compiler::compGetTieringName(bool wantShortName) const
 {
     const bool tier0         = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0);
     const bool tier1         = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER1);
-    const bool instrumenting = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR);
+    const bool instrumenting = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PGO_INSTR);
 
     if (!opts.compMinOptsIsSet)
     {
@@ -4313,7 +4313,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // If we're going to instrument code, we may need to prepare before
     // we import. Also do this before we read in any profile data.
     //
-    if (compileFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR))
+    if (compileFlags->IsSet(JitFlags::JIT_FLAG_PGO_INSTR))
     {
         DoPhase(this, PHASE_IBCPREP, &Compiler::fgPrepareToInstrumentMethod);
     }
@@ -4369,7 +4369,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // If instrumenting, add block and class probes.
     //
-    if (compileFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR))
+    if (compileFlags->IsSet(JitFlags::JIT_FLAG_PGO_INSTR))
     {
         DoPhase(this, PHASE_IBCINSTR, &Compiler::fgInstrumentMethod);
     }
@@ -7023,9 +7023,9 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
         //
         const char* reason = nullptr;
 
-        if (compTailPrefixSeen && !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR))
+        if (compTailPrefixSeen && !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PGO_INSTR))
         {
-            reason = "tail.call and not BBINSTR";
+            reason = "tail.call and not PGO_INSTR";
         }
         else if (compHasBackwardJump && ((info.compFlags & CORINFO_FLG_DISABLE_TIER0_FOR_LOOPS) != 0))
         {
@@ -7057,10 +7057,10 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
             {
                 JITDUMP("\nOSR enabled for this method\n");
                 if (compHasBackwardJump && !compTailPrefixSeen &&
-                    opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR_IF_LOOPS) && opts.IsTier0())
+                    opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PGO_INSTR_IF_LOOPS) && opts.IsTier0())
                 {
                     assert((info.compFlags & CORINFO_FLG_DISABLE_TIER0_FOR_LOOPS) == 0);
-                    opts.jitFlags->Set(JitFlags::JIT_FLAG_BBINSTR);
+                    opts.jitFlags->Set(JitFlags::JIT_FLAG_PGO_INSTR);
                     JITDUMP("\nEnabling instrumentation for this method so OSR'd version will have a profile.\n");
                 }
             }
@@ -7090,7 +7090,7 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
         if (JitInstrumentIfOptimizingRange.Contains(hash))
         {
             JITDUMP("\nEnabling instrumentation\n");
-            opts.jitFlags->Set(JitFlags::JIT_FLAG_BBINSTR);
+            opts.jitFlags->Set(JitFlags::JIT_FLAG_PGO_INSTR);
         }
     }
 #endif
