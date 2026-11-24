@@ -137,19 +137,23 @@ For each candidate failure, do the following:
    - **unrelated**: continue with KBE lookup and handling;
    - **unclear**: search for existing tracking, but keep any proposed new issue
      as a non-publishable review draft until the relationship is resolved.
-3. Use the shared destination-classification section when runtime ownership is
-   not already established.
-4. For a runtime candidate, extract the narrowest signature and run the existing
-   shared runtime KBE lookup flow from
+3. Extract the narrowest signature and run the existing shared runtime KBE
+   lookup flow for every unrelated or unclear candidate from
    `.github/workflows/shared/create-kbe.instructions.md`.
-5. Classify the runtime candidate into exactly one of these buckets:
+4. Classify the runtime lookup into exactly one of these buckets:
    - **new KBE needed**
    - **existing KBE matched but Build Analysis likely missed it**
    - **unhandled**
-6. For a dnceng candidate, preserve the shared dnceng classification and either
+   Retain a matching plain tracker as cross-link context rather than treating it
+   as a KBE substitute.
+5. If a verified open runtime KBE matches, report it and stop destination
+   routing for that candidate unless an explicit migration was requested.
+6. When no open runtime KBE matches, use the shared destination-classification
+   section if runtime ownership is not already established.
+7. For a dnceng candidate, preserve the shared dnceng classification and either
    report the existing issue, prepare a new/recurrence draft, prepare a
    non-publishable review draft, or mark the failure unhandled.
-7. When the PR targets `release/<major>.<minor>`, read and follow
+8. When the PR targets `release/<major>.<minor>`, read and follow
    [`references/servicing-triage.md`](references/servicing-triage.md) after the
    normal runtime lookup and before any live publication.
 

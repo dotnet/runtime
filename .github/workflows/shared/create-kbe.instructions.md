@@ -82,11 +82,22 @@ If the candidate may contain a security issue, stop public KBE processing and
 report the required private escalation path. Do not create a GitHub issue,
 AzDO work item, comment, or public draft.
 
-For a runtime repository candidate, continue with
-[Search for an existing KBE](#search-for-an-existing-kbe).
+Before routing any candidate to dnceng, run the normal runtime KBE lookup,
+including open and recently closed KBEs, plain trackers, and existing PRs. This
+preserves the previous behavior for pipelines excluded from Build Analysis:
 
-For an infrastructure candidate or infrastructure review, run the dnceng lookup
-below before selecting any creation action.
+- if a verified open runtime KBE matches, report or reuse it and do not create a
+  dnceng issue unless an explicit migration was requested;
+- if only a plain tracker matches, retain it as cross-link context but continue
+  destination and KBE eligibility analysis because it is not a KBE substitute;
+- if the runtime lookup is blocked or inconclusive, stop for human review rather
+  than creating a dnceng issue.
+
+For a runtime repository candidate, continue with the normal runtime lookup and
+classification.
+
+For an infrastructure candidate or infrastructure review with no matching open
+runtime KBE, run the dnceng lookup below before selecting any creation action.
 
 <a id="search-existing-dnceng-kbe"></a>
 
@@ -99,8 +110,8 @@ Read the current authoritative sources before classifying a dnceng result:
 - Arcade `Documentation/Build Analysis/KnownIssues.md`
 - dnceng `Documentation/TeamProcess/DevGuide/IssueTrackingGuidance.md`
 
-Search open and recent closed `dotnet/dnceng` issues using progressively
-narrowed combinations of:
+Search open and closed `dotnet/dnceng` issues using progressively narrowed
+combinations of:
 
 1. the full stable error signature,
 2. assertion, exception, or task error text,
@@ -109,6 +120,16 @@ narrowed combinations of:
    values,
 5. build leg and originating repository,
 6. relevant service or package-feed name.
+
+For closed `dotnet/dnceng` issues, use the following windows:
+
+- The normal closed dnceng search uses `closed:>=<30-days-ago>`.
+- After that misses, widen to `closed:>=<90-days-ago>` only when checking a
+  suspected recurrence with the same stable signature. Do not use a test stem,
+  generic exception, or task name alone for the widened search.
+- Do not run an unbounded dnceng history search from this shared flow. Older
+  infrastructure history requires explicit human review or separate,
+  caller-specific guidance.
 
 Preserve complete search responses and inspect every plausible issue body and
 relevant comments. A failed, filtered, incomplete, ambiguous, or unreadable

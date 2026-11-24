@@ -60,6 +60,62 @@ For each runtime-owned failure:
 Absence from a search result or absence of a recent failing build is not proof
 that a branch is unaffected.
 
+## Historical servicing fallback
+
+Keep the shared 30/90-day closed-KBE and recurrence barriers unchanged. Use
+this release-only fallback immediately before finalizing a **new KBE needed**
+result, and only when all of these are true:
+
+- the PR targets `release/<major>.<minor>` and the failure is runtime-owned;
+- the normal shared lookup completed successfully and found no verified open or
+  recent closed KBE that determines the outcome;
+- existing tracker or fix evidence does not already determine propagation;
+- the candidate satisfies the normal signature-specificity and stability gates;
+- the failing source SHA, target release branch, and main branch are known;
+- a composite search key has at least two independent stable anchors, such as a
+  full test or method plus a distinctive assertion, an invariant error phrase
+  plus leg root, or source symbol plus assertion and file or assembly.
+
+Do not use a test stem, class name, generic exception, or build leg alone.
+
+### Phase 1: historical fix search
+
+1. Search merged runtime PRs across all dates using the composite key.
+2. Admit at most 10 unique PR candidates for the signature. Fully read every
+   candidate body and diff. If a query has more results, narrow it; if it cannot
+   be narrowed to a complete result set, stop for human review.
+3. Require one unambiguous effective fix for the same root cause. Multiple
+   plausible fixes, unreadable/filtered results, or uncertain patch identity
+   stop for human review.
+
+### Phase 2: old closed KBE as a fix index
+
+Run this phase only when Phase 1 finds no fix candidate:
+
+1. Search closed runtime KBEs across all dates using the same composite key.
+2. Admit at most 10 unique issue candidates. Fully read every issue and relevant
+   comments.
+3. Follow only explicit duplicate links, with at most 5 hops per chain and at
+   most 20 total issue reads for the signature. Missing or ambiguous links,
+   cycles, filtered reads, or a budget overrun stop for human review.
+4. Use an old KBE only to discover verified fix provenance. It is not an active
+   KBE substitute and does not change the generic 90-day recurring-signature
+   policy.
+
+### Classify by effective fix presence
+
+- failing source lacks fix; target release now has it: historical failure,
+  already addressed;
+- failing source and target release lack fix; main has it: release propagation
+  gap or backport candidate;
+- failing source contains fix and still fails: post-fix recurrence;
+- main also lacks fix: main fix needed;
+- effective patch presence or applicability is ambiguous: human review.
+
+A complete zero-result fallback returns to the ordinary **new KBE needed**
+decision with `no historical servicing evidence found`; it is not proof that no
+older issue ever existed. Never invoke `/backport` automatically.
+
 ## Result fields
 
 Report these independently because more than one can apply:
@@ -71,6 +127,8 @@ Report these independently because more than one can apply:
   unclear
 - `recommendedAction`: none, correct matcher, request backport, fix main,
   investigate VMR sync, or human review
+- `historicalLookupStatus`: not run, no evidence, fix found, old KBE indexed,
+  budget exceeded, ambiguous, or blocked
 
 Before recommending a backport, verify that the fix is a small targeted change
 for a security bug, regression, or reliability issue, consistent with the
