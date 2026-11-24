@@ -145,7 +145,7 @@ the metadata of the type arguments too. (The group type of the other APIs is vis
 * The sections of the image are emitted when the program has scope maps even if there are no assembly level type maps (the manager can't know before the analysis is done): `ShouldSkipEmittingObjectNode` of the section nodes makes a program without any
 type map keep not having the sections.
 
-At run time (`TypeMapLazyDictionary.NativeAot.cs`) the overloads with an owner use `typeof(TypeMapOwnerScope<TGroup, TOwner>)` as the group handle: the same lookup of the group, the same flavors and the same decoding of the values.
+At run time (`TypeMapLazyDictionary.NativeAot.cs`) the overloads with an owner use the handle of `TypeMapOwnerScope<TGroup, TOwner>` (`MethodTable.Of`, not a `typeof` that would create a `Type`) as the group handle: the same lookup of the group, the same flavors and the same decoding of the values.
 A scope that was not requested at compile time (the call is not seen: through reflection or a delegate) throws the missing metadata exception like any other group.
 
 ## Runtime

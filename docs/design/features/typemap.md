@@ -251,7 +251,7 @@ In NativeAOT a type that is used as the owner is visible to reflection (see type
 The owner has to be a type that C# allows as a type argument: a `static` class can't be used (CS0718), so owner types that are meant for this overload can't be `static`.
 * Entries on a holder behave the same everywhere else: a holder entry is trimmed by the same rules as an assembly level entry, and the type map attributes are removed from the output of trimming tools.
 * The holders are not supported by ILLink and the Roslyn analyzer yet: ILLink doesn't read the attributes of the types, so a trimmed CoreCLR application doesn't have the entries of the holders.
-* ReadyToRun: the type maps of a module only cover its assembly level entries. The holder types are always read from the attributes at run time, after the assemblies of the group, and their entries are checked against the ones of the images for duplicates.
+* ReadyToRun: the type maps of a module only cover its assembly level entries. The holder types are always read from the attributes at run time, after the assemblies of the group, and their entries of the external type map are checked against the ones of the images for duplicates.
 
 ## Type Map entry trimming rules
 

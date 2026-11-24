@@ -149,8 +149,9 @@ namespace ILCompiler
 
         private Dictionary<TypeDesc, TypeMapMetadata.Map> _mapsByGroup;
 
-        // The maps that start at an owner type, by the type that identifies them (see CompilerTypeSystemContext.GetTypeMapOwnerScope).
-        private readonly ConcurrentDictionary<TypeDesc, TypeMapMetadata.Map> _ownerMaps = new();
+        // The maps that start at an owner type, by the group and the definition of the owner (the scan only depends on the attributes of the definition,
+        // and the maps of different instantiations of the owner can't have different error stubs).
+        private readonly ConcurrentDictionary<(TypeDesc Group, TypeDesc Owner), TypeMapMetadata.Map> _ownerMaps = new();
         private volatile bool _hasOwnerMaps;
 
         private bool TryGetMap(NodeFactory factory, TypeDesc typeMapGroup, out TypeMapMetadata.Map map)
@@ -159,9 +160,9 @@ namespace ILCompiler
             if (context.IsTypeMapOwnerScope(typeMapGroup, out TypeDesc group, out TypeDesc ownerType))
             {
                 // The map exists for any owner: an owner without entries has an empty map.
-                map = _ownerMaps.GetOrAdd(typeMapGroup, _ => ownerType.GetTypeDefinition() is EcmaType ecmaOwner
-                    ? TypeMapMetadata.CreateFromOwnerType(ecmaOwner, group, context.GeneratedAssembly)
-                    : new TypeMapMetadata.Map(group));
+                map = _ownerMaps.GetOrAdd((group, ownerType.GetTypeDefinition()), key => key.Owner is EcmaType ecmaOwner
+                    ? TypeMapMetadata.CreateFromOwnerType(ecmaOwner, key.Group, context.GeneratedAssembly)
+                    : new TypeMapMetadata.Map(key.Group));
                 _hasOwnerMaps = true;
                 return true;
             }
