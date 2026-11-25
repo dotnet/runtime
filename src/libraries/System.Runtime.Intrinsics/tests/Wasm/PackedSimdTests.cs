@@ -818,13 +818,18 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
         [Fact]
         public unsafe void NativeIntegerLoadStoreTest()
         {
-            nint[] values = new nint[] { 1, 2, 3, 4 };
+            nint[] values = new nint[Vector128<nint>.Count];
+            for (int i = 0; i < values.Length; i++)
+            {
+                values[i] = (nint)(i + 1);
+            }
+
             fixed (nint* ptr = values)
             {
                 var loaded = PackedSimd.LoadVector128(ptr);
                 Assert.Equal(Vector128.Create(values.AsSpan()), loaded);
 
-                nint[] storeTarget = new nint[4];
+                nint[] storeTarget = new nint[values.Length];
                 fixed (nint* storePtr = storeTarget)
                 {
                     PackedSimd.Store(storePtr, loaded);
@@ -836,13 +841,18 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
         [Fact]
         public unsafe void NativeUnsignedIntegerLoadStoreTest()
         {
-            nuint[] values = new nuint[] { 1, 2, 3, 4 };
+            nuint[] values = new nuint[Vector128<nuint>.Count];
+            for (int i = 0; i < values.Length; i++)
+            {
+                values[i] = (nuint)(i + 1);
+            }
+
             fixed (nuint* ptr = values)
             {
                 var loaded = PackedSimd.LoadVector128(ptr);
                 Assert.Equal(Vector128.Create(values.AsSpan()), loaded);
 
-                nuint[] storeTarget = new nuint[4];
+                nuint[] storeTarget = new nuint[values.Length];
                 fixed (nuint* storePtr = storeTarget)
                 {
                     PackedSimd.Store(storePtr, loaded);
@@ -861,7 +871,7 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
             var rightShiftLogical = PackedSimd.ShiftRightLogical(v, 2);
             Assert.Equal(Vector128.Create([(nint)64, (-64), 128, (-128)]), leftShift);
             Assert.Equal(Vector128.Create([(nint)4, (-4), 8, (-8)]), rightShiftArith);
-            Assert.Equal(Vector128.Create([(nint)4, 1073741820, 8, 1073741816]), rightShiftLogical);
+            Assert.Equal(Vector128.Create([(nint)4, unchecked((nint)((nuint)(nint)(-16) >> 2)), 8, unchecked((nint)((nuint)(nint)(-32) >> 2))]), rightShiftLogical);
         }
 
         [Fact]
@@ -872,7 +882,7 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
             var leftShift = PackedSimd.ShiftLeft(v, 2);
             var rightShiftLogical = PackedSimd.ShiftRightLogical(v, 2);
             Assert.Equal(Vector128.Create([(nuint)64, unchecked((nuint)(-64)), (nuint)128, unchecked((nuint)(-128))]), leftShift);
-            Assert.Equal(Vector128.Create([(nuint)4, (nuint)1073741820, (nuint)8, (nuint)1073741816]), rightShiftLogical);
+            Assert.Equal(Vector128.Create([(nuint)4, unchecked((nuint)(-16)) >> 2, (nuint)8, unchecked((nuint)(-32)) >> 2]), rightShiftLogical);
         }
 
         [Fact]
