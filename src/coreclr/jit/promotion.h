@@ -275,6 +275,13 @@ class ReplaceVisitor : public GenTreeVisitor<ReplaceVisitor>
 
     ReplacementInfo* m_replacementInfo;
 
+    // Scratch locals that receive remainder bytes of promoted structs stored
+    // from calls. They are dead after the statement that defines them, so they
+    // are shared between statements.
+    jitstd::vector<unsigned> m_callRemainderScratch;
+
+    unsigned GetCallRemainderScratch(var_types type, jitstd::vector<unsigned>& usedScratch);
+
 public:
     enum
     {

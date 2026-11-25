@@ -1649,6 +1649,7 @@ ReplaceVisitor::ReplaceVisitor(Promotion*         prom,
     , m_liveness(liveness)
     , m_dfsTree(dfsTree)
     , m_postOrderTraits(dfsTree->PostOrderTraits())
+    , m_callRemainderScratch(prom->m_compiler->getAllocator(CMK_Promotion))
 {
 }
 

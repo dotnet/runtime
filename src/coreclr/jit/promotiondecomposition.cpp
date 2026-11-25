@@ -1351,6 +1351,46 @@ const GenTree* Compiler::gtPeelFieldAddrs(const GenTree* addr) const
     return gtPeelFieldAddrs(const_cast<GenTree*>(addr));
 }
 
+// GetCallRemainderScratch:
+//   Get a scratch local of the specified type that receives a piece of a
+//   struct returned by a call, reusing locals from earlier stores.
+//
+// Parameters:
+//   type        - The type of the local
+//   usedScratch - Scratch locals already handed out for the current store
+//
+// Returns:
+//   Local number of a scratch local not in 'usedScratch'.
+//
+unsigned ReplaceVisitor::GetCallRemainderScratch(var_types type, jitstd::vector<unsigned>& usedScratch)
+{
+    for (unsigned lclNum : m_callRemainderScratch)
+    {
+        if (m_compiler->lvaGetDesc(lclNum)->TypeGet() != type)
+        {
+            continue;
+        }
+
+        bool inUse = false;
+        for (unsigned used : usedScratch)
+        {
+            inUse |= (used == lclNum);
+        }
+
+        if (!inUse)
+        {
+            usedScratch.push_back(lclNum);
+            return lclNum;
+        }
+    }
+
+    unsigned lclNum = m_compiler->lvaGrabTemp(true DEBUGARG("promoted call remainder"));
+    m_compiler->lvaGetDesc(lclNum)->lvType = type;
+    m_callRemainderScratch.push_back(lclNum);
+    usedScratch.push_back(lclNum);
+    return lclNum;
+}
+
 // HandleStructStore:
 //   Handle a store that may be between struct locals with replacements.
 //
@@ -1412,6 +1452,7 @@ void ReplaceVisitor::HandleStructStore(GenTree** use, GenTree* user)
                 var_types Type;
             };
             jitstd::vector<Remainder> remainder(m_compiler->getAllocator(CMK_Promotion));
+            jitstd::vector<unsigned>  usedScratch(m_compiler->getAllocator(CMK_Promotion));
             AggregateInfo*            aggregate = m_aggregates.Lookup(dstLcl->GetLclNum());
             ClassLayout*              layout    = m_compiler->lvaGetDesc(dstLcl)->GetLayout();
             SegmentList               remaining(m_compiler->getAllocator(CMK_Promotion));
@@ -1473,8 +1514,7 @@ void ReplaceVisitor::HandleStructStore(GenTree** use, GenTree* user)
                     continue;
                 }
 
-                unsigned local = m_compiler->lvaGrabTemp(true DEBUGARG("promoted call remainder register"));
-                m_compiler->lvaGetDesc(local)->lvType = type;
+                unsigned local = GetCallRemainderScratch(type, usedScratch);
                 remainder.push_back({local, targetOffset, type});
                 remaining.Subtract(chunk);
             }
@@ -1502,8 +1542,7 @@ void ReplaceVisitor::HandleStructStore(GenTree** use, GenTree* user)
                         }
                         type = width == 8 ? TYP_LONG : width == 4 ? TYP_INT : width == 2 ? TYP_USHORT : TYP_UBYTE;
                     }
-                    unsigned local = m_compiler->lvaGrabTemp(true DEBUGARG("promoted call remainder"));
-                    m_compiler->lvaGetDesc(local)->lvType = type;
+                    unsigned local = GetCallRemainderScratch(type, usedScratch);
                     remainder.push_back({local, offset, type});
                     offset += width;
                 }
