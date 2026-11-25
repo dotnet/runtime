@@ -605,6 +605,58 @@ public class R2RTestSuites
         }
     }
 
+    /// <summary>
+    /// A constrained call resolved at compile time to a shared in-bubble method body is imported by that
+    /// method's own token. The exact constrained owner is not encoded, so decoding the import doesn't
+    /// load the constrained type's instantiation arguments.
+    /// </summary>
+    [Fact]
+    public void ResolvedConstrainedCallImportsOmitConstrainedType()
+    {
+        CompiledAssembly input = new()
+        {
+            AssemblyName = nameof(ResolvedConstrainedCallImportsOmitConstrainedType),
+            SourceResourceNames = ["ConstrainedCalls/ResolvedConstrainedCall.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(ResolvedConstrainedCallImportsOmitConstrainedType),
+            [
+                new(nameof(ResolvedConstrainedCallImportsOmitConstrainedType), [new CrossgenAssembly(input)])
+                {
+                    Options = [Crossgen2Option.Optimize],
+                    AdditionalArgs = ["--codegenopt", "JitNoInline=1"],
+                    OutputFileExtension = TestPaths.IsWasmTarget ? ".wasm" : ".dll",
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            SignatureFormattingOptions formatting = new();
+            foreach (string enumerator in new[] { "ConstrainedCalls.Enumerator`1", "ConstrainedCalls.NoInliningEnumerator`1" })
+            {
+                List<string> disposeImports = reader.ImportSections
+                    .SelectMany(section => section.Entries)
+                    .Where(entry => entry.Signature?.FixupKind is ReadyToRunFixupKind.MethodEntry
+                        or ReadyToRunFixupKind.MethodEntry_DefToken
+                        or ReadyToRunFixupKind.MethodEntry_RefToken
+                        or ReadyToRunFixupKind.MethodEntry_ReadyToRun)
+                    .Select(entry => entry.Signature.ToString(formatting))
+                    .Where(signature => signature.Contains(enumerator, StringComparison.Ordinal)
+                        && signature.Contains("Dispose", StringComparison.Ordinal))
+                    .ToList();
+
+                Assert.NotEmpty(disposeImports);
+                foreach (string signature in disposeImports)
+                {
+                    Assert.DoesNotContain("Marker", signature, StringComparison.Ordinal);
+                    Assert.DoesNotContain(" @ ", signature, StringComparison.Ordinal);
+                }
+            }
+        }
+    }
+
     [Fact]
     public void CallSignaturesDoNotRequireTypeHandleFixups()
     {
