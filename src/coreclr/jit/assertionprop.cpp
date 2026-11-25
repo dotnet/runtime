@@ -110,6 +110,13 @@ bool Compiler::optIsBoundInvariantInLoopsOf(ValueNum xVN, ValueNum bndVN)
         return false;
     }
 
+    // Irreducible cycles are not natural loops, so we can't tell whether the bound
+    // varies across their iterations.
+    if (m_blockToLoop->GetLoops()->ImproperLoopHeaders() > 0)
+    {
+        return false;
+    }
+
     ArrayStack<ValueNum>            toVisit(getAllocator(CMK_AssertionProp));
     ValueNumStore::SmallValueNumSet visited;
     toVisit.Push(xVN);

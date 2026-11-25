@@ -80,6 +80,65 @@ public class Runtime_137674
         }
     }
 
+    // "A" and "B" both enter the cycle, so it is irreducible.
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    private static int TestIrreducible(ReadOnlySpan<int> span, ReadOnlySpan<int> repl, bool enterAtB)
+    {
+        int i = 0;
+        int sum = 0;
+        if (enterAtB)
+        {
+            goto B;
+        }
+
+    A:
+        sum += 1;
+    B:
+        if (span.Length - i < 0)
+        {
+            sum += 100;
+        }
+
+        if (i >= span.Length)
+        {
+            return sum;
+        }
+
+        sum += span[i];
+        i++;
+        span = repl;
+        goto A;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    private static int TestIrreducibleArray(int[] array, int[] repl, bool enterAtB)
+    {
+        int i = 0;
+        int sum = 0;
+        if (enterAtB)
+        {
+            goto B;
+        }
+
+    A:
+        sum += 1;
+    B:
+        if (array.Length - i < 0)
+        {
+            sum += 100;
+        }
+
+        if (i >= array.Length)
+        {
+            return sum;
+        }
+
+        sum += array[i];
+        i++;
+        array = repl;
+        goto A;
+    }
+
     [Fact]
     public static void TestEntryPoint()
     {
@@ -91,5 +150,10 @@ public class Runtime_137674
         s_array = new int[] { 5 };
         s_repl = new int[0];
         Assert.Equal(105, TestStatic());
+
+        Assert.Equal(107, TestIrreducible(new int[] { 5 }, new int[0], false));
+        Assert.Equal(106, TestIrreducible(new int[] { 5 }, new int[0], true));
+        Assert.Equal(107, TestIrreducibleArray(new int[] { 5 }, new int[0], false));
+        Assert.Equal(106, TestIrreducibleArray(new int[] { 5 }, new int[0], true));
     }
 }
