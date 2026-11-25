@@ -410,7 +410,8 @@ void PgoManager::LogInstrumentationData()
 
                 SchemaWriterFunctor writer(interpreterSource);
                 if (!ReadLivePgoInstrumentationSchema(interpreterSource->header.GetData(),
-                    interpreterSource->header.countsOffset, interpreterSource->header.countsOffset, writer) ||
+                    interpreterSource->header.countsOffset, interpreterSource->header.countsOffset,
+                    [&writer](const ICorJitInfo::PgoInstrumentationSchema& item) { return writer(item); }) ||
                     !writer.writer.Finish())
                     return false;
                 ETW::MethodLog::LogMethodInstrumentationData(primary->header.method,
