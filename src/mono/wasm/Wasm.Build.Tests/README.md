@@ -163,8 +163,9 @@ file and a separate `js-export-tests.js` module. Its existing HTML, runtime
 bootstrap, and TestOutput helper are reused. The counting project and provider
 references are enabled only by `TestJSExportProviders`; legacy references use
 `TestLegacyExports`, leaving unrelated scenarios unchanged.
-Child libraries explicitly select the current targeting pack because they have no
-browser RID. Detailed generated-source assertions live in the generator unit tests;
+Both child libraries inherit the current targeting pack and generator from the
+shared no-workload `Directory.Build.targets`, without needing a browser RID.
+Detailed generated-source assertions live in the generator unit tests;
 WBT verifies behavior, not generated implementation spelling.
 
 `Blazor.AssetCachingTests` exercises the browser HTTP cache using the hosted

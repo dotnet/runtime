@@ -12,14 +12,4 @@
     </Reference>
     <TrimmerRootAssembly Include="LegacyExports" />
   </ItemGroup>
-
-  <!-- Child libraries have no browser RID, so the harness's browser runtime overrides do not select their generator. -->
-  <Target Name="UseCurrentJSExportTargetingPack" BeforeTargets="ProcessFrameworkReferences">
-    <ItemGroup>
-      <KnownFrameworkReference Update="@(KnownFrameworkReference)"
-                               Condition="'%(KnownFrameworkReference.Identity)' == 'Microsoft.NETCore.App' and '%(KnownFrameworkReference.TargetFramework)' == 'net12.0'">
-        <TargetingPackVersion>$(RUNTIME_PACK_VER12)</TargetingPackVersion>
-      </KnownFrameworkReference>
-    </ItemGroup>
-  </Target>
 </Project>

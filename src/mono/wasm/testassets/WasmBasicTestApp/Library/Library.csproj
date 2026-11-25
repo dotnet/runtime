@@ -7,5 +7,4 @@
   <ItemGroup Condition="'$(TestJSExportProviders)' != 'true'">
     <Compile Remove="JSExports.cs" />
   </ItemGroup>
-  <Import Project="..\JSExportTests.targets" Condition="'$(TestJSExportProviders)' == 'true'" />
 </Project>
