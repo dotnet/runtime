@@ -4866,11 +4866,12 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
     // anyway (e.g. checks for null or for a handle).
     if (op2->IsIntegralConst() && !op2->IsIconHandle() && varTypeIsIntegral(op1))
     {
-        const KnownBool result = KnownBitsAnalysis(this).EvalRelop(tree->AsOp(), assertions);
-        if (result.HasValue)
+        const RelopEvaluationResult result = KnownBitsAnalysis(this).EvalRelop(tree->AsOp(), assertions);
+        if (result != RelopEvaluationResult::Unknown)
         {
             JITDUMP("Folding relop [%06u] based on known bits.\n", dspTreeID(tree));
-            newTree = gtWrapWithSideEffects(result.Value ? gtNewTrue() : gtNewFalse(), tree, GTF_ALL_EFFECT);
+            newTree = gtWrapWithSideEffects((result == RelopEvaluationResult::True) ? gtNewTrue() : gtNewFalse(), tree,
+                                            GTF_ALL_EFFECT);
             return optAssertionProp_Update(newTree, tree, stmt);
         }
     }
@@ -6886,6 +6887,9 @@ PhaseStatus Compiler::optAssertionPropMain()
 
     // All assertions are created, size the bit vectors accordingly.
     optAssertionTraitsInit(max(optAssertionCount, (AssertionIndex)1));
+
+    Metrics.GlobalAssertionCount    = optAssertionCount;
+    Metrics.GlobalAssertionOverflow = optAssertionOverflow;
 
     if (optAssertionCount == 0)
     {

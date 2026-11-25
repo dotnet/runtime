@@ -27,7 +27,8 @@
 //
 // Differences from LLVM:
 //  * Only the functions that the JIT uses (directly or indirectly) are here.
-//  * APInt is limited to 64 bits, std::optional<bool> is replaced with KnownBool.
+//  * APInt is limited to 64 bits, std::optional<bool> is replaced with the JIT's
+//    RelopEvaluationResult.
 //  * Functionality that has no JIT counterpart is omitted: nuw/nsw flags on shifts, exact
 //    divisions and shifts, saturating arithmetic, funnel shifts, min/max, pext/pdep, etc.
 //
@@ -586,24 +587,6 @@ public:
         }
         *DifferentBit = A.getBitWidth() - ((A ^ B).countl_zero() + 1);
         return true;
-    }
-};
-
-// Stand-in for the std::optional<bool> results of llvm::KnownBits's comparisons.
-struct KnownBool
-{
-    bool HasValue;
-    bool Value;
-
-    KnownBool()
-        : HasValue(false)
-        , Value(false)
-    {
-    }
-    KnownBool(bool Value)
-        : HasValue(true)
-        , Value(Value)
-    {
     }
 };
 
@@ -1475,33 +1458,34 @@ public:
     }
 
     /// Determine if these known bits always give the same ICMP_EQ result.
-    static KnownBool eq(const KnownBits& LHS, const KnownBits& RHS)
+    static RelopEvaluationResult eq(const KnownBits& LHS, const KnownBits& RHS)
     {
         if (LHS.isConstant() && RHS.isConstant())
         {
-            return KnownBool(LHS.getConstant() == RHS.getConstant());
+            return (LHS.getConstant() == RHS.getConstant()) ? RelopEvaluationResult::True
+                                                            : RelopEvaluationResult::False;
         }
         if (LHS.One.intersects(RHS.Zero) || RHS.One.intersects(LHS.Zero))
         {
-            return KnownBool(false);
+            return RelopEvaluationResult::False;
         }
-        return KnownBool();
+        return RelopEvaluationResult::Unknown;
     }
 
     /// Determine if these known bits always give the same ICMP_SGT result.
-    static KnownBool sgt(const KnownBits& LHS, const KnownBits& RHS)
+    static RelopEvaluationResult sgt(const KnownBits& LHS, const KnownBits& RHS)
     {
         // LHS >s RHS -> false if smax(LHS) <= smax(RHS)
         if (LHS.getSignedMaxValue().sle(RHS.getSignedMinValue()))
         {
-            return KnownBool(false);
+            return RelopEvaluationResult::False;
         }
         // LHS >s RHS -> true if smin(LHS) > smax(RHS)
         if (LHS.getSignedMinValue().sgt(RHS.getSignedMaxValue()))
         {
-            return KnownBool(true);
+            return RelopEvaluationResult::True;
         }
-        return KnownBool();
+        return RelopEvaluationResult::Unknown;
     }
 
     /// Update known bits based on ANDing with RHS.
@@ -1615,10 +1599,10 @@ struct KnownBitsTracking
                 if (!isKnownNonNegative && NUW)
                 {
                     // mul nuw nsw with a factor > 1 is non-negative.
-                    KnownBits One      = KnownBits::makeConstant(APInt(Known.getBitWidth(), 1));
-                    KnownBool SGT1     = KnownBits::sgt(Known, One);
-                    KnownBool SGT2     = KnownBits::sgt(Known2, One);
-                    isKnownNonNegative = (SGT1.HasValue && SGT1.Value) || (SGT2.HasValue && SGT2.Value);
+                    KnownBits             One  = KnownBits::makeConstant(APInt(Known.getBitWidth(), 1));
+                    RelopEvaluationResult SGT1 = KnownBits::sgt(Known, One);
+                    RelopEvaluationResult SGT2 = KnownBits::sgt(Known2, One);
+                    isKnownNonNegative = (SGT1 == RelopEvaluationResult::True) || (SGT2 == RelopEvaluationResult::True);
                 }
 
                 // The product of a negative number and a non-negative number is either

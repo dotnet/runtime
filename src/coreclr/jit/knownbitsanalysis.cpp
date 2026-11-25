@@ -8,15 +8,6 @@
 
 #include "knownbitsanalysis.h"
 
-// The known bits of PHIs, see KnownBitsAnalysis::ComputeForPhi.
-struct KnownBitsPhiCache : public JitHashTable<ValueNum, JitSmallPrimitiveKeyFuncs<ValueNum>, KnownBits>
-{
-    KnownBitsPhiCache(CompAllocator alloc)
-        : JitHashTable(alloc)
-    {
-    }
-};
-
 //------------------------------------------------------------------------
 // Bounds: Create the bounds that the known bits of a value imply.
 //
@@ -136,8 +127,19 @@ KnownBitsAnalysis::KnownBitsAnalysis(Compiler* comp, int phiDepth)
     , m_vnStore(comp->vnStore)
     , m_budget(Budget)
     , m_phiDepth(phiDepth)
+    , m_maxPhiDepth(MaxPhiDepth)
     , m_followVNAssertions(true)
+    , m_followIntPhis(false)
 {
+#ifdef DEBUG
+    // JIT stress: look deeper (and through 32-bit PHIs) to get more coverage of the analysis.
+    if (comp->compStressCompile(Compiler::STRESS_KNOWNBITS_BUDGET, 50))
+    {
+        m_budget *= 16;
+        m_maxPhiDepth *= 4;
+        m_followIntPhis = true;
+    }
+#endif
 }
 
 //------------------------------------------------------------------------
@@ -150,7 +152,7 @@ KnownBitsAnalysis::KnownBitsAnalysis(Compiler* comp, int phiDepth)
 // Return Value:
 //    The result of the relop if it's the same for all the values its operands can have.
 //
-KnownBool KnownBitsAnalysis::EvalRelop(GenTreeOp* relop, ASSERT_VALARG_TP assertions)
+RelopEvaluationResult KnownBitsAnalysis::EvalRelop(GenTreeOp* relop, ASSERT_VALARG_TP assertions)
 {
     assert(relop->OperIsCompare());
     GenTree* const op1 = relop->gtGetOp1();
@@ -161,19 +163,19 @@ KnownBool KnownBitsAnalysis::EvalRelop(GenTreeOp* relop, ASSERT_VALARG_TP assert
     const unsigned width = GetWidth(op1->TypeGet());
     if ((width == 0) || (GetWidth(op2->TypeGet()) != width) || !op2->IsIntegralConst() || op2->IsIconHandle())
     {
-        return KnownBool();
+        return RelopEvaluationResult::Unknown;
     }
 
     const ValueNum op1VN = m_compiler->optConservativeNormalVN(op1);
 
     // TP: equality tests are too common to analyze all of them, and we rarely fold
     // anything but the tests of bit patterns (e.g. flag checks) and casts.
-    if (relop->OperIs(GT_EQ, GT_NE))
+    if (relop->OperIs(GT_EQ, GT_NE) INDEBUG(&&!m_compiler->compStressCompile(Compiler::STRESS_KNOWNBITS_RELOPS, 50)))
     {
         VNFuncApp funcApp;
         if (!m_vnStore->GetVNFunc(op1VN, &funcApp) || !funcApp.FuncIs(VNF_AND, VNF_OR, VNF_XOR, VNF_Cast, VNF_CastOvf))
         {
-            return KnownBool();
+            return RelopEvaluationResult::Unknown;
         }
     }
 
@@ -181,7 +183,7 @@ KnownBool KnownBitsAnalysis::EvalRelop(GenTreeOp* relop, ASSERT_VALARG_TP assert
     const KnownBits known1 = Compute(op1VN, width, assertions, &b1);
     if (known1.isUnknown() && b1.IsUnknown())
     {
-        return KnownBool();
+        return RelopEvaluationResult::Unknown;
     }
 
     const APInt     cns(width, (uint64_t)op2->AsIntConCommon()->IntegralValue());
@@ -190,12 +192,17 @@ KnownBool KnownBitsAnalysis::EvalRelop(GenTreeOp* relop, ASSERT_VALARG_TP assert
 
     if (relop->OperIs(GT_EQ, GT_NE))
     {
-        KnownBool isEqual = KnownBits::eq(known1, known2);
-        if (!isEqual.HasValue && (cns.ult(b1.UMin) || cns.ugt(b1.UMax) || cns.slt(b1.SMin) || cns.sgt(b1.SMax)))
+        RelopEvaluationResult isEqual = KnownBits::eq(known1, known2);
+        if ((isEqual == RelopEvaluationResult::Unknown) &&
+            (cns.ult(b1.UMin) || cns.ugt(b1.UMax) || cns.slt(b1.SMin) || cns.sgt(b1.SMax)))
         {
-            isEqual = KnownBool(false);
+            isEqual = RelopEvaluationResult::False;
         }
-        return isEqual.HasValue ? KnownBool(isEqual.Value == relop->OperIs(GT_EQ)) : KnownBool();
+        if ((isEqual == RelopEvaluationResult::Unknown) || relop->OperIs(GT_EQ))
+        {
+            return isEqual;
+        }
+        return (isEqual == RelopEvaluationResult::True) ? RelopEvaluationResult::False : RelopEvaluationResult::True;
     }
 
     // Normalize to "lo < hi" or "lo <= hi".
@@ -207,25 +214,25 @@ KnownBool KnownBitsAnalysis::EvalRelop(GenTreeOp* relop, ASSERT_VALARG_TP assert
     {
         if (isStrict ? lo.UMax.ult(hi.UMin) : lo.UMax.ule(hi.UMin))
         {
-            return KnownBool(true);
+            return RelopEvaluationResult::True;
         }
         if (isStrict ? lo.UMin.uge(hi.UMax) : lo.UMin.ugt(hi.UMax))
         {
-            return KnownBool(false);
+            return RelopEvaluationResult::False;
         }
     }
     else
     {
         if (isStrict ? lo.SMax.slt(hi.SMin) : lo.SMax.sle(hi.SMin))
         {
-            return KnownBool(true);
+            return RelopEvaluationResult::True;
         }
         if (isStrict ? lo.SMin.sge(hi.SMax) : lo.SMin.sgt(hi.SMax))
         {
-            return KnownBool(false);
+            return RelopEvaluationResult::False;
         }
     }
-    return KnownBool();
+    return RelopEvaluationResult::Unknown;
 }
 
 //------------------------------------------------------------------------
@@ -305,7 +312,7 @@ KnownBits KnownBitsAnalysis::Compute(ValueNum vn, unsigned width, ASSERT_VALARG_
     {
         known = known.unionWith(ComputeForFunc(funcApp, width, assertions));
     }
-    else if ((width == 64) && m_vnStore->IsPhiDef(vn))
+    else if (((width == 64) || m_followIntPhis) && m_vnStore->IsPhiDef(vn))
     {
         // TP: PHIs are expensive, and RangeCheck::GetRangeFromAssertions already looks through
         // them for 32-bit values, so we only do it for the 64-bit ones.
@@ -353,10 +360,10 @@ KnownBits KnownBitsAnalysis::ComputeForPhi(ValueNum vn, unsigned width)
 {
     if (m_compiler->optKnownBitsPhiCache == nullptr)
     {
-        m_compiler->optKnownBitsPhiCache =
-            new (m_compiler, CMK_AssertionProp) KnownBitsPhiCache(m_compiler->getAllocator(CMK_AssertionProp));
+        m_compiler->optKnownBitsPhiCache = new (m_compiler, CMK_AssertionProp)
+            Compiler::KnownBitsPhiCache(m_compiler->getAllocator(CMK_AssertionProp));
     }
-    KnownBitsPhiCache* const cache = m_compiler->optKnownBitsPhiCache;
+    Compiler::KnownBitsPhiCache* const cache = m_compiler->optKnownBitsPhiCache;
 
     KnownBits        result(width);
     const KnownBits* cached = cache->LookupPointer(vn);
@@ -366,7 +373,7 @@ KnownBits KnownBitsAnalysis::ComputeForPhi(ValueNum vn, unsigned width)
         return cached->hasConflict() ? result : *cached;
     }
 
-    if (m_phiDepth >= MaxPhiDepth)
+    if (m_phiDepth >= m_maxPhiDepth)
     {
         return result;
     }
@@ -386,7 +393,8 @@ KnownBits KnownBitsAnalysis::ComputeForPhi(ValueNum vn, unsigned width)
         result.resetAll();
     }
 
-    cache->Set(vn, result, KnownBitsPhiCache::Overwrite);
+    // Replace the "being computed" marker set above.
+    cache->Set(vn, result, Compiler::KnownBitsPhiCache::Overwrite);
     return result;
 }
 
@@ -498,10 +506,17 @@ KnownBits KnownBitsAnalysis::ComputeForFunc(const VNFuncApp& funcApp, unsigned w
         case VNF_RSH:
         case VNF_RSZ:
         {
-            KnownBits amount = Compute(funcApp.GetArg(1), 32, assertions);
-#ifdef TARGET_64BIT
-            // The shift amount is masked.
-            amount = amount & KnownBits::makeConstant(APInt(32, width - 1));
+            // The shift amount can be a native int.
+            const ValueNum amountVN    = funcApp.GetArg(1);
+            const unsigned amountWidth = GetWidth(m_vnStore->TypeOfVN(amountVN));
+            if (amountWidth == 0)
+            {
+                break;
+            }
+            KnownBits amount = Compute(amountVN, amountWidth, assertions);
+#if TARGET_MASKS_SHIFTS
+            // The shift amount is masked, only its low bits matter.
+            amount = amount.trunc(32) & KnownBits::makeConstant(APInt(32, width - 1));
 #else
             if (amount.getMaxValue().getZExtValue() >= width)
             {
@@ -589,8 +604,9 @@ KnownBits KnownBitsAnalysis::ComputeForFunc(const VNFuncApp& funcApp, unsigned w
 }
 
 //------------------------------------------------------------------------
-// MergeAssertions: Refine the known bits and the bounds of a value number using
-//    the "vn relop cns" and "vn relop otherVN" assertions.
+// MergeAssertions: Refine the known bits and the bounds of a value number using the
+//    "vn relop cns" and "vn relop otherVN" assertions. For the latter, the facts about
+//    "otherVN" come from its shape and its own "otherVN relop cns" assertions.
 //
 // Arguments:
 //    vn         - the value number
@@ -607,15 +623,12 @@ void KnownBitsAnalysis::MergeAssertions(
         return;
     }
 
-    BitVecOps::Iter iter(m_compiler->apTraits, assertions);
-    unsigned        index = 0;
-    while (iter.NextElem(&index))
-    {
+    BitVecOps::VisitBits(m_compiler->apTraits, assertions, [&](unsigned index) {
         const Compiler::AssertionDsc& assertion = m_compiler->optGetAssertion(GetAssertionIndex(index));
         if (!assertion.GetOp1().KindIs(Compiler::O1K_VN) || (assertion.GetOp1().GetVN() != vn) ||
             assertion.KindIs(Compiler::OAK_NOT_EQUAL))
         {
-            continue;
+            return true;
         }
 
         const auto& op2 = assertion.GetOp2();
@@ -645,7 +658,8 @@ void KnownBitsAnalysis::MergeAssertions(
                 *pKnown = pKnown->unionWith(other);
             }
         }
-    }
+        return true;
+    });
 
     pBounds->Normalize();
     if (pBounds->UMin.ule(pBounds->UMax))

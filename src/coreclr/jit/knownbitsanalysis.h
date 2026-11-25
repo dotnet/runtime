@@ -33,7 +33,9 @@ class KnownBitsAnalysis
     ValueNumStore* m_vnStore;
     int            m_budget;
     int            m_phiDepth;
+    int            m_maxPhiDepth;
     bool           m_followVNAssertions; // whether to use "vn relop otherVN" assertions
+    bool           m_followIntPhis;      // whether to look through 32-bit PHIs
 
     // Unsigned and signed bounds of a value.
     struct Bounds
@@ -62,5 +64,5 @@ public:
 
     // Not to be inlined (LTCG does that): this is called from a hot path of the assertion
     // propagation where it rarely has anything to do, having it inlined there costs TP.
-    NOINLINE KnownBool EvalRelop(GenTreeOp* relop, ASSERT_VALARG_TP assertions);
+    NOINLINE RelopEvaluationResult EvalRelop(GenTreeOp* relop, ASSERT_VALARG_TP assertions);
 };
