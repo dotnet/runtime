@@ -90,6 +90,9 @@ public class ForwardedMethodTypeArgument
     {
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static Type Forward<U>(bool owner) => owner ? Inner<T>() : Inner<U>();
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static Type Both<U>() => Inner<Dictionary<T, U>>();
     }
 
     private sealed class Box<T>
@@ -181,6 +184,8 @@ public class ForwardedMethodTypeArgument
         Assert.Equal(typeof(Dictionary<string, int[]>), Compound<int>());
         Assert.Equal(typeof(ForwardedArgumentBox<PairType<string, object>>), CrossModule<string, object>());
         Assert.Equal(typeof(ForwardedArgumentBox<PairType<object, string>>), CrossModule<object, string>());
+        Assert.Equal(typeof(Dictionary<string, object>), Owner<string>.Both<object>());
+        Assert.Equal(typeof(Dictionary<object, string>), Owner<object>.Both<string>());
         Assert.Equal(typeof(string), Owner<string>.Forward<object>(true));
         Assert.Equal(typeof(object), Owner<string>.Forward<object>(false));
     }

@@ -54,6 +54,18 @@ class InlineTypeSignature
         PCCOR_SIGNATURE start = sig;
         CorElementType  type  = (CorElementType)*sig++;
         size--;
+        if (type == ELEMENT_TYPE_VAR)
+        {
+            // Only the root's own declaring type is relative to the root dictionary.
+            uint32_t index;
+            if (m_comp->compIsForInlining() || !ReadCompressedUnsigned(sig, size, &index) ||
+                (index >= m_comp->info.compMethodInfo->args.sigInst.classInstCount))
+            {
+                return false;
+            }
+            m_usesParameter = true;
+            return Append(start, (unsigned)(sig - start));
+        }
         if (type == ELEMENT_TYPE_MVAR)
         {
             m_usesParameter = true;
@@ -189,7 +201,8 @@ bool MethodTypeArgument::TryRead(Compiler*                     comp,
         *result = bindings == nullptr ? MethodTypeArgument{index, 0, 0, nullptr} : bindings[index];
         return true;
     }
-    if ((size == 0) || ((*sig != ELEMENT_TYPE_SZARRAY) && (*sig != ELEMENT_TYPE_GENERICINST)))
+    if ((size == 0) ||
+        ((*sig != ELEMENT_TYPE_SZARRAY) && (*sig != ELEMENT_TYPE_GENERICINST) && (*sig != ELEMENT_TYPE_VAR)))
     {
         return false;
     }
