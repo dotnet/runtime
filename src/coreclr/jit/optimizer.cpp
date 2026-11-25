@@ -1280,14 +1280,16 @@ bool Compiler::optTryUnrollLoop(FlowGraphNaturalLoop* loop, bool* changedIR)
     // FlowGraphNaturalLoop::AnalyzeIteration ensures it is an exit but we must
     // make sure it is a backedge so that we can legally redirect it to the
     // next iteration. If it isn't a backedge then redirecting it would skip
-    // all code between the loop test and the backedge.
-    assert(loop->ContainsBlock(iterInfo.TestBlock->GetTrueTarget()) !=
-           loop->ContainsBlock(iterInfo.TestBlock->GetFalseTarget()));
+    // all code between the loop test and the backedge. Note that both of its
+    // successors may be outside the loop (e.g. when the only path back to the
+    // header is through a handler).
     if (!iterInfo.TestBlock->TrueTargetIs(loop->GetHeader()) && !iterInfo.TestBlock->FalseTargetIs(loop->GetHeader()))
     {
         JITDUMP("Failed to unroll loop " FMT_LP ": test block is not a backedge\n", loop->GetIndex());
         return false;
     }
+    assert(loop->ContainsBlock(iterInfo.TestBlock->GetTrueTarget()) !=
+           loop->ContainsBlock(iterInfo.TestBlock->GetFalseTarget()));
 
     // Get the loop data:
     //  - initial constant

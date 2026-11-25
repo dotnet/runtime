@@ -42,6 +42,7 @@
     <Compile Include="Metadata\Ecma335\Encoding\ControlFlowBuilderTests.cs" />
     <Compile Include="Metadata\Ecma335\Encoding\InstructionEncoderTests.cs" />
     <Compile Include="Metadata\Ecma335\MetadataRootBuilderTests.cs" />
+    <Compile Include="Metadata\Ecma335\MetadataSizesTests.cs" />
     <Compile Include="Metadata\Ecma335\PortablePdbBuilderTests.cs" />
     <Compile Include="Metadata\LargeTablesAndHeapsTests.cs" />
     <Compile Include="Metadata\TypeNameParserHelpersTests.cs" />

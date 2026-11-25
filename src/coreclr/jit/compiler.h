@@ -4237,6 +4237,9 @@ public:
     // Check if this tree is a typeof()
     bool gtIsTypeof(GenTree* tree, CORINFO_CLASS_HANDLE* handle = nullptr);
 
+    // Check if this tree loads the length field of a Span<T>
+    bool gtIsSpanLength(GenTree* tree);
+
     GenTreeLclVarCommon* gtCallGetDefinedRetBufLclAddr(GenTreeCall* call);
     GenTreeLclVarCommon* gtCallGetDefinedAsyncResumedLclAddr(GenTreeCall* call);
 
@@ -8526,6 +8529,7 @@ public:
 
     BitVecTraits* optReachableBitVecTraits;
     BitVec        optReachableBitVec;
+    bool          optRboNeedsSsaRebuild = false; // RBO must rebuild SSA and VNs (set by jump threading)
     void          optRelopImpliesRelop(RelopImplicationInfo* rii);
     bool          optRelopTryInferWithOneEqualOperand(const VNFuncApp&      domApp,
                                                       const VNFuncApp&      treeApp,
@@ -11543,17 +11547,17 @@ public:
 
         bool IsInstrumented() const
         {
-            return jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR);
+            return jitFlags->IsSet(JitFlags::JIT_FLAG_PGO_INSTR);
         }
 
         bool IsOptimizedWithProfile() const
         {
-            return OptimizationEnabled() && jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT);
+            return OptimizationEnabled() && jitFlags->IsSet(JitFlags::JIT_FLAG_PGO_OPT);
         }
 
         bool IsInstrumentedAndOptimized() const
         {
-            return IsInstrumented() && jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT);
+            return IsInstrumented() && jitFlags->IsSet(JitFlags::JIT_FLAG_PGO_OPT);
         }
 
         bool DoEarlyBlockMerging() const

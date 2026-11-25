@@ -42,10 +42,10 @@ namespace System.Xml.Schema
 
         public void Clear()
         {
-            int bitsLength = _bits.Length;
-            for (int i = bitsLength; i-- > 0;)
+            uint[] bits = _bits;
+            for (int i = 0; i < bits.Length; i++)
             {
-                _bits[i] = 0;
+                bits[i] = 0;
             }
         }
 
@@ -201,18 +201,7 @@ namespace System.Xml.Schema
         }
 
 
-        public bool IsEmpty
-        {
-            get
-            {
-                uint k = 0;
-                for (int i = 0; i < _bits.Length; i++)
-                {
-                    k |= _bits[i];
-                }
-                return k == 0;
-            }
-        }
+        public bool IsEmpty => !_bits.AsSpan().ContainsAnyExcept(0u);
 
         public bool Intersects(BitSet other)
         {
