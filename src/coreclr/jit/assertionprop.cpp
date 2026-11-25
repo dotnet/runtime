@@ -5181,8 +5181,7 @@ GenTree* Compiler::optAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* tr
         updated = optWriteBarrierAssertionProp_StoreInd(assertions, tree->AsStoreInd());
     }
 
-    // A non-faulting NULLCHECK is still re-morphed so that morph can remove it.
-    if (nonNull && !updated && (stmt != nullptr) && !tree->OperIs(GT_NULLCHECK))
+    if (nonNull && !updated && (stmt != nullptr))
     {
         // Only flags changed; the statement's side effects are updated instead of re-morphing it.
         optAssertionPropagated                 = true;
@@ -6724,6 +6723,50 @@ void Compiler::optVnNonNullPropCurStmt(BasicBlock* block, Statement* stmt, GenTr
     }
 }
 
+//------------------------------------------------------------------------------
+// optAssertionPropUpdateNonFaultingStmt: finish a statement where assertion
+//   prop only made indirections non-faulting.
+//
+// Arguments:
+//    block - block containing the statement
+//    stmt  - the statement
+//
+// Notes:
+//    Updates side effect flags instead of re-morphing the statement. Morph is
+//    still needed when it can remove code that no longer has side effects
+//    (the statement itself, or a non-faulting indirection under a COMMA), or
+//    simplify a compare of a non-faulting indirection against a constant.
+//
+void Compiler::optAssertionPropUpdateNonFaultingStmt(BasicBlock* block, Statement* stmt)
+{
+    if (optAssertionPropagatedCurrentStmt || !optAssertionPropNonFaultingCurrentStmt)
+    {
+        return;
+    }
+
+    gtUpdateStmtSideEffects(stmt);
+
+    if (fgCheckRemoveStmt(block, stmt))
+    {
+        return;
+    }
+
+    for (GenTree* node = stmt->GetTreeList(); node != nullptr; node = node->gtNext)
+    {
+        GenTree* op1 = nullptr;
+        if (node->OperIs(GT_COMMA) || (node->OperIs(GT_LT, GT_LE, GT_GE, GT_GT) && node->gtGetOp2()->IsIntegralConst()))
+        {
+            op1 = node->gtGetOp1();
+        }
+
+        if ((op1 != nullptr) && op1->OperIsIndirOrArrMetaData() && ((op1->gtFlags & GTF_SIDE_EFFECT) == 0))
+        {
+            optAssertionPropagatedCurrentStmt = true;
+            break;
+        }
+    }
+}
+
 /*****************************************************************************
  *
  *   Perform VN based i.e., data flow based assertion prop first because
@@ -6753,13 +6796,11 @@ Statement* Compiler::optVNAssertionPropCurStmt(BasicBlock* block, Statement* stm
     VNAssertionPropVisitor visitor(this, block, stmt);
     visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
 
+    optAssertionPropUpdateNonFaultingStmt(block, stmt);
+
     if (optAssertionPropagatedCurrentStmt)
     {
         fgMorphBlockStmt(block, stmt DEBUGARG("optVNAssertionPropCurStmt"));
-    }
-    else if (optAssertionPropNonFaultingCurrentStmt)
-    {
-        gtUpdateStmtSideEffects(stmt);
     }
 
     // Check if propagation removed statements starting from current stmt.
@@ -6966,6 +7007,13 @@ PhaseStatus Compiler::optAssertionPropMain()
                 }
             }
 
+            if (optAssertionPropNonFaultingCurrentStmt)
+            {
+                madeChanges = true;
+            }
+
+            optAssertionPropUpdateNonFaultingStmt(block, stmt);
+
             if (optAssertionPropagatedCurrentStmt)
             {
 #ifdef DEBUG
@@ -7027,11 +7075,6 @@ PhaseStatus Compiler::optAssertionPropMain()
                         // NOTE: this is not valid for LocalAP as assertions may die in the middle of the block
                     }
                 }
-            }
-            else if (optAssertionPropNonFaultingCurrentStmt)
-            {
-                gtUpdateStmtSideEffects(stmt);
-                madeChanges = true;
             }
 
             // Check if propagation removed statements starting from current stmt.

@@ -9410,6 +9410,7 @@ public:
     // Assertion prop data flow functions.
     PhaseStatus optAssertionPropMain();
     Statement*  optVNAssertionPropCurStmt(BasicBlock* block, Statement* stmt);
+    void        optAssertionPropUpdateNonFaultingStmt(BasicBlock* block, Statement* stmt);
     ASSERT_TP*  optInitAssertionDataflowFlags();
     ASSERT_TP*  optComputeAssertionGen();
 
