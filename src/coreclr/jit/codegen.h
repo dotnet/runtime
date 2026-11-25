@@ -1102,17 +1102,17 @@ protected:
     }
 
     //-------------------------------------------------------------------------
-    // genCanSkipStoreLclVarMove: Can a same-register move for a register store
-    // of 'data' into a local of 'targetType' be elided?
+    // genReportSameRegGCStore: In fully interruptible code the emitter learns register GC liveness only
+    // from instructions, so when a non-GC value becomes a GC local in the same register (elided move),
+    // start a new IG with codegen's current GC info. Must be called after the store's liveness update.
     //
-    // Notes:
-    //     In fully interruptible code the emitter learns register GC liveness only from
-    //     emitted instructions, so a move that turns a non-GC value into a GC one must be
-    //     emitted (e.g. a pinned pointer converted back to a byref before unpinning).
-    //
-    bool genCanSkipStoreLclVarMove(var_types targetType, GenTree* data)
+    void genReportSameRegGCStore(var_types targetType, GenTree* data, regNumber dataReg, regNumber targetReg)
     {
-        return !GetInterruptible() || !varTypeIsGC(targetType) || varTypeIsGC(data);
+        if (GetInterruptible() && (targetReg != REG_NA) && (dataReg == targetReg) && varTypeIsGC(targetType) &&
+            !varTypeIsGC(data))
+        {
+            GetEmitter()->emitAddLabel(gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur, gcInfo.gcRegByrefSetCur);
+        }
     }
 
     // Do liveness update for register produced by the current node in codegen after

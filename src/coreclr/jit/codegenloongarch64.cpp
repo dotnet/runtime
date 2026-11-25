@@ -1254,12 +1254,13 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
                 // need to load the address from $tp.
                 emit->emitIns_R_R_I(INS_ori, attr, targetReg, REG_TP, 0);
             }
-            else
+            else if (dataReg != targetReg)
             {
-                inst_Mov(targetType, targetReg, dataReg, genCanSkipStoreLclVarMove(targetType, data),
-                         emitActualTypeSize(targetType));
+                // Assign into targetReg when dataReg (from op1) is not the same register
+                inst_Mov(targetType, targetReg, dataReg, true, emitActualTypeSize(targetType));
             }
             genProduceReg(lclNode);
+            genReportSameRegGCStore(targetType, data, dataReg, targetReg);
         }
     }
 }

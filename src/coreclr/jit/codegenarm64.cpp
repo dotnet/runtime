@@ -2605,10 +2605,11 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
             }
             else
             {
-                inst_Mov(targetType, targetReg, dataReg, genCanSkipStoreLclVarMove(targetType, data));
+                inst_Mov(targetType, targetReg, dataReg, /* canSkip */ true);
             }
         }
         genUpdateLifeStore(lclNode, targetReg, varDsc);
+        genReportSameRegGCStore(targetType, data, dataReg, targetReg);
     }
 }
 
