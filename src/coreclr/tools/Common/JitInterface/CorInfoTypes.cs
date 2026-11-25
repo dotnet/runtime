@@ -1212,6 +1212,7 @@ namespace Internal.JitInterface
         //   an R2R image.
         // - instParamLookup contains all the information necessary to pass the instantiation parameter for
         //   the devirtualized method or its unboxed entry point.
+        //   A deferred lookup is prepared using the resolved target token if devirtualization is accepted.
         //
         public CORINFO_METHOD_STRUCT_* devirtualizedMethod;
         public CORINFO_CONTEXT_STRUCT* tokenLookupContext;

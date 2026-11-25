@@ -8823,13 +8823,34 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
 
         if (TypeHandle::IsCanonicalSubtypeInstantiation(pInstantiatedMD->GetMethodInstantiation()))
         {
-            // TODO: Support for runtime lookup
-            info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CANON;
-            return false;
-        }
+            CORINFO_RESOLVED_TOKEN* source = info->pResolvedTokenVirtualMethod;
+            if (!isGenericVirtual || pObjMT->IsValueType() || TypeHandle(pExactMT).IsCanonicalSubtype() ||
+                source == nullptr || source->tokenType != CORINFO_TOKENKIND_Method ||
+                TypeFromToken(source->token) != mdtMethodSpec || source->pMethodSpec == nullptr ||
+                IsDynamicScope(source->tokenScope) || !pBaseMD->HasSameMethodDefAs(GetMethod(source->hMethod)) ||
+                (pExactMT->Collectible() && pExactMT->GetLoaderAllocator() != GetModule(source->tokenScope)->GetLoaderAllocator()))
+            {
+                info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+                return false;
+            }
 
-        info->instParamLookup.constLookup.handle = (CORINFO_GENERIC_HANDLE) pInstantiatedMD;
-        info->instParamLookup.constLookup.accessType = IAT_VALUE;
+            // Keep the call site's MethodSpec and its scope for the method arguments.
+            // The owner and method for the dictionary lookup are those of the override.
+            CORINFO_RESOLVED_TOKEN& target = info->resolvedTokenDevirtualizedMethod;
+            target = *source;
+            target.tokenType = CORINFO_TOKENKIND_DevirtualizedMethod;
+            target.hClass = (CORINFO_CLASS_HANDLE)pExactMT;
+            target.hMethod = (CORINFO_METHOD_HANDLE)pInstantiatedMD;
+            target.pTypeSpec = nullptr;
+            target.cbTypeSpec = 0;
+            info->instParamLookup.lookupKind.needsRuntimeLookup = true;
+            info->instParamLookup.lookupKind.runtimeLookupKind = CORINFO_LOOKUP_DEFERRED;
+        }
+        else
+        {
+            info->instParamLookup.constLookup.handle = (CORINFO_GENERIC_HANDLE)pInstantiatedMD;
+            info->instParamLookup.constLookup.accessType = IAT_VALUE;
+        }
     }
     else if (pInstArgMD->RequiresInstMethodTableArg())
     {

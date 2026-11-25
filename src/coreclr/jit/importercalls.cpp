@@ -10135,6 +10135,29 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
     JITDUMP("    %s; can devirtualize\n", note);
 
+    if (dvInfo.instParamLookup.lookupKind.needsRuntimeLookup &&
+        (dvInfo.instParamLookup.lookupKind.runtimeLookupKind == CORINFO_LOOKUP_DEFERRED))
+    {
+        // Only the accepted direct target needs its dictionary lookup.
+        CORINFO_CALL_INFO targetInfo;
+        eeGetCallInfo(pDerivedResolvedToken, nullptr, CORINFO_CALLINFO_ALLOWINSTPARAM, &targetInfo);
+        if ((targetInfo.kind != CORINFO_CALL) || (targetInfo.hMethod != derivedMethod) || !targetInfo.sig.hasTypeArg())
+        {
+            return;
+        }
+        if (targetInfo.instParamLookup.lookupKind.needsRuntimeLookup &&
+            (targetInfo.instParamLookup.lookupKind.runtimeLookupKind == CORINFO_LOOKUP_DEFERRED))
+        {
+            info.compCompHnd->prepareCallLookups(pDerivedResolvedToken, nullptr, info.compMethodHnd, &targetInfo);
+        }
+        if (targetInfo.instParamLookup.lookupKind.needsRuntimeLookup &&
+            (targetInfo.instParamLookup.lookupKind.runtimeLookupKind == CORINFO_LOOKUP_NOT_SUPPORTED))
+        {
+            return;
+        }
+        dvInfo.instParamLookup = targetInfo.instParamLookup;
+    }
+
     DevirtualizedCallInfo dcInfo;
     dcInfo.tokenLookupContext    = exactContext;
     dcInfo.pInstParamLookup      = &dvInfo.instParamLookup;

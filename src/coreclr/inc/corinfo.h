@@ -1620,6 +1620,7 @@ struct CORINFO_DEVIRTUALIZATION_INFO
     //   an R2R image.
     // - instParamLookup contains all the information necessary to pass the instantiation parameter for
     //   the devirtualized method or its unboxed entry point.
+    //   A deferred lookup is prepared using the resolved target token if devirtualization is accepted.
     //
     CORINFO_METHOD_HANDLE           devirtualizedMethod;
     CORINFO_CONTEXT_HANDLE          tokenLookupContext;
