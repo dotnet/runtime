@@ -509,6 +509,18 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
                     public override int Run() => 20;
                 }
 
+                private sealed class DelegateReceiver
+                {
+                    private readonly int _offset;
+
+                    public DelegateReceiver(int offset) => _offset = offset;
+
+                    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                    public int DelegateHot(int value) => _offset + value + 731;
+
+                    public int DelegateCold(int value) => _offset - value;
+                }
+
                 [MethodImpl(MethodImplOptions.NoInlining)]
                 private static ITarget? ProfiledCast(object? input) => input as ITarget;
 
@@ -518,6 +530,9 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
                 [MethodImpl(MethodImplOptions.NoInlining)]
                 private static int ProfiledVirtual(Receiver input) => input.Run() + 1;
 
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                private static int ProfiledDelegate(Func<int, int> target, int value) => target(value) ^ 1;
+
                 public static void CheckTypes(int iteration)
                 {
                     bool hot = iteration < 4;
@@ -526,10 +541,30 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
                     if (ProfiledInterface(receiver) != expected || ProfiledVirtual(receiver) != expected)
                         throw new Exception("Dispatch returned the wrong result.");
 
+                    var target = new DelegateReceiver(200);
+                    Func<int, int> callback = hot ? target.DelegateHot : target.DelegateCold;
+                    if (ProfiledDelegate(callback, iteration) != ((hot ? 931 + iteration : 200 - iteration) ^ 1))
+                        throw new Exception("Delegate dispatch returned the wrong result.");
+
                     if (iteration >= 5)
                     {
                         if (ProfiledCast(null) is not null || ProfiledCast(new object()) is not null)
                             throw new Exception("Cast did not preserve the null or miss path.");
+
+                        Func<int, int> multicast = target.DelegateHot;
+                        multicast += target.DelegateCold;
+                        if (ProfiledDelegate(multicast, iteration) != ((200 - iteration) ^ 1) ||
+                            ProfiledDelegate(static value => 2 * value, iteration) != (2 * iteration ^ 1))
+                            throw new Exception("Delegate dispatch did not preserve the multicast or static fallback.");
+
+                        try
+                        {
+                            ProfiledDelegate(null!, iteration);
+                            throw new Exception("A null delegate did not throw.");
+                        }
+                        catch (NullReferenceException)
+                        {
+                        }
                     }
                     else
                     {
@@ -552,6 +587,7 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
         SaveCompilerLog(info, CompilerLog);
         foreach (string method in profiledMethods)
             Assert.Contains("CORINFO_HELP_CLASSPROFILE64", GetCompilerMethodListing(CompilerLog, method));
+        Assert.Contains("CORINFO_HELP_DELEGATEPROFILE64", GetCompilerMethodListing(CompilerLog, "ProfiledDelegate"));
         string referenceDir = CopyPgoReferences(info, Config, buildOutput, GetPublishedModuleMvids(Config), "cast-references");
 
         string tracePath = Path.Combine(info.LogPath, "cast.nettrace");
@@ -588,6 +624,18 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
             Assert.Single(samples, value => value.EndsWith(typePrefix + "Cold", StringComparison.Ordinal));
         }
 
+        JsonElement delegateMethod = Assert.Single(doc.RootElement.GetProperty("Methods").EnumerateArray(),
+            method => method.GetProperty("Method").GetString()!.Contains(".ProfiledDelegate(", StringComparison.Ordinal));
+        JsonElement[] delegateSchema = delegateMethod.GetProperty("InstrumentationData").EnumerateArray().ToArray();
+        JsonElement delegateCount = Assert.Single(delegateSchema, record => record.GetProperty("InstrumentationKind").GetString() == "HandleHistogramLongCount");
+        JsonElement delegateTargets = Assert.Single(delegateSchema, record => record.GetProperty("InstrumentationKind").GetString() == "HandleHistogramMethods");
+        Assert.Equal(5, delegateCount.GetProperty("Data").GetInt64());
+        Assert.Equal(delegateCount.GetProperty("ILOffset").GetInt32(), delegateTargets.GetProperty("ILOffset").GetInt32());
+        string[] targets = delegateTargets.GetProperty("Data").EnumerateArray().Select(value => value.GetString()!).ToArray();
+        Assert.Equal(5, targets.Length);
+        Assert.Equal(4, targets.Count(value => value.Contains(".DelegateHot(", StringComparison.Ordinal)));
+        Assert.Single(targets, value => value.Contains(".DelegateCold(", StringComparison.Ordinal));
+
         Directory.Delete(GetBlazorBinFrameworkDir(Config, forPublish: true), recursive: true);
         File.Delete(Path.Combine(_projectDir, CompilerLog));
         BlazorPublish(info, Config, new PublishOptions(UseCache: false, AssertAppBundle: false, Label: "consume-cast-profile",
@@ -607,6 +655,12 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
             Assert.Matches(@"\b(?:deferred\.call|call(?:_indirect)?)\b[^\r\n]*ReceiverHot:Run", dispatch);
             Assert.Contains(name == "ProfiledInterface" ? "CORINFO_HELP_VIRTUAL_FUNC_PTR" : "+Receiver:Run", dispatch);
         }
+        string delegateDispatch = GetCompilerMethodListing(CompilerLog, "ProfiledDelegate");
+        Assert.Contains("; ReadyToRun compilation", delegateDispatch);
+        Assert.DoesNotContain("CORINFO_HELP_DELEGATEPROFILE64", delegateDispatch);
+        Assert.Matches(@"(?m)^\s+i32\.(eq|ne)\s*$", delegateDispatch);
+        Assert.Matches(@"(?m)\bi32\.const 731[ \t]*\r?$", delegateDispatch);
+        Assert.Contains("call_indirect", delegateDispatch);
         await RunForPublishWithWebServer(new BlazorRunOptions(Config, CheckCounter: false, TimeoutSeconds: 60,
             Test: async page =>
             {

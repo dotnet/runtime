@@ -492,10 +492,16 @@ Instrumented methods also collect receiver types at eligible virtual and interfa
 calls and input types at eligible `isinst` and `castclass` sites. On republish,
 receiver profiles can drive guarded devirtualization. Pass crossgen2
 `--codegenopt:JitClassProfiling=0` to disable all type probes or
-`--codegenopt:JitProfileCasts=0` to disable only the cast probes. The profile does
-not include target-method histograms for virtual or delegate calls. A sampled type
+`--codegenopt:JitProfileCasts=0` to disable only the cast probes. A sampled type
 that the R2R image cannot reference is treated as unknown, so it cannot force the
 method to fall back to the interpreter.
+
+Delegate invocation sites also collect target-method histograms. Republish can
+guard and inline eligible closed reference-type instance targets, retaining the
+original delegate invocation on a miss. Unsupported targets, including static
+targets and methods the ReadyToRun image cannot reference, do not drive
+specialization. Pass `--codegenopt:JitDelegateProfiling=0` to disable the probes.
+Vtable target-method histograms are not collected.
 
 Run the published app in Chrome (or another supported browser), exercise representative
 workloads, and call:

@@ -45,7 +45,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     PgoInstrumentationKind.BasicBlockLongCount or PgoInstrumentationKind.EdgeLongCount or
                         PgoInstrumentationKind.ValueHistogramLongCount or PgoInstrumentationKind.HandleHistogramLongCount => sizeof(long),
                     PgoInstrumentationKind.ValueHistogram => sizeof(int),
-                    PgoInstrumentationKind.HandleHistogramTypes => pointerSize,
+                    PgoInstrumentationKind.HandleHistogramTypes or PgoInstrumentationKind.HandleHistogramMethods => pointerSize,
                     PgoInstrumentationKind.NumRuns or PgoInstrumentationKind.Version => 0,
                     _ => throw new NotSupportedException($"Unsupported R2R instrumentation kind: {record.InstrumentationKind}"),
                 };

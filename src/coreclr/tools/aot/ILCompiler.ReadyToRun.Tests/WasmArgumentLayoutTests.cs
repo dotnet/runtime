@@ -567,6 +567,54 @@ public class WasmArgumentLayoutTests
         }
     }
 
+    [Fact]
+    public void ReadyToRunProfilesDelegateTargets()
+    {
+        string directory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        Directory.CreateDirectory(directory);
+        try
+        {
+            string input = CompileCallbackAssembly("""
+                public delegate int Callback(int value);
+                public sealed class Target
+                {
+                    public int Hot(int value) => value + 731;
+                }
+                public static class Callbacks
+                {
+                    public static int Invoke(Callback callback, int value) => callback(value) ^ 1;
+                }
+                """, Path.Combine(directory, "DelegateProfile.dll"), optimize: true);
+            ReadyToRunCompilerContext context = WasmTestHelpers.CreateContext(input);
+            EcmaModule module = (EcmaModule)context.GetModuleForSimpleName("DelegateProfile");
+            EcmaMethod method = (EcmaMethod)module.GetType(""u8, "Callbacks"u8).GetMethod("Invoke"u8, null);
+            MethodDesc target = module.GetType(""u8, "Target"u8).GetMethod("Hot"u8, null);
+            int callOffset = Array.IndexOf(Internal.IL.EcmaMethodIL.Create(method).GetILBytes(), (byte)ILOpCode.Callvirt);
+            Assert.True(callOffset >= 0);
+
+            List<CompilerPgo.PgoSchemaElem> schema =
+            [
+                new() { InstrumentationKind = CompilerPgo.PgoInstrumentationKind.BasicBlockLongCount, Count = 1, DataLong = 5 },
+            ];
+            string producer = CompileCountProfile(input, context, method, schema, directory, "--pgo-instrumentation");
+            Assert.Contains("CORINFO_HELP_DELEGATEPROFILE64", producer);
+
+            const int DelegateFlag = 0x20000000;
+            schema.Add(new() { InstrumentationKind = CompilerPgo.PgoInstrumentationKind.HandleHistogramLongCount,
+                ILOffset = callOffset, Other = DelegateFlag, Count = 1, DataLong = 5 });
+            schema.Add(new() { InstrumentationKind = CompilerPgo.PgoInstrumentationKind.HandleHistogramMethods,
+                ILOffset = callOffset, Other = DelegateFlag, Count = 5, DataObject = new object[] { target, target, target, target, target } });
+            string consumer = CompileCountProfile(input, context, method, schema, directory);
+            Assert.Contains("Direct call [", consumer);
+            Assert.Contains("Residual call [", consumer);
+            Assert.Matches(@"(?m)\bi32\.const 731[ \t]*\r?$", consumer);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
@@ -714,7 +762,12 @@ public class WasmArgumentLayoutTests
             _il.OpCode(ILOpCode.Ldtoken);
             _il.Token(_metadata.GetTypeRef(Assert.IsAssignableFrom<TypeDesc>(type)));
         }
-        public void EmitMethod(object method, object previousValue) => throw new InvalidOperationException(nameof(EmitMethod));
+
+        public void EmitMethod(object method, object previousValue)
+        {
+            _il.OpCode(ILOpCode.Ldtoken);
+            _il.Token(_metadata.GetMethodRef(Assert.IsAssignableFrom<MethodDesc>(method)));
+        }
 
         public bool EmitDone()
         {

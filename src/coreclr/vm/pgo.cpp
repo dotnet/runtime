@@ -13,13 +13,15 @@
 #ifdef FEATURE_PGO
 
 #ifdef FEATURE_R2R_PGO
-static ICorJitInfo::PgoInstrumentationKind R2RHistogramTableKind(ICorJitInfo::PgoInstrumentationKind kind)
+static ICorJitInfo::PgoInstrumentationKind R2RHistogramTableKind(const ICorJitInfo::PgoInstrumentationSchema& item)
 {
     using Kind = ICorJitInfo::PgoInstrumentationKind;
-    switch (kind)
+    switch (item.InstrumentationKind)
     {
         case Kind::ValueHistogramLongCount: return Kind::ValueHistogram;
-        case Kind::HandleHistogramLongCount: return Kind::HandleHistogramTypes;
+        case Kind::HandleHistogramLongCount:
+            return (static_cast<UINT32>(item.Other) & ICorJitInfo::HandleHistogram32::CLASS_FLAG) != 0
+                ? Kind::HandleHistogramTypes : Kind::HandleHistogramMethods;
         default: return Kind::None;
     }
 }
@@ -27,7 +29,7 @@ static ICorJitInfo::PgoInstrumentationKind R2RHistogramTableKind(ICorJitInfo::Pg
 static bool IsR2RHistogramTable(ICorJitInfo::PgoInstrumentationKind kind)
 {
     using Kind = ICorJitInfo::PgoInstrumentationKind;
-    return kind == Kind::ValueHistogram || kind == Kind::HandleHistogramTypes;
+    return kind == Kind::ValueHistogram || kind == Kind::HandleHistogramTypes || kind == Kind::HandleHistogramMethods;
 }
 
 static void LayoutR2RPgoInstrumentationSchema(const ICorJitInfo::PgoInstrumentationSchema& previous,
@@ -309,7 +311,7 @@ void PgoManager::LogInstrumentationData()
                 {
                     ICorJitInfo::PgoInstrumentationSchema item = schema[k];
                     using Kind = ICorJitInfo::PgoInstrumentationKind;
-                    const Kind tableKind = R2RHistogramTableKind(item.InstrumentationKind);
+                    const Kind tableKind = R2RHistogramTableKind(item);
                     const bool histogramCount = tableKind != Kind::None;
                     const bool histogram = IsR2RHistogramTable(item.InstrumentationKind);
                     UINT64 filled = 0;
@@ -328,7 +330,7 @@ void PgoManager::LogInstrumentationData()
                     }
                     else if (histogram)
                     {
-                        if (k == 0 || R2RHistogramTableKind(schema[k - 1].InstrumentationKind) != item.InstrumentationKind ||
+                        if (k == 0 || R2RHistogramTableKind(schema[k - 1]) != item.InstrumentationKind ||
                             schema[k - 1].ILOffset != item.ILOffset || schema[k - 1].Other != item.Other ||
                             item.Count != ICorJitInfo::HandleHistogram32::SIZE)
                             return false;
@@ -1012,7 +1014,7 @@ BYTE* PgoManager::allocPgoInstrumentationFromR2RSchema(Module* imageModule, Meth
         item.Other = static_cast<INT32>(ReadPgoSchemaUInt32(record + 12));
         UINT32 offset = ReadPgoSchemaUInt32(record + 16);
         using Kind = ICorJitInfo::PgoInstrumentationKind;
-        const Kind expectedTable = R2RHistogramTableKind(previous.InstrumentationKind);
+        const Kind expectedTable = R2RHistogramTableKind(previous);
         if (expectedTable != Kind::None && item.InstrumentationKind != expectedTable)
             COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
         switch (item.InstrumentationKind)
@@ -1033,9 +1035,10 @@ BYTE* PgoManager::allocPgoInstrumentationFromR2RSchema(Module* imageModule, Meth
             case Kind::HandleHistogramLongCount:
             {
                 using Histogram = ICorJitInfo::HandleHistogram32;
+                const UINT32 flags = static_cast<UINT32>(item.Other);
                 const bool validFlags = item.InstrumentationKind == Kind::ValueHistogramLongCount
-                    ? item.Other == 0
-                    : (static_cast<UINT32>(item.Other) & ~Histogram::INTERFACE_FLAG) == Histogram::CLASS_FLAG;
+                    ? flags == 0
+                    : (flags & ~Histogram::INTERFACE_FLAG) == Histogram::CLASS_FLAG || flags == Histogram::DELEGATE_FLAG;
                 if (item.Count != 1 || item.ILOffset < 0 ||
                     !validFlags ||
                     static_cast<UINT32>(item.ILOffset) >= ilHeader.GetCodeSize() || i + 1 == recordCount)
@@ -1044,6 +1047,7 @@ BYTE* PgoManager::allocPgoInstrumentationFromR2RSchema(Module* imageModule, Meth
             }
             case Kind::ValueHistogram:
             case Kind::HandleHistogramTypes:
+            case Kind::HandleHistogramMethods:
                 if (expectedTable != item.InstrumentationKind ||
                     previous.ILOffset != item.ILOffset || previous.Other != item.Other ||
                     item.Count != ICorJitInfo::HandleHistogram32::SIZE)

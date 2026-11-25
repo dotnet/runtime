@@ -8308,13 +8308,11 @@ void Compiler::pickGDV(GenTreeCall*           call,
     unsigned                numberOfMethods = 0;
     bool                    isInferredGDV   = false;
 
-    // TODO-GDV: R2R support requires additional work to reacquire the
-    // entrypoint, similar to what happens at the end of impDevirtualizeCall.
-    // As part of supporting this we should merge the tail of
-    // impDevirtualizeCall and what happens in
-    // GuardedDevirtualizationTransformer::CreateThen for method GDV.
-    //
-    if (!IsAot() && (call->IsVirtualVtable() || call->IsDelegateInvoke()))
+    bool useMethodProfile = !IsAot() && (call->IsVirtualVtable() || call->IsDelegateInvoke());
+#if defined(TARGET_WASM) && defined(FEATURE_R2R_PGO)
+    useMethodProfile |= IsReadyToRun() && call->IsDelegateInvoke();
+#endif
+    if (useMethodProfile)
     {
         assert(!call->IsHelperCall());
         numberOfMethods = getLikelyMethods(likelyMethods, maxLikelyMethods, pgoInfo.PgoSchema, pgoInfo.PgoSchemaCount,
@@ -10664,15 +10662,21 @@ void Compiler::impTransformDevirtualizedCall(GenTreeCall*            call,
     {
         // For R2R, getCallInfo triggers bookkeeping on the zap
         // side and acquires the actual symbol to call so we need to call it here.
-        assert(pDerivedResolvedToken != nullptr);
-
-        // Look up the new call info.
-        CORINFO_CALL_INFO derivedCallInfo;
-        eeGetCallInfo(pDerivedResolvedToken, nullptr, CORINFO_CALLINFO_ALLOWINSTPARAM, &derivedCallInfo);
-
-        // Update the call.
+        CORINFO_CONST_LOOKUP entryPoint;
+        if (dcInfo->isDelegateCall)
+        {
+            // Use the same exact entry point as the guard, not a virtual slot.
+            info.compCompHnd->getFunctionFixedEntryPoint(derivedMethod, false, &entryPoint);
+        }
+        else
+        {
+            assert(pDerivedResolvedToken != nullptr);
+            CORINFO_CALL_INFO derivedCallInfo;
+            eeGetCallInfo(pDerivedResolvedToken, nullptr, CORINFO_CALLINFO_ALLOWINSTPARAM, &derivedCallInfo);
+            entryPoint = derivedCallInfo.codePointerLookup.constLookup;
+        }
         call->gtCallMoreFlags &= ~GTF_CALL_M_VIRTSTUB_REL_INDIRECT;
-        call->setEntryPoint(derivedCallInfo.codePointerLookup.constLookup);
+        call->setEntryPoint(entryPoint);
     }
 #endif // FEATURE_READYTORUN
 
@@ -10763,13 +10767,19 @@ Compiler::GDVProbeType Compiler::compClassifyGDVProbeType(GenTreeCall* call)
                                                       (call->gtHandleHistogramProfileCandidateInfo != nullptr));
     }
 
+    const bool createDelegateHistogram = (JitConfig.JitDelegateProfiling() > 0) && call->IsDelegateInvoke();
     if (IsAot())
     {
-        return (compR2RPgoInstrumentation() && createTypeHistogram) ? GDVProbeType::ClassProfile : GDVProbeType::None;
+        if (!compR2RPgoInstrumentation())
+        {
+            return GDVProbeType::None;
+        }
+        return createDelegateHistogram ? GDVProbeType::MethodProfile
+                                       : (createTypeHistogram ? GDVProbeType::ClassProfile : GDVProbeType::None);
     }
 
-    bool createMethodHistogram = ((JitConfig.JitDelegateProfiling() > 0) && call->IsDelegateInvoke()) ||
-                                 ((JitConfig.JitVTableProfiling() > 0) && call->IsVirtualVtable());
+    bool createMethodHistogram =
+        createDelegateHistogram || ((JitConfig.JitVTableProfiling() > 0) && call->IsVirtualVtable());
 
     if (createTypeHistogram && createMethodHistogram)
     {

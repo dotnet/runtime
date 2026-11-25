@@ -388,6 +388,7 @@ namespace Internal.ReadyToRunConstants
         WasmProfSamplepoint         = 0x119,
         ValueProfile64              = 0x11A,
         ClassProfile64              = 0x11B,
+        DelegateProfile64           = 0x11C,
 
         // **********************************************************************************************
         //

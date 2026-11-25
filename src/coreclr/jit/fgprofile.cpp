@@ -2145,8 +2145,10 @@ public:
         {
             GenTree* const tmpNode = compiler->gtNewLclvNode(tmpNum, TYP_REF);
             GenTree* const methodProfileNode =
-                compiler->gtNewIconNode(reinterpret_cast<ssize_t>(m_profileMemory + methodHistogram->Offset),
-                                        TYP_I_IMPL);
+                compiler->compR2RPgoInstrumentation()
+                    ? BlockCountInstrumentor::GetProfileAddress(compiler, m_profileMemory, methodHistogram->Offset)
+                    : compiler->gtNewIconNode(reinterpret_cast<ssize_t>(m_profileMemory + methodHistogram->Offset),
+                                              TYP_I_IMPL);
 
             GenTree* methodProfileCallNode;
             if (call->IsDelegateInvoke())
@@ -2690,7 +2692,7 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
     const bool useDelegateProfiles = (JitConfig.JitDelegateProfiling() > 0);
     const bool useVTableProfiles   = (JitConfig.JitVTableProfiling() > 0);
     fgR2RCastProfiling             = r2rPgo && useClassProfiles && (JitConfig.JitProfileCasts() == 1);
-    if (((!prejit || r2rPgo) && useClassProfiles) || (!prejit && (useDelegateProfiles || useVTableProfiles)))
+    if (((!prejit || r2rPgo) && (useClassProfiles || useDelegateProfiles)) || (!prejit && useVTableProfiles))
     {
         fgHistogramInstrumentor = new (this, CMK_Pgo) HandleHistogramProbeInstrumentor(this);
     }

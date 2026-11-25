@@ -1828,6 +1828,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                     builder.Append("VALUE_PROFILE64");
                     break;
                 case ReadyToRunHelper.ClassProfile64:
+                case ReadyToRunHelper.DelegateProfile64:
                     builder.Append("CLASS_PROFILE64");
                     break;
 

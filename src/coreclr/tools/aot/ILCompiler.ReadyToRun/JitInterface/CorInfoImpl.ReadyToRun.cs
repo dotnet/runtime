@@ -1435,6 +1435,10 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.ClassProfile64;
                     break;
 
+                case CorInfoHelpFunc.CORINFO_HELP_DELEGATEPROFILE64:
+                    id = ReadyToRunHelper.DelegateProfile64;
+                    break;
+
                 case CorInfoHelpFunc.CORINFO_HELP_GETCURRENTMANAGEDTHREADID:
                     id = ReadyToRunHelper.GetCurrentManagedThreadId;
                     break;
@@ -1512,6 +1516,31 @@ namespace Internal.JitInterface
                 false,
                 false);
             pResult = CreateConstLookupToSymbol(entrypoint);
+        }
+
+        private bool CanReferenceDelegateProfileTarget(MethodDesc method)
+        {
+            return method is EcmaMethod && !method.Signature.IsStatic && !method.IsAbstract &&
+                !method.OwningType.IsValueType && !method.OwningType.HasInstantiation &&
+                !method.HasInstantiation && !method.IsPInvoke && !method.IsUnmanagedCallersOnly &&
+                !MethodSignatureIsUnstable(method.Signature, out _) &&
+                !_compilation.NodeFactory.Resolver.GetModuleTokenForMethod(method, allowDynamicallyCreatedReference: false, throwIfNotFound: false).IsNull;
+        }
+
+        private void getFunctionFixedEntryPoint(CORINFO_METHOD_STRUCT_* ftn, bool isUnsafeFunctionPointer, ref CORINFO_CONST_LOOKUP pResult)
+        {
+            if (!_compilation.NodeFactory.Target.IsWasm || isUnsafeFunctionPointer)
+                throw new NotImplementedException(nameof(getFunctionFixedEntryPoint));
+
+            MethodDesc method = HandleToObject(ftn);
+            Debug.Assert(CanReferenceDelegateProfileTarget(method));
+            ModuleToken token = _compilation.NodeFactory.Resolver.GetModuleTokenForMethod(
+                method, allowDynamicallyCreatedReference: false, throwIfNotFound: true);
+
+            // A delegate holds the target's portable entrypoint, not a delayed-call stub.
+            pResult = CreateConstLookupToSymbol(_compilation.NodeFactory.MethodEntrypoint(
+                new MethodWithToken(method, token, constrainedType: null, unboxing: false, genericContextObject: null),
+                isInstantiatingStub: false, isPrecodeImportRequired: true, isJumpableImportRequired: false));
         }
 
         private CORINFO_METHOD_STRUCT_* GetDelegateCtor(CORINFO_METHOD_STRUCT_* methHnd, CORINFO_CLASS_STRUCT_* clsHnd, CORINFO_METHOD_STRUCT_* targetMethodHnd, ref DelegateCtorArgs pCtorData)
