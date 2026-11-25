@@ -124,6 +124,12 @@ HRESULT DefaultAssemblyBinder::BindUsingPEImage( /* in */ PEImage *pPEImage,
                                                  /* [retval][out] */ BINDER_SPACE::Assembly **ppAssembly,
                                                  /* [out, optional] */ BINDER_SPACE::Assembly **ppExistingAssemblyOnConflict)
 {
+    if (!GetAppContext()->IsTpaListProvided())
+    {
+        // Binding paths can be unavailable during early startup. Do not cache this transient failure.
+        return HOST_E_INVALIDOPERATION;
+    }
+
     HRESULT hr = S_OK;
 
     EX_TRY
