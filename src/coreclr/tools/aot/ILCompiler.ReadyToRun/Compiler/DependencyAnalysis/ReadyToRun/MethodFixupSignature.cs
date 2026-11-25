@@ -185,14 +185,19 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // If the method can be uniquely identified by a single token in the version bubble, use that instead of the full MethodSpec.
             if (factory.CompilationModuleGroup.VersionsWithMethodBody(method.Method) && method.Method.IsPrimaryMethodDesc())
             {
+                // Re-tokenizing a constrained method would pair the method a constrained call resolved to with its
+                // constraint, which needlessly loads the exact constrained type. CorInfoImpl names such methods by
+                // their own token without the constraint.
                 if (method.Token.TokenType == CorTokenType.mdtMethodSpec)
                 {
+                    Debug.Assert(method.ConstrainedType == null, "Resolved constrained call targets should not carry the constraint");
                     method = new MethodWithToken(method.Method, factory.SignatureContext.GetModuleTokenForMethod(method.Method), method.ConstrainedType, unboxing: _method.Unboxing, null);
                 }
                 else if (!optimized && (method.Token.TokenType == CorTokenType.mdtMemberRef))
                 {
                     if (method.Method.OwningType.GetTypeDefinition() is EcmaType)
                     {
+                        Debug.Assert(method.ConstrainedType == null, "Resolved constrained call targets should not carry the constraint");
                         method = new MethodWithToken(method.Method, factory.SignatureContext.GetModuleTokenForMethod(method.Method), method.ConstrainedType, unboxing: _method.Unboxing, null);
                     }
                 }

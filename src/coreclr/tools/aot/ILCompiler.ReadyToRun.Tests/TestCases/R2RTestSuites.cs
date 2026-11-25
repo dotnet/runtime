@@ -636,39 +636,50 @@ public class R2RTestSuites
             SignatureFormattingOptions formatting = new();
             bool foundEnumeratorDispose = false;
             bool foundNoInliningEnumeratorDispose = false;
+            bool foundGenericMethodDictionary = false;
             foreach (ReadyToRunImportSection section in reader.ImportSections)
             {
                 foreach (ReadyToRunImportSection.ImportSectionEntry entry in section.Entries)
                 {
-                    if (entry.Signature?.FixupKind is not (ReadyToRunFixupKind.MethodEntry
+                    if (entry.Signature is not { } entrySignature)
+                    {
+                        continue;
+                    }
+
+                    bool isMethodEntry = entrySignature.FixupKind is ReadyToRunFixupKind.MethodEntry
                         or ReadyToRunFixupKind.MethodEntry_DefToken
                         or ReadyToRunFixupKind.MethodEntry_RefToken
-                        or ReadyToRunFixupKind.MethodEntry_ReadyToRun))
+                        or ReadyToRunFixupKind.MethodEntry_ReadyToRun;
+                    if (!isMethodEntry && entrySignature.FixupKind != ReadyToRunFixupKind.MethodDictionary)
                     {
                         continue;
                     }
 
-                    string signature = entry.Signature.ToString(formatting);
-                    if (!signature.Contains("Dispose", StringComparison.Ordinal))
+                    string signature = entrySignature.ToString(formatting);
+                    bool isEnumeratorDispose = isMethodEntry
+                        && signature.Contains("ConstrainedCalls.Enumerator`1", StringComparison.Ordinal)
+                        && signature.Contains("Dispose", StringComparison.Ordinal);
+                    bool isNoInliningEnumeratorDispose = isMethodEntry
+                        && signature.Contains("ConstrainedCalls.NoInliningEnumerator`1", StringComparison.Ordinal)
+                        && signature.Contains("Dispose", StringComparison.Ordinal);
+                    bool isGenericMethodDictionary = !isMethodEntry
+                        && signature.Contains("ConstrainedCalls.GenericMethodStruct", StringComparison.Ordinal)
+                        && signature.Contains("Invoke", StringComparison.Ordinal);
+                    if (!isEnumeratorDispose && !isNoInliningEnumeratorDispose && !isGenericMethodDictionary)
                     {
                         continue;
                     }
 
-                    bool isEnumerator = signature.Contains("ConstrainedCalls.Enumerator`1", StringComparison.Ordinal);
-                    bool isNoInliningEnumerator = signature.Contains("ConstrainedCalls.NoInliningEnumerator`1", StringComparison.Ordinal);
-                    if (!isEnumerator && !isNoInliningEnumerator)
-                    {
-                        continue;
-                    }
-
-                    foundEnumeratorDispose |= isEnumerator;
-                    foundNoInliningEnumeratorDispose |= isNoInliningEnumerator;
+                    foundEnumeratorDispose |= isEnumeratorDispose;
+                    foundNoInliningEnumeratorDispose |= isNoInliningEnumeratorDispose;
+                    foundGenericMethodDictionary |= isGenericMethodDictionary;
                     Assert.DoesNotContain("Marker", signature, StringComparison.Ordinal);
                     Assert.DoesNotContain(" @ ", signature, StringComparison.Ordinal);
                 }
             }
 
             Assert.True(foundEnumeratorDispose, "Expected a MethodEntry import for Enumerator`1.Dispose");
+            Assert.True(foundGenericMethodDictionary, "Expected a MethodDictionary import for GenericMethodStruct.Invoke");
             Assert.True(foundNoInliningEnumeratorDispose, "Expected a MethodEntry import for NoInliningEnumerator`1.Dispose");
         }
     }

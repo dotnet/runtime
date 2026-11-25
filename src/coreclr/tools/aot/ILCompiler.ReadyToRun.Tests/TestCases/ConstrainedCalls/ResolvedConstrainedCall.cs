@@ -41,9 +41,28 @@ public sealed class NoInliningSequence
     public NoInliningEnumerator<Marker> GetEnumerator() => default;
 }
 
+public interface IGenericMethod
+{
+    void Invoke<U>();
+}
+
+// 'constrained. GenericMethodStruct callvirt IGenericMethod::Invoke<string>' resolves to the shared
+// GenericMethodStruct.Invoke<__Canon> body, which takes its method dictionary as an instantiation argument.
+public struct GenericMethodStruct : IGenericMethod
+{
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public void Invoke<U>() => ResolvedConstrainedCall.DisposeCount++;
+}
+
 public static class ResolvedConstrainedCall
 {
     public static int DisposeCount;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void InvokeConstrained<T>(T value) where T : IGenericMethod => value.Invoke<string>();
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void InvokeGenericMethod() => InvokeConstrained(new GenericMethodStruct());
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Iterate()

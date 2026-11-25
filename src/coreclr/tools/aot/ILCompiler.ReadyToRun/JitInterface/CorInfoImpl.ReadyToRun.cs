@@ -1586,11 +1586,11 @@ namespace Internal.JitInterface
         }
 
         /// <summary>
-        /// Computes the <see cref="MethodWithToken"/> for the target of a direct call. When a constrained
-        /// call was resolved at compile time to a method body in the version bubble, the import names that
-        /// method by its own token and omits the constrained type: the runtime cannot resolve the call
-        /// differently, and decoding the constraint would load the exact constrained type (and its
-        /// instantiation arguments) for no benefit.
+        /// Computes the <see cref="MethodWithToken"/> for the target of a call, used for both its entrypoint and
+        /// its generic context lookup. When a constrained call was resolved at compile time to a method body in
+        /// the version bubble, the import names that method by its own token and omits the constrained type: the
+        /// runtime cannot resolve the call differently, and decoding the constraint would load the exact
+        /// constrained type (and its instantiation arguments) for no benefit.
         /// </summary>
         private MethodWithToken ComputeCallTargetMethodWithToken(MethodDesc method, ref CORINFO_RESOLVED_TOKEN pResolvedToken, TypeDesc constrainedType, bool resolvedConstraint, bool unboxing, bool useInstantiatingStub)
         {
@@ -2928,7 +2928,7 @@ namespace Internal.JitInterface
                     {
                         pResult->instParamLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(
                             ReadyToRunHelperId.MethodDictionary,
-                            ComputeMethodWithToken(targetMethod, ref resolvedToken, constrainedType: constrainedType, unboxing: false)));
+                            ComputeCallTargetMethodWithToken(targetMethod, ref resolvedToken, constrainedType, resolvedConstraint, unboxing: false, useInstantiatingStub: false)));
                     }
                     else
                     {
@@ -2937,7 +2937,7 @@ namespace Internal.JitInterface
                         {
                             instParamLookup = _compilation.SymbolNodeFactory.CreateReadyToRunHelper(
                                 ReadyToRunHelperId.DeclaringTypeHandle,
-                                ComputeMethodWithToken(targetMethod, ref resolvedToken, constrainedType, unboxing: false));
+                                ComputeCallTargetMethodWithToken(targetMethod, ref resolvedToken, constrainedType, resolvedConstraint, unboxing: false, useInstantiatingStub: false));
                         }
                         else
                         {
