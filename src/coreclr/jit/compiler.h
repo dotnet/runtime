@@ -5457,12 +5457,14 @@ protected:
 
     GenTree* impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORINFO_CLASS_HANDLE ownerCls);
 
+    GenTree* impTryForwardStaticFieldOwner(const CORINFO_RESOLVED_TOKEN& token);
     GenTree* impImportStaticFieldAddress(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                          CORINFO_ACCESS_FLAGS    access,
                                          CORINFO_FIELD_INFO*     pFieldInfo,
                                          var_types               lclTyp,
                                          GenTreeFlags*           pIndirFlags,
-                                         bool*                   pIsHoistable = nullptr);
+                                         bool*                   pIsHoistable = nullptr,
+                                         GenTree*                forwardedOwner = nullptr);
     void impAnnotateFieldIndir(GenTreeIndir* indir);
 
     static void impBashVarAddrsToI(GenTree* tree1, GenTree* tree2 = nullptr);
@@ -5685,6 +5687,7 @@ public:
 
     GenTree* impNormStructVal(GenTree* structVal, unsigned curLevel);
 
+    GenTree* impDeferredTypeExpression(const MethodTypeArgument& type, CORINFO_CLASS_HANDLE cls);
     GenTree* impTokenToHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                               bool*                   pRuntimeLookup = nullptr,
                               bool                    importParent   = false);

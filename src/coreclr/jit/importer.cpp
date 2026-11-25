@@ -1298,16 +1298,7 @@ GenTree* Compiler::impTokenToHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken,
             }
             if (arg.signature != nullptr)
             {
-                Compiler* root = impInlineRoot();
-                GenTree*  tree =
-                    gtNewRuntimeLookup((CORINFO_GENERIC_HANDLE)pResolvedToken->hClass, CORINFO_HANDLETYPE_CLASS,
-                                       root->getRuntimeContextTree(root->impRuntimeContextKind()));
-                auto* pending                             = new (this, CMK_Inlining) DeferredHandleLookup{};
-                pending->kind                             = DeferredHandleLookup::Kind::TypeExpression;
-                pending->type.expression                  = arg;
-                tree->AsRuntimeLookup()->gtDeferredLookup = pending;
-                JITDUMP("Forward inlinee type as a root signature (%u bytes)\n", arg.signatureSize);
-                return tree;
+                return impDeferredTypeExpression(arg, pResolvedToken->hClass);
             }
             // A bare projection denotes !!n in the root. Class arguments use the EE's type-expression lookup.
             assert(impInlineRoot()->impRuntimeContextKind() == CORINFO_LOOKUP_METHODPARAM);
@@ -1344,6 +1335,21 @@ GenTree* Compiler::impTokenToHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken,
     }
 
     return result;
+}
+
+// Keep the root context with the type expression. Morph prepares the lookup if the use survives.
+GenTree* Compiler::impDeferredTypeExpression(const MethodTypeArgument& type, CORINFO_CLASS_HANDLE cls)
+{
+    assert(type.signature != nullptr);
+    Compiler* root           = impInlineRoot();
+    GenTree*  lookup         = gtNewRuntimeLookup((CORINFO_GENERIC_HANDLE)cls, CORINFO_HANDLETYPE_CLASS,
+                                                  root->getRuntimeContextTree(root->impRuntimeContextKind()));
+    auto*     pending        = new (this, CMK_Inlining) DeferredHandleLookup{};
+    pending->kind            = DeferredHandleLookup::Kind::TypeExpression;
+    pending->type.expression = type;
+    lookup->AsRuntimeLookup()->gtDeferredLookup = pending;
+    JITDUMP("Forward inlinee type as a root signature (%u bytes)\n", type.signatureSize);
+    return lookup;
 }
 
 //------------------------------------------------------------------------
@@ -4295,6 +4301,26 @@ GenTree* Compiler::impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORI
     return nullptr;
 }
 
+// A generic static helper needs the exact declaring type as its argument.
+GenTree* Compiler::impTryForwardStaticFieldOwner(const CORINFO_RESOLVED_TOKEN& token)
+{
+    MethodTypeArgument owner;
+    if (!compIsForInlining() || !impReadInlineType(token, &owner))
+    {
+        return nullptr;
+    }
+
+    // A MemberRef can name an inherited member. Its TypeSpec is useful here
+    // only when it constructs the type that actually declares the field.
+    CORINFO_CLASS_HANDLE declaring = info.compCompHnd->getFieldClass(token.hField);
+    if ((declaring != token.hClass) &&
+        (info.compCompHnd->getTypeDefinition(declaring) != info.compCompHnd->getTypeDefinition(token.hClass)))
+    {
+        return nullptr;
+    }
+    return impDeferredTypeExpression(owner, token.hClass);
+}
+
 //------------------------------------------------------------------------
 // impImportStaticFieldAddress: Generate an address of a static field
 //
@@ -4306,6 +4332,7 @@ GenTree* Compiler::impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORI
 //   pIndirFlags    - in/out parameter for the field indirection flags (e. g. IND_INITCLASS)
 //   pIsHoistable   - optional out parameter - whether any type initialization side
 //                    effects of the returned tree can be hoisted to occur earlier
+//   forwardedOwner - exact owner already computed while checking whether a store can inline
 //
 // Return Value:
 //   Tree representing the field's address.
@@ -4324,7 +4351,8 @@ GenTree* Compiler::impImportStaticFieldAddress(CORINFO_RESOLVED_TOKEN* pResolved
                                                CORINFO_FIELD_INFO*     pFieldInfo,
                                                var_types               lclTyp,
                                                GenTreeFlags*           pIndirFlags,
-                                               bool*                   pIsHoistable)
+                                               bool*                   pIsHoistable,
+                                               GenTree*                forwardedOwner)
 {
     // For statics that are not "boxed", the initial address tree will contain the field sequence.
     // For those that are, we will attach it later, when adding the indirection for the box, since
@@ -4375,9 +4403,11 @@ GenTree* Compiler::impImportStaticFieldAddress(CORINFO_RESOLVED_TOKEN* pResolved
         case CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER:
         {
             // We first call a special helper to get the statics base pointer
-            op1 = impParentClassTokenToHandle(pResolvedToken);
-
-            // compIsForInlining() is false so we should not get NULL here
+            if (forwardedOwner == nullptr)
+            {
+                forwardedOwner = impTryForwardStaticFieldOwner(*pResolvedToken);
+            }
+            op1 = (forwardedOwner != nullptr) ? forwardedOwner : impParentClassTokenToHandle(pResolvedToken);
             assert(op1 != nullptr);
 
             var_types type = TYP_BYREF;
@@ -10020,7 +10050,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             case CEE_STFLD:
             case CEE_STSFLD:
             {
-                bool isStoreStatic = (opcode == CEE_STSFLD);
+                GenTree* forwardedOwner = nullptr;
+                bool     isStoreStatic  = (opcode == CEE_STSFLD);
 
                 /* Get the CP_Fieldref index */
 
@@ -10054,6 +10085,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             return;
 
                         case CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER:
+                            forwardedOwner = impTryForwardStaticFieldOwner(resolvedToken);
+                            if (forwardedOwner != nullptr)
+                            {
+                                break;
+                            }
+                            FALLTHROUGH;
                         case CORINFO_FIELD_STATIC_READYTORUN_HELPER:
                             /* We may be able to inline the field accessors in specific instantiations of generic
                              * methods */
@@ -10124,7 +10161,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     case CORINFO_FIELD_STATIC_RELOCATABLE:
                         bool isHoistable;
                         op1 = impImportStaticFieldAddress(&resolvedToken, (CORINFO_ACCESS_FLAGS)aflags, &fieldInfo,
-                                                          lclTyp, &indirFlags, &isHoistable);
+                                                          lclTyp, &indirFlags, &isHoistable, forwardedOwner);
 
                         if (!isHoistable)
                         {

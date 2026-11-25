@@ -123,6 +123,18 @@ public class ForwardedMethodTypeArgument
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static Type Initialized() => InitializedOwner<T>.Get();
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static int ReadCache() => CalleeOwner<List<T>>.ReadCache();
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void WriteCache(int value) => CalleeOwner<List<T>>.WriteCache(value);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static ref int CacheAddress() => ref CalleeOwner<List<T>>.CacheAddress();
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static Type CacheTag() => CalleeOwner<List<T>>.CacheTag();
     }
 
     private sealed class DerivedOwner<P, Q> : Owner<Q> { }
@@ -151,8 +163,35 @@ public class ForwardedMethodTypeArgument
         public static Type Get() => typeof(T);
     }
 
+    private static int s_cacheInitializers;
+
+    private static class Cache<A>
+    {
+        public static int Value;
+        public static Type Tag;
+
+        static Cache()
+        {
+            s_cacheInitializers++;
+            Value = 17;
+            Tag = typeof(A);
+        }
+    }
+
     private class CalleeOwner<A>
     {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int ReadCache() => Cache<A>.Value;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteCache(int value) => Cache<A>.Value = value;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ref int CacheAddress() => ref Cache<A>.Value;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Type CacheTag() => Cache<A>.Tag;
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Type Get() => typeof(A);
 
@@ -301,6 +340,18 @@ public class ForwardedMethodTypeArgument
         Assert.Equal(typeof(Dictionary<string, int[]>), Compound<int>());
         Assert.Equal(typeof(ForwardedArgumentBox<PairType<string, object>>), CrossModule<string, object>());
         Assert.Equal(typeof(ForwardedArgumentBox<PairType<object, string>>), CrossModule<object, string>());
+        Assert.Equal(17, Owner<string>.ReadCache());
+        Assert.Equal(17, Owner<object>.ReadCache());
+        Owner<string>.WriteCache(53);
+        Owner<object>.CacheAddress() = 92;
+        Assert.Equal(53, Owner<string>.ReadCache());
+        Assert.Equal(92, Owner<object>.ReadCache());
+        Assert.Equal(typeof(List<string>), Owner<string>.CacheTag());
+        Assert.Equal(typeof(List<object>), Owner<object>.CacheTag());
+        Assert.Equal(2, s_cacheInitializers);
+        Owner<string>.WriteCache(17);
+        Owner<object>.WriteCache(17);
+
         var derived = new DerivedOwner<object, string>();
         Assert.Equal(typeof(List<string>), derived.OwnerOnly());
         Assert.Equal(typeof(List<object>), new DerivedOwner<string, object>().OwnerOnly());
