@@ -80,6 +80,7 @@ extern "C"
  *         set if a baseline instruction set is not supported.
  */
 int minipal_getcpufeatures(void);
+
 /**
  * Check if the current process is running under the Apple Rosetta x64 emulator.
  *

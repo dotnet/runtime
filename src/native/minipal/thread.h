@@ -86,7 +86,7 @@ extern "C" {
 #endif
 
 /**
- * Get the current process ID. On WASI, which has no process IDs, it is a fixed placeholder.
+ * Get the current process ID.
  *
  * @return The current process ID.
  */
