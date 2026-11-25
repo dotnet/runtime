@@ -11,6 +11,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
 #include "jitpch.h"
+#include "cor.h"
 #ifdef _MSC_VER
 #pragma hdrstop
 #endif
@@ -6922,16 +6923,35 @@ GenTreeOp* Compiler::fgMorphCommutative(GenTreeOp* tree)
     return op1->AsOp();
 }
 
-// Materialize a surviving hidden method argument at its use. Re-resolve the
-// MethodSpec in the original inlinee scope, even though morph runs on the root.
-GenTree* Compiler::fgMaterializeMethodContext(GenTreeRuntimeLookup* tree)
+// Materialize a surviving lookup. Type expressions are relative to the root;
+// method contexts retain the scope in which their arguments were bound.
+GenTree* Compiler::fgMaterializeDeferredLookup(GenTreeRuntimeLookup* tree)
 {
     assert(!compIsForInlining());
-    DeferredMethodLookup* pending = tree->gtDeferredLookup;
+    DeferredHandleLookup* pending = tree->gtDeferredLookup;
     if (pending->preparedLookup == nullptr)
     {
         CORINFO_LOOKUP lookup;
-        if (pending->devirtualized)
+        if (tree->IsClassHandle())
+        {
+            const MethodTypeArgument arg = pending->type.expression;
+            BYTE                     signature[MethodTypeArgument::MaxArrayDepth + 1 + 4];
+            memset(signature, ELEMENT_TYPE_SZARRAY, arg.arrayDepth);
+            signature[arg.arrayDepth] = ELEMENT_TYPE_MVAR;
+            unsigned indexSize        = CorSigCompressData(arg.index, signature + arg.arrayDepth + 1);
+
+            CORINFO_RESOLVED_TOKEN expression{};
+            expression.tokenType    = CORINFO_TOKENKIND_TypeExpression;
+            expression.tokenContext = METHOD_BEING_COMPILED_CONTEXT();
+            expression.tokenScope   = info.compScopeHnd;
+            expression.pTypeSpec    = signature;
+            expression.cbTypeSpec   = arg.arrayDepth + 1 + indexSize;
+            CORINFO_GENERICHANDLE_RESULT result;
+            info.compCompHnd->embedGenericHandle(&expression, false, info.compMethodHnd, &result);
+            lookup                          = result.lookup;
+            pending->type.compileTimeHandle = result.compileTimeHandle;
+        }
+        else if (pending->devirtualized)
         {
             CORINFO_CONTEXT_HANDLE context = MAKE_METHODCONTEXT((CORINFO_METHOD_HANDLE)tree->gtHnd);
             if (!getDevirtualizedMethodLookup(pending->target.token, pending->caller, pending->target.method, context,
@@ -6962,6 +6982,10 @@ GenTree* Compiler::fgMaterializeMethodContext(GenTreeRuntimeLookup* tree)
         pending->preparedLookup = new (this, CMK_Inlining) CORINFO_LOOKUP(lookup);
     }
 
+    if (tree->IsClassHandle())
+    {
+        return getLookupTree(pending->preparedLookup, GTF_ICON_CLASS_HDL, pending->type.compileTimeHandle, tree->gtOp1);
+    }
     return getLookupTree(pending->preparedLookup, GTF_ICON_METHOD_HDL, tree->gtHnd, tree->gtOp1);
 }
 
@@ -7564,7 +7588,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, bool* optAssertionPropDone)
         case GT_RUNTIMELOOKUP:
             if (tree->AsRuntimeLookup()->gtDeferredLookup != nullptr)
             {
-                return fgMorphTree(fgMaterializeMethodContext(tree->AsRuntimeLookup()));
+                return fgMorphTree(fgMaterializeDeferredLookup(tree->AsRuntimeLookup()));
             }
             return fgMorphTree(op1);
 

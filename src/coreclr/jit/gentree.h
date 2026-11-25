@@ -9202,13 +9202,34 @@ struct GenTreeAllocObj final : public GenTreeUnOp
 #endif
 };
 
+// A projection of a root method parameter, optionally wrapped in SZARRAYs.
+struct MethodTypeArgument
+{
+    unsigned index;
+    unsigned arrayDepth;
+
+    // Bound the size of the composed signature passed to the EE.
+    static constexpr unsigned MaxArrayDepth = 32;
+
+    static bool TryRead(PCCOR_SIGNATURE&          sig,
+                        unsigned&                 size,
+                        const MethodTypeArgument* bindings,
+                        unsigned                  arity,
+                        MethodTypeArgument*       result);
+};
+
 // An ordinary MethodSpec can be re-resolved from its metadata identity. A
 // devirtualized MethodSpec names the declaration in IL and the override in its
 // resolved handles, so retain the token supplied by the EE for that case.
-struct DeferredMethodLookup
+struct DeferredHandleLookup
 {
     union
     {
+        struct
+        {
+            MethodTypeArgument     expression;
+            CORINFO_GENERIC_HANDLE compileTimeHandle;
+        } type;
         struct
         {
             CORINFO_CONTEXT_HANDLE context;
@@ -9233,7 +9254,7 @@ struct GenTreeRuntimeLookup final : public GenTreeUnOp
     CORINFO_GENERIC_HANDLE   gtHnd;
     CorInfoGenericHandleType gtHndType;
     // While pending, gtOp1 supplies the input dictionary to the lookup.
-    DeferredMethodLookup* gtDeferredLookup = nullptr;
+    DeferredHandleLookup* gtDeferredLookup = nullptr;
 
     GenTreeRuntimeLookup(CORINFO_GENERIC_HANDLE hnd, CorInfoGenericHandleType hndTyp, GenTree* tree)
         : GenTreeUnOp(GT_RUNTIMELOOKUP, tree->gtType, tree DEBUGARG(/*largeNode*/ FALSE))

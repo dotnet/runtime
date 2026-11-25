@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Xunit;
 
@@ -53,6 +54,24 @@ public class ForwardedMethodTypeArgument
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static Type Recursive<T, U>(int depth) => depth == 0 ? typeof(U) : Recursive<T, U>(depth - 1);
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Type ArrayOfSecond<A, B>() => Inner<B[]>();
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Type NestedArray<T, U>() => ArrayOfSecond<U, T>();
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Type Jagged<T, U>(bool wrap) => Mixed<U[]>(wrap);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Type Rectangular<T, U>() => Inner<U[,]>();
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Type GenericWrapper<T, U>() => Inner<List<U[]>>();
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Type Pair<T, U>() => ArrayOfSecond<T, Dictionary<U, T>>();
+
     private class Owner<T>
     {
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -80,6 +99,15 @@ public class ForwardedMethodTypeArgument
         Assert.Equal(typeof(object), NestedKept<object, string>());
         Assert.Equal(typeof(string), NestedKept<string, object>());
         Assert.Equal(typeof(string), Recursive<object, string>(2));
+        Assert.Equal(typeof(string[]), NestedArray<string, object>());
+        Assert.Equal(typeof(object[]), NestedArray<object, string>());
+        Assert.Equal(typeof(int[]), NestedArray<int, string>());
+        Assert.Equal(typeof(string[]), Jagged<object, string>(false));
+        Assert.Equal(typeof(string[][]), Jagged<object, string>(true));
+        Assert.Equal(typeof(int[][]), Jagged<string, int>(true));
+        Assert.Equal(typeof(string[,]), Rectangular<object, string>());
+        Assert.Equal(typeof(List<string[]>), GenericWrapper<object, string>());
+        Assert.Equal(typeof(Dictionary<string, object>[]), Pair<object, string>());
         Assert.Equal(typeof(string), Owner<string>.Forward<object>(true));
         Assert.Equal(typeof(object), Owner<string>.Forward<object>(false));
     }

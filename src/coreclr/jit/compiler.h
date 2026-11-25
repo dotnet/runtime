@@ -6038,10 +6038,10 @@ private:
 
     void impConvertToUserCallAndMarkForInlining(GenTreeCall* call);
     GenTree* impDeferredMethodContext(CORINFO_RESOLVED_TOKEN* token, CORINFO_CONTEXT_HANDLE targetContext, CORINFO_METHOD_HANDLE devirtualizedMethod = nullptr);
-    unsigned* impForwardedMethodArgs(CORINFO_RESOLVED_TOKEN* token, unsigned arity);
+    MethodTypeArgument* impForwardedMethodArgs(CORINFO_RESOLVED_TOKEN* token, unsigned arity);
     bool getDevirtualizedMethodLookup(CORINFO_RESOLVED_TOKEN* target, CORINFO_METHOD_HANDLE caller, CORINFO_METHOD_HANDLE method,
                                       CORINFO_CONTEXT_HANDLE context, CORINFO_LOOKUP* result);
-    GenTree* fgMaterializeMethodContext(GenTreeRuntimeLookup* tree);
+    GenTree* fgMaterializeDeferredLookup(GenTreeRuntimeLookup* tree);
     void impMarkInlineCandidate(GenTree*               call,
                                 CORINFO_CONTEXT_HANDLE exactContextHnd,
                                 CORINFO_CALL_INFO*     callInfo,

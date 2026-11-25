@@ -13,7 +13,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
 #include "jitpch.h"
-#include "cor.h"
 #ifdef _MSC_VER
 #pragma hdrstop
 #endif
@@ -1284,28 +1283,41 @@ GenTree* Compiler::impTokenToHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken,
 
     if (compIsForInlining() && (impInlineInfo->inlineCandidateInfo->rootMethodArgs != nullptr) && !importParent &&
         (pResolvedToken->hMethod == nullptr) && (pResolvedToken->hField == nullptr) &&
-        (pResolvedToken->tokenType == CORINFO_TOKENKIND_Ldtoken) && (pResolvedToken->cbTypeSpec >= 2) &&
-        (pResolvedToken->pTypeSpec[0] == ELEMENT_TYPE_MVAR))
+        (pResolvedToken->tokenType == CORINFO_TOKENKIND_Ldtoken))
     {
-        uint32_t index, bytes;
-        if (SUCCEEDED(
-                CorSigUncompressData(pResolvedToken->pTypeSpec + 1, pResolvedToken->cbTypeSpec - 1, &index, &bytes)) &&
-            (bytes == pResolvedToken->cbTypeSpec - 1) && (index < info.compMethodInfo->args.sigInst.methInstCount) &&
-            eeIsSharedInst(pResolvedToken->hClass))
+        PCCOR_SIGNATURE      sig  = pResolvedToken->pTypeSpec;
+        unsigned             size = pResolvedToken->cbTypeSpec;
+        MethodTypeArgument   arg;
+        InlineCandidateInfo* candidate = impInlineInfo->inlineCandidateInfo;
+        if ((sig != nullptr) &&
+            MethodTypeArgument::TryRead(sig, size, candidate->rootMethodArgs,
+                                        info.compMethodInfo->args.sigInst.methInstCount, &arg) &&
+            (size == 0) && eeIsSharedInst(pResolvedToken->hClass))
         {
-            InlineCandidateInfo* candidate = impInlineInfo->inlineCandidateInfo;
-            CORINFO_LOOKUP       lookup{};
+            if (pRuntimeLookup != nullptr)
+            {
+                *pRuntimeLookup = true;
+            }
+            if (arg.arrayDepth != 0)
+            {
+                Compiler* root = impInlineRoot();
+                GenTree*  tree =
+                    gtNewRuntimeLookup((CORINFO_GENERIC_HANDLE)pResolvedToken->hClass, CORINFO_HANDLETYPE_CLASS,
+                                       root->getRuntimeContextTree(CORINFO_LOOKUP_METHODPARAM));
+                auto* pending                             = new (this, CMK_Inlining) DeferredHandleLookup{};
+                pending->type.expression                  = arg;
+                tree->AsRuntimeLookup()->gtDeferredLookup = pending;
+                JITDUMP("Forward inlinee array type as root !!%u with %u SZARRAYs\n", arg.index, arg.arrayDepth);
+                return tree;
+            }
+            CORINFO_LOOKUP lookup{};
             lookup.lookupKind.needsRuntimeLookup = true;
             lookup.lookupKind.runtimeLookupKind  = CORINFO_LOOKUP_METHODPARAM;
             lookup.runtimeLookup.indirections    = 2;
             lookup.runtimeLookup.sizeOffset      = CORINFO_NO_SIZE_CHECK;
             lookup.runtimeLookup.offsets[0]      = candidate->rootInstantiationOffset;
-            lookup.runtimeLookup.offsets[1]      = candidate->rootMethodArgs[index] * TARGET_POINTER_SIZE;
-            if (pRuntimeLookup != nullptr)
-            {
-                *pRuntimeLookup = true;
-            }
-            JITDUMP("Forward inlinee !!%u as root !!%u\n", index, candidate->rootMethodArgs[index]);
+            lookup.runtimeLookup.offsets[1]      = arg.index * TARGET_POINTER_SIZE;
+            JITDUMP("Forward inlinee type as root !!%u\n", arg.index);
             GenTree* handle = impInlineRoot()->impRuntimeLookupToTree(&lookup, pResolvedToken->hClass);
             return gtNewRuntimeLookup((CORINFO_GENERIC_HANDLE)pResolvedToken->hClass, CORINFO_HANDLETYPE_CLASS, handle);
         }

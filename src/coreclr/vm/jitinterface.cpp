@@ -2731,6 +2731,28 @@ void CEEInfo::embedGenericHandle(
 
     JIT_TO_EE_TRANSITION();
 
+    CORINFO_RESOLVED_TOKEN expression;
+    if (pResolvedToken->tokenType == CORINFO_TOKENKIND_TypeExpression)
+    {
+        _ASSERTE(!fEmbedParent && pResolvedToken->token == mdTokenNil &&
+                 pResolvedToken->tokenContext == METHOD_BEING_COMPILED_CONTEXT() &&
+                 GetMethod(callerHandle) == m_pMethodBeingCompiled &&
+                 pResolvedToken->tokenScope == GetScopeHandle(m_pMethodBeingCompiled) &&
+                 pResolvedToken->pTypeSpec != nullptr && pResolvedToken->cbTypeSpec > 0);
+        expression = *pResolvedToken;
+        Module* module = GetModule(expression.tokenScope);
+        SigTypeContext context;
+        GetTypeContext(expression.tokenContext, &context);
+        SigPointer sig(expression.pTypeSpec, expression.cbTypeSpec);
+        TypeHandle type = sig.GetTypeHandleThrowing(module, &context);
+        if (!module->IsSystem())
+        {
+            EnsureActive(type);
+        }
+        expression.hClass = CORINFO_CLASS_HANDLE(type.AsPtr());
+        pResolvedToken = &expression;
+    }
+
     embedGenericHandleInternal(pResolvedToken, fEmbedParent, callerHandle, pResult);
 
     EE_TO_JIT_TRANSITION();

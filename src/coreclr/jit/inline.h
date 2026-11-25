@@ -604,8 +604,8 @@ struct InlineCandidateInfo : public HandleHistogramProfileCandidateInfo
     CORINFO_RESOLVED_TOKEN guardedMethodUnboxedResolvedToken; // hMethod is the unboxed entry; token data is used by R2R
     unsigned               likelihood;
 
-    // One root method parameter per inlinee method parameter, when all are forwarded.
-    unsigned*           rootMethodArgs          = nullptr;
+    // Each inlinee method argument expressed in the root method context.
+    MethodTypeArgument* rootMethodArgs          = nullptr;
     unsigned            rootInstantiationOffset = 0;
     CORINFO_METHOD_INFO methInfo;
 

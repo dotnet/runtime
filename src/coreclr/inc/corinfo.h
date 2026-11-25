@@ -1497,6 +1497,9 @@ enum CorInfoTokenKind
     // token comes from devirtualizing a method
     CORINFO_TOKENKIND_DevirtualizedMethod = 0x800 | CORINFO_TOKENKIND_Method,
 
+    // Signature-only query to embedGenericHandle in the root method context.
+    CORINFO_TOKENKIND_TypeExpression = 0x4000 | CORINFO_TOKENKIND_Class,
+
     // token comes from runtime async awaiting pattern
     CORINFO_TOKENKIND_Await = 0x2000 | CORINFO_TOKENKIND_Method,
 };
@@ -3381,6 +3384,8 @@ public:
     // code is shared and the token contains generic parameters)
     // then indicate how the handle should be looked up at run-time.
     //
+    // A TypeExpression supplies pTypeSpec/cbTypeSpec in the caller's scope
+    // without a metadata token. Currently used for SZARRAYs of forwarded method parameters.
     CORINFO_VIRTUAL void embedGenericHandle(
             CORINFO_RESOLVED_TOKEN *        pResolvedToken,
             bool                            fEmbedParent, // `true` - embeds parent type handle of the field/method handle

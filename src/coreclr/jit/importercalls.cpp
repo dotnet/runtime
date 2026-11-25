@@ -5,9 +5,48 @@
 #include "cor.h"
 #include "async.h"
 
+// Read SZARRAY* MVAR from a TypeSpec or MethodSpec. Substitution replaces the
+// parameter at the leaf and preserves the array constructors around it.
+bool MethodTypeArgument::TryRead(PCCOR_SIGNATURE&          sig,
+                                 unsigned&                 size,
+                                 const MethodTypeArgument* bindings,
+                                 unsigned                  arity,
+                                 MethodTypeArgument*       result)
+{
+    unsigned depth = 0;
+    while ((size != 0) && (*sig == ELEMENT_TYPE_SZARRAY))
+    {
+        if (++depth > MaxArrayDepth)
+        {
+            return false;
+        }
+        sig++;
+        size--;
+    }
+    if ((size < 2) || (*sig++ != ELEMENT_TYPE_MVAR))
+    {
+        return false;
+    }
+    size--;
+    uint32_t index, bytes;
+    if (FAILED(CorSigUncompressData(sig, size, &index, &bytes)) || (index >= arity))
+    {
+        return false;
+    }
+    MethodTypeArgument arg = (bindings == nullptr) ? MethodTypeArgument{index, 0} : bindings[index];
+    if (depth + arg.arrayDepth > MaxArrayDepth)
+    {
+        return false;
+    }
+    *result = {arg.index, arg.arrayDepth + depth};
+    sig += bytes;
+    size -= bytes;
+    return true;
+}
+
 // Map callee method parameters to the parameters of the root caller. Keep the
 // usual dictionary lookup if any argument or enclosing binding is unavailable.
-unsigned* Compiler::impForwardedMethodArgs(CORINFO_RESOLVED_TOKEN* token, unsigned arity)
+MethodTypeArgument* Compiler::impForwardedMethodArgs(CORINFO_RESOLVED_TOKEN* token, unsigned arity)
 {
     InlineCandidateInfo* parent = compIsForInlining() ? impInlineInfo->inlineCandidateInfo : nullptr;
     if ((parent != nullptr) && (parent->rootMethodArgs == nullptr))
@@ -29,28 +68,19 @@ unsigned* Compiler::impForwardedMethodArgs(CORINFO_RESOLVED_TOKEN* token, unsign
     }
     sig += bytes;
     size -= bytes;
-    if ((count > size / 2) || (*sig != ELEMENT_TYPE_MVAR))
+    if ((count > size / 2) || ((*sig != ELEMENT_TYPE_MVAR) && (*sig != ELEMENT_TYPE_SZARRAY)))
     {
         return nullptr;
     }
 
-    unsigned* args = getAllocator(CMK_Inlining).allocate<unsigned>(count);
+    MethodTypeArgument* args = getAllocator(CMK_Inlining).allocate<MethodTypeArgument>(count);
     for (unsigned i = 0; i < count; i++)
     {
-        if ((size < 2) || (*sig++ != ELEMENT_TYPE_MVAR))
+        if (!MethodTypeArgument::TryRead(sig, size, (parent == nullptr) ? nullptr : parent->rootMethodArgs,
+                                         info.compMethodInfo->args.sigInst.methInstCount, &args[i]))
         {
             return nullptr;
         }
-        size--;
-        uint32_t index;
-        if (FAILED(CorSigUncompressData(sig, size, &index, &bytes)) ||
-            (index >= info.compMethodInfo->args.sigInst.methInstCount))
-        {
-            return nullptr;
-        }
-        args[i] = (parent == nullptr) ? index : parent->rootMethodArgs[index];
-        sig += bytes;
-        size -= bytes;
     }
     return size == 0 ? args : nullptr;
 }
@@ -80,7 +110,7 @@ GenTree* Compiler::impDeferredMethodContext(CORINFO_RESOLVED_TOKEN* token,
         }
     }
 
-    auto* pending   = new (this, CMK_Inlining) DeferredMethodLookup{};
+    auto* pending   = new (this, CMK_Inlining) DeferredHandleLookup{};
     pending->caller = info.compMethodHnd;
     if (devirtualizedMethod != nullptr)
     {
@@ -336,7 +366,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     const int              tailCallFlags                  = (prefixFlags & PREFIX_TAILCALL);
     const bool             isReadonlyCall                 = (prefixFlags & PREFIX_READONLY) != 0;
 
-    unsigned*             forwardedArgs   = nullptr;
+    MethodTypeArgument*   forwardedArgs   = nullptr;
     CORINFO_METHOD_HANDLE forwardedTarget = nullptr;
     methodPointerInfo*    ldftnInfo       = nullptr;
 
