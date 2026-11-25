@@ -2114,8 +2114,7 @@ namespace Internal.JitInterface
             // properly.
             NativeMemory.Fill(pResult, (nuint)sizeof(CORINFO_CALL_INFO), 0xcc);
 #endif
-            pResult->forwardedInstantiationOffset = 0;
-            pResult->forwardedArgumentOffset = 0;
+            pResult->methodInstantiationOffset = 0;
             pResult->codePointerOrStubLookup.lookupKind.needsRuntimeLookup = false;
 
             originalMethod = HandleToObject(pResolvedToken.hMethod);

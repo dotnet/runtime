@@ -6035,6 +6035,7 @@ public:
 private:
 
     void impConvertToUserCallAndMarkForInlining(GenTreeCall* call);
+    void impRecordForwardedMethodArgs(InlineCandidateInfo* candidate, CORINFO_RESOLVED_TOKEN* token, unsigned tableOffset);
     void impMarkInlineCandidate(GenTree*               call,
                                 CORINFO_CONTEXT_HANDLE exactContextHnd,
                                 CORINFO_CALL_INFO*     callInfo,

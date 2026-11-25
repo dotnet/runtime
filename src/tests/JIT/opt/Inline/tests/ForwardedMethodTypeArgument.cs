@@ -23,6 +23,24 @@ public class ForwardedMethodTypeArgument
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static Type OuterArray<T, U>() => Inner<U[]>();
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Type Middle<A, B>() => Inner<B>();
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Type Swapped<T, U>() => Middle<U, T>();
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Type Pick<A, B, C>(bool first) => first ? typeof(A) : Inner<C>();
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Type Repeat<A, B>(bool first) => Pick<B, B, A>(first);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Type ThreeLevels<T, U>(bool first) => Repeat<U, T>(first);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Type Constructed<T, U>() => Middle<U, T[]>();
+
     private class Owner<T>
     {
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -40,6 +58,13 @@ public class ForwardedMethodTypeArgument
         Assert.Equal(typeof(object[]), OuterMixed<string, object>(true));
         Assert.Equal(typeof(int), OuterMixed<string, int>(false));
         Assert.Equal(typeof(string[]), OuterArray<object, string>());
+        Assert.Equal(typeof(string), Swapped<string, object>());
+        Assert.Equal(typeof(object), Swapped<object, string>());
+        Assert.Equal(typeof(string), ThreeLevels<string, object>(true));
+        Assert.Equal(typeof(object), ThreeLevels<string, object>(false));
+        Assert.Equal(typeof(int), ThreeLevels<int, string>(true));
+        Assert.Equal(typeof(string), ThreeLevels<int, string>(false));
+        Assert.Equal(typeof(object[]), Constructed<object, string>());
         Assert.Equal(typeof(string), Owner<string>.Forward<object>(true));
         Assert.Equal(typeof(object), Owner<string>.Forward<object>(false));
     }

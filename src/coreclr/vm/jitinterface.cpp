@@ -5529,33 +5529,21 @@ void CEEInfo::getCallInfo(
         }
     }
 
-    pResult->forwardedMethodArg = {};
+    pResult->methodInstantiationOffset = 0;
     pResult->instParamLookup = {};
     if (pResult->sig.hasTypeArg() && pResult->exactContextNeedsRuntimeLookup)
     {
         pResult->instParamLookup.lookupKind.needsRuntimeLookup = true;
         pResult->instParamLookup.lookupKind.runtimeLookupKind = CORINFO_LOOKUP_DEFERRED;
-        // For a direct M<!!n> call, the caller's MethodDesc already contains the type
-        // handle that ldtoken !!0 would otherwise load through the callee's context.
         MethodDesc* caller = GetMethod(callerHandle);
-        if (pResult->kind == CORINFO_CALL && pResolvedToken->tokenContext == METHOD_BEING_COMPILED_CONTEXT() &&
-            pConstrainedResolvedToken == nullptr && !caller->IsILStub() && !caller->IsDynamicMethod() &&
-            pResolvedToken->tokenScope == GetScopeHandle(caller) && pMD->IsStatic() && pMD->HasSameMethodDefAs(pTargetMD) &&
-            pMD->GetNumGenericMethodArgs() == 1 && pMD->GetMethodInstantiation()[0].IsCanonicalSubtype() &&
-            caller->RequiresInstMethodDescArg() && pResolvedToken->tokenType == CORINFO_TOKENKIND_Method &&
-            pResolvedToken->pMethodSpec != nullptr)
+        MethodDesc* context = GetMethodFromContext(pResolvedToken->tokenContext);
+        if (pResult->kind == CORINFO_CALL && pConstrainedResolvedToken == nullptr && pMD->IsStatic() &&
+            pMD->HasSameMethodDefAs(pTargetMD) && pMD->HasMethodInstantiation() && context != nullptr &&
+            context->HasSameMethodDefAs(caller) && caller->RequiresInstMethodDescArg() &&
+            !caller->IsILStub() && !caller->IsDynamicMethod() && pResolvedToken->tokenScope == GetScopeHandle(caller) &&
+            pResolvedToken->tokenType == CORINFO_TOKENKIND_Method && pResolvedToken->pMethodSpec != nullptr)
         {
-            SigPointer sig(pResolvedToken->pMethodSpec, pResolvedToken->cbMethodSpec);
-            uint32_t convention, count, index;
-            CorElementType type;
-            if (SUCCEEDED(sig.GetCallingConvInfo(&convention)) && convention == IMAGE_CEE_CS_CALLCONV_GENERICINST &&
-                SUCCEEDED(sig.GetData(&count)) && count == 1 && SUCCEEDED(sig.GetElemType(&type)) &&
-                type == ELEMENT_TYPE_MVAR && SUCCEEDED(sig.GetData(&index)) &&
-                index < caller->GetNumGenericMethodArgs() && index <= UINT16_MAX / sizeof(TypeHandle))
-            {
-                pResult->forwardedMethodArg.instantiationOffset = offsetof(InstantiatedMethodDesc, m_pPerInstInfo);
-                pResult->forwardedMethodArg.argumentOffset = (uint16_t)(index * sizeof(TypeHandle));
-            }
+            pResult->methodInstantiationOffset = offsetof(InstantiatedMethodDesc, m_pPerInstInfo);
         }
     }
     else if (pResult->sig.hasTypeArg())

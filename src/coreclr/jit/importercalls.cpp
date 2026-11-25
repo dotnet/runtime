@@ -2,7 +2,65 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "jitpch.h"
+#include "cor.h"
 #include "async.h"
+
+// Map callee method parameters to the parameters of the root caller. Keep the
+// usual dictionary lookup if any argument or enclosing binding is unavailable.
+void Compiler::impRecordForwardedMethodArgs(InlineCandidateInfo*    candidate,
+                                            CORINFO_RESOLVED_TOKEN* token,
+                                            unsigned                tableOffset)
+{
+    InlineCandidateInfo* parent = compIsForInlining() ? impInlineInfo->inlineCandidateInfo : nullptr;
+    if ((parent != nullptr) && (parent->rootMethodArgs == nullptr))
+    {
+        return;
+    }
+
+    PCCOR_SIGNATURE sig  = token->pMethodSpec;
+    unsigned        size = token->cbMethodSpec;
+    if ((sig == nullptr) || (size < 2) || (*sig++ != IMAGE_CEE_CS_CALLCONV_GENERICINST))
+    {
+        return;
+    }
+    size--;
+    uint32_t count, bytes;
+    if (FAILED(CorSigUncompressData(sig, size, &count, &bytes)) || (count == 0) ||
+        (count != candidate->methInfo.args.sigInst.methInstCount))
+    {
+        return;
+    }
+    sig += bytes;
+    size -= bytes;
+    if ((count > size / 2) || (*sig != ELEMENT_TYPE_MVAR))
+    {
+        return;
+    }
+
+    unsigned* args = getAllocator(CMK_Inlining).allocate<unsigned>(count);
+    for (unsigned i = 0; i < count; i++)
+    {
+        if ((size < 2) || (*sig++ != ELEMENT_TYPE_MVAR))
+        {
+            return;
+        }
+        size--;
+        uint32_t index;
+        if (FAILED(CorSigUncompressData(sig, size, &index, &bytes)) ||
+            (index >= info.compMethodInfo->args.sigInst.methInstCount))
+        {
+            return;
+        }
+        args[i] = (parent == nullptr) ? index : parent->rootMethodArgs[index];
+        sig += bytes;
+        size -= bytes;
+    }
+    if (size == 0)
+    {
+        candidate->rootMethodArgs          = args;
+        candidate->rootInstantiationOffset = (parent == nullptr) ? tableOffset : parent->rootInstantiationOffset;
+    }
+}
 
 //------------------------------------------------------------------------
 // impGetInstParamArg: compute the hidden instantiation argument from the EE-supplied lookup.
@@ -869,7 +927,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
             instParam =
                 impGetInstParamArg(pResolvedToken, pConstrainedResolvedToken, callInfo, clsFlags, isReadonlyCall);
-            if (!compIsForInlining() && (opcode == CEE_CALL) && (callInfo->forwardedMethodArg.instantiationOffset != 0))
+            if ((opcode == CEE_CALL) && (callInfo->methodInstantiationOffset != 0))
             {
                 forwardedTarget = callInfo->hMethod;
             }
@@ -1368,7 +1426,8 @@ DONE:
         if ((forwardedTarget != nullptr) && call->AsCall()->IsInlineCandidate() &&
             !call->AsCall()->IsGuardedDevirtualizationCandidate() && (call->AsCall()->gtCallMethHnd == forwardedTarget))
         {
-            call->AsCall()->GetSingleInlineCandidateInfo()->forwardedMethodArg = callInfo->forwardedMethodArg;
+            impRecordForwardedMethodArgs(call->AsCall()->GetSingleInlineCandidateInfo(), pResolvedToken,
+                                         callInfo->methodInstantiationOffset);
         }
 
         // If the call is virtual, extra information for possible use during late devirt inlining.

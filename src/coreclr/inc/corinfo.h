@@ -1531,13 +1531,6 @@ struct CORINFO_RESOLVED_TOKEN
     uint32_t                cbMethodSpec;
 };
 
-// Optional lookup for a direct call forwarding a single method type parameter.
-struct CORINFO_FORWARDED_METHOD_ARG
-{
-    unsigned short instantiationOffset; // Zero if no binding is available.
-    unsigned short argumentOffset;
-};
-
 struct CORINFO_CALL_INFO
 {
     CORINFO_METHOD_HANDLE   hMethod;            //target method handle
@@ -1565,7 +1558,9 @@ struct CORINFO_CALL_INFO
     // Context for inlining and hidden arg
     CORINFO_CONTEXT_HANDLE  contextHandle;
     bool                    exactContextNeedsRuntimeLookup; // Set if contextHandle is approx handle. Runtime lookup is required to get the exact handle.
-    CORINFO_FORWARDED_METHOD_ARG forwardedMethodArg;
+    // For an ordinary MethodSpec call, nonzero if the caller's method arguments
+    // are a vector of type handles reached at this offset from its MethodDesc.
+    unsigned short methodInstantiationOffset;
 
     // If kind.CORINFO_VIRTUALCALL_STUB then stubLookup will be set.
     // If kind.CORINFO_CALL_CODE_POINTER then codePointerLookup will be set.
