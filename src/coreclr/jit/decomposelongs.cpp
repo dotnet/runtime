@@ -135,6 +135,11 @@ GenTree* DecomposeLongs::DecomposeNode(GenTree* tree)
         }
     }
 
+    if (tree->OperIs(GT_STORE_LCL_VARS))
+    {
+        return DecomposeStoreLclVars(tree->AsStoreLclVars());
+    }
+
 #if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_X86)
     // On x86, long->floating casts are implemented in DecomposeCast.
     // Those nodes, plus any nodes that produce a long, will be examined.
@@ -524,6 +529,118 @@ GenTree* DecomposeLongs::DecomposeStoreLclVar(LIR::Use& use)
     Range().InsertAfter(tree, hiStore);
 
     return hiStore->gtNext;
+}
+
+//------------------------------------------------------------------------
+// DecomposeStoreLclVars: Decompose the long destinations of GT_STORE_LCL_VARS.
+//
+// Arguments:
+//    store - the multiple-definition store
+//
+// Return Value:
+//    The next node to process.
+//
+// Remarks:
+//    Each long destination is split into destinations for its low and high
+//    halves at the original offset and offset + 4, replacing the destination
+//    array on the same node. Promoted longs use their field locals; other longs
+//    use INT temps and are reassembled by following stores from GT_LONG.
+//
+GenTree* DecomposeLongs::DecomposeStoreLclVars(GenTreeStoreLclVars* store)
+{
+    unsigned count = 0;
+    for (unsigned i = 0; i < store->gtCount; i++)
+    {
+        count += varTypeIsLong(m_compiler->lvaGetDesc(store->GetDestination(i).LclNum)) ? 2 : 1;
+    }
+
+    GenTree* next = store->gtNext;
+    if (count == store->gtCount)
+    {
+        return next;
+    }
+
+    JITDUMP("Decomposing long destinations of [%06u]\n", Compiler::dspTreeID(store));
+
+    GenTreeStoreLclVars::Destination* destinations =
+        new (m_compiler, CMK_ASTNode) GenTreeStoreLclVars::Destination[count]{};
+
+    LIR::Range longStores;
+    unsigned   index     = 0;
+    unsigned   tempCount = 0;
+    for (unsigned i = 0; i < store->gtCount; i++)
+    {
+        const GenTreeStoreLclVars::Destination& dest = store->GetDestination(i);
+        LclVarDsc*                              dsc  = m_compiler->lvaGetDesc(dest.LclNum);
+        if (!varTypeIsLong(dsc))
+        {
+            destinations[index++] = dest;
+            continue;
+        }
+
+        unsigned loLclNum;
+        unsigned hiLclNum;
+        if (dsc->lvPromoted)
+        {
+            assert(dsc->lvFieldCnt == 2);
+            loLclNum = dsc->lvFieldLclStart;
+            hiLclNum = loLclNum + 1;
+        }
+        else
+        {
+            loLclNum = GetStoreLclVarsTemp(tempCount++);
+            hiLclNum = GetStoreLclVarsTemp(tempCount++);
+
+            GenTree* lo    = m_compiler->gtNewLclvNode(loLclNum, TYP_INT);
+            GenTree* hi    = m_compiler->gtNewLclvNode(hiLclNum, TYP_INT);
+            GenTree* value = new (m_compiler, GT_LONG) GenTreeOp(GT_LONG, TYP_LONG, lo, hi);
+            longStores.InsertAtEnd(LIR::SeqTree(m_compiler, m_compiler->gtNewStoreLclVarNode(dest.LclNum, value)));
+        }
+
+        GenTreeStoreLclVars::Destination& loDest = destinations[index++];
+        loDest.LclNum                            = loLclNum;
+        loDest.Offset                            = dest.Offset;
+
+        GenTreeStoreLclVars::Destination& hiDest = destinations[index++];
+        hiDest.LclNum                            = hiLclNum;
+        hiDest.Offset                            = dest.Offset + 4;
+    }
+
+    assert(index == count);
+    store->gtDestinations = destinations;
+    store->gtCount        = count;
+
+    // Stores of non-promoted longs from GT_LONG are left for codegen, so
+    // there is nothing to decompose in the inserted nodes.
+    Range().InsertAfter(store, std::move(longStores));
+    return next;
+}
+
+//------------------------------------------------------------------------
+// GetStoreLclVarsTemp: Get an INT temp that receives half of a non-promoted
+// long defined by GT_STORE_LCL_VARS.
+//
+// Arguments:
+//    index - the index of the temp within the current store
+//
+// Return Value:
+//    The local number of the temp.
+//
+// Remarks:
+//    Each store indexes the pool from zero. Temps die at the following stores
+//    that reassemble the longs, so subsequent stores can reuse them.
+//
+unsigned DecomposeLongs::GetStoreLclVarsTemp(unsigned index)
+{
+    assert(index <= m_storeLclVarsTemps.size());
+    if (index == m_storeLclVarsTemps.size())
+    {
+        unsigned lclNum = m_compiler->lvaGrabTemp(true DEBUGARG("long half of multi-local store"));
+        m_compiler->lvaGetDesc(lclNum)->lvType = TYP_INT;
+        m_storeLclVarsTemps.push_back(lclNum);
+    }
+
+    return m_storeLclVarsTemps[index];
 }
 
 //------------------------------------------------------------------------

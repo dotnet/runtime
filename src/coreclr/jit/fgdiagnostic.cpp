@@ -3402,7 +3402,7 @@ void Compiler::fgDebugCheckFlagsAndTypes(GenTree* tree, BasicBlock* block)
             {
                 GenTreeStoreLclVars::Destination& dest = store->GetDestination(i);
                 LclVarDsc*                        dsc  = lvaGetDesc(dest.LclNum);
-                assert(!varTypeIsStruct(dsc) && !dsc->lvPromoted && !dsc->IsAddressExposed());
+                assert(!dsc->TypeIs(TYP_STRUCT) && !dsc->lvPromoted && !dsc->IsAddressExposed());
                 assert((dest.Flags & (GTF_VAR_DEF | GTF_VAR_USEASG)) == GTF_VAR_DEF);
                 assert(dest.Offset <= sourceSize && genTypeSize(dsc) <= sourceSize - dest.Offset);
                 for (unsigned j = 0; j < i; j++)

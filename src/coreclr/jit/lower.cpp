@@ -6376,8 +6376,6 @@ GenTreeStoreLclVars* Lowering::TryLowerStoreLclVarsByExtraction(GenTreeStoreLclV
     {
         regLcls[r] = m_compiler->lvaGrabTemp(true DEBUGARG(m_compiler->printfAlloc("Return register %u", r)));
         m_compiler->lvaGetDesc(regLcls[r])->lvType = genActualType(ret.GetReturnRegType(r));
-        // The call may have been retyped to a primitive already, so set the
-        // destination directly instead of via gtSetStoreLclVarsDestination.
         GenTreeStoreLclVars::Destination& dest = capture->GetDestination(r);
         dest.LclNum                            = regLcls[r];
         dest.Offset                            = ret.GetReturnFieldOffset(r);

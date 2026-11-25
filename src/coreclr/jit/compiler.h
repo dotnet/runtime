@@ -3446,7 +3446,9 @@ public:
 
     GenTreeLclVar* gtNewStoreLclVarNode(unsigned lclNum, GenTree* value);
     GenTreeStoreLclVars* gtNewStoreLclVarsNode(GenTree* source, unsigned count);
-    void gtSetStoreLclVarsDestination(GenTreeStoreLclVars* store, unsigned index, unsigned lclNum, unsigned offset);
+    GenTreeStoreLclVars* gtNewStoreLclVarsNode(GenTree*                          source,
+                                               GenTreeStoreLclVars::Destination* destinations,
+                                               unsigned                          count);
 
     static bool gtCanExtractRegisterField(bool fromFloatReg, var_types fieldType, unsigned offset);
     GenTree*    gtNewRegisterFieldExtraction(unsigned regLclNum, var_types fieldType, unsigned offset);

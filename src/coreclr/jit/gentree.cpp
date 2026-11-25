@@ -10370,7 +10370,7 @@ GenTree* Compiler::gtNewConWithPattern(var_types type, uint8_t pattern)
 }
 
 //------------------------------------------------------------------------
-// gtNewStoreLclVarsNode: Create a simultaneous scalar-local store.
+// gtNewStoreLclVarsNode: Create a simultaneous multi-local store.
 //
 // Arguments:
 //    source - The sole evaluated operand
@@ -10382,22 +10382,30 @@ GenTree* Compiler::gtNewConWithPattern(var_types type, uint8_t pattern)
 GenTreeStoreLclVars* Compiler::gtNewStoreLclVarsNode(GenTree* source, unsigned count)
 {
     GenTreeStoreLclVars::Destination* destinations = new (this, CMK_ASTNode) GenTreeStoreLclVars::Destination[count]{};
-    return new (this, GT_STORE_LCL_VARS) GenTreeStoreLclVars(source, destinations, count);
+    return gtNewStoreLclVarsNode(source, destinations, count);
 }
 
-// Each definition record owns ordinary scalar SSA/liveness/register state.
-void Compiler::gtSetStoreLclVarsDestination(GenTreeStoreLclVars* store,
-                                            unsigned             index,
-                                            unsigned             lclNum,
-                                            unsigned             offset)
+//------------------------------------------------------------------------
+// gtNewStoreLclVarsNode: Create a simultaneous multi-local store that uses
+// an existing array of destinations.
+//
+// Arguments:
+//    source       - The sole evaluated operand
+//    destinations - The compiler-allocated destination array
+//    count        - Number of destinations
+//
+// Return Value:
+//    The created node.
+//
+// Remarks:
+//    The node uses the array directly without copying it; its storage must
+//    remain valid for the node's lifetime.
+//
+GenTreeStoreLclVars* Compiler::gtNewStoreLclVarsNode(GenTree*                          source,
+                                                     GenTreeStoreLclVars::Destination* destinations,
+                                                     unsigned                          count)
 {
-    LclVarDsc* dsc = lvaGetDesc(lclNum);
-    assert(!varTypeIsStruct(dsc) && !dsc->lvPromoted && !dsc->IsAddressExposed());
-    assert(offset <= store->Data()->GetLayout(this)->GetSize() &&
-           genTypeSize(dsc) <= store->Data()->GetLayout(this)->GetSize() - offset);
-    GenTreeStoreLclVars::Destination& destination = store->GetDestination(index);
-    destination.LclNum                            = lclNum;
-    destination.Offset                            = offset;
+    return new (this, GT_STORE_LCL_VARS) GenTreeStoreLclVars(source, destinations, count);
 }
 
 //------------------------------------------------------------------------

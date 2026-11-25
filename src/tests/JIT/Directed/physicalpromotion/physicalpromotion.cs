@@ -6,8 +6,10 @@ namespace JitTest_Directed_physicalpromotion_physicalpromotion;
 
 using System.Runtime.CompilerServices;
 using System;
+using System.Numerics;
 using Xunit;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 public class PhysicalPromotion
 {
@@ -281,6 +283,47 @@ public class PhysicalPromotion
     }
 
     [Theory]
+    [InlineData(0x123456789ABCDEF0)]
+    [InlineData(-3)]
+    public static unsafe void StoreUnmanagedLongCallResult(long value)
+    {
+        // On x86 this is returned in EAX:EDX, so the long field spans two registers.
+        LongReturn result = ((delegate* unmanaged[Cdecl]<long, LongReturn>)&MakeUnmanagedLong)(value);
+        Assert.Equal(value, result.A);
+        Assert.Equal((int)(value >> 32), (int)(result.A >> 32));
+        Consume(result);
+    }
+
+    [Theory]
+    [InlineData(3)]
+    [InlineData(-17)]
+    public static void StoreVectorCallResult(int value)
+    {
+        VectorReturn vectors = MakeVectors(value);
+        Assert.Equal(Vector128.Create(value), vectors.A);
+        Assert.Equal(Vector128.Create(value + 1), vectors.B);
+        Consume(vectors);
+
+        Vector2Return vector2 = MakeVector2(value);
+        Assert.Equal(new Vector2(value, value + 1), vector2.A);
+        Assert.Equal(new Vector2(value + 2, value + 3), vector2.B);
+        Consume(vector2);
+    }
+
+    [Theory]
+    [InlineData(3)]
+    [InlineData(-17)]
+    public static void StorePaddedCallResult(int value)
+    {
+        // B is only read through the struct, so it is stored back next to
+        // the padding that follows it.
+        PaddedReturn padded = MakePadded(value);
+        Assert.Equal((value + 2) * 4, padded.C + padded.C * 3);
+        Assert.Equal((byte)(value + 1), GetPaddedB(padded));
+        Assert.Equal(value, padded.A);
+    }
+
+    [Theory]
     [InlineData(-1, false)]
     [InlineData(128, true)]
     [InlineData(32768, true)]
@@ -462,6 +505,24 @@ public class PhysicalPromotion
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static UnsignedShortReturn MakeUnsignedShort(int value) => new UnsignedShortReturn { Value = (ushort)value };
 
+    [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) })]
+    private static LongReturn MakeUnmanagedLong(long value) => new LongReturn { A = value };
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static VectorReturn MakeVectors(int value) =>
+        new VectorReturn { A = Vector128.Create(value), B = Vector128.Create(value + 1) };
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Vector2Return MakeVector2(int value) =>
+        new Vector2Return { A = new Vector2(value, value + 1), B = new Vector2(value + 2, value + 3) };
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static PaddedReturn MakePadded(int value) =>
+        new PaddedReturn { A = value, B = (byte)(value + 1), C = value + 2 };
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static byte GetPaddedB(PaddedReturn value) => value.B;
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void Collect() => GC.Collect();
 
@@ -520,6 +581,28 @@ public class PhysicalPromotion
     {
         public ref int A;
         public long B;
+    }
+
+    private struct LongReturn
+    {
+        public long A;
+    }
+
+    private struct VectorReturn
+    {
+        public Vector128<int> A, B;
+    }
+
+    private struct Vector2Return
+    {
+        public Vector2 A, B;
+    }
+
+    private struct PaddedReturn
+    {
+        public long A;
+        public byte B;
+        public int C;
     }
 
     private struct SignedByteReturn
