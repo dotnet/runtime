@@ -22240,6 +22240,55 @@ bool Compiler::gtIsTypeof(GenTree* tree, CORINFO_CLASS_HANDLE* handle)
 }
 
 //------------------------------------------------------------------------
+// gtIsSpanLength: Check whether a node loads the length field of a Span<T>.
+//
+// Arguments:
+//    tree - the node to check
+//
+// Return Value:
+//    True if "tree" is an "int" load of "Span<T>._length", either as a field of
+//    an unpromoted span local (LCL_FLD) or through an implicit byref span (an
+//    indirection at the length offset).
+//
+// Notes:
+//    Span lengths are never negative, so recognizing them lets range analysis
+//    treat comparisons against them as checked bounds, matching the promoted
+//    case where the length field local carries the "never negative" flag.
+//
+bool Compiler::gtIsSpanLength(GenTree* tree)
+{
+    if (!tree->TypeIs(TYP_INT))
+    {
+        return false;
+    }
+
+    if (tree->OperIs(GT_LCL_FLD))
+    {
+        GenTreeLclFld* const lclFld = tree->AsLclFld();
+        return lvaGetDesc(lclFld)->IsSpan() && (lclFld->GetLclOffs() == OFFSETOF__CORINFO_Span__length);
+    }
+
+    if (tree->OperIs(GT_IND))
+    {
+        GenTree* const addr = tree->AsIndir()->Addr();
+
+        if (addr->OperIs(GT_ADD) && addr->gtGetOp1()->OperIs(GT_LCL_VAR) &&
+            addr->gtGetOp2()->IsIntegralConst(OFFSETOF__CORINFO_Span__length))
+        {
+            GenTreeLclVar* const lclVar = addr->gtGetOp1()->AsLclVar();
+
+            if (lvaGetDesc(lclVar->GetLclNum())->IsSpan())
+            {
+                assert(lvaIsImplicitByRefLocal(lclVar->GetLclNum()));
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
 // gtCallGetDefinedRetBufLclAddr:
 //   Get the tree corresponding to the address of the retbuf that this call defines.
 //
@@ -23408,9 +23457,61 @@ bool GenTree::isEmbeddedMaskingCompatible(Compiler*  comp,
     var_types                 simdBaseType = node->GetSimdBaseType();
     var_types                 simdType     = node->TypeGet();
 
-    instruction ins             = HWIntrinsicInfo::lookupIns(intrinsic, simdBaseType, comp);
-    unsigned    maskBaseSize    = CodeGenInterface::instKMaskBaseSize(ins);
-    unsigned    tgtMaskBaseSize = tgtMaskSize / (genTypeSize(simdType) / 16);
+    instruction ins = HWIntrinsicInfo::lookupIns(intrinsic, simdBaseType, comp);
+
+    switch (ins)
+    {
+        case INS_cvtpd2dq:
+        case INS_cvtpd2ps:
+        case INS_cvttpd2dq:
+        case INS_vcvtdq2ph:
+        case INS_vcvtneps2bf16:
+        case INS_vcvtpd2ph:
+        case INS_vcvtpd2udq:
+        case INS_vcvtps2ph:
+        case INS_vcvtps2phx:
+        case INS_vcvtqq2ph:
+        case INS_vcvtqq2ps:
+        case INS_vcvttpd2dqs:
+        case INS_vcvttpd2udq:
+        case INS_vcvttpd2udqs:
+        case INS_vcvtudq2ph:
+        case INS_vcvtuqq2ph:
+        case INS_vcvtuqq2ps:
+        case INS_vpmovdb:
+        case INS_vpmovdw:
+        case INS_vpmovqb:
+        case INS_vpmovqd:
+        case INS_vpmovqw:
+        case INS_vpmovsdb:
+        case INS_vpmovsdw:
+        case INS_vpmovsqb:
+        case INS_vpmovsqd:
+        case INS_vpmovsqw:
+        case INS_vpmovswb:
+        case INS_vpmovusdb:
+        case INS_vpmovusdw:
+        case INS_vpmovusqb:
+        case INS_vpmovusqd:
+        case INS_vpmovusqw:
+        case INS_vpmovuswb:
+        case INS_vpmovwb:
+        {
+            // Narrowing conversions apply the write mask per (narrower) destination element, with
+            // the element count set by the source vector length, and zero any destination bits
+            // above the converted elements. The mask size checks below assume the mask lanes
+            // evenly cover the result type, which doesn't hold here.
+            return false;
+        }
+
+        default:
+        {
+            break;
+        }
+    }
+
+    unsigned maskBaseSize    = CodeGenInterface::instKMaskBaseSize(ins);
+    unsigned tgtMaskBaseSize = tgtMaskSize / (genTypeSize(simdType) / 16);
 
     tgtSimdBaseType = TYP_UNDEF;
 
@@ -36159,10 +36260,10 @@ bool GenTree::CanDivOrModPossiblyOverflow(Compiler* comp) const
 #if defined(FEATURE_HW_INTRINSICS)
 #if defined(FEATURE_MASKED_HW_INTRINSICS) && defined(TARGET_ARM64)
 //------------------------------------------------------------------------
-// GenTree::IsSveMaskOperand:
+// GenTree::CanBeSveMask:
 //   Return true if this node can be represented directly as an SVE predicate.
 //
-bool GenTree::IsSveMaskOperand() const
+bool GenTree::CanBeSveMask() const
 {
     return OperIsConvertMaskToVector() || varTypeIsMask(this) || IsVectorZero();
 }
@@ -36463,7 +36564,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
         for (size_t i = firstVectorOperand; (i <= opCount) && canFold; i++)
         {
             GenTree* operand = tree->Op(i);
-            canFold          = operand->IsSveMaskOperand() &&
+            canFold          = operand->CanBeSveMask() &&
                       (!operand->OperIsConvertMaskToVector() ||
                        (genTypeSize(operand->AsHWIntrinsic()->GetSimdBaseType()) == genTypeSize(simdBaseType)));
         }

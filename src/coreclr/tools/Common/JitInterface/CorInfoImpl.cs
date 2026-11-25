@@ -5037,7 +5037,7 @@ namespace Internal.JitInterface
 
 #if READYTORUN
             if (_compilation.NodeFactory.PgoInstrumentationSchemas is not null)
-                flags.Set(CorJitFlag.CORJIT_FLAG_BBINSTR);
+                flags.Set(CorJitFlag.CORJIT_FLAG_PGO_INSTR);
 #endif
 
             flags.InstructionSetFlags.Add(_compilation.InstructionSetSupport.OptimisticFlags);

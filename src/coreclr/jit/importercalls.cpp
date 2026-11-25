@@ -10701,7 +10701,7 @@ void Compiler::impConsiderCallProbe(GenTreeCall* call, IL_OFFSET ilOffset)
 {
     // Possibly instrument.
     //
-    if (!opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR))
+    if (!opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PGO_INSTR))
     {
         return;
     }
@@ -10745,7 +10745,7 @@ void Compiler::impConsiderCallProbe(GenTreeCall* call, IL_OFFSET ilOffset)
 //
 Compiler::GDVProbeType Compiler::compClassifyGDVProbeType(GenTreeCall* call)
 {
-    if (!opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR))
+    if (!opts.IsInstrumented())
     {
         return GDVProbeType::None;
     }

@@ -40,6 +40,18 @@ namespace ILLink.RoslynAnalyzer.Tests
         }
 
         [Fact]
+        public Task LibraryModeForwarderIsRemoved()
+        {
+            return RunTest(allowMissingWarnings: true);
+        }
+
+        [Fact]
+        public Task LibraryModeSkippedForwarderIsReferenced()
+        {
+            return RunTest(allowMissingWarnings: true);
+        }
+
+        [Fact]
         public Task LibraryWithUnresolvedInterfaces()
         {
             return RunTest(allowMissingWarnings: true);
