@@ -1281,7 +1281,7 @@ GenTree* Compiler::impTokenToHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken,
 {
     assert(!fgGlobalMorph);
 
-    if (compIsForInlining() && (impInlineInfo->inlineCandidateInfo->rootMethodArgs != nullptr) && !importParent &&
+    if (compIsForInlining() && impInlineInfo->inlineCandidateInfo->HasRootTypeArguments() && !importParent &&
         (pResolvedToken->hMethod == nullptr) && (pResolvedToken->hField == nullptr) &&
         (pResolvedToken->tokenType == CORINFO_TOKENKIND_Ldtoken))
     {
@@ -1303,6 +1303,7 @@ GenTree* Compiler::impTokenToHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                     gtNewRuntimeLookup((CORINFO_GENERIC_HANDLE)pResolvedToken->hClass, CORINFO_HANDLETYPE_CLASS,
                                        root->getRuntimeContextTree(root->impRuntimeContextKind()));
                 auto* pending                             = new (this, CMK_Inlining) DeferredHandleLookup{};
+                pending->kind                             = DeferredHandleLookup::Kind::TypeExpression;
                 pending->type.expression                  = arg;
                 tree->AsRuntimeLookup()->gtDeferredLookup = pending;
                 JITDUMP("Forward inlinee type as a root signature (%u bytes)\n", arg.signatureSize);

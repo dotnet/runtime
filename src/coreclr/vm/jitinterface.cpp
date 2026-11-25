@@ -5567,7 +5567,7 @@ void CEEInfo::getCallInfo(
         }
     }
 
-    pResult->canForwardMethodSpec = false;
+    pResult->canForwardTypeArguments = false;
     pResult->methodInstantiationOffset = 0;
     pResult->instParamLookup = {};
     if (pResult->sig.hasTypeArg() && pResult->exactContextNeedsRuntimeLookup)
@@ -5575,15 +5575,26 @@ void CEEInfo::getCallInfo(
         pResult->instParamLookup.lookupKind.needsRuntimeLookup = true;
         pResult->instParamLookup.lookupKind.runtimeLookupKind = CORINFO_LOOKUP_DEFERRED;
         MethodDesc* caller = GetMethod(callerHandle);
-        MethodDesc* context = GetMethodFromContext(pResolvedToken->tokenContext);
         if (pResult->kind == CORINFO_CALL && pConstrainedResolvedToken == nullptr && pMD->IsStatic() &&
-            pMD->HasSameMethodDefAs(pTargetMD) && pMD->HasMethodInstantiation() && context != nullptr &&
-            context->HasSameMethodDefAs(caller) && caller->IsSharedByGenericInstantiations() &&
+            pMD->HasSameMethodDefAs(pTargetMD) && caller->IsSharedByGenericInstantiations() &&
             !caller->IsILStub() && !caller->IsDynamicMethod() && pResolvedToken->tokenScope == GetScopeHandle(caller) &&
-            pResolvedToken->tokenType == CORINFO_TOKENKIND_Method && pResolvedToken->pMethodSpec != nullptr)
+            pResolvedToken->tokenType == CORINFO_TOKENKIND_Method &&
+            (pMD->HasMethodInstantiation() ? pResolvedToken->pMethodSpec != nullptr :
+             TypeFromToken(pResolvedToken->token) == mdtMemberRef && pResolvedToken->pTypeSpec != nullptr))
         {
-            pResult->canForwardMethodSpec = true;
-            if (caller->RequiresInstMethodDescArg())
+            MethodDesc* context = GetMethodFromContext(pResolvedToken->tokenContext);
+            if (context != nullptr)
+            {
+                pResult->canForwardTypeArguments = context->HasSameMethodDefAs(caller);
+            }
+            else if (!caller->HasMethodInstantiation())
+            {
+                // A non-generic inlinee can resolve its tokens in its declaring type's context.
+                TypeHandle owner = GetTypeFromContext(pResolvedToken->tokenContext);
+                pResult->canForwardTypeArguments = !owner.IsNull() && !owner.IsTypeDesc() &&
+                    owner.AsMethodTable()->HasSameTypeDefAs(caller->GetMethodTable());
+            }
+            if (pResult->canForwardTypeArguments && caller->RequiresInstMethodDescArg())
             {
                 pResult->methodInstantiationOffset = offsetof(InstantiatedMethodDesc, m_pPerInstInfo);
             }

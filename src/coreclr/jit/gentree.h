@@ -9227,11 +9227,18 @@ struct MethodTypeArgument
                         MethodTypeArgument*           result);
 };
 
-// An ordinary MethodSpec can be re-resolved from its metadata identity. A
+// An ordinary call can be re-resolved from its metadata identity. A
 // devirtualized MethodSpec names the declaration in IL and the override in its
 // resolved handles, so retain the token supplied by the EE for that case.
 struct DeferredHandleLookup
 {
+    enum class Kind : uint8_t
+    {
+        TypeExpression,
+        CallContext,
+        DevirtualizedMethodContext,
+    };
+
     union
     {
         struct
@@ -9252,7 +9259,7 @@ struct DeferredHandleLookup
     };
     CORINFO_METHOD_HANDLE caller;
     mdToken               token;
-    bool                  devirtualized;
+    Kind                  kind;
     CORINFO_LOOKUP*       preparedLookup = nullptr;
 };
 

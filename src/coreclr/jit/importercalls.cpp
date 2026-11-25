@@ -244,7 +244,7 @@ bool Compiler::impReadInlineType(const CORINFO_RESOLVED_TOKEN& token, MethodType
 
     if (compIsForInlining())
     {
-        if (impInlineInfo->inlineCandidateInfo->rootMethodArgs == nullptr)
+        if (!impInlineInfo->inlineCandidateInfo->HasRootTypeArguments())
         {
             return false;
         }
@@ -327,7 +327,7 @@ MethodTypeArgument* Compiler::impForwardedTypeArgs(const CORINFO_RESOLVED_TOKEN&
                                                    unsigned                      arity,
                                                    CORINFO_METHOD_HANDLE         declaringMethod)
 {
-    if ((arity == 0) || (compIsForInlining() && (impInlineInfo->inlineCandidateInfo->rootMethodArgs == nullptr)))
+    if ((arity == 0) || (compIsForInlining() && !impInlineInfo->inlineCandidateInfo->HasRootTypeArguments()))
     {
         return nullptr;
     }
@@ -388,11 +388,12 @@ MethodTypeArgument* Compiler::impForwardedTypeArgs(const CORINFO_RESOLVED_TOKEN&
 
 // Keep the input dictionary on the hidden argument. Morph prepares the lookup
 // only if the argument is still used after inlining.
-GenTree* Compiler::impDeferredMethodContext(CORINFO_RESOLVED_TOKEN* token,
-                                            CORINFO_CONTEXT_HANDLE  targetContext,
-                                            CORINFO_METHOD_HANDLE   devirtualizedMethod)
+GenTree* Compiler::impDeferredCallContext(CORINFO_RESOLVED_TOKEN* token,
+                                          CORINFO_CONTEXT_HANDLE  targetContext,
+                                          CORINFO_METHOD_HANDLE   devirtualizedMethod)
 {
-    assert(((size_t)targetContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD);
+    bool methodContext = ((size_t)targetContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD;
+    assert((devirtualizedMethod == nullptr) || methodContext);
     CORINFO_RUNTIME_LOOKUP_KIND contextKind = impRuntimeContextKind();
     if (contextKind == CORINFO_LOOKUP_NOT_SUPPORTED)
     {
@@ -404,20 +405,22 @@ GenTree* Compiler::impDeferredMethodContext(CORINFO_RESOLVED_TOKEN* token,
     if (devirtualizedMethod != nullptr)
     {
         assert(token->tokenType == CORINFO_TOKENKIND_DevirtualizedMethod);
-        pending->devirtualized = true;
+        pending->kind          = DeferredHandleLookup::Kind::DevirtualizedMethodContext;
         pending->target.method = devirtualizedMethod;
         pending->target.token  = new (this, CMK_Inlining) CORINFO_RESOLVED_TOKEN(*token);
     }
     else
     {
         assert(token->tokenType == CORINFO_TOKENKIND_Method);
+        pending->kind       = DeferredHandleLookup::Kind::CallContext;
         pending->il.context = token->tokenContext;
         pending->il.scope   = token->tokenScope;
         pending->token      = token->token;
     }
 
     CORINFO_GENERIC_HANDLE handle = (CORINFO_GENERIC_HANDLE)((size_t)targetContext & ~CORINFO_CONTEXTFLAGS_MASK);
-    GenTree* result = gtNewRuntimeLookup(handle, CORINFO_HANDLETYPE_METHOD, getRuntimeContextTree(contextKind));
+    GenTree* result = gtNewRuntimeLookup(handle, methodContext ? CORINFO_HANDLETYPE_METHOD : CORINFO_HANDLETYPE_CLASS,
+                                         getRuntimeContextTree(contextKind));
     result->AsRuntimeLookup()->gtDeferredLookup = pending;
     return result;
 }
@@ -655,7 +658,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     const int              tailCallFlags                  = (prefixFlags & PREFIX_TAILCALL);
     const bool             isReadonlyCall                 = (prefixFlags & PREFIX_READONLY) != 0;
 
-    MethodTypeArgument*   forwardedArgs   = nullptr;
+    MethodTypeArgument*   methodArgs      = nullptr;
+    MethodTypeArgument*   ownerArgs       = nullptr;
     CORINFO_METHOD_HANDLE forwardedTarget = nullptr;
     methodPointerInfo*    ldftnInfo       = nullptr;
 
@@ -1296,20 +1300,21 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
             assert(opcode != CEE_CALLI);
 
-            if ((opcode == CEE_CALL) && callInfo->canForwardMethodSpec &&
-                (TypeFromToken(pResolvedToken->token) == mdtMethodSpec) && !IsAot() && !opts.MinOpts())
+            if ((opcode == CEE_CALL) && callInfo->canForwardTypeArguments && !IsAot() && !opts.MinOpts())
             {
-                forwardedArgs = impForwardedTypeArgs(*pResolvedToken, sig->sigInst.methInstCount, nullptr);
+                methodArgs = impForwardedTypeArgs(*pResolvedToken, sig->sigInst.methInstCount, nullptr);
+                if (methodArgs == nullptr)
+                {
+                    ownerArgs = impForwardedTypeArgs(*pResolvedToken, sig->sigInst.classInstCount, callInfo->hMethod);
+                }
             }
 
-            if (forwardedArgs != nullptr)
+            if ((methodArgs != nullptr) || (ownerArgs != nullptr))
             {
                 assert(pConstrainedResolvedToken == nullptr && callInfo->kind == CORINFO_CALL);
-                assert((reinterpret_cast<size_t>(callInfo->contextHandle) & CORINFO_CONTEXTFLAGS_MASK) ==
-                       CORINFO_CONTEXTFLAGS_METHOD);
                 assert(callInfo->instParamLookup.lookupKind.runtimeLookupKind == CORINFO_LOOKUP_DEFERRED);
                 forwardedTarget = callInfo->hMethod;
-                instParam       = impDeferredMethodContext(pResolvedToken, callInfo->contextHandle);
+                instParam       = impDeferredCallContext(pResolvedToken, callInfo->contextHandle);
             }
             else
             {
@@ -1822,9 +1827,14 @@ DONE:
         {
             InlineCandidateInfo* candidate = call->AsCall()->GetSingleInlineCandidateInfo();
             assert(candidate->methInfo.args.sigInst.methInstCount == sig->sigInst.methInstCount);
-            candidate->rootMethodArgs = forwardedArgs;
+            assert((ownerArgs == nullptr) ||
+                   (candidate->methInfo.args.sigInst.classInstCount == sig->sigInst.classInstCount));
+            candidate->rootMethodArgs = methodArgs;
             candidate->rootClassArgs =
-                impForwardedTypeArgs(*pResolvedToken, candidate->methInfo.args.sigInst.classInstCount, forwardedTarget);
+                ownerArgs != nullptr
+                    ? ownerArgs
+                    : impForwardedTypeArgs(*pResolvedToken, candidate->methInfo.args.sigInst.classInstCount,
+                                           forwardedTarget);
             candidate->rootInstantiationOffset = compIsForInlining()
                                                      ? impInlineInfo->inlineCandidateInfo->rootInstantiationOffset
                                                      : callInfo->methodInstantiationOffset;
@@ -10614,7 +10624,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         if (!IsAot() && !isLateDevirtualization && derivedSig.hasTypeArg() &&
             (pDerivedResolvedToken->tokenType == CORINFO_TOKENKIND_DevirtualizedMethod))
         {
-            deferredInstParam = impDeferredMethodContext(pDerivedResolvedToken, exactContext, derivedMethod);
+            deferredInstParam = impDeferredCallContext(pDerivedResolvedToken, exactContext, derivedMethod);
         }
 
         if ((deferredInstParam == nullptr) &&

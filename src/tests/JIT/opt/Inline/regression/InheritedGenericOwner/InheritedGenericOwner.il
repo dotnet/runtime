@@ -6,6 +6,12 @@
 .assembly InheritedGenericOwner {}
 .module InheritedGenericOwner.dll
 .class public OwnerTestBase`2<A,B> extends [System.Runtime]System.Object {
+    .method public static class [System.Runtime]System.Type GetOwner() cil managed aggressiveinlining {
+        .maxstack 1
+        ldtoken !0
+        call class [System.Runtime]System.Type [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
+        ret
+    }
     .method public static class [System.Runtime]System.Type Get<X>() cil managed aggressiveinlining {
         .maxstack 1
         ldtoken !0
@@ -21,11 +27,20 @@
         call class [System.Runtime]System.Type class OwnerTestDerived`2<!!0,!!1>::Get<!!0>()
         ret
     }
+    .method public static class [System.Runtime]System.Type IndirectOwner<P,Q>() cil managed noinlining {
+        .maxstack 1
+        call class [System.Runtime]System.Type class OwnerTestDerived`2<!!0,!!1>::GetOwner()
+        ret
+    }
     .method public static int32 Main() cil managed {
         .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (01 00 00 00)
         .entrypoint
         .maxstack 2
         call class [System.Runtime]System.Type InheritedOwnerTest::Indirect<string,object>()
+        ldtoken [System.Runtime]System.Object
+        call class [System.Runtime]System.Type [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
+        bne.un.s FAIL
+        call class [System.Runtime]System.Type InheritedOwnerTest::IndirectOwner<string,object>()
         ldtoken [System.Runtime]System.Object
         call class [System.Runtime]System.Type [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
         bne.un.s FAIL

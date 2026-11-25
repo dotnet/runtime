@@ -111,6 +111,18 @@ public class ForwardedMethodTypeArgument
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         public Type KeptFromThis() => Kept<T[]>();
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public Type OwnerOnly() => CalleeOwner<List<T>>.Get();
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static Type OwnerRelay() => CalleeOwner<List<T>>.GetArray();
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static Type OwnerKept() => CalleeOwner<List<T>>.GetKept();
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static Type Initialized() => InitializedOwner<T>.Get();
     }
 
     private sealed class DerivedOwner<P, Q> : Owner<Q> { }
@@ -129,8 +141,27 @@ public class ForwardedMethodTypeArgument
         public Type Instance() => Inner<List<T[]>>();
     }
 
+    private static int s_typeInitializers;
+
+    private class InitializedOwner<T>
+    {
+        static InitializedOwner() => s_typeInitializers++;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Type Get() => typeof(T);
+    }
+
     private class CalleeOwner<A>
     {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Type Get() => typeof(A);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Type GetArray() => Inner<A[]>();
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static Type GetKept() => typeof(A);
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Type Pair<B>() => typeof(Dictionary<A, B>);
 
@@ -271,6 +302,14 @@ public class ForwardedMethodTypeArgument
         Assert.Equal(typeof(ForwardedArgumentBox<PairType<string, object>>), CrossModule<string, object>());
         Assert.Equal(typeof(ForwardedArgumentBox<PairType<object, string>>), CrossModule<object, string>());
         var derived = new DerivedOwner<object, string>();
+        Assert.Equal(typeof(List<string>), derived.OwnerOnly());
+        Assert.Equal(typeof(List<object>), new DerivedOwner<string, object>().OwnerOnly());
+        Assert.Equal(typeof(List<string>[]), Owner<string>.OwnerRelay());
+        Assert.Equal(typeof(List<object>), Owner<object>.OwnerKept());
+        Assert.Equal(typeof(string), Owner<string>.Initialized());
+        Assert.Equal(typeof(string), Owner<string>.Initialized());
+        Assert.Equal(typeof(object), Owner<object>.Initialized());
+        Assert.Equal(2, s_typeInitializers);
         Assert.Equal(typeof(string), derived.InstanceElement());
         Assert.Equal(typeof(object), new DerivedOwner<string, object>().InstanceElement());
         Assert.Equal(typeof(Owner<string>), derived.InstanceOwner());

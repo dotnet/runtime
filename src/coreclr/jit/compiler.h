@@ -6038,7 +6038,7 @@ public:
 private:
 
     void impConvertToUserCallAndMarkForInlining(GenTreeCall* call);
-    GenTree* impDeferredMethodContext(CORINFO_RESOLVED_TOKEN* token, CORINFO_CONTEXT_HANDLE targetContext, CORINFO_METHOD_HANDLE devirtualizedMethod = nullptr);
+    GenTree* impDeferredCallContext(CORINFO_RESOLVED_TOKEN* token, CORINFO_CONTEXT_HANDLE targetContext, CORINFO_METHOD_HANDLE devirtualizedMethod = nullptr);
     // Exact constructed types of single-definition reference locals during inlining, in the root context.
     using LocalTypeExpressionMap = JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, MethodTypeArgument>;
     LocalTypeExpressionMap* impLocalTypeExpressions = nullptr;

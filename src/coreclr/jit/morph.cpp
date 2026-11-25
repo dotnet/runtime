@@ -6927,11 +6927,12 @@ GenTreeOp* Compiler::fgMorphCommutative(GenTreeOp* tree)
 GenTree* Compiler::fgMaterializeDeferredLookup(GenTreeRuntimeLookup* tree)
 {
     assert(!compIsForInlining());
-    DeferredHandleLookup* pending = tree->gtDeferredLookup;
+    DeferredHandleLookup* pending        = tree->gtDeferredLookup;
+    const bool            typeExpression = pending->kind == DeferredHandleLookup::Kind::TypeExpression;
     if (pending->preparedLookup == nullptr)
     {
         CORINFO_LOOKUP lookup;
-        if (tree->IsClassHandle())
+        if (typeExpression)
         {
             const MethodTypeArgument arg = pending->type.expression;
             CORINFO_RESOLVED_TOKEN   expression{};
@@ -6945,7 +6946,7 @@ GenTree* Compiler::fgMaterializeDeferredLookup(GenTreeRuntimeLookup* tree)
             lookup                          = result.lookup;
             pending->type.compileTimeHandle = result.compileTimeHandle;
         }
-        else if (pending->devirtualized)
+        else if (pending->kind == DeferredHandleLookup::Kind::DevirtualizedMethodContext)
         {
             CORINFO_CONTEXT_HANDLE context = MAKE_METHODCONTEXT((CORINFO_METHOD_HANDLE)tree->gtHnd);
             if (!getDevirtualizedMethodLookup(pending->target.token, pending->caller, pending->target.method, context,
@@ -6966,7 +6967,7 @@ GenTree* Compiler::fgMaterializeDeferredLookup(GenTreeRuntimeLookup* tree)
             CORINFO_CALL_INFO callInfo;
             info.compCompHnd->getCallInfo(&token, nullptr, pending->caller,
                                           CORINFO_CALLINFO_ALLOWINSTPARAM | CORINFO_CALLINFO_SECURITYCHECKS, &callInfo);
-            assert(callInfo.kind == CORINFO_CALL && callInfo.sig.hasTypeArg() && callInfo.canForwardMethodSpec);
+            assert(callInfo.kind == CORINFO_CALL && callInfo.sig.hasTypeArg() && callInfo.canForwardTypeArguments);
             assert(callInfo.instParamLookup.lookupKind.runtimeLookupKind == CORINFO_LOOKUP_DEFERRED);
             assert((size_t)tree->gtHnd == ((size_t)callInfo.contextHandle & ~CORINFO_CONTEXTFLAGS_MASK));
             info.compCompHnd->prepareCallLookups(&token, nullptr, pending->caller, &callInfo);
@@ -6975,11 +6976,12 @@ GenTree* Compiler::fgMaterializeDeferredLookup(GenTreeRuntimeLookup* tree)
         pending->preparedLookup = new (this, CMK_Inlining) CORINFO_LOOKUP(lookup);
     }
 
-    if (tree->IsClassHandle())
+    if (typeExpression)
     {
         return getLookupTree(pending->preparedLookup, GTF_ICON_CLASS_HDL, pending->type.compileTimeHandle, tree->gtOp1);
     }
-    return getLookupTree(pending->preparedLookup, GTF_ICON_METHOD_HDL, tree->gtHnd, tree->gtOp1);
+    return getLookupTree(pending->preparedLookup, tree->IsClassHandle() ? GTF_ICON_CLASS_HDL : GTF_ICON_METHOD_HDL,
+                         tree->gtHnd, tree->gtOp1);
 }
 
 //------------------------------------------------------------------------

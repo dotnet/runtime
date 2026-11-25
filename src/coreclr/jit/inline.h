@@ -608,6 +608,12 @@ struct InlineCandidateInfo : public HandleHistogramProfileCandidateInfo
     MethodTypeArgument* rootClassArgs           = nullptr;
     MethodTypeArgument* rootMethodArgs          = nullptr;
     unsigned            rootInstantiationOffset = 0;
+
+    bool HasRootTypeArguments() const
+    {
+        return (rootClassArgs != nullptr) || (rootMethodArgs != nullptr);
+    }
+
     CORINFO_METHOD_INFO methInfo;
 
     // the logical IL caller of this inlinee.
