@@ -535,8 +535,9 @@ off for normal R2R training: interpreter method discovery does not require
 counters. If both producers collect counters for the same method, for example
 when a method runs both as an R2R inlinee and in the interpreter, the runtime
 logs a diagnostic and omits that method's counters rather than mixing
-interpreter block counts with R2R edge counts. Other methods' profiles and
-interpreter method discovery are unaffected.
+interpreter block counts with R2R edge counts. If only one producer recorded
+observations, its profile is kept. Other methods' profiles and interpreter
+method discovery are unaffected.
 
 Use the conversion option below to include metadata-backed interpreter methods
 from existing method-load/rundown events. These are method-presence roots for the

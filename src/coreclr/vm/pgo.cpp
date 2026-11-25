@@ -266,6 +266,7 @@ void PgoManager::LogInstrumentationData()
                 INT32 count;
             };
             StackSArray<HistogramSamples> histogramSamples;
+            HeaderList* interpreterSource = nullptr;
             bool nonzero = false;
             bool haveBlocks = false;
             bool haveEdges = false;
@@ -290,22 +291,23 @@ void PgoManager::LogInstrumentationData()
                     interpreterProfile |= schema[k].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount;
                 if (interpreterProfile)
                 {
-                    // Preserve the opt-in interpreter producer, but never mix its coarse blocks with R2R edges.
-                    if (j != i || next[j] != UINT32_MAX)
-                        return false;
-                    SchemaWriterFunctor writer(source);
+                    bool observed = false;
                     for (COUNT_T k = 0; k < schema.GetCount(); k++)
                     {
-                        if (!writer(schema[k]))
-                            return false;
+                        const ICorJitInfo::PgoInstrumentationSchema& item = schema[k];
+                        if (item.InstrumentationKind != ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount)
+                            continue;
+                        const UINT32* counts = reinterpret_cast<const UINT32*>(source->header.GetData() + item.Offset);
+                        for (INT32 slot = 0; slot < item.Count; slot++)
+                            observed |= counts[slot] != 0;
                     }
-                    if (!writer.writer.Finish())
-                        return false;
-                    ETW::MethodLog::LogMethodInstrumentationData(primary->header.method,
-                        writer.byteData.GetCount(), writer.byteData.GetElements(),
-                        writer.typeHandlesEncountered.GetElements(), writer.typeHandlesEncountered.GetCount(),
-                        writer.methodsEncountered.GetElements(), writer.methodsEncountered.GetCount());
-                    return true;
+                    if (observed || (j == i && next[j] == UINT32_MAX))
+                    {
+                        if (interpreterSource != nullptr)
+                            return false;
+                        interpreterSource = source;
+                    }
+                    continue;
                 }
                 for (COUNT_T k = 0; k < schema.GetCount(); k++)
                 {
@@ -399,6 +401,23 @@ void PgoManager::LogInstrumentationData()
                         }
                     }
                 }
+            }
+            // An unobserved allocation does not make the other producer's profile incompatible.
+            if (interpreterSource != nullptr)
+            {
+                if (nonzero)
+                    return false;
+
+                SchemaWriterFunctor writer(interpreterSource);
+                if (!ReadLivePgoInstrumentationSchema(interpreterSource->header.GetData(),
+                    interpreterSource->header.countsOffset, interpreterSource->header.countsOffset, writer) ||
+                    !writer.writer.Finish())
+                    return false;
+                ETW::MethodLog::LogMethodInstrumentationData(primary->header.method,
+                    writer.byteData.GetCount(), writer.byteData.GetElements(),
+                    writer.typeHandlesEncountered.GetElements(), writer.typeHandlesEncountered.GetCount(),
+                    writer.methodsEncountered.GetElements(), writer.methodsEncountered.GetCount());
+                return true;
             }
             if (!nonzero)
                 return true;

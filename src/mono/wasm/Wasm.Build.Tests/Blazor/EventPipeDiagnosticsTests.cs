@@ -211,7 +211,7 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
             extraItems: """
                 <WasmEnvironmentVariable Include="DOTNET_ReadyToRunExcludeList" Value="MixedProfileLibrary" />
                 <WasmEnvironmentVariable Include="DOTNET_InterpPGO" Value="1" />
-                <WasmEnvironmentVariable Include="DOTNET_InterpPGOMethods" Value="*WasmPgoScenarios:MixedProfileTarget" />
+                <WasmEnvironmentVariable Include="DOTNET_InterpPGOMethods" Value="*WasmPgoScenarios:*ProfileTarget" />
                 <Compile Remove="MixedProfileLibrary\**\*.cs" />
                 <ProjectReference Include="MixedProfileLibrary\MixedProfileLibrary.csproj" />
                 """);
@@ -237,6 +237,9 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
             {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 public static int MixedProfileTarget(int value) => value * 7;
+
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                public static int InterpreterProfileTarget(int value) => value * 11;
             }
             """);
         File.WriteAllText(Path.Combine(_projectDir, "WasmPgoScenarios.cs"), """
@@ -253,23 +256,28 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
                 public static int UnrelatedProfileTarget(int value) => value + 1;
 
                 [MethodImpl(MethodImplOptions.NoInlining)]
-                public static int MixedProfileCaller(int value) => MixedProfileLibrary.WasmPgoScenarios.MixedProfileTarget(value);
+                public static int MixedProfileCaller(int value, bool useInterpreterTarget) => useInterpreterTarget
+                    ? MixedProfileLibrary.WasmPgoScenarios.InterpreterProfileTarget(value)
+                    : MixedProfileLibrary.WasmPgoScenarios.MixedProfileTarget(value);
             }
             """);
         UpdateFile(Path.Combine("Pages", "Counter.razor"), new Dictionary<string, string>
         {
             ["currentCount++;"] = """
                 int input = BlazorBasicTestApp.WasmPgoScenarios.UnrelatedProfileTarget(currentCount);
-                int inlined = BlazorBasicTestApp.WasmPgoScenarios.MixedProfileCaller(input);
+                int inlined = BlazorBasicTestApp.WasmPgoScenarios.MixedProfileCaller(input, false);
                 var method = typeof(MixedProfileLibrary.WasmPgoScenarios).GetMethod(nameof(MixedProfileLibrary.WasmPgoScenarios.MixedProfileTarget))!;
+                var interpreterMethod = typeof(MixedProfileLibrary.WasmPgoScenarios).GetMethod(nameof(MixedProfileLibrary.WasmPgoScenarios.InterpreterProfileTarget))!;
                 currentCount = inlined + (int)method.Invoke(null, new object[] { input })!;
+                if ((int)interpreterMethod.Invoke(null, new object[] { input })! != input * 11)
+                    throw new System.Exception("Interpreter profile target returned the wrong result.");
                 """
         });
 
         BlazorPublish(info, Config, new PublishOptions(UseCache: false, AssertAppBundle: false,
             ExtraMSBuildArgs: GetPgoBuildArgs(Config)));
         SaveCompilerLog(info, CompilerLog);
-        AssertCompilerInlines(CompilerLog, "MixedProfileCaller", 1);
+        AssertCompilerInlines(CompilerLog, "MixedProfileCaller", 2);
 
         string tracePath = Path.Combine(info.LogPath, "mixed.nettrace");
         bool skippedIncompatibleProfile = false;
@@ -286,6 +294,7 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
         using var source = new EventPipeEventSource(tracePath);
         long? mixedMethodId = null;
         bool mixedProfileExported = false;
+        bool interpreterProfileExported = false;
         bool unrelatedProfileExported = false;
         bool capturedMixedMethodIdentity = false;
         source.Clr.All += data =>
@@ -295,6 +304,7 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
             else if (data is JitInstrumentationDataVerboseTraceData profile)
             {
                 mixedProfileExported |= profile.MethodName == "MixedProfileTarget";
+                interpreterProfileExported |= profile.MethodName == "InterpreterProfileTarget";
                 unrelatedProfileExported |= profile.MethodName == "UnrelatedProfileTarget";
             }
             else if (data is MethodDetailsTraceData details && unrelatedProfileExported)
@@ -303,6 +313,7 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
         source.Process();
         Assert.NotNull(mixedMethodId);
         Assert.False(mixedProfileExported);
+        Assert.True(interpreterProfileExported, "An unused R2R inlinee schema suppressed the interpreter profile.");
         Assert.True(unrelatedProfileExported, "The unrelated method's profile was not exported.");
         Assert.True(capturedMixedMethodIdentity, "The mixed method's identity was not captured after exporting profiles.");
         Assert.True(skippedIncompatibleProfile, "The runtime did not report the incompatible profile.");
