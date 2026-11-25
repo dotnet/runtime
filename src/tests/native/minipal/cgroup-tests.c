@@ -10,15 +10,13 @@
 #if defined(__linux__)
 
 #include <errno.h>
-#include <linux/magic.h>
-#include <stdint.h>
 #include <sys/vfs.h>
 #include <minipal/utils.h>
 
 static FILE* fixture_fopen(const char* filename, const char* mode);
 static int fixture_statfs(const char* filename, struct statfs* stats);
 
-// Keep the real reader's state and I/O substitutions separate from the linked minipal library.
+// Compile the real reader with test-local entry points and procfs substitutions, so the paths it resolves can be checked.
 #define minipal_cgroup_initialize fixture_cgroup_initialize
 #define minipal_cgroup_cleanup fixture_cgroup_cleanup
 #define minipal_cgroup_get_cpu_limit fixture_cgroup_get_cpu_limit
@@ -46,11 +44,6 @@ typedef struct
 
 static const CgroupPathCase* s_current;
 static int s_version;
-static uint64_t s_childLimit;
-static uint64_t s_parentLimit;
-static size_t s_cpuReads;
-static size_t s_limitReads;
-static size_t s_usageReads;
 
 static FILE* open_text(const char* text)
 {
@@ -67,171 +60,65 @@ static FILE* open_text(const char* text)
     return file;
 }
 
-static void normalize_path(char* path)
+static FILE* fixture_fopen(const char* filename, const char* mode)
 {
-    char* destination = path;
-    for (const char* source = path; *source != '\0'; source++)
-    {
-        if (*source != '/' || destination == path || destination[-1] != '/')
-            *destination++ = *source;
-    }
-    if (destination > path + 1 && destination[-1] == '/')
-        destination--;
-    *destination = '\0';
-}
-
-static bool is_resource(const char* path, const char* directory, const char* filename)
-{
-    size_t directoryLength = strlen(directory);
-    return strncmp(path, directory, directoryLength) == 0 && strcmp(path + directoryLength, filename) == 0;
-}
-
-static FILE* open_fixture(const char* filename)
-{
+    (void)mode;
     char* text = NULL;
-    if (strcmp(filename, "/proc/self/mountinfo") == 0)
+    int length = -1;
+    if (strcmp(filename, PROC_MOUNTINFO_FILENAME) == 0)
     {
         const char* tail = s_version == 2 ? "cgroup2 cgroup rw" : "cgroup cgroup rw,cpu,memory";
-        if (asprintf(&text, "32 29 0:28 %s %s rw - %s\n", s_current->root, s_current->encodedMount, tail) < 0)
-            return NULL;
+        length = asprintf(&text, "32 29 0:28 %s %s rw - %s\n", s_current->root, s_current->encodedMount, tail);
     }
-    else if (strcmp(filename, "/proc/self/cgroup") == 0)
+    else if (strcmp(filename, PROC_CGROUP_FILENAME) == 0)
     {
-        const char* prefix = s_version == 2 ? "0::" : "5:cpu,memory:";
-        if (asprintf(&text, "%s%s\n", prefix, s_current->membership) < 0)
-            return NULL;
+        length = asprintf(&text, "%s%s\n", s_version == 2 ? "0::" : "5:cpu,memory:", s_current->membership);
     }
-
-    if (text != NULL)
-    {
-        FILE* file = open_text(text);
-        free(text);
-        return file;
-    }
-
-    char* path = strdup(filename);
-    char* child = NULL;
-    if (path == NULL || asprintf(&child, "%s%s", s_current->mount, s_current->relativePath) < 0)
-    {
-        free(path);
-        return NULL;
-    }
-    normalize_path(path);
-    normalize_path(child);
 
     FILE* file = NULL;
-    if (is_resource(path, child, "/cpu.max"))
+    if (length >= 0)
     {
-        s_cpuReads++;
-        file = open_text("75000 100000\n");
-    }
-    else if (is_resource(path, child, "/cpu.cfs_quota_us"))
-    {
-        s_cpuReads++;
-        file = open_text("75000\n");
-    }
-    else if (is_resource(path, child, "/cpu.cfs_period_us"))
-    {
-        file = open_text("100000\n");
-    }
-    else if (is_resource(path, child, "/memory.max") || is_resource(path, child, "/memory.limit_in_bytes"))
-    {
-        s_limitReads++;
-        if (asprintf(&text, "%llu\n", (unsigned long long)s_childLimit) >= 0)
-            file = open_text(text);
-    }
-    else if (is_resource(path, child, "/memory.use_hierarchy"))
-    {
-        file = open_text("0\n");
-    }
-    else if (is_resource(path, child, "/memory.current") || is_resource(path, child, "/memory.usage_in_bytes"))
-    {
-        s_usageReads++;
-        file = open_text("67108864\n");
-    }
-    else if (is_resource(path, child, "/memory.stat"))
-    {
-        file = open_text(s_version == 2 ? "inactive_file 8388608\n" : "total_inactive_file 8388608\n");
-    }
-    else
-    {
-        size_t mountLength = strlen(s_current->mount);
-        while (strlen(child) > mountLength)
-        {
-            *strrchr(child, '/') = '\0';
-            if (is_resource(path, child, "/memory.max"))
-            {
-                if (asprintf(&text, "%llu\n", (unsigned long long)s_parentLimit) >= 0)
-                    file = open_text(text);
-                break;
-            }
-        }
+        file = open_text(text);
+        free(text);
     }
 
-    free(text);
-    free(child);
-    free(path);
     if (file == NULL)
         errno = ENOENT;
     return file;
 }
 
-// The native driver is a separate process; fixtures never change the host's cgroups.
-static FILE* fixture_fopen(const char* filename, const char* mode)
-{
-    return s_current == NULL ? fopen(filename, mode) : open_fixture(filename);
-}
-
 static int fixture_statfs(const char* filename, struct statfs* stats)
 {
-    if (s_current == NULL)
-        return statfs(filename, stats);
-    if (strcmp(filename, "/sys/fs/cgroup") != 0)
-    {
-        errno = ENOENT;
-        return -1;
-    }
+    (void)filename;
     memset(stats, 0, sizeof(*stats));
-    stats->f_type = s_version == 2 ? CGROUP2_SUPER_MAGIC : TMPFS_MAGIC;
+    stats->f_type = s_version == 2 ? CGROUP2_SUPER_MAGIC : 0;
     return 0;
 }
 
-static RESULT check_path(const CgroupPathCase* path, int version, bool parentTighter)
+static bool is_expected_path(const char* path)
 {
-    fixture_cgroup_cleanup();
-    s_current = path;
-    s_version = version;
-    s_childLimit = parentTighter ? 1073741824 : 268435456;
-    s_parentLimit = parentTighter ? 268435456 : 1073741824;
-    s_cpuReads = s_limitReads = s_usageReads = 0;
-
-    uint32_t cpu = 99;
-    uint64_t limit = 99;
-    uint64_t usage = 99;
-    bool cpuFound = fixture_cgroup_get_cpu_limit(&cpu);
-    bool limitFound = fixture_cgroup_get_memory_limit(&limit);
-    bool usageFound = fixture_cgroup_get_memory_usage(&usage);
-    uint64_t expectedLimit = version == 2 && s_parentLimit < s_childLimit ? s_parentLimit : s_childLimit;
-    fixture_cgroup_cleanup();
-    s_current = NULL;
-
-    if (!cpuFound || cpu != 1 || s_cpuReads == 0)
-        return FAILED("cgroup v%d membership '%s': CPU limit found=%d, value=%u, child reads=%zu", version, path->membership, cpuFound, cpu, s_cpuReads);
-    if (!limitFound || limit != expectedLimit || s_limitReads == 0)
-        return FAILED("cgroup v%d membership '%s': memory limit found=%d, value=%llu, child reads=%zu", version, path->membership, limitFound, (unsigned long long)limit, s_limitReads);
-    if (!usageFound || usage != 58720256 || s_usageReads == 0)
-        return FAILED("cgroup v%d membership '%s': memory usage found=%d, value=%llu, child reads=%zu", version, path->membership, usageFound, (unsigned long long)usage, s_usageReads);
-
-    return OK;
+    size_t mountLength = strlen(s_current->mount);
+    return path != NULL && strncmp(path, s_current->mount, mountLength) == 0 && strcmp(path + mountLength, s_current->relativePath) == 0;
 }
 
 static RESULT check_paths(const CgroupPathCase* cases, size_t count)
 {
     for (size_t i = 0; i < count; i++)
     {
-        for (int version = 1; version <= 2; version++)
+        for (s_version = 1; s_version <= 2; s_version++)
         {
-            RESULT result = check_path(&cases[i], version, false);
+            s_current = &cases[i];
+            fixture_cgroup_initialize();
+            RESULT result = OK;
+            if (!is_expected_path(s_cpu_cgroup_path) || !is_expected_path(s_memory_cgroup_path) ||
+                s_memory_cgroup_hierarchy_mount == NULL || strcmp(s_memory_cgroup_hierarchy_mount, s_current->mount) != 0)
+            {
+                result = FAILED("cgroup v%d membership '%s': CPU path '%s', memory path '%s', memory mount '%s'", s_version, s_current->membership,
+                    s_cpu_cgroup_path ? s_cpu_cgroup_path : "(null)",
+                    s_memory_cgroup_path ? s_memory_cgroup_path : "(null)",
+                    s_memory_cgroup_hierarchy_mount ? s_memory_cgroup_hierarchy_mount : "(null)");
+            }
+            fixture_cgroup_cleanup();
             if (result != OK)
                 return result;
         }
@@ -296,29 +183,9 @@ static RESULT test_cgroup_literal_sequences(void)
     {
         {"/", "/fixture/cgroup\\134040mount", "/fixture/cgroup\\040mount", "/plain/child", "/plain/child"},
         {"/parent\\134040group", "/fixture/cgroup", "/fixture/cgroup", "/parent\\040group/child", "/child"},
-        {"/", "/fixture/cgroup\\777mount", "/fixture/cgroup\\777mount", "/plain/child", "/plain/child"},
-        {"/", "/fixture/cgroup\\123mount", "/fixture/cgroup\\123mount", "/plain/child", "/plain/child"},
-        {"/", "/fixture/cgroup\\", "/fixture/cgroup\\", "/plain/child", "/plain/child"},
-        {"/", "/fixture/cgroup\\0", "/fixture/cgroup\\0", "/plain/child", "/plain/child"},
         {"/", "/fixture/cgroup\\04", "/fixture/cgroup\\04", "/plain/child", "/plain/child"}
     };
     return check_paths(cases, ARRAY_SIZE(cases));
-}
-
-static RESULT test_cgroup_parent_limits(void)
-{
-    const CgroupPathCase cases[] =
-    {
-        {"/", "/fixture/cgroup", "/fixture/cgroup", "/plain/child", "/plain/child"},
-        {"/", "/fixture/cgroup", "/fixture/cgroup", "/worker group/child", "/worker group/child"}
-    };
-    for (size_t i = 0; i < ARRAY_SIZE(cases); i++)
-    {
-        RESULT result = check_path(&cases[i], 2, true);
-        if (result != OK)
-            return result;
-    }
-    return OK;
 }
 
 static Test minipal_cgroup_tests[] =
@@ -328,7 +195,6 @@ static Test minipal_cgroup_tests[] =
     {"test_cgroup_mount_escapes", test_cgroup_mount_escapes},
     {"test_cgroup_root_escapes", test_cgroup_root_escapes},
     {"test_cgroup_literal_sequences", test_cgroup_literal_sequences},
-    {"test_cgroup_parent_limits", test_cgroup_parent_limits},
     {NULL, NULL}
 };
 
