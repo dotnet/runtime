@@ -103,6 +103,26 @@ public class Program
             Console.WriteLine("\tllvm-dwarfdump --verify " + Environment.ProcessPath);
             return 10;
         }
+
+        // References to classes are resolved to their complete type, there's no separate declaration. Tools
+        // like dsymutil only keep the referenced types, and would drop a complete type that is only found by name.
+        ProcessTextOutput typeResult = Process.RunAndCaptureText(new ProcessStartInfo(llvmDwarfDumpPath, ["--debug-info", "--regex", $"--name=.*_{nameof(Program)}$", Environment.ProcessPath])
+        {
+            InheritedHandles = [],
+            RedirectStandardOutput = true,
+            RedirectStandardError = true
+        });
+
+        if (typeResult.ExitStatus.ExitCode != 0 ||
+            !typeResult.StandardOutput.Contains("DW_TAG_class_type") ||
+            typeResult.StandardOutput.Contains("DW_AT_declaration"))
+        {
+            Console.Error.WriteLine($"Unexpected debug info for {nameof(Program)}:");
+            Console.Error.WriteLine(typeResult.StandardOutput);
+            Console.Error.WriteLine(typeResult.StandardError);
+            return 11;
+        }
+
         return 100;
     }
 }
