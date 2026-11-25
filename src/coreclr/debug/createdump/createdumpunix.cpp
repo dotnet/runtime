@@ -7,6 +7,9 @@
 //
 // The Linux/MacOS create dump code
 //
+// There is a simplified version of this CreateDump function available in nativeaot_createdump_main.cpp
+// which goes directly embedded into Native AOT executables.
+// If changes are made to this function, consider updating the other one.
 bool
 CreateDump(const CreateDumpOptions& options)
 {
