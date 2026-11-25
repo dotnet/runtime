@@ -5976,9 +5976,8 @@ void CodeGen::genCall(GenTreeCall* call)
     }
 
 #if defined(DEBUG) && defined(TARGET_X86)
-    // REG_ARG_0 (ECX) is trashed, so can be used as a temporary register.
     genStackPointerCheck(m_compiler->opts.compStackCheckOnCall && (call->gtCallType == CT_USER_FUNC),
-                         m_compiler->lvaCallSpCheck, call->CallerPop() ? 0 : stackArgBytes, REG_ARG_0);
+                         m_compiler->lvaCallSpCheck, call->CallerPop() ? 0 : stackArgBytes);
 #endif // defined(DEBUG) && defined(TARGET_X86)
 
     unsigned stackAdjustBias = 0;
@@ -7536,7 +7535,9 @@ void CodeGen::genRemoveAlignmentAfterCall(GenTreeCall* call, unsigned bias)
 #if defined(TARGET_X86)
     if (bias != 0)
     {
-        if (bias == sizeof(int))
+        // LSRA may have allocated the call's result to ECX, so we can only pop into it when it's free.
+        bool resultInEcx = !call->TypeIs(TYP_VOID) && ((call->gtGetRegMask() & RBM_ECX) != RBM_NONE);
+        if ((bias == sizeof(int)) && !resultInEcx)
         {
             inst_RV(INS_pop, REG_ECX, TYP_INT);
         }
@@ -8672,6 +8673,15 @@ void CodeGen::genAmd64EmitterUnitTestsApx()
         return;
     }
 
+    theEmitter->emitIns_AR_R(INS_cmpxchg, EA_2BYTE, REG_EAX, REG_EDX, 2);
+    theEmitter->emitIns_AR_R(INS_cmpxchg, EA_2BYTE, REG_R9, REG_R16, 2);
+    theEmitter->emitIns_S_R(INS_cmpxchg, EA_2BYTE, REG_R9, 0, 0);
+
+    theEmitter->emitIns_S_I(INS_imul_09, EA_4BYTE, 0, 20, 30);
+    theEmitter->emitIns_S_I(INS_imul_09, EA_8BYTE, 0, 20, 30);
+    theEmitter->emitIns_S_I(INS_imul_19, EA_4BYTE, 0, 20, 30);
+    theEmitter->emitIns_S_I(INS_imul_19, EA_8BYTE, 0, 20, 30);
+
     theEmitter->emitIns_R_R(INS_add, EA_1BYTE, REG_EAX, REG_ECX);
     theEmitter->emitIns_R_R(INS_add, EA_2BYTE, REG_EAX, REG_ECX);
     theEmitter->emitIns_R_R(INS_add, EA_4BYTE, REG_EAX, REG_ECX);
@@ -8709,6 +8719,8 @@ void CodeGen::genAmd64EmitterUnitTestsApx()
     theEmitter->emitIns_R_I(INS_test, EA_4BYTE, REG_EAX, 0x05);
 
     theEmitter->emitIns_R_I(INS_mov, EA_4BYTE, REG_EAX, 0xE0);
+    theEmitter->emitIns_R_I(INS_or, EA_4BYTE, REG_EAX, 0x500);
+    theEmitter->emitIns_R_I(INS_or, EA_1BYTE, REG_EAX, 0x05);
 
     // JIT tend to compress imm64 to imm32 if higher half is all-zero, make sure this test checks the path for imm64.
     theEmitter->emitIns_R_I(INS_mov, EA_8BYTE, REG_RAX, 0xFFFF000000000000);
@@ -8784,11 +8796,10 @@ void CodeGen::genAmd64EmitterUnitTestsApx()
     theEmitter->emitIns_R_AR(INS_cmovo, EA_4BYTE, REG_EAX, REG_ECX, 4);
 
     theEmitter->emitIns_AR_R(INS_xadd, EA_4BYTE, REG_EAX, REG_EDX, 2);
+    theEmitter->emitIns_AR_R(INS_xadd, EA_2BYTE, REG_EAX, REG_EDX, 2);
 
     theEmitter->emitIns_R_R_I(INS_shld, EA_4BYTE, REG_EAX, REG_ECX, 5);
     theEmitter->emitIns_R_R_I(INS_shrd, EA_2BYTE, REG_EAX, REG_ECX, 5);
-
-    theEmitter->emitIns_AR_R(INS_cmpxchg, EA_2BYTE, REG_EAX, REG_EDX, 2);
 
     theEmitter->emitIns_R(INS_seto, EA_1BYTE, REG_EDX);
 
@@ -9005,8 +9016,6 @@ void CodeGen::genAmd64EmitterUnitTestsApx()
     theEmitter->emitIns_I_AR(INS_imul_09, EA_4BYTE, 0x8149a, REG_EAX, 0x14);
     theEmitter->emitIns_I_AR(INS_imul_19, EA_4BYTE, 0x8149a, REG_EAX, 0x14);
     theEmitter->emitIns_I_AR(INS_imul_19, EA_4BYTE, 0x8149a, REG_R16, 0x14);
-    theEmitter->emitIns_S_I(INS_imul_19, EA_4BYTE, 0, 20, 30);
-    theEmitter->emitIns_S_I(INS_imul_09, EA_4BYTE, 0, 20, 30);
     theEmitter->emitIns_R_AR(INS_crc32_apx, EA_4BYTE, REG_R17, REG_EAX, 0x14);
 }
 

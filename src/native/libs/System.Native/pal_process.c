@@ -23,13 +23,13 @@
 #endif
 #include <fcntl.h>
 
-#if defined(TARGET_ANDROID)
+#if defined(TARGET_ANDROID) || defined(TARGET_OPENHARMONY)
 #include <dirent.h>
 #include <stddef.h>
 #endif
 
 #if defined(__linux__)
-#if !HAVE_CLOSE_RANGE || defined(TARGET_ANDROID)
+#if !HAVE_CLOSE_RANGE || defined(TARGET_ANDROID) || defined(TARGET_OPENHARMONY)
 #include <sys/syscall.h>
 #if !defined(__NR_close_range)
 // close_range was added in Linux 5.9. The syscall number is 436 for all
@@ -42,9 +42,11 @@
 #  define __NR_close_range 436
 # endif
 #endif // !defined(__NR_close_range)
-#endif // !HAVE_CLOSE_RANGE || defined(TARGET_ANDROID)
+#endif // !HAVE_CLOSE_RANGE || defined(TARGET_ANDROID) || defined(TARGET_OPENHARMONY)
 #endif // defined(__linux__)
-#if !defined(TARGET_ANDROID) && (HAVE_CLOSE_RANGE || defined(__NR_close_range)) && !defined(CLOSE_RANGE_CLOEXEC)
+// OpenHarmony and Android never call close_range (seccomp), so none of the users of
+// this flag compile there; keep the definition off to avoid -Wunused-macros.
+#if !defined(TARGET_ANDROID) && !defined(TARGET_OPENHARMONY) && (HAVE_CLOSE_RANGE || defined(__NR_close_range)) && !defined(CLOSE_RANGE_CLOEXEC)
 #define CLOSE_RANGE_CLOEXEC (1U << 2)
 #endif
 #include <pthread.h>
@@ -251,10 +253,10 @@ static int SetCloexecForFd(void* context, int fd)
 }
 #endif
 
-#if defined(TARGET_ANDROID)
+#if defined(TARGET_ANDROID) || defined(TARGET_OPENHARMONY)
 static int SetCloexecForOpenFds(void)
 {
-    // Android's app seccomp policy can kill the child on close_range(), rather than returning ENOSYS.
+    // Android's and OpenHarmony's app seccomp policies can kill the child on close_range(), rather than returning ENOSYS.
     // Enumerate only open descriptors. Use getdents64 directly to avoid opendir/readdir allocations
     // and locks between fork and exec. Android's dirent64 matches the kernel's linux_dirent64 layout:
     // https://man7.org/linux/man-pages/man2/getdents.2.html
@@ -318,7 +320,7 @@ done:
     close(directoryFd);
     return result;
 }
-#endif // defined(TARGET_ANDROID)
+#endif // defined(TARGET_ANDROID) || defined(TARGET_OPENHARMONY)
 
 // Returns 0 on success, or -1 (with errno set to ENOTSUP) if this platform/kernel doesn't provide
 // a performant native way (close_range()/fdwalk()/procfs) to restrict which fds a child process inherits.
@@ -338,7 +340,7 @@ static int32_t RestrictHandleInheritance(int32_t* inheritedFds, int32_t inherite
     // Using closefrom() or close_range() with flag 0 (direct close) would destroy this pipe.
 
     int result;
-#if defined(TARGET_ANDROID)
+#if defined(TARGET_ANDROID) || defined(TARGET_OPENHARMONY)
     result = SetCloexecForOpenFds();
 #elif HAVE_CLOSE_RANGE
     // On systems where close_range() is available as a function (FreeBSD 12.2+, Linux glibc >= 2.34).

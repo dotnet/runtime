@@ -144,5 +144,6 @@ namespace ILVerify
         UnalignedAlignment, // Alignment specified for 'unaligned.' must be 1, 2, or 4.
         ExpectedSignatureToken, // Expected signature token.
         ReadOnlyInMkrefany, // A readonly ByRef cannot be used with mkrefany.
+        LocallocInHandler, // localloc cannot be used in an exception filter or handler.
     }
 }

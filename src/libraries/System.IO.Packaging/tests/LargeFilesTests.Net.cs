@@ -24,8 +24,15 @@ public partial class LargeFilesTests
         // issue #94899
 
         CompressionOption compressionOption = isCompressed ? CompressionOption.Normal : CompressionOption.NotCompressed;
-        byte[] smallBuffer = GC.AllocateUninitializedArray<byte>(1000);
-        byte[] largeBuffer = GC.AllocateUninitializedArray<byte>(1_000_000_000); // ~1 GB
+        byte[] smallBuffer;
+        byte[] largeBuffer;
+        // SAFETY: To be audited
+        unsafe
+        {
+            smallBuffer = GC.AllocateUninitializedArray<byte>(1000);
+            largeBuffer = GC.AllocateUninitializedArray<byte>(1_000_000_000); // ~1 GB
+        }
+
         string zipArchivePath = Path.Combine(Path.GetTempPath(), "over4GB.zip");
         Uri largePartUri = PackUriHelper.CreatePartUri(new Uri("large.bin", UriKind.Relative));
         Uri smallPartUri = PackUriHelper.CreatePartUri(new Uri("small.bin", UriKind.Relative));

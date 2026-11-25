@@ -837,6 +837,24 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
                     JITDUMP(" ... Not a GC store at [%06u]\n", m_compiler->dspTreeID(tree));
                 }
             }
+            else
+            {
+                // Other definitions of tracked locals are not modelled in the connection graph. The defined
+                // locals may point anywhere, and escape since we cannot rewrite these definitions.
+                //
+                tree->VisitLogicalLocalDefs(m_compiler, [=](const auto& def) {
+                    unsigned const lclNum = def.GetLclNum();
+                    if (m_allocator->IsTrackedLocal(lclNum))
+                    {
+                        JITDUMP("V%02u defined by unmodelled node [%06u]\n", lclNum, m_compiler->dspTreeID(tree));
+                        m_allocator->AddConnGraphEdgeIndex(m_allocator->LocalToIndex(lclNum),
+                                                           m_allocator->m_unknownSourceIndex);
+                        m_allocator->MarkLclVarAsEscaping(lclNum);
+                    }
+
+                    return GenTree::VisitResult::Continue;
+                });
+            }
             return Compiler::fgWalkResult::WALK_CONTINUE;
         }
     };

@@ -39,7 +39,7 @@ namespace System.IO.Compression
         /// <summary>
         /// Derives key material from a password and optional salt using PBKDF2-SHA1.
         /// </summary>
-        internal static unsafe WinZipAesKeyMaterial Create(ReadOnlySpan<char> password, byte[]? salt, int keySizeBits)
+        internal static WinZipAesKeyMaterial Create(ReadOnlySpan<char> password, byte[]? salt, int keySizeBits)
         {
             if (OperatingSystem.IsBrowser())
             {
@@ -64,7 +64,12 @@ namespace System.IO.Compression
             int maxPasswordByteCount = Encoding.UTF8.GetMaxByteCount(password.Length);
             byte[] rentedPasswordBytes = ArrayPool<byte>.Shared.Rent(maxPasswordByteCount);
             Debug.Assert(totalKeySize <= 66, "totalKeySize should be at most 66 bytes (AES-256: 32 + 32 + 2)");
-            Span<byte> derivedKey = stackalloc byte[totalKeySize];
+            scoped Span<byte> derivedKey;
+            // SAFETY: To be audited
+            unsafe
+            {
+                derivedKey = stackalloc byte[totalKeySize];
+            }
 
             try
             {

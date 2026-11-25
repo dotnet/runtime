@@ -3980,6 +3980,16 @@ void LinearScan::BuildStoreLocDef(GenTreeLclVarCommon* storeLoc,
     defCandidates = allRegs(type);
 #endif // TARGET_X86
 
+#ifdef TARGET_XARCH
+    // TODO-Xarch-apx: Revisit once extended EVEX is available. Currently limiting high GPR for int <-> float
+    GenTree* storeSrc = storeLoc->gtGetOp1();
+    if (storeSrc->isContained() && storeSrc->OperIs(GT_BITCAST) && varTypeUsesIntReg(type) &&
+        varTypeUsesFloatReg(storeSrc->gtGetOp1()))
+    {
+        defCandidates = lowGprRegs;
+    }
+#endif // TARGET_XARCH
+
     RefPosition* def = newRefPosition(varDefInterval, currentLoc + 1, RefTypeDef, storeLoc, defCandidates, index);
     if (varDefInterval->isWriteThru)
     {
@@ -4127,9 +4137,17 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
     }
     else if (op1->isContained() && op1->OperIs(GT_BITCAST))
     {
-        GenTree*     bitCastSrc   = op1->gtGetOp1();
-        RegisterType registerType = regType(bitCastSrc->TypeGet());
-        singleUseRef              = BuildUse(bitCastSrc, allRegs(registerType));
+        GenTree*         bitCastSrc    = op1->gtGetOp1();
+        RegisterType     registerType  = regType(bitCastSrc->TypeGet());
+        SingleTypeRegSet srcCandidates = allRegs(registerType);
+#ifdef TARGET_XARCH
+        // TODO-Xarch-apx: Revisit once extended EVEX is available. Currently limiting high GPR for int <-> float
+        if (varTypeUsesIntReg(bitCastSrc) && varTypeUsesFloatReg(varDsc->GetRegisterType(storeLoc)))
+        {
+            srcCandidates = lowGprRegs;
+        }
+#endif // TARGET_XARCH
+        singleUseRef = BuildUse(bitCastSrc, srcCandidates);
 
         Interval* srcInterval = singleUseRef->getInterval();
         assert(regType(srcInterval->registerType) == registerType);

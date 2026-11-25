@@ -40,6 +40,10 @@
                       PackAsAnalyzer="true" />
   </ItemGroup>
 
+  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net12.0'))">
+    <Compile Include="$(CommonPath)Polyfills\TypePolyfills.cs" Link="Common\Polyfills\TypePolyfills.cs" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration.Abstractions\src\Microsoft.Extensions.Configuration.Abstractions.csproj" />
   </ItemGroup>

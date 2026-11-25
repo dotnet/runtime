@@ -7,6 +7,7 @@
 //
 
 #include "common.h"
+#include <minipal/instructioncache.h>
 #include "armsinglestepper.h"
 
 //
@@ -334,7 +335,7 @@ void ArmSingleStepper::Apply(T_CONTEXT *pCtx)
     pCtx->Pc = ((DWORD)(DWORD_PTR)m_rgCode) | THUMB_CODE;
 
     // Make sure the CPU sees the updated contents of the buffer.
-    FlushInstructionCache(GetCurrentProcess(), m_rgCode, kMaxCodeBuffer * sizeof(m_rgCode[0]));
+    minipal_flush_instruction_cache(m_rgCode, kMaxCodeBuffer * sizeof(m_rgCode[0]));
 
     // Done, set the state.
     m_state = Applied;

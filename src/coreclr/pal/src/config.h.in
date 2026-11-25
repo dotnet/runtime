@@ -3,12 +3,8 @@
 
 #cmakedefine01 HAVE_VM_FLAGS_SUPERPAGE_SIZE_ANY
 #cmakedefine01 HAVE_MAP_HUGETLB
-#cmakedefine01 HAVE_SYS_VMPARAM_H
-#cmakedefine01 HAVE_MACH_VM_TYPES_H
-#cmakedefine01 HAVE_MACH_VM_PARAM_H
 #cmakedefine01 HAVE_MACHINE_NPX_H
 #cmakedefine01 HAVE_MACHINE_REG_H
-#cmakedefine01 HAVE_MACHINE_VMPARAM_H
 #cmakedefine01 HAVE_PROCFS_H
 #cmakedefine01 HAVE_SYS_TIME_H
 #cmakedefine01 HAVE_PTHREAD_NP_H
@@ -28,12 +24,10 @@
 #cmakedefine01 HAVE_KQUEUE
 #cmakedefine01 HAVE_PTHREAD_ATTR_GET_NP
 #cmakedefine01 HAVE_PTHREAD_GETATTR_NP
-#cmakedefine01 HAVE_PTHREAD_GETCPUCLOCKID
 #cmakedefine01 HAVE_CPUSET_T
 #cmakedefine01 HAVE_FSYNC
 #cmakedefine01 HAVE_FUTIMES
 #cmakedefine01 HAVE_SYSCTL
-#cmakedefine01 HAVE_SYSCTLBYNAME
 #cmakedefine01 HAVE_SYSCONF
 #cmakedefine01 HAVE_GMTIME_R
 #cmakedefine01 HAVE_POLL
@@ -65,13 +59,9 @@
 #cmakedefine01 HAVE_FPREGS_WITH_CW
 
 #cmakedefine01 HAVE_INFTIM
-#cmakedefine01 USER_H_DEFINES_DEBUG
-#cmakedefine01 HAVE__SC_PHYS_PAGES
-#cmakedefine01 HAVE__SC_AVPHYS_PAGES
 
 #cmakedefine01 UNWIND_CONTEXT_IS_UCONTEXT_T
 #cmakedefine01 HAVE_SCHED_GET_PRIORITY
-#cmakedefine01 HAVE_CLOCK_THREAD_CPUTIME
 #cmakedefine01 HAVE_PTHREAD_CONDATTR_SETCLOCK
 #cmakedefine01 HAVE_PROCFS_CTL
 #cmakedefine01 HAVE_PROCFS_STAT
