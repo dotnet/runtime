@@ -28,5 +28,4 @@ target_include_directories(NativeMinipalTestsDriver PRIVATE
     ${NATIVE_TEST_COMMON_DIR}
     ${CORECLR_MINIPAL_DIR})
 target_link_libraries(NativeMinipalTestsDriver PRIVATE minipal)
-
 install(TARGETS NativeMinipalTestsDriver DESTINATION bin)
