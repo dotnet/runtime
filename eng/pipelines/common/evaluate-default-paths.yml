@@ -179,6 +179,7 @@ jobs:
       include:
       - src/native/managed/cdac/*
       - src/coreclr/debug/runtimeinfo/*
+      - src/tools/StressLogAnalyzer/*
 
     - subset: installer
       include:
