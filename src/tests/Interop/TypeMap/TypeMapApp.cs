@@ -50,6 +50,21 @@ using DupType_MapString = Lib.AliasedName;
 [assembly: TypeMapAssociation<TypicalUseCase>(typeof(int[]), typeof(C1))]
 [assembly: TypeMapAssociation<TypicalUseCase>(typeof(int*), typeof(S1))]
 
+[assembly: TypeMap<TypedValueUseCase>("1", typeof(TypedValueTarget))]
+[assembly: TypeMap<TypedValueUseCase>("2", typeof(TypedValueStructTarget))]
+[assembly: TypeMap<TypedValueUseCase>("bad", typeof(object))]
+[assembly: TypeMap<TypedValueUseCase>("generic", typeof(TypedValueGenericTarget<string>))]
+[assembly: TypeMapAssociation<TypedValueUseCase>(typeof(TypedValueSource), typeof(TypedValueTarget))]
+[assembly: TypeMapAssociation<TypedValueUseCase>(typeof(TypedValueGenericSource<string>), typeof(TypedValueGenericTarget<string>))]
+[assembly: TypeMapAssociation<TypedValueUseCase>(typeof(string), typeof(object))]
+
+[assembly: TypeMap<HolderUseCase>("assembly", typeof(HolderTarget3))]
+[assembly: TypeMapTypeTarget<HolderUseCase>(typeof(HolderLib))]
+[assembly: TypeMapTypeTarget<HolderUseCase>(typeof(AppHolder))]
+
+[assembly: TypeMap<HolderDuplicateUseCase>("1", typeof(object))]
+[assembly: TypeMapTypeTarget<HolderDuplicateUseCase>(typeof(DuplicateHolder))]
+
 [assembly: TypeMapAssociation<object>(typeof(object), typeof(string))]
 [assembly: TypeMapAssociation<string>(typeof(object), typeof(string))]
 [assembly: TypeMapAssociation<int[]>(typeof(object), typeof(string))]
@@ -81,8 +96,151 @@ namespace Lib
     public class AliasedName { }
 }
 
+// Linked from the assembly, and links a type of the other assembly (in the other direction too).
+[TypeMap<HolderUseCase>("app", typeof(HolderTarget4))]
+[TypeMapAssociation<HolderUseCase>(typeof(AppHolder), typeof(HolderTarget4))]
+public class AppHolder { }
+
+// Not linked from the assembly: only found by starting at it.
+[TypeMap<HolderUseCase>("unlinked", typeof(HolderTarget4))]
+[TypeMapAssociation<HolderUseCase>(typeof(AppUnlinkedHolder), typeof(HolderTarget4))]
+public class AppUnlinkedHolder { }
+
+public class AppEmptyHolder { }
+
+[TypeMap<HolderDuplicateUseCase>("1", typeof(object))]
+public class DuplicateHolder { }
+
 public class TypeMap
 {
+    [Fact]
+    public static void Validate_TypeMapTypeTarget_Holders()
+    {
+        Console.WriteLine(nameof(Validate_TypeMapTypeTarget_Holders));
+
+        // The type maps of the group have the entries of the assembly and of the holder types that it links, transitively.
+        IReadOnlyDictionary<string, Type> externalMap = TypeMapping.GetOrCreateExternalTypeMapping<HolderUseCase>();
+        Assert.Equal(typeof(HolderTarget3), externalMap["assembly"]);
+        Assert.Equal(typeof(HolderTarget4), externalMap["app"]);
+        Assert.Equal(typeof(HolderTarget1), externalMap["lib"]);
+        Assert.Equal(typeof(HolderTarget2), externalMap["chained"]);
+        Assert.False(externalMap.TryGetValue("unlinked", out Type? _));
+
+        IReadOnlyDictionary<Type, Type> proxyMap = TypeMapping.GetOrCreateProxyTypeMapping<HolderUseCase>();
+        Assert.Equal(typeof(HolderTarget4), proxyMap[typeof(AppHolder)]);
+        Assert.Equal(typeof(HolderTarget1), proxyMap[typeof(HolderSource)]);
+        Assert.False(proxyMap.TryGetValue(typeof(AppUnlinkedHolder), out Type? _));
+
+        Assert.True(TypeMapping.TryGetValue<HolderUseCase, TypedValue>("lib", out TypedValue value));
+        Assert.Equal(1, value.Number);
+        Assert.True(TypeMapping.TryGetValue<HolderUseCase, TypedValue>("chained", out value));
+        Assert.Equal(2, value.Number);
+        Assert.True(TypeMapping.TryGetValue<HolderUseCase, TypedValue>("assembly", out value));
+        Assert.Equal(3, value.Number);
+        Assert.True(TypeMapping.TryGetValue<HolderUseCase, TypedValue>(typeof(AppHolder), out value));
+        Assert.Equal(4, value.Number);
+        Assert.False(TypeMapping.TryGetValue<HolderUseCase, TypedValue>("unlinked", out _));
+
+        // The map that starts at an owner type only has the entries of the type and of the types that it links.
+        Assert.True(TypeMapping.TryGetValue<HolderUseCase, HolderLib, TypedValue>("lib", out value));
+        Assert.Equal(1, value.Number);
+        Assert.True(TypeMapping.TryGetValue<HolderUseCase, HolderLib, TypedValue>("chained", out value));
+        Assert.Equal(2, value.Number);
+        Assert.True(TypeMapping.TryGetValue<HolderUseCase, HolderLib, TypedValue>(typeof(HolderSource), out value));
+        Assert.Equal(1, value.Number);
+        Assert.False(TypeMapping.TryGetValue<HolderUseCase, HolderLib, TypedValue>("assembly", out _));
+        Assert.False(TypeMapping.TryGetValue<HolderUseCase, HolderLib, TypedValue>("app", out _));
+        Assert.False(TypeMapping.TryGetValue<HolderUseCase, HolderLib, TypedValue>(typeof(AppHolder), out _));
+
+        Assert.True(TypeMapping.TryGetValue<HolderUseCase, HolderLibChained, TypedValue>("chained", out value));
+        Assert.Equal(2, value.Number);
+        Assert.False(TypeMapping.TryGetValue<HolderUseCase, HolderLibChained, TypedValue>("lib", out _));
+
+        Assert.True(TypeMapping.TryGetValue<HolderUseCase, AppHolder, TypedValue>("app", out value));
+        Assert.Equal(4, value.Number);
+        Assert.True(TypeMapping.TryGetValue<HolderUseCase, AppHolder, TypedValue>(typeof(AppHolder), out value));
+        Assert.Equal(4, value.Number);
+        Assert.False(TypeMapping.TryGetValue<HolderUseCase, AppHolder, TypedValue>("lib", out _));
+        Assert.False(TypeMapping.TryGetValue<HolderUseCase, AppHolder, TypedValue>("assembly", out _));
+
+        Assert.True(TypeMapping.TryGetValue<HolderUseCase, AppUnlinkedHolder, TypedValue>("unlinked", out value));
+        Assert.Equal(4, value.Number);
+        Assert.True(TypeMapping.TryGetValue<HolderUseCase, AppUnlinkedHolder, TypedValue>(typeof(AppUnlinkedHolder), out value));
+        Assert.Equal(4, value.Number);
+        Assert.False(TypeMapping.TryGetValue<HolderUseCase, AppUnlinkedHolder, TypedValue>("app", out _));
+
+        // A type without entries, an entry of another group, and the group of the entries of a type that is not the one of the owner.
+        Assert.False(TypeMapping.TryGetValue<HolderUseCase, AppEmptyHolder, TypedValue>("app", out _));
+        Assert.False(TypeMapping.TryGetValue<TypedValueUseCase, AppHolder, TypedValue>("app", out _));
+        Assert.False(TypeMapping.TryGetValue<TypedValueUseCase, HolderLib, TypedValue>("lib", out _));
+
+        Assert.Throws<ArgumentNullException>(() => TypeMapping.TryGetValue<HolderUseCase, AppHolder, TypedValue>((string)null!, out _));
+        Assert.Throws<ArgumentNullException>(() => TypeMapping.TryGetValue<HolderUseCase, AppHolder, TypedValue>((Type)null!, out _));
+    }
+
+    [Fact]
+    public static void Validate_TypeMapTypeTarget_DuplicateKey()
+    {
+        Console.WriteLine(nameof(Validate_TypeMapTypeTarget_DuplicateKey));
+
+        // The same key on the assembly and on a holder type.
+        AssertExtensions.ThrowsAny<ArgumentException, BadImageFormatException>(() => TypeMapping.GetOrCreateExternalTypeMapping<HolderDuplicateUseCase>());
+
+        // The entries of the holder alone have no duplicate (the mapped type does not provide a value).
+        Assert.False(TypeMapping.TryGetValue<HolderDuplicateUseCase, DuplicateHolder, TypedValue>("1", out _));
+    }
+
+    [Fact]
+    public static void Validate_TryGetValue()
+    {
+        Console.WriteLine(nameof(Validate_TryGetValue));
+
+        // Proxy map entries only exist for key types that are used by the program.
+        GC.KeepAlive(new TypedValueSource());
+        GC.KeepAlive(new TypedValueGenericSource<string>());
+
+        // External type map: a type can provide several values, and the values can be value or reference types.
+        Assert.True(TypeMapping.TryGetValue<TypedValueUseCase, TypedValue>("1", out TypedValue value));
+        Assert.Equal(42, value.Number);
+        Assert.Equal(nameof(TypedValue), value.Text);
+        Assert.True(TypeMapping.TryGetValue<TypedValueUseCase, string>("1", out string? text));
+        Assert.Equal(nameof(String), text);
+        Assert.True(TypeMapping.TryGetValue<TypedValueUseCase, TypedValue>("2", out value));
+        Assert.Equal(7, value.Number);
+        Assert.Equal(nameof(TypedValueStructTarget), value.Text);
+
+        // Proxy type map
+        Assert.True(TypeMapping.TryGetValue<TypedValueUseCase, TypedValue>(typeof(TypedValueSource), out value));
+        Assert.Equal(42, value.Number);
+        Assert.True(TypeMapping.TryGetValue<TypedValueUseCase, string>(typeof(TypedValueSource), out text));
+        Assert.Equal(nameof(String), text);
+
+        // Generic mapped type
+        Assert.True(TypeMapping.TryGetValue<TypedValueUseCase, TypedValue>("generic", out value));
+        Assert.Equal(55, value.Number);
+        Assert.Equal(nameof(TypedValueGenericTarget<string>), value.Text);
+        Assert.True(TypeMapping.TryGetValue<TypedValueUseCase, TypedValue>(typeof(TypedValueGenericSource<string>), out value));
+        Assert.Equal(55, value.Number);
+        Assert.False(TypeMapping.TryGetValue<TypedValueUseCase, TypedValue>(typeof(TypedValueGenericSource<int>), out _));
+
+        // Keys that are not in the map
+        Assert.False(TypeMapping.TryGetValue<TypedValueUseCase, TypedValue>("missing", out value));
+        Assert.Equal(default, value);
+        Assert.False(TypeMapping.TryGetValue<TypedValueUseCase, string>("missing", out text));
+        Assert.Null(text);
+        Assert.False(TypeMapping.TryGetValue<TypedValueUseCase, TypedValue>(typeof(int), out value));
+
+        // Mapped types that don't implement ITypeMapValue for the requested type
+        Assert.False(TypeMapping.TryGetValue<TypedValueUseCase, string>("2", out text));
+        Assert.Null(text);
+        Assert.False(TypeMapping.TryGetValue<TypedValueUseCase, TypedValue>("bad", out value));
+        Assert.False(TypeMapping.TryGetValue<TypedValueUseCase, TypedValue>(typeof(string), out value));
+        Assert.False(TypeMapping.TryGetValue<TypedValueUseCase, long>("1", out _));
+
+        Assert.Throws<ArgumentNullException>(() => TypeMapping.TryGetValue<TypedValueUseCase, TypedValue>((string)null!, out _));
+        Assert.Throws<ArgumentNullException>(() => TypeMapping.TryGetValue<TypedValueUseCase, TypedValue>((Type)null!, out _));
+    }
+
     [Fact]
     public static void Validate_ExternalTypeMapping()
     {
@@ -192,6 +350,9 @@ public class TypeMap
         AssertExtensions.ThrowsAny<ArgumentException, BadImageFormatException>(() => TypeMapping.GetOrCreateExternalTypeMapping<DuplicateTypeNameKey>());
 
         AssertExtensions.ThrowsAny<ArgumentException, BadImageFormatException>(() => TypeMapping.GetOrCreateExternalTypeMapping<DuplicateTypeMapEntriesAcrossAssemblies>());
+
+        AssertExtensions.ThrowsAny<ArgumentException, BadImageFormatException>(() => TypeMapping.TryGetValue<DuplicateTypeNameKey, TypedValue>("1", out _));
+        AssertExtensions.ThrowsAny<ArgumentException, BadImageFormatException>(() => TypeMapping.TryGetValue<DuplicateTypeMapEntriesAcrossAssemblies, TypedValue>("1", out _));
     }
 
     [Fact]
@@ -264,6 +425,9 @@ public class TypeMap
 
         Assert.Throws<FileNotFoundException>(() => TypeMapping.GetOrCreateExternalTypeMapping<UnknownAssemblyReference>());
         Assert.Throws<FileNotFoundException>(() => TypeMapping.GetOrCreateProxyTypeMapping<UnknownAssemblyReference>());
+
+        Assert.Throws<FileNotFoundException>(() => TypeMapping.TryGetValue<UnknownAssemblyReference, TypedValue>("1", out _));
+        Assert.Throws<FileNotFoundException>(() => TypeMapping.TryGetValue<UnknownAssemblyReference, TypedValue>(typeof(object), out _));
     }
 
     [Fact]

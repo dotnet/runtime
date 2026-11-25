@@ -953,6 +953,10 @@ namespace System.Runtime.InteropServices
         bool IsInterfaceImplemented(System.RuntimeTypeHandle interfaceType, bool throwIfNotImplemented);
         System.RuntimeTypeHandle GetInterfaceImplementation(System.RuntimeTypeHandle interfaceType);
     }
+    public partial interface ITypeMapValue<TValue>
+    {
+        static abstract TValue Value { get; }
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Interface, Inherited=false)]
     public sealed partial class InterfaceTypeAttribute : System.Attribute
     {
@@ -1679,7 +1683,7 @@ namespace System.Runtime.InteropServices
         public string? Identifier { get { throw null; } }
         public string? Scope { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple = true)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class, AllowMultiple = true)]
     public sealed class TypeMapAttribute<TTypeMapGroup> : System.Attribute
     {
         public TypeMapAttribute(string value, System.Type target) { }
@@ -1692,7 +1696,12 @@ namespace System.Runtime.InteropServices
     {
         public TypeMapAssemblyTargetAttribute(string assemblyName) { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple = true)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class, AllowMultiple = true)]
+    public sealed class TypeMapTypeTargetAttribute<TTypeMapGroup> : System.Attribute
+    {
+        public TypeMapTypeTargetAttribute(System.Type type) { }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class, AllowMultiple = true)]
     public sealed class TypeMapAssociationAttribute<TTypeMapGroup> : System.Attribute
     {
         public TypeMapAssociationAttribute(System.Type source, System.Type proxy) { }
@@ -1704,6 +1713,18 @@ namespace System.Runtime.InteropServices
 
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Interop types may be removed by trimming")]
         public static System.Collections.Generic.IReadOnlyDictionary<System.Type, System.Type> GetOrCreateProxyTypeMapping<TTypeMapGroup>() => throw null;
+
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Interop types may be removed by trimming")]
+        public static bool TryGetValue<TTypeMapGroup, TValue>(string key, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TValue value) => throw null;
+
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Interop types may be removed by trimming")]
+        public static bool TryGetValue<TTypeMapGroup, TValue>(System.Type key, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TValue value) => throw null;
+
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Interop types may be removed by trimming")]
+        public static bool TryGetValue<TTypeMapGroup, TTypeMapGroupOwner, TValue>(string key, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TValue value) => throw null;
+
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Interop types may be removed by trimming")]
+        public static bool TryGetValue<TTypeMapGroup, TTypeMapGroupOwner, TValue>(System.Type key, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TValue value) => throw null;
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class UnknownWrapper

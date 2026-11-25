@@ -65,6 +65,9 @@ namespace ILCompiler.DependencyAnalysis
 
         public int Offset => 0;
         public override bool IsShareable => false;
+
+        // The manager can only know that it has nothing to emit once the program is analyzed.
+        public override bool ShouldSkipEmittingObjectNode(NodeFactory factory) => _manager.IsEmptyAtEmission;
         public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.ReadOnlyDataSection;
         protected internal override int Phase => (int)ObjectNodePhase.Ordered;
 

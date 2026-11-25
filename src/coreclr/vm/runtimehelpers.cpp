@@ -817,6 +817,7 @@ static const Entry s_RuntimeHelpers[] =
     DllImportEntry(TypeMapLazyDictionary_FindPrecachedExternalTypeMapEntry)
     DllImportEntry(TypeMapLazyDictionary_FindPrecachedProxyTypeMapEntry)
     DllImportEntry(TypeMapLazyDictionary_ProcessAttributes)
+    DllImportEntry(TypeMapLazyDictionary_ProcessAttributesFromType)
     DllImportEntry(UnsafeAccessors_ResolveGenericParamToTypeHandle)
     DllImportEntry(ValueType_GetHashCodeStrategy)
 #ifdef FEATURE_COMINTEROP

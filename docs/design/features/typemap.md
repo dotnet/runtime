@@ -33,7 +33,7 @@ namespace System.Runtime.InteropServices;
 /// Type mapping between a string and a type.
 /// </summary>
 /// <typeparam name="TTypeMapGroup">Type universe</typeparam>
-[AttributeUsage(AttributeTargets.Assembly, AllowMultiple = true)]
+[AttributeUsage(AttributeTargets.Assembly | AttributeTargets.Class, AllowMultiple = true)]
 public sealed class TypeMapAttribute<TTypeMapGroup> : Attribute
 {
     /// <summary>
@@ -78,10 +78,25 @@ public sealed class TypeMapAssemblyTargetAttribute<TTypeMapGroup> : Attribute
 }
 
 /// <summary>
+/// Declare a type that holds type map entries and should be inspected during type map building.
+/// </summary>
+/// <typeparam name="TTypeMapGroup">Type universe</typeparam>
+[AttributeUsage(AttributeTargets.Assembly | AttributeTargets.Class, AllowMultiple = true)]
+public sealed class TypeMapTypeTargetAttribute<TTypeMapGroup> : Attribute
+{
+    /// <summary>
+    /// Provide the type to look for type mapping attributes.
+    /// </summary>
+    /// <param name="type">Type that holds type map entries</param>
+    public TypeMapTypeTargetAttribute(Type type)
+    { }
+}
+
+/// <summary>
 /// Create a type association between a type and its proxy.
 /// </summary>
 /// <typeparam name="TTypeMapGroup">Type universe</typeparam>
-[AttributeUsage(AttributeTargets.Assembly, AllowMultiple = false)]
+[AttributeUsage(AttributeTargets.Assembly | AttributeTargets.Class, AllowMultiple = false)]
 public sealed class TypeMapAssociationAttribute<TTypeMapGroup> : Attribute
 {
     /// <summary>
@@ -125,6 +140,43 @@ public static class TypeMapping
     /// </remarks>
     [RequiresUnreferencedCode("Interop types may be removed by trimming")]
     public static IReadOnlyDictionary<Type, Type> GetOrCreateProxyTypeMapping<TTypeMapGroup>();
+
+    /// <summary>
+    /// Tries to get the value that the type mapped by a key in the external type map provides.
+    /// </summary>
+    /// <typeparam name="TTypeMapGroup">Type universe</typeparam>
+    /// <typeparam name="TValue">The type of the value</typeparam>
+    /// <remarks>
+    /// Call sites are treated as an intrinsic by the Trimmer.
+    /// </remarks>
+    [RequiresUnreferencedCode("Interop types may be removed by trimming")]
+    public static bool TryGetValue<TTypeMapGroup, TValue>(string key, [MaybeNullWhen(false)] out TValue value);
+
+    /// <summary>
+    /// Tries to get the value that the type mapped by a key in the proxy type map provides.
+    /// </summary>
+    [RequiresUnreferencedCode("Interop types may be removed by trimming")]
+    public static bool TryGetValue<TTypeMapGroup, TValue>(Type key, [MaybeNullWhen(false)] out TValue value);
+
+    /// <summary>
+    /// Tries to get the value that the type mapped by a key in the external type map provides, looking only at the entries that start at an owner type.
+    /// </summary>
+    [RequiresUnreferencedCode("Interop types may be removed by trimming")]
+    public static bool TryGetValue<TTypeMapGroup, TTypeMapGroupOwner, TValue>(string key, [MaybeNullWhen(false)] out TValue value);
+
+    /// <summary>
+    /// Tries to get the value that the type mapped by a key in the proxy type map provides, looking only at the entries that start at an owner type.
+    /// </summary>
+    [RequiresUnreferencedCode("Interop types may be removed by trimming")]
+    public static bool TryGetValue<TTypeMapGroup, TTypeMapGroupOwner, TValue>(Type key, [MaybeNullWhen(false)] out TValue value);
+}
+
+/// <summary>
+/// Implemented by the types that are the target of a type map entry (or the proxy of an association) to provide a value of type <typeparamref name="TValue"/>.
+/// </summary>
+public interface ITypeMapValue<TValue>
+{
+    static abstract TValue Value { get; }
 }
 ```
 
@@ -165,6 +217,44 @@ closure.
 
 5. Trimming tools will consider calls to `TypeMapping.GetOrCreateExternalTypeMapping<>` and
 `TypeMapping.GetOrCreateProxyTypeMapping<>` as intrinsics (for example, Java via `JavaTypeMapGroup`). As a result, it is not trim-compatible to call either of these methods with non-fully-instantiated generic (such as a type argument or a type that is instantiated over a type argument).
+
+## Typed values
+
+`GetOrCreate*TypeMapping` return `Type` values, so every mapped type has to be visible to reflection, even if the application only reads a few values from it (for example through attributes).
+`TypeMapping.TryGetValue` returns the data a mapped type provides instead of the type: a mapped type (the target of a `TypeMapAttribute` entry or the proxy of a `TypeMapAssociationAttribute` entry)
+implements `ITypeMapValue<TValue>` for each `TValue` it provides, and `TryGetValue<TTypeMapGroup, TValue>(key, out value)` finds the entry the same way the dictionaries do (a `string` key for the external type map, a `Type` key
+for the proxy type map) and returns the value of its static getter. The mapped type is never exposed, so it doesn't become visible to reflection because of the entry when the application is compiled ahead of time: only what the getter
+references does.
+
+* The entries are included under the same rules as the entries of the dictionaries (below), and the two kinds of APIs can be used with the same group: the group has one table per direction that serves both.
+* `TryGetValue` returns `false` if the key is not in the map or the mapped type doesn't implement `ITypeMapValue<TValue>`. Mapped types that are interfaces or generic type definitions don't provide values.
+* Trimming tools consider calls to `TypeMapping.TryGetValue<,>` as intrinsics too: the group and `TValue` have to be fully instantiated.
+* The getter should be a simple expression without side effects: it can be evaluated by the build, not run at all, or run any number of times, concurrently and on any thread. A `TValue` that is a reference type
+  (`string`, `Type`, an interface or a class) can be evaluated by the build when the getter returns `null`, a string literal, `typeof(X)`, or an object that a `static readonly` field of another type holds
+  (for example `public static IFoo Value => FooImpl.Instance;`): the value is then the same object as the static. Whether a getter that allocates (`new Foo()`) gives a new object per call is unspecified (it does today, as
+  it is not evaluated by the build): use a `static readonly` field in another type for an object that has to be shared.
+* The implementations are implementation-defined like the maps. For NativeAOT (the flavors of a group, the format of the image and what the compiler evaluates ahead of time) see
+[typemap-typed-values.md](../../../src/coreclr/nativeaot/docs/typemap-typed-values.md).
+
+## Holder types and owner lookups
+
+Assembly level attributes are commonly read at run time (for example `AssemblyMetadataAttribute`), and a type map with thousands of entries makes every such read go through all of them.
+The entries (`TypeMapAttribute` and `TypeMapAssociationAttribute`) can also be declared on a class, and `TypeMapTypeTargetAttribute<TTypeMapGroup>(Type)`, on the assembly or on a class, points to such a *holder* type.
+The type is only a container of attributes: it is never constructed or exposed, and it needs no reflection visibility.
+
+* The holder types are followed for the group of the attribute, transitively (a holder can point to other holders, in a cycle too, and in other assemblies).
+The attributes of a holder that are for another group are not read for this group.
+* The entries of a holder are part of the type map of the group exactly like the assembly level entries: the same keys and duplicate rules, the same trimming rules (the trim target of an external entry, the key type of an association), and
+`GetOrCreate*TypeMapping` and `TryGetValue<TTypeMapGroup, TValue>` see the union of the assembly level entries and of the entries of the holders that are reachable from them.
+Only the holders that the assembly level attributes of the assemblies that are scanned (see below) point to, directly or transitively, are part of the type map of the group.
+* `TryGetValue<TTypeMapGroup, TTypeMapGroupOwner, TValue>` starts at `TTypeMapGroupOwner` instead: it only considers the entries declared on that type and on the types reachable from it through
+`TypeMapTypeTargetAttribute<TTypeMapGroup>`, transitively. The assembly level entries, the `TypeMapAssemblyTargetAttribute` targets and the other libraries are not considered, and the owner does not have to be reachable from the assembly.
+This gives a library a local type map that doesn't need whole program analysis. The group, the owner and `TValue` have to be fully instantiated like for the other overloads.
+In NativeAOT a type that is used as the owner is visible to reflection (see typemap-typed-values.md); the holders that are only linked are not.
+The owner has to be a type that C# allows as a type argument: a `static` class can't be used (CS0718), so owner types that are meant for this overload can't be `static`.
+* Entries on a holder behave the same everywhere else: a holder entry is trimmed by the same rules as an assembly level entry, and the type map attributes are removed from the output of trimming tools.
+* The holders are not supported by ILLink and the Roslyn analyzer yet: ILLink doesn't read the attributes of the types, so a trimmed CoreCLR application doesn't have the entries of the holders.
+* ReadyToRun: the type maps of a module only cover its assembly level entries. The holder types are always read from the attributes at run time, after the assemblies of the group, and their entries of the external type map are checked against the ones of the images for duplicates.
 
 ## Type Map entry trimming rules
 

@@ -10,34 +10,43 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    internal sealed class AnalyzedExternalTypeMapNode(TypeDesc typeMapGroup, IReadOnlyDictionary<string, TypeDesc> entries) : SortableDependencyNode, IExternalTypeMapNode
+    internal sealed class AnalyzedExternalTypeMapNode(TypeDesc typeMapGroup, TypeMapFlavors flavors, IReadOnlyDictionary<string, TypeDesc> entries, IReadOnlyList<TypeMapValueFlavor> valueFlavors) : SortableDependencyNode, IExternalTypeMapNode
     {
         public TypeDesc TypeMapGroup => typeMapGroup;
 
         public Vertex CreateTypeMap(NodeFactory factory, NativeWriter writer, Section section, INativeFormatTypeReferenceProvider externalReferences)
         {
             VertexHashtable typeMapHashTable = new();
+            var ranks = TypeMapValueSupport.GetRanks(factory, TypeMapGroup, isProxy: false, valueFlavors);
 
             foreach ((string key, TypeDesc type) in entries)
             {
-                Vertex keyVertex = writer.GetStringConstant(key);
-                Vertex valueVertex = externalReferences.EncodeReferenceToType(writer, type, null);
-                Vertex entry = writer.GetTuple(keyVertex, valueVertex);
+                Vertex entry = TypeMapValueSupport.CreateExternalEntry(writer, externalReferences, flavors, key, type);
+                entry = TypeMapValueSupport.AppendEntryData(factory, writer, entry, valueFlavors, ranks, type);
                 typeMapHashTable.Append((uint)TypeHashingAlgorithms.ComputeNameHashCode(key), section.Place(entry));
             }
 
-            Vertex typeMapStateVertex = writer.GetUnsignedConstant(1); // Valid type map state
-            Vertex typeMapGroupVertex = externalReferences.EncodeReferenceToType(writer, TypeMapGroup, null);
-            Vertex tuple = writer.GetTuple(typeMapGroupVertex, typeMapStateVertex, typeMapHashTable);
-            return section.Place(tuple);
+            return section.Place(TypeMapValueSupport.CreateGroupHeader(factory, writer, externalReferences, TypeMapGroup, isProxy: false, flavors, valueFlavors, typeMapHashTable));
         }
 
         public override void AddConditionalDependencies(DependencySink sink, NodeFactory context) { }
         public override void AddStaticDependencies(DependencySink sink, NodeFactory context)
         {
+            sink.Add(context.NecessaryTypeSymbol(TypeMapGroup), "Type map group");
+
+            foreach (TypeMapValueFlavor valueFlavor in valueFlavors)
+                sink.Add(context.NecessaryTypeSymbol(valueFlavor.ValueType), "Analyzed external type map value type");
+
             foreach (TypeDesc targetType in entries.Values)
             {
-                sink.Add(context.MetadataTypeSymbol(targetType), "Analyzed external type map entry target type");
+                if ((flavors & TypeMapFlavors.Types) != 0)
+                    sink.Add(context.MetadataTypeSymbol(targetType), "Analyzed external type map entry target type");
+                foreach (TypeMapValueFlavor valueFlavor in valueFlavors)
+                {
+                    object dependency = valueFlavor.Evaluate(targetType).GetDependencyNode(context, TypeMapGroup, isProxy: false);
+                    if (dependency is not null)
+                        sink.Add(dependency, "Analyzed type map value");
+                }
             }
         }
         public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink sink, NodeFactory context) { }

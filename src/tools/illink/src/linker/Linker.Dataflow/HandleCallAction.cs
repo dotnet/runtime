@@ -197,15 +197,26 @@ namespace ILLink.Shared.TrimAnalysis
 
                 case IntrinsicId.TypeMapping_GetOrCreateExternalTypeMapping:
                 case IntrinsicId.TypeMapping_GetOrCreateProxyTypeMapping:
+                case IntrinsicId.TypeMapping_TryGetValue_External:
+                case IntrinsicId.TypeMapping_TryGetValue_Proxy:
                 {
                     GenericInstanceMethod method = ((GenericInstanceMethod)calledMethod.Method);
+                    bool isTryGetValue = intrinsicId is IntrinsicId.TypeMapping_TryGetValue_External or IntrinsicId.TypeMapping_TryGetValue_Proxy;
+
+                    // The AOT compiler also needs the value type of TryGetValue statically.
+                    if (isTryGetValue && method.GenericArguments[1].ContainsGenericParameter)
+                    {
+                        _diagnosticContext.AddDiagnostic(DiagnosticId.TypeMapGroupTypeCannotBeStaticallyDetermined, method.GenericArguments[1].FullName);
+                    }
+
                     if (method.GenericArguments[0].ContainsGenericParameter)
                     {
                         _diagnosticContext.AddDiagnostic(DiagnosticId.TypeMapGroupTypeCannotBeStaticallyDetermined, method.GenericArguments[0].FullName);
                         return true;
                     }
 
-                    if (intrinsicId == IntrinsicId.TypeMapping_GetOrCreateExternalTypeMapping)
+                    // TryGetValue keeps the whole group like GetOrCreate*TypeMapping does. The CoreCLR implementation uses the lazy maps.
+                    if (intrinsicId is IntrinsicId.TypeMapping_GetOrCreateExternalTypeMapping or IntrinsicId.TypeMapping_TryGetValue_External)
                     {
                         _markStep.TypeMapHandler.ProcessExternalTypeMapGroupSeen(_callingMethodDefinition, method.GenericArguments[0]);
                     }

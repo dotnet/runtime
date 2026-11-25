@@ -10,7 +10,7 @@ namespace System.Runtime.InteropServices
     /// Type mapping between a string and a type.
     /// </summary>
     /// <typeparam name="TTypeMapGroup">Type map group</typeparam>
-    [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = true)]
+    [AttributeUsage(AttributeTargets.Assembly | AttributeTargets.Class, AllowMultiple = true)]
     public sealed class TypeMapAttribute<TTypeMapGroup> : Attribute
     {
         /// <summary>

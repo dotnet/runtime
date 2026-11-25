@@ -20,8 +20,17 @@ namespace ILCompiler
         {
             None,
             TypeMapAssemblyTarget,
+            TypeMapTypeTarget,
             TypeMap,
             TypeMapAssociation
+        }
+
+        // The place that the type map attributes are read from: an assembly, or a type that holds type map entries.
+        private readonly record struct ScanSource(EcmaModule Module, EntityHandle Handle)
+        {
+            public static ScanSource ForAssembly(EcmaAssembly assembly) => new ScanSource(assembly, EntityHandle.AssemblyDefinition);
+
+            public static ScanSource ForType(EcmaType type) => new ScanSource(type.Module, type.Handle);
         }
 
         private readonly struct TypeWithSerializedName
@@ -119,6 +128,8 @@ namespace ILCompiler
             {
                 if (typeDef.Name == "TypeMapAssemblyTargetAttribute`1"u8)
                     return TypeMapAttributeKind.TypeMapAssemblyTarget;
+                else if (typeDef.Name == "TypeMapTypeTargetAttribute`1"u8)
+                    return TypeMapAttributeKind.TypeMapTypeTarget;
                 else if (typeDef.Name == "TypeMapAttribute`1"u8)
                     return TypeMapAttributeKind.TypeMap;
                 else if (typeDef.Name == "TypeMapAssociationAttribute`1"u8)
@@ -146,11 +157,12 @@ namespace ILCompiler
                 private readonly TypeDesc _typeMapGroup;
                 private readonly byte[] _name;
 
-                public ThrowingMethodStub(TypeDesc owningType, TypeDesc typeMapGroup, bool externalTypeMap, TypeSystemException ex)
+                public ThrowingMethodStub(TypeDesc owningType, TypeDesc typeMapGroup, string owner, bool externalTypeMap, TypeSystemException ex)
                 {
                     OwningType = owningType;
                     _typeMapGroup = typeMapGroup;
-                    _name = System.Text.Encoding.UTF8.GetBytes($"InvalidTypeMapStub_{_typeMapGroup}_{(externalTypeMap ? "External" : "Proxy")}");
+                    // The map that starts at an owner type has stubs of its own: they are different methods than the ones of the map of the group.
+                    _name = System.Text.Encoding.UTF8.GetBytes($"InvalidTypeMapStub_{_typeMapGroup}{(owner is null ? "" : "_Owner_" + owner)}_{(externalTypeMap ? "External" : "Proxy")}");
                     Exception = ex;
                 }
 
@@ -186,12 +198,17 @@ namespace ILCompiler
             private readonly Dictionary<TypeDesc, ProxyTypeMapEntry> _associatedTypeMap = [];
             private readonly Dictionary<string, ExternalTypeMapEntry> _externalTypeMap = [];
             private readonly List<ModuleDesc> _targetModules = [];
+            private readonly List<EcmaType> _targetTypes = [];
             private ThrowingMethodStub _externalTypeMapExceptionStub;
             private ThrowingMethodStub _associatedTypeMapExceptionStub;
 
-            public Map(TypeDesc typeMapGroup)
+            // The type that the map starts at, for the maps that start at an owner type.
+            private readonly string _owner;
+
+            public Map(TypeDesc typeMapGroup, string owner = null)
             {
                 TypeMapGroup = typeMapGroup;
+                _owner = owner;
             }
 
             public TypeDesc TypeMapGroup { get; }
@@ -241,7 +258,7 @@ namespace ILCompiler
                     // FileNotFound exception takes precedence.
                     return;
                 }
-                _externalTypeMapExceptionStub ??= new ThrowingMethodStub(stubModule.GetGlobalModuleType(), TypeMapGroup, externalTypeMap: true, exception);
+                _externalTypeMapExceptionStub ??= new ThrowingMethodStub(stubModule.GetGlobalModuleType(), TypeMapGroup, _owner, externalTypeMap: true, exception);
             }
 
             public void SetAssociatedTypeMapException(ModuleDesc stubModule, TypeSystemException exception)
@@ -251,7 +268,7 @@ namespace ILCompiler
                     // FileNotFound exception takes precedence.
                     return;
                 }
-                _associatedTypeMapExceptionStub ??= new ThrowingMethodStub(stubModule.GetGlobalModuleType(), TypeMapGroup, externalTypeMap: false, exception);
+                _associatedTypeMapExceptionStub ??= new ThrowingMethodStub(stubModule.GetGlobalModuleType(), TypeMapGroup, _owner, externalTypeMap: false, exception);
             }
 
             public void MergePendingMap(ModuleDesc stubModule, Map pendingMap)
@@ -328,6 +345,7 @@ namespace ILCompiler
                 }
 
                 _targetModules.AddRange(pendingMap._targetModules);
+                _targetTypes.AddRange(pendingMap._targetTypes);
                 HasAssemblyTargetAttributes |= pendingMap.HasAssemblyTargetAttributes;
             }
 
@@ -335,6 +353,17 @@ namespace ILCompiler
             {
                 _targetModules.Add(targetModule);
             }
+
+            public void AddTargetType(EcmaType targetType)
+            {
+                _targetTypes.Add(targetType);
+            }
+
+            /// <summary>
+            /// The types that hold entries and were targeted with TypeMapTypeTarget attributes for this type map group. Like <see cref="TargetModules"/>, these are
+            /// only used to find the targets of a pending map: the entries of the types are added to the map when the types are traversed.
+            /// </summary>
+            internal IReadOnlyList<EcmaType> TargetTypes => _targetTypes;
 
             /// <summary>
             /// The modules targeted with TypeMapAssemblyTarget attributes for this type map group. This is only populated when TypeMapMetadata is created with TypeMapAssemblyTargetsMode.Record. When TypeMapMetadata is created with TypeMapAssemblyTargetsMode.Traverse, this will be empty as the target assemblies will be traversed to include their type maps instead of just being recorded as targets.
@@ -371,34 +400,54 @@ namespace ILCompiler
 
         public static TypeMapMetadata CreateFromAssembly(EcmaAssembly assembly, ModuleDesc throwHelperEmitModule, TypeMapAssemblyTargetsMode assemblyTargetsMode)
         {
+            Dictionary<TypeDesc, Map> typeMapStates = Scan(ScanSource.ForAssembly(assembly), null, null, throwHelperEmitModule, assemblyTargetsMode);
+            return new TypeMapMetadata(typeMapStates, $"Type maps rooted at {assembly}", assembly);
+        }
+
+        /// <summary>
+        /// Creates the type map of a group that starts at an owner type: the entries declared on the type and on the types reachable from it
+        /// through TypeMapTypeTarget attributes. The assembly level entries and the other assemblies are not considered.
+        /// </summary>
+        internal static Map CreateFromOwnerType(EcmaType ownerType, TypeDesc typeMapGroup, ModuleDesc throwHelperEmitModule)
+        {
+            string owner = ownerType.ToString();
+            Dictionary<TypeDesc, Map> typeMapStates = Scan(ScanSource.ForType(ownerType), typeMapGroup, owner, throwHelperEmitModule, TypeMapAssemblyTargetsMode.Traverse);
+            return typeMapStates.TryGetValue(typeMapGroup, out Map map) ? map : new Map(typeMapGroup, owner);
+        }
+
+        // Scans the type map attributes starting at a source. If the group is not null, only the entries of that group are traversed.
+        // The owner is the name of the type that a map that starts at an owner type starts at.
+        private static Dictionary<TypeDesc, Map> Scan(ScanSource firstSource, TypeDesc firstTypeMapGroup, string owner, ModuleDesc throwHelperEmitModule, TypeMapAssemblyTargetsMode assemblyTargetsMode)
+        {
             Dictionary<TypeDesc, Map> typeMapStates = [];
-            // The pendingMaps collection represents assemblies that have been scanned, but the provided assembly
+            // The pendingMaps collection represents sources that have been scanned, but the provided source
             // has not been added as a target yet for the specified type map group.
-            // This can occur when an assembly is the target of a TypeMapAssemblyTarget attribute for a different group.
-            Dictionary<(EcmaAssembly assembly, TypeDesc typeMapGroup), (TypeDesc scannedDuringGroup, Map map)> pendingMaps = [];
-            HashSet<(EcmaAssembly assembly, TypeDesc typeMapGroup)> scannedAssemblies = [];
+            // This can occur when an assembly or a type is the target of a TypeMapAssemblyTarget or TypeMapTypeTarget attribute for a different group.
+            Dictionary<(ScanSource source, TypeDesc typeMapGroup), (TypeDesc scannedDuringGroup, Map map)> pendingMaps = [];
+            HashSet<(ScanSource source, TypeDesc typeMapGroup)> scannedSources = [];
 
-            Queue<(EcmaAssembly assembly, TypeDesc typeMapGroup)> assembliesToScan = [];
-            assembliesToScan.Enqueue((assembly, null));
+            Queue<(ScanSource source, TypeDesc typeMapGroup)> sourcesToScan = [];
+            sourcesToScan.Enqueue((firstSource, firstTypeMapGroup));
 
-            while (assembliesToScan.Count > 0)
+            while (sourcesToScan.Count > 0)
             {
-                (EcmaAssembly currentAssembly, TypeDesc currentTypeMapGroup) = assembliesToScan.Dequeue();
+                (ScanSource currentSource, TypeDesc currentTypeMapGroup) = sourcesToScan.Dequeue();
+                EcmaModule currentModule = currentSource.Module;
 
                 // A null currentTypeMapGroup means we're looking at all type maps in the assembly, not just traversing one.
                 // Otherwise, we're searching for a specific one.
-                // Don't rescan specific assembly + type map group combos as the results will be identical.
+                // Don't rescan specific source + type map group combos as the results will be identical.
                 if (currentTypeMapGroup is not null)
                 {
-                    if (scannedAssemblies.Contains((currentAssembly, currentTypeMapGroup)))
+                    if (scannedSources.Contains((currentSource, currentTypeMapGroup)))
                     {
-                        if (pendingMaps.TryGetValue((currentAssembly, currentTypeMapGroup), out var pendingMap))
+                        if (pendingMaps.TryGetValue((currentSource, currentTypeMapGroup), out var pendingMap))
                         {
-                            // We have already scanned this assembly, but we haven't added the results to the type map state for the specified type map group.
+                            // We have already scanned this source, but we haven't added the results to the type map state for the specified type map group.
                             // Merge in the results.
                             if (!typeMapStates.TryGetValue(currentTypeMapGroup, out Map typeMapState))
                             {
-                                typeMapStates[currentTypeMapGroup] = typeMapState = new Map(currentTypeMapGroup);
+                                typeMapStates[currentTypeMapGroup] = typeMapState = new Map(currentTypeMapGroup, owner);
                             }
                             typeMapState.MergePendingMap(throwHelperEmitModule, pendingMap.map);
                             foreach (ModuleDesc targetModule in pendingMap.map.TargetModules)
@@ -406,28 +455,32 @@ namespace ILCompiler
                                 Debug.Assert(assemblyTargetsMode == TypeMapAssemblyTargetsMode.Traverse, "We should only have pending maps with target modules when we're traversing for type map groups, as opposed to just recording targets.");
                                 // If the pending map has target modules,
                                 // then we need to ensure that they also get included in the metadata.
-                                assembliesToScan.Enqueue(((EcmaAssembly)targetModule, currentTypeMapGroup));
+                                sourcesToScan.Enqueue((ScanSource.ForAssembly((EcmaAssembly)targetModule), currentTypeMapGroup));
                             }
-                            pendingMaps.Remove((currentAssembly, currentTypeMapGroup));
+                            foreach (EcmaType targetType in pendingMap.map.TargetTypes)
+                            {
+                                sourcesToScan.Enqueue((ScanSource.ForType(targetType), currentTypeMapGroup));
+                            }
+                            pendingMaps.Remove((currentSource, currentTypeMapGroup));
                         }
-                        // We've already scanned this assembly for this type map group.
+                        // We've already scanned this source for this type map group.
                         // There's no more work to do for this case.
                         continue;
                     }
                 }
 
-                // Either we haven't seen this assembly + group combo before
+                // Either we haven't seen this source + group combo before
                 // or we are scanning all type map groups in the assembly.
-                foreach (CustomAttributeHandle attrHandle in currentAssembly.MetadataReader.GetCustomAttributes(EntityHandle.AssemblyDefinition))
+                foreach (CustomAttributeHandle attrHandle in currentModule.MetadataReader.GetCustomAttributes(currentSource.Handle))
                 {
-                    CustomAttribute attr = currentAssembly.MetadataReader.GetCustomAttribute(attrHandle);
+                    CustomAttribute attr = currentModule.MetadataReader.GetCustomAttribute(attrHandle);
 
-                    if (!MetadataExtensions.GetAttributeTypeAndConstructor(currentAssembly.MetadataReader, attrHandle, out EntityHandle attributeType, out _))
+                    if (!MetadataExtensions.GetAttributeTypeAndConstructor(currentModule.MetadataReader, attrHandle, out EntityHandle attributeType, out _))
                     {
                         continue;
                     }
 
-                    TypeDesc type = (TypeDesc)currentAssembly.GetObject(attributeType, NotFoundBehavior.ReturnNull);
+                    TypeDesc type = (TypeDesc)currentModule.GetObject(attributeType, NotFoundBehavior.ReturnNull);
                     if (type == null)
                     {
                         // If the type doesn't resolve, it can't be a type map attribute
@@ -442,6 +495,12 @@ namespace ILCompiler
                         continue;
                     }
 
+                    if (attrKind == TypeMapAttributeKind.TypeMapAssemblyTarget && currentSource.Handle.Kind != HandleKind.AssemblyDefinition)
+                    {
+                        // The assembly targets are only for the assemblies: a type that holds entries does not link other assemblies.
+                        continue;
+                    }
+
                     TypeDesc typeMapGroup = type.Instantiation[0];
 
                     Map typeMapState;
@@ -451,17 +510,17 @@ namespace ILCompiler
                         // This attribute is definitely included in the type map.
                         if (!typeMapStates.TryGetValue(typeMapGroup, out typeMapState))
                         {
-                            typeMapStates[typeMapGroup] = typeMapState = new Map(typeMapGroup);
+                            typeMapStates[typeMapGroup] = typeMapState = new Map(typeMapGroup, owner);
                         }
                     }
                     else
                     {
                         // This attribute may be included in the type map, but this type map group isn't the one that triggered us to scan this assembly,
                         // so we need to save it as a pending map in case its type map group is triggered later when we scan another assembly.
-                        if (!pendingMaps.TryGetValue((currentAssembly, typeMapGroup), out var pendingMap))
+                        if (!pendingMaps.TryGetValue((currentSource, typeMapGroup), out var pendingMap))
                         {
-                            typeMapState = new Map(typeMapGroup);
-                            pendingMaps[(currentAssembly, typeMapGroup)] = (currentTypeMapGroup, typeMapState);
+                            typeMapState = new Map(typeMapGroup, owner);
+                            pendingMaps[(currentSource, typeMapGroup)] = (currentTypeMapGroup, typeMapState);
                         }
                         else
                         {
@@ -476,17 +535,21 @@ namespace ILCompiler
                         }
                     }
 
-                    // Mark this assembly + type map group as scanned to avoid redundant work in the future.
-                    scannedAssemblies.Add((currentAssembly, typeMapGroup));
+                    // Mark this source + type map group as scanned to avoid redundant work in the future.
+                    scannedSources.Add((currentSource, typeMapGroup));
 
                     try
                     {
-                        CustomAttributeValue<TypeWithSerializedName> attrValue = attr.DecodeValue(new TypeMapCustomAttributeTypeProvider(currentAssembly));
+                        CustomAttributeValue<TypeWithSerializedName> attrValue = attr.DecodeValue(new TypeMapCustomAttributeTypeProvider(currentModule));
 
                         switch (attrKind)
                         {
                             case TypeMapAttributeKind.TypeMapAssemblyTarget:
                                 ProcessTypeMapAssemblyTargetAttribute(attrValue, typeMapState);
+                                break;
+
+                            case TypeMapAttributeKind.TypeMapTypeTarget:
+                                ProcessTypeMapTypeTargetAttribute(attrValue, typeMapState);
                                 break;
 
                             case TypeMapAttributeKind.TypeMap:
@@ -504,23 +567,20 @@ namespace ILCompiler
                     }
                     catch (TypeSystemException ex)
                     {
-                        if (!typeMapStates.TryGetValue(typeMapGroup, out Map value))
-                        {
-                            value = new Map(typeMapGroup);
-                            typeMapStates[typeMapGroup] = value;
-                        }
-
+                        // The map that the attribute is for: if the attribute is only pending (it is for a group that this scan is not traversing),
+                        // the exception only takes effect when the source is reached for that group.
+                        Map value = typeMapState;
                         if (attrKind is TypeMapAttributeKind.TypeMapAssemblyTarget)
                         {
                             value.HasAssemblyTargetAttributes = true;
                         }
 
-                        if (attrKind is TypeMapAttributeKind.TypeMapAssemblyTarget or TypeMapAttributeKind.TypeMap)
+                        if (attrKind is TypeMapAttributeKind.TypeMapAssemblyTarget or TypeMapAttributeKind.TypeMapTypeTarget or TypeMapAttributeKind.TypeMap)
                         {
                             value.SetExternalTypeMapException(throwHelperEmitModule, ex);
                         }
 
-                        if (attrKind is TypeMapAttributeKind.TypeMapAssemblyTarget or TypeMapAttributeKind.TypeMapAssociation)
+                        if (attrKind is TypeMapAttributeKind.TypeMapAssemblyTarget or TypeMapAttributeKind.TypeMapTypeTarget or TypeMapAttributeKind.TypeMapAssociation)
                         {
                             value.SetAssociatedTypeMapException(throwHelperEmitModule, ex);
                         }
@@ -529,9 +589,9 @@ namespace ILCompiler
 
                 if (currentTypeMapGroup is not null)
                 {
-                    // Mark this assembly + type map group as scanned to avoid redundant work in the future.
-                    // We can hit this case when the type map group has no entries in the current assembly.
-                    scannedAssemblies.Add((currentAssembly, currentTypeMapGroup));
+                    // Mark this source + type map group as scanned to avoid redundant work in the future.
+                    // We can hit this case when the type map group has no entries in the current source.
+                    scannedSources.Add((currentSource, currentTypeMapGroup));
                 }
 
                 void ProcessTypeMapAssemblyTargetAttribute(CustomAttributeValue<TypeWithSerializedName> attrValue, Map typeMapState)
@@ -544,7 +604,7 @@ namespace ILCompiler
                         return;
                     }
 
-                    EcmaAssembly targetAssembly = (EcmaAssembly)assembly.Context.ResolveAssembly(AssemblyNameInfo.Parse(assemblyName), throwIfNotFound: true);
+                    EcmaAssembly targetAssembly = (EcmaAssembly)currentModule.Context.ResolveAssembly(AssemblyNameInfo.Parse(assemblyName), throwIfNotFound: true);
                     typeMapState.AddTargetModule(targetAssembly);
 
                     if (assemblyTargetsMode == TypeMapAssemblyTargetsMode.Traverse
@@ -552,7 +612,37 @@ namespace ILCompiler
                     {
                         // If we're traversing for the current type map group, enqueue the target to be scanned.
                         // Otherwise, we'll pull the targets to be scanned when the pending group is scanned.
-                        assembliesToScan.Enqueue((targetAssembly, typeMapState.TypeMapGroup));
+                        sourcesToScan.Enqueue((ScanSource.ForAssembly(targetAssembly), typeMapState.TypeMapGroup));
+                    }
+                }
+
+                void ProcessTypeMapTypeTargetAttribute(CustomAttributeValue<TypeWithSerializedName> attrValue, Map typeMapState)
+                {
+                    if (assemblyTargetsMode == TypeMapAssemblyTargetsMode.Record)
+                    {
+                        // The type maps that are recorded for a module (ReadyToRun) only cover the attributes of the assembly.
+                        // The runtime reads the types that hold entries from the attributes, after the assemblies of the group.
+                        return;
+                    }
+
+                    if (attrValue.FixedArguments is not [{ Value: TypeWithSerializedName { Type: TypeDesc holderType } }])
+                    {
+                        ThrowHelper.ThrowBadImageFormatException();
+                        return;
+                    }
+
+                    // A type that is not defined in metadata (an array for example) does not have attributes.
+                    if (holderType.GetTypeDefinition() is not EcmaType holder)
+                    {
+                        return;
+                    }
+
+                    typeMapState.AddTargetType(holder);
+
+                    if (currentTypeMapGroup is null || currentTypeMapGroup == typeMapState.TypeMapGroup)
+                    {
+                        // Same as for the assembly targets: the pending groups pull their targets when they are scanned.
+                        sourcesToScan.Enqueue((ScanSource.ForType(holder), typeMapState.TypeMapGroup));
                     }
                 }
 
@@ -572,7 +662,7 @@ namespace ILCompiler
                                 serializedTargetTypeName,
                                 null,
                                 null,
-                                currentAssembly);
+                                currentModule);
                             break;
                         }
 
@@ -589,7 +679,7 @@ namespace ILCompiler
                                 serializedTargetTypeName,
                                 trimTargetType,
                                 serializedTrimTargetTypeName,
-                                currentAssembly);
+                                currentModule);
                             break;
                         }
 
@@ -618,11 +708,11 @@ namespace ILCompiler
                         serializedTypeName,
                         associatedType,
                         serializedAssociatedTypeName,
-                        currentAssembly);
+                        currentModule);
                 }
             }
 
-            return new TypeMapMetadata(typeMapStates, $"Type maps rooted at {assembly}", assembly);
+            return typeMapStates;
         }
     }
 

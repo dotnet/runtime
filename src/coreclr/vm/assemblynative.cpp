@@ -1468,20 +1468,21 @@ extern "C" BOOL QCALLTYPE AssemblyNative_IsApplyUpdateSupported(QCallExceptionSt
 namespace
 {
     LPCSTR TypeMapAssemblyTargetAttributeName = "System.Runtime.InteropServices.TypeMapAssemblyTargetAttribute`1";
+    LPCSTR TypeMapTypeTargetAttributeName = "System.Runtime.InteropServices.TypeMapTypeTargetAttribute`1";
     LPCSTR TypeMapAttributeName = "System.Runtime.InteropServices.TypeMapAttribute`1";
     LPCSTR TypeMapAssociationAttributeName = "System.Runtime.InteropServices.TypeMapAssociationAttribute`1";
 
     bool IsTypeSpecForTypeMapGroup(
         MethodTable* groupTypeMT,
-        Assembly* pAssembly,
+        Module* pModule,
         mdToken typeSpec)
     {
         STANDARD_VM_CONTRACT;
         _ASSERTE(groupTypeMT != NULL);
-        _ASSERTE(pAssembly != NULL);
+        _ASSERTE(pModule != NULL);
         _ASSERTE(TypeFromToken(typeSpec) == mdtTypeSpec);
 
-        IMDInternalImport* pImport = pAssembly->GetMDImport();
+        IMDInternalImport* pImport = pModule->GetMDImport();
 
         PCCOR_SIGNATURE sig;
         ULONG sigLen;
@@ -1490,7 +1491,7 @@ namespace
         SigPointer sigPointer{ sig, sigLen };
 
         SigTypeContext context{};
-        TypeHandle typeMapAttribute = sigPointer.GetTypeHandleNT(pAssembly->GetModule(), &context);
+        TypeHandle typeMapAttribute = sigPointer.GetTypeHandleNT(pModule, &context);
         if (typeMapAttribute.IsNull()
             || !typeMapAttribute.HasInstantiation())    // All TypeMap attributes are generic.
         {
@@ -1504,25 +1505,27 @@ namespace
         return genericParams[0] == groupTypeMT;
     }
 
+    // Processes the attributes with the supplied name on the supplied parent: the assembly, or a type that holds type map entries.
     template<typename ATTR_PROCESSOR>
     void ProcessTypeMapAttribute(
         LPCSTR attributeName,
         ATTR_PROCESSOR& processor,
         MethodTable* groupTypeMT,
-        Assembly* pAssembly)
+        Module* pModule,
+        mdToken tkParent)
     {
         STANDARD_VM_CONTRACT;
         _ASSERTE(attributeName != NULL);
         _ASSERTE(groupTypeMT != NULL);
-        _ASSERTE(pAssembly != NULL);
+        _ASSERTE(pModule != NULL);
 
         HRESULT hr;
-        IMDInternalImport* pImport = pAssembly->GetMDImport();
+        IMDInternalImport* pImport = pModule->GetMDImport();
 
         // Find all the CustomAttributes with the supplied name
         MDEnumHolder hEnum(pImport);
         hr = pImport->EnumCustomAttributeByNameInit(
-            TokenFromRid(1, mdtAssembly),
+            tkParent,
             attributeName,
             &hEnum);
         IfFailThrow(hr);
@@ -1553,7 +1556,7 @@ namespace
             // the TypeSpec contents to be sure it doesn't match.
             if (tokenType != lastMatchingTypeSpec)
             {
-                if (!IsTypeSpecForTypeMapGroup(groupTypeMT, pAssembly, tokenType))
+                if (!IsTypeSpecForTypeMapGroup(groupTypeMT, pModule, tokenType))
                     continue;
 
                 lastMatchingTypeSpec = (mdTypeSpec)tokenType;
@@ -1642,16 +1645,18 @@ namespace
     }
 #endif
 
-    class AssemblyPtrCollectionTraits : public DefaultSHashTraits<Assembly*>
+    template<typename T>
+    class PtrCollectionTraits : public DefaultSHashTraits<T*>
     {
     public:
-        typedef Assembly* key_t;
-        static const key_t GetKey(Assembly* e) { LIMITED_METHOD_CONTRACT; return e; }
-        static count_t Hash(key_t key) { LIMITED_METHOD_CONTRACT; return (count_t)(size_t)key; }
+        typedef T* key_t;
+        static const key_t GetKey(T* e) { LIMITED_METHOD_CONTRACT; return e; }
+        static typename DefaultSHashTraits<T*>::count_t Hash(key_t key) { LIMITED_METHOD_CONTRACT; return (typename DefaultSHashTraits<T*>::count_t)(size_t)key; }
         static BOOL Equals(key_t lhs, key_t rhs) { LIMITED_METHOD_CONTRACT; return (lhs == rhs); }
     };
 
-    using AssemblyPtrCollection = SHash<AssemblyPtrCollectionTraits>;
+    using AssemblyPtrCollection = SHash<PtrCollectionTraits<Assembly>>;
+    using MethodTablePtrCollection = SHash<PtrCollectionTraits<MethodTable>>;
 
     // Used for TypeMapAssemblyTargetAttribute`1 attribute.
     class AssemblyTargetProcessor final
@@ -1718,6 +1723,79 @@ namespace
         }
     };
 
+    // The types that hold type map entries, reached from TypeMapTypeTargetAttribute`1 attributes (transitively).
+    class HolderTypeCollection final
+    {
+        MethodTablePtrCollection _toProcess;
+        MethodTablePtrCollection _processed;
+
+    public:
+        // The attributes of a generic type are the ones of its definition, which is also the type that is processed.
+        // A type that does not have a definition in metadata (an array) does not have attributes.
+        void Add(MethodTable* holder)
+        {
+            if (holder->IsArray())
+                return;
+
+            holder = holder->GetTypicalMethodTable();
+            if (_toProcess.Lookup(holder) == NULL
+                && _processed.Lookup(holder) == NULL)
+            {
+                _toProcess.Add(holder);
+            }
+        }
+
+        bool IsEmpty() const
+        {
+            return _toProcess.GetCount() == 0;
+        }
+
+        MethodTable* GetNext()
+        {
+            MethodTablePtrCollection::Iterator first = _toProcess.Begin();
+            MethodTable* tmp = *first;
+            _toProcess.Remove(first);
+            _processed.Add(tmp);
+            return tmp;
+        }
+    };
+
+    // Used for TypeMapTypeTargetAttribute`1 attribute.
+    class TypeTargetProcessor final
+    {
+        HolderTypeCollection& _holders;
+        Assembly* _requestingAssembly;
+
+    public:
+        TypeTargetProcessor(HolderTypeCollection& holders, Assembly* requestingAssembly)
+            : _holders{ holders }
+            , _requestingAssembly{ requestingAssembly }
+        {
+        }
+
+        BOOL Process(void const* blob, ULONG blobLen)
+        {
+            CustomAttributeParser cap(blob, blobLen);
+            IfFailThrow(cap.ValidateProlog());
+
+            LPCUTF8 typeName;
+            ULONG typeNameLen;
+            IfFailThrow(cap.GetNonNullString(&typeName, &typeNameLen));
+
+            // The name is relative to the assembly that declares the attribute unless it is assembly qualified.
+            StackSString typeNameString{ SString::Utf8, typeName, typeNameLen };
+            TypeHandle holder = TypeName::GetTypeReferencedByCustomAttribute(typeNameString.GetUnicode(), _requestingAssembly);
+
+            // Only a type that is defined in metadata can hold attributes.
+            if (!holder.IsNull() && !holder.IsTypeDesc())
+            {
+                _holders.Add(holder.AsMethodTable());
+            }
+
+            return TRUE;
+        }
+    };
+
     // Used for TypeMapAttribute`1 and TypeMapAssociationAttribute`1 attributes.
     class MappingsProcessor final
     {
@@ -1761,6 +1839,47 @@ namespace
             return _callback(_context, &arg);
         }
     };
+
+    // Processes the entries of the types that hold them. The attributes of a type are only read for the group, and the types
+    // it points to with TypeMapTypeTargetAttribute`1 are processed as well. Each type is processed once.
+    void ProcessHolderTypes(
+        HolderTypeCollection& holders,
+        MethodTable* groupTypeMT,
+        BOOL (*newExternalTypeEntry)(CallbackContext* context, ProcessAttributesCallbackArg* arg),
+        BOOL (*newProxyTypeEntry)(CallbackContext* context, ProcessAttributesCallbackArg* arg),
+        CallbackContext* context)
+    {
+        STANDARD_VM_CONTRACT;
+
+        while (!holders.IsEmpty())
+        {
+            MethodTable* pHolder = holders.GetNext();
+            Module* pModule = pHolder->GetModule();
+            Assembly* pAssembly = pHolder->GetAssembly();
+            mdTypeDef tkHolder = pHolder->GetCl();
+
+            // The names of the types in the entries are relative to the assembly of the holder.
+            {
+                GCX_COOP();
+                context->_currAssembly = pAssembly->GetExposedObject();
+            }
+
+            TypeTargetProcessor onTypeTarget{ holders, pAssembly };
+            ProcessTypeMapAttribute(TypeMapTypeTargetAttributeName, onTypeTarget, groupTypeMT, pModule, tkHolder);
+
+            if (newExternalTypeEntry != NULL)
+            {
+                MappingsProcessor onExternalType{ newExternalTypeEntry, context };
+                ProcessTypeMapAttribute(TypeMapAttributeName, onExternalType, groupTypeMT, pModule, tkHolder);
+            }
+
+            if (newProxyTypeEntry != NULL)
+            {
+                MappingsProcessor onProxyType{ newProxyTypeEntry, context };
+                ProcessTypeMapAttribute(TypeMapAssociationAttributeName, onProxyType, groupTypeMT, pModule, tkHolder);
+            }
+        }
+    }
 }
 
 extern "C" void QCALLTYPE TypeMapLazyDictionary_ProcessAttributes(
@@ -1786,6 +1905,7 @@ extern "C" void QCALLTYPE TypeMapLazyDictionary_ProcessAttributes(
     MethodTable* groupTypeMT = groupTypeTH.AsMethodTable();
 
     AssemblyTargetProcessor assemblies{ pAssembly };
+    HolderTypeCollection holders;
     ExternalTypeNameHash seenPreprocessedExternalEntries;
     while (!assemblies.IsEmpty())
     {
@@ -1888,7 +2008,8 @@ extern "C" void QCALLTYPE TypeMapLazyDictionary_ProcessAttributes(
                 TypeMapAssemblyTargetAttributeName,
                 assemblies,
                 groupTypeMT,
-                currAssembly);
+                currAssembly->GetModule(),
+                TokenFromRid(1, mdtAssembly));
 
             // We will only process the specific type maps if we have a callback to process
             // the entry and the precached map was not calculated for this module.
@@ -1899,7 +2020,8 @@ extern "C" void QCALLTYPE TypeMapLazyDictionary_ProcessAttributes(
                     TypeMapAttributeName,
                     onExternalType,
                     groupTypeMT,
-                    currAssembly);
+                    currAssembly->GetModule(),
+                    TokenFromRid(1, mdtAssembly));
             }
 
             if (newProxyTypeEntry != NULL && !hasPrecachedProxy)
@@ -1909,9 +2031,55 @@ extern "C" void QCALLTYPE TypeMapLazyDictionary_ProcessAttributes(
                     TypeMapAssociationAttributeName,
                     onProxyType,
                     groupTypeMT,
-                    currAssembly);
+                    currAssembly->GetModule(),
+                    TokenFromRid(1, mdtAssembly));
             }
         }
+
+        // The types that hold entries are followed after all the assemblies are processed. The type maps that a ReadyToRun image has
+        // only cover the attributes of the assembly, so the types are read from the attributes whether the maps are pre-cached or not.
+        TypeTargetProcessor onTypeTarget{ holders, currAssembly };
+        ProcessTypeMapAttribute(
+            TypeMapTypeTargetAttributeName,
+            onTypeTarget,
+            groupTypeMT,
+            currAssembly->GetModule(),
+            TokenFromRid(1, mdtAssembly));
+    }
+
+    ProcessHolderTypes(holders, groupTypeMT, newExternalTypeEntry, newProxyTypeEntry, context);
+
+    END_QCALL;
+}
+
+extern "C" void QCALLTYPE TypeMapLazyDictionary_ProcessAttributesFromType(
+    QCall::TypeHandle pOwnerType,
+    QCall::TypeHandle pGroupType,
+    BOOL (*newExternalTypeEntry)(CallbackContext* context, ProcessAttributesCallbackArg* arg),
+    BOOL (*newProxyTypeEntry)(CallbackContext* context, ProcessAttributesCallbackArg* arg),
+    CallbackContext* context,
+    QCallExceptionStatus* qcallError)
+{
+    QCALL_CONTRACT;
+    _ASSERTE(!pOwnerType.AsTypeHandle().IsNull());
+    _ASSERTE(!pGroupType.AsTypeHandle().IsNull());
+    _ASSERTE(newExternalTypeEntry != NULL || newProxyTypeEntry != NULL);
+    _ASSERTE(context != NULL);
+
+    BEGIN_QCALL;
+
+    TypeHandle groupTypeTH = pGroupType.AsTypeHandle();
+    _ASSERTE(!groupTypeTH.IsTypeDesc());
+    MethodTable* groupTypeMT = groupTypeTH.AsMethodTable();
+
+    // The lookup starts at the owner type and does not look at the assembly attributes.
+    // A type that is not defined in metadata (an array for example) does not have any entries.
+    TypeHandle ownerTypeTH = pOwnerType.AsTypeHandle();
+    if (!ownerTypeTH.IsTypeDesc())
+    {
+        HolderTypeCollection holders;
+        holders.Add(ownerTypeTH.AsMethodTable());
+        ProcessHolderTypes(holders, groupTypeMT, newExternalTypeEntry, newProxyTypeEntry, context);
     }
 
     END_QCALL;

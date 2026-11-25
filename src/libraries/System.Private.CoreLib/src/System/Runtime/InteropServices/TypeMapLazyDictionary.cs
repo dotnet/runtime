@@ -4,6 +4,7 @@
 using System;
 using System.Buffers;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -12,6 +13,7 @@ using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Text;
+using System.Threading;
 
 namespace System.Runtime.InteropServices
 {
@@ -91,6 +93,18 @@ namespace System.Runtime.InteropServices
             delegate* unmanaged<CallbackContext*, ProcessAttributesCallbackArg*, Interop.BOOL> newProxyTypeEntry,
             delegate* unmanaged<CallbackContext*, Interop.BOOL> newPrecachedExternalTypeMap,
             delegate* unmanaged<CallbackContext*, Interop.BOOL> newPrecachedProxyTypeMap,
+            CallbackContext* context);
+
+        // Processes the entries declared on the owner type and on the types reachable from it through TypeMapTypeTargetAttribute<TGroup>.
+#if CORECLR
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
+#endif
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeMapLazyDictionary_ProcessAttributesFromType")]
+        private static unsafe partial void ProcessAttributesFromType(
+            QCallTypeHandle ownerType,
+            QCallTypeHandle groupType,
+            delegate* unmanaged<CallbackContext*, ProcessAttributesCallbackArg*, Interop.BOOL> newExternalTypeEntry,
+            delegate* unmanaged<CallbackContext*, ProcessAttributesCallbackArg*, Interop.BOOL> newProxyTypeEntry,
             CallbackContext* context);
 
 #if CORECLR
@@ -282,6 +296,27 @@ namespace System.Runtime.InteropServices
             return context;
         }
 
+        private static unsafe CallbackContext CreateOwnerMaps(
+            RuntimeType groupType,
+            RuntimeType ownerType,
+            delegate* unmanaged<CallbackContext*, ProcessAttributesCallbackArg*, Interop.BOOL> newExternalTypeEntry,
+            delegate* unmanaged<CallbackContext*, ProcessAttributesCallbackArg*, Interop.BOOL> newProxyTypeEntry)
+        {
+            CallbackContext context = new(groupType);
+            ProcessAttributesFromType(
+                new QCallTypeHandle(ref ownerType),
+                new QCallTypeHandle(ref groupType),
+                newExternalTypeEntry,
+                newProxyTypeEntry,
+                &context);
+
+            // If an exception was thrown during the processing of
+            // the attributes, rethrow it.
+            context.CreationException?.Throw();
+
+            return context;
+        }
+
         public static IReadOnlyDictionary<string, Type> CreateExternalTypeMap(RuntimeType groupType)
         {
             unsafe
@@ -303,6 +338,144 @@ namespace System.Runtime.InteropServices
                     &NewProxyTypeEntry).ProxyTypeMap;
             }
         }
+
+        private static IReadOnlyDictionary<string, Type> CreateOwnerExternalTypeMap(RuntimeType groupType, RuntimeType ownerType)
+        {
+            unsafe
+            {
+                return CreateOwnerMaps(
+                    groupType,
+                    ownerType,
+                    &NewExternalTypeEntry,
+                    null).ExternalTypeMap;
+            }
+        }
+
+        private static IReadOnlyDictionary<Type, Type> CreateOwnerProxyTypeMap(RuntimeType groupType, RuntimeType ownerType)
+        {
+            unsafe
+            {
+                return CreateOwnerMaps(
+                    groupType,
+                    ownerType,
+                    null,
+                    &NewProxyTypeEntry).ProxyTypeMap;
+            }
+        }
+
+        // CoreCLR implementation of TypeMapping.TryGetValue: reflection based, using the lazy maps above.
+        // The maps are cached per group type, so a collectible group type does not stay alive because of the cache.
+        // The maps that start at an owner type are cached per group and owner type.
+        private sealed class GroupMaps
+        {
+            public IReadOnlyDictionary<string, Type>? External;
+            public IReadOnlyDictionary<Type, Type>? Proxy;
+            public ConditionalWeakTable<RuntimeType, GroupMaps>? Owners;
+        }
+
+        private static readonly ConditionalWeakTable<RuntimeType, GroupMaps> s_groupMaps = new();
+        private static readonly ConcurrentDictionary<(Type Target, Type ValueType), Delegate?> s_valueGetters = new();
+
+        private static GroupMaps GetOwnerMaps(RuntimeType groupType, RuntimeType ownerType)
+        {
+            GroupMaps maps = s_groupMaps.GetOrCreateValue(groupType);
+            ConditionalWeakTable<RuntimeType, GroupMaps>? owners = maps.Owners;
+            if (owners is null)
+            {
+                Interlocked.CompareExchange(ref maps.Owners, new ConditionalWeakTable<RuntimeType, GroupMaps>(), null);
+                owners = maps.Owners;
+            }
+
+            return owners.GetOrCreateValue(ownerType);
+        }
+
+        public static bool TryGetValue<TValue>(RuntimeType groupType, string key, [MaybeNullWhen(false)] out TValue value)
+        {
+            GroupMaps maps = s_groupMaps.GetOrCreateValue(groupType);
+            IReadOnlyDictionary<string, Type> map = maps.External ??= CreateExternalTypeMap(groupType);
+            if (!map.TryGetValue(key, out Type? target))
+            {
+                value = default;
+                return false;
+            }
+
+            return TryGetTargetValue(target, out value);
+        }
+
+        public static bool TryGetValue<TValue>(RuntimeType groupType, Type key, [MaybeNullWhen(false)] out TValue value)
+        {
+            GroupMaps maps = s_groupMaps.GetOrCreateValue(groupType);
+            IReadOnlyDictionary<Type, Type> map = maps.Proxy ??= CreateProxyTypeMap(groupType);
+            if (!map.TryGetValue(key, out Type? target))
+            {
+                value = default;
+                return false;
+            }
+
+            return TryGetTargetValue(target, out value);
+        }
+
+        public static bool TryGetValue<TTypeMapGroup, TTypeMapGroupOwner, TValue>(string key, [MaybeNullWhen(false)] out TValue value)
+        {
+            RuntimeType groupType = (RuntimeType)typeof(TTypeMapGroup);
+            RuntimeType ownerType = (RuntimeType)typeof(TTypeMapGroupOwner);
+            GroupMaps maps = GetOwnerMaps(groupType, ownerType);
+            IReadOnlyDictionary<string, Type> map = maps.External ??= CreateOwnerExternalTypeMap(groupType, ownerType);
+            if (!map.TryGetValue(key, out Type? target))
+            {
+                value = default;
+                return false;
+            }
+
+            return TryGetTargetValue(target, out value);
+        }
+
+        public static bool TryGetValue<TTypeMapGroup, TTypeMapGroupOwner, TValue>(Type key, [MaybeNullWhen(false)] out TValue value)
+        {
+            RuntimeType groupType = (RuntimeType)typeof(TTypeMapGroup);
+            RuntimeType ownerType = (RuntimeType)typeof(TTypeMapGroupOwner);
+            GroupMaps maps = GetOwnerMaps(groupType, ownerType);
+            IReadOnlyDictionary<Type, Type> map = maps.Proxy ??= CreateOwnerProxyTypeMap(groupType, ownerType);
+            if (!map.TryGetValue(key, out Type? target))
+            {
+                value = default;
+                return false;
+            }
+
+            return TryGetTargetValue(target, out value);
+        }
+
+        private static bool TryGetTargetValue<TValue>(Type target, [MaybeNullWhen(false)] out TValue value)
+        {
+            // The cache is not collectible, so it can't hold on to types that are.
+            Func<TValue>? getter = target.IsCollectible || typeof(TValue).IsCollectible
+                ? CreateValueGetter<TValue>(target)
+                : (Func<TValue>?)s_valueGetters.GetOrAdd((target, typeof(TValue)), static k => CreateValueGetter<TValue>(k.Target));
+
+            if (getter is null)
+            {
+                value = default;
+                return false;
+            }
+
+            value = getter();
+            return true;
+        }
+
+        private static Func<TValue>? CreateValueGetter<TValue>(Type target)
+        {
+            if (!typeof(ITypeMapValue<TValue>).IsAssignableFrom(target) || target.IsInterface || target.ContainsGenericParameters)
+            {
+                return null;
+            }
+
+            MethodInfo getValueCore = typeof(TypeMapLazyDictionary)
+                .GetMethod(nameof(GetValueCore), BindingFlags.NonPublic | BindingFlags.Static)!
+                .MakeGenericMethod(target, typeof(TValue));
+            return getValueCore.CreateDelegate<Func<TValue>>();
+        }
+
+        private static TValue GetValueCore<T, TValue>() where T : ITypeMapValue<TValue>, allows ref struct => T.Value;
 
         private abstract class LazyTypeLoadDictionary<TKey> : IReadOnlyDictionary<TKey, Type> where TKey : notnull
         {

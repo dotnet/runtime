@@ -37,9 +37,19 @@ namespace ILCompiler
 
         protected abstract bool IsEmpty { get; }
 
+        /// <summary>
+        /// Gets a value that indicates whether the manager can have type maps to emit even if it is empty when the header of the image is created.
+        /// </summary>
+        protected virtual bool CanBecomeNonEmpty => false;
+
+        /// <summary>
+        /// Gets a value that indicates whether there are no type maps to emit once the program is analyzed.
+        /// </summary>
+        internal virtual bool IsEmptyAtEmission => IsEmpty;
+
         public virtual void AddToReadyToRunHeader(ReadyToRunHeaderNode header, NodeFactory nodeFactory, INativeFormatTypeReferenceProvider commonFixupsTableNode)
         {
-            if (IsEmpty)
+            if (IsEmpty && !CanBecomeNonEmpty)
             {
                 return; // No type maps to emit
             }
