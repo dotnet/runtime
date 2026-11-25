@@ -237,7 +237,7 @@ bool Compiler::optCopyProp(
 
         // Because of this dependence on live variable analysis, CopyProp phase is immediately
         // after Liveness, SSA and VN.
-        if ((newLclNum != info.compThisArg) && !VarSetOps::IsMember(this, compCurLife, newLclVarDsc->lvVarIndex))
+        if (!VarSetOps::IsMember(this, compCurLife, newLclVarDsc->lvVarIndex))
         {
             continue;
         }
@@ -404,9 +404,8 @@ bool Compiler::optBlockCopyProp(BasicBlock* block, LclNumToLiveDefsMap* curSsaNa
             {
                 unsigned lclNum = tree->AsLclVarCommon()->GetLclNum();
 
-                // If we encounter first use of a param or this pointer add it as a
-                // live definition. Since they are always live, we'll do it only once.
-                if ((lvaGetDesc(lclNum)->lvIsParam || (lclNum == info.compThisArg)) && !curSsaName->Lookup(lclNum))
+                // Seed the stack with the implicit entry definition of a parameter.
+                if (lvaGetDesc(lclNum)->lvIsParam && !curSsaName->Lookup(lclNum))
                 {
                     optCopyPropPushDef(tree->AsLclVarCommon(), lclNum, tree->AsLclVarCommon()->GetSsaNum(), curSsaName);
                 }
@@ -504,7 +503,7 @@ PhaseStatus Compiler::optVnCopyProp()
             for (LclNumToLiveDefsMap::Node* const iter : LclNumToLiveDefsMap::KeyValueIteration(&m_curSsaName))
             {
                 unsigned lclNum = iter->GetKey();
-                assert(m_compiler->lvaGetDesc(lclNum)->lvIsParam || (lclNum == m_compiler->info.compThisArg));
+                assert(m_compiler->lvaGetDesc(lclNum)->lvIsParam);
 
                 CopyPropSsaDefStack* defStack = iter->GetValue();
                 assert(defStack->Height() == 1);
