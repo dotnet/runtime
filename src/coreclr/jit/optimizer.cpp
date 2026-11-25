@@ -4986,8 +4986,8 @@ bool Compiler::optVNIsLoopInvariant(ValueNum vn, FlowGraphNaturalLoop* loop, VNS
     VNPhiDef       phiDef;
     VNMemoryPhiDef memoryPhiDef;
 
-    // Loop indices in memory VNs refer to the loops computed for value numbering,
-    // which may outlive m_loops (e.g. after RBO invalidates the flow graph annotations).
+    // Loop indices in memory VNs refer to the loops computed for value numbering. Use those
+    // rather than m_loops, which is cleared once RBO runs.
     FlowGraphNaturalLoops* const vnLoops = m_blockToLoop->GetLoops();
 
     if (vnStore->GetVNFunc(vn, &funcApp))

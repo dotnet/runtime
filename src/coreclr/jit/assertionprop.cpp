@@ -100,8 +100,12 @@ static Range GetRange(Compiler*        comp,
 // Remarks:
 //   The SSA walk can relate X to the bound via facts established on a previous iteration
 //   (e.g. on a loop backedge). That is only sound when the bound cannot change between
-//   iterations. Uses the loop structure computed for value numbering, which matches the
-//   loop indices recorded in memory VNs.
+//   iterations.
+//
+//   Uses the loop structure computed for the most recent value numbering, whose loop
+//   indices also tag memory and opaque VNs. Flow changes since then (RBO without jump
+//   threading, branch folding in assertion prop) only remove edges, so these loops may
+//   be larger than the current ones but never smaller, which is conservative here.
 //
 bool Compiler::optIsBoundInvariantInLoopsOf(ValueNum xVN, ValueNum bndVN)
 {
