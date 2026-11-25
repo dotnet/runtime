@@ -3911,9 +3911,10 @@ int LinearScan::BuildCastUses(GenTreeCast* cast, SingleTypeRegSet candidates)
     RefPosition* srcUse = BuildUse(src, candidates);
 
 #ifdef TARGET_64BIT
-    // A long -> int cast is a copy - the code generator will elide
-    // it if the source and destination registers are the same.
-    if (src->TypeIs(TYP_LONG) && cast->TypeIs(TYP_INT))
+    // A long -> int cast or a non-overflowing int -> int cast is a copy - the code generator
+    // will elide it if the source and destination registers are the same.
+    if ((src->TypeIs(TYP_LONG) && cast->TypeIs(TYP_INT)) ||
+        (src->TypeIs(TYP_INT) && (cast->CastToType() == TYP_INT) && !cast->gtOverflow()))
     {
         tgtPrefUse = srcUse;
     }
