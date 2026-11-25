@@ -24,7 +24,7 @@ namespace System.Net.NetworkInformation
             }
         }
 
-        public override bool ForwardingEnabled { get { return _stats.forwardingEnabled != 0; } }
+        public override bool ForwardingEnabled { get { return _stats.forwarding == Interop.IpHlpApi.MibIpStatsForwarding.Forwarding; } }
 
         public override int DefaultTtl { get { return (int)_stats.defaultTtl; } }
 
