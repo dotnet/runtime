@@ -125,17 +125,8 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
-            if (!result && factory.TypeSystemContext.IsGenericArrayInterfaceType(owningType))
-            {
-                // We need to also do this for generic interfaces on arrays because they have a weird casting rule
-                // that doesn't require the implemented interface to be variant to consider it castable.
-                // For value types, we only need this when the array is castable by size (int[] and ICollection<uint>),
-                // or it's a reference type (Derived[] and ICollection<Base>).
-                TypeDesc elementType = owningType.Instantiation[0];
-                result =
-                    CastingHelper.IsArrayElementTypeCastableBySize(elementType) ||
-                    (elementType.IsDefType && !elementType.IsValueType);
-            }
+            if (!result)
+                result = factory.TypeSystemContext.IsArrayVariantCastable(owningType);
 
             return result;
         }
@@ -147,8 +138,8 @@ namespace ILCompiler.DependencyAnalysis
         public override bool InterestingForDynamicDependencyAnalysis => false;
         public override bool StaticDependenciesAreComputed => true;
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory) => null;
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory) => null;
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory) => null;
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory factory) { }
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory factory) { }
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink sink, NodeFactory factory) { }
     }
 }

@@ -93,7 +93,6 @@ namespace System.Threading.Tasks.Dataflow
             ArgumentNullException.ThrowIfNull(dataflowBlockOptions);
 
             if (transformSync == null && transformAsync == null) throw new ArgumentNullException("transform");
-            if (dataflowBlockOptions == null) throw new ArgumentNullException(nameof(dataflowBlockOptions));
 
             Debug.Assert(transformSync == null ^ transformAsync == null, "Exactly one of transformSync and transformAsync must be null.");
 

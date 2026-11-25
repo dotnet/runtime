@@ -12,6 +12,9 @@
     <!-- https://github.com/dotnet/runtime/issues/126862 -->
     <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
     <EnableAotAnalyzer>false</EnableAotAnalyzer>
+    <!-- ILLink enables open-generic trimmability validation by default, but CallSiteFactoryTest deliberately registers
+         constraint shapes it rejects. VerifyOpenGenericTrimmabilityChecks enables the validation explicitly. -->
+    <VerifyDependencyInjectionOpenGenericServiceTrimmability>false</VerifyDependencyInjectionOpenGenericServiceTrimmability>
   </PropertyGroup>
 
   <ItemGroup>

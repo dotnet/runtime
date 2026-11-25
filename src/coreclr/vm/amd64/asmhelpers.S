@@ -8,6 +8,8 @@
 #define real4 dword
 #define real8 qword
 
+#ifdef PROFILING_SUPPORTED
+
 # On linux arguments can be passed in non-sequential registers. Integer arguments are
 # passed in sequential integer registers and floating point registers are passed in
 # sequential floating point registers. This presents a problem when we go to pass the
@@ -279,6 +281,8 @@ NESTED_ENTRY ProfileTailcallNaked, _TEXT, NoHandler
   ret
 NESTED_END ProfileTailcallNaked, _TEXT
 
+#endif // PROFILING_SUPPORTED
+
 #ifdef TARGET_APPLE
 # EXTERN_C void* GetThreadVarsAddress()
 # <NOTE>
@@ -323,17 +327,6 @@ LEAF_END GetTlsIndexObjectDescOffset, _TEXT
 #endif // !FEATURE_EMULATED_TLS
 #endif // !TARGET_OSX
 
-LEAF_ENTRY  JIT_PollGC, _TEXT
-        PREPARE_EXTERNAL_VAR g_TrapReturningThreads, rax
-        cmp     dword ptr [rax], 0
-        jnz     LOCAL_LABEL(JIT_PollGCRarePath)
-        ret
-LOCAL_LABEL(JIT_PollGCRarePath):
-        PREPARE_EXTERNAL_VAR g_pPollGC, rax
-        mov     rax, [rax]
-        jmp     rax
-LEAF_END  JIT_PollGC, _TEXT
-
 //rdi -This pointer
 //rsi -ReturnBuffer
 LEAF_ENTRY ThisPtrRetBufPrecodeWorker, _TEXT
@@ -343,91 +336,6 @@ LEAF_ENTRY ThisPtrRetBufPrecodeWorker, _TEXT
     mov rdi, r11
     jmp METHODDESC_REGISTER
 LEAF_END ThisPtrRetBufPrecodeWorker, _TEXT
-
-//
-// Prologue of all funclet calling helpers (CallXXXXFunclet)
-//
-.macro FUNCLET_CALL_PROLOGUE localsCount, alignStack
-        push_nonvol_reg r15     // save preserved regs for OS stackwalker
-        push_nonvol_reg r14     // ...
-        push_nonvol_reg r13     // ...
-        push_nonvol_reg r12     // ...
-        push_nonvol_reg rbx     // ...
-        push_nonvol_reg rbp     // ...
-
-        stack_alloc_size = \localsCount * 8 + \alignStack * 8
-
-        alloc_stack     stack_alloc_size
-
-        END_PROLOGUE
-.endm
-
-//
-// Epilogue of all funclet calling helpers (CallXXXXFunclet)
-//
-.macro FUNCLET_CALL_EPILOGUE
-        free_stack      stack_alloc_size
-
-        pop_nonvol_reg rbp
-        pop_nonvol_reg rbx
-        pop_nonvol_reg r12
-        pop_nonvol_reg r13
-        pop_nonvol_reg r14
-        pop_nonvol_reg r15
-.endm
-
-// This helper enables us to call into a funclet after restoring Fp register
-NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
-        // On entry:
-        //
-        // RDI = throwable
-        // RSI = PC to invoke
-        // RDX = address of CONTEXT record; used to restore the non-volatile registers of CrawlFrame
-        // RCX = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
-        //
-
-        FUNCLET_CALL_PROLOGUE 0, 1
-
-        //  Restore RBX, RBP, R12, R13, R14, R15 from CONTEXT
-        mov     rbx, [rdx + OFFSETOF__CONTEXT__Rbx]
-        mov     rbp, [rdx + OFFSETOF__CONTEXT__Rbp]
-        mov     r12, [rdx + OFFSETOF__CONTEXT__R12]
-        mov     r13, [rdx + OFFSETOF__CONTEXT__R13]
-        mov     r14, [rdx + OFFSETOF__CONTEXT__R14]
-        mov     r15, [rdx + OFFSETOF__CONTEXT__R15]
-
-        // Save the SP of this function.
-        mov     [rcx], rsp
-        // Invoke the funclet
-        call    rsi
-
-        FUNCLET_CALL_EPILOGUE
-        ret
-NESTED_END CallEHFunclet, _TEXT
-
-// This helper enables us to call into a filter funclet by passing it the CallerSP to lookup the
-// frame pointer for accessing the locals in the parent method.
-NESTED_ENTRY CallEHFilterFunclet, _TEXT, NoHandler
-        // On entry:
-        //
-        // RDI = throwable
-        // RSI = RBP of main function
-        // RDX = PC to invoke
-        // RCX = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
-        //
-
-        FUNCLET_CALL_PROLOGUE 0, 1
-
-        // Restore RBP
-        mov     rbp, rsi
-        // Save the SP of this function
-        mov     [rcx], rsp
-        // Invoke the filter funclet
-        call    rdx
-
-        FUNCLET_CALL_EPILOGUE
-        ret
-NESTED_END CallEHFilterFunclet, _TEXT
 
 #ifdef FEATURE_INTERPRETER
 

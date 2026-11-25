@@ -190,9 +190,9 @@ namespace Test.Cryptography
 
         private static bool CheckIfRsaPssSupported()
         {
-            if (PlatformDetection.IsBrowser)
+            if (PlatformDetection.IsWasm)
             {
-                // Browser doesn't support PSS or RSA at all.
+                // Browser and WASI don't support PSS or RSA at all.
                 return false;
             }
 
@@ -215,13 +215,13 @@ namespace Test.Cryptography
         internal const TestPlatforms AppleCrypto = TestPlatforms.OSX | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst;
         internal const TestPlatforms MobileAppleCrypto = TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst;
 
-        // Platforms that support OpenSSL - all Unix except OSX/iOS/tvOS/MacCatalyst, Android, and Browser
-        internal const TestPlatforms OpenSSL = TestPlatforms.AnyUnix & ~(AppleCrypto | TestPlatforms.Android | TestPlatforms.Browser);
+        // Platforms that support OpenSSL - all Unix except OSX/iOS/tvOS/MacCatalyst, Android, Browser, and WASI
+        internal const TestPlatforms OpenSSL = TestPlatforms.AnyUnix & ~(AppleCrypto | TestPlatforms.Android | TestPlatforms.Browser | TestPlatforms.Wasi);
 
         // Whether or not the current platform supports RC2
         internal static bool IsRC2Supported => s_lazyIsRC2Supported.Value;
 
-        internal static bool IsDSASupported => !PlatformDetection.IsApplePlatform && !PlatformDetection.IsBrowser;
+        internal static bool IsDSASupported => !PlatformDetection.IsApplePlatform && !PlatformDetection.IsWasm;
         internal static bool IsDSANotSupported => !IsDSASupported;
 
         internal static bool IsRSA384Supported => s_lazyIsRSA384Supported.Value;

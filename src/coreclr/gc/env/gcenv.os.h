@@ -125,17 +125,6 @@ public:
     //   true if the initialization succeeded, false if it did not
     bool CreateAutoEventNoThrow(bool initialState);
 
-    // Initializes this event to be a host-unaware manual reset event with the
-    // given initial state.
-    // Returns:
-    //   true if the initialization succeeded, false if it did not
-    bool CreateOSManualEventNoThrow(bool initialState);
-
-    // Initializes this event to be a host-unaware auto-resetting event with the
-    // given initial state.
-    // Returns:
-    //   true if the initialization succeeded, false if it did not
-    bool CreateOSAutoEventNoThrow(bool initialState);
 };
 
 // GC thread function prototype
@@ -418,6 +407,10 @@ public:
     // Return:
     //  Size of the cache
     static size_t GetCacheSizePerLogicalCpu(bool trueSize = true);
+
+    // Check if the OS supports setting the calling thread's affinity to a specific processor.
+    // The server GC relies on this, together with CanGetCurrentProcessorNumber, to map processors to heaps.
+    static bool CanSetThreadAffinity();
 
     // Sets the calling thread's affinity to only run on the processor specified.
     // Parameters:

@@ -88,9 +88,17 @@ namespace System.ComponentModel.DataAnnotations
         {
             SetupRegex();
 
-            return string.Format(CultureInfo.CurrentCulture, ErrorMessageString, name, Pattern);
+            return FormatMessage(ErrorMessageString, name);
         }
 
+        /// <inheritdoc />
+        /// <remarks>
+        /// <c>{0}</c> is replaced with <paramref name="name" /> and <c>{1}</c> is replaced with <see cref="Pattern" />.
+        /// </remarks>
+        public override string FormatMessage([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, string name)
+        {
+            return string.Format(CultureInfo.CurrentCulture, format, name, Pattern);
+        }
 
         /// <summary>
         ///     Sets up the <see cref="Regex" /> property from the <see cref="Pattern" /> property.

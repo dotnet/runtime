@@ -1,6 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <!-- TODO: Remove once migrated to unsafe-v2. -->
+    <MemorySafetyRulesVersion>1</MemorySafetyRulesVersion>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);$(NetCoreAppMinimum)-windows;$(NetCoreAppMinimum);netstandard2.1;netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <TargetFrameworks Condition="'$(NetCoreAppPrevious)' != ''">$(TargetFrameworks);$(NetCoreAppPrevious)-windows;$(NetCoreAppPrevious)</TargetFrameworks>
     <DefineConstants>$(DefineConstants);BUILDING_PKCS</DefineConstants>
@@ -17,6 +19,14 @@ System.Security.Cryptography.Pkcs.EnvelopedCms</PackageDescription>
     <!-- TODO: Add package README file: https://github.com/dotnet/runtime/issues/99358 -->
     <EnableDefaultPackageReadmeFile>false</EnableDefaultPackageReadmeFile>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The old bootstrap targeting packs predate required .NET 11 APIs; leave newer packs unchanged. -->
+    <!-- TODO: Remove after rebootstrap replaces the old .NET 11 targeting packs. -->
+    <KnownFrameworkReference Update="Microsoft.NETCore.App">
+      <TargetingPackVersion Condition="'%(KnownFrameworkReference.TargetFramework)' == 'net11.0' and ('%(KnownFrameworkReference.TargetingPackVersion)' == '11.0.0-rc.1.26420.103' or '%(KnownFrameworkReference.TargetingPackVersion)' == '11.0.0-preview.7.26381.103')">11.0.0-rc.2.26478.114</TargetingPackVersion>
+    </KnownFrameworkReference>
+  </ItemGroup>
 
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
@@ -68,6 +78,7 @@ System.Security.Cryptography.Pkcs.EnvelopedCms</PackageDescription>
 
      <!-- Internal types (platform independent) -->
     <Compile Include="Internal\Cryptography\DecryptorPal.cs" />
+    <Compile Include="Internal\Cryptography\EnvelopedCmsKey.cs" />
     <Compile Include="Internal\Cryptography\KeyAgreeRecipientInfoPal.cs" />
     <Compile Include="Internal\Cryptography\KeyLengths.cs" />
     <Compile Include="Internal\Cryptography\KeyTransRecipientInfoPal.cs" />
@@ -179,6 +190,10 @@ System.Security.Cryptography.Pkcs.EnvelopedCms</PackageDescription>
     <Compile Include="System\Security\Cryptography\Pkcs\Asn1\OtherKeyAttributeAsn.xml.cs">
       <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\OtherKeyAttributeAsn.xml</DependentUpon>
     </Compile>
+    <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\OtherRecipientInfoAsn.xml" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\OtherRecipientInfoAsn.xml.cs">
+      <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\OtherRecipientInfoAsn.xml</DependentUpon>
+    </Compile>
     <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\RecipientEncryptedKeyAsn.xml" />
     <Compile Include="System\Security\Cryptography\Pkcs\Asn1\RecipientEncryptedKeyAsn.xml.cs">
       <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\RecipientEncryptedKeyAsn.xml</DependentUpon>
@@ -195,6 +210,28 @@ System.Security.Cryptography.Pkcs.EnvelopedCms</PackageDescription>
     <Compile Include="System\Security\Cryptography\Pkcs\Asn1\RecipientKeyIdentifier.xml.cs">
       <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\RecipientKeyIdentifier.xml</DependentUpon>
     </Compile>
+  </ItemGroup>
+
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net11.0'))">
+    <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\CmsOriForKemOtherInfoAsn.xml" />
+    <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\KemRecipientInfoAsn.xml" />
+    <Compile Include="Internal\Cryptography\KemRecipientInfoPal.cs" />
+    <Compile Include="Internal\Cryptography\Pal\AnyOS\ManagedPal.Kem.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\CmsOriForKemOtherInfoAsn.xml.cs">
+      <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\CmsOriForKemOtherInfoAsn.xml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\KemRecipientInfoAsn.xml.cs">
+      <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\KemRecipientInfoAsn.xml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Security\Cryptography\Pkcs\EnvelopedCms.Kem.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\KemRecipientInfo.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net11.0'))">
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IUnion.cs"
+             Link="System\Runtime\CompilerServices\IUnion.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\UnionAttribute.cs"
+             Link="System\Runtime\CompilerServices\UnionAttribute.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
@@ -585,6 +622,7 @@ System.Security.Cryptography.Pkcs.EnvelopedCms</PackageDescription>
     <Compile Include="System\Security\Cryptography\Pkcs\Asn1\SigningCertificateV2Asn.xml.cs">
       <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\SigningCertificateV2Asn.xml</DependentUpon>
     </Compile>
+    <Compile Include="System\Security\Cryptography\NetStandardShims.cs" />
     <Compile Include="System\Security\Cryptography\Pkcs\CmsHash.cs" />
     <Compile Include="System\Security\Cryptography\Pkcs\CmsSignature.cs" />
     <Compile Include="System\Security\Cryptography\Pkcs\CmsSignature.ECDsa.cs" />

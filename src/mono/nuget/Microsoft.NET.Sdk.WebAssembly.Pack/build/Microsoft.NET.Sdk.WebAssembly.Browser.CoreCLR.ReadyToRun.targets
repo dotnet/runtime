@@ -1,0 +1,21 @@
+<!--
+***********************************************************************************************
+Microsoft.NET.Sdk.WebAssembly.Browser.CoreCLR.ReadyToRun.targets
+
+CoreCLR browser-wasm ReadyToRun hooks used with both SDK-resolved and in-build crossgen2.
+Appended to AfterMicrosoftNETSdkTargets by Microsoft.NET.Sdk.WebAssembly.Browser.props.
+
+Copyright (c) .NET Foundation. All rights reserved.
+***********************************************************************************************
+-->
+<Project>
+  <Target Name="_WasmCoreClrAddPerformanceInstrumentationToReadyToRun"
+          Condition="'$(UseMonoRuntime)' == 'false' and '$(PublishReadyToRun)' == 'true' and '$(WasmPerformanceInstrumentation)' != ''"
+          DependsOnTargets="_AddWasmPerformanceInstrumentationEnvironmentVariables"
+          BeforeTargets="_PrepareForReadyToRunCompilation">
+    <PropertyGroup>
+      <PublishReadyToRunCrossgen2ExtraArgs>$(PublishReadyToRunCrossgen2ExtraArgs);--codegenopt:WasmPerformanceInstrumentation=$(_WasmPerfInstFilter)</PublishReadyToRunCrossgen2ExtraArgs>
+    </PropertyGroup>
+  </Target>
+
+</Project>

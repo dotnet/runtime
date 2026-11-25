@@ -217,6 +217,7 @@ namespace System.Reflection.Emit
         protected override TypeAttributes GetAttributeFlagsImpl() { return _genericType.Attributes; }
 
         public override bool IsTypeDefinition => false;
+        public override bool IsByRefLike => _genericType.IsByRefLike;
         public override bool IsSZArray => false;
 
         protected override bool IsArrayImpl() { return false; }

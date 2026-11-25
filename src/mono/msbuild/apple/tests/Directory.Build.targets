@@ -1,0 +1,5 @@
+<Project>
+  <!-- Pairs with Directory.Build.props: without this the targets half of the chain would still resolve
+       to src/mono/Directory.Build.targets, so only the props half would skip the src/mono conventions. -->
+  <Import Project="..\..\..\..\..\Directory.Build.targets" />
+</Project>

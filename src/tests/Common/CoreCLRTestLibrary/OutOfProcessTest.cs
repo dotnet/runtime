@@ -25,6 +25,7 @@ namespace TestLibrary
     public static class OutOfProcessTest
     {
         private const string OutOfProcessPlanFileEnvironmentVariable = "__TestOutOfProcessPlanFile";
+        private const string OutOfProcessResultDirectoryEnvironmentVariable = "__TestOutOfProcessResultDirectory";
         private const string OutOfProcessResultFileSuffix = ".outofprocess-result";
         private const string OutOfProcessResultFormatVersion = "2";
         private const string OutOfProcessResultPassed = "Pass";
@@ -81,7 +82,7 @@ namespace TestLibrary
         {
             if (IsUsingPrecomputedResults)
             {
-                ImportPrecomputedResult(assemblyPath, testPathPrefix);
+                ImportPrecomputedResult(assemblyPath);
                 return;
             }
 
@@ -209,7 +210,21 @@ namespace TestLibrary
             }
         }
 
-        private static void ImportPrecomputedResult(string assemblyPath, string testPathPrefix)
+        private static string GetResultFile(string testAssemblyPath)
+        {
+            // Hosts that only expose the merged runner's directory (WASI) collect the results there,
+            // with the relative test path flattened into a file name. The run script must match.
+            string resultDirectory = Environment.GetEnvironmentVariable(OutOfProcessResultDirectoryEnvironmentVariable);
+            if (!String.IsNullOrEmpty(resultDirectory))
+            {
+                string resultName = testAssemblyPath.Replace("@", "@a").Replace("/", "@s");
+                return Path.Combine(resultDirectory, resultName + OutOfProcessResultFileSuffix);
+            }
+
+            return Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), testAssemblyPath)) + OutOfProcessResultFileSuffix;
+        }
+
+        private static void ImportPrecomputedResult(string testAssemblyPath)
         {
             string resultToken = Environment.GetEnvironmentVariable(OutOfProcessResultTokenEnvironmentVariable);
             if (String.IsNullOrEmpty(resultToken))
@@ -217,18 +232,13 @@ namespace TestLibrary
                 Assert.Fail($"Test Infrastructure Failure: Environment variable '{OutOfProcessResultTokenEnvironmentVariable}' is not set.");
             }
 
-            string testAssemblyPath = assemblyPath;
-            if (testPathPrefix != null)
-            {
-                testAssemblyPath = Path.Combine(testPathPrefix, testAssemblyPath);
-            }
-
+            // Results are keyed by the paths in the plan, relative to the runner's working directory.
             if (!OperatingSystem.IsWindows())
             {
                 testAssemblyPath = testAssemblyPath.Replace("\\", "/");
             }
 
-            string resultFile = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), testAssemblyPath)) + OutOfProcessResultFileSuffix;
+            string resultFile = GetResultFile(testAssemblyPath);
             if (!File.Exists(resultFile))
             {
                 Assert.Fail($"Test Infrastructure Failure: Out-of-process result file '{resultFile}' was not found.");

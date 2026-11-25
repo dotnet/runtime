@@ -43,8 +43,8 @@ bool TwoWayPipe::CreateServer(const ProcessDescriptor& pd)
     if (m_state != NotInitialized)
         return false;
 
-    PAL_GetTransportPipeName(m_inPipeName, pd.m_Pid, pd.m_ApplicationGroupId, "in");
-    PAL_GetTransportPipeName(m_outPipeName, pd.m_Pid, pd.m_ApplicationGroupId, "out");
+    GetTransportPipeName(m_inPipeName, pd.m_Pid, pd.m_ApplicationGroupId, "in");
+    GetTransportPipeName(m_outPipeName, pd.m_Pid, pd.m_ApplicationGroupId, "out");
 
     // Keep a static copy so AbortPipeServerImpl() can unlink them without going through
     // the TwoWayPipe instance, which may be concurrently updated by the worker thread.
@@ -87,8 +87,8 @@ bool TwoWayPipe::Connect(const ProcessDescriptor& pd)
         return false;
 
     //"in" and "out" are switched deliberately, because we're on the client
-    PAL_GetTransportPipeName(m_inPipeName, pd.m_Pid, pd.m_ApplicationGroupId, "out");
-    PAL_GetTransportPipeName(m_outPipeName, pd.m_Pid, pd.m_ApplicationGroupId, "in");
+    GetTransportPipeName(m_inPipeName, pd.m_Pid, pd.m_ApplicationGroupId, "out");
+    GetTransportPipeName(m_outPipeName, pd.m_Pid, pd.m_ApplicationGroupId, "in");
 
     // Pipe opening order is reversed compared to WaitForConnection()
     // in order to avoid deadlock.

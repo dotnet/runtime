@@ -2,69 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .intel_syntax noprefix
-#include "unixasmmacros.inc"
 #include "asmconstants.h"
+#include "unixasmmacros.inc"
 
-
-LEAF_ENTRY VarargPInvokeStub, _TEXT
-        mov             PINVOKE_CALLI_SIGTOKEN_REGISTER, rdi
-        jmp             C_FUNC(VarargPInvokeStubHelper)
-LEAF_END VarargPInvokeStub, _TEXT
-
-LEAF_ENTRY VarargPInvokeStub_RetBuffArg, _TEXT
-        mov             PINVOKE_CALLI_SIGTOKEN_REGISTER, rsi
-        jmp             C_FUNC(VarargPInvokeStubHelper)
-LEAF_END VarargPInvokeStub_RetBuffArg, _TEXT
-
-LEAF_ENTRY VarargPInvokeStubHelper, _TEXT
-        //
-        // check for existing IL stub
-        //
-        mov             rax, [PINVOKE_CALLI_SIGTOKEN_REGISTER + OFFSETOF__VASigCookie__pPInvokeILStub]
-        test            rax, rax
-        jz              C_FUNC(VarargPInvokeGenILStub)
-
-        //
-        // jump to existing IL stub
-        //
-        jmp             rax
-
-LEAF_END VarargPInvokeStubHelper, _TEXT
-
-//
-// IN: METHODDESC_REGISTER (R10) stub secret param
-//     PINVOKE_CALLI_SIGTOKEN_REGISTER (R11) VASigCookie*
-//
-// ASSUMES: we already checked for an existing stub to use
-//
-NESTED_ENTRY VarargPInvokeGenILStub, _TEXT, NoHandler
-
-        PROLOG_WITH_TRANSITION_BLOCK
-
-        //
-        // save target
-        //
-        mov             r12, METHODDESC_REGISTER
-        mov             r13, PINVOKE_CALLI_SIGTOKEN_REGISTER
-
-        //
-        // VarargPInvokeStubWorker(TransitionBlock * pTransitionBlock, VASigCookie *pVASigCookie, MethodDesc *pMD)
-        //
-        lea             rdi, [rsp + __PWTB_TransitionBlock]     // pTransitionBlock*
-        mov             rsi, PINVOKE_CALLI_SIGTOKEN_REGISTER    // pVASigCookie
-        mov             rdx, METHODDESC_REGISTER                // pMD
-        call            C_FUNC(VarargPInvokeStubWorker)
-
-        //
-        // restore target
-        //
-        mov             METHODDESC_REGISTER, r12
-        mov             PINVOKE_CALLI_SIGTOKEN_REGISTER, r13
-
-        EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
-        jmp             C_FUNC(VarargPInvokeStubHelper)
-
-NESTED_END VarargPInvokeGenILStub, _TEXT
 
 //
 // IN:
@@ -92,7 +32,7 @@ NESTED_ENTRY JIT_PInvokeBegin, _TEXT, NoHandler
         mov             r14, rdi
 
         // Get current thread and cache it in current frame
-        call            C_FUNC(GetThreadHelper)
+        INLINE_GETTHREAD
         mov             qword ptr [r14 + OFFSETOF__InlinedCallFrame__m_pThread], rax
 
         // pFrame->m_Next = pThread->m_pFrame;

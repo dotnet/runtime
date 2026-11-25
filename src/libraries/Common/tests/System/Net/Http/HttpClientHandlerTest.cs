@@ -66,7 +66,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsTlsSupported))]
         [SkipOnPlatform(TestPlatforms.Browser, "MaxResponseHeadersLength is not supported on Browser")]
         public void Ctor_ExpectedDefaultPropertyValues()
         {
@@ -88,6 +88,12 @@ namespace System.Net.Http.Functional.Tests
         [SkipOnPlatform(TestPlatforms.Browser, "Credentials is not supported on Browser")]
         public void Credentials_SetGet_Roundtrips()
         {
+            if (IsWasiHttpHandler)
+            {
+                // WasiHttpHandler doesn't support Credentials.
+                return;
+            }
+
             using (HttpClientHandler handler = CreateHttpClientHandler())
             {
                 var creds = new NetworkCredential("username", "password", "domain");
@@ -111,6 +117,11 @@ namespace System.Net.Http.Functional.Tests
         {
             using (HttpClientHandler handler = CreateHttpClientHandler())
             {
+                if (!handler.SupportsRedirectConfiguration)
+                {
+                    return;
+                }
+
                 Assert.Throws<ArgumentOutOfRangeException>(() => handler.MaxAutomaticRedirections = redirects);
             }
         }
@@ -157,6 +168,7 @@ namespace System.Net.Http.Functional.Tests
 
         [ConditionalFact]
         [SkipOnPlatform(TestPlatforms.Browser, "ServerCertificateCustomValidationCallback not supported on Browser")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "System.Net.NetworkInformation is not supported on WASI")]
         public async Task GetAsync_IPv6LinkLocalAddressUri_Success()
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
@@ -241,6 +253,14 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
+            using (HttpClientHandler probe = CreateHttpClientHandler())
+            {
+                if (!probe.SupportsProxy)
+                {
+                    return;
+                }
+            }
+
             await LoopbackServer.CreateClientAndServerAsync(async proxyUri =>
             {
                 using (HttpClientHandler handler = CreateHttpClientHandler())
@@ -271,6 +291,12 @@ namespace System.Net.Http.Functional.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/86317", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
         public async Task GetAsync_SecureAndNonSecureIPBasedUri_CorrectlyFormatted(IPAddress address, bool useSsl)
         {
+            if (useSsl && !PlatformDetection.IsTlsSupported)
+            {
+                // TLS is not supported on this platform
+                return;
+            }
+
             if (LoopbackServerFactory.Version >= HttpVersion20.Value)
             {
                 // Host header is not supported on HTTP/2 and later.
@@ -299,7 +325,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 connectionAccepted = true;
                 List<string> headers = await connection.ReadRequestHeaderAndSendResponseAsync();
-                Assert.Contains($"Host: {host}", headers);
+                Assert.Contains(headers, h => h.Equals($"Host: {host}", StringComparison.OrdinalIgnoreCase));
             }), options);
 
             Assert.True(connectionAccepted);
@@ -311,8 +337,9 @@ namespace System.Net.Http.Functional.Tests
         [SkipOnPlatform(TestPlatforms.Browser, "Credentials is not supported on Browser")]
         public async Task GetAsync_ServerNeedsNonStandardAuthAndSetCredential_StatusCodeUnauthorized(string authHeadrName, string authHeaderValue)
         {
-            if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
+            if ((IsWinHttpHandler && UseVersion >= HttpVersion20.Value) || IsWasiHttpHandler)
             {
+                // WasiHttpHandler doesn't support Credentials.
                 return;
             }
 
@@ -401,6 +428,12 @@ namespace System.Net.Http.Functional.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/101115", typeof(PlatformDetection), nameof(PlatformDetection.IsFirefox))]
         public async Task PostAsync_ManyDifferentRequestHeaders_SentCorrectly()
         {
+            if (IsWasiHttpHandler)
+            {
+                // wasi:http rejects hop-by-hop request headers such as Connection and Upgrade.
+                return;
+            }
+
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
             {
                 return;
@@ -434,9 +467,12 @@ namespace System.Net.Http.Functional.Tests
                     request.Headers.Connection.Add("close");
                     request.Headers.Add("Cookie", "$Version=1; Skin=new");
                     request.Content.Headers.ContentLength = contentArray.Length;
-                    if (PlatformDetection.IsNotBrowser)
+                    if (PlatformDetection.IsMD5Supported)
                     {
                         request.Content.Headers.ContentMD5 = MD5.Create().ComputeHash(contentArray);
+                    }
+                    if (PlatformDetection.IsNotBrowser)
+                    {
                         request.Headers.Expect.Add(new NameValueWithParametersHeaderValue("100-continue"));
                     }
                     request.Content.Headers.ContentType = new MediaTypeHeaderValue("application/x-www-form-urlencoded");
@@ -605,6 +641,45 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
+        [Fact]
+        public async Task PostAsync_ContentWrittenWithBeginEndWrite_ServerReceivesBody()
+        {
+            byte[] body = Encoding.ASCII.GetBytes("Hello from BeginWrite/EndWrite");
+
+            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            {
+                using HttpClient client = CreateHttpClient();
+                using var request = new HttpRequestMessage(HttpMethod.Post, uri) { Version = UseVersion, Content = new BeginEndWriteContent(body) };
+                using HttpResponseMessage response = await client.SendAsync(TestAsync, request);
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            }, async server =>
+            {
+                HttpRequestData requestData = await server.HandleRequestAsync(HttpStatusCode.OK);
+                Assert.Equal(body, requestData.Body);
+            });
+        }
+
+        private sealed class BeginEndWriteContent : HttpContent
+        {
+            private readonly byte[] _data;
+
+            public BeginEndWriteContent(byte[] data) => _data = data;
+
+            protected override Task SerializeToStreamAsync(Stream stream, TransportContext context) =>
+                Task.Factory.FromAsync(stream.BeginWrite, stream.EndWrite, _data, 0, _data.Length, null);
+
+#if !NETFRAMEWORK
+            protected override void SerializeToStream(Stream stream, TransportContext context, CancellationToken cancellationToken) =>
+                stream.EndWrite(stream.BeginWrite(_data, 0, _data.Length, null, null));
+#endif
+
+            protected override bool TryComputeLength(out long length)
+            {
+                length = _data.Length;
+                return true;
+            }
+        }
+
         public static IEnumerable<object[]> GetAsync_ManyDifferentResponseHeaders_ParsedCorrectly_MemberData() =>
             from newline in new[] { "\n", "\r\n" }
             from fold in new[] { "", newline + " ", newline + "\t", newline + "    " }
@@ -616,6 +691,12 @@ namespace System.Net.Http.Functional.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/82880", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
         public async Task GetAsync_ManyDifferentResponseHeaders_ParsedCorrectly(string newline, string fold, bool dribble)
         {
+            if (IsWasiHttpHandler)
+            {
+                // The wasi:http host parses responses: it strips hop-by-hop headers and rejects obsolete line folding.
+                return;
+            }
+
             if (LoopbackServerFactory.Version >= HttpVersion20.Value)
             {
                 // Folding is not supported on HTTP/2 and later.
@@ -1079,7 +1160,8 @@ namespace System.Net.Http.Functional.Tests
                         var buffer = new byte[1];
                         var buffer2 = new byte[2];
 
-                        if (PlatformDetection.IsBrowser)
+                        // The browser and WasiHttpHandler response streams only support asynchronous reads.
+                        if (PlatformDetection.IsBrowser || IsWasiHttpHandler)
                         {
 #if !NETFRAMEWORK
                             if (slowChunks)
@@ -1295,14 +1377,18 @@ namespace System.Net.Http.Functional.Tests
                         var buffer = new byte[1];
                         if (PlatformDetection.IsNotBrowser)
                         {
-                            Assert.Equal(-1, responseStream.ReadByte());
+                            // WasiHttpHandler's response stream doesn't support synchronous reads.
+                            if (!IsWasiHttpHandler)
+                            {
+                                Assert.Equal(-1, responseStream.ReadByte());
+                            }
                             Assert.Equal(0, await Task.Factory.FromAsync(responseStream.BeginRead, responseStream.EndRead, buffer, 0, 1, null));
                         }
 #if !NETFRAMEWORK
                         Assert.Equal(0, await responseStream.ReadAsync(new Memory<byte>(buffer)));
 #endif
                         Assert.Equal(0, await responseStream.ReadAsync(buffer, 0, 1));
-                        if (PlatformDetection.IsNotBrowser)
+                        if (PlatformDetection.IsNotBrowser && !IsWasiHttpHandler)
                         {
 #if !NETFRAMEWORK
                             Assert.Equal(0, responseStream.Read(new Span<byte>(buffer)));
@@ -1314,7 +1400,7 @@ namespace System.Net.Http.Functional.Tests
                         var ms = new MemoryStream();
                         await responseStream.CopyToAsync(ms);
                         Assert.Equal(0, ms.Length);
-                        if (PlatformDetection.IsNotBrowser)
+                        if (PlatformDetection.IsNotBrowser && !IsWasiHttpHandler)
                         {
                             responseStream.CopyTo(ms);
                             Assert.Equal(0, ms.Length);
@@ -1585,6 +1671,12 @@ namespace System.Net.Http.Functional.Tests
         [SkipOnPlatform(TestPlatforms.Browser, "CookieContainer is not supported on Browser")]
         public async Task SendAsync_1xxResponsesWithHeaders_InterimResponsesHeadersIgnored(HttpStatusCode responseStatusCode)
         {
+            if (IsWasiHttpHandler)
+            {
+                // WasiHttpHandler doesn't support CookieContainer.
+                return;
+            }
+
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
             {
                 return;
@@ -1791,10 +1883,20 @@ namespace System.Net.Http.Functional.Tests
                 }
             }, async server =>
             {
-                await server.AcceptConnectionAsync(async connection =>
+                Task serverTask = server.AcceptConnectionAsync(async connection =>
                 {
                     await IgnoreExceptions(connection.ReadRequestDataAsync(readBody: true));
                 });
+
+                if (IsWasiHttpHandler)
+                {
+                    // The wasi:http host may abandon the request before it connects to the server.
+                    await Task.WhenAny(serverTask, clientFinished.Task);
+                }
+                else
+                {
+                    await serverTask;
+                }
             });
         }
 
@@ -1956,6 +2058,12 @@ namespace System.Net.Http.Functional.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/54163", TestPlatforms.Browser)]
         public async Task GetAsync_CallMethod_ExpectedStatusLine(HttpStatusCode statusCode, string reasonPhrase)
         {
+            if (IsWasiHttpHandler)
+            {
+                // wasi:http doesn't expose the reason phrase.
+                return;
+            }
+
             if (LoopbackServerFactory.Version >= HttpVersion20.Value)
             {
                 // Custom messages are not supported on HTTP2 and later.
@@ -1982,6 +2090,12 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task SendAsync_RequestVersion10_ServerReceivesVersion10Request()
         {
+            if (IsWasiHttpHandler)
+            {
+                // wasi:http doesn't let the client choose the HTTP version.
+                return;
+            }
+
             // Test is not supported for WinHttpHandler and HTTP/2
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
             {
@@ -2156,6 +2270,12 @@ namespace System.Net.Http.Functional.Tests
         [InlineData('\u009F', HeaderType.Cookie)]
         public async Task SendAsync_RequestWithDangerousControlHeaderValue_ThrowsHttpRequestException(char dangerousChar, HeaderType headerType)
         {
+            if (IsWasiHttpHandler && headerType == HeaderType.Cookie)
+            {
+                // WasiHttpHandler doesn't support CookieContainer.
+                return;
+            }
+
             TaskCompletionSource<bool> acceptConnection = new TaskCompletionSource<bool>();
             SemaphoreSlim clientFinished = new SemaphoreSlim(0);
 
@@ -2207,7 +2327,7 @@ namespace System.Net.Http.Functional.Tests
                     {
                         Assert.Contains("Error 87", hrex.InnerException.Message);
                     }
-                    else
+                    else if (!IsWasiHttpHandler) // The wasi:http host validates headers and reports its own error.
                     {
                         var message = UseVersion == HttpVersion30 ? hrex.InnerException.Message : hrex.Message;
                         Assert.Contains("ASCII", message);
@@ -2247,40 +2367,85 @@ namespace System.Net.Http.Functional.Tests
             {
                 return; // SocketsHttpHandler doesn't support Latin-1 characters in headers without setting header encoding.
             }
+            if (IsWasiHttpHandler && (headerType == HeaderType.Cookie || char.IsControl(safeChar)))
+            {
+                return; // WasiHttpHandler doesn't support CookieContainer, and wasi:http rejects control characters in headers.
+            }
             var headerValue = $"HeaderValue{safeChar}WithSafeChar";
+            var clientFinished = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            using var cancellation = new CancellationTokenSource();
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
                 {
-                    var handler = CreateHttpClientHandler();
-                    using (var client = new HttpClient(handler))
+                    try
                     {
-                        var request = new HttpRequestMessage(HttpMethod.Get, uri);
-                        request.Version = UseVersion;
-                        switch (headerType)
+                        var handler = CreateHttpClientHandler();
+                        using (var client = new HttpClient(handler))
                         {
-                            case HeaderType.Request:
-                                request.Headers.Add("Custom-Header", headerValue);
-                                break;
-                            case HeaderType.Content:
-                                request.Content = new StringContent("test content");
-                                request.Content.Headers.Add("Custom-Content-Header", headerValue);
-                                break;
-                            case HeaderType.Cookie:
+                            using var request = new HttpRequestMessage(HttpMethod.Get, uri);
+                            request.Version = UseVersion;
+                            switch (headerType)
+                            {
+                                case HeaderType.Request:
+                                    request.Headers.Add("Custom-Header", headerValue);
+                                    break;
+                                case HeaderType.Content:
+                                    request.Content = new StringContent("test content");
+                                    request.Content.Headers.Add("Custom-Content-Header", headerValue);
+                                    break;
+                                case HeaderType.Cookie:
 #if WINHTTPHANDLER_TEST
-                                handler.CookieUsePolicy = CookieUsePolicy.UseSpecifiedCookieContainer;
+                                    handler.CookieUsePolicy = CookieUsePolicy.UseSpecifiedCookieContainer;
 #endif
-                                handler.CookieContainer = new CookieContainer();
-                                handler.CookieContainer.Add(uri, new Cookie("CustomCookie", headerValue));
-                                break;
-                        }
+                                    handler.CookieContainer = new CookieContainer();
+                                    handler.CookieContainer.Add(uri, new Cookie("CustomCookie", headerValue));
+                                    break;
+                            }
 
-                        using (HttpResponseMessage response = await client.SendAsync(request))
-                        {
-                            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                            using (HttpResponseMessage response = await client.SendAsync(request, cancellation.Token))
+                            {
+                                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                            }
                         }
+                    }
+                    finally
+                    {
+                        clientFinished.SetResult(true);
                     }
                 }, async server =>
                 {
-                    var data = await server.AcceptConnectionSendResponseAndCloseAsync();
+                    HttpRequestData data;
+                    if (IsWinHttpHandler && UseVersion.Major == 2)
+                    {
+                        GenericLoopbackConnection genericConnection = null;
+                        try
+                        {
+                            genericConnection = await server.EstablishGenericConnectionAsync();
+                            var connection = (Http2LoopbackConnection)genericConnection;
+                            (int streamId, data) = await connection.ReadAndParseRequestHeaderAsync();
+                            await connection.SendGoAway(streamId);
+                            await connection.SendResponseHeadersAsync(streamId, endStream: true);
+
+                            // WinHTTP can fail pending native I/O if the server closes before the buffered send completes.
+                            await clientFinished.Task.WaitAsync(TestHelper.PassingTestTimeout);
+                            await connection.WaitForConnectionShutdownAsync();
+                        }
+                        catch
+                        {
+                            cancellation.Cancel();
+                            throw;
+                        }
+                        finally
+                        {
+                            if (genericConnection is not null)
+                            {
+                                await genericConnection.DisposeAsync();
+                            }
+                        }
+                    }
+                    else
+                    {
+                        data = await server.AcceptConnectionSendResponseAndCloseAsync();
+                    }
                     switch (headerType)
                     {
                         case HeaderType.Request:
@@ -2332,8 +2497,15 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         public async Task LargeUriAndHeaders_Works()
         {
+            if (IsWasiHttpHandler)
+            {
+                // wasi:http rejects the oversized header name.
+                return;
+            }
+
             int length = IsWinHttpHandler ? 65_000
                 : PlatformDetection.IsAndroid ? 100_000
+                : PlatformDetection.Is32BitProcess ? 100_000
                 : 10_000_000;
 
             string longPath = "/" + new string('X', length);

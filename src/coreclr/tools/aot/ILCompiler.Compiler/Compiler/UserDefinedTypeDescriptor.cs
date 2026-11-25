@@ -607,9 +607,12 @@ namespace ILCompiler
                 {
                     if (isCanonical)
                         continue;
-                    if (fieldDesc.IsThreadStatic && !hasThreadStatics)
-                        continue;
-                    if (fieldDesc.HasGCStaticBase)
+                    if (fieldDesc.IsThreadStatic)
+                    {
+                        if (!hasThreadStatics)
+                            continue;
+                    }
+                    else if (fieldDesc.HasGCStaticBase)
                     {
                         if (!hasGcStatics)
                             continue;
@@ -741,7 +744,7 @@ namespace ILCompiler
                 FieldsCount = fieldsDescs.Count,
             };
 
-            uint completeTypeIndex = _objectWriter.GetCompleteClassTypeIndex(classTypeDescriptor, fieldsDescriptor, fields, statics);
+            uint completeTypeIndex = _objectWriter.GetCompleteClassTypeIndex(classTypeDescriptor, fieldsDescriptor, fields, statics, typeIndex);
             _completeKnownTypes[type] = completeTypeIndex;
 
             if (needsCompleteType)

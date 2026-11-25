@@ -31,8 +31,7 @@ namespace System.Runtime.Caching
             _ref = ((((uint)pageIndex) << PAGE_SHIFT) | (((uint)(entryIndex)) & ENTRY_MASK));
         }
 
-        public override bool Equals(object value) =>
-            value is UsageEntryRef other && Equals(other);
+        public override bool Equals([NotNullWhen(true)] object? value) => value is UsageEntryRef other && Equals(other);
 
         public bool Equals(UsageEntryRef other) => _ref == other._ref;
 
@@ -93,7 +92,7 @@ namespace System.Runtime.Caching
         internal DateTime _utcDate;
 
         [FieldOffset(24)]
-        internal MemoryCacheEntry _cacheEntry;
+        internal MemoryCacheEntry? _cacheEntry;
     }
 
     internal struct UsagePage
@@ -121,7 +120,8 @@ namespace System.Runtime.Caching
         private readonly CacheUsage _cacheUsage;
         private readonly byte _bucket;
 
-        private UsagePage[] _pages;
+        private UsagePage[] _pages = [];
+
         private int _cEntriesInUse;
         private int _cPagesInUse;
         private int _cEntriesInFlush;
@@ -152,7 +152,7 @@ namespace System.Runtime.Caching
             Debug.Assert(_lastRefTail.IsInvalid, "_lastRefTail.IsInvalid");
             Debug.Assert(_addRef2Head.IsInvalid, "_addRef2Head.IsInvalid");
 
-            _pages = null;
+            _pages = [];
             _minEntriesInUse = -1;
             _freePageList._head = -1;
             _freePageList._tail = -1;
@@ -290,7 +290,7 @@ namespace System.Runtime.Caching
             AddToListHead(pageIndex, ref _freePageList);
 
             Debug.Assert((_pages[(pageIndex)]._entries) != null, "EntriesI(pageIndex) != null");
-            (_pages[(pageIndex)]._entries) = null;
+            (_pages[(pageIndex)]._entries) = null!;
 
             _cPagesInUse--;
             if (_cPagesInUse == 0)
@@ -358,15 +358,7 @@ namespace System.Runtime.Caching
 
             if (_freePageList._head == -1)
             {
-                int oldLength;
-                if (_pages == null)
-                {
-                    oldLength = 0;
-                }
-                else
-                {
-                    oldLength = _pages.Length;
-                }
+                int oldLength = _pages.Length;
 
                 Debug.Assert(_cPagesInUse == oldLength, "_cPagesInUse == oldLength");
                 Debug.Assert(_cEntriesInUse == oldLength * NUM_ENTRIES, "_cEntriesInUse == oldLength * ExpiresEntryRef.NUM_ENTRIES");
@@ -463,7 +455,8 @@ namespace System.Runtime.Caching
 
                 for (int i = 1; i < entries.Length; i++)
                 {
-                    if (entries[i]._cacheEntry == null)
+                    MemoryCacheEntry? cacheEntry = entries[i]._cacheEntry;
+                    if (cacheEntry == null)
                         continue;
 
                     Debug.Assert(_freeEntryList._head != _freeEntryList._tail, "_freeEntryList._head != _freeEntryList._tail");
@@ -474,7 +467,6 @@ namespace System.Runtime.Caching
                     UsageEntryRef oldRef1 = new UsageEntryRef(_freeEntryList._tail, i);
                     UsageEntryRef oldRef2 = (new UsageEntryRef((oldRef1).PageIndex, -(oldRef1).Ref1Index));
 
-                    MemoryCacheEntry cacheEntry = entries[i]._cacheEntry;
                     Debug.Assert(cacheEntry.UsageEntryRef == oldRef1, "cacheEntry.UsageEntryRef == oldRef1");
                     cacheEntry.UsageEntryRef = newRef1;
 
@@ -688,7 +680,7 @@ namespace System.Runtime.Caching
             DateTime utcDate;
             UsageEntry[] entries;
             int entryIndex;
-            MemoryCacheEntry cacheEntry;
+            MemoryCacheEntry? cacheEntry;
             int flushed = 0;
 
             try
@@ -728,6 +720,7 @@ namespace System.Runtime.Caching
 
                         UsageEntryRef prev1 = (new UsageEntryRef((prev).PageIndex, (prev).Ref2Index));
                         cacheEntry = entries[entryIndex]._cacheEntry;
+                        Debug.Assert(cacheEntry != null, "cacheEntry != null");
                         Debug.Assert(cacheEntry.UsageEntryRef == prev1, "cacheEntry.UsageEntryRef == prev1");
                         Dbg.Trace("CacheUsageFlushUnderUsedItem", "Flushing underused items, item=" + cacheEntry.Key + ", bucket=" + _bucket);
 
@@ -772,6 +765,7 @@ namespace System.Runtime.Caching
 
                 cacheEntry = entries[entryIndex]._cacheEntry;
                 entries[entryIndex]._cacheEntry = null;
+                Debug.Assert(cacheEntry != null, "cacheEntry != null");
                 Debug.Assert(cacheEntry.UsageEntryRef.IsInvalid, "cacheEntry.UsageEntryRef.IsInvalid");
                 cacheStore.Remove(cacheEntry, cacheEntry, CacheEntryRemovedReason.Evicted);
 

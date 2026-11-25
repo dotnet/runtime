@@ -1611,7 +1611,10 @@ namespace System.Text
             }
 
             // Supplementary characters use the same simple scalar mapping as OrdinalIgnoreCase comparisons.
-            return UnsafeCreate(CharUnicodeInfo.ToUpper(value._value));
+            uint upper = CharUnicodeInfo.ToUpper(value._value);
+            return UnsafeCreate(GlobalizationMode.UseNls
+                ? Ordinal.PreserveNlsOrdinalCasingClass(value._value, upper)
+                : upper);
         }
 
         /// <summary>
@@ -1631,7 +1634,10 @@ namespace System.Text
                 return UnsafeCreate(TextInfo.ToLowerOrdinal((char)value._value));
             }
 
-            return UnsafeCreate(CharUnicodeInfo.ToLower(value._value));
+            uint lower = CharUnicodeInfo.ToLower(value._value);
+            return UnsafeCreate(GlobalizationMode.UseNls
+                ? Ordinal.PreserveNlsOrdinalCasingClass(value._value, lower)
+                : lower);
         }
 #endif
 

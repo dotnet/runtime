@@ -200,7 +200,7 @@ HRESULT CustomAssemblyBinder::SetupContext(DefaultAssemblyBinder *pDefaultBinder
                 }
 #endif
                 // Return reference to the allocated Binder instance
-                *ppBindContext = pBinder.Extract();
+                *ppBindContext = pBinder.Detach();
             }
         }
     }
@@ -258,6 +258,8 @@ void CustomAssemblyBinder::ReleaseLoadContext()
     // This method is called to release the weak and strong handles on the managed AssemblyLoadContext
     // once the Unloading event has been fired
     OBJECTHANDLE handle = reinterpret_cast<OBJECTHANDLE>(GetAssemblyLoadContext());
+
+    GCX_COOP();
     DestroyLongWeakHandle(handle);
     handle = reinterpret_cast<OBJECTHANDLE>(m_ptrManagedStrongAssemblyLoadContext);
     DestroyHandle(handle);

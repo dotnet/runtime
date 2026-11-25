@@ -49,10 +49,10 @@ public class Async2DevirtualizeInheritedNonAsync
     }
 
     [Fact]
-    public static void TestEntryPoint()
+    public static async Task TestEntryPoint()
     {
         var h = new Holder();
-        AwaitInheritedValueTask(h).GetAwaiter().GetResult();
-        AwaitInheritedTask(h).GetAwaiter().GetResult();
+        await AwaitInheritedValueTask(h);
+        await AwaitInheritedTask(h);
     }
 }

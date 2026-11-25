@@ -19,15 +19,6 @@ endif
 
 MONO_PROJ=/p:CoreClrTestConfig=$(CORECLR_TESTS_CONFIG) /p:LibrariesTestConfig=$(LIBRARIES_TESTS_CONFIG) /p:Configuration=$(MONO_RUNTIME_CONFIG) mono.proj
 
-# run sample using local .dotnet-mono
-# build it with .dotnet first in order to be able to use LLVM only for the actual sample
-run-sample:
-	make run -C sample/HelloWorld
-
-# run sample using local .dotnet (coreclr)
-run-sample-coreclr:
-	$(DOTNET) run -c Release -p sample/HelloWorld
-
 # build System.Private.CoreLib.dll
 bcl corelib:
 	../.././build.sh -c $(MONO_RUNTIME_CONFIG) -subset Mono.CoreLib+Libs.Pretest

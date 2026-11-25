@@ -11,6 +11,7 @@ namespace Internal.Runtime.CompilerHelpers
     internal static unsafe partial class ThrowHelpers
     {
         [DoesNotReturn]
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ExceptionNative_ThrowAmbiguousResolutionException")]
         private static partial void ThrowAmbiguousResolutionException(MethodTable* targetType, MethodTable* interfaceType, void* methodDesc);
 
@@ -25,6 +26,7 @@ namespace Internal.Runtime.CompilerHelpers
         }
 
         [DoesNotReturn]
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ExceptionNative_ThrowEntryPointNotFoundException")]
         private static partial void ThrowEntryPointNotFoundException(MethodTable* targetType, MethodTable* interfaceType, void* methodDesc);
 
@@ -39,6 +41,7 @@ namespace Internal.Runtime.CompilerHelpers
         }
 
         [DoesNotReturn]
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ExceptionNative_ThrowMethodAccessException")]
         private static partial void ThrowMethodAccessExceptionInternal(void* caller, void* callee);
 
@@ -53,6 +56,7 @@ namespace Internal.Runtime.CompilerHelpers
         }
 
         [DoesNotReturn]
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ExceptionNative_ThrowFieldAccessException")]
         private static partial void ThrowFieldAccessExceptionInternal(void* caller, void* callee);
 
@@ -67,6 +71,7 @@ namespace Internal.Runtime.CompilerHelpers
         }
 
         [DoesNotReturn]
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ExceptionNative_ThrowClassAccessException")]
         private static partial void ThrowClassAccessExceptionInternal(void* caller, void* callee);
 

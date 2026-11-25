@@ -55,7 +55,8 @@ namespace Microsoft.Extensions.Configuration
             get
             {
                 using ReferenceCountedProviders reference = _providerManager.GetReference();
-                return ConfigurationRoot.GetConfiguration(reference.Providers, key);
+                ConfigurationRoot.TryGetConfiguration(reference.Providers, key, out string? value);
+                return value;
             }
             set
             {
@@ -139,7 +140,7 @@ namespace Microsoft.Extensions.Configuration
 
             _changeTokenRegistrations.Clear();
 
-            var newProvidersList = new List<IConfigurationProvider>();
+            var newProvidersList = new List<IConfigurationProvider>(_sources.Count);
 
             foreach (IConfigurationSource source in _sources)
             {

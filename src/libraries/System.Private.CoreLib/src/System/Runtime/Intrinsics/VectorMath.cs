@@ -881,95 +881,26 @@ namespace System.Runtime.Intrinsics
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static TVectorSingle IsEvenIntegerSingle<TVectorSingle, TVectorUInt32>(TVectorSingle vector)
-            where TVectorSingle : unmanaged, ISimdVector<TVectorSingle, float>
-            where TVectorUInt32 : unmanaged, ISimdVector<TVectorUInt32, uint>
+        public static TVector IsEvenInteger<TVector, T>(TVector vector)
+            where TVector : unmanaged, ISimdVector<TVector, T>
+            where T : unmanaged, IFloatingPointIeee754<T>
         {
-            TVectorUInt32 bits = Unsafe.BitCast<TVectorSingle, TVectorUInt32>(TVectorSingle.Abs(vector));
-
-            TVectorUInt32 exponent = ((bits >> float.BiasedExponentShift) & TVectorUInt32.Create(float.ShiftedBiasedExponentMask)) - TVectorUInt32.Create(float.ExponentBias);
-            TVectorUInt32 fractionalBits = TVectorUInt32.Create(float.BiasedExponentShift) - exponent;
-            TVectorUInt32 firstIntegralBit = ShiftLeftUInt32(TVectorUInt32.One, fractionalBits);
-            TVectorUInt32 fractionalBitMask = firstIntegralBit - TVectorUInt32.One;
-
-            // We must be an integer in the range [1, 2^24) with the least significant integral bit clear
-            // or in the range [2^24, +Infinity) in which case we are known to be an even integer
-            TVectorUInt32 result = TVectorUInt32.GreaterThan(bits, TVectorUInt32.Create(0x3FFF_FFFF))
-                                 & TVectorUInt32.LessThan(bits, TVectorUInt32.Create(float.PositiveInfinityBits))
-                                 & ((TVectorUInt32.IsZero(bits & fractionalBitMask) & TVectorUInt32.IsZero(bits & firstIntegralBit))
-                                  | TVectorUInt32.GreaterThan(bits, TVectorUInt32.Create(0x4B7F_FFFF)));
-
-            // We are also an even integer if we are zero
-            result |= TVectorUInt32.IsZero(bits);
-
-            return Unsafe.BitCast<TVectorUInt32, TVectorSingle>(result);
+            // Subtract the even integer rounded toward zero. Using the original vector
+            // preserves nonzero subnormals when halving underflows; infinities give NaN.
+            TVector half = TVector.Create(T.CreateChecked(0.5));
+            TVector two = TVector.Create(T.CreateChecked(2));
+            return TVector.IsZero(vector - (TVector.Truncate(vector * half) * two));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static TVectorDouble IsEvenIntegerDouble<TVectorDouble, TVectorUInt64>(TVectorDouble vector)
-            where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
-            where TVectorUInt64 : unmanaged, ISimdVector<TVectorUInt64, ulong>
+        public static TVector IsOddInteger<TVector, T>(TVector vector)
+            where TVector : unmanaged, ISimdVector<TVector, T>
+            where T : unmanaged, IFloatingPointIeee754<T>
         {
-            TVectorUInt64 bits = Unsafe.BitCast<TVectorDouble, TVectorUInt64>(TVectorDouble.Abs(vector));
-
-            TVectorUInt64 exponent = ((bits >> double.BiasedExponentShift) & TVectorUInt64.Create(double.ShiftedBiasedExponentMask)) - TVectorUInt64.Create(double.ExponentBias);
-            TVectorUInt64 fractionalBits = TVectorUInt64.Create(double.BiasedExponentShift) - exponent;
-            TVectorUInt64 firstIntegralBit = ShiftLeftUInt64(TVectorUInt64.One, fractionalBits);
-            TVectorUInt64 fractionalBitMask = firstIntegralBit - TVectorUInt64.One;
-
-            // We must be an integer in the range [1, 2^53) with the least significant integral bit clear
-            // or in the range [2^53, +Infinity) in which case we are known to be an even integer
-            TVectorUInt64 result = TVectorUInt64.GreaterThan(bits, TVectorUInt64.Create(0x3FFF_FFFF_FFFF_FFFF))
-                                 & TVectorUInt64.LessThan(bits, TVectorUInt64.Create(double.PositiveInfinityBits))
-                                 & ((TVectorUInt64.IsZero(bits & fractionalBitMask) & TVectorUInt64.IsZero(bits & firstIntegralBit))
-                                  | TVectorUInt64.GreaterThan(bits, TVectorUInt64.Create(0x433F_FFFF_FFFF_FFFF)));
-
-            // We are also an even integer if we are zero
-            result |= TVectorUInt64.IsZero(bits);
-
-            return Unsafe.BitCast<TVectorUInt64, TVectorDouble>(result);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static TVectorSingle IsOddIntegerSingle<TVectorSingle, TVectorUInt32>(TVectorSingle vector)
-            where TVectorSingle : unmanaged, ISimdVector<TVectorSingle, float>
-            where TVectorUInt32 : unmanaged, ISimdVector<TVectorUInt32, uint>
-        {
-            TVectorUInt32 bits = Unsafe.BitCast<TVectorSingle, TVectorUInt32>(TVectorSingle.Abs(vector));
-
-            TVectorUInt32 exponent = ((bits >> float.BiasedExponentShift) & TVectorUInt32.Create(float.ShiftedBiasedExponentMask)) - TVectorUInt32.Create(float.ExponentBias);
-            TVectorUInt32 fractionalBits = TVectorUInt32.Create(float.BiasedExponentShift) - exponent;
-            TVectorUInt32 firstIntegralBit = ShiftLeftUInt32(TVectorUInt32.One, fractionalBits);
-            TVectorUInt32 fractionalBitMask = firstIntegralBit - TVectorUInt32.One;
-
-            // We must be an integer in the range [1, 2^24) with the least significant integral bit set
-            TVectorUInt32 result = TVectorUInt32.GreaterThan(bits, TVectorUInt32.Create(0x3F7F_FFFF))
-                                 & TVectorUInt32.LessThan(bits, TVectorUInt32.Create(0x4B80_0000))
-                                 & TVectorUInt32.IsZero(bits & fractionalBitMask)
-                                 & ~TVectorUInt32.IsZero(bits & firstIntegralBit);
-
-            return Unsafe.BitCast<TVectorUInt32, TVectorSingle>(result);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static TVectorDouble IsOddIntegerDouble<TVectorDouble, TVectorUInt64>(TVectorDouble vector)
-            where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
-            where TVectorUInt64 : unmanaged, ISimdVector<TVectorUInt64, ulong>
-        {
-            TVectorUInt64 bits = Unsafe.BitCast<TVectorDouble, TVectorUInt64>(TVectorDouble.Abs(vector));
-
-            TVectorUInt64 exponent = ((bits >> double.BiasedExponentShift) & TVectorUInt64.Create(double.ShiftedBiasedExponentMask)) - TVectorUInt64.Create(double.ExponentBias);
-            TVectorUInt64 fractionalBits = TVectorUInt64.Create(double.BiasedExponentShift) - exponent;
-            TVectorUInt64 firstIntegralBit = ShiftLeftUInt64(TVectorUInt64.One, fractionalBits);
-            TVectorUInt64 fractionalBitMask = firstIntegralBit - TVectorUInt64.One;
-
-            // We must be an integer in the range [1, 2^53) with the least significant integral bit set
-            TVectorUInt64 result = TVectorUInt64.GreaterThan(bits, TVectorUInt64.Create(0x3FEF_FFFF_FFFF_FFFF))
-                                 & TVectorUInt64.LessThan(bits, TVectorUInt64.Create(0x4340_0000_0000_0000))
-                                 & TVectorUInt64.IsZero(bits & fractionalBitMask)
-                                 & ~TVectorUInt64.IsZero(bits & firstIntegralBit);
-
-            return Unsafe.BitCast<TVectorUInt64, TVectorDouble>(result);
+            // Exactly the odd integers have a half with fractional magnitude 0.5.
+            TVector half = TVector.Create(T.CreateChecked(0.5));
+            vector *= half;
+            return TVector.Equals(TVector.Abs(vector - TVector.Truncate(vector)), half);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1064,11 +995,10 @@ namespace System.Runtime.Intrinsics
                     specialResult
                 );
 
-                // double.IsZero(x) | double.IsNegative(x) | double.IsNaN(x) | double.IsPositiveInfinity(x)
-                TVectorDouble temp = zeroMask
-                                   | isNegativeMask
-                                   | TVectorDouble.IsNaN(x)
-                                   | TVectorDouble.IsPositiveInfinity(x);
+                // Positive finite encodings are [1, V_MAX). Unsigned subtraction wraps zero out of this range.
+                TVectorDouble temp = Unsafe.BitCast<TVectorUInt64, TVectorDouble>(
+                    TVectorUInt64.GreaterThanOrEqual(Unsafe.BitCast<TVectorDouble, TVectorUInt64>(x) - TVectorUInt64.One, TVectorUInt64.Create(V_MAX - 1))
+                );
 
                 // subnormal
                 TVectorDouble subnormalMask = TVectorDouble.AndNot(Unsafe.BitCast<TVectorUInt64, TVectorDouble>(specialMask), temp);
@@ -1245,11 +1175,10 @@ namespace System.Runtime.Intrinsics
                     specialResult
                 );
 
-                // float.IsZero(x) | float.IsNegative(x) | float.IsNaN(x) | float.IsPositiveInfinity(x)
-                TVectorSingle temp = zeroMask
-                                   | isNegativeMask
-                                   | TVectorSingle.IsNaN(x)
-                                   | TVectorSingle.IsPositiveInfinity(x);
+                // Positive finite encodings are [1, V_MAX). Unsigned subtraction wraps zero out of this range.
+                TVectorSingle temp = Unsafe.BitCast<TVectorUInt32, TVectorSingle>(
+                    TVectorUInt32.GreaterThanOrEqual(Unsafe.BitCast<TVectorSingle, TVectorUInt32>(x) - TVectorUInt32.One, TVectorUInt32.Create(V_MAX - 1))
+                );
 
                 // subnormal
                 TVectorSingle subnormalMask = TVectorSingle.AndNot(Unsafe.BitCast<TVectorUInt32, TVectorSingle>(specialMask), temp);
@@ -1384,11 +1313,10 @@ namespace System.Runtime.Intrinsics
                     specialResult
                 );
 
-                // double.IsZero(x) | double.IsNegative(x) | double.IsNaN(x) | double.IsPositiveInfinity(x)
-                TVectorDouble temp = zeroMask
-                                   | isNegativeMask
-                                   | TVectorDouble.IsNaN(x)
-                                   | TVectorDouble.IsPositiveInfinity(x);
+                // Positive finite encodings are [1, V_MAX). Unsigned subtraction wraps zero out of this range.
+                TVectorDouble temp = Unsafe.BitCast<TVectorUInt64, TVectorDouble>(
+                    TVectorUInt64.GreaterThanOrEqual(Unsafe.BitCast<TVectorDouble, TVectorUInt64>(x) - TVectorUInt64.One, TVectorUInt64.Create(V_MAX - 1))
+                );
 
                 // subnormal
                 TVectorDouble subnormalMask = TVectorDouble.AndNot(Unsafe.BitCast<TVectorUInt64, TVectorDouble>(specialMask), temp);
@@ -1561,11 +1489,10 @@ namespace System.Runtime.Intrinsics
                     specialResult
                 );
 
-                // float.IsZero(x) | float.IsNegative(x) | float.IsNaN(x) | float.IsPositiveInfinity(x)
-                TVectorSingle temp = zeroMask
-                                   | isNegativeMask
-                                   | TVectorSingle.IsNaN(x)
-                                   | TVectorSingle.IsPositiveInfinity(x);
+                // Positive finite encodings are [1, V_MAX). Unsigned subtraction wraps zero out of this range.
+                TVectorSingle temp = Unsafe.BitCast<TVectorUInt32, TVectorSingle>(
+                    TVectorUInt32.GreaterThanOrEqual(Unsafe.BitCast<TVectorSingle, TVectorUInt32>(x) - TVectorUInt32.One, TVectorUInt32.Create(V_MAX - 1))
+                );
 
                 // subnormal
                 TVectorSingle subnormalMask = TVectorSingle.AndNot(Unsafe.BitCast<TVectorUInt32, TVectorSingle>(specialMask), temp);
@@ -2868,104 +2795,6 @@ namespace System.Runtime.Intrinsics
             {
                 Debug.Assert(typeof(TVectorSingle) == typeof(Vector512<float>));
                 result = (TVectorSingle)(object)Vector512.Narrow((Vector512<double>)(object)lower, (Vector512<double>)(object)upper);
-            }
-            else
-            {
-                ThrowHelper.ThrowNotSupportedException();
-            }
-
-            return result;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static TVectorUInt32 ShiftLeftUInt32<TVectorUInt32>(TVectorUInt32 vector, TVectorUInt32 shiftAmount)
-            where TVectorUInt32 : unmanaged, ISimdVector<TVectorUInt32, uint>
-        {
-            Unsafe.SkipInit(out TVectorUInt32 result);
-
-            if (typeof(TVectorUInt32) == typeof(Vector<uint>))
-            {
-                result = (TVectorUInt32)(object)Vector.ShiftLeft(
-                    (Vector<uint>)(object)vector,
-                    (Vector<uint>)(object)shiftAmount
-                );
-            }
-            else if (typeof(TVectorUInt32) == typeof(Vector64<uint>))
-            {
-                result = (TVectorUInt32)(object)Vector64.ShiftLeft(
-                    (Vector64<uint>)(object)vector,
-                    (Vector64<uint>)(object)shiftAmount
-                );
-            }
-            else if (typeof(TVectorUInt32) == typeof(Vector128<uint>))
-            {
-                result = (TVectorUInt32)(object)Vector128.ShiftLeft(
-                    (Vector128<uint>)(object)vector,
-                    (Vector128<uint>)(object)shiftAmount
-                );
-            }
-            else if (typeof(TVectorUInt32) == typeof(Vector256<uint>))
-            {
-                result = (TVectorUInt32)(object)Vector256.ShiftLeft(
-                    (Vector256<uint>)(object)vector,
-                    (Vector256<uint>)(object)shiftAmount
-                );
-            }
-            else if (typeof(TVectorUInt32) == typeof(Vector512<uint>))
-            {
-                result = (TVectorUInt32)(object)Vector512.ShiftLeft(
-                    (Vector512<uint>)(object)vector,
-                    (Vector512<uint>)(object)shiftAmount
-                );
-            }
-            else
-            {
-                ThrowHelper.ThrowNotSupportedException();
-            }
-
-            return result;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static TVectorUInt64 ShiftLeftUInt64<TVectorUInt64>(TVectorUInt64 vector, TVectorUInt64 shiftAmount)
-            where TVectorUInt64 : unmanaged, ISimdVector<TVectorUInt64, ulong>
-        {
-            Unsafe.SkipInit(out TVectorUInt64 result);
-
-            if (typeof(TVectorUInt64) == typeof(Vector<ulong>))
-            {
-                result = (TVectorUInt64)(object)Vector.ShiftLeft(
-                    (Vector<ulong>)(object)vector,
-                    (Vector<ulong>)(object)shiftAmount
-                );
-            }
-            else if (typeof(TVectorUInt64) == typeof(Vector64<ulong>))
-            {
-                result = (TVectorUInt64)(object)Vector64.ShiftLeft(
-                    (Vector64<ulong>)(object)vector,
-                    (Vector64<ulong>)(object)shiftAmount
-                );
-            }
-            else if (typeof(TVectorUInt64) == typeof(Vector128<ulong>))
-            {
-                result = (TVectorUInt64)(object)Vector128.ShiftLeft(
-                    (Vector128<ulong>)(object)vector,
-                    (Vector128<ulong>)(object)shiftAmount
-                );
-            }
-            else if (typeof(TVectorUInt64) == typeof(Vector256<ulong>))
-            {
-                result = (TVectorUInt64)(object)Vector256.ShiftLeft(
-                    (Vector256<ulong>)(object)vector,
-                    (Vector256<ulong>)(object)shiftAmount
-                );
-            }
-            else if (typeof(TVectorUInt64) == typeof(Vector512<ulong>))
-            {
-                result = (TVectorUInt64)(object)Vector512.ShiftLeft(
-                    (Vector512<ulong>)(object)vector,
-                    (Vector512<ulong>)(object)shiftAmount
-                );
             }
             else
             {

@@ -535,84 +535,6 @@ GenerateRedirectedHandledJITCaseStub GCStress
 #endif
 
 
-// ------------------------------------------------------------------
-// This helper enables us to call into a funclet after restoring Fp register
-NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
-    // On entry:
-    //
-    // a0 = throwable
-    // a1 = PC to invoke
-    // a2 = address of CONTEXT record; used to restore the non-volatile registers of CrawlFrame
-    // a3 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
-    //
-
-    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, 128, 0
-
-    // Spill callee saved registers
-    PROLOG_SAVE_REG_PAIR   s1, s2, 16
-    PROLOG_SAVE_REG_PAIR   s3, s4, 32
-    PROLOG_SAVE_REG_PAIR   s5, s6, 48
-    PROLOG_SAVE_REG_PAIR   s7, s8, 64
-    PROLOG_SAVE_REG_PAIR   s9, s10, 80
-    PROLOG_SAVE_REG_PAIR   s11, gp, 96
-    PROLOG_SAVE_REG tp, 112
-
-    // Save the SP of this function
-    sd  sp, 0(a3)
-
-    ld  gp, OFFSETOF__CONTEXT__Gp(a2)
-    ld  tp, OFFSETOF__CONTEXT__Tp(a2)
-    ld  fp, OFFSETOF__CONTEXT__Fp(a2)
-    ld  s1, OFFSETOF__CONTEXT__S1(a2)
-    ld  s2, OFFSETOF__CONTEXT__S2(a2)
-    ld  s3, OFFSETOF__CONTEXT__S2+8(a2)
-    ld  s4, OFFSETOF__CONTEXT__S2+16(a2)
-    ld  s5, OFFSETOF__CONTEXT__S2+24(a2)
-    ld  s6, OFFSETOF__CONTEXT__S2+32(a2)
-    ld  s7, OFFSETOF__CONTEXT__S2+40(a2)
-    ld  s8, OFFSETOF__CONTEXT__S2+48(a2)
-    ld  s9, OFFSETOF__CONTEXT__S2+56(a2)
-    ld  s10, OFFSETOF__CONTEXT__S2+64(a2)
-    ld  s11, OFFSETOF__CONTEXT__S2+72(a2)
-
-    // Invoke the funclet
-    jalr a1
-
-    EPILOG_RESTORE_REG_PAIR   s1, s2, 16
-    EPILOG_RESTORE_REG_PAIR   s3, s4, 32
-    EPILOG_RESTORE_REG_PAIR   s5, s6, 48
-    EPILOG_RESTORE_REG_PAIR   s7, s8, 64
-    EPILOG_RESTORE_REG_PAIR   s9, s10, 80
-    EPILOG_RESTORE_REG_PAIR   s11, gp, 96
-    EPILOG_RESTORE_REG tp, 112
-
-    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, ra, 128
-    EPILOG_RETURN
-NESTED_END CallEHFunclet, _TEXT
-
-// This helper enables us to call into a filter funclet by passing it the CallerSP to lookup the
-// frame pointer for accessing the locals in the parent method.
-NESTED_ENTRY CallEHFilterFunclet, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, 16, 0
-
-    // On entry:
-    //
-    // a0 = throwable
-    // a1 = FP of main function
-    // a2 = PC to invoke
-    // a3 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
-    //
-    // Save the SP of this function
-    sd  sp, 0(a3)
-    // Restore frame pointer
-    mv  fp, a1
-    // Invoke the filter funclet
-    jalr a2
-
-    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, ra, 16
-    EPILOG_RETURN
-NESTED_END CallEHFilterFunclet, _TEXT
-
 #ifdef FEATURE_READYTORUN
 
 NESTED_ENTRY DelayLoad_MethodCall_FakeProlog, _TEXT, NoHandler
@@ -682,7 +604,7 @@ NESTED_ENTRY \helper\()Naked, _TEXT, NoHandler
     // On entry:
     //   t0 = functionIDOrClientID
     //   t1 = profiledSp
-    //   t6 = throwable
+    //   (t6 is scratch: it is overwritten below before any read, so a jump stub may use it)
     //
     // On exit:
     //   Values of a0-a7, fa0-fa7, fp are preserved.
@@ -767,17 +689,6 @@ LEAF_ENTRY GetThreadStaticsVariableOffset, _TEXT
     EPILOG_RETURN
 LEAF_END GetThreadStaticsVariableOffset, _TEXT
 #endif // !TARGET_LINUX_MUSL
-
-LEAF_ENTRY JIT_PollGC, _TEXT
-        PREPARE_EXTERNAL_VAR g_TrapReturningThreads, t0
-        lw      t0, 0(t0)
-        bnez    t0, LOCAL_LABEL(JIT_PollGCRarePath)
-        ret
-LOCAL_LABEL(JIT_PollGCRarePath):
-        PREPARE_EXTERNAL_VAR g_pPollGC, t0
-        ld      t0, 0(t0)
-        jr      t0
-LEAF_END JIT_PollGC, _TEXT
 
 //a0 -This pointer
 //a1 -ReturnBuffer
@@ -893,6 +804,90 @@ LEAF_ENTRY Load_Stack_Ref
     addi t2, t2, 16
     jr t4
 LEAF_END Load_Stack_Ref
+
+// The interpreter stores 32-bit and narrower integers in 8-byte stack slots without defining the upper half,
+// while the RISC-V psABI requires them sign-extended to 64 bits in registers and stack slots.
+// t2 points to a bitmask of the argument registers a0..a7 to sign-extend.
+LEAF_ENTRY SignExtend_ArgRegs
+    ld t4, 0(t2)
+    addi t2, t2, 8
+    andi t5, t4, 0x01
+    beqz t5, LOCAL_LABEL(SignExtendA1)
+    sext.w a0, a0
+LOCAL_LABEL(SignExtendA1):
+    andi t5, t4, 0x02
+    beqz t5, LOCAL_LABEL(SignExtendA2)
+    sext.w a1, a1
+LOCAL_LABEL(SignExtendA2):
+    andi t5, t4, 0x04
+    beqz t5, LOCAL_LABEL(SignExtendA3)
+    sext.w a2, a2
+LOCAL_LABEL(SignExtendA3):
+    andi t5, t4, 0x08
+    beqz t5, LOCAL_LABEL(SignExtendA4)
+    sext.w a3, a3
+LOCAL_LABEL(SignExtendA4):
+    andi t5, t4, 0x10
+    beqz t5, LOCAL_LABEL(SignExtendA5)
+    sext.w a4, a4
+LOCAL_LABEL(SignExtendA5):
+    andi t5, t4, 0x20
+    beqz t5, LOCAL_LABEL(SignExtendA6)
+    sext.w a5, a5
+LOCAL_LABEL(SignExtendA6):
+    andi t5, t4, 0x40
+    beqz t5, LOCAL_LABEL(SignExtendA7)
+    sext.w a6, a6
+LOCAL_LABEL(SignExtendA7):
+    andi t5, t4, 0x80
+    beqz t5, LOCAL_LABEL(SignExtendDone)
+    sext.w a7, a7
+LOCAL_LABEL(SignExtendDone):
+    ld t4, 0(t2)
+    addi t2, t2, 8
+    EPILOG_BRANCH_REG t4
+LEAF_END SignExtend_ArgRegs
+
+// t2 points to the SP offset of a stack argument slot to sign-extend from its low 32 bits.
+LEAF_ENTRY SignExtend_Stack
+    ld t4, 0(t2)
+    addi t2, t2, 8
+    add t4, sp, t4
+    lw t5, 0(t4)
+    sd t5, 0(t4)
+    ld t4, 0(t2)
+    addi t2, t2, 8
+    EPILOG_BRANCH_REG t4
+LEAF_END SignExtend_Stack
+
+// Routines moving a single field of a struct passed by the hardware floating-point calling convention, or a float,
+// between a register and the interpreter stack. t2 points to a word holding the field offset in its low 32 bits and
+// the number of bytes to advance the interpreter stack pointer by afterwards in its high 32 bits.
+// flw also NaN-boxes the float, as required for single-precision values in the 64-bit FP registers.
+.macro FIELD_AT_OFFSET_ROUTINE Name, Insn, Reg
+LEAF_ENTRY \Name
+    lwu t4, 0(t2)
+    lwu t5, 4(t2)
+    addi t2, t2, 8
+    add t4, t3, t4
+    \Insn \Reg, 0(t4)
+    add t3, t3, t5
+    ld t4, 0(t2)
+    addi t2, t2, 8
+    EPILOG_BRANCH_REG t4
+LEAF_END \Name
+.endm
+
+.irp i, 0, 1, 2, 3, 4, 5, 6, 7
+FIELD_AT_OFFSET_ROUTINE Load_FA\i\()_F_AtOffset, flw, fa\i
+FIELD_AT_OFFSET_ROUTINE Load_FA\i\()_D_AtOffset, fld, fa\i
+FIELD_AT_OFFSET_ROUTINE Load_A\i\()_W_AtOffset, lw, a\i
+FIELD_AT_OFFSET_ROUTINE Load_A\i\()_D_AtOffset, ld, a\i
+FIELD_AT_OFFSET_ROUTINE Store_FA\i\()_F_AtOffset, fsw, fa\i
+FIELD_AT_OFFSET_ROUTINE Store_FA\i\()_D_AtOffset, fsd, fa\i
+FIELD_AT_OFFSET_ROUTINE Store_A\i\()_W_AtOffset, sw, a\i
+FIELD_AT_OFFSET_ROUTINE Store_A\i\()_D_AtOffset, sd, a\i
+.endr
 
 LEAF_ENTRY Store_Stack_Ref
     lwu t5, 0(t2)   // SP offset (zero-extend)
@@ -1059,6 +1054,24 @@ NESTED_ENTRY CallJittedMethodRetBuff, _TEXT, NoHandler
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, ra, 32
     EPILOG_RETURN
 NESTED_END CallJittedMethodRetBuff, _TEXT
+
+// Same as CallJittedMethodRetBuff, for methods with a this argument, where the return buffer is the second argument
+NESTED_ENTRY CallJittedMethodRetBuffA1, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, 32
+    sd a4, 16(fp)
+    sub sp, sp, a3
+    mv t2, a0
+    mv t3, a1
+    mv a1, a2  // buffer return pointer goes in a1
+    ld t4, 0(t2)
+    addi t2, t2, 8
+    jalr t4
+    ld a4, 16(fp)
+    sd a2, 0(a4)
+    EPILOG_STACK_RESTORE
+    EPILOG_RESTORE_REG_PAIR_INDEXED fp, ra, 32
+    EPILOG_RETURN
+NESTED_END CallJittedMethodRetBuffA1, _TEXT
 
 // a0 - routines array
 // a1 - interpreter stack args location
@@ -1316,10 +1329,14 @@ NESTED_END CallJittedMethodRet2Float, _TEXT
 // a2 - interpreter stack return value location
 // a3 - stack arguments size (properly aligned)
 // a4 - address of continuation return value
-NESTED_ENTRY CallJittedMethodRetFloatInt, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, 32
+// The returned struct is passed by the hardware floating-point calling convention. Its FpStructInRegistersInfo
+// follows the target slot in the routines array, and InterpFpStructReturnFromNative scatters fa0, fa1 and a0
+// to the struct fields.
+NESTED_ENTRY CallJittedMethodRetFpStruct, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, 64
     sd a2, 16(fp)
     sd a4, 24(fp)
+    sd a0, 32(fp)
     sub sp, sp, a3
     mv t2, a0
     mv t3, a1
@@ -1328,38 +1345,17 @@ NESTED_ENTRY CallJittedMethodRetFloatInt, _TEXT, NoHandler
     jalr t4
     ld a4, 24(fp)
     sd a2, 0(a4)
-    ld a2, 16(fp)
-    fsd fa0, 0(a2)
-    sd a0, 8(a2)
+    fsd fa0, 40(fp)
+    fsd fa1, 48(fp)
+    sd a0, 56(fp)
+    addi a0, fp, 40
+    ld a1, 16(fp)
+    ld a2, 32(fp)
+    call C_FUNC(InterpFpStructReturnFromNative)
     EPILOG_STACK_RESTORE
-    EPILOG_RESTORE_REG_PAIR_INDEXED fp, ra, 32
+    EPILOG_RESTORE_REG_PAIR_INDEXED fp, ra, 64
     EPILOG_RETURN
-NESTED_END CallJittedMethodRetFloatInt, _TEXT
-
-// a0 - routines array
-// a1 - interpreter stack args location
-// a2 - interpreter stack return value location
-// a3 - stack arguments size (properly aligned)
-// a4 - address of continuation return value
-NESTED_ENTRY CallJittedMethodRetIntFloat, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, 32
-    sd a2, 16(fp)
-    sd a4, 24(fp)
-    sub sp, sp, a3
-    mv t2, a0
-    mv t3, a1
-    ld t4, 0(t2)
-    addi t2, t2, 8
-    jalr t4
-    ld a4, 24(fp)
-    sd a2, 0(a4)
-    ld a2, 16(fp)
-    sd a0, 0(a2)
-    fsd fa0, 8(a2)
-    EPILOG_STACK_RESTORE
-    EPILOG_RESTORE_REG_PAIR_INDEXED fp, ra, 32
-    EPILOG_RETURN
-NESTED_END CallJittedMethodRetIntFloat, _TEXT
+NESTED_END CallJittedMethodRetFpStruct, _TEXT
 
 NESTED_ENTRY InterpreterStub, _TEXT, NoHandler
 
@@ -1427,6 +1423,19 @@ NESTED_ENTRY InterpreterStubRetI8, _TEXT, NoHandler
     EPILOG_RETURN
 NESTED_END InterpreterStubRetI8, _TEXT
 
+NESTED_ENTRY InterpreterStubRetI4, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, 16
+    // The +16 is for the fp, ra above
+    addi a0, sp, __PWTB_TransitionBlock + 16
+    mv a1, s1 // the IR bytecode pointer
+    mv a2, zero
+    call C_FUNC(ExecuteInterpretedMethod)
+    // Sign-extend from 32 bits as required by the psABI
+    lw a0, 0(a0)
+    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, ra,   16
+    EPILOG_RETURN
+NESTED_END InterpreterStubRetI4, _TEXT
+
 NESTED_ENTRY InterpreterStubRetDouble, _TEXT, NoHandler
     PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, 16
     // The +16 is for the fp, ra above
@@ -1449,6 +1458,18 @@ NESTED_ENTRY InterpreterStubRetBuff, _TEXT, NoHandler
     EPILOG_RESTORE_REG_PAIR_INDEXED   fp, ra, 16
     EPILOG_RETURN
 NESTED_END InterpreterStubRetBuff, _TEXT
+
+// Same as InterpreterStubRetBuff, for methods with a this argument, where the return buffer is the second argument
+NESTED_ENTRY InterpreterStubRetBuffA1, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, 16
+    // The +16 is for the fp, ra above
+    mv   a2, a1        // save caller's return buffer in a2
+    addi a0, sp, __PWTB_TransitionBlock + 16
+    mv   a1, s1        // the IR bytecode pointer
+    call C_FUNC(ExecuteInterpretedMethod)
+    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, ra, 16
+    EPILOG_RETURN
+NESTED_END InterpreterStubRetBuffA1, _TEXT
 
 NESTED_ENTRY InterpreterStubRet2I8, _TEXT, NoHandler
     PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, 16
@@ -1501,32 +1522,27 @@ NESTED_ENTRY InterpreterStubRet2Float, _TEXT, NoHandler
     EPILOG_RETURN
 NESTED_END InterpreterStubRet2Float, _TEXT
 
-NESTED_ENTRY InterpreterStubRetFloatInt, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, 16
-    // The +16 is for the fp, ra above
-    addi a0, sp, __PWTB_TransitionBlock + 16
+// The returned struct is passed by the hardware floating-point calling convention. t2 points to its
+// FpStructInRegistersInfo, which follows this handler in the routines array, and InterpFpStructReturnToNative
+// gathers the struct fields into fa0, fa1 and a0.
+NESTED_ENTRY InterpreterStubRetFpStruct, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, 48
+    sd t2, 16(sp)
+    // The +48 is for the fp, ra and the locals above
+    addi a0, sp, __PWTB_TransitionBlock + 48
     mv a1, s1 // the IR bytecode pointer
     mv a2, zero
     call C_FUNC(ExecuteInterpretedMethod)
-    fld fa0, 0(a0)
-    ld a0, 8(a0)
-    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, ra,   16
+    mv a1, a0
+    addi a0, sp, 24
+    ld a2, 16(sp)
+    call C_FUNC(InterpFpStructReturnToNative)
+    fld fa0, 24(sp)
+    fld fa1, 32(sp)
+    ld a0, 40(sp)
+    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, ra,   48
     EPILOG_RETURN
-NESTED_END InterpreterStubRetFloatInt, _TEXT
-
-NESTED_ENTRY InterpreterStubRetIntFloat, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, 16
-    // The +16 is for the fp, ra above
-    addi a0, sp, __PWTB_TransitionBlock + 16
-    mv a1, s1 // the IR bytecode pointer
-    mv a2, zero
-    call C_FUNC(ExecuteInterpretedMethod)
-    ld a1, 0(a0)
-    fld fa0, 8(a0)
-    mv a0, a1
-    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, ra,   16
-    EPILOG_RETURN
-NESTED_END InterpreterStubRetIntFloat, _TEXT
+NESTED_END InterpreterStubRetFpStruct, _TEXT
 
 // Copy arguments from the processor stack to the interpreter stack
 // The CPU stack slots are aligned to pointer size.

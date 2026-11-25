@@ -1,11 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //*****************************************************************************
 // MetaModel.h -- header file for compressed CLR metadata.
-//
-
-//
 //*****************************************************************************
+
 #ifndef _METAMODEL_H_
 #define _METAMODEL_H_
 
@@ -252,7 +251,8 @@ public:
 
         DELTA_ONLY      =   0x20,       // If set, only deltas were persisted.
         EXTRA_DATA      =   0x40,       // If set, schema persists an extra 4 bytes of data.
-        HAS_DELETE      =   0x80,       // If set, this metadata can contain _Delete tokens.
+        HAS_DELETE      =   0x80,       // No longer in use; reserved. Historically indicated that the metadata could contain
+                                        // _Deleted records. The runtime ignores it; System.Reflection.Metadata still sets it on EnC deltas.
     };
 
     uint64_t    m_maskvalid;            // Bit mask of present table counts.
@@ -434,14 +434,6 @@ public:
         ULONG       ulTarget,           // target for search
         RID        *pRid) = 0;
 
-    // Search for a custom value with a given type.
-    __checkReturn
-    HRESULT FindCustomAttributeFor(// RID of custom value, or 0.
-        RID         rid,                // The object's rid.
-        mdToken     tkOjb,              // The object's type.
-        mdToken     tkType,             // Type of custom value.
-        RID        *pFoundRid);
-
     // Search for the specified Column Definition array in the global cache
     BOOL FindSharedColDefs(// TRUE if we found a match in the global cache and updated pTable, FALSE otherwise
         CMiniTableDef *pTable,          // The table def that wants the column definition array
@@ -574,7 +566,7 @@ protected:
     ULONG       m_iBlobsMask;
 
     __checkReturn
-    HRESULT SchemaPopulate(const void *pvData, ULONG cbData, ULONG *pcbUsed);
+    HRESULT SchemaPopulate(const void *pvData, ULONG cbData, ULONG *pcbUsed, bool fIsDelta = false);
     __checkReturn
     HRESULT SchemaPopulate(const CMiniMdBase &that);
     __checkReturn

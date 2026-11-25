@@ -32,7 +32,6 @@ namespace CorUnix
 
         minipal_mutex m_csListLock;
         bool m_fListLockInitialized;
-        LIST_ENTRY m_leNamedObjects;
         LIST_ENTRY m_leAnonymousObjects;
 
         CSimpleHandleManager m_HandleManager;
@@ -68,7 +67,6 @@ namespace CorUnix
         AllocateObject(
             CPalThread *pthr,
             CObjectType *pot,
-            CObjectAttributes *poa,
             IPalObject **ppobjNew
             );
 
@@ -80,15 +78,6 @@ namespace CorUnix
             CAllowedObjectTypes *paot,
             HANDLE *pHandle,
             IPalObject **ppobjRegistered
-            );
-
-        virtual
-        PAL_ERROR
-        LocateObject(
-            CPalThread *pthr,
-            CPalString *psObjectToLocate,
-            CAllowedObjectTypes *paot,
-            IPalObject **ppobj
             );
 
         virtual
@@ -115,17 +104,7 @@ namespace CorUnix
             IPalObject **ppobj
             );
 
-        virtual
-        PAL_ERROR
-        ReferenceMultipleObjectsByHandleArray(
-            CPalThread *pthr,
-            HANDLE rghHandlesToReference[],
-            DWORD dwHandleCount,
-            CAllowedObjectTypes *paot,
-            IPalObject *rgpobjs[]
-            );
     };
 }
 
 #endif // _PAL_SHMOBJECTMANAGER_HPP_
-

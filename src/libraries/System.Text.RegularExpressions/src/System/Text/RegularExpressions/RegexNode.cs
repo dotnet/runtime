@@ -1448,9 +1448,7 @@ namespace System.Text.RegularExpressions
                             Debug.Assert(startingNode.Kind == RegexNodeKind.Multi);
                             Debug.Assert(startingNode.Str!.Length > 0);
 
-                            int minLength = Math.Min(startingSpan.Length, startingNode.Str.Length);
-                            int c = 0;
-                            while (c < minLength && startingSpan[c] == startingNode.Str[c]) c++;
+                            int c = startingSpan.CommonPrefixLength(startingNode.Str);
                             if (c == 0)
                             {
                                 break;

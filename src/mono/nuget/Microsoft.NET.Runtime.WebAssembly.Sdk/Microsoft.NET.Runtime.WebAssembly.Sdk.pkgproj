@@ -19,6 +19,7 @@
     <PackageFile Include="$(BrowserProjectRoot)build\BrowserWasmApp.props" TargetPath="Sdk" />
     <PackageFile Include="$(BrowserProjectRoot)build\BrowserWasmApp.targets" TargetPath="Sdk" />
     <PackageFile Include="$(BrowserProjectRoot)build\BrowserWasmApp.CoreCLR.targets" TargetPath="Sdk" />
+    <PackageFile Include="$(RepoRoot)eng\wasm\WasmPInvokeModules.props" TargetPath="Sdk" />
     <PackageFile Include="$(RepoRoot)eng/native.wasm.targets" TargetPath="Sdk" />
     <PackageFile Include="$(BrowserProjectRoot)build\coreclr_compat.h" TargetPath="Sdk" />
 

@@ -367,13 +367,14 @@ ErrExit:
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
 } // RegMeta::DefineTypeRefByName
 
+#ifdef FEATURE_METADATA_PUBLIC_INTERFACES
 //*****************************************************************************
 // Create a reference, in an emit scope, to a TypeDef in another scope.
 //*****************************************************************************
 STDMETHODIMP RegMeta::DefineImportType(       // S_OK or error.
     IMetaDataAssemblyImport *pAssemImport,  // [IN] Assembly containing the TypeDef.
-    const void  *pbHashValue,           // [IN] Hash Blob for Assembly.
-    ULONG    cbHashValue,           // [IN] Count of bytes.
+    const void  *,                      // [IN] Hash Blob for Assembly.
+    ULONG,                              // [IN] Count of bytes.
     IMetaDataImport *pImport,           // [IN] Scope containing the TypeDef.
     mdTypeDef   tdImport,               // [IN] The imported TypeDef.
     IMetaDataAssemblyEmit *pAssemEmit,  // [IN] Assembly into which the TypeDef is imported.
@@ -387,13 +388,8 @@ STDMETHODIMP RegMeta::DefineImportType(       // S_OK or error.
     IMetaDataImport2 *pImport2 = NULL;
     IMDCommon        *pImport2MDCommon = NULL;
 
-    IMDCommon        *pAssemImportMDCommon = NULL;
-
-    RegMeta     *pAssemEmitRM = NULL;
-    CMiniMdRW   *pMiniMdAssemEmit =  NULL;
     CMiniMdRW   *pMiniMdEmit = NULL;
 
-    IMetaModelCommon *pAssemImportMetaModelCommon;
     IMetaModelCommon *pImport2MetaModelCommon;
 
     LOCKWRITE();
@@ -401,25 +397,13 @@ STDMETHODIMP RegMeta::DefineImportType(       // S_OK or error.
     IfFailGo(m_pStgdb->m_MiniMd.PreUpdate());
     IfFailGo(pImport->QueryInterface(IID_IMetaDataImport2, (void**)&pImport2));
 
-    if (pAssemImport)
-    {
-        IfFailGo(pAssemImport->QueryInterface(IID_IMDCommon, (void**)&pAssemImportMDCommon));
-    }
-
-    pAssemImportMetaModelCommon = pAssemImportMDCommon ? pAssemImportMDCommon->GetMetaModelCommon() : 0;
-
     IfFailGo(pImport2->QueryInterface(IID_IMDCommon, (void**)&pImport2MDCommon));
     pImport2MetaModelCommon = pImport2MDCommon->GetMetaModelCommon();
 
-    pAssemEmitRM = static_cast<RegMeta*>(pAssemEmit);
-    pMiniMdAssemEmit =  pAssemEmitRM ? static_cast<CMiniMdRW*>(&pAssemEmitRM->m_pStgdb->m_MiniMd) : 0;
     pMiniMdEmit = &m_pStgdb->m_MiniMd;
 
     IfFailGo(ImportHelper::ImportTypeDef(
-                        pMiniMdAssemEmit,
                         pMiniMdEmit,
-                        pAssemImportMetaModelCommon,
-                        pbHashValue, cbHashValue,
                         pImport2MetaModelCommon,
                         tdImport,
                         false,  // Do not optimize to TypeDef if import and emit scopes are identical.
@@ -430,12 +414,10 @@ ErrExit:
         pImport2->Release();
     if (pImport2MDCommon)
         pImport2MDCommon->Release();
-    if (pAssemImportMDCommon)
-        pAssemImportMDCommon->Release();
-
     return hr;
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
 } // RegMeta::DefineImportType
+#endif // FEATURE_METADATA_PUBLIC_INTERFACES
 
 //*****************************************************************************
 // Create and set a MemberRef record.
@@ -521,13 +503,14 @@ ErrExit:
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
 } // RegMeta::DefineMemberRef
 
+#ifdef FEATURE_METADATA_PUBLIC_INTERFACES
 //*****************************************************************************
 // Create a MemberRef record based on a member in an import scope.
 //*****************************************************************************
 STDMETHODIMP RegMeta::DefineImportMember(     // S_OK or error.
     IMetaDataAssemblyImport *pAssemImport,  // [IN] Assembly containing the Member.
-    const void  *pbHashValue,           // [IN] Hash Blob for Assembly.
-    ULONG        cbHashValue,           // [IN] Count of bytes.
+    const void  *,                      // [IN] Hash Blob for Assembly.
+    ULONG,                              // [IN] Count of bytes.
     IMetaDataImport *pImport,           // [IN] Import scope, with member.
     mdToken     mbMember,               // [IN] Member in import scope.
     IMetaDataAssemblyEmit *pAssemEmit,  // [IN] Assembly into which the Member is imported.
@@ -589,8 +572,8 @@ STDMETHODIMP RegMeta::DefineImportMember(     // S_OK or error.
 
     IfFailGo(TranslateSigWithScope(
         pAssemImport,
-        pbHashValue,
-        cbHashValue,
+        nullptr,
+        0,
         pImport,
         pvSig,
         cbSig,
@@ -625,6 +608,7 @@ ErrExit:
     return hr;
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
 } // RegMeta::DefineImportMember
+#endif // FEATURE_METADATA_PUBLIC_INTERFACES
 
 //*****************************************************************************
 // Define and set a Event record.
@@ -1023,7 +1007,7 @@ STDMETHODIMP RegMeta::DefinePermissionSet(
     ULONG       cbPermission,           // [IN] count of bytes of pvPermission.
     mdPermission *ppm)                  // [OUT] returned permission token.
 {
-#ifdef FEATURE_METADATA_EMIT_ALL
+#if defined(FEATURE_METADATA_EMIT_ALL) && defined(FEATURE_METADATA_PERMISSION_SETS)
     HRESULT hr = S_OK;
 
     LOCKWRITE();
@@ -1034,9 +1018,9 @@ STDMETHODIMP RegMeta::DefinePermissionSet(
 
 ErrExit:
     return hr;
-#else //!FEATURE_METADATA_EMIT_ALL
+#else // !FEATURE_METADATA_EMIT_ALL || !FEATURE_METADATA_PERMISSION_SETS
     return E_NOTIMPL;
-#endif //!FEATURE_METADATA_EMIT_ALL
+#endif // !FEATURE_METADATA_EMIT_ALL || !FEATURE_METADATA_PERMISSION_SETS
 } // RegMeta::DefinePermissionSet
 
 
@@ -1050,7 +1034,7 @@ HRESULT RegMeta::_DefinePermissionSet(
     ULONG       cbPermission,           // [IN] count of bytes of pvPermission.
     mdPermission *ppm)                  // [OUT] returned permission token.
 {
-#ifdef FEATURE_METADATA_EMIT_ALL
+#if defined(FEATURE_METADATA_EMIT_ALL) && defined(FEATURE_METADATA_PERMISSION_SETS)
     HRESULT     hr  = S_OK;
     DeclSecurityRec *pDeclSec = NULL;
     RID         iDeclSec;
@@ -1112,9 +1096,9 @@ HRESULT RegMeta::_DefinePermissionSet(
 ErrExit:
 
     return hr;
-#else //!FEATURE_METADATA_EMIT_ALL
+#else // !FEATURE_METADATA_EMIT_ALL || !FEATURE_METADATA_PERMISSION_SETS
     return E_NOTIMPL;
-#endif //!FEATURE_METADATA_EMIT_ALL
+#endif // !FEATURE_METADATA_EMIT_ALL || !FEATURE_METADATA_PERMISSION_SETS
 } // RegMeta::_DefinePermissionSet
 
 
@@ -1392,181 +1376,13 @@ ErrExit:
 
 //*****************************************************************************
 // Delete a token.
-// We only allow deleting a subset of tokens at this moment. These are TypeDef,
-//  MethodDef, FieldDef, Event, Property, and CustomAttribute. Except
-//  CustomAttribute, all the other tokens are named. We reserved a special
-//  name COR_DELETED_NAME_A to indicating a named record is deleted when
-//  xxRTSpecialName is set.
+// Token deletion (which required MDUpdateIncremental) is not supported.
 //*****************************************************************************
 
 STDMETHODIMP RegMeta::DeleteToken(
     mdToken tkObj)  // [IN] The token to be deleted
 {
-#ifdef FEATURE_METADATA_EMIT_ALL
-    HRESULT hr = NOERROR;
-
-    LOCKWRITE();
-
-    if (!IsValidToken(tkObj))
-        IfFailGo( E_INVALIDARG );
-
-    // make sure that MetaData scope is opened for incremental compilation
-    if (!m_pStgdb->m_MiniMd.HasDelete())
-    {
-        _ASSERTE( !"You cannot call delete token when you did not open the scope with proper Update flags in the SetOption!");
-        IfFailGo( E_INVALIDARG );
-    }
-
-    _ASSERTE(!m_bSaveOptimized && "Cannot delete records after PreSave() and before Save().");
-
-    switch ( TypeFromToken(tkObj) )
-    {
-    case mdtTypeDef:
-        {
-            TypeDefRec      *pRecord;
-            IfFailGo(m_pStgdb->m_MiniMd.GetTypeDefRecord(RidFromToken(tkObj), &pRecord));
-            IfFailGo(m_pStgdb->m_MiniMd.PutString(TBL_TypeDef, TypeDefRec::COL_Name, pRecord, COR_DELETED_NAME_A));
-            pRecord->AddFlags(tdSpecialName | tdRTSpecialName);
-            break;
-        }
-    case mdtMethodDef:
-        {
-            MethodRec      *pRecord;
-            IfFailGo(m_pStgdb->m_MiniMd.GetMethodRecord(RidFromToken(tkObj), &pRecord));
-            IfFailGo(m_pStgdb->m_MiniMd.PutString(TBL_Method, MethodRec::COL_Name, pRecord, COR_DELETED_NAME_A));
-            pRecord->AddFlags(mdSpecialName | mdRTSpecialName);
-            break;
-        }
-    case mdtFieldDef:
-        {
-            FieldRec      *pRecord;
-            IfFailGo(m_pStgdb->m_MiniMd.GetFieldRecord(RidFromToken(tkObj), &pRecord));
-            IfFailGo(m_pStgdb->m_MiniMd.PutString(TBL_Field, FieldRec::COL_Name, pRecord, COR_DELETED_NAME_A));
-            pRecord->AddFlags(fdSpecialName | fdRTSpecialName);
-            break;
-        }
-    case mdtEvent:
-        {
-            EventRec      *pRecord;
-            IfFailGo(m_pStgdb->m_MiniMd.GetEventRecord(RidFromToken(tkObj), &pRecord));
-            IfFailGo(m_pStgdb->m_MiniMd.PutString(TBL_Event, EventRec::COL_Name, pRecord, COR_DELETED_NAME_A));
-            pRecord->AddEventFlags(evSpecialName | evRTSpecialName);
-            break;
-        }
-    case mdtProperty:
-        {
-            PropertyRec      *pRecord;
-            IfFailGo(m_pStgdb->m_MiniMd.GetPropertyRecord(RidFromToken(tkObj), &pRecord));
-            IfFailGo(m_pStgdb->m_MiniMd.PutString(TBL_Property, PropertyRec::COL_Name, pRecord, COR_DELETED_NAME_A));
-            pRecord->AddPropFlags(prSpecialName | prRTSpecialName);
-            break;
-        }
-    case mdtExportedType:
-        {
-            ExportedTypeRec      *pRecord;
-            IfFailGo(m_pStgdb->m_MiniMd.GetExportedTypeRecord(RidFromToken(tkObj), &pRecord));
-            IfFailGo(m_pStgdb->m_MiniMd.PutString(TBL_ExportedType, ExportedTypeRec::COL_TypeName, pRecord, COR_DELETED_NAME_A));
-            break;
-        }
-    case mdtCustomAttribute:
-        {
-            mdToken         tkParent;
-            CustomAttributeRec  *pRecord;
-            IfFailGo(m_pStgdb->m_MiniMd.GetCustomAttributeRecord(RidFromToken(tkObj), &pRecord));
-
-            // replace the parent column of the custom value record to a nil token.
-            tkParent = m_pStgdb->m_MiniMd.getParentOfCustomAttribute(pRecord);
-            tkParent = TokenFromRid( mdTokenNil, TypeFromToken(tkParent) );
-            IfFailGo(m_pStgdb->m_MiniMd.PutToken(TBL_CustomAttribute, CustomAttributeRec::COL_Parent, pRecord, tkParent));
-
-            // now the CustomAttribute table is no longer sorted
-            m_pStgdb->m_MiniMd.SetSorted(TBL_CustomAttribute, false);
-            break;
-        }
-    case mdtGenericParam:
-        {
-            mdToken         tkParent;
-            GenericParamRec  *pRecord;
-            IfFailGo(m_pStgdb->m_MiniMd.GetGenericParamRecord(RidFromToken(tkObj), &pRecord));
-
-            // replace the Parent column of the GenericParam record with a nil token.
-            tkParent = m_pStgdb->m_MiniMd.getOwnerOfGenericParam(pRecord);
-            tkParent = TokenFromRid( mdTokenNil, TypeFromToken(tkParent) );
-            IfFailGo(m_pStgdb->m_MiniMd.PutToken(TBL_GenericParam, GenericParamRec::COL_Owner,
-                                                 pRecord, tkParent));
-
-            // now the GenericParam table is no longer sorted
-            m_pStgdb->m_MiniMd.SetSorted(TBL_GenericParam, false);
-            break;
-        }
-    case mdtGenericParamConstraint:
-        {
-            GenericParamConstraintRec  *pRecord;
-            IfFailGo(m_pStgdb->m_MiniMd.GetGenericParamConstraintRecord(RidFromToken(tkObj), &pRecord));
-
-            // replace the Param column of the GenericParamConstraint record with zero RID.
-            IfFailGo(m_pStgdb->m_MiniMd.PutCol(TBL_GenericParamConstraint,
-                                               GenericParamConstraintRec::COL_Owner,pRecord, 0));
-            // now the GenericParamConstraint table is no longer sorted
-            m_pStgdb->m_MiniMd.SetSorted(TBL_GenericParamConstraint, false);
-            break;
-        }
-    case mdtPermission:
-        {
-            mdToken         tkParent;
-            mdToken         tkNil;
-            DeclSecurityRec *pRecord;
-            IfFailGo(m_pStgdb->m_MiniMd.GetDeclSecurityRecord(RidFromToken(tkObj), &pRecord));
-
-            // Replace the parent column of the permission record with a nil tokne.
-            tkParent = m_pStgdb->m_MiniMd.getParentOfDeclSecurity(pRecord);
-            tkNil = TokenFromRid( mdTokenNil, TypeFromToken(tkParent) );
-            IfFailGo(m_pStgdb->m_MiniMd.PutToken(TBL_DeclSecurity, DeclSecurityRec::COL_Parent, pRecord, tkNil ));
-
-            // The table is no longer sorted.
-            m_pStgdb->m_MiniMd.SetSorted(TBL_DeclSecurity, false);
-
-            // If the parent has no more security attributes, turn off the "has security" bit.
-            HCORENUM        hEnum = 0;
-            mdPermission    rPerms[1];
-            ULONG           cPerms = 0;
-            EnumPermissionSets(&hEnum, tkParent, 0 /* all actions */, rPerms, 1, &cPerms);
-            CloseEnum(hEnum);
-            if (cPerms == 0)
-            {
-                void    *pRow;
-                ULONG   ixTbl;
-                // Get the row for the parent object.
-                ixTbl = m_pStgdb->m_MiniMd.GetTblForToken(tkParent);
-                _ASSERTE(ixTbl >= 0 && ixTbl <= m_pStgdb->m_MiniMd.GetCountTables());
-                IfFailGo(m_pStgdb->m_MiniMd.getRow(ixTbl, RidFromToken(tkParent), &pRow));
-
-                switch (TypeFromToken(tkParent))
-                {
-                case mdtTypeDef:
-                    reinterpret_cast<TypeDefRec*>(pRow)->RemoveFlags(tdHasSecurity);
-                    break;
-                case mdtMethodDef:
-                    reinterpret_cast<MethodRec*>(pRow)->RemoveFlags(mdHasSecurity);
-                    break;
-                case mdtAssembly:
-                    // No security bit.
-                    break;
-                }
-            }
-            break;
-        }
-    default:
-        _ASSERTE(!"Bad token type!");
-        IfFailGo( E_INVALIDARG );
-        break;
-    }
-
-ErrExit:
-    return hr;
-#else //!FEATURE_METADATA_EMIT_ALL
     return E_NOTIMPL;
-#endif //!FEATURE_METADATA_EMIT_ALL
 } // RegMeta::DeleteToken
 
 //*****************************************************************************
@@ -2290,7 +2106,7 @@ STDMETHODIMP RegMeta::SetPermissionSetProps(  // S_OK or error.
     ULONG       cbPermission,           // [IN] Count of bytes of pvPermission.
     mdPermission *ppm)                  // [OUT] Permission token.
 {
-#ifdef FEATURE_METADATA_EMIT_ALL
+#if defined(FEATURE_METADATA_EMIT_ALL) && defined(FEATURE_METADATA_PERMISSION_SETS)
     HRESULT hr = S_OK;
 
     USHORT      sAction = static_cast<USHORT>(dwAction);    // Corresponding DeclSec field is a USHORT.
@@ -2313,9 +2129,9 @@ STDMETHODIMP RegMeta::SetPermissionSetProps(  // S_OK or error.
     IfFailGo(_SetPermissionSetProps(tkPerm, dwAction, pvPermission, cbPermission));
 ErrExit:
     return hr;
-#else //!FEATURE_METADATA_EMIT_ALL
+#else // !FEATURE_METADATA_EMIT_ALL || !FEATURE_METADATA_PERMISSION_SETS
     return E_NOTIMPL;
-#endif //!FEATURE_METADATA_EMIT_ALL
+#endif // !FEATURE_METADATA_EMIT_ALL || !FEATURE_METADATA_PERMISSION_SETS
 } // RegMeta::SetPermissionSetProps
 
 //*****************************************************************************
@@ -2941,39 +2757,15 @@ HRESULT RegMeta::DefineSecurityAttributeSet(// Return code.
     return E_NOTIMPL;
 } // RegMeta::DefineSecurityAttributeSet
 
+#ifdef FEATURE_METADATA_PUBLIC_INTERFACES
 //*****************************************************************************
 // Apply edit and continue changes to this metadata.
 //*****************************************************************************
 STDMETHODIMP RegMeta::ApplyEditAndContinue(   // S_OK or error.
     IUnknown    *pUnk)                  // [IN] Metadata from the delta PE.
 {
-#ifdef FEATURE_METADATA_EMIT_ALL
-    HRESULT hr;
-
-    IMetaDataImport2 *pImport=0;        // Interface on the delta metadata.
-    RegMeta     *pDeltaMD=0;            // The delta metadata.
-    CMiniMdRW   *mdDelta = NULL;
-    CMiniMdRW   *mdBase = NULL;
-
-    // Get the MiniMd on the delta.
-    IfFailGo(pUnk->QueryInterface(IID_IMetaDataImport2, (void**)&pImport));
-
-    pDeltaMD = static_cast<RegMeta*>(pImport);
-
-    mdDelta = &(pDeltaMD->m_pStgdb->m_MiniMd);
-    mdBase = &(m_pStgdb->m_MiniMd);
-
-    IfFailGo(mdBase->ConvertToRW());
-    IfFailGo(mdBase->ApplyDelta(*mdDelta));
-
-ErrExit:
-    if (pImport)
-        pImport->Release();
-
-    return hr;
-#else //!FEATURE_METADATA_EMIT_ALL
     return E_NOTIMPL;
-#endif //!FEATURE_METADATA_EMIT_ALL
 } // RegMeta::ApplyEditAndContinue
+#endif // FEATURE_METADATA_PUBLIC_INTERFACES
 
 #endif //FEATURE_METADATA_EMIT

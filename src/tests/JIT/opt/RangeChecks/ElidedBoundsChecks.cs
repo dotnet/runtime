@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers.Binary;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
@@ -214,6 +215,28 @@ public class ElidedBoundsChecks
         return vals[i >>> 31];
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static int ByteSwappedInt32(int[] data, ref int wire)
+    {
+        // X64-NOT: CORINFO_HELP_RNGCHKFAIL
+        // ARM64-NOT: CORINFO_HELP_RNGCHKFAIL
+        int index = BinaryPrimitives.ReverseEndianness(wire);
+        if (index < 0 || index > data.Length - 2)
+            return -1;
+        return data[index + 1];
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static int ByteSwappedUInt16(int[] data, ushort wire)
+    {
+        // X64-NOT: CORINFO_HELP_RNGCHKFAIL
+        // ARM64-NOT: CORINFO_HELP_RNGCHKFAIL
+        int index = BinaryPrimitives.ReverseEndianness(wire);
+        if (index > data.Length - 2)
+            return -1;
+        return data[index + 1];
+    }
+
     [Fact]
     public static int TestEntryPoint()
     {
@@ -334,6 +357,16 @@ public class ElidedBoundsChecks
         Assert.Throws<IndexOutOfRangeException>(() => TwoArrays(a4, new int[1]));
 
         if (UnsignedShiftBySignBit(-1) != 1 || UnsignedShiftBySignBit(0) != 0)
+            return 0;
+
+        int wire = BinaryPrimitives.ReverseEndianness(1);
+        if (ByteSwappedInt32(arr4, ref wire) != 30 || ByteSwappedUInt16(arr4, 0x0100) != 30)
+            return 0;
+        wire = -1;
+        if (ByteSwappedInt32(arr4, ref wire) != -1)
+            return 0;
+        wire = BinaryPrimitives.ReverseEndianness(3);
+        if (ByteSwappedInt32(arr4, ref wire) != -1 || ByteSwappedUInt16(arr4, 0x0300) != -1)
             return 0;
 
         return 100;

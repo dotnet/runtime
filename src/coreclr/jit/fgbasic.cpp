@@ -165,13 +165,16 @@ void Compiler::fgConvertBBToThrowBB(BasicBlock* block)
     // Scrub this block from the pred lists of any successors
     bool profileInconsistent = false;
 
+    // A self-edge can change the block weight as we visit its successors.
+    weight_t const blockWeight = block->bbWeight;
+
     for (BasicBlock* const succBlock : block->Succs())
     {
         FlowEdge* const succEdge = fgRemoveAllRefPreds(succBlock, block);
 
         if (block->hasProfileWeight() && succBlock->hasProfileWeight())
         {
-            succBlock->decreaseBBProfileWeight(succEdge->getLikelyWeight());
+            succBlock->decreaseBBProfileWeight(succEdge->getLikelihood() * blockWeight);
             profileInconsistent |= (succBlock->NumSucc() > 0);
         }
     }
@@ -1107,7 +1110,13 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
 
                 if (isIntrinsic)
                 {
-                    ni = lookupNamedIntrinsic(methodHnd);
+                    ni = resolveNamedIntrinsic(methodHnd, lookupNamedIntrinsic(methodHnd));
+
+                    if (((ni == NI_System_Numerics_Intrinsic) || (ni == NI_System_Runtime_Intrinsics_Intrinsic)) &&
+                        gtIsRecursiveCall(methodHnd, false))
+                    {
+                        ni = NI_Throw_PlatformNotSupportedException;
+                    }
 
                     bool foldableIntrinsic = false;
 
@@ -1498,7 +1507,11 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                         }
                     }
 
-                    if (foldableIntrinsic)
+                    if (ni == NI_Throw_PlatformNotSupportedException)
+                    {
+                        compInlineResult->Note(InlineObservation::CALLEE_THROW_BLOCK);
+                    }
+                    else if (foldableIntrinsic)
                     {
                         compInlineResult->Note(InlineObservation::CALLSITE_FOLDABLE_INTRINSIC);
                         handled = true;
@@ -1514,7 +1527,8 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                     }
                 }
 
-                if ((codeAddr < codeEndp - sz) && (OPCODE)getU1LittleEndian(codeAddr + sz) == CEE_RET)
+                if ((ni != NI_Throw_PlatformNotSupportedException) && (codeAddr < codeEndp - sz) &&
+                    (OPCODE)getU1LittleEndian(codeAddr + sz) == CEE_RET)
                 {
                     // If the method has a call followed by a ret, assume that
                     // it is a wrapper method.
@@ -2724,6 +2738,13 @@ void Compiler::fgLinkBasicBlocks()
         {
             case BBJ_COND:
             {
+                // The false target is the next block, so there must be one.
+                //
+                if (curBBdesc->IsLast())
+                {
+                    BADCODE("Fall thru the end of a method");
+                }
+
                 BasicBlock* const trueTarget  = fgLookupBB(curBBdesc->GetTargetOffs());
                 BasicBlock* const falseTarget = curBBdesc->Next();
                 FlowEdge* const   trueEdge    = fgAddRefPred<initializingPreds>(trueTarget, curBBdesc);
@@ -2757,11 +2778,6 @@ void Compiler::fgLinkBasicBlocks()
                 if (trueTarget->bbNum <= curBBdesc->bbNum)
                 {
                     fgMarkBackwardJump(trueTarget, curBBdesc);
-                }
-
-                if (curBBdesc->IsLast())
-                {
-                    BADCODE("Fall thru the end of a method");
                 }
 
                 break;
@@ -3657,6 +3673,18 @@ void Compiler::fgFindBasicBlocks()
             BADCODE3("end of hnd block beyond end of method for try", " at offset %04X", tryBegOff);
         }
 
+        // The method entry (IL offset 0) must not lie inside a handler or filter.
+        // Entry into these regions is controlled by the exception-handling mechanism
+        // (ECMA-335 I.12.4.2.8.1).
+        if (hndBegOff == 0)
+        {
+            BADCODE3("method entry inside handler for try", " at offset %04X", tryBegOff);
+        }
+        if ((clause.Flags & CORINFO_EH_CLAUSE_FILTER) && (filterBegOff == 0))
+        {
+            BADCODE3("method entry inside filter for try", " at offset %04X", tryBegOff);
+        }
+
         HBtab->ebdID              = impInlineRoot()->compEHID++;
         HBtab->ebdTryBegOffset    = tryBegOff;
         HBtab->ebdTryEndOffset    = tryEndOff;
@@ -3698,7 +3726,8 @@ void Compiler::fgFindBasicBlocks()
             filtBB->SetCatchType(BBCT_FILTER);
             hndBegBB->SetCatchType(BBCT_FILTER_HANDLER);
 
-            // Mark all BBs that belong to the filter with the XTnum of the corresponding handler
+            // Find the end of the filter. The filter's blocks get their handler index after the EH table is
+            // sorted, below: fgSortEHTable may move this clause, and XTnum is only its pre-sort index.
             for (block = filtBB; /**/; block = block->Next())
             {
                 if (block == nullptr)
@@ -3706,9 +3735,6 @@ void Compiler::fgFindBasicBlocks()
                     BADCODE3("Missing endfilter for filter", " at offset %04X", filtBB->bbCodeOffs);
                     return;
                 }
-
-                // Still inside the filter
-                block->setHndIndex(XTnum);
 
                 if (block->KindIs(BBJ_EHFILTERRET))
                 {
@@ -3845,6 +3871,17 @@ void Compiler::fgFindBasicBlocks()
             if ((block != hndBegBB) && !hndBegBB->CatchTypeIs(BBCT_FINALLY))
             {
                 block->bbSetRunRarely();
+            }
+        }
+
+        // Mark all blocks in the filter, if there is one. The filter ends immediately before hndBegBB (checked
+        // above). Valid filters cannot contain nested EH regions, so assign each block this clause's sorted index.
+
+        if (HBtab->HasFilter())
+        {
+            for (block = HBtab->ebdFilter; block != hndBegBB; block = block->Next())
+            {
+                block->setHndIndex(XTnum);
             }
         }
 

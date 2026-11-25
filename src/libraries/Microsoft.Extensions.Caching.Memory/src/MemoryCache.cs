@@ -935,8 +935,8 @@ namespace Microsoft.Extensions.Caching.Memory
                         ? []
                         : new Measurement<long>[]
                         {
-                            new(stats.TotalHits, cacheNameTag, new("dotnet.cache.request.type", "hit")),
-                            new(stats.TotalMisses, cacheNameTag, new("dotnet.cache.request.type", "miss")),
+                            new(stats.TotalHits, cacheNameTag, new("dotnet.cache.request.result", "hit")),
+                            new(stats.TotalMisses, cacheNameTag, new("dotnet.cache.request.result", "miss")),
                         };
                 },
                 unit: "{request}",
@@ -987,8 +987,8 @@ namespace Microsoft.Extensions.Caching.Memory
                         ? [new Measurement<long>(size, cacheNameTag)]
                         : [];
                 },
-                unit: "By",
-                description: "Estimated size of the cache.");
+                unit: "1",
+                description: "Estimated size of the cache in application-defined units.");
         }
 
         private sealed class SharedMeter : Meter

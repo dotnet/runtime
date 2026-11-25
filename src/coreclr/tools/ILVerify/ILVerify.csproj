@@ -9,6 +9,7 @@
     <DefineConstants>ILVERIFY;$(DefineConstants)</DefineConstants>
     <RunAnalyzers>false</RunAnalyzers>
     <IsPackable>true</IsPackable>
+    <IsShipping>true</IsShipping>
     <PackAsTool>true</PackAsTool>
     <PackageDescription>ILVerify tool.</PackageDescription>
     <PackageId>dotnet-ilverify</PackageId>

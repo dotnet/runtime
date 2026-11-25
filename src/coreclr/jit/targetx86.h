@@ -126,13 +126,8 @@
 #define MIN_ARG_AREA_FOR_CALL    0       // Minimum required outgoing argument space for a call.
 
 #define CODE_ALIGN               1       // code alignment requirement
-#if !defined(UNIX_X86_ABI)
 #define STACK_ALIGN              4       // stack alignment requirement
 #define STACK_ALIGN_SHIFT        2       // Shift-right amount to convert size in bytes to size in STACK_ALIGN units == log2(STACK_ALIGN)
-#else
-#define STACK_ALIGN              16      // stack alignment requirement
-#define STACK_ALIGN_SHIFT        4       // Shift-right amount to convert size in bytes to size in STACK_ALIGN units == log2(STACK_ALIGN)
-#endif // !UNIX_X86_ABI
 
 #define RBM_INT_CALLEE_SAVED    (RBM_EBX|RBM_ESI|RBM_EDI)
 #define RBM_INT_CALLEE_TRASH    (RBM_EAX|RBM_ECX|RBM_EDX)
@@ -228,7 +223,7 @@
 // Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
 #define RBM_CALLEE_GCTRASH_WRITEBARRIER       RBM_EDX
 
-// IL stub's secret parameter (JitFlags::JIT_FLAG_PUBLISH_SECRET_PARAM)
+// IL stub's SecretStubArgument parameter
 #define REG_SECRET_STUB_PARAM    REG_EAX
 #define RBM_SECRET_STUB_PARAM    RBM_EAX
 

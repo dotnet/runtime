@@ -7,8 +7,25 @@ using Xunit.Sdk;
 
 namespace System.Security.Cryptography.Tests
 {
-    public static class CompositeMLKemTestData
+    public static partial class CompositeMLKemTestData
     {
+        internal static partial CompositeMLKemTestVector[] AllIetfVectors { get; }
+
+        public static IEnumerable<object[]> AllIetfVectorsTestData =>
+            AllIetfVectors.Select(vector => new object[] { vector });
+
+        public static IEnumerable<object[]> SupportedAlgorithmIetfVectorsTestData =>
+            AllIetfVectors
+                .Where(vector => CompositeMLKem.IsAlgorithmSupported(vector.Algorithm))
+                .Select(vector => new object[] { vector });
+
+        public static IEnumerable<object[]> SupportedXDiffieHellmanIetfVectorsTestData =>
+            AllIetfVectors
+                .Where(vector =>
+                    CompositeMLKem.IsAlgorithmSupported(vector.Algorithm) &&
+                    IsXDiffieHellman(vector.Algorithm))
+                .Select(vector => new object[] { vector });
+
         internal static CompositeMLKemAlgorithm[] AllAlgorithms { get; } =
         [
             CompositeMLKemAlgorithm.MLKem768WithRsaOaep2048,
@@ -45,16 +62,20 @@ namespace System.Security.Cryptography.Tests
             internal int MaxPrivateKeySizeInBytes { get; } = maxPrivateKeySizeInBytes;
         }
 
-        internal sealed class ECDiffieHellmanAlgorithm(int keySizeInBits, int maxPrivateKeySizeInBytes)
+        internal sealed class ECDiffieHellmanAlgorithm(int keySizeInBits, int maxPrivateKeySizeInBytes, bool isSecg)
         {
             internal int KeySizeInBits { get; } = keySizeInBits;
 
             internal int MaxPrivateKeySizeInBytes { get; } = maxPrivateKeySizeInBytes;
+
+            internal bool IsSecg { get; } = isSecg;
         }
 
-        internal sealed class XDiffieHellmanAlgorithm(int keySizeInBits)
+        internal sealed class XDiffieHellmanAlgorithm(int keySizeInBits, bool isX25519)
         {
             internal int KeySizeInBits { get; } = keySizeInBits;
+
+            internal bool IsX25519 { get; } = isX25519;
         }
 
         internal static MLKemAlgorithm GetMLKemAlgorithm(CompositeMLKemAlgorithm algorithm) =>
@@ -75,14 +96,14 @@ namespace System.Security.Cryptography.Tests
                 "MLKEM768-RSA3072-SHA3-256" or
                 "MLKEM1024-RSA3072-SHA3-256" => rsaFunc(new RsaAlgorithm(3072, 428, 1800)),
                 "MLKEM768-RSA4096-SHA3-256" => rsaFunc(new RsaAlgorithm(4096, 556, 2381)),
-                "MLKEM768-ECDH-P256-SHA3-256" => ecdhFunc(new ECDiffieHellmanAlgorithm(256, 51)),
+                "MLKEM768-ECDH-P256-SHA3-256" => ecdhFunc(new ECDiffieHellmanAlgorithm(256, 51, isSecg: true)),
                 "MLKEM768-ECDH-P384-SHA3-256" or
-                "MLKEM1024-ECDH-P384-SHA3-256" => ecdhFunc(new ECDiffieHellmanAlgorithm(384, 64)),
-                "MLKEM1024-ECDH-P521-SHA3-256" => ecdhFunc(new ECDiffieHellmanAlgorithm(521, 82)),
-                "MLKEM768-ECDH-brainpoolP256r1-SHA3-256" => ecdhFunc(new ECDiffieHellmanAlgorithm(256, 52)),
-                "MLKEM1024-ECDH-brainpoolP384r1-SHA3-256" => ecdhFunc(new ECDiffieHellmanAlgorithm(384, 68)),
-                "MLKEM768-X25519-SHA3-256" => xdhFunc(new XDiffieHellmanAlgorithm(32 * 8)),
-                "MLKEM1024-X448-SHA3-256" => xdhFunc(new XDiffieHellmanAlgorithm(56 * 8)),
+                "MLKEM1024-ECDH-P384-SHA3-256" => ecdhFunc(new ECDiffieHellmanAlgorithm(384, 64, isSecg: true)),
+                "MLKEM1024-ECDH-P521-SHA3-256" => ecdhFunc(new ECDiffieHellmanAlgorithm(521, 82, isSecg: true)),
+                "MLKEM768-ECDH-brainpoolP256r1-SHA3-256" => ecdhFunc(new ECDiffieHellmanAlgorithm(256, 52, isSecg: false)),
+                "MLKEM1024-ECDH-brainpoolP384r1-SHA3-256" => ecdhFunc(new ECDiffieHellmanAlgorithm(384, 68, isSecg: false)),
+                "MLKEM768-X25519-SHA3-256" => xdhFunc(new XDiffieHellmanAlgorithm(32 * 8, isX25519: true)),
+                "MLKEM1024-X448-SHA3-256" => xdhFunc(new XDiffieHellmanAlgorithm(56 * 8, isX25519: false)),
                 _ => throw new XunitException($"Unsupported algorithm: {algorithm.Name}"),
             };
         }
@@ -128,14 +149,7 @@ namespace System.Security.Cryptography.Tests
                     xdh => xdh.KeySizeInBits / 8);
         }
 
-        internal static int ExpectedCiphertextSize(CompositeMLKemAlgorithm algorithm)
-        {
-            return GetMLKemAlgorithm(algorithm).CiphertextSizeInBytes +
-                ExecuteComponentFunc(
-                    algorithm,
-                    rsa => rsa.KeySizeInBits / 8, // RSA-OAEP ciphertexts are the size of the modulus
-                    ecdh => 1 + 2 * ((ecdh.KeySizeInBits + 7) / 8),
-                    xdh => xdh.KeySizeInBits / 8);
-        }
+        internal static bool IsXDiffieHellman(CompositeMLKemAlgorithm algorithm) =>
+            ExecuteComponentFunc(algorithm, rsa => false, ecdh => false, xdh => true);
     }
 }

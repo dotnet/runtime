@@ -28,7 +28,7 @@ InlinePolicy* InlinePolicy::GetPolicy(Compiler* compiler, bool isPrejitRoot)
 #if defined(DEBUG)
 
     // Optionally install the AsyncStressPolicy.
-    if (JitConfig.JitStressAsyncInlining() != 0)
+    if (compiler->compAsyncInliningStress())
     {
         return new (compiler, CMK_Inlining) AsyncStressPolicy(compiler, isPrejitRoot);
     }
@@ -462,6 +462,10 @@ void DefaultPolicy::NoteBool(InlineObservation obs, bool value)
                 m_InsideThrowBlock = value;
                 break;
 
+            case InlineObservation::CALLEE_MAY_RETURN_SMALL_ARRAY:
+                m_MayReturnSmallArray = true;
+                break;
+
             default:
                 // Ignore the remainder for now
                 break;
@@ -784,12 +788,19 @@ double DefaultPolicy::DetermineMultiplier()
         multiplier += 3.0;
         JITDUMP("\nInline candidate has const arg that feeds a conditional.  Multiplier increased to %g.", multiplier);
     }
+
     // For prejit roots we do not see the call sites. To be suitably optimistic
     // assume that call sites may pass constants.
-    else if (m_IsPrejitRoot && ((m_ArgFeedsConstantTest > 0) || (m_ArgFeedsTest > 0)))
+    if (m_IsPrejitRoot && ((m_ArgFeedsConstantTest > 0) || (m_ArgFeedsTest > 0)))
     {
         multiplier += 3.0;
         JITDUMP("\nPrejit root candidate has arg that feeds a conditional.  Multiplier increased to %g.", multiplier);
+    }
+
+    if (m_MayReturnSmallArray)
+    {
+        multiplier += 4.0;
+        JITDUMP("\nInline candidate may return small known-size array.  Multiplier increased to %g.", multiplier);
     }
 
     switch (m_CallsiteFrequency)
@@ -3507,7 +3518,7 @@ void AsyncStressPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
     const double pct         = (double)JitConfig.JitStressAsyncInliningPct() / 100.0;
     const double probability = pow(pct, (double)(m_CallsiteDepth + (unsigned)m_AsyncStressIndex));
 
-    CLRRandom* const random = m_RootCompiler->m_inlineStrategy->GetRandom(JitConfig.JitStressAsyncInlining());
+    CLRRandom* const random = m_RootCompiler->m_inlineStrategy->GetRandom(Compiler::compAsyncInliningStressSeed());
 
     if (random->NextDouble() < probability)
     {

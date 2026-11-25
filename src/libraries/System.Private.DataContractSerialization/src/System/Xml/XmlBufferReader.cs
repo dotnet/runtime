@@ -249,10 +249,11 @@ namespace System.Xml
             _offset += count;
         }
 
-        public void InsertBytes(byte[] buffer, int offset, int count)
+        public void InsertBytes(ReadOnlySpan<byte> bytes)
         {
             Debug.Assert(_stream != null);
-            if (_offsetMax > buffer.Length - count)
+            int count = bytes.Length;
+            if (_offsetMax > _buffer.Length - count)
             {
                 byte[] newBuffer = new byte[_offsetMax + count];
                 System.Buffer.BlockCopy(_buffer, 0, newBuffer, 0, _offsetMax);
@@ -261,7 +262,7 @@ namespace System.Xml
             }
             System.Buffer.BlockCopy(_buffer, _offset, _buffer, _offset + count, _offsetMax - _offset);
             _offsetMax += count;
-            System.Buffer.BlockCopy(buffer, offset, _buffer, _offset, count);
+            bytes.CopyTo(_buffer.AsSpan(_offset, count));
         }
 
         public void SetWindow(int windowOffset, int windowLength)
@@ -814,45 +815,17 @@ namespace System.Xml
 
         public bool Equals2(int offset1, int length1, byte[] buffer2)
         {
-            int length2 = buffer2.Length;
-            if (length1 != length2)
-                return false;
-            byte[] buffer1 = _buffer;
-            for (int i = 0; i < length1; i++)
-            {
-                if (buffer1[offset1 + i] != buffer2[i])
-                    return false;
-            }
-            return true;
+            return _buffer.AsSpan(offset1, length1).SequenceEqual(buffer2);
         }
 
         public bool Equals2(int offset1, int length1, XmlBufferReader bufferReader2, int offset2, int length2)
         {
-            if (length1 != length2)
-                return false;
-            byte[] buffer1 = _buffer;
-            byte[] buffer2 = bufferReader2._buffer;
-            for (int i = 0; i < length1; i++)
-            {
-                if (buffer1[offset1 + i] != buffer2[offset2 + i])
-                    return false;
-            }
-            return true;
+            return _buffer.AsSpan(offset1, length1).SequenceEqual(bufferReader2._buffer.AsSpan(offset2, length2));
         }
 
         public bool Equals2(int offset1, int length1, int offset2, int length2)
         {
-            if (length1 != length2)
-                return false;
-            if (offset1 == offset2)
-                return true;
-            byte[] buffer = _buffer;
-            for (int i = 0; i < length1; i++)
-            {
-                if (buffer[offset1 + i] != buffer[offset2 + i])
-                    return false;
-            }
-            return true;
+            return _buffer.AsSpan(offset1, length1).SequenceEqual(_buffer.AsSpan(offset2, length2));
         }
 
         public unsafe bool Equals2(int offset1, int length1, string s2)

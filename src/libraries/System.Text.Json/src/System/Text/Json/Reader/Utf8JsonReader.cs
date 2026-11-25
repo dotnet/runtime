@@ -666,7 +666,7 @@ namespace System.Text.Json
 
                     if (localSequence.IsSingleSegment)
                     {
-                        result = JsonReaderHelper.UnescapeAndCompare(localSequence.First.Span, other);
+                        result = JsonReaderHelper.UnescapeAndCompare(localSequence.FirstSpan, other);
                     }
                     else
                     {
@@ -1362,10 +1362,8 @@ namespace System.Text.Json
             Debug.Assert(data[idx] == JsonConstants.BackSlash || data[idx] < JsonConstants.Space);
 
             long prevLineBytePosition = _bytePositionInLine;
-            long prevLineNumber = _lineNumber;
 
-            _bytePositionInLine += idx + 1; // Add 1 for the first quote
-
+            // Raw newlines are invalid in strings, so byte positions can be derived from idx.
             bool nextCharEscaped = false;
             for (; idx < data.Length; idx++)
             {
@@ -1384,16 +1382,16 @@ namespace System.Text.Json
                 }
                 else if (nextCharEscaped)
                 {
-                    int index = JsonConstants.EscapableChars.IndexOf(currentByte);
-                    if (index == -1)
+                    if (!JsonConstants.EscapableChars.Contains(currentByte))
                     {
+                        _bytePositionInLine = prevLineBytePosition + idx + 1;
                         ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.InvalidCharacterAfterEscapeWithinString, currentByte);
                     }
 
                     if (currentByte == 'u')
                     {
                         // Expecting 4 hex digits to follow the escaped 'u'
-                        _bytePositionInLine++;  // move past the 'u'
+                        _bytePositionInLine = prevLineBytePosition + idx + 2;  // move past the 'u'
                         if (ValidateHexDigits(data, idx + 1))
                         {
                             idx += 4;   // Skip the 4 hex digits, the for loop accounts for idx incrementing past the 'u'
@@ -1410,25 +1408,24 @@ namespace System.Text.Json
                 }
                 else if (currentByte < JsonConstants.Space)
                 {
+                    _bytePositionInLine = prevLineBytePosition + idx + 1;
                     ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.InvalidCharacterWithinString, currentByte);
                 }
-
-                _bytePositionInLine++;
             }
 
             if (idx >= data.Length)
             {
                 if (IsLastSpan)
                 {
+                    _bytePositionInLine = prevLineBytePosition + data.Length + 1;
                     ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.EndOfStringNotFound);
                 }
-                _lineNumber = prevLineNumber;
                 _bytePositionInLine = prevLineBytePosition;
                 return false;
             }
 
         Done:
-            _bytePositionInLine++;  // Add 1 for the end quote
+            _bytePositionInLine = prevLineBytePosition + idx + 2; // Add 2 for the start and end quotes
             ValueSpan = data.Slice(0, idx);
             ValueIsEscaped = true;
             _tokenType = JsonTokenType.String;
@@ -1443,13 +1440,13 @@ namespace System.Text.Json
                 byte nextByte = data[j];
                 if (!JsonReaderHelper.IsHexDigit(nextByte))
                 {
+                    _bytePositionInLine += j - idx;
                     ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.InvalidHexCharacterWithinString, nextByte);
                 }
                 if (j - idx >= 3)
                 {
                     return true;
                 }
-                _bytePositionInLine++;
             }
 
             return false;
@@ -1505,7 +1502,7 @@ namespace System.Text.Json
 
                 Debug.Assert(result == ConsumeNumberResult.OperationIncomplete);
                 nextByte = data[i];
-                if (nextByte != '.' && nextByte != 'E' && nextByte != 'e')
+                if (nextByte is not ((byte)'.' or (byte)'E' or (byte)'e'))
                 {
                     _bytePositionInLine += i;
                     ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.ExpectedEndOfDigitNotFound, nextByte);
@@ -1529,7 +1526,7 @@ namespace System.Text.Json
 
                 Debug.Assert(result == ConsumeNumberResult.OperationIncomplete);
                 nextByte = data[i];
-                if (nextByte != 'E' && nextByte != 'e')
+                if (nextByte is not ((byte)'E' or (byte)'e'))
                 {
                     _bytePositionInLine += i;
                     ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.ExpectedNextDigitEValueNotFound, nextByte);
@@ -1624,7 +1621,7 @@ namespace System.Text.Json
                 }
             }
             nextByte = data[i];
-            if (nextByte != '.' && nextByte != 'E' && nextByte != 'e')
+            if (nextByte is not ((byte)'.' or (byte)'E' or (byte)'e'))
             {
                 _bytePositionInLine += i;
                 ThrowHelper.ThrowJsonReaderException(ref this,
@@ -1703,7 +1700,7 @@ namespace System.Text.Json
             }
 
             byte nextByte = data[i];
-            if (nextByte == '+' || nextByte == '-')
+            if (nextByte is (byte)'+' or (byte)'-')
             {
                 i++;
                 if (i >= data.Length)

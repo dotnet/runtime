@@ -9,6 +9,8 @@ RuntimeAsyncApisProfiler::RuntimeAsyncApisProfiler()
       _target(0),
       _jitStarts(0),
       _jitFinishes(0),
+      _cacheVetoes(0),
+      _unexpectedCachedFunctions(0),
       _ipRoundTrips(0),
       _ilMappings(0),
       _exceptionsThrown(0),
@@ -34,7 +36,10 @@ HRESULT RuntimeAsyncApisProfiler::Initialize(IUnknown* pCorProfilerInfoUnk)
     }
 
     return pCorProfilerInfo->SetEventMask2(
-        COR_PRF_MONITOR_JIT_COMPILATION | COR_PRF_MONITOR_EXCEPTIONS, 0);
+        COR_PRF_MONITOR_JIT_COMPILATION |
+        COR_PRF_MONITOR_CACHE_SEARCHES |
+        COR_PRF_MONITOR_EXCEPTIONS,
+        0);
 }
 
 bool RuntimeAsyncApisProfiler::IsTarget(FunctionID functionId)
@@ -69,15 +74,49 @@ HRESULT RuntimeAsyncApisProfiler::JITCompilationFinished(
         return S_OK;
     }
 
-    _target = functionId;
     if (FAILED(hrStatus))
     {
         _failures++;
         return S_OK;
     }
 
+    _target = functionId;
     _jitFinishes++;
+    ValidateTargetCode(functionId);
+    return S_OK;
+}
 
+HRESULT RuntimeAsyncApisProfiler::JITCachedFunctionSearchStarted(
+    FunctionID functionId, BOOL* pbUseCachedFunction)
+{
+    *pbUseCachedFunction = TRUE;
+    SHUTDOWNGUARD();
+
+    if (IsTarget(functionId))
+    {
+        // The APIs validated by this test require JIT-generated native code.
+        _cacheVetoes++;
+        *pbUseCachedFunction = FALSE;
+    }
+    return S_OK;
+}
+
+HRESULT RuntimeAsyncApisProfiler::JITCachedFunctionSearchFinished(
+    FunctionID functionId, COR_PRF_JIT_CACHE result)
+{
+    SHUTDOWNGUARD();
+
+    if (IsTarget(functionId) && result == COR_PRF_CACHED_FUNCTION_FOUND)
+    {
+        printf("Cached target function was used after the profiler requested JIT compilation\n");
+        _unexpectedCachedFunctions++;
+        _failures++;
+    }
+    return S_OK;
+}
+
+void RuntimeAsyncApisProfiler::ValidateTargetCode(FunctionID functionId)
+{
     COR_PRF_CODE_INFO codeInfos[16];
     ULONG32 codeInfoCount = 0;
     HRESULT hr = pCorProfilerInfo->GetCodeInfo2(
@@ -85,21 +124,21 @@ HRESULT RuntimeAsyncApisProfiler::JITCompilationFinished(
         &codeInfoCount, codeInfos);
     if (FAILED(hr) || codeInfoCount == 0)
     {
+        printf("GetCodeInfo2 failed hr=0x%x count=%u\n", hr, codeInfoCount);
         _failures++;
+        return;
+    }
+
+    FunctionID roundTrip = 0;
+    hr = pCorProfilerInfo->GetFunctionFromIP(
+        reinterpret_cast<LPCBYTE>(codeInfos[0].startAddress), &roundTrip);
+    if (SUCCEEDED(hr) && roundTrip == functionId)
+    {
+        _ipRoundTrips++;
     }
     else
     {
-        FunctionID roundTrip = 0;
-        hr = pCorProfilerInfo->GetFunctionFromIP(
-            reinterpret_cast<LPCBYTE>(codeInfos[0].startAddress), &roundTrip);
-        if (SUCCEEDED(hr) && roundTrip == functionId)
-        {
-            _ipRoundTrips++;
-        }
-        else
-        {
-            _failures++;
-        }
+        _failures++;
     }
 
     COR_DEBUG_IL_TO_NATIVE_MAP mappings[512];
@@ -115,8 +154,6 @@ HRESULT RuntimeAsyncApisProfiler::JITCompilationFinished(
     {
         _failures++;
     }
-
-    return S_OK;
 }
 
 HRESULT RuntimeAsyncApisProfiler::ExceptionThrown(ObjectID thrownObjectId)
@@ -161,9 +198,10 @@ HRESULT RuntimeAsyncApisProfiler::Shutdown()
 {
     HRESULT hr = Profiler::Shutdown();
 
-    printf("RuntimeAsyncApisProfiler: failures=%d jit=%d/%d ip=%d il=%d "
+    printf("RuntimeAsyncApisProfiler: failures=%d jit=%d/%d cacheVetoes=%d unexpectedCached=%d ip=%d il=%d "
            "thrown=%d searches=%d unwinds=%d catchers=%d\n",
            _failures.load(), _jitStarts.load(), _jitFinishes.load(),
+           _cacheVetoes.load(), _unexpectedCachedFunctions.load(),
            _ipRoundTrips.load(), _ilMappings.load(), _exceptionsThrown.load(),
            _targetSearches.load(), _targetUnwinds.load(), _catchers.load());
 

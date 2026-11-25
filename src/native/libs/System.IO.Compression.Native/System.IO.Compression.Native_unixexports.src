@@ -13,6 +13,7 @@ BrotliEncoderDestroyInstance
 BrotliEncoderHasMoreOutput
 BrotliEncoderMaxCompressedSize
 BrotliEncoderSetParameter
+BrotliDecoderSetParameter
 CompressionNative_Crc32
 CompressionNative_Deflate
 CompressionNative_DeflateEnd

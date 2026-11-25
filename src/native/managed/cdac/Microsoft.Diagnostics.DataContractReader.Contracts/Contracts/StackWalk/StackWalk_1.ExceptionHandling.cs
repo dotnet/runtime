@@ -46,8 +46,7 @@ internal partial class StackWalk_1 : IStackWalk
         StackDataFrameHandle handle,
         bool forGCReporting = false)
     {
-        IPlatformAgnosticContext callerContext = handle.Context.Clone();
-        callerContext.Unwind(_target);
+        IPlatformAgnosticContext callerContext = GetCallerContext(handle.Context);
         TargetPointer callerStackFrame = callerContext.StackPointer;
 
         bool isFilterFunclet = IsFilterFunclet(handle);
@@ -70,9 +69,7 @@ internal partial class StackWalk_1 : IStackWalk
                 else
                 {
                     // ExInfo::GetCallerSPOfParentOfNonExceptionallyInvokedFunclet
-                    IPlatformAgnosticContext callerCallerContext = callerContext.Clone();
-                    callerCallerContext.Unwind(_target);
-                    return callerCallerContext.StackPointer;
+                    return CallerStackPointer(callerContext);
                 }
             }
         }
@@ -109,7 +106,7 @@ internal partial class StackWalk_1 : IStackWalk
 
         // The funclet frame we are searching for in the fresh walk
         TargetPointer targetSP = funclet.Context.StackPointer;
-        byte[] seed = funclet.Context.GetBytes();
+        byte[] seed = funclet.Context.GetBytes().ToArray();
 
         bool foundTarget = false;
         TargetPointer skipTo = TargetPointer.Null;
@@ -199,9 +196,7 @@ internal partial class StackWalk_1 : IStackWalk
         TargetPointer callerStackPointer;
         if (handle.State is StackWalkState.Frameless)
         {
-            IPlatformAgnosticContext callerContext = handle.Context.Clone();
-            callerContext.Unwind(_target);
-            callerStackPointer = callerContext.StackPointer;
+            callerStackPointer = CallerStackPointer(handle);
         }
         else
         {

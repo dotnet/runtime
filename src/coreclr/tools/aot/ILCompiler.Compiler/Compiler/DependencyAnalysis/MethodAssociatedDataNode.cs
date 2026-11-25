@@ -53,6 +53,10 @@ namespace ILCompiler.DependencyAnalysis
 
         public static bool MethodHasAssociatedData(IMethodNode methodNode)
         {
+            // WASM cannot attach additional metadata to unwinding information
+            if (methodNode.Method.Context.Target.IsWasm)
+                return false;
+
             // Instantiating unboxing stubs. We need to store their non-unboxing target pointer (looked up by runtime)
             ISpecialUnboxThunkNode unboxThunk = methodNode as ISpecialUnboxThunkNode;
             if (unboxThunk != null && unboxThunk.IsSpecialUnboxingThunk)

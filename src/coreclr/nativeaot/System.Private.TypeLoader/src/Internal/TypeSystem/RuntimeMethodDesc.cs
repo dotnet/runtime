@@ -13,7 +13,7 @@ namespace Internal.TypeSystem.NoMetadata
     /// <summary>
     /// Represents a method within the NativeAOT runtime
     /// </summary>
-    internal sealed partial class RuntimeMethodDesc : NoMetadataMethodDesc
+    internal sealed partial class RuntimeMethodDesc : MethodDesc
     {
         public RuntimeMethodDesc(bool unboxingStub, bool asyncVariant, bool returnDroppingAsyncThunk, DefType owningType,
             MethodNameAndSignature nameAndSignature, int hashcode)

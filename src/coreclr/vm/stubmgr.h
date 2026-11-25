@@ -696,6 +696,7 @@ class CLRToCOMStubManager : public StubManager
 };
 #endif // FEATURE_COMINTEROP
 
+#ifdef FEATURE_VARARGS
 // This is used to recognize
 //   VarargPInvokeStub()
 typedef VPTR(class InteropDispatchStubManager) PTR_InteropDispatchStubManager;
@@ -737,8 +738,9 @@ class InteropDispatchStubManager : public StubManager
         { LIMITED_METHOD_CONTRACT; return W("InteropDispatchStub"); }
 #endif
 };
+#endif // FEATURE_VARARGS
 
-#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
+#ifdef TARGET_X86
 //---------------------------------------------------------------------------------------
 //
 // This is the stub manager to help the managed debugger step into a tail call.
@@ -779,7 +781,7 @@ protected:
     virtual LPCWSTR GetStubManagerName(PCODE addr) {LIMITED_METHOD_CONTRACT; return W("TailCallStub");}
 #endif // !DACCESS_COMPILE
 };
-#else // TARGET_X86 && UNIX_X86_ABI
+#else // !TARGET_X86
 class TailCallStubManager
 {
 public:
@@ -792,7 +794,7 @@ public:
         return false;
     }
 };
-#endif // TARGET_X86 && UNIX_X86_ABI
+#endif // TARGET_X86
 
 // -----------------------------------------------------------
 // This is used to recognize async thunks

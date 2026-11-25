@@ -151,6 +151,11 @@ namespace System.Net.Sockets
 
                     Debug.Assert(bufferLength <= buffer.Length);
 
+                    if (_addressFamily == AddressFamily.Unknown)
+                    {
+                        _addressFamily = SocketAddressPal.GetAddressFamily(buffer.Slice(0, bufferLength));
+                    }
+
                     // Try to get the local end point.  That will in turn enable the remote
                     // end point to be retrieved on-demand when the property is accessed.
                     switch (_addressFamily)
@@ -262,9 +267,7 @@ namespace System.Net.Sockets
         public static bool OSSupportsIPv6 => SocketProtocolSupportPal.OSSupportsIPv6;
         [UnsupportedOSPlatformGuard("wasi")]
         // OpenBSD does not support dual-mode (IPv4-mapped IPv6) sockets: setting IPV6_V6ONLY to 0 fails with EINVAL.
-        internal static bool OSSupportsIPv6DualMode => !OperatingSystem.IsWasi() && OSSupportsIPv6 && !RuntimeInformation.IsOSPlatform(OSPlatform.Create("OPENBSD"));
-        [UnsupportedOSPlatformGuard("wasi")]
-        internal static bool OSSupportsThreads => !OperatingSystem.IsWasi();
+        internal static bool OSSupportsIPv6DualMode => !OperatingSystem.IsWasi() && OSSupportsIPv6 && !OperatingSystem.IsOpenBSD();
         public static bool OSSupportsUnixDomainSockets => SocketProtocolSupportPal.OSSupportsUnixDomainSockets;
 
         // Gets the amount of data pending in the network's input buffer that can be
@@ -544,12 +547,12 @@ namespace System.Net.Sockets
         {
             get
             {
-                if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+                if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
                 return (int)GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveTimeout)!;
             }
             set
             {
-                if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+                if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
                 ArgumentOutOfRangeException.ThrowIfLessThan(value, -1);
                 if (value == -1)
                 {
@@ -564,13 +567,13 @@ namespace System.Net.Sockets
         {
             get
             {
-                if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+                if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
                 return (int)GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.SendTimeout)!;
             }
 
             set
             {
-                if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+                if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
                 ArgumentOutOfRangeException.ThrowIfLessThan(value, -1);
                 if (value == -1)
                 {
@@ -592,7 +595,7 @@ namespace System.Net.Sockets
             }
             set
             {
-                if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+                if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
 
                 SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Linger, value!);
             }
@@ -668,7 +671,7 @@ namespace System.Net.Sockets
 
             set
             {
-                if (OperatingSystem.IsWasi() && value) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+                if (OperatingSystem.IsWasi() && value) throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
 
                 if (_addressFamily == AddressFamily.InterNetwork || (_addressFamily == AddressFamily.InterNetworkV6 && DualMode))
                 {
@@ -705,7 +708,7 @@ namespace System.Net.Sockets
 
             set
             {
-                if (OperatingSystem.IsWasi() && value) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+                if (OperatingSystem.IsWasi() && value) throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
                 if (_addressFamily == AddressFamily.InterNetwork)
                 {
                     SetSocketOption(SocketOptionLevel.IP, SocketOptionName.MulticastLoopback, value ? 1 : 0);
@@ -734,7 +737,7 @@ namespace System.Net.Sockets
             }
             set
             {
-                if (OperatingSystem.IsWasi() && value) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+                if (OperatingSystem.IsWasi() && value) throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
                 SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Broadcast, value ? 1 : 0);
             }
         }
@@ -831,7 +834,7 @@ namespace System.Net.Sockets
         // Establishes a connection to a remote system.
         public void Connect(EndPoint remoteEP)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
 
             ThrowIfDisposed();
             ArgumentNullException.ThrowIfNull(remoteEP);
@@ -875,7 +878,7 @@ namespace System.Net.Sockets
 
         public void Connect(IPAddress address, int port)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
 
             ThrowIfDisposed();
             ArgumentNullException.ThrowIfNull(address);
@@ -900,7 +903,7 @@ namespace System.Net.Sockets
 
         public void Connect(string host, int port)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
 
             ThrowIfDisposed();
             ArgumentNullException.ThrowIfNull(host);
@@ -931,7 +934,7 @@ namespace System.Net.Sockets
 
         public void Connect(IPAddress[] addresses, int port)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
 
             ThrowIfDisposed();
             ArgumentNullException.ThrowIfNull(addresses);
@@ -1028,7 +1031,7 @@ namespace System.Net.Sockets
         // Creates a new Sockets.Socket instance to handle an incoming connection.
         public Socket Accept()
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
 
             ThrowIfDisposed();
 
@@ -1089,43 +1092,45 @@ namespace System.Net.Sockets
 
             Debug.Assert(!acceptedSocketHandle.IsInvalid);
 
-            Socket socket = CreateAcceptSocket(acceptedSocketHandle, _rightEndPoint.Create(socketAddress));
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Accepted(socket, socket.RemoteEndPoint!, socket.LocalEndPoint);
+            // macOS can return accept() success with an empty remote sockaddr when the peer reset before accept.
+            EndPoint? remoteEndPoint = socketAddress.Size > 0 ? _rightEndPoint.Create(socketAddress) : null;
+            Socket socket = CreateAcceptSocket(acceptedSocketHandle, remoteEndPoint);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Accepted(socket, remoteEndPoint, socket.LocalEndPoint);
             return socket;
         }
 
         // Sends a data buffer to a connected socket.
         public int Send(byte[] buffer, int size, SocketFlags socketFlags)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
 
             return Send(buffer, 0, size, socketFlags);
         }
 
         public int Send(byte[] buffer, SocketFlags socketFlags)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
 
             return Send(buffer, 0, buffer != null ? buffer.Length : 0, socketFlags);
         }
 
         public int Send(byte[] buffer)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
 
             return Send(buffer, 0, buffer != null ? buffer.Length : 0, SocketFlags.None);
         }
 
         public int Send(IList<ArraySegment<byte>> buffers)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
 
             return Send(buffers, SocketFlags.None);
         }
 
         public int Send(IList<ArraySegment<byte>> buffers, SocketFlags socketFlags)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
 
             SocketError errorCode;
             int bytesTransferred = Send(buffers, socketFlags, out errorCode);
@@ -1138,7 +1143,7 @@ namespace System.Net.Sockets
 
         public int Send(IList<ArraySegment<byte>> buffers, SocketFlags socketFlags, out SocketError errorCode)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
 
             ThrowIfDisposed();
             ArgumentNullException.ThrowIfNull(buffers);
@@ -1176,7 +1181,7 @@ namespace System.Net.Sockets
         // Sends data to a connected socket, starting at the indicated location in the buffer.
         public int Send(byte[] buffer, int offset, int size, SocketFlags socketFlags)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
 
             SocketError errorCode;
             int bytesTransferred = Send(buffer, offset, size, socketFlags, out errorCode);
@@ -1189,7 +1194,7 @@ namespace System.Net.Sockets
 
         public int Send(byte[] buffer, int offset, int size, SocketFlags socketFlags, out SocketError errorCode)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
 
             ThrowIfDisposed();
 
@@ -1230,7 +1235,7 @@ namespace System.Net.Sockets
 
         public int Send(ReadOnlySpan<byte> buffer, SocketFlags socketFlags)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
 
             int bytesTransferred = Send(buffer, socketFlags, out SocketError errorCode);
             return errorCode == SocketError.Success ?
@@ -1240,7 +1245,7 @@ namespace System.Net.Sockets
 
         public int Send(ReadOnlySpan<byte> buffer, SocketFlags socketFlags, out SocketError errorCode)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
 
             ThrowIfDisposed();
             ValidateBlockingMode();
@@ -1267,7 +1272,7 @@ namespace System.Net.Sockets
 
         public void SendFile(string? fileName)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
 
             SendFile(fileName, ReadOnlySpan<byte>.Empty, ReadOnlySpan<byte>.Empty, TransmitFileOptions.UseDefaultWorkerThread);
         }
@@ -1295,7 +1300,7 @@ namespace System.Net.Sockets
         /// <exception cref="SocketException">An error occurred when attempting to access the socket.</exception>
         public void SendFile(string? fileName, byte[]? preBuffer, byte[]? postBuffer, TransmitFileOptions flags)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
 
             SendFile(fileName, preBuffer.AsSpan(), postBuffer.AsSpan(), flags);
         }
@@ -1323,7 +1328,7 @@ namespace System.Net.Sockets
         /// <exception cref="SocketException">An error occurred when attempting to access the socket.</exception>
         public void SendFile(string? fileName, ReadOnlySpan<byte> preBuffer, ReadOnlySpan<byte> postBuffer, TransmitFileOptions flags)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
 
             ThrowIfDisposed();
 
@@ -1349,7 +1354,7 @@ namespace System.Net.Sockets
         // Sends data to a specific end point, starting at the indicated location in the buffer.
         public int SendTo(byte[] buffer, int offset, int size, SocketFlags socketFlags, EndPoint remoteEP)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
 
             ThrowIfDisposed();
 
@@ -1387,21 +1392,21 @@ namespace System.Net.Sockets
         // Sends data to a specific end point, starting at the indicated location in the data.
         public int SendTo(byte[] buffer, int size, SocketFlags socketFlags, EndPoint remoteEP)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
 
             return SendTo(buffer, 0, size, socketFlags, remoteEP);
         }
 
         public int SendTo(byte[] buffer, SocketFlags socketFlags, EndPoint remoteEP)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
 
             return SendTo(buffer, 0, buffer != null ? buffer.Length : 0, socketFlags, remoteEP);
         }
 
         public int SendTo(byte[] buffer, EndPoint remoteEP)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
 
             return SendTo(buffer, 0, buffer != null ? buffer.Length : 0, SocketFlags.None, remoteEP);
         }
@@ -1417,7 +1422,7 @@ namespace System.Net.Sockets
         /// <exception cref="ObjectDisposedException">The <see cref="Socket"/> has been closed.</exception>
         public int SendTo(ReadOnlySpan<byte> buffer, EndPoint remoteEP)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
 
             return SendTo(buffer, SocketFlags.None, remoteEP);
         }
@@ -1434,7 +1439,7 @@ namespace System.Net.Sockets
         /// <exception cref="ObjectDisposedException">The <see cref="Socket"/> has been closed.</exception>
         public int SendTo(ReadOnlySpan<byte> buffer, SocketFlags socketFlags, EndPoint remoteEP)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
 
             ThrowIfDisposed();
             ArgumentNullException.ThrowIfNull(remoteEP);
@@ -1477,7 +1482,7 @@ namespace System.Net.Sockets
         /// <exception cref="ObjectDisposedException">The <see cref="Socket"/> has been closed.</exception>
         public int SendTo(ReadOnlySpan<byte> buffer, SocketFlags socketFlags, SocketAddress socketAddress)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
 
             ThrowIfDisposed();
             ArgumentNullException.ThrowIfNull(socketAddress);
@@ -1506,21 +1511,21 @@ namespace System.Net.Sockets
         // Receives data from a connected socket.
         public int Receive(byte[] buffer, int size, SocketFlags socketFlags)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
 
             return Receive(buffer, 0, size, socketFlags);
         }
 
         public int Receive(byte[] buffer, SocketFlags socketFlags)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
 
             return Receive(buffer, 0, buffer != null ? buffer.Length : 0, socketFlags);
         }
 
         public int Receive(byte[] buffer)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
 
             return Receive(buffer, 0, buffer != null ? buffer.Length : 0, SocketFlags.None);
         }
@@ -1528,7 +1533,7 @@ namespace System.Net.Sockets
         // Receives data from a connected socket into a specific location of the receive buffer.
         public int Receive(byte[] buffer, int offset, int size, SocketFlags socketFlags)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
 
             SocketError errorCode;
             int bytesTransferred = Receive(buffer, offset, size, socketFlags, out errorCode);
@@ -1541,7 +1546,7 @@ namespace System.Net.Sockets
 
         public int Receive(byte[] buffer, int offset, int size, SocketFlags socketFlags, out SocketError errorCode)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
 
             ThrowIfDisposed();
             ValidateBufferArguments(buffer, offset, size);
@@ -1575,7 +1580,7 @@ namespace System.Net.Sockets
 
         public int Receive(Span<byte> buffer, SocketFlags socketFlags)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
 
             int bytesTransferred = Receive(buffer, socketFlags, out SocketError errorCode);
             return errorCode == SocketError.Success ?
@@ -1585,7 +1590,7 @@ namespace System.Net.Sockets
 
         public int Receive(Span<byte> buffer, SocketFlags socketFlags, out SocketError errorCode)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
 
             ThrowIfDisposed();
             ValidateBlockingMode();
@@ -1612,14 +1617,14 @@ namespace System.Net.Sockets
 
         public int Receive(IList<ArraySegment<byte>> buffers)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
 
             return Receive(buffers, SocketFlags.None);
         }
 
         public int Receive(IList<ArraySegment<byte>> buffers, SocketFlags socketFlags)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
 
             SocketError errorCode;
             int bytesTransferred = Receive(buffers, socketFlags, out errorCode);
@@ -1632,7 +1637,7 @@ namespace System.Net.Sockets
 
         public int Receive(IList<ArraySegment<byte>> buffers, SocketFlags socketFlags, out SocketError errorCode)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
 
             ThrowIfDisposed();
             ArgumentNullException.ThrowIfNull(buffers);
@@ -1671,7 +1676,7 @@ namespace System.Net.Sockets
         // the end point.
         public int ReceiveMessageFrom(byte[] buffer, int offset, int size, ref SocketFlags socketFlags, ref EndPoint remoteEP, out IPPacketInformation ipPacketInformation)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
 
             ThrowIfDisposed();
             ValidateBufferArguments(buffer, offset, size);
@@ -1750,7 +1755,7 @@ namespace System.Net.Sockets
         /// <para>You must call the Bind method before performing this operation.</para></exception>
         public int ReceiveMessageFrom(Span<byte> buffer, ref SocketFlags socketFlags, ref EndPoint remoteEP, out IPPacketInformation ipPacketInformation)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
 
             ThrowIfDisposed();
             ArgumentNullException.ThrowIfNull(remoteEP);
@@ -1812,7 +1817,7 @@ namespace System.Net.Sockets
         // the end point.
         public int ReceiveFrom(byte[] buffer, int offset, int size, SocketFlags socketFlags, ref EndPoint remoteEP)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
 
             ThrowIfDisposed();
             ValidateBufferArguments(buffer, offset, size);
@@ -1893,21 +1898,21 @@ namespace System.Net.Sockets
         // Receives a datagram and stores the source end point.
         public int ReceiveFrom(byte[] buffer, int size, SocketFlags socketFlags, ref EndPoint remoteEP)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
 
             return ReceiveFrom(buffer, 0, size, socketFlags, ref remoteEP);
         }
 
         public int ReceiveFrom(byte[] buffer, SocketFlags socketFlags, ref EndPoint remoteEP)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
 
             return ReceiveFrom(buffer, 0, buffer != null ? buffer.Length : 0, socketFlags, ref remoteEP);
         }
 
         public int ReceiveFrom(byte[] buffer, ref EndPoint remoteEP)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
 
             return ReceiveFrom(buffer, 0, buffer != null ? buffer.Length : 0, SocketFlags.None, ref remoteEP);
         }
@@ -1938,7 +1943,7 @@ namespace System.Net.Sockets
         /// <exception cref="ObjectDisposedException">The <see cref="Socket"/> has been closed.</exception>
         public int ReceiveFrom(Span<byte> buffer, SocketFlags socketFlags, ref EndPoint remoteEP)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
 
             ThrowIfDisposed();
             ValidateReceiveFromEndpointAndState(remoteEP, nameof(remoteEP));
@@ -2021,7 +2026,7 @@ namespace System.Net.Sockets
         /// <exception cref="ObjectDisposedException">The <see cref="Socket"/> has been closed.</exception>
         public int ReceiveFrom(Span<byte> buffer, SocketFlags socketFlags, SocketAddress receivedAddress)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
 
             ThrowIfDisposed();
             ArgumentNullException.ThrowIfNull(receivedAddress);
@@ -2349,7 +2354,7 @@ namespace System.Net.Sockets
         /// <exception cref="ObjectDisposedException">The <see cref="Socket"/> has been closed.</exception>
         public bool Poll(int microSeconds, SelectMode mode)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (microSeconds != 0 && !RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
 
             ThrowIfDisposed();
 
@@ -2396,7 +2401,7 @@ namespace System.Net.Sockets
         /// <exception cref="ObjectDisposedException">One or more sockets was disposed.</exception>
         public static void Select(IList? checkRead, IList? checkWrite, IList? checkError, int microSeconds)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (microSeconds != 0 && !RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
 
             if ((checkRead == null || checkRead.Count == 0) &&
                 (checkWrite == null || checkWrite.Count == 0) &&
@@ -2496,8 +2501,6 @@ namespace System.Net.Sockets
 
         public IAsyncResult BeginSend(byte[] buffer, int offset, int size, SocketFlags socketFlags, AsyncCallback? callback, object? state)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-
             ThrowIfDisposed();
             ValidateBufferArguments(buffer, offset, size);
 
@@ -2506,8 +2509,6 @@ namespace System.Net.Sockets
 
         public IAsyncResult? BeginSend(byte[] buffer, int offset, int size, SocketFlags socketFlags, out SocketError errorCode, AsyncCallback? callback, object? state)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-
             ThrowIfDisposed();
             ValidateBufferArguments(buffer, offset, size);
 
@@ -2524,8 +2525,6 @@ namespace System.Net.Sockets
 
         public IAsyncResult BeginSend(IList<ArraySegment<byte>> buffers, SocketFlags socketFlags, AsyncCallback? callback, object? state)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-
             ThrowIfDisposed();
 
             return TaskToAsyncResult.Begin(SendAsync(buffers, socketFlags), callback, state);
@@ -2533,8 +2532,6 @@ namespace System.Net.Sockets
 
         public IAsyncResult? BeginSend(IList<ArraySegment<byte>> buffers, SocketFlags socketFlags, out SocketError errorCode, AsyncCallback? callback, object? state)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-
             ThrowIfDisposed();
 
             Task<int> t = SendAsync(buffers, socketFlags);
@@ -2555,15 +2552,11 @@ namespace System.Net.Sockets
 
         public IAsyncResult BeginSendFile(string? fileName, AsyncCallback? callback, object? state)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-
             return BeginSendFile(fileName, null, null, TransmitFileOptions.UseDefaultWorkerThread, callback, state);
         }
 
         public IAsyncResult BeginSendFile(string? fileName, byte[]? preBuffer, byte[]? postBuffer, TransmitFileOptions flags, AsyncCallback? callback, object? state)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-
             ThrowIfDisposed();
 
             if (!Connected)
@@ -2580,8 +2573,6 @@ namespace System.Net.Sockets
 
         public IAsyncResult BeginSendTo(byte[] buffer, int offset, int size, SocketFlags socketFlags, EndPoint remoteEP, AsyncCallback? callback, object? state)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-
             ThrowIfDisposed();
             ValidateBufferArguments(buffer, offset, size);
             ArgumentNullException.ThrowIfNull(remoteEP);
@@ -2594,8 +2585,6 @@ namespace System.Net.Sockets
 
         public IAsyncResult BeginReceive(byte[] buffer, int offset, int size, SocketFlags socketFlags, AsyncCallback? callback, object? state)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-
             ThrowIfDisposed();
             ValidateBufferArguments(buffer, offset, size);
             return TaskToAsyncResult.Begin(ReceiveAsync(new ArraySegment<byte>(buffer, offset, size), socketFlags, fromNetworkStream: false, default).AsTask(), callback, state);
@@ -2603,8 +2592,6 @@ namespace System.Net.Sockets
 
         public IAsyncResult? BeginReceive(byte[] buffer, int offset, int size, SocketFlags socketFlags, out SocketError errorCode, AsyncCallback? callback, object? state)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-
             ThrowIfDisposed();
             ValidateBufferArguments(buffer, offset, size);
             Task<int> t = ReceiveAsync(new ArraySegment<byte>(buffer, offset, size), socketFlags, fromNetworkStream: false, default).AsTask();
@@ -2621,16 +2608,12 @@ namespace System.Net.Sockets
 
         public IAsyncResult BeginReceive(IList<ArraySegment<byte>> buffers, SocketFlags socketFlags, AsyncCallback? callback, object? state)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-
             ThrowIfDisposed();
             return TaskToAsyncResult.Begin(ReceiveAsync(buffers, socketFlags), callback, state);
         }
 
         public IAsyncResult? BeginReceive(IList<ArraySegment<byte>> buffers, SocketFlags socketFlags, out SocketError errorCode, AsyncCallback? callback, object? state)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-
             ThrowIfDisposed();
             Task<int> t = ReceiveAsync(buffers, socketFlags);
 
@@ -2651,8 +2634,6 @@ namespace System.Net.Sockets
 
         private static int EndSendReceive(IAsyncResult asyncResult, out SocketError errorCode)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-
             Task<int> ti = TaskToAsyncResult.Unwrap<int>(asyncResult);
 
             ((Task)ti).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing).GetAwaiter().GetResult();
@@ -2669,8 +2650,6 @@ namespace System.Net.Sockets
 
         public IAsyncResult BeginReceiveMessageFrom(byte[] buffer, int offset, int size, SocketFlags socketFlags, ref EndPoint remoteEP, AsyncCallback? callback, object? state)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"size:{size}");
 
             ThrowIfDisposed();
@@ -2692,8 +2671,6 @@ namespace System.Net.Sockets
 
         public int EndReceiveMessageFrom(IAsyncResult asyncResult, ref SocketFlags socketFlags, ref EndPoint endPoint, out IPPacketInformation ipPacketInformation)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-
             ArgumentNullException.ThrowIfNull(endPoint);
             if (!CanTryAddressFamily(endPoint.AddressFamily))
             {
@@ -2712,8 +2689,6 @@ namespace System.Net.Sockets
 
         public IAsyncResult BeginReceiveFrom(byte[] buffer, int offset, int size, SocketFlags socketFlags, ref EndPoint remoteEP, AsyncCallback? callback, object? state)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-
             ThrowIfDisposed();
             ValidateBufferArguments(buffer, offset, size);
             ValidateReceiveFromEndpointAndState(remoteEP, nameof(remoteEP));
@@ -2732,8 +2707,6 @@ namespace System.Net.Sockets
 
         public int EndReceiveFrom(IAsyncResult asyncResult, ref EndPoint endPoint)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-
             ArgumentNullException.ThrowIfNull(endPoint);
             if (!CanTryAddressFamily(endPoint.AddressFamily))
             {
@@ -2794,8 +2767,6 @@ namespace System.Net.Sockets
 
         public Socket EndAccept(out byte[] buffer, IAsyncResult asyncResult)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-
             Socket socket = EndAccept(out byte[] innerBuffer, out int bytesTransferred, asyncResult);
             buffer = new byte[bytesTransferred];
             Buffer.BlockCopy(innerBuffer, 0, buffer, 0, bytesTransferred);
@@ -2804,8 +2775,6 @@ namespace System.Net.Sockets
 
         public Socket EndAccept(out byte[] buffer, out int bytesTransferred, IAsyncResult asyncResult)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-
             Socket s;
             (s, buffer, bytesTransferred) = TaskToAsyncResult.End<(Socket, byte[], int)>(asyncResult);
             return s;
@@ -3107,7 +3076,12 @@ namespace System.Net.Sockets
 
             ArgumentNullException.ThrowIfNull(e);
             EndPoint? endPointSnapshot = e.RemoteEndPoint;
-            if (e._socketAddress == null)
+
+            // e._socketAddress is normally created once and reused on every subsequent call for this
+            // SocketAsyncEventArgs. If the instance is being reused across sockets of different address
+            // families (e.g. an IPv4 socket, then an IPv6 one), the previous buffer may be too small for
+            // this socket's family, so it needs to be replaced rather than reused as-is.
+            if (e._socketAddress == null || e._socketAddress.Buffer.Length < SocketAddress.GetMaximumAddressSize(AddressFamily))
             {
                 if (endPointSnapshot is DnsEndPoint)
                 {
@@ -3131,7 +3105,7 @@ namespace System.Net.Sockets
                 {
                     endPointSnapshot = s_IPEndPointIPv6;
                 }
-                e._socketAddress ??= new SocketAddress(AddressFamily);
+                e._socketAddress = new SocketAddress(AddressFamily);
             }
 
             // DualMode sockets may have updated the endPointSnapshot, and it has to have the same AddressFamily as
@@ -3684,7 +3658,7 @@ namespace System.Net.Sockets
 
         private void SetLingerOption(LingerOption lref)
         {
-            if (OperatingSystem.IsWasi() && lref.Enabled) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (OperatingSystem.IsWasi() && lref.Enabled) throw new PlatformNotSupportedException(); // TODO https://github.com/dotnet/runtime/issues/137564
 
             SocketError errorCode = SocketPal.SetLingerOption(_handle, lref);
 

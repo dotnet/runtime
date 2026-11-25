@@ -53,21 +53,21 @@ public class Async2InlinedFrameLdvirtftnAwait
     private static async Task<int> ThrowingAsync() => await InlinedThrowingAsync();
 
     [Fact]
-    public static void LdvirtftnAwaitInInlinedFrameReturns()
+    public static async Task LdvirtftnAwaitInInlinedFrameReturns()
     {
         for (int i = 0; i < 10; i++)
         {
-            Assert.Equal(5, ReturningAsync().GetAwaiter().GetResult());
+            Assert.Equal(5, await ReturningAsync());
         }
     }
 
     [Fact]
-    public static void LdvirtftnAwaitInInlinedFramePropagatesException()
+    public static async Task LdvirtftnAwaitInInlinedFramePropagatesException()
     {
         for (int i = 0; i < 10; i++)
         {
             InvalidOperationException e =
-                Assert.Throws<InvalidOperationException>(() => ThrowingAsync().GetAwaiter().GetResult());
+                await Assert.ThrowsAsync<InvalidOperationException>(() => ThrowingAsync());
             Assert.Equal("boom", e.Message);
         }
     }

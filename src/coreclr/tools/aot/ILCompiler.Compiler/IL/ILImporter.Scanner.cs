@@ -12,7 +12,7 @@ using ILCompiler.DependencyAnalysis;
 
 using Debug = System.Diagnostics.Debug;
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
-using CombinedDependencyList = System.Collections.Generic.List<ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.CombinedDependencyListEntry>;
+using CombinedDependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.CombinedDependencyList;
 using DependencyListEntry = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyListEntry;
 
 #pragma warning disable IDE0060
@@ -205,8 +205,9 @@ namespace Internal.IL
                     conditionalDependencies.Add(new(dep.Node, bb.Condition, dep.Reason));
             }
 
-            CodeBasedDependencyAlgorithm.AddDependenciesDueToMethodCodePresence(ref _unconditionalDependencies, _factory, _canonMethod, _canonMethodIL);
-            CodeBasedDependencyAlgorithm.AddConditionalDependenciesDueToMethodCodePresence(ref conditionalDependencies, _factory, _canonMethod);
+            conditionalDependencies ??= new CombinedDependencyList();
+            CodeBasedDependencyAlgorithm.AddDependenciesDueToMethodCodePresence(_unconditionalDependencies, _factory, _canonMethod, _canonMethodIL);
+            CodeBasedDependencyAlgorithm.AddConditionalDependenciesDueToMethodCodePresence(conditionalDependencies, _factory, _canonMethod);
 
             return (_unconditionalDependencies, conditionalDependencies);
         }
@@ -549,7 +550,7 @@ namespace Internal.IL
             if ((method.Signature.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask) == MethodSignatureFlags.CallingConventionVarargs)
                 ThrowHelper.ThrowInvalidProgramException();
 
-            _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(ref _dependencies, _compilation.NodeFactory, _canonMethodIL, method);
+            _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(_dependencies, _compilation.NodeFactory, _canonMethodIL, method);
 
             if (method.IsRawPInvoke())
             {
@@ -726,6 +727,7 @@ namespace Internal.IL
             bool resolvedConstraint = false;
             bool forceUseRuntimeLookup = false;
             DefaultInterfaceMethodResolution staticResolution = default;
+            MethodDesc runtimeDeterminedTarget = null;
 
             MethodDesc methodAfterConstraintResolution = method;
             if (_constrained != null)
@@ -753,6 +755,12 @@ namespace Internal.IL
                 }
 
                 MethodDesc directMethod = constrained.GetClosestDefType().TryResolveConstraintMethodApprox(method.OwningType, method, out forceUseRuntimeLookup, ref staticResolution);
+                if (directMethod != null && !forceUseRuntimeLookup && directMethod.IsCanonicalMethod(CanonicalFormKind.Any))
+                {
+                    runtimeDeterminedTarget = _constrained.TryGetRuntimeDeterminedConstrainedMethod(directMethod, runtimeDeterminedMethod.Instantiation);
+                    if (runtimeDeterminedTarget == null)
+                        directMethod = null;
+                }
                 if (directMethod != null)
                 {
                     // Either
@@ -849,24 +857,10 @@ namespace Internal.IL
                 }
                 else
                 {
-                    // We have the canonical version of the method - find the runtime determined version.
-                    Debug.Assert(targetMethod.OwningType.IsValueType || targetMethod.Signature.IsStatic);
+                    Debug.Assert(runtimeDeterminedTarget != null);
+                    _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.MethodEntry, runtimeDeterminedTarget), reason);
 
-                    MethodDesc targetOfLookup;
-                    if (_constrained.IsRuntimeDeterminedType)
-                        targetOfLookup = _compilation.TypeSystemContext.GetMethodForRuntimeDeterminedType(targetMethod.GetTypicalMethodDefinition(), (RuntimeDeterminedType)_constrained);
-                    else if (_constrained.HasInstantiation)
-                        targetOfLookup = _compilation.TypeSystemContext.GetMethodForInstantiatedType(targetMethod.GetTypicalMethodDefinition(), (InstantiatedType)_constrained);
-                    else
-                        targetOfLookup = targetMethod.GetMethodDefinition();
-                    if (targetOfLookup.HasInstantiation)
-                    {
-                        targetOfLookup = targetOfLookup.MakeInstantiatedMethod(runtimeDeterminedMethod.Instantiation);
-                    }
-                    Debug.Assert(targetOfLookup.GetCanonMethodTarget(CanonicalFormKind.Specific) == targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific));
-                    _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.MethodEntry, targetOfLookup), reason);
-
-                    targetForDelegate = targetOfLookup;
+                    targetForDelegate = runtimeDeterminedTarget;
                 }
             }
             else if (directCall && !allowInstParam && targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific).RequiresInstArg())
@@ -1012,7 +1006,7 @@ namespace Internal.IL
                         _canonMethod,
                         methodToLookup.GetCanonMethodTarget(CanonicalFormKind.Specific));
 
-                if (exactContextNeedsRuntimeLookup)
+                if (_compilation.NeedsRuntimeLookup(ReadyToRunHelperId.DispatchCell, methodToLookup))
                 {
                     _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.DispatchCell, methodToLookup), reason);
                 }
@@ -1209,7 +1203,9 @@ namespace Internal.IL
             if (opcode == ILOpcode.brfalse && _isInstCheckPatternAnalyzer.IsIsInstBranch)
             {
                 TypeDesc isinstCheckType = (TypeDesc)_canonMethodIL.GetObject(_isInstCheckPatternAnalyzer.Token);
-                if (ConstructedEETypeNode.CreationAllowed(isinstCheckType)
+                // Nullable<T> isinst checks operate on boxed T, not a constructed Nullable<T> MethodTable.
+                if (!isinstCheckType.IsNullable
+                    && ConstructedEETypeNode.CreationAllowed(isinstCheckType)
                     // Below makes sure we don't need to worry about variance
                     && !isinstCheckType.ConvertToCanonForm(CanonicalFormKind.Specific).IsCanonicalSubtype(CanonicalFormKind.Any)
                     // However, we still need to worry about variant-by-size casting with arrays
@@ -1296,7 +1292,7 @@ namespace Internal.IL
         {
             _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.TypeHandleToRuntimeType), "mkrefany");
             _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.TypeHandleToRuntimeTypeHandle), "mkrefany");
-            _factory.MetadataManager.GetDependenciesDueToAccess(ref _dependencies, _factory, _methodIL, (TypeDesc)_canonMethodIL.GetObject(token));
+            _factory.MetadataManager.GetDependenciesDueToAccess(_dependencies, _factory, _methodIL, (TypeDesc)_canonMethodIL.GetObject(token));
             ImportTypedRefOperationDependencies(token, "mkrefany");
         }
 
@@ -1336,7 +1332,7 @@ namespace Internal.IL
                     }
                 }
 
-                _factory.MetadataManager.GetDependenciesDueToAccess(ref _dependencies, _factory, _methodIL, (TypeDesc)_canonMethodIL.GetObject(token));
+                _factory.MetadataManager.GetDependenciesDueToAccess(_dependencies, _factory, _methodIL, (TypeDesc)_canonMethodIL.GetObject(token));
 
                 _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.GetRuntimeTypeHandle), "ldtoken");
                 _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.GetRuntimeType), "ldtoken");
@@ -1360,7 +1356,7 @@ namespace Internal.IL
             }
             else if (obj is MethodDesc method)
             {
-                _factory.MetadataManager.GetDependenciesDueToAccess(ref _dependencies, _factory, _methodIL, (MethodDesc)_canonMethodIL.GetObject(token));
+                _factory.MetadataManager.GetDependenciesDueToAccess(_dependencies, _factory, _methodIL, (MethodDesc)_canonMethodIL.GetObject(token));
 
                 if (method.IsRuntimeDeterminedExactMethod)
                 {
@@ -1377,7 +1373,7 @@ namespace Internal.IL
             {
                 var field = (FieldDesc)obj;
 
-                _factory.MetadataManager.GetDependenciesDueToAccess(ref _dependencies, _factory, _methodIL, (FieldDesc)_canonMethodIL.GetObject(token));
+                _factory.MetadataManager.GetDependenciesDueToAccess(_dependencies, _factory, _methodIL, (FieldDesc)_canonMethodIL.GetObject(token));
 
                 RvaIntrinsicPatternAnalyzer analyzer = _rvaIntrinsicPatternAnalyzer;
                 ILReader reader = GetRemainingBlockIL();
@@ -1432,7 +1428,7 @@ namespace Internal.IL
             if (field.IsLiteral)
                 ThrowHelper.ThrowMissingFieldException(field.OwningType, field.GetName());
 
-            _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(ref _dependencies, _compilation.NodeFactory, _canonMethodIL, canonField);
+            _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(_dependencies, _compilation.NodeFactory, _canonMethodIL, canonField);
 
             // `write` will be null for ld(s)flda. Consider address loads write unless they were
             // for initonly static fields. We'll trust the initonly that this is not a write.
@@ -1586,7 +1582,7 @@ namespace Internal.IL
                 return;
 
             TypeDesc typeForAccessCheck = type.IsRuntimeDeterminedSubtype ? type.ConvertToCanonForm(CanonicalFormKind.Specific) : type;
-            _factory.MetadataManager.GetDependenciesDueToAccess(ref _dependencies, _factory, _methodIL, typeForAccessCheck);
+            _factory.MetadataManager.GetDependenciesDueToAccess(_dependencies, _factory, _methodIL, typeForAccessCheck);
 
             if (type.IsRuntimeDeterminedSubtype)
             {
@@ -1615,7 +1611,7 @@ namespace Internal.IL
         private void ImportNewArray(int token)
         {
             var elementType = (TypeDesc)_methodIL.GetObject(token);
-            _factory.MetadataManager.GetDependenciesDueToAccess(ref _dependencies, _factory, _methodIL, (TypeDesc)_canonMethodIL.GetObject(token));
+            _factory.MetadataManager.GetDependenciesDueToAccess(_dependencies, _factory, _methodIL, (TypeDesc)_canonMethodIL.GetObject(token));
             if (elementType.IsRuntimeDeterminedSubtype)
             {
                 _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, elementType.MakeArrayType()), "newarr");

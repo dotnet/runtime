@@ -220,7 +220,9 @@ protected:
     unsigned                   findTargetDepth(BasicBlock* target);
     void                       WasmProduceReg(GenTree* node);
     regNumber                  GetMultiUseOperandReg(GenTree* operand);
-    void                       genEmitNullCheck(regNumber reg);
+    void                       genEmitLocalGet(regNumber reg, WasmValueType expectedType);
+    void                       genEmitLocalGet(regNumber reg, var_types expectedType);
+    void                       genEmitNullCheck(regNumber reg, var_types refType);
     unsigned                   GetStackPointerRegIndex() const;
     unsigned                   GetFramePointerRegIndex() const;
     void                       ensureCurrentFuncIsUnwindable();
@@ -235,6 +237,7 @@ protected:
 
     void genEmitStartBlock(BasicBlock* block);
     void genEmitEndBlock(BasicBlock* block);
+    bool genIsCatchRetTargetWithoutCode(BasicBlock* block);
 
 public:
 #if HAS_FIXED_REGISTER_SET
@@ -246,7 +249,7 @@ public:
 protected:
     void genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, regNumber callTarget = REG_NA);
 
-    void genGCWriteBarrier(GenTreeStoreInd* store, GCInfo::WriteBarrierForm wbf);
+    void genGCWriteBarrier(GCInfo::WriteBarrierForm wbf);
 
     BasicBlock* genCreateTempLabel();
 
@@ -355,7 +358,6 @@ protected:
     var_types genParamStackType(LclVarDsc* dsc, const ABIPassingSegment& seg);
     void      genSpillOrAddRegisterParam(
              unsigned lclNum, unsigned offset, unsigned paramLclNum, const ABIPassingSegment& seg, class RegGraph* graph);
-    void genSpillOrAddNonStandardRegisterParam(unsigned lclNum, regNumber sourceReg, class RegGraph* graph);
     void genEnregisterIncomingStackArgs();
     void genEnregisterOSRArgsAndLocals(regNumber initReg, bool* pInitRegZeroed);
 
@@ -501,61 +503,21 @@ protected:
     bool genUsedPopToReturn; // True if we use the pop into PC to return,
                              // False if we didn't and must branch to LR to return.
 
-    // A set of information that is used by funclet prolog and epilog generation. It is collected once, before
-    // funclet prologs and epilogs are generated, and used by all funclet prologs and epilogs, which must all be the
-    // same.
-    struct FuncletFrameInfoDsc
-    {
-        regMaskTP fiSaveRegs; // Set of registers saved in the funclet prolog (includes LR)
-        unsigned  fiSpDelta;  // Stack pointer delta
-    };
+#endif // TARGET_ARM
 
-    FuncletFrameInfoDsc genFuncletInfo;
-
-#elif defined(TARGET_ARM64)
+#if !defined(TARGET_X86) && !defined(TARGET_WASM)
 
     // A set of information that is used by funclet prolog and epilog generation. It is collected once, before
     // funclet prologs and epilogs are generated, and used by all funclet prologs and epilogs, which must all be the
     // same.
     struct FuncletFrameInfoDsc
     {
-        regMaskTP fiSaveRegs;               // Set of callee-saved registers saved in the funclet prolog (includes LR)
-        int       fiSP_to_FPLR_save_delta;  // FP/LR register save offset from SP (positive)
-        int       fiSP_to_CalleeSave_delta; // First callee-saved register slot offset from SP (positive)
-        int       fiFrameType;              // Funclet frame types are numbered. See genFuncletProlog() for details.
-        int       fiSpDelta1;               // Stack pointer delta 1 (negative)
-        int       fiSpDelta2;               // Stack pointer delta 2 (negative)
+        unsigned fiSpDelta; // Stack allocated for the outgoing argument space below the saved return address
     };
 
     FuncletFrameInfoDsc genFuncletInfo;
 
-#elif defined(TARGET_AMD64)
-
-    // A set of information that is used by funclet prolog and epilog generation. It is collected once, before
-    // funclet prologs and epilogs are generated, and used by all funclet prologs and epilogs, which must all be the
-    // same.
-    struct FuncletFrameInfoDsc
-    {
-        unsigned fiSpDelta; // Stack pointer delta
-    };
-
-    FuncletFrameInfoDsc genFuncletInfo;
-
-#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-
-    // A set of information that is used by funclet prolog and epilog generation.
-    // It is collected once, before funclet prologs and epilogs are generated,
-    // and used by all funclet prologs and epilogs, which must all be the same.
-    struct FuncletFrameInfoDsc
-    {
-        regMaskTP fiSaveRegs;                // Set of callee-saved registers saved in the funclet prolog (includes RA)
-        int       fiSP_to_CalleeSaved_delta; // CalleeSaved register save offset from SP (positive)
-        int       fiSpDelta;                 // Stack pointer delta (negative)
-    };
-
-    FuncletFrameInfoDsc genFuncletInfo;
-
-#endif // TARGET_ARM, TARGET_ARM64, TARGET_AMD64, TARGET_LOONGARCH64, TARGET_RISCV64
+#endif // !TARGET_X86, !TARGET_WASM
 
 #if defined(TARGET_XARCH)
 
@@ -646,6 +608,7 @@ protected:
 
 #if defined(TARGET_AMD64)
     void genAmd64EmitterUnitTestsSse2();
+    void genAmd64EmitterUnitTestsLea();
     void genAmd64EmitterUnitTestsApx();
     void genAmd64EmitterUnitTestsAvx10v2();
     void genAmd64EmitterUnitTestsCCMP();
@@ -663,7 +626,6 @@ protected:
     virtual void SetSaveFpLrWithAllCalleeSavedRegisters(bool value);
     virtual bool IsSaveFpLrWithAllCalleeSavedRegisters() const;
     bool         genSaveFpLrWithAllCalleeSavedRegisters;
-    bool         genForceFuncletFrameType5;
     bool         genReverseAndPairCalleeSavedRegisters;
 #endif // TARGET_ARM64
 
@@ -673,10 +635,7 @@ protected:
     //
     //-------------------------------------------------------------------------
 
-    void      genSinglePush();
-    void      genSinglePop();
-    regMaskTP genPushRegs(regMaskTP regs, regMaskTP* byrefRegs, regMaskTP* noRefRegs);
-    void      genPopRegs(regMaskTP regs, regMaskTP byrefRegs, regMaskTP noRefRegs);
+    void genSinglePush();
 
     /*
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -741,6 +700,12 @@ protected:
     bool siInFuncletRegion; // Have we seen the start of the funclet region?
 
     IL_OFFSET siLastEndOffs; // IL offset of the (exclusive) end of the last block processed
+
+#if defined(TARGET_WASM)
+    // Wasm opens its method-wide scopes in the first emitted block rather than relying on the
+    // monotonic enter/exit cursors used by other targets.
+    bool siWasmScopesOpened;
+#endif // defined(TARGET_WASM)
 
     /*
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -955,7 +920,7 @@ protected:
     void genCompareFloat(GenTreeOp* treeNode);
     void genCompareInt(GenTreeOp* treeNode);
 #ifdef TARGET_XARCH
-    bool     genCanAvoidEmittingCompareAgainstZero(GenTree* tree, var_types opType);
+    bool     genCanAvoidEmittingCompareAgainstZero(GenTree* tree, emitAttr opSize);
     GenTree* genTryFindFlagsConsumer(GenTree* flagsProducer, GenCondition** condition);
 #endif
 
@@ -1162,10 +1127,6 @@ protected:
     void      genTransferRegGCState(regNumber dst, regNumber src);
     void      genConsumeAddress(GenTree* addr);
     void      genConsumeAddrMode(GenTreeAddrMode* mode);
-    void      genSetBlockSize(GenTreeBlk* blkNode, regNumber sizeReg);
-    void      genConsumeBlockSrc(GenTreeBlk* blkNode);
-    void      genSetBlockSrc(GenTreeBlk* blkNode, regNumber srcReg);
-    void      genConsumeBlockOp(GenTreeBlk* blkNode, regNumber dstReg, regNumber srcReg, regNumber sizeReg);
 
     void genConsumePutStructArgStk(GenTreePutArgStk* putArgStkNode,
                                    regNumber         dstReg,
@@ -1175,6 +1136,9 @@ protected:
     void genConsumeOperands(GenTreeOp* tree);
 #if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
     void genConsumeMultiOpOperands(GenTreeMultiOp* tree);
+#endif
+#ifdef DEBUG
+    void genCheckTailCallEpilogRegisters(GenTreeCall* call);
 #endif
     void genEmitGSCookieCheck(bool tailCall);
     void genCodeForShift(GenTree* tree);
@@ -1207,6 +1171,7 @@ protected:
 #ifdef TARGET_WASM
     void           genCodeForFrameSize(GenTree* tree);
     cnsval_ssize_t genWasmMemargOffset(GenTree* addr);
+    void           genWasmZeroInit(size_t size);
 #endif // TARGET_WASM
 #ifdef SWIFT_SUPPORT
     void genCodeForSwiftErrorReg(GenTree* tree);
@@ -1219,40 +1184,6 @@ protected:
     void genAlignStackBeforeCall(GenTreePutArgStk* putArgStk);
     void genAlignStackBeforeCall(GenTreeCall* call);
     void genRemoveAlignmentAfterCall(GenTreeCall* call, unsigned bias = 0);
-
-#if defined(UNIX_X86_ABI)
-
-    unsigned curNestedAlignment; // Keep track of alignment adjustment required during codegen.
-    unsigned maxNestedAlignment; // The maximum amount of alignment adjustment required.
-
-    void SubtractNestedAlignment(unsigned adjustment)
-    {
-        assert(curNestedAlignment >= adjustment);
-        unsigned newNestedAlignment = curNestedAlignment - adjustment;
-        if (curNestedAlignment != newNestedAlignment)
-        {
-            JITDUMP("Adjusting stack nested alignment from %d to %d\n", curNestedAlignment, newNestedAlignment);
-        }
-        curNestedAlignment = newNestedAlignment;
-    }
-
-    void AddNestedAlignment(unsigned adjustment)
-    {
-        unsigned newNestedAlignment = curNestedAlignment + adjustment;
-        if (curNestedAlignment != newNestedAlignment)
-        {
-            JITDUMP("Adjusting stack nested alignment from %d to %d\n", curNestedAlignment, newNestedAlignment);
-        }
-        curNestedAlignment = newNestedAlignment;
-
-        if (curNestedAlignment > maxNestedAlignment)
-        {
-            JITDUMP("Max stack nested alignment changed from %d to %d\n", maxNestedAlignment, curNestedAlignment);
-            maxNestedAlignment = curNestedAlignment;
-        }
-    }
-
-#endif
 
 #ifndef TARGET_X86
     void genPutArgStkFieldList(GenTreePutArgStk* putArgStk, unsigned outArgVarNum);
@@ -1386,10 +1317,7 @@ protected:
 #endif // !TARGET_X86
 
 #if defined(DEBUG) && defined(TARGET_XARCH)
-    void genStackPointerCheck(bool      doStackPointerCheck,
-                              unsigned  lvaStackPointerVar,
-                              ssize_t   offset = 0,
-                              regNumber regTmp = REG_NA);
+    void genStackPointerCheck(bool doStackPointerCheck, unsigned lvaStackPointerVar, ssize_t offset = 0);
 #endif // defined(DEBUG) && defined(TARGET_XARCH)
 
 #ifdef DEBUG

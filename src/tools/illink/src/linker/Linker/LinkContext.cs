@@ -303,6 +303,11 @@ namespace Mono.Linker
             return FeatureSettings.TryGetValue(feature, out bool fvalue) && value == fvalue;
         }
 
+        internal static bool IsValidAssemblyName(ReadOnlySpan<char> name)
+        {
+            return !name.IsEmpty && name.IndexOfAny('/', '\\', ':') < 0;
+        }
+
 #if !ILTRIM
         public TypeDefinition? GetType(string fullName)
         {
@@ -322,12 +327,35 @@ namespace Mono.Linker
 
             string asmname = fullName.Substring(pos + 1);
             fullName = fullName.Substring(0, pos);
-            AssemblyDefinition? assembly = Resolve(AssemblyNameReference.Parse(asmname));
+            AssemblyNameReference? reference = TryParseAssemblyName(asmname);
+            if (reference is null)
+            {
+                _resolver.ReportUnresolvedAssembly(GetSimpleAssemblyName(asmname).ToString());
+                return null;
+            }
+
+            AssemblyDefinition? assembly = Resolve(reference);
             return assembly?.MainModule.GetType(fullName);
+        }
+
+        internal static ReadOnlySpan<char> GetSimpleAssemblyName(string fullName)
+        {
+            ReadOnlySpan<char> name = fullName.AsSpan();
+            int separator = name.IndexOf(',');
+            // Cecil parses the simple name from the first comma-separated component.
+            return (separator < 0 ? name : name[..separator]).Trim();
+        }
+
+        internal static AssemblyNameReference? TryParseAssemblyName(string fullName)
+        {
+            return IsValidAssemblyName(GetSimpleAssemblyName(fullName)) ? AssemblyNameReference.Parse(fullName) : null;
         }
 
         public AssemblyDefinition? TryResolve(string name)
         {
+            if (!IsValidAssemblyName(name))
+                return null;
+
             return TryResolve(new AssemblyNameReference(name, new Version()));
         }
 

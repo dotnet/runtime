@@ -404,7 +404,7 @@ namespace System.Globalization
                         }
 
                         tmp = fraction;
-                        tmp /= TimeSpanParse.Pow10UpToMaxFractionDigits(DateTimeFormat.MaxSecondsFractionDigits - tokenLen);
+                        tmp /= (int)uint.PowersOf10[DateTimeFormat.MaxSecondsFractionDigits - tokenLen];
                         DateTimeFormat.FormatFraction(ref result, tmp, DateTimeFormat.fixedNumberFormats[tokenLen - 1]);
                         break;
                     case 'F':
@@ -418,7 +418,7 @@ namespace System.Globalization
                         }
 
                         tmp = fraction;
-                        tmp /= TimeSpanParse.Pow10UpToMaxFractionDigits(DateTimeFormat.MaxSecondsFractionDigits - tokenLen);
+                        tmp /= (int)uint.PowersOf10[DateTimeFormat.MaxSecondsFractionDigits - tokenLen];
                         int effectiveDigits = tokenLen;
                         while (effectiveDigits > 0)
                         {
@@ -483,8 +483,16 @@ namespace System.Globalization
                         nextChar = DateTimeFormat.ParseNextChar(format, i);
                         if (nextChar >= 0)
                         {
-                            result.Append(TChar.CastFrom(nextChar));
-                            tokenLen = 2;
+                            char escapedChar = (char)nextChar;
+                            if (char.IsHighSurrogate(escapedChar) && i + 2 < format.Length && char.IsLowSurrogate(format[i + 2]))
+                            {
+                                tokenLen = 1 + DateTimeFormat.AppendChar(ref result, format[(i + 1)..]);
+                            }
+                            else
+                            {
+                                DateTimeFormat.AppendChar(ref result, escapedChar);
+                                tokenLen = 2;
+                            }
                         }
                         else
                         {

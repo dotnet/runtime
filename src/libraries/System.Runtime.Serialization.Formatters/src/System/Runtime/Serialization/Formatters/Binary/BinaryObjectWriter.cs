@@ -116,7 +116,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             Type? objType = objectInfo._objectType;
             long objectId = objectInfo._objectId;
 
-            if (ReferenceEquals(objType, Converter.s_typeofString))
+            if (ReferenceEquals(objType, typeof(string)))
             {
                 Debug.Assert(_serWriter != null);
                 // Top level String
@@ -156,11 +156,11 @@ namespace System.Runtime.Serialization.Formatters.Binary
                     {
                         Type type =
                             memberTypes[i] ?? (memberData[i] != null ? GetType(memberData[i]!) :
-                            Converter.s_typeofObject);
+                            typeof(object));
 
                         InternalPrimitiveTypeE code = ToCode(type);
                         if ((code == InternalPrimitiveTypeE.Invalid) &&
-                            (!ReferenceEquals(type, Converter.s_typeofString)))
+                            (!ReferenceEquals(type, typeof(string))))
                         {
                             Debug.Assert(_serObjectInfoInit != null && _formatterConverter != null);
                             if (memberData[i] != null)
@@ -211,7 +211,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 memberNameInfo._objectId = objectInfo._objectId;
                 _serWriter.WriteObject(memberNameInfo, typeNameInfo, numItems, memberNames, memberTypes, memberObjectInfos);
             }
-            else if (!ReferenceEquals(objectInfo._objectType, Converter.s_typeofString))
+            else if (!ReferenceEquals(objectInfo._objectType, typeof(string)))
             {
                 typeNameInfo._objectId = objectInfo._objectId;
                 _serWriter.WriteObject(typeNameInfo, null, numItems, memberNames, memberTypes, memberObjectInfos);
@@ -239,7 +239,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 memberNameInfo._objectId = objectInfo._objectId;
                 _serWriter.WriteObjectEnd(memberNameInfo, typeNameInfo);
             }
-            else if (!ReferenceEquals(objectInfo._objectType, Converter.s_typeofString))
+            else if (!ReferenceEquals(objectInfo._objectType, typeof(string)))
             {
                 _serWriter.WriteObjectEnd(typeNameInfo, typeNameInfo);
             }
@@ -297,7 +297,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             // The member object of type is ISerializable and
             //  Binary - Types always transmitted.
 
-            if (ReferenceEquals(memberType, Converter.s_typeofObject) || Nullable.GetUnderlyingType(memberType!) != null)
+            if (ReferenceEquals(memberType, typeof(object)) || Nullable.GetUnderlyingType(memberType!) != null)
             {
                 memberTypeNameInfo._transmitTypeOnMember = true;
                 memberNameInfo._transmitTypeOnMember = true;
@@ -329,7 +329,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 }
             }
 
-            if (ReferenceEquals(memberType, Converter.s_typeofObject))
+            if (ReferenceEquals(memberType, typeof(object)))
             {
                 assignUniqueIdToValueType = true;
                 memberType = GetType(memberData!);
@@ -468,13 +468,13 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
             Debug.Assert(_serWriter != null);
             // Byte array
-            if ((ReferenceEquals(arrayElemType, Converter.s_typeofByte)) && (rank == 1) && (lowerBoundA[0] == 0))
+            if ((ReferenceEquals(arrayElemType, typeof(byte))) && (rank == 1) && (lowerBoundA[0] == 0))
             {
                 _serWriter.WriteObjectByteArray(memberNameInfo, arrayNameInfo, arrayElemObjectInfo, arrayElemTypeNameInfo, lengthA[0], lowerBoundA[0], (byte[])array);
                 return;
             }
 
-            if (ReferenceEquals(arrayElemType, Converter.s_typeofObject) || Nullable.GetUnderlyingType(arrayElemType) != null)
+            if (ReferenceEquals(arrayElemType, typeof(object)) || Nullable.GetUnderlyingType(arrayElemType) != null)
             {
                 memberNameInfo._transmitTypeOnMember = true;
                 arrayElemTypeNameInfo._transmitTypeOnMember = true;
@@ -620,7 +620,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             if (!WriteKnownValueClass(arrayElemTypeNameInfo, actualTypeInfo, data!, ref assignUniqueIdForValueTypes))
             {
                 object obj = data!;
-                if (ReferenceEquals(arrayElemTypeNameInfo._type, Converter.s_typeofObject))
+                if (ReferenceEquals(arrayElemTypeNameInfo._type, typeof(object)))
                 {
                     assignUniqueIdForValueTypes = true;
                 }
@@ -633,7 +633,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                     Debug.Assert(_serObjectInfoInit != null && _formatterConverter != null);
                     WriteObjectInfo newObjectInfo = WriteObjectInfo.Serialize(obj, _surrogates, _context, _serObjectInfoInit, _formatterConverter, this, _binder);
                     newObjectInfo._objectId = arrayId;
-                    newObjectInfo._assemId = !ReferenceEquals(arrayElemTypeNameInfo._type, Converter.s_typeofObject) && Nullable.GetUnderlyingType(arrayElemTypeNameInfo._type!) == null ?
+                    newObjectInfo._assemId = !ReferenceEquals(arrayElemTypeNameInfo._type, typeof(object)) && Nullable.GetUnderlyingType(arrayElemTypeNameInfo._type!) == null ?
                         actualTypeInfo._assemId :
                         GetAssemblyId(newObjectInfo);
                     NameInfo typeNameInfo = TypeToNameInfo(newObjectInfo);
@@ -801,7 +801,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         // Determines if a type is a primitive type, if it is it is written
         private bool WriteKnownValueClass(NameInfo memberNameInfo, NameInfo typeNameInfo, object data, ref bool assignUniqueIdToValueType)
         {
-            if (ReferenceEquals(typeNameInfo._type, Converter.s_typeofString))
+            if (ReferenceEquals(typeNameInfo._type, typeof(string)))
             {
                 WriteString(memberNameInfo, typeNameInfo, data);
                 return true;

@@ -70,6 +70,7 @@ void StringLiteralMap::Init()
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(CheckPointer(this));
     }
     CONTRACTL_END;
@@ -297,6 +298,7 @@ GlobalStringLiteralMap::GlobalStringLiteralMap()
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 }
@@ -512,7 +514,7 @@ StringLiteralEntry *GlobalStringLiteralMap::AddStringLiteral(EEStringData *pStri
 
             // Allocate the StringLiteralEntry.
             StringLiteralEntryHolder pEntry(StringLiteralEntry::AllocateEntry(pStringData, (STRINGREF*)pStrObj[0]));
-            pStrObj.SuppressRelease();
+            pStrObj.Detach();
             // Insert the handle to the string into the hash table.
             m_StringToEntryHashTable->InsertValue(pStringData, pEntry, FALSE);
             pRet = pEntry.Detach();
@@ -554,7 +556,7 @@ StringLiteralEntry *GlobalStringLiteralMap::AddInternedString(STRINGREF *pString
         EEStringData StringData = EEStringData((*pString)->GetStringLength(), (*pString)->GetBuffer());
 
         StringLiteralEntryHolder pEntry(StringLiteralEntry::AllocateEntry(&StringData, (STRINGREF*)pStrObj[0]));
-        pStrObj.SuppressRelease();
+        pStrObj.Detach();
 
         // Insert the handle to the string into the hash table.
         m_StringToEntryHashTable->InsertValue(&StringData, (LPVOID)pEntry, FALSE);
@@ -675,6 +677,4 @@ void StringLiteralEntry::DeleteEntry (StringLiteralEntry *pEntry)
     pEntry->m_pNext = s_FreeEntryList;
     s_FreeEntryList = pEntry;
 }
-
-
 

@@ -7,7 +7,7 @@
     <PackageBrandNameSuffix>Host</PackageBrandNameSuffix>
     <VSInsertionShortComponentName>NetCore.SharedHost</VSInsertionShortComponentName>
     <UseCustomDirectoryHarvesting>true</UseCustomDirectoryHarvesting>
-    <WixIncludeRegistryKeys>true</WixIncludeRegistryKeys>
+    <WixIncludeRegistryKeys>false</WixIncludeRegistryKeys>
     <RegKeyProductName>sharedhost</RegKeyProductName>
     <!-- Contributes to DependencyKey which ensures stable provider key - do not change -->
     <WixDependencyKeyName>Dotnet_CLI_SharedHost</WixDependencyKeyName>

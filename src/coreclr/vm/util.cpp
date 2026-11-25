@@ -1,10 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// ===========================================================================
-// File: UTIL.CPP
-// ===========================================================================
-
 #include "common.h"
 #include "excep.h"
 #include "corhost.h"
@@ -12,6 +8,11 @@
 #include "posterror.h"
 
 #include "dlwrap.h"
+
+#ifdef TARGET_UNIX
+#include <minipal/cgroup.h>
+#include <minipal/cpucount.h>
+#endif
 
 #ifndef DACCESS_COMPILE
 
@@ -139,7 +140,29 @@ void PrintToStdErrW(const WCHAR *pwzString)
     }
     CONTRACTL_END
 
-    MAKE_MULTIBYTE_FROMWIDE_BESTFIT(pStr, pwzString, GetConsoleOutputCP());
+#ifdef TARGET_WINDOWS
+    UINT codePage = GetConsoleOutputCP();
+    // Console output allows best-fit mapping and default-character substitution.
+    int byteCount = WideCharToMultiByte(codePage, 0, pwzString, -1, nullptr, 0, nullptr, nullptr);
+    if (byteCount == 0)
+    {
+        ThrowWin32(ERROR_NO_UNICODE_TRANSLATION);
+    }
+
+    CQuickBytes buffer;
+    char* pStr = static_cast<char*>(buffer.AllocThrows(byteCount));
+    if (WideCharToMultiByte(codePage, 0, pwzString, -1, pStr, byteCount, nullptr, nullptr) == 0)
+    {
+        ThrowWin32(ERROR_NO_UNICODE_TRANSLATION);
+    }
+#else
+    size_t cchString = u16_strlen(pwzString) + 1;
+    size_t byteCount = minipal_get_length_utf16_to_utf8((const CHAR16_T*)pwzString, cchString, 0);
+
+    CQuickBytes buffer;
+    char* pStr = static_cast<char*>(buffer.AllocThrows(byteCount));
+    minipal_convert_utf16_to_utf8((const CHAR16_T*)pwzString, cchString, pStr, byteCount, 0);
+#endif
 
     PrintToStdErrA(pStr);
 }
@@ -197,6 +220,118 @@ bool operator ==(const ICorDebugInfo::VarLoc &varLoc1,
     default:
         _ASSERTE(!"Bad vlType"); return false;
     }
+}
+
+// The cached number of CPUs available for the current process
+static DWORD g_currentProcessCpuCount = 0;
+
+//******************************************************************************
+// Returns the number of processors that a process has been configured to run on
+//******************************************************************************
+int GetCurrentProcessCpuCount()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        CANNOT_TAKE_LOCK;
+    }
+    CONTRACTL_END;
+
+    if (g_currentProcessCpuCount > 0)
+        return g_currentProcessCpuCount;
+
+    DWORD count;
+
+    // If the configuration value has been set, it takes precedence. Otherwise, take into account
+    // process affinity and CPU quota limit.
+
+    DWORD configValue = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ProcessorCount);
+    const unsigned int MAX_PROCESSOR_COUNT = 0xffff;
+
+    if (0 < configValue && configValue <= MAX_PROCESSOR_COUNT)
+    {
+        count = configValue;
+    }
+    else
+    {
+#ifdef HOST_WINDOWS
+        CPUGroupInfo::EnsureInitialized();
+
+        if (CPUGroupInfo::CanEnableThreadUseAllCpuGroups())
+        {
+            count = CPUGroupInfo::GetNumActiveProcessors();
+        }
+        else
+        {
+            DWORD_PTR pmask, smask;
+
+            if (!GetProcessAffinityMask(GetCurrentProcess(), &pmask, &smask))
+            {
+                count = 1;
+            }
+            else
+            {
+                count = 0;
+
+                while (pmask)
+                {
+                    pmask &= (pmask - 1);
+                    count++;
+                }
+
+                // GetProcessAffinityMask can return pmask=0 and smask=0 on systems with more
+                // than 64 processors, which would leave us with a count of 0.  Since the GC
+                // expects there to be at least one processor to run on (and thus at least one
+                // heap), we'll return 64 here if count is 0, since there are likely a ton of
+                // processors available in that case.
+                if (count == 0)
+                    count = 64;
+            }
+        }
+
+        JOBOBJECT_CPU_RATE_CONTROL_INFORMATION cpuRateControl;
+
+        if (QueryInformationJobObject(NULL, JobObjectCpuRateControlInformation, &cpuRateControl,
+            sizeof(cpuRateControl), NULL))
+        {
+            const DWORD HardCapEnabled = JOB_OBJECT_CPU_RATE_CONTROL_ENABLE | JOB_OBJECT_CPU_RATE_CONTROL_HARD_CAP;
+            const DWORD MinMaxRateEnabled = JOB_OBJECT_CPU_RATE_CONTROL_ENABLE | JOB_OBJECT_CPU_RATE_CONTROL_MIN_MAX_RATE;
+            DWORD maxRate = 0;
+
+            if ((cpuRateControl.ControlFlags & HardCapEnabled) == HardCapEnabled)
+            {
+                maxRate = cpuRateControl.CpuRate;
+            }
+            else if ((cpuRateControl.ControlFlags & MinMaxRateEnabled) == MinMaxRateEnabled)
+            {
+                maxRate = cpuRateControl.MaxRate;
+            }
+
+            // The rate is the percentage times 100
+            const DWORD MAXIMUM_CPU_RATE = 10000;
+
+            if (0 < maxRate && maxRate < MAXIMUM_CPU_RATE)
+            {
+                DWORD cpuLimit = (maxRate * GetTotalProcessorCount() + MAXIMUM_CPU_RATE - 1) / MAXIMUM_CPU_RATE;
+                if (cpuLimit < count)
+                    count = cpuLimit;
+            }
+        }
+
+#else // HOST_WINDOWS
+        count = minipal_get_cpu_affinity_count();
+
+        uint32_t cpuLimit;
+        if (minipal_cgroup_get_cpu_limit(&cpuLimit) && cpuLimit < count)
+            count = cpuLimit;
+#endif // HOST_WINDOWS
+    }
+
+    _ASSERTE(count > 0);
+    g_currentProcessCpuCount = count;
+
+    return count;
 }
 
 #endif // #ifndef DACCESS_COMPILE
@@ -837,56 +972,6 @@ bool    SetNativeVarVal(const ICorDebugInfo::VarLoc &   varLoc,
     return true;
 }
 
-LPVOID
-CLRMapViewOfFile(
-    IN HANDLE hFileMappingObject,
-    IN DWORD dwDesiredAccess,
-    IN DWORD dwFileOffsetHigh,
-    IN DWORD dwFileOffsetLow,
-    IN SIZE_T dwNumberOfBytesToMap,
-    IN LPVOID lpBaseAddress
-    )
-{
-#ifdef _DEBUG
-#ifdef TARGET_X86
-
-    char *tmp = new (nothrow) char;
-    if (!tmp)
-    {
-        SetLastError(ERROR_OUTOFMEMORY);
-        return NULL;
-    }
-    delete tmp;
-
-#endif // TARGET_X86
-#endif // _DEBUG
-
-    LPVOID pv = MapViewOfFileEx(hFileMappingObject,dwDesiredAccess,dwFileOffsetHigh,dwFileOffsetLow,dwNumberOfBytesToMap,lpBaseAddress);
-
-
-    if (!pv)
-    {
-        if(GetLastError()==ERROR_SUCCESS)
-            SetLastError(ERROR_OUTOFMEMORY);
-        return NULL;
-    }
-
-    if (!pv && GetLastError()==ERROR_SUCCESS)
-        SetLastError(ERROR_OUTOFMEMORY);
-
-    return pv;
-}
-
-BOOL
-CLRUnmapViewOfFile(
-    IN LPVOID lpBaseAddress
-    )
-{
-    STATIC_CONTRACT_ENTRY_POINT;
-
-    return UnmapViewOfFile(lpBaseAddress);
-}
-
 static HMODULE CLRLoadLibraryWorker(LPCWSTR lpLibFileName, DWORD *pLastError)
 {
     // Don't use dynamic contract: will override GetLastError value
@@ -1524,23 +1609,6 @@ void DACNotify::DoModuleUnloadNotification(Module *ModulePtr)
     }
 }
 
-void DACNotify::DoExceptionNotification(Thread* ThreadPtr)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
-
-    if ((g_dacNotificationFlags & CLRDATA_NOTIFY_ON_EXCEPTION) != 0)
-    {
-        TADDR Args[2] = { EXCEPTION_NOTIFICATION, (TADDR) ThreadPtr};
-        DACNotifyExceptionHelper(Args, 2);
-    }
-}
-
 void DACNotify::DoGCNotification(const GcEvtArgs& args)
 {
     CONTRACTL
@@ -1703,7 +1771,7 @@ int GetRandomInt(int maxVal)
 {
     // In DAC builds we don't need the lock (DAC is single-threaded) and can't get it anyway (DNHSL isn't supported)
 #ifndef DACCESS_COMPILE
-    DangerousNonHostedSpinLockHolder lockHolder(&g_randomLock);
+    DangerousNonHostedSpinLockHolder lockHolder = g_randomLock.TakeLock();
 #endif
     // Use the thread-local Random instance
     if (!g_random.IsInitialized())

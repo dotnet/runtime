@@ -1,12 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-
 /*
- *
  * EE to Debugger Interface Implementation
- *
  */
+
 #ifndef _eedbginterfaceimpl_h_
 #define _eedbginterfaceimpl_h_
 
@@ -79,13 +77,6 @@ public:
 
     void* GetObjectFromHandle(OBJECTHANDLE handle);
 
-    OBJECTHANDLE GetHandleFromObject(void *obj,
-                              bool fStrongNewRef,
-                              AppDomain *pAppDomain);
-
-    void DbgDestroyHandle(OBJECTHANDLE oh,
-                          bool fStrongNewRef);
-
     OBJECTHANDLE GetThreadException(Thread *pThread);
 
     bool IsThreadExceptionNull(Thread *pThread);
@@ -157,12 +148,6 @@ public:
     MethodDesc *FindLoadedMethodRefOrDef(Module* pModule,
                                           mdToken memberRef);
 
-    MethodDesc *LoadMethodDef(Module* pModule,
-                              mdMethodDef methodDef,
-                              DWORD numGenericArgs = 0,
-                              TypeHandle *pGenericArgs = NULL,
-                              TypeHandle *pOwnerTypeRes = NULL);
-
     TypeHandle FindLoadedClass(Module *pModule,
                              mdTypeDef classToken);
 
@@ -182,26 +167,6 @@ public:
                                    unsigned rank);
 
     TypeHandle FindLoadedElementType(CorElementType et);
-
-    TypeHandle LoadClass(Module *pModule,
-                       mdTypeDef classToken);
-
-    TypeHandle LoadInstantiation(Module *pModule,
-                                 mdTypeDef typeDef,
-                                 DWORD numGenericArgs,
-                                 TypeHandle *pGenericArgs);
-
-    TypeHandle LoadArrayType(CorElementType et,
-                             TypeHandle elemtype,
-                             unsigned rank);
-
-    TypeHandle LoadPointerOrByrefType(CorElementType et,
-                                      TypeHandle elemtype);
-
-    TypeHandle LoadFnptrType(TypeHandle *inst,
-                             DWORD ntypars);
-
-    TypeHandle LoadElementType(CorElementType et);
 
     __checkReturn
     HRESULT GetMethodImplProps(Module *pModule,

@@ -22,14 +22,14 @@ public class RuntimeAsyncBuiltInCom
     }
 
     [Fact]
-    public static void RuntimeAsyncDoNotModifyRcwVtable()
+    public static async Task RuntimeAsyncDoNotModifyRcwVtable()
     {
         using (ComActivationHelpers.RegisterTypeForActivation<TaskComServer>())
         {
             var myObjectType = Type.GetTypeFromCLSID(typeof(TaskComServer).GUID, throwOnError: true)!;
             object obj = Activator.CreateInstance(myObjectType)!;
             ITaskComServer_Imported comObject = (ITaskComServer_Imported)obj;
-            TestAsyncMethod(comObject).GetAwaiter().GetResult();
+            await TestAsyncMethod(comObject);
 
             Assert.Equal(TaskComServer.ExpectedValue, comObject.GetValue());
 
@@ -41,14 +41,14 @@ public class RuntimeAsyncBuiltInCom
     }
 
     [Fact]
-    public static void IDispatchCallInvokesCorrectMethod()
+    public static async Task IDispatchCallInvokesCorrectMethod()
     {
         using (ComActivationHelpers.RegisterTypeForActivation<TaskComServer>())
         {
             var myObjectType = Type.GetTypeFromCLSID(typeof(TaskComServer).GUID, throwOnError: true)!;
             object obj = Activator.CreateInstance(myObjectType)!;
             ITaskComServer_AsDispatchOnly comObject = (ITaskComServer_AsDispatchOnly)obj;
-            TestAsyncMethod(comObject).GetAwaiter().GetResult();
+            await TestAsyncMethod(comObject);
 
             Assert.Equal(TaskComServer.ExpectedValue, comObject.GetValue());
 
@@ -60,14 +60,14 @@ public class RuntimeAsyncBuiltInCom
     }
 
     [Fact]
-    public static void TaskReturningPInvokeWithComMarshalling()
+    public static async Task TaskReturningPInvokeWithComMarshalling()
     {
         Task originalTask = new(() => {});
         Task result = RunTask(originalTask);
 
         originalTask.Start();
 
-        result.GetAwaiter().GetResult();
+        await result;
 
         static async Task RunTask(Task task)
         {

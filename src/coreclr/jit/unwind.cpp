@@ -165,7 +165,7 @@ void Compiler::unwindPushPopCFI(regNumber reg)
 }
 
 //------------------------------------------------------------------------
-// Compiler::unwindPush2Pop2CFI: Record  push/save of 2 registers simultaneously.
+// Compiler::unwindPush2Pop2CFI: Record push/save of 2 registers simultaneously.
 //
 // Arguments:
 //    reg1 - The first register being pushed/saved.
@@ -173,9 +173,32 @@ void Compiler::unwindPushPopCFI(regNumber reg)
 //
 void Compiler::unwindPush2Pop2CFI(regNumber reg1, regNumber reg2)
 {
-    // ToDo: This is a placeholder till OS has unwind support for push2/pop2.
-    unwindPushPopCFI(reg1);
-    unwindPushPopCFI(reg2);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
+
+    FuncInfoDsc*   func     = funCurrentFunc();
+    UNATIVE_OFFSET cbProlog = unwindGetCurrentOffset(func);
+
+    regMaskTP relOffsetMask = RBM_CALLEE_SAVED
+#if defined(UNIX_AMD64_ABI) && ETW_EBP_FRAMED
+                              // In case of ETW_EBP_FRAMED defined the REG_FPBASE (RBP)
+                              // is excluded from the callee-save register list.
+                              // Make sure the register gets PUSH unwind info in this case,
+                              // since it is pushed as a frame register.
+                              | RBM_FPBASE
+#endif
+        ;
+
+    createCfiCode(func, cbProlog, CFI_ADJUST_CFA_OFFSET, DWARF_REG_ILLEGAL, 2 * REGSIZE_BYTES);
+
+    if (relOffsetMask & genRegMask(reg1))
+    {
+        createCfiCode(func, cbProlog, CFI_REL_OFFSET, mapRegNumToDwarfReg(reg1), REGSIZE_BYTES);
+    }
+
+    if (relOffsetMask & genRegMask(reg2))
+    {
+        createCfiCode(func, cbProlog, CFI_REL_OFFSET, mapRegNumToDwarfReg(reg2), 0);
+    }
 }
 
 typedef jitstd::vector<CFI_CODE> CFICodeVector;

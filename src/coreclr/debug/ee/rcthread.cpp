@@ -10,6 +10,9 @@
 //*****************************************************************************
 
 #include "stdafx.h"
+#include "CLREventBase.h"
+#include <minipal/time.h>
+#include <minipal/thread.h>
 #include "threadsuspend.h"
 
 #ifndef SM_REMOTESESSION
@@ -34,7 +37,6 @@ DebuggerRCThread::DebuggerRCThread(Debugger * pDebugger)
     m_run(true),
     m_threadControlEvent(NULL),
     m_helperThreadExitedEvent(NULL),
-    m_helperThreadCanGoEvent(NULL),
     m_fDetachRightSide(false)
 {
     CONTRACTL
@@ -100,38 +102,6 @@ void DebuggerRCThread::CloseIPCHandles()
     {
         m_pDCB->m_rightSideProcessHandle.Close();
     }
-}
-
-//-----------------------------------------------------------------------------
-// Simple wrapper to create win32 events.
-// This helps make DebuggerRCThread::Init pretty, beccause we
-// create lots of events there.
-// These will either:
-// 1) Create/Open and return an event
-// 2) or throw an exception.
-// @todo - should these be CLREvents? ClrCreateManualEvent / ClrCreateAutoEvent
-//-----------------------------------------------------------------------------
-HANDLE CreateWin32EventOrThrow(
-    LPSECURITY_ATTRIBUTES lpEventAttributes,
-    EEventResetType eType,
-    BOOL bInitialState
-)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        PRECONDITION(CheckPointer(lpEventAttributes, NULL_OK));
-    }
-    CONTRACTL_END;
-
-    HANDLE h = NULL;
-    h = CreateEvent(lpEventAttributes, (BOOL) eType, bInitialState, NULL);
-
-    if (h == NULL)
-        ThrowLastError();
-
-    return h;
 }
 
 //---------------------------------------------------------------------------------------
@@ -296,7 +266,7 @@ HRESULT DebuggerRCThread::Init(void)
     }
 
     // Create the helper thread can go event.
-    m_helperThreadCanGoEvent = CreateWin32EventOrThrow(NULL, kManualResetEvent, TRUE);
+    m_helperThreadCanGoEvent.CreateManualEvent(TRUE);
 
     m_pDCB = new(nothrow) DebuggerIPCControlBlock;
 
@@ -325,7 +295,7 @@ HRESULT DebuggerRCThread::Init(void)
     // We will not fail out if CreateEvent fails for RSEA or RSER. Because
     // the worst case is that debugger cannot attach to debuggee.
     //
-    HandleHolder rightSideEventAvailable(CreateEvent(NULL, (BOOL) kAutoResetEvent, FALSE, NULL));
+    HandleHolder rightSideEventAvailable(CreateEvent(NULL, FALSE, FALSE, NULL));
 
     // Security fix:
     // We need to check the last error to see if the event was precreated or not
@@ -338,7 +308,7 @@ HRESULT DebuggerRCThread::Init(void)
         rightSideEventAvailable.Free();
     }
 
-    HandleHolder rightSideEventRead(CreateEvent(NULL, (BOOL) kAutoResetEvent, FALSE, NULL));
+    HandleHolder rightSideEventRead(CreateEvent(NULL, FALSE, FALSE, NULL));
 
     // Security fix:
     // We need to check the last error to see if the event was precreated or not
@@ -352,11 +322,26 @@ HRESULT DebuggerRCThread::Init(void)
     }
 
 
-    HandleHolder leftSideUnmanagedWaitEvent(CreateWin32EventOrThrow(NULL, kManualResetEvent, FALSE));
+    HandleHolder leftSideUnmanagedWaitEvent(CreateEvent(NULL, TRUE, FALSE, NULL));
+    if (leftSideUnmanagedWaitEvent == NULL)
+    {
+        ThrowOutOfMemory();
+    }
 
     // Copy RSEA and RSER into the control block only if shared memory is created without error.
     if (m_pDCB)
     {
+#ifdef HOST_WINDOWS
+        if (rightSideEventRead != NULL && !m_rightSideEventRead.CreateFromOSHandle(rightSideEventRead))
+        {
+            ThrowLastError();
+        }
+        if (!m_leftSideUnmanagedWaitEvent.CreateFromOSHandle(leftSideUnmanagedWaitEvent))
+        {
+            ThrowLastError();
+        }
+#endif
+
         // NOTE: initialization of the debugger control block occurs partly on the left side and partly on
         // the right side. This initialization occurs in parallel, so it's unsafe to make assumptions about
         // the order in which the fields will be initialized.
@@ -522,8 +507,8 @@ static LONG _debugFilter(LPEXCEPTION_POINTERS ep, PVOID pv)
 #if defined(_DEBUG)
     DebuggerIPCEvent *event = ((DebugFilterParam *)pv)->event;
 
-    DWORD pid = GetCurrentProcessId();
-    DWORD tid = GetCurrentThreadId();
+    DWORD pid = minipal_get_current_process_id();
+    size_t tid = minipal_get_current_thread_id();
 
     DebuggerIPCEventType type = (DebuggerIPCEventType) (event->type & DB_IPCE_TYPE_MASK);
 #endif // _DEBUG
@@ -549,7 +534,7 @@ static LONG _debugFilter(LPEXCEPTION_POINTERS ep, PVOID pv)
         EX_END_CATCH
 
         CONSISTENCY_CHECK_MSGF(false,
-            ("Unhandled exception on the helper thread.\nEvent=%s(0x%p)\nCode=0x%0x, Ip=0x%p, .cxr=%p, .exr=%p.\n pid=0x%x (%d), tid=0x%x (%d).\n-----\nStack of exception:\n%s\n----\n",
+            ("Unhandled exception on the helper thread.\nEvent=%s(0x%p)\nCode=0x%0x, Ip=0x%p, .cxr=%p, .exr=%p.\n pid=0x%x (%d), tid=0x%zx (%zu).\n-----\nStack of exception:\n%s\n----\n",
             IPCENames::GetName(type), type,
             ep->ExceptionRecord->ExceptionCode, GetIP(ep->ContextRecord), ep->ContextRecord, ep->ExceptionRecord,
             pid, pid, tid, tid,
@@ -639,7 +624,7 @@ void DebuggerRCThread::ThreadProc(void)
             case 3: dwSleep = INFINITE; break;
         }
 
-        ClrSleepEx(dwSleep, FALSE);
+        minipal_sleep(dwSleep);
     }
 #endif
 
@@ -671,19 +656,11 @@ void DebuggerRCThread::ThreadProc(void)
     // the handle was created by the Start method
     _ASSERTE(m_thread != NULL);
 
-#ifdef _DEBUG
-    // Make sure that we have the proper permissions.
-    {
-        DWORD dwWaitResult = WaitForSingleObject(m_thread, 0);
-        _ASSERTE(dwWaitResult == WAIT_TIMEOUT);
-    }
-#endif
-
     // Mark that we're the true helper thread. Now that we've marked
     // this, no other threads will ever become the temporary helper
     // thread.
     HelperThreadExitSignal helperThreadExitSignal = { m_helperThreadRunning, m_helperThreadExitedEvent };
-    m_pDCB->m_helperThreadId = GetCurrentThreadId();
+    m_pDCB->m_helperThreadId = (DWORD)minipal_get_current_thread_id();
     m_helperThreadRunning.Store(TRUE);
 
     LOG((LF_CORDB, LL_INFO1000, "DRCT::TP: helper thread id is 0x%x helperThreadId\n",
@@ -702,7 +679,7 @@ void DebuggerRCThread::ThreadProc(void)
         debugLockHolder.Release();
 
         // Wait for the temporary helper thread to finish up.
-        DWORD dwWaitResult = WaitForSingleObject(m_helperThreadCanGoEvent, INFINITE);
+        DWORD dwWaitResult = m_helperThreadCanGoEvent.Wait(INFINITE);
         (void)dwWaitResult; //prevent "unused variable" error from GCC
 
         LOG((LF_CORDB, LL_INFO1000, "DRCT::TP: done waiting for temp help to finish up.\n"));
@@ -807,7 +784,7 @@ bool DebuggerRCThread::HandleRSEA()
     {
         LOG((LF_CORDB, LL_INFO1000, "DRCT::ML: no reply required, letting Right Side go.\n"));
 
-        BOOL succ = SetEvent(m_pDCB->m_rightSideEventRead);
+        BOOL succ = m_rightSideEventRead.Set();
 
         if (!succ)
             CORDBDebuggerSetUnrecoverableWin32Error(m_debugger, 0, true);
@@ -1604,10 +1581,7 @@ bool DebuggerRCThread::IsRCThreadReady()
         return false;
     }
 
-    // a more subtle check. It's possible the thread was up, but then
-    // an bad call to ExitProcess suddenly terminated the helper thread,
-    // leaving the threadid still non-0. So check the actual thread object
-    // and make sure it's still around.
+#ifdef TARGET_WINDOWS
     int ret = WaitForSingleObject(m_thread, 0);
     LOG((LF_CORDB, LL_EVERYTHING, "DRCT::IsReady - wait(%p)=0x%x, GetLastError() = 0x%x\n", m_thread, ret, GetLastError()));
 
@@ -1615,6 +1589,7 @@ bool DebuggerRCThread::IsRCThreadReady()
     {
         return false;
     }
+#endif // TARGET_WINDOWS
 
     return true;
 }
@@ -1698,7 +1673,7 @@ void DebuggerRCThread::DoFavor(FAVORCALLBACK fp, void * pData)
         {
             // If the helper thread calls this, we deadlock.
             // (Since we wait on an event that only the helper thread sets)
-            _ASSERTE(GetRCThreadId() != GetCurrentThreadId());
+            _ASSERTE(GetRCThreadId() != (DWORD)minipal_get_current_thread_id());
 
             SetFavorFnPtr(fp, pData);
 
@@ -1816,7 +1791,7 @@ HRESULT DebuggerRCThread::SendIPCReply()
 #endif
 
 #if !defined(FEATURE_DBGIPC_TRANSPORT_VM)
-    BOOL succ = SetEvent(m_pDCB->m_rightSideEventRead);
+    BOOL succ = m_rightSideEventRead.Set();
     if (!succ)
     {
         hr = CORDBDebuggerSetUnrecoverableWin32Error(m_debugger, 0, false);

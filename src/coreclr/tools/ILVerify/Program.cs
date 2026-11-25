@@ -114,7 +114,9 @@ namespace ILVerify
             _verifier = new Verifier(this, new VerifierOptions
             {
                 IncludeMetadataTokensInErrorMessages = Get(_command.Tokens),
-                SanityChecks = Get(_command.SanityChecks)
+                SanityChecks = Get(_command.SanityChecks),
+                AllowIgnoresAccessChecksTo = Get(_command.AllowIgnoresAccessChecks),
+                ValidationOnly = Get(_command.ValidationOnly)
             });
             _verifier.SetSystemModuleName(new AssemblyNameInfo(Get(_command.SystemModule) ?? "mscorlib"));
 
@@ -261,17 +263,17 @@ namespace ILVerify
             else if (metadataReferencesOnly)
                 WriteLine("All metadata references in " + path + " resolved.");
             else
-                WriteLine("All types and methods in " + path + " verified.");
+                WriteLine("All types and methods in " + path + (Get(_command.ValidationOnly) ? " validated." : " verified."));
 
             if (Get(_command.Statistics))
             {
                 if (!metadataReferencesOnly)
                 {
                     WriteLine($"Types found: {typeCounter}");
-                    WriteLine($"Types verified: {verifiedTypeCounter}");
+                    WriteLine($"Types {(Get(_command.ValidationOnly) ? "validated" : "verified")}: {verifiedTypeCounter}");
 
                     WriteLine($"Methods found: {methodCounter}");
-                    WriteLine($"Methods verified: {verifiedMethodCounter}");
+                    WriteLine($"Methods {(Get(_command.ValidationOnly) ? "validated" : "verified")}: {verifiedMethodCounter}");
                 }
             }
 

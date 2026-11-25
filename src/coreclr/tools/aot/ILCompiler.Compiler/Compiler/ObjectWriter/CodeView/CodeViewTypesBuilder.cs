@@ -274,7 +274,8 @@ namespace ILCompiler.ObjectWriter
             ClassTypeDescriptor classTypeDescriptor,
             ClassFieldsTypeDescriptor classFieldsTypeDescriptor,
             DataFieldDescriptor[] fields,
-            StaticDataFieldDescriptor[] statics)
+            StaticDataFieldDescriptor[] statics,
+            uint forwardDeclarationTypeIndex = 0)
         {
             uint memberCount = 0;
 
