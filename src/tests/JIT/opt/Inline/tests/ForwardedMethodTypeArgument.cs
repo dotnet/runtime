@@ -72,6 +72,15 @@ public class ForwardedMethodTypeArgument
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static Type Pair<T, U>() => ArrayOfSecond<T, Dictionary<U, T>>();
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Type Compose<A, B>() => Inner<KeyValuePair<B, List<A[]>>>();
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Type Named<T, U>() => Compose<U, T>();
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Type Compound<T>() => Inner<Dictionary<string, T[]>>();
+
     private class Owner<T>
     {
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -108,6 +117,9 @@ public class ForwardedMethodTypeArgument
         Assert.Equal(typeof(string[,]), Rectangular<object, string>());
         Assert.Equal(typeof(List<string[]>), GenericWrapper<object, string>());
         Assert.Equal(typeof(Dictionary<string, object>[]), Pair<object, string>());
+        Assert.Equal(typeof(KeyValuePair<string, List<object[]>>), Named<string, object>());
+        Assert.Equal(typeof(KeyValuePair<object, List<string[]>>), Named<object, string>());
+        Assert.Equal(typeof(Dictionary<string, int[]>), Compound<int>());
         Assert.Equal(typeof(string), Owner<string>.Forward<object>(true));
         Assert.Equal(typeof(object), Owner<string>.Forward<object>(false));
     }

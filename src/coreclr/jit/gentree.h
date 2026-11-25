@@ -9202,16 +9202,21 @@ struct GenTreeAllocObj final : public GenTreeUnOp
 #endif
 };
 
-// A projection of a root method parameter, optionally wrapped in SZARRAYs.
+// Either a projection of a root method argument or an ECMA type signature in
+// that same context. The latter is prepared by the EE only if a use survives.
 struct MethodTypeArgument
 {
-    unsigned index;
-    unsigned arrayDepth;
+    unsigned        index;
+    unsigned short  signatureSize;
+    unsigned short  depth;
+    PCCOR_SIGNATURE signature;
 
-    // Bound the size of the composed signature passed to the EE.
-    static constexpr unsigned MaxArrayDepth = 32;
+    static constexpr unsigned MaxDepth         = 32;
+    static constexpr unsigned MaxSignatureSize = 256;
 
-    static bool TryRead(PCCOR_SIGNATURE&          sig,
+    static bool TryRead(Compiler*                 comp,
+                        CORINFO_MODULE_HANDLE     scope,
+                        PCCOR_SIGNATURE&          sig,
                         unsigned&                 size,
                         const MethodTypeArgument* bindings,
                         unsigned                  arity,

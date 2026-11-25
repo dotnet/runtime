@@ -3385,7 +3385,7 @@ public:
     // then indicate how the handle should be looked up at run-time.
     //
     // A TypeExpression supplies pTypeSpec/cbTypeSpec in the caller's scope
-    // without a metadata token. Currently used for SZARRAYs of forwarded method parameters.
+    // without a metadata token. Metadata references within the signature are relative to tokenScope.
     CORINFO_VIRTUAL void embedGenericHandle(
             CORINFO_RESOLVED_TOKEN *        pResolvedToken,
             bool                            fEmbedParent, // `true` - embeds parent type handle of the field/method handle

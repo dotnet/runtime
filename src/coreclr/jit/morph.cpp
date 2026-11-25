@@ -11,7 +11,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
 #include "jitpch.h"
-#include "cor.h"
 #ifdef _MSC_VER
 #pragma hdrstop
 #endif
@@ -6935,17 +6934,12 @@ GenTree* Compiler::fgMaterializeDeferredLookup(GenTreeRuntimeLookup* tree)
         if (tree->IsClassHandle())
         {
             const MethodTypeArgument arg = pending->type.expression;
-            BYTE                     signature[MethodTypeArgument::MaxArrayDepth + 1 + 4];
-            memset(signature, ELEMENT_TYPE_SZARRAY, arg.arrayDepth);
-            signature[arg.arrayDepth] = ELEMENT_TYPE_MVAR;
-            unsigned indexSize        = CorSigCompressData(arg.index, signature + arg.arrayDepth + 1);
-
-            CORINFO_RESOLVED_TOKEN expression{};
+            CORINFO_RESOLVED_TOKEN   expression{};
             expression.tokenType    = CORINFO_TOKENKIND_TypeExpression;
             expression.tokenContext = METHOD_BEING_COMPILED_CONTEXT();
             expression.tokenScope   = info.compScopeHnd;
-            expression.pTypeSpec    = signature;
-            expression.cbTypeSpec   = arg.arrayDepth + 1 + indexSize;
+            expression.pTypeSpec    = arg.signature;
+            expression.cbTypeSpec   = arg.signatureSize;
             CORINFO_GENERICHANDLE_RESULT result;
             info.compCompHnd->embedGenericHandle(&expression, false, info.compMethodHnd, &result);
             lookup                          = result.lookup;

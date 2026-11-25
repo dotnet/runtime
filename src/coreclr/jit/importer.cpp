@@ -1290,7 +1290,7 @@ GenTree* Compiler::impTokenToHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken,
         MethodTypeArgument   arg;
         InlineCandidateInfo* candidate = impInlineInfo->inlineCandidateInfo;
         if ((sig != nullptr) &&
-            MethodTypeArgument::TryRead(sig, size, candidate->rootMethodArgs,
+            MethodTypeArgument::TryRead(this, pResolvedToken->tokenScope, sig, size, candidate->rootMethodArgs,
                                         info.compMethodInfo->args.sigInst.methInstCount, &arg) &&
             (size == 0) && eeIsSharedInst(pResolvedToken->hClass))
         {
@@ -1298,7 +1298,7 @@ GenTree* Compiler::impTokenToHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken,
             {
                 *pRuntimeLookup = true;
             }
-            if (arg.arrayDepth != 0)
+            if (arg.signature != nullptr)
             {
                 Compiler* root = impInlineRoot();
                 GenTree*  tree =
@@ -1307,7 +1307,7 @@ GenTree* Compiler::impTokenToHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                 auto* pending                             = new (this, CMK_Inlining) DeferredHandleLookup{};
                 pending->type.expression                  = arg;
                 tree->AsRuntimeLookup()->gtDeferredLookup = pending;
-                JITDUMP("Forward inlinee array type as root !!%u with %u SZARRAYs\n", arg.index, arg.arrayDepth);
+                JITDUMP("Forward inlinee type as a root signature (%u bytes)\n", arg.signatureSize);
                 return tree;
             }
             CORINFO_LOOKUP lookup{};

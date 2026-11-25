@@ -5,43 +5,160 @@
 #include "cor.h"
 #include "async.h"
 
-// Read SZARRAY* MVAR from a TypeSpec or MethodSpec. Substitution replaces the
-// parameter at the leaf and preserves the array constructors around it.
-bool MethodTypeArgument::TryRead(PCCOR_SIGNATURE&          sig,
+namespace
+{
+bool ReadCompressedUnsigned(PCCOR_SIGNATURE& sig, unsigned& size, uint32_t* value)
+{
+    uint32_t bytes;
+    if (size == 0 || FAILED(CorSigUncompressData(sig, size, value, &bytes)))
+    {
+        return false;
+    }
+    sig += bytes;
+    size -= bytes;
+    return true;
+}
+
+// Substitute only the type forms understood here. Metadata tokens may be
+// copied verbatim only if they are already relative to the root module.
+class InlineTypeSignature
+{
+    const MethodTypeArgument* m_bindings;
+    unsigned                  m_arity;
+    bool                      m_rootScope;
+    BYTE                      m_bytes[MethodTypeArgument::MaxSignatureSize];
+    unsigned                  m_length        = 0;
+    unsigned                  m_depth         = 0;
+    bool                      m_usesParameter = false;
+
+    bool Append(const BYTE* bytes, unsigned count)
+    {
+        if (count > sizeof(m_bytes) - m_length)
+        {
+            return false;
+        }
+        memcpy(m_bytes + m_length, bytes, count);
+        m_length += count;
+        return true;
+    }
+
+    bool Read(PCCOR_SIGNATURE& sig, unsigned& size, unsigned depth)
+    {
+        if ((size == 0) || (depth > MethodTypeArgument::MaxDepth))
+        {
+            return false;
+        }
+
+        m_depth               = max(m_depth, depth);
+        PCCOR_SIGNATURE start = sig;
+        CorElementType  type  = (CorElementType)*sig++;
+        size--;
+        if (type == ELEMENT_TYPE_MVAR)
+        {
+            m_usesParameter = true;
+            uint32_t index;
+            if (!ReadCompressedUnsigned(sig, size, &index) || (index >= m_arity))
+            {
+                return false;
+            }
+            if (m_bindings != nullptr)
+            {
+                const MethodTypeArgument& arg = m_bindings[index];
+                if (arg.signature != nullptr)
+                {
+                    m_depth = max(m_depth, depth + arg.depth);
+                    return (m_depth <= MethodTypeArgument::MaxDepth) && Append(arg.signature, arg.signatureSize);
+                }
+                index = arg.index;
+            }
+            BYTE     parameter[5] = {ELEMENT_TYPE_MVAR};
+            unsigned bytes        = CorSigCompressData(index, parameter + 1);
+            return Append(parameter, 1 + bytes);
+        }
+
+        if (type == ELEMENT_TYPE_SZARRAY)
+        {
+            return Append(start, 1) && Read(sig, size, depth + 1);
+        }
+        if (((type >= ELEMENT_TYPE_BOOLEAN) && (type <= ELEMENT_TYPE_STRING)) || (type == ELEMENT_TYPE_I) ||
+            (type == ELEMENT_TYPE_U) || (type == ELEMENT_TYPE_OBJECT))
+        {
+            return Append(start, 1);
+        }
+        if ((type != ELEMENT_TYPE_GENERICINST) || !m_rootScope || (size < 3) ||
+            ((*sig != ELEMENT_TYPE_CLASS) && (*sig != ELEMENT_TYPE_VALUETYPE)))
+        {
+            return false;
+        }
+
+        sig++;
+        size--;
+        uint32_t typeToken, count;
+        if (!ReadCompressedUnsigned(sig, size, &typeToken) || ((typeToken >> 2) == 0) || ((typeToken & 3) > 1) ||
+            !ReadCompressedUnsigned(sig, size, &count) || (count == 0) || (count > size) ||
+            !Append(start, (unsigned)(sig - start)))
+        {
+            return false;
+        }
+
+        for (unsigned i = 0; i < count; i++)
+        {
+            if (!Read(sig, size, depth + 1))
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+public:
+    InlineTypeSignature(const MethodTypeArgument* bindings, unsigned arity, bool rootScope)
+        : m_bindings(bindings)
+        , m_arity(arity)
+        , m_rootScope(rootScope)
+    {
+    }
+
+    bool Compose(Compiler* comp, PCCOR_SIGNATURE& sig, unsigned& size, MethodTypeArgument* result)
+    {
+        if (!Read(sig, size, 0) || !m_usesParameter)
+        {
+            return false;
+        }
+        BYTE* signature = comp->getAllocator(CMK_Inlining).allocate<BYTE>(m_length);
+        memcpy(signature, m_bytes, m_length);
+        *result = {0, (unsigned short)m_length, (unsigned short)m_depth, signature};
+        return true;
+    }
+};
+} // namespace
+
+bool MethodTypeArgument::TryRead(Compiler*                 comp,
+                                 CORINFO_MODULE_HANDLE     scope,
+                                 PCCOR_SIGNATURE&          sig,
                                  unsigned&                 size,
                                  const MethodTypeArgument* bindings,
                                  unsigned                  arity,
                                  MethodTypeArgument*       result)
 {
-    unsigned depth = 0;
-    while ((size != 0) && (*sig == ELEMENT_TYPE_SZARRAY))
+    if ((size >= 2) && (*sig == ELEMENT_TYPE_MVAR))
     {
-        if (++depth > MaxArrayDepth)
+        sig++;
+        size--;
+        uint32_t index;
+        if (!ReadCompressedUnsigned(sig, size, &index) || (index >= arity))
         {
             return false;
         }
-        sig++;
-        size--;
+        *result = bindings == nullptr ? MethodTypeArgument{index, 0, 0, nullptr} : bindings[index];
+        return true;
     }
-    if ((size < 2) || (*sig++ != ELEMENT_TYPE_MVAR))
+    if ((size == 0) || ((*sig != ELEMENT_TYPE_SZARRAY) && (*sig != ELEMENT_TYPE_GENERICINST)))
     {
         return false;
     }
-    size--;
-    uint32_t index, bytes;
-    if (FAILED(CorSigUncompressData(sig, size, &index, &bytes)) || (index >= arity))
-    {
-        return false;
-    }
-    MethodTypeArgument arg = (bindings == nullptr) ? MethodTypeArgument{index, 0} : bindings[index];
-    if (depth + arg.arrayDepth > MaxArrayDepth)
-    {
-        return false;
-    }
-    *result = {arg.index, arg.arrayDepth + depth};
-    sig += bytes;
-    size -= bytes;
-    return true;
+    InlineTypeSignature builder(bindings, arity, scope == comp->impInlineRoot()->info.compScopeHnd);
+    return builder.Compose(comp, sig, size, result);
 }
 
 // Map callee method parameters to the parameters of the root caller. Keep the
@@ -68,7 +185,7 @@ MethodTypeArgument* Compiler::impForwardedMethodArgs(CORINFO_RESOLVED_TOKEN* tok
     }
     sig += bytes;
     size -= bytes;
-    if ((count > size / 2) || ((*sig != ELEMENT_TYPE_MVAR) && (*sig != ELEMENT_TYPE_SZARRAY)))
+    if (count > size / 2)
     {
         return nullptr;
     }
@@ -76,7 +193,8 @@ MethodTypeArgument* Compiler::impForwardedMethodArgs(CORINFO_RESOLVED_TOKEN* tok
     MethodTypeArgument* args = getAllocator(CMK_Inlining).allocate<MethodTypeArgument>(count);
     for (unsigned i = 0; i < count; i++)
     {
-        if (!MethodTypeArgument::TryRead(sig, size, (parent == nullptr) ? nullptr : parent->rootMethodArgs,
+        if (!MethodTypeArgument::TryRead(this, token->tokenScope, sig, size,
+                                         (parent == nullptr) ? nullptr : parent->rootMethodArgs,
                                          info.compMethodInfo->args.sigInst.methInstCount, &args[i]))
         {
             return nullptr;
