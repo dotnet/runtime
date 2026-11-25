@@ -360,17 +360,17 @@ namespace ILCompiler
 
                 case OptimizationMode.PreferSize:
                     corJitFlags.Add(CorJitFlag.CORJIT_FLAG_SIZE_OPT);
-                    corJitFlags.Add(CorJitFlag.CORJIT_FLAG_BBOPT);
+                    corJitFlags.Add(CorJitFlag.CORJIT_FLAG_PGO_OPT);
                     break;
 
                 case OptimizationMode.PreferSpeed:
                     corJitFlags.Add(CorJitFlag.CORJIT_FLAG_SPEED_OPT);
-                    corJitFlags.Add(CorJitFlag.CORJIT_FLAG_BBOPT);
+                    corJitFlags.Add(CorJitFlag.CORJIT_FLAG_PGO_OPT);
                     break;
 
                 default:
                     // Not setting a flag results in BLENDED_CODE.
-                    corJitFlags.Add(CorJitFlag.CORJIT_FLAG_BBOPT);
+                    corJitFlags.Add(CorJitFlag.CORJIT_FLAG_PGO_OPT);
                     break;
             }
 

@@ -106,6 +106,8 @@ namespace ILCompiler
             new("--generate-portable-callhelpers") { Description = SR.GeneratePortableCallHelpersOption };
         public Option<string[]> DirectPInvoke { get; } =
             new("--directpinvoke") { DefaultValueFactory = _ => Array.Empty<string>(), Description = SR.DirectPInvokeOption };
+        public Option<string[]> DirectPInvokeList { get; } =
+            new("--directpinvokelist") { DefaultValueFactory = _ => Array.Empty<string>(), Description = SR.DirectPInvokeListOption };
         public Option<string> SingleMethodTypeName { get; } =
             new("--singlemethodtypename") { Description = SR.SingleMethodTypeName };
         public Option<string> SingleMethodName { get; } =
@@ -225,6 +227,7 @@ namespace ILCompiler
             Options.Add(PrintReproInstructions);
             Options.Add(GeneratePortableCallHelpers);
             Options.Add(DirectPInvoke);
+            Options.Add(DirectPInvokeList);
             Options.Add(SingleMethodTypeName);
             Options.Add(SingleMethodName);
             Options.Add(SingleMethodIndex);
@@ -296,7 +299,7 @@ namespace ILCompiler
                         // + a rsp file that should work to directly run out of the zip file
 
                         Helpers.MakeReproPackage(makeReproPath, result.GetValue(OutputFilePath), args,
-                            result, new[] { "-r", "--reference", "-u", "--unrooted-input-file-paths", "-m", "--mibc", "--inputbubbleref" });
+                            result, new[] { "-r", "--reference", "-u", "--unrooted-input-file-paths", "-m", "--mibc", "--inputbubbleref", "--directpinvokelist" });
                     }
 
                     return new Program(this).Run();

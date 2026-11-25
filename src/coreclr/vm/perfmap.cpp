@@ -134,7 +134,7 @@ void PerfMap::Enable(PerfMapType type, bool sendExisting)
 
             InitializeConfiguration();
 
-            int currentPid = GetCurrentProcessId();
+            int currentPid = getpid();
             s_Current->OpenFileForPid(currentPid, basePath);
             s_enabled = true;
         }

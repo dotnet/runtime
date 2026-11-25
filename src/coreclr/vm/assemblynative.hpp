@@ -37,6 +37,8 @@ extern "C" void QCALLTYPE AssemblyNative_GetEntryAssembly(QCall::ObjectHandleOnS
 
 extern "C" void QCALLTYPE AssemblyNative_GetExecutingAssembly(QCall::StackCrawlMarkHandle stackMark, QCall::ObjectHandleOnStack retAssembly, QCallExceptionStatus* qcallError);
 
+extern "C" void QCALLTYPE AssemblyNative_GetAssemblyFromHandle(Assembly* pAssembly, QCall::ObjectHandleOnStack retAssembly, QCallExceptionStatus* qcallError);
+
 
 extern "C" void QCALLTYPE AssemblyNative_GetLocale(QCall::AssemblyHandle pAssembly, QCall::StringHandleOnStack retString, QCallExceptionStatus* qcallError);
 

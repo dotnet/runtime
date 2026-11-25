@@ -11,6 +11,7 @@
 #define DEBUGGER_H_
 
 #include <windows.h>
+#include <minipal/thread.h>
 
 #include <utilcode.h>
 
@@ -349,7 +350,7 @@ inline DWORD UnsafeGetConfigDWORD(const CLRConfig::ConfigDWORDInfo & info)
 
 bool ThisIsHelperThreadWorker(void);
 bool ThisIsTempHelperThread();
-bool ThisIsTempHelperThread(DWORD tid);
+bool ThisIsTempHelperThread(size_t tid);
 
 #ifdef _DEBUG
 
@@ -2136,30 +2137,6 @@ public:
                                       TypeHandle th,
                                       DebuggerIPCE_ExpandedTypeData *res);
 
-    class TypeDataWalk
-    {
-        DebuggerIPCE_TypeArgData *m_curdata;
-        unsigned int m_remaining;
-
-    public:
-        TypeDataWalk(DebuggerIPCE_TypeArgData *pData, unsigned int nData)
-        {
-            m_curdata = pData;
-            m_remaining = nData;
-        }
-
-
-        // These are for type arguments in the funceval case.
-        // They throw COMPLUS exceptions if they fail, so can only be used during funceval.
-        void ReadTypeHandles(unsigned int nTypeArgs, TypeHandle *pRes);
-        TypeHandle ReadInstantiation(Module *pModule, mdTypeDef tok, unsigned int nTypeArgs);
-        TypeHandle ReadTypeHandle();
-
-        BOOL Finished() { LIMITED_METHOD_CONTRACT; return m_remaining == 0; }
-        DebuggerIPCE_TypeArgData *ReadOne() { LIMITED_METHOD_CONTRACT; if (m_remaining) { m_remaining--; return m_curdata++; } else return NULL; }
-
-    };
-
     void GetAndSendTransitionStubInfo(CORDB_ADDRESS_TYPE *stubAddress);
 
     void SendBreakpoint(Thread *thread, T_CONTEXT *context,
@@ -2433,7 +2410,7 @@ public:
         }
         else
         {
-            return (GetCurrentThreadId() == m_mutexOwner);
+            return (minipal_get_current_thread_id() == m_mutexOwner);
         }
     }
 #endif // _DEBUG_IMPL
@@ -2584,11 +2561,8 @@ public:
     HRESULT FuncEvalCleanup(DebuggerEval *debuggerEvalKey);
 
 #ifndef DACCESS_COMPILE
-    virtual bool ReadFuncEvalTypeHandles(
-        DebuggerEval* pDE, TypeHandle* pTypes, uint32_t count);
     virtual void* AllocateFuncEvalExternalResult(DebuggerEval* pDE, TypeHandle resultType);
     virtual void ProtectFuncEvalByRefResult(DebuggerEval* pDE, TypeHandle resultType);
-    virtual TypeHandle GetFuncEvalArgumentType(DebuggerEval* pDE, UINT32 index);
     virtual BOOL ReadFuncEvalPrimitiveRegister(
         DebuggerEval* pDE, UINT32 index, UINT64* pValue);
     virtual void WriteFuncEvalRegister(
@@ -2699,7 +2673,7 @@ public:
     void SetModuleDefaultJMCStatus(Module * pRuntimeModule, bool fStatus);
 
 #ifndef DACCESS_COMPILE
-    static DWORD GetThreadIdHelper(Thread *pThread);
+    static SIZE_T GetThreadIdHelper(Thread *pThread);
 #endif // DACCESS_COMPILE
 
 private:
@@ -2893,10 +2867,10 @@ private:
 
 #ifdef _DEBUG
     // Ownership tracking for debugging.
-    DWORD                 m_mutexOwner;
+    size_t                m_mutexOwner;
 
     // Tid that last called LockForEventSending.
-    DWORD                 m_tidLockedForEventSending;
+    size_t                m_tidLockedForEventSending;
 #endif
     LONG                  m_threadsAtUnsafePlaces;
     Volatile<BOOL>        m_jitAttachInProgress;
@@ -3467,13 +3441,6 @@ public:
         return (DebuggerIPCE_FuncEvalArgData*) (m_argData + m_genericArgsNodeCount * sizeof(DebuggerIPCE_TypeArgData));
     }
 
-    WCHAR *GetNewStringArgData()
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(m_evalType == DB_IPCE_FET_NEW_STRING);
-        return (WCHAR*)m_argData;
-    }
-
     ~DebuggerEval()
     {
         WRAPPER_NO_CONTRACT;
@@ -3781,7 +3748,7 @@ HANDLE OpenWin32EventOrThrow(
 //   SuspendComplete
 //
 // @todo- we could also assert that:
-// - m_tidLockedForEventSending = GetCurrentThreadId();
+// - m_tidLockedForEventSending = minipal_get_current_thread_id();
 #define SENDEVENT_CONTRACT_ITEMS \
     GC_NOTRIGGER; \
     MODE_PREEMPTIVE; \

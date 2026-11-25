@@ -1,6 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <!-- TODO: Remove once migrated to unsafe-v2. -->
+    <MemorySafetyRulesVersion>1</MemorySafetyRulesVersion>
     <TargetFramework>netstandard2.0</TargetFramework>
     <RootNamespace>Microsoft.Interop</RootNamespace>
     <DefineConstants>$(DefineConstants);MICROSOFT_INTEROP_SOURCEGENERATION</DefineConstants>
@@ -17,6 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="$(CommonPath)Polyfills\MemoryExtensionsPolyfills.cs" Link="Common\Polyfills\MemoryExtensionsPolyfills.cs" />
     <Compile Include="$(CommonPath)Roslyn\GetBestTypeByMetadataName.cs" Link="Common\Roslyn\GetBestTypeByMetadataName.cs" />
     <Compile Include="$(CommonPath)Roslyn\Hash.cs" Link="Common\Roslyn\Hash.cs" />
     <Compile Include="$(CommonPath)Roslyn\MemorySafetyRulesPolyfills.cs" Link="Common\Roslyn\MemorySafetyRulesPolyfills.cs" />

@@ -34,7 +34,6 @@ namespace System
         /// </summary>
         /// <param name="array">The target array.</param>
         /// <remarks>Returns default when <paramref name="array"/> is null.</remarks>
-        /// <exception cref="ArrayTypeMismatchException">Thrown when <paramref name="array"/> is covariant and array's type is not exactly T[].</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ReadOnlyMemory(T[]? array)
         {
@@ -57,7 +56,6 @@ namespace System
         /// <param name="start">The index at which to begin the memory.</param>
         /// <param name="length">The number of items in the memory.</param>
         /// <remarks>Returns default when <paramref name="array"/> is null.</remarks>
-        /// <exception cref="ArrayTypeMismatchException">Thrown when <paramref name="array"/> is covariant and array's type is not exactly T[].</exception>
         /// <exception cref="ArgumentOutOfRangeException">
         /// Thrown when the specified <paramref name="start"/> or end index is not in the range (&lt;0 or &gt;Length).
         /// </exception>
@@ -71,14 +69,8 @@ namespace System
                 this = default;
                 return; // returns default
             }
-#if TARGET_64BIT
-            // See comment in Span<T>.Slice for how this works.
-            if ((ulong)(uint)start + (ulong)(uint)length > (ulong)(uint)array.Length)
-                ThrowHelper.ThrowArgumentOutOfRangeException();
-#else
             if ((uint)start > (uint)array.Length || (uint)length > (uint)(array.Length - start))
                 ThrowHelper.ThrowArgumentOutOfRangeException();
-#endif
 
             _object = array;
             _index = start;
@@ -173,14 +165,8 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ReadOnlyMemory<T> Slice(int start, int length)
         {
-#if TARGET_64BIT
-            // See comment in Span<T>.Slice for how this works.
-            if ((ulong)(uint)start + (ulong)(uint)length > (ulong)(uint)_length)
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
-#else
             if ((uint)start > (uint)_length || (uint)length > (uint)(_length - start))
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
-#endif
 
             // It is expected for _index + start to be negative if the memory is already pre-pinned.
             return new ReadOnlyMemory<T>(_object, _index + start, length);
@@ -251,18 +237,10 @@ namespace System
 
                     int desiredLength = _length;
 
-#if TARGET_64BIT
-                    // See comment in Span<T>.Slice for how this works.
-                    if ((ulong)desiredStartIndex + (ulong)(uint)desiredLength > (ulong)(uint)lengthOfUnderlyingSpan)
-                    {
-                        ThrowHelper.ThrowArgumentOutOfRangeException();
-                    }
-#else
                     if ((uint)desiredStartIndex > (uint)lengthOfUnderlyingSpan || (uint)desiredLength > (uint)lengthOfUnderlyingSpan - (uint)desiredStartIndex)
                     {
                         ThrowHelper.ThrowArgumentOutOfRangeException();
                     }
-#endif
 
                     refToReturn = ref Unsafe.Add(ref refToReturn, desiredStartIndex);
                     lengthOfUnderlyingSpan = desiredLength;

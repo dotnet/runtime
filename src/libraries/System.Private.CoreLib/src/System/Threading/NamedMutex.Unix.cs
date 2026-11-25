@@ -197,6 +197,12 @@ namespace System.Threading
 
         internal static unsafe SharedMemoryProcessDataHeader<NamedMutexProcessDataBase>? CreateOrOpen(string name, bool isUserScope, bool createIfNotExist, bool acquireLockIfCreated, out bool created)
         {
+            if (acquireLockIfCreated)
+            {
+                // Allocate before acquiring the underlying lock: failing after acquisition would leave the lock held without an ownership chain entry.
+                Thread.CurrentThread.WaitInfo.EnsureNamedMutexOwnershipChain();
+            }
+
             WaitSubsystem.LockHolder creationDeletionProcessLock = SharedMemoryManager<NamedMutexProcessDataBase>.Instance.AcquireCreationDeletionProcessLock();
             try
             {
@@ -221,7 +227,18 @@ namespace System.Threading
                 {
                     if (created)
                     {
-                        InitializeSharedData(SharedMemoryProcessDataHeader<NamedMutexProcessDataBase>.GetDataPointer(processDataHeader));
+                        try
+                        {
+                            InitializeSharedData(SharedMemoryProcessDataHeader<NamedMutexProcessDataBase>.GetDataPointer(processDataHeader));
+                        }
+                        catch
+                        {
+                            // The header is already published in the process-local cache. Drop its initial reference so the
+                            // uninitialized shared data is unpublished, unmapped and deleted instead of being handed
+                            // to later callers as if it were a valid mutex.
+                            processDataHeader.DecrementRefCount();
+                            throw;
+                        }
                     }
 
                     if (processDataHeader._processData is null)
@@ -587,22 +604,28 @@ namespace System.Threading
                             break;
                         }
 
-                        _sharedData->TimedWaiterCount++;
-
-                        do
+                        // The timed waiter count is shared between processes, so it must be updated atomically and must be
+                        // decremented on every exit path, including exceptions such as ThreadInterruptedException from the sleep.
+                        _sharedData->IncrementTimedWaiterCount();
+                        try
                         {
-                            int elapsedMilliseconds = Environment.TickCount - startTime;
-                            if (elapsedMilliseconds >= timeoutMilliseconds)
+                            do
                             {
-                                _sharedData->TimedWaiterCount--;
-                                return MutexTryAcquireLockResult.TimedOut;
-                            }
+                                int elapsedMilliseconds = Environment.TickCount - startTime;
+                                if (elapsedMilliseconds >= timeoutMilliseconds)
+                                {
+                                    return MutexTryAcquireLockResult.TimedOut;
+                                }
 
-                            int remainingTimeoutMilliseconds = timeoutMilliseconds - elapsedMilliseconds;
-                            int sleepMilliseconds = Math.Min(PollLoopMaximumSleepMilliseconds, remainingTimeoutMilliseconds);
-                            Thread.Sleep(sleepMilliseconds);
-                        } while (!SharedMemoryHelpers.TryAcquireFileLock(_sharedLockFileHandle, nonBlocking: true));
-                        _sharedData->TimedWaiterCount--;
+                                int remainingTimeoutMilliseconds = timeoutMilliseconds - elapsedMilliseconds;
+                                int sleepMilliseconds = Math.Min(PollLoopMaximumSleepMilliseconds, remainingTimeoutMilliseconds);
+                                Thread.Sleep(sleepMilliseconds);
+                            } while (!SharedMemoryHelpers.TryAcquireFileLock(_sharedLockFileHandle, nonBlocking: true));
+                        }
+                        finally
+                        {
+                            _sharedData->DecrementTimedWaiterCount();
+                        }
                         break;
                     }
                 }
@@ -633,7 +656,17 @@ namespace System.Threading
             private ulong _lockOwnerThreadId;
             private byte _isAbandoned;
 
-            public uint TimedWaiterCount { get => _timedWaiterCount; set => _timedWaiterCount = value; }
+            public uint TimedWaiterCount
+            {
+                get => Volatile.Read(ref _timedWaiterCount);
+                set => Volatile.Write(ref _timedWaiterCount, value);
+            }
+
+            // The count lives in memory shared with other processes, which do not take this process's locks.
+            public void IncrementTimedWaiterCount() => Interlocked.Increment(ref _timedWaiterCount);
+
+            public void DecrementTimedWaiterCount() => Interlocked.Decrement(ref _timedWaiterCount);
+
             public uint LockOwnerProcessId
             {
                 get
@@ -694,6 +727,9 @@ namespace System.Threading
             public int Wait_Locked(ThreadWaitInfo waitInfo, int timeoutMilliseconds, bool interruptible, ref LockHolder lockHolder)
             {
                 lockHolder.Dispose();
+
+                // Allocate before acquiring the underlying lock: failing after acquisition would leave the lock held without an ownership chain entry.
+                waitInfo.EnsureNamedMutexOwnershipChain();
 
                 NamedMutexProcessDataBase.UnrecordedMutexAcquisition acquisition = _processDataHeader._processData!.TryAcquireLock(timeoutMilliseconds);
                 LockHolder scope = SharedMemoryManager<NamedMutexProcessDataBase>.Instance.AcquireCreationDeletionProcessLock();

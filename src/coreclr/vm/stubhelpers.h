@@ -39,7 +39,7 @@ extern "C"
 #endif // FEATURE_VARARGS
 }
 
-extern "C" void QCALLTYPE StubHelpers_CreateCustomMarshaler(MethodDesc* pMD, mdToken paramToken, TypeHandle hndManagedType, QCall::ObjectHandleOnStack retObject, QCallExceptionStatus* qcallError);
+extern "C" void QCALLTYPE StubHelpers_CreateCustomMarshaler(MethodDesc* pMD, mdToken paramToken, EnregisteredTypeHandle pManagedType, QCall::ObjectHandleOnStack retObject, QCallExceptionStatus* qcallError);
 
 #ifdef PROFILING_SUPPORTED
 extern "C" void* QCALLTYPE StubHelpers_ProfilerBeginTransitionCallback(MethodDesc* pTargetMD, QCallExceptionStatus* qcallError);

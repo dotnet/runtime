@@ -66,6 +66,39 @@ namespace System.Reflection.Tests
             AssertExtensions.Throws<ArgumentException>("typeName@0", () => m.GetType(aqn, throwOnError: true, ignoreCase: true));
         }
 
+        [Theory]
+        [InlineData("\0")]
+        [InlineData("\0System.Int32")]
+        [InlineData("System.In\0t32")]
+        [InlineData("System.Int32\0")]
+        [InlineData("System.Int32\0junk")]
+        [InlineData("System.Environment\0x+SpecialFolder")]
+        [InlineData("System.Environment+SpecialFolder\0x")]
+        [InlineData("System.Collections.Generic.List`1[System.Int32\0zz]")]
+        [InlineData("System.Collections.Generic.List`1[[System.Int32\0zz]]")]
+        [InlineData("Escaped\\+Name\0junk")]
+        [InlineData("Escaped\\\0Name")]
+        public void GetType_NullCharacter(string typeName)
+        {
+            Assert.Null(Type.GetType(typeName));
+            Assert.Throws<ArgumentException>(() => Type.GetType(typeName, throwOnError: true));
+
+            string assemblyQualifiedName = $"{typeName}, {typeof(int).Assembly.FullName}";
+            Assert.Null(Type.GetType(assemblyQualifiedName));
+            Assert.Throws<ArgumentException>(() => Type.GetType(assemblyQualifiedName, throwOnError: true));
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime))]
+        [InlineData("System.Int32\0")]
+        [InlineData("System.Environment+SpecialFolder\0x")]
+        [InlineData("System.Collections.Generic.List`1[System.Int32\0zz]")]
+        public void AssemblyGetType_NullCharacter(string typeName)
+        {
+            Assembly assembly = typeof(int).Assembly;
+            Assert.Null(assembly.GetType(typeName));
+            Assert.Throws<ArgumentException>(() => assembly.GetType(typeName, throwOnError: true));
+        }
+
         public static IEnumerable<object[]> GetType_TestData()
         {
             yield return new object[] { "non-existent-type", null };

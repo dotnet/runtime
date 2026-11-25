@@ -2937,7 +2937,7 @@ PhaseStatus Compiler::fgIncorporateProfileData()
 
     // Or run synthesis and save the data out as the actual profile data
     //
-    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR) &&
+    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PGO_INSTR) &&
         (JitConfig.JitPropagateSynthesizedCountsToProfileData() > 0))
     {
         JITDUMP("Synthesizing profile data and writing it out as the actual profile data\n");
@@ -2953,13 +2953,13 @@ PhaseStatus Compiler::fgIncorporateProfileData()
     {
         // No...
         //
-        if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT))
+        if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PGO_OPT))
         {
-            JITDUMP("BBOPT set, but no profile data available (hr=%08x)\n", fgPgoQueryResult);
+            JITDUMP("PGO_OPT set, but no profile data available (hr=%08x)\n", fgPgoQueryResult);
         }
         else
         {
-            JITDUMP("BBOPT not set\n");
+            JITDUMP("PGO_OPT not set\n");
         }
 
         // Is dynamic PGO active? If so, run synthesis.

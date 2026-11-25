@@ -1,13 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <!-- TODO: Remove once migrated to unsafe-v2. -->
+    <MemorySafetyRulesVersion>1</MemorySafetyRulesVersion>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <RootNamespace>System.Numerics</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
-    <!-- Mono routes ulong -> float through double, which double rounds; the BigInteger -> float
-         conversion excludes its correctly-rounded fast path there. -->
-    <DefineConstants Condition="'$(RuntimeFlavor)' == 'Mono'">$(DefineConstants);MONO</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>

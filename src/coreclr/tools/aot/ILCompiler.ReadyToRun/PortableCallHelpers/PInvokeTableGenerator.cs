@@ -12,7 +12,6 @@ using ILCompiler.DependencyAnalysis.Wasm;
 using Internal.JitInterface;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
-using Internal.TypeSystem.Interop;
 
 namespace ILCompiler.PortableCallHelpers
 {
@@ -21,26 +20,17 @@ namespace ILCompiler.PortableCallHelpers
     /// </summary>
     internal sealed class PInvokeTableGenerator(InteropLogger log)
     {
-        public void EmitPInvokeTable(TextWriter w, TargetDetails target, ModuleDesc systemModule, IEnumerable<string> pinvokeModules, List<PInvokeInfo> pinvokes)
+        public void EmitPInvokeTable(TextWriter w, TargetDetails target, ModuleDesc systemModule, IEnumerable<string> pinvokeModules, List<PInvokeInfo> pinvokes, IEnumerable<string> pinvokeModuleLists = null)
         {
+            var linked = new DirectPInvokeSet(target, pinvokeModules, pinvokeModuleLists ?? []);
+
             // Modules an unresolved P/Invoke has already been reported for, so each is logged once.
             // Only the logging is suppressed: a module a later P/Invoke does resolve - through
             // [WasmImportLinkage], say - still has to make it into the table.
             var skippedModules = new HashSet<string>(StringComparer.Ordinal);
             var modules = new SortedSet<string>(StringComparer.Ordinal);
             var qcallImports = new List<PInvokeInfo>();
-
-            // Normalize what gets linked separately from the exact managed module names emitted into
-            // the table. Runtime lookup uses the latter, while availability accepts the same prefix
-            // and suffix variations as direct P/Invoke compilation.
-            var linkedModules = new HashSet<string>(StringComparer.Ordinal);
-            foreach (string module in pinvokeModules)
-            {
-                foreach (string variation in MarshalHelpers.GetPInvokeModuleNameVariations(target, module))
-                {
-                    linkedModules.Add(variation);
-                }
-            }
+            var linkedEntryPoints = new HashSet<PInvokeInfo>();
 
             foreach (PInvokeInfo pinvoke in pinvokes)
             {
@@ -54,17 +44,8 @@ namespace ILCompiler.PortableCallHelpers
                 if (modules.Contains(pinvoke.Module))
                     continue;
 
-                bool isLinked = false;
-                foreach (string variation in MarshalHelpers.GetPInvokeModuleNameVariations(target, pinvoke.Module))
-                {
-                    if (linkedModules.Contains(variation))
-                    {
-                        isLinked = true;
-                        break;
-                    }
-                }
-
-                if (isLinked)
+                // Linkage accepts module name variations; the table keys on the exact managed name.
+                if (linked.ContainsModule(pinvoke.Module))
                 {
                     modules.Add(pinvoke.Module);
                     continue;
@@ -78,11 +59,9 @@ namespace ILCompiler.PortableCallHelpers
                     modules.Add(pinvoke.Module);
                     log.Verbose($"Adding module {pinvoke.Module} for WasmImportLinkage");
                 }
-                else if (pinvoke.Module == "*")
+                else if (linked.TryGetDirectEntryPoint(pinvoke.Method, out _))
                 {
-                    // Special case for * module to indicate static linking without specifying the module
-                    modules.Add(pinvoke.Module);
-                    log.Verbose($"Adding module {pinvoke.Module} for static linking");
+                    linkedEntryPoints.Add(pinvoke);
                 }
                 else
                 {
@@ -93,9 +72,15 @@ namespace ILCompiler.PortableCallHelpers
                     // those are never reached on wasm. P/Invoke resolution failure is a runtime condition,
                     // so reporting it at build time produces false positives that have to be suppressed.
                     if (skippedModules.Add(pinvoke.Module))
-                        log.Verbose($"Skipping unresolved PInvoke module '{pinvoke.Module}' for method '{pinvoke.Method.OwningType}::{pinvoke.Method.Name.ToString()}' (not statically linked on wasm; will throw if called).");
+                        log.Verbose($"Skipping unresolved PInvoke '{pinvoke.Module}!{pinvoke.EntryPoint}' for method '{pinvoke.Method.OwningType}::{pinvoke.Method.Name.ToString()}' (not statically linked on wasm; will throw if called).");
                 }
             }
+
+            // Whole-module linkage includes every P/Invoke of the module.
+            List<PInvokeInfo> emitted = pinvokes
+                .Where(pinvoke => modules.Contains(pinvoke.Module) || linkedEntryPoints.Contains(pinvoke))
+                .ToList();
+            modules.UnionWith(linkedEntryPoints.Select(pinvoke => pinvoke.Module));
 
             w.WriteLine(
                 """
@@ -110,23 +95,26 @@ namespace ILCompiler.PortableCallHelpers
                 extern "C" {
                 """);
 
-            var pinvokesGroupedByEntryPoint = pinvokes
-                                                .Where(l => modules.Contains(l.Module))
-                                                .OrderBy(l => l.EntryPoint, StringComparer.Ordinal)
+            var linkedDecls = new List<string>();
+            var globalNames = new HashSet<string>(StringComparer.Ordinal);
+            var pinvokesGroupedByEntryPoint = emitted
+                                                .OrderBy(pinvoke => pinvoke.EntryPoint, StringComparer.Ordinal)
                                                 .GroupBy(CEntryPoint, StringComparer.Ordinal);
 
             foreach (IGrouping<string, PInvokeInfo> group in pinvokesGroupedByEntryPoint)
             {
                 PInvokeInfo[] candidates = group.Distinct().ToArray();
                 PInvokeInfo first = candidates[0];
-                if (ShouldTreatAsVariadic(candidates))
+                // A P/Invoke failing to bind is a runtime error, so skip what can't be declared rather than failing
+                // the build. ReadyToRun doesn't bind these directly either (see IsDirectPInvoke).
+                MethodDesc[] methods = candidates.Select(c => (MethodDesc)c.Method).ToArray();
+                bool variadic = IsVariadic(methods);
+                if (variadic || LowerToDifferentSignatures(methods))
                 {
-                    string imports = string.Join(Environment.NewLine,
-                                                candidates.Select(
-                                                    p => $"    {p.Method} (in [{((EcmaAssembly)p.Method.Module).GetName().Name}] {p.Method.OwningType})"));
-                    log.Warning("WASM0001", $"Found a native function ({first.EntryPoint}) with varargs in {first.Module}." +
+                    string problem = variadic ? "with varargs" : "with signatures that lower to different WebAssembly signatures";
+                    log.Warning("WASM0001", $"Found a native function ({first.EntryPoint}) {problem} in {first.Module}." +
                                      " Calling such functions is not supported, and will fail at runtime." +
-                                    $" Managed DllImports: {Environment.NewLine}{imports}");
+                                    $" Managed DllImports: {Environment.NewLine}{ListImports(candidates)}");
 
                     foreach (PInvokeInfo candidate in candidates)
                         candidate.Skip = true;
@@ -134,13 +122,17 @@ namespace ILCompiler.PortableCallHelpers
                     continue;
                 }
 
-                var decls = new HashSet<string>();
-                foreach (PInvokeInfo candidate in candidates)
+                // The table holds one address per entry point, so declare it once per linkage.
+                PInvokeInfo imported = candidates.FirstOrDefault(c => c.WasmLinkage);
+                if (imported is not null)
                 {
-                    string decl = GenPInvokeDecl(candidate);
-                    if (decls.Add(decl))
-                        w.WriteLine(decl);
+                    w.WriteLine(GenPInvokeDecl(imported));
+                    globalNames.Add(CEntryPoint(imported));
                 }
+
+                PInvokeInfo linkedEntryPoint = candidates.FirstOrDefault(c => !c.WasmLinkage);
+                if (linkedEntryPoint is not null)
+                    linkedDecls.Add(GenPInvokeDecl(linkedEntryPoint, CEntryPoint(linkedEntryPoint)));
             }
 
             w.Write(
@@ -149,26 +141,42 @@ namespace ILCompiler.PortableCallHelpers
 
                 """);
 
+            // Statically linked entry points, such as libc!strlen, are declared with C++ linkage in a
+            // namespace and bound by asm label, so they can't conflict with header declarations or with
+            // the [WasmImportLinkage] declarations above, whose names the namespace avoids.
+            string linkedNamespace = "direct_pinvoke";
+            while (globalNames.Contains(linkedNamespace))
+                linkedNamespace += "_";
+
+            if (linkedDecls.Count > 0)
+            {
+                w.WriteLine($"namespace {linkedNamespace} {{");
+                foreach (string decl in linkedDecls)
+                    w.WriteLine(decl);
+                w.WriteLine($"}} // namespace {linkedNamespace}");
+            }
+
             var moduleImports = new Dictionary<string, List<string>>();
             foreach (string module in modules)
             {
                 // the order here is not important, because we use hash tables, we want it to be stable though
-                List<string> imports = pinvokes
-                    .Where(l => l.Module == module && !l.Skip)
-                    .OrderBy(l => l.EntryPoint, StringComparer.Ordinal)
-                    .GroupBy(d => d.EntryPoint, StringComparer.Ordinal)
-                    .Select(l =>
+                List<string> imports = emitted
+                    .Where(pinvoke => pinvoke.Module == module && !pinvoke.Skip)
+                    .OrderBy(pinvoke => pinvoke.EntryPoint, StringComparer.Ordinal)
+                    .GroupBy(pinvoke => pinvoke.EntryPoint, StringComparer.Ordinal)
+                    .Select(group =>
                     {
-                        PInvokeInfo p = l.First();
-                        // Runtime resolver looks up by managed EntryPoint.
-                        // [WasmImportLinkage] mangles the C symbol per module,
-                        // so emit the entry-point string explicitly rather than
-                        // stringifying the mangled name via DllImportEntry.
-                        if (p.WasmLinkage)
-                            return $"    {{ \"{EscapeLiteral(p.EntryPoint)}\", (void*)&{CEntryPoint(p)} }}, // {ListRefs(l)}{w.NewLine}";
-                        return $"    DllImportEntry({CEntryPoint(p)}) // {ListRefs(l)}{w.NewLine}";
+                        PInvokeInfo p = group.First();
+                        // The runtime resolver looks up by managed EntryPoint, which can differ from the
+                        // C symbol: [WasmImportLinkage] mangles it per module.
+                        string address = p.WasmLinkage ? CEntryPoint(p) : $"{linkedNamespace}::{CEntryPoint(p)}";
+                        return $"    {{ \"{EscapeLiteral(p.EntryPoint)}\", (void*)&{address} }}, // {ListRefs(group)}{w.NewLine}";
                     })
                     .ToList();
+
+                // Every import of the module was skipped; an empty array would not compile.
+                if (imports.Count == 0)
+                    continue;
 
                 moduleImports[module] = imports;
                 w.Write(
@@ -190,7 +198,7 @@ namespace ILCompiler.PortableCallHelpers
                 } PInvokeTable;
 
                 static PInvokeTable s_PInvokeTables[] = {
-                    {{string.Join($",{w.NewLine}    ", modules.Select(m => $"{{\"{EscapeLiteral(m)}\", s_{FixupSymbolName(m)}, {moduleImports[m].Count}}}"))}}
+                    {{string.Join($",{w.NewLine}    ", modules.Where(moduleImports.ContainsKey).Select(m => $"{{\"{EscapeLiteral(m)}\", s_{FixupSymbolName(m)}, {moduleImports[m].Count}}}"))}}
                 };
                 const size_t s_PInvokeTablesCount = sizeof(s_PInvokeTables) / sizeof(s_PInvokeTables[0]);
 
@@ -212,25 +220,47 @@ namespace ILCompiler.PortableCallHelpers
 
             EmitQCallTable(w, target, qcallImports);
 
-            static bool ShouldTreatAsVariadic(PInvokeInfo[] candidates)
+            static string ListImports(PInvokeInfo[] candidates)
+                => string.Join(Environment.NewLine, candidates.Select(
+                    p => $"    {p.Method} (in [{((EcmaAssembly)p.Method.Module).GetName().Name}] {p.Method.OwningType})"));
+
+            static string ListRefs(IGrouping<string, PInvokeInfo> group)
+                => string.Join(", ", group.Select(c => ((EcmaAssembly)c.Method.Module).GetName().Name).Distinct().OrderBy(n => n, StringComparer.Ordinal));
+        }
+
+        /// <summary>
+        /// Whether the P/Invokes of one native entry point can't share the single declaration the table holds:
+        /// they differ in arity, which suggests C varargs, or lower to different WebAssembly signatures.
+        /// </summary>
+        internal static bool HasIncompatibleSignatures(IReadOnlyList<MethodDesc> methods)
+            => IsVariadic(methods) || LowerToDifferentSignatures(methods);
+
+        private static bool IsVariadic(IReadOnlyList<MethodDesc> methods)
+        {
+            for (int i = 1; i < methods.Count; i++)
             {
-                if (candidates.Length < 2)
-                    return false;
-
-                // Detect possible vararg entrypoint usage, where the same entrypoint is used with
-                // different numbers of arguments.
-                int firstNumArgs = candidates[0].Method.Signature.Length;
-                for (int i = 1; i < candidates.Length; i++)
-                {
-                    if (candidates[i].Method.Signature.Length != firstNumArgs)
-                        return true;
-                }
-
-                return false;
+                if (methods[i].Signature.Length != methods[0].Signature.Length)
+                    return true;
             }
 
-            static string ListRefs(IGrouping<string, PInvokeInfo> l)
-                => string.Join(", ", l.Select(c => ((EcmaAssembly)c.Method.Module).GetName().Name).Distinct().OrderBy(n => n, StringComparer.Ordinal));
+            return false;
+        }
+
+        private static bool LowerToDifferentSignatures(IReadOnlyList<MethodDesc> methods)
+        {
+            if (methods.Count < 2)
+                return false;
+
+            // Compare the native function types: the richer interpreter signature also records
+            // struct sizes that don't change how the struct is passed.
+            WasmFuncType first = WasmLowering.GetSignature(methods[0].Signature, WasmLowering.LoweringFlags.IsUnmanagedCallersOnly).FuncType;
+            for (int i = 1; i < methods.Count; i++)
+            {
+                if (!WasmLowering.GetSignature(methods[i].Signature, WasmLowering.LoweringFlags.IsUnmanagedCallersOnly).FuncType.Equals(first))
+                    return true;
+            }
+
+            return false;
         }
 
         private void EmitQCallTable(TextWriter w, TargetDetails target, List<PInvokeInfo> qcallImports)

@@ -303,6 +303,7 @@ namespace ILCompiler
                 {
                     OutputDirectory = _generatePortableCallHelpers,
                     PInvokeModules = Get(_command.DirectPInvoke),
+                    PInvokeModuleLists = Get(_command.DirectPInvokeList),
                     // The normalized name, so that platform attributes match regardless of how
                     // --targetos was spelled on the command line.
                     TargetOS = targetOS.ToString().ToLowerInvariant(),
@@ -503,7 +504,7 @@ namespace ILCompiler
                     groupConfig.CrossModuleInlineable = crossModuleInlineableCode;
                     groupConfig.CompileAllPossibleCrossModuleCode = false;
                     groupConfig.InstructionSetSupport = instructionSetSupport;
-                    groupConfig.DirectPInvokeModules = Get(_command.DirectPInvoke);
+                    groupConfig.DirectPInvokes = new DirectPInvokeSet(typeSystemContext.Target, Get(_command.DirectPInvoke), Get(_command.DirectPInvokeList));
 
                     // Handle non-local generics command line option
                     ModuleDesc nonLocalGenericsHome = compileBubbleGenerics ? inputModules[0] : null;

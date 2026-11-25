@@ -9,6 +9,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Numerics;
+using System.Security.Cryptography;
 using System.Text;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
@@ -32,6 +33,7 @@ namespace ILCompiler.ObjectWriter
 
         protected override CodeDataLayout LayoutMode => CodeDataLayout.Separate;
         private protected override bool ShouldDeduplicateFunctionBodies => true;
+        private protected override string WasmProducerName => "WebCIL";
 
         // We use 2 Wasm data segments for webcil,
         // 1 for the payload size, and the second for the payload itself.
@@ -460,19 +462,6 @@ namespace ILCompiler.ObjectWriter
                 return value;
             }
 
-            static void WriteULEB128(Stream stream, uint value)
-            {
-                do
-                {
-                    byte current = (byte)(value & 0x7F);
-                    value >>= 7;
-                    if (value != 0)
-                    {
-                        current |= 0x80;
-                    }
-                    stream.WriteByte(current);
-                } while (value != 0);
-            }
         }
 
         private protected override void EmitObjectFile(Stream outputFileStream)
@@ -574,6 +563,11 @@ namespace ILCompiler.ObjectWriter
             if (partition is not null)
                 auxiliaryCodeContentFileOffset = EmitAuxiliaryModule(outputFileStream, partition);
 
+            Span<byte> webcilBuildId = stackalloc byte[SHA256.HashSizeInBytes];
+            ComputeModuleHash(outputFileStream, webcilBuildId);
+            EmitProducersSection(outputFileStream);
+            EmitBuildIdSection(outputFileStream, webcilBuildId);
+
             if (_outputInfoBuilder is not null)
             {
                 // Populate the output section layout so OutputInfoBuilder.EnumerateMethods can resolve each
@@ -628,6 +622,24 @@ namespace ILCompiler.ObjectWriter
             {
                 WriteSymbolMap(GetAuxiliarySymbolMapPath(primaryModulePath), GetPartitionedFunctionNames(auxiliary: true, includeSharedImports: true));
             }
+        }
+
+        private static void ComputeModuleHash(Stream outputFileStream, Span<byte> hash)
+        {
+            long end = outputFileStream.Position;
+            outputFileStream.Position = 0;
+            SHA256.HashData(outputFileStream, hash);
+            outputFileStream.Position = end;
+        }
+
+        private static void EmitBuildIdSection(Stream outputFileStream, ReadOnlySpan<byte> buildId)
+        {
+            using var payload = new MemoryStream();
+            WriteULEB128(payload, checked((ulong)buildId.Length));
+            payload.Write(buildId);
+
+            var section = new WasmCustomSection(payload, new Utf8String("build_id"), sectionIndex: -1);
+            section.EmitToStream(outputFileStream);
         }
 
         private static void WriteSymbolMap(string path, IEnumerable<WasmSymbol> symbols)

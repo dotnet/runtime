@@ -19,8 +19,7 @@
     <WorkItemPrefix Condition="'$(WasmFingerprintAssets)' == 'false'">WBT-NoFingerprint-</WorkItemPrefix>
     <WorkItemPrefix Condition="'$(WasmBundlerFriendlyBootConfig)' == 'true'">WBT-JavascriptBundler-</WorkItemPrefix>
     <WorkItemPrefix Condition="'$(WasmRunWasmOpt)' == 'true'">WBT-WasmOpt-</WorkItemPrefix>
-    <WorkItemPrefix Condition="'$(RuntimeFlavor)' == 'Mono'">$(WorkItemPrefix)MONO-</WorkItemPrefix>
-    <WorkItemPrefix Condition="'$(RuntimeFlavor)' == 'CoreCLR'">$(WorkItemPrefix)CLR-</WorkItemPrefix>
+    <WorkItemPrefix>$(WorkItemPrefix)CLR-</WorkItemPrefix>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(Scenario)' == 'BuildWasmApps'">
