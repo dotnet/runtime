@@ -208,12 +208,13 @@ static RESULT test_fileio(void)
     CHECK(lstat("fifo", &link_status) == 0 && S_ISFIFO(link_status.st_mode), "FIFO was modified");
 #endif
 
-    CHECK(write_file("trace", "reader"), "unable to write reader file");
 #ifdef _WIN32
+    CHECK(write_file("trace", "reader"), "unable to write reader file");
     HANDLE reader = CreateFileW(L"trace", GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL,
         OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
     CHECK(reader != INVALID_HANDLE_VALUE, "unable to open reader");
     file = minipal_create_owner_only_file_for_overwrite("trace");
+    DWORD sharing_error = GetLastError();
     CloseHandle(reader);
     CHECK(file == -1, "replacement succeeded without delete sharing");
     CHECK(file_contains("trace", "reader"), "sharing failure modified the file");
@@ -228,17 +229,24 @@ static RESULT test_fileio(void)
         OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
     CHECK(reader != INVALID_HANDLE_VALUE, "unable to open reader with delete sharing");
     file = minipal_create_owner_only_file_for_overwrite("trace");
+    DWORD replacement_error = file == -1 ? GetLastError() : ERROR_SUCCESS;
     char reader_buffer[6];
     DWORD bytes_read = 0;
     bool old_file_preserved = ReadFile(reader, reader_buffer, sizeof(reader_buffer), &bytes_read, NULL) &&
         bytes_read == sizeof(reader_buffer) && memcmp(reader_buffer, "reader", sizeof(reader_buffer)) == 0;
     CloseHandle(reader);
-    CHECK(file != -1, "replacement failed with delete sharing");
+    if (file == -1)
+    {
+        result = FAILED("replacement failed with delete sharing (Win32 error %lu)", replacement_error);
+        goto Cleanup;
+    }
     CHECK(old_file_preserved, "open reader did not retain the old file");
     close_file(file);
     file = -1;
     CHECK(file_contains("trace", ""), "replacement was not empty");
+    CHECK(sharing_error == ERROR_SHARING_VIOLATION, "replacement failed for an unexpected reason");
 #else
+    CHECK(write_file("trace", "reader"), "unable to write reader file");
     int reader = open("trace", O_RDONLY);
     CHECK(reader != -1, "unable to open reader");
     file = minipal_create_owner_only_file_for_overwrite("trace");
