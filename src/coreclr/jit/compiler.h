@@ -7999,10 +7999,12 @@ protected:
     size_t              optCSEhashSize;                 // The current size of hashtable
     size_t              optCSEhashCount;                // Number of entries in hashtable
     size_t              optCSEhashMaxCountBeforeResize; // Number of entries before resize
+    bool                optCSEOccWeightsLive;           // Occurrence weights are being accumulated
     CSEdsc**            optCSEhash;
     CSEdsc**            optCSEtab;
 
     void optCSEstop();
+    void optValnumCSE_BackfillOccWeights();
 
     CSEdsc* optCSEfindDsc(unsigned index);
     bool optUnmarkCSE(GenTree* tree);

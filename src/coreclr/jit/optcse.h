@@ -385,6 +385,9 @@ struct CSEdsc
     weight_t csdDefWtCnt; // weighted def count
     weight_t csdUseWtCnt; // weighted use count  (excluding the implicit uses at defs)
 
+    weight_t csdSumOccWeight; // sum of occurrence block weights
+    weight_t csdMaxOccWeight; // maximum occurrence block weight
+
     treeStmtLst  csdTreeList; // list of matching tree nodes: head
     treeStmtLst* csdTreeLast; // list of matching tree nodes: tail
 
