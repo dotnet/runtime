@@ -60,15 +60,25 @@ namespace ILCompiler
             IEETypeNode dependencyType,
             string reason)
         {
-            TypeDesc type = dependencyType.Type;
+            AddTypeLoaderDependencies(dependencies, factory, dependencyType.Type, dependencyType, reason);
+        }
+
+        // Marks `dependency` once `type` is known to be creatable by the type loader at runtime.
+        public static void AddTypeLoaderDependencies(
+            List<DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry> dependencies,
+            NodeFactory factory,
+            TypeDesc type,
+            object dependency,
+            string reason)
+        {
             TypeDesc canonType = type.ConvertToCanonForm(CanonicalFormKind.Specific);
-            if (canonType != type && GenericTypesTemplateMap.IsEligibleToHaveATemplate(canonType))
-            {
-                dependencies.Add(new DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry(
-                    dependencyType,
-                    factory.NativeLayout.TemplateTypeLayout(canonType),
-                    reason));
-            }
-       }
+            if (canonType == type || !GenericTypesTemplateMap.IsEligibleToHaveATemplate(canonType))
+                return;
+
+            TypeLoaderArgumentGateNode firstGate = factory.TypeLoaderArgumentGate(type, 0);
+
+            dependencies.Add(new DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry(firstGate, factory.NativeLayout.TemplateTypeLayout(canonType), reason));
+            dependencies.Add(new DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry(dependency, firstGate.GetLast(factory), reason));
+        }
     }
 }
