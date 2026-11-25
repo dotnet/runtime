@@ -197,6 +197,64 @@ bool MethodTypeArgument::TryRead(Compiler*                     comp,
     return builder.Compose(sig, size, result);
 }
 
+// Compose a constructed type from this inlinee in the root method's context.
+bool Compiler::impReadInlineType(const CORINFO_RESOLVED_TOKEN& token, MethodTypeArgument* result)
+{
+    if (!compIsForInlining() || (token.pTypeSpec == nullptr) || (token.cbTypeSpec == 0) ||
+        (*token.pTypeSpec != ELEMENT_TYPE_GENERICINST) || (token.tokenScope != info.compScopeHnd) ||
+        (token.tokenContext != impTokenLookupContextHandle))
+    {
+        return false;
+    }
+
+    InlineCandidateInfo* candidate = impInlineInfo->inlineCandidateInfo;
+    PCCOR_SIGNATURE      sig       = token.pTypeSpec;
+    unsigned             size      = token.cbTypeSpec;
+    return (candidate->rootMethodArgs != nullptr) &&
+           MethodTypeArgument::TryRead(this, token, sig, size, candidate->rootMethodArgs,
+                                       info.compMethodInfo->args.sigInst.methInstCount, result) &&
+           (size == 0);
+}
+
+void Compiler::impRecordAllocatedType(unsigned lclNum, const CORINFO_RESOLVED_TOKEN& token)
+{
+    MethodTypeArgument type;
+    if (impReadInlineType(token, &type))
+    {
+        Compiler* root = impInlineRoot();
+        if (root->impLocalTypeExpressions == nullptr)
+        {
+            auto alloc                    = root->getAllocator(CMK_Inlining);
+            root->impLocalTypeExpressions = new (alloc) LocalTypeExpressionMap(alloc);
+        }
+        root->impLocalTypeExpressions->Set(lclNum, type);
+    }
+}
+
+MethodTypeArgument* Compiler::impLocalTypeExpression(GenTree* value)
+{
+    LocalTypeExpressionMap* types = impInlineRoot()->impLocalTypeExpressions;
+    if ((types != nullptr) && value->OperIs(GT_LCL_VAR) && value->TypeIs(TYP_REF))
+    {
+        unsigned   lclNum = value->AsLclVar()->GetLclNum();
+        LclVarDsc* local  = lvaGetDesc(lclNum);
+        if (local->lvSingleDef && !local->lvHasLdAddrOp && !local->IsAddressExposed())
+        {
+            return types->LookupPointer(lclNum);
+        }
+    }
+    return nullptr;
+}
+
+bool Compiler::impMatchesInlineType(GenTree* value, const CORINFO_RESOLVED_TOKEN& token)
+{
+    MethodTypeArgument* source = impLocalTypeExpression(value);
+    MethodTypeArgument  target;
+    return (source != nullptr) && impReadInlineType(token, &target) &&
+           (source->signatureSize == target.signatureSize) &&
+           (memcmp(source->signature, target.signature, target.signatureSize) == 0);
+}
+
 // Map callee method parameters to the parameters of the root caller. Keep the
 // usual dictionary lookup if any argument or enclosing binding is unavailable.
 MethodTypeArgument* Compiler::impForwardedMethodArgs(CORINFO_RESOLVED_TOKEN* token, unsigned arity)

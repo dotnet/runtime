@@ -92,9 +92,63 @@ public class ForwardedMethodTypeArgument
         public static Type Forward<U>(bool owner) => owner ? Inner<T>() : Inner<U>();
     }
 
+    private sealed class Box<T>
+    {
+        public Box() => s_constructions++;
+    }
+
+    private static int s_constructions;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static object Make<T>() => new Box<T>();
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static bool IsBox<U>(object value) => value is Box<U>;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool Same<T>() => IsBox<T>(Make<T>());
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool Other<T, U>() => IsBox<U>(Make<T>());
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void Observe(object value) => GC.KeepAlive(value);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool Copied<T>()
+    {
+        object value = Make<T>();
+        Observe(value);
+        return IsBox<T>(value);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool Choose<T, U>(bool first) => IsBox<T>(first ? Make<T>() : Make<U>());
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void Clear(ref object value) => value = null;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool Cleared<T>()
+    {
+        object value = Make<T>();
+        Clear(ref value);
+        return IsBox<T>(value);
+    }
+
     [Fact]
     public static void TestEntryPoint()
     {
+        int before = s_constructions;
+        Assert.True(Same<string>());
+        Assert.True(Copied<string>());
+        Assert.True(Other<string, string>());
+        Assert.False(Other<string, object>());
+        Assert.True(Choose<string, object>(true));
+        Assert.False(Choose<string, object>(false));
+        Assert.False(Cleared<string>());
+        Assert.Equal(before + 7, s_constructions);
+
         Assert.Equal(typeof(string), Outer<string, object>(true));
         Assert.Equal(typeof(object), Outer<string, object>(false));
         Assert.Equal(typeof(object), Outer<object, string>(true));

@@ -6038,6 +6038,14 @@ private:
 
     void impConvertToUserCallAndMarkForInlining(GenTreeCall* call);
     GenTree* impDeferredMethodContext(CORINFO_RESOLVED_TOKEN* token, CORINFO_CONTEXT_HANDLE targetContext, CORINFO_METHOD_HANDLE devirtualizedMethod = nullptr);
+    // Exact constructed types of single-definition reference locals during inlining, in the root context.
+    using LocalTypeExpressionMap = JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, MethodTypeArgument>;
+    LocalTypeExpressionMap* impLocalTypeExpressions = nullptr;
+    bool impReadInlineType(const CORINFO_RESOLVED_TOKEN& token, MethodTypeArgument* result);
+    bool impMatchesInlineType(GenTree* value, const CORINFO_RESOLVED_TOKEN& token);
+    void impRecordAllocatedType(unsigned lclNum, const CORINFO_RESOLVED_TOKEN& token);
+    MethodTypeArgument* impLocalTypeExpression(GenTree* value);
+
     MethodTypeArgument* impForwardedMethodArgs(CORINFO_RESOLVED_TOKEN* token, unsigned arity);
     bool getDevirtualizedMethodLookup(CORINFO_RESOLVED_TOKEN* target, CORINFO_METHOD_HANDLE caller, CORINFO_METHOD_HANDLE method,
                                       CORINFO_CONTEXT_HANDLE context, CORINFO_LOOKUP* result);

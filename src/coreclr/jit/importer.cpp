@@ -9407,6 +9407,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         lvaTable[lclNum].lvSingleDef = 1;
                         JITDUMP("Marked V%02u as a single def local\n", lclNum);
                         lvaSetClass(lclNum, resolvedToken.hClass, true /* is Exact */);
+                        impRecordAllocatedType(lclNum, resolvedToken);
 
                         newObjThisPtr = gtNewLclvNode(lclNum, TYP_REF);
                     }
@@ -10652,7 +10653,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 JITDUMP(" %08X", resolvedToken.token);
 
-                if (!IsAot())
+                bool matchesInlineType = compIsForInlining() && impMatchesInlineType(impStackTop().val, resolvedToken);
+                if (!IsAot() && !matchesInlineType)
                 {
                     op2 = impTokenToHandle(&resolvedToken);
                     if (op2 == nullptr)
@@ -10667,7 +10669,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 op1 = impPopStack().val;
 
-                GenTree* optTree = impOptimizeCastClassOrIsInst(op1, &resolvedToken, false);
+                // A successful isinst returns the original reference, including null.
+                GenTree* optTree = matchesInlineType ? op1 : impOptimizeCastClassOrIsInst(op1, &resolvedToken, false);
 
                 if (optTree != nullptr)
                 {

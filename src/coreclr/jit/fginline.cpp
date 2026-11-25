@@ -770,6 +770,14 @@ private:
 
                     m_madeChanges                    = true;
                     m_compiler->hasUpdatedTypeLocals = true;
+
+                    MethodTypeArgument* type = m_compiler->impLocalTypeExpression(value);
+                    if ((type != nullptr) && !lcl->lvIsParam && !lcl->lvHasLdAddrOp && !lcl->IsAddressExposed())
+                    {
+                        // Set may grow the map that owns the source entry.
+                        MethodTypeArgument copy = *type;
+                        m_compiler->impLocalTypeExpressions->Set(lclNum, copy);
+                    }
                 }
             }
 
@@ -1330,6 +1338,10 @@ void Compiler::fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result, 
         for (unsigned i = startVars; i < lvaCount; i++)
         {
             new (&lvaTable[i], jitstd::placement_t()) LclVarDsc(); // call the constructor.
+            if (impLocalTypeExpressions != nullptr)
+            {
+                impLocalTypeExpressions->Remove(i);
+            }
         }
 
         // Reset local var count and max bb num
