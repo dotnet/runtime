@@ -3,6 +3,12 @@
 
 public static class HelperCalls
 {
+    public static int Add(int left, int right) => checked(left + right);
+
+    public static int Divide(int dividend, int divisor) => dividend / divisor;
+
+    public static int GetElement(int[] array, int index) => array[index];
+
     public static int Sum(int count)
     {
         int result = 0;

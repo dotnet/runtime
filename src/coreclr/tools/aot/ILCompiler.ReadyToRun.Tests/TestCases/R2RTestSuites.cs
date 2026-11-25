@@ -505,6 +505,47 @@ public class R2RTestSuites
         }
     }
 
+    [ConditionalTheory(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
+    [InlineData(false, 1)]
+    [InlineData(false, 2)]
+    [InlineData(true, 1)]
+    [InlineData(true, 2)]
+    public void WasmManagedHelperInterpreterThunks(bool composite, int parallelism)
+    {
+        CompiledAssembly input = new()
+        {
+            AssemblyName = nameof(WasmManagedHelperInterpreterThunks),
+            SourceResourceNames = ["ManagedHelpers/HelperCalls.cs"],
+        };
+        List<Crossgen2Option> options = [Crossgen2Option.Optimize];
+        if (composite)
+            options.Add(Crossgen2Option.Composite);
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(WasmManagedHelperInterpreterThunks),
+            [
+                new(nameof(WasmManagedHelperInterpreterThunks), [new CrossgenAssembly(input)])
+                {
+                    Options = options,
+                    AdditionalArgs = ["--parallelism", parallelism.ToString()],
+                    OutputFileExtension = ".wasm",
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            foreach (string methodName in new[] { "Add", "Divide", "GetElement", "Sum" })
+            {
+                Assert.True(R2RAssert.HasCompiledMethod(reader, "HelperCalls", methodName,
+                    out string diagnostic), diagnostic);
+            }
+
+            // CoreLib is only a reference, and no ordinary call in the input supplies this thunk.
+            Assert.True(R2RAssert.HasStringThunk(reader, "Ivp", out string thunkDiagnostic), thunkDiagnostic);
+        }
+    }
+
     [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsNotWasmTarget))]
     public void BasicCrossModuleInlining()
     {

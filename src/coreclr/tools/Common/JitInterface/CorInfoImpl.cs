@@ -4168,6 +4168,8 @@ namespace Internal.JitInterface
             {
                 AddManagedHelperDependency(helper.Method);
             }
+
+            AddWasmManagedHelperThunkDependency(ftnNum);
 #endif
 
             if (pNativeEntrypoint != null)
