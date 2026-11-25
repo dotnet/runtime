@@ -593,32 +593,33 @@ public:
 #define BitScanForwardSizeT BitScanForward
 #endif
 
+        // A short bit vector is a single word. Treating it as an array of one word keeps a single call
+        // of "func", which helps the native compiler inline even large callbacks.
+        size_t        shortBits;
+        const size_t* words;
+        unsigned      len;
         if (BitSetOps::IsShort(env))
         {
-            size_t bits = reinterpret_cast<size_t>(bs);
-            DWORD  index;
-            while (BitScanForwardSizeT(&index, bits))
-            {
-                if (!func(index))
-                    return false;
-
-                bits ^= size_t(1) << index;
-            }
+            shortBits = reinterpret_cast<size_t>(bs);
+            words     = &shortBits;
+            len       = 1;
         }
         else
         {
-            unsigned len = BitSetTraits::GetArrSize(env);
-            for (unsigned i = 0; i < len; i++)
-            {
-                size_t bits = bs[i];
-                DWORD  index;
-                while (BitScanForwardSizeT(&index, bits))
-                {
-                    if (!func(i * BitsInSizeT + index))
-                        return false;
+            words = bs;
+            len   = BitSetTraits::GetArrSize(env);
+        }
 
-                    bits ^= size_t(1) << index;
-                }
+        for (unsigned i = 0; i < len; i++)
+        {
+            size_t bits = words[i];
+            DWORD  index;
+            while (BitScanForwardSizeT(&index, bits))
+            {
+                if (!func(i * BitsInSizeT + index))
+                    return false;
+
+                bits ^= size_t(1) << index;
             }
         }
 
@@ -652,32 +653,32 @@ public:
 #define BitScanReverseSizeT BitScanReverse
 #endif
 
+        // See VisitBits for why a short bit vector is treated as an array of one word.
+        size_t        shortBits;
+        const size_t* words;
+        unsigned      len;
         if (BitSetOps::IsShort(env))
         {
-            size_t bits = reinterpret_cast<size_t>(bs);
-            DWORD  index;
-            while (BitScanReverseSizeT(&index, bits))
-            {
-                if (!func(index))
-                    return false;
-
-                bits ^= size_t(1) << index;
-            }
+            shortBits = reinterpret_cast<size_t>(bs);
+            words     = &shortBits;
+            len       = 1;
         }
         else
         {
-            unsigned len = BitSetTraits::GetArrSize(env);
-            for (unsigned i = len; i != 0; i--)
-            {
-                size_t bits = bs[i - 1];
-                DWORD  index;
-                while (BitScanReverseSizeT(&index, bits))
-                {
-                    if (!func((i - 1) * BitsInSizeT + index))
-                        return false;
+            words = bs;
+            len   = BitSetTraits::GetArrSize(env);
+        }
 
-                    bits ^= size_t(1) << index;
-                }
+        for (unsigned i = len; i != 0; i--)
+        {
+            size_t bits = words[i - 1];
+            DWORD  index;
+            while (BitScanReverseSizeT(&index, bits))
+            {
+                if (!func((i - 1) * BitsInSizeT + index))
+                    return false;
+
+                bits ^= size_t(1) << index;
             }
         }
 
