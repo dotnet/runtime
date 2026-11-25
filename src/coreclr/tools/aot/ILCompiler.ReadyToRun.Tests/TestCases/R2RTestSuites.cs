@@ -634,26 +634,42 @@ public class R2RTestSuites
         static void Validate(ReadyToRunReader reader)
         {
             SignatureFormattingOptions formatting = new();
-            foreach (string enumerator in new[] { "ConstrainedCalls.Enumerator`1", "ConstrainedCalls.NoInliningEnumerator`1" })
+            bool foundEnumeratorDispose = false;
+            bool foundNoInliningEnumeratorDispose = false;
+            foreach (ReadyToRunImportSection section in reader.ImportSections)
             {
-                List<string> disposeImports = reader.ImportSections
-                    .SelectMany(section => section.Entries)
-                    .Where(entry => entry.Signature?.FixupKind is ReadyToRunFixupKind.MethodEntry
+                foreach (ReadyToRunImportSection.ImportSectionEntry entry in section.Entries)
+                {
+                    if (entry.Signature?.FixupKind is not (ReadyToRunFixupKind.MethodEntry
                         or ReadyToRunFixupKind.MethodEntry_DefToken
                         or ReadyToRunFixupKind.MethodEntry_RefToken
-                        or ReadyToRunFixupKind.MethodEntry_ReadyToRun)
-                    .Select(entry => entry.Signature.ToString(formatting))
-                    .Where(signature => signature.Contains(enumerator, StringComparison.Ordinal)
-                        && signature.Contains("Dispose", StringComparison.Ordinal))
-                    .ToList();
+                        or ReadyToRunFixupKind.MethodEntry_ReadyToRun))
+                    {
+                        continue;
+                    }
 
-                Assert.NotEmpty(disposeImports);
-                foreach (string signature in disposeImports)
-                {
+                    string signature = entry.Signature.ToString(formatting);
+                    if (!signature.Contains("Dispose", StringComparison.Ordinal))
+                    {
+                        continue;
+                    }
+
+                    bool isEnumerator = signature.Contains("ConstrainedCalls.Enumerator`1", StringComparison.Ordinal);
+                    bool isNoInliningEnumerator = signature.Contains("ConstrainedCalls.NoInliningEnumerator`1", StringComparison.Ordinal);
+                    if (!isEnumerator && !isNoInliningEnumerator)
+                    {
+                        continue;
+                    }
+
+                    foundEnumeratorDispose |= isEnumerator;
+                    foundNoInliningEnumeratorDispose |= isNoInliningEnumerator;
                     Assert.DoesNotContain("Marker", signature, StringComparison.Ordinal);
                     Assert.DoesNotContain(" @ ", signature, StringComparison.Ordinal);
                 }
             }
+
+            Assert.True(foundEnumeratorDispose, "Expected a MethodEntry import for Enumerator`1.Dispose");
+            Assert.True(foundNoInliningEnumeratorDispose, "Expected a MethodEntry import for NoInliningEnumerator`1.Dispose");
         }
     }
 
