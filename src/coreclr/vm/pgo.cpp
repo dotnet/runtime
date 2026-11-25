@@ -964,6 +964,28 @@ static UINT32 ReadPgoSchemaUInt32(const BYTE* data)
         (static_cast<UINT32>(data[3]) << 24);
 }
 
+void ReadyToRunLoadedImage::EnsurePgoSchemaOffsetsValidated(const BYTE* section, UINT32 sectionSize, UINT32 schemaCount)
+{
+    STANDARD_VM_CONTRACT;
+
+    if (m_pgoSchemaOffsetsValidated)
+        return;
+
+    // Composite components share this image and its immutable offset table.
+    UINT32 previousOffset = 12 + schemaCount * 4;
+    for (UINT32 i = 0; i <= schemaCount; i++)
+    {
+        UINT32 offset = ReadPgoSchemaUInt32(section + 8 + i * 4);
+        if (offset > sectionSize || (i == 0 ? offset != previousOffset : offset < previousOffset || offset - previousOffset < 8))
+            COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+        previousOffset = offset;
+    }
+    if (previousOffset != sectionSize)
+        COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+
+    m_pgoSchemaOffsetsValidated = true;
+}
+
 BYTE* PgoManager::allocPgoInstrumentationFromR2RSchema(Module* imageModule, MethodDesc* method, UINT32 schemaIndex)
 {
     STANDARD_VM_CONTRACT;
@@ -980,17 +1002,7 @@ BYTE* PgoManager::allocPgoInstrumentationFromR2RSchema(Module* imageModule, Meth
     UINT32 schemaCount = ReadPgoSchemaUInt32(section + 4);
     if (ReadPgoSchemaUInt32(section) != 1 || schemaCount > (directory->Size - 12) / 4 || schemaIndex >= schemaCount)
         COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
-    UINT32 tableEnd = 12 + schemaCount * 4;
-    UINT32 previousOffset = tableEnd;
-    for (UINT32 i = 0; i <= schemaCount; i++)
-    {
-        UINT32 offset = ReadPgoSchemaUInt32(section + 8 + i * 4);
-        if (offset > directory->Size || (i == 0 ? offset != tableEnd : offset < previousOffset || offset - previousOffset < 8))
-            COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
-        previousOffset = offset;
-    }
-    if (previousOffset != directory->Size)
-        COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+    image->EnsurePgoSchemaOffsetsValidated(section, directory->Size, schemaCount);
 
     UINT32 start = ReadPgoSchemaUInt32(section + 8 + schemaIndex * 4);
     UINT32 end = ReadPgoSchemaUInt32(section + 12 + schemaIndex * 4);

@@ -591,6 +591,10 @@ class ReadyToRunLoadedImage
 
     void(*m_pfnCleanup)(void*);
 
+#ifdef FEATURE_R2R_PGO
+    Volatile<bool> m_pgoSchemaOffsetsValidated = false;
+#endif
+
 public:
     ReadyToRunLoadedImage(TADDR m_pImageBase, uint32_t imageSize)
         : m_pImageBase(m_pImageBase), m_imageSize(imageSize), m_pImageCleanupData(nullptr), m_pfnCleanup(nullptr)
@@ -622,6 +626,10 @@ public:
     {
         return m_imageSize;
     }
+
+#ifdef FEATURE_R2R_PGO
+    void EnsurePgoSchemaOffsetsValidated(const BYTE* section, UINT32 sectionSize, UINT32 schemaCount);
+#endif
 
     TADDR GetDirectoryData(IMAGE_DATA_DIRECTORY* pDir, uint32_t* pSize = nullptr) const
     {
