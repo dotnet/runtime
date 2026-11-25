@@ -11540,17 +11540,17 @@ public:
 
         bool IsInstrumented() const
         {
-            return jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR);
+            return jitFlags->IsSet(JitFlags::JIT_FLAG_PGO_INSTR);
         }
 
         bool IsOptimizedWithProfile() const
         {
-            return OptimizationEnabled() && jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT);
+            return OptimizationEnabled() && jitFlags->IsSet(JitFlags::JIT_FLAG_PGO_OPT);
         }
 
         bool IsInstrumentedAndOptimized() const
         {
-            return IsInstrumented() && jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT);
+            return IsInstrumented() && jitFlags->IsSet(JitFlags::JIT_FLAG_PGO_OPT);
         }
 
         bool DoEarlyBlockMerging() const
