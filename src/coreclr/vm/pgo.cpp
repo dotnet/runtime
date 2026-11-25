@@ -1012,7 +1012,6 @@ BYTE* PgoManager::allocPgoInstrumentationFromR2RSchema(Module* imageModule, Meth
         COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
 
     StackSArray<ICorJitInfo::PgoInstrumentationSchema> schema;
-    StackSArray<UINT32> offsets;
     ICorJitInfo::PgoInstrumentationSchema previous = {};
     UINT32 storageEnd = 0;
     COR_ILMETHOD_DECODER ilHeader(method->GetILHeader());
@@ -1093,7 +1092,6 @@ BYTE* PgoManager::allocPgoInstrumentationFromR2RSchema(Module* imageModule, Meth
         storageEnd = offset + static_cast<UINT32>(recordBytes.Value());
         previous = item;
         schema.Append(item);
-        offsets.Append(offset);
     }
     if (storageEnd > UINT32_MAX - 7 || dataBytes != ((storageEnd + 7) & ~7u) || dataBytes == 0)
         COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
@@ -1101,11 +1099,6 @@ BYTE* PgoManager::allocPgoInstrumentationFromR2RSchema(Module* imageModule, Meth
     BYTE* data;
     IfFailThrow(allocPgoInstrumentationBySchema(method, &ilHeader, schema.OpenRawBuffer(), recordCount, &data));
     schema.CloseRawBuffer();
-    for (UINT32 i = 0; i < recordCount; i++)
-    {
-        if (schema[i].Offset != offsets[i])
-            COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
-    }
     return data;
 }
 #endif // FEATURE_R2R_PGO
@@ -1211,18 +1204,14 @@ HRESULT PgoManager::allocPgoInstrumentationBySchemaInstance(MethodDesc* pMD,
         prevSchema = pSchema[iSchema];
     }
 
-    S_SIZE_T allocationSize = S_SIZE_T(sizeof(HeaderList)) + S_SIZE_T(pSchema[countSchemaItems - 1].Offset) + S_SIZE_T(pSchema[countSchemaItems - 1].Count) * S_SIZE_T(InstrumentationKindToSize(pSchema[countSchemaItems - 1].InstrumentationKind));
+    S_SIZE_T dataEnd = S_SIZE_T(prevSchema.Offset) +
+        S_SIZE_T(prevSchema.Count) * S_SIZE_T(InstrumentationKindToSize(prevSchema.InstrumentationKind));
 #ifdef FEATURE_R2R_PGO
-    size_t dataEnd = offsetOfInstrumentationDataFromStartOfDataRegion;
-    for (UINT32 i = 0; i < countSchemaItems; i++)
-    {
-        S_SIZE_T end = S_SIZE_T(pSchema[i].Offset) +
-            S_SIZE_T(pSchema[i].Count) * S_SIZE_T(InstrumentationKindToSize(pSchema[i].InstrumentationKind));
-        if (end.IsOverflow() || end.Value() > UINT32_MAX - 7)
-            return E_OUTOFMEMORY;
-        dataEnd = max(dataEnd, end.Value());
-    }
-    allocationSize = S_SIZE_T(sizeof(HeaderList)) + S_SIZE_T(AlignUp(dataEnd, 8));
+    if (dataEnd.IsOverflow() || dataEnd.Value() > UINT32_MAX - 7)
+        return E_OUTOFMEMORY;
+    S_SIZE_T allocationSize = S_SIZE_T(sizeof(HeaderList)) + S_SIZE_T(AlignUp(dataEnd.Value(), 8));
+#else
+    S_SIZE_T allocationSize = S_SIZE_T(sizeof(HeaderList)) + dataEnd;
 #endif
 
     if (allocationSize.IsOverflow())
