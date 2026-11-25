@@ -523,13 +523,22 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
                 private sealed class DelegateReceiver
                 {
                     private readonly int _offset;
+                    public int Calls { get; private set; }
 
                     public DelegateReceiver(int offset) => _offset = offset;
 
                     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                    public int DelegateHot(int value) => _offset + value + 731;
+                    public int DelegateHot(int value)
+                    {
+                        Calls++;
+                        return _offset + value + 731;
+                    }
 
-                    public int DelegateCold(int value) => _offset - value;
+                    public int DelegateCold(int value)
+                    {
+                        Calls++;
+                        return _offset - value;
+                    }
                 }
 
                 [MethodImpl(MethodImplOptions.NoInlining)]
@@ -543,6 +552,8 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
 
                 [MethodImpl(MethodImplOptions.NoInlining)]
                 private static int ProfiledDelegate(Func<int, int> target, int value) => target(value) ^ 1;
+
+                private static int StaticDelegateTarget(int value) => 2 * value;
 
                 public static void CheckTypes(int iteration)
                 {
@@ -562,10 +573,13 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
                         if (ProfiledCast(null) is not null || ProfiledCast(new object()) is not null)
                             throw new Exception("Cast did not preserve the null or miss path.");
 
-                        Func<int, int> multicast = target.DelegateHot;
-                        multicast += target.DelegateCold;
+                        var multicastHot = new DelegateReceiver(200);
+                        var multicastCold = new DelegateReceiver(200);
+                        Func<int, int> multicast = multicastHot.DelegateHot;
+                        multicast += multicastCold.DelegateCold;
                         if (ProfiledDelegate(multicast, iteration) != ((200 - iteration) ^ 1) ||
-                            ProfiledDelegate(static value => 2 * value, iteration) != (2 * iteration ^ 1))
+                            multicastHot.Calls != 1 || multicastCold.Calls != 1 ||
+                            ProfiledDelegate(StaticDelegateTarget, iteration) != (2 * iteration ^ 1))
                             throw new Exception("Delegate dispatch did not preserve the multicast or static fallback.");
 
                         try
