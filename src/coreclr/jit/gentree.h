@@ -9224,8 +9224,6 @@ struct MethodTypeArgument
                         const CORINFO_RESOLVED_TOKEN& source,
                         PCCOR_SIGNATURE&              sig,
                         unsigned&                     size,
-                        const MethodTypeArgument*     bindings,
-                        unsigned                      arity,
                         MethodTypeArgument*           result);
 };
 

@@ -6057,7 +6057,7 @@ private:
     void impRecordAllocatedType(unsigned lclNum, const CORINFO_RESOLVED_TOKEN& token);
     MethodTypeArgument* impLocalTypeExpression(GenTree* value);
 
-    MethodTypeArgument* impForwardedMethodArgs(CORINFO_RESOLVED_TOKEN* token, unsigned arity);
+    MethodTypeArgument* impForwardedTypeArgs(const CORINFO_RESOLVED_TOKEN& token, unsigned arity, CORINFO_METHOD_HANDLE declaringMethod);
     bool getDevirtualizedMethodLookup(CORINFO_RESOLVED_TOKEN* target, CORINFO_METHOD_HANDLE caller, CORINFO_METHOD_HANDLE method,
                                       CORINFO_CONTEXT_HANDLE context, CORINFO_LOOKUP* result);
     GenTree* fgMaterializeDeferredLookup(GenTreeRuntimeLookup* tree);

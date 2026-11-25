@@ -19,12 +19,64 @@ bool ReadCompressedUnsigned(PCCOR_SIGNATURE& sig, unsigned& size, uint32_t* valu
     return true;
 }
 
-// Substitute root method parameters. Only root metadata tokens can be copied
+// A missing environment denotes the root. A missing binding inside an inlinee
+// means the expression cannot be translated into the root context.
+bool GetParameterBinding(Compiler* comp, CorElementType kind, unsigned index, const MethodTypeArgument** binding)
+{
+    const bool              method = kind == ELEMENT_TYPE_MVAR;
+    const CORINFO_SIG_INST& inst   = comp->info.compMethodInfo->args.sigInst;
+    if (index >= (method ? inst.methInstCount : inst.classInstCount))
+    {
+        return false;
+    }
+    *binding = nullptr;
+    if (comp->compIsForInlining())
+    {
+        const InlineCandidateInfo* environment = comp->impInlineInfo->inlineCandidateInfo;
+        const MethodTypeArgument*  args        = method ? environment->rootMethodArgs : environment->rootClassArgs;
+        if (args == nullptr)
+        {
+            return false;
+        }
+        *binding = &args[index];
+    }
+    return true;
+}
+
+// Read the class/value-type marker and the TypeDefOrRef following GENERICINST.
+bool ReadGenericDefinition(PCCOR_SIGNATURE& sig, unsigned& size, mdToken* token)
+{
+    if ((size == 0) || ((*sig != ELEMENT_TYPE_CLASS) && (*sig != ELEMENT_TYPE_VALUETYPE)))
+    {
+        return false;
+    }
+    sig++;
+    size--;
+    uint32_t coded;
+    if (!ReadCompressedUnsigned(sig, size, &coded) || ((coded >> 2) == 0) || ((coded >> 2) > 0x00FFFFFF) ||
+        ((coded & 3) > 1))
+    {
+        return false;
+    }
+    *token = TokenFromRid(coded >> 2, (coded & 1) ? mdtTypeRef : mdtTypeDef);
+    return true;
+}
+
+CORINFO_CLASS_HANDLE ResolveGenericDefinition(Compiler* comp, const CORINFO_RESOLVED_TOKEN& source, mdToken token)
+{
+    CORINFO_RESOLVED_TOKEN definition{};
+    definition.tokenScope   = source.tokenScope;
+    definition.tokenContext = source.tokenContext;
+    definition.token        = token;
+    definition.tokenType    = CORINFO_TOKENKIND_TypeExpressionDefinition;
+    comp->info.compCompHnd->resolveToken(&definition);
+    return definition.hClass;
+}
+
+// Substitute class and method parameters. Only root metadata tokens can be copied
 // verbatim. Ask the EE for the identity of a foreign generic definition.
 class InlineTypeSignature
 {
-    const MethodTypeArgument*     m_bindings;
-    unsigned                      m_arity;
     Compiler*                     m_comp;
     const CORINFO_RESOLVED_TOKEN& m_source;
     BYTE                          m_bytes[MethodTypeArgument::MaxSignatureSize];
@@ -54,38 +106,28 @@ class InlineTypeSignature
         PCCOR_SIGNATURE start = sig;
         CorElementType  type  = (CorElementType)*sig++;
         size--;
-        if (type == ELEMENT_TYPE_VAR)
+        if ((type == ELEMENT_TYPE_VAR) || (type == ELEMENT_TYPE_MVAR))
         {
-            // Only the root's own declaring type is relative to the root dictionary.
-            uint32_t index;
-            if (m_comp->compIsForInlining() || !ReadCompressedUnsigned(sig, size, &index) ||
-                (index >= m_comp->info.compMethodInfo->args.sigInst.classInstCount))
+            m_usesParameter = true;
+            uint32_t                  index;
+            const MethodTypeArgument* binding;
+            if (!ReadCompressedUnsigned(sig, size, &index) || !GetParameterBinding(m_comp, type, index, &binding))
             {
                 return false;
             }
-            m_usesParameter = true;
-            return Append(start, (unsigned)(sig - start));
-        }
-        if (type == ELEMENT_TYPE_MVAR)
-        {
-            m_usesParameter = true;
-            uint32_t index;
-            if (!ReadCompressedUnsigned(sig, size, &index) || (index >= m_arity))
+            if (binding == nullptr)
             {
-                return false;
+                return Append(start, (unsigned)(sig - start));
             }
-            if (m_bindings != nullptr)
+            if (binding->signature != nullptr)
             {
-                const MethodTypeArgument& arg = m_bindings[index];
-                if (arg.signature != nullptr)
-                {
-                    m_depth = max(m_depth, depth + arg.depth);
-                    return (m_depth <= MethodTypeArgument::MaxDepth) && Append(arg.signature, arg.signatureSize);
-                }
-                index = arg.index;
+                m_depth = max(m_depth, depth + binding->depth);
+                return (m_depth <= MethodTypeArgument::MaxDepth) && Append(binding->signature, binding->signatureSize);
             }
+            // A bare projection always denotes a method parameter of the root,
+            // even if it was substituted for a class parameter of this inlinee.
             BYTE     parameter[5] = {ELEMENT_TYPE_MVAR};
-            unsigned bytes        = CorSigCompressData(index, parameter + 1);
+            unsigned bytes        = CorSigCompressData(binding->index, parameter + 1);
             return Append(parameter, 1 + bytes);
         }
 
@@ -98,18 +140,10 @@ class InlineTypeSignature
         {
             return Append(start, 1);
         }
-        if ((type != ELEMENT_TYPE_GENERICINST) || (size < 3) ||
-            ((*sig != ELEMENT_TYPE_CLASS) && (*sig != ELEMENT_TYPE_VALUETYPE)))
-        {
-            return false;
-        }
-
-        sig++;
-        size--;
-        uint32_t typeToken, count;
-        if (!ReadCompressedUnsigned(sig, size, &typeToken) || ((typeToken >> 2) == 0) ||
-            ((typeToken >> 2) > 0x00FFFFFF) || ((typeToken & 3) > 1) || !ReadCompressedUnsigned(sig, size, &count) ||
-            (count == 0) || (count > size))
+        mdToken  typeToken;
+        uint32_t count;
+        if ((type != ELEMENT_TYPE_GENERICINST) || !ReadGenericDefinition(sig, size, &typeToken) ||
+            !ReadCompressedUnsigned(sig, size, &count) || (count == 0) || (count > size))
         {
             return false;
         }
@@ -123,21 +157,15 @@ class InlineTypeSignature
         }
         else
         {
-            CORINFO_RESOLVED_TOKEN definition{};
-            definition.tokenScope   = m_source.tokenScope;
-            definition.tokenContext = m_source.tokenContext;
-            definition.token        = TokenFromRid(typeToken >> 2, (typeToken & 1) ? mdtTypeRef : mdtTypeDef);
-            definition.tokenType    = CORINFO_TOKENKIND_TypeExpressionDefinition;
-            m_comp->info.compCompHnd->resolveToken(&definition);
-            if ((definition.hClass == nullptr) ||
-                (m_comp->eeIsValueClass(definition.hClass) != (start[1] == ELEMENT_TYPE_VALUETYPE)))
+            CORINFO_CLASS_HANDLE definition = ResolveGenericDefinition(m_comp, m_source, typeToken);
+            if ((definition == nullptr) || (m_comp->eeIsValueClass(definition) != (start[1] == ELEMENT_TYPE_VALUETYPE)))
             {
                 return false;
             }
             BYTE          header[] = {ELEMENT_TYPE_GENERICINST, ELEMENT_TYPE_INTERNAL};
             BYTE          arity[4];
             unsigned      aritySize = CorSigCompressData(count, arity);
-            target_size_t handle    = static_cast<target_size_t>(reinterpret_cast<uintptr_t>(definition.hClass));
+            target_size_t handle    = static_cast<target_size_t>(reinterpret_cast<uintptr_t>(definition));
             if (!Append(header, sizeof(header)) || !Append(reinterpret_cast<const BYTE*>(&handle), sizeof(handle)) ||
                 !Append(arity, aritySize))
             {
@@ -156,13 +184,8 @@ class InlineTypeSignature
     }
 
 public:
-    InlineTypeSignature(const MethodTypeArgument*     bindings,
-                        unsigned                      arity,
-                        Compiler*                     comp,
-                        const CORINFO_RESOLVED_TOKEN& source)
-        : m_bindings(bindings)
-        , m_arity(arity)
-        , m_comp(comp)
+    InlineTypeSignature(Compiler* comp, const CORINFO_RESOLVED_TOKEN& source)
+        : m_comp(comp)
         , m_source(source)
     {
     }
@@ -185,20 +208,19 @@ bool MethodTypeArgument::TryRead(Compiler*                     comp,
                                  const CORINFO_RESOLVED_TOKEN& source,
                                  PCCOR_SIGNATURE&              sig,
                                  unsigned&                     size,
-                                 const MethodTypeArgument*     bindings,
-                                 unsigned                      arity,
                                  MethodTypeArgument*           result)
 {
-    if ((size >= 2) && (*sig == ELEMENT_TYPE_MVAR))
+    if ((size >= 2) && ((*sig == ELEMENT_TYPE_MVAR) || ((*sig == ELEMENT_TYPE_VAR) && comp->compIsForInlining())))
     {
-        sig++;
+        CorElementType kind = static_cast<CorElementType>(*sig++);
         size--;
-        uint32_t index;
-        if (!ReadCompressedUnsigned(sig, size, &index) || (index >= arity))
+        uint32_t                  index;
+        const MethodTypeArgument* binding;
+        if (!ReadCompressedUnsigned(sig, size, &index) || !GetParameterBinding(comp, kind, index, &binding))
         {
             return false;
         }
-        *result = bindings == nullptr ? MethodTypeArgument{index, 0, 0, nullptr} : bindings[index];
+        *result = binding == nullptr ? MethodTypeArgument{index, 0, 0, nullptr} : *binding;
         return true;
     }
     if ((size == 0) ||
@@ -206,7 +228,7 @@ bool MethodTypeArgument::TryRead(Compiler*                     comp,
     {
         return false;
     }
-    InlineTypeSignature builder(bindings, arity, comp, source);
+    InlineTypeSignature builder(comp, source);
     return builder.Compose(sig, size, result);
 }
 
@@ -220,11 +242,9 @@ bool Compiler::impReadInlineType(const CORINFO_RESOLVED_TOKEN& token, MethodType
         return false;
     }
 
-    const MethodTypeArgument* bindings = nullptr;
     if (compIsForInlining())
     {
-        bindings = impInlineInfo->inlineCandidateInfo->rootMethodArgs;
-        if (bindings == nullptr)
+        if (impInlineInfo->inlineCandidateInfo->rootMethodArgs == nullptr)
         {
             return false;
         }
@@ -235,9 +255,7 @@ bool Compiler::impReadInlineType(const CORINFO_RESOLVED_TOKEN& token, MethodType
     }
     PCCOR_SIGNATURE sig  = token.pTypeSpec;
     unsigned        size = token.cbTypeSpec;
-    return MethodTypeArgument::TryRead(this, token, sig, size, bindings,
-                                       info.compMethodInfo->args.sigInst.methInstCount, result) &&
-           (size == 0);
+    return MethodTypeArgument::TryRead(this, token, sig, size, result) && (size == 0);
 }
 
 void Compiler::impRecordAllocatedType(unsigned lclNum, const CORINFO_RESOLVED_TOKEN& token)
@@ -304,41 +322,63 @@ void Compiler::impRememberTypeCheck(GenTree*                      check,
     Metrics.InlineTypeCheck++;
 }
 
-// Map callee method parameters to the parameters of the root caller. Keep the
-// usual dictionary lookup if any argument or enclosing binding is unavailable.
-MethodTypeArgument* Compiler::impForwardedMethodArgs(CORINFO_RESOLVED_TOKEN* token, unsigned arity)
+// Express the actual arguments of a MethodSpec or declaring TypeSpec in the root context.
+MethodTypeArgument* Compiler::impForwardedTypeArgs(const CORINFO_RESOLVED_TOKEN& token,
+                                                   unsigned                      arity,
+                                                   CORINFO_METHOD_HANDLE         declaringMethod)
 {
-    InlineCandidateInfo* parent = compIsForInlining() ? impInlineInfo->inlineCandidateInfo : nullptr;
-    if ((parent != nullptr) && (parent->rootMethodArgs == nullptr))
+    if ((arity == 0) || (compIsForInlining() && (impInlineInfo->inlineCandidateInfo->rootMethodArgs == nullptr)))
     {
         return nullptr;
     }
 
-    PCCOR_SIGNATURE sig  = token->pMethodSpec;
-    unsigned        size = token->cbMethodSpec;
-    if ((sig == nullptr) || (size < 2) || (*sig++ != IMAGE_CEE_CS_CALLCONV_GENERICINST))
+    PCCOR_SIGNATURE sig;
+    unsigned        size;
+    if (declaringMethod == nullptr)
     {
-        return nullptr;
+        sig  = token.pMethodSpec;
+        size = token.cbMethodSpec;
+        if ((size < 2) || (sig == nullptr) || (*sig++ != IMAGE_CEE_CS_CALLCONV_GENERICINST))
+        {
+            return nullptr;
+        }
+        size--;
     }
-    size--;
-    uint32_t count, bytes;
-    if (FAILED(CorSigUncompressData(sig, size, &count, &bytes)) || (count == 0) || (count != arity))
+    else
     {
-        return nullptr;
-    }
-    sig += bytes;
-    size -= bytes;
-    if (count > size / 2)
-    {
-        return nullptr;
+        sig  = token.pTypeSpec;
+        size = token.cbTypeSpec;
+        if ((size < 2) || (sig == nullptr) || (*sig++ != ELEMENT_TYPE_GENERICINST))
+        {
+            return nullptr;
+        }
+        size--;
+
+        // A MemberRef may name a derived type while the body is inherited. Its
+        // TypeSpec then describes different parameters from the inlinee's !n.
+        mdToken definition;
+        if (!ReadGenericDefinition(sig, size, &definition))
+        {
+            return nullptr;
+        }
+
+        CORINFO_CLASS_HANDLE declared = ResolveGenericDefinition(this, token, definition);
+        if ((declared == nullptr) ||
+            (declared != info.compCompHnd->getTypeDefinition(info.compCompHnd->getMethodClass(declaringMethod))))
+        {
+            return nullptr;
+        }
     }
 
+    uint32_t count;
+    if (!ReadCompressedUnsigned(sig, size, &count) || (count != arity) || (count > size / 2))
+    {
+        return nullptr;
+    }
     MethodTypeArgument* args = getAllocator(CMK_Inlining).allocate<MethodTypeArgument>(count);
     for (unsigned i = 0; i < count; i++)
     {
-        if (!MethodTypeArgument::TryRead(this, *token, sig, size,
-                                         (parent == nullptr) ? nullptr : parent->rootMethodArgs,
-                                         info.compMethodInfo->args.sigInst.methInstCount, &args[i]))
+        if (!MethodTypeArgument::TryRead(this, token, sig, size, &args[i]))
         {
             return nullptr;
         }
@@ -1271,7 +1311,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             if ((opcode == CEE_CALL) && (callInfo->methodInstantiationOffset != 0) &&
                 (TypeFromToken(pResolvedToken->token) == mdtMethodSpec) && !IsAot() && !opts.MinOpts())
             {
-                forwardedArgs = impForwardedMethodArgs(pResolvedToken, sig->sigInst.methInstCount);
+                forwardedArgs = impForwardedTypeArgs(*pResolvedToken, sig->sigInst.methInstCount, nullptr);
             }
 
             if (forwardedArgs != nullptr)
@@ -1794,7 +1834,9 @@ DONE:
         {
             InlineCandidateInfo* candidate = call->AsCall()->GetSingleInlineCandidateInfo();
             assert(candidate->methInfo.args.sigInst.methInstCount == sig->sigInst.methInstCount);
-            candidate->rootMethodArgs          = forwardedArgs;
+            candidate->rootMethodArgs = forwardedArgs;
+            candidate->rootClassArgs =
+                impForwardedTypeArgs(*pResolvedToken, candidate->methInfo.args.sigInst.classInstCount, forwardedTarget);
             candidate->rootInstantiationOffset = compIsForInlining()
                                                      ? impInlineInfo->inlineCandidateInfo->rootInstantiationOffset
                                                      : callInfo->methodInstantiationOffset;

@@ -93,6 +93,21 @@ public class ForwardedMethodTypeArgument
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static Type Both<U>() => Inner<Dictionary<T, U>>();
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static Type Swap<U>() => CalleeOwner<U>.Pair<T>();
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static Type Nested<U>() => CalleeOwner<U>.Relay<T>();
+    }
+
+    private class CalleeOwner<A>
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Type Pair<B>() => typeof(Dictionary<A, B>);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Type Relay<B>() => CalleeOwner<List<B[]>>.Pair<A>();
     }
 
     private sealed class Box<T>
@@ -227,6 +242,9 @@ public class ForwardedMethodTypeArgument
         Assert.Equal(typeof(Dictionary<string, int[]>), Compound<int>());
         Assert.Equal(typeof(ForwardedArgumentBox<PairType<string, object>>), CrossModule<string, object>());
         Assert.Equal(typeof(ForwardedArgumentBox<PairType<object, string>>), CrossModule<object, string>());
+        Assert.Equal(typeof(Dictionary<object, string>), Owner<string>.Swap<object>());
+        Assert.Equal(typeof(Dictionary<string, object>), Owner<object>.Swap<string>());
+        Assert.Equal(typeof(Dictionary<List<string[]>, object>), Owner<string>.Nested<object>());
         Assert.Equal(typeof(Dictionary<string, object>), Owner<string>.Both<object>());
         Assert.Equal(typeof(Dictionary<object, string>), Owner<object>.Both<string>());
         Assert.Equal(typeof(string), Owner<string>.Forward<object>(true));
