@@ -803,11 +803,7 @@ CONFIG_STRING(JitEnablePatchpointRange, "JitEnablePatchpointRange")
 
 // Profile instrumentation options
 RELEASE_CONFIG_INTEGER(JitInterlockedProfiling, "JitInterlockedProfiling", 0)
-#ifdef FEATURE_R2R_PGO
-RELEASE_CONFIG_INTEGER(JitScalableProfiling, "JitScalableProfiling", 0)
-#else
 RELEASE_CONFIG_INTEGER(JitScalableProfiling, "JitScalableProfiling", 1)
-#endif                                                            // FEATURE_R2R_PGO
 RELEASE_CONFIG_INTEGER(JitCounterPadding, "JitCounterPadding", 0) // number of unused extra slots per counter
 RELEASE_CONFIG_INTEGER(JitMinimalJitProfiling, "JitMinimalJitProfiling", 1)
 RELEASE_CONFIG_INTEGER(JitMinimalPrejitProfiling, "JitMinimalPrejitProfiling", 0)
@@ -821,11 +817,7 @@ RELEASE_CONFIG_INTEGER(JitClassProfiling, "JitClassProfiling", 1)       // Profi
 RELEASE_CONFIG_INTEGER(JitDelegateProfiling, "JitDelegateProfiling", 1) // Profile resolved delegate call targets
 RELEASE_CONFIG_INTEGER(JitVTableProfiling, "JitVTableProfiling", 0)     // Profile resolved vtable call targets
 RELEASE_CONFIG_INTEGER(JitEdgeProfiling, "JitEdgeProfiling", 1)         // Profile edges instead of blocks
-#ifdef FEATURE_R2R_PGO
-RELEASE_CONFIG_INTEGER(JitCollect64BitCounts, "JitCollect64BitCounts", 1) // Collect counts as 64-bit values.
-#else
 RELEASE_CONFIG_INTEGER(JitCollect64BitCounts, "JitCollect64BitCounts", 0) // Collect counts as 64-bit values.
-#endif // FEATURE_R2R_PGO
 
 CONFIG_INTEGER(JitInstrumentIfOptimizing, "JitInstrumentIfOptimizing", 0) // 1: Always add instrumentation if optimizing
                                                                           // and not prejitting
