@@ -218,6 +218,7 @@ static insTupleType insTupleTypeInfo(instruction ins);
 #define REX2_PREFIX_CODE_2BYTE 0xD50000000000ULL
 
 bool TakesRex2Prefix(const instrDesc* id) const;
+bool NeedsLegacyOperandSizePrefix(const instrDesc* id) const;
 //------------------------------------------------------------------------
 // hasEvexPrefix: Returns true if the instruction encoding already
 // contains Evex prefix.

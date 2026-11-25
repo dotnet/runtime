@@ -17,6 +17,8 @@ namespace ILCompiler.ObjectWriter
 {
     internal sealed partial class WasmRelocatableObjectWriter : WasmObjectWriter
     {
+        private protected override string WasmProducerName => "ILCompiler";
+
         private WasmDataSection _dataSection;
         private DwarfBuilder _dwarfBuilder;
         private SectionWriter _pdataSectionWriter;
@@ -159,6 +161,10 @@ namespace ILCompiler.ObjectWriter
 
             using MemoryStream linking = CreateLinkingSection(fileSectionIndices);
             sections.Add(new WasmCustomSection(linking, new Utf8String("linking"), sections.Count));
+            using MemoryStream producers = CreateProducersSectionPayload();
+            // Metadata custom sections are not linkable sections. Emit producers after the mandatory
+            // linking section without adding it to the linking symbol table or relocation bookkeeping.
+            sections.Add(new WasmCustomSection(producers, new Utf8String("producers"), sections.Count));
             Dictionary<int, (string Name, MemoryStream Entries, int Count)> relocationSections = new();
             try
             {
@@ -337,24 +343,11 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        private static void WriteULEB128(Stream stream, ulong value)
-        {
-            Span<byte> buffer = stackalloc byte[10];
-            int size = DwarfHelper.WriteULEB128(buffer, value);
-            stream.Write(buffer.Slice(0, size));
-        }
-
         private static void WriteSLEB128(Stream stream, long value)
         {
             Span<byte> buffer = stackalloc byte[10];
             int size = DwarfHelper.WriteSLEB128(buffer, value);
             stream.Write(buffer.Slice(0, size));
-        }
-
-        private static void WriteName(Stream stream, Utf8String name)
-        {
-            WriteULEB128(stream, (ulong)name.Length); // name_len: the length of name_data in bytes.
-            stream.Write(name.AsSpan()); // name_data: UTF-8 encoding of the name.
         }
 
         private static void WriteSubsection(Stream stream, byte kind, MemoryStream payload)

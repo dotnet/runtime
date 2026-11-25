@@ -74,6 +74,20 @@ namespace System.Reflection.Metadata.Tests
         [InlineData("EscapeNonSpecialChar\\a")]
         [InlineData("EscapeNonSpecialChar\\0")]
         [InlineData("DoubleNestingChar++Bla")]
+        [InlineData("\0")]
+        [InlineData("\0System.Int32")]
+        [InlineData("System.In\0t32")]
+        [InlineData("System.Int32\0")]
+        [InlineData("System.Int32\0junk")]
+        [InlineData("System.Environment\0x+SpecialFolder")]
+        [InlineData("System.Environment+SpecialFolder\0x")]
+        [InlineData("System.Collections.Generic.List`1[System.Int32\0zz]")]
+        [InlineData("System.Collections.Generic.List`1[[System.Int32\0zz]]")]
+        [InlineData("System.Collections.Generic.List`1[[System.Int32\0zz, System.Private.CoreLib]]")]
+        [InlineData("System.Diagnostics.Process\0x, System.Diagnostics.Process")]
+        [InlineData("System.Int32, System.Private.CoreLib\0x")]
+        [InlineData("Escaped\\+Name\0junk")]
+        [InlineData("Escaped\\\0Name")]
         public void InvalidTypeNamesAreNotAllowed(string input)
         {
             Assert.Throws<ArgumentException>(() => TypeName.Parse(input.AsSpan()));
@@ -860,6 +874,30 @@ namespace System.Reflection.Metadata.Tests
         {
             AssertExtensions.Throws<ArgumentNullException>("metadataName", () => TypeName.CreateSimpleTypeName(null!));
             AssertExtensions.Throws<ArgumentException>("metadataName", () => TypeName.CreateSimpleTypeName(""));
+        }
+
+        [Theory]
+        [InlineData("\0", "\0")]
+        [InlineData("\0Name", "\0Name")]
+        [InlineData("Na\0me", "Na\0me")]
+        [InlineData("Name\0", "Name\0")]
+        [InlineData("Name+\0", "Name\\+\0")]
+        [InlineData("Name\\\0", "Name\\\\\0")]
+        [InlineData("\0+Name", "\0\\+Name")]
+        public void CreateSimpleTypeName_PreservesNullCharacter(string metadataName, string expectedFullName)
+        {
+            TypeName declaringType = TypeName.CreateSimpleTypeName("Declaring");
+            foreach (string prefix in new[] { "", new string('a', 128) })
+            {
+                string name = prefix + metadataName;
+                TypeName created = TypeName.CreateSimpleTypeName(name);
+                Assert.Equal(prefix + expectedFullName, created.FullName);
+                Assert.Equal(name, TypeName.Unescape(created.FullName));
+
+                TypeName nested = TypeName.CreateSimpleTypeName(name, declaringType);
+                Assert.Equal("Declaring+" + prefix + expectedFullName, nested.FullName);
+                Assert.Same(declaringType, nested.DeclaringType);
+            }
         }
 
         [Theory]

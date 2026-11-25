@@ -1037,6 +1037,10 @@ public:
 
     void UpdateRegDisplay_Impl(const PREGDISPLAY, bool updateFloats = false);
 
+#ifdef FEATURE_INTERPRETER
+    BOOL IsInInterpreter();
+#endif // FEATURE_INTERPRETER
+
     friend struct ::cdac_data<FaultingExceptionFrame>;
 };
 
@@ -2148,9 +2152,9 @@ public:
     VOID Init();
 };
 
-#ifdef TARGET_X86
+#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
 bool isRetAddr(TADDR retAddr, TADDR* whereCalled);
-#endif // TARGET_X86
+#endif // TARGET_X86 && TARGET_WINDOWS
 
 #ifdef TARGET_X86
 //------------------------------------------------------------------------

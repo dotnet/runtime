@@ -26,6 +26,10 @@ namespace System.Reflection.Metadata.Tests
         [InlineData("Worst\\[\\]\\&\\*\\,\\+Case", 21, false)]
         [InlineData("EscapingSthThatShouldNotBeEscaped\\A", -1 , false)]
         [InlineData("EndsWithEscaping\\", -1, false)]
+        [InlineData("\0", 0, false)]
+        [InlineData("ABC\0junk", 3, false)]
+        [InlineData("Requires\\+Escaping\0junk", 18, false)]
+        [InlineData("Escaped\\\0Name", -1, false)]
         public void GetFullTypeNameLengthReturnsExpectedValue(string input, int expected, bool expectedIsNested)
         {
             Assert.Equal(expected, TypeNameParserHelpers.GetFullTypeNameLength(input.AsSpan(), out bool isNested));

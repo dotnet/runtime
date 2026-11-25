@@ -27,9 +27,9 @@ public:
         JIT_FLAG_RELOC                   = 15, // Generate relocatable code
         JIT_FLAG_IL_STUB                 = 16, // method is an IL stub
         JIT_FLAG_PROCSPLIT               = 17, // JIT should separate code into hot and cold sections
-        JIT_FLAG_BBINSTR                 = 18, // Collect basic block profile information
-        JIT_FLAG_BBINSTR_IF_LOOPS        = 19, // JIT must instrument current method if it has loops
-        JIT_FLAG_BBOPT                   = 20, // Optimize method based on profile information
+        JIT_FLAG_PGO_INSTR               = 18, // Collect profile data for PGO
+        JIT_FLAG_PGO_INSTR_IF_LOOPS      = 19, // JIT must instrument current method if it has loops
+        JIT_FLAG_PGO_OPT                 = 20, // Optimize method based on profile information
         JIT_FLAG_FRAMED                  = 21, // All methods have an EBP frame
         JIT_FLAG_USE_PINVOKE_HELPERS     = 23, // The JIT should use the PINVOKE_{BEGIN,END} helpers instead of emitting inline transitions
         JIT_FLAG_REVERSE_PINVOKE         = 24, // The JIT should insert REVERSE_PINVOKE_{ENTER,EXIT} helpers into method prolog/epilog
@@ -129,9 +129,9 @@ public:
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_RELOC, JIT_FLAG_RELOC);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_IL_STUB, JIT_FLAG_IL_STUB);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_PROCSPLIT, JIT_FLAG_PROCSPLIT);
-        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR, JIT_FLAG_BBINSTR);
-        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR_IF_LOOPS, JIT_FLAG_BBINSTR_IF_LOOPS);
-        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_BBOPT, JIT_FLAG_BBOPT);
+        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_PGO_INSTR, JIT_FLAG_PGO_INSTR);
+        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_PGO_INSTR_IF_LOOPS, JIT_FLAG_PGO_INSTR_IF_LOOPS);
+        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_PGO_OPT, JIT_FLAG_PGO_OPT);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_FRAMED, JIT_FLAG_FRAMED);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_USE_PINVOKE_HELPERS, JIT_FLAG_USE_PINVOKE_HELPERS);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_REVERSE_PINVOKE, JIT_FLAG_REVERSE_PINVOKE);

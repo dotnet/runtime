@@ -78,7 +78,6 @@ For testing WebAssembly implementation changes end-to-end, see the [testing docu
 ### Samples and Examples
 Located in `src/mono/sample/wasm/`:
 - **browser-bench**: Performance benchmarking sample
-- **browser-profile**: Profiling sample
 - **console**: Console application samples
 
 ### Workloads
@@ -119,6 +118,8 @@ See the [WebAssembly Debugging](debugging/mono/wasm-debugging.md#collecting-stac
 - **Outer loop tests**: Add `/p:Outerloop=true`
 
 ## Contributing
+
+- [Reviewing WebAssembly Changes](wasm-review.md) - SDK/workload ownership, configuration, incremental assets and Wasm.Build.Tests conventions
 
 ### Code Style
 - Runtime JavaScript code uses ESLint rules in `.eslintrc.js`

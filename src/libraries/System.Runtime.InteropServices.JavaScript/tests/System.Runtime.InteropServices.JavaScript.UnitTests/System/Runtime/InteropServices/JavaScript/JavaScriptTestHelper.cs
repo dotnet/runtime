@@ -277,6 +277,26 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
         #region Views
 
+        [JSImport("getMemoryViewByteLength", "JavaScriptTestHelper")]
+        [return: JSMarshalAs<JSType.Number>]
+        internal static partial int GetMemoryViewByteLength([JSMarshalAs<JSType.MemoryView>] Span<byte> value);
+
+        [JSImport("getMemoryViewByteLength", "JavaScriptTestHelper")]
+        [return: JSMarshalAs<JSType.Number>]
+        internal static partial int GetMemoryViewByteLength([JSMarshalAs<JSType.MemoryView>] Span<int> value);
+
+        [JSImport("getMemoryViewByteLength", "JavaScriptTestHelper")]
+        [return: JSMarshalAs<JSType.Number>]
+        internal static partial int GetMemoryViewByteLength([JSMarshalAs<JSType.MemoryView>] Span<float> value);
+
+        [JSImport("getMemoryViewByteLength", "JavaScriptTestHelper")]
+        [return: JSMarshalAs<JSType.Number>]
+        internal static partial int GetMemoryViewByteLength([JSMarshalAs<JSType.MemoryView>] Span<double> value);
+
+        [JSImport("getArraySegmentByteLength", "JavaScriptTestHelper")]
+        [return: JSMarshalAs<JSType.Number>]
+        internal static partial int GetMemoryViewByteLength([JSMarshalAs<JSType.MemoryView>] ArraySegment<float> value);
+
         [JSImport("echo1view", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.MemoryView>]
         internal static partial Span<byte> echo1_SpanOfByte([JSMarshalAs<JSType.MemoryView>] Span<byte> value, [JSMarshalAs<JSType.Boolean>] bool edit);

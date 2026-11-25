@@ -11,6 +11,7 @@
 #define DEBUGGER_H_
 
 #include <windows.h>
+#include <minipal/thread.h>
 
 #include <utilcode.h>
 
@@ -349,7 +350,7 @@ inline DWORD UnsafeGetConfigDWORD(const CLRConfig::ConfigDWORDInfo & info)
 
 bool ThisIsHelperThreadWorker(void);
 bool ThisIsTempHelperThread();
-bool ThisIsTempHelperThread(DWORD tid);
+bool ThisIsTempHelperThread(size_t tid);
 
 #ifdef _DEBUG
 
@@ -2409,7 +2410,7 @@ public:
         }
         else
         {
-            return (GetCurrentThreadId() == m_mutexOwner);
+            return (minipal_get_current_thread_id() == m_mutexOwner);
         }
     }
 #endif // _DEBUG_IMPL
@@ -2672,7 +2673,7 @@ public:
     void SetModuleDefaultJMCStatus(Module * pRuntimeModule, bool fStatus);
 
 #ifndef DACCESS_COMPILE
-    static DWORD GetThreadIdHelper(Thread *pThread);
+    static SIZE_T GetThreadIdHelper(Thread *pThread);
 #endif // DACCESS_COMPILE
 
 private:
@@ -2866,10 +2867,10 @@ private:
 
 #ifdef _DEBUG
     // Ownership tracking for debugging.
-    DWORD                 m_mutexOwner;
+    size_t                m_mutexOwner;
 
     // Tid that last called LockForEventSending.
-    DWORD                 m_tidLockedForEventSending;
+    size_t                m_tidLockedForEventSending;
 #endif
     LONG                  m_threadsAtUnsafePlaces;
     Volatile<BOOL>        m_jitAttachInProgress;
@@ -3747,7 +3748,7 @@ HANDLE OpenWin32EventOrThrow(
 //   SuspendComplete
 //
 // @todo- we could also assert that:
-// - m_tidLockedForEventSending = GetCurrentThreadId();
+// - m_tidLockedForEventSending = minipal_get_current_thread_id();
 #define SENDEVENT_CONTRACT_ITEMS \
     GC_NOTRIGGER; \
     MODE_PREEMPTIVE; \

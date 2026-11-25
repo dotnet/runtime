@@ -32,6 +32,7 @@
 #include <minipal/strings.h>
 #include <minipal/time.h>
 #include <minipal.h>
+#include <minipal/thread.h>
 
 #ifdef TARGET_UNIX
 #include <sys/time.h>
@@ -515,7 +516,7 @@ void
 ep_rt_provider_invoke_callback (
 	EventPipeCallback callback_func,
 	const uint8_t *source_id,
-	unsigned long is_enabled,
+	uint32_t is_enabled,
 	uint8_t level,
 	uint64_t match_any_keywords,
 	uint64_t match_all_keywords,
@@ -1163,7 +1164,7 @@ uint32_t
 ep_rt_current_process_get_id (void)
 {
 	STATIC_CONTRACT_NOTHROW;
-	return static_cast<uint32_t>(GetCurrentProcessId ());
+	return minipal_get_current_process_id();
 }
 
 static
@@ -1207,11 +1208,7 @@ ep_rt_current_thread_get_id (void)
 {
 	STATIC_CONTRACT_NOTHROW;
 
-#ifdef TARGET_UNIX
-	return static_cast<ep_rt_thread_id_t>(::PAL_GetCurrentOSThreadId ());
-#else
-	return static_cast<ep_rt_thread_id_t>(::GetCurrentThreadId ());
-#endif
+	return static_cast<ep_rt_thread_id_t>(minipal_get_current_thread_id ());
 }
 
 static

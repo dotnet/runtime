@@ -81,7 +81,6 @@ public:
 // ---------------------------------------------------------------------------
 class CLRException : public Exception
 {
-    friend bool DebugIsEECxxExceptionPointer(void* pv);
     friend class CLRLastThrownObjectException;
  private:
     static const int c_type = 0x434c5220;   // 'CLR '
@@ -198,8 +197,6 @@ void GetLastThrownObjectExceptionFromThread(Exception **ppException);
 
 class EEException : public CLRException
 {
-    friend bool DebugIsEECxxExceptionPointer(void* pv);
-
  private:
     static const int c_type = 0x45452020;   // 'EE '
 
@@ -245,14 +242,6 @@ class EEException : public CLRException
   protected:
     static HRESULT GetHRFromKind(RuntimeExceptionKind reKind);
 
-#ifdef _DEBUG
-    EEException() : m_kind(kException)
-    {
-        // Used only for DebugIsEECxxExceptionPointer to get the vtable pointer.
-        // We need a variant which does not allocate memory.
-    }
-#endif // _DEBUG
-
     virtual Exception *CloneHelper()
     {
         WRAPPER_NO_CONTRACT;
@@ -268,8 +257,6 @@ class EEException : public CLRException
 
 class EEMessageException : public EEException
 {
-    friend bool DebugIsEECxxExceptionPointer(void* pv);
-
  private:
     HRESULT             m_hr;
     UINT                m_resID;
@@ -332,13 +319,6 @@ class EEMessageException : public EEException
 
     BOOL GetResourceMessage(UINT iResourceID, SString &result);
 
-#ifdef _DEBUG
-    EEMessageException()
-    {
-        // Used only for DebugIsEECxxExceptionPointer to get the vtable pointer.
-        // We need a variant which does not allocate memory.
-    }
-#endif // _DEBUG
 };
 
 // ---------------------------------------------------------------------------
@@ -348,8 +328,6 @@ class EEMessageException : public EEException
 
 class EEResourceException : public EEException
 {
-    friend bool DebugIsEECxxExceptionPointer(void* pv);
-
  private:
     InlineSString<32>        m_resourceName;
 
@@ -369,15 +347,6 @@ class EEResourceException : public EEException
         WRAPPER_NO_CONTRACT;
         return new EEResourceException(m_kind, m_resourceName);
     }
-
-private:
-#ifdef _DEBUG
-    EEResourceException()
-    {
-        // Used only for DebugIsEECxxExceptionPointer to get the vtable pointer.
-        // We need a variant which does not allocate memory.
-    }
-#endif // _DEBUG
 };
 
 #ifdef FEATURE_COMINTEROP
@@ -400,8 +369,6 @@ struct ExceptionData
 
 class EECOMException : public EEException
 {
-    friend bool DebugIsEECxxExceptionPointer(void* pv);
-
  private:
     ExceptionData m_ED;
 
@@ -429,15 +396,6 @@ class EECOMException : public EEException
         return new EECOMException(&m_ED);
     }
 
-private:
-#ifdef _DEBUG
-    EECOMException()
-    {
-        // Used only for DebugIsEECxxExceptionPointer to get the vtable pointer.
-        // We need a variant which does not allocate memory.
-        ZeroMemory(&m_ED, sizeof(m_ED));
-    }
-#endif // _DEBUG
 };
 #endif // FEATURE_COMINTEROP
 
@@ -446,8 +404,6 @@ private:
 // ---------------------------------------------------------------------------
 class EEFieldException : public EEException
 {
-    friend bool DebugIsEECxxExceptionPointer(void* pv);
-
  private:
     FieldDesc   *m_pFD;
     MethodDesc  *m_pAccessingMD;
@@ -468,14 +424,6 @@ protected:
         return new EEFieldException(m_pFD, m_pAccessingMD, m_additionalContext, m_messageID);
     }
 
-private:
-#ifdef _DEBUG
-    EEFieldException()
-    {
-        // Used only for DebugIsEECxxExceptionPointer to get the vtable pointer.
-        // We need a variant which does not allocate memory.
-    }
-#endif // _DEBUG
 };
 
 // ---------------------------------------------------------------------------
@@ -484,8 +432,6 @@ private:
 
 class EEMethodException : public EEException
 {
-    friend bool DebugIsEECxxExceptionPointer(void* pv);
-
  private:
     MethodDesc *m_pMD;
     MethodDesc *m_pAccessingMD;
@@ -506,14 +452,6 @@ class EEMethodException : public EEException
         return new EEMethodException(m_pMD, m_pAccessingMD, m_additionalContext, m_messageID);
     }
 
-private:
-#ifdef _DEBUG
-    EEMethodException()
-    {
-        // Used only for DebugIsEECxxExceptionPointer to get the vtable pointer.
-        // We need a variant which does not allocate memory.
-    }
-#endif // _DEBUG
 };
 
 // ---------------------------------------------------------------------------
@@ -523,8 +461,6 @@ private:
 
 class EETypeAccessException : public EEException
 {
-    friend bool DebugIsEECxxExceptionPointer(void* pv);
-
  private:
     MethodTable *m_pMT;
     MethodDesc  *m_pAccessingMD;
@@ -545,14 +481,6 @@ class EETypeAccessException : public EEException
         return new EETypeAccessException(m_pMT, m_pAccessingMD, m_additionalContext, m_messageID);
     }
 
-private:
-#ifdef _DEBUG
-    EETypeAccessException()
-    {
-        // Used only for DebugIsEECxxExceptionPointer to get the vtable pointer.
-        // We need a variant which does not allocate memory.
-    }
-#endif // _DEBUG
 };
 
 // ---------------------------------------------------------------------------
@@ -562,8 +490,6 @@ private:
 
 class EEArgumentException : public EEException
 {
-    friend bool DebugIsEECxxExceptionPointer(void* pv);
-
  private:
     InlineSString<32>        m_argumentName;
     InlineSString<32>        m_resourceName;
@@ -584,14 +510,6 @@ class EEArgumentException : public EEException
         return new EEArgumentException(m_kind, m_argumentName, m_resourceName);
     }
 
-private:
-#ifdef _DEBUG
-    EEArgumentException()
-    {
-        // Used only for DebugIsEECxxExceptionPointer to get the vtable pointer.
-        // We need a variant which does not allocate memory.
-    }
-#endif // _DEBUG
 };
 
 // ---------------------------------------------------------------------------
@@ -601,8 +519,6 @@ private:
 
 class EETypeLoadException : public EEException
 {
-    friend bool DebugIsEECxxExceptionPointer(void* pv);
-
   private:
     InlineSString<64>   m_fullName;
     SString             m_pAssemblyName;
@@ -641,13 +557,6 @@ class EETypeLoadException : public EEException
     }
 
 
-#ifdef _DEBUG
-    EETypeLoadException()
-    {
-        // Used only for DebugIsEECxxExceptionPointer to get the vtable pointer.
-        // We need a variant which does not allocate memory.
-    }
-#endif // _DEBUG
 };
 
 // ---------------------------------------------------------------------------
@@ -657,8 +566,6 @@ class EETypeLoadException : public EEException
 
 class EEFileLoadException : public EEException
 {
-    friend bool DebugIsEECxxExceptionPointer(void* pv);
-
   private:
     SString m_name;
     HRESULT m_hr;
@@ -704,13 +611,6 @@ class EEFileLoadException : public EEException
     }
 
  private:
-#ifdef _DEBUG
-    EEFileLoadException()
-    {
-        // Used only for DebugIsEECxxExceptionPointer to get the vtable pointer.
-        // We need a variant which does not allocate memory.
-    }
-#endif // _DEBUG
 
     void SetFileName(const SString &fileName, BOOL removePath);
 };
@@ -1113,8 +1013,6 @@ inline EEArgumentException::EEArgumentException(RuntimeExceptionKind reKind, LPC
 
 class ObjrefException : public CLRException
 {
-    friend bool DebugIsEECxxExceptionPointer(void* pv);
-
  public:
 
     ObjrefException();
@@ -1142,8 +1040,6 @@ protected:
 
 class CLRLastThrownObjectException : public CLRException
 {
-    friend bool DebugIsEECxxExceptionPointer(void* pv);
-
  public:
     CLRLastThrownObjectException();
 

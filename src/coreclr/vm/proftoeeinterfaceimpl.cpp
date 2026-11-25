@@ -101,6 +101,7 @@
 // ======================================================================================
 
 #include "common.h"
+#include <minipal/thread.h>
 #include <posterror.h>
 #include "proftoeeinterfaceimpl.h"
 #include "proftoeeinterfaceimpl.inl"
@@ -5512,7 +5513,9 @@ HRESULT ProfToEEInterfaceImpl::GetAppDomainInfo(AppDomainID appDomainId,
     }
 
     if (pProcessId)
-        *pProcessId = (ProcessID) GetCurrentProcessId();
+    {
+        *pProcessId = (ProcessID) minipal_get_current_process_id();
+    }
 
     return hr;
 }
