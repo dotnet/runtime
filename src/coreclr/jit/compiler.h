@@ -9468,6 +9468,8 @@ public:
                                         GenTreeOp*       tree,
                                         Statement*       stmt,
                                         BasicBlock*      block);
+    GenTree* optAssertionProp_AndOr(ASSERT_VALARG_TP assertions, GenTreeOp* tree, Statement* stmt);
+    bool     optAssertionProp_SwitchDefault(ASSERT_VALARG_TP assertions, BasicBlock* block);
     GenTree* optAssertionProp_Return(ASSERT_VALARG_TP assertions, GenTreeOp* ret, Statement* stmt);
     GenTree* optAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
     GenTree* optAssertionProp_Cast(ASSERT_VALARG_TP assertions, GenTreeCast* cast, Statement* stmt, BasicBlock* block);

@@ -930,6 +930,10 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
     return node->gtNext;
 #endif // TARGET_WASM
 
+    // Assertion prop may have removed the default case if the value is known to be in range.
+    const bool     hasDefault = originalSwitchBB->GetSwitchTargets()->HasDefaultCase();
+    const unsigned caseCnt    = hasDefault ? (jumpCnt - 1) : jumpCnt;
+
     // Spill the argument to the switch node into a local so that it can be used later.
     LIR::Use use(switchBBRange, &(node->AsOp()->gtOp1), node);
     ReplaceWithLclVar(use);
@@ -944,12 +948,12 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
     unsigned  tempLclNum  = temp->AsLclVarCommon()->GetLclNum();
     var_types tempLclType = temp->TypeGet();
 
-    BasicBlock* defaultBB   = jumpTab[jumpCnt - 1]->getDestinationBlock();
+    BasicBlock* defaultBB   = hasDefault ? jumpTab[jumpCnt - 1]->getDestinationBlock() : nullptr;
     BasicBlock* followingBB = originalSwitchBB->Next();
 
     /* Is the number of cases right for a test and jump switch? */
     const bool fFirstCaseFollows = (followingBB == jumpTab[0]->getDestinationBlock());
-    const bool fDefaultFollows   = (followingBB == defaultBB);
+    const bool fDefaultFollows   = hasDefault && (followingBB == defaultBB);
 
     unsigned minSwitchTabJumpCnt = 2; // table is better than just 2 cmp/jcc
 
@@ -971,21 +975,31 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
     // the default case.  As stated above, this conditional is being shared between
     // both GT_SWITCH lowering code paths.
     // This condition is of the form: if (temp > jumpTableLength - 2){ goto jumpTable[jumpTableLength - 1]; }
-    GenTree* gtDefaultCaseCond =
-        m_compiler->gtNewOperNode(GT_GT, TYP_INT, m_compiler->gtNewLclvNode(tempLclNum, tempLclType),
-                                  m_compiler->gtNewIconNode(jumpCnt - 2, genActualType(tempLclType)));
+    BasicBlock* afterDefaultCondBlock;
+    FlowEdge*   defaultEdge       = nullptr;
+    weight_t    defaultLikelihood = 0;
+    if (hasDefault)
+    {
+        GenTree* gtDefaultCaseCond =
+            m_compiler->gtNewOperNode(GT_GT, TYP_INT, m_compiler->gtNewLclvNode(tempLclNum, tempLclType),
+                                      m_compiler->gtNewIconNode(jumpCnt - 2, genActualType(tempLclType)));
 
-    // Make sure we perform an unsigned comparison, just in case the switch index in 'temp'
-    // is now less than zero 0 (that would also hit the default case).
-    gtDefaultCaseCond->SetUnsigned();
+        // Make sure we perform an unsigned comparison, just in case the switch index in 'temp'
+        // is now less than zero 0 (that would also hit the default case).
+        gtDefaultCaseCond->SetUnsigned();
 
-    GenTree* gtDefaultCaseJump = m_compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, gtDefaultCaseCond);
-    gtDefaultCaseJump->gtFlags = node->gtFlags;
+        GenTree* gtDefaultCaseJump = m_compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, gtDefaultCaseCond);
+        gtDefaultCaseJump->gtFlags = node->gtFlags;
 
-    LIR::Range condRange = LIR::SeqTree(m_compiler, gtDefaultCaseJump);
-    switchBBRange.InsertAtEnd(std::move(condRange));
+        LIR::Range condRange = LIR::SeqTree(m_compiler, gtDefaultCaseJump);
+        switchBBRange.InsertAtEnd(std::move(condRange));
 
-    BasicBlock* afterDefaultCondBlock = m_compiler->fgSplitBlockAfterNode(originalSwitchBB, condRange.LastNode());
+        afterDefaultCondBlock = m_compiler->fgSplitBlockAfterNode(originalSwitchBB, condRange.LastNode());
+    }
+    else
+    {
+        afterDefaultCondBlock = m_compiler->fgSplitBlockAfterNode(originalSwitchBB, switchBBRange.LastNode());
+    }
 
     // afterDefaultCondBlock is now the switch, and all the switch targets have it as a predecessor.
     // originalSwitchBB is now a BBJ_ALWAYS, and there is a predecessor edge in afterDefaultCondBlock
@@ -994,31 +1008,38 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
     assert(originalSwitchBB->TargetIs(afterDefaultCondBlock));
     assert(originalSwitchBB->JumpsToNext());
     assert(afterDefaultCondBlock->KindIs(BBJ_SWITCH));
-    assert(afterDefaultCondBlock->GetSwitchTargets()->HasDefaultCase());
+    assert(afterDefaultCondBlock->GetSwitchTargets()->HasDefaultCase() == hasDefault);
     assert(afterDefaultCondBlock->isEmpty()); // Nothing here yet.
 
     // The GT_SWITCH code is still in originalSwitchBB (it will be removed later).
 
-    // Fix the pred for the default case: the default block target still has originalSwitchBB
-    // as a predecessor, but the fgSplitBlockAfterStatement() moved all predecessors to point
-    // to afterDefaultCondBlock.
+    if (hasDefault)
+    {
+        // Fix the pred for the default case: the default block target still has originalSwitchBB
+        // as a predecessor, but the fgSplitBlockAfterStatement() moved all predecessors to point
+        // to afterDefaultCondBlock.
 
-    // Note defaultEdge may also be the edge for some switch cases. We only probe edges,
-    // so assume each possibility is equally likely.
-    FlowEdge* const defaultEdge       = jumpTab[jumpCnt - 1];
-    weight_t const  defaultLikelihood = defaultEdge->getLikelihood() / defaultEdge->getDupCount();
-    m_compiler->fgRemoveRefPred(defaultEdge);
-    FlowEdge* const trueEdge = m_compiler->fgAddRefPred(defaultBB, originalSwitchBB);
-    trueEdge->setLikelihood(defaultLikelihood);
-    defaultEdge->setLikelihood(defaultEdge->getLikelihood() - defaultLikelihood);
+        // Note defaultEdge may also be the edge for some switch cases. We only probe edges,
+        // so assume each possibility is equally likely.
+        defaultEdge       = jumpTab[jumpCnt - 1];
+        defaultLikelihood = defaultEdge->getLikelihood() / defaultEdge->getDupCount();
+        m_compiler->fgRemoveRefPred(defaultEdge);
+        FlowEdge* const trueEdge = m_compiler->fgAddRefPred(defaultBB, originalSwitchBB);
+        trueEdge->setLikelihood(defaultLikelihood);
+        defaultEdge->setLikelihood(defaultEdge->getLikelihood() - defaultLikelihood);
 
-    // Turn originalSwitchBB into a BBJ_COND.
-    FlowEdge* const falseEdge        = originalSwitchBB->GetTargetEdge();
-    weight_t const  switchLikelihood = 1.0 - defaultLikelihood;
-    falseEdge->setLikelihood(switchLikelihood);
-    originalSwitchBB->SetCond(trueEdge, falseEdge);
-    afterDefaultCondBlock->inheritWeight(originalSwitchBB);
-    afterDefaultCondBlock->scaleBBWeight(switchLikelihood);
+        // Turn originalSwitchBB into a BBJ_COND.
+        FlowEdge* const falseEdge        = originalSwitchBB->GetTargetEdge();
+        weight_t const  switchLikelihood = 1.0 - defaultLikelihood;
+        falseEdge->setLikelihood(switchLikelihood);
+        originalSwitchBB->SetCond(trueEdge, falseEdge);
+        afterDefaultCondBlock->inheritWeight(originalSwitchBB);
+        afterDefaultCondBlock->scaleBBWeight(switchLikelihood);
+    }
+    else
+    {
+        afterDefaultCondBlock->inheritWeight(originalSwitchBB);
+    }
 
     bool useJumpSequence = jumpCnt < minSwitchTabJumpCnt;
 
@@ -1038,7 +1059,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
     // If we originally had 2 unique successors, check to see whether there is a unique
     // non-default case, in which case we can eliminate the switch altogether.
     // Note that the single unique successor case is handled above.
-    if ((targetCnt == 2) && (defaultEdge->getDupCount() == 0))
+    if (hasDefault && (targetCnt == 2) && (defaultEdge->getDupCount() == 0))
     {
         // The default case was peeled off, and we have only one other unique successor.
         // Jump directly to this remaining successor.
@@ -1080,7 +1101,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
         // tested for.  We'll use this to adjust the likelihood of the branches we're adding.
         // So far we've tested for the default case, so we'll start with that.
         weight_t totalTestLikelihood = defaultLikelihood;
-        for (unsigned i = 0; i < jumpCnt - 1; ++i)
+        for (unsigned i = 0; i < caseCnt; ++i)
         {
             assert(currentBlock != nullptr);
 
@@ -1166,7 +1187,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
             // This should truly be a new edge.
             assert(newEdge->getDupCount() == 1);
 
-            if (!fAnyTargetFollows && (i == jumpCnt - 2))
+            if (!fAnyTargetFollows && (i == caseCnt - 1))
             {
                 // We're processing the last one, and there is no fall through from any case
                 // to the following block, so we can use an unconditional branch to the final
@@ -1258,7 +1279,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
 
         // Try generating a bit test based switch first,
         // if that's not possible a jump table based switch will be generated.
-        if (!TryLowerSwitchToBitTest(jumpTab, jumpCnt, targetCnt, afterDefaultCondBlock, switchValue,
+        if (!TryLowerSwitchToBitTest(jumpTab, caseCnt, targetCnt, afterDefaultCondBlock, switchValue,
                                      defaultLikelihood))
         {
             JITDUMP("Lowering switch " FMT_BB ": using jump table expansion\n", originalSwitchBB->bbNum);
@@ -1281,7 +1302,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
 
             // This block no longer has a default switch case.
             // If no other cases branch to this successor, remove it from the unique successor table.
-            if (defaultEdge->getDupCount() == 0)
+            if (hasDefault && (defaultEdge->getDupCount() == 0))
             {
                 for (unsigned i = 0; i < targetCnt; i++)
                 {
@@ -1297,7 +1318,10 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
                 targetCnt--;
             }
 
-            afterDefaultCondBlock->GetSwitchTargets()->RemoveDefaultCase();
+            if (hasDefault)
+            {
+                afterDefaultCondBlock->GetSwitchTargets()->RemoveDefaultCase();
+            }
 
             // We need to scale up the likelihood of the remaining switch edges, now that we've peeled off
             // the default case. But if the remaining likelihood is zero (default likelihood was 1.0),
@@ -1372,7 +1396,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
 //
 // Arguments:
 //    jumpTable - The jump table
-//    jumpCount - The number of blocks in the jump table
+//    caseCount - The number of non-default cases in the jump table
 //    targetCount - The number of distinct blocks in the jump table
 //    bbSwitch - The switch block
 //    switchValue - A LclVar node that provides the switch value
@@ -1398,13 +1422,13 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
 //    to emit the jump table itself that can reach up to 256 bytes (for 64 entries).
 //
 bool Lowering::TryLowerSwitchToBitTest(FlowEdge*   jumpTable[],
-                                       unsigned    jumpCount,
+                                       unsigned    caseCount,
                                        unsigned    targetCount,
                                        BasicBlock* bbSwitch,
                                        GenTree*    switchValue,
                                        weight_t    defaultLikelihood)
 {
-    assert(jumpCount >= 2);
+    assert(caseCount >= 1);
     assert(targetCount >= 2);
     assert(bbSwitch->KindIs(BBJ_SWITCH));
     assert(switchValue->OperIs(GT_LCL_VAR));
@@ -1421,12 +1445,11 @@ bool Lowering::TryLowerSwitchToBitTest(FlowEdge*   jumpTable[],
     }
 
     //
-    // The number of bits in the bit table is the same as the number of jump table entries. But the
-    // jump table also includes the default target (at the end) so we need to ignore it. The default
-    // has already been handled by a JTRUE(GT(switchValue, jumpCount - 2)) that LowerSwitch generates.
+    // The number of bits in the bit table is the same as the number of non-default cases. The default,
+    // if any, has already been handled by a JTRUE(GT(switchValue, caseCount - 1)) that LowerSwitch generates.
     //
 
-    const unsigned bitCount = jumpCount - 1;
+    const unsigned bitCount = caseCount;
 
     if (bitCount > (genTypeSize(TYP_I_IMPL) * 8))
     {

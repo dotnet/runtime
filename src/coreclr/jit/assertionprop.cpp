@@ -4373,6 +4373,11 @@ void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
         *isKnownNonNegative |= rng.LowerLimit().GetConstant() >= 0;
         *isKnownNonZero |= (rng.LowerLimit().GetConstant() > 0) || (rng.UpperLimit().GetConstant() < 0);
     }
+
+    if (!*isKnownNonZero || !*isKnownNonNegative)
+    {
+        KnownBitsAnalysis(this).GetRangeProperties(tree, assertions, isKnownNonZero, isKnownNonNegative);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -4429,8 +4434,150 @@ GenTree* Compiler::optAssertionProp_AddMulSub(ASSERT_VALARG_TP assertions,
                 return optAssertionProp_Update(tree, tree, stmt);
             }
         }
+
+        if (KnownBitsAnalysis(this).NeverOverflows(tree, assertions))
+        {
+            JITDUMP("Clearing overflow flag for [%06u] based on known bits.\n", dspTreeID(tree));
+            tree->ClearOverflow();
+            return optAssertionProp_Update(tree, tree, stmt);
+        }
     }
     return nullptr;
+}
+
+//------------------------------------------------------------------------
+// optAssertionProp_AndOr: Remove an AND/OR with a constant that doesn't change its operand,
+//    e.g. "x & 0xFF" when "x" is known to be less than 256.
+//
+// Arguments:
+//    assertions - set of live assertions
+//    tree       - the AND/OR node to optimize
+//    stmt       - statement containing AND/OR
+//
+// Returns:
+//    The operand that replaced the AND/OR, or nullptr
+//
+GenTree* Compiler::optAssertionProp_AndOr(ASSERT_VALARG_TP assertions, GenTreeOp* tree, Statement* stmt)
+{
+    assert(tree->OperIs(GT_AND, GT_OR));
+
+    GenTree* const op1 = tree->gtGetOp1();
+    GenTree* const op2 = tree->gtGetOp2();
+    if (optLocalAssertionProp || !tree->TypeIs(TYP_INT, TYP_LONG) || (genActualType(op1) != tree->TypeGet()) ||
+        !op2->IsIntegralConst() || op2->IsIconHandle())
+    {
+        return nullptr;
+    }
+
+    // A "normalize on load" local may have garbage in its upper bits, the AND may be normalizing it.
+    if (op1->OperIs(GT_LCL_VAR) && lvaGetDesc(op1->AsLclVar())->lvNormalizeOnLoad())
+    {
+        return nullptr;
+    }
+
+    const KnownBits known = KnownBitsAnalysis(this).ComputeKnownBits(op1, assertions);
+    const APInt     mask(known.getBitWidth(), (uint64_t)op2->AsIntConCommon()->IntegralValue());
+
+    // AND: the bits the mask clears are already zero; OR: the bits the mask sets are already one.
+    if (tree->OperIs(GT_AND) ? (known.Zero | mask).isAllOnes() : ((known.One & mask) == mask))
+    {
+        JITDUMP("Removing redundant [%06u] based on known bits.\n", dspTreeID(tree));
+        return optAssertionProp_Update(op1, tree, stmt);
+    }
+
+    const KnownBits res =
+        tree->OperIs(GT_AND) ? (known & KnownBits::makeConstant(mask)) : (known | KnownBits::makeConstant(mask));
+    if (res.isConstant())
+    {
+        JITDUMP("Folding [%06u] to a constant based on known bits.\n", dspTreeID(tree));
+        const int64_t cns     = (int64_t)res.getConstant().getZExtValue();
+        GenTree*      newTree = tree->TypeIs(TYP_LONG) ? gtNewLconNode(cns) : gtNewIconNode((int32_t)cns);
+        newTree               = gtWrapWithSideEffects(newTree, tree, GTF_ALL_EFFECT);
+        return optAssertionProp_Update(newTree, tree, stmt);
+    }
+    return nullptr;
+}
+
+//------------------------------------------------------------------------
+// optAssertionProp_SwitchDefault: Remove the default case of a switch if
+//    the switch value is known to always hit one of the other cases.
+//
+// Arguments:
+//    assertions - set of live assertions at the end of the block
+//    block      - the BBJ_SWITCH block
+//
+// Returns:
+//    true if the flow graph was changed.
+//
+bool Compiler::optAssertionProp_SwitchDefault(ASSERT_VALARG_TP assertions, BasicBlock* block)
+{
+#ifdef TARGET_WASM
+    // br_table always needs a default target.
+    return false;
+#else
+    assert(block->KindIs(BBJ_SWITCH));
+    BBswtDesc* const swtDesc = block->GetSwitchTargets();
+    if (optLocalAssertionProp || !swtDesc->HasDefaultCase() || (swtDesc->GetCaseCount() < 3))
+    {
+        return false;
+    }
+
+    GenTree* const switchTree = block->lastStmt()->GetRootNode();
+    assert(switchTree->OperIs(GT_SWITCH));
+    GenTree* const  switchValue = switchTree->gtGetOp1();
+    FlowEdge* const defaultEdge = swtDesc->GetDefaultCase();
+
+    // Lowering expects at least two targets.
+    if ((defaultEdge->getDupCount() == 1) && (swtDesc->GetSuccCount() <= 2))
+    {
+        return false;
+    }
+
+    if (!switchValue->TypeIs(TYP_INT, TYP_LONG) ||
+        !KnownBitsAnalysis(this).IsInRange(switchValue, 0, swtDesc->GetCaseCount() - 2, assertions))
+    {
+        return false;
+    }
+
+    JITDUMP("Removing the unreachable default case of the switch in " FMT_BB "\n", block->bbNum);
+
+    weight_t const defaultLikelihood = defaultEdge->getLikelihood() / defaultEdge->getDupCount();
+    fgRemoveRefPred(defaultEdge);
+    defaultEdge->setLikelihood(defaultEdge->getLikelihood() - defaultLikelihood);
+    if (defaultEdge->getDupCount() == 0)
+    {
+        for (unsigned i = 0; i < swtDesc->GetSuccCount(); i++)
+        {
+            if (swtDesc->GetSucc(i) == defaultEdge)
+            {
+                swtDesc->RemoveSucc(i);
+                break;
+            }
+        }
+    }
+    swtDesc->RemoveDefaultCase();
+
+    if (swtDesc->HasDominantCase() && (swtDesc->GetDominantCase() >= swtDesc->GetCaseCount() - 1))
+    {
+        swtDesc->RemoveDominantCase();
+    }
+
+    // Redistribute the default's likelihood.
+    const bool unlikely = fgProfileWeightsEqual(defaultLikelihood, 1.0, 0.001);
+    for (unsigned i = 0; i < swtDesc->GetSuccCount(); i++)
+    {
+        FlowEdge* const edge = swtDesc->GetSucc(i);
+        edge->setLikelihood(unlikely ? ((weight_t)edge->getDupCount() / swtDesc->GetCaseCount())
+                                     : min(1.0, edge->getLikelihood() / (1.0 - defaultLikelihood)));
+    }
+    if (block->hasProfileWeight() && (defaultLikelihood > 0))
+    {
+        fgPgoConsistent = false;
+    }
+
+    fgInvalidateDfsTree();
+    return true;
+#endif
 }
 
 //------------------------------------------------------------------------
@@ -4864,7 +5011,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
     // See if the known bits of "op1" tell us the result of comparing it with a constant.
     // This is a hot path, so don't call into the analysis for the relops it can't handle
     // anyway (e.g. checks for null or for a handle).
-    if (op2->IsIntegralConst() && !op2->IsIconHandle() && varTypeIsIntegral(op1))
+    if (varTypeIsIntegral(op1))
     {
         const RelopEvaluationResult result = KnownBitsAnalysis(this).EvalRelop(tree->AsOp(), assertions);
         if (result != RelopEvaluationResult::Unknown)
@@ -5108,37 +5255,33 @@ GenTree* Compiler::optAssertionProp_Cast(ASSERT_VALARG_TP assertions,
         IntegralRange castRng = IntegralRange::ForCastInput(cast);
         int64_t       castLo  = IntegralRange::SymbolicToRealValue(castRng.GetLowerBound());
         int64_t       castHi  = IntegralRange::SymbolicToRealValue(castRng.GetUpperBound());
+        GenTree*      castOp  = cast->CastOp();
+        bool          inRange = false;
         if (FitsIn<int>(castLo) && FitsIn<int>(castHi))
         {
-            Range castToTypeRange = Range(Limit(Limit::keConstant, (int)castLo), Limit(Limit::keConstant, (int)castHi));
+            Range castOpRng = GetRange(this, castOp, block, assertions, /*fast*/ true);
+            inRange         = castOpRng.IsConstantRange() && (castOpRng.LowerLimit().GetConstant() >= castLo) &&
+                      (castOpRng.UpperLimit().GetConstant() <= castHi);
+        }
 
-            if (castToTypeRange.IsConstantRange())
+        if (!inRange && KnownBitsAnalysis(this).IsInRange(castOp, castLo, castHi, assertions))
+        {
+            JITDUMP("Cast %06u input is in range based on known bits.\n", dspTreeID(cast));
+            inRange = true;
+        }
+
+        if (inRange)
+        {
+            if (canDropCast)
             {
-                GenTree* castOp    = cast->CastOp();
-                Range    castOpRng = GetRange(this, castOp, block, assertions, /*fast*/ true);
-
-                if (castOpRng.IsConstantRange())
-                {
-                    int castFromLo = castOpRng.LowerLimit().GetConstant();
-                    int castFromHi = castOpRng.UpperLimit().GetConstant();
-                    int castToLo   = castToTypeRange.LowerLimit().GetConstant();
-                    int castToHi   = castToTypeRange.UpperLimit().GetConstant();
-
-                    if ((castFromLo >= castToLo) && (castFromHi <= castToHi))
-                    {
-                        if (canDropCast)
-                        {
-                            JITDUMP("Removing cast %06u as redundant based on VN assertions.\n", dspTreeID(cast));
-                            return optAssertionProp_Update(castOp, cast, stmt);
-                        }
-
-                        assert(cast->gtOverflow());
-                        JITDUMP("Clearing overflow flag for cast %06u based on VN assertions.\n", dspTreeID(cast));
-                        cast->ClearOverflow();
-                        return optAssertionProp_Update(cast, cast, stmt);
-                    }
-                }
+                JITDUMP("Removing cast %06u as redundant based on VN assertions.\n", dspTreeID(cast));
+                return optAssertionProp_Update(castOp, cast, stmt);
             }
+
+            assert(cast->gtOverflow());
+            JITDUMP("Clearing overflow flag for cast %06u based on VN assertions.\n", dspTreeID(cast));
+            cast->ClearOverflow();
+            return optAssertionProp_Update(cast, cast, stmt);
         }
         return nullptr;
     }
@@ -5969,6 +6112,10 @@ GenTree* Compiler::optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, 
         case GT_MUL:
         case GT_ADD:
             return optAssertionProp_AddMulSub(assertions, tree->AsOp(), stmt, block);
+
+        case GT_AND:
+        case GT_OR:
+            return optAssertionProp_AndOr(assertions, tree->AsOp(), stmt);
 
         case GT_MOD:
         case GT_DIV:
@@ -7063,6 +7210,11 @@ PhaseStatus Compiler::optAssertionPropMain()
             stmt                = (stmt == nextStmt) ? stmt->GetNextStmt() : nextStmt;
         }
         optAssertionPropagatedCurrentStmt = false; // clear it back as we are done with stmts.
+
+        if (block->KindIs(BBJ_SWITCH) && optAssertionProp_SwitchDefault(assertions, block))
+        {
+            madeChanges = true;
+        }
     }
 
     // The cached known bits of PHIs depend on this phase's assertions, don't let them outlive it.
