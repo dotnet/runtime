@@ -61,7 +61,7 @@ namespace ILCompiler.DependencyAnalysis
                 uint owningTypeIndex = _externalReferences.GetIndex(factory.MaximallyConstructableType(targetMethod.OwningType));
                 uint instantiationIndex = _externalReferences.GetIndex(factory.MetadataEnabledGenericComposition(targetMethod.Instantiation));
 
-                int token = factory.MetadataManager.GetMetadataHandleForMethod(factory, GetMethodForMetadata(targetMethod, out bool isAsyncVariant));
+                int token = factory.MetadataManager.GetMetadataHandleForNativeLayout(factory, GetMethodForMetadata(targetMethod, out bool isAsyncVariant));
 
                 Vertex entry = writer.GetTuple(
                     writer.GetUnsignedConstant(owningTypeIndex),

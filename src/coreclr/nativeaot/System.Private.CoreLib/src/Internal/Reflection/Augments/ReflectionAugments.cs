@@ -196,7 +196,18 @@ namespace Internal.Reflection.Augments
         private static RuntimeFieldInfo GetFieldInfo(RuntimeTypeHandle declaringTypeHandle, FieldHandle fieldHandle)
         {
             RuntimeTypeInfo contextTypeInfo = declaringTypeHandle.GetRuntimeTypeInfoForRuntimeTypeHandle();
-            NativeFormatRuntimeNamedTypeInfo definingTypeInfo = contextTypeInfo.AnchoringTypeDefinitionForDeclaredMembers.CastToNativeFormatRuntimeNamedTypeInfo();
+
+            RuntimeNamedTypeInfo anchoringTypeInfo = contextTypeInfo.AnchoringTypeDefinitionForDeclaredMembers;
+
+            // Members of types that have no reflection metadata (see DisablePrivateReflectionAttribute) have no metadata.
+            if (anchoringTypeInfo is null)
+                throw new NotSupportedException(SR.Reflection_TypeBlocked);
+
+            // A field that is not public in an assembly annotated with DisablePrivateReflectionAttribute has no metadata.
+            if (fieldHandle.IsNil)
+                throw new NotSupportedException(SR.Reflection_MemberBlocked);
+
+            NativeFormatRuntimeNamedTypeInfo definingTypeInfo = anchoringTypeInfo.CastToNativeFormatRuntimeNamedTypeInfo();
 
             // RuntimeFieldHandles always yield FieldInfo's whose ReflectedType equals the DeclaringType.
             RuntimeTypeInfo reflectedType = contextTypeInfo;

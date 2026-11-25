@@ -287,7 +287,7 @@ namespace System.Diagnostics
             private static MethodBase GetMethod(Context* context, RuntimeType[] typeArguments, out RuntimeType declaringType)
             {
                 RuntimeModule module = GetModule((nint)context->Assembly);
-                MethodBase? method = module.ResolveMethod((int)context->MemberToken);
+                MethodBase? method = module.ResolveMethodForDiagnostics((int)context->MemberToken);
                 Debug.Assert(method is RuntimeMethodInfo or RuntimeConstructorInfo);
                 declaringType = RuntimeMethodHandle.GetDeclaringType((IRuntimeMethodInfo)method);
                 int classArgumentCount = declaringType.IsGenericType ? declaringType.GetGenericArguments().Length : 0;
@@ -299,7 +299,7 @@ namespace System.Diagnostics
 
                 if (classArgumentCount != 0)
                 {
-                    declaringType = (RuntimeType)declaringType.MakeGenericType(typeArguments[..classArgumentCount]);
+                    declaringType = (RuntimeType)declaringType.MakeGenericTypeIgnoringReflectionBlocking(typeArguments[..classArgumentCount]);
                 }
                 if (methodArgumentCount != 0)
                 {
@@ -307,14 +307,20 @@ namespace System.Diagnostics
                     RuntimeType[] methodArguments = typeArguments[classArgumentCount..];
                     RuntimeMethodHandleInternal handle = RuntimeMethodHandle.GetStubIfNeeded(
                         IRuntimeMethodInfo.GetValue(owner), declaringType, methodArguments);
-                    method = RuntimeType.GetMethodBase(declaringType, handle);
+                    method = RuntimeType.GetMethodBaseForDiagnostics(handle, declaringType);
                     Debug.Assert(method is not null);
                     GC.KeepAlive(owner);
                     GC.KeepAlive(methodArguments);
                 }
                 else if (classArgumentCount != 0)
                 {
-                    method = (MethodBase)declaringType.GetMemberWithSameMetadataDefinitionAs(method);
+                    IRuntimeMethodInfo owner = (IRuntimeMethodInfo)method;
+                    RuntimeMethodHandleInternal handle = IRuntimeMethodInfo.GetValue(owner);
+
+                    method = RuntimeType.IsMethodHiddenFromReflection(handle)
+                        ? RuntimeType.GetMethodBaseForDiagnostics(RuntimeMethodHandle.GetStubIfNeeded(handle, declaringType, null), declaringType)!
+                        : (MethodBase)declaringType.GetMemberWithSameMetadataDefinitionAs(method);
+                    GC.KeepAlive(owner);
                 }
                 if (method.ContainsGenericParameters)
                 {
@@ -659,7 +665,7 @@ namespace System.Diagnostics
 
                 if (!method.IsVirtual
                     && declaringType.IsInterface
-                    && declaringType.IsDefined(typeof(DynamicInterfaceCastableImplementationAttribute)))
+                    && declaringType.IsDefinedForDiagnostics((RuntimeType)typeof(DynamicInterfaceCastableImplementationAttribute)))
                 {
                     // When calling a non-virtual method on a DynamicInterfaceCastableImplementation-attributed interface type,
                     // the receiver may not be assignable to the interface type

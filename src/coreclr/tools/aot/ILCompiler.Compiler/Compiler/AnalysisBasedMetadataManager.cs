@@ -39,6 +39,7 @@ namespace ILCompiler
                 Array.Empty<ReflectableEntity<TypeDesc>>(), Array.Empty<ReflectableEntity<MethodDesc>>(),
                 Array.Empty<ReflectableEntity<FieldDesc>>(), Array.Empty<ReflectableCustomAttribute>(),
                 Array.Empty<ReflectableParameter>(),
+                Array.Empty<MethodDesc>(),
                 default)
         {
         }
@@ -58,11 +59,17 @@ namespace ILCompiler
             IEnumerable<ReflectableEntity<FieldDesc>> reflectableFields,
             IEnumerable<ReflectableCustomAttribute> reflectableAttributes,
             IEnumerable<ReflectableParameter> reflectableParameters,
+            IEnumerable<MethodDesc> detachedMethods,
             MetadataManagerOptions options)
             : base(typeSystemContext, blockingPolicy, resourceBlockingPolicy, logFile, stackTracePolicy, invokeThunkGenerationPolicy, options, flowAnnotations)
         {
             _modulesWithMetadata = new List<ModuleDesc>(modulesWithMetadata);
             _forcedTypes = new List<TypeDesc>(forcedTypes);
+
+            foreach (MethodDesc detachedMethod in detachedMethods)
+            {
+                AddDetachedMethod(detachedMethod);
+            }
 
             foreach (var refType in reflectableTypes)
             {
@@ -276,6 +283,11 @@ namespace ILCompiler
             public bool IsBlocked(MethodDesc methodDef)
             {
                 return _blockingPolicy.IsBlocked(methodDef);
+            }
+
+            public bool IsStripped(MetadataType typeDef)
+            {
+                return _blockingPolicy.IsStripped(typeDef);
             }
         }
     }

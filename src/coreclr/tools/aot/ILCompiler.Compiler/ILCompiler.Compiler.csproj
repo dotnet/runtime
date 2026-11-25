@@ -561,7 +561,9 @@
     <Compile Include="Compiler\DependencyAnalysis\SerializedFrozenObjectNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GCStaticsPreInitDataNode.cs" />
     <Compile Include="Compiler\MetadataBlockingPolicy.cs" />
+    <Compile Include="Compiler\DisablePrivateReflectionMetadataBlockingPolicy.cs" />
     <Compile Include="Compiler\DependencyAnalysis\MethodMetadataNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\DetachedMethodMetadataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReflectedMethodNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ModuleMetadataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\TypeMetadataNode.cs" />

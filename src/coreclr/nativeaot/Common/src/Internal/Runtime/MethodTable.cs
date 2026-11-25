@@ -644,6 +644,11 @@ namespace Internal.Runtime
             }
         }
 
+        // The flags that tell reflection about a type that has no metadata because it is stripped (see DisablePrivateReflectionAttribute)
+        internal bool IsStrippedAbstract => (ExtendedFlags & (ushort)EETypeFlagsEx.StrippedIsAbstractFlag) != 0;
+
+        internal bool IsStrippedSealed => (ExtendedFlags & (ushort)EETypeFlagsEx.StrippedIsSealedFlag) != 0;
+
         internal bool IsValueType
         {
             get

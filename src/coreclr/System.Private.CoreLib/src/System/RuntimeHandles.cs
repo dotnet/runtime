@@ -656,6 +656,23 @@ namespace System
         }
 
         [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetReflectionVisibility")]
+        private static partial int _GetReflectionVisibility(QCallTypeHandle typeHandle);
+
+        // Returns what DisablePrivateReflectionAttribute hides of the type (the assembly of the type must be annotated with it): bit 0 is set if the type
+        // itself is not available (it is not externally visible), and the other bits are the ReflectionMemberVisibility of its members.
+        internal static int GetReflectionVisibility(RuntimeType type)
+        {
+            return _GetReflectionVisibility(new QCallTypeHandle(ref type));
+        }
+
+        // Returns true if the assembly of the type is annotated with DisablePrivateReflectionAttribute and the type is not externally visible.
+        internal static bool IsReflectionBlocked(RuntimeType type)
+        {
+            return (GetReflectionVisibility(type) & 1) != 0;
+        }
+
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_ConstructName")]
         private static partial void ConstructName(QCallTypeHandle handle, TypeNameFormatFlags formatFlags, StringHandleOnStack retString);
 
@@ -1888,6 +1905,14 @@ namespace System
 
         internal static int GetToken(RuntimeModule module)
             => GetToken(new QCallModule(ref module));
+
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ModuleHandle_IsPrivateReflectionDisabled")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial bool IsPrivateReflectionDisabled(QCallModule module);
+
+        internal static bool IsPrivateReflectionDisabled(RuntimeModule module)
+            => IsPrivateReflectionDisabled(new QCallModule(ref module));
 
         private static void ValidateModulePointer(RuntimeModule module)
         {

@@ -38,6 +38,10 @@ namespace System.Diagnostics
                     if (!string.Equals(ns, PackageName, StringComparison.Ordinal))
                         break;
                 }
+                else if (StackF.HasMethodHandle(i))
+                {
+                    break;
+                }
                 iRetVal++;
             }
 

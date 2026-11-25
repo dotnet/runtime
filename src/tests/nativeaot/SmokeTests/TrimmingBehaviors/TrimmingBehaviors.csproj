@@ -16,6 +16,7 @@
 
   <ItemGroup>
     <ProjectReference Include="ShimLibrary.csproj" />
+    <ProjectReference Include="DisablePrivateReflectionLibrary.csproj" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(TestLibraryProjectPath)" />
@@ -29,6 +30,7 @@
     <Compile Include="ILLinkLinkAttributes.cs" />
     <Compile Include="FeatureSwitches.cs" />
     <Compile Include="UnmanagedCallersOnlyAssociatedSourceType.cs" />
+    <Compile Include="..\..\..\reflection\DisablePrivateReflection\DisablePrivateReflectionConsumer.cs" />
     <Compile Include="Main.cs" />
   </ItemGroup>
 

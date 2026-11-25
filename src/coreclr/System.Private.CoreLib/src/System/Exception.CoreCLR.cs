@@ -59,7 +59,7 @@ namespace System
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ExceptionNative_GetMethodFromStackTrace")]
         private static partial void GetMethodFromStackTrace(ObjectHandleOnStack stackTrace, ObjectHandleOnStack method);
 
-        private MethodBase? GetExceptionMethodFromStackTrace()
+        private MethodBase? GetExceptionMethodFromStackTrace(bool forDiagnostics = false)
         {
             object? stackTraceLocal = _stackTrace;
             if (stackTraceLocal == null)
@@ -71,7 +71,9 @@ namespace System
             GetMethodFromStackTrace(ObjectHandleOnStack.Create(ref stackTraceLocal), ObjectHandleOnStack.Create(ref methodInfo));
             Debug.Assert(methodInfo != null);
 
-            return RuntimeType.GetMethodBase(methodInfo);
+            return forDiagnostics
+                ? RuntimeType.GetMethodBaseForDiagnostics(methodInfo)
+                : RuntimeType.GetMethodBaseOrNullIfReflectionBlocked(methodInfo);
         }
 
         public MethodBase? TargetSite
@@ -79,6 +81,10 @@ namespace System
             [RequiresUnreferencedCode("Metadata for the method might be incomplete or removed")]
             get => _exceptionMethod ??= GetExceptionMethodFromStackTrace();
         }
+
+        // The method that threw the exception for the diagnostics (Source), which is also a method that is not available to reflection
+        // (see DisablePrivateReflectionAttribute). TargetSite does not return it.
+        private MethodBase? TargetSiteForDiagnostics => _exceptionMethod ?? GetExceptionMethodFromStackTrace(forDiagnostics: true);
 
         // This method will clear the _stackTrace of the exception object upon deserialization
         // to ensure that references from another AD/Process dont get accidentally used.

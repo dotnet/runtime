@@ -226,6 +226,10 @@ namespace System.Diagnostics
             {
                 StackFrame? sf = GetFrame(iFrameIndex);
                 MethodBase? mb = sf?.GetMethod();
+#if CORECLR
+                // A method that is not available to reflection (see DisablePrivateReflectionAttribute) is part of the stack trace all the same.
+                mb ??= sf?.DiagnosticMethod;
+#endif
                 if (mb != null && (ShowInStackTrace(mb) ||
                                    (iFrameIndex == _numOfFrames - 1))) // Don't filter last frame
                 {
@@ -255,7 +259,7 @@ namespace System.Diagnostics
                     if (declaringType != null)
                     {
                         // Append t.FullName, replacing '+' with '.'
-                        string fullName = declaringType.FullName!;
+                        string fullName = GetFullNameForStackTrace(declaringType)!;
                         for (int i = 0; i < fullName.Length; i++)
                         {
                             char ch = fullName[i];
@@ -279,7 +283,7 @@ namespace System.Diagnostics
                             else
                                 fFirstTyParam = false;
 
-                            sb.Append(typars[k].Name);
+                            sb.Append(GetNameForStackTrace(typars[k]));
                             k++;
                         }
                         sb.Append(']');
@@ -311,7 +315,7 @@ namespace System.Diagnostics
 
                             string typeName = "<UnknownType>";
                             if (pi[j].ParameterType != null)
-                                typeName = pi[j].ParameterType.Name;
+                                typeName = GetNameForStackTrace(pi[j].ParameterType);
                             sb.Append(typeName);
                             string? parameterName = pi[j].Name;
                             if (parameterName != null)
@@ -372,6 +376,38 @@ namespace System.Diagnostics
         }
 #endif // !NATIVEAOT
 
+        // The names and the declaring types of the types that are not available to reflection (see DisablePrivateReflectionAttribute)
+        // are part of the stack trace all the same.
+        internal static string? GetFullNameForStackTrace(Type type)
+        {
+#if CORECLR
+            if (type is RuntimeType runtimeType)
+                return runtimeType.GetFullNameForDiagnostics();
+#endif
+
+            return type.FullName;
+        }
+
+        internal static string GetNameForStackTrace(Type type)
+        {
+#if CORECLR
+            if (type is RuntimeType runtimeType)
+                return runtimeType.GetNameForDiagnostics();
+#endif
+
+            return type.Name;
+        }
+
+        private static Type? GetDeclaringTypeForStackTrace(Type type)
+        {
+#if CORECLR
+            if (type is RuntimeType runtimeType)
+                return runtimeType.GetDeclaringTypeForDiagnostics();
+#endif
+
+            return type.DeclaringType;
+        }
+
         private static bool ShowInStackTrace(MethodBase mb)
         {
             Debug.Assert(mb != null);
@@ -407,6 +443,13 @@ namespace System.Diagnostics
         {
             try
             {
+#if CORECLR
+                // The custom attributes of a type that is not available to reflection (see DisablePrivateReflectionAttribute) are part
+                // of the diagnostics all the same, for example the ones that mark the state machines of async methods.
+                if (!inherit && memberInfo is RuntimeType runtimeType && attributeType is RuntimeType runtimeAttributeType)
+                    return runtimeType.IsDefinedForDiagnostics(runtimeAttributeType);
+#endif
+
                 return memberInfo.IsDefined(attributeType, inherit);
             }
             catch
@@ -439,7 +482,7 @@ namespace System.Diagnostics
 
             declaringType = method.DeclaringType;
 
-            Type? parentType = declaringType.DeclaringType;
+            Type? parentType = GetDeclaringTypeForStackTrace(declaringType);
             if (parentType == null)
             {
                 return false;
@@ -448,8 +491,15 @@ namespace System.Diagnostics
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
                 Justification = "Using Reflection to find the state machine's corresponding method is safe because the corresponding method is the only " +
                                 "caller of the state machine. If the state machine is present, the corresponding method will be, too.")]
-            static MethodInfo[]? GetDeclaredMethods(Type type) =>
-                type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+            static MethodInfo[]? GetDeclaredMethods(Type type)
+            {
+#if CORECLR
+                if (type is RuntimeType runtimeType)
+                    return runtimeType.GetDeclaredMethodsForDiagnostics();
+#endif
+
+                return type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+            }
 
             MethodInfo[]? methods = GetDeclaredMethods(parentType);
             if (methods == null)

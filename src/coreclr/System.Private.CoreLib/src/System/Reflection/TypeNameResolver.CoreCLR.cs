@@ -22,6 +22,7 @@ namespace System.Reflection
         private bool _extensibleParser;
         private bool _requireAssemblyQualifiedName;
         private bool _suppressContextualReflectionContext;
+        private bool _hideReflectionBlockedTypes;
         private IntPtr _unsafeAccessorMethod;
         private Assembly? _requestingAssembly;
         private Assembly? _topLevelAssembly;
@@ -73,7 +74,8 @@ namespace System.Reflection
                 _throwOnError = throwOnError,
                 _ignoreCase = ignoreCase,
                 _extensibleParser = extensibleParser,
-                _requestingAssembly = requestingAssembly
+                _requestingAssembly = requestingAssembly,
+                _hideReflectionBlockedTypes = true
             }.Resolve(parsed);
         }
 
@@ -100,7 +102,8 @@ namespace System.Reflection
                 _throwOnError = throwOnError,
                 _ignoreCase = ignoreCase,
                 _topLevelAssembly = topLevelAssembly,
-                _requestingAssembly = topLevelAssembly
+                _requestingAssembly = topLevelAssembly,
+                _hideReflectionBlockedTypes = true
             }.Resolve(parsed);
         }
 
@@ -206,6 +209,27 @@ namespace System.Reflection
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
             Justification = "TypeNameResolver.GetType is marked as RequiresUnreferencedCode.")]
         private Type? GetType(string escapedTypeName, ReadOnlySpan<string> nestedTypeNames, TypeName parsedName)
+        {
+            Type? type = GetTypeCore(escapedTypeName, nestedTypeNames, parsedName);
+
+            // Types that are not reflectable (see DisablePrivateReflectionAttribute) can't be found by name, also not as part of a
+            // generic type or an array. A type that the resolver of the caller returns is not checked, as in NativeAOT.
+            if (_hideReflectionBlockedTypes && _typeResolver is null && type is RuntimeType { IsReflectionBlocked: true })
+            {
+                if (_throwOnError)
+                    throw new TypeLoadException(SR.Format(SR.TypeLoad_ResolveType, parsedName.FullName), typeName: parsedName.FullName);
+
+                return null;
+            }
+
+            return type;
+        }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "TypeNameResolver.GetType is marked as RequiresUnreferencedCode.")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
+            Justification = "TypeNameResolver.GetType is marked as RequiresUnreferencedCode.")]
+        private Type? GetTypeCore(string escapedTypeName, ReadOnlySpan<string> nestedTypeNames, TypeName parsedName)
         {
             Assembly? assembly;
 

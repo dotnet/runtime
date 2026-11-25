@@ -42,9 +42,35 @@ namespace System.Runtime.InteropServices
         public static IntPtr OffsetOf(Type t, string fieldName)
         {
             ArgumentNullException.ThrowIfNull(t);
+            ArgumentNullException.ThrowIfNull(fieldName);
 
-            FieldInfo f = t.GetField(fieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic) ??
+            // The fields of a type of an assembly annotated with DisablePrivateReflectionAttribute are found whatever their accessibility,
+            // as the marshaller does not use reflection for them in NativeAOT. The base types are searched from the most derived one
+            // for the fields that are not private, like Type.GetField does.
+            FieldInfo? f = null;
+            if (t is RuntimeType rt && HasTypeNotAvailableToReflection(rt))
+            {
+                for (RuntimeType? type = rt; f is null && type is not null; type = type.BaseType as RuntimeType)
+                {
+                    foreach (FieldInfo candidate in type.GetInstanceFieldsIgnoringReflectionBlocking())
+                    {
+                        if (candidate.Name == fieldName && (type == rt || !candidate.IsPrivate))
+                        {
+                            f = candidate;
+                            break;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                f = t.GetField(fieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            }
+
+            if (f is null)
+            {
                 throw new ArgumentException(SR.Format(SR.Argument_OffsetOfFieldNotFound, t.FullName), nameof(fieldName));
+            }
 
             if (f is not RtFieldInfo rtField)
             {
@@ -54,6 +80,17 @@ namespace System.Runtime.InteropServices
             nint offset = OffsetOf(rtField.GetFieldDesc());
             GC.KeepAlive(rtField);
             return offset;
+        }
+
+        private static bool HasTypeNotAvailableToReflection(RuntimeType type)
+        {
+            for (RuntimeType? current = type; current is not null; current = current.BaseType as RuntimeType)
+            {
+                if (current.MemberVisibility != ReflectionMemberVisibility.All)
+                    return true;
+            }
+
+            return false;
         }
 
         [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]

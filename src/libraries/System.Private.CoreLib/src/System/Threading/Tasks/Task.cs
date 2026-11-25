@@ -824,7 +824,12 @@ namespace System.Threading.Tasks
         }
 
         // Debugger support
+#if CORECLR
+        // The method can be one that is not available to reflection (see DisablePrivateReflectionAttribute).
+        private string DebuggerDisplayMethodDescription => m_action?.GetMethodForDiagnostics().ToString() ?? "{null}";
+#else
         private string DebuggerDisplayMethodDescription => m_action?.Method.ToString() ?? "{null}";
+#endif
 
         // Internal property to process TaskCreationOptions access and mutation.
         internal TaskCreationOptions Options => OptionsMethod(m_stateFlags);

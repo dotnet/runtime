@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 
 namespace System.Runtime.InteropServices
 {
@@ -47,7 +48,7 @@ namespace System.Runtime.InteropServices
             if (!implType.IsActualInterface)
                 throw new InvalidOperationException(SR.Format(SR.IDynamicInterfaceCastable_NotInterface, implType.ToString()));
 
-            if (!implType.IsDefined(typeof(DynamicInterfaceCastableImplementationAttribute), inherit: false))
+            if (!RuntimeCustomAttribute.IsDefinedIgnoringReflectionBlocking(implType, (RuntimeType)typeof(DynamicInterfaceCastableImplementationAttribute)))
                 throw new InvalidOperationException(SR.Format(SR.IDynamicInterfaceCastable_MissingImplementationAttribute, implType, nameof(DynamicInterfaceCastableImplementationAttribute)));
 
             if (!implType.IsAssignableTo(interfaceType))

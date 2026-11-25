@@ -491,6 +491,10 @@ namespace Internal.Runtime.Augments
 
         public static bool IsByRefLike(RuntimeTypeHandle typeHandle) => typeHandle.ToMethodTable()->IsByRefLike;
 
+        public static bool IsStrippedAbstract(RuntimeTypeHandle typeHandle) => typeHandle.ToMethodTable()->IsStrippedAbstract;
+
+        public static bool IsStrippedSealed(RuntimeTypeHandle typeHandle) => typeHandle.ToMethodTable()->IsStrippedSealed;
+
         public static bool IsDynamicType(RuntimeTypeHandle typeHandle)
         {
             return typeHandle.ToMethodTable()->IsDynamicType;

@@ -599,6 +599,11 @@ namespace ILCompiler.DependencyAnalysis
                 return new MethodMetadataNode(method, isMinimal: true);
             });
 
+            _detachedMethodsWithMetadata = new NodeCache<MethodDesc, DetachedMethodMetadataNode>(method =>
+            {
+                return new DetachedMethodMetadataNode(method);
+            });
+
             _fieldsWithMetadata = new NodeCache<FieldDesc, FieldMetadataNode>(field =>
             {
                 return new FieldMetadataNode(field);
@@ -1514,6 +1519,14 @@ namespace ILCompiler.DependencyAnalysis
             // in the dependency graph otherwise.
             Debug.Assert(MetadataManager is UsageBasedMetadataManager);
             return _methodsWithLimitedMetadata.GetOrAdd(method);
+        }
+
+        private NodeCache<MethodDesc, DetachedMethodMetadataNode> _detachedMethodsWithMetadata;
+
+        internal DetachedMethodMetadataNode DetachedMethodMetadata(MethodDesc method)
+        {
+            Debug.Assert(MetadataManager is UsageBasedMetadataManager);
+            return _detachedMethodsWithMetadata.GetOrAdd(method);
         }
 
         private NodeCache<FieldDesc, FieldMetadataNode> _fieldsWithMetadata;

@@ -703,6 +703,11 @@ private:
         REF_SAFETY_RULES_V11_IS_CACHED = 0x00040000,
         //If this module opted into RefSafetyRules version 11 or above
         REF_SAFETY_RULES_V11 = 0x00080000,
+
+        //If the DisablePrivateReflectionAttribute setting has been cached
+        PRIVATE_REFLECTION_DISABLED_IS_CACHED = 0x00100000,
+        //If the assembly of this module is annotated with DisablePrivateReflectionAttribute
+        PRIVATE_REFLECTION_DISABLED = 0x00200000,
     };
 
     Volatile<DWORD>          m_dwTransientFlags;
@@ -1621,6 +1626,12 @@ public:
     // version of at least 11 (i.e. RefSafetyRulesAttribute(version) with version >= 11).
     //-----------------------------------------------------------------------------------------
     BOOL                    OptsIntoRefSafetyRulesV11();
+
+    //-----------------------------------------------------------------------------------------
+    // If true, the assembly of this module is annotated with DisablePrivateReflectionAttribute,
+    // so the types of the module that are not externally visible are not available to reflection.
+    //-----------------------------------------------------------------------------------------
+    BOOL                    IsPrivateReflectionDisabled();
 
 protected:
     // For reflection emit modules we set this flag when we emit the attribute, and always consider

@@ -18,10 +18,35 @@ namespace System.Reflection
         private RuntimeType m_runtimeType;
         private readonly RuntimeAssembly m_runtimeAssembly;
         private readonly IntPtr m_pData;
+        private nint m_privateReflectionState;
 #pragma warning restore CA1823, 169
         #endregion
 
         internal RuntimeModule() { throw new NotSupportedException(); }
+
+        // Private reflection is disabled for the types of the module that are not externally visible if the assembly is
+        // annotated with DisablePrivateReflectionAttribute. The state is cached (0: not computed yet, 1: enabled, 2: disabled),
+        // racing threads compute the same value.
+        internal bool IsPrivateReflectionDisabled
+        {
+            get
+            {
+                nint state = m_privateReflectionState;
+                if (state == 0)
+                {
+                    state = ComputePrivateReflectionState();
+                }
+
+                return state == 2;
+            }
+        }
+
+        private nint ComputePrivateReflectionState()
+        {
+            nint state = ModuleHandle.IsPrivateReflectionDisabled(this) ? 2 : 1;
+            m_privateReflectionState = state;
+            return state;
+        }
 
         #region Module overrides
         private static RuntimeTypeHandle[]? ConvertToTypeHandleArray(Type[]? genericArguments)
@@ -72,6 +97,15 @@ namespace System.Reflection
 
         [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public override MethodBase? ResolveMethod(int metadataToken, Type[]? genericTypeArguments, Type[]? genericMethodArguments)
+            => ResolveMethod(metadataToken, genericTypeArguments, genericMethodArguments, forDiagnostics: false);
+
+        // For the debugger, which is not affected by DisablePrivateReflectionAttribute.
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
+        internal MethodBase? ResolveMethodForDiagnostics(int metadataToken)
+            => ResolveMethod(metadataToken, null, null, forDiagnostics: true);
+
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
+        private MethodBase? ResolveMethod(int metadataToken, Type[]? genericTypeArguments, Type[]? genericMethodArguments, bool forDiagnostics)
         {
             try
             {
@@ -118,7 +152,9 @@ namespace System.Reflection
                     declaringType = ResolveType(tkDeclaringType, genericTypeArguments, genericMethodArguments);
                 }
 
-                return RuntimeType.GetMethodBase(declaringType as RuntimeType, methodHandle);
+                return forDiagnostics
+                    ? RuntimeType.GetMethodBaseForDiagnostics(methodHandle, declaringType as RuntimeType)
+                    : RuntimeType.GetMethodBase(declaringType as RuntimeType, methodHandle);
             }
             catch (BadImageFormatException e)
             {
@@ -427,10 +463,27 @@ namespace System.Reflection
             RuntimeModule thisAsLocal = this;
             GetTypes(new QCallModule(ref thisAsLocal), ObjectHandleOnStack.Create(ref types), ObjectHandleOnStack.Create(ref exceptions));
 
+            if (IsPrivateReflectionDisabled && types is not null)
+                types = HideReflectionBlockedTypes(types);
+
             if (exceptions is not null)
                 throw new ReflectionTypeLoadException(types, exceptions, SR.ReflectionTypeLoad_LoadFailed);
 
             return types!;
+        }
+
+        // Types that are not reflectable (see DisablePrivateReflectionAttribute) are not listed. The types that failed to load are null.
+        private static RuntimeType[] HideReflectionBlockedTypes(RuntimeType[] types)
+        {
+            int count = 0;
+
+            foreach (RuntimeType type in types)
+            {
+                if (type is null || type.IsPublic || !RuntimeTypeHandle.IsReflectionBlocked(type))
+                    types[count++] = type!;
+            }
+
+            return count == types.Length ? types : types.AsSpan(0, count).ToArray();
         }
 
         [RequiresUnreferencedCode("Types might be removed")]

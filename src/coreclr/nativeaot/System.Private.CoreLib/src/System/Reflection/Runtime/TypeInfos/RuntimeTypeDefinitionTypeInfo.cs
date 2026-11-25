@@ -28,7 +28,13 @@ namespace System.Reflection.Runtime.TypeInfos
             //
             // Because of these conditions, we can safely implement both the method token equivalence and the "is this type from the same implementor"
             // check as our regular Equals() method.
-            return ToType().Equals(other);
+            Type type = ToType();
+
+            // Instances of generic types that have no metadata (see DisablePrivateReflectionAttribute) are represented by a TypeInfo of this kind.
+            if (type.IsConstructedGenericType)
+                type = type.GetGenericTypeDefinition();
+
+            return type.Equals(other);
         }
     }
 }

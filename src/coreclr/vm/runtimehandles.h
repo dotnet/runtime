@@ -158,6 +158,11 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_PrepareMemberInfoCache(QCall::TypeHa
 extern "C" void QCALLTYPE RuntimeTypeHandle_ConstructName(QCall::TypeHandle pTypeHandle, DWORD format, QCall::StringHandleOnStack retString, QCallExceptionStatus* qcallError);
 extern "C" void QCALLTYPE RuntimeTypeHandle_GetInterfaces(MethodTable* pMT, QCall::ObjectHandleOnStack result, QCallExceptionStatus* qcallError);
 extern "C" BOOL QCALLTYPE RuntimeTypeHandle_IsVisible(QCall::TypeHandle pTypeHandle, QCallExceptionStatus* qcallError);
+extern "C" INT32 QCALLTYPE RuntimeTypeHandle_GetReflectionVisibility(QCall::TypeHandle pTypeHandle, QCallExceptionStatus* qcallError);
+
+// True if the method is not available to reflection because its assembly is annotated with DisablePrivateReflectionAttribute and
+// the method is not public (see GetTypeReflectionVisibility). Must match the reflection APIs in managed code.
+bool IsMethodHiddenFromReflection(MethodDesc* pMD);
 extern "C" BOOL QCALLTYPE RuntimeTypeHandle_SatisfiesConstraints(QCall::TypeHandle paramType, QCall::TypeHandle typeContext, MethodDesc* methodContext, QCall::TypeHandle toType, QCallExceptionStatus* qcallError);
 extern "C" void QCALLTYPE RuntimeTypeHandle_GetInstantiation(QCall::TypeHandle pTypeHandle, QCall::ObjectHandleOnStack retType, BOOL fAsRuntimeTypeArray, QCallExceptionStatus* qcallError);
 extern "C" void QCALLTYPE RuntimeTypeHandle_Instantiate(QCall::TypeHandle pTypeHandle, TypeHandle * pInstArray, INT32 cInstArray, QCall::ObjectHandleOnStack retType, QCallExceptionStatus* qcallError);
@@ -257,6 +262,7 @@ extern "C" INT32 QCALLTYPE ModuleHandle_GetMDStreamVersion(QCall::ModuleHandle p
 extern "C" void QCALLTYPE ModuleHandle_GetModuleType(QCall::ModuleHandle pModule, QCall::ObjectHandleOnStack retType, QCallExceptionStatus* qcallError);
 
 extern "C" INT32 QCALLTYPE ModuleHandle_GetToken(QCall::ModuleHandle pModule);
+extern "C" BOOL QCALLTYPE ModuleHandle_IsPrivateReflectionDisabled(QCall::ModuleHandle pModule, QCallExceptionStatus* qcallError);
 
 extern "C" void QCALLTYPE ModuleHandle_ResolveType(QCall::ModuleHandle pModule, INT32 tkType, TypeHandle *typeArgs, INT32 typeArgsCount, TypeHandle *methodArgs, INT32 methodArgsCount, QCall::ObjectHandleOnStack retType, QCallExceptionStatus* qcallError);
 

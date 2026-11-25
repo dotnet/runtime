@@ -200,7 +200,7 @@ namespace ILCompiler.DependencyAnalysis
                 fptrReferenceId = factory.MetadataManager.NativeLayoutInfo.ExternalReferences.GetIndex(methodEntryPointNode);
             }
 
-            int token = factory.MetadataManager.GetMetadataHandleForMethod(factory, methodForToken);
+            int token = factory.MetadataManager.GetMetadataHandleForNativeLayout(factory, methodForToken);
             return GetNativeWriter(factory).GetMethodSignature((uint)flags, fptrReferenceId, containingType, token, args);
         }
 

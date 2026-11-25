@@ -110,6 +110,8 @@ namespace System.Reflection
             return Signature.AreEqual(this.Signature, target.Signature);
         }
         internal BindingFlags BindingFlags => m_bindingFlags;
+
+        internal bool HasAccessors => m_getterMethod is not null || m_setterMethod is not null || m_otherMethod is not null;
         #endregion
 
         #region Object Overrides

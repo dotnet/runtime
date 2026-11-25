@@ -69,7 +69,7 @@ The PR that reveals the implementation of the `<IncludeInternalObsoleteAttribute
 |  __`SYSLIB0012`__ | Assembly.CodeBase and Assembly.EscapedCodeBase are only included for .NET Framework compatibility. Use Assembly.Location instead. |
 |  __`SYSLIB0013`__ | Uri.EscapeUriString can corrupt the Uri string in some cases. Consider using Uri.EscapeDataString for query string components instead. |
 |  __`SYSLIB0014`__ | WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead. |
-|  __`SYSLIB0015`__ | DisablePrivateReflectionAttribute has no effect in .NET 6.0+. |
+|  __`SYSLIB0015`__ | DisablePrivateReflectionAttribute has no effect in .NET 6.0+. This diagnostic is no longer reported because the attribute is supported again. |
 |  __`SYSLIB0016`__ | Use the Graphics.GetContextInfo overloads that accept arguments for better performance and fewer allocations. |
 |  __`SYSLIB0017`__ | Strong name signing is not supported and throws PlatformNotSupportedException. |
 |  __`SYSLIB0018`__ | ReflectionOnly loading is not supported and throws PlatformNotSupportedException. |

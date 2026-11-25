@@ -37,6 +37,9 @@ namespace System.Reflection
         {
             Debug.Assert(target is not null);
 
+            if (target.IsReflectionBlocked)
+                return Array.Empty<CustomAttributeData>();
+
             IList<CustomAttributeData> cad = GetCustomAttributes(new QCustomAttributeList(target));
             ListBuilder<Attribute> pcas = default;
             PseudoCustomAttribute.GetCustomAttributes(target, (RuntimeType)typeof(object), ref pcas);
@@ -214,7 +217,7 @@ namespace System.Reflection
 #else
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
             Justification = "We're getting a MethodBase of a constructor that we found in the metadata. The attribute constructor won't be trimmed.")]
-        private RuntimeCustomAttributeData(ResolutionScope scope, MetadataToken caCtorToken, in ConstArray blob)
+        private RuntimeCustomAttributeData(ResolutionScope scope, MetadataToken caCtorToken, in ConstArray blob, RuntimeConstructorInfo ctor)
 #endif
         {
 #if NATIVEAOT
@@ -223,7 +226,7 @@ namespace System.Reflection
             m_ctor = ResolveAttributeConstructor(reader, blob);
 #else
             m_scope = scope;
-            m_ctor = (RuntimeConstructorInfo)RuntimeType.GetMethodBase(m_scope, caCtorToken)!;
+            m_ctor = ctor;
 
             if (m_ctor.DeclaringType!.IsGenericType)
             {
@@ -1680,11 +1683,16 @@ namespace System.Reflection
             if (type.GetElementType() is not null)
                 return false;
 
-            if (PseudoCustomAttribute.IsDefined(type, caType))
-                return true;
+            // The attributes of a type that is not reflectable are not available (see DisablePrivateReflectionAttribute),
+            // but the ones that it inherits are.
+            if (!type.IsReflectionBlocked)
+            {
+                if (PseudoCustomAttribute.IsDefined(type, caType))
+                    return true;
 
-            if (IsCustomAttributeDefined(new QCustomAttributeList(type), caType))
-                return true;
+                if (IsCustomAttributeDefined(new QCustomAttributeList(type), caType))
+                    return true;
+            }
 
             if (!inherit)
                 return false;
@@ -1693,7 +1701,7 @@ namespace System.Reflection
 
             while (type is not null)
             {
-                if (IsCustomAttributeDefined(new QCustomAttributeList(type), caType, inherit))
+                if (!type.IsReflectionBlocked && IsCustomAttributeDefined(new QCustomAttributeList(type), caType, inherit))
                     return true;
 
                 type = (type.BaseType as RuntimeType)!;
@@ -1811,14 +1819,22 @@ namespace System.Reflection
             if (type.IsGenericType && !type.IsGenericTypeDefinition)
                 type = (type.GetGenericTypeDefinition() as RuntimeType)!;
 
+            // The attributes of a type that is not reflectable are not available (see DisablePrivateReflectionAttribute),
+            // but the ones that it inherits are.
+            bool isReflectionBlocked = type.IsReflectionBlocked;
+
             ListBuilder<Attribute> pcas = default;
-            PseudoCustomAttribute.GetCustomAttributes(type, caType, ref pcas);
+            if (!isReflectionBlocked)
+                PseudoCustomAttribute.GetCustomAttributes(type, caType, ref pcas);
 
             // if we are asked to go up the hierarchy chain we have to do it now and regardless of the
             // attribute usage for the specific attribute because a derived attribute may override the usage...
             // ... however if the attribute is sealed we can rely on the attribute usage
             if (!inherit || (caType.IsSealed && !GetAttributeUsage(caType).Inherited))
             {
+                if (isReflectionBlocked)
+                    return CreateAttributeArrayHelper(caType, 0);
+
                 object[] attributes = GetCustomAttributes(new QCustomAttributeList(type), pcas.Count, caType);
                 if (pcas.Count > 0) pcas.CopyTo(attributes, attributes.Length - pcas.Count);
                 return attributes;
@@ -1832,9 +1848,12 @@ namespace System.Reflection
 
             do
             {
-                AddCustomAttributes(ref result, new QCustomAttributeList(type), caType, mustBeInheritable, result);
+                if (!isReflectionBlocked)
+                    AddCustomAttributes(ref result, new QCustomAttributeList(type), caType, mustBeInheritable, result);
+
                 mustBeInheritable = true;
                 type = (type.BaseType as RuntimeType)!;
+                isReflectionBlocked = type is not null && type.IsReflectionBlocked;
             } while (type != (RuntimeType)typeof(object) && type != null);
 
             object[] typedResult = CreateAttributeArrayHelper(caType, result.Count);

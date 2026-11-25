@@ -642,6 +642,16 @@ namespace System.Runtime.Loader
         }
 
 #if !NATIVEAOT
+#if CORECLR
+        // The handler can be a method that is not available to reflection (see DisablePrivateReflectionAttribute), but tracing is not affected by that.
+        private static string GetHandlerNameForTracing(Delegate handler)
+        {
+            MethodInfo method = handler.GetMethodForDiagnostics();
+
+            return method.DeclaringType is Type declaringType ? $"{StackTrace.GetFullNameForStackTrace(declaringType)}.{method.Name}" : method.Name;
+        }
+#endif // CORECLR
+
         // This method is invoked by the VM when using the host-provided assembly load context
         // implementation.
         private static RuntimeAssembly? Resolve(IntPtr gchAssemblyLoadContext, AssemblyName assemblyName)
@@ -664,7 +674,7 @@ namespace System.Runtime.Loader
                 {
                     TraceResolvingHandlerInvoked(
                         assemblyName.FullName,
-                        handler.Method.DeclaringType is Type declaringType ? $"{declaringType.FullName}.{handler.Method.Name}" : handler.Method.Name,
+                        GetHandlerNameForTracing(handler),
                         this != Default ? ToString() : Name,
                         resolvedAssembly?.FullName,
                         resolvedAssembly != null && !resolvedAssembly.IsDynamic ? resolvedAssembly.Location : null);
@@ -761,7 +771,7 @@ namespace System.Runtime.Loader
                 {
                     TraceAssemblyResolveHandlerInvoked(
                         name,
-                        handler.Method.DeclaringType is Type declaringType ? $"{declaringType.FullName}.{handler.Method.Name}" : handler.Method.Name,
+                        GetHandlerNameForTracing(handler),
                         asm?.FullName,
                         asm != null && !asm.IsDynamic ? asm.Location : null);
                 }

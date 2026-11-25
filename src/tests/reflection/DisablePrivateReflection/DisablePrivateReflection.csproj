@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- DisablePrivateReflectionAttribute has no effect in Mono -->
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'mono'">true</CLRTestTargetUnsupported>
+    <!-- The type map is read from the entry assembly, which would be the merged runner otherwise -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="DisablePrivateReflection.cs" />
+    <Compile Include="DisablePrivateReflectionConsumer.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="DisablePrivateReflectionLibrary.csproj" />
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+</Project>

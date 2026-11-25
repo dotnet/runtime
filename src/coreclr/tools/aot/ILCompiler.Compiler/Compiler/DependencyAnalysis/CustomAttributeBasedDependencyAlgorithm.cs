@@ -128,6 +128,8 @@ namespace ILCompiler.DependencyAnalysis
                     caDependencies.Add(factory.ReflectedMethod(constructor.GetCanonMethodTarget(CanonicalFormKind.Specific)), "Attribute constructor");
                     caDependencies.Add(factory.ReflectedType(constructor.OwningType), "Attribute type");
 
+                    AddDependenciesForStrippedTypes(caDependencies, factory, constructor.OwningType);
+
                     if (AddDependenciesFromCustomAttributeBlob(caDependencies, factory, constructor.OwningType, decodedValue))
                     {
 
@@ -292,12 +294,48 @@ namespace ILCompiler.DependencyAnalysis
 
             TypeDesc typeofType = (TypeDesc)value;
 
-            if (factory.MetadataManager.IsReflectionBlocked(typeofType))
+            // A type that has no metadata because it is not public in an assembly that disables private reflection can still be mentioned.
+            if (factory.MetadataManager.IsReflectionBlocked(typeofType, mentioned: true))
                 return false;
 
             // Grab the metadata nodes that will be necessary to represent the typeof in the metadata blob
             TypeMetadataNode.AddMetadataDependencies(dependencies, factory, typeofType, "Custom attribute blob");
+            AddDependenciesForStrippedTypes(dependencies, factory, typeofType);
             return true;
+        }
+
+        // The runtime represents a type that has no metadata (see DisablePrivateReflectionAttribute) that an attribute mentions by its
+        // MethodTable, so it has to exist. For an instance of a generic type of this kind (nested in a type that has no metadata) that is the
+        // MethodTable of the instance, and the one of the generic type definition that comes with it.
+        private static void AddDependenciesForStrippedTypes(IDependencySink dependencies, NodeFactory factory, TypeDesc type)
+        {
+            switch (type.Category)
+            {
+                case TypeFlags.Array:
+                case TypeFlags.SzArray:
+                case TypeFlags.ByRef:
+                case TypeFlags.Pointer:
+                    AddDependenciesForStrippedTypes(dependencies, factory, ((ParameterizedType)type).ParameterType);
+                    break;
+
+                case TypeFlags.FunctionPointer:
+                    MethodSignature signature = ((FunctionPointerType)type).Signature;
+
+                    for (int i = 0; i < signature.Length; i++)
+                        AddDependenciesForStrippedTypes(dependencies, factory, signature[i]);
+
+                    AddDependenciesForStrippedTypes(dependencies, factory, signature.ReturnType);
+                    break;
+
+                default:
+                    if (type.GetTypeDefinition() is MetadataType typeDefinition && factory.MetadataManager.IsStripped(typeDefinition))
+                        dependencies.Add(factory.ReflectedType(type), "Stripped type mentioned by a custom attribute");
+
+                    foreach (TypeDesc typeArgument in type.Instantiation)
+                        AddDependenciesForStrippedTypes(dependencies, factory, typeArgument);
+
+                    break;
+            }
         }
     }
 }

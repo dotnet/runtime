@@ -147,7 +147,25 @@ namespace System.Diagnostics
 
             IRuntimeMethodInfo? mhReal = RuntimeMethodHandle.GetTypicalMethodDefinition(new RuntimeMethodInfoStub(new RuntimeMethodHandleInternal(mh), this));
 
-            return RuntimeType.GetMethodBase(mhReal);
+            return RuntimeType.GetMethodBaseOrNullIfReflectionBlocked(mhReal);
+        }
+
+        // A frame that has a method handle but no MethodBase can be a method that is not available to reflection (see DisablePrivateReflectionAttribute),
+        // which is not one of the frames that the diagnostics APIs skip.
+        internal bool HasMethodHandle(int i) => rgMethodHandle![i] != IntPtr.Zero;
+
+        // The method of a frame for the diagnostics: the same as GetMethodBase, except that the methods that are not available to
+        // reflection are included. They are not shared with the reflection APIs.
+        internal MethodBase? GetMethodBaseForDiagnostics(int i)
+        {
+            IntPtr mh = rgMethodHandle![i];
+
+            if (mh == IntPtr.Zero)
+                return null;
+
+            IRuntimeMethodInfo? mhReal = RuntimeMethodHandle.GetTypicalMethodDefinition(new RuntimeMethodInfoStub(new RuntimeMethodHandleInternal(mh), this));
+
+            return RuntimeType.GetMethodBaseForDiagnostics(mhReal);
         }
 
         public int GetOffset(int i) { return rgiOffset![i]; }

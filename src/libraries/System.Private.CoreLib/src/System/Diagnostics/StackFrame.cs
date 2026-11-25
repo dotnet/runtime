@@ -203,12 +203,19 @@ namespace System.Diagnostics
             StringBuilder sb = new StringBuilder(255);
             bool includeFileInfoIfAvailable;
 
-            if (_method != null)
+            // A method that is not available to reflection (see DisablePrivateReflectionAttribute) is part of the diagnostics all the same.
+#if CORECLR
+            MethodBase? method = _method ?? _diagnosticMethod;
+#else
+            MethodBase? method = _method;
+#endif
+
+            if (method != null)
             {
-                sb.Append(_method.Name);
+                sb.Append(method.Name);
 
                 // deal with the generic portion of the method
-                if (_method is MethodInfo methodInfo && methodInfo.IsGenericMethod)
+                if (method is MethodInfo methodInfo && methodInfo.IsGenericMethod)
                 {
                     Type[] typars = methodInfo.GetGenericArguments();
 
@@ -222,7 +229,7 @@ namespace System.Diagnostics
                         else
                             fFirstTyParam = false;
 
-                        sb.Append(typars[k].Name);
+                        sb.Append(StackTrace.GetNameForStackTrace(typars[k]));
                         k++;
                     }
 

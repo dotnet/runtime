@@ -24,6 +24,8 @@ namespace System
             private readonly delegate*<object?, void> _pfnRefCtor;
             private readonly delegate*<ref byte, void> _pfnValueCtor;
             private readonly bool _ctorIsPublic;
+            private readonly bool _ctorIsPublicToReflection;
+            private readonly bool _ctorIsHiddenFromReflection;
 
 #if DEBUG
             private readonly RuntimeType _originalRuntimeType;
@@ -46,6 +48,10 @@ namespace System
                 // than the unmanaged layer, and callers might be dependent on this.
 
                 rt.CreateInstanceCheckThis();
+
+                // The default constructor of a class that is not available to reflection (see DisablePrivateReflectionAttribute) can't be found
+                // by reflection, but it can be called directly (Activator.CreateInstance<T>() works).
+                ReflectionMemberVisibility memberVisibility = rt.IsValueType ? ReflectionMemberVisibility.All : rt.MemberVisibility;
 
                 try
                 {
@@ -72,6 +78,10 @@ namespace System
 
                     throw; // can't make a friendlier message, rethrow original exception
                 }
+
+                _ctorIsHiddenFromReflection = memberVisibility == ReflectionMemberVisibility.None ||
+                    (memberVisibility == ReflectionMemberVisibility.PublicOnly && !_ctorIsPublic);
+                _ctorIsPublicToReflection = _ctorIsPublic && !_ctorIsHiddenFromReflection;
 
                 // Activator.CreateInstance returns null given typeof(Nullable<T>).
 
@@ -120,6 +130,10 @@ namespace System
             }
 
             internal bool CtorIsPublic => _ctorIsPublic;
+
+            internal bool CtorIsPublicToReflection => _ctorIsPublicToReflection;
+
+            internal bool CtorIsHiddenFromReflection => _ctorIsHiddenFromReflection;
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             internal object? CreateUninitializedObject(RuntimeType rt)

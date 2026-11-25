@@ -11,6 +11,7 @@
 
 #include "common.h"
 #include "comdelegate.h"
+#include "runtimehandles.h"
 #include "invokeutil.h"
 #include "excep.h"
 #include "class.h"
@@ -1041,6 +1042,10 @@ extern "C" BOOL QCALLTYPE Delegate_BindToMethodName(MethodTable* pDelegateMT, Me
 
             if (StrCompFunc(pszMethodName, pCurMethod->GetName()) == 0)
             {
+                // Methods that are not available to reflection (see DisablePrivateReflectionAttribute) can't be found by name.
+                if (IsMethodHiddenFromReflection(pCurMethod))
+                    continue;
+
                 // found a matching string, get an associated method desc if needed
                 // Use unboxing stubs for instance and virtual methods on value types.
                 // If this is a open delegate to an instance method BindToMethod will rebind it to the non-unboxing method.

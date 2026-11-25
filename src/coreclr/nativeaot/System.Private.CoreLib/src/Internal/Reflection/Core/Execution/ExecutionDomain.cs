@@ -34,11 +34,25 @@ namespace Internal.Reflection.Core.Execution
             RuntimeTypeInfo contextTypeInfo = declaringTypeHandle.GetRuntimeTypeInfoForRuntimeTypeHandle();
             RuntimeNamedMethodInfo? runtimeNamedMethodInfo = null;
 
+            RuntimeNamedTypeInfo anchoringTypeInfo = contextTypeInfo.AnchoringTypeDefinitionForDeclaredMembers;
+
+            // Members of types that have no reflection metadata (see DisablePrivateReflectionAttribute) have no metadata.
+            if (anchoringTypeInfo is null)
+                throw new NotSupportedException(SR.Reflection_TypeBlocked);
+
             if (methodHandle.IsNativeFormatMetadataBased)
             {
                 MethodHandle nativeFormatMethodHandle = methodHandle.NativeFormatHandle;
-                NativeFormatRuntimeNamedTypeInfo definingTypeInfo = contextTypeInfo.AnchoringTypeDefinitionForDeclaredMembers.CastToNativeFormatRuntimeNamedTypeInfo();
+                NativeFormatRuntimeNamedTypeInfo definingTypeInfo = anchoringTypeInfo.CastToNativeFormatRuntimeNamedTypeInfo();
                 MetadataReader reader = definingTypeInfo.Reader;
+
+                // A method that is not public in an assembly annotated with DisablePrivateReflectionAttribute has no metadata for the
+                // ldtoken, or only the record that the runtime type loader needs to identify it (which is marked and not part of its type).
+                // The marker is a bit that the 16 bits of the method attributes of an assembly can't have.
+                const MethodAttributes DetachedMethodMarker = (MethodAttributes)0x10000;
+                if (nativeFormatMethodHandle.IsNil || (nativeFormatMethodHandle.GetMethod(reader).Flags & DetachedMethodMarker) != 0)
+                    throw new NotSupportedException(SR.Reflection_MemberBlocked);
+
                 if (nativeFormatMethodHandle.IsConstructor(reader))
                 {
                     return RuntimePlainConstructorInfo<NativeFormatMethodCommon>.GetRuntimePlainConstructorInfo(new NativeFormatMethodCommon(nativeFormatMethodHandle, definingTypeInfo, contextTypeInfo));
@@ -54,7 +68,7 @@ namespace Internal.Reflection.Core.Execution
             else
             {
                 System.Reflection.Metadata.MethodDefinitionHandle ecmaFormatMethodHandle = methodHandle.EcmaFormatHandle;
-                EcmaFormatRuntimeNamedTypeInfo definingEcmaTypeInfo = contextTypeInfo.AnchoringTypeDefinitionForDeclaredMembers.CastToEcmaFormatRuntimeNamedTypeInfo();
+                EcmaFormatRuntimeNamedTypeInfo definingEcmaTypeInfo = anchoringTypeInfo.CastToEcmaFormatRuntimeNamedTypeInfo();
                 System.Reflection.Metadata.MetadataReader reader = definingEcmaTypeInfo.Reader;
                 if (ecmaFormatMethodHandle.IsConstructor(reader))
                 {
@@ -90,7 +104,11 @@ namespace Internal.Reflection.Core.Execution
         //=======================================================================================
         internal static RuntimeTypeInfo GetNamedTypeForHandle(RuntimeTypeHandle typeHandle)
         {
-            QTypeDefinition qTypeDefinition = ReflectionCoreExecution.ExecutionEnvironment.GetMetadataForNamedType(typeHandle);
+            if (!ReflectionCoreExecution.ExecutionEnvironment.TryGetMetadataForNamedType(typeHandle, out QTypeDefinition qTypeDefinition))
+            {
+                // The type has no reflection metadata (it is not public, in an assembly annotated with DisablePrivateReflectionAttribute).
+                return RuntimeBlockedTypeInfo.GetRuntimeBlockedTypeInfo(typeHandle);
+            }
 #if ECMA_METADATA_SUPPORT
             if (qTypeDefinition.IsNativeFormatMetadataBased)
 #endif
@@ -157,6 +175,12 @@ namespace Internal.Reflection.Core.Execution
 
             static RuntimeTypeInfo GetConstructedGenericTypeForHandle(MethodTable* pEEType)
             {
+                RuntimeTypeInfo genericTypeDefinition = new RuntimeTypeHandle(pEEType->GenericDefinition).GetRuntimeTypeInfoForRuntimeTypeHandle();
+
+                // Instances of generic types that have no reflection metadata (see DisablePrivateReflectionAttribute) have none either.
+                if (genericTypeDefinition is RuntimeBlockedTypeInfo)
+                    return RuntimeBlockedTypeInfo.GetRuntimeBlockedTypeInfo(new RuntimeTypeHandle(pEEType));
+
                 RuntimeTypeInfo[] genericTypeArguments = new RuntimeTypeInfo[pEEType->GenericArity];
                 MethodTableList arguments = pEEType->GenericArguments;
                 for (int i = 0; i < genericTypeArguments.Length; i++)
@@ -165,7 +189,7 @@ namespace Internal.Reflection.Core.Execution
                 }
 
                 return RuntimeConstructedGenericTypeInfo.GetRuntimeConstructedGenericTypeInfo(
-                    new RuntimeTypeHandle(pEEType->GenericDefinition).GetRuntimeTypeInfoForRuntimeTypeHandle(),
+                    genericTypeDefinition,
                     genericTypeArguments,
                     precomputedTypeHandle: new RuntimeTypeHandle(pEEType));
             }

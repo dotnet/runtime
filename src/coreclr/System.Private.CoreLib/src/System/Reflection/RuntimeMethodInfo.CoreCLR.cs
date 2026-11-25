@@ -109,17 +109,19 @@ namespace System.Reflection
             if (!IsVirtual || m_declaringType.IsActualInterface)
                 return null;
 
-            RuntimeType? parent = (RuntimeType?)m_declaringType.BaseType;
-
-            if (parent == null)
-                return null;
-
             int slot = RuntimeMethodHandle.GetSlot(this);
 
-            if (RuntimeTypeHandle.GetNumVirtuals(parent) <= slot)
-                return null;
+            // The methods of types that are not reflectable (see DisablePrivateReflectionAttribute) are skipped.
+            for (RuntimeType? parent = (RuntimeType?)m_declaringType.BaseType; parent is not null; parent = (RuntimeType?)parent.BaseType)
+            {
+                if (RuntimeTypeHandle.GetNumVirtuals(parent) <= slot)
+                    return null;
 
-            return (RuntimeMethodInfo?)RuntimeType.GetMethodBase(parent, RuntimeTypeHandle.GetMethodAt(parent, slot));
+                if (!parent.IsReflectionBlocked && RuntimeType.GetMethodBaseOrNullIfReflectionBlocked(parent, RuntimeTypeHandle.GetMethodAt(parent, slot)) is RuntimeMethodInfo parentDefinition)
+                    return parentDefinition;
+            }
+
+            return null;
         }
 
         // Unlike DeclaringType, this will return a valid type even for global methods
@@ -353,6 +355,28 @@ namespace System.Reflection
 
                 declaringType = (RuntimeType)declaringType.BaseType!;
             } while (declaringType != null);
+
+            // The topmost definition can be a method that is not available to reflection (see DisablePrivateReflectionAttribute),
+            // then the base definition is the topmost one that is.
+            if (RuntimeType.IsMethodHiddenFromReflection(baseMethodHandle))
+            {
+                RuntimeType thisDeclaringType = (RuntimeType)DeclaringType!;
+                baseDeclaringType = null;
+
+                for (RuntimeType? type = thisDeclaringType.BaseType as RuntimeType; type is not null && RuntimeTypeHandle.GetNumVirtuals(type) > slot; type = type.BaseType as RuntimeType)
+                {
+                    RuntimeMethodHandleInternal methodHandle = RuntimeTypeHandle.GetMethodAt(type, slot);
+
+                    if (!type.IsReflectionBlocked && !RuntimeType.IsMethodHiddenFromReflection(methodHandle))
+                    {
+                        baseMethodHandle = methodHandle;
+                        baseDeclaringType = type;
+                    }
+                }
+
+                if (baseDeclaringType is null)
+                    return this;
+            }
 
             return (MethodInfo)RuntimeType.GetMethodBase(baseDeclaringType, baseMethodHandle)!;
         }

@@ -183,6 +183,79 @@ namespace ILCompiler.Metadata
             return HandleMethodSignature(module, ref blobReader);
         }
 
+        public override Method HandleDetachedMethod(Cts.MethodDesc method)
+        {
+            Debug.Assert(method.IsTypicalMethodDefinition);
+
+            var ecmaMethod = (Cts.Ecma.EcmaMethod)method;
+            Ecma.MetadataReader reader = ecmaMethod.MetadataReader;
+            Ecma.MethodDefinition methodDef = reader.GetMethodDefinition(ecmaMethod.Handle);
+
+            Cts.MethodSignature sig = method.Signature;
+            var record = new Method
+            {
+                Name = HandleString(method.GetName()),
+                Flags = methodDef.Attributes | DetachedMethodMarker,
+                ImplFlags = methodDef.ImplAttributes,
+                Signature = sig.HasEmbeddedSignatureData
+                    ? HandleMethodSignature(ecmaMethod.Module, methodDef.Signature)
+                    : HandleMethodSignature(sig),
+            };
+
+            if (method.HasInstantiation)
+            {
+                record.GenericParameters.Capacity = method.Instantiation.Length;
+                foreach (Cts.Ecma.EcmaGenericParameter genericParameter in method.Instantiation)
+                {
+                    Ecma.GenericParameter genericParameterDef = reader.GetGenericParameter(genericParameter.Handle);
+                    record.GenericParameters.Add(new GenericParameter
+                    {
+                        Kind = Internal.Metadata.NativeFormat.GenericParameterKind.GenericMethodParameter,
+                        Number = checked((ushort)genericParameter.Index),
+                        Flags = genericParameterDef.Attributes,
+                        Name = HandleString(reader.GetString(genericParameterDef.Name)),
+                    });
+                }
+            }
+
+            return record;
+        }
+
+        public override bool SignatureContainsStrippedType(Cts.MethodSignature signature)
+        {
+            if (ContainsStrippedType(signature.ReturnType))
+                return true;
+
+            for (int i = 0; i < signature.Length; i++)
+            {
+                if (ContainsStrippedType(signature[i]))
+                    return true;
+            }
+
+            return false;
+        }
+
+        public override MethodSignature HandleMethodSignatureWithRealNames(Cts.MethodSignature signature)
+        {
+            if (!SignatureContainsStrippedType(signature))
+                return HandleMethodSignature(signature);
+
+            var result = new MethodSignature
+            {
+                CallingConvention = GetSignatureCallingConvention(signature),
+                GenericParameterCount = signature.GenericParameterCount,
+                ReturnType = HandleTypeWithRealNames(signature.ReturnType),
+            };
+
+            result.Parameters.Capacity = signature.Length;
+            for (int i = 0; i < signature.Length; i++)
+            {
+                result.Parameters.Add(HandleTypeWithRealNames(signature[i]));
+            }
+
+            return result;
+        }
+
         private MethodSignature HandleMethodSignature(Cts.Ecma.EcmaModule module, ref Ecma.BlobReader blobReader)
         {
             Ecma.SignatureHeader header = blobReader.ReadSignatureHeader();
