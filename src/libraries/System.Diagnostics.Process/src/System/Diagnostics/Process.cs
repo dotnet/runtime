@@ -897,6 +897,13 @@ namespace System.Diagnostics
 
                     _output = null;
                     _error = null;
+                    _pendingOutputRead = false;
+                    _pendingErrorRead = false;
+                    _outputStreamReadMode = StreamReadMode.Undefined;
+                    _errorStreamReadMode = StreamReadMode.Undefined;
+                    _standardOutputAccessed = false;
+                    _standardErrorAccessed = false;
+                    _standardInputAccessed = false;
 
                     CloseCore();
                     Refresh();
