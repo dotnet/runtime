@@ -1,5 +1,18 @@
 ---
-applyTo: "src/mono/wasm/**,src/mono/browser/**,src/mono/wasi/**,src/mono/nuget/Microsoft.NET.Sdk.WebAssembly.Pack/**,src/mono/nuget/Microsoft.NET.Runtime.WebAssembly.Sdk/**,src/mono/nuget/Microsoft.NET.Runtime.WebAssembly.Wasi.Sdk/**,src/mono/nuget/Microsoft.NET.Workload.Mono.Toolchain.Current.Manifest/**,src/native/libs/Common/JavaScript/**,src/tasks/WasmAppBuilder/**,src/tasks/Microsoft.NET.Sdk.WebAssembly.Pack.Tasks/**,src/tasks/Microsoft.NET.WebAssembly.Webcil/**,eng/native.wasm.targets,src/tasks/Crossgen2Tasks/Microsoft.NET.CrossGen.targets"
+applyTo:
+  - "src/mono/wasm/**"
+  - "src/mono/browser/**"
+  - "src/mono/wasi/**"
+  - "src/mono/nuget/Microsoft.NET.Sdk.WebAssembly.Pack/**"
+  - "src/mono/nuget/Microsoft.NET.Runtime.WebAssembly.Sdk/**"
+  - "src/mono/nuget/Microsoft.NET.Runtime.WebAssembly.Wasi.Sdk/**"
+  - "src/mono/nuget/Microsoft.NET.Workload.Mono.Toolchain.Current.Manifest/**"
+  - "src/native/libs/Common/JavaScript/**"
+  - "src/tasks/WasmAppBuilder/**"
+  - "src/tasks/Microsoft.NET.Sdk.WebAssembly.Pack.Tasks/**"
+  - "src/tasks/Microsoft.NET.WebAssembly.Webcil/**"
+  - "eng/native.wasm.targets"
+  - "src/tasks/Crossgen2Tasks/Microsoft.NET.CrossGen.targets"
 ---
 
 # WebAssembly
