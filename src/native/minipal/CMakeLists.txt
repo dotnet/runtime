@@ -10,7 +10,6 @@ set(SOURCES
     environ.c
     getexepath.c
     memorybarrierprocesswide.c
-    mountinfo.c
     mutex.c
     ospagesize.c
     guid.c

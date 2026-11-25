@@ -7,7 +7,6 @@ using Xunit;
 public class NativeMinipalTests
 {
     [Theory]
-    [InlineData("mountinfo")]
     [InlineData("utf8")]
     [InlineData("u16")]
     public static void RunSuite(string group)
@@ -17,4 +16,8 @@ public class NativeMinipalTests
         Console.Error.Write(error);
         Assert.Equal(0, exitCode);
     }
+
+    [Fact]
+    [PlatformSpecific(TestPlatforms.Linux)]
+    public static void RunCgroupSuite() => RunSuite("cgroup");
 }

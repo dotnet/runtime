@@ -5,10 +5,14 @@
 
 DEFINE_TEST_GROUP_INIT_H(minipal_utf8_tests_init);
 DEFINE_TEST_GROUP_INIT_H(minipal_u16_tests_init);
-DEFINE_TEST_GROUP_INIT_H(minipal_mountinfo_tests_init);
+#ifdef MINIPAL_CGROUP_TESTS
+DEFINE_TEST_GROUP_INIT_H(minipal_cgroup_tests_init);
+#endif
 
 static const Group test_groups[] = {
-    {"mountinfo", minipal_mountinfo_tests_init, true},
+#ifdef MINIPAL_CGROUP_TESTS
+    {"cgroup", minipal_cgroup_tests_init, true},
+#endif
     {"utf8", minipal_utf8_tests_init, true},
     {"u16", minipal_u16_tests_init, true},
     {NULL, NULL, false}

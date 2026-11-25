@@ -19,7 +19,6 @@ endif()
 add_executable(NativeMinipalTestsDriver
     ${NATIVE_TEST_COMMON_DIR}/driver.c
     ${NATIVE_TEST_COMMON_DIR}/test.c
-    mountinfo-tests.c
     native-minipal-tests-driver.c
     utf8-tests.c
     u16-tests.cpp
@@ -27,4 +26,15 @@ add_executable(NativeMinipalTestsDriver
 
 target_include_directories(NativeMinipalTestsDriver PRIVATE ${NATIVE_TEST_COMMON_DIR} ${CORECLR_MINIPAL_DIR})
 target_link_libraries(NativeMinipalTestsDriver PRIVATE minipal)
+
+if(CLR_CMAKE_TARGET_LINUX AND NOT CLR_CMAKE_TARGET_ANDROID)
+    target_sources(NativeMinipalTestsDriver PRIVATE cgroup-tests.c)
+    target_compile_definitions(NativeMinipalTestsDriver PRIVATE MINIPAL_CGROUP_TESTS)
+    target_link_options(NativeMinipalTestsDriver PRIVATE
+        "LINKER:--wrap=fopen"
+        "LINKER:--wrap=fopen64"
+        "LINKER:--wrap=statfs"
+        "LINKER:--wrap=statfs64")
+endif()
+
 install(TARGETS NativeMinipalTestsDriver DESTINATION bin)
