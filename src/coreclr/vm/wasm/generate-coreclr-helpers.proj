@@ -36,12 +36,26 @@
 
   <ItemGroup>
     <_WasmCallHelperTarget Include="browser" Condition="'$(CallHelperTargetOS)' == '' or '$(CallHelperTargetOS)' == 'browser'">
+      <TargetOS>browser</TargetOS>
       <ScanPath Condition="'$(BrowserScanPath)' != ''">$([MSBuild]::EnsureTrailingSlash('$(BrowserScanPath)'))</ScanPath>
       <ScanPath Condition="'$(BrowserScanPath)' == ''">$(_TesthostDir)$(NetCoreAppCurrent)-browser-$(Configuration)-wasm/shared/Microsoft.NETCore.App/$(_FrameworkVersion)/</ScanPath>
+      <OutputDir>$(MSBuildThisFileDirectory)browser/</OutputDir>
+    </_WasmCallHelperTarget>
+    <_WasmCallHelperTarget Include="browser-production" Condition="'$(CallHelperTargetOS)' == '' or '$(CallHelperTargetOS)' == 'browser'">
+      <TargetOS>browser</TargetOS>
+      <ScanPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsObjDir)', 'sfx-finish', '$(Configuration)', '$(NetCoreAppCurrent)-browser', 'illink-wasm-production'))</ScanPath>
+      <OutputDir>$(MSBuildThisFileDirectory)browser/production/</OutputDir>
+    </_WasmCallHelperTarget>
+    <_WasmCallHelperTarget Include="browser-diagnostics" Condition="'$(CallHelperTargetOS)' == '' or '$(CallHelperTargetOS)' == 'browser'">
+      <TargetOS>browser</TargetOS>
+      <ScanPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsObjDir)', 'sfx-finish', '$(Configuration)', '$(NetCoreAppCurrent)-browser', 'illink-wasm-diagnostics'))</ScanPath>
+      <OutputDir>$(MSBuildThisFileDirectory)browser/diagnostics/</OutputDir>
     </_WasmCallHelperTarget>
     <_WasmCallHelperTarget Include="wasi" Condition="'$(CallHelperTargetOS)' == '' or '$(CallHelperTargetOS)' == 'wasi'">
+      <TargetOS>wasi</TargetOS>
       <ScanPath Condition="'$(WasiScanPath)' != ''">$([MSBuild]::EnsureTrailingSlash('$(WasiScanPath)'))</ScanPath>
       <ScanPath Condition="'$(WasiScanPath)' == ''">$(_TesthostDir)$(NetCoreAppCurrent)-wasi-$(Configuration)-wasm/shared/Microsoft.NETCore.App/$(_FrameworkVersion)/</ScanPath>
+      <OutputDir>$(MSBuildThisFileDirectory)wasi/</OutputDir>
     </_WasmCallHelperTarget>
   </ItemGroup>
 
@@ -93,13 +107,13 @@
   <!-- Batched over _WasmCallHelperTarget: one crossgen2 run per wasm flavor. -->
   <Target Name="GenerateCallHelpers" DependsOnTargets="_ValidateCallHelperTargetOS" Outputs="%(_WasmCallHelperTarget.Identity)">
     <PropertyGroup>
-      <_TargetOS>%(_WasmCallHelperTarget.Identity)</_TargetOS>
+      <_TargetOS>%(_WasmCallHelperTarget.TargetOS)</_TargetOS>
       <_ScanPath>%(_WasmCallHelperTarget.ScanPath)</_ScanPath>
       <!-- The self-contained crossgen2 from the same per-flavor build output that produced the
            scan path. -->
       <_Crossgen2Path>$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'coreclr', '$(_TargetOS).wasm.$(Configuration)', '$(BuildArchitecture)', 'crossgen2', 'crossgen2$(ExeSuffix)'))</_Crossgen2Path>
-      <_OutputDir>$(MSBuildThisFileDirectory)$(_TargetOS)/</_OutputDir>
-      <_ResponseFileDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsObjDir)', 'wasm-callhelpers', '$(_TargetOS)'))</_ResponseFileDir>
+      <_OutputDir>%(_WasmCallHelperTarget.OutputDir)</_OutputDir>
+      <_ResponseFileDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsObjDir)', 'wasm-callhelpers', '%(_WasmCallHelperTarget.Identity)'))</_ResponseFileDir>
       <_ResponseFile>$(_ResponseFileDir)generate-coreclr-helpers.rsp</_ResponseFile>
       <_StagingDir>$(_ResponseFileDir)generated/</_StagingDir>
     </PropertyGroup>
@@ -107,12 +121,12 @@
     <Error Condition="!Exists('$(_Crossgen2Path)')"
            Text="crossgen2 was not found at $(_Crossgen2Path). Build the runtime first: $(_BuildScript) clr+libs -os $(_TargetOS) -c $(Configuration)" />
     <Error Condition="!Exists('$(_ScanPath)')"
-           Text="Scan path for $(_TargetOS) does not exist: $(_ScanPath). Build the runtime first: $(_BuildScript) clr+libs -os $(_TargetOS) -c $(Configuration)" />
+           Text="Scan path for %(_WasmCallHelperTarget.Identity) does not exist: $(_ScanPath). Build the runtime packs first: $(_BuildScript) clr+libs+host -os $(_TargetOS) -c $(Configuration)" />
     <Error Condition="'@(WasmCoreClrFrameworkPInvokeModule)' == ''"
            Text="No WasmCoreClrFrameworkPInvokeModule entries were found in $(WasmPInvokeModulesPropsPath)." />
 
-    <Message Importance="High" Text="[$(_TargetOS)] Scan path: $(_ScanPath)" />
-    <Message Importance="High" Text="[$(_TargetOS)] Output path: $(_OutputDir)" />
+    <Message Importance="High" Text="[%(_WasmCallHelperTarget.Identity)] Scan path: $(_ScanPath)" />
+    <Message Importance="High" Text="[%(_WasmCallHelperTarget.Identity)] Output path: $(_OutputDir)" />
 
     <RemoveDir Directories="$(_StagingDir)" />
     <MakeDir Directories="$(_OutputDir);$(_ResponseFileDir);$(_StagingDir)" />

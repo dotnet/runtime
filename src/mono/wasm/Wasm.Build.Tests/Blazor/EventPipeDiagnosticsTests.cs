@@ -57,7 +57,15 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
     {
         Configuration config = Configuration.Debug;
         ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, "coreclr_production_listener",
-            extraProperties: "<EventSourceSupport>true</EventSourceSupport>");
+            extraProperties: "<PublishTrimmed>false</PublishTrimmed><EnableDiagnostics>false</EnableDiagnostics>",
+            insertAtEnd: """
+                <Target Name="EnableManagedEventSource" BeforeTargets="GenerateBuildRuntimeConfigurationFiles">
+                    <ItemGroup>
+                        <RuntimeHostConfigurationOption Remove="System.Diagnostics.Tracing.EventSource.IsSupported" />
+                        <RuntimeHostConfigurationOption Include="System.Diagnostics.Tracing.EventSource.IsSupported" Value="true" />
+                    </ItemGroup>
+                </Target>
+                """);
         UpdateFile("Program.cs", new Dictionary<string, string>
         {
             ["var builder"] = """
@@ -109,7 +117,12 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
                 """
         });
 
-        PublishProject(info, config, new PublishOptions(AssertAppBundle: false, UseCache: false));
+        (string _, string output) = PublishProject(info, config, new PublishOptions(AssertAppBundle: false, UseCache: false));
+        string runtimePackDir = Assert.IsType<string>(ProjectProviderBase.TryGetRuntimePackDirFromBuildOutput(output));
+        string expectedWasm = Path.Combine(runtimePackDir, "runtimes", BuildEnvironment.DefaultRuntimeIdentifier, "native", "dotnet.native.wasm");
+        string actualWasm = Assert.Single(Directory.GetFiles(GetBuildPaths(config, forPublish: true).BinFrameworkDir, "dotnet.native*.wasm"));
+        TestUtils.AssertSameFile(expectedWasm, actualWasm);
+
         bool received = false;
         bool receivedDynamic = false;
         await RunForPublishWithWebServer(new BlazorRunOptions(config,

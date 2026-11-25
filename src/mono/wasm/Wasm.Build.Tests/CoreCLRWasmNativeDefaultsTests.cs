@@ -41,6 +41,8 @@ namespace Wasm.Build.Tests
             { "<InvariantTimezone>false</InvariantTimezone>", false },
             { "<EnableDiagnostics>false</EnableDiagnostics>", false },
             { "<EnableDiagnostics>true</EnableDiagnostics>", false },
+            { "<EventSourceSupport>false</EventSourceSupport>", false },
+            { "<EventSourceSupport>true</EventSourceSupport>", false },
             // property left unset -> no relink
             { "", false },
             // casing must not matter, MSBuild string comparison is case-insensitive
@@ -72,6 +74,37 @@ namespace Wasm.Build.Tests
 
             Assert.NotNull(line);
             Assert.Contains($"** WasmBuildNative: '{(expectWasmBuildNative ? "true" : "")}'", line);
+        }
+
+        [Theory]
+        [InlineData("<EnableDiagnostics>false</EnableDiagnostics>", "production")]
+        [InlineData("<EnableDiagnostics>true</EnableDiagnostics>", "diagnostics")]
+        [InlineData("<EventSourceSupport>false</EventSourceSupport>", "production")]
+        [InlineData("<EventSourceSupport>true</EventSourceSupport>", "diagnostics")]
+        public void TracingPropertySelectsNativeFlavor(string extraProperties, string expectedFlavor)
+        {
+            Configuration config = Configuration.Debug;
+            ProjectInfo info = CopyTestAsset(
+                config,
+                aot: false,
+                TestAsset.WasmBasicTestApp,
+                "coreclr_native_flavor",
+                extraProperties: extraProperties,
+                insertAtEnd: """
+                    <Target Name="PrintCoreClrNativeFlavor"
+                            AfterTargets="_WasmCoreClrResolveNativeFlavor">
+                        <Message Text="** CoreCLR native flavor: '$(_WasmCoreClrNativeFlavor)'" Importance="High" />
+                        <Error Text="Stopping the build" />
+                    </Target>
+                    """);
+
+            (string _, string output) = BuildProject(
+                info,
+                config,
+                new BuildOptions(ExpectSuccess: false));
+
+            Assert.Contains($"** CoreCLR native flavor: '{expectedFlavor}'", output);
+            Assert.Contains("Stopping the build", output);
         }
 
         [Theory]

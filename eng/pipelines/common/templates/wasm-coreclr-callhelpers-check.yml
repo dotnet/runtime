@@ -1,5 +1,6 @@
 # Regenerates the checked-in CoreCLR WebAssembly call helpers for this leg's target OS
-# (src/coreclr/vm/wasm/<os>/callhelpers-*.cpp) from the testhost and crossgen2 the leg just built,
+# (src/coreclr/vm/wasm/<os>/callhelpers-*.cpp and browser flavor subdirectories) from the managed
+# closures and crossgen2 the leg just built,
 # and fails if they differ from what is committed. A stale table builds fine but crashes the
 # corerun that links it, for example with "GetUnmanagedCallersOnlyThunk: unknown thunk" when a
 # new [UnmanagedCallersOnly] method is missing. See src/coreclr/vm/wasm/generate-coreclr-helpers.md.
@@ -44,7 +45,7 @@ steps:
       echo "The managed code that feeds these tables ([UnmanagedCallersOnly] methods, P/Invokes, QCalls)"
       echo "changed without the tables being regenerated. To fix, run from the repository root:"
       echo
-      echo "  ./build.sh clr+libs -os $target_os -c $configuration"
+      echo "  ./build.sh clr+libs+host -os $target_os -c $configuration"
       echo "  src/coreclr/vm/wasm/generate-coreclr-helpers.sh -c $configuration --target-os $target_os"
       echo
       echo "and commit the changes under $table_dir."
