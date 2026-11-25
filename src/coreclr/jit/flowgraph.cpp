@@ -473,7 +473,7 @@ void Compiler::fgSwitchToOptimized(const char* reason)
     opts.jitFlags->Clear(JitFlags::JIT_FLAG_PGO_INSTR);
     opts.jitFlags->Clear(JitFlags::JIT_FLAG_PGO_INSTR_IF_LOOPS);
     opts.jitFlags->Clear(JitFlags::JIT_FLAG_OSR);
-    opts.jitFlags->Set(JitFlags::JIT_FLAG_BBOPT);
+    opts.jitFlags->Set(JitFlags::JIT_FLAG_PGO_OPT);
 
     // Leave a note for jit diagnostics
     compSwitchedToOptimized = true;

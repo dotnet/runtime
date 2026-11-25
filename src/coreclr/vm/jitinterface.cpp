@@ -10803,7 +10803,7 @@ static CORJIT_FLAGS GetCompileFlags(PrepareCodeConfig* prepareConfig, MethodDesc
         else
         {
             if (!flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_TIER0))
-                flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBOPT);
+                flags.Set(CORJIT_FLAGS::CORJIT_FLAG_PGO_OPT);
         }
 
         if (optType == OPT_SIZE)
@@ -10834,11 +10834,11 @@ static CORJIT_FLAGS GetCompileFlags(PrepareCodeConfig* prepareConfig, MethodDesc
 
     if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ReadPGOData) > 0)
     {
-        flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBOPT);
+        flags.Set(CORJIT_FLAGS::CORJIT_FLAG_PGO_OPT);
     }
     else if (g_pConfig->TieredPGO() && flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_TIER1))
     {
-        flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBOPT);
+        flags.Set(CORJIT_FLAGS::CORJIT_FLAG_PGO_OPT);
     }
 
 #endif

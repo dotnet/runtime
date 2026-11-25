@@ -2390,7 +2390,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     fgPgoConsistent  = false;
     fgPgoDynamic     = false;
 
-    if (jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT))
+    if (jitFlags->IsSet(JitFlags::JIT_FLAG_PGO_OPT))
     {
         fgPgoQueryResult =
             info.compCompHnd->getPgoInstrumentationResults(info.compMethodHnd, &fgPgoSchema, &fgPgoSchemaCount,
@@ -3046,7 +3046,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         }
 #endif
 
-        if (jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT))
+        if (jitFlags->IsSet(JitFlags::JIT_FLAG_PGO_OPT))
         {
             printf("OPTIONS: optimizer should use profile data\n");
         }
@@ -3747,7 +3747,7 @@ _SetMinOpts:
     {
         info.compCompHnd->setMethodAttribs(info.compMethodHnd, CORINFO_FLG_SWITCHED_TO_MIN_OPT);
         opts.jitFlags->Clear(JitFlags::JIT_FLAG_TIER1);
-        opts.jitFlags->Clear(JitFlags::JIT_FLAG_BBOPT);
+        opts.jitFlags->Clear(JitFlags::JIT_FLAG_PGO_OPT);
         compSwitchedToMinOpts = true;
     }
 
@@ -7761,7 +7761,7 @@ if (!inlineInfo &&
     compileFlags->Set(JitFlags::JIT_FLAG_MIN_OPT);
     compileFlags->Clear(JitFlags::JIT_FLAG_SIZE_OPT);
     compileFlags->Clear(JitFlags::JIT_FLAG_SPEED_OPT);
-    compileFlags->Clear(JitFlags::JIT_FLAG_BBOPT);
+    compileFlags->Clear(JitFlags::JIT_FLAG_PGO_OPT);
 
     goto START;
 }

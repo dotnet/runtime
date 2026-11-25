@@ -49,7 +49,7 @@ public:
         CORJIT_FLAG_PROCSPLIT               = 17, // JIT should separate code into hot and cold sections
         CORJIT_FLAG_PGO_INSTR               = 18, // Collect profile data for PGO
         CORJIT_FLAG_PGO_INSTR_IF_LOOPS      = 19, // JIT must instrument current method if it has loops
-        CORJIT_FLAG_BBOPT                   = 20, // Optimize method based on profile information
+        CORJIT_FLAG_PGO_OPT                 = 20, // Optimize method based on profile information
         CORJIT_FLAG_FRAMED                  = 21, // All methods have an EBP frame
         // UNUSED                           = 22,
         CORJIT_FLAG_USE_PINVOKE_HELPERS     = 23, // The JIT should use the PINVOKE_{BEGIN,END} helpers instead of emitting inline transitions

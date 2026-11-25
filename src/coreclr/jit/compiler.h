@@ -11542,12 +11542,12 @@ public:
 
         bool IsOptimizedWithProfile() const
         {
-            return OptimizationEnabled() && jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT);
+            return OptimizationEnabled() && jitFlags->IsSet(JitFlags::JIT_FLAG_PGO_OPT);
         }
 
         bool IsInstrumentedAndOptimized() const
         {
-            return IsInstrumented() && jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT);
+            return IsInstrumented() && jitFlags->IsSet(JitFlags::JIT_FLAG_PGO_OPT);
         }
 
         bool DoEarlyBlockMerging() const

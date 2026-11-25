@@ -1215,8 +1215,8 @@ const char* CorJitFlagToString(CORJIT_FLAGS::CorJitFlag flag)
         return "CORJIT_FLAG_PGO_INSTR";
     case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_PGO_INSTR_IF_LOOPS:
         return "CORJIT_FLAG_PGO_INSTR_IF_LOOPS";
-    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_BBOPT:
-        return "CORJIT_FLAG_BBOPT";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_PGO_OPT:
+        return "CORJIT_FLAG_PGO_OPT";
     case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_FRAMED:
         return "CORJIT_FLAG_FRAMED";
     case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_USE_PINVOKE_HELPERS:
