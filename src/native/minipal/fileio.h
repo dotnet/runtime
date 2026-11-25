@@ -14,6 +14,9 @@ extern "C"
 /**
  * Creates a file that is accessible only to the current effective user,
  * replacing an existing regular file. Existing non-regular files are rejected.
+ * Replacement is not atomic: the existing file is deleted before the new file
+ * is created. If creation fails after deletion, the previous file is not restored.
+ * On failure, the path may no longer exist.
  * The returned handle is write-only and is not inherited by child processes.
  * On Windows, concurrent readers must share write access.
  * On Windows, replacing a read-only file fails, as does replacing a file
