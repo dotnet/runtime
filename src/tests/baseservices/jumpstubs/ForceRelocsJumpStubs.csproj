@@ -3,6 +3,7 @@
     <!-- Needed for CLRTestEnvironmentVariable -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <Optimize>true</Optimize>
+    <CLRTestPriority>1</CLRTestPriority>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ForceRelocsJumpStubs.cs" />
