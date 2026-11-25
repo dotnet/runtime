@@ -6035,7 +6035,8 @@ public:
 private:
 
     void impConvertToUserCallAndMarkForInlining(GenTreeCall* call);
-    void impRecordForwardedMethodArgs(InlineCandidateInfo* candidate, CORINFO_RESOLVED_TOKEN* token, unsigned tableOffset);
+    unsigned* impForwardedMethodArgs(CORINFO_RESOLVED_TOKEN* token, unsigned arity);
+    GenTree* fgMaterializeMethodContext(GenTreeRuntimeLookup* tree);
     void impMarkInlineCandidate(GenTree*               call,
                                 CORINFO_CONTEXT_HANDLE exactContextHnd,
                                 CORINFO_CALL_INFO*     callInfo,
@@ -7424,11 +7425,8 @@ private:
     GenTree* fgCreateCallDispatcherAndGetResult(GenTreeCall*          origCall,
                                                 CORINFO_METHOD_HANDLE callTargetStubHnd,
                                                 CORINFO_METHOD_HANDLE dispatcherHnd);
-    GenTree* getLookupTree(CORINFO_LOOKUP* pLookup,
-                           GenTreeFlags    handleFlags,
-                           void*           compileTimeHandle);
-    GenTree* getRuntimeLookupTree(CORINFO_LOOKUP* pLookup,
-                                  void*           compileTimeHandle);
+    GenTree* getLookupTree(CORINFO_LOOKUP* pLookup, GenTreeFlags handleFlags, void* compileTimeHandle, GenTree* context = nullptr);
+    GenTree* getRuntimeLookupTree(CORINFO_LOOKUP* pLookup, void* compileTimeHandle, GenTree* context = nullptr);
     GenTree* getVirtMethodPointerTree(GenTree*                thisPtr,
                                       CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                       CORINFO_CALL_INFO*      pCallInfo);

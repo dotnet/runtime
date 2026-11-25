@@ -3428,8 +3428,8 @@ public:
             ) CORINFO_PURE;
 
     // Returns instructions on how to make the call. See code:CORINFO_CALL_INFO for possible return values.
-    // Resolves the target and its signature. Call prepareCallLookups during import if a
-    // deferred lookup is needed, while the resolved tokens are still available.
+    // Resolves the target and its signature. Call prepareCallLookups if a deferred
+    // lookup survives optimization and needs to be materialized.
     CORINFO_VIRTUAL void getCallInfo(
             // Token info (in)
             CORINFO_RESOLVED_TOKEN * pResolvedToken,

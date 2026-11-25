@@ -321,6 +321,7 @@ void GenTree::InitNodeSize()
     static_assert(sizeof(GenTreeStoreInd)     <= TREE_NODE_SZ_SMALL);
     static_assert(sizeof(GenTreeAddrMode)     <= TREE_NODE_SZ_SMALL);
     static_assert(sizeof(GenTreeBlk)          <= TREE_NODE_SZ_SMALL);
+    static_assert(sizeof(GenTreeRuntimeLookup) <= TREE_NODE_SZ_SMALL);
     static_assert(sizeof(GenTreeRetExpr)      <= TREE_NODE_SZ_LARGE); // *** large node
     static_assert(sizeof(GenTreeILOffset)     <= TREE_NODE_SZ_SMALL);
     static_assert(sizeof(GenTreePhiArg)       <= TREE_NODE_SZ_SMALL);
@@ -2994,8 +2995,11 @@ AGAIN:
                     }
                     break;
 
-                // For the ones below no extra argument matters for comparison.
                 case GT_RUNTIMELOOKUP:
+                    if (op1->AsRuntimeLookup()->gtDeferredLookup != op2->AsRuntimeLookup()->gtDeferredLookup)
+                    {
+                        return false;
+                    }
                     break;
 
                 default:
@@ -11654,6 +11658,7 @@ GenTree* Compiler::gtCloneExpr(GenTree* tree)
 
                 copy = new (this, GT_RUNTIMELOOKUP)
                     GenTreeRuntimeLookup(asRuntimeLookup->gtHnd, asRuntimeLookup->gtHndType, asRuntimeLookup->gtOp1);
+                copy->AsRuntimeLookup()->gtDeferredLookup = asRuntimeLookup->gtDeferredLookup;
             }
             break;
 

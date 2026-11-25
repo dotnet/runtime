@@ -7,34 +7,31 @@
 
 // Map callee method parameters to the parameters of the root caller. Keep the
 // usual dictionary lookup if any argument or enclosing binding is unavailable.
-void Compiler::impRecordForwardedMethodArgs(InlineCandidateInfo*    candidate,
-                                            CORINFO_RESOLVED_TOKEN* token,
-                                            unsigned                tableOffset)
+unsigned* Compiler::impForwardedMethodArgs(CORINFO_RESOLVED_TOKEN* token, unsigned arity)
 {
     InlineCandidateInfo* parent = compIsForInlining() ? impInlineInfo->inlineCandidateInfo : nullptr;
     if ((parent != nullptr) && (parent->rootMethodArgs == nullptr))
     {
-        return;
+        return nullptr;
     }
 
     PCCOR_SIGNATURE sig  = token->pMethodSpec;
     unsigned        size = token->cbMethodSpec;
     if ((sig == nullptr) || (size < 2) || (*sig++ != IMAGE_CEE_CS_CALLCONV_GENERICINST))
     {
-        return;
+        return nullptr;
     }
     size--;
     uint32_t count, bytes;
-    if (FAILED(CorSigUncompressData(sig, size, &count, &bytes)) || (count == 0) ||
-        (count != candidate->methInfo.args.sigInst.methInstCount))
+    if (FAILED(CorSigUncompressData(sig, size, &count, &bytes)) || (count == 0) || (count != arity))
     {
-        return;
+        return nullptr;
     }
     sig += bytes;
     size -= bytes;
     if ((count > size / 2) || (*sig != ELEMENT_TYPE_MVAR))
     {
-        return;
+        return nullptr;
     }
 
     unsigned* args = getAllocator(CMK_Inlining).allocate<unsigned>(count);
@@ -42,24 +39,20 @@ void Compiler::impRecordForwardedMethodArgs(InlineCandidateInfo*    candidate,
     {
         if ((size < 2) || (*sig++ != ELEMENT_TYPE_MVAR))
         {
-            return;
+            return nullptr;
         }
         size--;
         uint32_t index;
         if (FAILED(CorSigUncompressData(sig, size, &index, &bytes)) ||
             (index >= info.compMethodInfo->args.sigInst.methInstCount))
         {
-            return;
+            return nullptr;
         }
         args[i] = (parent == nullptr) ? index : parent->rootMethodArgs[index];
         sig += bytes;
         size -= bytes;
     }
-    if (size == 0)
-    {
-        candidate->rootMethodArgs          = args;
-        candidate->rootInstantiationOffset = (parent == nullptr) ? tableOffset : parent->rootInstantiationOffset;
-    }
+    return size == 0 ? args : nullptr;
 }
 
 //------------------------------------------------------------------------
@@ -271,6 +264,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     const int              tailCallFlags                  = (prefixFlags & PREFIX_TAILCALL);
     const bool             isReadonlyCall                 = (prefixFlags & PREFIX_READONLY) != 0;
 
+    unsigned*             forwardedArgs   = nullptr;
     CORINFO_METHOD_HANDLE forwardedTarget = nullptr;
     methodPointerInfo*    ldftnInfo       = nullptr;
 
@@ -925,11 +919,34 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
             assert(opcode != CEE_CALLI);
 
-            instParam =
-                impGetInstParamArg(pResolvedToken, pConstrainedResolvedToken, callInfo, clsFlags, isReadonlyCall);
-            if ((opcode == CEE_CALL) && (callInfo->methodInstantiationOffset != 0))
+            if ((opcode == CEE_CALL) && (callInfo->methodInstantiationOffset != 0) &&
+                (TypeFromToken(pResolvedToken->token) == mdtMethodSpec) && !IsAot() && !opts.MinOpts())
             {
+                forwardedArgs = impForwardedMethodArgs(pResolvedToken, sig->sigInst.methInstCount);
+            }
+
+            if (forwardedArgs != nullptr)
+            {
+                assert(pConstrainedResolvedToken == nullptr && callInfo->kind == CORINFO_CALL);
+                assert((reinterpret_cast<size_t>(callInfo->contextHandle) & CORINFO_CONTEXTFLAGS_MASK) ==
+                       CORINFO_CONTEXTFLAGS_METHOD);
+                assert(callInfo->instParamLookup.lookupKind.runtimeLookupKind == CORINFO_LOOKUP_DEFERRED);
                 forwardedTarget = callInfo->hMethod;
+                // Keep the dictionary expression on the call so the inliner can substitute
+                // or discard it just like any other argument. Morph prepares surviving uses.
+                auto* pending = new (this, CMK_Inlining)
+                    DeferredMethodLookup{pResolvedToken->tokenContext, pResolvedToken->tokenScope, info.compMethodHnd,
+                                         pResolvedToken->token};
+                CORINFO_GENERIC_HANDLE handle =
+                    (CORINFO_GENERIC_HANDLE)((size_t)callInfo->contextHandle & ~CORINFO_CONTEXTFLAGS_MASK);
+                instParam                                      = gtNewRuntimeLookup(handle, CORINFO_HANDLETYPE_METHOD,
+                                                                                    getRuntimeContextTree(CORINFO_LOOKUP_METHODPARAM));
+                instParam->AsRuntimeLookup()->gtDeferredLookup = pending;
+            }
+            else
+            {
+                instParam =
+                    impGetInstParamArg(pResolvedToken, pConstrainedResolvedToken, callInfo, clsFlags, isReadonlyCall);
             }
             if (instParam == nullptr)
             {
@@ -1426,8 +1443,12 @@ DONE:
         if ((forwardedTarget != nullptr) && call->AsCall()->IsInlineCandidate() &&
             !call->AsCall()->IsGuardedDevirtualizationCandidate() && (call->AsCall()->gtCallMethHnd == forwardedTarget))
         {
-            impRecordForwardedMethodArgs(call->AsCall()->GetSingleInlineCandidateInfo(), pResolvedToken,
-                                         callInfo->methodInstantiationOffset);
+            InlineCandidateInfo* candidate = call->AsCall()->GetSingleInlineCandidateInfo();
+            assert(candidate->methInfo.args.sigInst.methInstCount == sig->sigInst.methInstCount);
+            candidate->rootMethodArgs          = forwardedArgs;
+            candidate->rootInstantiationOffset = compIsForInlining()
+                                                     ? impInlineInfo->inlineCandidateInfo->rootInstantiationOffset
+                                                     : callInfo->methodInstantiationOffset;
         }
 
         // If the call is virtual, extra information for possible use during late devirt inlining.

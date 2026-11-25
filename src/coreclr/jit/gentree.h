@@ -9196,12 +9196,24 @@ struct GenTreeAllocObj final : public GenTreeUnOp
 #endif
 };
 
+// Inputs for re-resolving an ordinary IL MethodSpec if its context survives inlining.
+struct DeferredMethodLookup
+{
+    CORINFO_CONTEXT_HANDLE tokenContext;
+    CORINFO_MODULE_HANDLE  tokenScope;
+    CORINFO_METHOD_HANDLE  caller;
+    mdToken                token;
+    CORINFO_LOOKUP*        preparedLookup = nullptr;
+};
+
 // Represents GT_RUNTIMELOOKUP node
 
 struct GenTreeRuntimeLookup final : public GenTreeUnOp
 {
     CORINFO_GENERIC_HANDLE   gtHnd;
     CorInfoGenericHandleType gtHndType;
+    // While pending, gtOp1 supplies the input dictionary to the lookup.
+    DeferredMethodLookup* gtDeferredLookup = nullptr;
 
     GenTreeRuntimeLookup(CORINFO_GENERIC_HANDLE hnd, CorInfoGenericHandleType hndTyp, GenTree* tree)
         : GenTreeUnOp(GT_RUNTIMELOOKUP, tree->gtType, tree DEBUGARG(/*largeNode*/ FALSE))
@@ -9220,6 +9232,7 @@ struct GenTreeRuntimeLookup final : public GenTreeUnOp
     // Return reference to the actual tree that does the lookup
     GenTree*& Lookup()
     {
+        assert(gtDeferredLookup == nullptr);
         return gtOp1;
     }
 

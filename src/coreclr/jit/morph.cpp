@@ -5573,11 +5573,15 @@ GenTree* Compiler::fgCreateCallDispatcherAndGetResult(GenTreeCall*          orig
 //    pLookup - the lookup to get the tree for
 //    handleFlags - flags to set on the result node
 //    compileTimeHandle - compile-time handle corresponding to the lookup
+//    context - input generic context, or nullptr to use the current method
 //
 // Return Value:
 //    A node representing the lookup tree
 //
-GenTree* Compiler::getLookupTree(CORINFO_LOOKUP* pLookup, GenTreeFlags handleFlags, void* compileTimeHandle)
+GenTree* Compiler::getLookupTree(CORINFO_LOOKUP* pLookup,
+                                 GenTreeFlags    handleFlags,
+                                 void*           compileTimeHandle,
+                                 GenTree*        context)
 {
     if (!pLookup->lookupKind.needsRuntimeLookup)
     {
@@ -5600,7 +5604,7 @@ GenTree* Compiler::getLookupTree(CORINFO_LOOKUP* pLookup, GenTreeFlags handleFla
         return gtNewIconEmbHndNode(handle, pIndirection, handleFlags, compileTimeHandle);
     }
 
-    return getRuntimeLookupTree(pLookup, compileTimeHandle);
+    return getRuntimeLookupTree(pLookup, compileTimeHandle, context);
 }
 
 //------------------------------------------------------------------------
@@ -5609,12 +5613,17 @@ GenTree* Compiler::getLookupTree(CORINFO_LOOKUP* pLookup, GenTreeFlags handleFla
 // Arguments:
 //    pLookup - the lookup to get the tree for
 //    compileTimeHandle - compile-time handle corresponding to the lookup
+//    context - input generic context, or nullptr to use the current method
 //
 // Return Value:
 //    A node representing the runtime lookup tree
 //
-GenTree* Compiler::getRuntimeLookupTree(CORINFO_LOOKUP* pLookup, void* compileTimeHandle)
+GenTree* Compiler::getRuntimeLookupTree(CORINFO_LOOKUP* pLookup, void* compileTimeHandle, GenTree* context)
 {
+    if (context == nullptr)
+    {
+        context = getRuntimeContextTree(pLookup->lookupKind.runtimeLookupKind);
+    }
     CORINFO_RUNTIME_LOOKUP* pRuntimeLookup = &pLookup->runtimeLookup;
 
     // If pRuntimeLookup->indirections is equal to CORINFO_USEHELPER, it specifies that a run-time helper should be
@@ -5622,12 +5631,10 @@ GenTree* Compiler::getRuntimeLookupTree(CORINFO_LOOKUP* pLookup, void* compileTi
     if ((pRuntimeLookup->indirections == CORINFO_USEHELPER) || (pRuntimeLookup->indirections == CORINFO_USENULL) ||
         pRuntimeLookup->testForNull)
     {
-        return gtNewRuntimeLookupHelperCallNode(pRuntimeLookup,
-                                                getRuntimeContextTree(pLookup->lookupKind.runtimeLookupKind),
-                                                compileTimeHandle);
+        return gtNewRuntimeLookupHelperCallNode(pRuntimeLookup, context, compileTimeHandle);
     }
 
-    GenTree* result = getRuntimeContextTree(pLookup->lookupKind.runtimeLookupKind);
+    GenTree* result = context;
 
     ArrayStack<GenTree*> stmts(getAllocator(CMK_ArrayStack));
 
@@ -6915,6 +6922,34 @@ GenTreeOp* Compiler::fgMorphCommutative(GenTreeOp* tree)
     return op1->AsOp();
 }
 
+// Materialize a surviving hidden method argument at its use. Re-resolve the
+// MethodSpec in the original inlinee scope, even though morph runs on the root.
+GenTree* Compiler::fgMaterializeMethodContext(GenTreeRuntimeLookup* tree)
+{
+    assert(!compIsForInlining());
+    DeferredMethodLookup* pending = tree->gtDeferredLookup;
+    if (pending->preparedLookup == nullptr)
+    {
+        CORINFO_RESOLVED_TOKEN token{};
+        token.tokenContext = pending->tokenContext;
+        token.tokenScope   = pending->tokenScope;
+        token.token        = pending->token;
+        token.tokenType    = CORINFO_TOKENKIND_Method;
+        info.compCompHnd->resolveToken(&token);
+
+        CORINFO_CALL_INFO callInfo;
+        info.compCompHnd->getCallInfo(&token, nullptr, pending->caller,
+                                      CORINFO_CALLINFO_ALLOWINSTPARAM | CORINFO_CALLINFO_SECURITYCHECKS, &callInfo);
+        assert(callInfo.kind == CORINFO_CALL && callInfo.sig.hasTypeArg() && callInfo.methodInstantiationOffset != 0);
+        assert(callInfo.instParamLookup.lookupKind.runtimeLookupKind == CORINFO_LOOKUP_DEFERRED);
+        assert((size_t)tree->gtHnd == ((size_t)callInfo.contextHandle & ~CORINFO_CONTEXTFLAGS_MASK));
+        info.compCompHnd->prepareCallLookups(&token, nullptr, pending->caller, &callInfo);
+        pending->preparedLookup = new (this, CMK_Inlining) CORINFO_LOOKUP(callInfo.instParamLookup);
+    }
+
+    return getLookupTree(pending->preparedLookup, GTF_ICON_METHOD_HDL, tree->gtHnd, tree->gtOp1);
+}
+
 //------------------------------------------------------------------------
 // fgMorphSmpOp: morph a GTK_SMPOP tree
 //
@@ -7512,6 +7547,10 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, bool* optAssertionPropDone)
         }
 
         case GT_RUNTIMELOOKUP:
+            if (tree->AsRuntimeLookup()->gtDeferredLookup != nullptr)
+            {
+                return fgMorphTree(fgMaterializeMethodContext(tree->AsRuntimeLookup()));
+            }
             return fgMorphTree(op1);
 
         case GT_COMMA:

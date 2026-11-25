@@ -41,6 +41,18 @@ public class ForwardedMethodTypeArgument
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static Type Constructed<T, U>() => Middle<U, T[]>();
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Type Kept<X>() => typeof(X);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Type MiddleKept<A, B>() => Kept<B>();
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Type NestedKept<T, U>() => MiddleKept<U, T>();
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Type Recursive<T, U>(int depth) => depth == 0 ? typeof(U) : Recursive<T, U>(depth - 1);
+
     private class Owner<T>
     {
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -65,6 +77,9 @@ public class ForwardedMethodTypeArgument
         Assert.Equal(typeof(int), ThreeLevels<int, string>(true));
         Assert.Equal(typeof(string), ThreeLevels<int, string>(false));
         Assert.Equal(typeof(object[]), Constructed<object, string>());
+        Assert.Equal(typeof(object), NestedKept<object, string>());
+        Assert.Equal(typeof(string), NestedKept<string, object>());
+        Assert.Equal(typeof(string), Recursive<object, string>(2));
         Assert.Equal(typeof(string), Owner<string>.Forward<object>(true));
         Assert.Equal(typeof(object), Owner<string>.Forward<object>(false));
     }
