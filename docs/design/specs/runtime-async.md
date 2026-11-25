@@ -5,8 +5,6 @@ This document is a draft of changes to ECMA-335 for the "runtime async" feature.
 
 Async is currently a feature implemented by various .NET languages as a compiler rewrite to support methods that can "yield" control back to their caller at specific "suspension" points. While effective, it's believed that implementation directly in the .NET runtime can provide improvements, especially in performance.
 
-Mono can load assemblies containing runtime-async methods, but attempts to execute those methods throw `PlatformNotSupportedException`. This also applies to methods compiled ahead of time by Mono.
-
 ## Spec modifications
 
 These are proposed modifications to the ECMA-335 specification for runtime-async.
