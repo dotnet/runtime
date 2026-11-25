@@ -1157,6 +1157,8 @@ namespace Internal.JitInterface
 
         public byte _exactContextNeedsRuntimeLookup; // Set if contextHandle is approx handle. Runtime lookup is required to get the exact handle.
         public bool exactContextNeedsRuntimeLookup { get { return _exactContextNeedsRuntimeLookup != 0; } set { _exactContextNeedsRuntimeLookup = value ? (byte)1 : (byte)0; } }
+        public ushort forwardedInstantiationOffset;
+        public ushort forwardedArgumentOffset;
 
         // If kind.CORINFO_VIRTUALCALL_STUB then stubLookup will be set.
         // If kind.CORINFO_CALL_CODE_POINTER then entryPointLookup will be set.

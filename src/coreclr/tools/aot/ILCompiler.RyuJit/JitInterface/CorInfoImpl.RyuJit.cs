@@ -1195,6 +1195,8 @@ namespace Internal.JitInterface
             // properly.
             NativeMemory.Fill(pResult, (nuint)sizeof(CORINFO_CALL_INFO), 0xcc);
 #endif
+            pResult->forwardedInstantiationOffset = 0;
+            pResult->forwardedArgumentOffset = 0;
             pResult->instParamLookup = default;
             MethodDesc method = HandleToObject(pResolvedToken.hMethod);
 

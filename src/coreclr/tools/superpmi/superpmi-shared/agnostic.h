@@ -394,6 +394,8 @@ struct Agnostic_CORINFO_CALL_INFO
     DWORD                         exactContextNeedsRuntimeLookup;
     Agnostic_CORINFO_LOOKUP       stubLookup; // first view of union.  others are matching or subordinate
     Agnostic_CORINFO_LOOKUP instParamLookup;
+    WORD forwardedInstantiationOffset;
+    WORD forwardedArgumentOffset;
     DWORD                         exceptionCode;
 };
 

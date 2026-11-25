@@ -1451,6 +1451,8 @@ void MethodContext::recGetCallInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
         value.stubLookup = SpmiRecordsHelper::StoreAgnostic_CORINFO_LOOKUP(&pResult->stubLookup);
 
         value.instParamLookup = SpmiRecordsHelper::StoreAgnostic_CORINFO_LOOKUP(&pResult->instParamLookup);
+        value.forwardedInstantiationOffset = pResult->forwardedMethodArg.instantiationOffset;
+        value.forwardedArgumentOffset = pResult->forwardedMethodArg.argumentOffset;
     }
 
     value.exceptionCode = (DWORD)exceptionCode;
@@ -1570,6 +1572,7 @@ void MethodContext::repGetCallInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                 (DWORD)CORINFO_VIRTUALCALL_STUB);
         }
         pResult->instParamLookup = SpmiRecordsHelper::RestoreCORINFO_LOOKUP(value.instParamLookup);
+        pResult->forwardedMethodArg = {value.forwardedInstantiationOffset, value.forwardedArgumentOffset};
     }
 
     *exceptionCode = (DWORD)value.exceptionCode;

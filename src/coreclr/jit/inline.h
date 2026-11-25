@@ -604,7 +604,8 @@ struct InlineCandidateInfo : public HandleHistogramProfileCandidateInfo
     CORINFO_RESOLVED_TOKEN guardedMethodUnboxedResolvedToken; // hMethod is the unboxed entry; token data is used by R2R
     unsigned               likelihood;
 
-    CORINFO_METHOD_INFO methInfo;
+    CORINFO_FORWARDED_METHOD_ARG forwardedMethodArg{};
+    CORINFO_METHOD_INFO          methInfo;
 
     // the logical IL caller of this inlinee.
     CORINFO_METHOD_HANDLE ilCallerHandle;

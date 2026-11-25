@@ -213,7 +213,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     const int              tailCallFlags                  = (prefixFlags & PREFIX_TAILCALL);
     const bool             isReadonlyCall                 = (prefixFlags & PREFIX_READONLY) != 0;
 
-    methodPointerInfo* ldftnInfo = nullptr;
+    CORINFO_METHOD_HANDLE forwardedTarget = nullptr;
+    methodPointerInfo*    ldftnInfo       = nullptr;
 
     // Synchronized methods need to call CORINFO_HELP_MON_EXIT at the end. We could
     // do that before tailcalls, but that is probably not the intended
@@ -868,6 +869,10 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
             instParam =
                 impGetInstParamArg(pResolvedToken, pConstrainedResolvedToken, callInfo, clsFlags, isReadonlyCall);
+            if (!compIsForInlining() && (opcode == CEE_CALL) && (callInfo->forwardedMethodArg.instantiationOffset != 0))
+            {
+                forwardedTarget = callInfo->hMethod;
+            }
             if (instParam == nullptr)
             {
                 assert(compDonotInline());
@@ -1359,6 +1364,12 @@ DONE:
 
         // Is it an inline candidate?
         impMarkInlineCandidate(call, exactContextHnd, callInfo, compInlineContext);
+
+        if ((forwardedTarget != nullptr) && call->AsCall()->IsInlineCandidate() &&
+            !call->AsCall()->IsGuardedDevirtualizationCandidate() && (call->AsCall()->gtCallMethHnd == forwardedTarget))
+        {
+            call->AsCall()->GetSingleInlineCandidateInfo()->forwardedMethodArg = callInfo->forwardedMethodArg;
+        }
 
         // If the call is virtual, extra information for possible use during late devirt inlining.
         //

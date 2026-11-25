@@ -1281,6 +1281,30 @@ GenTree* Compiler::impTokenToHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken,
 {
     assert(!fgGlobalMorph);
 
+    if (compIsForInlining() && (impInlineInfo->inlineCandidateInfo->forwardedMethodArg.instantiationOffset != 0) &&
+        !importParent && (pResolvedToken->hMethod == nullptr) && (pResolvedToken->hField == nullptr) &&
+        (pResolvedToken->tokenType == CORINFO_TOKENKIND_Ldtoken) && (pResolvedToken->cbTypeSpec == 2) &&
+        (pResolvedToken->pTypeSpec[0] == ELEMENT_TYPE_MVAR) && (pResolvedToken->pTypeSpec[1] == 0))
+    {
+        CORINFO_FORWARDED_METHOD_ARG binding = impInlineInfo->inlineCandidateInfo->forwardedMethodArg;
+        // ldtoken !!0 in the inlinee denotes the caller's forwarded argument.
+        // Build the EE-provided lookup against the root method dictionary.
+        CORINFO_LOOKUP lookup{};
+        lookup.lookupKind.needsRuntimeLookup = true;
+        lookup.lookupKind.runtimeLookupKind  = CORINFO_LOOKUP_METHODPARAM;
+        lookup.runtimeLookup.indirections    = 2;
+        lookup.runtimeLookup.sizeOffset      = CORINFO_NO_SIZE_CHECK;
+        lookup.runtimeLookup.offsets[0]      = binding.instantiationOffset;
+        lookup.runtimeLookup.offsets[1]      = binding.argumentOffset;
+        if (pRuntimeLookup != nullptr)
+        {
+            *pRuntimeLookup = true;
+        }
+        JITDUMP("Forward inlinee method argument from caller offset %u\n", binding.argumentOffset);
+        GenTree* handle = impInlineRoot()->impRuntimeLookupToTree(&lookup, pResolvedToken->hClass);
+        return gtNewRuntimeLookup((CORINFO_GENERIC_HANDLE)pResolvedToken->hClass, CORINFO_HANDLETYPE_CLASS, handle);
+    }
+
     CORINFO_GENERICHANDLE_RESULT embedInfo;
     info.compCompHnd->embedGenericHandle(pResolvedToken, importParent, info.compMethodHnd, &embedInfo);
 
