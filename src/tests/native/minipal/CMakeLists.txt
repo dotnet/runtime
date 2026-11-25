@@ -5,8 +5,6 @@ if(CLR_CMAKE_TARGET_ANDROID OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS OR 
     return()
 endif()
 
-include_directories(${CLR_SRC_NATIVE_DIR})
-
 set(NATIVE_TEST_COMMON_DIR ../common)
 set(CORECLR_MINIPAL_DIR ${CLR_REPO_ROOT_DIR}/src/coreclr/minipal)
 
@@ -20,21 +18,15 @@ add_executable(NativeMinipalTestsDriver
     ${NATIVE_TEST_COMMON_DIR}/driver.c
     ${NATIVE_TEST_COMMON_DIR}/test.c
     native-minipal-tests-driver.c
+    cgroup-tests.c
     utf8-tests.c
     u16-tests.cpp
     ${DN_U16_SOURCE})
 
-target_include_directories(NativeMinipalTestsDriver PRIVATE ${NATIVE_TEST_COMMON_DIR} ${CORECLR_MINIPAL_DIR})
+target_include_directories(NativeMinipalTestsDriver PRIVATE
+    ${CLR_SRC_NATIVE_DIR}
+    ${NATIVE_TEST_COMMON_DIR}
+    ${CORECLR_MINIPAL_DIR})
 target_link_libraries(NativeMinipalTestsDriver PRIVATE minipal)
-
-if(CLR_CMAKE_TARGET_LINUX AND NOT CLR_CMAKE_TARGET_ANDROID)
-    target_sources(NativeMinipalTestsDriver PRIVATE cgroup-tests.c)
-    target_compile_definitions(NativeMinipalTestsDriver PRIVATE MINIPAL_CGROUP_TESTS)
-    target_link_options(NativeMinipalTestsDriver PRIVATE
-        "LINKER:--wrap=fopen"
-        "LINKER:--wrap=fopen64"
-        "LINKER:--wrap=statfs"
-        "LINKER:--wrap=statfs64")
-endif()
 
 install(TARGETS NativeMinipalTestsDriver DESTINATION bin)

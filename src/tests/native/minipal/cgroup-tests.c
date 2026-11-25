@@ -1,18 +1,39 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#ifndef _GNU_SOURCE
+#if defined(__linux__) && !defined(_GNU_SOURCE)
 #define _GNU_SOURCE
 #endif
 
 #include "test.h"
 
+#if defined(__linux__)
+
 #include <errno.h>
 #include <linux/magic.h>
 #include <stdint.h>
 #include <sys/vfs.h>
-#include <minipal/cgroup.h>
 #include <minipal/utils.h>
+
+static FILE* fixture_fopen(const char* filename, const char* mode);
+static int fixture_statfs(const char* filename, struct statfs* stats);
+
+// Keep the real reader's state and I/O substitutions separate from the linked minipal library.
+#define minipal_cgroup_initialize fixture_cgroup_initialize
+#define minipal_cgroup_cleanup fixture_cgroup_cleanup
+#define minipal_cgroup_get_cpu_limit fixture_cgroup_get_cpu_limit
+#define minipal_cgroup_get_memory_limit fixture_cgroup_get_memory_limit
+#define minipal_cgroup_get_memory_usage fixture_cgroup_get_memory_usage
+#define fopen(filename, mode) fixture_fopen(filename, mode)
+#define statfs(filename, stats) fixture_statfs(filename, stats)
+#include <minipal/cgroup.c>
+#undef statfs
+#undef fopen
+#undef minipal_cgroup_get_memory_usage
+#undef minipal_cgroup_get_memory_limit
+#undef minipal_cgroup_get_cpu_limit
+#undef minipal_cgroup_cleanup
+#undef minipal_cgroup_initialize
 
 typedef struct
 {
@@ -30,18 +51,6 @@ static uint64_t s_parentLimit;
 static size_t s_cpuReads;
 static size_t s_limitReads;
 static size_t s_usageReads;
-
-FILE* __real_fopen(const char* filename, const char* mode);
-FILE* __wrap_fopen(const char* filename, const char* mode);
-int __real_statfs(const char* filename, struct statfs* stats);
-int __wrap_statfs(const char* filename, struct statfs* stats);
-
-#ifdef __GLIBC__
-FILE* __real_fopen64(const char* filename, const char* mode);
-FILE* __wrap_fopen64(const char* filename, const char* mode);
-int __real_statfs64(const char* filename, struct statfs64* stats);
-int __wrap_statfs64(const char* filename, struct statfs64* stats);
-#endif
 
 static FILE* open_text(const char* text)
 {
@@ -168,15 +177,15 @@ static FILE* open_fixture(const char* filename)
 }
 
 // The native driver is a separate process; fixtures never change the host's cgroups.
-FILE* __wrap_fopen(const char* filename, const char* mode)
+static FILE* fixture_fopen(const char* filename, const char* mode)
 {
-    return s_current == NULL ? __real_fopen(filename, mode) : open_fixture(filename);
+    return s_current == NULL ? fopen(filename, mode) : open_fixture(filename);
 }
 
-int __wrap_statfs(const char* filename, struct statfs* stats)
+static int fixture_statfs(const char* filename, struct statfs* stats)
 {
     if (s_current == NULL)
-        return __real_statfs(filename, stats);
+        return statfs(filename, stats);
     if (strcmp(filename, "/sys/fs/cgroup") != 0)
     {
         errno = ENOENT;
@@ -186,31 +195,10 @@ int __wrap_statfs(const char* filename, struct statfs* stats)
     stats->f_type = s_version == 2 ? CGROUP2_SUPER_MAGIC : TMPFS_MAGIC;
     return 0;
 }
-
-#ifdef __GLIBC__
-FILE* __wrap_fopen64(const char* filename, const char* mode)
-{
-    return s_current == NULL ? __real_fopen64(filename, mode) : open_fixture(filename);
-}
-
-int __wrap_statfs64(const char* filename, struct statfs64* stats)
-{
-    if (s_current == NULL)
-        return __real_statfs64(filename, stats);
-    if (strcmp(filename, "/sys/fs/cgroup") != 0)
-    {
-        errno = ENOENT;
-        return -1;
-    }
-    memset(stats, 0, sizeof(*stats));
-    stats->f_type = s_version == 2 ? CGROUP2_SUPER_MAGIC : TMPFS_MAGIC;
-    return 0;
-}
-#endif // __GLIBC__
 
 static RESULT check_path(const CgroupPathCase* path, int version, bool parentTighter)
 {
-    minipal_cgroup_cleanup();
+    fixture_cgroup_cleanup();
     s_current = path;
     s_version = version;
     s_childLimit = parentTighter ? 1073741824 : 268435456;
@@ -220,11 +208,11 @@ static RESULT check_path(const CgroupPathCase* path, int version, bool parentTig
     uint32_t cpu = 99;
     uint64_t limit = 99;
     uint64_t usage = 99;
-    bool cpuFound = minipal_cgroup_get_cpu_limit(&cpu);
-    bool limitFound = minipal_cgroup_get_memory_limit(&limit);
-    bool usageFound = minipal_cgroup_get_memory_usage(&usage);
+    bool cpuFound = fixture_cgroup_get_cpu_limit(&cpu);
+    bool limitFound = fixture_cgroup_get_memory_limit(&limit);
+    bool usageFound = fixture_cgroup_get_memory_usage(&usage);
     uint64_t expectedLimit = version == 2 && s_parentLimit < s_childLimit ? s_parentLimit : s_childLimit;
-    minipal_cgroup_cleanup();
+    fixture_cgroup_cleanup();
     s_current = NULL;
 
     if (!cpuFound || cpu != 1 || s_cpuReads == 0)
@@ -345,3 +333,5 @@ static Test minipal_cgroup_tests[] =
 };
 
 DEFINE_TEST_GROUP_INIT(minipal_cgroup_tests_init, minipal_cgroup_tests)
+
+#endif // __linux__
