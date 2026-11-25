@@ -111,6 +111,11 @@ namespace System.Net.Http.Headers
 
         public override string ToString()
         {
+            if (_parameters is null || _parameters.Count == 0)
+            {
+                return _value;
+            }
+
             StringBuilder sb = StringBuilderCache.Acquire();
             sb.Append(_value);
             NameValueHeaderValue.ToString(_parameters, ';', true, sb);
