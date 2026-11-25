@@ -4470,7 +4470,8 @@ GenTree* Compiler::optAssertionProp_AndOr(ASSERT_VALARG_TP assertions, GenTreeOp
     }
 
     // A "normalize on load" local may have garbage in its upper bits, the AND may be normalizing it.
-    if (op1->OperIs(GT_LCL_VAR) && lvaGetDesc(op1->AsLclVar())->lvNormalizeOnLoad())
+    GenTree* const op1Val = op1->gtEffectiveVal();
+    if (op1Val->OperIs(GT_LCL_VAR) && lvaGetDesc(op1Val->AsLclVar())->lvNormalizeOnLoad())
     {
         return nullptr;
     }
@@ -4541,11 +4542,12 @@ bool Compiler::optAssertionProp_SwitchDefault(ASSERT_VALARG_TP assertions, Basic
 
     JITDUMP("Removing the unreachable default case of the switch in " FMT_BB "\n", block->bbNum);
 
-    weight_t const defaultLikelihood = defaultEdge->getLikelihood() / defaultEdge->getDupCount();
+    // A default edge shared with a live case keeps its likelihood: none of its flow came from the default.
+    weight_t defaultLikelihood = 0;
     fgRemoveRefPred(defaultEdge);
-    defaultEdge->setLikelihood(defaultEdge->getLikelihood() - defaultLikelihood);
     if (defaultEdge->getDupCount() == 0)
     {
+        defaultLikelihood = defaultEdge->getLikelihood();
         for (unsigned i = 0; i < swtDesc->GetSuccCount(); i++)
         {
             if (swtDesc->GetSucc(i) == defaultEdge)
@@ -4557,22 +4559,20 @@ bool Compiler::optAssertionProp_SwitchDefault(ASSERT_VALARG_TP assertions, Basic
     }
     swtDesc->RemoveDefaultCase();
 
-    if (swtDesc->HasDominantCase() && (swtDesc->GetDominantCase() >= swtDesc->GetCaseCount() - 1))
+    if (defaultLikelihood > 0)
     {
-        swtDesc->RemoveDominantCase();
-    }
-
-    // Redistribute the default's likelihood.
-    const bool unlikely = fgProfileWeightsEqual(defaultLikelihood, 1.0, 0.001);
-    for (unsigned i = 0; i < swtDesc->GetSuccCount(); i++)
-    {
-        FlowEdge* const edge = swtDesc->GetSucc(i);
-        edge->setLikelihood(unlikely ? ((weight_t)edge->getDupCount() / swtDesc->GetCaseCount())
-                                     : min(1.0, edge->getLikelihood() / (1.0 - defaultLikelihood)));
-    }
-    if (block->hasProfileWeight() && (defaultLikelihood > 0))
-    {
-        fgPgoConsistent = false;
+        // Redistribute the default's likelihood.
+        const bool unlikely = fgProfileWeightsEqual(defaultLikelihood, 1.0, 0.001);
+        for (unsigned i = 0; i < swtDesc->GetSuccCount(); i++)
+        {
+            FlowEdge* const edge = swtDesc->GetSucc(i);
+            edge->setLikelihood(unlikely ? ((weight_t)edge->getDupCount() / swtDesc->GetCaseCount())
+                                         : min(1.0, edge->getLikelihood() / (1.0 - defaultLikelihood)));
+        }
+        if (block->hasProfileWeight())
+        {
+            fgPgoConsistent = false;
+        }
     }
 
     fgInvalidateDfsTree();
@@ -5011,7 +5011,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
     // See if the known bits of "op1" tell us the result of comparing it with a constant.
     // This is a hot path, so don't call into the analysis for the relops it can't handle
     // anyway (e.g. checks for null or for a handle).
-    if (varTypeIsIntegral(op1))
+    if (op2->IsIntegralConst() && !op2->IsIconHandle() && varTypeIsIntegral(op1))
     {
         const RelopEvaluationResult result = KnownBitsAnalysis(this).EvalRelop(tree->AsOp(), assertions);
         if (result != RelopEvaluationResult::Unknown)

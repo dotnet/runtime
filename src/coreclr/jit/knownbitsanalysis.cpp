@@ -94,19 +94,19 @@ void KnownBitsAnalysis::Bounds::ApplyRelop(Compiler::optAssertionKind kind, cons
             if (other.UMin == other.UMax)
             {
                 const APInt& cns = other.UMin;
-                if ((UMin == cns) && !(UMax == cns))
+                if ((UMin == cns) && UMin.ult(UMax))
                 {
                     UMin = UMin + 1;
                 }
-                else if ((UMax == cns) && !(UMin == cns))
+                else if ((UMax == cns) && UMin.ult(UMax))
                 {
                     UMax = UMax - 1;
                 }
-                if ((SMin == cns) && !(SMax == cns))
+                if ((SMin == cns) && SMin.slt(SMax))
                 {
                     SMin = SMin + 1;
                 }
-                else if ((SMax == cns) && !(SMin == cns))
+                else if ((SMax == cns) && SMin.slt(SMax))
                 {
                     SMax = SMax - 1;
                 }
@@ -163,6 +163,8 @@ void KnownBitsAnalysis::Bounds::Normalize()
     {
         UMin = APInt::umax(UMin, SMin);
         UMax = APInt::umin(UMax, SMax);
+        SMin = APInt::smax(SMin, UMin);
+        SMax = APInt::smin(SMax, UMax);
     }
 }
 

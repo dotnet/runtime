@@ -2936,7 +2936,8 @@ void Compiler::fgPeelSwitch(BasicBlock* block)
 
     // The dominant case should not be the default case, as we already peel that one.
     //
-    assert(dominantCase < (block->GetSwitchTargets()->GetCaseCount() - 1));
+    assert(dominantCase <
+           (block->GetSwitchTargets()->GetCaseCount() - (block->GetSwitchTargets()->HasDefaultCase() ? 1 : 0)));
     FlowEdge* const   dominantEdge   = block->GetSwitchTargets()->GetCase(dominantCase);
     BasicBlock* const dominantTarget = dominantEdge->getDestinationBlock();
     Statement* const  switchStmt     = block->lastStmt();

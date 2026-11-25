@@ -1077,7 +1077,8 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                         {
                             fprintf(fgxFile, "\n            switchCases=\"%d\"", edge->getDupCount());
                         }
-                        if (bSource->GetSwitchTargets()->GetDefaultCase()->getDestinationBlock() == bTarget)
+                        if (bSource->GetSwitchTargets()->HasDefaultCase() &&
+                            (bSource->GetSwitchTargets()->GetDefaultCase()->getDestinationBlock() == bTarget))
                         {
                             fprintf(fgxFile, "\n            switchDefault=\"true\"");
                         }
