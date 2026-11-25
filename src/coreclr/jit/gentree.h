@@ -459,6 +459,7 @@ enum GenTreeFlags : unsigned
     GTF_CALL_NONVIRT            = 0x00000000, // GT_CALL -- a non virtual call
     GTF_CALL_VIRT_STUB          = 0x10000000, // GT_CALL -- a stub-dispatch virtual call
     GTF_CALL_VIRT_VTABLE        = 0x20000000, // GT_CALL -- a  vtable-based virtual call
+    GTF_CALL_VIRT_GVM           = 0x30000000, // GT_CALL -- GVM awaiting import-time dispatch selection
 
     GTF_CALL_NULLCHECK          = 0x08000000, // GT_CALL -- must check instance pointer for null
     GTF_CALL_POP_ARGS           = 0x04000000, // GT_CALL -- caller pop arguments?
@@ -5402,9 +5403,14 @@ struct GenTreeCall final : public GenTree
     {
         return (gtFlags & GTF_CALL_VIRT_KIND_MASK) == GTF_CALL_VIRT_VTABLE;
     }
+    bool IsPendingGvm() const
+    {
+        return (gtFlags & GTF_CALL_VIRT_KIND_MASK) == GTF_CALL_VIRT_GVM;
+    }
     bool IsGenericVirtual(Compiler* compiler) const
     {
-        return (gtCallType == CT_INDIRECT && (gtControlExpr->IsHelperCall(CORINFO_HELP_VIRTUAL_FUNC_PTR) ||
+        return IsPendingGvm() ||
+               (gtCallType == CT_INDIRECT && (gtControlExpr->IsHelperCall(CORINFO_HELP_VIRTUAL_FUNC_PTR) ||
                                               gtControlExpr->IsHelperCall(CORINFO_HELP_GVMLOOKUP_FOR_SLOT) ||
                                               gtControlExpr->IsHelperCall(CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT)
 #ifdef FEATURE_READYTORUN

@@ -67,9 +67,51 @@ public class SharedGenericVirtualMethod
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static Type SharedOwner<T, U>(SharedChild<T> d) => ((IOwner<T[]>)d).Read<U>();
 
+    private class OrderBase
+    {
+        public virtual int Apply<T>(int arg) => -1;
+    }
+
+    private sealed class OrderDerived : OrderBase
+    {
+        public override int Apply<T>(int arg) => arg;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static R Receiver<R>(R receiver, ref int order)
+    {
+        order = order * 10 + 1;
+        return receiver;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int Argument(ref int order) => order = order * 10 + 2;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int ExactOrder<T>(OrderDerived receiver, ref int order)
+        => ((OrderBase)Receiver(receiver, ref order)).Apply<T>(Argument(ref order));
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int VirtualOrder<T>(OrderBase receiver, ref int order)
+        => Receiver(receiver, ref order).Apply<T>(Argument(ref order));
+
     [Fact]
     public static void TestEntryPoint()
     {
+        var receiver = new OrderDerived();
+        int order = 0;
+        Assert.Equal(12, ExactOrder<string>(receiver, ref order));
+        Assert.Equal(12, order);
+        order = 0;
+        Assert.Equal(12, VirtualOrder<string>(receiver, ref order));
+        Assert.Equal(12, order);
+        order = 0;
+        Assert.Throws<NullReferenceException>(() => ExactOrder<string>(null, ref order));
+        Assert.Equal(12, order);
+        order = 0;
+        Assert.Throws<NullReferenceException>(() => VirtualOrder<string>(null, ref order));
+        Assert.Equal(12, order);
+
         var d = new Derived();
         Assert.Equal(42, ByClass<string>(d));
         Assert.Equal(42, ByInterface<object>(d));

@@ -2770,6 +2770,35 @@ bool Compiler::checkTailCallConstraint(OPCODE                  opcode,
     return true; // Yes, tailcall is legal
 }
 
+// Materialize the control expression for an indirect virtual call. The receiver
+// is passed both to the lookup helper and to the target, but evaluated once.
+bool Compiler::impMaterializeVirtualFunctionPointer(GenTreeCall*            call,
+                                                    CORINFO_RESOLVED_TOKEN* token,
+                                                    CORINFO_CALL_INFO*      callInfo)
+{
+    CallArg* thisArg  = call->gtArgs.GetThisArg();
+    GenTree* receiver = thisArg->GetNode();
+    GenTree* copy;
+    GenTree* lookupReceiver =
+        impCloneExpr(receiver, &copy, CHECK_SPILL_ALL, nullptr DEBUGARG("LDVIRTFTN this pointer"));
+    if ((lookupReceiver != receiver) && lookupReceiver->OperIsLocal() && lookupReceiver->TypeIs(TYP_REF))
+    {
+        unsigned lcl                 = lookupReceiver->AsLclVarCommon()->GetLclNum();
+        lvaGetDesc(lcl)->lvSingleDef = 1;
+        lvaSetClass(lcl, receiver);
+    }
+    thisArg->SetEarlyNode(copy);
+    GenTree* target = impImportLdvirtftn(lookupReceiver, token, callInfo);
+    if (target == nullptr)
+    {
+        assert(compDonotInline());
+        return false;
+    }
+    call->gtControlExpr = target;
+    call->gtFlags |= (target->gtFlags | copy->gtFlags) & GTF_ALL_EFFECT;
+    return !compDonotInline();
+}
+
 GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
                                       CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                       CORINFO_CALL_INFO*      pCallInfo)

@@ -586,34 +586,20 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 thisPtr          = impTransformThis(thisPtr, pConstrainedResolvedToken, callInfo->thisTransform);
                 assert(thisPtr != nullptr);
 
-                GenTree* origThisPtr = thisPtr;
+                call->AsCall()->gtArgs.PushFront(this,
+                                                 NewCallArg::Primitive(thisPtr).WellKnown(WellKnownArg::ThisPointer));
 
-                // Clone the (possibly transformed) "this" pointer
-                GenTree* thisPtrCopy;
-                thisPtr =
-                    impCloneExpr(thisPtr, &thisPtrCopy, CHECK_SPILL_ALL, nullptr DEBUGARG("LDVIRTFTN this pointer"));
-
-                // We cloned the "this" pointer, mark it as a single def and set the class for it
-                if (thisPtr->OperIsLocal() && thisPtr->TypeIs(TYP_REF) && (origThisPtr != thisPtr))
+                if (!IsAot() && opts.OptimizationEnabled() && callInfo->exactContextNeedsRuntimeLookup &&
+                    (sig->sigInst.methInstCount != 0) && (JitConfig.JitEnableGenericVirtualDevirtualization() != 0))
                 {
-                    lvaGetDesc(thisPtr->AsLclVarCommon())->lvSingleDef = 1;
-                    lvaSetClass(thisPtr->AsLclVarCommon()->GetLclNum(), origThisPtr);
+                    // Devirtualization needs the receiver and declaration. Build the dispatch
+                    // helper and its token lookups only if the call remains virtual.
+                    call->gtFlags |= GTF_CALL_VIRT_GVM | (thisPtr->gtFlags & GTF_ALL_EFFECT);
                 }
-
-                GenTree* fptr = impImportLdvirtftn(thisPtr, pResolvedToken, callInfo);
-                if (fptr == nullptr)
+                else if (!impMaterializeVirtualFunctionPointer(call->AsCall(), pResolvedToken, callInfo))
                 {
-                    assert(compDonotInline());
                     return TYP_UNDEF;
                 }
-
-                call->AsCall()
-                    ->gtArgs.PushFront(this, NewCallArg::Primitive(thisPtrCopy).WellKnown(WellKnownArg::ThisPointer));
-                call->gtFlags |= thisPtrCopy->gtFlags & GTF_ALL_EFFECT;
-
-                // Now make an indirect call through the function pointer
-                call->AsCall()->gtControlExpr = fptr;
-                call->gtFlags |= fptr->gtFlags & GTF_ALL_EFFECT;
 
                 if (needsFatPointerHandling)
                 {
@@ -1133,6 +1119,15 @@ DEVIRT:
         {
             considerGuardedDevirtualization(call->AsCall(), rawILOffset, false, call->AsCall()->gtCallMethHnd,
                                             NO_CLASS_HANDLE, nullptr);
+        }
+    }
+
+    if (call->AsCall()->IsPendingGvm())
+    {
+        call->gtFlags &= ~GTF_CALL_VIRT_KIND_MASK;
+        if (!impMaterializeVirtualFunctionPointer(call->AsCall(), pResolvedToken, callInfo))
+        {
+            return TYP_UNDEF;
         }
     }
 
@@ -10344,8 +10339,7 @@ void Compiler::impTransformDevirtualizedCall(GenTreeCall*            call,
 
     // Make the updates.
     call->ClearFatPointerCandidate();
-    call->gtFlags &= ~GTF_CALL_VIRT_VTABLE;
-    call->gtFlags &= ~GTF_CALL_VIRT_STUB;
+    call->gtFlags &= ~GTF_CALL_VIRT_KIND_MASK;
     call->gtCallMethHnd = derivedMethod;
     call->gtCallType    = CT_USER_FUNC;
     call->gtControlExpr = nullptr;

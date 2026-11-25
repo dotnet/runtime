@@ -5353,6 +5353,7 @@ protected:
     void impSaveStackState(SavedStack* savePtr, bool copy);
     void impRestoreStackState(SavedStack* savePtr);
 
+    bool impMaterializeVirtualFunctionPointer(GenTreeCall* call, CORINFO_RESOLVED_TOKEN* token, CORINFO_CALL_INFO* callInfo);
     GenTree* impImportLdvirtftn(GenTree* thisPtr, CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CALL_INFO* pCallInfo);
 
 #if defined(FEATURE_HW_INTRINSICS)
