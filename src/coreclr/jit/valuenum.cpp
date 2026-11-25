@@ -3545,7 +3545,7 @@ TailCall:
     MapSelectWorkCacheEntry entry;
 
     VNDefFuncApp<2> fstruct(VNF_MapSelect, map, index);
-    if (GetMapSelectWorkCache()->Lookup(fstruct, &entry))
+    if (GetMapSelectWorkCache(vnk)->Lookup(fstruct, &entry))
     {
         entry.GetMemoryDependencies(m_compiler, memoryDependencies);
         return entry.Result;
@@ -3569,7 +3569,7 @@ TailCall:
         // the IR may "evaluate" to this same VNForExpr, so it is not "unique" in the sense
         // that permits the BasicBlock attribution.
         entry.Result = VNForExpr(nullptr, type);
-        GetMapSelectWorkCache()->Set(fstruct, entry);
+        GetMapSelectWorkCache(vnk)->Set(fstruct, entry);
         return entry.Result;
     }
 
@@ -3793,7 +3793,7 @@ TailCall:
                     // If we ran out of budget we could have already cached the
                     // result in the leaf. In that case it is ok to overwrite
                     // it here.
-                    MapSelectWorkCache* cache = GetMapSelectWorkCache();
+                    MapSelectWorkCache* cache = GetMapSelectWorkCache(vnk);
                     assert(!cache->Lookup(fstruct) || ((*cache)[fstruct].Result == sameSelResult));
                     cache->Set(fstruct, entry, MapSelectWorkCache::Overwrite);
                 }
@@ -3810,7 +3810,7 @@ TailCall:
     }
 
     // We may have run out of budget and already assigned a result
-    if (!GetMapSelectWorkCache()->Lookup(fstruct, &entry))
+    if (!GetMapSelectWorkCache(vnk)->Lookup(fstruct, &entry))
     {
         // Otherwise, assign a new VN for the function application.
         Chunk* const          c                 = GetAllocChunk(type, CEA_Func2);
@@ -3823,7 +3823,7 @@ TailCall:
         entry.Result = c->m_baseVN + offsetWithinChunk;
         entry.SetMemoryDependencies(m_compiler, recMemoryDependencies);
 
-        GetMapSelectWorkCache()->Set(fstruct, entry);
+        GetMapSelectWorkCache(vnk)->Set(fstruct, entry);
     }
 
     recMemoryDependencies.ForEach([this, &memoryDependencies](ValueNum vn) {
@@ -7247,24 +7247,25 @@ bool ValueNumStore::IsVNNeverNegative(ValueNum vn)
             return VNVisit::Abort;
         }
 
-        // Array length can never be negative.
-        if (IsVNArrLen(vn))
-        {
-            return VNVisit::Continue;
-        }
-
         // TODO-VN: Recognize Span.Length
         // Handle more intrinsics such as Math.Max(neverNegative1, neverNegative2)
 
         VNFuncApp funcApp;
         if (GetVNFunc(vn, &funcApp))
         {
+            // Array lengths are nonnegative, including for arrays with negative lower bounds.
+            if (funcApp.FuncIs(VNF_ARR_LENGTH, VNF_MDArrLength))
+            {
+                return VNVisit::Continue;
+            }
+
             // Some HWIntrinsic functions have known result ranges that can be queried via flags.
 #if defined(FEATURE_HW_INTRINSICS)
             NamedIntrinsic id;
             unsigned       simdSize;
             var_types      simdBaseType;
-            if (IsVNHWIntrinsicFunc(vn, &funcApp, &id, &simdSize, &simdBaseType))
+            if ((funcApp.GetFunc() >= VNF_HWI_FIRST) && (funcApp.GetFunc() <= VNF_HWI_LAST) &&
+                IsVNHWIntrinsicFunc(vn, &funcApp, &id, &simdSize, &simdBaseType))
             {
                 if (HWIntrinsicInfo::ReturnsBoolean(id))
                 {
@@ -7295,7 +7296,6 @@ bool ValueNumStore::IsVNNeverNegative(ValueNum vn)
                 case VNF_GT_UN:
                 case VNF_LE_UN:
                 case VNF_LT_UN:
-                case VNF_MDArrLowerBound:
                 {
                     return VNVisit::Continue;
                 }
@@ -11814,7 +11814,7 @@ void ValueNumStore::RunTests(Compiler* comp)
     VNFuncApp fa2a;
     bool      b = vns->GetVNFunc(vnForFunc2a, &fa2a);
     assert(b);
-    assert(fa2a.FuncIs(VNF_Add) && fa2a.GetArity() == 2 && fa2a.GetArg(0) == vnFor1 && fa2a.GetArg(1) == vnRandom1);
+    assert(fa2a.FuncIs(VNF_Add) && fa2a.GetArity() == 2 && fa2a.GetArg(0) == vnRandom1 && fa2a.GetArg(1) == vnFor1);
 
     ValueNum vnForFunc2b = vns->VNForFunc(TYP_INT, VNF_Add, vnFor1, vnFor100);
     assert(vnForFunc2b == vns->VNForFunc(TYP_INT, VNF_Add, vnFor1, vnFor100));
@@ -11822,6 +11822,11 @@ void ValueNumStore::RunTests(Compiler* comp)
     assert(vns->TypeOfVN(vnForFunc2b) == TYP_INT);
     assert(vns->IsVNConstant(vnForFunc2b));
     assert(vns->ConstantValue<int>(vnForFunc2b) == 101);
+
+    ValueNum array = vns->VNForExpr(nullptr, TYP_REF);
+    ValueNum dim   = vns->VNForIntCon(0);
+    assert(vns->IsVNNeverNegative(vns->VNForFunc(TYP_INT, VNF_MDArrLength, array, dim)));
+    assert(!vns->IsVNNeverNegative(vns->VNForFunc(TYP_INT, VNF_MDArrLowerBound, array, dim)));
 
     // printf("Did ValueNumStore::RunTests.\n");
 }
@@ -13578,6 +13583,16 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     // An untracked local, and other odd cases.
                     lclFld->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, lclFld->TypeGet()));
                 }
+
+                // Treat Span lengths like array lengths: comparisons against them are worth analyzing.
+                if (gtIsSpanLength(tree))
+                {
+                    ValueNum lenVN = vnStore->VNConservativeNormalValue(tree->gtVNPair);
+                    if (!vnStore->IsVNConstant(lenVN))
+                    {
+                        vnStore->SetVNIsCheckedBound(lenVN);
+                    }
+                }
             }
             break;
 
@@ -13805,6 +13820,16 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 }
 
                 tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, addrXvnp);
+            }
+
+            // Treat Span lengths like array lengths: comparisons against them are worth analyzing.
+            if (gtIsSpanLength(tree))
+            {
+                ValueNum lenVN = vnStore->VNConservativeNormalValue(tree->gtVNPair);
+                if (!vnStore->IsVNConstant(lenVN))
+                {
+                    vnStore->SetVNIsCheckedBound(lenVN);
+                }
             }
         }
         else if (tree->OperIs(GT_CAST))

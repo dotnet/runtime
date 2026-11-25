@@ -781,13 +781,28 @@ internal sealed class FrameHelpers
         }
     }
 
-    // The SP that native VirtualUnwindInterpreterCallFrame (eetwain.cpp) gives the caller context: the parent
-    // InterpMethodContextFrame whenever there is one -- including the zeroed root frame (ip == NULL) of an
-    // interpreter activation -- otherwise the owning InterpreterFrame (first-argument register).
-    public TargetPointer InterpreterCallerStackPointer(IPlatformAgnosticContext context)
+    // Updates an interpreted frame's context to the caller context that native VirtualUnwindInterpreterCallFrame
+    // (eetwain.cpp) produces: the parent InterpMethodContextFrame whenever there is one -- including the zeroed root
+    // frame (ip == NULL) of an interpreter activation -- otherwise a non-managed IP (InterpreterFrame::DummyCallerIP)
+    // with the owning InterpreterFrame (first-argument register) as SP. For interpreted EH funclets, that SP is the
+    // ExInfo's CSFEHClause.
+    public void InterpreterUnwindToCaller(IPlatformAgnosticContext context)
     {
         Data.InterpMethodContextFrame currentFrame = _target.ProcessedData.GetOrAdd<Data.InterpMethodContextFrame>(context.StackPointer);
-        return currentFrame.ParentPtr != TargetPointer.Null ? currentFrame.ParentPtr : GetFirstArgRegister(context);
+        if (currentFrame.ParentPtr != TargetPointer.Null)
+        {
+            Data.InterpMethodContextFrame parentFrame = _target.ProcessedData.GetOrAdd<Data.InterpMethodContextFrame>(currentFrame.ParentPtr);
+            context.InstructionPointer = new TargetCodePointer((ulong)parentFrame.Ip);
+            context.StackPointer = currentFrame.ParentPtr;
+            context.FramePointer = parentFrame.Stack;
+        }
+        else
+        {
+            TargetPointer interpreterFrame = GetFirstArgRegister(context);
+            context.InstructionPointer = TargetCodePointer.Null;
+            context.StackPointer = interpreterFrame;
+        }
+        context.RawContextFlags = context.FullContextFlags;
     }
 
     private bool VirtualUnwindInterpreterCallFrame(IPlatformAgnosticContext context)

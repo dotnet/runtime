@@ -1,11 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Tracking issue: https://github.com/dotnet/runtime/issues/90427 -->
-    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'mono' and '$(RuntimeVariant)' == 'llvmfullaot'">true</CLRTestTargetUnsupported>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Configurations>Debug;Release;Checked</Configurations>
-    <!-- Tracking issue: https://github.com/dotnet/runtime/issues/90427 -->
-    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'mono' and '$(RuntimeVariant)' == 'minifullaot'">true</CLRTestTargetUnsupported>
     <HasMergedInTests>true</HasMergedInTests>
     <!--
       The merged wrapper compiles the P/Invokes of the directly-compiled-in tests below into itself,
@@ -14,7 +10,7 @@
       TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets.
       Tracked by https://github.com/dotnet/runtime/issues/131811
     -->
-    <WasmBuildTestCorerun Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetArchitecture)' == 'wasm'">false</WasmBuildTestCorerun>
+    <WasmBuildTestCorerun Condition="'$(TargetArchitecture)' == 'wasm'">false</WasmBuildTestCorerun>
   </PropertyGroup>
   <ItemGroup>
     <SupportProject Include="$(TestLibraryProjectPath)" />

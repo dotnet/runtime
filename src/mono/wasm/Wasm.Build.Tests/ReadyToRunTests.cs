@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Microsoft.NET.Sdk.WebAssembly;
 using Microsoft.NET.WebAssembly.Webcil;
 using Microsoft.Playwright;
+using Wasm.Build.NativeRebuild.Tests;
 using Xunit;
 using Xunit.Abstractions;
 using SL = Microsoft.Build.Logging.StructuredLogger;
@@ -585,7 +586,10 @@ namespace Wasm.Build.Tests
 
             int tableSize = GetReadyToRunTableSize(coreLib!);
             if (expectReadyToRun)
+            {
                 Assert.True(tableSize > 0, $"Expected a ReadyToRun table in '{coreLib}', but the R2R table size was 0.");
+                WasmMetadataSectionsTests.AssertContentBuildId(coreLib!, optimized: false);
+            }
             else
                 Assert.Equal(0, tableSize);
         }
@@ -644,6 +648,7 @@ namespace Wasm.Build.Tests
 
             string compositePath = Path.Combine(frameworkDir, composite.name);
             Assert.True(GetReadyToRunTableSize(compositePath) > 0, $"Expected compiled methods in '{compositePath}'.");
+            WasmMetadataSectionsTests.AssertContentBuildId(compositePath, optimized: EnvironmentVariables.UseWasmOpt);
             Assert.True(Directory.EnumerateFiles(frameworkDir, "System.Private.CoreLib*.wasm").Any(),
                 $"Expected a component stub for System.Private.CoreLib in '{frameworkDir}'.");
         }

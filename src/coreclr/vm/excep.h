@@ -119,12 +119,6 @@ BOOL ExceptionTypeOverridesStackTraceGetter(PTR_MethodTable pMT);
 // Removes source file names/paths and line information from a stack trace.
 void StripFileInfoFromStackTrace(SString &ssStackTrace);
 
-#ifdef _DEBUG
-// C++ EH cracking material gleaned from the debugger:
-// (DO NOT USE THIS KNOWLEDGE IN NON-DEBUG CODE!!!)
-void *DebugGetCxxException(EXCEPTION_RECORD* pExceptionRecord);
-#endif
-
 
 #ifdef _DEBUG_IMPL
 BOOL IsValidClause(EE_ILEXCEPTION_CLAUSE *EHClause);
@@ -164,6 +158,11 @@ bool GenerateDump(LPCWSTR dumpName, INT dumpType, ULONG32 flags, LPSTR errorMess
 void CrashDumpAndTerminateProcess(UINT exitCode);
 
 LONG ThreadBaseExceptionAppDomainFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID pvParam);
+
+#ifndef DACCESS_COMPILE
+struct NotifyOfCHFFilterWrapperParam { void *pFrame; };
+LONG NotifyOfCHFFilterWrapper(EXCEPTION_POINTERS *pExceptionInfo, PVOID pNotifyOfCHFFilterWrapperParam);
+#endif // !DACCESS_COMPILE
 
 void STDMETHODCALLTYPE DefaultCatchHandler(PEXCEPTION_POINTERS pExceptionInfo,
                                            OBJECTREF *Throwable = NULL,
@@ -611,8 +610,6 @@ LONG WatsonLastChance(
     Thread              *pThread,
     EXCEPTION_POINTERS  *pExceptionInfo,
     TypeOfReportedError tore);
-
-bool DebugIsEECxxException(EXCEPTION_RECORD* pExceptionRecord);
 
 inline void CopyOSContext(T_CONTEXT* pDest, T_CONTEXT* pSrc)
 {

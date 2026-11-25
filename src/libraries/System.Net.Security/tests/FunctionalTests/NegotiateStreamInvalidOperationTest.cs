@@ -209,14 +209,15 @@ namespace System.Net.Security.Tests
             using (var client = new NegotiateStream(stream1))
             using (var server = new NegotiateStream(stream2))
             {
-                // ProtectionLevel not match.
+                // NTLM may negotiate signing even when the client requests ProtectionLevel.None.
+                // Require encryption on the server to ensure the protection levels do not match.
                 await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
                     Assert.ThrowsAsync<AuthenticationException>(() =>
                         client.AuthenticateAsClientAsync((NetworkCredential)CredentialCache.DefaultCredentials,
                             TargetName, ProtectionLevel.None, TokenImpersonationLevel.Identification)),
                     Assert.ThrowsAsync<AuthenticationException>(() =>
                         server.AuthenticateAsServerAsync((NetworkCredential)CredentialCache.DefaultCredentials,
-                            ProtectionLevel.Sign, TokenImpersonationLevel.Identification)));
+                            ProtectionLevel.EncryptAndSign, TokenImpersonationLevel.Identification)));
 
                 Assert.Throws<AuthenticationException>(() => client.Write(s_sampleMsg, 0, s_sampleMsg.Length));
             }

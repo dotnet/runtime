@@ -2,11 +2,10 @@
   <PropertyGroup>
     <!-- Needed for CLRTestTargetUnsupported, CMakeProjectReference -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
-    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'">true</CLRTestTargetUnsupported>
+    <CLRTestTargetUnsupported Condition="'$(TargetOS)' == 'browser'">true</CLRTestTargetUnsupported>
     <!-- Test requires EH-clean Main -->
     <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>    
     <CLRTestPriority>0</CLRTestPriority>
-    <MonoAotIncompatible>true</MonoAotIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="PInvokeUnhandled.cs" />

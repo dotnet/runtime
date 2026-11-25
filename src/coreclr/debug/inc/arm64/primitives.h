@@ -11,6 +11,7 @@
 
 #ifndef PRIMITIVES_H_
 #define PRIMITIVES_H_
+#include <minipal/instructioncache.h>
 
 #if !defined(DBI_COMPILE) && !defined(DACCESS_COMPILE)
 #include "executableallocator.h"
@@ -189,8 +190,7 @@ inline void CORDbgSetInstruction(CORDB_ADDRESS_TYPE* address,
     TADDR ptraddr = dac_cast<TADDR>(address);
 #endif // !DBI_COMPILE && !DACCESS_COMPILE && HOST_OSX
     *(PRD_TYPE *)ptraddr = instruction;
-    FlushInstructionCache(GetCurrentProcess(),
-                          address,
+    minipal_flush_instruction_cache(address,
                           sizeof(PRD_TYPE));
 }
 

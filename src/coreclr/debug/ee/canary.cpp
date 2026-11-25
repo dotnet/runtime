@@ -10,6 +10,7 @@
 //*****************************************************************************
 
 #include "stdafx.h"
+#include <minipal/thread.h>
 #include "CLREventBase.h"
 
 
@@ -293,7 +294,7 @@ DWORD HelperCanary::ThreadProc(LPVOID param)
 //-----------------------------------------------------------------------------
 void HelperCanary::ThreadProc()
 {
-    _ASSERTE(m_CanaryThreadId == GetCurrentThreadId());
+    _ASSERTE(m_CanaryThreadId == (DWORD)minipal_get_current_thread_id());
 
     while(true)
     {
@@ -326,7 +327,7 @@ void HelperCanary::ThreadProc()
 void HelperCanary::TakeLocks()
 {
     _ASSERTE(::GetThreadNULLOk() == NULL); // Canary Thread should always be outside the runtime.
-    _ASSERTE(m_CanaryThreadId == GetCurrentThreadId());
+    _ASSERTE(m_CanaryThreadId == (DWORD)minipal_get_current_thread_id());
 
     // Call new, which will take whatever standard heap locks there are.
     // We don't care about what memory we get; we just want to take the heap lock(s).

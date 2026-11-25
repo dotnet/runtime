@@ -110,9 +110,6 @@ run-build-tests:
 run-browser-tests-%:
 	PATH="$(GECKODRIVER):$(CHROMEDRIVER):$(PATH)" XHARNESS_COMMAND="test-browser --browser=$(XHARNESS_BROWSER)" $(DOTNET) build $(TOP)/src/libraries/$*/tests/ /t:Test $(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS)
 
-build-runtime-tests:
-	$(TOP)/src/tests/build.sh -mono os browser wasm $(CONFIG) $(MSBUILD_ARGS)
-
 submit-wbt-helix:
 	PATH="$(JSVU):$(PATH)" \
 		$(DOTNET) build $(TOP)/src/mono/wasm/Wasm.Build.Tests/ /v:m /p:ArchiveTests=true /t:ArchiveTests $(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS) && \

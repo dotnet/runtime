@@ -14,7 +14,6 @@
 
     <!--<InstallWorkloadUsingArtifactsDependsOn>_GetWorkloadsToInstall;$(InstallWorkloadUsingArtifactsDependsOn)</InstallWorkloadUsingArtifactsDependsOn>-->
 
-    <_BundleAOTTestWasmAppForHelixDependsOn>$(_BundleAOTTestWasmAppForHelixDependsOn);PrepareForWasiBuildApp;_PrepareForAOTOnHelix</_BundleAOTTestWasmAppForHelixDependsOn>
   </PropertyGroup>
 
   <!-- On CI this is installed as part of pretest, but it should still be installed
@@ -23,12 +22,12 @@
   <!-- CoreCLR-WASI: WasiApp.CoreCLR.targets links the wasihost corehost per-app (so
        library/test reverse P/Invoke thunks are covered), and the host preloads icudt.dat,
        so the leg runs with full ICU globalization. -->
-  <PropertyGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR'">
+  <PropertyGroup>
     <InvariantGlobalization Condition="'$(InvariantGlobalization)' == ''">false</InvariantGlobalization>
   </PropertyGroup>
 
   <!-- Same opt-in as Apple mobile (tests.mobile.targets). These switches are substituted at trim
-       time, so they apply even though wasihost doesn't read runtimeconfig yet. -->
+       time and carried into the per-app wasihost property table. -->
   <PropertyGroup Condition="'$(EnableAggressiveTrimming)' == 'true' and '$(OverrideDefaultValueAndDesignerHostSupport)' == 'true'">
     <_DefaultValueAttributeSupport>true</_DefaultValueAttributeSupport>
     <_DesignerHostSupport>true</_DesignerHostSupport>
@@ -36,13 +35,11 @@
 
   <PropertyGroup>
     <_AppArgs Condition="'$(WasmSingleFileBundle)' == 'true'">$([System.IO.Path]::GetFileNameWithoutExtension('$(WasmMainAssemblyFileName)')).wasm</_AppArgs>
-    <!-- Mono launches dotnet.wasm with the entry assembly name; CoreCLR launches the
-         per-app-linked wasihost host with the managed entry assembly (.dll). The host is
-         linked into managed/ (as 'corerun') alongside the framework and finds the runtime via
+    <!-- CoreCLR launches the per-app-linked wasihost host with the managed entry assembly (.dll).
+         The host is linked into managed/ (as 'corerun') alongside the framework and finds the runtime via
          CORE_ROOT (see WasiApp.CoreCLR.targets). Validated locally: discovers + runs the full
          System.Runtime.Tests suite under wasmtime. -->
-    <_AppArgs Condition="'$(WasmSingleFileBundle)' != 'true' and '$(RuntimeFlavor)' != 'CoreCLR'">dotnet.wasm WasmTestRunner</_AppArgs>
-    <_AppArgs Condition="'$(WasmSingleFileBundle)' != 'true' and '$(RuntimeFlavor)' == 'CoreCLR'">managed/corerun managed/WasmTestRunner.dll</_AppArgs>
+    <_AppArgs Condition="'$(WasmSingleFileBundle)' != 'true'">managed/corerun managed/WasmTestRunner.dll</_AppArgs>
 
     <_AppArgs Condition="'$(IsFunctionalTest)' != 'true' and '$(WasmSingleFileBundle)' != 'true'">$(_AppArgs) managed/$(AssemblyName).dll</_AppArgs>
     <_AppArgs Condition="'$(IsFunctionalTest)' != 'true' and '$(WasmSingleFileBundle)' == 'true'">$(_AppArgs) $(AssemblyName).dll</_AppArgs>
@@ -73,8 +70,8 @@
     <!-- CoreCLR-WASI: enable the wasm exception-handling proposal (the host relies on it)
          and point the host at the bundled framework via CORE_ROOT=/managed. Validated
          locally: host+runtime live in managed/ and init succeeds under wasmtime. -->
-    <_XHarnessArgs Condition="'$(RuntimeFlavor)' == 'CoreCLR'">$(_XHarnessArgs) --engine-arg=-W --engine-arg=exceptions=y</_XHarnessArgs>
-    <_XHarnessArgs Condition="'$(RuntimeFlavor)' == 'CoreCLR'">$(_XHarnessArgs) --engine-arg=--env --engine-arg=CORE_ROOT=/managed</_XHarnessArgs>
+    <_XHarnessArgs>$(_XHarnessArgs) --engine-arg=-W --engine-arg=exceptions=y</_XHarnessArgs>
+    <_XHarnessArgs>$(_XHarnessArgs) --engine-arg=--env --engine-arg=CORE_ROOT=/managed</_XHarnessArgs>
     <_XHarnessArgs Condition="'$(WasmXHarnessArgsCli)' != ''"      >$(_XHarnessArgs) $(WasmXHarnessArgsCli)</_XHarnessArgs>
 
     <_InvariantGlobalization Condition="'$(InvariantGlobalization)' == 'true'">--env=DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=true</_InvariantGlobalization>
@@ -84,25 +81,9 @@
     <RunScriptCommand Condition="'$(OS)' == 'Windows_NT'">%HARNESS_RUNNER% $(_XHarnessArgs) %XHARNESS_ARGS% %WasmXHarnessArgs%  -- $(WasmXHarnessMonoArgs) %WasmXHarnessMonoArgs% $(_InvariantGlobalization) %_InvariantGlobalization% $(_AppArgs) %WasmTestAppArgs%</RunScriptCommand>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(BuildAOTTestsOnHelix)' == 'true'">
-    <_AOTBuildCommand Condition="'$(BrowserHost)' != 'windows'">_buildAOTFunc publish/ProxyProjectForAOTOnHelix.proj $XHARNESS_OUT/AOTBuild.binlog</_AOTBuildCommand>
-    <_AOTBuildCommand Condition="'$(BrowserHost)' == 'windows'">dotnet msbuild publish/ProxyProjectForAOTOnHelix.proj /bl:%XHARNESS_OUT%/AOTBuild.binlog</_AOTBuildCommand>
-
-    <!-- running aot-helix tests locally, so we can test with the same project file as CI -->
-    <_AOTBuildCommand Condition="'$(ContinuousIntegrationBuild)' != 'true'">$(_AOTBuildCommand) /p:RuntimeSrcDir=$(RepoRoot) /p:RuntimeConfig=$(Configuration) /p:TasksConfiguration=$(TasksConfiguration)</_AOTBuildCommand>
-
-    <_AOTBuildCommand>$(_AOTBuildCommand) /p:RunAOTCompilation=$(RunAOTCompilation)</_AOTBuildCommand>
-    <_AOTBuildCommand>$(_AOTBuildCommand) $(_ShellCommandSeparator) cd wasm_build/AppBundle</_AOTBuildCommand>
-
-    <RunScriptCommand Condition="'$(RunScriptCommand)' == ''">$(_AOTBuildCommand)</RunScriptCommand>
-    <RunScriptCommand Condition="'$(RunScriptCommand)' != ''">$(_AOTBuildCommand) $(_ShellCommandSeparator) $(RunScriptCommand)</RunScriptCommand>
-  </PropertyGroup>
-
   <!-- Don't include InTree.props here, because the test projects themselves can set the target* properties -->
-  <Import Project="$(WasiProjectRoot)build\WasiApp.props"
-          Condition="'$(BuildAOTTestsOn)' == 'local'" />
-  <Import Project="$(WasiProjectRoot)build\WasiApp.InTree.targets"
-          Condition="'$(BuildAOTTestsOn)' == 'local'" />
+  <Import Project="$(WasiProjectRoot)build\WasiApp.props" />
+  <Import Project="$(WasiProjectRoot)build\WasiApp.InTree.targets" />
 
   <ItemGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(PublishReadyToRun)' == 'true'">
     <WasmEnvironmentVariable Include="TEST_READY_TO_RUN_MODE" Value="1" />
@@ -113,11 +94,7 @@
     <WasmEnvironmentVariable Include="DOTNET_CI" Value="true" />
   </ItemGroup>
 
-  <PropertyGroup Condition="'$(BuildAOTTestsOnHelix)' == 'true'">
-    <!-- wasm targets are not imported at all, in this case, because we run the wasm build on helix -->
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(BuildAOTTestsOnHelix)' != 'true'">
+  <PropertyGroup>
     <WasmBuildOnlyAfterPublish>true</WasmBuildOnlyAfterPublish>
 
     <!-- Test projects are libraries (OutputType=Library), for which WasmGenerateAppBundle defaults to false.
@@ -137,7 +114,7 @@
       <WasmAppDir>$(BundleDir)</WasmAppDir>
     </PropertyGroup>
 
-    <ItemGroup Condition="'$(IncludeSatelliteAssembliesInVFS)' == 'true' and '$(BuildAOTTestsOnHelix)' != 'true'">
+    <ItemGroup Condition="'$(IncludeSatelliteAssembliesInVFS)' == 'true'">
       <_SatelliteAssemblies Include="$(PublishDir)*\*.resources.dll" />
       <_SatelliteAssemblies CultureName="$([System.IO.Directory]::GetParent('%(Identity)').Name)" />
       <_SatelliteAssemblies TargetPath="%(CultureName)\%(FileName)%(Extension)" />
@@ -146,7 +123,6 @@
     </ItemGroup>
 
     <ItemGroup>
-      <WasmAssembliesToBundle Include="$(PublishDir)\**\*.dll" Condition="'$(BuildAOTTestsOnHelix)' == 'true'" />
       <WasmFilesToIncludeInFileSystem Include="@(ContentWithTargetPath)" />
 
       <_CopyLocalPaths
@@ -165,17 +141,6 @@
               Condition="'%(WasmFilesToIncludeFromPublishDir.Identity)' != ''" />
     </ItemGroup>
 
-    <ForceMSBuildGC Condition="'$(RuntimeFlavor)' != 'CoreCLR'" />
-  </Target>
-
-  <Target Name="_PrepareForAOTOnHelix">
-    <ItemGroup>
-      <_WasmPropertyNames Include="DisableParallelEmccCompile" />
-      <_WasmPropertyNames Include="WasiClangCompileOptimizationFlag" />
-      <_WasmPropertyNames Include="WasiClangLinkOptimizationFlag" />
-      <_WasmPropertyNames Include="WasmIncludeFullIcuData" />
-      <_WasmPropertyNames Include="WasmIcuDataFileName" />
-    </ItemGroup>
   </Target>
 
   <Target Name="_WasiAddToRunScript" BeforeTargets="GenerateRunScript">
@@ -209,7 +174,7 @@
        build agent otherwise. The zip still has the composed module that runs. -->
   <Target Name="_RemoveWasiIntermediatesAfterArchive"
           AfterTargets="ZipTestArchive"
-          Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'">
+          Condition="'$(ContinuousIntegrationBuild)' == 'true'">
     <RemoveDir Directories="$(IntermediateOutputPath)R2R;$(IntermediateOutputPath)wasm" ContinueOnError="WarnAndContinue" />
   </Target>
 </Project>

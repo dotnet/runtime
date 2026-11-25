@@ -5044,6 +5044,7 @@ do                                                                      \
                 INTOP_CASE(INTOP_NOP)
                 INTOP_CASE(INTOP_DEF)
                 INTOP_CASE(INTOP_MOV_SRC_OFF)
+                INTOP_CASE(INTOP_LDIND_THIS_OFFSET)
                     EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Unimplemented or invalid interpreter opcode\n"));
                     INTOP_NEXT;
 #else
