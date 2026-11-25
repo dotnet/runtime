@@ -139,6 +139,33 @@ public class ForwardedMethodTypeArgument
         return IsBox<T>(value);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Box<T> Cast<T>(object value) => (Box<T>)value;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static object SiblingCast<T, U>() => Cast<U>(Make<T>());
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool RootTest<T>() => Make<T>() is Box<T>;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static object RootCast<T>() => (Box<T>)Make<T>();
+
+    private class Reader<T> { public virtual int Read() => 37; }
+    private sealed class OtherReader<T> : Reader<T> { public override int Read() => 13; }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static object MakeReader<T>() => new Reader<T>();
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static int Read<T>(object value) => ((Reader<T>)value).Read();
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int KnownReceiver<T>() => Read<T>(MakeReader<T>());
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int UnknownReceiver<T>(object value) => Read<T>(value);
+
     [Fact]
     public static void TestEntryPoint()
     {
@@ -151,6 +178,14 @@ public class ForwardedMethodTypeArgument
         Assert.False(Choose<string, object>(false));
         Assert.False(Cleared<string>());
         Assert.Equal(before + 7, s_constructions);
+
+        Assert.True(RootTest<string>());
+        Assert.True(RootCast<string>() is Box<string>);
+        Assert.True(SiblingCast<string, string>() is Box<string>);
+        Assert.Throws<InvalidCastException>(() => SiblingCast<string, object>());
+        Assert.Equal(before + 11, s_constructions);
+        Assert.Equal(37, KnownReceiver<string>());
+        Assert.Equal(13, UnknownReceiver<string>(new OtherReader<string>()));
 
         Assert.Equal(typeof(string), Outer<string, object>(true));
         Assert.Equal(typeof(object), Outer<string, object>(false));

@@ -5866,6 +5866,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(GenTree*                op1,
         op2->gtFlags |= GTF_DONT_CSE;
         GenTreeCall* call          = gtNewHelperCallNode(helper, TYP_REF, op2, op1);
         call->gtCastHelperILOffset = ilOffset;
+        impRememberTypeCheck(call, op1, op2, *pResolvedToken);
 
         // Instrument this castclass/isinst
         if ((JitConfig.JitClassProfiling() > 0) && impIsCastHelperEligibleForClassProbe(call) && !isClassExact &&
@@ -5918,6 +5919,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(GenTree*                op1,
 
     GenTreeOp* condNull = gtNewOperNode(GT_EQ, TYP_INT, gtClone(op1), gtNewNull());
     GenTreeOp* condMT   = gtNewOperNode(GT_NE, TYP_INT, gtNewMethodTableLookup(op1Clone), op2);
+    impRememberTypeCheck(condMT, op1Clone, op2, *pResolvedToken);
 
     GenTreeQmark* qmarkResult;
 
@@ -10653,7 +10655,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 JITDUMP(" %08X", resolvedToken.token);
 
-                bool matchesInlineType = compIsForInlining() && impMatchesInlineType(impStackTop().val, resolvedToken);
+                bool matchesInlineType = impMatchesInlineType(impStackTop().val, resolvedToken);
                 if (!IsAot() && !matchesInlineType)
                 {
                     op2 = impTokenToHandle(&resolvedToken);
@@ -11166,6 +11168,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 break;
 
             case CEE_CASTCLASS:
+            {
 
                 /* Get the Class index */
 
@@ -11175,7 +11178,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 JITDUMP(" %08X", resolvedToken.token);
 
-                if (!IsAot())
+                bool matchesInlineType = impMatchesInlineType(impStackTop().val, resolvedToken);
+                if (!IsAot() && !matchesInlineType)
                 {
                     op2 = impTokenToHandle(&resolvedToken);
                     if (op2 == nullptr)
@@ -11189,6 +11193,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 impHandleAccessAllowed(accessAllowedResult, &calloutHelper);
 
                 op1 = impPopStack().val;
+                if (matchesInlineType)
+                {
+                    impPushOnStack(op1, tiRetVal);
+                    break;
+                }
+            }
 
             /* Pop the address and create the 'checked cast' helper call */
 

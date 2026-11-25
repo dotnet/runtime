@@ -6041,6 +6041,17 @@ private:
     // Exact constructed types of single-definition reference locals during inlining, in the root context.
     using LocalTypeExpressionMap = JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, MethodTypeArgument>;
     LocalTypeExpressionMap* impLocalTypeExpressions = nullptr;
+    struct InlineTypeCheck
+    {
+        MethodTypeArgument target;
+        GenTree* handle;
+        CorInfoHelpFunc helper;
+    };
+    using TypeCheckMap = JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, InlineTypeCheck>;
+    TypeCheckMap* impTypeChecks = nullptr;
+    void impRememberTypeCheck(GenTree* check, GenTree* value, GenTree* handle, const CORINFO_RESOLVED_TOKEN& token);
+    bool fgFoldInlineTypeChecks();
+    friend class InlineTypeCheckWalker;
     bool impReadInlineType(const CORINFO_RESOLVED_TOKEN& token, MethodTypeArgument* result);
     bool impMatchesInlineType(GenTree* value, const CORINFO_RESOLVED_TOKEN& token);
     void impRecordAllocatedType(unsigned lclNum, const CORINFO_RESOLVED_TOKEN& token);

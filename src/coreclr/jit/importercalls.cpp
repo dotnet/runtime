@@ -213,18 +213,29 @@ bool MethodTypeArgument::TryRead(Compiler*                     comp,
 // Compose a constructed type from this inlinee in the root method's context.
 bool Compiler::impReadInlineType(const CORINFO_RESOLVED_TOKEN& token, MethodTypeArgument* result)
 {
-    if (!compIsForInlining() || (token.pTypeSpec == nullptr) || (token.cbTypeSpec == 0) ||
+    if (IsAot() || opts.OptimizationDisabled() || (token.pTypeSpec == nullptr) || (token.cbTypeSpec == 0) ||
         (*token.pTypeSpec != ELEMENT_TYPE_GENERICINST) || (token.tokenScope != info.compScopeHnd) ||
         (token.tokenContext != impTokenLookupContextHandle))
     {
         return false;
     }
 
-    InlineCandidateInfo* candidate = impInlineInfo->inlineCandidateInfo;
-    PCCOR_SIGNATURE      sig       = token.pTypeSpec;
-    unsigned             size      = token.cbTypeSpec;
-    return (candidate->rootMethodArgs != nullptr) &&
-           MethodTypeArgument::TryRead(this, token, sig, size, candidate->rootMethodArgs,
+    const MethodTypeArgument* bindings = nullptr;
+    if (compIsForInlining())
+    {
+        bindings = impInlineInfo->inlineCandidateInfo->rootMethodArgs;
+        if (bindings == nullptr)
+        {
+            return false;
+        }
+    }
+    else if ((info.compMethodInfo->options & CORINFO_GENERICS_CTXT_MASK) != CORINFO_GENERICS_CTXT_FROM_METHODDESC)
+    {
+        return false;
+    }
+    PCCOR_SIGNATURE sig  = token.pTypeSpec;
+    unsigned        size = token.cbTypeSpec;
+    return MethodTypeArgument::TryRead(this, token, sig, size, bindings,
                                        info.compMethodInfo->args.sigInst.methInstCount, result) &&
            (size == 0);
 }
@@ -241,6 +252,7 @@ void Compiler::impRecordAllocatedType(unsigned lclNum, const CORINFO_RESOLVED_TO
             root->impLocalTypeExpressions = new (alloc) LocalTypeExpressionMap(alloc);
         }
         root->impLocalTypeExpressions->Set(lclNum, type);
+        Metrics.InlineTypeAllocation++;
     }
 }
 
@@ -263,9 +275,33 @@ bool Compiler::impMatchesInlineType(GenTree* value, const CORINFO_RESOLVED_TOKEN
 {
     MethodTypeArgument* source = impLocalTypeExpression(value);
     MethodTypeArgument  target;
-    return (source != nullptr) && impReadInlineType(token, &target) &&
-           (source->signatureSize == target.signatureSize) &&
-           (memcmp(source->signature, target.signature, target.signatureSize) == 0);
+    if ((source != nullptr) && impReadInlineType(token, &target) && source->SameExpression(target))
+    {
+        Metrics.InlineTypeImportFold++;
+        return true;
+    }
+    return false;
+}
+
+void Compiler::impRememberTypeCheck(GenTree*                      check,
+                                    GenTree*                      value,
+                                    GenTree*                      handle,
+                                    const CORINFO_RESOLVED_TOKEN& token)
+{
+    MethodTypeArgument target;
+    if (!value->TypeIs(TYP_REF) || !value->OperIs(GT_RET_EXPR, GT_LCL_VAR) || !impReadInlineType(token, &target))
+    {
+        return;
+    }
+    Compiler* root = impInlineRoot();
+    if (root->impTypeChecks == nullptr)
+    {
+        auto alloc          = root->getAllocator(CMK_Inlining);
+        root->impTypeChecks = new (alloc) TypeCheckMap(alloc);
+    }
+    CorInfoHelpFunc helper = check->IsHelperCall() ? check->AsCall()->GetHelperNum() : CORINFO_HELP_UNDEF;
+    root->impTypeChecks->Set(check, {target, handle, helper});
+    Metrics.InlineTypeCheck++;
 }
 
 // Map callee method parameters to the parameters of the root caller. Keep the

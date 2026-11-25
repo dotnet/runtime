@@ -960,6 +960,83 @@ public:
 
 #endif // DEBUG
 
+// Revisit casts whose input was still a return placeholder during import.
+class InlineTypeCheckWalker final : public GenTreeVisitor<InlineTypeCheckWalker>
+{
+    Statement* m_stmt    = nullptr;
+    bool       m_changed = false;
+
+public:
+    enum
+    {
+        DoPostOrder = true
+    };
+    InlineTypeCheckWalker(Compiler* compiler)
+        : GenTreeVisitor(compiler)
+    {
+    }
+
+    bool Run()
+    {
+        for (BasicBlock* block : m_compiler->Blocks())
+        {
+            for (Statement* stmt : block->Statements())
+            {
+                m_stmt = stmt;
+                WalkTree(stmt->GetRootNodePointer(), nullptr);
+            }
+        }
+        return m_changed;
+    }
+
+    fgWalkResult PostOrderVisit(GenTree** use, GenTree* parent)
+    {
+        GenTree* tree = *use;
+        if (tree->OperIs(GT_CALL, GT_NE))
+        {
+            Compiler::InlineTypeCheck* check = m_compiler->impTypeChecks->LookupPointer(tree);
+            if (check == nullptr)
+            {
+                return fgWalkResult::WALK_CONTINUE;
+            }
+            GenTree* value;
+            if (tree->IsHelperCall() && (tree->AsCall()->GetHelperNum() == check->helper) &&
+                (tree->AsCall()->gtArgs.GetUserArgByIndex(0)->GetEarlyNode() == check->handle))
+            {
+                value = tree->AsCall()->gtArgs.GetUserArgByIndex(1)->GetEarlyNode();
+            }
+            else if (tree->OperIs(GT_NE) && (check->helper == CORINFO_HELP_UNDEF) && tree->gtGetOp1()->OperIs(GT_IND) &&
+                     (tree->gtGetOp2() == check->handle))
+            {
+                value = tree->gtGetOp1()->AsIndir()->Addr();
+            }
+            else
+            {
+                return fgWalkResult::WALK_CONTINUE;
+            }
+            MethodTypeArgument* source = m_compiler->impLocalTypeExpression(value);
+            if ((source != nullptr) && source->SameExpression(check->target))
+            {
+                *use = tree->OperIs(GT_CALL) ? value : m_compiler->gtNewZeroConNode(TYP_INT);
+                m_compiler->gtUpdateStmtSideEffects(m_stmt);
+                m_compiler->Metrics.InlineTypeLateFold++;
+                m_changed = true;
+            }
+        }
+        return fgWalkResult::WALK_CONTINUE;
+    }
+};
+
+bool Compiler::fgFoldInlineTypeChecks()
+{
+    if ((impTypeChecks == nullptr) || (impLocalTypeExpressions == nullptr) || opts.IsOSR() || (compHndBBtabCount != 0))
+    {
+        return false;
+    }
+    InlineTypeCheckWalker walker(this);
+    return walker.Run();
+}
+
 PhaseStatus Compiler::fgInline()
 {
     if (!opts.OptEnabled(CLFLG_INLINING))
@@ -1086,6 +1163,7 @@ PhaseStatus Compiler::fgInline()
     } while (block);
 
     madeChanges |= walker.MadeChanges();
+    madeChanges |= fgFoldInlineTypeChecks();
 
 #ifdef DEBUG
 
@@ -2952,7 +3030,7 @@ PhaseStatus Compiler::fgPostInlineNoReturnCleanup()
                 m_result = tree->AsCall();
                 return WALK_ABORT;
             }
-            return WALK_CONTINUE;
+            return fgWalkResult::WALK_CONTINUE;
         }
     };
 

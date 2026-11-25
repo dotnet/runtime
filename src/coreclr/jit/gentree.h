@@ -9211,6 +9211,12 @@ struct MethodTypeArgument
     unsigned short  depth;
     PCCOR_SIGNATURE signature;
 
+    bool SameExpression(const MethodTypeArgument& other) const
+    {
+        return (signature != nullptr) && (signatureSize == other.signatureSize) &&
+               (memcmp(signature, other.signature, signatureSize) == 0);
+    }
+
     static constexpr unsigned MaxDepth         = 32;
     static constexpr unsigned MaxSignatureSize = 256;
 
