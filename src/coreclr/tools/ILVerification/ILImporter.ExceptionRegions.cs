@@ -233,7 +233,7 @@ namespace Internal.IL
             if (!clauses[region.ClauseIndex].HasOverlap)
             {
                 _currentInstructionOffset = region.StartOffset;
-                VerificationError(VerifierError.EHClauseOverlap);
+                Invalid(VerifierError.EHClauseOverlap);
             }
             clauses[region.ClauseIndex].HasOverlap = true;
             clauses[other.ClauseIndex].HasOverlap = true;
@@ -259,7 +259,7 @@ namespace Internal.IL
                     bool sharedTryOverlap =
                         (handlerParent >= 0 && clauses[regions[handlerParent].ClauseIndex].TryIndex == clause.TryIndex) ||
                         (filterParent >= 0 && clauses[regions[filterParent].ClauseIndex].TryIndex == clause.TryIndex);
-                    VerificationError(sharedTryOverlap ? VerifierError.EHClauseOverlap : VerifierError.EHClauseNesting);
+                    Invalid(sharedTryOverlap ? VerifierError.EHClauseOverlap : VerifierError.EHClauseNesting);
                     continue;
                 }
 

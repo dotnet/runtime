@@ -53,7 +53,12 @@ namespace SourceGenerators
                 ReadOnlySpan<char> nextLine = GetNextLine(ref remainingText, out isFinalLine);
 
                 AddIndentation();
-                AppendSpan(_sb, nextLine);
+                // SAFETY: To be audited
+                unsafe
+                {
+                    AppendSpan(_sb, nextLine);
+                }
+
                 _sb.AppendLine();
             }
             while (!isFinalLine);
@@ -115,7 +120,11 @@ namespace SourceGenerators
             // There is no StringBuilder.Append(ReadOnlySpan<char>) overload in the NS2.0
             fixed (char* ptr = span)
             {
-                builder.Append(ptr, span.Length);
+                // SAFETY: To be audited
+                unsafe
+                {
+                    builder.Append(ptr, span.Length);
+                }
             }
         }
     }

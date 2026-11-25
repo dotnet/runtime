@@ -2312,6 +2312,18 @@ StackWalkAction StackFrameIterator::NextRaw(void)
 #endif // FEATURE_INTERPRETER
         }
 
+#ifdef FEATURE_INTERPRETER
+        if ((m_crawl.pFrame->GetFrameIdentifier() == FrameIdentifier::FaultingExceptionFrame) &&
+            ((PTR_FaultingExceptionFrame)m_crawl.pFrame)->IsInInterpreter())
+        {
+            PTR_Frame pNextFrame = m_crawl.pFrame->PtrNextFrame();
+            _ASSERTE((pNextFrame != FRAME_TOP) && (pNextFrame->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame));
+            LOG((LF_GCROOTS, LL_INFO10000, "STACKWALK: Transitioning from FaultingExceptionFrame to InterpreterFrame %p\n", pNextFrame));
+            m_crawl.GotoNextFrame();
+            goto Cleanup;
+        }
+#endif // FEATURE_INTERPRETER
+
         unsigned uFrameAttribs = m_crawl.pFrame->GetFrameAttribs();
 
         // Special resumable frames make believe they are on top of the stack.

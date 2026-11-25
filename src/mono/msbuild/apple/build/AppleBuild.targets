@@ -92,7 +92,6 @@
   <Target Name="_BeforeAppleBuild">
     <PropertyGroup>
       <_AppleRuntimeConfigFilePath Condition="'$(_AppleRuntimeConfigFilePath)' == ''">$([MSBuild]::NormalizePath($(AppleBuildDir), '$(AssemblyName).runtimeconfig.json'))</_AppleRuntimeConfigFilePath>
-      <_ParsedRuntimeConfigFilePath Condition="'$(_ParsedRuntimeConfigFilePath)' == ''">$([MSBuild]::NormalizePath($(AppleBuildDir), 'runtimeconfig.bin'))</_ParsedRuntimeConfigFilePath>
       <UseConsoleUITemplate Condition="'$(UseConsoleUITemplate)' == '' and '$(UseNativeAOTRuntime)' != 'true'">true</UseConsoleUITemplate>
       <UseConsoleUITemplate Condition="'$(UseConsoleUITemplate)' == '' and '$(UseNativeAOTRuntime)' == 'true' and '$(IncludesTestRunner)' == 'true'">true</UseConsoleUITemplate>
     </PropertyGroup>
@@ -295,8 +294,7 @@
   </Target>
 
   <Target Name="_AppleGenerateAppBundle"
-          Condition="'$(AppleGenerateAppBundle)' == 'true'"
-          DependsOnTargets="_AppleGenerateRuntimeConfig">
+          Condition="'$(AppleGenerateAppBundle)' == 'true'">
     <!-- Run App bundler, it uses AOT libs (if needed), link all native bits, compile simple UI (written in ObjC)
          and produce an app bundle (with xcode project) -->
 
@@ -356,6 +354,7 @@
       OutputDirectory="$(AppleBundleDir)"
       ProjectName="$(AppName)"
       RuntimeComponents="@(RuntimeComponents)"
+      RuntimeConfigFile="$(_AppleRuntimeConfigFilePath)"
       StripSymbolTable="$(StripDebugSymbols)"
       TargetOS="$(TargetOS)"
       UseConsoleUITemplate="$(UseConsoleUITemplate)">
@@ -371,20 +370,4 @@
 
   </Target>
 
-  <Target Name="_AppleGenerateRuntimeConfig"
-          Inputs="$(_AppleRuntimeConfigFilePath)"
-          Outputs="$(_ParsedRuntimeConfigFilePath)"
-          Condition="Exists('$(_AppleRuntimeConfigFilePath)')"
-          BeforeTargets="_GenerateBundle">
-    <ItemGroup>
-      <_RuntimeConfigReservedProperties Include="RUNTIME_IDENTIFIER"/>
-      <_RuntimeConfigReservedProperties Include="APP_CONTEXT_BASE_DIRECTORY"/>
-    </ItemGroup>
-
-    <RuntimeConfigParserTask
-        RuntimeConfigFile="$(_AppleRuntimeConfigFilePath)"
-        OutputFile="$(_ParsedRuntimeConfigFilePath)"
-        RuntimeConfigReservedProperties="@(_RuntimeConfigReservedProperties)">
-    </RuntimeConfigParserTask>
-  </Target>
 </Project>

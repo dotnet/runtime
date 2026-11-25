@@ -11,6 +11,7 @@
 
 #ifndef PRIMITIVES_H_
 #define PRIMITIVES_H_
+#include <minipal/instructioncache.h>
 
 #ifndef THUMB_CODE
 #define THUMB_CODE 1
@@ -160,8 +161,7 @@ inline void CORDbgSetInstruction(CORDB_ADDRESS_TYPE* address,
     ptraddr &= ~THUMB_CODE;
 
     *(PRD_TYPE *)ptraddr = instruction;
-    FlushInstructionCache(GetCurrentProcess(),
-                          _ClearThumbBit(address),
+    minipal_flush_instruction_cache(_ClearThumbBit(address),
                           sizeof(PRD_TYPE));
 }
 

@@ -2627,6 +2627,41 @@ namespace System
             return new ReadOnlySpan<Type>(candidates).ToArray();
         }
 
+        public override Type[] GetInterfacesWithSameMetadataDefinitionAs(Type interfaceType)
+        {
+            ArgumentNullException.ThrowIfNull(interfaceType);
+
+            // The interfaces of a runtime type are runtime types, so an interfaceType that isn't a RuntimeType never matches.
+            if (interfaceType is not RuntimeType)
+            {
+                return EmptyTypes;
+            }
+
+            // Any instantiation of a generic interface matches the same interfaces as its generic type definition.
+            if (interfaceType.IsConstructedGenericType)
+            {
+                interfaceType = interfaceType.GetGenericTypeDefinition();
+            }
+
+            // Filter the cached interface list directly instead of copying it via GetInterfaces. The interfaces are
+            // runtime types, so comparing generic type definitions by reference is equivalent to
+            // HasSameMetadataDefinitionAs and cheaper.
+            RuntimeType[] interfaces = Cache.GetInterfaceList(MemberListType.All, null);
+
+            // Usually a single interface matches, which ListBuilder handles without allocating backing storage.
+            // Don't size it for every interface: that would over-allocate when several interfaces match.
+            ListBuilder<Type> matches = default;
+            foreach (RuntimeType implementedInterface in interfaces)
+            {
+                if (ReferenceEquals(implementedInterface.IsGenericType ? implementedInterface.GetGenericTypeDefinition() : implementedInterface, interfaceType))
+                {
+                    matches.Add(implementedInterface);
+                }
+            }
+
+            return matches.ToArray();
+        }
+
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
         public override Type[] GetNestedTypes(BindingFlags bindingAttr)
         {

@@ -110,12 +110,16 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
             {
                 foreach (FactoryActivitySource source in sources)
                 {
-                    if (source.Version == options.Version
-                        && source.TelemetrySchemaUrl == options.TelemetrySchemaUrl
-                        && DiagnosticsHelper.CompareTags((IList<KeyValuePair<string, object?>>?)source.Tags, options.Tags))
+                    // SAFETY: To be audited
+                    unsafe
                     {
-                        match = source;
-                        return true;
+                        if (source.Version == options.Version
+                            && source.TelemetrySchemaUrl == options.TelemetrySchemaUrl
+                            && DiagnosticsHelper.CompareTags((IList<KeyValuePair<string, object?>>?)source.Tags, options.Tags))
+                        {
+                            match = source;
+                            return true;
+                        }
                     }
                 }
             }

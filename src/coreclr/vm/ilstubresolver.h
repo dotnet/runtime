@@ -101,6 +101,9 @@ protected:
     PTR_MethodDesc          m_pStubMD;
     PTR_MethodDesc          m_pStubTargetMD;
     CORJIT_FLAGS            m_jitFlags;
+
+    // Next resolver in the owning collectible LoaderAllocator's ILStubCache.
+    PTR_ILStubResolver      m_pNextCollectibleResolver;
 };
 
 struct ILStubGenHolderTraits final

@@ -6,9 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
-using System.Reflection.Metadata;
 using System.Text;
-using System.Text.Json;
 using System.Text.RegularExpressions;
 using Microsoft.Android.Build;
 using Microsoft.Build.Framework;
@@ -37,6 +35,7 @@ public partial class ApkBuilder
     public string OutputDir { get; set; } = ""!;
     public bool StripDebugSymbols { get; set; }
     public string? NativeMainSource { get; set; }
+    public string? RuntimeConfigFile { get; set; }
     public string? KeyStorePath { get; set; }
     public bool ForceInterpreter { get; set; }
     public bool ForceAOT { get; set; }
@@ -738,13 +737,17 @@ public partial class ApkBuilder
         appContextValues.AppendLine();
 
         // Parse runtime config properties and add them to the AppContext keys and values.
-        Dictionary<string, string> configProperties = ParseRuntimeConfigProperties();
+        Dictionary<string, string> configProperties = RuntimeConfigProperties.Read(
+            RuntimeConfigFile,
+            "RUNTIME_IDENTIFIER",
+            "APP_CONTEXT_BASE_DIRECTORY",
+            "HOST_RUNTIME_CONTRACT");
         int hardwiredAppContextProperties = 3; // For the hardwired AppContext keys and values above.
         int i = 0;
-        foreach ((string key, string value) in configProperties)
+        foreach ((string key, string value) in configProperties.OrderBy(property => property.Key, StringComparer.Ordinal))
         {
-            appContextKeys.AppendLine($"    appctx_keys[{i + hardwiredAppContextProperties}] = \"{key}\";");
-            appContextValues.AppendLine($"    appctx_values[{i + hardwiredAppContextProperties}] = \"{value}\";");
+            appContextKeys.AppendLine($"    appctx_keys[{i + hardwiredAppContextProperties}] = {RuntimeConfigProperties.ToCStringLiteral(key)};");
+            appContextValues.AppendLine($"    appctx_values[{i + hardwiredAppContextProperties}] = {RuntimeConfigProperties.ToCStringLiteral(value)};");
             i++;
         }
 
@@ -753,44 +756,5 @@ public partial class ApkBuilder
             .Replace("%AppContextKeys%", appContextKeys.ToString().TrimEnd())
             .Replace("%AppContextValues%", appContextValues.ToString().TrimEnd());
         return updatedContent;
-    }
-
-    private Dictionary<string, string> ParseRuntimeConfigProperties()
-    {
-        // This method reads the binary runtimeconfig.bin file created by RuntimeConfigParserTask.ConvertDictionaryToBlob.
-        // The binary format is: compressed integer count, followed by count pairs of length-prefixed UTF8 strings (key, value).
-        // See src/tasks/MonoTargetsTasks/RuntimeConfigParser/RuntimeConfigParser.cs for the corresponding write logic.
-
-        var configProperties = new Dictionary<string, string>();
-        string runtimeConfigPath = Path.Combine(AppDir ?? throw new InvalidOperationException("AppDir is not set"), "runtimeconfig.bin");
-
-        try
-        {
-            byte[] fileBytes = File.ReadAllBytes(runtimeConfigPath);
-            unsafe
-            {
-                fixed (byte* ptr = fileBytes)
-                {
-                    var blobReader = new BlobReader(ptr, fileBytes.Length);
-
-                    // Read the compressed integer count
-                    int count = blobReader.ReadCompressedInteger();
-
-                    // Read each key-value pair
-                    for (int i = 0; i < count; i++)
-                    {
-                        string key = blobReader.ReadSerializedString() ?? string.Empty;
-                        string value = blobReader.ReadSerializedString() ?? string.Empty;
-                        configProperties[key] = value;
-                    }
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            logger.LogMessage(MessageImportance.High, $"Error while parsing runtime config at {runtimeConfigPath}: {ex.Message}");
-        }
-
-        return configProperties;
     }
 }

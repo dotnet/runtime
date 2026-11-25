@@ -1698,6 +1698,17 @@ PhaseStatus Compiler::fgWasmControlFlow()
     }
 
     assert(dfsTree->IsForWasm());
+
+    // Layout below only covers blocks the DFS reaches; any other block would be
+    // emitted out of place and can produce an invalid function body.
+    //
+    if (dfsTree->GetPostOrderCount() != fgBBcount)
+    {
+        JITDUMP("\nWasm DFS reached %u of %u blocks\n", dfsTree->GetPostOrderCount(), fgBBcount);
+        NYI_WASM("Method has blocks not reachable from any wasm function entry");
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
     FlowGraphNaturalLoops* const loops = FlowGraphNaturalLoops::Find(dfsTree);
 
     // We should have transformed these away earlier
@@ -3728,6 +3739,386 @@ PhaseStatus Compiler::fgWasmProfInstrument()
 
     JITDUMP("Added %u Wasm profiler samplepoint(s)\n", samplepointsAdded);
     return (samplepointsAdded > 0) ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
+}
+
+//-----------------------------------------------------------------------------
+// fgWasmForwardLocalCopies: forward single-use local-to-local copies, and
+//   rematerialize single-use locals holding invariant values.
+//
+// Returns:
+//   suitable phase status
+//
+// Notes:
+//   Rewrites "STORE_LCL_VAR<tmp>(LCL_VAR<src>) ... LCL_VAR<tmp>" into a use of
+//   "src" when "tmp" has no other references and "src" is not redefined in
+//   between. CSE commonly leaves such copies behind in place of morph argument
+//   temps. The Wasm register allocator gives every candidate its own local and
+//   does not coalesce, so each copy would otherwise cost a local.get/local.set
+//   pair and a local.
+//
+//   Single-use locals holding constants or invariant loads are handled first,
+//   by fgWasmRematerializeInvariantLocals.
+//
+//   Only blocks recorded by lowering are visited. This runs after late liveness
+//   so that ref counts are exact, and keeps last-use flags up to date.
+//
+PhaseStatus Compiler::fgWasmForwardLocalCopies()
+{
+    if (!opts.OptimizationEnabled() || !backendRequiresLocalVarLifetimes())
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    bool modified = fgWasmRematerializeInvariantLocals();
+
+    if (m_wasmLocalCopyBlocks == nullptr)
+    {
+        return modified ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    struct PendingCopy
+    {
+        GenTreeLclVar* Store;
+        unsigned       SrcLclNum;
+        // The latest read of "src" marked as its last use, if any.
+        GenTree* SrcLastUse;
+    };
+
+    // GC refs are excluded: forwarding could extend a wasm-local GC ref's lifetime across a safepoint.
+    auto isCopyableType = [](var_types type) {
+        return varTypeIsEnregisterable(type) && !varTypeIsStruct(type) && !varTypeIsGC(type) && !varTypeIsSmall(type);
+    };
+
+    // Locals with defs not visible as local stores in IR. Implicitly referenced locals include
+    // the shadow stack pointer, which LCLHEAP updates.
+    auto hasHiddenDefs = [this](LclVarDsc* varDsc) {
+        if (varDsc->lvIsStructField)
+        {
+            LclVarDsc* parentDsc = lvaGetDesc(varDsc->lvParentLcl);
+            if (parentDsc->IsAddressExposed())
+            {
+                return true;
+            }
+        }
+
+        return varDsc->lvImplicitlyReferenced || varDsc->IsAddressExposed() || varDsc->lvPromoted;
+    };
+
+    // Capping the pending set bounds the per-node scans, keeping the phase linear in the size of the
+    // visited blocks. Calls with many arguments can have one pending copy per argument.
+    const int               maxPendingCopies = 256;
+    ArrayStack<PendingCopy> pending(getAllocator(CMK_Lower));
+    auto                    removePending = [&pending](int index) {
+        pending.BottomRef(index) = pending.Top();
+        pending.Pop();
+    };
+
+    for (BasicBlock* const block : m_wasmLocalCopyBlocks->BottomUpOrder())
+    {
+        if (block->HasFlag(BBF_REMOVED))
+        {
+            continue;
+        }
+
+        LIR::Range& range = LIR::AsRange(block);
+        pending.Reset();
+
+        for (GenTree* node : range)
+        {
+            if (pending.Height() != 0)
+            {
+                if (node->OperIs(GT_LCL_VAR) && !node->isContained())
+                {
+                    unsigned lclNum = node->AsLclVar()->GetLclNum();
+                    for (int i = 0; i < pending.Height(); i++)
+                    {
+                        PendingCopy& copy = pending.BottomRef(i);
+                        if ((copy.SrcLclNum == lclNum) && node->HasLastUse())
+                        {
+                            copy.SrcLastUse = node;
+                            continue;
+                        }
+
+                        if ((copy.Store->GetLclNum() != lclNum) || (node->TypeGet() != copy.Store->TypeGet()))
+                        {
+                            continue;
+                        }
+
+                        JITDUMP("Forwarding V%02u into [%06u] in place of single-use copy V%02u [%06u]\n",
+                                copy.SrcLclNum, dspTreeID(node), lclNum, dspTreeID(copy.Store));
+
+                        // "src" is now read here; move its last-use flag here if it died earlier.
+                        node->gtFlags &= ~GTF_VAR_DEATH;
+                        if (copy.SrcLastUse != nullptr)
+                        {
+                            copy.SrcLastUse->gtFlags &= ~GTF_VAR_DEATH;
+                            node->gtFlags |= GTF_VAR_DEATH;
+                        }
+
+                        range.Remove(copy.Store->Data());
+                        range.Remove(copy.Store);
+                        node->AsLclVar()->SetLclNum(copy.SrcLclNum);
+                        node->AsLclVar()->SetSsaNum(SsaConfig::RESERVED_SSA_NUM);
+
+                        LclVarDsc* tmpDsc = lvaGetDesc(lclNum);
+                        tmpDsc->setLvRefCnt(0);
+                        tmpDsc->setLvRefCntWtd(0);
+
+                        const unsigned srcLclNum = copy.SrcLclNum;
+                        removePending(i);
+
+                        // This is now the latest read of "src" for other pending copies of it.
+                        if (node->HasLastUse())
+                        {
+                            for (int j = 0; j < pending.Height(); j++)
+                            {
+                                if (pending.Bottom(j).SrcLclNum == srcLclNum)
+                                {
+                                    pending.BottomRef(j).SrcLastUse = node;
+                                }
+                            }
+                        }
+
+                        modified = true;
+                        break;
+                    }
+                }
+                else if (node->OperIs(GT_LCL_ADDR))
+                {
+                    unsigned lclNum = node->AsLclVarCommon()->GetLclNum();
+                    for (int i = pending.Height() - 1; i >= 0; i--)
+                    {
+                        if (pending.Bottom(i).SrcLclNum == lclNum)
+                        {
+                            removePending(i);
+                        }
+                    }
+                }
+
+                node->VisitLogicalLocalDefs(this, [&](const auto& def) {
+                    for (int i = pending.Height() - 1; i >= 0; i--)
+                    {
+                        if (pending.Bottom(i).SrcLclNum == def.GetLclNum())
+                        {
+                            removePending(i);
+                        }
+                    }
+                    return GenTree::VisitResult::Continue;
+                });
+            }
+
+            if (!node->OperIs(GT_STORE_LCL_VAR) || (pending.Height() >= maxPendingCopies))
+            {
+                continue;
+            }
+
+            GenTreeLclVar* store   = node->AsLclVar();
+            GenTree*       srcNode = store->Data();
+            if (!srcNode->OperIs(GT_LCL_VAR) || srcNode->isContained() ||
+                ((srcNode->gtLIRFlags & LIR::Flags::MultiplyUsed) != 0))
+            {
+                continue;
+            }
+
+            unsigned   tmpLclNum = store->GetLclNum();
+            unsigned   srcLclNum = srcNode->AsLclVar()->GetLclNum();
+            LclVarDsc* tmpDsc    = lvaGetDesc(tmpLclNum);
+            LclVarDsc* srcDsc    = lvaGetDesc(srcLclNum);
+            var_types  type      = tmpDsc->TypeGet();
+
+            if ((tmpLclNum == srcLclNum) || (tmpDsc->lvRefCnt() != 2) || tmpDsc->lvIsParam || tmpDsc->lvIsStructField ||
+                tmpDsc->lvIsOSRLocal || hasHiddenDefs(tmpDsc) || hasHiddenDefs(srcDsc) || !isCopyableType(type) ||
+                (srcDsc->TypeGet() != type) || (store->TypeGet() != type) || (srcNode->TypeGet() != type))
+            {
+                continue;
+            }
+
+            pending.Push({store, srcLclNum, srcNode->HasLastUse() ? srcNode : nullptr});
+        }
+    }
+
+    return modified ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
+}
+
+//-----------------------------------------------------------------------------
+// fgWasmIsRematerializableValue: check whether a value can be evaluated
+//   anywhere without changing its result or faulting.
+//
+// Arguments:
+//   node - the value
+//
+// Returns:
+//   true if the node is a constant, or an invariant, non-faulting load of
+//   an invariant address (such as a ReadyToRun handle)
+//
+bool Compiler::fgWasmIsRematerializableValue(GenTree* node)
+{
+    if (node->OperIsConst())
+    {
+        return true;
+    }
+
+    // Volatile loads have ordering side effects and must not move.
+    const GenTreeFlags invariantLoad = GTF_IND_INVARIANT | GTF_IND_NONFAULTING;
+    const GenTreeFlags unmovable     = GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF | GTF_IND_VOLATILE;
+    return node->OperIs(GT_IND) && ((node->gtFlags & invariantLoad) == invariantLoad) &&
+           ((node->gtFlags & unmovable) == 0) && node->AsIndir()->Addr()->IsInvariant();
+}
+
+//-----------------------------------------------------------------------------
+// fgWasmRematerializeInvariantLocals: move invariant values to the single
+//   use of the local they are stored to.
+//
+// Returns:
+//   true if the IR was modified
+//
+// Notes:
+//   Statement splitting, CSE and morph can leave "STORE_LCL_VAR<tmp>(V) ... LCL_VAR<tmp>"
+//   where V is a constant or an invariant load (see fgWasmIsRematerializableValue).
+//   Evaluating V at the use instead saves the store, the load of "tmp" and a Wasm local.
+//
+//   The def and use may be in different blocks. "tmp" must not be live into the method
+//   or a handler, so the single def reaches the use on every path. Uses in blocks with
+//   a higher weight than the def are skipped, so that hoisted values stay hoisted.
+//
+//   Runs after late liveness, so ref counts are exact.
+//
+bool Compiler::fgWasmRematerializeInvariantLocals()
+{
+    if (m_wasmRematBlocks == nullptr)
+    {
+        return false;
+    }
+
+    struct Candidate
+    {
+        BasicBlock*    Block;
+        GenTreeLclVar* Store;
+    };
+
+    using CandidateMap = JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, Candidate>;
+
+    CandidateMap candidates(getAllocator(CMK_Lower));
+
+    // Locals live into the method entry or any handler entry.
+    VARSET_TP liveIntoEntries(VarSetOps::MakeCopy(this, fgFirstBB->bbLiveIn));
+    for (EHblkDsc* const HBtab : EHClauses(this))
+    {
+        VarSetOps::UnionD(this, liveIntoEntries, HBtab->ebdHndBeg->bbLiveIn);
+        if (HBtab->HasFilter())
+        {
+            VarSetOps::UnionD(this, liveIntoEntries, HBtab->ebdFilter->bbLiveIn);
+        }
+    }
+
+    for (BasicBlock* const block : m_wasmRematBlocks->BottomUpOrder())
+    {
+        if (block->HasFlag(BBF_REMOVED))
+        {
+            continue;
+        }
+
+        for (GenTree* const node : LIR::AsRange(block))
+        {
+            if (!node->OperIs(GT_STORE_LCL_VAR))
+            {
+                continue;
+            }
+
+            GenTreeLclVar* const store = node->AsLclVar();
+            GenTree* const       value = store->Data();
+            if (!fgWasmIsRematerializableValue(value) || ((value->gtLIRFlags & LIR::Flags::MultiplyUsed) != 0))
+            {
+                continue;
+            }
+
+            LclVarDsc* const dsc  = lvaGetDesc(store);
+            var_types const  type = dsc->TypeGet();
+
+            // GC refs are excluded to keep GC reporting of Wasm locals unchanged.
+            if ((dsc->lvRefCnt() != 2) || !dsc->lvTracked || dsc->lvIsParam || dsc->lvIsStructField ||
+                dsc->lvIsOSRLocal || dsc->lvPromoted || dsc->IsAddressExposed() || dsc->lvImplicitlyReferenced ||
+                !varTypeIsEnregisterable(type) || varTypeIsStruct(type) || varTypeIsGC(type) || varTypeIsSmall(type) ||
+                (store->TypeGet() != type) || (genActualType(value) != type) ||
+                VarSetOps::IsMember(this, liveIntoEntries, dsc->lvVarIndex))
+            {
+                continue;
+            }
+
+            candidates.Set(store->GetLclNum(), {block, store}, CandidateMap::Overwrite);
+        }
+    }
+
+    if (candidates.GetCount() == 0)
+    {
+        return false;
+    }
+
+    VARSET_TP removed(VarSetOps::MakeEmpty(this));
+    bool      modified = false;
+
+    for (BasicBlock* const block : Blocks())
+    {
+        if (candidates.GetCount() == 0)
+        {
+            break;
+        }
+
+        LIR::Range& range = LIR::AsRange(block);
+        for (GenTree* node = range.FirstNode(); (node != nullptr) && (candidates.GetCount() != 0);)
+        {
+            GenTree* const next = node->gtNext;
+            Candidate      candidate;
+
+            if (node->OperIs(GT_LCL_VAR) && !node->isContained() &&
+                candidates.Lookup(node->AsLclVar()->GetLclNum(), &candidate) &&
+                (block->bbWeight <= candidate.Block->bbWeight) && (node->TypeGet() == candidate.Store->TypeGet()))
+            {
+                LIR::Range&        defRange   = LIR::AsRange(candidate.Block);
+                GenTree*           value      = candidate.Store->Data();
+                bool               isClosed   = false;
+                LIR::ReadOnlyRange valueRange = defRange.GetTreeRange(value, &isClosed);
+                LIR::Use           use;
+
+                if (isClosed && range.TryGetUse(node, &use))
+                {
+                    unsigned const lclNum = node->AsLclVar()->GetLclNum();
+                    JITDUMP("Rematerializing [%06u] from " FMT_BB " at [%06u] in " FMT_BB
+                            " in place of single-use V%02u\n",
+                            dspTreeID(value), candidate.Block->bbNum, dspTreeID(node), block->bbNum, lclNum);
+
+                    defRange.Remove(candidate.Store);
+                    LIR::Range moved = defRange.Remove(std::move(valueRange));
+                    range.InsertBefore(node, std::move(moved));
+
+                    value->gtLIRFlags |= (node->gtLIRFlags & LIR::Flags::MultiplyUsed);
+                    use.ReplaceWith(value);
+                    range.Remove(node);
+
+                    LclVarDsc* const dsc = lvaGetDesc(lclNum);
+                    dsc->setLvRefCnt(0);
+                    dsc->setLvRefCntWtd(0);
+                    VarSetOps::AddElemD(this, removed, dsc->lvVarIndex);
+                    candidates.Remove(lclNum);
+                    modified = true;
+                }
+            }
+
+            node = next;
+        }
+    }
+
+    if (modified)
+    {
+        // The rematerialized locals are no longer live anywhere.
+        for (BasicBlock* const block : Blocks())
+        {
+            VarSetOps::DiffD(this, block->bbLiveIn, removed);
+            VarSetOps::DiffD(this, block->bbLiveOut, removed);
+        }
+    }
+
+    return modified;
 }
 
 //-----------------------------------------------------------------------------

@@ -315,6 +315,14 @@ static void optAssertionProp_HWIntrinsic(Compiler* comp, GenTreeHWIntrinsic* tre
 
     var_types rangeType = node->TypeGet();
 
+    // A Span's length is never negative. Recognize it here (both the unpromoted
+    // LCL_FLD form and the implicit byref IND form) so range analysis can treat
+    // comparisons against it as checked bounds.
+    if (compiler->gtIsSpanLength(node))
+    {
+        return {SymbolicIntegerValue::Zero, UpperBoundForType(rangeType)};
+    }
+
     switch (node->OperGet())
     {
         case GT_EQ:
@@ -356,37 +364,6 @@ static void optAssertionProp_HWIntrinsic(Compiler* comp, GenTreeHWIntrinsic* tre
                 rangeType = static_cast<var_types>(node->AsCall()->gtReturnType);
             }
             break;
-
-        case GT_IND:
-        {
-            GenTree* const addr = node->AsIndir()->Addr();
-
-            if (node->TypeIs(TYP_INT) && addr->OperIs(GT_ADD) && addr->gtGetOp1()->OperIs(GT_LCL_VAR) &&
-                addr->gtGetOp2()->IsIntegralConst(OFFSETOF__CORINFO_Span__length))
-            {
-                GenTreeLclVar* const lclVar = addr->gtGetOp1()->AsLclVar();
-
-                if (compiler->lvaGetDesc(lclVar->GetLclNum())->IsSpan())
-                {
-                    assert(compiler->lvaIsImplicitByRefLocal(lclVar->GetLclNum()));
-                    return {SymbolicIntegerValue::Zero, UpperBoundForType(rangeType)};
-                }
-            }
-            break;
-        }
-
-        case GT_LCL_FLD:
-        {
-            GenTreeLclFld* const lclFld = node->AsLclFld();
-            LclVarDsc* const     varDsc = compiler->lvaGetDesc(lclFld);
-
-            if (node->TypeIs(TYP_INT) && varDsc->IsSpan() && lclFld->GetLclOffs() == OFFSETOF__CORINFO_Span__length)
-            {
-                return {SymbolicIntegerValue::Zero, UpperBoundForType(rangeType)};
-            }
-
-            break;
-        }
 
         case GT_LCL_VAR:
         {
@@ -2400,8 +2377,19 @@ void Compiler::optAssertionGen(GenTree* tree)
             if (!optLocalAssertionProp && tree->TypeIs(TYP_INT) &&
                 lvaGetDesc(tree->AsLclVarCommon())->IsNeverNegative())
             {
-                // Create "LCL_VAR >= 0" assertion for int local variables that are never negative.
-                // Typically, it's Span.Length.
+                // Create "LCL_VAR >= 0" assertions for locals that are never negative.
+                ValueNum opVN = optConservativeNormalVN(tree);
+                if (opVN != ValueNumStore::NoVN)
+                {
+                    assertionInfo = optAddAssertion(
+                        AssertionDsc::CreateConstantBound(this, VNF_GE, opVN, vnStore->VNZeroForType(TYP_INT)));
+                }
+            }
+            break;
+
+        case GT_LCL_FLD:
+            if (!optLocalAssertionProp && tree->TypeIs(TYP_INT) && IntegralRange::ForNode(tree, this).IsNonNegative())
+            {
                 ValueNum opVN = optConservativeNormalVN(tree);
                 if (opVN != ValueNumStore::NoVN)
                 {
@@ -2429,7 +2417,7 @@ void Compiler::optAssertionGen(GenTree* tree)
             {
                 assertionInfo = optCreateAssertion(tree->GetIndirOrArrMetaDataAddr(), nullptr, /*equals*/ false);
             }
-            else if (tree->OperIs(GT_IND) && tree->TypeIs(TYP_INT) &&
+            else if (!optLocalAssertionProp && tree->OperIs(GT_IND) && tree->TypeIs(TYP_INT) &&
                      IntegralRange::ForNode(tree, this).IsNonNegative())
             {
                 // Create "IND >= 0" assertion for int indirections that are known to be non-negative.
@@ -4024,7 +4012,13 @@ GenTree* Compiler::optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, GenTreeL
     ASSERT_TP filteredAssertions = assertions;
     if (optLocalAssertionProp)
     {
-        filteredAssertions = BitVecOps::Intersection(apTraits, GetAssertionDep(lclNum), filteredAssertions);
+        ASSERT_TP dep = optAssertionDep->Get(lclNum);
+        if (BitVecOps::MayBeUninit(dep))
+        {
+            // There are no assertions for this local
+            return nullptr;
+        }
+        filteredAssertions = BitVecOps::Intersection(apTraits, dep, filteredAssertions);
     }
     else if (!optAssertionHasAssertionsForVN(treeVN))
     {
@@ -4137,8 +4131,14 @@ GenTree* Compiler::optAssertionProp_LclFld(ASSERT_VALARG_TP assertions, GenTreeL
         return nullptr;
     }
 
-    const unsigned lclNum             = tree->GetLclNum();
-    ASSERT_TP      filteredAssertions = BitVecOps::Intersection(apTraits, GetAssertionDep(lclNum), assertions);
+    const unsigned lclNum = tree->GetLclNum();
+    ASSERT_TP      dep    = optAssertionDep->Get(lclNum);
+    if (BitVecOps::MayBeUninit(dep))
+    {
+        return nullptr;
+    }
+
+    ASSERT_TP filteredAssertions = BitVecOps::Intersection(apTraits, dep, assertions);
 
     BitVecOps::Iter iter(apTraits, filteredAssertions);
     unsigned        index = 0;
@@ -4535,7 +4535,13 @@ AssertionIndex Compiler::optLocalAssertionIsEqualOrNotEqual(
     noway_assert((op2Kind == O2K_CONST_INT) || (op2Kind == O2K_ZEROOBJ));
 
     assert(optLocalAssertionProp);
-    ASSERT_TP apDependent = BitVecOps::Intersection(apTraits, GetAssertionDep(lclNum), assertions);
+    ASSERT_TP dep = optAssertionDep->Get(lclNum);
+    if (BitVecOps::MayBeUninit(dep))
+    {
+        return NO_ASSERTION_INDEX;
+    }
+
+    ASSERT_TP apDependent = BitVecOps::Intersection(apTraits, dep, assertions);
 
     BitVecOps::Iter iter(apTraits, apDependent);
     unsigned        bvIndex = 0;
@@ -5254,8 +5260,14 @@ bool Compiler::optAssertionIsNonNull(GenTree* op, ASSERT_VALARG_TP assertions)
 
         // Find live assertions related to lclNum
         //
-        unsigned const lclNum      = op->AsLclVarCommon()->GetLclNum();
-        ASSERT_TP      apDependent = BitVecOps::Intersection(apTraits, GetAssertionDep(lclNum), assertions);
+        unsigned const lclNum = op->AsLclVarCommon()->GetLclNum();
+        ASSERT_TP      dep    = optAssertionDep->Get(lclNum);
+        if (BitVecOps::MayBeUninit(dep))
+        {
+            return false;
+        }
+
+        ASSERT_TP apDependent = BitVecOps::Intersection(apTraits, dep, assertions);
 
         // Scan those looking for a suitable assertion
         //
@@ -5520,9 +5532,17 @@ bool Compiler::optWriteBarrierAssertionProp_StoreInd(ASSERT_VALARG_TP assertions
     GCInfo::WriteBarrierForm barrierType = GCInfo::WriteBarrierForm::WBF_BarrierUnknown;
 
     // First, analyze the value being stored
-    auto vnVisitor = [this](ValueNum vn) -> ValueNumStore::VNVisit {
+    bool needsRelease = false;
+    auto vnVisitor    = [&](ValueNum vn) -> ValueNumStore::VNVisit {
         if ((vn == ValueNumStore::VNForNull()) || vnStore->IsVNObjHandle(vn))
         {
+#ifndef TARGET_XARCH
+            // GC barrier elision must preserve publication ordering for mutable objects.
+            if (!needsRelease && !indir->IsVolatile() && (vn != ValueNumStore::VNForNull()))
+            {
+                needsRelease = !info.compCompHnd->isObjectImmutable(vnStore->ConstantObjHandle(vn));
+            }
+#endif
             // No write barrier is required for null or nongc object handles as values
             return ValueNumStore::VNVisit::Continue;
         }
@@ -5532,6 +5552,11 @@ bool Compiler::optWriteBarrierAssertionProp_StoreInd(ASSERT_VALARG_TP assertions
     if (vnStore->VNVisitReachingVNs(optConservativeNormalVN(value), vnVisitor) == ValueNumStore::VNVisit::Continue)
     {
         barrierType = GCInfo::WriteBarrierForm::WBF_NoBarrier;
+        if (needsRelease)
+        {
+            indir->gtFlags |= GTF_IND_VOLATILE;
+            indir->SetHasOrderingSideEffect();
+        }
     }
     // Next, analyze the address if we haven't already determined the barrier type from the value
     else if ((indir->gtFlags & GTF_IND_TGT_HEAP) == 0)

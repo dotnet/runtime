@@ -41,25 +41,12 @@ SET_DEFAULT_DEBUG_CHANNEL(LOADER); // some headers have code with asserts, so do
 #include "pal/wasi/pal_wasi_missing.h"
 #endif
 
-#ifdef __APPLE__
-#include <mach-o/dyld.h>
-#include <mach-o/loader.h>
-#elif defined(TARGET_WASI)
-// WASI has no dynamic linker and no <link.h>. PAL_CopyModuleData is stubbed
-// to return 0 in the TARGET_WASM branch below; <link.h>'s dl_phdr_info /
-// link_map are not referenced anywhere this file actually compiles on WASI.
-#else
-#include <link.h>
-#endif // __APPLE__
-
 #include <sys/types.h>
 #include <sys/mman.h>
 
 #if HAVE_GNU_LIBNAMES_H
 #include <gnu/lib-names.h>
 #endif
-
-#include <algorithm>
 
 using namespace CorUnix;
 
@@ -72,6 +59,19 @@ using namespace CorUnix;
 
 /* get the full name of a module if available, and the short name otherwise*/
 #define MODNAME(x) ((x)->lib_name)
+
+#if _ENABLE_DEBUG_MESSAGES_
+// UTF-8 copy of a UTF-16 name for a trace message, freed at the end of the trace statement.
+class TraceName
+{
+    LPSTR m_name;
+public:
+    TraceName(LPCWSTR name) : m_name(name != nullptr ? UTIL_WCToMB_Alloc(name, -1) : nullptr) {}
+    ~TraceName() { free(m_name); }
+    LPCSTR Get() const { return m_name != nullptr ? m_name : "NULL"; }
+};
+#define TRACE_NAME(name) TraceName(name).Get()
+#endif // _ENABLE_DEBUG_MESSAGES_
 
 #define LIBC_NAME_WITHOUT_EXTENSION "libc"
 
@@ -178,9 +178,7 @@ LoadLibraryExW(
     HMODULE hModule = nullptr;
 
     PERF_ENTRY(LoadLibraryExW);
-    ENTRY("LoadLibraryExW (lpLibFileName=%p (%S)) \n",
-          lpLibFileName ? lpLibFileName : W16_NULLSTRING,
-          lpLibFileName ? lpLibFileName : W16_NULLSTRING);
+    ENTRY("LoadLibraryExW (lpLibFileName=%p (%s)) \n", lpLibFileName, TRACE_NAME(lpLibFileName));
 
     if (!LOADVerifyLibraryPath(lpLibFileName))
     {
@@ -268,19 +266,7 @@ GetProcAddress(
         int iLen = 4 + strlen(lpProcName) + 1;
         LPSTR lpPALProcName = (LPSTR) alloca(iLen);
 
-        if (strcpy_s(lpPALProcName, iLen, "PAL_") != SAFECRT_SUCCESS)
-        {
-            ERROR("strcpy_s failed!\n");
-            SetLastError(ERROR_INSUFFICIENT_BUFFER);
-            goto done;
-        }
-
-        if (strcat_s(lpPALProcName, iLen, lpProcName) != SAFECRT_SUCCESS)
-        {
-            ERROR("strcat_s failed!\n");
-            SetLastError(ERROR_INSUFFICIENT_BUFFER);
-            goto done;
-        }
+        snprintf(lpPALProcName, iLen, "PAL_%s", lpProcName);
 
         ProcAddress = (FARPROC) dlsym(module->dl_handle, lpPALProcName);
         symbolName = lpPALProcName;
@@ -295,8 +281,8 @@ GetProcAddress(
 
     if (ProcAddress)
     {
-        TRACE("Symbol %s found at address %p in module %p (named %S)\n",
-              lpProcName, ProcAddress, module, MODNAME(module));
+        TRACE("Symbol %s found at address %p in module %p (named %s)\n",
+              lpProcName, ProcAddress, module, TRACE_NAME(MODNAME(module)));
 
         /* if we don't know the module's full name yet, this is our chance to obtain it */
         if (!module->lib_name && module->dl_handle)
@@ -324,8 +310,8 @@ GetProcAddress(
     }
     else
     {
-        TRACE("Symbol %s not found in module %p (named %S)\n",
-              lpProcName, module, MODNAME(module));
+        TRACE("Symbol %s not found in module %p (named %s)\n",
+              lpProcName, module, TRACE_NAME(MODNAME(module)));
         SetLastError(ERROR_PROC_NOT_FOUND);
     }
 done:
@@ -360,71 +346,6 @@ FreeLibrary(
 
 /*++
 Function:
-  GetModuleFileNameA
-
-See MSDN doc.
-
-Notes :
-    because of limitations in the dlopen() mechanism, this will only return the
-    full path name if a relative or absolute path was given to LoadLibrary, or
-    if the module was used in a GetProcAddress call. otherwise, this will return
-    the short name as given to LoadLibrary. The exception is if hModule is
-    NULL : in this case, the full path of the executable is always returned.
---*/
-DWORD
-PALAPI
-GetModuleFileNameA(
-    IN HMODULE hModule,
-    OUT LPSTR lpFileName,
-    IN DWORD nSize)
-{
-    INT name_length;
-    DWORD retval = 0;
-    LPWSTR wide_name = nullptr;
-    size_t converted = 0;
-
-    PERF_ENTRY(GetModuleFileNameA);
-    ENTRY("GetModuleFileNameA (hModule=%p, lpFileName=%p, nSize=%u)\n",
-          hModule, lpFileName, nSize);
-
-    LockModuleList();
-    if (hModule && !LOADValidateModule((MODSTRUCT *)hModule))
-    {
-        TRACE("Can't find name for invalid module handle %p\n", hModule);
-        SetLastError(ERROR_INVALID_HANDLE);
-        goto done;
-    }
-    wide_name = LOADGetModuleFileName((MODSTRUCT *)hModule);
-
-    if (!wide_name)
-    {
-        ASSERT("Can't find name for valid module handle %p\n", hModule);
-        SetLastError(ERROR_INTERNAL_ERROR);
-        goto done;
-    }
-
-    /* Convert module name to Ascii, place it in the supplied buffer */
-
-    converted = minipal_convert_utf16_to_utf8((const CHAR16_T*)wide_name, minipal_u16_strlen((const CHAR16_T*)wide_name) + 1, lpFileName, nSize, 0);
-    if (converted == 0)
-    {
-        TRACE("Buffer too small to copy module's file name.\n");
-        SetLastError(ERROR_INSUFFICIENT_BUFFER);
-        goto done;
-    }
-
-    TRACE("File name of module %p is %s\n", hModule, lpFileName);
-    name_length = (INT)converted;
-    retval = name_length;
-done:
-    UnlockModuleList();
-    LOGEXIT("GetModuleFileNameA returns DWORD %d\n", retval);
-    PERF_EXIT(GetModuleFileNameA);
-    return retval;
-}
-
-/*++
-Function:
   GetModuleFileNameW
 
 See MSDN doc.
@@ -453,7 +374,11 @@ GetModuleFileNameW(
 
     LockModuleList();
 
-    wcscpy_s(lpFileName, nSize, W(""));
+    // Same as the former wcscpy_s: no write for a null or empty buffer.
+    if (lpFileName != nullptr && nSize != 0)
+    {
+        lpFileName[0] = W('\0');
+    }
 
     if (hModule && !LOADValidateModule((MODSTRUCT *)hModule))
     {
@@ -481,9 +406,13 @@ GetModuleFileNameW(
         goto done;
     }
 
-    wcscpy_s(lpFileName, nSize, wide_name);
+    // name_length < nSize was checked above. Same as the former wcscpy_s: no write for a null buffer.
+    if (lpFileName != nullptr)
+    {
+        memcpy(lpFileName, wide_name, (name_length + 1) * sizeof(WCHAR));
+    }
 
-    TRACE("file name of module %p is %S\n", hModule, lpFileName);
+    TRACE("file name of module %p is %s\n", hModule, TRACE_NAME(lpFileName));
     retval = (DWORD)name_length;
 done:
     UnlockModuleList();
@@ -542,9 +471,7 @@ PAL_LoadLibraryDirect(
     NATIVE_LIBRARY_HANDLE dl_handle = nullptr;
 
     PERF_ENTRY(LoadLibraryDirect);
-    ENTRY("LoadLibraryDirect (lpLibFileName=%p (%S)) \n",
-          lpLibFileName ? lpLibFileName : W16_NULLSTRING,
-          lpLibFileName ? lpLibFileName : W16_NULLSTRING);
+    ENTRY("LoadLibraryDirect (lpLibFileName=%p (%s)) \n", lpLibFileName, TRACE_NAME(lpLibFileName));
 
     // Getting nullptr as name indicates redirection to current library
     if (lpLibFileName == nullptr)
@@ -579,30 +506,6 @@ done:
     return dl_handle;
 }
 
-/*
-Function:
-  PAL_FreeLibraryDirect
-
-  Free a loaded library
-
-  Returns true on success, false on failure.
-*/
-BOOL
-PALAPI
-PAL_FreeLibraryDirect(
-        IN NATIVE_LIBRARY_HANDLE dl_handle)
-{
-    BOOL retValue = 0;
-    PERF_ENTRY(PAL_FreeLibraryDirect);
-    ENTRY("PAL_FreeLibraryDirect (dl_handle=%p) \n", dl_handle);
-
-    retValue = dlclose(dl_handle) == 0;
-
-    LOGEXIT("PAL_FreeLibraryDirect returns BOOL %p\n", retValue);
-    PERF_EXIT(PAL_FreeLibraryDirect);
-    return retValue;
-}
-
 /*++
 Function:
   PAL_GetPalHostModule
@@ -617,34 +520,6 @@ PALAPI
 PAL_GetPalHostModule()
 {
     return (HMODULE)LOADGetPalLibrary();
-}
-
-/*
-Function:
-  PAL_GetProcAddressDirect
-
-  Get the address corresponding to a symbol in a loaded native library.
-
-  Returns the address of the sumbol loaded in memory.
-*/
-FARPROC
-PALAPI
-PAL_GetProcAddressDirect(
-        IN NATIVE_LIBRARY_HANDLE dl_handle,
-        IN LPCSTR lpProcName)
-{
-    FARPROC address = nullptr;
-
-    PERF_ENTRY(PAL_GetProcAddressDirect);
-    ENTRY("PAL_GetProcAddressDirect (lpLibFileName=%p (%S)) \n",
-          lpProcName ? lpProcName : "NULL",
-          lpProcName ? lpProcName : "NULL");
-
-    address = (FARPROC) dlsym(dl_handle, lpProcName);
-
-    LOGEXIT("PAL_GetProcAddressDirect returns FARPROC %p\n", address);
-    PERF_EXIT(PAL_GetProcAddressDirect);
-    return address;
 }
 
 /*++
@@ -707,193 +582,6 @@ PAL_UnregisterModule(
     LOGEXIT("PAL_UnregisterModule returns\n");
     PERF_EXIT(PAL_UnregisterModule);
 }
-
-/*++
-    PAL_GetSymbolModuleBase
-
-    Get base address of the module containing a given symbol
-
-Parameters:
-    void *symbol - address of symbol
-
-Return value:
-    module base address
---*/
-LPCVOID
-PALAPI
-PAL_GetSymbolModuleBase(PVOID symbol)
-{
-    LPCVOID retval = nullptr;
-
-    PERF_ENTRY(PAL_GetPalModuleBase);
-    ENTRY("PAL_GetPalModuleBase\n");
-
-    if (symbol == nullptr)
-    {
-        TRACE("Can't get base address. Argument symbol == nullptr\n");
-        SetLastError(ERROR_INVALID_DATA);
-    }
-    else
-    {
-        Dl_info info;
-        if (dladdr(symbol, &info) != 0)
-        {
-            retval = info.dli_fbase;
-        }
-        else
-        {
-            TRACE("Can't get base address of the current module\n");
-            SetLastError(ERROR_INVALID_DATA);
-        }
-    }
-
-    LOGEXIT("PAL_GetPalModuleBase returns %p\n", retval);
-    PERF_EXIT(PAL_GetPalModuleBase);
-    return retval;
-}
-
-struct CopyModuleDataParam
-{
-    uint8_t* destination_buffer_start;
-    uint8_t* destination_buffer_end;
-    uint8_t* module_base;
-    int result;
-};
-
-void handle_image_range(uint8_t* source_start, size_t size, struct CopyModuleDataParam* param)
-{
-    uint8_t* source_end = source_start + size;
-    if (param->destination_buffer_start != NULL)
-    {
-        size_t offset = source_start - param->module_base;
-        uint8_t* destination_start = ((uint8_t*)(param->destination_buffer_start)) + offset;
-        uint8_t* destination_end   = destination_start + size;
-        _ASSERTE(destination_end <= param->destination_buffer_end);
-        if (destination_end <= param->destination_buffer_end)
-        {
-            memcpy(destination_start, source_start, size);
-        }
-    }
-    param->result = std::max(param->result, (int)(source_end - param->module_base));
-}
-
-#ifdef __APPLE__
-PALIMPORT
-int
-PALAPI
-PAL_CopyModuleData(PVOID moduleBase, PVOID destinationBufferStart, PVOID destinationBufferEnd)
-{
-    CopyModuleDataParam param;
-    param.module_base = (uint8_t*)moduleBase;
-    param.destination_buffer_start = (uint8_t*)destinationBufferStart;
-    param.destination_buffer_end = (uint8_t*)destinationBufferEnd;
-    uint32_t count = _dyld_image_count();
-    for (uint32_t i = 0; i < count; i++)
-    {
-        const struct mach_header * header = _dyld_get_image_header(i);
-        if (PAL_GetSymbolModuleBase((void*)header) == moduleBase)
-        {
-            intptr_t slide = _dyld_get_image_vmaddr_slide(i);
-
-            struct load_command * cmd = (struct load_command * )((char * ) header + sizeof(struct mach_header));
-            if(header->magic == MH_MAGIC_64)
-            {
-                cmd = (struct load_command*)((char *)header + sizeof(struct mach_header_64));
-            }
-
-            for (uint32_t j = 0; j < header -> ncmds; j++)
-            {
-                if (cmd -> cmd == LC_SEGMENT)
-                {
-                    struct segment_command * seg = (struct segment_command *) cmd;
-                    size_t size = seg->vmsize;
-                    uint8_t* source_start = (uint8_t*)(seg->vmaddr + slide);
-                    handle_image_range(source_start, size, &param);
-                }
-                else if (cmd -> cmd == LC_SEGMENT_64)
-                {
-                    struct segment_command_64 * seg = (struct segment_command_64 * ) cmd;
-                    size_t size = seg->vmsize;
-                    uint8_t* source_start = (uint8_t*)(seg->vmaddr + slide);
-                    handle_image_range(source_start, size, &param);
-                }
-                cmd = (struct load_command*)((uint8_t*)cmd + cmd->cmdsize);
-            }
-        }
-    }
-    return param.result;
-}
-#elif defined(TARGET_WASM)
-// WASM-TODO: get rid of whole module loading on wasm
-PALIMPORT
-int
-PALAPI
-PAL_CopyModuleData(PVOID moduleBase, PVOID destinationBufferStart, PVOID destinationBufferEnd)
-{
-    _ASSERTE(!"PAL_CopyModuleData not implemented for wasm");
-    return 0;
-}
-#else
-static int CopyModuleDataCallback(struct dl_phdr_info *info, size_t size, void *data)
-{
-    CopyModuleDataParam* param = (CopyModuleDataParam*)data;
-    if (info->dlpi_addr == (size_t)param->module_base)
-    {
-        for (int j = 0; j < info->dlpi_phnum; j++)
-        {
-            if (info->dlpi_phdr[j].p_type == PT_LOAD)
-            {
-                Elf32_Word size = info->dlpi_phdr[j].p_memsz;
-                uint8_t* source_start = (uint8_t*)(info->dlpi_addr + info->dlpi_phdr[j].p_vaddr);
-                handle_image_range(source_start, size, param);
-            }
-        }
-        return 1;
-    }
-    return 0;
-}
-
-PALIMPORT
-int
-PALAPI
-PAL_CopyModuleData(PVOID moduleBase, PVOID destinationBufferStart, PVOID destinationBufferEnd)
-{
-    CopyModuleDataParam param;
-    param.destination_buffer_start = (uint8_t*)destinationBufferStart;
-    param.destination_buffer_end = (uint8_t*)destinationBufferEnd;
-    param.module_base = (uint8_t*)moduleBase;
-    param.result = 0;
-    dl_iterate_phdr(CopyModuleDataCallback, &param);
-    return param.result;
-}
-#endif
-
-/*++
-    PAL_GetLoadLibraryError
-
-    Wrapper for dlerror() to be used by PAL functions
-
-Return value:
-
-A LPCSTR containing the output of dlerror()
-
---*/
-PALIMPORT
-LPCSTR
-PALAPI
-PAL_GetLoadLibraryError()
-{
-
-    PERF_ENTRY(PAL_GetLoadLibraryError);
-    ENTRY("PAL_GetLoadLibraryError");
-
-    LPCSTR last_error = dlerror();
-
-    LOGEXIT("PAL_GetLoadLibraryError returns %p\n", last_error);
-    PERF_EXIT(PAL_GetLoadLibraryError);
-    return last_error;
-}
-
 
 /* Internal PAL functions *****************************************************/
 
@@ -1109,8 +797,8 @@ static BOOL LOADFreeLibrary(MODSTRUCT *module, BOOL fCallDllMain)
     }
 
     module->refcount--;
-    TRACE("Reference count for module %p (named %S) decreases to %d\n",
-            module, MODNAME(module), module->refcount);
+    TRACE("Reference count for module %p (named %s) decreases to %d\n",
+            module, TRACE_NAME(MODNAME(module)), module->refcount);
 
     if (module->refcount != 0)
     {
@@ -1121,8 +809,8 @@ static BOOL LOADFreeLibrary(MODSTRUCT *module, BOOL fCallDllMain)
     /* Releasing the last reference : call dlclose(), remove module from the
        process-wide module list */
 
-    TRACE("Reference count for module %p (named %S) now 0; destroying module structure\n",
-        module, MODNAME(module));
+    TRACE("Reference count for module %p (named %s) now 0; destroying module structure\n",
+        module, TRACE_NAME(MODNAME(module)));
 
     /* unlink the module structure from the list */
     module->prev->next = module->next;
@@ -1205,9 +893,9 @@ static BOOL LOADCallDllMainSafe(MODSTRUCT *module, DWORD dwReason, LPVOID lpRese
 
     PAL_TRY(Param *, pParam, &param)
     {
-        TRACE("Calling DllMain (%p) for module %S\n",
+        TRACE("Calling DllMain (%p) for module %s\n",
               pParam->module->pDllMain,
-              pParam->module->lib_name ? pParam->module->lib_name : W16_NULLSTRING);
+              TRACE_NAME(pParam->module->lib_name));
 
         pParam->ret = pParam->module->pDllMain(pParam->module->hinstance, pParam->dwReason, pParam->lpReserved);
     }
@@ -1341,7 +1029,7 @@ static BOOL LOADValidateModule(MODSTRUCT *module)
                 ERROR("Found corrupt module %p!\n",module);
                 return FALSE;
             }
-            TRACE("Module %p is valid (name : %S)\n", module, MODNAME(module));
+            TRACE("Module %p is valid (name : %s)\n", module, TRACE_NAME(MODNAME(module)));
             return TRUE;
         }
         modlist_enum = modlist_enum->next;
@@ -1581,9 +1269,9 @@ static HMODULE LOADRegisterLibraryDirect(NATIVE_LIBRARY_HANDLE dl_handle, LPCSTR
     {
         if (!isAlreadyLoaded)
         {
-            TRACE("Calling DllMain (%p) for module %S\n",
+            TRACE("Calling DllMain (%p) for module %s\n",
                 module->pDllMain,
-                module->lib_name ? module->lib_name : W16_NULLSTRING);
+                TRACE_NAME(module->lib_name));
 
             if (nullptr == module->hinstance)
             {
@@ -1723,11 +1411,7 @@ MODSTRUCT *LOADGetPalLibrary()
                 goto exit;
             }
 
-            if (strcpy_s(g_szCoreCLRPath, cbszCoreCLRPath, info.dli_fname) != SAFECRT_SUCCESS)
-            {
-                ERROR("LOADGetPalLibrary: strcpy_s failed!");
-                goto exit;
-            }
+            memcpy(g_szCoreCLRPath, info.dli_fname, cbszCoreCLRPath);
         }
 
         if (g_running_in_exe)

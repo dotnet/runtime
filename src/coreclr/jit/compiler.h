@@ -4065,7 +4065,7 @@ public:
     GenTree* gtReverseCond(GenTree* tree);
     bool     gtTryReverseCond(GenTree* tree);
 
-    static bool gtHasRef(GenTree* tree, unsigned lclNum);
+    bool gtHasRef(GenTree* tree, unsigned lclNum);
 
     bool gtHasLocalsWithAddrOp(GenTree* tree);
     bool gtHasAddressExposedLocals(GenTree* tree);
@@ -4231,6 +4231,9 @@ public:
     CORINFO_CLASS_HANDLE gtGetFieldClassHandle(CORINFO_FIELD_HANDLE fieldHnd, bool* pIsExact, bool* pIsNonNull);
     // Check if this tree is a typeof()
     bool gtIsTypeof(GenTree* tree, CORINFO_CLASS_HANDLE* handle = nullptr);
+
+    // Check if this tree loads the length field of a Span<T>
+    bool gtIsSpanLength(GenTree* tree);
 
     GenTreeLclVarCommon* gtCallGetDefinedRetBufLclAddr(GenTreeCall* call);
     GenTreeLclVarCommon* gtCallGetDefinedAsyncResumedLclAddr(GenTreeCall* call);
@@ -4454,6 +4457,8 @@ public:
     };
     jitstd::vector<WasmSpillSlot>* m_wasmSpillSlots = nullptr;
     BitVec* m_wasmGCRefCandidates = nullptr;
+    ArrayStack<BasicBlock*>* m_wasmLocalCopyBlocks = nullptr; // Blocks with local-to-local copies, set by lowering
+    ArrayStack<BasicBlock*>* m_wasmRematBlocks     = nullptr; // Blocks with stores of invariant values, set by lowering
 #endif // defined(TARGET_WASM)
 
     unsigned lvaInlinedPInvokeFrameVar = BAD_VAR_NUM; // variable representing the InlinedCallFrame
@@ -7075,6 +7080,9 @@ public:
     PhaseStatus fgWasmTransformSccs();
     PhaseStatus fgWasmRepairTryEntries();
     PhaseStatus fgWasmVirtualIP();
+    PhaseStatus fgWasmForwardLocalCopies();
+    bool        fgWasmRematerializeInvariantLocals();
+    static bool fgWasmIsRematerializableValue(GenTree* node);
     bool        fgWasmMayEmitCall();
     PhaseStatus fgWasmFindGCRefCandidates();
     PhaseStatus fgWasmSpillRefs();
@@ -7375,6 +7383,7 @@ private:
 
     void fgMarkAddrModeForFieldAddr(GenTreeIndir* indir);
 
+    bool     fgTreeMayModifyLocal(GenTree* tree, unsigned lclNum);
     GenTree* fgMorphIndexAddr(GenTreeIndexAddr* tree);
     GenTree* fgMorphExpandCast(GenTreeCast* tree);
     GenTreeFieldList* fgMorphLclToFieldList(GenTreeLclVar* lcl);
@@ -11532,17 +11541,17 @@ public:
 
         bool IsInstrumented() const
         {
-            return jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR);
+            return jitFlags->IsSet(JitFlags::JIT_FLAG_PGO_INSTR);
         }
 
         bool IsOptimizedWithProfile() const
         {
-            return OptimizationEnabled() && jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT);
+            return OptimizationEnabled() && jitFlags->IsSet(JitFlags::JIT_FLAG_PGO_OPT);
         }
 
         bool IsInstrumentedAndOptimized() const
         {
-            return IsInstrumented() && jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT);
+            return IsInstrumented() && jitFlags->IsSet(JitFlags::JIT_FLAG_PGO_OPT);
         }
 
         bool DoEarlyBlockMerging() const

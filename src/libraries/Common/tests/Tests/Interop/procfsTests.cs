@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using Xunit;
@@ -125,8 +126,225 @@ namespace Common.Tests
 
             Assert.True(Interop.procfs.TryParseMountInfoLine(line, out Interop.procfs.ParsedMount result));
 
+            Assert.True(line.AsSpan().Overlaps(result.MountId));
+            Assert.True(line.AsSpan().Overlaps(result.ParentId));
             Assert.True(line.AsSpan().Overlaps(result.Root));
             Assert.True(line.AsSpan().Overlaps(result.MountPoint));
+        }
+
+        [Theory]
+        [InlineData("36", "35")]
+        [InlineData("4294967295", "0")]
+        [InlineData("-1", "35")]
+        [InlineData("36", "-1")]
+        [InlineData("x", "35")]
+        [InlineData("36", "x")]
+        [InlineData("4294967296", "35")]
+        [InlineData("36", "4294967296")]
+        [InlineData("18446744073709551615", "18446744073709551614")]
+        [InlineData("18446744073709551616", "0")]
+        [InlineData("", "35")]
+        [InlineData("36", "")]
+        public void ParseMountInfoLine_PreservesMountIdentifiers(string mountId, string parentId)
+        {
+            string line = $"{mountId} {parentId} 8:1 / / rw - ext4 /dev/root rw";
+
+            Assert.True(Interop.procfs.TryParseMountInfoLine(line, out Interop.procfs.ParsedMount result));
+            Assert.Equal(mountId, result.MountId);
+            Assert.Equal(parentId, result.ParentId);
+        }
+
+        public static IEnumerable<object?[]> FileSystemTypeForPath_TestData()
+        {
+            const string RootMount = "1 1 8:1 / / rw - ext4 /dev/root rw";
+
+            yield return ["/", Array.Empty<string>(), null];
+            yield return ["/", new[] { RootMount }, "ext4"];
+            yield return ["/home/file", new[] { RootMount }, "ext4"];
+
+            string[] mounts =
+            [
+                RootMount,
+                "20 1 0:20 / /mnt rw - tmpfs tmpfs rw",
+                "3 20 11:0 / /mnt/child ro - iso9660 /dev/sr0 ro"
+            ];
+            yield return ["/mnt", mounts, "tmpfs"];
+            yield return ["/mnt/child", mounts, "iso9660"];
+            yield return ["/mnt/child/file", mounts, "iso9660"];
+            yield return ["/mnt/childish", mounts, "tmpfs"];
+            yield return ["/mnt2/file", mounts, "ext4"];
+
+            mounts =
+            [
+                RootMount,
+                "200 1 0:20 / /media/disc rw - autofs systemd-1 rw",
+                "3 200 11:0 / /media/disc ro - iso9660 /dev/sr0 ro"
+            ];
+            yield return ["/media/disc", mounts, "iso9660"];
+            yield return ["/media/disc/file", mounts, "iso9660"];
+            string[] stackedMounts = [.. mounts, "150 3 0:21 / /media/disc rw - nfs server:/share rw"];
+            yield return ["/media/disc", stackedMounts, "nfs"];
+            yield return ["/media/disc/file", stackedMounts, "nfs"];
+
+            mounts =
+            [
+                RootMount,
+                "25 1 0:4 / /proc rw - proc proc rw",
+                "39 25 0:20 / /proc/sys/fs/binfmt_misc rw - autofs systemd-1 rw",
+                "102 39 0:21 / /proc/sys/fs/binfmt_misc rw - binfmt_misc binfmt_misc rw"
+            ];
+            yield return ["/proc/sys/fs/binfmt_misc", mounts, "binfmt_misc"];
+            yield return ["/proc/sys/fs/binfmt_misc/status", mounts, "binfmt_misc"];
+
+            mounts =
+            [
+                RootMount,
+                "200 1 0:20 / /sys/fs/cgroup rw - tmpfs tmpfs rw",
+                "3 200 0:21 / /sys/fs/cgroup rw - cgroup2 cgroup2 rw"
+            ];
+            yield return ["/sys/fs/cgroup", mounts, "cgroup2"];
+            yield return ["/sys/fs/cgroup/memory.max", mounts, "cgroup2"];
+
+            mounts =
+            [
+                RootMount,
+                "200 1 8:2 / /mnt rw - ext4 /dev/lower rw",
+                "30 200 0:21 / /mnt/child rw - nfs server:/share rw",
+                "3 200 0:22 / /mnt rw - tmpfs tmpfs rw"
+            ];
+            yield return ["/mnt", mounts, "tmpfs"];
+            yield return ["/mnt/child", mounts, "tmpfs"];
+            yield return ["/mnt/child/file", mounts, "tmpfs"];
+            string[] visibleChildMounts = [.. mounts, "4 3 11:0 / /mnt/child ro - iso9660 /dev/sr0 ro"];
+            yield return ["/mnt/child/file", visibleChildMounts, "iso9660"];
+
+            mounts =
+            [
+                "200 999 0:1 / / rw - rootfs rootfs rw",
+                "30 200 8:1 / /hidden rw - ext4 /dev/lower rw",
+                "3 200 0:2 / / rw - overlay overlay rw",
+                "4 3 0:3 / /data rw - tmpfs tmpfs rw"
+            ];
+            yield return ["/", mounts, "overlay"];
+            yield return ["/hidden/file", mounts, "overlay"];
+            yield return ["/data/file", mounts, "tmpfs"];
+            yield return ["/", new[] { RootMount, "3 1 0:2 / / rw - overlay overlay rw" }, "overlay"];
+
+            mounts =
+            [
+                "200 999 8:2 / /mnt rw - exfat /dev/lower rw",
+                "3 200 0:21 / /mnt rw - cifs //server/share rw"
+            ];
+            yield return ["/mnt", mounts, "cifs"];
+            yield return ["/mnt/file", mounts, "cifs"];
+            yield return ["/mnt2", mounts, null];
+
+            mounts =
+            [
+                RootMount,
+                "200 1 0:20 / /mnt/disc\\040space rw - autofs systemd-1 rw",
+                "3 200 11:0 / /mnt/disc\\040space ro - iso9660 /dev/sr0 ro"
+            ];
+            yield return ["/mnt/disc space", mounts, "iso9660"];
+            yield return ["/mnt/disc space/file", mounts, "iso9660"];
+            yield return ["/mnt/disc", mounts, "ext4"];
+
+            mounts =
+            [
+                RootMount,
+                "3 1 0:2 / /mnt/a\\134b rw - tmpfs tmpfs rw",
+                "4 1 0:3 / /mnt/r\u00E9sum\u00E9 rw - exfat /dev/data rw",
+                "5 1 0:4 / /etc/hosts rw - tmpfs tmpfs rw"
+            ];
+            yield return ["/mnt/a\\b/file", mounts, "tmpfs"];
+            yield return ["/mnt/r\u00E9sum\u00E9/file", mounts, "exfat"];
+            yield return ["/etc/hosts", mounts, "tmpfs"];
+            yield return ["/MNT/a\\b/file", mounts, "ext4"];
+
+            yield return ["/mnt/file", new[] { RootMount, "invalid", "x 1 0:2 / /mnt rw - tmpfs tmpfs rw" }, "ext4"];
+            yield return ["/mnt/file", new[] { "2 3 0:2 / /mnt rw - ext4 /dev/lower rw", "3 2 0:3 / /mnt rw - tmpfs tmpfs rw" }, null];
+
+            mounts =
+            [
+                RootMount,
+                "4294967296 1 0:20 / /mnt rw - autofs systemd-1 rw",
+                "18446744073709551615 4294967296 11:0 / /mnt ro - iso9660 /dev/sr0 ro"
+            ];
+            yield return ["/mnt", mounts, "iso9660"];
+            yield return ["/mnt/file", mounts, "iso9660"];
+
+            mounts =
+            [
+                "1 1 0:1 / / rw - rootfs root rw",
+                "2 1 0:2 / /mnt rw - ext4 root rw",
+                "3 2 0:3 / /mnt/sub rw - tmpfs tmpfs rw",
+                "4 1 0:4 / /other rw - nfs server rw"
+            ];
+            yield return ["/", mounts, "rootfs"];
+            yield return ["/file", mounts, "rootfs"];
+            yield return ["/mnt", mounts, "ext4"];
+            yield return ["/mnt/file", mounts, "ext4"];
+            yield return ["/mnt2", mounts, "rootfs"];
+            yield return ["/mnt/sub", mounts, "tmpfs"];
+            yield return ["/mnt/sub/file", mounts, "tmpfs"];
+            yield return ["/mnt/subway", mounts, "ext4"];
+            yield return ["/Mnt/sub", mounts, "rootfs"];
+
+            mounts =
+            [
+                "1 99 0:1 / / rw - rootfs root rw",
+                "5 1 0:2 / / rw - overlay overlay rw",
+                "6 5 0:3 / /mnt\\040path rw - autofs systemd rw",
+                "2 6 0:4 / /mnt\\040path rw - ext4 root rw",
+                "3 6 0:5 / /mnt\\040path/nested rw - tmpfs tmpfs rw",
+                "4 2 0:6 / /mnt\\040path/visible rw - nfs server rw",
+                "7 1 0:7 / /mnt\\040path/root-hidden rw - xfs root rw",
+                "8 5 0:8 / /mnt\\040path/visible/hidden rw - btrfs root rw"
+            ];
+            yield return ["/", mounts, "overlay"];
+            yield return ["/file", mounts, "overlay"];
+            yield return ["/mnt path", mounts, "ext4"];
+            yield return ["/mnt path/file", mounts, "ext4"];
+            yield return ["/mnt path/nested", mounts, "ext4"];
+            yield return ["/mnt path/nested/file", mounts, "ext4"];
+            yield return ["/mnt path/visible", mounts, "nfs"];
+            yield return ["/mnt path/visible/file", mounts, "nfs"];
+            yield return ["/mnt path/visible/hidden", mounts, "nfs"];
+            yield return ["/mnt path/root-hidden", mounts, "ext4"];
+            yield return ["/mnt pathway", mounts, "overlay"];
+
+            mounts =
+            [
+                "3 99 0:3 / /mnt/sub rw - tmpfs tmpfs rw",
+                "2 99 0:2 / /mnt rw - ext4 root rw",
+                "4 2 0:4 / /mnt/sub/visible rw - nfs server rw"
+            ];
+            yield return ["/mnt/sub/file", mounts, "ext4"];
+            yield return ["/mnt/sub/visible", mounts, "nfs"];
+            yield return ["/mnt/sub/visible/file", mounts, "nfs"];
+
+            yield return ["/mnt", new[] { "" }, null];
+            yield return ["/mnt", new[] { "invalid" }, null];
+            yield return ["/mnt", new[] { "1 99 0:1 / /different rw - ext4 root rw" }, null];
+        }
+
+        [Theory]
+        [MemberData(nameof(FileSystemTypeForPath_TestData))]
+        public void GetFileSystemTypeForPath_SelectsVisibleMount(string path, string[] mounts, string? expectedFormat)
+        {
+            for (int first = 0; first < Math.Max(1, mounts.Length); first++)
+            {
+                for (int direction = -1; direction <= 1; direction += 2)
+                {
+                    string[] orderedMounts = new string[mounts.Length];
+                    for (int i = 0; i < mounts.Length; i++)
+                    {
+                        orderedMounts[i] = mounts[(first + mounts.Length + i * direction) % mounts.Length];
+                    }
+
+                    Assert.Equal(expectedFormat, Interop.procfs.GetFileSystemTypeForPath(path, orderedMounts));
+                }
+            }
         }
     }
 }

@@ -2272,7 +2272,14 @@ namespace System.Security.Cryptography.X509Certificates
                         throw new CryptographicException();
                     }
 
-                    return certificate.CopyWithPrivateKey(ecdh);
+                    try
+                    {
+                        return certificate.CopyWithPrivateKey(ecdh);
+                    }
+                    catch (ArgumentException ae)
+                    {
+                        throw new CryptographicException(SR.Cryptography_X509_NoOrMismatchedPemKey, ae);
+                    }
                 }
             }
 
@@ -2289,7 +2296,14 @@ namespace System.Security.Cryptography.X509Certificates
                         throw new CryptographicException();
                     }
 
-                    return certificate.CopyWithPrivateKey(ecdsa);
+                    try
+                    {
+                        return certificate.CopyWithPrivateKey(ecdsa);
+                    }
+                    catch (ArgumentException ae)
+                    {
+                        throw new CryptographicException(SR.Cryptography_X509_NoOrMismatchedPemKey, ae);
+                    }
                 }
             }
 
