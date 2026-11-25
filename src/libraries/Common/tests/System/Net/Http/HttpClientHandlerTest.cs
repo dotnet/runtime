@@ -2334,6 +2334,7 @@ namespace System.Net.Http.Functional.Tests
         {
             int length = IsWinHttpHandler ? 65_000
                 : PlatformDetection.IsAndroid ? 100_000
+                : PlatformDetection.Is32BitProcess ? 100_000
                 : 10_000_000;
 
             string longPath = "/" + new string('X', length);
