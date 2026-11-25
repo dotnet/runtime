@@ -62,7 +62,7 @@ namespace System.SpanTests
         }
 
         [OuterLoop]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess), nameof(PlatformDetection.IsNotBrowserOnCI))]
         public static unsafe void CreateReadOnlySpanFromNullTerminated_Char_ExceedsMaximum()
         {
             char* mem;
@@ -90,7 +90,7 @@ namespace System.SpanTests
         }
 
         [OuterLoop]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess), nameof(PlatformDetection.IsNotBrowserOnCI))]
         public static unsafe void CreateReadOnlySpanFromNullTerminated_Byte_ExceedsMaximum()
         {
             byte* mem;

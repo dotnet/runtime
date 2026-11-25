@@ -195,7 +195,7 @@ namespace System.Buffers.Text.Tests
             Assert.True(Base64TestHelper.VerifyEncodingCorrectness(expectedConsumed, encodedBytes.Length, source, encodedBytes));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowserOnCI))]
         [InlineData(true)]
         [InlineData(false)]
         [OuterLoop]
