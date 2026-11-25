@@ -13,7 +13,7 @@ namespace ILCompiler
     /// <summary>
     /// Stub with the signature <c>static TValue ()</c> that calls the static virtual getter
     /// ITypeMapValue&lt;TValue&gt;.Value on a type map value type. This is used when the compiler could not evaluate the getter
-    /// at compile time, and always for reference type values. The type map stores the function pointer of the stub, so the mapped type itself doesn't need to be reflection visible.
+    /// at compile time, and for the values that are not frozen objects. The type map stores the function pointer of the stub, so the mapped type itself doesn't need to be reflection visible.
     /// </summary>
     /// <remarks>
     /// Generated IL:

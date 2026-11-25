@@ -242,7 +242,7 @@ namespace System.Runtime.InteropServices
             switch (data & ValueKindMask)
             {
                 case ValueKindData:
-                    // The data is a constant TValue (only value types have it). References in it are to frozen objects, so a plain copy is GC safe.
+                    // The data is a constant TValue: a struct, or a reference to a frozen object (or null). References in it are to frozen objects, so a plain copy is GC safe.
                     value = Unsafe.ReadUnaligned<TValue>((byte*)group.ValueFlavors![flavor].DataTable + (nuint)(data >> ValueKindBits) * (nuint)Unsafe.SizeOf<TValue>());
                     return true;
 

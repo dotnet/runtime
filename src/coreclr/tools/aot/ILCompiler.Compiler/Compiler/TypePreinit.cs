@@ -58,6 +58,9 @@ namespace ILCompiler
         // but it is allowed to write to the statics of its own type.
         private readonly bool _isNestedCctor;
 
+        // The static of another type that a getter loaded an object from (the object is the value of that static).
+        private readonly Dictionary<ReferenceTypeValue, FieldDesc> _loadedStaticReferences = new Dictionary<ReferenceTypeValue, FieldDesc>();
+
         private TypePreinit(MetadataType owningType, CompilationModuleGroup compilationGroup, ILProvider ilProvider, TypePreinitializationPolicy policy, ReadOnlyFieldPolicy readOnlyPolicy, FlowAnnotations flowAnnotations, bool isTypeMapValueGetter = false, bool isNestedCctor = false)
         {
             _isTypeMapValueGetter = isTypeMapValueGetter;
@@ -128,17 +131,19 @@ namespace ILCompiler
         }
 
         /// <summary>
-        /// Evaluates a static parameterless method that returns a value type (the getter of a type map value, see ITypeMapValue)
+        /// Evaluates a static parameterless method (the getter of a type map value, see ITypeMapValue)
         /// at compile time. The result is the returned value as constant data.
         /// </summary>
         /// <remarks>
         /// The method can build the returned struct in any way the interpreter understands: fields of the struct can be
         /// unmanaged data, function pointers (ldftn), strings (ldstr), types (typeof), nested structs.
+        /// A method that returns a reference can return null, a string literal, a type (typeof), or an object that is the value of a static field
+        /// of another type (the object is not the result of an allocation of the getter, as each call of the getter would get its own).
         /// The type of the method must not have a static constructor.
         /// </remarks>
         public static GetterEvaluationResult ScanGetter(CompilationModuleGroup compilationGroup, ILProvider ilProvider, TypePreinitializationPolicy policy, ReadOnlyFieldPolicy readOnlyPolicy, FlowAnnotations flowAnnotations, MethodDesc getter)
         {
-            Debug.Assert(getter.Signature.IsStatic && getter.Signature.Length == 0 && getter.Signature.ReturnType.IsValueType);
+            Debug.Assert(getter.Signature.IsStatic && getter.Signature.Length == 0 && !getter.Signature.ReturnType.IsVoid);
 
             if (getter.OwningType is not MetadataType owningType
                 || owningType.IsGenericDefinition
@@ -163,9 +168,10 @@ namespace ILCompiler
 
             Status status;
             Value result = null;
+            TypePreinit preinit = null;
             try
             {
-                TypePreinit preinit = new TypePreinit(owningType, compilationGroup, ilProvider, policy, readOnlyPolicy, flowAnnotations, isTypeMapValueGetter: true);
+                preinit = new TypePreinit(owningType, compilationGroup, ilProvider, policy, readOnlyPolicy, flowAnnotations, isTypeMapValueGetter: true);
                 int instructions = 0;
                 status = preinit.TryScanMethod(getter, Array.Empty<Value>(), null, ref instructions, out result);
             }
@@ -178,28 +184,103 @@ namespace ILCompiler
                 status = Status.Fail(getter, ex.Message);
             }
 
-            // Only values that are data can be part of the image.
-            if (status.IsSuccessful && result is ValueTypeValue or FieldwiseStructValue or VTableLikeStructValue or MethodPointerValue)
+            if (!status.IsSuccessful)
+                return new GetterEvaluationResult(status.FailureReason);
+
+            if (getter.Signature.ReturnType.IsValueType)
             {
-                // The result is kept for the rest of the compilation: it doesn't need the interpreter that produced it.
-                (result as FieldwiseStructValue)?.Detach();
-                return new GetterEvaluationResult(result);
+                // Only values that are data can be part of the image.
+                if (result is ValueTypeValue or FieldwiseStructValue or VTableLikeStructValue or MethodPointerValue)
+                {
+                    // The result is kept for the rest of the compilation: it doesn't need the interpreter that produced it.
+                    (result as FieldwiseStructValue)?.Detach();
+                    return new GetterEvaluationResult(result);
+                }
+
+                return new GetterEvaluationResult(result is not null ? "The result is not constant data" : "No result");
             }
 
-            if (status.IsSuccessful && result is not null)
-                return new GetterEvaluationResult("The result is not constant data");
+            switch (result)
+            {
+                case null:
+                    return new GetterEvaluationResult(new NullReferenceValue());
 
-            return new GetterEvaluationResult(status.IsSuccessful ? "No result" : status.FailureReason);
+                // String literals and types are frozen objects that don't depend on any other code that ran at compile time.
+                case StringInstance or RuntimeTypeValue:
+                    return new GetterEvaluationResult(result);
+
+                // The object is the one that the static holds. The value of the static is what the image has, so the object is the same one that the code sees.
+                case ForeignTypeInstance foreignInstance when preinit._loadedStaticReferences.TryGetValue(foreignInstance, out FieldDesc staticField):
+                    return new GetterEvaluationResult(new StaticFieldReferenceValue(staticField), staticField);
+
+                case AllocatedReferenceTypeValue:
+                    return new GetterEvaluationResult("The result is an object that the getter allocates, each call gets its own");
+
+                default:
+                    return new GetterEvaluationResult("The result is not a frozen object");
+            }
         }
 
         public sealed class GetterEvaluationResult
         {
-            internal GetterEvaluationResult(ISerializableValue value) => Value = value;
+            internal GetterEvaluationResult(ISerializableValue value, FieldDesc staticField = null)
+            {
+                Value = value;
+                StaticField = staticField;
+            }
+
             internal GetterEvaluationResult(string failureReason) => FailureReason = failureReason;
 
             public ISerializableValue Value { get; }
             public string FailureReason { get; }
+
+            /// <summary>
+            /// The static field of another type that holds the object that the getter returns, or null if the result is not that.
+            /// The type of the field has to be preinitialized for the object to be in the image.
+            /// </summary>
+            public FieldDesc StaticField { get; }
+
             public bool IsSuccessful => Value is not null;
+        }
+
+        /// <summary>
+        /// The null reference.
+        /// </summary>
+        private sealed class NullReferenceValue : ISerializableValue
+        {
+            public void WriteFieldData(ref ObjectDataBuilder builder, NodeFactory factory) => builder.EmitZeroPointer();
+
+            public bool GetRawData(NodeFactory factory, out object data)
+            {
+                data = null;
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// The object that a static field of a preinitialized type holds, as the image has it.
+        /// </summary>
+        private sealed class StaticFieldReferenceValue : ISerializableValue
+        {
+            private readonly FieldDesc _field;
+
+            public StaticFieldReferenceValue(FieldDesc field) => _field = field;
+
+            public void WriteFieldData(ref ObjectDataBuilder builder, NodeFactory factory)
+            {
+                // The object is always the one of the image of the static, never a copy that was made while the getter was evaluated: it needs to be the same one.
+                PreinitializationInfo info = factory.PreinitializationManager.GetPreinitializationInfo((MetadataType)_field.OwningType);
+                if (!info.IsPreinitialized)
+                    throw new InvalidOperationException($"The static constructor of '{_field.OwningType}' was preinitialized when the type map value was evaluated, but it is not when the value is written: {info.FailureReason}");
+
+                info.GetFieldValue(_field).WriteFieldData(ref builder, factory);
+            }
+
+            public bool GetRawData(NodeFactory factory, out object data)
+            {
+                data = null;
+                return false;
+            }
         }
 
         private bool TryGetNestedPreinitResult(MethodDesc callingMethod, MetadataType type, Stack<MethodDesc> recursionProtect, ref int instructionCounter, out NestedPreinitResult result)
@@ -578,6 +659,9 @@ namespace ILCompiler
 
                             if (!nestedPreinitResult.TryGetFieldValue(this, field, out fieldValue))
                                 return Status.Fail(methodIL.OwningMethod, opcode);
+
+                            if (_isTypeMapValueGetter && fieldValue is ForeignTypeInstance foreignInstance)
+                                _loadedStaticReferences.TryAdd(foreignInstance, field);
                         }
                         else if (_readOnlyPolicy.IsReadOnly(field)
                             && opcode != ILOpcode.ldsflda // We need to intern these for correctness in ldsfda scenarios

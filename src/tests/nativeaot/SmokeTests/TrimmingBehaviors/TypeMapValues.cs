@@ -49,6 +49,23 @@ using System.Runtime.InteropServices;
 [assembly: TypeMap<TypeMapValues.MixedDirections>("mixed-ext", typeof(TypeMapValues.MixedExternalTarget))]
 [assembly: TypeMapAssociation<TypeMapValues.MixedDirections>(typeof(TypeMapValues.MixedProxySource), typeof(TypeMapValues.MixedProxyTarget))]
 
+// Values that are references: the ones that are frozen objects are evaluated by the compiler, the others run in the program.
+[assembly: TypeMap<TypeMapValues.FrozenReferences>("frozen", typeof(TypeMapValues.FrozenTarget))]
+[assembly: TypeMap<TypeMapValues.FrozenReferences>("frozen-widget", typeof(TypeMapValues.FrozenWidgetTarget))]
+[assembly: TypeMap<TypeMapValues.FrozenReferences>("null", typeof(TypeMapValues.NullTarget))]
+[assembly: TypeMap<TypeMapValues.FrozenReferences>("type-identity", typeof(TypeMapValues.TypeIdentityTarget))]
+[assembly: TypeMap<TypeMapValues.FrozenReferences>("type-nullable", typeof(TypeMapValues.NullableTypeTarget))]
+[assembly: TypeMap<TypeMapValues.FrozenReferences>("type-array", typeof(TypeMapValues.ArrayTypeTarget))]
+[assembly: TypeMap<TypeMapValues.FrozenReferences>("type-generic-definition", typeof(TypeMapValues.GenericDefinitionTypeTarget))]
+[assembly: TypeMap<TypeMapValues.FrozenReferences>("type-generic-instance", typeof(TypeMapValues.GenericInstanceTypeTarget))]
+[assembly: TypeMap<TypeMapValues.FrozenReferences>("type-generic-mapped", typeof(TypeMapValues.GenericMappedTarget<int?>))]
+[assembly: TypeMap<TypeMapValues.FrozenReferences>("allocating", typeof(TypeMapValues.AllocatingTarget))]
+[assembly: TypeMap<TypeMapValues.FrozenReferences>("allocating-pure", typeof(TypeMapValues.PureAllocatingTarget))]
+[assembly: TypeMap<TypeMapValues.FrozenReferences>("mutable-static", typeof(TypeMapValues.MutableStaticTarget))]
+[assembly: TypeMap<TypeMapValues.FrozenReferences>("not-preinitialized", typeof(TypeMapValues.NotPreinitializedTarget))]
+[assembly: TypeMap<TypeMapValues.FrozenReferences>("owner-cctor", typeof(TypeMapValues.OwnerWithCctorTarget))]
+[assembly: TypeMapAssociation<TypeMapValues.FrozenReferences>(typeof(TypeMapValues.FrozenProxySource), typeof(TypeMapValues.FrozenTarget))]
+
 // Entries that are declared on holder types: HolderA is linked from the assembly and chains HolderB (that links HolderA back),
 // HolderLocal is only reachable as an owner.
 [assembly: TypeMap<TypeMapValues.HolderGroup>("assembly", typeof(TypeMapValues.HolderAssemblyTarget))]
@@ -60,6 +77,7 @@ unsafe class TypeMapValues
     public class ValuesOnly;
     public class TypesAndValues;
     public class MixedDirections;
+    public class FrozenReferences;
     public class NoMapAtAll;
 
     public struct NestedValue
@@ -246,7 +264,7 @@ unsafe class TypeMapValues
 
     public sealed class Counted;
 
-    // The values are references, so the getters always run in the program, and several flavors of the same type need their own stubs.
+    // The values are references, a type can provide several of them (the getters of the string and of the type are evaluated by the compiler, the one that allocates is not), and each needs its own stub if it has one.
     public class ReferenceValuesTarget : ITypeMapValue<string>, ITypeMapValue<Type>, ITypeMapValue<Counted>
     {
         public static int Calls;
@@ -270,6 +288,177 @@ unsafe class TypeMapValues
 
         public static SmallValue Value => new SmallValue { X = Setting };
     }
+
+    public interface IFoo;
+
+    // The instance lives in a static of another type that the compiler preinitializes: the values of the getters are the object of the static.
+    public sealed class FooImpl : IFoo
+    {
+        public static readonly FooImpl Instance = new();
+    }
+
+    public sealed class Widget : IFoo
+    {
+        public int Count;
+
+        public static readonly Widget Shared = new Widget { Count = 5 };
+    }
+
+    // Only mentioned by the getters (in a typeof).
+    public class FrozenOnlyType;
+    public class FrozenIdentityType;
+
+    // The markers are in the getters, after a branch that is never taken: they are in the program only if the getter is compiled.
+    public class FrozenTarget : ITypeMapValue<Type>, ITypeMapValue<string>, ITypeMapValue<IFoo>, ITypeMapValue<object>
+    {
+        static Type ITypeMapValue<Type>.Value
+        {
+            get
+            {
+                if (NeverTrue())
+                    Console.WriteLine("typemap-values-frozen-type-getter-marker");
+
+                return typeof(FrozenOnlyType);
+            }
+        }
+
+        static string ITypeMapValue<string>.Value
+        {
+            get
+            {
+                if (NeverTrue())
+                    Console.WriteLine("typemap-values-frozen-string-getter-marker");
+
+                return "frozen";
+            }
+        }
+
+        static IFoo ITypeMapValue<IFoo>.Value
+        {
+            get
+            {
+                if (NeverTrue())
+                    Console.WriteLine("typemap-values-frozen-object-getter-marker");
+
+                return FooImpl.Instance;
+            }
+        }
+
+        static object ITypeMapValue<object>.Value => FooImpl.Instance;
+    }
+
+    // A class that has a field that changes: the object is still the object of the static.
+    public class FrozenWidgetTarget : ITypeMapValue<Widget>, ITypeMapValue<string>
+    {
+        public static Widget Value => Widget.Shared;
+
+        static string ITypeMapValue<string>.Value => string.Empty;
+    }
+
+    public class NullTarget : ITypeMapValue<IFoo>, ITypeMapValue<string>, ITypeMapValue<Type>
+    {
+        static IFoo ITypeMapValue<IFoo>.Value => null;
+        static string ITypeMapValue<string>.Value => null;
+        static Type ITypeMapValue<Type>.Value => null;
+    }
+
+    public class TypeIdentityTarget : ITypeMapValue<Type>
+    {
+        public static Type Value => typeof(FrozenIdentityType);
+    }
+
+    public class NullableTypeTarget : ITypeMapValue<Type>
+    {
+        public static Type Value => typeof(int?);
+    }
+
+    public class ArrayTypeTarget : ITypeMapValue<Type>
+    {
+        public static Type Value => typeof(string[]);
+    }
+
+    public class GenericDefinitionTypeTarget : ITypeMapValue<Type>
+    {
+        public static Type Value => typeof(List<>);
+    }
+
+    public class GenericInstanceTypeTarget : ITypeMapValue<Type>
+    {
+        public static Type Value => typeof(Dictionary<string, FrozenOnlyType>);
+    }
+
+    public class GenericMappedTarget<T> : ITypeMapValue<Type>
+    {
+        public static Type Value => typeof(List<T>);
+    }
+
+    public sealed class Allocated : IFoo;
+
+    public sealed class AllocatingCounter
+    {
+        public static int Calls;
+    }
+
+    // Each call gets its own object and counts the calls, so the compiler leaves the getter to the program.
+    public class AllocatingTarget : ITypeMapValue<IFoo>
+    {
+        public static IFoo Value
+        {
+            get
+            {
+                AllocatingCounter.Calls++;
+                return new Allocated();
+            }
+        }
+    }
+
+    // Nothing in the getter stops the compiler from evaluating it, except that it allocates the object: each call would get its own one.
+    public class PureAllocatingTarget : ITypeMapValue<IFoo>
+    {
+        public static IFoo Value
+        {
+            get
+            {
+                if (NeverTrue())
+                    Console.WriteLine("typemap-values-frozen-compiled-getter-marker");
+
+                return new Allocated();
+            }
+        }
+    }
+
+    public static class MutableHolder
+    {
+        public static IFoo Current = new FooImpl();
+    }
+
+    public class MutableStaticTarget : ITypeMapValue<IFoo>
+    {
+        public static IFoo Value => MutableHolder.Current;
+    }
+
+    // The static constructor calls code that the compiler can't interpret, so the object is made when the program runs.
+    public static class NotPreinitialized
+    {
+        public static readonly IFoo Instance = Create();
+
+        static IFoo Create() => GC.GetTotalMemory(false) > 0 ? new Allocated() : null;
+    }
+
+    public class NotPreinitializedTarget : ITypeMapValue<IFoo>
+    {
+        public static IFoo Value => NotPreinitialized.Instance;
+    }
+
+    // The type that has the getter has a static constructor.
+    public class OwnerWithCctorTarget : ITypeMapValue<IFoo>
+    {
+        static readonly IFoo s_instance = new Allocated();
+
+        public static IFoo Value => s_instance;
+    }
+
+    public class FrozenProxySource;
 
     // Not a constant for the compiler that compiles code (the call is not inlined), but the one that evaluates the getter can.
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -559,6 +748,7 @@ unsafe class TypeMapValues
         Consume(new ProxySourceNotImplemented());
         Consume(new AllProxySource());
         Consume(new MixedProxySource());
+        Consume(new FrozenProxySource());
         Consume(new HolderSource());
         Consume(new HolderLocalSource());
         // Trim target of an external entry that is used.
@@ -568,6 +758,7 @@ unsafe class TypeMapValues
         RunMultipleFlavors();
         RunSimpleValues();
         RunReferenceValues();
+        RunFrozenReferences();
         RunTypesAndValues();
         RunMixedDirections();
         RunHolders();
@@ -750,6 +941,69 @@ unsafe class TypeMapValues
         CheckImage();
     }
 
+    static void RunFrozenReferences()
+    {
+        // (j) The getters whose result is a frozen object are evaluated by the compiler (the markers in CheckImage show that they are not in the program).
+        Check(TypeMapping.TryGetValue<FrozenReferences, Type>("frozen", out Type frozenType) && frozenType.Name == nameof(FrozenOnlyType), "frozen: type");
+        Check(TypeMapping.TryGetValue<FrozenReferences, string>("frozen", out string frozenString) && frozenString == "frozen", "frozen: string");
+        Check(TypeMapping.TryGetValue<FrozenReferences, string>("frozen", out string frozenString2) && ReferenceEquals(frozenString, frozenString2), "frozen: string is one object");
+        Check(ReferenceEquals(frozenString, "frozen"), "frozen: the string is the literal");
+
+        // The interface value is the object that the static of the other type holds, and every lookup gets it.
+        Check(TypeMapping.TryGetValue<FrozenReferences, IFoo>("frozen", out IFoo foo), "frozen: object found");
+        Check(ReferenceEquals(foo, FooImpl.Instance), "frozen: object is the object of the static");
+        Check(TypeMapping.TryGetValue<FrozenReferences, IFoo>("frozen", out IFoo foo2) && ReferenceEquals(foo, foo2), "frozen: same object in every lookup");
+        Check(TypeMapping.TryGetValue<FrozenReferences, object>("frozen", out object fooAsObject) && ReferenceEquals(fooAsObject, FooImpl.Instance), "frozen: object flavor");
+        Check(TypeMapping.TryGetValue<FrozenReferences, IFoo>(Hide(typeof(FrozenProxySource)), out IFoo proxyFoo) && ReferenceEquals(proxyFoo, FooImpl.Instance), "frozen: proxy map");
+        Check(TypeMapping.TryGetValue<FrozenReferences, string>(Hide(typeof(FrozenProxySource)), out string proxyString) && ReferenceEquals(proxyString, "frozen"), "frozen: proxy map string");
+
+        // A class with a field: the object is shared with the static, so changes are seen through both.
+        Check(TypeMapping.TryGetValue<FrozenReferences, Widget>("frozen-widget", out Widget widget) && ReferenceEquals(widget, Widget.Shared), "widget: object of the static");
+        Check(widget.Count == 5, "widget: initial state");
+        widget.Count++;
+        Check(Widget.Shared.Count == 6 && TypeMapping.TryGetValue<FrozenReferences, Widget>("frozen-widget", out Widget widget2) && widget2.Count == 6, "widget: changes are shared");
+        Check(TypeMapping.TryGetValue<FrozenReferences, string>("frozen-widget", out string empty) && ReferenceEquals(empty, string.Empty), "widget: string.Empty");
+
+        // A null result is a value: found, with null.
+        Check(TypeMapping.TryGetValue<FrozenReferences, IFoo>("null", out IFoo nullFoo) && nullFoo is null, "null: object");
+        Check(TypeMapping.TryGetValue<FrozenReferences, string>("null", out string nullString) && nullString is null, "null: string");
+        Check(TypeMapping.TryGetValue<FrozenReferences, Type>("null", out Type nullType) && nullType is null, "null: type");
+        Check(!TypeMapping.TryGetValue<FrozenReferences, IFoo>("missing", out IFoo missingFoo) && missingFoo is null, "null: missing key is not found");
+        Check(!TypeMapping.TryGetValue<FrozenReferences, IFoo>("type-identity", out _), "null: not provided is not found");
+
+        // Types: the same objects that typeof gives. (The getters of int? and of the type with the generic argument int? are left to the program: the compiler analyzes the code that mentions Nullable<T>.)
+        Check(TypeMapping.TryGetValue<FrozenReferences, Type>("type-identity", out Type identity) && ReferenceEquals(identity, typeof(FrozenIdentityType)), "type: identity");
+        Check(TypeMapping.TryGetValue<FrozenReferences, Type>("type-nullable", out Type nullable) && ReferenceEquals(nullable, typeof(int?)) && nullable == Hide(typeof(int?)), "type: nullable");
+        Check(TypeMapping.TryGetValue<FrozenReferences, Type>("type-array", out Type array) && ReferenceEquals(array, typeof(string[])) && array.IsArray, "type: array");
+        Check(TypeMapping.TryGetValue<FrozenReferences, Type>("type-generic-definition", out Type definition) && definition == typeof(List<>) && definition.IsGenericTypeDefinition, "type: generic type definition");
+        Check(TypeMapping.TryGetValue<FrozenReferences, Type>("type-generic-instance", out Type instance) && instance == typeof(Dictionary<string, FrozenOnlyType>) && instance.GenericTypeArguments[1].Name == nameof(FrozenOnlyType), "type: generic instance");
+        Check(TypeMapping.TryGetValue<FrozenReferences, Type>("type-generic-mapped", out Type listOfNullable) && listOfNullable == typeof(List<int?>), "type: mapped generic type");
+
+        // Getters that allocate, or that depend on something the compiler can't see, still run in the program.
+        int calls = AllocatingCounter.Calls;
+        Check(TypeMapping.TryGetValue<FrozenReferences, IFoo>("allocating", out IFoo allocated) && allocated is Allocated, "allocating: object");
+        Check(TypeMapping.TryGetValue<FrozenReferences, IFoo>("allocating", out IFoo allocated2) && allocated2 is Allocated, "allocating: object again");
+        Check(AllocatingCounter.Calls > calls, "allocating: the getter runs in the program");
+        Check(TypeMapping.TryGetValue<FrozenReferences, IFoo>("allocating-pure", out IFoo pure) && pure is Allocated, "allocating: object of a getter without side effects");
+
+        MutableHolder.Current = new Allocated();
+        Check(TypeMapping.TryGetValue<FrozenReferences, IFoo>("mutable-static", out IFoo mutable) && ReferenceEquals(mutable, MutableHolder.Current) && mutable is Allocated, "mutable static: current value");
+
+        Check(TypeMapping.TryGetValue<FrozenReferences, IFoo>("not-preinitialized", out IFoo notPreinitialized) && notPreinitialized is Allocated && ReferenceEquals(notPreinitialized, NotPreinitialized.Instance), "static of a type that is not preinitialized");
+        Check(TypeMapping.TryGetValue<FrozenReferences, IFoo>("owner-cctor", out IFoo ownerCctor) && ownerCctor is Allocated
+            && TypeMapping.TryGetValue<FrozenReferences, IFoo>("owner-cctor", out IFoo ownerCctor2) && ReferenceEquals(ownerCctor, ownerCctor2), "getter of a type with a static constructor");
+
+        // The mapped types are not reflection visible, the types in the values are (the stub that has the typeof makes them so too).
+        foreach (string name in new[] { nameof(FrozenTarget), nameof(FrozenWidgetTarget), nameof(NullTarget), nameof(TypeIdentityTarget), nameof(NullableTypeTarget),
+                                        nameof(ArrayTypeTarget), nameof(GenericDefinitionTypeTarget), nameof(GenericInstanceTypeTarget), "GenericMappedTarget`1",
+                                        nameof(AllocatingTarget), nameof(PureAllocatingTarget), nameof(MutableStaticTarget), nameof(NotPreinitializedTarget), nameof(OwnerWithCctorTarget) })
+        {
+            Check(GetTypeSecretly(Hide(typeof(TypeMapValues)), name) == null, name + " is reflection visible");
+        }
+
+        Check(GetTypeSecretly(Hide(typeof(TypeMapValues)), nameof(FrozenOnlyType)) != null, "frozen: the type in the value is reflection visible");
+    }
+
     static void CheckImage()
     {
         // The executable is not the program on these.
@@ -774,6 +1028,12 @@ unsafe class TypeMapValues
         Check(Count(Hide("typemap-values-compiled-") + Hide("getter-marker")) > 0, "image: the getter that is not evaluated is compiled");
         Check(Count(Hide("typemap-values-folded-") + Hide("getter-marker")) == 0, "image: the getter that is evaluated is not compiled");
         Check(Count(Hide("typemap-values-holder-folded-") + Hide("getter-marker")) == 0, "image: the getter of the entry of a holder is not compiled");
+
+        // The getters of references: the ones whose result is a frozen object are not in the program, the one that allocates is.
+        Check(Count(Hide("typemap-values-frozen-type-") + Hide("getter-marker")) == 0, "image: the getter of a type is not compiled");
+        Check(Count(Hide("typemap-values-frozen-string-") + Hide("getter-marker")) == 0, "image: the getter of a string is not compiled");
+        Check(Count(Hide("typemap-values-frozen-object-") + Hide("getter-marker")) == 0, "image: the getter of the object of a static is not compiled");
+        Check(Count(Hide("typemap-values-frozen-compiled-") + Hide("getter-marker")) > 0, "image: the getter that allocates is compiled");
     }
 
     static void RunSimpleValues()
@@ -789,7 +1049,7 @@ unsafe class TypeMapValues
 
     static void RunReferenceValues()
     {
-        // (g) The values are references: the program calls the getters, and a type can provide several of them.
+        // (g) The values are references: the string and the type are frozen objects that the compiler evaluates, the getter that allocates runs in the program, and a type can provide several of them.
         Check(TypeMapping.TryGetValue<ValuesOnly, string>("reference", out string text) && text == "reference", "reference: string");
         Check(TypeMapping.TryGetValue<ValuesOnly, Type>("reference", out Type type) && type.Name == nameof(VisibleViaTypeOf), "reference: type");
 

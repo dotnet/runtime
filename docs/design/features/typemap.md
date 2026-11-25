@@ -229,7 +229,10 @@ references does.
 * The entries are included under the same rules as the entries of the dictionaries (below), and the two kinds of APIs can be used with the same group: the group has one table per direction that serves both.
 * `TryGetValue` returns `false` if the key is not in the map or the mapped type doesn't implement `ITypeMapValue<TValue>`. Mapped types that are interfaces or generic type definitions don't provide values.
 * Trimming tools consider calls to `TypeMapping.TryGetValue<,>` as intrinsics too: the group and `TValue` have to be fully instantiated.
-* The getter should be a simple expression without side effects: it can be evaluated by the build, not run at all, or run any number of times, concurrently and on any thread.
+* The getter should be a simple expression without side effects: it can be evaluated by the build, not run at all, or run any number of times, concurrently and on any thread. A `TValue` that is a reference type
+  (`string`, `Type`, an interface or a class) can be evaluated by the build when the getter returns `null`, a string literal, `typeof(X)`, or an object that a `static readonly` field of another type holds
+  (for example `public static IFoo Value => FooImpl.Instance;`): the value is then the same object as the static. Whether a getter that allocates (`new Foo()`) gives a new object per call is unspecified (it does today, as
+  it is not evaluated by the build): use a `static readonly` field in another type for an object that has to be shared.
 * The implementations are implementation-defined like the maps. For NativeAOT (the flavors of a group, the format of the image and what the compiler evaluates ahead of time) see
 [typemap-typed-values.md](../../../src/coreclr/nativeaot/docs/typemap-typed-values.md).
 

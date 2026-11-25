@@ -22,7 +22,7 @@ namespace ILCompiler
         /// <summary>The data was computed at compile time and is part of the image.</summary>
         Data = 0,
 
-        /// <summary>The getter is not evaluated at compile time (it can not be, or the value is a reference type), the entry points to a stub that calls it.</summary>
+        /// <summary>The getter is not evaluated at compile time (it can not be), the entry points to a stub that calls it.</summary>
         Getter = 1,
 
         /// <summary>The mapped type does not implement ITypeMapValue for the value type.</summary>
@@ -52,7 +52,7 @@ namespace ILCompiler
         /// <summary>The stub that returns the value (<see cref="TypeMapValueKind.Getter"/>).</summary>
         public MethodDesc Stub { get; private init; }
 
-        /// <summary>Why the compiler could not evaluate the getter (<see cref="TypeMapValueKind.Getter"/>), null if the value is never evaluated at compile time (reference types).</summary>
+        /// <summary>Why the compiler could not evaluate the getter (<see cref="TypeMapValueKind.Getter"/>).</summary>
         public string FallbackReason { get; private init; }
 
         public static TypeMapValueEvaluation ForData(TypeDesc target, TypeDesc valueType, TypePreinit.ISerializableValue data)
@@ -120,12 +120,6 @@ namespace ILCompiler
                     return TypeMapValueEvaluation.ForNotImplemented(target, valueType);
                 }
 
-                if (!valueType.IsValueType)
-                {
-                    // A reference can not be copied from a constant: the getter could allocate, and each call would see the same object.
-                    return TypeMapValueEvaluation.ForGetter(target, valueType, context.GetTypeMapGetValueStub(target, valueType), reason: null);
-                }
-
                 MethodDesc interfaceGetter = valueInterface.GetKnownMethod("get_Value"u8, null);
                 DefaultInterfaceMethodResolution staticResolution = default;
                 MethodDesc getter = target.GetClosestDefType().TryResolveConstraintMethodApprox(valueInterface, interfaceGetter, out bool forceUseRuntimeLookup, ref staticResolution);
@@ -137,10 +131,19 @@ namespace ILCompiler
                 else
                 {
                     TypePreinit.GetterEvaluationResult result = factory.PreinitializationManager.ScanGetter(getter);
-                    if (result.IsSuccessful)
+                    if (!result.IsSuccessful)
+                    {
+                        reason = result.FailureReason;
+                    }
+                    else if (result.StaticField is { OwningType: MetadataType staticOwner } && !factory.PreinitializationManager.IsPreinitialized(staticOwner))
+                    {
+                        // The object is made by code that runs when the program does, and a table can't refer to it.
+                        reason = $"The result is the object of a static of '{staticOwner}', whose static constructor is not preinitialized";
+                    }
+                    else
+                    {
                         return TypeMapValueEvaluation.ForData(target, valueType, result.Value);
-
-                    reason = result.FailureReason;
+                    }
                 }
             }
             catch (TypeSystemException)

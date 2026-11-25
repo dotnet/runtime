@@ -30,17 +30,18 @@ namespace ILCompiler.DependencyAnalysis
         protected internal override int Phase => (int)ObjectNodePhase.Unordered;
 
         // The array starts at an address that is aligned for the value type (at least pointer aligned, as the values contain pointers),
-        // and the size of a value is a multiple of its alignment.
+        // and the size of a value is a multiple of its alignment. A reference is a pointer to a frozen object.
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly)
         {
             ObjectData data = base.GetData(factory, relocsOnly);
-            int alignment = Math.Max(data.Alignment, ((DefType)ValueType).InstanceFieldAlignment.AsInt);
+            int valueAlignment = ValueType.IsValueType ? ((DefType)ValueType).InstanceFieldAlignment.AsInt : factory.Target.PointerSize;
+            int alignment = Math.Max(data.Alignment, valueAlignment);
             return alignment == data.Alignment
                 ? data
                 : new ObjectData(data.Data, data.Relocs, alignment, data.DefinedSymbols);
         }
 
-        // The values are constants that are copied into a struct of the value type, and contain pointers (to code, strings, types).
+        // The values are constants that are copied into a location of the value type, and contain pointers (to code, strings, types, other frozen objects).
         // Windows can relocate read only data, other platforms only relocate writable data without creating text relocations.
         public override ObjectNodeSection GetSection(NodeFactory factory)
             => factory.Target.IsWindows ? ObjectNodeSection.ReadOnlyDataSection : ObjectNodeSection.DataSection;

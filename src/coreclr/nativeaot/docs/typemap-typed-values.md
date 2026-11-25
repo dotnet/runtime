@@ -89,7 +89,7 @@ Entry data: for each typed value flavor (in header order) the entry has a varint
 | kind | meaning |
 |---|---|
 | 0 | the data is a constant: `index` is the position in the data table of the flavor |
-| 1 | ILC does not evaluate the getter (it could not, or `TValue` is a reference type): `index` is the external reference of a stub (`TypeMapGetValueStub`) that calls it |
+| 1 | ILC does not evaluate the getter (it could not, or the result is not a frozen object): `index` is the external reference of a stub (`TypeMapGetValueStub`) that calls it |
 | 2 | the mapped type does not implement the interface (no data, no stub) |
 
 If the state has the bit 2, the state is followed by the number of typed value flavors, and for each the
@@ -99,10 +99,23 @@ The data table of a flavor is a dense array of `TValue` (`TypeMapValueArrayNode`
 exact layout of the struct (references are pointers to frozen strings and frozen `RuntimeType` objects, function pointers are relocations to the callable address
 of the method). The runtime copies the bytes into the `TValue` with the regular write barriers of managed code. The references point to frozen objects, so the GC never moves or collects them.
 
-`TValue` can be any type, but only value types are evaluated at compile time. For a reference type (for example `string` or `Type`) the entry always has kind 1: the program calls the
-getter through a stub, as ILC does not create a shared constant object for a getter that could allocate. Like for any other `TValue`, the contract of `ITypeMapValue<TValue>` does not say
-how many times the getter runs or whether it runs at all. The stub is named after the mapped type and the value type, as a mapped type can provide several values. A small struct that wraps
-the reference gets its data at compile time and does not need the stub or the getter code, so it is the better choice when the value is a constant.
+`TValue` can be any type. For a reference type (for example `string`, `Type` or an interface) a slot of the table is one pointer, a relocation to a frozen object (or zero for `null`), and the runtime reads it
+with the same plain copy. ILC evaluates the getter if its result is one of:
+
+* `null`;
+* a string literal (the frozen string object of the literal);
+* `typeof(X)` (the frozen `RuntimeType` object of the type, the same one the program sees);
+* an object that a `static readonly` field of another type holds, where the static constructor of that type is preinitialized by ILC (for example `public static IFoo Value => FooImpl.Instance;`).
+  The slot is written from the preinitialized value of the static itself (`PreinitializationInfo.GetFieldValue`), not from a copy that the evaluation made, so the object is the one that `FooImpl.Instance` is for the rest of the program
+  (reference equality holds), whichever phase created the frozen object first. The compile phase can't fall back to a stub (the scan phase decided), so an owner type that was preinitialized in the scan phase and is not in the compile phase is
+  an internal compiler error (the read only policy of the compile phase can be stricter than the one of the scan phase for a field that the program writes).
+
+Any other result gets a stub (kind 1) like before: an object that the getter allocates (`new Foo()`, a boxed value, an array, a delegate), the value of a static that is not read only or of a type whose static constructor can't be preinitialized,
+or anything the interpreter does not understand. The objects that the getter allocates are not frozen on purpose: each call of such a getter used to see its own object, and a single shared (and possibly mutable) frozen object would also need an
+identity for the allocation that does not collide between the getters of one type. The contract of `ITypeMapValue<TValue>` allows it (the getter can run any number of times, or not at all), but the shared identity is not needed for the supported cases.
+The stub is named after the mapped type and the value type, as a mapped type can provide several values.
+
+A getter that is evaluated at compile time is not in the program. `--verbose` logs `Type map value getter of '<mapped type>' for '<TValue>' is not evaluated at compile time: <reason>` for the ones that are not, for any `TValue`.
 
 ### Evaluation
 
@@ -120,7 +133,7 @@ Preinitialization disabled (`--nopreinitstatics`, no optimization) also gives up
 also left to the compiled code, as the interpreter replaces the values of the fields.
 
 The values are evaluated once, by the first thing that needs them in the analysis phase (and the result is what the compilation phase emits), so both phases agree.
-Getters of value types that fell back are logged with `--verbose`. The result of the evaluation does not keep the interpreter alive.
+Getters that fell back are logged with `--verbose`. The result of the evaluation does not keep the interpreter alive.
 
 ## Holder types and owner scopes
 
@@ -171,6 +184,7 @@ assembly. The maps are cached per group and per (group, owner) with `Conditional
 * The group type and `TValue` must be statically known at the call site: a group or `TValue` that is, or contains, a generic parameter of the enclosing method or type gets the existing
   "cannot be statically determined" warning and no request, and the call fails at runtime with a missing metadata exception (a generic method that calls `TryGetValue` with concrete types is fine).
   Calls through reflection or delegates fail the same way, like the existing APIs. Calling a `Types` API on a group that is only used with `TryGetValue` fails the same way.
+* A static constructor on the type that declares the getter makes the evaluation give up (`static IFoo Value { get; } = new FooImpl();` is evaluated by the runtime, so the object has to live in another type to be frozen).
 * A mapped type that is an interface or a generic type definition does not provide values (`TryGetValue` returns `false`), as the getter can't be called through it on either runtime.
   A mapped type that can't be loaded does not provide values on NativeAOT, while CoreCLR throws when it loads the type.
 * On CoreCLR the lazy maps are cached per group type (a collectible group type does not stay alive because of them). The getters of mapped types are cached for the lifetime
@@ -180,7 +194,7 @@ assembly. The maps are cached per group and per (group, owner) with `Conditional
 ## Soundness notes
 
 * A mapped type that does not provide a value gets no data and no code.
-* The data only points to frozen objects, so copying it into a managed location is GC safe.
+* The data only points to frozen objects, so copying it into a managed location is GC safe (also a reference `TValue`: the table is not in the GC heap and the objects never move).
 * Structs that have references or function pointers and are packed (or have another layout that can't be written field by field) are not evaluated at compile time (they could have unaligned pointers).
   Packed structs of unmanaged data only are evaluated as bytes.
 * Floating point arithmetic in a getter is not evaluated at compile time. The interpreter of static constructors keeps `float` values in double precision, and a getter that is evaluated must not give a different
