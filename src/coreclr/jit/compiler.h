@@ -2881,7 +2881,7 @@ public:
     // a PSPSym for functions with any EH.
     bool ehNeedsPSPSym() const
     {
-#ifdef TARGET_X86
+#if defined(TARGET_X86) || defined(TARGET_S390X)
         return false;
 #else  // TARGET_X86
         return compHndBBtabCount > 0;

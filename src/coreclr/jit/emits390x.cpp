@@ -8517,6 +8517,18 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount)
     id->idIns(ins);
     id->idInsFmt(IF_RIL_C);
     id->idOpSize(EA_PTRSIZE);
+    if (ins == INS_brasl)
+    {
+        id->idReg1(REG_R14);
+    }
+
+#ifdef DEBUG
+    if (ins == INS_brasl && emitComp->compCurBB->KindIs(BBJ_CALLFINALLY))
+    {
+        id->idDebugOnlyInfo()->idFinallyCall = true;
+    }
+#endif
+
     if (dst != nullptr)
     {
         id->idAddr()->iiaBBlabel = dst;
@@ -9740,7 +9752,7 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
     int32_t offset_hw = (int32_t)(distVal / 2);
     code_t op = emitInsCode(ins, IF_NONE);
 
-    if (ins == INS_larl)
+    if (ins == INS_larl || (ins == INS_brasl))
     {
         S390_RIL_b(dst, op, id->idReg1(), offset_hw);
         return dst;
@@ -10836,14 +10848,14 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
         case INS_brasl:
             //imm = id->idAddr()->iiaGetJitDataOffset();
-            if (id->idIsCall())
+            // TODO-S390X: move the relative offset and relocation handling for calls into emitOutputLJ
+            if (!id->idIsCall())
             {
-    		imm = 0;
-	    }
-	    else
-	    {
-    		imm = id->idAddr()->iiaGetJitDataOffset();
-	    }
+                dst = emitOutputLJ(ig, dst, id);
+                sz  = sizeof(instrDescJmp);
+                break;
+            }
+            imm = 0;
             op = emitInsCode(ins, fmt);
             assert((id->idReg1() >= 0) && (id->idReg1() <= 15));
             assert((imm >= -0x80000000LL) && (imm <= 0x7FFFFFFFLL));

@@ -5327,15 +5327,21 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
 
 void CodeGen::genFuncletEpilog()
 {
-    _ASSERTE(!"NYI");
-#if 0
 #ifdef DEBUG
     if (verbose)
         printf("*************** In genFuncletEpilog()\n");
 #endif
-
     ScopedSetVariable<bool> _setGeneratingEpilog(&compiler->compGeneratingEpilog, true);
+    compiler->unwindBegEpilog();
 
+    GetEmitter()->emitIns_R_R_R_I(INS_lmg, EA_PTRSIZE, REG_R6, REG_SP, REG_SPBASE,
+                                  48 - genFuncletInfo.fiSpDelta);
+    inst_RV(INS_ret, REG_LR, TYP_I_IMPL);
+
+    compiler->unwindEndEpilog();
+
+
+#if 0
     bool unwindStarted = false;
 
     if (!unwindStarted)
@@ -5589,9 +5595,6 @@ void CodeGen::genFloatToIntCast(GenTree* treeNode)
 
 void CodeGen::genCaptureFuncletPrologEpilogInfo()
 {
-    return ;
-    _ASSERTE(!"NYI");
-#if 0
     if (!compiler->ehAnyFunclets())
         return;
 
@@ -5599,7 +5602,11 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
 
     // The frame size and offsets must be finalized
     assert(compiler->lvaDoneFrameLayout == Compiler::FINAL_FRAME_LAYOUT);
+    unsigned frameSize = roundUp(S390X_REG_SAVE_AREA_SIZE + compiler->lvaOutgoingArgSpaceSize, (unsigned)STACK_ALIGN);
 
+    genFuncletInfo.fiSpDelta = -(int)frameSize;
+
+#if 0
     unsigned const PSPSize = (compiler->lvaPSPSym != BAD_VAR_NUM) ? REGSIZE_BYTES : 0;
 
     // Because a method and funclets must have the same caller-relative PSPSym offset,
@@ -5888,12 +5895,7 @@ int CodeGenInterface::genCallerSPtoFPdelta() const
 
 void CodeGen::genEHCatchRet(BasicBlock* block)
 {
-    _ASSERTE(!"NYI");
-#if 0
-    // For long address (default): `adrp + add` will be emitted.
-    // For short address (proven later): `adr` will be emitted.
-    GetEmitter()->emitIns_R_L(INS_adr, EA_PTRSIZE, block->GetTarget(), REG_INTRET);
-#endif
+    GetEmitter()->emitIns_R_L(INS_larl, EA_PTRSIZE, block->GetTarget(), REG_INTRET);
 }
 
 //-----------------------------------------------------------------------------
@@ -6423,8 +6425,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
 {
-    _ASSERTE(!"NYI");
-#if 0
     assert(block->KindIs(BBJ_CALLFINALLY));
 
     BasicBlock* const nextBlock = block->Next();
@@ -6435,18 +6435,10 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     //      b           finally-return                  // Only for non-retless finally calls
     // The 'b' can be a NOP if we're going to the next block.
 
-    if (compiler->lvaPSPSym != BAD_VAR_NUM)
-    {
-        GetEmitter()->emitIns_R_S(INS_ldr, EA_PTRSIZE, REG_R0, compiler->lvaPSPSym, 0);
-    }
-    else
-    {
-        GetEmitter()->emitIns_Mov(INS_mov, EA_PTRSIZE, REG_R0, REG_SPBASE, /* canSkip */ false);
-    }
 
     if (block->HasFlag(BBF_RETLESS_CALL))
     {
-        GetEmitter()->emitIns_J(INS_bl_local, block->GetTarget());
+        GetEmitter()->emitIns_J(INS_brasl, block->GetTarget());
 
         // We have a retless call, and the last instruction generated was a call.
         // If the next block is in a different EH region (or is the end of the code
@@ -6467,14 +6459,14 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
         // after the call is not (can not be) correct in cases where a variable has a last use in the
         // handler.  So turn off GC reporting once we execute the call and reenable after the jmp/nop
         GetEmitter()->emitDisableGC();
-        GetEmitter()->emitIns_J(INS_bl_local, block->GetTarget());
+        GetEmitter()->emitIns_J(INS_brasl, block->GetTarget());
 
         // Now go to where the finally funclet needs to return to.
         BasicBlock* const finallyContinuation = nextBlock->GetFinallyContinuation();
         if (nextBlock->NextIs(finallyContinuation) && !compiler->fgInDifferentRegions(nextBlock, finallyContinuation))
         {
             // Fall-through.
-            // TODO-ARM64-CQ: Can we get rid of this instruction, and just have the call return directly
+            // TODO-S390X-CQ: Can we get rid of this instruction, and just have the call return directly
             // to the next instruction? This would depend on stack walking from within the finally
             // handler working without this instruction being in this special EH region.
             instGen(INS_nop);
@@ -6488,7 +6480,6 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
 
         return nextBlock;
     }
-#endif
 }
 
 
@@ -7042,8 +7033,6 @@ int CodeGenInterface::genTotalFrameSize() const
 
 void CodeGen::genFuncletProlog(BasicBlock* block)
 {
-    _ASSERTE(!"NYI");
-#if 0
 #ifdef DEBUG
     if (verbose)
         printf("*************** In genFuncletProlog()\n");
@@ -7057,7 +7046,13 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
     gcInfo.gcResetForBB();
 
     compiler->unwindBegProlog();
+    GetEmitter()->emitIns_R_R_R_I(INS_stmg, EA_PTRSIZE, REG_R6, REG_SP, REG_SPBASE, 48);
+    GetEmitter()->emitIns_R_R(INS_lgr, EA_PTRSIZE, REG_R1, REG_SPBASE);
+    GetEmitter()->emitIns_R_R_I(INS_lay, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, genFuncletInfo.fiSpDelta);
+    GetEmitter()->emitIns_R_R_I(INS_stg, EA_PTRSIZE, REG_R1, REG_SPBASE, 0);
 
+    compiler->unwindEndProlog();
+#if 0
     regMaskTP maskSaveRegsFloat = genFuncletInfo.fiSaveRegs & RBM_ALLFLOAT;
     regMaskTP maskSaveRegsInt   = genFuncletInfo.fiSaveRegs & ~maskSaveRegsFloat;
 

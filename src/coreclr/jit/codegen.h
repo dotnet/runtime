@@ -482,7 +482,16 @@ protected:
 
     FuncletFrameInfoDsc genFuncletInfo;
 
-#endif // TARGET_ARM, TARGET_ARM64, TARGET_AMD64, TARGET_LOONGARCH64, TARGET_RISCV64
+#elif defined(TARGET_S390X)
+
+    struct FuncletFrameInfoDsc
+    {
+        int       fiSpDelta;
+    };
+
+    FuncletFrameInfoDsc genFuncletInfo;
+
+#endif // TARGET_ARM, TARGET_ARM64, TARGET_AMD64, TARGET_LOONGARCH64, TARGET_RISCV64, TARGET_S390X
 
 #if defined(TARGET_XARCH)
 

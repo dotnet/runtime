@@ -12997,41 +12997,64 @@ static bool isJitted(MethodDesc* ftnDesc, const char* ftnName)
         "Memmove",
         "Log2SoftwareFallback",
         "CountHexDigits",
+        ".ctor",
+        "Validate",
+        "PreregisterEventProviders",
+        "OnProcessExit",
+        "InitializePersistentListener",
+        "<get_Out>g__EnsureInitialized|26_0",
+        "CreateSpan",
+        "IndexOfNullCharacter",
+        "Cast",
+        "GetNonRandomizedHashCode",
+        "InitializeProviderMetadata",
+        "IndexOf",
+        "NarrowFourUtf16CharsToAsciiAndWriteToBuffer",
+        "NarrowTwoUtf16CharsToAsciiAndWriteToBuffer",
+        "InternalGetCodePageFromName",
+        "InitializeCommandLineArgs",
+        "Create",
+        "get_OutputEncoding",
+        "ChangeCaseCommon",
+        "ConvertAllAsciiCharsInUInt64ToLowercase",
+        "Flush",
+        "EnsureInitializedCore",
+        "CreateValue",
+        "ReadDatabase",
+        "Dispose",
+        "TryFormatInt32",
+        "Log2",
+        "Int32ToHexChars",
+        "ValidateInput",
+        "GetCanSeek",
+        "ClearWithoutReferences",
+        "GetCharCountFast",
+        "GetCharsFast",
+        "WidenAsciiToUtf16",
+        "WidenFourAsciiBytesToUtf16AndWriteToBuffer",
+        "ReleaseHandle",
+        "Close",
+        "ReadMemoryBarrier",
+        "NonPackedIndexOfAnyValueType",
+        "GetTitle",
+        "StartsWith",
+        "ComputeStringHash",
+        "GetEnumerator",
+        "get_Current",
+        "SetKeypadXmit",
+        "DisposeOnShutdown",
+        "GetHandleValue",
+        "GetEncodingFromCharset",
+        "FilterApplyMethodBase",
+        "GetListByName",
+        "GetConstructorCandidates",
+        "GetConstructorImpl",
+        "IsAssignableFrom",
+        "AddEventSource",
+        "get_IsTypeDesc",
+        "GetBytesFast",
+        "GetByteCountFast",
     };
-
-    // 2D array for class name and function name combinations to exclude from JIT compilation
-    struct JitExclusionEntry
-    {
-        const char* className;
-        const char* functionName;
-    };
-
-    static const JitExclusionEntry jitExclusionList[] = {
-       { "System.Diagnostics.Tracing.EventSource", "Initialize" },
-       { "System.Collections.Generic.Dictionary`2[__Canon,__Canon]", ".ctor"},
-       { "System.Collections.Generic.NonRandomizedStringEqualityComparer", ".ctor"},
-       { "System.Collections.Generic.List`1[__Canon]", ".ctor"},
-       { "System.Runtime.CompilerServices.QCallTypeHandle", ".ctor"},
-       { "System.Resources.ResourceManager", ".ctor"},
-       { "RuntimeTypeCache", ".ctor"},
-       { "System.Runtime.CompilerServices.QCallModule", ".ctor"},
-       { "System.Runtime.CompilerServices.ObjectHandleOnStack", ".ctor"},
-       { "System.Reflection.MetadataImport", ".ctor"},
-       { "System.Runtime.CompilerServices.DefaultInterpolatedStringHandler", ".ctor"},
-       { "System.Runtime.CompilerServices.ConditionalWeakTable`2[__Canon,__Canon]", ".ctor"},
-       { "Container[__Canon,__Canon]", ".ctor"},
-    };
-
-    const size_t numExclusions = sizeof(jitExclusionList) / sizeof(jitExclusionList[0]);
-
-    for (size_t i = 0; i < numExclusions; i++)
-    {
-        if (!strcmp(ftnDesc->m_pszDebugClassName, jitExclusionList[i].className) &&
-            !strcmp(ftnName, jitExclusionList[i].functionName))
-        {
-            return false;
-        }
-    }
 
     const size_t numFunctions = sizeof(JittedFunctions) / sizeof(JittedFunctions[0]);
 
