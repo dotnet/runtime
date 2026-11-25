@@ -62,7 +62,5 @@ class KnownBitsAnalysis
 public:
     KnownBitsAnalysis(Compiler* comp, int phiDepth = 0);
 
-    // Not to be inlined (LTCG does that): this is called from a hot path of the assertion
-    // propagation where it rarely has anything to do, having it inlined there costs TP.
-    NOINLINE RelopEvaluationResult EvalRelop(GenTreeOp* relop, ASSERT_VALARG_TP assertions);
+    RelopEvaluationResult EvalRelop(GenTreeOp* relop, ASSERT_VALARG_TP assertions);
 };
