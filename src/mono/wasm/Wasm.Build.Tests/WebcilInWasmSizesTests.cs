@@ -17,6 +17,7 @@ using Microsoft.Build.Utilities;
 using Microsoft.NET.Sdk.WebAssembly;
 using Microsoft.NET.WebAssembly.Webcil;
 using Xunit;
+using Xunit.Sdk;
 using SL = Microsoft.Build.Logging.StructuredLogger;
 
 #nullable enable
@@ -365,6 +366,36 @@ public class WebcilInWasmSizesTests
         using FileStream output = File.OpenRead(Path.Combine(outputDirectory, "System.Console.wasm"));
         Assert.True(WebcilReader.TryReadWebcilInWasmSizes(output, out _, out int tableSize, out string? failureReason), failureReason);
         Assert.Equal(0, tableSize);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void RuntimePackAssets_ReadsOriginalFilesFromDirectoryAndPackage(bool precompress)
+    {
+        using var pack = new PrecompressedTestPack(precompress);
+        string nativePath = RuntimePackAssets.GetNativePath("dotnet.native.wasm");
+        string r2rPath = RuntimePackAssets.GetNativePath("r2r/" + Path.GetFileName(pack.ReadyToRunPath));
+        Assert.Equal(!precompress, File.Exists(pack.NativePath));
+        Assert.Equal(!precompress, File.Exists(pack.ReadyToRunPath));
+
+        string outputPath = Path.Combine(pack.Directory, "dotnet.native.wasm");
+        File.WriteAllBytes(outputPath, pack.NativeBytes);
+        var extracted = new RuntimePackAssets(pack.Root);
+        extracted.AssertFileSize(nativePath, outputPath);
+        Assert.Throws<XunitException>(() => extracted.AssertFileSize(nativePath, outputPath, same: false));
+        File.WriteAllBytes(outputPath, [.. pack.NativeBytes, 0]);
+        extracted.AssertFileSize(nativePath, outputPath, same: false);
+        Assert.Throws<XunitException>(() => extracted.AssertFileSize(nativePath, outputPath));
+        Assert.Equal(pack.ReadyToRunBytes, extracted.ReadBytes(r2rPath));
+        Assert.Null(extracted.TryReadBytes("runtimes/browser-wasm/native/r2r/App.wasm"));
+
+        string packagePath = Path.Combine(pack.Directory, "runtime.nupkg");
+        ZipFile.CreateFromDirectory(pack.Root, packagePath);
+        using ZipArchive package = ZipFile.OpenRead(packagePath);
+        var archived = new RuntimePackAssets(packagePath, package);
+        Assert.Equal(pack.NativeBytes, archived.ReadBytes(nativePath));
+        Assert.Equal("dynamic boot configuration", System.Text.Encoding.UTF8.GetString(archived.ReadBytes("runtimes/browser-wasm/native/dotnet.js")));
     }
 
     [Theory]

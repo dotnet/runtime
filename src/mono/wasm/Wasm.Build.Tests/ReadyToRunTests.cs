@@ -592,20 +592,19 @@ namespace Wasm.Build.Tests
 
         private static void AssertPrebuiltFrameworkReadyToRun(string webcilDir, string buildOutput)
         {
-            string? runtimePackDir = ProjectProviderBase.TryGetRuntimePackDirFromBuildOutput(buildOutput);
-            Assert.NotNull(runtimePackDir);
-            string prebuiltDir = Path.Combine(runtimePackDir!, "runtimes", "browser-wasm", "native", "r2r");
-            Assert.True(Directory.Exists(prebuiltDir), $"Expected prebuilt ReadyToRun images in '{prebuiltDir}'.");
+            string runtimePackDir = Assert.IsType<string>(ProjectProviderBase.TryGetRuntimePackDirFromBuildOutput(buildOutput));
+            var runtimePack = new RuntimePackAssets(runtimePackDir);
             AssertCoreLibReadyToRun(webcilDir, expectReadyToRun: true);
             Assert.True(File.Exists(Path.Combine(webcilDir, "BlazorBasicTestApp.wasm")));
 
             foreach (string webcilPath in Directory.EnumerateFiles(webcilDir, "*.wasm"))
             {
-                string prebuiltPath = Path.Combine(prebuiltDir, Path.GetFileName(webcilPath));
-                if (File.Exists(prebuiltPath))
-                    Assert.Equal(File.ReadAllBytes(prebuiltPath), File.ReadAllBytes(webcilPath));
+                string prebuiltPath = RuntimePackAssets.GetNativePath("r2r/" + Path.GetFileName(webcilPath));
+                if (runtimePack.TryReadBytes(prebuiltPath) is byte[] prebuilt)
+                    Assert.Equal(prebuilt, File.ReadAllBytes(webcilPath));
                 else
-                    Assert.Equal(0, GetReadyToRunTableSize(webcilPath));
+                    Assert.True(GetReadyToRunTableSize(webcilPath) == 0,
+                        $"'{webcilPath}' contains ReadyToRun code, but '{prebuiltPath}' was not found in runtime pack '{runtimePackDir}'.");
             }
         }
 
