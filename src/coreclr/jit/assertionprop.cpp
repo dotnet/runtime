@@ -4828,13 +4828,11 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
                     Range op2Rng = GetRange(this, op2, block, assertions, /*fast*/ false);
                     relopRange   = RangeOps::EvalRelop(tree->OperGet(), tree->IsUnsigned(), op1Rng, op2Rng);
                 }
-                else if (tree->OperIs(GT_GT, GT_LE) && tree->IsUnsigned() && op2->TypeIs(TYP_INT) &&
-                         optIsNeverNegativeCheckedBound(op2VN, assertions))
+                else if (op2->TypeIs(TYP_INT) && optIsNeverNegativeCheckedBound(op2VN, assertions))
                 {
-                    // "(uint)X > (uint)Bnd", e.g. "(uint)start > (uint)_length" in Span.Slice.
-                    // LT/GE forms are mostly loop conditions that aren't worth the TP.
+                    // "X relop Bnd", e.g. "(uint)start > (uint)_length" in Span.Slice or "i >= _length" loop guards.
                     Range op1Rng = GetRange(this, op1, block, assertions, /*fast*/ false, op2VN);
-                    relopRange   = RangeOps::EvalRelop(tree->OperGet(), /*isUnsigned*/ true, op1Rng,
+                    relopRange   = RangeOps::EvalRelop(tree->OperGet(), tree->IsUnsigned(), op1Rng,
                                                        Range(Limit(Limit::keBinOpArray, op2VN, 0)));
                 }
             }
