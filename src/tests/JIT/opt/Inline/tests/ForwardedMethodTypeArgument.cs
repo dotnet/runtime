@@ -151,6 +151,12 @@ public class ForwardedMethodTypeArgument
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static object RootCast<T>() => (Box<T>)Make<T>();
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static object MakeOther<T>() { s_constructions++; return new Box<T>(); }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool Agree<T>(bool first) => IsBox<T>(first ? Make<T>() : MakeOther<T>());
+
     private class Reader<T> { public virtual int Read() => 37; }
     private sealed class OtherReader<T> : Reader<T> { public override int Read() => 13; }
 
@@ -183,7 +189,9 @@ public class ForwardedMethodTypeArgument
         Assert.True(RootCast<string>() is Box<string>);
         Assert.True(SiblingCast<string, string>() is Box<string>);
         Assert.Throws<InvalidCastException>(() => SiblingCast<string, object>());
-        Assert.Equal(before + 11, s_constructions);
+        Assert.True(Agree<string>(true));
+        Assert.True(Agree<string>(false));
+        Assert.Equal(before + 14, s_constructions);
         Assert.Equal(37, KnownReceiver<string>());
         Assert.Equal(13, UnknownReceiver<string>(new OtherReader<string>()));
 

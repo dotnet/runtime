@@ -960,11 +960,77 @@ public:
 
 #endif // DEBUG
 
-// Revisit casts whose input was still a return placeholder during import.
+// Before morph expands dictionary lookups, revisit casts whose inputs were still
+// return placeholders or merge temps during import. Keep the ordinary cast tree
+// when any reaching definition is unknown.
 class InlineTypeCheckWalker final : public GenTreeVisitor<InlineTypeCheckWalker>
 {
-    Statement* m_stmt    = nullptr;
-    bool       m_changed = false;
+    struct Definition
+    {
+        GenTree*    value;
+        BasicBlock* block;
+        unsigned    statement;
+        Definition* next;
+    };
+    struct Local
+    {
+        Definition* stores;
+        bool        unknown;
+    };
+    Local*      m_locals;
+    BasicBlock* m_block     = nullptr;
+    Statement*  m_stmt      = nullptr;
+    unsigned    m_statement = 0;
+    bool        m_collect   = true;
+    bool        m_changed   = false;
+
+    bool Holds(unsigned                  num,
+               BasicBlock*               block,
+               unsigned                  before,
+               const MethodTypeArgument& target,
+               unsigned&                 budget,
+               bool&                     joined)
+    {
+        if ((budget == 0) || m_locals[num].unknown || m_compiler->lvaGetDesc(num)->IsAddressExposed() ||
+            m_compiler->lvaGetDesc(num)->lvHasLdAddrOp)
+        {
+            return false;
+        }
+        --budget;
+        for (Definition* def = m_locals[num].stores; def != nullptr; def = def->next)
+        {
+            if (budget == 0)
+            {
+                return false;
+            }
+            --budget;
+            if ((def->block != block) || (def->statement >= before))
+            {
+                continue;
+            }
+            GenTree* value = def->value->gtEffectiveVal();
+            if (value->OperIs(GT_ALLOCOBJ))
+            {
+                MethodTypeArgument* fact = m_compiler->impLocalTypeExpressions->LookupPointer(num);
+                return m_compiler->lvaGetDesc(num)->lvSingleDef && (fact != nullptr) && fact->SameExpression(target);
+            }
+            return value->OperIs(GT_LCL_VAR) && value->TypeIs(TYP_REF) &&
+                   Holds(value->AsLclVar()->GetLclNum(), block, def->statement, target, budget, joined);
+        }
+        if ((block == m_compiler->fgFirstBB) || !m_compiler->fgPredsComputed || (block->bbPreds == nullptr))
+        {
+            return false;
+        }
+        joined |= block->bbPreds->getNextPredEdge() != nullptr;
+        for (FlowEdge* pred : block->PredEdges())
+        {
+            if (!Holds(num, pred->getSourceBlock(), UINT_MAX, target, budget, joined))
+            {
+                return false;
+            }
+        }
+        return true;
+    }
 
 public:
     enum
@@ -974,16 +1040,25 @@ public:
     InlineTypeCheckWalker(Compiler* compiler)
         : GenTreeVisitor(compiler)
     {
+        m_locals = compiler->getAllocator(CMK_Inlining).allocate<Local>(compiler->lvaCount);
+        memset(m_locals, 0, sizeof(Local) * compiler->lvaCount);
     }
 
     bool Run()
     {
-        for (BasicBlock* block : m_compiler->Blocks())
+        for (unsigned pass = 0; pass < 2; pass++)
         {
-            for (Statement* stmt : block->Statements())
+            m_collect   = pass == 0;
+            m_statement = 0;
+            for (BasicBlock* block : m_compiler->Blocks())
             {
-                m_stmt = stmt;
-                WalkTree(stmt->GetRootNodePointer(), nullptr);
+                m_block = block;
+                for (Statement* stmt : block->Statements())
+                {
+                    m_stmt = stmt;
+                    m_statement++;
+                    WalkTree(stmt->GetRootNodePointer(), nullptr);
+                }
             }
         }
         return m_changed;
@@ -992,7 +1067,24 @@ public:
     fgWalkResult PostOrderVisit(GenTree** use, GenTree* parent)
     {
         GenTree* tree = *use;
-        if (tree->OperIs(GT_CALL, GT_NE))
+        if (m_collect)
+        {
+            if (tree->OperIs(GT_LCL_ADDR, GT_STORE_LCL_FLD, GT_STORE_LCL_VAR) ||
+                (tree->OperIsLocal() && ((tree->gtFlags & GTF_VAR_DEF) != 0)))
+            {
+                Local& local = m_locals[tree->AsLclVarCommon()->GetLclNum()];
+                if ((parent != nullptr) || !tree->OperIs(GT_STORE_LCL_VAR) || !tree->TypeIs(TYP_REF))
+                {
+                    local.unknown = true;
+                }
+                else
+                {
+                    local.stores = new (m_compiler, CMK_Inlining)
+                        Definition{tree->AsLclVar()->Data(), m_block, m_statement, local.stores};
+                }
+            }
+        }
+        else if (tree->OperIs(GT_CALL, GT_NE))
         {
             Compiler::InlineTypeCheck* check = m_compiler->impTypeChecks->LookupPointer(tree);
             if (check == nullptr)
@@ -1014,12 +1106,18 @@ public:
             {
                 return fgWalkResult::WALK_CONTINUE;
             }
-            MethodTypeArgument* source = m_compiler->impLocalTypeExpression(value);
-            if ((source != nullptr) && source->SameExpression(check->target))
+            unsigned budget = 64;
+            bool     joined = false;
+            if (value->OperIs(GT_LCL_VAR) && value->TypeIs(TYP_REF) &&
+                Holds(value->AsLclVar()->GetLclNum(), m_block, m_statement, check->target, budget, joined))
             {
                 *use = tree->OperIs(GT_CALL) ? value : m_compiler->gtNewZeroConNode(TYP_INT);
                 m_compiler->gtUpdateStmtSideEffects(m_stmt);
                 m_compiler->Metrics.InlineTypeLateFold++;
+                if (joined)
+                {
+                    m_compiler->Metrics.InlineTypeJoinFold++;
+                }
                 m_changed = true;
             }
         }
