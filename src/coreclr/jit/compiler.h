@@ -2675,6 +2675,11 @@ class BlockToNaturalLoopMap
 public:
     FlowGraphNaturalLoop* GetLoop(BasicBlock* block);
 
+    FlowGraphNaturalLoops* GetLoops() const
+    {
+        return m_loops;
+    }
+
     static BlockToNaturalLoopMap* Build(FlowGraphNaturalLoops* loops);
 
 #ifdef DEBUG
@@ -9472,6 +9477,7 @@ public:
                                           BasicBlock*      block);
     GenTree* optAssertionPropLocal_RelOp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
     bool     optIsNeverNegativeCheckedBound(ValueNum vn, ASSERT_VALARG_TP assertions);
+    bool     optIsBoundInvariantInLoopsOf(ValueNum vn, ValueNum bndVN);
     ValueNum optGetPreferredBoundForRange(ValueNum vn, ASSERT_VALARG_TP assertions);
     GenTree* optAssertionProp_Update(GenTree* newTree, GenTree* tree, Statement* stmt);
     GenTree* optNonNullAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCall* call);

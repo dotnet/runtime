@@ -4983,6 +4983,11 @@ bool Compiler::optVNIsLoopInvariant(ValueNum vn, FlowGraphNaturalLoop* loop, VNS
     VNFuncApp      funcApp;
     VNPhiDef       phiDef;
     VNMemoryPhiDef memoryPhiDef;
+
+    // Loop indices in memory VNs refer to the loops computed for value numbering,
+    // which may outlive m_loops (e.g. after RBO invalidates the flow graph annotations).
+    FlowGraphNaturalLoops* const vnLoops = m_blockToLoop->GetLoops();
+
     if (vnStore->GetVNFunc(vn, &funcApp))
     {
         if (funcApp.FuncIs(VNF_MemOpaque))
@@ -5002,7 +5007,7 @@ bool Compiler::optVNIsLoopInvariant(ValueNum vn, FlowGraphNaturalLoop* loop, VNS
             }
             else
             {
-                FlowGraphNaturalLoop* otherLoop = m_loops->GetLoopByIndex(loopIndex);
+                FlowGraphNaturalLoop* otherLoop = vnLoops->GetLoopByIndex(loopIndex);
                 assert(otherLoop != nullptr);
                 res = !loop->ContainsLoop(otherLoop);
             }
@@ -5025,14 +5030,14 @@ bool Compiler::optVNIsLoopInvariant(ValueNum vn, FlowGraphNaturalLoop* loop, VNS
                     if (i == 3)
                     {
                         const unsigned loopIndex = funcApp.GetArg(3);
-                        assert((loopIndex == ValueNumStore::NoLoop) || (loopIndex < m_loops->NumLoops()));
+                        assert((loopIndex == ValueNumStore::NoLoop) || (loopIndex < vnLoops->NumLoops()));
                         if (loopIndex == ValueNumStore::NoLoop)
                         {
                             res = true;
                         }
                         else
                         {
-                            FlowGraphNaturalLoop* otherLoop = m_loops->GetLoopByIndex(loopIndex);
+                            FlowGraphNaturalLoop* otherLoop = vnLoops->GetLoopByIndex(loopIndex);
                             res                             = !loop->ContainsLoop(otherLoop);
                         }
                         break;

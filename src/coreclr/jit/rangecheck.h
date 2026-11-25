@@ -870,16 +870,14 @@ public:
     static Range GetRangeFromAssertions(Compiler* comp, GenTree* tree, ASSERT_VALARG_TP assertions, int budget = 10);
     static Range GetRangeFromAssertions(Compiler* comp, ValueNum vn, ASSERT_VALARG_TP assertions, int budget = 10);
 
+    // Same as above, but may express the upper limit symbolically in terms of "preferredBoundVN".
+    static Range GetRangeFromAssertions(Compiler*        comp,
+                                        ValueNum         vn,
+                                        ValueNum         preferredBoundVN,
+                                        ASSERT_VALARG_TP assertions);
+
     // Compute the range from the given type
     static Range GetRangeFromType(var_types type);
-
-    // Inspect the assertions about the current ValueNum to refine pRange
-    static void MergeEdgeAssertions(Compiler*        comp,
-                                    ValueNum         num,
-                                    ValueNum         preferredBoundVN,
-                                    ASSERT_VALARG_TP assertions,
-                                    Range*           pRange,
-                                    bool             canUseCheckedBounds = true);
 
 private:
     typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, Range*>      RangeMap;
@@ -927,6 +925,14 @@ private:
     void MergeEdgeAssertions(GenTreeLclVarCommon* lcl, ASSERT_VALARG_TP assertions, Range* pRange);
 
     static Limit TightenLimit(Limit l1, Limit l2, ValueNum preferredBound, bool isLower);
+
+    // Inspect the assertions about the current ValueNum to refine pRange
+    static void MergeEdgeAssertions(Compiler*        comp,
+                                    ValueNum         num,
+                                    ValueNum         preferredBoundVN,
+                                    ASSERT_VALARG_TP assertions,
+                                    Range*           pRange,
+                                    bool             canUseCheckedBounds = true);
 
     // Internal worker used by GetRangeFromAssertionsWorker: same as the public overload
     // but threads a recursion budget and visited set so that VN-to-VN assertions can be
