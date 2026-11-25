@@ -39,7 +39,7 @@ namespace Microsoft.Interop
 
             (string managedIdentifier, string nativeIdentifier) = context.GetIdentifiers(info);
             string convertToUnmanaged = $"{marshallerType}.{ShapeMemberNames.Value.Stateless.ConvertToUnmanaged}({managedIdentifier})";
-            if (unmanagedType == SpecialTypeInfo.Void)
+            if (unmanagedType == WellKnownTypeInfo.Void)
             {
                 // Exception marshallers can marshal to void without producing a native value.
                 writer.WriteLine($"{convertToUnmanaged};");
@@ -238,7 +238,7 @@ namespace Microsoft.Interop
             string numElementsIdentifier = MarshallerHelpers.GetNumElementsIdentifier(TypeInfo, context);
             writer.WriteLine($"int {numElementsIdentifier};");
             writer.WriteLine(MarshallerHelpers.SkipInitOrDefaultInit(
-                new TypePositionInfo(SpecialTypeInfo.Int32, NoMarshallingInfo.Instance)
+                new TypePositionInfo(WellKnownTypeInfo.Int32, NoMarshallingInfo.Instance)
                 {
                     InstanceIdentifier = numElementsIdentifier
                 }, context));

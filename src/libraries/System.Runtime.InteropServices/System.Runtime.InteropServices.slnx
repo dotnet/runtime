@@ -66,6 +66,14 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
+    <Project Path="gen/Microsoft.Interop.SourceGeneration.Roslyn/Microsoft.Interop.SourceGeneration.Roslyn.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
   </Folder>
   <Folder Name="/ref/">
     <Project Path="../System.Collections.Concurrent/ref/System.Collections.Concurrent.csproj">
@@ -216,6 +224,14 @@
       <Build Solution="Checked|x86" Project="false" />
     </Project>
     <Project Path="tests/LibraryImportGenerator.UnitTests/LibraryImportGenerator.Unit.Tests.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="tests/Microsoft.Interop.SourceGeneration.UnitTests/Microsoft.Interop.SourceGeneration.Unit.Tests.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />

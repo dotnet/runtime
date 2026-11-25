@@ -165,20 +165,20 @@ namespace Microsoft.Interop.JavaScript
                 InstanceIdentifier = Constants.ArgumentException,
                 ManagedIndex = TypePositionInfo.ExceptionIndex,
                 NativeIndex = signatureElements.Length,
-                RefKind = RefKind.Out,
+                RefKind = ByRefMarshalKind.Out,
                 IsErrorHandlingPosition = true,
             });
 
             for (int i = 0; i < allElements.Length; i++)
             {
-                if (allElements[i].IsNativeReturnPosition && allElements[i].ManagedType != SpecialTypeInfo.Void)
+                if (allElements[i].IsNativeReturnPosition && allElements[i].ManagedType != WellKnownTypeInfo.Void)
                 {
                     // Passing the return slot by reference preserves partial runtime initialization.
                     allElements = allElements.SetItem(i, allElements[i] with
                     {
                         ManagedIndex = TypePositionInfo.ReturnIndex,
                         NativeIndex = allElements.Length,
-                        RefKind = RefKind.Out,
+                        RefKind = ByRefMarshalKind.Out,
                     });
                 }
             }
@@ -237,7 +237,7 @@ namespace Microsoft.Interop.JavaScript
             {
                 if (nativeArgument.IsNativeReturnPosition)
                 {
-                    hasReturn = nativeArgument.ManagedType != SpecialTypeInfo.Void;
+                    hasReturn = nativeArgument.ManagedType != WellKnownTypeInfo.Void;
                     continue;
                 }
                 writer.Write($"{Constants.ArgumentsBuffer}[{nativeArgument.NativeIndex + 2}], ");

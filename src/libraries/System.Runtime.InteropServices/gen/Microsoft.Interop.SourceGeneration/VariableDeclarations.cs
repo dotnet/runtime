@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Interop
 {
@@ -17,7 +16,7 @@ namespace Microsoft.Interop
                 if (info.IsManagedReturnPosition)
                     continue;
 
-                if (info.RefKind == RefKind.Out && !info.IsErrorHandlingPosition)
+                if (info.RefKind == ByRefMarshalKind.Out && !info.IsErrorHandlingPosition)
                 {
                     initializations.WriteLine(MarshallerHelpers.DefaultInit(info, context));
                 }
