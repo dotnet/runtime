@@ -277,12 +277,33 @@ void JitTls::SetCompiler(Compiler* compiler)
 // interface. Things really don't get going inside the JIT until the code:Compiler::compCompile#Phases
 // method.  Usually that is where you want to go.
 
+#ifdef TARGET_WASM
+bool TargetArchitecture::Is64Bit = false;
+#endif
+
 CorJitResult CILJit::compileMethod(ICorJitInfo*         compHnd,
                                    CORINFO_METHOD_INFO* methodInfo,
                                    unsigned             flags,
                                    uint8_t**            entryAddress,
                                    uint32_t*            nativeSizeOfCode)
 {
+#ifdef TARGET_WASM
+    uint32_t expectedArchitecture = compHnd->getExpectedTargetArchitecture();
+    if ((expectedArchitecture != CORINFO_ARCH_WASM32) && (expectedArchitecture != CORINFO_ARCH_WASM64))
+    {
+        return CORJIT_IMPLLIMITATION;
+    }
+    static const uint32_t architecture = [expectedArchitecture]() {
+        TargetArchitecture::Is64Bit = expectedArchitecture == CORINFO_ARCH_WASM64;
+        Target::g_tgtCPUName        = TargetArchitecture::Is64Bit ? "wasm64" : "wasm32";
+        return expectedArchitecture;
+    }();
+    if (expectedArchitecture != architecture)
+    {
+        return CORJIT_IMPLLIMITATION;
+    }
+#endif
+
     JitFlags jitFlags;
 
     assert(flags == CORJIT_FLAGS::CORJIT_FLAG_CALL_GETJITFLAGS);

@@ -2678,7 +2678,7 @@ void CodeGen::genLclHeap(GenTree* tree)
     emitAttr             easz                     = emitTypeSize(type);
     BasicBlock*          endLabel                 = nullptr;
     unsigned             stackAdjustment          = 0;
-    const target_ssize_t ILLEGAL_LAST_TOUCH_DELTA = (target_ssize_t)-1;
+    const target_ssize_t ILLEGAL_LAST_TOUCH_DELTA = TargetFromHost<target_ssize_t>(-1);
     target_ssize_t       lastTouchDelta =
         ILLEGAL_LAST_TOUCH_DELTA; // The number of bytes from SP to the last stack address probed.
 

@@ -1108,7 +1108,13 @@ inline regNumber genFirstRegNumFromMaskAndToggle(SingleTypeRegSet& mask)
  *  Return the size in bytes of the given type.
  */
 
+#ifdef TARGET_WASM
+extern const BYTE genTypeSizes32[TYP_COUNT];
+extern const BYTE genTypeSizes64[TYP_COUNT];
+#define genTypeSizes (TargetArchitecture::Is64Bit ? genTypeSizes64 : genTypeSizes32)
+#else
 extern const BYTE genTypeSizes[TYP_COUNT];
+#endif
 
 template <class T>
 inline unsigned genTypeSize(T value)
@@ -1124,7 +1130,13 @@ inline unsigned genTypeSize(T value)
  *      returns 1 for 32-bit types and 2 for 64-bit types.
  */
 
+#ifdef TARGET_WASM
+extern const BYTE genTypeStSzs32[TYP_COUNT];
+extern const BYTE genTypeStSzs64[TYP_COUNT];
+#define genTypeStSzs (TargetArchitecture::Is64Bit ? genTypeStSzs64 : genTypeStSzs32)
+#else
 extern const BYTE genTypeStSzs[TYP_COUNT];
+#endif
 
 template <class T>
 inline unsigned genTypeStSz(T value)
@@ -1958,14 +1970,13 @@ inline void GenTree::SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
     assert(GenTree::s_gtNodeSizes[oper] == TREE_NODE_SZ_SMALL || GenTree::s_gtNodeSizes[oper] == TREE_NODE_SZ_LARGE);
     assert(GenTree::s_gtNodeSizes[oper] == TREE_NODE_SZ_SMALL || (gtDebugFlags & GTF_DEBUG_NODE_LARGE));
 
-#if defined(HOST_64BIT) && !defined(TARGET_64BIT)
-    if (OperIs(GT_CNS_LNG) && oper == GT_CNS_INT)
+    if ((sizeof(ssize_t) == sizeof(int64_t)) && !TargetArchitecture::Is64Bit && OperIs(GT_CNS_LNG) &&
+        oper == GT_CNS_INT)
     {
         // When casting from LONG to INT, we need to force cast of the value,
         // if the host architecture represents INT and LONG with the same data size.
         AsLngCon()->gtLconVal = (INT64)(INT32)AsLngCon()->gtLconVal;
     }
-#endif // defined(HOST_64BIT) && !defined(TARGET_64BIT)
 
     SetOperRaw(oper);
 
@@ -2115,9 +2126,10 @@ void GenTree::BashToConst(T value, var_types type /* = TYP_UNDEF */)
     switch (oper)
     {
         case GT_CNS_INT:
-#if !defined(TARGET_64BIT)
-            assert(type != TYP_LONG);
-#endif
+            if (!TargetArchitecture::Is64Bit)
+            {
+                assert(type != TYP_LONG);
+            }
             assert(varTypeIsIntegral(type) || varTypeIsGC(type));
             if (genTypeSize(type) <= genTypeSize(TYP_INT))
             {
@@ -2129,12 +2141,10 @@ void GenTree::BashToConst(T value, var_types type /* = TYP_UNDEF */)
             AsIntCon()->SetCompileTimeHandle(0);
             break;
 
-#if !defined(TARGET_64BIT)
         case GT_CNS_LNG:
             assert(type == TYP_LONG);
             AsLngCon()->SetLngValue(static_cast<int64_t>(value));
             break;
-#endif
 
         case GT_CNS_DBL:
             assert(varTypeIsFloating(type));
@@ -4246,17 +4256,14 @@ bool Compiler::fgVarNeedsExplicitZeroInit(unsigned varNum, bool bbInALoop, bool 
         return false;
 #else // !TARGET_WASM
         unsigned stackHomeSize = lvaLclStackHomeSize(varNum);
-#ifdef TARGET_64BIT
 #if defined(TARGET_AMD64)
         // We can clear using aligned SIMD so the threshold is lower,
         // and clears in order which is better for auto-prefetching
-        if (roundUp(stackHomeSize, TARGET_POINTER_SIZE) / sizeof(int) > 4)
+        const unsigned blockInitThreshold = 4;
 #else // !defined(TARGET_AMD64)
-        if (roundUp(stackHomeSize, TARGET_POINTER_SIZE) / sizeof(int) > 8)
+        const unsigned blockInitThreshold = TargetArchitecture::Is64Bit ? 8 : 4;
 #endif
-#else
-        if (roundUp(stackHomeSize, TARGET_POINTER_SIZE) / sizeof(int) > 4)
-#endif
+        if (roundUp(stackHomeSize, TARGET_POINTER_SIZE) / sizeof(int) > blockInitThreshold)
         {
             return false;
         }

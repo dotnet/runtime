@@ -129,14 +129,12 @@ void lsraAssignRegToTree(GenTree* tree, regNumber reg, unsigned regIdx)
     {
         tree->SetRegNum(reg);
     }
-#if !defined(TARGET_64BIT)
-    else if (tree->OperIsMultiRegOp())
+    else if (!TargetArchitecture::Is64Bit && tree->OperIsMultiRegOp())
     {
         assert(regIdx == 1);
         GenTreeMultiRegOp* mul = tree->AsMultiRegOp();
         mul->gtOtherReg        = reg;
     }
-#endif // TARGET_64BIT
 #if FEATURE_MULTIREG_RET
     else if (tree->OperIs(GT_COPY))
     {
@@ -1707,9 +1705,10 @@ void LinearScan::identifyCandidates()
     {
         // Initialize all variables to REG_STK
         varDsc->SetRegNum(REG_STK);
-#ifndef TARGET_64BIT
-        varDsc->SetOtherReg(REG_STK);
-#endif // TARGET_64BIT
+        if (!TargetArchitecture::Is64Bit)
+        {
+            varDsc->SetOtherReg(REG_STK);
+        }
 
         if (!localVarsEnregistered)
         {
@@ -2726,15 +2725,14 @@ bool LinearScan::isMatchingConstant(RegRecord* physRegRecord, RefPosition* refPo
             ssize_t v2 = otherTreeNode->AsIntCon()->IconValue();
             if ((v1 == v2) && (varTypeIsGC(refPosition->treeNode) == varTypeIsGC(otherTreeNode) || v1 == 0))
             {
-#ifdef TARGET_64BIT
                 // If the constant is negative, only reuse registers of the same type.
                 // This is because, on a 64-bit system, we do not sign-extend immediates in registers to
                 // 64-bits unless they are actually longs, as this requires a longer instruction.
                 // This doesn't apply to a 32-bit system, on which long values occupy multiple registers.
                 // (We could sign-extend, but we would have to always sign-extend, because if we reuse more
                 // than once, we won't have access to the instruction that originally defines the constant).
-                if ((refPosition->treeNode->TypeGet() == otherTreeNode->TypeGet()) || (v1 >= 0))
-#endif // TARGET_64BIT
+                if (!TargetArchitecture::Is64Bit || (refPosition->treeNode->TypeGet() == otherTreeNode->TypeGet()) ||
+                    (v1 >= 0))
                 {
                     return true;
                 }

@@ -1733,6 +1733,7 @@ enum CorInfoArch
     CORINFO_ARCH_LOONGARCH64,
     CORINFO_ARCH_RISCV64,
     CORINFO_ARCH_WASM32,
+    CORINFO_ARCH_WASM64,
 };
 
 enum CORINFO_OS
@@ -2017,6 +2018,8 @@ struct CORINFO_AsyncResumeInfo
     TARGET_SIZE_T DiagnosticIP;
 };
 
+#define SIZEOF__CORINFO_AsyncResumeInfo (2 * TARGET_POINTER_SIZE)
+
 struct CORINFO_TYPE_LAYOUT_NODE
 {
     // Type handle if this is a SIMD type, i.e. for intrinsic types in
@@ -2090,11 +2093,7 @@ struct CORINFO_FPSTRUCT_LOWERING
 #define CORINFO_String_MaxLength                          0x3FFFFFDF
 
 #define OFFSETOF__CORINFO_Array__length                   SIZEOF__CORINFO_Object
-#ifdef TARGET_64BIT
-#define OFFSETOF__CORINFO_Array__data                     (OFFSETOF__CORINFO_Array__length + sizeof(uint32_t) /* length */ + sizeof(uint32_t) /* alignpad */)
-#else
-#define OFFSETOF__CORINFO_Array__data                     (OFFSETOF__CORINFO_Array__length + sizeof(uint32_t) /* length */)
-#endif
+#define OFFSETOF__CORINFO_Array__data                     (2 * TARGET_POINTER_SIZE)
 
 #define OFFSETOF__CORINFO_TypedReference__dataPtr         0
 #define OFFSETOF__CORINFO_TypedReference__type            (OFFSETOF__CORINFO_TypedReference__dataPtr + TARGET_POINTER_SIZE /* dataPtr */)

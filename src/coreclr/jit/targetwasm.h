@@ -7,11 +7,7 @@
 #endif
 
 // clang-format off
-#ifdef TARGET_WASM32
-#define CORINFO_ARCH_TARGET      CORINFO_ARCH_WASM32
-#else
-#error NYI: WASM64
-#endif
+#define CORINFO_ARCH_TARGET      (TargetArchitecture::Is64Bit ? CORINFO_ARCH_WASM64 : CORINFO_ARCH_WASM32)
 
 #define WASM_THREAD_SUPPORT      0       // Codegen does not support WasmThreads yet
 
@@ -40,11 +36,7 @@
 
 #define NOGC_WRITE_BARRIERS      0       // No specialized WriteBarrier JIT Helpers
 #define USER_ARGS_COME_LAST      1
-#ifdef TARGET_WASM32
-#define TARGET_POINTER_SIZE      4       // equal to sizeof(void*) and the managed pointer size in bytes for this target
-#else
-#define TARGET_POINTER_SIZE      8       // equal to sizeof(void*) and the managed pointer size in bytes for this target
-#endif
+#define TARGET_POINTER_SIZE      (TargetArchitecture::Is64Bit ? 8 : 4)
 #define ETW_EBP_FRAMED           0       // No frame pointer chaining on WASM
 
 // TODO-WASM-CQ: measure if "CSE_CONSTS" is beneficial.

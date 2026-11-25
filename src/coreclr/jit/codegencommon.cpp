@@ -1862,37 +1862,15 @@ void CodeGen::genEmitCallWithCurrentGC(EmitCallParams& params)
         }
 #endif
 
-#if !defined(TARGET_64BIT)
-        // Multi-register debug-info encodings that involve floating-point
-        // registers assume each register holds an 8-byte half of the value, so
-        // they are only implemented for 64-bit targets. On a 32-bit target a
-        // value returned in two floating-point registers (e.g. an ARM32 HFA such
-        // as a struct of two floats or doubles) cannot yet be represented; skip
-        // emitting MRV info for it rather than producing an encoding the debugger
-        // cannot decode. A pair of integer registers (e.g. x86 EAX:EDX) is still
-        // encoded below as VLT_REG_REG.
-        //
-        // Supporting this on ARM32 also depends on implementing managed FP-register
-        // value inspection there, which is itself unimplemented (the single-register
-        // VLT_REG_FP case is @ARMTODO/E_NOTIMPL in the DBI), and on mapping the JIT's
-        // single-precision register numbering to the debugger's D-register indexing.
-        // TODO: Implement 32-bit support for two-floating-point-register returns.
-        if (!genIsValidIntReg(reg1) || !genIsValidIntReg(reg2))
+        if (!TargetArchitecture::Is64Bit || (!TargetArchitecture::IsX64 && !TargetArchitecture::IsArm64))
         {
-            return;
+            // FP-containing register pairs require 8-byte pieces and debugger FP
+            // register support, currently available only on AMD64 and ARM64.
+            if (!genIsValidIntReg(reg1) || !genIsValidIntReg(reg2))
+            {
+                return;
+            }
         }
-#elif !defined(TARGET_AMD64) && !defined(TARGET_ARM64)
-        // AMD64 and ARM64 include FP registers in their debug RegNum enumerations,
-        // so VLT_REG_REG can encode FP-containing two-register returns. Other
-        // 64-bit targets do not yet implement the debugger-side floating-point
-        // read path, so suppress those cases instead of emitting an encoding the
-        // debugger cannot decode. A pair of integer registers is still encoded
-        // below as VLT_REG_REG.
-        if (!genIsValidIntReg(reg1) || !genIsValidIntReg(reg2))
-        {
-            return;
-        }
-#endif // !TARGET_64BIT
 
         info.returnValueLoc.storeVariableInRegisters(reg1, reg2);
     }
@@ -2471,19 +2449,22 @@ void CodeGen::genEmitMachineCode()
 
     bool trackedStackPtrsContig; // are tracked stk-ptrs contiguous ?
 
-#ifdef TARGET_64BIT
-    trackedStackPtrsContig = false;
-#else
-    // We try to allocate GC pointers contiguously on the stack except for some special cases.
-    trackedStackPtrsContig = !m_compiler->opts.compDbgEnC && (m_compiler->lvaAsyncThreadObjectVar == BAD_VAR_NUM) &&
-                             (m_compiler->lvaAsyncExecutionContextVar == BAD_VAR_NUM) &&
-                             (m_compiler->lvaAsyncSynchronizationContextVar == BAD_VAR_NUM);
+    if (TargetArchitecture::Is64Bit)
+    {
+        trackedStackPtrsContig = false;
+    }
+    else
+    {
+        // We try to allocate GC pointers contiguously on the stack except for some special cases.
+        trackedStackPtrsContig = !m_compiler->opts.compDbgEnC && (m_compiler->lvaAsyncThreadObjectVar == BAD_VAR_NUM) &&
+                                 (m_compiler->lvaAsyncExecutionContextVar == BAD_VAR_NUM) &&
+                                 (m_compiler->lvaAsyncSynchronizationContextVar == BAD_VAR_NUM);
 
 #ifdef TARGET_ARM
-    // On arm due to prespilling of arguments, tracked stk-ptrs may not be contiguous
-    trackedStackPtrsContig &= !m_compiler->compIsProfilerHookNeeded();
+        // On arm due to prespilling of arguments, tracked stk-ptrs may not be contiguous
+        trackedStackPtrsContig &= !m_compiler->compIsProfilerHookNeeded();
 #endif
-#endif
+    }
 
     if (m_compiler->opts.disAsm && m_compiler->opts.disTesting)
     {
@@ -3961,28 +3942,20 @@ void CodeGen::genCheckUseBlockInit()
     // If this logic changes, Compiler::fgVarNeedsExplicitZeroInit needs
     // to be modified.
 
-#ifdef TARGET_WASM
-
-    // On WASM we always use a single memory.fill for prolog zeroing.
-    genUseBlockInit = (genInitStkLclCnt > 0);
-
-#elif defined(TARGET_64BIT)
-#if defined(TARGET_AMD64)
-
-    // We can clear using aligned SIMD so the threshold is lower,
-    // and clears in order which is better for auto-prefetching
-    genUseBlockInit = (genInitStkLclCnt > 4);
-
-#else // !defined(TARGET_AMD64)
-
-    genUseBlockInit = (genInitStkLclCnt > 8);
-
-#endif
-#else
-
-    genUseBlockInit = (genInitStkLclCnt > 4);
-
-#endif // TARGET_64BIT
+    if (TargetArchitecture::IsWasm)
+    {
+        // On WASM we always use a single memory.fill for prolog zeroing.
+        genUseBlockInit = (genInitStkLclCnt > 0);
+    }
+    else if (TargetArchitecture::Is64Bit && !TargetArchitecture::IsX64)
+    {
+        genUseBlockInit = (genInitStkLclCnt > 8);
+    }
+    else
+    {
+        // AMD64 can use aligned SIMD, with a lower threshold.
+        genUseBlockInit = (genInitStkLclCnt > 4);
+    }
 
 #ifdef TARGET_ARM
     if (genUseBlockInit)
@@ -4217,14 +4190,15 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
                     GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, zeroReg, varNum, i);
                 }
 
-#ifdef TARGET_64BIT
-                assert(i == lclSize || (i + sizeof(int) == lclSize));
-                if (i != lclSize)
+                if (TargetArchitecture::Is64Bit)
                 {
-                    GetEmitter()->emitIns_S_R(ins_Store(TYP_INT), EA_4BYTE, zeroReg, varNum, i);
-                    i += sizeof(int);
+                    assert(i == lclSize || (i + sizeof(int) == lclSize));
+                    if (i != lclSize)
+                    {
+                        GetEmitter()->emitIns_S_R(ins_Store(TYP_INT), EA_4BYTE, zeroReg, varNum, i);
+                        i += sizeof(int);
+                    }
                 }
-#endif // TARGET_64BIT
                 assert(i == lclSize);
             }
         }
@@ -6066,7 +6040,7 @@ CORINFO_FIELD_HANDLE CodeGen::genEmitAsyncResumeInfo(unsigned stateNum)
 
     emitter::dataSection* dataSection;
     UNATIVE_OFFSET        baseOffs = genEmitAsyncResumeInfoTable(&dataSection);
-    return m_compiler->eeFindJitDataOffs(baseOffs + stateNum * sizeof(CORINFO_AsyncResumeInfo));
+    return m_compiler->eeFindJitDataOffs(baseOffs + stateNum * SIZEOF__CORINFO_AsyncResumeInfo);
 }
 
 //------------------------------------------------------------------------
@@ -7982,19 +7956,22 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
 
 #ifdef DEBUG
             unsigned stackHomeSize = m_compiler->lvaLclStackHomeSize(lclNum);
-#ifdef TARGET_64BIT
-            assert(offset <= stackHomeSize);
-#else  // !TARGET_64BIT
-            if (varTypeIsStruct(varDsc))
+            if (TargetArchitecture::Is64Bit)
             {
                 assert(offset <= stackHomeSize);
             }
             else
             {
-                assert(varDsc->TypeIs(TYP_LONG));
-                assert(offset <= genTypeSize(TYP_LONG));
+                if (varTypeIsStruct(varDsc))
+                {
+                    assert(offset <= stackHomeSize);
+                }
+                else
+                {
+                    assert(varDsc->TypeIs(TYP_LONG));
+                    assert(offset <= genTypeSize(TYP_LONG));
+                }
             }
-#endif // !TARGET_64BIT
 #endif // DEBUG
         }
     }
@@ -8292,11 +8269,8 @@ void CodeGen::genPoisonFrame(regMaskTP regLiveIn)
     assert((regLiveIn & (genRegMask(REG_SCRATCH) | RBM_ARG_0 | RBM_ARG_1 | RBM_ARG_2)) == 0);
 #endif
 
-#ifdef TARGET_64BIT
-    const ssize_t poisonVal = (ssize_t)0xcdcdcdcdcdcdcdcd;
-#else
-    const ssize_t poisonVal = (ssize_t)0xcdcdcdcd;
-#endif
+    const ssize_t poisonVal =
+        TargetArchitecture::Is64Bit ? static_cast<ssize_t>(0xcdcdcdcdcdcdcdcd) : static_cast<ssize_t>(0xcdcdcdcd);
 
     // The first time we need to poison something we will initialize a register to the largest immediate cccccccc that
     // we can fit.
@@ -8354,24 +8328,28 @@ void CodeGen::genPoisonFrame(regMaskTP regLiveIn)
                 hasPoisonImm = true;
             }
 
-// For 64-bit we check if the local is 8-byte aligned. For 32-bit, we assume everything is always 4-byte aligned.
-#ifdef TARGET_64BIT
-            bool fpBased;
-            int  addr = m_compiler->lvaFrameAddress((int)varNum, &fpBased);
-#else
+            // For 64-bit we check if the local is 8-byte aligned. For 32-bit, we assume everything is always 4-byte
+            // aligned.
             int addr = 0;
+#ifndef TARGET_ARM
+            if (TargetArchitecture::Is64Bit)
+            {
+                bool fpBased;
+                addr = m_compiler->lvaFrameAddress((int)varNum, &fpBased);
+            }
 #endif
             int end = addr + (int)size;
             for (int offs = addr; offs < end;)
             {
-#ifdef TARGET_64BIT
-                if ((offs % 8) == 0 && end - offs >= 8)
+                if (TargetArchitecture::Is64Bit)
                 {
-                    GetEmitter()->emitIns_S_R(ins_Store(TYP_LONG), EA_8BYTE, REG_SCRATCH, (int)varNum, offs - addr);
-                    offs += 8;
-                    continue;
+                    if ((offs % 8) == 0 && end - offs >= 8)
+                    {
+                        GetEmitter()->emitIns_S_R(ins_Store(TYP_LONG), EA_8BYTE, REG_SCRATCH, (int)varNum, offs - addr);
+                        offs += 8;
+                        continue;
+                    }
                 }
-#endif
 
                 assert((offs % 4) == 0 && end - offs >= 4);
                 GetEmitter()->emitIns_S_R(ins_Store(TYP_INT), EA_4BYTE, REG_SCRATCH, (int)varNum, offs - addr);

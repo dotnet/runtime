@@ -145,13 +145,12 @@ var_types ABIPassingSegment::GetRegisterType() const
             case 3:
             case 4:
                 return TYP_INT;
-#if defined(TARGET_64BIT) || defined(TARGET_WASM)
             case 5:
             case 6:
             case 7:
             case 8:
+                assert(TargetArchitecture::Is64Bit || TargetArchitecture::IsWasm);
                 return TYP_LONG;
-#endif
             default:
                 assert(!"Unexpected size for integer register");
                 return TYP_UNDEF;

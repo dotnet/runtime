@@ -423,6 +423,7 @@ set( JIT_HEADERS
   stacklevelsetter.h
   target.h
   targetcommon.h
+  targetinteger.h
   treelifeupdater.h
   typelist.h
   unwind.h

@@ -107,23 +107,74 @@ inline bool _our_GetThreadCycles(uint64_t* cycleOut)
 
 #endif // which host OS
 
+#ifdef TARGET_WASM
+#define TYPE_POINTER_SIZE 4
+const BYTE genTypeSizes32[] = {
+#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) sz,
+#include "typelist.h"
+#undef DEF_TP
+};
+#undef TYPE_POINTER_SIZE
+#define TYPE_POINTER_SIZE 8
+const BYTE genTypeSizes64[] = {
+#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) sz,
+#include "typelist.h"
+#undef DEF_TP
+};
+#undef TYPE_POINTER_SIZE
+#else
 const BYTE genTypeSizes[] = {
 #define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) sz,
 #include "typelist.h"
 #undef DEF_TP
 };
+#endif
 
+#ifdef TARGET_WASM
+#define TYPE_POINTER_SIZE 4
+const BYTE genTypeAlignments32[] = {
+#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) al,
+#include "typelist.h"
+#undef DEF_TP
+};
+#undef TYPE_POINTER_SIZE
+#define TYPE_POINTER_SIZE 8
+const BYTE genTypeAlignments64[] = {
+#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) al,
+#include "typelist.h"
+#undef DEF_TP
+};
+#undef TYPE_POINTER_SIZE
+#else
 const BYTE genTypeAlignments[] = {
 #define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) al,
 #include "typelist.h"
 #undef DEF_TP
 };
+#endif
 
+#ifdef TARGET_WASM
+#define TYPE_POINTER_SIZE 4
+const BYTE genTypeStSzs32[] = {
+#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) st,
+#include "typelist.h"
+#undef DEF_TP
+};
+#undef TYPE_POINTER_SIZE
+#define TYPE_POINTER_SIZE 8
+const BYTE genTypeStSzs64[] = {
+#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) st,
+#include "typelist.h"
+#undef DEF_TP
+};
+#undef TYPE_POINTER_SIZE
+#else
 const BYTE genTypeStSzs[] = {
 #define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) st,
 #include "typelist.h"
 #undef DEF_TP
 };
+#endif
 
 const BYTE genActualTypes[] = {
 #define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) jitType,
@@ -644,6 +695,13 @@ var_types Compiler::getPrimitiveTypeForStruct(unsigned structSize, CORINFO_CLASS
     }
 
     // Now deal with non-HFA/HVA structs.
+    if (structSize == TARGET_POINTER_SIZE)
+    {
+        BYTE gcPtr = 0;
+        info.compCompHnd->getClassGClayout(clsHnd, &gcPtr);
+        return getJitGCType(gcPtr);
+    }
+
     switch (structSize)
     {
         case 1:
@@ -661,7 +719,6 @@ var_types Compiler::getPrimitiveTypeForStruct(unsigned structSize, CORINFO_CLASS
 
 #endif // !TARGET_XARCH || UNIX_AMD64_ABI
 
-#ifdef TARGET_64BIT
         case 4:
             // We dealt with the one-float HFA above. All other 4-byte structs are handled as INT.
             useType = TYP_INT;
@@ -671,21 +728,10 @@ var_types Compiler::getPrimitiveTypeForStruct(unsigned structSize, CORINFO_CLASS
         case 5:
         case 6:
         case 7:
-            useType = TYP_I_IMPL;
+            useType = TargetArchitecture::Is64Bit ? TYP_I_IMPL : TYP_UNKNOWN;
             break;
 
 #endif // !TARGET_XARCH || UNIX_AMD64_ABI
-#endif // TARGET_64BIT
-
-        case TARGET_POINTER_SIZE:
-        {
-            BYTE gcPtr = 0;
-            // Check if this pointer-sized struct is wrapping a GC object
-            info.compCompHnd->getClassGClayout(clsHnd, &gcPtr);
-            useType = getJitGCType(gcPtr);
-        }
-        break;
-
         default:
             useType = TYP_UNKNOWN;
             break;
@@ -920,22 +966,24 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
         }
     }
 
-#ifdef TARGET_64BIT
-    // Note this handles an odd case when FEATURE_MULTIREG_RET is disabled and HFAs are enabled
-    //
-    // getPrimitiveTypeForStruct will return TYP_UNKNOWN for a struct that is an HFA of two floats
-    // because when HFA are enabled, normally we would use two FP registers to pass or return it
-    //
-    // But if we don't have support for multiple register return types, we have to change this.
-    // Since what we have is an 8-byte struct (float + float)  we change useType to TYP_I_IMPL
-    // so that the struct is returned instead using an 8-byte integer register.
-    //
-    if ((FEATURE_MULTIREG_RET == 0) && (useType == TYP_UNKNOWN) && (structSize == (2 * sizeof(float))) && IsHfa(clsHnd))
+    if (TargetArchitecture::Is64Bit)
     {
-        useType           = TYP_I_IMPL;
-        howToReturnStruct = SPK_PrimitiveType;
+        // Note this handles an odd case when FEATURE_MULTIREG_RET is disabled and HFAs are enabled
+        //
+        // getPrimitiveTypeForStruct will return TYP_UNKNOWN for a struct that is an HFA of two floats
+        // because when HFA are enabled, normally we would use two FP registers to pass or return it
+        //
+        // But if we don't have support for multiple register return types, we have to change this.
+        // Since what we have is an 8-byte struct (float + float)  we change useType to TYP_I_IMPL
+        // so that the struct is returned instead using an 8-byte integer register.
+        //
+        if ((FEATURE_MULTIREG_RET == 0) && (useType == TYP_UNKNOWN) && (structSize == (2 * sizeof(float))) &&
+            IsHfa(clsHnd))
+        {
+            useType           = TYP_I_IMPL;
+            howToReturnStruct = SPK_PrimitiveType;
+        }
     }
-#endif
 
     // Did we change this struct type into a simple "primitive" type?
     if (useType != TYP_UNKNOWN)
@@ -1743,6 +1791,9 @@ void Compiler::compDoComponentUnitTestsOnce()
     if (!DidComponentUnitTests)
     {
         DidComponentUnitTests = true;
+#ifdef TARGET_WASM
+        RunTargetIntegerTests();
+#endif
         ValueNumStore::RunTests(this);
         BitSetSupport::TestSuite(getAllocatorDebugOnly());
     }
@@ -2972,20 +3023,23 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 #endif
     }
 
-#ifdef TARGET_64BIT
-    opts.compCollect64BitCounts = JitConfig.JitCollect64BitCounts() != 0;
+    if (TargetArchitecture::Is64Bit)
+    {
+        opts.compCollect64BitCounts = JitConfig.JitCollect64BitCounts() != 0;
 
 #ifdef DEBUG
-    if (JitConfig.JitRandomlyCollect64BitCounts() != 0)
-    {
-        CLRRandom rng;
-        rng.Init(info.compMethodHash() ^ JitConfig.JitRandomlyCollect64BitCounts() ^ 0x3485e20e);
-        opts.compCollect64BitCounts = rng.Next(2) == 0;
+        if (JitConfig.JitRandomlyCollect64BitCounts() != 0)
+        {
+            CLRRandom rng;
+            rng.Init(info.compMethodHash() ^ JitConfig.JitRandomlyCollect64BitCounts() ^ 0x3485e20e);
+            opts.compCollect64BitCounts = rng.Next(2) == 0;
+        }
+#endif
     }
-#endif
-#else
-    opts.compCollect64BitCounts = false;
-#endif
+    else
+    {
+        opts.compCollect64BitCounts = false;
+    }
 
 #ifdef DEBUG
 
@@ -9666,9 +9720,7 @@ JITDBGAPI void __cdecl cTreeFlags(Compiler* comp, GenTree* tree)
                 break;
 
             case GT_MUL:
-#if !defined(TARGET_64BIT)
             case GT_MUL_LONG:
-#endif
 
                 if (tree->gtFlags & GTF_MUL_64RSLT)
                 {
@@ -10638,11 +10690,9 @@ void Compiler::EnregisterStats::RecordLocal(const LclVarDsc* varDsc)
             case DoNotEnregisterReason::NoRegVars:
                 m_noRegVars++;
                 break;
-#if !defined(TARGET_64BIT)
             case DoNotEnregisterReason::LongParamField:
                 m_longParamField++;
                 break;
-#endif
             case DoNotEnregisterReason::PinningRef:
                 m_PinningRef++;
                 break;
@@ -10798,9 +10848,10 @@ void Compiler::EnregisterStats::Dump(FILE* fout) const
     PRINT_STATS(m_structArg, notEnreg);
     PRINT_STATS(m_depField, notEnreg);
     PRINT_STATS(m_noRegVars, notEnreg);
-#if !defined(TARGET_64BIT)
-    PRINT_STATS(m_longParamField, notEnreg);
-#endif // !TARGET_64BIT
+    if (!TargetArchitecture::Is64Bit)
+    {
+        PRINT_STATS(m_longParamField, notEnreg);
+    }
     PRINT_STATS(m_PinningRef, notEnreg);
     PRINT_STATS(m_lclAddrNode, notEnreg);
     PRINT_STATS(m_castTakesAddr, notEnreg);

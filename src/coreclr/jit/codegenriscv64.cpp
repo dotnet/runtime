@@ -1338,7 +1338,7 @@ void CodeGen::genLclHeap(GenTree* tree)
     emitAttr             easz                     = emitTypeSize(type);
     BasicBlock*          endLabel                 = nullptr; // can optimize for riscv64.
     unsigned             stackAdjustment          = 0;
-    const target_ssize_t ILLEGAL_LAST_TOUCH_DELTA = (target_ssize_t)-1;
+    const target_ssize_t ILLEGAL_LAST_TOUCH_DELTA = TargetFromHost<target_ssize_t>(-1);
 
     // The number of bytes from SP to the last stack address probed.
     target_ssize_t lastTouchDelta = ILLEGAL_LAST_TOUCH_DELTA;
@@ -3597,7 +3597,7 @@ void CodeGen::genStackPointerConstantAdjustment(ssize_t spDelta, regNumber regTm
 
     // We assert that the SP change is less than one page. If it's greater, you should have called a
     // function that does a probe, which will in turn call this function.
-    assert((target_size_t)(-spDelta) <= m_compiler->eeGetPageSize());
+    assert(TargetFromHost<target_size_t>((-spDelta)) <= m_compiler->eeGetPageSize());
 
     if (emitter::isValidSimm12(spDelta))
     {
@@ -3650,14 +3650,14 @@ target_ssize_t CodeGen::genStackPointerConstantAdjustmentLoopWithProbe(ssize_t s
     ssize_t spRemainingDelta = spDelta;
     do
     {
-        ssize_t spOneDelta = -(ssize_t)min((target_size_t)-spRemainingDelta, pageSize);
+        ssize_t spOneDelta = -(ssize_t)min(TargetFromHost<target_size_t>(-spRemainingDelta), pageSize);
         genStackPointerConstantAdjustmentWithProbe(spOneDelta, regTmp);
         spRemainingDelta -= spOneDelta;
     } while (spRemainingDelta < 0);
 
     // What offset from the final SP was the last probe? This depends on the fact that
     // genStackPointerConstantAdjustmentWithProbe() probes first, then does "SUB SP".
-    target_size_t lastTouchDelta = (target_size_t)(-spDelta) % pageSize;
+    target_size_t lastTouchDelta = TargetFromHost<target_size_t>((-spDelta)) % pageSize;
     if ((lastTouchDelta == 0) || (lastTouchDelta + STACK_PROBE_BOUNDARY_THRESHOLD_BYTES > pageSize))
     {
         // We haven't probed almost a complete page. If lastTouchDelta==0, then spDelta was an exact

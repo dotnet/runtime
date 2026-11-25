@@ -207,12 +207,13 @@ GenTree* Compiler::fgMorphIntoHelperCall(GenTree* tree, int helper, bool morphAr
     call->ResetReturnType();
     call->ClearOtherRegs();
     call->ClearOtherRegFlags();
-#ifndef TARGET_64BIT
-    if (varTypeIsLong(tree))
+    if (!TargetArchitecture::Is64Bit)
     {
-        call->InitializeLongReturnType();
+        if (varTypeIsLong(tree))
+        {
+            call->InitializeLongReturnType();
+        }
     }
-#endif // !TARGET_64BIT
 #endif // FEATURE_MULTIREG_RET
 
     if (call->OperMayThrow(this))
@@ -464,8 +465,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
         return fgMorphTree(oper);
     }
 
-#ifndef TARGET_64BIT
-    else if (varTypeIsLong(srcType))
+    else if (!TargetArchitecture::Is64Bit && varTypeIsLong(srcType))
     {
         // The code generation phase (for x86 & ARM32) does not handle casts
         // directly from [u]long to anything other than [u]int. Insert an
@@ -495,8 +495,6 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
             return fgMorphCastIntoHelper(tree, helper, oper);
         }
     }
-#endif // !TARGET_64BIT
-
 #ifdef TARGET_AMD64
     // Do we have to do two step U4 -> R4/8 ?
     // If we don't have the EVEX unsigned conversion instructions available,
@@ -2644,13 +2642,13 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
                 {
                     unsigned       retBufferSize  = typGetObjLayout(call->gtRetClsHnd)->GetSize();
                     target_ssize_t retBufferStart = retBuffer->GetLclOffs();
-                    target_ssize_t retBufferEnd   = retBufferStart + static_cast<target_ssize_t>(retBufferSize);
+                    target_ssize_t retBufferEnd   = retBufferStart + TargetFromHost<target_ssize_t>(retBufferSize);
 
                     unsigned       argSize        = arg->GetSignatureType() == TYP_STRUCT
                                                         ? typGetObjLayout(arg->GetSignatureClassHandle())->GetSize()
                                                         : genTypeSize(arg->GetSignatureType());
                     target_ssize_t implByrefStart = implicitByRefLclOffs;
-                    target_ssize_t implByrefEnd   = implByrefStart + static_cast<target_ssize_t>(argSize);
+                    target_ssize_t implByrefEnd   = implByrefStart + TargetFromHost<target_ssize_t>(argSize);
 
                     bool disjoint = (retBufferEnd <= implByrefStart) || (implByrefEnd <= retBufferStart);
                     omitCopy      = disjoint;
@@ -3071,15 +3069,16 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
         // Next introduce a GT_BOUNDS_CHECK node
         var_types bndsChkType = TYP_INT; // By default, try to use 32-bit comparison for array bounds check.
 
-#ifdef TARGET_64BIT
-        // The CLI Spec allows an array to be indexed by either an int32 or a native int.  In the case
-        // of a 64 bit architecture this means the array index can potentially be a TYP_LONG, so for this case,
-        // the comparison will have to be widened to 64 bits.
-        if (index->TypeIs(TYP_I_IMPL))
+        if (TargetArchitecture::Is64Bit)
         {
-            bndsChkType = TYP_I_IMPL;
+            // The CLI Spec allows an array to be indexed by either an int32 or a native int.  In the case
+            // of a 64 bit architecture this means the array index can potentially be a TYP_LONG, so for this case,
+            // the comparison will have to be widened to 64 bits.
+            if (index->TypeIs(TYP_I_IMPL))
+            {
+                bndsChkType = TYP_I_IMPL;
+            }
         }
-#endif // TARGET_64BIT
 
         GenTree* arrLen = gtNewArrLen(TYP_INT, arrRef, (int)indexAddr->gtLenOffset);
 
@@ -3100,20 +3099,21 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
     // Create the "addr" which is "*(arrRef + ((index * elemSize) + elemOffs))"
     GenTree* addr;
 
-#ifdef TARGET_64BIT
-    // Widen 'index' on 64-bit targets
-    if (!index->TypeIs(TYP_I_IMPL))
+    if (TargetArchitecture::Is64Bit)
     {
-        if (index->OperIs(GT_CNS_INT))
+        // Widen 'index' on 64-bit targets
+        if (!index->TypeIs(TYP_I_IMPL))
         {
-            index->gtType = TYP_I_IMPL;
-        }
-        else
-        {
-            index = gtNewCastNode(TYP_I_IMPL, index, true, TYP_I_IMPL);
+            if (index->OperIs(GT_CNS_INT))
+            {
+                index->gtType = TYP_I_IMPL;
+            }
+            else
+            {
+                index = gtNewCastNode(TYP_I_IMPL, index, true, TYP_I_IMPL);
+            }
         }
     }
-#endif // TARGET_64BIT
 
     // Scale the index value if necessary.
     if (!elemSize.IsExact() || (elemSize.GetExact() > 1))
@@ -3543,13 +3543,16 @@ GenTree* Compiler::fgMorphExpandLocal(GenTreeLclVarCommon* lclNode)
         if (varDsc->lvNormalizeOnStore())
         {
             GenTree* value = lclNode->Data();
-#ifdef TARGET_64BIT
-            noway_assert(genActualTypeIsInt(value));
-#else
-            // On 32-bit targets, a TYP_BYREF can flow into a normalizing store into a small int local.
-            // i.e., in IL we could have ldloca V_N; stloc <small_type_lcl> with no explicit conversion.
-            noway_assert(genActualTypeIsInt(value) || value->TypeIs(TYP_BYREF));
-#endif
+            if (TargetArchitecture::Is64Bit)
+            {
+                noway_assert(genActualTypeIsInt(value));
+            }
+            else
+            {
+                // On 32-bit targets, a TYP_BYREF can flow into a normalizing store into a small int local.
+                // i.e., in IL we could have ldloca V_N; stloc <small_type_lcl> with no explicit conversion.
+                noway_assert(genActualTypeIsInt(value) || value->TypeIs(TYP_BYREF));
+            }
 
             lclNode->gtType = TYP_INT;
 
@@ -3632,8 +3635,8 @@ unsigned Compiler::fgGetFieldMorphingTemp(GenTreeFieldAddr* fieldNode)
 //
 void Compiler::fgMarkAddrModeForFieldAddr(GenTreeIndir* indir)
 {
-    GenTree*                   addr = indir->Addr();
-    ClrSafeInt<target_ssize_t> total((target_ssize_t)0);
+    GenTree*            addr = indir->Addr();
+    ClrSafeInt<int64_t> total(0);
 
     // For stores with a side-effecting value operand, we must not elide an explicit null check
     // and let it sink to the consuming indirection: morphing of the value happens before the
@@ -3651,8 +3654,8 @@ void Compiler::fgMarkAddrModeForFieldAddr(GenTreeIndir* indir)
                 break;
             }
 
-            total += ClrSafeInt<target_ssize_t>((target_ssize_t)offset->AsIntCon()->IconValue());
-            if (total.IsOverflow())
+            total += ClrSafeInt<int64_t>(offset->AsIntCon()->IconValue());
+            if (total.IsOverflow() || (!TargetArchitecture::Is64Bit && !FitsIn<int32_t>(total.Value())))
             {
                 return;
             }
@@ -3666,8 +3669,8 @@ void Compiler::fgMarkAddrModeForFieldAddr(GenTreeIndir* indir)
         }
 
         GenTreeFieldAddr* fld = addr->AsFieldAddr();
-        total += ClrSafeInt<target_ssize_t>(fld->gtFldOffset);
-        if (total.IsOverflow())
+        total += ClrSafeInt<int64_t>(fld->gtFldOffset);
+        if (total.IsOverflow() || (!TargetArchitecture::Is64Bit && !FitsIn<int32_t>(total.Value())))
         {
             return;
         }
@@ -3675,9 +3678,9 @@ void Compiler::fgMarkAddrModeForFieldAddr(GenTreeIndir* indir)
         GenTree* objRef = fld->GetFldObj();
         if (fgAddrCouldBeNull(objRef))
         {
-            target_ssize_t accessOffset = total.Value();
-            bool const     elidable     = (accessOffset >= 0) && !fgIsBigOffset((size_t)accessOffset);
-            bool const     baseNonNull  = optLocalAssertionProp && optAssertionIsNonNull(objRef, apLocal);
+            int64_t    accessOffset = total.Value();
+            bool const elidable     = (accessOffset >= 0) && !fgIsBigOffset((size_t)accessOffset);
+            bool const baseNonNull  = optLocalAssertionProp && optAssertionIsNonNull(objRef, apLocal);
 
             if (!elidable || (storeWithSideEffectfulValue && !baseNonNull))
             {
@@ -7093,8 +7096,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, bool* optAssertionPropDone)
         case GT_MUL:
             noway_assert(op2 != nullptr);
 
-#if !defined(TARGET_64BIT) && !defined(TARGET_WASM)
-            if (typ == TYP_LONG)
+            if (!TargetArchitecture::Is64Bit && !TargetArchitecture::IsWasm && (typ == TYP_LONG))
             {
                 // For (long)int1 * (long)int2, we dont actually do the
                 // casts, and just multiply the 32 bit values, which will
@@ -7128,7 +7130,6 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, bool* optAssertionPropDone)
                     goto USE_HELPER_FOR_ARITH;
                 }
             }
-#endif // !defined(TARGET_64BIT) && !defined(TARGET_WASM)
 
 #if defined(TARGET_WASM)
             if (tree->gtOverflow())
@@ -7203,8 +7204,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, bool* optAssertionPropDone)
                 return fgMorphSmpOp(tree);
             }
 
-#if !defined(TARGET_64BIT) && !defined(TARGET_WASM)
-            if (typ == TYP_LONG)
+            if (!TargetArchitecture::Is64Bit && !TargetArchitecture::IsWasm && (typ == TYP_LONG))
             {
                 helper = CORINFO_HELP_LDIV;
                 goto USE_HELPER_FOR_ARITH;
@@ -7217,13 +7217,11 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, bool* optAssertionPropDone)
                 goto USE_HELPER_FOR_ARITH;
             }
 #endif
-#endif // !defined(TARGET_64BIT) && !defined(TARGET_WASM)
             break;
 
         case GT_UDIV:
 
-#if !defined(TARGET_64BIT) && !defined(TARGET_WASM)
-            if (typ == TYP_LONG)
+            if (!TargetArchitecture::Is64Bit && !TargetArchitecture::IsWasm && (typ == TYP_LONG))
             {
                 helper = CORINFO_HELP_ULDIV;
                 goto USE_HELPER_FOR_ARITH;
@@ -7235,7 +7233,6 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, bool* optAssertionPropDone)
                 goto USE_HELPER_FOR_ARITH;
             }
 #endif
-#endif // !defined(TARGET_64BIT) && !defined(TARGET_WASM)
             break;
 
         case GT_MOD:
@@ -7342,8 +7339,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, bool* optAssertionPropDone)
                 }
             }
 
-#if !defined(TARGET_64BIT) && !defined(TARGET_WASM)
-            if (typ == TYP_LONG)
+            if (!TargetArchitecture::Is64Bit && !TargetArchitecture::IsWasm && (typ == TYP_LONG))
             {
                 helper = (oper == GT_UMOD) ? CORINFO_HELP_ULMOD : CORINFO_HELP_LMOD;
                 goto USE_HELPER_FOR_ARITH;
@@ -7365,7 +7361,6 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, bool* optAssertionPropDone)
                 }
             }
 #endif // TARGET_ARM
-#endif // !defined(TARGET_64BIT) && !defined(TARGET_WASM)
 
             if (tree->OperIs(GT_UMOD) && op2->IsIntegralConstUnsignedPow2())
             {
@@ -7654,9 +7649,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, bool* optAssertionPropDone)
         }
     }
 
-#if !defined(TARGET_64BIT) && !defined(TARGET_WASM)
 DONE_MORPHING_CHILDREN:
-#endif // !defined(TARGET_64BIT) && !defined(TARGET_WASM)
 
     gtUpdateNodeOperSideEffects(tree);
 
@@ -7841,14 +7834,12 @@ DONE_MORPHING_CHILDREN:
 
         case GT_MUL:
 
-#if !defined(TARGET_64BIT) && !defined(TARGET_WASM)
-            if (typ == TYP_LONG)
+            if (!TargetArchitecture::Is64Bit && !TargetArchitecture::IsWasm && (typ == TYP_LONG))
             {
                 // This must be GTF_MUL_64RSLT
                 INDEBUG(tree->AsOp()->DebugCheckLongMul());
                 return tree;
             }
-#endif // !defined(TARGET_64BIT) && !defined(TARGET_WASM)
             goto CM_OVF_OP;
 
         case GT_SUB:
@@ -11205,13 +11196,7 @@ GenTree* Compiler::fgMorphRetInd(GenTreeOp* ret)
         // int<-SIMD16` etc. Note this will also require the offset of the field to be zero.
         assert(indSize <= lclVarSize);
 
-#if defined(TARGET_64BIT)
-        bool canFold = (indSize == lclVarSize);
-#else // !TARGET_64BIT
-      // TODO: improve 32 bit targets handling for LONG returns if necessary, nowadays we do not support `BITCAST
-      // long<->double` there.
-        bool canFold = (indSize == lclVarSize) && (lclVarSize <= REGSIZE_BYTES);
-#endif
+        bool canFold = (indSize == lclVarSize) && (TargetArchitecture::Is64Bit || (lclVarSize <= REGSIZE_BYTES));
 
         if (canFold)
         {
@@ -12484,15 +12469,16 @@ GenTree* Compiler::fgRecognizeAndMorphBitwiseRotation(GenTree* tree)
                             // where N == bitsize(x), M is const, and
                             // M & (N - 1) == N - 1
 
-#ifndef TARGET_64BIT
-                            if (!shiftIndexWithoutAdd->IsCnsIntOrI() && (rotatedValueBitSize == 64))
+                            if (!TargetArchitecture::Is64Bit)
                             {
-                                // TODO-X86-CQ: we need to handle variable-sized long shifts specially on x86.
-                                // GT_LSH, GT_RSH, and GT_RSZ have helpers for this case. We may need
-                                // to add helpers for GT_ROL and GT_ROR.
-                                return nullptr;
+                                if (!shiftIndexWithoutAdd->IsCnsIntOrI() && (rotatedValueBitSize == 64))
+                                {
+                                    // TODO-X86-CQ: we need to handle variable-sized long shifts specially on x86.
+                                    // GT_LSH, GT_RSH, and GT_RSZ have helpers for this case. We may need
+                                    // to add helpers for GT_ROL and GT_ROR.
+                                    return nullptr;
+                                }
                             }
-#endif
 
                             rotateIndex = shiftIndexWithoutAdd;
                         }
@@ -12568,7 +12554,6 @@ GenTree* Compiler::fgRecognizeAndMorphBitwiseRotation(GenTree* tree)
     return nullptr;
 }
 
-#if !defined(TARGET_64BIT)
 //------------------------------------------------------------------------------
 // fgRecognizeAndMorphLongMul : Check for and morph long multiplication with 32 bit operands.
 //
@@ -12653,7 +12638,6 @@ GenTreeOp* Compiler::fgMorphLongMul(GenTreeOp* mul)
 
     return mul;
 }
-#endif // !defined(TARGET_64BIT)
 
 /*****************************************************************************
  *
@@ -14666,22 +14650,22 @@ GenTree* Compiler::fgInitThisClass()
                 vtTree             = gtNewMethodTableLookup(vtTree);
                 GenTree* methodHnd = gtNewIconEmbMethHndNode(info.compMethodHnd);
 
-                return gtNewHelperCallNode(CORINFO_HELP_INITINSTCLASS, HelperInitClassRetType, vtTree, methodHnd);
+                return gtNewHelperCallNode(CORINFO_HELP_INITINSTCLASS, HelperInitClassReturnType(), vtTree, methodHnd);
             }
 
             case CORINFO_LOOKUP_CLASSPARAM:
             {
                 GenTree* vtTree = gtNewLclvNode(info.compTypeCtxtArg, TYP_I_IMPL);
                 vtTree->gtFlags |= GTF_VAR_CONTEXT;
-                return gtNewHelperCallNode(CORINFO_HELP_INITCLASS, HelperInitClassRetType, vtTree);
+                return gtNewHelperCallNode(CORINFO_HELP_INITCLASS, HelperInitClassReturnType(), vtTree);
             }
 
             case CORINFO_LOOKUP_METHODPARAM:
             {
                 GenTree* methHndTree = gtNewLclvNode(info.compTypeCtxtArg, TYP_I_IMPL);
                 methHndTree->gtFlags |= GTF_VAR_CONTEXT;
-                return gtNewHelperCallNode(CORINFO_HELP_INITINSTCLASS, HelperInitClassRetType, gtNewIconNode(0),
-                                           methHndTree);
+                return gtNewHelperCallNode(CORINFO_HELP_INITINSTCLASS, HelperInitClassReturnType(),
+                                           gtNewIconNode(0, TYP_I_IMPL), methHndTree);
             }
 
             default:
@@ -15744,14 +15728,12 @@ GenTree* Compiler::fgMorphReduceAddOps(GenTree* tree)
         return tree;
     }
 
-#if !defined(TARGET_64BIT) && !defined(TARGET_WASM)
     // Transforming 64-bit ADD to 64-bit MUL on 32-bit system results in replacing
     // ADD ops with a helper function call. Don't apply optimization in that case.
-    if (tree->TypeIs(TYP_LONG))
+    if (!TargetArchitecture::Is64Bit && !TargetArchitecture::IsWasm && tree->TypeIs(TYP_LONG))
     {
         return tree;
     }
-#endif // !defined(TARGET_64BIT) && !defined(TARGET_WASM)
 
     GenTree* lclVarTree = tree->AsOp()->gtOp2;
     GenTree* consTree   = tree->AsOp()->gtOp1;
@@ -16024,11 +16006,12 @@ bool Compiler::fgMorphArrayOpsStmt(MorphMDArrayTempCache* pTempCache, BasicBlock
                 }
             }
 
-#ifdef TARGET_64BIT
-            // Widen the linearized index on 64-bit targets; subsequent math will be done in TYP_I_IMPL.
-            assert(fullTree->TypeIs(TYP_INT));
-            fullTree = m_compiler->gtNewCastNode(TYP_I_IMPL, fullTree, true, TYP_I_IMPL);
-#endif // TARGET_64BIT
+            if (TargetArchitecture::Is64Bit)
+            {
+                // Widen the linearized index on 64-bit targets; subsequent math will be done in TYP_I_IMPL.
+                assert(fullTree->TypeIs(TYP_INT));
+                fullTree = m_compiler->gtNewCastNode(TYP_I_IMPL, fullTree, true, TYP_I_IMPL);
+            }
 
             // Now scale by element size and add offset from array object to array data base.
 

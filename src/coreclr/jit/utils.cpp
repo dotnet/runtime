@@ -81,11 +81,28 @@ const signed char       opcodeSizes[] =
 };
 // clang-format on
 
+#ifdef TARGET_WASM
+#define TYPE_POINTER_SIZE 4
+const BYTE varTypeClassification32[] = {
+#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) tf,
+#include "typelist.h"
+#undef DEF_TP
+};
+#undef TYPE_POINTER_SIZE
+#define TYPE_POINTER_SIZE 8
+const BYTE varTypeClassification64[] = {
+#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) tf,
+#include "typelist.h"
+#undef DEF_TP
+};
+#undef TYPE_POINTER_SIZE
+#else
 const BYTE varTypeClassification[] = {
 #define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) tf,
 #include "typelist.h"
 #undef DEF_TP
 };
+#endif
 
 const BYTE varTypeRegister[] = {
 #define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) regTyp,
@@ -3577,14 +3594,12 @@ uint32_t GetUnsigned32Magic(
     return GetUnsignedMagic<uint32_t>(d, increment, preShift, postShift, bits);
 }
 
-#ifdef TARGET_64BIT
 uint64_t GetUnsigned64Magic(
     uint64_t d, bool* increment /*out*/, int* preShift /*out*/, int* postShift /*out*/, unsigned bits)
 {
     assert(bits <= 64);
     return GetUnsignedMagic<uint64_t>(d, increment, preShift, postShift, bits);
 }
-#endif
 
 template <typename T>
 struct SignedMagic
@@ -3733,12 +3748,10 @@ int32_t GetSigned32Magic(int32_t d, int* shift /*out*/)
     return GetSignedMagic<int32_t>(d, shift);
 }
 
-#ifdef TARGET_64BIT
 int64_t GetSigned64Magic(int64_t d, int* shift /*out*/)
 {
     return GetSignedMagic<int64_t>(d, shift);
 }
-#endif
 } // namespace MagicDivide
 
 namespace CheckedOps

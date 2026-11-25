@@ -1654,15 +1654,16 @@ var_types Compiler::StructPromotionHelper::TryPromoteValueClassAsPrimitive(CORIN
         }
 #endif
 
-#ifdef TARGET_64BIT
-        // TODO-Quirk: Vector64 is a SIMD type with one 64-bit field, so when
-        // m_compiler->usesSIMDTypes() == false, it used to be promoted as a long
-        // field.
-        if (m_compiler->isRuntimeIntrinsicsNamespace(namespaceName) && (strcmp(className, "Vector64`1") == 0))
+        if (TargetArchitecture::Is64Bit)
         {
-            return TYP_LONG;
+            // TODO-Quirk: Vector64 is a SIMD type with one 64-bit field, so when
+            // m_compiler->usesSIMDTypes() == false, it used to be promoted as a long
+            // field.
+            if (m_compiler->isRuntimeIntrinsicsNamespace(namespaceName) && (strcmp(className, "Vector64`1") == 0))
+            {
+                return TYP_LONG;
+            }
         }
-#endif
     }
 
     // Check for a single primitive wrapper.
@@ -2400,11 +2401,9 @@ void Compiler::lvaSetVarDoNotEnregister(unsigned varNum DEBUGARG(DoNotEnregister
             JITDUMP("opts.compFlags & CLFLG_REGVAR is not set\n");
             assert(!compEnregLocals());
             break;
-#if !defined(TARGET_64BIT)
         case DoNotEnregisterReason::LongParamField:
             JITDUMP("it is a decomposed field of a long parameter\n");
             break;
-#endif
         case DoNotEnregisterReason::PinningRef:
             JITDUMP("pinning ref\n");
             assert(varDsc->lvPinned);
@@ -2600,23 +2599,24 @@ void Compiler::lvaSetStruct(unsigned varNum, ClassLayout* layout, bool unsafeVal
 
     if (!layout->IsCustomLayout())
     {
-#ifndef TARGET_64BIT
-        bool fDoubleAlignHint = false;
+        if (!TargetArchitecture::Is64Bit)
+        {
+            bool fDoubleAlignHint = false;
 #ifdef TARGET_X86
-        fDoubleAlignHint = true;
+            fDoubleAlignHint = true;
 #endif
 
-        if (info.compCompHnd->getClassAlignmentRequirement(layout->GetClassHandle(), fDoubleAlignHint) == 8)
-        {
-#ifdef DEBUG
-            if (verbose)
+            if (info.compCompHnd->getClassAlignmentRequirement(layout->GetClassHandle(), fDoubleAlignHint) == 8)
             {
-                printf("Marking struct in V%02i with double align flag\n", varNum);
-            }
+#ifdef DEBUG
+                if (verbose)
+                {
+                    printf("Marking struct in V%02i with double align flag\n", varNum);
+                }
 #endif
-            varDsc->lvStructDoubleAlign = 1;
+                varDsc->lvStructDoubleAlign = 1;
+            }
         }
-#endif // not TARGET_64BIT
 
         varDsc->SetIsSpan(this->isSpanClass(layout->GetClassHandle()));
 
@@ -2937,14 +2937,15 @@ unsigned Compiler::lvaLclStackHomeSize(unsigned varNum)
 
     if (!varTypeIsStruct(varType))
     {
-#ifdef TARGET_64BIT
-        // We only need this Quirk for TARGET_64BIT
-        if (varDsc->lvQuirkToLong)
+        if (TargetArchitecture::Is64Bit)
         {
-            noway_assert(varDsc->IsAddressExposed());
-            return genTypeStSz(TYP_LONG) * sizeof(int); // return 8  (2 * 4)
+            // We only need this Quirk for TARGET_64BIT
+            if (varDsc->lvQuirkToLong)
+            {
+                noway_assert(varDsc->IsAddressExposed());
+                return genTypeStSz(TYP_LONG) * sizeof(int); // return 8  (2 * 4)
+            }
         }
-#endif
 
         return genTypeStSz(varType) * sizeof(int);
     }
@@ -2987,16 +2988,16 @@ unsigned Compiler::lvaLclStackHomeSize(unsigned varNum)
         return roundUp(varDsc->lvExactSize(), TARGET_POINTER_SIZE);
     }
 
-#if defined(FEATURE_SIMD) && !defined(TARGET_64BIT)
+#ifdef FEATURE_SIMD
     // For 32-bit architectures, we make local variable SIMD12 types 16 bytes instead of just 12. We can't do
     // this for arguments, which must be passed according the defined ABI. We don't want to do this for
     // dependently promoted struct fields, but we don't know that here. See lvaMapSimd12ToSimd16().
     // (Note that for 64-bits, we are already rounding up to 16.)
-    if (varDsc->TypeIs(TYP_SIMD12))
+    if (!TargetArchitecture::Is64Bit && varDsc->TypeIs(TYP_SIMD12))
     {
         return 16;
     }
-#endif // defined(FEATURE_SIMD) && !defined(TARGET_64BIT)
+#endif // FEATURE_SIMD
 
     return roundUp(varDsc->lvExactSize(), TARGET_POINTER_SIZE);
 }
@@ -5500,10 +5501,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 #ifdef TARGET_ARM
                                     || varDsc->lvType == TYP_LONG // Align longs for ARM
 #endif
-#ifndef TARGET_64BIT
-                                    || varDsc->lvStructDoubleAlign // Align when lvStructDoubleAlign is true
-#endif                                                             // !TARGET_64BIT
-                                    ))
+                                    || (!TargetArchitecture::Is64Bit && varDsc->lvStructDoubleAlign)))
             {
                 noway_assert((compLclFrameSize % TARGET_POINTER_SIZE) == 0);
 
@@ -5837,81 +5835,82 @@ int Compiler::lvaAllocLocalAndSetVirtualOffset(unsigned lclNum, unsigned size, i
     noway_assert(lclNum != BAD_VAR_NUM);
 
     LclVarDsc* lcl = lvaGetDesc(lclNum);
-#if defined(TARGET_64BIT) || defined(TARGET_WASM)
-    // Align >=8 byte locals to 8 bytes.
-    //
-    // Before final frame layout, assume the worst case, that every >=8 byte local will need
-    // maximum padding to be aligned. This is because we generate code based on the stack offset
-    // computed during tentative frame layout. These offsets cannot get bigger during final
-    // frame layout, as that would possibly require different code generation (for example,
-    // using a 4-byte offset instead of a 1-byte offset in an instruction). The offsets can get
-    // smaller. It is possible there is different alignment at the point locals are allocated
-    // between tentative and final frame layout which would introduce padding between locals
-    // and thus increase the offset (from the stack pointer) of one of the locals. Hence the
-    // need to assume the worst alignment before final frame layout.
-    // We could probably improve this by sorting all the objects by alignment,
-    // such that all 8 byte objects are together, 4 byte objects are together, etc., which
-    // would require at most one alignment padding per group.
-    //
-    // TYP_SIMD structs locals have alignment preference given by getSIMDTypeAlignment() for
-    // better performance.
-    if ((size >= 8) && ((lvaDoneFrameLayout != FINAL_FRAME_LAYOUT) || ((stkOffs % 8) != 0)
-#if defined(FEATURE_SIMD) && ALIGN_SIMD_TYPES
-                        || varTypeIsSIMD(lcl)
-#endif
-                            ))
+    if (TargetArchitecture::Is64Bit || TargetArchitecture::IsWasm)
     {
-        // Note that stack offsets are negative or equal to zero
-        assert(stkOffs <= 0);
-
-        // alignment padding
-        unsigned pad = 0;
+        // Align >=8 byte locals to 8 bytes.
+        //
+        // Before final frame layout, assume the worst case, that every >=8 byte local will need
+        // maximum padding to be aligned. This is because we generate code based on the stack offset
+        // computed during tentative frame layout. These offsets cannot get bigger during final
+        // frame layout, as that would possibly require different code generation (for example,
+        // using a 4-byte offset instead of a 1-byte offset in an instruction). The offsets can get
+        // smaller. It is possible there is different alignment at the point locals are allocated
+        // between tentative and final frame layout which would introduce padding between locals
+        // and thus increase the offset (from the stack pointer) of one of the locals. Hence the
+        // need to assume the worst alignment before final frame layout.
+        // We could probably improve this by sorting all the objects by alignment,
+        // such that all 8 byte objects are together, 4 byte objects are together, etc., which
+        // would require at most one alignment padding per group.
+        //
+        // TYP_SIMD structs locals have alignment preference given by getSIMDTypeAlignment() for
+        // better performance.
+        if ((size >= 8) && ((lvaDoneFrameLayout != FINAL_FRAME_LAYOUT) || ((stkOffs % 8) != 0)
 #if defined(FEATURE_SIMD) && ALIGN_SIMD_TYPES
-        if (varTypeIsSIMD(lcl))
+                            || varTypeIsSIMD(lcl)
+#endif
+                                ))
         {
-            int alignment = getSIMDTypeAlignment(lcl->TypeGet());
+            // Note that stack offsets are negative or equal to zero
+            assert(stkOffs <= 0);
 
-            if (stkOffs % alignment != 0)
+            // alignment padding
+            unsigned pad = 0;
+#if defined(FEATURE_SIMD) && ALIGN_SIMD_TYPES
+            if (varTypeIsSIMD(lcl))
+            {
+                int alignment = getSIMDTypeAlignment(lcl->TypeGet());
+
+                if (stkOffs % alignment != 0)
+                {
+                    if (lvaDoneFrameLayout != FINAL_FRAME_LAYOUT)
+                    {
+                        pad = alignment - 1;
+                        // Note that all the objects will probably be misaligned, but we'll fix that in final layout.
+                    }
+                    else
+                    {
+                        pad = alignment + (stkOffs % alignment); // +1 to +(alignment-1) bytes
+                    }
+                }
+            }
+            else
+#endif // FEATURE_SIMD && ALIGN_SIMD_TYPES
             {
                 if (lvaDoneFrameLayout != FINAL_FRAME_LAYOUT)
                 {
-                    pad = alignment - 1;
+                    pad = 7;
                     // Note that all the objects will probably be misaligned, but we'll fix that in final layout.
                 }
                 else
                 {
-                    pad = alignment + (stkOffs % alignment); // +1 to +(alignment-1) bytes
+                    pad = 8 + (stkOffs % 8); // +1 to +7 bytes
                 }
             }
-        }
-        else
-#endif // FEATURE_SIMD && ALIGN_SIMD_TYPES
-        {
-            if (lvaDoneFrameLayout != FINAL_FRAME_LAYOUT)
-            {
-                pad = 7;
-                // Note that all the objects will probably be misaligned, but we'll fix that in final layout.
-            }
-            else
-            {
-                pad = 8 + (stkOffs % 8); // +1 to +7 bytes
-            }
-        }
-        // Will the pad ever be anything except 4? Do we put smaller-than-4-sized objects on the stack?
-        lvaIncrementFrameSize(pad);
-        stkOffs -= pad;
+            // Will the pad ever be anything except 4? Do we put smaller-than-4-sized objects on the stack?
+            lvaIncrementFrameSize(pad);
+            stkOffs -= pad;
 
 #ifdef DEBUG
-        if (verbose)
-        {
-            printf("Pad ");
-            gtDispLclVar(lclNum, /*pad*/ false);
-            printf(", size=%d, stkOffs=%c0x%x, pad=%d\n", size, stkOffs < 0 ? '-' : '+',
-                   stkOffs < 0 ? -stkOffs : stkOffs, pad);
-        }
+            if (verbose)
+            {
+                printf("Pad ");
+                gtDispLclVar(lclNum, /*pad*/ false);
+                printf(", size=%d, stkOffs=%c0x%x, pad=%d\n", size, stkOffs < 0 ? '-' : '+',
+                       stkOffs < 0 ? -stkOffs : stkOffs, pad);
+            }
 #endif
+        }
     }
-#endif // TARGET_64BIT || TARGET_WASM
 
     /* Reserve space on the stack by bumping the frame size */
 
@@ -6266,23 +6265,24 @@ int Compiler::lvaAllocateTemps(int stkOffs, bool mustDoubleAlign)
 
             /* Need to align the offset? */
 
-#ifdef TARGET_64BIT
-            if (varTypeIsGC(tempType) && ((stkOffs % TARGET_POINTER_SIZE) != 0))
+            if (TargetArchitecture::Is64Bit)
             {
-                // Calculate 'pad' as the number of bytes to align up 'stkOffs' to be a multiple of TARGET_POINTER_SIZE
-                // In practice this is really just a fancy way of writing 4. (as all stack locations are at least 4-byte
-                // aligned). Note stkOffs is always negative, so (stkOffs % TARGET_POINTER_SIZE) yields a negative
-                // value.
-                //
-                int alignPad = (int)AlignmentPad((unsigned)-stkOffs, TARGET_POINTER_SIZE);
+                if (varTypeIsGC(tempType) && ((stkOffs % TARGET_POINTER_SIZE) != 0))
+                {
+                    // Calculate 'pad' as the number of bytes to align up 'stkOffs' to be a multiple of
+                    // TARGET_POINTER_SIZE In practice this is really just a fancy way of writing 4. (as all stack
+                    // locations are at least 4-byte aligned). Note stkOffs is always negative, so (stkOffs %
+                    // TARGET_POINTER_SIZE) yields a negative value.
+                    //
+                    int alignPad = (int)AlignmentPad((unsigned)-stkOffs, TARGET_POINTER_SIZE);
 
-                spillTempSize += alignPad;
-                lvaIncrementFrameSize(alignPad);
-                stkOffs -= alignPad;
+                    spillTempSize += alignPad;
+                    lvaIncrementFrameSize(alignPad);
+                    stkOffs -= alignPad;
 
-                noway_assert((stkOffs % TARGET_POINTER_SIZE) == 0);
+                    noway_assert((stkOffs % TARGET_POINTER_SIZE) == 0);
+                }
             }
-#endif
 
             if (mustDoubleAlign && (tempType == TYP_DOUBLE)) // Align doubles for x86 and ARM
             {
@@ -6630,10 +6630,11 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
         printf(" multi-def");
     }
 
-#ifndef TARGET_64BIT
-    if (varDsc->lvStructDoubleAlign)
-        printf(" double-align");
-#endif // !TARGET_64BIT
+    if (!TargetArchitecture::Is64Bit)
+    {
+        if (varDsc->lvStructDoubleAlign)
+            printf(" double-align");
+    }
 
     if (compGSReorderStackLayout && !varDsc->lvRegister)
     {

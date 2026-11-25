@@ -1084,7 +1084,7 @@ inline bool emitter::IsCFCMOV(instruction ins)
 //
 /* static */ bool emitter::ImmCanUseSByteEncoding(instruction ins, ssize_t val)
 {
-    target_ssize_t targetVal = (target_ssize_t)val;
+    target_ssize_t targetVal = TargetFromHost<target_ssize_t>(val);
 
     if (targetVal != val)
     {
@@ -1166,7 +1166,7 @@ inline insCC emitter::GetCCFromCCMPOrCTEST(instruction ins)
     }
 }
 
-#ifdef TARGET_64BIT
+#ifdef TARGET_AMD64
 //------------------------------------------------------------------------
 // AreUpperBitsZero: check if some previously emitted
 //     instruction set the upper bits of reg to zero.
@@ -1315,7 +1315,7 @@ bool emitter::AreUpperBitsSignExtended(regNumber reg, emitAttr size)
 
     return result;
 }
-#endif // TARGET_64BIT
+#endif // TARGET_AMD64
 
 //------------------------------------------------------------------------
 // emitDoesInsModifyFlags: checks if the given instruction modifies flags
@@ -1469,7 +1469,7 @@ bool emitter::emitIsInstrWritingToReg(instrDesc* id, regNumber reg)
             break;
     }
 
-#ifdef TARGET_64BIT
+#ifdef TARGET_AMD64
     // This is a special case for cdq/cwde.
     switch (ins)
     {
@@ -1490,7 +1490,7 @@ bool emitter::emitIsInstrWritingToReg(instrDesc* id, regNumber reg)
         default:
             break;
     }
-#endif // TARGET_64BIT
+#endif // TARGET_AMD64
 
     if (id->idIsReg1Write() && (id->idReg1() == reg))
     {
@@ -7425,7 +7425,7 @@ void emitter::emitIns_I(instruction ins, emitAttr attr, cnsval_ssize_t val)
 {
     UNATIVE_OFFSET sz;
     instrDesc*     id;
-    bool           valInByte = ((signed char)val == (target_ssize_t)val);
+    bool           valInByte = ((signed char)val == TargetFromHost<target_ssize_t>(val));
 
 #ifdef TARGET_AMD64
     // mov reg, imm64 is the only opcode which takes a full 8 byte immediate
@@ -7886,7 +7886,7 @@ bool emitter::IsRedundantMov(
             return true;
         }
 
-#ifdef TARGET_64BIT
+#ifdef TARGET_AMD64
         switch (ins)
         {
             case INS_movzx:
@@ -7917,7 +7917,7 @@ bool emitter::IsRedundantMov(
             default:
                 break;
         }
-#endif // TARGET_64BIT
+#endif // TARGET_AMD64
     }
 
     // TODO-XArch-CQ: Certain instructions, such as movaps vs movups, are equivalent in
@@ -7970,7 +7970,7 @@ bool emitter::EmitMovsxAsCwde(instruction ins, emitAttr size, regNumber dst, reg
 {
     if ((src == REG_EAX) && (src == dst))
     {
-#ifdef TARGET_64BIT
+#ifdef TARGET_AMD64
         // "movsxd rax, eax".
         if ((ins == INS_movsxd) && (size == EA_4BYTE))
         {
@@ -14250,11 +14250,8 @@ BYTE* emitter::emitOutputAlign(insGroup* ig, instrDesc* id, BYTE* dst)
     return emitOutputNOP(dst, paddingToAdd);
 }
 
-#ifdef TARGET_64BIT
-static constexpr CorInfoReloc RELOC_DISP32 = CorInfoReloc::RELATIVE32;
-#else
-static constexpr CorInfoReloc RELOC_DISP32 = CorInfoReloc::DIRECT;
-#endif
+static constexpr CorInfoReloc RELOC_DISP32 =
+    TargetArchitecture::Is64Bit ? CorInfoReloc::RELATIVE32 : CorInfoReloc::DIRECT;
 
 /*****************************************************************************
  *
@@ -17542,7 +17539,7 @@ BYTE* emitter::emitOutputIV(BYTE* dst, instrDesc* id)
     instruction ins       = id->idIns();
     emitAttr    size      = id->idOpSize();
     ssize_t     val       = emitGetInsSC(id);
-    bool        valInByte = ((signed char)val == (target_ssize_t)val);
+    bool        valInByte = ((signed char)val == TargetFromHost<target_ssize_t>(val));
 
     // We would to update GC info correctly
     assert(!IsSSEInstruction(ins));

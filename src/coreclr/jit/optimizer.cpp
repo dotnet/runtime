@@ -3129,7 +3129,6 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
         {
             /* Constants can usually be narrowed by changing their value */
 
-#ifndef TARGET_64BIT
             int64_t lval;
             int64_t lmask;
 
@@ -3172,8 +3171,6 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
                 }
 
                 return true;
-#endif
-
             case GT_CNS_INT:
 
                 // Do not narrow relocatable handle constants.
@@ -3201,14 +3198,20 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
                     case TYP_USHORT:
                         imask = 0x0000FFFF;
                         break;
-#ifdef TARGET_64BIT
                     case TYP_INT:
+                        if (!TargetArchitecture::Is64Bit)
+                        {
+                            return false;
+                        }
                         imask = 0x7FFFFFFF;
                         break;
                     case TYP_UINT:
+                        if (!TargetArchitecture::Is64Bit)
+                        {
+                            return false;
+                        }
                         imask = 0xFFFFFFFF;
                         break;
-#endif // TARGET_64BIT
                     default:
                         return false;
                 }
@@ -3218,15 +3221,16 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
                     return false;
                 }
 
-#ifdef TARGET_64BIT
-                if (doit)
+                if (TargetArchitecture::Is64Bit)
                 {
-                    tree->gtType = TYP_INT;
-                    tree->AsIntCon()->SetIconValue((int)ival);
+                    if (doit)
+                    {
+                        tree->gtType = TYP_INT;
+                        tree->AsIntCon()->SetIconValue((int)ival);
 
-                    fgUpdateConstTreeValueNumber(tree);
+                        fgUpdateConstTreeValueNumber(tree);
+                    }
                 }
-#endif // TARGET_64BIT
 
                 return true;
 
@@ -3756,27 +3760,28 @@ bool Compiler::optHoistThisLoop(FlowGraphNaturalLoop* loop, LoopHoistContext* ho
     hoistCtxt->m_loopVarCount      = VarSetOps::Count(this, loopVars);
     hoistCtxt->m_hoistedExprCount  = 0;
 
-#ifndef TARGET_64BIT
-
-    if (!VarSetOps::IsEmpty(this, lvaLongVars))
+    if (!TargetArchitecture::Is64Bit)
     {
-        // Since 64-bit variables take up two registers on 32-bit targets, we increase
-        //  the Counts such that each TYP_LONG variable counts twice.
-        //
-        VARSET_TP loopLongVars(VarSetOps::Intersection(this, loopVars, lvaLongVars));
-        VARSET_TP inOutLongVars(VarSetOps::Intersection(this, sideEffs.VarInOut, lvaLongVars));
+
+        if (!VarSetOps::IsEmpty(this, lvaLongVars))
+        {
+            // Since 64-bit variables take up two registers on 32-bit targets, we increase
+            //  the Counts such that each TYP_LONG variable counts twice.
+            //
+            VARSET_TP loopLongVars(VarSetOps::Intersection(this, loopVars, lvaLongVars));
+            VARSET_TP inOutLongVars(VarSetOps::Intersection(this, sideEffs.VarInOut, lvaLongVars));
 
 #ifdef DEBUG
-        if (verbose)
-        {
-            printf("\n  LONGVARS(%d)=", VarSetOps::Count(this, lvaLongVars));
-            dumpConvertedVarSet(this, lvaLongVars);
-        }
+            if (verbose)
+            {
+                printf("\n  LONGVARS(%d)=", VarSetOps::Count(this, lvaLongVars));
+                dumpConvertedVarSet(this, lvaLongVars);
+            }
 #endif
-        hoistCtxt->m_loopVarCount += VarSetOps::Count(this, loopLongVars);
-        hoistCtxt->m_loopVarInOutCount += VarSetOps::Count(this, inOutLongVars);
+            hoistCtxt->m_loopVarCount += VarSetOps::Count(this, loopLongVars);
+            hoistCtxt->m_loopVarInOutCount += VarSetOps::Count(this, inOutLongVars);
+        }
     }
-#endif // !TARGET_64BIT
 
 #ifdef DEBUG
     if (verbose)
@@ -4008,13 +4013,14 @@ bool Compiler::optIsProfitableToHoistTree(GenTree*              tree,
         {
             availRegCount += CNT_CALLEE_TRASH - 1;
         }
-#ifndef TARGET_64BIT
-        // For our 32-bit targets Long types take two registers.
-        if (varTypeIsLong(tree->TypeGet()))
+        if (!TargetArchitecture::Is64Bit)
         {
-            availRegCount = (availRegCount + 1) / 2;
+            // For our 32-bit targets Long types take two registers.
+            if (varTypeIsLong(tree->TypeGet()))
+            {
+                availRegCount = (availRegCount + 1) / 2;
+            }
         }
-#endif
     }
 #ifdef FEATURE_MASKED_HW_INTRINSICS
     else if (varTypeUsesMaskReg(tree))
@@ -4933,13 +4939,14 @@ bool Compiler::optHoistCandidate(
     if (varTypeUsesIntReg(tree))
     {
         hoistCtxt->m_hoistedExprCount++;
-#ifndef TARGET_64BIT
-        // For our 32-bit targets Long types take two registers.
-        if (varTypeIsLong(tree->TypeGet()))
+        if (!TargetArchitecture::Is64Bit)
         {
-            hoistCtxt->m_hoistedExprCount++;
+            // For our 32-bit targets Long types take two registers.
+            if (varTypeIsLong(tree->TypeGet()))
+            {
+                hoistCtxt->m_hoistedExprCount++;
+            }
         }
-#endif
     }
 #ifdef FEATURE_MASKED_HW_INTRINSICS
     else if (varTypeUsesMaskReg(tree))
@@ -5173,9 +5180,10 @@ void Compiler::optComputeLoopSideEffects()
 void Compiler::optComputeInterestingVarSets()
 {
     VarSetOps::AssignNoCopy(this, lvaFloatVars, VarSetOps::MakeEmpty(this));
-#ifndef TARGET_64BIT
-    VarSetOps::AssignNoCopy(this, lvaLongVars, VarSetOps::MakeEmpty(this));
-#endif
+    if (!TargetArchitecture::Is64Bit)
+    {
+        VarSetOps::AssignNoCopy(this, lvaLongVars, VarSetOps::MakeEmpty(this));
+    }
 #ifdef FEATURE_MASKED_HW_INTRINSICS
     VarSetOps::AssignNoCopy(this, lvaMaskVars, VarSetOps::MakeEmpty(this));
 #endif
@@ -5189,12 +5197,10 @@ void Compiler::optComputeInterestingVarSets()
             {
                 VarSetOps::AddElemD(this, lvaFloatVars, varDsc->lvVarIndex);
             }
-#ifndef TARGET_64BIT
-            else if (varTypeIsLong(varDsc->lvType))
+            else if (!TargetArchitecture::Is64Bit && varTypeIsLong(varDsc->lvType))
             {
                 VarSetOps::AddElemD(this, lvaLongVars, varDsc->lvVarIndex);
             }
-#endif
 #ifdef FEATURE_MASKED_HW_INTRINSICS
             else if (varTypeUsesMaskReg(varDsc->lvType))
             {

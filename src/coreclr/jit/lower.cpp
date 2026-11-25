@@ -22,9 +22,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 #include "lower.h"
 
-#if !defined(TARGET_64BIT)
 #include "decomposelongs.h"
-#endif // !defined(TARGET_64BIT)
 
 //------------------------------------------------------------------------
 // MakeSrcContained: Make "childNode" a contained node
@@ -383,12 +381,10 @@ GenTree* Lowering::LowerNode(GenTree* node)
         }
         break;
 
-#if !defined(TARGET_64BIT)
         case GT_ADD_LO:
         case GT_ADD_HI:
         case GT_SUB_LO:
         case GT_SUB_HI:
-#endif
         case GT_SUB:
         case GT_AND:
         case GT_OR:
@@ -545,12 +541,10 @@ GenTree* Lowering::LowerNode(GenTree* node)
             break;
         }
 
-#ifndef TARGET_64BIT
         case GT_LSH_HI:
         case GT_RSH_LO:
             ContainCheckShiftRotate(node->AsOp());
             break;
-#endif // !TARGET_64BIT
 
         case GT_LSH:
         case GT_RSH:
@@ -1263,17 +1257,18 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
         {
             JITDUMP("Lowering switch " FMT_BB ": using jump table expansion\n", originalSwitchBB->bbNum);
 
-#ifdef TARGET_64BIT
-            if (RISCV64_ONLY(!m_compiler->compOpportunisticallyDependsOn(InstructionSet_Zba)&&) // shXadd.uw 0-extends
-                                                                                                // index
-                tempLclType != TYP_I_IMPL)
+            if (TargetArchitecture::Is64Bit)
             {
-                // SWITCH_TABLE expects the switch value (the index into the jump table) to be TYP_I_IMPL.
-                // Note that the switch value is unsigned so the cast should be unsigned as well.
-                switchValue = m_compiler->gtNewCastNode(TYP_I_IMPL, switchValue, true, TYP_U_IMPL);
-                switchBlockRange.InsertAtEnd(switchValue);
+                if (RISCV64_ONLY(!m_compiler->compOpportunisticallyDependsOn(InstructionSet_Zba)&&) // shXadd.uw
+                                                                                                    // 0-extends index
+                    tempLclType != TYP_I_IMPL)
+                {
+                    // SWITCH_TABLE expects the switch value (the index into the jump table) to be TYP_I_IMPL.
+                    // Note that the switch value is unsigned so the cast should be unsigned as well.
+                    switchValue = m_compiler->gtNewCastNode(TYP_I_IMPL, switchValue, true, TYP_U_IMPL);
+                    switchBlockRange.InsertAtEnd(switchValue);
+                }
             }
-#endif
 
             GenTree* switchTable = m_compiler->gtNewJmpTableNode();
             GenTree* switchJump  = m_compiler->gtNewOperNode(GT_SWITCH_TABLE, TYP_VOID, switchValue, switchTable);
@@ -1462,7 +1457,6 @@ bool Lowering::TryLowerSwitchToBitTest(FlowEdge*   jumpTable[],
         }
     }
 
-#if defined(TARGET_64BIT) && defined(TARGET_XARCH)
     //
     // See if we can avoid a 8 byte immediate on 64 bit targets. If all upper 32 bits are 1
     // then inverting the bit table will make them 0 so that the table now fits in 32 bits.
@@ -1471,12 +1465,11 @@ bool Lowering::TryLowerSwitchToBitTest(FlowEdge*   jumpTable[],
     // extends the immediate value to 64 bit.
     //
 
-    if (~bitTable <= UINT32_MAX)
+    if (TargetArchitecture::IsX64 && (~bitTable <= UINT32_MAX))
     {
         bitTable = ~bitTable;
         std::swap(case0Edge, case1Edge);
     }
-#endif
 
     BasicBlock* bbCase0 = case0Edge->getDestinationBlock();
     BasicBlock* bbCase1 = case1Edge->getDestinationBlock();
@@ -1584,41 +1577,42 @@ void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg)
     JITDUMP("Passed in ");
     DBEXEC(m_compiler->verbose, abiInfo.Dump());
 
-#if !defined(TARGET_64BIT) && !defined(TARGET_WASM)
-    if (m_compiler->opts.compUseSoftFP && arg->TypeIs(TYP_DOUBLE))
+    if (!TargetArchitecture::Is64Bit && !TargetArchitecture::IsWasm)
     {
-        // Unlike TYP_LONG we do no decomposition for doubles, yet we maintain
-        // it as a primitive type until lowering. So we need to get it into the
-        // right form here.
+        if (m_compiler->opts.compUseSoftFP && arg->TypeIs(TYP_DOUBLE))
+        {
+            // Unlike TYP_LONG we do no decomposition for doubles, yet we maintain
+            // it as a primitive type until lowering. So we need to get it into the
+            // right form here.
 
-        unsigned argLclNum = m_compiler->lvaGrabTemp(false DEBUGARG("double arg on softFP"));
-        GenTree* store     = m_compiler->gtNewTempStore(argLclNum, arg);
-        GenTree* low       = m_compiler->gtNewLclFldNode(argLclNum, TYP_INT, 0);
-        GenTree* high      = m_compiler->gtNewLclFldNode(argLclNum, TYP_INT, 4);
-        GenTree* longNode  = new (m_compiler, GT_LONG) GenTreeOp(GT_LONG, TYP_LONG, low, high);
-        BlockRange().InsertAfter(arg, store, low, high, longNode);
+            unsigned argLclNum = m_compiler->lvaGrabTemp(false DEBUGARG("double arg on softFP"));
+            GenTree* store     = m_compiler->gtNewTempStore(argLclNum, arg);
+            GenTree* low       = m_compiler->gtNewLclFldNode(argLclNum, TYP_INT, 0);
+            GenTree* high      = m_compiler->gtNewLclFldNode(argLclNum, TYP_INT, 4);
+            GenTree* longNode  = new (m_compiler, GT_LONG) GenTreeOp(GT_LONG, TYP_LONG, low, high);
+            BlockRange().InsertAfter(arg, store, low, high, longNode);
 
-        *ppArg = arg = longNode;
+            *ppArg = arg = longNode;
 
-        m_compiler->lvaSetVarDoNotEnregister(argLclNum DEBUGARG(DoNotEnregisterReason::LocalField));
+            m_compiler->lvaSetVarDoNotEnregister(argLclNum DEBUGARG(DoNotEnregisterReason::LocalField));
 
-        JITDUMP("Transformed double-typed arg on softFP to LONG node\n");
+            JITDUMP("Transformed double-typed arg on softFP to LONG node\n");
+        }
+
+        if (varTypeIsLong(arg))
+        {
+            noway_assert(arg->OperIs(GT_LONG));
+            GenTreeFieldList* fieldList = new (m_compiler, GT_FIELD_LIST) GenTreeFieldList();
+            fieldList->AddFieldLIR(m_compiler, arg->gtGetOp1(), 0, TYP_INT);
+            fieldList->AddFieldLIR(m_compiler, arg->gtGetOp2(), 4, TYP_INT);
+            BlockRange().InsertBefore(arg, fieldList);
+
+            BlockRange().Remove(arg);
+            *ppArg = arg = fieldList;
+
+            JITDUMP("Transformed long arg on 32-bit to FIELD_LIST node\n");
+        }
     }
-
-    if (varTypeIsLong(arg))
-    {
-        noway_assert(arg->OperIs(GT_LONG));
-        GenTreeFieldList* fieldList = new (m_compiler, GT_FIELD_LIST) GenTreeFieldList();
-        fieldList->AddFieldLIR(m_compiler, arg->gtGetOp1(), 0, TYP_INT);
-        fieldList->AddFieldLIR(m_compiler, arg->gtGetOp2(), 4, TYP_INT);
-        BlockRange().InsertBefore(arg, fieldList);
-
-        BlockRange().Remove(arg);
-        *ppArg = arg = fieldList;
-
-        JITDUMP("Transformed long arg on 32-bit to FIELD_LIST node\n");
-    }
-#endif // !defined(TARGET_64BIT) && !defined(TARGET_WASM)
 
 #if FEATURE_ARG_SPLIT
     // Structs can be split into register(s) and stack on some targets
@@ -1813,7 +1807,7 @@ void Lowering::SplitArgumentBetweenRegistersAndStack(GenTreeCall* call, CallArg*
 
         auto createAddr = [=](unsigned offs) {
             GenTree* addr = m_compiler->gtNewLclVarNode(addrLcl);
-            offs += (unsigned)offset;
+            offs += static_cast<unsigned>(TargetToHost(offset));
             if (offs != 0)
             {
                 GenTree* addrOffs = m_compiler->gtNewIconNode((ssize_t)offs, TYP_I_IMPL);
@@ -2375,7 +2369,10 @@ bool Lowering::LowerCallMemset(GenTreeCall* call, GenTree** next)
 
     // Convert lenCns to bytes
     ssize_t lenCns = lengthArg->AsIntCon()->IconValue();
-    if (CheckedOps::MulOverflows((target_ssize_t)lenCns, (target_ssize_t)lengthScale, CheckedOps::Signed))
+    if (TargetArchitecture::Is64Bit ? CheckedOps::MulOverflows(static_cast<int64_t>(lenCns),
+                                                               static_cast<int64_t>(lengthScale), CheckedOps::Signed)
+                                    : CheckedOps::MulOverflows(static_cast<int32_t>(lenCns),
+                                                               static_cast<int32_t>(lengthScale), CheckedOps::Signed))
     {
         // lenCns overflows
         JITDUMP("lenCns * lengthScale overflows - bail out.\n")
@@ -3990,7 +3987,6 @@ void Lowering::MovePutArgNodesUpToCall(GenTreeCall* call)
     }
 }
 
-#ifndef TARGET_64BIT
 //------------------------------------------------------------------------
 // Lowering::DecomposeLongCompare: Decomposes a TYP_LONG compare node.
 //
@@ -4207,7 +4203,6 @@ GenTree* Lowering::DecomposeLongCompare(GenTree* cmp)
 
     return cmp->gtNext;
 }
-#endif // !TARGET_64BIT
 
 //------------------------------------------------------------------------
 // Lowering::OptimizeConstCompare: Performs various "compare with const" optimizations.
@@ -6917,19 +6912,20 @@ void Lowering::InsertPInvokeMethodProlog()
     // the current thread's Frame stack. On 64-bit targets, it only initializes the PInvoke frame.
     // As a result, don't push the frame onto the frame stack here for any 64-bit targets
 
-#ifdef TARGET_64BIT
-#ifdef USE_PER_FRAME_PINVOKE_INIT
-    // For IL stubs, we push the frame once even when we're doing per-pinvoke init.
-    if (m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB))
-#endif // USE_PER_FRAME_PINVOKE_INIT
+    if (TargetArchitecture::Is64Bit)
     {
-        // Push a frame. The init routine sets InlinedCallFrame's m_pNext, so we just set the thread's top-of-stack
-        GenTree* frameUpd = CreateFrameLinkUpdate(PushFrame);
-        firstBlockRange.InsertBefore(insertionPoint, LIR::SeqTree(m_compiler, frameUpd));
-        ContainCheckStoreIndir(frameUpd->AsStoreInd());
-        DISPTREERANGE(firstBlockRange, frameUpd);
+#ifdef USE_PER_FRAME_PINVOKE_INIT
+        // For IL stubs, we push the frame once even when we're doing per-pinvoke init.
+        if (m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB))
+#endif // USE_PER_FRAME_PINVOKE_INIT
+        {
+            // Push a frame. The init routine sets InlinedCallFrame's m_pNext, so we just set the thread's top-of-stack
+            GenTree* frameUpd = CreateFrameLinkUpdate(PushFrame);
+            firstBlockRange.InsertBefore(insertionPoint, LIR::SeqTree(m_compiler, frameUpd));
+            ContainCheckStoreIndir(frameUpd->AsStoreInd());
+            DISPTREERANGE(firstBlockRange, frameUpd);
+        }
     }
-#endif // TARGET_64BIT
 }
 
 //------------------------------------------------------------------------
@@ -8182,12 +8178,13 @@ bool Lowering::TryLowerConstIntUDivOrUMod(GenTreeOp* divMod)
     GenTree* dividend = divMod->gtGetOp1();
     GenTree* divisor  = divMod->gtGetOp2();
 
-#if !defined(TARGET_64BIT)
-    if (dividend->OperIs(GT_LONG))
+    if (!TargetArchitecture::Is64Bit)
     {
-        return false;
+        if (dividend->OperIs(GT_LONG))
+        {
+            return false;
+        }
     }
-#endif
 
     if (!divisor->IsCnsIntOrI())
     {
@@ -8245,11 +8242,8 @@ bool Lowering::TryLowerConstIntUDivOrUMod(GenTreeOp* divMod)
     {
         // If the divisor is greater or equal than 2^(N - 1) then the result is 1
         // iff the dividend is greater or equal than the divisor.
-        if (((type == TYP_INT) && (divisorValue > (UINT32_MAX / 2)))
-#if defined(TARGET_64BIT)
-            || ((type == TYP_LONG) && (divisorValue > (UINT64_MAX / 2)))
-#endif
-        )
+        if (((type == TYP_INT) && (divisorValue > (UINT32_MAX / 2))) ||
+            (TargetArchitecture::Is64Bit && (type == TYP_LONG) && (divisorValue > (UINT64_MAX / 2))))
         {
             divMod->ChangeOper(GT_GE);
             divMod->SetUnsigned();
@@ -8296,34 +8290,38 @@ bool Lowering::TryLowerConstIntUDivOrUMod(GenTreeOp* divMod)
             magic = MagicDivide::GetUnsigned32Magic(static_cast<uint32_t>(divisorValue), &increment, &preShift,
                                                     &postShift, bits);
 
-#ifdef TARGET_64BIT
-            // avoid inc_saturate/multiple shifts by widening to 32x64 MULHI
-            if (increment || (preShift
+            if (TargetArchitecture::Is64Bit)
+            {
+                // avoid inc_saturate/multiple shifts by widening to 32x64 MULHI
+                if (increment || (preShift
 #ifdef TARGET_XARCH
-                              // IMUL reg,reg,imm32 can't be used if magic<0 because of sign-extension
-                              && static_cast<int32_t>(magic) < 0
+                                  // IMUL reg,reg,imm32 can't be used if magic<0 because of sign-extension
+                                  && static_cast<int32_t>(magic) < 0
 #endif
-                              ))
+                                  ))
+                {
+                    magic = MagicDivide::GetUnsigned64Magic(static_cast<uint64_t>(divisorValue), &increment, &preShift,
+                                                            &postShift, bits);
+                }
+                // otherwise just widen to regular multiplication
+                else
+                {
+                    postShift += 32;
+                    simpleMul = true;
+                }
+            }
+        }
+        else
+        {
+            if (TargetArchitecture::Is64Bit)
             {
                 magic = MagicDivide::GetUnsigned64Magic(static_cast<uint64_t>(divisorValue), &increment, &preShift,
                                                         &postShift, bits);
             }
-            // otherwise just widen to regular multiplication
             else
             {
-                postShift += 32;
-                simpleMul = true;
+                unreached();
             }
-#endif
-        }
-        else
-        {
-#ifdef TARGET_64BIT
-            magic = MagicDivide::GetUnsigned64Magic(static_cast<uint64_t>(divisorValue), &increment, &preShift,
-                                                    &postShift, bits);
-#else
-            unreached();
-#endif
         }
 
         const bool     requiresDividendMultiuse = !isDiv;
@@ -8543,11 +8541,8 @@ bool Lowering::TryLowerConstIntDivOrMod(GenTree* node, GenTree** nextNode)
 
     if (isDiv)
     {
-        if ((type == TYP_INT && divisorValue == INT_MIN)
-#if defined(TARGET_64BIT)
-            || (type == TYP_LONG && divisorValue == INT64_MIN)
-#endif
-        )
+        if ((type == TYP_INT && divisorValue == INT_MIN) ||
+            (TargetArchitecture::Is64Bit && type == TYP_LONG && divisorValue == INT64_MIN))
         {
             // If the divisor is the minimum representable integer value then we can use a compare,
             // the result is 1 iff the dividend equals divisor.
@@ -8577,11 +8572,14 @@ bool Lowering::TryLowerConstIntDivOrMod(GenTree* node, GenTree** nextNode)
         }
         else
         {
-#ifdef TARGET_64BIT
-            magic = MagicDivide::GetSigned64Magic(static_cast<int64_t>(divisorValue), &shift);
-#else  // !TARGET_64BIT
-            unreached();
-#endif // !TARGET_64BIT
+            if (TargetArchitecture::Is64Bit)
+            {
+                magic = MagicDivide::GetSigned64Magic(static_cast<int64_t>(divisorValue), &shift);
+            }
+            else
+            {
+                unreached();
+            }
         }
 
         divisor->AsIntConCommon()->SetIconValue(magic);
@@ -9033,7 +9031,7 @@ PhaseStatus Lowering::DoPhase()
         {
             decomp.DecomposeBlock(block);
         }
-#endif //! TARGET_64BIT
+#endif // LOWER_DECOMPOSE_LONGS
 
         LowerBlock(block);
     }
@@ -9268,13 +9266,13 @@ void Lowering::CheckNode(Compiler* compiler, GenTree* node)
         case GT_STORE_LCL_VAR:
         {
             const LclVarDsc* varDsc = compiler->lvaGetDesc(node->AsLclVar());
-#if defined(FEATURE_SIMD) && defined(TARGET_64BIT)
-            if (node->TypeIs(TYP_SIMD12))
+#ifdef FEATURE_SIMD
+            if (TargetArchitecture::Is64Bit && node->TypeIs(TYP_SIMD12))
             {
                 assert(compiler->lvaIsFieldOfDependentlyPromotedStruct(varDsc) ||
                        (compiler->lvaLclStackHomeSize(node->AsLclVar()->GetLclNum()) == 12));
             }
-#endif // FEATURE_SIMD && TARGET_64BIT
+#endif // FEATURE_SIMD
             if (varDsc->lvPromoted)
             {
                 assert(varDsc->lvDoNotEnregister || (node->OperIs(GT_STORE_LCL_VAR) && varDsc->lvIsMultiRegDest));
@@ -9637,12 +9635,10 @@ void Lowering::ContainCheckNode(GenTree* node)
 
         case GT_ADD:
         case GT_SUB:
-#if !defined(TARGET_64BIT)
         case GT_ADD_LO:
         case GT_ADD_HI:
         case GT_SUB_LO:
         case GT_SUB_HI:
-#endif
         case GT_AND:
         case GT_OR:
         case GT_XOR:
@@ -9667,10 +9663,8 @@ void Lowering::ContainCheckNode(GenTree* node)
         case GT_RSZ:
         case GT_ROL:
         case GT_ROR:
-#ifndef TARGET_64BIT
         case GT_LSH_HI:
         case GT_RSH_LO:
-#endif
             ContainCheckShiftRotate(node->AsOp());
             break;
         case GT_CAST:
@@ -10344,13 +10338,11 @@ void Lowering::LowerInitBlockStore(GenTreeBlk* blkNode)
             src->SetContained();
 #endif
         }
-#ifdef TARGET_64BIT
-        else if (size >= REGSIZE_BYTES)
+        else if (TargetArchitecture::Is64Bit && (size >= REGSIZE_BYTES))
         {
             fill *= 0x0101010101010101LL;
             src->gtType = TYP_LONG;
         }
-#endif
         else
         {
             fill *= 0x01010101;
@@ -10576,13 +10568,14 @@ static bool TryGetStoreCoalescingConstantBits(GenTree* value, uint64_t* bits)
             return true;
         }
 
-#ifdef TARGET_64BIT
-        // We only need the raw 64-bit payload for targets where the resulting 8-byte coalesced store is supported.
-        assert(value->TypeIs(TYP_DOUBLE));
-        double doubleCns = value->AsDblCon()->DconValue();
-        *bits            = BitOperations::DoubleToUInt64Bits(doubleCns);
-        return true;
-#endif
+        if (TargetArchitecture::Is64Bit)
+        {
+            // We only need the raw 64-bit payload for targets where the resulting 8-byte coalesced store is supported.
+            assert(value->TypeIs(TYP_DOUBLE));
+            double doubleCns = value->AsDblCon()->DconValue();
+            *bits            = BitOperations::DoubleToUInt64Bits(doubleCns);
+            return true;
+        }
     }
 
     return false;
@@ -11033,11 +11026,13 @@ void Lowering::LowerStoreCoalescing(GenTree* node)
                 case 4:
                     newType = TYP_INT;
                     break;
-#ifdef TARGET_64BIT
                 case 8:
+                    if (!TargetArchitecture::Is64Bit)
+                    {
+                        return;
+                    }
                     newType = TYP_LONG;
                     break;
-#endif
                 default:
                     return;
             }
@@ -11071,14 +11066,21 @@ void Lowering::LowerStoreCoalescing(GenTree* node)
                     newType = TYP_INT;
                     break;
 
-#ifdef TARGET_64BIT
                 case TYP_INT:
+                    if (!TargetArchitecture::Is64Bit)
+                    {
+                        return;
+                    }
                     newType = TYP_LONG;
                     break;
 
 #if defined(FEATURE_HW_INTRINSICS)
                 case TYP_LONG:
                 case TYP_REF:
+                    if (!TargetArchitecture::Is64Bit)
+                    {
+                        return;
+                    }
                     // TLDR: we should be here only if one of the conditions is true:
                     // 1) Both stores have the GTF_IND_ALLOW_NON_ATOMIC flag
                     // 2) ARM64: data is at least 8-byte aligned
@@ -11124,7 +11126,6 @@ void Lowering::LowerStoreCoalescing(GenTree* node)
                     break;
 #endif                      // TARGET_AMD64
 #endif                      // FEATURE_HW_INTRINSICS
-#endif                      // TARGET_64BIT
                 default:
                     return;
             }
@@ -11257,8 +11258,8 @@ void Lowering::LowerStoreCoalescing(GenTree* node)
 
         // The integer path below places each constant according to its byte offset, so it doesn't need to swap the
         // values first. Only the SIMD packing paths above need to normalize lower/upper order explicitly.
-#if defined(TARGET_64BIT) && defined(FEATURE_HW_INTRINSICS)
-        if (varTypeIsSIMD(newType))
+#if defined(FEATURE_HW_INTRINSICS)
+        if (TargetArchitecture::Is64Bit && varTypeIsSIMD(newType))
         {
             if (prevData.offset > currData.offset)
             {
@@ -11284,7 +11285,7 @@ void Lowering::LowerStoreCoalescing(GenTree* node)
 
             continue;
         }
-#endif // TARGET_64BIT && FEATURE_HW_INTRINSICS
+#endif // FEATURE_HW_INTRINSICS
 
         uint64_t prevMask = ~(uint64_t(0)) >> (sizeof(uint64_t) - prevData.accessSize) * BITS_PER_BYTE;
         uint64_t currMask = ~(uint64_t(0)) >> (sizeof(uint64_t) - currData.accessSize) * BITS_PER_BYTE;
@@ -11761,8 +11762,8 @@ bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indi
                 target_ssize_t storeOffs = 0;
                 m_compiler->gtPeelOffsets(&storeAddr, &storeOffs);
 
-                bool distinct = (storeOffs + (target_ssize_t)store->Size() <= offs) ||
-                                (offs + (target_ssize_t)indir->Size() <= storeOffs);
+                bool distinct = (storeOffs + TargetFromHost<target_ssize_t>(store->Size()) <= offs) ||
+                                (offs + TargetFromHost<target_ssize_t>(indir->Size()) <= storeOffs);
 
                 if (checkLocal && GenTree::Compare(indirAddr, storeAddr) && distinct)
                 {
@@ -12617,14 +12618,12 @@ void Lowering::TryRetypingFloatingPointStoreToIntegerStore(GenTree* store)
                 intCns       = *reinterpret_cast<INT32*>(&fltCns);
                 type         = TYP_INT;
             }
-#ifdef TARGET_64BIT
-            else
+            else if (TargetArchitecture::Is64Bit)
             {
                 assert(store->TypeIs(TYP_DOUBLE));
                 intCns = *reinterpret_cast<INT64*>(&dblCns);
                 type   = TYP_LONG;
             }
-#endif
         }
 
         if (type != TYP_UNKNOWN)
@@ -12948,7 +12947,7 @@ void Lowering::ContainCheckConditionalCompare(GenTreeCCMP* cmp)
 
     if (op2->IsCnsIntOrI() && !op2->AsIntCon()->ImmedValNeedsReloc(m_compiler))
     {
-        target_ssize_t immVal = (target_ssize_t)op2->AsIntCon()->IconValue();
+        target_ssize_t immVal = TargetFromHost<target_ssize_t>(op2->AsIntCon()->IconValue());
 
         if (emitter::emitIns_valid_imm_for_ccmp(immVal))
         {
@@ -13118,13 +13117,14 @@ GenTree* Lowering::LowerHWIntrinsicCreateWithInserts(GenTreeHWIntrinsic* node,
         if ((maskBits & (1ULL << (i - 1))) != 0)
         {
             // This operand is a constant and is already part of the vector constant.
-#if !defined(TARGET_64BIT)
-            if (opN->OperIsLong())
+            if (!TargetArchitecture::Is64Bit)
             {
-                BlockRange().Remove(opN->gtGetOp1());
-                BlockRange().Remove(opN->gtGetOp2());
+                if (opN->OperIsLong())
+                {
+                    BlockRange().Remove(opN->gtGetOp1());
+                    BlockRange().Remove(opN->gtGetOp2());
+                }
             }
-#endif // !TARGET_64BIT
             BlockRange().Remove(opN);
             continue;
         }

@@ -728,15 +728,18 @@ void CodeGen::genCodeForMulHi(GenTreeOp* treeNode)
         }
         else
         {
-#if TARGET_64BIT
-            assert(false);
-#else
-            assert(treeNode->OperIs(GT_MUL_LONG));
+            if (TargetArchitecture::Is64Bit)
+            {
+                assert(false);
+            }
+            else
+            {
+                assert(treeNode->OperIs(GT_MUL_LONG));
 
-            // emit MULX instruction
-            regNumber hiReg = treeNode->AsMultiRegOp()->GetRegByIndex(1);
-            inst_RV_RV_TT(INS_mulx, size, hiReg, targetReg, rmOp, /* isRMW */ false, INS_OPTS_NONE);
-#endif
+                // emit MULX instruction
+                regNumber hiReg = treeNode->AsMultiRegOp()->GetRegByIndex(1);
+                inst_RV_RV_TT(INS_mulx, size, hiReg, targetReg, rmOp, /* isRMW */ false, INS_OPTS_NONE);
+            }
         }
     }
     else // Generate MUL or IMUL instruction
@@ -954,9 +957,10 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
     else
     {
         isValidOper |= treeNode->OperIs(GT_AND, GT_OR, GT_XOR);
-#ifndef TARGET_64BIT
-        isValidOper |= treeNode->OperIs(GT_ADD_LO, GT_ADD_HI, GT_SUB_LO, GT_SUB_HI);
-#endif
+        if (!TargetArchitecture::Is64Bit)
+        {
+            isValidOper |= treeNode->OperIs(GT_ADD_LO, GT_ADD_HI, GT_SUB_LO, GT_SUB_HI);
+        }
     }
     assert(isValidOper);
 #endif
@@ -1127,11 +1131,14 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
 
     if (treeNode->gtOverflowEx())
     {
-#if !defined(TARGET_64BIT)
-        assert(oper == GT_ADD || oper == GT_SUB || oper == GT_ADD_HI || oper == GT_SUB_HI);
-#else
-        assert(oper == GT_ADD || oper == GT_SUB);
-#endif
+        if (!TargetArchitecture::Is64Bit)
+        {
+            assert(oper == GT_ADD || oper == GT_SUB || oper == GT_ADD_HI || oper == GT_SUB_HI);
+        }
+        else
+        {
+            assert(oper == GT_ADD || oper == GT_SUB);
+        }
         genCheckOverflow(treeNode);
     }
     genProduceReg(treeNode);
@@ -1805,15 +1812,13 @@ void CodeGen::genCodeForReturnTrap(GenTreeOp* tree)
 void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 {
     regNumber targetReg;
-#if !defined(TARGET_64BIT)
-    if (treeNode->TypeIs(TYP_LONG))
+    if (!TargetArchitecture::Is64Bit && treeNode->TypeIs(TYP_LONG))
     {
         // All long enregistered nodes will have been decomposed into their
         // constituent lo and hi nodes.
         targetReg = REG_NA;
     }
     else
-#endif // !defined(TARGET_64BIT)
     {
         targetReg = treeNode->GetRegNum();
     }
@@ -1924,12 +1929,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
             FALLTHROUGH;
 
-#if !defined(TARGET_64BIT)
         case GT_ADD_LO:
         case GT_ADD_HI:
         case GT_SUB_LO:
         case GT_SUB_HI:
-#endif // !defined(TARGET_64BIT)
 
         case GT_ADD:
         case GT_SUB:
@@ -1959,14 +1962,12 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForShift(treeNode);
             break;
 
-#if !defined(TARGET_64BIT)
-
+#ifdef TARGET_X86
         case GT_LSH_HI:
         case GT_RSH_LO:
             genCodeForShiftLong(treeNode);
             break;
-
-#endif // !defined(TARGET_64BIT)
+#endif
 
         case GT_CAST:
             genCodeForCast(treeNode->AsOp());
@@ -2230,12 +2231,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genTableBasedSwitch(treeNode);
             break;
 
-#if !defined(TARGET_64BIT)
         case GT_LONG:
             assert(treeNode->isUsedFromReg());
             genConsumeRegs(treeNode);
             break;
-#endif
 
         case GT_IL_OFFSET:
             // Do nothing; this node is a marker for debug info.
@@ -2511,7 +2510,7 @@ void CodeGen::genStackPointerConstantAdjustment(ssize_t spDelta, bool trackSpAdj
 
     // We assert that the SP change is less than one page. If it's greater, you should have called a
     // function that does a probe, which will in turn call this function.
-    assert((target_size_t)(-spDelta) <= m_compiler->eeGetPageSize());
+    assert(TargetFromHost<target_size_t>((-spDelta)) <= m_compiler->eeGetPageSize());
 
 #ifdef TARGET_AMD64
     // We always track the SP adjustment on X64.
@@ -2520,12 +2519,12 @@ void CodeGen::genStackPointerConstantAdjustment(ssize_t spDelta, bool trackSpAdj
 
     if (trackSpAdjustments)
     {
-        inst_RV_IV(INS_sub, REG_SPBASE, (target_ssize_t)-spDelta, EA_PTRSIZE);
+        inst_RV_IV(INS_sub, REG_SPBASE, TargetFromHost<target_ssize_t>(-spDelta), EA_PTRSIZE);
     }
     else
     {
         // For x86, some cases don't want to track the adjustment to SP.
-        inst_RV_IV(INS_sub_hide, REG_SPBASE, (target_ssize_t)-spDelta, EA_PTRSIZE);
+        inst_RV_IV(INS_sub_hide, REG_SPBASE, TargetFromHost<target_ssize_t>(-spDelta), EA_PTRSIZE);
     }
 }
 
@@ -2573,14 +2572,14 @@ target_ssize_t CodeGen::genStackPointerConstantAdjustmentLoopWithProbe(ssize_t s
     ssize_t spRemainingDelta = spDelta;
     do
     {
-        ssize_t spOneDelta = -(ssize_t)min((target_size_t)-spRemainingDelta, pageSize);
+        ssize_t spOneDelta = -(ssize_t)min(TargetFromHost<target_size_t>(-spRemainingDelta), pageSize);
         genStackPointerConstantAdjustmentWithProbe(spOneDelta, trackSpAdjustments);
         spRemainingDelta -= spOneDelta;
     } while (spRemainingDelta < 0);
 
     // What offset from the final SP was the last probe? This depends on the fact that
     // genStackPointerConstantAdjustmentWithProbe() probes first, then does "SUB SP".
-    target_size_t lastTouchDelta = (target_size_t)(-spDelta) % pageSize;
+    target_size_t lastTouchDelta = TargetFromHost<target_size_t>((-spDelta)) % pageSize;
     if ((lastTouchDelta == 0) || (lastTouchDelta + STACK_PROBE_BOUNDARY_THRESHOLD_BYTES > pageSize))
     {
         // We haven't probed almost a complete page. If lastTouchDelta==0, then spDelta was an exact
@@ -2836,7 +2835,7 @@ void CodeGen::genLclHeap(GenTree* tree)
     var_types      type           = genActualType(size->gtType);
     emitAttr       easz           = emitTypeSize(type);
     BasicBlock*    endLabel       = nullptr;
-    target_ssize_t lastTouchDelta = (target_ssize_t)-1;
+    target_ssize_t lastTouchDelta = TargetFromHost<target_ssize_t>(-1);
 
 #ifdef DEBUG
     genStackPointerCheck(m_compiler->opts.compStackCheckOnRet, m_compiler->lvaReturnSpCheck);
@@ -2943,19 +2942,19 @@ void CodeGen::genLclHeap(GenTree* tree)
             lastTouchDelta =
                 genStackPointerConstantAdjustmentLoopWithProbe(-(ssize_t)amount, /* trackSpAdjustments */ true);
             stackAdjustment     = 0;
-            locAllocStackOffset = (target_size_t)m_compiler->lvaOutgoingArgSpaceSize;
+            locAllocStackOffset = TargetFromHost<target_size_t>(m_compiler->lvaOutgoingArgSpaceSize);
             goto ALLOC_DONE;
         }
 
         if (size->IsCnsIntOrI() && size->isContained())
         {
             stackAdjustment     = 0;
-            locAllocStackOffset = (target_size_t)m_compiler->lvaOutgoingArgSpaceSize;
+            locAllocStackOffset = TargetFromHost<target_size_t>(m_compiler->lvaOutgoingArgSpaceSize);
         }
         else
         {
             inst_RV_IV(INS_add, REG_SPBASE, m_compiler->lvaOutgoingArgSpaceSize, EA_PTRSIZE);
-            stackAdjustment += (target_size_t)m_compiler->lvaOutgoingArgSpaceSize;
+            stackAdjustment += TargetFromHost<target_size_t>(m_compiler->lvaOutgoingArgSpaceSize);
             locAllocStackOffset = stackAdjustment;
         }
     }
@@ -3041,8 +3040,8 @@ ALLOC_DONE:
         assert((stackAdjustment % STACK_ALIGN) == 0); // This must be true for the stack to remain aligned
         assert(lastTouchDelta >= -1);
 
-        if ((lastTouchDelta == (target_ssize_t)-1) ||
-            (stackAdjustment + (target_size_t)lastTouchDelta + STACK_PROBE_BOUNDARY_THRESHOLD_BYTES >
+        if ((lastTouchDelta == TargetFromHost<target_ssize_t>(-1)) ||
+            (stackAdjustment + TargetFromHost<target_size_t>(lastTouchDelta) + STACK_PROBE_BOUNDARY_THRESHOLD_BYTES >
              m_compiler->eeGetPageSize()))
         {
             genStackPointerConstantAdjustmentLoopWithProbe(-(ssize_t)stackAdjustment, /* trackSpAdjustments */ true);
@@ -4566,7 +4565,6 @@ instruction CodeGen::genGetInsForOper(genTreeOps oper, var_types type)
         case GT_XOR:
             ins = INS_xor;
             break;
-#if !defined(TARGET_64BIT)
         case GT_ADD_LO:
             ins = INS_add;
             break;
@@ -4585,7 +4583,6 @@ instruction CodeGen::genGetInsForOper(genTreeOps oper, var_types type)
         case GT_RSH_LO:
             ins = INS_shrd;
             break;
-#endif // !defined(TARGET_64BIT)
         default:
             unreached();
             break;
@@ -5085,13 +5082,14 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
         assert(varTypeUsesIntReg(targetType) || (emitTypeSize(targetType) == emitTypeSize(op1Type)));
 #endif
 
-#if !defined(TARGET_64BIT)
-        if (targetType == TYP_LONG)
+        if (!TargetArchitecture::Is64Bit)
         {
-            genStoreLongLclVar(lclNode);
-            return;
+            if (targetType == TYP_LONG)
+            {
+                genStoreLongLclVar(lclNode);
+                return;
+            }
         }
-#endif // !defined(TARGET_64BIT)
 
 #ifdef FEATURE_SIMD
         // storing of TYP_SIMD12 (i.e. Vector3) field
@@ -5188,23 +5186,22 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
     assert(varTypeIsIntegral(index->TypeGet()));
 
     regNumber tmpReg = REG_NA;
-#ifdef TARGET_64BIT
-    tmpReg = internalRegisters.GetSingle(node);
-#endif
+    if (TargetArchitecture::Is64Bit)
+    {
+        tmpReg = internalRegisters.GetSingle(node);
+    }
 
     // Generate the bounds check if necessary.
     if (node->IsBoundsChecked())
     {
-#ifdef TARGET_64BIT
         // The CLI Spec allows an array to be indexed by either an int32 or a native int.  In the case that the index
         // is a native int on a 64-bit platform, we will need to widen the array length and then compare.
-        if (index->TypeIs(TYP_I_IMPL))
+        if (TargetArchitecture::Is64Bit && index->TypeIs(TYP_I_IMPL))
         {
             GetEmitter()->emitIns_R_AR(INS_mov, EA_4BYTE, tmpReg, baseReg, static_cast<int>(node->gtLenOffset));
             GetEmitter()->emitIns_R_R(INS_cmp, EA_8BYTE, indexReg, tmpReg);
         }
         else
-#endif // TARGET_64BIT
         {
             GetEmitter()->emitIns_R_AR(INS_cmp, EA_4BYTE, indexReg, baseReg, static_cast<int>(node->gtLenOffset));
         }
@@ -5212,14 +5209,15 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
         genJumpToThrowHlpBlk(EJ_jae, SCK_RNGCHK_FAIL);
     }
 
-#ifdef TARGET_64BIT
-    if (!index->TypeIs(TYP_I_IMPL))
+    if (TargetArchitecture::Is64Bit)
     {
-        // LEA needs 64-bit operands so we need to widen the index if it's TYP_INT.
-        GetEmitter()->emitIns_Mov(INS_mov, EA_4BYTE, tmpReg, indexReg, /* canSkip */ false);
-        indexReg = tmpReg;
+        if (!index->TypeIs(TYP_I_IMPL))
+        {
+            // LEA needs 64-bit operands so we need to widen the index if it's TYP_INT.
+            GetEmitter()->emitIns_Mov(INS_mov, EA_4BYTE, tmpReg, indexReg, /* canSkip */ false);
+            indexReg = tmpReg;
+        }
     }
-#endif // TARGET_64BIT
 
     // Compute the address of the array element.
     unsigned scale = node->GetElemSize();
@@ -5234,13 +5232,16 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
             break;
 
         default:
-#ifdef TARGET_64BIT
-            // IMUL treats its immediate operand as signed so scale can't be larger than INT32_MAX.
-            // The VM doesn't allow such large array elements but let's be sure.
-            noway_assert(scale <= INT32_MAX);
-#else  // !TARGET_64BIT
-            tmpReg = internalRegisters.GetSingle(node);
-#endif // !TARGET_64BIT
+            if (TargetArchitecture::Is64Bit)
+            {
+                // IMUL treats its immediate operand as signed so scale can't be larger than INT32_MAX.
+                // The VM doesn't allow such large array elements but let's be sure.
+                noway_assert(scale <= INT32_MAX);
+            }
+            else
+            {
+                tmpReg = internalRegisters.GetSingle(node);
+            }
 
             GetEmitter()->emitIns_R_I(emitter::inst3opImulForReg(tmpReg), EA_PTRSIZE, indexReg,
                                       static_cast<ssize_t>(scale));
@@ -5282,13 +5283,16 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
     if (addr->IsIconHandle(GTF_ICON_TLS_HDL))
     {
         noway_assert(EA_ATTR(genTypeSize(targetType)) == EA_PTRSIZE);
-#if TARGET_64BIT
-        emit->emitIns_R_C(ins_Load(TYP_I_IMPL), EA_PTRSIZE, tree->GetRegNum(), FLD_GLOBAL_GS,
-                          (int)addr->AsIntCon()->IconValue());
-#else
-        emit->emitIns_R_C(ins_Load(TYP_I_IMPL), EA_PTRSIZE, tree->GetRegNum(), FLD_GLOBAL_FS,
-                          (int)addr->AsIntCon()->IconValue());
-#endif
+        if (TargetArchitecture::Is64Bit)
+        {
+            emit->emitIns_R_C(ins_Load(TYP_I_IMPL), EA_PTRSIZE, tree->GetRegNum(), FLD_GLOBAL_GS,
+                              (int)addr->AsIntCon()->IconValue());
+        }
+        else
+        {
+            emit->emitIns_R_C(ins_Load(TYP_I_IMPL), EA_PTRSIZE, tree->GetRegNum(), FLD_GLOBAL_FS,
+                              (int)addr->AsIntCon()->IconValue());
+        }
     }
     else
     {
@@ -6602,7 +6606,6 @@ GenTree* CodeGen::genTryFindFlagsConsumer(GenTree* producer, GenCondition** cond
     return nullptr;
 }
 
-#if !defined(TARGET_64BIT)
 //------------------------------------------------------------------------
 // genLongToIntCast: Generate code for long to int casts on x86.
 //
@@ -6684,8 +6687,6 @@ void CodeGen::genLongToIntCast(GenTree* cast)
 
     genProduceReg(cast);
 }
-#endif
-
 //------------------------------------------------------------------------
 // genIntCastOverflowCheck: Generate overflow checking code for an integer cast.
 //
@@ -6703,7 +6704,7 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
             genJumpToThrowHlpBlk(EJ_jl, SCK_OVERFLOW);
             break;
 
-#ifdef TARGET_64BIT
+#ifdef TARGET_AMD64
         case GenIntCastDesc::CHECK_UINT_RANGE:
         {
             // We need to check if the value is not greater than 0xFFFFFFFF but this value
@@ -6797,7 +6798,7 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
             ins     = INS_movsx;
             insSize = desc.ExtendSrcSize();
             break;
-#ifdef TARGET_64BIT
+#ifdef TARGET_AMD64
         case GenIntCastDesc::ZERO_EXTEND_INT:
         case GenIntCastDesc::LOAD_ZERO_EXTEND_INT:
             ins     = INS_mov;
@@ -7051,101 +7052,102 @@ void CodeGen::genCkfinite(GenTree* treeNode)
 
     genConsumeReg(op1);
 
-#ifdef TARGET_64BIT
-
-    // Copy the floating-point value to an integer register. If we copied a float to a long, then
-    // right-shift the value so the high 32 bits of the floating-point value sit in the low 32
-    // bits of the integer register.
-    regNumber srcReg        = op1->GetRegNum();
-    var_types targetIntType = ((targetType == TYP_FLOAT) ? TYP_INT : TYP_LONG);
-    inst_Mov(targetIntType, tmpReg, srcReg, /* canSkip */ false, emitActualTypeSize(targetType));
-    if (targetType == TYP_DOUBLE)
+    if (TargetArchitecture::Is64Bit)
     {
-        // right shift by 32 bits to get to exponent.
-        inst_RV_SH(INS_shr, EA_8BYTE, tmpReg, 32);
-    }
 
-    // Mask exponent with all 1's and check if the exponent is all 1's
-    inst_RV_IV(INS_and, tmpReg, expMask, EA_4BYTE);
-    inst_RV_IV(INS_cmp, tmpReg, expMask, EA_4BYTE);
+        // Copy the floating-point value to an integer register. If we copied a float to a long, then
+        // right-shift the value so the high 32 bits of the floating-point value sit in the low 32
+        // bits of the integer register.
+        regNumber srcReg        = op1->GetRegNum();
+        var_types targetIntType = ((targetType == TYP_FLOAT) ? TYP_INT : TYP_LONG);
+        inst_Mov(targetIntType, tmpReg, srcReg, /* canSkip */ false, emitActualTypeSize(targetType));
+        if (targetType == TYP_DOUBLE)
+        {
+            // right shift by 32 bits to get to exponent.
+            inst_RV_SH(INS_shr, EA_8BYTE, tmpReg, 32);
+        }
 
-    // If exponent is all 1's, throw ArithmeticException
-    genJumpToThrowHlpBlk(EJ_je, SCK_ARITH_EXCPN);
+        // Mask exponent with all 1's and check if the exponent is all 1's
+        inst_RV_IV(INS_and, tmpReg, expMask, EA_4BYTE);
+        inst_RV_IV(INS_cmp, tmpReg, expMask, EA_4BYTE);
 
-    // if it is a finite value copy it to targetReg
-    inst_Mov(targetType, targetReg, op1->GetRegNum(), /* canSkip */ true);
+        // If exponent is all 1's, throw ArithmeticException
+        genJumpToThrowHlpBlk(EJ_je, SCK_ARITH_EXCPN);
 
-#else // !TARGET_64BIT
-
-    // If the target type is TYP_DOUBLE, we want to extract the high 32 bits into the register.
-    // There is no easy way to do this. To not require an extra register, we'll use shuffles
-    // to move the high 32 bits into the low 32 bits, then shuffle it back, since we
-    // need to produce the value into the target register.
-    //
-    // For TYP_DOUBLE, we'll generate (for targetReg != op1->GetRegNum()):
-    //    movaps targetReg, op1->GetRegNum()
-    //    shufps targetReg, targetReg, 0xB1    // WZYX => ZWXY
-    //    mov_xmm2i tmpReg, targetReg          // tmpReg <= Y
-    //    and tmpReg, <mask>
-    //    cmp tmpReg, <mask>
-    //    je <throw block>
-    //    movaps targetReg, op1->GetRegNum()   // copy the value again, instead of un-shuffling it
-    //
-    // For TYP_DOUBLE with (targetReg == op1->GetRegNum()):
-    //    shufps targetReg, targetReg, 0xB1    // WZYX => ZWXY
-    //    mov_xmm2i tmpReg, targetReg          // tmpReg <= Y
-    //    and tmpReg, <mask>
-    //    cmp tmpReg, <mask>
-    //    je <throw block>
-    //    shufps targetReg, targetReg, 0xB1    // ZWXY => WZYX
-    //
-    // For TYP_FLOAT, it's the same as TARGET_64BIT:
-    //    mov_xmm2i tmpReg, targetReg          // tmpReg <= low 32 bits
-    //    and tmpReg, <mask>
-    //    cmp tmpReg, <mask>
-    //    je <throw block>
-    //    movaps targetReg, op1->GetRegNum()      // only if targetReg != op1->GetRegNum()
-
-    regNumber copyToTmpSrcReg; // The register we'll copy to the integer temp.
-
-    if (targetType == TYP_DOUBLE)
-    {
+        // if it is a finite value copy it to targetReg
         inst_Mov(targetType, targetReg, op1->GetRegNum(), /* canSkip */ true);
-        GetEmitter()->emitIns_SIMD_R_R_R_I(INS_shufps, EA_16BYTE, targetReg, targetReg, targetReg, (int8_t)0xB1,
-                                           INS_OPTS_NONE);
-        copyToTmpSrcReg = targetReg;
     }
     else
     {
-        copyToTmpSrcReg = op1->GetRegNum();
+
+        // If the target type is TYP_DOUBLE, we want to extract the high 32 bits into the register.
+        // There is no easy way to do this. To not require an extra register, we'll use shuffles
+        // to move the high 32 bits into the low 32 bits, then shuffle it back, since we
+        // need to produce the value into the target register.
+        //
+        // For TYP_DOUBLE, we'll generate (for targetReg != op1->GetRegNum()):
+        //    movaps targetReg, op1->GetRegNum()
+        //    shufps targetReg, targetReg, 0xB1    // WZYX => ZWXY
+        //    mov_xmm2i tmpReg, targetReg          // tmpReg <= Y
+        //    and tmpReg, <mask>
+        //    cmp tmpReg, <mask>
+        //    je <throw block>
+        //    movaps targetReg, op1->GetRegNum()   // copy the value again, instead of un-shuffling it
+        //
+        // For TYP_DOUBLE with (targetReg == op1->GetRegNum()):
+        //    shufps targetReg, targetReg, 0xB1    // WZYX => ZWXY
+        //    mov_xmm2i tmpReg, targetReg          // tmpReg <= Y
+        //    and tmpReg, <mask>
+        //    cmp tmpReg, <mask>
+        //    je <throw block>
+        //    shufps targetReg, targetReg, 0xB1    // ZWXY => WZYX
+        //
+        // For TYP_FLOAT, it's the same as TARGET_64BIT:
+        //    mov_xmm2i tmpReg, targetReg          // tmpReg <= low 32 bits
+        //    and tmpReg, <mask>
+        //    cmp tmpReg, <mask>
+        //    je <throw block>
+        //    movaps targetReg, op1->GetRegNum()      // only if targetReg != op1->GetRegNum()
+
+        regNumber copyToTmpSrcReg; // The register we'll copy to the integer temp.
+
+        if (targetType == TYP_DOUBLE)
+        {
+            inst_Mov(targetType, targetReg, op1->GetRegNum(), /* canSkip */ true);
+            GetEmitter()->emitIns_SIMD_R_R_R_I(INS_shufps, EA_16BYTE, targetReg, targetReg, targetReg, (int8_t)0xB1,
+                                               INS_OPTS_NONE);
+            copyToTmpSrcReg = targetReg;
+        }
+        else
+        {
+            copyToTmpSrcReg = op1->GetRegNum();
+        }
+
+        // Copy only the low 32 bits. This will be the high order 32 bits of the floating-point
+        // value, no matter the floating-point type.
+        inst_Mov(TYP_INT, tmpReg, copyToTmpSrcReg, /* canSkip */ false, emitActualTypeSize(TYP_FLOAT));
+
+        // Mask exponent with all 1's and check if the exponent is all 1's
+        inst_RV_IV(INS_and, tmpReg, expMask, EA_4BYTE);
+        inst_RV_IV(INS_cmp, tmpReg, expMask, EA_4BYTE);
+
+        // If exponent is all 1's, throw ArithmeticException
+        genJumpToThrowHlpBlk(EJ_je, SCK_ARITH_EXCPN);
+
+        if ((targetType == TYP_DOUBLE) && (targetReg == op1->GetRegNum()))
+        {
+            // We need to re-shuffle the targetReg to get the correct result.
+            GetEmitter()->emitIns_SIMD_R_R_R_I(INS_shufps, EA_16BYTE, targetReg, targetReg, targetReg, (int8_t)0xB1,
+                                               INS_OPTS_NONE);
+        }
+        else
+        {
+            // In both the TYP_FLOAT and TYP_DOUBLE case, the op1 register is untouched,
+            // so copy it to the targetReg. This is faster and smaller for TYP_DOUBLE
+            // than re-shuffling the targetReg.
+            inst_Mov(targetType, targetReg, op1->GetRegNum(), /* canSkip */ true);
+        }
     }
-
-    // Copy only the low 32 bits. This will be the high order 32 bits of the floating-point
-    // value, no matter the floating-point type.
-    inst_Mov(TYP_INT, tmpReg, copyToTmpSrcReg, /* canSkip */ false, emitActualTypeSize(TYP_FLOAT));
-
-    // Mask exponent with all 1's and check if the exponent is all 1's
-    inst_RV_IV(INS_and, tmpReg, expMask, EA_4BYTE);
-    inst_RV_IV(INS_cmp, tmpReg, expMask, EA_4BYTE);
-
-    // If exponent is all 1's, throw ArithmeticException
-    genJumpToThrowHlpBlk(EJ_je, SCK_ARITH_EXCPN);
-
-    if ((targetType == TYP_DOUBLE) && (targetReg == op1->GetRegNum()))
-    {
-        // We need to re-shuffle the targetReg to get the correct result.
-        GetEmitter()->emitIns_SIMD_R_R_R_I(INS_shufps, EA_16BYTE, targetReg, targetReg, targetReg, (int8_t)0xB1,
-                                           INS_OPTS_NONE);
-    }
-    else
-    {
-        // In both the TYP_FLOAT and TYP_DOUBLE case, the op1 register is untouched,
-        // so copy it to the targetReg. This is faster and smaller for TYP_DOUBLE
-        // than re-shuffling the targetReg.
-        inst_Mov(targetType, targetReg, op1->GetRegNum(), /* canSkip */ true);
-    }
-
-#endif // !TARGET_64BIT
 
     genProduceReg(treeNode);
 }

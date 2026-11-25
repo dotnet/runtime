@@ -42,7 +42,7 @@ void CodeGen::genStackPointerConstantAdjustment(ssize_t spDelta, regNumber regTm
 
     // We assert that the SP change is less than one page. If it's greater, you should have called a
     // function that does a probe, which will in turn call this function.
-    assert((target_size_t)(-spDelta) <= m_compiler->eeGetPageSize());
+    assert(TargetFromHost<target_size_t>((-spDelta)) <= m_compiler->eeGetPageSize());
 
 #ifdef TARGET_ARM64
     genInstrWithConstant(INS_sub, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, -spDelta, regTmp);
@@ -91,14 +91,14 @@ target_ssize_t CodeGen::genStackPointerConstantAdjustmentLoopWithProbe(ssize_t s
     ssize_t spRemainingDelta = spDelta;
     do
     {
-        ssize_t spOneDelta = -(ssize_t)min((target_size_t)-spRemainingDelta, pageSize);
+        ssize_t spOneDelta = -(ssize_t)min(TargetFromHost<target_size_t>(-spRemainingDelta), pageSize);
         genStackPointerConstantAdjustmentWithProbe(spOneDelta, regTmp);
         spRemainingDelta -= spOneDelta;
     } while (spRemainingDelta < 0);
 
     // What offset from the final SP was the last probe? This depends on the fact that
     // genStackPointerConstantAdjustmentWithProbe() probes first, then does "SUB SP".
-    target_size_t lastTouchDelta = (target_size_t)(-spDelta) % pageSize;
+    target_size_t lastTouchDelta = TargetFromHost<target_size_t>((-spDelta)) % pageSize;
     if ((lastTouchDelta == 0) || (lastTouchDelta + STACK_PROBE_BOUNDARY_THRESHOLD_BYTES > pageSize))
     {
         // We haven't probed almost a complete page. If lastTouchDelta==0, then spDelta was an exact
@@ -225,12 +225,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
             FALLTHROUGH;
 
-#if !defined(TARGET_64BIT)
         case GT_ADD_LO:
         case GT_ADD_HI:
         case GT_SUB_LO:
         case GT_SUB_HI:
-#endif // !defined(TARGET_64BIT)
 
         case GT_ADD:
         case GT_SUB:
@@ -247,14 +245,12 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForShift(treeNode);
             break;
 
-#if !defined(TARGET_64BIT)
-
+#ifdef TARGET_ARM
         case GT_LSH_HI:
         case GT_RSH_LO:
             genCodeForShiftLong(treeNode);
             break;
-
-#endif // !defined(TARGET_64BIT)
+#endif
 
         case GT_CAST:
             genCodeForCast(treeNode->AsOp());
@@ -3629,7 +3625,7 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
             genJumpToThrowHlpBlk(EJ_lt, SCK_OVERFLOW);
             break;
 
-#ifdef TARGET_64BIT
+#ifdef TARGET_ARM64
         case GenIntCastDesc::CHECK_UINT_RANGE:
             // We need to check if the value is not greater than 0xFFFFFFFF but this value
             // cannot be encoded in the immediate operand of CMP. Use TST instead to check
@@ -3730,7 +3726,7 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
                 ins     = (desc.ExtendSrcSize() == 1) ? INS_sxtb : INS_sxth;
                 insSize = 4;
                 break;
-#ifdef TARGET_64BIT
+#ifdef TARGET_ARM64
             case GenIntCastDesc::ZERO_EXTEND_INT:
                 ins     = INS_mov;
                 insSize = 4;
@@ -3739,7 +3735,7 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
                 ins     = INS_sxtw;
                 insSize = 8;
                 break;
-#endif // TARGET_64BIT
+#endif // TARGET_ARM64
             case GenIntCastDesc::COPY:
                 ins     = INS_mov;
                 insSize = desc.ExtendSrcSize();
@@ -3752,7 +3748,7 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
                 ins     = (desc.ExtendSrcSize() == 1) ? INS_ldrsb : INS_ldrsh;
                 insSize = TARGET_POINTER_SIZE;
                 break;
-#ifdef TARGET_64BIT
+#ifdef TARGET_ARM64
             case GenIntCastDesc::LOAD_ZERO_EXTEND_INT:
                 ins     = INS_ldr;
                 insSize = 4;
@@ -3761,7 +3757,7 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
                 ins     = INS_ldrsw;
                 insSize = 8;
                 break;
-#endif // TARGET_64BIT
+#endif // TARGET_ARM64
             case GenIntCastDesc::LOAD_SOURCE:
                 ins     = ins_Load(src->TypeGet());
                 insSize = genTypeSize(genActualType(src));

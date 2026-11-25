@@ -6,13 +6,7 @@
 #pragma hdrstop
 #endif
 
-#ifdef TARGET_WASM32
-#define CPU_NAME "wasm32";
-#else
-#define CPU_NAME "wasm64";
-#endif
-
-const char*            Target::g_tgtCPUName           = CPU_NAME;
+const char*            Target::g_tgtCPUName           = "wasm";
 const Target::ArgOrder Target::g_tgtArgOrder          = ARG_ORDER_R2L;
 const Target::ArgOrder Target::g_tgtUnmanagedArgOrder = ARG_ORDER_R2L;
 

@@ -178,8 +178,6 @@ int LinearScan::BuildNode(GenTree* tree)
             break;
         }
 
-#if !defined(TARGET_64BIT)
-
         case GT_LONG:
             assert(tree->IsUnusedValue()); // Contained nodes are already processed, only unused GT_LONG can reach here.
             // An unused GT_LONG node needs to consume its sources, but need not produce a register.
@@ -191,8 +189,6 @@ int LinearScan::BuildNode(GenTree* tree)
             BuildUse(tree->gtGetOp1());
             BuildUse(tree->gtGetOp2());
             break;
-
-#endif // !defined(TARGET_64BIT)
 
         case GT_BOX:
         case GT_COMMA:
@@ -314,12 +310,10 @@ int LinearScan::BuildNode(GenTree* tree)
         }
         break;
 
-#if !defined(TARGET_64BIT)
         case GT_ADD_LO:
         case GT_ADD_HI:
         case GT_SUB_LO:
         case GT_SUB_HI:
-#endif
         case GT_ADD:
         case GT_SUB:
         case GT_AND:
@@ -656,28 +650,31 @@ int LinearScan::BuildNode(GenTree* tree)
         {
             assert(dstCount == 1);
             RefPosition* internalDef = nullptr;
-#ifdef TARGET_64BIT
-            // On 64-bit we always need a temporary register:
-            //   - if the index is `native int` then we need to load the array
-            //     length into a register to widen it to `native int`
-            //   - if the index is `int` (or smaller) then we need to widen
-            //     it to `long` to perform the address calculation
-            internalDef = buildInternalIntRegisterDefForNode(tree);
-#else  // !TARGET_64BIT
-            assert(!varTypeIsLong(tree->AsIndexAddr()->Index()->TypeGet()));
-            switch (tree->AsIndexAddr()->GetElemSize())
+            if (TargetArchitecture::Is64Bit)
             {
-                case 1:
-                case 2:
-                case 4:
-                case 8:
-                    break;
-
-                default:
-                    internalDef = buildInternalIntRegisterDefForNode(tree);
-                    break;
+                // On 64-bit we always need a temporary register:
+                //   - if the index is `native int` then we need to load the array
+                //     length into a register to widen it to `native int`
+                //   - if the index is `int` (or smaller) then we need to widen
+                //     it to `long` to perform the address calculation
+                internalDef = buildInternalIntRegisterDefForNode(tree);
             }
-#endif // !TARGET_64BIT
+            else
+            {
+                assert(!varTypeIsLong(tree->AsIndexAddr()->Index()->TypeGet()));
+                switch (tree->AsIndexAddr()->GetElemSize())
+                {
+                    case 1:
+                    case 2:
+                    case 4:
+                    case 8:
+                        break;
+
+                    default:
+                        internalDef = buildInternalIntRegisterDefForNode(tree);
+                        break;
+                }
+            }
             srcCount = BuildBinaryUses(tree->AsOp());
             if (internalDef != nullptr)
             {
@@ -1103,19 +1100,19 @@ int LinearScan::BuildShiftRotate(GenTree* tree)
     {
         assert(shiftBy->OperIsConst());
 
-#if defined(TARGET_64BIT)
-        int       shiftByValue = (int)shiftBy->AsIntConCommon()->IconValue();
-        var_types targetType   = tree->TypeGet();
-
-        if ((genActualType(targetType) == TYP_LONG) &&
-            m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2) && tree->OperIs(GT_ROL, GT_ROR) &&
-            (shiftByValue > 0) && (shiftByValue < 64))
+        if (TargetArchitecture::Is64Bit)
         {
-            srcCandidates = ForceLowGprForApxIfNeeded(source, srcCandidates, getEvexIsSupported());
-            dstCandidates = ForceLowGprForApxIfNeeded(tree, dstCandidates, getEvexIsSupported());
-        }
+            int       shiftByValue = (int)shiftBy->AsIntConCommon()->IconValue();
+            var_types targetType   = tree->TypeGet();
 
-#endif
+            if ((genActualType(targetType) == TYP_LONG) &&
+                m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2) && tree->OperIs(GT_ROL, GT_ROR) &&
+                (shiftByValue > 0) && (shiftByValue < 64))
+            {
+                srcCandidates = ForceLowGprForApxIfNeeded(source, srcCandidates, getEvexIsSupported());
+                dstCandidates = ForceLowGprForApxIfNeeded(tree, dstCandidates, getEvexIsSupported());
+            }
+        }
     }
     else if (!tree->isContained() && (tree->OperIsShift() || source->isContained()) &&
              m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2) && !tree->gtSetFlags())

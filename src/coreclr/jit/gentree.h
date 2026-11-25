@@ -1383,12 +1383,13 @@ public:
 
     bool OperIsMultiRegOp() const
     {
-#if !defined(TARGET_64BIT)
-        if (OperIs(GT_MUL_LONG))
+        if (!TargetArchitecture::Is64Bit)
         {
-            return true;
+            if (OperIs(GT_MUL_LONG))
+            {
+                return true;
+            }
         }
-#endif // TARGET_64BIT
         return false;
     }
 
@@ -1490,11 +1491,14 @@ public:
 
     static bool OperIsShiftLong(genTreeOps gtOper)
     {
-#ifdef TARGET_64BIT
-        return false;
-#else
-        return StaticOperIs(gtOper, GT_LSH_HI, GT_RSH_LO);
-#endif
+        if (TargetArchitecture::Is64Bit)
+        {
+            return false;
+        }
+        else
+        {
+            return StaticOperIs(gtOper, GT_LSH_HI, GT_RSH_LO);
+        }
     }
 
     bool OperIsShiftLong() const
@@ -1524,11 +1528,7 @@ public:
 
     static bool OperIsMul(genTreeOps gtOper)
     {
-        return StaticOperIs(gtOper, GT_MUL, GT_MULHI)
-#if !defined(TARGET_64BIT) || defined(TARGET_ARM64)
-               || (gtOper == GT_MUL_LONG)
-#endif
-            ;
+        return StaticOperIs(gtOper, GT_MUL, GT_MULHI, GT_MUL_LONG);
     }
 
     bool OperIsMul() const
@@ -1649,11 +1649,7 @@ public:
 
     static bool OperMayOverflow(genTreeOps gtOper)
     {
-        return StaticOperIs(gtOper, GT_ADD, GT_SUB, GT_MUL, GT_CAST)
-#if !defined(TARGET_64BIT)
-               || StaticOperIs(gtOper, GT_ADD_HI, GT_SUB_HI)
-#endif
-            ;
+        return StaticOperIs(gtOper, GT_ADD, GT_SUB, GT_MUL, GT_CAST) || StaticOperIs(gtOper, GT_ADD_HI, GT_SUB_HI);
     }
 
     bool OperMayOverflow() const
@@ -1803,11 +1799,14 @@ public:
     // This is here for cleaner GT_LONG #ifdefs.
     static bool OperIsLong(genTreeOps gtOper)
     {
-#if defined(TARGET_64BIT)
-        return false;
-#else
-        return gtOper == GT_LONG;
-#endif
+        if (TargetArchitecture::Is64Bit)
+        {
+            return false;
+        }
+        else
+        {
+            return gtOper == GT_LONG;
+        }
     }
 
     bool OperIsLong() const
@@ -1822,12 +1821,13 @@ public:
 
     bool OperConsumesFlags() const
     {
-#if !defined(TARGET_64BIT)
-        if (OperIs(GT_ADD_HI, GT_SUB_HI))
+        if (!TargetArchitecture::Is64Bit)
         {
-            return true;
+            if (OperIs(GT_ADD_HI, GT_SUB_HI))
+            {
+                return true;
+            }
         }
-#endif
 #if defined(TARGET_ARM64)
         if (OperIs(GT_CCMP, GT_SELECT_INCCC, GT_SELECT_INVCC, GT_SELECT_NEGCC))
         {
@@ -2251,11 +2251,14 @@ public:
 
     void SetUnsigned()
     {
-#if defined(TARGET_64BIT)
-        assert(OperIsCompare() || OperIsMul() || OperIs(GT_ADD, GT_SUB, GT_CAST));
-#else
-        assert(OperIsCompare() || OperIsMul() || OperIs(GT_ADD, GT_SUB, GT_CAST, GT_ADD_HI, GT_SUB_HI));
-#endif
+        if (TargetArchitecture::Is64Bit)
+        {
+            assert(OperIsCompare() || OperIsMul() || OperIs(GT_ADD, GT_SUB, GT_CAST));
+        }
+        else
+        {
+            assert(OperIsCompare() || OperIsMul() || OperIs(GT_ADD, GT_SUB, GT_CAST, GT_ADD_HI, GT_SUB_HI));
+        }
         gtFlags |= GTF_UNSIGNED;
     }
 
@@ -3266,11 +3269,9 @@ struct GenTreeOp : public GenTreeUnOp
         }
     }
 
-#if !defined(TARGET_64BIT) || defined(TARGET_ARM64)
     bool IsValidLongMul();
-#endif
 
-#if !defined(TARGET_64BIT) && defined(DEBUG)
+#ifdef DEBUG
     void DebugCheckLongMul();
 #endif
 
@@ -3335,11 +3336,14 @@ struct GenTreeIntConCommon : public GenTree
 
     static bool FitsInI32(ssize_t val) // Constant fits into 32-bit signed storage
     {
-#ifdef TARGET_64BIT
-        return (int32_t)val == val;
-#else
-        return true;
-#endif
+        if (TargetArchitecture::Is64Bit)
+        {
+            return (int32_t)val == val;
+        }
+        else
+        {
+            return true;
+        }
     }
 
     bool ImmedValNeedsReloc(Compiler* comp) const;
@@ -3505,26 +3509,32 @@ struct GenTreeLngCon : public GenTreeIntConCommon
 
 inline INT64 GenTreeIntConCommon::LngValue() const
 {
-#ifndef TARGET_64BIT
-    assert(OperIs(GT_CNS_LNG));
-    return AsLngCon()->gtLconVal;
-#else
-    return IconValue();
-#endif
+    if (!TargetArchitecture::Is64Bit)
+    {
+        assert(OperIs(GT_CNS_LNG));
+        return AsLngCon()->gtLconVal;
+    }
+    else
+    {
+        return IconValue();
+    }
 }
 
 inline void GenTreeIntConCommon::SetLngValue(INT64 val)
 {
-#ifndef TARGET_64BIT
-    assert(OperIs(GT_CNS_LNG));
-    AsLngCon()->gtLconVal = val;
-#else
-    // Compile time asserts that these two fields overlap and have the same offsets:  gtIconVal and gtLconVal
-    static_assert(offsetof(GenTreeLngCon, gtLconVal) == offsetof(GenTreeIntCon, gtIconVal));
-    static_assert(sizeof(AsLngCon()->gtLconVal) == sizeof(AsIntCon()->gtIconVal));
+    if (!TargetArchitecture::Is64Bit)
+    {
+        assert(OperIs(GT_CNS_LNG));
+        AsLngCon()->gtLconVal = val;
+    }
+    else
+    {
+        // Compile time asserts that these two fields overlap and have the same offsets:  gtIconVal and gtLconVal
+        static_assert(offsetof(GenTreeLngCon, gtLconVal) == offsetof(GenTreeIntCon, gtIconVal));
+        static_assert(sizeof(AsLngCon()->gtLconVal) == sizeof(AsIntCon()->gtIconVal));
 
-    SetIconValue(ssize_t(val));
-#endif
+        SetIconValue(ssize_t(val));
+    }
 }
 
 inline ssize_t GenTreeIntConCommon::IconValue() const
@@ -3541,19 +3551,23 @@ inline void GenTreeIntConCommon::SetIconValue(ssize_t val)
 
 inline INT64 GenTreeIntConCommon::IntegralValue() const
 {
-#ifdef TARGET_64BIT
-    return LngValue();
-#else
-    return OperIs(GT_CNS_LNG) ? LngValue() : static_cast<INT64>(IconValue());
-#endif // TARGET_64BIT
+    if (TargetArchitecture::Is64Bit)
+    {
+        return LngValue();
+    }
+    else
+    {
+        return OperIs(GT_CNS_LNG) ? LngValue() : static_cast<INT64>(IconValue());
+    }
 }
 
 inline void GenTreeIntConCommon::SetIntegralValue(int64_t value)
 {
-#ifdef TARGET_64BIT
-    SetIconValue(value);
-#else
-    if (OperIs(GT_CNS_LNG))
+    if (TargetArchitecture::Is64Bit)
+    {
+        SetIconValue(value);
+    }
+    else if (OperIs(GT_CNS_LNG))
     {
         SetLngValue(value);
     }
@@ -3562,7 +3576,6 @@ inline void GenTreeIntConCommon::SetIntegralValue(int64_t value)
         assert(FitsIn<int32_t>(value));
         SetIconValue(static_cast<int32_t>(value));
     }
-#endif // TARGET_64BIT
 }
 
 //------------------------------------------------------------------------
@@ -5915,7 +5928,6 @@ struct GenTreeCall final : public GenTree
 #endif
 };
 
-#if !defined(TARGET_64BIT)
 struct GenTreeMultiRegOp : public GenTreeOp
 {
     regNumber gtOtherReg;
@@ -6018,8 +6030,6 @@ struct GenTreeMultiRegOp : public GenTreeOp
     }
 #endif
 };
-#endif // !defined(TARGET_64BIT)
-
 struct GenTreeFptrVal : public GenTree
 {
     CORINFO_METHOD_HANDLE gtFptrMethod;
@@ -7073,8 +7083,8 @@ struct GenTreeVecCon : public GenTree
                     simdVal.i64[argIdx] = arg->AsIntConCommon()->IntegralValue();
                     return true;
                 }
-#if !defined(TARGET_64BIT)
-                else if (arg->OperIsLong() && arg->gtGetOp1()->IsCnsIntOrI() && arg->gtGetOp2()->IsCnsIntOrI())
+                else if (!TargetArchitecture::Is64Bit && arg->OperIsLong() && arg->gtGetOp1()->IsCnsIntOrI() &&
+                         arg->gtGetOp2()->IsCnsIntOrI())
                 {
                     // 32-bit targets may decompose GT_CNS_LNG into two GT_CNS_INT
                     // We need to reconstruct the 64-bit value in order to handle this
@@ -7086,7 +7096,6 @@ struct GenTreeVecCon : public GenTree
                     simdVal.i64[argIdx] = gtLconVal;
                     return true;
                 }
-#endif // !TARGET_64BIT
                 else
                 {
                     // We expect the constant to have been already zeroed
@@ -10256,12 +10265,13 @@ inline regNumber GenTree::GetRegByIndex(int regIndex) const
         return AsCall()->GetRegNumByIdx(regIndex);
     }
 
-#if !defined(TARGET_64BIT)
-    if (OperIsMultiRegOp())
+    if (!TargetArchitecture::Is64Bit)
     {
-        return AsMultiRegOp()->GetRegNumByIdx(regIndex);
+        if (OperIsMultiRegOp())
+        {
+            return AsMultiRegOp()->GetRegNumByIdx(regIndex);
+        }
     }
-#endif
 #endif // FEATURE_MULTIREG_RET
 
     if (OperIs(GT_COPY, GT_RELOAD))
@@ -10311,12 +10321,13 @@ inline var_types GenTree::GetRegTypeByIndex(int regIndex) const
         return AsCall()->AsCall()->GetReturnTypeDesc()->GetReturnRegType(regIndex);
     }
 
-#if !defined(TARGET_64BIT)
-    if (OperIsMultiRegOp())
+    if (!TargetArchitecture::Is64Bit)
     {
-        return AsMultiRegOp()->GetRegType(regIndex);
+        if (OperIsMultiRegOp())
+        {
+            return AsMultiRegOp()->GetRegType(regIndex);
+        }
     }
-#endif // !defined(TARGET_64BIT)
 #endif // FEATURE_MULTIREG_RET
 
 #ifdef FEATURE_HW_INTRINSICS
@@ -10381,12 +10392,13 @@ inline GenTreeFlags GenTree::GetRegSpillFlagByIdx(int regIndex) const
         return AsCall()->GetRegSpillFlagByIdx(regIndex);
     }
 
-#if !defined(TARGET_64BIT)
-    if (OperIsMultiRegOp())
+    if (!TargetArchitecture::Is64Bit)
     {
-        return AsMultiRegOp()->GetRegSpillFlagByIdx(regIndex);
+        if (OperIsMultiRegOp())
+        {
+            return AsMultiRegOp()->GetRegSpillFlagByIdx(regIndex);
+        }
     }
-#endif // !defined(TARGET_64BIT)
 #endif // FEATURE_MULTIREG_RET
 
 #ifdef FEATURE_HW_INTRINSICS
@@ -10427,13 +10439,14 @@ inline void GenTree::SetRegSpillFlagByIdx(GenTreeFlags flags, int regIndex)
         return;
     }
 
-#if !defined(TARGET_64BIT)
-    if (OperIsMultiRegOp())
+    if (!TargetArchitecture::Is64Bit)
     {
-        AsMultiRegOp()->SetRegSpillFlagByIdx(flags, regIndex);
-        return;
+        if (OperIsMultiRegOp())
+        {
+            AsMultiRegOp()->SetRegSpillFlagByIdx(flags, regIndex);
+            return;
+        }
     }
-#endif // !defined(TARGET_64BIT)
 
 #endif // FEATURE_MULTIREG_RET
 
@@ -10576,11 +10589,14 @@ inline bool GenTree::IsCnsIntOrI() const
 
 inline bool GenTree::IsIntegralConst() const
 {
-#ifdef TARGET_64BIT
-    return IsCnsIntOrI();
-#else  // !TARGET_64BIT
-    return ((OperIs(GT_CNS_INT)) || (OperIs(GT_CNS_LNG)));
-#endif // !TARGET_64BIT
+    if (TargetArchitecture::Is64Bit)
+    {
+        return IsCnsIntOrI();
+    }
+    else
+    {
+        return ((OperIs(GT_CNS_INT)) || (OperIs(GT_CNS_LNG)));
+    }
 }
 
 //-------------------------------------------------------------------------
@@ -10645,11 +10661,14 @@ inline bool GenTree::IsIntegralConstAbsPow2() const
 // Is this node an integer constant that fits in a 32-bit signed integer (INT32)
 inline bool GenTree::IsIntCnsFitsInI32()
 {
-#ifdef TARGET_64BIT
-    return IsCnsIntOrI() && AsIntCon()->FitsInI32();
-#else  // !TARGET_64BIT
-    return IsCnsIntOrI();
-#endif // !TARGET_64BIT
+    if (TargetArchitecture::Is64Bit)
+    {
+        return IsCnsIntOrI() && AsIntCon()->FitsInI32();
+    }
+    else
+    {
+        return IsCnsIntOrI();
+    }
 }
 
 inline bool GenTree::IsCnsFltOrDbl() const

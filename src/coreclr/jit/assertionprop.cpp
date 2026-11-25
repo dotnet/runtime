@@ -3217,8 +3217,7 @@ GenTree* Compiler::optVNBasedFoldConstExpr(BasicBlock* block, GenTree* parent, G
         {
             INT64 value = vnStore->ConstantValue<INT64>(vnCns);
 
-#ifdef TARGET_64BIT
-            if (vnStore->IsVNHandle(vnCns))
+            if (TargetArchitecture::Is64Bit && vnStore->IsVNHandle(vnCns))
             {
                 // Don't perform constant folding that involves a handle that needs
                 // to be recorded as a relocation with the VM.
@@ -3228,7 +3227,6 @@ GenTree* Compiler::optVNBasedFoldConstExpr(BasicBlock* block, GenTree* parent, G
                 }
             }
             else
-#endif
             {
                 switch (tree->TypeGet())
                 {
@@ -3282,8 +3280,7 @@ GenTree* Compiler::optVNBasedFoldConstExpr(BasicBlock* block, GenTree* parent, G
         case TYP_INT:
         {
             int value = vnStore->ConstantValue<int>(vnCns);
-#ifndef TARGET_64BIT
-            if (vnStore->IsVNHandle(vnCns))
+            if (!TargetArchitecture::Is64Bit && vnStore->IsVNHandle(vnCns))
             {
                 // Don't perform constant folding that involves a handle that needs
                 // to be recorded as a relocation with the VM.
@@ -3293,7 +3290,6 @@ GenTree* Compiler::optVNBasedFoldConstExpr(BasicBlock* block, GenTree* parent, G
                 }
             }
             else
-#endif
             {
                 switch (tree->TypeGet())
                 {
@@ -4946,13 +4942,11 @@ GenTree* Compiler::optAssertionPropLocal_RelOp(ASSERT_VALARG_TP assertions, GenT
     {
         constantIsEqual = (curAssertion.GetOp2().GetIntConstant() == cnsVal);
     }
-#ifdef TARGET_64BIT
-    else if (genTypeSize(cmpType) == sizeof(INT32))
+    else if (TargetArchitecture::Is64Bit && (genTypeSize(cmpType) == sizeof(INT32)))
     {
         // Compare the low 32-bits only
         constantIsEqual = (((INT32)curAssertion.GetOp2().GetIntConstant()) == ((INT32)cnsVal));
     }
-#endif
     else
     {
         // We currently don't fold/optimize when the GT_LCL_VAR has been cast to a small type
@@ -5278,7 +5272,7 @@ bool Compiler::optAssertionVNIsNonNull(ValueNum vn, ASSERT_VALARG_TP assertions,
     ValueNum       vnBase = vn;
     target_ssize_t offset = 0;
     vnStore->PeelOffsets(&vnBase, &offset);
-    if ((offset < 0) || fgIsBigOffset(static_cast<size_t>(offset)))
+    if ((offset < 0) || fgIsBigOffset(static_cast<size_t>(TargetToHost(offset))))
     {
         // A non-null base does not imply a non-null address for these offsets.
         // Still allow assertions about the full address.

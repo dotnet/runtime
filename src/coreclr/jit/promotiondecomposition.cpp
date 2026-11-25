@@ -367,11 +367,12 @@ private:
                     case 4:
                         primitiveType = TYP_INT;
                         break;
-#ifdef TARGET_64BIT
                     case 8:
-                        primitiveType = TYP_LONG;
+                        if (TargetArchitecture::Is64Bit)
+                        {
+                            primitiveType = TYP_LONG;
+                        }
                         break;
-#endif
 
 #ifdef FEATURE_SIMD
                     case 16:
@@ -1130,10 +1131,10 @@ private:
                 addrUse = comp->gtCloneExpr(m_addr);
             }
 
-            target_ssize_t fullOffs = m_addrBaseOffs + (target_ssize_t)offs;
+            target_ssize_t fullOffs = m_addrBaseOffs + TargetFromHost<target_ssize_t>(offs);
             if ((fullOffs != 0) || (m_addrBaseOffsFldSeq != nullptr))
             {
-                GenTreeIntCon* offsetNode = comp->gtNewIconNode(fullOffs, TYP_I_IMPL);
+                GenTreeIntCon* offsetNode = comp->gtNewIconNode(TargetToHost(fullOffs), TYP_I_IMPL);
                 offsetNode->SetFieldSeq(m_addrBaseOffsFldSeq);
 
                 var_types addrType = varTypeIsGC(addrUse) ? TYP_BYREF : TYP_I_IMPL;
@@ -1269,7 +1270,7 @@ void Compiler::gtPeelOffsets(GenTree** addr, target_ssize_t* offset, FieldSeq** 
             if (op2->IsCnsIntOrI() && op2->TypeIs(TYP_I_IMPL) && !op2->AsIntCon()->IsIconHandle())
             {
                 GenTreeIntCon* intCon = op2->AsIntCon();
-                *offset += (target_ssize_t)intCon->IconValue();
+                *offset += TargetFromHost<target_ssize_t>(intCon->IconValue());
 
                 if (fldSeq != nullptr)
                 {
@@ -1281,7 +1282,7 @@ void Compiler::gtPeelOffsets(GenTree** addr, target_ssize_t* offset, FieldSeq** 
             else if (op1->IsCnsIntOrI() && op1->TypeIs(TYP_I_IMPL) && !op1->AsIntCon()->IsIconHandle())
             {
                 GenTreeIntCon* intCon = op1->AsIntCon();
-                *offset += (target_ssize_t)intCon->IconValue();
+                *offset += TargetFromHost<target_ssize_t>(intCon->IconValue());
 
                 if (fldSeq != nullptr)
                 {
@@ -1303,7 +1304,7 @@ void Compiler::gtPeelOffsets(GenTree** addr, target_ssize_t* offset, FieldSeq** 
                 break;
             }
 
-            *offset += (target_ssize_t)addrMode->Offset();
+            *offset += TargetFromHost<target_ssize_t>(addrMode->Offset());
             *addr = addrMode->Base();
         }
         else

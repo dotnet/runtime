@@ -25,7 +25,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX*/
 #pragma hdrstop
 #endif
 
-#ifndef TARGET_64BIT // DecomposeLongs is only used on 32-bit platforms
+#if LOWER_DECOMPOSE_LONGS
 
 #include "decomposelongs.h"
 
@@ -2571,4 +2571,4 @@ void DecomposeLongs::TryPromoteLongVar(unsigned lclNum)
     }
 #endif
 }
-#endif // !defined(TARGET_64BIT)
+#endif // LOWER_DECOMPOSE_LONGS

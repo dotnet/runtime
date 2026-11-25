@@ -6,7 +6,7 @@
 //
 
 // clang-format off
-#ifdef TARGET_64BIT
+#if !defined(TARGET_X86) && !defined(TARGET_ARM)
 #define LOWER_DECOMPOSE_LONGS 0
 #endif
 

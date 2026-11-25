@@ -573,17 +573,14 @@ public:
 #endif // FEATURE_SIMD
     ValueNum VNForGenericCon(var_types typ, uint8_t* cnsVal);
 
-#ifdef TARGET_64BIT
     ValueNum VNForPtrSizeIntCon(INT64 cnsVal)
     {
-        return VNForLongCon(cnsVal);
+        if (TargetArchitecture::Is64Bit)
+        {
+            return VNForLongCon(cnsVal);
+        }
+        return VNForIntCon(static_cast<INT32>(cnsVal));
     }
-#else
-    ValueNum VNForPtrSizeIntCon(INT32 cnsVal)
-    {
-        return VNForIntCon(cnsVal);
-    }
-#endif
 
     // Packs information about the cast into an integer constant represented by the returned value number,
     // to be used as the second operand of VNF_Cast & VNF_CastOvf.

@@ -5488,6 +5488,11 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 // we only emit 64-bit BSWAP instructions on 64-bit archs; if we're asked to perform a
                 // 64-bit byte swap on a 32-bit arch, we'll fall to the default case in the switch block below.
 
+                if (!TargetArchitecture::Is64Bit && varTypeIsLong(callType))
+                {
+                    break;
+                }
+
                 switch (sig->retType)
                 {
                     case CorInfoType::CORINFO_TYPE_SHORT:
@@ -5500,10 +5505,8 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 
                     case CorInfoType::CORINFO_TYPE_INT:
                     case CorInfoType::CORINFO_TYPE_UINT:
-#ifdef TARGET_64BIT
                     case CorInfoType::CORINFO_TYPE_LONG:
                     case CorInfoType::CORINFO_TYPE_ULONG:
-#endif // TARGET_64BIT
                         retNode = gtNewOperNode(GT_BSWAP, callType, impPopStack().val);
                         break;
 
@@ -5624,8 +5627,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     double f64Cns = op1->AsDblCon()->DconValue();
                     retNode       = gtNewLconNode(*reinterpret_cast<int64_t*>(&f64Cns));
                 }
-#if TARGET_64BIT
-                else
+                else if (TargetArchitecture::Is64Bit)
                 {
                     // TODO-Cleanup: We should support this on 32-bit but it requires decomposition work
                     impPopStack();
@@ -5633,7 +5635,6 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     op1     = impImplicitR4orR8Cast(op1, TYP_DOUBLE);
                     retNode = gtNewBitCastNode(TYP_LONG, op1);
                 }
-#endif
                 break;
             }
 
@@ -5666,15 +5667,13 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     int64_t i64Cns = op1->AsIntConCommon()->LngValue();
                     retNode        = gtNewDconNodeD(*reinterpret_cast<double*>(&i64Cns));
                 }
-#if TARGET_64BIT
-                else
+                else if (TargetArchitecture::Is64Bit)
                 {
                     // TODO-Cleanup: We should support this on 32-bit but it requires decomposition work
                     impPopStack();
 
                     retNode = gtNewBitCastNode(TYP_DOUBLE, op1);
                 }
-#endif
                 break;
             }
 
@@ -5706,12 +5705,13 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             {
                 assert((sig->sigInst.methInstCount == 0) || (sig->sigInst.methInstCount == 1));
                 var_types retType = sig->sigInst.methInstCount == 0 ? JITtype2varType(sig->retType) : TYP_REF;
-#ifndef TARGET_64BIT
-                if ((retType == TYP_LONG) || (retType == TYP_DOUBLE))
+                if (!TargetArchitecture::Is64Bit)
                 {
-                    break;
+                    if ((retType == TYP_LONG) || (retType == TYP_DOUBLE))
+                    {
+                        break;
+                    }
                 }
-#endif // !TARGET_64BIT
                 assert(retType == TYP_REF || impIsPrimitive(sig->retType));
                 retNode = gtNewIndir(retType, impPopStack().val, GTF_IND_VOLATILE);
                 break;
@@ -5727,12 +5727,13 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                         strip(info.compCompHnd->getArgType(sig, info.compCompHnd->getArgNext(sig->args), &typeHnd));
                     assert(impIsPrimitive(jitType));
                     type = JITtype2varType(jitType);
-#ifndef TARGET_64BIT
-                    if ((type == TYP_LONG) || (type == TYP_DOUBLE))
+                    if (!TargetArchitecture::Is64Bit)
                     {
-                        break;
+                        if ((type == TYP_LONG) || (type == TYP_DOUBLE))
+                        {
+                            break;
+                        }
                     }
-#endif // !TARGET_64BIT
                 }
                 else
                 {
@@ -6875,16 +6876,17 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
             baseJitType = strip(info.compCompHnd->getArgType(sig, args, &op2ClsHnd));
             baseType    = JITtype2varType(baseJitType);
 
-#if !defined(TARGET_64BIT)
-            if (varTypeIsLong(baseType))
+            if (!TargetArchitecture::Is64Bit)
             {
-                // TODO-CQ: Adding long decomposition support is more complex
-                // and not supported today so early exit if we have a long and
-                // either input is not a constant.
+                if (varTypeIsLong(baseType))
+                {
+                    // TODO-CQ: Adding long decomposition support is more complex
+                    // and not supported today so early exit if we have a long and
+                    // either input is not a constant.
 
-                break;
+                    break;
+                }
             }
-#endif // !TARGET_64BIT
 
 #if defined(FEATURE_HW_INTRINSICS)
 #if defined(TARGET_XARCH)
@@ -6950,8 +6952,7 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                 break;
             }
 
-#if !defined(TARGET_64BIT) && !defined(TARGET_WASM)
-            if (varTypeIsLong(baseType))
+            if (!TargetArchitecture::Is64Bit && !TargetArchitecture::IsWasm && varTypeIsLong(baseType))
             {
                 // TODO-CQ: Adding long decomposition support is more complex
                 // and not supported today so early exit if we have a long and
@@ -6959,7 +6960,6 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
 
                 break;
             }
-#endif // !defined(TARGET_64BIT) && !defined(TARGET_WASM)
 
 #if defined(TARGET_RISCV64)
             if (compOpportunisticallyDependsOn(InstructionSet_Zbb))
@@ -7067,16 +7067,17 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                 break;
             }
 
-#if !defined(TARGET_64BIT)
-            if (varTypeIsLong(baseType))
+            if (!TargetArchitecture::Is64Bit)
             {
-                // TODO-CQ: Adding long decomposition support is more complex
-                // and not supported today so early exit if we have a long and
-                // either input is not a constant.
+                if (varTypeIsLong(baseType))
+                {
+                    // TODO-CQ: Adding long decomposition support is more complex
+                    // and not supported today so early exit if we have a long and
+                    // either input is not a constant.
 
-                break;
+                    break;
+                }
             }
-#endif // !TARGET_64BIT
 #if defined(FEATURE_HW_INTRINSICS) && !defined(TARGET_WASM)
             impPopStack();
 
@@ -7204,8 +7205,7 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                 break;
             }
 
-#if !defined(TARGET_64BIT) && !defined(TARGET_WASM)
-            if (varTypeIsLong(baseType))
+            if (!TargetArchitecture::Is64Bit && !TargetArchitecture::IsWasm && varTypeIsLong(baseType))
             {
                 // TODO-CQ: Adding long decomposition support is more complex
                 // and not supported today so early exit if we have a long and
@@ -7213,7 +7213,6 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
 
                 break;
             }
-#endif // !TARGET_64BIT
 
 #if defined(TARGET_RISCV64)
             if (compOpportunisticallyDependsOn(InstructionSet_Zbb))
@@ -7290,8 +7289,7 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                 break;
             }
 
-#if !defined(TARGET_64BIT) && !defined(TARGET_WASM)
-            if (varTypeIsLong(baseType))
+            if (!TargetArchitecture::Is64Bit && !TargetArchitecture::IsWasm && varTypeIsLong(baseType))
             {
                 // TODO-CQ: Adding long decomposition support is more complex
                 // and not supported today so early exit if we have a long and
@@ -7299,7 +7297,6 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
 
                 break;
             }
-#endif // !defined(TARGET_64BIT) && !defined(TARGET_WASM)
 
 #if defined(TARGET_RISCV64)
             if (compOpportunisticallyDependsOn(InstructionSet_Zbb))
@@ -10990,37 +10987,44 @@ bool Compiler::impTailCallRetTypeCompatible(bool                     allowWideni
         return true;
     }
 
-#ifdef TARGET_64BIT
-    // Jit64 compat:
-    if (callerRetType == TYP_VOID)
+#ifndef TARGET_WASM
+    if (TargetArchitecture::Is64Bit)
     {
-        // This needs to be allowed to support the following IL pattern that Jit64 allows:
-        //     tail.call
-        //     pop
-        //     ret
-        //
-        // Note that the above IL pattern is not valid as per IL verification rules.
-        // Therefore, only full trust code can take advantage of this pattern.
-        return true;
+        // Jit64 compat:
+        if (callerRetType == TYP_VOID)
+        {
+            // This needs to be allowed to support the following IL pattern that Jit64 allows:
+            //     tail.call
+            //     pop
+            //     ret
+            //
+            // Note that the above IL pattern is not valid as per IL verification rules.
+            // Therefore, only full trust code can take advantage of this pattern.
+            return true;
+        }
+
+        // These checks return true if the return value type sizes are the same and
+        // get returned in the same return register i.e. caller doesn't need to normalize
+        // return value. Some of the tail calls permitted by below checks would have
+        // been rejected by IL Verifier before we reached here.  Therefore, only full
+        // trust code can make those tail calls.
+        unsigned callerRetTypeSize = 0;
+        unsigned calleeRetTypeSize = 0;
+        bool     isCallerRetTypMBEnreg =
+            VarTypeIsMultiByteAndCanEnreg(callerRetType, callerRetTypeClass, &callerRetTypeSize, info.compIsVarArgs,
+                                          callerCallConv);
+        bool isCalleeRetTypMBEnreg =
+            VarTypeIsMultiByteAndCanEnreg(calleeRetType, calleeRetTypeClass, &calleeRetTypeSize, info.compIsVarArgs,
+                                          calleeCallConv);
+
+        if (varTypeIsIntegral(callerRetType) || isCallerRetTypMBEnreg)
+        {
+            return (varTypeIsIntegral(calleeRetType) || isCalleeRetTypMBEnreg) &&
+                   (callerRetTypeSize == calleeRetTypeSize);
+        }
     }
 
-    // These checks return true if the return value type sizes are the same and
-    // get returned in the same return register i.e. caller doesn't need to normalize
-    // return value. Some of the tail calls permitted by below checks would have
-    // been rejected by IL Verifier before we reached here.  Therefore, only full
-    // trust code can make those tail calls.
-    unsigned callerRetTypeSize = 0;
-    unsigned calleeRetTypeSize = 0;
-    bool isCallerRetTypMBEnreg = VarTypeIsMultiByteAndCanEnreg(callerRetType, callerRetTypeClass, &callerRetTypeSize,
-                                                               info.compIsVarArgs, callerCallConv);
-    bool isCalleeRetTypMBEnreg = VarTypeIsMultiByteAndCanEnreg(calleeRetType, calleeRetTypeClass, &calleeRetTypeSize,
-                                                               info.compIsVarArgs, calleeCallConv);
-
-    if (varTypeIsIntegral(callerRetType) || isCallerRetTypMBEnreg)
-    {
-        return (varTypeIsIntegral(calleeRetType) || isCalleeRetTypMBEnreg) && (callerRetTypeSize == calleeRetTypeSize);
-    }
-#endif // TARGET_64BIT
+#endif
 
     return false;
 }
