@@ -7834,6 +7834,7 @@ void CodeGen::genJmpPlaceArgs(GenTree* jmp)
 // Notes:
 //    Keep consume/copy/definition interleaved, matching the LSRA locations.
 //    In particular, do not consume all COPY/RELOAD registers up front.
+//    See the remarks on LinearScan::BuildStoreLclVars for the liveness model.
 //
 void CodeGen::genStoreLclVars(GenTreeStoreLclVars* store)
 {
@@ -7933,37 +7934,8 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
 #endif // FEATURE_SIMD
 
     // We have either a multi-reg local or a local with multiple fields in memory.
-    //
-    // The liveness model is as follows:
-    //    use reg #0 from src, including any reload or copy
-    //    define reg #0
-    //    use reg #1 from src, including any reload or copy
-    //    define reg #1
-    //    etc.
-    // Imagine the following scenario:
-    //    There are 3 registers used. Prior to this node, they occupy registers r3, r2 and r1.
-    //    There are 3 registers defined by this node. They need to be placed in r1, r2 and r3,
-    //    in that order.
-    //
-    // If we defined the as using all the source registers at once, we'd have to adopt one
-    // of the following models:
-    //  - All (or all but one) of the incoming sources are marked "delayFree" so that they won't
-    //    get the same register as any of the registers being defined. This would result in copies for
-    //    the common case where the source and destination registers are the same (e.g. when a CALL
-    //    result is assigned to a lclVar, which is then returned).
-    //    - For our example (and for many/most cases) we would have to copy or spill all sources.
-    //  - We allow circular dependencies between source and destination registers. This would require
-    //    the code generator to determine the order in which the copies must be generated, and would
-    //    require a temp register in case a swap is required. This complexity would have to be handled
-    //    in both the normal code generation case, as well as for copies & reloads, as they are currently
-    //    modeled by the register allocator to happen just prior to the use.
-    //    - For our example, a temp would be required to swap r1 and r3, unless a swap instruction is
-    //      available on the target.
-    //
-    // By having a multi-reg local use and define each field in order, we avoid these issues, and the
-    // register allocator will ensure that any conflicts are resolved via spill or inserted COPYs.
-    // For our example, the register allocator would simple spill r1 because the first def requires it.
-    // The code generator would move r3  to r1, leave r2 alone, and then load the spilled value into r3.
+    // Each field is used and defined in order; see the remarks on LinearScan::BuildStoreLclVars
+    // for the liveness model.
 
     unsigned offset        = 0;
     bool     isMultiRegVar = lclNode->IsMultiRegLclVar();
