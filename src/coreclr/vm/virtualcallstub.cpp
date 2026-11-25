@@ -4,6 +4,7 @@
 // This file contains the virtual call stub manager and caches
 
 #include "common.h"
+#include <minipal/thread.h>
 #include "array.h"
 #include "CachedInterfaceDispatchPal.h"
 #include "CachedInterfaceDispatch.h"
@@ -177,7 +178,7 @@ void VirtualCallStubManager::StartupLogging()
     EX_TRY
     {
         SString str;
-        str.Printf("StubLog_%d.log", GetCurrentProcessId());
+        str.Printf("StubLog_%d.log", minipal_get_current_process_id());
         if (fopen_lp(&g_hStubLogFile, str.GetUnicode(), W("wb")) != 0)
             g_hStubLogFile = NULL;
     }
@@ -3196,7 +3197,7 @@ void VirtualCallStubManagerManager::AddStubManager(VirtualCallStubManager *pMgr)
 {
     WRAPPER_NO_CONTRACT;
 
-    SimpleWriteLockHolder lh(&m_RWLock);
+    SimpleWriteLockHolder lh = SimpleRWLock::TakeWriteLock(&m_RWLock);
 
     pMgr->m_pNext = m_pManagers;
     m_pManagers = pMgr;
@@ -3220,7 +3221,7 @@ void VirtualCallStubManagerManager::RemoveStubManager(VirtualCallStubManager *pM
     }
     CONTRACTL_END;
 
-    SimpleWriteLockHolder lh(&m_RWLock);
+    SimpleWriteLockHolder lh = SimpleRWLock::TakeWriteLock(&m_RWLock);
 
     // Remove this manager from our list.
     for (VirtualCallStubManager **pCur = &m_pManagers;

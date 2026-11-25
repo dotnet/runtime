@@ -744,7 +744,7 @@ namespace ILCompiler
                 FieldsCount = fieldsDescs.Count,
             };
 
-            uint completeTypeIndex = _objectWriter.GetCompleteClassTypeIndex(classTypeDescriptor, fieldsDescriptor, fields, statics);
+            uint completeTypeIndex = _objectWriter.GetCompleteClassTypeIndex(classTypeDescriptor, fieldsDescriptor, fields, statics, typeIndex);
             _completeKnownTypes[type] = completeTypeIndex;
 
             if (needsCompleteType)

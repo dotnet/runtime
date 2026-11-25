@@ -212,7 +212,7 @@ inline UINT_PTR EEToProfInterfaceImpl::LookupClientIDFromCache(FunctionID functi
 
     _ASSERTE(functionID != 0);
 
-    SimpleReadLockHolder readLockHolder(m_pFunctionIDHashTableRWLock);
+    SimpleReadLockHolder readLockHolder = SimpleRWLock::TakeReadLock(m_pFunctionIDHashTableRWLock);
     const FunctionIDAndClientID * entry = m_pFunctionIDHashTable->LookupPtr(functionID);
 
     // entry can be NULL when OOM happens.

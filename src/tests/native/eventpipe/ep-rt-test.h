@@ -21,6 +21,7 @@
 #define EP_RT_TEST_WAIT_TIMEOUT 258
 
 extern ep_rt_spin_lock_handle_t ep_rt_test_config_lock;
+extern PLATFORM_THREAD_LOCAL int64_t ep_rt_test_perf_counter;
 
 void ep_rt_test_thread_exited(void);
 ep_rt_thread_handle_t ep_rt_test_current_thread(void);
@@ -155,7 +156,7 @@ static inline void ep_rt_provider_config_init(EventPipeProviderConfiguration *co
 static inline void ep_rt_init_providers_and_events(void) { }
 static inline bool ep_rt_providers_validate_all_disabled(void) { return true; }
 static inline void ep_rt_prepare_provider_invoke_callback(EventPipeProviderCallbackData *data) { }
-static inline void ep_rt_provider_invoke_callback(EventPipeCallback callback, const uint8_t *source, unsigned long enabled, uint8_t level, uint64_t any, uint64_t all, EventFilterDescriptor *filter, void *data)
+static inline void ep_rt_provider_invoke_callback(EventPipeCallback callback, const uint8_t *source, uint32_t enabled, uint8_t level, uint64_t any, uint64_t all, EventFilterDescriptor *filter, void *data)
 {
     callback(source, enabled, level, any, all, filter, data);
 }
@@ -205,7 +206,7 @@ static inline void ep_rt_thread_sleep(uint64_t ns)
 static inline uint32_t ep_rt_current_processor_get_number(void) { return ep_rt_test_current_processor(); }
 static inline uint32_t ep_rt_processors_get_count(void) { return ep_rt_test_processor_count(); }
 static inline ep_rt_thread_id_t ep_rt_current_thread_get_id(void) { return ep_rt_test_current_thread_id(); }
-static inline int64_t ep_rt_perf_counter_query(void) { return minipal_hires_ticks(); }
+static inline int64_t ep_rt_perf_counter_query(void) { return ep_rt_test_perf_counter ? ep_rt_test_perf_counter : minipal_hires_ticks(); }
 static inline int64_t ep_rt_perf_frequency_query(void) { return minipal_hires_tick_frequency(); }
 static inline void ep_rt_system_time_get(EventPipeSystemTime *time) { ep_rt_test_system_time(time); }
 static inline int64_t ep_rt_system_timestamp_get(void) { return (int64_t)minipal_get_system_time(); }

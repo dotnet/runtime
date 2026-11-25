@@ -6,6 +6,7 @@
 //*****************************************************************************
 
 #include "stdafx.h"                     // Standard header.
+#include <minipal/debugger.h>
 #include <utilcode.h>                   // Utility helpers.
 #include <corerror.h>
 #include <clrversion.h>
@@ -123,9 +124,6 @@ static int UtilMessageBoxNonLocalized(
             1024,                   // event identifier
             NULL,                   // no user security identifier
             message.GetUnicode());
-
-        OutputDebugString(lpTitle);
-        OutputDebugString(lpText);
 #endif // HOST_UNIX
 #endif //!defined(FEATURE_UTILCODE_NO_DEPENDENCIES)
 

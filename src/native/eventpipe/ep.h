@@ -225,6 +225,13 @@ ep_create_provider (
 	EventPipeCallback callback_func,
 	void *callback_data);
 
+EventPipeProvider *
+ep_create_provider_with_events (
+	const ep_char8_t *provider_name,
+	EventPipeCallback callback_func,
+	void *callback_data,
+	const EventPipeEventTable *event_table);
+
 void
 ep_delete_provider (EventPipeProvider *provider);
 
