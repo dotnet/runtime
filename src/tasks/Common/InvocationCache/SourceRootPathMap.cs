@@ -73,12 +73,15 @@ internal sealed class SourceRootPathMap
 
     internal string Map(string path)
     {
+        string normalized = Path.AltDirectorySeparatorChar == Path.DirectorySeparatorChar
+            ? path
+            : path.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
         foreach (var root in _roots)
         {
-            if (path.Equals(root.Physical, PathComparison))
+            if (normalized.Equals(root.Physical, PathComparison))
                 return "mapped:" + root.Logical;
-            if (path.StartsWith(root.Physical + Path.DirectorySeparatorChar, PathComparison))
-                return "mapped:" + root.Logical + path.Substring(root.Physical.Length + 1).Replace(Path.DirectorySeparatorChar, '/');
+            if (normalized.StartsWith(root.Physical + Path.DirectorySeparatorChar, PathComparison))
+                return "mapped:" + root.Logical + normalized.Substring(root.Physical.Length + 1).Replace(Path.DirectorySeparatorChar, '/');
         }
         return "absolute:" + path;
     }

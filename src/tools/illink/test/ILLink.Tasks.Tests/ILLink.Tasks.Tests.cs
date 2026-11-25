@@ -1972,7 +1972,7 @@ namespace ILLink.Tasks.Tests
                     Assert.Contains(test.Task.ReferenceAssemblyPaths[0].ItemSpec, arguments);
                     Assert.Equal(2, arguments.Count(argument => argument == xml));
                     Assert.Contains(directory, arguments);
-                    Assert.Equal(test.Task.OutputDirectory.ItemSpec, arguments.Last());
+                    Assert.Equal(test.Task.OutputDirectory.ItemSpec.TrimEnd('\\'), arguments.Last());
                     Assert.Equal(originalResponse, test.Task.GetResponseFileCommands());
                     Assert.Equal(caller, test.Task.WorkingDirectory);
 
@@ -2369,7 +2369,7 @@ namespace ILLink.Tasks.Tests
                     Assert.True(test.Task.Execute());
                     Assert.Equal(Environment.CurrentDirectory, test.Task.WorkingDirectories.Last());
                     Assert.Contains($"\"{test.Task.AssemblyPaths[0].ItemSpec}\"", test.Task.ResponseFiles.Last());
-                    Assert.Contains($"\"{test.Task.OutputDirectory.ItemSpec}\"", test.Task.ResponseFiles.Last());
+                    Assert.Contains($"\"{test.Task.OutputDirectory.ItemSpec.TrimEnd('\\')}\"", test.Task.ResponseFiles.Last());
                     Assert.Equal(File.ReadAllBytes(input), File.ReadAllBytes(Path.Combine(test.Output, "Input.dll")));
                 }
                 Assert.Equal(test.Task.ResponseFiles[0], test.Task.ResponseFiles[1]);
@@ -2435,7 +2435,7 @@ namespace ILLink.Tasks.Tests
                     }
                     string executedResponse = Assert.Single(first.Task.ResponseFiles);
                     Assert.Contains($"\"{Path.Combine(first.Root, "Fixture.dll")}\"", executedResponse);
-                    Assert.Contains($"\"{first.Task.OutputDirectory.ItemSpec}\"", executedResponse);
+                    Assert.Contains($"\"{first.Task.OutputDirectory.ItemSpec.TrimEnd('\\')}\"", executedResponse);
                     Assert.Empty(second.Task.ResponseFiles);
                     Assert.Contains(first.Task.WorkingDirectories, directory => directory == Path.Combine(first.Root, "first caller"));
                     Assert.Contains(first.BuildEngine.Messages, message => message.Message.StartsWith("ILLink cache stored:"));
@@ -2889,6 +2889,107 @@ namespace ILLink.Tasks.Tests
                 Assert.Contains(firstWarnings, w => w.File.StartsWith("resource ILLink.Descriptors.xml in Input", StringComparison.Ordinal) && w.Message.Contains("MissingEmbeddedType"));
                 Assert.DoesNotContain(firstWarnings, w => w.File.Contains(first.Root, StringComparison.OrdinalIgnoreCase) || w.Message.Contains(first.Root, StringComparison.OrdinalIgnoreCase));
                 Assert.DoesNotContain(secondWarnings, w => w.File.Contains(first.Root, StringComparison.OrdinalIgnoreCase) || w.File.Contains(second.Root, StringComparison.OrdinalIgnoreCase));
+            }).Dispose();
+        }
+
+        [Fact]
+        public void QuotedSourceRootIsRejectedBeforePathMapEmission()
+        {
+            using var test = new OutputDirectoryTest();
+            string host = PrepareCacheKeyTest(test);
+            test.Task.SourceRoots = new ITaskItem[]
+            {
+                new TaskItem(Path.Combine(test.Root, "quote\"root"), new Dictionary<string, string> { { "MappedPath", "/_/" } })
+            };
+
+            string response = test.Task.GetResponseFileCommands();
+            Assert.DoesNotContain("--pathmap", response);
+            Assert.True(test.Task.TryGetCacheKey(host, out _));
+            Assert.Contains(test.BuildEngine.Messages, message => message.Message.Contains("ILLink cache key is path-dependent:"));
+        }
+
+        [Fact]
+        public void RenamedReferenceWithSymbolsIsNotWaivedFromSymbolChecks()
+        {
+            using var first = new OutputDirectoryTest();
+            using var second = new OutputDirectoryTest();
+            string firstHost = PrepareCacheKeyTest(first);
+            string secondHost = PrepareCacheKeyTest(second);
+            string actualPath = Path.Combine(first.Root, "Actual.dll");
+            WriteSymbolAssembly(actualPath, "/_/src/Actual.cs");
+            string firstRenamed = Path.Combine(first.Root, "inputs", "Renamed.dll");
+            string secondRenamed = Path.Combine(second.Root, "inputs", "Renamed.dll");
+            File.Copy(actualPath, firstRenamed);
+            File.Copy(Path.ChangeExtension(actualPath, ".pdb"), Path.ChangeExtension(firstRenamed, ".pdb"));
+            File.Copy(actualPath, secondRenamed);
+            File.Copy(Path.ChangeExtension(actualPath, ".pdb"), Path.ChangeExtension(secondRenamed, ".pdb"));
+
+            foreach (var (test, renamed) in new[] { (first, firstRenamed), (second, secondRenamed) })
+            {
+                test.Task.RemoveSymbols = false;
+                test.Task.PreserveSymbolPaths = false;
+                test.Task.ReferenceAssemblyPaths = new ITaskItem[] { new TaskItem(renamed) };
+            }
+
+            Assert.True(first.Task.TryGetCacheKey(firstHost, out string firstKey));
+            Assert.True(second.Task.TryGetCacheKey(secondHost, out string secondKey));
+            Assert.NotEqual(firstKey, secondKey);
+            Assert.Contains(first.BuildEngine.Messages, message => message.Message.Contains("Portable PDB emission without PreserveSymbolPaths"));
+        }
+
+        [Fact]
+        public void TrailingSeparatorOnDescriptorFileBypassesCache()
+        {
+            using var test = new OutputDirectoryTest();
+            string host = PrepareCacheKeyTest(test);
+            string descriptor = test.Task.RootDescriptorFiles[0].ItemSpec;
+            test.Task.RootDescriptorFiles = new ITaskItem[] { new TaskItem(descriptor + Path.DirectorySeparatorChar) };
+
+            Assert.False(test.Task.TryGetCacheKey(host, out string key));
+            Assert.Empty(key);
+            Assert.Contains(test.BuildEngine.Messages, message => message.Message.StartsWith("ILLink cache bypassed:"));
+        }
+
+        [Fact]
+        public void RelativeExternalXmlResolvesToFullPathWithoutPathMap()
+        {
+            RemoteExecutor.Invoke(static () =>
+            {
+                using var test = new OutputDirectoryTest();
+                string input = Path.Combine(test.Root, "Input.dll");
+                WriteTestAssembly(input);
+                string descriptor = Path.Combine(test.Root, "descriptor.xml");
+                File.WriteAllText(descriptor, "<linker><assembly fullname=\"Input\"><type fullname=\"MissingType\" /></assembly></linker>");
+                string siblingDir = Path.Combine(test.Root, "sibling");
+                Directory.CreateDirectory(siblingDir);
+
+                string originalCwd = Environment.CurrentDirectory;
+                try
+                {
+                    Environment.CurrentDirectory = siblingDir;
+                    var task = new ILLink
+                    {
+                        BuildEngine = test.BuildEngine,
+                        SourceRoots = null,
+                        OutputDirectory = test.Task.OutputDirectory,
+                        ToolPath = test.Task.ToolPath,
+                        ToolExe = test.Task.ToolExe,
+                        ILLinkPath = test.Task.ILLinkPath,
+                        AssemblyPaths = new ITaskItem[] { new TaskItem(input) },
+                        ReferenceAssemblyPaths = new ITaskItem[] { new TaskItem(typeof(object).Assembly.Location) },
+                        RootAssemblyNames = new ITaskItem[] { new TaskItem("Input", new Dictionary<string, string> { { "RootMode", "library" } }) },
+                        RootDescriptorFiles = new ITaskItem[] { new TaskItem(Path.Combine("..", "descriptor.xml")) },
+                        TrimMode = "partial",
+                        ExtraArgs = null
+                    };
+                    Assert.True(task.Execute(), string.Join(Environment.NewLine, test.BuildEngine.Errors.Select(e => e.Message)));
+                }
+                finally
+                {
+                    Environment.CurrentDirectory = originalCwd;
+                }
+
+                Assert.Contains(test.BuildEngine.Warnings, w => w.File == Path.GetFullPath(descriptor) && w.Message.Contains("MissingType"));
             }).Dispose();
         }
 

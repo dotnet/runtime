@@ -556,6 +556,7 @@ namespace Mono.Linker
 
             return null;
         }
+#endif
 
         private List<(string Physical, string Logical)>? _pathMap;
 
@@ -604,6 +605,7 @@ namespace Mono.Linker
             return path;
         }
 
+#if !ILTRIM
         public string GetAssemblyLocation(AssemblyDefinition assembly)
         {
             return Resolver.GetAssemblyLocation(assembly);

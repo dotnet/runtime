@@ -302,6 +302,15 @@ namespace ILLink.Tasks
             try
             {
                 var paths = new SourceRootPathMap(SourceRoots);
+                foreach (var (physical, logical) in paths.Roots)
+                {
+                    if (physical.IndexOf('"') >= 0 || logical.IndexOf('"') >= 0 ||
+                        (Path.DirectorySeparatorChar == '/' && physical.IndexOf('\\') >= 0))
+                    {
+                        pathDependentReason = "SourceRoots containing quotes or Unix backslashes are not supported.";
+                        return new SourceRootPathMap(null);
+                    }
+                }
                 pathDependentReason = paths.HasLogicalRoots ? null : "no SourceRoots have logical MappedPath prefixes.";
                 return paths;
             }
@@ -343,9 +352,10 @@ namespace ILLink.Tasks
                 SourceRootPathMap paths = CreateSourceRootPathMap(out string? pathDependentReason);
                 if (pathDependentReason is not null)
                     Log.LogMessage(MessageImportance.Low, $"ILLink cache key is path-dependent: {pathDependentReason}");
-                string? outputDirectory = OutputDirectory is null ? null : GetFullInvocationPath(OutputDirectory.ItemSpec);
+                string? outputDirectory = OutputDirectory is null ? null : GetFullInvocationPath(OutputDirectory.ItemSpec, isDirectory: true);
                 bool emitsSymbols = false;
                 var assemblies = new HashSet<string>(StringComparer.Ordinal);
+                var assemblyNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 string toolPath = AddPath(nameof(ILLinkPath), ILLinkPath);
                 foreach (ITaskItem descriptor in RootDescriptorFiles ?? Array.Empty<ITaskItem>())
                     files.Add(AddPath(nameof(RootDescriptorFiles), descriptor.ItemSpec));
@@ -357,7 +367,9 @@ namespace ILLink.Tasks
                 }
                 foreach (ITaskItem assembly in AssemblyPaths)
                 {
-                    if (!AddAssembly(AddPath(nameof(AssemblyPaths), assembly.ItemSpec)))
+                    string assemblyPath = AddPath(nameof(AssemblyPaths), assembly.ItemSpec);
+                    assemblyNames.Add(Path.GetFileNameWithoutExtension(assemblyPath));
+                    if (!AddAssembly(assemblyPath))
                         return null;
                     context.Add(assembly.GetMetadata("TrimMode"));
                     context.Add(assembly.GetMetadata("IsTrimmable"));
@@ -367,7 +379,9 @@ namespace ILLink.Tasks
                 }
                 foreach (ITaskItem reference in ReferenceAssemblyPaths ?? Array.Empty<ITaskItem>())
                 {
-                    if (!AddAssembly(AddPath(nameof(ReferenceAssemblyPaths), reference.ItemSpec), checkOutputSymbols: false))
+                    string referencePath = AddPath(nameof(ReferenceAssemblyPaths), reference.ItemSpec);
+                    bool skippedByFileName = assemblyNames.Add(Path.GetFileNameWithoutExtension(referencePath));
+                    if (!AddAssembly(referencePath, waiveSymbolsIfSkippedByFileName: skippedByFileName))
                         return null;
                 }
                 foreach (ITaskItem feature in FeatureSettings ?? Array.Empty<ITaskItem>())
@@ -436,7 +450,7 @@ namespace ILLink.Tasks
                         files.Add(path);
                 }
 
-                bool AddAssembly(string path, bool checkOutputSymbols = true)
+                bool AddAssembly(string path, bool waiveSymbolsIfSkippedByFileName = false)
                 {
                     if (!assemblies.Add(path))
                         return true;
@@ -463,7 +477,10 @@ namespace ILLink.Tasks
                             return false;
                         }
                     }
-                    if (checkOutputSymbols)
+                    bool effectivelySkipped = waiveSymbolsIfSkippedByFileName &&
+                        metadata.IsAssembly &&
+                        string.Equals(metadata.GetString(metadata.GetAssemblyDefinition().Name), Path.GetFileNameWithoutExtension(path), StringComparison.Ordinal);
+                    if (!effectivelySkipped)
                         emitsSymbols |= CheckCacheableSymbols(path, pe);
                     return true;
                 }
@@ -480,10 +497,10 @@ namespace ILLink.Tasks
 
         private static bool HasPathSyntax(string name) => name.AsSpan().IndexOfAny('/', '\\', ':') >= 0;
 
-        private static string GetFullInvocationPath(string path)
+        private static string GetFullInvocationPath(string path, bool isDirectory = false)
         {
             path = Path.GetFullPath(path);
-            if (path.Length > Path.GetPathRoot(path).Length)
+            if (isDirectory && path.Length > Path.GetPathRoot(path).Length)
                 path = path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
             // Argument parsing can change these spellings, leaving a different file uninventoried.
             if (path.AsSpan().IndexOf('"') >= 0 ||
@@ -551,7 +568,7 @@ namespace ILLink.Tasks
                     return false;
                 }
 
-                path = GetFullInvocationPath(path);
+                path = GetFullInvocationPath(path, isDirectory: option == "-d");
                 context.Add(option);
                 orderedPaths.Add(path);
                 if (option == "-d")

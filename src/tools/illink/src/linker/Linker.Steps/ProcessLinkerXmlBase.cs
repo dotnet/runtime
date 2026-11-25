@@ -44,8 +44,24 @@ namespace Mono.Linker.Steps
         protected readonly LinkContext _context;
 
         protected ProcessLinkerXmlBase(LinkContext context, Stream documentStream, string xmlDocumentLocation)
-            : this(context, documentStream, context.MapPath(xmlDocumentLocation), resource: null)
+            : this(context, documentStream, GetExternalXmlLocation(context, xmlDocumentLocation), resource: null)
         {
+        }
+
+        private static string GetExternalXmlLocation(LinkContext context, string xmlDocumentLocation)
+        {
+            if (!string.IsNullOrEmpty(xmlDocumentLocation))
+            {
+                try
+                {
+                    xmlDocumentLocation = Path.GetFullPath(xmlDocumentLocation);
+                }
+                catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
+                {
+                }
+            }
+
+            return context.MapPath(xmlDocumentLocation);
         }
 
         protected ProcessLinkerXmlBase(LinkContext context, Stream documentStream, EmbeddedResource resource, AssemblyDefinition resourceAssembly, string xmlDocumentLocation)
