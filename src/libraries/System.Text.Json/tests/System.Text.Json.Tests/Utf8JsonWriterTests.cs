@@ -3516,9 +3516,8 @@ namespace System.Text.Json.Tests
             }
         }
 
-        [ConditionalTheory(typeof(Environment), nameof(Environment.Is64BitProcess))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess), nameof(PlatformDetection.IsNotBrowserOnCI))]
         [OuterLoop]
-        [SkipOnPlatform(TestPlatforms.Browser, "Allocates and fills multi-gigabyte buffers, which takes hours on the browser interpreter")]
         [MemberData(nameof(JsonOptions_TestData))]
         public void WritingTooLargeBase64Bytes(JsonWriterOptions options)
         {
@@ -6977,9 +6976,8 @@ namespace System.Text.Json.Tests
             }
         }
 
-        [ConditionalTheory(typeof(Environment), nameof(Environment.Is64BitProcess))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess), nameof(PlatformDetection.IsNotBrowserOnCI))]
         [OuterLoop]
-        [SkipOnPlatform(TestPlatforms.Browser, "Allocates and fills multi-gigabyte buffers, which takes hours on the browser interpreter")]
         [MemberData(nameof(JsonOptions_TestData))]
         public void WriteTooLargeArguments(JsonWriterOptions options)
         {
