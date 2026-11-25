@@ -4778,13 +4778,19 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 // Optimize redundant branches
                 //
                 DoPhase(this, PHASE_OPTIMIZE_BRANCHES, &Compiler::optRedundantBranches);
-            }
-            else
-            {
-                // DFS tree is always invalid after this point.
+
+                // Jump threading invalidates SSA and value numbers, so rebuild them.
                 //
-                fgInvalidateDfsTree();
+                if (optRboNeedsSsaRebuild)
+                {
+                    DoPhase(this, PHASE_BUILD_SSA, &Compiler::fgSsaBuild);
+                    DoPhase(this, PHASE_VALUE_NUMBER, &Compiler::fgValueNumber);
+                }
             }
+
+            // DFS tree is always invalid after this point.
+            //
+            fgInvalidateDfsTree();
 
             if (doCse)
             {
@@ -5852,13 +5858,8 @@ void Compiler::ResetOptAnnotations()
     assert(opts.optRepeat);
     assert(JitConfig.JitOptRepeatCount() > 0);
     fgResetForSsa(/* deepClean */ true);
-    vnStore                    = nullptr;
-    m_blockToEHPreds           = nullptr;
-    m_dominancePreds           = nullptr;
-    fgSsaPassesCompleted       = 0;
-    fgVNPassesCompleted        = 0;
-    fgSsaValid                 = false;
-    m_nodeToLoopMemoryBlockMap = nullptr;
+    fgSsaPassesCompleted = 0;
+    fgSsaValid           = false;
 
     for (BasicBlock* const block : Blocks())
     {
@@ -5866,7 +5867,6 @@ void Compiler::ResetOptAnnotations()
         {
             for (GenTree* const tree : stmt->TreeList())
             {
-                tree->ClearVN();
                 tree->ClearAssertion();
                 tree->gtCSEnum = NO_CSE;
             }
