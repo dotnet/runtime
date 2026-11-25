@@ -546,16 +546,6 @@ public:
         ULONG       cAssociateRec);         // [IN] size of the buffer
 
 
-    //**********************************
-    // Get info about a PermissionSet.
-    //**********************************
-    __checkReturn
-    STDMETHODIMP GetPermissionSetProps(
-        mdPermission pm,                    // [IN] the permission token.
-        DWORD       *pdwAction,             // [OUT] CorDeclSecurity.
-        void const  **ppvPermission,        // [OUT] permission blob.
-        ULONG       *pcbPermission);        // [OUT] count of bytes of pvPermission.
-
     //****************************************
     // Get the String given the String token.
     // Returns a pointer to the string, or NULL in case of error.

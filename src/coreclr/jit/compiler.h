@@ -584,6 +584,10 @@ public:
                                           // in earlier phase and the information might not be appropriate
                                           // in LSRA.
 
+#ifdef TARGET_WASM
+    unsigned char lvWasmGCWriteThru : 1; // GC register candidate with an up-to-date pinned shadow-stack home.
+#endif                                   // TARGET_WASM
+
     unsigned char lvHasExceptionalUsesHint : 1; // hint for CopyProp
 
 #ifndef TARGET_64BIT
@@ -1243,10 +1247,16 @@ public:
     //-----------------------------------------------------------------------------
     //  IsAlwaysAliveInMemory: Determines if this variable's value is always
     //     up-to-date on stack. This is possible if this is an EH-var or
-    //     we decided to spill after single-def.
+    //     we decided to spill after single-def, or it is a Wasm GC write-through local.
     //
     bool IsAlwaysAliveInMemory() const
     {
+#ifdef TARGET_WASM
+        if (lvWasmGCWriteThru)
+        {
+            return true;
+        }
+#endif // TARGET_WASM
         return IsLiveInOutOfHandler() || lvSpillAtSingleDef;
     }
 
@@ -4055,7 +4065,7 @@ public:
     GenTree* gtReverseCond(GenTree* tree);
     bool     gtTryReverseCond(GenTree* tree);
 
-    static bool gtHasRef(GenTree* tree, unsigned lclNum);
+    bool gtHasRef(GenTree* tree, unsigned lclNum);
 
     bool gtHasLocalsWithAddrOp(GenTree* tree);
     bool gtHasAddressExposedLocals(GenTree* tree);
@@ -4444,6 +4454,8 @@ public:
     };
     jitstd::vector<WasmSpillSlot>* m_wasmSpillSlots = nullptr;
     BitVec* m_wasmGCRefCandidates = nullptr;
+    ArrayStack<BasicBlock*>* m_wasmLocalCopyBlocks = nullptr; // Blocks with local-to-local copies, set by lowering
+    ArrayStack<BasicBlock*>* m_wasmRematBlocks     = nullptr; // Blocks with stores of invariant values, set by lowering
 #endif // defined(TARGET_WASM)
 
     unsigned lvaInlinedPInvokeFrameVar = BAD_VAR_NUM; // variable representing the InlinedCallFrame
@@ -7065,6 +7077,10 @@ public:
     PhaseStatus fgWasmTransformSccs();
     PhaseStatus fgWasmRepairTryEntries();
     PhaseStatus fgWasmVirtualIP();
+    PhaseStatus fgWasmForwardLocalCopies();
+    bool        fgWasmRematerializeInvariantLocals();
+    static bool fgWasmIsRematerializableValue(GenTree* node);
+    bool        fgWasmMayEmitCall();
     PhaseStatus fgWasmFindGCRefCandidates();
     PhaseStatus fgWasmSpillRefs();
     PhaseStatus fgWasmProfInstrument();
@@ -7364,6 +7380,7 @@ private:
 
     void fgMarkAddrModeForFieldAddr(GenTreeIndir* indir);
 
+    bool     fgTreeMayModifyLocal(GenTree* tree, unsigned lclNum);
     GenTree* fgMorphIndexAddr(GenTreeIndexAddr* tree);
     GenTree* fgMorphExpandCast(GenTreeCast* tree);
     GenTreeFieldList* fgMorphLclToFieldList(GenTreeLclVar* lcl);

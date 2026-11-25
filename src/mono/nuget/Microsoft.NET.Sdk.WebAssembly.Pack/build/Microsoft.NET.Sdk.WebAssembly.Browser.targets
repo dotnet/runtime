@@ -17,9 +17,11 @@ Copyright (c) .NET Foundation. All rights reserved.
     <_TargetingNET80OrLater>false</_TargetingNET80OrLater>
     <_TargetingNET90OrLater>false</_TargetingNET90OrLater>
     <_TargetingNET100OrLater>false</_TargetingNET100OrLater>
+    <_TargetingNET120OrLater>false</_TargetingNET120OrLater>
     <_TargetingNET80OrLater Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '8.0'))">true</_TargetingNET80OrLater>
     <_TargetingNET90OrLater Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '9.0'))">true</_TargetingNET90OrLater>
     <_TargetingNET100OrLater Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '10.0'))">true</_TargetingNET100OrLater>
+    <_TargetingNET120OrLater Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '12.0'))">true</_TargetingNET120OrLater>
 
     <WebAssemblyHotReloadCapabilities>Baseline;AddMethodToExistingType;AddStaticFieldToExistingType;NewTypeDefinition;ChangeCustomAttributes</WebAssemblyHotReloadCapabilities>
     <WebAssemblyHotReloadCapabilities Condition="'$(_TargetingNET80OrLater)' == 'true'">Baseline;AddMethodToExistingType;AddStaticFieldToExistingType;NewTypeDefinition;ChangeCustomAttributes;AddInstanceFieldToExistingType;GenericAddMethodToExistingType;GenericUpdateMethod;UpdateParameters;GenericAddFieldToExistingType</WebAssemblyHotReloadCapabilities>
@@ -52,6 +54,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     <_WebAssemblySdkTasksDirectory Condition="'$(_WebAssemblySdkTasksDirectory)' == '' and '$(MSBuildRuntimeType)' == 'Core'">$(MSBuildThisFileDirectory)..\tools\net\</_WebAssemblySdkTasksDirectory>
     <_WebAssemblySdkTasksDirectory Condition="'$(_WebAssemblySdkTasksDirectory)' == '' and '$(MSBuildRuntimeType)' != 'Core'">$(MSBuildThisFileDirectory)..\tools\netframework\</_WebAssemblySdkTasksDirectory>
     <_WebAssemblySdkTasksAssembly Condition="'$(_WebAssemblySdkTasksAssembly)' == ''">$(_WebAssemblySdkTasksDirectory)\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks.dll</_WebAssemblySdkTasksAssembly>
+    <_WebcilConverterAssembly>$([MSBuild]::NormalizePath('$([System.IO.Path]::GetDirectoryName($(_WebAssemblySdkTasksAssembly)))', 'Microsoft.NET.WebAssembly.Webcil.dll'))</_WebcilConverterAssembly>
 
     <!-- Compression -->
     <CompressionIncludePatterns>$(CompressionIncludePatterns);_framework\**</CompressionIncludePatterns>
@@ -245,6 +248,13 @@ Copyright (c) .NET Foundation. All rights reserved.
     <ItemGroup Condition="'$(StackTraceLineNumberSupport)' == 'false'">
       <RuntimeHostConfigurationOption Include="System.Diagnostics.StackTrace.IsLineNumberSupported" Value="false" Trim="true" />
     </ItemGroup>
+    <!-- Avoid precompiling thousands of generic call instructions for the System.Linq.Expressions interpreter by default -->
+    <PropertyGroup>
+      <LinqExpressionsInterpreterPrecompiledCallSupport Condition="'$(LinqExpressionsInterpreterPrecompiledCallSupport)' == ''">false</LinqExpressionsInterpreterPrecompiledCallSupport>
+    </PropertyGroup>
+    <ItemGroup>
+      <RuntimeHostConfigurationOption Include="System.Linq.Expressions.Interpreter.IsPrecompiledCallSupported" Value="$(LinqExpressionsInterpreterPrecompiledCallSupport)" Trim="true" />
+    </ItemGroup>
     <ItemGroup Condition="'$(WasmEnableThreads)' != 'true'">
       <RuntimeHostConfigurationOption Include="System.Runtime.CompilerServices.RuntimeFeature.IsMultithreadingSupported" Value="false" Trim="true" />
     </ItemGroup>
@@ -425,6 +435,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     <_WasmWebcilStampProperty Include="_WasmWebcilVersion" />
     <_WasmWebcilStampProperty Include="PublishReadyToRun" />
     <_WasmWebcilStampProperty Include="_WasmBuildPrebuiltR2RDirectory" />
+    <_WasmWebcilStampProperty Include="_TargetingNET120OrLater" />
   </ItemGroup>
 
   <!-- Writes one "name=value" line per _WasmWebcilStampProperty. WriteOnlyWhenDifferent bumps the stamp's
@@ -437,7 +448,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     <ItemGroup>
       <_WasmBuildPrebuiltR2RInput Include="$(_WasmBuildPrebuiltR2RDirectory)*.dll;$(_WasmBuildPrebuiltR2RDirectory)*.wasm"
                                   Condition="'$(_WasmBuildPrebuiltR2RDirectory)' != ''" />
-      <_WasmWebcilBuildStampInput Include="$(MSBuildProjectFullPath);$(MSBuildThisFileFullPath);$(_WebAssemblySdkTasksAssembly)" />
+      <_WasmWebcilBuildStampInput Include="$(MSBuildProjectFullPath);$(MSBuildThisFileFullPath);$(_WebAssemblySdkTasksAssembly);$(_WebcilConverterAssembly)" />
       <_WasmWebcilBuildStampLine Include="%(_WasmWebcilStampProperty.Identity)=$(%(_WasmWebcilStampProperty.Identity))" />
       <_WasmWebcilBuildStampLine Include="PrebuiltR2R=%(_WasmBuildPrebuiltR2RInput.Identity)|%(_WasmBuildPrebuiltR2RInput.ModifiedTime)" />
       <_WasmWebcilBuildStampLine Include="Input=%(_WasmWebcilBuildStampInput.Identity)|%(_WasmWebcilBuildStampInput.ModifiedTime)" />
@@ -465,7 +476,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     Inputs="@(_WasmDllBuildCandidates);$(IntermediateOutputPath)wasm-webcil-build.stamp;$(MSBuildProjectFullPath);$(MSBuildThisFileFullPath);$(_WebAssemblySdkTasksAssembly)"
     Outputs="@(_WasmDllBuildCandidates->'%(WebcilOutputPath)')">
 
-    <ConvertDllsToWebcil Candidates="@(_WasmDllBuildCandidates)" IntermediateOutputPath="$(_WasmBuildTmpWebcilPath)" OutputPath="$(_WasmBuildWebcilPath)" IsEnabled="$(_WasmEnableWebcil)" WebcilVersion="$(_WasmWebcilVersion)" PrebuiltR2RDirectory="$(_WasmBuildPrebuiltR2RDirectory)" ConversionStamp="$(IntermediateOutputPath)wasm-webcil-build.stamp">
+    <ConvertDllsToWebcil Candidates="@(_WasmDllBuildCandidates)" IntermediateOutputPath="$(_WasmBuildTmpWebcilPath)" OutputPath="$(_WasmBuildWebcilPath)" IsEnabled="$(_WasmEnableWebcil)" WebcilVersion="$(_WasmWebcilVersion)" PrebuiltR2RDirectory="$(_WasmBuildPrebuiltR2RDirectory)" ConversionStamp="$(IntermediateOutputPath)wasm-webcil-build.stamp" EmitMetadataSections="$(_TargetingNET120OrLater)">
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
       <Output TaskParameter="FilesToTouch" ItemName="_WasmConvertedWebcilOutputs" />
     </ConvertDllsToWebcil>
@@ -768,7 +779,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     </PropertyGroup>
     <WriteLinesToFile
       File="$(IntermediateOutputPath)wasm-bootjson-build.stamp"
-      Lines="$(_WasmBootJsonBuildStampContent)|$(_WasmFilesystemUsageDetected)"
+      Lines="$(_WasmBootJsonBuildStampContent)|$(_WasmFilesystemUsageDetected)|$(WasmEnableIntegrityCheck)"
       Overwrite="true"
       WriteOnlyWhenDifferent="true" />
     <ItemGroup>
@@ -821,6 +832,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       UseMonoRuntime="$(UseMonoRuntime)"
       FingerprintAssets="$(_WasmFingerprintAssets)"
       BundlerFriendly="$(_WasmBundlerFriendlyBootConfig)"
+      EnableIntegrityCheck="$(WasmEnableIntegrityCheck)"
       ExitOnUnhandledError="$(WasmTestExitOnUnhandledError)"
       AppendElementOnExit="$(WasmTestAppendElementOnExit)"
       LogExitCode="$(WasmTestLogExitCode)"
@@ -1146,13 +1158,14 @@ Copyright (c) .NET Foundation. All rights reserved.
     <ItemGroup>
       <_WasmPublishPrebuiltR2RInput Include="$(_WasmPublishPrebuiltR2RDirectory)*.dll;$(_WasmPublishPrebuiltR2RDirectory)*.wasm"
                                     Condition="'$(_WasmPublishPrebuiltR2RDirectory)' != ''" />
-      <_WasmPublishWebcilStampInput Include="$(MSBuildProjectFullPath);$(MSBuildThisFileFullPath);$(_WebAssemblySdkTasksAssembly)" />
+      <_WasmPublishWebcilStampInput Include="$(MSBuildProjectFullPath);$(MSBuildThisFileFullPath);$(_WebAssemblySdkTasksAssembly);$(_WebcilConverterAssembly)" />
       <_WasmPublishWebcilStampLine Include="_WasmEnableWebcil=$(_WasmEnableWebcil)" />
       <_WasmPublishWebcilStampLine Include="_WasmWebcilVersion=$(_WasmWebcilVersion)" />
       <_WasmPublishWebcilStampLine Include="PublishReadyToRun=$(PublishReadyToRun)" />
       <_WasmPublishWebcilStampLine Include="PublishReadyToRunComposite=$(PublishReadyToRunComposite)" />
       <_WasmPublishWebcilStampLine Include="PublishTrimmed=$(PublishTrimmed)" />
       <_WasmPublishWebcilStampLine Include="_WasmPublishPrebuiltR2RDirectory=$(_WasmPublishPrebuiltR2RDirectory)" />
+      <_WasmPublishWebcilStampLine Include="_TargetingNET120OrLater=$(_TargetingNET120OrLater)" />
       <_WasmPublishWebcilStampLine Include="PrebuiltR2R=%(_WasmPublishPrebuiltR2RInput.Identity)|%(_WasmPublishPrebuiltR2RInput.ModifiedTime)" />
       <_WasmPublishWebcilStampLine Include="Input=%(_WasmPublishWebcilStampInput.Identity)|%(_WasmPublishWebcilStampInput.ModifiedTime)" />
     </ItemGroup>
@@ -1164,7 +1177,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       <FileWrites Include="$(IntermediateOutputPath)wasm-webcil-publish.stamp" />
     </ItemGroup>
 
-    <ConvertDllsToWebcil Candidates="@(_NewWasmPublishStaticWebAssets)" IntermediateOutputPath="$(_WasmPublishTmpWebcilPath)" OutputPath="$(_WasmPublishWebcilPath)" IsEnabled="$(_WasmEnableWebcil)" WebcilVersion="$(_WasmWebcilVersion)" PrebuiltR2RDirectory="$(_WasmPublishPrebuiltR2RDirectory)" ConversionStamp="$(IntermediateOutputPath)wasm-webcil-publish.stamp">
+    <ConvertDllsToWebcil Candidates="@(_NewWasmPublishStaticWebAssets)" IntermediateOutputPath="$(_WasmPublishTmpWebcilPath)" OutputPath="$(_WasmPublishWebcilPath)" IsEnabled="$(_WasmEnableWebcil)" WebcilVersion="$(_WasmWebcilVersion)" PrebuiltR2RDirectory="$(_WasmPublishPrebuiltR2RDirectory)" ConversionStamp="$(IntermediateOutputPath)wasm-webcil-publish.stamp" EmitMetadataSections="$(_TargetingNET120OrLater)">
       <Output TaskParameter="WebcilCandidates" ItemName="_NewWebcilPublishStaticWebAssetsCandidates" />
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
       <Output TaskParameter="FilesToTouch" ItemName="_WasmConvertedPublishWebcilOutputs" />
@@ -1367,7 +1380,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     </PropertyGroup>
     <WriteLinesToFile
       File="$(IntermediateOutputPath)wasm-bootjson-publish.stamp"
-      Lines="$(_WasmBootJsonPublishStampContent)|$(_WasmFilesystemUsageDetected)"
+      Lines="$(_WasmBootJsonPublishStampContent)|$(_WasmFilesystemUsageDetected)|$(WasmEnableIntegrityCheck)"
       Overwrite="true"
       WriteOnlyWhenDifferent="true" />
     <ItemGroup>
@@ -1414,6 +1427,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       UseMonoRuntime="$(UseMonoRuntime)"
       FingerprintAssets="$(_WasmFingerprintAssets)"
       BundlerFriendly="$(_WasmBundlerFriendlyBootConfig)"
+      EnableIntegrityCheck="$(WasmEnableIntegrityCheck)"
       ExitOnUnhandledError="$(WasmTestExitOnUnhandledError)"
       AppendElementOnExit="$(WasmTestAppendElementOnExit)"
       LogExitCode="$(WasmTestLogExitCode)"

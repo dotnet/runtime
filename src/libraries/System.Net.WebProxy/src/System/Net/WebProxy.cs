@@ -374,7 +374,13 @@ namespace System.Net
                     (isDefaultPort ? 0 : 1 + 5));
 
                 int charsWritten;
-                Span<char> url = (uint)lengthRequired <= 256 ? stackalloc char[256] : new char[lengthRequired];
+                scoped Span<char> url;
+                // SAFETY: To be audited
+                unsafe
+                {
+                    url = (uint)lengthRequired <= 256 ? stackalloc char[256] : new char[lengthRequired];
+                }
+
                 bool formatted = isDefaultPort ?
                     url.TryWrite($"{input.Scheme}://{input.Host}", out charsWritten) :
                     url.TryWrite($"{input.Scheme}://{input.Host}:{(uint)input.Port}", out charsWritten);

@@ -15,12 +15,9 @@ namespace Mono.Linker.Tests.Cases.Libraries
     [SetupLinkerArgument("--enable-opt", "ipconstprop")]
     [SetupLinkerArgument("--feature", "Mono.Linker.Tests.Cases.Libraries.LibraryModeFeatureSwitchConstants.ExplicitlySetSwitch", "false")]
     [SetupCompileBefore("impl.dll", new[] { "Dependencies/LibraryModeFeatureSwitchConstants_Impl.cs" })]
-    [SetupLinkerAction("link", "impl")]
+    [SetupLinkerAction("skip", "impl")]
     // Feature switches without a --feature value can still be substituted when the app is published, so library
     // mode must not fold them, even when their getters have constant bodies or come from a referenced implementation.
-    [KeptAssembly("impl.dll")]
-    [KeptMemberInAssembly("impl.dll", typeof(LibraryModeFeatureSwitchConstants_Impl),
-        "get_IsMultithreadingSupported()", "GetProcessorCount()", "GetProcessorCountIfSupported()")]
     public class LibraryModeFeatureSwitchConstants
     {
         [Kept]
@@ -57,6 +54,13 @@ namespace Mono.Linker.Tests.Cases.Libraries
         }
 
         [Kept]
+        [ExpectedInstructionSequence(new[] {
+            "nop",
+            "call System.Int32 Mono.Linker.Tests.Cases.Libraries.Dependencies.LibraryModeFeatureSwitchConstants_Impl::GetProcessorCountIfSupported()",
+            "call System.Void Mono.Linker.Tests.Cases.Libraries.LibraryModeFeatureSwitchConstants::Use(System.Int32)",
+            "nop",
+            "ret"
+        })]
         public static void TestReferencedConstantSwitchRetains()
         {
             Use(LibraryModeFeatureSwitchConstants_Impl.GetProcessorCountIfSupported());

@@ -1,9 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#ifdef FEATURE_INTERPRETER_DIRECT_CALLS
+#include "interpreter.h"
+#endif
 #include "gcinfoencoder.h" // for GcSlotFlags
 
+#ifndef FEATURE_INTERPRETER_DIRECT_CALLS
 #include "interpreter.h"
+#endif
 #include "stackmap.h"
 
 #include "failures.h"
@@ -18,7 +23,7 @@ dn_simdhash_assert_fail (const char* file, int line, const char* condition) {
 #endif
 }
 
-void InterpreterStackMap::PopulateStackMap(ICorJitInfo* jitInfo, CORINFO_CLASS_HANDLE classHandle, InterpAllocator allocator)
+void InterpreterStackMap::PopulateStackMap(COMP_HANDLE jitInfo, CORINFO_CLASS_HANDLE classHandle, InterpAllocator allocator)
 {
     unsigned size = jitInfo->getClassSize(classHandle);
     // getClassGClayout assumes it's given a buffer of exactly this size

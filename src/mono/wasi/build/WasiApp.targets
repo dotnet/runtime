@@ -20,13 +20,11 @@
     </PrepareForWasmBuildNativeDependsOn>
 
     <WasmLinkDotNetDependsOn>
-      _WasmGenerateRuntimeConfig;
       $(WasmLinkDotNetDependsOn);
       _WasiLinkDotNet;
     </WasmLinkDotNetDependsOn>
 
     <WasmGenerateAppBundleDependsOn>
-      _WasmGenerateRuntimeConfig;
       $(WasmGenerateAppBundleDependsOn);
       _GetWasiGenerateAppBundleDependencies;
       _WasiGenerateAppBundle;
@@ -61,31 +59,11 @@
     <!--<WasiRunner Condition="'$(WasiRunner)' == ''">wasmtime</WasiRunner>-->
   </PropertyGroup>
 
-  <Target Name="_WasmGenerateRuntimeConfig"
-          Inputs="$(_WasmRuntimeConfigFilePath)"
-          Outputs="$(_ParsedRuntimeConfigFilePath)"
-          Condition="Exists('$(_WasmRuntimeConfigFilePath)')">
-    <ItemGroup>
-      <_RuntimeConfigReservedProperties Include="RUNTIME_IDENTIFIER"/>
-      <_RuntimeConfigReservedProperties Include="APP_CONTEXT_BASE_DIRECTORY"/>
-    </ItemGroup>
-
-    <RuntimeConfigParserTask
-        RuntimeConfigFile="$(_WasmRuntimeConfigFilePath)"
-        OutputFile="$(_ParsedRuntimeConfigFilePath)"
-        RuntimeConfigReservedProperties="@(_RuntimeConfigReservedProperties)">
-    </RuntimeConfigParserTask>
-
-    <ItemGroup>
-      <WasmFilesToIncludeInFileSystem Condition="'$(WasmSingleFileBundle)' != 'true'" Include="$(_ParsedRuntimeConfigFilePath)" LoadingStage="Core" />
-    </ItemGroup>
-  </Target>
-
   <Target Name="_WasmGetRuntimeConfigPath">
     <PropertyGroup>
       <_MainAssemblyPath Condition="'%(WasmAssembliesToBundle.FileName)' == '$(AssemblyName)' and '%(WasmAssembliesToBundle.Extension)' == '.dll' and $(WasmGenerateAppBundle) == 'true'">%(WasmAssembliesToBundle.Identity)</_MainAssemblyPath>
       <_WasmRuntimeConfigFilePath Condition="'$(_WasmRuntimeConfigFilePath)' == '' and $(_MainAssemblyPath) != ''">$([System.IO.Path]::ChangeExtension($(_MainAssemblyPath), '.runtimeconfig.json'))</_WasmRuntimeConfigFilePath>
-      <_ParsedRuntimeConfigFilePath Condition="'$(_WasmRuntimeConfigFilePath)' != ''">$([System.IO.Path]::GetDirectoryName($(_WasmRuntimeConfigFilePath)))\runtimeconfig.bin</_ParsedRuntimeConfigFilePath>
+      <_WasiRuntimeConfigPropertiesSourcePath Condition="'$(WasmAppRuntimeFlavor)' == 'CoreCLR' and '$(_WasiRuntimeConfigPropertiesSourcePath)' == ''">$([MSBuild]::NormalizePath('$(_WasmIntermediateOutputPath)', 'corerun-relink', 'runtimeconfig.cpp'))</_WasiRuntimeConfigPropertiesSourcePath>
     </PropertyGroup>
   </Target>
 
@@ -149,8 +127,8 @@
 
   <!-- FIXME: make this similar to what browser targets has -->
   <Target Name="_WasiGenerateAppBundle"
-          Inputs="@(_WasmAssembliesInternal);@(WasmNativeAsset)"
-          Outputs="$(WasmAppDir)\.stamp"
+          Inputs="@(_WasmAssembliesInternal);@(WasmNativeAsset);$(_WasmRuntimeConfigFilePath)"
+          Outputs="$(WasmAppDir)\.stamp;$(_WasiRuntimeConfigPropertiesSourcePath)"
           Condition="'$(WasmGenerateAppBundle)' == 'true'">
 
     <PropertyGroup>
@@ -174,6 +152,7 @@
       NativeAssets="@(WasmNativeAsset)"
       OutputSymbolsToAppBundle="$(_WasmOutputSymbolsToAppBundle)"
       RuntimeConfigJsonPath="$(_WasmRuntimeConfigFilePath)"
+      RuntimeConfigPropertiesSourcePath="$(_WasiRuntimeConfigPropertiesSourcePath)"
       />
   </Target>
 
@@ -338,11 +317,6 @@
                 BundleRegistrationFunctionName="mono_register_icu_bundle"
                 BundleFile="wasi_bundled_icu.o" />
 
-      <!-- FIXME: if it is missing? -->
-      <_WasmBundleItem
-                Include="$(_ParsedRuntimeConfigFilePath)"
-                BundleRegistrationFunctionName="mono_register_runtimeconfig_bin"
-                BundleFile="wasi_bundled_runtimeconfig_bin.o" />
     </ItemGroup>
 
     <Error Text="Could not find NativeFileReference %(NativeFileReference.Identity)" Condition="'%(NativeFileReference.Identity)' != '' and !Exists(%(NativeFileReference.Identity))" />

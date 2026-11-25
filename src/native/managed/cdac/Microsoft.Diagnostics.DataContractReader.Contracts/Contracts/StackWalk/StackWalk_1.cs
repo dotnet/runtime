@@ -83,17 +83,8 @@ internal partial class StackWalk_1 : IStackWalk
         // set IsInterrupted when transitioning to a managed frame.
         public FrameType? LastProcessedFrameType { get; set; }
 
-        public IPlatformAgnosticContext GetCallerContext(Target target)
-        {
-            if (_callerContext is null)
-            {
-                IPlatformAgnosticContext context = Context.Clone();
-                context.Unwind(target);
-                _callerContext = context;
-            }
-
-            return _callerContext;
-        }
+        public IPlatformAgnosticContext GetCallerContext(StackWalk_1 stackWalk)
+            => _callerContext ??= stackWalk.GetCallerContext(Context);
 
         public void Unwind(Target target)
         {
@@ -352,6 +343,7 @@ internal partial class StackWalk_1 : IStackWalk
                         if (!IsManaged(gcFrame.Frame.Context.InstructionPointer, out CodeBlockHandle? cbh))
                             throw new InvalidOperationException("Expected managed code");
 
+                        bool isFunclet = _eman.IsFunclet(cbh.Value);
                         GcSlotEnumerationOptions gcOptions = new()
                         {
                             IsActiveFrame = gcFrame.Frame.IsActiveFrame,
@@ -362,14 +354,17 @@ internal partial class StackWalk_1 : IStackWalk
                             // native CrawlFrame::GetCodeManagerFlags (stackwalk.h).
                             IsExecutionAborted = gcFrame.IsInterrupted,
                             IsParentOfFuncletStackFrame = gcFrame.ShouldParentToFuncletSkipReportingGCReferences,
-                            SuppressUntrackedSlots = _eman.IsFilterFunclet(cbh.Value),
+                            IsFunclet = isFunclet,
+                            SuppressUntrackedSlots = isFunclet && _eman.IsFilterFunclet(cbh.Value),
                         };
 
                         uint? relOffsetOverride = null;
                         if (gcFrame.ShouldParentFrameUseUnwindTargetPCforGCReporting)
                         {
                             _eman.GetGCInfo(cbh.Value, out TargetPointer gcInfoAddr, out uint gcVersion);
-                            IGCInfoHandle gcHandle = _target.Contracts.GCInfo.DecodePlatformSpecificGCInfo(gcInfoAddr, gcVersion);
+                            IGCInfoHandle gcHandle = IsInterpreterCode(gcFrame.Frame.Context.InstructionPointer)
+                                ? _target.Contracts.GCInfo.DecodeInterpreterGCInfo(gcInfoAddr, gcVersion)
+                                : _target.Contracts.GCInfo.DecodePlatformSpecificGCInfo(gcInfoAddr, gcVersion);
                             uint startPC = gcFrame.ClauseForCatchHandlerStartPC;
                             uint endPC = gcFrame.ClauseForCatchHandlerEndPC;
                             foreach (var range in _target.Contracts.GCInfo.GetInterruptibleRanges(gcHandle))
@@ -855,10 +850,7 @@ internal partial class StackWalk_1 : IStackWalk
     {
         Debug.Assert(handle.State is StackWalkState.Frameless);
 
-        IPlatformAgnosticContext callerContext = handle.Context.Clone();
-        callerContext.Unwind(_target);
-
-        return callerContext.StackPointer == targetParentFrame;
+        return CallerStackPointer(handle) == targetParentFrame;
     }
 
     private bool Next(StackWalkData handle)
@@ -1067,7 +1059,7 @@ internal partial class StackWalk_1 : IStackWalk
         }
 
         // get the caller context
-        IPlatformAgnosticContext parentContext = handle.GetCallerContext(_target);
+        IPlatformAgnosticContext parentContext = handle.GetCallerContext(this);
 
         return handle.FrameIter.CurrentFrameAddress.Value < parentContext.StackPointer.Value;
     }
@@ -1180,13 +1172,16 @@ internal partial class StackWalk_1 : IStackWalk
     // ARM64 et al.): interpreted frames are unwound by InterpreterCodeManager
     // (VirtualUnwindInterpreterCallFrame), not by the OS unwinder, which has no unwind info for bytecode.
     internal TargetPointer CallerStackPointer(IPlatformAgnosticContext context)
-    {
-        if (IsInterpreterCode(context.InstructionPointer))
-            return _frameHelpers.InterpreterCallerStackPointer(context);
+        => GetCallerContext(context).StackPointer;
 
+    private IPlatformAgnosticContext GetCallerContext(IPlatformAgnosticContext context)
+    {
         IPlatformAgnosticContext callerContext = context.Clone();
-        callerContext.Unwind(_target);
-        return callerContext.StackPointer;
+        if (IsInterpreterCode(context.InstructionPointer))
+            _frameHelpers.InterpreterUnwindToCaller(callerContext);
+        else
+            callerContext.Unwind(_target);
+        return callerContext;
     }
 
     TargetPointer IStackWalk.GetExactGenericArgsToken(IStackDataFrameHandle stackDataFrameHandle)

@@ -499,7 +499,7 @@ BOOL PAL_VirtualUnwind(CONTEXT *context)
     if ((void*)curPc == g_SEHProcessExceptionReturnAddress)
     {
         CONTEXT* exceptionContext = *(CONTEXT**)(CONTEXTGetFP(context) + g_hardware_exception_context_locvar_offset);
-        memcpy_s(context, sizeof(CONTEXT), exceptionContext, sizeof(CONTEXT));
+        memcpy(context, exceptionContext, sizeof(CONTEXT));
 
         return TRUE;
     }
@@ -511,7 +511,7 @@ BOOL PAL_VirtualUnwind(CONTEXT *context)
     if ((void*)curPc == g_InvokeActivationHandlerReturnAddress)
     {
         CONTEXT* activationContext = (CONTEXT*)(CONTEXTGetFP(context) + g_inject_activation_context_locvar_offset);
-        memcpy_s(context, sizeof(CONTEXT), activationContext, sizeof(CONTEXT));
+        memcpy(context, activationContext, sizeof(CONTEXT));
 
         return TRUE;
     }

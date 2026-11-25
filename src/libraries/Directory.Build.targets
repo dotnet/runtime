@@ -24,6 +24,11 @@
   <Import Project="$(RepositoryEngineeringDir)resources.targets" />
   <Import Project="..\..\Directory.Build.targets" />
 
+  <ItemGroup>
+    <ProjectReference Update="$(CoreLibProject)"
+                      GlobalPropertiesToRemove="LibrariesRuntimeFlavor;RuntimeFlavor" />
+  </ItemGroup>
+
   <PropertyGroup>
     <NETStandard21RefPath>$([MSBuild]::NormalizeDirectory('$(NuGetPackageRoot)', 'netstandard.library.ref', '$(NETStandardLibraryRefVersion)', 'ref', 'netstandard2.1'))</NETStandard21RefPath>
 
@@ -140,8 +145,7 @@
     <RuntimeAsyncSupported Condition="'$(TargetOS)' != 'browser'
       and '$(TargetOS)' != 'wasi'
       and '$(TargetOS)' != 'android'
-      and '$(TargetsAppleMobile)' != 'true'
-      and '$(RuntimeFlavor)' != 'Mono'">true</RuntimeAsyncSupported>
+      and '$(TargetsAppleMobile)' != 'true'">true</RuntimeAsyncSupported>
   </PropertyGroup>
 
   <!-- Enable runtime async for netcoreapp source projects, excluding unsupported platforms and OOB packages. -->

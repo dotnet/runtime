@@ -58,7 +58,6 @@
     <!-- Keep in sync with $(PropertiesThatTriggerRelinking) -->
     <_WasmNativeWorkloadNeeded Condition="
         '$(WasmEnableSIMD)' == 'false' or
-        '$(WasmEnableRelaxedSimd)' == 'true' or
         '$(WasmEnableExceptionHandling)' == 'false' or
         '$(InvariantTimezone)' == 'true' or
         '$(WasmNativeStrip)' == 'false' or
@@ -78,6 +77,24 @@
     <UsingBrowserRuntimeWorkload Condition="'$(UsingBrowserRuntimeWorkload)' == '' and '$(_WasmNativeWorkloadNeeded)' == 'true'">true</UsingBrowserRuntimeWorkload>
     <UsingBrowserRuntimeWorkload Condition="'$(UsingBrowserRuntimeWorkload)' == ''">$(WasmNativeWorkloadAvailable)</UsingBrowserRuntimeWorkload>
   </PropertyGroup>
+
+  <!-- Trigger the workload acquisition flow when CoreCLR native items require it. -->
+  <PropertyGroup>
+    <_WasmCoreCLRNativeItemsNeedWorkload Condition="'$(RuntimeIdentifier)' == 'browser-wasm' and '$(TargetsCurrent)' == 'true' and '$(UseMonoRuntime)' == 'false' and
+                                                     '$(UsingBrowserRuntimeWorkload)' != 'true' and '$(_BrowserWorkloadDisabled)' != 'true'">true</_WasmCoreCLRNativeItemsNeedWorkload>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(_WasmCoreCLRNativeItemsNeedWorkload)' == 'true'">
+    <MissingWorkloadPack Include="Microsoft.NET.Runtime.WebAssembly.Sdk.${NetVersion}"
+                         Condition="@(NativeFileReference->Count()) > 0 or @(NativeLibrary->Count()) > 0 or @(DirectPInvoke->Count()) > 0 or @(DirectPInvokeList->Count()) > 0" />
+  </ItemGroup>
+  <Target Name="_WasmAddMissingWorkloadPackForNativeItems"
+          BeforeTargets="_CheckForMissingWorkload;GetSuggestedWorkloads"
+          Condition="'$(_WasmCoreCLRNativeItemsNeedWorkload)' == 'true' and
+                     (@(NativeFileReference->Count()) > 0 or @(NativeLibrary->Count()) > 0 or @(DirectPInvoke->Count()) > 0 or @(DirectPInvokeList->Count()) > 0)">
+    <ItemGroup>
+      <MissingWorkloadPack Include="Microsoft.NET.Runtime.WebAssembly.Sdk.${NetVersion}" Exclude="@(MissingWorkloadPack)" />
+    </ItemGroup>
+  </Target>
 
   <!-- Mono AOT library mode support -->
   <PropertyGroup Condition="'$(PublishAot)' != 'true' and '$(NativeLib)' != ''">
@@ -231,6 +248,9 @@
       <TargetingPackVersion Condition="'%(KnownFrameworkReference.TargetFramework)' == '${NetVersion}.0'">$(_MonoWorkloadRuntimePackPackageVersion)</TargetingPackVersion>
       <LatestRuntimeFrameworkVersion Condition="'%(KnownFrameworkReference.TargetFramework)' == '${NetVersion}.0' and '$(UseMonoRuntime)' == 'false'">$(_MonoWorkloadRuntimePackPackageVersion)</LatestRuntimeFrameworkVersion>
     </KnownFrameworkReference>
+    <KnownCrossgen2Pack Update="@(KnownCrossgen2Pack)">
+      <Crossgen2PackVersion Condition="'%(KnownCrossgen2Pack.TargetFramework)' == '${NetVersion}.0' and '$(UseMonoRuntime)' == 'false'">$(_MonoWorkloadRuntimePackPackageVersion)</Crossgen2PackVersion>
+    </KnownCrossgen2Pack>
     <KnownWebAssemblySdkPack Update="@(KnownWebAssemblySdkPack)">
       <WebAssemblySdkPackVersion Condition="'%(KnownWebAssemblySdkPack.TargetFramework)' == '${NetVersion}.0'">$(_KnownWebAssemblySdkPackVersion)</WebAssemblySdkPackVersion>
     </KnownWebAssemblySdkPack>

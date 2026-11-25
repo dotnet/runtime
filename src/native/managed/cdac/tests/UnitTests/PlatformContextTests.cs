@@ -183,6 +183,20 @@ public class PlatformContextTests
         Assert.False(ctx.TrySetRegister(0, new TargetNUInt(0xDEAD)));
     }
 
+    [Theory]
+    [InlineData(nameof(RISCV64Context.R0), 0x8)]
+    [InlineData(nameof(RISCV64Context.Ra), 0x10)]
+    [InlineData(nameof(RISCV64Context.Sp), 0x18)]
+    [InlineData(nameof(RISCV64Context.Fp), 0x48)]
+    [InlineData(nameof(RISCV64Context.T6), 0x100)]
+    [InlineData(nameof(RISCV64Context.Pc), 0x108)]
+    [InlineData(nameof(RISCV64Context.F), 0x110)]
+    [InlineData(nameof(RISCV64Context.Fcsr), 0x210)]
+    public void RISCV64_FieldOffsets_MatchNativeContext(string field, int offset)
+    {
+        Assert.Equal(offset, (int)System.Runtime.InteropServices.Marshal.OffsetOf<RISCV64Context>(field));
+    }
+
     /// <summary>
     /// Architectures with a hardware single-step (trace) flag, the register that holds it,
     /// the trace-flag bit, and an unrelated bit that must be preserved by UnsetSingleStepFlag.

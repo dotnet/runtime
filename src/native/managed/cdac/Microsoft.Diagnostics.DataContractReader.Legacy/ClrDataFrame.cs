@@ -1130,6 +1130,8 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
             RuntimeInfoArchitecture.X86 => 4,   // ESP
             RuntimeInfoArchitecture.Arm64 => 31, // SP
             RuntimeInfoArchitecture.Arm => 13,   // SP
+            RuntimeInfoArchitecture.LoongArch64 => 3, // SP
+            RuntimeInfoArchitecture.RiscV64 => 2,     // SP
             _ => -1,
         };
     }

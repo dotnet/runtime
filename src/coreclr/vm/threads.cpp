@@ -593,6 +593,19 @@ static void DeleteThread(Thread* pThread)
     }
 }
 
+struct SetupThreadHolderTraits final
+{
+    using Type = Thread*;
+    static constexpr Type Default() { return NULL; }
+
+    static void Free(Type pThread) noexcept
+    {
+        WRAPPER_NO_CONTRACT;
+        if (pThread != NULL)
+            DeleteThread(pThread);
+    }
+};
+
 static void EnsurePreemptive()
 {
     WRAPPER_NO_CONTRACT;
@@ -643,13 +656,13 @@ Thread* SetupThread()
 
     if (ThreadStore::s_pThreadStore->GetPendingThreadCount() != 0)
     {
-        DWORD  ourOSThreadId = ::GetCurrentThreadId();
+        size_t ourOSThreadId = minipal_get_current_thread_id();
         {
             ThreadStoreLockHolder TSLockHolder;
             _ASSERTE(pThread == NULL);
             while ((pThread = ThreadStore::s_pThreadStore->GetAllThreadList(pThread, Thread::TS_Unstarted | Thread::TS_FailStarted, Thread::TS_Unstarted)) != NULL)
             {
-                if (pThread->GetOSThreadId() == ourOSThreadId)
+                if (pThread->GetOSThreadId64() == ourOSThreadId)
                 {
                     break;
                 }
@@ -676,30 +689,30 @@ Thread* SetupThread()
     // First time we've seen this thread in the runtime:
     pThread = new Thread();
 
-// What state are we in here? COOP???
+    {
+        LifetimeHolder<SetupThreadHolderTraits> threadHolder(pThread);
 
-    Holder<Thread*,DoNothing<Thread*>,DeleteThread> threadHolder(pThread);
+        SetupTLSForThread();
+        pThread->InitThread();
+        pThread->PrepareApartmentAndContext();
 
-    SetupTLSForThread();
-    pThread->InitThread();
-    pThread->PrepareApartmentAndContext();
+        // reset any unstarted bits on the thread object
+        pThread->ResetThreadState(Thread::TS_Unstarted);
 
-    // reset any unstarted bits on the thread object
-    pThread->ResetThreadState(Thread::TS_Unstarted);
+        ThreadStore::AddThread(pThread);
 
-    ThreadStore::AddThread(pThread);
-
-    SetThread(pThread);
+        SetThread(pThread);
 
 #ifdef FEATURE_INTEROP_DEBUGGING
-    // Ensure that debugger word slot is allocated
-    TlsSetValue(g_debuggerWordTLSIndex, 0);
+        // Ensure that debugger word slot is allocated
+        TlsSetValue(g_debuggerWordTLSIndex, 0);
 #endif
 
-    // We now have a Thread object visable to the RS. unmark special status.
-    hCantStop.Release();
+        // We now have a Thread object visable to the RS. unmark special status.
+        hCantStop.Release();
 
-    threadHolder.SuppressRelease();
+        threadHolder.Detach();
+    }
 
     pThread->SetThreadState(Thread::TS_FullyInitialized);
 
@@ -730,7 +743,7 @@ Thread* SetupThread()
                 (ThreadID)pThread);
         }
 
-        DWORD osThreadId = ::GetCurrentThreadId();
+        DWORD osThreadId = (DWORD)minipal_get_current_thread_id();
         (&g_profControlBlock)->ThreadAssignedToOSThread(
             (ThreadID)pThread, osThreadId);
         END_PROFILER_CALLBACK();
@@ -1831,7 +1844,7 @@ BOOL Thread::HasStarted()
 
         GC_ON_TRANSITIONS(gcOnTransition);
 
-        DWORD osThreadId = ::GetCurrentThreadId();
+        DWORD osThreadId = (DWORD)minipal_get_current_thread_id();
         (&g_profControlBlock)->ThreadAssignedToOSThread(
             (ThreadID) this, osThreadId);
         END_PROFILER_CALLBACK();
@@ -3599,11 +3612,7 @@ void Thread::PrepareApartmentAndContext()
 {
     STANDARD_VM_CONTRACT;
 
-#ifdef TARGET_UNIX
-    m_OSThreadId = ::PAL_GetCurrentOSThreadId();
-#else
-    m_OSThreadId = ::GetCurrentThreadId();
-#endif
+    m_OSThreadId = minipal_get_current_thread_id();
 
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
     // Be very careful in here because we haven't set up e.g. TLS yet.
@@ -3772,7 +3781,7 @@ Thread::ApartmentState Thread::SetApartment(ApartmentState state)
     CONTRACTL_END;
 
     // This method can be called on current thread only
-    _ASSERTE(m_OSThreadId == ::GetCurrentThreadId());
+    _ASSERTE(m_OSThreadId == minipal_get_current_thread_id());
 
     // Setting the state to AS_Unknown indicates we should CoUninitialize
     // the thread.
@@ -6552,7 +6561,7 @@ void DeadlockAwareLock::LeaveLock()
 // DLL_THREAD_ATTACH notification of an (IJW?) module calls into managed code.  This
 // is incredibly dangerous.  If a GC is provoked, the system may have trouble performing
 // the GC because its threads aren't available yet.
-static DWORD SpecialEEThreads[10];
+static size_t SpecialEEThreads[10];
 static LONG  cnt_SpecialEEThreads = 0;
 
 void dbgOnly_IdentifySpecialEEThread()
@@ -6562,14 +6571,14 @@ void dbgOnly_IdentifySpecialEEThread()
     LONG  ourCount = InterlockedIncrement(&cnt_SpecialEEThreads);
 
     _ASSERTE(ourCount < (LONG) ARRAY_SIZE(SpecialEEThreads));
-    SpecialEEThreads[ourCount-1] = ::GetCurrentThreadId();
+    SpecialEEThreads[ourCount-1] = minipal_get_current_thread_id();
 }
 
 BOOL dbgOnly_IsSpecialEEThread()
 {
     WRAPPER_NO_CONTRACT;
 
-    DWORD   ourId = ::GetCurrentThreadId();
+    size_t  ourId = minipal_get_current_thread_id();
 
     for (LONG i=0; i<cnt_SpecialEEThreads; i++)
         if (ourId == SpecialEEThreads[i])
@@ -6582,7 +6591,7 @@ BOOL dbgOnly_IsSpecialEEThread()
     {
         //<TODO>We probably should use Thread::GetThreadId</TODO>
         DWORD helperID = g_pDebugInterface->GetHelperThreadID();
-        if (helperID == ourId)
+        if (helperID == (DWORD)ourId)
             return TRUE;
     }
     #endif

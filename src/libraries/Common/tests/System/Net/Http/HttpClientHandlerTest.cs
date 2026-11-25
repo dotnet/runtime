@@ -641,6 +641,45 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
+        [Fact]
+        public async Task PostAsync_ContentWrittenWithBeginEndWrite_ServerReceivesBody()
+        {
+            byte[] body = Encoding.ASCII.GetBytes("Hello from BeginWrite/EndWrite");
+
+            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            {
+                using HttpClient client = CreateHttpClient();
+                using var request = new HttpRequestMessage(HttpMethod.Post, uri) { Version = UseVersion, Content = new BeginEndWriteContent(body) };
+                using HttpResponseMessage response = await client.SendAsync(TestAsync, request);
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            }, async server =>
+            {
+                HttpRequestData requestData = await server.HandleRequestAsync(HttpStatusCode.OK);
+                Assert.Equal(body, requestData.Body);
+            });
+        }
+
+        private sealed class BeginEndWriteContent : HttpContent
+        {
+            private readonly byte[] _data;
+
+            public BeginEndWriteContent(byte[] data) => _data = data;
+
+            protected override Task SerializeToStreamAsync(Stream stream, TransportContext context) =>
+                Task.Factory.FromAsync(stream.BeginWrite, stream.EndWrite, _data, 0, _data.Length, null);
+
+#if !NETFRAMEWORK
+            protected override void SerializeToStream(Stream stream, TransportContext context, CancellationToken cancellationToken) =>
+                stream.EndWrite(stream.BeginWrite(_data, 0, _data.Length, null, null));
+#endif
+
+            protected override bool TryComputeLength(out long length)
+            {
+                length = _data.Length;
+                return true;
+            }
+        }
+
         public static IEnumerable<object[]> GetAsync_ManyDifferentResponseHeaders_ParsedCorrectly_MemberData() =>
             from newline in new[] { "\n", "\r\n" }
             from fold in new[] { "", newline + " ", newline + "\t", newline + "    " }
@@ -1026,7 +1065,6 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(false, false, false)]
         [InlineData(null, false, false)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/65429", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
-        [SkipOnPlatform(TestPlatforms.Wasi, "APM (Begin/End) methods are not supported on WASI")]
         public async Task ReadAsStreamAsync_HandlerProducesWellBehavedResponseStream(bool? chunked, bool enableWasmStreaming, bool slowChunks)
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
@@ -1122,7 +1160,8 @@ namespace System.Net.Http.Functional.Tests
                         var buffer = new byte[1];
                         var buffer2 = new byte[2];
 
-                        if (PlatformDetection.IsBrowser)
+                        // The browser and WasiHttpHandler response streams only support asynchronous reads.
+                        if (PlatformDetection.IsBrowser || IsWasiHttpHandler)
                         {
 #if !NETFRAMEWORK
                             if (slowChunks)
@@ -1264,7 +1303,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Wasi, "APM (Begin/End) methods are not supported on WASI")]
         public async Task ReadAsStreamAsync_EmptyResponseBody_HandlerProducesWellBehavedResponseStream()
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
@@ -1339,14 +1377,18 @@ namespace System.Net.Http.Functional.Tests
                         var buffer = new byte[1];
                         if (PlatformDetection.IsNotBrowser)
                         {
-                            Assert.Equal(-1, responseStream.ReadByte());
+                            // WasiHttpHandler's response stream doesn't support synchronous reads.
+                            if (!IsWasiHttpHandler)
+                            {
+                                Assert.Equal(-1, responseStream.ReadByte());
+                            }
                             Assert.Equal(0, await Task.Factory.FromAsync(responseStream.BeginRead, responseStream.EndRead, buffer, 0, 1, null));
                         }
 #if !NETFRAMEWORK
                         Assert.Equal(0, await responseStream.ReadAsync(new Memory<byte>(buffer)));
 #endif
                         Assert.Equal(0, await responseStream.ReadAsync(buffer, 0, 1));
-                        if (PlatformDetection.IsNotBrowser)
+                        if (PlatformDetection.IsNotBrowser && !IsWasiHttpHandler)
                         {
 #if !NETFRAMEWORK
                             Assert.Equal(0, responseStream.Read(new Span<byte>(buffer)));
@@ -1358,7 +1400,7 @@ namespace System.Net.Http.Functional.Tests
                         var ms = new MemoryStream();
                         await responseStream.CopyToAsync(ms);
                         Assert.Equal(0, ms.Length);
-                        if (PlatformDetection.IsNotBrowser)
+                        if (PlatformDetection.IsNotBrowser && !IsWasiHttpHandler)
                         {
                             responseStream.CopyTo(ms);
                             Assert.Equal(0, ms.Length);
@@ -2463,6 +2505,7 @@ namespace System.Net.Http.Functional.Tests
 
             int length = IsWinHttpHandler ? 65_000
                 : PlatformDetection.IsAndroid ? 100_000
+                : PlatformDetection.Is32BitProcess ? 100_000
                 : 10_000_000;
 
             string longPath = "/" + new string('X', length);

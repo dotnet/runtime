@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "common.h"
+#include <minipal/thread.h>
 
 #include "frames.h"
 #include "threads.h"
@@ -454,15 +455,35 @@ OBJECTREF PossiblyUnwrapThrowable(OBJECTREF throwable, Assembly *pAssembly)
     return throwable;
 }
 
-
-// This is used by a holder in CreateTypeInitializationExceptionObject to
-// reset the state as appropriate.
-void ResetTypeInitializationExceptionState(BOOL isAlreadyCreating)
+class TypeInitializationExceptionStateHolder final
 {
-    LIMITED_METHOD_CONTRACT;
-    if (!isAlreadyCreating)
-        GetThread()->ResetIsCreatingTypeInitException();
-}
+    Thread* const m_pThread;
+    const BOOL m_wasAlreadyCreating;
+
+public:
+    explicit TypeInitializationExceptionStateHolder(Thread* pThread)
+        : m_pThread(pThread)
+        , m_wasAlreadyCreating(pThread->IsCreatingTypeInitException())
+    {
+        LIMITED_METHOD_CONTRACT;
+    }
+
+    TypeInitializationExceptionStateHolder(const TypeInitializationExceptionStateHolder&) = delete;
+    TypeInitializationExceptionStateHolder& operator=(const TypeInitializationExceptionStateHolder&) = delete;
+
+    ~TypeInitializationExceptionStateHolder() noexcept
+    {
+        LIMITED_METHOD_CONTRACT;
+        if (!m_wasAlreadyCreating)
+            m_pThread->ResetIsCreatingTypeInitException();
+    }
+
+    BOOL WasAlreadyCreating() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_wasAlreadyCreating;
+    }
+};
 
 void CreateTypeInitializationExceptionObject(LPCWSTR pTypeThatFailed,
                                              OBJECTREF *pInnerException,
@@ -486,14 +507,13 @@ void CreateTypeInitializationExceptionObject(LPCWSTR pTypeThatFailed,
 
     // This will make sure to put the thread back to its original state if something
     // throws out of this function (like an OOM exception or something)
-    Holder<BOOL, DoNothing<BOOL>, ResetTypeInitializationExceptionState, FALSE, NoNull<BOOL>>
-        isAlreadyCreating(pThread->IsCreatingTypeInitException());
+    TypeInitializationExceptionStateHolder stateHolder(pThread);
 
     // If we are already in the midst of creating a TypeInitializationException object,
     // and we get here, it means there was an exception thrown while initializing the
     // TypeInitializationException type itself, or one of the types used by its class
     // constructor. In this case, we fall back to using the inner exception directly.
-    if (isAlreadyCreating.GetValue())
+    if (stateHolder.WasAlreadyCreating())
     {
         // If we ever hit one of these asserts, then it is bad
         // because we do not know what exception to return then.
@@ -531,7 +551,7 @@ void CreateTypeInitializationExceptionObject(LPCWSTR pTypeThatFailed,
         // If calling the constructor fails, then we'll call ourselves again, and this time
         // through we will try and create an EEException object. If that fails, then the
         // else block of this will be executed.
-        if (!isAlreadyCreating.GetValue()) {
+        if (!stateHolder.WasAlreadyCreating()) {
             CreateTypeInitializationExceptionObject(pTypeThatFailed, pInnerException, pInitException, pThrowable);
         }
 
@@ -5948,12 +5968,12 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase3(PEXCEPTION_POINTERS pExcepti
                         pStack = sStack.GetUTF8();
                     }
 
-                    DWORD tid = GetCurrentThreadId();
+                    size_t tid = minipal_get_current_thread_id();
 
                     BOOL debuggerPresentBeforeAssert = minipal_is_native_debugger_present();
 
 
-                    CONSISTENCY_CHECK_MSGF(false, ("AV in clr at this callstack:\n------\n%s\n-----\n.AV on tid=0x%x (%d), cxr=%p, exr=%p\n",
+                    CONSISTENCY_CHECK_MSGF(false, ("AV in clr at this callstack:\n------\n%s\n-----\n.AV on tid=0x%zx (%zu), cxr=%p, exr=%p\n",
                         pStack, tid, tid, pContext, pExceptionRecord));
 
                     // @todo - this may not be what we want for interop-debugging...
@@ -6744,154 +6764,6 @@ LONG NotifyOfCHFFilterWrapper(
 } // LONG NotifyOfCHFFilterWrapper()
 
 #endif // !DACCESS_COMPILE
-
-#ifdef _DEBUG
-bool DebugIsEECxxExceptionPointer(void* pv)
-{
-    CONTRACTL
-    {
-        DISABLED(NOTHROW);
-        GC_NOTRIGGER;
-        MODE_ANY;
-        DEBUG_ONLY;
-    }
-    CONTRACTL_END;
-
-    if (pv == NULL)
-    {
-        return false;
-    }
-
-    // check whether the memory is readable in no-throw way
-    if (!isMemoryReadable((TADDR)pv, sizeof(UINT_PTR)))
-    {
-        return false;
-    }
-
-    bool retVal = false;
-
-    EX_TRY
-    {
-        UINT_PTR  vtbl  = *(UINT_PTR*)pv;
-
-        // ex.h
-
-        HRException             boilerplate1;
-        COMException            boilerplate2;
-#ifdef TARGET_WINDOWS
-        SEHException            boilerplate3;
-#endif // TARGET_WINDOWS
-
-        // clrex.h
-
-        CLRException            boilerplate4;
-        CLRLastThrownObjectException boilerplate5;
-        EEException             boilerplate6;
-        EEMessageException      boilerplate7;
-        EEResourceException     boilerplate8;
-
-#ifdef FEATURE_COMINTEROP
-        EECOMException          boilerplate9;
-#endif // FEATURE_COMINTEROP
-
-        EEFieldException        boilerplate10;
-        EEMethodException       boilerplate11;
-        EEArgumentException     boilerplate12;
-        EETypeLoadException     boilerplate13;
-        EEFileLoadException     boilerplate14;
-        ObjrefException         boilerplate15;
-
-        UINT_PTR    ValidVtbls[] =
-        {
-            *((TADDR*)&boilerplate1),
-            *((TADDR*)&boilerplate2),
-#ifdef TARGET_WINDOWS
-            *((TADDR*)&boilerplate3),
-#endif // TARGET_WINDOWS
-            *((TADDR*)&boilerplate4),
-            *((TADDR*)&boilerplate5),
-            *((TADDR*)&boilerplate6),
-            *((TADDR*)&boilerplate7),
-            *((TADDR*)&boilerplate8),
-#ifdef FEATURE_COMINTEROP
-            *((TADDR*)&boilerplate9),
-#endif // FEATURE_COMINTEROP
-            *((TADDR*)&boilerplate10),
-            *((TADDR*)&boilerplate11),
-            *((TADDR*)&boilerplate12),
-            *((TADDR*)&boilerplate13),
-            *((TADDR*)&boilerplate14),
-            *((TADDR*)&boilerplate15)
-        };
-
-        const int nVtbls = sizeof(ValidVtbls) / sizeof(ValidVtbls[0]);
-
-        for (int i = 0; i < nVtbls; i++)
-        {
-            if (vtbl == ValidVtbls[i])
-            {
-                retVal = true;
-                break;
-            }
-        }
-    }
-    EX_CATCH
-    {
-        // Swallow any exception out of the exception constructors above and simply return false.
-    }
-    EX_END_CATCH
-
-    return retVal;
-}
-
-void *DebugGetCxxException(EXCEPTION_RECORD* pExceptionRecord);
-
-bool DebugIsEECxxException(EXCEPTION_RECORD* pExceptionRecord)
-{
-    return DebugIsEECxxExceptionPointer(DebugGetCxxException(pExceptionRecord));
-}
-
-//
-// C++ EH cracking material gleaned from the debugger:
-// (DO NOT USE THIS KNOWLEDGE IN NON-DEBUG CODE!!!)
-//
-// EHExceptionRecord::EHParameters
-//     [0] magicNumber      : uint
-//     [1] pExceptionObject : void*
-//     [2] pThrowInfo       : ThrowInfo*
-
-#ifdef HOST_64BIT
-#define NUM_CXX_EXCEPTION_PARAMS 4
-#else
-#define NUM_CXX_EXCEPTION_PARAMS 3
-#endif
-
-void *DebugGetCxxException(EXCEPTION_RECORD* pExceptionRecord)
-{
-    WRAPPER_NO_CONTRACT;
-
-    bool fExCodeIsCxx           = (EXCEPTION_MSVC == pExceptionRecord->ExceptionCode);
-    bool fExHasCorrectNumParams = (NUM_CXX_EXCEPTION_PARAMS == pExceptionRecord->NumberParameters);
-
-    if (fExCodeIsCxx && fExHasCorrectNumParams)
-    {
-        void** ppException = (void**)pExceptionRecord->ExceptionInformation[1];
-
-        if (NULL == ppException)
-        {
-            return NULL;
-        }
-
-        return *ppException;
-
-    }
-
-    CONSISTENCY_CHECK_MSG(!fExCodeIsCxx || fExHasCorrectNumParams, "We expected an EXCEPTION_MSVC exception to have 3 parameters.  Did the CRT change its exception format?");
-
-    return NULL;
-}
-
-#endif // _DEBUG
 
 #endif // #ifndef DACCESS_COMPILE
 

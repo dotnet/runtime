@@ -18,16 +18,20 @@ namespace System.Runtime.Loader.Tests
         public object Instance;
 
         [DllImport("user32.dll")]
-        private static extern bool EnumWindows(EnumWindowsProc enumProc, IntPtr lParam);
+        private static unsafe extern bool EnumWindows(EnumWindowsProc enumProc, IntPtr lParam);
 
         public delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
 
         public static void TestDelegateMarshalling()
         {
-            EnumWindows((IntPtr wnd, IntPtr param) =>
+            // SAFETY: To be audited
+            unsafe
             {
-                return true;
-            }, IntPtr.Zero);
+                EnumWindows((IntPtr wnd, IntPtr param) =>
+                {
+                    return true;
+                }, IntPtr.Zero);
+            }
         }
 
         [ComImport]

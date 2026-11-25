@@ -78,7 +78,6 @@ For testing WebAssembly implementation changes end-to-end, see the [testing docu
 ### Samples and Examples
 Located in `src/mono/sample/wasm/`:
 - **browser-bench**: Performance benchmarking sample
-- **browser-profile**: Profiling sample
 - **console**: Console application samples
 
 ### Workloads

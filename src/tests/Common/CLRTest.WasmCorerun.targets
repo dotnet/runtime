@@ -344,10 +344,9 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
       <_WasmCorerunPInvokeModule Include="@(WasmCoreClrFrameworkPInvokeModule->WithMetadataValue('Wasi', 'true'))"
                                   Condition="'$(TargetOS)' == 'wasi'" />
 
-      <!-- The test's own modules, named after the archives that get linked in. The generator also
-           accepts the [DllImport] spelling without the 'lib' prefix, which is how tests write it. -->
+      <!-- The test's own modules: its native sources and the archives it links. -->
       <_WasmCorerunPInvokeModule Include="@(_WasmCorerunNativeSource->'%(FileName)')" />
-      <_WasmCorerunPInvokeModule Include="@(_WasmCorerunTestLib->'%(FileName)')" />
+      <_WasmCorerunPInvokeModule Include="@(_WasmNativeTestArchive->WithMetadataValue('IsNativeFileReference', 'false')->'%(ModuleName)')" />
     </ItemGroup>
 
     <!--

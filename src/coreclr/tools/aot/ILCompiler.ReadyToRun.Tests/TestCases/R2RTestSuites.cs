@@ -1003,6 +1003,22 @@ public class R2RTestSuites
     }
 
     [Fact]
+    public void GenericParameterNamesDoNotCollide()
+    {
+        var assembly = new CompiledAssembly
+        {
+            AssemblyName = nameof(GenericParameterNamesDoNotCollide),
+            SourceResourceNames = ["VirtualMethodGenerics/GenericParameterNames.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(GenericParameterNamesDoNotCollide),
+            [
+                new(nameof(GenericParameterNamesDoNotCollide), [new CrossgenAssembly(assembly)])
+            ]));
+    }
+
+    [Fact]
     public void GenericTypeConstraintsAllowVariantParameters()
     {
         var genericTypeConstraints = new CompiledAssembly
@@ -1858,11 +1874,11 @@ public class R2RTestSuites
 
             static void AssertFrameGcSlot(ReadyToRunMethod method, NativeVarInfo record)
             {
-                ILCompiler.Reflection.ReadyToRun.Amd64.GcInfo gcInfo =
-                    Assert.IsType<ILCompiler.Reflection.ReadyToRun.Amd64.GcInfo>(method.GcInfo);
-                Assert.Equal(0u, gcInfo.SlotTable.NumRegisters);
-                ILCompiler.Reflection.ReadyToRun.Amd64.GcSlotTable.GcSlot slot = Assert.Single(
-                    gcInfo.SlotTable.GcSlots,
+                ILCompiler.Reflection.ReadyToRun.Cdac.CdacGcInfo gcInfo =
+                    Assert.IsType<ILCompiler.Reflection.ReadyToRun.Cdac.CdacGcInfo>(method.GcInfo);
+                Assert.Equal(0u, gcInfo.NumRegisters);
+                ILCompiler.Reflection.ReadyToRun.Cdac.CdacGcSlot slot = Assert.Single(
+                    gcInfo.Slots,
                     candidate => candidate.StackSlot?.SpOffset == record.VariableLocation.Data2);
                 Assert.Equal(GcStackSlotBase.GC_FRAMEREG_REL, slot.StackSlot.Base);
             }

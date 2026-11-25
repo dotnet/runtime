@@ -1019,6 +1019,282 @@ namespace DispatchProxyTests
             Assert.Equal(expected, result);
         }
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        [SkipOnMono("Mono reads a dynamic assembly's IgnoresAccessChecksTo attributes only once")]
+        public static unsafe void Invoke_Pointer_Parameter_Receives_Pointer(bool useGenericCreate)
+        {
+            int value = 42;
+            TestType_IPointerService proxy = CreateHelper<TestType_IPointerService, TestDispatchProxy>(useGenericCreate);
+
+            object received = null;
+            ((TestDispatchProxy)proxy).CallOnInvoke = (method, args) =>
+            {
+                received = args[0];
+                return null;
+            };
+
+            proxy.Echo(&value);
+            Assert.Equal(typeof(int*), Assert.IsType<Pointer>(received).PointerType);
+            Assert.Equal((nint)(&value), (nint)Pointer.Unbox(received));
+
+            long longValue = 42;
+            proxy.EchoGeneric(&longValue);
+            Assert.Equal(typeof(long*), Assert.IsType<Pointer>(received).PointerType);
+            Assert.Equal((nint)(&longValue), (nint)Pointer.Unbox(received));
+
+            proxy.EchoGeneric<long>(null);
+            Assert.Equal(typeof(long*), Assert.IsType<Pointer>(received).PointerType);
+            Assert.Equal(0, (nint)Pointer.Unbox(received));
+
+            received = "Failed";
+            proxy.Echo(null);
+            Assert.Equal(typeof(int*), Assert.IsType<Pointer>(received).PointerType);
+            Assert.Equal(0, (nint)Pointer.Unbox(received));
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        [SkipOnMono("Mono reads a dynamic assembly's IgnoresAccessChecksTo attributes only once")]
+        public static unsafe void Invoke_Pointer_Return_Accepts_Pointer_IntPtr_And_Null(bool useGenericCreate)
+        {
+            int value = 42;
+            int* p = &value;
+            TestType_IPointerService proxy = CreateHelper<TestType_IPointerService, TestDispatchProxy>(useGenericCreate);
+
+            object result = null;
+            ((TestDispatchProxy)proxy).CallOnInvoke = (method, args) => result;
+
+            result = Pointer.Box(p, typeof(int*));
+            Assert.Equal((nint)p, (nint)proxy.Echo(null));
+
+            result = (IntPtr)p;
+            Assert.Equal((nint)p, (nint)proxy.Echo(null));
+
+            result = null;
+            Assert.Equal(0, (nint)proxy.Echo(null));
+
+            result = Pointer.Box(null, typeof(int*));
+            Assert.Equal(0, (nint)proxy.Echo(p));
+
+            result = IntPtr.Zero;
+            Assert.Equal(0, (nint)proxy.Echo(p));
+
+            result = Pointer.Box((uint*)p, typeof(uint*));
+            Assert.Equal((nint)p, (nint)proxy.Echo(null));
+
+            result = Pointer.Box((long*)p, typeof(long*));
+            Assert.Throws<InvalidCastException>(() => { proxy.Echo(null); });
+
+            result = Pointer.Box(p, typeof(void*));
+            Assert.Throws<InvalidCastException>(() => { proxy.Echo(null); });
+
+            result = 42;
+            Assert.Throws<InvalidCastException>(() => { proxy.Echo(null); });
+
+            result = "42";
+            Assert.Throws<InvalidCastException>(() => { proxy.Echo(null); });
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        [SkipOnMono("Mono reads a dynamic assembly's IgnoresAccessChecksTo attributes only once")]
+        public static unsafe void Invoke_Ref_Out_Pointer_Parameter(bool useGenericCreate)
+        {
+            int* values = stackalloc int[3];
+            TestType_IPointerService proxy = CreateHelper<TestType_IPointerService, TestDispatchProxy>(useGenericCreate);
+
+            object received = "Failed";
+            object written = null;
+            ((TestDispatchProxy)proxy).CallOnInvoke = (method, args) =>
+            {
+                received = args[0];
+                args[0] = written;
+                return null;
+            };
+
+            int* p = values;
+            written = Pointer.Box(values + 1, typeof(int*));
+            proxy.Ref(ref p);
+            Assert.Equal(typeof(int*), Assert.IsType<Pointer>(received).PointerType);
+            Assert.Equal((nint)values, (nint)Pointer.Unbox(received));
+            Assert.Equal((nint)(values + 1), (nint)p);
+
+            written = (IntPtr)(values + 2);
+            proxy.Ref(ref p);
+            Assert.Equal((nint)(values + 1), (nint)Pointer.Unbox(received));
+            Assert.Equal((nint)(values + 2), (nint)p);
+
+            written = null;
+            proxy.Ref(ref p);
+            Assert.Equal(0, (nint)p);
+
+            proxy.Ref(ref p);
+            Assert.Equal(typeof(int*), Assert.IsType<Pointer>(received).PointerType);
+            Assert.Equal(0, (nint)Pointer.Unbox(received));
+
+            written = Pointer.Box((long*)values, typeof(long*));
+            Assert.Throws<InvalidCastException>(() => { proxy.Ref(ref p); });
+
+            written = 42;
+            Assert.Throws<InvalidCastException>(() => { proxy.Ref(ref p); });
+
+            written = (IntPtr)(values + 1);
+            proxy.Out(out p);
+            Assert.Equal((nint)(values + 1), (nint)p);
+
+            written = Pointer.Box(values, typeof(int*));
+            proxy.Out(out p);
+            Assert.Null(received);
+            Assert.Equal((nint)values, (nint)p);
+
+            written = null;
+            proxy.Out(out p);
+            Assert.Equal(0, (nint)p);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        [SkipOnMono("Mono reads a dynamic assembly's IgnoresAccessChecksTo attributes only once")]
+        public static unsafe void Invoke_Pointer_Method_Forwarded_To_MethodInfo_Invoke(bool useGenericCreate)
+        {
+            int* ints = stackalloc int[2];
+            long* longs = stackalloc long[2];
+            var target = new TestType_PointerService();
+            TestType_IPointerService proxy = CreateHelper<TestType_IPointerService, TestDispatchProxy>(useGenericCreate);
+            ((TestDispatchProxy)proxy).CallOnInvoke = (method, args) => method.Invoke(target, args);
+
+            Assert.Equal((nint)(ints + 1), (nint)proxy.Echo(ints));
+            Assert.Equal((nint)(longs + 1), (nint)proxy.EchoGeneric(longs));
+            Assert.Equal(sizeof(int), (nint)proxy.Echo(null));
+            Assert.Equal((nint)((byte*)ints + 1), (nint)proxy.EchoVoid(ints));
+            Assert.Equal((nint)(&ints + 1), (nint)proxy.EchoPointerPointer(&ints));
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        [SkipOnMono("Mono reads a dynamic assembly's IgnoresAccessChecksTo attributes only once")]
+        public static unsafe void Invoke_Void_Pointer_Double_Pointer_And_In_Pointer(bool useGenericCreate)
+        {
+            int value = 42;
+            int* p = &value;
+            TestType_IPointerService proxy = CreateHelper<TestType_IPointerService, TestDispatchProxy>(useGenericCreate);
+
+            object received = null;
+            object result = null;
+            ((TestDispatchProxy)proxy).CallOnInvoke = (method, args) =>
+            {
+                received = args[0];
+                return result;
+            };
+
+            result = Pointer.Box(p, typeof(void*));
+            Assert.Equal((nint)p, (nint)proxy.EchoVoid(p));
+            Assert.Equal(typeof(void*), Assert.IsType<Pointer>(received).PointerType);
+            Assert.Equal((nint)p, (nint)Pointer.Unbox(received));
+
+            result = Pointer.Box(p, typeof(int*));
+            Assert.Equal((nint)p, (nint)proxy.EchoVoid(null));
+            Assert.Equal(typeof(void*), Assert.IsType<Pointer>(received).PointerType);
+            Assert.Equal(0, (nint)Pointer.Unbox(received));
+
+            result = Pointer.Box(&p, typeof(int**));
+            Assert.Equal((nint)(&p), (nint)proxy.EchoPointerPointer(&p));
+            Assert.Equal(typeof(int**), Assert.IsType<Pointer>(received).PointerType);
+            Assert.Equal((nint)(&p), (nint)Pointer.Unbox(received));
+
+            proxy.EchoPointerPointer(null);
+            Assert.Equal(typeof(int**), Assert.IsType<Pointer>(received).PointerType);
+            Assert.Equal(0, (nint)Pointer.Unbox(received));
+
+            result = null;
+            proxy.In(in p);
+            Assert.Equal(typeof(int*), Assert.IsType<Pointer>(received).PointerType);
+            Assert.Equal((nint)(&value), (nint)Pointer.Unbox(received));
+            Assert.Equal((nint)(&value), (nint)p);
+
+            int* nullPointer = null;
+            proxy.In(in nullPointer);
+            Assert.Equal(typeof(int*), Assert.IsType<Pointer>(received).PointerType);
+            Assert.Equal(0, (nint)Pointer.Unbox(received));
+            Assert.Equal(0, (nint)nullPointer);
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
+        [InlineData(false)]
+        [InlineData(true)]
+        [SkipOnMono("Mono reads a dynamic assembly's IgnoresAccessChecksTo attributes only once")]
+        public static void Invoke_Pointer_Parameter_In_Another_AssemblyLoadContext(bool useGenericCreate)
+        {
+            EchoPointerThroughProxy(useGenericCreate);
+
+            // Each new load context gets its own proxy assembly. Of the three proxies below, the first only
+            // boxes a pointer, which needs no access to UnboxPointer; the second unboxes only a returned pointer
+            // and the third only a ref pointer written back, so each must add that access to its own assembly.
+            InvokeInNewAssemblyLoadContext(nameof(PassPointerThroughProxy), useGenericCreate);
+            InvokeInNewAssemblyLoadContext(nameof(ReturnPointerThroughProxy), useGenericCreate);
+            InvokeInNewAssemblyLoadContext(nameof(WriteBackPointerThroughProxy), useGenericCreate);
+        }
+
+        private static void InvokeInNewAssemblyLoadContext(string methodName, bool useGenericCreate) =>
+            new AssemblyLoadContext(methodName)
+                .LoadFromAssemblyPath(typeof(DispatchProxyTests).Assembly.Location)
+                .GetType(typeof(DispatchProxyTests).FullName, true)
+                .GetMethod(methodName, BindingFlags.Static | BindingFlags.NonPublic)
+                .Invoke(null, new object[] { useGenericCreate });
+
+        private static unsafe void EchoPointerThroughProxy(bool useGenericCreate)
+        {
+            int value = 42;
+            TestType_IPointerService proxy = CreateHelper<TestType_IPointerService, TestDispatchProxy>(useGenericCreate);
+            ((TestDispatchProxy)proxy).CallOnInvoke = (method, args) => args[0];
+            Assert.Equal((nint)(&value), (nint)proxy.Echo(&value));
+        }
+
+        private static unsafe void PassPointerThroughProxy(bool useGenericCreate)
+        {
+            int value = 42;
+            object received = null;
+            TestType_IPointerArgumentService proxy = CreateHelper<TestType_IPointerArgumentService, TestDispatchProxy>(useGenericCreate);
+            ((TestDispatchProxy)proxy).CallOnInvoke = (method, args) =>
+            {
+                received = args[0];
+                return null;
+            };
+            proxy.Set(&value);
+            Assert.Equal(typeof(int*), Assert.IsType<Pointer>(received).PointerType);
+            Assert.Equal((nint)(&value), (nint)Pointer.Unbox(received));
+        }
+
+        private static unsafe void ReturnPointerThroughProxy(bool useGenericCreate)
+        {
+            int value = 42;
+            object result = Pointer.Box(&value, typeof(int*));
+            TestType_IPointerReturnService proxy = CreateHelper<TestType_IPointerReturnService, TestDispatchProxy>(useGenericCreate);
+            ((TestDispatchProxy)proxy).CallOnInvoke = (method, args) => result;
+            Assert.Equal((nint)(&value), (nint)proxy.Get());
+        }
+
+        private static unsafe void WriteBackPointerThroughProxy(bool useGenericCreate)
+        {
+            int value = 42;
+            int* p = null;
+            object written = Pointer.Box(&value, typeof(int*));
+            TestType_IPointerRefService proxy = CreateHelper<TestType_IPointerRefService, TestDispatchProxy>(useGenericCreate);
+            ((TestDispatchProxy)proxy).CallOnInvoke = (method, args) =>
+            {
+                args[0] = written;
+                return null;
+            };
+            proxy.Ref(ref p);
+            Assert.Equal((nint)(&value), (nint)p);
+        }
+
         private static TestType_IHelloService CreateTestHelloProxy(bool useGenericCreate) =>
             CreateHelper<TestType_IHelloService, TestDispatchProxy>(useGenericCreate);
 

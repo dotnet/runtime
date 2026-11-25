@@ -261,7 +261,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
         internal DateTime ReadDateTime() => FromBinaryRaw(ReadInt64());
 
-        private static unsafe DateTime FromBinaryRaw(long dateData)
+        private static DateTime FromBinaryRaw(long dateData)
         {
             // Use DateTime's public constructor to validate the input, but we
             // can't return that result as it strips off the kind. To address
@@ -269,7 +269,11 @@ namespace System.Runtime.Serialization.Formatters.Binary
             // See BinaryFormatterWriter.WriteDateTime for details.
             const long TicksMask = 0x3FFFFFFFFFFFFFFF;
             new DateTime(dateData & TicksMask);
-            return *(DateTime*)&dateData;
+            // SAFETY: To be audited
+            unsafe
+            {
+                return *(DateTime*)&dateData;
+            }
         }
 
         internal ushort ReadUInt16() => _dataReader.ReadUInt16();
