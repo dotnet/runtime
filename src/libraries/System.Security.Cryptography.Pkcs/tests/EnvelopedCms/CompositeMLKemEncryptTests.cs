@@ -140,6 +140,8 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         [ConditionalFact(typeof(CompositeMLKemEncryptTests), nameof(IsX25519Supported))]
         public static void EncryptInvalidContentEncryptionKeySize()
         {
+            // DES keys are represented by 8 bytes which can't be wrapped with AES-KW because AES-KW can only wrap inputs that
+            // are at least 16 bytes in length and a multiple of eight.
             using (X509Certificate2 certificate = GetCertificate(CompositeMLKemCmsTestData.X25519Vector))
             {
                 EnvelopedCms cms = new EnvelopedCms(

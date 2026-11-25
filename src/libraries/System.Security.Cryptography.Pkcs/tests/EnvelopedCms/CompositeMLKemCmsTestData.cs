@@ -83,15 +83,19 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
                 salt: [],
                 Encode(kdfInfo));
 
-            using (Aes aes = Aes.Create())
-            {
-                aes.SetKey(keyEncryptionKey);
-                encryptedKey = aes.EncryptKeyWrap(contentEncryptionKey);
-            }
-
+            // If encryptedKeyLength has a value then it is testing invalid inputs such as incorrect ciphertext lengths
+            // or contents, so the ciphertext is a simple zero value.
             if (encryptedKeyLength.HasValue)
             {
                 encryptedKey = new byte[encryptedKeyLength.Value];
+            }
+            else
+            {
+                using (Aes aes = Aes.Create())
+                {
+                    aes.SetKey(keyEncryptionKey);
+                    encryptedKey = aes.EncryptKeyWrap(contentEncryptionKey);
+                }
             }
 
             byte[] encryptedContent;
