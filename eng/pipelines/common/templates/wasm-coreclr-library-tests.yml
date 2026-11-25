@@ -7,6 +7,7 @@ parameters:
   nameSuffix: ''
   platforms: []
   readyToRun: false
+  runOnlyOnBrowserVersionUpdate: false
   scenarios: ['WasmTestOnChrome']
   shouldContinueOnError: false
   shouldRunSmokeOnly: false
@@ -96,14 +97,22 @@ jobs:
       buildArgs: -s clr+libs+host+packs+libs.tests -c $(_BuildConfig) -testscope ${{ parameters.testScope }} /p:ArchiveTests=true /p:BrowserHost=$(_hostedOs) $(_wasmRunSmokeTestsOnlyArg) $(chromeInstallArg) $(firefoxInstallArg) $(v8InstallArg) $(wasmReadyToRunArgs) /maxcpucount:1 ${{ parameters.extraBuildArgs }}
       timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
       # if !alwaysRun, then:
-      #   if this is runtime-wasm (isWasmOnlyBuild):
+      #   if runOnlyOnBrowserVersionUpdate:
+      #     - run only when BrowserVersions.props / bump-chrome-version.proj changed
+      #   else if this is runtime-wasm (isWasmOnlyBuild):
       #     - then run only if it would not have run on default pipelines (based
       #       on path changes)
       #     - else run based on path changes
-      condition: >-
-        or(
-          eq(variables['alwaysRunVar'], true),
-          eq(variables['isDefaultPipeline'], variables['shouldRunOnDefaultPipelines']))
+      ${{ if eq(parameters.runOnlyOnBrowserVersionUpdate, true) }}:
+        condition: >-
+          or(
+            eq(variables['alwaysRunVar'], true),
+            eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_wasm_chrome.containsChange'], true))
+      ${{ else }}:
+        condition: >-
+          or(
+            eq(variables['alwaysRunVar'], true),
+            eq(variables['isDefaultPipeline'], variables['shouldRunOnDefaultPipelines']))
       # extra steps, run tests
       postBuildSteps:
         - template: /eng/pipelines/libraries/helix.yml

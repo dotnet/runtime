@@ -1201,6 +1201,31 @@ extends:
           useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
           scenarios:
             - WasmTestOnChrome
+            - ${{ if eq(variables.isRollingBuild, true) }}:
+              - WasmTestOnFirefox
+
+      - ${{ if ne(variables.isRollingBuild, true) }}:
+        - template: /eng/pipelines/common/templates/wasm-coreclr-library-tests.yml
+          parameters:
+            platforms:
+              - browser_wasm
+            nameSuffix: _Firefox
+            runOnlyOnBrowserVersionUpdate: true
+            extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+            useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
+            scenarios:
+              - WasmTestOnFirefox
+
+      - template: /eng/pipelines/common/templates/wasm-coreclr-library-tests.yml
+        parameters:
+          platforms:
+            - browser_wasm_win
+          alwaysRun: ${{ variables.isRollingBuild }}
+          runOnlyOnBrowserVersionUpdate: true
+          extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+          useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
+          scenarios:
+            - WasmTestOnChrome
 
       # WebAssembly CoreCLR with trimmed ReadyToRun smoke tests
       - template: /eng/pipelines/common/templates/wasm-coreclr-library-tests.yml
@@ -1216,7 +1241,7 @@ extends:
           scenarios:
             - WasmTestOnChrome
 
-      # WebAssembly CoreCLR - smoke tests only on Firefox and V8
+      # WebAssembly CoreCLR - smoke tests only on Firefox (PRs) and V8
       - template: /eng/pipelines/common/templates/wasm-coreclr-library-tests.yml
         parameters:
           platforms:
@@ -1227,7 +1252,8 @@ extends:
           extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
           useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
           scenarios:
-            - WasmTestOnFirefox
+            - ${{ if ne(variables.isRollingBuild, true) }}:
+              - WasmTestOnFirefox
             - WasmTestOnV8
 
       #

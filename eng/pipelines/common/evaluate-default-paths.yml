@@ -8,6 +8,7 @@ parameters:
     _wasm_specific_only: [
         eng/testing/bump-chrome-version.proj
         eng/testing/BrowserVersions.props
+        eng/testing/WasmBatchRunner*
         eng/testing/WasmRunner*
         eng/testing/WasiRunner*
         eng/testing/tests.browser.targets
@@ -34,6 +35,7 @@ parameters:
         src/mono/wasi/*
         src/mono/wasm/*
         src/mono/mono/mini/interp/jiterpreter*
+        src/tasks/HelixTestTasks/*
         src/tasks/WasmAppBuilder/*
         src/tasks/WasmBuildTasks/*
         src/tasks/WorkloadBuildTasks/*
@@ -347,6 +349,7 @@ jobs:
       - src/tasks/AndroidAppBuilder/*
       - src/tasks/AotCompilerTask/*
       - src/tasks/AppleAppBuilder/*
+      - src/tasks/HelixTestTasks/*
       - src/tasks/MonoTargetsTasks/*
       - src/tasks/WasmAppBuilder/*
       - src/tasks/WasmBuildTasks/*
