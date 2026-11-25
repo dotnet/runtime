@@ -32,6 +32,16 @@ internal sealed partial class InvocationCache
         return enabled ? TryCreate(getEnvironmentVariable(configuration.PathEnvironmentVariable), log, configuration.ToolName, getEnvironmentVariable, baseDirectory) : null;
     }
 
+    /// <param name="cacheDirectory">
+    /// The configured cache location, which may be relative. When null or empty, the per-user default is used.
+    /// </param>
+    /// <param name="getEnvironmentVariable">
+    /// Reads environment variables for the default location; tasks pass their task environment.
+    /// </param>
+    /// <param name="baseDirectory">
+    /// The absolute directory that a relative <paramref name="cacheDirectory"/> resolves against, typically the
+    /// project directory. When null, the process current directory is used.
+    /// </param>
     internal static InvocationCache? TryCreate(
         string? cacheDirectory,
         TaskLoggingHelper log,
@@ -50,7 +60,6 @@ internal sealed partial class InvocationCache
 
         try
         {
-            // A relative cache path is relative to the project directory, not the process current directory.
             string fullPath = Path.GetFullPath(baseDirectory is null ? cacheDirectory : Path.Combine(baseDirectory, cacheDirectory));
             if (File.Exists(fullPath))
                 throw new IOException($"Cache location is a file: '{fullPath}'.");
