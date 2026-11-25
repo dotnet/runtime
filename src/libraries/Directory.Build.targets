@@ -7,32 +7,34 @@
     <_TestWasmReadyToRunImplicit>true</_TestWasmReadyToRunImplicit>
   </PropertyGroup>
 
-  <!-- Static graph builds every inner build of a multi-targeted reference because the graph can't negotiate the
-       nearest target framework. Narrow source and reference projects to the target frameworks this build can pick:
-       the current .NET target framework, either platform neutral or for TargetOS and the platforms it falls back to in
-       the RID graph. Projects without such a target framework are left alone, as are builds for another
+  <!-- Repo builds (see eng/Subsets.props) only build the current .NET target frameworks of libraries. Regular builds
+       pick them when negotiating project references, but static graph builds can't negotiate and would build every
+       inner build of a multi-targeted reference. Narrow library projects to the target frameworks this build can
+       pick: the current .NET target framework, either platform neutral or for TargetOS and the platforms it falls
+       back to in the RID graph. Narrowing every project, not just source projects, keeps references between them
+       compatible for restore. Projects without such a target framework are left alone, as are builds for another
        BuildTargetFramework, whose projects pick from the downlevel target frameworks. -->
-  <PropertyGroup Condition="'$(IsGraphBuild)' == 'true' and
+  <PropertyGroup Condition="'$(NarrowLibraryTargetFrameworks)' == 'true' and
                             '$(BuildAllConfigurations)' != 'true' and
                             ('$(BuildTargetFramework)' == '' or '$(BuildTargetFramework)' == '$(NetCoreAppCurrent)') and
-                            ('$(IsSourceProject)' == 'true' or '$(IsReferenceAssemblyProject)' == 'true') and
+                            '$(IsGeneratorProject)' != 'true' and
                             '$(TargetFrameworks)' != ''">
-    <_GraphTargetPlatforms>$(TargetOS)</_GraphTargetPlatforms>
-    <_GraphTargetPlatforms Condition="'$(TargetsAndroid)' == 'true'">$(_GraphTargetPlatforms)|linux-bionic</_GraphTargetPlatforms>
-    <_GraphTargetPlatforms Condition="'$(TargetsLinux)' == 'true'">$(_GraphTargetPlatforms)|linux</_GraphTargetPlatforms>
-    <_GraphTargetPlatforms Condition="'$(TargetsiOS)' == 'true' or '$(TargetsMacCatalyst)' == 'true'">$(_GraphTargetPlatforms)|ios</_GraphTargetPlatforms>
-    <_GraphTargetPlatforms Condition="'$(TargetstvOS)' == 'true'">$(_GraphTargetPlatforms)|tvos</_GraphTargetPlatforms>
-    <_GraphTargetPlatforms Condition="'$(TargetsUnix)' == 'true'">$(_GraphTargetPlatforms)|unix</_GraphTargetPlatforms>
-    <_GraphTargetFrameworkPattern>$(NetCoreAppCurrent.Replace('.', '\.'))(-($(_GraphTargetPlatforms)))?</_GraphTargetFrameworkPattern>
+    <_NarrowedTargetPlatforms>$(TargetOS)</_NarrowedTargetPlatforms>
+    <_NarrowedTargetPlatforms Condition="'$(TargetsAndroid)' == 'true'">$(_NarrowedTargetPlatforms)|linux-bionic</_NarrowedTargetPlatforms>
+    <_NarrowedTargetPlatforms Condition="'$(TargetsLinux)' == 'true'">$(_NarrowedTargetPlatforms)|linux</_NarrowedTargetPlatforms>
+    <_NarrowedTargetPlatforms Condition="'$(TargetsiOS)' == 'true' or '$(TargetsMacCatalyst)' == 'true'">$(_NarrowedTargetPlatforms)|ios</_NarrowedTargetPlatforms>
+    <_NarrowedTargetPlatforms Condition="'$(TargetstvOS)' == 'true'">$(_NarrowedTargetPlatforms)|tvos</_NarrowedTargetPlatforms>
+    <_NarrowedTargetPlatforms Condition="'$(TargetsUnix)' == 'true'">$(_NarrowedTargetPlatforms)|unix</_NarrowedTargetPlatforms>
+    <_NarrowedTargetFrameworkPattern>$(NetCoreAppCurrent.Replace('.', '\.'))(-($(_NarrowedTargetPlatforms)))?</_NarrowedTargetFrameworkPattern>
     <!-- Property function results are escaped; unescape so the lists still split into target frameworks. -->
-    <_GraphAllTargetFrameworks>$([MSBuild]::Unescape($([System.Text.RegularExpressions.Regex]::Replace('$(TargetFrameworks)', '\s', ''))))</_GraphAllTargetFrameworks>
-    <_GraphTargetFrameworks>$([MSBuild]::Unescape($([System.Text.RegularExpressions.Regex]::Replace(';$(_GraphAllTargetFrameworks);', ';(?!($(_GraphTargetFrameworkPattern));)[^;]*(?=;)', '').Trim(';'))))</_GraphTargetFrameworks>
-    <TargetFrameworks Condition="'$(_GraphTargetFrameworks)' != ''">$(_GraphTargetFrameworks)</TargetFrameworks>
-    <!-- A multi-targeted project validates its inner builds against the contract in the outer build, which a regular
-         build only runs for the projects it builds directly. Graph builds also run it for referenced projects, where
-         the removed target frameworks would leave their suppressions unnecessary, so skip it there like a regular
-         build does. -->
-    <ApiCompatValidateAssemblies Condition="'$(TargetFramework)' == '' and '$(_GraphTargetFrameworks)' != '' and '$(_GraphTargetFrameworks)' != '$(_GraphAllTargetFrameworks)'">false</ApiCompatValidateAssemblies>
+    <_AllTargetFrameworks>$([MSBuild]::Unescape($([System.Text.RegularExpressions.Regex]::Replace('$(TargetFrameworks)', '\s', ''))))</_AllTargetFrameworks>
+    <_NarrowedTargetFrameworks>$([MSBuild]::Unescape($([System.Text.RegularExpressions.Regex]::Replace(';$(_AllTargetFrameworks);', ';(?!($(_NarrowedTargetFrameworkPattern));)[^;]*(?=;)', '').Trim(';'))))</_NarrowedTargetFrameworks>
+    <TargetFrameworks Condition="'$(_NarrowedTargetFrameworks)' != ''">$(_NarrowedTargetFrameworks)</TargetFrameworks>
+    <!-- A multi-targeted project validates its inner builds against the contract in its outer build, which regular
+         builds only run for projects they build directly. Graph builds also run it for referenced projects, where the
+         removed target frameworks would leave their suppressions unnecessary, so skip it like regular builds do. The
+         BuildAllConfigurations build still validates all target frameworks. -->
+    <ApiCompatValidateAssemblies Condition="'$(TargetFramework)' == '' and '$(_NarrowedTargetFrameworks)' != '' and '$(_NarrowedTargetFrameworks)' != '$(_AllTargetFrameworks)'">false</ApiCompatValidateAssemblies>
   </PropertyGroup>
 
   <PropertyGroup>
