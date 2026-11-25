@@ -406,7 +406,7 @@ static void PopExplicitFrames(Thread *pThread, void *targetSp, void *targetCalle
 }
 
 #if !defined(HOST_UNIX) && !defined(TARGET_X86)
-// Unwind managed frames the same way the GC's stack walk does, so the context pointers end at the slots it updated.
+// Unwind managed frames with the code manager, retaining register-slot pointers.
 static bool UnwindRegDisplayToSp(REGDISPLAY *pRD, TADDR targetSp, int *pFramesUnwound)
 {
     CONTRACTL
@@ -452,7 +452,7 @@ static NOINLINE void UpdateNonvolatileRegistersFromExplicitFrame(Thread *pThread
     void *sp = (void*)GetSP(pContextRecord);
     PCODE ip = GetIP(pContextRecord);
 #ifdef TARGET_ARM64
-    // The return address of a hijacked frame can be PAC signed.
+    // Strip any PAC signature before comparing IPs.
     ip = (PCODE)PacStripPtr((void*)ip);
 #endif
 
@@ -477,7 +477,7 @@ static NOINLINE void UpdateNonvolatileRegistersFromExplicitFrame(Thread *pThread
         }
 
         FillRegDisplay(&rd, pContextRecord);
-        rd.SP = 0; // A frame that leaves the REGDISPLAY unchanged must not match
+        rd.SP = 0; // A frame that leaves the REGDISPLAY unchanged (a FuncEvalFrame without a hijack) must not match
         rd.ControlPC = 0;
         pFrame->UpdateRegDisplay(&rd);
 
@@ -510,8 +510,8 @@ static NOINLINE void UpdateNonvolatileRegistersFromExplicitFrame(Thread *pThread
         return;
     }
 
-    // The OS gives no handler to a frame whose IP is the first instruction of an epilog, so the second pass runs
-    // for its caller, and the explicit Frame then describes a frame below the target. rd holds the nearest one.
+    // For example, the OS gives no handler to a frame whose IP is the first instruction of an epilog, so the second
+    // pass runs for its caller, and the explicit Frame then describes a frame below the target. rd holds the nearest one.
     int framesUnwound = 0;
     bool landed = (frameSp < (TADDR)sp) && UnwindRegDisplayToSp(&rd, (TADDR)sp, &framesUnwound);
     frameIp = GetControlPC(&rd);

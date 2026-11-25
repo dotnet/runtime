@@ -17,7 +17,6 @@ using Xunit;
 // leave a stale copy in the context that the second pass resumes the catching method with.
 // The references at risk are the ones that the catching method's caller keeps in callee-saved registers, so that
 // caller keeps a movable object in every integer callee-saved register across the call and checks them afterwards.
-// GC stress collects before the second pass on this path, so the collector thread is what exposes it.
 public class Runtime_137606_Prestub
 {
     private const int Iterations = 1000;
@@ -181,7 +180,6 @@ public class Runtime_137606_Prestub
         Assert.Throws<FileNotFoundException>(() => { UseDependency(); });
     }
 
-    // Without GC stress, compacting GCs from another thread are what land in the window.
     private static Thread StartCollector(CancellationToken stop)
     {
         var thread = new Thread(() =>

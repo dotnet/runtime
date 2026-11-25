@@ -173,8 +173,7 @@ public class Runtime_137606_NoAbort
         }
     }
 
-    // Without GC stress, compacting GCs from another thread are the only way to hit the window. A collector thread
-    // runs compacting gen0 GCs; under stress the allocations of other threads already collect, so it is left out.
+    // A collector thread runs compacting gen0 GCs; under GC stress it is left out.
     private static Thread StartCollector(CancellationToken stop)
     {
         var thread = new Thread(() =>

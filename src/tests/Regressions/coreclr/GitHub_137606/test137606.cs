@@ -20,8 +20,7 @@ using Xunit;
 // CoreLib was compiled. So the holder keeps a movable object in every integer callee-saved register across the call.
 // Run never returns normally after an abort, so the holder cannot check its objects afterwards: a stale register is
 // caught when a GC reports it, during the dispatch or at the forced collections at the end.
-// Under DOTNET_GCStress=0x3 the allocations of other threads collect in the window. Without GC stress a collector
-// thread allocates to drive real compacting GCs.
+// Without GC stress a collector thread allocates to drive real compacting GCs.
 // AbortAtEpilogStart spins in two IL methods that tail-call each other with an explicit tail. prefix, so some
 // redirects land on the first instruction of an epilog. The OS finds no handler for that frame and dispatches its
 // caller instead.
@@ -310,7 +309,6 @@ public class Runtime_137606
         GC.Collect();
         s_validationFailures = 0;
 
-        // Under GC stress the allocations of other threads already collect, so the collector is left out there.
         using var stop = new CancellationTokenSource();
         // CoreClrConfigurationDetection is qualified because Xunit also defines the name through the using above.
         Thread collector = TestLibrary.CoreClrConfigurationDetection.IsGCStress ? null : StartCollector(stop.Token);
