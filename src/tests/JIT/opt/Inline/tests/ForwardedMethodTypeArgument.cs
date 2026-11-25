@@ -81,6 +81,11 @@ public class ForwardedMethodTypeArgument
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static Type Compound<T>() => Inner<Dictionary<string, T[]>>();
 
+    private class PairType<T, U> { }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Type CrossModule<T, U>() => ForwardedArgumentBridge.Wrap<PairType<T, U>>();
+
     private class Owner<T>
     {
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -120,6 +125,8 @@ public class ForwardedMethodTypeArgument
         Assert.Equal(typeof(KeyValuePair<string, List<object[]>>), Named<string, object>());
         Assert.Equal(typeof(KeyValuePair<object, List<string[]>>), Named<object, string>());
         Assert.Equal(typeof(Dictionary<string, int[]>), Compound<int>());
+        Assert.Equal(typeof(ForwardedArgumentBox<PairType<string, object>>), CrossModule<string, object>());
+        Assert.Equal(typeof(ForwardedArgumentBox<PairType<object, string>>), CrossModule<object, string>());
         Assert.Equal(typeof(string), Owner<string>.Forward<object>(true));
         Assert.Equal(typeof(object), Owner<string>.Forward<object>(false));
     }

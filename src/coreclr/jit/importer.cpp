@@ -1290,7 +1290,7 @@ GenTree* Compiler::impTokenToHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken,
         MethodTypeArgument   arg;
         InlineCandidateInfo* candidate = impInlineInfo->inlineCandidateInfo;
         if ((sig != nullptr) &&
-            MethodTypeArgument::TryRead(this, pResolvedToken->tokenScope, sig, size, candidate->rootMethodArgs,
+            MethodTypeArgument::TryRead(this, *pResolvedToken, sig, size, candidate->rootMethodArgs,
                                         info.compMethodInfo->args.sigInst.methInstCount, &arg) &&
             (size == 0) && eeIsSharedInst(pResolvedToken->hClass))
         {

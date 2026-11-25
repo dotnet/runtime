@@ -1500,6 +1500,10 @@ enum CorInfoTokenKind
     // Signature-only query to embedGenericHandle in the root method context.
     CORINFO_TOKENKIND_TypeExpression = 0x4000 | CORINFO_TOKENKIND_Class,
 
+    // Resolve a TypeDef/TypeRef for use as an internal generic definition in a root TypeExpression.
+    // A null hClass means the root dictionary cannot safely retain this definition.
+    CORINFO_TOKENKIND_TypeExpressionDefinition = 0x8000 | CORINFO_TOKENKIND_Class,
+
     // token comes from runtime async awaiting pattern
     CORINFO_TOKENKIND_Await = 0x2000 | CORINFO_TOKENKIND_Method,
 };
@@ -3385,7 +3389,9 @@ public:
     // then indicate how the handle should be looked up at run-time.
     //
     // A TypeExpression supplies pTypeSpec/cbTypeSpec in the caller's scope
-    // without a metadata token. Metadata references within the signature are relative to tokenScope.
+    // without a metadata token. Metadata tokens are relative to tokenScope. A GENERICINST may
+    // also name a definition from another scope using INTERNAL and the opaque class handle
+    // returned by resolveToken(TypeExpressionDefinition).
     CORINFO_VIRTUAL void embedGenericHandle(
             CORINFO_RESOLVED_TOKEN *        pResolvedToken,
             bool                            fEmbedParent, // `true` - embeds parent type handle of the field/method handle

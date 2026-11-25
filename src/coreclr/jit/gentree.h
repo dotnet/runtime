@@ -9202,7 +9202,7 @@ struct GenTreeAllocObj final : public GenTreeUnOp
 #endif
 };
 
-// Either a projection of a root method argument or an ECMA type signature in
+// Either a projection of a root method argument or a type expression in
 // that same context. The latter is prepared by the EE only if a use survives.
 struct MethodTypeArgument
 {
@@ -9214,13 +9214,13 @@ struct MethodTypeArgument
     static constexpr unsigned MaxDepth         = 32;
     static constexpr unsigned MaxSignatureSize = 256;
 
-    static bool TryRead(Compiler*                 comp,
-                        CORINFO_MODULE_HANDLE     scope,
-                        PCCOR_SIGNATURE&          sig,
-                        unsigned&                 size,
-                        const MethodTypeArgument* bindings,
-                        unsigned                  arity,
-                        MethodTypeArgument*       result);
+    static bool TryRead(Compiler*                     comp,
+                        const CORINFO_RESOLVED_TOKEN& source,
+                        PCCOR_SIGNATURE&              sig,
+                        unsigned&                     size,
+                        const MethodTypeArgument*     bindings,
+                        unsigned                      arity,
+                        MethodTypeArgument*           result);
 };
 
 // An ordinary MethodSpec can be re-resolved from its metadata identity. A

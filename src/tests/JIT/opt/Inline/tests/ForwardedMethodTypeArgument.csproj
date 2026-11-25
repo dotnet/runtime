@@ -7,6 +7,7 @@
     <Optimize>True</Optimize>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="ForwardedArgumentBridge.csproj" />
     <Compile Include="ForwardedMethodTypeArgument.cs" />
   </ItemGroup>
 </Project>

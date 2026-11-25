@@ -839,6 +839,10 @@ void CEEInfo::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken
 
     CorInfoTokenKind tokenType = pResolvedToken->tokenType;
 
+    bool expressionDefinition = tokenType == CORINFO_TOKENKIND_TypeExpressionDefinition;
+    _ASSERTE(!expressionDefinition || TypeFromToken(pResolvedToken->token) == mdtTypeDef ||
+             TypeFromToken(pResolvedToken->token) == mdtTypeRef);
+
     if (IsDynamicScope(pResolvedToken->tokenScope))
     {
         ResolvedToken resolved{};
@@ -920,7 +924,7 @@ void CEEInfo::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken
         _ASSERTE(!th.IsNull());
 
         // "PermitUninstDefOrRef" check
-        if ((tokenType != CORINFO_TOKENKIND_Ldtoken) && th.ContainsGenericVariables())
+        if (!expressionDefinition && (tokenType != CORINFO_TOKENKIND_Ldtoken) && th.ContainsGenericVariables())
         {
             COMPlusThrow(kInvalidProgramException);
         }
@@ -953,7 +957,7 @@ void CEEInfo::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken
 
             th = ClassLoader::LoadTypeDefOrRefThrowing(pModule, metaTOK,
                                          ClassLoader::ThrowIfNotFound,
-                                         (tokenType == CORINFO_TOKENKIND_Ldtoken) ?
+                                         (expressionDefinition || tokenType == CORINFO_TOKENKIND_Ldtoken) ?
                                             ClassLoader::PermitUninstDefOrRef : ClassLoader::FailIfUninstDefOrRef);
             break;
 
@@ -1102,6 +1106,18 @@ void CEEInfo::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken
     pResolvedToken->hClass = CORINFO_CLASS_HANDLE(th.AsPtr());
     pResolvedToken->hMethod = CORINFO_METHOD_HANDLE(pMD);
     pResolvedToken->hField = CORINFO_FIELD_HANDLE(pFD);
+
+    if (expressionDefinition)
+    {
+        // This definition can become part of the root method's dictionary layout. A foreign
+        // collectible allocator may unload independently. Leave that lookup in its original context.
+        if (IsDynamicScope(pResolvedToken->tokenScope) || !th.IsGenericTypeDefinition() ||
+            (th.GetLoaderAllocator()->IsCollectible() &&
+             th.GetLoaderAllocator() != m_pMethodBeingCompiled->GetModule()->GetLoaderAllocator()))
+        {
+            pResolvedToken->hClass = nullptr;
+        }
+    }
 
     EE_TO_JIT_TRANSITION();
 }
