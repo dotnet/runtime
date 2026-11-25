@@ -1388,13 +1388,13 @@ void WasmRegAlloc::ResolveReferences()
         return genIsValidReg(virtReg) && (WasmRegToType(virtReg) == WasmRegToType(abiReg));
     };
 
-    auto mergeAssignments = [&](int destIdx, int srcIdx){
-        PerFuncletData* srcData = m_perFuncletData[srcIdx];
+    auto mergeAssignments = [&](int destIdx, int srcIdx) {
+        PerFuncletData* srcData  = m_perFuncletData[srcIdx];
         PerFuncletData* destData = m_perFuncletData[destIdx];
 
         for (unsigned i = 0; i < m_compiler->lvaTrackedCount; i++)
         {
-            regNumber srcAssigned = srcData->m_physicalRegAssignments[i];
+            regNumber srcAssigned  = srcData->m_physicalRegAssignments[i];
             regNumber destAssigned = destData->m_physicalRegAssignments[i];
             if (srcAssigned != REG_STK && destAssigned == REG_STK)
             {
@@ -1485,7 +1485,7 @@ void WasmRegAlloc::ResolveReferences()
             if (physReg == REG_NA)
             {
                 physReg = physRegMap[static_cast<unsigned>(WasmRegToType(virtReg))].AllocPhysReg(virtReg,
-                                                                                                    /*relative=*/true);
+                                                                                                 /*relative=*/true);
             }
 
             assert(genIsValidReg(physReg));
@@ -1530,13 +1530,13 @@ void WasmRegAlloc::ResolveReferences()
         }
 
         // At this point, physRegMap should reflect the declaration count necessary for any extra locals needed
-        // for ABI parameters. Each local index remains relative to the final IndexBase, which is unset at this point. We
-        // can't set it until we know how many locals we will actually need. Once we have the final local count, we will
-        // resolve the indices to their actual physical register assignments. 
-        // 
+        // for ABI parameters. Each local index remains relative to the final IndexBase, which is unset at this point.
+        // We can't set it until we know how many locals we will actually need. Once we have the final local count, we
+        // will resolve the indices to their actual physical register assignments.
+        //
         // At the end of this method, we will update the LclVarDsc
-        // to be the assignments for the main method. Then when codegen calls back to the allocator via recordVarLocationsAtStartOfBB
-        // we will either verify the assignments are correct for the block, or update them
+        // to be the assignments for the main method. Then when codegen calls back to the allocator via
+        // recordVarLocationsAtStartOfBB we will either verify the assignments are correct for the block, or update them
         // using the per-funclet mappings kept in the per-funclet m_physicalRegAssignments.
         //
 
@@ -1586,8 +1586,9 @@ void WasmRegAlloc::ResolveReferences()
         {
             if (genIsRelativeReg(data->m_physicalRegAssignments[i]))
             {
-                WasmValueType type = WasmRegToType(data->m_physicalRegAssignments[i]);
-                data->m_physicalRegAssignments[i] = ResolveRegOffset(data->m_physicalRegAssignments[i], physRegMap[static_cast<unsigned>(type)].IndexBase);
+                WasmValueType type                = WasmRegToType(data->m_physicalRegAssignments[i]);
+                data->m_physicalRegAssignments[i] = ResolveRegOffset(data->m_physicalRegAssignments[i],
+                                                                     physRegMap[static_cast<unsigned>(type)].IndexBase);
             }
         }
 
@@ -1703,7 +1704,7 @@ void WasmRegAlloc::ResolveReferences()
         }
 
         // Copy any local -> reg mappings in this funclet to the root funclets if they don't exist there already.
-        // This allows us to ensure the root funclet knows about all reg assignments, 
+        // This allows us to ensure the root funclet knows about all reg assignments,
         // even for locals which may not ever be used in the root funclet.
         mergeAssignments(ROOT_FUNC_IDX, m_currentFunclet);
     }
