@@ -314,6 +314,14 @@ static void optAssertionProp_HWIntrinsic(Compiler* comp, GenTreeHWIntrinsic* tre
 
     var_types rangeType = node->TypeGet();
 
+    // A Span's length is never negative. Recognize it here (both the unpromoted
+    // LCL_FLD form and the implicit byref IND form) so range analysis can treat
+    // comparisons against it as checked bounds.
+    if (compiler->gtIsSpanLength(node))
+    {
+        return {SymbolicIntegerValue::Zero, UpperBoundForType(rangeType)};
+    }
+
     switch (node->OperGet())
     {
         case GT_EQ:
@@ -355,37 +363,6 @@ static void optAssertionProp_HWIntrinsic(Compiler* comp, GenTreeHWIntrinsic* tre
                 rangeType = static_cast<var_types>(node->AsCall()->gtReturnType);
             }
             break;
-
-        case GT_IND:
-        {
-            GenTree* const addr = node->AsIndir()->Addr();
-
-            if (node->TypeIs(TYP_INT) && addr->OperIs(GT_ADD) && addr->gtGetOp1()->OperIs(GT_LCL_VAR) &&
-                addr->gtGetOp2()->IsIntegralConst(OFFSETOF__CORINFO_Span__length))
-            {
-                GenTreeLclVar* const lclVar = addr->gtGetOp1()->AsLclVar();
-
-                if (compiler->lvaGetDesc(lclVar->GetLclNum())->IsSpan())
-                {
-                    assert(compiler->lvaIsImplicitByRefLocal(lclVar->GetLclNum()));
-                    return {SymbolicIntegerValue::Zero, UpperBoundForType(rangeType)};
-                }
-            }
-            break;
-        }
-
-        case GT_LCL_FLD:
-        {
-            GenTreeLclFld* const lclFld = node->AsLclFld();
-            LclVarDsc* const     varDsc = compiler->lvaGetDesc(lclFld);
-
-            if (node->TypeIs(TYP_INT) && varDsc->IsSpan() && lclFld->GetLclOffs() == OFFSETOF__CORINFO_Span__length)
-            {
-                return {SymbolicIntegerValue::Zero, UpperBoundForType(rangeType)};
-            }
-
-            break;
-        }
 
         case GT_LCL_VAR:
         {
@@ -2375,8 +2352,19 @@ void Compiler::optAssertionGen(GenTree* tree)
             if (!optLocalAssertionProp && tree->TypeIs(TYP_INT) &&
                 lvaGetDesc(tree->AsLclVarCommon())->IsNeverNegative())
             {
-                // Create "LCL_VAR >= 0" assertion for int local variables that are never negative.
-                // Typically, it's Span.Length.
+                // Create "LCL_VAR >= 0" assertions for locals that are never negative.
+                ValueNum opVN = optConservativeNormalVN(tree);
+                if (opVN != ValueNumStore::NoVN)
+                {
+                    assertionInfo = optAddAssertion(
+                        AssertionDsc::CreateConstantBound(this, VNF_GE, opVN, vnStore->VNZeroForType(TYP_INT)));
+                }
+            }
+            break;
+
+        case GT_LCL_FLD:
+            if (!optLocalAssertionProp && tree->TypeIs(TYP_INT) && IntegralRange::ForNode(tree, this).IsNonNegative())
+            {
                 ValueNum opVN = optConservativeNormalVN(tree);
                 if (opVN != ValueNumStore::NoVN)
                 {
@@ -2404,7 +2392,7 @@ void Compiler::optAssertionGen(GenTree* tree)
             {
                 assertionInfo = optCreateAssertion(tree->GetIndirOrArrMetaDataAddr(), nullptr, /*equals*/ false);
             }
-            else if (tree->OperIs(GT_IND) && tree->TypeIs(TYP_INT) &&
+            else if (!optLocalAssertionProp && tree->OperIs(GT_IND) && tree->TypeIs(TYP_INT) &&
                      IntegralRange::ForNode(tree, this).IsNonNegative())
             {
                 // Create "IND >= 0" assertion for int indirections that are known to be non-negative.

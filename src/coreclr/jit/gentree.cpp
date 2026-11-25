@@ -22239,6 +22239,55 @@ bool Compiler::gtIsTypeof(GenTree* tree, CORINFO_CLASS_HANDLE* handle)
 }
 
 //------------------------------------------------------------------------
+// gtIsSpanLength: Check whether a node loads the length field of a Span<T>.
+//
+// Arguments:
+//    tree - the node to check
+//
+// Return Value:
+//    True if "tree" is an "int" load of "Span<T>._length", either as a field of
+//    an unpromoted span local (LCL_FLD) or through an implicit byref span (an
+//    indirection at the length offset).
+//
+// Notes:
+//    Span lengths are never negative, so recognizing them lets range analysis
+//    treat comparisons against them as checked bounds, matching the promoted
+//    case where the length field local carries the "never negative" flag.
+//
+bool Compiler::gtIsSpanLength(GenTree* tree)
+{
+    if (!tree->TypeIs(TYP_INT))
+    {
+        return false;
+    }
+
+    if (tree->OperIs(GT_LCL_FLD))
+    {
+        GenTreeLclFld* const lclFld = tree->AsLclFld();
+        return lvaGetDesc(lclFld)->IsSpan() && (lclFld->GetLclOffs() == OFFSETOF__CORINFO_Span__length);
+    }
+
+    if (tree->OperIs(GT_IND))
+    {
+        GenTree* const addr = tree->AsIndir()->Addr();
+
+        if (addr->OperIs(GT_ADD) && addr->gtGetOp1()->OperIs(GT_LCL_VAR) &&
+            addr->gtGetOp2()->IsIntegralConst(OFFSETOF__CORINFO_Span__length))
+        {
+            GenTreeLclVar* const lclVar = addr->gtGetOp1()->AsLclVar();
+
+            if (lvaGetDesc(lclVar->GetLclNum())->IsSpan())
+            {
+                assert(lvaIsImplicitByRefLocal(lclVar->GetLclNum()));
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
 // gtCallGetDefinedRetBufLclAddr:
 //   Get the tree corresponding to the address of the retbuf that this call defines.
 //
