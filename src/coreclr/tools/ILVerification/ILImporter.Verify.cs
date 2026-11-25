@@ -600,6 +600,20 @@ namespace Internal.IL
                 Invalid(error);
         }
 
+        void Unverifiable(VerifierError error, object found, object expected)
+        {
+            if (!ValidationOnly)
+                Invalid(error, found, expected);
+        }
+
+        // Check for a rule that only verifiable IL must follow.
+        bool CheckVerifiable(bool cond, VerifierError error)
+        {
+            if (!cond && !ValidationOnly)
+                Invalid(error);
+            return cond;
+        }
+
         void CheckIsNumeric(StackValue value)
         {
             if (!Check(StackValueKind.Int32 <= value.Kind && value.Kind <= StackValueKind.Float,
@@ -1431,7 +1445,8 @@ namespace Internal.IL
                     // ECMA III 1.7.5 Backward Branch Constraints
                     // if stack is not empty at beginning of this block,
                     // there must exist a predecessor block with lower IL offset.
-                    Check(basicBlock.HasPredecessorWithLowerOffset, VerifierError.BackwardBranch);
+                    // The ECMA-335 augments delete this rule, so it is no longer a validity rule.
+                    CheckVerifiable(basicBlock.HasPredecessorWithLowerOffset, VerifierError.BackwardBranch);
                 }
 
                 // Copy stack state
@@ -1486,7 +1501,7 @@ namespace Internal.IL
             var varType = GetVarType(index, argument);
 
             if (!argument)
-                Check(_initLocals, VerifierError.InitLocals);
+                CheckVerifiable(_initLocals, VerifierError.InitLocals);
 
             CheckIsNotPointer(varType);
 
@@ -1517,7 +1532,7 @@ namespace Internal.IL
             var varType = GetVarType(index, argument);
 
             if (!argument)
-                Check(_initLocals, VerifierError.InitLocals);
+                CheckVerifiable(_initLocals, VerifierError.InitLocals);
 
             Check(!varType.IsByRef, VerifierError.ByrefOfByref);
 
@@ -1594,8 +1609,9 @@ namespace Internal.IL
                         constrained = _constrained;
 
                         // The constrained type must implement the interface declaring the static virtual method
+                        // (a Verifiability rule of the augmented III.2.1).
                         if (!constrained.CanCastTo(method.OwningType))
-                            Invalid(VerifierError.ConstrainedTypeNoInterfaceImpl, constrained, method.OwningType);
+                            Unverifiable(VerifierError.ConstrainedTypeNoInterfaceImpl, constrained, method.OwningType);
                     }
                 }
 
@@ -1753,7 +1769,7 @@ namespace Internal.IL
                     {
                         var methodTypeDef = methodType.GetTypeDefinition() as MetadataType; // Method is always considered final if owning type is sealed
                         if (methodTypeDef == null || !methodTypeDef.IsSealed)
-                            Check(actualThis.IsThisPtr && !_modifiesThisPtr, VerifierError.ThisMismatch);
+                            CheckVerifiable(actualThis.IsThisPtr && !_modifiesThisPtr, VerifierError.ThisMismatch);
                     }
                 }
 
@@ -1912,7 +1928,7 @@ namespace Internal.IL
                 {
                     ClearPendingPrefix(Prefix.Constrained);
                     if (!_constrained.CanCastTo(method.OwningType))
-                        Invalid(VerifierError.ConstrainedTypeNoInterfaceImpl, _constrained, method.OwningType);
+                        Unverifiable(VerifierError.ConstrainedTypeNoInterfaceImpl, _constrained, method.OwningType);
                 }
                 else
                 {
@@ -2016,7 +2032,8 @@ namespace Internal.IL
                     var actualReturnType = Pop();
                     CheckIsAssignable(actualReturnType, StackValue.CreateFromType(expectedReturnType));
 
-                    Check((!expectedReturnType.IsByRef && !expectedReturnType.IsByRefLike) || actualReturnType.IsPermanentHome, VerifierError.ReturnPtrToStack);
+                    // The lifetime of a returned byref is checked for verification only (III.1.8.1.2.1).
+                    CheckVerifiable((!expectedReturnType.IsByRef && !expectedReturnType.IsByRefLike) || actualReturnType.IsPermanentHome, VerifierError.ReturnPtrToStack);
                 }
             }
         }
@@ -2795,7 +2812,8 @@ namespace Internal.IL
 
             var result = Pop(allowUninitThis: true);
             Check(result.Kind == StackValueKind.Int32, VerifierError.StackUnexpected, result);
-            Check(_stackTop == 0, VerifierError.EndfilterStack);
+            // Only the Verifiability paragraph of III.3.34 requires the value to be the only item.
+            CheckVerifiable(_stackTop == 0, VerifierError.EndfilterStack);
         }
 
         void ImportCpBlk()

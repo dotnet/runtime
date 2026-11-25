@@ -152,7 +152,7 @@
     }
 
     // The address in a typed reference can point to a local of a caller.
-    .method public hidebysig static int32& Refanyval.ReturnAddress_Invalid_ReturnPtrToStack(typedref tr) cil managed
+    .method public hidebysig static int32& Refanyval.ReturnAddress_Invalid_ReturnPtrToStack_Validation_Valid(typedref tr) cil managed
     {
         ldarg.0
         refanyval [System.Runtime]System.Int32

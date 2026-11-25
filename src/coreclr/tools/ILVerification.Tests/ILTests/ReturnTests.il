@@ -114,7 +114,7 @@
         ret
     }
 
-    .method public hidebysig instance int32& Return.LocalArgByRef_Invalid_ReturnPtrToStack(int32 i) cil managed
+    .method public hidebysig instance int32& Return.LocalArgByRef_Invalid_ReturnPtrToStack_Validation_Valid(int32 i) cil managed
     {
         ldarga.s    i
         ret
@@ -133,7 +133,7 @@
         ret
     }
 
-    .method public hidebysig instance int32& Return.LocalStructFieldByRef_Invalid_ReturnPtrToStack(valuetype Struct s) cil managed
+    .method public hidebysig instance int32& Return.LocalStructFieldByRef_Invalid_ReturnPtrToStack_Validation_Valid(valuetype Struct s) cil managed
     {
         ldarg.1
         ldflda      int32 Struct::instanceField
