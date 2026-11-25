@@ -1230,15 +1230,13 @@ static bool IsBoundLessOrEqual(
         return false;
     }
 
-    BitVecOps::Iter iter(comp->apTraits, assertions);
-    unsigned        index = 0;
-    while (iter.NextElem(&index))
-    {
+    bool isLessOrEqual = false;
+    BitVecOps::VisitBits(comp->apTraits, assertions, [&](unsigned index) {
         const Compiler::AssertionDsc& curAssertion = comp->optGetAssertion(GetAssertionIndex(index));
         if (!curAssertion.GetOp1().KindIs(Compiler::O1K_VN) ||
             !curAssertion.GetOp2().KindIs(Compiler::O2K_VN_ADD_CNS) || (curAssertion.GetOp2().GetCns() != 0))
         {
-            continue;
+            return true;
         }
 
         ValueNum op1VN = curAssertion.GetOp1().GetVN();
@@ -1259,10 +1257,12 @@ static bool IsBoundLessOrEqual(
 
         if ((next != ValueNumStore::NoVN) && IsBoundLessOrEqual(comp, assertions, next, hi, equalOnly, budget - 1))
         {
-            return true;
+            isLessOrEqual = true;
+            return false;
         }
-    }
-    return false;
+        return true;
+    });
+    return isLessOrEqual;
 }
 
 //------------------------------------------------------------------------
@@ -1337,17 +1337,14 @@ void RangeCheck::MergeEdgeAssertionsWorker(Compiler*                        comp
     assert(canUseCheckedBounds || (preferredBoundVN == ValueNumStore::NoVN));
 
     // Walk through the "assertions" to check if they apply.
-    BitVecOps::Iter iter(comp->apTraits, assertions);
-    unsigned        index = 0;
-    while (iter.NextElem(&index))
-    {
+    BitVecOps::VisitBits(comp->apTraits, assertions, [&](unsigned index) {
         AssertionIndex assertionIndex = GetAssertionIndex(index);
 
         const Compiler::AssertionDsc& curAssertion = comp->optGetAssertion(assertionIndex);
 
         if (curAssertion.GetOp2().KindIs(Compiler::O2K_CONST_INT) && (curAssertion.GetOp1().GetVN() != normalLclVN))
         {
-            continue;
+            return true;
         }
 
         Limit      limit(Limit::keUndef);
@@ -1386,12 +1383,12 @@ void RangeCheck::MergeEdgeAssertionsWorker(Compiler*                        comp
                 }
                 else
                 {
-                    continue;
+                    return true;
                 }
             }
             else
             {
-                continue;
+                return true;
             }
         }
         // If we're not allowed to emit keBinOpArray, we still can deduce something useful from
@@ -1519,12 +1516,12 @@ void RangeCheck::MergeEdgeAssertionsWorker(Compiler*                        comp
                 }
                 else
                 {
-                    continue;
+                    return true;
                 }
             }
             else
             {
-                continue;
+                return true;
             }
             assert(!isUnsigned);
         }
@@ -1544,7 +1541,7 @@ void RangeCheck::MergeEdgeAssertionsWorker(Compiler*                        comp
             // Ignore GC values/NULL caught by IsConstantInt32Assertion assertion (may happen on 32bit)
             if (varTypeIsGC(comp->vnStore->TypeOfVN(curAssertion.GetOp2().GetVN())))
             {
-                continue;
+                return true;
             }
 
             int cnstLimit = (int)curAssertion.GetOp2().GetIntConstant();
@@ -1577,7 +1574,7 @@ void RangeCheck::MergeEdgeAssertionsWorker(Compiler*                        comp
                 else
                 {
                     // We can't make any useful deduction from this assertion.
-                    continue;
+                    return true;
                 }
             }
         }
@@ -1620,7 +1617,7 @@ void RangeCheck::MergeEdgeAssertionsWorker(Compiler*                        comp
                 else
                 {
                     // Nothing to deduce from this assertion at this site.
-                    continue;
+                    return true;
                 }
             }
         }
@@ -1678,7 +1675,7 @@ void RangeCheck::MergeEdgeAssertionsWorker(Compiler*                        comp
                     }
                     else
                     {
-                        continue;
+                        return true;
                     }
                 }
                 // arr[arr.Length - CNS] means arr.Length >= CNS, so we can deduce "normalLclVN >= CNS"
@@ -1699,7 +1696,7 @@ void RangeCheck::MergeEdgeAssertionsWorker(Compiler*                        comp
             }
             else
             {
-                continue;
+                return true;
             }
         }
         // Current assertion is "normalLclVN u< boundVN". Get boundVN's range using our preferred bound.
@@ -1723,7 +1720,7 @@ void RangeCheck::MergeEdgeAssertionsWorker(Compiler*                        comp
             }
             else
             {
-                continue;
+                return true;
             }
         }
         // Current assertion is of the form "X <relop> Y" where both X and Y are arbitrary VNs
@@ -1746,7 +1743,7 @@ void RangeCheck::MergeEdgeAssertionsWorker(Compiler*                        comp
             cmpOper = Compiler::AssertionDsc::ToCompareOper(curAssertion.GetKind(), &isUnsigned);
             if (isUnsigned)
             {
-                continue;
+                return true;
             }
 
             ValueNum otherVN;
@@ -1766,14 +1763,14 @@ void RangeCheck::MergeEdgeAssertionsWorker(Compiler*                        comp
 
             if (budget <= 0)
             {
-                continue;
+                return true;
             }
 
             budget--;
             Range otherRange = GetRangeFromAssertionsWorker(comp, otherVN, assertions, budget, visited);
             if (!otherRange.IsConstantRange())
             {
-                continue;
+                return true;
             }
 
             // Derive a constant limit for normalLclVN from the constant range of otherVN.
@@ -1793,14 +1790,14 @@ void RangeCheck::MergeEdgeAssertionsWorker(Compiler*                        comp
                     break;
 
                 default:
-                    continue;
+                    return true;
             }
             limit = Limit(Limit::keConstant, derivedLimit);
         }
         // Current assertion is not supported, ignore it
         else
         {
-            continue;
+            return true;
         }
 
         assert(limit.IsBinOpArray() || limit.IsConstant());
@@ -1837,12 +1834,12 @@ void RangeCheck::MergeEdgeAssertionsWorker(Compiler*                        comp
         // Bounds are inclusive, so add -1 for upper bound when "<". But make sure we won't underflow.
         if (cmpOper == GT_LT && !limit.AddConstant(-1))
         {
-            continue;
+            return true;
         }
         // Bounds are inclusive, so add +1 for lower bound when ">". But make sure we won't overflow.
         if (cmpOper == GT_GT && !limit.AddConstant(1))
         {
-            continue;
+            return true;
         }
 
         // cmpOp (loop index i) cmpOper len +/- cns
@@ -1880,7 +1877,7 @@ void RangeCheck::MergeEdgeAssertionsWorker(Compiler*                        comp
         if (!assertedRange.IsValid())
         {
             JITDUMP("assertedRange is invalid: [%s] - bail out\n", assertedRange.ToString(comp));
-            return;
+            return false;
         }
 
         JITDUMP("Tightening pRange: [%s] with assertedRange: [%s] into ", pRange->ToString(comp),
@@ -1898,9 +1895,10 @@ void RangeCheck::MergeEdgeAssertionsWorker(Compiler*                        comp
         else
         {
             JITDUMP("invalid range after tightening\n");
-            return;
+            return false;
         }
-    }
+        return true;
+    });
 }
 
 class AssertionsAccumulator final : public GenTreeVisitor<AssertionsAccumulator>

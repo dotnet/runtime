@@ -1034,10 +1034,7 @@ void Compiler::compChangeLife(VARSET_VALARG_TP newLife)
     // Handle the dying vars first, then the newly live vars.
     // This is because, in the RyuJIT backend case, they may occupy registers that
     // will be occupied by another var that is newly live.
-    VarSetOps::Iter deadIter(this, deadSet);
-    unsigned        deadVarIndex = 0;
-    while (deadIter.NextElem(&deadVarIndex))
-    {
+    VarSetOps::VisitBits(this, deadSet, [&](unsigned deadVarIndex) {
         unsigned   varNum = lvaTrackedIndexToLclNum(deadVarIndex);
         LclVarDsc* varDsc = lvaGetDesc(varNum);
 
@@ -1072,12 +1069,10 @@ void Compiler::compChangeLife(VARSET_VALARG_TP newLife)
 #endif // EMIT_GENERATE_GCINFO
 
         codeGen->getVariableLiveKeeper()->siEndVariableLiveRange(varNum);
-    }
+        return true;
+    });
 
-    VarSetOps::Iter bornIter(this, bornSet);
-    unsigned        bornVarIndex = 0;
-    while (bornIter.NextElem(&bornVarIndex))
-    {
+    VarSetOps::VisitBits(this, bornSet, [&](unsigned bornVarIndex) {
         unsigned   varNum = lvaTrackedIndexToLclNum(bornVarIndex);
         LclVarDsc* varDsc = lvaGetDesc(varNum);
 
@@ -1120,7 +1115,8 @@ void Compiler::compChangeLife(VARSET_VALARG_TP newLife)
 #endif // EMIT_GENERATE_GCINFO
 
         codeGen->getVariableLiveKeeper()->siStartVariableLiveRange(varDsc, varNum);
-    }
+        return true;
+    });
 }
 
 // Need an explicit instantiation.

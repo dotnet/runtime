@@ -1542,18 +1542,23 @@ AssertionIndex Compiler::optAddAssertion(const AssertionDsc& newAssertion)
     {
         assert(newAssertion.GetOp1().KindIs(O1K_LCLVAR));
 
-        unsigned        lclNum = newAssertion.GetOp1().GetLclNum();
-        BitVecOps::Iter iter(apTraits, GetAssertionDep(lclNum));
-        unsigned        bvIndex = 0;
-        while (iter.NextElem(&bvIndex))
-        {
+        unsigned       lclNum        = newAssertion.GetOp1().GetLclNum();
+        AssertionIndex existingIndex = NO_ASSERTION_INDEX;
+        BitVecOps::VisitBits(apTraits, GetAssertionDep(lclNum), [&](unsigned bvIndex) {
             AssertionIndex const index        = GetAssertionIndex(bvIndex);
             const AssertionDsc&  curAssertion = optGetAssertion(index);
 
             if (curAssertion.Equals(newAssertion, /* vnBased */ false))
             {
-                return index;
+                existingIndex = index;
+                return false;
             }
+            return true;
+        });
+
+        if (existingIndex != NO_ASSERTION_INDEX)
+        {
+            return existingIndex;
         }
     }
     else
@@ -2625,27 +2630,27 @@ AssertionIndex Compiler::optAssertionIsSubrange(GenTree* tree, IntegralRange ran
 {
     assert(optLocalAssertionProp); // Subrange assertions are local only.
 
-    BitVecOps::Iter iter(apTraits, assertions);
-    unsigned        bvIndex = 0;
-    while (iter.NextElem(&bvIndex))
-    {
+    AssertionIndex result = NO_ASSERTION_INDEX;
+    BitVecOps::VisitBits(apTraits, assertions, [&](unsigned bvIndex) {
         AssertionIndex const index        = GetAssertionIndex(bvIndex);
         const AssertionDsc&  curAssertion = optGetAssertion(index);
         if (curAssertion.CanPropSubRange())
         {
             if (curAssertion.GetOp1().GetLclNum() != tree->AsLclVarCommon()->GetLclNum())
             {
-                continue;
+                return true;
             }
 
             if (range.Contains(curAssertion.GetOp2().GetIntegralRange()))
             {
-                return index;
+                result = index;
+                return false;
             }
         }
-    }
+        return true;
+    });
 
-    return NO_ASSERTION_INDEX;
+    return result;
 }
 
 //------------------------------------------------------------------------
@@ -2691,10 +2696,8 @@ bool Compiler::optAssertionVNIsSubtype(ValueNum objVN, ValueNum castToVN, ASSERT
 
     // Now look through assertions directly on the VN.
     // We're looking for "vn is (exactly/subtype) cls" assertions that can help us prove the cast.
-    BitVecOps::Iter iter(apTraits, assertions);
-    unsigned        bvIndex = 0;
-    while (iter.NextElem(&bvIndex))
-    {
+    bool isSubtype = false;
+    BitVecOps::VisitBits(apTraits, assertions, [&](unsigned bvIndex) {
         AssertionIndex const index        = GetAssertionIndex(bvIndex);
         const AssertionDsc&  curAssertion = optGetAssertion(index);
 
@@ -2707,14 +2710,14 @@ bool Compiler::optAssertionVNIsSubtype(ValueNum objVN, ValueNum castToVN, ASSERT
             //     if (obj is MyClass) // can be folded to false
             //     {
             //
-            continue;
+            return true;
         }
 
         // Extract CORINFO_CLASS_HANDLE from curAssertion.GetOp2()
         CORINFO_CLASS_HANDLE cls;
         if (!vnStore->IsVNTypeHandle(curAssertion.GetOp2().GetVN(), &cls))
         {
-            continue;
+            return true;
         }
 
         // Now we have "objVN is (exactly/subtype) cls" assertion.
@@ -2722,8 +2725,15 @@ bool Compiler::optAssertionVNIsSubtype(ValueNum objVN, ValueNum castToVN, ASSERT
         if (info.compCompHnd->compareTypesForCast(cls, castTo) == TypeCompareState::Must)
         {
             // The assertion implies the cast is always successful.
-            return true;
+            isSubtype = true;
+            return false;
         }
+        return true;
+    });
+
+    if (isSubtype)
+    {
+        return true;
     }
 
     // For PHI-defs, walk reaching assertions/VNs and recursively check.
@@ -4115,14 +4125,12 @@ GenTree* Compiler::optAssertionProp_LclFld(ASSERT_VALARG_TP assertions, GenTreeL
 
     ASSERT_TP filteredAssertions = BitVecOps::Intersection(apTraits, dep, assertions);
 
-    BitVecOps::Iter iter(apTraits, filteredAssertions);
-    unsigned        index = 0;
-    while (iter.NextElem(&index))
-    {
+    GenTree* result = nullptr;
+    BitVecOps::VisitBits(apTraits, filteredAssertions, [&](unsigned index) {
         AssertionIndex assertionIndex = GetAssertionIndex(index);
         if (assertionIndex > optAssertionCount)
         {
-            break;
+            return false;
         }
 
         // See if the variable is equal to another variable.
@@ -4133,12 +4141,14 @@ GenTree* Compiler::optAssertionProp_LclFld(ASSERT_VALARG_TP assertions, GenTreeL
             GenTree* const newTree = optCopyAssertionProp(curAssertion, tree, stmt DEBUGARG(assertionIndex));
             if (newTree != nullptr)
             {
-                return newTree;
+                result = newTree;
+                return false;
             }
         }
-    }
+        return true;
+    });
 
-    return nullptr;
+    return result;
 }
 
 //------------------------------------------------------------------------
@@ -4294,11 +4304,8 @@ void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
         return;
     }
 
-    const ValueNum  treeVN = vnStore->VNConservativeNormalValue(tree->gtVNPair);
-    BitVecOps::Iter iter(apTraits, assertions);
-    unsigned        index = 0;
-    while (iter.NextElem(&index))
-    {
+    const ValueNum treeVN = vnStore->VNConservativeNormalValue(tree->gtVNPair);
+    BitVecOps::VisitBits(apTraits, assertions, [&](unsigned index) {
         const AssertionDsc& curAssertion = optGetAssertion(GetAssertionIndex(index));
 
         // First, analyze possible X ==/!= CNS assertions.
@@ -4334,7 +4341,8 @@ void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
                 *isKnownNonZero     = curAssertion.KindIs(OAK_GT) || (curAssertion.GetOp2().GetIntConstant() > 0);
             }
         }
-    }
+        return true;
+    });
 
     if (*isKnownNonZero && *isKnownNonNegative)
     {
@@ -4518,16 +4526,14 @@ AssertionIndex Compiler::optLocalAssertionIsEqualOrNotEqual(
 
     ASSERT_TP apDependent = BitVecOps::Intersection(apTraits, dep, assertions);
 
-    BitVecOps::Iter iter(apTraits, apDependent);
-    unsigned        bvIndex = 0;
-    while (iter.NextElem(&bvIndex))
-    {
+    AssertionIndex result = NO_ASSERTION_INDEX;
+    BitVecOps::VisitBits(apTraits, apDependent, [&](unsigned bvIndex) {
         AssertionIndex const index        = GetAssertionIndex(bvIndex);
         const AssertionDsc&  curAssertion = optGetAssertion(index);
 
         if (!curAssertion.CanPropEqualOrNotEqual())
         {
-            continue;
+            return true;
         }
 
         if (curAssertion.GetOp1().KindIs(op1Kind) && (curAssertion.GetOp1().GetLclNum() == lclNum) &&
@@ -4541,11 +4547,13 @@ AssertionIndex Compiler::optLocalAssertionIsEqualOrNotEqual(
 
             if (constantIsEqual || assertionIsEqual)
             {
-                return index;
+                result = index;
+                return false;
             }
         }
-    }
-    return NO_ASSERTION_INDEX;
+        return true;
+    });
+    return result;
 }
 
 /*****************************************************************************
@@ -4619,19 +4627,19 @@ ValueNum Compiler::optGetPreferredBoundForRange(ValueNum vn, ASSERT_VALARG_TP as
         return ValueNumStore::NoVN;
     }
 
-    BitVecOps::Iter iter(apTraits, assertions);
-    unsigned        index = 0;
-    while (iter.NextElem(&index))
-    {
+    ValueNum result = ValueNumStore::NoVN;
+    BitVecOps::VisitBits(apTraits, assertions, [&](unsigned index) {
         const AssertionDsc& curAssertion = optGetAssertion(GetAssertionIndex(index));
         if (curAssertion.IsRelop() && (curAssertion.GetOp1().GetVN() == vn) &&
             curAssertion.GetOp2().KindIs(O2K_VN_ADD_CNS) &&
             optIsNeverNegativeCheckedBound(curAssertion.GetOp2().GetVN(), assertions))
         {
-            return curAssertion.GetOp2().GetVN();
+            result = curAssertion.GetOp2().GetVN();
+            return false;
         }
-    }
-    return ValueNumStore::NoVN;
+        return true;
+    });
+    return result;
 }
 
 //------------------------------------------------------------------------
@@ -4703,10 +4711,8 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
     {
         ValueNum falseVN = vnStore->VNZeroForType(TYP_INT);
 
-        BitVecOps::Iter iter(apTraits, assertions);
-        unsigned        index = 0;
-        while (iter.NextElem(&index))
-        {
+        GenTree* updatedTree = nullptr;
+        BitVecOps::VisitBits(apTraits, assertions, [&](unsigned index) {
             const AssertionDsc& curAssertion = optGetAssertion(GetAssertionIndex(index));
 
             // Look for a relop-like assertion that matches the current relop exactly.
@@ -4759,8 +4765,15 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
                 newTree = gtWrapWithSideEffects(newTree, tree, GTF_ALL_EFFECT);
                 JITDUMP(". Folded into:\n");
                 DISPTREE(newTree);
-                return optAssertionProp_Update(newTree, tree, stmt);
+                updatedTree = optAssertionProp_Update(newTree, tree, stmt);
+                return false;
             }
+            return true;
+        });
+
+        if (updatedTree != nullptr)
+        {
+            return updatedTree;
         }
     }
 
@@ -4859,14 +4872,12 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
     }
 
     // Find an equal or not equal assertion involving "op1" and "op2".
-    BitVecOps::Iter iter(apTraits, assertions);
-    unsigned        index = 0;
-    while (iter.NextElem(&index))
-    {
+    GenTree* updatedTree = nullptr;
+    BitVecOps::VisitBits(apTraits, assertions, [&](unsigned index) {
         const AssertionDsc& curAssertion = optGetAssertion(GetAssertionIndex(index));
         if (!curAssertion.CanPropEqualOrNotEqual() || (curAssertion.GetOp2().GetVN() != op2VN))
         {
-            continue;
+            return true;
         }
 
         if ((curAssertion.GetOp1().KindIs(O1K_VN) && (curAssertion.GetOp1().GetVN() == op1VN)) ||
@@ -4877,11 +4888,13 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
             newTree           = gtWrapWithSideEffects(result ? gtNewTrue() : gtNewFalse(), tree, GTF_ALL_EFFECT);
             JITDUMP(". Folded into:\n");
             DISPTREE(newTree);
-            return optAssertionProp_Update(newTree, tree, stmt);
+            updatedTree = optAssertionProp_Update(newTree, tree, stmt);
+            return false;
         }
-    }
+        return true;
+    });
 
-    return nullptr;
+    return updatedTree;
 }
 
 /*************************************************************************************
@@ -5232,10 +5245,8 @@ bool Compiler::optAssertionIsNonNull(GenTree* op, ASSERT_VALARG_TP assertions)
 
         // Scan those looking for a suitable assertion
         //
-        BitVecOps::Iter iter(apTraits, apDependent);
-        unsigned        index = 0;
-        while (iter.NextElem(&index))
-        {
+        bool isNonNull = false;
+        BitVecOps::VisitBits(apTraits, apDependent, [&](unsigned index) {
             AssertionIndex      assertionIndex = GetAssertionIndex(index);
             const AssertionDsc& curAssertion   = optGetAssertion(assertionIndex);
 
@@ -5244,8 +5255,15 @@ bool Compiler::optAssertionIsNonNull(GenTree* op, ASSERT_VALARG_TP assertions)
                 curAssertion.GetOp2().KindIs(O2K_CONST_INT) && // op2
                 (curAssertion.GetOp1().GetLclNum() == lclNum) && (curAssertion.GetOp2().GetIntConstant() == 0))
             {
-                return true;
+                isNonNull = true;
+                return false;
             }
+            return true;
+        });
+
+        if (isNonNull)
+        {
+            return true;
         }
     }
     return false;
@@ -5292,17 +5310,22 @@ bool Compiler::optAssertionVNIsNonNull(ValueNum vn, ASSERT_VALARG_TP assertions,
     //
     if (!BitVecOps::MayBeUninit(assertions))
     {
-        BitVecOps::Iter iter(apTraits, assertions);
-        unsigned        index = 0;
-        while (iter.NextElem(&index))
-        {
+        bool isNonNull = false;
+        BitVecOps::VisitBits(apTraits, assertions, [&](unsigned index) {
             AssertionIndex      assertionIndex = GetAssertionIndex(index);
             const AssertionDsc& curAssertion   = optGetAssertion(assertionIndex);
             if (curAssertion.CanPropNonNull() &&
                 ((curAssertion.GetOp1().GetVN() == vn) || (curAssertion.GetOp1().GetVN() == vnBase)))
             {
-                return true;
+                isNonNull = true;
+                return false;
             }
+            return true;
+        });
+
+        if (isNonNull)
+        {
+            return true;
         }
     }
 
@@ -5790,18 +5813,16 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions,
         // "length != 0" assertion for it.
         if ((idxLo == 0) && (idxHi == 0) && (lenLo <= 0))
         {
-            BitVecOps::Iter iter(apTraits, assertions);
-            unsigned        bvIndex = 0;
-            while (iter.NextElem(&bvIndex))
-            {
+            BitVecOps::VisitBits(apTraits, assertions, [&](unsigned bvIndex) {
                 const AssertionDsc& assertion = optGetAssertion(GetAssertionIndex(bvIndex));
                 if (assertion.IsConstantInt32Assertion() && assertion.KindIs(OAK_NOT_EQUAL) &&
                     (assertion.GetOp1().GetVN() == vnCurLen) && (assertion.GetOp2().GetIntConstant() == 0))
                 {
                     lenLo = 1;
-                    break;
+                    return false;
                 }
-            }
+                return true;
+            });
         }
 
         // index is always within [0..lenLo) --> drop bounds check

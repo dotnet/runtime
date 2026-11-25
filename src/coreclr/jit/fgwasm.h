@@ -656,10 +656,7 @@ unsigned FgWasm::WasmRunSubgraphDfs(VisitPreorder  visitPreorder,
     //
     ArrayStack<BasicBlock*> entries(comp->getAllocator(CMK_WasmSccTransform));
 
-    unsigned        poNum = 0;
-    BitVecOps::Iter iterator(&m_traits, subgraph);
-    while (iterator.NextElem(&poNum))
-    {
+    BitVecOps::VisitBits(&m_traits, subgraph, [&](unsigned poNum) {
         BasicBlock* const block   = m_dfsTree->GetPostOrder(poNum);
         bool              hasPred = false;
         for (BasicBlock* const pred : block->PredBlocks())
@@ -677,7 +674,8 @@ unsigned FgWasm::WasmRunSubgraphDfs(VisitPreorder  visitPreorder,
             JITDUMP(FMT_BB " is an isolated subgraph entry\n", block->bbNum);
             entries.Emplace(block);
         }
-    }
+        return true;
+    });
 
     // Kick off a DFS from each unvisited entry
     //

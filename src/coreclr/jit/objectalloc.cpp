@@ -600,15 +600,13 @@ void ObjectAllocator::DoAnalysis()
         JITDUMP("digraph ConnectionGraph {\n");
         for (unsigned int i = 0; i < m_bvCount; i++)
         {
-            BitVecOps::Iter iterator(&m_bitVecTraits, m_ConnGraphAdjacencyMatrix[i]);
-            unsigned int    lclIndex;
-            while (iterator.NextElem(&lclIndex))
-            {
+            BitVecOps::VisitBits(&m_bitVecTraits, m_ConnGraphAdjacencyMatrix[i], [&](unsigned lclIndex) {
                 JITDUMPEXEC(DumpIndex(lclIndex));
                 JITDUMP(" -> ");
                 JITDUMPEXEC(DumpIndex(i));
                 JITDUMP(";\n");
-            }
+                return true;
+            });
 
             if (CanIndexEscape(i))
             {
@@ -940,15 +938,12 @@ void ObjectAllocator::ComputeEscapingNodes(BitVecTraits* bitVecTraits, BitVec& e
         JITDUMP("\nComputing escape closure\n\n");
         bool               doOneMoreIteration = true;
         BitSetShortLongRep newEscapingNodes   = BitVecOps::UninitVal();
-        unsigned int       lclIndex;
 
         while (doOneMoreIteration)
         {
-            BitVecOps::Iter iterator(bitVecTraits, escapingNodesToProcess);
             doOneMoreIteration = false;
 
-            while (iterator.NextElem(&lclIndex))
-            {
+            BitVecOps::VisitBits(bitVecTraits, escapingNodesToProcess, [&](unsigned lclIndex) {
                 if (m_ConnGraphAdjacencyMatrix[lclIndex] != nullptr)
                 {
                     doOneMoreIteration = true;
@@ -969,19 +964,18 @@ void ObjectAllocator::ComputeEscapingNodes(BitVecTraits* bitVecTraits, BitVec& e
                     //
                     if (!BitVecOps::IsEmpty(bitVecTraits, newEscapingNodes))
                     {
-                        BitVecOps::Iter iterator(bitVecTraits, newEscapingNodes);
-                        unsigned int    newLclIndex;
-                        while (iterator.NextElem(&newLclIndex))
-                        {
+                        BitVecOps::VisitBits(bitVecTraits, newEscapingNodes, [&](unsigned newLclIndex) {
                             JITDUMPEXEC(DumpIndex(lclIndex));
                             JITDUMP(" causes ");
                             JITDUMPEXEC(DumpIndex(newLclIndex));
                             JITDUMP(" to escape\n");
-                        }
+                            return true;
+                        });
                     }
 #endif
                 }
-            }
+                return true;
+            });
         }
     };
 
@@ -1020,15 +1014,12 @@ void ObjectAllocator::ComputeConnGraphClosure(BitVecTraits* bitVecTraits, BitVec
 
     bool               doOneMoreIteration = true;
     BitSetShortLongRep newNodes           = BitVecOps::UninitVal();
-    unsigned int       lclIndex;
 
     while (doOneMoreIteration)
     {
-        BitVecOps::Iter iterator(bitVecTraits, nodesToProcess);
         doOneMoreIteration = false;
 
-        while (iterator.NextElem(&lclIndex))
-        {
+        BitVecOps::VisitBits(bitVecTraits, nodesToProcess, [&](unsigned lclIndex) {
             if (m_ConnGraphAdjacencyMatrix[lclIndex] != nullptr)
             {
                 doOneMoreIteration = true;
@@ -1042,19 +1033,18 @@ void ObjectAllocator::ComputeConnGraphClosure(BitVecTraits* bitVecTraits, BitVec
 #ifdef DEBUG
                 if (!BitVecOps::IsEmpty(bitVecTraits, newNodes))
                 {
-                    BitVecOps::Iter newIterator(bitVecTraits, newNodes);
-                    unsigned int    newLclIndex;
-                    while (newIterator.NextElem(&newLclIndex))
-                    {
+                    BitVecOps::VisitBits(bitVecTraits, newNodes, [&](unsigned newLclIndex) {
                         JITDUMPEXEC(DumpIndex(lclIndex));
                         JITDUMP(" causes ");
                         JITDUMPEXEC(DumpIndex(newLclIndex));
                         JITDUMP(" to be %s\n", setName);
-                    }
+                        return true;
+                    });
                 }
 #endif
             }
-        }
+            return true;
+        });
     }
 }
 
@@ -1123,26 +1113,22 @@ void ObjectAllocator::ComputeStackObjectPointers(BitVecTraits* bitVecTraits)
     {
         printf("Definitely stack-pointing locals:");
         {
-            BitVecOps::Iter iter(bitVecTraits, m_DefinitelyStackPointingPointers);
-            unsigned        index = 0;
-            while (iter.NextElem(&index))
-            {
+            BitVecOps::VisitBits(bitVecTraits, m_DefinitelyStackPointingPointers, [&](unsigned index) {
                 DumpIndex(index);
-            }
+                return true;
+            });
             printf("\n");
         }
 
         printf("Possibly stack-pointing locals:");
         {
-            BitVecOps::Iter iter(bitVecTraits, m_PossiblyStackPointingPointers);
-            unsigned        index = 0;
-            while (iter.NextElem(&index))
-            {
+            BitVecOps::VisitBits(bitVecTraits, m_PossiblyStackPointingPointers, [&](unsigned index) {
                 if (!BitVecOps::IsMember(bitVecTraits, m_DefinitelyStackPointingPointers, index))
                 {
                     DumpIndex(index);
                 }
-            }
+                return true;
+            });
             printf("\n");
         }
     }
@@ -3204,10 +3190,8 @@ bool ObjectAllocator::AnalyzePseudoForCloning(BitVecTraits* bitVecTraits, BitVec
     // Check if each conditionally escaping local escapes on its own; if so cloning is of no use
     //
     {
-        BitVecOps::Iter iterator(bitVecTraits, pseudoAdjacencies);
-        unsigned        lclNumIndex = BAD_VAR_NUM;
-        while (iterator.NextElem(&lclNumIndex))
-        {
+        bool escapesIndependently = false;
+        BitVecOps::VisitBits(bitVecTraits, pseudoAdjacencies, [&](unsigned lclNumIndex) {
             if (BitVecOps::IsMember(bitVecTraits, escapingNodes, lclNumIndex))
             {
                 // The enumerator var or a related var had escaping uses somewhere in the method,
@@ -3217,8 +3201,15 @@ bool ObjectAllocator::AnalyzePseudoForCloning(BitVecTraits* bitVecTraits, BitVec
                 JITDUMP("   escapes independently of");
                 JITDUMPEXEC(DumpIndex(pseudoIndex));
                 JITDUMP("\n");
+                escapesIndependently = true;
                 return false;
             }
+            return true;
+        });
+
+        if (escapesIndependently)
+        {
+            return false;
         }
     }
 

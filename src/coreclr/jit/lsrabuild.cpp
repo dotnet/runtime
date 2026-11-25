@@ -1090,17 +1090,14 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
         // if (!blockSequence[curBBSeqNum]->isRunRarely())
         if (enregisterLocalVars)
         {
-            VarSetOps::Iter iter(m_compiler, currentLiveVars);
-            unsigned        varIndex = 0;
-            while (iter.NextElem(&varIndex))
-            {
+            VarSetOps::VisitBits(m_compiler, currentLiveVars, [&](unsigned varIndex) {
                 LclVarDsc* varDsc = m_compiler->lvaGetDescByTrackedIndex(varIndex);
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
                 if (Compiler::varTypeNeedsPartialCalleeSave(varDsc->GetRegisterType()))
                 {
                     if (!VarSetOps::IsMember(m_compiler, largeVectorCalleeSaveCandidateVars, varIndex))
                     {
-                        continue;
+                        return true;
                     }
                 }
                 else
@@ -1108,12 +1105,13 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
                     if (varTypeIsFloating(varDsc) &&
                         !VarSetOps::IsMember(m_compiler, fpCalleeSaveCandidateVars, varIndex))
                     {
-                        continue;
+                        return true;
                     }
 
                 Interval* interval = getIntervalForLocalVar(varIndex);
                 updateIntervalPreferencesForKill(interval, killMask);
-            }
+                return true;
+            });
         }
 
         // Now update preferences of LIR edges to avoid the killed registers.
@@ -1482,13 +1480,10 @@ void LinearScan::buildUpperVectorSaveRefPositions(GenTree*                tree,
 
         assert(VarSetOps::IsSubset(m_compiler, liveLargeVectors, liveDefsLargeVectors));
 
-        VarSetOps::Iter iter(m_compiler, liveDefsLargeVectors);
-        unsigned        varIndex = 0;
-        bool            blockAlwaysReturn =
+        bool blockAlwaysReturn =
             m_compiler->compCurBB->KindIs(BBJ_THROW, BBJ_EHFINALLYRET, BBJ_EHFAULTRET, BBJ_EHFILTERRET, BBJ_EHCATCHRET);
 
-        while (iter.NextElem(&varIndex))
-        {
+        VarSetOps::VisitBits(m_compiler, liveDefsLargeVectors, [&](unsigned varIndex) {
             Interval* varInterval = getIntervalForLocalVar(varIndex);
             if (!varInterval->isPartiallySpilled)
             {
@@ -1502,7 +1497,8 @@ void LinearScan::buildUpperVectorSaveRefPositions(GenTree*                tree,
                 pos->regOptional = true;
 #endif
             }
-        }
+            return true;
+        });
     }
     // For any non-lclVar intervals that are live at this point (i.e. in the DefList), we will also create
     // a RefTypeUpperVectorSave. For now these will all be spilled at this point, as we don't currently
@@ -1999,10 +1995,7 @@ void LinearScan::insertZeroInitRefPositions()
 
     // insert defs for this, then a block boundary
 
-    VarSetOps::Iter iter(m_compiler, currentLiveVars);
-    unsigned        varIndex = 0;
-    while (iter.NextElem(&varIndex))
-    {
+    VarSetOps::VisitBits(m_compiler, currentLiveVars, [&](unsigned varIndex) {
         LclVarDsc* varDsc = m_compiler->lvaGetDescByTrackedIndex(varIndex);
         if (!varDsc->lvIsParam && !varDsc->lvIsParamRegTarget && isCandidateVar(varDsc))
         {
@@ -2031,15 +2024,13 @@ void LinearScan::insertZeroInitRefPositions()
                 JITDUMP(" marking as spilled\n");
             }
         }
-    }
+        return true;
+    });
 
     // We must also insert zero-inits for any finallyVars if they are refs or if compInitMem is true.
     if (m_compiler->lvaEnregEHVars)
     {
-        VarSetOps::Iter iter(m_compiler, finallyVars);
-        unsigned        varIndex = 0;
-        while (iter.NextElem(&varIndex))
-        {
+        VarSetOps::VisitBits(m_compiler, finallyVars, [&](unsigned varIndex) {
             LclVarDsc* varDsc = m_compiler->lvaGetDescByTrackedIndex(varIndex);
             if (!varDsc->lvIsParam && !varDsc->lvIsParamRegTarget && isCandidateVar(varDsc))
             {
@@ -2065,7 +2056,8 @@ void LinearScan::insertZeroInitRefPositions()
                     }
                 }
             }
-        }
+            return true;
+        });
     }
 }
 
@@ -2354,10 +2346,7 @@ void LinearScan::buildIntervals()
                         // If we are using locations from a predecessor, we should never require DummyDefs.
                         assert(!predBlockIsAllocated);
                         JITDUMP("Creating dummy definitions\n");
-                        VarSetOps::Iter iter(m_compiler, newLiveIn);
-                        unsigned        varIndex = 0;
-                        while (iter.NextElem(&varIndex))
-                        {
+                        VarSetOps::VisitBits(m_compiler, newLiveIn, [&](unsigned varIndex) {
                             // Add a dummyDef for any candidate vars that are in the "newLiveIn" set.
                             LclVarDsc* varDsc = m_compiler->lvaGetDescByTrackedIndex(varIndex);
                             assert(isCandidateVar(varDsc));
@@ -2365,7 +2354,8 @@ void LinearScan::buildIntervals()
                             RefPosition* pos      = newRefPosition(interval, currentLoc, RefTypeDummyDef, nullptr,
                                                                    allRegs(interval->registerType));
                             pos->setRegOptional(true);
-                        }
+                            return true;
+                        });
                         JITDUMP("Finished creating dummy definitions\n\n");
                     }
                 }
@@ -2501,13 +2491,11 @@ void LinearScan::buildIntervals()
             // At the end of each block, create upperVectorRestores for any largeVectorVars that may be
             // partiallySpilled (during the build phase all intervals will be marked isPartiallySpilled if
             // they *may) be partially spilled at any point.
-            VarSetOps::Iter largeVectorVarsIter(m_compiler, largeVectorVars);
-            unsigned        largeVectorVarIndex = 0;
-            while (largeVectorVarsIter.NextElem(&largeVectorVarIndex))
-            {
+            VarSetOps::VisitBits(m_compiler, largeVectorVars, [&](unsigned largeVectorVarIndex) {
                 Interval* lclVarInterval = getIntervalForLocalVar(largeVectorVarIndex);
                 buildUpperVectorRestoreRefPosition(lclVarInterval, currentLoc, nullptr, false, 0);
-            }
+                return true;
+            });
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
 
             // Note: the visited set is cleared in LinearScan::doLinearScan()
@@ -2562,10 +2550,7 @@ void LinearScan::buildIntervals()
             if (!VarSetOps::IsEmpty(m_compiler, expUseSet))
             {
                 JITDUMP("Exposed uses:\n");
-                VarSetOps::Iter iter(m_compiler, expUseSet);
-                unsigned        varIndex = 0;
-                while (iter.NextElem(&varIndex))
-                {
+                VarSetOps::VisitBits(m_compiler, expUseSet, [&](unsigned varIndex) {
                     unsigned         varNum = m_compiler->lvaTrackedToVarNum[varIndex];
                     const LclVarDsc* varDsc = m_compiler->lvaGetDesc(varNum);
                     assert(isCandidateVar(varDsc));
@@ -2573,15 +2558,13 @@ void LinearScan::buildIntervals()
                     RefPosition* pos =
                         newRefPosition(interval, currentLoc, RefTypeExpUse, nullptr, allRegs(interval->registerType));
                     pos->setRegOptional(true);
-                }
+                    return true;
+                });
             }
 
             // Clear the "last use" flag on any vars that are live-out from this block.
-            VARSET_TP       bbLiveDefs(VarSetOps::Intersection(m_compiler, registerCandidateVars, block->bbLiveOut));
-            VarSetOps::Iter iter(m_compiler, bbLiveDefs);
-            unsigned        varIndex = 0;
-            while (iter.NextElem(&varIndex))
-            {
+            VARSET_TP bbLiveDefs(VarSetOps::Intersection(m_compiler, registerCandidateVars, block->bbLiveOut));
+            VarSetOps::VisitBits(m_compiler, bbLiveDefs, [&](unsigned varIndex) {
                 unsigned         varNum = m_compiler->lvaTrackedToVarNum[varIndex];
                 LclVarDsc* const varDsc = m_compiler->lvaGetDesc(varNum);
                 assert(isCandidateVar(varDsc));
@@ -2592,7 +2575,8 @@ void LinearScan::buildIntervals()
                 {
                     lastRP->lastUse = false;
                 }
-            }
+                return true;
+            });
 
 #ifdef DEBUG
             checkLastUses(block);
@@ -2641,10 +2625,7 @@ void LinearScan::buildIntervals()
         // Adjust heuristics for writeThru intervals.
         if (m_compiler->compHndBBtabCount > 0)
         {
-            VarSetOps::Iter iter(m_compiler, exceptVars);
-            unsigned        varIndex = 0;
-            while (iter.NextElem(&varIndex))
-            {
+            VarSetOps::VisitBits(m_compiler, exceptVars, [&](unsigned varIndex) {
                 unsigned   varNum   = m_compiler->lvaTrackedToVarNum[varIndex];
                 LclVarDsc* varDsc   = m_compiler->lvaGetDesc(varNum);
                 Interval*  interval = getIntervalForLocalVar(varIndex);
@@ -2706,7 +2687,8 @@ void LinearScan::buildIntervals()
                         interval->registerPreferences |= calleeSaveRegs(interval->registerType);
                     }
                 }
-            }
+                return true;
+            });
         }
 
 #ifdef DEBUG

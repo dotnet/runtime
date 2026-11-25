@@ -216,15 +216,13 @@ static void UpdateMutatedLocals(Compiler* compiler, GenTree* node, VARSET_TP& mu
 //
 void AsyncAnalysis::PrintVarSet(Compiler* comp, VARSET_VALARG_TP set)
 {
-    VarSetOps::Iter iter(comp, set);
-    unsigned        varIndex = 0;
-    const char*     sep      = "";
-    while (iter.NextElem(&varIndex))
-    {
+    const char* sep = "";
+    VarSetOps::VisitBits(comp, set, [&](unsigned varIndex) {
         unsigned lclNum = comp->lvaTrackedToVarNum[varIndex];
         printf("%sV%02u", sep, lclNum);
         sep = " ";
-    }
+        return true;
+    });
     printf("\n");
 }
 #endif

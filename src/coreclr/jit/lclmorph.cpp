@@ -2769,11 +2769,9 @@ bool Compiler::fgExposeUnpropagatedLocals(bool propagatedAny, LocalEqualsLocalAd
 //
 void Compiler::fgExposeLocalsInBitVec(BitVec_ValArg_T bitVec)
 {
-    BitVecTraits    localsTraits(lvaCount, this);
-    BitVecOps::Iter iter(&localsTraits, bitVec);
-    unsigned        lclNum;
-    while (iter.NextElem(&lclNum))
-    {
+    BitVecTraits localsTraits(lvaCount, this);
+    BitVecOps::VisitBits(&localsTraits, bitVec, [&](unsigned lclNum) {
         lvaSetVarAddrExposed(lclNum DEBUGARG(AddressExposedReason::ESCAPE_ADDRESS));
-    }
+        return true;
+    });
 }

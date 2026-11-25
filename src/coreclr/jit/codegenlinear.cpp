@@ -272,10 +272,7 @@ void CodeGen::genCodeForBlock(BasicBlock* block)
     VARSET_TP removedGCVars(VarSetOps::MakeEmpty(m_compiler));
     VARSET_TP addedGCVars(VarSetOps::MakeEmpty(m_compiler));
 #endif
-    VarSetOps::Iter iter(m_compiler, block->bbLiveIn);
-    unsigned        varIndex = 0;
-    while (iter.NextElem(&varIndex))
-    {
+    VarSetOps::VisitBits(m_compiler, block->bbLiveIn, [&](unsigned varIndex) {
         LclVarDsc* varDsc = m_compiler->lvaGetDescByTrackedIndex(varIndex);
 
         if (varDsc->lvIsInReg())
@@ -310,7 +307,8 @@ void CodeGen::genCodeForBlock(BasicBlock* block)
 #endif // DEBUG
             VarSetOps::AddElemD(m_compiler, gcInfo.gcVarPtrSetCur, varIndex);
         }
-    }
+        return true;
+    });
 
     regSet.SetMaskVars(newLiveRegSet);
 
@@ -669,11 +667,8 @@ void CodeGen::genCodeForBlock(BasicBlock* block)
     VARSET_TP mismatchLiveVars(VarSetOps::Diff(m_compiler, block->bbLiveOut, m_compiler->compCurLife));
     VarSetOps::UnionD(m_compiler, mismatchLiveVars,
                       VarSetOps::Diff(m_compiler, m_compiler->compCurLife, block->bbLiveOut));
-    VarSetOps::Iter mismatchLiveVarIter(m_compiler, mismatchLiveVars);
-    unsigned        mismatchLiveVarIndex  = 0;
-    bool            foundMismatchedRegVar = false;
-    while (mismatchLiveVarIter.NextElem(&mismatchLiveVarIndex))
-    {
+    bool foundMismatchedRegVar = false;
+    VarSetOps::VisitBits(m_compiler, mismatchLiveVars, [&](unsigned mismatchLiveVarIndex) {
         LclVarDsc* varDsc = m_compiler->lvaGetDescByTrackedIndex(mismatchLiveVarIndex);
         if (varDsc->lvIsRegCandidate())
         {
@@ -684,7 +679,8 @@ void CodeGen::genCodeForBlock(BasicBlock* block)
             }
             JITDUMP(" V%02u", m_compiler->lvaTrackedIndexToLclNum(mismatchLiveVarIndex));
         }
-    }
+        return true;
+    });
     if (foundMismatchedRegVar)
     {
         JITDUMP("\n");

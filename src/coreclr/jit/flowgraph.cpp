@@ -7721,14 +7721,12 @@ void BlockReachabilitySets::Dump()
         printf(FMT_BB " : ", block->bbNum);
         if (m_dfsTree->Contains(block))
         {
-            BitVecOps::Iter iter(&postOrderTraits, m_reachabilitySets[block->bbPostorderNum]);
-            unsigned        poNum = 0;
-            const char*     sep   = "";
-            while (iter.NextElem(&poNum))
-            {
+            const char* sep = "";
+            BitVecOps::VisitBits(&postOrderTraits, m_reachabilitySets[block->bbPostorderNum], [&](unsigned poNum) {
                 printf("%s" FMT_BB, sep, m_dfsTree->GetPostOrder(poNum)->bbNum);
                 sep = " ";
-            }
+                return true;
+            });
         }
         else
         {
@@ -8063,12 +8061,10 @@ void FlowGraphTryRegion::Dump(FlowGraphTryRegion* region)
     {
         printf(" [bbNum]:");
 
-        BitVecOps::Iter iterator(regions->GetBlockBitVecTraits(), region->m_blocks);
-        unsigned int    index;
-        while (iterator.NextElem(&index))
-        {
+        BitVecOps::VisitBits(regions->GetBlockBitVecTraits(), region->m_blocks, [&](unsigned index) {
             printf(" " FMT_BB, index);
-        }
+            return true;
+        });
     }
 
     printf(" [entries]: ");

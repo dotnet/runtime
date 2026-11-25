@@ -1459,10 +1459,7 @@ void LinearScan::recordVarLocationsAtStartOfBB(BasicBlock* bb)
 
     VarSetOps::AssignNoCopy(m_compiler, currentLiveVars,
                             VarSetOps::Intersection(m_compiler, registerCandidateVars, bb->bbLiveIn));
-    VarSetOps::Iter iter(m_compiler, currentLiveVars);
-    unsigned        varIndex = 0;
-    while (iter.NextElem(&varIndex))
-    {
+    VarSetOps::VisitBits(m_compiler, currentLiveVars, [&](unsigned varIndex) {
         unsigned   varNum = m_compiler->lvaTrackedIndexToLclNum(varIndex);
         LclVarDsc* varDsc = m_compiler->lvaGetDesc(varNum);
 
@@ -1500,7 +1497,8 @@ void LinearScan::recordVarLocationsAtStartOfBB(BasicBlock* bb)
             JITDUMP("  V%02u(%s)", varNum, m_compiler->compRegVarName(newRegNum));
             count++;
         }
-    }
+        return true;
+    });
 
     if (count == 0)
     {
@@ -1564,10 +1562,7 @@ void LinearScan::identifyCandidatesExceptionDataflow()
 
     // All variables live on exit from a 'finally' block should be marked lvLiveInOutOfHndlr.
     // and as 'explicitly initialized' (must-init) for GC-ref types.
-    VarSetOps::Iter iter(m_compiler, exceptVars);
-    unsigned        varIndex = 0;
-    while (iter.NextElem(&varIndex))
-    {
+    VarSetOps::VisitBits(m_compiler, exceptVars, [&](unsigned varIndex) {
         unsigned   varNum = m_compiler->lvaTrackedIndexToLclNum(varIndex);
         LclVarDsc* varDsc = m_compiler->lvaGetDesc(varNum);
 
@@ -1578,7 +1573,8 @@ void LinearScan::identifyCandidatesExceptionDataflow()
         {
             assert(varDsc->lvMustInit);
         }
-    }
+        return true;
+    });
 #endif
 }
 
@@ -1868,12 +1864,10 @@ void LinearScan::identifyCandidates()
     // Create Intervals to use for the save & restore of the upper halves of large vector lclVars.
     if (localVarsEnregistered)
     {
-        VarSetOps::Iter largeVectorVarsIter(m_compiler, largeVectorVars);
-        unsigned        largeVectorVarIndex = 0;
-        while (largeVectorVarsIter.NextElem(&largeVectorVarIndex))
-        {
+        VarSetOps::VisitBits(m_compiler, largeVectorVars, [&](unsigned largeVectorVarIndex) {
             makeUpperVectorInterval(largeVectorVarIndex);
-        }
+            return true;
+        });
     }
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
 
@@ -2257,10 +2251,7 @@ void LinearScan::checkLastUses(BasicBlock* block)
         m_compiler->fgAddHandlerLiveVars(block, ehHandlerLiveVars, memoryLiveness);
         VarSetOps::DiffD(m_compiler, liveInNotComputedLive, ehHandlerLiveVars);
     }
-    VarSetOps::Iter liveInNotComputedLiveIter(m_compiler, liveInNotComputedLive);
-    unsigned        liveInNotComputedLiveIndex = 0;
-    while (liveInNotComputedLiveIter.NextElem(&liveInNotComputedLiveIndex))
-    {
+    VarSetOps::VisitBits(m_compiler, liveInNotComputedLive, [&](unsigned liveInNotComputedLiveIndex) {
         LclVarDsc* varDesc = m_compiler->lvaGetDescByTrackedIndex(liveInNotComputedLiveIndex);
         if (varDesc->lvLRACandidate)
         {
@@ -2268,14 +2259,12 @@ void LinearScan::checkLastUses(BasicBlock* block)
                     m_compiler->lvaTrackedIndexToLclNum(liveInNotComputedLiveIndex));
             foundDiff = true;
         }
-    }
+        return true;
+    });
 
     VarSetOps::DiffD(m_compiler, computedLive, block->bbLiveIn);
     const VARSET_TP& computedLiveNotLiveIn(computedLive); // reuse the buffer.
-    VarSetOps::Iter  computedLiveNotLiveInIter(m_compiler, computedLiveNotLiveIn);
-    unsigned         computedLiveNotLiveInIndex = 0;
-    while (computedLiveNotLiveInIter.NextElem(&computedLiveNotLiveInIndex))
-    {
+    VarSetOps::VisitBits(m_compiler, computedLiveNotLiveIn, [&](unsigned computedLiveNotLiveInIndex) {
         LclVarDsc* varDesc = m_compiler->lvaGetDescByTrackedIndex(computedLiveNotLiveInIndex);
         if (varDesc->lvLRACandidate)
         {
@@ -2283,7 +2272,8 @@ void LinearScan::checkLastUses(BasicBlock* block)
                     m_compiler->lvaTrackedIndexToLclNum(computedLiveNotLiveInIndex));
             foundDiff = true;
         }
-    }
+        return true;
+    });
 
     assert(!foundDiff);
 }
@@ -4298,14 +4288,11 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
     // inactive registers available for the rotation.
     regMaskTP inactiveRegs = RBM_NONE;
 #endif // DEBUG
-    regMaskTP       liveRegs = RBM_NONE;
-    VarSetOps::Iter iter(m_compiler, currentLiveVars);
-    unsigned        varIndex = 0;
-    while (iter.NextElem(&varIndex))
-    {
+    regMaskTP liveRegs = RBM_NONE;
+    VarSetOps::VisitBits(m_compiler, currentLiveVars, [&](unsigned varIndex) {
         if (!m_compiler->lvaGetDescByTrackedIndex(varIndex)->lvLRACandidate)
         {
-            continue;
+            return true;
         }
         regNumber    targetReg;
         Interval*    interval        = getIntervalForLocalVar(varIndex);
@@ -4394,7 +4381,7 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
                 assert(interval->assignedReg != nullptr && interval->assignedReg->regNum == targetReg &&
                        interval->assignedReg->assignedInterval == interval);
                 liveRegs.AddRegNum(targetReg, interval->registerType);
-                continue;
+                return true;
             }
         }
         else if (interval->physReg != REG_NA)
@@ -4485,7 +4472,8 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
                 interval->getNextRefPosition()->outOfOrder = true;
             }
         }
-    }
+        return true;
+    });
 
     // Unassign any registers that are no longer live, and set register state, if allocating.
     if (!allocationPassComplete)
@@ -4643,10 +4631,7 @@ void LinearScan::processBlockEndLocations(BasicBlock* currentBlock)
         VarSetOps::Assign(m_compiler, currentLiveVars, registerCandidateVars);
     }
 #endif // DEBUG
-    VarSetOps::Iter iter(m_compiler, currentLiveVars);
-    unsigned        varIndex = 0;
-    while (iter.NextElem(&varIndex))
-    {
+    VarSetOps::VisitBits(m_compiler, currentLiveVars, [&](unsigned varIndex) {
         Interval* interval = getIntervalForLocalVar(varIndex);
         if (interval->isActive)
         {
@@ -4661,7 +4646,8 @@ void LinearScan::processBlockEndLocations(BasicBlock* currentBlock)
         // Ensure that we have no partially-spilled large vector locals.
         assert(!Compiler::varTypeNeedsPartialCalleeSave(interval->registerType) || !interval->isPartiallySpilled);
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-    }
+        return true;
+    });
     INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_END_BB));
 }
 
@@ -5489,13 +5475,11 @@ void LinearScan::allocateRegisters()
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     if (enregisterLocalVars)
     {
-        VarSetOps::Iter largeVectorVarsIter(m_compiler, largeVectorVars);
-        unsigned        largeVectorVarIndex = 0;
-        while (largeVectorVarsIter.NextElem(&largeVectorVarIndex))
-        {
+        VarSetOps::VisitBits(m_compiler, largeVectorVars, [&](unsigned largeVectorVarIndex) {
             Interval* lclVarInterval           = getIntervalForLocalVar(largeVectorVarIndex);
             lclVarInterval->isPartiallySpilled = false;
-        }
+            return true;
+        });
     }
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
 
@@ -8935,17 +8919,15 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
     // available to copy into.
     // Note that for this purpose we use the full live-out set, because we must ensure that
     // even the registers that remain the same across the edge are preserved correctly.
-    regMaskTP       liveOutRegs = RBM_NONE;
-    VarSetOps::Iter liveOutIter(m_compiler, block->bbLiveOut);
-    unsigned        liveOutVarIndex = 0;
-    while (liveOutIter.NextElem(&liveOutVarIndex))
-    {
+    regMaskTP liveOutRegs = RBM_NONE;
+    VarSetOps::VisitBits(m_compiler, block->bbLiveOut, [&](unsigned liveOutVarIndex) {
         regNumber fromReg = getVarReg(outVarToRegMap, liveOutVarIndex);
         if (fromReg != REG_STK)
         {
             liveOutRegs.AddRegNumInMask(fromReg ARM_ARG(getIntervalForLocalVar(liveOutVarIndex)->registerType));
         }
-    }
+        return true;
+    });
 
     LclVarDsc* terminatorNodeLclVarDsc  = nullptr;
     LclVarDsc* terminatorNodeLclVarDsc2 = nullptr;
@@ -9065,10 +9047,7 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
     //   write to any registers that are read by those in the diffResolutionSet:
     //     sameResolutionSet
 
-    VarSetOps::Iter outResolutionSetIter(m_compiler, outResolutionSet);
-    unsigned        outResolutionSetVarIndex = 0;
-    while (outResolutionSetIter.NextElem(&outResolutionSetVarIndex))
-    {
+    VarSetOps::VisitBits(m_compiler, outResolutionSet, [&](unsigned outResolutionSetVarIndex) {
         regNumber fromReg             = getVarReg(outVarToRegMap, outResolutionSetVarIndex);
         bool      maybeSameLivePaths  = false;
         bool      liveOnlyAtSplitEdge = true;
@@ -9171,7 +9150,8 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
                     sameToReg ARM_ARG(getIntervalForLocalVar(outResolutionSetVarIndex)->registerType));
             }
         }
-    }
+        return true;
+    });
 
     if (!VarSetOps::IsEmpty(m_compiler, sameResolutionSet))
     {
@@ -9207,10 +9187,7 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
             // Check only the vars in diffResolutionSet that are live-in to this successor.
             VarToRegMap succInVarToRegMap = getInVarToRegMap(succBlock->bbNum);
             VARSET_TP   edgeResolutionSet(VarSetOps::Intersection(m_compiler, diffResolutionSet, succBlock->bbLiveIn));
-            VarSetOps::Iter iter(m_compiler, edgeResolutionSet);
-            unsigned        varIndex = 0;
-            while (iter.NextElem(&varIndex))
-            {
+            VarSetOps::VisitBits(m_compiler, edgeResolutionSet, [&](unsigned varIndex) {
                 regNumber fromReg = getVarReg(outVarToRegMap, varIndex);
                 regNumber toReg   = getVarReg(succInVarToRegMap, varIndex);
 
@@ -9218,7 +9195,8 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
                 {
                     VarSetOps::RemoveElemD(m_compiler, edgeResolutionSet, varIndex);
                 }
-            }
+                return true;
+            });
             if (!VarSetOps::IsEmpty(m_compiler, edgeResolutionSet))
             {
                 // For EH vars, we can always safely load them from the stack into the target for this block,
@@ -9226,11 +9204,8 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
                 if ((m_compiler->compHndBBtabCount > 0) &&
                     VarSetOps::IsSubset(m_compiler, edgeResolutionSet, exceptVars))
                 {
-                    GenTree*        insertionPoint = LIR::AsRange(succBlock).FirstNode();
-                    VarSetOps::Iter edgeSetIter(m_compiler, edgeResolutionSet);
-                    unsigned        edgeVarIndex = 0;
-                    while (edgeSetIter.NextElem(&edgeVarIndex))
-                    {
+                    GenTree* insertionPoint = LIR::AsRange(succBlock).FirstNode();
+                    VarSetOps::VisitBits(m_compiler, edgeResolutionSet, [&](unsigned edgeVarIndex) {
                         regNumber toReg = getVarReg(succInVarToRegMap, edgeVarIndex);
                         setVarReg(succInVarToRegMap, edgeVarIndex, REG_STK);
                         if (toReg != REG_STK)
@@ -9240,7 +9215,8 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
                             addResolution(succBlock, insertionPoint, interval, toReg,
                                           REG_STK DEBUG_ARG(block) DEBUG_ARG(succBlock) DEBUG_ARG("EHvar"));
                         }
-                    }
+                        return true;
+                    });
                 }
                 else
                 {
@@ -9431,11 +9407,8 @@ void LinearScan::resolveEdges()
         VarToRegMap toVarToRegMap = getInVarToRegMap(block->bbNum);
         for (BasicBlock* const predBlock : block->PredBlocks())
         {
-            VarToRegMap     fromVarToRegMap = getOutVarToRegMap(predBlock->bbNum);
-            VarSetOps::Iter iter(m_compiler, block->bbLiveIn);
-            unsigned        varIndex = 0;
-            while (iter.NextElem(&varIndex))
-            {
+            VarToRegMap fromVarToRegMap = getOutVarToRegMap(predBlock->bbNum);
+            VarSetOps::VisitBits(m_compiler, block->bbLiveIn, [&](unsigned varIndex) {
                 regNumber fromReg = getVarReg(fromVarToRegMap, varIndex);
                 regNumber toReg   = getVarReg(toVarToRegMap, varIndex);
                 if (fromReg != toReg)
@@ -9454,7 +9427,8 @@ void LinearScan::resolveEdges()
                                 block->bbNum, getRegName(fromReg), getRegName(toReg));
                     }
                 }
-            }
+                return true;
+            });
         }
     }
     assert(!foundMismatch);
@@ -9605,10 +9579,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
     {
         VARSET_TP extraLiveSet(VarSetOps::Diff(m_compiler, block->bbLiveOut, toBlock->bbLiveIn));
         VarSetOps::IntersectionD(m_compiler, extraLiveSet, exceptVars);
-        VarSetOps::Iter iter(m_compiler, extraLiveSet);
-        unsigned        extraVarIndex = 0;
-        while (iter.NextElem(&extraVarIndex))
-        {
+        VarSetOps::VisitBits(m_compiler, extraLiveSet, [&](unsigned extraVarIndex) {
             Interval* interval = getIntervalForLocalVar(extraVarIndex);
             assert(interval->isWriteThru);
             regNumber fromReg = getVarReg(fromVarToRegMap, extraVarIndex);
@@ -9618,7 +9589,8 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                               fromReg DEBUG_ARG(fromBlock) DEBUG_ARG(toBlock) DEBUG_ARG("EH DUMMY"));
                 setVarReg(fromVarToRegMap, extraVarIndex, REG_STK);
             }
-        }
+            return true;
+        });
     }
 
     // First:
@@ -9630,16 +9602,13 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
     // TODO-Throughput: We should be looping over the liveIn and liveOut registers, since
     // that will scale better than the live variables
 
-    VarSetOps::Iter iter(m_compiler, liveSet);
-    unsigned        varIndex = 0;
-    while (iter.NextElem(&varIndex))
-    {
+    VarSetOps::VisitBits(m_compiler, liveSet, [&](unsigned varIndex) {
         Interval* interval = getIntervalForLocalVar(varIndex);
         regNumber fromReg  = getVarReg(fromVarToRegMap, varIndex);
         regNumber toReg    = getVarReg(toVarToRegMap, varIndex);
         if (fromReg == toReg)
         {
-            continue;
+            return true;
         }
         if (interval->isWriteThru && (toReg == REG_STK))
         {
@@ -9649,7 +9618,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
             // a NOP but will cause the variable to be removed from being live in the register.
             if ((resolveType == ResolveSplit) || block->hasEHBoundaryOut())
             {
-                continue;
+                return true;
             }
         }
         // For Critical edges, the location will not change on either side of the edge,
@@ -9684,7 +9653,8 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
             sourceIntervals[fromReg] = interval;
             targetRegsToDo |= genRegMask(toReg);
         }
-    }
+        return true;
+    });
 
     // REGISTER to REGISTER MOVES
 
@@ -11992,15 +11962,12 @@ void LinearScan::verifyFinalAllocation()
                     // Validate the locations at the end of the previous block.
                     if (enregisterLocalVars)
                     {
-                        VarToRegMap     outVarToRegMap = outVarToRegMaps[currentBlock->bbNum];
-                        VarSetOps::Iter iter(m_compiler, currentBlock->bbLiveOut);
-                        unsigned        varIndex = 0;
-                        while (iter.NextElem(&varIndex))
-                        {
+                        VarToRegMap outVarToRegMap = outVarToRegMaps[currentBlock->bbNum];
+                        VarSetOps::VisitBits(m_compiler, currentBlock->bbLiveOut, [&](unsigned varIndex) {
                             if (localVarIntervals[varIndex] == nullptr)
                             {
                                 assert(!m_compiler->lvaGetDescByTrackedIndex(varIndex)->lvLRACandidate);
-                                continue;
+                                return true;
                             }
                             regNumber regNum = getVarReg(outVarToRegMap, varIndex);
                             interval         = getIntervalForLocalVar(varIndex);
@@ -12012,7 +11979,8 @@ void LinearScan::verifyFinalAllocation()
                             interval->physReg     = REG_NA;
                             interval->assignedReg = nullptr;
                             interval->isActive    = false;
-                        }
+                            return true;
+                        });
                     }
 
                     // Clear register assignments.
@@ -12031,15 +11999,12 @@ void LinearScan::verifyFinalAllocation()
                 {
                     if (enregisterLocalVars)
                     {
-                        VarToRegMap     inVarToRegMap = inVarToRegMaps[currentBlock->bbNum];
-                        VarSetOps::Iter iter(m_compiler, currentBlock->bbLiveIn);
-                        unsigned        varIndex = 0;
-                        while (iter.NextElem(&varIndex))
-                        {
+                        VarToRegMap inVarToRegMap = inVarToRegMaps[currentBlock->bbNum];
+                        VarSetOps::VisitBits(m_compiler, currentBlock->bbLiveIn, [&](unsigned varIndex) {
                             if (localVarIntervals[varIndex] == nullptr)
                             {
                                 assert(!m_compiler->lvaGetDescByTrackedIndex(varIndex)->lvLRACandidate);
-                                continue;
+                                return true;
                             }
                             regNumber regNum                  = getVarReg(inVarToRegMap, varIndex);
                             interval                          = getIntervalForLocalVar(varIndex);
@@ -12047,7 +12012,8 @@ void LinearScan::verifyFinalAllocation()
                             interval->assignedReg             = &(physRegs[regNum]);
                             interval->isActive                = true;
                             physRegs[regNum].assignedInterval = interval;
-                        }
+                            return true;
+                        });
                     }
 
                     if (VERBOSE)
@@ -12350,15 +12316,12 @@ void LinearScan::verifyFinalAllocation()
             }
 
             // Set the incoming register assignments
-            VarToRegMap     inVarToRegMap = getInVarToRegMap(currentBlock->bbNum);
-            VarSetOps::Iter iter(m_compiler, currentBlock->bbLiveIn);
-            unsigned        varIndex = 0;
-            while (iter.NextElem(&varIndex))
-            {
+            VarToRegMap inVarToRegMap = getInVarToRegMap(currentBlock->bbNum);
+            VarSetOps::VisitBits(m_compiler, currentBlock->bbLiveIn, [&](unsigned varIndex) {
                 if (localVarIntervals[varIndex] == nullptr)
                 {
                     assert(!m_compiler->lvaGetDescByTrackedIndex(varIndex)->lvLRACandidate);
-                    continue;
+                    return true;
                 }
                 regNumber regNum                  = getVarReg(inVarToRegMap, varIndex);
                 Interval* interval                = getIntervalForLocalVar(varIndex);
@@ -12366,7 +12329,8 @@ void LinearScan::verifyFinalAllocation()
                 interval->assignedReg             = &(physRegs[regNum]);
                 interval->isActive                = true;
                 physRegs[regNum].assignedInterval = interval;
-            }
+                return true;
+            });
 
             // Verify the moves in this block
             LIR::Range& currentBlockRange = LIR::AsRange(currentBlock);
@@ -12383,15 +12347,12 @@ void LinearScan::verifyFinalAllocation()
 
             // Verify the outgoing register assignments
             {
-                VarToRegMap     outVarToRegMap = getOutVarToRegMap(currentBlock->bbNum);
-                VarSetOps::Iter iter(m_compiler, currentBlock->bbLiveOut);
-                unsigned        varIndex = 0;
-                while (iter.NextElem(&varIndex))
-                {
+                VarToRegMap outVarToRegMap = getOutVarToRegMap(currentBlock->bbNum);
+                VarSetOps::VisitBits(m_compiler, currentBlock->bbLiveOut, [&](unsigned varIndex) {
                     if (localVarIntervals[varIndex] == nullptr)
                     {
                         assert(!m_compiler->lvaGetDescByTrackedIndex(varIndex)->lvLRACandidate);
-                        continue;
+                        return true;
                     }
                     regNumber regNum   = getVarReg(outVarToRegMap, varIndex);
                     Interval* interval = getIntervalForLocalVar(varIndex);
@@ -12402,7 +12363,8 @@ void LinearScan::verifyFinalAllocation()
                     interval->physReg     = REG_NA;
                     interval->assignedReg = nullptr;
                     interval->isActive    = false;
-                }
+                    return true;
+                });
             }
         }
     }

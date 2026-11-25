@@ -327,17 +327,14 @@ void SsaBuilder::InsertPhiFunctions()
         }
 
         // For each local var number "lclNum" that "block" assigns to...
-        VarSetOps::Iter defVars(m_compiler, block->bbVarDef);
-        unsigned        varIndex = 0;
-        while (defVars.NextElem(&varIndex))
-        {
+        VarSetOps::VisitBits(m_compiler, block->bbVarDef, [&](unsigned varIndex) {
             unsigned lclNum = m_compiler->lvaTrackedIndexToLclNum(varIndex);
             DBG_SSA_JITDUMP("  Considering local var V%02u:\n", lclNum);
 
             if (!m_compiler->lvaInSsa(lclNum))
             {
                 DBG_SSA_JITDUMP("  Skipping because it is excluded.\n");
-                continue;
+                return true;
             }
 
             // For each block "bbInDomFront" that is in the dominance frontier of "block"...
@@ -360,7 +357,8 @@ void SsaBuilder::InsertPhiFunctions()
                     InsertPhi(m_compiler, bbInDomFront, lclNum);
                 }
             }
-        }
+            return true;
+        });
 
         // Now make a similar phi definition if the block defines memory.
         if (block->bbMemoryDef != emptyMemoryKindSet)

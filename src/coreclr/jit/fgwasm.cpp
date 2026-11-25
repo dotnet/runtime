@@ -282,19 +282,16 @@ public:
     {
         JITDUMP("Scc %u has %u blocks\n", m_num, BitVecOps::Count(m_traits, m_blocks));
 
-        BitVecOps::Iter iterator(m_traits, m_blocks);
-        unsigned int    poNum;
-        bool            isFirstEntry = true;
+        bool isFirstEntry = true;
 
-        while (iterator.NextElem(&poNum))
-        {
+        BitVecOps::VisitBits(m_traits, m_blocks, [&](unsigned poNum) {
             BasicBlock* const block = m_dfsTree->GetPostOrder(poNum);
 
             // cfpt's cannot be scc entries
             //
             if (block->isBBCallFinallyPairTail())
             {
-                continue;
+                return true;
             }
 
             bool isEntry = false;
@@ -356,7 +353,8 @@ public:
                     }
                 }
             }
-        }
+            return true;
+        });
 
         JITDUMPEXEC(Dump());
     }
@@ -403,11 +401,8 @@ public:
 #ifdef DEBUG
     void Dump(int indent = 0)
     {
-        BitVecOps::Iter iterator(m_traits, m_blocks);
-        unsigned int    poNum;
-        bool            first = true;
-        while (iterator.NextElem(&poNum))
-        {
+        bool first = true;
+        BitVecOps::VisitBits(m_traits, m_blocks, [&](unsigned poNum) {
             if (first)
             {
                 printf("%*c", indent, ' ');
@@ -430,17 +425,15 @@ public:
             BasicBlock* const block   = m_dfsTree->GetPostOrder(poNum);
             bool              isEntry = BitVecOps::IsMember(m_traits, m_entries, poNum);
             printf(FMT_BB "%s", block->bbNum, isEntry ? "e" : "");
-        }
+            return true;
+        });
         printf("\n");
     }
 
     void DumpDot()
     {
         printf("digraph SCC_%u {\n", m_num);
-        BitVecOps::Iter iterator(m_traits, m_blocks);
-        unsigned int    poNum;
-        while (iterator.NextElem(&poNum))
-        {
+        BitVecOps::VisitBits(m_traits, m_blocks, [&](unsigned poNum) {
             BasicBlock* const block   = m_dfsTree->GetPostOrder(poNum);
             bool              isEntry = BitVecOps::IsMember(m_traits, m_entries, poNum);
 
@@ -473,7 +466,8 @@ public:
             {
                 printf(FMT_BB " -> " FMT_BB ";\n", block->bbNum, succ->bbNum);
             }
-        }
+            return true;
+        });
         printf("}\n");
     }
 
@@ -524,10 +518,7 @@ public:
         if (m_compiler->verbose)
         {
             JITDUMP("digraph scc_%u_nested_subgraph%u {\n", m_num, nestedCount);
-            BitVecOps::Iter iterator(m_traits, nestedBlocks);
-            unsigned int    poNum;
-            while (iterator.NextElem(&poNum))
-            {
+            BitVecOps::VisitBits(m_traits, nestedBlocks, [&](unsigned poNum) {
                 BasicBlock* const block = m_dfsTree->GetPostOrder(poNum);
 
                 JITDUMP(FMT_BB ";\n", block->bbNum);
@@ -537,7 +528,8 @@ public:
                 {
                     JITDUMP(FMT_BB " -> " FMT_BB ";\n", block->bbNum, succ->bbNum);
                 }
-            }
+                return true;
+            });
 
             JITDUMP("}\n");
         }
