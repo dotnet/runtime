@@ -63,8 +63,8 @@ namespace System.ComponentModel.Tests
             yield return ConvertTest.Valid(
                 new DateTimeOffset(),
                 new InstanceDescriptor(
-                    typeof(DateTimeOffset).GetConstructor(new Type[] { typeof(long) }),
-                    new object[] { (long)0 }
+                    typeof(DateTimeOffset).GetConstructor(new Type[] { typeof(long), typeof(TimeSpan) }),
+                    new object[] { (long)0, TimeSpan.Zero }
                 )
             );
             yield return ConvertTest.Valid(
@@ -92,6 +92,21 @@ namespace System.ComponentModel.Tests
 
             yield return ConvertTest.CantConvertTo(new DateTimeOffset(), typeof(DateTimeOffset));
             yield return ConvertTest.CantConvertTo(new DateTimeOffset(), typeof(int));
+        }
+
+        [Theory]
+        [InlineData(0L, 0)]
+        [InlineData(0L, -60)]
+        [InlineData(638447204960000000L, 150)]
+        public void ConvertTo_InstanceDescriptor_InvokesWithOriginalTicksAndOffset(long ticks, int offsetMinutes)
+        {
+            var value = new DateTimeOffset(ticks, TimeSpan.FromMinutes(offsetMinutes));
+            var descriptor = Assert.IsType<InstanceDescriptor>(Converter.ConvertTo(value, typeof(InstanceDescriptor)));
+            Assert.NotNull(descriptor.MemberInfo);
+
+            var restored = Assert.IsType<DateTimeOffset>(descriptor.Invoke());
+            Assert.Equal(value.Ticks, restored.Ticks);
+            Assert.Equal(value.Offset, restored.Offset);
         }
 
         [Theory]
