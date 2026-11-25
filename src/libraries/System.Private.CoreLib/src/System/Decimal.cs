@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
@@ -956,6 +957,10 @@ namespace System
 
         public static explicit operator double(decimal value) => DecCalc.VarR8FromDec(in value);
 
+        internal static Half VarHalfFromDec(in decimal value) => DecCalc.VarHalfFromDec(in value);
+
+        internal static BFloat16 VarBFloat16FromDec(in decimal value) => DecCalc.VarBFloat16FromDec(in value);
+
         public static decimal operator +(decimal d) => d;
 
         public static decimal operator -(decimal d) => new decimal(in d, d._flags ^ SignMask);
@@ -1113,10 +1118,12 @@ namespace System
         //
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.ConvertToInteger{TInteger}(TSelf)" />
+        [SuppressReadyToRunCanonicalRooting]
         public static TInteger ConvertToInteger<TInteger>(decimal value)
             where TInteger : IBinaryInteger<TInteger> => TInteger.CreateSaturating(value);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.ConvertToIntegerNative{TInteger}(TSelf)" />
+        [SuppressReadyToRunCanonicalRooting]
         public static TInteger ConvertToIntegerNative<TInteger>(decimal value)
             where TInteger : IBinaryInteger<TInteger> => TInteger.CreateSaturating(value);
 
@@ -1283,6 +1290,7 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.CreateChecked{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         public static decimal CreateChecked<TOther>(TOther value)
             where TOther : INumberBase<TOther>
         {
@@ -1302,6 +1310,7 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.CreateSaturating{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         public static decimal CreateSaturating<TOther>(TOther value)
             where TOther : INumberBase<TOther>
         {
@@ -1321,6 +1330,7 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.CreateTruncating{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         public static decimal CreateTruncating<TOther>(TOther value)
             where TOther : INumberBase<TOther>
         {
@@ -1466,9 +1476,11 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromChecked{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         static bool INumberBase<decimal>.TryConvertFromChecked<TOther>(TOther value, out decimal result) => TryConvertFromChecked(value, out result);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         private static bool TryConvertFromChecked<TOther>(TOther value, out decimal result)
             where TOther : INumberBase<TOther>
         {
@@ -1532,6 +1544,7 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromSaturating{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         static bool INumberBase<decimal>.TryConvertFromSaturating<TOther>(TOther value, out decimal result)
         {
             return TryConvertFrom(value, out result);
@@ -1539,12 +1552,14 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromTruncating{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         static bool INumberBase<decimal>.TryConvertFromTruncating<TOther>(TOther value, out decimal result)
         {
             return TryConvertFrom(value, out result);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         private static bool TryConvertFrom<TOther>(TOther value, out decimal result)
             where TOther : INumberBase<TOther>
         {
@@ -1608,6 +1623,7 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToChecked{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         static bool INumberBase<decimal>.TryConvertToChecked<TOther>(decimal value, [MaybeNullWhen(false)] out TOther result)
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
@@ -1682,6 +1698,7 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToSaturating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         static bool INumberBase<decimal>.TryConvertToSaturating<TOther>(decimal value, [MaybeNullWhen(false)] out TOther result)
         {
             return TryConvertTo(value, out result);
@@ -1689,12 +1706,14 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToTruncating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         static bool INumberBase<decimal>.TryConvertToTruncating<TOther>(decimal value, [MaybeNullWhen(false)] out TOther result)
         {
             return TryConvertTo(value, out result);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         private static bool TryConvertTo<TOther>(decimal value, [MaybeNullWhen(false)] out TOther result)
             where TOther : INumberBase<TOther>
         {

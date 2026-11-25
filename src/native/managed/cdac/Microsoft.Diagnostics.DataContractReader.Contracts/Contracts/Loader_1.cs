@@ -80,6 +80,10 @@ internal readonly struct Loader_1 : ILoader
 
         foreach (TargetPointer pAssembly in arrayList.Elements)
         {
+            // AppDomain::RemoveAssembly leaves an empty slot when an assembly is unloaded
+            if (pAssembly == TargetPointer.Null)
+                continue;
+
             Data.Assembly assembly = _target.ProcessedData.GetOrAdd<Data.Assembly>(pAssembly);
 
             // following logic is based on AppDomain::AssemblyIterator::Next_Unlocked in appdomain.cpp
@@ -95,7 +99,7 @@ internal readonly struct Loader_1 : ILoader
                 continue;
             }
 
-            if ((assembly.NotifyFlags & ASSEMBLY_NOTIFYFLAGS_PROFILER_NOTIFIED) != 0 && !iterationFlags.HasFlag(AssemblyIterationFlags.IncludeAvailableToProfilers))
+            if ((assembly.NotifyFlags & ASSEMBLY_NOTIFYFLAGS_PROFILER_NOTIFIED) != 0 && iterationFlags.HasFlag(AssemblyIterationFlags.IncludeAvailableToProfilers))
             {
                 // The assembly has reached the state at which we would notify profilers,
                 // and we're supposed to include such assemblies in the enumeration. So
@@ -370,7 +374,7 @@ internal readonly struct Loader_1 : ILoader
         return true;
     }
 
-    IEnumerable<TargetPointer> ILoader.GetAvailableTypeParams(ModuleHandle handle)
+    IEnumerable<TargetPointer> ILoader.GetAvailableTypeParams(ModuleHandle handle, uint? hash)
     {
         Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
 
@@ -378,7 +382,10 @@ internal readonly struct Loader_1 : ILoader
             return [];
 
         EETypeHashTable typeHashTable = _target.ProcessedData.GetOrAdd<EETypeHashTable>(module.AvailableTypeParams);
-        return typeHashTable.Entries.Select(entry => entry.TypeHandle);
+        IEnumerable<EETypeHashTable.Entry> entries = hash is uint hashValue
+            ? typeHashTable.Lookup(hashValue)
+            : typeHashTable.Entries;
+        return entries.Select(entry => entry.TypeHandle);
     }
 
     IEnumerable<TargetPointer> ILoader.GetInstantiatedMethods(ModuleHandle handle)

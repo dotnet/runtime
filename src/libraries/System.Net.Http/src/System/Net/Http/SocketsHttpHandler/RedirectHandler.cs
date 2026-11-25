@@ -49,8 +49,9 @@ namespace System.Net.Http
 
                 response.Dispose();
 
-                // Clear the authorization header.
+                // Clear the authorization headers.
                 request.Headers.Authorization = null;
+                request.Headers.ProxyAuthorization = null;
 
                 if (HttpTelemetry.Log.IsEnabled())
                 {

@@ -65,9 +65,9 @@ analyzer. It scans for classes carrying `[CdacType]` and emits a
 * A lazily-read `partial` property implementation for each `[Field]` /
   `[FieldAddress]` / `[InstanceDataStart]` / `[CustomInit]` /
   `[RawOffset]` declaration.
-  Each getter resolves the type name against native descriptors and
-  managed metadata through the `LayoutSet` cascade on first access,
-  reads the field, and memoizes the value. A required field missing from
+  Each getter uses the instance's selected native or managed layout,
+  resolving managed metadata lazily on first access if no native layout
+  exists, then reads the field and memoizes the value. A required field missing from
   the descriptor throws `InvalidOperationException` from the layout
   lookup at read time; `VirtualReadException` is thrown only if the
   target read itself fails.
@@ -78,9 +78,9 @@ analyzer. It scans for classes carrying `[CdacType]` and emits a
 * A `private readonly Target _target` field (captured in the
   constructor) for any type with instance members, so lazy getters and
   `Write{Name}` methods can read/write without a `Target` parameter.
-* An explicit `IReadableData.EnsureAllFieldsRead()` implementation (for
-  any type with instance members) that touches every field so a caller
-  can force a full eager read.
+* An internal `bool TryReadAllFields()` method (for any type with instance
+  members) that touches every field so a caller can force a full eager read.
+  It returns `false` if a target memory read throws `VirtualReadException`.
 * For types with `HasTypeHandle = true`: a
   `public static ITypeHandle TypeHandle(Target target)` accessor.
 * For each `[Field(Writable = true)]` property: a
@@ -137,7 +137,7 @@ access instead of construction. This has two consequences:
 * **Reading a field fails exactly as the eager path did.** A non-nullable
   `[Field]` whose descriptor entry is absent throws
   `InvalidOperationException` from the layout lookup (the same exception
-  `LayoutSet.Select` threw at construction). A field that *is* in the
+  `TypeLayout.Select` threw at construction). A field that *is* in the
   descriptor but whose target memory is unreadable throws
   `VirtualReadException` from the read itself. The generator does not
   substitute one for the other -- it looks the field up and, if found,
@@ -151,25 +151,25 @@ not at construction, and whatever it throws (an
 from a failed read, or nothing for an optional value) surfaces at first
 access.
 
-### Forcing a full read: `IReadableData`
+### Forcing a full read: `TryReadAllFields`
 
 Because reads are deferred, constructing an instance no longer proves the
 whole structure is readable. Every generated type with instance members
-implements `IReadableData.EnsureAllFieldsRead()`, which touches every
-field to force a full eager read. Materializing a field can throw either
-lazy-read exception: `InvalidOperationException` if a required field is
-missing from the descriptor, or `VirtualReadException` if the field's
-target memory cannot be read. A caller catches whichever it cares about --
-for example, to validate that the target memory is readable:
+provides an internal `TryReadAllFields()` method, which touches every field
+to force a full eager read. It returns `true` when all fields can be
+materialized, or `false` if a field's target memory cannot be read.
+`InvalidOperationException` still propagates if a required field is missing
+from the descriptor. Optional fields absent from the descriptor yield `null`
+and do not cause failure. For example, to validate that a method table is
+readable:
 
 ```csharp
-T data = target.ProcessedData.GetOrAdd<T>(address);
-try
+Data.MethodTable data = target.ProcessedData.GetOrAdd<Data.MethodTable>(address);
+if (data.TryReadAllFields())
 {
-    (data as IReadableData)?.EnsureAllFieldsRead();
     // ... the entire structure is readable
 }
-catch (VirtualReadException)
+else
 {
     // ... the structure is only partially readable
 }
@@ -177,9 +177,9 @@ catch (VirtualReadException)
 
 This is how `RuntimeTypeSystem` validation confirms a candidate
 `MethodTable` / `EEClass` is fully readable before trusting it. Its
-descriptor fields are always present, so only `VirtualReadException` is
-relevant there; a caller that also needs to tolerate a missing descriptor
-field would additionally catch `InvalidOperationException`.
+descriptor fields are always present, so the boolean result is sufficient
+there; a caller that also needs to tolerate a missing descriptor field would
+additionally catch `InvalidOperationException`.
 
 ## Attribute surface
 
@@ -191,9 +191,11 @@ All attributes live in the root
 ### Class-level: `[CdacType]`
 
 Marks a class for source generation. The constructor accepts any number
-of candidate type names (`params string[] names`). At runtime the
-cascade tries each name against native data descriptors first, then
-managed metadata. The first match wins.
+of candidate type names (`params string[] names`). At runtime each name
+is tried against native data descriptors first. If none exists, managed
+metadata is resolved lazily using the same names. The first matching
+layout supplies all instance fields and the instance size; native and
+managed layouts are never combined.
 
 ```csharp
 // One or more candidate type names.
@@ -227,9 +229,9 @@ type:
 Parameters:
 
 * `[Field("name", ...)]` -- one or more candidate descriptor field names,
-  passed as positional `params string[]`. The cdac generator's runtime
-  cascade tries each name first against the native descriptor, then against
-  the managed descriptor. The first match wins.
+  passed as positional `params string[]`. Each name is tried against the
+  selected layout. The first match wins; a missing field does not cause
+  another layout source to be queried.
 
   By default, the C# property name is **always appended as the lowest-priority
   candidate** (de-duped if already in the list). This means `[Field]` with no
@@ -242,8 +244,7 @@ Parameters:
   Examples:
   - `[Field] public uint Id` -- candidates `["Id"]`.
   - `[Field("_state")] public uint State` -- candidates `["_state", "State"]`.
-    On a managed-only class, native is absent so the cascade falls to managed
-    and finds `_state`.
+    When no native layout exists, the selected managed layout supplies `_state`.
   - `[Field("State", "_state")] public uint State` -- candidates
     `["State", "_state"]` (property name already present, not appended again).
   - `[Field("Id", "m_id")] public uint Id` -- runtime-version rename;
@@ -450,7 +451,7 @@ internal sealed partial class Module : IData<Module>
 // Generated (the class captures _target for any type with instance members):
 public void WriteFlags(uint value)
 {
-    _layouts.Select(Address, out var t, out var b, out var n, "Flags");
+    _layout.Select(Address, out var t, out var b, out var n, "Flags");
     _target.WriteField<uint>(b, t, n, value);
     Flags = value;
 }
@@ -468,12 +469,10 @@ Rules:
 
 ## Fallback
 
-`[Field]` accepts one or more candidate field names. At runtime the
-generator's emitted ctor tries every candidate name against the native
-descriptor first, then every candidate name against the managed metadata.
-The first match wins. The `[CdacType]` bag of names lists candidate type
-names that are tried against both sources -- if any candidate resolves
-to a native descriptor or managed metadata, that source is used.
+Fallback selects a whole type layout, not individual fields. The
+`[CdacType]` names are tried against native descriptors first. Only if
+none exists can a managed layout be selected. All field aliases, field
+addresses, writes, offsets, and instance-size queries use that one layout.
 
 ### Why it exists
 
@@ -481,41 +480,45 @@ The team has decided some types (e.g. `Exception`, `String`) live in the
 native cdac descriptor for fast, header-free access during basic dump
 analysis. Other types (`Lock`, several COM wrappers) get their layout
 from managed metadata via `IManagedTypeSource`. The classification is
-reviewed per-type and may change in follow-ups; the per-field cascade
+reviewed per-type and may change in follow-ups; whole-layout fallback
 lets a single IData class survive a type moving from one source to the
-other (or being added to the native descriptor incrementally, one field
-at a time) without C# changes.
+other without C# changes. A published native layout must supply all
+required fields and any required instance size. It cannot rely on
+managed metadata to fill gaps.
 
-### How the cascade works
+### How layout selection works
 
 1. The generator emits a call to
-   `LayoutSet.Resolve(target, typeNames)` at the top of the ctor.
+   `TypeLayout.Resolve(target, typeNames)` at the top of the ctor.
    This tries each candidate type name against the native descriptors
-   first, then against managed metadata. It returns a `LayoutSet`
-   carrying whichever `Target.TypeInfo`(s) exist.
+   first. The first native match is authoritative, even if a field or
+   size is absent. If no native layout exists, the helper prepares a
+   lazy managed lookup using the same names. The first managed match is
+   likewise authoritative. Successful and unsuccessful managed lookups
+   are memoized for that instance.
 
 2. Every `[Field]` read calls
-   `LayoutSet.Select(address, out type, out baseAddr, out name, ...names)`.
-   The helper walks `names` against the native `TypeInfo`'s `Fields`
-   map first; if a name matches, the read is anchored at `address`
-   (native offsets already include the object header by convention). If
-   no name matches against native (or the native descriptor wasn't
-   available), the helper walks `names` against the managed `TypeInfo`'s
-   `Fields` map; if a name matches, the read is anchored at `address`
-   as well (managed offsets are pre-adjusted by `ManagedTypeSource` to
-   include the object header). The generated code then calls the
+   `TypeLayout.Select(address, out type, out baseAddr, out name, ...names)`.
+   The helper walks `names` against the selected `TypeInfo`'s `Fields`
+   map. If a name matches, the read is anchored at `address`: native
+   offsets already include the object header by convention, and managed
+   offsets are pre-adjusted by `ManagedTypeSource` to include it.
+   The generated code then calls the
    appropriate `target.ReadField<T>(baseAddr, type, name)` overload.
 
-3. If no name matches in either source, `LayoutSet.Select` throws
+3. If no field name matches in the selected layout, `TypeLayout.Select` throws
    `InvalidOperationException` with the candidate name list in the
-   message. If the resolution at step 1 found *neither* source, the
-   ctor itself throws.
+   message. Optional fields instead return `null`. Neither case searches
+   another layout. Construction remains lazy and succeeds even if no
+   layout exists; required field access or size lookup then throws.
+
+Static, thread-static, and type-handle accessors resolve independently
+through `TypeNameResolver`; they are not instance-layout queries.
 
 ### Cross-source: same field names
 
 When native and managed metadata use the same field names, a single
-name per field is sufficient. The cascade tries the name against native
-first, then managed:
+name per field is sufficient. The selected layout supplies that name:
 
 ```csharp
 [CdacType("Lock", "System.Threading.Lock")]
@@ -527,7 +530,7 @@ internal sealed partial class Lock : IData<Lock>
 }
 ```
 
-When the native cdac descriptor for `Lock` is present, the cascade
+When the native cdac descriptor for `Lock` is present, the reader
 finds `"_owningThreadId"` in the native type info and reads at
 `address + nativeOffset`. When only managed metadata is present, it
 finds `"_owningThreadId"` in the managed type info instead.
@@ -535,8 +538,8 @@ finds `"_owningThreadId"` in the managed type info instead.
 ### Cross-source: different field names
 
 When native and managed metadata disagree on field names, list both
-candidates. The cascade picks the first one that matches in either
-source:
+candidates. The reader picks the first one that matches within the
+selected layout:
 
 ```csharp
 [CdacType("Lock", "System.Threading.Lock")]
@@ -548,16 +551,16 @@ internal sealed partial class Lock : IData<Lock>
 }
 ```
 
-When the native descriptor uses `"OwningThreadId"`, the cascade finds
-it first. When only managed metadata is present, it falls past the
-unmatched `"OwningThreadId"` on the native side, then tries
-`"_owningThreadId"` against managed.
+When the selected native descriptor uses `"OwningThreadId"`, the reader
+finds it first. When no native layout exists and the managed layout is
+selected, the reader tries `"OwningThreadId"` and then `"_owningThreadId"`
+within that managed layout.
 
 ### Cross-version aliases
 
 When a field has been renamed across runtime or BCL versions, simply
-list the candidates in priority order. The cascade tries them in order
-against each source:
+list the candidates in priority order. The reader tries them in order
+against the selected layout:
 
 ```csharp
 [CdacType("Thread")]
@@ -587,14 +590,14 @@ the header for managed reference types -- so native reads also use
 ### `[FieldAddress]` and `[InstanceDataStart]` under fallback
 
 `[FieldAddress]` accepts the same `params string[]` name list as
-`[Field]`, and works through `LayoutSet.Select` to obtain the
+`[Field]`, and works through `TypeLayout.Select` to obtain the
 resolved type info and base address, then computes the absolute
-field address regardless of which source resolves the field.
+field address within the selected layout.
 
-`[InstanceDataStart]` returns `address + layouts.InstanceSize`,
-where `InstanceSize` is whichever side's `Size` is populated (native
-preferred when both have one). For pure native-only classes this
-reduces to `address + type.Size` exactly as before.
+`[InstanceDataStart]` returns `address + layout.InstanceSize`,
+where `InstanceSize` is the selected layout's `Size`. An absent size
+throws `InvalidOperationException`; it does not cause a lookup in
+another source.
 
 ## Examples
 
@@ -935,8 +938,8 @@ internal sealed partial class LoaderAllocator : IData<LoaderAllocator>
 
 ### One IData class, one descriptor
 
-Don't read fields from a different `Target.TypeInfo` than the one the
-class is anchored on. If a type's layout genuinely spans two
+All generated instance access uses one native or managed `Target.TypeInfo`.
+Missing fields never fall back to another source. If a type's layout genuinely spans two
 descriptors (e.g. `ParamTypeDesc` inheriting `TypeAndFlags` from the
 base `TypeDesc` descriptor), use a `[CustomInit]` initializer to do the
 cross-descriptor read explicitly -- don't try to express it through
@@ -947,7 +950,7 @@ cross-descriptor read explicitly -- don't try to express it through
 The IData source generator is designed so that types can move between
 managed metadata and native data descriptors without changing the C#
 IData class. The bag-of-names `[CdacType]` constructor and the
-field-name cascade make migration transparent to contract consumers.
+field-name aliases make migration transparent to contract consumers.
 
 ### Migrating managed types to native
 
@@ -964,13 +967,22 @@ qualified name and field names. No changes to the IData class are needed.
 
    ```cpp
    CDAC_TYPE_BEGIN(System.Threading.Lock)
+   CDAC_TYPE_FIELD(System.Threading.Lock, /*fieldtype*/, _owningThreadId,
+                   cdac_data<System.Threading.Lock>::_owningThreadId)
    CDAC_TYPE_FIELD(System.Threading.Lock, /*fieldtype*/, _state,
                    cdac_data<System.Threading.Lock>::_state)
+   CDAC_TYPE_FIELD(System.Threading.Lock, /*fieldtype*/, _recursionCount,
+                   cdac_data<System.Threading.Lock>::_recursionCount)
    CDAC_TYPE_END(System.Threading.Lock)
    ```
 
+   Include every required field consumed by the IData class, and its size
+   if it uses `[InstanceDataStart]` or `GetSize`. Optional fields may be
+   omitted, in which case they read as `null` even if managed metadata
+   contains them.
+
 2. The IData class already has the managed name in its `[CdacType]`
-   names list. The cascade will find the native descriptor first and
+   names list. Layout selection will find the native descriptor first and
    read from it; the managed fallback remains available if the native
    descriptor is absent (e.g. older runtimes).
 

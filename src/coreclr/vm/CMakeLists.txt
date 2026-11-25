@@ -115,6 +115,7 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     onstackreplacement.cpp
     peassembly.cpp
     peimage.cpp
+    perfjitdump.cpp
     perfmap.cpp
     pgo.cpp
     precode_portable.cpp
@@ -130,7 +131,6 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     stubmgr.cpp
     syncblk.cpp
     threads.cpp
-    threadstatics.cpp
     tieredcompilation.cpp
     typectxt.cpp
     typedesc.cpp
@@ -221,6 +221,7 @@ set(VM_HEADERS_DAC_AND_WKS_COMMON
     peimage.inl
     peimagelayout.h
     peimagelayout.inl
+    perfjitdump.h
     perfmap.h
     pgo.h
     precode_portable.hpp
@@ -237,7 +238,6 @@ set(VM_HEADERS_DAC_AND_WKS_COMMON
     syncblk.h
     threads.h
     threads.inl
-    threadstatics.h
     typectxt.h
     typedesc.h
     typedesc.inl
@@ -275,6 +275,15 @@ if(FEATURE_READYTORUN)
     )
 endif(FEATURE_READYTORUN)
 
+if(FEATURE_MULTITHREADING)
+    list(APPEND VM_SOURCES_DAC_AND_WKS_COMMON
+        threadstatics.cpp
+    )
+    list(APPEND VM_HEADERS_DAC_AND_WKS_COMMON
+        threadstatics.h
+    )
+endif(FEATURE_MULTITHREADING)
+
 list(APPEND VM_SOURCES_DAC_AND_WKS_COMMON
     pregeneratedstringthunks.cpp
 )
@@ -308,7 +317,9 @@ set(VM_SOURCES_WKS
     bundle.cpp
     ${RUNTIME_DIR}/CachedInterfaceDispatch.cpp
     CachedInterfaceDispatch_Coreclr.cpp
+    ${RUNTIME_DIR}/MathHelpers.cpp
     ${RUNTIME_DIR}/MiscNativeHelpers.cpp
+    ${RUNTIME_DIR}/ProcessEnvironment.cpp
     cachelinealloc.cpp
     callconvbuilder.cpp
     callhelpers.cpp
@@ -325,7 +336,6 @@ set(VM_SOURCES_WKS
     corelib.cpp # <DisablePrecompiledHeaders>true</DisablePrecompiledHeaders>
     customattribute.cpp
     custommarshalerinfo.cpp
-    divmodint.cpp
     dllimport.cpp
     dllimportcallback.cpp
     dynamicinterfacecastable.cpp
@@ -337,8 +347,6 @@ set(VM_SOURCES_WKS
     fcall.cpp
     fieldmarshaler.cpp
     finalizerthread.cpp
-    floatdouble.cpp
-    floatsingle.cpp
     cdacstress.cpp
     frozenobjectheap.cpp
     gccover.cpp
@@ -361,8 +369,6 @@ set(VM_SOURCES_WKS
     marshalnative.cpp
     methodtablebuilder.cpp
     mlinfo.cpp
-    multicorejit.cpp # Condition="'$(FeatureMulticoreJIT)' == 'true'
-    multicorejitplayer.cpp # Condition="'$(FeatureMulticoreJIT)' == 'true'
     nativeeventsource.cpp
     nativelibrary.cpp
     nativelibrarynative.cpp
@@ -373,10 +379,10 @@ set(VM_SOURCES_WKS
     profilinghelper.cpp
     proftoeeinterfaceimpl.cpp
     qcall.cpp
-    qcallentrypoints.cpp
     reflectclasswriter.cpp
     reflectioninvocation.cpp
     runtimehandles.cpp
+    runtimehelpers.cpp
     simplerwlock.cpp
     stackingallocator.cpp
     stringliteralmap.cpp
@@ -394,6 +400,13 @@ set(VM_SOURCES_WKS
     yieldprocessornormalized.cpp
     ${VM_SOURCES_GDBJIT}
 )
+
+if (FEATURE_MULTICOREJIT)
+    list(APPEND VM_SOURCES_WKS
+        multicorejit.cpp
+        multicorejitplayer.cpp
+    )
+endif()
 
 if (FEATURE_VARARGS)
     list(APPEND VM_SOURCES_WKS
@@ -438,7 +451,6 @@ set(VM_HEADERS_WKS
     customattribute.h
     custommarshalerinfo.h
     diagnosticserveradapter.h
-    divmodint.h
     dllimport.h
     dllimportcallback.h
     eeconfig.h
@@ -453,8 +465,6 @@ set(VM_HEADERS_WKS
     fcall.h
     fieldmarshaler.h
     finalizerthread.h
-    floatdouble.h
-    floatsingle.h
     frozenobjectheap.h
     gcenv.h
     gcenv.os.h
@@ -677,7 +687,6 @@ elseif(CLR_CMAKE_TARGET_WIN32)
             ${ARCH_SOURCES_DIR}/AllocSlow.asm
             ${ARCH_SOURCES_DIR}/AsmHelpers.asm
             ${ARCH_SOURCES_DIR}/CachedInterfaceDispatchCoreCLR.asm
-            ${ARCH_SOURCES_DIR}/CallDescrWorkerAMD64.asm
             ${ARCH_SOURCES_DIR}/ComCallPreStub.asm
             ${ARCH_SOURCES_DIR}/getstate.asm
             ${ARCH_SOURCES_DIR}/JitHelpers_Fast.asm
@@ -695,6 +704,8 @@ elseif(CLR_CMAKE_TARGET_WIN32)
             ${ARCH_SOURCES_DIR}/VirtualCallStubAMD64.asm
             ${ARCH_SOURCES_DIR}/StubPrecodeDynamicHelpers.asm
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/AllocFast.asm
+            ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/EHHelpers.asm
+            ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/MiscStubs.asm
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.asm
         )
 
@@ -706,11 +717,12 @@ elseif(CLR_CMAKE_TARGET_WIN32)
             ${ARCH_SOURCES_DIR}/RedirectedHandledJITCase.asm
             ${ARCH_SOURCES_DIR}/AllocSlow.asm
             ${ARCH_SOURCES_DIR}/asmhelpers.asm
-            ${ARCH_SOURCES_DIR}/ehhelpers.asm
             ${ARCH_SOURCES_DIR}/jithelp.asm
             ${ARCH_SOURCES_DIR}/PInvokeStubs.asm
             ${ARCH_SOURCES_DIR}/thunktemplates.asm
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/AllocFast.asm
+            ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/EHHelpers.asm
+            ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/MiscStubs.asm
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.asm
             )
 
@@ -721,7 +733,6 @@ elseif(CLR_CMAKE_TARGET_WIN32)
         set(VM_SOURCES_WKS_ARCH_ASM
             ${ARCH_SOURCES_DIR}/AllocSlow.asm
             ${ARCH_SOURCES_DIR}/AsmHelpers.asm
-            ${ARCH_SOURCES_DIR}/CallDescrWorkerARM64.asm
             ${ARCH_SOURCES_DIR}/patchedcode.asm
             ${ARCH_SOURCES_DIR}/PInvokeStubs.asm
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/StubDispatch.asm
@@ -729,6 +740,8 @@ elseif(CLR_CMAKE_TARGET_WIN32)
             ${ARCH_SOURCES_DIR}/CachedInterfaceDispatchCoreCLR.asm
             ${ARCH_SOURCES_DIR}/StubPrecodeDynamicHelpers.asm
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/AllocFast.asm
+            ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/EHHelpers.asm
+            ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/MiscStubs.asm
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.asm
             )
 
@@ -745,7 +758,6 @@ else()
             ${ARCH_SOURCES_DIR}/AllocSlow.S
             ${ARCH_SOURCES_DIR}/asmhelpers.S
             ${ARCH_SOURCES_DIR}/CachedInterfaceDispatchCoreCLR.S
-            ${ARCH_SOURCES_DIR}/calldescrworkeramd64.S
             ${ARCH_SOURCES_DIR}/externalmethodfixupthunk.S
             ${ARCH_SOURCES_DIR}/getstate.S
             ${ARCH_SOURCES_DIR}/jithelpers_fast.S
@@ -762,21 +774,11 @@ else()
             ${ARCH_SOURCES_DIR}/umthunkstub.S
             ${ARCH_SOURCES_DIR}/virtualcallstubamd64.S
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/AllocFast.S
+            ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/EHHelpers.S
+            ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/MiscStubs.S
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.S
             ${ARCH_SOURCES_DIR}/StubPrecodeDynamicHelpers.S
         )
-    elseif(CLR_CMAKE_TARGET_ARCH_I386)
-        set(VM_SOURCES_WKS_ARCH_ASM
-            ${ARCH_SOURCES_DIR}/AllocSlow.S
-            ${ARCH_SOURCES_DIR}/ehhelpers.S
-            ${ARCH_SOURCES_DIR}/asmhelpers.S
-            ${ARCH_SOURCES_DIR}/jithelp.S
-            ${ARCH_SOURCES_DIR}/pinvokestubs.S
-            ${ARCH_SOURCES_DIR}/umthunkstub.S
-            ${ARCH_SOURCES_DIR}/thunktemplates.S
-            ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/AllocFast.S
-            ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.S
-            )
     elseif(CLR_CMAKE_TARGET_ARCH_ARM)
         set(VM_SOURCES_WKS_ARCH_ASM
             ${ARCH_SOURCES_DIR}/AllocSlow.S
@@ -786,6 +788,8 @@ else()
             ${ARCH_SOURCES_DIR}/pinvokestubs.S
             ${ARCH_SOURCES_DIR}/thunktemplates.S
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/AllocFast.S
+            ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/EHHelpers.S
+            ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/MiscStubs.S
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.S
         )
     elseif(CLR_CMAKE_TARGET_ARCH_ARM64)
@@ -793,33 +797,36 @@ else()
             ${ARCH_SOURCES_DIR}/AllocSlow.S
             ${ARCH_SOURCES_DIR}/asmhelpers.S
             ${ARCH_SOURCES_DIR}/CachedInterfaceDispatchCoreCLR.S
-            ${ARCH_SOURCES_DIR}/calldescrworkerarm64.S
             ${ARCH_SOURCES_DIR}/patchedcode.S
             ${ARCH_SOURCES_DIR}/pinvokestubs.S
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/StubDispatch.S
             ${ARCH_SOURCES_DIR}/thunktemplates.S
             ${ARCH_SOURCES_DIR}/StubPrecodeDynamicHelpers.S
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/AllocFast.S
+            ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/EHHelpers.S
+            ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/MiscStubs.S
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.S
         )
     elseif(CLR_CMAKE_TARGET_ARCH_LOONGARCH64)
         set(VM_SOURCES_WKS_ARCH_ASM
             ${ARCH_SOURCES_DIR}/AllocSlow.S
             ${ARCH_SOURCES_DIR}/asmhelpers.S
-            ${ARCH_SOURCES_DIR}/calldescrworkerloongarch64.S
             ${ARCH_SOURCES_DIR}/pinvokestubs.S
             ${ARCH_SOURCES_DIR}/thunktemplates.S
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/AllocFast.S
+            ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/EHHelpers.S
+            ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/MiscStubs.S
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.S
         )
     elseif(CLR_CMAKE_TARGET_ARCH_RISCV64)
         set(VM_SOURCES_WKS_ARCH_ASM
             ${ARCH_SOURCES_DIR}/AllocSlow.S
             ${ARCH_SOURCES_DIR}/asmhelpers.S
-            ${ARCH_SOURCES_DIR}/calldescrworkerriscv64.S
             ${ARCH_SOURCES_DIR}/pinvokestubs.S
             ${ARCH_SOURCES_DIR}/thunktemplates.S
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/AllocFast.S
+            ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/EHHelpers.S
+            ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/MiscStubs.S
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.S
         )
     endif()
@@ -960,7 +967,6 @@ elseif(CLR_CMAKE_TARGET_ARCH_WASM)
     )
     set(VM_SOURCES_WKS_ARCH
         ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/writebarriers.cpp
-        ${ARCH_SOURCES_DIR}/calldescrworkerwasm.cpp
         ${ARCH_SOURCES_DIR}/profiler.cpp
         ${ARCH_SOURCES_DIR}/helpers.cpp
         ${ARCH_SOURCES_DIR}/dynamichelpers.cpp
@@ -982,6 +988,7 @@ elseif(CLR_CMAKE_TARGET_ARCH_WASM)
         ${ARCH_SOURCES_DIR}/${WASM_THUNK_SUBDIR}/callhelpers-reverse.cpp
     )
     if (GEN_PINVOKE)
+        add_compile_definitions(GEN_PINVOKE=1)
         list(APPEND VM_SOURCES_WKS_GEN
             ${ARCH_SOURCES_DIR}/${WASM_THUNK_SUBDIR}/callhelpers-pinvoke.cpp
         )
@@ -1054,11 +1061,9 @@ list(APPEND VM_SOURCES_DAC
 # gcdecode.cpp is included by both JIT and VM. to avoid duplicate definitions we need to
 # treat it in a special way when statically linking with both VM and JIT
 if(CLR_CMAKE_TARGET_ARCH_I386)
-    if(CLR_CMAKE_TARGET_WIN32)
-        list(APPEND VM_SOURCES_DAC
-            gcdecode.cpp
-        )
-    endif()
+    list(APPEND VM_SOURCES_DAC
+        gcdecode.cpp
+    )
     list(APPEND VM_SOURCES_WKS_SPECIAL
         gcdecode.cpp
     )

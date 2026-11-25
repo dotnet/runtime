@@ -10,7 +10,7 @@
     <HelixPreCommands Condition="'$(AGENT_OS)' != 'Windows_NT'">$(HelixPreCommands);chmod +x $HELIX_WORKITEM_PAYLOAD/SOD/SizeOnDisk</HelixPreCommands>
 
     <_MSBuildArgs>/p:_TrimmerDumpDependencies=true;/warnaserror:NU1602,NU1604</_MSBuildArgs>
-    <PublishArgs>--has-workload --readonly-dotnet --msbuild &quot;$(_MSBuildArgs)&quot; --msbuild-static AdditionalMonoLinkerOptions=%27&quot;%24(AdditionalMonoLinkerOptions) --dump-dependencies&quot;%27 --binlog $(LogDirectory)blazor_publish.binlog</PublishArgs>
+    <PublishArgs>--has-workload --readonly-dotnet --msbuild &quot;$(_MSBuildArgs)&quot; --binlog $(LogDirectory)blazor_publish.binlog</PublishArgs>
     <PublishCommand>$(EnvVars) $(Python) pre.py publish $(PublishArgs)</PublishCommand>
   </PropertyGroup>
 
@@ -84,13 +84,6 @@
     <HelixWorkItem Include="SOD - Localized App - Publish">
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
       <Command>cd $(BlazorLocalizedDirectory) &amp;&amp; $(PublishCommand) -f $(PerflabTargetFrameworks) &amp;&amp; $(Python) test.py sod --scenario-name &quot;%(Identity)&quot; --dirs $(PizzaAppPubLocation) $(ScenarioArgs)</Command>
-      <PostCommands>$(Python) post.py --readonly-dotnet</PostCommands>
-      <Timeout>1:00</Timeout>
-    </HelixWorkItem>
-    <HelixWorkItem Include="SOD - Localized App - Publish - AOT">
-      <_PublishArgsWithAOT>--msbuild &quot;$(_MSBuildArgs);/p:RunAOTCompilation=true&quot;</_PublishArgsWithAOT>
-      <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
-      <Command>cd $(BlazorLocalizedDirectory) &amp;&amp; $(PublishCommand) $(_PublishArgsWithAOT) -f $(PerflabTargetFrameworks) &amp;&amp; $(Python) test.py sod --scenario-name &quot;%(Identity)&quot; --dirs $(PizzaAppPubLocation) $(ScenarioArgs)</Command>
       <PostCommands>$(Python) post.py --readonly-dotnet</PostCommands>
       <Timeout>1:00</Timeout>
     </HelixWorkItem>

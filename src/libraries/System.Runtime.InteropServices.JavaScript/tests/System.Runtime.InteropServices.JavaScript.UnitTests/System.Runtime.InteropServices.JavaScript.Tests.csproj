@@ -1,8 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <Import Project="$(RepositoryEngineeringDir)restore\browserWasmMibcProfile.props" />
   <Import Condition="'$(TargetOS)' == 'browser'" Project="$(CommonTestPath)System/Net/Prerequisites/LocalEchoServer.props" />
 
   <PropertyGroup>
+    <!-- TODO: Remove once migrated to unsafe-v2. -->
+    <MemorySafetyRulesVersion>1</MemorySafetyRulesVersion>
     <TargetFramework>$(NetCoreAppCurrent)-browser</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TestRuntime>true</TestRuntime>
@@ -22,8 +25,12 @@
     <WasmEnableStreamingResponse>false</WasmEnableStreamingResponse>
 
     <!-- Remove when PublishReadyToRun becomes default https://github.com/dotnet/runtime/issues/132466 -->
-    <PublishReadyToRun Condition="'$(PublishReadyToRun)' == '' and '$(RuntimeFlavor)' == 'CoreCLR'">true</PublishReadyToRun>
+    <PublishReadyToRun Condition="'$(PublishReadyToRun)' == ''">true</PublishReadyToRun>
   </PropertyGroup>
+  <ItemGroup>
+    <!-- Exercise mixed R2R/interpreter execution across JS interop boundaries for extra coverage. -->
+    <PublishReadyToRunPgoFiles Include="$(BrowserWasmMibcProfile)" />
+  </ItemGroup>
 
   <!-- Make debugging easier -->
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">

@@ -47,9 +47,9 @@ public:
         CORJIT_FLAG_RELOC                   = 15, // Generate relocatable code
         CORJIT_FLAG_IL_STUB                 = 16, // method is an IL stub
         CORJIT_FLAG_PROCSPLIT               = 17, // JIT should separate code into hot and cold sections
-        CORJIT_FLAG_BBINSTR                 = 18, // Collect basic block profile information
-        CORJIT_FLAG_BBINSTR_IF_LOOPS        = 19, // JIT must instrument current method if it has loops
-        CORJIT_FLAG_BBOPT                   = 20, // Optimize method based on profile information
+        CORJIT_FLAG_PGO_INSTR               = 18, // Collect profile data for PGO
+        CORJIT_FLAG_PGO_INSTR_IF_LOOPS      = 19, // JIT must instrument current method if it has loops
+        CORJIT_FLAG_PGO_OPT                 = 20, // Optimize method based on profile information
         CORJIT_FLAG_FRAMED                  = 21, // All methods have an EBP frame
         // UNUSED                           = 22,
         CORJIT_FLAG_USE_PINVOKE_HELPERS     = 23, // The JIT should use the PINVOKE_{BEGIN,END} helpers instead of emitting inline transitions
@@ -65,6 +65,7 @@ public:
 #endif
         CORJIT_FLAG_USE_DISPATCH_HELPERS    = 31, // The JIT should use helpers for interface dispatch instead of virtual stub dispatch
         CORJIT_FLAG_VERIFY_GC_MODE_TRANSITIONS = 32, // The JIT should emit the diagnostic helpers that verify GC mode transitions are legal
+        CORJIT_FLAG_WASM_MANAGED_HELPER    = 33, // Store a constant CoreLib frame identity instead of the incoming portable entrypoint
     };
 
     CORJIT_FLAGS()

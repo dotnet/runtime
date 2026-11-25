@@ -18,7 +18,8 @@ namespace System.Diagnostics
         /// <param name="name">The name of the <see cref="ActivitySourceOptions"/> object</param>
         public ActivitySourceOptions(string name)
         {
-            _name = name ?? throw new ArgumentNullException(nameof(name));
+            ArgumentNullException.ThrowIfNull(name);
+            _name = name;
         }
 
         /// <summary>
@@ -27,7 +28,11 @@ namespace System.Diagnostics
         public string Name
         {
             get => _name;
-            set => _name = value ?? throw new ArgumentNullException(nameof(value));
+            set
+            {
+                ArgumentNullException.ThrowIfNull(value);
+                _name = value;
+            }
         }
 
         /// <summary>

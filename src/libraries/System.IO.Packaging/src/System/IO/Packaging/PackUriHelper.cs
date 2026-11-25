@@ -9,7 +9,7 @@ using System.Text;
 namespace System.IO.Packaging
 {
     /// <summary>
-    /// This class has the utility methods for composing and parsing an Uri of pack:// scheme
+    /// This class has the utility methods for composing and parsing a Uri of pack:// scheme
     /// </summary>
     public static partial class PackUriHelper
     {
@@ -60,12 +60,12 @@ namespace System.IO.Packaging
         /// <summary>
         /// This method is used to resolve part Uris
         /// Constructs resolved relative URI from two relative URIs
-        /// This method should be used in places where we have a
+        /// This method should be used in places where we have
         /// a target URI in the PackageRelationship and we want to get the
         /// name of the part it targets with respect to the source part
         /// </summary>
         /// <param name="sourcePartUri">This should be a valid partName.
-        /// The only exception to this rule is an Uri of the form "/". This uri
+        /// The only exception to this rule is a Uri of the form "/". This uri
         /// will only be used to resolve package level relationships. This Uri
         /// indicates that the relative Uri is being resolved against the root of the
         /// package.</param>

@@ -8,6 +8,7 @@
 #include <eventpipe/ep.h>
 #include <eventpipe/ep-stack-contents.h>
 #include <eventpipe/ep-rt.h>
+#include <minipal/thread.h>
 
 #ifdef HOST_WINDOWS
 #include <windows.h>
@@ -17,6 +18,7 @@
 #include <unistd.h>
 #endif
 
+#include "ProcessEnvironment.h"
 #include <minipal/random.h>
 #include <minipal/time.h>
 
@@ -490,18 +492,14 @@ uint32_t
 ep_rt_aot_current_process_get_id (void)
 {
     STATIC_CONTRACT_NOTHROW;
-    return PalGetCurrentProcessId ();
+    return minipal_get_current_process_id ();
 }
 
 ep_rt_thread_id_t
 ep_rt_aot_current_thread_get_id (void)
 {
     STATIC_CONTRACT_NOTHROW;
-#ifdef TARGET_UNIX
-    return static_cast<ep_rt_thread_id_t>(PalGetCurrentOSThreadId());
-#else
-    return static_cast<ep_rt_thread_id_t>(::GetCurrentThreadId ());
-#endif
+    return static_cast<ep_rt_thread_id_t>(minipal_get_current_thread_id());
 }
 
 int64_t
@@ -835,22 +833,6 @@ bool ep_rt_aot_spin_lock_release (ep_rt_spin_lock_handle_t *spin_lock)
     return false;
 }
 
-#ifndef HOST_WIN32
-#if defined(__APPLE__)
-#if defined (HOST_OSX)
-extern "C" {char ***_NSGetEnviron(void);}
-#define environ (*_NSGetEnviron())
-#else
-static char *_ep_rt_aot_environ[1] = { NULL };
-#define environ _ep_rt_aot_environ
-#endif /* defined (HOST_OSX) */
-#else
-extern "C" {
-extern char **environ;
-}
-#endif /* defined (__APPLE__) */
-#endif /* !defined (HOST_WIN32) */
-
 void ep_rt_aot_os_environment_get_utf16 (dn_vector_ptr_t *env_array)
 {
     STATIC_CONTRACT_NOTHROW;
@@ -867,9 +849,10 @@ void ep_rt_aot_os_environment_get_utf16 (dn_vector_ptr_t *env_array)
         FreeEnvironmentStringsW (reinterpret_cast<LPWSTR>(envs));
     }
 #else
-    ep_char8_t **next = NULL;
-    for (next = environ; *next != NULL; ++next)
-        dn_vector_ptr_push_back (env_array, ep_rt_utf8_to_utf16le_string (*next));
+    ProcessEnvironment_EnumerateVariablesUtf8 ([](const char *entry, void *context)
+    {
+        dn_vector_ptr_push_back (reinterpret_cast<dn_vector_ptr_t *>(context), ep_rt_utf8_to_utf16le_string (entry));
+    }, env_array);
 #endif
 }
 

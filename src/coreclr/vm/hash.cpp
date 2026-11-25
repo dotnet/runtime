@@ -365,51 +365,6 @@ UPTR   HashMap::CompareValues(const UPTR value1, const UPTR value2)
     return (m_pCompare == NULL || m_pCompare->CompareHelper(value1,value2));
 }
 
-//---------------------------------------------------------------------
-//  bool HashMap::Enter()
-//  bool HashMap::Leave()
-//  check  valid use of the hash table in synchronous mode
-
-#ifdef _DEBUG
-#ifndef DACCESS_COMPILE
-void HashMap::Enter(HashMap *map)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    // check proper concurrent use of the hash table
-    if (map->m_fInSyncCode)
-        ASSERT(0); // oops multiple access to sync.-critical code
-    map->m_fInSyncCode = true;
-}
-#else
-// In DAC builds, we don't want to take the lock, we just want to know if it's held. If it is,
-// we assume the hash map is in an inconsistent state and throw an exception.
-// Arguments:
-//     input: map - the map controlled by the lock.
-// Note: Throws
-void HashMap::Enter(HashMap *map)
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    // check proper concurrent use of the hash table
-    if (map->m_fInSyncCode)
-    {
-        ThrowHR(CORDBG_E_PROCESS_NOT_SYNCHRONIZED); // oops multiple access to sync.-critical code
-    }
-}
-#endif // DACCESS_COMPILE
-
-void HashMap::Leave(HashMap *map)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    // check proper concurrent use of the hash table
-    if (map->m_fInSyncCode == false)
-        ASSERT(0); // oops multiple access to sync.-critical code
-    map->m_fInSyncCode = false;
-}
-#endif // _DEBUG
-
 #endif // !DACCESS_COMPILE
 
 //---------------------------------------------------------------------

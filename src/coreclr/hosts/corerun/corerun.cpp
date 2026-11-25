@@ -259,7 +259,9 @@ struct host_runtime_contract_assembly_path
 
 struct host_runtime_contract_context
 {
-    const configuration* config;
+    string_t entry_assembly_fullpath;
+    std::vector<string_t> user_defined_keys;
+    std::vector<string_t> user_defined_values;
     std::vector<const char*> assembly_names;
     std::unordered_set<std::string> assembly_directories;
     std::unordered_map<std::string, host_runtime_contract_assembly_path> assembly_paths;
@@ -271,14 +273,14 @@ size_t HOST_CONTRACT_CALLTYPE get_runtime_property(
     size_t value_buffer_size,
     void* contract_context)
 {
-    const configuration* config = static_cast<host_runtime_contract_context*>(contract_context)->config;
+    const host_runtime_contract_context* context = static_cast<host_runtime_contract_context*>(contract_context);
 
     if (::strcmp(key, HOST_PROPERTY_ENTRY_ASSEMBLY_NAME) == 0)
     {
         // Compute the entry assembly name based on the entry assembly full path
         pal::string_t dir;
         pal::string_t file;
-        pal::split_path_to_dir_filename(config->entry_assembly_fullpath, dir, file);
+        pal::split_path_to_dir_filename(context->entry_assembly_fullpath, dir, file);
         file = file.substr(0, file.rfind(W('.')));
 
         pal::string_utf8_t file_utf8 = pal::convert_to_utf8(file.c_str());
@@ -292,13 +294,13 @@ size_t HOST_CONTRACT_CALLTYPE get_runtime_property(
     }
 
     // Look up user-defined properties passed to corerun via -p/--property.
-    assert(config->user_defined_keys.size() == config->user_defined_values.size());
+    assert(context->user_defined_keys.size() == context->user_defined_values.size());
     pal::string_t key_native = pal::convert_from_utf8(key);
-    for (size_t i = 0; i < config->user_defined_keys.size(); ++i)
+    for (size_t i = 0; i < context->user_defined_keys.size(); ++i)
     {
-        if (config->user_defined_keys[i] == key_native)
+        if (context->user_defined_keys[i] == key_native)
         {
-            pal::string_utf8_t value_utf8 = pal::convert_to_utf8(config->user_defined_values[i].c_str());
+            pal::string_utf8_t value_utf8 = pal::convert_to_utf8(context->user_defined_values[i].c_str());
             size_t len = value_utf8.size() + 1;
             if (value_buffer_size < len)
                 return len;
@@ -654,7 +656,10 @@ static int run(const configuration& config)
     for (const pal::string_utf8_t& str : user_defined_values_utf8)
         propertyValues.push_back(str.c_str());
 
-    host_runtime_contract_context contract_context{ &config };
+    // The runtime can call back into the contract from any thread until the process exits, including
+    // after this function returns, so the contract state is intentionally never freed.
+    host_runtime_contract_context& contract_context = *new host_runtime_contract_context{
+        config.entry_assembly_fullpath, config.user_defined_keys, config.user_defined_values };
     if (use_tpa_callbacks)
     {
         contract_context.assembly_names.reserve(tpa.size());

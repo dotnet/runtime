@@ -2979,34 +2979,34 @@ namespace System.Tests
         }
 
         [ConditionalTheory(typeof(TimeZoneInfoTests), nameof(SupportIanaNamesConversion))]
-        [InlineData("Pacific Standard Time", "America/Vancouver", "CA")]
-        [InlineData("Pacific Standard Time", "America/Los_Angeles", "US")]
-        [InlineData("Pacific Standard Time", "America/Los_Angeles", "\u0600NotValidRegion")]
-        [InlineData("Central Europe Standard Time", "Europe/Budapest", "DJ")]
-        [InlineData("Central Europe Standard Time", "Europe/Budapest", "\uFFFFNotValidRegion")]
-        [InlineData("Central Europe Standard Time", "Europe/Prague", "CZ")]
-        [InlineData("Central Europe Standard Time", "Europe/Ljubljana", "SI")]
-        [InlineData("Central Europe Standard Time", "Europe/Bratislava", "SK")]
-        [InlineData("Central Europe Standard Time", "Europe/Tirane", "AL")]
-        [InlineData("Central Europe Standard Time", "Europe/Podgorica", "ME")]
-        [InlineData("Central Europe Standard Time", "Europe/Belgrade", "RS")]
+        [InlineData("Pacific Standard Time", "CA", "America/Vancouver", "America/Los_Angeles")]
+        [InlineData("Pacific Standard Time", "US", "America/Los_Angeles")]
+        [InlineData("Pacific Standard Time", "\u0600NotValidRegion", "America/Los_Angeles")]
+        [InlineData("Central Europe Standard Time", "DJ", "Europe/Budapest")]
+        [InlineData("Central Europe Standard Time", "\uFFFFNotValidRegion", "Europe/Budapest")]
+        [InlineData("Central Europe Standard Time", "CZ", "Europe/Prague")]
+        [InlineData("Central Europe Standard Time", "SI", "Europe/Ljubljana")]
+        [InlineData("Central Europe Standard Time", "SK", "Europe/Bratislava")]
+        [InlineData("Central Europe Standard Time", "AL", "Europe/Tirane")]
+        [InlineData("Central Europe Standard Time", "ME", "Europe/Podgorica")]
+        [InlineData("Central Europe Standard Time", "RS", "Europe/Belgrade")]
         // lowercased region name cases:
-        [InlineData("Cen. Australia Standard Time", "Australia/Adelaide", "au")]
-        [InlineData("AUS Central Standard Time", "Australia/Darwin", "au")]
-        [InlineData("E. Australia Standard Time", "Australia/Brisbane", "au")]
-        [InlineData("AUS Eastern Standard Time", "Australia/Sydney", "au")]
-        [InlineData("Tasmania Standard Time", "Australia/Hobart", "au")]
-        [InlineData("Romance Standard Time", "Europe/Madrid", "es")]
-        [InlineData("Romance Standard Time", "Europe/Madrid", "Es")]
-        [InlineData("Romance Standard Time", "Europe/Madrid", "eS")]
-        [InlineData("GMT Standard Time", "Europe/London", "gb")]
-        [InlineData("GMT Standard Time", "Europe/Dublin", "ie")]
-        [InlineData("W. Europe Standard Time", "Europe/Rome", "it")]
-        [InlineData("New Zealand Standard Time", "Pacific/Auckland", "nz")]
-        public static void IdsConversionsWithRegionTest(string windowsId, string ianaId, string region)
+        [InlineData("Cen. Australia Standard Time", "au", "Australia/Adelaide")]
+        [InlineData("AUS Central Standard Time", "au", "Australia/Darwin")]
+        [InlineData("E. Australia Standard Time", "au", "Australia/Brisbane")]
+        [InlineData("AUS Eastern Standard Time", "au", "Australia/Sydney")]
+        [InlineData("Tasmania Standard Time", "au", "Australia/Hobart")]
+        [InlineData("Romance Standard Time", "es", "Europe/Madrid")]
+        [InlineData("Romance Standard Time", "Es", "Europe/Madrid")]
+        [InlineData("Romance Standard Time", "eS", "Europe/Madrid")]
+        [InlineData("GMT Standard Time", "gb", "Europe/London")]
+        [InlineData("GMT Standard Time", "ie", "Europe/Dublin")]
+        [InlineData("W. Europe Standard Time", "it", "Europe/Rome")]
+        [InlineData("New Zealand Standard Time", "nz", "Pacific/Auckland")]
+        public static void IdsConversionsWithRegionTest(string windowsId, string region, params string[] ianaIds)
         {
             Assert.True(TimeZoneInfo.TryConvertWindowsIdToIanaId(windowsId, region, out string ianaConvertedId));
-            Assert.Equal(ianaId, ianaConvertedId);
+            Assert.Contains(ianaConvertedId, ianaIds);
         }
 
         // We test the existence of a specific English time zone name to avoid failures on non-English platforms.

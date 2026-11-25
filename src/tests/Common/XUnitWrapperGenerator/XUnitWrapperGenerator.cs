@@ -403,10 +403,10 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                 builder.AppendLine("return 100;");
             }
 
-            builder.AppendLine("if (System.OperatingSystem.IsBrowser() && !TestLibrary.OutOfProcessTest.IsUsingPrecomputedResults)");
+            builder.AppendLine("if ((System.OperatingSystem.IsBrowser() || System.OperatingSystem.IsWasi()) && !TestLibrary.OutOfProcessTest.IsUsingPrecomputedResults)");
             using (builder.NewBracesScope())
             {
-                builder.AppendLine(@"System.Console.Error.WriteLine(""Out-of-process tests require host-side orchestration on Browser."");");
+                builder.AppendLine(@"System.Console.Error.WriteLine(""Out-of-process tests require host-side orchestration on WebAssembly."");");
                 builder.AppendLine("return 1;");
             }
         }

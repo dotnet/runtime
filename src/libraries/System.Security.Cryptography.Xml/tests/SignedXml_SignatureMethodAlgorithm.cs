@@ -13,6 +13,7 @@ namespace System.Security.Cryptography.Xml.Tests
     public class SignedXml_SignatureMethodAlgorithm
     {
         private const string MaxDecryptedDataElementsAppContextSwitch = "System.Security.Cryptography.Xml.MaxDecryptedDataElements";
+        private const string DangerousMaxDecryptionCountAppContextSwitch = "System.Security.Cryptography.Xml.DangerousMaxDecryptionCount";
 
         [Fact]
         public static void TestDummySignatureAlgorithm()
@@ -89,18 +90,26 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Throws<CryptographicException>(() => signedXml.CheckSignature(rsa));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(50)]
         [InlineData(99)]
         public void SignedXml_EncryptedElementListWithinDefaultLimit_DoesNotThrowCryptographicException(int encryptedElementCount)
         {
-            using RSA rsa = RSA.Create();
-            using Aes aes = Aes.Create();
+            RemoteExecutor.Invoke(static (string encryptedElementCountText) =>
+            {
+                AppContext.SetData(DangerousMaxDecryptionCountAppContextSwitch, 0);
 
-            SignedXml signedXml = BuildSignedXmlWithManyEncryptedElements(aes, rsa, encryptedElementCount);
+                using RSA rsa = RSA.Create();
+                using Aes aes = Aes.Create();
 
-            // Document is processed fully without throwing a CryptographicException
-            Assert.Throws<NullReferenceException>(() => signedXml.CheckSignature(rsa));
+                SignedXml signedXml = BuildSignedXmlWithManyEncryptedElements(
+                    aes,
+                    rsa,
+                    int.Parse(encryptedElementCountText, CultureInfo.InvariantCulture));
+
+                // Document is processed fully without throwing a CryptographicException.
+                Assert.Throws<NullReferenceException>(() => signedXml.CheckSignature(rsa));
+            }, encryptedElementCount.ToString(CultureInfo.InvariantCulture)).Dispose();
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -108,6 +117,8 @@ namespace System.Security.Cryptography.Xml.Tests
         [InlineData(99, 200, false)]  // raise the limit; counts well below the new cap still don't trip it
         [InlineData(50, 30, true)]    // lower the limit; 50 elements now exceed the configured cap
         [InlineData(10, 5, true)]     // lower the limit aggressively; even 10 elements exceed the cap
+        [InlineData(9, 10, false)]    // boundary: count == limit - 1
+        [InlineData(10, 10, true)]    // boundary: count == limit
         public void SignedXml_EncryptedElementListLimit_RespectsAppContextSwitch(
             int encryptedElementCount,
             int maxDecryptedDataElements,
@@ -120,6 +131,9 @@ namespace System.Security.Cryptography.Xml.Tests
                 bool shouldThrow = bool.Parse(expectThrowText);
 
                 AppContext.SetData(MaxDecryptedDataElementsAppContextSwitch, limit);
+
+                // There's a separate decryption count limit, so make sure we're not hitting that.
+                AppContext.SetData(DangerousMaxDecryptionCountAppContextSwitch, 0);
 
                 using RSA rsa = RSA.Create();
                 using Aes aes = Aes.Create();
@@ -154,7 +168,7 @@ namespace System.Security.Cryptography.Xml.Tests
                 int limit = int.Parse(limitText, CultureInfo.InvariantCulture);
                 bool shouldThrow = bool.Parse(expectThrowText);
 
-                AppContext.SetData(MaxDecryptedDataElementsAppContextSwitch, limit);
+                AppContext.SetData(DangerousMaxDecryptionCountAppContextSwitch, limit);
 
                 XmlDocument document = new();
                 XmlElement root = document.CreateElement("root");
@@ -192,6 +206,7 @@ namespace System.Security.Cryptography.Xml.Tests
             RemoteExecutor.Invoke(static () =>
             {
                 AppContext.SetData(MaxDecryptedDataElementsAppContextSwitch, 0);
+                AppContext.SetData(DangerousMaxDecryptionCountAppContextSwitch, 0);
 
                 using RSA rsa = RSA.Create();
                 using Aes aes = Aes.Create();

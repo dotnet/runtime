@@ -92,7 +92,7 @@ namespace Internal.Runtime.InteropServices
         /// Native hosting entry point for loading an assembly from a path
         /// </summary>
         /// <param name="assemblyPathNative">Fully qualified path to assembly</param>
-        /// <param name="loadContext">Extensibility parameter (currently unused)</param>
+        /// <param name="loadContext">Assembly load context specification</param>
         /// <param name="reserved">Extensibility parameter (currently unused)</param>
         [RequiresDynamicCode(NativeAOTIncompatibleWarningMessage)]
         [UnsupportedOSPlatform("android")]
@@ -110,10 +110,10 @@ namespace Internal.Runtime.InteropServices
             {
                 string assemblyPath = MarshalToString(assemblyPathNative, nameof(assemblyPathNative));
 
-                ArgumentOutOfRangeException.ThrowIfNotEqual(loadContext, IntPtr.Zero);
+                ArgumentOutOfRangeException.ThrowIfEqual(loadContext, ComponentLoadContextManager.IsolatedContext);
                 ArgumentOutOfRangeException.ThrowIfNotEqual(reserved, IntPtr.Zero);
 
-                LoadAssemblyLocal(assemblyPath);
+                LoadAssemblyLocal(loadContext, assemblyPath);
             }
             catch (Exception e)
             {
@@ -124,11 +124,8 @@ namespace Internal.Runtime.InteropServices
 
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                 Justification = "The same feature switch applies to GetFunctionPointer and this function. We rely on the warning from GetFunctionPointer.")]
-            static void LoadAssemblyLocal(string assemblyPath)
-            {
-                ComponentLoadContextManager.AddResolverToDefaultContext(assemblyPath);
-                AssemblyLoadContext.Default.LoadFromAssemblyPath(assemblyPath);
-            }
+            static void LoadAssemblyLocal(IntPtr loadContext, string assemblyPath)
+                => ComponentLoadContextManager.Get(loadContext, assemblyPath).LoadFromAssemblyPath(assemblyPath);
         }
 
         /// <summary>
@@ -138,7 +135,7 @@ namespace Internal.Runtime.InteropServices
         /// <param name="assemblyByteLength">Byte length of the assembly to load</param>
         /// <param name="symbols">Optional. Bytes of the symbols for the assembly</param>
         /// <param name="symbolsByteLength">Optional. Byte length of the symbols for the assembly</param>
-        /// <param name="loadContext">Extensibility parameter (currently unused)</param>
+        /// <param name="loadContext">Assembly load context specification</param>
         /// <param name="reserved">Extensibility parameter (currently unused)</param>
         [RequiresDynamicCode(NativeAOTIncompatibleWarningMessage)]
         [UnsupportedOSPlatform("android")]
@@ -157,7 +154,7 @@ namespace Internal.Runtime.InteropServices
                 ArgumentNullException.ThrowIfNull(assembly);
                 ArgumentOutOfRangeException.ThrowIfNegativeOrZero(assemblyByteLength);
                 ArgumentOutOfRangeException.ThrowIfGreaterThan(assemblyByteLength, int.MaxValue);
-                ArgumentOutOfRangeException.ThrowIfNotEqual(loadContext, IntPtr.Zero);
+                ArgumentOutOfRangeException.ThrowIfEqual(loadContext, ComponentLoadContextManager.IsolatedContext);
                 ArgumentOutOfRangeException.ThrowIfNotEqual(reserved, IntPtr.Zero);
 
                 ReadOnlySpan<byte> assemblySpan = new ReadOnlySpan<byte>(assembly, (int)assemblyByteLength);
@@ -167,7 +164,7 @@ namespace Internal.Runtime.InteropServices
                     symbolsSpan = new ReadOnlySpan<byte>(symbols, (int)symbolsByteLength);
                 }
 
-                LoadAssemblyBytesLocal(assemblySpan, symbolsSpan);
+                LoadAssemblyBytesLocal(loadContext, assemblySpan, symbolsSpan);
             }
             catch (Exception e)
             {
@@ -178,7 +175,8 @@ namespace Internal.Runtime.InteropServices
 
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                 Justification = "The same feature switch applies to GetFunctionPointer and this function. We rely on the warning from GetFunctionPointer.")]
-            static void LoadAssemblyBytesLocal(ReadOnlySpan<byte> assemblyBytes, ReadOnlySpan<byte> symbolsBytes) => AssemblyLoadContext.Default.InternalLoad(assemblyBytes, symbolsBytes);
+            static void LoadAssemblyBytesLocal(IntPtr loadContext, ReadOnlySpan<byte> assemblyBytes, ReadOnlySpan<byte> symbolsBytes)
+                => ComponentLoadContextManager.Get(loadContext).InternalLoad(assemblyBytes, symbolsBytes);
         }
 
         /// <summary>
@@ -187,7 +185,7 @@ namespace Internal.Runtime.InteropServices
         /// <param name="typeNameNative">Assembly qualified type name</param>
         /// <param name="methodNameNative">Public static method name compatible with delegateType</param>
         /// <param name="delegateTypeNative">Assembly qualified delegate type name</param>
-        /// <param name="loadContext">Extensibility parameter (currently unused)</param>
+        /// <param name="loadContext">Assembly load context specification</param>
         /// <param name="reserved">Extensibility parameter (currently unused)</param>
         /// <param name="functionHandle">Pointer where to store the function pointer result</param>
         [RequiresDynamicCode(NativeAOTIncompatibleWarningMessage)]
@@ -228,13 +226,14 @@ namespace Internal.Runtime.InteropServices
                 string typeName = MarshalToString(typeNameNative, nameof(typeNameNative));
                 string methodName = MarshalToString(methodNameNative, nameof(methodNameNative));
 
-                ArgumentOutOfRangeException.ThrowIfNotEqual(loadContext, IntPtr.Zero);
+                ArgumentOutOfRangeException.ThrowIfEqual(loadContext, ComponentLoadContextManager.IsolatedContext);
                 ArgumentOutOfRangeException.ThrowIfNotEqual(reserved, IntPtr.Zero);
                 ArgumentNullException.ThrowIfNull(functionHandle);
 
 #pragma warning disable IL2026 // suppressed in ILLink.Suppressions.LibraryBuild.xml
                 // Create the function pointer.
-                *(IntPtr*)functionHandle = InternalGetFunctionPointer(AssemblyLoadContext.Default, typeName, methodName, delegateTypeNative);
+                AssemblyLoadContext alc = ComponentLoadContextManager.Get(loadContext);
+                *(IntPtr*)functionHandle = InternalGetFunctionPointer(alc, typeName, methodName, delegateTypeNative);
 #pragma warning restore IL2026
             }
             catch (Exception e)

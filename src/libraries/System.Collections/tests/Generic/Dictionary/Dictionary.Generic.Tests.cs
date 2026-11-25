@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
@@ -310,19 +311,69 @@ namespace System.Collections.Tests
 
         #endregion
 
+        #region Clear
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(17)]
+        [InlineData(100)]
+        public void Clear_AfterRemovingEntries_CanRefill(int count)
+        {
+            var dictionary = (Dictionary<TKey, TValue>)GenericIDictionaryFactory(count);
+            KeyValuePair<TKey, TValue>[] entries = dictionary.ToArray();
+            int capacity = dictionary.Capacity;
+
+            for (int cycle = 0; cycle < 3; cycle++)
+            {
+                for (int i = 0; i < entries.Length; i += 2)
+                {
+                    Assert.True(dictionary.Remove(entries[i].Key));
+                }
+
+                Dictionary<TKey, TValue>.Enumerator enumerator = dictionary.GetEnumerator();
+                dictionary.Clear();
+
+                Assert.Empty(dictionary);
+                Assert.Empty(dictionary.Keys);
+                Assert.Empty(dictionary.Values);
+                Assert.Equal(capacity, dictionary.Capacity);
+                Assert.False(enumerator.MoveNext());
+
+                foreach (KeyValuePair<TKey, TValue> entry in entries)
+                {
+                    Assert.False(dictionary.ContainsKey(entry.Key));
+                    ref TValue value = ref CollectionsMarshal.GetValueRefOrAddDefault(dictionary, entry.Key, out bool exists);
+                    Assert.False(exists);
+                    Assert.Equal(default(TValue), value);
+                    value = entry.Value;
+                }
+
+                CollectionAsserts.EqualUnordered<KeyValuePair<TKey, TValue>>(entries, dictionary);
+            }
+        }
+
+        #endregion
+
         #region EnsureCapacity
 
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]
-        public void EnsureCapacity_Generic_RequestingLargerCapacity_DoesInvalidateEnumeration(int count)
+        public void EnsureCapacity_Generic_RequestingLargerCapacity_DoesNotInvalidateEnumeration(int count)
         {
             var dictionary = (Dictionary<TKey, TValue>)(GenericIDictionaryFactory(count));
             var capacity = dictionary.EnsureCapacity(0);
+            var expected = new List<KeyValuePair<TKey, TValue>>(dictionary);
             var enumerator = dictionary.GetEnumerator();
 
-            dictionary.EnsureCapacity(capacity + 1); // Verify EnsureCapacity does invalidate enumeration
+            dictionary.EnsureCapacity(capacity + 1); // Growing keeps the entries at the same indices
 
-            Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
+            foreach (KeyValuePair<TKey, TValue> pair in expected)
+            {
+                Assert.True(enumerator.MoveNext());
+                Assert.Equal(pair, enumerator.Current);
+            }
+            Assert.False(enumerator.MoveNext());
         }
 
         [Fact]

@@ -202,8 +202,7 @@ RaiseException(
     throw PAL_SEHException(exceptionRecord, contextRecord);
 }
 
-// WIN32 debug-output APIs. WASI build excludes pal/src/debug/debug.cpp; route
-// to the same internal channels stderr would on a real platform.
+// DebugBreak: the WASI build excludes pal/src/debug/debug.cpp.
 extern "C" VOID PALAPI
 DebugBreak()
 {
@@ -212,32 +211,6 @@ DebugBreak()
     // hide the original assert. Trap directly instead.
     __builtin_debugtrap();
     abort();
-}
-
-extern "C" VOID PALAPI
-OutputDebugStringA(IN LPCSTR lpOutputString)
-{
-    if (lpOutputString) fputs(lpOutputString, stderr);
-}
-
-extern "C" VOID PALAPI
-OutputDebugStringW(IN LPCWSTR lpOutputString)
-{
-    (void)lpOutputString;  // wchar_t* — not converted here; stub only
-}
-
-// PAL_ProbeMemory — normally in pal/src/debug/debug.cpp, excluded on WASI. wasm
-// linear memory is one contiguous region, so a range is valid iff it ends
-// within the current memory size (64 KiB pages).
-extern "C" PALIMPORT BOOL PALAPI
-PAL_ProbeMemory(PVOID pBuffer, DWORD cbBuffer, BOOL fWriteAccess)
-{
-    (void)fWriteAccess;
-    if ((uintptr_t)((PBYTE)pBuffer + cbBuffer) <= (__builtin_wasm_memory_size(0) * 65536))
-    {
-        return TRUE;
-    }
-    return FALSE;
 }
 
 // PAL exception-record allocation — normally in seh-unwind.cpp which we
@@ -293,7 +266,8 @@ void SEHCleanupSignals(bool isChildProcess)
     (void)isChildProcess;
 }
 
-void UnmaskActivationSignal()
+extern "C" VOID PALAPI
+PAL_UnmaskActivationSignal(VOID)
 {
 }
 
@@ -311,14 +285,6 @@ GetThreadContext(IN HANDLE hThread, IN OUT LPCONTEXT lpContext)
     (void)hThread; (void)lpContext;
     _ASSERT(!"GetThreadContext not implemented on wasi");
     return FALSE;
-}
-
-// FlushInstructionCache: no-op on WASI. wasm has no separate I-cache to flush.
-extern "C" PALIMPORT BOOL PALAPI
-FlushInstructionCache(IN HANDLE hProcess, IN LPCVOID lpBaseAddress, IN SIZE_T dwSize)
-{
-    (void)hProcess; (void)lpBaseAddress; (void)dwSize;
-    return TRUE;
 }
 
 // SystemJS_GetLocaleInfo is the browser ICU shim entrypoint

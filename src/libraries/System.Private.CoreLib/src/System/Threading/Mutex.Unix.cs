@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
@@ -10,6 +11,10 @@ namespace System.Threading
 {
     public sealed partial class Mutex
     {
+        [FeatureSwitchDefinition("System.Threading.Mutex.UnsafeDefaultMutexScopeGlobal")]
+        private static bool UnsafeDefaultMutexScopeGlobal { get; } =
+            AppContext.TryGetSwitch("System.Threading.Mutex.UnsafeDefaultMutexScopeGlobal", out bool enable) ? enable : false;
+
         private void CreateMutexCore(bool initiallyOwned) => SafeWaitHandle = WaitSubsystem.NewMutex(initiallyOwned);
 
         private void CreateMutexCore(
@@ -22,7 +27,7 @@ namespace System.Threading
             {
                 name = BuildNameForOptions(name, options);
 
-                SafeWaitHandle? safeWaitHandle = WaitSubsystem.CreateNamedMutex(initiallyOwned, name, isUserScope: options.WasSpecified && options.CurrentUserOnly, out createdNew);
+                SafeWaitHandle? safeWaitHandle = WaitSubsystem.CreateNamedMutex(initiallyOwned, name, isUserScope: CalculateUserScope(options), out createdNew);
                 if (safeWaitHandle == null)
                 {
                     throw new WaitHandleCannotBeOpenedException(SR.Format(SR.Threading_WaitHandleCannotBeOpenedException_InvalidHandle, name));
@@ -44,7 +49,7 @@ namespace System.Threading
 
             name = BuildNameForOptions(name, options);
 
-            OpenExistingResult status = WaitSubsystem.OpenNamedMutex(name, isUserScope: options.WasSpecified && options.CurrentUserOnly, out SafeWaitHandle? safeWaitHandle);
+            OpenExistingResult status = WaitSubsystem.OpenNamedMutex(name, isUserScope: CalculateUserScope(options), out SafeWaitHandle? safeWaitHandle);
             result = status == OpenExistingResult.Success ? new Mutex(safeWaitHandle!) : null;
             return status;
         }
@@ -63,6 +68,11 @@ namespace System.Threading
             }
 
             return name;
+        }
+
+        private static bool CalculateUserScope(NamedWaitHandleOptionsInternal options)
+        {
+            return options.WasSpecified ? options.CurrentUserOnly : !UnsafeDefaultMutexScopeGlobal;
         }
 
         public void ReleaseMutex()

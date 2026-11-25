@@ -193,9 +193,9 @@ inline void FATAL_GC_ERROR()
 #define FEATURE_PREMORTEM_FINALIZATION
 #define GC_HISTORY
 
-#ifndef TARGET_WASM
+#ifdef FEATURE_MULTITHREADING
 #define BACKGROUND_GC   //concurrent background GC (requires WRITE_WATCH)
-#endif //!TARGET_WASM
+#endif //FEATURE_MULTITHREADING
 
 // We need the lower 3 bits in the MT to do our bookkeeping so doubly linked free list is only for 64-bit
 #if defined(BACKGROUND_GC) && defined(HOST_64BIT)
@@ -2421,6 +2421,8 @@ private:
     PER_HEAP_ISOLATED_METHOD void destroy_semi_shared();
     PER_HEAP_METHOD void repair_allocation_contexts (BOOL repair_p);
     PER_HEAP_METHOD void fix_allocation_contexts (BOOL for_gc_p);
+    PER_HEAP_METHOD void retire_allocation_context (alloc_context* acontext);
+    PER_HEAP_ISOLATED_METHOD void retire_allocation (gc_alloc_context* acontext, void*);
 #ifdef MULTIPLE_HEAPS
     PER_HEAP_ISOLATED_METHOD void fix_allocation_contexts_heaps ();
     PER_HEAP_ISOLATED_METHOD void fix_allocation_context_heaps (gc_alloc_context* acontext, void*);
@@ -5374,7 +5376,11 @@ private:
     // Set unconditionally on WASM and whenever use_large_pages_p is set (large pages
     // are pre-committed and cannot be decommitted). Code that wants to skip a
     // decommit-related path should test this flag rather than use_large_pages_p.
+#ifdef HOST_WASM
+    static constexpr bool never_decommit_p = true;
+#else // HOST_WASM
     PER_HEAP_ISOLATED_FIELD_INIT_ONLY bool never_decommit_p;
+#endif // HOST_WASM
 
 #ifdef MULTIPLE_HEAPS
     // Init-ed in gc_heap::initialize_gc

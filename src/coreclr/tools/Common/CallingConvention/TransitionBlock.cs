@@ -417,7 +417,7 @@ namespace Internal.CallingConvention
             // Argument registers, callee-save registers, return address
             public override int SizeOfTransitionBlock => SizeOfArgumentRegisters + SizeOfCalleeSavedRegisters + PointerSize;
             public override int OffsetOfArgumentRegisters => 0;
-            // CALLDESCR_FPARGREGS is not set for X86
+            // HAS_FLOAT_ARGUMENT_REGISTERS is not set for X86
             public override int OffsetOfFloatArgumentRegisters => 0;
             // offsetof(ArgumentRegisters.ECX)
             public override int ThisOffset => X86Constants.OffsetOfEcx;
@@ -495,7 +495,7 @@ namespace Internal.CallingConvention
             // Callee-saved registers, return address
             public override int SizeOfTransitionBlock => SizeOfCalleeSavedRegisters + PointerSize;
             public override int OffsetOfArgumentRegisters => SizeOfTransitionBlock;
-            // CALLDESCR_FPARGREGS is not set for Amd64 on
+            // HAS_FLOAT_ARGUMENT_REGISTERS is not set for Amd64 on
             public override int OffsetOfFloatArgumentRegisters => 0;
             public override int EnregisteredParamTypeMaxSize => 8;
             public override int EnregisteredReturnTypeIntegerMaxSize => 8;

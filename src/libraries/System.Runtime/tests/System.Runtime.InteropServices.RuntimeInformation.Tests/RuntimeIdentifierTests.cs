@@ -90,5 +90,11 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
         {
             Assert.StartsWith("osx", RuntimeInformation.RuntimeIdentifier, StringComparison.OrdinalIgnoreCase);
         }
+
+        [Fact, PlatformSpecific(TestPlatforms.Wasi)]
+        public void VerifyWasiRid()
+        {
+            Assert.Equal("wasi-wasm", RuntimeInformation.RuntimeIdentifier);
+        }
     }
 }

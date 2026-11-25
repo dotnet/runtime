@@ -64,9 +64,7 @@ static bool blockNeedsGCPoll(BasicBlock* block)
 //                   with SuppressGCTransitionAttribute.
 //
 // Notes:
-//    When not optimizing, the method relies on BBF_HAS_SUPPRESSGC_CALL flag to
-//    find the basic blocks that require GC polls; when optimizing the tree nodes
-//    are scanned to find calls to methods with SuppressGCTransitionAttribute.
+//    The tree nodes are scanned to find calls to methods with SuppressGCTransitionAttribute.
 //
 //    This must be done after any transformations that would add control flow between
 //    calls.
@@ -91,21 +89,9 @@ PhaseStatus Compiler::fgInsertGCPolls()
     {
         compCurBB = block;
 
-        // When optimizations are enabled, we can't rely on BBF_HAS_SUPPRESSGC_CALL flag:
-        // the call could've been moved, e.g., hoisted from a loop, CSE'd, etc.
-        if (opts.OptimizationDisabled())
+        if (!blockNeedsGCPoll(block))
         {
-            if (!block->HasAnyFlag(BBF_HAS_SUPPRESSGC_CALL | BBF_NEEDS_GCPOLL))
-            {
-                continue;
-            }
-        }
-        else
-        {
-            if (!blockNeedsGCPoll(block))
-            {
-                continue;
-            }
+            continue;
         }
 
         result = PhaseStatus::MODIFIED_EVERYTHING;
@@ -484,10 +470,10 @@ void Compiler::fgSwitchToOptimized(const char* reason)
     JITDUMP("****\n**** JIT Tier0 jit request switching to Tier1 because: %s\n****\n", reason);
     assert(opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0));
     opts.jitFlags->Clear(JitFlags::JIT_FLAG_TIER0);
-    opts.jitFlags->Clear(JitFlags::JIT_FLAG_BBINSTR);
-    opts.jitFlags->Clear(JitFlags::JIT_FLAG_BBINSTR_IF_LOOPS);
+    opts.jitFlags->Clear(JitFlags::JIT_FLAG_PGO_INSTR);
+    opts.jitFlags->Clear(JitFlags::JIT_FLAG_PGO_INSTR_IF_LOOPS);
     opts.jitFlags->Clear(JitFlags::JIT_FLAG_OSR);
-    opts.jitFlags->Set(JitFlags::JIT_FLAG_BBOPT);
+    opts.jitFlags->Set(JitFlags::JIT_FLAG_PGO_OPT);
 
     // Leave a note for jit diagnostics
     compSwitchedToOptimized = true;
@@ -755,6 +741,8 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
         case CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE:
         case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE:
         case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE:
+        case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_OPTIMIZED:
+        case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_OPTIMIZED:
             // type = TYP_BYREF;
             break;
 
@@ -795,6 +783,8 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
 
     if ((helper == CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED) ||
         (helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED) ||
+        (helper == CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_OPTIMIZED) ||
+        (helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_OPTIMIZED) ||
         (helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2) ||
         (helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2_NOJITOPT))
     {
@@ -874,8 +864,11 @@ void Compiler::fgSetPreferredInitCctor()
 GenTreeCall* Compiler::fgGetSharedCCtor(CORINFO_CLASS_HANDLE cls)
 {
 #if defined(TARGET_WASM)
-    // Wasm does not support dynamically created helpers
-    return fgGetStaticsCCtorHelper(cls, CORINFO_HELP_INITCLASS);
+    // CoreCLR Wasm does not support dynamically created helpers.
+    if (!IsNativeAot())
+    {
+        return fgGetStaticsCCtorHelper(cls, CORINFO_HELP_INITCLASS);
+    }
 #endif
 
 #ifdef FEATURE_READYTORUN
@@ -5874,9 +5867,10 @@ bool FlowGraphNaturalLoop::MatchLimit(unsigned iterVar, GenTree* test, NaturalLo
     // peeling the constant into LimitOffset and form-checking the base.
     // Morph canonicalizes commutative ops so that any constant operand sits on
     // op2, and folds `base ± 0`, so we only need to look for `base op2-cns`.
+    // An overflow-checked limit can throw instead of wrapping, so it is not peeled.
     int      peeledOffset = 0;
     GenTree* peeledBase   = nullptr;
-    if (limitOp->OperIs(GT_ADD, GT_SUB) && limitOp->TypeIs(TYP_INT))
+    if (limitOp->OperIs(GT_ADD, GT_SUB) && limitOp->TypeIs(TYP_INT) && !limitOp->gtOverflow())
     {
         GenTree* lop1 = limitOp->gtGetOp1();
         GenTree* lop2 = limitOp->gtGetOp2();

@@ -7,6 +7,7 @@
 
 #include "common.h"
 #include <minipal/time.h>
+#include <minipal/thread.h>
 #include "eepolicy.h"
 #include "corhost.h"
 #include "dbginterface.h"
@@ -428,11 +429,7 @@ void LogInfoForFatalError(UINT exitCode, LPCWSTR pszMessage, PEXCEPTION_POINTERS
     static size_t s_pCrashingThreadID;
 
     size_t currentThreadID;
-#ifndef TARGET_UNIX
-    currentThreadID = GetCurrentThreadId();
-#else
-    currentThreadID = PAL_GetCurrentOSThreadId();
-#endif
+    currentThreadID = minipal_get_current_thread_id();
 
     size_t previousThreadID = InterlockedCompareExchangeT<size_t>(&s_pCrashingThreadID, currentThreadID, 0);
 
@@ -761,6 +758,7 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
 
         DisplayStackOverflowException();
 
+#ifdef FEATURE_MULTITHREADING
         HandleHolder stackDumpThreadHandle{ Thread::CreateUtilityThread(Thread::StackSize_Small, LogStackOverflowStackTraceThread, GetThreadNULLOk(), W(".NET SO Tracer")) };
         if (stackDumpThreadHandle != NULL)
         {
@@ -775,6 +773,7 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
  #endif
         }
         else
+#endif // FEATURE_MULTITHREADING
         {
             InterlockedExchange(&g_stackOverflowCallStackLogged, 2);
         }

@@ -1329,7 +1329,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// </para>
         /// <para>PEM-encoded items that have a different label are ignored.</para>
         /// <para>
-        ///   Combined PEM-encoded certificates and keys do not require a specific order. For the certificate, the
+        ///   Combined PEM-encoded certificates and keys do not require a specific order. For the certificate,
         ///   the first certificate with a CERTIFICATE label is loaded. For the private key, the first private
         ///   key with an acceptable label is loaded. More advanced scenarios for loading certificates and
         ///   private keys can leverage <see cref="System.Security.Cryptography.PemEncoding" /> to enumerate
@@ -1395,7 +1395,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// </para>
         /// <para>PEM-encoded items that have a different label are ignored.</para>
         /// <para>
-        ///   Combined PEM-encoded certificates and keys do not require a specific order. For the certificate, the
+        ///   Combined PEM-encoded certificates and keys do not require a specific order. For the certificate,
         ///   the first certificate with a CERTIFICATE label is loaded. For the private key, the first private
         ///   key with the label "ENCRYPTED PRIVATE KEY" is loaded. More advanced scenarios for loading certificates and
         ///   private keys can leverage <see cref="System.Security.Cryptography.PemEncoding" /> to enumerate
@@ -1445,7 +1445,7 @@ namespace System.Security.Cryptography.X509Certificates
         ///   <code>
         ///     CreateFromPem(combinedCertAndKey, combinedCertAndKey);
         ///   </code>
-        ///   Combined PEM-encoded certificates and keys do not require a specific order. For the certificate, the
+        ///   Combined PEM-encoded certificates and keys do not require a specific order. For the certificate,
         ///   the first certificate with a CERTIFICATE label is loaded. For the private key, the first private
         ///   key with an acceptable label is loaded. More advanced scenarios for loading certificates and
         ///   private keys can leverage <see cref="System.Security.Cryptography.PemEncoding" /> to enumerate
@@ -1531,7 +1531,7 @@ namespace System.Security.Cryptography.X509Certificates
         ///   <code>
         ///     CreateFromEncryptedPem(combinedCertAndKey, combinedCertAndKey, theKeyPassword);
         ///   </code>
-        ///   Combined PEM-encoded certificates and keys do not require a specific order. For the certificate, the
+        ///   Combined PEM-encoded certificates and keys do not require a specific order. For the certificate,
         ///   the first certificate with a CERTIFICATE label is loaded. For the private key, the first private
         ///   key with the label "ENCRYPTED PRIVATE KEY" is loaded. More advanced scenarios for loading certificates and
         ///   private keys can leverage <see cref="System.Security.Cryptography.PemEncoding" /> to enumerate
@@ -2272,7 +2272,14 @@ namespace System.Security.Cryptography.X509Certificates
                         throw new CryptographicException();
                     }
 
-                    return certificate.CopyWithPrivateKey(ecdh);
+                    try
+                    {
+                        return certificate.CopyWithPrivateKey(ecdh);
+                    }
+                    catch (ArgumentException ae)
+                    {
+                        throw new CryptographicException(SR.Cryptography_X509_NoOrMismatchedPemKey, ae);
+                    }
                 }
             }
 
@@ -2289,7 +2296,14 @@ namespace System.Security.Cryptography.X509Certificates
                         throw new CryptographicException();
                     }
 
-                    return certificate.CopyWithPrivateKey(ecdsa);
+                    try
+                    {
+                        return certificate.CopyWithPrivateKey(ecdsa);
+                    }
+                    catch (ArgumentException ae)
+                    {
+                        throw new CryptographicException(SR.Cryptography_X509_NoOrMismatchedPemKey, ae);
+                    }
                 }
             }
 

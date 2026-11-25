@@ -26,7 +26,7 @@ namespace System.IO.Packaging
     /// <summary>
     /// This class provides access to the "core properties", such as Title and
     /// Subject, of an RM-protected XPS package. These properties are a subset of
-    /// of the standard OLE property sets SummaryInformation and
+    /// the standard OLE property sets SummaryInformation and
     /// DocumentSummaryInformation.
     /// </summary>
     public abstract class PackageProperties : IDisposable

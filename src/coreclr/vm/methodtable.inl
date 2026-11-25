@@ -6,7 +6,9 @@
 
 #include "methodtable.h"
 #include "genericdict.h"
+#ifdef FEATURE_MULTITHREADING
 #include "threadstatics.h"
+#endif // FEATURE_MULTITHREADING
 
 //==========================================================================================
 // DO NOT ADD ANY ASSERTS OR ANY OTHER CODE TO THIS METHOD.
@@ -442,11 +444,11 @@ inline MethodDesc* MethodTable::GetMethodDescForSlot_NoThrow(DWORD slot)
 #ifndef DACCESS_COMPILE
 
 //==========================================================================================
-inline void MethodTable::CopySlotFrom(UINT32 slotNumber, MethodDataWrapper &hSourceMTData, MethodTable *pSourceMT)
+inline void MethodTable::CopySlotFrom(UINT32 slotNumber, MethodData *pSourceMTData, MethodTable *pSourceMT)
 {
     WRAPPER_NO_CONTRACT;
 
-    MethodDesc *pMD = hSourceMTData->GetImplMethodDesc(slotNumber);
+    MethodDesc *pMD = pSourceMTData->GetImplMethodDesc(slotNumber);
     _ASSERTE(pMD == pSourceMT->GetMethodDescForSlot_NoThrow(slotNumber));
     SetSlot(slotNumber, pMD->GetInitialEntryPointForCopiedSlot(NULL, NULL));
 }
@@ -1143,6 +1145,7 @@ inline PTR_BYTE MethodTable::GetGCStaticsBasePointer()
     }
 }
 
+#ifdef FEATURE_MULTITHREADING
 #ifndef DACCESS_COMPILE
 //==========================================================================================
 inline PTR_BYTE MethodTable::GetNonGCThreadStaticsBasePointer()
@@ -1201,6 +1204,7 @@ inline PTR_BYTE MethodTable::GetGCThreadStaticsBasePointer(PTR_Thread pThread)
 
     return (PTR_BYTE)GetThreadLocalStaticBaseNoCreate(pThread, tlsIndex);
 }
+#endif // FEATURE_MULTITHREADING
 
 //==========================================================================================
 inline OBJECTREF MethodTable::AllocateNoChecks()

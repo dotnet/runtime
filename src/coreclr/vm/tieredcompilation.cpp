@@ -120,13 +120,7 @@ bool TieredCompilationManager::IsTieringDelayActive()
 
 void TieredCompilationManager::HandleCallCountingForFirstCall(MethodDesc* pMethodDesc)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     _ASSERTE(pMethodDesc != nullptr);
     _ASSERTE(pMethodDesc->IsEligibleForTieredCompilation());
@@ -154,13 +148,13 @@ void TieredCompilationManager::HandleCallCountingForFirstCall(MethodDesc* pMetho
             return;
         }
 
-        NewHolder<SArray<MethodDesc *>> methodsPendingCountingHolder = new SArray<MethodDesc *>();
+        NewHolder<SArray<MethodDesc *>> methodsPendingCountingHolder(new SArray<MethodDesc *>());
         methodsPendingCountingHolder->Preallocate(64);
 
         methodsPendingCountingHolder->Append(pMethodDesc);
         ++m_countOfNewMethodsCalledDuringDelay;
 
-        m_methodsPendingCountingForTier1 = methodsPendingCountingHolder.Extract();
+        m_methodsPendingCountingForTier1 = methodsPendingCountingHolder.Detach();
         _ASSERTE(!m_tier1CallCountingCandidateMethodRecentlyRecorded);
         _ASSERTE(IsTieringDelayActive());
 
@@ -369,13 +363,7 @@ bool TieredCompilationManager::TryScheduleBackgroundWorkerWithoutGCTrigger_Locke
 
 void TieredCompilationManager::CreateBackgroundWorker()
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     _ASSERTE(!IsLockOwnedByCurrentThread());
     _ASSERTE(s_isBackgroundWorkerRunning);
@@ -424,13 +412,7 @@ void TieredCompilationManager::CreateBackgroundWorker()
 
 DWORD WINAPI TieredCompilationManager::BackgroundWorkerBootstrapper0(LPVOID args)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     _ASSERTE(args != nullptr);
     Thread *thread = (Thread *)args;
@@ -471,13 +453,7 @@ void TieredCompilationManager::BackgroundWorkerBootstrapper1(LPVOID)
 
 void TieredCompilationManager::BackgroundWorkerStart()
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     _ASSERTE(s_backgroundWorkAvailableEvent.IsValid());
 
@@ -562,13 +538,7 @@ void TieredCompilationManager::BackgroundWorkerStart()
 
 bool TieredCompilationManager::TryDeactivateTieringDelay()
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     _ASSERTE(GetThread() == s_backgroundWorkerThread);
 
@@ -653,13 +623,7 @@ bool TieredCompilationManager::TryDeactivateTieringDelay()
 
 void TieredCompilationManager::AsyncCompleteCallCounting()
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     {
         LockHolder tieredCompilationLockHolder;
@@ -1037,13 +1001,13 @@ CORJIT_FLAGS TieredCompilationManager::GetJitFlags(PrepareCodeConfig *config)
     {
         case NativeCodeVersion::OptimizationTier0Instrumented:
             _ASSERT(g_pConfig->TieredCompilation_QuickJit());
-            flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR);
+            flags.Set(CORJIT_FLAGS::CORJIT_FLAG_PGO_INSTR);
             flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER0);
             break;
 
         case NativeCodeVersion::OptimizationTier1Instrumented:
             _ASSERT(g_pConfig->TieredCompilation_QuickJit());
-            flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR);
+            flags.Set(CORJIT_FLAGS::CORJIT_FLAG_PGO_INSTR);
             flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER1);
             break;
 
@@ -1057,7 +1021,7 @@ CORJIT_FLAGS TieredCompilationManager::GetJitFlags(PrepareCodeConfig *config)
                     // for cold methods with loops so if those self promote to OSR they need
                     // some profile to optimize, so here we allow JIT to enable instrumentation
                     // if current method has loops and is eligible for OSR.
-                    flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR_IF_LOOPS);
+                    flags.Set(CORJIT_FLAGS::CORJIT_FLAG_PGO_INSTR_IF_LOOPS);
                 }
 #endif
                 flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER0);

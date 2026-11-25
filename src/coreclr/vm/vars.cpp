@@ -168,9 +168,9 @@ GVAL_IMPL_INIT(DWORD, g_externalMethodFixupTraceActiveCount, 0);
 
 #endif // DEBUGGING_SUPPORTED
 
-#if defined(PROFILING_SUPPORTED_DATA) || defined(PROFILING_SUPPPORTED)
+#ifdef PROFILING_SUPPORTED_DATA
 GVAL_IMPL(ProfControlBlock, g_profControlBlock);
-#endif // defined(PROFILING_SUPPORTED_DATA) || defined(PROFILING_SUPPPORTED)
+#endif // PROFILING_SUPPORTED_DATA
 
 #ifndef DACCESS_COMPILE
 
@@ -263,4 +263,3 @@ __GlobalVal< GSCookie > s_gsCookie(&DacGlobals::dac__s_gsCookie);
 #endif //!DACCESS_COMPILE
 
 //==============================================================================
-

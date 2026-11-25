@@ -9,15 +9,17 @@ namespace System.Composition.Runtime.Util
 {
     internal static class Formatters
     {
-        public static string Format(object value) =>
-            value is null ? throw new ArgumentNullException(nameof(value)) :
-            value is string ? $"\"{value}\"" :
-            value.ToString();
+        public static string Format(object value)
+        {
+            ArgumentNullException.ThrowIfNull(value);
+            return value is string ? $"\"{value}\"" : value.ToString();
+        }
 
-        public static string Format(Type type) =>
-            type is null ? throw new ArgumentNullException(nameof(type)) :
-            type.IsConstructedGenericType ? FormatClosedGeneric(type) :
-            type.Name;
+        public static string Format(Type type)
+        {
+            ArgumentNullException.ThrowIfNull(type);
+            return type.IsConstructedGenericType ? FormatClosedGeneric(type) : type.Name;
+        }
 
         private static string FormatClosedGeneric(Type closedGenericType)
         {

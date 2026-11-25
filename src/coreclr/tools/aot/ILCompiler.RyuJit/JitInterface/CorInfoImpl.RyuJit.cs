@@ -417,31 +417,14 @@ namespace Internal.JitInterface
 
                 DefaultInterfaceMethodResolution staticResolution = default;
                 MethodDesc directMethod = canonConstrainedType.GetClosestDefType().TryResolveConstraintMethodApprox(interfaceType, interfaceMethod, out bool forceRuntimeLookup, ref staticResolution);
-                if (directMethod != null && !directMethod.IsCanonicalMethod(CanonicalFormKind.Any))
+                if (directMethod != null && directMethod.IsCanonicalMethod(CanonicalFormKind.Any))
+                {
+                    Debug.Assert(!forceRuntimeLookup);
+                    directMethod = constrainedType.TryGetRuntimeDeterminedConstrainedMethod(directMethod, targetMethod.Instantiation);
+                }
+                if (directMethod != null)
                 {
                     targetMethod = directMethod;
-
-                    // We resolved the constraint
-                    constrainedType = null;
-                }
-                else if (directMethod != null)
-                {
-                    // We resolved on a canonical form. Now find the method on the runtime determined form.
-                    Debug.Assert(directMethod.OwningType.IsValueType || directMethod.Signature.IsStatic);
-                    Debug.Assert(!forceRuntimeLookup);
-
-                    MethodDesc targetOfLookup;
-                    if (constrainedType.IsRuntimeDeterminedType)
-                        targetOfLookup = _compilation.TypeSystemContext.GetMethodForRuntimeDeterminedType(directMethod.GetTypicalMethodDefinition(), (RuntimeDeterminedType)constrainedType);
-                    else if (constrainedType.HasInstantiation)
-                        targetOfLookup = _compilation.TypeSystemContext.GetMethodForInstantiatedType(directMethod.GetTypicalMethodDefinition(), (InstantiatedType)constrainedType);
-                    else
-                        targetOfLookup = directMethod.GetMethodDefinition();
-
-                    if (targetOfLookup.HasInstantiation)
-                        targetOfLookup = targetOfLookup.MakeInstantiatedMethod(targetMethod.Instantiation);
-
-                    targetMethod = targetOfLookup;
 
                     // We resolved the constraint
                     constrainedType = null;
@@ -809,6 +792,8 @@ namespace Internal.JitInterface
                         return _compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelper.InterfaceDispatchGuarded);
                     return _compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelper.InterfaceDispatch);
                 case CorInfoHelpFunc.CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT:
+                    if (_compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.Wasm32)
+                        return _compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelper.ResolveInterfaceMethod);
                     return _compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelper.ResolveInterfaceMethodFast);
 
                 case CorInfoHelpFunc.CORINFO_HELP_GETREFANY:
@@ -1231,6 +1216,7 @@ namespace Internal.JitInterface
             bool targetIsFatFunctionPointer = false;
             bool useFatCallTransform = false;
             DefaultInterfaceMethodResolution staticResolution = default;
+            MethodDesc runtimeDeterminedTarget = null;
 
             MethodDesc methodAfterConstraintResolution = method;
             if (constrainedType == null)
@@ -1257,6 +1243,15 @@ namespace Internal.JitInterface
                 }
 
                 MethodDesc directMethod = constrainedType.GetClosestDefType().TryResolveConstraintMethodApprox(exactType, method, out forceUseRuntimeLookup, ref staticResolution);
+                if (directMethod != null && !forceUseRuntimeLookup && directMethod.IsCanonicalMethod(CanonicalFormKind.Any))
+                {
+                    TypeDesc runtimeConstraint = (TypeDesc)GetRuntimeDeterminedObjectForToken(ref *pConstrainedResolvedToken);
+                    Instantiation methodInstantiation = directMethod.HasInstantiation
+                        ? ((MethodDesc)GetRuntimeDeterminedObjectForToken(ref pResolvedToken)).Instantiation : default;
+                    runtimeDeterminedTarget = runtimeConstraint.TryGetRuntimeDeterminedConstrainedMethod(directMethod, methodInstantiation);
+                    if (runtimeDeterminedTarget == null)
+                        directMethod = null;
+                }
                 if (directMethod != null)
                 {
                     // Either
@@ -1390,37 +1385,19 @@ namespace Internal.JitInterface
                 pResult->codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
                 pResult->nullInstanceCheck = !targetMethod.Signature.IsStatic;
 
-                TypeDesc runtimeDeterminedConstrainedType = (TypeDesc)GetRuntimeDeterminedObjectForToken(ref *pConstrainedResolvedToken);
-
                 object targetOfLookup;
                 ReadyToRunHelperId lookupHelper;
                 if (forceUseRuntimeLookup)
                 {
+                    TypeDesc runtimeDeterminedConstrainedType = (TypeDesc)GetRuntimeDeterminedObjectForToken(ref *pConstrainedResolvedToken);
                     MethodDesc runtimeDeterminedInterfaceMethod = (MethodDesc)GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
                     targetOfLookup = new ConstrainedCallInfo(runtimeDeterminedConstrainedType, runtimeDeterminedInterfaceMethod);
                     lookupHelper = ReadyToRunHelperId.ConstrainedDirectCall;
                 }
                 else
                 {
-                    // We have the canonical version of the method - find the runtime determined version.
-                    // For now simplify it by assuming the resolved method is on the same type as the constraint.
-                    Debug.Assert(targetMethod.OwningType.GetTypeDefinition() == constrainedType.GetTypeDefinition());
-
-                    MethodDesc lookupMethod;
-                    if (runtimeDeterminedConstrainedType.IsRuntimeDeterminedType)
-                        lookupMethod = _compilation.TypeSystemContext.GetMethodForRuntimeDeterminedType(targetMethod.GetTypicalMethodDefinition(), (RuntimeDeterminedType)runtimeDeterminedConstrainedType);
-                    else if (runtimeDeterminedConstrainedType.HasInstantiation)
-                        lookupMethod = _compilation.TypeSystemContext.GetMethodForInstantiatedType(targetMethod.GetTypicalMethodDefinition(), (InstantiatedType)runtimeDeterminedConstrainedType);
-                    else
-                        lookupMethod = targetMethod.GetMethodDefinition();
-                    if (lookupMethod.HasInstantiation)
-                    {
-                        var methodToGetInstantiation = (MethodDesc)GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
-                        lookupMethod = lookupMethod.MakeInstantiatedMethod(methodToGetInstantiation.Instantiation);
-                    }
-                    Debug.Assert(lookupMethod.GetCanonMethodTarget(CanonicalFormKind.Specific) == targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific));
-
-                    targetOfLookup = lookupMethod;
+                    Debug.Assert(runtimeDeterminedTarget != null);
+                    targetOfLookup = runtimeDeterminedTarget;
                     lookupHelper = ReadyToRunHelperId.MethodEntry;
                 }
 
@@ -1603,7 +1580,7 @@ namespace Internal.JitInterface
                     targetOfLookup.GetCanonMethodTarget(CanonicalFormKind.Specific));
 
 
-                if (pResult->exactContextNeedsRuntimeLookup)
+                if (_compilation.NeedsRuntimeLookup(ReadyToRunHelperId.DispatchCell, targetOfLookup))
                 {
                     ComputeLookup(ref pResolvedToken,
                         targetOfLookup,
@@ -1631,10 +1608,14 @@ namespace Internal.JitInterface
                 // move that assert to some place later though.
                 targetIsFatFunctionPointer = true;
             }
-            else if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) == 0
-                && targetMethod.OwningType.IsInterface)
+            else if (targetMethod.OwningType.IsInterface
+                && ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) == 0
+                    || _compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.Wasm32))
             {
-                pResult->kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_STUB;
+                bool isWasm = _compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.Wasm32;
+                pResult->kind = isWasm
+                    ? CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_LDVIRTFTN
+                    : CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_STUB;
 
                 if (pResult->exactContextNeedsRuntimeLookup)
                 {
@@ -1648,7 +1629,8 @@ namespace Internal.JitInterface
                 else
                 {
                     pResult->codePointerOrStubLookup.lookupKind.needsRuntimeLookup = false;
-                    pResult->codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_PVALUE;
+                    pResult->codePointerOrStubLookup.constLookup.accessType =
+                        isWasm ? InfoAccessType.IAT_VALUE : InfoAccessType.IAT_PVALUE;
 #pragma warning disable SA1001, SA1113, SA1115 // Commas should be spaced correctly
                     pResult->codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(
                         _compilation.NodeFactory.DispatchCell(targetMethod
@@ -1659,7 +1641,7 @@ namespace Internal.JitInterface
 #pragma warning restore SA1001, SA1113, SA1115 // Commas should be spaced correctly
                 }
 
-                pResult->nullInstanceCheck = false;
+                pResult->nullInstanceCheck = isWasm;
             }
             else if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) == 0)
             {
@@ -1895,7 +1877,7 @@ namespace Internal.JitInterface
             }
 
             if (_compilation.NeedsSlotUseTracking(owningType))
-                (_additionalDependencies ??= new ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<NodeFactory>.DependencyList()).Add(_compilation.NodeFactory.VirtualMethodUse(methodDesc), "Virtual method call");
+                _additionalDependencies.Add(_compilation.NodeFactory.VirtualMethodUse(methodDesc), "Virtual method call");
 
             offsetAfterIndirection = (uint)(EETypeNode.GetVTableOffset(pointerSize) + slot * pointerSize);
         }
@@ -2031,6 +2013,12 @@ namespace Internal.JitInterface
         {
             get
             {
+                if (_compilation.TypeSystemContext.Target.IsWasm)
+                {
+                    // m_pThread, m_ShadowSP.
+                    return 2 * PointerSize;
+                }
+
                 // struct PInvokeTransitionFrame:
                 //  m_RIP (1)
                 //  m_FramePointer (1)
@@ -2051,12 +2039,6 @@ namespace Internal.JitInterface
 
                 return size;
             }
-        }
-
-#pragma warning disable CA1822 // Mark members as static
-        private void classMustBeLoadedBeforeCodeIsRun(CORINFO_CLASS_STRUCT_* cls)
-#pragma warning restore CA1822 // Mark members as static
-        {
         }
 
         private void setEHcount(uint cEH)
@@ -2418,7 +2400,7 @@ namespace Internal.JitInterface
             {
                 // Only support reading the string data
                 int strDataOffset = _compilation.TypeSystemContext.Target.PointerSize + sizeof(int); // 12 on 64bit
-                if (valueOffset >= strDataOffset && (long)frozenStr.Data.Length * 2 >= (valueOffset - strDataOffset) + bufferSize)
+                if (valueOffset >= strDataOffset && (long)frozenStr.Data.Length * 2 >= (long)(valueOffset - strDataOffset) + bufferSize)
                 {
                     int offset = valueOffset - strDataOffset;
                     fixed (char* pStr = frozenStr.Data)
@@ -2516,6 +2498,12 @@ namespace Internal.JitInterface
 
 #pragma warning disable CA1822 // Mark members as static
         private void recordWasmManagedCallSig(CORINFO_SIG_INFO* callSig)
+#pragma warning restore CA1822 // Mark members as static
+        {
+        }
+
+#pragma warning disable CA1822 // Mark members as static
+        private void recordWasmVirtualFunctionPointerLookup(CORINFO_METHOD_STRUCT_* method)
 #pragma warning restore CA1822 // Mark members as static
         {
         }

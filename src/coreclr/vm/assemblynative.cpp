@@ -530,7 +530,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetForwardedType(QCall::AssemblyHandle 
     END_QCALL;
 }
 
-FCIMPL1(FC_BOOL_RET, AssemblyNative::GetIsDynamic, Assembly* pAssembly)
+FCIMPL1(FC_BOOL_RET, RuntimeAssembly_GetIsDynamic, Assembly* pAssembly)
 {
     CONTRACTL
     {
@@ -765,7 +765,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetModules(QCall::AssemblyHandle pAssem
     END_QCALL;
 }
 
-FCIMPL1(FC_BOOL_RET, AssemblyNative::GetIsCollectible, Assembly* pAssembly)
+FCIMPL1(FC_BOOL_RET, RuntimeAssembly_GetIsCollectible, Assembly* pAssembly)
 {
     CONTRACTL
     {
@@ -1134,6 +1134,20 @@ extern "C" void QCALLTYPE AssemblyNative_GetFullName(QCall::AssemblyHandle pAsse
     END_QCALL;
 }
 
+extern "C" void QCALLTYPE AssemblyNative_GetAssemblyFromHandle(Assembly* pAssembly, QCall::ObjectHandleOnStack retAssembly, QCallExceptionStatus* qcallError)
+{
+    QCALL_CONTRACT;
+
+    _ASSERTE(pAssembly != nullptr);
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+    retAssembly.Set(pAssembly->GetExposedObject());
+
+    END_QCALL;
+}
+
 extern "C" void QCALLTYPE AssemblyNative_GetExecutingAssembly(QCall::StackCrawlMarkHandle stackMark, QCall::ObjectHandleOnStack retAssembly, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
@@ -1330,7 +1344,7 @@ extern "C" BOOL QCALLTYPE AssemblyNative_InternalTryGetRawMetadata(
 }
 
 // static
-FCIMPL0(FC_BOOL_RET, AssemblyNative::IsTracingEnabled)
+FCIMPL0(FC_BOOL_RET, AssemblyLoadContext_IsTracingEnabled)
 {
     FCALL_CONTRACT;
 

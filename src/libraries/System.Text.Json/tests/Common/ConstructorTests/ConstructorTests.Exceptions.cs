@@ -92,8 +92,10 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
-        [Fact]
-        public async Task RandomReferenceMetadataNotSupported()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task NonMetadataPropertyWithLeadingDollarSignIsAccepted(bool allowOutOfOrderMetadata)
         {
             string json = """{"Name":"Jet","$random":10}""";
 
@@ -103,12 +105,14 @@ namespace System.Text.Json.Serialization.Tests
 
             Assert.Equal("Jet", employee.Name);
 
-            // Metadata not supported with preserve ref feature on.
+            var options = new JsonSerializerOptions
+            {
+                ReferenceHandler = ReferenceHandler.Preserve,
+                AllowOutOfOrderMetadataProperties = allowOutOfOrderMetadata
+            };
 
-            var options = new JsonSerializerOptions { ReferenceHandler = ReferenceHandler.Preserve };
-
-            JsonException ex = await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<Employee>(json, options));
-            Assert.Equal("$['$random']", ex.Path);
+            employee = await Serializer.DeserializeWrapper<Employee>(json, options);
+            Assert.Equal("Jet", employee.Name);
         }
 
         [Fact]

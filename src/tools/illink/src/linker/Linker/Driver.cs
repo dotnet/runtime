@@ -290,7 +290,7 @@ namespace Mono.Linker
                             string? assemblyName = GetNextStringValue();
                             if (assemblyName != null)
                             {
-                                if (!IsValidAssemblyName(assemblyName))
+                                if (!LinkContext.IsValidAssemblyName(assemblyName))
                                 {
                                     context.LogError(null, DiagnosticId.InvalidAssemblyName, assemblyName);
                                     return -1;
@@ -385,7 +385,7 @@ namespace Mono.Linker
                                 continue;
                             }
 
-                            if (!IsValidAssemblyName(assemblyName))
+                            if (!LinkContext.IsValidAssemblyName(assemblyName))
                             {
                                 context.LogError(null, DiagnosticId.InvalidAssemblyName, assemblyName);
                                 return -1;
@@ -686,7 +686,7 @@ namespace Mono.Linker
                             string? assemblyName = GetNextStringValue();
                             if (assemblyName != null)
                             {
-                                if (!IsValidAssemblyName(assemblyName))
+                                if (!LinkContext.IsValidAssemblyName(assemblyName))
                                 {
                                     context.LogError(null, DiagnosticId.InvalidAssemblyName, assemblyName);
                                     return -1;
@@ -708,7 +708,7 @@ namespace Mono.Linker
                             string? assemblyName = GetNextStringValue();
                             if (assemblyName != null)
                             {
-                                if (!IsValidAssemblyName(assemblyName))
+                                if (!LinkContext.IsValidAssemblyName(assemblyName))
                                 {
                                     context.LogError(null, DiagnosticId.InvalidAssemblyName, assemblyName);
                                     return -1;
@@ -1491,11 +1491,6 @@ namespace Mono.Linker
             return new List<BaseStep>();
         }
 #endif
-
-        static bool IsValidAssemblyName(string value)
-        {
-            return !string.IsNullOrEmpty(value);
-        }
 
         static void Usage()
         {

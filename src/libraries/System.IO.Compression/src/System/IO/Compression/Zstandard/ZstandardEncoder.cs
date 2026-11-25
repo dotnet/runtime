@@ -11,7 +11,6 @@ namespace System.IO.Compression
 {
     /// <summary>Provides methods and properties to compress data using Zstandard compression.</summary>
     [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
-    [System.Runtime.Versioning.UnsupportedOSPlatform("wasi")]
     public sealed class ZstandardEncoder : IDisposable
     {
         internal SafeZstdCompressHandle _context;
@@ -193,7 +192,11 @@ namespace System.IO.Compression
         [MemberNotNull(nameof(_context))]
         private void InitializeEncoder()
         {
-            _context = Interop.Zstd.ZSTD_createCCtx();
+            // SAFETY: To be audited
+            unsafe
+            {
+                _context = Interop.Zstd.ZSTD_createCCtx();
+            }
             if (_context.IsInvalid)
             {
                 throw new OutOfMemoryException();
@@ -245,6 +248,7 @@ namespace System.IO.Compression
             bytesConsumed = 0;
             bytesWritten = 0;
 
+            // SAFETY: To be audited
             unsafe
             {
                 fixed (byte* inBytes = &MemoryMarshal.GetReference(source))
@@ -302,7 +306,12 @@ namespace System.IO.Compression
             ArgumentOutOfRangeException.ThrowIfNegative(inputLength);
             ArgumentOutOfRangeException.ThrowIfGreaterThan(inputLength, nint.MaxValue);
 
-            nuint result = Interop.Zstd.ZSTD_compressBound((nuint)inputLength);
+            nuint result;
+            // SAFETY: To be audited
+            unsafe
+            {
+                result = Interop.Zstd.ZSTD_compressBound((nuint)inputLength);
+            }
             if (ZstandardUtils.IsError(result))
             {
                 throw new ArgumentOutOfRangeException(nameof(inputLength));
@@ -358,7 +367,7 @@ namespace System.IO.Compression
         {
             bytesWritten = 0;
 
-            using SafeZstdCompressHandle ctx = Interop.Zstd.ZSTD_createCCtx();
+            using SafeZstdCompressHandle ctx = /* SAFETY: To be audited */ unsafe(Interop.Zstd.ZSTD_createCCtx());
             if (ctx.IsInvalid)
             {
                 throw new OutOfMemoryException();
@@ -378,6 +387,7 @@ namespace System.IO.Compression
                 SetWindowLog(ctx, windowLog2);
             }
 
+            // SAFETY: To be audited
             unsafe
             {
                 fixed (byte* inBytes = &MemoryMarshal.GetReference(source))
@@ -397,6 +407,7 @@ namespace System.IO.Compression
         }
 
         /// <summary>Resets the encoder session, allowing reuse for the next compression operation.</summary>
+        /// <remarks>Clears any prefix and restores the dictionary supplied when the encoder was constructed.</remarks>
         /// <exception cref="ObjectDisposedException">The encoder has been disposed.</exception>
         /// <exception cref="IOException">Failed to reset the encoder session.</exception>
         public void Reset()
@@ -409,7 +420,9 @@ namespace System.IO.Compression
 
         /// <summary>References a prefix for the next compression operation.</summary>
         /// <remarks>
-        /// The prefix will be used only for the next compression frame and will be removed when <see cref="Reset"/> is called. The referenced data must remain valid and unmodified for the duration of the compression operation.
+        /// The prefix will be used only for the next compression frame and will be removed when <see cref="Reset"/> is called.
+        /// The prefix replaces any dictionary supplied when the encoder was constructed until <see cref="Reset"/> restores that dictionary.
+        /// The referenced data must remain valid and unmodified for the duration of the compression operation.
         /// When compressing with a prefix larger than ~32 MB at high quality levels, set <see cref="ZstandardCompressionOptions.HashLog2"/> so the entire prefix is indexed.
         /// </remarks>
         /// <exception cref="ObjectDisposedException">The encoder has been disposed.</exception>
@@ -451,9 +464,13 @@ namespace System.IO.Compression
                 throw new InvalidOperationException(SR.ZstandardEncoderDecoder_InvalidState);
             }
 
-            if (ZstandardUtils.IsError(Interop.Zstd.ZSTD_CCtx_setPledgedSrcSize(_context, (ulong)length), out var error))
+            // SAFETY: To be audited
+            unsafe
             {
-                ZstandardUtils.Throw(error);
+                if (ZstandardUtils.IsError(Interop.Zstd.ZSTD_CCtx_setPledgedSrcSize(_context, (ulong)length), out var error))
+                {
+                    ZstandardUtils.Throw(error);
+                }
             }
         }
 
@@ -503,7 +520,12 @@ namespace System.IO.Compression
         {
             Debug.Assert(handle != null);
 
-            nuint result = Interop.Zstd.ZSTD_CCtx_setParameter(handle, parameter, value);
+            nuint result;
+            // SAFETY: To be audited
+            unsafe
+            {
+                result = Interop.Zstd.ZSTD_CCtx_setParameter(handle, parameter, value);
+            }
             ZstandardUtils.ThrowIfError(result);
         }
     }

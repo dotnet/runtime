@@ -146,7 +146,9 @@ typedef void(*ADCallBackFcnType)(LPVOID);
 #include "eventpipeadaptertypes.h"
 #endif // FEATURE_PERFTRACING
 
+#ifdef FEATURE_MULTITHREADING
 #include "threadstatics.h"
+#endif // FEATURE_MULTITHREADING
 
 class Module;
 
@@ -303,8 +305,10 @@ enum SetupUnstartedThreadFlags
     // The default flags for the majority of threads.
     SUTF_Default = SUTF_None,
 };
+#ifdef FEATURE_MULTITHREADING
 Thread* SetupUnstartedThread(SetupUnstartedThreadFlags flags = SUTF_Default);
 void    DestroyThread(Thread *th);
+#endif // FEATURE_MULTITHREADING
 
 DWORD GetRuntimeId();
 
@@ -654,8 +658,7 @@ public:
         TSNC_TSLTakenForStartup         = 0x10000000, // The ThreadStoreLock (TSL) is held by another mechanism during
                                                       // thread startup so can be skipped.
 
-        TSNC_CallingManagedCodeDisabled = 0x20000000, // Use by multicore JIT feature to asert on calling managed code/loading module in background thread
-                                                      // Exception, system module is allowed, security demand is allowed
+        // unused                       = 0x20000000,
 
         TSNC_LoadsTypeViolation         = 0x40000000, // Use by type loader to break deadlocks caused by type load level ordering violations
 
@@ -1102,6 +1105,7 @@ public:
     void InitThread();
     BOOL AllocHandles();
 
+#ifdef FEATURE_MULTITHREADING
     //--------------------------------------------------------------
     // If the thread was setup through SetupUnstartedThread, rather
     // than SetupThread, complete the setup here when the thread is
@@ -1114,6 +1118,7 @@ public:
     // you must ::ResumeThread to kick it off.  It is guaranteed to create the
     // thread, or throw.
     BOOL CreateNewThread(SIZE_T stackSize, LPTHREAD_START_ROUTINE start, void *args, LPCWSTR pName=NULL);
+#endif // FEATURE_MULTITHREADING
 
     // Functions used to perform initialization and cleanup on a managed thread
     // that would normally occur if the thread was stated when the runtime was
@@ -1122,6 +1127,7 @@ public:
     static void InitializationForManagedThreadInNative(_In_ Thread* pThread);
     static void CleanUpForManagedThreadInNative(_In_ Thread* pThread);
 
+#ifdef FEATURE_MULTITHREADING
     enum StackSizeBucket
     {
         StackSize_Small,
@@ -1134,6 +1140,7 @@ public:
     // StackSizeBucket determines how large the stack should be.
     //
     static HANDLE CreateUtilityThread(StackSizeBucket stackSizeBucket, LPTHREAD_START_ROUTINE start, void *args, LPCWSTR pName, DWORD flags = 0, DWORD* pThreadId = NULL);
+#endif // FEATURE_MULTITHREADING
 
     //--------------------------------------------------------------
     // Destructor
@@ -1618,9 +1625,11 @@ public:
         return (ObjectFromHandle(m_ExposedObject) != NULL) ;
     }
 
+#ifdef FEATURE_MULTITHREADING
     // When we create a managed thread, the thread is suspended.  We call StartThread to get
     // the thread start.
     DWORD StartThread();
+#endif // FEATURE_MULTITHREADING
 
     // The result of attempting to OS-suspend an EE thread.
     enum SuspendThreadResult
@@ -1685,10 +1694,12 @@ public:
 
 #endif  // DISABLE_THREADSUSPEND
 
+#ifdef FEATURE_MULTITHREADING
     int GetThreadPriority();
     BOOL SetThreadPriority(
         int nPriority   // thread priority level
     );
+#endif // FEATURE_MULTITHREADING
 
     BOOL GetThreadContext(
         LPCONTEXT lpContext   // context structure
@@ -1794,7 +1805,26 @@ private:
     static void  LockAbortRequest(Thread *pThread);
     static void  UnlockAbortRequest(Thread *pThread);
 
-    typedef Holder<Thread*, Thread::LockAbortRequest, Thread::UnlockAbortRequest> AbortRequestLockHolder;
+    struct AbortRequestLockHolderTraits final
+    {
+        using Type = Thread*;
+        static constexpr Type Default() { return NULL; }
+        static void Free(Type value) noexcept
+        {
+            LIMITED_METHOD_CONTRACT;
+            if (value != NULL)
+                Thread::UnlockAbortRequest(value);
+        }
+    };
+
+    using AbortRequestLockHolder = LifetimeHolder<AbortRequestLockHolderTraits>;
+
+    AbortRequestLockHolder TakeAbortRequestLock()
+    {
+        WRAPPER_NO_CONTRACT;
+        LockAbortRequest(this);
+        return AbortRequestLockHolder(this);
+    }
 
     static void AcquireAbortControl(Thread *pThread)
     {
@@ -1809,7 +1839,26 @@ private:
         InterlockedDecrement (&pThread->m_AbortController);
     }
 
-    typedef Holder<Thread*, Thread::AcquireAbortControl, Thread::ReleaseAbortControl> AbortControlHolder;
+    struct AbortControlHolderTraits final
+    {
+        using Type = Thread*;
+        static constexpr Type Default() { return NULL; }
+        static void Free(Type value) noexcept
+        {
+            LIMITED_METHOD_CONTRACT;
+            if (value != NULL)
+                Thread::ReleaseAbortControl(value);
+        }
+    };
+
+    using AbortControlHolder = LifetimeHolder<AbortControlHolderTraits>;
+
+    AbortControlHolder TakeAbortControl()
+    {
+        LIMITED_METHOD_CONTRACT;
+        AcquireAbortControl(this);
+        return AbortControlHolder(this);
+    }
 
 public:
 #ifdef _DEBUG
@@ -2195,6 +2244,8 @@ public:
     #define SKIP_GSCOOKIE_CHECK 0x10000
 
     #define UNWIND_FLOATS 0x20000
+
+    #define GC_ROOT_SCAN 0x40000
 
     StackWalkAction StackWalkFramesEx(
                         PREGDISPLAY pRD,        // virtual register set at crawl start
@@ -2655,7 +2706,9 @@ private:
     HANDLE          m_ThreadHandleForResume;
     SIZE_T          m_OSThreadId;
 
+#ifdef FEATURE_MULTITHREADING
     BOOL CreateNewOSThread(SIZE_T stackSize, LPTHREAD_START_ROUTINE start, void *args);
+#endif // FEATURE_MULTITHREADING
 
     OBJECTHANDLE    m_ExposedObject;
     OBJECTHANDLE    m_StrongHndToExposedObject;
@@ -2956,6 +3009,7 @@ public:
 #endif // PROFILING_SUPPORTED || PROFILING_SUPPORTED_DATA
     }
 
+private:
     //-------------------------------------------------------------------------
     // The hijack lock enforces that a thread on which a profiler is currently
     // performing a stack walk cannot be hijacked.
@@ -2980,7 +3034,32 @@ public:
         pThread->m_hijackLock = FALSE;
     }
 
-    typedef ConditionalStateHolder<Thread *, Thread::EnterHijackLock, Thread::LeaveHijackLock> HijackLockHolder;
+    struct HijackLockHolderTraits final
+    {
+        using Type = Thread*;
+        static constexpr Type Default() { return NULL; }
+        static void Free(Type value) noexcept
+        {
+            LIMITED_METHOD_CONTRACT;
+            if (value != NULL)
+                Thread::LeaveHijackLock(value);
+        }
+    };
+
+public:
+    using HijackLockHolder = LifetimeHolder<HijackLockHolderTraits>;
+
+    bool TryAcquireHijackLock(HijackLockHolder& holder)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        _ASSERTE(!holder);
+        if (!EnterHijackLock(this))
+            return false;
+
+        holder = this;
+        return true;
+    }
     //-------------------------------------------------------------------------
 
     void PrepareForEERestart(BOOL SuspendSucceeded)
@@ -2996,8 +3075,10 @@ public:
 #endif // FEATURE_HIJACK
     }
 
+#ifdef FEATURE_MULTITHREADING
     static LPVOID GetStaticFieldAddress(FieldDesc *pFD);
     TADDR GetStaticFieldAddrNoCreate(FieldDesc *pFD);
+#endif // FEATURE_MULTITHREADING
 
 private:
     // Don't allow a thread to be asynchronously stopped or interrupted (e.g. because
@@ -3179,11 +3260,13 @@ public:
     }
 #endif //DACCESS_COMPILE
 
+#ifdef FEATURE_MULTITHREADING
     PTR_ThreadLocalData m_ThreadLocalDataPtr;
     int32_t cLoaderHandles = 0;
     PTR_LOADERHANDLE pLoaderHandles = 0;
     SpinLock m_TlsSpinLock;
     PTR_ThreadLocalData GetThreadLocalDataPtr() { LIMITED_METHOD_DAC_CONTRACT; return m_ThreadLocalDataPtr; }
+#endif // FEATURE_MULTITHREADING
 
 private:
     TailCallTls m_tailCallTls;
@@ -3241,7 +3324,6 @@ public:
     void EnumMemoryRegionsWorker(CLRDataEnumMemoryFlags flags);
 #endif
 
-public:
 #ifdef _DEBUG
 // when the thread is doing a stressing GC, some Crst violation could be ignored, by a non-elegant solution.
 private:
@@ -3359,6 +3441,7 @@ public:
     }
 #endif // _DEBUG
 
+#ifdef FEATURE_MULTITHREADING
 private:
     // If HasStarted fails, we cache the exception here, and rethrow on the thread which
     // calls Thread.Start.
@@ -3366,6 +3449,7 @@ private:
 
 public:
     OBJECTREF GetExceptionDuringStartup();
+#endif // FEATURE_MULTITHREADING
 
 #ifdef HAVE_GCCOVER
 private:
@@ -3460,26 +3544,6 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
         return m_debuggerActivePatchSkipper.Load() != NULL;
     }
-
-private:
-
-    static BOOL EnterWorkingOnThreadContext(Thread *pThread)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        if(pThread->m_debuggerActivePatchSkipper.Load() != NULL)
-        {
-            return FALSE;
-        }
-        return TRUE;
-    }
-
-    static void LeaveWorkingOnThreadContext(Thread *pThread)
-    {
-        LIMITED_METHOD_CONTRACT;
-    }
-
-    typedef ConditionalStateHolder<Thread *, Thread::EnterWorkingOnThreadContext, Thread::LeaveWorkingOnThreadContext> WorkingOnThreadContextHolder;
 
 private:
     BOOL m_fAllowProfilerCallbacks;
@@ -3791,7 +3855,9 @@ struct cdac_data<Thread>
     static constexpr size_t LastThrownObject = offsetof(Thread, m_LastThrownObjectHandle);
     static constexpr size_t LastThrownObjectIsUnhandled = offsetof(Thread, m_ltoIsUnhandled);
     static constexpr size_t Link = offsetof(Thread, m_pNext);
+#ifdef FEATURE_MULTITHREADING
     static constexpr size_t ThreadLocalDataPtr = offsetof(Thread, m_ThreadLocalDataPtr);
+#endif // FEATURE_MULTITHREADING
     static constexpr size_t CurrentCustomDebuggerNotification = offsetof(Thread, m_hCurrNotification);
 
     static_assert(std::is_same<decltype(std::declval<Thread>().m_ExceptionState), ThreadExceptionState>::value,
@@ -3865,6 +3931,7 @@ public:
     // Before using the thread list, be sure to take the critical section.  Otherwise
     // it can change underneath you, perhaps leading to an exception after Remove.
     // Prev==NULL to get the first entry in the list.
+    static Thread *GetAllThreadList(Thread *Prev);
     static Thread *GetAllThreadList(Thread *Prev, ULONG mask, ULONG bits);
     static Thread *GetThreadList(Thread *Prev);
 
@@ -3910,11 +3977,14 @@ private:
     // Critical section for adding and removing threads to the store
     Crst        m_Crst;
 
-    // List of all the threads known to the ThreadStore (started & unstarted).
+    // Native threads known to the ThreadStore.
+#ifdef FEATURE_MULTITHREADING
     ThreadList  m_ThreadList;
+#else
+    PTR_Thread  m_pThread;
+#endif // FEATURE_MULTITHREADING
 
-    // m_ThreadCount is the count of all threads in m_ThreadList.  This includes
-    // background threads / unstarted threads / whatever.
+    // m_ThreadCount includes background and unstarted native threads in multithreaded builds.
     //
     // m_UnstartedThreadCount is the subset of m_ThreadCount that have not yet been
     // started.
@@ -4066,7 +4136,11 @@ public:
 template<>
 struct cdac_data<ThreadStore>
 {
+#ifdef FEATURE_MULTITHREADING
     static constexpr size_t FirstThreadLink = offsetof(ThreadStore, m_ThreadList) + offsetof(ThreadList, m_pHead);
+#else
+    static constexpr size_t FirstThreadLink = offsetof(ThreadStore, m_pThread);
+#endif // FEATURE_MULTITHREADING
     static constexpr size_t ThreadCount = offsetof(ThreadStore, m_ThreadCount);
     static constexpr size_t UnstartedCount = offsetof(ThreadStore, m_UnstartedThreadCount);
     static constexpr size_t BackgroundCount = offsetof(ThreadStore, m_BackgroundThreadCount);
@@ -5371,78 +5445,6 @@ public:
 private:
     BOOL m_fNeed;
     DWORD m_state;
-};
-
-// Sets an NC threadstate if not already set, and restores the old state
-// of that bit upon destruction
-
-// fNeed > 0,   make sure state is set, restored in destructor
-// fNeed = 0,   no change
-// fNeed < 0,   make sure state is reset, restored in destructor
-
-class ThreadStateNCStackHolder
-{
-    public:
-    ThreadStateNCStackHolder (BOOL fNeed, Thread::ThreadStateNoConcurrency state)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        _ASSERTE (GetThreadNULLOk());
-        m_fNeed = fNeed;
-        m_state = state;
-
-        if (fNeed)
-        {
-            Thread *pThread = GetThread();
-            if (fNeed < 0)
-            {
-                // if the state is set, reset it
-                if (pThread->HasThreadStateNC(state))
-                {
-                    pThread->ResetThreadStateNC(m_state);
-                }
-                else
-                {
-                    m_fNeed = FALSE;
-                }
-            }
-            else
-            {
-                // if the state is already set then no change is
-                // necessary during the back out
-                if(pThread->HasThreadStateNC(state))
-                {
-                    m_fNeed = FALSE;
-                }
-                else
-                {
-                    pThread->SetThreadStateNC(state);
-                }
-            }
-        }
-    }
-
-    ~ThreadStateNCStackHolder()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        if (m_fNeed)
-        {
-            Thread *pThread = GetThread();
-            if (m_fNeed < 0)
-            {
-                pThread->SetThreadStateNC(m_state); // set it
-            }
-            else
-            {
-                pThread->ResetThreadStateNC(m_state);
-            }
-        }
-    }
-
-private:
-    BOOL m_fNeed;
-    Thread::ThreadStateNoConcurrency m_state;
 };
 
 BOOL Debug_IsLockedViaThreadSuspension();

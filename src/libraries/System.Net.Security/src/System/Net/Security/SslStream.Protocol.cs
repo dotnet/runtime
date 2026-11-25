@@ -1372,7 +1372,11 @@ namespace System.Net.Security
                 // which may access properties like SslProtocol or CipherAlgorithm.
                 // During inline cert validation the handshake hasn't completed yet, so
                 // connectionInfo may not have been set by ProcessHandshakeSuccess.
-                if (connectionInfo.Protocol == 0 && securityContext is not null)
+                // Android 8.1's Conscrypt dereferences a null current cipher during this
+                // phase of the handshake. Defer its connection info query until handshake
+                // completion; earlier and later Android versions do not have this bug.
+                if (connectionInfo.Protocol == 0 && securityContext is not null &&
+                    (!OperatingSystem.IsAndroidVersionAtLeast(27) || OperatingSystem.IsAndroidVersionAtLeast(28)))
                 {
                     SslStreamPal.QueryContextConnectionInfo(securityContext, ref connectionInfo);
                 }

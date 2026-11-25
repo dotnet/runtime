@@ -995,7 +995,8 @@ public:
     void EmitJMP        (int token);
     void EmitLDARG      (unsigned uArgIdx);
     void EmitLDARGA     (unsigned uArgIdx);
-    void EmitLDC        (DWORD_PTR uConst);
+    void EmitLDC_I4     (INT32 iConst);
+    void EmitLDC_I      (UINT_PTR uConst);
     void EmitLDC_R4     (float fConst);
     void EmitLDC_R8     (double dConst);
     void EmitLDELEMA    (int token);
@@ -1067,7 +1068,6 @@ public:
     void EmitLabel(ILCodeLabel* pLabel);
     void EmitLoadThis ();
     void EmitLoadSecretStubArgument();
-    void EmitLoadNullPtr();
 
     ILCodeLabel* NewCodeLabel();
 
