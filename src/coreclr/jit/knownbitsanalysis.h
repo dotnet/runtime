@@ -64,6 +64,7 @@ public:
 
     RelopEvaluationResult EvalRelop(GenTreeOp* relop, ASSERT_VALARG_TP assertions);
     bool                  IsInRange(GenTree* tree, int64_t lo, int64_t hi, ASSERT_VALARG_TP assertions);
+    bool                  IsAlwaysLessUnsigned(GenTree* op1, GenTree* op2, ASSERT_VALARG_TP assertions);
     bool                  NeverOverflows(GenTreeOp* tree, ASSERT_VALARG_TP assertions);
     void GetRangeProperties(GenTree* tree, ASSERT_VALARG_TP assertions, bool* isKnownNonZero, bool* isKnownNonNegative);
     KnownBits ComputeKnownBits(GenTree* tree, ASSERT_VALARG_TP assertions);

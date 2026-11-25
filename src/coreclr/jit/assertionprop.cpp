@@ -5994,6 +5994,11 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions,
         }
     }
 
+    if (KnownBitsAnalysis(this).IsAlwaysLessUnsigned(arrBndsChkIdx, arrBndsChkLen, assertions))
+    {
+        return dropBoundsCheck(INDEBUG("known bits: idx u< len"));
+    }
+
     return nullptr;
 }
 

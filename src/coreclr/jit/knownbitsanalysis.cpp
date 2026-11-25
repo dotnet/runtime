@@ -347,6 +347,21 @@ bool KnownBitsAnalysis::IsInRange(GenTree* tree, int64_t lo, int64_t hi, ASSERT_
 }
 
 //------------------------------------------------------------------------
+// IsAlwaysLessUnsigned: Check if "op1 u< op2" holds for all the values of the operands.
+//
+// Arguments:
+//    op1, op2   - the operands, of the same TYP_INT or TYP_LONG type
+//    assertions - the assertions that hold for the operands, can be uninit
+//
+bool KnownBitsAnalysis::IsAlwaysLessUnsigned(GenTree* op1, GenTree* op2, ASSERT_VALARG_TP assertions)
+{
+    Bounds b1{KnownBits(1)};
+    Bounds b2{KnownBits(1)};
+    return (GetWidth(op1->TypeGet()) == GetWidth(op2->TypeGet())) && ComputeBounds(op1, assertions, &b1) &&
+           ComputeBounds(op2, assertions, &b2) && b1.UMax.ult(b2.UMin);
+}
+
+//------------------------------------------------------------------------
 // GetRangeProperties: Check if the value of a tree is known to be non-zero or non-negative.
 //
 // Arguments:
@@ -570,6 +585,10 @@ KnownBits KnownBitsAnalysis::Compute(ValueNum vn, unsigned width, ASSERT_VALARG_
         bounds.SMin = APInt::smax(bounds.SMin, funcBounds.SMin);
         bounds.SMax = APInt::smin(bounds.SMax, funcBounds.SMax);
         bounds.Normalize();
+        if (bounds.UMin.ule(bounds.UMax))
+        {
+            known = known.unionWith(KnownBitsRange::toKnownBits(bounds.UMin, bounds.UMax));
+        }
     }
     MergeAssertions(vn, width, assertions, &known, &bounds);
 
@@ -677,6 +696,13 @@ KnownBits KnownBitsAnalysis::ComputeForFunc(const VNFuncApp& funcApp,
 
     switch (func)
     {
+        case VNF_ARR_LENGTH:
+        case VNF_MDARR_LENGTH:
+            pBounds->UMin = pBounds->SMin = APInt(width, 0);
+            pBounds->UMax = pBounds->SMax = APInt(width, CORINFO_Array_MaxLength);
+            known.Zero.setBitsFrom(31);
+            return known;
+
         case VNF_AND:
         case VNF_OR:
         case VNF_XOR:
@@ -702,12 +728,32 @@ KnownBits KnownBitsAnalysis::ComputeForFunc(const VNFuncApp& funcApp,
         case VNF_ADD:
         case VNF_SUB:
         {
-            // Nothing is known about the result if nothing is known about one of the operands.
-            KnownBits op1 = Compute(funcApp.GetArg(0), width, assertions);
+            const bool isAdd = func == VNF_ADD;
+            Bounds     b1{KnownBits(width)};
+            Bounds     b2{KnownBits(width)};
+            KnownBits  op1 = Compute(funcApp.GetArg(0), width, assertions, &b1);
+            KnownBits  op2 = Compute(funcApp.GetArg(1), width, assertions, &b2);
+
+            // Signed/unsigned bounds hold if the corresponding extremes don't overflow.
+            bool        ovf1, ovf2;
+            const APInt sLo = isAdd ? b1.SMin.sadd_ov(b2.SMin, ovf1) : b1.SMin.ssub_ov(b2.SMax, ovf1);
+            const APInt sHi = isAdd ? b1.SMax.sadd_ov(b2.SMax, ovf2) : b1.SMax.ssub_ov(b2.SMin, ovf2);
+            if (!ovf1 && !ovf2)
+            {
+                pBounds->SMin = sLo;
+                pBounds->SMax = sHi;
+            }
+            const APInt uLo = isAdd ? b1.UMin.uadd_ov(b2.UMin, ovf1) : b1.UMin.usub_ov(b2.UMax, ovf1);
+            const APInt uHi = isAdd ? b1.UMax.uadd_ov(b2.UMax, ovf2) : b1.UMax.usub_ov(b2.UMin, ovf2);
+            if (!ovf1 && !ovf2)
+            {
+                pBounds->UMin = uLo;
+                pBounds->UMax = uHi;
+            }
+
             if (!op1.isUnknown())
             {
-                KnownBits op2 = Compute(funcApp.GetArg(1), width, assertions);
-                return KnownBits::computeForAddSub(func == VNF_ADD, /* NSW */ false, /* NUW */ false, op1, op2);
+                return KnownBits::computeForAddSub(isAdd, /* NSW */ false, /* NUW */ false, op1, op2);
             }
             break;
         }
