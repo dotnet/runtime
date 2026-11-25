@@ -783,7 +783,12 @@ bool Compiler::optRedundantDominatingBranch(BasicBlock* const block)
         return false;
     }
 
-    if (block->hasSideEffects())
+    // Block and the blocks along the paths to and from it may now execute
+    // where the dominating branch previously bypassed them. Besides having no
+    // side effects, these blocks must not depend on the dominating branch
+    // (ordering side effects), e.g. a load made non-faulting by a null check.
+    //
+    if (!block->isSafeToSpeculate())
     {
         return false;
     }
@@ -836,7 +841,7 @@ bool Compiler::optRedundantDominatingBranch(BasicBlock* const block)
     auto skipSideEffectFreeBlocks = [=](BasicBlock* b) {
         BitVecTraits traits(fgBBNumMax + 1, this);
         BitVec       visitedBlocks = BitVecOps::MakeEmpty(&traits);
-        while (!b->hasSideEffects() && b->KindIs(BBJ_ALWAYS))
+        while (b->isSafeToSpeculate() && b->KindIs(BBJ_ALWAYS))
         {
             b = b->GetUniqueSucc();
 
@@ -893,7 +898,7 @@ bool Compiler::optRedundantDominatingBranch(BasicBlock* const block)
                 break;
             }
 
-            if (domBlockProbe->hasSideEffects())
+            if (!domBlockProbe->isSafeToSpeculate())
             {
                 domBlockProbe = nullptr;
                 break;
@@ -1154,7 +1159,7 @@ bool Compiler::optRedundantDominatingBranch(BasicBlock* const block)
         //
         if (!domMayHaveSideEffects)
         {
-            domMayHaveSideEffects = domBlockProbe->hasSideEffects();
+            domMayHaveSideEffects = !domBlockProbe->isSafeToSpeculate();
         }
 
         if (domMayHaveSideEffects)
