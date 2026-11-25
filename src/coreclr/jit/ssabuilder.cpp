@@ -33,7 +33,8 @@ PhaseStatus Compiler::fgSsaBuild()
 // fgResetForSsa: remove SSA artifacts
 //
 // Arguments:
-//   deepClean - if true, remove all SSA artifacts
+//   deepClean - if true, remove all SSA artifacts, along with value numbers
+//               (which are derived from SSA)
 //               if false, just remove PHIs
 //
 // Notes:
@@ -59,6 +60,12 @@ void Compiler::fgResetForSsa(bool deepClean)
         {
             m_outlinedCompositeSsaNums->Reset();
         }
+
+        vnStore                    = nullptr;
+        fgVNPassesCompleted        = 0;
+        m_blockToEHPreds           = nullptr;
+        m_dominancePreds           = nullptr;
+        m_nodeToLoopMemoryBlockMap = nullptr;
     }
 
     for (BasicBlock* const blk : Blocks())
@@ -88,6 +95,8 @@ void Compiler::fgResetForSsa(bool deepClean)
                     {
                         tree->AsLclVarCommon()->SetSsaNum(SsaConfig::RESERVED_SSA_NUM);
                     }
+
+                    tree->ClearVN();
                 }
             }
         }

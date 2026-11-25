@@ -12,6 +12,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 #include "jitpch.h"
 #include "rangecheck.h"
+#include "knownbitsanalysis.h"
 #ifdef _MSC_VER
 #pragma hdrstop
 #endif
@@ -838,6 +839,7 @@ void Compiler::optAssertionTraitsInit(AssertionIndex assertionCount)
 void Compiler::optAssertionInit(bool isLocalProp)
 {
     assert(NO_ASSERTION_INDEX == 0);
+    optKnownBitsPhiCache            = nullptr;
     const unsigned maxTrackedLocals = (unsigned)JitConfig.JitMaxLocalsToTrack();
 
     // We initialize differently for local prop / global prop
@@ -1918,9 +1920,32 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
     ValueNum op1VN     = relopFuncApp.GetArg(0);
     ValueNum op2VN     = relopFuncApp.GetArg(1);
 
-    if ((genActualType(vnStore->TypeOfVN(op1VN)) != TYP_INT) || (genActualType(vnStore->TypeOfVN(op2VN)) != TYP_INT))
+    const var_types op1Type = genActualType(vnStore->TypeOfVN(op1VN));
+    const var_types op2Type = genActualType(vnStore->TypeOfVN(op2VN));
+    if ((op1Type == TYP_LONG) && (op2Type == TYP_LONG) && !isEqualityRelop)
     {
-        // For now, we don't have consumers for assertions derived from non-int32 comparisons
+        // 64-bit comparisons: we only create "X relop CNS" assertions for these, they are used
+        // to compute the known bits (and the ranges, if they fit into 32 bits) of 64-bit values.
+        ssize_t cns;
+        if (vnStore->IsVNIntegralConstant(op1VN, &cns))
+        {
+            std::swap(op1VN, op2VN);
+            relopFunc = ValueNumStore::SwapRelop(relopFunc);
+        }
+
+        if (vnStore->IsVNIntegralConstant(op2VN, &cns) && (!isUnsignedRelop || (cns > 0)))
+        {
+            AssertionDsc   dsc = AssertionDsc::CreateConstantBound(this, relopFunc, op1VN, op2VN);
+            AssertionIndex idx = optAddAssertion(dsc);
+            optCreateComplementaryAssertion(idx);
+            return idx;
+        }
+        return NO_ASSERTION_INDEX;
+    }
+
+    if ((op1Type != TYP_INT) || (op2Type != TYP_INT))
+    {
+        // For now, we don't have consumers for assertions derived from other comparisons
         return NO_ASSERTION_INDEX;
     }
 
@@ -4849,6 +4874,21 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
         }
     }
 
+    // See if the known bits of "op1" tell us the result of comparing it with a constant.
+    // This is a hot path, so don't call into the analysis for the relops it can't handle
+    // anyway (e.g. checks for null or for a handle).
+    if (op2->IsIntegralConst() && !op2->IsIconHandle() && varTypeIsIntegral(op1))
+    {
+        const RelopEvaluationResult result = KnownBitsAnalysis(this).EvalRelop(tree->AsOp(), assertions);
+        if (result != RelopEvaluationResult::Unknown)
+        {
+            JITDUMP("Folding relop [%06u] based on known bits.\n", dspTreeID(tree));
+            newTree = gtWrapWithSideEffects((result == RelopEvaluationResult::True) ? gtNewTrue() : gtNewFalse(), tree,
+                                            GTF_ALL_EFFECT);
+            return optAssertionProp_Update(newTree, tree, stmt);
+        }
+    }
+
     // The rest is for EQ/NE only.
     if (!tree->OperIs(GT_EQ, GT_NE))
     {
@@ -6869,6 +6909,9 @@ PhaseStatus Compiler::optAssertionPropMain()
     // All assertions are created, size the bit vectors accordingly.
     optAssertionTraitsInit(max(optAssertionCount, (AssertionIndex)1));
 
+    Metrics.GlobalAssertionCount    = optAssertionCount;
+    Metrics.GlobalAssertionOverflow = optAssertionOverflow;
+
     if (optAssertionCount == 0)
     {
         // Zero out the bbAssertionIn values, as these can be referenced in RangeCheck::MergeAssertion
@@ -7042,6 +7085,9 @@ PhaseStatus Compiler::optAssertionPropMain()
         }
         optAssertionPropagatedCurrentStmt = false; // clear it back as we are done with stmts.
     }
+
+    // The cached known bits of PHIs depend on this phase's assertions, don't let them outlive it.
+    optKnownBitsPhiCache = nullptr;
 
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
