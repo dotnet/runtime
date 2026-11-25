@@ -447,6 +447,34 @@ namespace System.Reflection.Metadata
             });
         }
 
+        [ConditionalFact(typeof(ApplyUpdateUtil), nameof(ApplyUpdateUtil.IsSupported), nameof(ApplyUpdateUtil.IsNotMonoRuntime))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/138256", typeof(PlatformDetection), nameof(PlatformDetection.IsCheckedRuntime))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/138256", typeof(PlatformDetection), nameof(PlatformDetection.IsDebugRuntime))]
+        public static void TestAddStaticFieldCollectible()
+        {
+            // The test assembly is loaded again into a collectible AssemblyLoadContext and updated there. Code that
+            // accesses the added static fields must not go through the statics base of the collectible type: the
+            // added fields are not part of it. The updated methods read each added field before writing it.
+            ApplyUpdateUtil.TestCase(static () =>
+            {
+                string path = typeof(System.Reflection.Metadata.ApplyUpdate.Test.AddStaticFieldCollectible).Assembly.Location;
+                var alc = new System.Runtime.Loader.AssemblyLoadContext(nameof(TestAddStaticFieldCollectible), isCollectible: true);
+                Assembly assm = alc.LoadFromAssemblyPath(path);
+                Type type = assm.GetType("System.Reflection.Metadata.ApplyUpdate.Test.AddStaticFieldCollectible", throwOnError: true);
+                MethodInfo next = type.GetMethod("Next");
+                MethodInfo name = type.GetMethod("Name");
+
+                Assert.Equal(1, next.Invoke(null, null));
+                Assert.Equal("none", name.Invoke(null, null));
+
+                ApplyUpdateUtil.ApplyUpdate(assm);
+
+                Assert.Equal(2, next.Invoke(null, null));
+                Assert.Equal(4, next.Invoke(null, null));
+                Assert.Equal("added", name.Invoke(null, null));
+            });
+        }
+
         // FieldRVA update tests are not supported on the Mono runtime.
         //[ConditionalFact(typeof(ApplyUpdateUtil), nameof (ApplyUpdateUtil.IsSupported), nameof (ApplyUpdateUtil.IsNotMonoRuntime))]
         //[ActiveIssue("https://github.com/dotnet/runtime/issues/54617", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]

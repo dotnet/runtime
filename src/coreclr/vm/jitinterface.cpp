@@ -1427,11 +1427,27 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
             else
             if (pFieldMT->Collectible())
             {
-                // Static fields are not pinned in collectible types. We will always access
-                // them using a helper since the address cannot be embedded into the code.
-                fieldAccessor = CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER;
+                if (pField->IsEnCNew())
+                {
+                    // Static fields added by Edit and Continue are not part of the type's statics block, so the
+                    // statics base plus GetOffset() (FIELD_OFFSET_NEW_ENC) does not point at them. Use the EnC
+                    // address helper, like the shared generics case above.
+                    fieldAccessor = CORINFO_FIELD_STATIC_ADDR_HELPER;
 
-                pResult->helper = getSharedStaticsHelper(pField, pFieldMT);
+                    pResult->helper = CORINFO_HELP_GETSTATICFIELDADDR;
+
+                    // The address helper does not run the class constructor.
+                    if (!pFieldMT->IsClassInitedOrPreinited())
+                        fieldFlags |= CORINFO_FLG_FIELD_INITCLASS;
+                }
+                else
+                {
+                    // Static fields are not pinned in collectible types. We will always access
+                    // them using a helper since the address cannot be embedded into the code.
+                    fieldAccessor = CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER;
+
+                    pResult->helper = getSharedStaticsHelper(pField, pFieldMT);
+                }
             }
 #ifdef FEATURE_MULTITHREADING
             else if (pField->IsThreadStatic())
