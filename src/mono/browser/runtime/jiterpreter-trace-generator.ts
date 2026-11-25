@@ -3800,6 +3800,14 @@ function emit_simd_3 (builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrin
             builder.appendSimd(WasmSimdOpcode.v128_store);
             builder.appendMemarg(0, 0);
             return true;
+        case SimdIntrinsic3.V128_U1_NARROW:
+            append_simd_3_load(builder, ip);
+            // Wasm's narrow opcode saturates, so select the low byte of each 16-bit lane.
+            builder.appendSimd(WasmSimdOpcode.i8x16_shuffle);
+            for (let i = 0; i < sizeOfV128; i++)
+                builder.appendU8(i * 2);
+            append_simd_store(builder, ip);
+            return true;
         case SimdIntrinsic3.V128_BITWISE_EQUALITY:
         case SimdIntrinsic3.V128_BITWISE_INEQUALITY:
             append_simd_3_load(builder, ip);
