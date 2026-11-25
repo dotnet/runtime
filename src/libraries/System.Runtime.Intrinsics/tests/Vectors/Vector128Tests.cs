@@ -7022,6 +7022,32 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         [Fact]
         public void AddSaturateUIntPtrTest() => AddSaturateToMaxTest<nuint>(1);
 
+        [Fact]
+        public void NarrowUInt16ToByteTest()
+        {
+            ushort[] lanes =
+            [
+                0x0000, 0x0001, 0x00FF, 0x0100, 0x0113, 0x7FFF, 0x8000, 0xFFFF,
+                0x8001, 0x80FF, 0xFFFF, 0xFF00, 0x1234, 0xFF7F, 0x7F80, 0x2A55,
+            ];
+            Vector128<byte> expected = Vector128.Create(
+                (byte)0x00, 0x01, 0xFF, 0x00, 0x13, 0xFF, 0x00, 0xFF,
+                0x01, 0xFF, 0xFF, 0x00, 0x34, 0x7F, 0x80, 0x55);
+
+            // Run enough iterations for the WebAssembly jiterpreter to compile the intrinsic.
+            for (int i = 0; i < 10_000; i++)
+            {
+                Vector128<byte> actual = NarrowUInt16ToByte(
+                    Vector128.Create(lanes.AsSpan(0, 8)),
+                    Vector128.Create(lanes.AsSpan(8, 8)));
+                Assert.Equal(expected, actual);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static Vector128<byte> NarrowUInt16ToByte(Vector128<ushort> lower, Vector128<ushort> upper)
+            => Vector128.Narrow(lower, upper);
+
         private (Vector128<TFrom> lower, Vector128<TFrom> upper) GetNarrowWithSaturationInputs<TFrom, TTo>()
             where TFrom : unmanaged, IMinMaxValue<TFrom>, INumber<TFrom>
             where TTo : unmanaged, IMinMaxValue<TTo>, INumber<TTo>
