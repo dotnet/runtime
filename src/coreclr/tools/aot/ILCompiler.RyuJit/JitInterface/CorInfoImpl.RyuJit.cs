@@ -269,18 +269,20 @@ namespace Internal.JitInterface
             }
         }
 
-        private void ComputeLookup(ref CORINFO_RESOLVED_TOKEN pResolvedToken, object entity, ReadyToRunHelperId helperId, MethodDesc callerHandle, ref CORINFO_LOOKUP lookup)
+        private void ComputeLookup(ref CORINFO_RESOLVED_TOKEN pResolvedToken, object entity, ReadyToRunHelperId helperId, MethodDesc callerHandle,
+            ref CORINFO_LOOKUP lookup, bool useHelperIfSlotMissing = false)
         {
-            ComputeLookup(pResolvedToken.tokenContext != contextFromMethodBeingCompiled(), entity, helperId, callerHandle, ref lookup);
+            ComputeLookup(pResolvedToken.tokenContext != contextFromMethodBeingCompiled(), entity, helperId, callerHandle, ref lookup, useHelperIfSlotMissing);
         }
 
-        private void ComputeLookup(bool isInlining, object entity, ReadyToRunHelperId helperId, MethodDesc callerHandle, ref CORINFO_LOOKUP lookup)
+        private void ComputeLookup(bool isInlining, object entity, ReadyToRunHelperId helperId, MethodDesc callerHandle,
+            ref CORINFO_LOOKUP lookup, bool useHelperIfSlotMissing = false)
         {
             Debug.Assert(callerHandle != null);
 
             if (_compilation.NeedsRuntimeLookup(helperId, entity))
             {
-                GenericDictionaryLookup genericLookup = _compilation.ComputeGenericLookup(callerHandle, helperId, entity);
+                GenericDictionaryLookup genericLookup = _compilation.ComputeGenericLookup(callerHandle, helperId, entity, useHelperIfSlotMissing);
 
                 lookup.lookupKind.needsRuntimeLookup = true;
                 lookup.lookupKind.runtimeLookupKind = GetLookupKindFromContextSource(genericLookup.ContextSource);
@@ -1736,21 +1738,13 @@ namespace Internal.JitInterface
                 var method = (MethodDesc)GetRuntimeDeterminedObjectForToken(ref token);
                 ComputeLookup(ref token, new ConstrainedCallInfo(constrainedType, method), helper, caller, ref lookup);
             }
-            else if (target != null)
-            {
-                ComputeLookup(ref token, HandleToObject(target), helper, caller, ref lookup);
-            }
             else
             {
-                // A fat ldftn uses a helper so the scanner need not predict a dictionary slot
-                // for a function pointer that may only be used to construct a delegate.
-                Debug.Assert(helper == ReadyToRunHelperId.MethodEntry && token.tokenContext == contextFromMethodBeingCompiled());
-                lookup.lookupKind.needsRuntimeLookup = true;
-                lookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(caller);
-                lookup.runtimeLookup.indirections = CORINFO.USEHELPER;
-                lookup.runtimeLookup.helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GENERIC_HANDLE;
-                ISymbolNode entry = GetGenericLookupHelper(lookup.lookupKind.runtimeLookupKind, helper, caller, GetRuntimeDeterminedObjectForToken(ref token));
-                lookup.runtimeLookup.helperEntryPoint = CreateConstLookupToSymbol(entry);
+                bool fatLdftn = target == null;
+                Debug.Assert(!fatLdftn || (helper == ReadyToRunHelperId.MethodEntry && token.tokenContext == contextFromMethodBeingCompiled()));
+                object entity = fatLdftn ? GetRuntimeDeterminedObjectForToken(ref token) : HandleToObject(target);
+                // The scanner may have predicted only the delegate helper for a fat ldftn.
+                ComputeLookup(ref token, entity, helper, caller, ref lookup, useHelperIfSlotMissing: fatLdftn);
             }
         }
 

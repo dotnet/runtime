@@ -35,6 +35,15 @@ public class DeferredInterfaceLookup
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static unsafe delegate* managed<Type> Pointer<T>() => &Target<T>;
 
+    private struct Receiver
+    {
+        public int Value;
+        public Type Read<T>() => Value == 42 ? typeof(T) : throw new InvalidOperationException();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Func<Type> BindStruct<T>(Receiver receiver) => new Func<Type>(receiver.Read<T>);
+
     private readonly unsafe struct Holder
     {
         public readonly delegate* managed<Type> Pointer;
@@ -49,6 +58,8 @@ public class DeferredInterfaceLookup
     {
         Assert.Equal(typeof(string), Bind<string>()());
         Assert.Equal(typeof(object), Bind<object>()());
+        // The delegate binds a boxed receiver and uses the unboxing entry.
+        Assert.Equal(typeof(string), BindStruct<string>(new Receiver { Value = 42 })());
         Assert.Equal(typeof(string), Pointer<string>()());
         Assert.Equal(typeof(object), Wrap<object>().Pointer());
 

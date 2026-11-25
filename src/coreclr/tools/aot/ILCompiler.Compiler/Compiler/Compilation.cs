@@ -376,7 +376,8 @@ namespace ILCompiler
             }
         }
 
-        public GenericDictionaryLookup ComputeGenericLookup(MethodDesc contextMethod, ReadyToRunHelperId lookupKind, object targetOfLookup)
+        public GenericDictionaryLookup ComputeGenericLookup(MethodDesc contextMethod, ReadyToRunHelperId lookupKind, object targetOfLookup,
+            bool useHelperIfSlotMissing = false)
         {
             if (targetOfLookup is TypeSystemEntity typeSystemEntity)
             {
@@ -429,7 +430,7 @@ namespace ILCompiler
                 int pointerSize = _nodeFactory.Target.PointerSize;
 
                 GenericLookupResult lookup = ReadyToRunGenericHelperNode.GetLookupSignature(_nodeFactory, lookupKind, targetOfLookup);
-                if (dictionaryLayout.TryGetSlotForEntry(lookup, out int dictionarySlot))
+                if (dictionaryLayout.TryGetSlotForEntry(lookup, out int dictionarySlot, allowUnpredicted: useHelperIfSlotMissing))
                 {
                     int dictionaryOffset = dictionarySlot * pointerSize;
 
@@ -444,7 +445,7 @@ namespace ILCompiler
                         return GenericDictionaryLookup.CreateFixedLookup(contextSource, vtableOffset, dictionaryOffset);
                     }
                 }
-                else
+                else if (!useHelperIfSlotMissing)
                 {
                     return GenericDictionaryLookup.CreateNullLookup(contextSource);
                 }

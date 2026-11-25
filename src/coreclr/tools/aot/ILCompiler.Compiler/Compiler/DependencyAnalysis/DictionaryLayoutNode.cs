@@ -77,7 +77,7 @@ namespace ILCompiler.DependencyAnalysis
         /// <summary>
         /// Get a slot index for a given entry. Slot indices are never expected to change once given out.
         /// </summary>
-        public abstract bool TryGetSlotForEntry(GenericLookupResult entry, out int slot);
+        public abstract bool TryGetSlotForEntry(GenericLookupResult entry, out int slot, bool allowUnpredicted = false);
 
         public abstract IEnumerable<GenericLookupResult> Entries
         {
@@ -204,7 +204,7 @@ namespace ILCompiler.DependencyAnalysis
             throw new NotSupportedException();
         }
 
-        public override bool TryGetSlotForEntry(GenericLookupResult entry, out int slot)
+        public override bool TryGetSlotForEntry(GenericLookupResult entry, out int slot, bool allowUnpredicted = false)
         {
             slot = Array.IndexOf(_layout, entry);
 
@@ -232,8 +232,8 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
-            // If this is a slot we should discard, respond false
-            if (slot < 0 && Array.IndexOf(_discardedSlots, entry) >= 0)
+            // An optional lookup may use a helper if the scanner did not predict the slot.
+            if (slot < 0 && (allowUnpredicted || Array.IndexOf(_discardedSlots, entry) >= 0))
                 return false;
 
             // This entry wasn't precomputed. If this is an optimized build with scanner, it might suggest
@@ -297,7 +297,7 @@ namespace ILCompiler.DependencyAnalysis
             _layout = layout;
         }
 
-        public override bool TryGetSlotForEntry(GenericLookupResult entry, out int slot)
+        public override bool TryGetSlotForEntry(GenericLookupResult entry, out int slot, bool allowUnpredicted = false)
         {
             if (_layout == null)
                 ComputeLayout();
