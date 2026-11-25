@@ -80,6 +80,14 @@ if [%XUNIT_RANDOM_ORDER_SEED%] NEQ [] (
     set "WasmXHarnessMonoArgs=%WasmXHarnessMonoArgs% --setenv=XUNIT_RANDOM_ORDER_SEED=%XUNIT_RANDOM_ORDER_SEED%"
 )
 
+:: The app doesn't inherit the host environment, so tell it when it runs in CI ([SkipOnCI], PlatformDetection.IsNotBrowserOnCI).
+set "_IS_CI="
+if defined HELIX_WORKITEM_ROOT set "_IS_CI=1"
+if defined DOTNET_CI set "_IS_CI=1"
+if defined _IS_CI (
+    set "WasmXHarnessMonoArgs=%WasmXHarnessMonoArgs% --setenv=DOTNET_CI=true"
+)
+
 echo EXECUTION_DIR=%EXECUTION_DIR%
 echo SCENARIO=%SCENARIO%
 echo XHARNESS_OUT=%XHARNESS_OUT%

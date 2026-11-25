@@ -2551,7 +2551,7 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
     DWORD dwSizeAcquiredFromInitialBlock = 0;
 
     size_t allocationSize = pCodeHeap->m_LoaderHeap.AllocMem_TotalSize(initialRequestSize);
-#if defined(TARGET_64BIT)
+#if defined(TARGET_64BIT) && !defined(TARGET_WASM)
     if (!pInfo->IsInterpreted())
     {
         allocationSize += pCodeHeap->m_LoaderHeap.AllocMem_TotalSize(JUMP_ALLOCATE_SIZE);
@@ -2604,7 +2604,10 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
     HeapList *pHp = new HeapList;
     pHp->isOptimizedCode = false;
 
-#if defined(TARGET_64BIT)
+#if defined(TARGET_WASM64)
+    pHp->CLRPersonalityRoutine = nullptr;
+    pCodeHeap->m_LoaderHeap.ReservePages(1);
+#elif defined(TARGET_64BIT)
     if (pInfo->IsInterpreted())
     {
         pHp->CLRPersonalityRoutine = NULL;
@@ -2638,7 +2641,7 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
     pHp->mapBase         = ROUND_DOWN_TO_PAGE(pHp->startAddress);  // round down to next lower page align
     size_t nibbleMapSize = HEAP2MAPSIZE(ROUND_UP_TO_PAGE(heapSize));
     pHp->pHdrMap         = (DWORD*)(void*)pJitMetaHeap->AllocMem(S_SIZE_T(nibbleMapSize));
-#if defined(TARGET_64BIT)
+#if defined(TARGET_64BIT) && !defined(TARGET_WASM)
     if (pHp->CLRPersonalityRoutine != NULL)
     {
         ExecutableWriterHolder<BYTE> personalityRoutineWriterHolder(pHp->CLRPersonalityRoutine, 12);
@@ -2790,7 +2793,7 @@ HeapList* EECodeGenManager::NewCodeHeap(CodeHeapRequestInfo *pInfo, DomainCodeHe
 
     size_t reserveSize = initialRequestSize;
 
-#if defined(TARGET_64BIT)
+#if defined(TARGET_64BIT) && !defined(TARGET_WASM)
     if (!pInfo->IsInterpreted())
     {
         reserveSize += JUMP_ALLOCATE_SIZE;
@@ -6442,7 +6445,11 @@ DONE:
     _ASSERTE(((UINT_PTR)jumpStub & 7) == 0);
 #endif
 
+#ifdef TARGET_WASM64
+    UNREACHABLE_MSG("Wasm64 does not use native jump stubs");
+#else
     emitBackToBackJump(jumpStub, jumpStubRW, (void*) target);
+#endif
 
     PerfMap::LogStubs(__FUNCTION__, "emitBackToBackJump", (PCODE)jumpStub, BACK_TO_BACK_JUMP_ALLOCATE_SIZE, PerfMapStubType::IndividualWithinBlock);
 

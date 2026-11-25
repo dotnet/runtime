@@ -8,6 +8,7 @@
 
 #if defined(TARGET_BROWSER)
 #include <emscripten/emscripten.h>
+#include <libunwind.h>
 #elif defined(TARGET_WASI)
 #include <stdlib.h>
 #include <stdint.h>
@@ -88,25 +89,25 @@ void ExecuteHandlerOnCustomStack(int code, siginfo_t *siginfo, void *context, si
 // seh-unwind.cpp is excluded from the browser-wasm build, but emscripten's
 // libunwind shim still exposes the unw_* symbols at link time. Trap stubs
 // satisfy any residual references.
-extern "C" int unw_getcontext(int)
+extern "C" int unw_getcontext(unw_context_t*)
 {
     _ASSERT(!"unw_getcontext not implemented on wasm");
     return 0;
 }
 
-extern "C" int unw_init_local(int, int)
+extern "C" int unw_init_local(unw_cursor_t*, unw_context_t*)
 {
     _ASSERT(!"unw_init_local not implemented on wasm");
     return 0;
 }
 
-extern "C" int unw_step(int)
+extern "C" int unw_step(unw_cursor_t*)
 {
     _ASSERT(!"unw_step not implemented on wasm");
     return 0;
 }
 
-extern "C" int unw_is_signal_frame(int)
+extern "C" int unw_is_signal_frame(unw_cursor_t*)
 {
     _ASSERT(!"unw_is_signal_frame not implemented on wasm");
     return 0;

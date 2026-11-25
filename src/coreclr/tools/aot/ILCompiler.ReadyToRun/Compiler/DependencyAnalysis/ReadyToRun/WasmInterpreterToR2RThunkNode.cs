@@ -34,8 +34,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override string LookupString => "M" + _wasmSignature.SignatureString;
 
-        private static WasmSignature sigForInterpToR2RThunks = new WasmSignature(new WasmFuncType(new WasmResultType(new WasmValueType[]{WasmValueType.I32, WasmValueType.I32, WasmValueType.I32}), new WasmResultType(Array.Empty<WasmValueType>())), "viii");
-        MethodSignature INodeWithTypeSignature.Signature => WasmLowering.RaiseSignature(sigForInterpToR2RThunks, _context);
+        private readonly WasmSignature _thunkSignature;
+        MethodSignature INodeWithTypeSignature.Signature => WasmLowering.RaiseSignature(_thunkSignature, _context);
         bool INodeWithTypeSignature.IsUnmanagedCallersOnly => false;
         bool INodeWithTypeSignature.IsAsyncCall => false;
         bool INodeWithTypeSignature.HasGenericContextArg => false;
@@ -45,6 +45,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _context = factory.TypeSystemContext;
             _wasmSignature = wasmSignature;
             _targetTypeNode = factory.WasmTypeNode(wasmSignature);
+            WasmTargetPtr ptr = new WasmTargetPtr(factory.Target.PointerSize);
+            _thunkSignature = new WasmSignature(new WasmFuncType(new([ptr.Type, ptr.Type, ptr.Type]), new([])), ptr.Is64Bit ? "vlll" : "viii");
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
@@ -73,12 +75,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             base.ComputeNonRelocationBasedDependencies(sink, factory);
             sink.Add(_targetTypeNode, "Wasm interpreter-to-R2R thunk requires target type node");
-            sink.Add(factory.WasmTypeNode(sigForInterpToR2RThunks), "Wasm interpreter-to-R2R thunk requires type for the function entry point");
+            sink.Add(factory.WasmTypeNode(_thunkSignature), "Wasm interpreter-to-R2R thunk requires type for the function entry point");
         }
 
         protected override void EmitCode(NodeFactory factory, ref Wasm.WasmEmitter instructionEncoder, bool relocsOnly)
         {
-            Debug.Assert(!instructionEncoder.Is64Bit);
+            WasmTargetPtr ptr = instructionEncoder.Ptr;
 
             ISymbolNode targetTypeIndex = _targetTypeNode;
 
@@ -91,15 +93,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             WasmFuncType targetFuncType = _targetTypeNode.Type;
             bool hasWasmReturn = targetFuncType.Returns.Types.Length > 0;
 
-            // Wasm locals for this thunk:
-            //   local 0: portableEntryPoint (I32)
-            //   local 1: pArgs (I32)
-            //   local 2: pRet (I32)
-            //   local 3: savedSp (I32) - save/restore SP global
             const int LocalPortableEntrypoint = 0;
             const int LocalPArgs = 1;
             const int LocalPRet = 2;
-            int localSavedSp = 3;
+            const int LocalSavedSp = 3;
 
             const int FrameSize = 16; // 16-byte aligned allocation for framePointer
 
@@ -107,18 +104,18 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             // Save the current stack pointer global
             expressions.Add(Global.Get(WebCilObjectWriter.StackPointerGlobalIndex));
-            expressions.Add(Local.Set(localSavedSp));
+            expressions.Add(Local.Set(LocalSavedSp));
 
             // Allocate frame space: sp -= FrameSize
-            expressions.Add(Local.Get(localSavedSp));
-            expressions.Add(I32.Const(FrameSize));
-            expressions.Add(I32.Sub);
+            expressions.Add(Local.Get(LocalSavedSp));
+            expressions.Add(ptr.Const(FrameSize));
+            expressions.Add(ptr.Sub);
             expressions.Add(Global.Set(WebCilObjectWriter.StackPointerGlobalIndex));
 
             // Write TERMINATE_R2R_STACK_WALK (1) into the framePointer at new SP
             expressions.Add(Global.Get(WebCilObjectWriter.StackPointerGlobalIndex));
-            expressions.Add(I32.Const(TerminateR2RStackWalk));
-            expressions.Add(I32.Store(0));
+            expressions.Add(ptr.Const(TerminateR2RStackWalk));
+            expressions.Add(ptr.Store(0));
 
             // If there is a wasm return value, push pRet underneath all the call args
             // so that after call_indirect the stack is [pRet, return_value] for the store.
@@ -141,14 +138,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 }
                 else if (arg.Kind == WasmThunkArgKind.AsyncContinuation)
                 {
-                    expressions.Add(I32.Const(0));
+                    expressions.Add(ptr.Const(0));
                 }
                 else if (arg.IsIndirectStruct)
                 {
                     // Byreference struct — pass a pointer into the incoming pArgs buffer
                     expressions.Add(Local.Get(LocalPArgs));
-                    expressions.Add(I32.Const(interpOffset));
-                    expressions.Add(I32.Add);
+                    expressions.Add(ptr.Const(interpOffset));
+                    expressions.Add(ptr.Add);
                 }
                 else
                 {
@@ -166,7 +163,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             // call_indirect with the target R2R function's type signature
             expressions.Add(Local.Get(LocalPortableEntrypoint));
-            expressions.Add(I32.Load(0)); // load the actual function index from the portable entrypoint
+            expressions.Add(ptr.Load(0)); // load the actual function index from the portable entrypoint
             expressions.Add(ControlFlow.CallIndirect(targetTypeIndex, 0));
 
             // Handle wasm return value — pRet is already on the stack under the return value
@@ -183,12 +180,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // pRet, and there is nothing more to do.
 
             // Restore the stack pointer global
-            expressions.Add(Local.Get(localSavedSp));
+            expressions.Add(Local.Get(LocalSavedSp));
             expressions.Add(Global.Set(WebCilObjectWriter.StackPointerGlobalIndex));
 
             instructionEncoder.FunctionBody = new WasmFunctionBody(
-                sigForInterpToR2RThunks.FuncType,
-                new[] { WasmValueType.I32 },
+                _thunkSignature.FuncType,
+                new[] { ptr.Type },
                 expressions.ToArray());
         }
 

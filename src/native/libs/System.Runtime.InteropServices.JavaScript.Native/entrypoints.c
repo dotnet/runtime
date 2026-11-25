@@ -12,10 +12,10 @@
 // implemented in JavaScript
 EXTERN_C void* SystemInteropJS_BindJSImportST(void* signature);
 EXTERN_C void SystemInteropJS_InvokeJSImportST(int32_t functionHandle, void *args);
-EXTERN_C void SystemInteropJS_ReleaseCSOwnedObject (int32_t jsHandle);
+EXTERN_C void SystemInteropJS_ReleaseCSOwnedObject (intptr_t jsHandle);
 EXTERN_C void SystemInteropJS_ResolveOrRejectPromise (void *args);
-EXTERN_C void SystemInteropJS_CancelPromise (int32_t taskHolderGCHandle);
-EXTERN_C void SystemInteropJS_InvokeJSFunction (int32_t functionJSSHandle, void *args);
+EXTERN_C void SystemInteropJS_CancelPromise (intptr_t taskHolderGCHandle);
+EXTERN_C void SystemInteropJS_InvokeJSFunction (intptr_t functionJSSHandle, void *args);
 
 static const Entry s_browserNative[] =
 {

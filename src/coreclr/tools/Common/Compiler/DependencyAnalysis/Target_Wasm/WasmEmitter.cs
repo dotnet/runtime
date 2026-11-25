@@ -13,6 +13,7 @@ namespace ILCompiler.DependencyAnalysis.Wasm
         public WasmFunctionBody FunctionBody = null!;
 
         public bool Is64Bit => factory.Target.PointerSize == 8;
+        internal WasmTargetPtr Ptr => new WasmTargetPtr(factory.Target.PointerSize);
         public bool RelocsOnly => relocsOnly;
 
         public ObjectNode.ObjectData Encode(ISymbolDefinitionNode symbolDefinitionNode)

@@ -123,15 +123,18 @@ namespace ILCompiler.ObjectWriter
 
     public class WasmTableImportType : WasmImportType
     {
-        public WasmTableImportType() : base (WasmExternalKind.Table)
+        private readonly bool _is64Bit;
+
+        public WasmTableImportType(bool is64Bit = false) : base(WasmExternalKind.Table)
         {
+            _is64Bit = is64Bit;
         }
 
         public override int Encode(Span<byte> buffer)
         {
             int pos = 0;
             buffer[pos++] = (byte)0x70; // element type: funcref
-            buffer[pos++] = (byte)0; // table limits: flags (0 = min-only, 1 = min+max)
+            buffer[pos++] = (byte)(_is64Bit ? WasmLimitType.HasMin64 : WasmLimitType.HasMin);
             pos += DwarfHelper.WriteULEB128(buffer.Slice(pos), 1); // Requires 1 table entry
             return pos;
         }
@@ -144,7 +147,8 @@ namespace ILCompiler.ObjectWriter
     public enum WasmLimitType : byte
     {
         HasMin = 0x00,
-        HasMinAndMax = 0x01
+        HasMinAndMax = 0x01,
+        HasMin64 = 0x04
     }
 
     public class WasmMemoryImportType : WasmImportType

@@ -30,6 +30,14 @@
 // *must* be implemented without use of the linear memory stack, and the best way to guarantee that
 // is to implement the barriers by hand in assembly.
 
+// Pointer-sized values use the pointer-width opcodes; comparison results, branch conditions
+// and card bytes remain i32 on both Wasm32 and Wasm64.
+#ifdef TARGET_WASM64
+#define PTR_OP "i64"
+#else
+#define PTR_OP "i32"
+#endif
+
 #define ASM_HELPER_2(rettype, funcname, a1, a2) \
     EXTERN_C rettype __attribute__((naked)) F_CALL_CONV funcname(a1, a2)
 
@@ -51,23 +59,23 @@ ASM_HELPER_2(void, RhpAssignRef, Object **dst, Object *ref)
         /* *dst = ref */
         "local.get 0\n"
         "local.get 1\n"
-        "i32.store 0\n"
+        PTR_OP ".store 0\n"
         /* if ((ref < ephemeral_low) || (ref >= ephemeral_high)) return */
         "local.get 1\n"
-        "i32.const 0\n i32.load %[g_ephemeral_low]\n"
-        "i32.lt_u\n"
+        PTR_OP ".const 0\n" PTR_OP ".load %[g_ephemeral_low]\n"
+        PTR_OP ".lt_u\n"
         "local.get 1\n"
-        "i32.const 0\n i32.load %[g_ephemeral_high]\n"
-        "i32.ge_u\n"
+        PTR_OP ".const 0\n" PTR_OP ".load %[g_ephemeral_high]\n"
+        PTR_OP ".ge_u\n"
         "i32.or\n"
         "if\n return\n end_if\n"
         /* dst = &g_card_table[(dst >> card_byte_shift)] */
         "local.get 0\n"
-        "i32.const %[card_byte_shift]\n"
-        "i32.shr_u\n"
-        "i32.const 0\n"
-        "i32.load %[g_card_table]\n"
-        "i32.add\n"
+        PTR_OP ".const %[card_byte_shift]\n"
+        PTR_OP ".shr_u\n"
+        PTR_OP ".const 0\n"
+        PTR_OP ".load %[g_card_table]\n"
+        PTR_OP ".add\n"
         "local.tee 0\n"
         /* if (*dst == 255) return */
         "i32.load8_u 0\n"
@@ -89,32 +97,32 @@ ASM_HELPER_2(void, RhpCheckedAssignRef, Object **dst, Object *ref)
         /* *dst = ref */
         "local.get 0\n"
         "local.get 1\n"
-        "i32.store 0\n"
+        PTR_OP ".store 0\n"
         /* if ((dst < lowest) || (dst >= highest)) return */
         "local.get 0\n"
-        "i32.const 0\n i32.load %[g_lowest_address]\n"
-        "i32.lt_u\n"
+        PTR_OP ".const 0\n" PTR_OP ".load %[g_lowest_address]\n"
+        PTR_OP ".lt_u\n"
         "local.get 0\n"
-        "i32.const 0\n i32.load %[g_highest_address]\n"
-        "i32.ge_u\n"
+        PTR_OP ".const 0\n" PTR_OP ".load %[g_highest_address]\n"
+        PTR_OP ".ge_u\n"
         "i32.or\n"
         "if\n return\n end_if\n"
         /* if ((ref < ephemeral_low) || (ref >= ephemeral_high)) return */
         "local.get 1\n"
-        "i32.const 0\n i32.load %[g_ephemeral_low]\n"
-        "i32.lt_u\n"
+        PTR_OP ".const 0\n" PTR_OP ".load %[g_ephemeral_low]\n"
+        PTR_OP ".lt_u\n"
         "local.get 1\n"
-        "i32.const 0\n i32.load %[g_ephemeral_high]\n"
-        "i32.ge_u\n"
+        PTR_OP ".const 0\n" PTR_OP ".load %[g_ephemeral_high]\n"
+        PTR_OP ".ge_u\n"
         "i32.or\n"
         "if\n return\n end_if\n"
         /* dst = &g_card_table[(dst >> card_byte_shift)] */
         "local.get 0\n"
-        "i32.const %[card_byte_shift]\n"
-        "i32.shr_u\n"
-        "i32.const 0\n"
-        "i32.load %[g_card_table]\n"
-        "i32.add\n"
+        PTR_OP ".const %[card_byte_shift]\n"
+        PTR_OP ".shr_u\n"
+        PTR_OP ".const 0\n"
+        PTR_OP ".load %[g_card_table]\n"
+        PTR_OP ".add\n"
         "local.tee 0\n"
         /* if (*dst == 255) return */
         "i32.load8_u 0\n"

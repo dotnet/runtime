@@ -113,12 +113,16 @@ else()
                     list(APPEND CORERUN_BROWSER_LINK_OPTIONS --preload-file ${WASM_PRELOAD_DIR}@/)
                 endif()
             else()
-                # Node.js doesn't have good support for WASM_BIGINT, so disable it for the Node/shell.
-                list(APPEND CORERUN_BROWSER_LINK_OPTIONS -sWASM_BIGINT=0)
-
-                # remove HEAP64 and HEAPU64 from CMAKE_EMCC_EXPORTED_RUNTIME_METHODS
-                string(REPLACE "HEAP64," "" CMAKE_EMCC_EXPORTED_RUNTIME_METHODS "${CMAKE_EMCC_EXPORTED_RUNTIME_METHODS}")
-                string(REPLACE "HEAPU64," "" CMAKE_EMCC_EXPORTED_RUNTIME_METHODS "${CMAKE_EMCC_EXPORTED_RUNTIME_METHODS}")
+                if(CLR_CMAKE_TARGET_ARCH STREQUAL wasm64)
+                    # wasm64 needs BigInt to pass 64-bit pointers across the JS boundary.
+                    list(APPEND CORERUN_BROWSER_LINK_OPTIONS -sWASM_BIGINT=1)
+                else()
+                    # Node.js doesn't have good support for WASM_BIGINT, so disable it for the Node/shell.
+                    list(APPEND CORERUN_BROWSER_LINK_OPTIONS -sWASM_BIGINT=0)
+                    # remove HEAP64 and HEAPU64 from CMAKE_EMCC_EXPORTED_RUNTIME_METHODS
+                    string(REPLACE "HEAP64," "" CMAKE_EMCC_EXPORTED_RUNTIME_METHODS "${CMAKE_EMCC_EXPORTED_RUNTIME_METHODS}")
+                    string(REPLACE "HEAPU64," "" CMAKE_EMCC_EXPORTED_RUNTIME_METHODS "${CMAKE_EMCC_EXPORTED_RUNTIME_METHODS}")
+                endif()
 
                 # Add Node.js host file system support.
                 list(APPEND CORERUN_BROWSER_LINK_OPTIONS -sNODERAWFS=1 -lnodefs.js)
@@ -147,7 +151,7 @@ else()
                 COMPONENT hosts
                 SOURCES ${CORERUN_SOURCES}
                 LINK_OPTIONS ${CORERUN_BROWSER_LINK_OPTIONS}
-                COMPILE_OPTIONS -fwasm-exceptions -sWASM_LEGACY_EXCEPTIONS=0 -msimd128
+                COMPILE_OPTIONS -fwasm-exceptions -sWASM_LEGACY_EXCEPTIONS=0 -msimd128 ${CLR_CMAKE_WASM_POINTER_WIDTH_OPTIONS}
                 JS_LIBRARIES "${JS_SYSTEM_NATIVE_BROWSER}" "${JS_SYSTEM_BROWSER_UTILS}" "${JS_CORE_RUN}"
                 EXTERN_POST_JS "${JS_CORE_RUN_EXTPOST}")
         elseif (CLR_CMAKE_TARGET_WASI)

@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.Build.NoTargets">
 
   <Import Project="$(WasmPInvokeModulesPropsPath)"
-          Condition="'$(TargetArchitecture)' == 'wasm'" />
+          Condition="'$(TargetArchitecture)' == 'wasm' or '$(TargetArchitecture)' == 'wasm64'" />
 
   <ItemGroup>
     <ProjectReference Include="$(CoreClrProjectRoot)/tools/aot/crossgen2/crossgen2_inbuild.csproj" OutputItemType="Crossgen2Files" />
@@ -51,7 +51,7 @@
     <CrossgenTargetName>$(CrossgenTargetName);LinkCoreLibMachO</CrossgenTargetName>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetsWasm)' == 'true' and $(PublishReadyToRun)">
+  <PropertyGroup Condition="('$(TargetsWasm)' == 'true' or '$(TargetsWasm64)' == 'true') and $(PublishReadyToRun)">
     <PublishReadyToRunContainerFormat>wasm</PublishReadyToRunContainerFormat>
     <CrossgenTargetName>CopyILCoreLib;$(CrossgenTargetName)</CrossgenTargetName>
   </PropertyGroup>

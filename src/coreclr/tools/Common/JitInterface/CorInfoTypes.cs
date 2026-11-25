@@ -895,6 +895,7 @@ namespace Internal.JitInterface
         CORINFO_ARCH_LOONGARCH64,
         CORINFO_ARCH_RISCV64,
         CORINFO_ARCH_WASM32,
+        CORINFO_ARCH_WASM64,
     }
 
     public enum CORINFO_OS

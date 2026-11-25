@@ -312,7 +312,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     <ItemGroup>
       <_ReadyToRunCompilerInputs Include="$(_WasmReadyToRunStateFile);@(_ReadyToRunCompileList);@(_ReadyToRunAssembliesToReference);@(_ReadyToRunCompositeBuildReferences);@(_ReadyToRunCompositeUnrootedBuildInput)" />
       <!-- crossgen2 itself, not just the JIT: an updated compiler with an unchanged JIT must still invalidate. -->
-      <_ReadyToRunCompilerInputs Include="$(_WasmResolvedCrossgen2Dir)crossgen2*;$(_WasmResolvedCrossgen2Dir)clrjit_universal_wasm_*"
+      <_ReadyToRunCompilerInputs Include="$(_WasmResolvedCrossgen2Dir)crossgen2*;$(_WasmResolvedCrossgen2Dir)*clrjit_universal_$(_WasmR2RTargetArch)_*"
                                  Condition="'$(_WasmResolvedCrossgen2Dir)' != ''" />
       <FileWrites Include="$(_WasmReadyToRunStateFile)" />
     </ItemGroup>

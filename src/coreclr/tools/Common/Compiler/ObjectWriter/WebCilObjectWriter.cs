@@ -99,8 +99,11 @@ namespace ILCompiler.ObjectWriter
             ]);
         }
 
-        static WasmFunctionBody GetWebcilSize = new WasmFunctionBody(
-            new WasmFuncType(new([WasmValueType.I32]), new([])), // (func (destPtr i32) (result))
+        private bool Is64Bit => _nodeFactory.Target.PointerSize == 8;
+        private WasmValueType PointerType => Is64Bit ? WasmValueType.I64 : WasmValueType.I32;
+
+        private WasmFunctionBody GetWebcilSize => new WasmFunctionBody(
+            new WasmFuncType(new([PointerType]), new([])),
                 [
                     Local.Get(0), // (local.get $destPtr)
                     I32.Const(0),
@@ -118,19 +121,23 @@ namespace ILCompiler.ObjectWriter
         /// silently shifting every R2R function index by <c>tableBase</c>. Hosts must call this after
         /// instantiation.
         /// </summary>
-        static WasmFunctionBody PatchWebcilHeader = new WasmFunctionBody(
-            new WasmFuncType(new([WasmValueType.I32, WasmValueType.I32]), new([])), // (func ($d i32) ($n i32))
-                [
+        private WasmFunctionBody CreatePatchWebcilHeader()
+        {
+            List<WasmExpr> instructions = [
                     Local.Get(1),
                     I32.Const(32),
                     I32.Ge_s,
                     Block.If(WasmBlockType.Empty),
                     Local.Get(0), // (local.get $d)
-                    Global.Get(WebCilObjectWriter.TableBaseGlobalIndex), // (global.get $tableBase)
-                    I32.Store((ulong)WebcilEncoder.TableBaseOffset), // i32.store offset=TableBaseOffset
-                    Block.End
-                ]
-        );
+                    Global.Get(TableBaseGlobalIndex),
+                ];
+            // The WebCIL header stores a 32-bit table base even when the table uses i64 operands.
+            if (Is64Bit)
+                instructions.Add(I32.WrapI64);
+            instructions.Add(I32.Store((ulong)WebcilEncoder.TableBaseOffset));
+            instructions.Add(Block.End);
+            return new WasmFunctionBody(new WasmFuncType(new([PointerType, WasmValueType.I32]), new([])), instructions.ToArray());
+        }
 
         private long ResolveSymbolRVA(WebcilSection[] sections, SymbolDefinition definition)
         {
@@ -284,7 +291,7 @@ namespace ILCompiler.ObjectWriter
             const int stubCount = 2;
             int totalMethodCount = MethodCount + stubCount;
             InsertWasmStub(new Utf8String("getWebcilSize"), GetWebcilSize);
-            InsertWasmStub(new Utf8String("patchWebcilHeader"), PatchWebcilHeader);
+            InsertWasmStub(new Utf8String("patchWebcilHeader"), CreatePatchWebcilHeader());
 
             Debug.Assert(MethodCount == totalMethodCount);
 
@@ -1121,11 +1128,11 @@ namespace ILCompiler.ObjectWriter
 
             return
             [
-                new WasmImport("webcil", WasmWellKnownGlobalSymbolNode.StackPointerName, import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Mut), index: StackPointerGlobalIndex),
-                new WasmImport("webcil", WasmWellKnownGlobalSymbolNode.ImageBaseName, import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Const), index: ImageBaseGlobalIndex),
-                new WasmImport("webcil", WasmWellKnownGlobalSymbolNode.TableBaseName, import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Const), index: TableBaseGlobalIndex),
-                new WasmImport("webcil", WasmWellKnownGlobalSymbolNode.AsyncContinuationName, import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Mut), index: AsyncContinuationGlobalIndex),
-                new WasmImport("webcil", IndirectFunctionTableName, import: new WasmTableImportType(), index: 0),
+                new WasmImport("webcil", WasmWellKnownGlobalSymbolNode.StackPointerName, import: new WasmGlobalImportType(PointerType, WasmMutabilityType.Mut), index: StackPointerGlobalIndex),
+                new WasmImport("webcil", WasmWellKnownGlobalSymbolNode.ImageBaseName, import: new WasmGlobalImportType(PointerType, WasmMutabilityType.Const), index: ImageBaseGlobalIndex),
+                new WasmImport("webcil", WasmWellKnownGlobalSymbolNode.TableBaseName, import: new WasmGlobalImportType(PointerType, WasmMutabilityType.Const), index: TableBaseGlobalIndex),
+                new WasmImport("webcil", WasmWellKnownGlobalSymbolNode.AsyncContinuationName, import: new WasmGlobalImportType(PointerType, WasmMutabilityType.Mut), index: AsyncContinuationGlobalIndex),
+                new WasmImport("webcil", IndirectFunctionTableName, import: new WasmTableImportType(Is64Bit), index: 0),
                 new WasmImport("webcil", RtlRestoreContextTagName.ToString(), import: new WasmTagImportType(rtlRestoreContextTagTypeIndex), index: RtlRestoreContextTagIndex),
             ];
         }
@@ -1143,7 +1150,7 @@ namespace ILCompiler.ObjectWriter
             uint dataPages = checked((uint)((contentSize + (1 << 16) - 1) >> 16));
             uint numPages = Math.Max(dataPages, 1); // Ensure at least one page is allocated for the minimum
 
-            WasmImport memoryImport = new WasmImport("webcil", "memory", import: new WasmMemoryImportType(WasmLimitType.HasMin, numPages)); // memory limits: flags (0 = only minimum)
+            WasmImport memoryImport = new WasmImport("webcil", "memory", import: new WasmMemoryImportType(Is64Bit ? WasmLimitType.HasMin64 : WasmLimitType.HasMin, numPages));
             WriteImport(memoryImport);
         }
 

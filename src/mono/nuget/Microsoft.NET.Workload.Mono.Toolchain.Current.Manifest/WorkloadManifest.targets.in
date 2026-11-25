@@ -30,6 +30,10 @@
     <WasmNativeWorkload7 Condition="'${PackageVersionNet7}' == '${PackageVersion}'">$(WasmNativeWorkload8)</WasmNativeWorkload7>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(TargetsCurrent)' == 'true' and '$(RuntimeIdentifier)' == 'browser-wasm64' and '$(UseMonoRuntime)' == 'false'">
+    <_CoreClrBrowserWasm64>true</_CoreClrBrowserWasm64>
+  </PropertyGroup>
+
   <Import Project="$(MSBuildThisFileDirectory)WorkloadManifest.Wasi.targets" Condition="'$(RuntimeIdentifier)' == 'wasi-wasm'" />
 
   <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'browser-wasm' and '$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
@@ -39,7 +43,7 @@
     <_UsingBlazorOrWasmSdk Condition="'$(UsingMicrosoftNETSdkBlazorWebAssembly)' == 'true' or '$(UsingMicrosoftNETSdkWebAssembly)' == 'true'">true</_UsingBlazorOrWasmSdk>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'browser-wasm'">
+  <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'browser-wasm' or '$(_CoreClrBrowserWasm64)' == 'true'">
     <WasmNativeWorkloadAvailable Condition="'$(TargetsCurrent)' == 'true'">$(WasmNativeWorkload12)</WasmNativeWorkloadAvailable>
     <WasmNativeWorkloadAvailable Condition="'$(TargetsNet11)' == 'true'">$(WasmNativeWorkload11)</WasmNativeWorkloadAvailable>
     <WasmNativeWorkloadAvailable Condition="'$(TargetsNet10)' == 'true'">$(WasmNativeWorkload10)</WasmNativeWorkloadAvailable>
@@ -52,9 +56,9 @@
   </PropertyGroup>
 
   <!-- Runtime feature defaults to trim unnecessary code -->
-  <Import Project="$(MSBuildThisFileDirectory)WasmFeatures.props" Condition="'$(RuntimeIdentifier)' == 'browser-wasm' or '$(RuntimeIdentifier)' == 'wasi-wasm'" />
+  <Import Project="$(MSBuildThisFileDirectory)WasmFeatures.props" Condition="'$(RuntimeIdentifier)' == 'browser-wasm' or '$(RuntimeIdentifier)' == 'wasi-wasm' or '$(_CoreClrBrowserWasm64)' == 'true'" />
 
-  <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'browser-wasm' and '$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+  <PropertyGroup Condition="('$(RuntimeIdentifier)' == 'browser-wasm' and '$(TargetFrameworkIdentifier)' == '.NETCoreApp') or '$(_CoreClrBrowserWasm64)' == 'true'">
     <!-- Keep in sync with $(PropertiesThatTriggerRelinking) -->
     <_WasmNativeWorkloadNeeded Condition="
         '$(WasmEnableSIMD)' == 'false' or
@@ -222,7 +226,7 @@
 
   <!-- CoreCLR uses WebAssembly.Sdk for native builds, without Mono tooling.
        The .NET SDK resolves the runtime and crossgen2 packs. -->
-  <ImportGroup Condition="'$(TargetsCurrent)' == 'true' and '$(RuntimeIdentifier)' == 'browser-wasm' and '$(UsingBrowserRuntimeWorkload)' == 'true' and '$(UseMonoRuntime)' == 'false'">
+  <ImportGroup Condition="'$(TargetsCurrent)' == 'true' and ('$(RuntimeIdentifier)' == 'browser-wasm' or '$(_CoreClrBrowserWasm64)' == 'true') and '$(UsingBrowserRuntimeWorkload)' == 'true' and '$(UseMonoRuntime)' == 'false'">
     <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.WebAssembly.Sdk.${NetVersion}" />
     <Import Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.WebAssembly.Sdk.${NetVersion}" />
   </ImportGroup>

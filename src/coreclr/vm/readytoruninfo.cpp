@@ -1523,7 +1523,7 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
 #endif
 #ifdef TARGET_WASM
     void* actualEntryPoint;
-    actualEntryPoint = (void*)(GetMinFunctionTableIndex() + id);
+    actualEntryPoint = reinterpret_cast<void *>(static_cast<uintptr_t>(GetMinFunctionTableIndex()) + id);
     PCODE virtualEntrypointIP;
     virtualEntrypointIP = R2RRelativeFunctionIndexToVirtualIP(id);
     pEntryPoint = pMD->GetTemporaryEntryPoint();
@@ -2985,7 +2985,7 @@ static void ProcessWasmAsyncResumeInfoFixups(
     TADDR imageBase,
     SIZE_T imageSize,
     IMAGE_DATA_DIRECTORY* pFixupSection,
-    DWORD virtualIPBase,
+    TADDR virtualIPBase,
     bool applyFixups)
 {
     SIZE_T sectionRva = pFixupSection->VirtualAddress;
@@ -3021,27 +3021,34 @@ static void ProcessWasmAsyncResumeInfoFixups(
 
         currentFixupRva += delta;
         if ((currentFixupRva > imageSize) ||
-            (sizeof(DWORD) > imageSize - currentFixupRva))
+            (sizeof(TADDR) > imageSize - currentFixupRva))
         {
             COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
         }
 
         SIZE_T maximumFixupCount =
-            1 + (imageSize - currentFixupRva - sizeof(DWORD)) / fixupStride;
+            1 + (imageSize - currentFixupRva - sizeof(TADDR)) / fixupStride;
         if (fixupCount > maximumFixupCount)
             COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
 
         for (UINT32 fixupIndex = 0; fixupIndex < fixupCount; fixupIndex++)
         {
             SIZE_T diagnosticIPRva = currentFixupRva + (SIZE_T)fixupIndex * fixupStride;
-            PTR_DWORD pDiagnosticIP = dac_cast<PTR_DWORD>(imageBase + diagnosticIPRva);
-            if (*pDiagnosticIP > UINT32_MAX - virtualIPBase)
+            // The image stores a 32-bit method-relative virtual IP in the low half of the
+            // pointer-sized DiagnosticIP; the upper half, present on Wasm64, is zero.
+            PTR_TADDR pDiagnosticIP = dac_cast<PTR_TADDR>(imageBase + diagnosticIPRva);
+            TADDR relativeVirtualIP = *dac_cast<PTR_DWORD>(pDiagnosticIP);
+            if ((*pDiagnosticIP != relativeVirtualIP) ||
+                (relativeVirtualIP > static_cast<TADDR>(-1) - virtualIPBase))
+            {
                 COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+            }
 
             if (applyFixups)
-                *pDiagnosticIP += virtualIPBase;
+                *pDiagnosticIP = virtualIPBase + relativeVirtualIP;
         }
 
+        // Chunk deltas are measured from the end of the 32-bit relative value, as crossgen2 encodes them.
         currentFixupRva += (SIZE_T)(fixupCount - 1) * fixupStride + sizeof(DWORD);
     }
 }
@@ -3083,7 +3090,7 @@ void ReadyToRunInfo::RegisterVirtualIPRange(Module* pModule)
             m_pComposite->FindSection(ReadyToRunSectionType::WasmAsyncResumeInfo);
         if (pAsyncResumeInfoFixups != nullptr)
         {
-            DWORD virtualIPBase = static_cast<DWORD>(m_pComposite->GetMinVirtualIP());
+            TADDR virtualIPBase = m_pComposite->GetMinVirtualIP();
             SIZE_T imageSize = m_pComposite->GetLayout()->GetVirtualSize();
             ProcessWasmAsyncResumeInfoFixups(
                 imageBase, imageSize, pAsyncResumeInfoFixups, virtualIPBase, false);

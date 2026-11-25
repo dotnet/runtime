@@ -34,6 +34,7 @@
     <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
     <EnableRuntimePackDownload>false</EnableRuntimePackDownload>
     <GenerateErrorForMissingTargetingPacks>false</GenerateErrorForMissingTargetingPacks>
+    <RuntimeIdentifierGraphPath Condition="'$(RuntimeIdentifier)' == 'browser-wasm64' and '$(RuntimeFlavor)' == 'CoreCLR'">$(MSBuildThisFileDirectory)../src/libraries/Microsoft.NETCore.Platforms/src/PortableRuntimeIdentifierGraph.json</RuntimeIdentifierGraphPath>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -61,6 +62,9 @@
     <KnownFrameworkReference Update="@(KnownFrameworkReference->WithMetadataValue('Identity', '$(LocalFrameworkOverrideName)')->WithMetadataValue('TargetFramework', '$(NetCoreAppCurrent)'))"
                              RuntimePackRuntimeIdentifiers="$(_LocalAppHostRuntimeIdentifiers)"
                              Condition="'$(UseLocalTargetingRuntimePack)' == 'true'" />
+    <KnownFrameworkReference Update="@(KnownFrameworkReference->WithMetadataValue('Identity', '$(LocalFrameworkOverrideName)')->WithMetadataValue('TargetFramework', '$(NetCoreAppCurrent)'))"
+                             RuntimePackRuntimeIdentifiers="$(_LocalAppHostRuntimeIdentifiers);browser-wasm64"
+                             Condition="'$(UseLocalTargetingRuntimePack)' == 'true' and '$(RuntimeIdentifier)' == 'browser-wasm64' and '$(RuntimeFlavor)' == 'CoreCLR'" />
     <KnownRuntimePack Include="$(LocalFrameworkOverrideName)"
                       TargetFramework="$(NetCoreAppCurrent)"
                       RuntimeFrameworkName="$(LocalFrameworkOverrideName)"

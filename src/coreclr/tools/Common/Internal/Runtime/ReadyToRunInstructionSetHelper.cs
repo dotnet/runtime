@@ -97,6 +97,19 @@ namespace Internal.ReadyToRunConstants
                     }
                 }
 
+                case TargetArchitecture.Wasm64:
+                {
+                    switch (instructionSet)
+                    {
+                        case InstructionSet.Wasm64_WasmBase: return ReadyToRunInstructionSet.WasmBase;
+                        case InstructionSet.Wasm64_PackedSimd: return ReadyToRunInstructionSet.PackedSimd;
+                        case InstructionSet.Wasm64_Vector128: return null;
+                        case InstructionSet.Wasm64_RelaxedSimd: return ReadyToRunInstructionSet.RelaxedSimd;
+
+                        default: throw new Exception("Unknown instruction set");
+                    }
+                }
+
                 case TargetArchitecture.X64:
                 {
                     switch (instructionSet)

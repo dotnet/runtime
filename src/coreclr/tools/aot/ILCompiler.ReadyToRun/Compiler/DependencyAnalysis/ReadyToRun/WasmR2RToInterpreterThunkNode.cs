@@ -28,16 +28,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private readonly WasmTypeNode _typeNode;
         private readonly Import _helperCell;
 
-        // Helper signature: (I32, I32, I32, I32) -> ()
-        private static readonly CorInfoWasmType[] s_helperTypeParams = new CorInfoWasmType[]
-        {
-            CorInfoWasmType.CORINFO_WASM_TYPE_VOID,
-            CorInfoWasmType.CORINFO_WASM_TYPE_I32,
-            CorInfoWasmType.CORINFO_WASM_TYPE_I32,
-            CorInfoWasmType.CORINFO_WASM_TYPE_I32,
-            CorInfoWasmType.CORINFO_WASM_TYPE_I32,
-        };
-
         public override bool StaticDependenciesAreComputed => true;
         public override bool IsShareable => false;
         public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.TextSection;
@@ -89,18 +79,16 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         protected override void EmitCode(NodeFactory factory, ref Wasm.WasmEmitter instructionEncoder, bool relocsOnly)
         {
-            Debug.Assert(!instructionEncoder.Is64Bit);
-
-            ISymbolNode helperTypeIndex = factory.WasmTypeNode(s_helperTypeParams);
+            WasmTargetPtr ptr = instructionEncoder.Ptr;
+            CorInfoWasmType ptrType = ptr.CorInfoType;
+            ISymbolNode helperTypeIndex = factory.WasmTypeNode([CorInfoWasmType.CORINFO_WASM_TYPE_VOID, ptrType, ptrType, ptrType, ptrType]);
 
             WasmThunkArgLayout layout = new WasmThunkArgLayout(_wasmSignature, _context);
 
             int sizeOfArgumentArray = layout.SizeOfFrameArgumentArray;
             int sizeOfTransitionBlock = layout.TransitionBlock.SizeOfTransitionBlock;
 
-            // The arguments area must be 16-byte aligned. The TransitionBlock (8 bytes on Wasm32)
-            // sits before the arguments, so it is 8-byte aligned but not 16-byte aligned.
-            // Layout from base: [TransitionBlock (8)] [args...]
+            // Pad before the transition block to align the argument area to 16 bytes.
             int argumentsOffset = AlignmentHelper.AlignUp(sizeOfTransitionBlock, 16);
             int transitionBlockOffset = argumentsOffset - sizeOfTransitionBlock;
             int sizeOfStoredLocals = argumentsOffset + AlignmentHelper.AlignUp(sizeOfArgumentArray, 16);
@@ -117,24 +105,22 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             List<WasmExpr> expressions = new List<WasmExpr>();
 
-            // Allocate stack space: local.get 0; i32.const totalAlloc; i32.sub; local.set 0
+            // Allocate stack space.
             expressions.Add(Local.Get(0));
-            expressions.Add(I32.Const(totalAlloc));
-            expressions.Add(I32.Sub);
+            expressions.Add(ptr.Const(totalAlloc));
+            expressions.Add(ptr.Sub);
             expressions.Add(Local.Set(0));
 
-            // Initialize TransitionBlock:
-            //   First 4 bytes (m_ReturnAddress) = 0
+            // Initialize the transition block with a zero return address and the original SP.
             expressions.Add(Local.Get(0));
-            expressions.Add(I32.Const(0));
-            expressions.Add(I32.Store((ulong)transitionBlockOffset));
+            expressions.Add(ptr.Const(0));
+            expressions.Add(ptr.Store((ulong)transitionBlockOffset));
 
-            //   Second 4 bytes (m_StackPointer) = original SP (local 0 + totalAlloc)
             expressions.Add(Local.Get(0));
             expressions.Add(Local.Get(0));
-            expressions.Add(I32.Const(totalAlloc));
-            expressions.Add(I32.Add);
-            expressions.Add(I32.Store((ulong)(transitionBlockOffset + 4)));
+            expressions.Add(ptr.Const(totalAlloc));
+            expressions.Add(ptr.Add);
+            expressions.Add(ptr.Store((ulong)(transitionBlockOffset + ptr.Size)));
 
             // Store all arguments into the transition block area
             int? retBufParamIndex = null;
@@ -162,12 +148,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     // memory.copy: (dst, src, len) -> ()
                     // dst: base + currentOffset
                     expressions.Add(Local.Get(0));
-                    expressions.Add(I32.Const(currentOffset));
-                    expressions.Add(I32.Add);
+                    expressions.Add(ptr.Const(currentOffset));
+                    expressions.Add(ptr.Add);
                     // src: the byref pointer passed as the wasm local
                     expressions.Add(Local.Get(arg.WasmParamIndex));
                     // len: struct size
-                    expressions.Add(I32.Const(structSize));
+                    expressions.Add(ptr.Const(structSize));
                     expressions.Add(Memory.Copy());
 
                     // Pad remaining bytes to alignment boundary with zeros
@@ -177,10 +163,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     {
                         // memory.fill: (dst, val, len) -> ()
                         expressions.Add(Local.Get(0));
-                        expressions.Add(I32.Const(currentOffset + structSize));
-                        expressions.Add(I32.Add);
+                        expressions.Add(ptr.Const(currentOffset + structSize));
+                        expressions.Add(ptr.Add);
                         expressions.Add(I32.Const(0));
-                        expressions.Add(I32.Const(padding));
+                        expressions.Add(ptr.Const(padding));
                         expressions.Add(Memory.Fill());
                     }
                 }
@@ -207,10 +193,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             else
             {
                 expressions.Add(Local.Get(0));
-                expressions.Add(I32.Const(localRetBufOffset));
-                expressions.Add(I32.Add);
+                expressions.Add(ptr.Const(localRetBufOffset));
+                expressions.Add(ptr.Add);
                 expressions.Add(I32.Const(0));
-                expressions.Add(I32.Const(retBufSize));
+                expressions.Add(ptr.Const(retBufSize));
                 expressions.Add(Memory.Fill());
             }
 
@@ -220,11 +206,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             //   arg2: pointer to the collected arguments and transition block (base + transitionBlockOffset)
             expressions.Add(Local.Get(0));
-            expressions.Add(I32.Const(transitionBlockOffset));
-            expressions.Add(I32.Add);
+            expressions.Add(ptr.Const(transitionBlockOffset));
+            expressions.Add(ptr.Add);
 
             //   arg3: size of arguments (excluding transition block)
-            expressions.Add(I32.Const(sizeOfArgumentArray));
+            expressions.Add(ptr.Const(sizeOfArgumentArray));
 
             //   arg4: return buffer pointer
             if (retBufParamIndex is int retBufLocalIndex)
@@ -236,8 +222,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 // Pass pointer to local 8-byte return buffer
                 expressions.Add(Local.Get(0));
-                expressions.Add(I32.Const(localRetBufOffset));
-                expressions.Add(I32.Add);
+                expressions.Add(ptr.Const(localRetBufOffset));
+                expressions.Add(ptr.Add);
             }
 
             // Extra local to save/restore the stack pointer global across the helper call
@@ -252,7 +238,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             // Load the helper function address and call
             expressions.Add(Global.Get(WebCilObjectWriter.ImageBaseGlobalIndex));
-            expressions.Add(I32.LoadWithRVAOffset(_helperCell));
+            expressions.Add(ptr.LoadWithRVAOffset(_helperCell));
             expressions.Add(ControlFlow.CallIndirect(helperTypeIndex, 0));
 
             // The interpreter publishes its async continuation to the global itself
@@ -270,7 +256,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 expressions.Add(Memory.Load(returnWasmType, (ulong)localRetBufOffset));
             }
 
-            instructionEncoder.FunctionBody = new WasmFunctionBody(_typeNode.Type, new[] { WasmValueType.I32 }, expressions.ToArray());
+            instructionEncoder.FunctionBody = new WasmFunctionBody(_typeNode.Type, new[] { ptr.Type }, expressions.ToArray());
         }
 
         protected override void EmitCode(NodeFactory factory, ref X64.X64Emitter instructionEncoder, bool relocsOnly) { throw new NotSupportedException(); }

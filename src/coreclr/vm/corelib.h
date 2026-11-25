@@ -258,9 +258,9 @@ DEFINE_METHOD(MATH,                 CONVERT_TO_UINT32_CHECKED,   ConvertToUInt32
 DEFINE_METHOD(MATH,                 CONVERT_TO_INT64_CHECKED,    ConvertToInt64Checked,    NoSig)
 DEFINE_METHOD(MATH,                 CONVERT_TO_UINT64_CHECKED,   ConvertToUInt64Checked,   NoSig)
 
-#ifdef TARGET_32BIT
 DEFINE_METHOD(MATH,                 MULTIPLY_CHECKED_INT64,      MultiplyChecked,          SM_Long_Long_RetLong)
 DEFINE_METHOD(MATH,                 MULTIPLY_CHECKED_UINT64,     MultiplyChecked,          SM_ULong_ULong_RetULong)
+#ifdef TARGET_32BIT
 DEFINE_METHOD(MATH,                 DIV_INT32,                   DivInt32,                 NoSig)
 DEFINE_METHOD(MATH,                 DIV_UINT32,                  DivUInt32,                NoSig)
 DEFINE_METHOD(MATH,                 DIV_INT64,                   DivInt64,                 NoSig)

@@ -201,7 +201,8 @@ function libCoreRunFactory() {
                 throw new Error("Wasm data section not found");
             }
 
-            const path = UTF8ToString(pathPtr);
+            const isWasm64 = typeof pathPtr === "bigint";
+            const path = UTF8ToString(isWasm64 ? Number(pathPtr) : pathPtr);
             let wasmPath;
             if (path.endsWith(".dll")) {
                 wasmPath = path.slice(0, -4) + ".wasm";
@@ -243,7 +244,7 @@ function libCoreRunFactory() {
             }
 
             try {
-                wasmTable.grow(tableSize);
+                wasmTable.grow(isWasm64 ? BigInt(tableSize) : tableSize);
             } catch (e) {
                 const errorMessage = e instanceof Error ? e.message : String(e);
                 console.error("Failed to grow WebAssembly table for Webcil image:", { wasmPath, errorMessage });
@@ -254,8 +255,11 @@ function libCoreRunFactory() {
             var wasmInstance;
             const sp = stackSave();
             try {
-                const ptrPtr = stackAlloc(4);
-                if (_posix_memalign(ptrPtr, 16, payloadSize)) {
+                const ptrPtr = stackAlloc(isWasm64 ? 8 : 4);
+                if (_posix_memalign(
+                    isWasm64 ? BigInt(ptrPtr) : ptrPtr,
+                    isWasm64 ? 16n : 16,
+                    isWasm64 ? BigInt(payloadSize) : payloadSize)) {
                     throw new Error("posix_memalign failed for Webcil payload");
                 }
                 if (typeof (wasmExports.__stack_pointer) === "undefined") {
@@ -267,15 +271,16 @@ function libCoreRunFactory() {
                 if (typeof (wasmExports.__async_continuation) === "undefined") {
                     throw new Error("__async_continuation was not preserved by the linker or optimizer");
                 }
-                payloadPtr = HEAPU32[ptrPtr >>> 2 >>> 0];
+                payloadPtr = isWasm64 ? HEAPU64[Number(ptrPtr) / 8] : HEAPU32[ptrPtr >>> 2 >>> 0];
+                const addressType = isWasm64 ? "i64" : "i32";
                 wasmInstance = new WebAssembly.Instance(wasmModule, {
                     webcil: {
                         memory: wasmMemory,
                         __stack_pointer: wasmExports.__stack_pointer,
                         __coreclr_wasm_rtlrestorecontext_tag: wasmExports.__coreclr_wasm_rtlrestorecontext_tag,
                         __indirect_function_table: wasmTable,
-                        __table_base: new WebAssembly.Global({ value: "i32", mutable: false }, tableStartIndex),
-                        __memory_base: new WebAssembly.Global({ value: "i32", mutable: false }, payloadPtr),
+                        __table_base: new WebAssembly.Global({ value: addressType, mutable: false }, tableStartIndex),
+                        __memory_base: new WebAssembly.Global({ value: addressType, mutable: false }, payloadPtr),
                         // Runtime-async continuation return value, shared with the runtime module.
                         __async_continuation: wasmExports.__async_continuation
                     }
@@ -304,9 +309,14 @@ function libCoreRunFactory() {
                 wasmInstance.exports.patchWebcilHeader(payloadPtr, payloadSize);
             }
 
-            HEAPU32[outDataStartPtr >>> 2 >>> 0] = payloadPtr;
-            HEAPU32[outSize >>> 2 >>> 0] = payloadSize;
-            HEAPU32[(outSize + 4) >>> 2 >>> 0] = 0;
+            if (isWasm64) {
+                HEAPU64[Number(outDataStartPtr) / 8] = payloadPtr;
+                HEAPU64[Number(outSize) / 8] = BigInt(payloadSize);
+            } else {
+                HEAPU32[outDataStartPtr >>> 2 >>> 0] = payloadPtr;
+                HEAPU32[outSize >>> 2 >>> 0] = payloadSize;
+                HEAPU32[(outSize + 4) >>> 2 >>> 0] = 0;
+            }
             return true;
         }
     };

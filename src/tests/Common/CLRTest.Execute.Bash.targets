@@ -443,7 +443,7 @@ run_out_of_process_tests() {
 }
       ]]></BashRunOutOfProcessTestsFunction>
 
-      <CLRTestBashPreCommands Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(TargetArchitecture)' == 'wasm' and '$(TargetOS)' == 'browser'"><![CDATA[
+      <CLRTestBashPreCommands Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(TargetsBrowser)' == 'true'"><![CDATA[
 $(CLRTestBashPreCommands)
 $(BashDefaultRunWithNodeJS)
 if [ ! -z ${RunCrossGen2+x} ]%3B then

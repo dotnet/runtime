@@ -84,6 +84,7 @@ namespace ILCompiler.DependencyAnalysis
                     return riscv64Emitter.Builder.ToObjectData();
 
                 case TargetArchitecture.Wasm32:
+                case TargetArchitecture.Wasm64:
                     Wasm.WasmEmitter wasmEmitter = new Wasm.WasmEmitter(factory, relocsOnly);
                     EmitCode(factory, ref wasmEmitter, relocsOnly);
                     return wasmEmitter.Encode(this);

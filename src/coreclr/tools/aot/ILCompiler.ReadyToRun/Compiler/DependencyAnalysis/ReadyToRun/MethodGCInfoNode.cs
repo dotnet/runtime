@@ -41,12 +41,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private static bool TargetUsesPersonalityRoutines(TargetArchitecture targetArch)
         {
-            return targetArch != TargetArchitecture.X86 && targetArch != TargetArchitecture.Wasm32;
+            return targetArch is not (TargetArchitecture.X86 or TargetArchitecture.Wasm32 or TargetArchitecture.Wasm64);
         }
 
         private static bool TargetAlignsGCInfoComponents(TargetArchitecture targetArch)
         {
-            return targetArch != TargetArchitecture.Wasm32;
+            return targetArch is not (TargetArchitecture.Wasm32 or TargetArchitecture.Wasm64);
         }
 
         public int[] CalculateFuncletOffsets(NodeFactory factory)

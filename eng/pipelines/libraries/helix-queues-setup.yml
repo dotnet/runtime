@@ -181,7 +181,7 @@ jobs:
       - (Ubuntu.2604.Amd64.Open)AzureLinux.4.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-26.04-helix-webassembly-amd64@sha256:ad1f7dcade2316b01be4f731474775e2d82e7bf40f8e54c9af848b5a66a7b735
 
     # Browser WebAssembly
-    - ${{ if eq(parameters.platform, 'browser_wasm') }}:
+    - ${{ if in(parameters.platform, 'browser_wasm', 'browser_wasm64') }}:
       - (Ubuntu.2604.Amd64.Open)AzureLinux.4.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-26.04-helix-webassembly-amd64@sha256:ad1f7dcade2316b01be4f731474775e2d82e7bf40f8e54c9af848b5a66a7b735
 
     # Browser WebAssembly Firefox
