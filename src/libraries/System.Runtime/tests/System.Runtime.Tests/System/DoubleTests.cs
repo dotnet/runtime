@@ -1099,6 +1099,7 @@ namespace System.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))] // Requires a lot of memory
         [OuterLoop("Takes a long time, allocates a lot of memory")]
         [SkipOnMono("Frequently throws OOM on Mono")]
+        [SkipOnPlatform(TestPlatforms.Browser, "Allocates multi-gigabyte buffers; wasm linear memory never shrinks, so the browser exhausts Helix machine memory")]
         public static void ToString_ValidLargeFormat()
         {
             double d = 123.0;
