@@ -393,12 +393,9 @@ namespace System.Runtime.Serialization.Json
                             CollectionKind kind = collectionContract.Kind;
                             if (kind == CollectionKind.GenericDictionary || kind == CollectionKind.GenericCollection || kind == CollectionKind.GenericEnumerable)
                             {
-                                Type[] interfaceTypes = enumeratorType.GetInterfaces();
-                                foreach (Type interfaceType in interfaceTypes)
+                                foreach (Type interfaceType in enumeratorType.GetInterfacesWithSameMetadataDefinitionAs(typeof(System.Collections.Generic.IEnumerator<>)))
                                 {
-                                    if (interfaceType.IsGenericType
-                                        && interfaceType.GetGenericTypeDefinition() == typeof(System.Collections.Generic.IEnumerator<>)
-                                        && interfaceType.GetGenericArguments()[0] == collectionContract.ItemType)
+                                    if (interfaceType.GetGenericArguments()[0] == collectionContract.ItemType)
                                     {
                                         ienumeratorInterface = interfaceType;
                                         break;

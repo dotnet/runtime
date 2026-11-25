@@ -4,6 +4,7 @@
 // This file contains the virtual call stub manager and caches
 
 #include "common.h"
+#include <minipal/thread.h>
 #include "array.h"
 #include "CachedInterfaceDispatchPal.h"
 #include "CachedInterfaceDispatch.h"
@@ -177,7 +178,7 @@ void VirtualCallStubManager::StartupLogging()
     EX_TRY
     {
         SString str;
-        str.Printf("StubLog_%d.log", GetCurrentProcessId());
+        str.Printf("StubLog_%d.log", minipal_get_current_process_id());
         if (fopen_lp(&g_hStubLogFile, str.GetUnicode(), W("wb")) != 0)
             g_hStubLogFile = NULL;
     }

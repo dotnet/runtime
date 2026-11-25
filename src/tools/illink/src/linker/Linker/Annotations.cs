@@ -60,6 +60,7 @@ namespace Mono.Linker
         protected readonly Dictionary<ExportedType, TypePreserveMembers> preserved_exportedtype_members = new();
         protected readonly Dictionary<IMemberDefinition, List<MethodDefinition>> preserved_methods = new Dictionary<IMemberDefinition, List<MethodDefinition>>();
         readonly HashSet<AssemblyDefinition> assemblies_with_root_all_members = new();
+        readonly HashSet<AssemblyDefinition> library_root_assemblies = new();
         protected readonly HashSet<IMetadataTokenProvider> public_api = new HashSet<IMetadataTokenProvider>();
         protected readonly Dictionary<AssemblyDefinition, ISymbolReader> symbol_readers = new Dictionary<AssemblyDefinition, ISymbolReader>();
         readonly Dictionary<IMemberDefinition, LinkerAttributesInformation> linker_attributes = new Dictionary<IMemberDefinition, LinkerAttributesInformation>();
@@ -432,6 +433,16 @@ namespace Mono.Linker
         public bool IsRootAssembly(AssemblyDefinition assembly)
         {
             return assemblies_with_root_all_members.Contains(assembly);
+        }
+
+        internal void SetLibraryRootAssembly(AssemblyDefinition assembly)
+        {
+            library_root_assemblies.Add(assembly);
+        }
+
+        internal bool IsLibraryRootAssembly(AssemblyDefinition assembly)
+        {
+            return library_root_assemblies.Contains(assembly);
         }
 
         public bool TryGetMethodStubValue(MethodDefinition method, out object? value)

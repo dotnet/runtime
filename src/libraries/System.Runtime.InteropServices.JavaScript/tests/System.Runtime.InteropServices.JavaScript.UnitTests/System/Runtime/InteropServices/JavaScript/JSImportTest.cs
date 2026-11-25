@@ -500,6 +500,30 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         #region Views
 
         [Fact]
+        public void JsImportSpanByteLength()
+        {
+            Span<byte> bytes = stackalloc byte[3];
+            Span<int> integers = stackalloc int[3];
+            Span<float> singles = stackalloc float[3];
+            Span<double> doubles = stackalloc double[3];
+
+            Assert.Equal(3, JavaScriptTestHelper.GetMemoryViewByteLength(bytes));
+            Assert.Equal(12, JavaScriptTestHelper.GetMemoryViewByteLength(integers));
+            Assert.Equal(12, JavaScriptTestHelper.GetMemoryViewByteLength(singles));
+            Assert.Equal(24, JavaScriptTestHelper.GetMemoryViewByteLength(doubles));
+        }
+
+        [Theory]
+        [InlineData(0, 0)]
+        [InlineData(3, 12)]
+        public void JsImportArraySegmentOfSingleByteLength(int count, int expectedByteLength)
+        {
+            ArraySegment<float> segment = new ArraySegment<float>(new float[5], 1, count);
+
+            Assert.Equal(expectedByteLength, JavaScriptTestHelper.GetMemoryViewByteLength(segment));
+        }
+
+        [Fact]
         public unsafe void JsImportSpanOfByte()
         {
             var expectedBytes = stackalloc byte[] { 1, 2, 42, 0, 127, 255 };

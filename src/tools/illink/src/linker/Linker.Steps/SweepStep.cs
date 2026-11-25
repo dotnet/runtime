@@ -63,21 +63,18 @@ namespace Mono.Linker.Steps
                 UpdateAssemblyReferencesToRemovedAssemblies(assembly);
 
             // Update scopes before removing any type forwarder.
-            if (Context.UpdateReferenceScopes)
+            foreach (var assembly in assemblies)
             {
-                foreach (var assembly in assemblies)
+                var action = Annotations.GetAction(assembly);
+                switch (action)
                 {
-                    var action = Annotations.GetAction(assembly);
-                    switch (action)
-                    {
-                        case AssemblyAction.CopyUsed:
-                        case AssemblyAction.Link:
-                        case AssemblyAction.Save:
-                            bool changed = SweepAssemblyReferences(assembly);
-                            if (changed && action == AssemblyAction.CopyUsed)
-                                Annotations.SetAction(assembly, AssemblyAction.Save);
-                            break;
-                    }
+                    case AssemblyAction.CopyUsed:
+                    case AssemblyAction.Link:
+                    case AssemblyAction.Save:
+                        bool changed = SweepAssemblyReferences(assembly);
+                        if (changed && action == AssemblyAction.CopyUsed)
+                            Annotations.SetAction(assembly, AssemblyAction.Save);
+                        break;
                 }
             }
 
@@ -632,29 +629,38 @@ namespace Mono.Linker.Steps
             //
             assembly.MainModule.AssemblyReferences.Clear();
 
-            var arc = new AssemblyReferencesCorrector(assembly, walkSymbols: Context.LinkSymbols, updateScopes: Context.UpdateReferenceScopes);
+            var arc = new AssemblyReferencesCorrector(assembly, walkSymbols: Context.LinkSymbols,
+                keepScope: Annotations.IsLibraryRootAssembly(assembly) ? IsKeptAsIs : null);
             arc.Process();
 
             return arc.ChangedAnyScopes;
         }
 
+        // A library keeps referencing the assemblies it was compiled against, rather than whichever assembly defines
+        // the type in the trimming closure, as long as those are kept as they are with their type forwarders
+        bool IsKeptAsIs(AssemblyNameReference reference)
+        {
+            return Context.TryResolve(reference) is AssemblyDefinition referenced &&
+                Annotations.GetAction(referenced) is AssemblyAction.Skip or AssemblyAction.Copy;
+        }
+
         sealed class AssemblyReferencesCorrector : TypeReferenceWalker
         {
             readonly DefaultMetadataImporter importer;
-            readonly bool updateScopes;
+            readonly Func<AssemblyNameReference, bool>? keepScope;
 
             public bool ChangedAnyScopes { get; private set; }
 
-            public AssemblyReferencesCorrector(AssemblyDefinition assembly, bool walkSymbols, bool updateScopes) : base(assembly, walkSymbols)
+            public AssemblyReferencesCorrector(AssemblyDefinition assembly, bool walkSymbols, Func<AssemblyNameReference, bool>? keepScope) : base(assembly, walkSymbols)
             {
                 this.importer = new DefaultMetadataImporter(assembly.MainModule);
-                this.updateScopes = updateScopes;
+                this.keepScope = keepScope;
                 ChangedAnyScopes = false;
             }
 
             protected override void ProcessTypeReference(TypeReference type)
             {
-                if (!updateScopes && type.Scope is AssemblyNameReference originalScope)
+                if (type.Scope is AssemblyNameReference originalScope && keepScope?.Invoke(originalScope) == true)
                 {
                     type.Scope = importer.ImportReference(originalScope);
                     return;
@@ -694,7 +700,7 @@ namespace Mono.Linker.Steps
 
             protected override void ProcessExportedType(ExportedType exportedType)
             {
-                if (!updateScopes && exportedType.Scope is AssemblyNameReference originalScope)
+                if (exportedType.Scope is AssemblyNameReference originalScope && keepScope?.Invoke(originalScope) == true)
                 {
                     exportedType.Scope = importer.ImportReference(originalScope);
                     return;

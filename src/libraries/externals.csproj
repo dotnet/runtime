@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.Build.NoTargets">
   <PropertyGroup>
-    <SwapNativeForIL Condition="'$(SwapNativeForIL)' == '' and ('$(Configuration)' == 'Debug' or '$(Coverage)' == 'true') and '$(RuntimeFlavor)' != 'Mono'">true</SwapNativeForIL>
+    <SwapNativeForIL Condition="'$(SwapNativeForIL)' == '' and ('$(Configuration)' == 'Debug' or '$(Coverage)' == 'true')">true</SwapNativeForIL>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <!-- Binplace properties -->
     <BinPlaceForTargetVertical>false</BinPlaceForTargetVertical>
@@ -84,7 +84,7 @@
   <Target Name="OverrideRuntimeCoreCLR"
           DependsOnTargets="ResolveRuntimeFilesFromLocalBuild"
           AfterTargets="AfterResolveReferences"
-          Condition="'$(RuntimeFlavor)' != 'Mono' and '$(UseNativeAotCoreLib)' != 'true'">
+          Condition="'$(UseNativeAotCoreLib)' != 'true'">
     <ItemGroup>
       <RuntimeFiles Include="@(HostFxrFile)" Condition="Exists('@(HostFxrFile)')" />
       <RuntimeFiles Include="@(HostPolicyFile)" Condition="Exists('@(HostPolicyFile)')" />
@@ -123,7 +123,7 @@
   <Target Name="OverrideBrowserHost"
           DependsOnTargets="ResolveLibrariesRuntimeFilesFromLocalBuild"
           AfterTargets="AfterResolveReferences"
-          Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'CoreCLR'">
+          Condition="'$(TargetOS)' == 'browser'">
     <ItemGroup>
       <ReferenceCopyLocalPaths Include="@(LibrariesRuntimeFiles)"
                                Condition="'%(LibrariesRuntimeFiles.IsNative)' == 'true'">
@@ -132,21 +132,4 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="OverrideRuntimeMono"
-          DependsOnTargets="ResolveRuntimeFilesFromLocalBuild"
-          AfterTargets="AfterResolveReferences"
-          Condition="'$(RuntimeFlavor)' == 'Mono'">
-    <ItemGroup>
-      <RuntimeFiles Include="@(HostFxrFile)" Condition="Exists('@(HostFxrFile)') and '$(TargetsMobile)' != 'true'"/>
-      <RuntimeFiles Include="@(HostPolicyFile)" Condition="Exists('@(HostPolicyFile)') and '$(TargetsMobile)' != 'true'" />
-      <RuntimeFiles Include="@(_HostFxrSymbols)" IsNative="true" Condition="Exists('%(Identity)') and '$(TargetsMobile)' != 'true'" />
-      <RuntimeFiles Include="@(_HostPolicySymbols)" IsNative="true" Condition="Exists('%(Identity)') and '$(TargetsMobile)' != 'true'" />
-      <ReferenceCopyLocalPaths Include="@(RuntimeFiles)" />
-      <!-- Setup runtime pack native. -->
-      <ReferenceCopyLocalPaths Include="@(MonoCrossFiles)"
-                               DestinationSubDirectory="cross/%(RecursiveDir)" />
-      <ReferenceCopyLocalPaths Include="@(MonoIncludeFiles)"
-                               DestinationSubDirectory="include/%(RecursiveDir)" />
-    </ItemGroup>
-  </Target>
 </Project>

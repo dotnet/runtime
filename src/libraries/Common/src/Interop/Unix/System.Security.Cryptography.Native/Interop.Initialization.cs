@@ -31,15 +31,19 @@ internal static partial class Interop
     {
         static CryptoInitializer()
         {
-            if (EnsureOpenSslInitialized() != 0)
+            // SAFETY: To be audited
+            unsafe
             {
-                // Ideally this would be a CryptographicException, but we use
-                // OpenSSL in libraries lower than System.Security.Cryptography.
-                // It's not a big deal, though: this will already be wrapped in a
-                // TypeLoadException, and this failing means something is very
-                // wrong with the system's configuration and any code using
-                // these libraries will be unable to operate correctly.
-                throw new InvalidOperationException();
+                if (EnsureOpenSslInitialized() != 0)
+                {
+                    // Ideally this would be a CryptographicException, but we use
+                    // OpenSSL in libraries lower than System.Security.Cryptography.
+                    // It's not a big deal, though: this will already be wrapped in a
+                    // TypeLoadException, and this failing means something is very
+                    // wrong with the system's configuration and any code using
+                    // these libraries will be unable to operate correctly.
+                    throw new InvalidOperationException();
+                }
             }
         }
 
@@ -49,6 +53,6 @@ internal static partial class Interop
         }
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EnsureOpenSslInitialized")]
-        private static partial int EnsureOpenSslInitialized();
+        private static unsafe partial int EnsureOpenSslInitialized();
     }
 }

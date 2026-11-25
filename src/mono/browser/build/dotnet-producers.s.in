@@ -1,0 +1,31 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+
+.section .custom_section.producers,"",@
+.uleb128 2
+.uleb128 .Lprocessed_by_field_end - .Lprocessed_by_field_start
+.Lprocessed_by_field_start:
+.ascii "processed-by"
+.Lprocessed_by_field_end:
+.uleb128 1
+.uleb128 .Lruntime_name_end - .Lruntime_name_start
+.Lruntime_name_start:
+.ascii "{RuntimeName}"
+.Lruntime_name_end:
+.uleb128 .Lruntime_version_end - .Lruntime_version_start
+.Lruntime_version_start:
+.ascii "{Version}"
+.Lruntime_version_end:
+.uleb128 .Lsdk_field_end - .Lsdk_field_start
+.Lsdk_field_start:
+.ascii "sdk"
+.Lsdk_field_end:
+.uleb128 1
+.uleb128 .Lsdk_name_end - .Lsdk_name_start
+.Lsdk_name_start:
+.ascii ".NET"
+.Lsdk_name_end:
+.uleb128 .Lsdk_version_end - .Lsdk_version_start
+.Lsdk_version_start:
+.ascii "{Version}"
+.Lsdk_version_end:
