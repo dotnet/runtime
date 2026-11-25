@@ -1992,7 +1992,7 @@ public:
         ICorJitInfo::PgoInstrumentationSchema schemaElem = {};
         schemaElem.Count                                 = 1;
         schemaElem.Other = isTypeHistogram ? ICorJitInfo::HandleHistogram32::CLASS_FLAG : 0;
-        if (call->IsVirtualStub())
+        if (call->IsVirtualStub() || call->IsR2RInterfaceLdvirtftn())
         {
             schemaElem.Other |= ICorJitInfo::HandleHistogram32::INTERFACE_FLAG;
         }
@@ -2419,6 +2419,12 @@ void HandleHistogramProbeInstrumentor::BuildSchemaElements(BasicBlock* block, Sc
     {
         visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
     }
+
+    // Early block splitting can copy the flag into blocks without a probe.
+    if (block->bbHandleHistogramSchemaIndex == (int)schema.size())
+    {
+        block->RemoveFlags(BBF_HAS_HISTOGRAM_PROFILE);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -2680,14 +2686,11 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
         fgCountInstrumentor = new (this, CMK_Pgo) BlockCountInstrumentor(this);
     }
 
-    // Enable class profiling by default, when jitting.
-    // Todo: we may also want this on by default for prejitting.
-    //
     const bool useClassProfiles    = (JitConfig.JitClassProfiling() > 0);
     const bool useDelegateProfiles = (JitConfig.JitDelegateProfiling() > 0);
     const bool useVTableProfiles   = (JitConfig.JitVTableProfiling() > 0);
     fgR2RCastProfiling             = r2rPgo && useClassProfiles && (JitConfig.JitProfileCasts() == 1);
-    if (fgR2RCastProfiling || (!prejit && (useClassProfiles || useDelegateProfiles || useVTableProfiles)))
+    if (((!prejit || r2rPgo) && useClassProfiles) || (!prejit && (useDelegateProfiles || useVTableProfiles)))
     {
         fgHistogramInstrumentor = new (this, CMK_Pgo) HandleHistogramProbeInstrumentor(this);
     }

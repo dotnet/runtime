@@ -203,14 +203,16 @@ private:
         //   block - the block to insert the spill statements into.
         //   useToSpill - the use of the call to spill into a temp.
         //
-        void SplitCall(BasicBlock* block, GenTree** useToSpill)
+        //   fallbackUse - the use that should only be evaluated on the fallback path.
+        //
+        void SplitCall(BasicBlock* block, GenTree** useToSpill, GenTree** fallbackUse = nullptr)
         {
             // Find last arg with a side effect. All args with any effect
             // before that will need to be spilled.
             GenTree** lastSideEffectUse = nullptr;
             for (GenTree** use : m_origCall->UseEdges())
             {
-                if (((*use)->gtFlags & GTF_SIDE_EFFECT) != 0)
+                if ((use != fallbackUse) && (((*use)->gtFlags & GTF_SIDE_EFFECT) != 0))
                 {
                     lastSideEffectUse = use;
                 }
@@ -220,6 +222,11 @@ private:
             {
                 for (GenTree** use : m_origCall->UseEdges())
                 {
+                    if (use == fallbackUse)
+                    {
+                        continue;
+                    }
+
                     GenTree* node = *use;
                     if (((node->gtFlags & GTF_ALL_EFFECT) != 0) ||
                         (!m_compiler->impIsInvariant(node) && m_compiler->gtHasLocalsWithAddrOp(node)))
@@ -705,7 +712,9 @@ private:
             }
 
             CallArg* thisArg = m_origCall->gtArgs.GetThisArg();
-            SplitCall(m_checkBlock, &thisArg->EarlyNodeRef());
+            // Interface dispatch can throw and must not run on the guarded direct path.
+            GenTree** fallbackUse = m_origCall->IsR2RInterfaceLdvirtftn() ? &m_origCall->gtControlExpr : nullptr;
+            SplitCall(m_checkBlock, &thisArg->EarlyNodeRef(), fallbackUse);
 
             GenTree* thisTree = m_compiler->gtCloneExpr(thisArg->GetNode());
 

@@ -488,12 +488,14 @@ same trace and MIBC as the edge counts. Pass crossgen2 `--codegenopt:JitProfileV
 to turn off value probes while retaining counts. Value collection does not add
 new Wasm constant-length optimizations.
 
-Instrumented methods also collect input types at eligible `isinst` and `castclass`
-sites using the existing JIT type histograms. Pass crossgen2
-`--codegenopt:JitProfileCasts=0` to disable these probes. The profile does not
-include receiver or target histograms for virtual, interface, or delegate calls.
-On republish, a sampled type that the R2R image cannot reference is treated as
-unknown, so it cannot force the method to fall back to the interpreter.
+Instrumented methods also collect receiver types at eligible virtual and interface
+calls and input types at eligible `isinst` and `castclass` sites. On republish,
+receiver profiles can drive guarded devirtualization. Pass crossgen2
+`--codegenopt:JitClassProfiling=0` to disable all type probes or
+`--codegenopt:JitProfileCasts=0` to disable only the cast probes. The profile does
+not include target-method histograms for virtual or delegate calls. A sampled type
+that the R2R image cannot reference is treated as unknown, so it cannot force the
+method to fall back to the interpreter.
 
 Run the published app in Chrome (or another supported browser), exercise representative
 workloads, and call:

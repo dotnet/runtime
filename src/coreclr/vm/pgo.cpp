@@ -1031,12 +1031,17 @@ BYTE* PgoManager::allocPgoInstrumentationFromR2RSchema(Module* imageModule, Meth
                 break;
             case Kind::ValueHistogramLongCount:
             case Kind::HandleHistogramLongCount:
+            {
+                using Histogram = ICorJitInfo::HandleHistogram32;
+                const bool validFlags = item.InstrumentationKind == Kind::ValueHistogramLongCount
+                    ? item.Other == 0
+                    : (static_cast<UINT32>(item.Other) & ~Histogram::INTERFACE_FLAG) == Histogram::CLASS_FLAG;
                 if (item.Count != 1 || item.ILOffset < 0 ||
-                    item.Other != (item.InstrumentationKind == Kind::HandleHistogramLongCount
-                        ? static_cast<INT32>(ICorJitInfo::HandleHistogram32::CLASS_FLAG) : 0) ||
+                    !validFlags ||
                     static_cast<UINT32>(item.ILOffset) >= ilHeader.GetCodeSize() || i + 1 == recordCount)
                     COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
                 break;
+            }
             case Kind::ValueHistogram:
             case Kind::HandleHistogramTypes:
                 if (expectedTable != item.InstrumentationKind ||

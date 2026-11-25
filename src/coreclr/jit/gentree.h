@@ -4418,6 +4418,7 @@ enum GenTreeCallFlags : unsigned int
     GTF_CALL_M_CAST_CAN_BE_EXPANDED    = 0x02000000, // this cast (helper call) can be expanded if it's profitable. To be removed.
     GTF_CALL_M_CAST_OBJ_NONNULL        = 0x04000000, // if we expand this specific cast we don't need to check the input object for null
                                                      // NOTE: if needed, this flag can be removed, and we can introduce new _NONNUL cast helpers
+    GTF_CALL_M_R2R_INTERFACE_LDVIRTFTN  = 0x08000000, // call via ldvirtftn to a non-generic R2R interface method
 };
 
 inline constexpr GenTreeCallFlags operator ~(GenTreeCallFlags a)
@@ -5403,6 +5404,10 @@ struct GenTreeCall final : public GenTree
     bool IsVirtualVtable() const
     {
         return (gtFlags & GTF_CALL_VIRT_KIND_MASK) == GTF_CALL_VIRT_VTABLE;
+    }
+    bool IsR2RInterfaceLdvirtftn() const
+    {
+        return (gtCallMoreFlags & GTF_CALL_M_R2R_INTERFACE_LDVIRTFTN) != 0;
     }
     bool IsGenericVirtual(Compiler* compiler) const
     {

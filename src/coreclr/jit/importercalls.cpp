@@ -701,6 +701,12 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                        (sig->callConv & CORINFO_CALLCONV_MASK) != CORINFO_CALLCONV_NATIVEVARARG);
 
 #ifdef TARGET_WASM
+                if (IsReadyToRun() && ((callInfo->classFlags & CORINFO_FLG_INTERFACE) != 0) &&
+                    (sig->sigInst.methInstCount == 0))
+                {
+                    call->AsCall()->gtCallMoreFlags |= GTF_CALL_M_R2R_INTERFACE_LDVIRTFTN;
+                }
+
                 // Wasm virtual calls that cannot use a pregenerated dispatch thunk (including the
                 // array Address accessor) come through LDVIRTFTN, which skips the shared hidden-arg
                 // handling below via the `goto DEVIRT`. Add the type-context arg here so the
@@ -8291,7 +8297,7 @@ void Compiler::pickGDV(GenTreeCall*           call,
     const int               maxLikelyClasses = MAX_GDV_TYPE_CHECKS;
     LikelyClassMethodRecord likelyClasses[maxLikelyClasses];
     unsigned                numberOfClasses = 0;
-    if (call->IsVirtualStub() || call->IsVirtualVtable() || call->IsHelperCall())
+    if (call->IsVirtual() || call->IsR2RInterfaceLdvirtftn() || call->IsHelperCall())
     {
         numberOfClasses = getLikelyClasses(likelyClasses, maxLikelyClasses, pgoInfo.PgoSchema, pgoInfo.PgoSchemaCount,
                                            pgoInfo.PgoData, ilOffset);
@@ -8767,7 +8773,7 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
         return;
     }
 
-    if (call->IsGenericVirtual(this))
+    if (call->IsGenericVirtual(this) && !call->IsR2RInterfaceLdvirtftn())
     {
         JITDUMP("Generic virtual methods are not supported by guarded devirtualization, sorry.\n");
         return;
@@ -9074,7 +9080,7 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*            call,
                                                    CORINFO_RESOLVED_TOKEN* pUnboxedResolvedToken)
 {
     // This transformation only makes sense for delegate and virtual calls
-    assert(call->IsDelegateInvoke() || call->IsVirtual());
+    assert(call->IsDelegateInvoke() || call->IsVirtual() || call->IsR2RInterfaceLdvirtftn());
 
     // Only mark calls if the feature is enabled.
     const bool isEnabled = JitConfig.JitEnableGuardedDevirtualization() > 0;
@@ -9446,7 +9452,7 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
         return;
     }
 
-    // Ignore indirect calls, unless they are indirect virtual stub calls with profile info.
+    // Ignore indirect calls unless they have a guarded direct call candidate.
     //
     if (call->gtCallType == CT_INDIRECT)
     {
@@ -9457,7 +9463,7 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
         }
         else
         {
-            assert(call->IsVirtualStub());
+            assert(call->IsVirtualStub() || call->IsR2RInterfaceLdvirtftn());
         }
     }
 
@@ -10329,6 +10335,7 @@ void Compiler::impTransformDevirtualizedCall(GenTreeCall*            call,
     call->ClearFatPointerCandidate();
     call->gtFlags &= ~GTF_CALL_VIRT_VTABLE;
     call->gtFlags &= ~GTF_CALL_VIRT_STUB;
+    call->gtCallMoreFlags &= ~GTF_CALL_M_R2R_INTERFACE_LDVIRTFTN;
     call->gtCallMethHnd = derivedMethod;
     call->gtCallType    = CT_USER_FUNC;
     call->gtControlExpr = nullptr;
@@ -10743,23 +10750,22 @@ Compiler::GDVProbeType Compiler::compClassifyGDVProbeType(GenTreeCall* call)
         return GDVProbeType::None;
     }
 
-    const bool profileCast = (JitConfig.JitClassProfiling() > 0) && impIsCastHelperEligibleForClassProbe(call) &&
-                             (call->gtHandleHistogramProfileCandidateInfo != nullptr);
-    if (IsAot())
-    {
-        return profileCast ? GDVProbeType::ClassProfile : GDVProbeType::None;
-    }
-
     bool createTypeHistogram = false;
     if (JitConfig.JitClassProfiling() > 0)
     {
-        createTypeHistogram = call->IsVirtualStub() || call->IsVirtualVtable();
+        createTypeHistogram = call->IsVirtual() || call->IsR2RInterfaceLdvirtftn();
 
         // Cast helpers may conditionally (depending on whether the class is
         // exact or not) have probes. For those helpers we do not use this
         // function to classify the probe type until after we have decided on
         // whether we probe them or not.
-        createTypeHistogram = createTypeHistogram || profileCast;
+        createTypeHistogram = createTypeHistogram || (impIsCastHelperEligibleForClassProbe(call) &&
+                                                      (call->gtHandleHistogramProfileCandidateInfo != nullptr));
+    }
+
+    if (IsAot())
+    {
+        return (compR2RPgoInstrumentation() && createTypeHistogram) ? GDVProbeType::ClassProfile : GDVProbeType::None;
     }
 
     bool createMethodHistogram = ((JitConfig.JitDelegateProfiling() > 0) && call->IsDelegateInvoke()) ||

@@ -492,6 +492,84 @@ public class WasmArgumentLayoutTests
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
+    public void ReadyToRunProfilesVirtualAndInterfaceReceivers(bool classProfiling)
+    {
+        string directory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        Directory.CreateDirectory(directory);
+        try
+        {
+            string input = CompileCallbackAssembly("""
+                public interface ITarget { int Run(); }
+                public abstract class Target { public abstract int Run(); }
+                public sealed class Hot : Target, ITarget
+                {
+                    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+                    public override int Run() => 5;
+                }
+                public static class Callbacks
+                {
+                    public static int ViaInterface(ITarget target) => target.Run() + 1;
+                    public static int ViaVirtual(Target target, int? value, out object boxed)
+                    {
+                        int result = target.Run();
+                        boxed = value;
+                        return result + 1;
+                    }
+                }
+                """, Path.Combine(directory, "ReceiverProfile.dll"), optimize: true);
+            string listing = Path.Combine(directory, "receiver.jit.txt");
+            R2RCompilationResult result = new R2RDriver(_output).Compile(
+            [
+                input, "--reference", Path.Combine(TestPaths.LibrariesDir, "*.dll"),
+                "--targetos", "browser", "--targetarch", "wasm", "--pgo-instrumentation",
+                "--optimize", "--parallelism", "1",
+                "--codegenopt:JitProfileCasts=0", $"--codegenopt:JitClassProfiling={(classProfiling ? 1 : 0)}",
+                "--codegenopt:JitDisasm=Callbacks:*", $"--codegenopt:JitStdOutFile={listing}",
+                "--out", Path.Combine(directory, "receiver.wasm"),
+            ]);
+            Assert.True(result.Success, result.StandardOutput + result.StandardError);
+            string disassembly = File.ReadAllText(listing);
+            Assert.Contains("; Assembly listing for method Callbacks:ViaInterface", disassembly);
+            Assert.Contains("; Assembly listing for method Callbacks:ViaVirtual", disassembly);
+            Assert.Equal(classProfiling ? 2 : 0, Regex.Matches(disassembly, @"\bCORINFO_HELP_CLASSPROFILE64\b").Count);
+            Assert.DoesNotContain("CORINFO_HELP_VTABLEPROFILE", disassembly);
+            if (classProfiling)
+            {
+                ReadyToRunCompilerContext context = WasmTestHelpers.CreateContext(input);
+                EcmaModule module = (EcmaModule)context.GetModuleForSimpleName("ReceiverProfile");
+                TypeDesc hot = module.GetType(""u8, "Hot"u8);
+                foreach (bool interfaceCall in new[] { true, false })
+                {
+                    EcmaMethod method = (EcmaMethod)module.GetType(""u8, "Callbacks"u8)
+                        .GetMethod(interfaceCall ? "ViaInterface"u8 : "ViaVirtual"u8, null);
+                    int callOffset = Array.IndexOf(Internal.IL.EcmaMethodIL.Create(method).GetILBytes(), (byte)ILOpCode.Callvirt);
+                    Assert.True(callOffset >= 0);
+                    const int ClassFlag = unchecked((int)0x80000000);
+                    const int InterfaceFlag = 0x40000000;
+                    int flags = ClassFlag | InterfaceFlag;
+                    string profiled = CompileCountProfile(input, context, method,
+                    [
+                        new() { InstrumentationKind = CompilerPgo.PgoInstrumentationKind.BasicBlockLongCount, Count = 1, DataLong = 5 },
+                        new() { InstrumentationKind = CompilerPgo.PgoInstrumentationKind.HandleHistogramLongCount,
+                            ILOffset = callOffset, Other = flags, Count = 1, DataLong = 5 },
+                        new() { InstrumentationKind = CompilerPgo.PgoInstrumentationKind.HandleHistogramTypes,
+                            ILOffset = callOffset, Other = flags, Count = 1, DataObject = new object[] { hot } },
+                    ], directory);
+                    Assert.Contains("; ReadyToRun compilation", profiled);
+                    Assert.Contains("Direct call [", profiled);
+                    Assert.Contains("Residual call [", profiled);
+                }
+            }
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
     public void CastProfileDoesNotRequireUnreferencedTypes(bool localType)
     {
         string directory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());

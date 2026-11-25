@@ -463,7 +463,7 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
 
     [ConditionalFact(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
     [TestCategory("no-workload"), TestCategory("coreclr")]
-    public async Task BlazorReadyToRunCastProfileRoundtrip()
+    public async Task BlazorReadyToRunTypeProfileRoundtrip()
     {
         const Configuration Config = Configuration.Debug;
         const string CompilerLog = "cast-profile.jit.txt";
@@ -475,7 +475,7 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
                 <PublishReadyToRunComposite>false</PublishReadyToRunComposite>
                 <PublishTrimmed>false</PublishTrimmed>
                 <PublishReadyToRunPgoInstrumentation Condition="'$(WasmBuildTestCastProfile)' == ''">true</PublishReadyToRunPgoInstrumentation>
-                <PublishReadyToRunCrossgen2ExtraArgs>$(PublishReadyToRunCrossgen2ExtraArgs);--optimize;--parallelism:1;--codegenopt:JitDisasm=*WasmPgoScenarios:ProfiledCast;--codegenopt:JitStdOutFile=&quot;$(MSBuildProjectDirectory)/{CompilerLog}&quot;</PublishReadyToRunCrossgen2ExtraArgs>
+                <PublishReadyToRunCrossgen2ExtraArgs>$(PublishReadyToRunCrossgen2ExtraArgs);--optimize;--parallelism:1;--codegenopt:JitDisasm=*WasmPgoScenarios:Profiled*;--codegenopt:JitStdOutFile=&quot;$(MSBuildProjectDirectory)/{CompilerLog}&quot;</PublishReadyToRunCrossgen2ExtraArgs>
                 """,
             extraItems: """
                 <PublishReadyToRunPgoFiles Include="$(WasmBuildTestCastProfile)" Condition="'$(WasmBuildTestCastProfile)' != ''" />
@@ -496,11 +496,36 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
                 private sealed class CastHot : ITarget { }
                 private sealed class CastCold : ITarget { }
 
+                private interface IReceiver { int Run(); }
+                private abstract class Receiver : IReceiver { public abstract int Run(); }
+                private sealed class ReceiverHot : Receiver
+                {
+                    [MethodImpl(MethodImplOptions.NoInlining)]
+                    public override int Run() => 10;
+                }
+                private sealed class ReceiverCold : Receiver
+                {
+                    [MethodImpl(MethodImplOptions.NoInlining)]
+                    public override int Run() => 20;
+                }
+
                 [MethodImpl(MethodImplOptions.NoInlining)]
                 private static ITarget? ProfiledCast(object? input) => input as ITarget;
 
-                public static void CheckCast(int iteration)
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                private static int ProfiledInterface(IReceiver input) => input.Run() + 1;
+
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                private static int ProfiledVirtual(Receiver input) => input.Run() + 1;
+
+                public static void CheckTypes(int iteration)
                 {
+                    bool hot = iteration < 4;
+                    Receiver receiver = hot ? new ReceiverHot() : new ReceiverCold();
+                    int expected = hot ? 11 : 21;
+                    if (ProfiledInterface(receiver) != expected || ProfiledVirtual(receiver) != expected)
+                        throw new Exception("Dispatch returned the wrong result.");
+
                     if (iteration >= 5)
                     {
                         if (ProfiledCast(null) is not null || ProfiledCast(new object()) is not null)
@@ -508,7 +533,7 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
                     }
                     else
                     {
-                        object input = iteration < 4 ? new CastHot() : new CastCold();
+                        object input = hot ? new CastHot() : new CastCold();
                         if (!ReferenceEquals(input, ProfiledCast(input)))
                             throw new Exception("Cast did not return the input object.");
                     }
@@ -517,14 +542,16 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
             """);
         UpdateFile(Path.Combine("Pages", "Counter.razor"), new Dictionary<string, string>
         {
-            ["currentCount++;"] = "BlazorBasicTestApp.WasmPgoScenarios.CheckCast(currentCount++);",
+            ["currentCount++;"] = "BlazorBasicTestApp.WasmPgoScenarios.CheckTypes(currentCount++);",
         });
 
+        string[] profiledMethods = ["ProfiledCast", "ProfiledInterface", "ProfiledVirtual"];
         string buildArgs = GetPgoBuildArgs(Config);
         (_, string buildOutput) = BlazorPublish(info, Config, new PublishOptions(UseCache: false, AssertAppBundle: false,
             ExtraMSBuildArgs: buildArgs));
         SaveCompilerLog(info, CompilerLog);
-        Assert.Contains("CORINFO_HELP_CLASSPROFILE64", GetCompilerMethodListing(CompilerLog, "ProfiledCast"));
+        foreach (string method in profiledMethods)
+            Assert.Contains("CORINFO_HELP_CLASSPROFILE64", GetCompilerMethodListing(CompilerLog, method));
         string referenceDir = CopyPgoReferences(info, Config, buildOutput, GetPublishedModuleMvids(Config), "cast-references");
 
         string tracePath = Path.Combine(info.LogPath, "cast.nettrace");
@@ -544,10 +571,11 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
             command.ExecuteWithCapturedOutput($"exec \"{tool}\" create-mibc --trace \"{tracePath}\" --reference \"{Path.Combine(referenceDir, "*.dll")}\" --output \"{profile}\"").EnsureSuccessful();
         using (var command = new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false).WithWorkingDirectory(_projectDir))
             command.ExecuteWithCapturedOutput($"exec \"{tool}\" dump --input \"{profile}\" --output \"{dump}\"").EnsureSuccessful();
-        using (JsonDocument doc = JsonDocument.Parse(File.ReadAllText(dump)))
+        using JsonDocument doc = JsonDocument.Parse(File.ReadAllText(dump));
+        foreach (string name in profiledMethods)
         {
             JsonElement method = Assert.Single(doc.RootElement.GetProperty("Methods").EnumerateArray(),
-                method => method.GetProperty("Method").GetString()!.Contains(".ProfiledCast(", StringComparison.Ordinal));
+                method => method.GetProperty("Method").GetString()!.Contains($".{name}(", StringComparison.Ordinal));
             JsonElement[] schema = method.GetProperty("InstrumentationData").EnumerateArray().ToArray();
             JsonElement count = Assert.Single(schema, record => record.GetProperty("InstrumentationKind").GetString() == "HandleHistogramLongCount");
             JsonElement types = Assert.Single(schema, record => record.GetProperty("InstrumentationKind").GetString() == "HandleHistogramTypes");
@@ -555,8 +583,9 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
             Assert.Equal(count.GetProperty("ILOffset").GetInt32(), types.GetProperty("ILOffset").GetInt32());
             string[] samples = types.GetProperty("Data").EnumerateArray().Select(value => value.GetString()!).ToArray();
             Assert.Equal(5, samples.Length);
-            Assert.Equal(4, samples.Count(value => value.EndsWith("CastHot", StringComparison.Ordinal)));
-            Assert.Single(samples, value => value.EndsWith("CastCold", StringComparison.Ordinal));
+            string typePrefix = name == "ProfiledCast" ? "Cast" : "Receiver";
+            Assert.Equal(4, samples.Count(value => value.EndsWith(typePrefix + "Hot", StringComparison.Ordinal)));
+            Assert.Single(samples, value => value.EndsWith(typePrefix + "Cold", StringComparison.Ordinal));
         }
 
         Directory.Delete(GetBlazorBinFrameworkDir(Config, forPublish: true), recursive: true);
@@ -569,6 +598,15 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
         Assert.DoesNotContain("CORINFO_HELP_CLASSPROFILE64", listing);
         Assert.Matches(@"(?m)^\s+i32\.eq\s*$", listing);
         Assert.Contains("CORINFO_HELP_ISINSTANCEOFANY", listing);
+        foreach (string name in profiledMethods.Skip(1))
+        {
+            string dispatch = GetCompilerMethodListing(CompilerLog, name);
+            Assert.Contains("; ReadyToRun compilation", dispatch);
+            Assert.DoesNotContain("CORINFO_HELP_CLASSPROFILE64", dispatch);
+            Assert.Matches(@"(?m)^\s+i32\.(eq|ne)\s*$", dispatch);
+            Assert.Matches(@"\b(?:deferred\.call|call(?:_indirect)?)\b[^\r\n]*ReceiverHot:Run", dispatch);
+            Assert.Contains(name == "ProfiledInterface" ? "CORINFO_HELP_VIRTUAL_FUNC_PTR" : "+Receiver:Run", dispatch);
+        }
         await RunForPublishWithWebServer(new BlazorRunOptions(Config, CheckCounter: false, TimeoutSeconds: 60,
             Test: async page =>
             {
