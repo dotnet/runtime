@@ -5156,8 +5156,8 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
             {
                 assert(targetReg == lclNode->GetRegNum());
                 assert(op1->GetRegNum() != REG_NA);
-                inst_Mov_Extend(targetType, /* srcInReg */ true, targetReg, op1->GetRegNum(), /* canSkip */ true,
-                                emitTypeSize(targetType));
+                inst_Mov_Extend(targetType, /* srcInReg */ true, targetReg, op1->GetRegNum(),
+                                genCanSkipStoreLclVarMove(targetType, op1), emitTypeSize(targetType));
             }
         }
         genUpdateLifeStore(lclNode, targetReg, varDsc);

@@ -1101,6 +1101,20 @@ protected:
         }
     }
 
+    //-------------------------------------------------------------------------
+    // genCanSkipStoreLclVarMove: Can a same-register move for a register store
+    // of 'data' into a local of 'targetType' be elided?
+    //
+    // Notes:
+    //     In fully interruptible code the emitter learns register GC liveness only from
+    //     emitted instructions, so a move that turns a non-GC value into a GC one must be
+    //     emitted (e.g. a pinned pointer converted back to a byref before unpinning).
+    //
+    bool genCanSkipStoreLclVarMove(var_types targetType, GenTree* data)
+    {
+        return !GetInterruptible() || !varTypeIsGC(targetType) || varTypeIsGC(data);
+    }
+
     // Do liveness update for register produced by the current node in codegen after
     // code has been emitted for it.
     void genProduceReg(GenTree* tree);

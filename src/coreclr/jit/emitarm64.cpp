@@ -4333,7 +4333,8 @@ void emitter::emitIns_Mov(
         {
             assert(insOptsNone(opt));
 
-            if (IsRedundantMov(ins, size, dstReg, srcReg, canSkip))
+            // A non-skippable move creating a GC value must be emitted so the register gets reported.
+            if ((canSkip || !EA_IS_GCREF_OR_BYREF(attr)) && IsRedundantMov(ins, size, dstReg, srcReg, canSkip))
             {
                 // These instructions have no side effect and can be skipped
                 return;

@@ -1261,7 +1261,7 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
             }
             else
             {
-                inst_Mov(targetType, targetReg, dataReg, true);
+                inst_Mov(targetType, targetReg, dataReg, genCanSkipStoreLclVarMove(targetType, data));
             }
             genProduceReg(lclNode);
         }
