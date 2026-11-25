@@ -233,8 +233,6 @@ static RESULT test_fileio(void)
     bool old_file_preserved = ReadFile(reader, reader_buffer, sizeof(reader_buffer), &bytes_read, NULL) &&
         bytes_read == sizeof(reader_buffer) && memcmp(reader_buffer, "reader", sizeof(reader_buffer)) == 0;
     CloseHandle(reader);
-    if (file == -1)
-        file = minipal_create_owner_only_file_for_overwrite("trace");
     CHECK(file != -1, "replacement failed with delete sharing");
     CHECK(old_file_preserved, "open reader did not retain the old file");
     close_file(file);
