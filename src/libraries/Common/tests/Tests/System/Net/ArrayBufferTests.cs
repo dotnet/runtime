@@ -196,6 +196,7 @@ namespace Tests.System.Net
 
         [OuterLoop]
         [ConditionalTheory(typeof(Environment), nameof(Environment.Is64BitProcess))]
+        [SkipOnPlatform(TestPlatforms.Browser, "Allocates multi-gigabyte buffers; wasm linear memory never shrinks, so the browser exhausts Helix machine memory")]
         [InlineData(true)]
         [InlineData(false)]
         public void CanResizeToMaxArraySize(bool usePool)
