@@ -108,12 +108,93 @@ public:
     }
 };
 
+// A size that takes more than one word, so the bit sets are "long".
+class TestLongBitSetTraits
+{
+public:
+    static void* Alloc(CompAllocator alloc, size_t byteSize)
+    {
+        return alloc.allocate<char>(byteSize);
+    }
+    static unsigned GetSize(CompAllocator alloc)
+    {
+        return 192;
+    }
+    static unsigned GetArrSize(CompAllocator alloc)
+    {
+        return (192 / 8) / sizeof(size_t);
+    }
+    static unsigned GetEpoch(CompAllocator alloc)
+    {
+        return 0;
+    }
+};
+
+//------------------------------------------------------------------------
+// RunVisitBitsTests: Test VisitBits and VisitBitsReverse of the short/long representation.
+//
+// Arguments:
+//    env   - the allocator
+//    bits  - the elements of the bit set, in ascending order
+//    count - the number of elements, at least 2
+//
+template <typename BitSetTraits>
+static void RunVisitBitsTests(CompAllocator env, const unsigned* bits, unsigned count)
+{
+    typedef BitSetOps<BitSetShortLongRep, BSShortLong, CompAllocator, BitSetTraits> LclBitSetOps;
+
+    BitSetShortLongRep bs;
+    LclBitSetOps::AssignNoCopy(env, bs, LclBitSetOps::MakeEmpty(env));
+    for (unsigned i = 0; i < count; i++)
+    {
+        LclBitSetOps::AddElemD(env, bs, bits[i]);
+    }
+
+    unsigned k         = 0;
+    bool     completed = LclBitSetOps::VisitBits(env, bs, [&](unsigned bitNum) {
+        assert(bitNum == bits[k]);
+        k++;
+        return true;
+    });
+    assert(completed && (k == count));
+
+    k         = count;
+    completed = LclBitSetOps::VisitBitsReverse(env, bs, [&](unsigned bitNum) {
+        k--;
+        assert(bitNum == bits[k]);
+        return true;
+    });
+    assert(completed && (k == 0));
+
+    // Stop after the second element.
+    k         = 0;
+    completed = LclBitSetOps::VisitBits(env, bs, [&](unsigned bitNum) {
+        assert(bitNum == bits[k]);
+        k++;
+        return k < 2;
+    });
+    assert(!completed && (k == 2));
+
+    k         = 0;
+    completed = LclBitSetOps::VisitBitsReverse(env, bs, [&](unsigned bitNum) {
+        k++;
+        assert(bitNum == bits[count - k]);
+        return k < 2;
+    });
+    assert(!completed && (k == 2));
+}
+
 void BitSetSupport::TestSuite(CompAllocator env)
 {
     BitSetSupport::RunTests<UINT64, BSUInt64, CompAllocator, TestBitSetTraits>(env);
     BitSetSupport::RunTests<BitSetShortLongRep, BSShortLong, CompAllocator, TestBitSetTraits>(env);
     BitSetSupport::RunTests<BitSetUint64<CompAllocator, TestBitSetTraits>, BSUInt64Class, CompAllocator,
                             TestBitSetTraits>(env);
+
+    const unsigned shortBits[] = {0, 10, 44, 63};
+    RunVisitBitsTests<TestBitSetTraits>(env, shortBits, ArrLen(shortBits));
+    const unsigned longBits[] = {0, 10, 63, 64, 130, 191};
+    RunVisitBitsTests<TestLongBitSetTraits>(env, longBits, ArrLen(longBits));
 }
 #endif
 
