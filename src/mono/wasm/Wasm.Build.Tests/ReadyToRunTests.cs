@@ -558,6 +558,31 @@ namespace Wasm.Build.Tests
             return string.Join(" ", extraArgs);
         }
 
+        [Fact]
+        [TestCategory("no-workload")]
+        public void PgoInstrumentationAppliesToDirectPublishButNotBuild()
+        {
+            const Configuration Config = Configuration.Debug;
+            ProjectInfo info = CopyTestAsset(Config, aot: false, TestAsset.BlazorBasicTestApp, "r2r_pgo_direct_publish",
+                extraProperties: """
+                    <EnableDiagnostics>true</EnableDiagnostics>
+                    <WasmEnableThreads>false</WasmEnableThreads>
+                    <PublishReadyToRun>true</PublishReadyToRun>
+                    <PublishReadyToRunComposite>false</PublishReadyToRunComposite>
+                    <PublishReadyToRunPgoInstrumentation>true</PublishReadyToRunPgoInstrumentation>
+                    """);
+            string args = $"{GetR2RBuildArgs(Config)} -p:UsingBrowserRuntimeWorkload=false -p:WasmEnableHotReload=false -p:CompressionEnabled=false";
+            BlazorBuild(info, Config, new BuildOptions(AssertAppBundle: false, ExtraMSBuildArgs: args));
+            AssertPerAppCrossgenRan(Config, expected: false);
+
+            string binlog = Path.Combine(info.LogPath, "direct-publish.binlog");
+            using var command = new DotNetCommand(s_buildEnv, _testOutput).WithWorkingDirectory(_projectDir)
+                .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir);
+            command.ExecuteWithCapturedOutput($"msbuild -t:Publish -p:Configuration={Config} -nr:false -bl:\"{binlog}\" {args}").EnsureSuccessful();
+            AssertPerAppCrossgenRan(Config, expected: true);
+            Assert.Contains("--pgo-instrumentation", GetCrossgen2ExtraCommandLineArgs(binlog));
+        }
+
         // Total table bytes across the canonical per-app R2R outputs. The base SDK names them .dll while the
         // wasm-aware task shim names them .wasm. Measuring the fingerprinted publish directory would count
         // files retained from earlier incremental publishes.

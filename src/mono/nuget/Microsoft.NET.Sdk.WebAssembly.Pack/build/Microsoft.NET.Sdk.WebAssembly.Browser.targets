@@ -677,13 +677,11 @@ Copyright (c) .NET Foundation. All rights reserved.
 
   <Target Name="_ValidateReadyToRunPgoInstrumentation"
           Condition="'$(PublishReadyToRunPgoInstrumentation)' != '' and '$(PublishReadyToRunPgoInstrumentation)' != 'false'"
-          BeforeTargets="PrepareForBuild;_ResolveWasmConfiguration;_PrepareForReadyToRunCompilation">
+          BeforeTargets="PrepareForPublish;_PrepareForReadyToRunCompilation">
     <Error Condition="'$(PublishReadyToRunPgoInstrumentation)' != 'true'"
            Text="PublishReadyToRunPgoInstrumentation must be true or false." />
     <Error Condition="'$(UseMonoRuntime)' != 'false' or '$(RuntimeIdentifier)' != 'browser-wasm'"
            Text="PublishReadyToRunPgoInstrumentation requires CoreCLR browser-wasm. Set UseMonoRuntime=false and RuntimeIdentifier=browser-wasm; Mono and other targets are not supported." />
-    <Error Condition="'$(_IsPublishing)' != 'true' and '$(WasmBuildingForNestedPublish)' != 'true' and '$(WasmBuildOnlyAfterPublish)' != 'true' and '$(DeployOnBuild)' != 'true'"
-           Text="PublishReadyToRunPgoInstrumentation is supported only when publishing. Use dotnet publish with PublishReadyToRun=true to instrument the application and framework assemblies, or clear PublishReadyToRunPgoInstrumentation for a development build." />
     <Error Condition="'$(PublishReadyToRun)' != 'true'"
            Text="PublishReadyToRunPgoInstrumentation requires PublishReadyToRun=true. Enable ReadyToRun publishing or clear PublishReadyToRunPgoInstrumentation." />
     <Error Condition="'$(EnableDiagnostics)' != 'true'"

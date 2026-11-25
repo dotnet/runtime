@@ -463,8 +463,9 @@ dotnet publish -c Release
 
 The publish compiles both application and framework assemblies with instrumentation.
 It does not substitute uninstrumented prebuilt framework images. The build rejects
-Mono, other runtime identifiers, threads, disabled diagnostics, non-ReadyToRun
-publishing, and development builds with this property set. Use a wasm-capable
+Mono, other runtime identifiers, threads, disabled diagnostics, and non-ReadyToRun
+publishing with this property set. Ordinary builds ignore the property.
+Use a wasm-capable
 crossgen2 matching the runtime. Instrumented ReadyToRun images carry their counter
 schemas in section 129, using format 34.2. The SDK enables Crossgen2's
 `--pgo-instrumentation` switch. In composite builds, the switch preserves all
@@ -574,7 +575,7 @@ The consumer uses measured edge profiles where available and interpreter presenc
 for method selection. The rundown option is only for CoreCLR Browser/Wasm traces;
 when architecture metadata is missing, specifying it asserts that input contract.
 Convert the original `.nettrace` with this option: a previously converted `.etlx`
-may already have discarded the required events. Changing the filter, profile inputs, composite
+may already have discarded the required events. Changing instrumentation, profile inputs, composite
 setting, crossgen2 arguments, or ReadyToRun postprocessing settings invalidates
 the incremental ReadyToRun outputs.
 

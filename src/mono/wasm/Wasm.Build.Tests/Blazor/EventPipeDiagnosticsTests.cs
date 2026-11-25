@@ -1145,13 +1145,12 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
     }
 
     [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
-    [InlineData("-p:PublishReadyToRun=false", "PublishReadyToRunPgoInstrumentation requires PublishReadyToRun=true", true)]
-    [InlineData("-p:EnableDiagnostics=false", "PublishReadyToRunPgoInstrumentation requires EnableDiagnostics=true", true)]
-    [InlineData("-p:WasmEnableThreads=true", "PublishReadyToRunPgoInstrumentation supports only single-threaded", true)]
-    [InlineData("-p:PublishReadyToRunPgoInstrumentation=all", "PublishReadyToRunPgoInstrumentation must be true or false", true)]
-    [InlineData("", "PublishReadyToRunPgoInstrumentation is supported only when publishing", false)]
+    [InlineData("-p:PublishReadyToRun=false", "PublishReadyToRunPgoInstrumentation requires PublishReadyToRun=true")]
+    [InlineData("-p:EnableDiagnostics=false", "PublishReadyToRunPgoInstrumentation requires EnableDiagnostics=true")]
+    [InlineData("-p:WasmEnableThreads=true", "PublishReadyToRunPgoInstrumentation supports only single-threaded")]
+    [InlineData("-p:PublishReadyToRunPgoInstrumentation=all", "PublishReadyToRunPgoInstrumentation must be true or false")]
     [TestCategory("no-workload"), TestCategory("coreclr")]
-    public void BlazorPgoRejectsUnsupportedConfiguration(string extraArgs, string expectedError, bool publish)
+    public void BlazorPgoRejectsUnsupportedConfiguration(string extraArgs, string expectedError)
     {
         ProjectInfo info = CopyTestAsset(Configuration.Debug, aot: false, TestAsset.BlazorBasicTestApp, "blazor_invalid_pgo",
             extraProperties: """
@@ -1161,11 +1160,8 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
                 <PublishReadyToRunPgoInstrumentation>true</PublishReadyToRunPgoInstrumentation>
                 """);
         string args = $"{GetPgoBuildArgs(Configuration.Debug)} {extraArgs}";
-        (_, string output) = publish
-            ? BlazorPublish(info, Configuration.Debug,
-                new PublishOptions(ExpectSuccess: false, AssertAppBundle: false, ExtraMSBuildArgs: args))
-            : BlazorBuild(info, Configuration.Debug,
-                new BuildOptions(ExpectSuccess: false, AssertAppBundle: false, ExtraMSBuildArgs: args));
+        (_, string output) = BlazorPublish(info, Configuration.Debug,
+            new PublishOptions(ExpectSuccess: false, AssertAppBundle: false, ExtraMSBuildArgs: args));
         Assert.Contains(expectedError, output);
     }
 
