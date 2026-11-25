@@ -1690,9 +1690,7 @@ namespace System.Diagnostics
                         throw new InvalidOperationException(SR.SetSecurityDescriptorFailed);
                     }
 
-                    Interop.Kernel32.SECURITY_ATTRIBUTES securityAttributes = default;
-                    securityAttributes.lpSecurityDescriptor = pSecurityDescriptor;
-                    securityAttributes.bInheritHandle = Interop.BOOL.FALSE;
+                    Interop.Kernel32.SECURITY_ATTRIBUTES securityAttributes = Interop.Kernel32.SECURITY_ATTRIBUTES.Create(pSecurityDescriptor);
 
                     //
                     //
