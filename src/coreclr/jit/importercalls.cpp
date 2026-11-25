@@ -55,6 +55,78 @@ unsigned* Compiler::impForwardedMethodArgs(CORINFO_RESOLVED_TOKEN* token, unsign
     return size == 0 ? args : nullptr;
 }
 
+// Keep the input dictionary on the hidden argument. Morph prepares the lookup
+// only if the argument is still used after inlining.
+GenTree* Compiler::impDeferredMethodContext(CORINFO_RESOLVED_TOKEN* token,
+                                            CORINFO_CONTEXT_HANDLE  targetContext,
+                                            CORINFO_METHOD_HANDLE   devirtualizedMethod)
+{
+    assert(((size_t)targetContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD);
+    CORINFO_RUNTIME_LOOKUP_KIND contextKind = CORINFO_LOOKUP_METHODPARAM;
+    if (devirtualizedMethod != nullptr)
+    {
+        switch (info.compMethodInfo->options & CORINFO_GENERICS_CTXT_MASK)
+        {
+            case CORINFO_GENERICS_CTXT_FROM_METHODDESC:
+                break;
+            case CORINFO_GENERICS_CTXT_FROM_METHODTABLE:
+                contextKind = CORINFO_LOOKUP_CLASSPARAM;
+                break;
+            case CORINFO_GENERICS_CTXT_FROM_THIS:
+                contextKind = CORINFO_LOOKUP_THISOBJ;
+                break;
+            default:
+                return nullptr;
+        }
+    }
+
+    auto* pending   = new (this, CMK_Inlining) DeferredMethodLookup{};
+    pending->caller = info.compMethodHnd;
+    if (devirtualizedMethod != nullptr)
+    {
+        assert(token->tokenType == CORINFO_TOKENKIND_DevirtualizedMethod);
+        pending->devirtualized = true;
+        pending->target.method = devirtualizedMethod;
+        pending->target.token  = new (this, CMK_Inlining) CORINFO_RESOLVED_TOKEN(*token);
+    }
+    else
+    {
+        assert(token->tokenType == CORINFO_TOKENKIND_Method);
+        pending->il.context = token->tokenContext;
+        pending->il.scope   = token->tokenScope;
+        pending->token      = token->token;
+    }
+
+    CORINFO_GENERIC_HANDLE handle = (CORINFO_GENERIC_HANDLE)((size_t)targetContext & ~CORINFO_CONTEXTFLAGS_MASK);
+    GenTree* result = gtNewRuntimeLookup(handle, CORINFO_HANDLETYPE_METHOD, getRuntimeContextTree(contextKind));
+    result->AsRuntimeLookup()->gtDeferredLookup = pending;
+    return result;
+}
+
+// Ask the EE for the accepted override's instantiation argument in the IL caller's context.
+bool Compiler::getDevirtualizedMethodLookup(CORINFO_RESOLVED_TOKEN* target,
+                                            CORINFO_METHOD_HANDLE   caller,
+                                            CORINFO_METHOD_HANDLE   method,
+                                            CORINFO_CONTEXT_HANDLE  context,
+                                            CORINFO_LOOKUP*         result)
+{
+    CORINFO_CALL_INFO callInfo;
+    info.compCompHnd->getCallInfo(target, nullptr, caller, CORINFO_CALLINFO_ALLOWINSTPARAM, &callInfo);
+    if ((callInfo.kind != CORINFO_CALL) || (callInfo.hMethod != method) || !callInfo.sig.hasTypeArg() ||
+        (callInfo.contextHandle != context))
+    {
+        return false;
+    }
+    if (callInfo.instParamLookup.lookupKind.needsRuntimeLookup &&
+        (callInfo.instParamLookup.lookupKind.runtimeLookupKind == CORINFO_LOOKUP_DEFERRED))
+    {
+        info.compCompHnd->prepareCallLookups(target, nullptr, caller, &callInfo);
+    }
+    *result = callInfo.instParamLookup;
+    return !result->lookupKind.needsRuntimeLookup ||
+           (result->lookupKind.runtimeLookupKind != CORINFO_LOOKUP_NOT_SUPPORTED);
+}
+
 //------------------------------------------------------------------------
 // impGetInstParamArg: compute the hidden instantiation argument from the EE-supplied lookup.
 //
@@ -918,16 +990,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                        CORINFO_CONTEXTFLAGS_METHOD);
                 assert(callInfo->instParamLookup.lookupKind.runtimeLookupKind == CORINFO_LOOKUP_DEFERRED);
                 forwardedTarget = callInfo->hMethod;
-                // Keep the dictionary expression on the call so the inliner can substitute
-                // or discard it just like any other argument. Morph prepares surviving uses.
-                auto* pending = new (this, CMK_Inlining)
-                    DeferredMethodLookup{pResolvedToken->tokenContext, pResolvedToken->tokenScope, info.compMethodHnd,
-                                         pResolvedToken->token};
-                CORINFO_GENERIC_HANDLE handle =
-                    (CORINFO_GENERIC_HANDLE)((size_t)callInfo->contextHandle & ~CORINFO_CONTEXTFLAGS_MASK);
-                instParam                                      = gtNewRuntimeLookup(handle, CORINFO_HANDLETYPE_METHOD,
-                                                                                    getRuntimeContextTree(CORINFO_LOOKUP_METHODPARAM));
-                instParam->AsRuntimeLookup()->gtDeferredLookup = pending;
+                instParam       = impDeferredMethodContext(pResolvedToken, callInfo->contextHandle);
             }
             else
             {
@@ -10221,30 +10284,28 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
     JITDUMP("    %s; can devirtualize\n", note);
 
+    GenTree* deferredInstParam = nullptr;
     if (dvInfo.instParamLookup.lookupKind.needsRuntimeLookup &&
         (dvInfo.instParamLookup.lookupKind.runtimeLookupKind == CORINFO_LOOKUP_DEFERRED))
     {
-        // Only the accepted direct target needs its dictionary lookup.
-        CORINFO_CALL_INFO targetInfo;
-        eeGetCallInfo(pDerivedResolvedToken, nullptr, CORINFO_CALLINFO_ALLOWINSTPARAM, &targetInfo);
-        if ((targetInfo.kind != CORINFO_CALL) || (targetInfo.hMethod != derivedMethod) || !targetInfo.sig.hasTypeArg())
+        // CoreCLR supplies a resolved target token when the body is known but the
+        // exact method instantiation must come from the caller's dictionary.
+        if (!IsAot() && !isLateDevirtualization && derivedSig.hasTypeArg() &&
+            (pDerivedResolvedToken->tokenType == CORINFO_TOKENKIND_DevirtualizedMethod))
+        {
+            deferredInstParam = impDeferredMethodContext(pDerivedResolvedToken, exactContext, derivedMethod);
+        }
+
+        if ((deferredInstParam == nullptr) &&
+            !getDevirtualizedMethodLookup(pDerivedResolvedToken, info.compMethodHnd, derivedMethod, exactContext,
+                                          &dvInfo.instParamLookup))
         {
             return;
         }
-        if (targetInfo.instParamLookup.lookupKind.needsRuntimeLookup &&
-            (targetInfo.instParamLookup.lookupKind.runtimeLookupKind == CORINFO_LOOKUP_DEFERRED))
-        {
-            info.compCompHnd->prepareCallLookups(pDerivedResolvedToken, nullptr, info.compMethodHnd, &targetInfo);
-        }
-        if (targetInfo.instParamLookup.lookupKind.needsRuntimeLookup &&
-            (targetInfo.instParamLookup.lookupKind.runtimeLookupKind == CORINFO_LOOKUP_NOT_SUPPORTED))
-        {
-            return;
-        }
-        dvInfo.instParamLookup = targetInfo.instParamLookup;
     }
 
     DevirtualizedCallInfo dcInfo;
+    dcInfo.deferredInstParam     = deferredInstParam;
     dcInfo.tokenLookupContext    = exactContext;
     dcInfo.pInstParamLookup      = &dvInfo.instParamLookup;
     dcInfo.pResolvedToken        = pDerivedResolvedToken;
@@ -10609,6 +10670,10 @@ void Compiler::impTransformDevirtualizedCall(GenTreeCall*            call,
                 JITDUMP("Sorry, failed to find unboxed entry point\n");
             }
         }
+    }
+    else if (dcInfo->deferredInstParam != nullptr)
+    {
+        instParam = dcInfo->deferredInstParam;
     }
     else
     {

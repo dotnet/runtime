@@ -9202,14 +9202,28 @@ struct GenTreeAllocObj final : public GenTreeUnOp
 #endif
 };
 
-// Inputs for re-resolving an ordinary IL MethodSpec if its context survives inlining.
+// An ordinary MethodSpec can be re-resolved from its metadata identity. A
+// devirtualized MethodSpec names the declaration in IL and the override in its
+// resolved handles, so retain the token supplied by the EE for that case.
 struct DeferredMethodLookup
 {
-    CORINFO_CONTEXT_HANDLE tokenContext;
-    CORINFO_MODULE_HANDLE  tokenScope;
-    CORINFO_METHOD_HANDLE  caller;
-    mdToken                token;
-    CORINFO_LOOKUP*        preparedLookup = nullptr;
+    union
+    {
+        struct
+        {
+            CORINFO_CONTEXT_HANDLE context;
+            CORINFO_MODULE_HANDLE  scope;
+        } il;
+        struct
+        {
+            CORINFO_RESOLVED_TOKEN* token;
+            CORINFO_METHOD_HANDLE   method;
+        } target;
+    };
+    CORINFO_METHOD_HANDLE caller;
+    mdToken               token;
+    bool                  devirtualized;
+    CORINFO_LOOKUP*       preparedLookup = nullptr;
 };
 
 // Represents GT_RUNTIMELOOKUP node

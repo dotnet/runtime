@@ -5246,6 +5246,7 @@ public:
         CORINFO_RESOLVED_TOKEN* pResolvedToken;          // Resolved token for the target method, used by R2R.
         CORINFO_RESOLVED_TOKEN* pUnboxedResolvedToken;   // Resolved token and method handle for the unboxed entry.
         CORINFO_LOOKUP*         pInstParamLookup;        // All the information needed for the instantiation parameter lookup.
+        GenTree* deferredInstParam = nullptr;
         CORINFO_SIG_INFO*       pMethSig;                // The devirted method signature.
         bool                    objIsNonNull;            // True if the receiver is known non-null.
         bool                    hadImplicitNullCheck;    // True if the original call's null check was implicit.
@@ -6036,7 +6037,10 @@ public:
 private:
 
     void impConvertToUserCallAndMarkForInlining(GenTreeCall* call);
+    GenTree* impDeferredMethodContext(CORINFO_RESOLVED_TOKEN* token, CORINFO_CONTEXT_HANDLE targetContext, CORINFO_METHOD_HANDLE devirtualizedMethod = nullptr);
     unsigned* impForwardedMethodArgs(CORINFO_RESOLVED_TOKEN* token, unsigned arity);
+    bool getDevirtualizedMethodLookup(CORINFO_RESOLVED_TOKEN* target, CORINFO_METHOD_HANDLE caller, CORINFO_METHOD_HANDLE method,
+                                      CORINFO_CONTEXT_HANDLE context, CORINFO_LOOKUP* result);
     GenTree* fgMaterializeMethodContext(GenTreeRuntimeLookup* tree);
     void impMarkInlineCandidate(GenTree*               call,
                                 CORINFO_CONTEXT_HANDLE exactContextHnd,

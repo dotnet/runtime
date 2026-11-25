@@ -6930,21 +6930,36 @@ GenTree* Compiler::fgMaterializeMethodContext(GenTreeRuntimeLookup* tree)
     DeferredMethodLookup* pending = tree->gtDeferredLookup;
     if (pending->preparedLookup == nullptr)
     {
-        CORINFO_RESOLVED_TOKEN token{};
-        token.tokenContext = pending->tokenContext;
-        token.tokenScope   = pending->tokenScope;
-        token.token        = pending->token;
-        token.tokenType    = CORINFO_TOKENKIND_Method;
-        info.compCompHnd->resolveToken(&token);
+        CORINFO_LOOKUP lookup;
+        if (pending->devirtualized)
+        {
+            CORINFO_CONTEXT_HANDLE context = MAKE_METHODCONTEXT((CORINFO_METHOD_HANDLE)tree->gtHnd);
+            if (!getDevirtualizedMethodLookup(pending->target.token, pending->caller, pending->target.method, context,
+                                              &lookup))
+            {
+                IMPL_LIMITATION("Devirtualized method context is no longer available");
+            }
+        }
+        else
+        {
+            CORINFO_RESOLVED_TOKEN token{};
+            token.tokenContext = pending->il.context;
+            token.tokenScope   = pending->il.scope;
+            token.token        = pending->token;
+            token.tokenType    = CORINFO_TOKENKIND_Method;
+            info.compCompHnd->resolveToken(&token);
 
-        CORINFO_CALL_INFO callInfo;
-        info.compCompHnd->getCallInfo(&token, nullptr, pending->caller,
-                                      CORINFO_CALLINFO_ALLOWINSTPARAM | CORINFO_CALLINFO_SECURITYCHECKS, &callInfo);
-        assert(callInfo.kind == CORINFO_CALL && callInfo.sig.hasTypeArg() && callInfo.methodInstantiationOffset != 0);
-        assert(callInfo.instParamLookup.lookupKind.runtimeLookupKind == CORINFO_LOOKUP_DEFERRED);
-        assert((size_t)tree->gtHnd == ((size_t)callInfo.contextHandle & ~CORINFO_CONTEXTFLAGS_MASK));
-        info.compCompHnd->prepareCallLookups(&token, nullptr, pending->caller, &callInfo);
-        pending->preparedLookup = new (this, CMK_Inlining) CORINFO_LOOKUP(callInfo.instParamLookup);
+            CORINFO_CALL_INFO callInfo;
+            info.compCompHnd->getCallInfo(&token, nullptr, pending->caller,
+                                          CORINFO_CALLINFO_ALLOWINSTPARAM | CORINFO_CALLINFO_SECURITYCHECKS, &callInfo);
+            assert(callInfo.kind == CORINFO_CALL && callInfo.sig.hasTypeArg() &&
+                   callInfo.methodInstantiationOffset != 0);
+            assert(callInfo.instParamLookup.lookupKind.runtimeLookupKind == CORINFO_LOOKUP_DEFERRED);
+            assert((size_t)tree->gtHnd == ((size_t)callInfo.contextHandle & ~CORINFO_CONTEXTFLAGS_MASK));
+            info.compCompHnd->prepareCallLookups(&token, nullptr, pending->caller, &callInfo);
+            lookup = callInfo.instParamLookup;
+        }
+        pending->preparedLookup = new (this, CMK_Inlining) CORINFO_LOOKUP(lookup);
     }
 
     return getLookupTree(pending->preparedLookup, GTF_ICON_METHOD_HDL, tree->gtHnd, tree->gtOp1);

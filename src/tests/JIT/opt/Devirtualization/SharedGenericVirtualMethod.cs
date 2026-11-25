@@ -67,6 +67,15 @@ public class SharedGenericVirtualMethod
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static Type SharedOwner<T, U>(SharedChild<T> d) => ((IOwner<T[]>)d).Read<U>();
 
+    private class Caller<T>
+    {
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public Type FromThis(Derived d) => ((Base)d).Read<T>();
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static Type FromType(Derived d) => ((IReader)d).Read<T[]>();
+    }
+
     private class OrderBase
     {
         public virtual int Apply<T>(int arg) => -1;
@@ -118,6 +127,10 @@ public class SharedGenericVirtualMethod
         Assert.Throws<NullReferenceException>(() => ByClass<string>(null));
         Assert.Throws<NullReferenceException>(() => ByInterface<object>(null));
         Assert.Throws<NullReferenceException>(() => Kept<string>(null));
+        Assert.Equal(typeof(object), new Caller<object>().FromThis(d));
+        Assert.Equal(typeof(string), new Caller<string>().FromThis(d));
+        Assert.Equal(typeof(object[]), Caller<object>.FromType(d));
+        Assert.Equal(typeof(string[]), Caller<string>.FromType(d));
         Assert.Equal(typeof(string), Kept<string>(d));
         Assert.Equal(typeof(object), Kept<object>(d));
         Assert.Equal(typeof(string), Unknown<string>(d));
