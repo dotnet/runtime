@@ -295,9 +295,9 @@ namespace System.Reflection.Emit.Tests
 
         private static string StringReverse(string a) => string.Join("", a.Reverse());
 
-        private unsafe static int ComplexSignature(delegate* unmanaged[Stdcall, MemberFunction]<short, bool> arg) => 5;
+        private static int ComplexSignature(delegate* unmanaged[Stdcall, MemberFunction]<short, bool> arg) => 5;
 
-        private unsafe static delegate*<delegate* unmanaged[Stdcall, MemberFunction]<short, bool>, int> EvenMoreComplexSignature(
+        private static delegate*<delegate* unmanaged[Stdcall, MemberFunction]<short, bool>, int> EvenMoreComplexSignature(
             delegate* unmanaged[Cdecl]<delegate*<delegate* unmanaged[Fastcall, SuppressGCTransition]<List<short>*>>> arg) => &ComplexSignature;
     }
 }

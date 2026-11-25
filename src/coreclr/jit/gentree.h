@@ -1796,7 +1796,7 @@ public:
     bool OperIsConvertMaskToVector() const;
     bool OperIsConvertVectorToMask() const;
 #if defined(TARGET_ARM64) && defined(FEATURE_MASKED_HW_INTRINSICS)
-    bool IsSveMaskOperand() const;
+    bool CanBeSveMask() const;
 #endif // TARGET_ARM64 && FEATURE_MASKED_HW_INTRINSICS
     bool OperIsVectorFusedMultiplyOp() const;
 
@@ -2140,6 +2140,8 @@ public:
 
     template <typename TVisitor>
     VisitResult VisitLogicalLocalDefs(Compiler* comp, TVisitor visitor);
+    template <typename TVisitor>
+    VisitResult VisitLogicalLocalDefsInternal(Compiler* comp, TVisitor visitor);
 
     bool HasAnyLocalDefs(Compiler* comp);
 
@@ -3036,6 +3038,9 @@ class GenTreeUseEdgeIterator final
     void AdvanceFieldList();
     void AdvancePhi();
     void AdvanceConditional();
+#ifdef TARGET_WASM
+    void AdvanceWasmSelect();
+#endif
 
     template <bool ReverseOperands>
     void AdvanceBinOp();
@@ -5930,7 +5935,7 @@ struct GenTreeCall final : public GenTree
 
     CorInfoHelpFunc GetHelperNum() const;
 
-    ExceptionSetFlags CallExceptions() const;
+    ExceptionSetFlags CallExceptions(Compiler* comp) const;
 
     bool AreArgsComplete() const;
 

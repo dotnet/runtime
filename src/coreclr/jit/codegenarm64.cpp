@@ -1809,17 +1809,16 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                     else
                     {
                         simd16_t val = vecCon->gtSimd16Val;
-                        if (ElementsAreSame(val.i32, is8 ? 2 : 4) &&
-                            emitter::emitIns_valid_imm_for_movi(val.i32[0], EA_4BYTE))
+                        if (vecCon->IsBroadcast(TYP_INT) && emitter::emitIns_valid_imm_for_movi(val.i32[0], EA_4BYTE))
                         {
                             emit->emitIns_R_I(INS_movi, attr, targetReg, val.i32[0], is8 ? INS_OPTS_2S : INS_OPTS_4S);
                         }
-                        else if (ElementsAreSame(val.i16, is8 ? 4 : 8) &&
+                        else if (vecCon->IsBroadcast(TYP_SHORT) &&
                                  emitter::emitIns_valid_imm_for_movi(val.i16[0], EA_2BYTE))
                         {
                             emit->emitIns_R_I(INS_movi, attr, targetReg, val.i16[0], is8 ? INS_OPTS_4H : INS_OPTS_8H);
                         }
-                        else if (ElementsAreSame(val.i8, is8 ? 8 : 16) &&
+                        else if (vecCon->IsBroadcast(TYP_BYTE) &&
                                  emitter::emitIns_valid_imm_for_movi(val.i8[0], EA_1BYTE))
                         {
                             emit->emitIns_R_I(INS_movi, attr, targetReg, val.i8[0], is8 ? INS_OPTS_8B : INS_OPTS_16B);

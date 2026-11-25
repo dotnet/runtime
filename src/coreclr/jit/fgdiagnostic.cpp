@@ -3360,6 +3360,16 @@ void Compiler::fgDebugCheckFlagsAndTypes(GenTree* tree, BasicBlock* block)
         expectedFlags |= GTF_ASG;
     }
 
+    // Nodes that define locals require GTF_ASG.
+    auto findDef = [](const auto& def) {
+        return GenTree::VisitResult::Abort;
+    };
+
+    if (tree->VisitLogicalLocalDefsInternal(this, findDef) == GenTree::VisitResult::Abort)
+    {
+        expectedFlags |= GTF_ASG;
+    }
+
     if (tree->OperRequiresCallFlag(this))
     {
         expectedFlags |= GTF_CALL;

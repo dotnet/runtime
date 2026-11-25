@@ -88,10 +88,12 @@ void emitter::emitIns_BlockTy(instruction ins, WasmValueType valType)
 //   attr     - emit attributes
 //   imm      - immediate value
 //   isLastUse - whether this local.get is the last use of the stored value
+//   lclNum   - local variable number for register-local disassembly annotations
 //
-void emitter::emitIns_I(instruction ins, emitAttr attr, cnsval_ssize_t imm, bool isLastUse)
+void emitter::emitIns_I(instruction ins, emitAttr attr, cnsval_ssize_t imm, bool isLastUse, unsigned lclNum)
 {
     assert(!isLastUse || (ins == INS_local_get));
+    assert((lclNum == BAD_VAR_NUM) || (ins == INS_local_get) || (ins == INS_local_set) || (ins == INS_local_tee));
 
     // Keep the local assignment unless this get is known to be its last use.
     //
@@ -121,6 +123,11 @@ void emitter::emitIns_I(instruction ins, emitAttr attr, cnsval_ssize_t imm, bool
 
     id->idIns(ins);
     id->idInsFmt(fmt);
+
+    if (m_debugInfoSize > 0)
+    {
+        id->idDebugOnlyInfo()->idLclNum = lclNum;
+    }
 
     dispIns(id);
     appendToCurIG(id);
@@ -361,6 +368,15 @@ void emitter::emitIns_Call(const EmitCallParams& params)
     switch (params.callType)
     {
         case EC_FUNC_TOKEN:
+            if (m_compiler->eeGetRelocTypeHint(params.addr) == CorInfoReloc::WASM_DEFERRED_CALL)
+            {
+                ins = params.isJump ? INS_deferred_return_call : INS_deferred_call;
+                id  = emitNewInstrCns(EA_HANDLE_CNS_RELOC, reinterpret_cast<cnsval_ssize_t>(params.addr));
+                id->idIns(ins);
+                id->idInsFmt(IF_DEFERRED_CALL);
+                id->idAddr()->iiaWasmSignature = params.wasmSignature;
+                break;
+            }
             ins = params.isJump ? INS_return_call : INS_call;
             id  = emitNewInstrSC(EA_HANDLE_CNS_RELOC, (cnsval_ssize_t)params.addr);
             id->idIns(ins);
@@ -783,6 +799,9 @@ unsigned emitter::instrDesc::idCodeSize() const
     unsigned size = HasOpcodePrefix(idIns()) ? 1 + SizeOfULEB128(opcode) : 1;
     switch (idInsFmt())
     {
+        case IF_DEFERRED_CALL:
+            size += 1 + 2 * PADDED_RELOC_SIZE;
+            break;
         case IF_OPCODE:
             break;
         case IF_BLOCK:
@@ -992,9 +1011,10 @@ size_t emitter::emitOutputPaddedReloc(uint8_t* destination)
 
 size_t emitter::emitOutputConstantFunclet(uint8_t* destination, const instrDesc* id, CorInfoReloc relocType)
 {
+    assert((emitGetInsSC(id) >= 0) && FitsIn<int32_t>(emitGetInsSC(id)));
+    // Keep a valid funclet index even when the EE only records relocations.
+    emitOutputULEB128Padded(destination, static_cast<uint32_t>(emitGetInsSC(id)));
     emitRecordRelocationWithAddlDelta(destination, emitCodeBlock, relocType, (int32_t)emitGetInsSC(id));
-    // emitRecordRelocationWithAddlDelta writes the relocation addend and padding,
-    // so we don't need to write anything else here.
     return PADDED_RELOC_SIZE;
 }
 
@@ -1043,6 +1063,28 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_NONE:
             break;
 
+        case IF_DEFERRED_CALL:
+        {
+            // #DeferredWasmCallRelocationProtocol
+            // Lowering omits the final frame-identity/PEP argument from the call IR. Codegen
+            // includes it in the exact Wasm signature, and this fixed-width bundle supplies it.
+            // The managed CorInfoImpl consumes relocation callbacks in emission order: first
+            // the frame identity, then metadata-only WASM_DEFERRED_CALL with the signature,
+            // immediately followed by WASM_FUNCTION_INDEX_LEB for the target at the same offset.
+            // The metadata callback writes no bytes and produces no object relocation. Its
+            // signature occupies one pending slot until the function-index callback consumes it,
+            // so another deferred call must not interleave these callbacks.
+            // See #DeferredWasmCallRewriting for direct-call selection and indirect expansion.
+            dst += emitOutputOpcode(dst, INS_i32_const);
+            emitRecordRelocation(dst, reinterpret_cast<void*>(emitGetInsSC(id)),
+                                 CorInfoReloc::WASM_METHOD_FRAME_IDENTITY_SLEB);
+            dst += emitOutputPaddedReloc(dst);
+            dst += emitOutputOpcode(dst, ins);
+            emitRecordRelocation(dst, reinterpret_cast<void*>(id->idAddr()->iiaWasmSignature),
+                                 CorInfoReloc::WASM_DEFERRED_CALL);
+            dst += emitOutputConstant(dst, id, UNSIGNED, CorInfoReloc::WASM_FUNCTION_INDEX_LEB);
+            break;
+        }
         case IF_OPCODE:
         {
             dst += emitOutputOpcode(dst, ins);
@@ -1090,9 +1132,10 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         }
         case IF_FRAMEIDENTITY:
         {
+            assert(m_compiler->IsNativeAot() || id->idIsCnsReloc());
             dst += emitOutputOpcode(dst, ins);
-            void* target =
-                m_compiler->IsNativeAot() ? static_cast<void*>(emitCodeBlock) : m_compiler->info.compMethodHnd;
+            void* target = m_compiler->IsNativeAot() ? static_cast<void*>(emitCodeBlock)
+                                                     : reinterpret_cast<void*>(emitGetInsSC(id));
             emitRecordRelocation(dst, target, CorInfoReloc::WASM_METHOD_FRAME_IDENTITY_SLEB);
             dst += emitOutputPaddedReloc(dst);
             break;
@@ -1416,6 +1459,7 @@ void emitter::emitDispIns(
         case IF_RAW_ULEB128:
         case IF_ULEB128:
         case IF_FUNCIDX:
+        case IF_DEFERRED_CALL:
         case IF_GLOBALIDX:
         {
             cnsval_ssize_t imm = emitGetInsSC(id);

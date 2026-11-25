@@ -2971,8 +2971,8 @@ GenTree* Lowering::LowerCall(GenTree* node)
         call->gtControlExpr = controlExpr;
 
 #ifdef TARGET_RISCV64
-        // If controlExpr is a constant, we should contain it inside the call so that we can move the lower 12-bits of
-        // the value to call instruction's (JALR) offset.
+        // If controlExpr is a constant, contain it inside the call so that codegen emits a direct call to it
+        // (auipc + jalr with a relocation) instead of materializing the address in a register.
         if (controlExpr->IsCnsIntOrI() && !controlExpr->AsIntCon()->ImmedValNeedsReloc(m_compiler) &&
             !call->IsFastTailCall())
         {
@@ -3010,14 +3010,25 @@ GenTree* Lowering::LowerCall(GenTree* node)
     // the call according to the portable entrypoint abi
     if (!call->IsUnmanaged() && m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PORTABLE_ENTRY_POINTS))
     {
-        if (call->gtDirectCallAddress != nullptr)
+        // Deferred instructions supply the final PEP argument after all other operands.
+        // See #DeferredWasmCallRelocationProtocol.
+        if ((call->gtDirectCallAddress != nullptr) &&
+            (m_compiler->eeGetRelocTypeHint(call->gtDirectCallAddress) != CorInfoReloc::WASM_DEFERRED_CALL))
         {
-            // A direct call target has no portable entrypoint to dispatch through, so there is
-            // nothing meaningful to pass here. The argument still needs to be present to satisfy
-            // the calling convention shared with indirect PEP calls, so pass a constant zero.
-            AddWasmPortableEntryPointArg(call, m_compiler->gtNewIconNode(0, TYP_I_IMPL));
+            GenTree* portableEntryPoint;
+            if ((call->gtCallMethHnd != nullptr) && !call->IsHelperCall())
+            {
+                portableEntryPoint = m_compiler->gtNewIconHandleNode(reinterpret_cast<size_t>(call->gtCallMethHnd),
+                                                                     GTF_ICON_WASM_FRAME_IDENTITY);
+            }
+            else
+            {
+                // Direct same-image managed helpers establish their own frame identity.
+                portableEntryPoint = m_compiler->gtNewIconNode(0, TYP_I_IMPL);
+            }
+            AddWasmPortableEntryPointArg(call, portableEntryPoint);
         }
-        else
+        else if (call->gtDirectCallAddress == nullptr)
         {
             LowerPEPCall(call);
         }
@@ -4819,6 +4830,10 @@ GenTree* Lowering::LowerSelect(GenTreeConditional* select)
     DISPTREERANGE(BlockRange(), select);
     JITDUMP("\n");
 
+#ifdef TARGET_WASM
+    TryMoveWasmSelectCondition(select);
+#endif
+
     // Do not transform GT_SELECT with GTF_SET_FLAGS into GT_SELECTCC; this
     // node is used by decomposition on x86.
     // TODO-CQ: If we allowed multiple nodes to consume the same CPU flags then
@@ -4850,6 +4865,11 @@ GenTree* Lowering::LowerSelect(GenTreeConditional* select)
     {
         TryLowerCnsIntCselToCinc(select, cond);
     }
+#endif
+
+#ifdef TARGET_WASM
+    assert(newSelect == nullptr);
+    select->SetOper(GT_WASM_SELECT);
 #endif
 
     return newSelect != nullptr ? newSelect->gtNext : select->gtNext;
@@ -6096,13 +6116,17 @@ void Lowering::LowerReturnSuspend(GenTree* node)
     if (!block->KindIs(BBJ_RETURN))
     {
         bool profileInconsistent = false;
+
+        // A self-edge can change the block weight as we visit its successors.
+        weight_t const blockWeight = block->bbWeight;
+
         for (BasicBlock* const succBlock : block->Succs())
         {
             FlowEdge* const succEdge = m_compiler->fgRemoveAllRefPreds(succBlock, block);
 
             if (block->hasProfileWeight() && succBlock->hasProfileWeight())
             {
-                succBlock->decreaseBBProfileWeight(succEdge->getLikelyWeight());
+                succBlock->decreaseBBProfileWeight(succEdge->getLikelihood() * blockWeight);
                 profileInconsistent |= (succBlock->NumSucc() > 0);
             }
         }
@@ -11596,7 +11620,7 @@ GenTree* Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
     }
 
 #ifndef TARGET_XARCH
-    if (ind->Data()->IsIconHandle(GTF_ICON_OBJ_HDL))
+    if (!ind->IsVolatile() && ind->Data()->IsIconHandle(GTF_ICON_OBJ_HDL))
     {
         const ssize_t handle = ind->Data()->AsIntCon()->IconValue();
         if (!m_compiler->info.compCompHnd->isObjectImmutable(reinterpret_cast<CORINFO_OBJECT_HANDLE>(handle)))
@@ -12315,11 +12339,8 @@ void Lowering::UnmarkTree(GenTree* node)
 //------------------------------------------------------------------------
 // IsContainableLclAddr: Can a given local address be contained?
 //
-// Most local addresses can be contained, however, there are two edge cases
-// where this is not true:
-// 1. When the resulting memory access will go beyond the local's location.
-// 2. When the resulting access may go past a UINT16_MAX.
-// Both of these requirements are imposed by the emitter.
+// A local address can be contained when the access is not wide, as defined
+// by Compiler::IsWideAccess.
 //
 // Arguments:
 //    lclAddr    - The local address node
@@ -12328,10 +12349,9 @@ void Lowering::UnmarkTree(GenTree* node)
 // Return Value:
 //    Whether an indirection of "accessSize" may contain "lclAddr".
 //
-bool Lowering::IsContainableLclAddr(GenTreeLclFld* lclAddr, unsigned accessSize) const
+bool Lowering::IsContainableLclAddr(GenTreeLclFld* lclAddr, ValueSize accessSize) const
 {
-    if (CheckedOps::AddOverflows<int32_t>(lclAddr->GetLclOffs(), accessSize, CheckedOps::Unsigned) ||
-        !m_compiler->IsValidLclAddr(lclAddr->GetLclNum(), lclAddr->GetLclOffs() + accessSize - 1))
+    if (m_compiler->IsWideAccess(lclAddr->GetLclNum(), lclAddr->GetLclOffs(), accessSize))
     {
         // We depend on containment for correctness of liveness updates in codegen. Therefore, all
         // locals that may "return false" here MUST be address-exposed. Local morph ensures this.

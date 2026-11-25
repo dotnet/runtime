@@ -153,39 +153,12 @@ set(SOURCES
   init/pal.cpp
   init/sxs.cpp
   loader/module.cpp
-  misc/cgroup.cpp
   misc/dbgmsg.cpp
-  misc/environ.cpp
   misc/error.cpp
-  misc/errorstrings.cpp
-  misc/fmtmessage.cpp
-  misc/perfjitdump.cpp
-  misc/strutil.cpp
-  misc/sysinfo.cpp
-  misc/time.cpp
   misc/utils.cpp
   objmgr/palobjbase.cpp
   objmgr/listedobject.cpp
   objmgr/listedobjectmanager.cpp
-  safecrt/memcpy_s.cpp
-  safecrt/memmove_s.cpp
-  safecrt/mbusafecrt.cpp
-  safecrt/safecrt_input_s.cpp
-  safecrt/safecrt_winput_s.cpp
-  safecrt/sprintf_s.cpp
-  safecrt/sscanf_s.cpp
-  safecrt/strcat_s.cpp
-  safecrt/strcpy_s.cpp
-  safecrt/strncat_s.cpp
-  safecrt/strncpy_s.cpp
-  safecrt/vsprintf.cpp
-  safecrt/wcscat_s.cpp
-  safecrt/wcscpy_s.cpp
-  safecrt/wcslen_s.cpp
-  safecrt/wcslwr_s.cpp
-  safecrt/wcsncat_s.cpp
-  safecrt/wcsncpy_s.cpp
-  safecrt/wmakepath_s.cpp
   thread/process.cpp
   thread/thread.cpp
   thread/threadsusp.cpp

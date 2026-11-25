@@ -810,9 +810,20 @@ int LinearScan::BuildNode(GenTree* tree)
             }
             else
             {
-                // Reserve int to load constant from memory (IF_LARGELDC)
-                buildInternalIntRegisterDefForNode(tree);
-                buildInternalRegisterUses();
+                // MOVI can broadcast a repeated, encodable vector element without an integer temp.
+                // Keep these immediate checks in sync with CodeGen::genSetRegToConst.
+                simd16_t val = vecCon->gtSimd16Val;
+                bool     canEncode =
+                    (vecCon->IsBroadcast(TYP_INT) && emitter::emitIns_valid_imm_for_movi(val.i32[0], EA_4BYTE)) ||
+                    (vecCon->IsBroadcast(TYP_SHORT) && emitter::emitIns_valid_imm_for_movi(val.i16[0], EA_2BYTE)) ||
+                    (vecCon->IsBroadcast(TYP_BYTE) && emitter::emitIns_valid_imm_for_movi(val.i8[0], EA_1BYTE));
+
+                if (!canEncode)
+                {
+                    // Reserve int to load constant from memory (IF_LARGELDC)
+                    buildInternalIntRegisterDefForNode(tree);
+                    buildInternalRegisterUses();
+                }
             }
 
             srcCount = 0;

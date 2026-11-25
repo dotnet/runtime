@@ -18,6 +18,7 @@
 #include <stdlib.h>
 #include <wchar.h>
 #include <stdio.h>
+#include <dn-safecrt.h>
 
 #ifdef HOST_WINDOWS
 // CoreCLR.dll uses linker .def files to control the exported symbols.

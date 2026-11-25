@@ -59,12 +59,13 @@
 // Data structure that keeps track of per-loop info, like occurrences and suspension-points inside loops.
 class PerLoopInfo
 {
+    // An occurrence is either a local node or another node defining the local.
     struct Occurrence
     {
-        BasicBlock*          Block;
-        struct Statement*    Statement;
-        GenTreeLclVarCommon* Node;
-        Occurrence*          Next;
+        BasicBlock*       Block;
+        struct Statement* Statement;
+        GenTree*          Node;
+        Occurrence*       Next;
     };
 
     typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, Occurrence*> LocalToOccurrenceMap;
@@ -162,20 +163,29 @@ PerLoopInfo::LoopInfo* PerLoopInfo::GetOrCreateInfo(FlowGraphNaturalLoop* loop)
             {
                 info.HasSuspensionPoint |= node->IsCall() && node->AsCall()->IsAsync();
 
-                if (!node->OperIsAnyLocal())
+                auto addOccurrence = [=, &info](unsigned lclNum) {
+                    Occurrence** occurrence = info.LocalToOccurrences->LookupPointerOrAdd(lclNum, nullptr);
+
+                    Occurrence* newOccurrence = new (comp, CMK_LoopOpt) Occurrence;
+                    newOccurrence->Block      = block;
+                    newOccurrence->Statement  = stmt;
+                    newOccurrence->Node       = node;
+                    newOccurrence->Next       = *occurrence;
+                    *occurrence               = newOccurrence;
+                };
+
+                if (node->OperIsAnyLocal())
                 {
+                    addOccurrence(node->AsLclVarCommon()->GetLclNum());
                     continue;
                 }
 
-                GenTreeLclVarCommon* lcl = node->AsLclVarCommon();
-                Occurrence** occurrence  = info.LocalToOccurrences->LookupPointerOrAdd(lcl->GetLclNum(), nullptr);
+                auto visitDef = [&](const auto& def) {
+                    addOccurrence(def.GetLclNum());
+                    return GenTree::VisitResult::Continue;
+                };
 
-                Occurrence* newOccurrence = new (comp, CMK_LoopOpt) Occurrence;
-                newOccurrence->Block      = block;
-                newOccurrence->Statement  = stmt;
-                newOccurrence->Node       = lcl;
-                newOccurrence->Next       = *occurrence;
-                *occurrence               = newOccurrence;
+                node->VisitLogicalLocalDefs(comp, visitDef);
             }
         }
 
@@ -219,7 +229,7 @@ bool PerLoopInfo::VisitLoopNestInfo(FlowGraphNaturalLoop* loop, TFunc& func)
 //   Visit all occurrences of the specified local inside the loop.
 //
 // Type parameters:
-//   TFunc - Functor of type bool(Block*, Statement*, GenTreeLclVarCommon*)
+//   TFunc - Functor of type bool(Block*, Statement*, GenTree*)
 //
 // Parameters:
 //   loop   - The loop
@@ -275,7 +285,7 @@ bool PerLoopInfo::VisitOccurrences(FlowGraphNaturalLoop* loop, unsigned lclNum, 
 //
 bool PerLoopInfo::HasAnyOccurrences(FlowGraphNaturalLoop* loop, unsigned lclNum)
 {
-    if (!VisitOccurrences(loop, lclNum, [](BasicBlock* block, Statement* stmt, GenTreeLclVarCommon* tree) {
+    if (!VisitOccurrences(loop, lclNum, [](BasicBlock* block, Statement* stmt, GenTree* tree) {
         return false;
     }))
     {
@@ -546,7 +556,7 @@ bool Compiler::optIsIVWideningProfitable(
     weight_t savedCost = 0;
     int      savedSize = 0;
 
-    auto measure = [=, &savedCost, &savedSize](BasicBlock* block, Statement* stmt, GenTreeLclVarCommon* lcl) {
+    auto measure = [=, &savedCost, &savedSize](BasicBlock* block, Statement* stmt, GenTree* lcl) {
         GenTree* parent = lcl->gtGetParent(nullptr);
         if ((parent == nullptr) || !parent->OperIs(GT_CAST))
         {
@@ -899,6 +909,17 @@ bool Compiler::optWidenPrimaryIV(FlowGraphNaturalLoop* loop, unsigned lclNum, Sc
     if (lclDsc->lvDoNotEnregister || lclDsc->IsLiveInOutOfHandler())
     {
         JITDUMP("  V%02u is marked DNER or lives into a handler\n", lclNum);
+        return false;
+    }
+
+    // Only local nodes can be replaced with the widened local.
+    auto isLocalNode = [](BasicBlock* block, Statement* stmt, GenTree* node) {
+        return node->OperIsAnyLocal();
+    };
+
+    if (!loopInfo->VisitOccurrences(loop, lclNum, isLocalNode))
+    {
+        JITDUMP("  V%02u is defined by a non-local node inside the loop\n", lclNum);
         return false;
     }
 
@@ -1442,7 +1463,7 @@ class StrengthReductionContext
 
     void        InitializeSimplificationAssumptions();
     bool        InitializeCursors(GenTreeLclVarCommon* primaryIVLcl, ScevAddRec* primaryIV);
-    bool        IsUseExpectedToBeRemoved(BasicBlock* block, Statement* stmt, GenTreeLclVarCommon* tree);
+    bool        IsUseExpectedToBeRemoved(BasicBlock* block, Statement* stmt, unsigned primaryIVLclNum);
     void        AdvanceCursors(ArrayStack<CursorInfo>* cursors, ArrayStack<CursorInfo>* nextCursors);
     void        ExpandStoredCursors(ArrayStack<CursorInfo>* cursors, ArrayStack<CursorInfo>* otherCursors);
     bool        CheckAdvancedCursors(ArrayStack<CursorInfo>* cursors, ScevAddRec** nextIV);
@@ -1724,8 +1745,8 @@ bool StrengthReductionContext::InitializeCursors(GenTreeLclVarCommon* primaryIVL
     m_cursors2.Reset();
     m_intermediateIVStores.Reset();
 
-    auto visitor = [=](BasicBlock* block, Statement* stmt, GenTreeLclVarCommon* tree) {
-        if (IsUseExpectedToBeRemoved(block, stmt, tree))
+    auto visitor = [=](BasicBlock* block, Statement* stmt, GenTree* tree) {
+        if (IsUseExpectedToBeRemoved(block, stmt, primaryIVLcl->GetLclNum()))
         {
             // If we do strength reduction we expect to be able to remove this
             // use; do not create a cursor for it.
@@ -1737,7 +1758,7 @@ bool StrengthReductionContext::InitializeCursors(GenTreeLclVarCommon* primaryIVL
             return false;
         }
 
-        if (tree->GetSsaNum() != primaryIVLcl->GetSsaNum())
+        if (tree->AsLclVar()->GetSsaNum() != primaryIVLcl->GetSsaNum())
         {
             // Most likely a post-incremented use of the primary IV; we
             // could replace these as well, but currently we only handle
@@ -1802,10 +1823,9 @@ bool StrengthReductionContext::InitializeCursors(GenTreeLclVarCommon* primaryIVL
 // Returns:
 //   True if the use is expected to be removable.
 //
-bool StrengthReductionContext::IsUseExpectedToBeRemoved(BasicBlock* block, Statement* stmt, GenTreeLclVarCommon* tree)
+bool StrengthReductionContext::IsUseExpectedToBeRemoved(BasicBlock* block, Statement* stmt, unsigned primaryIVLclNum)
 {
-    unsigned primaryIVLclNum = tree->GetLclNum();
-    if (m_compiler->optIsUpdateOfIVWithoutSideEffects(stmt->GetRootNode(), tree->GetLclNum()))
+    if (m_compiler->optIsUpdateOfIVWithoutSideEffects(stmt->GetRootNode(), primaryIVLclNum))
     {
         // Removal of unused IVs will get rid of this.
         return true;
@@ -1968,14 +1988,13 @@ void StrengthReductionContext::ExpandStoredCursors(ArrayStack<CursorInfo>* curso
                     Statement*  cursorStmt  = cursor->Stmt;
                     cursor = nullptr; // Cannot use this below since we may add elements to "cursors" here.
 
-                    auto createExtraCursor = [=, &numCreated](BasicBlock* block, Statement* stmt,
-                                                              GenTreeLclVarCommon* use) {
+                    auto createExtraCursor = [=, &numCreated](BasicBlock* block, Statement* stmt, GenTree* use) {
                         if (use == parent)
                         {
                             return true;
                         }
 
-                        if (!use->OperIs(GT_LCL_VAR) || (use->GetSsaNum() != storedLcl->GetSsaNum()))
+                        if (!use->OperIs(GT_LCL_VAR) || (use->AsLclVar()->GetSsaNum() != storedLcl->GetSsaNum()))
                         {
                             return false;
                         }

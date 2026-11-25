@@ -5,7 +5,6 @@
     <BuildAsStandalone>true</BuildAsStandalone>
     <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
     <NativeAotIncompatible>true</NativeAotIncompatible>
-    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' != 'coreclr'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="threadstatic09.cs" />

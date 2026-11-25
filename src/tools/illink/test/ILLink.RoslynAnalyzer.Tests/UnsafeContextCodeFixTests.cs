@@ -46,10 +46,14 @@ namespace ILLink.RoslynAnalyzer.Tests
         {
             var project = solution.GetProject(projectId)!;
             var parseOptions = ((CSharpParseOptions)project.ParseOptions!).WithLanguageVersion(LanguageVersion.Preview);
-            if (updatedMemorySafetyRules)
-                parseOptions = parseOptions.WithFeatures([.. parseOptions.Features, new("updated-memory-safety-rules", "")]);
-
             var compilationOptions = ((CSharpCompilationOptions)project.CompilationOptions!).WithAllowUnsafe(true);
+            if (updatedMemorySafetyRules)
+            {
+#pragma warning disable RSEXPERIMENTAL006
+                compilationOptions = compilationOptions.WithMemorySafetyRulesVersion(MemorySafetyRulesVersion.Version2);
+#pragma warning restore RSEXPERIMENTAL006
+            }
+
             return solution
                 .WithProjectParseOptions(projectId, parseOptions)
                 .WithProjectCompilationOptions(projectId, compilationOptions);
@@ -151,7 +155,7 @@ namespace ILLink.RoslynAnalyzer.Tests
         }
 
         [Fact]
-        public Task ExpressionBodiedMember_KeepsExpressionBody()
+        public Task ExpressionBodiedMember_ConvertsToGetAccessor()
         {
             return VerifyAsync("""
                 class C
@@ -165,7 +169,17 @@ namespace ILLink.RoslynAnalyzer.Tests
                 {
                     int* _p;
 
-                    int Value => /* SAFETY: To be audited */ unsafe(*_p);
+                    int Value
+                    {
+                        get
+                        {
+                            // SAFETY: To be audited
+                            unsafe
+                            {
+                                return *_p;
+                            }
+                        }
+                    }
                 }
                 """);
         }

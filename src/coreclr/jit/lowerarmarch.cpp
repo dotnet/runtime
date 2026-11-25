@@ -739,7 +739,7 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
     assert(blkNode->OperIs(GT_STORE_BLK) && (blkNode->gtBlkOpKind == GenTreeBlk::BlkOpKindUnroll));
     assert(size < INT32_MAX);
 
-    if (addr->OperIs(GT_LCL_ADDR) && IsContainableLclAddr(addr->AsLclFld(), size))
+    if (addr->OperIs(GT_LCL_ADDR) && IsContainableLclAddr(addr->AsLclFld(), ValueSize(size)))
     {
         addr->SetContained();
         return;
@@ -752,6 +752,13 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
 
     GenTreeIntCon* offsetNode = addr->AsOp()->gtGetOp2()->AsIntCon();
     ssize_t        offset     = offsetNode->IconValue();
+
+    // A constant that needs a relocation, such as a frozen object's handle, cannot be folded into the
+    // address mode: the offset is emitted as a plain immediate, without the relocation.
+    if (offsetNode->ImmedValNeedsReloc(m_compiler))
+    {
+        return;
+    }
 
 #ifdef TARGET_ARM
     // All integer load/store instructions on Arm support offsets in range -255..255.
@@ -1589,7 +1596,9 @@ bool Lowering::TryLowerSvePredicateBitwiseClear(GenTreeHWIntrinsic* node, NamedI
         }
     }
 
-    if ((notNode != nullptr) && op1->IsSveMaskOperand() && op2->IsSveMaskOperand())
+    // Vector zero operands are SVE mask operands even when SVE is not available.
+    if ((notNode != nullptr) && op1->CanBeSveMask() && op2->CanBeSveMask() &&
+        m_compiler->compOpportunisticallyDependsOn(InstructionSet_Sve))
     {
         // Reinterpreting a mask vector can change its element width. Removing the
         // conversion in that case would not preserve the replicated vector bits.
@@ -3078,7 +3087,7 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
         }
     }
     else if (addr->OperIs(GT_LCL_ADDR) && !indirNode->OperIs(GT_NULLCHECK) &&
-             IsContainableLclAddr(addr->AsLclFld(), indirNode->Size()))
+             IsContainableLclAddr(addr->AsLclFld(), indirNode->ValueSize()))
     {
         // These nodes go into an addr mode:
         // - GT_LCL_ADDR is a stack addr mode.

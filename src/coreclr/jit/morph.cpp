@@ -826,7 +826,8 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
         if (!treatLikeCall && (argx->gtFlags & GTF_EXCEPT) && (argCount > 1) && comp->opts.compDbgCode)
         {
             exceptionFlags = comp->gtCollectExceptions(argx);
-            if ((exceptionFlags & (ExceptionSetFlags::IndexOutOfRangeException |
+            if ((exceptionFlags & (ExceptionSetFlags::IndexOutOfRangeException | ExceptionSetFlags::ArgumentException |
+                                   ExceptionSetFlags::ArgumentOutOfRangeException |
                                    ExceptionSetFlags::OverflowException)) != ExceptionSetFlags::None)
             {
                 for (CallArg& otherArg : Args())
@@ -907,11 +908,11 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
 #endif
             }
         }
-        else if ((argx->gtFlags & GTF_EXCEPT) != 0)
+        else if ((argx->gtFlags & (GTF_EXCEPT | GTF_ORDER_SIDEEFF)) != 0)
         {
-            // If a previous arg may throw a different exception than this arg
-            // then we evaluate all previous arguments with GTF_EXCEPT to temps
-            // to avoid reordering them in our sort later.
+            // An ordered argument may depend on null checks in previous arguments,
+            // even if it cannot throw itself. Otherwise, only preserve exception
+            // order when the arguments may throw different exceptions.
             if (prevExceptionTree != nullptr)
             {
                 if (prevExceptionFlags == ExceptionSetFlags::None)
@@ -927,10 +928,11 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
                 bool exactlyOneKnown =
                     isPow2(static_cast<unsigned>(exceptionFlags)) &&
                     ((exceptionFlags & ExceptionSetFlags::UnknownException) == ExceptionSetFlags::None);
-                bool throwsSameAsPrev = exactlyOneKnown && (exceptionFlags == prevExceptionFlags);
-                if (!throwsSameAsPrev)
+                bool canReorder = ((argx->gtFlags & GTF_ORDER_SIDEEFF) == 0) && exactlyOneKnown &&
+                                  (exceptionFlags == prevExceptionFlags);
+                if (!canReorder)
                 {
-                    JITDUMP("Exception set for arg [%06u] interferes with previous tree [%06u]; must evaluate previous "
+                    JITDUMP("Effects for arg [%06u] interfere with previous tree [%06u]; must evaluate previous "
                             "trees with exceptions to temps\n",
                             Compiler::dspTreeID(argx), Compiler::dspTreeID(prevExceptionTree));
 
@@ -964,8 +966,11 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
                 }
             }
 
-            prevExceptionTree  = argx;
-            prevExceptionFlags = exceptionFlags;
+            if ((argx->gtFlags & GTF_EXCEPT) != 0)
+            {
+                prevExceptionTree  = argx;
+                prevExceptionFlags = exceptionFlags;
+            }
         }
     }
 
@@ -2303,8 +2308,9 @@ bool Compiler::fgTryMorphStructArg(CallArg* arg)
             return false;
         }
 
-        ClassLayout* layout     = argNode->TypeIs(TYP_STRUCT) ? argNode->GetLayout(this) : nullptr;
-        unsigned     structSize = argNode->TypeIs(TYP_STRUCT) ? layout->GetSize() : genTypeSize(argNode);
+        ClassLayout* layout         = argNode->TypeIs(TYP_STRUCT) ? argNode->GetLayout(this) : nullptr;
+        unsigned     structSize     = argNode->TypeIs(TYP_STRUCT) ? layout->GetSize() : genTypeSize(argNode);
+        GenTree*     addrSpillStore = nullptr;
 
         if (layout != nullptr)
         {
@@ -2330,6 +2336,27 @@ bool Compiler::fgTryMorphStructArg(CallArg* arg)
             {
                 // Cannot create multiple uses of the address. Bail.
                 return false;
+            }
+
+            // Each slot below gets its own use of the address. If computing
+            // the address reads mutable memory, cloning it would re-read that
+            // memory for each slot and could observe different values (a torn
+            // struct), so evaluate the address once into a temp instead.
+            auto readsMutableMemory = [this](GenTree* node) {
+                if (node->OperIsIndir())
+                {
+                    return (node->gtFlags & GTF_IND_INVARIANT) == 0;
+                }
+
+                return node->OperIsLocalRead() && lvaGetDesc(node->AsLclVarCommon())->IsAddressExposed();
+            };
+
+            if ((arg->AbiInfo.CountRegsAndStackSlots() > 1) &&
+                (gtFindNodeInTree<GTF_GLOB_REF>(indirAddr, readsMutableMemory) != nullptr))
+            {
+                TempInfo addrTemp          = fgMakeTemp(indirAddr);
+                addrSpillStore             = addrTemp.store;
+                argNode->AsIndir()->Addr() = addrTemp.load;
             }
         }
 
@@ -2423,7 +2450,16 @@ bool Compiler::fgTryMorphStructArg(CallArg* arg)
                     addr                  = gtNewOperNode(GT_ADD, indirAddr->TypeGet(), indirAddrDup, offsetNode);
                 }
 
-                return gtNewIndir(type, addr);
+                GenTree* indir = gtNewIndir(type, addr, argNode->gtFlags & GTF_IND_COPYABLE_FLAGS);
+
+                // A nonfaulting load may depend on a guarding check (e.g. from
+                // non-null assertion prop); keep it ordered after that guard.
+                if (((argNode->gtFlags & GTF_IND_NONFAULTING) != 0) && ((argNode->gtFlags & GTF_ORDER_SIDEEFF) != 0))
+                {
+                    indir->SetHasOrderingSideEffect();
+                }
+
+                return indir;
             }
         };
 
@@ -2451,6 +2487,11 @@ bool Compiler::fgTryMorphStructArg(CallArg* arg)
         }
 
         newArg = newArg->AsFieldList()->SoleFieldOrThis();
+
+        if (addrSpillStore != nullptr)
+        {
+            newArg = gtNewOperNode(GT_COMMA, newArg->TypeGet(), addrSpillStore, newArg);
+        }
     }
 
     JITDUMP("fgTryMorphStructArg created tree:\n");
@@ -2882,6 +2923,26 @@ void Compiler::fgMoveOpsLeft(GenTree* tree)
 #endif
 
 //------------------------------------------------------------------------
+// fgTreeMayModifyLocal: Check whether evaluating a tree may modify a local.
+//
+// Arguments:
+//    tree   - The tree to check
+//    lclNum - The local
+//
+// Return Value:
+//    True if evaluating the tree may modify the local.
+//
+bool Compiler::fgTreeMayModifyLocal(GenTree* tree, unsigned lclNum)
+{
+    if ((tree->gtFlags & (GTF_ASG | GTF_CALL)) == 0)
+    {
+        return false;
+    }
+
+    return lvaGetDesc(lclNum)->IsAddressExposed() || gtHasRef(tree, lclNum);
+}
+
+//------------------------------------------------------------------------
 // fgMorphIndexAddr: Expand a GT_INDEX_ADDR node and fully morph the child operands.
 //
 // We expand the GT_INDEX_ADDR node into a larger tree that evaluates the array
@@ -2978,7 +3039,8 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
         //
         if (((arrRef->gtFlags & (GTF_ASG | GTF_CALL | GTF_GLOB_REF)) != 0) ||
             gtComplexityExceeds(arrRef, MAX_ARR_COMPLEXITY, countNode) || arrRef->OperIs(GT_LCL_FLD) ||
-            (arrRef->OperIs(GT_LCL_VAR) && lvaIsLocalImplicitlyAccessedByRef(arrRef->AsLclVar()->GetLclNum())))
+            (arrRef->OperIs(GT_LCL_VAR) && (lvaIsLocalImplicitlyAccessedByRef(arrRef->AsLclVar()->GetLclNum()) ||
+                                            fgTreeMayModifyLocal(index, arrRef->AsLclVar()->GetLclNum()))))
         {
             unsigned arrRefTmpNum = lvaGrabTemp(true DEBUGARG("arr expr"));
             arrRefDefn            = gtNewTempStore(arrRefTmpNum, arrRef);
@@ -10196,7 +10258,8 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                 var_types  op1SimdBaseType = op1Intrin->GetSimdBaseType();
 
                 if ((op1Oper == GT_NEG) && !op1IsScalar &&
-                    (varTypeToSigned(simdBaseType) == varTypeToSigned(op1SimdBaseType)))
+                    (varTypeToSigned(simdBaseType) == varTypeToSigned(op1SimdBaseType)) &&
+                    gtCanSwapOrder(op1, op2Intrin))
                 {
                     op1 = ExtractEffectiveOp(GT_NEG, op1Intrin, /* destroyNodes */ true);
 
@@ -11364,7 +11427,7 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree, bool* optAssertionPropD
                     op1->ChangeOper(GT_MUL);
 
                     add->AsIntCon()->SetIconValue(imul);
-                    fgValueNumberTreeConst(add);
+                    fgUpdateConstTreeValueNumber(add);
                 }
             }
 
@@ -12835,7 +12898,11 @@ void Compiler::fgKillDependentAssertionsSingle(unsigned lclNum DEBUGARG(GenTree*
 {
     // Active dependent assertions are killed here
     //
-    ASSERT_TP killed = GetAssertionDep(lclNum);
+    ASSERT_TP killed = optAssertionDep->Get(lclNum);
+    if (BitVecOps::MayBeUninit(killed))
+    {
+        return;
+    }
 
 #ifdef DEBUG
     bool hasKills = !BitVecOps::IsEmptyIntersection(apTraits, apLocal, killed);
@@ -13295,13 +13362,16 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
 
             if (block->hasProfileWeight())
             {
+                // A self-edge can change the block weight as we visit its successors.
+                weight_t blockWeight = block->bbWeight;
+
                 // Use unique successor edges, as duplicate jump table entries share an edge.
                 for (FlowEdge* const succEdge : block->SuccEdges())
                 {
                     BasicBlock* const targetBlock = succEdge->getDestinationBlock();
                     if (targetBlock->hasProfileWeight())
                     {
-                        targetBlock->decreaseBBProfileWeight(succEdge->getLikelyWeight());
+                        targetBlock->decreaseBBProfileWeight(succEdge->getLikelihood() * blockWeight);
                         profileInconsistent |= (targetBlock->NumSucc() > 0);
                     }
                 }
@@ -15894,7 +15964,15 @@ bool Compiler::fgMorphArrayOpsStmt(MorphMDArrayTempCache* pTempCache, BasicBlock
             unsigned rank      = arrElem->gtArrRank;
 
             // We are going to multiply reference the array object; create a new local var if necessary.
-            if (arrObj->OperIs(GT_LCL_VAR))
+            // A local can be reused only if evaluating the indices cannot modify it.
+            bool canReuseArrLcl = arrObj->OperIs(GT_LCL_VAR);
+            for (unsigned i = 0; canReuseArrLcl && anyIdxWithSideEffects && (i < rank); i++)
+            {
+                canReuseArrLcl =
+                    !m_compiler->fgTreeMayModifyLocal(arrElem->gtArrInds[i], arrObj->AsLclVar()->GetLclNum());
+            }
+
+            if (canReuseArrLcl)
             {
                 arrLcl = arrObj->AsLclVar()->GetLclNum();
             }

@@ -115,6 +115,7 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     onstackreplacement.cpp
     peassembly.cpp
     peimage.cpp
+    perfjitdump.cpp
     perfmap.cpp
     pgo.cpp
     precode_portable.cpp
@@ -220,6 +221,7 @@ set(VM_HEADERS_DAC_AND_WKS_COMMON
     peimage.inl
     peimagelayout.h
     peimagelayout.inl
+    perfjitdump.h
     perfmap.h
     pgo.h
     precode_portable.hpp
@@ -317,6 +319,7 @@ set(VM_SOURCES_WKS
     CachedInterfaceDispatch_Coreclr.cpp
     ${RUNTIME_DIR}/MathHelpers.cpp
     ${RUNTIME_DIR}/MiscNativeHelpers.cpp
+    ${RUNTIME_DIR}/ProcessEnvironment.cpp
     cachelinealloc.cpp
     callconvbuilder.cpp
     callhelpers.cpp
@@ -376,10 +379,10 @@ set(VM_SOURCES_WKS
     profilinghelper.cpp
     proftoeeinterfaceimpl.cpp
     qcall.cpp
-    qcallentrypoints.cpp
     reflectclasswriter.cpp
     reflectioninvocation.cpp
     runtimehandles.cpp
+    runtimehelpers.cpp
     simplerwlock.cpp
     stackingallocator.cpp
     stringliteralmap.cpp
@@ -714,11 +717,11 @@ elseif(CLR_CMAKE_TARGET_WIN32)
             ${ARCH_SOURCES_DIR}/RedirectedHandledJITCase.asm
             ${ARCH_SOURCES_DIR}/AllocSlow.asm
             ${ARCH_SOURCES_DIR}/asmhelpers.asm
-            ${ARCH_SOURCES_DIR}/ehhelpers.asm
             ${ARCH_SOURCES_DIR}/jithelp.asm
             ${ARCH_SOURCES_DIR}/PInvokeStubs.asm
             ${ARCH_SOURCES_DIR}/thunktemplates.asm
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/AllocFast.asm
+            ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/EHHelpers.asm
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/MiscStubs.asm
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.asm
             )
@@ -785,6 +788,7 @@ else()
             ${ARCH_SOURCES_DIR}/pinvokestubs.S
             ${ARCH_SOURCES_DIR}/thunktemplates.S
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/AllocFast.S
+            ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/EHHelpers.S
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/MiscStubs.S
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.S
         )

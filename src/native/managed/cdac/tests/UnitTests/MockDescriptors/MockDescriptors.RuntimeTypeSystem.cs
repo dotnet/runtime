@@ -160,6 +160,12 @@ internal sealed class MockEEClass : TypedView
             .AddUInt32Field(VMFlagsFieldName)
             .Build<MockEEClass>();
 
+    public byte BaseSizePadding
+    {
+        get => ReadByteField(BaseSizePaddingFieldName);
+        set => WriteByteField(BaseSizePaddingFieldName, value);
+    }
+
     public uint VMFlags
     {
         get => ReadUInt32Field(VMFlagsFieldName);
@@ -643,6 +649,24 @@ internal partial class MockDescriptors
                     fragment.Data.AsMemory((int)((uint)i * size), (int)size),
                     fragment.Address + (uint)i * size);
                 fieldDesc.MTOfEnclosingClass = mtOfEnclosingClass;
+            }
+            return fragment.Address;
+        }
+
+        // Allocates the FieldDescs of `fields` contiguously, each recording `mtOfEnclosingClass` and the packed
+        // field type, offset and FieldDef RID (see AddFieldDesc), and returns the address of the first one.
+        internal TargetPointer AddFieldDescList(ulong mtOfEnclosingClass, ReadOnlySpan<(CorElementType Type, uint Offset, uint MemberDef)> fields)
+        {
+            uint size = (uint)FieldDescLayout.Size;
+            MockMemorySpace.HeapFragment fragment = TypeSystemAllocator.Allocate((ulong)fields.Length * size, "FieldDesc array");
+            for (int i = 0; i < fields.Length; i++)
+            {
+                MockFieldDesc fieldDesc = FieldDescLayout.Create(
+                    fragment.Data.AsMemory((int)((uint)i * size), (int)size),
+                    fragment.Address + (uint)i * size);
+                fieldDesc.MTOfEnclosingClass = mtOfEnclosingClass;
+                fieldDesc.DWord1 = fields[i].MemberDef & 0x00ffffff;
+                fieldDesc.DWord2 = ((uint)fields[i].Type << 27) | (fields[i].Offset & 0x07ffffff);
             }
             return fragment.Address;
         }

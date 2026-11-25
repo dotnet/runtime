@@ -2110,18 +2110,18 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
     GenTree* valOp       = treeNode->Data();
     GenTree* comparandOp = treeNode->Comparand();
 
-    regNumber target    = treeNode->GetRegNum();
-    regNumber loc       = locOp->GetRegNum();
-    regNumber val       = !valOp->isContained() ? valOp->GetRegNum() : REG_ZERO;
-    regNumber comparand = REG_ZERO;
+    regNumber target            = treeNode->GetRegNum();
+    regNumber loc               = locOp->GetRegNum();
+    regNumber val               = !valOp->isContained() ? valOp->GetRegNum() : REG_ZERO;
+    regNumber comparand         = REG_ZERO;
+    regNumber comparandToExtend = REG_NA;
     if (!comparandOp->isContained())
     {
         comparand = comparandOp->GetRegNum();
         if (comparandOp->TypeIs(TYP_INT, TYP_UINT))
         {
-            regNumber signExtendedComparand = internalRegisters.Extract(treeNode);
-            GetEmitter()->emitIns_R_R(INS_sext_w, EA_4BYTE, signExtendedComparand, comparand);
-            comparand = signExtendedComparand;
+            comparandToExtend = comparand;
+            comparand         = internalRegisters.Extract(treeNode);
         }
     }
     regNumber storeErr = internalRegisters.GetSingle(treeNode);
@@ -2144,6 +2144,12 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
     genConsumeAddress(locOp);
     genConsumeRegs(valOp);
     genConsumeRegs(comparandOp);
+
+    // The comparand may have been reloaded from its spill location by genConsumeRegs above
+    if (comparandToExtend != REG_NA)
+    {
+        GetEmitter()->emitIns_R_R(INS_sext_w, EA_4BYTE, comparand, comparandToExtend);
+    }
 
     // NOTE: `genConsumeAddress` marks consumed register as not a GC pointer, assuming the input
     // registers die at the first generated instruction. However, here the input registers are reused,
@@ -5444,20 +5450,21 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 
         if (target->isContainedIntOrIImmed())
         {
+            // A direct call: auipc + jalr with a relocation. No register is needed for the target, and ireg is
+            // left unset because the emitter chooses the auipc and jalr registers itself.
             params.callType = EC_FUNC_TOKEN;
-            params.ireg     = internalRegisters.GetSingle(call);
             params.addr     = (void*)target->AsIntCon()->IconValue();
         }
         else
         {
             params.callType = EC_INDIR_R;
             params.ireg     = target->GetRegNum();
-        }
 
-        // We have already generated code for gtControlExpr evaluating it into a register.
-        // We just need to emit "call reg" in this case.
-        //
-        assert(genIsValidIntReg(params.ireg));
+            // We have already generated code for gtControlExpr evaluating it into a register.
+            // We just need to emit "call reg" in this case.
+            //
+            assert(genIsValidIntReg(params.ireg));
+        }
 
         genEmitCallWithCurrentGC(params);
     }

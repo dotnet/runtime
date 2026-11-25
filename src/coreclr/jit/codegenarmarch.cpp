@@ -2550,8 +2550,11 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
         const int dstOffsetAdjustment = helper.GetDstOffset() - dstRegAddrAlignment;
         dstRegAddrAlignment           = 0;
 
+        // For non-local addresses the adjustment computes the destination itself.
+        // Stack-local adjustments can instead point before the local due to alignment.
+        const emitAttr  dstAttr = (dstLclNum == BAD_VAR_NUM) && varTypeIsGC(dstAddr) ? EA_BYREF : EA_PTRSIZE;
         const regNumber tempReg = internalRegisters.Extract(node, RBM_ALLINT);
-        genInstrWithConstant(INS_add, EA_PTRSIZE, tempReg, dstReg, dstOffsetAdjustment, tempReg);
+        genInstrWithConstant(INS_add, dstAttr, tempReg, dstReg, dstOffsetAdjustment, tempReg);
         dstReg = tempReg;
 
         helper.SetDstOffset(helper.GetDstOffset() - dstOffsetAdjustment);

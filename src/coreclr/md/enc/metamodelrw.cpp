@@ -1125,19 +1125,6 @@ CMiniMdRW::SetOption(
         m_OptionValue.m_UpdateMode |= MDUpdateDelta;
 #endif
 
-    // if a scope is previously updated as incremental, then it should not be open again
-    // with full update for read/write.
-    //
-    if ((m_Schema.m_heaps & CMiniMdSchema::HAS_DELETE) &&
-        (m_OptionValue.m_UpdateMode & MDUpdateMask) == MDUpdateFull &&
-        !m_fIsReadOnly)
-    {
-        IfFailGo( CLDB_E_BADUPDATEMODE );
-    }
-
-    if ((m_OptionValue.m_UpdateMode & MDUpdateMask) == MDUpdateIncremental)
-        m_Schema.m_heaps |= CMiniMdSchema::HAS_DELETE;
-
     // Set the value of sortable based on the options.
     switch (m_OptionValue.m_UpdateMode & MDUpdateMask)
     {
@@ -1387,7 +1374,8 @@ HRESULT
 CMiniMdRW::InitOnMem(
     const void *pvBuf,          // The data from which to init.
     ULONG       ulBufLen,       // The data size
-    int         fIsReadOnly)    // Is the memory read-only?
+    int         fIsReadOnly,    // Is the memory read-only?
+    bool        fIsDelta)       // Is this metadata being loaded to apply an EnC delta?
 {
     HRESULT  hr = S_OK;
     UINT32   cbSchemaSize;      // Size of the schema structure.
@@ -1411,7 +1399,7 @@ CMiniMdRW::InitOnMem(
     }
 
     // Uncompress the schema from the buffer into our structures.
-    IfFailGo(SchemaPopulate(pvBuf, ulBufLen, (ULONG *)&cbSchemaSize));
+    IfFailGo(SchemaPopulate(pvBuf, ulBufLen, (ULONG *)&cbSchemaSize, fIsDelta));
 
     if (m_fMinimalDelta)
         IfFailGo(InitWithLargeTables());

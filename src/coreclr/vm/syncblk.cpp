@@ -753,7 +753,7 @@ void SyncBlockCache::DeleteSyncBlock(SyncBlock *psb)
         INSTANCE_CHECK;
         THROWS;
         GC_TRIGGERS;
-        MODE_ANY;
+        MODE_COOPERATIVE;
     }
     CONTRACTL_END;
 
@@ -1443,16 +1443,19 @@ BOOL ObjHeader::Validate (BOOL bVerifySyncBlkIndex)
 //
 // This holder really just meets GetSyncBlock()'s special requirements. It's not a general purpose holder.
 
-
-// Do not inline this call. (fyuan)
-// SyncBlockMemoryHolder is normally a check for empty pointer and return. Inlining VoidDeleteSyncBlockMemory adds expensive exception handling.
-void VoidDeleteSyncBlockMemory(SyncBlock* psb)
+struct SyncBlockMemoryTraits final
 {
-    LIMITED_METHOD_CONTRACT;
-    SyncBlockCache::GetSyncBlockCache()->DeleteSyncBlockMemory(psb);
-}
+    using Type = SyncBlock*;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type value) noexcept
+    {
+        WRAPPER_NO_CONTRACT;
+        if (value != NULL)
+            SyncBlockCache::GetSyncBlockCache()->DeleteSyncBlockMemory(value);
+    }
+};
 
-typedef Wrapper<SyncBlock*, DoNothing<SyncBlock*>, VoidDeleteSyncBlockMemory, 0> SyncBlockMemoryHolder;
+using SyncBlockMemoryHolder = LifetimeHolder<SyncBlockMemoryTraits>;
 
 
 // get the sync block for an existing object
@@ -1503,7 +1506,7 @@ SyncBlock *ObjHeader::GetSyncBlock()
             //! failable operation called.
             CANNOTTHROWCOMPLUSEXCEPTION();
 
-            syncBlockMemoryHolder.SuppressRelease();
+            syncBlockMemoryHolder.Detach();
 
             new (syncBlock) SyncBlock(indx);
 

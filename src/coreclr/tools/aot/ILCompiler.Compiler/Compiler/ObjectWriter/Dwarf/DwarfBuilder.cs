@@ -441,11 +441,23 @@ namespace ILCompiler.ObjectWriter
             ClassTypeDescriptor classTypeDescriptor,
             ClassFieldsTypeDescriptor classFieldsTypeDescriptor,
             DataFieldDescriptor[] fields,
-            StaticDataFieldDescriptor[] statics)
+            StaticDataFieldDescriptor[] statics,
+            uint forwardDeclarationTypeIndex = 0)
         {
             var classInfo = new DwarfClassTypeInfo(classTypeDescriptor, classFieldsTypeDescriptor, fields, statics);
-            _dwarfTypes.Add(classInfo);
             _staticFields.AddRange(classInfo.StaticVariables);
+
+            // Debuggers find the complete type of a declaration by its name, but tools like dsymutil
+            // only keep the types that are referenced. The complete type replaces the forward declaration,
+            // so that references to the declaration keep the complete type alive.
+            if (forwardDeclarationTypeIndex != 0)
+            {
+                Debug.Assert(_dwarfTypes[(int)forwardDeclarationTypeIndex - 1] is DwarfClassTypeInfo);
+                _dwarfTypes[(int)forwardDeclarationTypeIndex - 1] = classInfo;
+                return forwardDeclarationTypeIndex;
+            }
+
+            _dwarfTypes.Add(classInfo);
             return (uint)_dwarfTypes.Count;
         }
 
@@ -487,7 +499,8 @@ namespace ILCompiler.ObjectWriter
             int methodPCLength,
             uint methodTypeIndex,
             IEnumerable<(DebugVarInfoMetadata, uint)> debugVars,
-            DebugEHClauseInfo[] debugEHClauseInfos)
+            DebugEHClauseInfo[] debugEHClauseInfos,
+            FrameInfo[] frameInfos)
         {
             if (methodTypeIndex == 0)
             {
@@ -496,6 +509,10 @@ namespace ILCompiler.ObjectWriter
 
             DwarfMemberFunction memberFunction = _memberFunctions[(int)methodTypeIndex - 1];
             memberFunction.LinkageName = methodName;
+            if (frameInfos.Length > 1)
+            {
+                memberFunction.FuncletInfoOffsets = new long[frameInfos.Length - 1];
+            }
 
             _dwarfSubprograms.Add(new DwarfSubprogramInfo(
                 sectionSymbolName,
@@ -503,7 +520,8 @@ namespace ILCompiler.ObjectWriter
                 methodPCLength,
                 memberFunction,
                 debugVars.ToArray(),
-                debugEHClauseInfos));
+                debugEHClauseInfos,
+                frameInfos));
         }
 
         public void EmitLineInfo(
