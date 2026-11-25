@@ -249,7 +249,7 @@ bool Compiler::impReadInlineType(const CORINFO_RESOLVED_TOKEN& token, MethodType
             return false;
         }
     }
-    else if ((info.compMethodInfo->options & CORINFO_GENERICS_CTXT_MASK) != CORINFO_GENERICS_CTXT_FROM_METHODDESC)
+    else if (impRuntimeContextKind() == CORINFO_LOOKUP_NOT_SUPPORTED)
     {
         return false;
     }
@@ -393,22 +393,10 @@ GenTree* Compiler::impDeferredMethodContext(CORINFO_RESOLVED_TOKEN* token,
                                             CORINFO_METHOD_HANDLE   devirtualizedMethod)
 {
     assert(((size_t)targetContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD);
-    CORINFO_RUNTIME_LOOKUP_KIND contextKind = CORINFO_LOOKUP_METHODPARAM;
-    if (devirtualizedMethod != nullptr)
+    CORINFO_RUNTIME_LOOKUP_KIND contextKind = impRuntimeContextKind();
+    if (contextKind == CORINFO_LOOKUP_NOT_SUPPORTED)
     {
-        switch (info.compMethodInfo->options & CORINFO_GENERICS_CTXT_MASK)
-        {
-            case CORINFO_GENERICS_CTXT_FROM_METHODDESC:
-                break;
-            case CORINFO_GENERICS_CTXT_FROM_METHODTABLE:
-                contextKind = CORINFO_LOOKUP_CLASSPARAM;
-                break;
-            case CORINFO_GENERICS_CTXT_FROM_THIS:
-                contextKind = CORINFO_LOOKUP_THISOBJ;
-                break;
-            default:
-                return nullptr;
-        }
+        return nullptr;
     }
 
     auto* pending   = new (this, CMK_Inlining) DeferredHandleLookup{};
@@ -1308,7 +1296,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
             assert(opcode != CEE_CALLI);
 
-            if ((opcode == CEE_CALL) && (callInfo->methodInstantiationOffset != 0) &&
+            if ((opcode == CEE_CALL) && callInfo->canForwardMethodSpec &&
                 (TypeFromToken(pResolvedToken->token) == mdtMethodSpec) && !IsAot() && !opts.MinOpts())
             {
                 forwardedArgs = impForwardedTypeArgs(*pResolvedToken, sig->sigInst.methInstCount, nullptr);

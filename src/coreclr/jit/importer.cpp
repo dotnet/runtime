@@ -1301,13 +1301,16 @@ GenTree* Compiler::impTokenToHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                 Compiler* root = impInlineRoot();
                 GenTree*  tree =
                     gtNewRuntimeLookup((CORINFO_GENERIC_HANDLE)pResolvedToken->hClass, CORINFO_HANDLETYPE_CLASS,
-                                       root->getRuntimeContextTree(CORINFO_LOOKUP_METHODPARAM));
+                                       root->getRuntimeContextTree(root->impRuntimeContextKind()));
                 auto* pending                             = new (this, CMK_Inlining) DeferredHandleLookup{};
                 pending->type.expression                  = arg;
                 tree->AsRuntimeLookup()->gtDeferredLookup = pending;
                 JITDUMP("Forward inlinee type as a root signature (%u bytes)\n", arg.signatureSize);
                 return tree;
             }
+            // A bare projection denotes !!n in the root. Class arguments use the EE's type-expression lookup.
+            assert(impInlineRoot()->impRuntimeContextKind() == CORINFO_LOOKUP_METHODPARAM);
+            assert(candidate->rootInstantiationOffset != 0);
             CORINFO_LOOKUP lookup{};
             lookup.lookupKind.needsRuntimeLookup = true;
             lookup.lookupKind.runtimeLookupKind  = CORINFO_LOOKUP_METHODPARAM;
@@ -1586,6 +1589,22 @@ GenTree* Compiler::impMethodPointer(CORINFO_RESOLVED_TOKEN* pResolvedToken,
     }
 
     return op1;
+}
+
+// Return the source of this method's generic context, including when it is itself an inlinee.
+CORINFO_RUNTIME_LOOKUP_KIND Compiler::impRuntimeContextKind() const
+{
+    switch (info.compMethodInfo->options & CORINFO_GENERICS_CTXT_MASK)
+    {
+        case CORINFO_GENERICS_CTXT_FROM_METHODDESC:
+            return CORINFO_LOOKUP_METHODPARAM;
+        case CORINFO_GENERICS_CTXT_FROM_METHODTABLE:
+            return CORINFO_LOOKUP_CLASSPARAM;
+        case CORINFO_GENERICS_CTXT_FROM_THIS:
+            return CORINFO_LOOKUP_THISOBJ;
+        default:
+            return CORINFO_LOOKUP_NOT_SUPPORTED;
+    }
 }
 
 //------------------------------------------------------------------------

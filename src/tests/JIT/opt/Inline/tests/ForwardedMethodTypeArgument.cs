@@ -99,6 +99,34 @@ public class ForwardedMethodTypeArgument
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static Type Nested<U>() => CalleeOwner<U>.Relay<T>();
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public Type InstanceElement() => Inner<T>();
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public Type InstanceOwner() => Inner<Owner<T>>();
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static Type FromClassContext() => Inner<List<T[]>>();
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public Type KeptFromThis() => Kept<T[]>();
+    }
+
+    private sealed class DerivedOwner<P, Q> : Owner<Q> { }
+
+    private interface IContext<T>
+    {
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        Type GetContext() => Inner<List<T[]>>();
+    }
+
+    private sealed class TwoContexts : IContext<string>, IContext<object> { }
+
+    private struct ValueOwner<T>
+    {
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public Type Instance() => Inner<List<T[]>>();
     }
 
     private class CalleeOwner<A>
@@ -242,6 +270,16 @@ public class ForwardedMethodTypeArgument
         Assert.Equal(typeof(Dictionary<string, int[]>), Compound<int>());
         Assert.Equal(typeof(ForwardedArgumentBox<PairType<string, object>>), CrossModule<string, object>());
         Assert.Equal(typeof(ForwardedArgumentBox<PairType<object, string>>), CrossModule<object, string>());
+        var derived = new DerivedOwner<object, string>();
+        Assert.Equal(typeof(string), derived.InstanceElement());
+        Assert.Equal(typeof(object), new DerivedOwner<string, object>().InstanceElement());
+        Assert.Equal(typeof(Owner<string>), derived.InstanceOwner());
+        var twoContexts = new TwoContexts();
+        Assert.Equal(typeof(List<string[]>), ((IContext<string>)twoContexts).GetContext());
+        Assert.Equal(typeof(List<object[]>), ((IContext<object>)twoContexts).GetContext());
+        Assert.Equal(typeof(string[]), derived.KeptFromThis());
+        Assert.Equal(typeof(List<string[]>), Owner<string>.FromClassContext());
+        Assert.Equal(typeof(List<object[]>), default(ValueOwner<object>).Instance());
         Assert.Equal(typeof(Dictionary<object, string>), Owner<string>.Swap<object>());
         Assert.Equal(typeof(Dictionary<string, object>), Owner<object>.Swap<string>());
         Assert.Equal(typeof(Dictionary<List<string[]>, object>), Owner<string>.Nested<object>());

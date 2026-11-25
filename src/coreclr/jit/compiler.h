@@ -5706,6 +5706,7 @@ public:
                              GenTreeFlags            flags,
                              void*                   compileTimeHandle);
 
+    CORINFO_RUNTIME_LOOKUP_KIND impRuntimeContextKind() const;
     GenTree* getRuntimeContextTree(CORINFO_RUNTIME_LOOKUP_KIND kind);
 
     GenTree* impRuntimeLookupToTree(CORINFO_LOOKUP*         pLookup,

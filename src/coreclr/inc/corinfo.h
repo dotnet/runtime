@@ -1565,8 +1565,9 @@ struct CORINFO_CALL_INFO
     // Context for inlining and hidden arg
     CORINFO_CONTEXT_HANDLE  contextHandle;
     bool                    exactContextNeedsRuntimeLookup; // Set if contextHandle is approx handle. Runtime lookup is required to get the exact handle.
-    // For an ordinary MethodSpec call, nonzero if the caller's method arguments
-    // are a vector of type handles reached at this offset from its MethodDesc.
+    // The ordinary MethodSpec can be composed in its caller's generic context.
+    bool canForwardMethodSpec;
+    // Only for method contexts: offset of the argument vector from the caller's MethodDesc.
     unsigned short methodInstantiationOffset;
 
     // If kind.CORINFO_VIRTUALCALL_STUB then stubLookup will be set.

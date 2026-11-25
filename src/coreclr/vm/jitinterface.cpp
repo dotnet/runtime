@@ -5567,6 +5567,7 @@ void CEEInfo::getCallInfo(
         }
     }
 
+    pResult->canForwardMethodSpec = false;
     pResult->methodInstantiationOffset = 0;
     pResult->instParamLookup = {};
     if (pResult->sig.hasTypeArg() && pResult->exactContextNeedsRuntimeLookup)
@@ -5577,11 +5578,15 @@ void CEEInfo::getCallInfo(
         MethodDesc* context = GetMethodFromContext(pResolvedToken->tokenContext);
         if (pResult->kind == CORINFO_CALL && pConstrainedResolvedToken == nullptr && pMD->IsStatic() &&
             pMD->HasSameMethodDefAs(pTargetMD) && pMD->HasMethodInstantiation() && context != nullptr &&
-            context->HasSameMethodDefAs(caller) && caller->RequiresInstMethodDescArg() &&
+            context->HasSameMethodDefAs(caller) && caller->IsSharedByGenericInstantiations() &&
             !caller->IsILStub() && !caller->IsDynamicMethod() && pResolvedToken->tokenScope == GetScopeHandle(caller) &&
             pResolvedToken->tokenType == CORINFO_TOKENKIND_Method && pResolvedToken->pMethodSpec != nullptr)
         {
-            pResult->methodInstantiationOffset = offsetof(InstantiatedMethodDesc, m_pPerInstInfo);
+            pResult->canForwardMethodSpec = true;
+            if (caller->RequiresInstMethodDescArg())
+            {
+                pResult->methodInstantiationOffset = offsetof(InstantiatedMethodDesc, m_pPerInstInfo);
+            }
         }
     }
     else if (pResult->sig.hasTypeArg())
