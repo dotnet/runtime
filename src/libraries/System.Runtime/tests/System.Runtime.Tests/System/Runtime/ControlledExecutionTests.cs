@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
@@ -96,6 +97,41 @@ namespace System.Runtime.Tests
                     Assert.Equal(cts.Token, exception.CancellationToken);
                 }
             }).Dispose();
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.IsX64Process))]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void CancelAtStartOfTryRunsHandlers()
+        {
+            using var cts = new CancellationTokenSource();
+            RunTest(() => SpinInTry(cts), cts.Token);
+
+            Assert.IsType<OperationCanceledException>(_exception);
+            Assert.True(_finishedExecution);
+            Assert.True(_caughtException);
+
+            [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+            void SpinInTry(CancellationTokenSource source)
+            {
+                source.CancelAfter(100);
+                try
+                {
+                    try
+                    {
+                        // The loop is a single backward branch at the start of the inner try.
+                        while (true) { }
+                    }
+                    finally
+                    {
+                        _finishedExecution = true;
+                    }
+                }
+                catch (ThreadAbortException)
+                {
+                    _caughtException = true;
+                    throw;
+                }
+            }
         }
 
         // Tests that an infinite loop may be aborted, that the ThreadAbortException is automatically rethrown,
