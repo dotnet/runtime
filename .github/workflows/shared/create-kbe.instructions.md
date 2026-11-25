@@ -105,8 +105,8 @@ runtime KBE, run the dnceng lookup below before selecting any creation action.
 
 Read the current authoritative sources before classifying a dnceng result:
 
-- `dotnet/dnceng` infrastructure Known Issue form:
-  `.github/ISSUE_TEMPLATE/z-build-break-infrastructure-issue-template.yml`
+- `dotnet/dnceng` Known Build Error form:
+  `.github/ISSUE_TEMPLATE/known-build-error.yml`
 - Arcade `Documentation/Build Analysis/KnownIssues.md`
 - dnceng `Documentation/TeamProcess/DevGuide/IssueTrackingGuidance.md`
 

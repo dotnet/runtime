@@ -18,7 +18,7 @@ is warranted or whether the result should be draft-only or live.
 
 Read the current versions of these sources before drafting:
 
-1. [dnceng infrastructure Known Issue form](https://github.com/dotnet/dnceng/blob/main/.github/ISSUE_TEMPLATE/z-build-break-infrastructure-issue-template.yml)
+1. [dnceng Known Build Error form](https://github.com/dotnet/dnceng/blob/main/.github/ISSUE_TEMPLATE/known-build-error.yml)
 2. [Arcade Known Issues guidance](https://github.com/dotnet/arcade/blob/main/Documentation/Build%20Analysis/KnownIssues.md)
 3. [Arcade Known Issue JSON steps](https://github.com/dotnet/arcade/blob/main/Documentation/Build%20Analysis/KnownIssueJsonStepByStep.md)
 4. [dnceng issue tracking guidance](https://github.com/dotnet/dnceng/blob/main/Documentation/TeamProcess/DevGuide/IssueTrackingGuidance.md)
