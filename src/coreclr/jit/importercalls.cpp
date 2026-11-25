@@ -190,9 +190,13 @@ public:
     {
     }
 
-    bool Compose(PCCOR_SIGNATURE& sig, unsigned& size, MethodTypeArgument* result)
+    bool Compose(PCCOR_SIGNATURE& sig, unsigned& size, MethodTypeArgument* result, bool vector = false)
     {
-        if (!Read(sig, size, 0) || !m_usesParameter)
+        if (vector)
+        {
+            m_bytes[m_length++] = ELEMENT_TYPE_SZARRAY;
+        }
+        if (!Read(sig, size, vector ? 1 : 0) || !m_usesParameter)
         {
             return false;
         }
@@ -232,12 +236,30 @@ bool MethodTypeArgument::TryRead(Compiler*                     comp,
     return builder.Compose(sig, size, result);
 }
 
+// The IL operand of newarr names its element. The allocator takes the handle
+// of the vector, so include that outer constructor in the same composition.
+bool Compiler::impReadTokenType(const CORINFO_RESOLVED_TOKEN& token, MethodTypeArgument* result)
+{
+    PCCOR_SIGNATURE sig  = token.pTypeSpec;
+    unsigned        size = token.cbTypeSpec;
+    if ((sig == nullptr) || (size == 0) || (token.tokenScope != info.compScopeHnd) ||
+        (token.tokenContext != impTokenLookupContextHandle))
+    {
+        return false;
+    }
+    if (token.tokenType == CORINFO_TOKENKIND_Newarr)
+    {
+        InlineTypeSignature builder(this, token);
+        return builder.Compose(sig, size, result, true) && (size == 0);
+    }
+    return MethodTypeArgument::TryRead(this, token, sig, size, result) && (size == 0);
+}
+
 // Compose a constructed type from this inlinee in the root method's context.
 bool Compiler::impReadInlineType(const CORINFO_RESOLVED_TOKEN& token, MethodTypeArgument* result)
 {
     if (IsAot() || opts.OptimizationDisabled() || (token.pTypeSpec == nullptr) || (token.cbTypeSpec == 0) ||
-        (*token.pTypeSpec != ELEMENT_TYPE_GENERICINST) || (token.tokenScope != info.compScopeHnd) ||
-        (token.tokenContext != impTokenLookupContextHandle))
+        (*token.pTypeSpec != ELEMENT_TYPE_GENERICINST))
     {
         return false;
     }
@@ -253,25 +275,19 @@ bool Compiler::impReadInlineType(const CORINFO_RESOLVED_TOKEN& token, MethodType
     {
         return false;
     }
-    PCCOR_SIGNATURE sig  = token.pTypeSpec;
-    unsigned        size = token.cbTypeSpec;
-    return MethodTypeArgument::TryRead(this, token, sig, size, result) && (size == 0);
+    return impReadTokenType(token, result);
 }
 
-void Compiler::impRecordAllocatedType(unsigned lclNum, const CORINFO_RESOLVED_TOKEN& token)
+void Compiler::impRecordAllocatedType(unsigned lclNum, const MethodTypeArgument& type)
 {
-    MethodTypeArgument type;
-    if (impReadInlineType(token, &type))
+    Compiler* root = impInlineRoot();
+    if (root->impLocalTypeExpressions == nullptr)
     {
-        Compiler* root = impInlineRoot();
-        if (root->impLocalTypeExpressions == nullptr)
-        {
-            auto alloc                    = root->getAllocator(CMK_Inlining);
-            root->impLocalTypeExpressions = new (alloc) LocalTypeExpressionMap(alloc);
-        }
-        root->impLocalTypeExpressions->Set(lclNum, type);
-        Metrics.InlineTypeAllocation++;
+        auto alloc                    = root->getAllocator(CMK_Inlining);
+        root->impLocalTypeExpressions = new (alloc) LocalTypeExpressionMap(alloc);
     }
+    root->impLocalTypeExpressions->Set(lclNum, type);
+    Metrics.InlineTypeAllocation++;
 }
 
 MethodTypeArgument* Compiler::impLocalTypeExpression(GenTree* value)

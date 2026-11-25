@@ -5457,6 +5457,7 @@ protected:
 
     GenTree* impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORINFO_CLASS_HANDLE ownerCls);
 
+    bool impReadInlineMemberOwner(const CORINFO_RESOLVED_TOKEN& token, MethodTypeArgument* result);
     GenTree* impTryForwardStaticFieldOwner(const CORINFO_RESOLVED_TOKEN& token);
     GenTree* impImportStaticFieldAddress(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                          CORINFO_ACCESS_FLAGS    access,
@@ -6056,9 +6057,10 @@ private:
     void impRememberTypeCheck(GenTree* check, GenTree* value, GenTree* handle, const CORINFO_RESOLVED_TOKEN& token);
     bool fgFoldInlineTypeChecks();
     friend class InlineTypeCheckWalker;
+    bool impReadTokenType(const CORINFO_RESOLVED_TOKEN& token, MethodTypeArgument* result);
     bool impReadInlineType(const CORINFO_RESOLVED_TOKEN& token, MethodTypeArgument* result);
     bool impMatchesInlineType(GenTree* value, const CORINFO_RESOLVED_TOKEN& token);
-    void impRecordAllocatedType(unsigned lclNum, const CORINFO_RESOLVED_TOKEN& token);
+    void impRecordAllocatedType(unsigned lclNum, const MethodTypeArgument& type);
     MethodTypeArgument* impLocalTypeExpression(GenTree* value);
 
     MethodTypeArgument* impForwardedTypeArgs(const CORINFO_RESOLVED_TOKEN& token, unsigned arity, CORINFO_METHOD_HANDLE declaringMethod);

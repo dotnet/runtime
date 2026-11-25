@@ -135,6 +135,27 @@ public class ForwardedMethodTypeArgument
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static Type CacheTag() => CalleeOwner<List<T>>.CacheTag();
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static object Allocate() => CalleeOwner<List<T>>.Allocate();
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static Array Vector(int length) => CalleeOwner<List<T>>.Vector(length);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static Array DirectVector(int length) => new List<T>[length];
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static Array Jagged(int length) => CalleeOwner<T[]>.Vector(length);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static bool Test(object value) => CalleeOwner<Box<List<T>>>.Test(value);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static bool TestNullable(object value) => CalleeOwner<KeyValuePair<T, int>?>.Test(value);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static object CheckedCast(object value) => CalleeOwner<List<T>>.CheckedCast(value);
     }
 
     private sealed class DerivedOwner<P, Q> : Owner<Q> { }
@@ -197,6 +218,18 @@ public class ForwardedMethodTypeArgument
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Type GetArray() => Inner<A[]>();
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static object Allocate() => new Box<A>();
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Array Vector(int length) => new A[length];
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool Test(object value) => value is A;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static object CheckedCast(object value) => (Box<A>)value;
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static Type GetKept() => typeof(A);
@@ -340,6 +373,21 @@ public class ForwardedMethodTypeArgument
         Assert.Equal(typeof(Dictionary<string, int[]>), Compound<int>());
         Assert.Equal(typeof(ForwardedArgumentBox<PairType<string, object>>), CrossModule<string, object>());
         Assert.Equal(typeof(ForwardedArgumentBox<PairType<object, string>>), CrossModule<object, string>());
+        object box = Owner<string>.Allocate();
+        Assert.Equal(typeof(Box<List<string>>), box.GetType());
+        Assert.True(Owner<string>.Test(box));
+        Assert.False(Owner<object>.Test(box));
+        Assert.False(Owner<string>.Test(null));
+        Assert.True(ReferenceEquals(box, Owner<string>.CheckedCast(box)));
+        Assert.True(Owner<string>.CheckedCast(null) == null);
+        Assert.Throws<InvalidCastException>(() => Owner<object>.CheckedCast(box));
+        Assert.True(Owner<string>.TestNullable(new KeyValuePair<string, int>()));
+        Assert.False(Owner<object>.TestNullable(new KeyValuePair<string, int>()));
+        Assert.Equal(typeof(List<string>[]), Owner<string>.Vector(2).GetType());
+        Assert.Equal(typeof(object[][]), Owner<object>.Jagged(2).GetType());
+        Assert.Equal(Record.Exception(() => { Owner<string>.DirectVector(-1); }).GetType(),
+                     Record.Exception(() => { Owner<string>.Vector(-1); }).GetType());
+
         Assert.Equal(17, Owner<string>.ReadCache());
         Assert.Equal(17, Owner<object>.ReadCache());
         Owner<string>.WriteCache(53);

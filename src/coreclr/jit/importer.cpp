@@ -1283,14 +1283,13 @@ GenTree* Compiler::impTokenToHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken,
 
     if (compIsForInlining() && impInlineInfo->inlineCandidateInfo->HasRootTypeArguments() && !importParent &&
         (pResolvedToken->hMethod == nullptr) && (pResolvedToken->hField == nullptr) &&
-        (pResolvedToken->tokenType == CORINFO_TOKENKIND_Ldtoken))
+        ((pResolvedToken->tokenType == CORINFO_TOKENKIND_Ldtoken) ||
+         (pResolvedToken->tokenType == CORINFO_TOKENKIND_Casting) ||
+         (pResolvedToken->tokenType == CORINFO_TOKENKIND_Newarr)))
     {
-        PCCOR_SIGNATURE      sig  = pResolvedToken->pTypeSpec;
-        unsigned             size = pResolvedToken->cbTypeSpec;
         MethodTypeArgument   arg;
         InlineCandidateInfo* candidate = impInlineInfo->inlineCandidateInfo;
-        if ((sig != nullptr) && MethodTypeArgument::TryRead(this, *pResolvedToken, sig, size, &arg) && (size == 0) &&
-            eeIsSharedInst(pResolvedToken->hClass))
+        if (impReadTokenType(*pResolvedToken, &arg) && eeIsSharedInst(pResolvedToken->hClass))
         {
             if (pRuntimeLookup != nullptr)
             {
@@ -4301,24 +4300,27 @@ GenTree* Compiler::impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORI
     return nullptr;
 }
 
-// A generic static helper needs the exact declaring type as its argument.
+// The TypeSpec on a MemberRef describes the class named by the IL. Use it
+// for a declaring-type lookup only when the resolved member belongs to that definition.
+bool Compiler::impReadInlineMemberOwner(const CORINFO_RESOLVED_TOKEN& token, MethodTypeArgument* result)
+{
+    if (!impReadInlineType(token, result))
+    {
+        return false;
+    }
+    assert((token.hField != nullptr) != (token.hMethod != nullptr));
+    CORINFO_CLASS_HANDLE declaring = (token.hField != nullptr) ? info.compCompHnd->getFieldClass(token.hField)
+                                                               : info.compCompHnd->getMethodClass(token.hMethod);
+    return (declaring == token.hClass) ||
+           (info.compCompHnd->getTypeDefinition(declaring) == info.compCompHnd->getTypeDefinition(token.hClass));
+}
+
 GenTree* Compiler::impTryForwardStaticFieldOwner(const CORINFO_RESOLVED_TOKEN& token)
 {
     MethodTypeArgument owner;
-    if (!compIsForInlining() || !impReadInlineType(token, &owner))
-    {
-        return nullptr;
-    }
-
-    // A MemberRef can name an inherited member. Its TypeSpec is useful here
-    // only when it constructs the type that actually declares the field.
-    CORINFO_CLASS_HANDLE declaring = info.compCompHnd->getFieldClass(token.hField);
-    if ((declaring != token.hClass) &&
-        (info.compCompHnd->getTypeDefinition(declaring) != info.compCompHnd->getTypeDefinition(token.hClass)))
-    {
-        return nullptr;
-    }
-    return impDeferredTypeExpression(owner, token.hClass);
+    return (compIsForInlining() && impReadInlineMemberOwner(token, &owner))
+               ? impDeferredTypeExpression(owner, token.hClass)
+               : nullptr;
 }
 
 //------------------------------------------------------------------------
@@ -9405,11 +9407,20 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("finalizable newobj spill"));
                         }
 
-                        const bool useParent = true;
-                        op1                  = gtNewAllocObjNode(&resolvedToken, info.compMethodHnd, useParent);
-                        if (op1 == nullptr)
+                        MethodTypeArgument allocatedType;
+                        bool               hasAllocatedType = impReadInlineMemberOwner(resolvedToken, &allocatedType);
+                        if (hasAllocatedType && compIsForInlining() && eeIsSharedInst(resolvedToken.hClass))
                         {
-                            return;
+                            GenTree* handle = impDeferredTypeExpression(allocatedType, resolvedToken.hClass);
+                            op1 = gtNewAllocObjNode(newHelper, hasSideEffects, resolvedToken.hClass, TYP_REF, handle);
+                        }
+                        else
+                        {
+                            op1 = gtNewAllocObjNode(&resolvedToken, info.compMethodHnd, /* useParent */ true);
+                            if (op1 == nullptr)
+                            {
+                                return;
+                            }
                         }
 
                         // Flag if this allocation happens within a method that uses the static empty
@@ -9457,7 +9468,10 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         lvaTable[lclNum].lvSingleDef = 1;
                         JITDUMP("Marked V%02u as a single def local\n", lclNum);
                         lvaSetClass(lclNum, resolvedToken.hClass, true /* is Exact */);
-                        impRecordAllocatedType(lclNum, resolvedToken);
+                        if (hasAllocatedType)
+                        {
+                            impRecordAllocatedType(lclNum, allocatedType);
+                        }
 
                         newObjThisPtr = gtNewLclvNode(lclNum, TYP_REF);
                     }
