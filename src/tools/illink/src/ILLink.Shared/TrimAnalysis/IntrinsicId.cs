@@ -376,5 +376,13 @@ namespace ILLink.Shared.TrimAnalysis
         /// <see cref="System.Runtime.InteropServices.TypeMapping.GetOrCreateProxyTypeMapping"/>.
         /// </summary>
         TypeMapping_GetOrCreateProxyTypeMapping,
+        /// <summary>
+        /// <c>System.Runtime.InteropServices.TypeMapping.TryGetValue</c> overloads with a string key (external type map).
+        /// </summary>
+        TypeMapping_TryGetValue_External,
+        /// <summary>
+        /// <c>System.Runtime.InteropServices.TypeMapping.TryGetValue</c> overloads with a Type key (proxy type map).
+        /// </summary>
+        TypeMapping_TryGetValue_Proxy,
     }
 }

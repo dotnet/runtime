@@ -953,6 +953,10 @@ namespace System.Runtime.InteropServices
         bool IsInterfaceImplemented(System.RuntimeTypeHandle interfaceType, bool throwIfNotImplemented);
         System.RuntimeTypeHandle GetInterfaceImplementation(System.RuntimeTypeHandle interfaceType);
     }
+    public partial interface ITypeMapValue<TValue>
+    {
+        static abstract TValue Value { get; }
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Interface, Inherited=false)]
     public sealed partial class InterfaceTypeAttribute : System.Attribute
     {
@@ -1704,6 +1708,12 @@ namespace System.Runtime.InteropServices
 
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Interop types may be removed by trimming")]
         public static System.Collections.Generic.IReadOnlyDictionary<System.Type, System.Type> GetOrCreateProxyTypeMapping<TTypeMapGroup>() => throw null;
+
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Interop types may be removed by trimming")]
+        public static bool TryGetValue<TTypeMapGroup, TValue>(string key, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TValue value) => throw null;
+
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Interop types may be removed by trimming")]
+        public static bool TryGetValue<TTypeMapGroup, TValue>(System.Type key, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TValue value) => throw null;
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class UnknownWrapper

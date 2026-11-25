@@ -436,6 +436,7 @@
     </Compile>
     <Compile Include="Compiler\CompilerTypeSystemContext.InterfaceThunks.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.Sorting.cs" />
+    <Compile Include="Compiler\CompilerTypeSystemContext.TypeMapValues.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.DelegateInfo.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.DynamicInvoke.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.GeneratedAssembly.cs" />
@@ -598,6 +599,9 @@
     <Compile Include="Compiler\DependencyAnalysis\ConstructedEETypeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\DictionaryLayoutNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ExternalTypeMapRequestNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\TypeMapFlavors.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\TypeMapValueNodes.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\TypeMapValuesRequestNodes.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ExternalReferencesTableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ExternEETypeSymbolNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\FatFunctionPointerNode.cs" />
@@ -735,6 +739,8 @@
     <Compile Include="Compiler\ILAssemblyGeneratingMethodDebugInfoProvider.cs" />
     <Compile Include="Compiler\StackTraceEmissionPolicy.cs" />
     <Compile Include="Compiler\PreinitializationManager.cs" />
+    <Compile Include="Compiler\TypeMapGetValueStub.cs" />
+    <Compile Include="Compiler\TypeMapValues.cs" />
     <Compile Include="Compiler\TypePreinit.cs" />
     <Compile Include="Compiler\UsageBasedInteropStubManager.cs" />
     <Compile Include="Compiler\UsageBasedMetadataManager.cs" />

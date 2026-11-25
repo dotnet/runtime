@@ -25,6 +25,8 @@
     <Compile Include="Dataflow.cs" />
     <Compile Include="DeadCodeElimination.cs" />
     <Compile Include="DependencyInjectionPattern.cs" />
+    <Compile Include="TypeMapFrozenKeys.cs" />
+    <Compile Include="TypeMapValues.cs" />
     <Compile Include="ILLinkDescriptor.cs" />
     <Compile Include="ILLinkLinkAttributes.cs" />
     <Compile Include="FeatureSwitches.cs" />
@@ -33,6 +35,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <IlcArg Include="--preinitstatics" />
     <EmbeddedResource Include="ILLink.LinkAttributes.xml">
       <LogicalName>ILLink.LinkAttributes.xml</LogicalName>
     </EmbeddedResource>

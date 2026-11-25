@@ -3,9 +3,11 @@
 
 using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 using Internal.NativeFormat;
@@ -18,22 +20,52 @@ namespace System.Runtime.InteropServices
 {
     internal static class TypeMapLazyDictionary
     {
-        public static IReadOnlyDictionary<string, Type> CreateExternalTypeMap(RuntimeType typeMapGroup)
+        // Flavors of a type map group: which values the entries of the group carry.
+        // The same values are used as the state of the group in the image (0 is an invalid group).
+        private const uint TypesFlavor = 1;
+        private const uint ValuesFlavor = 2;
+
+        // Kinds of the data of an entry for a typed value flavor (see ITypeMapValue<TValue>). The data of an entry is
+        // (index << ValueKindBits) | kind, see TypeMapValueSupport in ILC. Any other kind (2) means that the mapped type does not implement the interface.
+        private const int ValueKindBits = 2;
+        private const uint ValueKindMask = (1u << ValueKindBits) - 1;
+        private const uint ValueKindData = 0;
+        private const uint ValueKindGetter = 1;
+
+        private readonly struct ValueFlavor(RuntimeTypeHandle valueType, IntPtr dataTable)
+        {
+            public RuntimeTypeHandle ValueType { get; } = valueType;
+            public IntPtr DataTable { get; } = dataTable;
+        }
+
+        private sealed class GroupTable(NativeHashtable table, ExternalReferencesTable externalReferences, uint flavors, ValueFlavor[]? valueFlavors)
+        {
+            public NativeHashtable Table { get; } = table;
+            public ExternalReferencesTable ExternalReferences { get; } = externalReferences;
+            public uint Flavors { get; } = flavors;
+            public ValueFlavor[]? ValueFlavors { get; } = valueFlavors;
+        }
+
+        private static readonly ConcurrentDictionary<RuntimeTypeHandle, GroupTable> s_externalGroups = new();
+        private static readonly ConcurrentDictionary<RuntimeTypeHandle, GroupTable> s_proxyGroups = new();
+
+        // Finds the group in the image and returns the parser positioned after the state of the group.
+        private static NativeParser FindGroupState(ReadyToRunSectionType sectionType, RuntimeType typeMapGroup, out ExternalReferencesTable externalReferences, out uint flavors)
         {
             RuntimeTypeHandle typeMapGroupHandle = typeMapGroup.TypeHandle;
             foreach (TypeManagerHandle module in RuntimeAugments.GetLoadedModules())
             {
-                if (!TryGetNativeReaderForBlob(module, ReadyToRunSectionType.ExternalTypeMaps, out NativeReader externalTypeMapReader))
+                if (!TryGetNativeReaderForBlob(module, sectionType, out NativeReader typeMapReader))
                 {
                     continue;
                 }
-                NativeParser externalTypeMapParser = new NativeParser(externalTypeMapReader, 0);
-                NativeHashtable externalTypeMapTable = new NativeHashtable(externalTypeMapParser);
+                NativeParser typeMapParser = new NativeParser(typeMapReader, 0);
+                NativeHashtable typeMapTable = new NativeHashtable(typeMapParser);
 
-                ExternalReferencesTable externalReferences = default;
+                externalReferences = default;
                 externalReferences.InitializeCommonFixupsTable(module);
 
-                var lookup = externalTypeMapTable.Lookup(typeMapGroupHandle.GetHashCode());
+                var lookup = typeMapTable.Lookup(typeMapGroupHandle.GetHashCode());
                 NativeParser entryParser;
                 while (!(entryParser = lookup.GetNext()).IsNull)
                 {
@@ -42,66 +74,215 @@ namespace System.Runtime.InteropServices
                     {
                         continue;
                     }
-                    bool isValid = entryParser.GetUnsigned() == 1;
-                    if (!isValid)
+                    flavors = entryParser.GetUnsigned();
+                    if (flavors == 0)
                     {
                         unsafe
                         {
                             delegate*<void> exceptionStub = (delegate*<void>)externalReferences.GetFunctionPointerFromIndex(entryParser.GetUnsigned());
                             exceptionStub();
                             Debug.Fail("Expected exception stub to throw an exception.");
-                            return null; // Should never reach here, as the exception stub should throw an exception.
                         }
                     }
 
-                    return new ExternalTypeMapDictionary(new NativeHashtable(entryParser), externalReferences);
+                    return entryParser;
                 }
             }
 
             throw ReflectionCoreExecution.ExecutionEnvironment.CreateMissingMetadataException(typeMapGroup);
         }
 
-        public static IReadOnlyDictionary<Type, Type> CreateProxyTypeMap(RuntimeType typeMapGroup)
+        // The state of a group with typed value flavors is followed by the count of the flavors, then (value type, data table + 1) per flavor.
+        private static GroupTable FindGroup(ReadyToRunSectionType sectionType, RuntimeType typeMapGroup)
         {
-            RuntimeTypeHandle typeMapGroupHandle = typeMapGroup.TypeHandle;
-            foreach (TypeManagerHandle module in RuntimeAugments.GetLoadedModules())
+            NativeParser entryParser = FindGroupState(sectionType, typeMapGroup, out ExternalReferencesTable externalReferences, out uint flavors);
+
+            ValueFlavor[]? valueFlavors = null;
+            if ((flavors & ValuesFlavor) != 0)
             {
-                if (!TryGetNativeReaderForBlob(module, ReadyToRunSectionType.ProxyTypeMaps, out NativeReader externalTypeMapReader))
+                valueFlavors = new ValueFlavor[entryParser.GetUnsigned()];
+                for (int i = 0; i < valueFlavors.Length; i++)
                 {
+                    RuntimeTypeHandle valueType = externalReferences.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
+                    uint dataTable = entryParser.GetUnsigned();
+                    valueFlavors[i] = new ValueFlavor(valueType, dataTable == 0 ? IntPtr.Zero : externalReferences.GetIntPtrFromIndex(dataTable - 1));
+                }
+            }
+
+            return new GroupTable(new NativeHashtable(entryParser), externalReferences, flavors, valueFlavors);
+        }
+
+        // The readers of the type valued maps don't need the descriptors of the typed value flavors: they skip them.
+        private static NativeHashtable FindTypesTable(ReadyToRunSectionType sectionType, RuntimeType typeMapGroup, out ExternalReferencesTable externalReferences)
+        {
+            NativeParser entryParser = FindGroupState(sectionType, typeMapGroup, out externalReferences, out uint flavors);
+
+            // Type valued mappings are only available if some call site asked for them. A group that is only used with
+            // TryGetValue does not carry any type values.
+            RequireFlavor(flavors, typeMapGroup, TypesFlavor);
+
+            if ((flavors & ValuesFlavor) != 0)
+            {
+                uint count = entryParser.GetUnsigned();
+                for (uint i = 0; i < count * 2; i++)
+                {
+                    entryParser.SkipInteger();
+                }
+            }
+
+            return new NativeHashtable(entryParser);
+        }
+
+        private static GroupTable FindCachedGroupWithFlavor(ConcurrentDictionary<RuntimeTypeHandle, GroupTable> cache, ReadyToRunSectionType sectionType, RuntimeType typeMapGroup, uint flavor)
+        {
+            GroupTable group = cache.GetOrAdd(typeMapGroup.TypeHandle, static (_, state) => FindGroup(state.SectionType, state.TypeMapGroup), (SectionType: sectionType, TypeMapGroup: typeMapGroup));
+            RequireFlavor(group.Flavors, typeMapGroup, flavor);
+            return group;
+        }
+
+        private static void RequireFlavor(uint groupFlavors, RuntimeType typeMapGroup, uint flavor)
+        {
+            if ((groupFlavors & flavor) == 0)
+            {
+                throw ReflectionCoreExecution.ExecutionEnvironment.CreateMissingMetadataException(typeMapGroup);
+            }
+        }
+
+        // Finds the entry of a key in the hash table of an external type map. The key of an entry is either a UTF-8 string, or 0 followed by
+        // 0 (the empty string) or by the index + 1 of a frozen string object in the external references (the string of the key is already in the image).
+        // The parser is positioned after the key if the entry is found, see AnalyzedExternalTypeMapNode in ILC.
+        private static bool TryFindEntry(NativeHashtable table, ExternalReferencesTable externalReferences, string key, out NativeParser entryParser)
+        {
+            var lookup = table.Lookup(TypeHashingAlgorithms.ComputeNameHashCode(key));
+            while (!(entryParser = lookup.GetNext()).IsNull)
+            {
+                // A UTF-8 string starts with its length, which is not 0 (the first byte of an integer is only 0 for the value 0).
+                NativeParser keyParser = entryParser;
+                if (keyParser.GetUInt8() != 0)
+                {
+                    if (entryParser.StringEquals(key))
+                    {
+                        entryParser.SkipString();
+                        return true;
+                    }
+
                     continue;
                 }
-                NativeParser externalTypeMapParser = new NativeParser(externalTypeMapReader, 0);
-                NativeHashtable externalTypeMapTable = new NativeHashtable(externalTypeMapParser);
 
-                ExternalReferencesTable externalReferences = default;
-                externalReferences.InitializeCommonFixupsTable(module);
+                uint reference = keyParser.GetUnsigned();
+                if (reference == 0
+                    ? key.Length == 0
+                    : string.Equals(GetFrozenString(externalReferences, reference - 1), key))
+                {
+                    entryParser = keyParser;
+                    return true;
+                }
+            }
 
-                var lookup = externalTypeMapTable.Lookup(typeMapGroupHandle.GetHashCode());
+            return false;
+        }
+
+        private static string GetFrozenString(ExternalReferencesTable externalReferences, uint index)
+        {
+            IntPtr address = externalReferences.GetIntPtrFromIndex(index);
+            return Unsafe.As<IntPtr, string>(ref address);
+        }
+
+        public static bool TryGetValue<TValue>(RuntimeType typeMapGroup, string key, [MaybeNullWhen(false)] out TValue value)
+        {
+            GroupTable group = FindCachedGroupWithFlavor(s_externalGroups, ReadyToRunSectionType.ExternalTypeMaps, typeMapGroup, ValuesFlavor);
+            int flavor = FindValueFlavor<TValue>(group, typeMapGroup);
+
+            if (TryFindEntry(group.Table, group.ExternalReferences, key, out NativeParser entryParser))
+            {
+                return TryReadValue(group, flavor, ref entryParser, out value);
+            }
+
+            value = default;
+            return false;
+        }
+
+        public static bool TryGetValue<TValue>(RuntimeType typeMapGroup, Type key, [MaybeNullWhen(false)] out TValue value)
+        {
+            GroupTable group = FindCachedGroupWithFlavor(s_proxyGroups, ReadyToRunSectionType.ProxyTypeMaps, typeMapGroup, ValuesFlavor);
+            int flavor = FindValueFlavor<TValue>(group, typeMapGroup);
+
+            RuntimeTypeHandle handle = key.TypeHandle;
+            if (!handle.IsNull)
+            {
+                var lookup = group.Table.Lookup(handle.GetHashCode());
                 NativeParser entryParser;
                 while (!(entryParser = lookup.GetNext()).IsNull)
                 {
-                    RuntimeTypeHandle foundTypeMapGroup = externalReferences.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
-                    if (!foundTypeMapGroup.Equals(typeMapGroupHandle))
+                    RuntimeTypeHandle foundHandle = group.ExternalReferences.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
+                    if (foundHandle.Equals(handle))
                     {
-                        continue;
+                        return TryReadValue(group, flavor, ref entryParser, out value);
                     }
-                    bool isValid = entryParser.GetUnsigned() == 1;
-                    if (!isValid)
-                    {
-                        unsafe
-                        {
-                            delegate*<void> exceptionStub = (delegate*<void>)externalReferences.GetFunctionPointerFromIndex(entryParser.GetUnsigned());
-                            exceptionStub();
-                            Debug.Fail("Expected exception stub to throw an exception.");
-                            return null; // Should never reach here, as the exception stub should throw an exception.
-                        }
-                    }
+                }
+            }
 
-                    return new AssociatedTypeMapDictionary(new NativeHashtable(entryParser), externalReferences);
+            value = default;
+            return false;
+        }
+
+        // A typed value flavor is only in the image if some call site asked for it.
+        private static int FindValueFlavor<TValue>(GroupTable group, RuntimeType typeMapGroup)
+        {
+            RuntimeTypeHandle valueType = typeof(TValue).TypeHandle;
+            ValueFlavor[] valueFlavors = group.ValueFlavors!;
+            for (int i = 0; i < valueFlavors.Length; i++)
+            {
+                if (valueFlavors[i].ValueType.Equals(valueType))
+                {
+                    return i;
                 }
             }
 
             throw ReflectionCoreExecution.ExecutionEnvironment.CreateMissingMetadataException(typeMapGroup);
+        }
+
+        // The parser is positioned after the key of an entry: [type value] then one data per typed value flavor.
+        private static unsafe bool TryReadValue<TValue>(GroupTable group, int flavor, ref NativeParser entryParser, [MaybeNullWhen(false)] out TValue value)
+        {
+            if ((group.Flavors & TypesFlavor) != 0)
+            {
+                entryParser.SkipInteger();
+            }
+
+            for (int i = 0; i < flavor; i++)
+            {
+                entryParser.SkipInteger();
+            }
+
+            uint data = entryParser.GetUnsigned();
+            switch (data & ValueKindMask)
+            {
+                case ValueKindData:
+                    // The data is a constant TValue (only value types have it). References in it are to frozen objects, so a plain copy is GC safe.
+                    value = Unsafe.ReadUnaligned<TValue>((byte*)group.ValueFlavors![flavor].DataTable + (nuint)(data >> ValueKindBits) * (nuint)Unsafe.SizeOf<TValue>());
+                    return true;
+
+                case ValueKindGetter:
+                    value = ((delegate*<TValue>)group.ExternalReferences.GetFunctionPointerFromIndex(data >> ValueKindBits))();
+                    return true;
+
+                default:
+                    value = default;
+                    return false;
+            }
+        }
+
+        public static IReadOnlyDictionary<string, Type> CreateExternalTypeMap(RuntimeType typeMapGroup)
+        {
+            NativeHashtable table = FindTypesTable(ReadyToRunSectionType.ExternalTypeMaps, typeMapGroup, out ExternalReferencesTable externalReferences);
+            return new ExternalTypeMapDictionary(table, externalReferences);
+        }
+
+        public static IReadOnlyDictionary<Type, Type> CreateProxyTypeMap(RuntimeType typeMapGroup)
+        {
+            NativeHashtable table = FindTypesTable(ReadyToRunSectionType.ProxyTypeMaps, typeMapGroup, out ExternalReferencesTable externalReferences);
+            return new AssociatedTypeMapDictionary(table, externalReferences);
         }
 
         private static unsafe bool TryGetNativeReaderForBlob(TypeManagerHandle module, ReadyToRunSectionType sectionType, out NativeReader reader)
@@ -148,17 +329,11 @@ namespace System.Runtime.InteropServices
 
             public override  bool TryGetValue(string key, [MaybeNullWhen(false)] out Type value)
             {
-                var lookup = table.Lookup(TypeHashingAlgorithms.ComputeNameHashCode(key));
-                NativeParser entryParser;
-                while (!(entryParser = lookup.GetNext()).IsNull)
+                if (TryFindEntry(table, externalReferences, key, out NativeParser entryParser))
                 {
-                    if (entryParser.StringEquals(key))
-                    {
-                        entryParser.SkipString();
-                        RuntimeTypeHandle typeHandle = externalReferences.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
-                        value = Type.GetTypeFromHandle(typeHandle)!;
-                        return true;
-                    }
+                    RuntimeTypeHandle typeHandle = externalReferences.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
+                    value = Type.GetTypeFromHandle(typeHandle)!;
+                    return true;
                 }
                 value = null;
                 return false;

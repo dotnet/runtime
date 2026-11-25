@@ -136,6 +136,14 @@ namespace ILCompiler
             return _preinitHashTable.GetOrCreateValue(type);
         }
 
+        /// <summary>
+        /// Evaluates a static getter of a type map value (ITypeMapValue) at compile time.
+        /// </summary>
+        public TypePreinit.GetterEvaluationResult ScanGetter(MethodDesc getter)
+        {
+            return _preinitHashTable.ScanGetter(getter);
+        }
+
         private sealed class PreinitializationInfoHashtable : LockFreeReaderHashtable<MetadataType, TypePreinit.PreinitializationInfo>
         {
             private readonly CompilationModuleGroup _compilationGroup;
@@ -152,6 +160,9 @@ namespace ILCompiler
                 _readOnlyPolicy = readOnlyPolicy;
                 _flowAnnotations = flowAnnotations;
             }
+
+            public TypePreinit.GetterEvaluationResult ScanGetter(MethodDesc getter)
+                => TypePreinit.ScanGetter(_compilationGroup, _ilProvider, _policy, _readOnlyPolicy, _flowAnnotations, getter);
 
             protected override bool CompareKeyToValue(MetadataType key, TypePreinit.PreinitializationInfo value) => key == value.Type;
             protected override bool CompareValueToValue(TypePreinit.PreinitializationInfo value1, TypePreinit.PreinitializationInfo value2) => value1.Type == value2.Type;

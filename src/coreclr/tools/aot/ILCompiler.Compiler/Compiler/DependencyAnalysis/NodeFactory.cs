@@ -187,6 +187,11 @@ namespace ILCompiler.DependencyAnalysis
             {
                 return _cache.GetOrAdd(key, creator);
             }
+
+            public bool TryGetValue(TKey key, out TValue value)
+            {
+                return _cache.TryGetValue(key, out value);
+            }
         }
 
         private void CreateNodeCaches()
@@ -649,6 +654,30 @@ namespace ILCompiler.DependencyAnalysis
             _proxyTypeMapRequests = new NodeCache<TypeDesc, ProxyTypeMapRequestNode>(type =>
             {
                 return new ProxyTypeMapRequestNode(type);
+            });
+
+            _externalTypeMapValuesRequests = new NodeCache<(TypeDesc, TypeDesc), ExternalTypeMapValuesRequestNode>(key =>
+            {
+                return new ExternalTypeMapValuesRequestNode(key.Item1, key.Item2);
+            });
+
+            _proxyTypeMapValuesRequests = new NodeCache<(TypeDesc, TypeDesc), ProxyTypeMapValuesRequestNode>(key =>
+            {
+                return new ProxyTypeMapValuesRequestNode(key.Item1, key.Item2);
+            });
+
+            _typeMapValueArrays = new NodeCache<(TypeDesc TypeMapGroup, bool IsProxy, TypeDesc ValueType), TypeMapValueArrayNode>(key =>
+            {
+                // The length prefix keeps the name unambiguous: mangled type names can contain underscores.
+                string group = NameMangler.GetMangledTypeName(key.TypeMapGroup).ToString();
+                string name = "__type_map_values_" + (key.IsProxy ? "proxy_" : "external_")
+                    + group.Length + "_" + group + NameMangler.GetMangledTypeName(key.ValueType);
+                return new TypeMapValueArrayNode(name, key.ValueType);
+            });
+
+            _typeMapValueData = new NodeCache<TypeMapValueDataKey, TypeMapValueDataNode>(key =>
+            {
+                return new TypeMapValueDataNode(TypeMapValueArray(key.TypeMapGroup, key.IsProxy, key.Evaluation.ValueType), key.Evaluation);
             });
 
             _typeLoaderArgumentGates = new NodeCache<(TypeDesc, int), TypeLoaderArgumentGateNode>(key =>
@@ -1589,6 +1618,22 @@ namespace ILCompiler.DependencyAnalysis
             return _frozenStringNodes.GetOrAdd(data);
         }
 
+        /// <summary>
+        /// Gets the node of a string that is in the frozen segment of the image, without creating it.
+        /// Only call this after marking is complete: nothing can make a string part of the image anymore.
+        /// </summary>
+        public bool TryGetMarkedSerializedStringObject(string data, out FrozenStringNode node)
+        {
+            Debug.Assert(MarkingComplete);
+            if (_frozenStringNodes.TryGetValue(data, out node) && node.Marked)
+            {
+                return true;
+            }
+
+            node = null;
+            return false;
+        }
+
         private NodeCache<SerializedFrozenObjectKey, SerializedFrozenObjectNode> _frozenObjectNodes;
 
         public SerializedFrozenObjectNode SerializedFrozenObject(MetadataType owningType, int allocationSiteId, TypePreinit.ISerializableReference data)
@@ -1649,6 +1694,44 @@ namespace ILCompiler.DependencyAnalysis
             return _externalTypeMapRequests.GetOrAdd(type);
         }
 
+        private NodeCache<(TypeDesc, TypeDesc), ExternalTypeMapValuesRequestNode> _externalTypeMapValuesRequests;
+
+        public ExternalTypeMapValuesRequestNode ExternalTypeMapValuesRequest(TypeDesc type, TypeDesc valueType)
+        {
+            return _externalTypeMapValuesRequests.GetOrAdd((type, valueType));
+        }
+
+        private NodeCache<(TypeDesc TypeMapGroup, bool IsProxy, TypeDesc ValueType), TypeMapValueArrayNode> _typeMapValueArrays;
+
+        internal TypeMapValueArrayNode TypeMapValueArray(TypeDesc typeMapGroup, bool isProxy, TypeDesc valueType)
+        {
+            return _typeMapValueArrays.GetOrAdd((typeMapGroup, isProxy, valueType));
+        }
+
+        private readonly struct TypeMapValueDataKey : IEquatable<TypeMapValueDataKey>
+        {
+            public readonly TypeDesc TypeMapGroup;
+            public readonly bool IsProxy;
+            public readonly TypeMapValueEvaluation Evaluation;
+
+            public TypeMapValueDataKey(TypeDesc typeMapGroup, bool isProxy, TypeMapValueEvaluation evaluation)
+                => (TypeMapGroup, IsProxy, Evaluation) = (typeMapGroup, isProxy, evaluation);
+
+            // One data node per group, direction, mapped type and value type: the evaluation itself is not part of the identity,
+            // it is determined by the mapped type and the value type.
+            public bool Equals(TypeMapValueDataKey other)
+                => TypeMapGroup == other.TypeMapGroup && IsProxy == other.IsProxy && Evaluation.Target == other.Evaluation.Target && Evaluation.ValueType == other.Evaluation.ValueType;
+            public override bool Equals(object obj) => obj is TypeMapValueDataKey other && Equals(other);
+            public override int GetHashCode() => HashCode.Combine(TypeMapGroup.GetHashCode(), IsProxy, Evaluation.Target.GetHashCode(), Evaluation.ValueType.GetHashCode());
+        }
+
+        private NodeCache<TypeMapValueDataKey, TypeMapValueDataNode> _typeMapValueData;
+
+        internal TypeMapValueDataNode TypeMapValueData(TypeDesc typeMapGroup, bool isProxy, TypeMapValueEvaluation evaluation)
+        {
+            return _typeMapValueData.GetOrAdd(new TypeMapValueDataKey(typeMapGroup, isProxy, evaluation));
+        }
+
         private NodeCache<(TypeDesc, int), TypeLoaderArgumentGateNode> _typeLoaderArgumentGates;
 
         public TypeLoaderArgumentGateNode TypeLoaderArgumentGate(TypeDesc type, int argumentIndex)
@@ -1661,6 +1744,13 @@ namespace ILCompiler.DependencyAnalysis
         public ProxyTypeMapRequestNode ProxyTypeMapRequest(TypeDesc type)
         {
             return _proxyTypeMapRequests.GetOrAdd(type);
+        }
+
+        private NodeCache<(TypeDesc, TypeDesc), ProxyTypeMapValuesRequestNode> _proxyTypeMapValuesRequests;
+
+        public ProxyTypeMapValuesRequestNode ProxyTypeMapValuesRequest(TypeDesc type, TypeDesc valueType)
+        {
+            return _proxyTypeMapValuesRequests.GetOrAdd((type, valueType));
         }
 
         private NodeCache<string, AnalysisCharacteristicNode> _analysisCharacteristics;
@@ -1755,7 +1845,8 @@ namespace ILCompiler.DependencyAnalysis
             ReadyToRunHeader.Add(ReadyToRunSectionType.FrozenObjectRegion, FrozenSegmentRegion);
             ReadyToRunHeader.Add(ReadyToRunSectionType.ModuleInitializerList, ModuleInitializerList);
 
-            var commonFixupsTableNode = new ExternalReferencesTableNode("CommonFixupsTable", this);
+            _commonFixupsTable = new ExternalReferencesTableNode("CommonFixupsTable", this);
+            var commonFixupsTableNode = _commonFixupsTable;
             InteropStubManager.AddToReadyToRunHeader(ReadyToRunHeader, this, commonFixupsTableNode);
             TypeMapManager.AddToReadyToRunHeader(ReadyToRunHeader, this, new ExternalReferencesTableIndex(commonFixupsTableNode, this));
             MetadataManager.AddToReadyToRunHeader(ReadyToRunHeader, this, commonFixupsTableNode);
@@ -1763,6 +1854,13 @@ namespace ILCompiler.DependencyAnalysis
             TypeMapManager.AttachToDependencyGraph(graph);
             ReadyToRunHeader.Add(MetadataManager.BlobIdToReadyToRunSection(ReflectionMapBlob.CommonFixupsTable), commonFixupsTableNode);
         }
+
+        private ExternalReferencesTableNode _commonFixupsTable;
+
+        /// <summary>
+        /// Gets the index of a symbol in the table of external references that the type map tables of the image use.
+        /// </summary>
+        internal uint GetCommonFixupIndex(ISymbolNode symbol) => _commonFixupsTable.GetIndex(symbol);
 
         private sealed class ExternalReferencesTableIndex(ExternalReferencesTableNode table, NodeFactory factory) : INativeFormatTypeReferenceProvider
         {
