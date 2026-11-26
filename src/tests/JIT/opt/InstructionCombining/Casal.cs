@@ -14,10 +14,8 @@ public sealed class Casal
     public static void TestEntryPoint()
     {
         Volatile.Write(ref s_value, 7);
-        if (CompareExchangeAcrossCall() <= 0 || Volatile.Read(ref s_value) != 1)
-        {
-            throw new Exception("CompareExchange returned an unexpected result.");
-        }
+        Assert.Equal(7L, CompareExchangeAcrossCall());
+        Assert.Equal(1L, Volatile.Read(ref s_value));
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -29,8 +27,8 @@ public sealed class Casal
         // ARM64-NOT: mov {{x[0-9]+}}, {{x[0-9]+}}
         // ARM64: casal
         long old = Interlocked.CompareExchange(ref s_value, 1, 7);
-        long current = GetTicks();
-        return old + current;
+        GetTicks();
+        return old;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
