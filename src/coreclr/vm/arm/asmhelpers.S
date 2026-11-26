@@ -685,7 +685,9 @@ g_rgWriteBarrierDescriptors:
 1:
     add     r2, pc
 #else
-    ldr     r2, =JIT_WriteBarrier_Loc
+    movw    r2, #:lower16:JIT_WriteBarrier_Loc - (. + 12)
+    movt    r2, #:upper16:JIT_WriteBarrier_Loc - (. + 8)
+    add     r2, pc
 #endif
     ldr     pc, [r2]
 
@@ -869,7 +871,9 @@ ProbeLoop:
 1:
         add     r2, pc
 #else
-        ldr     r2, =g_TrapReturningThreads
+        movw    r2, #:lower16:g_TrapReturningThreads - (. + 12)
+        movt    r2, #:upper16:g_TrapReturningThreads - (. + 8)
+        add     r2, pc
 #endif
         ldr     r2, [r2]
         cbnz    r2, LOCAL_LABEL(JIT_PollGCRarePath)
@@ -880,7 +884,9 @@ LOCAL_LABEL(JIT_PollGCRarePath):
 1:
         add     r2, pc
 #else
-        ldr     r2, =g_pPollGC
+        movw    r2, #:lower16:g_pPollGC - (. + 12)
+        movt    r2, #:upper16:g_pPollGC - (. + 8)
+        add     r2, pc
 #endif
         ldr     r2, [r2]
         EPILOG_BRANCH_REG r2
