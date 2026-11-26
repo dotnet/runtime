@@ -797,7 +797,7 @@ public class WasmArgumentLayoutTests
                     [MethodImpl(MethodImplOptions.NoInlining)]
                     public bool MoveNext() => false;
                     {{(!useDirectCall ? "[MethodImpl(MethodImplOptions.NoInlining)]" : "")}}
-                    public void Dispose() { }
+                    public void Dispose() => Callbacks.DisposeCount++;
                 }
                 public sealed class Sequence
                 {
@@ -805,9 +805,11 @@ public class WasmArgumentLayoutTests
                 }
                 public static class Callbacks
                 {
-                    public static void Main()
+                    public static int DisposeCount;
+                    public static int Main()
                     {
                         foreach (Marker item in new Sequence()) { }
+                        return DisposeCount == 1 ? 0 : 1;
                     }
                 }
                 """;
@@ -827,7 +829,6 @@ public class WasmArgumentLayoutTests
                 "--optimize",
                 "--parallelism", "1",
                 "--codegenopt:JitNoInline=1",
-                "--pgo-instrumentation",
                 "--out", output,
             ];
             R2RCompilationResult result = new R2RDriver(_output).Compile(args);
