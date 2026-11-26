@@ -34,6 +34,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <Compile Include="$(LibrariesProjectRoot)Common\src\Polyfills\EnumPolyfills.cs" Link="Common\Polyfills\EnumPolyfills.cs" />
     <PackageReference Include="Microsoft.Bcl.HashCode" Version="$(MicrosoftBclHashCodeVersion)" />
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
     <!-- Keep the downlevel dependency compatible with consumers using .NET 10 metadata APIs. -->
