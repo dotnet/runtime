@@ -6377,12 +6377,11 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
 #if FEATURE_MULTIREG_RET
         GenTree* stmtRoot = compCurStmt->GetRootNode();
         if (fgGlobalMorph && call->HasMultiRegRetVal() && varTypeIsStruct(call->TypeGet()) &&
-            stmtRoot->OperIs(GT_RETURN, GT_SWIFT_ERROR_RET) && (stmtRoot->AsOp()->GetReturnValue() == call))
+            !(stmtRoot->OperIs(GT_STORE_LCL_VAR, GT_STORE_LCL_VARS) && (stmtRoot->Data() == call)))
         {
-            // After tail call rejection, finish the work impFixupCallStructReturn
-            // defers only for calls directly returned by GT_RETURN or GT_SWIFT_ERROR_RET.
-            // Calls already stored by STORE_LCL_VAR or STORE_LCL_VARS need no temp.
-            // Transform
+            // After tail call rejection, materialize the temp deferred by impFixupCallStructReturn.
+            // A call directly stored by a STORE_LCL_VAR or STORE_LCL_VARS statement root
+            // already has a destination local and needs no temp. For example, transform
             //     ret call
             // into
             //     temp = call
