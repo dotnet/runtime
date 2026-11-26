@@ -18,7 +18,7 @@ public static class FileHasher
         return ToBase36(hashBytes);
     }
 
-    private static string ToBase36(byte[] hash)
+    internal static string ToBase36(byte[] hash)
     {
         const string chars = "0123456789abcdefghijklmnopqrstuvwxyz";
 

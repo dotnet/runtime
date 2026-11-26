@@ -1,0 +1,146 @@
+<Project DefaultTargets="_ComputeWasmBuildCandidates">
+  <PropertyGroup>
+    <UseMonoRuntime>false</UseMonoRuntime>
+    <EnableDiagnostics>false</EnableDiagnostics>
+    <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
+    <TargetFrameworkIdentifier>.NETCoreApp</TargetFrameworkIdentifier>
+    <TargetFrameworkVersion>v12.0</TargetFrameworkVersion>
+    <OutputPath>$(TestDirectory)/bin/</OutputPath>
+    <IntermediateOutputPath>$(TestDirectory)/obj/</IntermediateOutputPath>
+    <_WebAssemblySdkTasksAssembly>$(TaskAssembly)</_WebAssemblySdkTasksAssembly>
+    <StaticWebAssetsSdkBuildTasksAssembly>@(_StaticWebAssetsTasks)</StaticWebAssetsSdkBuildTasksAssembly>
+    <PackageId Condition="'$(ProducerTest)' == 'true'">Microsoft.NETCore.App.Runtime.browser-wasm</PackageId>
+    <PackageVersion Condition="'$(ProducerTest)' == 'true'">1.0.0</PackageVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <ResolvedRuntimePack Include="Microsoft.NETCore.App.Runtime.browser-wasm"
+                         FrameworkName="Microsoft.NETCore.App" PackageDirectory="$(PackDirectory)" />
+    <_StaticWebAssetsTasks Include="$(MSBuildSDKsPath)/Microsoft.NET.Sdk.StaticWebAssets/tasks/net*/Microsoft.NET.Sdk.StaticWebAssets.Tasks.dll"
+                          Exclude="$(MSBuildSDKsPath)/Microsoft.NET.Sdk.StaticWebAssets/tasks/net472/Microsoft.NET.Sdk.StaticWebAssets.Tasks.dll" />
+  </ItemGroup>
+  <UsingTask TaskName="Microsoft.AspNetCore.StaticWebAssets.Tasks.DefineStaticWebAssets" AssemblyFile="@(_StaticWebAssetsTasks)" />
+  <UsingTask TaskName="Microsoft.AspNetCore.StaticWebAssets.Tasks.DefineStaticWebAssetEndpoints" AssemblyFile="@(_StaticWebAssetsTasks)" />
+  <UsingTask TaskName="Microsoft.AspNetCore.StaticWebAssets.Tasks.UpdatePackageStaticWebAssets" AssemblyFile="@(_StaticWebAssetsTasks)" />
+  <UsingTask TaskName="Microsoft.AspNetCore.StaticWebAssets.Tasks.GenerateStaticWebAssetsManifest" AssemblyFile="@(_StaticWebAssetsTasks)" />
+  <UsingTask TaskName="Microsoft.AspNetCore.StaticWebAssets.Tasks.ComputeReferenceStaticWebAssetItems" AssemblyFile="@(_StaticWebAssetsTasks)" />
+  <UsingTask TaskName="Microsoft.AspNetCore.StaticWebAssets.Tasks.ComputeEndpointsForReferenceStaticWebAssets" AssemblyFile="@(_StaticWebAssetsTasks)" />
+  <UsingTask TaskName="Microsoft.AspNetCore.StaticWebAssets.Tasks.FilterStaticWebAssetEndpoints" AssemblyFile="@(_StaticWebAssetsTasks)" />
+  <Import Project="precompressed/Microsoft.NET.Sdk.WebAssembly.Browser.targets" />
+  <Import Project="$(MSBuildSDKsPath)/Microsoft.NET.Sdk.StaticWebAssets/targets/Microsoft.NET.Sdk.StaticWebAssets.Compression.targets" />
+  <Import Project="precompressed/WasmRuntimePack.targets" Condition="'$(ProducerTest)' == 'true'" />
+  <PropertyGroup>
+    <ResolveCompressedFilesDependsOn />
+  </PropertyGroup>
+  <Target Name="_CollectProducerFiles">
+    <ItemGroup>
+      <FilesToPackage Include="$(PackDirectory)/**/*" />
+      <FilesToPackage Update="@(FilesToPackage)"
+                      TargetPath="$([MSBuild]::MakeRelative('$(PackDirectory)', '%(FilesToPackage.RootDir)%(FilesToPackage.Directory)'))" />
+    </ItemGroup>
+    <Error Condition="!Exists('$(PackDirectory)/runtimes/browser-wasm/native/dotnet.native.wasm')"
+           Text="The producer must start with raw native inputs." />
+    <Error Condition="Exists('$(PackDirectory)/data/PrecompressedAssets.xml')"
+           Text="The producer must start without precompressed representations." />
+  </Target>
+  <Target Name="_GetAllSharedFrameworkFiles" DependsOnTargets="_CollectProducerFiles" Returns="@(FilesToPackage)" />
+  <Target Name="CheckProducerOutputs">
+    <MSBuild Projects="$(MSBuildProjectFullPath)" Targets="_GetAllSharedFrameworkFiles">
+      <Output TaskParameter="TargetOutputs" ItemName="_ReturnedPackageFiles" />
+    </MSBuild>
+  </Target>
+  <Target Name="ResolveRuntimePackAssets">
+    <ItemGroup>
+      <RuntimePackAsset Include="$(PackDirectory)/runtimes/browser-wasm/native/dotnet.native.wasm;
+                                 $(PackDirectory)/runtimes/browser-wasm/native/r2r/System.Console.wasm" />
+      <ReferenceCopyLocalPaths Include="@(RuntimePackAsset)" />
+    </ItemGroup>
+  </Target>
+  <Target Name="_ComputeWasmBuildCandidates" DependsOnTargets="ResolveRuntimePackAssets;_WasmCoreClrSelectR2RDirectories">
+    <PropertyGroup>
+      <_WasmBuildWebcilPath>$(TestDirectory)/webcil/</_WasmBuildWebcilPath>
+      <WasmBuildNative Condition="'$(LateExclusion)' == 'WasmBuildNative'">true</WasmBuildNative>
+      <RunAOTCompilation Condition="'$(LateExclusion)' == 'RunAOTCompilation'">true</RunAOTCompilation>
+      <_IsPublishing Condition="'$(LateExclusion)' == '_IsPublishing'">true</_IsPublishing>
+    </PropertyGroup>
+    <ItemGroup>
+      <_WasmDllBuildCandidates Include="$(PackDirectory)/runtimes/browser-wasm/lib/net12.0/System.Console.dll"
+                               Condition="'$(EmptySelection)' != 'true'"
+                               RelativePath="_framework/System.Console.dll"
+                               WebcilOutputPath="$(_WasmBuildWebcilPath)System.Console.wasm" AssetTraitName="WasmResource"
+                               NuGetPackageId="Microsoft.NETCore.App.Runtime.browser-wasm" NuGetPackageVersion="1.0.0" />
+      <_WasmDllBuildCandidatesNonCulture Include="@(_WasmDllBuildCandidates)" />
+    </ItemGroup>
+  </Target>
+  <Target Name="_StageSelectedAssembly">
+    <ConvertDllsToWebcil Candidates="@(_WasmDllBuildCandidates)" IsEnabled="$(_WasmEnableWebcil)" WebcilVersion="$(_WasmWebcilVersion)"
+        PrebuiltR2RDirectory="$(_WasmBuildPrebuiltR2RDirectory)"
+        OutputPath="$(TestDirectory)/staged-webcil" IntermediateOutputPath="$(TestDirectory)/tmp-webcil" />
+  </Target>
+  <Target Name="_AddWasmStaticWebAssets" DependsOnTargets="_ComputeWasmBuildCandidates">
+    <ItemGroup>
+      <_NativeCandidate Include="@(WasmNativeAsset)" Condition="'%(Filename)%(Extension)' == 'dotnet.native.wasm'"
+                        ContentRoot="%(RootDir)%(Directory)" RelativePath="_framework/dotnet.native#[.{fingerprint}]!.wasm" />
+      <_NativeCandidate Update="@(_NativeCandidate)" Condition="'$(TestOptionalFingerprint)' == 'true'"
+                        RelativePath="_framework/dotnet.native#[.{fingerprint}]?.wasm" />
+    </ItemGroup>
+    <DefineStaticWebAssets CandidateAssets="@(_NativeCandidate)" SourceId="$(PackageId)"
+                           SourceType="Framework" AssetKind="Build" AssetMode="All" AssetRole="Primary"
+                           CopyToOutputDirectory="Never" CopyToPublishDirectory="Never"
+                           BasePath="$(PackageId)">
+      <Output TaskParameter="Assets" ItemName="_WasmFrameworkAssets" />
+    </DefineStaticWebAssets>
+    <UpdatePackageStaticWebAssets Assets="@(_WasmFrameworkAssets)" IntermediateOutputPath="$(IntermediateOutputPath)"
+                                  ProjectPackageId="$(PackageId)" ProjectBasePath="$(PackageId)">
+      <Output TaskParameter="UpdatedAssets" ItemName="_WasmMaterializedFrameworkAssets" />
+    </UpdatePackageStaticWebAssets>
+    <ItemGroup>
+      <_WasmMaterializedFrameworkAssets Update="@(_WasmMaterializedFrameworkAssets)" AssetMode="All" />
+      <StaticWebAsset Include="@(_WasmMaterializedFrameworkAssets)" />
+      <_AppAsset Include="$(TestDirectory)/app.js" RelativePath="app.js" Condition="'$(TestAppAsset)' == 'true'" />
+    </ItemGroup>
+    <WriteLinesToFile Condition="'@(_AppAsset)' != ''" File="@(_AppAsset)" Lines="export default 1" Overwrite="true" />
+    <DefineStaticWebAssets Condition="'@(_AppAsset)' != ''" CandidateAssets="@(_AppAsset)"
+                           SourceId="$(PackageId)" SourceType="Computed" AssetKind="Build" AssetMode="All" AssetRole="Primary"
+                           ContentRoot="$(TestDirectory)" BasePath="$(PackageId)"
+                           CopyToOutputDirectory="Never" CopyToPublishDirectory="Never">
+      <Output TaskParameter="Assets" ItemName="StaticWebAsset" />
+    </DefineStaticWebAssets>
+    <DefineStaticWebAssetEndpoints CandidateAssets="@(StaticWebAsset)" ContentTypeMappings="">
+      <Output TaskParameter="Endpoints" ItemName="StaticWebAssetEndpoint" />
+    </DefineStaticWebAssetEndpoints>
+  </Target>
+  <Target Name="ResolveStaticWebAssetsInputs" DependsOnTargets="_AddWasmStaticWebAssets" />
+  <Target Name="CheckStaticAssets" DependsOnTargets="ResolveStaticWebAssetsInputs;$(ResolveBuildRelatedStaticWebAssetsDependsOn)" Returns="@(_TestOutput)">
+    <GenerateStaticWebAssetsManifest Source="$(PackageId)" BasePath="$(PackageId)" Mode="Default" ManifestType="Build"
+        ReferencedProjectsConfigurations="" DiscoveryPatterns=""
+        Assets="@(StaticWebAsset)" Endpoints="@(StaticWebAssetEndpoint)"
+        ManifestPath="$(TestDirectory)/staticwebassets.json" ManifestCacheFilePath="$(TestDirectory)/staticwebassets.cache" />
+    <ComputeReferenceStaticWebAssetItems Assets="@(StaticWebAsset)" ProjectMode="Default" AssetKind="Build" Source="$(PackageId)">
+      <Output TaskParameter="StaticWebAssets" ItemName="_ReferencedAsset" />
+    </ComputeReferenceStaticWebAssetItems>
+    <ComputeEndpointsForReferenceStaticWebAssets Assets="@(_ReferencedAsset)" CandidateEndpoints="@(StaticWebAssetEndpoint)">
+      <Output TaskParameter="Endpoints" ItemName="_ReferencedEndpoint" />
+    </ComputeEndpointsForReferenceStaticWebAssets>
+    <ItemGroup>
+      <_TestOutput Include="@(_ReferencedAsset)" TestItemType="Asset" />
+      <_TestOutput Include="@(_ReferencedEndpoint)" TestItemType="Endpoint" />
+    </ItemGroup>
+  </Target>
+  <Target Name="CheckHostedStaticAssets">
+    <ItemGroup>
+      <_Client Include="Client1;Client2" />
+    </ItemGroup>
+    <MSBuild Projects="$(MSBuildProjectFullPath)" Targets="CheckStaticAssets"
+             Properties="PackageId=%(_Client.Identity);TestDirectory=$(TestDirectory)/%(_Client.Identity);StaticWebAssetBasePath=%(_Client.Identity)">
+      <Output TaskParameter="TargetOutputs" ItemName="_ClientOutput" />
+    </MSBuild>
+    <ItemGroup>
+      <_HostedAsset Include="@(_ClientOutput)" Condition="'%(TestItemType)' == 'Asset'" />
+      <_HostedEndpoint Include="@(_ClientOutput)" Condition="'%(TestItemType)' == 'Endpoint'" />
+    </ItemGroup>
+    <GenerateStaticWebAssetsManifest Source="Host" BasePath="/" Mode="Default" ManifestType="Build"
+        ReferencedProjectsConfigurations="" DiscoveryPatterns=""
+        Assets="@(_HostedAsset)" Endpoints="@(_HostedEndpoint)"
+        ManifestPath="$(TestDirectory)/hosted.json" ManifestCacheFilePath="$(TestDirectory)/hosted.cache" />
+  </Target>
+</Project>

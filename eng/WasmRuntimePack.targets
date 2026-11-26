@@ -1,0 +1,25 @@
+<Project>
+  <PropertyGroup>
+    <_WasmPrecompressionTasksAssembly>$(ArtifactsBinDir)Microsoft.NET.Sdk.WebAssembly.Pack.Tasks/$(TasksConfiguration)/net/Microsoft.NET.Sdk.WebAssembly.Pack.Tasks.dll</_WasmPrecompressionTasksAssembly>
+  </PropertyGroup>
+
+  <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.PrecompressWasmRuntimeAssets" AssemblyFile="$(_WasmPrecompressionTasksAssembly)" />
+
+  <!-- Run after validation, before the package file list is returned. -->
+  <Target Name="_PrecompressBrowserRuntimePackAssets"
+          BeforeTargets="_GetAllSharedFrameworkFiles">
+    <PrecompressWasmRuntimeAssets
+        Files="@(FilesToPackage)"
+        OutputPath="$(IntermediateOutputPath)precompressed/"
+        PackageId="$(PackageId)"
+        PackageVersion="$(PackageVersion)">
+      <Output TaskParameter="CompressedFiles" ItemName="_WasmPrecompressedPackageFiles" />
+      <Output TaskParameter="ReplacedFiles" ItemName="_WasmPrecompressedReplacedFiles" />
+      <Output TaskParameter="FileWrites" ItemName="FileWrites" />
+    </PrecompressWasmRuntimeAssets>
+    <ItemGroup>
+      <FilesToPackage Remove="@(_WasmPrecompressedReplacedFiles)" />
+      <FilesToPackage Include="@(_WasmPrecompressedPackageFiles)" />
+    </ItemGroup>
+  </Target>
+</Project>

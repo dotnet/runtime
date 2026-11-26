@@ -67,26 +67,30 @@ Copyright (c) .NET Foundation. All rights reserved.
     </ItemGroup>
   </Target>
 
-  <Target Name="_WasmCoreClrResolveNativeFlavorDirectories"
-          DependsOnTargets="_ResolveWasmConfiguration">
+  <Target Name="_WasmCoreClrResolveNativeFlavorAssets"
+          DependsOnTargets="ResolveRuntimePackAssets;_ResolveWasmConfiguration">
     <PropertyGroup>
       <_WasmCoreClrDiagnosticsNativeDir>$([MSBuild]::NormalizeDirectory('$(_RuntimePackDir)', 'data', 'native-flavors', 'diagnostics'))</_WasmCoreClrDiagnosticsNativeDir>
+      <_WasmCoreClrProductionNativeDir>$(_RuntimePackNativeDir)</_WasmCoreClrProductionNativeDir>
+      <_WasmCoreClrProductionNativeDir Condition="'$(_WasmPrecompressedNativeDirectory)' != ''">$(_WasmPrecompressedNativeDirectory)</_WasmCoreClrProductionNativeDir>
     </PropertyGroup>
     <ItemGroup>
-      <_WasmCoreClrPrelinkedFile Include="dotnet.native.wasm;dotnet.native.js;dotnet.native.js.symbols" />
+      <_WasmCoreClrProductionNativeAsset Include="$(_WasmCoreClrProductionNativeDir)dotnet.native.wasm;
+                                                 $(_WasmCoreClrProductionNativeDir)dotnet.native.js;
+                                                 $(_RuntimePackNativeDir)dotnet.native.js.symbols" />
+      <_WasmCoreClrDiagnosticsNativeAsset Include="$(_WasmCoreClrDiagnosticsNativeDir)dotnet.native.wasm;
+                                                  $(_WasmCoreClrDiagnosticsNativeDir)dotnet.native.js;
+                                                  $(_WasmCoreClrDiagnosticsNativeDir)dotnet.native.js.symbols" />
     </ItemGroup>
   </Target>
 
   <Target Name="_WasmCoreClrSelectBuildNativeFlavor"
-          DependsOnTargets="_WasmCoreClrSetDiagnosticsDefault;_WasmCoreClrResolveNativeFlavorDirectories"
+          DependsOnTargets="_WasmCoreClrSetDiagnosticsDefault;_WasmCoreClrResolveNativeFlavorAssets"
           BeforeTargets="_ComputeWasmBuildCandidates"
           Condition="'$(WasmBuildNative)' != 'true'">
-    <PropertyGroup>
-      <_WasmCoreClrBuildNativeDir>$(_RuntimePackNativeDir)</_WasmCoreClrBuildNativeDir>
-      <_WasmCoreClrBuildNativeDir Condition="'$(EnableDiagnostics)' == 'true'">$(_WasmCoreClrDiagnosticsNativeDir)</_WasmCoreClrBuildNativeDir>
-    </PropertyGroup>
     <ItemGroup>
-      <_WasmCoreClrPrelinkedBuildAsset Include="@(_WasmCoreClrPrelinkedFile->'$(_WasmCoreClrBuildNativeDir)%(Identity)')" />
+      <_WasmCoreClrPrelinkedBuildAsset Include="@(_WasmCoreClrProductionNativeAsset)" Condition="'$(EnableDiagnostics)' != 'true'" />
+      <_WasmCoreClrPrelinkedBuildAsset Include="@(_WasmCoreClrDiagnosticsNativeAsset)" Condition="'$(EnableDiagnostics)' == 'true'" />
     </ItemGroup>
     <Error Condition="!Exists('%(_WasmCoreClrPrelinkedBuildAsset.Identity)')"
            Text="The CoreCLR browser native flavor is missing '%(_WasmCoreClrPrelinkedBuildAsset.Identity)'. Install wasm-tools and set WasmBuildNative=true, or use a runtime pack that contains this flavor." />
@@ -97,7 +101,7 @@ Copyright (c) .NET Foundation. All rights reserved.
 
   <!-- Publish replacements must have per-project identities, just like relink outputs. -->
   <Target Name="_WasmCoreClrSelectPublishNativeFlavor"
-          DependsOnTargets="_ResolveWasmPublishConfiguration;_WasmCoreClrResolveNativeFlavorDirectories"
+          DependsOnTargets="_ResolveWasmPublishConfiguration;_WasmCoreClrResolveNativeFlavorAssets"
           BeforeTargets="ProcessPublishFilesForWasm"
           Condition="'$(WasmBuildingForNestedPublish)' != 'true'">
     <ItemGroup>
@@ -107,12 +111,11 @@ Copyright (c) .NET Foundation. All rights reserved.
     <PropertyGroup Condition="'@(_WasmCoreClrRelinkedWasm)' == ''">
       <_WasmCoreClrPublishNativeFlavor Condition="'$(EnableDiagnostics)' == 'true'">diagnostics</_WasmCoreClrPublishNativeFlavor>
       <_WasmCoreClrPublishNativeFlavor Condition="'$(EnableDiagnostics)' != 'true'">production</_WasmCoreClrPublishNativeFlavor>
-      <_WasmCoreClrPublishNativeDir>$(_RuntimePackNativeDir)</_WasmCoreClrPublishNativeDir>
-      <_WasmCoreClrPublishNativeDir Condition="'$(EnableDiagnostics)' == 'true'">$(_WasmCoreClrDiagnosticsNativeDir)</_WasmCoreClrPublishNativeDir>
       <_WasmCoreClrPrelinkedPublishDir>$([MSBuild]::NormalizeDirectory('$(IntermediateOutputPath)', 'wasm', 'prelinked', '$(_WasmCoreClrPublishNativeFlavor)'))</_WasmCoreClrPrelinkedPublishDir>
     </PropertyGroup>
     <ItemGroup Condition="'@(_WasmCoreClrRelinkedWasm)' == ''">
-      <_WasmCoreClrPrelinkedPublishAsset Include="@(_WasmCoreClrPrelinkedFile->'$(_WasmCoreClrPublishNativeDir)%(Identity)')" />
+      <_WasmCoreClrPrelinkedPublishAsset Include="@(_WasmCoreClrProductionNativeAsset)" Condition="'$(EnableDiagnostics)' != 'true'" />
+      <_WasmCoreClrPrelinkedPublishAsset Include="@(_WasmCoreClrDiagnosticsNativeAsset)" Condition="'$(EnableDiagnostics)' == 'true'" />
     </ItemGroup>
     <Error Condition="'@(_WasmCoreClrRelinkedWasm)' == '' and !Exists('%(_WasmCoreClrPrelinkedPublishAsset.Identity)')"
            Text="The CoreCLR browser native flavor is missing '%(_WasmCoreClrPrelinkedPublishAsset.Identity)'. Install wasm-tools and set WasmBuildNative=true, or use a runtime pack that contains this flavor." />
@@ -432,4 +435,5 @@ Copyright (c) .NET Foundation. All rights reserved.
     <Delete Files="@(_WasmStalePerAppR2R)" />
   </Target>
 
+  <Import Project="Microsoft.NET.Sdk.WebAssembly.Browser.Precompressed.targets" />
 </Project>

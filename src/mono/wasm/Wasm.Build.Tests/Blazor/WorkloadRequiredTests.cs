@@ -116,13 +116,10 @@ public class WorkloadRequiredTests : BlazorWasmTestBase
         string actualNativeWasm = Assert.Single(Directory.GetFiles(frameworkDir, "dotnet.native*.wasm", SearchOption.TopDirectoryOnly));
         string runtimePackDir = ProjectProviderBase.TryGetRuntimePackDirFromBuildOutput(output)
             ?? throw new InvalidOperationException($"Could not resolve runtime pack from build output:{Environment.NewLine}{output}");
-        string expectedNativeWasm = expectedFlavor == "production"
-            ? Path.Combine(runtimePackDir, "runtimes", BuildEnvironment.DefaultRuntimeIdentifier, "native", "dotnet.native.wasm")
-            : Path.Combine(runtimePackDir, "data", "native-flavors", expectedFlavor, "dotnet.native.wasm");
-
-        Assert.True(File.Exists(expectedNativeWasm), $"Expected prelinked native flavor does not exist: {expectedNativeWasm}");
+        var runtimePack = new RuntimePackAssets(runtimePackDir);
+        string expectedNativeWasm = RuntimePackAssets.GetPrelinkedNativePath("dotnet.native.wasm", expectedFlavor == "diagnostics");
         Assert.Equal(
-            SHA256.HashData(File.ReadAllBytes(expectedNativeWasm)),
+            SHA256.HashData(runtimePack.ReadBytes(expectedNativeWasm)),
             SHA256.HashData(File.ReadAllBytes(actualNativeWasm)));
 
         BlazorRunOptions runOptions = new(config);
@@ -167,17 +164,14 @@ public class WorkloadRequiredTests : BlazorWasmTestBase
 
         string runtimePackDir = ProjectProviderBase.TryGetRuntimePackDirFromBuildOutput(output)
             ?? throw new InvalidOperationException($"Could not resolve runtime pack from build output:{Environment.NewLine}{output}");
-        string expectedNativeDir = enableDiagnostics == true
-            ? Path.Combine(runtimePackDir, "data", "native-flavors", "diagnostics")
-            : Path.Combine(runtimePackDir, "runtimes", BuildEnvironment.DefaultRuntimeIdentifier, "native");
+        var runtimePack = new RuntimePackAssets(runtimePackDir);
         string frameworkDir = GetBuildPaths(config, forPublish: true).BinFrameworkDir;
         foreach (string extension in new[] { ".wasm", ".js", ".js.symbols" })
         {
             string actual = Assert.Single(Directory.GetFiles(frameworkDir, $"dotnet.native*{extension}"));
-            string expected = Path.Combine(expectedNativeDir, $"dotnet.native{extension}");
-            using FileStream expectedStream = File.OpenRead(expected);
+            string expected = RuntimePackAssets.GetPrelinkedNativePath($"dotnet.native{extension}", enableDiagnostics == true);
             using FileStream actualStream = File.OpenRead(actual);
-            Assert.Equal(SHA256.HashData(expectedStream), SHA256.HashData(actualStream));
+            Assert.Equal(SHA256.HashData(runtimePack.ReadBytes(expected)), SHA256.HashData(actualStream));
         }
 
         string? publishedDiagnosticPorts = null;

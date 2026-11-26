@@ -522,15 +522,8 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         return match.Success && match.Groups.Count == 2 ? match.Groups[1].Value : null;
     }
 
-    protected static string GetPrelinkedNativeAssetDir(MSBuildOptions buildOptions, string? runtimePackDir = null)
-    {
-        runtimePackDir ??= BuildTestBase.s_buildEnv.GetRuntimePackDir(buildOptions.TargetFramework, buildOptions.RuntimeType);
-
-        if (BuildTestBase.IsCoreClrRuntime && (buildOptions.EnableDiagnostics ?? !buildOptions.IsPublish))
-            return Path.Combine(runtimePackDir, "data", "native-flavors", "diagnostics");
-
-        return Path.Combine(runtimePackDir, "runtimes", BuildEnvironment.DefaultRuntimeIdentifier, "native");
-    }
+    protected static string GetPrelinkedNativeAssetPath(string name, MSBuildOptions buildOptions)
+        => RuntimePackAssets.GetPrelinkedNativePath(name, BuildTestBase.IsCoreClrRuntime && (buildOptions.EnableDiagnostics ?? !buildOptions.IsPublish));
 
     public static void AssertDotNetJsSymbols(AssertBundleOptions assertOptions)
     {
@@ -538,10 +531,10 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
 
         if (assertOptions.BuildOptions.ExpectedFileType == NativeFilesType.FromRuntimePack)
         {
-            TestUtils.AssertFile(
-                    Path.Combine(GetPrelinkedNativeAssetDir(assertOptions.BuildOptions, assertOptions.RuntimePackDir), "dotnet.native.js.symbols"),
-                    Path.Combine(assertOptions.BinFrameworkDir, "dotnet.native.js.symbols"),
-                    same: true);
+            var runtimePack = new RuntimePackAssets(assertOptions.RuntimePackDir ??
+                BuildTestBase.s_buildEnv.GetRuntimePackDir(assertOptions.BuildOptions.TargetFramework, assertOptions.BuildOptions.RuntimeType));
+            runtimePack.AssertFileSize(GetPrelinkedNativeAssetPath("dotnet.native.js.symbols", assertOptions.BuildOptions),
+                Path.Combine(assertOptions.BinFrameworkDir, "dotnet.native.js.symbols"));
         }
     }
 
@@ -595,16 +588,16 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         if (assertOptions.BuildOptions.GlobalizationMode is GlobalizationMode.Custom)
         {
             string srcPath = assertOptions.BuildOptions.CustomIcuFile!;
-            // Prefer the runtime-pack root the build actually resolved (from MSBuild output),
-            // since that is the same pack the publish output was produced from. The SDK's
-            // workload-pack dir (GetRuntimeNativeDir) can diverge from it on CoreCLR no-workload
-            // runs where the publish-time pack comes from a per-test NuGet cache.
-            string runtimePackDir = !string.IsNullOrEmpty(assertOptions.RuntimePackDir)
-                ? Path.Combine(assertOptions.RuntimePackDir, "runtimes", BuildEnvironment.DefaultRuntimeIdentifier, "native")
-                : BuildTestBase.s_buildEnv.GetRuntimeNativeDir(assertOptions.BuildOptions.TargetFramework, assertOptions.BuildOptions.RuntimeType);
-            if (!Path.IsPathRooted(srcPath))
-                srcPath = Path.Combine(runtimePackDir, assertOptions.BuildOptions.CustomIcuFile!);
-            TestUtils.AssertSameFile(srcPath, actual.Single());
+            if (Path.IsPathRooted(srcPath))
+            {
+                TestUtils.AssertSameFile(srcPath, actual.Single());
+            }
+            else
+            {
+                var runtimePack = new RuntimePackAssets(assertOptions.RuntimePackDir ??
+                    BuildTestBase.s_buildEnv.GetRuntimePackDir(assertOptions.BuildOptions.TargetFramework, assertOptions.BuildOptions.RuntimeType));
+                runtimePack.AssertFileSize(RuntimePackAssets.GetNativePath(srcPath), actual.Single());
+            }
         }
     }
 
