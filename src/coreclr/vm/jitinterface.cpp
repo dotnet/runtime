@@ -1111,7 +1111,7 @@ void CEEInfo::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken
     {
         // This definition can become part of the root method's dictionary layout. A foreign
         // collectible allocator may unload independently. Leave that lookup in its original context.
-        if (IsDynamicScope(pResolvedToken->tokenScope) || !th.IsGenericTypeDefinition() ||
+        if (IsDynamicScope(pResolvedToken->tokenScope) || (th.HasInstantiation() && !th.IsGenericTypeDefinition()) ||
             (th.GetLoaderAllocator()->IsCollectible() &&
              th.GetLoaderAllocator() != m_pMethodBeingCompiled->GetModule()->GetLoaderAllocator()))
         {

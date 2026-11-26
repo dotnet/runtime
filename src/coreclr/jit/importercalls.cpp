@@ -43,8 +43,8 @@ bool GetParameterBinding(Compiler* comp, CorElementType kind, unsigned index, co
     return true;
 }
 
-// Read the class/value-type marker and the TypeDefOrRef following GENERICINST.
-bool ReadGenericDefinition(PCCOR_SIGNATURE& sig, unsigned& size, mdToken* token)
+// Read a class/value-type marker followed by its TypeDefOrRef.
+bool ReadNamedTypeToken(PCCOR_SIGNATURE& sig, unsigned& size, mdToken* token)
 {
     if ((size == 0) || ((*sig != ELEMENT_TYPE_CLASS) && (*sig != ELEMENT_TYPE_VALUETYPE)))
     {
@@ -62,7 +62,7 @@ bool ReadGenericDefinition(PCCOR_SIGNATURE& sig, unsigned& size, mdToken* token)
     return true;
 }
 
-CORINFO_CLASS_HANDLE ResolveGenericDefinition(Compiler* comp, const CORINFO_RESOLVED_TOKEN& source, mdToken token)
+CORINFO_CLASS_HANDLE ResolveTypeDefinition(Compiler* comp, const CORINFO_RESOLVED_TOKEN& source, mdToken token)
 {
     CORINFO_RESOLVED_TOKEN definition{};
     definition.tokenScope   = source.tokenScope;
@@ -74,7 +74,7 @@ CORINFO_CLASS_HANDLE ResolveGenericDefinition(Compiler* comp, const CORINFO_RESO
 }
 
 // Substitute class and method parameters. Only root metadata tokens can be copied
-// verbatim. Ask the EE for the identity of a foreign generic definition.
+// verbatim. Ask the EE for the identity of a foreign type definition.
 class InlineTypeSignature
 {
     Compiler*                     m_comp;
@@ -95,11 +95,39 @@ class InlineTypeSignature
         return true;
     }
 
+    bool AppendNamedType(PCCOR_SIGNATURE& sig, unsigned& size)
+    {
+        PCCOR_SIGNATURE start = sig;
+        mdToken         token;
+        if (!ReadNamedTypeToken(sig, size, &token))
+        {
+            return false;
+        }
+        if (m_source.tokenScope == m_comp->impInlineRoot()->info.compScopeHnd)
+        {
+            return Append(start, (unsigned)(sig - start));
+        }
+        CORINFO_CLASS_HANDLE definition = ResolveTypeDefinition(m_comp, m_source, token);
+        if ((definition == nullptr) || (m_comp->eeIsValueClass(definition) != (*start == ELEMENT_TYPE_VALUETYPE)))
+        {
+            return false;
+        }
+        BYTE          internal = ELEMENT_TYPE_INTERNAL;
+        target_size_t handle   = static_cast<target_size_t>(reinterpret_cast<uintptr_t>(definition));
+        return Append(&internal, 1) && Append(reinterpret_cast<const BYTE*>(&handle), sizeof(handle));
+    }
+
     bool Read(PCCOR_SIGNATURE& sig, unsigned& size, unsigned depth)
     {
         if ((size == 0) || (depth > MethodTypeArgument::MaxDepth))
         {
             return false;
+        }
+
+        if ((*sig == ELEMENT_TYPE_CLASS) || (*sig == ELEMENT_TYPE_VALUETYPE))
+        {
+            m_depth = max(m_depth, depth);
+            return AppendNamedType(sig, size);
         }
 
         m_depth               = max(m_depth, depth);
@@ -140,37 +168,16 @@ class InlineTypeSignature
         {
             return Append(start, 1);
         }
-        mdToken  typeToken;
-        uint32_t count;
-        if ((type != ELEMENT_TYPE_GENERICINST) || !ReadGenericDefinition(sig, size, &typeToken) ||
-            !ReadCompressedUnsigned(sig, size, &count) || (count == 0) || (count > size))
+        if ((type != ELEMENT_TYPE_GENERICINST) || !Append(start, 1) || !AppendNamedType(sig, size))
         {
             return false;
         }
-
-        if (m_source.tokenScope == m_comp->impInlineRoot()->info.compScopeHnd)
+        PCCOR_SIGNATURE arity = sig;
+        uint32_t        count;
+        if (!ReadCompressedUnsigned(sig, size, &count) || (count == 0) || (count > size) ||
+            !Append(arity, (unsigned)(sig - arity)))
         {
-            if (!Append(start, (unsigned)(sig - start)))
-            {
-                return false;
-            }
-        }
-        else
-        {
-            CORINFO_CLASS_HANDLE definition = ResolveGenericDefinition(m_comp, m_source, typeToken);
-            if ((definition == nullptr) || (m_comp->eeIsValueClass(definition) != (start[1] == ELEMENT_TYPE_VALUETYPE)))
-            {
-                return false;
-            }
-            BYTE          header[] = {ELEMENT_TYPE_GENERICINST, ELEMENT_TYPE_INTERNAL};
-            BYTE          arity[4];
-            unsigned      aritySize = CorSigCompressData(count, arity);
-            target_size_t handle    = static_cast<target_size_t>(reinterpret_cast<uintptr_t>(definition));
-            if (!Append(header, sizeof(header)) || !Append(reinterpret_cast<const BYTE*>(&handle), sizeof(handle)) ||
-                !Append(arity, aritySize))
-            {
-                return false;
-            }
+            return false;
         }
 
         for (unsigned i = 0; i < count; i++)
@@ -196,7 +203,9 @@ public:
         {
             m_bytes[m_length++] = ELEMENT_TYPE_SZARRAY;
         }
-        if (!Read(sig, size, vector ? 1 : 0) || !m_usesParameter)
+        // A method's owner or one of its arguments can be closed even when the
+        // full MethodSpec is open. Keep those operands when composing the call.
+        if (!Read(sig, size, vector ? 1 : 0) || (!m_usesParameter && (m_source.tokenType != CORINFO_TOKENKIND_Method)))
         {
             return false;
         }
@@ -227,8 +236,8 @@ bool MethodTypeArgument::TryRead(Compiler*                     comp,
         *result = binding == nullptr ? MethodTypeArgument{index, 0, 0, nullptr} : *binding;
         return true;
     }
-    if ((size == 0) ||
-        ((*sig != ELEMENT_TYPE_SZARRAY) && (*sig != ELEMENT_TYPE_GENERICINST) && (*sig != ELEMENT_TYPE_VAR)))
+    if ((size == 0) || ((source.tokenType != CORINFO_TOKENKIND_Method) && (*sig != ELEMENT_TYPE_SZARRAY) &&
+                        (*sig != ELEMENT_TYPE_GENERICINST) && (*sig != ELEMENT_TYPE_VAR)))
     {
         return false;
     }
@@ -373,12 +382,12 @@ MethodTypeArgument* Compiler::impForwardedTypeArgs(const CORINFO_RESOLVED_TOKEN&
         // A MemberRef may name a derived type while the body is inherited. Its
         // TypeSpec then describes different parameters from the inlinee's !n.
         mdToken definition;
-        if (!ReadGenericDefinition(sig, size, &definition))
+        if (!ReadNamedTypeToken(sig, size, &definition))
         {
             return nullptr;
         }
 
-        CORINFO_CLASS_HANDLE declared = ResolveGenericDefinition(this, token, definition);
+        CORINFO_CLASS_HANDLE declared = ResolveTypeDefinition(this, token, definition);
         if ((declared == nullptr) ||
             (declared != info.compCompHnd->getTypeDefinition(info.compCompHnd->getMethodClass(declaringMethod))))
         {
@@ -387,7 +396,7 @@ MethodTypeArgument* Compiler::impForwardedTypeArgs(const CORINFO_RESOLVED_TOKEN&
     }
 
     uint32_t count;
-    if (!ReadCompressedUnsigned(sig, size, &count) || (count != arity) || (count > size / 2))
+    if (!ReadCompressedUnsigned(sig, size, &count) || (count != arity) || (count > size))
     {
         return nullptr;
     }

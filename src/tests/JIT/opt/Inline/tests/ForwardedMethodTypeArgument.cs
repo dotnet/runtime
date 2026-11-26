@@ -184,6 +184,24 @@ public class ForwardedMethodTypeArgument
         public static Type Get() => typeof(T);
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Type NamedMethodContext<T>() => ForwardedArgumentBridge.Named<List<T>>();
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Type FixedArgument<A>() => MethodOwner<TimeSpan>.Kept<KeyValuePair<A, int>>();
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Type FixedOwner<T>() => FixedArgument<List<T>>();
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Type KeptPair<A, B>() => typeof(KeyValuePair<A, B>);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Type MixedArguments<A>() => KeptPair<A, int>();
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Type FixedPrimitive<T>() => MixedArguments<T[]>();
+
     private class MethodOwner<A>
     {
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -345,6 +363,11 @@ public class ForwardedMethodTypeArgument
     [Fact]
     public static void TestEntryPoint()
     {
+        Assert.Equal(typeof(Dictionary<TimeSpan, KeyValuePair<List<string>, int>>), FixedOwner<string>());
+        Assert.Equal(typeof(Dictionary<TimeSpan, KeyValuePair<List<object>, int>>), FixedOwner<object>());
+        Assert.Equal(typeof(KeyValuePair<string[], int>), FixedPrimitive<string>());
+        Assert.Equal(typeof(Action<List<string>, TimeSpan, ForwardedArgumentMode, ForwardedArgumentTag>), NamedMethodContext<string>());
+        Assert.Equal(typeof(Action<List<object>, TimeSpan, ForwardedArgumentMode, ForwardedArgumentTag>), NamedMethodContext<object>());
         Assert.Equal(typeof(Dictionary<string[], List<object>>), MethodOwner<string>.Outer<object>());
         Assert.Equal(typeof(Dictionary<object[], List<string>>), MethodOwner<object>.Outer<string>());
         Assert.Equal(typeof(Dictionary<object, string[]>), StructMethodContext<string, object>());
