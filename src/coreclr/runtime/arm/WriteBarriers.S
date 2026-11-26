@@ -120,7 +120,7 @@ ALTERNATE_ENTRY RhpAssignRef
 
           // Write the reference into the location. Note that we rely on the fact that no GC can occur between here
           // and the card table update we may perform below.
-GLOBAL_LABEL "RhpAssignRefAvLocation"\EXPORT_REG_NAME  // WriteBarrierFunctionAvLocation
+GLOBAL_LABEL RhpAssignRefAvLocation\EXPORT_REG_NAME  // WriteBarrierFunctionAvLocation
 .ifc \REFREG, r1
 GLOBAL_LABEL RhpAssignRefAVLocation
 .endif
@@ -190,7 +190,7 @@ ALTERNATE_ENTRY RhpCheckedAssignRef
           dmb
           // Write the reference into the location. Note that we rely on the fact that no GC can occur between here
           // and the card table update we may perform below.
-GLOBAL_LABEL "RhpCheckedAssignRefAvLocation"\EXPORT_REG_NAME // WriteBarrierFunctionAvLocation
+GLOBAL_LABEL RhpCheckedAssignRefAvLocation\EXPORT_REG_NAME // WriteBarrierFunctionAvLocation
 .ifc \REFREG, r1
 GLOBAL_LABEL RhpCheckedAssignRefAVLocation
 .endif
