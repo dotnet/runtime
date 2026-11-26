@@ -1,14 +1,11 @@
 $ErrorActionPreference = 'Continue'
 
-if ([string]::IsNullOrEmpty($env:HELIX_WORKITEM_UPLOAD_ROOT)) {
-    $originalUploadRoot = Join-Path (Get-Location).Path "test-results"
-} else {
-    $originalUploadRoot = $env:HELIX_WORKITEM_UPLOAD_ROOT
-}
-
 $batchDir = (Get-Location).Path
-$failCount = 0
-$results = New-Object System.Collections.Generic.List[psobject]
+$originalUploadRoot = if ([string]::IsNullOrEmpty($env:HELIX_WORKITEM_UPLOAD_ROOT)) {
+    Join-Path $batchDir "test-results"
+} else {
+    $env:HELIX_WORKITEM_UPLOAD_ROOT
+}
 
 Write-Host "=== WasmBatchRunner ==="
 Write-Host "BATCH_DIR=$batchDir"
@@ -21,6 +18,7 @@ if ($zipFiles.Count -eq 0) {
 }
 
 Add-Type -AssemblyName System.IO.Compression.FileSystem
+$results = New-Object System.Collections.Generic.List[psobject]
 
 foreach ($zipFile in $zipFiles) {
     $suiteName = [System.IO.Path]::GetFileNameWithoutExtension($zipFile.Name)
@@ -34,21 +32,11 @@ foreach ($zipFile in $zipFiles) {
     }
     $null = New-Item -ItemType Directory -Path $suiteDir -Force
 
-    $extractFailed = $false
     try {
         [System.IO.Compression.ZipFile]::ExtractToDirectory($zipFile.FullName, $suiteDir)
     } catch {
         Write-Host "ERROR: Failed to extract $($zipFile.FullName): $($_.Exception.Message)"
-        $extractFailed = $true
-    }
-
-    if ($extractFailed) {
-        $failCount++
-        $results.Add([pscustomobject]@{
-            Name = $suiteName
-            ExitCode = 1
-            Duration = 0
-        })
+        $results.Add([pscustomobject]@{ Name = $suiteName; ExitCode = 1; Duration = 0 })
         Remove-Item -LiteralPath $suiteDir -Recurse -Force -ErrorAction SilentlyContinue
         continue
     }
@@ -62,19 +50,13 @@ foreach ($zipFile in $zipFiles) {
     try {
         if (-not (Test-Path -LiteralPath "RunTests.cmd")) {
             Write-Host "ERROR: RunTests.cmd not found in $suiteDir"
-            $suiteExitCode = 1
         } else {
             $global:LASTEXITCODE = $null
             & .\RunTests.cmd @args
-            if ($null -eq $LASTEXITCODE) {
-                $suiteExitCode = 1
-            } else {
-                $suiteExitCode = $LASTEXITCODE
-            }
+            $suiteExitCode = if ($null -eq $LASTEXITCODE) { 1 } else { $LASTEXITCODE }
         }
     } catch {
         Write-Host "ERROR: Failed to execute RunTests.cmd: $($_.Exception.Message)"
-        $suiteExitCode = 1
     } finally {
         $stopwatch.Stop()
         Pop-Location
@@ -83,14 +65,9 @@ foreach ($zipFile in $zipFiles) {
     Remove-Item -LiteralPath $suiteDir -Recurse -Force -ErrorAction SilentlyContinue
 
     $duration = [int][Math]::Floor($stopwatch.Elapsed.TotalSeconds)
-    $results.Add([pscustomobject]@{
-        Name = $suiteName
-        ExitCode = $suiteExitCode
-        Duration = $duration
-    })
+    $results.Add([pscustomobject]@{ Name = $suiteName; ExitCode = $suiteExitCode; Duration = $duration })
 
     if ($suiteExitCode -ne 0) {
-        $failCount++
         Write-Host "----- FAIL $suiteName - exit code $suiteExitCode - ${duration}s -----"
     } else {
         Write-Host "----- PASS $suiteName - ${duration}s -----"
@@ -98,9 +75,6 @@ foreach ($zipFile in $zipFiles) {
 
     Write-Host "========================= END $suiteName ==============================="
 }
-
-# Restore so Helix post-commands write artifacts to the expected root
-$env:HELIX_WORKITEM_UPLOAD_ROOT = $originalUploadRoot
 
 Write-Host ""
 Write-Host "=== Batch Summary ==="
@@ -113,9 +87,9 @@ foreach ($entry in $results) {
 }
 
 $suiteCount = $results.Count
-$passCount = $suiteCount - $failCount
+$failCount = @($results | Where-Object { $_.ExitCode -ne 0 }).Count
 Write-Host ""
-Write-Host "Total: $suiteCount | Passed: $passCount | Failed: $failCount"
+Write-Host "Total: $suiteCount | Passed: $($suiteCount - $failCount) | Failed: $failCount"
 
 if ($failCount -ne 0) {
     exit 1

@@ -46,15 +46,15 @@
 
     <!-- Per-batch Helix timeout knobs. The minimum must exceed the per-suite xharness
          timeout (01:30:00 in innerloop, 04:00:00 in outerloop; see WasmXHarnessTestsTimeout
-         in eng/testing/tests.wasm.targets) so a solo batch is bounded by the suite's own
-         timeout rather than hard-killed by Helix before xharness uploads logs. MaximumMinutes
-         stays below the AzDO outerloop job timeout (minus build/send overhead) so the
-         synchronous send-to-Helix wait cannot outlast the job. -->
+         in eng/testing/tests.wasm.targets) by ~30 minutes so a solo or small batch where one
+         suite times out still finishes its remaining work and uploads xharness logs before
+         Helix kills the work item. MaximumMinutes stays below the AzDO outerloop job timeout
+         (minus build/send overhead) so the synchronous send-to-Helix wait cannot outlast the job. -->
     <_IsOuterloopTestScope Condition="'$(TestScope)' == 'outerloop' or '$(TestScope)' == 'all'">true</_IsOuterloopTestScope>
     <_WasmBatchMinutesPerSuite Condition="'$(_WasmBatchMinutesPerSuite)' == '' and '$(_IsOuterloopTestScope)' == 'true'">40</_WasmBatchMinutesPerSuite>
     <_WasmBatchMinutesPerSuite Condition="'$(_WasmBatchMinutesPerSuite)' == ''">20</_WasmBatchMinutesPerSuite>
     <_WasmBatchMinimumMinutes Condition="'$(_WasmBatchMinimumMinutes)' == '' and '$(_IsOuterloopTestScope)' == 'true'">270</_WasmBatchMinimumMinutes>
-    <_WasmBatchMinimumMinutes Condition="'$(_WasmBatchMinimumMinutes)' == ''">95</_WasmBatchMinimumMinutes>
+    <_WasmBatchMinimumMinutes Condition="'$(_WasmBatchMinimumMinutes)' == ''">120</_WasmBatchMinimumMinutes>
     <_WasmBatchMaximumMinutes Condition="'$(_WasmBatchMaximumMinutes)' == '' and '$(_IsOuterloopTestScope)' == 'true'">300</_WasmBatchMaximumMinutes>
     <_WasmBatchMaximumMinutes Condition="'$(_WasmBatchMaximumMinutes)' == ''">1439</_WasmBatchMaximumMinutes>
 
@@ -429,11 +429,12 @@
              Condition="'@(_WasmUniqueBatchId)' != ''" />
     <Copy SourceFiles="@(_WasmGroupedItem)"
           DestinationFolder="$(_WasmBatchStagingRoot)batch-%(BatchId)/"
+          UseHardlinksIfPossible="true"
           Condition="'@(_WasmGroupedItem)' != ''" />
     <Copy SourceFiles="$(RepositoryEngineeringDir)testing/WasmBatchRunner.sh"
           DestinationFolder="$(_WasmBatchStagingRoot)batch-%(_WasmUniqueBatchId.Identity)/"
           Condition="'$(WindowsShell)' != 'true' and '@(_WasmUniqueBatchId)' != ''" />
-    <Copy SourceFiles="$(RepositoryEngineeringDir)testing/WasmBatchRunner.cmd;$(RepositoryEngineeringDir)testing/WasmBatchRunner.ps1"
+    <Copy SourceFiles="$(RepositoryEngineeringDir)testing/WasmBatchRunner.ps1"
           DestinationFolder="$(_WasmBatchStagingRoot)batch-%(_WasmUniqueBatchId.Identity)/"
           Condition="'$(WindowsShell)' == 'true' and '@(_WasmUniqueBatchId)' != ''" />
 
@@ -460,7 +461,7 @@
            Text="WasmBatchLibraryTests: expected HelixCommand to contain 'call RunTests.cmd'. Got: $(HelixCommand)" />
     <PropertyGroup>
       <_WasmBatchHelixCommand Condition="'$(WindowsShell)' != 'true'">$(HelixCommand.Replace('./RunTests.sh', 'chmod +x WasmBatchRunner.sh &amp;&amp; ./WasmBatchRunner.sh'))</_WasmBatchHelixCommand>
-      <_WasmBatchHelixCommand Condition="'$(WindowsShell)' == 'true'">$(HelixCommand.Replace('call RunTests.cmd', 'call WasmBatchRunner.cmd'))</_WasmBatchHelixCommand>
+      <_WasmBatchHelixCommand Condition="'$(WindowsShell)' == 'true'">$(HelixCommand.Replace('call RunTests.cmd', 'powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File WasmBatchRunner.ps1'))</_WasmBatchHelixCommand>
     </PropertyGroup>
 
     <ItemGroup>

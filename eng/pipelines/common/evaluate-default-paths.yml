@@ -336,6 +336,15 @@ jobs:
       include:
       - ${{ parameters._const_paths._wasm_chrome }}
 
+    # Browser version bumps and browser runner / Helix batching infrastructure
+    - subset: wasm_browser_infra
+      include:
+      - ${{ parameters._const_paths._wasm_chrome }}
+      - eng/testing/WasmBatchRunner*
+      - eng/testing/WasmRunnerTemplate*
+      - src/libraries/sendtohelix-browser.targets
+      - src/tasks/HelixTestTasks/*
+
     # anything other than mono, or wasm specific paths
     - subset: non_mono_and_wasm
       exclude:
