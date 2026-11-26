@@ -40,7 +40,7 @@ jobs:
       timeoutInMinutes: 240
       helixQueues:
         - ubuntu.2604.amd64.android.24.open
-        - ubuntu.2604.amd64.android.29.open
+        - ubuntu.2204.amd64.android.24.open
       # extra steps, run tests
       postBuildSteps:
         - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
@@ -81,7 +81,7 @@ jobs:
       timeoutInMinutes: 360
       helixQueues:
         - ubuntu.2604.amd64.android.24.open
-        - ubuntu.2604.amd64.android.29.open
+        - ubuntu.2204.amd64.android.24.open
       extraVariablesTemplates:
         - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
           parameters:
@@ -119,7 +119,7 @@ jobs:
       timeoutInMinutes: 240
       helixQueues:
         - ubuntu.2604.amd64.android.24.open
-        - ubuntu.2604.amd64.android.29.open
+        - ubuntu.2204.amd64.android.24.open
       # extra steps, run tests
       postBuildSteps:
         - template: /eng/pipelines/libraries/helix.yml
@@ -156,7 +156,7 @@ jobs:
       timeoutInMinutes: 240
       helixQueues:
         - ubuntu.2604.amd64.android.24.open
-        - ubuntu.2604.amd64.android.29.open
+        - ubuntu.2204.amd64.android.24.open
       # extra steps, run tests
       postBuildSteps:
         - template: /eng/pipelines/libraries/helix.yml
