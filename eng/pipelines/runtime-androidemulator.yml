@@ -20,6 +20,7 @@ extends:
         - template: /eng/common/core-templates/job/helix-job-monitor.yml
           parameters:
             helixAccessToken: $(HelixApiAccessToken)
+            helixBaseUri: https://helix.int-dot.net/
             timeoutInMinutes: 540
             allowNoHelixJobs: true
 

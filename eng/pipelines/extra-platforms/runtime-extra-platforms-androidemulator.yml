@@ -16,7 +16,6 @@ jobs:
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
-    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     buildConfig: Release
     runtimeFlavor: coreclr
     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
@@ -39,6 +38,9 @@ jobs:
       nameSuffix: AllSubsets_NativeAOT_RuntimeTests
       buildArgs: -s clr.alljits+clr.tools+clr.nativeaotruntime+clr.nativeaotlibs+libs -c $(_BuildConfig)
       timeoutInMinutes: 240
+      helixQueues:
+        - ubuntu.2604.amd64.android.24.open
+        - ubuntu.2604.amd64.android.29.open
       # extra steps, run tests
       postBuildSteps:
         - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
@@ -47,6 +49,7 @@ jobs:
             testBuildArgs: nativeaot tree nativeaot/SmokeTests /p:BuildNativeAOTRuntimePack=true
             testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
             useHelixMonitor: ${{ parameters.useHelixMonitor }}
+            extraHelixArguments: /p:HelixBaseUri=https://helix.int-dot.net/
       extraVariablesTemplates:
         - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
 
@@ -56,7 +59,6 @@ jobs:
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
-    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     buildConfig: Release
     runtimeFlavor: coreclr
     platforms:
@@ -77,6 +79,9 @@ jobs:
       nameSuffix: AllSubsets_CoreCLR_RuntimeTests
       buildArgs: -s clr+libs -c $(_BuildConfig)
       timeoutInMinutes: 360
+      helixQueues:
+        - ubuntu.2604.amd64.android.24.open
+        - ubuntu.2604.amd64.android.29.open
       extraVariablesTemplates:
         - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
           parameters:
@@ -87,6 +92,7 @@ jobs:
             creator: dotnet-bot
             testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
             useHelixMonitor: ${{ parameters.useHelixMonitor }}
+            extraHelixArguments: /p:HelixBaseUri=https://helix.int-dot.net/
 
 #
 # Android emulators
@@ -95,7 +101,6 @@ jobs:
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
-    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
     buildConfig: Release
     runtimeFlavor: coreclr
     platforms:
@@ -112,6 +117,9 @@ jobs:
       isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
       buildArgs: -s clr.runtime+clr.alljits+clr.corelib+clr.nativecorelib+clr.tools+clr.packages+libs+libs.tests+host+packs -c $(_BuildConfig) /p:ArchiveTests=true $(_runSmokeTestsOnlyArg)
       timeoutInMinutes: 240
+      helixQueues:
+        - ubuntu.2604.amd64.android.24.open
+        - ubuntu.2604.amd64.android.29.open
       # extra steps, run tests
       postBuildSteps:
         - template: /eng/pipelines/libraries/helix.yml
@@ -119,6 +127,7 @@ jobs:
             creator: dotnet-bot
             testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
             useHelixMonitor: ${{ parameters.useHelixMonitor }}
+            extraHelixArguments: /p:HelixBaseUri=https://helix.int-dot.net/
 
 #
 # Android arm64 devices and x64 emulators
@@ -127,7 +136,6 @@ jobs:
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
-    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
     buildConfig: Release
     runtimeFlavor: coreclr
     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
@@ -146,6 +154,9 @@ jobs:
       isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
       buildArgs: -s clr.aot+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:UseNativeAOTRuntime=true /p:RuntimeFlavor=coreclr /p:TestNativeAOT=true
       timeoutInMinutes: 240
+      helixQueues:
+        - ubuntu.2604.amd64.android.24.open
+        - ubuntu.2604.amd64.android.29.open
       # extra steps, run tests
       postBuildSteps:
         - template: /eng/pipelines/libraries/helix.yml
@@ -153,3 +164,4 @@ jobs:
             creator: dotnet-bot
             testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
             useHelixMonitor: ${{ parameters.useHelixMonitor }}
+            extraHelixArguments: /p:HelixBaseUri=https://helix.int-dot.net/
