@@ -24,6 +24,10 @@
        so the leg runs with full ICU globalization. -->
   <PropertyGroup>
     <InvariantGlobalization Condition="'$(InvariantGlobalization)' == ''">false</InvariantGlobalization>
+    <!-- Keep function names in the test host so wasmtime backtraces stay readable in test logs,
+         but drop the runtime pack's DWARF. -->
+    <WasmNativeStrip Condition="'$(WasmNativeStrip)' == ''">false</WasmNativeStrip>
+    <WasmNativeDebugSymbols Condition="'$(WasmNativeDebugSymbols)' == ''">false</WasmNativeDebugSymbols>
   </PropertyGroup>
 
   <!-- Same opt-in as Apple mobile (tests.mobile.targets). These switches are substituted at trim
