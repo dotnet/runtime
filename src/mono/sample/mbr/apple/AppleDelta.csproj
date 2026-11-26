@@ -5,7 +5,6 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <RuntimeIdentifier>$(TargetOS)-$(TargetArchitecture)</RuntimeIdentifier>
     <DefineConstants Condition="'$(ArchiveTests)' == 'true'">$(DefineConstants);CI_TEST</DefineConstants>
-    <MonoForceInterpreter>true</MonoForceInterpreter>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
   </PropertyGroup>
 
@@ -27,7 +26,6 @@
     <DevTeamProvisioning Condition="'$(TargetOS)' == 'maccatalyst' and '$(DevTeamProvisioning)' == ''">-</DevTeamProvisioning>
   </PropertyGroup>
 
-  <Import Project="$(MonoProjectRoot)\msbuild\common\MonoAOTCompiler.props" />
   <UsingTask TaskName="AppleAppBuilderTask"
              AssemblyFile="$(AppleAppBuilderTasksAssemblyPath)" />
 
@@ -36,7 +34,6 @@
       <AppDir>$(MSBuildThisFileDirectory)$(PublishDir)\app</AppDir>
       <IosSimulator Condition="'$(TargetsiOSSimulator)' == 'true'">iPhone 11</IosSimulator>
       <Optimized Condition="'$(Configuration)' == 'Release'">True</Optimized>
-      <RunAOTCompilation Condition="('$(TargetsMacCatalyst)' == 'false' and '$(IosSimulator)' == '') or '$(ForceAOT)' == 'true'">true</RunAOTCompilation>
     </PropertyGroup>
 
     <Error Condition="'$(TargetOS)' == ''" Text="The TargetOS property must be set outside the project file" />
@@ -44,24 +41,21 @@
     <RemoveDir Directories="$(AppDir)" />
 
     <ItemGroup>
-      <BundleAssemblies Condition="'$(RunAOTCompilation)' != 'true'" Include="$(MSBuildThisFileDirectory)$(PublishDir)\*.dll" />
+      <BundleAssemblies Include="$(MSBuildThisFileDirectory)$(PublishDir)\*.dll" />
     </ItemGroup>
 
     <AppleAppBuilderTask
         TargetOS="$(TargetOS)"
         Arch="$(TargetArchitecture)"
         ProjectName="AppleDelta"
-        MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)runtimes\$(TargetOS)-$(TargetArchitecture)\native\include\mono-2.0"
         Assemblies="@(BundleAssemblies)"
-	NativeMainSource="$(MSBuildThisFileDirectory)\main.m"
+        NativeMainSource="$(MSBuildThisFileDirectory)\main.m"
         MainLibraryFileName="AppleDelta.dll"
         GenerateXcodeProject="True"
         BuildAppBundle="True"
         DevTeamProvisioning="$(DevTeamProvisioning)"
         OutputDirectory="$(AppDir)"
         Optimized="$(Optimized)"
-        ForceAOT="$(ForceAOT)"
-        ForceInterpreter="$(MonoForceInterpreter)"
         AppDir="$(MSBuildThisFileDirectory)$(PublishDir)">
         <Output TaskParameter="AppBundlePath" PropertyName="AppBundlePath" />
         <Output TaskParameter="XcodeProjectPath" PropertyName="XcodeProjectPath" />

@@ -16,7 +16,6 @@ parameters:
         eng/testing/workloads-browser.targets
         eng/testing/workloads-testing.targets
         eng/testing/workloads-wasi.targets
-        eng/testing/workloads-wasm.targets
         src/libraries/sendtohelix-browser.targets
         src/libraries/sendtohelix-wasi.targets
         src/libraries/sendtohelix-wasm.targets
@@ -233,15 +232,12 @@ jobs:
       - eng/testing/workloads-browser.targets
       - eng/testing/workloads-testing.targets
       - eng/testing/workloads-wasi.targets
-      - eng/testing/workloads-wasm.targets
       - src/installer/pkg/sfx/Microsoft.NETCore.App/*
       - src/libraries/sendtohelix*
       - src/libraries/System.Net.WebSockets.Client/*
       - src/libraries/System.Runtime.InteropServices/*
       - src/libraries/System.Runtime.InteropServices.JavaScript/*
       - src/mono/mono/*
-      - src/mono/mono.proj
-      - src/mono/monoaotcross.proj
       - src/mono/nuget/Microsoft.NET.Runtime.MonoAOTCompiler.Task/*
       - src/mono/nuget/Microsoft.NET.Runtime.MonoTargets.Sdk/*
       - src/mono/nuget/Microsoft.NET.Runtime.WebAssembly.Sdk/*
@@ -314,7 +310,6 @@ jobs:
       - eng/testing/workloads-browser.targets
       - eng/testing/workloads-testing.targets
       - eng/testing/workloads-wasi.targets
-      - eng/testing/workloads-wasm.targets
       - src/mono/mono/component/mini-wasm-debugger.c
       - src/mono/browser/debugger/*
       - src/mono/wasm/host/*

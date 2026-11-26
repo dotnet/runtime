@@ -125,7 +125,7 @@ extends:
           - iossimulator_arm64
           jobParameters:
             nameSuffix: Diagnostics_CoreCLR
-            buildArgs: -s clr+libs+packs.product -c $(_BuildConfig) /p:UseMonoRuntime=false /p:UseNativeAOTRuntime=false /p:UsePortableRuntimePack=false /p:DotNetBuildTests=false
+            buildArgs: -s clr+libs+packs.product -c $(_BuildConfig) /p:UseNativeAOTRuntime=false /p:UsePortableRuntimePack=false /p:DotNetBuildTests=false
             timeoutInMinutes: 300
             postBuildSteps:
             - template: /eng/pipelines/common/upload-artifact-step.yml

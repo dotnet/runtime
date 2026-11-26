@@ -87,7 +87,6 @@ jobs:
           /p:Configuration=$(_BuildConfig)
           /p:TestUsingWorkloads=true
           /p:InstallWorkloadForTesting=true
-          /p:WasmSkipMissingRuntimePackBuild=true
           /p:PreparePackagesForWorkloadInstall=false
           /p:WorkloadsTestPreviousVersions=$(workloadsTestPreviousVersionsVar)
           /p:RuntimeFlavor=CoreCLR

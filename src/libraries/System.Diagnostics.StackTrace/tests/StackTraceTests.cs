@@ -754,12 +754,12 @@ namespace System.Diagnostics.Tests
         }
 
         // Move test case back into Ctor_Async_TestData once enabled.
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsRuntimeAsyncSupported))]
+        [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/131123", typeof(PlatformDetection), nameof(PlatformDetection.IsCoreClrInterpreter))]
         public Task ToString_Async_ThrowsSoonValueTaskSource() =>
             ToString_Async(V2Methods.ThrowsSoonValueTaskSource, MethodExceptionStrings["ThrowsSoonValueTaskSource"]);
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsRuntimeAsyncSupported))]
+        [Theory]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsWasm))]
         [MemberData(nameof(Ctor_Async_TestData))]
         [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]

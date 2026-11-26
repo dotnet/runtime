@@ -1,25 +1,19 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <RuntimeFlavor Condition="'$(RuntimeFlavor)' == ''">Mono</RuntimeFlavor>
     <OutputType>Exe</OutputType>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <RuntimeIdentifier>android-$(TargetArchitecture)</RuntimeIdentifier>
     <SelfContained>true</SelfContained>
     <PublishTrimmed>true</PublishTrimmed>
     <TrimMode>Link</TrimMode>
-    <ForceAOT Condition="'$(ForceAOT)' == ''">false</ForceAOT>
-    <RunAOTCompilation Condition="'$(RunAOTCompilation)' == ''">$(ForceAOT)</RunAOTCompilation>
     <StripDebugSymbols Condition="'$(Configuration)' == 'Release'">true</StripDebugSymbols>
     <AppName>HelloAndroid</AppName>
     <MainLibraryFileName>$(AssemblyName).dll</MainLibraryFileName>
     <EnableDefaultAssembliesToBundle>true</EnableDefaultAssembliesToBundle>
-    <!-- With Mono AOT on Android we default to not using AOT data file optimization as it can degrade runtime performance for small binary size improvements. -->
-    <_UseAotDataFile Condition="'$(RunAOTCompilation)' == 'true'">false</_UseAotDataFile>
   </PropertyGroup>
 
   <ItemGroup>
-    <RuntimeComponents Condition="'$(RuntimeFlavor)' == 'Mono' and '$(DiagnosticPorts)' != ''" Include="diagnostics_tracing" />
-    <RuntimeHeaders Include="$(SharedNativeRoot)" Condition="'$(RuntimeFlavor)' != 'Mono'"/>
+    <RuntimeHeaders Include="$(SharedNativeRoot)"/>
   </ItemGroup>
 
   <Import Project="$(MonoProjectRoot)\msbuild\android\build\AndroidBuild.props" />

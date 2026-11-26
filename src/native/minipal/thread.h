@@ -46,7 +46,7 @@ inline size_t minipal_get_current_thread_id(void)
 }
 
 /**
- * Set the name of the specified thread.
+ * Set the name of the specified thread. Names longer than the platform limit are truncated.
  *
  * @param thread The thread for which to set the name.
  * @param name The desired name for the thread.

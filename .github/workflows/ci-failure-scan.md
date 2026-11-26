@@ -158,6 +158,11 @@ To suggest changes, edit this file or comment on the issues it files — the [`c
 
 The agent runs read-only. All writes go through `safe-outputs`.
 
+This scheduled scanner is runtime-KBE-only. It does not invoke the optional
+destination-routing or dnceng lookup sections in the shared KBE instructions,
+and it cannot draft or publish issues in `dotnet/dnceng`. Continue to handle
+infra-shaped noise through the existing scanner skip and tally rules.
+
 ## Hard rules — non-negotiable
 
 1. **All writes via `safe-outputs`.** No `issues: write`, no `contents: write`. Don't try to use `gh` to write. The only output is `create_issue`.
