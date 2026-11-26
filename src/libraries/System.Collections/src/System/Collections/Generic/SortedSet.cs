@@ -720,6 +720,11 @@ namespace System.Collections.Generic
         /// </remarks>
         internal int InternalIndexOf(T item)
         {
+            if (!IsWithinRange(item))
+            {
+                return -1;
+            }
+
             Node? current = root;
             int count = 0;
             while (current != null)
