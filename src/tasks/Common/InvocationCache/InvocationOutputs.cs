@@ -13,7 +13,7 @@ internal sealed class InvocationOutputs
     internal string? DirectoryPath { get; }
     internal string[] Files { get; }
 
-    private InvocationOutputs(string? directoryPath, string[] files)
+    internal InvocationOutputs(string? directoryPath, string[] files)
     {
         DirectoryPath = directoryPath;
         Files = files;

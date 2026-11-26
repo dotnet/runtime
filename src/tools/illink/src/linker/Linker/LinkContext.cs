@@ -33,6 +33,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Reflection;
 using ILLink.Shared;
 using ILLink.Shared.TypeSystemProxy;
@@ -474,7 +475,7 @@ namespace Mono.Linker
             {
                 if (IsCPPCLIAssembly(assembly.MainModule) && action != AssemblyAction.Copy && action != AssemblyAction.Skip)
                 {
-                    LogWarning($"Invalid assembly action '{action}' specified for assembly '{assembly.Name.Name}'. C++/CLI assemblies can only be copied or skipped.", 2106, GetAssemblyLocation(assembly));
+                    LogWarning($"Invalid assembly action '{action}' specified for assembly '{assembly.Name.Name}'. C++/CLI assemblies can only be copied or skipped.", 2106, GetMappedAssemblyLocation(assembly));
                     return AssemblyAction.Copy;
                 }
 
@@ -525,7 +526,7 @@ namespace Mono.Linker
 
                 if (args[1].Value is not string value || !value.Equals("True", StringComparison.OrdinalIgnoreCase))
                 {
-                    LogWarning(GetAssemblyLocation(assembly), DiagnosticId.InvalidIsTrimmableValue, args[1].Value.ToString() ?? "", assembly.Name.Name);
+                    LogWarning(GetMappedAssemblyLocation(assembly), DiagnosticId.InvalidIsTrimmableValue, args[1].Value.ToString() ?? "", assembly.Name.Name);
                     continue;
                 }
 
@@ -551,10 +552,64 @@ namespace Mono.Linker
 
             return null;
         }
+#endif
 
+        private List<(string Physical, string Logical)>? _pathMap;
+
+        private static StringComparison PathComparison => Path.DirectorySeparatorChar == '\\'
+            ? StringComparison.OrdinalIgnoreCase
+            : StringComparison.Ordinal;
+
+        internal void AddPathMap(string physicalPath, string logicalPath)
+        {
+            string physical = Path.GetFullPath(physicalPath).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            if (physical.Length == 0 || physical.Equals(Path.GetPathRoot(physical), PathComparison))
+                return;
+
+            string logical = logicalPath.Replace('\\', '/');
+            if (logical.Length > 0 && logical[logical.Length - 1] != '/')
+                logical += '/';
+
+            _pathMap ??= new List<(string Physical, string Logical)>();
+            _pathMap.Add((physical, logical));
+            _pathMap.Sort((left, right) => right.Physical.Length.CompareTo(left.Physical.Length));
+        }
+
+        internal string MapPath(string path)
+        {
+            if (_pathMap is null || _pathMap.Count == 0 || string.IsNullOrEmpty(path))
+                return path;
+
+            string fullPath;
+            try
+            {
+                fullPath = Path.GetFullPath(path).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            }
+            catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
+            {
+                return path;
+            }
+
+            foreach (var (physical, logical) in _pathMap)
+            {
+                if (fullPath.Equals(physical, PathComparison))
+                    return logical;
+                if (fullPath.StartsWith(physical + Path.DirectorySeparatorChar, PathComparison))
+                    return logical + fullPath.Substring(physical.Length + 1).Replace(Path.DirectorySeparatorChar, '/');
+            }
+
+            return path;
+        }
+
+#if !ILTRIM
         public string GetAssemblyLocation(AssemblyDefinition assembly)
         {
             return Resolver.GetAssemblyLocation(assembly);
+        }
+
+        internal string GetMappedAssemblyLocation(AssemblyDefinition assembly)
+        {
+            return MapPath(GetAssemblyLocation(assembly));
         }
 
         public IEnumerable<AssemblyDefinition> GetReferencedAssemblies()

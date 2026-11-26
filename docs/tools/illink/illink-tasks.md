@@ -57,10 +57,22 @@ Keep the cache and output directories separate: neither may equal or contain the
 For eligible cache-enabled invocations, overlap fails the task before output cleanup;
 it does not fall back to uncached linking.
 
-Eligible invocations use a key covering arguments, input-file and sidecar contents, the task
+Eligible invocations use a key covering task settings, ordered path inputs, input-file and sidecar contents, the task
 assembly, the selected dotnet host executable, and the entire ILLink assembly.
 File contents are hashed on every invocation. Linker changes invalidate the cache even when
 the module version ID (MVID), file length, and timestamp are unchanged.
+`SourceRoots` with stable `MappedPath` metadata allow equivalent relative layouts in different
+clones/worktrees to share a key and are forwarded to ILLink via `--pathmap` so linker diagnostic
+origins use the same logical prefixes and can be cached and replayed verbatim. Only known
+path-valued inputs and input/output identities are mapped for the key;
+external paths remain absolute and argument/search-directory order is preserved.
+Tool arguments retain the task's original input path values, independently of whether caching is enabled.
+Cache descriptions resolve relative paths against the caller's working directory and retain physical
+full paths; only key construction maps them to portable identities. Multiple roots, such as a checkout and a
+NuGet package directory, can be mapped independently. This does not change the working directory,
+mutate task inputs, or normalize bytes embedded in inputs or outputs. Without logical mappings, keys use
+physical paths and only hit at the same locations. Unsuitable symbols bypass caching without changing execution. Unsupported opaque extra arguments
+retain their original spelling.
 Bundled dependencies and configuration are not fingerprinted. Changes to those files require
 a cleared/isolated cache or disabled caching unless the linker binary also changes.
 
@@ -74,14 +86,41 @@ stream importance, stderr-as-error setting, and MSBuild warning policy apply on 
 without changing the cache key, so a cached warning can fail a build under `-warnaserror`.
 
 Caching is bypassed with a diagnostic for arbitrary `ExtraArgs`, custom steps/data,
-dependency-dump options, and explicit task environment overrides. Runtime's library-build
-arguments for link attributes, substitutions, and assembly search directories are supported.
-Their XML files and search-directory assembly candidates (including sidecars) are content-hashed,
-without changing assembly resolution. Other SDK options supplied through `ExtraArgs` remain unsupported.
+dependency-dump options, and explicit task environment overrides. The only supported
+`ExtraArgs` shape is `--ignore-link-attributes true` followed by zero or more
+`--link-attributes FILE`, `--substitutions FILE`, `-d DIRECTORY`, `--ignore-substitutions true|false`,
+or `--feature NAME true|false` options. Non-file option values and their ordering contribute to the key.
+Referenced files and search-directory assembly candidates are content-hashed, including shadowed candidates.
+Other options still run the linker normally, uncached.
+Arguments containing backslashes immediately before quotes also bypass caching because
+the supported tokenizer does not model the linker's escape rules.
 Inherited environment variables are not tracked; disable caching
 when they affect outputs or dependencies beyond the keyed inputs, or require tool-execution
 side effects such as startup hooks or profiling. Unreadable inputs or linker files also
-fall back to normal linking. See the
+fall back to normal linking.
+
+Roots without logical mappings are ignored, and invalid logical mappings, such as duplicate or
+inconsistent prefixes, are ignored entirely. Their paths keep physical identities, so entries are
+reused only at the same physical paths. Unsupported symbol emission bypasses caching.
+Additional modules are left to ILLink's existing failure behavior, and ordinary linked resources
+are covered by their stored metadata hashes. The unusual missing-resource-hash case is outside
+the supported dependency model. Path-shaped metadata assembly references also bypass caching because they
+can escape the declared search-directory inventory. Root and XML assembly-name strings are left to
+ILLink's existing unresolved-name handling.
+Portable PDB emission, including embedded PDBs, requires explicit `PreserveSymbolPaths=true`
+to share across locations; without it, emitted CodeView paths depend on the physical output
+directory, so the physical output directory is included in the key and entries only hit at the
+same output location. Existing physical symbol paths
+are covered by input content hashes, not rejected. Symbols-disabled inputs are not subject to
+symbol-format checks. Neither symbol preservation nor deterministic compiler paths are enabled
+automatically.
+SDK and runtime library targets initialize and forward the compiler's existing `@(SourceRoot)`
+items. Sharing across locations additionally requires stable logical `MappedPath` prefixes, normally supplied when
+`DeterministicSourcePaths=true`, such as deterministic CI builds; ordinary local SDK builds
+without usable mappings use path-dependent keys. These targets do not change how inputs are compiled.
+Normal runtime trimming uses structured task parameters
+and supported extra arguments; custom arguments and input/symbol eligibility checks can
+still cause a cache bypass. See the
 [cache design](../../design/tools/illink/task-cache.md) for identity and eligibility details.
 
 ### Cache maintenance
@@ -186,6 +225,18 @@ paths.
 ### RootDescriptorFiles
 
 A list of XML [descriptors](data-formats.md#descriptor-format) files specifying trimmer roots at a granular level.
+
+### SourceRoots
+
+Physical absolute roots for experimental cache identity. Pass
+`SourceRoots="@(SourceRoot)"` after running `InitializeSourceRootMappedPaths` to reuse the
+compiler's initialized source roots.
+
+Sharing across locations requires conventional `/_/`, `/_1/`, etc. logical prefixes that do not alias distinct files.
+Physically nested roots may use independent logical prefixes.
+Without those mappings the cache key uses physical paths.
+This parameter does not enable caching, change the tool's arguments or working directory,
+change compiler settings, or remap embedded paths in linker outputs.
 
 ## ILLink Task Customization
 

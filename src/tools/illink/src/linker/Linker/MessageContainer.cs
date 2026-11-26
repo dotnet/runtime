@@ -240,7 +240,7 @@ namespace Mono.Linker
                 return false;
 
             if (context.AssembliesWithGeneratedSingleWarning.Add(assemblyName))
-                context.LogWarning(context.GetAssemblyLocation(assembly), DiagnosticId.AssemblyProducedTrimWarnings, assemblyName);
+                context.LogWarning(context.GetMappedAssemblyLocation(assembly), DiagnosticId.AssemblyProducedTrimWarnings, assemblyName);
 
             return true;
         }

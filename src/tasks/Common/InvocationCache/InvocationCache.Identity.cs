@@ -37,29 +37,42 @@ internal sealed partial class InvocationCache
         using var data = new MemoryStream();
         using var writer = new BinaryWriter(data, Encoding.UTF8, leaveOpen: true);
         writer.Write("invocation-cache-key-v1");
-        writer.Write(Environment.CurrentDirectory);
         writer.Write(RuntimeInformation.OSDescription);
         writer.Write(RuntimeInformation.ProcessArchitecture.ToString());
         writer.Write(CultureInfo.CurrentCulture.Name);
         writer.Write(CultureInfo.CurrentUICulture.Name);
-        writer.Write(invocation.Context.Length);
-        foreach (string value in invocation.Context)
-            writer.Write(value);
+        writer.Write(invocation.Context.Count);
+        foreach (string? value in invocation.Context)
+        {
+            writer.Write(value is not null);
+            if (value is not null)
+                writer.Write(value);
+        }
+        writer.Write(invocation.Inputs.OrderedPaths.Count);
+        foreach (string path in invocation.Inputs.OrderedPaths)
+            writer.Write(invocation.MapPath(path));
         writer.Write(invocation.Outputs.DirectoryPath is not null);
         if (invocation.Outputs.DirectoryPath is not null)
-            writer.Write(invocation.Outputs.DirectoryPath);
+            writer.Write(invocation.MapPath(invocation.Outputs.DirectoryPath));
         writer.Write(invocation.Outputs.Files.Length);
-        foreach (string file in invocation.Outputs.Files)
-            writer.Write(file);
-        writer.Write(invocation.Inputs.Files.Length);
-        foreach (string input in invocation.Inputs.Files)
+        foreach (string output in invocation.Outputs.Files)
+            writer.Write(invocation.MapPath(output));
+        var inputs = new (string Path, string Identity)[invocation.Inputs.Files.Count];
+        int i = 0;
+        foreach (string path in invocation.Inputs.Files)
         {
-            writer.Write(input);
+            inputs[i++] = (path, invocation.MapPath(path));
+        }
+        Array.Sort(inputs, static (left, right) => StringComparer.Ordinal.Compare(left.Identity, right.Identity));
+        writer.Write(inputs.Length);
+        foreach (var input in inputs)
+        {
+            writer.Write(input.Identity);
             try
             {
-                using FileStream file = File.OpenRead(input);
+                using FileStream stream = File.OpenRead(input.Path);
                 writer.Write(true);
-                writer.Write(sha256.ComputeHash(file));
+                writer.Write(sha256.ComputeHash(stream));
             }
             catch (FileNotFoundException)
             {

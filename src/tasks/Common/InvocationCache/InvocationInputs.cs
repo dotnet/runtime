@@ -4,17 +4,20 @@
 #nullable enable
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 
 namespace Microsoft.NET.Build.Tasks;
 
 internal sealed class InvocationInputs
 {
-    internal string[] Files { get; }
+    internal IReadOnlyCollection<string> Files { get; }
+    internal IReadOnlyList<string> OrderedPaths { get; }
 
-    private InvocationInputs(string[] files)
+    internal InvocationInputs(IReadOnlyCollection<string> files, IReadOnlyList<string>? orderedPaths = null)
     {
         Files = files;
+        OrderedPaths = orderedPaths ?? Array.Empty<string>();
     }
 
     internal static InvocationInputs FromFiles(params string[] files) =>

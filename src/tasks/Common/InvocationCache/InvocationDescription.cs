@@ -3,18 +3,26 @@
 
 #nullable enable
 
+using System.Collections.Generic;
+
 namespace Microsoft.NET.Build.Tasks;
 
 internal sealed class InvocationDescription
 {
-    internal InvocationInputs Inputs { get; }
-    internal string[] Context { get; }
-    internal InvocationOutputs Outputs { get; }
+    private readonly SourceRootPathMap? _pathMap;
 
-    internal InvocationDescription(InvocationInputs inputs, string[] context, InvocationOutputs outputs)
+    internal InvocationInputs Inputs { get; }
+    internal InvocationOutputs Outputs { get; }
+    internal IReadOnlyList<string?> Context { get; }
+
+    internal InvocationDescription(InvocationInputs inputs, IReadOnlyList<string?> context, InvocationOutputs outputs,
+        SourceRootPathMap? pathMap = null)
     {
-        Inputs = inputs;
+        _pathMap = pathMap;
         Context = context;
+        Inputs = inputs;
         Outputs = outputs;
     }
+
+    internal string MapPath(string path) => _pathMap is null ? path : _pathMap.Map(path);
 }

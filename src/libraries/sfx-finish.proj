@@ -136,6 +136,7 @@
 
     <MakeDir Directories="$(SharedFrameworkAssembliesTrimDir)" />
     <ILLink AssemblyPaths="@(SharedFrameworkAssembly)"
+        SourceRoots="@(SourceRoot)"
         RootAssemblyNames="@(_SharedFrameworkRootAssemblyName)"
         OutputDirectory="$(SharedFrameworkAssembliesTrimDir)"
         ExtraArgs="$(SharedFrameworkILLinkArgs)"
