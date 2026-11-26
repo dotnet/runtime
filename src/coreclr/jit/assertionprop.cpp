@@ -2087,6 +2087,16 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
     if ((op1VN != op2VN) && !vnStore->IsVNConstant(op1VN) && !vnStore->IsVNConstant(op2VN) &&
         (optAssertionHasAssertionsForVN(op1VN) || optAssertionHasAssertionsForVN(op2VN)))
     {
+        // Relop VNs are canonical, so their operand order may differ from the tree's.
+        // RangeCheck only matches the local against op1 of these assertions, so keep
+        // the tree's operand order here.
+        if ((optConservativeNormalVN(relop->gtGetOp1()) == op2VN) &&
+            (optConservativeNormalVN(relop->gtGetOp2()) == op1VN))
+        {
+            std::swap(op1VN, op2VN);
+            relopFunc = ValueNumStore::SwapRelop(relopFunc);
+        }
+
         AssertionDsc   dsc = AssertionDsc::CreateRelopVN(this, relopFunc, op1VN, op2VN);
         AssertionIndex idx = optAddAssertion(dsc);
         optCreateComplementaryAssertion(idx);
