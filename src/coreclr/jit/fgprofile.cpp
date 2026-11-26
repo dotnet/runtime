@@ -438,7 +438,11 @@ public:
     void BuildSchemaElements(BasicBlock* block, Schema& schema) override;
     void Instrument(BasicBlock* block, Schema& schema, uint8_t* profileMemory) override;
 
-    static GenTree* CreateCounterIncrement(Compiler* comp, uint8_t* counterAddr, var_types countType);
+    static GenTree* GetProfileAddress(Compiler* comp, uint8_t* profileBase, size_t offset);
+    static GenTree* CreateCounterIncrement(Compiler* comp,
+                                           uint8_t*  counterBase,
+                                           size_t    counterOffset,
+                                           var_types countType);
 };
 
 //------------------------------------------------------------------------
@@ -578,20 +582,6 @@ void BlockCountInstrumentor::RelocateProbes()
 //
 void BlockCountInstrumentor::BuildSchemaElements(BasicBlock* block, Schema& schema)
 {
-    unsigned numCountersPerProbe = 1;
-
-    // When we have both interlocked and scalable profile modes enabled, we will
-    // count both ways, so allocate two count slots per probe.
-    //
-    if ((JitConfig.JitScalableProfiling() > 0) && (JitConfig.JitInterlockedProfiling() > 0))
-    {
-        numCountersPerProbe = 2;
-    }
-    else if (JitConfig.JitCounterPadding() > 0)
-    {
-        numCountersPerProbe = (unsigned)JitConfig.JitCounterPadding();
-    }
-
     // Remember the schema index for this block.
     //
     assert(block->bbCountSchemaIndex == -1);
@@ -604,7 +594,7 @@ void BlockCountInstrumentor::BuildSchemaElements(BasicBlock* block, Schema& sche
     assert((int)offset >= 0);
 
     ICorJitInfo::PgoInstrumentationSchema schemaElem;
-    schemaElem.Count               = numCountersPerProbe;
+    schemaElem.Count               = m_compiler->opts.compPgoCounterSlots;
     schemaElem.Other               = 0;
     schemaElem.InstrumentationKind = m_compiler->opts.compCollect64BitCounts
                                          ? ICorJitInfo::PgoInstrumentationKind::BasicBlockLongCount
@@ -641,11 +631,10 @@ void BlockCountInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8
     assert(block->bbCodeOffs == (IL_OFFSET)entry.ILOffset);
     assert((entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount) ||
            (entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockLongCount));
-    uint8_t* addrOfCurrentExecutionCount = entry.Offset + profileMemory;
-
 #ifdef DEBUG
-    if (JitConfig.JitPropagateSynthesizedCountsToProfileData() > 0)
+    if (m_compiler->fgShouldWriteSynthesizedCounts())
     {
+        uint8_t* addrOfCurrentExecutionCount = entry.Offset + profileMemory;
         // Write the current synthesized count as the profile data
         //
         weight_t blockWeight = block->bbWeight;
@@ -666,7 +655,7 @@ void BlockCountInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8
     var_types typ =
         entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount ? TYP_INT : TYP_LONG;
 
-    GenTree* incCount = CreateCounterIncrement(m_compiler, addrOfCurrentExecutionCount, typ);
+    GenTree* incCount = CreateCounterIncrement(m_compiler, profileMemory, entry.Offset, typ);
 
     if (block->HasFlag(BBF_TAILCALL_SUCCESSOR))
     {
@@ -700,20 +689,40 @@ void BlockCountInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8
 }
 
 //------------------------------------------------------------------------
+// BlockCountInstrumentor::GetProfileAddress: compute the address of a slot in the profile slab.
+//
+GenTree* BlockCountInstrumentor::GetProfileAddress(Compiler* comp, uint8_t* profileBase, size_t offset)
+{
+    if (!comp->compR2RPgoInstrumentation())
+    {
+        return comp->gtNewIconHandleNode(reinterpret_cast<size_t>(profileBase) + offset, GTF_ICON_BBC_PTR);
+    }
+
+    // The import cell is fixed up before this code runs. Only the pointer, not the counters, is invariant.
+    GenTree* cell = comp->gtNewIconHandleNode(reinterpret_cast<size_t>(profileBase), GTF_ICON_BBC_PTR);
+    GenTree* base = comp->gtNewIndir(TYP_I_IMPL, cell, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+    return offset == 0 ? base : comp->gtNewOperNode(GT_ADD, TYP_I_IMPL, base, comp->gtNewIconNode(offset));
+}
+
+//------------------------------------------------------------------------
 // BlockCountInstrumentor::CreateCounterIncrement: create a tree that increments a profile counter.
 //
 // Arguments:
 //   comp        - compiler instance
-//   counterAddr - address of counter to increment
+//   counterBase - profile slab, or the R2R import cell containing its address
+//   counterOffset - counter offset relative to the slab
 //   countType   - type of counter
 //
 // Returns:
 //   A node that increments the specified count.
 //
-GenTree* BlockCountInstrumentor::CreateCounterIncrement(Compiler* comp, uint8_t* counterAddr, var_types countType)
+GenTree* BlockCountInstrumentor::CreateCounterIncrement(Compiler* comp,
+                                                        uint8_t*  counterBase,
+                                                        size_t    counterOffset,
+                                                        var_types countType)
 {
-    const bool interlocked = JitConfig.JitInterlockedProfiling() > 0;
-    const bool scalable    = JitConfig.JitScalableProfiling() > 0;
+    const bool interlocked = comp->opts.compPgoInterlocked;
+    const bool scalable    = comp->opts.compPgoScalable;
 
     if (interlocked || scalable)
     {
@@ -722,7 +731,7 @@ GenTree* BlockCountInstrumentor::CreateCounterIncrement(Compiler* comp, uint8_t*
         if (interlocked)
         {
             // Form counter address
-            GenTree* addressNode = comp->gtNewIconHandleNode(reinterpret_cast<size_t>(counterAddr), GTF_ICON_BBC_PTR);
+            GenTree* addressNode = GetProfileAddress(comp, counterBase, counterOffset);
 
             // Interlocked increment
             result = comp->gtNewAtomicNode(GT_XADD, countType, addressNode, comp->gtNewIconNode(1, countType));
@@ -733,11 +742,11 @@ GenTree* BlockCountInstrumentor::CreateCounterIncrement(Compiler* comp, uint8_t*
             if (interlocked)
             {
                 assert(result != nullptr);
-                counterAddr += (countType == TYP_INT) ? 4 : 8;
+                counterOffset += (countType == TYP_INT) ? 4 : 8;
             }
 
             // Form counter address
-            GenTree* addressNode = comp->gtNewIconHandleNode(reinterpret_cast<size_t>(counterAddr), GTF_ICON_BBC_PTR);
+            GenTree* addressNode = GetProfileAddress(comp, counterBase, counterOffset);
 
             // Scalable increment
             GenTree* scalableNode = comp->gtNewHelperCallNode((countType == TYP_INT) ? CORINFO_HELP_COUNTPROFILE32
@@ -762,14 +771,19 @@ GenTree* BlockCountInstrumentor::CreateCounterIncrement(Compiler* comp, uint8_t*
 
     // Read Basic-Block count value
     GenTree* valueNode =
-        comp->gtNewIndOfIconHandleNode(countType, reinterpret_cast<size_t>(counterAddr), GTF_ICON_BBC_PTR);
+        comp->gtNewIndir(countType, GetProfileAddress(comp, counterBase, counterOffset), GTF_IND_NONFAULTING);
 
     // Increment value by 1
     GenTree* incValueNode = comp->gtNewOperNode(GT_ADD, countType, valueNode, comp->gtNewIconNode(1, countType));
 
     // Write new Basic-Block count value
-    GenTree* counterAddrNode = comp->gtNewIconHandleNode(reinterpret_cast<size_t>(counterAddr), GTF_ICON_BBC_PTR);
+    GenTree* counterAddrNode = GetProfileAddress(comp, counterBase, counterOffset);
     GenTree* updateNode      = comp->gtNewStoreIndNode(countType, counterAddrNode, incValueNode);
+    if (comp->compR2RPgoInstrumentation())
+    {
+        updateNode->gtFlags |= GTF_IND_NONFAULTING;
+        updateNode->gtFlags &= ~GTF_EXCEPT;
+    }
 
     return updateNode;
 }
@@ -1679,20 +1693,6 @@ void EfficientEdgeCountInstrumentor::RelocateProbes()
 //
 void EfficientEdgeCountInstrumentor::BuildSchemaElements(BasicBlock* block, Schema& schema)
 {
-    unsigned numCountersPerProbe = 1;
-
-    // When we have both interlocked and scalable profile modes enabled, we will
-    // count both ways, so allocate two count slots per probe.
-    //
-    if ((JitConfig.JitScalableProfiling() > 0) && (JitConfig.JitInterlockedProfiling() > 0))
-    {
-        numCountersPerProbe = 2;
-    }
-    else if (JitConfig.JitCounterPadding() > 0)
-    {
-        numCountersPerProbe = (unsigned)JitConfig.JitCounterPadding();
-    }
-
     // Walk the bbSparseProbeList, emitting one schema element per...
     //
     for (Probe* probe = (Probe*)block->bbSparseProbeList; probe != nullptr; probe = probe->next)
@@ -1719,7 +1719,7 @@ void EfficientEdgeCountInstrumentor::BuildSchemaElements(BasicBlock* block, Sche
         int32_t targetKey = EfficientEdgeCountBlockToKey(target);
 
         ICorJitInfo::PgoInstrumentationSchema schemaElem;
-        schemaElem.Count               = numCountersPerProbe;
+        schemaElem.Count               = m_compiler->opts.compPgoCounterSlots;
         schemaElem.Other               = targetKey;
         schemaElem.InstrumentationKind = m_compiler->opts.compCollect64BitCounts
                                              ? ICorJitInfo::PgoInstrumentationKind::EdgeLongCount
@@ -1746,8 +1746,8 @@ void EfficientEdgeCountInstrumentor::Instrument(BasicBlock* block, Schema& schem
 {
     // What type of probe(s) will we emit?
     //
-    const bool interlocked    = JitConfig.JitInterlockedProfiling() > 0;
-    const bool scalable       = JitConfig.JitScalableProfiling() > 0;
+    const bool interlocked    = m_compiler->opts.compPgoInterlocked;
+    const bool scalable       = m_compiler->opts.compPgoScalable;
     const bool unsynchronized = !interlocked && !scalable;
     const bool dual           = interlocked && scalable;
 
@@ -1787,11 +1787,10 @@ void EfficientEdgeCountInstrumentor::Instrument(BasicBlock* block, Schema& schem
         assert((entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeIntCount) ||
                (entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeLongCount));
 
-        uint8_t* addrOfCurrentExecutionCount = profileMemory + entry.Offset;
-
 #ifdef DEBUG
-        if (JitConfig.JitPropagateSynthesizedCountsToProfileData() > 0)
+        if (m_compiler->fgShouldWriteSynthesizedCounts())
         {
+            uint8_t* addrOfCurrentExecutionCount = profileMemory + entry.Offset;
             // Write the current synthesized count as the profile data
             //
             // Todo: handle pseudo edges!
@@ -1848,7 +1847,7 @@ void EfficientEdgeCountInstrumentor::Instrument(BasicBlock* block, Schema& schem
             entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeIntCount ? TYP_INT : TYP_LONG;
 
         GenTree* incCount =
-            BlockCountInstrumentor::CreateCounterIncrement(m_compiler, addrOfCurrentExecutionCount, typ);
+            BlockCountInstrumentor::CreateCounterIncrement(m_compiler, profileMemory, entry.Offset, typ);
         m_compiler->fgNewStmtAtBeg(instrumentedBlock, incCount);
 
         if (probe->kind != EdgeKind::Duplicate)
@@ -1993,7 +1992,7 @@ public:
         ICorJitInfo::PgoInstrumentationSchema schemaElem = {};
         schemaElem.Count                                 = 1;
         schemaElem.Other = isTypeHistogram ? ICorJitInfo::HandleHistogram32::CLASS_FLAG : 0;
-        if (call->IsVirtualStub())
+        if (call->IsVirtualStub() || call->IsR2RInterfaceLdvirtftn())
         {
             schemaElem.Other |= ICorJitInfo::HandleHistogram32::INTERFACE_FLAG;
         }
@@ -2089,8 +2088,8 @@ public:
         //
 
         // Read histograms
-        void* typeHistogram   = nullptr;
-        void* methodHistogram = nullptr;
+        const ICorJitInfo::PgoInstrumentationSchema* typeHistogram   = nullptr;
+        const ICorJitInfo::PgoInstrumentationSchema* methodHistogram = nullptr;
 
         bool is32;
         ReadHistogramAndAdvance(call->gtHandleHistogramProfileCandidateInfo->ilOffset, &typeHistogram, &methodHistogram,
@@ -2131,8 +2130,12 @@ public:
 
         if (typeHistogram != nullptr)
         {
-            GenTree* const tmpNode          = compiler->gtNewLclvNode(tmpNum, TYP_REF);
-            GenTree* const classProfileNode = compiler->gtNewIconNode((ssize_t)typeHistogram, TYP_I_IMPL);
+            GenTree* const tmpNode = compiler->gtNewLclvNode(tmpNum, TYP_REF);
+            GenTree* const classProfileNode =
+                compiler->compR2RPgoInstrumentation()
+                    ? BlockCountInstrumentor::GetProfileAddress(compiler, m_profileMemory, typeHistogram->Offset)
+                    : compiler->gtNewIconNode(reinterpret_cast<ssize_t>(m_profileMemory + typeHistogram->Offset),
+                                              TYP_I_IMPL);
             helperCallNode =
                 compiler->gtNewHelperCallNode(is32 ? CORINFO_HELP_CLASSPROFILE32 : CORINFO_HELP_CLASSPROFILE64,
                                               TYP_VOID, tmpNode, classProfileNode);
@@ -2140,8 +2143,12 @@ public:
 
         if (methodHistogram != nullptr)
         {
-            GenTree* const tmpNode           = compiler->gtNewLclvNode(tmpNum, TYP_REF);
-            GenTree* const methodProfileNode = compiler->gtNewIconNode((ssize_t)methodHistogram, TYP_I_IMPL);
+            GenTree* const tmpNode = compiler->gtNewLclvNode(tmpNum, TYP_REF);
+            GenTree* const methodProfileNode =
+                compiler->compR2RPgoInstrumentation()
+                    ? BlockCountInstrumentor::GetProfileAddress(compiler, m_profileMemory, methodHistogram->Offset)
+                    : compiler->gtNewIconNode(reinterpret_cast<ssize_t>(m_profileMemory + methodHistogram->Offset),
+                                              TYP_I_IMPL);
 
             GenTree* methodProfileCallNode;
             if (call->IsDelegateInvoke())
@@ -2188,7 +2195,10 @@ public:
     }
 
 private:
-    void ReadHistogramAndAdvance(IL_OFFSET ilOffset, void** typeHistogram, void** methodHistogram, bool* histogramIs32)
+    void ReadHistogramAndAdvance(IL_OFFSET                                     ilOffset,
+                                 const ICorJitInfo::PgoInstrumentationSchema** typeHistogram,
+                                 const ICorJitInfo::PgoInstrumentationSchema** methodHistogram,
+                                 bool*                                         histogramIs32)
     {
         if (*m_currentSchemaIndex >= (int)m_schema.size())
         {
@@ -2214,7 +2224,7 @@ private:
         assert((tableEntry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::HandleHistogramTypes) ||
                (tableEntry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::HandleHistogramMethods));
 
-        void** outHistogram;
+        const ICorJitInfo::PgoInstrumentationSchema** outHistogram;
         if (tableEntry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::HandleHistogramTypes)
         {
             assert(*typeHistogram == nullptr);
@@ -2226,23 +2236,17 @@ private:
             outHistogram = methodHistogram;
         }
 
-        *outHistogram  = &m_profileMemory[countEntry.Offset];
+        *outHistogram  = &countEntry;
         *histogramIs32 = is32;
 
 #ifdef DEBUG
         if (is32)
         {
-            ICorJitInfo::HandleHistogram32* h32 =
-                reinterpret_cast<ICorJitInfo::HandleHistogram32*>(&m_profileMemory[countEntry.Offset]);
-            assert(reinterpret_cast<uint8_t*>(&h32->Count) == &m_profileMemory[countEntry.Offset]);
-            assert(reinterpret_cast<uint8_t*>(h32->HandleTable) == &m_profileMemory[tableEntry.Offset]);
+            assert(tableEntry.Offset == countEntry.Offset + offsetof(ICorJitInfo::HandleHistogram32, HandleTable));
         }
         else
         {
-            ICorJitInfo::HandleHistogram64* h64 =
-                reinterpret_cast<ICorJitInfo::HandleHistogram64*>(&m_profileMemory[countEntry.Offset]);
-            assert(reinterpret_cast<uint8_t*>(&h64->Count) == &m_profileMemory[countEntry.Offset]);
-            assert(reinterpret_cast<uint8_t*>(h64->HandleTable) == &m_profileMemory[tableEntry.Offset]);
+            assert(tableEntry.Offset == countEntry.Offset + offsetof(ICorJitInfo::HandleHistogram64, HandleTable));
         }
 #endif
 
@@ -2296,9 +2300,6 @@ public:
         assert(*m_currentSchemaIndex + 2 <= (int)m_schema.size());
         const ICorJitInfo::PgoInstrumentationSchema& tableEntry = m_schema[*m_currentSchemaIndex + 1];
         assert((tableEntry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::ValueHistogram));
-        uint8_t* hist = &m_profileMemory[countEntry.Offset];
-        assert(hist != nullptr);
-
         *m_currentSchemaIndex += 2;
 
         GenTree** lenArgRef = &node->AsCall()->gtArgs.GetUserArgByIndex(2)->EarlyNodeRef();
@@ -2319,7 +2320,7 @@ public:
         GenTree*       storeLenToTemp = compiler->gtNewTempStore(lenTmpNum, *lenArgRef);
         GenTree*       lengthLocal    = compiler->gtNewLclvNode(lenTmpNum, genActualType(*lenArgRef));
         GenTreeOp* lengthNode = compiler->gtNewOperNode(GT_COMMA, lengthLocal->TypeGet(), storeLenToTemp, lengthLocal);
-        GenTree*   histNode   = compiler->gtNewIconNode(reinterpret_cast<ssize_t>(hist), TYP_I_IMPL);
+        GenTree*   histNode   = BlockCountInstrumentor::GetProfileAddress(compiler, m_profileMemory, countEntry.Offset);
         unsigned   helper     = is32 ? CORINFO_HELP_VALUEPROFILE32 : CORINFO_HELP_VALUEPROFILE64;
         GenTreeCall* helperCallNode = compiler->gtNewHelperCallNode(helper, TYP_VOID, lengthNode, histNode);
 
@@ -2419,6 +2420,12 @@ void HandleHistogramProbeInstrumentor::BuildSchemaElements(BasicBlock* block, Sc
     for (Statement* const stmt : block->Statements())
     {
         visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
+    }
+
+    // Early block splitting can copy the flag into blocks without a probe.
+    if (block->bbHandleHistogramSchemaIndex == (int)schema.size())
+    {
+        block->RemoveFlags(BBF_HAS_HISTOGRAM_PROFILE);
     }
 }
 
@@ -2531,6 +2538,26 @@ void ValueInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8_t* p
 }
 
 //------------------------------------------------------------------------
+// compR2RPgoInstrumentation: whether counter addresses are resolved through R2R imports.
+//
+bool Compiler::compR2RPgoInstrumentation() const
+{
+#ifdef FEATURE_R2R_PGO
+    return IsAot() && opts.IsInstrumented();
+#else
+    return false;
+#endif // FEATURE_R2R_PGO
+}
+
+#ifdef DEBUG
+bool Compiler::fgShouldWriteSynthesizedCounts() const
+{
+    // R2R profile addresses are symbolic imports, not writable storage at compile time.
+    return (JitConfig.JitPropagateSynthesizedCountsToProfileData() > 0) && !compR2RPgoInstrumentation();
+}
+#endif // DEBUG
+
+//------------------------------------------------------------------------
 // fgPrepareToInstrumentMethod: prepare for instrumentation
 //
 // Notes:
@@ -2548,18 +2575,30 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
+    const bool r2rPgo = compR2RPgoInstrumentation();
+    const bool prejit = IsAot();
+
+    // Browser R2R uses direct single-threaded updates, and its profiles merge one count per edge.
+    opts.compPgoInterlocked  = !r2rPgo && (JitConfig.JitInterlockedProfiling() > 0);
+    opts.compPgoScalable     = !r2rPgo && (JitConfig.JitScalableProfiling() > 0);
+    opts.compPgoCounterSlots = r2rPgo ? 1 : static_cast<unsigned>(max(1, JitConfig.JitCounterPadding()));
+    if (opts.compPgoInterlocked && opts.compPgoScalable)
+    {
+        opts.compPgoCounterSlots = 2;
+    }
+    opts.compPgoMinimal =
+        prejit ? (JitConfig.JitMinimalPrejitProfiling() > 0) : (JitConfig.JitMinimalJitProfiling() > 0);
+
     // Choose instrumentation technology.
     //
     // We enable edge profiling by default, except when:
     //
     // * disabled by option
-    // * we are AOT compiling
+    // * we are AOT compiling without R2R instrumentation support
     //
-    const bool edgesEnabled    = (JitConfig.JitEdgeProfiling() > 0);
-    const bool prejit          = IsAot();
-    const bool useEdgeProfiles = edgesEnabled && !prejit;
-    const bool minimalProfiling =
-        prejit ? (JitConfig.JitMinimalPrejitProfiling() > 0) : (JitConfig.JitMinimalJitProfiling() > 0);
+    const bool edgesEnabled     = (JitConfig.JitEdgeProfiling() > 0);
+    const bool useEdgeProfiles  = edgesEnabled && (!prejit || r2rPgo);
+    const bool minimalProfiling = opts.compPgoMinimal;
 
     // Intrinsic recognition must not prevent ordinary managed implementations from
     // benefiting from profiles. Exclude compiler primitives and explicit SIMD APIs,
@@ -2649,13 +2688,11 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
         fgCountInstrumentor = new (this, CMK_Pgo) BlockCountInstrumentor(this);
     }
 
-    // Enable class profiling by default, when jitting.
-    // Todo: we may also want this on by default for prejitting.
-    //
     const bool useClassProfiles    = (JitConfig.JitClassProfiling() > 0);
     const bool useDelegateProfiles = (JitConfig.JitDelegateProfiling() > 0);
     const bool useVTableProfiles   = (JitConfig.JitVTableProfiling() > 0);
-    if (!prejit && (useClassProfiles || useDelegateProfiles || useVTableProfiles))
+    fgR2RCastProfiling             = r2rPgo && useClassProfiles && (JitConfig.JitProfileCasts() == 1);
+    if (((!prejit || r2rPgo) && (useClassProfiles || useDelegateProfiles)) || (!prejit && useVTableProfiles))
     {
         fgHistogramInstrumentor = new (this, CMK_Pgo) HandleHistogramProbeInstrumentor(this);
     }
@@ -2665,13 +2702,13 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
         fgHistogramInstrumentor = new (this, CMK_Pgo) NonInstrumentor(this);
     }
 
-    if (!prejit && JitConfig.JitProfileValues())
+    if ((!prejit || r2rPgo) && JitConfig.JitProfileValues())
     {
         fgValueInstrumentor = new (this, CMK_Pgo) ValueInstrumentor(this);
     }
     else
     {
-        JITDUMP("Not doing generic profiling, because %s\n", prejit ? "prejit" : "DOTNET_JitProfileValues=0")
+        JITDUMP("Not doing value profiling\n")
         fgValueInstrumentor = new (this, CMK_Pgo) NonInstrumentor(this);
     }
 
@@ -2800,18 +2837,7 @@ PhaseStatus Compiler::fgInstrumentMethodCore()
     //
     // For jitting, no information is conveyed by the count in a single=block method.
     //
-    bool minimalProbeMode = false;
-
-    if (IsAot())
-    {
-        minimalProbeMode = (JitConfig.JitMinimalPrejitProfiling() > 0);
-    }
-    else
-    {
-        minimalProbeMode = (JitConfig.JitMinimalJitProfiling() > 0);
-    }
-
-    if (minimalProbeMode && (fgCountInstrumentor->SchemaCount() == 1) &&
+    if (opts.compPgoMinimal && (fgCountInstrumentor->SchemaCount() == 1) &&
         (fgHistogramInstrumentor->SchemaCount() == 0) && (fgValueInstrumentor->SchemaCount() == 0))
     {
         JITDUMP("Not instrumenting method: minimal probing enabled, and method has only one counter and no class and "
@@ -2937,8 +2963,7 @@ PhaseStatus Compiler::fgIncorporateProfileData()
 
     // Or run synthesis and save the data out as the actual profile data
     //
-    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PGO_INSTR) &&
-        (JitConfig.JitPropagateSynthesizedCountsToProfileData() > 0))
+    if (opts.IsInstrumented() && fgShouldWriteSynthesizedCounts())
     {
         JITDUMP("Synthesizing profile data and writing it out as the actual profile data\n");
         ProfileSynthesis::Run(this, ProfileSynthesisOption::AssignLikelihoods);

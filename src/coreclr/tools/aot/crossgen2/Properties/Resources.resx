@@ -486,4 +486,10 @@
   <data name="StripILBodiesOption" xml:space="preserve">
     <value>Replace IL method bodies of compiled methods with a throwing stub in composite R2R output assemblies.</value>
   </data>
+  <data name="PgoInstrumentationOption" xml:space="preserve">
+    <value>Instrument compiled methods for profile-guided optimization.</value>
+  </data>
+  <data name="ErrorPgoInstrumentationRequiresBrowserWasm" xml:space="preserve">
+    <value>--pgo-instrumentation requires a single-threaded browser-wasm target.</value>
+  </data>
 </root>

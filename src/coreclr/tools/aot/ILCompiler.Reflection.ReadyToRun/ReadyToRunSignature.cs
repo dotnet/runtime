@@ -1211,6 +1211,13 @@ namespace ILCompiler.Reflection.ReadyToRun
                     builder.Append(" (METHOD_HANDLE)");
                     break;
 
+                case ReadyToRunFixupKind.PgoInstrumentationData:
+                    ParseMethod(builder);
+                    builder.Append(" (PGO_INSTRUMENTATION_DATA schema ");
+                    builder.Append(ReadUInt());
+                    builder.Append(')');
+                    break;
+
                 case ReadyToRunFixupKind.FieldHandle:
                     ParseField(builder);
                     builder.Append(" (FIELD_HANDLE)");
@@ -1816,6 +1823,13 @@ namespace ILCompiler.Reflection.ReadyToRun
 
                 case ReadyToRunHelper.WasmProfSamplepoint:
                     builder.Append("WASM_PROF_SAMPLEPOINT");
+                    break;
+                case ReadyToRunHelper.ValueProfile64:
+                    builder.Append("VALUE_PROFILE64");
+                    break;
+                case ReadyToRunHelper.ClassProfile64:
+                case ReadyToRunHelper.DelegateProfile64:
+                    builder.Append("CLASS_PROFILE64");
                     break;
 
                 case ReadyToRunHelper.GetCurrentManagedThreadId:

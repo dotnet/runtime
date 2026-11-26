@@ -12661,14 +12661,14 @@ HRESULT CEECodeGenInfo::allocPgoInstrumentationBySchema(
     STANDARD_VM_CONTRACT;
 
     HRESULT hr = E_FAIL;
+    *pInstrumentationData = nullptr;
 
     JIT_TO_EE_TRANSITION();
 
 #ifdef FEATURE_PGO
 
-    // Only try instrumenting tiering-eligible methods, unless interpreter PGO is enabled, in
-    // which case we instrument every method for offline profile collection.
     MethodDesc* pMD = (MethodDesc*)ftnHnd;
+    // Interpreter PGO collects offline data independently of tiering eligibility.
     if (pMD->IsEligibleForTieredCompilation() || InterpreterPgoInstrumentationEnabled())
     {
         hr = PgoManager::allocPgoInstrumentationBySchema(pMD, m_ILHeader, pSchema, countSchemaItems, pInstrumentationData);
@@ -14037,6 +14037,34 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             }
 
             result = (size_t)pMD;
+        }
+        break;
+
+    case READYTORUN_FIXUP_PgoInstrumentationData:
+        {
+#ifdef FEATURE_R2R_PGO
+            SigTypeContext typeContext;
+            ZapSig::Context context(pInfoModule, currentModule, ZapSig::NormalTokens);
+            PCCOR_SIGNATURE afterMethod;
+            MethodDesc* method = ZapSig::DecodeMethod(pInfoModule, pBlob, &typeContext, &context,
+                nullptr, nullptr, nullptr, &afterMethod);
+            ReadyToRunLoadedImage* image = currentModule->GetReadyToRunInfo()->GetImage();
+            TADDR indexAddress = reinterpret_cast<TADDR>(afterMethod);
+            if (indexAddress < image->GetBase() || indexAddress - image->GetBase() >= image->GetVirtualSize())
+                COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+            UINT32 schemaIndex;
+            SigPointer signature(afterMethod, static_cast<DWORD>(image->GetVirtualSize() - (indexAddress - image->GetBase())));
+            if (FAILED(signature.GetData(&schemaIndex)))
+                COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+            if (method->IsDynamicMethod() || method->IsILStub() || !method->IsIL() || method->GetILHeader() == nullptr)
+                COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+            if (g_fEEStarted)
+                method->EnsureActive();
+            method = method->GetOrdinaryVariant();
+            result = reinterpret_cast<size_t>(PgoManager::allocPgoInstrumentationFromR2RSchema(currentModule, method, schemaIndex));
+#else
+            COMPlusThrowHR(COR_E_PLATFORMNOTSUPPORTED);
+#endif
         }
         break;
 

@@ -436,45 +436,171 @@ globalThis.getDotnetRuntime(0).collectPgoTrace()
 globalThis.getDotnetRuntime(0).collectPgoTrace({durationSeconds: 30})
 ```
 
-This captures a startup PGO trace on the CoreCLR interpreter. To arm the trace before the first
-managed method compiles, set `DOTNET_DiagnosticPorts=js://pgo`. The trace always contains the method
-list; to also capture **block counts** the interpreter must be instrumented, which is enabled with
-`DOTNET_InterpPGO=1`:
+#### CoreCLR profile-guided ReadyToRun publishing
+
+Set `PublishReadyToRunPgoInstrumentation=true` to enable 64-bit sparse-edge
+counters for compiled CoreCLR ReadyToRun methods, including inlined bodies.
+This setting is independent of `WasmPerformanceInstrumentation`, which controls CPU
+sampling; either can be enabled alone or both can be enabled together.
+
+Configure the producer in an existing single-threaded Browser/CoreCLR project.
+If the project still defaults to Mono, set `UseMonoRuntime=false` separately.
+
+```xml
+<PropertyGroup>
+  <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
+  <PublishReadyToRun>true</PublishReadyToRun>
+  <EnableDiagnostics>true</EnableDiagnostics>
+  <PublishReadyToRunPgoInstrumentation>true</PublishReadyToRunPgoInstrumentation>
+</PropertyGroup>
+```
+
+Publish, rather than running a development build:
+
+```console
+dotnet publish -c Release
+```
+
+The publish compiles both application and framework assemblies with instrumentation.
+It does not substitute uninstrumented prebuilt framework images. The build rejects
+Mono, other runtime identifiers, threads, disabled diagnostics, and non-ReadyToRun
+publishing with this property set. Ordinary builds ignore the property.
+Use a wasm-capable
+crossgen2 matching the runtime. Instrumented ReadyToRun images carry their counter
+schemas in section 129, using format 34.2. The SDK enables Crossgen2's
+`--pgo-instrumentation` switch. In composite builds, the switch preserves all
+original IL bodies even when `--strip-il-bodies` is also specified.
+
+Standalone Wasm cross-JITs enable the R2R profiling capability independently of
+the build host OS. Runtime counter storage and publishing remain limited to
+single-threaded Browser/CoreCLR applications.
+
+R2R profiling uses one direct 64-bit counter per probe. Counter width,
+interlocked or scalable updates, and padding cannot be changed through
+JIT counter settings for this mode.
+Inlinees share their root compilation's counter width. The compiler can use the
+ordinary minimal prejit profiling option, but it cannot initialize counter
+values during compilation: the import cell resolves to runtime storage only
+when loaded.
+
+Instrumented R2R methods also collect sampled integer arguments at supported
+`Memmove` and `SequenceEqual` call sites. The value samples are exported in the
+same trace and MIBC as the edge counts. Pass crossgen2 `--codegenopt:JitProfileValues=0`
+to turn off value probes while retaining counts. Value collection does not add
+new Wasm constant-length optimizations.
+
+Instrumented methods also collect receiver types at eligible virtual and interface
+calls and input types at eligible `isinst` and `castclass` sites. On republish,
+receiver profiles can drive guarded devirtualization. Pass crossgen2
+`--codegenopt:JitClassProfiling=0` to disable all type probes or
+`--codegenopt:JitProfileCasts=0` to disable only the cast probes. A sampled type
+that the R2R image cannot reference is treated as unknown, so it cannot force the
+method to fall back to the interpreter.
+
+Delegate invocation sites also collect target-method histograms. Republish can
+guard and inline eligible closed reference-type instance targets, retaining the
+original delegate invocation on a miss. Unsupported targets, including static
+targets and methods the ReadyToRun image cannot reference, do not drive
+specialization. Pass `--codegenopt:JitDelegateProfiling=0` to disable the probes.
+Vtable target-method histograms are not collected.
+
+Run the published app in Chrome (or another supported browser), exercise representative
+workloads, and call:
+
+```js
+await globalThis.getDotnetRuntime(0).collectPgoTrace({ durationSeconds: 30 })
+```
+
+Counters start accumulating at startup, independently of CPU sampling. Stopping the
+PGO session exports the accumulated counters along with the module/method information
+needed by the profile tool. To arm the startup trace before managed execution, use:
 
 ```xml
 <ItemGroup>
   <WasmEnvironmentVariable Include="DOTNET_DiagnosticPorts" Value="js://pgo" />
-  <WasmEnvironmentVariable Include="DOTNET_InterpPGO" Value="1" />
 </ItemGroup>
 ```
 
-Instrumentation can be scoped to a subset of methods with `DOTNET_InterpPGOMethods` (standard MethodSet
-filter format; empty = all methods) to bound overhead during bring-up.
+Compiled bodies produce ordinary `EdgeLongCount` schemas, using the JIT's sparse
+spanning-tree instrumentation and flow reconstruction. The source key is stored
+in `ILOffset` and the destination key in `Other`; JIT-internal blocks can use
+synthetic keys. Method entry counts and branch likelihoods are reconstructed from
+these measured edges. Intrinsic expansion does not fabricate a separate callee
+invocation profile.
+
+The publish property selects R2R instrumentation in crossgen2. It does not enable
+interpreter counter probes. The interpreter retains its separate, optional
+`DOTNET_InterpPGO` and `DOTNET_InterpPGOMethods` settings. Leave `DOTNET_InterpPGO`
+off for normal R2R training: interpreter method discovery does not require
+counters. If both producers collect counters for the same method, for example
+when a method runs both as an R2R inlinee and in the interpreter, the runtime
+logs a diagnostic and omits that method's counters rather than mixing
+interpreter block counts with R2R edge counts. If only one producer recorded
+observations, its profile is kept. Other methods' profiles and interpreter
+method discovery are unaffected.
+
+Use the conversion option below to include metadata-backed interpreter methods
+from existing method-load/rundown events. These are method-presence roots for the
+next compilation, not measured invocation counts or internal branch statistics.
+Prepared interpreter code need not have executed. Dynamic stubs and methods
+without usable IL bodies are excluded; shared generics retain their canonical
+identity.
+
+The PGO collector requests capture-state metadata before the runtime provider
+stops, so method/type identities are available even for methods without counters.
+This is a one-time enumeration, not interpreter execution instrumentation.
 
 Convert the downloaded `xxx.nettrace` into an `.mibc` with `dotnet-pgo` (installed via
 `dotnet tool install --global dotnet-pgo`, or from `artifacts/bin/coreclr/<host-os>.<arch>.<config>/dotnet-pgo/`
-in a runtime build):
+in a runtime build). Use a tool version supporting interpreter rundown roots:
 
 ```console
-dotnet-pgo create-mibc --trace xxx.nettrace --reference <trimmed-IL-dlls>/*.dll --output app.mibc
+dotnet-pgo create-mibc --include-interpreted-rundown --trace xxx.nettrace --reference "<matching-IL-directory>/*.dll" --output app.mibc
+dotnet-pgo dump --input app.mibc --output app.json
 ```
 
-The resulting `.mibc` drives a profile-guided crossgen2 build.
+Disable producer instrumentation for the consumer publish and provide the measured profile:
 
-#### Referencing the right (IL-trimmed) assemblies
+```xml
+<ItemGroup>
+  <PublishReadyToRunPgoFiles Include="app.mibc" />
+</ItemGroup>
+```
+
+```console
+dotnet publish -c Release -p:PublishReadyToRunPgoInstrumentation=false
+```
+
+Keep the same application IL and runtime-pack IL between producer and consumer.
+The consumer uses measured edge profiles where available and interpreter presence
+for method selection. The rundown option is only for CoreCLR Browser/Wasm traces;
+when architecture metadata is missing, specifying it asserts that input contract.
+Convert the original `.nettrace` with this option: a previously converted `.etlx`
+may already have discarded the required events. Changing instrumentation, profile inputs, composite
+setting, crossgen2 arguments, or ReadyToRun postprocessing settings invalidates
+the incremental ReadyToRun outputs.
+
+#### Referencing the matching IL assemblies
 
 `--reference` must point at assemblies whose **MVID** matches the modules recorded in the trace, otherwise
 `dotnet-pgo` reports `Dll mismatch ...` (or `Unknown ModuleID` for the affected methods). On browser/wasm
-the assemblies loaded by the runtime are the **IL-trimmed** ones: `PublishTrimmed`/ILLink rewrites each
+with trimming enabled, the assemblies loaded by the runtime are the **IL-trimmed** ones: ILLink rewrites each
 assembly and **generates a fresh MVID**, then those trimmed DLLs are converted to the fingerprinted
 `*.wasm` files in `_framework` (webcil preserves the MVID byte-for-byte). So the trace records the
 **trimmed** MVIDs, which do **not** match the untrimmed assemblies in the runtime pack
-(`microsoft.netcore.app.runtime.browser-wasm/.../runtimes/browser-wasm/native/*.dll`).
+(`microsoft.netcore.app.runtime.browser-wasm/.../runtimes/browser-wasm/lib/<TFM>/*.dll`).
 
 Point `--reference` at the ILLink trim output instead:
 
 - Published app: `obj/<Config>/<TFM>/browser-wasm/linked/*.dll`
 - In this repo's WASM samples: `artifacts/obj/mono/<App>/browser.wasm.<Config>/linked/*.dll`
+
+With `PublishTrimmed=false`, use the unchanged app build DLLs and the IL DLLs from
+the runtime pack actually selected for publishing. Do not assume the pack's TFM
+matches the app TFM. Read the boot-listed Webcil assets to discover their assembly
+names and MVIDs, then match those against candidate IL assemblies. Composite owner
+images and unlisted compiler artifacts are not original IL-reference assemblies;
+exclude them rather than treating a zero MVID as a matching reference.
 
 If a method's assembly is not among the references, `dotnet-pgo` skips it with an `Unknown ModuleID`
 warning; pass every trimmed assembly the app exercised to capture all of them. `dotnet-pgo dump --input app.mibc`

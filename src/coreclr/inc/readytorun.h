@@ -20,7 +20,7 @@
 // If you update this, ensure you run `git grep MINIMUM_READYTORUN_MAJOR_VERSION`
 // and handle pending work.
 #define READYTORUN_MAJOR_VERSION 34
-#define READYTORUN_MINOR_VERSION 0x0001
+#define READYTORUN_MINOR_VERSION 0x0002
 
 #define MINIMUM_READYTORUN_MAJOR_VERSION 34
 
@@ -90,6 +90,7 @@
 //                only the return address, and the runtime preserves the callee-saved registers around the
 //                funclets that it calls
 // R2R Version 34.1 adds AuxiliaryModuleMetadata sections
+// R2R Version 34.2 adds indexed PGO schemas, profile-storage fixups, and 64-bit profiling helpers.
 
 struct READYTORUN_CORE_HEADER
 {
@@ -165,6 +166,7 @@ enum class ReadyToRunSectionType : uint32_t
     TypeMapAssemblyTargets      = 126, // Added in V18.3
     WasmAsyncResumeInfo         = 127, // Added in V29
     AuxiliaryModuleMetadata     = 128, // Added in V34.1
+    PgoInstrumentationSchemas   = 129, // Added in V34.2
 
     // If you add a new section consider whether it is a breaking or non-breaking change.
     // Usually it is non-breaking, but if it is preferable to have older runtimes fail
@@ -178,6 +180,12 @@ struct READYTORUN_SECTION
     ReadyToRunSectionType   Type;           // READYTORUN_SECTION_XXX
     IMAGE_DATA_DIRECTORY    Section;
 };
+
+// PgoInstrumentationSchemas version 1 consists of little-endian UInt32 values:
+// version, schemaCount, then schemaCount + 1 section-relative offsets (including the end offset).
+// Each blob contains recordCount, totalCounterBytes, then recordCount records of
+// kind, ILOffset, Count, Other, counterOffset. Signed fields retain their Int32 bit patterns.
+// Counter offsets describe target layouts; storage is allocated at load time, never stored in the image.
 
 enum class ReadyToRunImportSectionType : uint8_t
 {
@@ -354,6 +362,7 @@ enum ReadyToRunFixupKind
     READYTORUN_FIXUP_StoreMultiCallableAddrOfCode = 0x3A, /* Store a method's MultiCallableAddrOfCode into a location in the R2R image (processed at method load time; used on WebAssembly) */
 
     READYTORUN_FIXUP_MethodEntry_ReadyToRun       = 0x3B, /* Ensure that a method's ReadyToRun entry point and fixups are initialized */
+    READYTORUN_FIXUP_PgoInstrumentationData      = 0x3C, /* Method signature followed by compressed PgoInstrumentationSchemas index */
 
     READYTORUN_FIXUP_ModuleOverride             = 0x80, /* followed by sig-encoded UInt with assemblyref index into either the assemblyref table of the MSIL metadata of the master context module for the signature or */
                                                         /* into the extra assemblyref table in the manifest metadata R2R header table (used in cases inlining brings in references to assemblies not seen in the MSIL). */
@@ -539,6 +548,9 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_InitInstClass             = 0x117,
     READYTORUN_HELPER_R2RToInterpreter          = 0x118,
     READYTORUN_HELPER_WasmProfSamplepoint       = 0x119,
+    READYTORUN_HELPER_ValueProfile64            = 0x11A,
+    READYTORUN_HELPER_ClassProfile64            = 0x11B,
+    READYTORUN_HELPER_DelegateProfile64         = 0x11C,
 };
 
 #include "readytoruninstructionset.h"

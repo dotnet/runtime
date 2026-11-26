@@ -676,6 +676,21 @@ Copyright (c) .NET Foundation. All rights reserved.
            Text="The interval option is no longer supported in WasmPerformanceInstrumentation. Set DOTNET_EventPipeThreadSamplingRate using a WasmEnvironmentVariable item instead." />
   </Target>
 
+  <Target Name="_ValidateReadyToRunPgoInstrumentation"
+          Condition="'$(PublishReadyToRunPgoInstrumentation)' != '' and '$(PublishReadyToRunPgoInstrumentation)' != 'false'"
+          BeforeTargets="PrepareForPublish;_PrepareForReadyToRunCompilation">
+    <Error Condition="'$(PublishReadyToRunPgoInstrumentation)' != 'true'"
+           Text="PublishReadyToRunPgoInstrumentation must be true or false." />
+    <Error Condition="'$(UseMonoRuntime)' != 'false' or '$(RuntimeIdentifier)' != 'browser-wasm'"
+           Text="PublishReadyToRunPgoInstrumentation requires CoreCLR browser-wasm. Set UseMonoRuntime=false and RuntimeIdentifier=browser-wasm; Mono and other targets are not supported." />
+    <Error Condition="'$(PublishReadyToRun)' != 'true'"
+           Text="PublishReadyToRunPgoInstrumentation requires PublishReadyToRun=true. Enable ReadyToRun publishing or clear PublishReadyToRunPgoInstrumentation." />
+    <Error Condition="'$(EnableDiagnostics)' != 'true'"
+           Text="PublishReadyToRunPgoInstrumentation requires EnableDiagnostics=true so collectPgoTrace() can export the collected counts." />
+    <Error Condition="'$(WasmEnableThreads)' == 'true'"
+           Text="PublishReadyToRunPgoInstrumentation supports only single-threaded applications. Set WasmEnableThreads=false or clear PublishReadyToRunPgoInstrumentation." />
+  </Target>
+
   <Target Name="_AddWasmDiagnosticPortsEnvironmentVariable"
           Condition="'$(EnableDiagnostics)' == 'true'"
           DependsOnTargets="_ValidateWasmPerformanceInstrumentation">

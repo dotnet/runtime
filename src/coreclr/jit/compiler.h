@@ -7254,6 +7254,7 @@ protected:
     Instrumentor* fgCountInstrumentor = nullptr;
     Instrumentor* fgHistogramInstrumentor = nullptr;
     Instrumentor* fgValueInstrumentor = nullptr;
+    bool          fgR2RCastProfiling = false;
 
     PhaseStatus fgPrepareToInstrumentMethod();
     PhaseStatus fgInstrumentMethod();
@@ -7263,6 +7264,11 @@ protected:
     bool        fgIncorporateEdgeCounts();
 
 public:
+    bool compR2RPgoInstrumentation() const;
+#ifdef DEBUG
+    bool fgShouldWriteSynthesizedCounts() const;
+#endif
+
     const char*                            fgPgoFailReason;
     bool                                   fgPgoDisabled = false;
     ICorJitInfo::PgoSource                 fgPgoSource;
@@ -11780,6 +11786,11 @@ public:
 
         // Collect 64 bit counts for PGO data.
         bool compCollect64BitCounts;
+
+        bool     compPgoInterlocked;
+        bool     compPgoScalable;
+        bool     compPgoMinimal;
+        unsigned compPgoCounterSlots;
 
         // Allow inlining of methods with EH.
         bool compInlineMethodsWithEH;

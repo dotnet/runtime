@@ -795,6 +795,8 @@ namespace Internal.JitInterface
             _stashedPrecodeFixups.Clear();
             _stashedInlinedMethods.Clear();
             _ilBodiesNeeded = null;
+            _wasmPgoCells.Clear();
+            _pgoTokenMissing = false;
             _synthesizedPgoDependencies = null;
 #endif
 
@@ -4278,8 +4280,10 @@ namespace Internal.JitInterface
             return res;
         }
 
+#if !READYTORUN
         private void getFunctionFixedEntryPoint(CORINFO_METHOD_STRUCT_* ftn, bool isUnsafeFunctionPointer, ref CORINFO_CONST_LOOKUP pResult)
         { throw new NotImplementedException("getFunctionFixedEntryPoint"); }
+#endif
 
         private CORINFO_MODULE_STRUCT_* embedModuleHandle(CORINFO_MODULE_STRUCT_* handle, ref void* ppIndirection)
         { throw new NotImplementedException("embedModuleHandle"); }
@@ -4879,7 +4883,7 @@ namespace Internal.JitInterface
 
 #if READYTORUN
                     case BlockType.BBCounts:
-                        relocTarget = null;
+                        relocTarget = FindWasmPgoCell(target);
                         break;
 #endif
 
@@ -5033,6 +5037,11 @@ namespace Internal.JitInterface
             foreach (var flag in JitConfigProvider.Instance.Flags)
                 flags.Set(flag);
 
+#if READYTORUN
+            if (_compilation.NodeFactory.PgoInstrumentationSchemas is not null)
+                flags.Set(CorJitFlag.CORJIT_FLAG_PGO_INSTR);
+#endif
+
             flags.InstructionSetFlags.Add(_compilation.InstructionSetSupport.OptimisticFlags);
 
             // Set the rest of the flags that don't make sense to expose publicly.
@@ -5140,7 +5149,7 @@ namespace Internal.JitInterface
 
         private MemoryStream _cachedMemoryStream = new MemoryStream();
 
-        public static void ComputeJitPgoInstrumentationSchema(Func<object, IntPtr> objectToHandle, PgoSchemaElem[] pgoResultsSchemas, out PgoInstrumentationSchema[] nativeSchemas, MemoryStream instrumentationData, Func<TypeDesc, bool> typeFilter = null)
+        public static void ComputeJitPgoInstrumentationSchema(Func<object, IntPtr> objectToHandle, PgoSchemaElem[] pgoResultsSchemas, out PgoInstrumentationSchema[] nativeSchemas, MemoryStream instrumentationData, Func<TypeDesc, bool> typeFilter = null, Func<MethodDesc, bool> methodFilter = null)
         {
             nativeSchemas = new PgoInstrumentationSchema[pgoResultsSchemas.Length];
             instrumentationData.SetLength(0);
@@ -5186,7 +5195,7 @@ namespace Internal.JitInterface
                             {
                                 ptrVal = (IntPtr)objectToHandle(typeVal.AsType);
                             }
-                            else if (typeVal.AsMethod != null)
+                            else if (typeVal.AsMethod != null && (methodFilter == null || methodFilter(typeVal.AsMethod)))
                             {
                                 ptrVal = (IntPtr)objectToHandle(typeVal.AsMethod);
                             }
@@ -5236,7 +5245,11 @@ namespace Internal.JitInterface
                 {
 #pragma warning disable SA1001, SA1113, SA1115 // Commas should be spaced correctly
                     ComputeJitPgoInstrumentationSchema(ObjectToHandle, pgoResultsSchemas, out var nativeSchemas, _cachedMemoryStream
-#if !READYTORUN
+#if READYTORUN
+                        // A speculative guard must not cause an otherwise compilable Wasm method to fall back.
+                        , _compilation.NodeFactory.Target.IsWasm ? _compilation.CompilationModuleGroup.VersionsWithTypeReference : null
+                        , _compilation.NodeFactory.Target.IsWasm ? CanReferenceDelegateProfileTarget : null
+#else
                         , _compilation.CanReferenceConstructedMethodTable
 #endif
                         );

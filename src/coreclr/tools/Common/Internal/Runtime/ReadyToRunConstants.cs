@@ -205,6 +205,7 @@ namespace Internal.ReadyToRunConstants
 
         MethodEntry_ReadyToRun = 0x3B, /* Ensure that a method's ReadyToRun entry point and fixups are initialized */
 
+        PgoInstrumentationData = 0x3C,
         ModuleOverride = 0x80,
         // followed by sig-encoded UInt with assemblyref index into either the assemblyref
         // table of the MSIL metadata of the master context module for the signature or
@@ -385,6 +386,9 @@ namespace Internal.ReadyToRunConstants
         InitInstClass               = 0x117,
         R2RToInterpreter            = 0x118,
         WasmProfSamplepoint         = 0x119,
+        ValueProfile64              = 0x11A,
+        ClassProfile64              = 0x11B,
+        DelegateProfile64           = 0x11C,
 
         // **********************************************************************************************
         //

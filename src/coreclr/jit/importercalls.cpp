@@ -701,6 +701,12 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                        (sig->callConv & CORINFO_CALLCONV_MASK) != CORINFO_CALLCONV_NATIVEVARARG);
 
 #ifdef TARGET_WASM
+                if (IsReadyToRun() && ((callInfo->classFlags & CORINFO_FLG_INTERFACE) != 0) &&
+                    (sig->sigInst.methInstCount == 0))
+                {
+                    call->AsCall()->gtCallMoreFlags |= GTF_CALL_M_R2R_INTERFACE_LDVIRTFTN;
+                }
+
                 // Wasm virtual calls that cannot use a pregenerated dispatch thunk (including the
                 // array Address accessor) come through LDVIRTFTN, which skips the shared hidden-arg
                 // handling below via the `goto DEVIRT`. Add the type-context arg here so the
@@ -8291,7 +8297,7 @@ void Compiler::pickGDV(GenTreeCall*           call,
     const int               maxLikelyClasses = MAX_GDV_TYPE_CHECKS;
     LikelyClassMethodRecord likelyClasses[maxLikelyClasses];
     unsigned                numberOfClasses = 0;
-    if (call->IsVirtualStub() || call->IsVirtualVtable() || call->IsHelperCall())
+    if (call->IsVirtual() || call->IsR2RInterfaceLdvirtftn() || call->IsHelperCall())
     {
         numberOfClasses = getLikelyClasses(likelyClasses, maxLikelyClasses, pgoInfo.PgoSchema, pgoInfo.PgoSchemaCount,
                                            pgoInfo.PgoData, ilOffset);
@@ -8302,13 +8308,11 @@ void Compiler::pickGDV(GenTreeCall*           call,
     unsigned                numberOfMethods = 0;
     bool                    isInferredGDV   = false;
 
-    // TODO-GDV: R2R support requires additional work to reacquire the
-    // entrypoint, similar to what happens at the end of impDevirtualizeCall.
-    // As part of supporting this we should merge the tail of
-    // impDevirtualizeCall and what happens in
-    // GuardedDevirtualizationTransformer::CreateThen for method GDV.
-    //
-    if (!IsAot() && (call->IsVirtualVtable() || call->IsDelegateInvoke()))
+    bool useMethodProfile = !IsAot() && (call->IsVirtualVtable() || call->IsDelegateInvoke());
+#if defined(TARGET_WASM) && defined(FEATURE_R2R_PGO)
+    useMethodProfile |= IsReadyToRun() && call->IsDelegateInvoke();
+#endif
+    if (useMethodProfile)
     {
         assert(!call->IsHelperCall());
         numberOfMethods = getLikelyMethods(likelyMethods, maxLikelyMethods, pgoInfo.PgoSchema, pgoInfo.PgoSchemaCount,
@@ -8767,7 +8771,7 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
         return;
     }
 
-    if (call->IsGenericVirtual(this))
+    if (call->IsGenericVirtual(this) && !call->IsR2RInterfaceLdvirtftn())
     {
         JITDUMP("Generic virtual methods are not supported by guarded devirtualization, sorry.\n");
         return;
@@ -9074,7 +9078,7 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*            call,
                                                    CORINFO_RESOLVED_TOKEN* pUnboxedResolvedToken)
 {
     // This transformation only makes sense for delegate and virtual calls
-    assert(call->IsDelegateInvoke() || call->IsVirtual());
+    assert(call->IsDelegateInvoke() || call->IsVirtual() || call->IsR2RInterfaceLdvirtftn());
 
     // Only mark calls if the feature is enabled.
     const bool isEnabled = JitConfig.JitEnableGuardedDevirtualization() > 0;
@@ -9446,7 +9450,7 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
         return;
     }
 
-    // Ignore indirect calls, unless they are indirect virtual stub calls with profile info.
+    // Ignore indirect calls unless they have a guarded direct call candidate.
     //
     if (call->gtCallType == CT_INDIRECT)
     {
@@ -9457,7 +9461,7 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
         }
         else
         {
-            assert(call->IsVirtualStub());
+            assert(call->IsVirtualStub() || call->IsR2RInterfaceLdvirtftn());
         }
     }
 
@@ -10329,6 +10333,7 @@ void Compiler::impTransformDevirtualizedCall(GenTreeCall*            call,
     call->ClearFatPointerCandidate();
     call->gtFlags &= ~GTF_CALL_VIRT_VTABLE;
     call->gtFlags &= ~GTF_CALL_VIRT_STUB;
+    call->gtCallMoreFlags &= ~GTF_CALL_M_R2R_INTERFACE_LDVIRTFTN;
     call->gtCallMethHnd = derivedMethod;
     call->gtCallType    = CT_USER_FUNC;
     call->gtControlExpr = nullptr;
@@ -10657,15 +10662,21 @@ void Compiler::impTransformDevirtualizedCall(GenTreeCall*            call,
     {
         // For R2R, getCallInfo triggers bookkeeping on the zap
         // side and acquires the actual symbol to call so we need to call it here.
-        assert(pDerivedResolvedToken != nullptr);
-
-        // Look up the new call info.
-        CORINFO_CALL_INFO derivedCallInfo;
-        eeGetCallInfo(pDerivedResolvedToken, nullptr, CORINFO_CALLINFO_ALLOWINSTPARAM, &derivedCallInfo);
-
-        // Update the call.
+        CORINFO_CONST_LOOKUP entryPoint;
+        if (dcInfo->isDelegateCall)
+        {
+            // Use the same exact entry point as the guard, not a virtual slot.
+            info.compCompHnd->getFunctionFixedEntryPoint(derivedMethod, false, &entryPoint);
+        }
+        else
+        {
+            assert(pDerivedResolvedToken != nullptr);
+            CORINFO_CALL_INFO derivedCallInfo;
+            eeGetCallInfo(pDerivedResolvedToken, nullptr, CORINFO_CALLINFO_ALLOWINSTPARAM, &derivedCallInfo);
+            entryPoint = derivedCallInfo.codePointerLookup.constLookup;
+        }
         call->gtCallMoreFlags &= ~GTF_CALL_M_VIRTSTUB_REL_INDIRECT;
-        call->setEntryPoint(derivedCallInfo.codePointerLookup.constLookup);
+        call->setEntryPoint(entryPoint);
     }
 #endif // FEATURE_READYTORUN
 
@@ -10738,7 +10749,7 @@ void Compiler::impConsiderCallProbe(GenTreeCall* call, IL_OFFSET ilOffset)
 //
 Compiler::GDVProbeType Compiler::compClassifyGDVProbeType(GenTreeCall* call)
 {
-    if (!opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PGO_INSTR) || IsAot())
+    if (!opts.IsInstrumented())
     {
         return GDVProbeType::None;
     }
@@ -10746,7 +10757,7 @@ Compiler::GDVProbeType Compiler::compClassifyGDVProbeType(GenTreeCall* call)
     bool createTypeHistogram = false;
     if (JitConfig.JitClassProfiling() > 0)
     {
-        createTypeHistogram = call->IsVirtualStub() || call->IsVirtualVtable();
+        createTypeHistogram = call->IsVirtual() || call->IsR2RInterfaceLdvirtftn();
 
         // Cast helpers may conditionally (depending on whether the class is
         // exact or not) have probes. For those helpers we do not use this
@@ -10756,8 +10767,19 @@ Compiler::GDVProbeType Compiler::compClassifyGDVProbeType(GenTreeCall* call)
                                                       (call->gtHandleHistogramProfileCandidateInfo != nullptr));
     }
 
-    bool createMethodHistogram = ((JitConfig.JitDelegateProfiling() > 0) && call->IsDelegateInvoke()) ||
-                                 ((JitConfig.JitVTableProfiling() > 0) && call->IsVirtualVtable());
+    const bool createDelegateHistogram = (JitConfig.JitDelegateProfiling() > 0) && call->IsDelegateInvoke();
+    if (IsAot())
+    {
+        if (!compR2RPgoInstrumentation())
+        {
+            return GDVProbeType::None;
+        }
+        return createDelegateHistogram ? GDVProbeType::MethodProfile
+                                       : (createTypeHistogram ? GDVProbeType::ClassProfile : GDVProbeType::None);
+    }
+
+    bool createMethodHistogram =
+        createDelegateHistogram || ((JitConfig.JitVTableProfiling() > 0) && call->IsVirtualVtable());
 
     if (createTypeHistogram && createMethodHistogram)
     {

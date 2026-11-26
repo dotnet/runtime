@@ -16,7 +16,7 @@ namespace Internal.Runtime
         public const uint Signature = 0x00525452; // 'RTR'
 
         public const ushort CurrentMajorVersion = 34;
-        public const ushort CurrentMinorVersion = 1;
+        public const ushort CurrentMinorVersion = 2;
     }
 #if READYTORUN
 #pragma warning disable 0169
@@ -86,6 +86,7 @@ namespace Internal.Runtime
         TypeMapAssemblyTargets      = 126, // Added in V18.3
         WasmAsyncResumeInfo         = 127, // Added in V29
         AuxiliaryModuleMetadata     = 128, // Added in V34.1
+        PgoInstrumentationSchemas   = 129, // Added in V34.2
 
         //
         // NativeAOT ReadyToRun sections

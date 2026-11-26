@@ -87,6 +87,8 @@ function(create_standalone_jit)
   if (TARGETDETAILS_ARCH STREQUAL "wasm")
     target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE FEATURE_SIMD)
     target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE FEATURE_HW_INTRINSICS)
+    # Standalone Wasm JITs must support Browser profiling regardless of the configured host OS.
+    target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE FEATURE_R2R_PGO)
   endif ()
 endfunction()
 

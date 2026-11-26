@@ -72,6 +72,7 @@ namespace ILCompiler.DependencyAnalysis
         public bool StripInliningInfo;
         public bool StripDebugInfo;
         public bool StripILBodies;
+        public bool PgoInstrumentation;
         public HashSet<MethodDesc> CompiledMethodDefs;
     }
 
@@ -616,6 +617,7 @@ namespace ILCompiler.DependencyAnalysis
         public ImportSectionsTableNode ImportSectionsTable;
 
         public InstrumentationDataTableNode InstrumentationDataTable;
+        public PgoInstrumentationSchemaTableNode PgoInstrumentationSchemas { get; private set; }
         public InliningInfoNode CrossModuleInlningInfo;
         public ImportReferenceProvider ImportReferenceProvider;
 
@@ -1220,6 +1222,11 @@ namespace ILCompiler.DependencyAnalysis
 
             ImportSectionsTable = new ImportSectionsTableNode(this);
             Header.Add(Internal.Runtime.ReadyToRunSectionType.ImportSections, ImportSectionsTable);
+            if (OptimizationFlags.PgoInstrumentation)
+            {
+                PgoInstrumentationSchemas = new PgoInstrumentationSchemaTableNode();
+                Header.Add(Internal.Runtime.ReadyToRunSectionType.PgoInstrumentationSchemas, PgoInstrumentationSchemas);
+            }
 
             if (!OptimizationFlags.StripDebugInfo)
             {

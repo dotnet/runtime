@@ -2490,8 +2490,27 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
     if (compIsForInlining())
     {
+        opts.compCollect64BitCounts = impInlineRoot()->opts.compCollect64BitCounts;
         return;
     }
+
+#if defined(TARGET_64BIT) || defined(TARGET_WASM)
+    opts.compCollect64BitCounts = JitConfig.JitCollect64BitCounts() != 0;
+#else
+    opts.compCollect64BitCounts = false;
+#endif // TARGET_64BIT || TARGET_WASM
+
+#if defined(TARGET_64BIT) && defined(DEBUG)
+    if (JitConfig.JitRandomlyCollect64BitCounts() != 0)
+    {
+        CLRRandom rng;
+        rng.Init(info.compMethodHash() ^ JitConfig.JitRandomlyCollect64BitCounts() ^ 0x3485e20e);
+        opts.compCollect64BitCounts = rng.Next(2) == 0;
+    }
+#endif // TARGET_64BIT && DEBUG
+
+    // The current R2R schema table and exporter require 64-bit counts.
+    opts.compCollect64BitCounts |= compR2RPgoInstrumentation();
 
     // The rest of the opts fields that we initialize here
     // should only be used when we generate code for the method
@@ -2971,21 +2990,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         }
 #endif
     }
-
-#ifdef TARGET_64BIT
-    opts.compCollect64BitCounts = JitConfig.JitCollect64BitCounts() != 0;
-
-#ifdef DEBUG
-    if (JitConfig.JitRandomlyCollect64BitCounts() != 0)
-    {
-        CLRRandom rng;
-        rng.Init(info.compMethodHash() ^ JitConfig.JitRandomlyCollect64BitCounts() ^ 0x3485e20e);
-        opts.compCollect64BitCounts = rng.Next(2) == 0;
-    }
-#endif
-#else
-    opts.compCollect64BitCounts = false;
-#endif
 
 #ifdef DEBUG
 

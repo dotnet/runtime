@@ -81,9 +81,9 @@ internal sealed class DeferredWasmCallRewriter(ReadyToRunCodegenCompilation comp
         }
     }
 
-    // Record the chosen call's activation requirements: preserve its import-time
-    // token for direct activation, or retain the fallback import for an indirect
-    // call. Keep eager imports reachable and deduplicate added precode entries.
+    // Code preparation canonicalizes the direct target's import-time token to its compiled
+    // body. Indirect calls retain the fallback's exact invocation context.
+    // Keep eager imports reachable and deduplicate added precode entries.
     private void SelectCall(
         MethodWithGCInfo caller, DeferredWasmCallNode call, bool useDirectCall, bool isEager,
         Dictionary<MethodWithGCInfo, DelayLoadMethodImport> activationImports)

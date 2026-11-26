@@ -40,6 +40,7 @@ namespace ILCompiler
         private readonly bool _outNearInput;
         private readonly string _outputFilePath;
         private readonly string _generatePortableCallHelpers;
+        private readonly bool _pgoInstrumentation;
 
         public Program(Crossgen2RootCommand command)
         {
@@ -49,6 +50,7 @@ namespace ILCompiler
             _outNearInput = Get(command.OutNearInput);
             _outputFilePath = Get(command.OutputFilePath);
             _generatePortableCallHelpers = Get(command.GeneratePortableCallHelpers);
+            _pgoInstrumentation = Get(command.PgoInstrumentation);
 
             if (Get(command.WaitForDebugger))
             {
@@ -91,6 +93,10 @@ namespace ILCompiler
                 ?? GetTargetAllowsRuntimeCodeGeneration(targetOS, targetArchitecture);
             bool targetIsSingleThreaded = Get(_command.TargetSingleThreaded)
                 ?? GetTargetIsSingleThreaded(targetArchitecture);
+
+            if (_pgoInstrumentation &&
+                (targetOS != TargetOS.Browser || targetArchitecture != TargetArchitecture.Wasm32 || !targetIsSingleThreaded))
+                throw new CommandLineException(SR.ErrorPgoInstrumentationRequiresBrowserWasm);
 
             // Crossgen2 is partial AOT and its pre-compiled methods can be thrown away at runtime if
             // they mismatch in required ISAs or computed layouts of structs. On targets that allow
@@ -475,7 +481,8 @@ namespace ILCompiler
                         }
                     }
 
-                    if (!composite && Get(_command.StripILBodies))
+                    bool stripILBodies = Get(_command.StripILBodies);
+                    if (!composite && stripILBodies)
                     {
                         throw new Exception(SR.ErrorStripILBodiesRequiresComposite);
                     }
@@ -696,7 +703,8 @@ namespace ILCompiler
                     nodeFactoryFlags.GenerateUnboxingStubs = Get(_command.GenerateUnboxingStubs) ?? !typeSystemContext.TargetAllowsRuntimeCodeGeneration;
                     nodeFactoryFlags.StripInliningInfo = Get(_command.StripInliningInfo);
                     nodeFactoryFlags.StripDebugInfo = Get(_command.StripDebugInfo);
-                    nodeFactoryFlags.StripILBodies = Get(_command.StripILBodies);
+                    nodeFactoryFlags.PgoInstrumentation = _pgoInstrumentation;
+                    nodeFactoryFlags.StripILBodies = stripILBodies && !_pgoInstrumentation;
 
                     builder
                         .UseMapFile(Get(_command.Map))

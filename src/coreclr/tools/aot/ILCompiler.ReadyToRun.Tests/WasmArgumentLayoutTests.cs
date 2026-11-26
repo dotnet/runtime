@@ -4,9 +4,15 @@
 extern alias crossgen2;
 
 using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
+using System.Reflection.PortableExecutable;
+using System.Text.RegularExpressions;
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -19,8 +25,13 @@ using crossgen2::ILCompiler.DependencyAnalysis.Wasm;
 using crossgen2::ILCompiler.PortableCallHelpers;
 using crossgen2::Internal.CallingConvention;
 using crossgen2::Internal.JitInterface;
+using CompilerPgo = crossgen2::Internal.Pgo;
+using TypeSystemMetadataEmitter = crossgen2::Internal.TypeSystem.TypeSystemMetadataEmitter;
 
 using ILCompiler.ReadyToRun.Tests.TestCasesRunner;
+using ReadyToRunReader = ILCompiler.Reflection.ReadyToRun.ReadyToRunReader;
+using SignatureFormattingOptions = ILCompiler.Reflection.ReadyToRun.SignatureFormattingOptions;
+using WebcilImageReader = ILCompiler.Reflection.ReadyToRun.WebcilImageReader;
 
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -55,6 +66,806 @@ public class WasmArgumentLayoutTests
     public WasmArgumentLayoutTests(ITestOutputHelper output)
     {
         _output = output;
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void InstrumentationSchemaTableDeduplicatesAndOrdersLayouts(bool reverse)
+    {
+        PgoInstrumentationSchema[] edges =
+        [
+            new() { InstrumentationKind = CompilerPgo.PgoInstrumentationKind.EdgeLongCount, Other = 12, Count = 1 },
+            new() { InstrumentationKind = CompilerPgo.PgoInstrumentationKind.EdgeLongCount, ILOffset = 12, Count = 1 },
+        ];
+        PgoInstrumentationSchema[] alternateEdges =
+        [
+            new() { InstrumentationKind = CompilerPgo.PgoInstrumentationKind.EdgeLongCount, Other = 24, Count = 1 },
+            new() { InstrumentationKind = CompilerPgo.PgoInstrumentationKind.EdgeLongCount, ILOffset = 12, Count = 1 },
+        ];
+        int edgeSize = PgoInstrumentationSchemaTableNode.Layout(edges, sizeof(uint));
+        int alternateSize = PgoInstrumentationSchemaTableNode.Layout(alternateEdges, sizeof(uint));
+        PgoInstrumentationSchemaTableNode table = new();
+        if (reverse)
+            table.Add(alternateEdges, alternateSize);
+        var edgeEntry = table.Add(edges, edgeSize);
+        table.Add(alternateEdges, alternateSize);
+        Assert.Same(edgeEntry, table.Add(edges, edgeSize));
+
+        PgoInstrumentationSchemaTableNode comparison = new();
+        comparison.Add(alternateEdges, alternateSize);
+        comparison.Add(edges, edgeSize);
+        byte[] data = table.Encode();
+        Assert.Equal(comparison.Encode(), data);
+        Assert.Equal(2, BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(4)));
+        int blobOffset = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(8 + table.GetIndex(edgeEntry) * 4));
+        Assert.Equal(2, BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(blobOffset)));
+        Assert.Equal(16, BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(blobOffset + 4)));
+        Assert.Equal(12, BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(blobOffset + 20)));
+        Assert.Equal(0, BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(blobOffset + 24)));
+        Assert.Equal(12, BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(blobOffset + 32)));
+        Assert.Equal(8, BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(blobOffset + 44)));
+        Assert.Equal(data.Length, BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(16)));
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    [InlineData(int.MaxValue)]
+    public void InstrumentationSchemaLayoutRejectsInvalidCounterCounts(int count)
+    {
+        PgoInstrumentationSchema[] schema =
+        [
+            new() { InstrumentationKind = CompilerPgo.PgoInstrumentationKind.BasicBlockLongCount, Count = count },
+        ];
+        if (count == int.MaxValue)
+            Assert.Throws<OverflowException>(() => PgoInstrumentationSchemaTableNode.Layout(schema, sizeof(uint)));
+        else
+            Assert.Throws<InvalidOperationException>(() => PgoInstrumentationSchemaTableNode.Layout(schema, sizeof(uint)));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void RecursiveIntrinsicBodyHasOneEdgeProbe(bool instrument)
+    {
+        string directory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        Directory.CreateDirectory(directory);
+        try
+        {
+            string listingPath = Path.Combine(directory, "intrinsic.jit.txt");
+            List<string> args =
+            [
+                TestPaths.SystemPrivateCoreLibPath,
+                "--reference", Path.Combine(TestPaths.LibrariesDir, "*.dll"),
+                "--targetos", TestPaths.TargetOS,
+                "--targetarch", TestPaths.TargetArchitecture,
+                "--obj-format", "wasm",
+                "--optimize",
+                "--parallelism", "1",
+                "--singlemethodtypename", "System.Runtime.Intrinsics.Wasm.PackedSimd",
+                "--singlemethodname", "PopCount",
+                "--codegenopt:JitDisasm=*",
+                $"--codegenopt:JitStdOutFile={listingPath}",
+                "--out", Path.Combine(directory, "intrinsic.wasm"),
+            ];
+            if (instrument)
+                args.Add("--pgo-instrumentation");
+            R2RCompilationResult result = new R2RDriver(_output).Compile(args);
+            Assert.True(result.Success, result.StandardOutput + result.StandardError);
+            string listing = File.ReadAllText(listingPath);
+            Assert.Equal(1, Regex.Matches(listing, @"\bi8x16\.popcnt\b").Count);
+            Assert.Equal(instrument ? 1 : 0, Regex.Matches(listing, @"\bi64\.add\b").Count);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void NullableListSetterProfilesSparseEdges(bool instrument)
+    {
+        string directory = Path.GetFullPath(Path.Combine("artifacts", "tmp", "il-block-profiling", Path.GetRandomFileName()));
+        Directory.CreateDirectory(directory);
+        try
+        {
+            string listingPath = Path.Combine(directory, "setter.jit.txt");
+            List<string> args =
+            [
+                TestPaths.SystemPrivateCoreLibPath,
+                "--reference", Path.Combine(TestPaths.LibrariesDir, "*.dll"),
+                "--targetos", TestPaths.TargetOS,
+                "--targetarch", TestPaths.TargetArchitecture,
+                "--obj-format", "wasm",
+                "--optimize",
+                "--parallelism", "1",
+                "--strip-debug-info",
+                "--strip-inlining-info",
+                "--singlemethodtypename", "System.Collections.Generic.List`1[System.Nullable`1[System.Decimal]]",
+                "--singlemethodname", "System.Collections.IList.set_Item",
+                "--codegenopt:JitDisasm=*",
+                $"--codegenopt:JitStdOutFile={listingPath}",
+                "--out", Path.Combine(directory, "setter.wasm"),
+            ];
+            if (instrument)
+                args.Add("--pgo-instrumentation");
+            R2RCompilationResult result = new R2RDriver(_output).Compile(args);
+            Assert.True(result.Success, result.StandardOutput + result.StandardError);
+            string listing = File.ReadAllText(listingPath);
+            Assert.Equal(instrument, Regex.IsMatch(listing, @"\bi64\.add\b"));
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Theory]
+    [InlineData(false, 0)]
+    [InlineData(true, 2)]
+    [InlineData(true, 0, "JitMinimalPrejitProfiling=1")]
+    [InlineData(true, 2, "JitCollect64BitCounts=0")]
+    public void InlineeProfilingPreservesInlining(bool instrument, int expectedProbeCount, string? counterOption = null)
+    {
+        string directory = Path.GetFullPath(Path.Combine("artifacts", "tmp", "inlinee-profiling", Path.GetRandomFileName()));
+        Directory.CreateDirectory(directory);
+        try
+        {
+            const string Source = """
+                using System.Runtime.CompilerServices;
+                public static class Callbacks
+                {
+                    [MethodImpl(MethodImplOptions.NoInlining)]
+                    public static int Caller(int value) => Inlinee(value) + 1;
+                    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                    public static int Inlinee(int value) => value * 7;
+                }
+                """;
+            string input = CompileCallbackAssembly(Source, Path.Combine(directory, "InlineProfile.dll"), optimize: true);
+            string listingPath = Path.Combine(directory, "caller.jit.txt");
+            List<string> args =
+            [
+                input,
+                "--reference", Path.Combine(TestPaths.LibrariesDir, "*.dll"),
+                "--targetos", TestPaths.TargetOS,
+                "--targetarch", TestPaths.TargetArchitecture,
+                "--obj-format", "wasm",
+                "--optimize",
+                "--parallelism", "1",
+                "--singlemethodtypename", "Callbacks, InlineProfile",
+                "--singlemethodname", "Caller",
+                "--codegenopt:JitDisasm=Callbacks:Caller",
+                $"--codegenopt:JitStdOutFile={listingPath}",
+                "--out", Path.Combine(directory, "caller.wasm"),
+            ];
+            if (instrument)
+                args.Add("--pgo-instrumentation");
+            if (counterOption is not null)
+                args.Add($"--codegenopt:{counterOption}");
+            R2RCompilationResult result = new R2RDriver(_output).Compile(args);
+            Assert.True(result.Success, result.StandardOutput + result.StandardError);
+            string listing = File.ReadAllText(listingPath);
+            Assert.Contains("; Assembly listing for method Callbacks:Caller", listing);
+            Assert.DoesNotMatch(@"\b(?:deferred\.call|call_indirect|call)\b[^\r\n]*Callbacks:Inlinee", listing);
+            Assert.Equal(expectedProbeCount, Regex.Matches(listing, @"\bi64\.add\b").Count);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Theory]
+    [InlineData(true, true)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(false, false)]
+    public void PgoInstrumentationPreservesAllILWhenStrippingIsRequested(bool instrument, bool composite)
+    {
+        string directory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        Directory.CreateDirectory(directory);
+        try
+        {
+            string input = CompileCallbackAssembly("""
+                public static class Callbacks
+                {
+                    public static int Increment(int value) => value + 1;
+                    public static int Decrement(int value) => value - 1;
+                }
+                """, Path.Combine(directory, "PgoIL.dll"), optimize: true);
+            string listing = Path.Combine(directory, "pgo.jit.txt");
+            List<string> args =
+            [
+                input, "--reference", Path.Combine(TestPaths.LibrariesDir, "*.dll"),
+                "--targetos", "browser", "--targetarch", "wasm", "--strip-il-bodies",
+                "--optimize", "--parallelism", "1",
+                "--codegenopt:JitDisasm=Callbacks:*", $"--codegenopt:JitStdOutFile={listing}",
+                "--out", Path.Combine(directory, "PgoIL.r2r.wasm"),
+            ];
+            if (composite)
+                args.Add("--composite");
+            if (instrument)
+                args.Add("--pgo-instrumentation");
+
+            R2RCompilationResult result = new R2RDriver(_output).Compile(args);
+            if (!composite)
+            {
+                Assert.False(result.Success, result.StandardOutput + result.StandardError);
+                Assert.Contains("--strip-il-bodies requires --composite.", result.StandardOutput + result.StandardError, StringComparison.Ordinal);
+                return;
+            }
+
+            Assert.True(result.Success, result.StandardOutput + result.StandardError);
+            Assert.Equal(instrument ? 2 : 0, Regex.Matches(File.ReadAllText(listing), @"\bi64\.add\b").Count);
+
+            using var original = new PEReader(File.OpenRead(input));
+            MetadataReader originalMetadata = original.GetMetadataReader();
+            WebcilImageReader component = new(File.ReadAllBytes(Path.Combine(directory, "PgoIL.wasm")));
+            var emitted = component.GetStandaloneAssemblyMetadata();
+            foreach (MethodDefinitionHandle handle in originalMetadata.MethodDefinitions)
+            {
+                MethodDefinition definition = originalMetadata.GetMethodDefinition(handle);
+                byte[] expected = instrument
+                    ? original.GetMethodBody(definition.RelativeVirtualAddress).GetILBytes()!
+                    : [0xFE, 0x24];
+                int rva = emitted.MetadataReader.GetMethodDefinition(handle).RelativeVirtualAddress;
+                emitted.GetSectionData(rva, data => Assert.Equal(expected, MethodBodyBlock.Create(data).GetILBytes()));
+            }
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void ReadyToRunValueProbesRespectConfiguration(bool enabled)
+    {
+        string directory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        Directory.CreateDirectory(directory);
+        try
+        {
+            string listingPath = Path.Combine(directory, "value-probes.jit.txt");
+            R2RCompilationResult result = new R2RDriver(_output).Compile(
+            [
+                TestPaths.SystemPrivateCoreLibPath,
+                "--reference", Path.Combine(TestPaths.LibrariesDir, "*.dll"),
+                "--targetos", TestPaths.TargetOS, "--targetarch", TestPaths.TargetArchitecture,
+                "--obj-format", "wasm", "--optimize", "--parallelism", "1",
+                "--singlemethodtypename", "System.MemoryExtensions",
+                "--singlemethodname", "SequenceEqual",
+                "--singlemethodindex", "2",
+                "--singlemethodgenericarg", "System.SByte",
+                "--pgo-instrumentation",
+                $"--codegenopt:JitProfileValues={(enabled ? 1 : 0)}",
+                "--codegenopt:JitDisasm=System.MemoryExtensions:SequenceEqual",
+                $"--codegenopt:JitStdOutFile={listingPath}",
+                "--out", Path.Combine(directory, "value-probes.wasm"),
+            ]);
+            Assert.True(result.Success, result.StandardOutput + result.StandardError);
+            string listing = File.ReadAllText(listingPath);
+            Assert.Contains("i64.add", listing);
+            if (enabled)
+                Assert.Contains("CORINFO_HELP_VALUEPROFILE64", listing);
+            else
+                Assert.DoesNotContain("CORINFO_HELP_VALUEPROFILE64", listing);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Theory]
+    [InlineData(7L, 1L)]
+    [InlineData(21L, 3L)]
+    public void EdgeProfileSeparatesEntryFromIlZeroBackedge(long loopCount, long exitCount)
+    {
+        string directory = Path.GetFullPath(Path.Combine("artifacts", "tmp", "block-profile-flow", Path.GetRandomFileName()));
+        Directory.CreateDirectory(directory);
+        try
+        {
+            const string Source = """
+                using System.Runtime.CompilerServices;
+                public static class Callbacks
+                {
+                    public static int Value = 7;
+                    [MethodImpl(MethodImplOptions.NoInlining)]
+                    public static void Loop()
+                    {
+                    Start:
+                        Value--;
+                        if (Value > 0) goto Start;
+                    }
+                }
+                """;
+            string input = CompileCallbackAssembly(Source, Path.Combine(directory, "EntryFlow.dll"), optimize: true);
+            ReadyToRunCompilerContext context = WasmTestHelpers.CreateContext(input);
+            var module = context.ResolveAssembly(new AssemblyNameInfo("EntryFlow"), throwIfNotFound: true);
+            var method = (EcmaMethod)module.GetType(""u8, "Callbacks"u8).GetMethod("Loop"u8, null);
+            byte[] ilBytes = Internal.IL.EcmaMethodIL.Create(method).GetILBytes();
+            Assert.Equal((byte)ILOpCode.Ldsfld, ilBytes[0]);
+            Assert.Equal((byte)ILOpCode.Ret, ilBytes[^1]);
+            List<CompilerPgo.PgoSchemaElem> schema =
+            [
+                new() { InstrumentationKind = CompilerPgo.PgoInstrumentationKind.EdgeLongCount,
+                    ILOffset = 0, Other = 0, Count = 1, DataLong = loopCount - exitCount },
+                new() { InstrumentationKind = CompilerPgo.PgoInstrumentationKind.EdgeLongCount,
+                    ILOffset = ilBytes.Length - 1, Other = 0, Count = 1, DataLong = exitCount },
+            ];
+
+            string profile = Path.Combine(directory, "profile.mibc");
+            WriteProfile(context, method, schema, profile);
+
+            string listingPath = Path.Combine(directory, "loop.jit.txt");
+            R2RCompilationResult result = new R2RDriver(_output).Compile(
+            [
+                input,
+                "--reference", Path.Combine(TestPaths.LibrariesDir, "*.dll"),
+                "--targetos", TestPaths.TargetOS,
+                "--targetarch", TestPaths.TargetArchitecture,
+                "--obj-format", "wasm",
+                "--optimize",
+                "--parallelism", "1",
+                "--singlemethodtypename", "Callbacks, EntryFlow",
+                "--singlemethodname", "Loop",
+                "-m", profile,
+                "--codegenopt:JitDisasm=Callbacks:Loop",
+                $"--codegenopt:JitStdOutFile={listingPath}",
+                "--out", Path.Combine(directory, "loop.wasm"),
+            ]);
+            Assert.True(result.Success, result.StandardOutput + result.StandardError);
+            string listing = File.ReadAllText(listingPath);
+            Match count = Regex.Match(listing, @"with Static PGO: fgCalledCount is ([\d.eE+-]+)");
+            Assert.True(count.Success, listing);
+            Assert.Equal((double)exitCount,
+                double.Parse(count.Groups[1].Value, CultureInfo.InvariantCulture));
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    [InlineData(true, true)]
+    public void EdgeProfilePreservesLikelihoods(bool longCounts, bool instrument = false)
+    {
+        string directory = Path.GetFullPath(Path.Combine("artifacts", "tmp", "mixed-edge-profile", Path.GetRandomFileName()));
+        Directory.CreateDirectory(directory);
+        try
+        {
+            const string Source = """
+                using System.Runtime.CompilerServices;
+                public static class Callbacks
+                {
+                    [MethodImpl(MethodImplOptions.NoInlining)]
+                    public static int Branch(bool takeFirst)
+                    {
+                        if (takeFirst) return 1;
+                        return 2;
+                    }
+                }
+                """;
+            string input = CompileCallbackAssembly(Source, Path.Combine(directory, "MixedEdgeFlow.dll"), optimize: true);
+            ReadyToRunCompilerContext context = WasmTestHelpers.CreateContext(input);
+            EcmaModule module = context.GetModuleForSimpleName("MixedEdgeFlow");
+            EcmaMethod method = (EcmaMethod)module.GetType(""u8, "Callbacks"u8).GetMethod("Branch"u8, null);
+            byte[] ilBytes = Internal.IL.EcmaMethodIL.Create(method).GetILBytes();
+            Assert.Equal((byte)ILOpCode.Ldarg_0, ilBytes[0]);
+            Assert.Equal((byte)ILOpCode.Brfalse_s, ilBytes[1]);
+            const int FirstOffset = 3;
+            int secondOffset = FirstOffset + (sbyte)ilBytes[2];
+            Assert.Equal((byte)ILOpCode.Ldc_i4_1, ilBytes[FirstOffset]);
+            Assert.Equal((byte)ILOpCode.Ldc_i4_2, ilBytes[secondOffset]);
+            CompilerPgo.PgoInstrumentationKind edgeKind = longCounts
+                ? CompilerPgo.PgoInstrumentationKind.EdgeLongCount
+                : CompilerPgo.PgoInstrumentationKind.EdgeIntCount;
+            // Return-to-entry pseudo-edges are the measured edges in this spanning tree.
+            List<CompilerPgo.PgoSchemaElem> schema =
+            [
+                new() { InstrumentationKind = edgeKind, ILOffset = FirstOffset, Other = 0, Count = 1, DataLong = 30 },
+                new() { InstrumentationKind = edgeKind, ILOffset = secondOffset, Other = 0, Count = 1, DataLong = 70 },
+            ];
+
+            string listing = instrument
+                ? CompileCountProfile(input, context, method, schema, directory, "--pgo-instrumentation",
+                    "--codegenopt:JitPropagateSynthesizedCountsToProfileData=1")
+                : CompileCountProfile(input, context, method, schema, directory);
+            AssertCountProfile(listing, entryCount: 100, firstLikelihood: 0.3, secondLikelihood: 0.7);
+            if (instrument)
+                Assert.Contains("i64.add", listing);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void ReadyToRunProfilesVirtualAndInterfaceReceivers(bool classProfiling)
+    {
+        string directory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        Directory.CreateDirectory(directory);
+        try
+        {
+            string input = CompileCallbackAssembly("""
+                public interface ITarget { int Run(); }
+                public abstract class Target { public abstract int Run(); }
+                public sealed class Hot : Target, ITarget
+                {
+                    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+                    public override int Run() => 5;
+                }
+                public static class Callbacks
+                {
+                    public static int ViaInterface(ITarget target) => target.Run() + 1;
+                    public static int ViaVirtual(Target target, int? value, out object boxed)
+                    {
+                        int result = target.Run();
+                        boxed = value;
+                        return result + 1;
+                    }
+                }
+                """, Path.Combine(directory, "ReceiverProfile.dll"), optimize: true);
+            string listing = Path.Combine(directory, "receiver.jit.txt");
+            R2RCompilationResult result = new R2RDriver(_output).Compile(
+            [
+                input, "--reference", Path.Combine(TestPaths.LibrariesDir, "*.dll"),
+                "--targetos", "browser", "--targetarch", "wasm", "--pgo-instrumentation",
+                "--optimize", "--parallelism", "1",
+                "--codegenopt:JitProfileCasts=0", $"--codegenopt:JitClassProfiling={(classProfiling ? 1 : 0)}",
+                "--codegenopt:JitDisasm=Callbacks:*", $"--codegenopt:JitStdOutFile={listing}",
+                "--out", Path.Combine(directory, "receiver.wasm"),
+            ]);
+            Assert.True(result.Success, result.StandardOutput + result.StandardError);
+            string disassembly = File.ReadAllText(listing);
+            Assert.Contains("; Assembly listing for method Callbacks:ViaInterface", disassembly);
+            Assert.Contains("; Assembly listing for method Callbacks:ViaVirtual", disassembly);
+            Assert.Equal(classProfiling ? 2 : 0, Regex.Matches(disassembly, @"\bCORINFO_HELP_CLASSPROFILE64\b").Count);
+            Assert.DoesNotContain("CORINFO_HELP_VTABLEPROFILE", disassembly);
+            if (classProfiling)
+            {
+                ReadyToRunCompilerContext context = WasmTestHelpers.CreateContext(input);
+                EcmaModule module = (EcmaModule)context.GetModuleForSimpleName("ReceiverProfile");
+                TypeDesc hot = module.GetType(""u8, "Hot"u8);
+                foreach (bool interfaceCall in new[] { true, false })
+                {
+                    EcmaMethod method = (EcmaMethod)module.GetType(""u8, "Callbacks"u8)
+                        .GetMethod(interfaceCall ? "ViaInterface"u8 : "ViaVirtual"u8, null);
+                    int callOffset = Array.IndexOf(Internal.IL.EcmaMethodIL.Create(method).GetILBytes(), (byte)ILOpCode.Callvirt);
+                    Assert.True(callOffset >= 0);
+                    const int ClassFlag = unchecked((int)0x80000000);
+                    const int InterfaceFlag = 0x40000000;
+                    int flags = ClassFlag | InterfaceFlag;
+                    string profiled = CompileCountProfile(input, context, method,
+                    [
+                        new() { InstrumentationKind = CompilerPgo.PgoInstrumentationKind.BasicBlockLongCount, Count = 1, DataLong = 5 },
+                        new() { InstrumentationKind = CompilerPgo.PgoInstrumentationKind.HandleHistogramLongCount,
+                            ILOffset = callOffset, Other = flags, Count = 1, DataLong = 5 },
+                        new() { InstrumentationKind = CompilerPgo.PgoInstrumentationKind.HandleHistogramTypes,
+                            ILOffset = callOffset, Other = flags, Count = 1, DataObject = new object[] { hot } },
+                    ], directory);
+                    Assert.Contains("; ReadyToRun compilation", profiled);
+                    Assert.Contains("Direct call [", profiled);
+                    Assert.Contains("Residual call [", profiled);
+                }
+            }
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void ReadyToRunProfilesDelegateTargets()
+    {
+        string directory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        Directory.CreateDirectory(directory);
+        try
+        {
+            string input = CompileCallbackAssembly("""
+                public delegate int Callback(int value);
+                public sealed class Target
+                {
+                    public int Hot(int value) => value + 731;
+                }
+                public static class Callbacks
+                {
+                    public static int Invoke(Callback callback, int value) => callback(value) ^ 1;
+                }
+                """, Path.Combine(directory, "DelegateProfile.dll"), optimize: true);
+            ReadyToRunCompilerContext context = WasmTestHelpers.CreateContext(input);
+            EcmaModule module = (EcmaModule)context.GetModuleForSimpleName("DelegateProfile");
+            EcmaMethod method = (EcmaMethod)module.GetType(""u8, "Callbacks"u8).GetMethod("Invoke"u8, null);
+            MethodDesc target = module.GetType(""u8, "Target"u8).GetMethod("Hot"u8, null);
+            int callOffset = Array.IndexOf(Internal.IL.EcmaMethodIL.Create(method).GetILBytes(), (byte)ILOpCode.Callvirt);
+            Assert.True(callOffset >= 0);
+
+            List<CompilerPgo.PgoSchemaElem> schema =
+            [
+                new() { InstrumentationKind = CompilerPgo.PgoInstrumentationKind.BasicBlockLongCount, Count = 1, DataLong = 5 },
+            ];
+            string producer = CompileCountProfile(input, context, method, schema, directory, "--pgo-instrumentation");
+            Assert.Contains("CORINFO_HELP_DELEGATEPROFILE64", producer);
+
+            const int DelegateFlag = 0x20000000;
+            schema.Add(new() { InstrumentationKind = CompilerPgo.PgoInstrumentationKind.HandleHistogramLongCount,
+                ILOffset = callOffset, Other = DelegateFlag, Count = 1, DataLong = 5 });
+            schema.Add(new() { InstrumentationKind = CompilerPgo.PgoInstrumentationKind.HandleHistogramMethods,
+                ILOffset = callOffset, Other = DelegateFlag, Count = 5, DataObject = new object[] { target, target, target, target, target } });
+            string consumer = CompileCountProfile(input, context, method, schema, directory);
+            Assert.Contains("Direct call [", consumer);
+            Assert.Contains("Residual call [", consumer);
+            Assert.Matches(@"(?m)\bi32\.const 731[ \t]*\r?$", consumer);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void CastProfileDoesNotRequireUnreferencedTypes(bool localType)
+    {
+        string directory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        Directory.CreateDirectory(directory);
+        try
+        {
+            const string Sample = """
+                public sealed class Sample : System.IDisposable
+                {
+                    public void Dispose() { }
+                }
+                """;
+            const string Caller = """
+                public static class Callbacks
+                {
+                    public static System.IDisposable Cast(object input) => input as System.IDisposable;
+                }
+                """;
+            string input = CompileCallbackAssembly(localType ? Caller + Sample : Caller,
+                Path.Combine(directory, "CastProfile.dll"), optimize: true);
+            string sample = localType ? input : CompileCallbackAssembly(Sample, Path.Combine(directory, "ExternalSample.dll"));
+            ReadyToRunCompilerContext context = localType ? WasmTestHelpers.CreateContext(input) : WasmTestHelpers.CreateContext(input, sample);
+            EcmaModule module = (EcmaModule)context.GetModuleForSimpleName("CastProfile");
+            EcmaMethod method = (EcmaMethod)module.GetType(""u8, "Callbacks"u8).GetMethod("Cast"u8, null);
+            TypeDesc sampledType = ((EcmaModule)context.GetModuleForSimpleName(Path.GetFileNameWithoutExtension(sample)))
+                .GetType(""u8, "Sample"u8);
+            int castOffset = Array.IndexOf(Internal.IL.EcmaMethodIL.Create(method).GetILBytes(), (byte)ILOpCode.Isinst);
+            Assert.True(castOffset >= 0);
+            const int ClassFlag = unchecked((int)0x80000000);
+            List<CompilerPgo.PgoSchemaElem> schema =
+            [
+                new() { InstrumentationKind = CompilerPgo.PgoInstrumentationKind.BasicBlockLongCount, Count = 1, DataLong = 5 },
+                new() { InstrumentationKind = CompilerPgo.PgoInstrumentationKind.HandleHistogramLongCount,
+                    ILOffset = castOffset, Other = ClassFlag, Count = 1, DataLong = 5 },
+                new() { InstrumentationKind = CompilerPgo.PgoInstrumentationKind.HandleHistogramTypes,
+                    ILOffset = castOffset, Other = ClassFlag, Count = 5,
+                    DataObject = new object[] { sampledType, sampledType, sampledType, sampledType, sampledType } },
+            ];
+            string listing = CompileCountProfile(input, context, method, schema, directory,
+                "--reference", sample);
+            Assert.Contains("; ReadyToRun compilation", listing);
+            Assert.Contains("CORINFO_HELP_ISINSTANCEOF", listing);
+            Assert.Contains("; with Static PGO: fgCalledCount is 5", listing);
+            Assert.Equal(localType, Regex.IsMatch(listing, @"(?m)\bi32\.eq[ \t]*\r?$"));
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    private string CompileCountProfile(string input, ReadyToRunCompilerContext context, EcmaMethod method,
+        List<CompilerPgo.PgoSchemaElem> schema, string directory, params string[] instrumentationOptions)
+    {
+        string profile = Path.Combine(directory, "profile.mibc");
+        WriteProfile(context, method, schema, profile);
+        string listingPath = Path.Combine(directory, "profile.jit.txt");
+        string methodName = method.Name.ToString();
+        R2RCompilationResult result = new R2RDriver(_output).Compile(
+        [
+            input,
+            "--reference", Path.Combine(TestPaths.LibrariesDir, "*.dll"),
+            "--targetos", TestPaths.TargetOS,
+            "--targetarch", TestPaths.TargetArchitecture,
+            "--obj-format", "wasm",
+            "--optimize",
+            "--parallelism", "1",
+            "--singlemethodtypename", $"Callbacks, {method.Module.Assembly.GetName().Name}",
+            "--singlemethodname", methodName,
+            "-m", profile,
+            $"--codegenopt:JitDump=Callbacks:{methodName}",
+            $"--codegenopt:JitDisasm=Callbacks:{methodName}",
+            $"--codegenopt:JitStdOutFile={listingPath}",
+            "--out", Path.Combine(directory, "profile.wasm"),
+            .. instrumentationOptions,
+        ]);
+        Assert.True(result.Success, result.StandardOutput + result.StandardError);
+
+        return File.ReadAllText(listingPath);
+    }
+
+    private static void AssertCountProfile(string listing, double entryCount, double firstLikelihood, double secondLikelihood)
+    {
+        Match count = Regex.Match(listing, @"with Static PGO: fgCalledCount is ([\d.eE+-]+)");
+        Assert.True(count.Success, listing);
+        Assert.Equal(entryCount, double.Parse(count.Groups[1].Value, CultureInfo.InvariantCulture));
+        Match phase = Regex.Match(listing,
+            @"Trees after Profile incorporation(?<body>.*?)\*+ Starting PHASE", RegexOptions.Singleline);
+        Assert.True(phase.Success, listing);
+        Match branch = Regex.Match(phase.Groups["body"].Value,
+            @"^BB01\b[^\r\n]*-> BB03\(([\d.eE+-]+)\),BB02\(([\d.eE+-]+)\)", RegexOptions.Multiline);
+        Assert.True(branch.Success, phase.Value);
+        Assert.Equal(firstLikelihood, double.Parse(branch.Groups[2].Value, CultureInfo.InvariantCulture));
+        Assert.Equal(secondLikelihood, double.Parse(branch.Groups[1].Value, CultureInfo.InvariantCulture));
+    }
+
+    private static void WriteProfile(ReadyToRunCompilerContext context, EcmaMethod method,
+        List<CompilerPgo.PgoSchemaElem> schema, string profile)
+    {
+        string assemblyName = method.Module.Assembly.GetName().Name;
+        TypeSystemMetadataEmitter metadata = new(new AssemblyNameInfo("profile.mibc"), context);
+        metadata.AllowUseOfAddGlobalMethod();
+        InstructionEncoder group = new(new BlobBuilder());
+        group.OpCode(ILOpCode.Ldtoken);
+        group.Token(metadata.GetMethodRef(method));
+        group.LoadString(metadata.GetUserStringHandle("InstrumentationDataStart"));
+        CompilerPgo.PgoProcessor.EncodePgoData<object, object>(schema,
+            new ProfileEmitter(metadata, group), emitAllElementsUnconditionally: true);
+        group.OpCode(ILOpCode.Pop);
+        MethodDefinitionHandle groupHandle = metadata.AddGlobalMethod($"Assemblies_{assemblyName}", group, 8);
+        InstructionEncoder dictionary = new(new BlobBuilder());
+        dictionary.LoadString(metadata.GetUserStringHandle($"{assemblyName};"));
+        dictionary.OpCode(ILOpCode.Ldtoken);
+        dictionary.Token(groupHandle);
+        dictionary.OpCode(ILOpCode.Pop);
+        metadata.AddGlobalMethod("AssemblyDictionary", dictionary, 8);
+        using FileStream stream = File.Create(profile);
+        metadata.SerializeToStream(stream);
+    }
+
+    private sealed class ProfileEmitter : CompilerPgo.IPgoEncodedValueEmitter<object, object>
+    {
+        private readonly TypeSystemMetadataEmitter _metadata;
+        private readonly InstructionEncoder _il;
+
+        public ProfileEmitter(TypeSystemMetadataEmitter metadata, InstructionEncoder il)
+        {
+            _metadata = metadata;
+            _il = il;
+        }
+
+        public void EmitLong(long value, long previousValue)
+        {
+            if (value is >= int.MinValue and <= int.MaxValue)
+                _il.LoadConstantI4((int)value);
+            else
+                _il.LoadConstantI8(value);
+        }
+
+        public void EmitType(object type, object previousValue)
+        {
+            _il.OpCode(ILOpCode.Ldtoken);
+            _il.Token(_metadata.GetTypeRef(Assert.IsAssignableFrom<TypeDesc>(type)));
+        }
+
+        public void EmitMethod(object method, object previousValue)
+        {
+            _il.OpCode(ILOpCode.Ldtoken);
+            _il.Token(_metadata.GetMethodRef(Assert.IsAssignableFrom<MethodDesc>(method)));
+        }
+
+        public bool EmitDone()
+        {
+            _il.LoadString(_metadata.GetUserStringHandle("InstrumentationDataEnd"));
+            return true;
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void DirectCallActivationUsesCanonicalBody(bool useDirectCall)
+    {
+        string directory = Path.GetFullPath(Path.Combine("artifacts", "tmp", "canonical-ready-entry", Path.GetRandomFileName()));
+        Directory.CreateDirectory(directory);
+        try
+        {
+            string source = $$"""
+                using System;
+                using System.Runtime.CompilerServices;
+
+                public sealed class Marker { }
+                public struct Enumerator<T> : IDisposable
+                {
+                    public T Value;
+                    public T Current => Value;
+                    [MethodImpl(MethodImplOptions.NoInlining)]
+                    public bool MoveNext() => false;
+                    {{(!useDirectCall ? "[MethodImpl(MethodImplOptions.NoInlining)]" : "")}}
+                    public void Dispose() => Callbacks.DisposeCount++;
+                }
+                public sealed class Sequence
+                {
+                    public Enumerator<Marker> GetEnumerator() => default;
+                }
+                public static class Callbacks
+                {
+                    public static int DisposeCount;
+                    public static int Main()
+                    {
+                        foreach (Marker item in new Sequence()) { }
+                        return DisposeCount == 1 ? 0 : 1;
+                    }
+                }
+                """;
+            string input = CompileCallbackAssembly(source, Path.Combine(directory, "CanonicalActivation.dll"),
+                optimize: true, outputKind: OutputKind.ConsoleApplication);
+            string output = Path.Combine(directory, "CanonicalActivation.r2r.wasm");
+            List<string> args =
+            [
+                input,
+                "--composite",
+                "--inputbubble",
+                "--unrooted-input-file-paths", TestPaths.SystemPrivateCoreLibPath,
+                "--reference", Path.Combine(TestPaths.LibrariesDir, "*.dll"),
+                "--targetos", TestPaths.TargetOS,
+                "--targetarch", TestPaths.TargetArchitecture,
+                "--obj-format", "wasm",
+                "--optimize",
+                "--parallelism", "1",
+                "--codegenopt:JitNoInline=1",
+                "--out", output,
+            ];
+            R2RCompilationResult result = new R2RDriver(_output).Compile(args);
+            Assert.True(result.Success, result.StandardOutput + result.StandardError);
+
+            var resolver = new SimpleAssemblyResolver([input, .. Directory.GetFiles(TestPaths.LibrariesDir, "*.dll")]);
+            var reader = new ReadyToRunReader(resolver, output);
+            var formatting = new SignatureFormattingOptions();
+            string[] allSignatures = reader.ImportSections.SelectMany(section => section.Entries)
+                .Select(entry => entry.Signature.ToString(formatting))
+                .ToArray();
+            string[] signatures = allSignatures.Where(signature => signature.StartsWith("void Enumerator`1<", StringComparison.Ordinal) &&
+                signature.Contains(".Dispose(", StringComparison.Ordinal)).ToArray();
+            Assert.NotEmpty(signatures);
+            _output.WriteLine(string.Join(Environment.NewLine, signatures));
+            if (useDirectCall)
+            {
+                string[] activations = signatures.Where(signature => signature.Contains("METHOD_ENTRY_READYTORUN", StringComparison.Ordinal)).ToArray();
+                Assert.NotEmpty(activations);
+                foreach (string activation in activations)
+                {
+                    Assert.Contains("__Canon", activation);
+                    Assert.DoesNotContain("Marker", activation);
+                    Assert.DoesNotContain(" @ ", activation);
+                }
+            }
+            else
+            {
+                Assert.Contains(signatures, signature => signature.Contains("Marker", StringComparison.Ordinal) &&
+                    signature.Contains("METHOD_ENTRY", StringComparison.Ordinal) &&
+                    !signature.Contains("METHOD_ENTRY_READYTORUN", StringComparison.Ordinal));
+            }
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
     }
 
     [Theory]
@@ -1617,13 +2428,15 @@ public class WasmArgumentLayoutTests
     /// Builds an input assembly for the generator to scan, referencing the context's CoreLib
     /// unless the source defines its own.
     /// </summary>
-    private static string CompileCallbackAssembly(string source, string outputPath, bool allowUnsafe = false, bool useCoreLibReference = true)
+    private static string CompileCallbackAssembly(string source, string outputPath, bool allowUnsafe = false, bool useCoreLibReference = true,
+        bool optimize = false, OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary)
     {
         CSharpCompilation compilation = CSharpCompilation.Create(
             Path.GetFileNameWithoutExtension(outputPath),
             [CSharpSyntaxTree.ParseText(source)],
             useCoreLibReference ? [MetadataReference.CreateFromFile(TestPaths.SystemPrivateCoreLibPath)] : [],
-            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: allowUnsafe));
+            new CSharpCompilationOptions(outputKind, allowUnsafe: allowUnsafe,
+                optimizationLevel: optimize ? OptimizationLevel.Release : OptimizationLevel.Debug));
 
         EmitResult result = compilation.Emit(outputPath);
         Assert.True(result.Success,
