@@ -12275,8 +12275,9 @@ CorInfoReloc CEEJitInfo::getRelocTypeHint(void * target)
             return CorInfoReloc::RELATIVE32;
     }
 #elif defined(TARGET_ARM64)
-    if (m_fAllowOptionalRelocs && IS_ALIGNED((SIZE_T)target, sizeof(void*)) &&
-        ExecutableAllocator::IsInPreferredPageRelativeRange(target))
+    // Alignment constraints are the consumer's: a folded page-offset load needs a
+    // scaled offset, materializing an address with ADRP and ADD does not.
+    if (m_fAllowOptionalRelocs && ExecutableAllocator::IsInPreferredPageRelativeRange(target))
         return CorInfoReloc::ARM64_PAGEBASE_REL21;
 #endif
 
