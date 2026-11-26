@@ -32,6 +32,7 @@ class Generics
         TestNameManglingCollisionRegression.Run();
         TestSimpleGVMScenarios.Run();
         TestAsyncGVMScenarios.Run();
+        TestCovariantReturnGvm.Run();
         TestGvmDelegates.Run();
         TestGvmDependencies.Run();
         TestGvmLookups.Run();
@@ -69,6 +70,7 @@ class Generics
         Test105397Regression.Run();
         Test105880Regression.Run();
         Test130028Regression.Run();
+        Test137774Regression.Run();
         TestInterfaceGenericCornerCase.Run();
         Test115442Regression.Run();
         TestInvokeMemberCornerCaseInGenerics.Run();
@@ -78,8 +80,10 @@ class Generics
         TestVariantDispatchUnconstructedTypes.Run();
         TestMDArrayAddressMethod.Run();
         TestNativeLayoutGeneration.Run();
+        TestInterfaceDispatchTemplateDependencies.Run();
         TestByRefLikeVTables.Run();
         TestFunctionPointerLoading.Run();
+        TestTemplateArrayLayout.Run();
 
         return 100;
     }
@@ -766,6 +770,43 @@ class Generics
             }
         }
 
+        interface IHierarchy
+        {
+            Type GetBaseArgument();
+            Type GetDerivedArgument();
+        }
+
+        struct Value<T> { }
+
+        class GenericBase<T>
+        {
+            public virtual Type GetBaseArgument() => typeof(T);
+        }
+
+        class Middle<T, U> : GenericBase<U>, IHierarchy
+        {
+            public virtual Type GetDerivedArgument() => typeof(T);
+        }
+
+        class ReferenceDerived<T> : Middle<T, string> { }
+        class ValueDerived<T> : Middle<T, int> { }
+        class NestedValueDerived<T> : Middle<T, Value<T>> { }
+
+        class EmptyDictionaryBase<T> : IHierarchy
+        {
+            public Type GetBaseArgument() => typeof(int);
+            public virtual Type GetDerivedArgument() => typeof(int);
+        }
+
+        class EmptyDictionaryDerived<T> : EmptyDictionaryBase<T>
+        {
+            public override Type GetDerivedArgument() => typeof(T);
+        }
+
+        class ReusedDictionaryDerived<T> : EmptyDictionaryDerived<T> { }
+
+        private static Type s_argument = typeof(TestSlotsInHierarchy);
+
         public static void Run()
         {
             var derived = new Derived<string>();
@@ -776,6 +817,24 @@ class Generics
 
             if (derived.Cast("Hello") != "Hello")
                 throw new Exception();
+
+            CheckHierarchy(new ReferenceDerived<object>(), typeof(object), typeof(string));
+            CheckHierarchy(new ValueDerived<object>(), typeof(object), typeof(int));
+            CheckHierarchy(new NestedValueDerived<object>(), typeof(object), typeof(Value<object>));
+            CheckHierarchy(new EmptyDictionaryDerived<object>(), typeof(object), typeof(int));
+            CheckHierarchy(new ReusedDictionaryDerived<object>(), typeof(object), typeof(int));
+
+            CheckHierarchy((IHierarchy)Activator.CreateInstance(typeof(ReferenceDerived<>).MakeGenericType(s_argument)), s_argument, typeof(string));
+            CheckHierarchy((IHierarchy)Activator.CreateInstance(typeof(ValueDerived<>).MakeGenericType(s_argument)), s_argument, typeof(int));
+            CheckHierarchy((IHierarchy)Activator.CreateInstance(typeof(NestedValueDerived<>).MakeGenericType(s_argument)), s_argument, typeof(Value<>).MakeGenericType(s_argument));
+            CheckHierarchy((IHierarchy)Activator.CreateInstance(typeof(EmptyDictionaryDerived<>).MakeGenericType(s_argument)), s_argument, typeof(int));
+            CheckHierarchy((IHierarchy)Activator.CreateInstance(typeof(ReusedDictionaryDerived<>).MakeGenericType(s_argument)), s_argument, typeof(int));
+        }
+
+        private static void CheckHierarchy(IHierarchy value, Type derivedArgument, Type baseArgument)
+        {
+            if (value.GetBaseArgument() != baseArgument || value.GetDerivedArgument() != derivedArgument)
+                throw new Exception("Unexpected hierarchy dictionary");
         }
     }
 
@@ -1563,6 +1622,197 @@ class Generics
         public virtual async Task AsyncGvm1<T>() => await AsyncGvm2<T>();
 
         public virtual async Task AsyncGvm2<T>() => await Task.CompletedTask;
+    }
+
+    class TestCovariantReturnGvm
+    {
+        class Atom { }
+
+        static string s_lastCalled;
+        static List<string> s_failures = new List<string>();
+
+        static string Record(string name)
+        {
+            s_lastCalled = name;
+            return name;
+        }
+
+        // Also called through Derived references, so the Derived overrides are reachable without GVM resolution
+        class Base
+        {
+            public virtual Task GetTask<T>() => Task.FromResult(Record("Base"));
+            public virtual object GetObject<T>() => Record("Base");
+            public virtual object NonGeneric() => Record("Base");
+        }
+
+        class Derived : Base
+        {
+            public override Task<string> GetTask<T>() => Task.FromResult(Record("Derived<" + typeof(T).Name + ">"));
+            public override string GetObject<T>() => Record("Derived<" + typeof(T).Name + ">");
+            public override string NonGeneric() => Record("Derived");
+        }
+
+        class SuperDerived : Derived
+        {
+            public override Task<string> GetTask<T>() => Task.FromResult(Record("SuperDerived<" + typeof(T).Name + ">"));
+            public override string GetObject<T>() => Record("SuperDerived<" + typeof(T).Name + ">");
+        }
+
+        // The overrides below are only ever called through the base slot, so they are only reachable through GVM resolution
+        class BaseOnly
+        {
+            public virtual Task GetTask<T>() => Task.FromResult(Record("BaseOnly"));
+            public virtual object GetObject<T>() => Record("BaseOnly");
+        }
+
+        class DerivedOnly : BaseOnly
+        {
+            public override Task<string> GetTask<T>() => Task.FromResult(Record("DerivedOnly<" + typeof(T).Name + ">"));
+            public override string GetObject<T>() => Record("DerivedOnly<" + typeof(T).Name + ">");
+        }
+
+        class GenericDerivedOnly<X> : BaseOnly
+        {
+            public override string GetObject<T>() => Record("GenericDerivedOnly<" + typeof(X).Name + ">.GetObject<" + typeof(T).Name + ">");
+        }
+
+        abstract class AbstractCovariantOnly : BaseOnly
+        {
+            public abstract override IEnumerable<char> GetObject<T>();
+        }
+
+        class DerivedFromAbstractCovariantOnly : AbstractCovariantOnly
+        {
+            public override string GetObject<T>() => Record("DerivedFromAbstractCovariantOnly<" + typeof(T).Name + ">");
+        }
+
+        class GenericBaseOnly<X>
+        {
+            public virtual object GetObject<T>() => Record("GenericBaseOnly");
+        }
+
+        class DerivedFromGenericBaseOnly : GenericBaseOnly<string>
+        {
+            public override string GetObject<T>() => Record("DerivedFromGenericBaseOnly<" + typeof(T).Name + ">");
+        }
+
+        interface IHasGvm
+        {
+            object GetObject<T>();
+        }
+
+        class InterfaceBase : IHasGvm
+        {
+            public virtual object GetObject<T>() => Record("InterfaceBase");
+        }
+
+        class InterfaceDerived : InterfaceBase
+        {
+            public override string GetObject<T>() => Record("InterfaceDerived<" + typeof(T).Name + ">");
+        }
+
+        static void Check(string scenario, string expected, object actual)
+        {
+            if (actual is Task<string> task)
+                actual = task.Result;
+
+            if (actual as string != expected || s_lastCalled != expected)
+                s_failures.Add($"{scenario}: expected '{expected}', got '{actual}' (last called '{s_lastCalled}')");
+
+            s_lastCalled = null;
+        }
+
+        static void CheckLastCalled(string scenario, string expected)
+        {
+            if (s_lastCalled != expected)
+                s_failures.Add($"{scenario}: expected '{expected}', last called '{s_lastCalled}'");
+
+            s_lastCalled = null;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static T Opaque<T>(T value) => value;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void CheckShared<T>(BaseOnly bo, IHasGvm i)
+        {
+            Check("Shared BaseOnly.GetTask", "DerivedOnly<" + typeof(T).Name + ">", bo.GetTask<T>());
+            Check("Shared BaseOnly.GetObject", "DerivedOnly<" + typeof(T).Name + ">", bo.GetObject<T>());
+            Check("Shared IHasGvm.GetObject", "InterfaceDerived<" + typeof(T).Name + ">", i.GetObject<T>());
+        }
+
+        // The calls are awaited directly so that runtime async uses the async variants of the GVMs
+        static async Task RunAsync()
+        {
+            Base b = Opaque<Base>(new Derived());
+            await b.GetTask<int>();
+            CheckLastCalled("Awaited Base.GetTask<int>", "Derived<Int32>");
+            await b.GetTask<Atom>();
+            CheckLastCalled("Awaited Base.GetTask<Atom>", "Derived<Atom>");
+
+            Derived d = Opaque(new Derived());
+            Check("Awaited Derived.GetTask<int>", "Derived<Int32>", await d.GetTask<int>());
+            Check("Awaited Derived.GetTask<Atom>", "Derived<Atom>", await d.GetTask<Atom>());
+
+            BaseOnly bo = Opaque<BaseOnly>(new DerivedOnly());
+            await bo.GetTask<int>();
+            CheckLastCalled("Awaited BaseOnly.GetTask<int>", "DerivedOnly<Int32>");
+            await bo.GetTask<Atom>();
+            CheckLastCalled("Awaited BaseOnly.GetTask<Atom>", "DerivedOnly<Atom>");
+        }
+
+        public static void Run()
+        {
+            Base b = Opaque<Base>(new Derived());
+            Check("Base.GetTask<int>", "Derived<Int32>", b.GetTask<int>());
+            Check("Base.GetTask<Atom>", "Derived<Atom>", b.GetTask<Atom>());
+            Check("Base.GetObject<int>", "Derived<Int32>", b.GetObject<int>());
+            Check("Base.GetObject<Atom>", "Derived<Atom>", b.GetObject<Atom>());
+            Check("Base.NonGeneric", "Derived", b.NonGeneric());
+
+            Derived d = Opaque(new Derived());
+            Check("Derived.GetTask<int>", "Derived<Int32>", d.GetTask<int>());
+            Check("Derived.GetTask<Atom>", "Derived<Atom>", d.GetTask<Atom>());
+            Check("Derived.GetObject<int>", "Derived<Int32>", d.GetObject<int>());
+            Check("Derived.GetObject<Atom>", "Derived<Atom>", d.GetObject<Atom>());
+
+            Base bs = Opaque<Base>(new SuperDerived());
+            Check("Base(SuperDerived).GetTask<int>", "SuperDerived<Int32>", bs.GetTask<int>());
+            Check("Base(SuperDerived).GetObject<Atom>", "SuperDerived<Atom>", bs.GetObject<Atom>());
+
+            Derived ds = Opaque<Derived>(new SuperDerived());
+            Check("Derived(SuperDerived).GetObject<int>", "SuperDerived<Int32>", ds.GetObject<int>());
+            Check("Derived(SuperDerived).GetTask<Atom>", "SuperDerived<Atom>", ds.GetTask<Atom>());
+
+            BaseOnly bo = Opaque<BaseOnly>(new DerivedOnly());
+            Check("BaseOnly.GetTask<int>", "DerivedOnly<Int32>", bo.GetTask<int>());
+            Check("BaseOnly.GetTask<Atom>", "DerivedOnly<Atom>", bo.GetTask<Atom>());
+            Check("BaseOnly.GetObject<int>", "DerivedOnly<Int32>", bo.GetObject<int>());
+            Check("BaseOnly.GetObject<Atom>", "DerivedOnly<Atom>", bo.GetObject<Atom>());
+
+            BaseOnly gbo = Opaque<BaseOnly>(new GenericDerivedOnly<Atom>());
+            Check("BaseOnly(GenericDerivedOnly).GetObject<int>", "GenericDerivedOnly<Atom>.GetObject<Int32>", gbo.GetObject<int>());
+            Check("BaseOnly(GenericDerivedOnly).GetObject<Atom>", "GenericDerivedOnly<Atom>.GetObject<Atom>", gbo.GetObject<Atom>());
+
+            BaseOnly abo = Opaque<BaseOnly>(new DerivedFromAbstractCovariantOnly());
+            Check("BaseOnly(DerivedFromAbstractCovariantOnly).GetObject<int>", "DerivedFromAbstractCovariantOnly<Int32>", abo.GetObject<int>());
+            Check("BaseOnly(DerivedFromAbstractCovariantOnly).GetObject<Atom>", "DerivedFromAbstractCovariantOnly<Atom>", abo.GetObject<Atom>());
+
+            GenericBaseOnly<string> gb = Opaque<GenericBaseOnly<string>>(new DerivedFromGenericBaseOnly());
+            Check("GenericBaseOnly.GetObject<int>", "DerivedFromGenericBaseOnly<Int32>", gb.GetObject<int>());
+            Check("GenericBaseOnly.GetObject<Atom>", "DerivedFromGenericBaseOnly<Atom>", gb.GetObject<Atom>());
+
+            IHasGvm i = Opaque<IHasGvm>(new InterfaceDerived());
+            Check("IHasGvm.GetObject<int>", "InterfaceDerived<Int32>", i.GetObject<int>());
+            Check("IHasGvm.GetObject<Atom>", "InterfaceDerived<Atom>", i.GetObject<Atom>());
+
+            CheckShared<Atom>(Opaque<BaseOnly>(new DerivedOnly()), Opaque<IHasGvm>(new InterfaceDerived()));
+
+            RunAsync().Wait();
+
+            if (s_failures.Count != 0)
+                throw new Exception(string.Join(Environment.NewLine, s_failures));
+        }
     }
 
     class TestGvmDelegates
@@ -2426,6 +2676,49 @@ class Generics
         }
     }
 
+    class TestInterfaceDispatchTemplateDependencies
+    {
+        static Type s_atomType = typeof(Atom);
+
+        class Atom { }
+        class Bar<T> { }
+
+        interface IFoo<in T>
+        {
+            int Method();
+        }
+
+        class Foo : IFoo<object>
+        {
+            public int Method() => 42;
+        }
+
+        interface ITest
+        {
+            int Method();
+        }
+
+        class Gen<T> : ITest
+        {
+            public int Method()
+            {
+                // Use variance so only the interface dispatch cell requires the Bar<T> template.
+                IFoo<Bar<T>> foo = GetFoo();
+                return foo.Method();
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static IFoo<object> GetFoo() => new Foo();
+
+        public static void Run()
+        {
+            var instance = (ITest)Activator.CreateInstance(typeof(Gen<>).MakeGenericType(s_atomType));
+            if (instance.Method() != 42)
+                throw new Exception("Unexpected interface dispatch result.");
+        }
+    }
+
     class TestInterfaceVTableTracking
     {
         class Gen<T> { }
@@ -2486,11 +2779,25 @@ class Generics
     {
         struct Mine<T> { }
 
+        struct BranchMine<T> { }
+
         [MethodImpl(MethodImplOptions.NoInlining)]
         static bool CallWithNullable<T>(object m)
         {
             return m is T;
         }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool CallWithNullableBranch<T>(object m)
+        {
+            if (m is T)
+                return Matched();
+
+            return false;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool Matched() => true;
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         static bool CallWithReferenceType<T>(object m)
@@ -2504,6 +2811,15 @@ class Generics
                 throw new Exception();
 
             if (CallWithNullable<Nullable<Mine<object>>>(new Mine<string>()))
+                throw new Exception();
+
+            if (!CallWithNullableBranch<Nullable<BranchMine<object>>>(new BranchMine<object>()))
+                throw new Exception();
+
+            if (CallWithNullableBranch<Nullable<BranchMine<object>>>(new BranchMine<string>()))
+                throw new Exception();
+
+            if (CallWithNullableBranch<Nullable<BranchMine<object>>>(null))
                 throw new Exception();
 
             if (!CallWithReferenceType<object>(new Mine<object>()))
@@ -2653,6 +2969,128 @@ class Generics
                 if (!t.TypeHandle.Equals(typeof(delegate*<AlsoAlsoGen<Atom>, MyGen<Atom>>).TypeHandle))
                     throw new Exception();
             }
+        }
+    }
+
+    class TestTemplateArrayLayout
+    {
+        class Payload
+        {
+            public Payload() { }
+
+            public override string ToString() => "payload";
+        }
+
+        struct NoReferences<T>
+        {
+            public long Number;
+            public byte Tail;
+            public override string ToString() => $"{Number}:{Tail}";
+        }
+
+        struct AllReferences<T>
+        {
+            public T First;
+            public object Second;
+            public override string ToString() => $"{First}:{Second}";
+        }
+
+        struct MixedReferences<T>
+        {
+            public byte Head;
+            public T First;
+            public long Number;
+            public object Second;
+            public byte Tail;
+            public override string ToString() => $"{Head}:{First}:{Number}:{Second}:{Tail}";
+        }
+
+        interface ITest
+        {
+            void Run();
+        }
+
+        class Test<T> : ITest where T : new()
+        {
+            public void Run()
+            {
+                Check<T>(() => new T(), new T().ToString());
+                Check<NoReferences<T>>(
+                    () => new NoReferences<T> { Number = 123456789, Tail = 42 },
+                    "123456789:42");
+                Check<AllReferences<T>>(
+                    () => new AllReferences<T> { First = new T(), Second = new string('a', 23) },
+                    $"{new T()}:{new string('a', 23)}");
+                Check<MixedReferences<T>>(
+                    () => new MixedReferences<T> { Head = 17, First = new T(), Number = 123456789, Second = new string('b', 29), Tail = 42 },
+                    $"17:{new T()}:123456789:{new string('b', 29)}:42");
+                Check<MixedReferences<T>?>(
+                    () => new MixedReferences<T> { Head = 17, First = new T(), Number = 123456789, Second = new string('c', 31), Tail = 42 },
+                    $"17:{new T()}:123456789:{new string('c', 31)}:42");
+            }
+
+            private static void Check<TElement>(Func<TElement> createValue, string expected)
+            {
+                Type rankOneType = typeof(TElement).MakeArrayType(1);
+                if (rankOneType.IsSZArray || rankOneType.GetArrayRank() != 1 || rankOneType.TypeHandle.Equals(typeof(TElement[]).TypeHandle))
+                    throw new Exception($"Unexpected rank-one MD array type: {rankOneType}");
+
+                Array[] arrays =
+                [
+                    new TElement[3],
+                    new TElement[2, 3],
+                    new TElement[2, 2, 3],
+                ];
+
+                for (int i = 0; i < arrays.Length; i++)
+                {
+                    Array array = arrays[i];
+                    Type expectedType = i == 0 ? typeof(TElement[]) : typeof(TElement).MakeArrayType(i + 1);
+                    if (array.GetType() != expectedType)
+                        throw new Exception($"Unexpected array type: {array.GetType()}");
+
+                    Fill(array, createValue);
+                    GC.Collect(2, GCCollectionMode.Forced, blocking: true, compacting: true);
+                }
+
+                foreach (Array array in arrays)
+                {
+                    foreach (object value in array)
+                    {
+                        if (value.ToString() != expected)
+                            throw new Exception($"Unexpected array value: {value}");
+                    }
+                }
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            private static void Fill<TElement>(Array array, Func<TElement> createValue)
+            {
+                int[] indices = new int[array.Rank];
+                for (int i = 0; i < array.Length; i++)
+                {
+                    int remaining = i;
+                    for (int dimension = array.Rank - 1; dimension >= 0; dimension--)
+                    {
+                        indices[dimension] = remaining % array.GetLength(dimension);
+                        remaining /= array.GetLength(dimension);
+                    }
+
+                    array.SetValue(createValue(), indices);
+                }
+            }
+        }
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+        private static Type s_payloadType = typeof(Payload);
+
+        public static void Run()
+        {
+            new Test<object>().Run();
+
+            Type testType = typeof(Test<>).MakeGenericType(s_payloadType);
+            ((ITest)Activator.CreateInstance(testType)).Run();
+            ((ITest)Activator.CreateInstance(testType)).Run();
         }
     }
 
@@ -3917,6 +4355,31 @@ class Generics
             }
 
             throw new Exception();
+        }
+    }
+
+    class Test137774Regression
+    {
+        public abstract class Base
+        {
+            public abstract T M<T>();
+        }
+
+        public class Mid<U> : Base
+        {
+            public override T M<T>() => default;
+        }
+
+        public sealed class Wrapper<U>(Mid<U> inner) : Base
+        {
+            public override T M<T>() => inner.M<T>();
+        }
+
+        public static void Run()
+        {
+            Base r = new Wrapper<string>(new Mid<string>());
+            if (r.M<int>() != 0)
+                throw new Exception();
         }
     }
 

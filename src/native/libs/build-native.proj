@@ -40,7 +40,7 @@
           Condition="!$([MSBuild]::IsOsPlatform(Windows))">
     <PropertyGroup>
       <_BuildNativeArgs Condition="'$(Ninja)' == 'true'">$(_BuildNativeArgs) ninja</_BuildNativeArgs>
-      <_BuildNativeArgs Condition="'$(Ninja)' != 'true'">$(_BuildNativeArgs) ninja false</_BuildNativeArgs>
+      <_BuildNativeArgs Condition="'$(Ninja)' == 'false'">$(_BuildNativeArgs) ninja false</_BuildNativeArgs>
       <!--
         MSBuildNodeCount should a good approximation for how many procs to use for native build, if we find that doesn't work
         then we should consider calling Environment.ProcessorCount
@@ -113,8 +113,7 @@
           $(NativeBinDir)System.Globalization.Native.dll;
           $(NativeBinDir)System.Globalization.Native.pdb;
           $(NativeBinDir)System.Globalization.Native.so;
-          $(NativeBinDir)System.Globalization.Native.dylib"
-        Condition="'$(RuntimeFlavor)' != 'Mono'" />
+          $(NativeBinDir)System.Globalization.Native.dylib" />
 
       <NativeAsset Include="$(NativeBinDir)*.dll" Exclude="@(ExcludeNativeLibrariesRuntimeFiles)" />
       <NativeAsset Include="$(NativeBinDir)*.pdb" Exclude="@(ExcludeNativeLibrariesRuntimeFiles)" />

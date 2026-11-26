@@ -34,7 +34,7 @@ public sealed unsafe partial class SOSDacImpl
     : ISOSDacInterface, ISOSDacInterface2, ISOSDacInterface3, ISOSDacInterface4, ISOSDacInterface5,
       ISOSDacInterface6, ISOSDacInterface7, ISOSDacInterface8, ISOSDacInterface9, ISOSDacInterface10,
       ISOSDacInterface11, ISOSDacInterface12, ISOSDacInterface13, ISOSDacInterface14, ISOSDacInterface15,
-      ISOSDacInterface16, ISOSDacInterface17
+      ISOSDacInterface16, ISOSDacInterface17, ISOSDacInterface18, ISOSDacInterface19
 {
     private const uint DefaultAppDomainId = 1;
 
@@ -43,7 +43,17 @@ public sealed unsafe partial class SOSDacImpl
 
     private readonly ulong _rcwMask = 1UL;
 
+    // The native DAC owns the cDAC host and passes itself here. Keep the wrapper rooted for
+    // the lifetime of this object even when release builds do not use it for comparisons.
+#pragma warning disable CS0414 // Assigned to keep the legacy DAC wrapper rooted for lifetime management.
+    private readonly object? _legacyLifetime;
+#pragma warning restore CS0414
+
     private readonly ISOSDacInterface? _legacyImpl;
+    private readonly ISOSDacInterface13? _legacyImpl13;
+    private readonly IXCLRDataProcess? _legacyProcess;
+
+#if DEBUG
     private readonly ISOSDacInterface2? _legacyImpl2;
     private readonly ISOSDacInterface3? _legacyImpl3;
     private readonly ISOSDacInterface4? _legacyImpl4;
@@ -55,44 +65,44 @@ public sealed unsafe partial class SOSDacImpl
     private readonly ISOSDacInterface10? _legacyImpl10;
     private readonly ISOSDacInterface11? _legacyImpl11;
     private readonly ISOSDacInterface12? _legacyImpl12;
-    private readonly ISOSDacInterface13? _legacyImpl13;
     private readonly ISOSDacInterface14? _legacyImpl14;
     private readonly ISOSDacInterface15? _legacyImpl15;
     private readonly ISOSDacInterface16? _legacyImpl16;
-    private readonly IXCLRDataProcess? _legacyProcess;
     private readonly IXCLRDataProcess2? _legacyProcess2;
-    private readonly ICLRDataEnumMemoryRegions? _legacyEnumMemory;
+#endif
 
     public SOSDacImpl(Target target, object? legacyObj, Lock apiLock)
     {
         _apiLock = apiLock;
         _target = target;
+        _legacyLifetime = legacyObj;
 
-        // Get all the interfaces for delegating to the legacy DAC
-        if (legacyObj is not null)
-        {
-            _legacyImpl = legacyObj as ISOSDacInterface;
-            _legacyImpl2 = legacyObj as ISOSDacInterface2;
-            _legacyImpl3 = legacyObj as ISOSDacInterface3;
-            _legacyImpl4 = legacyObj as ISOSDacInterface4;
-            _legacyImpl5 = legacyObj as ISOSDacInterface5;
-            _legacyImpl6 = legacyObj as ISOSDacInterface6;
-            _legacyImpl7 = legacyObj as ISOSDacInterface7;
-            _legacyImpl8 = legacyObj as ISOSDacInterface8;
-            _legacyImpl9 = legacyObj as ISOSDacInterface9;
-            _legacyImpl10 = legacyObj as ISOSDacInterface10;
-            _legacyImpl11 = legacyObj as ISOSDacInterface11;
-            _legacyImpl12 = legacyObj as ISOSDacInterface12;
-            _legacyImpl13 = legacyObj as ISOSDacInterface13;
-            _legacyImpl14 = legacyObj as ISOSDacInterface14;
-            _legacyImpl15 = legacyObj as ISOSDacInterface15;
-            _legacyImpl16 = legacyObj as ISOSDacInterface16;
+#if DEBUG
+        // Get all the interfaces used to compare cDAC behavior with the legacy DAC.
+        _legacyImpl = legacyObj as ISOSDacInterface;
+        _legacyImpl2 = legacyObj as ISOSDacInterface2;
+        _legacyImpl3 = legacyObj as ISOSDacInterface3;
+        _legacyImpl4 = legacyObj as ISOSDacInterface4;
+        _legacyImpl5 = legacyObj as ISOSDacInterface5;
+        _legacyImpl6 = legacyObj as ISOSDacInterface6;
+        _legacyImpl7 = legacyObj as ISOSDacInterface7;
+        _legacyImpl8 = legacyObj as ISOSDacInterface8;
+        _legacyImpl9 = legacyObj as ISOSDacInterface9;
+        _legacyImpl10 = legacyObj as ISOSDacInterface10;
+        _legacyImpl11 = legacyObj as ISOSDacInterface11;
+        _legacyImpl12 = legacyObj as ISOSDacInterface12;
+        _legacyImpl13 = legacyObj as ISOSDacInterface13;
+        _legacyImpl14 = legacyObj as ISOSDacInterface14;
+        _legacyImpl15 = legacyObj as ISOSDacInterface15;
+        _legacyImpl16 = legacyObj as ISOSDacInterface16;
 
-            _legacyProcess = legacyObj as IXCLRDataProcess;
-            _legacyProcess2 = legacyObj as IXCLRDataProcess2;
-
-            _legacyEnumMemory = legacyObj as ICLRDataEnumMemoryRegions;
-        }
+        _legacyProcess = legacyObj as IXCLRDataProcess;
+        _legacyProcess2 = legacyObj as IXCLRDataProcess2;
+#else
+        _legacyImpl = null;
+        _legacyImpl13 = null;
+        _legacyProcess = null;
+#endif
     }
 
     #region ISOSDacInterface
@@ -877,11 +887,11 @@ public sealed unsafe partial class SOSDacImpl
 
             IExecutionManager em = _target.Contracts.ExecutionManager;
 #if DEBUG
-            Contracts.JitManagerInfo jitManagerInfo = em.GetEEJitManagerInfo();
+            Contracts.JitManagerInfo jitManagerInfo = em.GetJitManagerInfo(JitManagerKind.EE)!.Value;
             Debug.Assert(jitManager.ToTargetPointer(_target) == jitManagerInfo.ManagerAddress);
 #endif
 
-            List<ICodeHeapInfo> heapInfos = em.GetCodeHeapInfos().ToList();
+            List<ICodeHeapInfo> heapInfos = em.GetCodeHeapInfos(JitManagerKind.EE).ToList();
             int i = 0;
             if (codeHeaps is not null)
             {
@@ -1220,16 +1230,16 @@ public sealed unsafe partial class SOSDacImpl
         return hr;
     }
 
-    int ISOSDacInterface.GetFrameName(ClrDataAddress vtable, uint count, char* frameName, uint* pNeeded)
+    int ISOSDacInterface.GetFrameName(ClrDataAddress vtableAddress, uint count, char* frameName, uint* pNeeded)
     {
         using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
-            if (vtable == 0)
+            if (vtableAddress == 0)
                 throw new ArgumentException();
             IStackWalk stackWalk = _target.Contracts.StackWalk;
-            string name = stackWalk.GetFrameName(new(vtable));
+            string name = stackWalk.GetFrameName(new(vtableAddress));
 
             if (string.IsNullOrEmpty(name))
                 throw new ArgumentException();
@@ -1256,7 +1266,7 @@ public sealed unsafe partial class SOSDacImpl
             int hrLocal;
             fixed (char* ptr = nameLocal)
             {
-                hrLocal = _legacyImpl.GetFrameName(vtable, count, ptr, &neededLocal);
+                hrLocal = _legacyImpl.GetFrameName(vtableAddress, count, ptr, &neededLocal);
             }
             Debug.ValidateHResult(hr, hrLocal);
             if (hr == HResults.S_OK)
@@ -2216,7 +2226,7 @@ public sealed unsafe partial class SOSDacImpl
                 if (count >= 1)
                 {
                     *managers = default;
-                    Contracts.JitManagerInfo jitManagerInfo = _target.Contracts.ExecutionManager.GetEEJitManagerInfo();
+                    Contracts.JitManagerInfo jitManagerInfo = _target.Contracts.ExecutionManager.GetJitManagerInfo(JitManagerKind.EE)!.Value;
                     managers->managerAddr = jitManagerInfo.ManagerAddress.ToClrDataAddress(_target);
                     managers->codeType = jitManagerInfo.CodeType;
                     managers->ptrHeapList = jitManagerInfo.HeapListAddress.ToClrDataAddress(_target);
@@ -2261,17 +2271,28 @@ public sealed unsafe partial class SOSDacImpl
         return hr;
     }
 
-    private bool IsJumpRel64(TargetPointer pThunk)
+    private bool IsJumpAbs64(TargetPointer pThunk)
+        => 0xD5 == _target.Read<byte>(pThunk) &&
+           0x00 == _target.Read<byte>(pThunk + 1) &&
+           0xA1 == _target.Read<byte>(pThunk + 2);
+
+    private bool IsJumpMovRax64(TargetPointer pThunk)
         => 0x48 == _target.Read<byte>(pThunk) &&
            0xB8 == _target.Read<byte>(pThunk + 1) &&
            0xFF == _target.Read<byte>(pThunk + 10) &&
            0xE0 == _target.Read<byte>(pThunk + 11);
 
+    private bool IsJumpRel64(TargetPointer pThunk)
+        => IsJumpAbs64(pThunk) || IsJumpMovRax64(pThunk);
+
     private TargetPointer DecodeJump64(TargetPointer pThunk)
     {
         Debug.Assert(IsJumpRel64(pThunk), "Expected a jump thunk");
 
-        return _target.ReadPointer(pThunk + 2);
+        // The immediate follows the 3-byte jmpabs opcode or the 2-byte mov rax opcode.
+        return IsJumpAbs64(pThunk)
+            ? _target.ReadPointer(pThunk + 3)
+            : _target.ReadPointer(pThunk + 2);
     }
 
     int ISOSDacInterface.GetJumpThunkTarget(void* ctx, ClrDataAddress* targetIP, ClrDataAddress* targetMD)
@@ -2378,7 +2399,7 @@ public sealed unsafe partial class SOSDacImpl
             if (nativeCodeAddr != TargetCodePointer.Null)
             {
                 data->bHasNativeCode = 1;
-                data->NativeCodeAddr = _target.Contracts.PrecodeStubs.GetInterpreterCodeFromInterpreterPrecodeIfPresent(nativeCodeAddr).ToAddress(_target).ToClrDataAddress(_target);
+                data->NativeCodeAddr = _target.Contracts.ExecutionManager.GetDiagnosticCodeStartFromEntryPoint(nativeCodeAddr).ToAddress(_target).ToClrDataAddress(_target);
             }
             else
             {
@@ -2590,7 +2611,7 @@ public sealed unsafe partial class SOSDacImpl
         ILCodeVersionHandle ilCodeVersion = cv.GetILCodeVersion(nativeCodeVersion);
 
         TargetCodePointer nativeCode = cv.GetNativeCode(nativeCodeVersion);
-        pReJitData->NativeCodeAddr = _target.Contracts.PrecodeStubs.GetInterpreterCodeFromInterpreterPrecodeIfPresent(nativeCode).Value;
+        pReJitData->NativeCodeAddr = _target.Contracts.ExecutionManager.GetDiagnosticCodeStartFromEntryPoint(nativeCode).Value;
         if (cv.GetSource(ilCodeVersion) != CodeVersionSource.ReJIT)
         {
             pReJitData->rejitID = 0;
@@ -2617,6 +2638,8 @@ public sealed unsafe partial class SOSDacImpl
                 // kStateActive
                 case RejitState.Active:
                     flags = DacpReJitData.Flags.kActive;
+                    break;
+                case RejitState.Unknown:
                     break;
                 default:
                     Debug.Fail("Unknown RejitState. cDAC should be updated to understand this new state.");
@@ -3188,17 +3211,23 @@ public sealed unsafe partial class SOSDacImpl
     int ISOSDacInterface.GetModule(ClrDataAddress addr, DacComNullableByRef<IXCLRDataModule> mod)
     {
         using Lock.Scope scope = _apiLock.EnterScope();
+        if (addr == 0 || mod.IsNullRef)
+            return HResults.E_INVALIDARG;
+
+        int hrLocal = HResults.S_OK;
         IXCLRDataModule? legacyModule = null;
         if (_legacyImpl is not null)
         {
             DacComNullableByRef<IXCLRDataModule> legacyOut = new(isNullRef: false);
-            int hr = _legacyImpl.GetModule(addr, legacyOut);
-            if (hr < 0)
-                return hr;
-            legacyModule = legacyOut.Interface;
+            hrLocal = _legacyImpl.GetModule(addr, legacyOut);
+            if (hrLocal >= 0)
+                legacyModule = legacyOut.Interface;
         }
 
         mod.Interface = new ClrDataModule(addr.ToTargetPointer(_target), _target, legacyModule, _apiLock);
+
+        if (_legacyImpl is not null)
+            Debug.ValidateHResult(HResults.S_OK, hrLocal);
 
         return HResults.S_OK;
     }
@@ -5460,7 +5489,7 @@ public sealed unsafe partial class SOSDacImpl
             int count = 0;
             foreach (NativeCodeVersionHandle nativeCodeVersionHandle in codeVersions.GetNativeCodeVersions(methodDescPtr, ilCodeVersionHandle))
             {
-                TargetCodePointer nativeCode = _target.Contracts.PrecodeStubs.GetInterpreterCodeFromInterpreterPrecodeIfPresent(codeVersions.GetNativeCode(nativeCodeVersionHandle));
+                TargetCodePointer nativeCode = _target.Contracts.ExecutionManager.GetDiagnosticCodeStartFromEntryPoint(codeVersions.GetNativeCode(nativeCodeVersionHandle));
                 TargetPointer nativeCodeAddr = nativeCode.ToAddress(_target);
                 nativeCodeAddrs[count].nativeCodeAddr = nativeCodeAddr.ToClrDataAddress(_target);
                 nativeCodeAddrs[count].nativeCodeVersionNodePtr = nativeCodeVersionHandle.CodeVersionNodeAddress.ToClrDataAddress(_target);
@@ -5670,8 +5699,11 @@ public sealed unsafe partial class SOSDacImpl
                     case RejitState.Active:
                         pRejitData->flags = DacpReJitData2.Flags.kActive;
                         break;
+                    case RejitState.Unknown:
+                        pRejitData->flags = DacpReJitData2.Flags.kUnknown;
+                        break;
                     default:
-                        Debug.Assert(true, "Unknown SharedRejitInfo state.  cDAC should be updated to understand this new state.");
+                        Debug.Fail("Unknown SharedRejitInfo state.  cDAC should be updated to understand this new state.");
                         pRejitData->flags = DacpReJitData2.Flags.kUnknown;
                         break;
                 }
@@ -6876,9 +6908,11 @@ public sealed unsafe partial class SOSDacImpl
         using Lock.Scope scope = _apiLock.EnterScope();
         _target.Flush(FlushScope.All);
 
-        // As long as any part of cDAC falls back to the legacy DAC, we need to propagate the Flush call
         if (_legacyImpl13 is not null)
-            return _legacyImpl13.LockedFlush();
+        {
+            int hrLocal = _legacyImpl13.LockedFlush();
+            Debug.ValidateHResult(HResults.S_OK, hrLocal);
+        }
 
         return HResults.S_OK;
     }
@@ -7572,4 +7606,327 @@ public sealed unsafe partial class SOSDacImpl
     }
 
     #endregion ISOSDacInterface17
+
+    int ISOSDacInterface18.GetGCInfoHeader(ClrDataAddress ip, SOSGCInfoHeader* header)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+        int hr = HResults.S_OK;
+        try
+        {
+            if (header is null)
+                return HResults.E_POINTER;
+            if (header->SizeOf < (uint)sizeof(SOSGCInfoHeader))
+                return HResults.E_INVALIDARG;
+
+            *header = new SOSGCInfoHeader { SizeOf = (uint)sizeof(SOSGCInfoHeader) };
+            (IGCInfo gcInfo, IGCInfoHandle handle) = GetGCInfoForAddress(ip);
+            GCInfoHeader info = gcInfo.GetHeader(handle);
+            if (info.PSPSym is { Base: not SpecialSlotBase.CallerStackPointer }
+                || info.GenericsInstContext is { Base: not SpecialSlotBase.CallerStackPointer })
+                return HResults.E_NOTIMPL;
+
+            // Interface18 special slots are caller-SP-relative; other GS cookie bases are reported through Interface19.
+            SpecialSlot? gsCookie = info.GSCookie is { Base: SpecialSlotBase.CallerStackPointer } ? info.GSCookie : null;
+            *header = new SOSGCInfoHeader
+            {
+                SizeOf = (uint)sizeof(SOSGCInfoHeader),
+                GcInfoVersion = info.Version,
+                CodeSize = info.CodeSize,
+                PrologSize = info.PrologSize,
+                StackBaseRegister = info.StackBaseRegister,
+                SizeOfStackParameterArea = info.SizeOfStackParameterArea,
+                IsVarArg = info.IsVarArg ? 1 : 0,
+                WantsReportOnlyLeaf = info.WantsReportOnlyLeaf ? 1 : 0,
+                HasTailCalls = info.HasTailCalls ? 1 : 0,
+                GSCookieIsPresent = gsCookie.HasValue ? 1 : 0,
+                GSCookieStackSlot = gsCookie?.SpOffset ?? 0,
+                GSCookieValidRangeStart = gsCookie.HasValue ? info.GSCookieValidRangeStart : 0,
+                GSCookieValidRangeEnd = gsCookie.HasValue ? info.GSCookieValidRangeEnd : 0,
+                PSPSymIsPresent = info.PSPSym.HasValue ? 1 : 0,
+                PSPSymStackSlot = info.PSPSym?.SpOffset ?? 0,
+                GenericsInstContextIsPresent = info.GenericsInstContext.HasValue ? 1 : 0,
+                GenericsInstContextStackSlot = info.GenericsInstContext?.SpOffset ?? 0,
+                GenericsInstContextKind = info.GenericsInstContextKind switch
+                {
+                    GenericsContextKind.MethodDesc => 1,
+                    GenericsContextKind.MethodHandle => 2,
+                    _ => 0,
+                },
+            };
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+        return hr;
+    }
+
+    int ISOSDacInterface18.GetGCInfoInterruptibleRanges(
+        ClrDataAddress ip, uint count, SOSCodeRange[]? ranges, uint* pNeeded)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+        int hr = HResults.S_OK;
+        try
+        {
+            if (pNeeded is null)
+                return HResults.E_POINTER;
+            *pNeeded = 0;
+            if (count > (uint)(ranges?.Length ?? 0))
+                return HResults.E_INVALIDARG;
+
+            (IGCInfo gcInfo, IGCInfoHandle handle) = GetGCInfoForAddress(ip);
+            IReadOnlyList<InterruptibleRange> info = gcInfo.GetInterruptibleRanges(handle);
+            // The X86 contract also exposes call-site ranges for stack walking.
+            // Interface18 has a separate safe-point table; those are not interruptible regions.
+            if (handle is Contracts.GCInfoHelpers.X86.X86GCInfo { Header.Interruptible: false })
+                info = Array.Empty<InterruptibleRange>();
+            *pNeeded = (uint)info.Count;
+            if (count < *pNeeded)
+                return HResults.S_FALSE;
+
+            Span<SOSCodeRange> output = ranges.AsSpan();
+            for (int i = 0; i < info.Count; i++)
+            {
+                InterruptibleRange range = info[i];
+                output[i] = new SOSCodeRange
+                {
+                    BeginOffset = range.StartOffset,
+                    EndOffset = range.EndOffset,
+                };
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+        return hr;
+    }
+
+    int ISOSDacInterface18.GetGCInfoSafePoints(
+        ClrDataAddress ip, uint count, uint[]? offsets, uint* pNeeded)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+        int hr = HResults.S_OK;
+        try
+        {
+            if (pNeeded is null)
+                return HResults.E_POINTER;
+            *pNeeded = 0;
+            if (count > (uint)(offsets?.Length ?? 0))
+                return HResults.E_INVALIDARG;
+
+            (IGCInfo gcInfo, IGCInfoHandle handle) = GetGCInfoForAddress(ip);
+            IReadOnlyList<uint> info = gcInfo.GetSafePoints(handle);
+            *pNeeded = (uint)info.Count;
+            if (count < *pNeeded)
+                return HResults.S_FALSE;
+
+            Span<uint> output = offsets.AsSpan();
+            for (int i = 0; i < info.Count; i++)
+            {
+                output[i] = info[i];
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+        return hr;
+    }
+
+    int ISOSDacInterface18.GetGCInfoSlotLifetimes(
+        ClrDataAddress ip, uint count, SOSGCSlotLifetime[]? lifetimes, uint* pNeeded)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+        int hr = HResults.S_OK;
+        try
+        {
+            if (pNeeded is null)
+                return HResults.E_POINTER;
+            *pNeeded = 0;
+            if (count > (uint)(lifetimes?.Length ?? 0))
+                return HResults.E_INVALIDARG;
+
+            (IGCInfo gcInfo, IGCInfoHandle handle) = GetGCInfoForAddress(ip);
+            IReadOnlyList<GCSlotLifetime> info = gcInfo.GetSlotLifetimes(handle);
+            *pNeeded = (uint)info.Count;
+            if (count < *pNeeded)
+                return HResults.S_FALSE;
+
+            Span<SOSGCSlotLifetime> output = lifetimes.AsSpan();
+            for (int i = 0; i < info.Count; i++)
+            {
+                GCSlotLifetime slot = info[i];
+                output[i] = new SOSGCSlotLifetime
+                {
+                    BeginOffset = slot.BeginOffset,
+                    EndOffset = slot.EndOffset,
+                    IsRegister = slot.IsRegister ? 1 : 0,
+                    RegisterNumber = slot.RegisterNumber,
+                    SpOffset = slot.SpOffset,
+                    // Contract caller-SP/SP/frame bases (0/1/2) map to Interface18's 2/0/1.
+                    BaseRegister = slot.IsRegister ? 0u : slot.BaseRegister switch
+                    {
+                        0 => 2u,
+                        1 => 0u,
+                        2 => 1u,
+                        _ => throw new InvalidOperationException($"Unexpected GC stack slot base {slot.BaseRegister}."),
+                    },
+                    GcFlags = slot.GcFlags,
+                };
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+        return hr;
+    }
+
+    int ISOSDacInterface19.GetGCInfoX86Header(ClrDataAddress ip, SOSGCInfoX86Header* header)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+        try
+        {
+            if (header is null)
+                return HResults.E_POINTER;
+            if (header->SizeOf < (uint)sizeof(SOSGCInfoX86Header))
+                return HResults.E_INVALIDARG;
+            *header = new() { SizeOf = (uint)sizeof(SOSGCInfoX86Header) };
+            (IGCInfo gcInfo, IGCInfoHandle handle) = GetGCInfoForAddress(ip);
+            X86GCInfoHeader info = gcInfo.GetX86Header(handle);
+            GCInfoHeader commonInfo = gcInfo.GetHeader(handle);
+            SpecialSlot? gsCookie = commonInfo.GSCookie;
+            *header = new()
+            {
+                SizeOf = (uint)sizeof(SOSGCInfoX86Header),
+                EpilogSize = info.EpilogSize,
+                EpilogCount = info.EpilogCount,
+                SavedRegisters = info.SavedRegisters,
+                Flags = info.Flags,
+                ArgumentSize = info.ArgumentSize,
+                FrameSize = info.FrameSize,
+                UntrackedCount = info.UntrackedCount,
+                VarPtrTableSize = info.VarPtrTableSize,
+                SyncStartOffset = info.SyncStartOffset,
+                SyncEndOffset = info.SyncEndOffset,
+                NoGCRegionCount = info.NoGCRegionCount,
+                ArgumentTableOffset = info.ArgumentTableOffset,
+                ReturnKind = info.ReturnKind,
+                ReversePInvokeOffset = info.ReversePInvokeOffset,
+                GSCookieBase = gsCookie?.Base switch
+                {
+                    null => 0u,
+                    SpecialSlotBase.CallerStackPointer => 1u,
+                    SpecialSlotBase.InitialStackPointer => 2u,
+                    SpecialSlotBase slotBase => throw new InvalidOperationException($"Unexpected GS cookie base {slotBase}."),
+                },
+                GSCookieOffset = gsCookie?.SpOffset ?? 0,
+                GSCookieValidRangeStart = gsCookie.HasValue ? commonInfo.GSCookieValidRangeStart : 0,
+                GSCookieValidRangeEnd = gsCookie.HasValue ? commonInfo.GSCookieValidRangeEnd : 0,
+            };
+            return HResults.S_OK;
+        }
+        catch (PlatformNotSupportedException)
+        {
+            return HResults.E_NOTIMPL;
+        }
+        catch (System.Exception ex)
+        {
+            return ex.HResult;
+        }
+    }
+
+    int ISOSDacInterface19.GetGCInfoX86Epilogs(ClrDataAddress ip, uint count, uint[]? offsets, uint* pNeeded)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+        try
+        {
+            if (pNeeded is null)
+                return HResults.E_POINTER;
+            *pNeeded = 0;
+            if (count > (uint)(offsets?.Length ?? 0))
+                return HResults.E_INVALIDARG;
+            (IGCInfo gcInfo, IGCInfoHandle handle) = GetGCInfoForAddress(ip);
+            IReadOnlyList<uint> info = gcInfo.GetX86Epilogs(handle);
+            *pNeeded = (uint)info.Count;
+            if (count < *pNeeded)
+                return HResults.S_FALSE;
+            Span<uint> output = offsets.AsSpan();
+            for (int i = 0; i < info.Count; i++)
+                output[i] = info[i];
+            return HResults.S_OK;
+        }
+        catch (PlatformNotSupportedException)
+        {
+            return HResults.E_NOTIMPL;
+        }
+        catch (System.Exception ex)
+        {
+            return ex.HResult;
+        }
+    }
+
+    int ISOSDacInterface19.GetGCInfoX86Transitions(
+        ClrDataAddress ip, uint count, SOSGCInfoX86Transition[]? transitions, uint* pNeeded)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+        try
+        {
+            if (pNeeded is null)
+                return HResults.E_POINTER;
+            *pNeeded = 0;
+            if (count > (uint)(transitions?.Length ?? 0))
+                return HResults.E_INVALIDARG;
+            (IGCInfo gcInfo, IGCInfoHandle handle) = GetGCInfoForAddress(ip);
+            IReadOnlyList<X86GCTransition> info = gcInfo.GetX86Transitions(handle);
+            *pNeeded = (uint)info.Count;
+            if (count < *pNeeded)
+                return HResults.S_FALSE;
+            Span<SOSGCInfoX86Transition> output = transitions.AsSpan();
+            for (int i = 0; i < info.Count; i++)
+            {
+                X86GCTransition transition = info[i];
+                output[i] = new()
+                {
+                    CodeOffset = transition.CodeOffset,
+                    Kind = (uint)transition.Kind,
+                    StackDepthChange = transition.StackDepthChange,
+                    RegisterNumber = transition.RegisterNumber,
+                    ArgumentOffset = transition.ArgumentOffset,
+                    Count = transition.Count,
+                    Flags = transition.Flags,
+                };
+            }
+            return HResults.S_OK;
+        }
+        catch (PlatformNotSupportedException)
+        {
+            return HResults.E_NOTIMPL;
+        }
+        catch (System.Exception ex)
+        {
+            return ex.HResult;
+        }
+    }
+
+    private (IGCInfo Contract, IGCInfoHandle Handle) GetGCInfoForAddress(ClrDataAddress ip)
+    {
+        IExecutionManager executionManager = _target.Contracts.ExecutionManager;
+        TargetCodePointer codePointer = ip.ToTargetCodePointer(_target);
+        if (ip == 0 || executionManager.GetCodeBlockHandle(codePointer) is not CodeBlockHandle codeBlock)
+            throw new ArgumentException("The instruction pointer must refer to managed code.", nameof(ip));
+
+        executionManager.GetGCInfo(codeBlock, out TargetPointer address, out uint version);
+        IGCInfo gcInfo = _target.Contracts.GCInfo;
+        IGCInfoHandle handle = executionManager.GetCodeKind(codePointer) == Contracts.CodeKind.Interpreter
+            ? gcInfo.DecodeInterpreterGCInfo(address, version)
+            : gcInfo.DecodePlatformSpecificGCInfo(address, version);
+
+        return (gcInfo, handle);
+    }
 }

@@ -9,9 +9,25 @@ using Xunit;
 public class Async2Returns
 {
     [Fact]
-    public static void TestEntryPoint()
+    public static Task TestEntryPoint() => Returns(new C());
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public static async Task NestedAsyncCalls(bool suspend)
     {
-        Returns(new C()).Wait();
+        Assert.Equal(42, await AddOneAsync(await AddOneAsync(40, suspend), suspend));
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static async Task<int> AddOneAsync(int value, bool suspend)
+    {
+        if (suspend)
+        {
+            await Task.Yield();
+        }
+
+        return value + 1;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]

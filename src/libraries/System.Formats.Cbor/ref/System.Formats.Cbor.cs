@@ -27,6 +27,7 @@ namespace System.Formats.Cbor
     {
         public CborReader(System.ReadOnlyMemory<byte> data, System.Formats.Cbor.CborConformanceMode conformanceMode = System.Formats.Cbor.CborConformanceMode.Strict, bool allowMultipleRootLevelValues = false) { }
         public CborReader(System.ReadOnlyMemory<byte> data, System.Formats.Cbor.CborReaderOptions? options) { }
+        public CborReader(System.ReadOnlyMemory<byte> data, System.Formats.Cbor.CborReaderOptions? options, bool isFinalBlock) { }
         public bool AllowMultipleRootLevelValues { get { throw null; } }
         public int BytesRemaining { get { throw null; } }
         public System.Formats.Cbor.CborConformanceMode ConformanceMode { get { throw null; } }
@@ -68,10 +69,14 @@ namespace System.Formats.Cbor
         public ulong ReadUInt64() { throw null; }
         public System.DateTimeOffset ReadUnixTimeSeconds() { throw null; }
         public void Reset(System.ReadOnlyMemory<byte> data) { }
+        public void Reset(System.ReadOnlyMemory<byte> data, bool isFinalBlock) { }
         public void SkipToParent(bool disableConformanceModeChecks = false) { }
         public void SkipValue(bool disableConformanceModeChecks = false) { }
+        public void SlideData(System.ReadOnlyMemory<byte> data, bool isFinalBlock) { }
         public bool TryReadByteString(System.Span<byte> destination, out int bytesWritten) { throw null; }
         public bool TryReadTextString(System.Span<char> destination, out int charsWritten) { throw null; }
+        public bool TrySkipToParent(bool disableConformanceModeChecks = false) { throw null; }
+        public bool TrySkipValue(bool disableConformanceModeChecks = false) { throw null; }
     }
     public sealed partial class CborReaderOptions
     {
@@ -103,6 +108,7 @@ namespace System.Formats.Cbor
         Null = 18,
         Boolean = 19,
         Finished = 20,
+        NeedsMoreData = 21,
     }
     public enum CborSimpleValue : byte
     {

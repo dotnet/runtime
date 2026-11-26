@@ -159,9 +159,6 @@ void StackLevelSetter::ProcessBlock(BasicBlock* block)
         {
             GenTreeCall* call                = node->AsCall();
             unsigned     usedStackSlotsCount = PopArgumentsFromCall(call);
-#if defined(UNIX_X86_ABI)
-            call->gtArgs.SetStkSizeBytes(usedStackSlotsCount * TARGET_POINTER_SIZE);
-#endif // UNIX_X86_ABI
         }
 #endif
 
@@ -396,21 +393,10 @@ void StackLevelSetter::SetThrowHelperBlock(SpecialCodeKind kind, BasicBlock* blo
         // array element in a parameter list to have an EBP frame,
         // this restriction could be removed with more careful code
         // generation for BBJ_THROW (i.e. range check failed).
-        //
-        // For Linux/x86, we possibly need to insert stack alignment adjustment
-        // before the first stack argument pushed for every call. But we
-        // don't know what the stack alignment adjustment will be when
-        // we morph a tree that calls a throw helper, so the stack depth
-        // number will be incorrect. For now, simply force all functions with
-        // these helpers to have EBP frames.
-#if defined(UNIX_X86_ABI)
-        framePointerRequired = true;
-#else  // !defined(UNIX_X86_ABI)
         if (add->acdStkLvl != currentStackLevel)
         {
             framePointerRequired = true;
         }
-#endif // !defined(UNIX_X86_ABI)
     }
     else
     {

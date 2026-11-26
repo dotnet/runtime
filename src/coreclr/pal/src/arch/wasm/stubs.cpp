@@ -202,26 +202,15 @@ RaiseException(
     throw PAL_SEHException(exceptionRecord, contextRecord);
 }
 
-// WIN32 debug-output APIs. WASI build excludes pal/src/debug/debug.cpp; route
-// to the same internal channels stderr would on a real platform.
+// DebugBreak: the WASI build excludes pal/src/debug/debug.cpp.
 extern "C" VOID PALAPI
 DebugBreak()
 {
-    _ASSERT(!"DebugBreak not implemented on wasi");
+    // No host debugger on WASI. Must NOT call _ASSERT here: AssertBreak calls
+    // DebugBreak, so asserting would recurse until the stack is exhausted and
+    // hide the original assert. Trap directly instead.
     __builtin_debugtrap();
     abort();
-}
-
-extern "C" VOID PALAPI
-OutputDebugStringA(IN LPCSTR lpOutputString)
-{
-    if (lpOutputString) fputs(lpOutputString, stderr);
-}
-
-extern "C" VOID PALAPI
-OutputDebugStringW(IN LPCWSTR lpOutputString)
-{
-    (void)lpOutputString;  // wchar_t* — not converted here; stub only
 }
 
 // PAL exception-record allocation — normally in seh-unwind.cpp which we
@@ -235,7 +224,7 @@ struct WasiExceptionRecords
 };
 
 extern "C" PALIMPORT VOID PALAPI
-PAL_FreeExceptionRecords(IN EXCEPTION_RECORD *exceptionRecord, IN CONTEXT *contextRecord)
+PAL_FreeExceptionRecords(IN EXCEPTION_RECORD *exceptionRecord, IN CONTEXT *contextRecord) noexcept
 {
     (void)exceptionRecord;
     // contextRecord is the start of the combined WasiExceptionRecords allocation.
@@ -277,7 +266,8 @@ void SEHCleanupSignals(bool isChildProcess)
     (void)isChildProcess;
 }
 
-void UnmaskActivationSignal()
+extern "C" VOID PALAPI
+PAL_UnmaskActivationSignal(VOID)
 {
 }
 
@@ -295,14 +285,6 @@ GetThreadContext(IN HANDLE hThread, IN OUT LPCONTEXT lpContext)
     (void)hThread; (void)lpContext;
     _ASSERT(!"GetThreadContext not implemented on wasi");
     return FALSE;
-}
-
-// FlushInstructionCache: no-op on WASI. wasm has no separate I-cache to flush.
-extern "C" PALIMPORT BOOL PALAPI
-FlushInstructionCache(IN HANDLE hProcess, IN LPCVOID lpBaseAddress, IN SIZE_T dwSize)
-{
-    (void)hProcess; (void)lpBaseAddress; (void)dwSize;
-    return TRUE;
 }
 
 // SystemJS_GetLocaleInfo is the browser ICU shim entrypoint

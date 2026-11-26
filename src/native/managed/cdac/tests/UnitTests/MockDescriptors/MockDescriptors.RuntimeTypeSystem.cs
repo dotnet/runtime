@@ -95,6 +95,38 @@ internal sealed class MockMethodTable : TypedView
     }
 }
 
+internal sealed class MockEEClassLayoutInfo : TypedView
+{
+    private const string LayoutTypeFieldName = nameof(Data.EEClassLayoutInfo.LayoutType);
+    private const string AlignmentRequirementFieldName = nameof(Data.EEClassLayoutInfo.AlignmentRequirement);
+    private const string FlagsFieldName = nameof(Data.EEClassLayoutInfo.Flags);
+
+    public static Layout<MockEEClassLayoutInfo> CreateLayout(MockTarget.Architecture architecture)
+        => new SequentialLayoutBuilder("EEClassLayoutInfo", architecture)
+            .AddByteField(LayoutTypeFieldName)
+            .AddByteField(AlignmentRequirementFieldName)
+            .AddByteField(FlagsFieldName)
+            .Build<MockEEClassLayoutInfo>();
+
+    public byte LayoutType
+    {
+        get => ReadByteField(LayoutTypeFieldName);
+        set => WriteByteField(LayoutTypeFieldName, value);
+    }
+
+    public byte AlignmentRequirement
+    {
+        get => ReadByteField(AlignmentRequirementFieldName);
+        set => WriteByteField(AlignmentRequirementFieldName, value);
+    }
+
+    public byte Flags
+    {
+        get => ReadByteField(FlagsFieldName);
+        set => WriteByteField(FlagsFieldName, value);
+    }
+}
+
 internal sealed class MockEEClass : TypedView
 {
     private const string MethodTableFieldName = nameof(Data.EEClass.MethodTable);
@@ -109,6 +141,7 @@ internal sealed class MockEEClass : TypedView
     private const string NumNonVirtualSlotsFieldName = nameof(Data.EEClass.NumNonVirtualSlots);
     private const string BaseSizePaddingFieldName = nameof(Data.EEClass.BaseSizePadding);
     private const string OptionalFieldsFieldName = nameof(Data.EEClass.OptionalFields);
+    private const string VMFlagsFieldName = nameof(Data.EEClass.VMFlags);
 
     public static Layout<MockEEClass> CreateLayout(MockTarget.Architecture architecture)
         => new SequentialLayoutBuilder("EEClass", architecture)
@@ -124,7 +157,20 @@ internal sealed class MockEEClass : TypedView
             .AddUInt16Field(NumNonVirtualSlotsFieldName)
             .AddByteField(BaseSizePaddingFieldName)
             .AddPointerField(OptionalFieldsFieldName)
+            .AddUInt32Field(VMFlagsFieldName)
             .Build<MockEEClass>();
+
+    public byte BaseSizePadding
+    {
+        get => ReadByteField(BaseSizePaddingFieldName);
+        set => WriteByteField(BaseSizePaddingFieldName, value);
+    }
+
+    public uint VMFlags
+    {
+        get => ReadUInt32Field(VMFlagsFieldName);
+        set => WriteUInt32Field(VMFlagsFieldName, value);
+    }
 
     public ulong MethodTable
     {
@@ -384,6 +430,9 @@ internal partial class MockDescriptors
         internal Layout<MockTypeVarTypeDesc> TypeVarTypeDescLayout { get; }
         internal Layout<MockFieldDesc> FieldDescLayout { get; }
         internal Layout<MockGCCoverageInfo> GCCoverageInfoLayout { get; }
+        internal Layout<MockEEClassLayoutInfo> EEClassLayoutInfoLayout { get; }
+
+        internal Layout<TypedView> LayoutEEClassLayout { get; }
 
         internal MockEEClass SystemObjectEEClass { get; private set; } = null!;
         internal MockMethodTable SystemObjectMethodTable { get; private set; } = null!;
@@ -420,6 +469,11 @@ internal partial class MockDescriptors
             TypeVarTypeDescLayout = MockTypeVarTypeDesc.CreateLayout(Builder.TargetTestHelpers.Arch);
             FieldDescLayout = MockFieldDesc.CreateLayout(Builder.TargetTestHelpers.Arch);
             GCCoverageInfoLayout = MockGCCoverageInfo.CreateLayout(Builder.TargetTestHelpers.Arch);
+            EEClassLayoutInfoLayout = MockEEClassLayoutInfo.CreateLayout(Builder.TargetTestHelpers.Arch);
+            LayoutEEClassLayout = new SequentialLayoutBuilder("LayoutEEClass", Builder.TargetTestHelpers.Arch)
+                .AddField("EEClassFields", EEClassLayout.Size)
+                .AddField("LayoutInfo", EEClassLayoutInfoLayout.Size)
+                .Build<TypedView>();
 
             AddGlobalPointers();
             AddDefaultTypes();
@@ -531,6 +585,21 @@ internal partial class MockDescriptors
         internal MockEEClass AddEEClass(string name)
             => Add(EEClassLayout, $"EEClass '{name}'");
 
+        internal MockEEClass AddLayoutEEClass(string name, byte layoutType, byte alignmentRequirement, byte flags)
+        {
+            MockEEClass eeClass = Add(EEClassLayout, (ulong)LayoutEEClassLayout.Size, $"LayoutEEClass '{name}'");
+            eeClass.VMFlags = HasLayoutVMFlag;
+
+            ulong layoutInfoAddress = eeClass.Address + (ulong)LayoutEEClassLayout.GetField("LayoutInfo").Offset;
+            Span<byte> layoutInfoBytes = Builder.BorrowAddressRange(layoutInfoAddress, EEClassLayoutInfoLayout.Size);
+            layoutInfoBytes[EEClassLayoutInfoLayout.GetField(nameof(Data.EEClassLayoutInfo.LayoutType)).Offset] = layoutType;
+            layoutInfoBytes[EEClassLayoutInfoLayout.GetField(nameof(Data.EEClassLayoutInfo.AlignmentRequirement)).Offset] = alignmentRequirement;
+            layoutInfoBytes[EEClassLayoutInfoLayout.GetField(nameof(Data.EEClassLayoutInfo.Flags)).Offset] = flags;
+            return eeClass;
+        }
+
+        internal const uint HasLayoutVMFlag = 0x00000040;
+
         internal MockMethodTable AddMethodTable(string name)
             => Add(MethodTableLayout, $"MethodTable '{name}'");
 
@@ -553,9 +622,10 @@ internal partial class MockDescriptors
         internal MockTypeVarTypeDesc AddTypeVarTypeDesc()
             => Add(TypeVarTypeDescLayout, "TypeVarTypeDesc");
 
-        // Value of the native FieldDesc::m_dwOffset sentinel FIELD_OFFSET_BIG_RVA (FIELD_OFFSET_MAX - 5,
-        // where FIELD_OFFSET_MAX == (1 << 27) - 1). See src/coreclr/vm/field.h.
+        // Native FieldDesc::m_dwOffset sentinels relative to FIELD_OFFSET_MAX == (1 << 27) - 1.
+        // See src/coreclr/vm/field.h.
         internal const uint FieldOffsetBigRVAValue = ((1u << 27) - 1) - 5;
+        internal const uint FieldOffsetDynamicRVAValue = ((1u << 27) - 1) - 6;
 
         // Allocates a FieldDesc whose packed DWord2 stores the given 5-bit field type and 27-bit offset.
         internal MockFieldDesc AddFieldDesc(ulong mtOfEnclosingClass, CorElementType type, uint offset, uint memberDef = 0)
@@ -583,6 +653,24 @@ internal partial class MockDescriptors
             return fragment.Address;
         }
 
+        // Allocates the FieldDescs of `fields` contiguously, each recording `mtOfEnclosingClass` and the packed
+        // field type, offset and FieldDef RID (see AddFieldDesc), and returns the address of the first one.
+        internal TargetPointer AddFieldDescList(ulong mtOfEnclosingClass, ReadOnlySpan<(CorElementType Type, uint Offset, uint MemberDef)> fields)
+        {
+            uint size = (uint)FieldDescLayout.Size;
+            MockMemorySpace.HeapFragment fragment = TypeSystemAllocator.Allocate((ulong)fields.Length * size, "FieldDesc array");
+            for (int i = 0; i < fields.Length; i++)
+            {
+                MockFieldDesc fieldDesc = FieldDescLayout.Create(
+                    fragment.Data.AsMemory((int)((uint)i * size), (int)size),
+                    fragment.Address + (uint)i * size);
+                fieldDesc.MTOfEnclosingClass = mtOfEnclosingClass;
+                fieldDesc.DWord1 = fields[i].MemberDef & 0x00ffffff;
+                fieldDesc.DWord2 = ((uint)fields[i].Type << 27) | (fields[i].Offset & 0x07ffffff);
+            }
+            return fragment.Address;
+        }
+
         private TView Add<TView>(Layout<TView> layout, string name)
             where TView : TypedView, new()
             => Add(layout, (ulong)layout.Size, name);
@@ -592,6 +680,32 @@ internal partial class MockDescriptors
         {
             MockMemorySpace.HeapFragment fragment = TypeSystemAllocator.Allocate(size, name);
             return layout.Create(fragment.Data.AsMemory(), fragment.Address);
+        }
+
+        /// <summary>
+        /// Allocates a method table followed by one vtable indirection and its chunk of virtual slots
+        /// (MethodTable::GetSlotPtrRaw: the indirections start immediately after the MethodTable).
+        /// Sets <c>NumVirtuals</c> to the number of slots given.
+        /// </summary>
+        internal MockMethodTable AddMethodTableWithVtable(string name, ulong[] vtableSlots)
+        {
+            const int SlotsPerIndirection = 8;
+            if (vtableSlots.Length > SlotsPerIndirection)
+                throw new ArgumentOutOfRangeException(nameof(vtableSlots));
+
+            int pointerSize = Builder.TargetTestHelpers.PointerSize;
+            int indirectionOffset = MethodTableLayout.Size;
+            int chunkOffset = indirectionOffset + pointerSize;
+            MockMemorySpace.HeapFragment fragment = TypeSystemAllocator.Allocate(
+                (ulong)(chunkOffset + SlotsPerIndirection * pointerSize), $"MethodTable+vtable '{name}'");
+
+            Builder.TargetTestHelpers.WritePointer(fragment.Data.AsSpan(indirectionOffset, pointerSize), fragment.Address + (ulong)chunkOffset);
+            for (int i = 0; i < vtableSlots.Length; i++)
+                Builder.TargetTestHelpers.WritePointer(fragment.Data.AsSpan(chunkOffset + i * pointerSize, pointerSize), vtableSlots[i]);
+
+            MockMethodTable mt = MethodTableLayout.Create(fragment.Data.AsMemory(0, MethodTableLayout.Size), fragment.Address);
+            mt.NumVirtuals = (ushort)vtableSlots.Length;
+            return mt;
         }
 
         /// <summary>

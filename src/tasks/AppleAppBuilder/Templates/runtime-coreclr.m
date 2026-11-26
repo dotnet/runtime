@@ -158,7 +158,6 @@ mono_ios_runtime_init (void)
 
     // build using DiagnosticPorts property in AppleAppBuilder
     // or set DOTNET_DiagnosticPorts env via mlaunch, xharness when undefined.
-    // NOTE, using DOTNET_DiagnosticPorts requires app build using AppleAppBuilder and RuntimeComponents=diagnostics_tracing
 #ifdef DIAGNOSTIC_PORTS
     setenv ("DOTNET_DiagnosticPorts", DIAGNOSTIC_PORTS, true);
 #endif
@@ -216,7 +215,8 @@ mono_ios_runtime_init (void)
         &coreclr_handle, &coreclr_domainId);
     assert (res == 0);
 
-    coreclr_execute_assembly (coreclr_handle, coreclr_domainId, argi, managed_argv, path, &res);
+    // managed_argv[0] is the executable path; managed Main expects only the arguments after it.
+    coreclr_execute_assembly (coreclr_handle, coreclr_domainId, argi - 1, managed_argv + 1, path, &res);
     // Print this so apps parsing logs can detect when we exited
     os_log_info (OS_LOG_DEFAULT, EXIT_CODE_TAG ": %d", res);
 

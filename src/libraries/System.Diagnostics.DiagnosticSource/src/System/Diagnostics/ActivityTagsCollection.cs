@@ -155,10 +155,7 @@ namespace System.Diagnostics
         /// <param name="item">Key and value pair of the tag to add to the collection.</param>
         public void Add(KeyValuePair<string, object?> item)
         {
-            if (item.Key == null)
-            {
-                throw new ArgumentNullException(nameof(item));
-            }
+            ArgumentNullException.ThrowIfNull(item.Key, nameof(item));
 
             int index = FindIndex(item.Key);
             if (index >= 0)
@@ -278,7 +275,14 @@ namespace System.Diagnostics
             object IEnumerator.Current => ((IEnumerator)_enumerator).Current;
             public void Dispose() => _enumerator.Dispose();
             public bool MoveNext() => _enumerator.MoveNext();
-            void IEnumerator.Reset() => ((IEnumerator)_enumerator).Reset();
+            void IEnumerator.Reset()
+            {
+                // Reset is explicit on List<T>.Enumerator, so this boxes a copy.
+                // Copy it back to preserve the reset state.
+                IEnumerator enumerator = _enumerator;
+                enumerator.Reset();
+                _enumerator = (List<KeyValuePair<string, object?>>.Enumerator)enumerator;
+            }
         }
     }
 }

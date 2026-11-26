@@ -1,9 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 // ===========================================================================
 // File: ReadyToRunInfo.h
-//
-
 //
 // Runtime support for Ready to Run
 // ===========================================================================
@@ -15,6 +14,7 @@
 #include "inlinetracking.h"
 #include "wellknownattributes.h"
 #include "nativeimage.h"
+#include "interpretershared.h"
 
 typedef DPTR(struct READYTORUN_SECTION) PTR_READYTORUN_SECTION;
 
@@ -96,7 +96,6 @@ public:
 
     const static ReadyToRun_TypeGenericInfoMap EmptyInstance;
 
-    HRESULT IsGenericNoThrow(mdTypeDef input, bool *pIsGeneric, IMDInternalImport* pImport) const;
     HRESULT GetGenericArgumentCountNoThrow(mdTypeDef input, uint32_t *pCount, IMDInternalImport* pImport) const;
     bool IsGeneric(mdTypeDef input, IMDInternalImport* pImport) const;
     uint32_t GetGenericArgumentCount(mdTypeDef input, IMDInternalImport* pImport) const;
@@ -115,6 +114,46 @@ public:
     const static ReadyToRun_MethodIsGenericMap EmptyInstance;
     bool IsGeneric(mdMethodDef input, bool *foundResult) const;
 };
+
+#ifdef FEATURE_READYTORUN_AUXILIARY_MODULES
+// Activation flags are read with VolatileLoad for explicit ordering. Although the
+// current browser-WASM runtime is single-threaded and does not need it for thread
+// synchronization, these loads do not emit a hardware memory fence on WASM.
+struct ReadyToRun_AuxiliaryModuleMetadataEntry
+{
+public:
+    const uint32_t FileNameRVA;
+    const uint32_t RelativeTableBase;
+    const uint32_t MethodCount;
+    uint32_t ActivationStatus;
+
+    uint32_t* GetActivationFlag()
+    {
+        return &ActivationStatus;
+    }
+};
+
+class ReadyToRun_AuxiliaryModuleMetadata
+{
+public:
+    const uint32_t EntryPointsFilenameRVA;
+    const uint32_t InstanceMethodEntryPointsRVA;
+    const uint32_t MethodDefEntryPointsInfoRVA;
+    uint32_t EntryPointsModuleActivationStatus;
+    const uint32_t PrimaryModuleMethodCount;
+    const uint32_t AuxiliaryModuleCount;
+
+    ReadyToRun_AuxiliaryModuleMetadataEntry* GetAuxiliaryModuleMetadataEntries()
+    {
+        return reinterpret_cast<ReadyToRun_AuxiliaryModuleMetadataEntry*>(this + 1);
+    }
+
+    uint32_t GetAuxiliaryModuleMetadataEntriesCount()
+    {
+        return AuxiliaryModuleCount;
+    }
+};
+#endif // FEATURE_READYTORUN_AUXILIARY_MODULES
 
 struct StringWithLength
 {
@@ -191,8 +230,10 @@ class ReadyToRunInfo
     Crst                            m_Crst;
     PtrHashMap                      m_entryPointToMethodDescMap;
 
+#ifdef FEATURE_INLINE_TRACKING
     PTR_PersistentInlineTrackingMapR2R m_pPersistentInlineTrackingMap;
     PTR_PersistentInlineTrackingMapR2R m_pCrossModulePersistentInlineTrackingMap;
+#endif // FEATURE_INLINE_TRACKING
 
     NativeFormat::NativeHashtable   m_externalTypeMaps;
     NativeFormat::NativeHashtable   m_proxyTypeMaps;
@@ -200,6 +241,10 @@ class ReadyToRunInfo
 
     PTR_ReadyToRunInfo              m_pNextR2RForUnrelatedCode;
     TADDR                           m_pLoadedImageBase;
+
+#ifdef FEATURE_READYTORUN_AUXILIARY_MODULES
+    ReadyToRun_AuxiliaryModuleMetadata* m_pAuxiliaryModuleMetadata = nullptr;
+#endif // FEATURE_READYTORUN_AUXILIARY_MODULES
 
 public:
     ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocator, READYTORUN_HEADER * pHeader, NativeImage * pNativeImage, ReadyToRunLoadedImage * pLayout, AllocMemTracker *pamTracker);
@@ -271,6 +316,20 @@ public:
         return m_pHeader->CoreHeader.Flags & READYTORUN_FLAG_PARTIAL;
     }
 
+    // True when this image was compiled with the GC mode transition verification scaffolding.
+    //
+    // Only WebAssembly emits the scaffolding: the helper call at catch resumption points is
+    // inserted by the WebAssembly-only JIT path in fgwasm.cpp, and only the WebAssembly catch
+    // resumption path consumes this. On any other target the flag is inert even if set, so do not
+    // treat it as a general statement that the image's catch resumption points call
+    // READYTORUN_HELPER_ResumeAfterCatch. See the comment on t_gcModeSwitchPermitted in
+    // vm/threads.h.
+    BOOL VerifiesGCModeTransitions()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_pHeader->CoreHeader.Flags & READYTORUN_FLAG_VERIFY_GC_MODE_TRANSITIONS;
+    }
+
     BOOL HasStrippedILBodies()
     {
         LIMITED_METHOD_CONTRACT;
@@ -334,6 +393,14 @@ public:
 
     PTR_BYTE GetDebugInfo(PTR_RUNTIME_FUNCTION pRuntimeFunction);
 
+#ifdef FEATURE_READYTORUN_AUXILIARY_MODULES
+    // Returns the AuxiliaryModuleMetadata section if available.
+    ReadyToRun_AuxiliaryModuleMetadata* GetAuxiliaryModuleMetadata() const
+    {
+        return m_pAuxiliaryModuleMetadata;
+    }
+#endif // FEATURE_READYTORUN_AUXILIARY_MODULES
+
     class MethodIterator
     {
         ReadyToRunInfo * m_pInfo;
@@ -375,6 +442,7 @@ public:
 
     static DWORD GetFieldBaseOffset(MethodTable * pMT);
 
+#ifdef FEATURE_INLINE_TRACKING
     PTR_PersistentInlineTrackingMapR2R GetInlineTrackingMap()
     {
         return m_pPersistentInlineTrackingMap;
@@ -412,16 +480,18 @@ public:
 
         return inlinersCount;
     }
-
+#endif // FEATURE_INLINE_TRACKING
 
     bool MayHaveCustomAttribute(WellKnownAttribute attribute, mdToken token);
     void DisableCustomAttributeFilter();
 
+    bool TryGetPrecachedExternalTypeMap(MethodTable* pGroupType, NativeFormat::NativeHashtable* pTypeMap, NativeFormat::NativeParser* pNamedEntries);
     bool HasPrecachedExternalTypeMap(MethodTable* pGroupType);
     TypeHandle FindPrecachedExternalTypeMapEntry(MethodTable* pGroupType, LPCUTF8 pKey);
 
     bool CheckForUniqueExternalTypeMapKeys(MethodTable* pGroupType, ExternalTypeNameHash *pHash);
 
+    bool TryGetPrecachedProxyTypeMap(MethodTable* pGroupType, NativeFormat::NativeHashtable* pTypeMap, NativeFormat::NativeParser* pNamedEntries);
     bool HasPrecachedProxyTypeMap(MethodTable* pGroupType);
     TypeHandle FindPrecachedProxyTypeMapEntry(MethodTable* pGroupType, TypeHandle key);
 

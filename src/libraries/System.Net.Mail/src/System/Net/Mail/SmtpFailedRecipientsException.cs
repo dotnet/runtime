@@ -38,7 +38,7 @@ namespace System.Net.Mail
         }
 
         public SmtpFailedRecipientsException(string? message, SmtpFailedRecipientException[] innerExceptions) :
-            base(message, innerExceptions.Length > 0 ? innerExceptions[0].FailedRecipient : null, innerExceptions.Length > 0 ? innerExceptions[0] : null)
+            base(message, innerExceptions?.Length > 0 ? innerExceptions[0].FailedRecipient : null, innerExceptions?.Length > 0 ? innerExceptions[0] : null)
         {
             ArgumentNullException.ThrowIfNull(innerExceptions);
 

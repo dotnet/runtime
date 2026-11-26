@@ -29,6 +29,110 @@ public unsafe class DacDbiImplTests
     private const uint DebuggerIgnorePdbsPriv = 0x00008000;
     private const ulong CorDBDefaultEnCFunctionVersion = 1;
 
+    [Theory]
+    [MemberData(nameof(RuntimeProductVersions))]
+    public void GetRuntimeVersion_ReportsTargetProductVersion(MockTarget.Architecture arch, string productVersion)
+    {
+        Target target = RuntimeInfoTests.CreateTarget(arch, [(Constants.Globals.RuntimeProductVersionString, productVersion)]);
+        DacDbiImpl dacDbi = new(target, legacyObj: null, new());
+        COR_VERSION version = new() { dwMajor = uint.MaxValue, dwMinor = uint.MaxValue, dwBuild = uint.MaxValue, dwSubBuild = uint.MaxValue };
+
+        int hr = dacDbi.GetRuntimeVersion(&version);
+
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(42u, version.dwMajor);
+        Assert.Equal(7u, version.dwMinor);
+        Assert.Equal(19u, version.dwBuild);
+        Assert.Equal(0u, version.dwSubBuild);
+    }
+
+    public static IEnumerable<object[]> RuntimeProductVersions()
+    {
+        foreach (object[] architecture in new MockTarget.StdArch())
+        {
+            foreach (string productVersion in new[] { "42.7.19", "42.7.19-preview.3.12345.6", "42.7.19+build.12345", "42.7.19-preview.3+build.12345" })
+                yield return [architecture[0], productVersion];
+        }
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("not-a-version")]
+    [InlineData("42..19")]
+    [InlineData("42.7")]
+    [InlineData("42.7.19.1")]
+    public void GetRuntimeVersion_InvalidVersion_InitializesOutput(string productVersion)
+    {
+        Target target = RuntimeInfoTests.CreateTarget(new() { IsLittleEndian = true, Is64Bit = true },
+            [(Constants.Globals.RuntimeProductVersionString, productVersion)]);
+        DacDbiImpl dacDbi = new(target, legacyObj: null, new());
+        COR_VERSION version = new() { dwMajor = uint.MaxValue, dwMinor = uint.MaxValue, dwBuild = uint.MaxValue, dwSubBuild = uint.MaxValue };
+
+        int hr = dacDbi.GetRuntimeVersion(&version);
+
+        Assert.Equal(new FormatException().HResult, hr);
+        Assert.Equal(0u, version.dwMajor);
+        Assert.Equal(0u, version.dwMinor);
+        Assert.Equal(0u, version.dwBuild);
+        Assert.Equal(0u, version.dwSubBuild);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetRuntimeVersion_ContractFailure_InitializesOutput(MockTarget.Architecture arch)
+    {
+        InvalidOperationException exception = new("Target version is unavailable.");
+        var runtimeInfo = new Mock<IRuntimeInfo>();
+        runtimeInfo.Setup(r => r.GetRuntimeProductVersion()).Throws(exception);
+        TestPlaceholderTarget target = new TestPlaceholderTarget.Builder(arch).AddMockContract(runtimeInfo).Build();
+        DacDbiImpl dacDbi = new(target, legacyObj: null, new());
+        COR_VERSION version = new() { dwMajor = uint.MaxValue, dwMinor = uint.MaxValue, dwBuild = uint.MaxValue, dwSubBuild = uint.MaxValue };
+
+        int hr = dacDbi.GetRuntimeVersion(&version);
+
+        Assert.Equal(exception.HResult, hr);
+        Assert.Equal(0u, version.dwMajor);
+        Assert.Equal(0u, version.dwMinor);
+        Assert.Equal(0u, version.dwBuild);
+        Assert.Equal(0u, version.dwSubBuild);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetRuntimeVersion_NullOutput_ReturnsInvalidArgument(MockTarget.Architecture arch)
+    {
+        Target target = RuntimeInfoTests.CreateTarget(arch, []);
+        DacDbiImpl dacDbi = new(target, legacyObj: null, new());
+
+        Assert.Equal(System.HResults.E_INVALIDARG, dacDbi.GetRuntimeVersion(null));
+    }
+
+    [Theory]
+    [InlineData("wasm", "Browser", TargetArchitecture.Wasm, TargetOperatingSystem.Browser, 4u)]
+    [InlineData("wasm", "Unix", TargetArchitecture.Wasm, TargetOperatingSystem.Unix, 4u)]
+    [InlineData("arm64", "Apple", TargetArchitecture.Arm64, TargetOperatingSystem.Apple, 8u)]
+    [InlineData("x64", "Windows", TargetArchitecture.AMD64, TargetOperatingSystem.Windows, 8u)]
+    public void GetTargetInfo_ReportsOperatingSystem(
+        string architecture,
+        string operatingSystem,
+        TargetArchitecture expectedArchitecture,
+        TargetOperatingSystem expectedOperatingSystem,
+        uint pointerSize)
+    {
+        MockTarget.Architecture arch = new() { IsLittleEndian = true, Is64Bit = pointerSize == 8 };
+        Target target = RuntimeInfoTests.CreateTarget(arch,
+            [(Constants.Globals.Architecture, architecture), (Constants.Globals.OperatingSystem, operatingSystem)]);
+        DacDbiImpl dacDbi = new(target, legacyObj: null, new());
+        TargetInfo targetInfo = default;
+
+        int hr = dacDbi.GetTargetInfo(&targetInfo);
+
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(expectedArchitecture, targetInfo.Arch);
+        Assert.Equal(expectedOperatingSystem, targetInfo.OS);
+        Assert.Equal(pointerSize, targetInfo.PointerSize);
+    }
+
     private static (DacDbiImpl DacDbi, TestPlaceholderTarget Target) CreateDacDbiWithLoader(
         MockTarget.Architecture arch,
         Action<MockLoaderBuilder, TestPlaceholderTarget.Builder> configure)
@@ -881,6 +985,135 @@ public unsafe class DacDbiImplTests
     }
 
     [Theory]
+    [InlineData("x86", 0xccu)]
+    [InlineData("x64", 0x4d0u)]
+    public void GetTargetContextSize_OptionalExtendedRegisters(string targetArch, uint expectedBaseSize)
+    {
+        Target target = RuntimeInfoTests.CreateTarget(new() { IsLittleEndian = true, Is64Bit = targetArch != "x86" },
+            [(Constants.Globals.Architecture, targetArch)]);
+        DacDbiImpl dacDbi = new(target, legacyObj: null, new());
+        IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(target);
+        uint size;
+
+        Assert.Equal(System.HResults.S_OK, dacDbi.GetTargetContextSize(context.FullContextFlags, &size));
+        Assert.Equal(expectedBaseSize, size);
+        Assert.Equal(System.HResults.S_OK, dacDbi.GetTargetContextSize(context.AllContextFlags, &size));
+        Assert.Equal(context.Size, size);
+    }
+
+    [Theory]
+    [InlineData("x64", 16u, 31u, CorDebugRegister.REGISTER_AMD64_XMM0)]
+    [InlineData("arm64", 33u, 64u, CorDebugRegister.REGISTER_ARM64_V0)]
+    public void ConvertJitRegNumToCorDebugRegister_FloatingPointRegisters(
+        string targetArch, uint firstJitRegister, uint lastJitRegister, CorDebugRegister firstRegister)
+    {
+        Target target = RuntimeInfoTests.CreateTarget(new() { IsLittleEndian = true, Is64Bit = true },
+            [(Constants.Globals.Architecture, targetArch)]);
+        DacDbiImpl dacDbi = new(target, legacyObj: null, new());
+
+        for (uint jitRegister = firstJitRegister; jitRegister <= lastJitRegister; jitRegister++)
+        {
+            CorDebugRegister register = default;
+            Interop.BOOL isAmbientSP = Interop.BOOL.TRUE;
+
+            int hr = dacDbi.ConvertJitRegNumToCorDebugRegister(jitRegister, &register, &isAmbientSP);
+
+            Assert.Equal(System.HResults.S_OK, hr);
+            Assert.Equal((CorDebugRegister)((uint)firstRegister + jitRegister - firstJitRegister), register);
+            Assert.Equal(Interop.BOOL.FALSE, isAmbientSP);
+        }
+
+        CorDebugRegister invalidRegister = firstRegister;
+        Interop.BOOL invalidIsAmbientSP = Interop.BOOL.TRUE;
+        Assert.Equal(System.HResults.E_INVALIDARG,
+            dacDbi.ConvertJitRegNumToCorDebugRegister(lastJitRegister + 1, &invalidRegister, &invalidIsAmbientSP));
+        Assert.Equal(default, invalidRegister);
+        Assert.Equal(Interop.BOOL.FALSE, invalidIsAmbientSP);
+    }
+
+    [Theory]
+    [MemberData(nameof(TargetArchitectures))]
+    public void CopyContext_CopyModeControlsContextFlags(MockTarget.Architecture arch, string targetArch)
+    {
+        var target = new TestPlaceholderTarget.Builder(arch)
+            .AddGlobalStrings((Constants.Globals.Architecture, targetArch))
+            .AddContract<IRuntimeInfo>(version: "c1")
+            .Build();
+        DacDbiImpl dacDbi = new(target, legacyObj: null, new());
+
+        IPlatformAgnosticContext destinationContext = IPlatformAgnosticContext.GetContextForPlatform(target);
+        IPlatformAgnosticContext sourceContext = IPlatformAgnosticContext.GetContextForPlatform(target);
+        destinationContext.RawContextFlags = destinationContext.ContextControlFlags;
+        sourceContext.RawContextFlags = sourceContext.FullContextFlags;
+
+        string sourceOnlyRegister = targetArch switch
+        {
+            "x86" => "edi",
+            "x64" => "rax",
+            "arm" => "r0",
+            "arm64" => "x0",
+            "loongarch64" => "a0",
+            "riscv64" => "gp",
+            _ => throw new InvalidOperationException(targetArch),
+        };
+        TargetNUInt expectedValue = new(0x1234);
+        Assert.True(sourceContext.TrySetRegister(sourceOnlyRegister, expectedValue));
+
+        byte[] destinationBytes = destinationContext.GetBytes().ToArray();
+        byte[] sourceBytes = sourceContext.GetBytes().ToArray();
+        fixed (byte* pDestination = destinationBytes)
+        fixed (byte* pSource = sourceBytes)
+        {
+            ContextBuffer destinationBuffer = new() { pContextBytes = pDestination, contextSize = (uint)destinationBytes.Length };
+            ContextBuffer sourceBuffer = new() { pContextBytes = pSource, contextSize = (uint)sourceBytes.Length };
+            int hr = dacDbi.CopyContext(destinationBuffer, sourceBuffer, ContextCopyMode.PreserveDestinationFlags, flags: 0);
+            Assert.Equal(System.HResults.S_OK, hr);
+        }
+
+        destinationContext.FillFromBuffer(destinationBytes);
+        Assert.Equal(destinationContext.ContextControlFlags, destinationContext.RawContextFlags);
+        Assert.True(destinationContext.TryReadRegister(sourceOnlyRegister, out TargetNUInt preservedValue));
+        Assert.NotEqual(expectedValue, preservedValue);
+
+        fixed (byte* pDestination = destinationBytes)
+        fixed (byte* pSource = sourceBytes)
+        {
+            ContextBuffer destinationBuffer = new() { pContextBytes = pDestination, contextSize = (uint)destinationBytes.Length };
+            ContextBuffer sourceBuffer = new() { pContextBytes = pSource, contextSize = (uint)sourceBytes.Length };
+            int hr = dacDbi.CopyContext(destinationBuffer, sourceBuffer, ContextCopyMode.MergeSourceFlags, flags: 0);
+            Assert.Equal(System.HResults.S_OK, hr);
+        }
+
+        destinationContext.FillFromBuffer(destinationBytes);
+        Assert.Equal(sourceContext.FullContextFlags, destinationContext.RawContextFlags);
+        Assert.True(destinationContext.TryReadRegister(sourceOnlyRegister, out TargetNUInt actualValue));
+        Assert.Equal(expectedValue, actualValue);
+
+        TargetNUInt destinationValue = new(0x5678);
+        destinationContext.RawContextFlags = destinationContext.FullContextFlags;
+        Assert.True(destinationContext.TrySetRegister(sourceOnlyRegister, destinationValue));
+        destinationBytes = destinationContext.GetBytes().ToArray();
+
+        fixed (byte* pDestination = destinationBytes)
+        fixed (byte* pSource = sourceBytes)
+        {
+            ContextBuffer destinationBuffer = new() { pContextBytes = pDestination, contextSize = (uint)destinationBytes.Length };
+            ContextBuffer sourceBuffer = new() { pContextBytes = pSource, contextSize = (uint)sourceBytes.Length };
+            int hr = dacDbi.CopyContext(
+                destinationBuffer,
+                sourceBuffer,
+                ContextCopyMode.UseExplicitFlags,
+                flags: 0);
+            Assert.Equal(System.HResults.S_OK, hr);
+        }
+
+        destinationContext.FillFromBuffer(destinationBytes);
+        Assert.Equal(0u, destinationContext.RawContextFlags);
+        Assert.True(destinationContext.TryReadRegister(sourceOnlyRegister, out actualValue));
+        Assert.Equal(destinationValue, actualValue);
+    }
+
+    [Theory]
     [MemberData(nameof(TargetArchitectures_SpRange))]
     public void CheckContext_WithControlFlag_ValidatesSpRange(MockTarget.Architecture arch, string targetArch, ulong sp, int expectedHr)
     {
@@ -890,12 +1123,30 @@ public unsafe class DacDbiImplTests
         IPlatformAgnosticContext ctx = IPlatformAgnosticContext.GetContextForPlatform(target);
         ctx.RawContextFlags = ctx.ContextControlFlags;
         ctx.StackPointer = new TargetPointer(sp);
-        byte[] bytes = ctx.GetBytes();
+        byte[] bytes = ctx.GetBytes().ToArray();
 
         fixed (byte* pCtx = bytes)
         {
-            int hr = dacDbi.CheckContext(ThreadAddr, pCtx);
+            ContextBuffer contextBuffer = new() { pContextBytes = pCtx, contextSize = (uint)bytes.Length };
+            int hr = dacDbi.CheckContext(ThreadAddr, contextBuffer);
             Assert.Equal(expectedHr, hr);
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(TargetArchitectures))]
+    public void CheckContext_UndersizedBuffer_ReturnsInvalidArgument(MockTarget.Architecture arch, string targetArch)
+    {
+        const ulong ThreadAddr = 0x1000;
+        var (dacDbi, target) = CreateCheckContextDacDbi(arch, targetArch, ThreadAddr, stackBase: 0x8000, stackLimit: 0x4000);
+        uint contextSize = IPlatformAgnosticContext.GetContextForPlatform(target).Size;
+        byte[] bytes = new byte[(int)contextSize - 1];
+
+        fixed (byte* pCtx = bytes)
+        {
+            ContextBuffer contextBuffer = new() { pContextBytes = pCtx, contextSize = (uint)bytes.Length };
+            int hr = dacDbi.CheckContext(ThreadAddr, contextBuffer);
+            Assert.Equal(System.HResults.E_INVALIDARG, hr);
         }
     }
 
@@ -917,11 +1168,12 @@ public unsafe class DacDbiImplTests
         IPlatformAgnosticContext ctx = IPlatformAgnosticContext.GetContextForPlatform(target);
         ctx.RawContextFlags = 0;
         ctx.StackPointer = new TargetPointer(0x2000);
-        byte[] bytes = ctx.GetBytes();
+        byte[] bytes = ctx.GetBytes().ToArray();
 
         fixed (byte* pCtx = bytes)
         {
-            int hr = dacDbi.CheckContext(ThreadAddr, pCtx);
+            ContextBuffer contextBuffer = new() { pContextBytes = pCtx, contextSize = (uint)bytes.Length };
+            int hr = dacDbi.CheckContext(ThreadAddr, contextBuffer);
             Assert.Equal(System.HResults.S_OK, hr);
         }
 
@@ -983,6 +1235,113 @@ public unsafe class DacDbiImplTests
         return new DacDbiImpl(target, legacyObj: null, new());
     }
 
+    [UnmanagedCallersOnly]
+    private static unsafe void CollectAsyncLocalCallback(AsyncLocalData* pLocal, nint pUserData)
+    {
+        GCHandle handle = GCHandle.FromIntPtr(pUserData);
+        ((List<AsyncLocalData>)handle.Target!).Add(*pLocal);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void EnumerateAsyncLocals_MapsEntryPointToDiagnosticCodeStart(bool useCodeAddress)
+    {
+        MockTarget.Architecture arch = new() { IsLittleEndian = true, Is64Bit = true };
+        TargetPointer methodDesc = new(0xf0003000);
+        TargetCodePointer entryPoint = new(0xf0005000);
+        TargetCodePointer codeStart = new(0xf0006100);
+        const ulong CodeAddress = 0xf0006140;
+        MethodDescHandle methodDescHandle = new(methodDesc);
+        NativeCodeVersionHandle nativeCodeVersion = NativeCodeVersionHandle.CreateSynthetic(methodDesc);
+
+        var rts = new Mock<IRuntimeTypeSystem>();
+        rts.Setup(r => r.GetMethodDescHandle(methodDesc)).Returns(methodDescHandle);
+        rts.Setup(r => r.GetAsyncMethodFlags(methodDescHandle)).Returns(AsyncMethodFlags.None);
+        rts.Setup(r => r.IsDiagnosticsHidden(methodDescHandle)).Returns(false);
+        rts.Setup(r => r.GetNativeCode(methodDescHandle)).Returns(entryPoint);
+
+        var codeVersions = new Mock<ICodeVersions>();
+        codeVersions.Setup(c => c.GetNativeCodeVersionForIP(new TargetCodePointer(CodeAddress))).Returns(nativeCodeVersion);
+        codeVersions.Setup(c => c.GetNativeCode(nativeCodeVersion)).Returns(entryPoint);
+
+        var executionManager = new Mock<IExecutionManager>();
+        executionManager.Setup(e => e.GetDiagnosticCodeStartFromEntryPoint(entryPoint)).Returns(codeStart);
+
+        var debugInfo = new Mock<IDebugInfo>(MockBehavior.Strict);
+        debugInfo.Setup(d => d.GetAsyncSuspensionPoints(codeStart)).Returns(
+        [
+            new AsyncSuspensionInfo
+            {
+                NativeOffset = 0x10,
+                Locals = [new AsyncLocalInfo { Offset = 8, ILVarNumber = 1 }, new AsyncLocalInfo { Offset = 16, ILVarNumber = 3 }],
+            },
+        ]);
+
+        var target = new TestPlaceholderTarget.Builder(arch)
+            .UseReader((_, _) => -1)
+            .AddMockContract(rts)
+            .AddMockContract(codeVersions)
+            .AddMockContract(executionManager)
+            .AddMockContract(debugInfo)
+            .Build();
+        DacDbiImpl dacDbi = new(target, legacyObj: null, new());
+
+        List<AsyncLocalData> locals = new();
+        GCHandle gcHandle = GCHandle.Alloc(locals);
+        try
+        {
+            int hr = dacDbi.EnumerateAsyncLocals(
+                methodDesc.Value,
+                useCodeAddress ? CodeAddress : 0,
+                state: 0,
+                &CollectAsyncLocalCallback,
+                GCHandle.ToIntPtr(gcHandle));
+
+            Assert.Equal(System.HResults.S_OK, hr);
+        }
+        finally
+        {
+            gcHandle.Free();
+        }
+
+        Assert.Equal([(8u, 1u), (16u, 3u)], locals.ConvertAll(l => (l.Offset, l.IlVarNum)));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void IsDiagnosticsHiddenOrLCGMethod_DistinguishesExplicitlyHiddenLCG(MockTarget.Architecture arch)
+    {
+        MethodDescHandle methodDesc = new(new TargetPointer(0x1000));
+        (bool ExplicitlyHidden, bool DiagnosticsHidden, bool LCG, DynamicMethodType Expected)[] cases =
+        [
+            (true, true, true, DynamicMethodType.kDiagnosticHiddenLCGMethod),
+            (false, true, false, DynamicMethodType.kDiagnosticHidden),
+            (false, false, true, DynamicMethodType.kLCGMethod),
+            (false, false, false, DynamicMethodType.kNone),
+            (false, true, true, DynamicMethodType.kDiagnosticHidden),
+        ];
+
+        foreach (var testCase in cases)
+        {
+            var rts = new Mock<IRuntimeTypeSystem>();
+            rts.Setup(r => r.GetMethodDescHandle(methodDesc.Address)).Returns(methodDesc);
+            rts.Setup(r => r.IsDiagnosticsHiddenLCGMethod(methodDesc)).Returns(testCase.ExplicitlyHidden);
+            rts.Setup(r => r.IsDiagnosticsHidden(methodDesc)).Returns(testCase.DiagnosticsHidden);
+            rts.Setup(r => r.IsDynamicMethod(methodDesc)).Returns(testCase.LCG);
+            TestPlaceholderTarget target = new TestPlaceholderTarget.Builder(arch)
+                .AddMockContract(rts)
+                .Build();
+            DacDbiImpl dacDbi = new(target, legacyObj: null, new());
+            int result = -1;
+
+            int hr = dacDbi.IsDiagnosticsHiddenOrLCGMethod(methodDesc.Address.Value, &result);
+
+            Assert.Equal(System.HResults.S_OK, hr);
+            Assert.Equal((int)testCase.Expected, result);
+        }
+    }
+
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
     public void GetNativeCodeInfo_FillsDataForAsyncVariant(MockTarget.Architecture arch)
@@ -1013,14 +1372,15 @@ public unsafe class DacDbiImplTests
         rts.Setup(r => r.GetMethodDescHandle(methodDesc)).Returns(methodDescHandle);
         rts.Setup(r => r.GetMethodDescHandle(asyncVariant)).Returns(asyncVariantHandle);
         rts.Setup(r => r.GetAsyncMethodFlags(methodDescHandle)).Returns(AsyncMethodFlags.Thunk);
+        rts.Setup(r => r.IsDiagnosticsHidden(methodDescHandle)).Returns(true);
         rts.Setup(r => r.GetAsyncVariant(methodDescHandle)).Returns(asyncVariant);
         rts.Setup(r => r.GetNativeCode(asyncVariantHandle)).Returns(interpreterPrecode);
         rts.Setup(r => r.GetMethodTable(asyncVariantHandle)).Throws(new VirtualReadException());
 
         var precodeStubs = new Mock<IPrecodeStubs>();
-        precodeStubs.Setup(p => p.GetInterpreterCodeFromInterpreterPrecodeIfPresent(interpreterPrecode)).Returns(nativeCode);
 
         var executionManager = new Mock<IExecutionManager>();
+        executionManager.Setup(e => e.GetDiagnosticCodeStartFromEntryPoint(interpreterPrecode)).Returns(nativeCode);
         executionManager.Setup(e => e.GetCodeBlockHandle(nativeCode)).Returns(codeBlock);
         executionManager
             .Setup(e => e.GetMethodRegionInfo(codeBlock, out It.Ref<uint>.IsAny, out It.Ref<TargetPointer>.IsAny, out It.Ref<uint>.IsAny))
@@ -1103,9 +1463,9 @@ public unsafe class DacDbiImplTests
         ILCodeVersionHandle ilCodeVersion = ILCodeVersionHandle.CreateExplicit(new TargetPointer(0x8000));
 
         var precodeStubs = new Mock<IPrecodeStubs>();
-        precodeStubs.Setup(p => p.GetInterpreterCodeFromInterpreterPrecodeIfPresent(new TargetCodePointer(CodeAddress))).Returns(nativeCode);
 
         var executionManager = new Mock<IExecutionManager>();
+        executionManager.Setup(e => e.GetDiagnosticCodeStartFromEntryPoint(new TargetCodePointer(CodeAddress))).Returns(nativeCode);
         executionManager.Setup(e => e.GetCodeBlockHandle(nativeCode)).Returns(codeBlock);
         executionManager.Setup(e => e.GetStartAddress(codeBlock)).Returns(codeStart);
         executionManager.Setup(e => e.GetMethodDesc(codeBlock)).Returns(methodDesc);
@@ -1163,9 +1523,9 @@ public unsafe class DacDbiImplTests
         ITypeHandle typeHandle = new TargetTypeHandle(methodTable);
 
         var precodeStubs = new Mock<IPrecodeStubs>();
-        precodeStubs.Setup(p => p.GetInterpreterCodeFromInterpreterPrecodeIfPresent(new TargetCodePointer(CodeAddress))).Throws(new VirtualReadException());
 
         var executionManager = new Mock<IExecutionManager>();
+        executionManager.Setup(e => e.GetDiagnosticCodeStartFromEntryPoint(new TargetCodePointer(CodeAddress))).Throws(new VirtualReadException());
         executionManager.Setup(e => e.GetCodeBlockHandle(new TargetCodePointer(CodeAddress))).Returns(codeBlock);
         executionManager.Setup(e => e.GetStartAddress(codeBlock)).Returns(codeStart);
         executionManager.Setup(e => e.GetMethodDesc(codeBlock)).Returns(methodDesc);
@@ -1967,4 +2327,5 @@ public unsafe class DacDbiImplTests
         Assert.Equal(System.HResults.S_OK, hr);
         Assert.Equal(Interop.BOOL.TRUE, result);
     }
+
 }

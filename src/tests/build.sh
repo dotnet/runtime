@@ -60,7 +60,7 @@ build_Tests()
 
     if [[ "$__SkipNative" != 1 && "$__GenerateLayoutOnly" != 1 && "$__CopyNativeTestBinaries" != 1 && \
         "$__TargetOS" != "android" && "$__TargetOS" != "ios" && "$__TargetOS" != "iossimulator" && "$__TargetOS" != "tvos" && "$__TargetOS" != "tvossimulator" ]]; then
-        build_native "$__TargetOS" "$__TargetArch" "$__TestDir" "$__NativeTestIntermediatesDir" "install" "$__CMakeArgs" "CoreCLR test component"
+        build_native "$__TargetOS" "$__TargetArch" "$__TestDir" "$__NativeTestIntermediatesDir" "install" "$__CMakeArgs -DCLR_CMAKE_TEST_RUNTIME_FLAVOR=$__RuntimeFlavor -DCLR_CMAKE_TEST_BUILD_MODE=$__TestBuildMode" "CoreCLR test component"
 
         if [[ "$?" -ne 0 ]]; then
             echo "${__ErrMsgPrefix}${__MsgPrefix}Error: native test build failed. Refer to the build log files for details (above)"
@@ -101,9 +101,6 @@ build_Tests()
     export __CompositeBuildMode
     export __GenerateLayoutOnly
     export __TestBuildMode
-    export __MonoAot
-    export __MonoFullAot
-    export __MonoBinDir
     export __MsgPrefix
     export __ErrMsgPrefix
     export EnableNativeSanitizers
@@ -162,10 +159,7 @@ usage_list+=("-allTargets - Build managed tests for all target platforms (includ
 usage_list+=("-use-bootstrap - Use artifacts produced by the bootstrap subset for local targeting, runtime, and apphost packs.")
 usage_list+=("")
 usage_list+=("-runtests - Run tests after building them.")
-usage_list+=("-mono, -excludemonofailures - Build the tests for the Mono runtime honoring mono-specific issues.")
-usage_list+=("-coreclr - Build tests targeting the CoreCLR runtime (default; opposite of -mono/-excludemonofailures).")
-usage_list+=("-mono_aot - Use Mono AOT mode.")
-usage_list+=("-mono_fullaot - Use Mono Full AOT mode.")
+usage_list+=("-coreclr - Build tests targeting the CoreCLR runtime (default).")
 usage_list+=("")
 usage_list+=("-test:xxx - Only build the specified test project (relative or absolute project path under src/tests).")
 usage_list+=("-dir:xxx - Build all test projects in the given directory (relative or absolute directory under src/tests).")
@@ -281,30 +275,7 @@ handle_arguments_local() {
             __SkipGenerateLayout=1
             ;;
 
-        excludemonofailures|-excludemonofailures)
-            __Mono=1
-            ;;
-
-        mono|-mono)
-            __Mono=1
-            ;;
-
-        mono_aot|-mono_aot)
-            __Mono=1
-            __MonoAot=1
-            __SkipNative=1
-            ;;
-
-        mono_fullaot|-mono_fullaot)
-            __Mono=1
-            __MonoFullAot=1
-            __SkipNative=1
-            ;;
-
         coreclr|-coreclr)
-            __Mono=0
-            __MonoAot=0
-            __MonoFullAot=0
             ;;
 
         browser|-browser)
@@ -372,9 +343,6 @@ __UnprocessedBuildArgs=()
 __VerboseBuild=0
 __CMakeArgs=""
 __Priority=0
-__Mono=0
-__MonoAot=0
-__MonoFullAot=0
 __BuildLogRootName="TestBuild"
 CORE_ROOT=
 EnableNativeSanitizers=
@@ -389,13 +357,8 @@ if [[ "$__CrossBuild" == 1 && "$__TargetOS" != "android" ]]; then
     __UnprocessedBuildArgs+=("/p:CrossBuild=true")
 fi
 
-if [[ $__Mono -eq 1 ]]; then
-    __RuntimeFlavor="mono"
-    __CMakeArgs="-DCMAKE_BUILD_RUNTIME_FLAVOR=Mono $__CMakeArgs"
-else
-    __RuntimeFlavor="coreclr"
-    __CMakeArgs="-DCMAKE_BUILD_RUNTIME_FLAVOR=CoreCLR $__CMakeArgs"
-fi
+__RuntimeFlavor="coreclr"
+__CMakeArgs="-DCMAKE_BUILD_RUNTIME_FLAVOR=CoreCLR $__CMakeArgs"
 
 # Get the number of processors available to the scheduler
 platform="$(uname -s | tr '[:upper:]' '[:lower:]')"
@@ -426,7 +389,6 @@ __TestBinDir="$__RootBinDir/tests/coreclr/$__OSPlatformConfig"
 __IntermediatesDir="$__RootBinDir/obj/coreclr/$__OSPlatformConfig"
 __TestIntermediatesDir="$__RootBinDir/tests/coreclr/obj/$__OSPlatformConfig"
 __CrossCompIntermediatesDir="$__IntermediatesDir/crossgen"
-__MonoBinDir="$__RootBinDir/bin/mono/$__OSPlatformConfig"
 
 # CI_SPECIFIC - On CI machines, $HOME may not be set. In such a case, create a subfolder and set the variable to it.
 # This is needed by CLI to function.

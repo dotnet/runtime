@@ -32,8 +32,12 @@
 
   <Import Project="$(MSBuildThisFileDirectory)CoreRootArtifacts.targets" />
 
+  <Target Name="_ResolveRuntimeFilesForCoreRoot"
+    DependsOnTargets="ResolveRuntimeFilesFromLocalBuild"
+    Condition="'$(TestBuildMode)' != 'nativeaot'" />
+
   <Target Name="CopyDependencyToCoreRoot"
-    DependsOnTargets="_ComputeCoreRootArtifactSources;ResolveAssemblyReferences;ResolveRuntimeFilesFromLocalBuild">
+    DependsOnTargets="_ComputeCoreRootArtifactSources;ResolveAssemblyReferences;_ResolveRuntimeFilesForCoreRoot">
 
     <!-- NuGet-resolved items (libraries runtime files, targeting pack, xunit) -->
     <ItemGroup>
@@ -48,7 +52,7 @@
       <RunTimeDependencyCopyLocal Include="@(_CoreRootArtifactSource)" />
     </ItemGroup>
 
-    <ItemGroup Condition="'$(TargetArchitecture)' == 'wasm'">
+    <ItemGroup Condition="'$(TargetArchitecture)' == 'wasm' and '$(TestBuildMode)' != 'nativeaot'">
         <RunTimeDependencyCopyLocal
           Include="@(RuntimeFiles)"
           TargetDir="runtimepack/native/"/>
@@ -76,10 +80,6 @@
           TargetDir="WasmAppBuilder/"/>
 
         <RunTimeDependencyCopyLocal
-          Include="$(MonoTargetsTasksDir)publish\**"
-          TargetDir="WasmAppBuilder/"/>
-
-        <RunTimeDependencyCopyLocal
           Include="$(RepoRoot)\src\tests\Common\wasm-test-runner\WasmTestRunner.proj"
           TargetDir="wasm-test-runner/"/>
 
@@ -99,20 +99,20 @@
           TargetDir="build/"/>
     </ItemGroup>
 
+    <ItemGroup Condition="'$(TargetOS)' == 'wasi' and '$(RuntimeFlavor)' == 'coreclr' and '$(TestBuildMode)' != 'nativeaot'">
+      <!-- Wasm App Builder builds as part of tasks, using the corresponding TasksConfiguration -->
+      <RunTimeDependencyCopyLocal
+        Include="$(WasmAppBuilderDir)*"
+        TargetDir="wasi-r2r/" />
+      <RunTimeDependencyCopyLocal
+        Include="$(MSBuildThisFileDirectory)WasiR2RComposer.proj"
+        TargetDir="wasi-r2r/" />
+    </ItemGroup>
+    <Error Condition="'$(TargetOS)' == 'wasi' and '$(RuntimeFlavor)' == 'coreclr' and '$(TestBuildMode)' != 'nativeaot' and !Exists('$(WasmAppBuilderTasksAssemblyPath)')"
+           Text="WasmAppBuilder was not found at '$(WasmAppBuilderTasksAssemblyPath)'. It is required to compose WASI ReadyToRun tests." />
+
     <ItemGroup>
       <RunTimeDependencyCopyLocal Include="$(CoreDisToolsLibrary)" Condition="$(CopyCoreDisToolsToCoreRoot)" />
-    </ItemGroup>
-
-    <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and '$(IsDesktopOS)' == 'true' " >
-      <!-- Copy the mono version of the coreclr library and SPCL instead of the corceclr one -->
-      <RuntimeDependencyCopyLocal Remove="$(CoreCLRArtifactsPath)$(LibPrefix)coreclr$(LibSuffix)" />
-      <RuntimeDependencyCopyLocal Remove="$(CoreCLRArtifactsPath)System.Private.CoreLib.dll" />
-      <RuntimeDependencyCopyLocal Include="$(MonoArtifactsPath)$(LibPrefix)coreclr$(LibSuffix)" TargetDir="" />
-
-      <RuntimeDependencyCopyLocal Include="$(MonoArtifactsPath)/libmono-component-*" TargetDir=""  />
-      <RuntimeDependencyCopyLocal Include="$(MonoArtifactsPath)/*.dll" TargetDir="" />
-      <RuntimeDependencyCopyLocal Include="$(MonoArtifactsPath)/libc++.so.1" TargetDir="" Condition="Exists('$(MonoArtifactsPath)/libc++.so.1')" />
-      <RuntimeDependencyCopyLocal Include="$(MonoArtifactsPath)/libc++abi.so.1" TargetDir="" Condition="Exists('$(MonoArtifactsPath)/libc++abi.so.1')" />
     </ItemGroup>
 
     <Copy

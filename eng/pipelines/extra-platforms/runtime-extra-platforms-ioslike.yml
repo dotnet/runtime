@@ -6,7 +6,6 @@
 parameters:
   isExtraPlatformsBuild: false
   isiOSLikeOnlyBuild: false
-  isRollingBuild: false
   useHelixMonitor: false
 
 jobs:
@@ -34,7 +33,7 @@ jobs:
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_NativeAOT
-      buildArgs: --cross -s clr.alljits+clr.tools+clr.nativeaotruntime+clr.nativeaotlibs+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:BuildTestsOnHelix=true /p:UseNativeAOTRuntime=true /p:RunAOTCompilation=false /p:ContinuousIntegrationBuild=true
+      buildArgs: --cross -s clr.alljits+clr.tools+clr.nativeaotruntime+clr.nativeaotlibs+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:BuildTestsOnHelix=true /p:UseNativeAOTRuntime=true /p:ContinuousIntegrationBuild=true
       timeoutInMinutes: 360
       # extra steps, run tests
       postBuildSteps:
@@ -70,10 +69,19 @@ jobs:
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_CoreCLR
-      buildArgs: -s clr+clr.runtime+libs+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:UseMonoRuntime=false /p:UseNativeAOTRuntime=false $(_runSmokeTestsOnlyArg) /p:BuildTestsOnHelix=true /p:EnableAdditionalTimezoneChecks=true /p:UsePortableRuntimePack=false /p:EnableAggressiveTrimming=true
+      buildArgs: -s clr+clr.runtime+libs+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:UseNativeAOTRuntime=false $(_runSmokeTestsOnlyArg) /p:BuildTestsOnHelix=true /p:EnableAdditionalTimezoneChecks=true /p:UsePortableRuntimePack=false /p:EnableAggressiveTrimming=true
+      enablePublishTestResults: true
+      testResultsFormat: 'xunit'
       timeoutInMinutes: 240
       # extra steps, run tests
       postBuildSteps:
+        - script: >-
+            $(Build.SourcesDirectory)/build.sh
+            --projects
+            $(Build.SourcesDirectory)/src/mono/msbuild/apple/tests/Apple.Build.Tests/Apple.Build.Tests.csproj
+            -c $(_BuildConfig)
+            -test
+          displayName: Run Apple build tests
         - template: /eng/pipelines/libraries/helix.yml
           parameters:
             creator: dotnet-bot
@@ -120,7 +128,7 @@ jobs:
         - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
           parameters:
             creator: dotnet-bot
-            testBuildArgs: /p:DevTeamProvisioning=- /p:UseMonoRuntime=false /p:UseNativeAOTRuntime=false /p:BuildTestsOnHelix=true
+            testBuildArgs: /p:DevTeamProvisioning=- /p:UseNativeAOTRuntime=false /p:BuildTestsOnHelix=true
             testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
             useHelixMonitor: ${{ parameters.useHelixMonitor }}
             extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
@@ -150,7 +158,7 @@ jobs:
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_CoreCLR_Smoke
-      buildArgs: -s clr+clr.runtime+libs+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:UseMonoRuntime=false /p:UseNativeAOTRuntime=false /p:RunSmokeTestsOnly=true /p:BuildTestsOnHelix=true /p:EnableAdditionalTimezoneChecks=true /p:UsePortableRuntimePack=false /p:EnableAggressiveTrimming=true
+      buildArgs: -s clr+clr.runtime+libs+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:UseNativeAOTRuntime=false /p:RunSmokeTestsOnly=true /p:BuildTestsOnHelix=true /p:EnableAdditionalTimezoneChecks=true /p:UsePortableRuntimePack=false /p:EnableAggressiveTrimming=true
       timeoutInMinutes: 240
       # extra steps, run tests
       postBuildSteps:

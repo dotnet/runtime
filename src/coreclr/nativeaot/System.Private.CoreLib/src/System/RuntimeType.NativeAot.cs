@@ -11,6 +11,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 
+using Internal.Metadata.NativeFormat;
 using Internal.Reflection.Augments;
 using Internal.Reflection.Core.Execution;
 using Internal.Runtime;
@@ -19,7 +20,7 @@ using Debug = System.Diagnostics.Debug;
 
 namespace System
 {
-    internal sealed unsafe class RuntimeType : TypeInfo, ICloneable
+    internal sealed unsafe partial class RuntimeType : TypeInfo, ICloneable
     {
         private MethodTable* _pUnderlyingEEType;
         private IntPtr _runtimeTypeInfoHandle;
@@ -211,7 +212,15 @@ namespace System
         {
             MethodTable* pEEType = _pUnderlyingEEType;
             if (pEEType != null)
-                return ((nuint)pEEType).GetHashCode();
+            {
+                // Fibonacci hashing moves the entropy in aligned handles into the high bits.
+#if TARGET_64BIT
+                return (int)(((ulong)(nuint)pEEType * 0x9E3779B97F4A7C15UL) >> 32);
+#else
+                uint hash = (uint)(nuint)pEEType * 0x9E3779B9U;
+                return (int)(hash ^ (hash >> 16));
+#endif
+            }
             return RuntimeHelpers.GetHashCode(this);
         }
 
@@ -373,6 +382,45 @@ namespace System
             }
 
             return GetRuntimeTypeInfo().GetInterfaces();
+        }
+
+        public override Type[] GetInterfacesWithSameMetadataDefinitionAs(Type interfaceType)
+        {
+            ArgumentNullException.ThrowIfNull(interfaceType);
+
+            // The interfaces of a runtime type are runtime types, so an interfaceType that isn't a RuntimeType never matches.
+            if (interfaceType is not RuntimeType runtimeInterfaceType)
+            {
+                return EmptyTypes;
+            }
+
+            MethodTable* pEEType = _pUnderlyingEEType;
+            MethodTable* pInterfaceEEType = runtimeInterfaceType._pUnderlyingEEType;
+            if (pEEType == null || pEEType->IsGenericTypeDefinition || pInterfaceEEType == null)
+            {
+                return base.GetInterfacesWithSameMetadataDefinitionAs(interfaceType);
+            }
+
+            // Any instantiation of a generic interface matches the same interfaces as its generic type definition.
+            if (pInterfaceEEType->IsGeneric)
+            {
+                pInterfaceEEType = pInterfaceEEType->GenericDefinition;
+            }
+
+            // Compare MethodTables directly and only create Type objects for the matches.
+            // Usually a single interface matches, which ListBuilder handles without allocating backing storage.
+            ListBuilder<Type> matches = default;
+            int count = pEEType->NumInterfaces;
+            for (int i = 0; i < count; i++)
+            {
+                MethodTable* pImplementedInterface = pEEType->InterfaceMap[i];
+                if ((pImplementedInterface->IsGeneric ? pImplementedInterface->GenericDefinition : pImplementedInterface) == pInterfaceEEType)
+                {
+                    matches.Add(GetTypeFromMethodTable(pImplementedInterface));
+                }
+            }
+
+            return matches.ToArray();
         }
 
         public override bool IsTypeDefinition
@@ -796,30 +844,38 @@ namespace System
             => GetRuntimeTypeInfo().GetDefaultMembers();
 
         public override bool IsDefined(Type attributeType, bool inherit)
-            => GetRuntimeTypeInfo().IsDefined(attributeType, inherit);
+        {
+            ArgumentNullException.ThrowIfNull(attributeType);
+
+            if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
+                throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
+
+            return RuntimeCustomAttribute.IsDefined(this, attributeRuntimeType, inherit);
+        }
 
         public override object[] GetCustomAttributes(bool inherit)
         {
-            return GetRuntimeTypeInfo().GetCustomAttributes(inherit);
+            return RuntimeCustomAttribute.GetCustomAttributes(this, (RuntimeType)typeof(object), inherit);
         }
 
         public override object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
-            return GetRuntimeTypeInfo().GetCustomAttributes(attributeType, inherit);
-        }
+            ArgumentNullException.ThrowIfNull(attributeType);
 
-        public override IEnumerable<CustomAttributeData> CustomAttributes
-        {
-            get
-            {
-                return GetRuntimeTypeInfo().CustomAttributes;
-            }
+            if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
+                throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
+
+            return RuntimeCustomAttribute.GetCustomAttributes(this, attributeRuntimeType, inherit);
         }
 
         public override IList<CustomAttributeData> GetCustomAttributesData()
         {
-            return GetRuntimeTypeInfo().GetCustomAttributesData();
+            return RuntimeCustomAttributeData.GetCustomAttributesInternal(this);
         }
+
+        internal MetadataReader? GetMetadataReader() => GetRuntimeTypeInfo().GetMetadataReader();
+
+        internal CustomAttributeHandleCollection GetCustomAttributeHandles() => GetRuntimeTypeInfo().GetCustomAttributeHandles();
 
         public override string Name
         {

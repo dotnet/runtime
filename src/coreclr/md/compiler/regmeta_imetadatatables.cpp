@@ -38,6 +38,8 @@
 #include "stdafx.h"
 #include "regmeta.h"
 
+#ifdef FEATURE_METADATA_PUBLIC_INTERFACES
+
 // --------------------------------------------------------------------------------------
 //
 // Fills size (*pcbStringsHeapSize) of internal strings heap (#String).
@@ -646,3 +648,5 @@ RegMeta::GetMetaDataStreamInfo(
 
     return m_pStgdb->GetRawStreamInfo(ix, ppchName, ppv, pcb);
 } // RegMeta::GetMetaDataStreamInfo
+
+#endif // FEATURE_METADATA_PUBLIC_INTERFACES

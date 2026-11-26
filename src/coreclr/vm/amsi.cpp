@@ -79,7 +79,7 @@ bool Amsi::IsBlockedByAmsiScan(PVOID flatImageBytes, COUNT_T size)
 
     // Lazily initialize AMSI because it is very expensive
     {
-        CRITSEC_Holder csh(s_csAmsi);
+        CRITSEC_Holder csh = ClrTakeCriticalSection(s_csAmsi);
 
         // Cache that we failed if this didn't work so we don't keep trying to reinitialize
         static bool amsiInitializationAttempted = false;

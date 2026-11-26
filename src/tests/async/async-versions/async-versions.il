@@ -8,6 +8,8 @@
 // completes synchronously (returns an already-completed task).
 
 .assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A) .ver 4:0:0:0 }
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35) }
+.assembly extern TestLibrary { .ver 0:0:0:0 }
 .assembly extern xunit.core {}
 
 .assembly 'async-versions'
@@ -157,7 +159,10 @@
 
     .method public hidebysig static void JmpToSuspendingTest() cil managed
     {
-        .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = ( 01 00 00 00 )
+        .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ConditionalFactAttribute::.ctor(class [System.Runtime]System.Type, string[]) = {
+            type([TestLibrary]TestLibrary.PlatformDetection)
+            string[1] ('IsMultithreadingSupported')
+        }
         .maxstack 2
 
         call class [System.Runtime]System.Threading.Tasks.Task`1<int32> AsyncVersions::AwaitJmpToSuspending()
@@ -185,7 +190,10 @@
 
     .method public hidebysig static void TailToSuspendingTest() cil managed
     {
-        .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = ( 01 00 00 00 )
+        .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ConditionalFactAttribute::.ctor(class [System.Runtime]System.Type, string[]) = {
+            type([TestLibrary]TestLibrary.PlatformDetection)
+            string[1] ('IsMultithreadingSupported')
+        }
         .maxstack 2
 
         call class [System.Runtime]System.Threading.Tasks.Task`1<int32> AsyncVersions::AwaitTailToSuspending()

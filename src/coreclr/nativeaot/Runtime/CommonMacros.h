@@ -6,9 +6,6 @@
 
 #include "rhassert.h"
 #include <minipal/utils.h>
-#ifdef PROFILE_STARTUP
-#include <minipal/time.h>
-#endif
 
 #define EXTERN_C extern "C"
 
@@ -173,47 +170,89 @@ typedef uint8_t CODE_LOCATION;
     FCIMPL_RENAME_ARGSIZE(_rettype, _method, 24) \
     EXTERN_C _rettype F_CALL_CONV _method##_FCall (c, b, a) \
     {
+#define FCIMPL3_FII(_rettype, _method, a, b, c) \
+    FCIMPL_RENAME_ARGSIZE(_rettype, _method, 12) \
+    EXTERN_C _rettype F_CALL_CONV _method##_FCall (a, b, c) \
+    {
+#define FCIMPL3_DII(_rettype, _method, a, b, c) \
+    FCIMPL_RENAME_ARGSIZE(_rettype, _method, 16) \
+    EXTERN_C _rettype F_CALL_CONV _method##_FCall (a, b, c) \
+    {
 #define FCIMPL3_ILL(_rettype, _method, a, b, c) \
     FCIMPL_RENAME_ARGSIZE(_rettype, _method, 20) \
     EXTERN_C _rettype F_CALL_CONV _method##_FCall (a, c, b) \
     {
+
+#elif defined(HOST_WASM)
+
+#define FCDECL_RENAME(_rettype, _method, ...) \
+    EXTERN_C _rettype _method##_IMPL FCALL_METHOD_ARGS_NO_METHOD_NAME(__VA_ARGS__);
+
+// Wasm's managed calling convention passes the shadow stack as the first argument.
+#define FCALL_METHOD_ARGS_NO_METHOD_NAME(...) (uintptr_t callersStackPointer __VA_OPT__(,) __VA_ARGS__)
+
+#define FCALL_METHOD_ARGS(dummy, ...) FCALL_METHOD_ARGS_NO_METHOD_NAME(__VA_ARGS__)
+#define FCALL_METHOD_ARGS_(tuple) FCALL_METHOD_ARGS tuple
+
+#define FCIMPL1_F FCIMPL1
+#define FCIMPL1_D FCIMPL1
+#define FCIMPL1_L FCIMPL1
+#define FCIMPL2_FF FCIMPL2
+#define FCIMPL2_DD FCIMPL2
+#define FCIMPL2_LL FCIMPL2
+#define FCIMPL2_FI FCIMPL2
+#define FCIMPL2_DI FCIMPL2
+#define FCIMPL3_FFF FCIMPL3
+#define FCIMPL3_DDD FCIMPL3
+#define FCIMPL3_FII FCIMPL3
+#define FCIMPL3_DII FCIMPL3
+#define FCIMPL3_ILL FCIMPL3
+
+#define FCDECL2_RAW(_rettype, _method, a, b) _rettype F_CALL_CONV _method(a, b)
 
 #else
 
 #define FCDECL_RENAME(_rettype, ...)
 #define FCIMPL_RENAME(_rettype, ...)
 
-#define FCALL_METHOD_ARGS(dummy, ...) (__VA_ARGS__)
+#define FCALL_METHOD_ARGS_NO_METHOD_NAME(...) (__VA_ARGS__)
+#define FCALL_METHOD_ARGS(dummy, ...) FCALL_METHOD_ARGS_NO_METHOD_NAME(__VA_ARGS__)
 #define FCALL_METHOD_ARGS_(tuple) FCALL_METHOD_ARGS tuple
 
 #define FCIMPL1_F(_rettype, _method, a) \
-    EXTERN_C _rettype F_CALL_CONV _method (a) \
+    EXTERN_C _rettype F_CALL_CONV _method FCALL_METHOD_ARGS_NO_METHOD_NAME(a) \
     {
 #define FCIMPL1_D(_rettype, _method, a) \
-    EXTERN_C _rettype F_CALL_CONV _method (a) \
+    EXTERN_C _rettype F_CALL_CONV _method FCALL_METHOD_ARGS_NO_METHOD_NAME(a) \
     {
 #define FCIMPL1_L FCIMPL1_D
 #define FCIMPL2_FF(_rettype, _method, a, b) \
-    EXTERN_C _rettype F_CALL_CONV _method (a, b) \
+    EXTERN_C _rettype F_CALL_CONV _method FCALL_METHOD_ARGS_NO_METHOD_NAME(a, b) \
     {
 #define FCIMPL2_DD(_rettype, _method, a, b) \
-    EXTERN_C _rettype F_CALL_CONV _method (a, b) \
+    EXTERN_C _rettype F_CALL_CONV _method FCALL_METHOD_ARGS_NO_METHOD_NAME(a, b) \
     {
 #define FCIMPL2_LL FCIMPL2_DD
 #define FCIMPL2_FI(_rettype, _method, a, b) \
-    EXTERN_C _rettype F_CALL_CONV _method (a, b) \
+    EXTERN_C _rettype F_CALL_CONV _method FCALL_METHOD_ARGS_NO_METHOD_NAME(a, b) \
     {
 #define FCIMPL2_DI(_rettype, _method, a, b) \
-    EXTERN_C _rettype F_CALL_CONV _method (a, b) \
+    EXTERN_C _rettype F_CALL_CONV _method FCALL_METHOD_ARGS_NO_METHOD_NAME(a, b) \
     {
 #define FCIMPL3_FFF(_rettype, _method, a, b, c) \
-    EXTERN_C _rettype F_CALL_CONV _method (a, b, c) \
+    EXTERN_C _rettype F_CALL_CONV _method FCALL_METHOD_ARGS_NO_METHOD_NAME(a, b, c) \
     {
 #define FCIMPL3_DDD(_rettype, _method, a, b, c) \
-    EXTERN_C _rettype F_CALL_CONV _method (a, b, c) \
+    EXTERN_C _rettype F_CALL_CONV _method FCALL_METHOD_ARGS_NO_METHOD_NAME(a, b, c) \
+    {
+#define FCIMPL3_FII(_rettype, _method, a, b, c) \
+    EXTERN_C _rettype F_CALL_CONV _method FCALL_METHOD_ARGS_NO_METHOD_NAME(a, b, c) \
+    {
+#define FCIMPL3_DII(_rettype, _method, a, b, c) \
+    EXTERN_C _rettype F_CALL_CONV _method FCALL_METHOD_ARGS_NO_METHOD_NAME(a, b, c) \
     {
 #define FCIMPL3_ILL(_rettype, _method, a, b, c) \
-    EXTERN_C _rettype F_CALL_CONV _method (a, b, c) \
+    EXTERN_C _rettype F_CALL_CONV _method FCALL_METHOD_ARGS_NO_METHOD_NAME(a, b, c) \
     {
 
 #endif
@@ -228,6 +267,77 @@ typedef uint8_t CODE_LOCATION;
 #define FCDECL4(_rettype, _method, a, b, c, d) FCDECL_(_rettype, _method, a, b, c, d)
 #define FCDECL5(_rettype, _method, a, b, c, d, e) FCDECL_(_rettype, _method, a, b, c, d, e)
 
+#ifndef FCDECL2_RAW
+#define FCDECL2_RAW(_rettype, _method, a, b) FCDECL2(_rettype, _method, a, b)
+#endif
+
+#ifdef HOST_WASM
+
+#define WASM_WRAPPER_FUNC_INITIAL \
+{ \
+    asm ("local.get 0\n" /* Capture callersStackPointer onto the stack for calling _IMPL function*/ \
+         "local.get 0\n" /* Capture callersStackPointer onto the stack for setting the __stack_pointer */ \
+         "global.get __stack_pointer\n" /* Get current value of stack global */ \
+         "local.set 0\n"  /* Store current stack global into callersStackPointer local */ \
+         "global.set __stack_pointer\n" /* Set stack global to the initial value of callersStackPointer, which is the current stack pointer for the managed caller */
+
+#define WASM_WRAPPER_FUNC_EPILOG(_method) \
+             "call %0\n" /* Call the actual implementation function*/ \
+             "local.get 0\n" /* Load the original stack pointer from stack Arg local */ \
+             "global.set __stack_pointer\n" /* Restore the original stack pointer to the stack global */ \
+             "return" :: "i" (_method ## _IMPL)); \
+}
+
+#define WASM_WRAPPER_FUNC_0(_rettype, _method) __attribute__((naked)) _rettype _method(uintptr_t callersStackPointer) WASM_WRAPPER_FUNC_INITIAL WASM_WRAPPER_FUNC_EPILOG(_method)
+#define WASM_WRAPPER_FUNC_1(_rettype, _method, a) __attribute__((naked)) _rettype _method(uintptr_t callersStackPointer, a) WASM_WRAPPER_FUNC_INITIAL "local.get 1\n" WASM_WRAPPER_FUNC_EPILOG(_method)
+#define WASM_WRAPPER_FUNC_2(_rettype, _method, a, b) __attribute__((naked)) _rettype _method(uintptr_t callersStackPointer, a, b) WASM_WRAPPER_FUNC_INITIAL "local.get 1\nlocal.get 2\n" WASM_WRAPPER_FUNC_EPILOG(_method)
+#define WASM_WRAPPER_FUNC_3(_rettype, _method, a, b, c) __attribute__((naked)) _rettype _method(uintptr_t callersStackPointer, a, b, c) WASM_WRAPPER_FUNC_INITIAL "local.get 1\nlocal.get 2\nlocal.get 3\n" WASM_WRAPPER_FUNC_EPILOG(_method)
+#define WASM_WRAPPER_FUNC_4(_rettype, _method, a, b, c, d) __attribute__((naked)) _rettype _method(uintptr_t callersStackPointer, a, b, c, d) WASM_WRAPPER_FUNC_INITIAL "local.get 1\nlocal.get 2\nlocal.get 3\nlocal.get 4\n" WASM_WRAPPER_FUNC_EPILOG(_method)
+#define WASM_WRAPPER_FUNC_5(_rettype, _method, a, b, c, d, e) __attribute__((naked)) _rettype _method(uintptr_t callersStackPointer, a, b, c, d, e) WASM_WRAPPER_FUNC_INITIAL "local.get 1\nlocal.get 2\nlocal.get 3\nlocal.get 4\nlocal.get 5\n" WASM_WRAPPER_FUNC_EPILOG(_method)
+
+#define WASM_CALLABLE_FUNC_0(_rettype, _method) \
+    FCDECL0(_rettype, _method); \
+    EXTERN_C WASM_WRAPPER_FUNC_0(_rettype, _method) \
+    EXTERN_C _rettype _method ## _IMPL (uintptr_t callersStackPointer)
+
+#define WASM_CALLABLE_FUNC_1(_rettype, _method, a) \
+    FCDECL1(_rettype, _method, a); \
+    EXTERN_C WASM_WRAPPER_FUNC_1(_rettype, _method, a) \
+    EXTERN_C _rettype _method ## _IMPL (uintptr_t callersStackPointer, a)
+
+#define WASM_CALLABLE_FUNC_2(_rettype, _method, a, b) \
+    FCDECL2(_rettype, _method, a, b); \
+    EXTERN_C WASM_WRAPPER_FUNC_2(_rettype, _method, a, b) \
+    EXTERN_C _rettype _method ## _IMPL (uintptr_t callersStackPointer, a, b)
+
+#define WASM_CALLABLE_FUNC_3(_rettype, _method, a, b, c) \
+    FCDECL3(_rettype, _method, a, b, c); \
+    EXTERN_C WASM_WRAPPER_FUNC_3(_rettype, _method, a, b, c) \
+    EXTERN_C _rettype _method ## _IMPL (uintptr_t callersStackPointer, a, b, c)
+
+#define WASM_CALLABLE_FUNC_4(_rettype, _method, a, b, c, d) \
+    FCDECL4(_rettype, _method, a, b, c, d); \
+    EXTERN_C WASM_WRAPPER_FUNC_4(_rettype, _method, a, b, c, d) \
+    EXTERN_C _rettype _method ## _IMPL (uintptr_t callersStackPointer, a, b, c, d)
+
+#define WASM_CALLABLE_FUNC_5(_rettype, _method, a, b, c, d, e) \
+    FCDECL5(_rettype, _method, a, b, c, d, e); \
+    EXTERN_C WASM_WRAPPER_FUNC_5(_rettype, _method, a, b, c, d, e) \
+    EXTERN_C _rettype _method ## _IMPL (uintptr_t callersStackPointer, a, b, c, d, e)
+
+#define FCIMPL0(rettype, funcname) WASM_CALLABLE_FUNC_0(rettype, funcname) {
+#define FCIMPL1(rettype, funcname, a1) WASM_CALLABLE_FUNC_1(rettype, funcname, a1) {
+#define FCIMPL2(rettype, funcname, a1, a2) WASM_CALLABLE_FUNC_2(rettype, funcname, a1, a2) {
+#define FCIMPL3(rettype, funcname, a1, a2, a3) WASM_CALLABLE_FUNC_3(rettype, funcname, a1, a2, a3) {
+#define FCIMPL4(rettype, funcname, a1, a2, a3, a4) WASM_CALLABLE_FUNC_4(rettype, funcname, a1, a2, a3, a4) {
+#define FCIMPL5(rettype, funcname, a1, a2, a3, a4, a5) WASM_CALLABLE_FUNC_5(rettype, funcname, a1, a2, a3, a4, a5) {
+
+#define FCIMPL2_RAW(_rettype, _method, a, b) \
+    EXTERN_C FCDECL2_RAW(_rettype, _method, a, b) \
+    {
+
+#else // HOST_WASM
+
 #define FCIMPL_(_rettype, ...) \
     FCIMPL_RENAME(_rettype, __VA_ARGS__) \
     EXTERN_C _rettype F_CALL_CONV FCALL_METHOD_NAME_((__VA_ARGS__)) FCALL_METHOD_ARGS_((__VA_ARGS__)) \
@@ -238,6 +348,12 @@ typedef uint8_t CODE_LOCATION;
 #define FCIMPL3(_rettype, _method, a, b, c) FCIMPL_(_rettype, _method, a, b, c)
 #define FCIMPL4(_rettype, _method, a, b, c, d) FCIMPL_(_rettype, _method, a, b, c, d)
 #define FCIMPL5(_rettype, _method, a, b, c, d, e) FCIMPL_(_rettype, _method, a, b, c, d, e)
+
+#endif // HOST_WASM
+
+#ifndef FCIMPL2_RAW
+#define FCIMPL2_RAW(_rettype, _method, a, b) FCIMPL2(_rettype, _method, a, b)
+#endif
 
 #define FCIMPLEND \
     }
@@ -257,22 +373,5 @@ typedef int32_t FC_BOOL_ARG;
 #define IN_DAC(x) x
 #define NOT_IN_DAC(x)
 #endif
-
-enum STARTUP_TIMELINE_EVENT_ID
-{
-    PROCESS_ATTACH_BEGIN = 0,
-    NONGC_INIT_COMPLETE,
-    GC_INIT_COMPLETE,
-    PROCESS_ATTACH_COMPLETE,
-
-    NUM_STARTUP_TIMELINE_EVENTS
-};
-
-#ifdef PROFILE_STARTUP
-extern uint64_t g_startupTimelineEvents[NUM_STARTUP_TIMELINE_EVENTS];
-#define STARTUP_TIMELINE_EVENT(eventid) g_startupTimelineEvents[eventid] = (uint64_t)minipal_hires_ticks();
-#else // PROFILE_STARTUP
-#define STARTUP_TIMELINE_EVENT(eventid)
-#endif // PROFILE_STARTUP
 
 #endif // __COMMONMACROS_H__

@@ -4,6 +4,15 @@ This contract is for fetching information related to GCInfo associated with nati
 
 The GCInfo contract has platform specific implementations as GCInfo differs per architecture. With the exception of x86, all platforms have a common encoding scheme with different encoding lengths and normalization functions for data. x86 uses an entirely different scheme which is partially supported by this contract.
 
+WebAssembly uses the common decoder with `Wasm32GcInfoEncoding` traits from
+`src/coreclr/inc/gcinfotypes.h`: code lengths/offsets and stack offsets are
+unscaled, the code-length encoding base is 6, and there is no fixed stack
+parameter scratch area. The platform encoding has no interruptible-range
+count in its fat header (`HAS_INTERRUPTIBLE_RANGES` is false).
+`DecodeInterpreterGCInfo` uses the separate interpreter traits even on
+WebAssembly, including its code-length encoding base of 8 and its
+interruptible-range count field.
+
 ## APIs of contract
 
 ```csharp
@@ -47,6 +56,11 @@ IReadOnlyList<uint> GetSafePoints(IGCInfoHandle handle);
 // and untracked slots (live for the whole method).
 IReadOnlyList<GCSlotLifetime> GetSlotLifetimes(IGCInfoHandle handle);
 
+// Optional native X86 diagnostic details; other decoders throw PlatformNotSupportedException.
+X86GCInfoHeader GetX86Header(IGCInfoHandle handle);
+IReadOnlyList<uint> GetX86Epilogs(IGCInfoHandle handle);
+IReadOnlyList<X86GCTransition> GetX86Transitions(IGCInfoHandle handle);
+
 // Returns all live GC slots at the given instruction offset.
 IReadOnlyList<LiveSlot> EnumerateLiveSlots(IGCInfoHandle handle, uint instructionOffset, GcSlotEnumerationOptions options);
 
@@ -64,8 +78,16 @@ TargetPointer GetAmbientSP(IGCInfoHandle handle, uint codeOffset, TargetPointer 
 ```
 
 ```csharp
-// Stack offset of a special GC info slot (GS cookie, PSP sym, or generics inst context).
-public readonly record struct SpecialSlot(int SpOffset);
+// CallerStackPointer is the caller's SP after unwinding the current frame.
+// InitialStackPointer is the SP after the prolog, before outgoing arguments are pushed.
+public enum SpecialSlotBase { CallerStackPointer, InitialStackPointer }
+
+// Stack offset and base of a special GC info slot (GS cookie, PSP sym, or generics context).
+public readonly record struct SpecialSlot(int SpOffset)
+{
+    public SpecialSlot(int spOffset, SpecialSlotBase slotBase) : this(spOffset) { Base = slotBase; }
+    public SpecialSlotBase Base { get; init; } // CallerStackPointer by default
+}
 
 // Kind of the generics instantiation context reported in the GC info header.
 public enum GenericsContextKind
@@ -102,6 +124,21 @@ public readonly record struct GCSlotLifetime(
     uint GcFlags,          // GC slot flags: 0x1 = interior pointer, 0x2 = pinned, 0x4 = untracked
     uint BeginOffset,      // Code offset where the slot becomes live
     uint EndOffset);       // Code offset where the slot becomes dead (exclusive)
+
+public readonly record struct X86GCInfoHeader(
+    uint EpilogSize, uint EpilogCount, uint SavedRegisters, uint Flags,
+    uint ArgumentSize, uint FrameSize, uint UntrackedCount, uint VarPtrTableSize,
+    uint SyncStartOffset, uint SyncEndOffset, uint NoGCRegionCount,
+    uint ArgumentTableOffset, uint ReturnKind, uint ReversePInvokeOffset);
+
+public enum X86GCTransitionKind : uint
+{
+    RegisterLive, RegisterDead, Push, Pop, Kill, StackDepth, ThisRegister, InteriorMask, Call,
+}
+
+public readonly record struct X86GCTransition(
+    uint CodeOffset, X86GCTransitionKind Kind, int StackDepthChange,
+    uint RegisterNumber, uint ArgumentOffset, uint Count, uint Flags);
 
 public enum GenericContextStorageKind
 {
@@ -148,12 +185,66 @@ public record struct GcSlotEnumerationOptions
     bool IsActiveFrame;                  // True if this is the active (leaf) stack frame
     bool IsExecutionAborted;             // True if execution was interrupted by an exception
     bool IsParentOfFuncletStackFrame;    // True if a funclet already reported GC references
+    bool IsFunclet;                     // True if the current frame is a funclet
     bool SuppressUntrackedSlots;         // True to suppress untracked slots (e.g., filter funclets)
     bool ReportFPBasedSlotsOnly;         // True to report only frame-register-relative stack slots
 }
 ```
 
 ## Version 1
+
+### X86 diagnostic projection
+
+`GetSlotLifetimes` walks decoded transitions in code-offset order, retaining the
+interior qualifier from each register LIVE transition. Fully interruptible
+register and pushed-pointer states are coalesced only while their locations and
+flags remain identical. Pushed arguments use `(depth - 1 - pushIndex) * 4` as
+their current ESP-relative displacement. Pushes and pops split locations of
+existing pushed roots and ESP-relative locals. KILL removes the indicated number
+of highest pointer arguments without changing stack depth.
+For ordinary EBP frames, pushed roots instead use the encoded argument index
+relative to the stable frame base. Funclets use their current ESP instead,
+because their EBP addresses the parent frame. Fully interruptible pops count all stack
+entries, including non-pointer arguments, and remove roots only from the slots
+actually popped. `GetX86Transitions` currently reports zero stack delta for EBP
+push/pop records; their argument information and pointer flag identify the
+encoded operations. Bulk `StackDepth` records report the byte depth change.
+Constant `sub ESP, N` and `add ESP, N` instructions in the method body are
+represented as non-pointer argument pushes and argument pops, respectively;
+the GC encoding does not distinguish these from push/pop instructions.
+
+For partially interruptible methods, call records supply register and argument
+roots at the call offset, represented by single-byte intervals `[offset, offset+1)`;
+no tracked call-root liveness is inferred between calls. Untracked locations retain
+flag `0x4` even when stack movement splits their intervals. Call-site
+interruptible ranges remain available to stack walking, and `GetSafePoints`
+returns the call offsets.
+Fully interruptible ranges exclude the prolog, epilogs, and explicit no-GC regions.
+
+`GetX86Header`, `GetX86Epilogs`, and `GetX86Transitions` require a native X86 handle.
+Header sizes and transition stack deltas are in bytes. Saved-register bits follow
+the X86 register order (EAX, ECX, EDX, EBX, ESP, EBP, ESI, EDI). Header flags are
+epilog-at-end `1`, EBP-frame `2`, interruptible `4`, double-aligned `8`, security
+`16`, handlers `32`, localloc `64`, EnC `128`, profiler callbacks `256`, async
+`512`, and explicit argument-table offset `1024`. Transition flags are interior
+`1`, pointer argument `2`, and receiver `4`. `ArgumentOffset` and `Count` retain
+decoded argument indices/counts; for a call they contain its pointer and interior
+argument masks. For an `InteriorMask` record, `ArgumentOffset` contains the mask.
+For register-based ESP push/pop records, `ArgumentOffset` is unused and `Count`
+is the number of stack slots pushed or popped.
+Explicit huge-call roots are included in `GetSlotLifetimes`.
+Raw encoding bytes are not exposed.
+Dynamic localloc and funclet argument bases still require per-frame execution
+state and remain a limitation of the static lifetime projection.
+
+Special slots normally use caller-SP-relative offsets. On X86 the caller SP
+includes any callee-popped arguments. For a double-aligned frame, the GS cookie
+instead uses `InitialStackPointer` because alignment makes its caller-SP
+displacement dependent on the frame. The SOS common header cannot represent this
+base and reports the cookie as absent; `ISOSDacInterface19` reports every X86
+GS cookie with its base (`1` = caller SP, `2` = initial SP), offset, and valid range.
+Interface18 lifetime bases are `0` = SP, `1` = `StackBaseRegister`, and `2` =
+caller SP.
 
 <!-- BEGIN GENERATED: usage contract=GCInfo version=c1 -->
 ### Data descriptors used
@@ -220,7 +311,7 @@ The fat header is used for methods that cannot be encoded using the compact slim
 | ReversePInvokeFrameSlot | `REVERSE_PINVOKE_FRAME_ENCBASE` | Normalized reverse P/Invoke frame slot | If GC_INFO_REVERSE_PINVOKE_FRAME |
 | SizeOfStackOutgoingAndScratchArea | `SIZE_OF_STACK_AREA_ENCBASE` | Size of stack parameter area | Platform dependent |
 | NumSafePoints | `NUM_SAFE_POINTS_ENCBASE` | Number of safe points/callsites | #ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED |
-| NumInterruptibleRanges | `NUM_INTERRUPTIBLE_RANGES_ENCBASE` | Number of interruptible ranges | |
+| NumInterruptibleRanges | `NUM_INTERRUPTIBLE_RANGES_ENCBASE` | Number of interruptible ranges | If `HAS_INTERRUPTIBLE_RANGES` (omitted for Wasm R2R) |
 
 ##### Header Flags
 
@@ -517,7 +608,10 @@ if HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA:  // platform-dependent
     fixedStackParameterScratchArea = DenormalizeSizeOfStackArea(DecodeVarLengthUnsigned(...))
 
 numSafePoints = DecodeVarLengthUnsigned(NUM_SAFE_POINTS_ENCBASE)
-numInterruptibleRanges = DecodeVarLengthUnsigned(NUM_INTERRUPTIBLE_RANGES_ENCBASE)
+if HAS_INTERRUPTIBLE_RANGES:  // false for Wasm R2R, which never has interruptible ranges
+    numInterruptibleRanges = DecodeVarLengthUnsigned(NUM_INTERRUPTIBLE_RANGES_ENCBASE)
+else:
+    numInterruptibleRanges = 0
 ```
 
 #### Body Decoding
@@ -647,10 +741,15 @@ For each chunk, the encoding stores:
 
 To determine liveness at the target offset: start from the chunk's final state, then apply any transitions that occur *after* the target offset (toggling the state backwards). A slot is live if its final state (after toggle adjustment) is 1.
 
+For encodings without interruptible ranges (`HAS_INTERRUPTIBLE_RANGES` is false, as for Wasm R2R), this step is replaced by reporting only untracked slots, including for `ExecutionAborted` frames. An aborted funclet shares those slots with parent frames that are skipped.
+
 **Step 4 — Report untracked slots**: Untracked slots are always live (they represent stack locations the JIT doesn't track at each safe point). They are reported unconditionally unless `ParentOfFuncletStackFrame` or `NoReportUntracked` flags are set. Untracked slots are reported with `reportScratchSlots=true` since the JIT may produce untracked scratch register slots for interior pointers.
 
 **Slot filtering**: Before reporting any slot, the algorithm checks:
 - **Scratch registers**: Only reported for the active/leaf frame (`ActiveStackFrame` flag).
+  Valid Wasm GC info never contains register slots, so the WebAssembly platform
+  decoder's scratch-register predicate always returns false and asserts in debug
+  builds if called, mirroring the native unsupported-platform fallback.
 - **Scratch stack slots**: Only reported for the active/leaf frame (slots in the outgoing/scratch area).
 - **FP-based-only mode** (`ReportFPBasedSlotsOnly`): Only frame-register-relative stack slots are reported; all register slots and non-frame-relative stack slots are skipped.
 

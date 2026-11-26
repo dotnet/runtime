@@ -19,8 +19,13 @@ namespace System.Net.ServerSentEvents
         /// </returns>
         /// <exception cref="ArgumentNullException"><paramref name="sseStream"/> is null.</exception>
         /// <remarks>
+        /// <para>
         /// This overload has behavior equivalent to calling <see cref="Create{T}(Stream, SseItemParser{T})"/> with a delegate
         /// that decodes the data of each event using <see cref="Encoding.UTF8"/>'s GetString method.
+        /// </para>
+        /// <para>
+        /// When parsing data from an untrusted source, use the overload that accepts <see cref="SseParserOptions{T}"/> to limit how much data the parser may buffer.
+        /// </para>
         /// </remarks>
         public static SseParser<string> Create(Stream sseStream) =>
             Create(sseStream, static (_, bytes) => Encoding.UTF8.GetString(bytes));
@@ -31,6 +36,9 @@ namespace System.Net.ServerSentEvents
         /// <param name="itemParser">The parser to use to transform each payload of bytes into a data element.</param>
         /// <returns>The enumerable, which can be enumerated synchronously or asynchronously.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="sseStream"/> or <paramref name="itemParser"/> is null.</exception>
+        /// <remarks>
+        /// When parsing data from an untrusted source, use the overload that accepts <see cref="SseParserOptions{T}"/> to limit how much data the parser may buffer.
+        /// </remarks>
         public static SseParser<T> Create<T>(Stream sseStream, SseItemParser<T> itemParser) =>
             Create(sseStream, new SseParserOptions<T>(itemParser));
 

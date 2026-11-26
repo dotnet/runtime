@@ -1,5 +1,9 @@
 <Project Sdk="Microsoft.Build.Traversal">
 
+  <PropertyGroup Condition="'$(IsGraphBuild)' == 'true'">
+    <AddTransitiveProjectReferencesInStaticGraph>false</AddTransitiveProjectReferencesInStaticGraph>
+  </PropertyGroup>
+
   <ItemGroup>
     <ProjectReference Include="$(RepoTasksDir)tasks.proj" BuildInParallel="false" />
     <!-- Subsets.props which defines @(ProjectToBuild) is already imported in Directory.Build.props. -->

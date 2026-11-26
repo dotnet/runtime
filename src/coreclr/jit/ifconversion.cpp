@@ -213,7 +213,7 @@ bool OptIfConversionDsc::IfConvertCheckStmts(BasicBlock* block, IfConvertOperati
             GenTree* op1 = tree->gtGetOp1();
 
             // Ensure it won't cause any additional side effects.
-            if ((op1->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0)
+            if ((op1->gtFlags & GTF_OBS_EFFECT) != 0)
             {
                 return false;
             }
@@ -290,6 +290,12 @@ bool OptIfConversionDsc::IfConvertTryGetElseFromJtrueBlock(GenTreeLclVar* thenSt
             GenTreeLclVar* prevStore = tree->AsLclVar();
             if (prevStore->GetLclNum() == targetLclNum)
             {
+                // Sinking an explicit init could expose an uninitialized GC local at a safepoint.
+                if ((prevStore->gtFlags & GTF_VAR_EXPLICIT_INIT) != 0)
+                {
+                    return false;
+                }
+
                 if (prevStore->Data()->IsInvariant())
                 {
                     m_elseOperation.block = m_startBlock;
@@ -629,11 +635,13 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
 
     if (select->OperIs(GT_SELECT))
     {
+#ifndef TARGET_WASM
         if (varTypeIsFloating(select))
         {
             JITDUMP("Abort: SELECT of type float\n");
             return true;
         }
+#endif
 
 #ifdef TARGET_RISCV64
         // Without Zicond, riscv64 has no native lowering for GT_SELECT - the
@@ -667,7 +675,7 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
             JITDUMP("Skipping if-conversion: branchy form fits in ~2 insns; Zicond would need 5+\n");
             return true;
         }
-#elif !defined(TARGET_64BIT)
+#elif !defined(TARGET_64BIT) && !defined(TARGET_WASM)
         // Disallow 64-bit operands on 32-bit targets as the backend currently cannot
         // handle contained relops efficiently after decomposition.
         if (varTypeIsLong(select))
@@ -676,6 +684,11 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
             return true;
         }
 #endif
+    }
+    else
+    {
+        // The comparison may now produce a value that must be normalized to 0 or 1.
+        m_cond->gtFlags &= ~GTF_RELOP_JMP_USED;
     }
 
     // Use the SELECT as the source of the Then STORE/RETURN.
@@ -1032,7 +1045,7 @@ PhaseStatus Compiler::optIfConversion()
     assert(!fgSsaValid);
     optReachableBitVecTraits = nullptr;
 
-#if defined(TARGET_ARM64) || defined(TARGET_XARCH) || defined(TARGET_RISCV64)
+#if defined(TARGET_ARM64) || defined(TARGET_XARCH) || defined(TARGET_RISCV64) || defined(TARGET_WASM)
     // Reverse iterate through the blocks.
     BasicBlock* block = fgLastBB;
 

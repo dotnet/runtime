@@ -1,10 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <!-- TODO: Remove once migrated to unsafe-v2. -->
+    <MemorySafetyRulesVersion>1</MemorySafetyRulesVersion>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <TestRuntime>true</TestRuntime>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <InvariantGlobalization>true</InvariantGlobalization>
-    <WasmWarnOnUnresolvedPInvokeModules>false</WasmWarnOnUnresolvedPInvokeModules>
     <PredefinedCulturesOnly>false</PredefinedCulturesOnly>
   </PropertyGroup>
   <ItemGroup>

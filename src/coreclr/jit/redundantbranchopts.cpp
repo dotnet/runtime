@@ -101,6 +101,7 @@ PhaseStatus Compiler::optRedundantBranches()
     };
 
     optReachableBitVecTraits = nullptr;
+    optRboNeedsSsaRebuild    = false;
     OptRedundantBranchesDomTreeVisitor visitor(this);
     visitor.WalkTree(m_domTree);
 
@@ -124,6 +125,22 @@ PhaseStatus Compiler::optRedundantBranches()
 
     // DFS tree is always considered invalid after RBO.
     fgInvalidateDfsTree();
+
+    // If we jump threaded, SSA and value numbers are stale and will be rebuilt
+    // by the phases that follow. Recompute the flow graph annotations they need.
+    //
+    if (optRboNeedsSsaRebuild)
+    {
+        JITDUMP("Jump threading modified the flow graph; SSA and value numbers must be rebuilt\n");
+
+        fgDfsBlocksAndRemove();
+        m_domTree = FlowGraphDominatorTree::Build(m_dfsTree);
+        m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
+
+        // Jump threading can leave loops non-canonical.
+        //
+        optLoopsCanonical = false;
+    }
 
     return visitor.madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
@@ -408,10 +425,9 @@ static const RelopImplicationRule s_implicationRules[] =
 // First looks for exact or similar relations.
 //
 // If that fails, then looks for cases where the user or optOptimizeBools
-// has combined two distinct predicates with a boolean AND, OR, or has wrapped
-// a predicate in NOT.
+// has combined two distinct predicates with a boolean AND or OR.
 //
-// This will be expressed as  {NE/EQ}({AND/OR/NOT}(...), 0).
+// This will be expressed as  {NE/EQ}({AND/OR}(...), 0).
 // If the operator is EQ then a true {AND/OR} result implies
 // a false taken branch, so we need to invert the sense of our
 // inferences.
@@ -515,7 +531,7 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
     // See if dominating compare is a compound comparison that might
     // tell us the value of the tree compare.
     //
-    // Look for {EQ,NE}({AND,OR,NOT}, 0)
+    // Look for {EQ,NE}({AND,OR}, 0)
     //
     genTreeOps const oper = genTreeOps(domFunc);
     if (!GenTree::StaticOperIs(oper, GT_EQ, GT_NE))
@@ -537,14 +553,14 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
 
     genTreeOps const predOper = genTreeOps(predFuncApp.GetFunc());
 
-    if (!GenTree::StaticOperIs(predOper, GT_AND, GT_OR, GT_NOT))
+    if (!GenTree::StaticOperIs(predOper, GT_AND, GT_OR))
     {
         return;
     }
 
-    // Dominating compare is {EQ,NE}({AND,OR,NOT}, 0).
+    // Dominating compare is {EQ,NE}({AND,OR}, 0).
     //
-    // See if one of {AND,OR,NOT} operands is related.
+    // See if one of {AND,OR} operands is related.
     //
     for (unsigned int i = 0; (i < predFuncApp.GetArity()) && !rii->canInfer; i++)
     {
@@ -580,22 +596,14 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
                     rii->canInferFromTrue = (oper == GT_NE);
                     rii->reverseSense ^= (oper == GT_EQ);
                 }
-                else if (predOper == GT_OR)
+                else
                 {
+                    assert(predOper == GT_OR);
                     // NE(OR, 0) false ==> OR false ==> OR operands false
                     rii->canInferFromFalse = (oper == GT_NE);
                     // EQ(OR, 0) true ==> OR false ==> OR operands false
                     rii->canInferFromTrue = (oper == GT_EQ);
                     rii->reverseSense ^= (oper == GT_EQ);
-                }
-                else
-                {
-                    assert(predOper == GT_NOT);
-                    // NE(NOT(x), 0) ==> NOT(X)
-                    // EQ(NOT(x), 0) ==> X
-                    rii->canInferFromTrue  = true;
-                    rii->canInferFromFalse = true;
-                    rii->reverseSense ^= (oper == GT_NE);
                 }
 
                 JITDUMP("Inferring predicate value from %s\n", GenTree::OpName(predOper));
@@ -775,7 +783,12 @@ bool Compiler::optRedundantDominatingBranch(BasicBlock* const block)
         return false;
     }
 
-    if (block->hasSideEffects())
+    // Block and the blocks along the paths to and from it may now execute
+    // where the dominating branch previously bypassed them. Besides having no
+    // side effects, these blocks must not depend on the dominating branch
+    // (ordering side effects), e.g. a load made non-faulting by a null check.
+    //
+    if (!block->isSafeToSpeculate())
     {
         return false;
     }
@@ -828,7 +841,7 @@ bool Compiler::optRedundantDominatingBranch(BasicBlock* const block)
     auto skipSideEffectFreeBlocks = [=](BasicBlock* b) {
         BitVecTraits traits(fgBBNumMax + 1, this);
         BitVec       visitedBlocks = BitVecOps::MakeEmpty(&traits);
-        while (!b->hasSideEffects() && b->KindIs(BBJ_ALWAYS))
+        while (b->isSafeToSpeculate() && b->KindIs(BBJ_ALWAYS))
         {
             b = b->GetUniqueSucc();
 
@@ -885,7 +898,7 @@ bool Compiler::optRedundantDominatingBranch(BasicBlock* const block)
                 break;
             }
 
-            if (domBlockProbe->hasSideEffects())
+            if (!domBlockProbe->isSafeToSpeculate())
             {
                 domBlockProbe = nullptr;
                 break;
@@ -1054,6 +1067,19 @@ bool Compiler::optRedundantDominatingBranch(BasicBlock* const block)
 
             if (newRelopFunc != VNF_NONE)
             {
+                // Rewriting just the relop is only valid if the VN relop is over the
+                // actual tree operands. Liberal VN may look through a materialized
+                // predicate and expose a relop over different operands.
+                //
+                const ValueNum treeOp1VN = vnStore->VNNormalValue(tree->AsOp()->gtOp1->GetVN(VNK_Liberal));
+                const ValueNum treeOp2VN = vnStore->VNNormalValue(tree->AsOp()->gtOp2->GetVN(VNK_Liberal));
+
+                if ((pathApp.GetArg(0) != treeOp1VN) || (pathApp.GetArg(1) != treeOp2VN))
+                {
+                    JITDUMP("; relop operands do not match tree operands, cannot simplify\n");
+                    break;
+                }
+
                 newRelop = vnStore->VNRelopToGenTreeOp(newRelopFunc, &isUnsigned);
 
                 if (newRelop != GT_NONE)
@@ -1133,7 +1159,7 @@ bool Compiler::optRedundantDominatingBranch(BasicBlock* const block)
         //
         if (!domMayHaveSideEffects)
         {
-            domMayHaveSideEffects = domBlockProbe->hasSideEffects();
+            domMayHaveSideEffects = !domBlockProbe->isSafeToSpeculate();
         }
 
         if (domMayHaveSideEffects)
@@ -1196,6 +1222,17 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
     unsigned       matchCount  = 0;
     const unsigned matchLimit  = 4;
 
+    // Compares with no relation to this one don't count against matchLimit, so also bound the
+    // total number of dominating compares inspected. Otherwise a long chain of unrelated
+    // compares makes each relop walk to the method entry, which is quadratic in the chain length.
+    //
+    unsigned domCompareCount = 0;
+#ifdef DEBUG
+    const unsigned domCompareLimit = (unsigned)JitConfig.JitRboDominatorLimit();
+#else
+    const unsigned domCompareLimit = 128;
+#endif
+
     // Unpack the tree's VN
     //
     ValueNum treeNormVN;
@@ -1257,6 +1294,12 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
 
             if (domCmpTree->OperIsCompare())
             {
+                if (++domCompareCount > domCompareLimit)
+                {
+                    JITDUMP("Bailing out; inspected %u dominating compares\n", domCompareLimit);
+                    break;
+                }
+
                 // We can use liberal VNs here, as bounds checks are not yet
                 // manifest explicitly as relops.
                 //
@@ -1328,7 +1371,8 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
                         // However we may be able to update the flow from block's predecessors so they
                         // bypass block and instead transfer control to jump's successors (aka jump threading).
                         //
-                        const bool wasThreaded = optJumpThreadDom(block, domBlock, !rii.reverseSense);
+                        const bool wasThreaded =
+                            optJumpThreadDom(block, domBlock, !rii.reverseSense, domCmpExcVN, treeExcVN);
 
                         if (wasThreaded)
                         {
@@ -1581,6 +1625,7 @@ static bool optGetThreadedSsaNumForBlock(JumpThreadInfo& jti, GenTreeLclVar* phi
     assert(jti.m_numAmbiguousPreds != 0);
 
     bool              foundReplacement = false;
+    BitVec            coveredPreds     = BitVecOps::MakeEmpty(&jti.traits);
     unsigned          replacementSsa   = SsaConfig::RESERVED_SSA_NUM;
     GenTreePhi* const phi              = phiDef->Data()->AsPhi();
 
@@ -1594,6 +1639,8 @@ static bool optGetThreadedSsaNumForBlock(JumpThreadInfo& jti, GenTreeLclVar* phi
             continue;
         }
 
+        BitVecOps::AddElemD(&jti.traits, coveredPreds, predBlock->bbPostorderNum);
+
         if (!foundReplacement)
         {
             replacementSsa   = phiArgNode->GetSsaNum();
@@ -1605,7 +1652,7 @@ static bool optGetThreadedSsaNumForBlock(JumpThreadInfo& jti, GenTreeLclVar* phi
         }
     }
 
-    if (!foundReplacement)
+    if (!foundReplacement || !BitVecOps::Equal(&jti.traits, coveredPreds, jti.m_ambiguousPreds))
     {
         return false;
     }
@@ -1639,7 +1686,34 @@ static bool optGetThreadedSsaNumForSuccessor(JumpThreadInfo& jti,
     *hasThreadedPreds  = false;
     *replacementSsaNum = SsaConfig::RESERVED_SSA_NUM;
 
+    BitVec expectedPreds = BitVecOps::MakeCopy(&jti.traits, jti.m_ambiguousPreds);
+    for (BasicBlock* const predBlock : jti.m_block->PredBlocks())
+    {
+        if (BitVecOps::IsMember(&jti.traits, jti.m_ambiguousPreds, predBlock->bbPostorderNum))
+        {
+            continue;
+        }
+
+        BasicBlock* predTarget = nullptr;
+        if (BitVecOps::IsMember(&jti.traits, jti.m_truePreds, predBlock->bbPostorderNum))
+        {
+            predTarget = jti.m_trueTarget;
+        }
+        else
+        {
+            assert(jti.m_numFalsePreds != 0);
+            predTarget = jti.m_falseTarget;
+        }
+
+        if (predTarget == successor)
+        {
+            BitVecOps::AddElemD(&jti.traits, expectedPreds, predBlock->bbPostorderNum);
+            *hasThreadedPreds = true;
+        }
+    }
+
     bool              foundReplacement = false;
+    BitVec            coveredPreds     = BitVecOps::MakeEmpty(&jti.traits);
     unsigned          replacementSsa   = SsaConfig::RESERVED_SSA_NUM;
     GenTreePhi* const phi              = phiDef->Data()->AsPhi();
 
@@ -1647,19 +1721,12 @@ static bool optGetThreadedSsaNumForSuccessor(JumpThreadInfo& jti,
     {
         GenTreePhiArg* const phiArgNode = use.GetNode()->AsPhiArg();
         BasicBlock* const    predBlock  = phiArgNode->gtPredBB;
-        bool const           isTruePred = BitVecOps::IsMember(&jti.traits, jti.m_truePreds, predBlock->bbPostorderNum);
-        bool const isAmbiguousPred = BitVecOps::IsMember(&jti.traits, jti.m_ambiguousPreds, predBlock->bbPostorderNum);
-
-        if (!isAmbiguousPred)
+        if (!BitVecOps::IsMember(&jti.traits, expectedPreds, predBlock->bbPostorderNum))
         {
-            BasicBlock* const predTarget = isTruePred ? jti.m_trueTarget : jti.m_falseTarget;
-            if (predTarget != successor)
-            {
-                continue;
-            }
-
-            *hasThreadedPreds = true;
+            continue;
         }
+
+        BitVecOps::AddElemD(&jti.traits, coveredPreds, predBlock->bbPostorderNum);
 
         if (!foundReplacement)
         {
@@ -1673,7 +1740,7 @@ static bool optGetThreadedSsaNumForSuccessor(JumpThreadInfo& jti,
     }
 
     *replacementSsaNum = replacementSsa;
-    return foundReplacement;
+    return foundReplacement && BitVecOps::Equal(&jti.traits, coveredPreds, expectedPreds);
 }
 
 //------------------------------------------------------------------------
@@ -1925,8 +1992,8 @@ Compiler::JumpThreadCheckResult Compiler::optJumpThreadCheck(BasicBlock* const b
     // Since flow is going to bypass block, make sure there
     // is nothing in block that can cause a side effect.
     //
-    // For non-PHI RBO, we neglect PHI stores. This can leave SSA in
-    // an incorrect state but so far it has not yet caused problems.
+    // For non-PHI RBO, we neglect PHI stores; SSA and VNs are rebuilt after
+    // the phase if we thread.
     //
     // For PHI-based RBO we need to be more cautious. We can now tolerate
     // some non-local PHI uses, but only when all uses are found in the
@@ -1992,8 +2059,8 @@ Compiler::JumpThreadCheckResult Compiler::optJumpThreadCheck(BasicBlock* const b
         //
         // We can ignore exception side effects in the jump tree.
         //
-        // They are covered by the exception effects in the dominating compare.
-        // We know this because the VNs match and they encode exception states.
+        // For dominator-based threading, the caller has verified they are covered by
+        // the exception effects in the dominating compare.
         //
         if ((tree->gtFlags & GTF_SIDE_EFFECT) != 0)
         {
@@ -2032,6 +2099,8 @@ Compiler::JumpThreadCheckResult Compiler::optJumpThreadCheck(BasicBlock* const b
 //   domBlock - a dominating block that has an equivalent branch
 //   domIsSameRelop - if true, dominating block does the same compare;
 //                    if false, dominating block does a reverse compare
+//   domCmpExcVN - exception set for the dominating compare
+//   treeExcVN - exception set for the dominated compare
 //
 // Returns:
 //   True if the branch was optimized.
@@ -2066,10 +2135,20 @@ Compiler::JumpThreadCheckResult Compiler::optJumpThreadCheck(BasicBlock* const b
 //     /     \           |       |
 //    Tt     Ft          Tt      Ft    True/false target
 //
-bool Compiler::optJumpThreadDom(BasicBlock* const block, BasicBlock* const domBlock, bool domIsSameRelop)
+bool Compiler::optJumpThreadDom(
+    BasicBlock* const block, BasicBlock* const domBlock, bool domIsSameRelop, ValueNum domCmpExcVN, ValueNum treeExcVN)
 {
     assert(block->KindIs(BBJ_COND));
     assert(domBlock->KindIs(BBJ_COND));
+
+    // Jump threading bypasses the dominated compare. Make sure the dominating compare
+    // produces all exceptions that the dominated compare would produce.
+    //
+    if (!vnStore->VNExcIsSubset(domCmpExcVN, treeExcVN))
+    {
+        JITDUMP("Dominating compare does not anticipate all current relop exceptions\n");
+        return false;
+    }
 
     // If the dominating block is not the immediate dominator
     // we might need to duplicate a lot of code to thread
@@ -2554,19 +2633,10 @@ bool Compiler::optJumpThreadCore(JumpThreadInfo& jti)
             JITDUMPEXEC(vnpPrint(newVNPair, 1));
             JITDUMP("\n");
 
+            // Ancestors of the use may now have stale VNs; they are fixed when SSA and VNs
+            // are rebuilt after the phase.
+            //
             use->SetVNs(newVNPair);
-
-            GenTree* node   = use;
-            GenTree* parent = node->gtGetParent(nullptr);
-
-            while ((parent != nullptr) && parent->OperIs(GT_COMMA) && (parent->AsOp()->gtOp2 == node))
-            {
-                JITDUMP(" Updating COMMA parent VN [%06u]\n", dspTreeID(parent));
-                ValueNumPair op1Xvnp = vnStore->VNPExceptionSet(parent->AsOp()->gtOp1->gtVNPair);
-                parent->SetVNs(vnStore->VNPWithExc(parent->AsOp()->gtOp2->gtVNPair, op1Xvnp));
-                node   = parent;
-                parent = node->gtGetParent(nullptr);
-            }
         }
 
         replacementSsaDef->AddUse(phiUse.m_block);
@@ -2709,8 +2779,11 @@ bool Compiler::optJumpThreadCore(JumpThreadInfo& jti)
         JITDUMP("Updating [%06u] liberal VN from " FMT_VN " to " FMT_VN "\n", dspTreeID(tree), treeOldVN, treeNewVN);
     }
 
-    // We optimized.
+    // We optimized. Threading invalidates SSA and value numbers (stale phis, phi args,
+    // and VNs of trees using rewritten locals), so they must be rebuilt before later
+    // phases rely on them.
     //
+    optRboNeedsSsaRebuild = true;
     Metrics.JumpThreadingsPerformed++;
     fgModified = true;
     return true;

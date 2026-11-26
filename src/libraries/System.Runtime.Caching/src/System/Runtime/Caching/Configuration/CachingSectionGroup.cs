@@ -3,13 +3,9 @@
 
 using System;
 using System.Configuration;
-using System.Runtime.Versioning;
 
 namespace System.Runtime.Caching.Configuration
 {
-#if NET
-    [UnsupportedOSPlatform("browser")]
-#endif
     internal sealed class CachingSectionGroup : ConfigurationSectionGroup
     {
         public CachingSectionGroup()

@@ -42,7 +42,7 @@ internal sealed class DescriptorCommand : Command
     private static void Execute(string dumpPath)
     {
         using DataTarget dt = DataTarget.LoadDump(dumpPath);
-        ulong contractAddr = DumpHelpers.FindContractDescriptor(dt);
+        ulong contractAddr = DumpHelpers.FindContractDescriptor(dt, out _);
 
         Console.WriteLine($"Dump: {dumpPath}");
         Console.WriteLine($"Pointer size: {dt.DataReader.PointerSize}");

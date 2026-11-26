@@ -366,8 +366,7 @@ internal sealed class ManifestBuilder
         if (channelTab != null)
         {
             sb?.AppendLine(" <channels>");
-            var sortedChannels = new List<KeyValuePair<int, ChannelInfo>>();
-            foreach (KeyValuePair<int, ChannelInfo> p in channelTab) { sortedChannels.Add(p); }
+            var sortedChannels = new List<KeyValuePair<int, ChannelInfo>>(channelTab);
             sortedChannels.Sort((p1, p2) => -Comparer<ulong>.Default.Compare(p1.Value.Keywords, p2.Value.Keywords));
 
             foreach (KeyValuePair<int, ChannelInfo> kvpair in sortedChannels)

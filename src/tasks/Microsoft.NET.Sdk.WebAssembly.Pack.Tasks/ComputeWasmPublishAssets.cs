@@ -180,8 +180,9 @@ public class ComputeWasmPublishAssets : Task
             var asset = kvp.Value;
             var isDotNetJs = IsAnyDotNetJs(key);
             var isDotNetWasm = IsDotNetWasm(key);
+            var isNativeSymbolMap = EmitSymbolMap && Path.GetFileName(asset.GetMetadata("OriginalItemSpec")) == "dotnet.native.js.symbols";
 
-            if (!isDotNetJs && !isDotNetWasm)
+            if (!isDotNetJs && !isDotNetWasm && !isNativeSymbolMap)
             {
                 if (resolvedNativeAssetToPublish.TryGetValue(Path.GetFileName(asset.GetMetadata("OriginalItemSpec")), out var existing))
                 {
@@ -213,9 +214,9 @@ public class ComputeWasmPublishAssets : Task
                 continue;
             }
 
-            if (isDotNetJs)
+            if (isDotNetJs || isNativeSymbolMap)
             {
-                var extension = ".js";
+                var extension = isNativeSymbolMap ? ".js.symbols" : ".js";
                 var baseName = Path.GetFileNameWithoutExtension(key);
                 if (baseName.StartsWith("dotnet.native.worker")) {
                     baseName = "dotnet.native.worker";
@@ -229,30 +230,30 @@ public class ComputeWasmPublishAssets : Task
                 else if (baseName.StartsWith("dotnet"))
                     baseName = "dotnet";
 
-                var aotDotNetJs = WasmAotAssets.SingleOrDefault(a => $"{a.GetMetadata("FileName")}{a.GetMetadata("Extension")}" == $"{baseName}{extension}");
-                ITaskItem newDotNetJs = null;
-                if (aotDotNetJs != null)
+                var aotAsset = WasmAotAssets.SingleOrDefault(a => $"{a.GetMetadata("FileName")}{a.GetMetadata("Extension")}" == $"{baseName}{extension}");
+                ITaskItem publishedAsset;
+                if (aotAsset is not null)
                 {
-                    newDotNetJs = new TaskItem(Path.GetFullPath(aotDotNetJs.ItemSpec), asset.CloneCustomMetadata());
-                    newDotNetJs.SetMetadata("OriginalItemSpec", aotDotNetJs.ItemSpec);
+                    publishedAsset = new TaskItem(Path.GetFullPath(aotAsset.ItemSpec), asset.CloneCustomMetadata());
+                    publishedAsset.SetMetadata("OriginalItemSpec", aotAsset.ItemSpec);
 
-                    ApplyPublishProperties(newDotNetJs);
+                    ApplyPublishProperties(publishedAsset);
 
-                    updateMap.Add(asset.ItemSpec, newDotNetJs);
-                    newAssets.Add(newDotNetJs);
-                    Log.LogMessage(MessageImportance.Low, "Replacing asset '{0}' with AoT version '{1}'", asset.ItemSpec, newDotNetJs.ItemSpec);
+                    updateMap.Add(asset.ItemSpec, publishedAsset);
+                    newAssets.Add(publishedAsset);
+                    Log.LogMessage(MessageImportance.Low, "Replacing asset '{0}' with AoT version '{1}'", asset.ItemSpec, publishedAsset.ItemSpec);
                 }
                 else
                 {
-                    newDotNetJs = CreatePromotedAsset(asset);
-                    if (newDotNetJs.ItemSpec != asset.ItemSpec)
-                        mappedFingerprintedAssets[asset.ItemSpec] = newDotNetJs.ItemSpec;
+                    publishedAsset = CreatePromotedAsset(asset);
+                    if (publishedAsset.ItemSpec != asset.ItemSpec)
+                        mappedFingerprintedAssets[asset.ItemSpec] = publishedAsset.ItemSpec;
 
-                    promotedAssets.Add(newDotNetJs);
+                    promotedAssets.Add(publishedAsset);
                     Log.LogMessage(MessageImportance.Low, "Promoting asset '{0}' to Publish asset.", asset.ItemSpec);
                 }
 
-                nativeStaticWebAssets.Add(newDotNetJs);
+                nativeStaticWebAssets.Add(publishedAsset);
                 if (resolvedNativeAssetToPublish.TryGetValue($"{baseName}{extension}", out var resolved))
                 {
                     filesToRemove.Add(resolved);
@@ -365,17 +366,18 @@ public class ComputeWasmPublishAssets : Task
             {
                 if (!resolvedPublishFilesToRemove.TryGetValue(existing.ItemSpec, out var removed))
                 {
-                    // This is a symbol asset like classlibrary.pdb or similar that was not filtered and that needs to be updated
-                    // to a publish asset.
+                    // Publish symbols must come from the selected publish file, which may have been rewritten by the linker.
                     var newAsset = CreatePromotedAsset(asset);
+                    newAsset.ItemSpec = existing.GetMetadata("FullPath");
+                    newAsset.SetMetadata("OriginalItemSpec", existing.ItemSpec);
                     if (newAsset.ItemSpec != asset.ItemSpec)
                         mappedFingerprintedAssets[asset.ItemSpec] = newAsset.ItemSpec;
 
                     symbolStaticWebAssets.Add(newAsset);
-                    updateMap.Add(newAsset.ItemSpec, newAsset);
+                    updateMap.Add(asset.ItemSpec, newAsset);
                     filesToRemove.Add(existing);
                     promotedAssets.Add(newAsset);
-                    Log.LogMessage(MessageImportance.Low, "Promoting asset '{0}' to Publish asset.", asset.ItemSpec);
+                    Log.LogMessage(MessageImportance.Low, "Replacing symbol asset '{0}' with publish version '{1}'.", asset.ItemSpec, newAsset.ItemSpec);
                 }
                 else
                 {

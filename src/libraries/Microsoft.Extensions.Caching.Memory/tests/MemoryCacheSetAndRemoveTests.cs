@@ -288,7 +288,7 @@ namespace Microsoft.Extensions.Caching.Memory
             Assert.Equal(default, obj);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void SetOverwritesAndInvokesCallbacks()
         {
             var cache = CreateCache();
@@ -337,7 +337,7 @@ namespace Microsoft.Extensions.Caching.Memory
             Assert.False(callback2Invoked.WaitOne(TimeSpan.FromSeconds(1)), "Callback2");
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void SetOverwritesWithReplacedReason()
         {
             var cache = CreateCache();
@@ -429,7 +429,7 @@ namespace Microsoft.Extensions.Caching.Memory
             Assert.Throws<ArgumentException>(() => entry.SetOptions(options));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void RemoveRemovesAndInvokesCallback()
         {
             var cache = CreateCache();
@@ -460,7 +460,7 @@ namespace Microsoft.Extensions.Caching.Memory
             Assert.Null(result);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void ClearClearsAndInvokesCallback()
         {
             var cache = (MemoryCache)CreateCache();
@@ -492,7 +492,7 @@ namespace Microsoft.Extensions.Caching.Memory
             Assert.Null(result);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void RemoveAndReAddFromCallbackWorks()
         {
             var cache = CreateCache();
@@ -568,7 +568,7 @@ namespace Microsoft.Extensions.Caching.Memory
             Assert.Null(result);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void GetAndSet_AreThreadSafe_AndUpdatesNeverLeavesNullValues()
         {
             var cache = CreateCache();
@@ -622,7 +622,7 @@ namespace Microsoft.Extensions.Caching.Memory
             Assert.False(readValueIsNull);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void OvercapacityPurge_AreThreadSafe()
         {
             const long SizeLimit = 10;
@@ -673,7 +673,7 @@ namespace Microsoft.Extensions.Caching.Memory
             });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void AddAndReplaceEntries_AreThreadSafe()
         {
             const int KeyCount = 10;
@@ -765,7 +765,7 @@ namespace Microsoft.Extensions.Caching.Memory
             await Assert.ThrowsAsync<ArgumentNullException>(async () => await cache.GetOrCreateAsync<object>(null, null));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void GetOrCreateWithCacheEntryOptions()
         {
             var cacheKey = "test";
@@ -793,7 +793,7 @@ namespace Microsoft.Extensions.Caching.Memory
             Assert.False(cache.TryGetValue(cacheKey, out _));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task GetOrCreateAsyncWithCacheEntryOptions()
         {
             var cacheKey = "test";

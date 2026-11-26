@@ -41,6 +41,114 @@ namespace Microsoft.Extensions
             public T Value { get; set; }
         }
 
+        public class VirtualCollectionOptions
+        {
+            public virtual List<int> Values { get; } = [99];
+        }
+
+        public class RenamedVirtualCollectionOptions : VirtualCollectionOptions
+        {
+            [ConfigurationKeyName("Renamed")]
+            public override List<int> Values { get; } = [99];
+        }
+
+        public sealed class InheritedRenamedVirtualCollectionOptions : RenamedVirtualCollectionOptions
+        {
+            public override List<int> Values { get; } = [99];
+        }
+
+        public class IgnoredVirtualCollectionOptions : VirtualCollectionOptions
+        {
+            [ConfigurationIgnore]
+            public override List<int> Values { get; } = [99];
+        }
+
+        public sealed class InheritedIgnoredVirtualCollectionOptions : IgnoredVirtualCollectionOptions
+        {
+            public override List<int> Values { get; } = [99];
+        }
+
+        public class VirtualScalarOptions
+        {
+            public virtual string Value { get; set; } = "initial";
+        }
+
+        public class GetterOnlyRenamedVirtualScalarOptions : VirtualScalarOptions
+        {
+            [ConfigurationKeyName("Middle")]
+            public override string Value => base.Value;
+        }
+
+        public sealed class SetterOnlyRenamedVirtualScalarOptions : GetterOnlyRenamedVirtualScalarOptions
+        {
+            [ConfigurationKeyName("Leaf")]
+            public override string Value
+            {
+                set => base.Value = value;
+            }
+        }
+
+        public class SetterOnlyInheritedRenamedVirtualScalarOptions : VirtualScalarOptions
+        {
+            [ConfigurationKeyName("Renamed")]
+            public override string Value
+            {
+                set => base.Value = value;
+            }
+        }
+
+        public sealed class InheritedSetterOnlyRenamedVirtualScalarOptions : SetterOnlyInheritedRenamedVirtualScalarOptions
+        {
+            public override string Value
+            {
+                get => base.Value;
+                set => base.Value = value;
+            }
+        }
+
+        public class SetterOnlyIgnoredVirtualScalarOptions : VirtualScalarOptions
+        {
+            [ConfigurationIgnore]
+            public override string Value
+            {
+                set => base.Value = value;
+            }
+        }
+
+        public sealed class InheritedSetterOnlyIgnoredVirtualScalarOptions : SetterOnlyIgnoredVirtualScalarOptions
+        {
+            public override string Value
+            {
+                get => base.Value;
+                set => base.Value = value;
+            }
+        }
+
+        public class OverloadedVirtualIndexerOptions
+        {
+            public virtual string this[int index]
+            {
+                get => index.ToString();
+                set { }
+            }
+
+            public virtual string this[string index]
+            {
+                get => index;
+                set { }
+            }
+
+            public string Value { get; set; } = "initial";
+        }
+
+        public sealed class PartiallyOverriddenVirtualIndexerOptions : OverloadedVirtualIndexerOptions
+        {
+            public override string this[int index]
+            {
+                set { }
+            }
+        }
+
         public record GenericOptionsRecord<T>(T Value);
 
         public class GenericOptionsWithParamCtor<T>

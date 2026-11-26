@@ -112,7 +112,6 @@ internal sealed class MsQuicContextSafeHandle : MsQuicSafeHandle
     public unsafe MsQuicContextSafeHandle(QUIC_HANDLE* handle, GCHandle context, SafeHandleType safeHandleType, MsQuicSafeHandle? parent = null)
         : base(handle, safeHandleType)
     {
-        _context = context;
         if (parent is not null)
         {
             bool success = false;
@@ -123,6 +122,7 @@ internal sealed class MsQuicContextSafeHandle : MsQuicSafeHandle
                 NetEventSource.Info(this, $"{this} {_parent} ref count incremented");
             }
         }
+        _context = context;
     }
 
     protected override bool ReleaseHandle()

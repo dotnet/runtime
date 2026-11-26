@@ -25,6 +25,7 @@
   <ItemGroup>
     <Compile Include="..\Common\Utils.cs" />
     <Compile Include="..\Common\LogAsErrorException.cs" />
+    <Compile Include="..\Common\RuntimeConfigProperties.cs" />
     <Compile Include="..\Common\TempFileName.cs" />
     <Compile Include="..\Common\JoinedString.cs" />
     <Compile Include="..\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\ArtifactWriter.cs" />
@@ -38,7 +39,7 @@
     <!-- Reference Microsoft.Build.Tasks.Core directly to avoid bringing in it's package closure.
          This assembly is provided by MSBuild.  -->
     <PackageDownloadAndReference Include="Microsoft.Build.Tasks.Core" Version="$(MicrosoftBuildTasksCoreVersion)" Folder="ref/net472" Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net472'))" />
-    <PackageDownloadAndReference Include="Microsoft.Build.Tasks.Core" Version="$(MicrosoftBuildTasksCoreVersion)" Folder="ref/net8.0" Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))" />
+    <PackageDownloadAndReference Include="Microsoft.Build.Tasks.Core" Version="$(MicrosoftBuildTasksCoreVersion)" Folder="ref/net10.0" Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net10.0'))" />
   </ItemGroup>
 
   <Target Name="GetFilesToPackage" Returns="@(FilesToPackage)">
@@ -57,33 +58,5 @@
   </Target>
 
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.Mono.ManagedToNativeGenerator" TaskFactory="TaskHostFactory" AssemblyFile="$(OutputPath)net\WasmAppBuilder.dll" Condition="'$(RuntimeFlavor)' == 'Mono'" />
-  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.CoreClr.ManagedToNativeGenerator" TaskFactory="TaskHostFactory" AssemblyFile="$(OutputPath)net\WasmAppBuilder.dll" Condition="'$(RuntimeFlavor)' == 'CoreCLR'" />
-
-  <!-- The module list is shared with the runtime tests' corerun relink, which has to cover the
-       same modules as the tables generated here. -->
-  <Import Project="$(RepositoryEngineeringDir)wasm\WasmPInvokeModules.props" />
-
-  <Target Name="RunGenerator" DependsOnTargets="Build" Condition="'$(AssembliesScanPath)' != ''">
-      <ItemGroup>
-        <WasmPInvokeAssembly Include="$(AssembliesScanPath)*.dll" />
-        <WasmPInvokeModule Include="@(WasmCoreClrFrameworkPInvokeModule)" />
-      </ItemGroup>
-
-      <PropertyGroup>
-        <_RunGeneratorTargetOS Condition="'$(TargetOS)' == ''">browser</_RunGeneratorTargetOS>
-        <_RunGeneratorTargetOS Condition="'$(TargetOS)' != ''">$(TargetOS)</_RunGeneratorTargetOS>
-      </PropertyGroup>
-
-      <Message Importance="high" Text="Running ManagedToNativeGenerator on @(WasmPInvokeAssembly) for TargetOS=$(_RunGeneratorTargetOS)" />
-      <ManagedToNativeGenerator
-          Assemblies="@(WasmPInvokeAssembly)"
-          PInvokeModules="@(WasmPInvokeModule)"
-          TargetOS="$(_RunGeneratorTargetOS)"
-          PInvokeOutputPath="$(GeneratorOutputPath)callhelpers-pinvoke.cpp"
-          ReversePInvokeOutputPath="$(GeneratorOutputPath)callhelpers-reverse.cpp"
-          InterpToNativeOutputPath="$(GeneratorOutputPath)callhelpers-interp-to-managed.cpp">
-          <Output TaskParameter="FileWrites" ItemName="FileWrites" />
-      </ManagedToNativeGenerator>
-  </Target>
 
 </Project>

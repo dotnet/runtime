@@ -74,9 +74,6 @@ namespace ILCompiler.DependencyAnalysis
                     flags = FieldTableFlags.Instance | FieldTableFlags.FieldOffsetEncodedDirectly;
                 }
 
-                if (field.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any))
-                    flags |= FieldTableFlags.IsAnyCanonicalEntry;
-
                 if (field.IsInitOnly)
                     flags |= FieldTableFlags.IsInitOnly;
 

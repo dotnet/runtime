@@ -71,6 +71,7 @@ class OutOfMemoryExceptionTest
 
         var psi = new ProcessStartInfo(fileName, arguments)
         {
+            InheritedHandles = [],
             RedirectStandardOutput = true,
             RedirectStandardError = true,
         };

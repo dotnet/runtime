@@ -535,11 +535,7 @@ namespace System
 
         #region Private Data Members
 
-        internal static readonly RuntimeType ValueType = (RuntimeType)typeof(System.ValueType);
         internal static readonly RuntimeType EnumType = (RuntimeType)typeof(System.Enum);
-
-        private static readonly RuntimeType ObjectType = (RuntimeType)typeof(object);
-        private static readonly RuntimeType StringType = (RuntimeType)typeof(string);
 
         #endregion
 
@@ -1486,6 +1482,8 @@ namespace System
 
         #endregion
 
+        public override int GetHashCode() => RuntimeHelpers.GetHashCode(this);
+
         public static bool operator ==(RuntimeType? left, RuntimeType? right)
         {
             return ReferenceEquals(left, right);
@@ -1870,10 +1868,10 @@ namespace System
 
                 if (value is Pointer pointer)
                 {
-                    Type pointerType = pointer.GetPointerType();
+                    Type pointerType = pointer.PointerType;
                     if (pointerType == this)
                     {
-                        value = pointer.GetPointerValue();
+                        value = (IntPtr)pointer.Value;
                         return CheckValueStatus.Success;
                     }
                 }

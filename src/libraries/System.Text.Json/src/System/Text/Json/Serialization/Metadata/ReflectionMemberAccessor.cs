@@ -49,26 +49,63 @@ namespace System.Text.Json.Serialization.Metadata
             Debug.Assert(!type.IsAbstract);
             Debug.Assert(constructor.DeclaringType == type && !constructor.IsStatic);
 
-            int parameterCount = constructor.GetParameters().Length;
+            ParameterInfo[] parameters = constructor.GetParameters();
+            int parameterCount = parameters.Length;
+            bool hasOutParameter = false;
+
+            foreach (ParameterInfo parameter in parameters)
+            {
+                if (parameter.IsOut)
+                {
+                    hasOutParameter = true;
+                    break;
+                }
+            }
 
 #if NET
             ConstructorInvoker invoker = ConstructorInvoker.Create(constructor);
-            return arguments => (T)invoker.Invoke(arguments.AsSpan(0, parameterCount));
-#else
-            return (arguments) =>
+            if (!hasOutParameter)
             {
-                // The input array was rented from the shared ArrayPool, so its size is likely to be larger than the param count.
-                // The emit equivalent of this method does not (need to) allocate here + transfer the objects.
-                object[] argsToPass = new object[parameterCount];
+                return arguments => (T)invoker.Invoke(arguments.AsSpan(0, parameterCount));
+            }
+#else
+            if (!hasOutParameter)
+            {
+                return (arguments) =>
+                {
+                    // The input array was rented from the shared ArrayPool, so its size is likely to be larger than the param count.
+                    // The emit equivalent of this method does not (need to) allocate here + transfer the objects.
+                    object[] argsToPass = new object[parameterCount];
 
-                Array.Copy(arguments, 0, argsToPass, 0, parameterCount);
+                    Array.Copy(arguments, 0, argsToPass, 0, parameterCount);
 
-                // Not wrapping in TargetInvocationException also plumbs ArgumentException through for
-                // tuples with more than 7 generic parameters, e.g.
-                // System.ArgumentException : The last element of an eight element tuple must be a Tuple.
-                return (T)constructor.InvokeNoWrapExceptions(argsToPass);
-            };
+                    // Not wrapping in TargetInvocationException also plumbs ArgumentException through for
+                    // tuples with more than 7 generic parameters, e.g.
+                    // System.ArgumentException : The last element of an eight element tuple must be a Tuple.
+                    return (T)constructor.InvokeNoWrapExceptions(argsToPass);
+                };
+            }
 #endif
+
+            return arguments =>
+            {
+                object?[] argsToPass = new object?[parameterCount];
+                int argumentIndex = 0;
+
+                for (int parameterIndex = 0; parameterIndex < parameterCount; parameterIndex++)
+                {
+                    if (!parameters[parameterIndex].IsOut)
+                    {
+                        argsToPass[parameterIndex] = arguments[argumentIndex++];
+                    }
+                }
+
+#if NET
+                return (T)invoker.Invoke(argsToPass.AsSpan());
+#else
+                return (T)constructor.InvokeNoWrapExceptions(argsToPass);
+#endif
+            };
         }
 
         public override JsonTypeInfo.ParameterizedConstructorDelegate<T, TArg0, TArg1, TArg2, TArg3>?
@@ -151,7 +188,7 @@ namespace System.Text.Json.Serialization.Metadata
         public override Action<TCollection, object?> CreateAddMethodDelegate<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TCollection>()
         {
             Type collectionType = typeof(TCollection);
-            Type elementType = JsonTypeInfo.ObjectType;
+            Type elementType = typeof(object);
 
             // We verified this won't be null when we created the converter for the collection type.
             MethodInfo addMethod = (collectionType.GetMethod("Push") ?? collectionType.GetMethod("Enqueue"))!;

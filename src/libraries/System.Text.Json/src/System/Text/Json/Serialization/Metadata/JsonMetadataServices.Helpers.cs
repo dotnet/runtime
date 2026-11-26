@@ -165,7 +165,7 @@ namespace System.Text.Json.Serialization.Metadata
         {
             Debug.Assert(typeInfo.Kind is JsonTypeInfoKind.Object);
             Debug.Assert(!typeInfo.IsConfigured);
-            Debug.Assert(typeInfo.Type != JsonTypeInfo.ObjectType);
+            Debug.Assert(typeInfo.Type != typeof(object));
             Debug.Assert(typeInfo.Converter.ElementType is null);
 
             JsonSerializerContext? context = typeInfo.Options.TypeInfoResolver as JsonSerializerContext;

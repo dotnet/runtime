@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
@@ -648,11 +649,13 @@ namespace System
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.ConvertToInteger{TInteger}(TSelf)" />
         [Intrinsic]
+        [SuppressReadyToRunCanonicalRooting]
         public static TInteger ConvertToInteger<TInteger>(float value)
             where TInteger : IBinaryInteger<TInteger> => TInteger.CreateSaturating(value);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.ConvertToIntegerNative{TInteger}(TSelf)" />
         [Intrinsic]
+        [SuppressReadyToRunCanonicalRooting]
         public static TInteger ConvertToIntegerNative<TInteger>(float value)
             where TInteger : IBinaryInteger<TInteger>
         {
@@ -979,7 +982,14 @@ namespace System
 
         /// <inheritdoc cref="INumber{TSelf}.MaxNative(TSelf, TSelf)" />
         [Intrinsic]
-        public static float MaxNative(float x, float y) => (x > y) ? x : y;
+        public static float MaxNative(float x, float y)
+        {
+#if MONO
+            return (x > y) ? x : y;
+#else
+            return MaxNative(x, y);
+#endif
+        }
 
         /// <inheritdoc cref="INumber{TSelf}.MaxNumber(TSelf, TSelf)" />
         [Intrinsic]
@@ -1010,7 +1020,14 @@ namespace System
 
         /// <inheritdoc cref="INumber{TSelf}.MinNative(TSelf, TSelf)" />
         [Intrinsic]
-        public static float MinNative(float x, float y) => (x < y) ? x : y;
+        public static float MinNative(float x, float y)
+        {
+#if MONO
+            return (x < y) ? x : y;
+#else
+            return MinNative(x, y);
+#endif
+        }
 
         /// <inheritdoc cref="INumber{TSelf}.MinNumber(TSelf, TSelf)" />
         [Intrinsic]
@@ -1057,6 +1074,7 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.CreateChecked{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         public static float CreateChecked<TOther>(TOther value)
             where TOther : INumberBase<TOther>
         {
@@ -1076,6 +1094,7 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.CreateSaturating{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         public static float CreateSaturating<TOther>(TOther value)
             where TOther : INumberBase<TOther>
         {
@@ -1095,6 +1114,7 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.CreateTruncating{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         public static float CreateTruncating<TOther>(TOther value)
             where TOther : INumberBase<TOther>
         {
@@ -1121,34 +1141,28 @@ namespace System
         /// <inheritdoc cref="INumberBase{TSelf}.IsEvenInteger(TSelf)" />
         public static bool IsEvenInteger(float value)
         {
-            uint bits = BitConverter.SingleToUInt32Bits(Abs(value));
-
-            if (bits < 0x3F80_0000)
-            {
-                return bits == 0;
-            }
-
-            if (bits >= 0x4B80_0000)
-            {
-                return bits < 0x7F80_0000;
-            }
-
-            uint exponent = ((bits >> 23) & 0xFF) - 127;
-            uint fractionalBits = 23 - exponent;
-            uint firstIntegerBit = 1u << (int)fractionalBits;
-            uint fractionalBitMask = firstIntegerBit - 1;
-
-            return ((bits & fractionalBitMask) == 0) && ((bits & firstIntegerBit) == 0);
+            // Subtract from the original value so halving a subnormal cannot make it appear even.
+            // Nonfinite values produce a NaN residual and compare unequal to zero.
+            return (value - (Truncate(value * 0.5f) * 2.0f)) == 0.0f;
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.IsImaginaryNumber(TSelf)" />
         static bool INumberBase<float>.IsImaginaryNumber(float value) => false;
 
         /// <inheritdoc cref="INumberBase{TSelf}.IsInteger(TSelf)" />
-        public static bool IsInteger(float value) => IsFinite(value) && (value == Truncate(value));
+        public static bool IsInteger(float value)
+        {
+            // Nonfinite values produce a NaN residual and compare unequal to zero.
+            return (value - Truncate(value)) == 0.0f;
+        }
 
         /// <inheritdoc cref="INumberBase{TSelf}.IsOddInteger(TSelf)" />
-        public static bool IsOddInteger(float value) => IsInteger(value) && (Abs((value) % 2) == 1);
+        public static bool IsOddInteger(float value)
+        {
+            // Half an odd integer has a fractional magnitude of 0.5; nonfinite values produce NaN.
+            float half = value * 0.5f;
+            return Abs(half - Truncate(half)) == 0.5f;
+        }
 
         /// <inheritdoc cref="INumberBase{TSelf}.IsPositive(TSelf)" />
         public static bool IsPositive(float value) => BitConverter.SingleToInt32Bits(value) >= 0;
@@ -1242,6 +1256,7 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromChecked{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         static bool INumberBase<float>.TryConvertFromChecked<TOther>(TOther value, out float result)
         {
             return TryConvertFrom(value, out result);
@@ -1249,6 +1264,7 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromSaturating{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         static bool INumberBase<float>.TryConvertFromSaturating<TOther>(TOther value, out float result)
         {
             return TryConvertFrom(value, out result);
@@ -1256,12 +1272,14 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromTruncating{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         static bool INumberBase<float>.TryConvertFromTruncating<TOther>(TOther value, out float result)
         {
             return TryConvertFrom(value, out result);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         private static bool TryConvertFrom<TOther>(TOther value, out float result)
             where TOther : INumberBase<TOther>
         {
@@ -1331,6 +1349,7 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToChecked{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         static bool INumberBase<float>.TryConvertToChecked<TOther>(float value, [MaybeNullWhen(false)] out TOther result)
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
@@ -1399,6 +1418,7 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToSaturating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         static bool INumberBase<float>.TryConvertToSaturating<TOther>(float value, [MaybeNullWhen(false)] out TOther result)
         {
             return TryConvertTo(value, out result);
@@ -1406,12 +1426,14 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToTruncating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         static bool INumberBase<float>.TryConvertToTruncating<TOther>(float value, [MaybeNullWhen(false)] out TOther result)
         {
             return TryConvertTo(value, out result);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         private static bool TryConvertTo<TOther>(float value, [MaybeNullWhen(false)] out TOther result)
             where TOther : INumberBase<TOther>
         {
@@ -1650,7 +1672,7 @@ namespace System
                 {
                     if (x != 0)
                     {
-                        if ((x > 0) || IsOddInteger(n))
+                        if ((x > 0) || int.IsOddInteger(n))
                         {
                             result = (float)double.Pow(Abs(x), 1.0 / n);
                             result = CopySign(result, x);
@@ -1660,7 +1682,7 @@ namespace System
                             result = NaN;
                         }
                     }
-                    else if (IsEvenInteger(n))
+                    else if (int.IsEvenInteger(n))
                     {
                         result = 0.0f;
                     }
@@ -1695,7 +1717,7 @@ namespace System
                 {
                     if (x != 0)
                     {
-                        if ((x > 0) || IsOddInteger(n))
+                        if ((x > 0) || int.IsOddInteger(n))
                         {
                             result = (float)double.Pow(Abs(x), 1.0 / n);
                             result = CopySign(result, x);
@@ -1705,7 +1727,7 @@ namespace System
                             result = NaN;
                         }
                     }
-                    else if (IsEvenInteger(n))
+                    else if (int.IsEvenInteger(n))
                     {
                         result = PositiveInfinity;
                     }

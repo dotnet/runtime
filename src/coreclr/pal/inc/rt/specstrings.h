@@ -465,14 +465,6 @@ __inner_analysis_assume_nullterminated_dec
 }
 #endif
 
-/**************************************************************************
-* This include should always be the last thing in this file.
-* Must avoid redfinitions of macros to workaround rc.exe issues.
-***************************************************************************/
-#if !(defined(RC_INVOKED) || defined(SORTPP_PASS))
-#include <specstrings_strict.h>
-#endif /* if !(defined(RC_INVOKED) || defined(SORTPP_PASS)) */
-
 /*
  If no SAL 2 appears to have been defined (_Outptr_ is a representative choice)
  then we must be operating in a downlevel build environment (such as VS10).

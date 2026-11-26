@@ -29,16 +29,16 @@ public class Runtime_126750
     }
 
     [Fact]
-    public static void TestEntryPoint()
+    public static async Task TestEntryPoint()
     {
         for (int depth = 0; depth < 64; depth++)
         {
-            Run(depth);
+            await Run(depth);
         }
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static void Run(int depth)
+    private static Task Run(int depth)
     {
         TaskCompletionSource tcs = new TaskCompletionSource();
         Task<Large> task = Caller(tcs.Task);
@@ -46,7 +46,7 @@ public class Runtime_126750
         FillStackWithGarbage(depth);
 
         tcs.SetResult();
-        task.GetAwaiter().GetResult();
+        return task;
     }
 
     // Leaves a non-null, non-heap value in the stack range that the resumed frame lands in.

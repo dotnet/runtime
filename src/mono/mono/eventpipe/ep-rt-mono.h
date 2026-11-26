@@ -518,7 +518,7 @@ void
 ep_rt_provider_invoke_callback (
 	EventPipeCallback callback_func,
 	const uint8_t *source_id,
-	unsigned long is_enabled,
+	uint32_t is_enabled,
 	uint8_t level,
 	uint64_t match_any_keywords,
 	uint64_t match_all_keywords,
@@ -711,6 +711,13 @@ void
 ep_rt_notify_profiler_provider_created (EventPipeProvider *provider)
 {
 	;
+}
+
+static
+inline
+void
+ep_rt_session_stopping (void)
+{
 }
 
 /*
@@ -2080,7 +2087,7 @@ void
 EP_CALLBACK_CALLTYPE
 EventPipeEtwCallbackDotNETRuntime (
 	const uint8_t *source_id,
-	unsigned long is_enabled,
+	uint32_t is_enabled,
 	uint8_t level,
 	uint64_t match_any_keywords,
 	uint64_t match_all_keywords,
@@ -2091,7 +2098,7 @@ void
 EP_CALLBACK_CALLTYPE
 EventPipeEtwCallbackDotNETRuntimeRundown (
 	const uint8_t *source_id,
-	unsigned long is_enabled,
+	uint32_t is_enabled,
 	uint8_t level,
 	uint64_t match_any_keywords,
 	uint64_t match_all_keywords,
@@ -2102,7 +2109,7 @@ void
 EP_CALLBACK_CALLTYPE
 EventPipeEtwCallbackDotNETRuntimePrivate (
 	const uint8_t *source_id,
-	unsigned long is_enabled,
+	uint32_t is_enabled,
 	uint8_t level,
 	uint64_t match_any_keywords,
 	uint64_t match_all_keywords,
@@ -2113,7 +2120,7 @@ void
 EP_CALLBACK_CALLTYPE
 EventPipeEtwCallbackDotNETRuntimeStress (
 	const uint8_t *source_id,
-	unsigned long is_enabled,
+	uint32_t is_enabled,
 	uint8_t level,
 	uint64_t match_any_keywords,
 	uint64_t match_all_keywords,
@@ -2124,7 +2131,7 @@ void
 EP_CALLBACK_CALLTYPE
 EventPipeEtwCallbackDotNETRuntimeMonoProfiler (
 	const uint8_t *source_id,
-	unsigned long is_enabled,
+	uint32_t is_enabled,
 	uint8_t level,
 	uint64_t match_any_keywords,
 	uint64_t match_all_keywords,

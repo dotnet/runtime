@@ -13,18 +13,10 @@ public class Async2TaskAdapters
     // Wrapping a runtime-async Task in a ValueTask (ValueTask(Task) constructor) and
     // awaiting the resulting ValueTask should suspend and resume correctly.
     [Fact]
-    public static void TestTaskToValueTask()
+    public static async Task TestTaskToValueTask()
     {
-        SynchronizationContext prevContext = SynchronizationContext.Current;
-        try
-        {
-            SynchronizationContext.SetSynchronizationContext(new MySyncContext());
-            WrapTaskInValueTaskCaller().GetAwaiter().GetResult();
-        }
-        finally
-        {
-            SynchronizationContext.SetSynchronizationContext(prevContext);
-        }
+        SynchronizationContext.SetSynchronizationContext(new MySyncContext());
+        await WrapTaskInValueTaskCaller();
     }
 
     private static async Task WrapTaskInValueTaskCaller()
@@ -47,18 +39,10 @@ public class Async2TaskAdapters
     // Converting a ValueTask backed by an IValueTaskSource into a Task via AsTask()
     // and awaiting it should complete correctly.
     [Fact]
-    public static void TestValueTaskSourceToTask()
+    public static async Task TestValueTaskSourceToTask()
     {
-        SynchronizationContext prevContext = SynchronizationContext.Current;
-        try
-        {
-            SynchronizationContext.SetSynchronizationContext(new MySyncContext());
-            ConvertSourceToTaskCaller().GetAwaiter().GetResult();
-        }
-        finally
-        {
-            SynchronizationContext.SetSynchronizationContext(prevContext);
-        }
+        SynchronizationContext.SetSynchronizationContext(new MySyncContext());
+        await ConvertSourceToTaskCaller();
     }
 
     private static async Task ConvertSourceToTaskCaller()
@@ -84,12 +68,7 @@ public class Async2TaskAdapters
     //   - return new ValueTask<Task<int>>(TaskOfTaskOfIntReturningFunction()) passes a Task<Task<int>>,
     //     which binds to the ValueTask<TResult>(Task<TResult> task) constructor, an actual async call.
     [Fact]
-    public static void TestValueTaskOfTaskValueVersusAsync()
-    {
-        WrapValueVersusAsync().GetAwaiter().GetResult();
-    }
-
-    private static async Task WrapValueVersusAsync()
+    public static async Task WrapValueVersusAsync()
     {
         // Value case: a suspended Task<int> is passed to the ValueTask<Task<int>>(TResult result)
         // constructor, so the ValueTask holds it as an already-available value. The ValueTask is

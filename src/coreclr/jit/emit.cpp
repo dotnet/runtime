@@ -4402,9 +4402,9 @@ void emitter::emitDispJumpList()
 #endif // TARGET_XARCH
 
 #if defined(TARGET_AMD64)
-            if (jmp->idjIsAfterCallBeforeEpilog)
+            if (jmp->idjIsAfterCall)
             {
-                printf(" ; after call before epilog");
+                printf(" ; after call");
             }
 #endif // TARGET_AMD64
         }
@@ -4799,21 +4799,12 @@ void emitter::emitRemoveJumpToNextInst()
                 jmp->idCodeSize(0);
 
 #ifdef TARGET_AMD64
-                // If the removed jump is after a call and before an OS epilog, it needs to be replaced by a nop
-                if (jmp->idjIsAfterCallBeforeEpilog)
+                // Preserve the call's return PC in its EH region and keep its GC state distinct
+                // from the branch target's state. This also separates the call from an OS epilog.
+                if (jmp->idjIsAfterCall)
                 {
-                    if ((targetGroup->igFlags & IGF_EPILOG) != 0)
-                    {
-                        // This jump will become a nop, so set its size now to ensure below calculations are correct
-                        jmp->idCodeSize(1);
-                        codeSize--;
-                    }
-                    else
-                    {
-                        // We don't need a nop if the removed jump isn't before an OS epilog,
-                        // so zero jmp->idjIsAfterCallBeforeEpilog to avoid emitting a nop
-                        jmp->idjIsAfterCallBeforeEpilog = 0;
-                    }
+                    jmp->idCodeSize(1);
+                    codeSize--;
                 }
 #endif // TARGET_AMD64
 
@@ -7138,7 +7129,7 @@ unsigned emitter::emitEndCodeGen(Compiler*             comp,
                 continue;
             }
 
-            if (m_compiler->lvaIsUnknownSizeLocal(num))
+            if (m_compiler->lvaLocalIsOnUnknownSizeFrame(num))
             {
                 continue;
             }
@@ -8534,11 +8525,7 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, AllocMemChunk* chunks)
                 // Async call may have been removed very late, after we have introduced suspension/resumption.
                 // In those cases just encode null.
 #ifdef TARGET_WASM
-                BYTE* target = nullptr; // On WASM if we wanted this to have meaning, we would need a reloc to the
-                                        // virtual ip of the location in the method but we both don't have a reloc to
-                                        // represent that, as well as we don't have modeling for virtual ips which is
-                                        // useful for diagnostic purposes at this time. So simply leave it null for now.
-                                        // This is a diagnostic value, so it is not critical to have it be correct.
+                BYTE* target = emitLoc->Valid() && m_compiler->IsReadyToRun() ? emitCodeBlock : nullptr;
 #else
                 BYTE* target = emitLoc->Valid() ? emitOffsetToPtr(emitLoc->CodeOffset(this)) : nullptr;
 #endif
@@ -8550,7 +8537,12 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, AllocMemChunk* chunks)
                     emitRecordRelocation(&aDstRW[i].Resume, emitAsyncResumeStubEntryPoint, CorInfoReloc::DIRECT);
                     if (target != nullptr)
                     {
+#ifdef TARGET_WASM
+                        emitRecordRelocation(&aDstRW[i].DiagnosticIP, target,
+                                             CorInfoReloc::WASM_METHOD_RELATIVE_VIRTUAL_IP_I32);
+#else
                         emitRecordRelocation(&aDstRW[i].DiagnosticIP, target, CorInfoReloc::DIRECT);
+#endif
                     }
                 }
 

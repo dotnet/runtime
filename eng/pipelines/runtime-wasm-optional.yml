@@ -1,3 +1,4 @@
+# Retained entry point; no optional test jobs remain after retiring Mono Wasm tests.
 trigger: none
 pr: none
 
@@ -29,8 +30,6 @@ extends:
         parameters:
           isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
           isWasmOnlyBuild: ${{ variables.isWasmOnlyBuild }}
-          isRollingBuild: ${{ variables.isRollingBuild }}
           useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
           excludeLibTests: true
           excludeNonLibTests: true
-          excludeOptional: false

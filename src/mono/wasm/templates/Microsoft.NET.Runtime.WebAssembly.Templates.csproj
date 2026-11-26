@@ -4,8 +4,7 @@
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
 
     <PackageType>Template</PackageType>
-    <!-- when changing the net version also change it in template.json in the templates -->
-    <PackageId>Microsoft.NET.Runtime.WebAssembly.Templates.net11</PackageId>
+    <PackageId>Microsoft.NET.Runtime.WebAssembly.Templates.net$(NetCoreAppCurrentVersion.Split('.')[0])</PackageId>
     <Title>WebAssembly Templates</Title>
     <Authors>Microsoft</Authors>
     <Description>Templates to create WebAssembly projects.</Description>
@@ -24,8 +23,24 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="templates\**\*" Exclude="templates\**\bin\**;templates\**\obj\**" />
+    <Content Include="browser\**\*" Exclude="browser\**\bin\**;browser\**\obj\**" PackagePath="content\templates\browser\%(RecursiveDir)%(Filename)%(Extension)" />
+    <Content Include="$(IntermediateOutputPath)template.json" PackagePath="content\templates\browser\.template.config\template.json" />
   </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Templating" Version="$(MicrosoftDotNetBuildTasksTemplatingVersion)" PrivateAssets="All" />
+  </ItemGroup>
+
+  <Target Name="GenerateTemplateConfig" BeforeTargets="CoreCompile">
+    <GenerateFileFromTemplate
+      TemplateFile="browser.template.json.in"
+      Properties="NetCoreAppCurrentVersion=$(NetCoreAppCurrentVersion)"
+      OutputPath="$(IntermediateOutputPath)template.json" />
+
+    <ItemGroup>
+      <FileWrites Include="$(IntermediateOutputPath)template.json" />
+    </ItemGroup>
+  </Target>
 
   <Target Name="CreateManifestResourceNames" />
   <Target Name="CoreCompile" />

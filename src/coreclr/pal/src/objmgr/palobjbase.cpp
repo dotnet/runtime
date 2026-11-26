@@ -34,25 +34,21 @@ Function:
 
 Parameters:
   pthr -- thread data for calling thread
-  poa -- the object attributes (e.g., name) for the object
 --*/
 
 PAL_ERROR
 CPalObjectBase::Initialize(
-    CPalThread *pthr,
-    CObjectAttributes *poa
+    CPalThread *pthr
     )
 {
     PAL_ERROR palError = NO_ERROR;
 
     _ASSERTE(NULL != pthr);
-    _ASSERTE(NULL != poa);
 
     ENTRY("CPalObjectBase::Initialize"
-        "(this = %p, pthr = %p, poa = %p)\n",
+        "(this = %p, pthr = %p)\n",
         this,
-        pthr,
-        poa
+        pthr
         );
 
     if (0 != m_pot->GetImmutableDataSize())
@@ -92,11 +88,6 @@ CPalObjectBase::Initialize(
         }
     }
 
-    if (0 != poa->sObjectName.GetStringLength())
-    {
-        palError = m_oa.sObjectName.CopyString(&poa->sObjectName);
-    }
-
 InitializeExit:
 
     LOGEXIT("CPalObjectBase::Initialize returns %d\n", palError);
@@ -120,24 +111,6 @@ CPalObjectBase::GetObjectType(
     LOGEXIT("CPalObjectBase::GetObjectType returns %p\n", m_pot);
 
     return m_pot;
-}
-
-/*++
-Function:
-  CPalObjectBase::GetObjectAttributes
-
-  Returns the attributes of the object
---*/
-
-CObjectAttributes *
-CPalObjectBase::GetObjectAttributes(
-    VOID
-    )
-{
-    ENTRY("CPalObjectBase::GetObjectAttributes(this = %p)\n", this);
-    LOGEXIT("CPalObjectBase::GetObjectAttributes returns %p\n", &m_oa);
-
-    return &m_oa;
 }
 
 /*++
@@ -354,11 +327,6 @@ CPalObjectBase::~CPalObjectBase()
     if (NULL != m_pvLocalData)
     {
         free(m_pvLocalData);
-    }
-
-    if (NULL != m_oa.sObjectName.GetString())
-    {
-        m_oa.sObjectName.FreeBuffer();
     }
 
     LOGEXIT("CPalObjectBase::~CPalObjectBase\n");

@@ -34,8 +34,6 @@ namespace System.Text.Json.Serialization.Converters
             return true;
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "The ctor is marked RequiresUnreferencedCode.")]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
             Justification = "The ctor is marked RequiresUnreferencedCode.")]
         public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options)
@@ -58,6 +56,7 @@ namespace System.Text.Json.Serialization.Converters
             else
             {
                 int parameterCount = parameters.Length;
+                bool hasOutParameter = false;
 
                 foreach (ParameterInfo parameter in parameters)
                 {
@@ -65,6 +64,7 @@ namespace System.Text.Json.Serialization.Converters
                     // and may reference unsupported types (e.g. Task).
                     if (parameter.IsOut)
                     {
+                        hasOutParameter = true;
                         continue;
                     }
 
@@ -79,9 +79,9 @@ namespace System.Text.Json.Serialization.Converters
                     JsonTypeInfo.ValidateType(parameterType);
                 }
 
-                if (parameterCount <= JsonConstants.UnboxedParameterCountThreshold)
+                if (parameterCount <= JsonConstants.UnboxedParameterCountThreshold && !hasOutParameter)
                 {
-                    Type placeHolderType = JsonTypeInfo.ObjectType;
+                    Type placeHolderType = typeof(object);
                     Type[] typeArguments = new Type[JsonConstants.UnboxedParameterCountThreshold + 1];
 
                     typeArguments[0] = typeToConvert;
@@ -119,7 +119,7 @@ namespace System.Text.Json.Serialization.Converters
                 }
                 else
                 {
-                    converterType = typeof(LargeObjectWithParameterizedConstructorConverterWithReflection<>).MakeGenericType(typeToConvert);
+                    converterType = typeof(LargeObjectWithParameterizedConstructorConverter<>).MakeGenericType(typeToConvert);
                 }
             }
 

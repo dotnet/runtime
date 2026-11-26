@@ -1087,7 +1087,8 @@ namespace System
 
             // Copy each of the strings into the result buffer, interleaving with the separator.
             string result = FastAllocateString(totalLength);
-            int copiedLength = 0;
+            Span<char> resultSpan = new Span<char>(ref result._firstChar, result.Length);
+            bool copyFailed = false;
 
             for (int i = 0; i < values.Length; i++)
             {
@@ -1095,40 +1096,41 @@ namespace System
                 // such that our second read of an index will not be the same string
                 // we got during the first read.
 
-                // We range check again to avoid buffer overflows if this happens.
+                // We range check each value and separator to avoid buffer overflows if this happens.
 
                 if (values[i] is string value)
                 {
-                    int valueLen = value.Length;
-                    if (valueLen > totalLength - copiedLength)
+                    if (!value.TryCopyTo(resultSpan))
                     {
-                        copiedLength = -1;
+                        copyFailed = true;
                         break;
                     }
 
-                    // Fill in the value.
-                    CopyStringContent(result, copiedLength, value);
-                    copiedLength += valueLen;
+                    resultSpan = resultSpan[value.Length..];
                 }
 
                 if (i < values.Length - 1)
                 {
+                    if (separator.Length > resultSpan.Length)
+                    {
+                        copyFailed = true;
+                        break;
+                    }
+
                     // Fill in the separator.
                     // Special-case length 1 to avoid additional overheads of CopyTo.
                     // This is common due to the char separator overload.
 
-                    ref char dest = ref Unsafe.Add(ref result._firstChar, copiedLength);
-
                     if (separator.Length == 1)
                     {
-                        dest = separator[0];
+                        resultSpan[0] = separator[0];
                     }
                     else
                     {
-                        separator.CopyTo(new Span<char>(ref dest, separator.Length));
+                        separator.CopyTo(resultSpan);
                     }
 
-                    copiedLength += separator.Length;
+                    resultSpan = resultSpan[separator.Length..];
                 }
             }
 
@@ -1136,7 +1138,7 @@ namespace System
             // something changed concurrently to mutate the input array: fall back to
             // doing the concatenation again, but this time with a defensive copy. This
             // fall back should be extremely rare.
-            return copiedLength == totalLength ?
+            return !copyFailed && resultSpan.IsEmpty ?
                 result :
                 JoinCore(separator, values.ToArray().AsSpan());
         }
@@ -2320,7 +2322,7 @@ namespace System
                 Vector128<ushort> v2 = Vector128.Create((ushort)c2);
                 Vector128<ushort> v3 = Vector128.Create((ushort)c3);
 
-                if (Sse2.IsSupported && PackedSpanHelpers.CanUsePackedIndexOf(c) && PackedSpanHelpers.CanUsePackedIndexOf(c2) && PackedSpanHelpers.CanUsePackedIndexOf(c3))
+                if (PackedSpanHelpers.PackedIndexOfIsSupported && PackedSpanHelpers.CanUsePackedIndexOf(c) && PackedSpanHelpers.CanUsePackedIndexOf(c2) && PackedSpanHelpers.CanUsePackedIndexOf(c3))
                 {
                     // Process in double chunks & check if either chunk is likely to contain matches at once.
                     // If we get multiple matches in a single chunk, we assume they're likely to be close &
@@ -2511,12 +2513,7 @@ namespace System
 
         public string Substring(int startIndex, int length)
         {
-#if TARGET_64BIT
-            // See comment in Span<T>.Slice for how this works.
-            if ((ulong)(uint)startIndex + (ulong)(uint)length > (ulong)(uint)Length)
-#else
             if ((uint)startIndex > (uint)Length || (uint)length > (uint)(Length - startIndex))
-#endif
             {
                 ThrowSubstringArgumentOutOfRange(startIndex, length, Length);
             }

@@ -99,7 +99,7 @@ namespace System.Data.Odbc
             int index = IndexOf(parameterName);
             if (index < 0)
             {
-                throw ADP.ParametersSourceIndex(parameterName, this, s_itemType);
+                throw ADP.ParametersSourceIndex(parameterName, this, typeof(OdbcParameter));
             }
             return index;
         }
@@ -145,7 +145,7 @@ namespace System.Data.Odbc
             int index = IndexOf(parameterName);
             if (index < 0)
             {
-                throw ADP.ParametersSourceIndex(parameterName, this, s_itemType);
+                throw ADP.ParametersSourceIndex(parameterName, this, typeof(OdbcParameter));
             }
             return InnerList[index];
         }
@@ -234,7 +234,7 @@ namespace System.Data.Odbc
             }
             else if (this != ((OdbcParameter)value).CompareExchangeParent(null, this))
             {
-                throw ADP.CollectionRemoveInvalidObject(s_itemType, this);
+                throw ADP.CollectionRemoveInvalidObject(typeof(OdbcParameter), this);
             }
         }
 
@@ -285,7 +285,7 @@ namespace System.Data.Odbc
             int index = IndexOf(parameterName);
             if (index < 0)
             {
-                throw ADP.ParametersSourceIndex(parameterName, this, s_itemType);
+                throw ADP.ParametersSourceIndex(parameterName, this, typeof(OdbcParameter));
             }
             Replace(index, value);
         }
@@ -294,7 +294,7 @@ namespace System.Data.Odbc
         {
             if (null == value)
             {
-                throw ADP.ParameterNull(nameof(value), this, s_itemType);
+                throw ADP.ParameterNull(nameof(value), this, typeof(OdbcParameter));
             }
 
             object? parent = ((OdbcParameter)value).CompareExchangeParent(this, null);
@@ -302,11 +302,11 @@ namespace System.Data.Odbc
             {
                 if (this != parent)
                 {
-                    throw ADP.ParametersIsNotParent(s_itemType, this);
+                    throw ADP.ParametersIsNotParent(typeof(OdbcParameter), this);
                 }
                 if (index != IndexOf(value))
                 {
-                    throw ADP.ParametersIsParent(s_itemType, this);
+                    throw ADP.ParametersIsParent(typeof(OdbcParameter), this);
                 }
             }
 
@@ -341,11 +341,11 @@ namespace System.Data.Odbc
         {
             if (null == value)
             {
-                throw ADP.ParameterNull(nameof(value), this, s_itemType);
+                throw ADP.ParameterNull(nameof(value), this, typeof(OdbcParameter));
             }
-            else if (!s_itemType.IsInstanceOfType(value))
+            else if (!typeof(OdbcParameter).IsInstanceOfType(value))
             {
-                throw ADP.InvalidParameterType(this, s_itemType, value);
+                throw ADP.InvalidParameterType(this, typeof(OdbcParameter), value);
             }
         }
     };

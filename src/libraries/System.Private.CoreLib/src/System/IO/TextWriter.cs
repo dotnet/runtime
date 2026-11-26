@@ -271,6 +271,20 @@ namespace System.IO
             Write(value.ToString(FormatProvider));
         }
 
+        internal void WriteNumber<T>(T value) where T : struct, ISpanFormattable
+        {
+            IFormatProvider provider = FormatProvider;
+            Span<char> buffer = stackalloc char[128]; // arbitrary limit
+            if (value.TryFormat(buffer, out int charsWritten, format: default, provider))
+            {
+                Write(buffer.Slice(0, charsWritten));
+            }
+            else
+            {
+                Write(value.ToString(null, provider));
+            }
+        }
+
         // Writes a string to the text stream. If the given string is null, nothing
         // is written to the text stream.
         //

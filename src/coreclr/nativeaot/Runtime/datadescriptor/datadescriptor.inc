@@ -175,7 +175,7 @@ CDAC_GLOBAL_POINTER(ThreadStore, &ThreadStore::s_pThreadStore)
 
 CDAC_GLOBAL_POINTER(RuntimeInstance, &g_pTheRuntimeInstance)
 
-CDAC_GLOBAL_POINTER(FreeObjectMethodTable, &g_pFreeObjectEEType)
+CDAC_GLOBAL_POINTER(FreeObjectMethodTable, &g_pFreeObjectMethodTable)
 
 CDAC_GLOBAL_POINTER(GCLowestAddress, &g_lowest_address)
 CDAC_GLOBAL_POINTER(GCHighestAddress, &g_highest_address)

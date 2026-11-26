@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -16,7 +17,28 @@ namespace System.Runtime.Loader.Tests
         private const string TestAssembly = "System.Runtime.Loader.Test.Assembly";
         private const string TestAssembly2 = "System.Runtime.Loader.Test.Assembly2";
 
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData("profile.mcj")]
+        public static void ProfileOptimization_WithoutMultithreading_IsNoOp(string? profile)
+        {
+            string directoryPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+
+            ProfileOptimization.SetProfileRoot(directoryPath);
+            ProfileOptimization.StartProfile(profile);
+            ProfileOptimization.StartProfile(null);
+
+            AssemblyLoadContext context = new AssemblyLoadContext(nameof(ProfileOptimization_WithoutMultithreading_IsNoOp));
+            context.SetProfileOptimizationRoot(directoryPath);
+            context.StartProfileOptimization(profile);
+            context.StartProfileOptimization(null);
+
+            Assert.False(Directory.Exists(directoryPath));
+        }
+
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134952", TestPlatforms.Wasi)]
         public static void GetAssemblyNameTest_ValidAssembly()
         {
             var expectedName = typeof(AssemblyLoadContextTest).Assembly.GetName();
@@ -69,7 +91,7 @@ namespace System.Runtime.Loader.Tests
 
         [Fact]
         [PlatformSpecific(~(TestPlatforms.iOS | TestPlatforms.tvOS))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51893", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51893", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsWasm))]
         public static void LoadAssemblyByPath_ValidUserAssembly()
         {
             var asmName = new AssemblyName(TestAssembly);
@@ -85,7 +107,7 @@ namespace System.Runtime.Loader.Tests
 
         [Fact]
         [PlatformSpecific(~(TestPlatforms.iOS | TestPlatforms.tvOS))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51893", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51893", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsWasm))]
         public static void LoadAssemblyByStream_ValidUserAssembly()
         {
             var asmName = new AssemblyName(TestAssembly);
@@ -97,6 +119,44 @@ namespace System.Runtime.Loader.Tests
             Assert.NotNull(asm);
             Assert.Same(loadContext, AssemblyLoadContext.GetLoadContext(asm));
             Assert.Contains(asm.DefinedTypes, t => t.Name == "TestClass");
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported))]
+        [DynamicDependency(nameof(MissingDependency.Root.RootClass.GetMiddleTypeName), typeof(MissingDependency.Root.RootClass))]
+        public static void AssemblyLoadEvent_ReentrantMethodCompilation()
+        {
+            var loadContext = new ResourceAssemblyLoadContext { LoadBy = LoadBy.Stream };
+            Assembly assembly = loadContext.LoadFromAssemblyName(new AssemblyName("MissingDependency.Root"));
+            Assert.Same(loadContext, AssemblyLoadContext.GetLoadContext(assembly));
+            MethodInfo method = assembly.GetType("MissingDependency.Root.RootClass").GetMethod(nameof(MissingDependency.Root.RootClass.GetMiddleTypeName));
+            Assert.NotNull(method);
+
+            object nestedResult = null;
+            int nestedCalls = 0;
+            AssemblyLoadEventHandler handler = (_, args) =>
+            {
+                if (AssemblyLoadContext.GetLoadContext(args.LoadedAssembly) == loadContext &&
+                    args.LoadedAssembly.GetName().Name == "MissingDependency.Mid")
+                {
+                    nestedCalls++;
+                    nestedResult = method.Invoke(null, null);
+                }
+            };
+
+            AppDomain.CurrentDomain.AssemblyLoad += handler;
+            try
+            {
+                // Resolving MidClass during compilation raises AssemblyLoad, whose handler
+                // invokes this method again before the outer compilation finishes.
+                Assert.Equal("MissingDependency.Mid.MidClass", method.Invoke(null, null));
+                Assert.Equal(1, nestedCalls);
+                Assert.Equal("MissingDependency.Mid.MidClass", nestedResult);
+                Assert.Equal("MissingDependency.Mid.MidClass", method.Invoke(null, null));
+            }
+            finally
+            {
+                AppDomain.CurrentDomain.AssemblyLoad -= handler;
+            }
         }
 
         [Fact]

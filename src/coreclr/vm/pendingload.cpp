@@ -307,7 +307,7 @@ PendingTypeLoadTable::Entry* PendingTypeLoadTable::Shard::InsertPendingTypeLoadE
     {
         NewHolder<DynamicallyAllocatedEntry> dynamicResult(new DynamicallyAllocatedEntry(typeKey));
         dynamicResult->Init(m_pLinkedListOfActiveEntries, hash, typeHnd);
-        result = dynamicResult.Extract();
+        result = dynamicResult.Detach();
     }
 
     m_pLinkedListOfActiveEntries = result;

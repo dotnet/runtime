@@ -109,16 +109,9 @@ jobs:
         - name: logRootNameArg
           value: '-log:'
 
-      - name: runtimeFlavorName
-        ${{ if eq(parameters.jobParameters.runtimeFlavor, 'mono') }}:
-          value: Mono
-        ${{ if eq(parameters.jobParameters.runtimeFlavor, 'coreclr') }}:
-          value: CoreCLR
-
       - ${{ if eq(parameters.archType, 'wasm') }}:
         - name: wasmDarcDependenciesChanged
           value: $[ or(
-                      eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_NET_Workload_Emscripten_Current_Manifest-11_0_100_Transport'], true),
                       eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['DarcDependenciesChanged.System_Runtime_TimeZoneData'], true),
                       eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_Net_Compilers_Toolset'], true),
                       eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_CodeAnalysis'], true),
@@ -176,7 +169,7 @@ jobs:
 
         # OSX Public Build Pool (we don't have on-prem OSX BuildPool).
         ${{ if and(or(in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator'), eq(parameters.jobParameters.hostedOs, 'osx')), eq(variables['System.TeamProject'], 'public')) }}:
-          vmImage: 'macos-15'
+          vmImage: 'macos-26'
 
         # Official build OSX pool
         ${{ if and(or(in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator'), eq(parameters.jobParameters.hostedOs, 'osx')), ne(variables['System.TeamProject'], 'public')) }}:

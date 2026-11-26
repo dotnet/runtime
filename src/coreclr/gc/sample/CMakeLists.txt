@@ -75,6 +75,7 @@ if(CLR_CMAKE_TARGET_WIN32)
     ${STATIC_MT_VCRT_LIB}
     kernel32.lib
     advapi32.lib
+    coreclrminipal
     minipal
   )
 endif(CLR_CMAKE_TARGET_WIN32)

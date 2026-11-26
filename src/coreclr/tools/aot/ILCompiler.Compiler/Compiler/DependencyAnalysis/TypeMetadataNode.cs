@@ -33,25 +33,23 @@ namespace ILCompiler.DependencyAnalysis
 
         public MetadataType Type => _type;
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory factory)
         {
-            DependencyList dependencies = new DependencyList();
-
             MetadataType containingType = _type.ContainingType;
             if (containingType != null)
-                dependencies.Add(factory.TypeMetadata(containingType), "Containing type of a reflectable type");
+                sink.Add(factory.TypeMetadata(containingType), "Containing type of a reflectable type");
             else
-                dependencies.Add(factory.ModuleMetadata(_type.Module), "Containing module of a reflectable type");
+                sink.Add(factory.ModuleMetadata(_type.Module), "Containing module of a reflectable type");
 
             MetadataType baseType = _type.BaseType;
             if (baseType != null)
-                GetMetadataDependencies(ref dependencies, factory, baseType, "Base type of a reflectable type");
+                AddMetadataDependencies(sink, factory, baseType, "Base type of a reflectable type");
 
             foreach (GenericParameterDesc genericParameter in _type.Instantiation)
             {
                 foreach (TypeDesc typeConstraint in genericParameter.TypeConstraints)
                 {
-                    GetMetadataDependencies(ref dependencies, factory, typeConstraint, "Generic parameter constraint of a reflectable type");
+                    AddMetadataDependencies(sink, factory, typeConstraint, "Generic parameter constraint of a reflectable type");
                 }
             }
 
@@ -61,7 +59,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 // A lot of the enum reflection actually happens on top of the respective MethodTable (e.g. getting the underlying type),
                 // so for enums also include their MethodTable.
-                dependencies.Add(factory.ReflectedType(_type), "Reflectable enum");
+                sink.Add(factory.ReflectedType(_type), "Reflectable enum");
 
                 // Enums are not useful without their literal fields. The literal fields are not referenced
                 // from anywhere (source code reference to enums compiles to the underlying numerical constants in IL).
@@ -69,7 +67,7 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     if (enumField.IsLiteral)
                     {
-                        dependencies.Add(factory.FieldMetadata(enumField), "Value of a reflectable enum");
+                        sink.Add(factory.FieldMetadata(enumField), "Value of a reflectable enum");
                     }
                 }
             }
@@ -94,32 +92,28 @@ namespace ILCompiler.DependencyAnalysis
                             continue;
                         }
 
-                        dependencies.Add(factory.MethodMetadata(method), "Complete metadata for type");
+                        sink.Add(factory.MethodMetadata(method), "Complete metadata for type");
                     }
                 }
 
                 foreach (FieldDesc field in _type.GetFields())
                 {
                     if (!mdManager.IsReflectionBlocked(field))
-                        dependencies.Add(factory.FieldMetadata(field), "Complete metadata for type");
+                        sink.Add(factory.FieldMetadata(field), "Complete metadata for type");
                 }
             }
-
-            return dependencies;
         }
 
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory factory)
         {
-            var dependencies = new List<CombinedDependencyListEntry>();
-            CustomAttributeBasedDependencyAlgorithm.AddDependenciesDueToCustomAttributes(ref dependencies, factory, ((EcmaType)_type));
-            return dependencies;
+            CustomAttributeBasedDependencyAlgorithm.AddDependenciesDueToCustomAttributes(sink, factory, ((EcmaType)_type));
         }
 
         /// <summary>
         /// Decomposes a constructed type into individual <see cref="TypeMetadataNode"/> units that will be needed to
         /// express the constructed type in metadata.
         /// </summary>
-        public static void GetMetadataDependencies(ref DependencyList dependencies, NodeFactory nodeFactory, TypeDesc type, string reason)
+        public static void AddMetadataDependencies(IDependencySink dependencies, NodeFactory nodeFactory, TypeDesc type, string reason)
         {
             MetadataManager mdManager = nodeFactory.MetadataManager;
 
@@ -129,13 +123,13 @@ namespace ILCompiler.DependencyAnalysis
                 case TypeFlags.SzArray:
                 case TypeFlags.ByRef:
                 case TypeFlags.Pointer:
-                    GetMetadataDependencies(ref dependencies, nodeFactory, ((ParameterizedType)type).ParameterType, reason);
+                    AddMetadataDependencies(dependencies, nodeFactory, ((ParameterizedType)type).ParameterType, reason);
                     break;
                 case TypeFlags.FunctionPointer:
                     var pointerType = (FunctionPointerType)type;
-                    GetMetadataDependencies(ref dependencies, nodeFactory, pointerType.Signature.ReturnType, reason);
+                    AddMetadataDependencies(dependencies, nodeFactory, pointerType.Signature.ReturnType, reason);
                     foreach (TypeDesc paramType in pointerType.Signature)
-                        GetMetadataDependencies(ref dependencies, nodeFactory, paramType, reason);
+                        AddMetadataDependencies(dependencies, nodeFactory, paramType, reason);
                     break;
 
                 case TypeFlags.SignatureMethodVariable:
@@ -153,7 +147,6 @@ namespace ILCompiler.DependencyAnalysis
                     // There's no dataflow annotations on the IDynamicInterfaceCastable.GetInterfaceImplementation API.
                     if (type.IsInterface && ((MetadataType)type).IsDynamicInterfaceCastableImplementation())
                     {
-                        dependencies ??= new DependencyList();
                         dependencies.Add(nodeFactory.ReflectedType(type), "Reflected IDynamicInterfaceCastableImplementation");
                     }
 
@@ -162,20 +155,18 @@ namespace ILCompiler.DependencyAnalysis
                     {
                         if (mdManager.CanGenerateMetadata((MetadataType)typeDefinition))
                         {
-                            dependencies ??= new DependencyList();
                             dependencies.Add(nodeFactory.TypeMetadata((MetadataType)typeDefinition), reason);
                         }
 
                         foreach (TypeDesc typeArg in type.Instantiation)
                         {
-                            GetMetadataDependencies(ref dependencies, nodeFactory, typeArg, reason);
+                            AddMetadataDependencies(dependencies, nodeFactory, typeArg, reason);
                         }
                     }
                     else
                     {
                         if (mdManager.CanGenerateMetadata((MetadataType)type))
                         {
-                            dependencies ??= new DependencyList();
                             dependencies.Add(nodeFactory.TypeMetadata((MetadataType)type), reason);
                         }
                     }
@@ -198,6 +189,6 @@ namespace ILCompiler.DependencyAnalysis
         public override bool HasDynamicDependencies => false;
         public override bool HasConditionalStaticDependencies => true;
         public override bool StaticDependenciesAreComputed => true;
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory) => null;
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink sink, NodeFactory factory) { }
     }
 }

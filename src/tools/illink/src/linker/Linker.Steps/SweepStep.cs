@@ -629,26 +629,43 @@ namespace Mono.Linker.Steps
             //
             assembly.MainModule.AssemblyReferences.Clear();
 
-            var arc = new AssemblyReferencesCorrector(assembly, walkSymbols: Context.LinkSymbols);
+            var arc = new AssemblyReferencesCorrector(assembly, walkSymbols: Context.LinkSymbols,
+                keepScope: Annotations.IsLibraryRootAssembly(assembly) ? IsKeptAsIs : null);
             arc.Process();
 
             return arc.ChangedAnyScopes;
         }
 
+        // A library keeps referencing the assemblies it was compiled against, rather than whichever assembly defines
+        // the type in the trimming closure, as long as those are kept as they are with their type forwarders
+        bool IsKeptAsIs(AssemblyNameReference reference)
+        {
+            return Context.TryResolve(reference) is AssemblyDefinition referenced &&
+                Annotations.GetAction(referenced) is AssemblyAction.Skip or AssemblyAction.Copy;
+        }
+
         sealed class AssemblyReferencesCorrector : TypeReferenceWalker
         {
             readonly DefaultMetadataImporter importer;
+            readonly Func<AssemblyNameReference, bool>? keepScope;
 
             public bool ChangedAnyScopes { get; private set; }
 
-            public AssemblyReferencesCorrector(AssemblyDefinition assembly, bool walkSymbols) : base(assembly, walkSymbols)
+            public AssemblyReferencesCorrector(AssemblyDefinition assembly, bool walkSymbols, Func<AssemblyNameReference, bool>? keepScope) : base(assembly, walkSymbols)
             {
                 this.importer = new DefaultMetadataImporter(assembly.MainModule);
+                this.keepScope = keepScope;
                 ChangedAnyScopes = false;
             }
 
             protected override void ProcessTypeReference(TypeReference type)
             {
+                if (type.Scope is AssemblyNameReference originalScope && keepScope?.Invoke(originalScope) == true)
+                {
+                    type.Scope = importer.ImportReference(originalScope);
+                    return;
+                }
+
                 //
                 // Resolve to type definition to remove any type forwarding imports
                 //
@@ -683,6 +700,12 @@ namespace Mono.Linker.Steps
 
             protected override void ProcessExportedType(ExportedType exportedType)
             {
+                if (exportedType.Scope is AssemblyNameReference originalScope && keepScope?.Invoke(originalScope) == true)
+                {
+                    exportedType.Scope = importer.ImportReference(originalScope);
+                    return;
+                }
+
 #pragma warning disable RS0030 // Cecil's Resolve is banned -- it's necessary when the metadata graph is unstable
                 TypeDefinition? td = exportedType.Resolve();
 #pragma warning restore RS0030

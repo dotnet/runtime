@@ -51,6 +51,7 @@ internal static partial class Interop
         [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint = "NetSecurityNative_AcquireAcceptorCred")]
         internal static partial Status AcquireAcceptorCred(
             out Status minorStatus,
+            PackageType packageType,
             out SafeGssCredHandle outputCredHandle);
 
         [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint = "NetSecurityNative_InitiateCredSpNego")]
@@ -294,6 +295,16 @@ internal static partial class Interop
         internal static partial Status GetUser(
             out Status minorStatus,
             SafeGssContextHandle? acceptContextHandle,
+            ref GssBuffer token);
+
+        [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint = "NetSecurityNative_GetNameAttribute")]
+        internal static unsafe partial Status GetNameAttribute(
+            out Status minorStatus,
+            SafeGssContextHandle? acceptContextHandle,
+            byte* attributeName,
+            uint attributeNameLen,
+            [MarshalAs(UnmanagedType.Bool)] out bool isAvailable,
+            [MarshalAs(UnmanagedType.Bool)] out bool isAuthenticated,
             ref GssBuffer token);
 
         [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint = "NetSecurityNative_Wrap")]

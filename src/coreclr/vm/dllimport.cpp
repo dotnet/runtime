@@ -166,6 +166,98 @@ static bool IsSharedStubScenario(DWORD dwStubFlags)
     return true;
 }
 
+static bool StubNeedsSecretArgument(DWORD dwStubFlags)
+{
+    WRAPPER_NO_CONTRACT;
+
+    if (SF_IsFieldGetterStub(dwStubFlags) || SF_IsFieldSetterStub(dwStubFlags))
+    {
+        return false;
+    }
+
+    if (SF_IsForwardStub(dwStubFlags))
+    {
+        return SF_IsVarArgStub(dwStubFlags);
+    }
+
+    // All native-to-managed stubs currently need the secret argument.
+    return true;
+}
+
+static void AppendSecretStubArgument(SigBuilder* pSigBuilder)
+{
+    STANDARD_VM_CONTRACT;
+
+    TypeHandle secretStubArgument = CoreLibBinder::GetClass(CLASS__SECRET_STUB_ARGUMENT);
+    pSigBuilder->AppendElementType(ELEMENT_TYPE_CMOD_INTERNAL);
+    pSigBuilder->AppendByte(1);
+    pSigBuilder->AppendPointer(secretStubArgument.AsPtr());
+    pSigBuilder->AppendElementType(ELEMENT_TYPE_I);
+}
+
+static void AppendSecretStubArgumentToMethodDescSignature(MethodDesc* pStubMD)
+{
+    STANDARD_VM_CONTRACT;
+
+    SigBuilder internalSigBuilder;
+    SigPointer sigPtr = pStubMD->GetSigPointer();
+    sigPtr.ConvertToInternalSignature(pStubMD->GetModule(), NULL, &internalSigBuilder, /* bSkipCustomModifier */ FALSE);
+
+    DWORD cbInternalSig;
+    PCCOR_SIGNATURE pInternalSig =
+        static_cast<PCCOR_SIGNATURE>(internalSigBuilder.GetSignature(&cbInternalSig));
+    SigParser sigParser(pInternalSig, cbInternalSig);
+
+    uint32_t callConv;
+    IfFailThrow(sigParser.GetCallingConvInfo(&callConv));
+
+    SigBuilder stubSigBuilder;
+    stubSigBuilder.AppendByte(static_cast<BYTE>(callConv));
+
+    if ((callConv & IMAGE_CEE_CS_CALLCONV_GENERIC) != 0)
+    {
+        uint32_t genericArgCount;
+        IfFailThrow(sigParser.GetData(&genericArgCount));
+        stubSigBuilder.AppendData(genericArgCount);
+    }
+
+    uint32_t numArgs;
+    IfFailThrow(sigParser.GetData(&numArgs));
+    stubSigBuilder.AppendData(numArgs + 1);
+
+    // Keep the secret argument before the vararg sentinel so it is a fixed parameter.
+    PCCOR_SIGNATURE pReturnTypeAndFixedArgs = sigParser.GetPtr();
+    IfFailThrow(sigParser.SkipExactlyOne());
+    for (uint32_t i = 0; i < numArgs; i++)
+    {
+        BYTE elementType;
+        IfFailThrow(sigParser.PeekByte(&elementType));
+        if (elementType == ELEMENT_TYPE_SENTINEL)
+        {
+            break;
+        }
+
+        IfFailThrow(sigParser.SkipExactlyOne());
+    }
+
+    PCCOR_SIGNATURE pSentinelAndOptionalArgs = sigParser.GetPtr();
+    stubSigBuilder.AppendBlob(
+        (PVOID)pReturnTypeAndFixedArgs,
+        static_cast<DWORD>(pSentinelAndOptionalArgs - pReturnTypeAndFixedArgs));
+    AppendSecretStubArgument(&stubSigBuilder);
+    stubSigBuilder.AppendBlob(
+        (PVOID)pSentinelAndOptionalArgs,
+        cbInternalSig - static_cast<DWORD>(pSentinelAndOptionalArgs - pInternalSig));
+
+    DWORD cbStubSig;
+    PCCOR_SIGNATURE pTemporaryStubSig =
+        static_cast<PCCOR_SIGNATURE>(stubSigBuilder.GetSignature(&cbStubSig));
+    PCCOR_SIGNATURE pStoredStubSig = (PCCOR_SIGNATURE)(void*)
+        pStubMD->GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(cbStubSig));
+    memcpyNoGCRefs((void*)pStoredStubSig, pTemporaryStubSig, cbStubSig);
+    pStubMD->AsDynamicMethodDesc()->SetStoredMethodSig(pStoredStubSig, cbStubSig);
+}
+
 class ILStubState
 {
 public:
@@ -328,7 +420,7 @@ public:
             {
                 // We used to get LCID from current thread's culture here. The code
                 // was replaced by the hardcoded LCID_ENGLISH_US as requested by VSTO.
-                pcs->EmitLDC(0x0409); // LCID_ENGLISH_US
+                pcs->EmitLDC_I4(0x0409); // LCID_ENGLISH_US
             }
             else
             {
@@ -447,7 +539,14 @@ public:
             // If we're not in a Reverse stub, the signatures are correct,
             // but we need to convert the signature into a module-independent form
             // if our signature is not backed by metadata.
-            ConvertMethodDescSigToModuleIndependentSig(pStubMD);
+            if (StubNeedsSecretArgument(m_dwStubFlags))
+            {
+                AppendSecretStubArgumentToMethodDescSignature(pStubMD);
+            }
+            else
+            {
+                ConvertMethodDescSigToModuleIndependentSig(pStubMD);
+            }
         }
         else
         {
@@ -510,7 +609,7 @@ public:
                 if (!returnTheHRESULT)
                 {
                     pcsExceptionHandler->EmitPOP();
-                    pcsExceptionHandler->EmitLDC(0);
+                    pcsExceptionHandler->EmitLDC_I4(0);
                     pcsExceptionHandler->EmitCONV_T((CorElementType)nativeReturnElemType);
                 }
                 _ASSERTE(retvalLocalNum != (DWORD)-1);
@@ -540,8 +639,7 @@ public:
             break;
         case ELEMENT_TYPE_PTR:
             pcsExceptionHandler->EmitPOP();
-            pcsExceptionHandler->EmitLDC(0);
-            pcsExceptionHandler->EmitCONV_U();
+            pcsExceptionHandler->EmitLDC_I(0);
             _ASSERTE(retvalLocalNum != (DWORD)-1);
             pcsExceptionHandler->EmitSTLOC(retvalLocalNum);
             break;
@@ -556,7 +654,7 @@ public:
         case ELEMENT_TYPE_I:
         case ELEMENT_TYPE_U:
             pcsExceptionHandler->EmitPOP();
-            pcsExceptionHandler->EmitLDC(0);
+            pcsExceptionHandler->EmitLDC_I4(0);
             pcsExceptionHandler->EmitCONV_T((CorElementType)nativeReturnElemType);
             _ASSERTE(retvalLocalNum != (DWORD)-1);
             pcsExceptionHandler->EmitSTLOC(retvalLocalNum);
@@ -596,7 +694,7 @@ public:
                 // reverse interop needs to seed the return value if the
                 // managed function returns void but we're doing hresult
                 // swapping.
-                pcsUnmarshal->EmitLDC(S_OK);
+                pcsUnmarshal->EmitLDC_I4(S_OK);
             }
         }
 
@@ -615,6 +713,11 @@ public:
             m_slIL.GetStubReturnType(&managedReturnType);
         }
 #endif // FEATURE_COMINTEROP
+
+        if (SF_IsReverseStub(m_dwStubFlags) && StubNeedsSecretArgument(m_dwStubFlags))
+        {
+            m_slIL.AppendSecretStubArgumentToTargetSignature();
+        }
 
         // Don't touch target signatures from this point on otherwise it messes up the
         // cache in ILStubState::GetStubTargetMethodSig.
@@ -716,7 +819,7 @@ public:
                 ILCodeLabel* pSkipThrowLabel = pcsDispatch->NewCodeLabel();
 
                 pcsDispatch->EmitDUP();
-                pcsDispatch->EmitLDC(0); // Compare against S_OK (i.e. 0).
+                pcsDispatch->EmitLDC_I4(0); // Compare against S_OK (i.e. 0).
                 pcsDispatch->EmitBGE(pSkipThrowLabel);
 
 #ifdef FEATURE_COMINTEROP
@@ -741,7 +844,7 @@ public:
                 }
 
                 pcsDispatch->EmitTHROW();
-                pcsDispatch->EmitLDC(0);   // keep the IL stack balanced across the branch and the fall-through
+                pcsDispatch->EmitLDC_I4(0);   // keep the IL stack balanced across the branch and the fall-through
                 pcsDispatch->EmitLabel(pSkipThrowLabel);
                 pcsDispatch->EmitPOP();
             }
@@ -756,7 +859,7 @@ public:
             pcsDispatch->EmitDUP();
             pcsDispatch->EmitBRFALSE(pSkipThrowLabel);
             pcsDispatch->EmitTHROW();
-            pcsDispatch->EmitLDC(0);   // keep the IL stack balanced across the branch and the fall-through
+            pcsDispatch->EmitLDC_I4(0);   // keep the IL stack balanced across the branch and the fall-through
             pcsDispatch->EmitLabel(pSkipThrowLabel);
             pcsDispatch->EmitPOP();
         }
@@ -767,45 +870,15 @@ public:
             pcsUnmarshal->EmitRET();
         }
 
-        CORJIT_FLAGS jitFlags(CORJIT_FLAGS::CORJIT_FLAG_IL_STUB);
-
         if (m_slIL.HasInteropExceptionInfo())
         {
-            // This code will not use the secret parameter, so we do not
-            // tell the JIT to bother with it.
             m_slIL.ClearCode();
             m_slIL.GenerateInteropException(pcsMarshal);
         }
         else if (m_slIL.HasInteropParamExceptionInfo())
         {
-            // This code will not use the secret parameter, so we do not
-            // tell the JIT to bother with it.
             m_slIL.ClearCode();
             m_slIL.GenerateInteropParamException(pcsMarshal);
-        }
-        else if (SF_IsFieldGetterStub(m_dwStubFlags) || SF_IsFieldSetterStub(m_dwStubFlags))
-        {
-            // Field access stubs are not shared and do not use the secret parameter.
-        }
-        else if (SF_IsForwardDelegateStub(m_dwStubFlags))
-        {
-            // Forward delegate stubs get all the context they need in 'this' so they
-            // don't use the secret parameter.
-        }
-        else if (SF_IsForwardPInvokeStub(m_dwStubFlags) && !SF_IsVarArgStub(m_dwStubFlags))
-        {
-            // Regular PInvokes and unmanaged CALLI stubs don't use the secret parameter.
-            // Unmanaged CALLI stubs receive the native target as their last argument.
-        }
-        else if (SF_IsForwardCOMStub(m_dwStubFlags))
-        {
-            // Forward CLR->COM stubs bake everything they need to know about the target
-            // into the IL, so they don't use the secret parameter.
-        }
-        else
-        {
-            // All other IL stubs will need to use the secret parameter.
-            jitFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_PUBLISH_SECRET_PARAM);
         }
 
         FinalizeStubSignatures(pStubMD);
@@ -815,6 +888,7 @@ public:
             EmitExceptionHandler(&nativeReturnType, &managedReturnType);
         }
 
+        CORJIT_FLAGS jitFlags(CORJIT_FLAGS::CORJIT_FLAG_IL_STUB);
         COR_ILMETHOD_DECODER* pILHeader = pResolver->FinalizeILStub(&m_slIL, jitFlags);
 
         pResolver->SetStubTargetMethodSig(
@@ -1358,9 +1432,8 @@ public:
         CLRToCOMCallInfo* pComInfo = CLRToCOMCallInfo::FromMethodDesc(pTargetMD);
         _ASSERTE(pComInfo->m_pInterfaceMT != NULL);
 
-        pcsDispatch->EmitLDC((DWORD_PTR)pComInfo->m_pInterfaceMT);
-        pcsDispatch->EmitCONV_I();
-        pcsDispatch->EmitLDC(pComInfo->m_cachedComSlot);
+        pcsDispatch->EmitLDC_I((DWORD_PTR)pComInfo->m_pInterfaceMT);
+        pcsDispatch->EmitLDC_I4(pComInfo->m_cachedComSlot);
 
         pcsDispatch->EmitLDLOCA(m_slIL.GetTargetEntryPointLocalNum());
 
@@ -1549,7 +1622,7 @@ public:
         ILCodeStream *pcsMarshal = m_slIL.GetMarshalCodeStream();
 
         pcsMarshal->EmitLDLOC(m_argumentArrayLocalNum);
-        pcsMarshal->EmitLDC(paramIndex);
+        pcsMarshal->EmitLDC_I4(paramIndex);
         LocalDesc argTypeDesc(argType);
         pcsMarshal->EmitLDARG(paramIndex);
         if (pInfo->IsByRef())
@@ -1565,7 +1638,7 @@ public:
         pcsMarshal->EmitSTELEM_REF();
 
         pcsMarshal->EmitLDLOC(m_argumentTypeLocalNum);
-        pcsMarshal->EmitLDC(paramIndex);
+        pcsMarshal->EmitLDC_I4(paramIndex);
 
         pcsMarshal->EmitLDTOKEN(pcsMarshal->GetToken(argType));
         pcsMarshal->EmitCALL(METHOD__TYPE__GET_TYPE_FROM_HANDLE, 1, 1);
@@ -1575,8 +1648,8 @@ public:
         {
             // Mark this argument as by-ref in the argumentIsByRef array so the callee knows to copy back the value after the call.
             pcsMarshal->EmitLDLOC(m_argumentIsByRefArrayLocalNum);
-            pcsMarshal->EmitLDC(paramIndex);
-            pcsMarshal->EmitLDC(1);
+            pcsMarshal->EmitLDC_I4(paramIndex);
+            pcsMarshal->EmitLDC_I4(1);
             pcsMarshal->EmitSTELEM_I1();
 
             // We need to emit the code to copy back the results after the call.
@@ -1584,7 +1657,7 @@ public:
 
             pcsUnmarshal->EmitLDARG(paramIndex);
             pcsUnmarshal->EmitLDLOC(m_argumentArrayLocalNum);
-            pcsUnmarshal->EmitLDC(paramIndex);
+            pcsUnmarshal->EmitLDC_I4(paramIndex);
             pcsUnmarshal->EmitLDELEM_REF();
             pcsUnmarshal->EmitUNBOX_ANY(pcsUnmarshal->GetToken(argType));
             pcsUnmarshal->EmitSTIND_T(&argTypeDesc);
@@ -1606,7 +1679,7 @@ public:
             LocalDesc wrapperArrayType(ELEMENT_TYPE_I4);
             wrapperArrayType.MakeArray();
             m_wrapperArrayLocalNum = pcsMarshal->NewLocal(wrapperArrayType);
-            pcsMarshal->EmitLDC((DWORD)m_signature.NumFixedArgs());
+            pcsMarshal->EmitLDC_I4((DWORD)m_signature.NumFixedArgs());
             pcsMarshal->EmitNEWARR(pcsMarshal->GetToken(CoreLibBinder::GetClass(CLASS__INT32)));
             pcsMarshal->EmitSTLOC(m_wrapperArrayLocalNum);
 
@@ -1615,8 +1688,8 @@ public:
                 if (m_wrapperTypes[i] != 0)
                 {
                     pcsMarshal->EmitLDLOC(m_wrapperArrayLocalNum);
-                    pcsMarshal->EmitLDC(i);
-                    pcsMarshal->EmitLDC(m_wrapperTypes[i]);
+                    pcsMarshal->EmitLDC_I4(i);
+                    pcsMarshal->EmitLDC_I4(m_wrapperTypes[i]);
                     pcsMarshal->EmitSTELEM_I4();
                 }
             }
@@ -1655,7 +1728,7 @@ public:
             pcsDispatch->EmitLDSTR(SString(SString::Utf8, memberName));
         }
 
-        pcsDispatch->EmitLDC(binderFlags);
+        pcsDispatch->EmitLDC_I4(binderFlags);
         pcsDispatch->EmitLoadThis();
         pcsDispatch->EmitLDLOC(m_argumentArrayLocalNum);
         pcsDispatch->EmitLDLOC(m_argumentIsByRefArrayLocalNum);
@@ -1719,7 +1792,7 @@ private:
         LocalDesc arrayDesc(pMT);
         arrayDesc.MakeArray();
         DWORD localNum = pcs->NewLocal(arrayDesc);
-        pcs->EmitLDC(m_signature.NumFixedArgs());
+        pcs->EmitLDC_I4(m_signature.NumFixedArgs());
         pcs->EmitNEWARR(pcs->GetToken(pMT));
         pcs->EmitSTLOC(localNum);
         return localNum;
@@ -1805,7 +1878,7 @@ private:
             {
                 // Only a setter so make the invoke a set which maps to
                 // INVOKE_PROPERTYPUT | INVOKE_PROPERTYPUTREF.
-                binderFlags = BINDER_SetProperty;
+                binderFlags |= BINDER_SetProperty;
             }
             break;
         }
@@ -1899,10 +1972,16 @@ PInvokeStubLinker::PInvokeStubLinker(
     m_pcsExceptionCleanup   = NewCodeStream(ILStubLinker::kExceptionCleanup);   // MAY NOT THROW: goes in a finally and does exception-only cleanup
     m_pcsCleanup            = NewCodeStream(ILStubLinker::kCleanup);            // MAY NOT THROW: goes in a finally and does unconditional cleanup
 
+    if (StubNeedsSecretArgument(dwStubFlags) && SF_IsForwardStub(dwStubFlags))
+    {
+        MetaSig stubSig(signature, pModule, pTypeContext);
+        SetSecretStubArgumentIndex(stubSig.NumFixedArgs());
+    }
+
     //
     // Add locals
     m_dwArgMarshalIndexLocalNum = NewLocal(ELEMENT_TYPE_I4);
-    m_pcsMarshal->EmitLDC(0);
+    m_pcsMarshal->EmitLDC_I4(0);
     m_pcsMarshal->EmitSTLOC(m_dwArgMarshalIndexLocalNum);
 
 #ifdef FEATURE_COMINTEROP
@@ -1913,7 +1992,7 @@ PInvokeStubLinker::PInvokeStubLinker(
     {
         m_dwTargetEntryPointLocalNum = NewLocal(ELEMENT_TYPE_I);
         m_dwTargetInterfacePointerLocalNum = NewLocal(ELEMENT_TYPE_I);
-        m_pcsSetup->EmitLoadNullPtr();
+        m_pcsSetup->EmitLDC_I(0);
         m_pcsSetup->EmitSTLOC(m_dwTargetInterfacePointerLocalNum);
     }
 #endif // FEATURE_COMINTEROP
@@ -1970,7 +2049,7 @@ void PInvokeStubLinker::EmitSetArgMarshalIndex(ILCodeStream* pcsEmit, UINT uArgI
     // value must always monotonically increase so we can use <=, >, etc.
     //
 
-    pcsEmit->EmitLDC(uArgIdx + 1);
+    pcsEmit->EmitLDC_I4(uArgIdx + 1);
     pcsEmit->EmitSTLOC(m_dwArgMarshalIndexLocalNum);
 }
 
@@ -1982,7 +2061,7 @@ void PInvokeStubLinker::EmitCheckForArgCleanup(ILCodeStream* pcsEmit, UINT uArgI
 
     // See EmitSetArgMarshalIndex.
     pcsEmit->EmitLDLOC(m_dwArgMarshalIndexLocalNum);
-    pcsEmit->EmitLDC(uArgIdx);
+    pcsEmit->EmitLDC_I4(uArgIdx);
 
     switch (branchKind)
     {
@@ -2078,8 +2157,8 @@ void PInvokeStubLinker::GenerateInteropParamException(ILCodeStream* pcsEmit)
 {
     STANDARD_VM_CONTRACT;
 
-    pcsEmit->EmitLDC(m_ErrorResID);
-    pcsEmit->EmitLDC(m_ErrorParamIdx);
+    pcsEmit->EmitLDC_I4(m_ErrorResID);
+    pcsEmit->EmitLDC_I4(m_ErrorParamIdx);
     pcsEmit->EmitCALL(METHOD__STUBHELPERS__THROW_INTEROP_PARAM_EXCEPTION, 2, 0);
 
     pcsEmit->EmitLDNULL();
@@ -2111,8 +2190,8 @@ void PInvokeStubLinker::GenerateInteropException(ILCodeStream* pcsEmit)
 {
     STANDARD_VM_CONTRACT;
 
-    pcsEmit->EmitLDC(static_cast<int>(m_ExceptionKind));
-    pcsEmit->EmitLDC(m_ExceptionResID);
+    pcsEmit->EmitLDC_I4(static_cast<int>(m_ExceptionKind));
+    pcsEmit->EmitLDC_I4(m_ExceptionResID);
     pcsEmit->EmitCALL(METHOD__STUBHELPERS__THROW_INTEROP_EXCEPTION, 2, 0);
 
     pcsEmit->EmitLDNULL();
@@ -2261,9 +2340,9 @@ void PInvokeStubLinker::Begin(DWORD dwStubFlags)
             //
             // recover delegate object from UMEntryThunk
 
-            EmitLoadStubContext(m_pcsDispatch, dwStubFlags); // load UMEntryThunk*
+            m_pcsDispatch->EmitLoadSecretStubArgument(); // load UMEntryThunk*
 
-            m_pcsDispatch->EmitLDC(offsetof(UMEntryThunkData, m_pObjectHandle));
+            m_pcsDispatch->EmitLDC_I4(offsetof(UMEntryThunkData, m_pObjectHandle));
             m_pcsDispatch->EmitADD();
             m_pcsDispatch->EmitLDIND_I();      // get OBJECTHANDLE
             m_pcsDispatch->EmitLDIND_REF();    // get Delegate object
@@ -2416,7 +2495,7 @@ void PInvokeStubLinker::DoPInvoke(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
         else if (SF_IsCOMStub(dwStubFlags))
         {
             // this is a CLR -> COM call
-            // the target has been computed by StubHelpers::GetCOMIPFromRCW
+            // the target has been computed by StubHelpers_GetCOMIPFromRCW
             pcsEmit->EmitLDLOC(m_dwTargetEntryPointLocalNum);
         }
 #endif // FEATURE_COMINTEROP
@@ -2428,8 +2507,8 @@ void PInvokeStubLinker::DoPInvoke(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
         }
         else if (SF_IsVarArgStub(dwStubFlags)) // vararg P/Invoke
         {
-            EmitLoadStubContext(pcsEmit, dwStubFlags);
-            pcsEmit->EmitLDC(offsetof(PInvokeMethodDesc, m_pPInvokeTarget));
+            pcsEmit->EmitLoadSecretStubArgument();
+            pcsEmit->EmitLDC_I4(offsetof(PInvokeMethodDesc, m_pPInvokeTarget));
             pcsEmit->EmitADD();
             pcsEmit->EmitLDIND_I();
         }
@@ -2443,13 +2522,11 @@ void PInvokeStubLinker::DoPInvoke(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
             void* pInvokeTarget = nullptr;
             if (PInvokeMethodDesc::TryGetResolvedPInvokeTarget(pTargetMD, &pInvokeTarget))
             {
-                pcsEmit->EmitLDC((DWORD_PTR)pInvokeTarget);
-                pcsEmit->EmitCONV_I();
+                pcsEmit->EmitLDC_I((DWORD_PTR)pInvokeTarget);
             }
             else
             {
-                pcsEmit->EmitLDC((DWORD_PTR)&pTargetMD->m_pPInvokeTarget);
-                pcsEmit->EmitCONV_I();
+                pcsEmit->EmitLDC_I((DWORD_PTR)&pTargetMD->m_pPInvokeTarget);
                 pcsEmit->EmitLDIND_I();
             }
         }
@@ -2464,8 +2541,8 @@ void PInvokeStubLinker::DoPInvoke(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
         {
             int tokDelegate_methodPtr = pcsEmit->GetToken(CoreLibBinder::GetField(FIELD__DELEGATE__METHOD_PTR));
 
-            EmitLoadStubContext(pcsEmit, dwStubFlags);
-            pcsEmit->EmitLDC(offsetof(UMEntryThunkData, m_pObjectHandle));
+            pcsEmit->EmitLoadSecretStubArgument();
+            pcsEmit->EmitLDC_I4(offsetof(UMEntryThunkData, m_pObjectHandle));
             pcsEmit->EmitADD();
             pcsEmit->EmitLDIND_I();                    // Get OBJECTHANDLE
             pcsEmit->EmitLDIND_REF();                  // Get Delegate object
@@ -2476,9 +2553,9 @@ void PInvokeStubLinker::DoPInvoke(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
             // One of the following:
             // - COM -> CLR call
             // - direct reverse P/Invoke (CoreCLR hosting)
-            EmitLoadStubContext(pcsEmit, dwStubFlags);
+            pcsEmit->EmitLoadSecretStubArgument();
             CONSISTENCY_CHECK(0 == offsetof(UMEntryThunkData, m_pManagedTarget)); // if this changes, just add back the EmitLDC/EmitADD below
-            // pcsEmit->EmitLDC(offsetof(UMEntryThunkData, m_pManagedTarget));
+            // pcsEmit->EmitLDC_I4(offsetof(UMEntryThunkData, m_pManagedTarget));
             // pcsEmit->EmitADD();
             pcsEmit->EmitLDIND_I();  // Get UMEntryThunk::m_pManagedTarget
         }
@@ -2504,7 +2581,7 @@ void PInvokeStubLinker::EmitLogNativeArgument(ILCodeStream* pslILEmit, DWORD dwP
     else
     {
         // no secret argument
-        pslILEmit->EmitLoadNullPtr();
+        pslILEmit->EmitLDC_I(0);
     }
 
     pslILEmit->EmitLDLOC(dwPinnedLocal);
@@ -2531,21 +2608,19 @@ DWORD PInvokeStubLinker::EmitProfilerBeginTransitionCallback(ILCodeStream* pcsEm
         // so the MethodDesc to report is known at IL generation time.
         _ASSERTE(SF_IsForwardStub(dwStubFlags));
         _ASSERTE(pStubMD != NULL && pStubMD->IsCLRToCOMCall());
-        pcsEmit->EmitLDC((DWORD_PTR)pStubMD);
-        pcsEmit->EmitCONV_I();
+        pcsEmit->EmitLDC_I((DWORD_PTR)pStubMD);
     }
 #endif // FEATURE_COMINTEROP
     else if (SF_IsForwardPInvokeStub(dwStubFlags) && !SF_IsCALLIStub(dwStubFlags))
     {
         MethodDesc* pMD = GetTargetMD();
         _ASSERTE(pMD != NULL && pMD->IsPInvoke());
-        pcsEmit->EmitLDC((DWORD_PTR)pMD);
-        pcsEmit->EmitCONV_I();
+        pcsEmit->EmitLDC_I((DWORD_PTR)pMD);
     }
     else
     {
         // Some other stub without the MD as the secret parameter, so pass null.
-        pcsEmit->EmitLoadNullPtr();
+        pcsEmit->EmitLDC_I(0);
     }
 
     pcsEmit->EmitCALL(METHOD__STUBHELPERS__PROFILER_BEGIN_TRANSITION_CALLBACK, 1, 1);
@@ -2585,13 +2660,12 @@ void PInvokeStubLinker::EmitValidateLocal(ILCodeStream* pcsEmit, MethodDesc* pSt
         // so the MethodDesc to report is known at IL generation time.
         _ASSERTE(SF_IsForwardStub(dwStubFlags));
         _ASSERTE(pStubMD != NULL && pStubMD->IsCLRToCOMCall());
-        pcsEmit->EmitLDC((DWORD_PTR)pStubMD);
-        pcsEmit->EmitCONV_I();
+        pcsEmit->EmitLDC_I((DWORD_PTR)pStubMD);
     }
 #endif // FEATURE_COMINTEROP
     else
     {
-        pcsEmit->EmitLoadNullPtr();
+        pcsEmit->EmitLDC_I(0);
     }
 
     if (fIsByref)
@@ -2641,20 +2715,14 @@ void PInvokeStubLinker::EmitObjectValidation(ILCodeStream* pcsEmit, MethodDesc* 
 }
 #endif // VERIFY_HEAP
 
-// Loads the 'secret argument' passed to the stub.
-void PInvokeStubLinker::EmitLoadStubContext(ILCodeStream* pcsEmit, DWORD dwStubFlags)
+void PInvokeStubLinker::AppendSecretStubArgumentToTargetSignature()
 {
     STANDARD_VM_CONTRACT;
 
-    CONSISTENCY_CHECK(!SF_IsForwardDelegateStub(dwStubFlags));
-    CONSISTENCY_CHECK(!SF_IsFieldGetterStub(dwStubFlags) && !SF_IsFieldSetterStub(dwStubFlags));
-    // Forward CLR->COM stubs are compiled as transient IL on the CLR->COM method itself, so the JIT
-    // does not publish a secret argument for them (see ILStubState::FinishEmit). Any data such a stub
-    // needs must be baked into the IL at generation time instead.
-    CONSISTENCY_CHECK(!SF_IsForwardCOMStub(dwStubFlags));
-
-    // get the secret argument via intrinsic
-    pcsEmit->EmitCALL(METHOD__STUBHELPERS__GET_STUB_CONTEXT, 0, 1);
+    CONSISTENCY_CHECK(SF_IsReverseStub(m_dwStubFlags));
+    LocalDesc secretStubArgument(ELEMENT_TYPE_I);
+    secretStubArgument.AddModifier(true, CoreLibBinder::GetClass(CLASS__SECRET_STUB_ARGUMENT));
+    SetSecretStubArgumentIndex(SetStubTargetArgType(&secretStubArgument, false));
 }
 
 namespace
@@ -3946,8 +4014,8 @@ static COR_ILMETHOD_DECODER* CreatePInvokeStubWorker(
         COMPlusThrowHR(COR_E_OVERFLOW);
     }
 
-    NewArrayHolder<BYTE> pbParamMarshalInfo(new BYTE[cbParamMarshalInfo]);
-    MarshalInfo *pParamMarshalInfo = reinterpret_cast<MarshalInfo *>(pbParamMarshalInfo.GetValue());
+    NewArrayHolder<BYTE> pbParamMarshalInfo{ new BYTE[cbParamMarshalInfo] };
+    MarshalInfo *pParamMarshalInfo = reinterpret_cast<MarshalInfo *>(static_cast<BYTE*>(pbParamMarshalInfo));
 
     MetaSig paramInfoMSig(msig);
     for (int i = 0; i < numArgs; ++i)
@@ -4242,11 +4310,11 @@ bool StructMarshalStubs::TryGenerateStructMarshallingMethod(MethodDesc* pMD, Dyn
 
     CreateStructMarshalIL(pStructMT, &slIL, marshalFlags);
 
-    NewHolder<ILStubResolver> ilResolver = new ILStubResolver();
+    NewHolder<ILStubResolver> ilResolver{ new ILStubResolver() };
     ilResolver->SetStubMethodDesc(pMD);
 
     *methodILDecoder = ilResolver->FinalizeILStub(&slIL);
-    *resolver = ilResolver.Extract();
+    *resolver = ilResolver.Detach();
     return true;
 }
 
@@ -4384,13 +4452,13 @@ namespace
         {
             _ASSERTE(pTargetMD != NULL);
             const size_t blobSize = unsharedStubHashBlobSize;
-            NewArrayHolder<BYTE> pBytes = new BYTE[blobSize];
+            NewArrayHolder<BYTE> pBytes{ new BYTE[blobSize] };
             ZeroMemory(pBytes, blobSize);
             ILStubHashBlob* pBlob = (ILStubHashBlob*)(BYTE*)pBytes;
             pBlob->m_cbSizeOfBlob = blobSize;
             memcpy(pBlob->m_rgbBlobData, &dwStubFlags, sizeof(dwStubFlags));
             memcpy(pBlob->m_rgbBlobData + sizeof(dwStubFlags), &pTargetMD, sizeof(pTargetMD));
-            pBytes.SuppressRelease();
+            pBytes.Detach();
             return pBlob;
         }
 
@@ -4454,7 +4522,7 @@ namespace
         static_assert(nlfMaxValue   <= 0xFF);
         static_assert(pmMaxValue    <= 0xFFFF);
 
-        NewArrayHolder<BYTE> pBytes = new BYTE[cbSizeOfBlob.Value()];
+        NewArrayHolder<BYTE> pBytes{ new BYTE[cbSizeOfBlob.Value()] };
         // zero out the hash bytes to ensure all bit fields are deterministically set
         ZeroMemory(pBytes, cbSizeOfBlob.Value());
         pBlob = (PInvokeStubHashBlob*)(BYTE*)pBytes;
@@ -4512,7 +4580,7 @@ namespace
         // Verify that we indeed have reached the end
         _ASSERTE(pBlobParams + cbSig == (BYTE *)pBlob + cbSizeOfBlob.Value());
 
-        pBytes.SuppressRelease();
+        pBytes.Detach();
         return (ILStubHashBlob*)pBlob;
     }
 
@@ -4848,12 +4916,12 @@ COR_ILMETHOD_DECODER* PInvoke::CreatePInvokeMethodIL(PInvokeMethodDesc* pMD, Dyn
     CollateParamTokens(pModule->GetMDImport(), sigDesc.m_tkMethodDef, numArgs, pParamTokenArray);
 
     PInvoke_ILStubState stubState(pModule, sigDesc.m_sig, &sigDesc.m_typeContext, dwStubFlags, sigInfo.GetCallConv(), iLCIDArg, pMD);
-    NewHolder<ILStubResolver> pResolver = new ILStubResolver();
+    NewHolder<ILStubResolver> pResolver{ new ILStubResolver() };
     pResolver->SetStubMethodDesc(pMD);
 
     COR_ILMETHOD_DECODER* pIL = CreatePInvokeStubWorker(&stubState, pResolver, &sigDesc, sigInfo.GetCharSet(), sigInfo.GetLinkFlags(), sigInfo.GetCallConv(), stubState.GetFlags(), pMD, pParamTokenArray, iLCIDArg);
 
-    *ppResolver = pResolver.Extract();
+    *ppResolver = pResolver.Detach();
     return pIL;
 }
 
@@ -5310,7 +5378,7 @@ namespace
     private:
         MethodDesc*                      m_pTargetMD;
         PInvokeStubParameters*           m_pParams;
-        NewArrayHolder<ILStubHashBlob>   m_pHashParams;
+        NewArrayHolder<ILStubHashBlob> m_pHashParams;
         MethodDesc*                      m_pStubMD;
         AllocMemTracker                  m_amTracker;
         bool                             m_bILStubCreator;     // Only the creator can remove the ILStub from the Cache
@@ -5416,7 +5484,8 @@ namespace
             ILStubCreatorHelper ilStubCreatorHelper(pTargetMD, &params);
 
             // take the domain level lock
-            ListLockHolder pILStubLock(AppDomain::GetCurrentDomain()->GetILStubGenLock());
+            ListLock* pILStubGenLock = AppDomain::GetCurrentDomain()->GetILStubGenLock();
+            ListLockHolder pILStubLock = pILStubGenLock->TakeLock();
 
             {
                 ilStubCreatorHelper.GetStubMethodDesc();
@@ -5432,15 +5501,14 @@ namespace
                     // take the MethodDesc level locker
                     ListLockEntryHolder pEntry(ListLockEntry::Find(pILStubLock, pStubMD, "il stub gen lock"));
 
-                    ListLockEntryLockHolder pEntryLock(pEntry, FALSE);
-
                     // We have the entry lock we need to use, so we can release the global lock.
-                    pILStubLock.Release();
+                    pILStubLock.Free();
 
+                    ListLockEntryLockHolder pEntryLock;
                     {
                         ilStubCreatorHelper.GetStubMethodDesc();
 
-                        if (!pEntryLock.DeadlockAwareAcquire())
+                        if (!pEntryLock.DeadlockAwareAcquire(pEntry))
                         {
                             UNREACHABLE_MSG("unexpected deadlock in IL stub generation!");
                         }
@@ -5449,7 +5517,7 @@ namespace
                         {
                             // We need to re-acquire the lock in case we need to get a new pStubMD
                             // in the case that the owner of the shared stub was destroyed.
-                            pILStubLock.Acquire();
+                            pILStubLock = pILStubGenLock->TakeLock();
 
                             // Assure that pStubMD we have now has not been destroyed by other threads
                             ilStubCreatorHelper.GetStubMethodDesc();
@@ -5459,17 +5527,17 @@ namespace
                                 pStubMD = ilStubCreatorHelper.GetStubMD();
 
                                 pEntry = ListLockEntry::Find(pILStubLock, pStubMD, "il stub gen lock");
-                                pEntryLock.Assign(pEntry, FALSE);
+                                pEntryLock.Free();
 
                                 // We have the entry lock we need to use, so we can release the global lock.
-                                pILStubLock.Release();
+                                pILStubLock.Free();
 
-                                if (!pEntryLock.DeadlockAwareAcquire())
+                                if (!pEntryLock.DeadlockAwareAcquire(pEntry))
                                 {
                                     UNREACHABLE_MSG("unexpected deadlock in IL stub generation!");
                                 }
 
-                                pILStubLock.Acquire();
+                                pILStubLock = pILStubGenLock->TakeLock();
 
                                 ilStubCreatorHelper.GetStubMethodDesc();
                             }
@@ -5478,9 +5546,9 @@ namespace
                         for (;;)
                         {
                             // We have the entry lock now, we can release the global lock
-                            pILStubLock.Release();
+                            pILStubLock.Free();
 
-                            _ASSERTE(pEntryLock.GetValue()->HasLock());
+                            _ASSERTE(pEntry->HasLock());
 
                             if (pEntry->m_hrResultCode != S_FALSE)
                             {
@@ -5556,7 +5624,7 @@ namespace
                                                         iLCIDArg);
 
                                 // we successfully generated the IL stub
-                                sgh.SuppressRelease();
+                                sgh.Detach();
                             }
 
                             pEntry->m_hrResultCode = S_OK;
@@ -5713,7 +5781,7 @@ MethodDesc* PInvoke::CreateFieldAccessILStub(
 #endif // _DEBUG
 
     Signature signature(szMetaSig, cbMetaSigSize);
-    NewHolder<ILStubState> pStubState = new COMToCLRFieldAccess_ILStubState(pModule, signature, &sigDesc.m_typeContext, dwStubFlags, pFD);
+    NewHolder<ILStubState> pStubState{ new COMToCLRFieldAccess_ILStubState(pModule, signature, &sigDesc.m_typeContext, dwStubFlags, pFD) };
 
     MethodDesc* pStubMD;
     pStubMD = CreateInteropILStub(
@@ -5847,15 +5915,29 @@ namespace
 
         if (pMD->IsQCall())
         {
-            void* pvTarget = (void*)QCallResolveDllImport(pMD->GetEntrypointName());
+            void* pvTarget = (void*)ResolveRuntimeHelperEntrypoint(pMD->GetEntrypointName());
 #ifdef _DEBUG
             CONSISTENCY_CHECK_MSGF(pvTarget != nullptr,
-                ("%s::%s is not registered using DllImportEntry macro in qcallentrypoints.cpp",
+                ("%s::%s is not registered in the QCall entrypoint table",
                 pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName));
 #endif
             pMD->SetPInvokeTarget(pvTarget);
             return;
         }
+
+#ifdef TARGET_WASM
+        // CoreLib eager fixups run before CoreLib is active. Resolving a statically
+        // linked target does not load a library or execute its initialization code.
+        if (!g_fEEStarted && pMD->GetModule()->IsSystem())
+        {
+            void* pvTarget = const_cast<void*>(PInvokeOverride::GetMethodImpl(pMD->GetLibNameRaw(), pMD->GetEntrypointName()));
+            if (pvTarget != nullptr)
+            {
+                pMD->SetPInvokeTarget(pvTarget);
+                return;
+            }
+        }
+#endif // TARGET_WASM
 
         // Loading unmanaged dlls can trigger dllmains which certainly count as code execution!
         pMD->EnsureActive();
@@ -5885,7 +5967,8 @@ namespace
             StackSString ssLibName(SString::Utf8, pMD->GetLibName());
 
             WCHAR wszEPName[50];
-            if (MultiByteToWideChar(CP_UTF8, 0, (LPCSTR)pMD->GetEntrypointName(), -1, wszEPName, sizeof(wszEPName)/sizeof(WCHAR)) == 0)
+            LPCSTR szEPName = (LPCSTR)pMD->GetEntrypointName();
+            if (minipal_convert_utf8_to_utf16(szEPName, strlen(szEPName) + 1, (CHAR16_T*)wszEPName, ARRAY_SIZE(wszEPName), 0) == 0)
             {
                 wszEPName[0] = W('?');
                 wszEPName[1] = W('\0');
@@ -5944,9 +6027,7 @@ void PInvoke::ResolvePInvokeTarget(PInvokeMethodDesc* pNMD)
 {
     CONTRACTL
     {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
+        STANDARD_VM_CHECK;
 
         PRECONDITION(CheckPointer(pNMD));
     }
@@ -6105,13 +6186,7 @@ EXTERN_C void* PInvokeImportWorker(PInvokeMethodDesc* pMD)
 {
     PreserveLastErrorHolder preserveLastError;
 
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(GetThread()->GetFrame());
     INSTALL_MANAGED_EXCEPTION_DISPATCHER;
@@ -6257,11 +6332,7 @@ static void BuildCalliILStubSignature(
     pSigBuilder->AppendBlob((PVOID)pArgsStart, (DWORD)(pArgsEnd - pArgsStart));
 
     // The unmanaged target is marked so the JIT passes it in the secret stub register.
-    TypeHandle secretStubArgument = CoreLibBinder::GetClass(CLASS__SECRET_STUB_ARGUMENT);
-    pSigBuilder->AppendElementType(ELEMENT_TYPE_CMOD_INTERNAL);
-    pSigBuilder->AppendByte(1);
-    pSigBuilder->AppendPointer(secretStubArgument.AsPtr());
-    pSigBuilder->AppendElementType(ELEMENT_TYPE_I);
+    AppendSecretStubArgument(pSigBuilder);
 }
 
 // A failure detected while classifying an unmanaged CALLI call site. It is reported when the stub
@@ -6879,7 +6950,7 @@ bool GenerateCopyConstructorHelper(MethodDesc* ftn, DynamicResolver** ppResolver
     MethodDesc* pDestructor = nullptr;
     FindDestructor(pMT->GetModule(), pMT, &pDestructor);
 
-    NewHolder<ILStubResolver> ilResolver = new ILStubResolver();
+    NewHolder<ILStubResolver> ilResolver{ new ILStubResolver() };
     ilResolver->SetStubMethodDesc(ftn);
 
     SigTypeContext genericContext;
@@ -6902,7 +6973,7 @@ bool GenerateCopyConstructorHelper(MethodDesc* ftn, DynamicResolver** ppResolver
     }
     else
     {
-        pCode->EmitLDC(type.GetSize());
+        pCode->EmitLDC_I4(type.GetSize());
         pCode->EmitCPBLK();
     }
 
@@ -6916,7 +6987,7 @@ bool GenerateCopyConstructorHelper(MethodDesc* ftn, DynamicResolver** ppResolver
 
     // Generate all IL associated data for JIT
     *ppHeader = ilResolver->FinalizeILStub(&sl);
-    *ppResolver = ilResolver.Extract();
+    *ppResolver = ilResolver.Detach();
     return true;
 }
 

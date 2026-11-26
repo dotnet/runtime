@@ -23,6 +23,12 @@ namespace System.Security.Cryptography.Pkcs
                     Debug.Assert(pal is KeyAgreeRecipientInfoPal);
                     break;
 
+#if NET11_0_OR_GREATER
+                case RecipientInfoType.KeyEncapsulation:
+                    Debug.Assert(pal is KemRecipientInfoPal);
+                    break;
+#endif
+
                 default:
                     Debug.Fail($"Illegal recipientInfoType: {type}");
                     break;

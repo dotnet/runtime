@@ -95,7 +95,7 @@ namespace System.Security.Cryptography.Tests
             using CngKey key = X25519DiffieHellmanCngTests.GenerateCngKey(exportPolicy: CngExportPolicies.None);
             using X25519DiffieHellmanCng xdh = new(key);
             ReadOnlySpan<byte> publicKey = xdh.ExportPublicKey();
-            AssertExtensions.TrueExpression(publicKey.IndexOfAnyExcept((byte)0) >= 0);
+            AssertExtensions.TrueExpression(publicKey.ContainsAnyExcept((byte)0));
         }
     }
 
@@ -112,6 +112,10 @@ namespace System.Security.Cryptography.Tests
         private static SafeNCryptProviderHandle DefaultProviderHandle => s_lazyDefaultProviderHandle.Value;
 
         protected abstract CngExportPolicies ExportPolicy { get; }
+
+        // A caller-supplied CngKey has already been imported by the provider. The original public key may have been
+        // rejected or transformed, so exporting it does not reliably preserve whether it reduced to zero.
+        protected override bool CanRoundTripReducedZeroPublicKeys => false;
 
         public override X25519DiffieHellman GenerateKey()
         {

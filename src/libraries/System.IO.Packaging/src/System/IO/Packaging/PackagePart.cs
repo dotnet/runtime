@@ -424,8 +424,7 @@ namespace System.IO.Packaging
             CheckInvalidState();
             _container.ThrowIfReadOnly();
 
-            if (id == null)
-                throw new ArgumentNullException(nameof(id));
+            ArgumentNullException.ThrowIfNull(id);
 
             InternalRelationshipCollection.ThrowIfInvalidXsdId(id);
 
@@ -468,8 +467,7 @@ namespace System.IO.Packaging
             CheckInvalidState();
             _container.ThrowIfWriteOnly();
 
-            if (relationshipType == null)
-                throw new ArgumentNullException(nameof(relationshipType));
+            ArgumentNullException.ThrowIfNull(relationshipType);
 
             InternalRelationshipCollection.ThrowIfInvalidRelationshipType(relationshipType);
 
@@ -739,8 +737,7 @@ namespace System.IO.Packaging
             CheckInvalidState();
             _container.ThrowIfWriteOnly();
 
-            if (id == null)
-                throw new ArgumentNullException(nameof(id));
+            ArgumentNullException.ThrowIfNull(id);
 
             InternalRelationshipCollection.ThrowIfInvalidXsdId(id);
 

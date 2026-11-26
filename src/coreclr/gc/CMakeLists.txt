@@ -83,7 +83,8 @@ if(CLR_CMAKE_HOST_WIN32)
     ${STATIC_MT_CRT_LIB}
     ${STATIC_MT_VCRT_LIB}
     kernel32.lib
-    advapi32.lib)
+    advapi32.lib
+    coreclrminipal)
 endif(CLR_CMAKE_HOST_WIN32)
 
 set (GC_LINK_LIBRARIES

@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 using Antlr4.Runtime;
 using Xunit;
 
-namespace ILAssembler.Tests
+namespace Microsoft.DotNet.ILAssembler.Tests
 {
     public class PreprocessedTokenSourceTests
     {
@@ -22,7 +22,7 @@ namespace ILAssembler.Tests
                 """;
 
             ITokenSource lexer = CreateLexerForSource(source);
-            PreprocessedTokenSource preprocessor = new PreprocessedTokenSource(lexer, NoIncludeDirectivesCallback);
+            PreprocessedTokenSource preprocessor = new PreprocessedTokenSource(lexer, NoIncludeDirectivesCallback, CreateDefaultLexer());
             preprocessor.OnPreprocessorSyntaxError += NoLexerDiagnosticsCallback;
             BufferedTokenStream stream = new(preprocessor);
             stream.Fill();
@@ -46,7 +46,7 @@ namespace ILAssembler.Tests
                 """;
 
             ITokenSource lexer = CreateLexerForSource(source);
-            PreprocessedTokenSource preprocessor = new PreprocessedTokenSource(lexer, NoIncludeDirectivesCallback);
+            PreprocessedTokenSource preprocessor = new PreprocessedTokenSource(lexer, NoIncludeDirectivesCallback, CreateDefaultLexer());
             preprocessor.OnPreprocessorSyntaxError += NoLexerDiagnosticsCallback;
             BufferedTokenStream stream = new(preprocessor);
             stream.Fill();
@@ -71,7 +71,7 @@ namespace ILAssembler.Tests
                 """;
 
             ITokenSource lexer = CreateLexerForSource(source);
-            PreprocessedTokenSource preprocessor = new PreprocessedTokenSource(lexer, NoIncludeDirectivesCallback);
+            PreprocessedTokenSource preprocessor = new PreprocessedTokenSource(lexer, NoIncludeDirectivesCallback, CreateDefaultLexer());
             preprocessor.OnPreprocessorSyntaxError += NoLexerDiagnosticsCallback;
             BufferedTokenStream stream = new(preprocessor);
             stream.Fill();
@@ -101,7 +101,7 @@ namespace ILAssembler.Tests
                 """;
 
             ITokenSource lexer = CreateLexerForSource(source);
-            PreprocessedTokenSource preprocessor = new PreprocessedTokenSource(lexer, NoIncludeDirectivesCallback);
+            PreprocessedTokenSource preprocessor = new PreprocessedTokenSource(lexer, NoIncludeDirectivesCallback, CreateDefaultLexer());
             preprocessor.OnPreprocessorSyntaxError += NoLexerDiagnosticsCallback;
             BufferedTokenStream stream = new(preprocessor);
             stream.Fill();
@@ -125,7 +125,7 @@ namespace ILAssembler.Tests
                 """;
 
             ITokenSource lexer = CreateLexerForSource(source);
-            PreprocessedTokenSource preprocessor = new PreprocessedTokenSource(lexer, NoIncludeDirectivesCallback);
+            PreprocessedTokenSource preprocessor = new PreprocessedTokenSource(lexer, NoIncludeDirectivesCallback, CreateDefaultLexer());
             preprocessor.OnPreprocessorSyntaxError += NoLexerDiagnosticsCallback;
             BufferedTokenStream stream = new(preprocessor);
             stream.Fill();
@@ -156,7 +156,7 @@ namespace ILAssembler.Tests
                 """;
 
             ITokenSource lexer = CreateLexerForSource(source);
-            PreprocessedTokenSource preprocessor = new PreprocessedTokenSource(lexer, NoIncludeDirectivesCallback);
+            PreprocessedTokenSource preprocessor = new PreprocessedTokenSource(lexer, NoIncludeDirectivesCallback, CreateDefaultLexer());
             preprocessor.OnPreprocessorSyntaxError += NoLexerDiagnosticsCallback;
             BufferedTokenStream stream = new(preprocessor);
             stream.Fill();
@@ -183,7 +183,7 @@ namespace ILAssembler.Tests
                 """;
 
             ITokenSource lexer = CreateLexerForSource(source);
-            PreprocessedTokenSource preprocessor = new PreprocessedTokenSource(lexer, NoIncludeDirectivesCallback);
+            PreprocessedTokenSource preprocessor = new PreprocessedTokenSource(lexer, NoIncludeDirectivesCallback, CreateDefaultLexer());
             preprocessor.OnPreprocessorSyntaxError += NoLexerDiagnosticsCallback;
             BufferedTokenStream stream = new(preprocessor);
             stream.Fill();
@@ -214,7 +214,7 @@ namespace ILAssembler.Tests
                 """;
 
             ITokenSource lexer = CreateLexerForSource(source);
-            PreprocessedTokenSource preprocessor = new PreprocessedTokenSource(lexer, NoIncludeDirectivesCallback);
+            PreprocessedTokenSource preprocessor = new PreprocessedTokenSource(lexer, NoIncludeDirectivesCallback, CreateDefaultLexer());
             preprocessor.OnPreprocessorSyntaxError += NoLexerDiagnosticsCallback;
             BufferedTokenStream stream = new(preprocessor);
             stream.Fill();
@@ -240,7 +240,7 @@ namespace ILAssembler.Tests
                 """;
 
             ITokenSource lexer = CreateLexerForSource(source);
-            PreprocessedTokenSource preprocessor = new PreprocessedTokenSource(lexer, NoIncludeDirectivesCallback);
+            PreprocessedTokenSource preprocessor = new PreprocessedTokenSource(lexer, NoIncludeDirectivesCallback, CreateDefaultLexer());
             preprocessor.OnPreprocessorSyntaxError += NoLexerDiagnosticsCallback;
             BufferedTokenStream stream = new(preprocessor);
             stream.Fill();
@@ -269,7 +269,7 @@ namespace ILAssembler.Tests
                 """;
 
             ITokenSource lexer = CreateLexerForSource(source);
-            PreprocessedTokenSource preprocessor = new PreprocessedTokenSource(lexer, NoIncludeDirectivesCallback);
+            PreprocessedTokenSource preprocessor = new PreprocessedTokenSource(lexer, NoIncludeDirectivesCallback, CreateDefaultLexer());
             preprocessor.OnPreprocessorSyntaxError += NoLexerDiagnosticsCallback;
             BufferedTokenStream stream = new(preprocessor);
             stream.Fill();
@@ -294,7 +294,7 @@ namespace ILAssembler.Tests
                 """;
 
             ITokenSource lexer = CreateLexerForSource(source);
-            PreprocessedTokenSource preprocessor = new PreprocessedTokenSource(lexer, NoIncludeDirectivesCallback);
+            PreprocessedTokenSource preprocessor = new PreprocessedTokenSource(lexer, NoIncludeDirectivesCallback, CreateDefaultLexer());
             preprocessor.OnPreprocessorSyntaxError += NoLexerDiagnosticsCallback;
             BufferedTokenStream stream = new(preprocessor);
             stream.Fill();
@@ -305,6 +305,123 @@ namespace ILAssembler.Tests
                     Assert.Equal("B", token.Text);
                 },
                 token => Assert.Equal(CILLexer.Eof, token.Type));
+        }
+
+        [Theory]
+        [InlineData("ARM64", "int64", CILLexer.INT64_)]
+        [InlineData("X64", "int64", CILLexer.INT64_)]
+        [InlineData("X86", "int32", CILLexer.INT32_)]
+        public void NestedConditionals_ExpandSelectedMacro(string architecture, string expectedText, int expectedType)
+        {
+            string source = $$"""
+                #define {{architecture}}
+                #ifdef ARM64
+                #define SLOT "int64"
+                #else
+                #ifdef X64
+                #define SLOT "int64"
+                #else
+                #define SLOT "int32"
+                #endif
+                #endif
+                SLOT
+                """;
+
+            PreprocessedTokenSource preprocessor = new(CreateLexerForSource(source), NoIncludeDirectivesCallback, CreateDefaultLexer());
+            preprocessor.OnPreprocessorSyntaxError += NoLexerDiagnosticsCallback;
+            BufferedTokenStream stream = new(preprocessor);
+            stream.Fill();
+
+            Assert.Collection(stream.GetTokens(),
+                token =>
+                {
+                    Assert.Equal(expectedType, token.Type);
+                    Assert.Equal(expectedText, token.Text);
+                },
+                token => Assert.Equal(CILLexer.Eof, token.Type));
+            Assert.Equal(expectedText, preprocessor.DefinedVariables["SLOT"]);
+        }
+
+        [Theory]
+        [InlineData("ifdef", "ifdef", false)]
+        [InlineData("ifdef", "ifndef", false)]
+        [InlineData("ifndef", "ifdef", false)]
+        [InlineData("ifndef", "ifndef", false)]
+        [InlineData("ifdef", "ifdef", true)]
+        [InlineData("ifdef", "ifndef", true)]
+        [InlineData("ifndef", "ifdef", true)]
+        [InlineData("ifndef", "ifndef", true)]
+        public void DisabledNestedConditionals_DoNotAffectActiveBranch(string firstDirective, string secondDirective, bool skipElse)
+        {
+            string disabledBlock = $$"""
+                #{{firstDirective}} UNDEFINED
+                #{{secondDirective}} UNDEFINED
+                #define UNEXPECTED
+                Wrong
+                #endif
+                #else
+                AlsoWrong
+                #endif
+                """;
+            string source = $$"""
+                #define DEFINED
+                #{{(skipElse ? "ifdef" : "ifndef")}} DEFINED
+                {{(skipElse ? "Selected" : disabledBlock)}}
+                #else
+                {{(skipElse ? disabledBlock : "Selected")}}
+                #endif
+                After
+                """;
+
+            PreprocessedTokenSource preprocessor = new(CreateLexerForSource(source), NoIncludeDirectivesCallback, CreateDefaultLexer());
+            preprocessor.OnPreprocessorSyntaxError += NoLexerDiagnosticsCallback;
+            BufferedTokenStream stream = new(preprocessor);
+            stream.Fill();
+
+            Assert.Equal(new[] { "Selected", "After", "<EOF>" }, stream.GetTokens().Select(token => token.Text));
+            Assert.False(preprocessor.DefinedVariables.ContainsKey("UNEXPECTED"));
+        }
+
+        [Theory]
+        [InlineData(true, true)]
+        [InlineData(true, false)]
+        [InlineData(false, true)]
+        [InlineData(false, false)]
+        public void EndIf_RestoresOuterConditionalAndProcessesNextDirective(bool outerDefined, bool innerDefined)
+        {
+            string source = """
+                #ifdef OUTER
+                #ifdef INNER
+                Inner
+                #endif
+                #else
+                OuterElse
+                #endif
+                #define AFTER "Expanded"
+                AFTER
+                """;
+            Dictionary<string, string?> definitions = new();
+            if (outerDefined)
+            {
+                definitions.Add("OUTER", null);
+            }
+            if (innerDefined)
+            {
+                definitions.Add("INNER", null);
+            }
+
+            PreprocessedTokenSource preprocessor = new(CreateLexerForSource(source), NoIncludeDirectivesCallback, CreateDefaultLexer(), definitions);
+            preprocessor.OnPreprocessorSyntaxError += NoLexerDiagnosticsCallback;
+            BufferedTokenStream stream = new(preprocessor);
+            stream.Fill();
+
+            string[] expected = (outerDefined, innerDefined) switch
+            {
+                (true, true) => new[] { "Inner", "Expanded", "<EOF>" },
+                (true, false) => new[] { "Expanded", "<EOF>" },
+                _ => new[] { "OuterElse", "Expanded", "<EOF>" },
+            };
+            Assert.Equal(expected, stream.GetTokens().Select(token => token.Text));
         }
 
         [Fact]
@@ -325,7 +442,7 @@ namespace ILAssembler.Tests
             {
                 Assert.Equal($"{nameof(source2)}.il", path);
                 return CreateLexerForSource(source2, nameof(source2));
-            });
+            }, CreateDefaultLexer());
             preprocessor.OnPreprocessorSyntaxError += NoLexerDiagnosticsCallback;
             BufferedTokenStream stream = new(preprocessor);
             stream.Fill();
@@ -351,6 +468,30 @@ namespace ILAssembler.Tests
                 token => Assert.Equal(CILLexer.Eof, token.Type));
         }
 
+        [Fact]
+        public void UnterminatedIfDef_EofDiagnosticHasNonNegativeSpan()
+        {
+            string source = """
+                #define X
+                #ifdef X
+                A
+                """;
+
+            ITokenSource lexer = CreateLexerForSource(source);
+            PreprocessedTokenSource preprocessor = new(
+                lexer,
+                NoIncludeDirectivesCallback,
+                CreateDefaultLexer());
+            (int Start, int Length)? diagnosticSpan = null;
+            preprocessor.OnPreprocessorSyntaxError += (_, start, length, _) =>
+                diagnosticSpan = (start, length);
+            BufferedTokenStream stream = new(preprocessor);
+
+            stream.Fill();
+
+            Assert.Equal((source.Length, 0), diagnosticSpan);
+        }
+
         private void NoLexerDiagnosticsCallback(string arg1, int arg2, int arg3, string arg4)
         {
             Assert.Fail($"A lexer diagnostic was encountered at {arg2}:{arg3}. '{arg4}'");
@@ -365,10 +506,169 @@ namespace ILAssembler.Tests
                 });
         }
 
+        private static Func<string, ITokenSource> CreateDefaultLexer()
+        {
+            return text => new CILLexer(new AntlrInputStream(text));
+        }
+
         private static ITokenSource NoIncludeDirectivesCallback(string path)
         {
             Assert.Fail("The included-file callback was called when no #include was provided in source.");
             return null!;
+        }
+
+        [Fact]
+        public void Define_MultiTokenValue_RelexedIntoSeparateTokens()
+        {
+            string source = """
+                #define NEG_INF "float32(0xFF800000)"
+                NEG_INF
+                """;
+
+            ITokenSource lexer = CreateLexerForSource(source);
+            PreprocessedTokenSource preprocessor = new PreprocessedTokenSource(lexer, NoIncludeDirectivesCallback, CreateDefaultLexer());
+            preprocessor.OnPreprocessorSyntaxError += NoLexerDiagnosticsCallback;
+            BufferedTokenStream stream = new(preprocessor);
+            stream.Fill();
+            Assert.Collection(stream.GetTokens(),
+                token =>
+                {
+                    Assert.Equal(CILLexer.FLOAT32, token.Type);
+                    Assert.Equal("float32", token.Text);
+                },
+                token => Assert.Equal("(", token.Text),
+                token =>
+                {
+                    Assert.Equal(CILLexer.INT32, token.Type);
+                    Assert.Equal("0xFF800000", token.Text);
+                },
+                token => Assert.Equal(")", token.Text),
+                token => Assert.Equal(CILLexer.Eof, token.Type));
+        }
+
+        [Fact]
+        public void Define_MultiTokenValue_RecursivelyExpandsQueuedMacroTokensInOrder()
+        {
+            string source = """
+                #define INNER "B C"
+                #define OUTER "A INNER D"
+                OUTER
+                """;
+
+            ITokenSource lexer = CreateLexerForSource(source);
+            PreprocessedTokenSource preprocessor = new PreprocessedTokenSource(lexer, NoIncludeDirectivesCallback, CreateDefaultLexer());
+            preprocessor.OnPreprocessorSyntaxError += NoLexerDiagnosticsCallback;
+            BufferedTokenStream stream = new(preprocessor);
+            stream.Fill();
+            Assert.Collection(stream.GetTokens(),
+                token =>
+                {
+                    Assert.Equal(CILLexer.ID, token.Type);
+                    Assert.Equal("A", token.Text);
+                },
+                token =>
+                {
+                    Assert.Equal(CILLexer.ID, token.Type);
+                    Assert.Equal("B", token.Text);
+                },
+                token =>
+                {
+                    Assert.Equal(CILLexer.ID, token.Type);
+                    Assert.Equal("C", token.Text);
+                },
+                token =>
+                {
+                    Assert.Equal(CILLexer.ID, token.Type);
+                    Assert.Equal("D", token.Text);
+                },
+                token => Assert.Equal(CILLexer.Eof, token.Type));
+        }
+
+        [Fact]
+        public void Define_EscapedQuotedString_ReportsSyntaxError()
+        {
+            string source = """
+                #define STRING "\"value\""
+                """;
+
+            ITokenSource lexer = CreateLexerForSource(source);
+            PreprocessedTokenSource preprocessor = new PreprocessedTokenSource(lexer, NoIncludeDirectivesCallback, CreateDefaultLexer());
+            bool reportedSyntaxError = false;
+            preprocessor.OnPreprocessorSyntaxError += (_, _, _, _) => reportedSyntaxError = true;
+            BufferedTokenStream stream = new(preprocessor);
+
+            stream.Fill();
+
+            Assert.True(reportedSyntaxError);
+            Assert.Collection(
+                stream.GetTokens(),
+                token => Assert.Equal(CILLexer.Eof, token.Type));
+        }
+
+        [Fact]
+        public void Define_SingleTokenValue_SubstitutedCorrectly()
+        {
+            string source = """
+                #define FALSE "0"
+                FALSE
+                """;
+
+            ITokenSource lexer = CreateLexerForSource(source);
+            PreprocessedTokenSource preprocessor = new PreprocessedTokenSource(lexer, NoIncludeDirectivesCallback, CreateDefaultLexer());
+            preprocessor.OnPreprocessorSyntaxError += NoLexerDiagnosticsCallback;
+            BufferedTokenStream stream = new(preprocessor);
+            stream.Fill();
+            Assert.Collection(stream.GetTokens(),
+                token =>
+                {
+                    Assert.Equal(CILLexer.INT32, token.Type);
+                    Assert.Equal("0", token.Text);
+                },
+                token => Assert.Equal(CILLexer.Eof, token.Type));
+        }
+
+        [Fact]
+        public void Define_SimpleNameValue_SubstitutedAsId()
+        {
+            string source = """
+                #define ASSEMBLY_NAME "my_test"
+                ASSEMBLY_NAME
+                """;
+
+            ITokenSource lexer = CreateLexerForSource(source);
+            PreprocessedTokenSource preprocessor = new PreprocessedTokenSource(lexer, NoIncludeDirectivesCallback, CreateDefaultLexer());
+            preprocessor.OnPreprocessorSyntaxError += NoLexerDiagnosticsCallback;
+            BufferedTokenStream stream = new(preprocessor);
+            stream.Fill();
+            Assert.Collection(stream.GetTokens(),
+                token =>
+                {
+                    Assert.Equal(CILLexer.ID, token.Type);
+                    Assert.Equal("my_test", token.Text);
+                },
+                token => Assert.Equal(CILLexer.Eof, token.Type));
+        }
+
+        [Fact]
+        public void Define_DottedNameValue_SubstitutedCorrectly()
+        {
+            string source = """
+                #define ANAME "System.Runtime"
+                ANAME
+                """;
+
+            ITokenSource lexer = CreateLexerForSource(source);
+            PreprocessedTokenSource preprocessor = new PreprocessedTokenSource(lexer, NoIncludeDirectivesCallback, CreateDefaultLexer());
+            preprocessor.OnPreprocessorSyntaxError += NoLexerDiagnosticsCallback;
+            BufferedTokenStream stream = new(preprocessor);
+            stream.Fill();
+            Assert.Collection(stream.GetTokens(),
+                token =>
+                {
+                    Assert.Equal(CILLexer.DOTTEDNAME, token.Type);
+                    Assert.Equal("System.Runtime", token.Text);
+                },
+                token => Assert.Equal(CILLexer.Eof, token.Type));
         }
     }
 }

@@ -243,18 +243,21 @@ namespace System.Runtime
         private static IntPtr InternalAllocWithGCTransition(object? target, object? dependent)
             => _InternalAllocWithGCTransition(ObjectHandleOnStack.Create(ref target), ObjectHandleOnStack.Create(ref dependent));
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DependentHandle_InternalAllocWithGCTransition")]
         private static partial IntPtr _InternalAllocWithGCTransition(ObjectHandleOnStack target, ObjectHandleOnStack dependent);
 
 #if DEBUG
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern object? InternalGetTarget(IntPtr dependentHandle);
+        private static object? InternalGetTarget(IntPtr dependentHandle) => InternalGetTargetWithDebugValidation(dependentHandle);
 #else
         // This optimization is the same that is used in GCHandle in RELEASE mode.
         // This is not used in DEBUG builds as the runtime performs additional checks.
         // The logic below is the inlined copy of ObjectFromHandle in the unmanaged runtime.
         private static unsafe object? InternalGetTarget(IntPtr dependentHandle) => *(object*)dependentHandle;
 #endif
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern object? InternalGetTargetWithDebugValidation(IntPtr dependentHandle);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern object? InternalGetDependent(IntPtr dependentHandle);
@@ -275,6 +278,7 @@ namespace System.Runtime
         private static void InternalFreeWithGCTransition(IntPtr dependentHandle)
             => _InternalFreeWithGCTransition(dependentHandle);
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DependentHandle_InternalFreeWithGCTransition")]
         private static partial void _InternalFreeWithGCTransition(IntPtr dependentHandle);
     }

@@ -133,9 +133,8 @@ AliasSet::AliasSet()
 
 //------------------------------------------------------------------------
 // AliasSet::NodeInfo::NodeInfo:
-//    Computes the alias info for a given node. Note that this does not
-//    include the set of lclVar accesses for a node unless the node is
-//    itself a lclVar access (e.g. a GT_LCL_VAR, GT_STORE_LCL_VAR, etc.).
+//    Computes the alias info for a given node, including its logical local
+//    definitions but not local reads in its operands.
 //
 // Arguments:
 //    compiler - The compiler context.
@@ -145,37 +144,39 @@ AliasSet::NodeInfo::NodeInfo(Compiler* compiler, GenTree* node)
     : m_compiler(compiler)
     , m_node(node)
     , m_flags(0)
-    , m_lclNum(0)
-    , m_lclOffs(0)
+    , m_readLclNum(0)
+    , m_readLclOffs(0)
 {
-    if (node->IsCall())
+    // Local definitions require GTF_ASG; avoid visiting nodes without assignments.
+    if ((node->gtFlags & GTF_ASG) != 0)
     {
-        // For calls having return buffer, update the local number that is written after this call.
-        GenTree* retBufArgNode = compiler->gtCallGetDefinedRetBufLclAddr(node->AsCall());
-        if (retBufArgNode != nullptr)
-        {
+        node->VisitLogicalLocalDefs(compiler, [&](const auto& def) {
             m_flags |= ALIAS_WRITES_LCL_VAR;
-            m_lclNum  = retBufArgNode->AsLclVarCommon()->GetLclNum();
-            m_lclOffs = retBufArgNode->AsLclVarCommon()->GetLclOffs();
-
-            if (compiler->lvaTable[m_lclNum].IsAddressExposed())
+            if (compiler->lvaGetDesc(def.GetLclNum())->IsAddressExposed())
             {
                 m_flags |= ALIAS_WRITES_ADDRESSABLE_LOCATION;
+                return GenTree::VisitResult::Abort;
             }
-        }
+            return GenTree::VisitResult::Continue;
+        });
+    }
 
+    if (node->IsCall())
+    {
         // Calls are treated as reads and writes of addressable locations unless they are known to be pure.
-        if (node->AsCall()->IsPure(compiler))
+        if (!node->AsCall()->IsPure(compiler))
         {
-            m_flags = ALIAS_NONE;
-        }
-        else
-        {
-            m_flags = ALIAS_READS_ADDRESSABLE_LOCATION | ALIAS_WRITES_ADDRESSABLE_LOCATION;
+            m_flags |= ALIAS_READS_ADDRESSABLE_LOCATION | ALIAS_WRITES_ADDRESSABLE_LOCATION;
         }
         return;
     }
-    else if (node->OperIsAtomicOp())
+
+    if (IsLclVarWrite())
+    {
+        return;
+    }
+
+    if (node->OperIsAtomicOp())
     {
         // Atomic operations both read and write addressable locations.
         m_flags = ALIAS_READS_ADDRESSABLE_LOCATION | ALIAS_WRITES_ADDRESSABLE_LOCATION;
@@ -252,8 +253,8 @@ AliasSet::NodeInfo::NodeInfo(Compiler* compiler, GenTree* node)
         if (isLclVarAccess)
         {
             m_flags |= ALIAS_READS_LCL_VAR;
-            m_lclNum  = lclNum;
-            m_lclOffs = lclOffs;
+            m_readLclNum  = lclNum;
+            m_readLclOffs = lclOffs;
         }
     }
     else
@@ -266,8 +267,6 @@ AliasSet::NodeInfo::NodeInfo(Compiler* compiler, GenTree* node)
         if (isLclVarAccess)
         {
             m_flags |= ALIAS_WRITES_LCL_VAR;
-            m_lclNum  = lclNum;
-            m_lclOffs = lclOffs;
         }
     }
 }
@@ -313,24 +312,28 @@ void AliasSet::AddNode(Compiler* compiler, GenTree* node)
     }
     if (nodeInfo.IsLclVarRead())
     {
-        m_lclVarReads.Add(compiler, nodeInfo.LclNum());
+        m_lclVarReads.Add(compiler, nodeInfo.ReadLclNum());
     }
     if (nodeInfo.IsLclVarWrite())
     {
-        m_lclVarWrites.Add(compiler, nodeInfo.LclNum());
+        nodeInfo.VisitLocalWrites([&](const auto& def) {
+            unsigned lclNum = def.GetLclNum();
+            m_lclVarWrites.Add(compiler, lclNum);
 
-        LclVarDsc* dsc = compiler->lvaGetDesc(nodeInfo.LclNum());
-        if (dsc->lvIsStructField)
-        {
-            m_lclVarWrites.Add(compiler, dsc->lvParentLcl);
-        }
-        else if (dsc->lvPromoted)
-        {
-            for (unsigned i = 0; i < dsc->lvFieldCnt; i++)
+            LclVarDsc* dsc = compiler->lvaGetDesc(lclNum);
+            if (dsc->lvIsStructField)
             {
-                m_lclVarWrites.Add(compiler, dsc->lvFieldLclStart + i);
+                m_lclVarWrites.Add(compiler, dsc->lvParentLcl);
             }
-        }
+            else if (node->OperIsIndir() && dsc->lvPromoted)
+            {
+                for (unsigned i = 0; i < dsc->lvFieldCnt; i++)
+                {
+                    m_lclVarWrites.Add(compiler, dsc->lvFieldLclStart + i);
+                }
+            }
+            return GenTree::VisitResult::Continue;
+        });
     }
 }
 
@@ -430,13 +433,47 @@ bool AliasSet::InterferesWith(const NodeInfo& other) const
     }
 
     // If the set writes a local var accessed by the node, they interfere.
-    if ((other.IsLclVarRead() || other.IsLclVarWrite()) && m_lclVarWrites.Contains(other.LclNum()))
+    if (other.IsLclVarRead() && m_lclVarWrites.Contains(other.ReadLclNum()))
     {
         return true;
     }
 
-    // If the set reads a local var written by the node, they interfere.
-    return other.IsLclVarWrite() && m_lclVarReads.Contains(other.LclNum());
+    // If the set reads or writes a local var written by the node, they interfere.
+    if (other.IsLclVarWrite())
+    {
+        return other.VisitLocalWrites([&](const auto& def) {
+            auto interferesWithLocal = [&](unsigned lclNum) {
+                return m_lclVarWrites.Contains(lclNum) || m_lclVarReads.Contains(lclNum);
+            };
+
+            unsigned lclNum = def.GetLclNum();
+            if (interferesWithLocal(lclNum))
+            {
+                return GenTree::VisitResult::Abort;
+            }
+
+            LclVarDsc* dsc = other.TheCompiler()->lvaGetDesc(lclNum);
+            if (dsc->lvIsStructField)
+            {
+                if (interferesWithLocal(dsc->lvParentLcl))
+                {
+                    return GenTree::VisitResult::Abort;
+                }
+            }
+            else if (other.Node()->OperIsIndir() && dsc->lvPromoted)
+            {
+                for (unsigned i = 0; i < dsc->lvFieldCnt; i++)
+                {
+                    if (interferesWithLocal(dsc->lvFieldLclStart + i))
+                    {
+                        return GenTree::VisitResult::Abort;
+                    }
+                }
+            }
+            return GenTree::VisitResult::Continue;
+        }) == GenTree::VisitResult::Abort;
+    }
+    return false;
 }
 
 //------------------------------------------------------------------------

@@ -19,8 +19,6 @@ struct hostpolicy_init_t
     fx_definition_vector_t fx_definitions;
     pal::string_t tfm;
     host_mode_t host_mode;
-    bool patch_roll_forward;
-    bool prerelease_roll_forward;
     bool is_framework_dependent;
     pal::string_t host_command;
     host_startup_info_t host_info;

@@ -16,7 +16,7 @@ namespace System.Runtime.InteropServices
 {
     public unsafe partial interface IDynamicInterfaceCastable
     {
-        private static readonly object s_thunkPoolHeap = RuntimeAugments.CreateThunksHeap(RuntimeImports.GetInteropCommonStubAddress());
+        private static readonly object s_thunkPoolHeap = RuntimeAugments.CreateThunksHeap();
 
         internal static nint GetDynamicInterfaceImplementation(IDynamicInterfaceCastable instance, MethodTable* interfaceType, ushort slot)
         {

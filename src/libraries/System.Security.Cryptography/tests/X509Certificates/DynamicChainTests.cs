@@ -1515,5 +1515,55 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 }
             }
         }
+
+        [Theory]
+        [InlineData(X509RevocationMode.NoCheck)]
+        [InlineData(X509RevocationMode.Online)]
+        public static void BuildChainForExpiredSelfSignedCertificate(X509RevocationMode revocationMode)
+        {
+            using (RSA key = RSA.Create())
+            {
+                CertificateRequest request = new CertificateRequest(
+                    "CN=Expired Self-Issued",
+                    key,
+                    HashAlgorithmName.SHA256,
+                    RSASignaturePadding.Pkcs1);
+
+                request.CertificateExtensions.Add(BasicConstraintsCA);
+
+                DateTimeOffset now = DateTimeOffset.UtcNow;
+
+                // The certificate is already expired at verification time.
+                using (X509Certificate2 cert = request.CreateSelfSigned(now.AddDays(-30), now.AddDays(-10)))
+                using (ChainHolder chainHolder = new ChainHolder())
+                {
+                    X509Chain chain = chainHolder.Chain;
+                    chain.ChainPolicy.VerificationFlags = X509VerificationFlags.IgnoreNotTimeValid;
+                    chain.ChainPolicy.RevocationMode = revocationMode;
+                    chain.ChainPolicy.VerificationTime = now.UtcDateTime;
+                    chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+                    chain.ChainPolicy.CustomTrustStore.Add(cert);
+
+                    bool valid = chain.Build(cert);
+                    X509ChainStatusFlags flags = chain.AllStatusFlags();
+
+                    Assert.True(valid, $"chain.Build; status flags: {flags}");
+                    Assert.Equal(1, chain.ChainElements.Count);
+
+                    // The certificate is trusted, so it must not be reported as an untrusted
+                    // root or a partial chain, and its (ignored) expiration must remain the
+                    // only reported problem.
+                    Assert.False(
+                        flags.HasFlag(X509ChainStatusFlags.UntrustedRoot),
+                        $"UntrustedRoot should not be set; status flags: {flags}");
+                    Assert.False(
+                        flags.HasFlag(X509ChainStatusFlags.PartialChain),
+                        $"PartialChain should not be set; status flags: {flags}");
+                    Assert.True(
+                        flags.HasFlag(X509ChainStatusFlags.NotTimeValid),
+                        $"NotTimeValid should be set; status flags: {flags}");
+                }
+            }
+        }
     }
 }

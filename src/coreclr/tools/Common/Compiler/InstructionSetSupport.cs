@@ -20,17 +20,18 @@ namespace ILCompiler
         private readonly InstructionSetFlags _nonSpecifiableInstructionSets;
 
         public InstructionSetSupport(InstructionSetFlags supportedInstructionSets, InstructionSetFlags unsupportedInstructionSets, TargetArchitecture architecture) :
-            this(supportedInstructionSets, unsupportedInstructionSets, supportedInstructionSets, default(InstructionSetFlags), architecture)
+            this(supportedInstructionSets, unsupportedInstructionSets, supportedInstructionSets, default(InstructionSetFlags), architecture, isVectorTOptimistic: false)
         {
         }
 
-        public InstructionSetSupport(InstructionSetFlags supportedInstructionSets, InstructionSetFlags unsupportedInstructionSets, InstructionSetFlags optimisticInstructionSets, InstructionSetFlags nonSpecifiableInstructionSets, TargetArchitecture architecture)
+        public InstructionSetSupport(InstructionSetFlags supportedInstructionSets, InstructionSetFlags unsupportedInstructionSets, InstructionSetFlags optimisticInstructionSets, InstructionSetFlags nonSpecifiableInstructionSets, TargetArchitecture architecture, bool isVectorTOptimistic)
         {
             _supportedInstructionSets = supportedInstructionSets;
             _unsupportedInstructionSets = unsupportedInstructionSets;
             _optimisticInstructionSets = optimisticInstructionSets;
             _targetArchitecture = architecture;
             _nonSpecifiableInstructionSets = nonSpecifiableInstructionSets;
+            IsVectorTOptimistic = isVectorTOptimistic;
         }
 
         public bool IsInstructionSetSupported(InstructionSet instructionSet)
@@ -54,6 +55,8 @@ namespace ILCompiler
         public InstructionSetFlags NonSpecifiableFlags => _nonSpecifiableInstructionSets;
 
         public TargetArchitecture Architecture => _targetArchitecture;
+
+        public bool IsVectorTOptimistic { get; }
 
         public static string GetHardwareIntrinsicId(TargetArchitecture architecture, TypeDesc potentialTypeDesc)
         {
@@ -97,8 +100,8 @@ namespace ILCompiler
             }
             else if (architecture is TargetArchitecture.Wasm32)
             {
-                // TODO-WASM: return the correct intrinsic id once xplat intrinsics are implemented.
-                return "";
+                if (potentialType.Namespace != "System.Runtime.Intrinsics.Wasm"u8)
+                    return "";
             }
             else
             {

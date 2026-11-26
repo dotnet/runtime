@@ -344,8 +344,12 @@ class InlineResult
 public:
     // Construct a new InlineResult to help evaluate a
     // particular call for inlining.
-    InlineResult(
-        Compiler* compiler, GenTreeCall* call, Statement* stmt, const char* description, bool doNotReport = false);
+    InlineResult(Compiler*             compiler,
+                 GenTreeCall*          call,
+                 Statement*            stmt,
+                 const char*           description,
+                 bool                  doNotReport = false,
+                 CORINFO_METHOD_HANDLE callee      = nullptr);
 
     // Construct a new InlineResult to evaluate a particular
     // method to see if it is inlineable.
