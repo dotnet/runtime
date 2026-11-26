@@ -15,6 +15,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma hdrstop
 #endif
 
+#include "sideeffects.h"
 #include "allocacheck.h" // for alloca
 
 //-------------------------------------------------------------
@@ -731,12 +732,44 @@ void CallArg::Dump(Compiler* comp)
 }
 #endif
 
+// A late argument can move past the helper and other arguments evaluated into
+// early temps. Check the remaining arguments in IL order, including their inputs.
+static bool CanDelayCallArgument(Compiler* comp, CallArg& earlier, unsigned& budget)
+{
+    SideEffectSet earlierEffects;
+    if (!earlierEffects.TryAddTree(comp, earlier.GetEarlyNode(), budget))
+    {
+        return false;
+    }
+
+    for (CallArg* arg = earlier.GetNext(); arg != nullptr; arg = arg->GetNext())
+    {
+        if ((budget == 0) || (arg->GetLateNode() != nullptr))
+        {
+            return false;
+        }
+        --budget;
+        GenTree* crossed = arg->GetEarlyNode();
+        if ((crossed == nullptr) || ((crossed->gtFlags & GTF_ALL_EFFECT) == 0))
+        {
+            continue;
+        }
+        SideEffectSet crossedEffects;
+        if (!crossedEffects.TryAddTree(comp, crossed, budget) || earlierEffects.InterferesWith(crossedEffects, true))
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
 //------------------------------------------------------------------------
 // ArgsComplete: Make final decisions on which arguments to evaluate into temporaries.
 //
 void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
 {
-    unsigned argCount = CountArgs();
+    unsigned argCount     = CountArgs();
+    unsigned effectBudget = 64;
 
     // Previous argument with GTF_EXCEPT
     GenTree* prevExceptionTree = nullptr;
@@ -869,6 +902,11 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
                 }
             }
 
+            // Even a pure helper needs its own ABI temp. Consult interference only
+            // when a register argument would otherwise be forced early by this call.
+            bool canCheckEffects = canEvalToTemp && comp->fgGlobalMorph && comp->opts.OptimizationEnabled() &&
+                                   argx->IsHelperCall() && argx->AsCall()->IsPure(comp) &&
+                                   !argx->AsCall()->HasSideEffects(comp, false);
             // All previous arguments may need to be evaluated into temps
             for (CallArg& prevArg : Args())
             {
@@ -888,7 +926,15 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
 
                 // For all previous arguments, if they have any GTF_ALL_EFFECT
                 //  we require that they be evaluated into a temp
-                if ((prevArg.GetEarlyNode() != nullptr) && ((prevArg.GetEarlyNode()->gtFlags & GTF_ALL_EFFECT) != 0))
+                GenTree* prev      = prevArg.GetEarlyNode();
+                bool     needsTemp = (prev != nullptr) && ((prev->gtFlags & GTF_ALL_EFFECT) != 0);
+                if (needsTemp && !prevArg.m_needTmp && canCheckEffects && effectBudget != 0 &&
+                    prevArg.AbiInfo.HasExactlyOneRegisterSegment() && !prev->TypeIs(TYP_STRUCT) &&
+                    ((prev->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) == 0))
+                {
+                    needsTemp = !CanDelayCallArgument(comp, prevArg, effectBudget);
+                }
+                if (needsTemp)
                 {
                     SetNeedsTemp(&prevArg);
                 }
@@ -1991,6 +2037,86 @@ unsigned CallArgs::CountUserArgs()
     return numArgs;
 }
 
+// The local whose null value would fault at this access. Restrict the address to
+// a local or a small field offset from it, with no intervening computation.
+unsigned Compiler::gtImplicitNullCheckLocal(GenTree* tree)
+{
+    if (!tree->OperIs(GT_IND, GT_NULLCHECK) || ((tree->gtFlags & GTF_EXCEPT) == 0))
+    {
+        return BAD_VAR_NUM;
+    }
+    GenTree* addr = tree->gtGetOp1();
+    if (addr->OperIs(GT_FIELD_ADDR) && addr->AsFieldAddr()->IsInstance() &&
+        !fgIsBigOffset(addr->AsFieldAddr()->gtFldOffset))
+    {
+        addr = addr->AsFieldAddr()->GetFldObj();
+    }
+    return addr->OperIs(GT_LCL_VAR) ? addr->AsLclVar()->GetLclNum() : BAD_VAR_NUM;
+}
+
+// Prepare an adjacent hidden lookup at the receiver's evaluation point. Keep its
+// setup separate from argument placement so the other arguments retain their IL order.
+GenTree* Compiler::fgPrepareEarlyLookup(GenTreeCall* call)
+{
+    if (call->gtArgs.IsEmpty())
+    {
+        return nullptr;
+    }
+    CallArg* first = &*call->gtArgs.Args().begin();
+    CallArg* inst  = first->GetNext();
+    if (first->GetWellKnownArg() != WellKnownArg::ThisPointer || inst == nullptr ||
+        inst->GetWellKnownArg() != WellKnownArg::InstParam || !first->AbiInfo.HasExactlyOneRegisterSegment() ||
+        !inst->AbiInfo.HasExactlyOneRegisterSegment())
+    {
+        return nullptr;
+    }
+    GenTree* receiver = first->GetEarlyNode();
+    GenTree* token    = inst->GetEarlyNode();
+    if ((token == nullptr) || (receiver == nullptr) || !token->OperIs(GT_RUNTIMELOOKUP) ||
+        token->AsRuntimeLookup()->gtDeferredLookup == nullptr || ((receiver->gtFlags & GTF_ALL_EFFECT) == 0) ||
+        ((receiver->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) != 0))
+    {
+        return nullptr;
+    }
+
+    // Both dereferences are still faulting here. If their only possible fault is
+    // on the same object local, the method-table load can supply the receiver's check.
+    GenTree* context      = token->gtGetOp1();
+    unsigned checkedLocal = gtImplicitNullCheckLocal(receiver);
+    bool     sameCheck =
+        checkedLocal != BAD_VAR_NUM && receiver->OperIs(GT_IND) && receiver->TypeIs(TYP_REF) &&
+        context->OperIs(GT_IND) && context->gtGetOp1()->OperIs(GT_LCL_VAR) && context->gtGetOp1()->TypeIs(TYP_REF) &&
+        (context->gtGetOp1()->gtFlags & GTF_VAR_CONTEXT) && (context->gtFlags & GTF_IND_INVARIANT) &&
+        gtImplicitNullCheckLocal(context) == checkedLocal &&
+        ((context->gtFlags | receiver->gtFlags) & (GTF_ORDER_SIDEEFF | GTF_IND_MUST_PRESERVE_FLAGS)) == 0 &&
+        !lvaGetDesc(checkedLocal)->IsAddressExposed();
+    if (!sameCheck && !context->OperIs(GT_LCL_VAR))
+    {
+        return nullptr;
+    }
+    GenTree* lookup = fgMaterializeDeferredLookup(token->AsRuntimeLookup());
+    inst->SetEarlyNode(lookup);
+    if (!lookup->IsHelperCall() || !lookup->AsCall()->IsRuntimeLookupHelperCall(this) ||
+        lookup->AsCall()->HasSideEffects(this, false))
+    {
+        return nullptr;
+    }
+    if (!sameCheck)
+    {
+        unsigned      budget = 16;
+        SideEffectSet receiverEffects;
+        SideEffectSet lookupEffects;
+        if (!receiverEffects.TryAddTree(this, receiver, budget) || !lookupEffects.TryAddTree(this, lookup, budget) ||
+            receiverEffects.InterferesWith(lookupEffects, true))
+        {
+            return nullptr;
+        }
+    }
+    TempInfo temp = fgMakeTemp(lookup);
+    inst->SetEarlyNode(temp.load);
+    return fgMorphTree(temp.store);
+}
+
 //------------------------------------------------------------------------
 // fgMorphArgs: Walk and transform (morph) the arguments of a call
 //
@@ -2037,6 +2163,9 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
 
     call->gtArgs.AddFinalArgsAndDetermineABIInfo(this, call);
     JITDUMP("%sMorphing args for %d.%s:\n", (reMorphing) ? "Re" : "", call->gtTreeID, GenTree::OpName(call->gtOper));
+
+    GenTree* firstSetup =
+        (!reMorphing && fgGlobalMorph && opts.OptimizationEnabled()) ? fgPrepareEarlyLookup(call) : nullptr;
 
     // If we are remorphing, process the late arguments (which were determined by a previous caller).
     if (reMorphing)
@@ -2152,6 +2281,19 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
     {
         // Do the 'defer or eval to temp' analysis.
         call->gtArgs.EvalArgsToTemps(this, call);
+        if (firstSetup != nullptr)
+        {
+            CallArg* first = &*call->gtArgs.Args().begin();
+            assert(first->GetLateNode() != nullptr);
+            GenTree* early = first->GetEarlyNode();
+            if (early != nullptr)
+            {
+                firstSetup = gtNewOperNode(GT_COMMA, early->TypeGet(), firstSetup, early);
+                fgMorphTreeDone(firstSetup);
+            }
+            first->SetEarlyNode(firstSetup);
+            call->gtFlags |= firstSetup->gtFlags & GTF_ALL_EFFECT;
+        }
     }
 
 #ifdef DEBUG

@@ -2367,6 +2367,54 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
     iciStmt->SetRootNode(gtNewNothingNode());
 }
 
+// Does completing this expression require a non-null value for the given local?
+// The caller excludes writes and calls so that the local cannot change in the expression.
+static bool DereferencesLocal(Compiler* compiler, GenTree* tree, unsigned lclNum, unsigned& budget)
+{
+    if ((budget == 0) || ((tree->gtFlags & GTF_EXCEPT) == 0) ||
+        tree->OperIs(GT_QMARK, GT_COLON, GT_SELECT, GT_RET_EXPR))
+    {
+        return false;
+    }
+    --budget;
+    if (compiler->gtImplicitNullCheckLocal(tree) == lclNum)
+    {
+        return true;
+    }
+    for (GenTree* operand : tree->Operands())
+    {
+        if (DereferencesLocal(compiler, operand, lclNum, budget))
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+// An unused method-table load from this only needs its null check. If the
+// preceding argument evaluation already checked that local, appending another
+// statement here can separate a single-use temp from its consumer.
+static bool PreviousArgumentChecksContext(Compiler* compiler, Statement* previous, GenTree* effects)
+{
+    if (!effects->OperIs(GT_IND) || ((effects->gtFlags & GTF_IND_INVARIANT) == 0) || effects->AsIndir()->IsVolatile())
+    {
+        return false;
+    }
+    GenTree* obj   = effects->gtGetOp1();
+    GenTree* store = previous->GetRootNode();
+    if (!obj->OperIs(GT_LCL_VAR) || !obj->TypeIs(TYP_REF) || ((obj->gtFlags & GTF_VAR_CONTEXT) == 0) ||
+        !store->OperIs(GT_STORE_LCL_VAR))
+    {
+        return false;
+    }
+    unsigned   num    = obj->AsLclVar()->GetLclNum();
+    LclVarDsc* local  = compiler->lvaGetDesc(num);
+    GenTree*   value  = store->AsLclVarCommon()->Data();
+    unsigned   budget = 16;
+    return (store->AsLclVarCommon()->GetLclNum() != num) && !local->lvHasLdAddrOp && !local->IsAddressExposed() &&
+           ((value->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) == 0) && DereferencesLocal(compiler, value, num, budget);
+}
+
 //------------------------------------------------------------------------
 // fgInsertInlineeArgument: wire up the given argument from the callsite with the inlinee
 //
@@ -2517,6 +2565,11 @@ void Compiler::fgInsertInlineeArgument(
                     GenTree* effects = nullptr;
                     gtExtractSideEffList(argNode, &effects, GTF_OBS_EFFECT);
                     if (effects == nullptr)
+                    {
+                        return;
+                    }
+                    if ((arg->GetWellKnownArg() == WellKnownArg::InstParam) &&
+                        PreviousArgumentChecksContext(this, *afterStmt, effects))
                     {
                         return;
                     }

@@ -27,7 +27,7 @@ public:
 
     inline bool IsEmpty() const
     {
-        return !m_hasAnyLcl || !m_hasBitVector || !m_bitVector->anySet();
+        return !m_hasAnyLcl || (m_hasBitVector && !m_bitVector->anySet());
     }
 
     void Add(Compiler* compiler, unsigned lclNum);
@@ -195,6 +195,7 @@ public:
     }
 
     void AddNode(Compiler* compiler, GenTree* node);
+    void AddNodeInfo(Compiler* compiler, GenTree* node);
     bool InterferesWith(const AliasSet& other) const;
     bool InterferesWith(const NodeInfo& node) const;
     bool WritesLocal(unsigned lclNum) const;
@@ -215,8 +216,8 @@ public:
 class SideEffectSet final
 {
     unsigned          m_sideEffectFlags; // A mask of GTF_* flags that represents exceptional and barrier side effects.
-    ExceptionSetFlags m_preciseExceptions; // Set representing exceptions that may be thrown
-    AliasSet          m_aliasSet;          // An AliasSet that represents read and write side effects.
+    ExceptionSetFlags m_preciseExceptions = ExceptionSetFlags::None; // Set representing exceptions that may be thrown
+    AliasSet          m_aliasSet; // An AliasSet that represents read and write side effects.
 
     template <typename TOtherAliasInfo>
     bool InterferesWith(unsigned               otherSideEffectFlags,
@@ -229,6 +230,7 @@ public:
     SideEffectSet(Compiler* compiler, GenTree* node);
 
     void AddNode(Compiler* compiler, GenTree* node);
+    bool TryAddTree(Compiler* compiler, GenTree* tree, unsigned& budget);
     bool InterferesWith(const SideEffectSet& other, bool strict) const;
     bool InterferesWith(Compiler* compiler, GenTree* node, bool strict) const;
     void Clear();

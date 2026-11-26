@@ -3984,6 +3984,7 @@ public:
     }
 
     GenTree* gtNewNullCheck(GenTree* addr);
+    unsigned gtImplicitNullCheckLocal(GenTree* tree);
 
     var_types gtTypeForNullCheck(GenTree* tree);
     void gtChangeOperToNullCheck(GenTree* tree);
@@ -6072,6 +6073,7 @@ private:
     MethodTypeArgument* impForwardedTypeArgs(const CORINFO_RESOLVED_TOKEN& token, unsigned arity, CORINFO_METHOD_HANDLE declaringMethod);
     bool getDevirtualizedMethodLookup(CORINFO_RESOLVED_TOKEN* target, CORINFO_METHOD_HANDLE caller, CORINFO_METHOD_HANDLE method,
                                       CORINFO_CONTEXT_HANDLE context, CORINFO_LOOKUP* result);
+    GenTree* fgPrepareEarlyLookup(GenTreeCall* call);
     GenTree* fgMaterializeDeferredLookup(GenTreeRuntimeLookup* tree);
     void impMarkInlineCandidate(GenTree*               call,
                                 CORINFO_CONTEXT_HANDLE exactContextHnd,

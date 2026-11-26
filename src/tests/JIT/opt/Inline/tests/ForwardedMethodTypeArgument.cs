@@ -321,6 +321,56 @@ public class ForwardedMethodTypeArgument
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static bool CompareChecks<T, U>() => DeferredChecks<T[]>.SameType<U[]>();
 
+    private struct IndexedValue<T>
+    {
+        internal T Value;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        internal T Item(int index) => Value;
+    }
+
+    private sealed class FieldReceiver<T>
+    {
+        internal IndexedValue<T> Field;
+        internal KeyValuePair<T, int>[] Pairs;
+        internal int Index;
+
+        internal FieldReceiver<T> Target;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private int Read<U>(int argument) => Index + argument;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private int Replace(FieldReceiver<T> next)
+        {
+            Target = next;
+            return 1;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        internal int ReadThenReplace<U>(FieldReceiver<T> next) => Target.Read<U>(Replace(next));
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        internal int ReadWithContext(bool fail, ref int evaluations) =>
+            Target.Read<T[]>(EvaluateIndex(fail, ref evaluations));
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        internal T Key() => Pairs[Index].Key;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int EvaluateIndex(bool fail, ref int evaluations)
+    {
+        evaluations++;
+        if (fail)
+            throw new InvalidOperationException();
+        return 0;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static T ReadField<T>(FieldReceiver<T> receiver, bool fail, ref int evaluations) =>
+        receiver.Field.Item(EvaluateIndex(fail, ref evaluations));
+
     private sealed class Box<T>
     {
         public Box() => s_constructions++;
@@ -642,6 +692,29 @@ public class ForwardedMethodTypeArgument
         Assert.Throws<InvalidCastException>(() => DiscardCast<string>(new List<object[]>()));
         Assert.True(CompareChecks<string, string>());
         Assert.False(CompareChecks<string, object>());
+        var fields = new FieldReceiver<string> { Field = new IndexedValue<string> { Value = "field" } };
+        int indices = 0;
+        Assert.Equal("field", ReadField(fields, false, ref indices));
+        Assert.Throws<InvalidOperationException>(() => ReadField(fields, true, ref indices));
+        Assert.Throws<NullReferenceException>(() => ReadField<string>(null, true, ref indices));
+        Assert.Equal(2, indices);
+        var next = new FieldReceiver<string> { Index = 20 };
+        fields.Target = new FieldReceiver<string> { Index = 10 };
+        Assert.Equal(11, fields.ReadThenReplace<object>(next));
+        Assert.Equal(21, fields.ReadThenReplace<string>(null));
+        Assert.Throws<NullReferenceException>(() => fields.ReadThenReplace<object>(next));
+        Assert.Same(next, fields.Target);
+        int contextEvaluations = 0;
+        Assert.Equal(20, fields.ReadWithContext(false, ref contextEvaluations));
+        fields.Target = null;
+        Assert.Throws<InvalidOperationException>(() => fields.ReadWithContext(true, ref contextEvaluations));
+        Assert.Throws<NullReferenceException>(() => fields.ReadWithContext(false, ref contextEvaluations));
+        Assert.Equal(3, contextEvaluations);
+        Assert.Throws<NullReferenceException>(() => fields.Key());
+        fields.Pairs = new[] { new KeyValuePair<string, int>("key", 1) };
+        Assert.Equal("key", fields.Key());
+        fields.Index = 1;
+        Assert.Throws<IndexOutOfRangeException>(() => fields.Key());
         Assert.True(SharedReturnSpill<string>());
     }
 }
