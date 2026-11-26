@@ -11,6 +11,7 @@ using System.Runtime.Loader;
 using System.Runtime.Serialization;
 using System.Runtime.Versioning;
 using System.Threading;
+using Internal.Runtime.CompilerHelpers;
 
 namespace System
 {
@@ -1784,28 +1785,30 @@ namespace System
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeFieldHandle_GetEnCFieldAddr")]
         private static partial void GetEnCFieldAddr(ObjectHandleOnStack tgt, void* pFD, ByteRefOnStack fieldAddr);
 
-        // The address is returned as a byref so that the GC tracks it: an EnC instance field lives in a helper
-        // object on the GC heap.
-        private static unsafe ref byte GetEnCFieldAddr(object? tgt, void* pFD)
-        {
-            ByteRef fieldAddr = default;
-            GetEnCFieldAddr(ObjectHandleOnStack.Create(ref tgt), pFD, ByteRefOnStack.Create(ref fieldAddr));
-            if (Unsafe.IsNullRef(ref fieldAddr.Value))
-                throw new NullReferenceException();
-            return ref fieldAddr.Value;
-        }
-
         // implementation of CORINFO_HELP_GETFIELDADDR
         [StackTraceHidden]
         [DebuggerStepThrough]
         [DebuggerHidden]
-        internal static unsafe ref byte GetFieldAddr(object tgt, void* pFD) => ref GetEnCFieldAddr(tgt, pFD);
+        internal static unsafe ref byte GetFieldAddr(object tgt, void* pFD)
+        {
+            if (tgt == null)
+                ThrowHelpers.ThrowNullReferenceException();
+            ByteRef fieldAddr = default;
+            GetEnCFieldAddr(ObjectHandleOnStack.Create(ref tgt), pFD, ByteRefOnStack.Create(ref fieldAddr));
+            return ref fieldAddr.Value;
+        }
 
         // implementation of CORINFO_HELP_GETSTATICFIELDADDR
         [StackTraceHidden]
         [DebuggerStepThrough]
         [DebuggerHidden]
-        internal static unsafe ref byte GetStaticFieldAddr(void* pFD) => ref GetEnCFieldAddr(null, pFD);
+        internal static unsafe ref byte GetStaticFieldAddr(void* pFD)
+        {
+            object? nullTarget = null;
+            ByteRef fieldAddr = default;
+            GetEnCFieldAddr(ObjectHandleOnStack.Create(ref nullTarget), pFD, ByteRefOnStack.Create(ref fieldAddr));
+            return ref fieldAddr.Value;
+        }
     }
 
     public unsafe partial struct ModuleHandle : IEquatable<ModuleHandle>
