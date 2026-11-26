@@ -19845,6 +19845,17 @@ bool Compiler::gtSplitTree(BasicBlock* block,
                 return;
             }
 
+            // A fixed offset from a local's address is also invariant. Spilling
+            // it before local morph would make the local appear address-exposed.
+            if ((*use)->OperIs(GT_FIELD_ADDR))
+            {
+                GenTreeFieldAddr* field = (*use)->AsFieldAddr();
+                if (field->IsOffsetKnown() && field->IsInstance() && field->GetFldObj()->OperIs(GT_LCL_ADDR))
+                {
+                    return;
+                }
+            }
+
             if ((*use)->OperIs(GT_LCL_VAR) && !m_compiler->lvaGetDesc((*use)->AsLclVarCommon())->IsAddressExposed() &&
                 !(m_early && m_compiler->lvaGetDesc((*use)->AsLclVarCommon())->lvHasLdAddrOp))
             {
