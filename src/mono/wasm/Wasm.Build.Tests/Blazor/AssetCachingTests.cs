@@ -86,11 +86,9 @@ public class AssetCachingTests : BlazorWasmTestBase
             ExtraMSBuildArgs: CacheTestPublishArgs);
         (string projectDir, string buildOutput) = BlazorPublish(project, Configuration.Release, publishOptions);
         string runtimePack = Assert.IsType<string>(ProjectProviderBase.TryGetRuntimePackDirFromBuildOutput(buildOutput));
-        string packName = s_buildEnv.IsCoreClrRuntime
-            ? "Microsoft.NETCore.App.Runtime.browser-wasm"
-            : "Microsoft.NETCore.App.Runtime.Mono.browser-wasm";
+        const string RuntimePackName = "Microsoft.NETCore.App.Runtime.browser-wasm";
         string packVersion = s_buildEnv.GetRuntimePackVersion(DefaultTargetFramework);
-        Assert.EndsWith(Path.Combine(packName, packVersion), runtimePack, StringComparison.OrdinalIgnoreCase);
+        Assert.EndsWith(Path.Combine(RuntimePackName, packVersion), runtimePack, StringComparison.OrdinalIgnoreCase);
         string expectedLoaderPath = Path.Combine(s_buildEnv.GetRuntimeNativeDir(DefaultTargetFramework), "dotnet.js");
         string resolvedLoaderPath = Path.Combine(runtimePack, "runtimes", "browser-wasm", "native", "dotnet.js");
         byte[] expectedLoaderHash;
@@ -103,8 +101,8 @@ public class AssetCachingTests : BlazorWasmTestBase
         }
         else
         {
-            _testOutput.WriteLine($"No independent SDK-installed loader is available; verifying '{packName}' against the local package.");
-            using var package = ZipFile.OpenRead(Path.Combine(s_buildEnv.BuiltNuGetsPath, $"{packName}.{packVersion}.nupkg"));
+            _testOutput.WriteLine($"No independent SDK-installed loader is available; verifying '{RuntimePackName}' against the local package.");
+            using var package = ZipFile.OpenRead(Path.Combine(s_buildEnv.BuiltNuGetsPath, $"{RuntimePackName}.{packVersion}.nupkg"));
             var loader = package.GetEntry("runtimes/browser-wasm/native/dotnet.js");
             Assert.NotNull(loader);
             using Stream expectedLoader = loader.Open();

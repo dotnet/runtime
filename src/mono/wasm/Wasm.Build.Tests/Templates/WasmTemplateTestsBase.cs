@@ -163,15 +163,8 @@ public class WasmTemplateTestsBase : BuildTestBase
 
     protected static void AddCoreClrProjectProperties(ref string extraProperties, ref string extraItems, ref string insertAtEnd)
     {
-        if (!s_buildEnv.IsCoreClrRuntime)
-            return;
-
         string runtimePackVersion = s_buildEnv.GetRuntimePackVersion(DefaultTargetFramework);
 
-        extraProperties +=
-        """
-            <UseMonoRuntime>false</UseMonoRuntime>
-        """;
         foreach (string targetFramework in new[] { DefaultTargetFramework, DefaultTargetFrameworkForBlazorTemplate }.Distinct())
         {
             extraItems +=

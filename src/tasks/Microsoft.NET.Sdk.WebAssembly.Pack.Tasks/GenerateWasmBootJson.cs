@@ -110,11 +110,21 @@ public class GenerateWasmBootJson : Task
 
     public override bool Execute()
     {
-        var entryAssemblyName = AssemblyName.GetAssemblyName(AssemblyPath).Name;
-
         try
         {
-            WriteBootConfig(entryAssemblyName);
+            bool targetingNet12OrLater = IsTargeting120OrLater();
+            bool isMonoRuntime = string.IsNullOrEmpty(UseMonoRuntime)
+                ? !targetingNet12OrLater
+                : string.Equals(UseMonoRuntime, "true", StringComparison.OrdinalIgnoreCase);
+
+            if (isMonoRuntime && targetingNet12OrLater)
+            {
+                Log.LogError("Mono runtime is no longer supported when targeting .NET 12 or later.");
+                return false;
+            }
+
+            var entryAssemblyName = AssemblyName.GetAssemblyName(AssemblyPath).Name;
+            WriteBootConfig(entryAssemblyName, isMonoRuntime);
         }
         catch (Exception ex)
         {
@@ -124,16 +134,8 @@ public class GenerateWasmBootJson : Task
         return !Log.HasLoggedErrors;
     }
 
-    private void WriteBootConfig(string entryAssemblyName)
+    private void WriteBootConfig(string entryAssemblyName, bool isMonoRuntime)
     {
-        bool isMonoRuntime = string.IsNullOrEmpty(UseMonoRuntime) || string.Equals(UseMonoRuntime, "true", StringComparison.OrdinalIgnoreCase);
-
-        if (isMonoRuntime && IsTargeting120OrLater())
-        {
-            Log.LogError("Mono runtime is not supported for target framework 12.0 or later.");
-            return;
-        }
-
         var helper = new BootJsonBuilderHelper(Log, DebugLevel, IsMultiThreaded, IsPublish, ParsedTargetFrameworkVersion, isMonoRuntime);
 
         // ReadyToRun webcil-in-wasm images carry payload/table sizes that the loader needs before

@@ -183,7 +183,7 @@ public class DebugLevelTests : WasmTemplateTestsBase
         }
     }
 
-    [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+    [Theory]
     [InlineData(false)]
     [InlineData(true)]
     [TestCategory("no-workload")]

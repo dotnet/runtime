@@ -30,7 +30,7 @@ namespace Wasm.Build.Tests
         public Task ProjectWithNativeReference_AOT(Configuration config, bool aot) =>
             ProjectWithNativeReferenceCore(config, aot);
 
-        [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+        [Theory]
         [InlineData(Configuration.Release)]
         [TestCategory("native"), TestCategory("coreclr"), TestCategory("workload"), TestCategory("wasm-opt")]
         public Task ProjectWithNativeReference_ReadyToRun(Configuration config) =>

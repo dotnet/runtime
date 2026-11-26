@@ -44,7 +44,7 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
     public Task BlazorEventPipeTestWithCpuSamples(Configuration config, bool aot)
         => BlazorEventPipeTestWithCpuSamplesCore(config, aot, readyToRun: false);
 
-    [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+    [Theory]
     [InlineData(Configuration.Debug)]
     [InlineData(Configuration.Release)]
     [TestCategory("no-workload")]
@@ -125,13 +125,13 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
             : "The cpuprofile.nettrace should contain stack frames for the 'Counter.CpuSamplingTarget' method");
         if (readyToRun)
             Assert.True(reversePInvokeMethodFound, "The cpuprofile.nettrace should contain a Wasm virtual-IP stack frame for the R2R reverse P/Invoke entry samplepoint");
-        if (BuildTestBase.IsCoreClrRuntime && !readyToRun)
+        if (!readyToRun)
         {
             Assert.True(readyToRunMethodFound, "The cpuprofile.nettrace should contain rundown information for the ReadyToRun 'System.Buffer.Memmove' method");
         }
     }
 
-    [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+    [Theory]
     [InlineData(Configuration.Debug, false)]
     [InlineData(Configuration.Release, false)]
     public async Task BlazorEventPipeTestWithInterpPgo(Configuration config, bool aot)

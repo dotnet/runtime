@@ -21,7 +21,7 @@ namespace Wasm.Build.Tests
         {
         }
 
-        [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+        [Theory]
         [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { false })]
         [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { true })]
         [TestCategory("native"), TestCategory("coreclr"), TestCategory("workload"), TestCategory("wasm-opt")]
@@ -51,7 +51,7 @@ namespace Wasm.Build.Tests
             Assert.Contains(result.TestOutput, line => line.Contains("QCall trimming sample passed", StringComparison.Ordinal));
         }
 
-        [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+        [Theory]
         [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { false, false })]
         [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { true, false })]
         [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { false, true })]
@@ -108,7 +108,7 @@ namespace Wasm.Build.Tests
             Assert.Contains(result.TestOutput, line => line.Contains("CoreLib entrypoint trimming sample passed", StringComparison.Ordinal));
         }
 
-        [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+        [Theory]
         [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { false, "entry" })]
         [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { true, "entry" })]
         [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { true, "list" })]
@@ -145,7 +145,7 @@ namespace Wasm.Build.Tests
             Assert.Contains(result.TestOutput, line => line.Contains("DirectPInvoke sample passed", StringComparison.Ordinal));
         }
 
-        [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+        [Theory]
         [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { false })]
         [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { true })]
         [TestCategory("native"), TestCategory("coreclr"), TestCategory("workload")]
@@ -463,13 +463,10 @@ namespace Wasm.Build.Tests
             // FIXME: Not possible in in-process mode for some reason, even with verbosity at "diagnostic"
             // Assert.Contains("Adding pinvoke signature FD for method 'Test.", output);
 
-            string pinvokeTableFileName = IsCoreClrRuntime ? "callhelpers-pinvoke.cpp" : "pinvoke-table.h";
-            string pinvokeTable = File.ReadAllText(Path.Combine(objDir, pinvokeTableFileName));
+            string pinvokeTable = File.ReadAllText(Path.Combine(objDir, "callhelpers-pinvoke.cpp"));
             // Verify that the invoke is in the pinvoke table. Under various circumstances we will silently skip it,
             //  for example if the module isn't found
-            string pinvokeTableEntry = IsCoreClrRuntime
-                ? "{ \"accept_double_struct_and_return_float_struct\", (void*)&direct_pinvoke::accept_double_struct_and_return_float_struct }"
-                : "\"accept_double_struct_and_return_float_struct\", accept_double_struct_and_return_float_struct";
+            string pinvokeTableEntry = "{ \"accept_double_struct_and_return_float_struct\", (void*)&direct_pinvoke::accept_double_struct_and_return_float_struct }";
             Assert.Contains(pinvokeTableEntry, pinvokeTable);
             // Verify the signature of the C function prototype. Wasm ABI specifies that the structs should both decompose into scalars.
             Assert.Contains("float accept_double_struct_and_return_float_struct (double)", pinvokeTable);
@@ -540,17 +537,12 @@ namespace Wasm.Build.Tests
             Assert.DoesNotContain("WASM0001", output);
 
             string objDir = Path.Combine(_projectDir, "obj", config.ToString(), DefaultTargetFramework, "wasm", "for-build");
-            string pinvokeTableFileName = IsCoreClrRuntime ? "callhelpers-pinvoke.cpp" : "pinvoke-table.h";
-            string pinvokeTable = File.ReadAllText(Path.Combine(objDir, pinvokeTableFileName));
+            string pinvokeTable = File.ReadAllText(Path.Combine(objDir, "callhelpers-pinvoke.cpp"));
 
-            string includedPInvokeTableEntry = IsCoreClrRuntime
-                ? "{ \"versioned_browser_add\", (void*)&direct_pinvoke::versioned_browser_add }"
-                : "\"versioned_browser_add\", versioned_browser_add";
+            string includedPInvokeTableEntry = "{ \"versioned_browser_add\", (void*)&direct_pinvoke::versioned_browser_add }";
             Assert.Contains(includedPInvokeTableEntry, pinvokeTable);
 
-            string excludedPInvokeTableEntry = IsCoreClrRuntime
-                ? "\"versioned_windows_add\""
-                : "\"versioned_windows_add\", versioned_windows_add";
+            string excludedPInvokeTableEntry = "\"versioned_windows_add\"";
             Assert.DoesNotContain(excludedPInvokeTableEntry, pinvokeTable);
 
             RunResult result = await RunForBuildWithDotnetRun(new BrowserRunOptions(config, TestScenario: "DotnetRun", ExpectedExitCode: 42));

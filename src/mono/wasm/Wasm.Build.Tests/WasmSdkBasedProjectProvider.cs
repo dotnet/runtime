@@ -86,12 +86,9 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
         if (assertOptions.AssertSymbolsFile && assertOptions.ExpectSymbolsFile)
             res.Add("dotnet.native.js.symbols");
 
-        if (assertOptions.BuildOptions.EnableDiagnostics || BuildTestBase.IsCoreClrRuntime)
-        {
-            res.Add("dotnet.diagnostics.js");
-            if (!assertOptions.BuildOptions.IsPublish)
-                res.Add("dotnet.diagnostics.js.map");
-        }
+        res.Add("dotnet.diagnostics.js");
+        if (!assertOptions.BuildOptions.IsPublish)
+            res.Add("dotnet.diagnostics.js.map");
 
         return res;
     }
@@ -229,11 +226,7 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
         AssertFileNotExists(fxFrameworkDir, "dotnet.js", "fx/_framework");
 
         // --- Materialized framework assets: JS modules and source maps in fx/_framework/ ---
-        string[] materializedFiles = ["dotnet.runtime.js", "dotnet.runtime.js.map", "dotnet.js.map"];
-        if (buildOptions.EnableDiagnostics || BuildTestBase.IsCoreClrRuntime)
-        {
-            materializedFiles = [.. materializedFiles, "dotnet.diagnostics.js", "dotnet.diagnostics.js.map"];
-        }
+        string[] materializedFiles = ["dotnet.runtime.js", "dotnet.runtime.js.map", "dotnet.js.map", "dotnet.diagnostics.js", "dotnet.diagnostics.js.map"];
         foreach (string file in materializedFiles)
         {
             AssertFileExists(fxFrameworkDir, file);
@@ -243,14 +236,10 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
         // --- Native assets: dotnet.native.* ---
         // For non-native builds, native files are materialized in fx/_framework/ from runtime pack.
         // For native builds (AOT/relink), they are rebuilt and placed in wasm/for-build/.
-        // CoreCLR WBT runs in NoWorkload mode but still performs per-app native relink via
-        // BrowserWasmApp.CoreCLR.targets (imported by data/Local.Directory.Build.targets), so
-        // treat CoreCLR as having native-rebuild capability regardless of isUsingWorkloads.
+        // WBT runs in NoWorkload mode but still performs per-app native relink via
+        // BrowserWasmApp.CoreCLR.targets (imported by data/Local.Directory.Build.targets).
         string[] nativeFiles = ["dotnet.native.js", "dotnet.native.wasm"];
-        bool hasNativeRebuildCapability = isUsingWorkloads || BuildTestBase.IsCoreClrRuntime;
-        var expectedFileType = hasNativeRebuildCapability
-            ? GetExpectedFileType(config, buildOptions.AOT, isPublish: false, isUsingWorkloads: isUsingWorkloads, isNativeBuild: isNativeBuild)
-            : NativeFilesType.FromRuntimePack;
+        var expectedFileType = GetExpectedFileType(config, buildOptions.AOT, isPublish: false, isUsingWorkloads: isUsingWorkloads, isNativeBuild: isNativeBuild);
         bool isNativeRebuild = expectedFileType is NativeFilesType.Relinked or NativeFilesType.AOT;
         string nativeDir = isNativeRebuild
             ? Path.Combine(objDir, "wasm", "for-build")

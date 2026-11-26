@@ -27,7 +27,6 @@ namespace Wasm.Build.Tests
 
         public bool UseWebcil { get; init; }
         public bool IsWorkloadWithMultiThreadingForDefaultFramework { get; init; }
-        public bool IsCoreClrRuntime { get; init; }
         public bool IsRunningOnCI => EnvironmentVariables.IsRunningOnCI;
 
         public static readonly string           RelativeTestAssetsPath = @"..\testassets\";
@@ -105,16 +104,6 @@ namespace Wasm.Build.Tests
             }
 
             UseWebcil = EnvironmentVariables.UseWebcil;
-            IsCoreClrRuntime = true;
-
-            // Only Mono ships a multithreaded browser-wasm runtime pack.
-            IsWorkloadWithMultiThreadingForDefaultFramework = !IsCoreClrRuntime && IsMultiThreadingRuntimePackAvailableFor(BuildTestBase.DefaultTargetFramework);
-            if (IsWorkload && !IsCoreClrRuntime && EnvironmentVariables.IsRunningOnCI && !IsWorkloadWithMultiThreadingForDefaultFramework)
-            {
-                throw new Exception(
-                            "Expected the multithreading runtime pack to be available when running on CI." +
-                            $" {nameof(IsRunningOnCI)} is true but {nameof(IsWorkloadWithMultiThreadingForDefaultFramework)} is false.");
-            }
 
             if (EnvironmentVariables.BuiltNuGetsPath is null || !Directory.Exists(EnvironmentVariables.BuiltNuGetsPath))
                 throw new Exception($"Cannot find 'BUILT_NUGETS_PATH={EnvironmentVariables.BuiltNuGetsPath}'");
@@ -142,13 +131,10 @@ namespace Wasm.Build.Tests
                 EnvVars["WasmFingerprintAssets"] = "false";
             }
 
-            if (IsCoreClrRuntime)
-            {
-                EnvVars["WasmTestSupport"] = "true";
-                EnvVars["WasmTestExitOnUnhandledError"] = "true";
-                EnvVars["WasmTestLogExitCode"] = "true";
-                // EnvVars["WasmTestAppendElementOnExit"] = "true"; // only used by xharness // https://github.com/dotnet/xharness/blob/799df8d4c86ff50c83b7a57df9e3691eeab813ec/src/Microsoft.DotNet.XHarness.CLI/Commands/WASM/Browser/WasmBrowserTestRunner.cs#L122-L141
-            }
+            EnvVars["WasmTestSupport"] = "true";
+            EnvVars["WasmTestExitOnUnhandledError"] = "true";
+            EnvVars["WasmTestLogExitCode"] = "true";
+            // EnvVars["WasmTestAppendElementOnExit"] = "true"; // only used by xharness // https://github.com/dotnet/xharness/blob/799df8d4c86ff50c83b7a57df9e3691eeab813ec/src/Microsoft.DotNet.XHarness.CLI/Commands/WASM/Browser/WasmBrowserTestRunner.cs#L122-L141
 
             DotNet = Path.Combine(sdkForWorkloadPath!, "dotnet");
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -182,12 +168,9 @@ namespace Wasm.Build.Tests
 
         private string GetRuntimePackName(RuntimeVariant runtimeType)
         {
-            // CoreCLR ships browser-wasm via Microsoft.NETCore.App.Runtime.{rid}, with a separate .multithread. variant.
-            // Mono uses Microsoft.NETCore.App.Runtime.Mono.{rid}, with a separate .multithread. variant.
-            string flavor = IsCoreClrRuntime ? string.Empty : "Mono.";
             return runtimeType is RuntimeVariant.SingleThreaded
-                ? $"Microsoft.NETCore.App.Runtime.{flavor}{DefaultRuntimeIdentifier}"
-                : $"Microsoft.NETCore.App.Runtime.{flavor}multithread.{DefaultRuntimeIdentifier}";
+                ? $"Microsoft.NETCore.App.Runtime.{DefaultRuntimeIdentifier}"
+                : $"Microsoft.NETCore.App.Runtime.multithread.{DefaultRuntimeIdentifier}";
         }
         public string GetRuntimeNativeDir(string tfm, RuntimeVariant runtimeType = RuntimeVariant.SingleThreaded)
             => Path.Combine(GetRuntimePackDir(tfm, runtimeType), "runtimes", DefaultRuntimeIdentifier, "native");

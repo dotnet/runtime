@@ -30,10 +30,8 @@ public class MemoryTests : WasmTemplateTestsBase
     {
         Configuration config = Configuration.Release;
         ProjectInfo info = CopyTestAsset(config, false, TestAsset.WasmBasicTestApp, "MemoryTests");
-        string extraArgs = "-p:EmccMaximumHeapSize=4294901760";
+        string extraArgs = "-p:EmccMaximumHeapSize=4294901760 -p:WasmBuildNative=true";
         // TODO-WASM https://github.com/dotnet/runtime/issues/126100 Pass default property values from runtime (pack) build to the relink.
-        if (BuildTestBase.IsCoreClrRuntime)
-            extraArgs += " -p:WasmBuildNative=true";
 
         BuildProject(info,
             config,
