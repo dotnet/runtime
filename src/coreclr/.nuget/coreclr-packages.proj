@@ -34,11 +34,4 @@
     <ProjectReference Include="$(MonoProjectRoot)\nuget\Microsoft.NET.Workload.Mono.Toolchain.Current.Manifest\Microsoft.NET.Workload.Mono.Toolchain.Current.Manifest.pkgproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetsAppleMobile)' == 'true' or '$(TargetsAndroid)' == 'true'">
-    <ProjectReference Include="$(MonoProjectRoot)\nuget\Microsoft.NET.Runtime.LibraryBuilder.Sdk\Microsoft.NET.Runtime.LibraryBuilder.Sdk.pkgproj" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetsMobile)' == 'true'">
-    <ProjectReference Include="$(MonoProjectRoot)\nuget\Microsoft.NET.Runtime.MonoTargets.Sdk\Microsoft.NET.Runtime.MonoTargets.Sdk.pkgproj" Condition="'$(DotNetBuildSourceOnly)' != 'true'" />
-  </ItemGroup>
 </Project>
