@@ -3035,9 +3035,21 @@ GenTree* Compiler::optVNBasedFoldExpr_Call(BasicBlock* block, GenTree* parent, G
             GenTree* castClsArg     = castClsCallArg->GetNode();
             GenTree* castObjArg     = castObjCallArg->GetNode();
 
-            // If object has the same VN as the cast, then the cast is effectively a no-op.
-            //
-            if (castObjArg->gtVNPair == call->gtVNPair)
+            bool isRedundant = castObjArg->gtVNPair == call->gtVNPair;
+            if (!isRedundant && castClsArg->gtVNPair.BothDefined() && castObjArg->gtVNPair.BothDefined())
+            {
+                // The call includes exceptions from argument evaluation. Query the cast on the
+                // normal operands so an exception from the cast itself still prevents the fold.
+                ValueNumPair obj = vnStore->VNPNormalPair(castObjArg->gtVNPair);
+                if (obj == vnStore->VNPNormalPair(call->gtVNPair))
+                {
+                    VNFunc func = fgValueNumberJitHelperMethodVNFunc(call->GetHelperNum());
+                    isRedundant =
+                        vnStore->VNPairForFunc(TYP_REF, func, vnStore->VNPNormalPair(castClsArg->gtVNPair), obj) == obj;
+                }
+            }
+
+            if (isRedundant)
             {
                 // if castObjArg is not simple, we replace the arg with a temp assignment and
                 // continue using that temp - it allows us reliably extract all side effects
