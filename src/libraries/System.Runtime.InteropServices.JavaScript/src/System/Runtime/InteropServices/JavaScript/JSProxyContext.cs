@@ -14,7 +14,8 @@ namespace System.Runtime.InteropServices.JavaScript
         internal bool _isDisposed;
 
         // we use this to maintain identity of JSHandle for a JSObject proxy
-        private readonly Dictionary<nint, WeakReference<JSObject>> ThreadCsOwnedObjects = new();
+        // Both references must stay rooted here, even while the proxy is only reachable for finalization.
+        private readonly Dictionary<nint, JSObjectReference> ThreadCsOwnedObjects = new();
         // we use this to maintain identity of GCHandle for a managed object
         private readonly Dictionary<object, nint> ThreadJsOwnedObjects = new(ReferenceEqualityComparer.Instance);
         // this is similar to GCHandle, but the GCVHandle is allocated on JS side and this keeps the C# proxy alive
@@ -28,6 +29,18 @@ namespace System.Runtime.InteropServices.JavaScript
         // into another thread's context via BindingContextOrMain, concurrently with CallJSExport reading it.
         private readonly Dictionary<int, Action<IntPtr>> JSExportByHandle = new Dictionary<int, Action<IntPtr>>();
         private int NextJSExportHandle = 1;
+
+        private readonly struct JSObjectReference
+        {
+            public readonly WeakReference<JSObject> LongReference;
+            public readonly WeakReference<JSObject> ShortReference;
+
+            public JSObjectReference(JSObject target)
+            {
+                LongReference = new WeakReference<JSObject>(target, trackResurrection: true);
+                ShortReference = new WeakReference<JSObject>(target);
+            }
+        }
 
         public int PromiseHolderCount
         {
@@ -515,18 +528,23 @@ namespace System.Runtime.InteropServices.JavaScript
 #endif
             {
                 JSObject? res;
-                if (!ThreadCsOwnedObjects.TryGetValue(jsHandle, out WeakReference<JSObject>? reference) ||
-                    !reference.TryGetTarget(out res) ||
+                if (!ThreadCsOwnedObjects.TryGetValue(jsHandle, out JSObjectReference reference) ||
+                    !reference.LongReference.TryGetTarget(out res) ||
                     res.IsDisposed)
                 {
                     res = new JSObject(jsHandle, this);
-                    ThreadCsOwnedObjects[jsHandle] = new WeakReference<JSObject>(res, trackResurrection: true);
+                    ThreadCsOwnedObjects[jsHandle] = new JSObjectReference(res);
+                }
+                else if (!reference.ShortReference.TryGetTarget(out _))
+                {
+                    // The long reference can return a proxy whose finalizer is already queued.
+                    reference.ShortReference.SetTarget(res);
                 }
                 return res;
             }
         }
 
-        public static void ReleaseCSOwnedObject(JSObject jso, bool skipJS)
+        public static void ReleaseCSOwnedObject(JSObject jso, bool skipJS, bool isFinalizing = false)
         {
             if (jso.IsDisposed)
             {
@@ -540,6 +558,14 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 if (jso.IsDisposed || ctx._isDisposed)
                 {
+                    return;
+                }
+                if (isFinalizing &&
+                    ctx.ThreadCsOwnedObjects.TryGetValue(jso.JSHandle, out JSObjectReference reference) &&
+                    reference.ShortReference.TryGetTarget(out _))
+                {
+                    // Reacquiring a proxy does not cancel its queued finalizer.
+                    GC.ReRegisterForFinalize(jso);
                     return;
                 }
                 var jsHandle = jso.JSHandle;
@@ -598,10 +624,10 @@ namespace System.Runtime.InteropServices.JavaScript
                     }
 #endif
 
-                    List<WeakReference<JSObject>> copy = new(ThreadCsOwnedObjects.Values);
-                    foreach (var jsObjectWeak in copy)
+                    List<JSObjectReference> copy = new(ThreadCsOwnedObjects.Values);
+                    foreach (var reference in copy)
                     {
-                        if (jsObjectWeak.TryGetTarget(out var jso))
+                        if (reference.LongReference.TryGetTarget(out var jso))
                         {
                             jso.Dispose();
                         }

@@ -11,6 +11,7 @@
 #define __UtilCode_h__
 
 #include <type_traits>
+#include <minipal/thread.h>
 #include <algorithm>
 #include <stdio.h>
 #include <limits.h>
@@ -29,7 +30,9 @@ using std::nothrow;
 #include "clrhost.h"
 #include "dn_xxhash.h"
 #include "debugmacros.h"
+#ifndef JIT_BUILD
 #include "corhlprpriv.h"
+#endif // !JIT_BUILD
 #include "check.h"
 #include "safemath.h"
 
@@ -498,6 +501,10 @@ public:
 
 int GetTotalProcessorCount();
 
+// Copies the system message for a Win32 error code or HRESULT_FROM_WIN32 value into buffer.
+// On Unix, only the messages for the error codes used by the runtime are available.
+// Returns false on failure, for example if the buffer is too small.
+bool GetSystemErrorMessage(DWORD code, WCHAR *buffer, size_t cchBuffer);
 
 //*****************************************************************************
 // Return != 0 if the bit at the specified index in the array is on and 0 if
@@ -2299,7 +2306,13 @@ HRESULT GetDebuggerSettingInfoWorker(_Out_writes_to_opt_(*pcchDebuggerString, *p
 
 void TrimWhiteSpace(__inout_ecount(*pcch)  LPCWSTR *pwsz, __inout LPDWORD pcch);
 
+#ifdef HOST_UNIX
+// There is no debugger channel for debug output outside Windows.
+#define OutputDebugString(x) ((void)0)
+#define OutputDebugStringUtf8(x) ((void)0)
+#else
 void OutputDebugStringUtf8(LPCUTF8 utf8str);
+#endif
 
 //*****************************************************************************
 // Convert a UTF8 string to Unicode, into a CQuickArray<WCHAR>.
@@ -2473,7 +2486,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         // not fiber for HOST_UNIX - use the regular thread ID
-        return (void *)(size_t)GetCurrentThreadId();
+        return (void *)minipal_get_current_thread_id();
     }
 
     static void* GetStackBase()

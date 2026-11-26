@@ -51,6 +51,10 @@ static const instruction INS_I_gt_u  = INS_i32_gt_u;
 void CodeGen::ensureCurrentFuncIsUnwindable()
 {
     FuncInfoDsc* const func = m_compiler->funCurrentFunc();
+
+    // The main method's frame header must have been allocated by fgWasmVirtualIP.
+    // If this fires, fgWasmMayEmitCall is missing a case.
+    assert(func->IsFunclet() || (m_compiler->lvaWasmVirtualIP != BAD_VAR_NUM));
     func->ensureUnwindableFrame(m_compiler);
 }
 
@@ -1155,6 +1159,17 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_JTRUE:
             genCodeForJTrue(treeNode->AsOp());
             break;
+
+        case GT_WASM_SELECT:
+        {
+            GenTreeConditional* select = treeNode->AsConditional();
+            genConsumeRegs(select->gtOp1);
+            genConsumeRegs(select->gtOp2);
+            genConsumeRegs(select->gtCond);
+            GetEmitter()->emitIns(INS_select);
+            WasmProduceReg(treeNode);
+            break;
+        }
 
         case GT_SWITCH:
             genTableBasedSwitch(treeNode);

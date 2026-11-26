@@ -153,7 +153,11 @@ namespace System.IO.IsolatedStorage
                 if (Helper.IsDomain(scope))
                 {
                     _domainIdentity = identity;
-                    hash = string.Create(null, stackalloc char[128], $"{hash}{SeparatorExternal}{hash}");
+                    // SAFETY: To be audited
+                    unsafe
+                    {
+                        hash = string.Create(null, stackalloc char[128], $"{hash}{SeparatorExternal}{hash}");
+                    }
                 }
 
                 _assemblyIdentity = identity;

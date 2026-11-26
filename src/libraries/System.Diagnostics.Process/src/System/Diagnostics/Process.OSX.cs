@@ -53,6 +53,27 @@ namespace System.Diagnostics
             return "/usr/bin/open";
         }
 
+        /// <summary>
+        /// Gets or sets which processors the threads in this process can be scheduled to run on.
+        /// </summary>
+        private static IntPtr ProcessorAffinityCore
+        {
+            get
+            {
+                throw new PlatformNotSupportedException(SR.ProcessorAffinityNotSupported);
+            }
+            set
+            {
+                throw new PlatformNotSupportedException(SR.ProcessorAffinityNotSupported);
+            }
+        }
+
+        private void GetWorkingSetLimits(out IntPtr minWorkingSet, out IntPtr maxWorkingSet) =>
+            GetWorkingSetLimitsBsd(out minWorkingSet, out maxWorkingSet);
+
+        private void SetWorkingSetLimitsCore(IntPtr? newMin, IntPtr? newMax, out IntPtr resultingMin, out IntPtr resultingMax) =>
+            SetWorkingSetLimitsCoreBsd(newMin, newMax, out resultingMin, out resultingMax);
+
         public partial TimeSpan TotalProcessorTime
         {
             get

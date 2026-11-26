@@ -1199,12 +1199,19 @@ void DisplayNowayAssertMap()
         }
 
         // Iterate noway assert map, create sorted table by occurrence, dump it.
-        unsigned             count = NowayAssertMap->GetCount();
-        NowayAssertCountMap* nacp  = new NowayAssertCountMap[count];
-        unsigned             i     = 0;
+        unsigned             count         = NowayAssertMap->GetCount();
+        HostAllocator        hostAllocator = HostAllocator::getHostAllocator();
+        NowayAssertCountMap* nacp          = hostAllocator.allocate<NowayAssertCountMap>(count);
+        if (nacp == nullptr)
+        {
+            throw std::bad_alloc{};
+        }
+
+        unsigned i = 0;
 
         for (FileLineToCountMap::Node* const iter : FileLineToCountMap::KeyValueIteration(NowayAssertMap))
         {
+            new (&nacp[i], jitstd::placement_t()) NowayAssertCountMap();
             nacp[i].count = iter->GetValue();
             nacp[i].fl    = iter->GetKey();
             ++i;
@@ -1230,6 +1237,8 @@ void DisplayNowayAssertMap()
             fclose(fout);
             fout = nullptr;
         }
+
+        hostAllocator.deallocate(nacp);
     }
 }
 
@@ -2381,7 +2390,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     fgPgoConsistent  = false;
     fgPgoDynamic     = false;
 
-    if (jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT))
+    if (jitFlags->IsSet(JitFlags::JIT_FLAG_PGO_OPT))
     {
         fgPgoQueryResult =
             info.compCompHnd->getPgoInstrumentationResults(info.compMethodHnd, &fgPgoSchema, &fgPgoSchemaCount,
@@ -3037,7 +3046,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         }
 #endif
 
-        if (jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT))
+        if (jitFlags->IsSet(JitFlags::JIT_FLAG_PGO_OPT))
         {
             printf("OPTIONS: optimizer should use profile data\n");
         }
@@ -3738,7 +3747,7 @@ _SetMinOpts:
     {
         info.compCompHnd->setMethodAttribs(info.compMethodHnd, CORINFO_FLG_SWITCHED_TO_MIN_OPT);
         opts.jitFlags->Clear(JitFlags::JIT_FLAG_TIER1);
-        opts.jitFlags->Clear(JitFlags::JIT_FLAG_BBOPT);
+        opts.jitFlags->Clear(JitFlags::JIT_FLAG_PGO_OPT);
         compSwitchedToMinOpts = true;
     }
 
@@ -4049,7 +4058,7 @@ const char* Compiler::compGetTieringName(bool wantShortName) const
 {
     const bool tier0         = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0);
     const bool tier1         = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER1);
-    const bool instrumenting = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR);
+    const bool instrumenting = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PGO_INSTR);
 
     if (!opts.compMinOptsIsSet)
     {
@@ -4304,7 +4313,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // If we're going to instrument code, we may need to prepare before
     // we import. Also do this before we read in any profile data.
     //
-    if (compileFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR))
+    if (compileFlags->IsSet(JitFlags::JIT_FLAG_PGO_INSTR))
     {
         DoPhase(this, PHASE_IBCPREP, &Compiler::fgPrepareToInstrumentMethod);
     }
@@ -4360,7 +4369,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // If instrumenting, add block and class probes.
     //
-    if (compileFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR))
+    if (compileFlags->IsSet(JitFlags::JIT_FLAG_PGO_INSTR))
     {
         DoPhase(this, PHASE_IBCINSTR, &Compiler::fgInstrumentMethod);
     }
@@ -4769,13 +4778,19 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 // Optimize redundant branches
                 //
                 DoPhase(this, PHASE_OPTIMIZE_BRANCHES, &Compiler::optRedundantBranches);
-            }
-            else
-            {
-                // DFS tree is always invalid after this point.
+
+                // Jump threading invalidates SSA and value numbers, so rebuild them.
                 //
-                fgInvalidateDfsTree();
+                if (optRboNeedsSsaRebuild)
+                {
+                    DoPhase(this, PHASE_BUILD_SSA, &Compiler::fgSsaBuild);
+                    DoPhase(this, PHASE_VALUE_NUMBER, &Compiler::fgValueNumber);
+                }
             }
+
+            // DFS tree is always invalid after this point.
+            //
+            fgInvalidateDfsTree();
 
             if (doCse)
             {
@@ -5034,6 +5049,12 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     DoPhase(this, PHASE_LCLVARLIVENESS, &Compiler::fgLateLiveness);
 
 #ifdef TARGET_WASM
+    // Forward single-use local copies and rematerialize single-use invariant
+    // locals recorded by lowering, using the ref counts and last-use flags
+    // computed by late liveness.
+    //
+    DoPhase(this, PHASE_WASM_FORWARD_LOCAL_COPIES, &Compiler::fgWasmForwardLocalCopies);
+
     // Determine if a Virtual IP is needed and add code as needed to
     // keep the Virtual IP updated.
     //
@@ -5047,9 +5068,17 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // to pinned stack slots so the objects aren't moved.
     //
     DoPhase(this, PHASE_WASM_SPILL_REFS, &Compiler::fgWasmSpillRefs);
+
 #endif
 
     FinalizeEH();
+
+#ifdef TARGET_WASM
+    // Reorder blocks for wasm and figure out wasm control flow nesting.
+    // Note: This phase is ordered after FinalizeEH since the
+    // pass shouldn't alter EH structure.
+    DoPhase(this, PHASE_WASM_CONTROL_FLOW, &Compiler::fgWasmControlFlow);
+#endif
 
     // We can not add any new tracked variables after this point.
     lvaTrackedFixed = true;
@@ -5068,11 +5097,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Copied from rpPredictRegUse()
     SetFullPtrRegMapRequired(codeGen->GetInterruptible() || !codeGen->isFramePointerUsed());
 
-#ifdef TARGET_WASM
-    // Reorder blocks for wasm and figure out wasm control flow nesting
-    //
-    DoPhase(this, PHASE_WASM_CONTROL_FLOW, &Compiler::fgWasmControlFlow);
-#else
+#ifndef TARGET_WASM
     if (opts.OptimizationEnabled())
     {
         // We won't introduce new blocks from here on out,
@@ -5833,13 +5858,8 @@ void Compiler::ResetOptAnnotations()
     assert(opts.optRepeat);
     assert(JitConfig.JitOptRepeatCount() > 0);
     fgResetForSsa(/* deepClean */ true);
-    vnStore                    = nullptr;
-    m_blockToEHPreds           = nullptr;
-    m_dominancePreds           = nullptr;
-    fgSsaPassesCompleted       = 0;
-    fgVNPassesCompleted        = 0;
-    fgSsaValid                 = false;
-    m_nodeToLoopMemoryBlockMap = nullptr;
+    fgSsaPassesCompleted = 0;
+    fgSsaValid           = false;
 
     for (BasicBlock* const block : Blocks())
     {
@@ -5847,7 +5867,6 @@ void Compiler::ResetOptAnnotations()
         {
             for (GenTree* const tree : stmt->TreeList())
             {
-                tree->ClearVN();
                 tree->ClearAssertion();
                 tree->gtCSEnum = NO_CSE;
             }
@@ -7004,9 +7023,9 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
         //
         const char* reason = nullptr;
 
-        if (compTailPrefixSeen && !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR))
+        if (compTailPrefixSeen && !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PGO_INSTR))
         {
-            reason = "tail.call and not BBINSTR";
+            reason = "tail.call and not PGO_INSTR";
         }
         else if (compHasBackwardJump && ((info.compFlags & CORINFO_FLG_DISABLE_TIER0_FOR_LOOPS) != 0))
         {
@@ -7038,10 +7057,10 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
             {
                 JITDUMP("\nOSR enabled for this method\n");
                 if (compHasBackwardJump && !compTailPrefixSeen &&
-                    opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR_IF_LOOPS) && opts.IsTier0())
+                    opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PGO_INSTR_IF_LOOPS) && opts.IsTier0())
                 {
                     assert((info.compFlags & CORINFO_FLG_DISABLE_TIER0_FOR_LOOPS) == 0);
-                    opts.jitFlags->Set(JitFlags::JIT_FLAG_BBINSTR);
+                    opts.jitFlags->Set(JitFlags::JIT_FLAG_PGO_INSTR);
                     JITDUMP("\nEnabling instrumentation for this method so OSR'd version will have a profile.\n");
                 }
             }
@@ -7071,7 +7090,7 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
         if (JitInstrumentIfOptimizingRange.Contains(hash))
         {
             JITDUMP("\nEnabling instrumentation\n");
-            opts.jitFlags->Set(JitFlags::JIT_FLAG_BBINSTR);
+            opts.jitFlags->Set(JitFlags::JIT_FLAG_PGO_INSTR);
         }
     }
 #endif
@@ -7742,7 +7761,7 @@ if (!inlineInfo &&
     compileFlags->Set(JitFlags::JIT_FLAG_MIN_OPT);
     compileFlags->Clear(JitFlags::JIT_FLAG_SIZE_OPT);
     compileFlags->Clear(JitFlags::JIT_FLAG_SPEED_OPT);
-    compileFlags->Clear(JitFlags::JIT_FLAG_BBOPT);
+    compileFlags->Clear(JitFlags::JIT_FLAG_PGO_OPT);
 
     goto START;
 }

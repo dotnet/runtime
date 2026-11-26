@@ -39,6 +39,18 @@ export function echo1(arg1) {
     return arg1;
 }
 
+export function getMemoryViewByteLength(view) {
+    return view.byteLength;
+}
+
+export function getArraySegmentByteLength(view) {
+    try {
+        return view.byteLength;
+    } finally {
+        view.dispose();
+    }
+}
+
 export function echo1view(arg1, edit) {
     if (globalThis.gc) {
         // console.log('globalThis.gc');

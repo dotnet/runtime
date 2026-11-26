@@ -1980,10 +1980,11 @@ namespace System.Net.Http.Functional.Tests
                 throw new SkipTestException("Synchronous Send requires multithreading.");
             }
 
-            if (PlatformDetection.IsAndroid && PlatformDetection.Is32BitProcess)
+            if (PlatformDetection.Is32BitProcess)
             {
                 // https://github.com/dotnet/runtime/issues/77474
-                throw new SkipTestException("This test runs out of memory on 32-bit Android devices");
+                // https://github.com/dotnet/runtime/issues/137888
+                throw new SkipTestException("This test runs out of memory on 32-bit devices");
             }
 
             Memory<byte> responsePrefix = Encoding.ASCII.GetBytes(trailingHeaders

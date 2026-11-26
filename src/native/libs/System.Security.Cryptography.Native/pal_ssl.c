@@ -446,6 +446,7 @@ int32_t CryptoNative_SslRenegotiate(SSL* ssl, int32_t* error)
 {
     ERR_clear_error();
 
+    // These are not I/O operations; their failure reasons are on the error queue, not in SSL_get_error.
 #if defined NEED_OPENSSL_1_1 || defined NEED_OPENSSL_3_0
     // TLS1.3 uses different API for renegotiation/delayed client cert request
     #ifndef TLS1_3_VERSION
@@ -458,7 +459,7 @@ int32_t CryptoNative_SslRenegotiate(SSL* ssl, int32_t* error)
         int ret = SSL_verify_client_post_handshake(ssl);
         if (ret != 1)
         {
-            *error = CryptoNative_SslGetError(ssl, ret);
+            *error = SSL_ERROR_SSL;
         }
         return ret;
     }
@@ -474,7 +475,7 @@ int32_t CryptoNative_SslRenegotiate(SSL* ssl, int32_t* error)
         int ret = SSL_renegotiate(ssl);
         if(ret != 1)
         {
-            *error = CryptoNative_SslGetError(ssl, ret);
+            *error = SSL_ERROR_SSL;
         }
         return ret;
     }

@@ -4,6 +4,9 @@
 #include "common.h"
 #include "configuration.h"
 #include "gcheaputilities.h"
+#ifdef HOST_UNIX
+#include <dlfcn.h>
+#endif
 #include "appdomain.hpp"
 #include "hostinformation.h"
 
@@ -116,7 +119,7 @@ void FinalizeLoad(IGCHeap* gcHeap, IGCHandleManager* handleMgr, PTR_VOID pGcModu
     g_pGCHeap = gcHeap;
 
     {
-        DangerousNonHostedSpinLockHolder lockHolder(&g_eventStashLock);
+        DangerousNonHostedSpinLockHolder lockHolder = g_eventStashLock.TakeLock();
 
         // Ultimately, g_eventStashLock ensures that no two threads call ControlEvents at any
         // point in time.
@@ -136,7 +139,7 @@ void FinalizeLoad(IGCHeap* gcHeap, IGCHandleManager* handleMgr, PTR_VOID pGcModu
 
 void StashKeywordAndLevel(bool isPublicProvider, GCEventKeyword keywords, GCEventLevel level)
 {
-    DangerousNonHostedSpinLockHolder lockHolder(&g_eventStashLock);
+    DangerousNonHostedSpinLockHolder lockHolder = g_eventStashLock.TakeLock();
     if (!g_gcEventTracingInitialized)
     {
         if (isPublicProvider)
@@ -310,7 +313,12 @@ HRESULT LoadAndInitializeGC(LPCWSTR standaloneGCName, LPCWSTR standaloneGCPath)
 #if TARGET_WINDOWS
         pGcModuleBase = (PTR_VOID)hMod;
 #else
-        pGcModuleBase = (PTR_VOID)PAL_GetSymbolModuleBase((PVOID)initFunc);
+#ifdef TARGET_WASM // no modules on wasm
+        pGcModuleBase = NULL;
+#else
+        Dl_info info;
+        pGcModuleBase = dladdr((void*)initFunc, &info) != 0 ? (PTR_VOID)info.dli_fbase : NULL;
+#endif
 #endif
 
         FinalizeLoad(heap, manager, pGcModuleBase);

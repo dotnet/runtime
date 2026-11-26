@@ -85,6 +85,32 @@ extends:
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: Debug
+          platforms:
+          - linux_x64_dev_innerloop
+          jobParameters:
+            nameSuffix: StaticGraph
+            # Restore with the regular build driver because Arcade's toolset bootstrap
+            # projects aren't graph/isolate-safe, then build the clr subset directly.
+            buildArgs: -s clr -c Debug --restore
+            timeoutInMinutes: 180
+            postBuildSteps:
+            - script: |
+                set -ex
+                $(Build.SourcesDirectory)/.dotnet/dotnet msbuild $(Build.SourcesDirectory)/Build.proj \
+                  /t:Build /p:Subset=clr /p:Configuration=Debug /p:RuntimeConfiguration=Debug \
+                  /p:Restore=false /p:Build=true /p:Ninja=true /p:TargetArchitecture=x64 /p:BuildArchitecture=x64 \
+                  /p:ContinuousIntegrationBuild=true /p:FeatureDynamicCodeCompiled=true \
+                  /graphBuild /isolateProjects /m:2 /nr:false
+              displayName: Build clr subset with static graph (/graphBuild /isolateProjects)
+            condition: >-
+              or(
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
+
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
           platforms:
           - linux_musl_arm
@@ -134,7 +160,7 @@ extends:
           - browser_wasm_win
           jobParameters:
             nameSuffix: CoreCLR
-            buildArgs: -s clr+libs+libs.tests+packs -c Release -rc $(_BuildConfig) /p:TestAssemblies=false /p:TestWasmBuildTests=true /p:ArchiveTests=true /p:InstallWorkloadForTesting=false /p:BuildCrossgen2HostPackForWorkloadTesting=true
+            buildArgs: -s clr+libs+libs.tests+packs -c Release -rc $(_BuildConfig) /p:TestAssemblies=false /p:TestWasmBuildTests=true /p:ArchiveTests=true /p:InstallWorkloadForTesting=false
             timeoutInMinutes: 120
             postBuildSteps:
               # Runs on the Linux-hosted browser_wasm job only; the step skips itself on Windows.
@@ -1120,7 +1146,7 @@ extends:
             # components are Mach-O and unusable here. The cross components are built from source
             # instead - they target the build host (linux-x64), not iOS, so no Apple SDK is needed.
             # libs.sfx rather than libs, because libs.native does require the Apple SDK.
-            buildArgs: -s clr.crossarchtools+clr.corelib+libs.sfx -rf CoreCLR -lc Release -c $(_BuildConfig)
+            buildArgs: -s clr.crossarchtools+clr.corelib+libs.sfx -lc Release -c $(_BuildConfig)
             enablePublishTestResults: true
             testResultsFormat: 'xunit'
             postBuildSteps:
@@ -1128,7 +1154,7 @@ extends:
               # Subsets.props, so a single build would run the tests before their inputs exist.
               - template: /eng/pipelines/common/templates/global-build-step.yml
                 parameters:
-                  buildArgs: -s clr.r2rtests -rf CoreCLR -lc Release -c $(_BuildConfig) -test
+                  buildArgs: -s clr.r2rtests -lc Release -c $(_BuildConfig) -test
                   displayName: Build and run R2R tests
             condition: >-
               or(
@@ -1302,7 +1328,7 @@ extends:
           jobParameters:
             testGroup: innerloop
             nameSuffix: AllSubsets_NativeAOT_Smoke
-            buildArgs: --cross -s clr.alljits+clr.tools+clr.nativeaotruntime+clr.nativeaotlibs+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:RunSmokeTestsOnly=true /p:DevTeamProvisioning=- /p:BuildTestsOnHelix=true /p:UseNativeAOTRuntime=true /p:RunAOTCompilation=false /p:ContinuousIntegrationBuild=true
+            buildArgs: --cross -s clr.alljits+clr.tools+clr.nativeaotruntime+clr.nativeaotlibs+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:RunSmokeTestsOnly=true /p:DevTeamProvisioning=- /p:BuildTestsOnHelix=true /p:UseNativeAOTRuntime=true /p:ContinuousIntegrationBuild=true
             timeoutInMinutes: 180
             useNativeAOTRuntime: true
             condition: >-
@@ -1392,7 +1418,7 @@ extends:
           jobParameters:
             testGroup: innerloop
             nameSuffix: AllSubsets_NativeAOT_Smoke
-            buildArgs: --cross -s clr.alljits+clr.tools+clr.nativeaotruntime+clr.nativeaotlibs+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:RunSmokeTestsOnly=true /p:DevTeamProvisioning=adhoc /p:BuildTestsOnHelix=true /p:UseNativeAOTRuntime=true /p:RunAOTCompilation=false /p:ContinuousIntegrationBuild=true
+            buildArgs: --cross -s clr.alljits+clr.tools+clr.nativeaotruntime+clr.nativeaotlibs+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:RunSmokeTestsOnly=true /p:DevTeamProvisioning=adhoc /p:BuildTestsOnHelix=true /p:UseNativeAOTRuntime=true /p:ContinuousIntegrationBuild=true
             timeoutInMinutes: 180
             useNativeAOTRuntime: true
             condition: >-

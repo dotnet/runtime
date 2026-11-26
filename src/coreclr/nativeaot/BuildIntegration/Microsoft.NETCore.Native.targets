@@ -93,8 +93,6 @@ The .NET Foundation licenses this file to you under the MIT license.
     <NativeObject>$(NativeIntermediateOutputPath)$(TargetName)$(NativeObjectExt)</NativeObject>
     <NativeBinary>$(NativeOutputPath)$(NativeBinaryPrefix)$(TargetName)$(NativeBinaryExt)</NativeBinary>
     <NativeImportLibrary Condition="'$(NativeImportLibrary)' == '' and '$(_targetOS)' == 'win' and '$(NativeLib)' == 'Shared'">$(NativeOutputPath)$(NativeBinaryPrefix)$(TargetName)$(LibFileExt)</NativeImportLibrary>
-    <_LinkNativeOutputs>$(NativeBinary)</_LinkNativeOutputs>
-    <_LinkNativeOutputs Condition="'$(_targetOS)' == 'win' and '$(NativeLib)' == 'Shared' and '$(NativeImportLibrary)' != ''">$(NativeBinary);$(NativeImportLibrary)</_LinkNativeOutputs>
     <NativeExecutableExt Condition="'$(NativeExecutableExt)' == '' and '$(_targetOS)' == 'win'">.exe</NativeExecutableExt>
     <NativeExecutableExt Condition="'$(NativeExecutableExt)' == '' and '$(_targetArchitecture)' == 'wasm'">.wasm</NativeExecutableExt>
     <NativeExecutableExt Condition="'$(NativeExecutableExt)' == ''"></NativeExecutableExt>
@@ -385,10 +383,18 @@ The .NET Foundation licenses this file to you under the MIT license.
       <Copy SourceFiles="@(NativeObjects)" DestinationFolder="$(NativeOutputPath)" />
   </Target>
 
+  <Target Name="_ComputeLinkNativeOutputs">
+    <PropertyGroup>
+      <_LinkNativeOutputs>$(NativeBinary)</_LinkNativeOutputs>
+      <!-- The linker may leave an existing import library unchanged when only the implementation changes. -->
+      <_LinkNativeOutputs Condition="'$(_targetOS)' == 'win' and '$(NativeLib)' == 'Shared' and '$(NativeImportLibrary)' != '' and !Exists('$(NativeImportLibrary)')">$(NativeBinary);$(NativeImportLibrary)</_LinkNativeOutputs>
+    </PropertyGroup>
+  </Target>
+
   <Target Name="LinkNative"
       Inputs="$(NativeObject);@(NativeLibrary)"
       Outputs="$(_LinkNativeOutputs)"
-      DependsOnTargets="$(LinkNativeDependsOn)">
+      DependsOnTargets="$(LinkNativeDependsOn);_ComputeLinkNativeOutputs">
 
     <ItemGroup>
       <CustomLinkerArg Include="&quot;$(NativeObject)&quot;" />

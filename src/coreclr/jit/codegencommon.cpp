@@ -2320,7 +2320,7 @@ void CodeGen::genGenerateMachineCode()
             printf("; debuggable code\n");
         }
 
-        if (m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT) && m_compiler->fgHaveProfileWeights())
+        if (m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PGO_OPT) && m_compiler->fgHaveProfileWeights())
         {
             printf("; optimized using %s\n", m_compiler->compGetPgoSourceName());
         }
@@ -8223,15 +8223,11 @@ regNumber CodeGen::genRegCopy(GenTree* treeNode, unsigned multiRegIndex)
 //    lvaStackPointerVar  - The local variable number that holds the value of the stack pointer
 //                          we are comparing against.
 //    offset              - the offset from the stack pointer to expect
-//    regTmp              - register we can use for computation if `offset` != 0
 //
 // Return Value:
 //    None
 //
-void CodeGen::genStackPointerCheck(bool      doStackPointerCheck,
-                                   unsigned  lvaStackPointerVar,
-                                   ssize_t   offset,
-                                   regNumber regTmp)
+void CodeGen::genStackPointerCheck(bool doStackPointerCheck, unsigned lvaStackPointerVar, ssize_t offset)
 {
     if (doStackPointerCheck)
     {
@@ -8241,15 +8237,12 @@ void CodeGen::genStackPointerCheck(bool      doStackPointerCheck,
 
         if (offset != 0)
         {
-            assert(regTmp != REG_NA);
-            GetEmitter()->emitIns_Mov(INS_mov, EA_PTRSIZE, regTmp, REG_SPBASE, /* canSkip */ false);
-            GetEmitter()->emitIns_R_I(INS_sub, EA_PTRSIZE, regTmp, offset);
-            GetEmitter()->emitIns_S_R(INS_cmp, EA_PTRSIZE, regTmp, lvaStackPointerVar, 0);
+            // Adjust the saved value rather than SP so that no scratch register is needed
+            // (e.g. after a call, any register may hold its result).
+            GetEmitter()->emitIns_S_I(INS_add, EA_PTRSIZE, lvaStackPointerVar, 0, (int)offset);
         }
-        else
-        {
-            GetEmitter()->emitIns_S_R(INS_cmp, EA_PTRSIZE, REG_SPBASE, lvaStackPointerVar, 0);
-        }
+
+        GetEmitter()->emitIns_S_R(INS_cmp, EA_PTRSIZE, REG_SPBASE, lvaStackPointerVar, 0);
 
         BasicBlock* sp_check = genCreateTempLabel();
         GetEmitter()->emitIns_J(INS_je, sp_check);
