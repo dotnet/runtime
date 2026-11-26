@@ -416,6 +416,11 @@ static bool IsSigIgn(struct sigaction* action)
             action->sa_handler == SIG_IGN;
 }
 
+BOOL PALAPI PAL_IsDefaultSIGTRAPHandler()
+{
+    return IsSigDfl(&g_previous_sigtrap);
+}
+
 /*++
 Function :
     invoke_previous_action
@@ -1128,6 +1133,18 @@ static bool common_signal_handler(int code, siginfo_t *siginfo, void *sigcontext
         exceptionRecord.ExceptionCode = CONTEXTGetExceptionCodeForSignal(siginfo, ucontext);
     }
     exceptionRecord.ExceptionFlags = EXCEPTION_IS_SIGNAL;
+    if (code == SIGTRAP)
+    {
+        switch (siginfo->si_code)
+        {
+#ifdef SI_KERNEL
+            case SI_KERNEL:
+#endif
+            case TRAP_BRKPT:
+                exceptionRecord.ExceptionFlags |= EXCEPTION_IS_SIGNAL_TRAP;
+                break;
+        }
+    }
     exceptionRecord.ExceptionRecord = NULL;
     exceptionRecord.ExceptionAddress = GetNativeContextPC(ucontext);
     exceptionRecord.NumberParameters = numParams;

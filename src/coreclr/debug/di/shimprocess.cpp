@@ -459,15 +459,15 @@ CORDB_ADDRESS ShimProcess::GetNtRaiseExceptionContextRecord(DWORD dwThreadId, co
 //    chance where it is already past it), so continuing without a fixup re-executes it forever.
 //    That state is either the live thread context or the ContextRecord passed to
 //    NtRaiseException (see GetNtRaiseExceptionContextRecord); both cases are handled.
-//    For both encodings (CC and CD 03) ExceptionAddress + 1 is the next instruction, because for
-//    CD 03 the OS reports the address of the 03 byte.
+//    On x86 and x64, ExceptionAddress + 1 is the next instruction for both encodings (CC and
+//    CD 03), because for CD 03 the OS reports the address of the 03 byte. On ARM64, the next
+//    instruction is four bytes after the BRK instruction.
 //---------------------------------------------------------------------------------------
 bool ShimProcess::SkipUnhandledBreakpointInstruction(DWORD dwThreadId, const EXCEPTION_RECORD * pRecord)
 {
-#if defined(TARGET_WINDOWS) && (defined(TARGET_AMD64) || defined(TARGET_X86))
+#if defined(TARGET_WINDOWS) && (defined(TARGET_AMD64) || defined(TARGET_X86) || defined(TARGET_ARM64))
     if ((pRecord->ExceptionCode != STATUS_BREAKPOINT) ||
-        (m_pLiveDataTarget == NULL) ||
-        (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_DbgSkipUnhandledNativeBreakpoint) == 0))
+        (m_pLiveDataTarget == NULL))
     {
         return false;
     }
@@ -504,6 +504,9 @@ bool ShimProcess::SkipUnhandledBreakpointInstruction(DWORD dwThreadId, const EXC
         }
     }
 
+    const char *breakpointName;
+    CORDB_ADDRESS addrResume;
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
     // Confirm a breakpoint instruction is still at the faulting address: CC at addrException,
     // or CD 03 with addrException pointing at the 03 byte.
     BYTE bytes[2] = { 0, 0 };
@@ -529,7 +532,23 @@ bool ShimProcess::SkipUnhandledBreakpointInstruction(DWORD dwThreadId, const EXC
         return false;
     }
 
-    CORDB_ADDRESS addrResume = addrException + 1;
+    breakpointName = fIsInt3 ? "int3" : "int 3";
+    addrResume = addrException + 1;
+#elif defined(TARGET_ARM64)
+    PRD_TYPE instruction;
+    ULONG32 cbRead = 0;
+    hr = m_pLiveDataTarget->ReadVirtual(addrException, reinterpret_cast<BYTE *>(&instruction), sizeof(instruction), &cbRead);
+    if (FAILED(hr) || (cbRead != sizeof(instruction)) || !PRDIsBreakInst(&instruction))
+    {
+        LOG((LF_CORDB, LL_INFO10, "SP::SUBI not skipping: no breakpoint instruction at %p tid=0x%x\n",
+            pRecord->ExceptionAddress, dwThreadId));
+        return false;
+    }
+
+    breakpointName = "brk";
+    addrResume = addrException + CORDbg_BREAK_INSTRUCTION_SIZE;
+#endif
+
     if (addrFaultContext == 0)
     {
         CORDbgSetIP(&context, CORDB_ADDRESS_TO_PTR(addrResume));
@@ -568,7 +587,7 @@ bool ShimProcess::SkipUnhandledBreakpointInstruction(DWORD dwThreadId, const EXC
     }
 
     LOG((LF_CORDB, LL_INFO10, "SP::SUBI skipped unowned %s at %p, resuming at %p via %s tid=0x%x\n",
-        fIsInt3 ? "int3" : "int 3", pRecord->ExceptionAddress, CORDB_ADDRESS_TO_PTR(addrResume),
+        breakpointName, pRecord->ExceptionAddress, CORDB_ADDRESS_TO_PTR(addrResume),
         (addrFaultContext == 0) ? "SetThreadContext" : "NtContinue", dwThreadId));
     return true;
 #else
