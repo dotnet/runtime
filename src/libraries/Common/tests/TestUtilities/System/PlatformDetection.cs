@@ -487,8 +487,6 @@ namespace System
             }
         }
 
-        public static bool IsRuntimeAsyncSupported => !IsMonoRuntime;
-
         private static Version GetICUVersion()
         {
             int version = 0;
