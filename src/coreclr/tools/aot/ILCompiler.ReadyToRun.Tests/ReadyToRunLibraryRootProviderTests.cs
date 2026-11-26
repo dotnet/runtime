@@ -67,6 +67,10 @@ public class ReadyToRunLibraryRootProviderTests
 
         Assert.Contains(((EcmaModule)context.SystemModule).GetType("System"u8, "RuntimeTypeHandle"u8)
             .GetMethod("GetRuntimeTypeFromHandle"u8, null), roots.Methods);
+        MetadataType genericsHelpers = ((EcmaModule)context.SystemModule).GetType("System.Runtime.CompilerServices"u8, "GenericsHelpers"u8);
+        Assert.Contains(genericsHelpers.GetMethod("MethodWithSlotAndModule"u8, null), roots.Methods);
+        Assert.Contains(genericsHelpers.GetMethod("ClassWithSlotAndModule"u8, null), roots.Methods);
+        Assert.Null(ReadyToRunJitHelperRootProvider.GetManagedHelper(context, CorInfoHelpFunc.CORINFO_HELP_UNDEF));
         Assert.All(roots.Methods, helper =>
         {
             Assert.False(profile.IsMethodInInputProfileData(helper));

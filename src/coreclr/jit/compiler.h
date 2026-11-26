@@ -89,6 +89,7 @@ struct JumpThreadInfo;     // defined in redundantbranchopts.cpp
 class ProfileSynthesis;    // defined in profilesynthesis.h
 class PerLoopInfo;         // defined in inductionvariableopts.cpp
 class RangeCheck;          // defined in rangecheck.h
+struct KnownBits;          // defined in knownbits.h
 #ifdef TARGET_WASM
 class WasmInterval; // defined in fgwasm.h
 enum class WasmValueType : unsigned;
@@ -9405,7 +9406,10 @@ public:
     {
         return optAssertionCount;
     }
-    ASSERT_TP* bbJtrueAssertionOut;
+    // The known bits of PHIs, see KnownBitsAnalysis::ComputeForPhi.
+    typedef JitHashTable<ValueNum, JitSmallPrimitiveKeyFuncs<ValueNum>, KnownBits> KnownBitsPhiCache;
+    KnownBitsPhiCache*                                                             optKnownBitsPhiCache = nullptr;
+    ASSERT_TP*                                                                     bbJtrueAssertionOut;
 
     // Assertion prop helpers.
     ASSERT_TP&          GetAssertionDep(unsigned lclNum, bool mustExist = false);
@@ -11948,6 +11952,8 @@ public:
         STRESS_MODE(POISON_IMPLICIT_BYREFS)                                                     \
         STRESS_MODE(THREE_OPT_LAYOUT)                                                           \
         STRESS_MODE(GET_RANGE) /* Force slow SSA-based range walk in GetRange */                \
+        STRESS_MODE(KNOWNBITS_BUDGET) /* Use larger budgets in KnownBitsAnalysis */             \
+        STRESS_MODE(KNOWNBITS_RELOPS) /* Let KnownBitsAnalysis try to fold all EQ/NE relops */  \
         STRESS_MODE(COUNT)
 
     enum                compStressArea

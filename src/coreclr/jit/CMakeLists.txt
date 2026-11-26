@@ -159,6 +159,7 @@ set( JIT_SOURCES
   jiteh.cpp
   jithashtable.cpp
   jitmetadata.cpp
+  knownbitsanalysis.cpp
   layout.cpp
   lclmorph.cpp
   lclvars.cpp
@@ -389,6 +390,8 @@ set( JIT_HEADERS
   jitmetadatalist.h
   jitpch.h
   jitstd.h
+  knownbits.h
+  knownbitsanalysis.h
   lir.h
   loopcloning.h
   loopcloningopts.h

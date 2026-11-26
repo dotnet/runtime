@@ -3,7 +3,8 @@
   <PropertyGroup>
     <!-- TODO: Remove once migrated to unsafe-v2. -->
     <MemorySafetyRulesVersion>1</MemorySafetyRulesVersion>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <!-- Plural so static graph builds reach the netstandard2.0 build pinned by SetTargetFramework in eng/generators.targets. -->
+    <TargetFrameworks>netstandard2.0</TargetFrameworks>
     <RootNamespace>Microsoft.Interop</RootNamespace>
     <DefineConstants>$(DefineConstants);MICROSOFT_INTEROP_SOURCEGENERATION</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
