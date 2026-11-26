@@ -15,13 +15,12 @@ namespace Wasm.Build.Tests.Blazor;
 
 public class WorkloadRequiredTests : BlazorWasmTestBase
 {
-    /* Keep in sync with settings in browser.proj, and WasmApp.Native.targets .
+    /* Keep in sync with the relink properties in eng/native.wasm.targets and BrowserWasmApp.CoreCLR.targets.
      * The `triggerValue` here is opposite of the default used when building the runtime pack
-     * (see browser.proj), and thus requiring a native build
+     * and thus requires a native build.
      */
     public static (string propertyName, bool triggerValue)[] PropertiesWithTriggerValues = new[]
     {
-        ("RunAOTCompilation", true),
         ("WasmEnableSIMD", false),
         ("WasmEnableExceptionHandling", false),
         ("InvariantTimezone", true),
@@ -94,30 +93,6 @@ public class WorkloadRequiredTests : BlazorWasmTestBase
         Assert.NotEqual(0, res.ExitCode);
         Assert.Contains("following workloads must be installed: wasm-tools", res.Output);
     }
-
-    [Theory, TestCategory("no-workload")]
-    [InlineData(Configuration.Debug)]
-    [InlineData(Configuration.Release)]
-    public void AOT_FailsBecauseItRequiresWorkload(Configuration config)
-    {
-        CommandResult res = PublishForRequiresWorkloadTest(config, extraProperties: "<RunAOTCompilation>true</RunAOTCompilation>");
-        Assert.NotEqual(0, res.ExitCode);
-        Assert.Contains("following workloads must be installed: wasm-tools", res.Output);
-    }
-
-    [Theory, TestCategory("no-workload")]
-    [InlineData(Configuration.Debug)]
-    [InlineData(Configuration.Release)]
-    public void AOT_And_NativeRef_FailBecauseTheyRequireWorkload(Configuration config)
-    {
-        CommandResult res = PublishForRequiresWorkloadTest(config,
-                                extraProperties: "<RunAOTCompilation>true</RunAOTCompilation>",
-                                extraItems: "<NativeFileReference Include=\"native-lib.o\" />");
-
-        Assert.NotEqual(0, res.ExitCode);
-        Assert.Contains("following workloads must be installed: wasm-tools", res.Output);
-    }
-
 
     [Theory, TestCategory("no-workload")]
     [MemberData(nameof(InvariantGlobalizationTestData), parameters: /*publish*/ false)]

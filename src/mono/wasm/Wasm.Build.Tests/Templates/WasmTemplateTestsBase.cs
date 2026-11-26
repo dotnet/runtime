@@ -46,7 +46,7 @@ public class WasmTemplateTestsBase : BuildTestBase
             { "Hello, Browser!", "TestOutput -> Hello, Browser!" }
         };
 
-    private string GetProjectName(string idPrefix, Configuration config, bool aot, bool appendUnicodeToPath, bool avoidAotLongPathIssue = false) =>
+    private string GetProjectName(string idPrefix, bool aot, Configuration config, bool appendUnicodeToPath, bool avoidAotLongPathIssue = false) =>
         avoidAotLongPathIssue ? // https://github.com/dotnet/runtime/issues/103625
             $"{GetRandomId()}" :
             appendUnicodeToPath ?
@@ -55,7 +55,7 @@ public class WasmTemplateTestsBase : BuildTestBase
 
     private (string projectName, string logPath, string nugetDir) InitProjectLocation(string idPrefix, Configuration config, bool aot, bool appendUnicodeToPath, bool avoidAotLongPathIssue = false)
     {
-        string projectName = GetProjectName(idPrefix, config, aot, appendUnicodeToPath, avoidAotLongPathIssue);
+        string projectName = GetProjectName(idPrefix, aot, config, appendUnicodeToPath, avoidAotLongPathIssue);
         (string logPath, string nugetDir) = InitPaths(projectName);
         InitProjectDir(_projectDir, addNuGetSourceForLocalPackages: true);
         return (projectName, logPath, nugetDir);
@@ -64,7 +64,6 @@ public class WasmTemplateTestsBase : BuildTestBase
     public ProjectInfo CreateWasmTemplateProject(
         Template template,
         Configuration config,
-        bool aot,
         string idPrefix = "wbt",
         bool? appendUnicodeToPath = null,
         string extraArgs = "",
@@ -75,7 +74,7 @@ public class WasmTemplateTestsBase : BuildTestBase
         string insertAtEnd = "")
     {
         (string projectName, string logPath, string nugetDir) =
-            InitProjectLocation(idPrefix, config, aot, appendUnicodeToPath ?? s_buildEnv.IsRunningOnCI);
+            InitProjectLocation(idPrefix, config, false, appendUnicodeToPath ?? s_buildEnv.IsRunningOnCI);
 
         if (addFrameworkArg) {
             var defaultTarget = template switch

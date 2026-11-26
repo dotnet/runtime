@@ -23,14 +23,10 @@ namespace Wasm.Build.Tests;
 		[Theory]
 		[InlineData("v12.0", "false", null, true)]
 		[InlineData("v13.0", "false", null, true)]
-		[InlineData("v12.0", "true", null, null)]
-		[InlineData("v12.0", null, null, null)]
 		[InlineData("v11.0", "false", null, null)]
 		[InlineData("v10.0", "true", null, null)]
 		[InlineData("v12.0", "false", "true", false)]
 		[InlineData("v12.0", "false", "false", true)]
-		[InlineData("v12.0", "true", "true", false)]
-		[InlineData("v12.0", "true", "false", true)]
 		[InlineData("v11.0", "false", "true", false)]
 		[InlineData("v11.0", "false", "false", true)]
 		public void IntegrityCheckConfiguration(string framework, string? useMonoRuntime, string? enableIntegrityCheck, bool? expectedDisableIntegrityCheck)
@@ -57,10 +53,30 @@ namespace Wasm.Build.Tests;
 		}
 
         [Theory]
+        [InlineData("true")]
+        [InlineData(null)]
+        public void Net12RejectsMonoRuntime(string? useMonoRuntime)
+        {
+            using var dir = new TempDirectory();
+            var task = new GenerateWasmBootJson
+            {
+                BuildEngine = new TestBuildEngine(),
+                AssemblyPath = typeof(GenerateWasmBootJsonTests).Assembly.Location,
+                Resources = [],
+                Endpoints = [],
+                TargetFrameworkVersion = "v12.0",
+                UseMonoRuntime = useMonoRuntime,
+                OutputPath = Path.Combine(dir.Path, "boot.json")
+            };
+
+            InvalidOperationException exception = Assert.Throws<InvalidOperationException>(() => task.Execute());
+            Assert.Contains("Mono runtime is not supported for target framework 12.0 or later.", exception.Message);
+        }
+
+        [Theory]
         [InlineData("v12.0", false, false, true)]
         [InlineData("v12.0", false, true, true)]
         [InlineData("v13.0", false, false, true)]
-        [InlineData("v12.0", true, false, false)]
         [InlineData("v11.0", false, false, false)]
         [InlineData("v11.0", false, true, false)]
         [InlineData("v11.0", true, false, false)]

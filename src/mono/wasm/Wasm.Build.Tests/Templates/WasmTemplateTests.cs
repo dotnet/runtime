@@ -83,7 +83,7 @@ namespace Wasm.Build.Tests
                         <Error Text="No file was linked-out. Trimming probably doesn't work (PublishTrimmed=$(PublishTrimmed))" Condition="@(_LinkedOutFile->Count()) == 0" />
                     </Target>
                     """;
-            ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot: false, "browser", insertAtEnd: atEnd);
+            ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, "browser", insertAtEnd: atEnd);
             UpdateBrowserProgramFile();
             UpdateBrowserMainJs();
 
@@ -104,7 +104,7 @@ namespace Wasm.Build.Tests
         [InlineData(Configuration.Release)]
         public void BrowserBuildAndPublishOutputDirectories(Configuration config)
         {
-            ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot: false, "output_directory");
+            ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, "output_directory");
             (string projectDir, string buildOutput) = BuildProject(info, config);
 
             string buildOutputDirectory = Path.Combine(
@@ -155,7 +155,7 @@ namespace Wasm.Build.Tests
 
         private async Task BrowserRunTwiceWithAndThenWithoutBuildAsync(Configuration config, string extraProperties = "", bool runOutsideProjectDirectory = false)
         {
-            ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot: false, "browser", extraProperties: extraProperties);
+            ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, "browser", extraProperties: extraProperties);
             UpdateBrowserProgramFile();
             UpdateBrowserMainJs(forwardConsole: true);
 
@@ -221,7 +221,6 @@ namespace Wasm.Build.Tests
             ProjectInfo info = CreateWasmTemplateProject(
                 Template.WasmBrowser,
                 config,
-                aot: false,
                 "browser",
                 extraArgs: extraNewArgs,
                 addFrameworkArg: extraNewArgs.Length == 0
@@ -245,7 +244,7 @@ namespace Wasm.Build.Tests
         [TestCategory("workload")]
         public async Task BuildAndRunForDifferentOutputPaths(Configuration config, bool appendRID, bool useArtifacts)
         {
-            ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot: false);
+            ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config);
             UpdateBrowserProgramFile();
             UpdateBrowserMainJs(forwardConsole: true);
 
@@ -274,85 +273,6 @@ namespace Wasm.Build.Tests
         }
 
         [Theory]
-        [InlineData("", true)] // Default case
-        [InlineData("false", false)] // the other case
-        [TestCategory("native"), TestCategory("mono"), TestCategory("workload")]
-        public async Task Test_WasmStripILAfterAOT(string stripILAfterAOT, bool expectILStripping)
-        {
-            Configuration config = Configuration.Release;
-            bool aot = true;
-            string extraProperties = "<RunAOTCompilation>true</RunAOTCompilation>";
-            if (!string.IsNullOrEmpty(stripILAfterAOT))
-                extraProperties += $"<WasmStripILAfterAOT>{stripILAfterAOT}</WasmStripILAfterAOT>";
-            ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot, "strip", extraProperties: extraProperties);
-
-            UpdateBrowserProgramFile();
-            UpdateBrowserMainJs();
-
-            PublishProject(info, config, new PublishOptions(UseCache: false, AssertAppBundle: false));
-            await RunForBuildWithDotnetRun(new BrowserRunOptions(config, ExpectedExitCode: 42));
-
-            string projectDirectory = Path.GetDirectoryName(info.ProjectFilePath)!;
-            string objBuildDir = Path.Combine(projectDirectory, "obj", config.ToString(), BuildTestBase.DefaultTargetFramework, "wasm", "for-publish");
-
-            string frameworkDir = GetBinFrameworkDir(config, forPublish: true);
-            TestWasmStripILAfterAOTOutput(objBuildDir, frameworkDir, expectILStripping, _testOutput);
-        }
-
-        internal static void TestWasmStripILAfterAOTOutput(string objBuildDir, string frameworkDir, bool expectILStripping, ITestOutputHelper testOutput)
-        {
-            string origAssemblyDir = Path.Combine(objBuildDir, "aot-in");
-            string strippedAssemblyDir = Path.Combine(objBuildDir, "stripped");
-            Assert.True(Directory.Exists(origAssemblyDir), $"Could not find the original AOT input assemblies dir: {origAssemblyDir}");
-            if (expectILStripping)
-                Assert.True(Directory.Exists(strippedAssemblyDir), $"Could not find the stripped assemblies dir: {strippedAssemblyDir}");
-            else
-                Assert.False(Directory.Exists(strippedAssemblyDir), $"Expected {strippedAssemblyDir} to not exist");
-
-            string assemblyToExamine = "System.Private.CoreLib.dll";
-            string assemblyToExamineWithoutExtension = Path.GetFileNameWithoutExtension(assemblyToExamine);
-            string originalAssembly = Path.Combine(objBuildDir, origAssemblyDir, assemblyToExamine);
-            string strippedAssembly = Path.Combine(objBuildDir, strippedAssemblyDir, assemblyToExamine);
-            string? bundledAssembly = Directory.EnumerateFiles(frameworkDir, $"*{ProjectProviderBase.WasmAssemblyExtension}").FirstOrDefault(f => Path.GetFileNameWithoutExtension(f).StartsWith(assemblyToExamineWithoutExtension));
-            Assert.True(File.Exists(originalAssembly), $"Expected {nameof(originalAssembly)} {originalAssembly} to exist");
-            Assert.True(bundledAssembly != null && File.Exists(bundledAssembly), $"Expected {nameof(bundledAssembly)} {bundledAssembly} to exist");
-            if (expectILStripping)
-                Assert.True(File.Exists(strippedAssembly), $"Expected {nameof(strippedAssembly)} {strippedAssembly} to exist");
-            else
-                Assert.False(File.Exists(strippedAssembly), $"Expected {strippedAssembly} to not exist");
-
-            string compressedOriginalAssembly = Utils.GZipCompress(originalAssembly);
-            string compressedBundledAssembly = Utils.GZipCompress(bundledAssembly);
-            FileInfo compressedOriginalAssembly_fi = new FileInfo(compressedOriginalAssembly);
-            FileInfo compressedBundledAssembly_fi = new FileInfo(compressedBundledAssembly);
-
-            testOutput.WriteLine ($"compressedOriginalAssembly_fi: {compressedOriginalAssembly_fi.Length}, {compressedOriginalAssembly}");
-            testOutput.WriteLine ($"compressedBundledAssembly_fi: {compressedBundledAssembly_fi.Length}, {compressedBundledAssembly}");
-
-            if (expectILStripping)
-            {
-                if (!UseWebcil)
-                {
-                    string compressedStrippedAssembly = Utils.GZipCompress(strippedAssembly);
-                    FileInfo compressedStrippedAssembly_fi = new FileInfo(compressedStrippedAssembly);
-                    testOutput.WriteLine ($"compressedStrippedAssembly_fi: {compressedStrippedAssembly_fi.Length}, {compressedStrippedAssembly}");
-                    Assert.True(compressedOriginalAssembly_fi.Length > compressedStrippedAssembly_fi.Length, $"Expected original assembly({compressedOriginalAssembly}) size ({compressedOriginalAssembly_fi.Length}) " +
-                                $"to be bigger than the stripped assembly ({compressedStrippedAssembly}) size ({compressedStrippedAssembly_fi.Length})");
-                    Assert.True(compressedBundledAssembly_fi.Length == compressedStrippedAssembly_fi.Length, $"Expected bundled assembly({compressedBundledAssembly}) size ({compressedBundledAssembly_fi.Length}) " +
-                                $"to be the same as the stripped assembly ({compressedStrippedAssembly}) size ({compressedStrippedAssembly_fi.Length})");
-                }
-            }
-            else
-            {
-                if (!UseWebcil)
-                {
-                    // FIXME: The bundled file would be .wasm in case of webcil, so can't compare size
-                    Assert.True(compressedOriginalAssembly_fi.Length == compressedBundledAssembly_fi.Length);
-                }
-            }
-        }
-
-        [Theory]
         [InlineData(false)]
         [InlineData(true)]
         [TestCategory("workload")]
@@ -361,7 +281,7 @@ namespace Wasm.Build.Tests
             Configuration config = Configuration.Release;
             string shouldCopy = copyOutputSymbolsToPublishDirectory.ToString().ToLower();
             string extraProperties = $"<CopyOutputSymbolsToPublishDirectory>{shouldCopy}</CopyOutputSymbolsToPublishDirectory>";
-            ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot: false, "publishpdb", extraProperties: extraProperties);
+            ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, "publishpdb", extraProperties: extraProperties);
 
             PublishProject(info, config, new PublishOptions(ExtraMSBuildArgs: "-p:CompressionEnabled=true"));
             string publishPath = GetBinFrameworkDir(config, forPublish: true);
@@ -419,7 +339,7 @@ namespace Wasm.Build.Tests
         {
             string shouldEmit = emitTypeScriptDts ? "true" : "false";
             string emitTypeScriptDtsProp = $"<WasmEmitTypeScriptDefinitions>{shouldEmit}</WasmEmitTypeScriptDefinitions>";
-            ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot: false, "tsdefs", extraProperties: emitTypeScriptDtsProp);
+            ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, "tsdefs", extraProperties: emitTypeScriptDtsProp);
 
             string projectDirectory = Path.GetDirectoryName(info.ProjectFilePath)!;
             string dotnetDtsWwwrootPath = Path.Combine(projectDirectory, "wwwroot", "_framework", "dotnet.d.ts");
@@ -447,31 +367,6 @@ namespace Wasm.Build.Tests
             {
                 Assert.False(fileExists, $"dotnet.d.ts should not exist at {dotnetDtsWwwrootPath} after the build with WasmEmitTypeScriptDefinitions={shouldEmit}");
                 Assert.False(File.Exists(rootDotnetDtsWwwrootPath), $"dotnet.d.ts should not exist at {rootDotnetDtsWwwrootPath} after the build with WasmEmitTypeScriptDefinitions={shouldEmit}");
-            }
-        }
-
-        [Theory]
-        [InlineData("true", false)]
-        [InlineData("false", true)]
-        [InlineData("", false)] // Default case
-        [TestCategory("mono"), TestCategory("workload")]
-        public void UseMonoRuntimeParameter(string useMonoRuntimeArg, bool expectUseMonoRuntimeProperty)
-        {
-            Configuration config = Configuration.Debug;
-            string extraArgs = string.IsNullOrEmpty(useMonoRuntimeArg) ? "" : $"--UseMonoRuntime {useMonoRuntimeArg}";
-            ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot: false, "usemonoruntime", extraArgs: extraArgs);
-
-            string projectFile = File.ReadAllText(info.ProjectFilePath);
-
-            // Verify UseMonoRuntime presence in the project file
-            bool containsUseMonoRuntime = projectFile.Contains("<UseMonoRuntime>false</UseMonoRuntime>");
-            if (expectUseMonoRuntimeProperty)
-            {
-                Assert.True(containsUseMonoRuntime, $"Expected <UseMonoRuntime>false</UseMonoRuntime> to be present in the project file when --UseMonoRuntime {useMonoRuntimeArg}");
-            }
-            else
-            {
-                Assert.False(containsUseMonoRuntime, $"Expected <UseMonoRuntime>false</UseMonoRuntime> to not be present in the project file when --UseMonoRuntime {useMonoRuntimeArg}");
             }
         }
     }

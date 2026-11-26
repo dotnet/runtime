@@ -43,7 +43,6 @@ namespace Wasm.Build.Templates.Tests
             ProjectInfo info = CreateWasmTemplateProject(
                 Template.WasmBrowser,
                 config,
-                aot: false,
                 $"UndefinedNativeSymbol_{(allowUndefined ? "allowed" : "disabled")}",
                 extraItems: extraItems,
                 extraProperties: extraProperties
@@ -70,7 +69,6 @@ namespace Wasm.Build.Templates.Tests
             ProjectInfo info = CreateWasmTemplateProject(
                 Template.WasmBrowser,
                 config,
-                aot: false,
                 "dllimport_incompatible",
                 extraItems: extraItems
             );

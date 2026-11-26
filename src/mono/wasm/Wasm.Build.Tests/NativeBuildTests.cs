@@ -26,7 +26,7 @@ namespace Wasm.Build.Tests
         public async Task NativeRelinkWithoutManagedTimers(Configuration config)
         {
             ProjectInfo info = CreateWasmTemplateProject(
-                Template.WasmBrowser, config, aot: false, "native_relink_without_timers",
+                Template.WasmBrowser, config, "native_relink_without_timers",
                 extraProperties: "<WasmBuildNative>true</WasmBuildNative><PublishTrimmed>true</PublishTrimmed><WasmRunInWorker>false</WasmRunInWorker>");
             ReplaceFile("Program.cs", Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "SimpleSourceChange.cs"));
             ReplaceMainJsWithMinimalRunMain();
@@ -36,14 +36,14 @@ namespace Wasm.Build.Tests
         }
 
         [Theory]
-        [BuildAndRun(aot: false)]
+        [BuildAndRun]
         [TestCategory("wasm-opt")]
         public async Task SimpleNativeBuild(Configuration config, bool aot)
         {
+            Assert.False(aot);
             ProjectInfo info = CreateWasmTemplateProject(
                 Template.WasmBrowser,
                 config,
-                aot,
                 "simple_native_build",
                 extraProperties: "<WasmBuildNative>true</WasmBuildNative>");
             
@@ -60,11 +60,12 @@ namespace Wasm.Build.Tests
         }
 
         [Theory]
-        [BuildAndRun(aot: false)]
-        [TestCategory("native"), TestCategory("mono")]
+        [BuildAndRun]
+        [TestCategory("native")]
         [SkipOnPlatform(TestPlatforms.AnyUnix, "The cmd.exe quoting behavior this covers is Windows-specific.")]
         public async Task NativeBuildWithSpecialCharsInTempPath(Configuration config, bool aot)
         {
+            Assert.False(aot);
             // Regression test for https://github.com/dotnet/runtime/issues/120327.
             // Native compilation runs the compiler through a temporary batch file created under the
             // temp directory. Windows user profile names can contain parentheses (e.g. "John(US)"),
@@ -76,7 +77,6 @@ namespace Wasm.Build.Tests
             ProjectInfo info = CreateWasmTemplateProject(
                 Template.WasmBrowser,
                 config,
-                aot,
                 "parens_temp",
                 extraProperties: "<WasmBuildNative>true</WasmBuildNative>");
 
@@ -93,74 +93,6 @@ namespace Wasm.Build.Tests
 
             PublishProject(info, config, new PublishOptions(ExtraBuildEnvironmentVariables: envVars), isNativeBuild: true);
             await RunForPublishWithWebServer(new BrowserRunOptions(config, ExpectedExitCode: 42));
-        }
-
-        [Theory]
-        [BuildAndRun(aot: true)]
-        [TestCategory("native"), TestCategory("mono")]
-        public void AOTNotSupportedWithNoTrimming(Configuration config, bool aot)
-        {
-            ProjectInfo info = CreateWasmTemplateProject(
-                Template.WasmBrowser,
-                config,
-                aot,
-                "mono_aot_cross",
-                extraProperties: "<PublishTrimmed>false</PublishTrimmed>");
-            
-            UpdateBrowserProgramFile();
-            UpdateBrowserMainJs();
-
-            (string _, string output) = PublishProject(info, config, new PublishOptions(ExpectSuccess: false, AOT: aot));
-            Assert.Contains("AOT is not supported without IL trimming", output);
-        }
-
-        [Theory]
-        [BuildAndRun(config: Configuration.Release, aot: true)]
-        [TestCategory("native"), TestCategory("mono")]
-        public void IntermediateBitcodeToObjectFilesAreNotLLVMIR(Configuration config, bool aot)
-        {
-            string printFileTypeTarget = @"
-                <Target Name=""PrintIntermediateFileType"" AfterTargets=""WasmNestedPublishApp"">
-                    <Exec Command=""wasm-dis &quot;$(_WasmIntermediateOutputPath)System.Private.CoreLib.dll.o&quot; -o &quot;$(_WasmIntermediateOutputPath)wasm-dis-out.txt&quot;""
-                          EnvironmentVariables=""@(EmscriptenEnvVars)""
-                          IgnoreExitCode=""true"">
-
-                        <Output TaskParameter=""ExitCode"" PropertyName=""ExitCode"" />
-                    </Exec>
-
-                    <Message Text=""
-                    ** wasm-dis exit code: $(ExitCode)
-                    "" Importance=""High"" />
-                </Target>
-                ";
-            
-            ProjectInfo info = CreateWasmTemplateProject(
-                Template.WasmBrowser,
-                config,
-                aot,
-                "bc_to_o",
-                insertAtEnd: printFileTypeTarget);
-
-            (string _, string output) = PublishProject(info, config, new PublishOptions(AOT: aot));
-            if (!output.Contains("** wasm-dis exit code: 0"))
-                throw new XunitException($"Expected to successfully run wasm-dis on System.Private.CoreLib.dll.o ."
-                                            + " It might fail if it was incorrectly compiled to a bitcode file, instead of wasm.");
-        }
-
-        [Theory]
-        [BuildAndRun(config: Configuration.Release, aot: true)]
-        [TestCategory("native"), TestCategory("mono")]
-        public void NativeBuildIsRequired(Configuration config, bool aot)
-        {
-            ProjectInfo info = CreateWasmTemplateProject(
-                Template.WasmBrowser,
-                config,
-                aot,
-                "native_build",
-                extraProperties: "<WasmBuildNative>false</WasmBuildNative><WasmSingleFileBundle>true</WasmSingleFileBundle>");
-
-            (string _, string output) = PublishProject(info, config, new PublishOptions(ExpectSuccess: false, AOT: aot));
-            Assert.Contains("WasmBuildNative is required", output);
         }
 
         [Fact]

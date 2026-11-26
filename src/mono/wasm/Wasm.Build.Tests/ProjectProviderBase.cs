@@ -510,10 +510,9 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         }
     }
 
-    // Extract the runtime pack root that the build actually resolved (printed by
-    // BrowserWasmApp.targets / BrowserWasmApp.CoreCLR.targets as
-    // "** MicrosoftNetCoreAppRuntimePackDir : '<path>'"). Returns null when the line is
-    // not present (e.g. assertions running off a cached output that didn't capture it).
+    // Extract the runtime pack root that the build actually resolved
+    // (printed by BrowserWasmApp.CoreCLR.targets as "** MicrosoftNetCoreAppRuntimePackDir : '<path>'").
+    // Returns null when the line is not present (e.g. assertions running off a cached output that didn't capture it).
     public static string? TryGetRuntimePackDirFromBuildOutput(string? buildOutput)
     {
         if (string.IsNullOrEmpty(buildOutput))
