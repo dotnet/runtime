@@ -598,6 +598,31 @@ unsigned CodeGenInterface::instKMaskBaseSize(instruction ins)
 
 /*****************************************************************************
  *
+ *  Returns the value of the given instruction's output size attribute, in bytes,
+ *  or 0 if it doesn't have one. Currently only packed narrowing instructions have one.
+ */
+
+unsigned CodeGenInterface::instOutputSize(instruction ins)
+{
+    assert((unsigned)ins < ArrLen(instInfo));
+    insFlags outputSize = static_cast<insFlags>((instInfo[ins] & Output_Mask));
+
+    switch (outputSize)
+    {
+        case Output_8Bit:
+            return 1;
+        case Output_16Bit:
+            return 2;
+        case Output_32Bit:
+            return 4;
+        default:
+            assert(outputSize == INS_FLAGS_None);
+            return 0;
+    }
+}
+
+/*****************************************************************************
+ *
  *  Returns true if the given CPU instruction has a pseudo name
  */
 

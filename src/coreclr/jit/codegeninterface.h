@@ -209,6 +209,7 @@ public:
 
     static unsigned instInputSize(instruction ins);
     static unsigned instKMaskBaseSize(instruction ins);
+    static unsigned instOutputSize(instruction ins);
 
     static bool instHasPseudoName(instruction ins);
 
