@@ -417,7 +417,7 @@ internal sealed partial class GrammarActions
             "ldelem.any" => ILOpCode.Ldelem,
             "stelem.any" => ILOpCode.Stelem,
             "endfault" => ILOpCode.Endfinally,
-            _ => Enum.Parse<ILOpCode>(text.Replace('.', '_'), ignoreCase: true),
+            _ => (ILOpCode)Enum.Parse(typeof(ILOpCode), text.Replace('.', '_'), ignoreCase: true),
         };
     }
 
