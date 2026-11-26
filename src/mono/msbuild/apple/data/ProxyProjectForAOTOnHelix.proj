@@ -15,7 +15,7 @@
 
   <!-- The app bundle source is staged outside publish because publish is the crossgen2
        input for every run, and AppleAppBuilder bundles every top-level entry of its AppDir. -->
-  <PropertyGroup Condition="'$(PublishReadyToRun)' == 'true' and '$(UseMonoRuntime)' != 'true' and '$(UseNativeAOTRuntime)' != 'true'">
+  <PropertyGroup Condition="'$(PublishReadyToRun)' == 'true' and '$(UseNativeAOTRuntime)' != 'true'">
     <_R2RAppBundleSourceDir>$([MSBuild]::NormalizeDirectory($(BaseIntermediateOutputPath), 'r2r-app-bundle-source'))</_R2RAppBundleSourceDir>
   </PropertyGroup>
 
@@ -120,7 +120,7 @@
       <MainLibraryFileName Condition="'$(MainLibraryFileName)' == '' and '$(IncludesTestRunner)' == 'true' and '$(_NativeAotLibraryTestOnHelix)' != 'true'">AppleTestRunner.dll</MainLibraryFileName>
       <MainLibraryFileName Condition="'$(_NativeAotLibraryTestOnHelix)' == 'true'"></MainLibraryFileName>
 
-      <AppleBuildDir Condition="'$(PublishReadyToRun)' == 'true' and '$(UseMonoRuntime)' != 'true' and '$(UseNativeAOTRuntime)' != 'true' and '$(PublishReadyToRunContainerFormat)' == 'macho'">$(_R2RAppBundleSourceDir)</AppleBuildDir>
+      <AppleBuildDir Condition="'$(PublishReadyToRun)' == 'true' and '$(UseNativeAOTRuntime)' != 'true' and '$(PublishReadyToRunContainerFormat)' == 'macho'">$(_R2RAppBundleSourceDir)</AppleBuildDir>
       <AppleBuildDir Condition="'$(AppleBuildDir)' == ''">$(OriginalPublishDir)</AppleBuildDir>
       <AppleBundleDir>$(TestRootDir)AppBundle\</AppleBundleDir>
     </PropertyGroup>
@@ -147,23 +147,15 @@
       SourceFiles="@(AppleAssembliesToBundle)"
       DestinationFolder="$(IntermediateOutputPath)" />
 
-    <PropertyGroup Condition="'$(UseRuntimeComponents)' == 'true'">
-      <DiagnosticPorts>127.0.0.1:9000,nosuspend,listen</DiagnosticPorts>
-    </PropertyGroup>
-
     <ItemGroup Condition="'$(_NativeAotLibraryTestOnHelix)' == 'true'">
       <IntermediateAssembly Remove="@(IntermediateAssembly)" />
       <IntermediateAssembly Include="$(OriginalPublishDir)$(AssemblyName).dll" />
     </ItemGroup>
 
-    <ItemGroup Condition="'$(UseRuntimeComponents)' == 'true'">
-      <RuntimeComponents Include="diagnostics_tracing" />
-      <RuntimeComponents Include="marshal-ilgen" />
-    </ItemGroup>
   </Target>
 
   <Target Name="_RunR2RCompilationOnHelix"
-          Condition="'$(PublishReadyToRun)' == 'true' and '$(UseMonoRuntime)' != 'true' and '$(UseNativeAOTRuntime)' != 'true'"
+          Condition="'$(PublishReadyToRun)' == 'true' and '$(UseNativeAOTRuntime)' != 'true'"
           DependsOnTargets="_PrepareR2RItemsOnHelix;CreateReadyToRunImages;_AddR2RFilesToAppleBundle" />
 
   <Target Name="_AddR2RFilesToAppleBundle"
