@@ -402,6 +402,67 @@ MethodTypeArgument* Compiler::impForwardedTypeArgs(const CORINFO_RESOLVED_TOKEN&
     return size == 0 ? args : nullptr;
 }
 
+// A surviving call inside an inlinee can request its dictionary directly from the root
+// when both the declaring type and every method argument have a root-relative binding.
+GenTree* Compiler::impTryRootCallContext(const CORINFO_RESOLVED_TOKEN& token,
+                                         const CORINFO_CALL_INFO&      callInfo,
+                                         const MethodTypeArgument*     methodArgs)
+{
+    assert(compIsForInlining() && callInfo.canForwardTypeArguments);
+    const bool method = ((size_t)callInfo.contextHandle & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD;
+    if (method && ((methodArgs == nullptr) || !callInfo.canForwardMethodContext))
+    {
+        return nullptr;
+    }
+
+    MethodTypeArgument owner{};
+    if (((token.pTypeSpec != nullptr) || (callInfo.sig.sigInst.classInstCount != 0)) &&
+        !impReadInlineMemberOwner(token, &owner))
+    {
+        return nullptr;
+    }
+    if (!method)
+    {
+        return owner.signature != nullptr ? impDeferredTypeExpression(owner, token.hClass) : nullptr;
+    }
+
+    unsigned arity                                      = callInfo.sig.sigInst.methInstCount;
+    BYTE     spec[MethodTypeArgument::MaxSignatureSize] = {IMAGE_CEE_CS_CALLCONV_GENERICINST};
+    unsigned size                                       = 1 + CorSigCompressData(arity, spec + 1);
+    for (unsigned i = 0; i < arity; i++)
+    {
+        const MethodTypeArgument& arg          = methodArgs[i];
+        BYTE                      parameter[5] = {ELEMENT_TYPE_MVAR};
+        PCCOR_SIGNATURE           bytes        = arg.signature;
+        unsigned                  length       = arg.signatureSize;
+        if (bytes == nullptr)
+        {
+            bytes  = parameter;
+            length = 1 + CorSigCompressData(arg.index, parameter + 1);
+        }
+        if (length > sizeof(spec) - size)
+        {
+            return nullptr;
+        }
+        memcpy(spec + size, bytes, length);
+        size += length;
+    }
+
+    BYTE* signature = getAllocator(CMK_Inlining).allocate<BYTE>(size);
+    memcpy(signature, spec, size);
+    auto* pending             = new (this, CMK_Inlining) DeferredHandleLookup{};
+    pending->kind             = DeferredHandleLookup::Kind::MethodExpression;
+    pending->methodExpression = new (this, CMK_Inlining)
+        DeferredHandleLookup::MethodExpression{token.hMethod, token.hClass, owner, signature, size};
+    Compiler*              root = impInlineRoot();
+    CORINFO_GENERIC_HANDLE handle =
+        (CORINFO_GENERIC_HANDLE)((size_t)callInfo.contextHandle & ~CORINFO_CONTEXTFLAGS_MASK);
+    GenTree* tree                             = gtNewRuntimeLookup(handle, CORINFO_HANDLETYPE_METHOD,
+                                                                   root->getRuntimeContextTree(root->impRuntimeContextKind()));
+    tree->AsRuntimeLookup()->gtDeferredLookup = pending;
+    return tree;
+}
+
 // Keep the input dictionary on the hidden argument. Morph prepares the lookup
 // only if the argument is still used after inlining.
 GenTree* Compiler::impDeferredCallContext(CORINFO_RESOLVED_TOKEN* token,
@@ -1330,7 +1391,12 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 assert(pConstrainedResolvedToken == nullptr && callInfo->kind == CORINFO_CALL);
                 assert(callInfo->instParamLookup.lookupKind.runtimeLookupKind == CORINFO_LOOKUP_DEFERRED);
                 forwardedTarget = callInfo->hMethod;
-                instParam       = impDeferredCallContext(pResolvedToken, callInfo->contextHandle);
+                instParam =
+                    compIsForInlining() ? impTryRootCallContext(*pResolvedToken, *callInfo, methodArgs) : nullptr;
+                if (instParam == nullptr)
+                {
+                    instParam = impDeferredCallContext(pResolvedToken, callInfo->contextHandle);
+                }
             }
             else
             {

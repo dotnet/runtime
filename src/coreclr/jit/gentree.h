@@ -9235,8 +9235,18 @@ struct DeferredHandleLookup
     enum class Kind : uint8_t
     {
         TypeExpression,
+        MethodExpression,
         CallContext,
         DevirtualizedMethodContext,
+    };
+
+    struct MethodExpression
+    {
+        CORINFO_METHOD_HANDLE method;
+        CORINFO_CLASS_HANDLE  owner;
+        MethodTypeArgument    ownerType;
+        PCCOR_SIGNATURE       methodSpec;
+        unsigned              methodSpecSize;
     };
 
     union
@@ -9246,6 +9256,7 @@ struct DeferredHandleLookup
             MethodTypeArgument     expression;
             CORINFO_GENERIC_HANDLE compileTimeHandle;
         } type;
+        MethodExpression* methodExpression;
         struct
         {
             CORINFO_CONTEXT_HANDLE context;

@@ -1159,6 +1159,8 @@ namespace Internal.JitInterface
         public bool exactContextNeedsRuntimeLookup { get { return _exactContextNeedsRuntimeLookup != 0; } set { _exactContextNeedsRuntimeLookup = value ? (byte)1 : (byte)0; } }
         private byte _canForwardTypeArguments;
         public bool canForwardTypeArguments { get { return _canForwardTypeArguments != 0; } set { _canForwardTypeArguments = value ? (byte)1 : (byte)0; } }
+        private byte _canForwardMethodContext;
+        public bool canForwardMethodContext { get { return _canForwardMethodContext != 0; } set { _canForwardMethodContext = value ? (byte)1 : (byte)0; } }
         public ushort methodInstantiationOffset;
 
         // If kind.CORINFO_VIRTUALCALL_STUB then stubLookup will be set.
@@ -1503,6 +1505,7 @@ namespace Internal.JitInterface
         // token comes from resolved static virtual method
         CORINFO_TOKENKIND_ResolvedStaticVirtualMethod = 0x1000 | CORINFO_TOKENKIND_Method,
 
+        CORINFO_TOKENKIND_MethodExpression = 0x10000 | CORINFO_TOKENKIND_Method,
         CORINFO_TOKENKIND_TypeExpression = 0x4000 | CORINFO_TOKENKIND_Class,
 
         // Resolve a TypeDef/TypeRef for use as an internal generic definition in a root TypeExpression.

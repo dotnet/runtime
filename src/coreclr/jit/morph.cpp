@@ -6946,6 +6946,23 @@ GenTree* Compiler::fgMaterializeDeferredLookup(GenTreeRuntimeLookup* tree)
             lookup                          = result.lookup;
             pending->type.compileTimeHandle = result.compileTimeHandle;
         }
+        else if (pending->kind == DeferredHandleLookup::Kind::MethodExpression)
+        {
+            const auto&            method = *pending->methodExpression;
+            CORINFO_RESOLVED_TOKEN expression{};
+            expression.tokenType    = CORINFO_TOKENKIND_MethodExpression;
+            expression.tokenContext = METHOD_BEING_COMPILED_CONTEXT();
+            expression.tokenScope   = info.compScopeHnd;
+            expression.hMethod      = method.method;
+            expression.hClass       = method.owner;
+            expression.pTypeSpec    = method.ownerType.signature;
+            expression.cbTypeSpec   = method.ownerType.signatureSize;
+            expression.pMethodSpec  = method.methodSpec;
+            expression.cbMethodSpec = method.methodSpecSize;
+            CORINFO_GENERICHANDLE_RESULT result;
+            info.compCompHnd->embedGenericHandle(&expression, false, info.compMethodHnd, &result);
+            lookup = result.lookup;
+        }
         else if (pending->kind == DeferredHandleLookup::Kind::DevirtualizedMethodContext)
         {
             CORINFO_CONTEXT_HANDLE context = MAKE_METHODCONTEXT((CORINFO_METHOD_HANDLE)tree->gtHnd);

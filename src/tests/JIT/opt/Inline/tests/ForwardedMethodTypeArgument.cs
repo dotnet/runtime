@@ -184,6 +184,30 @@ public class ForwardedMethodTypeArgument
         public static Type Get() => typeof(T);
     }
 
+    private class MethodOwner<A>
+    {
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static Type Kept<B>() => typeof(Dictionary<A, B>);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Type Relay<B>() => MethodOwner<B[]>.Kept<List<A>>();
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static Type Outer<B>() => MethodOwner<B>.Relay<A>();
+    }
+
+    private struct MethodValueOwner<A>
+    {
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public Type Kept<B>() => typeof(Dictionary<A, B>);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Type Relay<B>() => Kept<B[]>();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Type StructMethodContext<T, U>() => default(MethodValueOwner<U>).Relay<T>();
+
     private static int s_cacheInitializers;
 
     private static class Cache<A>
@@ -321,6 +345,11 @@ public class ForwardedMethodTypeArgument
     [Fact]
     public static void TestEntryPoint()
     {
+        Assert.Equal(typeof(Dictionary<string[], List<object>>), MethodOwner<string>.Outer<object>());
+        Assert.Equal(typeof(Dictionary<object[], List<string>>), MethodOwner<object>.Outer<string>());
+        Assert.Equal(typeof(Dictionary<object, string[]>), StructMethodContext<string, object>());
+        Assert.Equal(typeof(Dictionary<string, object[]>), StructMethodContext<object, string>());
+
         int before = s_constructions;
         Assert.True(Same<string>());
         Assert.True(Copied<string>());

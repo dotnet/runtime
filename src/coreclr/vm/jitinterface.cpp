@@ -2805,8 +2805,16 @@ void CEEInfo::embedGenericHandleInternal(CORINFO_RESOLVED_TOKEN* pResolvedToken,
         pTemplateMD = pMD;
 
         // Runtime lookup is only required for stubs. Regular entrypoints are always the same shared MethodDescs.
-        fRuntimeLookup = pMD->IsWrapperStub() &&
-            (th.IsSharedByGenericInstantiations() || TypeHandle::IsCanonicalSubtypeInstantiation(methodInst));
+        // A composed MethodSpec describes the exact instantiation in the root.
+        // The original method handle identifies the template used to encode the slot.
+        _ASSERTE(pResolvedToken->tokenType != CORINFO_TOKENKIND_MethodExpression ||
+                 (pResolvedToken->token == mdTokenNil && pResolvedToken->pMethodSpec != nullptr &&
+                  pResolvedToken->tokenContext == METHOD_BEING_COMPILED_CONTEXT() &&
+                  GetMethod(callerHandle) == m_pMethodBeingCompiled &&
+                  pResolvedToken->tokenScope == GetScopeHandle(m_pMethodBeingCompiled)));
+        fRuntimeLookup = (pResolvedToken->tokenType == CORINFO_TOKENKIND_MethodExpression) ||
+            (pMD->IsWrapperStub() &&
+             (th.IsSharedByGenericInstantiations() || TypeHandle::IsCanonicalSubtypeInstantiation(methodInst)));
     }
     else
     if (!fEmbedParent && pResolvedToken->hField != NULL)
@@ -5568,6 +5576,7 @@ void CEEInfo::getCallInfo(
     }
 
     pResult->canForwardTypeArguments = false;
+    pResult->canForwardMethodContext = false;
     pResult->methodInstantiationOffset = 0;
     pResult->instParamLookup = {};
     if (pResult->sig.hasTypeArg() && pResult->exactContextNeedsRuntimeLookup)
@@ -5575,7 +5584,8 @@ void CEEInfo::getCallInfo(
         pResult->instParamLookup.lookupKind.needsRuntimeLookup = true;
         pResult->instParamLookup.lookupKind.runtimeLookupKind = CORINFO_LOOKUP_DEFERRED;
         MethodDesc* caller = GetMethod(callerHandle);
-        if (pResult->kind == CORINFO_CALL && pConstrainedResolvedToken == nullptr && pMD->IsStatic() &&
+        if (pResult->kind == CORINFO_CALL && pConstrainedResolvedToken == nullptr &&
+            (pMD->IsStatic() || (pMD->GetMethodTable()->IsValueType() && !pMD->IsUnboxingStub())) &&
             pMD->HasSameMethodDefAs(pTargetMD) && caller->IsSharedByGenericInstantiations() &&
             !caller->IsILStub() && !caller->IsDynamicMethod() && pResolvedToken->tokenScope == GetScopeHandle(caller) &&
             pResolvedToken->tokenType == CORINFO_TOKENKIND_Method &&
@@ -5593,6 +5603,21 @@ void CEEInfo::getCallInfo(
                 TypeHandle owner = GetTypeFromContext(pResolvedToken->tokenContext);
                 pResult->canForwardTypeArguments = !owner.IsNull() && !owner.IsTypeDesc() &&
                     owner.AsMethodTable()->HasSameTypeDefAs(caller->GetMethodTable());
+            }
+            if (pResult->canForwardTypeArguments && pMD->HasMethodInstantiation())
+            {
+                // MethodDescSlot embeds the declaring MethodTable. A constructed method or
+                // owner may also depend on another collectible loader allocator.
+                LoaderAllocator* root = m_pMethodBeingCompiled->GetModule()->GetLoaderAllocator();
+                auto canRetain = [root](LoaderAllocator* allocator) {
+                    return !allocator->IsCollectible() || allocator == root;
+                };
+                TypeHandle owner(pResolvedToken->hClass);
+                pResult->canForwardMethodContext = !owner.IsTypeDesc() &&
+                    owner.AsMethodTable()->HasSameTypeDefAs(pMD->GetMethodTable()) &&
+                    (!owner.HasInstantiation() || pResolvedToken->pTypeSpec != nullptr) &&
+                    canRetain(pMD->GetLoaderAllocator()) && canRetain(pMD->GetMethodTable()->GetLoaderAllocator()) &&
+                    canRetain(owner.GetLoaderAllocator());
             }
             if (pResult->canForwardTypeArguments && caller->RequiresInstMethodDescArg())
             {

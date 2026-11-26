@@ -395,6 +395,7 @@ struct Agnostic_CORINFO_CALL_INFO
     Agnostic_CORINFO_LOOKUP       stubLookup; // first view of union.  others are matching or subordinate
     Agnostic_CORINFO_LOOKUP instParamLookup;
     BYTE canForwardTypeArguments;
+    BYTE canForwardMethodContext;
     WORD methodInstantiationOffset;
     DWORD                         exceptionCode;
 };
