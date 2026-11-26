@@ -44,19 +44,17 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             internal delegate*<JSMarshalerArgument*, void> Callback;
             internal readonly JSExportProvider Provider;
-            internal readonly string MethodId;
-            internal readonly string FullyQualifiedName;
-            internal readonly int SignatureHash;
+            internal readonly int MethodIndex;
+            internal readonly string CatalogKey;
             internal readonly JSFunctionBinding Signature;
             internal readonly int ArgumentCount;
             internal bool IsBinding;
 
-            internal PendingJSExport(JSExportProvider provider, string methodId, string fullyQualifiedName, int signatureHash, JSFunctionBinding signature)
+            internal PendingJSExport(JSExportProvider provider, int methodIndex, string catalogKey, JSFunctionBinding signature)
             {
                 Provider = provider;
-                MethodId = methodId;
-                FullyQualifiedName = fullyQualifiedName;
-                SignatureHash = signatureHash;
+                MethodIndex = methodIndex;
+                CatalogKey = catalogKey;
                 Signature = signature;
                 ArgumentCount = signature.ArgumentCount;
             }

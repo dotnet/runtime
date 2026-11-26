@@ -45,7 +45,8 @@ export function registerLazyCsFunctions(assemblyName: string, exportNames: strin
         exportsByAssembly.set(assemblyName, exports);
         exportsByAssembly.set(assemblyName + ".dll", exports);
     }
-    for (const { methodId, namespaceName, shortClassName, methodName, signatureHash, isDefault } of names) {
+    for (let index = 0; index < names.length; index++) {
+        const { namespaceName, shortClassName, methodName, signatureHash, isDefault } = names[index];
         const key = getCsFunctionKey(assemblyName, namespaceName, shortClassName, methodName, signatureHash);
         const existing = deferredCsFunctions.get(key);
         if (existing) {
@@ -53,7 +54,6 @@ export function registerLazyCsFunctions(assemblyName: string, exportNames: strin
             continue;
         }
 
-        const index = Number(methodId);
         const binding: DeferredBindingCS = { signature: snapshots[index], isBinding: false, isDisposed: false };
         const deferredFn = function (this: unknown, ...args: unknown[]) {
             assertRuntimeRunning();

@@ -31,7 +31,7 @@ public abstract class JSExportProvider
     [DynamicDependency(nameof(RegisterSignature), typeof(JSExportProvider))]
     protected JSExportProvider() { }
 
-    /// <summary>Gets the fully qualified export names, including signature hashes, in method ID order.</summary>
+    /// <summary>Gets the fully qualified export names, each followed by <c>#</c> and its signature hash in invariant decimal format, in method ID order.</summary>
     /// <returns>The generated export catalog.</returns>
     [DebuggerNonUserCode]
     public abstract ReadOnlySpan<string> GetExportNames();

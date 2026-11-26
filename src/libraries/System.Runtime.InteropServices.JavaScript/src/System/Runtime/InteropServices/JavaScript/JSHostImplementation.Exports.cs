@@ -56,15 +56,9 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 for (int index = 0; index < names.Length; index++)
                 {
-                    int separator = names[index].LastIndexOf('#');
-                    if (separator <= 0 || !int.TryParse(names[index].AsSpan(separator + 1), NumberStyles.Integer, CultureInfo.InvariantCulture, out int hash))
-                        throw new InvalidOperationException(SR.JSExportInvalidCatalog);
-
-                    string name = names[index].Substring(0, separator);
                     JSFunctionBinding signature = GetMethodSignature(signatures[index], null, null);
                     bindings[index] = signature;
-                    handles[index] = ctx.AllocJSExportHandle(new JSProxyContext.PendingJSExport(
-                        provider, index.ToString(CultureInfo.InvariantCulture), name, hash, signature));
+                    handles[index] = ctx.AllocJSExportHandle(new JSProxyContext.PendingJSExport(provider, index, names[index], signature));
                     signaturePointers[index] = (int)signature.Header;
                 }
 
@@ -110,7 +104,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
                 entry.IsBinding = true;
                 t_bindingExport = entry;
-                entry.Provider.Bind(entry.MethodId);
+                entry.Provider.Bind(entry.MethodIndex.ToString(CultureInfo.InvariantCulture));
                 if (entry.Callback == null)
                     throw new InvalidOperationException(SR.JSExportMissingBinding);
 
@@ -146,13 +140,7 @@ namespace System.Runtime.InteropServices.JavaScript
         public static unsafe JSFunctionBinding BindManagedFunction(string fullyQualifiedName, int signatureHash, ReadOnlySpan<JSMarshalerType> signatures, delegate*<JSMarshalerArgument*, void> callback)
         {
             if (t_bindingExport is JSProxyContext.PendingJSExport entry)
-            {
-                if (entry.FullyQualifiedName != fullyQualifiedName || entry.SignatureHash != signatureHash || callback == null || entry.Callback != null)
-                    throw new InvalidOperationException(SR.JSExportInvalidBinding);
-
-                entry.Callback = callback;
-                return entry.Signature;
-            }
+                return BindPendingJSExport(entry, fullyQualifiedName, signatureHash, callback);
 
             var (assemblyName, nameSpace, shortClassName, methodName) = ParseFQN(fullyQualifiedName);
             return BindManagedFunctionCore(assemblyName, nameSpace, shortClassName, methodName, signatureHash, signatures, callback);
@@ -204,22 +192,36 @@ namespace System.Runtime.InteropServices.JavaScript
             var callback = (delegate*<JSMarshalerArgument*, void>)wrapperInfo.MethodHandle.GetFunctionPointer();
 
             if (t_bindingExport is JSProxyContext.PendingJSExport entry)
-            {
-                if (entry.FullyQualifiedName != fullyQualifiedName || entry.SignatureHash != signatureHash || entry.Callback != null)
-                    throw new InvalidOperationException(SR.JSExportInvalidBinding);
-
-                entry.Callback = callback;
-                return entry.Signature;
-            }
+                return BindPendingJSExport(entry, fullyQualifiedName, signatureHash, callback);
 
             return BindManagedFunctionCore(assemblyName, nameSpace, shortClassName, methodName, signatureHash, signatures, callback);
 #endif
         }
 
 #if !MONO
+        private static unsafe JSFunctionBinding BindPendingJSExport(JSProxyContext.PendingJSExport entry, string fullyQualifiedName, int signatureHash,
+            delegate*<JSMarshalerArgument*, void> callback)
+        {
+            Span<char> hash = stackalloc char[11]; // Enough for Int32.MinValue.
+            ReadOnlySpan<char> key = entry.CatalogKey;
+            int nameLength = fullyQualifiedName.Length;
+            if (callback == null || entry.Callback != null ||
+                !signatureHash.TryFormat(hash, out int hashLength, provider: CultureInfo.InvariantCulture) ||
+                key.Length != nameLength + 1 + hashLength || key[nameLength] != '#' ||
+                !key[..nameLength].SequenceEqual(fullyQualifiedName) || !key[(nameLength + 1)..].SequenceEqual(hash[..hashLength]))
+            {
+                throw new InvalidOperationException(SR.JSExportInvalidBinding);
+            }
+
+            entry.Callback = callback;
+            return entry.Signature;
+        }
+
         private static unsafe JSFunctionBinding BindManagedFunctionCore(string assemblyName, string nameSpace, string shortClassName, string methodName,
             int signatureHash, ReadOnlySpan<JSMarshalerType> signatures, delegate*<JSMarshalerArgument*, void> callback)
         {
+            ArgumentOutOfRangeException.ThrowIfZero(signatures.Length, nameof(signatures));
+
             var ctx = JSProxyContext.BindingContextOrMain();
             int methodHandle = ctx.AllocJSExportHandle(new JSProxyContext.JSExportEntry(callback));
 

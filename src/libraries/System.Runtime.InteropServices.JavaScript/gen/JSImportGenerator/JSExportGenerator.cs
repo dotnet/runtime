@@ -291,25 +291,27 @@ namespace Microsoft.Interop.JavaScript
 
             JSSignatureContext signature = incrementalContext.SignatureContext;
             string signatures = SignatureBindingHelpers.CreateSignaturesArgument(signatureElements, StubCodeContext.DefaultNativeToManagedStub);
+            // Bind is called with the signature already captured by GetExportNames.
+            string bind = $"{Constants.JSFunctionSignatureGlobal}.{Constants.BindCSFunctionMethod}({CodeWriterHelpers.StringLiteral(signature.QualifiedMethodName)}, {signature.TypesHash.ToString(CultureInfo.InvariantCulture)}, default";
 
             if (incrementalContext.IsReflectionFree)
             {
                 string wrapperReference = $"&{signature.StubTypeQualifiedName}.{signature.WrapperName}";
-                string fastRegistration = $"{Constants.JSFunctionSignatureGlobal}.{Constants.BindCSFunctionMethod}({CodeWriterHelpers.StringLiteral(signature.QualifiedMethodName)}, {signature.TypesHash.ToString(CultureInfo.InvariantCulture)}, {signatures}, {wrapperReference});";
+                string fastRegistration = $"{bind}, {wrapperReference});";
                 return (writer.ToString(), fastRegistration, null, signature.QualifiedMethodName, signature.TypesHash, signatures);
             }
 
             if (incrementalContext.UnsafeAccessorTarget is string target)
             {
                 string accessorRegistration =
-                    $"{Constants.JSFunctionSignatureGlobal}.{Constants.BindCSFunctionMethod}({CodeWriterHelpers.StringLiteral(signature.QualifiedMethodName)}, {signature.TypesHash.ToString(CultureInfo.InvariantCulture)}, {signatures}, &__Invoke);\n" +
+                    $"{bind}, &__Invoke);\n" +
                     $"static void __Invoke({Constants.JSMarshalerArgumentGlobal}* arguments) => __Access(null, arguments);\n" +
                     $"[global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.StaticMethod, Name = {CodeWriterHelpers.StringLiteral(signature.WrapperName)})]\n" +
                     $"static extern void __Access([global::System.Runtime.CompilerServices.UnsafeAccessorType({CodeWriterHelpers.StringLiteral(target)})] object target, {Constants.JSMarshalerArgumentGlobal}* arguments);";
                 return (writer.ToString(), accessorRegistration, null, signature.QualifiedMethodName, signature.TypesHash, signatures);
             }
 
-            string registration = $"{Constants.JSFunctionSignatureGlobal}.{Constants.BindCSFunctionMethod}({CodeWriterHelpers.StringLiteral(signature.QualifiedMethodName)}, {signature.TypesHash.ToString(CultureInfo.InvariantCulture)}, {signatures});";
+            string registration = $"{bind});";
             string attribute = $"{Constants.DynamicDependencyAttributeGlobal}({CodeWriterHelpers.StringLiteral(signature.WrapperName)}, {CodeWriterHelpers.StringLiteral(signature.StubTypeFullName)}, {CodeWriterHelpers.StringLiteral(signature.AssemblyName)})";
 
             return (writer.ToString(), registration, attribute, signature.QualifiedMethodName, signature.TypesHash, signatures);

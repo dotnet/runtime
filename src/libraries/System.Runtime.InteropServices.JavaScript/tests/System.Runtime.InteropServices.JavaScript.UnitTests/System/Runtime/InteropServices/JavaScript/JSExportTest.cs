@@ -65,19 +65,23 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
     public class JSExportTest : JSInteropTestBase, IAsyncLifetime
     {
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
-        [InlineData(false)]
-        [InlineData(true)]
-        public unsafe void FailedBindingReleasesUnconsumedPayloads(bool reentrant)
+        [InlineData(false, false)]
+        [InlineData(true, false)]
+        [InlineData(false, true)]
+        public unsafe void FailedBindingReleasesUnconsumedPayloads(bool reentrant, bool wrongHash)
         {
             Type hostType = typeof(JSExportProvider).Assembly.GetType("System.Runtime.InteropServices.JavaScript.JSHostImplementation", throwOnError: true)!;
             Type contextType = typeof(JSExportProvider).Assembly.GetType("System.Runtime.InteropServices.JavaScript.JSProxyContext", throwOnError: true)!;
             Type pendingType = contextType.GetNestedType("PendingJSExport", BindingFlags.NonPublic)!;
             object context = contextType.GetMethod("AssertIsInteropThread", BindingFlags.Public | BindingFlags.Static)!.Invoke(null, null)!;
             var provider = new PayloadFailureProvider("PayloadFailure", isAsync: false);
+            int initialAttempts = wrongHash ? 2 : 0;
+            provider.BindAttempts = initialAttempts;
             JSFunctionBinding signature = PayloadFailureProvider.CreateSignature(
                 [JSMarshalerType.Int32, JSMarshalerType.Object, JSMarshalerType.Span(JSMarshalerType.Byte)]);
+            string key = wrongHash ? provider.Name + "#2" : provider.GetExportNames()[0];
             object pending = Activator.CreateInstance(pendingType, BindingFlags.Instance | BindingFlags.NonPublic, null,
-                [provider, "0", provider.Name, 1, signature], null)!;
+                [provider, 0, key, signature], null)!;
             int handle = (int)contextType.GetMethod("AllocJSExportHandle", BindingFlags.Instance | BindingFlags.NonPublic, null, [pendingType], null)!.Invoke(context, [pending])!;
             FieldInfo isBinding = pendingType.GetField("IsBinding", BindingFlags.Instance | BindingFlags.NonPublic)!;
             isBinding.SetValue(pending, reentrant);
@@ -97,13 +101,19 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                     arguments[3].ToJS(borrowed);
                     Assert.False((bool)bind.Invoke(null, [context, handle, Pointer.Box(arguments, typeof(JSMarshalerArgument*)), null])!);
                     arguments[0].ToManaged(out Exception? error);
-                    Assert.Contains(reentrant ? "cannot be bound recursively" : "Payload binding failure", error!.Message);
+                    string expectedError = (reentrant, wrongHash) switch
+                    {
+                        (true, _) => "cannot be bound recursively",
+                        (_, true) => "does not match the requested export",
+                        _ => "Payload binding failure",
+                    };
+                    Assert.Contains(expectedError, error!.Message);
                     arguments[2].ToManaged(out object? payload);
                     Assert.Null(payload);
                     Assert.Equal(17, borrowed[0]);
                     Assert.Equal(25, borrowed[1]);
                 }
-                Assert.Equal(reentrant ? 0 : 2, provider.BindAttempts);
+                Assert.Equal(initialAttempts + (reentrant ? 0 : 2), provider.BindAttempts);
             }
             finally
             {
@@ -202,7 +212,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 try
                 {
                     object pending = Activator.CreateInstance(pendingType, BindingFlags.Instance | BindingFlags.NonPublic, null,
-                        [provider, "0", provider.Name, 1, signature], null)!;
+                        [provider, 0, provider.GetExportNames()[0], signature], null)!;
                     int handle = (int)contextType.GetMethod("AllocJSExportHandle", BindingFlags.Instance | BindingFlags.NonPublic, null, [pendingType], null)!.Invoke(context, [pending])!;
                     void* header = Pointer.Unbox(typeof(JSFunctionBinding).GetField("Header", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(signature)!);
                     JavaScriptTestHelper.RegisterPayloadFailure(assemblyName, handle, header);
@@ -256,6 +266,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [InlineData("[Other]Exports:Echo#1")]
         [InlineData("[RawCatalogInvalid]Exports:Echo")]
         [InlineData("[RawCatalogInvalid]Exports:Echo#")]
+        [InlineData("[RawCatalogInvalid]Exports:Echo#0x1")]
+        [InlineData("[RawCatalogInvalid]Exports:Echo#1e2")]
+        [InlineData("[RawCatalogInvalid]Exports:Echo#-0")]
         [InlineData("[RawCatalogInvalid]Exports:Echo#2147483648")]
         [InlineData("[RawCatalogInvalid]Exports:#1")]
         public void RawExportCatalogRejectsInvalidNames(string name)

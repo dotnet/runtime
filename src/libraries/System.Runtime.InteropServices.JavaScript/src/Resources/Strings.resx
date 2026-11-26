@@ -207,9 +207,6 @@
   <data name="JSExportMissingSignatures" xml:space="preserve">
     <value>The JavaScript export provider did not register signatures for its export catalog.</value>
   </data>
-  <data name="JSExportInvalidCatalog" xml:space="preserve">
-    <value>The JavaScript export catalog contains an invalid method name or signature hash.</value>
-  </data>
   <data name="JSExportMissingBinding" xml:space="preserve">
     <value>Unable to resolve the JavaScript export binding.</value>
   </data>
