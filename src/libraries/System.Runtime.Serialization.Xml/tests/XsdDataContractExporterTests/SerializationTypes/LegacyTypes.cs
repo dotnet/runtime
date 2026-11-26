@@ -13,11 +13,7 @@ namespace System.Runtime.Serialization.Xml.XsdDataContractExporterTests
 {
     [Serializable]
     [SecuritySafeCritical]
-#if UseSeparateAssemblyNamespace
-    public unsafe class LegacyTypes
-#else
     public class LegacyTypes
-#endif
     {
         Hashtable h;
         List<int> lInt;

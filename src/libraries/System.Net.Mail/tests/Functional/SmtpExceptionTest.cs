@@ -20,6 +20,32 @@ namespace System.Net.Mail.Tests
     public class SmtpExceptionTest
     {
         [Fact]
+        public void FailedRecipientsConstructor_NullArray_ThrowsArgumentNullException()
+        {
+            Assert.Throws<ArgumentNullException>("innerExceptions", () =>
+                new SmtpFailedRecipientsException("message", (SmtpFailedRecipientException[])null));
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        public void FailedRecipientsConstructor_PreservesArrayAndFirstRecipient(int count)
+        {
+            var recipients = new SmtpFailedRecipientException[count];
+            for (int i = 0; i < count; i++)
+            {
+                recipients[i] = new SmtpFailedRecipientException(SmtpStatusCode.MailboxUnavailable, "recipient" + i);
+            }
+
+            var exception = new SmtpFailedRecipientsException("message", recipients);
+            Assert.Same(recipients, exception.InnerExceptions);
+            Assert.Equal("message", exception.Message);
+            Assert.Same(count == 0 ? null : recipients[0], exception.InnerException);
+            Assert.Equal(count == 0 ? null : "recipient0", exception.FailedRecipient);
+        }
+
+        [Fact]
         public void TestDefaultConstructor()
         {
             SmtpException se = new SmtpException();

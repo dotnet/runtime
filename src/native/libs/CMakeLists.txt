@@ -73,8 +73,6 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
         endif ()
     endif ()
 
-    string(TOUPPER ${CMAKE_BUILD_TYPE} UPPERCASE_CMAKE_BUILD_TYPE)
-
     if (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG OR UPPERCASE_CMAKE_BUILD_TYPE STREQUAL CHECKED)
         if (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG)
             add_compile_options(-O0)
@@ -94,7 +92,7 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
             add_compile_options (-O3)
         endif ()
     else ()
-        message(FATAL_ERROR "Unknown build type. Set CMAKE_BUILD_TYPE to DEBUG or RELEASE.")
+        message(FATAL_ERROR "Unknown build type. Set CMAKE_BUILD_TYPE to Debug, Checked, or Release.")
     endif ()
 
     if (CLR_CMAKE_TARGET_APPLE)

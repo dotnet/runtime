@@ -134,6 +134,28 @@ public class RedundantBranchDominating
         return result;
     }
 
+    private class Box
+    {
+        public int Value;
+    }
+
+    // The field load is made non-faulting by the dominating null check,
+    // so that check must not be removed.
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    private static int NullCheck_00(Box box)
+    {
+        bool notNull = box != null;
+        if (box != null)
+        {
+            if (notNull & (box.Value > 0))
+            {
+                return 1;
+            }
+        }
+
+        return 3;
+    }
+
     private static void RunTest(string name, Func<int, int> func, int[] expectedResults, int[] expectedEffects)
     {
         s_effects = 0;
@@ -177,4 +199,12 @@ public class RedundantBranchDominating
     [Fact]
     public static void TestException00() =>
         Assert.Throws<DivideByZeroException>(() => Exception_00(5, 5, 0));
+
+    [Fact]
+    public static void TestNullCheck00()
+    {
+        Assert.Equal(3, NullCheck_00(null));
+        Assert.Equal(3, NullCheck_00(new Box { Value = 0 }));
+        Assert.Equal(1, NullCheck_00(new Box { Value = 1 }));
+    }
 }

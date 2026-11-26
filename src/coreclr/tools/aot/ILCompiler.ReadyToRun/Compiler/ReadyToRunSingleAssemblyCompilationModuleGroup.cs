@@ -15,6 +15,7 @@ namespace ILCompiler
     {
         private ProfileDataManager _profileGuidedCompileRestriction;
         private bool _profileGuidedCompileRestrictionSet;
+        private HashSet<MethodDesc> _managedJitHelpers;
 
         public ReadyToRunSingleAssemblyCompilationModuleGroup(
             ReadyToRunCompilationModuleGroupConfig config) :
@@ -31,7 +32,9 @@ namespace ILCompiler
             {
                 if (!_profileGuidedCompileRestriction.IsMethodInInputProfileData(method) &&
                     (((ReadyToRunCompilerContext)method.Context).TargetAllowsRuntimeCodeGeneration ||
-                     !HardwareIntrinsicHelpers.IsHardwareIntrinsic(method)))
+                     (!HardwareIntrinsicHelpers.IsHardwareIntrinsic(method) &&
+                      !(method.IsIntrinsic && method.Name == "get_IsHardwareAccelerated"u8) &&
+                      !IsManagedJitHelper(method))))
                     return false;
             }
 
@@ -43,6 +46,17 @@ namespace ILCompiler
             }
 
             return (ContainsType(method.OwningType) && VersionsWithMethodBody(method)) || CompileVersionBubbleGenericsIntoCurrentModule(method) || this.CrossModuleCompileable(method);
+        }
+
+        // Without runtime codegen, CoreLib's R2R image must contain code for every managed JIT helper.
+        // The helpers are only rooted when the version bubble includes CoreLib.
+        private bool IsManagedJitHelper(MethodDesc method)
+        {
+            ReadyToRunCompilerContext context = (ReadyToRunCompilerContext)method.Context;
+            if (!context.BubbleIncludesCoreModule)
+                return false;
+
+            return (_managedJitHelpers ??= ReadyToRunJitHelperRootProvider.GetManagedHelpers(context)).Contains(method);
         }
 
         public sealed override void ApplyProfileGuidedOptimizationData(ProfileDataManager profileGuidedCompileRestriction, bool partial)
