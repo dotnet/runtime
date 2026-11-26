@@ -1282,7 +1282,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// An reverse enumerable of a sorted set.
+        /// A reverse enumerable of a sorted set.
         /// </summary>
         private sealed class ReverseEnumerable : IEnumerable<T>
         {
@@ -1290,6 +1290,7 @@ namespace System.Collections.Immutable
             /// The root node to enumerate.
             /// </summary>
             private readonly Node _root;
+            private readonly Builder? _builder;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="ImmutableSortedSet{T}.ReverseEnumerable"/> class.
@@ -1302,6 +1303,18 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
+            /// Initializes a new instance of the <see cref="ImmutableSortedSet{T}.ReverseEnumerable"/> class
+            /// for reverse enumeration of a builder.
+            /// </summary>
+            internal ReverseEnumerable(Node root, Builder builder)
+            {
+                Requires.NotNull(root, nameof(root));
+                Requires.NotNull(builder, nameof(builder));
+                _builder = builder;
+                _root = root;
+            }
+
+            /// <summary>
             /// Returns an enumerator that iterates through the collection.
             /// </summary>
             /// <returns>
@@ -1309,6 +1322,10 @@ namespace System.Collections.Immutable
             /// </returns>
             public IEnumerator<T> GetEnumerator()
             {
+                if (_builder is not null)
+                {
+                    return new Enumerator(_root, _builder, reverse: true);
+                }
                 return _root.Reverse();
             }
 

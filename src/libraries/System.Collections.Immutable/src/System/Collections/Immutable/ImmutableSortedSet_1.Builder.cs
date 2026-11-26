@@ -436,7 +436,7 @@ namespace System.Collections.Immutable
             /// </returns>
             public IEnumerable<T> Reverse()
             {
-                return new ReverseEnumerable(_root);
+                return new ReverseEnumerable(_root, this);
             }
 
             /// <summary>
