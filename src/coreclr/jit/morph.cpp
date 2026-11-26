@@ -6929,7 +6929,6 @@ GenTree* Compiler::fgMaterializeDeferredLookup(GenTreeRuntimeLookup* tree)
     assert(!compIsForInlining());
     DeferredHandleLookup* pending        = tree->gtDeferredLookup;
     const bool            typeExpression = pending->kind == DeferredHandleLookup::Kind::TypeExpression;
-    const bool            methodEntry    = pending->kind == DeferredHandleLookup::Kind::MethodEntryExpression;
     if (pending->preparedLookup == nullptr)
     {
         CORINFO_LOOKUP lookup;
@@ -6947,12 +6946,11 @@ GenTree* Compiler::fgMaterializeDeferredLookup(GenTreeRuntimeLookup* tree)
             lookup                          = result.lookup;
             pending->type.compileTimeHandle = result.compileTimeHandle;
         }
-        else if (methodEntry || pending->kind == DeferredHandleLookup::Kind::MethodExpression)
+        else if (pending->kind == DeferredHandleLookup::Kind::MethodExpression)
         {
             const auto&            method = *pending->methodExpression;
             CORINFO_RESOLVED_TOKEN expression{};
-            expression.tokenType =
-                methodEntry ? CORINFO_TOKENKIND_MethodEntryExpression : CORINFO_TOKENKIND_MethodExpression;
+            expression.tokenType    = method.tokenType;
             expression.tokenContext = METHOD_BEING_COMPILED_CONTEXT();
             expression.tokenScope   = info.compScopeHnd;
             expression.hMethod      = method.method;
@@ -7003,9 +7001,9 @@ GenTree* Compiler::fgMaterializeDeferredLookup(GenTreeRuntimeLookup* tree)
     {
         return getLookupTree(pending->preparedLookup, GTF_ICON_CLASS_HDL, pending->type.compileTimeHandle, tree->gtOp1);
     }
-    GenTreeFlags flags = methodEntry             ? GTF_ICON_FTN_ADDR
-                         : tree->IsClassHandle() ? GTF_ICON_CLASS_HDL
-                                                 : GTF_ICON_METHOD_HDL;
+    GenTreeFlags flags = tree->IsClassHandle()    ? GTF_ICON_CLASS_HDL
+                         : tree->IsMethodHandle() ? GTF_ICON_METHOD_HDL
+                                                  : GTF_ICON_FTN_ADDR;
     return getLookupTree(pending->preparedLookup, flags, tree->gtHnd, tree->gtOp1);
 }
 

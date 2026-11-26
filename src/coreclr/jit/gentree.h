@@ -9236,7 +9236,6 @@ struct DeferredHandleLookup
     {
         TypeExpression,
         MethodExpression,
-        MethodEntryExpression,
         CallContext,
         DevirtualizedMethodContext,
     };
@@ -9248,6 +9247,7 @@ struct DeferredHandleLookup
         MethodTypeArgument    ownerType;
         PCCOR_SIGNATURE       methodSpec;
         unsigned              methodSpecSize;
+        CorInfoTokenKind      tokenType;
     };
 
     union

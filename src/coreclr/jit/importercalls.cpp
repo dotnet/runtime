@@ -553,17 +553,31 @@ GenTree* Compiler::impTryRootMethodLookup(const CORINFO_RESOLVED_TOKEN& token,
 
     BYTE* signature = getAllocator(CMK_Inlining).allocate<BYTE>(size);
     memcpy(signature, spec, size);
-    auto* pending = new (this, CMK_Inlining) DeferredHandleLookup{};
-    pending->kind =
-        entry ? DeferredHandleLookup::Kind::MethodEntryExpression : DeferredHandleLookup::Kind::MethodExpression;
-    pending->methodExpression = new (this, CMK_Inlining)
-        DeferredHandleLookup::MethodExpression{token.hMethod, token.hClass, owner, signature, size};
-    Compiler*              root = impInlineRoot();
     CORINFO_GENERIC_HANDLE handle =
         entry ? (CORINFO_GENERIC_HANDLE)callInfo.hMethod
               : (CORINFO_GENERIC_HANDLE)((size_t)callInfo.contextHandle & ~CORINFO_CONTEXTFLAGS_MASK);
-    GenTree* tree = gtNewRuntimeLookup(handle, entry ? CORINFO_HANDLETYPE_UNKNOWN : CORINFO_HANDLETYPE_METHOD,
-                                       root->getRuntimeContextTree(root->impRuntimeContextKind()));
+    return impDeferredMethodExpression(token, owner, signature, size,
+                                       entry ? CORINFO_TOKENKIND_MethodEntryExpression
+                                             : CORINFO_TOKENKIND_MethodExpression,
+                                       handle);
+}
+
+GenTree* Compiler::impDeferredMethodExpression(const CORINFO_RESOLVED_TOKEN& token,
+                                               const MethodTypeArgument&     owner,
+                                               PCCOR_SIGNATURE               methodSpec,
+                                               unsigned                      size,
+                                               CorInfoTokenKind              kind,
+                                               CORINFO_GENERIC_HANDLE        handle)
+{
+    auto* pending             = new (this, CMK_Inlining) DeferredHandleLookup{};
+    pending->kind             = DeferredHandleLookup::Kind::MethodExpression;
+    pending->methodExpression = new (this, CMK_Inlining)
+        DeferredHandleLookup::MethodExpression{token.hMethod, token.hClass, owner, methodSpec, size, kind};
+    Compiler* root                            = impInlineRoot();
+    GenTree*  tree                            = gtNewRuntimeLookup(handle,
+                                       kind == CORINFO_TOKENKIND_MethodExpression ? CORINFO_HANDLETYPE_METHOD
+                                                                                                              : CORINFO_HANDLETYPE_UNKNOWN,
+                                                                   root->getRuntimeContextTree(root->impRuntimeContextKind()));
     tree->AsRuntimeLookup()->gtDeferredLookup = pending;
     return tree;
 }
@@ -1714,8 +1728,21 @@ DEVIRT:
         callInfo->stubLookup.lookupKind.needsRuntimeLookup && call->AsCall()->IsVirtualStub())
     {
         // Only surviving interface dispatches need a dictionary slot.
-        GenTree* stubAddr = impCallLookupToTree(pResolvedToken, pConstrainedResolvedToken, callInfo,
-                                                &callInfo->stubLookup, GTF_ICON_FTN_ADDR, methHnd);
+        GenTree*           stubAddr = nullptr;
+        MethodTypeArgument owner;
+        if (compIsForInlining() && callInfo->canForwardMethodContext &&
+            (impRuntimeContextKind() != CORINFO_LOOKUP_THISOBJ) && impReadInlineMemberOwner(*pResolvedToken, &owner))
+        {
+            assert(pConstrainedResolvedToken == nullptr && pResolvedToken->pMethodSpec == nullptr);
+            stubAddr =
+                impDeferredMethodExpression(*pResolvedToken, owner, nullptr, 0,
+                                            CORINFO_TOKENKIND_DispatchStubExpression, (CORINFO_GENERIC_HANDLE)methHnd);
+        }
+        else
+        {
+            stubAddr = impCallLookupToTree(pResolvedToken, pConstrainedResolvedToken, callInfo, &callInfo->stubLookup,
+                                           GTF_ICON_FTN_ADDR, methHnd);
+        }
         if (compDonotInline())
         {
             return TYP_UNDEF;

@@ -6044,6 +6044,8 @@ private:
     void impConvertToUserCallAndMarkForInlining(GenTreeCall* call);
     void impBindInlineTypeArguments(GenTreeCall* call, const CORINFO_RESOLVED_TOKEN& token, const CORINFO_CALL_INFO& callInfo,
                                     CORINFO_METHOD_HANDLE forwardedTarget, MethodTypeArgument* methodArgs, MethodTypeArgument* ownerArgs);
+    GenTree* impDeferredMethodExpression(const CORINFO_RESOLVED_TOKEN& token, const MethodTypeArgument& owner,
+                                         PCCOR_SIGNATURE methodSpec, unsigned size, CorInfoTokenKind kind, CORINFO_GENERIC_HANDLE handle);
     GenTree* impTryRootMethodLookup(const CORINFO_RESOLVED_TOKEN& token, const CORINFO_CALL_INFO& callInfo,
                                    const MethodTypeArgument* methodArgs);
     GenTree* impDeferredCallContext(CORINFO_RESOLVED_TOKEN* token, CORINFO_CONTEXT_HANDLE targetContext, CORINFO_METHOD_HANDLE devirtualizedMethod = nullptr, bool callVirt = false);

@@ -2769,18 +2769,21 @@ void CEEInfo::embedGenericHandle(
         pResolvedToken = &expression;
     }
 
-    if (pResolvedToken->tokenType == CORINFO_TOKENKIND_MethodEntryExpression)
+    bool dispatchStub = pResolvedToken->tokenType == CORINFO_TOKENKIND_DispatchStubExpression;
+    if (dispatchStub || pResolvedToken->tokenType == CORINFO_TOKENKIND_MethodEntryExpression)
     {
-        _ASSERTE(!fEmbedParent && pResolvedToken->token == mdTokenNil && pResolvedToken->pMethodSpec != nullptr &&
+        _ASSERTE(dispatchStub ? (pResolvedToken->pTypeSpec != nullptr && pResolvedToken->pMethodSpec == nullptr &&
+                                 GetMethod(pResolvedToken->hMethod)->IsInterface())
+                              : pResolvedToken->pMethodSpec != nullptr);
+        _ASSERTE(!fEmbedParent && pResolvedToken->token == mdTokenNil &&
                  pResolvedToken->tokenContext == METHOD_BEING_COMPILED_CONTEXT() &&
                  GetMethod(callerHandle) == m_pMethodBeingCompiled &&
                  pResolvedToken->tokenScope == GetScopeHandle(m_pMethodBeingCompiled));
-        // Use the same template and instantiating entry as an ordinary ldftn.
-        // The runtime value is a code pointer, not a reflection method handle.
+        // Use the same slot kind and method template as the lookup in the IL caller.
         *pResult = {};
         pResult->handleType = CORINFO_HANDLETYPE_UNKNOWN;
         pResult->compileTimeHandle = (CORINFO_GENERIC_HANDLE)pResolvedToken->hMethod;
-        ComputeRuntimeLookupForSharedGenericToken(MethodEntrySlot, pResolvedToken, nullptr,
+        ComputeRuntimeLookupForSharedGenericToken(dispatchStub ? DispatchStubAddrSlot : MethodEntrySlot, pResolvedToken, nullptr,
                                                   GetMethod(pResolvedToken->hMethod), m_pMethodBeingCompiled,
                                                   &pResult->lookup);
     }
@@ -5623,11 +5626,14 @@ void CEEInfo::getCallInfo(
         (pResult->kind == CORINFO_CALL || pResult->kind == CORINFO_VIRTUALCALL_LDVIRTFTN) &&
         !declaringType->IsValueType() && (!declaringType->IsInterface() || interfaceGvm) &&
         !declaringType->IsDelegate() && !declaringType->IsArray();
-    if (directContext || methodEntry || receiver)
+    bool dispatchStub = pResult->kind == CORINFO_VIRTUALCALL_STUB && pResult->exactContextNeedsRuntimeLookup &&
+        !pMD->IsStatic() && declaringType->IsInterface() && !declaringType->HasVariance() &&
+        !pMD->HasMethodInstantiation() && pResolvedToken->pTypeSpec != nullptr;
+    if (directContext || methodEntry || receiver || dispatchStub)
     {
         MethodDesc* caller = GetMethod(callerHandle);
         if (pConstrainedResolvedToken == nullptr &&
-            (receiver || pMD->IsStatic() || (declaringType->IsValueType() && !pMD->IsUnboxingStub())) &&
+            (dispatchStub || receiver || pMD->IsStatic() || (declaringType->IsValueType() && !pMD->IsUnboxingStub())) &&
             pMD->HasSameMethodDefAs(pTargetMD) && caller->IsSharedByGenericInstantiations() &&
             !caller->IsILStub() && !caller->IsDynamicMethod() && pResolvedToken->tokenScope == GetScopeHandle(caller) &&
             (pResolvedToken->tokenType == CORINFO_TOKENKIND_Method ||
@@ -5647,9 +5653,9 @@ void CEEInfo::getCallInfo(
                 pResult->canForwardTypeArguments = !owner.IsNull() && !owner.IsTypeDesc() &&
                     owner.AsMethodTable()->HasSameTypeDefAs(caller->GetMethodTable());
             }
-            if (pResult->canForwardTypeArguments && pMD->HasMethodInstantiation())
+            if (pResult->canForwardTypeArguments && (pMD->HasMethodInstantiation() || dispatchStub))
             {
-                // MethodDescSlot and MethodEntrySlot embed the declaring MethodTable. A constructed method or
+                // These method-based slots can embed the declaring MethodTable. A constructed method or
                 // owner may also depend on another collectible loader allocator.
                 LoaderAllocator* root = m_pMethodBeingCompiled->GetModule()->GetLoaderAllocator();
                 auto canRetain = [root](LoaderAllocator* allocator) {

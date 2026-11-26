@@ -379,6 +379,35 @@ public class ForwardedMethodTypeArgument
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static Type FromOverride<T>(SwappedReceiver<int, long> value) => value.Select<T[]>();
 
+    private interface IDispatch<T>
+    {
+        int First();
+        int Second();
+    }
+
+    private sealed class Both : IDispatch<string[]>, IDispatch<object[]>
+    {
+        int IDispatch<string[]>.First() => 1;
+        int IDispatch<string[]>.Second() => 2;
+        int IDispatch<object[]>.First() => 3;
+        int IDispatch<object[]>.Second() => 4;
+    }
+
+    private sealed class OtherDispatch<T> : IDispatch<T>
+    {
+        public int First() => 5;
+        public int Second() => 6;
+    }
+
+    private static class Dispatch<T>
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int Invoke(IDispatch<T> receiver, bool first) => first ? receiver.First() : receiver.Second();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int NestedDispatch<T>(IDispatch<T[]> receiver, bool first) => Dispatch<T[]>.Invoke(receiver, first);
+
     private interface IGenericCall
     {
         Type Select<K>();
@@ -426,6 +455,13 @@ public class ForwardedMethodTypeArgument
         Assert.Equal(typeof(KeyValuePair<int, string>), FromConstructor<string>());
         Assert.Equal(typeof(Tuple<int, long, string[]>), FromOverride<string>(new SwappedReceiver<int, long>()));
         Assert.Equal(typeof(Tuple<int, long, object[]>), FromOverride<object>(new SwappedReceiver<int, long>()));
+        var both = new Both();
+        Assert.Equal(1, NestedDispatch<string>(both, true));
+        Assert.Equal(2, NestedDispatch<string>(both, false));
+        Assert.Equal(3, NestedDispatch<object>(both, true));
+        Assert.Equal(4, NestedDispatch<object>(both, false));
+        Assert.Equal(5, NestedDispatch<string>(new OtherDispatch<string[]>(), true));
+        Assert.Throws<NullReferenceException>(() => NestedDispatch<object>(null, false));
         var receiver = new GenericCall<int>();
         Assert.Equal(typeof(Tuple<int, string[]>), DirectCallVirt<string>(receiver));
         Assert.Throws<NullReferenceException>(() => DirectCallVirt<object>(null));

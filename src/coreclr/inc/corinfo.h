@@ -1500,6 +1500,7 @@ enum CorInfoTokenKind
     // A resolved method template with its owner and MethodSpec expressed in the root context.
     CORINFO_TOKENKIND_MethodExpression = 0x10000 | CORINFO_TOKENKIND_Method,
     CORINFO_TOKENKIND_MethodEntryExpression = 0x20000 | CORINFO_TOKENKIND_Method,
+    CORINFO_TOKENKIND_DispatchStubExpression = 0x40000 | CORINFO_TOKENKIND_Method,
 
     // Signature-only query to embedGenericHandle in the root method context.
     CORINFO_TOKENKIND_TypeExpression = 0x4000 | CORINFO_TOKENKIND_Class,
@@ -1571,7 +1572,7 @@ struct CORINFO_CALL_INFO
     bool                    exactContextNeedsRuntimeLookup; // Set if contextHandle is approx handle. Runtime lookup is required to get the exact handle.
     // The token can supply argument bindings for inlining. An override supplies its own declaring type.
     bool canForwardTypeArguments;
-    // The root dictionary can retain this MethodSpec for a direct call context or an unconstrained ldftn entry.
+    // The root dictionary can retain the method template for a composed context, callable entry or dispatch stub.
     bool canForwardMethodContext;
     // Only for method contexts: offset of the argument vector from the caller's MethodDesc.
     unsigned short methodInstantiationOffset;
@@ -3402,6 +3403,8 @@ public:
     // A MethodExpression additionally supplies pMethodSpec in that same context and the
     // resolved hMethod/hClass of a call for which getCallInfo set canForwardMethodContext.
     // MethodEntryExpression uses the same inputs to obtain the callable entry for ldftn.
+    // DispatchStubExpression requests the dispatch cell for a non-generic interface method
+    // using its resolved template and the composed interface TypeSpec.
     CORINFO_VIRTUAL void embedGenericHandle(
             CORINFO_RESOLVED_TOKEN *        pResolvedToken,
             bool                            fEmbedParent, // `true` - embeds parent type handle of the field/method handle
