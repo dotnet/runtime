@@ -5616,10 +5616,13 @@ void CEEInfo::getCallInfo(
     // Class instance calls can bind the inlinee's type parameters even when
     // its generic context comes from this rather than a hidden argument.
     MethodTable* declaringType = pMD->GetMethodTable();
+    bool interfaceGvm = pResult->kind == CORINFO_VIRTUALCALL_LDVIRTFTN && pMD->HasMethodInstantiation() &&
+        !declaringType->HasVariance();
     bool receiver = (pResolvedToken->pTypeSpec != nullptr || pResolvedToken->pMethodSpec != nullptr) &&
         !(flags & CORINFO_CALLINFO_LDFTN) && !pMD->IsStatic() &&
         (pResult->kind == CORINFO_CALL || pResult->kind == CORINFO_VIRTUALCALL_LDVIRTFTN) &&
-        !declaringType->IsValueType() && !declaringType->IsInterface() && !declaringType->IsDelegate() && !declaringType->IsArray();
+        !declaringType->IsValueType() && (!declaringType->IsInterface() || interfaceGvm) &&
+        !declaringType->IsDelegate() && !declaringType->IsArray();
     if (directContext || methodEntry || receiver)
     {
         MethodDesc* caller = GetMethod(callerHandle);

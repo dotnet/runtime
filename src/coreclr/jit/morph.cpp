@@ -6983,9 +6983,13 @@ GenTree* Compiler::fgMaterializeDeferredLookup(GenTreeRuntimeLookup* tree)
             token.tokenType    = CORINFO_TOKENKIND_Method;
             info.compCompHnd->resolveToken(&token);
 
-            CORINFO_CALL_INFO callInfo;
-            info.compCompHnd->getCallInfo(&token, nullptr, pending->caller,
-                                          CORINFO_CALLINFO_ALLOWINSTPARAM | CORINFO_CALLINFO_SECURITYCHECKS, &callInfo);
+            CORINFO_CALL_INFO      callInfo;
+            CORINFO_CALLINFO_FLAGS flags = CORINFO_CALLINFO_ALLOWINSTPARAM | CORINFO_CALLINFO_SECURITYCHECKS;
+            if (pending->il.callVirt)
+            {
+                flags |= CORINFO_CALLINFO_CALLVIRT;
+            }
+            info.compCompHnd->getCallInfo(&token, nullptr, pending->caller, flags, &callInfo);
             assert(callInfo.kind == CORINFO_CALL && callInfo.sig.hasTypeArg() && callInfo.canForwardTypeArguments);
             assert(callInfo.instParamLookup.lookupKind.runtimeLookupKind == CORINFO_LOOKUP_DEFERRED);
             assert((size_t)tree->gtHnd == ((size_t)callInfo.contextHandle & ~CORINFO_CONTEXTFLAGS_MASK));

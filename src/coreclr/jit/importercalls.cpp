@@ -572,7 +572,8 @@ GenTree* Compiler::impTryRootMethodLookup(const CORINFO_RESOLVED_TOKEN& token,
 // only if the argument is still used after inlining.
 GenTree* Compiler::impDeferredCallContext(CORINFO_RESOLVED_TOKEN* token,
                                           CORINFO_CONTEXT_HANDLE  targetContext,
-                                          CORINFO_METHOD_HANDLE   devirtualizedMethod)
+                                          CORINFO_METHOD_HANDLE   devirtualizedMethod,
+                                          bool                    callVirt)
 {
     bool methodContext = ((size_t)targetContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD;
     assert((devirtualizedMethod == nullptr) || methodContext);
@@ -594,10 +595,11 @@ GenTree* Compiler::impDeferredCallContext(CORINFO_RESOLVED_TOKEN* token,
     else
     {
         assert(token->tokenType == CORINFO_TOKENKIND_Method);
-        pending->kind       = DeferredHandleLookup::Kind::CallContext;
-        pending->il.context = token->tokenContext;
-        pending->il.scope   = token->tokenScope;
-        pending->token      = token->token;
+        pending->kind        = DeferredHandleLookup::Kind::CallContext;
+        pending->il.context  = token->tokenContext;
+        pending->il.scope    = token->tokenScope;
+        pending->il.callVirt = callVirt;
+        pending->token       = token->token;
     }
 
     CORINFO_GENERIC_HANDLE handle = (CORINFO_GENERIC_HANDLE)((size_t)targetContext & ~CORINFO_CONTEXTFLAGS_MASK);
@@ -1482,8 +1484,9 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
             assert(opcode != CEE_CALLI);
 
-            if ((opcode == CEE_CALL) && callInfo->canForwardTypeArguments && callInfo->exactContextNeedsRuntimeLookup &&
-                (callInfo->kind == CORINFO_CALL) && !IsAot() && !opts.MinOpts())
+            if (((opcode == CEE_CALL) || (opcode == CEE_CALLVIRT)) && callInfo->canForwardTypeArguments &&
+                callInfo->exactContextNeedsRuntimeLookup && (callInfo->kind == CORINFO_CALL) && !IsAot() &&
+                !opts.MinOpts())
             {
                 methodArgs = impForwardedTypeArgs(*pResolvedToken, sig->sigInst.methInstCount, nullptr);
                 if (methodArgs == nullptr)
@@ -1501,7 +1504,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                     compIsForInlining() ? impTryRootMethodLookup(*pResolvedToken, *callInfo, methodArgs) : nullptr;
                 if (instParam == nullptr)
                 {
-                    instParam = impDeferredCallContext(pResolvedToken, callInfo->contextHandle);
+                    instParam = impDeferredCallContext(pResolvedToken, callInfo->contextHandle, nullptr,
+                                                       opcode == CEE_CALLVIRT);
                 }
             }
             else

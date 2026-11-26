@@ -379,6 +379,29 @@ public class ForwardedMethodTypeArgument
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static Type FromOverride<T>(SwappedReceiver<int, long> value) => value.Select<T[]>();
 
+    private interface IGenericCall
+    {
+        Type Select<K>();
+    }
+
+    private sealed class GenericCall<A> : IGenericCall
+    {
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public Type Direct<K>() => typeof(Tuple<A, K>);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        Type IGenericCall.Select<K>() => typeof(Tuple<K, A>);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Type DirectRelay<K>(GenericCall<int> receiver) => receiver.Direct<K>();
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Type DirectCallVirt<T>(GenericCall<int> receiver) => DirectRelay<T[]>(receiver);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Type InterfaceCall<T>(GenericCall<int> receiver) => ((IGenericCall)receiver).Select<T[]>();
+
     private class Reader<T> { public virtual int Read() => 37; }
     private sealed class OtherReader<T> : Reader<T> { public override int Read() => 13; }
 
@@ -403,6 +426,12 @@ public class ForwardedMethodTypeArgument
         Assert.Equal(typeof(KeyValuePair<int, string>), FromConstructor<string>());
         Assert.Equal(typeof(Tuple<int, long, string[]>), FromOverride<string>(new SwappedReceiver<int, long>()));
         Assert.Equal(typeof(Tuple<int, long, object[]>), FromOverride<object>(new SwappedReceiver<int, long>()));
+        var receiver = new GenericCall<int>();
+        Assert.Equal(typeof(Tuple<int, string[]>), DirectCallVirt<string>(receiver));
+        Assert.Throws<NullReferenceException>(() => DirectCallVirt<object>(null));
+        Assert.Equal(typeof(Tuple<string[], int>), InterfaceCall<string>(receiver));
+        Assert.Equal(typeof(Tuple<object[], int>), InterfaceCall<object>(receiver));
+        Assert.Throws<NullReferenceException>(() => InterfaceCall<string>(null));
         var firstEntry = NestedEntry<string, object>();
         var secondEntry = NestedEntry<object, string>();
         Assert.Equal(typeof(Dictionary<object[], List<string>>), firstEntry());

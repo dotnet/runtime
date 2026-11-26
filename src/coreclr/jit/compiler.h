@@ -6046,7 +6046,7 @@ private:
                                     CORINFO_METHOD_HANDLE forwardedTarget, MethodTypeArgument* methodArgs, MethodTypeArgument* ownerArgs);
     GenTree* impTryRootMethodLookup(const CORINFO_RESOLVED_TOKEN& token, const CORINFO_CALL_INFO& callInfo,
                                    const MethodTypeArgument* methodArgs);
-    GenTree* impDeferredCallContext(CORINFO_RESOLVED_TOKEN* token, CORINFO_CONTEXT_HANDLE targetContext, CORINFO_METHOD_HANDLE devirtualizedMethod = nullptr);
+    GenTree* impDeferredCallContext(CORINFO_RESOLVED_TOKEN* token, CORINFO_CONTEXT_HANDLE targetContext, CORINFO_METHOD_HANDLE devirtualizedMethod = nullptr, bool callVirt = false);
     // Exact constructed types of single-definition reference locals during inlining, in the root context.
     using LocalTypeExpressionMap = JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, MethodTypeArgument>;
     LocalTypeExpressionMap* impLocalTypeExpressions = nullptr;

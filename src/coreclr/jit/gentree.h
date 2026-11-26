@@ -9262,6 +9262,7 @@ struct DeferredHandleLookup
         {
             CORINFO_CONTEXT_HANDLE context;
             CORINFO_MODULE_HANDLE  scope;
+            bool                   callVirt;
         } il;
         struct
         {
