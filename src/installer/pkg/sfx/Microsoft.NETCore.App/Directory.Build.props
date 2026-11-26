@@ -179,57 +179,10 @@
     <PlatformManifestFileEntry Include="System.Private.Reflection.Execution.dll" />
     <PlatformManifestFileEntry Include="System.Private.StackTraceMetadata.dll" />
     <PlatformManifestFileEntry Include="System.Private.TypeLoader.dll" />
-    <!-- Mono-specific files -->
-    <PlatformManifestFileEntry Include="monosgen-2.0.lib" IsNative="true" />
-    <PlatformManifestFileEntry Include="libmonosgen-2.0.a" IsNative="true" />
-    <PlatformManifestFileEntry Include="libmonosgen-2.0.so" IsNative="true" />
-    <PlatformManifestFileEntry Include="libmonosgen-2.0.dylib" IsNative="true" />
-    <PlatformManifestFileEntry Include="llc" IsNative="true" />
-    <PlatformManifestFileEntry Include="mono-aot-cross" IsNative="true" />
-    <PlatformManifestFileEntry Include="mono-aot-cross.exe" IsNative="true" />
-    <PlatformManifestFileEntry Include="opt" IsNative="true" />
     <!-- libc++ for C++17 support on older distributions -->
     <PlatformManifestFileEntry Include="libc++.so.1" IsNative="true" />
     <PlatformManifestFileEntry Include="libc++abi.so.1" IsNative="true" />
-    <!-- Mono components specific files -->
-    <PlatformManifestFileEntry Include="libmono-component-diagnostics_tracing.dll" IsNative="true" />
-    <PlatformManifestFileEntry Include="libmono-component-diagnostics_tracing.so" IsNative="true" />
-    <PlatformManifestFileEntry Include="libmono-component-diagnostics_tracing.dylib" IsNative="true" />
-    <PlatformManifestFileEntry Include="libmono-component-diagnostics_tracing-static.a" IsNative="true" />
-    <PlatformManifestFileEntry Include="libmono-component-diagnostics_tracing-stub-static.a" IsNative="true" />
-    <PlatformManifestFileEntry Include="libmono-component-diagnostics_tracing-static.lib" IsNative="true" />
-    <PlatformManifestFileEntry Include="libmono-component-diagnostics_tracing-stub-static.lib" IsNative="true" />
-    <PlatformManifestFileEntry Include="libmono-component-hot_reload.dll" IsNative="true" />
-    <PlatformManifestFileEntry Include="libmono-component-hot_reload.so" IsNative="true" />
-    <PlatformManifestFileEntry Include="libmono-component-hot_reload.dylib" IsNative="true" />
-    <PlatformManifestFileEntry Include="libmono-component-hot_reload-static.a" IsNative="true" />
-    <PlatformManifestFileEntry Include="libmono-component-hot_reload-stub-static.a" IsNative="true" />
-    <PlatformManifestFileEntry Include="libmono-component-hot_reload-static.lib" IsNative="true" />
-    <PlatformManifestFileEntry Include="libmono-component-hot_reload-stub-static.lib" IsNative="true" />
-    <PlatformManifestFileEntry Include="libmono-component-debugger.dll" IsNative="true" />
-    <PlatformManifestFileEntry Include="libmono-component-debugger.so" IsNative="true" />
-    <PlatformManifestFileEntry Include="libmono-component-debugger.dylib" IsNative="true" />
-    <PlatformManifestFileEntry Include="libmono-component-debugger-static.a" IsNative="true" />
-    <PlatformManifestFileEntry Include="libmono-component-debugger-stub-static.a" IsNative="true" />
-    <PlatformManifestFileEntry Include="libmono-component-debugger-static.lib" IsNative="true" />
-    <PlatformManifestFileEntry Include="libmono-component-debugger-stub-static.lib" IsNative="true" />
-    <PlatformManifestFileEntry Include="libmono-component-marshal-ilgen.dll" IsNative="true" />
-    <PlatformManifestFileEntry Include="libmono-component-marshal-ilgen.so" IsNative="true" />
-    <PlatformManifestFileEntry Include="libmono-component-marshal-ilgen.dylib" IsNative="true" />
-    <PlatformManifestFileEntry Include="libmono-component-marshal-ilgen-static.a" IsNative="true" />
-    <PlatformManifestFileEntry Include="libmono-component-marshal-ilgen-stub-static.a" IsNative="true" />
-    <PlatformManifestFileEntry Include="libmono-component-marshal-ilgen-static.lib" IsNative="true" />
-    <PlatformManifestFileEntry Include="libmono-component-marshal-ilgen-stub-static.lib" IsNative="true" />
-    <!-- Mono WASM-specific files -->
-    <PlatformManifestFileEntry Include="libmono-ee-interp.a" IsNative="true" />
-    <PlatformManifestFileEntry Include="libmono-icall-table.a" IsNative="true" />
-    <PlatformManifestFileEntry Include="libmono-profiler-aot.a" IsNative="true" />
-    <PlatformManifestFileEntry Include="libmono-profiler-log.a" IsNative="true" />
-    <PlatformManifestFileEntry Include="libmono-profiler-browser.a" IsNative="true" />
-    <PlatformManifestFileEntry Include="libmono-wasm-eh-js.a" IsNative="true" />
-    <PlatformManifestFileEntry Include="libmono-wasm-eh-wasm.a" IsNative="true" />
-    <PlatformManifestFileEntry Include="libmono-wasm-simd.a" IsNative="true" />
-    <PlatformManifestFileEntry Include="libmono-wasm-nosimd.a" IsNative="true" />
+    <!-- WASM-specific files -->
     <PlatformManifestFileEntry Include="dotnet.js" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.js.map" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.runtime.js" IsNative="true" />
@@ -262,7 +215,6 @@
     <PlatformManifestFileEntry Include="wasm-config.h" IsNative="true" />
     <PlatformManifestFileEntry Include="emcc-default.rsp" IsNative="true" />
     <PlatformManifestFileEntry Include="emcc-link.rsp" IsNative="true" />
-    <PlatformManifestFileEntry Include="wasm-props.json" IsNative="true" />
     <PlatformManifestFileEntry Include="wasi-default.rsp" IsNative="true" />
     <PlatformManifestFileEntry Include="wasi-link.rsp" IsNative="true" />
     <PlatformManifestFileEntry Include="ILLink.Substitutions.WasmIntrinsics.xml" IsNative="true" />
