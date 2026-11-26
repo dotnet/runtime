@@ -28,7 +28,7 @@ public record PublishOptions : MSBuildOptions
         string NonDefaultFrameworkDir                               = "",
         string ExtraMSBuildArgs                                     = "",
         bool ExpectRelinkDirWhenPublishing                          = false,
-        bool EnableDiagnostics                                      = false
+        bool? EnableDiagnostics                                     = null
     ) : base(
         IsPublish,
         TargetFramework ?? BuildTestBase.DefaultTargetFramework,

@@ -25,7 +25,7 @@ public record BuildOptions : MSBuildOptions
         IDictionary<string, string>? ExtraBuildEnvironmentVariables = null,
         string NonDefaultFrameworkDir                               = "",
         string ExtraMSBuildArgs                                     = "",
-        bool EnableDiagnostics                                      = false
+        bool? EnableDiagnostics                                     = null
     ) : base(
         IsPublish,
         TargetFramework ?? BuildTestBase.DefaultTargetFramework,

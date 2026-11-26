@@ -526,7 +526,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
     {
         runtimePackDir ??= BuildTestBase.s_buildEnv.GetRuntimePackDir(buildOptions.TargetFramework, buildOptions.RuntimeType);
 
-        if (BuildTestBase.IsCoreClrRuntime && (buildOptions.EnableDiagnostics || !buildOptions.IsPublish))
+        if (BuildTestBase.IsCoreClrRuntime && (buildOptions.EnableDiagnostics ?? !buildOptions.IsPublish))
             return Path.Combine(runtimePackDir, "data", "native-flavors", "diagnostics");
 
         return Path.Combine(runtimePackDir, "runtimes", BuildEnvironment.DefaultRuntimeIdentifier, "native");

@@ -74,6 +74,16 @@ namespace Wasm.Build.Tests
             Assert.Contains($"** WasmBuildNative: '{(expectWasmBuildNative ? "true" : "")}'", line);
         }
 
+        [Fact]
+        public void BuildWithDiagnosticsDisabledUsesProductionPrelink()
+        {
+            Configuration config = Configuration.Debug;
+            ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.WasmBasicTestApp, "coreclr_native_production",
+                extraProperties: "<EnableDiagnostics>false</EnableDiagnostics>");
+
+            BuildProject(info, config, new BuildOptions(EnableDiagnostics: false));
+        }
+
         [Theory]
         [InlineData("<InvariantGlobalization>true</InvariantGlobalization>")]
         [InlineData("<InvariantTimezone>true</InvariantTimezone>")]
