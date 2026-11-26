@@ -2525,6 +2525,16 @@ void Compiler::fgInsertInlineeArgument(
                 // just append the arg node as an unused value.
                 if (*newStmt == nullptr)
                 {
+                    if (arg->GetWellKnownArg() == WellKnownArg::InstParam)
+                    {
+                        // An unused hidden argument doesn't need its deferred lookups.
+                        // Evaluate their input here: loading a context from this can still fault.
+                        while (argNode->OperIs(GT_RUNTIMELOOKUP) &&
+                               (argNode->AsRuntimeLookup()->gtDeferredLookup != nullptr))
+                        {
+                            argNode = argNode->gtGetOp1();
+                        }
+                    }
                     *newStmt = gtNewStmt(gtUnusedValNode(argNode), callDI);
                 }
 
