@@ -88,6 +88,17 @@ public static class ResolvedConstrainedCall
         foreach (Marker item in new NoInliningSequence()) { }
     }
 
+    // Queue<T>.Enumerator.Dispose is a nonempty CoreLib body, here instantiated over a type from this assembly.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void IterateCoreLibQueue()
+    {
+        foreach (Marker item in new System.Collections.Generic.Queue<Marker>()) { }
+    }
+
+    // 'constrained. KeyValuePair<Marker, int> callvirt object::ToString' resolves to the shared CoreLib override.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static string FormatCoreLibKeyValuePair(System.Collections.Generic.KeyValuePair<Marker, int> pair) => pair.ToString();
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void InvokeConstrainedExternal<T>(T value) where T : IGenericMethod => value.Invoke<ExternalMarker>();
 

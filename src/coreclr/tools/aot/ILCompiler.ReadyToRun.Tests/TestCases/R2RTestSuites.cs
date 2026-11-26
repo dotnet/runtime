@@ -666,6 +666,8 @@ public class R2RTestSuites
             bool foundExternalMarkerEnumeratorDictionary = false;
             bool foundReadinessEnumeratorDispose = false;
             bool foundOrdinaryNoInliningEnumeratorDispose = false;
+            bool foundReadinessQueueEnumeratorDispose = false;
+            bool foundReadinessKeyValuePairToString = false;
             foreach (ReadyToRunImportSection section in reader.ImportSections)
             {
                 foreach (ReadyToRunImportSection.ImportSectionEntry entry in section.Entries)
@@ -690,6 +692,28 @@ public class R2RTestSuites
                         or ReadyToRunFixupKind.MethodEntry_ReadyToRun;
                     if (!isMethodEntry && entrySignature.FixupKind != ReadyToRunFixupKind.MethodDictionary)
                     {
+                        continue;
+                    }
+
+                    bool isCoreLibQueueEnumeratorDispose = isMethodEntry
+                        && signature.Contains("System.Collections.Generic.Queue`1", StringComparison.Ordinal)
+                        && signature.Contains("Dispose", StringComparison.Ordinal);
+                    bool isCoreLibKeyValuePairToString = isMethodEntry
+                        && signature.Contains("System.Collections.Generic.KeyValuePair`2", StringComparison.Ordinal)
+                        && signature.Contains("ToString", StringComparison.Ordinal);
+                    if (isCoreLibQueueEnumeratorDispose || isCoreLibKeyValuePairToString)
+                    {
+                        // CoreLib is only in the version bubble when it is compiled into the composite image. There, an
+                        // eager readiness fixup naming Marker would load this assembly while CoreLib is still loading.
+                        if (deferredWasmCalls)
+                        {
+                            bool isCoreLibReadinessFixup = entrySignature.FixupKind == ReadyToRunFixupKind.MethodEntry_ReadyToRun;
+                            foundReadinessQueueEnumeratorDispose |= isCoreLibQueueEnumeratorDispose && isCoreLibReadinessFixup;
+                            foundReadinessKeyValuePairToString |= isCoreLibKeyValuePairToString && isCoreLibReadinessFixup;
+                            Assert.DoesNotContain("Marker", signature, StringComparison.Ordinal);
+                            Assert.DoesNotContain(" @ ", signature, StringComparison.Ordinal);
+                        }
+
                         continue;
                     }
 
@@ -748,6 +772,8 @@ public class R2RTestSuites
                 // NoInlining control keeps an ordinary indirect-call import.
                 Assert.True(foundReadinessEnumeratorDispose, "Expected a MethodEntry_ReadyToRun import for Enumerator`1.Dispose");
                 Assert.True(foundOrdinaryNoInliningEnumeratorDispose, "Expected an ordinary MethodEntry import for NoInliningEnumerator`1.Dispose");
+                Assert.True(foundReadinessQueueEnumeratorDispose, "Expected a MethodEntry_ReadyToRun import for Queue`1.Enumerator.Dispose");
+                Assert.True(foundReadinessKeyValuePairToString, "Expected a MethodEntry_ReadyToRun import for KeyValuePair`2.ToString");
             }
         }
     }
