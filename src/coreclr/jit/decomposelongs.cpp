@@ -612,7 +612,11 @@ GenTree* DecomposeLongs::DecomposeStoreLclVars(GenTreeStoreLclVars* store)
 
     // Stores of non-promoted longs from GT_LONG are left for codegen, so
     // there is nothing to decompose in the inserted nodes.
-    Range().InsertAfter(store, std::move(longStores));
+    if (!longStores.IsEmpty())
+    {
+        Range().InsertAfter(store, std::move(longStores));
+    }
+
     return next;
 }
 
