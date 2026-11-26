@@ -1189,14 +1189,12 @@ void WasmRegAlloc::BuildFuncIntervals(FuncInfoDsc* funcInfo, PerFuncletData* fun
                 }
             }
 
-            if (tree == CurrentRange().LastNode())
-            {
-                // Extend interval ends to the end of the block for live-out locals
-                updateIntervalEnds(block->bbLiveOut, pos);
-            }
-
             pos++;
         }
+
+        // Extend interval ends to the end of the block for live-out locals,
+        // and assign them pos + 1, where pos is the last position in the block
+        updateIntervalEnds(block->bbLiveOut, pos);
     }
 
     // Remove empty intervals which correspond to virtual registers that were never used in this funclet.
