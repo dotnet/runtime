@@ -1230,8 +1230,7 @@ static bool IsBoundLessOrEqual(
         return false;
     }
 
-    bool isLessOrEqual = false;
-    BitVecOps::VisitBits(comp->apTraits, assertions, [&](unsigned index) {
+    return !BitVecOps::VisitBits(comp->apTraits, assertions, [=](unsigned index) {
         const Compiler::AssertionDsc& curAssertion = comp->optGetAssertion(GetAssertionIndex(index));
         if (!curAssertion.GetOp1().KindIs(Compiler::O1K_VN) ||
             !curAssertion.GetOp2().KindIs(Compiler::O2K_VN_ADD_CNS) || (curAssertion.GetOp2().GetCns() != 0))
@@ -1257,12 +1256,10 @@ static bool IsBoundLessOrEqual(
 
         if ((next != ValueNumStore::NoVN) && IsBoundLessOrEqual(comp, assertions, next, hi, equalOnly, budget - 1))
         {
-            isLessOrEqual = true;
             return false;
         }
         return true;
     });
-    return isLessOrEqual;
 }
 
 //------------------------------------------------------------------------
@@ -1337,7 +1334,7 @@ void RangeCheck::MergeEdgeAssertionsWorker(Compiler*                        comp
     assert(canUseCheckedBounds || (preferredBoundVN == ValueNumStore::NoVN));
 
     // Walk through the "assertions" to check if they apply.
-    BitVecOps::VisitBits(comp->apTraits, assertions, [&](unsigned index) {
+    BitVecOps::VisitBits(comp->apTraits, assertions, [=, &assertedRange, &budget](unsigned index) {
         AssertionIndex assertionIndex = GetAssertionIndex(index);
 
         const Compiler::AssertionDsc& curAssertion = comp->optGetAssertion(assertionIndex);

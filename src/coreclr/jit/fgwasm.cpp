@@ -284,7 +284,7 @@ public:
 
         bool isFirstEntry = true;
 
-        BitVecOps::VisitBits(m_traits, m_blocks, [&](unsigned poNum) {
+        BitVecOps::VisitBits(m_traits, m_blocks, [=, &isFirstEntry](unsigned poNum) {
             BasicBlock* const block = m_dfsTree->GetPostOrder(poNum);
 
             // cfpt's cannot be scc entries
@@ -402,7 +402,7 @@ public:
     void Dump(int indent = 0)
     {
         bool first = true;
-        BitVecOps::VisitBits(m_traits, m_blocks, [&](unsigned poNum) {
+        BitVecOps::VisitBits(m_traits, m_blocks, [=, &first](unsigned poNum) {
             if (first)
             {
                 printf("%*c", indent, ' ');
@@ -433,7 +433,7 @@ public:
     void DumpDot()
     {
         printf("digraph SCC_%u {\n", m_num);
-        BitVecOps::VisitBits(m_traits, m_blocks, [&](unsigned poNum) {
+        BitVecOps::VisitBits(m_traits, m_blocks, [=](unsigned poNum) {
             BasicBlock* const block   = m_dfsTree->GetPostOrder(poNum);
             bool              isEntry = BitVecOps::IsMember(m_traits, m_entries, poNum);
 
@@ -518,7 +518,7 @@ public:
         if (m_compiler->verbose)
         {
             JITDUMP("digraph scc_%u_nested_subgraph%u {\n", m_num, nestedCount);
-            BitVecOps::VisitBits(m_traits, nestedBlocks, [&](unsigned poNum) {
+            BitVecOps::VisitBits(m_traits, nestedBlocks, [=](unsigned poNum) {
                 BasicBlock* const block = m_dfsTree->GetPostOrder(poNum);
 
                 JITDUMP(FMT_BB ";\n", block->bbNum);

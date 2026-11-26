@@ -1034,7 +1034,7 @@ void Compiler::compChangeLife(VARSET_VALARG_TP newLife)
     // Handle the dying vars first, then the newly live vars.
     // This is because, in the RyuJIT backend case, they may occupy registers that
     // will be occupied by another var that is newly live.
-    VarSetOps::VisitBits(this, deadSet, [&](unsigned deadVarIndex) {
+    VarSetOps::VisitBits(this, deadSet, [=](unsigned deadVarIndex) {
         unsigned   varNum = lvaTrackedIndexToLclNum(deadVarIndex);
         LclVarDsc* varDsc = lvaGetDesc(varNum);
 
@@ -1072,7 +1072,7 @@ void Compiler::compChangeLife(VARSET_VALARG_TP newLife)
         return true;
     });
 
-    VarSetOps::VisitBits(this, bornSet, [&](unsigned bornVarIndex) {
+    VarSetOps::VisitBits(this, bornSet, [=](unsigned bornVarIndex) {
         unsigned   varNum = lvaTrackedIndexToLclNum(bornVarIndex);
         LclVarDsc* varDsc = lvaGetDesc(varNum);
 
