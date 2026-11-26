@@ -2457,23 +2457,10 @@ void Compiler::fgInsertInlineeArgument(
             }
             else
             {
-                // In some special cases, unused args with side effects can
-                // trigger further changes.
-                //
-                // (1) If the arg is a static field access and the field access
-                // was produced by a call to EqualityComparer<T>.get_Default, the
-                // helper call to ensure the field has a value can be suppressed.
-                // This helper call is marked as a "Special DCE" helper during
-                // importation, over in fgGetStaticsCCtorHelper.
-                //
-                // (2) NYI. If we find that the actual arg expression
-                // has no side effects, we can skip appending all
-                // together. This will help jit TP a bit.
-                //
+                // A static field access produced by EqualityComparer<T>.get_Default can also
+                // discard the class initialization marked for special DCE by fgGetStaticsCCtorHelper.
                 assert(!argNode->OperIs(GT_RET_EXPR));
 
-                // For case (1)
-                //
                 // Look for the following tree shapes
                 // prejit: (IND (ADD (CONST, CALL(special dce helper...))))
                 // jit   : (COMMA (CALL(special dce helper...), (FIELD ...)))
@@ -2525,17 +2512,15 @@ void Compiler::fgInsertInlineeArgument(
                 // just append the arg node as an unused value.
                 if (*newStmt == nullptr)
                 {
-                    if (arg->GetWellKnownArg() == WellKnownArg::InstParam)
+                    // Extract effects before morph materializes any deferred generic lookups.
+                    // This also preserves a faulting context input when the lookup itself is unused.
+                    GenTree* effects = nullptr;
+                    gtExtractSideEffList(argNode, &effects, GTF_OBS_EFFECT);
+                    if (effects == nullptr)
                     {
-                        // An unused hidden argument doesn't need its deferred lookups.
-                        // Evaluate their input here: loading a context from this can still fault.
-                        while (argNode->OperIs(GT_RUNTIMELOOKUP) &&
-                               (argNode->AsRuntimeLookup()->gtDeferredLookup != nullptr))
-                        {
-                            argNode = argNode->gtGetOp1();
-                        }
+                        return;
                     }
-                    *newStmt = gtNewStmt(gtUnusedValNode(argNode), callDI);
+                    *newStmt = gtNewStmt(gtUnusedValNode(effects), callDI);
                 }
 
                 fgInsertStmtAfter(block, *afterStmt, *newStmt);

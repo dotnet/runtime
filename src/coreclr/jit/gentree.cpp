@@ -16335,8 +16335,23 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
     }
 
     // Screen for the right kinds of operands
-    GenTree* const         op1     = tree->AsOp()->gtOp1;
-    GenTree* const         op2     = tree->AsOp()->gtOp2;
+    GenTree* const op1 = tree->AsOp()->gtOp1;
+    GenTree* const op2 = tree->AsOp()->gtOp2;
+    // Compare the root-relative type expressions before morph expands their dictionary lookups.
+    if (op1->OperIs(GT_RUNTIMELOOKUP) && op2->OperIs(GT_RUNTIMELOOKUP))
+    {
+        DeferredHandleLookup* left  = op1->AsRuntimeLookup()->gtDeferredLookup;
+        DeferredHandleLookup* right = op2->AsRuntimeLookup()->gtDeferredLookup;
+        if ((left != nullptr) && (right != nullptr) && (left->kind == DeferredHandleLookup::Kind::TypeExpression) &&
+            (right->kind == DeferredHandleLookup::Kind::TypeExpression) &&
+            left->type.expression.SameExpression(right->type.expression) &&
+            ((tree->gtFlags & (GTF_ALL_EFFECT & ~GTF_EXCEPT)) == 0) &&
+            GenTree::Compare(op1->gtGetOp1(), op2->gtGetOp1()))
+        {
+            return gtWrapWithSideEffects(gtNewIconNode(oper == GT_EQ), tree, GTF_OBS_EFFECT);
+        }
+    }
+
     const TypeProducerKind op1Kind = gtGetTypeProducerKind(op1);
     const TypeProducerKind op2Kind = gtGetTypeProducerKind(op2);
 

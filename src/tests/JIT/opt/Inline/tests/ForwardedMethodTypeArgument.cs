@@ -289,6 +289,38 @@ public class ForwardedMethodTypeArgument
         public static Type Relay<B>() => CalleeOwner<List<B[]>>.Pair<A>();
     }
 
+    private static class DeferredChecks<A>
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool SameType<B>() => typeof(List<A>) == typeof(List<B>);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int Ignore(object value, bool test) => 1;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int Check(object value) => Ignore(null, value is List<A>);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int Cast(object value) => Ignore((List<A>)value, false);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static object CountEvaluation(object value, ref int count)
+    {
+        count++;
+        return value;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int DiscardTest<T>(object value, ref int count) =>
+        DeferredChecks<T[]>.Check(CountEvaluation(value, ref count));
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int DiscardCast<T>(object value) => DeferredChecks<T[]>.Cast(value);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool CompareChecks<T, U>() => DeferredChecks<T[]>.SameType<U[]>();
+
     private sealed class Box<T>
     {
         public Box() => s_constructions++;
@@ -603,6 +635,13 @@ public class ForwardedMethodTypeArgument
         Assert.Equal(typeof(Dictionary<object, string>), Owner<object>.Both<string>());
         Assert.Equal(typeof(string), Owner<string>.Forward<object>(true));
         Assert.Equal(typeof(object), Owner<string>.Forward<object>(false));
+        int evaluations = 0;
+        Assert.Equal(1, DiscardTest<string>(new object(), ref evaluations));
+        Assert.Equal(1, evaluations);
+        Assert.Equal(1, DiscardCast<string>(new List<string[]>()));
+        Assert.Throws<InvalidCastException>(() => DiscardCast<string>(new List<object[]>()));
+        Assert.True(CompareChecks<string, string>());
+        Assert.False(CompareChecks<string, object>());
         Assert.True(SharedReturnSpill<string>());
     }
 }
