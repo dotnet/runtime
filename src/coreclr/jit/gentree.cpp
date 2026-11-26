@@ -15162,11 +15162,18 @@ void Compiler::gtDispTree(GenTree*                    tree,
 
             if (call->gtCallType != CT_INDIRECT)
             {
-                auto disp = [&]() {
+                if ((call->gtCallMethHnd == nullptr) && (call->gtDirectCallAddress != nullptr))
+                {
+                    // LowerVirtualStubCall rewrites an interface dispatch into a direct call to the
+                    // dispatch helper and clears the method handle. Describe it by its role and the
+                    // helper target rather than the absent method.
+                    printf(" [stub dispatch helper @ %p]", dspPtr(call->gtDirectCallAddress));
+                }
+                else
+                {
                     char buffer[256];
                     printf(" %s", eeGetMethodFullName(call->gtCallMethHnd, true, true, buffer, sizeof(buffer)));
-                };
-                disp();
+                }
             }
 
             if (call->IsAsync())

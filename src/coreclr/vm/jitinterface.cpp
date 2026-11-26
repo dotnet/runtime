@@ -5237,9 +5237,15 @@ void CEEInfo::getCallInfo(
 
         bool allowInstParam = (flags & CORINFO_CALLINFO_ALLOWINSTPARAM);
 
+        // A resolved non-generic method on the constrained value type needs only that
+        // type's context. Lookup preparation can obtain it from the constrained token.
+        bool canPassConstrainedTypeArg = allowInstParam && fResolvedConstraint && !fForceUseRuntimeLookup &&
+                                         !pTargetMD->HasMethodInstantiation() && exactType.IsValueType() &&
+                                         exactType == constrainedType;
+
         // If the target method is resolved via constrained static virtual dispatch
-        // And it requires an instParam, we do not have the generic dictionary infrastructure
-        // to load the correct generic context arg via EmbedGenericHandle.
+        // and needs a context other than the constrained type, we do not have the generic
+        // dictionary infrastructure to load the correct generic context arg via EmbedGenericHandle.
         // Instead, force the call to go down the CORINFO_CALL_CODE_POINTER code path
         // which should have somewhat inferior performance. This should only actually happen in the case
         // of shared generic code calling a shared generic implementation method, which should be rare.
@@ -5255,7 +5261,8 @@ void CEEInfo::getCallInfo(
         // which is generic numerics which will always resolve to exact valuetypes, it is not expected that
         // the complexity involved would be worth the risk. Other scenarios are not expected to be as performance
         // sensitive.
-        if (IsMdStatic(dwTargetMethodAttrs) && constrainedType != NULL && pResult->exactContextNeedsRuntimeLookup)
+        if (IsMdStatic(dwTargetMethodAttrs) && constrainedType != NULL && pResult->exactContextNeedsRuntimeLookup &&
+            !canPassConstrainedTypeArg)
         {
             allowInstParam = FALSE;
         }
@@ -5283,10 +5290,11 @@ void CEEInfo::getCallInfo(
         //    (a) some JITs may call instantiating stubs (it makes the JIT simpler) and
         //    (b) if the method is a remote stub then the EE will force the
         //        call through an instantiating stub and
-        //    (c) constraint calls that require runtime context lookup are never resolved
-        //        to underlying shared generic code
+        //    (c) constrained calls that need a context other than the constrained type
+        //        still require a runtime lookup of the instantiating stub
 
-        if (((pResult->exactContextNeedsRuntimeLookup && pTargetMD->IsInstantiatingStub() && (!allowInstParam || fResolvedConstraint)) || fForceUseRuntimeLookup))
+        if (((pResult->exactContextNeedsRuntimeLookup && pTargetMD->IsInstantiatingStub() &&
+              (!allowInstParam || (fResolvedConstraint && !canPassConstrainedTypeArg))) || fForceUseRuntimeLookup))
         {
             pResult->kind = CORINFO_CALL_CODE_POINTER;
 

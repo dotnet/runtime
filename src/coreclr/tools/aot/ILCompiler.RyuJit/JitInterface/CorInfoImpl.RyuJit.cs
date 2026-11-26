@@ -1381,7 +1381,14 @@ namespace Internal.JitInterface
                 ThrowHelper.ThrowBadImageFormatException();
             }
 
-            if (directCall && resolvedConstraint && (pResult->exactContextNeedsRuntimeLookup || forceUseRuntimeLookup))
+            // A resolved non-generic method on the constrained value type needs only that type's
+            // context, which the EE supplies from the constrained token. Keep the call direct and
+            // inlinable instead of falling back to a fat function pointer, matching the CoreCLR VM.
+            bool canPassConstrainedTypeArg = allowInstParam && resolvedConstraint && !forceUseRuntimeLookup &&
+                                             !targetMethod.HasInstantiation && exactType.IsValueType &&
+                                             exactType == constrainedType;
+
+            if (directCall && resolvedConstraint && !canPassConstrainedTypeArg && (pResult->exactContextNeedsRuntimeLookup || forceUseRuntimeLookup))
             {
                 // We want to do a direct call to a shared method on a type. We need to provide
                 // a generic context, but the JitInterface doesn't provide a way for us to do it from here.

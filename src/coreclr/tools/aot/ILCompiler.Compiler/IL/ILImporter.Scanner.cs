@@ -844,7 +844,21 @@ namespace Internal.IL
 
             bool allowInstParam = opcode != ILOpcode.ldvirtftn && opcode != ILOpcode.ldftn;
 
-            if (directCall && resolvedConstraint && (exactContextNeedsRuntimeLookup || forceUseRuntimeLookup))
+            // A resolved non-generic method on the constrained value type needs only that type's
+            // context, which the EE supplies from the constrained token. Keep the call direct and
+            // reserve the constrained type's handle as the instantiation argument, matching the
+            // getCallInfo decision and the compile-time generic lookup.
+            bool canPassConstrainedTypeArg = false;
+            if (allowInstParam && resolvedConstraint && !forceUseRuntimeLookup &&
+                !targetMethod.HasInstantiation && exactType.IsValueType)
+            {
+                TypeDesc canonConstrained = _constrained.IsRuntimeDeterminedSubtype
+                    ? _constrained.ConvertToCanonForm(CanonicalFormKind.Specific)
+                    : _constrained;
+                canPassConstrainedTypeArg = exactType == canonConstrained;
+            }
+
+            if (directCall && resolvedConstraint && !canPassConstrainedTypeArg && (exactContextNeedsRuntimeLookup || forceUseRuntimeLookup))
             {
                 // We want to do a direct call to a shared method on a valuetype. We need to provide
                 // a generic context, but the JitInterface doesn't provide a way for us to do it from here.
@@ -901,7 +915,19 @@ namespace Internal.IL
                 }
                 else if (exactContextNeedsRuntimeLookup)
                 {
-                    if (targetMethod.IsSharedByGenericInstantiations && !resolvedConstraint && !referencingArrayAddressMethod)
+                    if (canPassConstrainedTypeArg)
+                    {
+                        // The instantiation argument is the constrained value type's handle, looked
+                        // up from the caller's dictionary, as lookup preparation obtains
+                        // it from the constrained token.
+                        if (_canonMethod.IsSharedByGenericInstantiations && targetMethod.RequiresInstArg())
+                        {
+                            _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, _constrained), reason);
+                        }
+
+                        _dependencies.Add(_factory.CanonicalEntrypoint(targetMethod), reason);
+                    }
+                    else if (targetMethod.IsSharedByGenericInstantiations && !resolvedConstraint && !referencingArrayAddressMethod)
                     {
                         ISymbolNode instParam = null;
 
