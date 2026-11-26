@@ -9056,9 +9056,10 @@ void emitter::emitIns_R_AI(instruction  ins,
     assert(EA_IS_RELOC(attr));
     assert((ins == INS_adr) || (ins == INS_adrp) || (ins == INS_ldr));
 
-    emitAttr      size = EA_SIZE(attr);
-    insFormat     fmt  = IF_DI_1E;
-    instrDescJmp* id   = emitNewInstrJmp();
+    emitAttr  size = EA_SIZE(attr);
+    insFormat fmt  = IF_DI_1E;
+    // ADRP writes a page address. Only the following ADD or LDR can produce a GC reference.
+    instrDescJmp* id = emitNewInstrJmp();
     id->idIns(ins == INS_ldr ? INS_adrp : ins);
     id->idInsFmt(fmt);
     id->idInsOpt(INS_OPTS_NONE);
@@ -9077,7 +9078,9 @@ void emitter::emitIns_R_AI(instruction  ins,
     if (ins == INS_ldr)
     {
         assert(size == EA_PTRSIZE && ((size_t)addr % TARGET_POINTER_SIZE) == 0);
-        emitPageOffsetLoad(size, ireg, (void*)addr);
+        // The ADRP above leaves a page address in the register, so only the load
+        // may carry the GC type of the loaded value.
+        emitPageOffsetLoad(EA_IS_GCREF(attr) ? EA_GCREF : size, ireg, (void*)addr);
     }
     else if (ins == INS_adrp)
     {
@@ -15038,11 +15041,13 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
 
     if (addr->isContained())
     {
-        if (addr->IsIconHandle(GTF_ICON_FTN_ADDR))
+        if (addr->IsIconHandle(GTF_ICON_FTN_ADDR, GTF_ICON_CONST_PTR, GTF_ICON_STATIC_HDL, GTF_ICON_STATIC_BOX_PTR,
+                               GTF_ICON_STATIC_ADDR_PTR, GTF_ICON_GLOBAL_PTR, GTF_ICON_STR_HDL))
         {
-            assert(ins == INS_ldr && attr == EA_PTRSIZE);
-            GenTreeIntCon* cell = addr->AsIntCon();
-            emitIns_R_AI(INS_ldr, EA_PTR_DSP_RELOC, dataReg,
+            assert(ins == INS_ldr && EA_SIZE(attr) == EA_PTRSIZE && !EA_IS_BYREF(attr));
+            GenTreeIntCon* cell      = addr->AsIntCon();
+            emitAttr       relocAttr = EA_IS_GCREF(attr) ? EA_SET_FLG(EA_GCREF, EA_DSP_RELOC_FLG) : EA_PTR_DSP_RELOC;
+            emitIns_R_AI(INS_ldr, relocAttr, dataReg,
                          cell->IconValue() DEBUGARG(cell->GetTargetHandle()) DEBUGARG(cell->gtFlags));
             return;
         }

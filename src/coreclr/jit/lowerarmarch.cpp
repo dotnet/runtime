@@ -3092,8 +3092,11 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
         MakeSrcContained(indirNode, addr);
     }
 #ifdef TARGET_ARM64
-    else if (!m_compiler->opts.compReloc && indirNode->OperIs(GT_IND) && indirNode->TypeIs(TYP_I_IMPL) &&
-             !indirNode->IsVolatile() && addr->IsIconHandle(GTF_ICON_FTN_ADDR) &&
+    else if (!m_compiler->opts.compReloc && indirNode->OperIs(GT_IND) && !indirNode->IsVolatile() &&
+             (indirNode->TypeIs(TYP_I_IMPL) ||
+              (indirNode->TypeIs(TYP_REF) && ((indirNode->gtFlags & GTF_IND_INVARIANT) != 0))) &&
+             addr->IsIconHandle(GTF_ICON_FTN_ADDR, GTF_ICON_CONST_PTR, GTF_ICON_STATIC_HDL, GTF_ICON_STATIC_BOX_PTR,
+                                GTF_ICON_STATIC_ADDR_PTR, GTF_ICON_GLOBAL_PTR, GTF_ICON_STR_HDL) &&
              (((size_t)addr->AsIntCon()->IconValue() % TARGET_POINTER_SIZE) == 0) &&
              m_compiler->eeGetRelocTypeHint((void*)addr->AsIntCon()->IconValue()) == CorInfoReloc::ARM64_PAGEBASE_REL21)
     {
