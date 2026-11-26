@@ -140,12 +140,13 @@
                                                 '$(IsGeneratorProject)' != 'true'">true</SkipTargetingPackShimReferences>
   </PropertyGroup>
 
-  <!-- Define a shared predicate for platforms that support runtime async. -->
+  <!-- Runtime async is supported on all platforms starting with .NET 12. -->
   <PropertyGroup Condition="'$(RuntimeAsyncSupported)' == ''">
-    <RuntimeAsyncSupported Condition="'$(TargetOS)' != 'browser'
+    <RuntimeAsyncSupported Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net12.0'))
+      or ('$(TargetOS)' != 'browser'
       and '$(TargetOS)' != 'wasi'
       and '$(TargetOS)' != 'android'
-      and '$(TargetsAppleMobile)' != 'true'">true</RuntimeAsyncSupported>
+      and '$(TargetsAppleMobile)' != 'true')">true</RuntimeAsyncSupported>
   </PropertyGroup>
 
   <!-- Enable runtime async for netcoreapp source projects, excluding unsupported platforms and OOB packages. -->
