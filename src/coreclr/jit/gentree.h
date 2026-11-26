@@ -1979,6 +1979,9 @@ public:
     // Returns the type of the regIndex'th register defined by a multi-reg node.
     var_types GetRegTypeByIndex(int regIndex) const;
 
+    // Returns the byte offset of the regIndex'th register within the struct value produced by this node.
+    unsigned GetSourceRegisterOffset(Compiler* comp, int regIndex) const;
+
     // Returns the GTF flag equivalent for the regIndex'th register of a multi-reg node.
     GenTreeFlags GetRegSpillFlagByIdx(int regIndex) const;
 
@@ -4619,7 +4622,6 @@ public:
 
     // Initialize the Return Type Descriptor for a method that returns a struct type
     void InitializeStructReturnType(Compiler* comp, CORINFO_CLASS_HANDLE retClsHnd, CorInfoCallConvExtension callConv);
-    void InitializeStructCallReturnType(Compiler* comp, const GenTreeCall* call);
 
     // Initialize the Return Type Descriptor for a method that returns a TYP_LONG
     // Only needed for X86 and arm32.

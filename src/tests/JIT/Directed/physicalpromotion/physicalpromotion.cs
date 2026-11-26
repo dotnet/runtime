@@ -10,6 +10,8 @@ using System.Numerics;
 using Xunit;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.X86;
 
 public class PhysicalPromotion
 {
@@ -308,6 +310,36 @@ public class PhysicalPromotion
         Assert.Equal(new Vector2(value, value + 1), vector2.A);
         Assert.Equal(new Vector2(value + 2, value + 3), vector2.B);
         Consume(vector2);
+    }
+
+    [Theory]
+    [InlineData(17U, 5U)]
+    [InlineData(0xFFFFFFF0U, 7U)]
+    public static unsafe void StoreMultiRegIntrinsicResult(uint value, uint divisor)
+    {
+        if (X86Base.IsSupported)
+        {
+#pragma warning disable SYSLIB5004 // DivRem is experimental
+            (uint Quotient, uint Remainder) result = X86Base.DivRem(value, 0, divisor);
+#pragma warning restore SYSLIB5004
+            Assert.Equal(value / divisor, result.Quotient);
+            Assert.Equal(value % divisor, result.Remainder);
+            Consume(result);
+        }
+
+        if (AdvSimd.Arm64.IsSupported)
+        {
+            uint* data = stackalloc uint[8];
+            for (uint i = 0; i < 8; i++)
+            {
+                data[i] = value + i;
+            }
+
+            (Vector128<uint> Value1, Vector128<uint> Value2) pair = AdvSimd.Arm64.LoadPairVector128(data);
+            Assert.Equal(Vector128.Create(value, value + 1, value + 2, value + 3), pair.Value1);
+            Assert.Equal(Vector128.Create(value + 4, value + 5, value + 6, value + 7), pair.Value2);
+            Consume(pair);
+        }
     }
 
     [Theory]

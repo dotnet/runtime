@@ -1353,7 +1353,7 @@ const GenTree* Compiler::gtPeelFieldAddrs(const GenTree* addr) const
 
 //------------------------------------------------------------------------
 // GetCallRemainderScratch: Get a scratch local for an unpromoted piece of a
-// struct returned by a call, reusing locals from earlier stores.
+// struct source, reusing locals from earlier stores.
 //
 // Arguments:
 //    type        - The type of the local
@@ -1428,125 +1428,183 @@ void ReplaceVisitor::HandleStructStore(GenTree** use, GenTree* user)
     JITDUMP("Processing block operation [%06u] that involves replacements\n", Compiler::dspTreeID(store));
 
 #if HAS_FIXED_REGISTER_SET
-    if (dstInvolvesReplacements && src->IsCall() && src->TypeIs(TYP_STRUCT) && !src->AsCall()->ShouldHaveRetBufArg() &&
-        !src->AsCall()->CanTailCall()
-#ifdef SWIFT_SUPPORT
-        && (src->AsCall()->GetUnmanagedCallConv() != CorInfoCallConvExtension::Swift)
-#endif
-    )
+    // Sources not handled by field-by-field decomposition below define replacements
+    // and layout-based remainder scratch locals via GT_STORE_LCL_VARS. Tail call
+    // candidates are statement-root stores defining a whole local.
+    if (dstInvolvesReplacements && !src->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_BLK) && !src->IsConstInitVal())
     {
-        unsigned start      = dstLcl->GetLclOffs();
-        unsigned end        = start + dstLcl->GetLayout(m_compiler)->GetSize();
-        bool     canReplace = true;
-        for (Replacement* rep = dstFirstRep; rep != dstEndRep; rep++)
-        {
-            canReplace &= (rep->Offset >= start) && (rep->Offset + genTypeSize(rep->AccessType) <= end);
-        }
-        if (canReplace)
-        {
-            // Describe destinations from the layout, in offset order. Lowering
-            // maps them to ABI return registers or falls back to a stack spill.
-            struct Remainder
-            {
-                unsigned  Local;
-                unsigned  Offset;
-                var_types Type;
-            };
-            jitstd::vector<Remainder>                        remainder(m_compiler->getAllocator(CMK_Promotion));
-            jitstd::vector<unsigned>                         usedScratch(m_compiler->getAllocator(CMK_Promotion));
-            jitstd::vector<GenTreeStoreLclVars::Destination> destinations(m_compiler->getAllocator(CMK_ASTNode));
-            AggregateInfo*                                   aggregate = m_aggregates.Lookup(dstLcl->GetLclNum());
-            ClassLayout*                                     layout    = m_compiler->lvaGetDesc(dstLcl)->GetLayout();
+        bool isTailCallCandidate = src->IsCall() && src->AsCall()->CanTailCall();
+        assert(!isTailCallCandidate || (user == nullptr));
+        assert(!src->IsCall() || !src->AsCall()->ShouldHaveRetBufArg());
 
-            // Non-padding bytes without a replacement. These must be stored
-            // to the struct local.
-            SegmentList remaining(m_compiler->getAllocator(CMK_Promotion));
-            for (const SegmentList::Segment& segment : aggregate->Unpromoted)
+        unsigned start = dstLcl->GetLclOffs();
+        unsigned end   = start + dstLcl->GetLayout(m_compiler)->GetSize();
+
+        DecompositionStatementList result;
+        EliminateCommasInBlockOp(store, &result);
+
+        // Describe destinations from the layout, in offset order. Lowering
+        // maps them to source registers directly or by extraction, or spills to the stack.
+        struct Remainder
+        {
+            unsigned  Local;
+            unsigned  Offset;
+            var_types Type;
+        };
+        jitstd::vector<Remainder>                        remainder(m_compiler->getAllocator(CMK_Promotion));
+        jitstd::vector<unsigned>                         usedScratch(m_compiler->getAllocator(CMK_Promotion));
+        jitstd::vector<GenTreeStoreLclVars::Destination> destinations(m_compiler->getAllocator(CMK_ASTNode));
+        AggregateInfo*                                   aggregate = m_aggregates.Lookup(dstLcl->GetLclNum());
+        ClassLayout*                                     layout    = m_compiler->lvaGetDesc(dstLcl)->GetLayout();
+
+        // Non-padding bytes without a replacement. These must be stored
+        // to the struct local.
+        SegmentList remaining(m_compiler->getAllocator(CMK_Promotion));
+        for (const SegmentList::Segment& segment : aggregate->Unpromoted)
+        {
+            unsigned segmentStart = max(start, segment.Start);
+            unsigned segmentEnd   = min(end, segment.End);
+            if (segmentStart < segmentEnd)
             {
-                unsigned segmentStart = max(start, segment.Start);
-                unsigned segmentEnd   = min(end, segment.End);
-                if (segmentStart < segmentEnd)
-                {
-                    remaining.Add(SegmentList::Segment(segmentStart, segmentEnd));
-                }
+                remaining.Add(SegmentList::Segment(segmentStart, segmentEnd));
+            }
+        }
+
+        // As in field-by-field decomposition, write back partial replacements if
+        // needed, store their overlapping bytes through the remainder, and read them back later.
+        auto handlePartialOverlap = [&](Replacement& rep) {
+            // Tail call candidate stores define the whole local, so partial overlaps cannot occur.
+            assert(!isTailCallCandidate);
+            JITDUMP("*** Block operation partially overlaps with replacement V%02u (%s) of destination\n", rep.LclNum,
+                    rep.Description);
+
+            if (NeedsWriteBack(rep))
+            {
+                result.AddStatement(Promotion::CreateWriteBack(m_compiler, dstLcl->GetLclNum(), rep));
+                ClearNeedsWriteBack(rep);
             }
 
-            auto addRemainder = [&](unsigned offset, var_types type) {
-                unsigned lclNum = GetCallRemainderScratch(type, usedScratch);
-                remainder.push_back({lclNum, offset, type});
-                destinations.push_back({lclNum, offset - start});
-                remaining.Subtract(SegmentList::Segment(offset, offset + genTypeSize(type)));
-            };
+            SetNeedsReadBack(rep);
+            remaining.Add(
+                SegmentList::Segment(max(start, rep.Offset), min(end, rep.Offset + genTypeSize(rep.AccessType))));
+        };
 
-            // Use the largest naturally aligned chunk up to pointer size that
-            // fits in the gap, preserving GC slot types. Covering padding is safe.
-            auto addRemainders = [&](unsigned gapStart, unsigned gapEnd) {
-                while (true)
+        if (dstFirstRep->Offset < start)
+        {
+            handlePartialOverlap(*dstFirstRep);
+            dstFirstRep++;
+        }
+
+        if ((dstEndRep > dstFirstRep) && ((dstEndRep - 1)->Offset + genTypeSize((dstEndRep - 1)->AccessType) > end))
+        {
+            handlePartialOverlap(*(dstEndRep - 1));
+            dstEndRep--;
+        }
+
+        auto addRemainder = [&](unsigned offset, var_types type) {
+            unsigned lclNum = GetCallRemainderScratch(type, usedScratch);
+            remainder.push_back({lclNum, offset, type});
+            destinations.push_back({lclNum, offset - start});
+            remaining.Subtract(SegmentList::Segment(offset, offset + genTypeSize(type)));
+        };
+
+        // Use the largest naturally aligned chunk up to pointer size that
+        // fits in the gap, preserving GC slot types. Covering padding is safe.
+        auto addRemainders = [&](unsigned gapStart, unsigned gapEnd) {
+            while (true)
+            {
+                unsigned offset = UINT_MAX;
+                for (const SegmentList::Segment& segment : remaining)
                 {
-                    unsigned offset = UINT_MAX;
-                    for (const SegmentList::Segment& segment : remaining)
+                    if ((segment.End > gapStart) && (segment.Start < gapEnd))
                     {
-                        if ((segment.End > gapStart) && (segment.Start < gapEnd))
+                        offset = max(segment.Start, gapStart);
+                        break;
+                    }
+                }
+
+                if (offset == UINT_MAX)
+                {
+                    return;
+                }
+
+                unsigned  slot = offset / TARGET_POINTER_SIZE;
+                var_types type = TYP_UBYTE;
+                if (((offset % TARGET_POINTER_SIZE) == 0) && layout->IsGCPtr(slot))
+                {
+                    type = layout->GetGCPtrType(slot);
+                }
+                else if (!layout->IsGCPtr(slot))
+                {
+                    for (unsigned width = TARGET_POINTER_SIZE; width > 1; width /= 2)
+                    {
+                        if (((offset % width) == 0) && (offset + width <= gapEnd))
                         {
-                            offset = max(segment.Start, gapStart);
+                            type = width == 8 ? TYP_LONG : width == 4 ? TYP_INT : TYP_USHORT;
                             break;
                         }
                     }
-
-                    if (offset == UINT_MAX)
-                    {
-                        return;
-                    }
-
-                    unsigned  slot = offset / TARGET_POINTER_SIZE;
-                    var_types type = TYP_UBYTE;
-                    if (((offset % TARGET_POINTER_SIZE) == 0) && layout->IsGCPtr(slot))
-                    {
-                        type = layout->GetGCPtrType(slot);
-                    }
-                    else if (!layout->IsGCPtr(slot))
-                    {
-                        for (unsigned width = TARGET_POINTER_SIZE; width > 1; width /= 2)
-                        {
-                            if (((offset % width) == 0) && (offset + width <= gapEnd))
-                            {
-                                type = width == 8 ? TYP_LONG : width == 4 ? TYP_INT : TYP_USHORT;
-                                break;
-                            }
-                        }
-                    }
-
-                    addRemainder(offset, type);
                 }
-            };
 
-            unsigned offset = start;
-            for (Replacement* rep = dstFirstRep; rep != dstEndRep; rep++)
+                addRemainder(offset, type);
+            }
+        };
+
+        unsigned offset = start;
+        for (Replacement* rep = dstFirstRep; rep != dstEndRep; rep++)
+        {
+            addRemainders(offset, rep->Offset);
+            destinations.push_back({rep->LclNum, rep->Offset - start});
+            ClearNeedsReadBack(*rep);
+            SetNeedsWriteBack(*rep);
+            offset = rep->Offset + genTypeSize(rep->AccessType);
+        }
+
+        addRemainders(offset, end);
+
+        GenTreeStoreLclVars* defs =
+            m_compiler->gtNewStoreLclVarsNode(src, destinations.data(), static_cast<unsigned>(destinations.size()));
+
+        auto createRemainderStore = [=](const Remainder& rem) {
+            GenTree* value = m_compiler->gtNewLclvNode(rem.Local, genActualType(rem.Type));
+            m_compiler->lvaSetVarDoNotEnregister(dstLcl->GetLclNum() DEBUGARG(DoNotEnregisterReason::LocalField));
+            return m_compiler->gtNewStoreLclFldNode(dstLcl->GetLclNum(), rem.Type, rem.Offset, value);
+        };
+
+        if (isTailCallCandidate)
+        {
+            // Morph replaces the statement root with the call and removes following
+            // statements on tail call success. Keep preceding effects in a separate
+            // statement and each remainder store in its own following statement, in order.
+            GenTree* before = result.ToCommaTree(m_compiler);
+            if (!before->IsNothingNode())
             {
-                addRemainders(offset, rep->Offset);
-                destinations.push_back({rep->LclNum, rep->Offset - start});
-                ClearNeedsReadBack(*rep);
-                SetNeedsWriteBack(*rep);
-                offset = rep->Offset + genTypeSize(rep->AccessType);
+                m_compiler->fgInsertStmtBefore(m_currentBlock, m_currentStmt, m_compiler->fgNewStmtFromTree(before));
             }
 
-            addRemainders(offset, end);
-
-            DecompositionStatementList result;
-            EliminateCommasInBlockOp(store, &result);
-            GenTreeStoreLclVars* defs =
-                m_compiler->gtNewStoreLclVarsNode(src, destinations.data(), static_cast<unsigned>(destinations.size()));
+            *use                   = defs;
+            Statement* insertAfter = m_currentStmt;
+            for (const Remainder& rem : remainder)
+            {
+                Statement* stmt = m_compiler->fgNewStmtFromTree(createRemainderStore(rem));
+                m_compiler->fgInsertStmtAfter(m_currentBlock, insertAfter, stmt);
+                insertAfter = stmt;
+            }
+        }
+        else
+        {
+            // A single comma tree also supports stores nested within another expression.
             result.AddStatement(defs);
             for (const Remainder& rem : remainder)
             {
-                GenTree* value = m_compiler->gtNewLclvNode(rem.Local, genActualType(rem.Type));
-                result.AddStatement(m_compiler->gtNewStoreLclFldNode(dstLcl->GetLclNum(), rem.Type, rem.Offset, value));
-                m_compiler->lvaSetVarDoNotEnregister(dstLcl->GetLclNum() DEBUGARG(DoNotEnregisterReason::LocalField));
+                result.AddStatement(createRemainderStore(rem));
             }
-            *use          = result.ToCommaTree(m_compiler);
-            m_madeChanges = true;
-            return;
+
+            *use = result.ToCommaTree(m_compiler);
         }
+
+        m_madeChanges = true;
+        return;
     }
 
 #endif

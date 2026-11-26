@@ -288,9 +288,17 @@ void AggregateInfoMap::Add(AggregateInfo* agg)
 //   Pointer to the aggregate information, or nullptr if the local is not
 //   physically promoted.
 //
+// Remarks:
+//   Locals created after the map was built return nullptr, including remainder
+//   scratch locals read by inserted statements that the replacer visits.
+//
 AggregateInfo* AggregateInfoMap::Lookup(unsigned lclNum)
 {
-    assert(lclNum < m_numLocals);
+    if (lclNum >= m_numLocals)
+    {
+        return nullptr;
+    }
+
     unsigned index = m_lclNumToAggregateIndex[lclNum];
 
     if (index == UINT_MAX)

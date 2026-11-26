@@ -4935,6 +4935,7 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
     //    Either a call stmt or
     //    GT_RETURN(GT_CALL(..)) or GT_RETURN(GT_CAST(GT_CALL(..)))
     //    var = GT_CALL(..) or var = (GT_CAST(GT_CALL(..)))
+    //    GT_STORE_LCL_VARS(GT_CALL(..)) or GT_STORE_LCL_VARS(GT_CAST(GT_CALL(..)))
     //    GT_COMMA(GT_CALL(..), GT_NOP) or GT_COMMA(GT_CAST(GT_CALL(..)), GT_NOP)
     // In the above,
     //    GT_CASTS may be nested.
@@ -4945,7 +4946,8 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
     }
     else
     {
-        assert(stmtOper == GT_RETURN || stmtOper == GT_STORE_LCL_VAR || stmtOper == GT_COMMA);
+        assert(stmtOper == GT_RETURN || stmtOper == GT_STORE_LCL_VAR || stmtOper == GT_STORE_LCL_VARS ||
+               stmtOper == GT_COMMA);
         GenTree* treeWithCall;
         if (stmtOper == GT_RETURN)
         {
@@ -4956,6 +4958,10 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
             // Second operation must be nop.
             assert(stmtExpr->gtGetOp2()->IsNothingNode());
             treeWithCall = stmtExpr->gtGetOp1();
+        }
+        else if (stmtOper == GT_STORE_LCL_VARS)
+        {
+            treeWithCall = stmtExpr->AsStoreLclVars()->Data();
         }
         else
         {
@@ -6369,10 +6375,14 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
         assert(!call->CanTailCall());
 
 #if FEATURE_MULTIREG_RET
-        if (fgGlobalMorph && call->HasMultiRegRetVal() && varTypeIsStruct(call->TypeGet()))
+        GenTree* stmtRoot = compCurStmt->GetRootNode();
+        if (fgGlobalMorph && call->HasMultiRegRetVal() && varTypeIsStruct(call->TypeGet()) &&
+            stmtRoot->OperIs(GT_RETURN, GT_SWIFT_ERROR_RET) && (stmtRoot->AsOp()->GetReturnValue() == call))
         {
-            // The tail call has been rejected so we must finish the work deferred
-            // by impFixupCallStructReturn for multi-reg-returning calls and transform
+            // After tail call rejection, finish the work impFixupCallStructReturn
+            // defers only for calls directly returned by GT_RETURN or GT_SWIFT_ERROR_RET.
+            // Calls already stored by STORE_LCL_VAR or STORE_LCL_VARS need no temp.
+            // Transform
             //     ret call
             // into
             //     temp = call

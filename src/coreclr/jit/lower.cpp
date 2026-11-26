@@ -6261,12 +6261,63 @@ void Lowering::LowerCallStruct(GenTreeCall* call)
 }
 
 //----------------------------------------------------------------------------------------------
+// GetStoreLclVarsRegisterCount: Get the number of registers defined by a GT_STORE_LCL_VARS source.
+//
+// Arguments:
+//     compiler - The compiler instance
+//     source   - The store's source
+//
+// Return Value:
+//     The multi-reg node's GetMultiRegCount result, one for a single-register call,
+//     or zero for any other source.
+//
+// Remarks:
+//     A non-register source, such as a struct local substituted by CSE, reports
+//     zero so LowerStoreLclVars spills through the stack.
+//
+unsigned Lowering::GetStoreLclVarsRegisterCount(Compiler* compiler, GenTree* source)
+{
+    if (source->IsMultiRegNode())
+    {
+        return source->GetMultiRegCount(compiler);
+    }
+
+    return source->IsCall() ? 1 : 0;
+}
+
+//----------------------------------------------------------------------------------------------
+// GetStoreLclVarsRegisterType: Get a register's type for a GT_STORE_LCL_VARS source.
+//
+// Arguments:
+//     source   - The store's source
+//     regIndex - The zero-based register index
+//
+// Return Value:
+//     The multi-reg node's GetRegTypeByIndex result, or the call's type for a
+//     single-register call.
+//
+// Remarks:
+//     Lowering has already retyped struct calls to their register type.
+//     The register index must be less than GetStoreLclVarsRegisterCount.
+//
+var_types Lowering::GetStoreLclVarsRegisterType(GenTree* source, unsigned regIndex)
+{
+    if (source->IsMultiRegNode())
+    {
+        return source->GetRegTypeByIndex(regIndex);
+    }
+
+    assert(source->IsCall() && (regIndex == 0));
+    return source->TypeGet();
+}
+
+//----------------------------------------------------------------------------------------------
 // IsDirectReturnRegisterDestination: Check whether a local of the specified
-// type can be directly defined from a return register by GT_STORE_LCL_VARS.
+// type can be directly defined from a source register by GT_STORE_LCL_VARS.
 //
 // Arguments:
 //     type    - The type of the destination local
-//     regType - The type of the return register
+//     regType - The type of the source register
 //
 // Returns:
 //     True if the local can be defined directly from the register.
@@ -6279,11 +6330,11 @@ bool Lowering::IsDirectReturnRegisterDestination(var_types type, var_types regTy
 
 //----------------------------------------------------------------------------------------------
 // IsReturnRegisterCaptureType: Check whether a local of the specified type
-// can capture a return register for TryLowerStoreLclVarsByExtraction.
+// can capture a source register for TryLowerStoreLclVarsByExtraction.
 //
 // Arguments:
 //     type    - The type of the capturing local
-//     regType - The type of the return register
+//     regType - The type of the source register
 //
 // Returns:
 //     True if the local can capture the register.
@@ -6301,25 +6352,33 @@ bool Lowering::IsReturnRegisterCaptureType(var_types type, var_types regType)
 
 //----------------------------------------------------------------------------------------------
 // TryLowerStoreLclVarsByExtraction: Lower a multiple-definition store from a
-// call whose destinations do not map directly to return registers by
-// capturing each return register in its own local and extracting the
+// register-valued source whose destinations do not map directly to source
+// registers by capturing each register in its own local and extracting the
 // destinations from those locals.
 //
 // Arguments:
 //     store - The multiple-definition store
-//     ret   - The return type descriptor of the call
 //
 // Returns:
-//     If successful, a new store that directly defines one local per return
+//     If successful, a new store that directly defines one local per source
 //     register. It replaces the original store and is followed by stores of
 //     each original destination. Otherwise nullptr.
 //
 // Remarks:
-//     Each destination must be contained in a single return register.
+//     Sources defining no registers are not supported. Each destination must be
+//     contained in a single source register or overlap none. Destinations outside
+//     all source registers are zeroed; partial overlaps cause failure.
 //
-GenTreeStoreLclVars* Lowering::TryLowerStoreLclVarsByExtraction(GenTreeStoreLclVars* store, const ReturnTypeDesc& ret)
+GenTreeStoreLclVars* Lowering::TryLowerStoreLclVarsByExtraction(GenTreeStoreLclVars* store)
 {
-    const unsigned regCount = ret.GetReturnRegCount();
+    GenTree*       source   = store->Data();
+    const unsigned regCount = GetStoreLclVarsRegisterCount(m_compiler, source);
+    if (regCount == 0)
+    {
+        return nullptr;
+    }
+
+    const unsigned noRegister = UINT_MAX - 1;
     unsigned       destRegsStorage[32];
     unsigned*      destRegs = store->gtCount <= ArrLen(destRegsStorage)
                                   ? destRegsStorage
@@ -6330,13 +6389,20 @@ GenTreeStoreLclVars* Lowering::TryLowerStoreLclVarsByExtraction(GenTreeStoreLclV
         GenTreeStoreLclVars::Destination& dest = store->GetDestination(i);
         var_types                         type = m_compiler->lvaGetDesc(dest.LclNum)->TypeGet();
         destRegs[i]                            = UINT_MAX;
+        bool overlapsRegister                  = false;
         for (unsigned r = 0; r < regCount; r++)
         {
-            var_types regType   = ret.GetReturnRegType(r);
-            unsigned  regOffset = ret.GetReturnFieldOffset(r);
-            if ((dest.Offset < regOffset) || (dest.Offset + genTypeSize(type) > regOffset + genTypeSize(regType)))
+            var_types regType   = GetStoreLclVarsRegisterType(source, r);
+            unsigned  regOffset = source->GetSourceRegisterOffset(m_compiler, r);
+            if ((dest.Offset >= regOffset + genTypeSize(regType)) || (dest.Offset + genTypeSize(type) <= regOffset))
             {
                 continue;
+            }
+
+            overlapsRegister = true;
+            if ((dest.Offset < regOffset) || (dest.Offset + genTypeSize(type) > regOffset + genTypeSize(regType)))
+            {
+                break;
             }
 
             if (!Compiler::gtCanExtractRegisterField(varTypeUsesFloatReg(regType), type, dest.Offset - regOffset))
@@ -6356,29 +6422,33 @@ GenTreeStoreLclVars* Lowering::TryLowerStoreLclVarsByExtraction(GenTreeStoreLclV
 
         if (destRegs[i] == UINT_MAX)
         {
-            return nullptr;
+            if (overlapsRegister)
+            {
+                return nullptr;
+            }
+
+            destRegs[i] = noRegister;
         }
     }
 
     for (unsigned r = 0; r < regCount; r++)
     {
-        var_types regType = ret.GetReturnRegType(r);
+        var_types regType = GetStoreLclVarsRegisterType(source, r);
         if (!IsReturnRegisterCaptureType(genActualType(regType), regType))
         {
             return nullptr;
         }
     }
 
-    GenTree*             source  = store->Data();
     GenTreeStoreLclVars* capture = m_compiler->gtNewStoreLclVarsNode(source, regCount);
     unsigned*            regLcls = m_compiler->getAllocator(CMK_ASTNode).allocate<unsigned>(regCount);
     for (unsigned r = 0; r < regCount; r++)
     {
         regLcls[r] = m_compiler->lvaGrabTemp(true DEBUGARG(m_compiler->printfAlloc("Return register %u", r)));
-        m_compiler->lvaGetDesc(regLcls[r])->lvType = genActualType(ret.GetReturnRegType(r));
-        GenTreeStoreLclVars::Destination& dest = capture->GetDestination(r);
-        dest.LclNum                            = regLcls[r];
-        dest.Offset                            = ret.GetReturnFieldOffset(r);
+        m_compiler->lvaGetDesc(regLcls[r])->lvType = genActualType(GetStoreLclVarsRegisterType(source, r));
+        GenTreeStoreLclVars::Destination& dest     = capture->GetDestination(r);
+        dest.LclNum                                = regLcls[r];
+        dest.Offset                                = source->GetSourceRegisterOffset(m_compiler, r);
     }
 
     BlockRange().InsertBefore(store, capture);
@@ -6389,8 +6459,18 @@ GenTreeStoreLclVars* Lowering::TryLowerStoreLclVarsByExtraction(GenTreeStoreLclV
         GenTreeStoreLclVars::Destination& dest = store->GetDestination(i);
         unsigned                          r    = destRegs[i];
         var_types                         type = m_compiler->lvaGetDesc(dest.LclNum)->TypeGet();
-        GenTree*                          value =
-            m_compiler->gtNewRegisterFieldExtraction(regLcls[r], type, dest.Offset - ret.GetReturnFieldOffset(r));
+        GenTree*                          value;
+        if (r == noRegister)
+        {
+            // The ABI leaves these bytes undefined, so zero is a valid value.
+            value = m_compiler->gtNewZeroConNode(genActualType(type));
+        }
+        else
+        {
+            value =
+                m_compiler->gtNewRegisterFieldExtraction(regLcls[r], type,
+                                                         dest.Offset - source->GetSourceRegisterOffset(m_compiler, r));
+        }
         GenTree* def = m_compiler->gtNewStoreLclVarNode(dest.LclNum, value);
         extractions.InsertAtEnd(LIR::SeqTree(m_compiler, def));
     }
@@ -6404,7 +6484,8 @@ GenTreeStoreLclVars* Lowering::TryLowerStoreLclVarsByExtraction(GenTreeStoreLclV
 }
 
 //----------------------------------------------------------------------------------------------
-// LowerStoreLclVars: Keep direct register definitions or expand stores through a stack local.
+// LowerStoreLclVars: Keep direct register definitions, extract fields from captured
+// source registers, or expand stores through a stack local.
 //
 // Arguments:
 //     store - The multiple-definition store
@@ -6414,40 +6495,31 @@ GenTreeStoreLclVars* Lowering::TryLowerStoreLclVarsByExtraction(GenTreeStoreLclV
 //
 GenTree* Lowering::LowerStoreLclVars(GenTreeStoreLclVars* store)
 {
-    GenTree*       source = store->Data();
-    GenTree*       next   = store->gtNext;
-    GenTreeCall*   call   = source->IsCall() ? source->AsCall() : nullptr;
-    ReturnTypeDesc retStorage;
-    if (call != nullptr)
-    {
-        retStorage.InitializeStructCallReturnType(m_compiler, call);
-    }
-    const ReturnTypeDesc* ret    = call == nullptr ? nullptr : &retStorage;
-    unsigned              count  = ret == nullptr ? 0 : ret->GetReturnRegCount();
-    bool                  direct = (count == store->gtCount);
-    for (unsigned i = 0; direct && i < count; i++)
+    GenTree*     source   = store->Data();
+    GenTree*     next     = store->gtNext;
+    GenTreeCall* call     = source->IsCall() ? source->AsCall() : nullptr;
+    unsigned     regCount = GetStoreLclVarsRegisterCount(m_compiler, source);
+    bool         direct   = (regCount == store->gtCount);
+    for (unsigned i = 0; direct && i < regCount; i++)
     {
         GenTreeStoreLclVars::Destination& dest = store->GetDestination(i);
-        direct =
-            (dest.Offset == ret->GetReturnFieldOffset(i)) &&
-            IsDirectReturnRegisterDestination(m_compiler->lvaGetDesc(dest.LclNum)->TypeGet(), ret->GetReturnRegType(i));
+        direct                                 = (dest.Offset == source->GetSourceRegisterOffset(m_compiler, i)) &&
+                 IsDirectReturnRegisterDestination(m_compiler->lvaGetDesc(dest.LclNum)->TypeGet(),
+                                                   GetStoreLclVarsRegisterType(source, i));
     }
     if (direct)
     {
         return next;
     }
 
-    if (call != nullptr)
+    GenTreeStoreLclVars* capture = TryLowerStoreLclVarsByExtraction(store);
+    if (capture != nullptr)
     {
-        GenTreeStoreLclVars* capture = TryLowerStoreLclVarsByExtraction(store, *ret);
-        if (capture != nullptr)
-        {
-            return capture->gtNext;
-        }
+        return capture->gtNext;
     }
 
-    // Preserve the source's layout, including GC slots, when fields do not map
-    // directly to return registers.
+    // Preserve the source's layout, including GC slots, when fields cannot be
+    // defined directly or extracted from source registers.
     unsigned     temp = m_compiler->lvaGrabTemp(true DEBUGARG("Spilled local for multi-local store"));
     ClassLayout* layout =
         call != nullptr ? m_compiler->typGetObjLayout(call->gtRetClsHnd) : source->GetLayout(m_compiler);
@@ -9469,18 +9541,14 @@ void Lowering::CheckNode(Compiler* compiler, GenTree* node)
         {
             GenTreeStoreLclVars* store  = node->AsStoreLclVars();
             GenTree*             source = store->Data()->gtSkipReloadOrCopy();
-            assert(source->IsCall() && !source->AsCall()->ShouldHaveRetBufArg());
-            ReturnTypeDesc retStorage;
-            retStorage.InitializeStructCallReturnType(compiler, source->AsCall());
-            const ReturnTypeDesc* ret = &retStorage;
-            assert(store->gtCount == ret->GetReturnRegCount());
+            assert(!source->IsCall() || !source->AsCall()->ShouldHaveRetBufArg());
+            assert(store->gtCount == GetStoreLclVarsRegisterCount(compiler, source));
             for (unsigned i = 0; i < store->gtCount; i++)
             {
                 GenTreeStoreLclVars::Destination& dest = store->GetDestination(i);
-                assert(dest.Offset == ret->GetReturnFieldOffset(i));
-                var_types type    = compiler->lvaGetDesc(dest.LclNum)->TypeGet();
-                var_types regType = ret->GetReturnRegType(i);
-                assert(IsReturnRegisterCaptureType(type, regType));
+                assert(dest.Offset == source->GetSourceRegisterOffset(compiler, i));
+                var_types type = compiler->lvaGetDesc(dest.LclNum)->TypeGet();
+                assert(IsReturnRegisterCaptureType(type, GetStoreLclVarsRegisterType(source, i)));
             }
             break;
         }

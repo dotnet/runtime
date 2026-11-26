@@ -1012,6 +1012,53 @@ unsigned GenTree::GetMultiRegCount(Compiler* comp) const
     return 1;
 }
 
+//-----------------------------------------------------------------------------------
+// GetSourceRegisterOffset: Return a source register's byte offset within the
+// struct value produced by this node.
+//
+// Arguments:
+//     comp     - Compiler instance, used to get Swift lowering information
+//     regIndex - The zero-based register index
+//
+// Return Value:
+//     The byte offset of the register within the produced struct value.
+//
+// Remarks:
+//     Swift calls use GetSwiftLowering offsets, which ReturnTypeDesc does not record.
+//     Other calls use ReturnTypeDesc field offsets; without FEATURE_MULTIREG_RET,
+//     they return in at most one register, at offset zero. Other multi-reg nodes
+//     use consecutive offsets, matching CodeGen::genMultiRegStoreToLocal.
+//
+unsigned GenTree::GetSourceRegisterOffset(Compiler* comp, int regIndex) const
+{
+    if (IsCall())
+    {
+#ifdef SWIFT_SUPPORT
+        if (AsCall()->GetUnmanagedCallConv() == CorInfoCallConvExtension::Swift)
+        {
+            const CORINFO_SWIFT_LOWERING* lowering = comp->GetSwiftLowering(AsCall()->gtRetClsHnd);
+            assert(!lowering->byReference && (static_cast<unsigned>(regIndex) < lowering->numLoweredElements));
+            return lowering->offsets[regIndex];
+        }
+#endif
+
+#if FEATURE_MULTIREG_RET
+        return AsCall()->GetReturnTypeDesc()->GetReturnFieldOffset(regIndex);
+#else
+        assert(regIndex == 0);
+        return 0;
+#endif
+    }
+
+    unsigned offset = 0;
+    for (int i = 0; i < regIndex; i++)
+    {
+        offset += genTypeSize(GetRegTypeByIndex(i));
+    }
+
+    return offset;
+}
+
 #ifdef TARGET_ARM64
 //-----------------------------------------------------------------------------------
 // NeedsConsecutiveRegisters: Checks if this tree node needs consecutive registers
@@ -35317,24 +35364,6 @@ GenTree* Compiler::gtNewMustThrowException(unsigned helper, var_types type, CORI
         return gtNewOperNode(GT_COMMA, type, node, dummyNode);
     }
     return node;
-}
-
-//---------------------------------------------------------------------------------------
-// InitializeStructCallReturnType: Describe a struct call's return ABI, including
-// targets that do not keep a return descriptor on individual call nodes.
-//
-void ReturnTypeDesc::InitializeStructCallReturnType(Compiler* comp, const GenTreeCall* call)
-{
-    assert(!m_inited);
-    const ReturnTypeDesc* existing = call->GetReturnTypeDesc();
-    if (existing != nullptr)
-    {
-        *this = *existing;
-    }
-    else
-    {
-        InitializeStructReturnType(comp, call->gtRetClsHnd, call->GetUnmanagedCallConv());
-    }
 }
 
 //---------------------------------------------------------------------------------------

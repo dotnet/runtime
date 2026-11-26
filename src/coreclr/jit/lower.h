@@ -188,9 +188,11 @@ private:
     unsigned   StoreFieldListToNewLocal(ClassLayout* layout, GenTreeFieldList* fieldList);
     void       LowerArgFieldList(CallArg* arg, GenTreeFieldList* fieldList);
 
+    static unsigned      GetStoreLclVarsRegisterCount(Compiler* compiler, GenTree* source);
+    static var_types     GetStoreLclVarsRegisterType(GenTree* source, unsigned regIndex);
     static bool          IsDirectReturnRegisterDestination(var_types type, var_types regType);
     static bool          IsReturnRegisterCaptureType(var_types type, var_types regType);
-    GenTreeStoreLclVars* TryLowerStoreLclVarsByExtraction(GenTreeStoreLclVars* store, const ReturnTypeDesc& ret);
+    GenTreeStoreLclVars* TryLowerStoreLclVarsByExtraction(GenTreeStoreLclVars* store);
 
     template <typename GetRegisterInfoFunc>
     bool IsFieldListCompatibleWithRegisters(GenTreeFieldList* fieldList, unsigned numRegs, GetRegisterInfoFunc func);
