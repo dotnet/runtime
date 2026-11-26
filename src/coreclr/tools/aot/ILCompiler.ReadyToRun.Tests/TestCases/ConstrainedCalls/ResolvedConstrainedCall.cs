@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using ConstrainedCalls.External;
 
 namespace ConstrainedCalls;
 
@@ -41,6 +42,17 @@ public sealed class NoInliningSequence
     public NoInliningEnumerator<Marker> GetEnumerator() => default;
 }
 
+// Instantiations over types from an assembly outside the version bubble.
+public sealed class ExternalMarkerSequence
+{
+    public Enumerator<ExternalMarker> GetEnumerator() => default;
+}
+
+public sealed class ExternalValueSequence
+{
+    public Enumerator<ExternalValue> GetEnumerator() => default;
+}
+
 public interface IGenericMethod
 {
     void Invoke<U>();
@@ -74,5 +86,23 @@ public static class ResolvedConstrainedCall
     public static void IterateNoInlining()
     {
         foreach (Marker item in new NoInliningSequence()) { }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void InvokeConstrainedExternal<T>(T value) where T : IGenericMethod => value.Invoke<ExternalMarker>();
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void InvokeGenericMethodExternal() => InvokeConstrainedExternal(new GenericMethodStruct());
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void IterateExternalMarker()
+    {
+        foreach (ExternalMarker item in new ExternalMarkerSequence()) { }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void IterateExternalValue()
+    {
+        foreach (ExternalValue item in new ExternalValueSequence()) { }
     }
 }
