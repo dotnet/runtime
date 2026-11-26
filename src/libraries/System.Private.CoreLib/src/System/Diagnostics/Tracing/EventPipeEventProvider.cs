@@ -9,6 +9,8 @@ namespace System.Diagnostics.Tracing
 {
     internal sealed class EventPipeEventProvider : EventProviderImpl
     {
+        private const int DisabledProviderHandle = -1;
+
         private readonly WeakReference<EventProvider> _eventProvider;
         private IntPtr _provHandle;
         private GCHandle<EventPipeEventProvider> _gcHandle;
@@ -80,11 +82,12 @@ namespace System.Diagnostics.Tracing
 
             try
             {
-                _provHandle = EventPipeInternal.CreateProvider(name, &Callback, (void*)GCHandle<EventPipeEventProvider>.ToIntPtr(_gcHandle));
-#if !(CORECLR && TARGET_BROWSER)
-                if (!IsRegistered)
+                IntPtr handle = EventPipeInternal.CreateProvider(name, &Callback, (void*)GCHandle<EventPipeEventProvider>.ToIntPtr(_gcHandle));
+                if (handle == IntPtr.Zero)
                     throw new OutOfMemoryException();
-#endif
+
+                if (handle != DisabledProviderHandle)
+                    _provHandle = handle;
             }
             finally
             {

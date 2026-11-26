@@ -46,7 +46,8 @@ extern "C" INT_PTR QCALLTYPE EventPipeInternal_CreateProvider(
 {
     QCALL_CONTRACT;
     *qcallError = 0;
-    return 0;
+    // EventPipeEventProvider treats -1 as disabled and 0 as allocation failure.
+    return -1;
 }
 
 extern "C" INT_PTR QCALLTYPE EventPipeInternal_DefineEvent(

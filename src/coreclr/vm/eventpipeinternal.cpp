@@ -106,12 +106,6 @@ extern "C" INT_PTR QCALLTYPE EventPipeInternal_CreateProvider(
 
     pProvider = EventPipeAdapter::CreateProvider(providerName, pCallbackFunc, pCallbackContext);
 
-#ifdef TARGET_BROWSER
-    // A null return from the Browser QCall is reserved for the disabled EventPipe component.
-    if (pProvider == nullptr)
-        ThrowOutOfMemory();
-#endif
-
     END_QCALL;
 
     return reinterpret_cast<INT_PTR>(pProvider);
