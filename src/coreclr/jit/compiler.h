@@ -8167,19 +8167,23 @@ public:
 
     typedef ArrayStack<CopyPropSsaDef> CopyPropSsaDefStack;
     typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, CopyPropSsaDefStack*> LclNumToLiveDefsMap;
+    // Number of locals whose most recent live def has a given (conservative) VN.
+    typedef JitHashTable<ValueNum, JitSmallPrimitiveKeyFuncs<ValueNum>, unsigned> VNToLiveDefCountMap;
 
     // Copy propagation functions.
     bool optCopyProp(BasicBlock*          block,
                      Statement*           stmt,
                      GenTreeLclVarCommon* tree,
                      unsigned             lclNum,
-                     LclNumToLiveDefsMap* curSsaName);
-    void optBlockCopyPropPopStacks(BasicBlock* block, LclNumToLiveDefsMap* curSsaName);
-    bool optBlockCopyProp(BasicBlock* block, LclNumToLiveDefsMap* curSsaName);
+                     LclNumToLiveDefsMap* curSsaName,
+                     VNToLiveDefCountMap* liveDefVNs);
+    void optBlockCopyPropPopStacks(BasicBlock* block, LclNumToLiveDefsMap* curSsaName, VNToLiveDefCountMap* liveDefVNs);
+    bool optBlockCopyProp(BasicBlock* block, LclNumToLiveDefsMap* curSsaName, VNToLiveDefCountMap* liveDefVNs);
     void optCopyPropPushDef(GenTreeLclVarCommon* lclNode,
                             unsigned             lclNum,
                             unsigned             ssaNum,
-                            LclNumToLiveDefsMap* curSsaName);
+                            LclNumToLiveDefsMap* curSsaName,
+                            VNToLiveDefCountMap* liveDefVNs);
     int optCopyProp_LclVarScore(const LclVarDsc* lclVarDsc, const LclVarDsc* copyVarDsc, bool preferOp2);
     PhaseStatus optVnCopyProp();
     INDEBUG(void optDumpCopyPropStack(LclNumToLiveDefsMap* curSsaName));

@@ -21,6 +21,24 @@
 #include "treelifeupdater.h"
 
 //------------------------------------------------------------------------------
+// optCopyPropAddLiveDefVN: Record that a local's most recent live def has the given VN.
+//
+static void optCopyPropAddLiveDefVN(Compiler::VNToLiveDefCountMap* liveDefVNs, const LclSsaVarDsc* ssaDef)
+{
+    (*liveDefVNs->LookupPointerOrAdd(ssaDef->m_vnPair.GetConservative(), 0))++;
+}
+
+//------------------------------------------------------------------------------
+// optCopyPropRemoveLiveDefVN: Undo optCopyPropAddLiveDefVN.
+//
+static void optCopyPropRemoveLiveDefVN(Compiler::VNToLiveDefCountMap* liveDefVNs, const LclSsaVarDsc* ssaDef)
+{
+    unsigned* count = liveDefVNs->LookupPointer(ssaDef->m_vnPair.GetConservative());
+    assert((count != nullptr) && (*count > 0));
+    (*count)--;
+}
+
+//------------------------------------------------------------------------------
 // optBlockCopyPropPopStacks: pop copy prop stack
 //
 // Notes:
@@ -28,16 +46,23 @@
 //    of the graph originating from the block. Refer SSA renaming for any additional info.
 //    "curSsaName" tracks the currently live definitions.
 //
-void Compiler::optBlockCopyPropPopStacks(BasicBlock* block, LclNumToLiveDefsMap* curSsaName)
+void Compiler::optBlockCopyPropPopStacks(BasicBlock*          block,
+                                         LclNumToLiveDefsMap* curSsaName,
+                                         VNToLiveDefCountMap* liveDefVNs)
 {
     auto popDef = [=](unsigned defLclNum, unsigned defSsaNum) {
         CopyPropSsaDefStack* stack = nullptr;
         if ((defSsaNum != SsaConfig::RESERVED_SSA_NUM) && curSsaName->Lookup(defLclNum, &stack))
         {
+            optCopyPropRemoveLiveDefVN(liveDefVNs, stack->Top().GetSsaDef());
             stack->Pop();
             if (stack->Empty())
             {
                 curSsaName->Remove(defLclNum);
+            }
+            else
+            {
+                optCopyPropAddLiveDefVN(liveDefVNs, stack->Top().GetSsaDef());
             }
         }
     };
@@ -144,12 +169,17 @@ int Compiler::optCopyProp_LclVarScore(const LclVarDsc* lclVarDsc, const LclVarDs
 //    tree        -  The local tree to perform copy propagation on
 //    lclNum      -  Number of the local "tree" refers to
 //    curSsaName  -  The map from lclNum to its recently live definitions as a stack
+//    liveDefVNs  -  The number of locals in "curSsaName" whose top definition has a given VN
 //
 // Returns:
 //    Whether any changes were made.
 //
-bool Compiler::optCopyProp(
-    BasicBlock* block, Statement* stmt, GenTreeLclVarCommon* tree, unsigned lclNum, LclNumToLiveDefsMap* curSsaName)
+bool Compiler::optCopyProp(BasicBlock*          block,
+                           Statement*           stmt,
+                           GenTreeLclVarCommon* tree,
+                           unsigned             lclNum,
+                           LclNumToLiveDefsMap* curSsaName,
+                           VNToLiveDefCountMap* liveDefVNs)
 {
     assert((tree->gtFlags & GTF_VAR_DEF) == 0);
     assert(tree->GetLclNum() == lclNum);
@@ -159,6 +189,23 @@ bool Compiler::optCopyProp(
     LclSsaVarDsc* const varSsaDsc   = varDsc->GetPerSsaData(tree->GetSsaNum());
     ValueNum const      lclDefVN    = varSsaDsc->m_vnPair.GetConservative();
     assert(lclDefVN != ValueNumStore::NoVN);
+
+    // Only locals other than "lclNum" whose top definition has "lclDefVN" can be candidates.
+    unsigned candidateCount = 0;
+    liveDefVNs->Lookup(lclDefVN, &candidateCount);
+
+    CopyPropSsaDefStack* lclDefStack;
+    if (curSsaName->Lookup(lclNum, &lclDefStack) &&
+        (lclDefStack->Top().GetSsaDef()->m_vnPair.GetConservative() == lclDefVN))
+    {
+        assert(candidateCount > 0);
+        candidateCount--;
+    }
+
+    if (candidateCount == 0)
+    {
+        return false;
+    }
 
     for (LclNumToLiveDefsMap::Node* const iter : LclNumToLiveDefsMap::KeyValueIteration(curSsaName))
     {
@@ -319,11 +366,13 @@ bool Compiler::optCopyProp(
 //    lclNum     - The logical local being defined
 //    ssaNum     - The SSA number of the definition
 //    curSsaName - The map of local numbers to stacks of their defs
+//    liveDefVNs - The number of locals in "curSsaName" whose top definition has a given VN
 //
 void Compiler::optCopyPropPushDef(GenTreeLclVarCommon* lclNode,
                                   unsigned             lclNum,
                                   unsigned             ssaNum,
-                                  LclNumToLiveDefsMap* curSsaName)
+                                  LclNumToLiveDefsMap* curSsaName,
+                                  VNToLiveDefCountMap* liveDefVNs)
 {
     // Shadowed parameters are special: they will (at most) have one use, as values in a store
     // to their shadow, and we must not substitute them anywhere. So we'll not push any defs.
@@ -348,8 +397,13 @@ void Compiler::optCopyPropPushDef(GenTreeLclVarCommon* lclNode,
         defStack = new (curSsaName->GetAllocator()) CopyPropSsaDefStack(curSsaName->GetAllocator());
         curSsaName->Set(lclNum, defStack);
     }
+    else
+    {
+        optCopyPropRemoveLiveDefVN(liveDefVNs, defStack->Top().GetSsaDef());
+    }
 
     defStack->Push(CopyPropSsaDef(ssaDef, lclNode));
+    optCopyPropAddLiveDefVN(liveDefVNs, ssaDef);
 }
 
 //------------------------------------------------------------------------------
@@ -360,11 +414,12 @@ void Compiler::optCopyPropPushDef(GenTreeLclVarCommon* lclNode,
 // Arguments:
 //    block       -  Block the tree belongs to
 //    curSsaName  -  The map from lclNum to its recently live definitions as a stack
+//    liveDefVNs  -  The number of locals in "curSsaName" whose top definition has a given VN
 //
 // Returns:
 //    true if any copy prop was done
 //
-bool Compiler::optBlockCopyProp(BasicBlock* block, LclNumToLiveDefsMap* curSsaName)
+bool Compiler::optBlockCopyProp(BasicBlock* block, LclNumToLiveDefsMap* curSsaName, VNToLiveDefCountMap* liveDefVNs)
 {
 #ifdef DEBUG
     JITDUMP("Copy Assertion for " FMT_BB "\n", block->bbNum);
@@ -394,7 +449,7 @@ bool Compiler::optBlockCopyProp(BasicBlock* block, LclNumToLiveDefsMap* curSsaNa
             if (tree->OperIsSsaDef())
             {
                 auto visitDef = [=](const auto& def) {
-                    optCopyPropPushDef(def.GetDefNode(), def.GetLclNum(), def.GetSsaNum(this), curSsaName);
+                    optCopyPropPushDef(def.GetDefNode(), def.GetLclNum(), def.GetSsaNum(this), curSsaName, liveDefVNs);
                     return GenTree::VisitResult::Continue;
                 };
 
@@ -408,7 +463,8 @@ bool Compiler::optBlockCopyProp(BasicBlock* block, LclNumToLiveDefsMap* curSsaNa
                 // live definition. Since they are always live, we'll do it only once.
                 if ((lvaGetDesc(lclNum)->lvIsParam || (lclNum == info.compThisArg)) && !curSsaName->Lookup(lclNum))
                 {
-                    optCopyPropPushDef(tree->AsLclVarCommon(), lclNum, tree->AsLclVarCommon()->GetSsaNum(), curSsaName);
+                    optCopyPropPushDef(tree->AsLclVarCommon(), lclNum, tree->AsLclVarCommon()->GetSsaNum(), curSsaName,
+                                       liveDefVNs);
                 }
 
                 // TODO-Review: EH successor/predecessor iteration seems broken.
@@ -417,7 +473,7 @@ bool Compiler::optBlockCopyProp(BasicBlock* block, LclNumToLiveDefsMap* curSsaNa
                     continue;
                 }
 
-                madeChanges |= optCopyProp(block, stmt, tree->AsLclVarCommon(), lclNum, curSsaName);
+                madeChanges |= optCopyProp(block, stmt, tree->AsLclVarCommon(), lclNum, curSsaName, liveDefVNs);
             }
         }
     }
@@ -468,12 +524,15 @@ PhaseStatus Compiler::optVnCopyProp()
     {
         // The map from lclNum to its recently live definitions as a stack.
         LclNumToLiveDefsMap m_curSsaName;
+        // The number of locals in m_curSsaName whose top definition has a given VN.
+        VNToLiveDefCountMap m_liveDefVNs;
         bool                m_madeChanges = false;
 
     public:
         CopyPropDomTreeVisitor(Compiler* compiler)
             : DomTreeVisitor(compiler)
             , m_curSsaName(compiler->getAllocator(CMK_CopyProp))
+            , m_liveDefVNs(compiler->getAllocator(CMK_CopyProp))
             , m_madeChanges(false)
         {
         }
@@ -486,13 +545,13 @@ PhaseStatus Compiler::optVnCopyProp()
         void PreOrderVisit(BasicBlock* block)
         {
             // TODO-Cleanup: Move this function from Compiler to this class.
-            m_madeChanges |= m_compiler->optBlockCopyProp(block, &m_curSsaName);
+            m_madeChanges |= m_compiler->optBlockCopyProp(block, &m_curSsaName, &m_liveDefVNs);
         }
 
         void PostOrderVisit(BasicBlock* block)
         {
             // TODO-Cleanup: Move this function from Compiler to this class.
-            m_compiler->optBlockCopyPropPopStacks(block, &m_curSsaName);
+            m_compiler->optBlockCopyPropPopStacks(block, &m_curSsaName, &m_liveDefVNs);
         }
 
         void PropagateCopies()

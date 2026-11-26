@@ -280,92 +280,83 @@ public:
     }
 };
 
-// LclVarDsc "less" comparer used to compare the weight of two locals, when optimizing for blended code.
+// Sort key used to compare the weight of two locals when optimizing for blended code.
+// Computed once per local so that sorting does not re-derive it for every comparison.
+struct LclVarDsc_BlendedCode_Key
+{
+    weight_t m_weight; // weighted ref count, including the bonus for register args
+    unsigned m_refCnt;
+    unsigned m_lclNum;
+    bool     m_hasWeight; // weighted ref count (without the bonus) is not zero
+    bool     m_isFloat;
+    bool     m_isGC;
+
+    LclVarDsc_BlendedCode_Key() = default;
+
+    LclVarDsc_BlendedCode_Key(const LclVarDsc* dsc, unsigned lclNum, RefCountState rcs)
+        : m_weight(dsc->lvRefCntWtd(rcs))
+        , m_refCnt(dsc->lvRefCnt(rcs))
+        , m_lclNum(lclNum)
+        , m_hasWeight(!Compiler::fgProfileWeightsEqual(m_weight, 0))
+        , m_isFloat(isFloatRegType(dsc->lvType))
+        , m_isGC(varTypeIsGC(dsc->TypeGet()))
+    {
+        // We should not be sorting untracked variables
+        assert(dsc->lvTracked);
+        // We should not be sorting after registers have been allocated
+        assert(!dsc->lvRegister);
+
+        if (m_hasWeight && dsc->lvIsRegArg)
+        {
+            m_weight += 2 * BB_UNITY_WEIGHT;
+        }
+    }
+};
+
+// "less" comparer for LclVarDsc_BlendedCode_Key.
 class LclVarDsc_BlendedCode_Less
 {
-    const LclVarDsc* m_lvaTable;
-    RefCountState    m_rcs;
-    INDEBUG(unsigned m_lvaCount;)
-
 public:
-    LclVarDsc_BlendedCode_Less(const LclVarDsc* lvaTable, RefCountState rcs DEBUGARG(unsigned lvaCount))
-        : m_lvaTable(lvaTable)
-        , m_rcs(rcs)
-#ifdef DEBUG
-        , m_lvaCount(lvaCount)
-#endif
+    bool operator()(const LclVarDsc_BlendedCode_Key& key1, const LclVarDsc_BlendedCode_Key& key2)
     {
-    }
-
-    bool operator()(unsigned n1, unsigned n2)
-    {
-        assert(n1 < m_lvaCount);
-        assert(n2 < m_lvaCount);
-
-        const LclVarDsc* dsc1 = &m_lvaTable[n1];
-        const LclVarDsc* dsc2 = &m_lvaTable[n2];
-
-        // We should not be sorting untracked variables
-        assert(dsc1->lvTracked);
-        assert(dsc2->lvTracked);
-        // We should not be sorting after registers have been allocated
-        assert(!dsc1->lvRegister);
-        assert(!dsc2->lvRegister);
-
-        weight_t weight1 = dsc1->lvRefCntWtd(m_rcs);
-        weight_t weight2 = dsc2->lvRefCntWtd(m_rcs);
-
 #ifndef TARGET_ARM
         // ARM-TODO: this was disabled for ARM under !FEATURE_FP_REGALLOC; it was probably a left-over from
         // legacy backend. It should be enabled and verified.
 
         // Force integer candidates to sort above float candidates.
-        const bool isFloat1 = isFloatRegType(dsc1->lvType);
-        const bool isFloat2 = isFloatRegType(dsc2->lvType);
-
-        if (isFloat1 != isFloat2)
+        if (key1.m_isFloat != key2.m_isFloat)
         {
-            if (!Compiler::fgProfileWeightsEqual(weight2, 0) && isFloat1)
+            if (key2.m_hasWeight && key1.m_isFloat)
             {
                 return false;
             }
 
-            if (!Compiler::fgProfileWeightsEqual(weight1, 0) && isFloat2)
+            if (key1.m_hasWeight && key2.m_isFloat)
             {
                 return true;
             }
         }
 #endif
 
-        if (!Compiler::fgProfileWeightsEqual(weight1, 0) && dsc1->lvIsRegArg)
+        if (!Compiler::fgProfileWeightsEqual(key1.m_weight, key2.m_weight))
         {
-            weight1 += 2 * BB_UNITY_WEIGHT;
-        }
-
-        if (!Compiler::fgProfileWeightsEqual(weight2, 0) && dsc2->lvIsRegArg)
-        {
-            weight2 += 2 * BB_UNITY_WEIGHT;
-        }
-
-        if (!Compiler::fgProfileWeightsEqual(weight1, weight2))
-        {
-            return weight1 > weight2;
+            return key1.m_weight > key2.m_weight;
         }
 
         // If the weighted ref counts are different then try the unweighted ref counts.
-        if (dsc1->lvRefCnt(m_rcs) != dsc2->lvRefCnt(m_rcs))
+        if (key1.m_refCnt != key2.m_refCnt)
         {
-            return dsc1->lvRefCnt(m_rcs) > dsc2->lvRefCnt(m_rcs);
+            return key1.m_refCnt > key2.m_refCnt;
         }
 
         // If one is a GC type and the other is not the GC type wins.
-        if (varTypeIsGC(dsc1->TypeGet()) != varTypeIsGC(dsc2->TypeGet()))
+        if (key1.m_isGC != key2.m_isGC)
         {
-            return varTypeIsGC(dsc1->TypeGet());
+            return key1.m_isGC;
         }
 
-        // To achieve a stable sort we use the LclNum (by way of the pointer address).
-        return dsc1 < dsc2;
+        // To achieve a stable sort we use the LclNum.
+        return key1.m_lclNum < key2.m_lclNum;
     }
 };
 
@@ -464,11 +455,24 @@ void Liveness<TLiveness>::SelectTrackedLocals()
                          LclVarDsc_SmallCode_Less(m_compiler->lvaTable,
                                                   m_compiler->lvaRefCountState DEBUGARG(m_compiler->lvaCount)));
         }
-        else
+        else if (trackedCandidateCount > 1)
         {
-            jitstd::sort(trackedCandidates, trackedCandidates + trackedCandidateCount,
-                         LclVarDsc_BlendedCode_Less(m_compiler->lvaTable,
-                                                    m_compiler->lvaRefCountState DEBUGARG(m_compiler->lvaCount)));
+            LclVarDsc_BlendedCode_Key* keys =
+                new (m_compiler, CMK_LvaTable) LclVarDsc_BlendedCode_Key[trackedCandidateCount];
+
+            for (unsigned i = 0; i < trackedCandidateCount; i++)
+            {
+                const unsigned lclNum = trackedCandidates[i];
+                keys[i] =
+                    LclVarDsc_BlendedCode_Key(m_compiler->lvaGetDesc(lclNum), lclNum, m_compiler->lvaRefCountState);
+            }
+
+            jitstd::sort(keys, keys + trackedCandidateCount, LclVarDsc_BlendedCode_Less());
+
+            for (unsigned i = 0; i < trackedCandidateCount; i++)
+            {
+                trackedCandidates[i] = keys[i].m_lclNum;
+            }
         }
     }
 

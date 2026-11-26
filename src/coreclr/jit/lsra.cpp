@@ -4561,6 +4561,7 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
 
     // Only focus on actual registers present
     deadCandidates &= actualRegistersMask;
+    makeRegsAvailable(deadCandidates);
     handleDeadCandidates(deadCandidates.getLow(), REG_LOW_BASE, inVarToRegMap);
 #ifdef HAS_MORE_THAN_64_REGISTERS
     handleDeadCandidates(deadCandidates.getHigh(), REG_HIGH_BASE, inVarToRegMap);
@@ -4572,7 +4573,7 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
 // handleDeadCandidates: Handle registers that are assigned to local variables.
 //
 // Arguments:
-//    deadCandidates - mask of registers.
+//    deadCandidates - mask of registers; the caller has already made them available.
 //    regBase - base register number.
 //    inVarToRegMap - variable to register map.
 //
@@ -4583,11 +4584,9 @@ void LinearScan::handleDeadCandidates(SingleTypeRegSet deadCandidates, int regBa
 {
     while (deadCandidates != RBM_NONE)
     {
-        regNumber  reg           = (regNumber)(genFirstRegNumFromMaskAndToggle(deadCandidates) + regBase);
-        RegRecord* physRegRecord = getRegisterRecord(reg);
-
-        makeRegAvailable(reg, physRegRecord->registerType);
-        Interval* assignedInterval = physRegRecord->assignedInterval;
+        regNumber  reg              = (regNumber)(genFirstRegNumFromMaskAndToggle(deadCandidates) + regBase);
+        RegRecord* physRegRecord    = getRegisterRecord(reg);
+        Interval*  assignedInterval = physRegRecord->assignedInterval;
 
         if (assignedInterval != nullptr)
         {
