@@ -30,10 +30,11 @@ namespace System.Globalization
     ///     Therefore, we do not support the days before the January 1st, 1 A.D.
     ///
     /// Calendar support range:
-    ///     Calendar    Minimum     Maximum
-    ///     ==========  ==========  ==========
-    ///     Gregorian   0622/07/18   9999/12/31
-    ///     Hijri       0001/01/01   9666/04/03
+    ///     Calendar                 Minimum     Maximum
+    ///     =======================  ==========  ==========
+    ///     Gregorian                0622/07/20   9999/12/31
+    ///     Hijri (adjustment: 2)    0001/01/05   9666/04/05
+    ///     Hijri (adjustment: -2)   0001/01/01   9666/04/01
     /// </remarks>
 
     public partial class HijriCalendar : Calendar
@@ -52,13 +53,13 @@ namespace System.Globalization
 
         private int _hijriAdvance = int.MinValue;
 
-        // DateTime.MaxValue = Hijri calendar (year:9666, month: 4, day: 3).
+        // DateTime.MaxValue = Hijri calendar (year:9666, month: 4, day: 5, adjustment: 2).
         private const int MaxCalendarYear = 9666;
         private const int MaxCalendarMonth = 4;
 
-        // Hijri calendar (year: 1, month: 1, day:1 ) = Gregorian (year: 622, month: 7, day: 18)
-        // This is the minimal Gregorian date that we support in the HijriCalendar.
-        private static readonly DateTime s_calendarMinValue = new DateTime(622, 7, 18);
+        // Hijri calendar (year: 1, month: 1, day:1, adjustment: -2) = Gregorian (year: 622, month: 7, day: 20)
+        // This is the minimal Gregorian date that we support in the HijriCalendar for any valid HijriAdjustment.
+        private static readonly DateTime s_calendarMinValue = new DateTime(622, 7, 20);
         private static readonly DateTime s_calendarMaxValue = DateTime.MaxValue;
 
         public override DateTime MinSupportedDateTime => s_calendarMinValue;
