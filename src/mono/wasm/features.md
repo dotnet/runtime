@@ -138,6 +138,11 @@ If the Browser app has no managed entry point, set `<TypeMapEntryAssembly>` in
 the publishing project to the assembly name containing the type-map roots.
 An untrimmed publish does not require these declarations for JSExport discovery.
 
+Use explicit type-map targets only for libraries that are not configured for
+lazy loading. The runtime can follow these targets while discovering the app's
+exports, before a lazy library has been downloaded. Preserving export maps for
+trimmed, lazy-loaded libraries is tracked in [#138321](https://github.com/dotnet/runtime/issues/138321).
+
 ### C code or native linked libraries
 Native rebuild will cause the .NET runtime to be re-built alongside your application, which allows you to link additional libraries into the WASM binary or change compiler configuration flags.
 

@@ -7,7 +7,7 @@ const check = (condition, message) => {
     if (!condition) throw new Error(message);
 };
 
-export async function runJSExportTest(scenario, getAssemblyExports, INTERNAL) {
+export async function runJSExportTest(scenario, getAssemblyExports) {
     if (scenario === "LegacyJSExports") {
         const legacy = (await getAssemblyExports("LegacyExports.dll")).LegacyExports.Exports;
         check(legacy.Add(17, 25) === 42, "Legacy integer export failed");
@@ -32,10 +32,8 @@ export async function runJSExportTest(scenario, getAssemblyExports, INTERNAL) {
             check(Object.keys(await getAssemblyExports(name)).length === 0, `Unexpected exports from ${name}`);
         }
         output("Empty BCL exports passed");
-        check(await INTERNAL.loadLazyAssembly("Library.dll"), "The exported library was not downloaded lazily");
         const library = await getAssemblyExports("Library.dll");
         const again = await getAssemblyExports("Library");
-        check(await INTERNAL.loadLazyAssembly("CountingLibrary.dll"), "The counting provider was not downloaded lazily");
         const counting = (await getAssemblyExports("CountingLibrary")).AssemblyProviderTest.CountingExports;
         output("lazy:discovered");
         const add = counting.Add;

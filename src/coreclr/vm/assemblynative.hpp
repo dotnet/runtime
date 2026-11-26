@@ -148,7 +148,6 @@ struct CallbackContext final
     OBJECTREF _externalTypeMap;
     OBJECTREF _proxyTypeMap;
     OBJECTREF _creationException;
-    BOOL _followAssemblyTargets;
 };
 
 // See TypeMapLazyDictionary.cs for managed version.

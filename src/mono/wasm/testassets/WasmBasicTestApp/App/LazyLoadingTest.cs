@@ -3,13 +3,9 @@
 
 using Library;
 using System;
-using System.Diagnostics.CodeAnalysis;
-using System.Runtime.InteropServices.JavaScript;
 using System.Text.Json;
-
-#if TEST_LAZY_LOADING
-[assembly: System.Runtime.InteropServices.TypeMapAssemblyTarget<JSExportProvider>("LazyLibrary")]
-#endif
+using System.Runtime.InteropServices.JavaScript;
+using System.Diagnostics.CodeAnalysis;
 
 public partial class LazyLoadingTest
 {

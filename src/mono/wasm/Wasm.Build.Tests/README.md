@@ -144,10 +144,11 @@ the unchanged DLL under `LegacyExports/staging`. Its build binlog is written to
 the test log directory and uploaded as a Helix artifact.
 
 `LibraryInitializerTests.JSExportFromAssemblyProvider` checks a library reached only from
-JavaScript through one generated type-map provider per assembly. Both provider libraries
-are downloaded lazily, after the application's own exports have been discovered.
-It covers multiple exports, overloads, and repeated assembly lookup in a trimmed
-publish. The app explicitly roots both libraries' JSExport type maps.
+JavaScript through one generated type-map provider per assembly. It covers multiple
+exports, overloads, and repeated assembly lookup in a trimmed publish. The fixture
+uses ILLink's `copy` action for the two provider libraries, preserving their maps
+without adding traversal edges. The existing lazy-loading fixture also copies its
+exporting lazy library to preserve its map until [#138321](https://github.com/dotnet/runtime/issues/138321).
 The provider's `ReadOnlySpan<string>` catalog supports discovery without enumerating
 the type map, and `Bind(string methodId)` dispatches on invariant decimal catalog indexes.
 On CoreCLR, a counting provider verifies one activation at discovery, no binding at discovery or

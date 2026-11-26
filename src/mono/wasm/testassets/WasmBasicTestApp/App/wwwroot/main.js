@@ -388,7 +388,7 @@ try {
     switch (testCase) {
         case "DeferredJSExports":
         case "LegacyJSExports": {
-            await runJSExportTest(testCase, getAssemblyExports, INTERNAL);
+            await runJSExportTest(testCase, getAssemblyExports);
             break;
         }
         case "ConfigLoadedCallbacks":

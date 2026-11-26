@@ -26,12 +26,10 @@ namespace System.Runtime.InteropServices
             private LazyExternalTypeDictionary? _externalTypeMap;
             private LazyProxyTypeDictionary? _proxyTypeMap;
             private ExceptionDispatchInfo? _creationException;
-            private readonly Interop.BOOL _followAssemblyTargets;
 
-            public CallbackContext(RuntimeType groupType, bool followAssemblyTargets)
+            public CallbackContext(RuntimeType groupType)
             {
                 _groupType = groupType;
-                _followAssemblyTargets = followAssemblyTargets ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
             }
 
             public RuntimeAssembly CurrentAssembly
@@ -253,7 +251,6 @@ namespace System.Runtime.InteropServices
             delegate* unmanaged<CallbackContext*, ProcessAttributesCallbackArg*, Interop.BOOL> newProxyTypeEntry,
             RuntimeAssembly? startingAssembly = null)
         {
-            bool followAssemblyTargets = startingAssembly is null;
             startingAssembly ??= AppContext.GetData("System.Runtime.InteropServices.TypeMappingEntryAssembly") is string entryAssemblyName
                 ? (RuntimeAssembly?)Assembly.Load(entryAssemblyName)
                 : (RuntimeAssembly?)Assembly.GetEntryAssembly();
@@ -263,7 +260,7 @@ namespace System.Runtime.InteropServices
                 throw new InvalidOperationException(SR.InvalidOperation_TypeMapMissingEntryAssembly);
             }
 
-            CallbackContext context = new(groupType, followAssemblyTargets);
+            CallbackContext context = new(groupType);
             ProcessAttributes(
                 new QCallAssembly(ref startingAssembly),
                 new QCallTypeHandle(ref groupType),
