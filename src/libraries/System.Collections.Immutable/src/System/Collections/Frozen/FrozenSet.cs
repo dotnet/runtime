@@ -105,10 +105,18 @@ namespace System.Collections.Frozen
             {
 #if NET
                 // If the values are integers that are close enough to each other, use an implementation that indexes
-                // directly into the range of values rather than searching or hashing.
-                if (DenseIntegralFrozenSet.CreateIfValid(source, allowBitmap: true) is { } denseResult)
+                // directly into the range of values rather than searching or hashing. If they all fit in a single vector
+                // though, a single vector comparison is cheaper than a bitmap, so only do so if they're contiguous.
+                bool fitsInVector = SmallIntegralFrozenSet.IsSupported<T>(source.Count);
+                if (DenseIntegralFrozenSet.CreateIfValid(source, allowBitmap: !fitsInVector) is { } denseResult)
                 {
                     return denseResult;
+                }
+
+                // If the values are integers that all fit in a single vector, search them with a single vector comparison.
+                if (fitsInVector && SmallIntegralFrozenSet.CreateIfValid(source) is { } smallIntegralResult)
+                {
+                    return smallIntegralResult;
                 }
 #endif
 

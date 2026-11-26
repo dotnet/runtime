@@ -162,6 +162,7 @@ The System.Collections.Immutable library is built-in as part of the shared frame
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Compile Include="System\Collections\Frozen\Integer\DenseIntegralFrozenDictionary.cs" />
     <Compile Include="System\Collections\Frozen\Integer\DenseIntegralFrozenSet.cs" />
+    <Compile Include="System\Collections\Frozen\Integer\SmallIntegralFrozenSet.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net9.0'))">
@@ -181,6 +182,7 @@ The System.Collections.Immutable library is built-in as part of the shared frame
     <ProjectReference Include="$(LibrariesProjectRoot)System.Memory\src\System.Memory.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\src\System.Runtime.InteropServices.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.Intrinsics\src\System.Runtime.Intrinsics.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Threading\src\System.Threading.csproj" />
   </ItemGroup>
 
