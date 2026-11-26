@@ -426,7 +426,8 @@ namespace System.Globalization
             // the last day of the previous year may "underflow" to no longer be a valid date time for
             // this calendar if we just subtract so we need the subclass to provide us with
             // that information
-            if (time <= MinSupportedDateTime.AddDays(dayOfYear))
+            TimeSpan timeSinceMinimum = time - MinSupportedDateTime;
+            if (timeSinceMinimum < TimeSpan.FromDays(dayOfYear + 1))
             {
                 return GetWeekOfYearOfMinSupportedDateTime(firstDayOfWeek, fullDays);
             }
