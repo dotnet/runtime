@@ -91,16 +91,8 @@ public class WorkloadRequiredTests : BlazorWasmTestBase
     public void NativeRef_RequiresWorkload(Configuration config)
     {
         CommandResult res = PublishForRequiresWorkloadTest(config, extraItems: "<NativeFileReference Include=\"native-lib.o\" />");
-        if (IsCoreClrRuntime)
-        {
-            Assert.NotEqual(0, res.ExitCode);
-            Assert.Contains("following workloads must be installed: wasm-tools", res.Output);
-        }
-        else
-        {
-            res.EnsureSuccessful();
-            Assert.Matches("warning : .*but the native references won't be linked in", res.Output);
-        }
+        Assert.NotEqual(0, res.ExitCode);
+        Assert.Contains("following workloads must be installed: wasm-tools", res.Output);
     }
 
     [Theory, TestCategory("no-workload")]

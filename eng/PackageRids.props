@@ -4,6 +4,9 @@
 
     IsOfficial: RID-specific packages are built and published by official builds, so they can be
     restored. Community RIDs are listed so that others can provide the packages.
+
+    SdkToolsSupported: false for RIDs that don't get the SDK tool packages (ILCompiler, ILAsm, ILDAsm),
+    as in eng/Subsets.props, so that the runtime.json of those packages doesn't list them.
   -->
   <ItemGroup>
     <PackageRID Include="win-x64" Platform="x64" IsOfficial="true" />
@@ -30,12 +33,12 @@
     <PackageRID Include="linux-musl-ppc64le" Platform="ppc64le" IsOfficial="false" />
     <PackageRID Include="linux-musl-s390x" Platform="s390x" IsOfficial="false" />
 
-    <PackageRID Include="linux-bionic-x64" Platform="x64" IsOfficial="true" />
-    <PackageRID Include="linux-bionic-arm64" Platform="arm64" IsOfficial="true" />
-    <PackageRID Include="linux-bionic-arm" Platform="arm" IsOfficial="true" />
+    <PackageRID Include="linux-bionic-x64" Platform="x64" IsOfficial="true" SdkToolsSupported="false" />
+    <PackageRID Include="linux-bionic-arm64" Platform="arm64" IsOfficial="true" SdkToolsSupported="false" />
+    <PackageRID Include="linux-bionic-arm" Platform="arm" IsOfficial="true" SdkToolsSupported="false" />
 
-    <PackageRID Include="tizen.4.0.0-armel" Platform="armel" IsOfficial="false" />
-    <PackageRID Include="tizen.5.0.0-armel" Platform="armel" IsOfficial="false" />
+    <PackageRID Include="tizen.4.0.0-armel" Platform="armel" IsOfficial="false" SdkToolsSupported="false" />
+    <PackageRID Include="tizen.5.0.0-armel" Platform="armel" IsOfficial="false" SdkToolsSupported="false" />
 
     <PackageRID Include="openharmony-x64" Platform="x64" IsOfficial="false" />
     <PackageRID Include="openharmony-arm64" Platform="arm64" IsOfficial="false" />

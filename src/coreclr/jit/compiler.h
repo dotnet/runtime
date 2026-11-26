@@ -89,6 +89,7 @@ struct JumpThreadInfo;     // defined in redundantbranchopts.cpp
 class ProfileSynthesis;    // defined in profilesynthesis.h
 class PerLoopInfo;         // defined in inductionvariableopts.cpp
 class RangeCheck;          // defined in rangecheck.h
+struct KnownBits;          // defined in knownbits.h
 #ifdef TARGET_WASM
 class WasmInterval; // defined in fgwasm.h
 enum class WasmValueType : unsigned;
@@ -4231,6 +4232,9 @@ public:
     CORINFO_CLASS_HANDLE gtGetFieldClassHandle(CORINFO_FIELD_HANDLE fieldHnd, bool* pIsExact, bool* pIsNonNull);
     // Check if this tree is a typeof()
     bool gtIsTypeof(GenTree* tree, CORINFO_CLASS_HANDLE* handle = nullptr);
+
+    // Check if this tree loads the length field of a Span<T>
+    bool gtIsSpanLength(GenTree* tree);
 
     GenTreeLclVarCommon* gtCallGetDefinedRetBufLclAddr(GenTreeCall* call);
     GenTreeLclVarCommon* gtCallGetDefinedAsyncResumedLclAddr(GenTreeCall* call);
@@ -8521,6 +8525,7 @@ public:
 
     BitVecTraits* optReachableBitVecTraits;
     BitVec        optReachableBitVec;
+    bool          optRboNeedsSsaRebuild = false; // RBO must rebuild SSA and VNs (set by jump threading)
     void          optRelopImpliesRelop(RelopImplicationInfo* rii);
     bool          optRelopTryInferWithOneEqualOperand(const VNFuncApp&      domApp,
                                                       const VNFuncApp&      treeApp,
@@ -9395,7 +9400,10 @@ public:
     {
         return optAssertionCount;
     }
-    ASSERT_TP* bbJtrueAssertionOut;
+    // The known bits of PHIs, see KnownBitsAnalysis::ComputeForPhi.
+    typedef JitHashTable<ValueNum, JitSmallPrimitiveKeyFuncs<ValueNum>, KnownBits> KnownBitsPhiCache;
+    KnownBitsPhiCache*                                                             optKnownBitsPhiCache = nullptr;
+    ASSERT_TP*                                                                     bbJtrueAssertionOut;
 
     // Assertion prop helpers.
     ASSERT_TP&          GetAssertionDep(unsigned lclNum, bool mustExist = false);
@@ -11537,17 +11545,17 @@ public:
 
         bool IsInstrumented() const
         {
-            return jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR);
+            return jitFlags->IsSet(JitFlags::JIT_FLAG_PGO_INSTR);
         }
 
         bool IsOptimizedWithProfile() const
         {
-            return OptimizationEnabled() && jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT);
+            return OptimizationEnabled() && jitFlags->IsSet(JitFlags::JIT_FLAG_PGO_OPT);
         }
 
         bool IsInstrumentedAndOptimized() const
         {
-            return IsInstrumented() && jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT);
+            return IsInstrumented() && jitFlags->IsSet(JitFlags::JIT_FLAG_PGO_OPT);
         }
 
         bool DoEarlyBlockMerging() const
@@ -11933,6 +11941,8 @@ public:
         STRESS_MODE(POISON_IMPLICIT_BYREFS)                                                     \
         STRESS_MODE(THREE_OPT_LAYOUT)                                                           \
         STRESS_MODE(GET_RANGE) /* Force slow SSA-based range walk in GetRange */                \
+        STRESS_MODE(KNOWNBITS_BUDGET) /* Use larger budgets in KnownBitsAnalysis */             \
+        STRESS_MODE(KNOWNBITS_RELOPS) /* Let KnownBitsAnalysis try to fold all EQ/NE relops */  \
         STRESS_MODE(COUNT)
 
     enum                compStressArea

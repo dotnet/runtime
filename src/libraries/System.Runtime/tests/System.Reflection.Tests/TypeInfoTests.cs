@@ -1738,6 +1738,92 @@ namespace System.Reflection.Tests
             Assert.Throws<ArgumentException>(() => openGenericType.GetMemberWithSameMetadataDefinitionAs(typeof(string).GetMethod("get_Length")));
         }
 
+        public static IEnumerable<object[]> GetInterfacesWithSameMetadataDefinitionAsData()
+        {
+            Type[] genericInterfaces = { typeof(TI_GenericInterface<int>), typeof(TI_GenericInterface<string>), typeof(TI_GenericInterface<long[]>) };
+
+            // A generic interface type definition matches all instantiations, including ones inherited
+            // from a base class or through another interface.
+            yield return new object[] { typeof(TI_ClassWithGenericInterfaces), typeof(TI_GenericInterface<>), genericInterfaces };
+
+            // Any instantiation of a generic interface matches the same interfaces as its generic type definition.
+            yield return new object[] { typeof(TI_ClassWithGenericInterfaces), typeof(TI_GenericInterface<int>), genericInterfaces };
+            yield return new object[] { typeof(TI_ClassWithGenericInterfaces), typeof(TI_GenericInterface<Guid>), genericInterfaces };
+            yield return new object[] { typeof(List<int>), typeof(IList<string>), new[] { typeof(IList<int>) } };
+            yield return new object[] { typeof(List<int>), typeof(List<>).GetInterface("IList`1"), new[] { typeof(IList<int>) } };
+
+            // Other interfaces implemented by the type.
+            yield return new object[] { typeof(TI_ClassWithGenericInterfaces), typeof(TI_DerivedGenericInterface<>), new[] { typeof(TI_DerivedGenericInterface<long>) } };
+            yield return new object[] { typeof(TI_ClassWithGenericInterfaces), typeof(TI_NonGenericInterface1), new[] { typeof(TI_NonGenericInterface1) } };
+
+            // No match.
+            yield return new object[] { typeof(TI_ClassWithGenericInterfaces), typeof(IDisposable), Type.EmptyTypes };
+            yield return new object[] { typeof(object), typeof(TI_GenericInterface<>), Type.EmptyTypes };
+
+            // A type that isn't an interface never matches.
+            yield return new object[] { typeof(TI_ClassWithGenericInterfaces), typeof(string), Type.EmptyTypes };
+            yield return new object[] { typeof(TI_ClassWithGenericInterfaces), typeof(List<>), Type.EmptyTypes };
+            yield return new object[] { typeof(List<int>), typeof(List<int>), Type.EmptyTypes };
+            yield return new object[] { typeof(List<int>), typeof(List<>).GetGenericArguments()[0], Type.EmptyTypes };
+
+            // An interface doesn't match itself, only the interfaces it inherits.
+            yield return new object[] { typeof(TI_DerivedGenericInterface<long>), typeof(TI_GenericInterface<>), new[] { typeof(TI_GenericInterface<long[]>) } };
+            yield return new object[] { typeof(TI_DerivedGenericInterface<long>), typeof(TI_DerivedGenericInterface<>), Type.EmptyTypes };
+
+            // Framework types.
+            yield return new object[] { typeof(int), typeof(IEquatable<>), new[] { typeof(IEquatable<int>) } };
+            yield return new object[] { typeof(List<string>), typeof(IList<>), new[] { typeof(IList<string>) } };
+            yield return new object[] { typeof(int[]), typeof(IReadOnlyList<>), new[] { typeof(IReadOnlyList<int>) } };
+        }
+
+        [Theory, MemberData(nameof(GetInterfacesWithSameMetadataDefinitionAsData))]
+        public void GetInterfacesWithSameMetadataDefinitionAs(Type type, Type interfaceType, Type[] expected)
+        {
+            Type[] actual = type.GetInterfacesWithSameMetadataDefinitionAs(interfaceType);
+            Assert.Equal(expected.OrderBy(t => t.ToString()), actual.OrderBy(t => t.ToString()));
+        }
+
+        [Theory, MemberData(nameof(GetInterfacesWithSameMetadataDefinitionAsData))]
+        public void GetInterfacesWithSameMetadataDefinitionAs_TypeDelegator(Type type, Type interfaceType, Type[] expected)
+        {
+            // TypeDelegator doesn't override GetInterfacesWithSameMetadataDefinitionAs, so this uses the base Type
+            // implementation, which runtime types may specialize.
+            Type[] actual = new TypeDelegator(type).GetInterfacesWithSameMetadataDefinitionAs(interfaceType);
+            Assert.Equal(expected.OrderBy(t => t.ToString()), actual.OrderBy(t => t.ToString()));
+        }
+
+        [Fact]
+        public void GetInterfacesWithSameMetadataDefinitionAs_NonRuntimeInterfaceType()
+        {
+            // An interface type from another Type implementation never matches the interfaces of a runtime type.
+            Assert.Empty(typeof(List<int>).GetInterfacesWithSameMetadataDefinitionAs(new TypeDelegator(typeof(IEnumerable<>))));
+            Assert.Empty(typeof(TI_ClassWithGenericInterfaces).GetInterfacesWithSameMetadataDefinitionAs(new TypeDelegator(typeof(TI_NonGenericInterface1))));
+
+            // Also when it's a constructed generic interface, or isn't an interface.
+            Assert.Empty(typeof(List<int>).GetInterfacesWithSameMetadataDefinitionAs(new TypeDelegator(typeof(IList<int>))));
+            Assert.Empty(typeof(List<int>).GetInterfacesWithSameMetadataDefinitionAs(new TypeDelegator(typeof(string))));
+        }
+
+        [Fact]
+        public void GetInterfacesWithSameMetadataDefinitionAs_GenericTypeDefinition()
+        {
+            foreach (Type interfaceType in new[] { typeof(IList<>), typeof(IList<int>) })
+            {
+                Type[] actual = typeof(List<>).GetInterfacesWithSameMetadataDefinitionAs(interfaceType);
+
+                Type implemented = Assert.Single(actual);
+                Assert.Equal(typeof(IList<>), implemented.GetGenericTypeDefinition());
+                Assert.Equal(typeof(List<>).GetGenericArguments()[0], implemented.GetGenericArguments()[0]);
+            }
+        }
+
+        [Fact]
+        public void GetInterfacesWithSameMetadataDefinitionAs_Null()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("interfaceType", () => typeof(TI_ClassWithGenericInterfaces).GetInterfacesWithSameMetadataDefinitionAs(null));
+            AssertExtensions.Throws<ArgumentNullException>("interfaceType", () => new TypeDelegator(typeof(TI_ClassWithGenericInterfaces)).GetInterfacesWithSameMetadataDefinitionAs(null));
+        }
+
 #pragma warning disable 0067, 0169
         public static class ClassWithStaticConstructor
         {
@@ -1987,6 +2073,11 @@ namespace System.Reflection.Tests
 
     public interface TI_NonGenericInterface1 { }
     public class TI_ClassWithInterface1 : TI_NonGenericInterface1 { }
+
+    public interface TI_GenericInterface<T> { }
+    public interface TI_DerivedGenericInterface<T> : TI_GenericInterface<T[]> { }
+    public class TI_BaseClassWithGenericInterface : TI_GenericInterface<string> { }
+    public class TI_ClassWithGenericInterfaces : TI_BaseClassWithGenericInterface, TI_GenericInterface<int>, TI_DerivedGenericInterface<long>, TI_NonGenericInterface1 { }
 
     namespace InnerNamespace
     {

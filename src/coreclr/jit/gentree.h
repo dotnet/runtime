@@ -1796,7 +1796,7 @@ public:
     bool OperIsConvertMaskToVector() const;
     bool OperIsConvertVectorToMask() const;
 #if defined(TARGET_ARM64) && defined(FEATURE_MASKED_HW_INTRINSICS)
-    bool IsSveMaskOperand() const;
+    bool CanBeSveMask() const;
 #endif // TARGET_ARM64 && FEATURE_MASKED_HW_INTRINSICS
     bool OperIsVectorFusedMultiplyOp() const;
 

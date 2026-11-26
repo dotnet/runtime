@@ -88,6 +88,9 @@
       <IsLibrariesGenerator Condition="$([System.String]::Copy('%(FullPath)').StartsWith('$(LibrariesProjectRoot)')) and
                                        $([System.String]::Copy('%(FullPath)').Contains('$([System.IO.Path]::DirectorySeparatorChar)gen$([System.IO.Path]::DirectorySeparatorChar)'))">true</IsLibrariesGenerator>
     </_LibrariesGeneratorProjectReference>
+    <!-- Static graph construction drops SetTargetFramework on references from single-targeted projects
+         (https://github.com/dotnet/msbuild/issues/15629). Pinned generators declare a plural TargetFrameworks so
+         the graph still reaches the netstandard2.0 build through their outer build. -->
     <ProjectReference Update="@(_LibrariesGeneratorProjectReference->WithMetadataValue('IsLibrariesGenerator', 'true'))"
                       GlobalPropertiesToRemove="%(GlobalPropertiesToRemove);LibrariesRuntimeFlavor;RuntimeFlavor"
                       UndefineProperties="%(UndefineProperties);LibrariesRuntimeFlavor;RuntimeFlavor"

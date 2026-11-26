@@ -119,6 +119,8 @@ See the [WebAssembly Debugging](debugging/mono/wasm-debugging.md#collecting-stac
 
 ## Contributing
 
+- [Reviewing WebAssembly Changes](wasm-review.md) - SDK/workload ownership, configuration, incremental assets and Wasm.Build.Tests conventions
+
 ### Code Style
 - Runtime JavaScript code uses ESLint rules in `.eslintrc.js`
 - Run `npm run lint` in `src/mono/browser/runtime`
