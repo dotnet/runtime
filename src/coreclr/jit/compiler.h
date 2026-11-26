@@ -4254,6 +4254,7 @@ public:
     void gtDispConst(GenTree* tree);
     void gtDispLeaf(GenTree* tree, IndentStack* indentStack);
     void gtDispLocal(GenTreeLclVarCommon* tree, IndentStack* indentStack);
+    void gtDispStoreLclVarsDestinations(GenTreeStoreLclVars* store, IndentStack* indentStack);
     void gtDispNodeName(GenTree* tree);
     unsigned gtDispMultiRegCount(GenTree* tree);
     void gtDispRegVal(GenTree* tree);

@@ -13928,28 +13928,8 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
 
             if (tree->OperIs(GT_STORE_LCL_VARS))
             {
-                GenTreeStoreLclVars* store = tree->AsStoreLclVars();
-                for (unsigned i = 0; i < store->gtCount; i++)
-                {
-                    GenTreeStoreLclVars::Destination& dest = store->GetDestination(i);
-                    printf(" V%02u[%u]", dest.LclNum, dest.Offset);
-                    if (dest.SsaNum != SsaConfig::RESERVED_SSA_NUM)
-                    {
-                        printf(" d:%u", dest.SsaNum);
-                    }
-                    if ((dest.Flags & GTF_VAR_DEATH) != 0)
-                    {
-                        printf(" (last use)");
-                    }
-                    if (dest.RegNum != REG_NA)
-                    {
-                        printf(" %s", getRegName(static_cast<regNumber>(dest.RegNum)));
-                    }
-                    if ((dest.Flags & GTF_SPILL) != 0)
-                    {
-                        printf(" (spill)");
-                    }
-                }
+                unsigned count = tree->AsStoreLclVars()->gtCount;
+                printf(" (%u dest%s)", count, count == 1 ? "" : "s");
             }
             if (tree->OperIs(GT_RUNTIMELOOKUP))
             {
@@ -15006,6 +14986,51 @@ void Compiler::gtDispLocal(GenTreeLclVarCommon* tree, IndentStack* indentStack)
 }
 
 //------------------------------------------------------------------------
+// gtDispStoreLclVarsDestinations: Print each GT_STORE_LCL_VARS destination on its own line,
+// showing its type, offset within the source value, local, SSA definition, register, and flags.
+//
+// Arguments:
+//    store       - the node whose destinations to print
+//    indentStack - the indent stack of the node
+//
+// Notes:
+//    Called after the node's line is complete, mirroring the display of promoted struct fields.
+//
+void Compiler::gtDispStoreLclVarsDestinations(GenTreeStoreLclVars* store, IndentStack* indentStack)
+{
+    for (unsigned i = 0; i < store->gtCount; i++)
+    {
+        const GenTreeStoreLclVars::Destination& dest = store->GetDestination(i);
+
+        char offset[16];
+        sprintf_s(offset, sizeof(offset), "[+%u]", dest.Offset);
+
+        printf("                                                            ");
+        printIndent(indentStack);
+        printf("    %-6s %-6s -> ", varTypeName(lvaGetDesc(dest.LclNum)->TypeGet()), offset);
+        gtDispLclVar(dest.LclNum);
+        gtDispSsaName(dest.LclNum, dest.SsaNum, /* isDef */ true);
+
+        if (dest.RegNum != REG_NA)
+        {
+            printf(" %s", getRegName(static_cast<regNumber>(dest.RegNum)));
+        }
+
+        if ((dest.Flags & GTF_VAR_DEATH) != 0)
+        {
+            printf(" (last use)");
+        }
+
+        if ((dest.Flags & GTF_SPILL) != 0)
+        {
+            printf(" (spill)");
+        }
+
+        printf("\n");
+    }
+}
+
+//------------------------------------------------------------------------
 // gtDispChild: Print a child node to jitstdout.
 //
 // Arguments:
@@ -15378,6 +15403,11 @@ void Compiler::gtDispTree(GenTree*                    tree,
         }
 #endif
         gtDispCommonEndLine(tree);
+
+        if (tree->OperIs(GT_STORE_LCL_VARS))
+        {
+            gtDispStoreLclVarsDestinations(tree->AsStoreLclVars(), indentStack);
+        }
 
         if (!topOnly)
         {
