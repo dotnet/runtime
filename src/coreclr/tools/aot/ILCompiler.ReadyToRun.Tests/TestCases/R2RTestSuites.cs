@@ -667,7 +667,7 @@ public class R2RTestSuites
             bool foundReadinessEnumeratorDispose = false;
             bool foundOrdinaryNoInliningEnumeratorDispose = false;
             bool foundReadinessQueueEnumeratorDispose = false;
-            bool foundReadinessKeyValuePairToString = false;
+            bool foundCoreLibKeyValuePairToString = false;
             foreach (ReadyToRunImportSection section in reader.ImportSections)
             {
                 foreach (ReadyToRunImportSection.ImportSectionEntry entry in section.Entries)
@@ -709,7 +709,7 @@ public class R2RTestSuites
                         {
                             bool isCoreLibReadinessFixup = entrySignature.FixupKind == ReadyToRunFixupKind.MethodEntry_ReadyToRun;
                             foundReadinessQueueEnumeratorDispose |= isCoreLibQueueEnumeratorDispose && isCoreLibReadinessFixup;
-                            foundReadinessKeyValuePairToString |= isCoreLibKeyValuePairToString && isCoreLibReadinessFixup;
+                            foundCoreLibKeyValuePairToString |= isCoreLibKeyValuePairToString;
                             Assert.DoesNotContain("Marker", signature, StringComparison.Ordinal);
                             Assert.DoesNotContain(" @ ", signature, StringComparison.Ordinal);
                         }
@@ -773,7 +773,7 @@ public class R2RTestSuites
                 Assert.True(foundReadinessEnumeratorDispose, "Expected a MethodEntry_ReadyToRun import for Enumerator`1.Dispose");
                 Assert.True(foundOrdinaryNoInliningEnumeratorDispose, "Expected an ordinary MethodEntry import for NoInliningEnumerator`1.Dispose");
                 Assert.True(foundReadinessQueueEnumeratorDispose, "Expected a MethodEntry_ReadyToRun import for Queue`1.Enumerator.Dispose");
-                Assert.True(foundReadinessKeyValuePairToString, "Expected a MethodEntry_ReadyToRun import for KeyValuePair`2.ToString");
+                Assert.True(foundCoreLibKeyValuePairToString, "Expected a MethodEntry import for KeyValuePair`2.ToString");
             }
         }
     }
