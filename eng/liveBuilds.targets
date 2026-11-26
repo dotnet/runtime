@@ -263,12 +263,16 @@
                                                    $(LibrariesNativeArtifactsPath)libicui18n.a;
                                                    $(LibrariesNativeArtifactsPath)libicuuc.a;
                                                    $(LibrariesNativeArtifactsPath)libSystem.Globalization.Native.a;
-                                                   $(LibrariesNativeArtifactsPath)libSystem.IO.Compression.Native.a;
                                                    $(LibrariesNativeArtifactsPath)libSystem.Native.a;
                                                    $(LibrariesNativeArtifactsPath)libSystem.Native.Browser.a;
                                                    $(LibrariesNativeArtifactsPath)libSystem.Native.TimeZoneData.a;
                                                    $(LibrariesNativeArtifactsPath)libSystem.Native.TimeZoneData.Invariant.a;
-                                                   $(LibrariesNativeArtifactsPath)libSystem.Runtime.InteropServices.JavaScript.Native.a;
+                                                   $(LibrariesNativeArtifactsPath)libSystem.Runtime.InteropServices.JavaScript.Native.a" />
+
+      <!-- NativeAOT needs the libs.native compression archives because its RuntimeFiles come
+           from aotsdk rather than the CoreCLR sharedFramework directory. -->
+      <ExcludeNativeLibrariesRuntimeFiles Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(BuildNativeAOTRuntimePack)' != 'true'"
+                                          Include="$(LibrariesNativeArtifactsPath)libSystem.IO.Compression.Native.a;
                                                    $(LibrariesNativeArtifactsPath)libz.a" />
       <LibrariesRuntimeFiles Include="
         $(LibrariesNativeArtifactsPath)*.dat;
