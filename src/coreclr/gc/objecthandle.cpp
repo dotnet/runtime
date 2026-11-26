@@ -1022,14 +1022,24 @@ void Ref_TraceNormalRoots(uint32_t condemned, uint32_t maxgen, ScanContext* sc, 
     TraceVariableHandles(PromoteObject, sc, uintptr_t(fn), VHT_STRONG, condemned, maxgen, flags);
 #endif
 
+    Ref_TraceRefCountedRoots(condemned, maxgen, sc, fn);
+}
+
+void Ref_TraceRefCountedRoots(uint32_t condemned, uint32_t maxgen, ScanContext* sc, Ref_promote_func* fn)
+{
+    WRAPPER_NO_CONTRACT;
+
 #ifdef FEATURE_REFCOUNTED_HANDLES
     // don't scan ref-counted handles during concurrent phase as the clean-up of CCWs can race with AD unload and cause AV's
     if (!sc->concurrent)
     {
+        LOG((LF_GC, LL_INFO10000, "Promoting referents of ref-counted handles in generation %u\n", condemned));
+
         // promote ref-counted handles
         uint32_t type = HNDTYPE_REFCOUNTED;
+        uint32_t flags = HNDGCF_NORMAL;
 
-        walk = &g_HandleTableMap;
+        HandleTableMap *walk = &g_HandleTableMap;
         while (walk) {
             for (uint32_t i = 0; i < INITIAL_HANDLE_TABLE_ARRAY_SIZE; i ++)
                 if (walk->pBuckets[i] != NULL)

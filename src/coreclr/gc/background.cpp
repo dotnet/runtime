@@ -2105,12 +2105,44 @@ void gc_heap::background_mark_phase ()
         SoftwareWriteWatch::DisableForGCHeap();
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 
-        GCToEEInterface::AfterGcScanRoots (max_generation, max_generation, &sc);
+        // See gc_heap::mark_phase for details.
+        background_rescan_refcounted_handles_p = GCToEEInterface::ShouldRescanRefCountedHandles (&sc);
+        if (!background_rescan_refcounted_handles_p)
+        {
+            // No rescan, so we can call AfterGcScanRoots immediately.
+            GCToEEInterface::AfterGcScanRoots (max_generation, max_generation, &sc);
+        }
 
 #ifdef MULTIPLE_HEAPS
         dprintf(3, ("Joining BGC threads for short weak handle scan"));
         bgc_t_join.restart();
 #endif //MULTIPLE_HEAPS
+    }
+
+    if (background_rescan_refcounted_handles_p)
+    {
+        dprintf (2, ("nonconcurrent rescan of refcounted handles"));
+        GCScan::GcScanRefCountedHandles (background_promote, max_generation, max_generation, &sc);
+        drain_mark_queue();
+
+        // Promote secondaries of dependent handles whose primaries were promoted by the rescan.
+        // As before background_scan_dependent_handles will also process any mark stack overflow.
+        background_scan_dependent_handles (&sc);
+
+#ifdef MULTIPLE_HEAPS
+        // All heaps must finish marking before any heap clears short weak references.
+        bgc_t_join.join(this, gc_join_rescan_refcounted_handles);
+        if (bgc_t_join.joined())
+#endif //MULTIPLE_HEAPS
+        {
+            // Rescan of refcounted handles completed, now call AfterGcScanRoots
+            GCToEEInterface::AfterGcScanRoots (max_generation, max_generation, &sc);
+
+#ifdef MULTIPLE_HEAPS
+            dprintf(3, ("Joining BGC threads after refcounted handle rescan"));
+            bgc_t_join.restart();
+#endif //MULTIPLE_HEAPS
+        }
     }
 
     // null out the target of short weakref that were not promoted.
@@ -2163,6 +2195,8 @@ void gc_heap::background_mark_phase ()
 #ifdef FEATURE_EVENT_TRACE
         record_mark_time (bgc_time_info[time_mark_scan_finalization], current_mark_time, last_mark_time);
 #endif //FEATURE_EVENT_TRACE
+
+        GCToEEInterface::AfterScanForFinalization (max_generation, max_generation, &sc);
 
 #ifdef MULTIPLE_HEAPS
         dprintf(2, ("Joining BGC threads for weak pointer deletion"));

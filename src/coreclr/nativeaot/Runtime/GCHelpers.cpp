@@ -249,9 +249,9 @@ FCIMPL2(void, RhUnregisterGcCallout, GcRestrictedCalloutKind eKind, void * pCall
 FCIMPLEND
 
 #ifdef FEATURE_OBJCMARSHAL
-FCIMPL1(FC_BOOL_RET, RhRegisterObjectiveCMarshalBeginEndCallback, void * pCallback)
+FCIMPL2(FC_BOOL_RET, RhRegisterObjectiveCMarshalReferenceTrackerCallbacks, void * pBeginEndCallback, void * pHaveReferencesChangedCallback)
 {
-    FC_RETURN_BOOL(ObjCMarshalNative::RegisterBeginEndCallback(pCallback));
+    FC_RETURN_BOOL(ObjCMarshalNative::RegisterReferenceTrackerCallbacks(pBeginEndCallback, pHaveReferencesChangedCallback));
 }
 FCIMPLEND
 #endif

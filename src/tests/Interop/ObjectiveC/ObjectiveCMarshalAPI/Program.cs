@@ -21,7 +21,20 @@ namespace ObjectiveCMarshalAPI
         public static extern unsafe void GetExports(
             out delegate* unmanaged<void> beginEndCallback,
             out delegate* unmanaged<IntPtr, int> isReferencedCallback,
+            out delegate* unmanaged<int> haveReferencesChangedCallback,
             out delegate* unmanaged<IntPtr, void> trackedObjectEnteredFinalization);
+
+        [DllImport(nameof(NativeObjCMarshalTests))]
+        public static extern void StartReferencesChangedTest(IntPtr memory);
+
+        [DllImport(nameof(NativeObjCMarshalTests))]
+        public static extern int GetReferencesChangedTestQueries();
+
+        [DllImport(nameof(NativeObjCMarshalTests))]
+        public static extern int GetReferencesChangedTestCallbacks();
+
+        [DllImport(nameof(NativeObjCMarshalTests))]
+        public static extern void EndReferencesChangedTest();
 
         [DllImport(nameof(NativeObjCMarshalTests))]
         public static extern unsafe void SetImports(
@@ -45,8 +58,9 @@ namespace ObjectiveCMarshalAPI
 
             delegate* unmanaged<void> beginEndCallback;
             delegate* unmanaged<IntPtr, int> isReferencedCallback;
+            delegate* unmanaged<int> haveReferencesChangedCallback;
             delegate* unmanaged<IntPtr, void> trackedObjectEnteredFinalization;
-            NativeObjCMarshalTests.GetExports(out beginEndCallback, out isReferencedCallback, out trackedObjectEnteredFinalization);
+            NativeObjCMarshalTests.GetExports(out beginEndCallback, out isReferencedCallback, out haveReferencesChangedCallback, out trackedObjectEnteredFinalization);
 
             Assert.Throws<ArgumentNullException>(
                 () =>
@@ -67,6 +81,39 @@ namespace ObjectiveCMarshalAPI
                 () =>
                 {
                     ObjectiveCMarshal.Initialize(beginEndCallback, isReferencedCallback, trackedObjectEnteredFinalization, null);
+                });
+
+            ObjectiveCReferenceTrackingCallbacks callbacks = new ObjectiveCReferenceTrackingCallbacks
+            {
+                BeginEndCallback = beginEndCallback,
+                IsReferencedCallback = isReferencedCallback,
+                HaveReferencesChangedCallback = haveReferencesChangedCallback,
+                TrackedObjectEnteredFinalization = trackedObjectEnteredFinalization,
+            };
+            Assert.Throws<ArgumentNullException>(
+                () =>
+                {
+                    ObjectiveCMarshal.Initialize(callbacks with { BeginEndCallback = null }, OnUnhandledExceptionPropagationHandler);
+                });
+            Assert.Throws<ArgumentNullException>(
+                () =>
+                {
+                    ObjectiveCMarshal.Initialize(callbacks with { IsReferencedCallback = null }, OnUnhandledExceptionPropagationHandler);
+                });
+            Assert.Throws<ArgumentNullException>(
+                () =>
+                {
+                    ObjectiveCMarshal.Initialize(callbacks with { HaveReferencesChangedCallback = null }, OnUnhandledExceptionPropagationHandler);
+                });
+            Assert.Throws<ArgumentNullException>(
+                () =>
+                {
+                    ObjectiveCMarshal.Initialize(callbacks with { TrackedObjectEnteredFinalization = null }, OnUnhandledExceptionPropagationHandler);
+                });
+            Assert.Throws<ArgumentNullException>(
+                () =>
+                {
+                    ObjectiveCMarshal.Initialize(callbacks, null);
                 });
             Assert.Throws<ArgumentNullException>(
                 () =>
@@ -180,13 +227,82 @@ namespace ObjectiveCMarshalAPI
         {
             delegate* unmanaged<void> beginEndCallback;
             delegate* unmanaged<IntPtr, int> isReferencedCallback;
+            delegate* unmanaged<int> haveReferencesChangedCallback;
             delegate* unmanaged<IntPtr, void> trackedObjectEnteredFinalization;
-            NativeObjCMarshalTests.GetExports(out beginEndCallback, out isReferencedCallback, out trackedObjectEnteredFinalization);
+            NativeObjCMarshalTests.GetExports(out beginEndCallback, out isReferencedCallback, out haveReferencesChangedCallback, out trackedObjectEnteredFinalization);
 
             delegate* unmanaged<void> beforeThrow = &BeforeThrowNativeException;
             NativeObjCMarshalTests.SetImports(beforeThrow);
 
-            ObjectiveCMarshal.Initialize(beginEndCallback, isReferencedCallback, trackedObjectEnteredFinalization, OnUnhandledExceptionPropagationHandler);
+            if (s_useLatestAlgorithmCallbacks)
+            {
+                ObjectiveCMarshal.Initialize(new ObjectiveCReferenceTrackingCallbacks
+                {
+                    BeginEndCallback = beginEndCallback,
+                    IsReferencedCallback = isReferencedCallback,
+                    HaveReferencesChangedCallback = haveReferencesChangedCallback,
+                    TrackedObjectEnteredFinalization = trackedObjectEnteredFinalization,
+                }, OnUnhandledExceptionPropagationHandler);
+            }
+            else
+            {
+                ObjectiveCMarshal.Initialize(beginEndCallback, isReferencedCallback, trackedObjectEnteredFinalization, OnUnhandledExceptionPropagationHandler);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static GCHandle AllocForReferencesChangedTest(out WeakReference<Base> weakReference)
+        {
+            Base obj = new Base();
+            GCHandle handle = ObjectiveCMarshal.CreateReferenceTrackingHandle(obj, out Span<IntPtr> memory);
+            fixed (IntPtr* taggedMemory = memory)
+            {
+                obj.SetContractMemory((IntPtr)taggedMemory, 0);
+                weakReference = new WeakReference<Base>(obj);
+                NativeObjCMarshalTests.StartReferencesChangedTest((IntPtr)taggedMemory);
+            }
+            GC.KeepAlive(obj);
+            return handle;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool IsAlive(WeakReference<Base> weakReference) => weakReference.TryGetTarget(out _);
+
+        static void Validate_NoReferencesChangedCallback_Scenario()
+        {
+            Console.WriteLine($"Running {nameof(Validate_NoReferencesChangedCallback_Scenario)}...");
+
+            GCHandle handle = AllocForReferencesChangedTest(out WeakReference<Base> weakReference);
+
+            GC.Collect(2, GCCollectionMode.Forced, blocking: true);
+            GC.WaitForPendingFinalizers();
+            Assert.Equal(0, NativeObjCMarshalTests.GetReferencesChangedTestCallbacks());
+            Assert.Equal(1, NativeObjCMarshalTests.GetReferencesChangedTestQueries());
+            Assert.False(IsAlive(weakReference));
+
+            NativeObjCMarshalTests.EndReferencesChangedTest();
+            handle.Free();
+        }
+
+        static void Validate_ReferencesChanged_Scenario()
+        {
+            Console.WriteLine($"Running {nameof(Validate_ReferencesChanged_Scenario)}...");
+
+            GCHandle handle = AllocForReferencesChangedTest(out WeakReference<Base> weakReference);
+
+            GC.Collect(2, GCCollectionMode.Forced, blocking: true);
+            GC.WaitForPendingFinalizers();
+            Assert.Equal(1, NativeObjCMarshalTests.GetReferencesChangedTestCallbacks());
+            Assert.Equal(1, NativeObjCMarshalTests.GetReferencesChangedTestQueries());
+            Assert.True(IsAlive(weakReference));
+
+            GC.Collect(2, GCCollectionMode.Forced, blocking: true);
+            GC.WaitForPendingFinalizers();
+            Assert.False(IsAlive(weakReference));
+            Assert.Equal(2, NativeObjCMarshalTests.GetReferencesChangedTestQueries());
+
+            NativeObjCMarshalTests.EndReferencesChangedTest();
+            handle.Free();
         }
 
         static void Validate_PreInitialize_Scenario()
@@ -504,6 +620,57 @@ namespace ObjectiveCMarshalAPI
         [SkipOnMono("Mono does not support the new Objective-C marshalling APIs. Objective-C interop is done via Mono's own runtime embedding APIs.")]
         public static int TestEntryPoint()
         {
+            // Element 0 is the managed assembly (CoreCLR) or the executable (NativeAOT).
+            string[] args = Environment.GetCommandLineArgs();
+            if (args.Length < 2)
+            {
+                foreach (string childMode in new[] { Initialize_NET6, Initialize_Latest })
+                {
+                    int childResult = RunChildProcess(childMode);
+                    if (childResult != 100)
+                        return childResult;
+                }
+
+                return 100;
+            }
+
+            s_useLatestAlgorithmCallbacks = args[1] switch
+            {
+                Initialize_NET6 => false,
+                Initialize_Latest => true,
+                _ => throw new InvalidOperationException($"Unknown API mode: {args[1]}"),
+            };
+
+            return RunTests();
+        }
+
+        private const string Initialize_NET6 = nameof(Initialize_NET6);
+        private const string Initialize_Latest = nameof(Initialize_Latest);
+
+        private static bool s_useLatestAlgorithmCallbacks;
+
+        static int RunChildProcess(string mode)
+        {
+            Console.WriteLine($"Launching child process with API mode {mode}...");
+
+            ProcessStartInfo psi = new ProcessStartInfo(Environment.ProcessPath)
+            {
+                UseShellExecute = false,
+            };
+            if (!TestLibrary.Utilities.IsNativeAot)
+                psi.ArgumentList.Add(Environment.GetCommandLineArgs()[0]);
+
+            psi.ArgumentList.Add(mode);
+
+            using Process child = Process.Start(psi);
+            child.WaitForExit();
+
+            Console.WriteLine($"Child process ({mode}) exited with {child.ExitCode}.");
+            return child.ExitCode;
+        }
+
+        static int RunTests()
+        {
             try
             {
                 Validate_InvalidArgs();
@@ -512,6 +679,14 @@ namespace ObjectiveCMarshalAPI
                 InitializeObjectiveCMarshal();
                 Validate_ReferenceTracking_Scenario();
                 Validate_ReferenceTrackingMemory_Scenario();
+                if (s_useLatestAlgorithmCallbacks)
+                {
+                    Validate_ReferencesChanged_Scenario();
+                }
+                else
+                {
+                    Validate_NoReferencesChangedCallback_Scenario();
+                }
 
                 Validate_Initialize_FailsOnSecondAttempt();
             }

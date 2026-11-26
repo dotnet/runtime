@@ -67,6 +67,18 @@ namespace System.Runtime.InteropServices.ObjectiveC
             => throw new PlatformNotSupportedException();
 
         /// <summary>
+        /// Initialize the Objective-C marshalling API.
+        /// </summary>
+        /// <param name="callbacks">Unmanaged callbacks used by the GC to query reference tracking state.</param>
+        /// <param name="unhandledExceptionPropagationHandler">Handler for the propagation of unhandled Exceptions across a managed -> native boundary (that is, Reverse P/Invoke).</param>
+        /// <exception cref="ArgumentNullException">Thrown if any callback in <paramref name="callbacks"/> or <paramref name="unhandledExceptionPropagationHandler"/> is <c>null</c>.</exception>
+        /// <exception cref="InvalidOperationException">Thrown if this API has already been called.</exception>
+        public static void Initialize(
+            ObjectiveCReferenceTrackingCallbacks callbacks,
+            UnhandledExceptionPropagationHandler unhandledExceptionPropagationHandler)
+            => throw new PlatformNotSupportedException();
+
+        /// <summary>
         /// Request native reference tracking for the supplied object.
         /// </summary>
         /// <param name="obj">The object to track.</param>
@@ -74,7 +86,7 @@ namespace System.Runtime.InteropServices.ObjectiveC
         /// <returns>Reference tracking GC handle.</returns>
         /// <exception cref="InvalidOperationException">Thrown if the ObjectiveCMarshal API has not been initialized.</exception>
         /// <remarks>
-        /// The <see cref="Initialize" /> function must be called prior to calling this function.
+        /// The <see cref="O:System.Runtime.InteropServices.ObjectiveC.ObjectiveCMarshal.Initialize" /> function must be called prior to calling this function.
         ///
         /// The <paramref name="obj"/> parameter must have a type in its hierarchy marked with
         /// <see cref="ObjectiveCTrackedTypeAttribute"/>.
@@ -109,7 +121,7 @@ namespace System.Runtime.InteropServices.ObjectiveC
         /// The <paramref name="obj"/> must have a type in its hierarchy marked with
         /// <see cref="ObjectiveCTrackedTypeAttribute"/>.
         ///
-        /// The "Is Referenced" callback passed to <see cref="Initialize" />
+        /// The "Is Referenced" callback passed to <see cref="O:System.Runtime.InteropServices.ObjectiveC.ObjectiveCMarshal.Initialize" />
         /// will be passed the memory returned from this function.
         /// The memory it points at is defined by the length in the <see cref="Span{IntPtr}"/> and
         /// will be zeroed out. It will be available until <paramref name="obj"/> is collected by the GC.

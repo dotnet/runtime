@@ -14,6 +14,7 @@
 using BeforeThrowNativeExceptionCallback = void(STDMETHODCALLTYPE *)(void);
 using BeginEndCallback = void(STDMETHODCALLTYPE *)(void);
 using IsReferencedCallback = int(STDMETHODCALLTYPE *)(void*);
+using HaveReferencesChangedCallback = int(STDMETHODCALLTYPE *)(void);
 using EnteredFinalizationCallback = void(STDMETHODCALLTYPE *)(void*);
 
 //#define REF_TRACKER_DEBUG_CALLBACKS
@@ -21,6 +22,10 @@ using EnteredFinalizationCallback = void(STDMETHODCALLTYPE *)(void*);
 namespace
 {
     std::atomic_bool state = { false };
+    std::atomic<void*> changedTestMemory = { nullptr };
+    std::atomic_bool referencesChanged = { false };
+    std::atomic_int changedTestQueries = { 0 };
+    std::atomic_int changedTestCallbacks = { 0 };
 
     void STDMETHODCALLTYPE BeginEndCb()
     {
@@ -53,6 +58,8 @@ namespace
         }
 
         assert(mem != nullptr);
+        if (mem == changedTestMemory.load())
+            changedTestQueries++;
         auto cxt = (Contract*)mem;
 
         if (cxt->RefCountDown == 0)
@@ -68,6 +75,18 @@ namespace
         }
     }
 
+    int STDMETHODCALLTYPE HaveReferencesChangedCb()
+    {
+        assert(state);
+        if (changedTestQueries.load() != 0 && referencesChanged.exchange(false))
+        {
+            changedTestCallbacks++;
+            return 1;
+        }
+
+        return 0;
+    }
+
     void STDMETHODCALLTYPE EnteredFinalizerCb(void* mem)
     {
 #ifdef REF_TRACKER_DEBUG_CALLBACKS
@@ -81,17 +100,43 @@ namespace
     }
 }
 
+extern "C" DLL_EXPORT void StartReferencesChangedTest(void* memory)
+{
+    changedTestMemory = memory;
+    changedTestQueries = 0;
+    changedTestCallbacks = 0;
+    referencesChanged = true;
+}
+
+extern "C" DLL_EXPORT int GetReferencesChangedTestQueries()
+{
+    return changedTestQueries;
+}
+
+extern "C" DLL_EXPORT int GetReferencesChangedTestCallbacks()
+{
+    return changedTestCallbacks;
+}
+
+extern "C" DLL_EXPORT void EndReferencesChangedTest()
+{
+    changedTestMemory = nullptr;
+}
+
 extern "C" DLL_EXPORT void GetExports(
     BeginEndCallback* beginEnd,
     IsReferencedCallback* isRef,
+    HaveReferencesChangedCallback* haveReferencesChanged,
     EnteredFinalizationCallback* enteredFinalizer)
 {
     assert(beginEnd != nullptr);
     assert(isRef != nullptr);
+    assert(haveReferencesChanged != nullptr);
     assert(enteredFinalizer != nullptr);
 
     *beginEnd = BeginEndCb;
     *isRef = IsRefCb;
+    *haveReferencesChanged = HaveReferencesChangedCb;
     *enteredFinalizer = EnteredFinalizerCb;
 }
 

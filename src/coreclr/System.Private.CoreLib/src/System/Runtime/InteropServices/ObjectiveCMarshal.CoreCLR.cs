@@ -34,12 +34,14 @@ namespace System.Runtime.InteropServices.ObjectiveC
         private static unsafe partial bool TryInitializeReferenceTracker(
             delegate* unmanaged<void> beginEndCallback,
             delegate* unmanaged<IntPtr, int> isReferencedCallback,
+            delegate* unmanaged<int> haveReferencesChangedCallback,
             delegate* unmanaged<IntPtr, void> trackedObjectEnteredFinalization,
             ObjectHandleOnStack objectTrackingInfoTable);
 
         private static unsafe bool TryInitializeReferenceTracker(
             delegate* unmanaged<void> beginEndCallback,
             delegate* unmanaged<IntPtr, int> isReferencedCallback,
+            delegate* unmanaged<int> haveReferencesChangedCallback,
             delegate* unmanaged<IntPtr, void> trackedObjectEnteredFinalization)
         {
             // Make a local of the readonly field because it needs to be passed by ref to a QCall
@@ -48,6 +50,7 @@ namespace System.Runtime.InteropServices.ObjectiveC
             bool result = TryInitializeReferenceTracker(
                 beginEndCallback,
                 isReferencedCallback,
+                haveReferencesChangedCallback,
                 trackedObjectEnteredFinalization,
                 ObjectHandleOnStack.Create(ref objects));
             Debug.Assert(object.ReferenceEquals(objects, s_objects));

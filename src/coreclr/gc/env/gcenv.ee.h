@@ -43,6 +43,9 @@ public:
 
     static bool IsClientBridgeProcessingActive();
 
+    static bool ShouldRescanRefCountedHandles(ScanContext* sc);
+    static void AfterScanForFinalization(int condemned, int max_gen, ScanContext* sc);
+
     // Sync block cache management
     static void SyncBlockCacheWeakPtrScan(HANDLESCANPROC scanProc, uintptr_t lp1, uintptr_t lp2);
     static void SyncBlockCacheDemote(int max_gen);

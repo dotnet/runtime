@@ -2457,6 +2457,9 @@ namespace System.Runtime.InteropServices.ObjectiveC
             delegate* unmanaged<System.IntPtr, int> isReferencedCallback,
             delegate* unmanaged<System.IntPtr, void> trackedObjectEnteredFinalization,
             UnhandledExceptionPropagationHandler unhandledExceptionPropagationHandler) => throw null;
+        public static void Initialize(
+            System.Runtime.InteropServices.ObjectiveC.ObjectiveCReferenceTrackingCallbacks callbacks,
+            UnhandledExceptionPropagationHandler unhandledExceptionPropagationHandler) => throw null;
         public static GCHandle CreateReferenceTrackingHandle(
             object obj,
             out System.Span<System.IntPtr> taggedMemory) => throw null;
@@ -2471,6 +2474,20 @@ namespace System.Runtime.InteropServices.ObjectiveC
         }
         public unsafe static void SetMessageSendCallback(MessageSendFunction msgSendFunction, System.IntPtr func) => throw null;
         public static void SetMessageSendPendingException(Exception? exception) => throw null;
+    }
+
+    [System.Runtime.Versioning.SupportedOSPlatformAttribute("macos")]
+    [System.Runtime.Versioning.SupportedOSPlatformAttribute("ios")]
+    [System.Runtime.Versioning.SupportedOSPlatformAttribute("tvos")]
+    [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")]
+    [System.CLSCompliantAttribute(false)]
+    public partial struct ObjectiveCReferenceTrackingCallbacks
+    {
+        private int _dummyPrimitive;
+        public unsafe delegate* unmanaged<void> BeginEndCallback { get { throw null; } set { } }
+        public unsafe delegate* unmanaged<System.IntPtr, int> IsReferencedCallback { get { throw null; } set { } }
+        public unsafe delegate* unmanaged<int> HaveReferencesChangedCallback { get { throw null; } set { } }
+        public unsafe delegate* unmanaged<System.IntPtr, void> TrackedObjectEnteredFinalization { get { throw null; } set { } }
     }
 }
 namespace System.Runtime.InteropServices.Marshalling

@@ -127,14 +127,11 @@ standalone GCs has a major version number and minor version number that is obtai
 `gcinterface.h` that the EE built against. It will compare these numbers against the numbers it receives from
 `GC_VersionInfo` in this way:
 
-* If the EE's MajorVersion is not equal to the MajorVersion obtained from the candidate GC, reject. Major version    changes occur when there are breaking changes in the EE/GC interface and it is not possible to interoperate with
-  incompatible interfaces. A change is considered breaking if it alters the semantics of an existing method or if
-  it deletes or renames existing methods so that VTable layouts are not compatible.
-* If the EE's MinorVersion is greater than the MinorVersion obtained from the candidate GC, accept
-  (Forward compatibility). The EE must take care not to call any new APIs that are not present in the version of
-  the candidate GC.
-* Otherwise, accept (Backward compatibility). It is perfectly safe to use a GC whose MinorVersion exceeds the EE's
-  MinorVersion.
+* If the candidate GC's MajorVersion is lower than the EE's, reject it. Major version changes indicate a breaking
+  change to the EE/GC interface.
+* If the candidate GC's MajorVersion matches the EE's but its MinorVersion is lower, reject it. The EE requires the
+  interface additions introduced by its current minor version.
+* Otherwise, accept. It is safe to use a GC whose MinorVersion is equal to or greater than the EE's MinorVersion.
 
 The build version and name are not considered and are provided only for display/debug purposes.
 

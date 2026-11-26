@@ -105,9 +105,10 @@ namespace System.Runtime.InteropServices.ObjectiveC
         private static bool TryInitializeReferenceTracker(
             delegate* unmanaged<void> beginEndCallback,
             delegate* unmanaged<IntPtr, int> isReferencedCallback,
+            delegate* unmanaged<int> haveReferencesChangedCallback,
             delegate* unmanaged<IntPtr, void> trackedObjectEnteredFinalization)
         {
-            if (!RuntimeImports.RhRegisterObjectiveCMarshalBeginEndCallback((IntPtr)beginEndCallback))
+            if (!RuntimeImports.RhRegisterObjectiveCMarshalReferenceTrackerCallbacks((IntPtr)beginEndCallback, (IntPtr)haveReferencesChangedCallback))
             {
                 return false;
             }

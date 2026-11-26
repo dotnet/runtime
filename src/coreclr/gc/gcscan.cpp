@@ -177,6 +177,13 @@ void GCScan::GcScanHandles (promote_func* fn,  int condemned, int max_gen,
     }
 }
 
+void GCScan::GcScanRefCountedHandles (promote_func* fn, int condemned, int max_gen, ScanContext* sc)
+{
+    STRESS_LOG0(LF_GC|LF_GCROOTS, LL_INFO10, "GcScanRefCountedHandles\n");
+    assert(sc->promotion);
+    Ref_TraceRefCountedRoots(condemned, max_gen, sc, fn);
+}
+
 #ifdef FEATURE_JAVAMARSHAL
 uint8_t** GCScan::GcProcessBridgeObjects (int condemned, int max_gen, ScanContext* sc, size_t* numObjs)
 {

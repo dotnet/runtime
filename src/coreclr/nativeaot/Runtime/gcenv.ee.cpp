@@ -154,12 +154,6 @@ void GCToEEInterface::AfterGcScanRoots(int condemned, int /*max_gen*/, ScanConte
 {
     // Invoke any registered callouts for the end of the mark phase.
     RestrictedCallouts::InvokeGcCallouts(GCRC_AfterMarkPhase, condemned);
-#ifdef FEATURE_OBJCMARSHAL
-    if (!sc->concurrent)
-    {
-        ObjCMarshalNative::AfterRefCountedHandleCallbacks();
-    }
-#endif
 }
 
 void GCToEEInterface::GcDone(int condemned)
@@ -836,6 +830,26 @@ bool GCToEEInterface::IsClientBridgeProcessingActive()
     return JavaMarshalNative::IsGCBridgeActive();
 #else
     return false;
+#endif
+}
+
+bool GCToEEInterface::ShouldRescanRefCountedHandles(ScanContext* sc)
+{
+#ifdef FEATURE_OBJCMARSHAL
+    if (!sc->concurrent)
+        return ObjCMarshalNative::ShouldRescanRefCountedHandles();
+#endif
+
+    return false;
+}
+
+void GCToEEInterface::AfterScanForFinalization(int condemned, int max_gen, ScanContext* sc)
+{
+#ifdef FEATURE_OBJCMARSHAL
+    if (!sc->concurrent)
+    {
+        ObjCMarshalNative::AfterScanForFinalization();
+    }
 #endif
 }
 

@@ -435,6 +435,40 @@ void GCToEEInterface::TriggerClientBridgeProcessing(MarkCrossReferencesArgs* arg
 #endif // FEATURE_JAVAMARSHAL
 }
 
+bool GCToEEInterface::ShouldRescanRefCountedHandles(ScanContext* sc)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+#ifdef FEATURE_OBJCMARSHAL
+    // See Interop::OnBeforeGCScanRoots for why non-concurrent.
+    if (!sc->concurrent)
+        return ObjCMarshalNative::ShouldRescanRefCountedHandles();
+#endif // FEATURE_OBJCMARSHAL
+
+    return false;
+}
+
+void GCToEEInterface::AfterScanForFinalization(int condemned, int max_gen, ScanContext* sc)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+#ifdef FEATURE_OBJCMARSHAL
+    // See Interop::OnBeforeGCScanRoots for why non-concurrent.
+    if (!sc->concurrent)
+        ObjCMarshalNative::AfterScanForFinalization();
+#endif // FEATURE_OBJCMARSHAL
+}
+
 bool GCToEEInterface::IsClientBridgeProcessingActive()
 {
     CONTRACTL
