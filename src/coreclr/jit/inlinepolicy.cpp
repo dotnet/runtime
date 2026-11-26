@@ -961,6 +961,15 @@ void DefaultPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
     // Reject if callee size is over the threshold
     if (m_CalleeNativeSizeEstimate > threshold)
     {
+        // The size estimate includes the throw path of an argument check. Give
+        // the importer a chance to prove that the actual argument bypasses it.
+        if (!m_IsPrejitRoot && !m_IsNoReturn && !methodInfo->args.hasThis() &&
+            (methodInfo->args.retType == CORINFO_TYPE_VOID) && (methodInfo->args.numArgs == 1) &&
+            (methodInfo->EHcount == 0) && MayFoldToEmpty())
+        {
+            SetCandidate(InlineObservation::CALLSITE_MAY_FOLD_TO_EMPTY);
+            return;
+        }
         // Inline appears to be unprofitable
         JITLOG_THIS(m_RootCompiler,
                     (LL_INFO100000,
@@ -1012,6 +1021,10 @@ void DefaultPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
 
 int DefaultPolicy::CodeSizeEstimate()
 {
+    if ((m_Decision == InlineDecision::SUCCESS) && (m_Observation == InlineObservation::CALLSITE_MAY_FOLD_TO_EMPTY))
+    {
+        return -m_CallsiteNativeSizeEstimate;
+    }
     if (m_StateMachine != nullptr)
     {
         // This is not something the DefaultPolicy explicitly computed,

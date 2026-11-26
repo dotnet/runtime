@@ -539,11 +539,21 @@ PhaseStatus Compiler::fgImport()
     //
     // Note this includes (to some extent) the impact of importer folded
     // branches, provided the folded tree covered the entire block's IL.
+    bool mustFoldToEmpty = compIsForInlining() && compInlineResult->IsCandidate() &&
+                           (compInlineResult->GetObservation() == InlineObservation::CALLSITE_MAY_FOLD_TO_EMPTY);
     unsigned importedILSize = 0;
     for (BasicBlock* const block : Blocks())
     {
         if (block->HasFlag(BBF_IMPORTED))
         {
+            // A guard that exceeded the normal budget is only profitable if
+            // the constant argument eliminated all its work.
+            if (mustFoldToEmpty && (!block->KindIs(BBJ_ALWAYS, BBJ_RETURN) || !block->isEmpty()))
+            {
+                compInlineResult->NoteFatal(InlineObservation::CALLSITE_NOT_PROFITABLE_INLINE);
+                impInlineRoot()->m_inlineStrategy->NoteUnprofitable();
+                mustFoldToEmpty = false;
+            }
             // Assume if we generate any IR for the block we generate IR for the entire block.
             if (block->firstStmt() != nullptr)
             {
