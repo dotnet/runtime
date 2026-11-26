@@ -614,33 +614,46 @@ public class R2RTestSuites
     /// </summary>
     [Fact]
     public void ResolvedConstrainedCallImportsOmitConstrainedType()
+        => RunResolvedConstrainedCallTest(nameof(ResolvedConstrainedCallImportsOmitConstrainedType), deferredWasmCalls: false);
+
+    /// <summary>
+    /// Compiling CoreLib into the same composite image enables deferred Wasm direct calls, whose readiness fixups
+    /// are <c>MethodEntry_ReadyToRun</c> imports. Those must also omit the constrained type.
+    /// </summary>
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
+    public void ResolvedConstrainedCallDeferredWasmImportsOmitConstrainedType()
+        => RunResolvedConstrainedCallTest(nameof(ResolvedConstrainedCallDeferredWasmImportsOmitConstrainedType), deferredWasmCalls: true);
+
+    private void RunResolvedConstrainedCallTest(string testName, bool deferredWasmCalls)
     {
         CompiledAssembly external = new()
         {
-            AssemblyName = "ResolvedConstrainedCallExternal",
+            AssemblyName = testName + "External",
             SourceResourceNames = ["ConstrainedCalls/ExternalTypes.cs"],
         };
         CompiledAssembly input = new()
         {
-            AssemblyName = nameof(ResolvedConstrainedCallImportsOmitConstrainedType),
+            AssemblyName = testName,
             SourceResourceNames = ["ConstrainedCalls/ResolvedConstrainedCall.cs"],
             References = [external],
         };
 
         new R2RTestRunner(_output).Run(new R2RTestCase(
-            nameof(ResolvedConstrainedCallImportsOmitConstrainedType),
+            testName,
             [
-                new(nameof(ResolvedConstrainedCallImportsOmitConstrainedType),
+                new(testName,
                     [new CrossgenAssembly(input), new CrossgenAssembly(external) { Kind = Crossgen2InputKind.Reference }])
                 {
-                    Options = [Crossgen2Option.Optimize],
-                    AdditionalArgs = ["--codegenopt", "JitNoInline=1"],
+                    Options = deferredWasmCalls ? [Crossgen2Option.Composite, Crossgen2Option.Optimize] : [Crossgen2Option.Optimize],
+                    AdditionalArgs = deferredWasmCalls
+                        ? ["--unrooted-input-file-paths", TestPaths.SystemPrivateCoreLibPath, "--codegenopt", "JitNoInline=1"]
+                        : ["--codegenopt", "JitNoInline=1"],
                     OutputFileExtension = TestPaths.IsWasmTarget ? ".wasm" : ".dll",
-                    Validate = Validate,
+                    Validate = reader => Validate(reader, deferredWasmCalls),
                 },
             ]));
 
-        static void Validate(ReadyToRunReader reader)
+        void Validate(ReadyToRunReader reader, bool deferredWasmCalls)
         {
             const string ExternalValueEnumerator = "ConstrainedCalls.Enumerator`1<ConstrainedCalls.External.ExternalValue>";
             SignatureFormattingOptions formatting = new();
@@ -651,6 +664,8 @@ public class R2RTestSuites
             bool foundExternalValueEnumeratorDispose = false;
             bool foundMarkerEnumeratorDictionary = false;
             bool foundExternalMarkerEnumeratorDictionary = false;
+            bool foundReadinessEnumeratorDispose = false;
+            bool foundOrdinaryNoInliningEnumeratorDispose = false;
             foreach (ReadyToRunImportSection section in reader.ImportSections)
             {
                 foreach (ReadyToRunImportSection.ImportSectionEntry entry in section.Entries)
@@ -712,6 +727,9 @@ public class R2RTestSuites
                     foundEnumeratorDispose |= isEnumeratorDispose;
                     foundNoInliningEnumeratorDispose |= isNoInliningEnumeratorDispose;
                     foundGenericMethodDictionary |= isGenericMethodDictionary;
+                    bool isReadinessFixup = entrySignature.FixupKind == ReadyToRunFixupKind.MethodEntry_ReadyToRun;
+                    foundReadinessEnumeratorDispose |= isEnumeratorDispose && isReadinessFixup;
+                    foundOrdinaryNoInliningEnumeratorDispose |= isNoInliningEnumeratorDispose && !isReadinessFixup;
                     Assert.DoesNotContain("Marker", signature, StringComparison.Ordinal);
                     Assert.DoesNotContain(" @ ", signature, StringComparison.Ordinal);
                 }
@@ -724,6 +742,13 @@ public class R2RTestSuites
             Assert.True(foundExternalValueEnumeratorDispose, "Expected a MethodEntry import for Enumerator`1<ExternalValue>.Dispose");
             Assert.True(foundMarkerEnumeratorDictionary, "Expected a TypeDictionary import for Enumerator`1<Marker>");
             Assert.True(foundExternalMarkerEnumeratorDictionary, "Expected a TypeDictionary import for Enumerator`1<ExternalMarker>");
+            if (deferredWasmCalls)
+            {
+                // The deferred direct call to Enumerator`1.Dispose gets a readiness fixup, while the
+                // NoInlining control keeps an ordinary indirect-call import.
+                Assert.True(foundReadinessEnumeratorDispose, "Expected a MethodEntry_ReadyToRun import for Enumerator`1.Dispose");
+                Assert.True(foundOrdinaryNoInliningEnumeratorDispose, "Expected an ordinary MethodEntry import for NoInliningEnumerator`1.Dispose");
+            }
         }
     }
 
