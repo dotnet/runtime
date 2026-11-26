@@ -593,32 +593,19 @@ public:
 #define BitScanForwardSizeT BitScanForward
 #endif
 
-        if (BitSetOps::IsShort(env))
+        // Single call site for func, so an inlined functor is not duplicated.
+        bool     isShort = BitSetOps::IsShort(env);
+        unsigned len     = isShort ? 1 : BitSetTraits::GetArrSize(env);
+        for (unsigned i = 0; i < len; i++)
         {
-            size_t bits = reinterpret_cast<size_t>(bs);
+            size_t bits = isShort ? reinterpret_cast<size_t>(bs) : bs[i];
             DWORD  index;
             while (BitScanForwardSizeT(&index, bits))
             {
-                if (!func(index))
+                if (!func(i * BitsInSizeT + index))
                     return false;
 
                 bits ^= size_t(1) << index;
-            }
-        }
-        else
-        {
-            unsigned len = BitSetTraits::GetArrSize(env);
-            for (unsigned i = 0; i < len; i++)
-            {
-                size_t bits = bs[i];
-                DWORD  index;
-                while (BitScanForwardSizeT(&index, bits))
-                {
-                    if (!func(i * BitsInSizeT + index))
-                        return false;
-
-                    bits ^= size_t(1) << index;
-                }
             }
         }
 
@@ -652,32 +639,19 @@ public:
 #define BitScanReverseSizeT BitScanReverse
 #endif
 
-        if (BitSetOps::IsShort(env))
+        // Single call site for func, so an inlined functor is not duplicated.
+        bool     isShort = BitSetOps::IsShort(env);
+        unsigned len     = isShort ? 1 : BitSetTraits::GetArrSize(env);
+        for (unsigned i = len; i != 0; i--)
         {
-            size_t bits = reinterpret_cast<size_t>(bs);
+            size_t bits = isShort ? reinterpret_cast<size_t>(bs) : bs[i - 1];
             DWORD  index;
             while (BitScanReverseSizeT(&index, bits))
             {
-                if (!func(index))
+                if (!func((i - 1) * BitsInSizeT + index))
                     return false;
 
                 bits ^= size_t(1) << index;
-            }
-        }
-        else
-        {
-            unsigned len = BitSetTraits::GetArrSize(env);
-            for (unsigned i = len; i != 0; i--)
-            {
-                size_t bits = bs[i - 1];
-                DWORD  index;
-                while (BitScanReverseSizeT(&index, bits))
-                {
-                    if (!func((i - 1) * BitsInSizeT + index))
-                        return false;
-
-                    bits ^= size_t(1) << index;
-                }
             }
         }
 
