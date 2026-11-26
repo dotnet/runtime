@@ -404,33 +404,21 @@ internal sealed partial class GrammarActions
     private static ILOpCode ParseOpCodeFromToken(IToken token)
     {
         string text = token.Text.TrimEnd('.');
-        if (text == "unused")
+        return text switch
         {
-            return ILOpCode.Unused;
-        }
-
-        if (text == "no")
-        {
-            // The 'no.' prefix (ECMA-335 III.2.2) has no ILOpCode member.
-            return (ILOpCode)0xFE19;
-        }
-
-        string normalized = text.Replace('.', '_');
-        normalized = normalized switch
-        {
-            "brnull" or "brzero" => "brfalse",
-            "brnull_s" or "brzero_s" => "brfalse_s",
-            "brinst" => "brtrue",
-            "brinst_s" => "brtrue_s",
-            "ldelem_u8" => "ldelem_i8",
-            "ldind_u8" => "ldind_i8",
-            "ldelem_any" => "ldelem",
-            "stelem_any" => "stelem",
-            "endfault" => "endfinally",
-            _ => normalized
+            "unused" => ILOpCode.Unused,
+            "no" => ILOpCode.No,
+            "brnull" or "brzero" => ILOpCode.Brfalse,
+            "brnull.s" or "brzero.s" => ILOpCode.Brfalse_s,
+            "brinst" => ILOpCode.Brtrue,
+            "brinst.s" => ILOpCode.Brtrue_s,
+            "ldelem.u8" => ILOpCode.Ldelem_i8,
+            "ldind.u8" => ILOpCode.Ldind_i8,
+            "ldelem.any" => ILOpCode.Ldelem,
+            "stelem.any" => ILOpCode.Stelem,
+            "endfault" => ILOpCode.Endfinally,
+            _ => Enum.Parse<ILOpCode>(text.Replace('.', '_'), ignoreCase: true),
         };
-
-        return (ILOpCode)Enum.Parse(typeof(ILOpCode), normalized, ignoreCase: true);
     }
 
     internal EntityRegistry.EntityBase ResolveMetadataToken(CILParser.MdtokenContext context)
