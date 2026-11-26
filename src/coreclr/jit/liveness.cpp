@@ -98,6 +98,12 @@ private:
                                                     VARSET_VALARG_TP     keepAliveVars,
                                                     LclVarDsc&           varDsc,
                                                     GenTreeLclVarCommon* node);
+    bool                 ComputeLifeTrackedLocalDef(VARSET_TP&       life,
+                                                    VARSET_VALARG_TP keepAliveVars,
+                                                    LclVarDsc&       varDsc,
+                                                    GenTree*         node,
+                                                    GenTreeFlags&    flags,
+                                                    unsigned         lclNum);
     bool                 ComputeLifeUntrackedLocal(VARSET_TP&           life,
                                                    VARSET_VALARG_TP     keepAliveVars,
                                                    LclVarDsc&           varDsc,
@@ -742,6 +748,16 @@ void Liveness<TLiveness>::PerNodeLocalVarLiveness(GenTree* tree)
             MarkUseDef(tree->AsLclVarCommon());
             break;
 
+        case GT_STORE_LCL_VARS:
+        {
+            GenTreeStoreLclVars* store = tree->AsStoreLclVars();
+            for (unsigned i = 0; i < store->gtCount; i++)
+            {
+                MarkUseDef(StoreLclVarsOccurrence(store, i));
+            }
+            break;
+        }
+
         case GT_LCL_ADDR:
             if (TLiveness::IsLIR)
             {
@@ -929,7 +945,7 @@ template <typename TOccurrence>
 void Liveness<TLiveness>::MarkUseDef(const TOccurrence& occurrence)
 {
     GenTree* tree = occurrence.GetNode();
-    assert((tree->OperIsLocal() && !tree->OperIs(GT_PHI_ARG)) || tree->OperIs(GT_LCL_ADDR));
+    assert((tree->OperIsLocal() && !tree->OperIs(GT_PHI_ARG)) || tree->OperIs(GT_LCL_ADDR, GT_STORE_LCL_VARS));
 
     const unsigned   lclNum = occurrence.GetLclNum();
     LclVarDsc* const varDsc = m_compiler->lvaGetDesc(lclNum);
@@ -961,7 +977,7 @@ void Liveness<TLiveness>::MarkUseDef(const TOccurrence& occurrence)
             // If this is an enregisterable variable that is not marked doNotEnregister and not defined via address,
             // we should only see direct references (not ADDRs).
             assert(varDsc->lvDoNotEnregister || varDsc->lvDefinedViaAddress ||
-                   tree->OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR));
+                   tree->OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR, GT_STORE_LCL_VARS));
         }
 
         if (isUse && !VarSetOps::IsMember(m_compiler, m_curDefSet, varDsc->lvVarIndex))
@@ -1198,7 +1214,7 @@ void Liveness<TLiveness>::InterBlockLocalVarLiveness()
                 {
                     for (GenTree* cur = stmt->GetTreeListEnd(); cur != nullptr;)
                     {
-                        assert(cur->OperIsAnyLocal());
+                        assert(cur->OperIsAnyLocal() || cur->OperIs(GT_STORE_LCL_VARS));
                         bool isDef       = (cur->gtFlags & GTF_VAR_DEF) != 0;
                         bool conditional = cur != dst;
                         // Ignore conditional defs that would otherwise
@@ -1210,7 +1226,7 @@ void Liveness<TLiveness>::InterBlockLocalVarLiveness()
                             continue;
                         }
 
-                        if (!ComputeLifeLocal(life, keepAliveVars, cur))
+                        if (!ComputeLifeLocal(life, keepAliveVars, cur) || cur->OperIs(GT_STORE_LCL_VARS))
                         {
                             cur = cur->gtPrev;
                             continue;
@@ -1224,8 +1240,8 @@ void Liveness<TLiveness>::InterBlockLocalVarLiveness()
                 {
                     for (GenTree* cur = stmt->GetTreeListEnd(); cur != nullptr;)
                     {
-                        assert(cur->OperIsAnyLocal());
-                        if (!ComputeLifeLocal(life, keepAliveVars, cur))
+                        assert(cur->OperIsAnyLocal() || cur->OperIs(GT_STORE_LCL_VARS));
+                        if (!ComputeLifeLocal(life, keepAliveVars, cur) || cur->OperIs(GT_STORE_LCL_VARS))
                         {
                             cur = cur->gtPrev;
                             continue;
@@ -1640,7 +1656,11 @@ void Liveness<TLiveness>::ComputeLife(VARSET_TP&           life,
         bool       storeRemoved = false;
         LclVarDsc* varDsc       = nullptr;
 
-        if (tree->IsCall())
+        if (tree->OperIs(GT_STORE_LCL_VARS))
+        {
+            ComputeLifeLocal(life, keepAliveVars, tree);
+        }
+        else if (tree->IsCall())
         {
             GenTreeLclVarCommon* const partialDef = ComputeLifeCall(life, keepAliveVars, tree->AsCall());
             if (partialDef != nullptr)
@@ -1806,6 +1826,28 @@ GenTreeLclVarCommon* Liveness<TLiveness>::ComputeLifeCall(VARSET_TP&       life,
 template <typename TLiveness>
 bool Liveness<TLiveness>::ComputeLifeLocal(VARSET_TP& life, VARSET_VALARG_TP keepAliveVars, GenTree* lclVarNode)
 {
+    if (lclVarNode->OperIs(GT_STORE_LCL_VARS))
+    {
+        // Process destinations in reverse definition order so the last definition of a repeated local
+        // sees its live-out state, and earlier overwritten definitions are marked GTF_VAR_DEATH.
+        GenTreeStoreLclVars* store   = lclVarNode->AsStoreLclVars();
+        bool                 allDead = true;
+        for (unsigned i = store->gtCount; i != 0; i--)
+        {
+            GenTreeStoreLclVars::Destination& dest = store->GetDestination(i - 1);
+            LclVarDsc*                        dsc  = m_compiler->lvaGetDesc(dest.LclNum);
+            bool                              dead =
+                dsc->lvTracked
+                                                 ? ComputeLifeTrackedLocalDef(life, keepAliveVars, *dsc, lclVarNode, dest.Flags, dest.LclNum)
+                                                 : TLiveness::EliminateDeadCode && TLiveness::IsLIR && dsc->lvRefCnt() == 1 && !dsc->lvPinned;
+            if (dead)
+            {
+                dest.Flags |= GTF_VAR_DEATH;
+            }
+            allDead &= dead;
+        }
+        return allDead;
+    }
     unsigned lclNum = lclVarNode->AsLclVarCommon()->GetLclNum();
 
     assert(lclNum < m_compiler->lvaCount);
@@ -1892,17 +1934,28 @@ bool Liveness<TLiveness>::ComputeLifeTrackedLocalDef(VARSET_TP&           life,
                                                      LclVarDsc&           varDsc,
                                                      GenTreeLclVarCommon* node)
 {
+    return ComputeLifeTrackedLocalDef(life, keepAliveVars, varDsc, node, node->gtFlags, node->GetLclNum());
+}
+
+template <typename TLiveness>
+bool Liveness<TLiveness>::ComputeLifeTrackedLocalDef(VARSET_TP&       life,
+                                                     VARSET_VALARG_TP keepAliveVars,
+                                                     LclVarDsc&       varDsc,
+                                                     GenTree*         node,
+                                                     GenTreeFlags&    flags,
+                                                     unsigned         lclNum)
+{
     assert(node != nullptr);
-    assert((node->gtFlags & GTF_VAR_DEF) != 0);
+    assert((flags & GTF_VAR_DEF) != 0);
     assert(varDsc.lvTracked);
 
     const unsigned varIndex = varDsc.lvVarIndex;
     if (VarSetOps::IsMember(m_compiler, life, varIndex))
     {
         // The variable is live
-        node->gtFlags &= ~GTF_VAR_DEATH;
+        flags &= ~GTF_VAR_DEATH;
 
-        if ((node->gtFlags & GTF_VAR_USEASG) == 0)
+        if ((flags & GTF_VAR_USEASG) == 0)
         {
             // Remove the variable from the live set if it is not in the keepalive set.
             if (!VarSetOps::IsMember(m_compiler, keepAliveVars, varIndex))
@@ -1912,7 +1965,7 @@ bool Liveness<TLiveness>::ComputeLifeTrackedLocalDef(VARSET_TP&           life,
 #ifdef DEBUG
             if (m_compiler->verbose && 0)
             {
-                printf("Def V%02u,T%02u at ", node->GetLclNum(), varIndex);
+                printf("Def V%02u,T%02u at ", lclNum, varIndex);
                 Compiler::printTreeID(node);
                 printf(" life %s -> %s\n",
                        VarSetOps::ToString(m_compiler,
@@ -1926,7 +1979,7 @@ bool Liveness<TLiveness>::ComputeLifeTrackedLocalDef(VARSET_TP&           life,
     else
     {
         // Dead store
-        node->gtFlags |= GTF_VAR_DEATH;
+        flags |= GTF_VAR_DEATH;
 
         if (TLiveness::EliminateDeadCode)
         {
@@ -2433,6 +2486,18 @@ void Liveness<TLiveness>::ComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VAR
                     }
                 }
                 break;
+
+            case GT_STORE_LCL_VARS:
+            {
+                bool allDead = ComputeLifeLocal(life, keepAliveVars, node);
+                if (TLiveness::EliminateDeadCode && allDead)
+                {
+                    node->Data()->SetUnusedValue();
+                    blockRange.Remove(node);
+                    m_compiler->fgStmtRemoved = true;
+                }
+                break;
+            }
 
             case GT_STORE_LCL_VAR:
             case GT_STORE_LCL_FLD:

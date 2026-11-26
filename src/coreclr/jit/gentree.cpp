@@ -295,6 +295,7 @@ void GenTree::InitNodeSize()
 #endif // FEATURE_SIMD
     static_assert(sizeof(GenTreeLclVarCommon) <= TREE_NODE_SZ_SMALL);
     static_assert(sizeof(GenTreeLclVar)       <= TREE_NODE_SZ_SMALL);
+    static_assert(sizeof(GenTreeStoreLclVars) <= TREE_NODE_SZ_SMALL);
     static_assert(sizeof(GenTreeLclFld)       <= TREE_NODE_SZ_SMALL);
     static_assert(sizeof(GenTreeCC)           <= TREE_NODE_SZ_SMALL);
     static_assert(sizeof(GenTreeOpCC)         <= TREE_NODE_SZ_SMALL);
@@ -560,7 +561,7 @@ void GenTree::DumpNodeSizes()
 LocalsGenTreeList::iterator LocalsGenTreeList::begin() const
 {
     GenTree* first = m_stmt->GetTreeList();
-    assert((first == nullptr) || first->OperIsAnyLocal());
+    assert((first == nullptr) || first->OperIsAnyLocal() || first->OperIs(GT_STORE_LCL_VARS));
     return iterator(first);
 }
 
@@ -1009,6 +1010,53 @@ unsigned GenTree::GetMultiRegCount(Compiler* comp) const
 
     assert(!"GetMultiRegCount called with non-multireg node");
     return 1;
+}
+
+//-----------------------------------------------------------------------------------
+// GetSourceRegisterOffset: Return a source register's byte offset within the
+// struct value produced by this node.
+//
+// Arguments:
+//     comp     - Compiler instance, used to get Swift lowering information
+//     regIndex - The zero-based register index
+//
+// Return Value:
+//     The byte offset of the register within the produced struct value.
+//
+// Remarks:
+//     Swift calls use GetSwiftLowering offsets, which ReturnTypeDesc does not record.
+//     Other calls use ReturnTypeDesc field offsets; without FEATURE_MULTIREG_RET,
+//     they return in at most one register, at offset zero. Other multi-reg nodes
+//     use consecutive offsets, matching CodeGen::genMultiRegStoreToLocal.
+//
+unsigned GenTree::GetSourceRegisterOffset(Compiler* comp, int regIndex) const
+{
+    if (IsCall())
+    {
+#ifdef SWIFT_SUPPORT
+        if (AsCall()->GetUnmanagedCallConv() == CorInfoCallConvExtension::Swift)
+        {
+            const CORINFO_SWIFT_LOWERING* lowering = comp->GetSwiftLowering(AsCall()->gtRetClsHnd);
+            assert(!lowering->byReference && (static_cast<unsigned>(regIndex) < lowering->numLoweredElements));
+            return lowering->offsets[regIndex];
+        }
+#endif
+
+#if FEATURE_MULTIREG_RET
+        return AsCall()->GetReturnTypeDesc()->GetReturnFieldOffset(regIndex);
+#else
+        assert(regIndex == 0);
+        return 0;
+#endif
+    }
+
+    unsigned offset = 0;
+    for (int i = 0; i < regIndex; i++)
+    {
+        offset += genTypeSize(GetRegTypeByIndex(i));
+    }
+
+    return offset;
 }
 
 #ifdef TARGET_ARM64
@@ -2926,6 +2974,24 @@ AGAIN:
             // these should be included in the comparison.
             switch (oper)
             {
+                case GT_STORE_LCL_VARS:
+                {
+                    GenTreeStoreLclVars* left  = op1->AsStoreLclVars();
+                    GenTreeStoreLclVars* right = op2->AsStoreLclVars();
+                    if (left->gtCount != right->gtCount)
+                    {
+                        return false;
+                    }
+                    for (unsigned i = 0; i < left->gtCount; i++)
+                    {
+                        if ((left->GetDestination(i).LclNum != right->GetDestination(i).LclNum) ||
+                            (left->GetDestination(i).Offset != right->GetDestination(i).Offset))
+                        {
+                            return false;
+                        }
+                    }
+                    break;
+                }
                 case GT_STORE_LCL_FLD:
                     if ((op1->AsLclFld()->GetLclOffs() != op2->AsLclFld()->GetLclOffs()) ||
                         (op1->AsLclFld()->GetLayout() != op2->AsLclFld()->GetLayout()))
@@ -3586,6 +3652,13 @@ AGAIN:
             {
                 case GT_STORE_LCL_VAR:
                     hash = genTreeHashAdd(hash, tree->AsLclVar()->GetLclNum());
+                    break;
+                case GT_STORE_LCL_VARS:
+                    for (unsigned i = 0; i < tree->AsStoreLclVars()->gtCount; i++)
+                    {
+                        hash = genTreeHashAdd(hash, tree->AsStoreLclVars()->GetDestination(i).LclNum);
+                        hash = genTreeHashAdd(hash, tree->AsStoreLclVars()->GetDestination(i).Offset);
+                    }
                     break;
                 case GT_STORE_LCL_FLD:
                     hash = genTreeHashAdd(hash, tree->AsLclFld()->GetLclNum());
@@ -7319,6 +7392,11 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     }
                     break;
 
+                case GT_STORE_LCL_VARS:
+                    costEx = tree->AsStoreLclVars()->gtCount;
+                    costSz = 3 * tree->AsStoreLclVars()->gtCount;
+                    break;
+
                 case GT_STORE_LCL_VAR:
                     if (gtIsLikelyRegVar(tree))
                     {
@@ -8716,6 +8794,7 @@ bool GenTree::OperRequiresAsgFlag() const
 {
     switch (OperGet())
     {
+        case GT_STORE_LCL_VARS:
         case GT_STORE_LCL_VAR:
         case GT_STORE_LCL_FLD:
         case GT_STOREIND:
@@ -9092,6 +9171,19 @@ bool GenTree::OperRequiresGlobRefFlag(Compiler* comp) const
 {
     switch (OperGet())
     {
+        case GT_STORE_LCL_VARS:
+        {
+            const GenTreeStoreLclVars* store = AsStoreLclVars();
+            for (unsigned i = 0; i < store->gtCount; i++)
+            {
+                if (comp->lvaGetDesc(store->GetDestination(i).LclNum)->RequiresGlobRefFlag())
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         case GT_LCL_VAR:
         case GT_LCL_FLD:
         case GT_STORE_LCL_VAR:
@@ -10325,14 +10417,159 @@ GenTree* Compiler::gtNewConWithPattern(var_types type, uint8_t pattern)
 }
 
 //------------------------------------------------------------------------
-// gtNewStoreLclVarNode: Create a local store node.
+// gtNewStoreLclVarsNode: Create a simultaneous multi-local store.
 //
 // Arguments:
-//    lclNum - Number of the local being stored to
-//    value  - Value to store
+//    source - The sole evaluated operand
+//    count  - Number of destination records to initialize
 //
 // Return Value:
-//    The created STORE_LCL_VAR node.
+//    The created node; initialize every destination before using it.
+//
+GenTreeStoreLclVars* Compiler::gtNewStoreLclVarsNode(GenTree* source, unsigned count)
+{
+    GenTreeStoreLclVars::Destination* destinations = new (this, CMK_ASTNode) GenTreeStoreLclVars::Destination[count]{};
+    return gtNewStoreLclVarsNode(source, destinations, count);
+}
+
+//------------------------------------------------------------------------
+// gtNewStoreLclVarsNode: Create a simultaneous multi-local store that uses
+// an existing array of destinations.
+//
+// Arguments:
+//    source       - The sole evaluated operand
+//    destinations - The compiler-allocated destination array
+//    count        - Number of destinations
+//
+// Return Value:
+//    The created node.
+//
+// Remarks:
+//    The node uses the array directly without copying it; its storage must
+//    remain valid for the node's lifetime.
+//
+GenTreeStoreLclVars* Compiler::gtNewStoreLclVarsNode(GenTree*                          source,
+                                                     GenTreeStoreLclVars::Destination* destinations,
+                                                     unsigned                          count)
+{
+    return new (this, GT_STORE_LCL_VARS) GenTreeStoreLclVars(source, destinations, count);
+}
+
+//------------------------------------------------------------------------
+// gtCanExtractRegisterField: Check whether gtNewRegisterFieldExtraction
+// supports extracting a field from a register-sized local.
+//
+// Arguments:
+//    fromFloatReg - Whether the register is a floating-point register
+//    fieldType    - Type of the field to extract
+//    offset       - Byte offset of the field relative to the start of the register
+//
+// Return Value:
+//    True if the extraction is supported.
+//
+bool Compiler::gtCanExtractRegisterField(bool fromFloatReg, var_types fieldType, unsigned offset)
+{
+    // TODO-CQ: Float -> !float extractions are not supported
+    // TODO-CQ: Float -> float extractions with non-zero offset is not supported
+    return !fromFloatReg || (varTypeUsesFloatReg(fieldType) && (offset == 0));
+}
+
+//------------------------------------------------------------------------
+// gtNewRegisterFieldExtraction: Create a tree that extracts a field from a
+// local holding the contents of a register.
+//
+// Arguments:
+//    regLclNum - Local holding the register's value
+//    fieldType - Type of the field to extract
+//    offset    - Byte offset of the field relative to the start of the register
+//
+// Return Value:
+//    A tree of type genActualType(fieldType) producing the field's value, with
+//    small types normalized.
+//
+// Remarks:
+//    The caller must have checked gtCanExtractRegisterField.
+//
+GenTree* Compiler::gtNewRegisterFieldExtraction(unsigned regLclNum, var_types fieldType, unsigned offset)
+{
+    GenTree* value = gtNewLclVarNode(regLclNum);
+
+#ifdef TARGET_WASM
+    if (varTypeIsSIMD(value) && !varTypeIsSIMD(fieldType))
+    {
+        // Unlike native targets, wasm cannot reinterpret a v128 local access as a scalar.
+        const unsigned scalarSize = genTypeSize(fieldType);
+        assert((offset % scalarSize) == 0);
+
+        const unsigned laneIndex = offset / scalarSize;
+        return gtNewSimdGetElementNode(fieldType, value, gtNewIconNode(static_cast<ssize_t>(laneIndex)), fieldType,
+                                       genTypeSize(value));
+    }
+#endif // TARGET_WASM
+
+    if (varTypeUsesFloatReg(value))
+    {
+        assert(offset == 0);
+
+        value->gtType = fieldType;
+
+#ifdef FEATURE_SIMD
+        // SIMD12s should be widened. We cannot do that with
+        // WidenSIMD12IfNecessary as it does not expect to see SIMD12
+        // accesses of SIMD16 locals here.
+        if (value->TypeIs(TYP_SIMD12))
+        {
+            value->gtType = TYP_SIMD16;
+        }
+#endif
+        return value;
+    }
+
+    var_types registerType = value->TypeGet();
+
+    if (offset > 0)
+    {
+        assert(value->TypeIs(TYP_INT, TYP_LONG));
+        GenTree* shiftAmount = gtNewIconNode(offset * 8, TYP_INT);
+        value                = gtNewOperNode(varTypeIsSmall(fieldType) && varTypeIsSigned(fieldType) ? GT_RSH : GT_RSZ,
+                              value->TypeGet(), value, shiftAmount);
+    }
+
+    // Insert explicit normalization for small types. This is only required
+    // if we didn't get the normalization via a right shift.
+    if (varTypeIsSmall(fieldType) && (offset + genTypeSize(fieldType) != genTypeSize(registerType)))
+    {
+        value = gtNewCastNode(TYP_INT, value, false, fieldType);
+    }
+
+    // If the node is still too large then get it to the right size
+    if (genTypeSize(value) != genTypeSize(genActualType(fieldType)))
+    {
+        assert(genTypeSize(value) == 8);
+        assert(genTypeSize(genActualType(fieldType)) == 4);
+
+        if (value->OperIsScalarLocal())
+        {
+            // We can use lower bits directly
+            value->gtType = TYP_INT;
+        }
+        else
+        {
+            value = gtNewCastNode(TYP_INT, value, false, TYP_INT);
+        }
+    }
+
+    // Finally insert a bitcast if necessary
+    if (value->TypeGet() != genActualType(fieldType))
+    {
+        value = gtNewBitCastNode(genActualType(fieldType), value);
+    }
+
+    return value;
+}
+
+//------------------------------------------------------------------------
+// gtNewStoreLclVarNode: Create a store of value to lclNum.
 //
 GenTreeLclVar* Compiler::gtNewStoreLclVarNode(unsigned lclNum, GenTree* value)
 {
@@ -11612,6 +11849,18 @@ GenTree* Compiler::gtCloneExpr(GenTree* tree)
 
         switch (oper)
         {
+            case GT_STORE_LCL_VARS:
+            {
+                GenTreeStoreLclVars* store = tree->AsStoreLclVars();
+                GenTreeStoreLclVars* clone = gtNewStoreLclVarsNode(store->Data(), store->gtCount);
+                for (unsigned i = 0; i < store->gtCount; i++)
+                {
+                    GenTreeStoreLclVars::Destination& dest = store->GetDestination(i);
+                    clone->GetDestination(i)               = dest;
+                }
+                copy = clone;
+                break;
+            }
             case GT_STORE_LCL_VAR:
                 // Remember that the local node has been cloned. The flag will be set on 'copy' as well.
                 tree->gtFlags |= GTF_VAR_MOREUSES;
@@ -12387,6 +12636,7 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_NEG:
         case GT_COPY:
         case GT_RELOAD:
+        case GT_STORE_LCL_VARS:
         case GT_ARR_LENGTH:
         case GT_MDARR_LENGTH:
         case GT_MDARR_LOWER_BOUND:
@@ -13676,6 +13926,11 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
                 }
             }
 
+            if (tree->OperIs(GT_STORE_LCL_VARS))
+            {
+                unsigned count = tree->AsStoreLclVars()->gtCount;
+                printf(" (%u dest%s)", count, count == 1 ? "" : "s");
+            }
             if (tree->OperIs(GT_RUNTIMELOOKUP))
             {
                 printf(" %p", dspPtr(tree->AsRuntimeLookup()->gtHnd));
@@ -14731,6 +14986,51 @@ void Compiler::gtDispLocal(GenTreeLclVarCommon* tree, IndentStack* indentStack)
 }
 
 //------------------------------------------------------------------------
+// gtDispStoreLclVarsDestinations: Print each GT_STORE_LCL_VARS destination on its own line,
+// showing its type, offset within the source value, local, SSA definition, register, and flags.
+//
+// Arguments:
+//    store       - the node whose destinations to print
+//    indentStack - the indent stack of the node
+//
+// Notes:
+//    Called after the node's line is complete, mirroring the display of promoted struct fields.
+//
+void Compiler::gtDispStoreLclVarsDestinations(GenTreeStoreLclVars* store, IndentStack* indentStack)
+{
+    for (unsigned i = 0; i < store->gtCount; i++)
+    {
+        const GenTreeStoreLclVars::Destination& dest = store->GetDestination(i);
+
+        char offset[16];
+        sprintf_s(offset, sizeof(offset), "[+%u]", dest.Offset);
+
+        printf("                                                            ");
+        printIndent(indentStack);
+        printf("    %-6s %-6s -> ", varTypeName(lvaGetDesc(dest.LclNum)->TypeGet()), offset);
+        gtDispLclVar(dest.LclNum);
+        gtDispSsaName(dest.LclNum, dest.SsaNum, /* isDef */ true);
+
+        if (dest.RegNum != REG_NA)
+        {
+            printf(" %s", getRegName(static_cast<regNumber>(dest.RegNum)));
+        }
+
+        if ((dest.Flags & GTF_VAR_DEATH) != 0)
+        {
+            printf(" (last use)");
+        }
+
+        if ((dest.Flags & GTF_SPILL) != 0)
+        {
+            printf(" (spill)");
+        }
+
+        printf("\n");
+    }
+}
+
+//------------------------------------------------------------------------
 // gtDispChild: Print a child node to jitstdout.
 //
 // Arguments:
@@ -15103,6 +15403,11 @@ void Compiler::gtDispTree(GenTree*                    tree,
         }
 #endif
         gtDispCommonEndLine(tree);
+
+        if (tree->OperIs(GT_STORE_LCL_VARS))
+        {
+            gtDispStoreLclVarsDestinations(tree->AsStoreLclVars(), indentStack);
+        }
 
         if (!topOnly)
         {

@@ -445,6 +445,10 @@ void PromotionLiveness::FillInLiveness()
             {
                 for (GenTree* cur = stmt->GetTreeListEnd(); cur != nullptr; cur = cur->gtPrev)
                 {
+                    if (cur->OperIs(GT_STORE_LCL_VARS))
+                    {
+                        continue;
+                    }
                     FillInLiveness(life, volatileVars, stmt, cur->AsLclVarCommon());
                 }
             }

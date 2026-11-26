@@ -22,6 +22,7 @@ public:
     DecomposeLongs(Compiler* compiler, Lowering* lowering)
         : m_compiler(compiler)
         , m_lowering(lowering)
+        , m_storeLclVarsTemps(compiler->getAllocator(CMK_Generic))
     {
     }
 
@@ -48,6 +49,7 @@ private:
     GenTree* DecomposeLclFld(LIR::Use& use);
     GenTree* DecomposeStoreLclVar(LIR::Use& use);
     GenTree* DecomposeStoreLclFld(LIR::Use& use);
+    GenTree* DecomposeStoreLclVars(GenTreeStoreLclVars* store);
     GenTree* DecomposeCast(LIR::Use& use);
     GenTree* DecomposeCnsLng(LIR::Use& use);
     GenTree* DecomposeFieldList(GenTreeFieldList* fieldList, GenTreeOp* longNode);
@@ -78,6 +80,7 @@ private:
     GenTree* EnsureIntSized(GenTree* node, bool signExtend);
 
     GenTree*          StoreNodeToVar(LIR::Use& use);
+    unsigned          GetStoreLclVarsTemp(unsigned index);
     static genTreeOps GetHiOper(genTreeOps oper);
     static genTreeOps GetLoOper(genTreeOps oper);
 
@@ -85,6 +88,8 @@ private:
     Compiler*   m_compiler;
     Lowering*   m_lowering;
     LIR::Range* m_range;
+
+    jitstd::vector<unsigned> m_storeLclVarsTemps;
 };
 
 #endif // _DECOMPOSELONGS_H_

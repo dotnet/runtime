@@ -2456,8 +2456,8 @@ void LinearScan::buildIntervals()
         {
             // We increment the location of each tree node by 2 so that the node definition, if any,
             // is at a new location and doesn't interfere with the uses.
-            // For multi-reg local stores, the 'BuildMultiRegStoreLoc' method will further increment the
-            // location by 2 for each destination register beyond the first.
+            // For multi-reg local stores, 'BuildStoreLclVars' and 'BuildMultiRegStoreLoc' will further
+            // increment the location by 2 for each destination register beyond the first.
 
 #ifdef DEBUG
             node->gtSeqNum = currentLoc;
@@ -3932,10 +3932,7 @@ int LinearScan::BuildCastUses(GenTreeCast* cast, SingleTypeRegSet candidates)
 // Notes:
 //    This takes an index to enable building multiple defs for a multi-reg local.
 //
-void LinearScan::BuildStoreLocDef(GenTreeLclVarCommon* storeLoc,
-                                  LclVarDsc*           varDsc,
-                                  RefPosition*         singleUseRef,
-                                  int                  index)
+void LinearScan::BuildStoreLocDef(GenTree* storeLoc, LclVarDsc* varDsc, RefPosition* singleUseRef, int index)
 {
     assert(varDsc->lvTracked);
     unsigned  varIndex       = varDsc->lvVarIndex;
@@ -4007,13 +4004,86 @@ void LinearScan::BuildStoreLocDef(GenTreeLclVarCommon* storeLoc,
 }
 
 //------------------------------------------------------------------------
-// BuildMultiRegStoreLoc: Set register requirements for a store of a lclVar
+// BuildStoreLclVars: Build interleaved uses and scalar definitions.
 //
 // Arguments:
-//    storeLoc - the multireg local store (GT_STORE_LCL_VAR)
+//    store - The lowered multiple-definition store
 //
 // Returns:
 //    The number of source registers read.
+//
+// Remarks:
+//    For multi-reg local stores of multi-reg sources, the code generator will read each source
+//    register, and then move it, if needed, to the destination register. These nodes have
+//    2*N locations where N is the number of registers, so that the liveness can
+//    be reflected accordingly. This model is shared by GT_STORE_LCL_VARS and by GT_STORE_LCL_VAR
+//    of a multi-reg local (see BuildMultiRegStoreLoc).
+//
+//    The liveness model is as follows:
+//       use reg #0 from src, including any reload or copy
+//       define reg #0
+//       use reg #1 from src, including any reload or copy
+//       define reg #1
+//       etc.
+//    Imagine the following scenario:
+//       There are 3 registers used. Prior to this node, they occupy registers r3, r2 and r1.
+//       There are 3 registers defined by this node. They need to be placed in r1, r2 and r3,
+//       in that order.
+//
+//    If we modeled this as using all the source registers at once, we'd have to adopt one
+//    of the following models:
+//     - All (or all but one) of the incoming sources are marked "delayFree" so that they won't
+//       get the same register as any of the registers being defined. This would result in copies for
+//       the common case where the source and destination registers are the same (e.g. when a CALL
+//       result is assigned to a lclVar, which is then returned).
+//       - For our example (and for many/most cases) we would have to copy or spill all sources.
+//     - We allow circular dependencies between source and destination registers. This would require
+//       the code generator to determine the order in which the copies must be generated, and would
+//       require a temp register in case a swap is required. This complexity would have to be handled
+//       in both the normal code generation case, as well as for copies & reloads, as they are currently
+//       modeled by the register allocator to happen just prior to the use.
+//       - For our example, a temp would be required to swap r1 and r3, unless a swap instruction is
+//         available on the target.
+//
+//    By using and defining each register in order, we avoid these issues, and the register
+//    allocator will ensure that any conflicts are resolved via spill or inserted COPYs.
+//    For our example, the register allocator would simply spill r1 because the first def requires it.
+//    The code generator would move r3 to r1, leave r2 alone, and then load the spilled value into r3.
+//
+int LinearScan::BuildStoreLclVars(GenTreeStoreLclVars* store)
+{
+    GenTree* source = store->Data();
+    assert(store->gtCount == (source->IsMultiRegNode() ? source->GetMultiRegCount(m_compiler) : 1));
+    for (unsigned i = 0; i < store->gtCount; i++)
+    {
+        GenTreeStoreLclVars::Destination& def        = store->GetDestination(i);
+        LclVarDsc*                        dsc        = m_compiler->lvaGetDesc(def.LclNum);
+        SingleTypeRegSet                  candidates = RBM_NONE;
+#ifdef TARGET_X86
+        if (varTypeIsByte(dsc))
+        {
+            candidates = allByteRegs();
+        }
+#endif
+        RefPosition* use = BuildUse(source, candidates, i);
+        if (isCandidateVar(dsc))
+        {
+            BuildStoreLocDef(store, dsc, use, i);
+        }
+        else
+        {
+            def.RegNum = REG_NA;
+        }
+        if (i + 1 < store->gtCount)
+        {
+            currentLoc += 2;
+        }
+    }
+    return store->gtCount;
+}
+
+//------------------------------------------------------------------------
+// BuildMultiRegStoreLoc: Build register requirements for a promoted local store.
 //
 int LinearScan::BuildMultiRegStoreLoc(GenTreeLclVar* storeLoc)
 {
@@ -4049,11 +4119,7 @@ int LinearScan::BuildMultiRegStoreLoc(GenTreeLclVar* storeLoc)
         assert(op1->OperIs(GT_LCL_VAR) && op1->isContained() && op1->TypeIs(TYP_STRUCT));
         srcCount = 0;
     }
-    // For multi-reg local stores of multi-reg sources, the code generator will read each source
-    // register, and then move it, if needed, to the destination register. These nodes have
-    // 2*N locations where N is the number of registers, so that the liveness can
-    // be reflected accordingly.
-    //
+    // See the remarks on BuildStoreLclVars for how multi-reg sources' uses and defs are interleaved.
     for (unsigned int i = 0; i < dstCount; ++i)
     {
         LclVarDsc*   fieldVarDsc  = m_compiler->lvaGetDesc(varDsc->lvFieldLclStart + i);
