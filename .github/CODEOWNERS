@@ -82,17 +82,14 @@
 /src/libraries/System.Runtime.InteropServices.JavaScript @lewing @pavelsavara
 
 /src/mono/nuget/*WebAssembly*/ @lewing @akoeplinger
-/src/mono/nuget/*MonoTargets*/ @lewing @akoeplinger
 /src/mono/nuget/*BrowserDebugHost*/ @lewing @akoeplinger
 /src/mono/nuget/*Workload.Mono.Toolchain*/ @lewing @akoeplinger
-/src/mono/nuget/*MonoAOTCompiler*/ @lewing @akoeplinger
 
 /src/mono/wasm/Wasm* @maraf @ilonatommy
 /src/mono/wasm/testassets @maraf @ilonatommy
 /src/mono/wasi/testassets @maraf @ilonatommy
 /src/tasks/WasmAppBuilder/ @maraf @akoeplinger
 /src/tasks/WorkloadBuildTasks/ @akoeplinger
-/src/tasks/AotCompilerTask/ @akoeplinger
 /src/tasks/WasmBuildTasks/ @maraf @akoeplinger
 
 /eng/pipelines/**/*wasm* @akoeplinger

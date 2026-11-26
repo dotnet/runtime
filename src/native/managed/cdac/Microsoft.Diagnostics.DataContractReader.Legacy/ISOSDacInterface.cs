@@ -759,7 +759,7 @@ public unsafe partial interface ISOSDacInterface
 
     // Frames
     [PreserveSig]
-    int GetFrameName(ClrDataAddress vtable, uint count, char* frameName, uint* pNeeded);
+    int GetFrameName(ClrDataAddress vtableAddress, uint count, char* frameName, uint* pNeeded);
 
     // PEFiles
     [PreserveSig]

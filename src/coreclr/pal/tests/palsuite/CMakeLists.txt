@@ -38,39 +38,6 @@ add_executable_clr(paltests
   EXCLUDE_FROM_ALL
   paltests.cpp
   common/palsuite.cpp
-  c_runtime/sscanf_s/test1/test1.cpp
-  c_runtime/sscanf_s/test10/test10.cpp
-  c_runtime/sscanf_s/test11/test11.cpp
-  c_runtime/sscanf_s/test12/test12.cpp
-  c_runtime/sscanf_s/test13/test13.cpp
-  c_runtime/sscanf_s/test14/test14.cpp
-  c_runtime/sscanf_s/test15/test15.cpp
-  c_runtime/sscanf_s/test16/test16.cpp
-  c_runtime/sscanf_s/test17/test17.cpp
-  c_runtime/sscanf_s/test2/test2.cpp
-  c_runtime/sscanf_s/test3/test3.cpp
-  c_runtime/sscanf_s/test4/test4.cpp
-  c_runtime/sscanf_s/test5/test5.cpp
-  c_runtime/sscanf_s/test6/test6.cpp
-  c_runtime/sscanf_s/test7/test7.cpp
-  c_runtime/sscanf_s/test8/test8.cpp
-  c_runtime/sscanf_s/test9/test9.cpp
-  c_runtime/_vsnprintf_s/test1/test1.cpp
-  c_runtime/_vsnprintf_s/test10/test10.cpp
-  c_runtime/_vsnprintf_s/test11/test11.cpp
-  c_runtime/_vsnprintf_s/test12/test12.cpp
-  c_runtime/_vsnprintf_s/test13/test13.cpp
-  c_runtime/_vsnprintf_s/test14/test14.cpp
-  c_runtime/_vsnprintf_s/test15/test15.cpp
-  c_runtime/_vsnprintf_s/test16/test16.cpp
-  c_runtime/_vsnprintf_s/test17/test17.cpp
-  c_runtime/_vsnprintf_s/test18/test18.cpp
-  c_runtime/_vsnprintf_s/test19/test19.cpp
-  c_runtime/_vsnprintf_s/test2/test2.cpp
-  c_runtime/_vsnprintf_s/test4/test4.cpp
-  c_runtime/_vsnprintf_s/test6/test6.cpp
-  c_runtime/_vsnprintf_s/test8/test8.cpp
-  c_runtime/_vsnprintf_s/test9/test9.cpp
   #debug_api/DebugBreak/test1/test1.cpp
   #exception_handling/pal_except/test1/test1.cpp
   #exception_handling/pal_except/test2/test2.cpp

@@ -1,7 +1,6 @@
 <Project>
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
-    <MemorySafetyRulesVersion>2</MemorySafetyRulesVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
