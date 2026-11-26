@@ -190,7 +190,7 @@
   <!-- WASI CoreCLR: stage libWasiHost.a into the runtime pack native dir for the per-app relink.
        Depends on both host-build targets (one is skipped by its HostOS condition) so the copy is
        ordered after the archive on either host. -->
-  <Target Name="CopyWasiNativeFiles" AfterTargets="Build" DependsOnTargets="BuildCoreHostOnUnix;BuildCoreHostOnWindows" Condition="'$(TargetsWasi)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'">
+  <Target Name="CopyWasiNativeFiles" AfterTargets="Build" DependsOnTargets="BuildCoreHostOnUnix;BuildCoreHostOnWindows" Condition="'$(TargetsWasi)' == 'true'">
     <ItemGroup>
       <_MicrosoftNetCoreAppRuntimePackNativeDirFiles Include="$(HostSharedFrameworkDir)libWasiHost.a" />
     </ItemGroup>
