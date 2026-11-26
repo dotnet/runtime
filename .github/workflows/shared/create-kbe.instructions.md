@@ -1,7 +1,8 @@
 # Shared KBE Analysis Instructions
 
 Use this file when you already have a concrete failure candidate that might need
-a `Known Build Error` issue in `dotnet/runtime`.
+a repository `Known Build Error` in `dotnet/runtime` or an infrastructure Known
+Build Error in `dotnet/dnceng`.
 
 This file is intentionally limited to the logic shared between:
 
@@ -18,6 +19,11 @@ responsible for:
 - deciding whether skipped outcomes should still produce a draft for human
   review, and
 - formatting the final report back to the user.
+
+The runtime lookup, templates, and verification sections below remain specific
+to `dotnet/runtime`. Consumers that have not already established runtime
+ownership may opt into the destination-routing section first. That section can
+identify or deduplicate a dnceng outcome.
 
 These shared analysis and template instructions do not grant permission to
 publish. The caller must follow the repository's
@@ -47,6 +53,120 @@ report the pending decision. Dry-run mode never publishes.
    separately.
 5. **Do not comment on existing KBEs.** Build Analysis tracks occurrence data in
    the issue body.
+
+<a id="classify-kbe-destination"></a>
+
+## Classify the KBE destination
+
+Use this section when the caller has not already established that the failure
+is exclusive to `dotnet/runtime`.
+
+Apply the current Arcade Known Issues criteria:
+
+- **Runtime repository candidate:** the failure is specific to runtime product,
+  tests, build logic, or repository configuration and should be investigated by
+  runtime owners.
+- **Infrastructure candidate:** the failure is not exclusive to runtime and
+  needs engineering-services investigation, such as a lab, agent, queue,
+  pipeline service, network, package-feed, or cross-repository infrastructure
+  failure.
+- **Infrastructure review:** the evidence is infrastructure-shaped but ownership
+  is not yet proven. This may support a non-publishable review draft, not an
+  automatic issue.
+- **Unclear:** evidence is too weak to choose either destination.
+
+Do not infer infrastructure ownership merely because the runtime lookup finds
+no existing issue. Use failure evidence and ownership criteria.
+
+If the candidate may contain a security issue, stop public KBE processing and
+report the required private escalation path. Do not create a GitHub issue,
+AzDO work item, comment, or public draft.
+
+Before routing any candidate to dnceng, run the normal runtime KBE lookup,
+including open and recently closed KBEs, plain trackers, and existing PRs. This
+preserves the previous behavior for pipelines excluded from Build Analysis:
+
+- if a verified open runtime KBE matches, report or reuse it and do not create a
+  dnceng issue unless an explicit migration was requested;
+- if only a plain tracker matches, retain it as cross-link context but continue
+  destination and KBE eligibility analysis because it is not a KBE substitute;
+- if the runtime lookup is blocked or inconclusive, stop for human review rather
+  than creating a dnceng issue.
+
+For a runtime repository candidate, continue with the normal runtime lookup and
+classification.
+
+For an infrastructure candidate or infrastructure review with no matching open
+runtime KBE, run the dnceng lookup below before selecting any creation action.
+
+<a id="search-existing-dnceng-kbe"></a>
+
+## Search for an existing dnceng KBE
+
+Read the current authoritative sources before classifying a dnceng result:
+
+- `dotnet/dnceng` Known Build Error form:
+  `.github/ISSUE_TEMPLATE/known-build-error.yml`
+- Arcade `Documentation/Build Analysis/KnownIssues.md`
+- dnceng `Documentation/TeamProcess/DevGuide/IssueTrackingGuidance.md`
+
+Search open and closed `dotnet/dnceng` issues using progressively narrowed
+combinations of:
+
+1. the full stable error signature,
+2. assertion, exception, or task error text,
+3. pipeline and failing task,
+4. queue, image, pool, or agent identifier after removing volatile instance
+   values,
+5. build leg and originating repository,
+6. relevant service or package-feed name.
+
+For closed `dotnet/dnceng` issues, use the following windows:
+
+- The normal closed dnceng search uses `closed:>=<30-days-ago>`.
+- After that misses, widen to `closed:>=<90-days-ago>` only when checking a
+  suspected recurrence with the same stable signature. Do not use a test stem,
+  generic exception, or task name alone for the widened search.
+- Do not run an unbounded dnceng history search from this shared flow. Older
+  infrastructure history requires explicit human review or separate,
+  caller-specific guidance.
+
+Preserve complete search responses and inspect every plausible issue body and
+relevant comments. A failed, filtered, incomplete, ambiguous, or unreadable
+lookup is not an empty result: classify it as `dnceng-lookup-blocked` and do not
+draft or publish a new issue.
+
+If a candidate is closed as a duplicate, follow only explicit duplicate links
+and read each linked issue body and relevant comments until reaching the
+canonical issue that is not itself a duplicate. Track visited issues. If a link
+is missing or ambiguous, the chain is cyclic, or any read is inconclusive,
+classify the result as `dnceng-lookup-blocked`.
+
+Use the canonical issue's state, closure time, and linked fix evidence for
+classification. An open canonical issue always yields `existing-dnceng-kbe`,
+even when the initially matched duplicate is closed. A closed duplicate does
+not establish that the failure was fixed and must not by itself produce a
+recurrence draft.
+
+Classify the result as exactly one of:
+
+- `existing-dnceng-kbe`: an open issue covers the same root cause;
+- `recently-handled-dnceng-kbe`: a closed issue or linked fix handled a failure
+  that predates the fix or closure;
+- `eligible-dnceng-recurrence`: the same root cause is verified after the prior
+  fix or closure;
+- `eligible-new-dnceng-kbe`: no issue matches and the evidence supports
+  engineering-services ownership;
+- `dnceng-review-draft`: ownership is still uncertain but the evidence is
+  useful for human review;
+- `runtime-candidate`: dnceng lookup or ownership analysis shows the failure is
+  repository-specific; continue with the runtime lookup;
+- `dnceng-lookup-blocked`: lookup or evidence is inconclusive;
+- `unhandled`: evidence is too weak even for a useful review draft.
+
+These are classifications, not publication decisions. The caller chooses no
+action, review draft, publishable draft, or live publication. The dnceng issue
+form remains the authority for draft and publication fields.
 
 <a id="search-existing-kbe"></a>
 
