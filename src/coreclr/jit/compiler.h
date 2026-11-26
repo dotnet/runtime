@@ -7174,6 +7174,7 @@ public:
 
     void fgDebugCheckType(GenTree* node);
     void fgDebugCheckFlagsAndTypes(GenTree* tree, BasicBlock* block);
+    void fgDebugCheckStoreLclVarsDisjoint(GenTreeStoreLclVars* store);
     void fgDebugCheckDispFlags(GenTree* tree, GenTreeFlags dispFlags);
     void fgDebugCheckFlagsHelper(GenTree* tree, GenTreeFlags actualFlags, GenTreeFlags expectedFlags);
     void fgDebugCheckTryFinallyExits();

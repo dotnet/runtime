@@ -3337,6 +3337,32 @@ void Compiler::fgDebugCheckInitBB()
 }
 
 //------------------------------------------------------------------------
+// fgDebugCheckStoreLclVarsDisjoint: Assert that destination byte ranges within the source are pairwise disjoint.
+//
+// Arguments:
+//    store - The GT_STORE_LCL_VARS node to check.
+//
+// Notes:
+//    The register allocator only supports one use of each source register.
+//
+void Compiler::fgDebugCheckStoreLclVarsDisjoint(GenTreeStoreLclVars* store)
+{
+    for (unsigned i = 0; i < store->gtCount; i++)
+    {
+        const GenTreeStoreLclVars::Destination& dest  = store->GetDestination(i);
+        unsigned                                start = dest.Offset;
+        unsigned                                end   = start + genTypeSize(lvaGetDesc(dest.LclNum));
+        for (unsigned j = 0; j < i; j++)
+        {
+            const GenTreeStoreLclVars::Destination& other      = store->GetDestination(j);
+            unsigned                                otherStart = other.Offset;
+            unsigned                                otherEnd   = otherStart + genTypeSize(lvaGetDesc(other.LclNum));
+            assert((end <= otherStart) || (otherEnd <= start));
+        }
+    }
+}
+
+//------------------------------------------------------------------------
 // fgDebugCheckFlagsAndTypes: Validate node types, and the invariants related to
 //    the propagation and setting of tree, block and method flags.
 //
@@ -3395,22 +3421,16 @@ void Compiler::fgDebugCheckFlagsAndTypes(GenTree* tree, BasicBlock* block)
             GenTreeStoreLclVars* store = tree->AsStoreLclVars();
             assert(store->TypeIs(TYP_VOID) && (store->gtCount > 0));
             assert((store->gtFlags & GTF_VAR_DEF) != 0);
-            GenTree* source     = store->Data()->gtSkipReloadOrCopy();
-            unsigned sourceSize = source->IsCall() ? typGetObjLayout(source->AsCall()->gtRetClsHnd)->GetSize()
-                                                   : source->GetLayout(this)->GetSize();
+            unsigned sourceSize = store->Data()->GetLayout(this)->GetSize();
             for (unsigned i = 0; i < store->gtCount; i++)
             {
                 GenTreeStoreLclVars::Destination& dest = store->GetDestination(i);
                 LclVarDsc*                        dsc  = lvaGetDesc(dest.LclNum);
-                assert(!dsc->TypeIs(TYP_STRUCT) && !dsc->lvPromoted && !dsc->IsAddressExposed());
+                assert(!dsc->TypeIs(TYP_STRUCT) && !dsc->lvPromoted);
                 assert((dest.Flags & (GTF_VAR_DEF | GTF_VAR_USEASG)) == GTF_VAR_DEF);
                 assert(dest.Offset <= sourceSize && genTypeSize(dsc) <= sourceSize - dest.Offset);
-                assert((i == 0) || (store->GetDestination(i - 1).Offset < dest.Offset));
-                for (unsigned j = 0; j < i; j++)
-                {
-                    assert(dest.LclNum != store->GetDestination(j).LclNum);
-                }
             }
+            fgDebugCheckStoreLclVarsDisjoint(store);
             break;
         }
 

@@ -1828,20 +1828,24 @@ bool Liveness<TLiveness>::ComputeLifeLocal(VARSET_TP& life, VARSET_VALARG_TP kee
 {
     if (lclVarNode->OperIs(GT_STORE_LCL_VARS))
     {
-        bool allDead = true;
-        lclVarNode->VisitLogicalLocalDefs(m_compiler, [&](const auto& def) {
-            LclVarDsc* dsc = m_compiler->lvaGetDesc(def.GetLclNum());
-            bool       dead =
+        // Process destinations in reverse definition order so the last definition of a repeated local
+        // sees its live-out state, and earlier overwritten definitions are marked GTF_VAR_DEATH.
+        GenTreeStoreLclVars* store   = lclVarNode->AsStoreLclVars();
+        bool                 allDead = true;
+        for (unsigned i = store->gtCount; i != 0; i--)
+        {
+            GenTreeStoreLclVars::Destination& dest = store->GetDestination(i - 1);
+            LclVarDsc*                        dsc  = m_compiler->lvaGetDesc(dest.LclNum);
+            bool                              dead =
                 dsc->lvTracked
-                          ? ComputeLifeTrackedLocalDef(life, keepAliveVars, *dsc, lclVarNode, def.FlagsRef(), def.GetLclNum())
-                          : TLiveness::EliminateDeadCode && TLiveness::IsLIR && dsc->lvRefCnt() == 1 && !dsc->lvPinned;
+                                                 ? ComputeLifeTrackedLocalDef(life, keepAliveVars, *dsc, lclVarNode, dest.Flags, dest.LclNum)
+                                                 : TLiveness::EliminateDeadCode && TLiveness::IsLIR && dsc->lvRefCnt() == 1 && !dsc->lvPinned;
             if (dead)
             {
-                def.FlagsRef() |= GTF_VAR_DEATH;
+                dest.Flags |= GTF_VAR_DEATH;
             }
             allDead &= dead;
-            return GenTree::VisitResult::Continue;
-        });
+        }
         return allDead;
     }
     unsigned lclNum = lclVarNode->AsLclVarCommon()->GetLclNum();

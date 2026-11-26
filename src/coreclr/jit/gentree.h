@@ -4055,9 +4055,9 @@ public:
 #endif
 };
 
-// Represents a definition of multiple scalar locals from a single source value. Destinations in
-// gtDestinations[0..gtCount) are always sorted by strictly increasing offset. The offset stored in each destination
-// represents the offset within the source value from which the destination local is defined.
+// Represents a definition of multiple scalar locals from a single source value.
+// Destinations are defined in gtDestinations order. Each destination's Offset is within the source value,
+// not within the destination local. See gtlist.h for full semantics.
 struct GenTreeStoreLclVars : public GenTreeUnOp
 {
     struct Destination

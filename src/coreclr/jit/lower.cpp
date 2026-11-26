@@ -9547,7 +9547,6 @@ void Lowering::CheckNode(Compiler* compiler, GenTree* node)
             {
                 GenTreeStoreLclVars::Destination& dest = store->GetDestination(i);
                 assert(dest.Offset == source->GetSourceRegisterOffset(compiler, i));
-                assert((i == 0) || (store->GetDestination(i - 1).Offset < dest.Offset));
                 var_types type = compiler->lvaGetDesc(dest.LclNum)->TypeGet();
                 assert(IsReturnRegisterCaptureType(type, GetStoreLclVarsRegisterType(source, i)));
             }

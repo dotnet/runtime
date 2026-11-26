@@ -9176,7 +9176,7 @@ bool GenTree::OperRequiresGlobRefFlag(Compiler* comp) const
             const GenTreeStoreLclVars* store = AsStoreLclVars();
             for (unsigned i = 0; i < store->gtCount; i++)
             {
-                if (comp->lvaGetDesc(store->GetDestination(i).LclNum)->IsAddressExposed())
+                if (comp->lvaGetDesc(store->GetDestination(i).LclNum)->RequiresGlobRefFlag())
                 {
                     return true;
                 }

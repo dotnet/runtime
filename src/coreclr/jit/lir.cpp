@@ -1651,6 +1651,11 @@ bool LIR::Range::CheckLIR(Compiler* compiler, bool checkUnusedValues) const
         // insert nodes into an LIR range.
         assert((node->gtFlags & GTF_REVERSE_OPS) == 0);
 
+        if (node->OperIs(GT_STORE_LCL_VARS))
+        {
+            compiler->fgDebugCheckStoreLclVarsDisjoint(node->AsStoreLclVars());
+        }
+
         // TODO: validate catch arg stores
 
         for (GenTree** useEdge : node->UseEdges())

@@ -7053,6 +7053,13 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, bool* optAssertionPropDone)
         }
         break;
 
+        case GT_STORE_LCL_VARS:
+            if (tree->OperRequiresGlobRefFlag(this))
+            {
+                tree->AddAllEffectsFlags(GTF_GLOB_REF);
+            }
+            break;
+
         case GT_QMARK:
         case GT_JTRUE:
 
