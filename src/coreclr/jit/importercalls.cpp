@@ -411,14 +411,15 @@ MethodTypeArgument* Compiler::impForwardedTypeArgs(const CORINFO_RESOLVED_TOKEN&
     return size == 0 ? args : nullptr;
 }
 
-// A surviving call inside an inlinee can request its dictionary directly from the root
-// when both the declaring type and every method argument have a root-relative binding.
-GenTree* Compiler::impTryRootCallContext(const CORINFO_RESOLVED_TOKEN& token,
-                                         const CORINFO_CALL_INFO&      callInfo,
-                                         const MethodTypeArgument*     methodArgs)
+// Compose the dictionary or callable entry of an inlined MethodSpec directly in the root context.
+GenTree* Compiler::impTryRootMethodLookup(const CORINFO_RESOLVED_TOKEN& token,
+                                          const CORINFO_CALL_INFO&      callInfo,
+                                          const MethodTypeArgument*     methodArgs)
 {
     assert(compIsForInlining() && callInfo.canForwardTypeArguments);
-    const bool method = ((size_t)callInfo.contextHandle & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD;
+    const bool entry = callInfo.kind == CORINFO_CALL_CODE_POINTER;
+    const bool method =
+        entry || (((size_t)callInfo.contextHandle & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD);
     if (method && ((methodArgs == nullptr) || !callInfo.canForwardMethodContext))
     {
         return nullptr;
@@ -459,15 +460,17 @@ GenTree* Compiler::impTryRootCallContext(const CORINFO_RESOLVED_TOKEN& token,
 
     BYTE* signature = getAllocator(CMK_Inlining).allocate<BYTE>(size);
     memcpy(signature, spec, size);
-    auto* pending             = new (this, CMK_Inlining) DeferredHandleLookup{};
-    pending->kind             = DeferredHandleLookup::Kind::MethodExpression;
+    auto* pending = new (this, CMK_Inlining) DeferredHandleLookup{};
+    pending->kind =
+        entry ? DeferredHandleLookup::Kind::MethodEntryExpression : DeferredHandleLookup::Kind::MethodExpression;
     pending->methodExpression = new (this, CMK_Inlining)
         DeferredHandleLookup::MethodExpression{token.hMethod, token.hClass, owner, signature, size};
     Compiler*              root = impInlineRoot();
     CORINFO_GENERIC_HANDLE handle =
-        (CORINFO_GENERIC_HANDLE)((size_t)callInfo.contextHandle & ~CORINFO_CONTEXTFLAGS_MASK);
-    GenTree* tree                             = gtNewRuntimeLookup(handle, CORINFO_HANDLETYPE_METHOD,
-                                                                   root->getRuntimeContextTree(root->impRuntimeContextKind()));
+        entry ? (CORINFO_GENERIC_HANDLE)callInfo.hMethod
+              : (CORINFO_GENERIC_HANDLE)((size_t)callInfo.contextHandle & ~CORINFO_CONTEXTFLAGS_MASK);
+    GenTree* tree = gtNewRuntimeLookup(handle, entry ? CORINFO_HANDLETYPE_UNKNOWN : CORINFO_HANDLETYPE_METHOD,
+                                       root->getRuntimeContextTree(root->impRuntimeContextKind()));
     tree->AsRuntimeLookup()->gtDeferredLookup = pending;
     return tree;
 }
@@ -1401,7 +1404,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 assert(callInfo->instParamLookup.lookupKind.runtimeLookupKind == CORINFO_LOOKUP_DEFERRED);
                 forwardedTarget = callInfo->hMethod;
                 instParam =
-                    compIsForInlining() ? impTryRootCallContext(*pResolvedToken, *callInfo, methodArgs) : nullptr;
+                    compIsForInlining() ? impTryRootMethodLookup(*pResolvedToken, *callInfo, methodArgs) : nullptr;
                 if (instParam == nullptr)
                 {
                     instParam = impDeferredCallContext(pResolvedToken, callInfo->contextHandle);

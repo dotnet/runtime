@@ -9236,6 +9236,7 @@ struct DeferredHandleLookup
     {
         TypeExpression,
         MethodExpression,
+        MethodEntryExpression,
         CallContext,
         DevirtualizedMethodContext,
     };

@@ -202,6 +202,12 @@ public class ForwardedMethodTypeArgument
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static Type FixedPrimitive<T>() => MixedArguments<T[]>();
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Func<Type> MethodEntry<A, B>() => new Func<Type>(MethodOwner<A>.Kept<B>);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Func<Type> NestedEntry<T, U>() => MethodEntry<U[], List<T>>();
+
     private class MethodOwner<A>
     {
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -363,6 +369,11 @@ public class ForwardedMethodTypeArgument
     [Fact]
     public static void TestEntryPoint()
     {
+        var firstEntry = NestedEntry<string, object>();
+        var secondEntry = NestedEntry<object, string>();
+        Assert.Equal(typeof(Dictionary<object[], List<string>>), firstEntry());
+        Assert.Equal(typeof(Dictionary<string[], List<object>>), secondEntry());
+        Assert.Equal(typeof(Dictionary<object[], List<string>>), firstEntry());
         Assert.Equal(typeof(Dictionary<TimeSpan, KeyValuePair<List<string>, int>>), FixedOwner<string>());
         Assert.Equal(typeof(Dictionary<TimeSpan, KeyValuePair<List<object>, int>>), FixedOwner<object>());
         Assert.Equal(typeof(KeyValuePair<string[], int>), FixedPrimitive<string>());

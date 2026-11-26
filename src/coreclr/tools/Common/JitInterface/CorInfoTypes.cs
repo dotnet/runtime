@@ -1506,6 +1506,7 @@ namespace Internal.JitInterface
         CORINFO_TOKENKIND_ResolvedStaticVirtualMethod = 0x1000 | CORINFO_TOKENKIND_Method,
 
         CORINFO_TOKENKIND_MethodExpression = 0x10000 | CORINFO_TOKENKIND_Method,
+        CORINFO_TOKENKIND_MethodEntryExpression = 0x20000 | CORINFO_TOKENKIND_Method,
         CORINFO_TOKENKIND_TypeExpression = 0x4000 | CORINFO_TOKENKIND_Class,
 
         // Resolve a TypeDef/TypeRef for use as a named type in a root TypeExpression.

@@ -6042,7 +6042,7 @@ public:
 private:
 
     void impConvertToUserCallAndMarkForInlining(GenTreeCall* call);
-    GenTree* impTryRootCallContext(const CORINFO_RESOLVED_TOKEN& token, const CORINFO_CALL_INFO& callInfo,
+    GenTree* impTryRootMethodLookup(const CORINFO_RESOLVED_TOKEN& token, const CORINFO_CALL_INFO& callInfo,
                                    const MethodTypeArgument* methodArgs);
     GenTree* impDeferredCallContext(CORINFO_RESOLVED_TOKEN* token, CORINFO_CONTEXT_HANDLE targetContext, CORINFO_METHOD_HANDLE devirtualizedMethod = nullptr);
     // Exact constructed types of single-definition reference locals during inlining, in the root context.

@@ -1585,6 +1585,17 @@ GenTree* Compiler::impMethodPointer(CORINFO_RESOLVED_TOKEN* pResolvedToken,
             break;
 
         case CORINFO_CALL_CODE_POINTER:
+            if (compIsForInlining() && pCallInfo->canForwardMethodContext && !IsAot() && !opts.MinOpts())
+            {
+                assert(pConstrainedResolvedToken == nullptr);
+                const MethodTypeArgument* args =
+                    impForwardedTypeArgs(*pResolvedToken, pCallInfo->sig.sigInst.methInstCount, nullptr);
+                op1 = impTryRootMethodLookup(*pResolvedToken, *pCallInfo, args);
+                if (op1 != nullptr)
+                {
+                    break;
+                }
+            }
             op1 = impCallLookupToTree(pResolvedToken, pConstrainedResolvedToken, pCallInfo,
                                       &pCallInfo->codePointerLookup, GTF_ICON_FTN_ADDR, pCallInfo->hMethod);
             break;

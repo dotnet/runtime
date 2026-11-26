@@ -1499,6 +1499,7 @@ enum CorInfoTokenKind
 
     // A resolved method template with its owner and MethodSpec expressed in the root context.
     CORINFO_TOKENKIND_MethodExpression = 0x10000 | CORINFO_TOKENKIND_Method,
+    CORINFO_TOKENKIND_MethodEntryExpression = 0x20000 | CORINFO_TOKENKIND_Method,
 
     // Signature-only query to embedGenericHandle in the root method context.
     CORINFO_TOKENKIND_TypeExpression = 0x4000 | CORINFO_TOKENKIND_Class,
@@ -1570,7 +1571,7 @@ struct CORINFO_CALL_INFO
     bool                    exactContextNeedsRuntimeLookup; // Set if contextHandle is approx handle. Runtime lookup is required to get the exact handle.
     // The ordinary call's method or declaring-type arguments can be composed in the caller's generic context.
     bool canForwardTypeArguments;
-    // The root dictionary can retain this ordinary MethodSpec's template.
+    // The root dictionary can retain this MethodSpec for a direct call context or an unconstrained ldftn entry.
     bool canForwardMethodContext;
     // Only for method contexts: offset of the argument vector from the caller's MethodDesc.
     unsigned short methodInstantiationOffset;
@@ -3400,6 +3401,7 @@ public:
     // returned by resolveToken(TypeExpressionDefinition).
     // A MethodExpression additionally supplies pMethodSpec in that same context and the
     // resolved hMethod/hClass of a call for which getCallInfo set canForwardMethodContext.
+    // MethodEntryExpression uses the same inputs to obtain the callable entry for ldftn.
     CORINFO_VIRTUAL void embedGenericHandle(
             CORINFO_RESOLVED_TOKEN *        pResolvedToken,
             bool                            fEmbedParent, // `true` - embeds parent type handle of the field/method handle

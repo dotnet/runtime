@@ -2769,7 +2769,25 @@ void CEEInfo::embedGenericHandle(
         pResolvedToken = &expression;
     }
 
-    embedGenericHandleInternal(pResolvedToken, fEmbedParent, callerHandle, pResult);
+    if (pResolvedToken->tokenType == CORINFO_TOKENKIND_MethodEntryExpression)
+    {
+        _ASSERTE(!fEmbedParent && pResolvedToken->token == mdTokenNil && pResolvedToken->pMethodSpec != nullptr &&
+                 pResolvedToken->tokenContext == METHOD_BEING_COMPILED_CONTEXT() &&
+                 GetMethod(callerHandle) == m_pMethodBeingCompiled &&
+                 pResolvedToken->tokenScope == GetScopeHandle(m_pMethodBeingCompiled));
+        // Use the same template and instantiating entry as an ordinary ldftn.
+        // The runtime value is a code pointer, not a reflection method handle.
+        *pResult = {};
+        pResult->handleType = CORINFO_HANDLETYPE_UNKNOWN;
+        pResult->compileTimeHandle = (CORINFO_GENERIC_HANDLE)pResolvedToken->hMethod;
+        ComputeRuntimeLookupForSharedGenericToken(MethodEntrySlot, pResolvedToken, nullptr,
+                                                  GetMethod(pResolvedToken->hMethod), m_pMethodBeingCompiled,
+                                                  &pResult->lookup);
+    }
+    else
+    {
+        embedGenericHandleInternal(pResolvedToken, fEmbedParent, callerHandle, pResult);
+    }
 
     EE_TO_JIT_TRANSITION();
 }
@@ -5579,12 +5597,26 @@ void CEEInfo::getCallInfo(
     pResult->canForwardMethodContext = false;
     pResult->methodInstantiationOffset = 0;
     pResult->instParamLookup = {};
-    if (pResult->sig.hasTypeArg() && pResult->exactContextNeedsRuntimeLookup)
+    bool needsContext = pResult->sig.hasTypeArg() && pResult->exactContextNeedsRuntimeLookup;
+    if (needsContext)
     {
         pResult->instParamLookup.lookupKind.needsRuntimeLookup = true;
         pResult->instParamLookup.lookupKind.runtimeLookupKind = CORINFO_LOOKUP_DEFERRED;
+    }
+    else if (pResult->sig.hasTypeArg())
+    {
+        pResult->instParamLookup.constLookup.accessType = IAT_VALUE;
+        pResult->instParamLookup.constLookup.handle =
+            (CORINFO_GENERIC_HANDLE)((SIZE_T)pResult->contextHandle & ~CORINFO_CONTEXTFLAGS_MASK);
+    }
+
+    bool directContext = needsContext && pResult->kind == CORINFO_CALL;
+    bool methodEntry = (flags & CORINFO_CALLINFO_LDFTN) && !(flags & CORINFO_CALLINFO_CALLVIRT) &&
+        pResult->kind == CORINFO_CALL_CODE_POINTER && pMD->HasMethodInstantiation();
+    if (directContext || methodEntry)
+    {
         MethodDesc* caller = GetMethod(callerHandle);
-        if (pResult->kind == CORINFO_CALL && pConstrainedResolvedToken == nullptr &&
+        if (pConstrainedResolvedToken == nullptr &&
             (pMD->IsStatic() || (pMD->GetMethodTable()->IsValueType() && !pMD->IsUnboxingStub())) &&
             pMD->HasSameMethodDefAs(pTargetMD) && caller->IsSharedByGenericInstantiations() &&
             !caller->IsILStub() && !caller->IsDynamicMethod() && pResolvedToken->tokenScope == GetScopeHandle(caller) &&
@@ -5606,7 +5638,7 @@ void CEEInfo::getCallInfo(
             }
             if (pResult->canForwardTypeArguments && pMD->HasMethodInstantiation())
             {
-                // MethodDescSlot embeds the declaring MethodTable. A constructed method or
+                // MethodDescSlot and MethodEntrySlot embed the declaring MethodTable. A constructed method or
                 // owner may also depend on another collectible loader allocator.
                 LoaderAllocator* root = m_pMethodBeingCompiled->GetModule()->GetLoaderAllocator();
                 auto canRetain = [root](LoaderAllocator* allocator) {
@@ -5624,12 +5656,6 @@ void CEEInfo::getCallInfo(
                 pResult->methodInstantiationOffset = offsetof(InstantiatedMethodDesc, m_pPerInstInfo);
             }
         }
-    }
-    else if (pResult->sig.hasTypeArg())
-    {
-        pResult->instParamLookup.constLookup.accessType = IAT_VALUE;
-        pResult->instParamLookup.constLookup.handle =
-            (CORINFO_GENERIC_HANDLE)((SIZE_T)pResult->contextHandle & ~CORINFO_CONTEXTFLAGS_MASK);
     }
 
     EE_TO_JIT_TRANSITION();
