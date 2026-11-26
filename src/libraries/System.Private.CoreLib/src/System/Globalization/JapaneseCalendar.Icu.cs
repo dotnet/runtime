@@ -75,6 +75,12 @@ namespace System.Globalization
                 eras.Add(new EraInfo(i, dt.Year, dt.Month, dt.Day, dt.Year - 1, 1, lastMaxYear - dt.Year + 1, eraNames![i], GetAbbreviatedEraName(eraNames, i), ""));
 
                 lastMaxYear = dt.Year;
+
+                if (dt.Year == s_calendarMinValue.Year)
+                {
+                    // Earlier eras are not supported and may no longer be present in ICU.
+                    break;
+                }
             }
 
             string[] abbrevEnglishEraNames;
