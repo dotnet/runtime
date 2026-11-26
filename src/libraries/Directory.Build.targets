@@ -140,11 +140,8 @@
                                                 '$(IsGeneratorProject)' != 'true'">true</SkipTargetingPackShimReferences>
   </PropertyGroup>
 
-  <!-- Enable runtime async for netcoreapp source projects, excluding OOB packages. -->
-  <PropertyGroup Condition="'$(IsNETCoreAppSrc)' == 'true'
-    and '$(IsPackable)' != 'true'
-    and $([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net11.0'))
-    and '$(UseRuntimeAsync)' != 'false'">
+  <!-- Enable runtime async for .NET 12+ source projects. -->
+  <PropertyGroup Condition="'$(IsNETCoreAppSrc)' == 'true' and $([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net12.0'))">
     <Features>$(Features);runtime-async=on</Features>
   </PropertyGroup>
 
