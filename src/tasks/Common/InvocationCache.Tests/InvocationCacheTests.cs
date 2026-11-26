@@ -46,6 +46,23 @@ public class InvocationCacheTests
         Assert.False(Directory.Exists(Path.Combine(test.Root, "second")));
     }).Dispose();
 
+    [Fact]
+    public void CacheConfigurationUsesSuppliedEnvironmentAndBaseDirectory()
+    {
+        using var test = new CacheTestDirectory();
+        var variables = new Dictionary<string, string?>
+        {
+            [EnabledEnvironmentVariable] = "true",
+            [PathEnvironmentVariable] = "relative-cache",
+        };
+
+        InvocationCache? cache = InvocationCache.TryCreateFromEnvironment(
+            test.Log, s_cacheConfiguration, name => variables.GetValueOrDefault(name), test.Root);
+
+        Assert.NotNull(cache);
+        Assert.Equal(Path.Combine(test.Root, "relative-cache"), cache.CacheDirectory);
+    }
+
     [Theory]
     [InlineData(null, false, false)]
     [InlineData("", false, false)]
@@ -1028,6 +1045,7 @@ public class InvocationCacheTests
     [InlineData("context")]
     [InlineData("output")]
     [InlineData("input-order")]
+    [InlineData("working-directory")]
     public void SharedFingerprintIncludesDeclaredInputsContextAndOutputs(string change)
     {
         using var test = new CacheTestDirectory();
@@ -1039,7 +1057,8 @@ public class InvocationCacheTests
         string[] inputs = new[] { first, second, missing };
         string[] context = new[] { "arguments" };
         InvocationOutputs outputs = test.OutputOutputs;
-        string before = InvocationCache.ComputeKey(new InvocationDescription(InvocationInputs.FromFiles(inputs), context, outputs));
+        string workingDirectory = test.Source;
+        string before = InvocationCache.ComputeKey(new InvocationDescription(InvocationInputs.FromFiles(inputs), context, outputs, workingDirectory));
 
         switch (change)
         {
@@ -1048,9 +1067,10 @@ public class InvocationCacheTests
             case "context": context = new[] { "changed arguments" }; break;
             case "output": outputs = InvocationOutputs.FromFiles(Path.Combine(test.Output, "other.dll")); break;
             case "input-order": inputs = new[] { second, first, missing }; break;
+            case "working-directory": workingDirectory = test.Output; break;
         }
 
-        Assert.NotEqual(before, InvocationCache.ComputeKey(new InvocationDescription(InvocationInputs.FromFiles(inputs), context, outputs)));
+        Assert.NotEqual(before, InvocationCache.ComputeKey(new InvocationDescription(InvocationInputs.FromFiles(inputs), context, outputs, workingDirectory)));
     }
 
     [Fact]
