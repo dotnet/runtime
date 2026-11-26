@@ -672,7 +672,7 @@ extern "C" {
     int32_t RuntimeHelper_RuntimeFieldHandle_AcquiresContextFromThis (uintptr_t, void *, uintptr_t) __asm__("RuntimeFieldHandle_AcquiresContextFromThis");
     void * RuntimeHelper_RuntimeFieldHandle_GetApproxDeclaringMethodTable (uintptr_t, void *, uintptr_t) __asm__("RuntimeFieldHandle_GetApproxDeclaringMethodTable");
     int32_t RuntimeHelper_RuntimeFieldHandle_GetAttributes (uintptr_t, void *, uintptr_t) __asm__("RuntimeFieldHandle_GetAttributes");
-    void * RuntimeHelper_RuntimeFieldHandle_GetEnCFieldAddr (void *, void *, void *) __asm__("RuntimeFieldHandle_GetEnCFieldAddr");
+    void RuntimeHelper_RuntimeFieldHandle_GetEnCFieldAddr (void *, void *, void *, void *) __asm__("RuntimeFieldHandle_GetEnCFieldAddr");
     void RuntimeHelper_RuntimeFieldHandle_GetFieldDataReference (void *, void *, void *, void *) __asm__("RuntimeFieldHandle_GetFieldDataReference");
     int32_t RuntimeHelper_RuntimeFieldHandle_GetInstanceFieldOffset (uintptr_t, void *, uintptr_t) __asm__("RuntimeFieldHandle_GetInstanceFieldOffset");
     void * RuntimeHelper_RuntimeFieldHandle_GetLoaderAllocatorInternal (uintptr_t, void *, uintptr_t) __asm__("RuntimeFieldHandle_GetLoaderAllocatorInternal");

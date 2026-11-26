@@ -601,9 +601,9 @@ FCIMPL1(void*, RuntimeFieldHandle_GetStaticFieldAddress, ReflectFieldObject *pFi
 }
 FCIMPLEND
 
-// Returns the address of the EnC instance field in the object (This is an interior
-// pointer and the caller has to use it appropriately) or an EnC static field.
-extern "C" void* QCALLTYPE RuntimeFieldHandle_GetEnCFieldAddr(QCall::ObjectHandleOnStack target, FieldDesc* pFD, QCallExceptionStatus* qcallError)
+// Returns the address of the EnC instance field in the object or of an EnC static field as a byref, so
+// that the GC tracks it (the instance field is an interior pointer). Leaves it null for a null object.
+extern "C" void QCALLTYPE RuntimeFieldHandle_GetEnCFieldAddr(QCall::ObjectHandleOnStack target, FieldDesc* pFD, QCall::ByteRefOnStack fieldAddr, QCallExceptionStatus* qcallError)
 {
     CONTRACTL
     {
@@ -611,8 +611,6 @@ extern "C" void* QCALLTYPE RuntimeFieldHandle_GetEnCFieldAddr(QCall::ObjectHandl
         PRECONDITION(pFD != NULL);
     }
     CONTRACTL_END;
-
-    void* ret = NULL;
 
     BEGIN_QCALL;
 
@@ -623,11 +621,9 @@ extern "C" void* QCALLTYPE RuntimeFieldHandle_GetEnCFieldAddr(QCall::ObjectHandl
 
     // If the field is static, or if the object is non-null, get the address of the field.
     if (pFD->IsStatic() || target.Get() != NULL)
-        ret = pFD->GetAddress(OBJECTREFToObject(target.Get()));
+        fieldAddr.Set((BYTE*)pFD->GetAddress(OBJECTREFToObject(target.Get())));
 
     END_QCALL;
-
-    return ret;
 }
 
 extern "C" BOOL QCALLTYPE RuntimeFieldHandle_GetRVAFieldInfo(FieldDesc* pField, void** address, UINT* size, QCallExceptionStatus* qcallError)

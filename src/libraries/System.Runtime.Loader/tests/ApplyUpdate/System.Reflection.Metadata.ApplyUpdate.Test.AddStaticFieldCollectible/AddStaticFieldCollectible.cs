@@ -11,4 +11,16 @@ namespace System.Reflection.Metadata.ApplyUpdate.Test
 
         public static string Name() => "none";
     }
+
+    public static class AddStaticFieldCollectibleInit
+    {
+        // An explicit static constructor makes the type precise-init (not beforefieldinit): it has to run before
+        // any of its static fields is accessed.
+        static AddStaticFieldCollectibleInit() { }
+    }
+
+    public static class AddStaticFieldCollectibleReader
+    {
+        public static int Read() => 0;
+    }
 }
