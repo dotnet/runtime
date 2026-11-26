@@ -57,7 +57,7 @@ namespace System.Collections.Frozen
             int i = 0;
             foreach (T item in source)
             {
-                values[i++] = ToUnsigned<T, TUnsigned>(item);
+                values[i++] = Unsafe.BitCast<T, TUnsigned>(item);
             }
 
             // Start with a 50% load factor (and at least 2 buckets, so that the shift below is never 64), and double
@@ -100,9 +100,6 @@ namespace System.Collections.Frozen
 
             return true;
         }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static TUnsigned ToUnsigned<T, TUnsigned>(T value) => Unsafe.As<T, TUnsigned>(ref value);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static int GetBucket<TUnsigned>(TUnsigned value, ulong multiplier, int shift)
@@ -169,8 +166,7 @@ namespace System.Collections.Frozen
             foreach (TUnsigned value in values)
             {
                 int bucket = VectorBucketsFrozenSet.GetBucket(value, multiplier, shift);
-                TUnsigned unsignedValue = value;
-                _items[_bucketStarts[bucket] + bucketFills[bucket]++] = Unsafe.As<TUnsigned, T>(ref unsignedValue);
+                _items[_bucketStarts[bucket] + bucketFills[bucket]++] = Unsafe.BitCast<TUnsigned, T>(value);
             }
 
             // Lay out the buckets.
@@ -181,10 +177,10 @@ namespace System.Collections.Frozen
                 Span<TUnsigned> slots = _buckets.AsSpan(bucket * bucketCapacity, bucketCapacity);
                 for (int slot = 0; slot < bucketCount; slot++)
                 {
-                    slots[slot] = VectorBucketsFrozenSet.ToUnsigned<T, TUnsigned>(_items[_bucketStarts[bucket] + slot]);
+                    slots[slot] = Unsafe.BitCast<T, TUnsigned>(_items[_bucketStarts[bucket] + slot]);
                 }
 
-                slots.Slice(bucketCount).Fill(bucketCount != 0 ? slots[0] : VectorBucketsFrozenSet.ToUnsigned<T, TUnsigned>(_items[0]));
+                slots.Slice(bucketCount).Fill(bucketCount != 0 ? slots[0] : Unsafe.BitCast<T, TUnsigned>(_items[0]));
             }
         }
 
@@ -196,7 +192,7 @@ namespace System.Collections.Frozen
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private protected override int FindItemIndex(T item)
         {
-            TUnsigned value = VectorBucketsFrozenSet.ToUnsigned<T, TUnsigned>(item);
+            TUnsigned value = Unsafe.BitCast<T, TUnsigned>(item);
             int bucket = VectorBucketsFrozenSet.GetBucket(value, _multiplier, _shift);
 
             // The bucket is always in range, as the shift leaves only as many bits as needed to index the buckets, so the
@@ -207,9 +203,9 @@ namespace System.Collections.Frozen
 
             // This is branch-free with respect to whether the value is found, so that the generated code doesn't depend
             // on whether hits or misses were more frequent when the method was profiled by dynamic PGO.
-            uint matches = Vector128.Equals(slots, Vector128.Create(value)).ExtractMostSignificantBits();
-            int index = _bucketStarts[bucket] + BitOperations.TrailingZeroCount(matches);
-            return matches != 0 ? index : -1;
+            int lane = Vector128.IndexOf(slots, value);
+            int index = _bucketStarts[bucket] + lane;
+            return lane >= 0 ? index : -1;
         }
 
         internal struct GSW : IGenericSpecializedWrapper

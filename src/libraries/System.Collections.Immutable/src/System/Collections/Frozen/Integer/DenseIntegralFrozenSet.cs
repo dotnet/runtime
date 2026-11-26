@@ -118,13 +118,12 @@ namespace System.Collections.Frozen
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int ToInt32<T, TUnderlying>(T value) where TUnderlying : unmanaged, IBinaryInteger<TUnderlying> =>
-            int.CreateTruncating(Unsafe.As<T, TUnderlying>(ref value));
+            int.CreateTruncating(Unsafe.BitCast<T, TUnderlying>(value));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static T FromInt32<T, TUnderlying>(int value) where TUnderlying : unmanaged, IBinaryInteger<TUnderlying>
         {
-            TUnderlying underlying = TUnderlying.CreateTruncating(value);
-            return Unsafe.As<TUnderlying, T>(ref underlying);
+            return Unsafe.BitCast<TUnderlying, T>(TUnderlying.CreateTruncating(value));
         }
 
         /// <summary>A word of the bitmap along with the number of bits set in all preceding words.</summary>

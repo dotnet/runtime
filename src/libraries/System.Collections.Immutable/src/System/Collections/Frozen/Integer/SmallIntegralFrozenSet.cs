@@ -88,7 +88,7 @@ namespace System.Collections.Frozen
             _vector = new TUnsigned[vectorLength];
             for (int i = 0; i < _items.Length; i++)
             {
-                _vector[i] = Unsafe.As<T, TUnsigned>(ref _items[i]);
+                _vector[i] = Unsafe.BitCast<T, TUnsigned>(_items[i]);
             }
             _vector.AsSpan(_items.Length).Fill(_vector[0]);
         }
@@ -102,27 +102,22 @@ namespace System.Collections.Frozen
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private protected override int FindItemIndex(T item)
         {
-            TUnsigned value = Unsafe.As<T, TUnsigned>(ref item);
+            TUnsigned value = Unsafe.BitCast<T, TUnsigned>(item);
             TUnsigned[] vector = _vector;
 
-            // This is branch-free with respect to whether the value is found, so that the generated code doesn't depend
-            // on whether hits or misses were more frequent when the method was profiled by dynamic PGO.
-            ulong matches;
+            // IndexOf doesn't branch on whether the value is found, so the generated code doesn't depend on whether
+            // hits or misses were more frequent when the method was profiled by dynamic PGO.
             if (Vector512.IsHardwareAccelerated && vector.Length == Vector512<TUnsigned>.Count)
             {
-                matches = Vector512.Equals(Vector512.Create((ReadOnlySpan<TUnsigned>)vector), Vector512.Create(value)).ExtractMostSignificantBits();
-            }
-            else if (Vector256.IsHardwareAccelerated && vector.Length == Vector256<TUnsigned>.Count)
-            {
-                matches = Vector256.Equals(Vector256.Create((ReadOnlySpan<TUnsigned>)vector), Vector256.Create(value)).ExtractMostSignificantBits();
-            }
-            else
-            {
-                matches = Vector128.Equals(Vector128.Create((ReadOnlySpan<TUnsigned>)vector), Vector128.Create(value)).ExtractMostSignificantBits();
+                return Vector512.IndexOf(Vector512.Create((ReadOnlySpan<TUnsigned>)vector), value);
             }
 
-            int index = BitOperations.TrailingZeroCount(matches);
-            return matches != 0 ? index : -1;
+            if (Vector256.IsHardwareAccelerated && vector.Length == Vector256<TUnsigned>.Count)
+            {
+                return Vector256.IndexOf(Vector256.Create((ReadOnlySpan<TUnsigned>)vector), value);
+            }
+
+            return Vector128.IndexOf(Vector128.Create((ReadOnlySpan<TUnsigned>)vector), value);
         }
 
         internal struct GSW : IGenericSpecializedWrapper

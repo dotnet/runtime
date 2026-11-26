@@ -85,6 +85,10 @@ namespace System.Collections.Frozen
         /// Whether <typeparamref name="T"/> is an integral type or an enum, i.e. a type for which equality as defined by
         /// <see cref="EqualityComparer{T}.Default"/> is the bitwise equality of the value.
         /// </summary>
+        /// <remarks>
+        /// These are the integer types (and enums) among the types for which RuntimeHelpers.IsBitwiseEquatable returns true,
+        /// which can't be used here as it's internal to CoreLib and this assembly also ships as a standalone package.
+        /// </remarks>
         public static bool IsIntegralOrEnum<T>() =>
             typeof(T) == typeof(byte) ||
             typeof(T) == typeof(sbyte) ||
