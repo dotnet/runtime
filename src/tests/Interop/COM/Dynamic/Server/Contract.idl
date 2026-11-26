@@ -197,6 +197,8 @@ interface IEventTest : IDispatch
 {
     HRESULT FireEvent([in] int id);
     HRESULT FireEventMessage([in] BSTR message);
+    HRESULT FireEventMessageByRef([in] BSTR message, [out, retval] BSTR *result);
+    HRESULT FireEventArrayByRef([out, retval] SAFEARRAY(int) *result);
 };
 
 cpp_quote("#define DISPID_IEVENTTESTSINK_ONEVENT 100")
@@ -211,6 +213,8 @@ interface IEventTestSink : IDispatch
 };
 
 cpp_quote("#define DISPID_IEVENTTESTSINKEX_ONEVENTMESSAGE 200")
+cpp_quote("#define DISPID_IEVENTTESTSINKEX_ONEVENTMESSAGEBYREF 201")
+cpp_quote("#define DISPID_IEVENTTESTSINKEX_ONEVENTARRAYBYREF 202")
 [
     object,
     uuid(70637C04-570B-4CDC-90D4-E869F5929A84)
@@ -219,6 +223,12 @@ interface IEventTestSinkEx : IDispatch
 {
     [id(200)]
     HRESULT OnEventMessage([in] BSTR message);
+
+    [id(201)]
+    HRESULT OnEventMessageByRef([in, out] BSTR *message);
+
+    [id(202)]
+    HRESULT OnEventArrayByRef([in, out] SAFEARRAY(int) *values);
 };
 
 [

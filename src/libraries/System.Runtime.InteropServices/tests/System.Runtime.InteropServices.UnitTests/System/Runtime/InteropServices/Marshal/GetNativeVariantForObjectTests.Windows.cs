@@ -115,5 +115,45 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Throws<InvalidCastException>(() => Marshal.GetNativeVariantForObject(obj, pNative));
             Assert.Throws<InvalidCastException>(() => Marshal.GetNativeVariantForObject<object>(obj, pNative));
         }
+
+        public static bool IsVariantMarshallingSupported => PlatformDetection.IsBuiltInComEnabled || PlatformDetection.IsNativeAot;
+
+        public static IEnumerable<object[]> GetNativeVariantForObject_Char_TestData()
+        {
+            yield return new object[] { 'q' };
+            yield return new object[] { new CharConvertible('q') };
+        }
+
+        [ConditionalTheory(nameof(IsVariantMarshallingSupported))]
+        [MemberData(nameof(GetNativeVariantForObject_Char_TestData))]
+        public unsafe void GetNativeVariantForObject_Char_ReturnsVariantUI2(object value)
+        {
+            ComVariant variant = default;
+            Marshal.GetNativeVariantForObject(value, (nint)(&variant));
+            Assert.Equal(VarEnum.VT_UI2, variant.VarType);
+            Assert.Equal((ushort)'q', variant.GetRawDataRef<ushort>());
+        }
+
+        private sealed class CharConvertible(char value) : IConvertible
+        {
+            public TypeCode GetTypeCode() => TypeCode.Char;
+            public char ToChar(IFormatProvider provider) => value;
+
+            public bool ToBoolean(IFormatProvider provider) => throw new InvalidCastException();
+            public byte ToByte(IFormatProvider provider) => throw new InvalidCastException();
+            public DateTime ToDateTime(IFormatProvider provider) => throw new InvalidCastException();
+            public decimal ToDecimal(IFormatProvider provider) => throw new InvalidCastException();
+            public double ToDouble(IFormatProvider provider) => throw new InvalidCastException();
+            public short ToInt16(IFormatProvider provider) => throw new InvalidCastException();
+            public int ToInt32(IFormatProvider provider) => throw new InvalidCastException();
+            public long ToInt64(IFormatProvider provider) => throw new InvalidCastException();
+            public sbyte ToSByte(IFormatProvider provider) => throw new InvalidCastException();
+            public float ToSingle(IFormatProvider provider) => throw new InvalidCastException();
+            public string ToString(IFormatProvider provider) => value.ToString();
+            public object ToType(Type conversionType, IFormatProvider provider) => throw new InvalidCastException();
+            public ushort ToUInt16(IFormatProvider provider) => throw new InvalidCastException();
+            public uint ToUInt32(IFormatProvider provider) => throw new InvalidCastException();
+            public ulong ToUInt64(IFormatProvider provider) => throw new InvalidCastException();
+        }
     }
 }

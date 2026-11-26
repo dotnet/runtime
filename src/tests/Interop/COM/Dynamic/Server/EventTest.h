@@ -37,6 +37,13 @@ public: // IEventTest
     HRESULT STDMETHODCALLTYPE FireEventMessage(
         /* [in] */ BSTR message);
 
+    HRESULT STDMETHODCALLTYPE FireEventMessageByRef(
+        /* [in] */ BSTR message,
+        /* [out,retval] */ BSTR *result);
+
+    HRESULT STDMETHODCALLTYPE FireEventArrayByRef(
+        /* [out,retval] */ SAFEARRAY **result);
+
 public: // IConnectionPointContainer
     virtual HRESULT STDMETHODCALLTYPE EnumConnectionPoints(
         /* [out] */ __RPC__deref_out_opt IEnumConnectionPoints **ppEnum)
