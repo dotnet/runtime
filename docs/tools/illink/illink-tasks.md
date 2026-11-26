@@ -26,15 +26,6 @@ alternatively you can edit your .csproj file to include
 
 The output will include only necessary code to run your application. The framework libraries size will be reduced noticeably.
 
-`TypeMapEntryAssembly` selects the assembly from which type-map discovery starts.
-It is forwarded to ILLink when targets execute, so SDK extensions can set it after
-the ILLink targets are imported. When set, the property takes precedence over a
-raw `--typemap-entry-assembly` argument. Changing or clearing the property
-invalidates incremental trimming outputs. Library-mode applications without a
-managed entry point must provide this root for application-wide type-map discovery.
-ILLink also discovers assembly-local Browser JSExport map entries in assemblies
-it marks. This does not root an otherwise unused assembly.
-
 ## Experimental task cache
 
 > [!WARNING]

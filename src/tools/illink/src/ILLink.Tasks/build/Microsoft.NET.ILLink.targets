@@ -18,7 +18,6 @@ Copyright (c) .NET Foundation. All rights reserved.
     <IntermediateLinkDir Condition=" !HasTrailingSlash('$(IntermediateLinkDir)') ">$(IntermediateLinkDir)\</IntermediateLinkDir>
     <!-- Used to enable incremental build for the ILLink target. -->
     <_LinkSemaphore>$(IntermediateLinkDir.TrimEnd('\/')).semaphore</_LinkSemaphore>
-    <_ILLinkTypeMapEntryAssemblyCache>$(_LinkSemaphore).typemap-entry-assembly</_ILLinkTypeMapEntryAssemblyCache>
   </PropertyGroup>
 
   <ItemGroup>
@@ -83,20 +82,10 @@ Copyright (c) .NET Foundation. All rights reserved.
     <EnableTrimAnalyzer Condition="'$(EnableTrimAnalyzer)' == ''">false</EnableTrimAnalyzer>
   </PropertyGroup>
 
-  <!-- Targets imported after the SDK can provide the type-map entry assembly.
-       Append it last so the property wins over any raw linker argument. -->
-  <Target Name="_ConfigureTypeMapEntryAssembly"
-          BeforeTargets="PrepareForILLink">
-    <PropertyGroup Condition="'$(TypeMapEntryAssembly)' != '' and '$(_TypeMapEntryAssemblyForwarded)' != 'true'">
-      <_ExtraTrimmerArgs>$(_ExtraTrimmerArgs) --typemap-entry-assembly "$(TypeMapEntryAssembly)"</_ExtraTrimmerArgs>
-      <_TypeMapEntryAssemblyForwarded>true</_TypeMapEntryAssemblyForwarded>
-    </PropertyGroup>
-    <WriteLinesToFile File="$(_ILLinkTypeMapEntryAssemblyCache)" Lines="$([MSBuild]::Escape('TypeMapEntryAssembly=$(TypeMapEntryAssembly)'))"
-                      Overwrite="true" WriteOnlyWhenDifferent="true" />
-    <ItemGroup>
-      <FileWrites Include="$(_ILLinkTypeMapEntryAssemblyCache)" />
-    </ItemGroup>
-  </Target>
+  <!-- Configure TypeMap entry assembly -->
+  <PropertyGroup Condition="'$(TypeMapEntryAssembly)' != ''">
+    <_ExtraTrimmerArgs>$(_ExtraTrimmerArgs) --typemap-entry-assembly "$(TypeMapEntryAssembly)"</_ExtraTrimmerArgs>
+  </PropertyGroup>
 
   <!-- Disable Redundant Warning Suppressions by default-->
   <PropertyGroup Condition="'$(_TrimmerShowRedundantSuppressions)' != 'true' And '$(PublishTrimmed)' == 'true'">
@@ -160,7 +149,7 @@ Copyright (c) .NET Foundation. All rights reserved.
   <UsingTask TaskName="ILLink" AssemblyFile="$(ILLinkTasksAssembly)" Condition="'$(ILLinkTasksAssembly)' != ''" TaskFactory="TaskHostFactory" />
   <Target Name="_RunILLink"
           DependsOnTargets="_ComputeManagedAssemblyToLink;PrepareForILLink"
-          Inputs="$(MSBuildAllProjects);@(ManagedAssemblyToLink);@(TrimmerRootDescriptor);@(ReferencePath);$(_ILLinkTypeMapEntryAssemblyCache)"
+          Inputs="$(MSBuildAllProjects);@(ManagedAssemblyToLink);@(TrimmerRootDescriptor);@(ReferencePath)"
           Outputs="$(_LinkSemaphore)">
     <NETSdkInformation ResourceName="ILLinkRunning" />
     <!-- When running from Desktop MSBuild, DOTNET_HOST_PATH is not set.

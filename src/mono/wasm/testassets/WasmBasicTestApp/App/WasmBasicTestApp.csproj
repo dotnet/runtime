@@ -15,6 +15,7 @@
     <LazyAssemblyExtension Condition="'$(LazyLoadingTestExtension)' == 'wasm'">.wasm</LazyAssemblyExtension>
     <LazyAssemblyExtension Condition="'$(LazyLoadingTestExtension)' == 'NoExtension'"></LazyAssemblyExtension>
     <LazyAssemblyExtension Condition="'$(LazyLoadingTestExtension)' == ''">$(WasmAssemblyExtension)</LazyAssemblyExtension>
+    <DefineConstants Condition="'$(TestLazyLoading)' == 'true'">$(DefineConstants);TEST_LAZY_LOADING</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>

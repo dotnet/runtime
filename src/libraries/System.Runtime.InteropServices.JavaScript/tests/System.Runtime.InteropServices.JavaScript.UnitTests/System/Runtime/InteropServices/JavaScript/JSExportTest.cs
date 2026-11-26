@@ -5,11 +5,15 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.JavaScript;
 using System.Threading.Tasks;
 using System.Threading;
 using Xunit;
 using System.Diagnostics.CodeAnalysis;
 #pragma warning disable xUnit1026 // Theory methods should use all of their parameters
+
+[assembly: TypeMapAssemblyTarget<JSExportProvider>("JavaScriptLibrary")]
 
 namespace System.Runtime.InteropServices.JavaScript.Tests
 {
@@ -222,10 +226,11 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
-        public void PublicTypeMapDoesNotDiscoverReferencedJSExportProviders()
+        public void PublicTypeMapIncludesExplicitlyRootedJSExportProvider()
         {
             IReadOnlyDictionary<string, Type> map = TypeMapping.GetOrCreateExternalTypeMapping<JSExportProvider>();
-            Assert.False(map.TryGetValue("JavaScriptLibrary", out _));
+            Assert.True(map.TryGetValue("JavaScriptLibrary", out Type? libraryProvider));
+            Assert.True(typeof(JSExportProvider).IsAssignableFrom(libraryProvider));
             Assert.True(map.TryGetValue("System.Runtime.InteropServices.JavaScript.Tests", out Type? applicationProvider));
             Assert.True(typeof(JSExportProvider).IsAssignableFrom(applicationProvider));
         }

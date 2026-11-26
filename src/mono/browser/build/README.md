@@ -2,37 +2,15 @@
 
 This usually consists of taking the built assemblies, and related files, and generating an app bundle.
 
-CoreCLR Browser builds use `TypeMapEntryAssembly` as the type-map root for both
-the runtime and the linker. If it is unset, the
-`System.Runtime.InteropServices.TypeMappingEntryAssembly` runtime host option
-in MSBuild takes precedence over the value in `runtimeconfig.template.json`
-(or the template selected by `UserRuntimeConfig`). If neither specifies a root,
-the application's assembly name is used. Changing the selected root reruns
-the linker on the next trimmed publish. The JSExport provider
-linker descriptor preserves the native `BindAssemblyExports` entry point, which makes the type-map lookup
-reachable even when JavaScript is the only caller of the application's exports.
-ILLink forwards this root at target execution time so late WebAssembly imports
-also work for library-mode applications without a managed entry point. Until that
-ILLink fix flows through supported SDKs, a shared compatibility target supplies
-the argument for in-tree, local-build, and packaged SDK paths without duplicating it.
-The shared JSExport trimming configuration is imported by the Browser SDK and by
-in-tree/local-build adapters, independently of native relinking or workloads.
-Production targets use packaged sibling files; checkout paths stay in those adapters.
-`WASM-TODO` issue [#137651](https://github.com/dotnet/runtime/issues/137651) tracks
-removing the compatibility forwarding after SDK flow, not the functional trimming roots.
-
 Runtime discovery reads only the requested assembly's local type map, including
 its ReadyToRun map when available. It does not follow assembly-target edges or
-require unrelated lazy assemblies to have been downloaded. ILLink preserves local
-JSExport maps in assemblies it already keeps. If reachable managed code does not
-keep a library used from JavaScript, the publishing project must root it, for
-example by passing a library-supplied `TrimmerRootDescriptor`. An embedded
-descriptor alone cannot keep its own assembly. Trimmed publication needs an
-SDK-selected ILLink version that supports local JSExport map discovery. The
-compatibility target only forwards the root; it does not select ILLink. An older
-linker can retain a library but remove its export map, leaving no exports to discover.
-Assembly-target attributes are not generated for JSExports; application-wide type-map queries
-still require explicit edges to discover entries in other assemblies.
+require unrelated lazy assemblies to have been downloaded. For trimmed publishes,
+see [rooting JSExport type maps](../../wasm/features.md#rooting-jsexport-type-maps).
+
+The Browser build supplies an external linker descriptor for the native
+`BindAssemblyExports` callback. This is separate from application type-map roots:
+the interop assembly might not have any managed callers to activate an embedded
+descriptor.
 
 One generated provider per assembly uses the assembly name as its type-map key.
 Its `ReadOnlySpan<string> GetExportNames()` catalog supplies fully qualified, hash-qualified names without

@@ -81,7 +81,7 @@ public partial class LibraryInitializerTests : WasmTemplateTestsBase
         Configuration config = Configuration.Debug;
         ProjectInfo info = CopyTestAsset(
             config, false, TestAsset.WasmBasicTestApp, "mapped_exports",
-            extraProperties: "<PublishTrimmed>false</PublishTrimmed><TestJSExportProviders>true</TestJSExportProviders>",
+            extraProperties: "<PublishTrimmed>true</PublishTrimmed><TestJSExportProviders>true</TestJSExportProviders>",
             insertAtEnd: """<Import Project="..\JSExportTests.targets" />""");
         PublishProject(info, config);
         RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(config, TestScenario: "DeferredJSExports"));

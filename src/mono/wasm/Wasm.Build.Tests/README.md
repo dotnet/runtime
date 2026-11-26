@@ -122,11 +122,9 @@ Managed JSON parsing remains the consumer's responsibility.
 ## How to add tests
 
 `WasmTemplateTests.LibraryMode` verifies build and publish for libraries with and
-without the WebAssembly SDK. CoreCLR trimmed publishing checks that the library
-is forwarded exactly once after a conflicting `--typemap-entry-assembly` argument
-in the publish binlog's `ILLink` task `ExtraArgs`, then invokes its JSExport without
-a managed entry point. The untrimmed CoreCLR SDK build checks that an explicit
-type-map root in the runtime host configuration survives into the boot configuration.
+without the WebAssembly SDK. The fixture explicitly selects its own assembly
+as the linker type-map root so CoreCLR can invoke its JSExport after a trimmed
+publish without a managed entry point.
 
 Blazor specific tests should be located in `Blazor` directory. New test classes are picked up automatically - the per-class Helix work item list is generated from the built test assembly, so there is no list to update. Annotate classes and test methods that only apply to one runtime with `[TestCategory("mono")]` or `[TestCategory("coreclr")]`, and they will be left out of the other flavor's runs. If you are adding a new test to an existing class, make sure it does not prolong the execution time significantly. Tests run on parallel on CI and having one class running much longer than the average prolongs the total execution time.
 
@@ -148,8 +146,9 @@ the test log directory and uploaded as a Helix artifact.
 `LibraryInitializerTests.JSExportFromAssemblyProvider` checks a library reached only from
 JavaScript through one generated type-map provider per assembly. Both provider libraries
 are downloaded lazily, after the application's own exports have been discovered.
-It covers multiple exports, overloads, and repeated assembly lookup in an untrimmed
-publish. The provider's `ReadOnlySpan<string>` catalog supports discovery without enumerating
+It covers multiple exports, overloads, and repeated assembly lookup in a trimmed
+publish. The app explicitly roots both libraries' JSExport type maps.
+The provider's `ReadOnlySpan<string>` catalog supports discovery without enumerating
 the type map, and `Bind(string methodId)` dispatches on invariant decimal catalog indexes.
 On CoreCLR, a counting provider verifies one activation at discovery, no binding at discovery or
 property read, exactly one binding on first invocation, stable aliases, and an

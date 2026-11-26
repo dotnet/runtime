@@ -1,0 +1,8 @@
+<Project>
+  <PropertyGroup>
+    <_BrowserWasmAppJSExportTargetsImported>true</_BrowserWasmAppJSExportTargetsImported>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(UseMonoRuntime)' == 'false' or '$(RuntimeFlavor)' == 'CoreCLR'">
+    <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.JSExportProvider.xml" />
+  </ItemGroup>
+</Project>

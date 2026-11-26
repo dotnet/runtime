@@ -114,6 +114,30 @@ var json = JsonSerializer.Serialize(items, ItemListSerializerContext.Default.Lis
 
 Please ensure that you have thoroughly tested your application with trimming enabled before deployment, as the issues it causes may only appear in obscure parts of your software. For more advice on how to use trimming, see [trimming guidance](https://learn.microsoft.com/dotnet/core/deploying/trimming/trim-self-contained).
 
+#### Rooting JSExport type maps
+
+When publishing a trimmed CoreCLR Browser app, you are responsible for rooting
+the JSExport type maps of libraries called from JavaScript. Keeping the library
+DLL, for example through a managed call or a trimming descriptor, does not by
+itself keep the map. A publish can succeed but `getAssemblyExports()` can return
+no exports for that library.
+
+Add a type-map assembly target to the app (or another assembly already reachable
+in the type-map graph), using the library's assembly name without the `.dll`
+extension:
+
+```csharp
+using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.JavaScript;
+
+[assembly: TypeMapAssemblyTarget<JSExportProvider>("MyExportLibrary")]
+```
+
+By default the linker starts at the assembly containing the managed entry point.
+If the Browser app has no managed entry point, set `<TypeMapEntryAssembly>` in
+the publishing project to the assembly name containing the type-map roots.
+An untrimmed publish does not require these declarations for JSExport discovery.
+
 ### C code or native linked libraries
 Native rebuild will cause the .NET runtime to be re-built alongside your application, which allows you to link additional libraries into the WASM binary or change compiler configuration flags.
 

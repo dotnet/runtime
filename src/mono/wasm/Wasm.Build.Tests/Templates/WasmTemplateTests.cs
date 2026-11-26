@@ -6,13 +6,11 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
-using SL = Microsoft.Build.Logging.StructuredLogger;
 
 #nullable enable
 
@@ -386,18 +384,7 @@ namespace Wasm.Build.Tests
         public async Task LibraryMode(bool useWasmSdk, bool isPublish)
         {
             var config = Configuration.Release;
-            const string ConflictingEntryAssembly = "ConflictingTypeMapRoot";
-            const string RuntimeEntryAssembly = "System.Runtime";
-            const string RuntimeEntryOption = "System.Runtime.InteropServices.TypeMappingEntryAssembly";
-            bool checkLinkerRoot = IsCoreClrRuntime && useWasmSdk && isPublish;
-            bool checkRuntimeRoot = IsCoreClrRuntime && useWasmSdk && !isPublish;
-            ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.LibraryModeTestApp, "libraryMode",
-                extraProperties: checkLinkerRoot
-                    ? $"<_ExtraTrimmerArgs>$(_ExtraTrimmerArgs) --typemap-entry-assembly {ConflictingEntryAssembly}</_ExtraTrimmerArgs>"
-                    : "",
-                extraItems: checkRuntimeRoot
-                    ? $"""<RuntimeHostConfigurationOption Include="{RuntimeEntryOption}" Value="{RuntimeEntryAssembly}" />"""
-                    : "");
+            ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.LibraryModeTestApp, "libraryMode");
             if (!useWasmSdk)
             {
                 UpdateFile($"{info.ProjectName}.csproj", new Dictionary<string, string>() {
@@ -412,19 +399,6 @@ namespace Wasm.Build.Tests
             else
                 BuildProject(info, config, new BuildOptions(AssertAppBundle: useWasmSdk));
 
-            if (checkLinkerRoot)
-            {
-                AssertLinkerEntryAssemblies($"{info.ProjectName}-publish.binlog", ConflictingEntryAssembly, info.ProjectName);
-            }
-
-            if (checkRuntimeRoot)
-            {
-                WasmSdkBasedProjectProvider provider = GetProvider<WasmSdkBasedProjectProvider>();
-                string frameworkDirectory = GetBinFrameworkDir(config, forPublish: false);
-                var bootConfig = provider.GetBootJson(provider.GetBootConfigPath(frameworkDirectory));
-                Assert.Equal(RuntimeEntryAssembly, bootConfig.runtimeConfig.runtimeOptions.configProperties[RuntimeEntryOption].ToString());
-            }
-
             if (useWasmSdk)
             {
                 var result = isPublish
@@ -433,78 +407,6 @@ namespace Wasm.Build.Tests
 
                 Assert.Contains("WASM Library MyExport is called", result.TestOutput);
             }
-        }
-
-        [ConditionalTheory(nameof(IsCoreClrRuntime)), TestCategory("coreclr"), TestCategory("no-workload")]
-        [InlineData(false)]
-        [InlineData(true)]
-        public void LibraryModeTypeMapRootIncrementalPublish(bool useTemplate)
-        {
-            const string TemplateName = "custom.runtimeconfig.json";
-            const string AlternateRoot = "System.Runtime";
-            const string RuntimeEntryOption = "System.Runtime.InteropServices.TypeMappingEntryAssembly";
-            const Configuration Config = Configuration.Release;
-
-            string extraProperties = "<WasmFingerprintDotnetJs>false</WasmFingerprintDotnetJs>";
-            if (useTemplate)
-                extraProperties += $"<UserRuntimeConfig>{TemplateName}</UserRuntimeConfig>";
-            ProjectInfo info = CopyTestAsset(Config, aot: false, TestAsset.LibraryModeTestApp, "libraryModeRoot",
-                extraProperties: extraProperties);
-            string templatePath = Path.Combine(_projectDir, TemplateName);
-            if (useTemplate)
-            {
-                File.WriteAllText(templatePath, $$"""
-                    {
-                      // The SDK allows comments and trailing commas in runtimeconfig templates.
-                      "configProperties": { "{{RuntimeEntryOption}}": "{{AlternateRoot}}", },
-                    }
-                    """);
-            }
-
-            string initialRoot = useTemplate ? AlternateRoot : info.ProjectName;
-            PublishAndCheckRoot("initial", initialRoot);
-            PublishAndCheckRoot("unchanged", initialRoot, expectLink: false);
-
-            PublishAndCheckRoot("override", useTemplate ? info.ProjectName : AlternateRoot,
-                extraArgs: $"-p:TypeMapEntryAssembly={(useTemplate ? info.ProjectName : AlternateRoot)}");
-            PublishAndCheckRoot("cleared", initialRoot);
-
-            void PublishAndCheckRoot(string label, string expectedRoot, bool expectLink = true, string extraArgs = "")
-            {
-                PublishProject(info, Config, new PublishOptions(UseCache: false, Label: label, ExtraMSBuildArgs: extraArgs),
-                    wasmFingerprintDotnetJs: false);
-                WasmSdkBasedProjectProvider provider = GetProvider<WasmSdkBasedProjectProvider>();
-                string frameworkDirectory = GetBinFrameworkDir(Config, forPublish: true);
-                var bootConfig = provider.GetBootJson(Path.Combine(frameworkDirectory, "dotnet.js"));
-                Assert.Equal(expectedRoot, bootConfig.runtimeConfig.runtimeOptions.configProperties[RuntimeEntryOption].ToString());
-                AssertLinkerEntryAssemblies($"{info.ProjectName}-{label}-publish.binlog", expectLink ? [expectedRoot] : []);
-            }
-        }
-
-        private void AssertLinkerEntryAssemblies(string binlogName, params string[] expectedRoots)
-        {
-            SL.Build build = SL.BinaryLog.ReadBuild(Path.Combine(_logPath, binlogName));
-            List<SL.Task> linkerTasks = [];
-            build.VisitAllChildren<SL.Task>(task =>
-            {
-                if (task.Name == "ILLink")
-                    linkerTasks.Add(task);
-            });
-            if (expectedRoots.Length == 0)
-            {
-                Assert.Empty(linkerTasks);
-                return;
-            }
-
-            List<string> linkerArgs = [];
-            Assert.Single(linkerTasks).VisitAllChildren<SL.Property>(parameter =>
-            {
-                if (parameter.Name == "ExtraArgs")
-                    linkerArgs.Add(parameter.Value);
-            });
-            IEnumerable<string> entryAssemblies = Regex.Matches(Assert.Single(linkerArgs), """--typemap-entry-assembly\s+(?:"([^"]+)"|(\S+))""")
-                .Select(static match => match.Groups[1].Success ? match.Groups[1].Value : match.Groups[2].Value);
-            Assert.Equal(expectedRoots, entryAssemblies);
         }
 
         [Theory]

@@ -1494,7 +1494,6 @@ namespace Mono.Linker.Steps
 
             // Flush any TypeMapAssemblyTarget attributes that were waiting for this assembly to be marked.
             _typeMapHandler.TriggerPendingAssemblyTargets(assembly);
-            _typeMapHandler.DiscoverLocalTypeMaps(assembly);
 
             var assemblyOrigin = new MessageOrigin(assembly);
 

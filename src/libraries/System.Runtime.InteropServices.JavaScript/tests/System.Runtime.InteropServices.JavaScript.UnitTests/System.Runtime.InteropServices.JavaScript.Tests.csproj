@@ -13,6 +13,7 @@
     <WasmXHarnessMonoArgs>$(WasmXHarnessMonoArgs) --setenv=TZ=Europe/Berlin</WasmXHarnessMonoArgs>
     <EnableAggressiveTrimming>true</EnableAggressiveTrimming>
     <PublishTrimmed>true</PublishTrimmed>
+    <TypeMapEntryAssembly>System.Runtime.InteropServices.JavaScript.Tests</TypeMapEntryAssembly>
     <!-- Use following lines to write the generated files to disk. -->
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <WasmXHarnessMaxParallelThreads>1</WasmXHarnessMaxParallelThreads>
@@ -39,6 +40,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <RuntimeHostConfigurationOption Include="System.Runtime.InteropServices.TypeMappingEntryAssembly" Value="$(TypeMapEntryAssembly)" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\JavaScriptTestHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\JSImportTest.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\JSExportTest.cs" />

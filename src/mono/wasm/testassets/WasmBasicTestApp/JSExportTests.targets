@@ -3,6 +3,7 @@
     <ProjectReference Include="$(MSBuildThisFileDirectory)Library\Library.csproj" AdditionalProperties="TestJSExportProviders=true" />
     <!-- The provider links TestOutput, which the app also compiles. Keep that duplicate type out of its global namespace. -->
     <ProjectReference Include="$(MSBuildThisFileDirectory)CountingLibrary\CountingLibrary.csproj" Aliases="CountingLibrary" />
+    <Compile Include="$(MSBuildThisFileDirectory)JSExportTypeMapRoots.cs" />
     <BlazorWebAssemblyLazyLoad Include="Library$(WasmAssemblyExtension)" />
     <BlazorWebAssemblyLazyLoad Include="CountingLibrary$(WasmAssemblyExtension)" />
   </ItemGroup>
