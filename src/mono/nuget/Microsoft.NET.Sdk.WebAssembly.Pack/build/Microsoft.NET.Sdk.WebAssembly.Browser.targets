@@ -679,7 +679,9 @@ Copyright (c) .NET Foundation. All rights reserved.
           Condition="'$(EnableDiagnostics)' == 'true'"
           DependsOnTargets="_ValidateWasmPerformanceInstrumentation">
     <ItemGroup>
-      <WasmEnvironmentVariable Include="DOTNET_DiagnosticPorts" Value="$(DiagnosticPorts)" Condition="'$(DiagnosticPorts)' != '' and '$(EnableDiagnostics)' == 'true'"/>
+      <WasmEnvironmentVariable Include="DOTNET_DiagnosticPorts" Value="$(DiagnosticPorts)" Condition="'$(DiagnosticPorts)' != ''">
+        <_WasmFromDiagnosticPorts>true</_WasmFromDiagnosticPorts>
+      </WasmEnvironmentVariable>
     </ItemGroup>
   </Target>
 

@@ -47,9 +47,11 @@ output. The diagnostics flavor links the enabled
 EventPipe component and is placed under `sharedFramework/native-flavors/diagnostics`. The runtime
 pack ships that alternative asset set under `data/native-flavors/diagnostics`, outside the runtime
 asset group, so the SDK can select it without colliding with the production filenames.
-Selecting diagnostics does not require a native relink. When publishing a prelink, the SDK
-stages it per project so multiple Blazor clients can share a runtime pack without sharing
-static web asset identities.
+Selecting diagnostics does not require a native relink. Builds default to diagnostics, and
+publishes default to production, even when both targets run in the same MSBuild invocation.
+Set `EnableDiagnostics` explicitly to override either default. When publishing a prelink,
+the SDK stages it per project so multiple Blazor clients can share a runtime pack without
+sharing static web asset identities.
 `libs.pretest` copies the production layout into the testhost, and runtime-pack generation packages
 both flavors together with the static component archives and relinking headers.
 Link optimization and assertions follow `HostConfiguration`; memory defaults come from

@@ -131,26 +131,59 @@ public class WorkloadRequiredTests : BlazorWasmTestBase
             : await RunForBuildWithDotnetRun(runOptions);
     }
 
-    [ConditionalFact(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+    [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+    [InlineData(null, null)]
+    [InlineData("Publish", null)]
+    [InlineData("Build;Publish", null)]
+    [InlineData("Build;Publish", true)]
+    [InlineData("Build;Publish", false)]
     [TestCategory("no-workload")]
-    public void CoreClrPrelinkedPublishWithoutBuildUsesMatchingNativeAssets()
+    public void CoreClrPrelinkedPublishUsesMatchingNativeAssets(string? msbuildTargets, bool? enableDiagnostics)
     {
+        const string diagnosticPorts = "ws://localhost:9000,connect,nosuspend";
         Configuration config = Configuration.Debug;
-        ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, "coreclr_publish_without_build",
-            extraProperties: "<WasmEmitSymbolMap>true</WasmEmitSymbolMap>");
-        (string _, string output) = BuildProject(info, config, new BuildOptions(AssertAppBundle: false));
-        PublishProject(info, config, new PublishOptions(AssertAppBundle: false, UseCache: false, ExtraMSBuildArgs: "--no-build"));
+        string diagnosticsProperty = enableDiagnostics is bool enabled
+            ? $"<EnableDiagnostics>{enabled}</EnableDiagnostics>"
+            : "";
+        ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, "coreclr_publish_native_assets",
+            extraProperties: $"<WasmEmitSymbolMap>true</WasmEmitSymbolMap><DiagnosticPorts>{diagnosticPorts}</DiagnosticPorts>" + diagnosticsProperty);
+
+        string output;
+        if (msbuildTargets is null)
+        {
+            (_, output) = BuildProject(info, config, new BuildOptions(AssertAppBundle: false));
+            PublishProject(info, config, new PublishOptions(AssertAppBundle: false, UseCache: false, ExtraMSBuildArgs: "--no-build"));
+        }
+        else
+        {
+            string binlog = Path.Combine(_logPath, $"{info.ProjectName}-msbuild.binlog");
+            using DotNetCommand cmd = new DotNetCommand(s_buildEnv, _testOutput);
+            output = cmd.WithWorkingDirectory(_projectDir)
+                .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
+                .ExecuteWithCapturedOutput("msbuild", "-restore", $"-t:\"{msbuildTargets}\"", $"-bl:\"{binlog}\"",
+                    $"-p:Configuration={config}", "-nr:false")
+                .EnsureSuccessful().Output;
+        }
 
         string runtimePackDir = ProjectProviderBase.TryGetRuntimePackDirFromBuildOutput(output)
             ?? throw new InvalidOperationException($"Could not resolve runtime pack from build output:{Environment.NewLine}{output}");
-        string productionDir = Path.Combine(runtimePackDir, "runtimes", BuildEnvironment.DefaultRuntimeIdentifier, "native");
+        string expectedNativeDir = enableDiagnostics == true
+            ? Path.Combine(runtimePackDir, "data", "native-flavors", "diagnostics")
+            : Path.Combine(runtimePackDir, "runtimes", BuildEnvironment.DefaultRuntimeIdentifier, "native");
         string frameworkDir = GetBuildPaths(config, forPublish: true).BinFrameworkDir;
         foreach (string extension in new[] { ".wasm", ".js", ".js.symbols" })
         {
             string actual = Assert.Single(Directory.GetFiles(frameworkDir, $"dotnet.native*{extension}"));
-            string expected = Path.Combine(productionDir, $"dotnet.native{extension}");
-            TestUtils.AssertSameFile(expected, actual, "publish --no-build");
+            string expected = Path.Combine(expectedNativeDir, $"dotnet.native{extension}");
+            using FileStream expectedStream = File.OpenRead(expected);
+            using FileStream actualStream = File.OpenRead(actual);
+            Assert.Equal(SHA256.HashData(expectedStream), SHA256.HashData(actualStream));
         }
+
+        string? publishedDiagnosticPorts = null;
+        _provider.GetBootJson(_provider.GetBootConfigPath(frameworkDir)).environmentVariables
+            ?.TryGetValue("DOTNET_DiagnosticPorts", out publishedDiagnosticPorts);
+        Assert.Equal(enableDiagnostics == true ? diagnosticPorts : null, publishedDiagnosticPorts);
     }
 
     [Theory, TestCategory("no-workload")]
