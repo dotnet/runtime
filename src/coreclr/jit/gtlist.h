@@ -26,19 +26,24 @@ GTNODE(LCL_FLD          , GenTreeLclFld      ,0,0,GTK_LEAF)             // field
 GTNODE(STORE_LCL_VAR    , GenTreeLclVar      ,0,1,GTK_UNOP|GTK_EXOP|GTK_NOVALUE|GTK_STORE) // store to local variable
 GTNODE(STORE_LCL_FLD    , GenTreeLclFld      ,0,1,GTK_UNOP|GTK_EXOP|GTK_NOVALUE|GTK_STORE) // store to a part of the variable
 GTNODE(LCL_ADDR         , GenTreeLclFld      ,0,0,GTK_LEAF)             // local address
-// GT_STORE_LCL_VARS is a unary store of type TYP_VOID that produces no value. Its operand is the source value.
-// Each of the gtCount > 0 entries in gtDestinations defines a scalar local.
-// Each destination receives the bytes starting at its Offset within the source value, using the size of the
-// destination local's type. Offset is not an offset within the destination local.
-// In all phases, destination bytes must lie within the source, and destination source ranges must be disjoint.
-// Source bytes not covered by any destination are ignored.
-// Destinations are defined in gtDestinations order, with no requirement that they be sorted by Offset.
-// A later definition of the same local overwrites an earlier one.
-// Between rationalization and lowering, LIR has no constraints beyond those above.
-// After lowering, the source is a register-producing call or multi-register node; gtCount is its register count.
-// Destination i is defined from source register i, with Offset equal to that register's offset within the source
-// and a type that can be captured from that register. Lowering establishes this form, extracting from captured
-// registers or spilling the source to a struct temp when destinations do not map directly.
+// GT_STORE_LCL_VARS is a unary store of type TYP_VOID that produces no value.
+// In all phases:
+//   - The operand is the source value.
+//   - Each of the gtCount > 0 entries in gtDestinations defines a scalar local.
+//   - Each destination receives bytes starting at its Offset within the source value, using the size of
+//     the destination local's type.
+//   - Destination source ranges must be disjoint.
+//   - Source bytes not covered by any destination are ignored.
+//   - Destinations are defined in gtDestinations order.
+//   - A later definition of the same local overwrites an earlier one.
+// After lowering:
+//   - The source is a register-producing call or multi-register node.
+//   - gtCount is the source's register count.
+//   - Destination i is defined from source register i.
+//   - Each destination's Offset equals its source register's offset within the source.
+//   - Each destination has a type that can be captured from its source register.
+//   - Lowering establishes this form, extracting from captured registers or spilling the source to a
+//     struct temp when destinations do not map directly.
 GTNODE(STORE_LCL_VARS   , GenTreeStoreLclVars,0,1,GTK_UNOP|GTK_EXOP|GTK_NOVALUE|GTK_STORE)
 
 //-----------------------------------------------------------------------------
