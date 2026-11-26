@@ -237,7 +237,26 @@ static RESULT test_fileio(void)
     CloseHandle(reader);
     if (file == -1)
     {
-        result = FAILED("replacement failed with delete sharing (Win32 error %lu)", replacement_error);
+        DWORD attributes = GetFileAttributesW(L"trace");
+        if (attributes == INVALID_FILE_ATTRIBUTES)
+        {
+            DWORD path_error = GetLastError();
+            if (path_error == ERROR_FILE_NOT_FOUND || path_error == ERROR_PATH_NOT_FOUND)
+            {
+                result = FAILED("replacement failed with delete sharing (Win32 error 0x%08lx; trace absent after reader close)",
+                    replacement_error);
+            }
+            else
+            {
+                result = FAILED("replacement failed with delete sharing (Win32 error 0x%08lx; trace lookup after reader close failed with 0x%08lx)",
+                    replacement_error, path_error);
+            }
+        }
+        else
+        {
+            result = FAILED("replacement failed with delete sharing (Win32 error 0x%08lx; trace still exists after reader close with attributes 0x%08lx)",
+                replacement_error, attributes);
+        }
         goto Cleanup;
     }
     CHECK(old_file_preserved, "open reader did not retain the old file");
