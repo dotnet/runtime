@@ -15,6 +15,10 @@
     <ProjectReference Include="..\..\src\ILAssembler\ILAssembler.csproj" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(IsGraphBuild)' == 'true'">
+    <ProjectReferenceTargets Include="Build" Targets="InitializeSourceRootMappedPaths" />
+  </ItemGroup>
+
   <!-- Shared IL opcode metadata used by tests to decode method bodies and validate operand tokens. -->
   <ItemGroup>
     <Compile Include="..\..\..\..\coreclr\tools\Common\TypeSystem\IL\ILOpcode.cs">

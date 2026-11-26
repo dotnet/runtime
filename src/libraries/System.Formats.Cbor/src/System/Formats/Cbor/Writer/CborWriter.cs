@@ -15,6 +15,9 @@ namespace System.Formats.Cbor
     {
         private const int DefaultMaxDepth = 1000;
         private const int DefaultCapacitySentinel = -1;
+        private const CborMajorType NoMajorType = (CborMajorType)0xFF; // the root context
+        private const int NoDefiniteLength = -1; // indefinite-length context, or a root context allowing multiple values
+        private const int NoOffset = -1;
         private static readonly ArrayPool<byte> s_bufferPool = ArrayPool<byte>.Create();
 
         // Conformance-mode behaviors
@@ -28,15 +31,15 @@ namespace System.Formats.Cbor
         private int _offset;
 
         private Stack<StackFrame>? _nestedDataItems;
-        private CborMajorType? _currentMajorType; // major type of the current data item context
-        private int? _definiteLength; // predetermined definite-length of current data item context
+        private CborMajorType _currentMajorType = NoMajorType; // major type of the current data item context
+        private int _definiteLength; // predetermined definite-length of current data item context, or NoDefiniteLength
         private int _itemsWritten; // number of items written in the current context
         private int _frameOffset; // buffer offset particular to the current data item context
         private bool _isTagContext; // true if writer is expecting a tagged value
 
         // Map-specific book-keeping
-        private int? _currentKeyOffset; // offset for the current key encoding
-        private int? _currentValueOffset; // offset for the current value encoding
+        private int _currentKeyOffset = NoOffset; // offset for the current key encoding
+        private int _currentValueOffset = NoOffset; // offset for the current value encoding
         private bool _keysRequireSorting; // tracks whether key/value pair encodings need to be sorted
         private List<KeyValuePairEncodingRange>? _keyValuePairEncodingRanges; // all key/value pair encoding ranges
         private HashSet<(int Offset, int Length)>? _keyEncodingRanges; // all key encoding ranges up to encoding equality
@@ -67,7 +70,7 @@ namespace System.Formats.Cbor
 
         /// <summary>Declares whether the writer has completed writing a complete root-level CBOR document, or sequence of root-level CBOR documents.</summary>
         /// <value><see langword="true" /> if the writer has completed writing a complete root-level CBOR document, or sequence of root-level CBOR documents; <see langword="false" /> otherwise.</value>
-        public bool IsWriteCompleted => _currentMajorType is null && _itemsWritten > 0;
+        public bool IsWriteCompleted => _currentMajorType == NoMajorType && _itemsWritten > 0;
 
         /// <summary>Initializes a new instance of the <see cref="CborWriter"/> class using the provided options.</summary>
         /// <param name="options">The options for configuring the writer.</param>
@@ -100,7 +103,7 @@ namespace System.Formats.Cbor
             ConvertIndefiniteLengthEncodings = convertIndefiniteLengthEncodings;
             AllowMultipleRootLevelValues = allowMultipleRootLevelValues;
             MaxDepth = maxDepth < 0 ? DefaultMaxDepth : maxDepth;
-            _definiteLength = allowMultipleRootLevelValues ? null : (int?)1;
+            _definiteLength = allowMultipleRootLevelValues ? NoDefiniteLength : 1;
 
             _buffer = initialCapacity > 0 ? new byte[initialCapacity] : Array.Empty<byte>();
         }
@@ -145,7 +148,7 @@ namespace System.Formats.Cbor
             ConvertIndefiniteLengthEncodings = convertIndefiniteLengthEncodings;
             AllowMultipleRootLevelValues = allowMultipleRootLevelValues;
             MaxDepth = DefaultMaxDepth;
-            _definiteLength = allowMultipleRootLevelValues ? null : (int?)1;
+            _definiteLength = allowMultipleRootLevelValues ? NoDefiniteLength : 1;
 
             _buffer = initialCapacity switch
             {
@@ -164,14 +167,14 @@ namespace System.Formats.Cbor
 
                 _offset = 0;
                 _nestedDataItems?.Clear();
-                _currentMajorType = null;
-                _definiteLength = AllowMultipleRootLevelValues ? null : (int?)1;
+                _currentMajorType = NoMajorType;
+                _definiteLength = AllowMultipleRootLevelValues ? NoDefiniteLength : 1;
                 _itemsWritten = 0;
                 _frameOffset = 0;
                 _isTagContext = false;
 
-                _currentKeyOffset = null;
-                _currentValueOffset = null;
+                _currentKeyOffset = NoOffset;
+                _currentValueOffset = NoOffset;
                 _keysRequireSorting = false;
                 _keyValuePairEncodingRanges?.Clear();
                 _keyEncodingRanges?.Clear();
@@ -323,7 +326,7 @@ namespace System.Formats.Cbor
             }
         }
 
-        private void PushDataItem(CborMajorType newMajorType, int? definiteLength)
+        private void PushDataItem(CborMajorType newMajorType, int definiteLength)
         {
             Debug.Assert(CurrentDepth < MaxDepth);
 
@@ -347,8 +350,8 @@ namespace System.Formats.Cbor
             _frameOffset = _offset;
             _definiteLength = definiteLength;
             _itemsWritten = 0;
-            _currentKeyOffset = null;
-            _currentValueOffset = null;
+            _currentKeyOffset = NoOffset;
+            _currentValueOffset = NoOffset;
             _keysRequireSorting = false;
             _keyEncodingRanges = null;
             _keyValuePairEncodingRanges = null;
@@ -360,7 +363,7 @@ namespace System.Formats.Cbor
             // Validate that the pop operation can be performed
             if (typeToPop != _currentMajorType)
             {
-                if (_currentMajorType.HasValue)
+                if (_currentMajorType != NoMajorType)
                 {
                     throw new InvalidOperationException(SR.Format(SR.Cbor_PopMajorTypeMismatch, (int)_currentMajorType));
                 }
@@ -378,7 +381,7 @@ namespace System.Formats.Cbor
                 throw new InvalidOperationException(SR.Format(SR.Cbor_PopMajorTypeMismatch, (int)CborMajorType.Tag));
             }
 
-            if (_definiteLength - _itemsWritten > 0)
+            if (_definiteLength > _itemsWritten)
             {
                 throw new InvalidOperationException(SR.Cbor_NotAtEndOfDefiniteLengthDataItem);
             }
@@ -391,7 +394,7 @@ namespace System.Formats.Cbor
                 CompleteMapWrite();
             }
 
-            if (_definiteLength == null)
+            if (_definiteLength == NoDefiniteLength)
             {
                 CompleteIndefiniteLengthWrite(typeToPop);
             }
@@ -430,7 +433,7 @@ namespace System.Formats.Cbor
 
         private void WriteInitialByte(CborInitialByte initialByte)
         {
-            if (_definiteLength - _itemsWritten == 0)
+            if (_definiteLength == _itemsWritten)
             {
                 throw new InvalidOperationException(SR.Cbor_Writer_DefiniteLengthExceeded);
             }
@@ -457,7 +460,7 @@ namespace System.Formats.Cbor
 
         private void CompleteIndefiniteLengthWrite(CborMajorType type)
         {
-            Debug.Assert(_definiteLength == null);
+            Debug.Assert(_definiteLength == NoDefiniteLength);
 
             if (ConvertIndefiniteLengthEncodings)
             {
@@ -491,12 +494,12 @@ namespace System.Formats.Cbor
         private readonly struct StackFrame
         {
             public StackFrame(
-                CborMajorType? type,
+                CborMajorType type,
                 int frameOffset,
-                int? definiteLength,
+                int definiteLength,
                 int itemsWritten,
-                int? currentKeyOffset,
-                int? currentValueOffset,
+                int currentKeyOffset,
+                int currentValueOffset,
                 bool keysRequireSorting,
                 List<KeyValuePairEncodingRange>? keyValuePairEncodingRanges,
                 HashSet<(int Offset, int Length)>? keyEncodingRanges)
@@ -512,13 +515,13 @@ namespace System.Formats.Cbor
                 KeyEncodingRanges = keyEncodingRanges;
             }
 
-            public CborMajorType? MajorType { get; }
+            public CborMajorType MajorType { get; }
             public int FrameOffset { get; }
-            public int? DefiniteLength { get; }
+            public int DefiniteLength { get; }
             public int ItemsWritten { get; }
 
-            public int? CurrentKeyOffset { get; }
-            public int? CurrentValueOffset { get; }
+            public int CurrentKeyOffset { get; }
+            public int CurrentValueOffset { get; }
             public bool KeysRequireSorting { get; }
             public List<KeyValuePairEncodingRange>? KeyValuePairEncodingRanges { get; }
             public HashSet<(int Offset, int Length)>? KeyEncodingRanges { get; }

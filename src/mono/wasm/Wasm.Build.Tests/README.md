@@ -24,7 +24,7 @@ being generated.
 
 - Running:
 
-Linux/macOS: `$ make -C src/mono/(browser|wasi) run-build-tests`
+Linux/macOS: `./dotnet.sh build ./src/mono/wasm/Wasm.Build.Tests/Wasm.Build.Tests.csproj -c Release -t:Test -p:TargetOS=browser -p:TargetArchitecture=wasm`
 Windows: `.\dotnet.cmd build .\src\mono\wasm\Wasm.Build.Tests\Wasm.Build.Tests.csproj -c Release -t:Test -p:TargetOS=browser -p:TargetArchitecture=wasm`
 
 - Specific tests can be run via `XUnitClassName`, and `XUnitMethodName`
@@ -54,6 +54,9 @@ For this, the builds get cached using `ProjectInfo` as the key.
   `artifacts/bin/dotnet-latest`. And the workload packs are installed there
   using packages in `artifacts/packages/$(Configuration)/Shipping`.
     - If the packages get updated, then the workload will get installed again.
+
+    - Bundle checks read original native and prebuilt ReadyToRun assets from the pack,
+      decoding manifest-listed gzip entries when the raw files aren't present.
 
     - Keep in mind, that if you have any non-test changes, and don't regenerate
       the nuget packages, then you will still be running tests against the

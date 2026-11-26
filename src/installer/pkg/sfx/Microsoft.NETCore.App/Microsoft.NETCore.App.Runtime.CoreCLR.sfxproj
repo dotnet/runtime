@@ -24,6 +24,10 @@
     <LinuxPackageDependency Include="dotnet-hostfxr-$(MajorVersion).$(MinorVersion);dotnet-runtime-deps-$(MajorVersion).$(MinorVersion)" Version="$(InstallerPackageVersion)" />
     <ProjectReference Include="$(SharedNativeRoot)corehost\browserhost\browserhost.proj"
                       Condition="'$(TargetOS)' == 'browser' and '$(MSBuildRestoreSessionId)' != ''" />
+    <ProjectReference Include="$(RepoTasksDir)Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks.csproj"
+                      ReferenceOutputAssembly="false"
+                      SetConfiguration="Configuration=$(TasksConfiguration)"
+                      Condition="'$(TargetOS)' == 'browser'" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -93,6 +97,7 @@
   </Target>
 
   <Import Project="Microsoft.NETCore.App.Runtime.props" />
+  <Import Project="$(RepositoryEngineeringDir)WasmRuntimePack.targets" Condition="'$(TargetOS)' == 'browser'" />
 
   <Target Name="BuildBrowserHost"
           BeforeTargets="ResolveLibrariesNativeRuntimeFilesFromLocalBuild"
