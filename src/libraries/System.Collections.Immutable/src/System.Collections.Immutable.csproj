@@ -163,6 +163,7 @@ The System.Collections.Immutable library is built-in as part of the shared frame
     <Compile Include="System\Collections\Frozen\Integer\DenseIntegralFrozenDictionary.cs" />
     <Compile Include="System\Collections\Frozen\Integer\DenseIntegralFrozenSet.cs" />
     <Compile Include="System\Collections\Frozen\Integer\SmallIntegralFrozenSet.cs" />
+    <Compile Include="System\Collections\Frozen\Integer\VectorBucketsFrozenSet.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net9.0'))">

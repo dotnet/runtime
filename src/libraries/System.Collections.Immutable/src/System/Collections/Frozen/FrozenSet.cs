@@ -118,6 +118,12 @@ namespace System.Collections.Frozen
                 {
                     return smallIntegralResult;
                 }
+
+                // If there are still few enough integers, use a hash table whose buckets are each searched with a single vector comparison.
+                if (VectorBucketsFrozenSet.CreateIfValid(source) is { } vectorBucketsResult)
+                {
+                    return vectorBucketsResult;
+                }
 #endif
 
                 if (source.Count <= Constants.MaxItemsInSmallValueTypeFrozenCollection)

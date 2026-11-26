@@ -32,6 +32,14 @@ namespace System.Collections.Frozen
         /// </remarks>
         public const int MaxItemsInSmallValueTypeFrozenCollection = 10;
 
+        /// <summary>Threshold when we switch from vectorized buckets to the general hashing for integral value types.</summary>
+        /// <remarks>
+        /// This determines the threshold when we switch from VectorBucketsFrozenSet to the
+        /// Int32FrozenSet / ValueTypeDefaultComparerFrozenSet. It must not exceed 256, as
+        /// VectorBucketsFrozenSet stores item indices as bytes.
+        /// </remarks>
+        public const int MaxItemsInVectorBucketsFrozenCollection = 64;
+
         /// <summary>
         /// Whether the <typeparamref name="T"/> is known to implement <see cref="IComparable{T}"/> safely and efficiently,
         /// such that its comparison operations should be used in searching for types in small collections.
