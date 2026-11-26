@@ -116,7 +116,7 @@ namespace ILCompiler
 
             if (_optimizationMode != OptimizationMode.None && _profileDataManager != null)
             {
-                jitFlagBuilder.Add(CorJitFlag.CORJIT_FLAG_BBOPT);
+                jitFlagBuilder.Add(CorJitFlag.CORJIT_FLAG_PGO_OPT);
             }
 
             // Do not bother with debug information if the debug info provider never gives anything.

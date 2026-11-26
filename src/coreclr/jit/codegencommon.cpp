@@ -2320,7 +2320,7 @@ void CodeGen::genGenerateMachineCode()
             printf("; debuggable code\n");
         }
 
-        if (m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT) && m_compiler->fgHaveProfileWeights())
+        if (m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PGO_OPT) && m_compiler->fgHaveProfileWeights())
         {
             printf("; optimized using %s\n", m_compiler->compGetPgoSourceName());
         }

@@ -24,7 +24,7 @@ being generated.
 
 - Running:
 
-Linux/macOS: `$ make -C src/mono/(browser|wasi) run-build-tests`
+Linux/macOS: `./dotnet.sh build ./src/mono/wasm/Wasm.Build.Tests/Wasm.Build.Tests.csproj -c Release -t:Test -p:TargetOS=browser -p:TargetArchitecture=wasm`
 Windows: `.\dotnet.cmd build .\src\mono\wasm\Wasm.Build.Tests\Wasm.Build.Tests.csproj -c Release -t:Test -p:TargetOS=browser -p:TargetArchitecture=wasm`
 
 - Specific tests can be run via `XUnitClassName`, and `XUnitMethodName`
@@ -54,6 +54,9 @@ For this, the builds get cached using `ProjectInfo` as the key.
   `artifacts/bin/dotnet-latest`. And the workload packs are installed there
   using packages in `artifacts/packages/$(Configuration)/Shipping`.
     - If the packages get updated, then the workload will get installed again.
+
+    - Bundle checks read original native and prebuilt ReadyToRun assets from the pack,
+      decoding manifest-listed gzip entries when the raw files aren't present.
 
     - Keep in mind, that if you have any non-test changes, and don't regenerate
       the nuget packages, then you will still be running tests against the
@@ -169,3 +172,48 @@ while rejected fetches retain their existing fatal-error behavior. Native Wasm
 cache recovery remains covered by `Blazor.AssetCachingTests`.
 
 If you want to test templating mechanism, use `CreateWasmTemplateProject`. Otherwise, use `CopyTestAsset` with either `WasmBasicTestApp` or `BlazorBasicTestApp`, adding your custom `TestScenario` or using a generic `DotnetRun` scenario in case of WASM app and adding a page with test in case of Blazor app. Bigger snippets of code should be saved in `src/mono/wasm/testassets` and placed in the application using methods: `ReplaceFile` or `File.Move`. Replacing existing small parts of code with custom lines is done with `UpdateFile`.
+
+## Reviewing test changes
+
+Apply the [Wasm build review guidance](../../../../docs/workflow/wasm-review.md) as well as the asset and
+category conventions above.
+
+- Prefer a standard [WasmBasicTestApp scenario](../testassets/WasmBasicTestApp/README.md)
+  and its `TestOutput`/JavaScript `testOutput` helpers over embedding app source
+  or reproducing the output protocol in a test. Dedicated assets are appropriate
+  for substantially different applications. Reuse runtime/pack setup helpers
+  before adding properties to a shared client asset.
+- Use `TestCategory` for runtime/workload selection already expressed by that
+  category instead of duplicating it in a condition. Check the actual lane
+  filters first; keep guards for independent unsupported feature combinations.
+- Match build assertions to the contract using the existing StructuredLogger
+  dependency: evaluated properties for defaults, actual task parameters for
+  compiler/linker arguments, and restore `PackageDownload` items for package
+  requests. Scope observations to the intended app, target framework and phase;
+  exclude restore/referenced-project evaluations when asserting build defaults.
+  Require the expected nodes to exist and assert multiplicity when it matters.
+  `ReadyToRunTests.GetCrossgen2ExtraCommandLineArgs` is an example of reading
+  compiler task parameters and rejecting an empty observation.
+- Prefer those observations over diagnostic-text scraping or an injected target
+  that deliberately fails after asserting properties. Invoke an appropriate
+  early target successfully when compilation is not needed. Keep injected
+  targets that arrange required ordering or input state; a binlog can observe
+  that state but cannot create it. Prefer external observations for assertions.
+  Preserve binlog artifacts for diagnosis. Property/argument checks do not
+  replace browser execution or bundle checks for changed runtime behavior.
+- Keep detailed generated-source shape assertions in generator unit tests.
+  Integration tests should exercise trimming, loading, binding and invocation,
+  with only the output-shape checks needed to establish compatibility, such as
+  proving that a legacy fixture used the intended older generator.
+- For runtime-pack byte comparisons, retain an independent expected source;
+  reading both sides from the same resolved directory can compare a file with
+  itself. Check constructed-SDK freshness as described above.
+- Reuse existing CI dimensions before adding expensive theory rows or duplicate
+  publish/browser runs. Verify selected tests and actual results rather than
+  inferring coverage from a lane name: disabling WebCIL does not disable
+  fingerprinting. Keep the relevant option-execution assertion in the shared
+  scenario when a dedicated permutation supplies that option.
+- For CI partition changes, distinguish individual test duration, nested MSBuild
+  invocations and the Helix work-item timeout. Choose category groups using
+  measured durations and timeout headroom, including setup overhead; do not
+  fan out every class solely because one group became slow.

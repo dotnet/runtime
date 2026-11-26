@@ -1,5 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <!-- TODO: Remove once migrated to unsafe-v2. -->
+    <MemorySafetyRulesVersion>1</MemorySafetyRulesVersion>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>

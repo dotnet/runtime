@@ -415,15 +415,13 @@ if(FEATURE_PERFTRACING)
   add_subdirectory(eventpipe)
 endif()
 
-if(NOT CLR_CMAKE_TARGET_ARCH_WASM)
-  # Create an interface library that captures the Runtime's include directories
-  # for use by the datadescriptor intermediary compilation.
-  add_library(nativeaot_runtime_includes INTERFACE)
-  get_property(_runtime_includes DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
-  target_include_directories(nativeaot_runtime_includes INTERFACE ${_runtime_includes})
+# Create an interface library that captures the Runtime's include directories
+# for use by the datadescriptor intermediary compilation.
+add_library(nativeaot_runtime_includes INTERFACE)
+get_property(_runtime_includes DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
+target_include_directories(nativeaot_runtime_includes INTERFACE ${_runtime_includes})
 
-  add_subdirectory(datadescriptor)
-endif()
+add_subdirectory(datadescriptor)
 
 if(FEATURE_PORTABLE_HELPERS)
   add_definitions(-DFEATURE_PORTABLE_HELPERS)
@@ -535,9 +533,7 @@ if(FEATURE_PERFTRACING)
   add_dependencies(Runtime.WorkstationGC aot_eventing_headers)
 endif()
 target_link_libraries(Runtime.WorkstationGC PRIVATE aotminipal)
-if(NOT CLR_CMAKE_TARGET_ARCH_WASM)
-  target_link_libraries(Runtime.WorkstationGC PRIVATE nativeaot_cdac_contract_descriptor nativeaot_gc_wks_descriptor)
-endif()
+target_link_libraries(Runtime.WorkstationGC PRIVATE nativeaot_cdac_contract_descriptor nativeaot_gc_wks_descriptor)
 if(NOT FEATURE_PORTABLE_HELPERS)
   target_link_libraries(Runtime.WorkstationGC PRIVATE Runtime.AsmHelpers)
 endif()

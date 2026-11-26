@@ -347,6 +347,27 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
+        public void ReverseThrowsOnMutation()
+        {
+            ImmutableSortedSet<int>.Builder builder = ImmutableSortedSet.CreateBuilder<int>();
+            builder.Add(0);
+            builder.Add(2);
+            builder.Add(4);
+            builder.Add(6);
+
+            Assert.Throws<InvalidOperationException>(() =>
+            {
+                foreach (int item in builder.Reverse())
+                {
+                    if (item == 6)
+                    {
+                        builder.Remove(0);
+                    }
+                }
+            });
+        }
+
+        [Fact]
         public void SetEquals()
         {
             ImmutableSortedSet<string>.Builder builder = ImmutableSortedSet.Create("a").ToBuilder();

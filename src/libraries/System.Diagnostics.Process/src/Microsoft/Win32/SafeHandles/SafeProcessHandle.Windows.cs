@@ -214,7 +214,7 @@ namespace Microsoft.Win32.SafeHandles
 
             Interop.Kernel32.STARTUPINFOEX startupInfoEx = default;
             Interop.Kernel32.PROCESS_INFORMATION processInfo = default;
-            Interop.Kernel32.SECURITY_ATTRIBUTES unused_SecAttrs = default;
+            Interop.Kernel32.SECURITY_ATTRIBUTES unused_SecAttrs = Interop.Kernel32.SECURITY_ATTRIBUTES.Create();
             SafeProcessHandle procSH = new SafeProcessHandle();
 
             // Inheritable copies of the child handles for CreateProcess

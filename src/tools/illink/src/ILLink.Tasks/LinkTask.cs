@@ -14,6 +14,7 @@ using Microsoft.NET.Build.Tasks;
 
 namespace ILLink.Tasks
 {
+    [MSBuildMultiThreadableTask]
     public class ILLink : CachedToolTask
     {
         private static readonly InvocationCacheConfiguration s_cacheConfiguration =
@@ -251,10 +252,11 @@ namespace ILLink.Tasks
                 if (!string.IsNullOrEmpty(_dotnetPath))
                     return _dotnetPath;
 
-                _dotnetPath = Environment.GetEnvironmentVariable(DotNetHostPathEnvironmentName);
+                _dotnetPath = TaskEnvironment.GetEnvironmentVariable(DotNetHostPathEnvironmentName);
                 if (string.IsNullOrEmpty(_dotnetPath))
                     throw new InvalidOperationException($"{DotNetHostPathEnvironmentName} is not set");
 
+                _dotnetPath = TaskEnvironment.GetAbsolutePath(_dotnetPath);
                 return _dotnetPath;
             }
         }
@@ -274,7 +276,7 @@ namespace ILLink.Tasks
         {
             try
             {
-                string outputDirectory = Path.GetFullPath(OutputDirectory.ItemSpec);
+                string outputDirectory = TaskEnvironment.GetAbsolutePath(OutputDirectory.ItemSpec);
                 if (Directory.Exists(outputDirectory))
                     Directory.Delete(outputDirectory, recursive: true);
                 Directory.CreateDirectory(outputDirectory);
@@ -342,9 +344,10 @@ namespace ILLink.Tasks
                 {
                     commandLineCommands,
                     responseFileCommands
-                }, InvocationOutputs.FromDirectory(OutputDirectory.ItemSpec));
+                }, InvocationOutputs.FromDirectory(TaskEnvironment.GetAbsolutePath(OutputDirectory.ItemSpec)),
+                    TaskEnvironment.ProjectDirectory);
 
-                void AddFile(string path) => files.Add(Path.GetFullPath(path));
+                void AddFile(string path) => files.Add(Path.GetFullPath(TaskEnvironment.GetAbsolutePath(path)));
 
                 void AddOptionalFile(string path)
                 {
@@ -354,7 +357,7 @@ namespace ILLink.Tasks
 
                 void AddAssembly(string path)
                 {
-                    path = Path.GetFullPath(path);
+                    path = Path.GetFullPath(TaskEnvironment.GetAbsolutePath(path));
                     if (!assemblies.Add(path))
                         return;
 
@@ -444,7 +447,7 @@ namespace ILLink.Tasks
                     return false;
                 }
 
-                string fullPath = Path.GetFullPath(path);
+                string fullPath = Path.GetFullPath(TaskEnvironment.GetAbsolutePath(path));
                 if (option == "-d")
                     directories.Add(fullPath);
                 else
@@ -499,6 +502,9 @@ namespace ILLink.Tasks
 
         private string _illinkPath = "";
 
+        /// <summary>
+        /// Gets or sets the path to the linker assembly.
+        /// </summary>
         public string ILLinkPath
         {
             get
