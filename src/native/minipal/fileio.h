@@ -20,7 +20,9 @@ extern "C"
  * The returned handle is write-only and is not inherited by child processes.
  * On Windows, concurrent readers must share write access.
  * On Windows, replacing a read-only file fails, as does replacing a file
- * when an existing handle does not share delete access.
+ * when an existing handle does not share delete access. Even when delete
+ * sharing is allowed, Windows may defer removal until the last handle closes,
+ * preventing creation at the same path while that handle remains open.
  *
  * Returns the platform file handle as an intptr_t on success, or -1 on
  * failure.

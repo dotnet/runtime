@@ -237,32 +237,38 @@ static RESULT test_fileio(void)
     CloseHandle(reader);
     if (file == -1)
     {
+        CHECK(old_file_preserved, "open reader did not retain the old file");
         DWORD attributes = GetFileAttributesW(L"trace");
         if (attributes == INVALID_FILE_ATTRIBUTES)
         {
             DWORD path_error = GetLastError();
-            if (path_error == ERROR_FILE_NOT_FOUND || path_error == ERROR_PATH_NOT_FOUND)
+            if (path_error != ERROR_FILE_NOT_FOUND && path_error != ERROR_PATH_NOT_FOUND)
             {
-                result = FAILED("replacement failed with delete sharing (Win32 error 0x%08lx; trace absent after reader close)",
-                    replacement_error);
-            }
-            else
-            {
-                result = FAILED("replacement failed with delete sharing (Win32 error 0x%08lx; trace lookup after reader close failed with 0x%08lx)",
+                result = FAILED("replacement failed with delete sharing (Win32 error 0x%08lx; trace lookup failed with 0x%08lx)",
                     replacement_error, path_error);
+                goto Cleanup;
+            }
+            if (replacement_error != ERROR_ACCESS_DENIED)
+            {
+                result = FAILED("replacement failed with delete sharing (unexpected Win32 error 0x%08lx; trace absent after reader close)",
+                    replacement_error);
+                goto Cleanup;
             }
         }
         else
         {
             result = FAILED("replacement failed with delete sharing (Win32 error 0x%08lx; trace still exists after reader close with attributes 0x%08lx)",
                 replacement_error, attributes);
+            goto Cleanup;
         }
-        goto Cleanup;
     }
-    CHECK(old_file_preserved, "open reader did not retain the old file");
-    close_file(file);
-    file = -1;
-    CHECK(file_contains("trace", ""), "replacement was not empty");
+    else
+    {
+        CHECK(old_file_preserved, "open reader did not retain the old file");
+        close_file(file);
+        file = -1;
+        CHECK(file_contains("trace", ""), "replacement was not empty");
+    }
     CHECK(sharing_error == ERROR_SHARING_VIOLATION, "replacement failed for an unexpected reason");
 #else
     CHECK(write_file("trace", "reader"), "unable to write reader file");
