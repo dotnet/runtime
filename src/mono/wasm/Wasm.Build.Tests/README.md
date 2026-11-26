@@ -55,6 +55,9 @@ For this, the builds get cached using `ProjectInfo` as the key.
   using packages in `artifacts/packages/$(Configuration)/Shipping`.
     - If the packages get updated, then the workload will get installed again.
 
+    - Bundle checks read original native and prebuilt ReadyToRun assets from the pack,
+      decoding manifest-listed gzip entries when the raw files aren't present.
+
     - Keep in mind, that if you have any non-test changes, and don't regenerate
       the nuget packages, then you will still be running tests against the
       "old" sdk
