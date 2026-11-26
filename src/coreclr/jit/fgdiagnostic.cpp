@@ -3405,6 +3405,7 @@ void Compiler::fgDebugCheckFlagsAndTypes(GenTree* tree, BasicBlock* block)
                 assert(!dsc->TypeIs(TYP_STRUCT) && !dsc->lvPromoted && !dsc->IsAddressExposed());
                 assert((dest.Flags & (GTF_VAR_DEF | GTF_VAR_USEASG)) == GTF_VAR_DEF);
                 assert(dest.Offset <= sourceSize && genTypeSize(dsc) <= sourceSize - dest.Offset);
+                assert((i == 0) || (store->GetDestination(i - 1).Offset < dest.Offset));
                 for (unsigned j = 0; j < i; j++)
                 {
                     assert(dest.LclNum != store->GetDestination(j).LclNum);
