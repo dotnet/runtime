@@ -557,17 +557,30 @@ void SideEffectSet::AddNode(Compiler* compiler, GenTree* node)
     m_aliasSet.AddNode(compiler, node);
 }
 
-// Summarize a morphed argument in tree form. Bail out on constructs with
-// implicit evaluation or special placement rules and keep the usual early temp.
+// Can the operation's effects be summarized by OperEffects and AddNodeInfo,
+// with each operand evaluated explicitly by the tree walk?
+static bool CanSummarizeArgumentNode(Compiler* compiler, GenTree* tree)
+{
+    if (tree->IsCall())
+    {
+        return tree->IsHelperCall() && tree->AsCall()->IsPure(compiler) &&
+               !tree->AsCall()->HasSideEffects(compiler, false);
+    }
+    if (tree->OperIsIndir())
+    {
+        return (tree->gtFlags & (GTF_IND_VOLATILE | GTF_IND_INITCLASS)) == 0;
+    }
+    if (tree->OperIs(GT_FIELD_ADDR))
+    {
+        return tree->AsFieldAddr()->IsInstance();
+    }
+    return tree->OperIsNonPhiLocal() || tree->OperIsConst() || GenTree::OperIsArrMetaData(tree->OperGet()) ||
+           tree->OperIs(GT_LCL_ADDR, GT_COMMA, GT_ADD, GT_SUB, GT_MUL, GT_CAST, GT_BITCAST, GT_BOUNDS_CHECK);
+}
+
 bool SideEffectSet::TryAddTree(Compiler* compiler, GenTree* tree, unsigned& budget)
 {
-    if ((budget == 0) || (!tree->OperIsLIR() && !tree->OperIs(GT_COMMA, GT_FIELD_ADDR)) ||
-        (tree->OperIs(GT_FIELD_ADDR) && !tree->AsFieldAddr()->IsInstance()) ||
-        tree->OperIs(GT_CATCH_ARG, GT_LCLHEAP, GT_ASYNC_CONTINUATION, GT_SWIFT_ERROR) || tree->OperIsHWIntrinsic() ||
-        tree->OperIsAtomicOp() || (tree->OperRequiresAsgFlag() && !tree->OperIsStore()) ||
-        (tree->OperIsIndir() && (tree->gtFlags & (GTF_IND_VOLATILE | GTF_IND_INITCLASS)) != 0) ||
-        (tree->IsCall() && (!tree->IsHelperCall() || !tree->AsCall()->IsPure(compiler) ||
-                            tree->AsCall()->HasSideEffects(compiler, false))))
+    if ((budget == 0) || !CanSummarizeArgumentNode(compiler, tree))
     {
         return false;
     }
