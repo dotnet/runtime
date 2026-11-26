@@ -188,7 +188,7 @@ private:
     unsigned   StoreFieldListToNewLocal(ClassLayout* layout, GenTreeFieldList* fieldList);
     void       LowerArgFieldList(CallArg* arg, GenTreeFieldList* fieldList);
 
-    static unsigned      GetStoreLclVarsRegisterCount(Compiler* compiler, GenTree* source);
+    static bool          TryGetStoreLclVarsRegisterCount(Compiler* compiler, GenTree* source, unsigned* regCount);
     static var_types     GetStoreLclVarsRegisterType(GenTree* source, unsigned regIndex);
     static bool          IsDirectReturnRegisterDestination(var_types type, var_types regType);
     static bool          IsReturnRegisterCaptureType(var_types type, var_types regType);

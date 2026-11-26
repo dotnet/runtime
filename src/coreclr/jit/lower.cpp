@@ -6261,28 +6261,36 @@ void Lowering::LowerCallStruct(GenTreeCall* call)
 }
 
 //----------------------------------------------------------------------------------------------
-// GetStoreLclVarsRegisterCount: Get the number of registers defined by a GT_STORE_LCL_VARS source.
+// TryGetStoreLclVarsRegisterCount: Try to get the register count of a GT_STORE_LCL_VARS source.
 //
 // Arguments:
 //     compiler - The compiler instance
 //     source   - The store's source
+//     regCount - [out] The register count, written only on success
 //
 // Return Value:
-//     The multi-reg node's GetMultiRegCount result, one for a single-register call,
-//     or zero for any other source.
+//     True for a register-producing source; otherwise, false.
 //
 // Remarks:
-//     A non-register source, such as a struct local substituted by CSE, reports
-//     zero so LowerStoreLclVars spills through the stack.
+//     Multi-reg nodes report their GetMultiRegCount result; single-register calls report one.
+//     Other sources, such as a struct local substituted by CSE, leave *regCount unchanged
+//     and must be spilled through the stack by LowerStoreLclVars.
 //
-unsigned Lowering::GetStoreLclVarsRegisterCount(Compiler* compiler, GenTree* source)
+bool Lowering::TryGetStoreLclVarsRegisterCount(Compiler* compiler, GenTree* source, unsigned* regCount)
 {
     if (source->IsMultiRegNode())
     {
-        return source->GetMultiRegCount(compiler);
+        *regCount = source->GetMultiRegCount(compiler);
+        return true;
     }
 
-    return source->IsCall() ? 1 : 0;
+    if (source->IsCall())
+    {
+        *regCount = 1;
+        return true;
+    }
+
+    return false;
 }
 
 //----------------------------------------------------------------------------------------------
@@ -6298,7 +6306,7 @@ unsigned Lowering::GetStoreLclVarsRegisterCount(Compiler* compiler, GenTree* sou
 //
 // Remarks:
 //     Lowering has already retyped struct calls to their register type.
-//     The register index must be less than GetStoreLclVarsRegisterCount.
+//     The register index must be less than the count produced by TryGetStoreLclVarsRegisterCount.
 //
 var_types Lowering::GetStoreLclVarsRegisterType(GenTree* source, unsigned regIndex)
 {
@@ -6371,9 +6379,9 @@ bool Lowering::IsReturnRegisterCaptureType(var_types type, var_types regType)
 //
 GenTreeStoreLclVars* Lowering::TryLowerStoreLclVarsByExtraction(GenTreeStoreLclVars* store)
 {
-    GenTree*       source   = store->Data();
-    const unsigned regCount = GetStoreLclVarsRegisterCount(m_compiler, source);
-    if (regCount == 0)
+    GenTree* source = store->Data();
+    unsigned regCount;
+    if (!TryGetStoreLclVarsRegisterCount(m_compiler, source, &regCount))
     {
         return nullptr;
     }
@@ -6498,8 +6506,8 @@ GenTree* Lowering::LowerStoreLclVars(GenTreeStoreLclVars* store)
     GenTree*     source   = store->Data();
     GenTree*     next     = store->gtNext;
     GenTreeCall* call     = source->IsCall() ? source->AsCall() : nullptr;
-    unsigned     regCount = GetStoreLclVarsRegisterCount(m_compiler, source);
-    bool         direct   = (regCount == store->gtCount);
+    unsigned     regCount = 0;
+    bool direct = TryGetStoreLclVarsRegisterCount(m_compiler, source, &regCount) && (regCount == store->gtCount);
     for (unsigned i = 0; direct && i < regCount; i++)
     {
         GenTreeStoreLclVars::Destination& dest = store->GetDestination(i);
@@ -6520,7 +6528,9 @@ GenTree* Lowering::LowerStoreLclVars(GenTreeStoreLclVars* store)
 
     // Preserve the source's layout, including GC slots, when fields cannot be
     // defined directly or extracted from source registers.
-    unsigned     temp = m_compiler->lvaGrabTemp(true DEBUGARG("Spilled local for multi-local store"));
+    unsigned temp = m_compiler->lvaGrabTemp(true DEBUGARG("Spilled local for multi-local store"));
+    // LowerCallStruct may have bashed a struct-returning call to its register type.
+    // Such calls cannot use GetLayout; obtain their struct layout from gtRetClsHnd instead.
     ClassLayout* layout =
         call != nullptr ? m_compiler->typGetObjLayout(call->gtRetClsHnd) : source->GetLayout(m_compiler);
     m_compiler->lvaSetStruct(temp, layout, false);
@@ -9542,7 +9552,9 @@ void Lowering::CheckNode(Compiler* compiler, GenTree* node)
             GenTreeStoreLclVars* store  = node->AsStoreLclVars();
             GenTree*             source = store->Data()->gtSkipReloadOrCopy();
             assert(!source->IsCall() || !source->AsCall()->ShouldHaveRetBufArg());
-            assert(store->gtCount == GetStoreLclVarsRegisterCount(compiler, source));
+            unsigned regCount      = 0;
+            bool     isRegisterSrc = TryGetStoreLclVarsRegisterCount(compiler, source, &regCount);
+            assert(isRegisterSrc && (store->gtCount == regCount));
             for (unsigned i = 0; i < store->gtCount; i++)
             {
                 GenTreeStoreLclVars::Destination& dest = store->GetDestination(i);
