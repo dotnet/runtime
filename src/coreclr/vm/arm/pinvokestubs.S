@@ -138,7 +138,9 @@
 1:
         add     r2, pc
 #else
-        ldr     r2, =g_TrapReturningThreads
+        movw    r2, #:lower16:g_TrapReturningThreads - (. + 12)
+        movt    r2, #:upper16:g_TrapReturningThreads - (. + 8)
+        add     r2, pc
 #endif
         ldr     r2, [r2]
         cbnz    r2, LOCAL_LABEL(RarePath)
