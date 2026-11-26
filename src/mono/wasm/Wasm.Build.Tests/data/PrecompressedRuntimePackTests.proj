@@ -1,6 +1,7 @@
 <Project DefaultTargets="_ComputeWasmBuildCandidates">
   <PropertyGroup>
     <UseMonoRuntime>false</UseMonoRuntime>
+    <EnableDiagnostics>false</EnableDiagnostics>
     <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
     <TargetFrameworkIdentifier>.NETCoreApp</TargetFrameworkIdentifier>
     <TargetFrameworkVersion>v12.0</TargetFrameworkVersion>
@@ -77,7 +78,7 @@
   </Target>
   <Target Name="_AddWasmStaticWebAssets" DependsOnTargets="_ComputeWasmBuildCandidates">
     <ItemGroup>
-      <_NativeCandidate Include="@(RuntimePackAsset)" Condition="'%(Filename)' == 'dotnet.native'"
+      <_NativeCandidate Include="@(WasmNativeAsset)" Condition="'%(Filename)%(Extension)' == 'dotnet.native.wasm'"
                         ContentRoot="%(RootDir)%(Directory)" RelativePath="_framework/dotnet.native#[.{fingerprint}]!.wasm" />
       <_NativeCandidate Update="@(_NativeCandidate)" Condition="'$(TestOptionalFingerprint)' == 'true'"
                         RelativePath="_framework/dotnet.native#[.{fingerprint}]?.wasm" />

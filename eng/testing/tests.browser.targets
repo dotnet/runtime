@@ -53,6 +53,7 @@
 
     <UseSystemResourceKeys Condition="'$(UseSystemResourceKeys)' == ''">false</UseSystemResourceKeys>
     <EventSourceSupport Condition="'$(EventSourceSupport)' == ''">true</EventSourceSupport>
+    <EnableDiagnostics Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(EnableDiagnostics)' == ''">$(EventSourceSupport)</EnableDiagnostics>
     <NullabilityInfoContextSupport Condition="'$(NullabilityInfoContextSupport)' == ''">true</NullabilityInfoContextSupport>
 
     <!-- Library tests run directly from bin/ without the static web assets middleware,
@@ -318,6 +319,8 @@
       <_HasDotnetWasm Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.native.wasm'">true</_HasDotnetWasm>
       <_HasDotnetJsSymbols Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.native.js.symbols'">true</_HasDotnetJsSymbols>
       <_HasDotnetNativeJs Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.native.js'">true</_HasDotnetNativeJs>
+      <_TestPrelinkedNativeDir>$(MicrosoftNetCoreAppRuntimePackRidNativeDir)</_TestPrelinkedNativeDir>
+      <_TestPrelinkedNativeDir Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(EnableDiagnostics)' == 'true'">$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRuntimePackDir)', 'data', 'native-flavors', 'diagnostics'))</_TestPrelinkedNativeDir>
       <_WasmIcuDataFileName Condition="'$(WasmIcuDataFileName)' != '' and Exists('$(WasmIcuDataFileName)')">$(WasmIcuDataFileName)</_WasmIcuDataFileName>
       <_WasmIcuDataFileName Condition="'$(WasmIcuDataFileName)' != '' and !Exists('$(WasmIcuDataFileName)')">$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(WasmIcuDataFileName)</_WasmIcuDataFileName>
     </PropertyGroup>
@@ -328,12 +331,12 @@
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.js" />
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.runtime.js" />
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.diagnostics.js" Condition="'$(EnableDiagnostics)' == 'true'" />
-      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.wasm" Condition="'$(_HasDotnetWasm)' != 'true'" />
-      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.js" Condition="'$(_HasDotnetNativeJs)' != 'true'" />
-      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.js.symbols"
+      <WasmNativeAsset Include="$(_TestPrelinkedNativeDir)dotnet.native.wasm" Condition="'$(_HasDotnetWasm)' != 'true'" />
+      <WasmNativeAsset Include="$(_TestPrelinkedNativeDir)dotnet.native.js" Condition="'$(_HasDotnetNativeJs)' != 'true'" />
+      <WasmNativeAsset Include="$(_TestPrelinkedNativeDir)dotnet.native.js.symbols"
                        Condition="'$(WasmEmitSymbolMap)' == 'true' and
                                   '$(_HasDotnetJsSymbols)' != 'true' and
-                                  Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.js.symbols')" />
+                                  Exists('$(_TestPrelinkedNativeDir)dotnet.native.js.symbols')" />
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.js.map"
                        Condition="'$(WasmEmitSourceMap)' != 'false'" />
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.runtime.js.map"

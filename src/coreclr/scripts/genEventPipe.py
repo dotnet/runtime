@@ -79,7 +79,7 @@ def generateMethodSignatureWrite(eventName, template, extern, runtimeFlavor):
     return ''.join(sig_pieces)
 
 def generateClrEventPipeWriteEventsImpl(
-        providerName, eventNodes, allTemplates, extern, target_cpp, runtimeFlavor, inclusionList, exclusionList):
+        providerName, eventNodes, allTemplates, extern, target_cpp, runtimeFlavor, inclusionList, exclusionList, stub):
     providerPrettyName = providerName.replace("Windows-", '')
     providerPrettyName = providerPrettyName.replace("Microsoft-", '')
     providerPrettyName = providerPrettyName.replace('-', '_')
@@ -105,6 +105,24 @@ def generateClrEventPipeWriteEventsImpl(
 }
 
 """ % (eventName, eventExpr))
+
+        if stub:
+            WriteEventImpl.append(
+                generateMethodSignatureEnabled(eventName, runtimeFlavor) + """
+{
+    return false;
+}
+
+""")
+            template = allTemplates[templateName] if templateName else None
+            WriteEventImpl.append(generateMethodSignatureWrite(eventName, template, extern, runtimeFlavor))
+            WriteEventImpl.append("""
+{
+    return ERROR_SUCCESS;
+}
+
+""")
+            continue
 
         eventIsEnabledFunc = ""
         if runtimeFlavor.coreclr:
@@ -178,6 +196,10 @@ def generateClrEventPipeWriteEventsImpl(
         "void Init" +
         providerPrettyName +
         "(void)\n{\n")
+    if stub:
+        WriteEventImpl.append("}\n")
+        return ''.join(WriteEventImpl)
+
     if runtimeFlavor.coreclr:
         callbackExpr = ("\n#ifdef FEATURE_EVENT_TRACE\n" +
             "        " + eventPipeCallbackCastExpr + "(" + callbackName + ")\n" +
@@ -549,14 +571,16 @@ def getAotEventPipeHelperFileImplSuffix():
     return ""
 
 
-def generateEventPipeHelperFile(etwmanifest, eventpipe_directory, target_cpp, runtimeFlavor, extern, dryRun):
+def generateEventPipeHelperFile(etwmanifest, eventpipe_directory, target_cpp, runtimeFlavor, extern, stub, dryRun):
     eventpipehelpersPath = os.path.join(eventpipe_directory, "eventpipehelpers" + (".cpp" if target_cpp else ".c"))
     if dryRun:
         print(eventpipehelpersPath)
     else:
         with open_for_update(eventpipehelpersPath) as helper:
             helper.write(stdprolog_cpp)
-            if runtimeFlavor.coreclr:
+            if runtimeFlavor.coreclr and stub:
+                helper.write("#include <common.h>\n\n")
+            elif runtimeFlavor.coreclr:
                 helper.write(getCoreCLREventPipeHelperFileImplPrefix())
             elif runtimeFlavor.nativeaot:
                 helper.write(getAotEventPipeHelperFileImplPrefix())
@@ -699,7 +723,7 @@ bool DotNETRuntimeRundownProvider_IsEnabled(unsigned char level, unsigned long l
 """
 
 def generateEventPipeImplFiles(
-        etwmanifest, eventpipe_directory, extern, target_cpp, runtimeFlavor, inclusionList, exclusionList, dryRun):
+        etwmanifest, eventpipe_directory, extern, target_cpp, runtimeFlavor, inclusionList, exclusionList, stub, dryRun):
     tree = DOM.parse(etwmanifest)
 
     for providerNode in tree.getElementsByTagName('provider'):
@@ -758,7 +782,8 @@ def generateEventPipeImplFiles(
                         target_cpp,
                         runtimeFlavor,
                         inclusionList,
-                        exclusionList) + "\n")
+                        exclusionList,
+                        stub) + "\n")
 
                 if runtimeFlavor.coreclr:
                     eventpipeImpl.write(getCoreCLREventPipeImplFileSuffix())
@@ -766,7 +791,7 @@ def generateEventPipeImplFiles(
                     eventpipeImpl.write(getAotEventPipeImplFileSuffix())
 
 def generateEventPipeFiles(
-        etwmanifest, intermediate, extern, target_cpp, runtimeFlavor, inclusionList, exclusionList, dryRun):
+        etwmanifest, intermediate, extern, target_cpp, runtimeFlavor, inclusionList, exclusionList, stub, dryRun):
     eventpipe_directory = os.path.join(intermediate, eventpipe_dirname)
     tree = DOM.parse(etwmanifest)
 
@@ -774,7 +799,7 @@ def generateEventPipeFiles(
         os.makedirs(eventpipe_directory)
 
     # generate helper file
-    generateEventPipeHelperFile(etwmanifest, eventpipe_directory, target_cpp, runtimeFlavor, extern, dryRun)
+    generateEventPipeHelperFile(etwmanifest, eventpipe_directory, target_cpp, runtimeFlavor, extern, stub, dryRun)
 
     # generate all keywords
     for keywordNode in tree.getElementsByTagName('keyword'):
@@ -791,6 +816,7 @@ def generateEventPipeFiles(
         runtimeFlavor,
         inclusionList,
         exclusionList,
+        stub,
         dryRun
     )
 
@@ -818,6 +844,8 @@ def main(argv):
                           help='if specified, will generate files to be compiled into the CLR rather than extern' )
     required.add_argument('--dry-run', action='store_true',
                                     help='if specified, will output the names of the generated files instead of generating the files' )
+    required.add_argument('--stub', action='store_true',
+                                    help='if specified, will generate no-op provider and event implementations' )
     args, unknown = parser.parse_known_args(argv)
     if unknown:
         print('Unknown argument(s): ', ', '.join(unknown))
@@ -830,13 +858,14 @@ def main(argv):
     runtimeFlavor = RuntimeFlavor(args.runtimeflavor)
     extern = not args.nonextern
     dryRun = args.dry_run
+    stub = args.stub
 
     target_cpp = True
 
     inclusion_list = parseInclusionList(inclusion_filename)
     exclusion_list = parseExclusionList(exclusion_filename)
 
-    generateEventPipeFiles(sClrEtwAllMan, intermediate, extern, target_cpp, runtimeFlavor, inclusion_list, exclusion_list, dryRun)
+    generateEventPipeFiles(sClrEtwAllMan, intermediate, extern, target_cpp, runtimeFlavor, inclusion_list, exclusion_list, stub, dryRun)
 
 if __name__ == '__main__':
     return_code = main(sys.argv[1:])

@@ -22,7 +22,6 @@
         '$(WasmNativeStrip)' == 'false' or
         '$(WasmNativeDebugSymbols)' == 'true' or
         '$(WasmSingleFileBundle)' == 'false' or
-        '$(EnableDiagnostics)' == 'true' or
         '$(RunAOTCompilation)' == 'true' or
         '$(WasmBuildNative)' == 'true' or
         '$(EmccInitialHeapSize)' != '' or

@@ -57,6 +57,8 @@ For this, the builds get cached using `ProjectInfo` as the key.
 
     - Bundle checks read original native and prebuilt ReadyToRun assets from the pack,
       decoding manifest-listed gzip entries when the raw files aren't present.
+      For CoreCLR prelinks, they compare against the production or diagnostics flavor
+      selected by the build or publish.
 
     - Keep in mind, that if you have any non-test changes, and don't regenerate
       the nuget packages, then you will still be running tests against the

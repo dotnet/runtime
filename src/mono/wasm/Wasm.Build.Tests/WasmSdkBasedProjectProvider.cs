@@ -86,7 +86,7 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
         if (assertOptions.AssertSymbolsFile && assertOptions.ExpectSymbolsFile)
             res.Add("dotnet.native.js.symbols");
 
-        if (assertOptions.BuildOptions.EnableDiagnostics || EnvironmentVariables.RuntimeFlavor == "CoreCLR")
+        if (assertOptions.BuildOptions.EnableDiagnostics == true || EnvironmentVariables.RuntimeFlavor == "CoreCLR")
         {
             res.Add("dotnet.diagnostics.js");
             if (!assertOptions.BuildOptions.IsPublish)
@@ -155,7 +155,7 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
             {
                 throw new XunitException($"Could not find {nativeFilename}. Actual files on disk: {string.Join($"{Environment.NewLine}  ", actualDotnetFiles.Values.Select(a => a.ActualPath).Order())}");
             }
-            string packPath = RuntimePackAssets.GetNativePath(nativeFilename);
+            string packPath = GetPrelinkedNativeAssetPath(nativeFilename, assertOptions.BuildOptions);
             if (fromRuntimePack)
                 runtimePack.AssertFileSize(packPath, dotnetFile.ActualPath, buildType);
             else
@@ -230,7 +230,7 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
 
         // --- Materialized framework assets: JS modules and source maps in fx/_framework/ ---
         string[] materializedFiles = ["dotnet.runtime.js", "dotnet.runtime.js.map", "dotnet.js.map"];
-        if (buildOptions.EnableDiagnostics || EnvironmentVariables.RuntimeFlavor == "CoreCLR")
+        if (buildOptions.EnableDiagnostics == true || EnvironmentVariables.RuntimeFlavor == "CoreCLR")
         {
             materializedFiles = [.. materializedFiles, "dotnet.diagnostics.js", "dotnet.diagnostics.js.map"];
         }
@@ -298,7 +298,7 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
         {
             var runtimePack = new RuntimePackAssets(runtimePackDir ?? BuildTestBase.s_buildEnv.GetRuntimePackDir(tfm, buildOptions.RuntimeType));
             foreach (string nativeFilename in nativeFiles)
-                runtimePack.AssertFileSize(RuntimePackAssets.GetNativePath(nativeFilename), Path.Combine(nativeDir, nativeFilename), "build");
+                runtimePack.AssertFileSize(GetPrelinkedNativeAssetPath(nativeFilename, buildOptions), Path.Combine(nativeDir, nativeFilename), "build");
         }
     }
 

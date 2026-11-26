@@ -8,6 +8,20 @@
 
 #include <eventpipe/ds-server.h>
 
+#if defined(TARGET_BROWSER)
+
+class DiagnosticServerAdapter final
+{
+public:
+    static bool Initialize();
+    static bool Shutdown();
+    static void PauseForDiagnosticsMonitor();
+    static void ResumeRuntimeStartup();
+    static bool IsPausedInRuntimeStartup();
+};
+
+#else // TARGET_BROWSER
+
 class DiagnosticServerAdapter final
 {
 public:
@@ -36,6 +50,8 @@ public:
 		return ds_server_is_paused_in_startup();
 	}
 };
+
+#endif // TARGET_BROWSER
 
 #endif // FEATURE_PERFTRACING
 

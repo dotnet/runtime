@@ -44,6 +44,90 @@ Copyright (c) .NET Foundation. All rights reserved.
     <PublishReadyToRunCrossgen2ExtraArgs>$(PublishReadyToRunCrossgen2ExtraArgs);--opt-cross-module:*</PublishReadyToRunCrossgen2ExtraArgs>
   </PropertyGroup>
 
+  <Target Name="_WasmCoreClrSetDiagnosticsDefault"
+          BeforeTargets="_CoreCLRSetWasmBuildNativeDefaults">
+    <PropertyGroup>
+      <_WasmCoreClrDefaultedEnableDiagnostics Condition="'$(EnableDiagnostics)' == ''">true</_WasmCoreClrDefaultedEnableDiagnostics>
+      <EnableDiagnostics Condition="'$(EnableDiagnostics)' == '' and ('$(_IsPublishing)' == 'true' or '$(WasmBuildingForNestedPublish)' == 'true' or
+                                                                      '$(WasmBuildOnlyAfterPublish)' == 'true' or '$(DeployOnBuild)' == 'true')">false</EnableDiagnostics>
+      <EnableDiagnostics Condition="'$(EnableDiagnostics)' == ''">true</EnableDiagnostics>
+    </PropertyGroup>
+  </Target>
+
+  <!-- Direct MSBuild publish can share a project instance with Build. Only replace an inferred default. -->
+  <Target Name="_WasmCoreClrSetPublishDiagnosticsDefault"
+          BeforeTargets="_ResolveWasmPublishConfiguration"
+          Condition="'$(WasmBuildingForNestedPublish)' != 'true'">
+    <PropertyGroup>
+      <EnableDiagnostics Condition="'$(EnableDiagnostics)' == '' or '$(_WasmCoreClrDefaultedEnableDiagnostics)' == 'true'">false</EnableDiagnostics>
+    </PropertyGroup>
+    <ItemGroup Condition="'$(EnableDiagnostics)' != 'true'">
+      <WasmEnvironmentVariable Remove="@(WasmEnvironmentVariable->WithMetadataValue('_WasmFromDiagnosticPorts', 'true'))"
+                               MatchOnMetadata="_WasmFromDiagnosticPorts" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="_WasmCoreClrResolveNativeFlavorAssets"
+          DependsOnTargets="ResolveRuntimePackAssets;_ResolveWasmConfiguration">
+    <PropertyGroup>
+      <_WasmCoreClrDiagnosticsNativeDir>$([MSBuild]::NormalizeDirectory('$(_RuntimePackDir)', 'data', 'native-flavors', 'diagnostics'))</_WasmCoreClrDiagnosticsNativeDir>
+      <_WasmCoreClrProductionNativeDir>$(_RuntimePackNativeDir)</_WasmCoreClrProductionNativeDir>
+      <_WasmCoreClrProductionNativeDir Condition="'$(_WasmPrecompressedNativeDirectory)' != ''">$(_WasmPrecompressedNativeDirectory)</_WasmCoreClrProductionNativeDir>
+    </PropertyGroup>
+    <ItemGroup>
+      <_WasmCoreClrProductionNativeAsset Include="$(_WasmCoreClrProductionNativeDir)dotnet.native.wasm;
+                                                 $(_WasmCoreClrProductionNativeDir)dotnet.native.js;
+                                                 $(_RuntimePackNativeDir)dotnet.native.js.symbols" />
+      <_WasmCoreClrDiagnosticsNativeAsset Include="$(_WasmCoreClrDiagnosticsNativeDir)dotnet.native.wasm;
+                                                  $(_WasmCoreClrDiagnosticsNativeDir)dotnet.native.js;
+                                                  $(_WasmCoreClrDiagnosticsNativeDir)dotnet.native.js.symbols" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="_WasmCoreClrSelectBuildNativeFlavor"
+          DependsOnTargets="_WasmCoreClrSetDiagnosticsDefault;_WasmCoreClrResolveNativeFlavorAssets"
+          BeforeTargets="_ComputeWasmBuildCandidates"
+          Condition="'$(WasmBuildNative)' != 'true'">
+    <ItemGroup>
+      <_WasmCoreClrPrelinkedBuildAsset Include="@(_WasmCoreClrProductionNativeAsset)" Condition="'$(EnableDiagnostics)' != 'true'" />
+      <_WasmCoreClrPrelinkedBuildAsset Include="@(_WasmCoreClrDiagnosticsNativeAsset)" Condition="'$(EnableDiagnostics)' == 'true'" />
+    </ItemGroup>
+    <Error Condition="!Exists('%(_WasmCoreClrPrelinkedBuildAsset.Identity)')"
+           Text="The CoreCLR browser native flavor is missing '%(_WasmCoreClrPrelinkedBuildAsset.Identity)'. Install wasm-tools and set WasmBuildNative=true, or use a runtime pack that contains this flavor." />
+    <ItemGroup>
+      <WasmNativeAsset Include="@(_WasmCoreClrPrelinkedBuildAsset)" PrelinkedNativeAsset="true" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Publish replacements must have per-project identities, just like relink outputs. -->
+  <Target Name="_WasmCoreClrSelectPublishNativeFlavor"
+          DependsOnTargets="_ResolveWasmPublishConfiguration;_WasmCoreClrResolveNativeFlavorAssets"
+          BeforeTargets="ProcessPublishFilesForWasm"
+          Condition="'$(WasmBuildingForNestedPublish)' != 'true'">
+    <ItemGroup>
+      <WasmNativeAsset Remove="@(WasmNativeAsset->WithMetadataValue('PrelinkedNativeAsset', 'true'))" />
+      <_WasmCoreClrRelinkedWasm Include="@(WasmNativeAsset)" Condition="'%(WasmNativeAsset.Filename)%(WasmNativeAsset.Extension)' == 'dotnet.native.wasm'" />
+    </ItemGroup>
+    <PropertyGroup Condition="'@(_WasmCoreClrRelinkedWasm)' == ''">
+      <_WasmCoreClrPublishNativeFlavor Condition="'$(EnableDiagnostics)' == 'true'">diagnostics</_WasmCoreClrPublishNativeFlavor>
+      <_WasmCoreClrPublishNativeFlavor Condition="'$(EnableDiagnostics)' != 'true'">production</_WasmCoreClrPublishNativeFlavor>
+      <_WasmCoreClrPrelinkedPublishDir>$([MSBuild]::NormalizeDirectory('$(IntermediateOutputPath)', 'wasm', 'prelinked', '$(_WasmCoreClrPublishNativeFlavor)'))</_WasmCoreClrPrelinkedPublishDir>
+    </PropertyGroup>
+    <ItemGroup Condition="'@(_WasmCoreClrRelinkedWasm)' == ''">
+      <_WasmCoreClrPrelinkedPublishAsset Include="@(_WasmCoreClrProductionNativeAsset)" Condition="'$(EnableDiagnostics)' != 'true'" />
+      <_WasmCoreClrPrelinkedPublishAsset Include="@(_WasmCoreClrDiagnosticsNativeAsset)" Condition="'$(EnableDiagnostics)' == 'true'" />
+    </ItemGroup>
+    <Error Condition="'@(_WasmCoreClrRelinkedWasm)' == '' and !Exists('%(_WasmCoreClrPrelinkedPublishAsset.Identity)')"
+           Text="The CoreCLR browser native flavor is missing '%(_WasmCoreClrPrelinkedPublishAsset.Identity)'. Install wasm-tools and set WasmBuildNative=true, or use a runtime pack that contains this flavor." />
+    <Copy SourceFiles="@(_WasmCoreClrPrelinkedPublishAsset)"
+          DestinationFiles="@(_WasmCoreClrPrelinkedPublishAsset->'$(_WasmCoreClrPrelinkedPublishDir)%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true"
+          Condition="'@(_WasmCoreClrRelinkedWasm)' == ''">
+      <Output TaskParameter="DestinationFiles" ItemName="WasmNativeAsset" />
+      <Output TaskParameter="DestinationFiles" ItemName="FileWrites" />
+    </Copy>
+  </Target>
+
   <!-- Prebuilt R2R probe directory for ConvertDllsToWebcil. PublishTrimmed is deliberately not consulted:
        publish always crossgens the whole closure, so framework and app R2R both come from obj/R2R. Only the
        dev-loop build differs - it never crossgens, so its BCL comes from the runtime pack's R2R images.

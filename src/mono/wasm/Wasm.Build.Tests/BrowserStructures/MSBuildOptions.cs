@@ -24,5 +24,5 @@ public abstract record MSBuildOptions
     IDictionary<string, string>?    ExtraBuildEnvironmentVariables  = null,
     string                          NonDefaultFrameworkDir          = "",
     string                          ExtraMSBuildArgs                = "",
-    bool                            EnableDiagnostics               = false
+    bool?                           EnableDiagnostics               = null
 );

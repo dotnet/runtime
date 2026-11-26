@@ -35,6 +35,9 @@ internal sealed class RuntimePackAssets(string location, Func<string, Stream?> o
     public static string GetNativePath(string name)
         => $"runtimes/{BuildEnvironment.DefaultRuntimeIdentifier}/native/{name.Replace('\\', '/')}";
 
+    public static string GetPrelinkedNativePath(string name, bool diagnostics)
+        => diagnostics ? $"data/native-flavors/diagnostics/{name}" : GetNativePath(name);
+
     public byte[] ReadBytes(string path)
         => TryReadBytes(path) ?? throw MissingAsset(path);
 

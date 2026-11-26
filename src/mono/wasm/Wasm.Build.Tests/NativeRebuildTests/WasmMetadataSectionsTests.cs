@@ -238,19 +238,11 @@ namespace Wasm.Build.NativeRebuild.Tests
             Assert.Contains($".ascii \"{runtimePackVersion}\"", source);
             Assert.Null(package.GetEntry("runtimes/browser-wasm/native/dotnet-producers.o"));
 
-            ZipArchiveEntry? r2rCoreLibEntry = package.GetEntry("runtimes/browser-wasm/native/r2r/System.Private.CoreLib.wasm");
-            Assert.NotNull(r2rCoreLibEntry);
-            using var r2rCoreLib = new MemoryStream();
-            using (Stream r2rCoreLibStream = r2rCoreLibEntry.Open())
-                r2rCoreLibStream.CopyTo(r2rCoreLib);
-            AssertProducers(r2rCoreLib.ToArray(), "WebCIL", requireVersion: true);
+            var runtimePack = new RuntimePackAssets(packagePath, package);
+            byte[] r2rCoreLib = runtimePack.ReadBytes(RuntimePackAssets.GetNativePath("r2r/System.Private.CoreLib.wasm"));
+            AssertProducers(r2rCoreLib, "WebCIL", requireVersion: true);
 
-            ZipArchiveEntry? nativeWasmEntry = package.GetEntry("runtimes/browser-wasm/native/dotnet.native.wasm");
-            Assert.NotNull(nativeWasmEntry);
-            using Stream nativeWasmStream = nativeWasmEntry.Open();
-            using var nativeWasm = new MemoryStream(checked((int)nativeWasmEntry.Length));
-            nativeWasmStream.CopyTo(nativeWasm);
-            byte[] nativeWasmBytes = nativeWasm.ToArray();
+            byte[] nativeWasmBytes = runtimePack.ReadBytes(RuntimePackAssets.GetNativePath("dotnet.native.wasm"));
             AssertProducers(nativeWasmBytes, "CoreCLR", expectedVersion: runtimePackVersion);
             byte[]? nativeBuildId = ReadBuildId(nativeWasmBytes);
             Assert.NotNull(nativeBuildId);

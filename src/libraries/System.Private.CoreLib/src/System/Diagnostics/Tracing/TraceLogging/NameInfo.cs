@@ -73,6 +73,9 @@ namespace System.Diagnostics.Tracing
 #if FEATURE_PERFTRACING
         public IntPtr GetOrCreateEventHandle(EventProvider provider, TraceLoggingEventHandleTable eventHandleTable, EventDescriptor descriptor, TraceLoggingEventTypes eventTypes)
         {
+            if (provider._eventProvider is EventPipeEventProvider { IsRegistered: false })
+                return IntPtr.Zero;
+
             IntPtr eventHandle;
             if ((eventHandle = eventHandleTable[descriptor.EventId]) == IntPtr.Zero)
             {
@@ -107,6 +110,7 @@ namespace System.Diagnostics.Tracing
                         }
 
                         // Cache the event handle.
+                        Debug.Assert(eventHandle != IntPtr.Zero);
                         eventHandleTable.SetEventHandle(descriptor.EventId, eventHandle);
                     }
                 }

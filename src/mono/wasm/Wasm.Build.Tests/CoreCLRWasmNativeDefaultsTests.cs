@@ -40,6 +40,7 @@ namespace Wasm.Build.Tests
             { "<InvariantGlobalization>false</InvariantGlobalization>", false },
             { "<InvariantTimezone>false</InvariantTimezone>", false },
             { "<EnableDiagnostics>false</EnableDiagnostics>", false },
+            { "<EnableDiagnostics>true</EnableDiagnostics>", false },
             // property left unset -> no relink
             { "", false },
             // casing must not matter, MSBuild string comparison is case-insensitive
@@ -47,7 +48,6 @@ namespace Wasm.Build.Tests
             // property differing from the runtime pack -> relink
             { "<InvariantGlobalization>true</InvariantGlobalization>", true },
             { "<InvariantTimezone>true</InvariantTimezone>", true },
-            { "<EnableDiagnostics>true</EnableDiagnostics>", true },
             { "<WasmInitialHeapSize>67108864</WasmInitialHeapSize>", true },
             // EmccInitialHeapSize is the documented browser property and EmccTotalMemory its legacy
             // alias; both must be normalized into WasmInitialHeapSize before the registry compares.
@@ -72,6 +72,16 @@ namespace Wasm.Build.Tests
 
             Assert.NotNull(line);
             Assert.Contains($"** WasmBuildNative: '{(expectWasmBuildNative ? "true" : "")}'", line);
+        }
+
+        [Fact]
+        public void BuildWithDiagnosticsDisabledUsesProductionPrelink()
+        {
+            Configuration config = Configuration.Debug;
+            ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.WasmBasicTestApp, "coreclr_native_production",
+                extraProperties: "<EnableDiagnostics>false</EnableDiagnostics>");
+
+            BuildProject(info, config, new BuildOptions(EnableDiagnostics: false));
         }
 
         [Theory]

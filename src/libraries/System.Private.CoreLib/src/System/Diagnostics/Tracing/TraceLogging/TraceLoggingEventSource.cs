@@ -417,7 +417,6 @@ namespace System.Diagnostics.Tracing
 
 #if FEATURE_PERFTRACING
             IntPtr eventHandle = nameInfo.GetOrCreateEventHandle(m_eventPipeProvider, m_eventHandleTable, descriptor, eventTypes);
-            Debug.Assert(eventHandle != IntPtr.Zero);
 #else
             IntPtr eventHandle = IntPtr.Zero;
 #endif
@@ -527,7 +526,6 @@ namespace System.Diagnostics.Tracing
 
 #if FEATURE_PERFTRACING
                 IntPtr eventHandle = nameInfo.GetOrCreateEventHandle(m_eventPipeProvider, m_eventHandleTable, descriptor, eventTypes);
-                Debug.Assert(eventHandle != IntPtr.Zero);
 #else
                 IntPtr eventHandle = IntPtr.Zero;
 #endif
@@ -595,7 +593,6 @@ namespace System.Diagnostics.Tracing
 
 #if FEATURE_PERFTRACING
                     IntPtr eventHandle = nameInfo.GetOrCreateEventHandle(m_eventPipeProvider, m_eventHandleTable, descriptor, eventTypes);
-                    Debug.Assert(eventHandle != IntPtr.Zero);
 #else
                     IntPtr eventHandle = IntPtr.Zero;
 #endif

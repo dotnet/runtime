@@ -4,6 +4,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
@@ -83,6 +85,99 @@ public class WorkloadRequiredTests : BlazorWasmTestBase
 
         BlazorPublish(info, config, new PublishOptions(UseCache: false));
         await RunForPublishWithWebServer(new BlazorRunOptions(config));
+    }
+
+    [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+    [InlineData(false, "", "diagnostics")]
+    [InlineData(true, "", "production")]
+    [InlineData(false, "<EnableDiagnostics>false</EnableDiagnostics>", "production")]
+    [InlineData(true, "<EnableDiagnostics>true</EnableDiagnostics>", "diagnostics")]
+    [TestCategory("no-workload")]
+    public async Task CoreClrPrelinkedNativeFlavorIsSelectedWithoutWorkload(bool publish, string extraProperties, string expectedFlavor)
+    {
+        Configuration config = Configuration.Debug;
+        ProjectInfo info = CopyTestAsset(
+            config,
+            aot: false,
+            TestAsset.BlazorBasicTestApp,
+            $"coreclr_native_flavor_{(publish ? "publish" : "build")}_{expectedFlavor}",
+            extraProperties: extraProperties);
+
+        (string _, string output) = publish
+            ? PublishProject(info, config, new PublishOptions(UseCache: false))
+            : BuildProject(info, config, new BuildOptions());
+
+        Assert.DoesNotContain("Linking CoreCLR WASM", output);
+
+        BuildPaths paths = GetBuildPaths(config, forPublish: publish);
+        string frameworkDir = publish
+            ? paths.BinFrameworkDir
+            : WasmSdkBasedProjectProvider.GetMaterializedFrameworkDir(paths.ObjDir);
+        string actualNativeWasm = Assert.Single(Directory.GetFiles(frameworkDir, "dotnet.native*.wasm", SearchOption.TopDirectoryOnly));
+        string runtimePackDir = ProjectProviderBase.TryGetRuntimePackDirFromBuildOutput(output)
+            ?? throw new InvalidOperationException($"Could not resolve runtime pack from build output:{Environment.NewLine}{output}");
+        var runtimePack = new RuntimePackAssets(runtimePackDir);
+        string expectedNativeWasm = RuntimePackAssets.GetPrelinkedNativePath("dotnet.native.wasm", expectedFlavor == "diagnostics");
+        Assert.Equal(
+            SHA256.HashData(runtimePack.ReadBytes(expectedNativeWasm)),
+            SHA256.HashData(File.ReadAllBytes(actualNativeWasm)));
+
+        BlazorRunOptions runOptions = new(config);
+        _ = publish
+            ? await RunForPublishWithWebServer(runOptions)
+            : await RunForBuildWithDotnetRun(runOptions);
+    }
+
+    [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+    [InlineData(null, null)]
+    [InlineData("Publish", null)]
+    [InlineData("Build;Publish", null)]
+    [InlineData("Build;Publish", true)]
+    [InlineData("Build;Publish", false)]
+    [TestCategory("no-workload")]
+    public void CoreClrPrelinkedPublishUsesMatchingNativeAssets(string? msbuildTargets, bool? enableDiagnostics)
+    {
+        const string diagnosticPorts = "ws://localhost:9000,connect,nosuspend";
+        Configuration config = Configuration.Debug;
+        string diagnosticsProperty = enableDiagnostics is bool enabled
+            ? $"<EnableDiagnostics>{enabled}</EnableDiagnostics>"
+            : "";
+        ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, "coreclr_publish_native_assets",
+            extraProperties: $"<WasmEmitSymbolMap>true</WasmEmitSymbolMap><DiagnosticPorts>{diagnosticPorts}</DiagnosticPorts>" + diagnosticsProperty);
+
+        string output;
+        if (msbuildTargets is null)
+        {
+            (_, output) = BuildProject(info, config, new BuildOptions(AssertAppBundle: false));
+            PublishProject(info, config, new PublishOptions(AssertAppBundle: false, UseCache: false, ExtraMSBuildArgs: "--no-build"));
+        }
+        else
+        {
+            string binlog = Path.Combine(_logPath, $"{info.ProjectName}-msbuild.binlog");
+            using DotNetCommand cmd = new DotNetCommand(s_buildEnv, _testOutput);
+            output = cmd.WithWorkingDirectory(_projectDir)
+                .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
+                .ExecuteWithCapturedOutput("msbuild", "-restore", $"-t:\"{msbuildTargets}\"", $"-bl:\"{binlog}\"",
+                    $"-p:Configuration={config}", "-nr:false")
+                .EnsureSuccessful().Output;
+        }
+
+        string runtimePackDir = ProjectProviderBase.TryGetRuntimePackDirFromBuildOutput(output)
+            ?? throw new InvalidOperationException($"Could not resolve runtime pack from build output:{Environment.NewLine}{output}");
+        var runtimePack = new RuntimePackAssets(runtimePackDir);
+        string frameworkDir = GetBuildPaths(config, forPublish: true).BinFrameworkDir;
+        foreach (string extension in new[] { ".wasm", ".js", ".js.symbols" })
+        {
+            string actual = Assert.Single(Directory.GetFiles(frameworkDir, $"dotnet.native*{extension}"));
+            string expected = RuntimePackAssets.GetPrelinkedNativePath($"dotnet.native{extension}", enableDiagnostics == true);
+            using FileStream actualStream = File.OpenRead(actual);
+            Assert.Equal(SHA256.HashData(runtimePack.ReadBytes(expected)), SHA256.HashData(actualStream));
+        }
+
+        string? publishedDiagnosticPorts = null;
+        _provider.GetBootJson(_provider.GetBootConfigPath(frameworkDir)).environmentVariables
+            ?.TryGetValue("DOTNET_DiagnosticPorts", out publishedDiagnosticPorts);
+        Assert.Equal(enableDiagnostics == true ? diagnosticPorts : null, publishedDiagnosticPorts);
     }
 
     [Theory, TestCategory("no-workload")]

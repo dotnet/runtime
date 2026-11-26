@@ -404,8 +404,8 @@ public class WebcilInWasmSizesTests
     public void PrecompressedRuntimePack_ProducesAndRegistersRuntimeAssets(bool endpointFingerprint)
     {
         using var pack = new PrecompressedTestPack();
-        Assert.Equal(5, pack.Producer.CompressedFiles.Length - 1);
-        Assert.Equal(4, pack.Producer.ReplacedFiles.Length);
+        Assert.Equal(6, pack.Producer.CompressedFiles.Length - 1);
+        Assert.Equal(5, pack.Producer.ReplacedFiles.Length);
         Assert.All(pack.Producer.ReplacedFiles, file => Assert.False(File.Exists(file.ItemSpec)));
         Assert.True(File.Exists(pack.AssemblyPath));
         Assert.True(File.Exists(pack.FacadePath));
@@ -758,6 +758,7 @@ public class WebcilInWasmSizesTests
         using var pack = new PrecompressedTestPack();
         string manifestPath = Path.Combine(pack.Root, "data", "PrecompressedAssets.xml");
         byte[] manifest = File.ReadAllBytes(manifestPath);
+        XElement updatedManifest = XElement.Load(manifestPath);
         string gzipPath = Path.Combine(pack.Root, "precompressed/runtimes/browser-wasm/native/dotnet.native.wasm.gz");
         byte[] originalGzip = File.ReadAllBytes(gzipPath);
         File.WriteAllBytes(pack.NativePath, pack.NativeBytes.Concat(new byte[] { 0, 1, 0 }).ToArray());
@@ -769,6 +770,10 @@ public class WebcilInWasmSizesTests
             PackageId = pack.Producer.PackageId, PackageVersion = pack.Producer.PackageVersion
         };
         Assert.True(producer.Execute());
+        XElement nativeEntry = Assert.Single(updatedManifest.Elements("Asset").Where(asset =>
+            (string?)asset.Attribute("RuntimePath") == RuntimePackAssets.GetNativePath("dotnet.native.wasm")));
+        nativeEntry.ReplaceWith(Assert.Single(XElement.Load(manifestPath).Elements("Asset")));
+        updatedManifest.Save(manifestPath);
         File.Delete(pack.NativePath);
         File.SetLastWriteTimeUtc(gzipPath, new DateTime(2002, 1, 1, 0, 0, 0, DateTimeKind.Utc));
         RunPrecompressedTarget(pack, "CheckStaticAssets", "-p:PackageId=Client", "-p:StaticWebAssetBasePath=Client");
@@ -909,10 +914,14 @@ public class WebcilInWasmSizesTests
             ReadyToRunBytes = BuildWebcilInWasm(File.ReadAllBytes(payload), tableSize: 1);
             File.WriteAllBytes(ReadyToRunPath, ReadyToRunBytes);
             File.WriteAllBytes(NativePath, NativeBytes);
+            string nativeJsPath = Path.Combine(native, "dotnet.native.js");
+            string nativeSymbolsPath = Path.Combine(native, "dotnet.native.js.symbols");
+            File.WriteAllText(nativeJsPath, "export const native = 1;");
+            File.WriteAllText(nativeSymbolsPath, "0:test");
             File.WriteAllText(Path.Combine(native, "dotnet.js"), "dynamic boot configuration");
             File.WriteAllText(Path.Combine(native, "dotnet.runtime.js"), "export const runtime = 1;");
             File.WriteAllText(Path.Combine(native, "icudt.dat"), "ICU data");
-            ITaskItem[] files = new[] { AssemblyPath, FacadePath, NativePath, ReadyToRunPath, Path.Combine(native, "dotnet.js"), Path.Combine(native, "dotnet.runtime.js"), Path.Combine(native, "icudt.dat") }
+            ITaskItem[] files = new[] { AssemblyPath, FacadePath, NativePath, nativeJsPath, nativeSymbolsPath, ReadyToRunPath, Path.Combine(native, "dotnet.js"), Path.Combine(native, "dotnet.runtime.js"), Path.Combine(native, "icudt.dat") }
                 .Select(path =>
                 {
                     var item = new TaskItem(path);

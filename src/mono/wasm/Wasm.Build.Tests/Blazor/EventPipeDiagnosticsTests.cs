@@ -48,6 +48,85 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
     [InlineData(Configuration.Debug)]
     [InlineData(Configuration.Release)]
     [TestCategory("no-workload")]
+    public Task BlazorEventPipeTestWithCpuSamplesPrelinked(Configuration config)
+        => BlazorEventPipeTestWithCpuSamplesCore(config, aot: false, readyToRun: false);
+
+    [ConditionalFact(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+    [TestCategory("no-workload")]
+    public async Task CoreClrPrelinkedProductionSupportsManagedEventListener()
+    {
+        Configuration config = Configuration.Debug;
+        ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, "coreclr_production_listener",
+            extraProperties: "<EventSourceSupport>true</EventSourceSupport>");
+        UpdateFile("Program.cs", new Dictionary<string, string>
+        {
+            ["var builder"] = """
+                using System.Diagnostics.Tracing;
+
+                using (var listener = new TestListener())
+                using (var source = new TestEventSource())
+                {
+                    if (source.ConstructionException is Exception error)
+                        Console.WriteLine($"EventSource construction failed: {error}");
+
+                    listener.EnableEvents(source, EventLevel.Informational);
+                    source.Message(42);
+                    Console.WriteLine($"Managed listener received: {listener.Received}");
+                }
+
+                using (var listener = new TestListener())
+                using (var source = new EventSource("BrowserTestDynamic"))
+                {
+                    listener.EnableEvents(source, EventLevel.Informational);
+                    source.Write("Message", new EventSourceOptions { Level = EventLevel.Informational });
+                    Console.WriteLine($"Managed listener received dynamic event: {listener.ReceivedDynamic}");
+                }
+
+                var builder
+                """,
+            ["await builder.Build().RunAsync();"] = """
+                await builder.Build().RunAsync();
+
+                sealed class TestEventSource : EventSource
+                {
+                    [Event(1)]
+                    public void Message(int value) => WriteEvent(1, value);
+                }
+
+                sealed class TestListener : EventListener
+                {
+                    public int? Received { get; private set; }
+                    public bool ReceivedDynamic { get; private set; }
+
+                    protected override void OnEventWritten(EventWrittenEventArgs eventData)
+                    {
+                        if (eventData.EventId == 1 && eventData.EventSource is TestEventSource)
+                            Received = (int)eventData.Payload![0]!;
+                        if (eventData.EventSource.Name == "BrowserTestDynamic" && eventData.EventName == "Message")
+                            ReceivedDynamic = true;
+                    }
+                }
+                """
+        });
+
+        PublishProject(info, config, new PublishOptions(AssertAppBundle: false, UseCache: false));
+        bool received = false;
+        bool receivedDynamic = false;
+        await RunForPublishWithWebServer(new BlazorRunOptions(config,
+            OnConsoleMessage: (_, message) =>
+            {
+                received |= message.Contains("Managed listener received: 42");
+                receivedDynamic |= message.Contains("Managed listener received dynamic event: True");
+            }));
+
+        Assert.True(received, "The production flavor did not deliver the manifest event to the managed listener.");
+        Assert.True(receivedDynamic, "The production flavor did not deliver the dynamic event to the managed listener.");
+    }
+
+    [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+    [InlineData(Configuration.Debug)]
+    [InlineData(Configuration.Release)]
+    [TestCategory("no-workload")]
     public Task BlazorEventPipeTestWithCpuSamplesReadyToRun(Configuration config)
         => BlazorEventPipeTestWithCpuSamplesCore(config, aot: false, readyToRun: true);
 
