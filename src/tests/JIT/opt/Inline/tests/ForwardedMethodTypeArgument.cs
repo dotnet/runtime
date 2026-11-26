@@ -325,6 +325,22 @@ public class ForwardedMethodTypeArgument
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void Clear(ref object value) => value = null;
 
+    // The GC local makes the inlinee spill its return. The caller has already spilled
+    // the same value to evaluate the second argument, so the inliner reuses that temp.
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static object MakeWithGcLocal<T>()
+    {
+        object local = null;
+        Clear(ref local);
+        return new Box<T>();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool CheckSpilledBox<T>(object value, Type tag) => value is Box<T> && tag == typeof(T);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool SharedReturnSpill<T>() => CheckSpilledBox<T>(MakeWithGcLocal<T>(), Cache<T>.Tag ?? typeof(T));
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static bool Cleared<T>()
     {
@@ -587,5 +603,6 @@ public class ForwardedMethodTypeArgument
         Assert.Equal(typeof(Dictionary<object, string>), Owner<object>.Both<string>());
         Assert.Equal(typeof(string), Owner<string>.Forward<object>(true));
         Assert.Equal(typeof(object), Owner<string>.Forward<object>(false));
+        Assert.True(SharedReturnSpill<string>());
     }
 }

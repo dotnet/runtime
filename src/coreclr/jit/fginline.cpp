@@ -751,6 +751,17 @@ private:
             const unsigned lclNum = tree->AsLclVarCommon()->GetLclNum();
             GenTree* const value  = tree->AsLclVarCommon()->Data();
 
+            // Sharing a return spill temp can produce Vn = Vn. Remove it before propagating the source's type facts.
+            //
+            if (value->OperIs(GT_LCL_VAR) && (value->AsLclVar()->GetLclNum() == lclNum))
+            {
+                JITDUMP("... removing self-store\n");
+                DISPTREE(tree);
+                tree->gtBashToNOP();
+                m_madeChanges = true;
+                return;
+            }
+
             // If we're storing to a ref typed local that has one definition,
             // we may be able to sharpen the type for the local.
             if (tree->TypeIs(TYP_REF))
@@ -779,16 +790,6 @@ private:
                         m_compiler->impLocalTypeExpressions->Set(lclNum, copy);
                     }
                 }
-            }
-
-            // If we created a self-store (say because we are sharing return spill temps) we can remove it.
-            //
-            if (value->OperIs(GT_LCL_VAR) && (value->AsLclVar()->GetLclNum() == lclNum))
-            {
-                JITDUMP("... removing self-store\n");
-                DISPTREE(tree);
-                tree->gtBashToNOP();
-                m_madeChanges = true;
             }
         }
         else if (tree->OperIs(GT_JTRUE))
