@@ -24,7 +24,6 @@
 #cmakedefine01 HAVE_KQUEUE
 #cmakedefine01 HAVE_PTHREAD_ATTR_GET_NP
 #cmakedefine01 HAVE_PTHREAD_GETATTR_NP
-#cmakedefine01 HAVE_CPUSET_T
 #cmakedefine01 HAVE_FSYNC
 #cmakedefine01 HAVE_FUTIMES
 #cmakedefine01 HAVE_SYSCTL
@@ -42,8 +41,6 @@
 #cmakedefine01 HAVE_SEMAPHORE_H
 #cmakedefine HAVE_TTRACE
 #cmakedefine01 HAVE_PIPE2
-#cmakedefine01 HAVE_SCHED_GETAFFINITY
-#cmakedefine01 HAVE_SCHED_SETAFFINITY
 #cmakedefine HAVE_UNW_AARCH64_X19
 #cmakedefine01 HAVE_PUBLIC_XSTATE_STRUCT
 #cmakedefine01 HAVE__FPX_SW_BYTES_WITH_XSTATE_BV

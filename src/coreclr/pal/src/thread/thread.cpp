@@ -27,7 +27,6 @@ SET_DEFAULT_DEBUG_CHANNEL(THREAD); // some headers have code with asserts, so do
 #include "pal/utils.h"
 
 #include <minipal/thread.h>
-#include <minipal/cpucount.h>
 #include <minipal/ospagesize.h>
 
 #if defined(TARGET_BROWSER)
@@ -53,17 +52,12 @@ SET_DEFAULT_DEBUG_CHANNEL(THREAD); // some headers have code with asserts, so do
 #include "pal/fakepoll.h"
 #endif  // HAVE_POLL
 #include <limits.h>
-#include <algorithm>
 
 #if HAVE_SYS_LWP_H
 #include <sys/lwp.h>
 #endif
 #if HAVE_LWP_H
 #include <lwp.h>
-#endif
-
-#if HAVE_CPUSET_T
-typedef cpuset_t cpu_set_t;
 #endif
 
 using namespace CorUnix;
@@ -989,9 +983,6 @@ CPalThread::ThreadEntry(
     PTHREAD_START_ROUTINE pfnStartRoutine;
     LPVOID pvPar;
     DWORD retValue;
-#if HAVE_SCHED_GETAFFINITY && HAVE_SCHED_SETAFFINITY
-    int st;
-#endif
 
     pThread = reinterpret_cast<CPalThread*>(pvParam);
 
@@ -1000,74 +991,6 @@ CPalThread::ThreadEntry(
         ASSERT("THREAD pointer is NULL!\n");
         goto fail;
     }
-
-#if HAVE_SCHED_GETAFFINITY && HAVE_SCHED_SETAFFINITY
-    // Threads inherit their parent's affinity mask on Linux. This is not desired, so we reset
-    // the current thread's affinity mask to the mask of the current process.
-    //
-    // Typically, we would use pthread_attr_setaffinity_np() and have pthread_create() create the thread with the specified
-    // affinity. At least one implementation of pthread_create() following a pthread_attr_setaffinity_np() calls
-    // sched_setaffinity(<newThreadPid>, ...), which is not allowed under Snap's default strict confinement without manually
-    // connecting the process-control plug. To work around that, have the thread set the affinity after it starts.
-    // sched_setaffinity(<currentThreadPid>, ...) is also currently not allowed, only sched_setaffinity(0, ...).
-    // pthread_setaffinity_np(pthread_self(), ...) seems to call sched_setaffinity(<currentThreadPid>, ...) in at least one
-    // implementation, and does not work. Use sched_setaffinity(0, ...) instead. See the following for more information:
-    // - https://github.com/dotnet/runtime/pull/38795
-    // - https://github.com/dotnet/runtime/issues/1634
-    // - https://forum.snapcraft.io/t/requesting-autoconnect-for-interfaces-in-pigmeat-process-control-home/17987/13
-
-    {
-        int configuredCpuCount = minipal_get_cpu_max_possible_count();
-        if (configuredCpuCount == -1)
-        {
-            // In the unlikely event that minipal_get_cpu_max_possible_count() fails, just assume a reasonable default maximum number of CPUs to avoid failing thread creation.
-            configuredCpuCount = CPU_SETSIZE;
-        }
-
-        int cpusToAllocate = std::max(configuredCpuCount, CPU_SETSIZE);
-        cpu_set_t* pCpuSet = CPU_ALLOC(cpusToAllocate);
-        if (pCpuSet == nullptr)
-        {
-            ASSERT("CPU_ALLOC failed!\n");
-            palError = ERROR_OUTOFMEMORY;
-            goto fail;
-        }
-
-        size_t cpuSetSize = CPU_ALLOC_SIZE(cpusToAllocate);
-        CPU_ZERO_S(cpuSetSize, pCpuSet);
-
-        st = sched_getaffinity(gPID, cpuSetSize, pCpuSet);
-        if (st == 0)
-        {
-            st = sched_setaffinity(0, cpuSetSize, pCpuSet);
-            if (st != 0)
-            {
-                if (errno == EPERM || errno == EACCES)
-                {
-                    // Some sandboxed or restricted environments (snap strict confinement,
-                    // vendor-modified Android kernels with strict SELinux policy) block
-                    // sched_setaffinity even when passed a mask extracted via sched_getaffinity.
-                    // Treat this as non-fatal — the thread will continue running on any
-                    // available CPU rather than the originally affinitized one.
-                    WARN("sched_setaffinity failed with EPERM/EACCES, ignoring\n");
-                }
-                else
-                {
-                    ASSERT("sched_setaffinity failed!\n");
-                    CPU_FREE(pCpuSet);
-                    palError = ERROR_INTERNAL_ERROR;
-                    goto fail;
-                }
-            }
-        }
-        else
-        {
-            // Treat failure to get the affinity mask in release build as non-fatal.
-            ASSERT("sched_getaffinity failed!\n");
-        }
-        CPU_FREE(pCpuSet);
-    }
-#endif // HAVE_SCHED_GETAFFINITY && HAVE_SCHED_SETAFFINITY
 
 #if !HAVE_MACH_EXCEPTIONS && HAVE_SIGALTSTACK
     if (!pThread->EnsureSignalAlternateStack())
