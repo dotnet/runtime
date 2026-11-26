@@ -36,6 +36,13 @@ public class WebcilConverter
         return new WebcilConverter(converter, inputPath, outputPath, logger);
     }
 
+    /// <summary>Whether to emit producers and build_id sections in the wrapped module.</summary>
+    public bool EmitMetadataSections
+    {
+        get => _converter.EmitMetadataSections;
+        set => _converter.EmitMetadataSections = value;
+    }
+
     public void ConvertToWebcil()
     {
         Log.LogMessage(MessageImportance.Low, $"Converting to Webcil: input {_inputPath} output: {_outputPath}");

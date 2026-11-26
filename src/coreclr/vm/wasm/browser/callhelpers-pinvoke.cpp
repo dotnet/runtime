@@ -11,295 +11,297 @@
 #include <minipal/entrypoints.h>
 
 extern "C" {
-    uint32_t CompressionNative_Crc32 (uint32_t, void *, int32_t);
-    int32_t CompressionNative_Deflate (void *, int32_t);
-    int32_t CompressionNative_DeflateEnd (void *);
-    int32_t CompressionNative_DeflateInit2_ (void *, int32_t, int32_t, int32_t, int32_t, int32_t);
-    int32_t CompressionNative_DeflateReset (void *);
-    int32_t CompressionNative_Inflate (void *, int32_t);
-    int32_t CompressionNative_InflateEnd (void *);
-    int32_t CompressionNative_InflateInit2_ (void *, int32_t);
-    int32_t CompressionNative_InflateReset2_ (void *, int32_t);
-    void GlobalizationNative_ChangeCase (void *, int32_t, void *, int32_t, int32_t);
-    void GlobalizationNative_ChangeCaseInvariant (void *, int32_t, void *, int32_t, int32_t);
-    void GlobalizationNative_ChangeCaseTurkish (void *, int32_t, void *, int32_t, int32_t);
-    void GlobalizationNative_CloseSortHandle (void *);
-    int32_t GlobalizationNative_CompareString (void *, void *, int32_t, void *, int32_t, int32_t);
-    int32_t GlobalizationNative_EndsWith (void *, void *, int32_t, void *, int32_t, int32_t, void *);
-    int32_t GlobalizationNative_EnumCalendarInfo (void *, void *, uint32_t, int32_t, void *);
-    int32_t GlobalizationNative_GetCalendarInfo (void *, uint32_t, int32_t, void *, int32_t);
-    int32_t GlobalizationNative_GetCalendars (void *, void *, int32_t);
-    int32_t GlobalizationNative_GetDefaultLocaleName (void *, int32_t);
-    int32_t GlobalizationNative_GetICUVersion ();
-    int32_t GlobalizationNative_GetJapaneseEraStartDate (int32_t, void *, void *, void *);
-    int32_t GlobalizationNative_GetLatestJapaneseEra ();
-    int32_t GlobalizationNative_GetLocaleInfoGroupingSizes (void *, uint32_t, void *, void *);
-    int32_t GlobalizationNative_GetLocaleInfoInt (void *, uint32_t, void *);
-    int32_t GlobalizationNative_GetLocaleInfoString (void *, uint32_t, void *, int32_t, void *);
-    int32_t GlobalizationNative_GetLocaleName (void *, void *, int32_t);
-    int32_t GlobalizationNative_GetLocaleTimeFormat (void *, int32_t, void *, int32_t);
-    int32_t GlobalizationNative_GetLocales (void *, int32_t);
-    int32_t GlobalizationNative_GetSortHandle (void *, void *);
-    int32_t GlobalizationNative_GetSortKey (void *, void *, int32_t, void *, int32_t, int32_t);
-    int32_t GlobalizationNative_GetSortVersion (void *);
-    int32_t GlobalizationNative_IndexOf (void *, void *, int32_t, void *, int32_t, int32_t, void *);
-    void GlobalizationNative_InitICUFunctions (void *, void *, void *, void *);
-    void GlobalizationNative_InitOrdinalCasingPage (int32_t, void *);
-    void GlobalizationNative_InitOrdinalLowerCasingPage (int32_t, void *);
-    int32_t GlobalizationNative_IsNormalized (int32_t, void *, int32_t);
-    int32_t GlobalizationNative_IsPredefinedLocale (void *);
-    int32_t GlobalizationNative_LastIndexOf (void *, void *, int32_t, void *, int32_t, int32_t, void *);
-    int32_t GlobalizationNative_LoadICU ();
-    int32_t GlobalizationNative_NormalizeString (int32_t, void *, int32_t, void *, int32_t);
-    int32_t GlobalizationNative_StartsWith (void *, void *, int32_t, void *, int32_t, int32_t, void *);
-    int32_t GlobalizationNative_ToAscii (uint32_t, void *, int32_t, void *, int32_t);
-    int32_t GlobalizationNative_ToUnicode (uint32_t, void *, int32_t, void *, int32_t);
-    void * SystemInteropJS_BindJSImportST (void *);
-    void SystemInteropJS_CancelPromise (void *);
-    void SystemInteropJS_InvokeJSFunction (void *, void *);
-    void SystemInteropJS_InvokeJSImportST (int32_t, void *);
-    void SystemInteropJS_ReleaseCSOwnedObject (void *);
-    void SystemInteropJS_ResolveOrRejectPromise (void *);
-    void * SystemJS_GetLocaleInfo (void *, int32_t, void *, int32_t, void *, int32_t, void *);
-    int32_t SystemNative_Access (void *, int32_t);
-    void * SystemNative_AlignedAlloc (void *, void *);
-    void SystemNative_AlignedFree (void *);
-    void * SystemNative_AlignedRealloc (void *, void *, void *);
-    void * SystemNative_Calloc (void *, void *);
-    int32_t SystemNative_CanGetHiddenFlag ();
-    int32_t SystemNative_ChDir (void *);
-    int32_t SystemNative_ChMod (void *, int32_t);
-    int32_t SystemNative_Close (void *);
-    int32_t SystemNative_CloseDir (void *);
-    int32_t SystemNative_ConvertErrorPalToPlatform (int32_t);
-    int32_t SystemNative_ConvertErrorPlatformToPal (int32_t);
-    int32_t SystemNative_CopyFile (void *, void *, int64_t);
-    int32_t SystemNative_FAllocate (void *, int64_t, int64_t);
-    int32_t SystemNative_FChMod (void *, int32_t);
-    int32_t SystemNative_FChflags (void *, uint32_t);
-    int32_t SystemNative_FLock (void *, int32_t);
-    int32_t SystemNative_FStat (void *, void *);
-    int32_t SystemNative_FSync (void *);
-    int32_t SystemNative_FTruncate (void *, int64_t);
-    int32_t SystemNative_FUTimens (void *, void *);
-    int32_t SystemNative_FcntlGetIsNonBlocking (void *, void *);
-    int32_t SystemNative_FcntlSetFD (void *, int32_t);
-    int32_t SystemNative_FileSystemSupportsLocking (void *, int32_t, int32_t);
-    void SystemNative_Free (void *);
-    void SystemNative_FreeLibrary (void *);
-    double SystemNative_GetCpuUtilization (void *);
-    int32_t SystemNative_GetCryptographicallySecureRandomBytes (void *, int32_t);
-    void * SystemNative_GetCwd (void *, int32_t);
-    void * SystemNative_GetDefaultSearchOrderPseudoHandle ();
-    int32_t SystemNative_GetErrNo ();
-    void * SystemNative_GetLoadLibraryError ();
-    int64_t SystemNative_GetLowResolutionTimestamp ();
-    void SystemNative_GetNonCryptographicallySecureRandomBytes (void *, int32_t);
-    void * SystemNative_GetProcAddress (void *, void *);
-    int64_t SystemNative_GetSystemTimeAsTicks ();
-    void * SystemNative_GetTimeZoneData (void *, void *);
-    int64_t SystemNative_GetTimestamp ();
-    int32_t SystemNative_IsMemfdSupported ();
-    int32_t SystemNative_LChflags (void *, uint32_t);
-    int32_t SystemNative_LChflagsCanSetHiddenFlag ();
-    int64_t SystemNative_LSeek (void *, int64_t, int32_t);
-    int32_t SystemNative_LStat (void *, void *);
-    int32_t SystemNative_Link (void *, void *);
-    void * SystemNative_LoadLibrary (void *);
-    int32_t SystemNative_LockFileRegion (void *, int64_t, int64_t, int32_t);
-    void SystemNative_Log (void *, int32_t);
-    void SystemNative_LogError (void *, int32_t);
-    int32_t SystemNative_MAdvise (void *, uint64_t, int32_t);
-    void * SystemNative_MMap (void *, uint64_t, int32_t, int32_t, void *, int64_t);
-    int32_t SystemNative_MSync (void *, uint64_t, int32_t);
-    int32_t SystemNative_MUnmap (void *, uint64_t);
-    void * SystemNative_Malloc (void *);
-    void * SystemNative_MemfdCreate (void *, int32_t);
-    int32_t SystemNative_MkDir (void *, int32_t);
-    void * SystemNative_MkdTemp (void *);
-    void * SystemNative_MksTemps (void *, int32_t);
-    void * SystemNative_Open (void *, int32_t, int32_t);
-    void * SystemNative_OpenDir (void *);
-    int32_t SystemNative_PRead (void *, void *, int32_t, int64_t);
-    int64_t SystemNative_PReadV (void *, void *, int32_t, int64_t);
-    int32_t SystemNative_PWrite (void *, void *, int32_t, int64_t);
-    int64_t SystemNative_PWriteV (void *, void *, int32_t, int64_t);
-    int32_t SystemNative_Pipe (void *, int32_t);
-    int32_t SystemNative_PosixFAdvise (void *, int64_t, int64_t, int32_t);
-    int32_t SystemNative_Read (void *, void *, int32_t);
-    int32_t SystemNative_ReadDir (void *, void *);
-    int32_t SystemNative_ReadFromNonblocking (void *, void *, int32_t);
-    int32_t SystemNative_ReadLink (void *, void *, int32_t);
-    int64_t SystemNative_ReadV (void *, void *, int32_t);
-    void * SystemNative_Realloc (void *, void *);
-    int32_t SystemNative_Rename (void *, void *);
-    int32_t SystemNative_RmDir (void *);
-    void SystemNative_SetErrNo (int32_t);
-    void * SystemNative_ShmOpen (void *, int32_t, int32_t);
-    int32_t SystemNative_ShmUnlink (void *);
-    int32_t SystemNative_Stat (void *, void *);
-    void * SystemNative_StrErrorR (int32_t, void *, int32_t);
-    int32_t SystemNative_SymLink (void *, void *);
-    int64_t SystemNative_SysConf (int32_t);
-    void SystemNative_SysLog (int32_t, void *, void *);
-    int32_t SystemNative_ThreadSleep (int32_t);
-    int32_t SystemNative_UTimensat (void *, void *);
-    int32_t SystemNative_Unlink (void *);
-    int32_t SystemNative_Write (void *, void *, int32_t);
-    int32_t SystemNative_WriteToNonblocking (void *, void *, int32_t);
-    int64_t SystemNative_WriteV (void *, void *, int32_t);
 } // extern "C"
+namespace direct_pinvoke {
+    uint32_t CompressionNative_Crc32 (uint32_t, void *, int32_t) __asm__("CompressionNative_Crc32");
+    int32_t CompressionNative_Deflate (void *, int32_t) __asm__("CompressionNative_Deflate");
+    int32_t CompressionNative_DeflateEnd (void *) __asm__("CompressionNative_DeflateEnd");
+    int32_t CompressionNative_DeflateInit2_ (void *, int32_t, int32_t, int32_t, int32_t, int32_t) __asm__("CompressionNative_DeflateInit2_");
+    int32_t CompressionNative_DeflateReset (void *) __asm__("CompressionNative_DeflateReset");
+    int32_t CompressionNative_Inflate (void *, int32_t) __asm__("CompressionNative_Inflate");
+    int32_t CompressionNative_InflateEnd (void *) __asm__("CompressionNative_InflateEnd");
+    int32_t CompressionNative_InflateInit2_ (void *, int32_t) __asm__("CompressionNative_InflateInit2_");
+    int32_t CompressionNative_InflateReset2_ (void *, int32_t) __asm__("CompressionNative_InflateReset2_");
+    void GlobalizationNative_ChangeCase (void *, int32_t, void *, int32_t, int32_t) __asm__("GlobalizationNative_ChangeCase");
+    void GlobalizationNative_ChangeCaseInvariant (void *, int32_t, void *, int32_t, int32_t) __asm__("GlobalizationNative_ChangeCaseInvariant");
+    void GlobalizationNative_ChangeCaseTurkish (void *, int32_t, void *, int32_t, int32_t) __asm__("GlobalizationNative_ChangeCaseTurkish");
+    void GlobalizationNative_CloseSortHandle (void *) __asm__("GlobalizationNative_CloseSortHandle");
+    int32_t GlobalizationNative_CompareString (void *, void *, int32_t, void *, int32_t, int32_t) __asm__("GlobalizationNative_CompareString");
+    int32_t GlobalizationNative_EndsWith (void *, void *, int32_t, void *, int32_t, int32_t, void *) __asm__("GlobalizationNative_EndsWith");
+    int32_t GlobalizationNative_EnumCalendarInfo (void *, void *, uint32_t, int32_t, void *) __asm__("GlobalizationNative_EnumCalendarInfo");
+    int32_t GlobalizationNative_GetCalendarInfo (void *, uint32_t, int32_t, void *, int32_t) __asm__("GlobalizationNative_GetCalendarInfo");
+    int32_t GlobalizationNative_GetCalendars (void *, void *, int32_t) __asm__("GlobalizationNative_GetCalendars");
+    int32_t GlobalizationNative_GetDefaultLocaleName (void *, int32_t) __asm__("GlobalizationNative_GetDefaultLocaleName");
+    int32_t GlobalizationNative_GetICUVersion () __asm__("GlobalizationNative_GetICUVersion");
+    int32_t GlobalizationNative_GetJapaneseEraStartDate (int32_t, void *, void *, void *) __asm__("GlobalizationNative_GetJapaneseEraStartDate");
+    int32_t GlobalizationNative_GetLatestJapaneseEra () __asm__("GlobalizationNative_GetLatestJapaneseEra");
+    int32_t GlobalizationNative_GetLocaleInfoGroupingSizes (void *, uint32_t, void *, void *) __asm__("GlobalizationNative_GetLocaleInfoGroupingSizes");
+    int32_t GlobalizationNative_GetLocaleInfoInt (void *, uint32_t, void *) __asm__("GlobalizationNative_GetLocaleInfoInt");
+    int32_t GlobalizationNative_GetLocaleInfoString (void *, uint32_t, void *, int32_t, void *) __asm__("GlobalizationNative_GetLocaleInfoString");
+    int32_t GlobalizationNative_GetLocaleName (void *, void *, int32_t) __asm__("GlobalizationNative_GetLocaleName");
+    int32_t GlobalizationNative_GetLocaleTimeFormat (void *, int32_t, void *, int32_t) __asm__("GlobalizationNative_GetLocaleTimeFormat");
+    int32_t GlobalizationNative_GetLocales (void *, int32_t) __asm__("GlobalizationNative_GetLocales");
+    int32_t GlobalizationNative_GetSortHandle (void *, void *) __asm__("GlobalizationNative_GetSortHandle");
+    int32_t GlobalizationNative_GetSortKey (void *, void *, int32_t, void *, int32_t, int32_t) __asm__("GlobalizationNative_GetSortKey");
+    int32_t GlobalizationNative_GetSortVersion (void *) __asm__("GlobalizationNative_GetSortVersion");
+    int32_t GlobalizationNative_IndexOf (void *, void *, int32_t, void *, int32_t, int32_t, void *) __asm__("GlobalizationNative_IndexOf");
+    void GlobalizationNative_InitICUFunctions (void *, void *, void *, void *) __asm__("GlobalizationNative_InitICUFunctions");
+    void GlobalizationNative_InitOrdinalCasingPage (int32_t, void *) __asm__("GlobalizationNative_InitOrdinalCasingPage");
+    void GlobalizationNative_InitOrdinalLowerCasingPage (int32_t, void *) __asm__("GlobalizationNative_InitOrdinalLowerCasingPage");
+    int32_t GlobalizationNative_IsNormalized (int32_t, void *, int32_t) __asm__("GlobalizationNative_IsNormalized");
+    int32_t GlobalizationNative_IsPredefinedLocale (void *) __asm__("GlobalizationNative_IsPredefinedLocale");
+    int32_t GlobalizationNative_LastIndexOf (void *, void *, int32_t, void *, int32_t, int32_t, void *) __asm__("GlobalizationNative_LastIndexOf");
+    int32_t GlobalizationNative_LoadICU () __asm__("GlobalizationNative_LoadICU");
+    int32_t GlobalizationNative_NormalizeString (int32_t, void *, int32_t, void *, int32_t) __asm__("GlobalizationNative_NormalizeString");
+    int32_t GlobalizationNative_StartsWith (void *, void *, int32_t, void *, int32_t, int32_t, void *) __asm__("GlobalizationNative_StartsWith");
+    int32_t GlobalizationNative_ToAscii (uint32_t, void *, int32_t, void *, int32_t) __asm__("GlobalizationNative_ToAscii");
+    int32_t GlobalizationNative_ToUnicode (uint32_t, void *, int32_t, void *, int32_t) __asm__("GlobalizationNative_ToUnicode");
+    void * SystemInteropJS_BindJSImportST (void *) __asm__("SystemInteropJS_BindJSImportST");
+    void SystemInteropJS_CancelPromise (void *) __asm__("SystemInteropJS_CancelPromise");
+    void SystemInteropJS_InvokeJSFunction (void *, void *) __asm__("SystemInteropJS_InvokeJSFunction");
+    void SystemInteropJS_InvokeJSImportST (int32_t, void *) __asm__("SystemInteropJS_InvokeJSImportST");
+    void SystemInteropJS_ReleaseCSOwnedObject (void *) __asm__("SystemInteropJS_ReleaseCSOwnedObject");
+    void SystemInteropJS_ResolveOrRejectPromise (void *) __asm__("SystemInteropJS_ResolveOrRejectPromise");
+    void * SystemJS_GetLocaleInfo (void *, int32_t, void *, int32_t, void *, int32_t, void *) __asm__("SystemJS_GetLocaleInfo");
+    int32_t SystemNative_Access (void *, int32_t) __asm__("SystemNative_Access");
+    void * SystemNative_AlignedAlloc (void *, void *) __asm__("SystemNative_AlignedAlloc");
+    void SystemNative_AlignedFree (void *) __asm__("SystemNative_AlignedFree");
+    void * SystemNative_AlignedRealloc (void *, void *, void *) __asm__("SystemNative_AlignedRealloc");
+    void * SystemNative_Calloc (void *, void *) __asm__("SystemNative_Calloc");
+    int32_t SystemNative_CanGetHiddenFlag () __asm__("SystemNative_CanGetHiddenFlag");
+    int32_t SystemNative_ChDir (void *) __asm__("SystemNative_ChDir");
+    int32_t SystemNative_ChMod (void *, int32_t) __asm__("SystemNative_ChMod");
+    int32_t SystemNative_Close (void *) __asm__("SystemNative_Close");
+    int32_t SystemNative_CloseDir (void *) __asm__("SystemNative_CloseDir");
+    int32_t SystemNative_ConvertErrorPalToPlatform (int32_t) __asm__("SystemNative_ConvertErrorPalToPlatform");
+    int32_t SystemNative_ConvertErrorPlatformToPal (int32_t) __asm__("SystemNative_ConvertErrorPlatformToPal");
+    int32_t SystemNative_CopyFile (void *, void *, int64_t) __asm__("SystemNative_CopyFile");
+    int32_t SystemNative_FAllocate (void *, int64_t, int64_t) __asm__("SystemNative_FAllocate");
+    int32_t SystemNative_FChMod (void *, int32_t) __asm__("SystemNative_FChMod");
+    int32_t SystemNative_FChflags (void *, uint32_t) __asm__("SystemNative_FChflags");
+    int32_t SystemNative_FLock (void *, int32_t) __asm__("SystemNative_FLock");
+    int32_t SystemNative_FStat (void *, void *) __asm__("SystemNative_FStat");
+    int32_t SystemNative_FSync (void *) __asm__("SystemNative_FSync");
+    int32_t SystemNative_FTruncate (void *, int64_t) __asm__("SystemNative_FTruncate");
+    int32_t SystemNative_FUTimens (void *, void *) __asm__("SystemNative_FUTimens");
+    int32_t SystemNative_FcntlGetIsNonBlocking (void *, void *) __asm__("SystemNative_FcntlGetIsNonBlocking");
+    int32_t SystemNative_FcntlSetFD (void *, int32_t) __asm__("SystemNative_FcntlSetFD");
+    int32_t SystemNative_FileSystemSupportsLocking (void *, int32_t, int32_t) __asm__("SystemNative_FileSystemSupportsLocking");
+    void SystemNative_Free (void *) __asm__("SystemNative_Free");
+    void SystemNative_FreeLibrary (void *) __asm__("SystemNative_FreeLibrary");
+    double SystemNative_GetCpuUtilization (void *) __asm__("SystemNative_GetCpuUtilization");
+    int32_t SystemNative_GetCryptographicallySecureRandomBytes (void *, int32_t) __asm__("SystemNative_GetCryptographicallySecureRandomBytes");
+    void * SystemNative_GetCwd (void *, int32_t) __asm__("SystemNative_GetCwd");
+    void * SystemNative_GetDefaultSearchOrderPseudoHandle () __asm__("SystemNative_GetDefaultSearchOrderPseudoHandle");
+    int32_t SystemNative_GetErrNo () __asm__("SystemNative_GetErrNo");
+    void * SystemNative_GetLoadLibraryError () __asm__("SystemNative_GetLoadLibraryError");
+    int64_t SystemNative_GetLowResolutionTimestamp () __asm__("SystemNative_GetLowResolutionTimestamp");
+    void SystemNative_GetNonCryptographicallySecureRandomBytes (void *, int32_t) __asm__("SystemNative_GetNonCryptographicallySecureRandomBytes");
+    void * SystemNative_GetProcAddress (void *, void *) __asm__("SystemNative_GetProcAddress");
+    int64_t SystemNative_GetSystemTimeAsTicks () __asm__("SystemNative_GetSystemTimeAsTicks");
+    void * SystemNative_GetTimeZoneData (void *, void *) __asm__("SystemNative_GetTimeZoneData");
+    int64_t SystemNative_GetTimestamp () __asm__("SystemNative_GetTimestamp");
+    int32_t SystemNative_IsMemfdSupported () __asm__("SystemNative_IsMemfdSupported");
+    int32_t SystemNative_LChflags (void *, uint32_t) __asm__("SystemNative_LChflags");
+    int32_t SystemNative_LChflagsCanSetHiddenFlag () __asm__("SystemNative_LChflagsCanSetHiddenFlag");
+    int64_t SystemNative_LSeek (void *, int64_t, int32_t) __asm__("SystemNative_LSeek");
+    int32_t SystemNative_LStat (void *, void *) __asm__("SystemNative_LStat");
+    int32_t SystemNative_Link (void *, void *) __asm__("SystemNative_Link");
+    void * SystemNative_LoadLibrary (void *) __asm__("SystemNative_LoadLibrary");
+    int32_t SystemNative_LockFileRegion (void *, int64_t, int64_t, int32_t) __asm__("SystemNative_LockFileRegion");
+    void SystemNative_Log (void *, int32_t) __asm__("SystemNative_Log");
+    void SystemNative_LogError (void *, int32_t) __asm__("SystemNative_LogError");
+    int32_t SystemNative_MAdvise (void *, uint64_t, int32_t) __asm__("SystemNative_MAdvise");
+    void * SystemNative_MMap (void *, uint64_t, int32_t, int32_t, void *, int64_t) __asm__("SystemNative_MMap");
+    int32_t SystemNative_MSync (void *, uint64_t, int32_t) __asm__("SystemNative_MSync");
+    int32_t SystemNative_MUnmap (void *, uint64_t) __asm__("SystemNative_MUnmap");
+    void * SystemNative_Malloc (void *) __asm__("SystemNative_Malloc");
+    void * SystemNative_MemfdCreate (void *, int32_t) __asm__("SystemNative_MemfdCreate");
+    int32_t SystemNative_MkDir (void *, int32_t) __asm__("SystemNative_MkDir");
+    void * SystemNative_MkdTemp (void *) __asm__("SystemNative_MkdTemp");
+    void * SystemNative_MksTemps (void *, int32_t) __asm__("SystemNative_MksTemps");
+    void * SystemNative_Open (void *, int32_t, int32_t) __asm__("SystemNative_Open");
+    void * SystemNative_OpenDir (void *) __asm__("SystemNative_OpenDir");
+    int32_t SystemNative_PRead (void *, void *, int32_t, int64_t) __asm__("SystemNative_PRead");
+    int64_t SystemNative_PReadV (void *, void *, int32_t, int64_t) __asm__("SystemNative_PReadV");
+    int32_t SystemNative_PWrite (void *, void *, int32_t, int64_t) __asm__("SystemNative_PWrite");
+    int64_t SystemNative_PWriteV (void *, void *, int32_t, int64_t) __asm__("SystemNative_PWriteV");
+    int32_t SystemNative_Pipe (void *, int32_t) __asm__("SystemNative_Pipe");
+    int32_t SystemNative_PosixFAdvise (void *, int64_t, int64_t, int32_t) __asm__("SystemNative_PosixFAdvise");
+    int32_t SystemNative_Read (void *, void *, int32_t) __asm__("SystemNative_Read");
+    int32_t SystemNative_ReadDir (void *, void *) __asm__("SystemNative_ReadDir");
+    int32_t SystemNative_ReadFromNonblocking (void *, void *, int32_t) __asm__("SystemNative_ReadFromNonblocking");
+    int32_t SystemNative_ReadLink (void *, void *, int32_t) __asm__("SystemNative_ReadLink");
+    int64_t SystemNative_ReadV (void *, void *, int32_t) __asm__("SystemNative_ReadV");
+    void * SystemNative_Realloc (void *, void *) __asm__("SystemNative_Realloc");
+    int32_t SystemNative_Rename (void *, void *) __asm__("SystemNative_Rename");
+    int32_t SystemNative_RmDir (void *) __asm__("SystemNative_RmDir");
+    void SystemNative_SetErrNo (int32_t) __asm__("SystemNative_SetErrNo");
+    void * SystemNative_ShmOpen (void *, int32_t, int32_t) __asm__("SystemNative_ShmOpen");
+    int32_t SystemNative_ShmUnlink (void *) __asm__("SystemNative_ShmUnlink");
+    int32_t SystemNative_Stat (void *, void *) __asm__("SystemNative_Stat");
+    void * SystemNative_StrErrorR (int32_t, void *, int32_t) __asm__("SystemNative_StrErrorR");
+    int32_t SystemNative_SymLink (void *, void *) __asm__("SystemNative_SymLink");
+    int64_t SystemNative_SysConf (int32_t) __asm__("SystemNative_SysConf");
+    void SystemNative_SysLog (int32_t, void *, void *) __asm__("SystemNative_SysLog");
+    int32_t SystemNative_ThreadSleep (int32_t) __asm__("SystemNative_ThreadSleep");
+    int32_t SystemNative_UTimensat (void *, void *) __asm__("SystemNative_UTimensat");
+    int32_t SystemNative_Unlink (void *) __asm__("SystemNative_Unlink");
+    int32_t SystemNative_Write (void *, void *, int32_t) __asm__("SystemNative_Write");
+    int32_t SystemNative_WriteToNonblocking (void *, void *, int32_t) __asm__("SystemNative_WriteToNonblocking");
+    int64_t SystemNative_WriteV (void *, void *, int32_t) __asm__("SystemNative_WriteV");
+} // namespace direct_pinvoke
 
 static const Entry s_libSystem_Globalization_Native [] = {
-    DllImportEntry(GlobalizationNative_ChangeCase) // System.Private.CoreLib
-    DllImportEntry(GlobalizationNative_ChangeCaseInvariant) // System.Private.CoreLib
-    DllImportEntry(GlobalizationNative_ChangeCaseTurkish) // System.Private.CoreLib
-    DllImportEntry(GlobalizationNative_CloseSortHandle) // System.Private.CoreLib
-    DllImportEntry(GlobalizationNative_CompareString) // System.Private.CoreLib
-    DllImportEntry(GlobalizationNative_EndsWith) // System.Private.CoreLib
-    DllImportEntry(GlobalizationNative_EnumCalendarInfo) // System.Private.CoreLib
-    DllImportEntry(GlobalizationNative_GetCalendarInfo) // System.Private.CoreLib
-    DllImportEntry(GlobalizationNative_GetCalendars) // System.Private.CoreLib
-    DllImportEntry(GlobalizationNative_GetDefaultLocaleName) // System.Private.CoreLib
-    DllImportEntry(GlobalizationNative_GetICUVersion) // System.Private.CoreLib
-    DllImportEntry(GlobalizationNative_GetJapaneseEraStartDate) // System.Private.CoreLib
-    DllImportEntry(GlobalizationNative_GetLatestJapaneseEra) // System.Private.CoreLib
-    DllImportEntry(GlobalizationNative_GetLocaleInfoGroupingSizes) // System.Private.CoreLib
-    DllImportEntry(GlobalizationNative_GetLocaleInfoInt) // System.Private.CoreLib
-    DllImportEntry(GlobalizationNative_GetLocaleInfoString) // System.Private.CoreLib
-    DllImportEntry(GlobalizationNative_GetLocaleName) // System.Private.CoreLib
-    DllImportEntry(GlobalizationNative_GetLocaleTimeFormat) // System.Private.CoreLib
-    DllImportEntry(GlobalizationNative_GetLocales) // System.Private.CoreLib
-    DllImportEntry(GlobalizationNative_GetSortHandle) // System.Private.CoreLib
-    DllImportEntry(GlobalizationNative_GetSortKey) // System.Private.CoreLib
-    DllImportEntry(GlobalizationNative_GetSortVersion) // System.Private.CoreLib
-    DllImportEntry(GlobalizationNative_IndexOf) // System.Private.CoreLib
-    DllImportEntry(GlobalizationNative_InitICUFunctions) // System.Private.CoreLib
-    DllImportEntry(GlobalizationNative_InitOrdinalCasingPage) // System.Private.CoreLib
-    DllImportEntry(GlobalizationNative_InitOrdinalLowerCasingPage) // System.Private.CoreLib
-    DllImportEntry(GlobalizationNative_IsNormalized) // System.Private.CoreLib
-    DllImportEntry(GlobalizationNative_IsPredefinedLocale) // System.Private.CoreLib
-    DllImportEntry(GlobalizationNative_LastIndexOf) // System.Private.CoreLib
-    DllImportEntry(GlobalizationNative_LoadICU) // System.Private.CoreLib
-    DllImportEntry(GlobalizationNative_NormalizeString) // System.Private.CoreLib
-    DllImportEntry(GlobalizationNative_StartsWith) // System.Private.CoreLib
-    DllImportEntry(GlobalizationNative_ToAscii) // System.Private.CoreLib
-    DllImportEntry(GlobalizationNative_ToUnicode) // System.Private.CoreLib
+    { "GlobalizationNative_ChangeCase", (void*)&direct_pinvoke::GlobalizationNative_ChangeCase }, // System.Private.CoreLib
+    { "GlobalizationNative_ChangeCaseInvariant", (void*)&direct_pinvoke::GlobalizationNative_ChangeCaseInvariant }, // System.Private.CoreLib
+    { "GlobalizationNative_ChangeCaseTurkish", (void*)&direct_pinvoke::GlobalizationNative_ChangeCaseTurkish }, // System.Private.CoreLib
+    { "GlobalizationNative_CloseSortHandle", (void*)&direct_pinvoke::GlobalizationNative_CloseSortHandle }, // System.Private.CoreLib
+    { "GlobalizationNative_CompareString", (void*)&direct_pinvoke::GlobalizationNative_CompareString }, // System.Private.CoreLib
+    { "GlobalizationNative_EndsWith", (void*)&direct_pinvoke::GlobalizationNative_EndsWith }, // System.Private.CoreLib
+    { "GlobalizationNative_EnumCalendarInfo", (void*)&direct_pinvoke::GlobalizationNative_EnumCalendarInfo }, // System.Private.CoreLib
+    { "GlobalizationNative_GetCalendarInfo", (void*)&direct_pinvoke::GlobalizationNative_GetCalendarInfo }, // System.Private.CoreLib
+    { "GlobalizationNative_GetCalendars", (void*)&direct_pinvoke::GlobalizationNative_GetCalendars }, // System.Private.CoreLib
+    { "GlobalizationNative_GetDefaultLocaleName", (void*)&direct_pinvoke::GlobalizationNative_GetDefaultLocaleName }, // System.Private.CoreLib
+    { "GlobalizationNative_GetICUVersion", (void*)&direct_pinvoke::GlobalizationNative_GetICUVersion }, // System.Private.CoreLib
+    { "GlobalizationNative_GetJapaneseEraStartDate", (void*)&direct_pinvoke::GlobalizationNative_GetJapaneseEraStartDate }, // System.Private.CoreLib
+    { "GlobalizationNative_GetLatestJapaneseEra", (void*)&direct_pinvoke::GlobalizationNative_GetLatestJapaneseEra }, // System.Private.CoreLib
+    { "GlobalizationNative_GetLocaleInfoGroupingSizes", (void*)&direct_pinvoke::GlobalizationNative_GetLocaleInfoGroupingSizes }, // System.Private.CoreLib
+    { "GlobalizationNative_GetLocaleInfoInt", (void*)&direct_pinvoke::GlobalizationNative_GetLocaleInfoInt }, // System.Private.CoreLib
+    { "GlobalizationNative_GetLocaleInfoString", (void*)&direct_pinvoke::GlobalizationNative_GetLocaleInfoString }, // System.Private.CoreLib
+    { "GlobalizationNative_GetLocaleName", (void*)&direct_pinvoke::GlobalizationNative_GetLocaleName }, // System.Private.CoreLib
+    { "GlobalizationNative_GetLocaleTimeFormat", (void*)&direct_pinvoke::GlobalizationNative_GetLocaleTimeFormat }, // System.Private.CoreLib
+    { "GlobalizationNative_GetLocales", (void*)&direct_pinvoke::GlobalizationNative_GetLocales }, // System.Private.CoreLib
+    { "GlobalizationNative_GetSortHandle", (void*)&direct_pinvoke::GlobalizationNative_GetSortHandle }, // System.Private.CoreLib
+    { "GlobalizationNative_GetSortKey", (void*)&direct_pinvoke::GlobalizationNative_GetSortKey }, // System.Private.CoreLib
+    { "GlobalizationNative_GetSortVersion", (void*)&direct_pinvoke::GlobalizationNative_GetSortVersion }, // System.Private.CoreLib
+    { "GlobalizationNative_IndexOf", (void*)&direct_pinvoke::GlobalizationNative_IndexOf }, // System.Private.CoreLib
+    { "GlobalizationNative_InitICUFunctions", (void*)&direct_pinvoke::GlobalizationNative_InitICUFunctions }, // System.Private.CoreLib
+    { "GlobalizationNative_InitOrdinalCasingPage", (void*)&direct_pinvoke::GlobalizationNative_InitOrdinalCasingPage }, // System.Private.CoreLib
+    { "GlobalizationNative_InitOrdinalLowerCasingPage", (void*)&direct_pinvoke::GlobalizationNative_InitOrdinalLowerCasingPage }, // System.Private.CoreLib
+    { "GlobalizationNative_IsNormalized", (void*)&direct_pinvoke::GlobalizationNative_IsNormalized }, // System.Private.CoreLib
+    { "GlobalizationNative_IsPredefinedLocale", (void*)&direct_pinvoke::GlobalizationNative_IsPredefinedLocale }, // System.Private.CoreLib
+    { "GlobalizationNative_LastIndexOf", (void*)&direct_pinvoke::GlobalizationNative_LastIndexOf }, // System.Private.CoreLib
+    { "GlobalizationNative_LoadICU", (void*)&direct_pinvoke::GlobalizationNative_LoadICU }, // System.Private.CoreLib
+    { "GlobalizationNative_NormalizeString", (void*)&direct_pinvoke::GlobalizationNative_NormalizeString }, // System.Private.CoreLib
+    { "GlobalizationNative_StartsWith", (void*)&direct_pinvoke::GlobalizationNative_StartsWith }, // System.Private.CoreLib
+    { "GlobalizationNative_ToAscii", (void*)&direct_pinvoke::GlobalizationNative_ToAscii }, // System.Private.CoreLib
+    { "GlobalizationNative_ToUnicode", (void*)&direct_pinvoke::GlobalizationNative_ToUnicode }, // System.Private.CoreLib
 };
 
 static const Entry s_libSystem_IO_Compression_Native [] = {
-    DllImportEntry(CompressionNative_Crc32) // System.IO.Compression
-    DllImportEntry(CompressionNative_Deflate) // System.IO.Compression, System.Net.WebSockets
-    DllImportEntry(CompressionNative_DeflateEnd) // System.IO.Compression, System.Net.WebSockets
-    DllImportEntry(CompressionNative_DeflateInit2_) // System.IO.Compression, System.Net.WebSockets
-    DllImportEntry(CompressionNative_DeflateReset) // System.IO.Compression
-    DllImportEntry(CompressionNative_Inflate) // System.IO.Compression, System.Net.WebSockets
-    DllImportEntry(CompressionNative_InflateEnd) // System.IO.Compression, System.Net.WebSockets
-    DllImportEntry(CompressionNative_InflateInit2_) // System.IO.Compression, System.Net.WebSockets
-    DllImportEntry(CompressionNative_InflateReset2_) // System.IO.Compression
+    { "CompressionNative_Crc32", (void*)&direct_pinvoke::CompressionNative_Crc32 }, // System.IO.Compression
+    { "CompressionNative_Deflate", (void*)&direct_pinvoke::CompressionNative_Deflate }, // System.IO.Compression, System.Net.WebSockets
+    { "CompressionNative_DeflateEnd", (void*)&direct_pinvoke::CompressionNative_DeflateEnd }, // System.IO.Compression, System.Net.WebSockets
+    { "CompressionNative_DeflateInit2_", (void*)&direct_pinvoke::CompressionNative_DeflateInit2_ }, // System.IO.Compression, System.Net.WebSockets
+    { "CompressionNative_DeflateReset", (void*)&direct_pinvoke::CompressionNative_DeflateReset }, // System.IO.Compression
+    { "CompressionNative_Inflate", (void*)&direct_pinvoke::CompressionNative_Inflate }, // System.IO.Compression, System.Net.WebSockets
+    { "CompressionNative_InflateEnd", (void*)&direct_pinvoke::CompressionNative_InflateEnd }, // System.IO.Compression, System.Net.WebSockets
+    { "CompressionNative_InflateInit2_", (void*)&direct_pinvoke::CompressionNative_InflateInit2_ }, // System.IO.Compression, System.Net.WebSockets
+    { "CompressionNative_InflateReset2_", (void*)&direct_pinvoke::CompressionNative_InflateReset2_ }, // System.IO.Compression
 };
 
 static const Entry s_libSystem_Native [] = {
-    DllImportEntry(SystemNative_Access) // System.Private.CoreLib
-    DllImportEntry(SystemNative_AlignedAlloc) // System.Private.CoreLib
-    DllImportEntry(SystemNative_AlignedFree) // System.Private.CoreLib
-    DllImportEntry(SystemNative_AlignedRealloc) // System.Private.CoreLib
-    DllImportEntry(SystemNative_Calloc) // System.Private.CoreLib
-    DllImportEntry(SystemNative_CanGetHiddenFlag) // System.Private.CoreLib
-    DllImportEntry(SystemNative_ChDir) // System.Private.CoreLib
-    DllImportEntry(SystemNative_ChMod) // System.Private.CoreLib
-    DllImportEntry(SystemNative_Close) // System.Private.CoreLib
-    DllImportEntry(SystemNative_CloseDir) // System.Private.CoreLib
-    DllImportEntry(SystemNative_ConvertErrorPalToPlatform) // System.Console, System.IO.Compression.ZipFile, System.IO.MemoryMappedFiles, System.Net.Primitives, System.Private.CoreLib
-    DllImportEntry(SystemNative_ConvertErrorPlatformToPal) // System.Console, System.IO.Compression.ZipFile, System.IO.MemoryMappedFiles, System.Net.Primitives, System.Private.CoreLib
-    DllImportEntry(SystemNative_CopyFile) // System.Private.CoreLib
-    DllImportEntry(SystemNative_FAllocate) // System.Private.CoreLib
-    DllImportEntry(SystemNative_FChMod) // System.Private.CoreLib
-    DllImportEntry(SystemNative_FChflags) // System.Private.CoreLib
-    DllImportEntry(SystemNative_FLock) // System.Private.CoreLib
-    DllImportEntry(SystemNative_FStat) // System.IO.Compression.ZipFile, System.Private.CoreLib
-    DllImportEntry(SystemNative_FSync) // System.Private.CoreLib
-    DllImportEntry(SystemNative_FTruncate) // System.IO.MemoryMappedFiles, System.Private.CoreLib
-    DllImportEntry(SystemNative_FUTimens) // System.Private.CoreLib
-    DllImportEntry(SystemNative_FcntlGetIsNonBlocking) // System.Private.CoreLib
-    DllImportEntry(SystemNative_FcntlSetFD) // System.IO.MemoryMappedFiles
-    DllImportEntry(SystemNative_FileSystemSupportsLocking) // System.Private.CoreLib
-    DllImportEntry(SystemNative_Free) // System.Private.CoreLib
-    DllImportEntry(SystemNative_FreeLibrary) // System.Private.CoreLib
-    DllImportEntry(SystemNative_GetCpuUtilization) // System.Private.CoreLib
-    DllImportEntry(SystemNative_GetCryptographicallySecureRandomBytes) // System.IO.Compression, System.Private.CoreLib, System.Security.Cryptography
-    DllImportEntry(SystemNative_GetCwd) // System.Private.CoreLib
-    DllImportEntry(SystemNative_GetDefaultSearchOrderPseudoHandle) // System.Private.CoreLib
-    DllImportEntry(SystemNative_GetErrNo) // System.Private.CoreLib
-    DllImportEntry(SystemNative_GetLoadLibraryError) // System.Private.CoreLib
-    DllImportEntry(SystemNative_GetLowResolutionTimestamp) // System.Private.CoreLib
-    DllImportEntry(SystemNative_GetNonCryptographicallySecureRandomBytes) // System.Private.CoreLib
-    DllImportEntry(SystemNative_GetProcAddress) // System.Private.CoreLib
-    DllImportEntry(SystemNative_GetSystemTimeAsTicks) // System.Private.CoreLib
-    DllImportEntry(SystemNative_GetTimeZoneData) // System.Private.CoreLib
-    DllImportEntry(SystemNative_GetTimestamp) // System.Private.CoreLib
-    DllImportEntry(SystemNative_IsMemfdSupported) // System.IO.MemoryMappedFiles
-    DllImportEntry(SystemNative_LChflags) // System.Private.CoreLib
-    DllImportEntry(SystemNative_LChflagsCanSetHiddenFlag) // System.Private.CoreLib
-    DllImportEntry(SystemNative_LSeek) // System.Private.CoreLib
-    DllImportEntry(SystemNative_LStat) // System.Private.CoreLib
-    DllImportEntry(SystemNative_Link) // System.Private.CoreLib
-    DllImportEntry(SystemNative_LoadLibrary) // System.Private.CoreLib
-    DllImportEntry(SystemNative_LockFileRegion) // System.Private.CoreLib
-    DllImportEntry(SystemNative_Log) // System.Private.CoreLib
-    DllImportEntry(SystemNative_LogError) // System.Private.CoreLib
-    DllImportEntry(SystemNative_MAdvise) // System.IO.MemoryMappedFiles
-    DllImportEntry(SystemNative_MMap) // System.IO.MemoryMappedFiles
-    DllImportEntry(SystemNative_MSync) // System.IO.MemoryMappedFiles
-    DllImportEntry(SystemNative_MUnmap) // System.IO.MemoryMappedFiles
-    DllImportEntry(SystemNative_Malloc) // System.Private.CoreLib
-    DllImportEntry(SystemNative_MemfdCreate) // System.IO.MemoryMappedFiles
-    DllImportEntry(SystemNative_MkDir) // System.Private.CoreLib
-    DllImportEntry(SystemNative_MkdTemp) // System.Private.CoreLib
-    DllImportEntry(SystemNative_MksTemps) // System.Private.CoreLib
-    DllImportEntry(SystemNative_Open) // System.Private.CoreLib
-    DllImportEntry(SystemNative_OpenDir) // System.Private.CoreLib
-    DllImportEntry(SystemNative_PRead) // System.Private.CoreLib
-    DllImportEntry(SystemNative_PReadV) // System.Private.CoreLib
-    DllImportEntry(SystemNative_PWrite) // System.Private.CoreLib
-    DllImportEntry(SystemNative_PWriteV) // System.Private.CoreLib
-    DllImportEntry(SystemNative_Pipe) // System.Private.CoreLib
-    DllImportEntry(SystemNative_PosixFAdvise) // System.Private.CoreLib
-    DllImportEntry(SystemNative_Read) // System.Private.CoreLib
-    DllImportEntry(SystemNative_ReadDir) // System.Private.CoreLib
-    DllImportEntry(SystemNative_ReadFromNonblocking) // System.Private.CoreLib
-    DllImportEntry(SystemNative_ReadLink) // System.Private.CoreLib
-    DllImportEntry(SystemNative_ReadV) // System.Private.CoreLib
-    DllImportEntry(SystemNative_Realloc) // System.Private.CoreLib
-    DllImportEntry(SystemNative_Rename) // System.Private.CoreLib
-    DllImportEntry(SystemNative_RmDir) // System.Private.CoreLib
-    DllImportEntry(SystemNative_SetErrNo) // System.Private.CoreLib
-    DllImportEntry(SystemNative_ShmOpen) // System.IO.MemoryMappedFiles
-    DllImportEntry(SystemNative_ShmUnlink) // System.IO.MemoryMappedFiles
-    DllImportEntry(SystemNative_Stat) // System.IO.Compression.ZipFile, System.Private.CoreLib
-    DllImportEntry(SystemNative_StrErrorR) // System.Console, System.IO.Compression.ZipFile, System.IO.MemoryMappedFiles, System.Net.Primitives, System.Private.CoreLib
-    DllImportEntry(SystemNative_SymLink) // System.Private.CoreLib
-    DllImportEntry(SystemNative_SysConf) // System.IO.MemoryMappedFiles, System.Private.CoreLib
-    DllImportEntry(SystemNative_SysLog) // System.Private.CoreLib
-    DllImportEntry(SystemNative_ThreadSleep) // System.Private.CoreLib
-    DllImportEntry(SystemNative_UTimensat) // System.Private.CoreLib
-    DllImportEntry(SystemNative_Unlink) // System.IO.MemoryMappedFiles, System.Private.CoreLib
-    DllImportEntry(SystemNative_Write) // System.Console, System.Private.CoreLib
-    DllImportEntry(SystemNative_WriteToNonblocking) // System.Private.CoreLib
-    DllImportEntry(SystemNative_WriteV) // System.Private.CoreLib
+    { "SystemNative_Access", (void*)&direct_pinvoke::SystemNative_Access }, // System.Private.CoreLib
+    { "SystemNative_AlignedAlloc", (void*)&direct_pinvoke::SystemNative_AlignedAlloc }, // System.Private.CoreLib
+    { "SystemNative_AlignedFree", (void*)&direct_pinvoke::SystemNative_AlignedFree }, // System.Private.CoreLib
+    { "SystemNative_AlignedRealloc", (void*)&direct_pinvoke::SystemNative_AlignedRealloc }, // System.Private.CoreLib
+    { "SystemNative_Calloc", (void*)&direct_pinvoke::SystemNative_Calloc }, // System.Private.CoreLib
+    { "SystemNative_CanGetHiddenFlag", (void*)&direct_pinvoke::SystemNative_CanGetHiddenFlag }, // System.Private.CoreLib
+    { "SystemNative_ChDir", (void*)&direct_pinvoke::SystemNative_ChDir }, // System.Private.CoreLib
+    { "SystemNative_ChMod", (void*)&direct_pinvoke::SystemNative_ChMod }, // System.Private.CoreLib
+    { "SystemNative_Close", (void*)&direct_pinvoke::SystemNative_Close }, // System.Private.CoreLib
+    { "SystemNative_CloseDir", (void*)&direct_pinvoke::SystemNative_CloseDir }, // System.Private.CoreLib
+    { "SystemNative_ConvertErrorPalToPlatform", (void*)&direct_pinvoke::SystemNative_ConvertErrorPalToPlatform }, // System.Console, System.IO.Compression.ZipFile, System.IO.MemoryMappedFiles, System.Net.Primitives, System.Private.CoreLib
+    { "SystemNative_ConvertErrorPlatformToPal", (void*)&direct_pinvoke::SystemNative_ConvertErrorPlatformToPal }, // System.Console, System.IO.Compression.ZipFile, System.IO.MemoryMappedFiles, System.Net.Primitives, System.Private.CoreLib
+    { "SystemNative_CopyFile", (void*)&direct_pinvoke::SystemNative_CopyFile }, // System.Private.CoreLib
+    { "SystemNative_FAllocate", (void*)&direct_pinvoke::SystemNative_FAllocate }, // System.Private.CoreLib
+    { "SystemNative_FChMod", (void*)&direct_pinvoke::SystemNative_FChMod }, // System.Private.CoreLib
+    { "SystemNative_FChflags", (void*)&direct_pinvoke::SystemNative_FChflags }, // System.Private.CoreLib
+    { "SystemNative_FLock", (void*)&direct_pinvoke::SystemNative_FLock }, // System.Private.CoreLib
+    { "SystemNative_FStat", (void*)&direct_pinvoke::SystemNative_FStat }, // System.IO.Compression.ZipFile, System.Private.CoreLib
+    { "SystemNative_FSync", (void*)&direct_pinvoke::SystemNative_FSync }, // System.Private.CoreLib
+    { "SystemNative_FTruncate", (void*)&direct_pinvoke::SystemNative_FTruncate }, // System.IO.MemoryMappedFiles, System.Private.CoreLib
+    { "SystemNative_FUTimens", (void*)&direct_pinvoke::SystemNative_FUTimens }, // System.Private.CoreLib
+    { "SystemNative_FcntlGetIsNonBlocking", (void*)&direct_pinvoke::SystemNative_FcntlGetIsNonBlocking }, // System.Private.CoreLib
+    { "SystemNative_FcntlSetFD", (void*)&direct_pinvoke::SystemNative_FcntlSetFD }, // System.IO.MemoryMappedFiles
+    { "SystemNative_FileSystemSupportsLocking", (void*)&direct_pinvoke::SystemNative_FileSystemSupportsLocking }, // System.Private.CoreLib
+    { "SystemNative_Free", (void*)&direct_pinvoke::SystemNative_Free }, // System.Private.CoreLib
+    { "SystemNative_FreeLibrary", (void*)&direct_pinvoke::SystemNative_FreeLibrary }, // System.Private.CoreLib
+    { "SystemNative_GetCpuUtilization", (void*)&direct_pinvoke::SystemNative_GetCpuUtilization }, // System.Private.CoreLib
+    { "SystemNative_GetCryptographicallySecureRandomBytes", (void*)&direct_pinvoke::SystemNative_GetCryptographicallySecureRandomBytes }, // System.IO.Compression, System.Private.CoreLib, System.Security.Cryptography
+    { "SystemNative_GetCwd", (void*)&direct_pinvoke::SystemNative_GetCwd }, // System.Private.CoreLib
+    { "SystemNative_GetDefaultSearchOrderPseudoHandle", (void*)&direct_pinvoke::SystemNative_GetDefaultSearchOrderPseudoHandle }, // System.Private.CoreLib
+    { "SystemNative_GetErrNo", (void*)&direct_pinvoke::SystemNative_GetErrNo }, // System.Private.CoreLib
+    { "SystemNative_GetLoadLibraryError", (void*)&direct_pinvoke::SystemNative_GetLoadLibraryError }, // System.Private.CoreLib
+    { "SystemNative_GetLowResolutionTimestamp", (void*)&direct_pinvoke::SystemNative_GetLowResolutionTimestamp }, // System.Private.CoreLib
+    { "SystemNative_GetNonCryptographicallySecureRandomBytes", (void*)&direct_pinvoke::SystemNative_GetNonCryptographicallySecureRandomBytes }, // System.Private.CoreLib
+    { "SystemNative_GetProcAddress", (void*)&direct_pinvoke::SystemNative_GetProcAddress }, // System.Private.CoreLib
+    { "SystemNative_GetSystemTimeAsTicks", (void*)&direct_pinvoke::SystemNative_GetSystemTimeAsTicks }, // System.Private.CoreLib
+    { "SystemNative_GetTimeZoneData", (void*)&direct_pinvoke::SystemNative_GetTimeZoneData }, // System.Private.CoreLib
+    { "SystemNative_GetTimestamp", (void*)&direct_pinvoke::SystemNative_GetTimestamp }, // System.Private.CoreLib
+    { "SystemNative_IsMemfdSupported", (void*)&direct_pinvoke::SystemNative_IsMemfdSupported }, // System.IO.MemoryMappedFiles
+    { "SystemNative_LChflags", (void*)&direct_pinvoke::SystemNative_LChflags }, // System.Private.CoreLib
+    { "SystemNative_LChflagsCanSetHiddenFlag", (void*)&direct_pinvoke::SystemNative_LChflagsCanSetHiddenFlag }, // System.Private.CoreLib
+    { "SystemNative_LSeek", (void*)&direct_pinvoke::SystemNative_LSeek }, // System.Private.CoreLib
+    { "SystemNative_LStat", (void*)&direct_pinvoke::SystemNative_LStat }, // System.Private.CoreLib
+    { "SystemNative_Link", (void*)&direct_pinvoke::SystemNative_Link }, // System.Private.CoreLib
+    { "SystemNative_LoadLibrary", (void*)&direct_pinvoke::SystemNative_LoadLibrary }, // System.Private.CoreLib
+    { "SystemNative_LockFileRegion", (void*)&direct_pinvoke::SystemNative_LockFileRegion }, // System.Private.CoreLib
+    { "SystemNative_Log", (void*)&direct_pinvoke::SystemNative_Log }, // System.Private.CoreLib
+    { "SystemNative_LogError", (void*)&direct_pinvoke::SystemNative_LogError }, // System.Private.CoreLib
+    { "SystemNative_MAdvise", (void*)&direct_pinvoke::SystemNative_MAdvise }, // System.IO.MemoryMappedFiles
+    { "SystemNative_MMap", (void*)&direct_pinvoke::SystemNative_MMap }, // System.IO.MemoryMappedFiles
+    { "SystemNative_MSync", (void*)&direct_pinvoke::SystemNative_MSync }, // System.IO.MemoryMappedFiles
+    { "SystemNative_MUnmap", (void*)&direct_pinvoke::SystemNative_MUnmap }, // System.IO.MemoryMappedFiles
+    { "SystemNative_Malloc", (void*)&direct_pinvoke::SystemNative_Malloc }, // System.Private.CoreLib
+    { "SystemNative_MemfdCreate", (void*)&direct_pinvoke::SystemNative_MemfdCreate }, // System.IO.MemoryMappedFiles
+    { "SystemNative_MkDir", (void*)&direct_pinvoke::SystemNative_MkDir }, // System.Private.CoreLib
+    { "SystemNative_MkdTemp", (void*)&direct_pinvoke::SystemNative_MkdTemp }, // System.Private.CoreLib
+    { "SystemNative_MksTemps", (void*)&direct_pinvoke::SystemNative_MksTemps }, // System.Private.CoreLib
+    { "SystemNative_Open", (void*)&direct_pinvoke::SystemNative_Open }, // System.Private.CoreLib
+    { "SystemNative_OpenDir", (void*)&direct_pinvoke::SystemNative_OpenDir }, // System.Private.CoreLib
+    { "SystemNative_PRead", (void*)&direct_pinvoke::SystemNative_PRead }, // System.Private.CoreLib
+    { "SystemNative_PReadV", (void*)&direct_pinvoke::SystemNative_PReadV }, // System.Private.CoreLib
+    { "SystemNative_PWrite", (void*)&direct_pinvoke::SystemNative_PWrite }, // System.Private.CoreLib
+    { "SystemNative_PWriteV", (void*)&direct_pinvoke::SystemNative_PWriteV }, // System.Private.CoreLib
+    { "SystemNative_Pipe", (void*)&direct_pinvoke::SystemNative_Pipe }, // System.Private.CoreLib
+    { "SystemNative_PosixFAdvise", (void*)&direct_pinvoke::SystemNative_PosixFAdvise }, // System.Private.CoreLib
+    { "SystemNative_Read", (void*)&direct_pinvoke::SystemNative_Read }, // System.Private.CoreLib
+    { "SystemNative_ReadDir", (void*)&direct_pinvoke::SystemNative_ReadDir }, // System.Private.CoreLib
+    { "SystemNative_ReadFromNonblocking", (void*)&direct_pinvoke::SystemNative_ReadFromNonblocking }, // System.Private.CoreLib
+    { "SystemNative_ReadLink", (void*)&direct_pinvoke::SystemNative_ReadLink }, // System.Private.CoreLib
+    { "SystemNative_ReadV", (void*)&direct_pinvoke::SystemNative_ReadV }, // System.Private.CoreLib
+    { "SystemNative_Realloc", (void*)&direct_pinvoke::SystemNative_Realloc }, // System.Private.CoreLib
+    { "SystemNative_Rename", (void*)&direct_pinvoke::SystemNative_Rename }, // System.Private.CoreLib
+    { "SystemNative_RmDir", (void*)&direct_pinvoke::SystemNative_RmDir }, // System.Private.CoreLib
+    { "SystemNative_SetErrNo", (void*)&direct_pinvoke::SystemNative_SetErrNo }, // System.Private.CoreLib
+    { "SystemNative_ShmOpen", (void*)&direct_pinvoke::SystemNative_ShmOpen }, // System.IO.MemoryMappedFiles
+    { "SystemNative_ShmUnlink", (void*)&direct_pinvoke::SystemNative_ShmUnlink }, // System.IO.MemoryMappedFiles
+    { "SystemNative_Stat", (void*)&direct_pinvoke::SystemNative_Stat }, // System.IO.Compression.ZipFile, System.Private.CoreLib
+    { "SystemNative_StrErrorR", (void*)&direct_pinvoke::SystemNative_StrErrorR }, // System.Console, System.IO.Compression.ZipFile, System.IO.MemoryMappedFiles, System.Net.Primitives, System.Private.CoreLib
+    { "SystemNative_SymLink", (void*)&direct_pinvoke::SystemNative_SymLink }, // System.Private.CoreLib
+    { "SystemNative_SysConf", (void*)&direct_pinvoke::SystemNative_SysConf }, // System.IO.MemoryMappedFiles, System.Private.CoreLib
+    { "SystemNative_SysLog", (void*)&direct_pinvoke::SystemNative_SysLog }, // System.Private.CoreLib
+    { "SystemNative_ThreadSleep", (void*)&direct_pinvoke::SystemNative_ThreadSleep }, // System.Private.CoreLib
+    { "SystemNative_UTimensat", (void*)&direct_pinvoke::SystemNative_UTimensat }, // System.Private.CoreLib
+    { "SystemNative_Unlink", (void*)&direct_pinvoke::SystemNative_Unlink }, // System.IO.MemoryMappedFiles, System.Private.CoreLib
+    { "SystemNative_Write", (void*)&direct_pinvoke::SystemNative_Write }, // System.Console, System.Private.CoreLib
+    { "SystemNative_WriteToNonblocking", (void*)&direct_pinvoke::SystemNative_WriteToNonblocking }, // System.Private.CoreLib
+    { "SystemNative_WriteV", (void*)&direct_pinvoke::SystemNative_WriteV }, // System.Private.CoreLib
 };
 
 static const Entry s_libSystem_Native_Browser [] = {
-    DllImportEntry(SystemJS_GetLocaleInfo) // System.Private.CoreLib
+    { "SystemJS_GetLocaleInfo", (void*)&direct_pinvoke::SystemJS_GetLocaleInfo }, // System.Private.CoreLib
 };
 
 static const Entry s_libSystem_Runtime_InteropServices_JavaScript_Native [] = {
-    DllImportEntry(SystemInteropJS_BindJSImportST) // System.Runtime.InteropServices.JavaScript
-    DllImportEntry(SystemInteropJS_CancelPromise) // System.Runtime.InteropServices.JavaScript
-    DllImportEntry(SystemInteropJS_InvokeJSFunction) // System.Runtime.InteropServices.JavaScript
-    DllImportEntry(SystemInteropJS_InvokeJSImportST) // System.Runtime.InteropServices.JavaScript
-    DllImportEntry(SystemInteropJS_ReleaseCSOwnedObject) // System.Runtime.InteropServices.JavaScript
-    DllImportEntry(SystemInteropJS_ResolveOrRejectPromise) // System.Runtime.InteropServices.JavaScript
+    { "SystemInteropJS_BindJSImportST", (void*)&direct_pinvoke::SystemInteropJS_BindJSImportST }, // System.Runtime.InteropServices.JavaScript
+    { "SystemInteropJS_CancelPromise", (void*)&direct_pinvoke::SystemInteropJS_CancelPromise }, // System.Runtime.InteropServices.JavaScript
+    { "SystemInteropJS_InvokeJSFunction", (void*)&direct_pinvoke::SystemInteropJS_InvokeJSFunction }, // System.Runtime.InteropServices.JavaScript
+    { "SystemInteropJS_InvokeJSImportST", (void*)&direct_pinvoke::SystemInteropJS_InvokeJSImportST }, // System.Runtime.InteropServices.JavaScript
+    { "SystemInteropJS_ReleaseCSOwnedObject", (void*)&direct_pinvoke::SystemInteropJS_ReleaseCSOwnedObject }, // System.Runtime.InteropServices.JavaScript
+    { "SystemInteropJS_ResolveOrRejectPromise", (void*)&direct_pinvoke::SystemInteropJS_ResolveOrRejectPromise }, // System.Runtime.InteropServices.JavaScript
 };
 
 typedef struct PInvokeTable {

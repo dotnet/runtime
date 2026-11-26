@@ -66,4 +66,4 @@ void __cpuidex(int cpuInfo[4], int function_id, int subFunction_id);
 #endif // HOST_UNIX
 #endif // defined(HOST_X86) || defined(HOST_AMD64)
 
-#endif
+#endif // HAVE_MINIPAL_CPUID_H

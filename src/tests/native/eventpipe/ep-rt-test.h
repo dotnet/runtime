@@ -156,7 +156,7 @@ static inline void ep_rt_provider_config_init(EventPipeProviderConfiguration *co
 static inline void ep_rt_init_providers_and_events(void) { }
 static inline bool ep_rt_providers_validate_all_disabled(void) { return true; }
 static inline void ep_rt_prepare_provider_invoke_callback(EventPipeProviderCallbackData *data) { }
-static inline void ep_rt_provider_invoke_callback(EventPipeCallback callback, const uint8_t *source, unsigned long enabled, uint8_t level, uint64_t any, uint64_t all, EventFilterDescriptor *filter, void *data)
+static inline void ep_rt_provider_invoke_callback(EventPipeCallback callback, const uint8_t *source, uint32_t enabled, uint8_t level, uint64_t any, uint64_t all, EventFilterDescriptor *filter, void *data)
 {
     callback(source, enabled, level, any, all, filter, data);
 }

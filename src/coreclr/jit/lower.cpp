@@ -2968,8 +2968,8 @@ GenTree* Lowering::LowerCall(GenTree* node)
         call->gtControlExpr = controlExpr;
 
 #ifdef TARGET_RISCV64
-        // If controlExpr is a constant, we should contain it inside the call so that we can move the lower 12-bits of
-        // the value to call instruction's (JALR) offset.
+        // If controlExpr is a constant, contain it inside the call so that codegen emits a direct call to it
+        // (auipc + jalr with a relocation) instead of materializing the address in a register.
         if (controlExpr->IsCnsIntOrI() && !controlExpr->AsIntCon()->ImmedValNeedsReloc(m_compiler) &&
             !call->IsFastTailCall())
         {
@@ -11383,7 +11383,7 @@ GenTree* Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
     }
 
 #ifndef TARGET_XARCH
-    if (ind->Data()->IsIconHandle(GTF_ICON_OBJ_HDL))
+    if (!ind->IsVolatile() && ind->Data()->IsIconHandle(GTF_ICON_OBJ_HDL))
     {
         const ssize_t handle = ind->Data()->AsIntCon()->IconValue();
         if (!m_compiler->info.compCompHnd->isObjectImmutable(reinterpret_cast<CORINFO_OBJECT_HANDLE>(handle)))

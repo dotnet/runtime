@@ -10803,7 +10803,7 @@ static CORJIT_FLAGS GetCompileFlags(PrepareCodeConfig* prepareConfig, MethodDesc
         else
         {
             if (!flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_TIER0))
-                flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBOPT);
+                flags.Set(CORJIT_FLAGS::CORJIT_FLAG_PGO_OPT);
         }
 
         if (optType == OPT_SIZE)
@@ -10834,11 +10834,11 @@ static CORJIT_FLAGS GetCompileFlags(PrepareCodeConfig* prepareConfig, MethodDesc
 
     if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ReadPGOData) > 0)
     {
-        flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBOPT);
+        flags.Set(CORJIT_FLAGS::CORJIT_FLAG_PGO_OPT);
     }
     else if (g_pConfig->TieredPGO() && flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_TIER1))
     {
-        flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBOPT);
+        flags.Set(CORJIT_FLAGS::CORJIT_FLAG_PGO_OPT);
     }
 
 #endif
@@ -12167,18 +12167,23 @@ void CEEJitInfo::recordRelocation(void *       location,
             // Target is out of 32-bit range
             // If we're fixing up a jump, try jumping through a stub
             PCODE jumpStubAddr = (PCODE)NULL;
-            if ((fRelocType == CorInfoReloc::RISCV64_CALL_PLT) && !m_fJumpStubOverflow)
+            if (fRelocType == CorInfoReloc::RISCV64_CALL_PLT)
             {
-                BYTE* loAddr = (BYTE*)location - (1ll << 31) - (1ll << 11);
-                BYTE* hiAddr = (BYTE*)location + (1ll << 31) - (1ll << 11) - 1;
+                // Once an overflow has been recorded the code is thrown away and recompiled, so do not allocate
+                // more jump stubs; keep counting them so that the retry reserves enough space.
+                if (!m_fJumpStubOverflow)
+                {
+                    BYTE* loAddr = (BYTE*)location - (1ll << 31) - (1ll << 11);
+                    BYTE* hiAddr = (BYTE*)location + (1ll << 31) - (1ll << 11) - 1;
 
-                // Check for the wrap around cases
-                if (loAddr > location)
-                    loAddr = (BYTE*)UINT64_MIN; // overflow
-                if (hiAddr < location)
-                    hiAddr = (BYTE*)UINT64_MAX; // overflow
+                    // Check for the wrap around cases
+                    if (loAddr > location)
+                        loAddr = (BYTE*)UINT64_MIN; // overflow
+                    if (hiAddr < location)
+                        hiAddr = (BYTE*)UINT64_MAX; // overflow
 
-                PCODE jumpStubAddr = ExecutionManager::jumpStub(m_pMethodBeingCompiled, (PCODE)target, loAddr, hiAddr, nullptr);
+                    jumpStubAddr = ExecutionManager::jumpStub(m_pMethodBeingCompiled, (PCODE)target, loAddr, hiAddr, nullptr);
+                }
 
                 // Keep track of conservative estimate of how much memory may be needed by jump stubs. We will use it
                 // to reserve extra memory on retry to increase chances that the retry succeeds.
@@ -15026,7 +15031,7 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub(void** entryPoint)
 
     if (msig.HasGenericContextArg())
     {
-        pCode->EmitLDC(0);
+        pCode->EmitLDC_I(0);
         pCode->EmitCALL(METHOD__RUNTIME_HELPERS__SET_NEXT_CALL_GENERIC_CONTEXT, 1, 0);
     }
 
@@ -15039,8 +15044,7 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub(void** entryPoint)
     {
         if (md->GetMethodTable()->IsValueType())
         {
-            pCode->EmitLDC(0);
-            pCode->EmitCONV_U();
+            pCode->EmitLDC_I(0);
         }
         else
         {
@@ -15057,8 +15061,7 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub(void** entryPoint)
         TypeHandle tyHnd = msig.GetLastTypeHandleThrowing();
         if (tyHnd.IsByRef())
         {
-            pCode->EmitLDC(0);
-            pCode->EmitCONV_U();
+            pCode->EmitLDC_I(0);
         }
         else
         {
@@ -15084,7 +15087,7 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub(void** entryPoint)
         // expects and then delegating back into the OSR version (knowing to do
         // so through information stored in the continuation).
         _ASSERTE(m_pPatchpointInfoFromRuntime != NULL);
-        pCode->EmitLDC((DWORD_PTR)m_pPatchpointInfoFromRuntime->GetTier0EntryPoint());
+        pCode->EmitLDC_I((DWORD_PTR)m_pPatchpointInfoFromRuntime->GetTier0EntryPoint());
 #else // !FEATURE_ON_STACK_REPLACEMENT
         _ASSERTE(!"Unexpected optimization tier with OSR disabled");
 #endif // FEATURE_ON_STACK_REPLACEMENT
@@ -15096,7 +15099,7 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub(void** entryPoint)
             m_finalCodeAddressSlot = (PCODE*)amTracker.Track(m_pMethodBeingCompiled->GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(PCODE))));
         }
 
-        pCode->EmitLDC((DWORD_PTR)m_finalCodeAddressSlot);
+        pCode->EmitLDC_I((DWORD_PTR)m_finalCodeAddressSlot);
         pCode->EmitLDIND_I();
     }
 

@@ -465,7 +465,12 @@ namespace System.IO.Hashing.Tests
             public IEnumerable<ReadOnlyMemory<byte>> EnumerateDataChunks()
             {
 #if NET
-                byte[] chunk = GC.AllocateUninitializedArray<byte>(1024 * 1024);
+                byte[] chunk;
+                // SAFETY: To be audited
+                unsafe
+                {
+                    chunk = GC.AllocateUninitializedArray<byte>(1024 * 1024);
+                }
 #else
                 byte[] chunk = new byte[1024 * 1024];
 #endif

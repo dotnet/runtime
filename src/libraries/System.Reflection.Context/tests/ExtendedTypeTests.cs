@@ -31,7 +31,7 @@ namespace System.Reflection.Context.Tests
         Value2 = 2
     }
 
-    internal unsafe class FunctionPointerHolder
+    internal class FunctionPointerHolder
     {
         public void CdeclParameter(delegate* unmanaged[Cdecl]<void> f) { }
         public void ManagedParameter(delegate*<string, int> f) { }

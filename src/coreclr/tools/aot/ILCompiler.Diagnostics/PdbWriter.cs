@@ -62,15 +62,8 @@ namespace ILCompiler.Diagnostics
                 return false;
             if (ChecksumType != other.ChecksumType)
                 return false;
-            if (Checksum.Length != other.Checksum.Length)
-                return false;
-            for (int i = 0; i < Checksum.Length; i++)
-            {
-                if (Checksum[i] != other.Checksum[i])
-                    return false;
-            }
 
-            return true;
+            return Checksum.AsSpan().SequenceEqual(other.Checksum);
         }
     }
 

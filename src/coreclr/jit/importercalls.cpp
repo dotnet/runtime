@@ -2187,9 +2187,8 @@ GenTreeCall* Compiler::impImportIndirectCall(CORINFO_SIG_INFO* sig, const DebugI
 
     GenTree* fptr = impPopStack().val;
 
-    // The function pointer is typically a sized to match the target pointer size
-    // However, stubgen IL optimization can change LDC.I8 to LDC.I4
-    // See ILCodeStream::LowerOpcode
+    // The function pointer is typically sized to match the target pointer size,
+    // but tolerate int32 values from IL producers that omit conv.i.
     assert(genActualType(fptr->gtType) == TYP_I_IMPL || genActualType(fptr->gtType) == TYP_INT);
 
 #ifdef DEBUG
@@ -10695,7 +10694,7 @@ void Compiler::impConsiderCallProbe(GenTreeCall* call, IL_OFFSET ilOffset)
 {
     // Possibly instrument.
     //
-    if (!opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR))
+    if (!opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PGO_INSTR))
     {
         return;
     }
@@ -10739,7 +10738,7 @@ void Compiler::impConsiderCallProbe(GenTreeCall* call, IL_OFFSET ilOffset)
 //
 Compiler::GDVProbeType Compiler::compClassifyGDVProbeType(GenTreeCall* call)
 {
-    if (!opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR) || IsAot())
+    if (!opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PGO_INSTR) || IsAot())
     {
         return GDVProbeType::None;
     }

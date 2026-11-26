@@ -3198,13 +3198,23 @@ GenTree** GenTree::EffectiveUse(GenTree** use)
 //    lclNum - the local's number
 //
 // Return Value:
-//    Whether "tree" has any local nodes that refer to the local.
+//    Whether "tree" has any local nodes that refer to the local, or any nodes
+//    that define the local.
 //
-/* static */ bool Compiler::gtHasRef(GenTree* tree, unsigned lclNum)
+bool Compiler::gtHasRef(GenTree* tree, unsigned lclNum)
 {
     if (tree == nullptr)
     {
         return false;
+    }
+
+    auto visitDef = [lclNum](const auto& def) {
+        return def.GetLclNum() == lclNum ? GenTree::VisitResult::Abort : GenTree::VisitResult::Continue;
+    };
+
+    if (tree->VisitLogicalLocalDefs(this, visitDef) == GenTree::VisitResult::Abort)
+    {
+        return true;
     }
 
     if (tree->OperIsLeaf())
@@ -3223,11 +3233,6 @@ GenTree** GenTree::EffectiveUse(GenTree** use)
 
     if (tree->OperIsUnary())
     {
-        if (tree->OperIsLocalStore() && (tree->AsLclVarCommon()->GetLclNum() == lclNum))
-        {
-            return true;
-        }
-
         return gtHasRef(tree->AsUnOp()->gtGetOp1(), lclNum);
     }
 
@@ -3237,7 +3242,7 @@ GenTree** GenTree::EffectiveUse(GenTree** use)
     }
 
     bool result = false;
-    tree->VisitOperands([lclNum, &result](GenTree* operand) -> GenTree::VisitResult {
+    tree->VisitOperands([this, lclNum, &result](GenTree* operand) -> GenTree::VisitResult {
         if (gtHasRef(operand, lclNum))
         {
             result = true;
@@ -3267,8 +3272,7 @@ bool Compiler::gtHasLocalsWithAddrOp(GenTree* tree)
     {
         enum
         {
-            DoPreOrder    = true,
-            DoLclVarsOnly = true,
+            DoPreOrder = true,
         };
 
         LocalsWithAddrOpVisitor(Compiler* comp)
@@ -3276,10 +3280,25 @@ bool Compiler::gtHasLocalsWithAddrOp(GenTree* tree)
         {
         }
 
+        static bool HasAddrOp(LclVarDsc* varDsc)
+        {
+            return varDsc->lvHasLdAddrOp || varDsc->IsAddressExposed();
+        }
+
         fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
         {
-            LclVarDsc* varDsc = m_compiler->lvaGetDesc((*use)->AsLclVarCommon());
-            if (varDsc->lvHasLdAddrOp || varDsc->IsAddressExposed())
+            GenTree* node = *use;
+            if (node->OperIsAnyLocal())
+            {
+                return HasAddrOp(m_compiler->lvaGetDesc(node->AsLclVarCommon())) ? WALK_ABORT : WALK_CONTINUE;
+            }
+
+            auto visitDef = [=](const auto& def) {
+                return HasAddrOp(m_compiler->lvaGetDesc(def.GetLclNum())) ? GenTree::VisitResult::Abort
+                                                                          : GenTree::VisitResult::Continue;
+            };
+
+            if (node->VisitLogicalLocalDefs(m_compiler, visitDef) == GenTree::VisitResult::Abort)
             {
                 return WALK_ABORT;
             }
@@ -3309,8 +3328,7 @@ bool Compiler::gtHasAddressExposedLocals(GenTree* tree)
     {
         enum
         {
-            DoPreOrder    = true,
-            DoLclVarsOnly = true,
+            DoPreOrder = true,
         };
 
         Visitor(Compiler* comp)
@@ -3320,8 +3338,18 @@ bool Compiler::gtHasAddressExposedLocals(GenTree* tree)
 
         fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
         {
-            LclVarDsc* varDsc = m_compiler->lvaGetDesc((*use)->AsLclVarCommon());
-            if (varDsc->IsAddressExposed())
+            GenTree* node = *use;
+            if (node->OperIsAnyLocal())
+            {
+                return m_compiler->lvaGetDesc(node->AsLclVarCommon())->IsAddressExposed() ? WALK_ABORT : WALK_CONTINUE;
+            }
+
+            auto visitDef = [=](const auto& def) {
+                return m_compiler->lvaGetDesc(def.GetLclNum())->IsAddressExposed() ? GenTree::VisitResult::Abort
+                                                                                   : GenTree::VisitResult::Continue;
+            };
+
+            if (node->VisitLogicalLocalDefs(m_compiler, visitDef) == GenTree::VisitResult::Abort)
             {
                 return WALK_ABORT;
             }
@@ -8162,18 +8190,29 @@ bool Compiler::gtMayHaveStoreInterference(GenTree* treeWithStores, GenTree* tree
                 return WALK_SKIP_SUBTREES;
             }
 
-            if (node->OperIsLocalStore())
-            {
-                // Check up to 8 stores before we bail with a conservative
-                // answer. Avoids quadratic behavior in case we have a large
-                // number of stores (e.g. created by physical promotion or by
-                // call args morphing).
-                if ((m_numStoresChecked >= 8) ||
-                    m_compiler->gtTreeHasLocalRead(m_readTree, node->AsLclVarCommon()->GetLclNum()))
+            bool hasDefs  = false;
+            auto visitDef = [&](const auto& def) {
+                // Check up to 8 defining nodes before we bail with a
+                // conservative answer. Avoids quadratic behavior in case we
+                // have a large number of stores (e.g. created by physical
+                // promotion or by call args morphing).
+                if (!hasDefs && (m_numStoresChecked >= 8))
                 {
-                    return WALK_ABORT;
+                    return GenTree::VisitResult::Abort;
                 }
 
+                hasDefs = true;
+                return m_compiler->gtTreeHasLocalRead(m_readTree, def.GetLclNum()) ? GenTree::VisitResult::Abort
+                                                                                   : GenTree::VisitResult::Continue;
+            };
+
+            if (node->VisitLogicalLocalDefs(m_compiler, visitDef) == GenTree::VisitResult::Abort)
+            {
+                return WALK_ABORT;
+            }
+
+            if (hasDefs)
+            {
                 m_numStoresChecked++;
             }
 
@@ -22200,6 +22239,55 @@ bool Compiler::gtIsTypeof(GenTree* tree, CORINFO_CLASS_HANDLE* handle)
 }
 
 //------------------------------------------------------------------------
+// gtIsSpanLength: Check whether a node loads the length field of a Span<T>.
+//
+// Arguments:
+//    tree - the node to check
+//
+// Return Value:
+//    True if "tree" is an "int" load of "Span<T>._length", either as a field of
+//    an unpromoted span local (LCL_FLD) or through an implicit byref span (an
+//    indirection at the length offset).
+//
+// Notes:
+//    Span lengths are never negative, so recognizing them lets range analysis
+//    treat comparisons against them as checked bounds, matching the promoted
+//    case where the length field local carries the "never negative" flag.
+//
+bool Compiler::gtIsSpanLength(GenTree* tree)
+{
+    if (!tree->TypeIs(TYP_INT))
+    {
+        return false;
+    }
+
+    if (tree->OperIs(GT_LCL_FLD))
+    {
+        GenTreeLclFld* const lclFld = tree->AsLclFld();
+        return lvaGetDesc(lclFld)->IsSpan() && (lclFld->GetLclOffs() == OFFSETOF__CORINFO_Span__length);
+    }
+
+    if (tree->OperIs(GT_IND))
+    {
+        GenTree* const addr = tree->AsIndir()->Addr();
+
+        if (addr->OperIs(GT_ADD) && addr->gtGetOp1()->OperIs(GT_LCL_VAR) &&
+            addr->gtGetOp2()->IsIntegralConst(OFFSETOF__CORINFO_Span__length))
+        {
+            GenTreeLclVar* const lclVar = addr->gtGetOp1()->AsLclVar();
+
+            if (lvaGetDesc(lclVar->GetLclNum())->IsSpan())
+            {
+                assert(lvaIsImplicitByRefLocal(lclVar->GetLclNum()));
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
 // gtCallGetDefinedRetBufLclAddr:
 //   Get the tree corresponding to the address of the retbuf that this call defines.
 //
@@ -23368,9 +23456,61 @@ bool GenTree::isEmbeddedMaskingCompatible(Compiler*  comp,
     var_types                 simdBaseType = node->GetSimdBaseType();
     var_types                 simdType     = node->TypeGet();
 
-    instruction ins             = HWIntrinsicInfo::lookupIns(intrinsic, simdBaseType, comp);
-    unsigned    maskBaseSize    = CodeGenInterface::instKMaskBaseSize(ins);
-    unsigned    tgtMaskBaseSize = tgtMaskSize / (genTypeSize(simdType) / 16);
+    instruction ins = HWIntrinsicInfo::lookupIns(intrinsic, simdBaseType, comp);
+
+    switch (ins)
+    {
+        case INS_cvtpd2dq:
+        case INS_cvtpd2ps:
+        case INS_cvttpd2dq:
+        case INS_vcvtdq2ph:
+        case INS_vcvtneps2bf16:
+        case INS_vcvtpd2ph:
+        case INS_vcvtpd2udq:
+        case INS_vcvtps2ph:
+        case INS_vcvtps2phx:
+        case INS_vcvtqq2ph:
+        case INS_vcvtqq2ps:
+        case INS_vcvttpd2dqs:
+        case INS_vcvttpd2udq:
+        case INS_vcvttpd2udqs:
+        case INS_vcvtudq2ph:
+        case INS_vcvtuqq2ph:
+        case INS_vcvtuqq2ps:
+        case INS_vpmovdb:
+        case INS_vpmovdw:
+        case INS_vpmovqb:
+        case INS_vpmovqd:
+        case INS_vpmovqw:
+        case INS_vpmovsdb:
+        case INS_vpmovsdw:
+        case INS_vpmovsqb:
+        case INS_vpmovsqd:
+        case INS_vpmovsqw:
+        case INS_vpmovswb:
+        case INS_vpmovusdb:
+        case INS_vpmovusdw:
+        case INS_vpmovusqb:
+        case INS_vpmovusqd:
+        case INS_vpmovusqw:
+        case INS_vpmovuswb:
+        case INS_vpmovwb:
+        {
+            // Narrowing conversions apply the write mask per (narrower) destination element, with
+            // the element count set by the source vector length, and zero any destination bits
+            // above the converted elements. The mask size checks below assume the mask lanes
+            // evenly cover the result type, which doesn't hold here.
+            return false;
+        }
+
+        default:
+        {
+            break;
+        }
+    }
+
+    unsigned maskBaseSize    = CodeGenInterface::instKMaskBaseSize(ins);
+    unsigned tgtMaskBaseSize = tgtMaskSize / (genTypeSize(simdType) / 16);
 
     tgtSimdBaseType = TYP_UNDEF;
 
@@ -36119,10 +36259,10 @@ bool GenTree::CanDivOrModPossiblyOverflow(Compiler* comp) const
 #if defined(FEATURE_HW_INTRINSICS)
 #if defined(FEATURE_MASKED_HW_INTRINSICS) && defined(TARGET_ARM64)
 //------------------------------------------------------------------------
-// GenTree::IsSveMaskOperand:
+// GenTree::CanBeSveMask:
 //   Return true if this node can be represented directly as an SVE predicate.
 //
-bool GenTree::IsSveMaskOperand() const
+bool GenTree::CanBeSveMask() const
 {
     return OperIsConvertMaskToVector() || varTypeIsMask(this) || IsVectorZero();
 }
@@ -36423,7 +36563,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
         for (size_t i = firstVectorOperand; (i <= opCount) && canFold; i++)
         {
             GenTree* operand = tree->Op(i);
-            canFold          = operand->IsSveMaskOperand() &&
+            canFold          = operand->CanBeSveMask() &&
                       (!operand->OperIsConvertMaskToVector() ||
                        (genTypeSize(operand->AsHWIntrinsic()->GetSimdBaseType()) == genTypeSize(simdBaseType)));
         }
