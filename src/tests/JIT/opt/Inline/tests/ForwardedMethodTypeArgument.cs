@@ -351,6 +351,34 @@ public class ForwardedMethodTypeArgument
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static bool Agree<T>(bool first) => IsBox<T>(first ? Make<T>() : MakeOther<T>());
 
+    private class Receiver<A, B>
+    {
+        internal readonly Type Constructed;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Receiver() => Constructed = typeof(KeyValuePair<A, B>);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Type Read() => Kept<List<B>>();
+
+        public virtual Type Select<K>() => typeof(Tuple<A, B, K>);
+    }
+
+    private sealed class SwappedReceiver<A, B> : Receiver<B, B>
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public override Type Select<K>() => typeof(Tuple<A, B, K>);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Type FromReceiver<T>(Receiver<int, T> value) => value.Read();
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Type FromConstructor<T>() => new Receiver<int, T>().Constructed;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Type FromOverride<T>(SwappedReceiver<int, long> value) => value.Select<T[]>();
+
     private class Reader<T> { public virtual int Read() => 37; }
     private sealed class OtherReader<T> : Reader<T> { public override int Read() => 13; }
 
@@ -369,6 +397,12 @@ public class ForwardedMethodTypeArgument
     [Fact]
     public static void TestEntryPoint()
     {
+        Assert.Equal(typeof(List<string>), FromReceiver(new Receiver<int, string>()));
+        Assert.Equal(typeof(List<object>), FromReceiver(new Receiver<int, object>()));
+        Assert.Throws<NullReferenceException>(() => FromReceiver<string>(null));
+        Assert.Equal(typeof(KeyValuePair<int, string>), FromConstructor<string>());
+        Assert.Equal(typeof(Tuple<int, long, string[]>), FromOverride<string>(new SwappedReceiver<int, long>()));
+        Assert.Equal(typeof(Tuple<int, long, object[]>), FromOverride<object>(new SwappedReceiver<int, long>()));
         var firstEntry = NestedEntry<string, object>();
         var secondEntry = NestedEntry<object, string>();
         Assert.Equal(typeof(Dictionary<object[], List<string>>), firstEntry());

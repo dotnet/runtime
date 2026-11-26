@@ -5613,14 +5613,22 @@ void CEEInfo::getCallInfo(
     bool directContext = needsContext && pResult->kind == CORINFO_CALL;
     bool methodEntry = (flags & CORINFO_CALLINFO_LDFTN) && !(flags & CORINFO_CALLINFO_CALLVIRT) &&
         pResult->kind == CORINFO_CALL_CODE_POINTER && pMD->HasMethodInstantiation();
-    if (directContext || methodEntry)
+    // Class instance calls can bind the inlinee's type parameters even when
+    // its generic context comes from this rather than a hidden argument.
+    MethodTable* declaringType = pMD->GetMethodTable();
+    bool receiver = (pResolvedToken->pTypeSpec != nullptr || pResolvedToken->pMethodSpec != nullptr) &&
+        !(flags & CORINFO_CALLINFO_LDFTN) && !pMD->IsStatic() &&
+        (pResult->kind == CORINFO_CALL || pResult->kind == CORINFO_VIRTUALCALL_LDVIRTFTN) &&
+        !declaringType->IsValueType() && !declaringType->IsInterface() && !declaringType->IsDelegate() && !declaringType->IsArray();
+    if (directContext || methodEntry || receiver)
     {
         MethodDesc* caller = GetMethod(callerHandle);
         if (pConstrainedResolvedToken == nullptr &&
-            (pMD->IsStatic() || (pMD->GetMethodTable()->IsValueType() && !pMD->IsUnboxingStub())) &&
+            (receiver || pMD->IsStatic() || (declaringType->IsValueType() && !pMD->IsUnboxingStub())) &&
             pMD->HasSameMethodDefAs(pTargetMD) && caller->IsSharedByGenericInstantiations() &&
             !caller->IsILStub() && !caller->IsDynamicMethod() && pResolvedToken->tokenScope == GetScopeHandle(caller) &&
-            pResolvedToken->tokenType == CORINFO_TOKENKIND_Method &&
+            (pResolvedToken->tokenType == CORINFO_TOKENKIND_Method ||
+             (receiver && pResolvedToken->tokenType == CORINFO_TOKENKIND_NewObj)) &&
             (pMD->HasMethodInstantiation() ? pResolvedToken->pMethodSpec != nullptr :
              TypeFromToken(pResolvedToken->token) == mdtMemberRef && pResolvedToken->pTypeSpec != nullptr))
         {
@@ -8951,7 +8959,8 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
             }
 
             // Keep the call site's MethodSpec and its scope for the method arguments.
-            // The owner and method for the dictionary lookup are those of the override.
+            // The exact override owner and its arguments may be retained in the source
+            // module's dictionary. The collectible allocator check above also applies to forwarding.
             CORINFO_RESOLVED_TOKEN& target = info->resolvedTokenDevirtualizedMethod;
             target = *source;
             target.tokenType = CORINFO_TOKENKIND_DevirtualizedMethod;

@@ -43,6 +43,12 @@ bool GetParameterBinding(Compiler* comp, CorElementType kind, unsigned index, co
     return true;
 }
 
+// A call or constructor can have a fixed argument beside an open one.
+bool IsCallTypeOperand(CorInfoTokenKind kind)
+{
+    return (kind == CORINFO_TOKENKIND_Method) || (kind == CORINFO_TOKENKIND_NewObj);
+}
+
 // Read a class/value-type marker followed by its TypeDefOrRef.
 bool ReadNamedTypeToken(PCCOR_SIGNATURE& sig, unsigned& size, mdToken* token)
 {
@@ -203,9 +209,7 @@ public:
         {
             m_bytes[m_length++] = ELEMENT_TYPE_SZARRAY;
         }
-        // A method's owner or one of its arguments can be closed even when the
-        // full MethodSpec is open. Keep those operands when composing the call.
-        if (!Read(sig, size, vector ? 1 : 0) || (!m_usesParameter && (m_source.tokenType != CORINFO_TOKENKIND_Method)))
+        if (!Read(sig, size, vector ? 1 : 0) || (!m_usesParameter && !IsCallTypeOperand(m_source.tokenType)))
         {
             return false;
         }
@@ -236,7 +240,7 @@ bool MethodTypeArgument::TryRead(Compiler*                     comp,
         *result = binding == nullptr ? MethodTypeArgument{index, 0, 0, nullptr} : *binding;
         return true;
     }
-    if ((size == 0) || ((source.tokenType != CORINFO_TOKENKIND_Method) && (*sig != ELEMENT_TYPE_SZARRAY) &&
+    if ((size == 0) || (!IsCallTypeOperand(source.tokenType) && (*sig != ELEMENT_TYPE_SZARRAY) &&
                         (*sig != ELEMENT_TYPE_GENERICINST) && (*sig != ELEMENT_TYPE_VAR)))
     {
         return false;
@@ -411,6 +415,87 @@ MethodTypeArgument* Compiler::impForwardedTypeArgs(const CORINFO_RESOLVED_TOKEN&
     return size == 0 ? args : nullptr;
 }
 
+// Attach argument bindings only to an inline candidate whose body we have identified.
+void Compiler::impBindInlineTypeArguments(GenTreeCall*                  call,
+                                          const CORINFO_RESOLVED_TOKEN& token,
+                                          const CORINFO_CALL_INFO&      callInfo,
+                                          CORINFO_METHOD_HANDLE         forwardedTarget,
+                                          MethodTypeArgument*           methodArgs,
+                                          MethodTypeArgument*           ownerArgs)
+{
+    if (!call->IsInlineCandidate() || call->IsGuardedDevirtualizationCandidate() || !callInfo.canForwardTypeArguments ||
+        IsAot() || opts.MinOpts() || (call->gtCallMethHnd != callInfo.hMethod) ||
+        ((forwardedTarget != nullptr) && (forwardedTarget != call->gtCallMethHnd)) ||
+        (impInlineRoot()->impRuntimeContextKind() == CORINFO_LOOKUP_NOT_SUPPORTED) ||
+        (compIsForInlining() && !impInlineInfo->inlineCandidateInfo->HasRootTypeArguments()))
+    {
+        return;
+    }
+    InlineCandidateInfo*    candidate = call->GetSingleInlineCandidateInfo();
+    const CORINFO_SIG_INST& inst      = candidate->methInfo.args.sigInst;
+    if (forwardedTarget == nullptr)
+    {
+        methodArgs = impForwardedTypeArgs(token, inst.methInstCount, nullptr);
+    }
+    if (callInfo.kind == CORINFO_CALL)
+    {
+        if ((forwardedTarget == nullptr) &&
+            !info.compCompHnd->haveSameMethodDefinition(token.hMethod, call->gtCallMethHnd))
+        {
+            return;
+        }
+        if (ownerArgs == nullptr)
+        {
+            ownerArgs = impForwardedTypeArgs(token, inst.classInstCount, call->gtCallMethHnd);
+        }
+    }
+    else
+    {
+        // A resolved GVM keeps the original MethodSpec, but the override can
+        // have an entirely different declaring type from the IL MemberRef.
+        CallArg* arg = call->gtArgs.FindWellKnownArg(WellKnownArg::InstParam);
+        if ((arg == nullptr) || !arg->GetNode()->OperIs(GT_RUNTIMELOOKUP))
+        {
+            return;
+        }
+        DeferredHandleLookup* lookup = arg->GetNode()->AsRuntimeLookup()->gtDeferredLookup;
+        if ((lookup == nullptr) || (lookup->kind != DeferredHandleLookup::Kind::DevirtualizedMethodContext) ||
+            (lookup->target.method != call->gtCallMethHnd))
+        {
+            return;
+        }
+        if ((methodArgs == nullptr) || (lookup->target.token->tokenScope != impInlineRoot()->info.compScopeHnd))
+        {
+            return;
+        }
+        if (inst.classInstCount != 0)
+        {
+            // The EE validated the exact override owner for the token's
+            // module. That same module owns the root dictionary here.
+            ownerArgs = getAllocator(CMK_Inlining).allocate<MethodTypeArgument>(inst.classInstCount);
+            BYTE* sig = getAllocator(CMK_Inlining).allocate<BYTE>(inst.classInstCount * (1 + sizeof(target_size_t)));
+            for (unsigned i = 0; i < inst.classInstCount; i++, sig += 1 + sizeof(target_size_t))
+            {
+                CORINFO_CLASS_HANDLE type =
+                    info.compCompHnd->getTypeInstantiationArgument(lookup->target.token->hClass, i);
+                if (type == nullptr)
+                {
+                    return;
+                }
+                target_size_t handle = static_cast<target_size_t>(reinterpret_cast<uintptr_t>(type));
+                sig[0]               = ELEMENT_TYPE_INTERNAL;
+                memcpy(sig + 1, &handle, sizeof(handle));
+                ownerArgs[i] = {0, 1 + sizeof(handle), 0, sig};
+            }
+        }
+    }
+    candidate->rootMethodArgs          = methodArgs;
+    candidate->rootClassArgs           = ownerArgs;
+    candidate->rootInstantiationOffset = compIsForInlining()
+                                             ? impInlineInfo->inlineCandidateInfo->rootInstantiationOffset
+                                             : callInfo.methodInstantiationOffset;
+}
+
 // Compose the dictionary or callable entry of an inlined MethodSpec directly in the root context.
 GenTree* Compiler::impTryRootMethodLookup(const CORINFO_RESOLVED_TOKEN& token,
                                           const CORINFO_CALL_INFO&      callInfo,
@@ -421,6 +506,14 @@ GenTree* Compiler::impTryRootMethodLookup(const CORINFO_RESOLVED_TOKEN& token,
     const bool method =
         entry || (((size_t)callInfo.contextHandle & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD);
     if (method && ((methodArgs == nullptr) || !callInfo.canForwardMethodContext))
+    {
+        return nullptr;
+    }
+
+    // A receiver already supplies a class dictionary and its load checks for null.
+    // Keep it when the alternative is another class dictionary lookup of the same method.
+    if (!entry && method && (impRuntimeContextKind() == CORINFO_LOOKUP_THISOBJ) &&
+        (impInlineRoot()->impRuntimeContextKind() != CORINFO_LOOKUP_METHODPARAM))
     {
         return nullptr;
     }
@@ -1389,7 +1482,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
             assert(opcode != CEE_CALLI);
 
-            if ((opcode == CEE_CALL) && callInfo->canForwardTypeArguments && !IsAot() && !opts.MinOpts())
+            if ((opcode == CEE_CALL) && callInfo->canForwardTypeArguments && callInfo->exactContextNeedsRuntimeLookup &&
+                (callInfo->kind == CORINFO_CALL) && !IsAot() && !opts.MinOpts())
             {
                 methodArgs = impForwardedTypeArgs(*pResolvedToken, sig->sigInst.methInstCount, nullptr);
                 if (methodArgs == nullptr)
@@ -1688,6 +1782,8 @@ DEVIRT:
 
                 // Is it an inline candidate?
                 impMarkInlineCandidate(call, exactContextHnd, callInfo, compInlineContext);
+                impBindInlineTypeArguments(call->AsCall(), *pResolvedToken, *callInfo, forwardedTarget, methodArgs,
+                                           ownerArgs);
             }
 
             // append the call node.
@@ -1916,22 +2012,10 @@ DONE:
         // Is it an inline candidate?
         impMarkInlineCandidate(call, exactContextHnd, callInfo, compInlineContext);
 
-        if ((forwardedTarget != nullptr) && call->AsCall()->IsInlineCandidate() &&
-            !call->AsCall()->IsGuardedDevirtualizationCandidate() && (call->AsCall()->gtCallMethHnd == forwardedTarget))
+        if (opcode != CEE_CALLI)
         {
-            InlineCandidateInfo* candidate = call->AsCall()->GetSingleInlineCandidateInfo();
-            assert(candidate->methInfo.args.sigInst.methInstCount == sig->sigInst.methInstCount);
-            assert((ownerArgs == nullptr) ||
-                   (candidate->methInfo.args.sigInst.classInstCount == sig->sigInst.classInstCount));
-            candidate->rootMethodArgs = methodArgs;
-            candidate->rootClassArgs =
-                ownerArgs != nullptr
-                    ? ownerArgs
-                    : impForwardedTypeArgs(*pResolvedToken, candidate->methInfo.args.sigInst.classInstCount,
-                                           forwardedTarget);
-            candidate->rootInstantiationOffset = compIsForInlining()
-                                                     ? impInlineInfo->inlineCandidateInfo->rootInstantiationOffset
-                                                     : callInfo->methodInstantiationOffset;
+            impBindInlineTypeArguments(call->AsCall(), *pResolvedToken, *callInfo, forwardedTarget, methodArgs,
+                                       ownerArgs);
         }
 
         // If the call is virtual, extra information for possible use during late devirt inlining.

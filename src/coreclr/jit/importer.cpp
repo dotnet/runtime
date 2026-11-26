@@ -4328,10 +4328,14 @@ bool Compiler::impReadInlineMemberOwner(const CORINFO_RESOLVED_TOKEN& token, Met
 
 GenTree* Compiler::impTryForwardStaticFieldOwner(const CORINFO_RESOLVED_TOKEN& token)
 {
+    // With a context from this, the field owner is already a single lookup.
+    // Keep the receiver dictionary instead of growing the root dictionary for the same access.
+    if (!compIsForInlining() || (impRuntimeContextKind() == CORINFO_LOOKUP_THISOBJ))
+    {
+        return nullptr;
+    }
     MethodTypeArgument owner;
-    return (compIsForInlining() && impReadInlineMemberOwner(token, &owner))
-               ? impDeferredTypeExpression(owner, token.hClass)
-               : nullptr;
+    return impReadInlineMemberOwner(token, &owner) ? impDeferredTypeExpression(owner, token.hClass) : nullptr;
 }
 
 //------------------------------------------------------------------------

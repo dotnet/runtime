@@ -1569,7 +1569,7 @@ struct CORINFO_CALL_INFO
     // Context for inlining and hidden arg
     CORINFO_CONTEXT_HANDLE  contextHandle;
     bool                    exactContextNeedsRuntimeLookup; // Set if contextHandle is approx handle. Runtime lookup is required to get the exact handle.
-    // The ordinary call's method or declaring-type arguments can be composed in the caller's generic context.
+    // The token can supply argument bindings for inlining. An override supplies its own declaring type.
     bool canForwardTypeArguments;
     // The root dictionary can retain this MethodSpec for a direct call context or an unconstrained ldftn entry.
     bool canForwardMethodContext;
