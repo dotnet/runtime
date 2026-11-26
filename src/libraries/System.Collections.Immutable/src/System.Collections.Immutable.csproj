@@ -161,6 +161,7 @@ The System.Collections.Immutable library is built-in as part of the shared frame
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Compile Include="System\Collections\Frozen\Integer\DenseIntegralFrozenDictionary.cs" />
+    <Compile Include="System\Collections\Frozen\Integer\DenseIntegralFrozenSet.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net9.0'))">

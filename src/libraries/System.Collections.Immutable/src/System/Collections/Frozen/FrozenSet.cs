@@ -103,6 +103,15 @@ namespace System.Collections.Frozen
             // the Equals/GetHashCode methods to be devirtualized and possibly inlined.
             if (typeof(T).IsValueType && ReferenceEquals(comparer, EqualityComparer<T>.Default))
             {
+#if NET
+                // If the values are integers that are close enough to each other, use an implementation that indexes
+                // directly into the range of values rather than searching or hashing.
+                if (DenseIntegralFrozenSet.CreateIfValid(source, allowBitmap: true) is { } denseResult)
+                {
+                    return denseResult;
+                }
+#endif
+
                 if (source.Count <= Constants.MaxItemsInSmallValueTypeFrozenCollection)
                 {
                     // If the type is a something we know we can efficiently compare, use a specialized implementation
