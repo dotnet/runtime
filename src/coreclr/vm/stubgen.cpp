@@ -1,11 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
-// File: StubGen.cpp
-//
-
-//
-
 
 #include "common.h"
 #include <limits>
@@ -306,7 +300,7 @@ ILCodeStream::ILInstrEnum ILCodeStream::LowerOpcode(ILInstrEnum instr, ILStubLin
 
     switch (instr)
     {
-        case CEE_LDC_I8:
+        case CEE_LDC_I4:
         {
             if (uConst == (UINT_PTR)-1)
             {
@@ -321,11 +315,6 @@ ILCodeStream::ILInstrEnum ILCodeStream::LowerOpcode(ILInstrEnum instr, ILStubLin
             if (FitsInI1(uConst))
             {
                 instr = CEE_LDC_I4_S;
-            }
-            else
-            if (FitsInI4(uConst))
-            {
-                instr = CEE_LDC_I4;
             }
             break;
         }
@@ -391,26 +380,6 @@ lShortForm:
 
     pInstr->uInstruction = static_cast<UINT16>(instr);
     return instr;
-}
-
-void ILStubLinker::PatchInstructionArgument(ILCodeLabel* pLabel, UINT_PTR uNewArg
-    DEBUG_ARG(UINT16 uExpectedInstruction))
-{
-    LIMITED_METHOD_CONTRACT;
-
-    UINT            idx                 = pLabel->m_idxLabeledInstruction;
-    ILCodeStream*   pLabelCodeStream    = pLabel->m_pCodeStreamOfLabel;
-    ILInstruction*  pLabelInstrBuffer   = (ILInstruction*)pLabelCodeStream->m_pqbILInstructions->Ptr();
-
-    CONSISTENCY_CHECK(pLabelInstrBuffer[idx].uInstruction == ILCodeStream::CEE_CODE_LABEL);
-    CONSISTENCY_CHECK(pLabelInstrBuffer[idx].iStackDelta == 0);
-
-    idx++;
-
-    CONSISTENCY_CHECK(idx < pLabelCodeStream->m_uCurInstrIdx);
-    CONSISTENCY_CHECK(pLabelInstrBuffer[idx].uInstruction == uExpectedInstruction);
-
-    pLabelInstrBuffer[idx].uArg = uNewArg;
 }
 
 ILCodeLabel::ILCodeLabel()
@@ -655,7 +624,6 @@ static void LogJitFlags(DWORD facility, DWORD level, CORJIT_FLAGS jitFlags)
 
     // these are all we care about at the moment
     LOG_FLAG(CORJIT_FLAGS::CORJIT_FLAG_IL_STUB);
-    LOG_FLAG(CORJIT_FLAGS::CORJIT_FLAG_PUBLISH_SECRET_PARAM);
 
 #undef LOG_FLAGS
 
@@ -718,6 +686,12 @@ bool ILStubLinker::FirstPassLink(ILInstruction* pInstrBuffer, UINT numInstr, siz
     {
         ILCodeStream::ILInstrEnum instr = (ILCodeStream::ILInstrEnum)pInstrBuffer[i].uInstruction;
         CONSISTENCY_CHECK(ILCodeStream::IsSupportedInstruction(instr));
+
+        if ((instr == ILCodeStream::CEE_LDARG) && (pInstrBuffer[i].uArg == SECRET_STUB_ARGUMENT))
+        {
+            CONSISTENCY_CHECK(m_uSecretStubArgumentIndex != static_cast<DWORD>(-1));
+            pInstrBuffer[i].uArg = m_uSecretStubArgumentIndex + (m_fHasThis ? 1 : 0);
+        }
 
         //
         // down-size instructions
@@ -1469,6 +1443,11 @@ void ILCodeStream::EmitLDARG   (unsigned uArgIdx)
     }
     Emit(CEE_LDARG, 1, uArgIdx);
 }
+void ILCodeStream::EmitLoadSecretStubArgument()
+{
+    WRAPPER_NO_CONTRACT;
+    Emit(CEE_LDARG, 1, ILStubLinker::SECRET_STUB_ARGUMENT);
+}
 void ILCodeStream::EmitLDARGA  (unsigned uArgIdx)
 {
     WRAPPER_NO_CONTRACT;
@@ -1478,16 +1457,28 @@ void ILCodeStream::EmitLDARGA  (unsigned uArgIdx)
     }
     Emit(CEE_LDARGA, 1, uArgIdx);
 }
-void ILCodeStream::EmitLDC(DWORD_PTR uConst)
+void ILCodeStream::EmitLDC_I4(INT32 iConst)
 {
     WRAPPER_NO_CONTRACT;
-    Emit(
+    Emit(CEE_LDC_I4, 1, (UINT_PTR)(INT_PTR)iConst);
+}
+// Loads a constant as a native int. The constant is pushed with the shortest ldc
+// form and then converted with conv.i, so the stack type is always native int.
+// The conversion is needed since int32/int64/native int are different IL stack types.
+void ILCodeStream::EmitLDC_I(UINT_PTR uConst)
+{
+    WRAPPER_NO_CONTRACT;
 #ifdef TARGET_64BIT
-        CEE_LDC_I8
-#else
-        CEE_LDC_I4
-#endif
-        , 1, uConst);
+    if (!FitsInI4(uConst))
+    {
+        Emit(CEE_LDC_I8, 1, uConst);
+    }
+    else
+#endif // TARGET_64BIT
+    {
+        EmitLDC_I4((INT32)uConst);
+    }
+    EmitCONV_I();
 }
 void ILCodeStream::EmitLDC_R4(float fConst)
 {
@@ -1976,17 +1967,6 @@ void ILCodeStream::EmitLoadThis ()
     // so that we don't have to have a special method to
     // load arguments.
     EmitLDARG((unsigned)-1);
-}
-
-void ILCodeStream::EmitLoadNullPtr()
-{
-    WRAPPER_NO_CONTRACT;
-
-    // This is the correct way to load unmanaged zero pointer. EmitLDC(0) alone works
-    // fine in most cases but may lead to wrong code being generated on 64-bit if the
-    // flow graph is complex.
-    EmitLDC(0);
-    EmitCONV_I();
 }
 
 DWORD ILStubLinker::NewLocal(CorElementType typ)
@@ -2504,6 +2484,7 @@ ILStubLinker::ILStubLinker(Module* pStubSigModule, const Signature &signature, S
     m_iTargetStackDelta(0),
     m_cbCurrentCompressedSigLen(1),
     m_nLocals(0),
+    m_uSecretStubArgumentIndex(static_cast<DWORD>(-1)),
     m_fHasThis(false),
     m_pMD(pMD),
     m_pBuildingEHClauseStack(NULL),
@@ -2917,6 +2898,14 @@ DWORD ILStubLinker::SetStubTargetArgType(CorElementType typ, bool fConsumeStubAr
 
     LocalDesc locDesc(typ);
     return SetStubTargetArgType(&locDesc, fConsumeStubArg);
+}
+
+void ILStubLinker::SetSecretStubArgumentIndex(DWORD uArgIdx)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    _ASSERTE(m_uSecretStubArgumentIndex == static_cast<DWORD>(-1));
+    m_uSecretStubArgumentIndex = uArgIdx;
 }
 
 void ILStubLinker::SetStubTargetCallingConv(CorCallingConvention uNativeCallingConv)
@@ -3416,7 +3405,7 @@ ILCodeStream* ILStubLinker::NewCodeStream(CodeStreamType codeStreamType)
 {
     STANDARD_VM_CONTRACT;
 
-    NewHolder<ILCodeStream> pNewCodeStream = new ILCodeStream(this, codeStreamType);
+    NewHolder<ILCodeStream> pNewCodeStream(new ILCodeStream(this, codeStreamType));
 
     if (NULL == m_pCodeStreamList)
     {
@@ -3429,8 +3418,7 @@ ILCodeStream* ILStubLinker::NewCodeStream(CodeStreamType codeStreamType)
         pTail->m_pNextStream = pNewCodeStream;
     }
 
-    pNewCodeStream.SuppressRelease();
-    return pNewCodeStream;
+    return pNewCodeStream.Detach();
 }
 
 int ILCodeStream::GetToken(MethodDesc* pMD)

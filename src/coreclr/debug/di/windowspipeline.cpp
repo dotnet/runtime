@@ -71,7 +71,7 @@ public:
     );
 
     // Return a handle for the debuggee process.
-    virtual HANDLE GetProcessHandle();
+    virtual WaitHandle *GetProcessHandle();
 
     // Terminate the debuggee process.
     virtual BOOL TerminateProcess(UINT32 exitCode);
@@ -156,19 +156,48 @@ BOOL WindowsNativePipeline::ContinueDebugEvent(
 }
 
 // Return a handle for the debuggee process.
-HANDLE WindowsNativePipeline::GetProcessHandle()
+WaitHandle *WindowsNativePipeline::GetProcessHandle()
 {
     _ASSERTE(m_dwProcessId != 0);
 
-    return ::OpenProcess(PROCESS_DUP_HANDLE        |
-                         PROCESS_QUERY_INFORMATION |
-                         PROCESS_TERMINATE         |
-                         PROCESS_VM_OPERATION      |
-                         PROCESS_VM_READ           |
-                         PROCESS_VM_WRITE          |
-                         SYNCHRONIZE,
-                         FALSE,
-                         m_dwProcessId);
+    HANDLE processHandle = ::OpenProcess(PROCESS_DUP_HANDLE        |
+                                         PROCESS_QUERY_INFORMATION |
+                                         PROCESS_TERMINATE         |
+                                         PROCESS_VM_OPERATION      |
+                                         PROCESS_VM_READ           |
+                                         PROCESS_VM_WRITE          |
+                                         SYNCHRONIZE,
+                                         FALSE,
+                                         m_dwProcessId);
+    if (processHandle == NULL)
+    {
+        return nullptr;
+    }
+
+    NativeHandle nativeHandle(processHandle);
+    DWORD error = GetLastError();
+    CloseHandle(processHandle);
+
+    if (!nativeHandle.IsValid())
+    {
+        SetLastError(error);
+        return nullptr;
+    }
+
+    WaitHandle *waitHandle = new (nothrow) WaitHandle(nativeHandle);
+    DWORD duplicateError = GetLastError();
+    if (waitHandle == nullptr)
+    {
+        SetLastError(ERROR_NOT_ENOUGH_MEMORY);
+    }
+    else if (!waitHandle->IsValid())
+    {
+        delete waitHandle;
+        waitHandle = nullptr;
+        SetLastError(duplicateError);
+    }
+
+    return waitHandle;
 }
 
 // Terminate the debuggee process.

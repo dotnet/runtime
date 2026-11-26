@@ -11,7 +11,7 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.Templates.Tests
 {
-    [TestCategory("native-mono")]
+    [TestCategory("native")]
     public class NativeBuildTests : WasmTemplateTestsBase
     {
         public NativeBuildTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
@@ -19,11 +19,12 @@ namespace Wasm.Build.Templates.Tests
         {
         }
 
-        // Excluded on CoreCLR via the `category=native` trait filter: WasmAllowUndefinedSymbols=false
+        // Excluded on CoreCLR via the `category=mono` trait filter: WasmAllowUndefinedSymbols=false
         // is not honored on the CoreCLR native-build path. See https://github.com/dotnet/runtime/pull/127073.
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        [TestCategory("mono")]
         public void BuildWithUndefinedNativeSymbol(bool allowUndefined)
         {
             Configuration config = Configuration.Release;
@@ -59,10 +60,6 @@ namespace Wasm.Build.Templates.Tests
             }
         }
 
-        // Excluded on CoreCLR via the `category=native` trait filter: the default template's main.js calls
-        // getAssemblyExports() which throws on CoreCLR when the user assembly has no [JSExport]
-        // (JSHostImplementation.CoreCLR.BindAssemblyExports uses throwOnError: true, while Mono's native
-        // path is tolerant). See https://github.com/dotnet/runtime/pull/127073.
         [Theory]
         [InlineData(Configuration.Debug)]
         [InlineData(Configuration.Release)]
@@ -79,7 +76,10 @@ namespace Wasm.Build.Templates.Tests
             );
             string nativeCode = "void call_needing_marhsal_ilgen(void *x) {}";
             File.WriteAllText(path: Path.Combine(_projectDir, nativeSourceFilename), nativeCode);
-            UpdateBrowserMainJs();
+            if (IsCoreClrRuntime)
+                ReplaceMainJsWithMinimalRunMain();
+            else
+                UpdateBrowserMainJs();
             ReplaceFile("Program.cs", Path.Combine(BuildEnvironment.TestAssetsPath, "marshal_ilgen_test.cs"));
 
             (string _, string buildOutput) = BuildProject(info, config, new BuildOptions(AssertAppBundle: false), isNativeBuild: true);

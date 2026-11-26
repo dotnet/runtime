@@ -32,7 +32,7 @@ namespace System.Formats.Cbor
             else
             {
                 ReadOnlySpan<byte> buffer = GetRemainingBytes();
-                int arrayLength = DecodeDefiniteLength(header, buffer, out int bytesRead);
+                int arrayLength = DecodeCollectionLength(header, buffer, out int bytesRead);
 
                 AdvanceBuffer(bytesRead);
                 PushDataItem(CborMajorType.Array, arrayLength);

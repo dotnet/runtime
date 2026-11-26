@@ -4,6 +4,26 @@
 #include "standardpch.h"
 #include "cycletimer.h"
 
+#include <time.h> // For CLOCK_THREAD_CPUTIME_ID
+
+static BOOL GetThreadCycles(uint64_t* cycles)
+{
+#ifdef HOST_UNIX
+#ifdef CLOCK_THREAD_CPUTIME_ID
+    struct timespec ts;
+    if (clock_gettime(CLOCK_THREAD_CPUTIME_ID, &ts) != 0)
+        return FALSE;
+
+    *cycles = (uint64_t)ts.tv_sec * 1000000000 + (uint64_t)ts.tv_nsec;
+    return TRUE;
+#else // CLOCK_THREAD_CPUTIME_ID
+    return FALSE;
+#endif // CLOCK_THREAD_CPUTIME_ID
+#else // HOST_UNIX
+    return QueryThreadCycleTime(GetCurrentThread(), cycles);
+#endif // HOST_UNIX
+}
+
 CycleTimer::CycleTimer()
 {
     start    = 0;
@@ -17,7 +37,7 @@ CycleTimer::~CycleTimer()
 
 void CycleTimer::Start()
 {
-    BOOL retVal = QueryThreadCycleTime(GetCurrentThread(), &start);
+    BOOL retVal = GetThreadCycles(&start);
 
     if (retVal == FALSE)
     {
@@ -28,7 +48,7 @@ void CycleTimer::Start()
 
 void CycleTimer::Stop()
 {
-    BOOL retVal = QueryThreadCycleTime(GetCurrentThread(), &stop);
+    BOOL retVal = GetThreadCycles(&stop);
 
     if (retVal == FALSE)
     {
@@ -50,8 +70,8 @@ uint64_t CycleTimer::QueryOverhead()
     const int        N = 1000;
     for (int i = 0; i < N; i++)
     {
-        QueryThreadCycleTime(GetCurrentThread(), &startCycles);
-        QueryThreadCycleTime(GetCurrentThread(), &endCycles);
+        GetThreadCycles(&startCycles);
+        GetThreadCycles(&endCycles);
         tot += (endCycles - startCycles);
     }
     return tot / N;

@@ -299,10 +299,7 @@ namespace System.Text.Json
         {
             CheckNotDisposed();
 
-            if (utf8Json is null)
-            {
-                throw new ArgumentNullException(nameof(utf8Json));
-            }
+            ArgumentNullException.ThrowIfNull(utf8Json);
 
             if (!utf8Json.CanWrite)
             {
@@ -362,7 +359,9 @@ namespace System.Text.Json
         {
             CheckNotDisposed();
 
-            _output = bufferWriter ?? throw new ArgumentNullException(nameof(bufferWriter));
+            ArgumentNullException.ThrowIfNull(bufferWriter);
+
+            _output = bufferWriter;
             _stream = null;
             _arrayBufferWriter = null;
 

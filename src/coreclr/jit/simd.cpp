@@ -308,13 +308,12 @@ var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, u
                         }
 
                         JITDUMP(" Found Vector<%s>\n", varTypeName(simdBaseType));
-                        size = getVectorTByteLength();
+                        size = getCompileTimeVectorTByteLength();
 
                         if (size == 0)
                         {
                             return TYP_UNDEF;
                         }
-
                         // Vector<T>'s length is target-dependent, so under a cross-targeting altjit (e.g.
                         // SuperPMI replaying a context captured for a target with a different Vector<T>
                         // length) our size can disagree with the VM's. Treat it as a regular struct then,
@@ -488,6 +487,36 @@ GenTree* Compiler::impSIMDPopStack()
     }
 
     return tree;
+}
+
+//--------------------------------------------------------------------------------
+// SimdConstantContains:
+//   Determine whether a fixed-size integral SIMD constant contains the specified value.
+//
+// Arguments:
+//    simdBaseType - SIMD base type
+//    simdValue    - SIMD constant value
+//    simdSize     - SIMD size in bytes
+//    value        - Value to search for
+//
+// Return Value:
+//    True if any element equals value
+//
+bool SimdConstantContains(var_types simdBaseType, const simd_t& simdValue, unsigned simdSize, int64_t value)
+{
+    assert(varTypeIsIntegral(simdBaseType));
+
+    unsigned elementCount = Compiler::getSIMDVectorLength(simdSize, simdBaseType);
+
+    for (unsigned index = 0; index < elementCount; index++)
+    {
+        if (EvaluateGetElementIntegral(simdBaseType, simdValue, index) == value)
+        {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 #if defined(TARGET_ARM64)

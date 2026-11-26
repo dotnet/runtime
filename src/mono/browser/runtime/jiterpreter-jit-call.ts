@@ -290,6 +290,7 @@ export function mono_interp_flush_jitcall_queue (): void {
     const jitQueue: TrampolineInfo[] = [];
     let methodPtr = <MonoMethod><any>0;
     while ((methodPtr = <any>cwraps.mono_jiterp_tlqueue_next(JitQueue.JitCall)) != 0) {
+        methodPtr = methodPtr as any >>> 0 as any;
         const infos = infosByMethod[<any>methodPtr];
         if (!infos) {
             mono_log_info(`Failed to find corresponding info list for method ptr ${methodPtr} from jit queue!`);

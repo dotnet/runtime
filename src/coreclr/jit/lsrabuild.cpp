@@ -2277,18 +2277,6 @@ void LinearScan::buildIntervals()
         buildInitialParamDef(lclDsc, paramReg);
     }
 
-    // If there is a secret stub param, it is also live in
-    if (m_compiler->info.compPublishStubParam)
-    {
-        calleeRegArgMaskLiveIn->AddGprRegs(RBM_SECRET_STUB_PARAM.GetIntRegSet() DEBUG_ARG(RBM_ALLINT));
-
-        LclVarDsc* stubParamDsc = m_compiler->lvaGetDesc(m_compiler->lvaStubArgumentVar);
-        if (isCandidateVar(stubParamDsc))
-        {
-            buildInitialParamDef(stubParamDsc, REG_SECRET_STUB_PARAM);
-        }
-    }
-
 #ifdef DEBUG
     if (stressInitialParamReg())
     {
@@ -2495,8 +2483,15 @@ void LinearScan::buildIntervals()
             // The cookie check will kill some registers that it is using.
             // Model this to ensure values that are kept live throughout the
             // method are properly made available.
-            bool isTailCall = block->HasFlag(BBF_HAS_JMP);
-            addKillForRegs(m_compiler->codeGen->genGetGSCookieTempRegs(isTailCall), currentLoc + 1);
+            bool         isTailCall   = block->HasFlag(BBF_HAS_JMP);
+            GenTreeCall* tailCallNode = nullptr;
+            if (isTailCall && block->lastNode()->OperIs(GT_CALL))
+            {
+                tailCallNode = block->lastNode()->AsCall();
+                assert(tailCallNode->IsFastTailCall());
+            }
+
+            addKillForRegs(m_compiler->codeGen->genGetGSCookieTempRegs(isTailCall, tailCallNode), currentLoc + 1);
             currentLoc += 2;
         }
 
@@ -3916,9 +3911,10 @@ int LinearScan::BuildCastUses(GenTreeCast* cast, SingleTypeRegSet candidates)
     RefPosition* srcUse = BuildUse(src, candidates);
 
 #ifdef TARGET_64BIT
-    // A long -> int cast is a copy - the code generator will elide
-    // it if the source and destination registers are the same.
-    if (src->TypeIs(TYP_LONG) && cast->TypeIs(TYP_INT))
+    // A long -> int cast or a non-overflowing int -> int cast is a copy - the code generator
+    // will elide it if the source and destination registers are the same.
+    if ((src->TypeIs(TYP_LONG) && cast->TypeIs(TYP_INT)) ||
+        (src->TypeIs(TYP_INT) && (cast->CastToType() == TYP_INT) && !cast->gtOverflow()))
     {
         tgtPrefUse = srcUse;
     }
@@ -3984,6 +3980,16 @@ void LinearScan::BuildStoreLocDef(GenTreeLclVarCommon* storeLoc,
 #else
     defCandidates = allRegs(type);
 #endif // TARGET_X86
+
+#ifdef TARGET_XARCH
+    // TODO-Xarch-apx: Revisit once extended EVEX is available. Currently limiting high GPR for int <-> float
+    GenTree* storeSrc = storeLoc->gtGetOp1();
+    if (storeSrc->isContained() && storeSrc->OperIs(GT_BITCAST) && varTypeUsesIntReg(type) &&
+        varTypeUsesFloatReg(storeSrc->gtGetOp1()))
+    {
+        defCandidates = lowGprRegs;
+    }
+#endif // TARGET_XARCH
 
     RefPosition* def = newRefPosition(varDefInterval, currentLoc + 1, RefTypeDef, storeLoc, defCandidates, index);
     if (varDefInterval->isWriteThru)
@@ -4132,9 +4138,17 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
     }
     else if (op1->isContained() && op1->OperIs(GT_BITCAST))
     {
-        GenTree*     bitCastSrc   = op1->gtGetOp1();
-        RegisterType registerType = regType(bitCastSrc->TypeGet());
-        singleUseRef              = BuildUse(bitCastSrc, allRegs(registerType));
+        GenTree*         bitCastSrc    = op1->gtGetOp1();
+        RegisterType     registerType  = regType(bitCastSrc->TypeGet());
+        SingleTypeRegSet srcCandidates = allRegs(registerType);
+#ifdef TARGET_XARCH
+        // TODO-Xarch-apx: Revisit once extended EVEX is available. Currently limiting high GPR for int <-> float
+        if (varTypeUsesIntReg(bitCastSrc) && varTypeUsesFloatReg(varDsc->GetRegisterType(storeLoc)))
+        {
+            srcCandidates = lowGprRegs;
+        }
+#endif // TARGET_XARCH
+        singleUseRef = BuildUse(bitCastSrc, srcCandidates);
 
         Interval* srcInterval = singleUseRef->getInterval();
         assert(regType(srcInterval->registerType) == registerType);
@@ -4608,37 +4622,7 @@ int LinearScan::BuildCmpOperands(GenTree* tree)
     GenTree*         op2           = tree->gtGetOp2();
 
 #ifdef TARGET_X86
-    bool needByteRegs = false;
-    if (varTypeIsByte(tree))
-    {
-        if (varTypeUsesIntReg(op1))
-        {
-            needByteRegs = true;
-        }
-    }
-    // Example1: GT_EQ(int, op1 of type ubyte, op2 of type ubyte) - in this case codegen uses
-    // ubyte as the result of comparison and if the result needs to be materialized into a reg
-    // simply zero extend it to TYP_INT size.  Here is an example of generated code:
-    //         cmp dl, byte ptr[addr mode]
-    //         movzx edx, dl
-    else if (varTypeIsByte(op1) && varTypeIsByte(op2))
-    {
-        needByteRegs = true;
-    }
-    // Example2: GT_EQ(int, op1 of type ubyte, op2 is GT_CNS_INT) - in this case codegen uses
-    // ubyte as the result of the comparison and if the result needs to be materialized into a reg
-    // simply zero extend it to TYP_INT size.
-    else if (varTypeIsByte(op1) && op2->IsCnsIntOrI())
-    {
-        needByteRegs = true;
-    }
-    // Example3: GT_EQ(int, op1 is GT_CNS_INT, op2 of type ubyte) - in this case codegen uses
-    // ubyte as the result of the comparison and if the result needs to be materialized into a reg
-    // simply zero extend it to TYP_INT size.
-    else if (op1->IsCnsIntOrI() && varTypeIsByte(op2))
-    {
-        needByteRegs = true;
-    }
+    bool needByteRegs = (varTypeIsByte(tree) && varTypeUsesIntReg(op1)) || (tree->AsOp()->GetCompareSize() == 1);
     if (needByteRegs)
     {
         if (!op1->isContained())

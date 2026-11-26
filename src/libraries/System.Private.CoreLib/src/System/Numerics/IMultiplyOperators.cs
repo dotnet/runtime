@@ -1,12 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime;
+
 namespace System.Numerics
 {
     /// <summary>Defines a mechanism for computing the product of two values.</summary>
     /// <typeparam name="TSelf">The type that implements this interface.</typeparam>
     /// <typeparam name="TOther">The type that will multiply <typeparamref name="TSelf" />.</typeparam>
     /// <typeparam name="TResult">The type that contains the product of <typeparamref name="TSelf" /> and <typeparamref name="TOther" />.</typeparam>
+    [SuppressReadyToRunCanonicalRooting]
     public interface IMultiplyOperators<TSelf, TOther, TResult>
         where TSelf : IMultiplyOperators<TSelf, TOther, TResult>?
     {

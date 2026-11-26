@@ -930,8 +930,8 @@ PhaseStatus Compiler::fgRemoveEmptyTryCatchOrTryFault()
         if (HBtab->HasFilter())
         {
             BasicBlock* const firstFltBlock = HBtab->ebdFilter;
-            assert(firstFltBlock->bbRefs == 1);
-            firstFltBlock->bbRefs               = 0;
+            assert(firstFltBlock->bbRefs >= 1);
+            firstFltBlock->bbRefs -= 1;
             BasicBlock* const afterLastFltBlock = HBtab->BBFilterLast()->Next();
 
             // Must do this in two passes to handle loops or lexically
@@ -955,8 +955,8 @@ PhaseStatus Compiler::fgRemoveEmptyTryCatchOrTryFault()
         // (3) Remove any handler blocks.
         // The first handler block has an artificial ref count
         //
-        assert(firstHndBlock->bbRefs == 1);
-        firstHndBlock->bbRefs               = 0;
+        assert(firstHndBlock->bbRefs >= 1);
+        firstHndBlock->bbRefs -= 1;
         BasicBlock* const afterLastHndBlock = lastHndBlock->Next();
 
         // Must do this in two passes to handle loops or lexically
@@ -999,12 +999,16 @@ PhaseStatus Compiler::fgRemoveEmptyTryCatchOrTryFault()
         //
         fgRemoveEHTableEntry(XTnum);
 
-        // (6) The old try entry may no longer need special protection.
-        // (it may still be an entry of an enclosing try)
+        // (6) Unprotect the old try blocks: blocks split from the try entry inherit
+        // BBF_DONT_REMOVE. Keep it on blocks that are still EH entries or are never removed.
         //
-        if (!bbIsTryBeg(firstTryBlock))
+        for (BasicBlock* const tryBlock : Blocks(firstTryBlock, lastTryBlock))
         {
-            firstTryBlock->RemoveFlags(BBF_DONT_REMOVE);
+            if (!bbIsTryBeg(tryBlock) && !bbIsHandlerBeg(tryBlock) && !fgIsThrowHlpBlk(tryBlock) &&
+                (tryBlock != genReturnBB))
+            {
+                tryBlock->RemoveFlags(BBF_DONT_REMOVE);
+            }
         }
 
         // Another one bites the dust...

@@ -14,7 +14,7 @@
         g             INTEGER
     }
   -->
-  <asn:Integer name="P" />
-  <asn:Integer name="Q" />
-  <asn:Integer name="G" />
+  <asn:Integer name="P" backingType="ReadOnlyMemory"/>
+  <asn:Integer name="Q" backingType="ReadOnlyMemory"/>
+  <asn:Integer name="G" backingType="ReadOnlyMemory"/>
 </asn:Sequence>

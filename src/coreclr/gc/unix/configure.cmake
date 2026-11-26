@@ -16,18 +16,6 @@ check_include_files(sys/membarrier.h HAVE_SYS_MEMBARRIER_H)
 check_function_exists(vm_allocate HAVE_VM_ALLOCATE)
 check_function_exists(sysctlbyname HAVE_SYSCTLBYNAME)
 
-check_cxx_source_compiles("
-    #include <pthread.h>
-    #include <stdint.h>
-
-    int main()
-    {
-        uint64_t tid;
-        pthread_threadid_np(pthread_self(), &tid);
-        return (int)tid;
-    }
-    " HAVE_PTHREAD_THREADID_NP)
-
 if(HAVE_PTHREAD_NP_H)
   set(PTHREAD_NP_H_INCLUDE "#include <pthread_np.h>")
 endif()
@@ -83,6 +71,17 @@ check_cxx_source_runs("
         return 0;
     }
     " HAVE_SCHED_GETCPU)
+
+check_cxx_source_compiles("
+    #include <pthread.h>
+    #include <stddef.h>
+
+    int main()
+    {
+        size_t cpu;
+        return pthread_cpu_number_np(&cpu);
+    }
+    " HAVE_PTHREAD_CPU_NUMBER_NP)
 
 check_symbol_exists(
     clock_gettime_nsec_np
@@ -170,22 +169,5 @@ check_prototype_definition(
     0
     ${STATFS_INCLUDES}
     HAVE_NON_LEGACY_STATFS)
-
-set(CMAKE_REQUIRED_LIBRARIES)
-check_cxx_source_runs("
-#include <fcntl.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <unistd.h>
-
-int main(void) {
-  int fd;
-
-  fd = open(\"/proc/self/statm\", O_RDONLY);
-  if (fd == -1) {
-    exit(1);
-  }
-  exit(0);
-}" HAVE_PROCFS_STATM)
 
 configure_file(${CMAKE_CURRENT_LIST_DIR}/config.gc.h.in ${CMAKE_CURRENT_BINARY_DIR}/config.gc.h)

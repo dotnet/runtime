@@ -1,13 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <!-- TODO: Remove once migrated to unsafe-v2. -->
+    <MemorySafetyRulesVersion>1</MemorySafetyRulesVersion>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <RootNamespace>System.Numerics</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
-    <!-- Mono routes ulong -> float through double, which double rounds; the BigInteger -> float
-         conversion excludes its correctly-rounded fast path there. -->
-    <DefineConstants Condition="'$(RuntimeFlavor)' == 'Mono'">$(DefineConstants);MONO</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
@@ -18,6 +17,7 @@
     <Compile Include="System\Numerics\BigIntegerCalculator.FastReducer.cs" />
     <Compile Include="System\Numerics\BigIntegerCalculator.GcdInv.cs" />
     <Compile Include="System\Numerics\BigIntegerCalculator.PowMod.cs" />
+    <Compile Include="System\Numerics\BigIntegerCalculator.PowTables.cs" />
     <Compile Include="System\Numerics\BigIntegerCalculator.SquMul.cs" />
     <Compile Include="System\Numerics\BigIntegerCalculator.ShiftRot.cs" />
     <Compile Include="System\Numerics\BigIntegerCalculator.Utils.cs" />
@@ -35,6 +35,8 @@
              Link="CoreLib\System\Buffers\Text\FormattingHelpers.CountDigits.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Numerics\BigIntegerCalculator.Shared.cs"
              Link="CoreLib\System\Numerics\BigIntegerCalculator.Shared.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\SuppressReadyToRunCanonicalRootingAttribute.cs"
+             Link="CoreLib\System\Runtime\SuppressReadyToRunCanonicalRootingAttribute.cs" />
     <Compile Include="$(CommonPath)System\Collections\Generic\ValueListBuilder.cs"
              Link="CoreLib\System\Collections\Generic\ValueListBuilder.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder_1.cs"

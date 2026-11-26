@@ -8,8 +8,6 @@ namespace Microsoft.Extensions.Internal
 {
     internal readonly struct ValueStopwatch
     {
-        private static readonly double s_timestampToTicks = TimeSpan.TicksPerSecond / (double)Stopwatch.Frequency;
-
         private readonly long _startTimestamp;
 
         public bool IsActive => _startTimestamp != 0;
@@ -30,10 +28,7 @@ namespace Microsoft.Extensions.Internal
                 throw new InvalidOperationException("An uninitialized, or 'default', ValueStopwatch cannot be used to get elapsed time.");
             }
 
-            long end = Stopwatch.GetTimestamp();
-            long timestampDelta = end - _startTimestamp;
-            long ticks = (long)(s_timestampToTicks * timestampDelta);
-            return new TimeSpan(ticks);
+            return Stopwatch.GetElapsedTime(_startTimestamp);
         }
     }
 }

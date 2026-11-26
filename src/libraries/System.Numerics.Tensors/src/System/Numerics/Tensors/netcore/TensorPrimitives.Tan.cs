@@ -3,6 +3,8 @@
 
 using System.Diagnostics;
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.X86;
 
 namespace System.Numerics.Tensors
 {
@@ -36,6 +38,14 @@ namespace System.Numerics.Tensors
             InvokeSpanIntoSpan<T, TanOperator<T>>(x, destination);
         }
 
+        // A non-fused product dn * pi/2 has absolute rounding error at most u * dn * pi/2,
+        // where u is the unit roundoff. Requiring |f| >= dn/256 bounds the relative
+        // reduction error to roughly 410u, including the tail corrections. On
+        // [-pi/4, pi/4], tan and cot amplify this by less than 2, keeping it below
+        // 5e-5 for float and 1e-13 for double. dn == 0 needs no range reduction.
+        // Beyond this bound, scalar tangent is cheaper than software FMA.
+        private const float TanNonFusedReductionThreshold = 1.0f / 256;
+
         /// <summary>T.Tan(x)</summary>
         private readonly struct TanOperator<T> : IUnaryOperator<T, T>
             where T : ITrigonometricFunctions<T>
@@ -60,6 +70,10 @@ namespace System.Numerics.Tensors
             //         when N is even, = -cot(F) = -1/tan(F)
             //         when N is odd, tan(F) is approximated using a polynomial
             //         obtained from Remez approximation from Sollya.
+            //
+            // Range reduction can require fused multiply-add: near an odd multiple of π/2,
+            // separately rounding N * π/2 loses significant bits of F, which is then
+            // used as the denominator of -1/tan(F).
 
             public static bool Vectorizable => typeof(T) == typeof(float) || typeof(T) == typeof(double);
 
@@ -138,9 +152,22 @@ namespace System.Numerics.Tensors
                 dn -= Vector128.Create(AlmHuge);
 
                 Vector128<float> f = uxMasked;
-                f = MultiplyAddEstimateOperator<float>.Invoke(dn, Vector128.Create(-float.Pi / 2), f);
-                f = MultiplyAddEstimateOperator<float>.Invoke(dn, Vector128.Create(Pi_Tail2), f);
-                f = MultiplyAddEstimateOperator<float>.Invoke(dn, Vector128.Create(Pi_Tail3), f);
+                if (Fma.IsSupported || AdvSimd.Arm64.IsSupported)
+                {
+                    f = FusedMultiplyAddOperator<float>.Invoke(dn, Vector128.Create(-float.Pi / 2), f);
+                    f = FusedMultiplyAddOperator<float>.Invoke(dn, Vector128.Create(Pi_Tail2), f);
+                    f = FusedMultiplyAddOperator<float>.Invoke(dn, Vector128.Create(Pi_Tail3), f);
+                }
+                else
+                {
+                    f = MultiplyAddEstimateOperator<float>.Invoke(dn, Vector128.Create(-float.Pi / 2), f);
+                    f = MultiplyAddEstimateOperator<float>.Invoke(dn, Vector128.Create(Pi_Tail2), f);
+                    f = MultiplyAddEstimateOperator<float>.Invoke(dn, Vector128.Create(Pi_Tail3), f);
+                    if (Vector128.LessThanAny(Vector128.Abs(f), dn * Vector128.Create(TanNonFusedReductionThreshold)))
+                    {
+                        return ApplyScalar<TanOperatorSingle>(x);
+                    }
+                }
 
                 // POLY_EVAL_ODD_15
                 Vector128<float> f2 = f * f;
@@ -173,9 +200,22 @@ namespace System.Numerics.Tensors
                 dn -= Vector256.Create(AlmHuge);
 
                 Vector256<float> f = uxMasked;
-                f = MultiplyAddEstimateOperator<float>.Invoke(dn, Vector256.Create(-float.Pi / 2), f);
-                f = MultiplyAddEstimateOperator<float>.Invoke(dn, Vector256.Create(Pi_Tail2), f);
-                f = MultiplyAddEstimateOperator<float>.Invoke(dn, Vector256.Create(Pi_Tail3), f);
+                if (Fma.IsSupported || AdvSimd.Arm64.IsSupported)
+                {
+                    f = FusedMultiplyAddOperator<float>.Invoke(dn, Vector256.Create(-float.Pi / 2), f);
+                    f = FusedMultiplyAddOperator<float>.Invoke(dn, Vector256.Create(Pi_Tail2), f);
+                    f = FusedMultiplyAddOperator<float>.Invoke(dn, Vector256.Create(Pi_Tail3), f);
+                }
+                else
+                {
+                    f = MultiplyAddEstimateOperator<float>.Invoke(dn, Vector256.Create(-float.Pi / 2), f);
+                    f = MultiplyAddEstimateOperator<float>.Invoke(dn, Vector256.Create(Pi_Tail2), f);
+                    f = MultiplyAddEstimateOperator<float>.Invoke(dn, Vector256.Create(Pi_Tail3), f);
+                    if (Vector256.LessThanAny(Vector256.Abs(f), dn * Vector256.Create(TanNonFusedReductionThreshold)))
+                    {
+                        return ApplyScalar<TanOperatorSingle>(x);
+                    }
+                }
 
                 // POLY_EVAL_ODD_15
                 Vector256<float> f2 = f * f;
@@ -208,9 +248,22 @@ namespace System.Numerics.Tensors
                 dn -= Vector512.Create(AlmHuge);
 
                 Vector512<float> f = uxMasked;
-                f = MultiplyAddEstimateOperator<float>.Invoke(dn, Vector512.Create(-float.Pi / 2), f);
-                f = MultiplyAddEstimateOperator<float>.Invoke(dn, Vector512.Create(Pi_Tail2), f);
-                f = MultiplyAddEstimateOperator<float>.Invoke(dn, Vector512.Create(Pi_Tail3), f);
+                if (Fma.IsSupported || AdvSimd.Arm64.IsSupported)
+                {
+                    f = FusedMultiplyAddOperator<float>.Invoke(dn, Vector512.Create(-float.Pi / 2), f);
+                    f = FusedMultiplyAddOperator<float>.Invoke(dn, Vector512.Create(Pi_Tail2), f);
+                    f = FusedMultiplyAddOperator<float>.Invoke(dn, Vector512.Create(Pi_Tail3), f);
+                }
+                else
+                {
+                    f = MultiplyAddEstimateOperator<float>.Invoke(dn, Vector512.Create(-float.Pi / 2), f);
+                    f = MultiplyAddEstimateOperator<float>.Invoke(dn, Vector512.Create(Pi_Tail2), f);
+                    f = MultiplyAddEstimateOperator<float>.Invoke(dn, Vector512.Create(Pi_Tail3), f);
+                    if (Vector512.LessThanAny(Vector512.Abs(f), dn * Vector512.Create(TanNonFusedReductionThreshold)))
+                    {
+                        return ApplyScalar<TanOperatorSingle>(x);
+                    }
+                }
 
                 // POLY_EVAL_ODD_15
                 Vector512<float> f2 = f * f;
@@ -273,9 +326,22 @@ namespace System.Numerics.Tensors
 
                 // f = |x| - (dn * π/2)
                 Vector128<double> f = uxMasked;
-                f = MultiplyAddEstimateOperator<double>.Invoke(dn, Vector128.Create(-double.Pi / 2), f);
-                f = MultiplyAddEstimateOperator<double>.Invoke(dn, Vector128.Create(-HalfPi2), f);
-                f = MultiplyAddEstimateOperator<double>.Invoke(dn, Vector128.Create(-HalfPi3), f);
+                if (Fma.IsSupported || AdvSimd.Arm64.IsSupported)
+                {
+                    f = FusedMultiplyAddOperator<double>.Invoke(dn, Vector128.Create(-double.Pi / 2), f);
+                    f = FusedMultiplyAddOperator<double>.Invoke(dn, Vector128.Create(-HalfPi2), f);
+                    f = FusedMultiplyAddOperator<double>.Invoke(dn, Vector128.Create(-HalfPi3), f);
+                }
+                else
+                {
+                    f = MultiplyAddEstimateOperator<double>.Invoke(dn, Vector128.Create(-double.Pi / 2), f);
+                    f = MultiplyAddEstimateOperator<double>.Invoke(dn, Vector128.Create(-HalfPi2), f);
+                    f = MultiplyAddEstimateOperator<double>.Invoke(dn, Vector128.Create(-HalfPi3), f);
+                    if (Vector128.LessThanAny(Vector128.Abs(f), dn * Vector128.Create((double)TanNonFusedReductionThreshold)))
+                    {
+                        return ApplyScalar<TanOperatorDouble>(x);
+                    }
+                }
 
                 // POLY_EVAL_ODD_29
                 Vector128<double> g = f * f;
@@ -320,9 +386,22 @@ namespace System.Numerics.Tensors
 
                 // f = |x| - (dn * π/2)
                 Vector256<double> f = uxMasked;
-                f = MultiplyAddEstimateOperator<double>.Invoke(dn, Vector256.Create(-double.Pi / 2), f);
-                f = MultiplyAddEstimateOperator<double>.Invoke(dn, Vector256.Create(-HalfPi2), f);
-                f = MultiplyAddEstimateOperator<double>.Invoke(dn, Vector256.Create(-HalfPi3), f);
+                if (Fma.IsSupported || AdvSimd.Arm64.IsSupported)
+                {
+                    f = FusedMultiplyAddOperator<double>.Invoke(dn, Vector256.Create(-double.Pi / 2), f);
+                    f = FusedMultiplyAddOperator<double>.Invoke(dn, Vector256.Create(-HalfPi2), f);
+                    f = FusedMultiplyAddOperator<double>.Invoke(dn, Vector256.Create(-HalfPi3), f);
+                }
+                else
+                {
+                    f = MultiplyAddEstimateOperator<double>.Invoke(dn, Vector256.Create(-double.Pi / 2), f);
+                    f = MultiplyAddEstimateOperator<double>.Invoke(dn, Vector256.Create(-HalfPi2), f);
+                    f = MultiplyAddEstimateOperator<double>.Invoke(dn, Vector256.Create(-HalfPi3), f);
+                    if (Vector256.LessThanAny(Vector256.Abs(f), dn * Vector256.Create((double)TanNonFusedReductionThreshold)))
+                    {
+                        return ApplyScalar<TanOperatorDouble>(x);
+                    }
+                }
 
                 // POLY_EVAL_ODD_29
                 Vector256<double> g = f * f;
@@ -367,9 +446,22 @@ namespace System.Numerics.Tensors
 
                 // f = |x| - (dn * π/2)
                 Vector512<double> f = uxMasked;
-                f = MultiplyAddEstimateOperator<double>.Invoke(dn, Vector512.Create(-double.Pi / 2), f);
-                f = MultiplyAddEstimateOperator<double>.Invoke(dn, Vector512.Create(-HalfPi2), f);
-                f = MultiplyAddEstimateOperator<double>.Invoke(dn, Vector512.Create(-HalfPi3), f);
+                if (Fma.IsSupported || AdvSimd.Arm64.IsSupported)
+                {
+                    f = FusedMultiplyAddOperator<double>.Invoke(dn, Vector512.Create(-double.Pi / 2), f);
+                    f = FusedMultiplyAddOperator<double>.Invoke(dn, Vector512.Create(-HalfPi2), f);
+                    f = FusedMultiplyAddOperator<double>.Invoke(dn, Vector512.Create(-HalfPi3), f);
+                }
+                else
+                {
+                    f = MultiplyAddEstimateOperator<double>.Invoke(dn, Vector512.Create(-double.Pi / 2), f);
+                    f = MultiplyAddEstimateOperator<double>.Invoke(dn, Vector512.Create(-HalfPi2), f);
+                    f = MultiplyAddEstimateOperator<double>.Invoke(dn, Vector512.Create(-HalfPi3), f);
+                    if (Vector512.LessThanAny(Vector512.Abs(f), dn * Vector512.Create((double)TanNonFusedReductionThreshold)))
+                    {
+                        return ApplyScalar<TanOperatorDouble>(x);
+                    }
+                }
 
                 // POLY_EVAL_ODD_29
                 Vector512<double> g = f * f;

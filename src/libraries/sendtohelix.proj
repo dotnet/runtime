@@ -84,17 +84,17 @@
       </_BaseProjectsToBuild>
     </ItemGroup>
 
-    <!-- For BuildWasmApps we want to build the project 4 times, with: TestUsingWorkloads=true, and TestUsingWorkloads=false and WasmEnableWebcil=true and WasmEnableWebcil=false-->
+    <!-- BuildWasmApps covers workload and asset-fingerprinting combinations. -->
     <ItemGroup Condition="'@(_Scenarios -> AnyHaveMetadataValue('Identity', 'buildwasmapps'))' == 'true'">
       <_TestUsingWorkloadsValues Include="false" />
-      <_TestUsingWorkloadsValues Include="true" Condition="'$(RuntimeFlavor)' == 'Mono'" />
-      <_TestUsingWebcilValues Include="true;false" Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'Mono'" />
-      <_TestUsingFingerprintingValues Include="true;false" Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'Mono'" />
+      <_TestUsingWorkloadsValues Include="true" />
+      <_TestUsingFingerprintingValues Include="true;false" Condition="'$(TargetOS)' == 'browser'" />
 
       <!-- now make the cartesian product of true and false values for two categories -->
       <_TestUsingCrossProductValuesTemp Include="@(_TestUsingWorkloadsValues)">
         <Workloads>%(_TestUsingWorkloadsValues.Identity)</Workloads>
         <BundlerFriendly>false</BundlerFriendly>
+        <RunWasmOpt>false</RunWasmOpt>
       </_TestUsingCrossProductValuesTemp>
       <_TestUsingCrossProductValuesTemp2 Include="@(_TestUsingCrossProductValuesTemp)">
         <Webcil>%(_TestUsingWebcilValues.Identity)</Webcil>
@@ -107,11 +107,21 @@
       <_TestUsingCrossProductValues Remove="@(_TestUsingCrossProductValues)" Condition="'%(_TestUsingCrossProductValues.Workloads)' == 'false' and '%(_TestUsingCrossProductValues.Fingerprinting)' == 'false'" />
       
       <!-- Add combination for JavascriptBundler friendliness -->
-      <_TestUsingCrossProductValues Include="JavaScriptBundlerFriendly" Condition="'$(RuntimeFlavor)' == 'Mono'">
+      <_TestUsingCrossProductValues Include="JavaScriptBundlerFriendly" Condition="'$(TargetOS)' == 'browser'">
         <Workloads>true</Workloads>
         <Webcil>true</Webcil>
         <Fingerprinting>true</Fingerprinting>
         <BundlerFriendly>true</BundlerFriendly>
+        <RunWasmOpt>false</RunWasmOpt>
+      </_TestUsingCrossProductValues>
+
+      <!-- Add combination for the opt-in WasmRunWasmOpt pass -->
+      <_TestUsingCrossProductValues Include="WasmRunWasmOpt" Condition="'$(TargetOS)' == 'browser'">
+        <Workloads>true</Workloads>
+        <Webcil>true</Webcil>
+        <Fingerprinting>true</Fingerprinting>
+        <BundlerFriendly>false</BundlerFriendly>
+        <RunWasmOpt>true</RunWasmOpt>
       </_TestUsingCrossProductValues>
 
       <_BuildWasmAppsProjectsToBuild Include="$(PerScenarioProjectFile)">
@@ -121,7 +131,8 @@
           TestUsingWorkloads=%(_TestUsingCrossProductValues.Workloads);
           WasmEnableWebcil=%(_TestUsingCrossProductValues.Webcil);
           WasmFingerprintAssets=%(_TestUsingCrossProductValues.Fingerprinting);
-          WasmBundlerFriendlyBootConfig=%(_TestUsingCrossProductValues.BundlerFriendly)
+          WasmBundlerFriendlyBootConfig=%(_TestUsingCrossProductValues.BundlerFriendly);
+          WasmRunWasmOpt=%(_TestUsingCrossProductValues.RunWasmOpt)
         </AdditionalProperties>
         <AdditionalProperties Condition="'$(NeedsToBuildWasmAppsOnHelix)' != ''">%(_BuildWasmAppsProjectsToBuild.AdditionalProperties);NeedsToBuildWasmAppsOnHelix=$(NeedsToBuildWasmAppsOnHelix)</AdditionalProperties>
       </_BuildWasmAppsProjectsToBuild>
@@ -145,6 +156,16 @@
       <_BuildInParallel>false</_BuildInParallel>
       <_BuildInParallel Condition=" '@(_ProjectsToBuild->Count())' &gt; '1' ">true</_BuildInParallel>
     </PropertyGroup>
+
+    <!-- Browser and WASI scenario projects all stage the same tools (chrome, v8, wasmtime, ...) into the
+         shared $(HelixDependenciesStagingPath). Stage them serially before the parallel fan-out; otherwise
+         the projects copy the same files concurrently, and one project's Helix upload can try to zip a
+         file that another project is still writing. -->
+    <MSBuild Condition="'$(_BuildInParallel)' == 'true' and ('$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi')"
+             Projects="@(_ProjectsToBuild)"
+             Targets="StageDependenciesForHelix"
+             Properties="_StageHelixDependenciesOnly=true"
+             BuildInParallel="false" />
 
     <!-- Invoke MSBuild once for each Scenario (because of the "batching" defined in "_ProjectsToBuild").
          Create the Helix work items and start the jobs. This is done by invoking the "Test" Helix target.
@@ -203,8 +224,7 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="IncludeDumpDocsInTesthost"
-          Condition="'$(RuntimeFlavor)' == 'CoreCLR'">
+  <Target Name="IncludeDumpDocsInTesthost">
     <ItemGroup>
       <DebugDocsFiles Include="$(RepositoryEngineeringDir)testing\debug-dump-template.md" />
       <DebugDocsFiles Include="$(RepositoryEngineeringDir)testing\gen-debug-dump-docs.py" />

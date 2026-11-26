@@ -83,10 +83,27 @@ namespace System.Net.Security.Tests
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux | TestPlatforms.FreeBSD)]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task ServerAuthenticate_EmptyHandshakeRecord_ThrowsIOException(bool useLegacyHandshake)
+        {
+            await RemoteExecutor.Invoke(async useLegacyHandshakeValue =>
+            {
+                AppContext.SetSwitch("System.Net.Security.UseLegacySslStreamHandshake", bool.Parse(useLegacyHandshakeValue));
+                using X509Certificate2 certificate = Configuration.Certificates.GetServerCertificate();
+                foreach (object[] data in ServerAsyncAuthenticateTest.EmptyHandshakeRecordData())
+                {
+                    await ServerAsyncAuthenticateTest.AuthenticateEmptyHandshakeRecord(
+                        certificate, (ServerAsyncAuthenticateTest.ServerCertificateSource)data[0], (bool)data[1], (int)data[2], (bool)data[3]);
+                }
+            }, useLegacyHandshake.ToString()).DisposeAsync();
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [PlatformSpecific(TestPlatforms.Linux)] // SSLKEYLOGFILE is only supported on Linux for SslStream
         [InlineData(true)]
         [InlineData(false)]
-        //[ActiveIssue("https://github.com/dotnet/runtime/issues/116473")]
         public async Task SslKeyLogFile_IsCreatedAndFilled(bool enabledBySwitch)
         {
             if (PlatformDetection.IsDebugLibrary(typeof(SslStream).Assembly) && !enabledBySwitch)

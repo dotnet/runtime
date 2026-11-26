@@ -4402,9 +4402,9 @@ void emitter::emitDispJumpList()
 #endif // TARGET_XARCH
 
 #if defined(TARGET_AMD64)
-            if (jmp->idjIsAfterCallBeforeEpilog)
+            if (jmp->idjIsAfterCall)
             {
-                printf(" ; after call before epilog");
+                printf(" ; after call");
             }
 #endif // TARGET_AMD64
         }
@@ -4799,21 +4799,12 @@ void emitter::emitRemoveJumpToNextInst()
                 jmp->idCodeSize(0);
 
 #ifdef TARGET_AMD64
-                // If the removed jump is after a call and before an OS epilog, it needs to be replaced by a nop
-                if (jmp->idjIsAfterCallBeforeEpilog)
+                // Preserve the call's return PC in its EH region and keep its GC state distinct
+                // from the branch target's state. This also separates the call from an OS epilog.
+                if (jmp->idjIsAfterCall)
                 {
-                    if ((targetGroup->igFlags & IGF_EPILOG) != 0)
-                    {
-                        // This jump will become a nop, so set its size now to ensure below calculations are correct
-                        jmp->idCodeSize(1);
-                        codeSize--;
-                    }
-                    else
-                    {
-                        // We don't need a nop if the removed jump isn't before an OS epilog,
-                        // so zero jmp->idjIsAfterCallBeforeEpilog to avoid emitting a nop
-                        jmp->idjIsAfterCallBeforeEpilog = 0;
-                    }
+                    jmp->idCodeSize(1);
+                    codeSize--;
                 }
 #endif // TARGET_AMD64
 
@@ -6977,7 +6968,6 @@ unsigned emitter::emitEndCodeGen(Compiler*             comp,
     AllocMemChunk* dataChunk       = emitDataChunks;
     unsigned*      dataChunkOffset = emitDataChunkOffsets;
 
-    unsigned cumulativeOffset = 0;
     for (dataSection* sec = emitConsDsc.dsdList; sec != nullptr; sec = sec->dsNext, dataChunk++, dataChunkOffset++)
     {
         comp->Metrics.ReadOnlyDataBytes += sec->dsSize;
@@ -6991,8 +6981,10 @@ unsigned emitter::emitEndCodeGen(Compiler*             comp,
             dataChunk->flags = CORJIT_ALLOCMEM_READONLY_DATA | CORJIT_ALLOCMEM_HAS_POINTERS_TO_CODE;
         }
 
-        *dataChunkOffset = cumulativeOffset;
-        cumulativeOffset += sec->dsSize;
+        // The logical offset assigned to each section (see emitDataGenBeg) is what instructions
+        // reference and what emitDataOffsetToPtr maps back to a chunk, so use it here rather than
+        // recomputing a packed offset that would ignore inter-section alignment padding.
+        *dataChunkOffset = sec->dsOffset;
     }
 
     comp->Metrics.AllocatedHotCodeBytes  = emitTotalHotCodeSize;
@@ -7137,7 +7129,7 @@ unsigned emitter::emitEndCodeGen(Compiler*             comp,
                 continue;
             }
 
-            if (m_compiler->lvaIsUnknownSizeLocal(num))
+            if (m_compiler->lvaLocalIsOnUnknownSizeFrame(num))
             {
                 continue;
             }
@@ -7879,9 +7871,10 @@ UNATIVE_OFFSET emitter::emitDataGenBeg(unsigned size, unsigned alignment, var_ty
     //
     assert((size != 0) && ((size % dataSection::MIN_DATA_ALIGN) == 0));
 
-    unsigned secOffs = emitConsDsc.dsdOffs;
+    // Keep the logical layout in sync with the per-chunk alignment used by the EE.
+    unsigned secOffs = AlignUp(emitConsDsc.dsdOffs, alignment);
     /* Advance the current offset */
-    emitConsDsc.dsdOffs += size;
+    emitConsDsc.dsdOffs = secOffs + size;
 
     /* Allocate a data section descriptor and add it to the list */
 
@@ -7892,6 +7885,8 @@ UNATIVE_OFFSET emitter::emitDataGenBeg(unsigned size, unsigned alignment, var_ty
     secDesc->dsSize = size;
 
     secDesc->dsAlignment = alignment;
+
+    secDesc->dsOffset = secOffs;
 
     secDesc->dsDataType = dataType;
 
@@ -7928,13 +7923,13 @@ UNATIVE_OFFSET emitter::emitBBTableDataGenBeg(unsigned numEntries, bool relative
 
     UNATIVE_OFFSET emittedSize = numEntries * elemSize;
 
-    /* Get hold of the current offset */
+    /* Get hold of the current offset, aligned for the element size */
 
-    secOffs = emitConsDsc.dsdOffs;
+    secOffs = AlignUp(emitConsDsc.dsdOffs, elemSize);
 
     /* Advance the current offset */
 
-    emitConsDsc.dsdOffs += emittedSize;
+    emitConsDsc.dsdOffs = secOffs + emittedSize;
 
     /* Allocate a data section descriptor and add it to the list */
 
@@ -7945,6 +7940,8 @@ UNATIVE_OFFSET emitter::emitBBTableDataGenBeg(unsigned numEntries, bool relative
     secDesc->dsSize = emittedSize;
 
     secDesc->dsAlignment = elemSize;
+
+    secDesc->dsOffset = secOffs;
 
     secDesc->dsDataType = TYP_UNKNOWN;
 
@@ -7975,9 +7972,9 @@ UNATIVE_OFFSET emitter::emitBBTableDataGenBeg(unsigned numEntries, bool relative
 //
 void emitter::emitAsyncResumeTable(unsigned numEntries, UNATIVE_OFFSET* dataSecOffs, emitter::dataSection** dataSec)
 {
-    UNATIVE_OFFSET secOffs     = emitConsDsc.dsdOffs;
     unsigned       emittedSize = sizeof(CORINFO_AsyncResumeInfo) * numEntries;
-    emitConsDsc.dsdOffs += emittedSize;
+    UNATIVE_OFFSET secOffs     = AlignUp(emitConsDsc.dsdOffs, TARGET_POINTER_SIZE);
+    emitConsDsc.dsdOffs        = secOffs + emittedSize;
 
     dataSection* secDesc = (dataSection*)emitGetMem(sizeof(dataSection));
     secDesc->dsType      = dataSection::asyncResumeInfo;
@@ -7988,6 +7985,7 @@ void emitter::emitAsyncResumeTable(unsigned numEntries, UNATIVE_OFFSET* dataSecO
 
     secDesc->dsSize      = emittedSize;
     secDesc->dsAlignment = TARGET_POINTER_SIZE;
+    secDesc->dsOffset    = secOffs;
     secDesc->dsDataType  = TYP_UNKNOWN;
     secDesc->dsNext      = nullptr;
 
@@ -8074,7 +8072,6 @@ UNATIVE_OFFSET emitter::emitDataGenFind(const void* cnsAddr, unsigned cnsSize, u
 {
     UNATIVE_OFFSET cnum     = INVALID_UNATIVE_OFFSET;
     unsigned       cmpCount = 0;
-    unsigned       curOffs  = 0;
     dataSection*   secDesc  = emitConsDsc.dsdList;
     while (secDesc != nullptr)
     {
@@ -8084,11 +8081,14 @@ UNATIVE_OFFSET emitter::emitDataGenFind(const void* cnsAddr, unsigned cnsSize, u
         // We match the bit pattern, so the dataType can be different
         // Only match constants when the dsType is 'data'
         //
-        if ((secDesc->dsType == dataSection::data) && (secDesc->dsSize >= cnsSize) && ((curOffs % alignment) == 0))
+        // The existing entry must also satisfy the requested alignment.
+        //
+        if ((secDesc->dsType == dataSection::data) && (secDesc->dsSize >= cnsSize) &&
+            (secDesc->dsAlignment >= alignment))
         {
             if (memcmp(cnsAddr, secDesc->Data(), cnsSize) == 0)
             {
-                cnum = curOffs;
+                cnum = secDesc->dsOffset;
 
                 // We also might want to update the dsDataType
                 //
@@ -8105,7 +8105,6 @@ UNATIVE_OFFSET emitter::emitDataGenFind(const void* cnsAddr, unsigned cnsSize, u
             }
         }
 
-        curOffs += secDesc->dsSize;
         secDesc = secDesc->dsNext;
 
         if (++cmpCount > 64)
@@ -8449,8 +8448,7 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, AllocMemChunk* chunks)
 
     /* Walk and emit the contents of all the data blocks */
 
-    size_t         curOffs = 0;
-    AllocMemChunk* chunk   = chunks;
+    AllocMemChunk* chunk = chunks;
 
     for (dataSection* dsc = sec->dsdList; dsc; dsc = dsc->dsNext, chunk++)
     {
@@ -8527,11 +8525,7 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, AllocMemChunk* chunks)
                 // Async call may have been removed very late, after we have introduced suspension/resumption.
                 // In those cases just encode null.
 #ifdef TARGET_WASM
-                BYTE* target = nullptr; // On WASM if we wanted this to have meaning, we would need a reloc to the
-                                        // virtual ip of the location in the method but we both don't have a reloc to
-                                        // represent that, as well as we don't have modeling for virtual ips which is
-                                        // useful for diagnostic purposes at this time. So simply leave it null for now.
-                                        // This is a diagnostic value, so it is not critical to have it be correct.
+                BYTE* target = emitLoc->Valid() && m_compiler->IsReadyToRun() ? emitCodeBlock : nullptr;
 #else
                 BYTE* target = emitLoc->Valid() ? emitOffsetToPtr(emitLoc->CodeOffset(this)) : nullptr;
 #endif
@@ -8543,7 +8537,12 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, AllocMemChunk* chunks)
                     emitRecordRelocation(&aDstRW[i].Resume, emitAsyncResumeStubEntryPoint, CorInfoReloc::DIRECT);
                     if (target != nullptr)
                     {
+#ifdef TARGET_WASM
+                        emitRecordRelocation(&aDstRW[i].DiagnosticIP, target,
+                                             CorInfoReloc::WASM_METHOD_RELATIVE_VIRTUAL_IP_I32);
+#else
                         emitRecordRelocation(&aDstRW[i].DiagnosticIP, target, CorInfoReloc::DIRECT);
+#endif
                     }
                 }
 
@@ -8560,7 +8559,7 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, AllocMemChunk* chunks)
 #ifdef DEBUG
             if (EMITVERBOSE)
             {
-                printf("  section %3u, size %2zu, RWD%2zu:\t", secNum++, dscSize, curOffs);
+                printf("  section %3u, size %2zu, RWD%2zu:\t", secNum++, dscSize, (size_t)dsc->dsOffset);
 
                 for (size_t i = 0; i < dscSize; i++)
                 {
@@ -8586,8 +8585,6 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, AllocMemChunk* chunks)
             }
 #endif // DEBUG
         }
-
-        curOffs += dscSize;
     }
 }
 
@@ -8607,8 +8604,7 @@ void emitter::emitDispDataSec(dataSecDsc* section, AllocMemChunk* dataChunks)
 {
     printf("\n");
 
-    unsigned       offset = 0;
-    AllocMemChunk* chunk  = dataChunks;
+    AllocMemChunk* chunk = dataChunks;
 
     for (dataSection* data = section->dsdList; data != nullptr; data = data->dsNext, chunk++)
     {
@@ -8621,9 +8617,8 @@ void emitter::emitDispDataSec(dataSecDsc* section, AllocMemChunk* dataChunks)
 
         const char* labelFormat = "%-7s";
         char        label[64];
-        sprintf_s(label, ArrLen(label), "RWD%02u", offset);
+        sprintf_s(label, ArrLen(label), "RWD%02zu", (size_t)data->dsOffset);
         printf(labelFormat, label);
-        offset += data->dsSize;
 
         if ((data->dsType == dataSection::blockRelative32) || (data->dsType == dataSection::blockAbsoluteAddr))
         {
@@ -8701,7 +8696,8 @@ void emitter::emitDispDataSec(dataSecDsc* section, AllocMemChunk* dataChunks)
             {
                 if (i > 0)
                 {
-                    sprintf_s(label, ArrLen(label), "RWD%02zu", i * sizeof(CORINFO_AsyncResumeInfo));
+                    sprintf_s(label, ArrLen(label), "RWD%02zu",
+                              static_cast<size_t>(data->dsOffset) + (i * sizeof(CORINFO_AsyncResumeInfo)));
                     printf(labelFormat, label);
                 }
 
@@ -9348,7 +9344,9 @@ BYTE* emitter::emitDataOffsetToPtr(UNATIVE_OFFSET offset)
     }
 
     assert((min > 0) && (min <= emitNumDataChunks));
-    return emitDataChunks[min - 1].block + (offset - emitDataChunkOffsets[min - 1]);
+    const unsigned chunkIndex = min - 1;
+    assert((offset - emitDataChunkOffsets[chunkIndex]) < emitDataChunks[chunkIndex].size);
+    return emitDataChunks[chunkIndex].block + (offset - emitDataChunkOffsets[chunkIndex]);
 }
 
 /*****************************************************************************

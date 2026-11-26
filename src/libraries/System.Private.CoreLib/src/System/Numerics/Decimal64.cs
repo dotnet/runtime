@@ -5,6 +5,7 @@ using System.Buffers.Binary;
 using System.Buffers.Text;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -58,6 +59,15 @@ namespace System.Numerics
         private const ulong MaxSignificand = 9_999_999_999_999_999;
         private const ulong MaxInternalValue = 0x77FB_86F2_6FC0_FFFF; // 9.999_999_999_999_999 * 10^384; aka 9_999_999_999_999_999 * 10^369
         private const ulong MinInternalValue = 0xF7FB_86F2_6FC0_FFFF; // -9.999_999_999_999_999 * 10^384; aka -9_999_999_999_999_999 * 10^369
+
+        // See `Decimal128` for how these are laid out and why they carry the digits they do.
+        private const ulong DegreesToRadiansHead = 174_532_925_199_432_957;
+        private const ulong DegreesToRadiansTail = 6_923_690_768_488_613;
+        private const int DegreesToRadiansExponent = -35;
+
+        private const ulong RadiansToDegreesHead = 572_957_795_130_823_208;
+        private const ulong RadiansToDegreesTail = 7_679_815_481_410_517;
+        private const int RadiansToDegreesExponent = -32;
 
         /// <summary>Gets a value that represents positive <c>infinity</c>.</summary>
         public static Decimal64 PositiveInfinity => new Decimal64(PositiveInfinityValue);
@@ -812,10 +822,12 @@ namespace System.Numerics
         public static Decimal64 Ceiling(Decimal64 x) => new Decimal64(Number.RoundDecimalIeee754<Decimal64, ulong>(x._value, 0, MidpointRounding.ToPositiveInfinity));
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.ConvertToInteger{TInteger}(TSelf)" />
+        [SuppressReadyToRunCanonicalRooting]
         public static TInteger ConvertToInteger<TInteger>(Decimal64 value)
             where TInteger : IBinaryInteger<TInteger> => TInteger.CreateSaturating(value);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.ConvertToIntegerNative{TInteger}(TSelf)" />
+        [SuppressReadyToRunCanonicalRooting]
         public static TInteger ConvertToIntegerNative<TInteger>(Decimal64 value)
             where TInteger : IBinaryInteger<TInteger> => TInteger.CreateSaturating(value);
 
@@ -968,6 +980,9 @@ namespace System.Numerics
         /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Cosh(TSelf)" />
         public static Decimal64 Cosh(Decimal64 x) => new Decimal64(Number.CoshDecimalIeee754<Decimal64, ulong>(x._value));
 
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.DegreesToRadians(TSelf)" />
+        public static Decimal64 DegreesToRadians(Decimal64 degrees) => new Decimal64(Number.MultiplyByWideConstantDecimalIeee754<Decimal64, ulong>(degrees._value, DegreesToRadiansHead, DegreesToRadiansTail, DegreesToRadiansExponent));
+
         /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp(TSelf)" />
         public static Decimal64 Exp(Decimal64 x) => new Decimal64(Number.ExpDecimalIeee754<Decimal64, ulong>(x._value));
 
@@ -1024,6 +1039,9 @@ namespace System.Numerics
 
         /// <inheritdoc cref="IPowerFunctions{TSelf}.Pow(TSelf, TSelf)" />
         public static Decimal64 Pow(Decimal64 x, Decimal64 y) => new Decimal64(Number.PowDecimalIeee754<Decimal64, ulong>(x._value, y._value));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.RadiansToDegrees(TSelf)" />
+        public static Decimal64 RadiansToDegrees(Decimal64 radians) => new Decimal64(Number.MultiplyByWideConstantDecimalIeee754<Decimal64, ulong>(radians._value, RadiansToDegreesHead, RadiansToDegreesTail, RadiansToDegreesExponent));
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ReciprocalEstimate(TSelf)" />
         public static Decimal64 ReciprocalEstimate(Decimal64 x) => One / x;
@@ -1291,6 +1309,7 @@ namespace System.Numerics
 
         /// <inheritdoc cref="INumberBase{TSelf}.CreateChecked{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         public static Decimal64 CreateChecked<TOther>(TOther value)
             where TOther : INumberBase<TOther>
         {
@@ -1310,6 +1329,7 @@ namespace System.Numerics
 
         /// <inheritdoc cref="INumberBase{TSelf}.CreateSaturating{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         public static Decimal64 CreateSaturating<TOther>(TOther value)
             where TOther : INumberBase<TOther>
         {
@@ -1329,6 +1349,7 @@ namespace System.Numerics
 
         /// <inheritdoc cref="INumberBase{TSelf}.CreateTruncating{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         public static Decimal64 CreateTruncating<TOther>(TOther value)
             where TOther : INumberBase<TOther>
         {
@@ -1348,17 +1369,21 @@ namespace System.Numerics
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromChecked{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         static bool INumberBase<Decimal64>.TryConvertFromChecked<TOther>(TOther value, out Decimal64 result) => TryConvertFrom(value, out result);
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromSaturating{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         static bool INumberBase<Decimal64>.TryConvertFromSaturating<TOther>(TOther value, out Decimal64 result) => TryConvertFrom(value, out result);
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromTruncating{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         static bool INumberBase<Decimal64>.TryConvertFromTruncating<TOther>(TOther value, out Decimal64 result) => TryConvertFrom(value, out result);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         private static bool TryConvertFrom<TOther>(TOther value, out Decimal64 result)
             where TOther : INumberBase<TOther>
         {
@@ -1470,6 +1495,7 @@ namespace System.Numerics
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToChecked{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         static bool INumberBase<Decimal64>.TryConvertToChecked<TOther>(Decimal64 value, [MaybeNullWhen(false)] out TOther result)
         {
             // Conversions to an integer target throw on overflow, NaN, or infinity. Conversions to a
@@ -1593,13 +1619,16 @@ namespace System.Numerics
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToSaturating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         static bool INumberBase<Decimal64>.TryConvertToSaturating<TOther>(Decimal64 value, [MaybeNullWhen(false)] out TOther result) => TryConvertTo(value, out result);
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToTruncating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         static bool INumberBase<Decimal64>.TryConvertToTruncating<TOther>(Decimal64 value, [MaybeNullWhen(false)] out TOther result) => TryConvertTo(value, out result);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         private static bool TryConvertTo<TOther>(Decimal64 value, [MaybeNullWhen(false)] out TOther result)
             where TOther : INumberBase<TOther>
         {
@@ -1728,9 +1757,9 @@ namespace System.Numerics
             return Number.UInt64ToDecStr(significand);
         }
 
-        static unsafe ulong IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.NumberToSignificand(ref Number.NumberBuffer number, int digits)
+        static ulong IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.NumberToSignificand(ref Number.NumberBuffer number, int digits)
         {
-            return Number.DigitsToUInt64(number.DigitsPtr, digits);
+            return Number.DigitsToUInt64(number.Digits.Slice(0, digits));
         }
 
         static Decimal64 IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.Construct(ulong value) => new Decimal64(value);

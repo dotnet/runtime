@@ -502,7 +502,7 @@ namespace System.Text.Json.Tests
 
             public unsafe override int FindFirstCharacterToEncode(char* text, int textLength)
             {
-                return Default.FindFirstCharacterToEncode(text, textLength);
+                return unsafe(Default.FindFirstCharacterToEncode(text, textLength));
             }
 
 
@@ -516,7 +516,7 @@ namespace System.Text.Json.Tests
 
             public unsafe override bool TryEncodeUnicodeScalar(int unicodeScalar, char* buffer, int bufferLength, out int numberOfCharactersWritten)
             {
-                return Default.TryEncodeUnicodeScalar(unicodeScalar, buffer, bufferLength, out numberOfCharactersWritten);
+                return unsafe(Default.TryEncodeUnicodeScalar(unicodeScalar, buffer, bufferLength, out numberOfCharactersWritten));
             }
         }
 

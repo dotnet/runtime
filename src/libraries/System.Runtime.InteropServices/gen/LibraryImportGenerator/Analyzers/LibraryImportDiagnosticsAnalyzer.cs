@@ -210,7 +210,7 @@ namespace Microsoft.Interop.Analyzers
             // The generator never copies LibraryImportAttribute onto the implementing part, so the attribute
             // application always points at the declaration the user authored.
             if (libraryImportAttr.ApplicationSyntaxReference is not { } attributeReference
-                || !attributeReference.SyntaxTree.UseUpdatedMemorySafetyRules)
+                || !context.Compilation.UsesUpdatedMemorySafetyRules())
             {
                 return;
             }
@@ -286,13 +286,16 @@ namespace Microsoft.Interop.Analyzers
                 }
             }
 
+            ErrorHandlingInfo? errorHandlingInfo = ErrorHandlingInfoParser.Parse(symbol, environment, generatorDiagnostics);
+
             // Create the signature context to collect marshalling-related diagnostics
             var signatureContext = SignatureContext.Create(
                 symbol,
                 DefaultMarshallingInfoParser.Create(environment, generatorDiagnostics, symbol, libraryImportData, libraryImportAttr),
                 environment,
                 new CodeEmitOptions(SkipInit: true),
-                typeof(LibraryImportGenerator).Assembly);
+                typeof(LibraryImportGenerator).Assembly,
+                errorHandlingInfo);
 
             // If forwarders are not being generated, we need to run stub generation logic to get those diagnostics too
             if (!options.GenerateForwarders)

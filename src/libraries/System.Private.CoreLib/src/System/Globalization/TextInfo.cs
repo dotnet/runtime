@@ -605,7 +605,7 @@ namespace System.Globalization
         /// <summary>
         /// Titlecasing refers to a casing practice wherein the first letter of a word is an uppercase letter
         /// and the rest of the letters are lowercase.  The choice of which words to titlecase in headings
-        /// and titles is dependent on language and local conventions.  For example, "The Merry Wives of Windor"
+        /// and titles is dependent on language and local conventions.  For example, "The Merry Wives of Windsor"
         /// is the appropriate titlecasing of that play's name in English, with the word "of" not titlecased.
         /// In German, however, the title is "Die lustigen Weiber von Windsor," and both "lustigen" and "von"
         /// are not titlecased.  In French even fewer words are titlecased: "Les joyeuses commeres de Windsor."
@@ -625,8 +625,11 @@ namespace System.Globalization
 
             StringBuilder result = new StringBuilder();
             string? lowercaseData = null;
-            // Store if the current culture is Dutch (special case)
-            bool isDutchCulture = CultureName.StartsWith("nl-", StringComparison.OrdinalIgnoreCase);
+            // Store if the current culture is Dutch (special case). This covers both the
+            // neutral culture ("nl") and any specific Dutch culture ("nl-NL", "nl-BE", etc.).
+            string cultureName = CultureName;
+            bool isDutchCulture = cultureName.StartsWith("nl", StringComparison.OrdinalIgnoreCase) &&
+                (cultureName.Length == 2 || cultureName[2] == '-');
 
             for (int i = 0; i < str.Length; i++)
             {
@@ -666,7 +669,7 @@ namespace System.Globalization
                             }
                             i += charLen;
                         }
-                        else if (str[i] == '\'')
+                        else if (IsApostrophe(str[i]))
                         {
                             i++;
                             if (hasLowerCase)
@@ -850,6 +853,18 @@ namespace System.Globalization
         private static bool IsWordSeparator(UnicodeCategory category)
         {
             return (c_wordSeparatorMask & (1 << (int)category)) != 0;
+        }
+
+        // Characters treated as an apostrophe within a word (e.g. contractions such as
+        // "can't" or possessives such as "Grandma's"), so a following letter is not treated
+        // as the start of a new word during titlecasing:
+        //   U+0027 APOSTROPHE
+        //   U+2019 RIGHT SINGLE QUOTATION MARK (the typographic curly apostrophe)
+        //   U+2018 LEFT SINGLE QUOTATION MARK
+        //   U+FF07 FULLWIDTH APOSTROPHE
+        private static bool IsApostrophe(char c)
+        {
+            return c is '\'' or '\u2019' or '\u2018' or '\uFF07';
         }
 
         private static bool IsLetterCategory(UnicodeCategory uc)

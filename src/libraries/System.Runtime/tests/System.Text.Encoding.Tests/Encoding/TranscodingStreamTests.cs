@@ -480,6 +480,7 @@ namespace System.Text.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Wasi, "AsyncComms feeds the pipe from a worker that blocks, which needs a second thread.")]
         public async Task ReadAsync_LoopsWhenPartialDataReceived()
         {
             // Validates that the TranscodingStream will loop instead of returning 0

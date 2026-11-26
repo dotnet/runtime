@@ -122,16 +122,16 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public void EmitHalfNaturalInt(short emit)
+        public void EmitHalfNaturalUInt(ushort emit)
         {
             if (_target.PointerSize == 8)
             {
-                EmitInt(emit);
+                EmitUInt(emit);
             }
             else
             {
                 Debug.Assert(_target.PointerSize == 4);
-                EmitShort(emit);
+                EmitUShort(emit);
             }
         }
 
@@ -269,6 +269,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 case RelocType.WASM_TABLE_INDEX_I32:
                 case RelocType.WASM_TABLE_INDEX_REL_I32:
+                case RelocType.WASM_METHOD_RELATIVE_VIRTUAL_IP_I32:
                 case RelocType.IMAGE_REL_BASED_REL32:
                 case RelocType.IMAGE_REL_BASED_RELPTR32:
                 case RelocType.IMAGE_REL_BASED_ABSOLUTE:
@@ -280,6 +281,17 @@ namespace ILCompiler.DependencyAnalysis
                 case RelocType.IMAGE_REL_BASED_ADDR32NB:
                 case RelocType.IMAGE_REL_SYMBOL_SIZE:
                     EmitInt(delta);
+                    break;
+                case RelocType.WASM_TYPE_INDEX_LEB:
+                case RelocType.WASM_ASYNC_RESUME_INFO_DELTA_ULEB:
+                    // Padded ULEB128, so the resolved value can be written in place
+                    uint value = checked((uint)delta);
+                    for (int i = 0; i < Relocation.GetSize(relocType) - 1; i++)
+                    {
+                        EmitByte((byte)((value & 0x7F) | 0x80));
+                        value >>= 7;
+                    }
+                    EmitByte(checked((byte)value));
                     break;
                 case RelocType.IMAGE_REL_BASED_DIR64:
                     EmitLong(delta);

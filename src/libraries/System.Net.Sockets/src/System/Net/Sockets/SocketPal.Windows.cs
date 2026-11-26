@@ -473,7 +473,7 @@ namespace System.Net.Sockets
             }
 
             IPAddress address = controlBuffer->length != UIntPtr.Zero ?
-                new IPAddress(new ReadOnlySpan<byte>(controlBuffer->address, Interop.Winsock.IPv6AddressLength)) :
+                new IPAddress(controlBuffer->address) :
                 IPAddress.IPv6None;
 
             return new IPPacketInformation(address, (int)controlBuffer->index);

@@ -15,6 +15,7 @@ namespace ILCompiler
     {
         private ProfileDataManager _profileGuidedCompileRestriction;
         private bool _profileGuidedCompileRestrictionSet;
+        private HashSet<MethodDesc> _managedJitHelpers;
 
         public ReadyToRunSingleAssemblyCompilationModuleGroup(
             ReadyToRunCompilationModuleGroupConfig config) :
@@ -22,14 +23,18 @@ namespace ILCompiler
         {
         }
 
-        public sealed override bool ContainsMethodBody(MethodDesc method, bool unboxingStub)
+        protected sealed override bool ContainsMethodBodyCore(MethodDesc method, bool unboxingStub)
         {
             if (!_profileGuidedCompileRestrictionSet)
                 throw new InternalCompilerErrorException("Called ContainsMethodBody without setting profile guided restriction");
 
             if (_profileGuidedCompileRestriction != null)
             {
-                if (!_profileGuidedCompileRestriction.IsMethodInInputProfileData(method))
+                if (!_profileGuidedCompileRestriction.IsMethodInInputProfileData(method) &&
+                    (((ReadyToRunCompilerContext)method.Context).TargetAllowsRuntimeCodeGeneration ||
+                     (!HardwareIntrinsicHelpers.IsHardwareIntrinsic(method) &&
+                      !(method.IsIntrinsic && method.Name == "get_IsHardwareAccelerated"u8) &&
+                      !IsManagedJitHelper(method))))
                     return false;
             }
 
@@ -41,6 +46,17 @@ namespace ILCompiler
             }
 
             return (ContainsType(method.OwningType) && VersionsWithMethodBody(method)) || CompileVersionBubbleGenericsIntoCurrentModule(method) || this.CrossModuleCompileable(method);
+        }
+
+        // Without runtime codegen, CoreLib's R2R image must contain code for every managed JIT helper.
+        // The helpers are only rooted when the version bubble includes CoreLib.
+        private bool IsManagedJitHelper(MethodDesc method)
+        {
+            ReadyToRunCompilerContext context = (ReadyToRunCompilerContext)method.Context;
+            if (!context.BubbleIncludesCoreModule)
+                return false;
+
+            return (_managedJitHelpers ??= ReadyToRunJitHelperRootProvider.GetManagedHelpers(context)).Contains(method);
         }
 
         public sealed override void ApplyProfileGuidedOptimizationData(ProfileDataManager profileGuidedCompileRestriction, bool partial)

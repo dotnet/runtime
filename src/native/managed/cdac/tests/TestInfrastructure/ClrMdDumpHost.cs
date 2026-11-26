@@ -124,11 +124,13 @@ public sealed class ClrMdDumpHost : IDisposable
     }
 
     /// <summary>
-    /// Locate the DotNetRuntimeContractDescriptor symbol address in the dump.
+    /// Locate the DotNetRuntimeContractDescriptor symbol address in the dump and return
+    /// the image base of the module that exports it.
     /// Uses ClrMD's built-in export resolution which handles PE, ELF, and Mach-O formats.
     /// </summary>
-    public ulong FindContractDescriptorAddress()
+    public ulong FindContractDescriptorAddress(out ulong runtimeImageBase)
     {
+        runtimeImageBase = 0;
         foreach (ModuleInfo module in _dataTarget.DataReader.EnumerateModules())
         {
             string? fileName = module.FileName;
@@ -146,11 +148,15 @@ public sealed class ClrMdDumpHost : IDisposable
             ulong address = module.GetExportSymbolAddress("DotNetRuntimeContractDescriptor");
             if (address != 0)
             {
+                runtimeImageBase = module.ImageBase;
                 // ClrMD may return addresses with spurious upper bits on 32-bit targets
                 // (observed on ARM32 ELF). Mask to the target's pointer size.
                 // https://github.com/microsoft/clrmd/issues/1407
                 if (_dataTarget.DataReader.PointerSize == 4)
+                {
                     address &= 0xFFFF_FFFF;
+                    runtimeImageBase &= 0xFFFF_FFFF;
+                }
 
                 return address;
             }

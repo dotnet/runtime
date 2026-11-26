@@ -10,6 +10,8 @@
 //*****************************************************************************
 
 #include "stdafx.h"
+#include "CLREventBase.h"
+#include <minipal/time.h>
 
 #include "safewrap.h"
 #include "check.h"
@@ -52,16 +54,15 @@ ShimProcess::ShimProcess() :
 
     m_machineInfo.Clear();
 
-    m_markAttachPendingEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
-    if (m_markAttachPendingEvent == NULL)
+    if (!m_markAttachPendingEvent.CreateManualEventNoThrow(false))
     {
-        ThrowLastError();
+        ThrowOutOfMemory();
     }
 
-    m_terminatingEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
-    if (m_terminatingEvent == NULL)
+    if (!m_terminatingEvent.CreateManualEventNoThrow(false))
     {
-        ThrowLastError();
+        m_markAttachPendingEvent.CloseEvent();
+        ThrowOutOfMemory();
     }
 }
 
@@ -82,17 +83,8 @@ ShimProcess::~ShimProcess()
     _ASSERTE(m_ShimProcessDisposeLock.IsInit());
     m_ShimProcessDisposeLock.Destroy();
 
-    if (m_markAttachPendingEvent != NULL)
-    {
-        CloseHandle(m_markAttachPendingEvent);
-        m_markAttachPendingEvent = NULL;
-    }
-
-    if (m_terminatingEvent != NULL)
-    {
-        CloseHandle(m_terminatingEvent);
-        m_terminatingEvent = NULL;
-    }
+    m_markAttachPendingEvent.CloseEvent();
+    m_terminatingEvent.CloseEvent();
 
     // Dtor will release m_pLiveDataTarget
 }
@@ -612,7 +604,7 @@ void ShimProcess::AddDuplicateCreationEvent(void * pKey)
 {
     NewHolder<DuplicateCreationEventEntry> pEntry(new DuplicateCreationEventEntry(pKey));
     m_pDupeEventsHashTable->Add(pEntry);
-    pEntry.SuppressRelease();
+    pEntry.Detach();
 }
 
 
@@ -874,7 +866,7 @@ HRESULT ShimProcess::HandleWin32DebugEvent(const DEBUG_EVENT * pEvent)
             DWORD fSkipResume = config.val(CLRConfig::UNSUPPORTED_DbgDontResumeThreadsOnUnhandledException);
             if (!fSkipResume)
             {
-                ::Sleep(500);
+                minipal_sleep(500);
             }
         }
     }
@@ -1083,15 +1075,16 @@ void ShimProcess::QueueFakeAssemblyAndModuleEvent(ICorDebugAssembly * pAssembly)
     GetShimCallback()->LoadAssembly(pAppDomain, pAssembly);
     AddDuplicateCreationEvent(pAssembly);
 
-    BOOL isModuleLoaded;
-    CordbAssembly * pAssemblyInternal = static_cast<CordbAssembly *> (pAssembly);
-    VMPTR_Assembly vmAssembly = pAssemblyInternal->GetAssemblyPtr();
-    VMPTR_Module vmModule = VMPTR_Module::NullPtr();
-    static_cast<CordbProcess *>(m_pProcess)->GetDAC()->GetModuleForAssembly(vmAssembly, &vmModule, &isModuleLoaded);
-    if (isModuleLoaded)
+    CordbModule * pModule = NULL;
+    EX_TRY
     {
-        CordbModule * pModule = pAssemblyInternal->GetAppDomain()->LookupOrCreateModule(vmAssembly, vmModule);
+        pModule = m_pProcess->GetLoadedModuleForShim(pAssembly);
+    }
+    EX_CATCH_HRESULT(hr);
+    SIMPLIFYING_ASSUMPTION_SUCCEEDED(hr);
 
+    if (pModule != NULL)
+    {
         GetShimCallback()->FakeLoadModule(pAppDomain, pModule);
         AddDuplicateCreationEvent(pModule);
 
@@ -1473,10 +1466,8 @@ ShimStackWalk * ShimProcess::LookupOrCreateShimStackWalk(ICorDebugThread * pThre
             if (pSW == NULL)
             {
                 m_pShimStackWalkHashTable->Add(pNewSW);
-                pSW = pNewSW;
-
                 // don't release the memory if all goes well
-                pNewSW.SuppressRelease();
+                pSW = pNewSW.Detach();
             }
             else
             {
@@ -1612,12 +1603,12 @@ MachineInfo ShimProcess::GetMachineInfo()
 
 void ShimProcess::SetMarkAttachPendingEvent()
 {
-    SetEvent(m_markAttachPendingEvent);
+    m_markAttachPendingEvent.Set();
 }
 
 void ShimProcess::SetTerminatingEvent()
 {
-    SetEvent(m_terminatingEvent);
+    m_terminatingEvent.Set();
 }
 
 RSLock * ShimProcess::GetShimLock()

@@ -238,8 +238,14 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
 
     private NativeCodeVersionHandle GetSpecificNativeCodeVersion(IRuntimeTypeSystem rts, MethodDescHandle md, TargetCodePointer startAddress)
     {
+        // Code-block start addresses are the code a method starts executing (for interpreted methods, the
+        // bytecode), while the MethodDesc native code slot / version node may hold an entry point (for
+        // interpreted methods, an InterpreterPrecode). Compare against the code start, as the native DAC does
+        // with GetInterpreterCodeFromEntryPointIfPresent(NativeCodeVersion::GetNativeCode()).
+        IExecutionManager eman = _target.Contracts.ExecutionManager;
+
         // initial stage of NativeCodeVersionIterator::Next() with a null m_ilCodeFilter
-        TargetCodePointer firstNativeCode = rts.GetNativeCode(md);
+        TargetCodePointer firstNativeCode = eman.GetDiagnosticCodeStartFromEntryPoint(rts.GetNativeCode(md));
         if (firstNativeCode == startAddress)
         {
             NativeCodeVersionHandle first = NativeCodeVersionHandle.CreateSynthetic(md.Address);
@@ -249,7 +255,7 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
         // CodeVersionManager::GetNativeCodeVersion(PTR_MethodDesc, PCODE startAddress)
         return FindNativeCodeVersionNodes(rts, md, (codeVersion) =>
         {
-            return codeVersion.MethodDesc == md.Address && codeVersion.NativeCode == startAddress;
+            return codeVersion.MethodDesc == md.Address && eman.GetDiagnosticCodeStartFromEntryPoint(codeVersion.NativeCode) == startAddress;
         }).FirstOrDefault(NativeCodeVersionHandle.Invalid);
     }
 

@@ -335,7 +335,7 @@ namespace System.Text
                     // Check that we will not overrun our boundaries.
                     if ((uint)(chunkLength + chunkOffset) > (uint)result.Length || (uint)chunkLength > (uint)sourceArray.Length)
                     {
-                        throw new ArgumentOutOfRangeException(nameof(chunkLength), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
+                        throw new ArgumentOutOfRangeException(null, SR.InvalidOperation_ConcurrentOperationsNotSupported);
                     }
 
                     Buffer.Memmove(
@@ -688,9 +688,8 @@ namespace System.Text
             int chunkLength = m_ChunkLength;
 
             // Try to fit the whole repeatCount in the current chunk
-            // Use the same check as Span<T>.Slice for 64-bit so it can be folded
-            // Since repeatCount can't be negative, there's no risk for it to overflow on 32 bit
-            if (((nuint)(uint)chunkLength + (nuint)(uint)repeatCount) <= (nuint)(uint)chunkChars.Length)
+            // Use the same check as Span<T>(T[], int, int) so it can be folded
+            if ((uint)chunkLength <= (uint)chunkChars.Length && (uint)repeatCount <= (uint)(chunkChars.Length - chunkLength))
             {
                 chunkChars.AsSpan(chunkLength, repeatCount).Fill(value);
                 m_ChunkLength += repeatCount;

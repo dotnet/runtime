@@ -303,8 +303,7 @@ namespace System.Reflection.Tests
             }
         }
 
-        [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser, "File locking is not respected")]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsFileLockingEnabled))]
         public static void GetAssemblyName_LockedFile()
         {
             using (var tempFile = new TempFile(Path.GetTempFileName(), 100))

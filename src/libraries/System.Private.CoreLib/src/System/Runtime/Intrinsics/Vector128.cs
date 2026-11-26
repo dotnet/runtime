@@ -31,6 +31,7 @@ namespace System.Runtime.Intrinsics
     // the internal inlining limits of the JIT.
 
     /// <summary>Provides a collection of static methods for creating, manipulating, and otherwise operating on 128-bit vectors.</summary>
+    [SuppressReadyToRunCanonicalRooting]
     public static partial class Vector128
     {
         internal const int Size = 16;
@@ -1736,7 +1737,7 @@ namespace System.Runtime.Intrinsics
         {
             if (IsHardwareAccelerated)
             {
-                return VectorMath.DegreesToRadians<Vector128<double>, double>(degrees);
+                return VectorMath.DegreesToRadiansDouble<Vector128<double>, Vector128<ulong>>(degrees);
             }
             else
             {
@@ -1754,7 +1755,14 @@ namespace System.Runtime.Intrinsics
         {
             if (IsHardwareAccelerated)
             {
-                return VectorMath.DegreesToRadians<Vector128<float>, float>(degrees);
+                if (Vector256.IsHardwareAccelerated)
+                {
+                    return VectorMath.DegreesToRadiansSingle<Vector128<float>, Vector256<double>>(degrees);
+                }
+                else
+                {
+                    return VectorMath.DegreesToRadiansSingle<Vector128<float>, Vector128<double>>(degrees);
+                }
             }
             else
             {
@@ -2149,11 +2157,11 @@ namespace System.Runtime.Intrinsics
         {
             if (typeof(T) == typeof(float))
             {
-                return VectorMath.IsEvenIntegerSingle<Vector128<float>, Vector128<uint>>(vector.AsSingle()).As<float, T>();
+                return VectorMath.IsEvenInteger<Vector128<float>, float>(vector.AsSingle()).As<float, T>();
             }
             else if (typeof(T) == typeof(double))
             {
-                return VectorMath.IsEvenIntegerDouble<Vector128<double>, Vector128<ulong>>(vector.AsDouble()).As<double, T>();
+                return VectorMath.IsEvenInteger<Vector128<double>, double>(vector.AsDouble()).As<double, T>();
             }
             return IsZero(vector & Vector128<T>.One);
         }
@@ -2193,7 +2201,7 @@ namespace System.Runtime.Intrinsics
         {
             if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
             {
-                return IsFinite(vector) & Equals(vector, Truncate(vector));
+                return IsZero(vector - Truncate(vector));
             }
             return Vector128<T>.AllBitsSet;
         }
@@ -2272,11 +2280,11 @@ namespace System.Runtime.Intrinsics
         {
             if (typeof(T) == typeof(float))
             {
-                return VectorMath.IsOddIntegerSingle<Vector128<float>, Vector128<uint>>(vector.AsSingle()).As<float, T>();
+                return VectorMath.IsOddInteger<Vector128<float>, float>(vector.AsSingle()).As<float, T>();
             }
             else if (typeof(T) == typeof(double))
             {
-                return VectorMath.IsOddIntegerDouble<Vector128<double>, Vector128<ulong>>(vector.AsDouble()).As<double, T>();
+                return VectorMath.IsOddInteger<Vector128<double>, double>(vector.AsDouble()).As<double, T>();
             }
             return ~IsZero(vector & Vector128<T>.One);
         }
@@ -2698,6 +2706,16 @@ namespace System.Runtime.Intrinsics
         {
             if (IsHardwareAccelerated)
             {
+#if !MONO
+                if (typeof(T) == typeof(float))
+                {
+                    return MaxNative(left.AsSingle(), right.AsSingle()).As<float, T>();
+                }
+                if (typeof(T) == typeof(double))
+                {
+                    return MaxNative(left.AsDouble(), right.AsDouble()).As<double, T>();
+                }
+#endif
                 return ConditionalSelect(GreaterThan(left, right), left, right);
             }
             else
@@ -2788,6 +2806,16 @@ namespace System.Runtime.Intrinsics
         {
             if (IsHardwareAccelerated)
             {
+#if !MONO
+                if (typeof(T) == typeof(float))
+                {
+                    return MinNative(left.AsSingle(), right.AsSingle()).As<float, T>();
+                }
+                if (typeof(T) == typeof(double))
+                {
+                    return MinNative(left.AsDouble(), right.AsDouble()).As<double, T>();
+                }
+#endif
                 return ConditionalSelect(LessThan(left, right), left, right);
             }
             else
@@ -3110,7 +3138,7 @@ namespace System.Runtime.Intrinsics
         {
             if (IsHardwareAccelerated)
             {
-                return VectorMath.RadiansToDegrees<Vector128<double>, double>(radians);
+                return VectorMath.RadiansToDegreesDouble<Vector128<double>, Vector128<ulong>>(radians);
             }
             else
             {
@@ -3128,7 +3156,14 @@ namespace System.Runtime.Intrinsics
         {
             if (IsHardwareAccelerated)
             {
-                return VectorMath.RadiansToDegrees<Vector128<float>, float>(radians);
+                if (Vector256.IsHardwareAccelerated)
+                {
+                    return VectorMath.RadiansToDegreesSingle<Vector128<float>, Vector256<double>>(radians);
+                }
+                else
+                {
+                    return VectorMath.RadiansToDegreesSingle<Vector128<float>, Vector128<double>>(radians);
+                }
             }
             else
             {
@@ -4398,17 +4433,8 @@ namespace System.Runtime.Intrinsics
             }
             else if (PackedSimd.IsSupported)
             {
-                // Compose with two PackedSimd.Swizzle calls (clamp out-of-range to 0) plus OR.
-                // We call PackedSimd.Swizzle directly rather than Vector128.ShuffleNative because
-                // the latter goes through a Ssse3 -> AdvSimd.Arm64 -> PackedSimd dispatcher chain
-                // that the Mono SIMD intrinsic recognizer doesn't always lower cleanly.
-                // PackedSimd.Shuffle (two-vector i8x16.shuffle) requires constant lane indices
-                // and is impractical to call portably from generic code paths.
-                Vector128<byte> leftPart = PackedSimd.Swizzle(left,
-                    Vector128.Create((byte)0, 0xFF, 1, 0xFF, 2, 0xFF, 3, 0xFF, 4, 0xFF, 5, 0xFF, 6, 0xFF, 7, 0xFF));
-                Vector128<byte> rightPart = PackedSimd.Swizzle(right,
-                    Vector128.Create((byte)0xFF, 0, 0xFF, 1, 0xFF, 2, 0xFF, 3, 0xFF, 4, 0xFF, 5, 0xFF, 6, 0xFF, 7));
-                return leftPart | rightPart;
+                return PackedSimd.Shuffle(left, right,
+                    Vector128.Create((byte)0, 16, 1, 17, 2, 18, 3, 19, 4, 20, 5, 21, 6, 22, 7, 23));
             }
             ThrowHelper.ThrowNotSupportedException();
             return default;
@@ -4430,11 +4456,8 @@ namespace System.Runtime.Intrinsics
             }
             else if (PackedSimd.IsSupported)
             {
-                Vector128<byte> leftPart = PackedSimd.Swizzle(left,
-                    Vector128.Create((byte)8, 0xFF, 9, 0xFF, 10, 0xFF, 11, 0xFF, 12, 0xFF, 13, 0xFF, 14, 0xFF, 15, 0xFF));
-                Vector128<byte> rightPart = PackedSimd.Swizzle(right,
-                    Vector128.Create((byte)0xFF, 8, 0xFF, 9, 0xFF, 10, 0xFF, 11, 0xFF, 12, 0xFF, 13, 0xFF, 14, 0xFF, 15));
-                return leftPart | rightPart;
+                return PackedSimd.Shuffle(left, right,
+                    Vector128.Create((byte)8, 24, 9, 25, 10, 26, 11, 27, 12, 28, 13, 29, 14, 30, 15, 31));
             }
             ThrowHelper.ThrowNotSupportedException();
             return default;

@@ -130,12 +130,12 @@ OSR is enabled by setting
 `DOTNET_TC_OnStackReplacement=1` (aka `OSR=1`)
 
 and is influenced by
-`DOTNET_TieredPGO=1` (`BBINSTR=1` at Tier0)
+`DOTNET_TieredPGO=1` (`PGO_INSTR=1` at Tier0)
 
 ### Choosing which methods are "OSR Eligible"
 
 The runtime makes a JIT request at Tier0, and passes the current
-values of QJFL, OSR, and BBINSTR.
+values of QJFL, OSR, and PGO_INSTR.
 
 The JIT does an initial IL scan for the method; during this scan it
 checks for several things:
@@ -159,7 +159,7 @@ if the method has a loop in a handler, localloc, or is a reverse
 PInvoke.  If not, the method is "OSR Eligible". If so, the JIT will
 switch the method to optimized.
 
-If there is a `tail.` prefixed call and BBINSTR=0, the JIT will
+If there is a `tail.` prefixed call and PGO_INSTR=0, the JIT will
 override all the above and switch the method to optimized.
 
 ### Jitting of OSR Eligible Methods at Tier0

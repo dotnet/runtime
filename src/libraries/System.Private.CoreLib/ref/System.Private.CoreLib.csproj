@@ -1,5 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <!-- TODO: Remove once migrated to unsafe-v2. -->
+    <MemorySafetyRulesVersion>1</MemorySafetyRulesVersion>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- It is a core assembly because it defines System.Object so we need to pass RuntimeMetadataVersion to the compiler -->
@@ -7,8 +9,6 @@
     <!-- disable warnings about obsolete APIs,
         Type has no accessible constructors which use only CLS-compliant types -->
     <NoWarn>$(NoWarn);0809;0618;CS3015</NoWarn>
-    <!-- https://github.com/dotnet/dotnet/issues/5640 -->
-    <NoWarn>$(NoWarn);CS9368</NoWarn>
     <StrongNameKeyId>SilverlightPlatform</StrongNameKeyId>
     <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
     <DefineConstants Condition="'$(WasmEnableThreads)' == 'true'">$(DefineConstants);FEATURE_WASM_MANAGED_THREADS</DefineConstants>

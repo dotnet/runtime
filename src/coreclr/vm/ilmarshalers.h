@@ -690,7 +690,7 @@ public:
             {
                 // we tolerate NULL here mainly for backward compatibility reasons
                 m_nativeHome.EmitCopyToByrefArgWithNullCheck(m_pcsUnmarshal, &nativeType, argidx);
-                m_pcsUnmarshal->EmitLDC(S_OK);
+                m_pcsUnmarshal->EmitLDC_I4(S_OK);
             }
             else
             {
@@ -1014,7 +1014,7 @@ protected:
         pcsSetup->EmitLDARG(StructMarshalStubs::MANAGED_STRUCT_ARGIDX);
         pcsSetup->EmitDUP();
         pcsSetup->EmitBRFALSE(pSkipComputeOffsetLabel);
-        pcsSetup->EmitLDC(managedOffset);
+        pcsSetup->EmitLDC_I4(managedOffset);
         pcsSetup->EmitADD();
         pcsSetup->EmitLabel(pSkipComputeOffsetLabel);
         EmitStoreManagedHomeAddr(pcsSetup);
@@ -1022,7 +1022,7 @@ protected:
         pcsSetup->EmitNOP("// native field setup {");
 
         pcsSetup->EmitLDARG(StructMarshalStubs::NATIVE_STRUCT_ARGIDX);
-        pcsSetup->EmitLDC(nativeOffset);
+        pcsSetup->EmitLDC_I4(nativeOffset);
         pcsSetup->EmitADD();
         EmitStoreNativeHomeAddr(pcsSetup);
         pcsSetup->EmitNOP("// } native field setup");
@@ -1460,7 +1460,7 @@ protected:
         // an ASSERT in JIT
         _ASSERTE(!GetNativeType().IsValueClass());
 
-        pslILEmit->EmitLDC(0);
+        pslILEmit->EmitLDC_I4(0);
         pslILEmit->EmitCONV_T(static_cast<CorElementType>(GetNativeType().ElementType[0]));
 
         EmitStoreNativeValue(pslILEmit);
@@ -1773,7 +1773,7 @@ public:
         else
         {
             // ldc.i4.0, conv.i8/u8/r4/r8 is shorter than ldc.i8/r4/r8 0
-            pslILEmit->EmitLDC(0);
+            pslILEmit->EmitLDC_I4(0);
             pslILEmit->EmitCONV_T(ELEMENT_TYPE);
 
             EmitStoreNativeValue(pslILEmit);
@@ -1874,8 +1874,7 @@ protected:
     {
         STANDARD_VM_CONTRACT;
 
-        pslILEmit->EmitLDC(0);
-        pslILEmit->EmitCONV_U();
+        pslILEmit->EmitLDC_I(0);
         EmitStoreNativeValue(pslILEmit);
     }
 };
@@ -2525,7 +2524,7 @@ protected:
 
         if (NeedsClearNative())
         {
-            pslILEmit->EmitLDC(sizeof(ELEMENT));
+            pslILEmit->EmitLDC_I4(sizeof(ELEMENT));
             pslILEmit->EmitCONV_U();
             // static IntPtr CoTaskMemAlloc(UIntPtr cb)
             pslILEmit->EmitCALL(METHOD__MARSHAL__ALLOC_CO_TASK_MEM, 1, 1);
@@ -3009,6 +3008,7 @@ public:
 };
 #endif // defined(TARGET_WINDOWS)
 
+#ifdef FEATURE_VARARGS
 class ILArgIteratorMarshaler : public ILMarshaler
 {
 public:
@@ -3032,6 +3032,7 @@ protected:
 private:
     DWORD m_dwVaListSizeLocalNum;
 };
+#endif // FEATURE_VARARGS
 
 class ILArrayWithOffsetMarshaler : public ILMarshaler
 {
@@ -3463,11 +3464,11 @@ public:
 };
 
 extern "C" void QCALLTYPE MngdSafeArrayMarshaler_CreateMarshaler(MngdSafeArrayMarshaler* pThis, MethodTable* pMT, UINT32 iRank, UINT32 dwFlags, PCODE pConvertToNative, PCODE pConvertToManaged);
-extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ConvertSpaceToNative(MngdSafeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome);
-extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ConvertContentsToNative(MngdSafeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome, QCall::ObjectHandleOnStack pOriginalManaged);
-extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ConvertSpaceToManaged(MngdSafeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome);
-extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ConvertContentsToManaged(MngdSafeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome);
-extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ClearNative(MngdSafeArrayMarshaler* pThis, void** pNativeHome);
+extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ConvertSpaceToNative(MngdSafeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome, QCallExceptionStatus* qcallError);
+extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ConvertContentsToNative(MngdSafeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome, QCall::ObjectHandleOnStack pOriginalManaged, QCallExceptionStatus* qcallError);
+extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ConvertSpaceToManaged(MngdSafeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome, QCallExceptionStatus* qcallError);
+extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ConvertContentsToManaged(MngdSafeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome, QCallExceptionStatus* qcallError);
+extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ClearNative(MngdSafeArrayMarshaler* pThis, void** pNativeHome, QCallExceptionStatus* qcallError);
 #endif // FEATURE_COMINTEROP
 
 class ILReferenceCustomMarshaler : public ILMngdMarshaler

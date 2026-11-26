@@ -68,6 +68,12 @@ bool BoundsCheckInfo::Initialize(const Compiler* comp, Statement* statement, int
         return false;
     }
 
+    // The guards are built as TYP_INT, so native-int (e.g. nint index) bounds checks aren't supported.
+    if ((genActualType(BndChk()->GetIndex()) != TYP_INT) || (genActualType(BndChk()->GetArrayLength()) != TYP_INT))
+    {
+        return false;
+    }
+
     if (BndChk()->GetIndex()->IsIntCnsFitsInI32())
     {
         // Index being a constant means we have index=0 and cns offset
@@ -337,14 +343,8 @@ static BasicBlock* optRangeCheckCloning_DoClone(Compiler*             comp,
                 statementFound = true;
 
                 // Find the bndChk in the statement
-                Compiler::fgWalkResult result = comp->fgWalkTreePre(
-                    stmt->GetRootNodePointer(),
-                    [](GenTree** pTree, Compiler::fgWalkData* data) -> Compiler::fgWalkResult {
-                    return (*pTree == (GenTree*)data->pCallbackData) ? Compiler::WALK_ABORT : Compiler::WALK_CONTINUE;
-                },
-                    info.BndChk());
                 // We don't need to validate bndChkParent - RemoveBoundsChk will do it for us
-                assert(result == Compiler::WALK_ABORT);
+                assert(comp->gtFindLink(stmt, info.BndChk()).result != nullptr);
                 break;
             }
         }

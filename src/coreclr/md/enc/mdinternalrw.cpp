@@ -40,39 +40,26 @@ HRESULT _FillMDDefaultValue(
 __checkReturn
 HRESULT TranslateSigHelper(                 // S_OK or error.
     IMDInternalImport*      pImport,        // [IN] import scope.
-    IMDInternalImport*      pAssemImport,   // [IN] import assembly scope.
-    const void*             pbHashValue,    // [IN] hash value for the import assembly.
-    ULONG                   cbHashValue,    // [IN] count of bytes in the hash value.
     PCCOR_SIGNATURE         pbSigBlob,      // [IN] signature in the importing scope
     ULONG                   cbSigBlob,      // [IN] count of bytes of signature
-    IMetaDataAssemblyEmit*  pAssemEmit,     // [IN] assembly emit scope.
-    IMetaDataEmit*          emit,           // [IN] emit interface
+    IMDInternalEmit*        emit,           // [IN] emit interface
     CQuickBytes*            pqkSigEmit,     // [OUT] buffer to hold translated signature
     ULONG*                  pcbSig)         // [OUT] count of bytes in the translated signature
 {
 #ifdef FEATURE_METADATA_EMIT
     HRESULT hr = S_OK;
     IMetaModelCommon *pCommon = pImport->GetMetaModelCommon();
-    RegMeta     *pAssemEmitRM = static_cast<RegMeta*>(pAssemEmit);
-    RegMeta     *pEmitRM      = static_cast<RegMeta*>(emit);
+    RegMeta *pEmitRM = static_cast<RegMeta*>(emit);
 
-    CMiniMdRW *pMiniMdAssemEmit = pAssemEmitRM ? &pAssemEmitRM->m_pStgdb->m_MiniMd : NULL;
-    CMiniMdRW *pMiniMdEmit      = &(pEmitRM->m_pStgdb->m_MiniMd);
+    CMiniMdRW *pMiniMdEmit = &(pEmitRM->m_pStgdb->m_MiniMd);
 
-    IMetaModelCommon *pCommonAssemImport = pAssemImport ? pAssemImport->GetMetaModelCommon() : NULL;
-
-    CMDSemReadWrite cSem(pEmitRM->m_pSemReadWrite);
-    IfFailGo(cSem.LockWrite());
+    CMDReadWriteLock lockHolder(pEmitRM->m_pReadWriteLock COMMA_INDEBUG(pMiniMdEmit));
+    IfFailGo(lockHolder.LockWrite());
 
     hr = ImportHelper::MergeUpdateTokenInSig(
-                pMiniMdAssemEmit,   // The assembly emit scope.
                 pMiniMdEmit,        // The emit scope.
-                pCommonAssemImport, // Assembly scope where the signature is from.
-                pbHashValue,        // Hash value for the import scope.
-                cbHashValue,        // Size in bytes.
                 pCommon,            // The scope where signature is from.
                 pbSigBlob,          // signature from the imported scope
-                NULL,               // Internal OID mapping structure.
                 pqkSigEmit,         // [OUT] translated signature
                 0,               // start from first byte of the signature
                 NULL,               // don't care how many bytes consumed
@@ -151,7 +138,8 @@ HRESULT GetInternalWithRWFormat(
     ULONG       cbData,
     DWORD       flags,                  // [IN] MDInternal_OpenForRead or MDInternal_OpenForENC
     REFIID      riid,                   // [in] The interface desired.
-    void        **ppIUnk)               // [out] Return interface on success.
+    void        **ppIUnk,               // [out] Return interface on success.
+    bool        fIsDelta)               // Is this metadata being loaded to apply an EnC delta?
 {
     MDInternalRW *pInternalRW = NULL;
     HRESULT     hr;
@@ -159,10 +147,11 @@ HRESULT GetInternalWithRWFormat(
     *ppIUnk = 0;
     pInternalRW = new (nothrow) MDInternalRW;
     IfNullGo( pInternalRW );
-    IfFailGo( pInternalRW->Init(
+    IfFailGo(pInternalRW->Init(
             const_cast<void*>(pData),
             cbData,
-            (flags == ofRead) ? true : false) );
+            (flags == ofRead) ? true : false,
+            fIsDelta));
     IfFailGo( pInternalRW->QueryInterface(riid, ppIUnk) );
 ErrExit:
     if (FAILED(hr))
@@ -183,7 +172,7 @@ struct MDReleaseHolderTraits final
 {
     using Type = TYPE*;
     static constexpr Type Default() { return NULL; }
-    static void Free(Type value)
+    static void Free(Type value) noexcept
     {
         STATIC_CONTRACT_WRAPPER;
 
@@ -263,8 +252,10 @@ STDAPI GetMDPublicInterfaceFromInternal(
 
     // grab the write lock when we are creating the corresponding regmeta for the public interface
     _ASSERTE( pInternalImport->GetReaderWriterLock() != NULL );
+    IfFailGo(AcquireMDWriteLock(
+        pInternalImport->GetReaderWriterLock()
+        COMMA_INDEBUG(static_cast<CMiniMdRW *>(pInternalImport->GetMetaModelCommon()))));
     isLockedForWrite = true;
-    IfFailGo(pInternalImport->GetReaderWriterLock()->LockWrite());
 
     // check again. Maybe someone else beat us to setting the public interface while we are waiting
     // for the write lock. Don't need to grab the read lock since we already have the write lock.
@@ -294,7 +285,9 @@ STDAPI GetMDPublicInterfaceFromInternal(
 
 ErrExit:
     if (isLockedForWrite)
-        pInternalImport->GetReaderWriterLock()->UnlockWrite();
+        ReleaseMDWriteLock(
+            pInternalImport->GetReaderWriterLock()
+            COMMA_INDEBUG(static_cast<CMiniMdRW *>(pInternalImport->GetMetaModelCommon())));
 
     if (FAILED(hr))
     {
@@ -351,8 +344,8 @@ MDInternalRW::MDInternalRW()
     m_pUnk(NULL),
     m_pUserUnk(NULL),
     m_pIMetaDataHelper(NULL),
-    m_pSemReadWrite(NULL),
-    m_fOwnSem(false)
+    m_pReadWriteLock(NULL),
+    m_fOwnLock(false)
 {
 } // MDInternalRW::MDInternalRW
 
@@ -382,14 +375,14 @@ MDInternalRW::~MDInternalRW()
 
             m_pIMetaDataHelper->SetCachedInternalInterface(NULL);
             m_pIMetaDataHelper = NULL;
-            m_fOwnSem = false;
+            m_fOwnLock = false;
 
         }
 
         UNLOCKWRITE();
     }
-    if (m_pSemReadWrite && m_fOwnSem)
-        delete m_pSemReadWrite;
+    if (m_pReadWriteLock && m_fOwnLock)
+        DestroyMDReadWriteLock(m_pReadWriteLock);
 
     if ( m_pStgdb && m_fOwnStgdb )
     {
@@ -429,7 +422,7 @@ HRESULT MDInternalRW::SetCachedPublicInterface(IUnknown * pUnk)
     {
         // public object is going away before the internal object. If we don't own the
         // reader writer lock, just take over the ownership.
-        m_fOwnSem = true;
+        m_fOwnLock = true;
         m_pIMetaDataHelper = NULL;
     }
     return hr;
@@ -466,7 +459,7 @@ ErrExit:
 //*****************************************************************************
 // Get the Reader-Writer lock
 //*****************************************************************************
-UTSemReadWrite * MDInternalRW::GetReaderWriterLock()
+minipal_rwlock * MDInternalRW::GetReaderWriterLock()
 {
     return getReaderWriterLock();
 } // MDInternalRW::GetReaderWriterLock
@@ -479,7 +472,7 @@ ULONG MDInternalRW::AddRef()
     return InterlockedIncrement(&m_cRefs);
 } // MDInternalRW::AddRef
 
-ULONG MDInternalRW::Release()
+ULONG MDInternalRW::Release() noexcept
 {
     ULONG cRef;
 
@@ -523,7 +516,8 @@ __checkReturn
 HRESULT MDInternalRW::Init(
     LPVOID pData,       // points to meta data section in memory
     ULONG  cbData,      // count of bytes in pData
-    int    bReadOnly)   // Is it open for read only?
+    int    bReadOnly,   // Is it open for read only?
+    bool   fIsDelta)    // Is this metadata being loaded to apply an EnC delta?
 {
     CLiteWeightStgdbRW * pStgdb = NULL;
     HRESULT     hr = NOERROR;
@@ -532,13 +526,11 @@ HRESULT MDInternalRW::Init(
     pStgdb = new (nothrow) CLiteWeightStgdbRW;
     IfNullGo(pStgdb);
 
-    m_pSemReadWrite = new (nothrow) UTSemReadWrite;
-    IfNullGo(m_pSemReadWrite);
-    IfFailGo(m_pSemReadWrite->Init());
-    m_fOwnSem = true;
-    INDEBUG(pStgdb->m_MiniMd.Debug_SetLock(m_pSemReadWrite);)
+    IfFailGo(CreateMDReadWriteLock(&m_pReadWriteLock));
+    m_fOwnLock = true;
+    INDEBUG(pStgdb->m_MiniMd.Debug_EnableLockCheck();)
 
-    IfFailGo(pStgdb->InitOnMem(cbData, (BYTE*)pData, bReadOnly));
+    IfFailGo(pStgdb->InitOnMem(cbData, (BYTE*)pData, bReadOnly, fIsDelta));
     IfFailGo(pStgdb->m_MiniMd.SetOption(&optVal));
     m_tdModule = COR_GLOBAL_PARENT_TOKEN;
     m_fOwnStgdb = true;
@@ -562,7 +554,7 @@ HRESULT MDInternalRW::InitWithStgdb(
     IUnknown        *pUnk,              // The IUnknow that owns the life time for the existing stgdb
     CLiteWeightStgdbRW *pStgdb)         // existing lightweight stgdb
 {
-    // m_fOwnSem should be false because this is the case where we create the internal interface given a public
+    // m_fOwnLock should be false because this is the case where we create the internal interface given a public
     // interface.
 
     m_tdModule = COR_GLOBAL_PARENT_TOKEN;
@@ -593,11 +585,9 @@ HRESULT MDInternalRW::InitWithRO(
     pStgdb = new (nothrow) CLiteWeightStgdbRW;
     IfNullGo(pStgdb);
 
-    m_pSemReadWrite = new (nothrow) UTSemReadWrite;
-    IfNullGo(m_pSemReadWrite);
-    IfFailGo(m_pSemReadWrite->Init());
-    m_fOwnSem = true;
-    INDEBUG(pStgdb->m_MiniMd.Debug_SetLock(m_pSemReadWrite);)
+    IfFailGo(CreateMDReadWriteLock(&m_pReadWriteLock));
+    m_fOwnLock = true;
+    INDEBUG(pStgdb->m_MiniMd.Debug_EnableLockCheck();)
 
     IfFailGo(pStgdb->m_MiniMd.InitOnRO(&pRO->m_LiteWeightStgdb.m_MiniMd, bReadOnly));
     IfFailGo(pStgdb->m_MiniMd.SetOption(&optVal));
@@ -623,24 +613,16 @@ ErrExit:
 //*****************************************************************************
 __checkReturn
 HRESULT MDInternalRW::TranslateSigWithScope(
-    IMDInternalImport*      pAssemImport,   // [IN] import assembly scope.
-    const void*             pbHashValue,    // [IN] hash value for the import assembly.
-    ULONG                   cbHashValue,    // [IN] count of bytes in the hash value.
     PCCOR_SIGNATURE         pbSigBlob,      // [IN] signature in the importing scope
     ULONG                   cbSigBlob,      // [IN] count of bytes of signature
-    IMetaDataAssemblyEmit*  pAssemEmit,     // [IN] assembly emit scope.
-    IMetaDataEmit*          emit,           // [IN] emit interface
+    IMDInternalEmit*        emit,           // [IN] emit interface
     CQuickBytes*            pqkSigEmit,     // [OUT] buffer to hold translated signature
     ULONG*                  pcbSig)         // [OUT] count of bytes in the translated signature
 {
     return TranslateSigHelper(
                 this,
-                pAssemImport,
-                pbHashValue,
-                cbHashValue,
                 pbSigBlob,
                 cbSigBlob,
-                pAssemEmit,
                 emit,
                 pqkSigEmit,
                 pcbSig);
@@ -773,44 +755,20 @@ HRESULT MDInternalRW::EnumTypeDefInit( // return hresult
 
     HENUMInternal::ZeroEnum(phEnum);
     phEnum->m_tkKind = mdtTypeDef;
+    phEnum->m_EnumType = MDSimpleEnum;
+    phEnum->m_ulCount = m_pStgdb->m_MiniMd.getCountTypeDefs();
 
-    if ( m_pStgdb->m_MiniMd.HasDelete() )
-    {
-        HENUMInternal::InitDynamicArrayEnum(phEnum);
+    // Skip over the global model typedef
+    //
+    // phEnum->u.m_ulCur : the current rid that is not yet enumerated
+    // phEnum->u.m_ulStart : the first rid that will be returned by enumerator
+    // phEnum->u.m_ulEnd : the last rid that will be returned by enumerator
+    phEnum->u.m_ulStart = phEnum->u.m_ulCur = 2;
+    phEnum->u.m_ulEnd = phEnum->m_ulCount + 1;
+    if (phEnum->m_ulCount > 0)
+        phEnum->m_ulCount --;
 
-        phEnum->m_tkKind = mdtTypeDef;
-        for (ULONG index = 2; index <= m_pStgdb->m_MiniMd.getCountTypeDefs(); index ++ )
-        {
-            TypeDefRec *pTypeDefRec;
-            IfFailGo(m_pStgdb->m_MiniMd.GetTypeDefRecord(index, &pTypeDefRec));
-            LPCSTR szTypeDefName;
-            IfFailGo(m_pStgdb->m_MiniMd.getNameOfTypeDef(pTypeDefRec, &szTypeDefName));
-            if (IsDeletedName(szTypeDefName))
-            {
-                continue;
-            }
-            IfFailGo( HENUMInternal::AddElementToEnum(
-                phEnum,
-                TokenFromRid(index, mdtTypeDef) ) );
-        }
-    }
-    else
-    {
-        phEnum->m_EnumType = MDSimpleEnum;
-        phEnum->m_ulCount = m_pStgdb->m_MiniMd.getCountTypeDefs();
-
-        // Skip over the global model typedef
-        //
-        // phEnum->u.m_ulCur : the current rid that is not yet enumerated
-        // phEnum->u.m_ulStart : the first rid that will be returned by enumerator
-        // phEnum->u.m_ulEnd : the last rid that will be returned by enumerator
-        phEnum->u.m_ulStart = phEnum->u.m_ulCur = 2;
-        phEnum->u.m_ulEnd = phEnum->m_ulCount + 1;
-        if (phEnum->m_ulCount > 0)
-            phEnum->m_ulCount --;
-    }
 ErrExit:
-
     return hr;
 } // MDInternalRW::EnumTypeDefInit
 
@@ -905,40 +863,6 @@ MDInternalRW::EnumMethodImplNext(  // return hresult
     return EnumNext(phEnumDecl, ptkDecl) ? S_OK : S_FALSE;
 } // MDInternalRW::EnumMethodImplNext
 
-//*****************************************
-// Reset the enumerator to the beginning.
-//*****************************************
-void MDInternalRW::EnumMethodImplReset(
-    HENUMInternal   *phEnumBody,        // [IN] MethodBody enumerator.
-    HENUMInternal   *phEnumDecl)        // [IN] MethodDecl enumerator.
-{
-    _ASSERTE((phEnumBody->m_tkKind >> 24) == TBL_MethodImpl &&
-             (phEnumDecl->m_tkKind >> 24) == TBL_MethodImpl);
-    _ASSERTE(phEnumBody->m_EnumType == MDDynamicArrayEnum &&
-             phEnumDecl->m_EnumType == MDDynamicArrayEnum);
-    _ASSERTE(phEnumBody->m_ulCount == phEnumDecl->m_ulCount);
-
-    EnumReset(phEnumBody);
-    EnumReset(phEnumDecl);
-} // MDInternalRW::EnumMethodImplReset
-
-
-//*****************************************
-// Close the enumerator.
-//*****************************************
-void MDInternalRW::EnumMethodImplClose(
-    HENUMInternal   *phEnumBody,        // [IN] MethodBody enumerator.
-    HENUMInternal   *phEnumDecl)        // [IN] MethodDecl enumerator.
-{
-    _ASSERTE((phEnumBody->m_tkKind >> 24) == TBL_MethodImpl &&
-             (phEnumDecl->m_tkKind >> 24) == TBL_MethodImpl);
-    _ASSERTE(phEnumBody->m_EnumType == MDDynamicArrayEnum &&
-             phEnumDecl->m_EnumType == MDDynamicArrayEnum);
-    _ASSERTE(phEnumBody->m_ulCount == phEnumDecl->m_ulCount);
-
-    EnumClose(phEnumBody);
-    EnumClose(phEnumDecl);
-} // MDInternalRW::EnumMethodImplClose
 #endif //!DACCESS_COMPILE
 
 //******************************************************************************
@@ -993,28 +917,7 @@ HRESULT MDInternalRW::EnumInit(     // return S_FALSE if record not found
         IfFailGo(m_pStgdb->m_MiniMd.GetTypeDefRecord(RidFromToken(tkParent), &pRec));
         ulStart = m_pStgdb->m_MiniMd.getFieldListOfTypeDef(pRec);
         IfFailGo(m_pStgdb->m_MiniMd.getEndFieldListOfTypeDef(RidFromToken(tkParent), &ulEnd));
-        if ( m_pStgdb->m_MiniMd.HasDelete() )
-        {
-            HENUMInternal::InitDynamicArrayEnum(phEnum);
-            for (index = ulStart; index < ulEnd; index ++ )
-            {
-                FieldRec *pFieldRec;
-                RID fieldRid;
-                IfFailGo(m_pStgdb->m_MiniMd.GetFieldRid(index, &fieldRid));
-                IfFailGo(m_pStgdb->m_MiniMd.GetFieldRecord(index, &pFieldRec));
-                LPCSTR szFieldName;
-                IfFailGo(m_pStgdb->m_MiniMd.getNameOfField(pFieldRec, &szFieldName));
-                if (IsFdRTSpecialName(pFieldRec->GetFlags()) && IsDeletedName(szFieldName) )
-                {
-                    continue;
-                }
-                IfFailGo(m_pStgdb->m_MiniMd.GetFieldRid(index, &fieldRid));
-                IfFailGo(HENUMInternal::AddElementToEnum(
-                    phEnum,
-                    TokenFromRid(fieldRid, mdtFieldDef)));
-            }
-        }
-        else if (m_pStgdb->m_MiniMd.HasIndirectTable(TBL_Field))
+        if (m_pStgdb->m_MiniMd.HasIndirectTable(TBL_Field))
         {
             HENUMInternal::InitDynamicArrayEnum(phEnum);
             for (index = ulStart; index < ulEnd; index ++ )
@@ -1036,28 +939,7 @@ HRESULT MDInternalRW::EnumInit(     // return S_FALSE if record not found
         IfFailGo(m_pStgdb->m_MiniMd.GetTypeDefRecord(RidFromToken(tkParent), &pRec));
         ulStart = m_pStgdb->m_MiniMd.getMethodListOfTypeDef(pRec);
         IfFailGo(m_pStgdb->m_MiniMd.getEndMethodListOfTypeDef(RidFromToken(tkParent), &ulEnd));
-        if ( m_pStgdb->m_MiniMd.HasDelete() )
-        {
-            HENUMInternal::InitDynamicArrayEnum(phEnum);
-            for (index = ulStart; index < ulEnd; index ++ )
-            {
-                MethodRec *pMethodRec;
-                RID methodRid;
-                IfFailGo(m_pStgdb->m_MiniMd.GetMethodRid(index, &methodRid));
-                IfFailGo(m_pStgdb->m_MiniMd.GetMethodRecord(methodRid, &pMethodRec));
-                LPCSTR szMethodName;
-                IfFailGo(m_pStgdb->m_MiniMd.getNameOfMethod(pMethodRec, &szMethodName));
-                if (IsMdRTSpecialName(pMethodRec->GetFlags()) && IsDeletedName(szMethodName))
-                {
-                    continue;
-                }
-                IfFailGo(m_pStgdb->m_MiniMd.GetMethodRid(index, &methodRid));
-                IfFailGo(HENUMInternal::AddElementToEnum(
-                    phEnum,
-                    TokenFromRid(methodRid, mdtMethodDef)));
-            }
-        }
-        else if (m_pStgdb->m_MiniMd.HasIndirectTable(TBL_Method))
+        if (m_pStgdb->m_MiniMd.HasIndirectTable(TBL_Method))
         {
             HENUMInternal::InitDynamicArrayEnum(phEnum);
             for (index = ulStart; index < ulEnd; index ++ )
@@ -1163,30 +1045,7 @@ HRESULT MDInternalRW::EnumInit(     // return S_FALSE if record not found
             if(ulStart == 0) ulStart = 1;
             if(ulEnd > ulMax) ulEnd = ulMax;
             if(ulStart > ulEnd) ulStart = ulEnd;
-            if ( m_pStgdb->m_MiniMd.HasDelete() )
-            {
-                HENUMInternal::InitDynamicArrayEnum(phEnum);
-                for (index = ulStart; index < ulEnd; index ++ )
-                {
-                    PropertyRec *pPropertyRec;
-                    RID propertyRid;
-                    IfFailGo(m_pStgdb->m_MiniMd.GetPropertyRid(index, &propertyRid));
-                    IfFailGo(m_pStgdb->m_MiniMd.GetPropertyRecord(
-                        propertyRid,
-                        &pPropertyRec));
-                    LPCSTR szPropertyName;
-                    IfFailGo(m_pStgdb->m_MiniMd.getNameOfProperty(pPropertyRec, &szPropertyName));
-                    if (IsPrRTSpecialName(pPropertyRec->GetPropFlags()) && IsDeletedName(szPropertyName))
-                    {
-                        continue;
-                    }
-                    IfFailGo(m_pStgdb->m_MiniMd.GetPropertyRid(index, &propertyRid));
-                    IfFailGo(HENUMInternal::AddElementToEnum(
-                        phEnum,
-                        TokenFromRid(propertyRid, mdtProperty)));
-                }
-            }
-            else if (m_pStgdb->m_MiniMd.HasIndirectTable(TBL_Property))
+            if (m_pStgdb->m_MiniMd.HasIndirectTable(TBL_Property))
             {
                 HENUMInternal::InitDynamicArrayEnum(phEnum);
                 for (index = ulStart; index < ulEnd; index ++ )
@@ -1220,28 +1079,7 @@ HRESULT MDInternalRW::EnumInit(     // return S_FALSE if record not found
             if(ulStart == 0) ulStart = 1;
             if(ulEnd > ulMax) ulEnd = ulMax;
             if(ulStart > ulEnd) ulStart = ulEnd;
-            if ( m_pStgdb->m_MiniMd.HasDelete() )
-            {
-                HENUMInternal::InitDynamicArrayEnum(phEnum);
-                for (index = ulStart; index < ulEnd; index ++ )
-                {
-                    EventRec *pEventRec;
-                    RID eventRid;
-                    IfFailGo(m_pStgdb->m_MiniMd.GetEventRid(index, &eventRid));
-                    IfFailGo(m_pStgdb->m_MiniMd.GetEventRecord(eventRid, &pEventRec));
-                    LPCSTR szEventName;
-                    IfFailGo(m_pStgdb->m_MiniMd.getNameOfEvent(pEventRec, &szEventName));
-                    if (IsEvRTSpecialName(pEventRec->GetEventFlags()) && IsDeletedName(szEventName))
-                    {
-                        continue;
-                    }
-                    IfFailGo(m_pStgdb->m_MiniMd.GetEventRid(index, &eventRid));
-                    IfFailGo(HENUMInternal::AddElementToEnum(
-                        phEnum,
-                        TokenFromRid(eventRid, mdtEvent)));
-                }
-            }
-            else if (m_pStgdb->m_MiniMd.HasIndirectTable(TBL_Event))
+            if (m_pStgdb->m_MiniMd.HasIndirectTable(TBL_Event))
             {
                 HENUMInternal::InitDynamicArrayEnum(phEnum);
                 for (index = ulStart; index < ulEnd; index ++ )
@@ -1325,41 +1163,13 @@ HRESULT MDInternalRW::EnumInit(     // return S_FALSE if record not found
         break;
     case mdtExportedType:
         _ASSERTE(IsNilToken(tkParent));
-        if ( m_pStgdb->m_MiniMd.HasDelete() )
-        {
-            HENUMInternal::InitDynamicArrayEnum(phEnum);
-
-            phEnum->m_tkKind = mdtExportedType;
-            for (ULONG typeindex = 1; typeindex <= m_pStgdb->m_MiniMd.getCountExportedTypes(); typeindex ++ )
-            {
-                ExportedTypeRec *pExportedTypeRec;
-                IfFailGo(m_pStgdb->m_MiniMd.GetExportedTypeRecord(typeindex, &pExportedTypeRec));
-                LPCSTR szTypeName;
-                IfFailGo(m_pStgdb->m_MiniMd.getTypeNameOfExportedType(pExportedTypeRec, &szTypeName));
-                if (IsDeletedName(szTypeName))
-                {
-                    continue;
-                }
-                IfFailGo( HENUMInternal::AddElementToEnum(
-                    phEnum,
-                    TokenFromRid(typeindex, mdtExportedType) ) );
-            }
-        }
-        else
-        {
-            phEnum->u.m_ulStart = 1;
-            phEnum->u.m_ulEnd = m_pStgdb->m_MiniMd.getCountExportedTypes() + 1;
-        }
+        phEnum->u.m_ulStart = 1;
+        phEnum->u.m_ulEnd = m_pStgdb->m_MiniMd.getCountExportedTypes() + 1;
         break;
     case mdtManifestResource:
         _ASSERTE(IsNilToken(tkParent));
         phEnum->u.m_ulStart = 1;
         phEnum->u.m_ulEnd = m_pStgdb->m_MiniMd.getCountManifestResources() + 1;
-        break;
-    case mdtModuleRef:
-        _ASSERTE(IsNilToken(tkParent));
-        phEnum->u.m_ulStart = 1;
-        phEnum->u.m_ulEnd = m_pStgdb->m_MiniMd.getCountModuleRefs() + 1;
         break;
     default:
         _ASSERTE(!"ENUM INIT not implemented for the uncompressed format!");
@@ -1404,14 +1214,6 @@ HRESULT MDInternalRW::EnumAllInit(      // return S_FALSE if record not found
         phEnum->m_ulCount = m_pStgdb->m_MiniMd.getCountTypeRefs();
         break;
 
-    case mdtMemberRef:
-        phEnum->m_ulCount = m_pStgdb->m_MiniMd.getCountMemberRefs();
-        break;
-
-    case mdtSignature:
-        phEnum->m_ulCount = m_pStgdb->m_MiniMd.getCountStandAloneSigs();
-        break;
-
     case mdtMethodDef:
         phEnum->m_ulCount = m_pStgdb->m_MiniMd.getCountMethods();
         break;
@@ -1420,32 +1222,12 @@ HRESULT MDInternalRW::EnumAllInit(      // return S_FALSE if record not found
         phEnum->m_ulCount = m_pStgdb->m_MiniMd.getCountMethodSpecs();
         break;
 
-    case mdtFieldDef:
-        phEnum->m_ulCount = m_pStgdb->m_MiniMd.getCountFields();
-        break;
-
     case mdtTypeSpec:
         phEnum->m_ulCount = m_pStgdb->m_MiniMd.getCountTypeSpecs();
         break;
 
     case mdtAssemblyRef:
         phEnum->m_ulCount = m_pStgdb->m_MiniMd.getCountAssemblyRefs();
-        break;
-
-    case mdtModuleRef:
-        phEnum->m_ulCount = m_pStgdb->m_MiniMd.getCountModuleRefs();
-        break;
-
-    case mdtTypeDef:
-        phEnum->m_ulCount = m_pStgdb->m_MiniMd.getCountTypeDefs();
-        break;
-
-    case mdtFile:
-        phEnum->m_ulCount = m_pStgdb->m_MiniMd.getCountFiles();
-        break;
-
-    case mdtCustomAttribute:
-        phEnum->m_ulCount = m_pStgdb->m_MiniMd.getCountCustomAttributes();
         break;
 
     default:
@@ -2045,6 +1827,8 @@ HRESULT MDInternalRW::FindTypeRefByName(  // S_OK or error.
     mdToken     tkResolutionScope,      // [IN] Resolution Scope fo the TypeRef.
     mdTypeRef   *ptk)                   // [OUT] TypeRef token returned.
 {
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
+    // ILDasm uses this API to resolve TypeRefs by name.
     HRESULT     hr = NOERROR;
     ULONG       cTypeRefRecs;
     TypeRefRec *pTypeRefRec;
@@ -2094,6 +1878,9 @@ HRESULT MDInternalRW::FindTypeRefByName(  // S_OK or error.
     hr = CLDB_E_RECORD_NOTFOUND;
 ErrExit:
     return hr;
+#else
+    return E_NOTIMPL;
+#endif
 } // MDInternalRW::FindTypeRefByName
 
 //*****************************************************************************
@@ -3459,33 +3246,6 @@ ErrExit:
 
 
 //*****************************************************************************
-// Get the Action and Permissions blob for a given PermissionSet.
-//*****************************************************************************
-__checkReturn
-HRESULT MDInternalRW::GetPermissionSetProps(
-    mdPermission pm,                    // [IN] the permission token.
-    DWORD       *pdwAction,             // [OUT] CorDeclSecurity.
-    void const  **ppvPermission,        // [OUT] permission blob.
-    ULONG       *pcbPermission)         // [OUT] count of bytes of pvPermission.
-{
-    HRESULT hr = S_OK;
-    _ASSERTE(TypeFromToken(pm) == mdtPermission);
-    _ASSERTE(pdwAction && ppvPermission && pcbPermission);
-
-    DeclSecurityRec *pPerm;
-    LOCKREAD();
-
-    IfFailGo(m_pStgdb->m_MiniMd.GetDeclSecurityRecord(RidFromToken(pm), &pPerm));
-    *pdwAction = m_pStgdb->m_MiniMd.getActionOfDeclSecurity(pPerm);
-    IfFailGo(m_pStgdb->m_MiniMd.getPermissionSetOfDeclSecurity(pPerm, reinterpret_cast<const BYTE **>(ppvPermission), pcbPermission));
-
-ErrExit:
-
-    return hr;
-} // MDInternalRW::GetPermissionSetProps
-
-
-//*****************************************************************************
 // Get the String given the String token.
 // Return a pointer to the string, or NULL in case of error.
 //*****************************************************************************
@@ -4109,7 +3869,7 @@ HRESULT MDInternalRW::ApplyEditAndContinue(
     HRESULT hr = E_FAIL;
     IMDInternalImportENC *pDeltaMDImport = NULL;
 
-    IfFailGo(GetInternalWithRWFormat(pDeltaMD, cbDeltaMD, 0, IID_IMDInternalImportENC, (void**)&pDeltaMDImport));
+    IfFailGo(GetInternalWithRWFormat(pDeltaMD, cbDeltaMD, 0, IID_IMDInternalImportENC, (void**)&pDeltaMDImport, true));
 
     *ppv = this;
     IfFailGo(MDApplyEditAndContinue(ppv, pDeltaMDImport));

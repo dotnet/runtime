@@ -1,8 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <Import Project="$(RepositoryEngineeringDir)restore\browserWasmMibcProfile.props" />
   <Import Condition="'$(TargetOS)' == 'browser'" Project="$(CommonTestPath)System/Net/Prerequisites/LocalEchoServer.props" />
 
   <PropertyGroup>
+    <!-- TODO: Remove once migrated to unsafe-v2. -->
+    <MemorySafetyRulesVersion>1</MemorySafetyRulesVersion>
     <TargetFramework>$(NetCoreAppCurrent)-browser</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TestRuntime>true</TestRuntime>
@@ -20,7 +23,14 @@
          Suppress the NU1511 warning in the whole project as putting it on a P2P doesn't work: https://github.com/NuGet/Home/issues/14121 -->
     <NoWarn>$(NoWarn);NU1511</NoWarn>
     <WasmEnableStreamingResponse>false</WasmEnableStreamingResponse>
+
+    <!-- Remove when PublishReadyToRun becomes default https://github.com/dotnet/runtime/issues/132466 -->
+    <PublishReadyToRun Condition="'$(PublishReadyToRun)' == ''">true</PublishReadyToRun>
   </PropertyGroup>
+  <ItemGroup>
+    <!-- Exercise mixed R2R/interpreter execution across JS interop boundaries for extra coverage. -->
+    <PublishReadyToRunPgoFiles Include="$(BrowserWasmMibcProfile)" />
+  </ItemGroup>
 
   <!-- Make debugging easier -->
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
@@ -34,6 +44,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\JSExportTest.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\YieldAwaitableTests.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\JSInteropTestBase.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\ProxyLeakTest.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\Utils.cs" />
 
     <None Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\JavaScriptTestHelper.mjs" />
@@ -58,6 +69,7 @@
   <ItemGroup Condition="'$(WasmEnableThreads)' != 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\SecondRuntimeTest.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\HttpRequestMessageTest.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\HttpCancellationLeakTest.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\TimerTests.cs" />
   </ItemGroup>
 

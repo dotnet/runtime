@@ -1,16 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //*****************************************************************************
 // StgTiggerStorage.cpp
-//
-
 //
 // TiggerStorage is a stripped down version of compound doc files.  Doc files
 // have some very useful and complex features to them, unfortunately nothing
 // comes for free.  Given the incredibly tuned format of existing .tlb files,
 // every single byte counts and 10% added by doc files is just too expensive.
-//
 //*****************************************************************************
+
 #include "stdafx.h"                     // Standard header.
 #include "stgio.h"                      // I/O subsystem.
 #include "stgtiggerstorage.h"           // Our interface.
@@ -81,7 +80,11 @@ TiggerStorage::Init(
     // For write case, dump the signature into the file up front.
     else
     {
+#ifdef FEATURE_METADATA_PERSISTENCE
         IfFailGo(WriteSignature(pVersion));
+#else
+        IfFailGo(E_NOTIMPL);
+#endif
     }
 
 ErrExit:
@@ -355,11 +358,13 @@ TiggerStorage::GetStreamSaveSize(
     UINT32  cbDataSize,         // Size of data to go into stream.
     UINT32 *pcbSaveSize)        // Return data size plus stream overhead.
 {
+    size_t cbName;                 // Converted stream name length.
     UINT32 cbTotalSize;            // Add up each element.
 
     // Find out how large the name will be.
-    cbTotalSize = ::WideCharToMultiByte(CP_ACP, 0, szStreamName, -1, 0, 0, 0, 0);
-    _ASSERTE(cbTotalSize != 0);
+    cbName = minipal_get_length_utf16_to_utf8((const CHAR16_T*)szStreamName, u16_strlen(szStreamName) + 1, 0);
+    _ASSERTE(cbName != 0);
+    cbTotalSize = (UINT32)cbName;
 
     // Add the size of the stream header minus the static name array.
     cbTotalSize += sizeof(STORAGESTREAM) - MAXSTREAMNAME;
@@ -440,9 +445,13 @@ HRESULT STDMETHODCALLTYPE TiggerStorage::CreateStream(
     DWORD       reserved2,
     IStream     **ppstm)
 {
+#ifdef FEATURE_METADATA_PERSISTENCE
     char        rcStream[MAXSTREAMNAME];// For converted name.
-    VERIFY(WideCharToMultiByte(CP_ACP, 0, pwcsName, -1, rcStream, sizeof(rcStream), 0, 0));
+    VERIFY(minipal_convert_utf16_to_utf8((const CHAR16_T*)pwcsName, u16_strlen(pwcsName) + 1, rcStream, sizeof(rcStream), 0));
     return (CreateStream(rcStream, grfMode, reserved1, reserved2, ppstm));
+#else
+    return E_NOTIMPL;
+#endif
 }
 
 
@@ -454,6 +463,7 @@ HRESULT STDMETHODCALLTYPE TiggerStorage::CreateStream(
     DWORD       reserved2,
     IStream     **ppstm)
 {
+#ifdef FEATURE_METADATA_PERSISTENCE
     PSTORAGESTREAM pStream;             // For lookup.
     HRESULT     hr;
 
@@ -487,6 +497,9 @@ HRESULT STDMETHODCALLTYPE TiggerStorage::CreateStream(
         return (hr);
     }
     return (S_OK);
+#else
+    return E_NOTIMPL;
+#endif
 }
 #endif //!DACCESS_COMPILE
 
@@ -630,7 +643,7 @@ HRESULT STDMETHODCALLTYPE TiggerStorage::OpenStream(
     HRESULT     hr;
 
     // Convert the name for internal use.
-    VERIFY(::WideCharToMultiByte(CP_ACP, 0, szStream, -1, rcName, sizeof(rcName), 0, 0));
+    VERIFY(minipal_convert_utf16_to_utf8((const CHAR16_T*)szStream, u16_strlen(szStream) + 1, rcName, sizeof(rcName), 0));
 
     // Look for the stream which must be found for this to work.  Note that
     // this error is explicitly not posted as an error object since unfound streams
@@ -954,34 +967,3 @@ HRESULT TiggerStorage::VerifyHeader()
 //*****************************************************************************
 // Print the sizes of the various streams.
 //*****************************************************************************
-#if defined(_DEBUG)
-ULONG TiggerStorage::PrintSizeInfo(bool verbose)
-{
-    ULONG total = 0;
-
-    printf("Storage Header:  %zu\n", sizeof(STORAGEHEADER));
-    if (m_pStreamList != NULL)
-    {
-        PSTORAGESTREAM storStream = m_pStreamList;
-        PSTORAGESTREAM pNext;
-        for (int i = 0; i < m_StgHdr.GetiStreams(); i++)
-        {
-            pNext = storStream->NextStream();
-            printf("Stream #%d (%s) Header: %zd, Data: %u\n",i,storStream->GetName(), (size_t)((BYTE*)pNext - (BYTE*)storStream), storStream->GetSize());
-            total += storStream->GetSize();
-            storStream = pNext;
-        }
-    }
-    else
-    {
-        //<REVISIT_TODO>todo: Add support for the case where m_Streams exists and m_pStreamList does not</REVISIT_TODO>
-    }
-
-    if (m_pbExtra != NULL)
-    {
-        printf("Extra bytes: %d\n",*(ULONG*)m_pbExtra);
-        total += *(ULONG*)m_pbExtra;
-    }
-    return total;
-}
-#endif // _DEBUG

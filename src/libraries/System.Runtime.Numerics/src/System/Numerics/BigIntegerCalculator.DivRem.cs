@@ -15,52 +15,6 @@ namespace System.Numerics
 #endif
         int DivideBurnikelZieglerThreshold = 64;
 
-        public static void Divide(ReadOnlySpan<nuint> left, nuint right, Span<nuint> quotient, out nuint remainder)
-        {
-            InitializeForDebug(quotient);
-            nuint carry = 0;
-            DivideCore(left, right, quotient, ref carry);
-            remainder = carry;
-        }
-
-        public static void Divide(ReadOnlySpan<nuint> left, nuint right, Span<nuint> quotient)
-        {
-            InitializeForDebug(quotient);
-            nuint carry = 0;
-            DivideCore(left, right, quotient, ref carry);
-        }
-
-        private static void DivideCore(ReadOnlySpan<nuint> left, nuint right, Span<nuint> quotient, ref nuint carry)
-        {
-            Debug.Assert(left.Length >= 1);
-            Debug.Assert(quotient.Length == left.Length);
-            InitializeForDebug(quotient);
-
-            // Executes the division for one big and one native-width integer.
-            // Thus, we've similar code than below, but there is no loop for
-            // processing the native-width integer, since it's a single element.
-
-            for (int i = left.Length - 1; i >= 0; i--)
-            {
-                quotient[i] = DivRem(carry, left[i], right, out nuint rem);
-                carry = rem;
-            }
-        }
-
-        public static nuint Remainder(ReadOnlySpan<nuint> left, nuint right)
-        {
-            Debug.Assert(left.Length >= 1);
-
-            // Same as above, but only computing the remainder.
-            nuint carry = 0;
-            for (int i = left.Length - 1; i >= 0; i--)
-            {
-                DivRem(carry, left[i], right, out carry);
-            }
-
-            return carry;
-        }
-
         public static void Divide(ReadOnlySpan<nuint> left, ReadOnlySpan<nuint> right, Span<nuint> quotient, Span<nuint> remainder)
         {
             Debug.Assert(left.Length >= 1);
@@ -92,10 +46,6 @@ namespace System.Numerics
 
             if (right.Length < DivideBurnikelZieglerThreshold || left.Length - right.Length < DivideBurnikelZieglerThreshold)
             {
-                // Same as above, but only returning the quotient.
-
-                // NOTE: left will get overwritten, we need a local copy
-                // However, mutated left is not used afterwards, so use array pooling or stack alloc
                 Span<nuint> leftCopy = BigInteger.RentedBuffer.Create(left.Length, out BigInteger.RentedBuffer leftCopyBuffer);
                 left.CopyTo(leftCopy);
 
@@ -119,8 +69,6 @@ namespace System.Numerics
 
             if (right.Length < DivideBurnikelZieglerThreshold || left.Length - right.Length < DivideBurnikelZieglerThreshold)
             {
-                // Same as above, but only returning the remainder.
-
                 left.CopyTo(remainder);
                 DivideGrammarSchool(remainder, right, default);
             }
@@ -134,6 +82,127 @@ namespace System.Numerics
 
                 quotientBuffer.Dispose();
             }
+        }
+
+        public static void DivideSpecial(
+            ReadOnlySpan<nuint> left,
+            ReadOnlySpan<nuint> right,
+            Span<nuint> quotient,
+            Span<nuint> remainder)
+        {
+            Debug.Assert(left.Length >= 16);
+            Debug.Assert(right.Length >= 1);
+            Debug.Assert(left.Length >= right.Length);
+            Debug.Assert(quotient.Length == left.Length - right.Length + 1);
+            Debug.Assert(remainder.Length == left.Length);
+            Debug.Assert(right[0] == 0 || right[0] == nuint.MaxValue);
+            Debug.Assert(!remainder.Overlaps(left));
+
+            InitializeForDebug(quotient);
+            InitializeForDebug(remainder);
+
+            if (right[0] == nuint.MaxValue
+                && TryDivideMersenne(left, right, quotient, remainder, remainderAliasesLeft: false))
+            {
+                return;
+            }
+
+            if (right.Length < DivideBurnikelZieglerThreshold
+                || left.Length - right.Length < DivideBurnikelZieglerThreshold)
+            {
+                left.CopyTo(remainder);
+                if (right[0] == 0)
+                {
+                    DivideGrammarSchoolSpecial(remainder, right, quotient);
+                }
+                else
+                {
+                    DivideGrammarSchool(remainder, right, quotient);
+                }
+                return;
+            }
+
+            Divide(left, right, quotient, remainder);
+        }
+
+        public static void DivideSpecial(
+            ReadOnlySpan<nuint> left,
+            ReadOnlySpan<nuint> right,
+            Span<nuint> quotient)
+        {
+            Debug.Assert(left.Length >= 16);
+            Debug.Assert(right.Length >= 1);
+            Debug.Assert(left.Length >= right.Length);
+            Debug.Assert(quotient.Length == left.Length - right.Length + 1);
+            Debug.Assert(right[0] == 0 || right[0] == nuint.MaxValue);
+
+            InitializeForDebug(quotient);
+
+            if (right[0] == nuint.MaxValue
+                && TryDivideMersenne(left, right, quotient, default, remainderAliasesLeft: false))
+            {
+                return;
+            }
+
+            if (right.Length < DivideBurnikelZieglerThreshold
+                || left.Length - right.Length < DivideBurnikelZieglerThreshold)
+            {
+                Span<nuint> leftCopy = BigInteger.RentedBuffer.Create(
+                    left.Length, out BigInteger.RentedBuffer leftCopyBuffer);
+                left.CopyTo(leftCopy);
+
+                if (right[0] == 0)
+                {
+                    DivideGrammarSchoolSpecial(leftCopy, right, quotient);
+                }
+                else
+                {
+                    DivideGrammarSchool(leftCopy, right, quotient);
+                }
+                leftCopyBuffer.Dispose();
+                return;
+            }
+
+            Divide(left, right, quotient);
+        }
+
+        public static void RemainderSpecial(
+            ReadOnlySpan<nuint> left,
+            ReadOnlySpan<nuint> right,
+            Span<nuint> remainder)
+        {
+            Debug.Assert(left.Length >= 16);
+            Debug.Assert(right.Length >= 1);
+            Debug.Assert(left.Length >= right.Length);
+            Debug.Assert(remainder.Length == left.Length);
+            Debug.Assert(right[0] == 0 || right[0] == nuint.MaxValue);
+            Debug.Assert(!remainder.Overlaps(left));
+
+            InitializeForDebug(remainder);
+
+            if (right[0] == nuint.MaxValue
+                && TryDivideMersenne(left, right, default, remainder, remainderAliasesLeft: false))
+            {
+                return;
+            }
+
+            if (right.Length < DivideBurnikelZieglerThreshold
+                || left.Length - right.Length < DivideBurnikelZieglerThreshold)
+            {
+                left.CopyTo(remainder);
+
+                if (right[0] == 0)
+                {
+                    DivideGrammarSchoolSpecial(remainder, right, default);
+                }
+                else
+                {
+                    DivideGrammarSchool(remainder, right, default);
+                }
+                return;
+            }
+
+            Remainder(left, right, remainder);
         }
 
         /// <summary>
@@ -151,6 +220,13 @@ namespace System.Numerics
             Debug.Assert(quotient.Length == left.Length - right.Length + 1
                 || quotient.Length == 0);
             InitializeForDebug(quotient);
+
+            if (left.Length >= 16
+                && right[0] == nuint.MaxValue
+                && TryDivideMersenne(left, right, quotient, left, remainderAliasesLeft: true))
+            {
+                return;
+            }
 
             if (right.Length < DivideBurnikelZieglerThreshold || left.Length - right.Length < DivideBurnikelZieglerThreshold)
             {
@@ -171,6 +247,178 @@ namespace System.Numerics
 
                 quotientActualBuffer.Dispose();
                 leftCopyBuffer.Dispose();
+            }
+        }
+
+        private static bool TryDivideMersenne(
+            ReadOnlySpan<nuint> left,
+            ReadOnlySpan<nuint> right,
+            Span<nuint> quotient,
+            Span<nuint> remainder,
+            bool remainderAliasesLeft)
+        {
+            if (left.Length < 16
+                || left.Length - right.Length < right.Length
+                || right.Length < 2
+                || right[0] != nuint.MaxValue
+                || right[1] != nuint.MaxValue
+                || right.ContainsAnyExcept(nuint.MaxValue))
+            {
+                return false;
+            }
+
+            DivideMersenne(left, right, quotient, remainder, remainderAliasesLeft);
+            return true;
+        }
+
+        private static void DivideMersenne(
+            ReadOnlySpan<nuint> left,
+            ReadOnlySpan<nuint> right,
+            Span<nuint> quotient,
+            Span<nuint> remainder,
+            bool remainderAliasesLeft)
+        {
+            // For X = B^k, X == 1 (mod X - 1), so the remainder is the sum of the
+            // k-limb chunks reduced modulo X - 1. The quotient's chunks are the
+            // corresponding rolling suffix sums plus floor(chunkSum / (X - 1)).
+            int chunkLength = right.Length;
+            int sumLength = chunkLength + 1;
+            bool usesScratch = !remainderAliasesLeft && remainder.Length >= sumLength;
+            int rentedLength = usesScratch ? 0 : sumLength;
+            Span<nuint> rented = BigInteger.RentedBuffer.Create(rentedLength, out BigInteger.RentedBuffer sumBuffer);
+            Span<nuint> sum = usesScratch
+                ? remainder[..sumLength]
+                : rented;
+
+            sum.Clear();
+            SumChunks(left, chunkLength, sum);
+
+            nuint quotientAdjustment = GetQuotientAdjustment(sum);
+
+            if (!quotient.IsEmpty)
+            {
+                quotient.Clear();
+
+                nuint coefficientCarry = quotientAdjustment;
+                int quotientOffset = 0;
+
+                for (int chunkOffset = 0; chunkOffset + chunkLength < left.Length; chunkOffset += chunkLength)
+                {
+                    SubtractSelf(sum, left.Slice(chunkOffset, chunkLength));
+
+                    nuint carry = coefficientCarry;
+
+                    for (int i = 0; i < chunkLength; i++)
+                    {
+                        nuint digit = sum[i] + carry;
+                        carry = digit < sum[i] ? 1 : (nuint)0;
+
+                        if (quotientOffset + i < quotient.Length)
+                        {
+                            quotient[quotientOffset + i] = digit;
+                        }
+                        else
+                        {
+                            Debug.Assert(digit == 0);
+                        }
+                    }
+
+                    coefficientCarry = sum[chunkLength] + carry;
+                    quotientOffset += chunkLength;
+                }
+
+                if (quotientOffset < quotient.Length)
+                {
+                    quotient[quotientOffset] = coefficientCarry;
+                }
+                else
+                {
+                    Debug.Assert(coefficientCarry == 0);
+                }
+            }
+
+            if (!remainder.IsEmpty)
+            {
+                if (!quotient.IsEmpty)
+                {
+                    sum.Clear();
+                    SumChunks(left, chunkLength, sum);
+                }
+
+                ReduceSum(sum);
+
+                if (!usesScratch)
+                {
+                    remainder.Clear();
+                    sum[..chunkLength].CopyTo(remainder);
+                }
+                else
+                {
+                    remainder[chunkLength..].Clear();
+                }
+            }
+
+            if (!usesScratch)
+            {
+                sumBuffer.Dispose();
+            }
+
+            static void SumChunks(ReadOnlySpan<nuint> value, int chunkLength, Span<nuint> sum)
+            {
+                for (int offset = 0; offset < value.Length; offset += chunkLength)
+                {
+                    AddSelf(sum, value.Slice(offset, Math.Min(chunkLength, value.Length - offset)));
+                }
+            }
+
+            static nuint GetQuotientAdjustment(ReadOnlySpan<nuint> sum)
+            {
+                nuint adjustment = sum[^1];
+                nuint carry = adjustment;
+                bool allMaxValue = true;
+
+                foreach (nuint limb in sum[..^1])
+                {
+                    nuint digit = limb + carry;
+                    carry = digit < limb ? 1 : (nuint)0;
+                    allMaxValue &= digit == nuint.MaxValue;
+                }
+
+                return adjustment + ((carry != 0 || allMaxValue) ? 1u : 0u);
+            }
+
+            static void ReduceSum(Span<nuint> sum)
+            {
+                Span<nuint> low = sum[..^1];
+                nuint carry = sum[^1];
+                bool allMaxValue = true;
+
+                for (int i = 0; i < low.Length; i++)
+                {
+                    nuint digit = low[i] + carry;
+                    carry = digit < low[i] ? 1 : (nuint)0;
+                    low[i] = digit;
+                    allMaxValue &= digit == nuint.MaxValue;
+                }
+
+                if (carry != 0)
+                {
+                    carry = 1;
+
+                    int i = 0;
+                    for (; carry != 0 && i < low.Length; i++)
+                    {
+                        nuint digit = low[i] + carry;
+                        carry = digit < low[i] ? 1 : (nuint)0;
+                        low[i] = digit;
+                    }
+
+                    Debug.Assert(carry == 0);
+                }
+                else if (allMaxValue)
+                {
+                    low.Clear();
+                }
             }
         }
 

@@ -157,8 +157,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
             }
 
-            private TypeRef EnqueueTransitiveType(TypeParseInfo containingTypeParseInfo, ITypeSymbol memberTypeSymbol, DiagnosticDescriptor diagDescriptor, string? memberName = null)
+            private TypeRef EnqueueTransitiveType(TypeParseInfo containingTypeParseInfo, ITypeSymbol memberTypeSymbol, DiagnosticDescriptor diagDescriptor, string? memberName = null, TypeRef? knownTypeRef = null)
             {
+                Debug.Assert(knownTypeRef is null || knownTypeRef.FullyQualifiedName == memberTypeSymbol.GetFullyQualifiedName(),
+                    $"'{nameof(knownTypeRef)}' must describe '{nameof(memberTypeSymbol)}'.");
+
                 TypeParseInfo memberTypeParseInfo = containingTypeParseInfo.ToTransitiveTypeParseInfo(memberTypeSymbol, diagDescriptor, memberName);
 
                 if (_createdTypeSpecs.TryGetValue(memberTypeSymbol, out TypeSpec? memberTypeSpec))
@@ -168,7 +171,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
 
                 _typesToParse.Enqueue(memberTypeParseInfo);
-                return new TypeRef(memberTypeSymbol);
+                return knownTypeRef ?? new TypeRef(memberTypeSymbol);
             }
 
             private TypeSpec CreateTypeSpec(TypeParseInfo typeParseInfo)
@@ -641,6 +644,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 return false;
             }
 
+            private static bool BacksConstructorParameter(IMethodSymbol? ctor, string propertyName)
+            {
+                return ctor is not null
+                    && ctor.Parameters.Any(parameter => string.Equals(parameter.Name, propertyName, StringComparison.OrdinalIgnoreCase));
+            }
+
             private ObjectSpec CreateObjectSpec(TypeParseInfo typeParseInfo)
             {
                 INamedTypeSymbol typeSymbol = (INamedTypeSymbol)typeParseInfo.TypeSymbol;
@@ -722,16 +731,16 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         if (member is IPropertySymbol { IsIndexer: false, IsImplicitlyDeclared: false } property)
                         {
                             string propertyName = property.Name;
-                            bool isDuplicateOrOverride = property.IsOverride || properties?.ContainsKey(propertyName) is true;
+                            bool isDuplicate = properties?.ContainsKey(propertyName) is true;
 
                             if (IsUnsupportedType(property.Type))
                             {
-                                // Report the skip once per property name. The override/duplicate check covers an
-                                // error-typed property that is overridden or shadows an already-bound member, while
+                                // Report the skip once per property name. The duplicate check covers an
+                                // error-typed property that overrides or shadows an already-bound member, while
                                 // the name set covers a `new`-shadowed error-typed property: both the base and
                                 // derived copies are skipped (so neither lands in 'properties' to dedupe the other),
                                 // which would otherwise fire SYSLIB1101 twice for the same name.
-                                if (ContainsErrorType(property.Type) && !isDuplicateOrOverride &&
+                                if (ContainsErrorType(property.Type) && !isDuplicate &&
                                     (reportedUnsupportedProperties ??= new(StringComparer.OrdinalIgnoreCase)).Add(propertyName))
                                 {
                                     RecordDiagnostic(DiagnosticDescriptors.PropertyNotSupported, typeParseInfo.BinderInvocation?.Location, [propertyName, typeParseInfo.FullName]);
@@ -740,23 +749,25 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                 continue;
                             }
 
-                            if (isDuplicateOrOverride)
+                            if (isDuplicate)
                             {
                                 continue;
                             }
 
-                            TypeRef propertyTypeRef = EnqueueTransitiveType(typeParseInfo, property.Type, DiagnosticDescriptors.PropertyNotSupported, propertyName);
-                            ImmutableArray<AttributeData> attributes = property.GetAttributes();
-
-                            AttributeData? attributeData = attributes.FirstOrDefault(a => SymbolEqualityComparer.Default.Equals(a.AttributeClass, _typeSymbols.ConfigurationKeyNameAttribute));
+                            AttributeData? attributeData = GetPropertyAttribute(property, _typeSymbols.ConfigurationKeyNameAttribute);
                             string configKeyName = attributeData?.ConstructorArguments.FirstOrDefault().Value as string ?? propertyName;
-                            bool isIgnored = attributes.Any(a => SymbolEqualityComparer.Default.Equals(a.AttributeClass, _typeSymbols.ConfigurationIgnoreAttribute));
+                            bool isIgnored = GetPropertyAttribute(property, _typeSymbols.ConfigurationIgnoreAttribute) is not null;
 
-                            PropertySpec spec = new(property, propertyTypeRef)
+                            PropertySpec spec = new(property, new TypeRef(property.Type))
                             {
                                 ConfigurationKeyName = configKeyName,
                                 IsIgnored = isIgnored,
                             };
+
+                            if (!spec.IsIgnored && (spec.CanGet || spec.CanSet || BacksConstructorParameter(ctor, propertyName)))
+                            {
+                                EnqueueTransitiveType(typeParseInfo, property.Type, DiagnosticDescriptors.PropertyNotSupported, propertyName, spec.TypeRef);
+                            }
 
                             (properties ??= new(StringComparer.OrdinalIgnoreCase))[propertyName] = spec;
                         }
@@ -825,6 +836,21 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private static UnsupportedTypeSpec CreateUnsupportedCollectionSpec(TypeParseInfo typeParseInfo)
                 => CreateUnsupportedTypeSpec(typeParseInfo, NotSupportedReason.CollectionNotSupported);
+
+            private static AttributeData? GetPropertyAttribute(IPropertySymbol property, INamedTypeSymbol? attributeType)
+            {
+                for (IPropertySymbol? current = property; current is not null; current = current.OverriddenProperty)
+                {
+                    AttributeData? attribute = current.GetAttributes().FirstOrDefault(attribute =>
+                        SymbolEqualityComparer.Default.Equals(attribute.AttributeClass, attributeType));
+                    if (attribute is not null)
+                    {
+                        return attribute;
+                    }
+                }
+
+                return null;
+            }
 
             private static UnsupportedTypeSpec CreateUnsupportedTypeSpec(TypeParseInfo typeParseInfo, NotSupportedReason reason) =>
                 new(typeParseInfo.TypeSymbol) { NotSupportedReason = reason };

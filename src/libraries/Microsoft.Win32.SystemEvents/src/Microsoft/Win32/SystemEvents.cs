@@ -349,7 +349,7 @@ namespace Microsoft.Win32
         ///  Console handler we add in case we are a console application or a service.
         ///  Without this we will not get end session events.
         /// </summary>
-        private bool ConsoleHandlerProc(int signalType)
+        private Interop.BOOL ConsoleHandlerProc(int signalType)
         {
             switch (signalType)
             {
@@ -362,7 +362,7 @@ namespace Microsoft.Win32
                     break;
             }
 
-            return false;
+            return Interop.BOOL.FALSE;
         }
 
         private static IntPtr DefWndProc
@@ -755,7 +755,7 @@ namespace Microsoft.Win32
             unsafe
             {
                 int pid;
-                int thread = Interop.User32.GetWindowThreadProcessId(s_systemEvents!._windowHandle, &pid);
+                uint thread = Interop.User32.GetWindowThreadProcessId(s_systemEvents!._windowHandle, &pid);
                 Debug.Assert(s_windowThread == null || thread != Interop.Kernel32.GetCurrentThreadId(), "Don't call MarshaledInvoke on the system events thread");
             }
 #endif

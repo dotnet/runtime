@@ -18,7 +18,7 @@ namespace System.Diagnostics
                 return;
             }
 
-            GetRootId(out string? parentId, out string? traceState, out bool isW3c, out IEnumerable<KeyValuePair<string, string?>>? baggage);
+            GetRootId(out string? parentId, out string? traceState, out bool isW3c, out Activity? rootActivity);
             if (parentId is null)
             {
                 return;
@@ -31,17 +31,14 @@ namespace System.Diagnostics
                 setter(carrier, TraceState, traceState);
             }
 
-            if (baggage is not null)
-            {
-                InjectBaggage(carrier, baggage, setter);
-            }
+            InjectBaggage(carrier, rootActivity, setter);
         }
 
         public override void ExtractTraceIdAndState(object? carrier, PropagatorGetterCallback? getter, out string? traceId, out string? traceState) => LegacyPropagator.Instance.ExtractTraceIdAndState(carrier, getter, out traceId, out traceState);
 
         public override IEnumerable<KeyValuePair<string, string?>>? ExtractBaggage(object? carrier, PropagatorGetterCallback? getter) => LegacyPropagator.Instance.ExtractBaggage(carrier, getter);
 
-        private static void GetRootId(out string? parentId, out string? traceState, out bool isW3c, out IEnumerable<KeyValuePair<string, string?>>? baggage)
+        private static void GetRootId(out string? parentId, out string? traceState, out bool isW3c, out Activity? rootActivity)
         {
             Activity? activity = Activity.Current;
 
@@ -53,7 +50,7 @@ namespace System.Diagnostics
             traceState = activity?.TraceStateString;
             parentId = activity?.ParentId ?? activity?.Id;
             isW3c = parentId is not null ? Activity.TryConvertIdToContext(parentId, traceState, isRemote: false, out _) : false;
-            baggage = activity?.Baggage;
+            rootActivity = activity;
         }
     }
 }

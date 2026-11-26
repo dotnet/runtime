@@ -109,7 +109,7 @@ EP_RT_DEFINE_THREAD_FUNC (streaming_thread)
 			ep_rt_wait_event_handle_t *wait_event = ep_session_get_wait_event (session);
 			while (ep_session_get_streaming_enabled (session)) {
 				bool events_written = false;
-				if (!ep_session_write_all_buffers_to_file (session, &events_written)) {
+				if (!ep_session_write_all_buffers_to_file (session, false, &events_written)) {
 					success = false;
 					break;
 				}
@@ -153,16 +153,18 @@ EP_RT_DEFINE_THREAD_FUNC (streaming_thread)
 static size_t streaming_loop_tick(EventPipeSession *const session) {
 	bool events_written = false;
 	bool ok;
+	if (!ep_session_has_started (session))
+		ep_rt_volatile_store_uint32_t (&session->started, 1);
 	if (!ep_session_get_streaming_enabled (session)){
 		ep_session_dec_ref (session);
 		return 1; // done
 	}
 	EP_GCX_PREEMP_ENTER
-	ok = ep_session_write_all_buffers_to_file (session, &events_written);
+	ok = ep_session_write_all_buffers_to_file (session, false, &events_written);
 	EP_GCX_PREEMP_EXIT
 	if (!ok) {
+		// Keep the job so the next tick sees streaming disabled and releases its reference.
 		ep_disable ((EventPipeSessionID)session);
-		return 1; // done
 	}
 	return 0; // continue
 }
@@ -189,8 +191,10 @@ session_create_streaming_thread (EventPipeSession *session)
 		EP_UNREACHABLE ("Unable to create streaming thread.");
 #else
 	ep_session_inc_ref (session);
-	ep_rt_volatile_store_uint32_t (&session->started, 1);
-	ep_rt_queue_job ((void *)streaming_loop_tick, (void *)session);
+	if (!ep_rt_queue_job ((void *)streaming_loop_tick, (void *)session)) {
+		// The session's own reference keeps it alive, so this only drops the job's reference.
+		ep_session_dec_ref (session);
+	}
 #endif
 }
 
@@ -400,10 +404,11 @@ ep_session_dec_ref (EventPipeSession *session)
 {
 	ep_return_void_if_nok (session != NULL);
 
-	EP_ASSERT (!ep_session_get_streaming_enabled (session));
-
-	if (ep_rt_atomic_dec_uint32_t (&session->ref_count) == 0)
+	if (ep_rt_atomic_dec_uint32_t (&session->ref_count) == 0) {
+		// Streaming must be stopped before the last reference goes away.
+		EP_ASSERT (!ep_session_get_streaming_enabled (session));
 		session_free (session);
+	}
 }
 
 static
@@ -641,24 +646,24 @@ ep_session_disable (EventPipeSession *session)
 
 	if (session->file != NULL) {
 		bool ignored;
-		ep_session_write_all_buffers_to_file (session, &ignored);
+		ep_session_write_all_buffers_to_file (session, false, &ignored);
 	}
 
 	ep_session_provider_list_clear (session->providers);
 }
 
 bool
-ep_session_write_all_buffers_to_file (EventPipeSession *session, bool *events_written)
+ep_session_write_all_buffers_to_file (EventPipeSession *session, bool is_final_flush, bool *events_written)
 {
 	EP_ASSERT (session != NULL);
+	EP_ASSERT (!is_final_flush || !ep_is_session_enabled ((EventPipeSessionID)session));
 
 	if (session->file == NULL || session->buffer_manager == NULL)
 		return true;
 
-	// Get the current time stamp.
-	// ep_buffer_manager_write_all_buffer_to_file will use this to ensure that no events after
-	// the current timestamp are written into the file.
-	ep_timestamp_t stop_timestamp = ep_perf_timestamp_get ();
+	// Live readers need an exclusive timestamp boundary. Once all writers have stopped, drain
+	// everything, including events sharing the current clock tick with the final flush.
+	ep_timestamp_t stop_timestamp = is_final_flush ? INT64_MAX : ep_perf_timestamp_get ();
 	ep_buffer_manager_write_all_buffers_to_file (session->buffer_manager, session->file, stop_timestamp, events_written);
 	return !ep_file_has_errors (session->file);
 }

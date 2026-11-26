@@ -1,14 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
-// File: DispatchInfo.cpp
-//
 
+// File: DispatchInfo.cpp
 //
 // Implementation of helpers used to expose IDispatch
 // and IDispatchEx to COM.
-//
-
 
 #include "common.h"
 
@@ -238,7 +234,7 @@ HRESULT DispatchMemberInfo::GetIDsOfParameters(_In_reads_(NumNames) WCHAR **astr
         {
             int NumParams = ParamArray->GetNumComponents();
             int cParams = 0;
-            NewArrayHolder< NewArrayHolder<WCHAR> > astrParamNames = new NewArrayHolder<WCHAR>[NumParams];
+            NewArrayHolder<WStringHolder> astrParamNames(new WStringHolder[NumParams]);
 
             // Go through and retrieve the names of all the components.
             for (cParams = 0; cParams < NumParams; cParams++)
@@ -482,7 +478,7 @@ LPWSTR DispatchMemberInfo::GetMemberName(OBJECTREF MemberInfoObj, ComMTMemberInf
     }
     CONTRACTL_END;
 
-    NewArrayHolder<WCHAR> strMemberName = NULL;
+    WStringHolder strMemberName;
     ComMTMethodProps *pMemberProps = NULL;
 
     struct { OBJECTREF MemberInfoObj; STRINGREF strObj; } gc;
@@ -516,8 +512,7 @@ LPWSTR DispatchMemberInfo::GetMemberName(OBJECTREF MemberInfoObj, ComMTMemberInf
     }
     GCPROTECT_END();
 
-    strMemberName.SuppressRelease();
-    return strMemberName;
+    return strMemberName.Detach();
 }
 
 void DispatchMemberInfo::DetermineMemberType()
@@ -1643,110 +1638,6 @@ void DispatchInfo::InvokeMemberWorker(DispatchMemberInfo*   pDispMemberInfo,
         MarshalReturnValueManagedToNative(pDispMemberInfo, &pObjs->RetVal, pVarRes);
 }
 
-void DispatchInfo::InvokeMemberDebuggerWrapper(
-                                      DispatchMemberInfo*   pDispMemberInfo,
-                                      InvokeObjects*        pObjs,
-                                      int                   NumParams,
-                                      int                   NumArgs,
-                                      int                   NumNamedArgs,
-                                      int&                  NumByrefArgs,
-                                      int&                  iSrcArg,
-                                      DISPID                id,
-                                      DISPPARAMS*           pdp,
-                                      VARIANT*              pVarRes,
-                                      WORD                  wFlags,
-                                      LCID                  lcid,
-                                      DISPID*               pSrcArgNames,
-                                      VARIANT*              pSrcArgs,
-                                      OBJECTHANDLE*         aByrefStaticArrayBackupObjHandle,
-                                      int*                  pManagedMethodParamIndexMap,
-                                      VARIANT**             aByrefArgOleVariant,
-                                      Frame *               pFrame)
-
-{
-    // Use static contracts b/c we have SEH.
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_MODE_ANY;
-
-    // @todo - we have a PAL_TRY/PAL_EXCEPT here as a general (cross-platform) way to get a 1st-pass
-    // filter. If that's bad perf, we could inline an FS:0 handler for x86-only; and then inline
-    // both this wrapper and the main body.
-
-    struct Param : public NotifyOfCHFFilterWrapperParam
-    {
-        DispatchInfo*         pThis;
-        DispatchMemberInfo*   pDispMemberInfo;
-        InvokeObjects*        pObjs;
-        int                   NumParams;
-        int                   NumArgs;
-        int                   NumNamedArgs;
-        int&                  NumByrefArgs;
-        int&                  iSrcArg;
-        DISPID                id;
-        DISPPARAMS*           pdp;
-        VARIANT*              pVarRes;
-        WORD                  wFlags;
-        LCID                  lcid;
-        DISPID*               pSrcArgNames;
-        VARIANT*              pSrcArgs;
-        OBJECTHANDLE*         aByrefStaticArrayBackupObjHandle;
-        int*                  pManagedMethodParamIndexMap;
-        VARIANT**             aByrefArgOleVariant;
-
-        Param(int& _NumByrefArgs, int& _iSrcArg)
-            : NumByrefArgs(_NumByrefArgs), iSrcArg(_iSrcArg)
-        {}
-    } param(NumByrefArgs, iSrcArg);
-
-    param.pFrame = GetThread()->GetFrame(); // Inherited from NotifyOfCHFFilterWrapperParam
-    param.pThis = this;
-    param.pDispMemberInfo = pDispMemberInfo;
-    param.pObjs = pObjs;
-    param.NumParams = NumParams;
-    param.NumArgs = NumArgs;
-    param.NumNamedArgs = NumNamedArgs;
-    //param.NumByrefArgs = NumByrefArgs;
-    //param.iSrcArg = iSrcArg;
-    param.id = id;
-    param.pdp = pdp;
-    param.pVarRes = pVarRes;
-    param.wFlags = wFlags;
-    param.lcid = lcid;
-    param.pSrcArgNames = pSrcArgNames;
-    param.pSrcArgs = pSrcArgs;
-    param.aByrefStaticArrayBackupObjHandle = aByrefStaticArrayBackupObjHandle;
-    param.pManagedMethodParamIndexMap = pManagedMethodParamIndexMap;
-    param.aByrefArgOleVariant = aByrefArgOleVariant;
-
-    PAL_TRY(Param *, pParam, &param)
-    {
-        pParam->pThis->InvokeMemberWorker(pParam->pDispMemberInfo,
-                                          pParam->pObjs,
-                                          pParam->NumParams,
-                                          pParam->NumArgs,
-                                          pParam->NumNamedArgs,
-                                          pParam->NumByrefArgs,
-                                          pParam->iSrcArg,
-                                          pParam->id,
-                                          pParam->pdp,
-                                          pParam->pVarRes,
-                                          pParam->wFlags,
-                                          pParam->lcid,
-                                          pParam->pSrcArgNames,
-                                          pParam->pSrcArgs,
-                                          pParam->aByrefStaticArrayBackupObjHandle,
-                                          pParam->pManagedMethodParamIndexMap,
-                                          pParam->aByrefArgOleVariant);
-    }
-    PAL_EXCEPT_FILTER(NotifyOfCHFFilterWrapper)
-    {
-        // Should never reach here b/c handler should always continue search.
-        _ASSERTE(false);
-    }
-    PAL_ENDTRY
-}
-
 // Helper method that invokes the member with the specified DISPID.
 HRESULT DispatchInfo::InvokeMember(SimpleComCallWrapper *pSimpleWrap, DISPID id, LCID lcid, WORD wFlags, DISPPARAMS *pdp, VARIANT *pVarRes, EXCEPINFO *pei, IServiceProvider *pspCaller, unsigned int *puArgErr)
 {
@@ -1969,31 +1860,25 @@ HRESULT DispatchInfo::InvokeMember(SimpleComCallWrapper *pSimpleWrap, DISPID id,
         // Invoke the method.
         //
 
-        // The sole purpose of having this frame is to tell the debugger that we have a catch handler here
-        // which may swallow managed exceptions.  The debugger needs this in order to send a
-        // CatchHandlerFound (CHF) notification.
-        DebuggerU2MCatchHandlerFrame catchFrame(true /* catchesAllExceptions */);
-
         EX_TRY
         {
-            InvokeMemberDebuggerWrapper(pDispMemberInfo,
-                                        &Objs,
-                                        NumParams,
-                                        NumArgs,
-                                        NumNamedArgs,
-                                        NumByrefArgs,
-                                        iSrcArg,
-                                        id,
-                                        pdp,
-                                        pVarRes,
-                                        wFlags,
-                                        lcid,
-                                        pSrcArgNames,
-                                        pSrcArgs,
-                                        aByrefStaticArrayBackupObjHandle,
-                                        pManagedMethodParamIndexMap,
-                                        aByrefArgOleVariant,
-                                        &catchFrame);
+            InvokeMemberWorker(pDispMemberInfo,
+                               &Objs,
+                               NumParams,
+                               NumArgs,
+                               NumNamedArgs,
+                               NumByrefArgs,
+                               iSrcArg,
+                               id,
+                               pdp,
+                               pVarRes,
+                               wFlags,
+                               lcid,
+                               pSrcArgNames,
+                               pSrcArgs,
+                               aByrefStaticArrayBackupObjHandle,
+                               pManagedMethodParamIndexMap,
+                               aByrefArgOleVariant);
         }
         EX_CATCH
         {
@@ -2001,7 +1886,6 @@ HRESULT DispatchInfo::InvokeMember(SimpleComCallWrapper *pSimpleWrap, DISPID id,
             RethrowTerminalExceptions();
         }
         EX_END_CATCH
-        catchFrame.Pop();
 
         if (pThrowable != NULL)
         {
@@ -2368,107 +2252,6 @@ bool DispatchInfo::IsPropertyAccessorVisible(bool fIsSetter, OBJECTREF* pMemberI
     return false;
 }
 
-MethodDesc* DispatchInfo::GetFieldInfoMD(BinderMethodID Method, TypeHandle hndFieldInfoType)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END
-
-    MethodDesc *pMD;
-
-    // If the current class is the standard implementation then return the cached method desc
-    if (CoreLibBinder::IsClass(hndFieldInfoType.GetMethodTable(), CLASS__FIELD))
-    {
-        pMD = CoreLibBinder::GetMethod(Method);
-    }
-    else
-    {
-        pMD = MemberLoader::FindMethod(hndFieldInfoType.GetMethodTable(),
-                CoreLibBinder::GetMethodName(Method), CoreLibBinder::GetMethodSig(Method));
-    }
-    _ASSERTE(pMD && "Unable to find specified FieldInfo method");
-
-    // Return the specified method desc.
-    return pMD;
-}
-
-MethodDesc* DispatchInfo::GetPropertyInfoMD(BinderMethodID Method, TypeHandle hndPropInfoType)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END
-
-    MethodDesc *pMD;
-
-    // If the current class is the standard implementation then return the cached method desc if present.
-    if (CoreLibBinder::IsClass(hndPropInfoType.GetMethodTable(), CLASS__PROPERTY))
-    {
-        pMD = CoreLibBinder::GetMethod(Method);
-    }
-    else
-    {
-        pMD = MemberLoader::FindMethod(hndPropInfoType.GetMethodTable(),
-                CoreLibBinder::GetMethodName(Method), CoreLibBinder::GetMethodSig(Method));
-    }
-    _ASSERTE(pMD && "Unable to find specified PropertyInfo method");
-
-    // Return the specified method desc.
-    return pMD;
-}
-
-MethodDesc* DispatchInfo::GetMethodInfoMD(BinderMethodID Method, TypeHandle hndMethodInfoType)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END
-
-    MethodDesc *pMD;
-
-    // If the current class is the standard implementation then return the cached method desc.
-    if (CoreLibBinder::IsClass(hndMethodInfoType.GetMethodTable(), CLASS__METHOD))
-    {
-        pMD = CoreLibBinder::GetMethod(Method);
-    }
-    else
-    {
-        pMD = MemberLoader::FindMethod(hndMethodInfoType.GetMethodTable(),
-                CoreLibBinder::GetMethodName(Method), CoreLibBinder::GetMethodSig(Method));
-    }
-    _ASSERTE(pMD && "Unable to find specified MethodInfo method");
-
-    // Return the specified method desc.
-    return pMD;
-}
-
-MethodDesc* DispatchInfo::GetCustomAttrProviderMD(TypeHandle hndCustomAttrProvider)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    MethodTable *pMT = hndCustomAttrProvider.AsMethodTable();
-    MethodDesc *pMD = pMT->GetMethodDescForInterfaceMethod(CoreLibBinder::GetMethod(METHOD__ICUSTOM_ATTR_PROVIDER__GET_CUSTOM_ATTRIBUTES), TRUE /* throwOnConflict */);
-
-    // Return the specified method desc.
-    return pMD;
-}
-
 // This method synchronizes the DispatchInfo's members with the ones in the method tables type.
 // The return value will be set to TRUE if the object was out of synch and members where
 // added and it will be set to FALSE otherwise.
@@ -2483,12 +2266,11 @@ BOOL DispatchInfo::SynchWithManagedView()
     CONTRACTL_END;
 
     HRESULT hr = S_OK;
-    NewArrayHolder<WCHAR> strMemberName = NULL;
-    NewHolder<ComMTMemberInfoMap> pMemberMap = NULL;
+    WStringHolder strMemberName;
+    NewHolder<ComMTMemberInfoMap> pMemberMap;
 
-    // This represents the new member to add and it is also used to determine if members have
-    // been added or not.
-    NewHolder<DispatchMemberInfo> pMemberToAdd = NULL;
+    NewHolder<DispatchMemberInfo> pMemberToAdd;
+    BOOL bMembersAdded = FALSE;
 
     Thread* pThread = SetupThreadNoThrow();
     if (pThread == NULL)
@@ -2618,19 +2400,20 @@ BOOL DispatchInfo::SynchWithManagedView()
                             SString sName(strMemberName);
                             pMemberToAdd = CreateDispatchMemberInfoInstance(MemberID, sName, CurrMemberInfoObj);
 
+                            // Add the member to the map. Note, the hash is unsynchronized, but we already have our lock
+                            // so we're okay.
+                            m_DispIDToMemberInfoMap.InsertValue(DispID2HashKey(MemberID), pMemberToAdd);
+
                             //
                             // Add the member to the end of the list.
                             //
 
-                            *ppNextMember = pMemberToAdd;
+                            *ppNextMember = pMemberToAdd.Detach();
 
                             // Update ppNextMember to be ready for the next new member.
                             ppNextMember = (*ppNextMember)->GetNextPtr();
 
-                            // Add the member to the map. Note, the hash is unsynchronized, but we already have our lock
-                            // so we're okay.
-                            m_DispIDToMemberInfoMap.InsertValue(DispID2HashKey(MemberID), pMemberToAdd);
-                            pMemberToAdd.SuppressRelease();
+                            bMembersAdded = TRUE;
                         }
                     }
                 }
@@ -2642,7 +2425,7 @@ BOOL DispatchInfo::SynchWithManagedView()
         // GC mode toggles back here
     }
     // Check to see if any new members were added to the expando object.
-    return pMemberToAdd ? TRUE : FALSE;
+    return bMembersAdded;
 
     // locks released and memory cleaned up here
 }
@@ -2784,20 +2567,6 @@ PTRARRAYREF DispatchInfo::RetrieveMethList()
     return gc.orRetVal;
 }
 
-// Virtual method to retrieve the InvokeMember method desc.
-MethodDesc* DispatchInfo::GetInvokeMemberMD()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    return CoreLibBinder::GetMethod(METHOD__CLASS__INVOKE_MEMBER);
-}
-
 // Virtual method to retrieve the object associated with this DispatchInfo that
 // implements IReflect.
 OBJECTREF DispatchInfo::GetReflectionObject()
@@ -2816,22 +2585,15 @@ OBJECTREF DispatchInfo::GetReflectionObject()
 // Virtual method to retrieve the member info map.
 ComMTMemberInfoMap *DispatchInfo::GetMemberInfoMap()
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     // Create the member info map.
-    NewHolder<ComMTMemberInfoMap> pMemberInfoMap (new ComMTMemberInfoMap(m_pMT));
+    NewHolder<ComMTMemberInfoMap> pMemberInfoMap(new ComMTMemberInfoMap(m_pMT));
 
     // Initialize it.
     pMemberInfoMap->Init(sizeof(void*));
 
-    pMemberInfoMap.SuppressRelease();
-    return pMemberInfoMap;
+    return pMemberInfoMap.Detach();
 }
 
 // Helper function to fill in an EXCEPINFO for an InvocationException.
@@ -3113,23 +2875,6 @@ DispatchMemberInfo* DispatchExInfo::GetNextMember(DISPID CurrMemberDispID)
     return *ppNextMemberInfo;
 }
 
-MethodDesc* DispatchExInfo::GetIReflectMD(BinderMethodID Method)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    MethodTable *pMT = m_pSimpleWrapperOwner->GetMethodTable();
-    MethodDesc *pMD = pMT->GetMethodDescForInterfaceMethod(CoreLibBinder::GetMethod(Method), TRUE /* throwOnConflict */);
-
-    // Return the specified method desc.
-    return pMD;
-}
-
 PTRARRAYREF DispatchExInfo::RetrievePropList()
 {
     CONTRACTL
@@ -3197,20 +2942,6 @@ PTRARRAYREF DispatchExInfo::RetrieveMethList()
     GCPROTECT_END();
 
     return gc.oMethList;
-}
-
-// Virtual method to retrieve the InvokeMember method desc.
-MethodDesc* DispatchExInfo::GetInvokeMemberMD()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    return GetIReflectMD(METHOD__IREFLECT__INVOKE_MEMBER);
 }
 
 // Virtual method to retrieve the object associated with this DispatchInfo that

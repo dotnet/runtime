@@ -13,13 +13,11 @@
 #define BITONIC_SORT_AVX512_INT32_T_H
 
 
-#ifdef __GNUC__
-#ifdef __clang__
+#if defined(__clang__)
 #pragma clang attribute push (__attribute__((target("avx512f"))), apply_to = any(function))
-#else
+#elif defined(__GNUC__)
 #pragma GCC push_options
 #pragma GCC target("avx512f")
-#endif
 #endif
 
 #include <immintrin.h>
@@ -1442,12 +1440,9 @@ public:
 #undef s2d
 #undef d2s
 
-#ifdef __GNUC__
-#ifdef __clang__
+#if defined(__clang__)
 #pragma clang attribute pop
-#else
+#elif defined(__GNUC__)
 #pragma GCC pop_options
 #endif
 #endif
-#endif
-

@@ -55,6 +55,12 @@ namespace Internal.TypeSystem
         // Value of <see cref="EmbeddedSignatureData.index" /> for any custom modifiers on the return type
         public const string IndexOfCustomModifiersOnReturnType = "0.1.1.1";
 
+        // Parameter index 0 represents the return type, and indices 1-n represent the parameters to the signature
+        public static string GetIndexOfCustomModifierOnTypeByParameterIndex(int parameterIndex)
+        {
+            return $"0.1.{(parameterIndex + 1).ToStringInvariant()}.1";
+        }
+
         // Value of <see cref="EmbeddedSignatureData.index" /> for any custom modifiers on
         // SomeStruct when SomeStruct *, or SomeStruct & is the type of a parameter or return type
         // Parameter index 0 represents the return type, and indices 1-n represent the parameters to the signature
@@ -184,6 +190,30 @@ namespace Internal.TypeSystem
             {
                 return _embeddedSignatureData != null && _embeddedSignatureData.Length != 0;
             }
+        }
+
+        public bool HasCustomModifierOnTypeByParameterIndex(
+            int parameterIndex,
+            EmbeddedSignatureDataKind kind,
+            TypeDesc modifierType)
+        {
+            Debug.Assert(kind is EmbeddedSignatureDataKind.RequiredCustomModifier or EmbeddedSignatureDataKind.OptionalCustomModifier);
+
+            if (_embeddedSignatureData == null)
+                return false;
+
+            string modifierIndex = null;
+            foreach (EmbeddedSignatureData data in _embeddedSignatureData)
+            {
+                if ((data.kind == kind) && (data.type == modifierType))
+                {
+                    modifierIndex ??= GetIndexOfCustomModifierOnTypeByParameterIndex(parameterIndex);
+                    if (data.index == modifierIndex)
+                        return true;
+                }
+            }
+
+            return false;
         }
 
         public bool EmbeddedSignatureMismatchPermitted

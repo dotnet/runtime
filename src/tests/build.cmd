@@ -110,9 +110,7 @@ if /i "%arg%" == "pdb"                   (set __CreatePdb=1&set processedArgs=!p
 if /i "%arg%" == "NativeAOT"             (set __TestBuildMode=nativeaot&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%arg%" == "Perfmap"               (set __CreatePerfmap=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%arg%" == "AllTargets"            (set "__BuildNeedTargetArg=/p:CLRTestBuildAllTargets=allTargets"&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%arg%" == "ExcludeMonoFailures"   (set __Mono=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%arg%" == "Mono"                  (set __Mono=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%arg%" == "CoreCLR"               (set __Mono=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%arg%" == "CoreCLR"               (set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
 @REM The following arguments also consume one subsequent argument
 if /i "%arg%" == "test"                  (set __BuildTestProject=!__BuildTestProject!%2%%3B&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
@@ -222,11 +220,8 @@ set __CommonMSBuildArgs="/p:TargetOS=%__TargetOS%"
 set __CommonMSBuildArgs=%__CommonMSBuildArgs% "/p:Configuration=%__BuildType%"
 set __CommonMSBuildArgs=%__CommonMSBuildArgs% "/p:TargetArchitecture=%__BuildArch%"
 
-if "%__Mono%"=="1" (
-  set __CommonMSBuildArgs=!__CommonMSBuildArgs! "/p:RuntimeFlavor=mono"
-) else (
-  set __CommonMSBuildArgs=!__CommonMSBuildArgs! "/p:RuntimeFlavor=coreclr"
-)
+set __CommonMSBuildArgs=!__CommonMSBuildArgs! "/p:RuntimeFlavor=coreclr"
+set __CMakeArgs="-DCMAKE_BUILD_RUNTIME_FLAVOR=CoreCLR" !__CMakeArgs!
 
 if %__Ninja% == 0 (
     set __CommonMSBuildArgs=%__CommonMSBuildArgs% /p:UseVisualStudioNativeBinariesLayout=true
@@ -381,8 +376,7 @@ echo -PDB: Create PDB files when precompiling the framework managed assemblies.
 echo -NativeAOT: Builds the tests for Native AOT compilation.
 echo -Perfmap: Emit perfmap symbol files when compiling the framework assemblies using Crossgen2.
 echo -AllTargets: Build managed tests for all target platforms (including test projects in which CLRTestTargetUnsupported resolves to true).
-echo -ExcludeMonoFailures, Mono: Build the tests for the Mono runtime honoring mono-specific issues.
-echo -CoreCLR: Build tests targeting the CoreCLR runtime (default; opposite of -Mono/-ExcludeMonoFailures).
+echo -CoreCLR: Build tests targeting the CoreCLR runtime (default).
 echo.
 echo     Set to "" to disable default exclusion file.
 echo -Priority ^<N^> : specify a set of tests that will be built and run, with priority N.

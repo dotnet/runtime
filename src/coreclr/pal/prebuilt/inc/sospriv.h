@@ -4305,6 +4305,165 @@ EXTERN_C const IID IID_ISOSDacInterface18;
 #endif 	/* __ISOSDacInterface18_INTERFACE_DEFINED__ */
 
 
+#ifndef __ISOSDacInterface19_FWD_DEFINED__
+#define __ISOSDacInterface19_FWD_DEFINED__
+typedef interface ISOSDacInterface19 ISOSDacInterface19;
+#endif
+
+typedef struct _SOSGCInfoX86Header
+    {
+    ULONG SizeOf;
+    unsigned int EpilogSize;
+    unsigned int EpilogCount;
+    unsigned int SavedRegisters;
+    unsigned int Flags;
+    unsigned int ArgumentSize;
+    unsigned int FrameSize;
+    unsigned int UntrackedCount;
+    unsigned int VarPtrTableSize;
+    unsigned int SyncStartOffset;
+    unsigned int SyncEndOffset;
+    unsigned int NoGCRegionCount;
+    unsigned int ArgumentTableOffset;
+    unsigned int ReturnKind;
+    unsigned int ReversePInvokeOffset;
+    unsigned int GSCookieBase;
+    int GSCookieOffset;
+    unsigned int GSCookieValidRangeStart;
+    unsigned int GSCookieValidRangeEnd;
+    } 	SOSGCInfoX86Header;
+
+typedef struct _SOSGCInfoX86Transition
+    {
+    unsigned int CodeOffset;
+    unsigned int Kind;
+    int StackDepthChange;
+    unsigned int RegisterNumber;
+    unsigned int ArgumentOffset;
+    unsigned int Count;
+    unsigned int Flags;
+    } 	SOSGCInfoX86Transition;
+
+
+
+extern RPC_IF_HANDLE __MIDL_itf_sospriv_0000_0026_v0_0_c_ifspec;
+extern RPC_IF_HANDLE __MIDL_itf_sospriv_0000_0026_v0_0_s_ifspec;
+
+#ifndef __ISOSDacInterface19_INTERFACE_DEFINED__
+#define __ISOSDacInterface19_INTERFACE_DEFINED__
+
+/* interface ISOSDacInterface19 */
+/* [uuid][local][object] */
+
+
+EXTERN_C const IID IID_ISOSDacInterface19;
+
+#if defined(__cplusplus) && !defined(CINTERFACE)
+
+    MIDL_INTERFACE("b53e2d4c-1b12-4d57-9959-ef05a873678a")
+    ISOSDacInterface19 : public IUnknown
+    {
+    public:
+        virtual HRESULT STDMETHODCALLTYPE GetGCInfoX86Header(
+            /* [in] */ CLRDATA_ADDRESS ip,
+            /* [out][in] */ SOSGCInfoX86Header *header) = 0;
+
+        virtual HRESULT STDMETHODCALLTYPE GetGCInfoX86Epilogs(
+            /* [in] */ CLRDATA_ADDRESS ip,
+            /* [in] */ ULONG count,
+            /* [length_is][size_is][out] */ unsigned int *offsets,
+            /* [out] */ ULONG *pNeeded) = 0;
+
+        virtual HRESULT STDMETHODCALLTYPE GetGCInfoX86Transitions(
+            /* [in] */ CLRDATA_ADDRESS ip,
+            /* [in] */ ULONG count,
+            /* [length_is][size_is][out] */ SOSGCInfoX86Transition *transitions,
+            /* [out] */ ULONG *pNeeded) = 0;
+
+    };
+
+
+#else 	/* C style interface */
+
+    typedef struct ISOSDacInterface19Vtbl
+    {
+        BEGIN_INTERFACE
+
+        HRESULT ( STDMETHODCALLTYPE *QueryInterface )(
+            ISOSDacInterface19 * This,
+            /* [in] */ REFIID riid,
+            /* [annotation][iid_is][out] */
+            _COM_Outptr_  void **ppvObject);
+
+        ULONG ( STDMETHODCALLTYPE *AddRef )(
+            ISOSDacInterface19 * This);
+
+        ULONG ( STDMETHODCALLTYPE *Release )(
+            ISOSDacInterface19 * This);
+
+        HRESULT ( STDMETHODCALLTYPE *GetGCInfoX86Header )(
+            ISOSDacInterface19 * This,
+            /* [in] */ CLRDATA_ADDRESS ip,
+            /* [out][in] */ SOSGCInfoX86Header *header);
+
+        HRESULT ( STDMETHODCALLTYPE *GetGCInfoX86Epilogs )(
+            ISOSDacInterface19 * This,
+            /* [in] */ CLRDATA_ADDRESS ip,
+            /* [in] */ ULONG count,
+            /* [length_is][size_is][out] */ unsigned int *offsets,
+            /* [out] */ ULONG *pNeeded);
+
+        HRESULT ( STDMETHODCALLTYPE *GetGCInfoX86Transitions )(
+            ISOSDacInterface19 * This,
+            /* [in] */ CLRDATA_ADDRESS ip,
+            /* [in] */ ULONG count,
+            /* [length_is][size_is][out] */ SOSGCInfoX86Transition *transitions,
+            /* [out] */ ULONG *pNeeded);
+
+        END_INTERFACE
+    } ISOSDacInterface19Vtbl;
+
+    interface ISOSDacInterface19
+    {
+        CONST_VTBL struct ISOSDacInterface19Vtbl *lpVtbl;
+    };
+
+
+
+#ifdef COBJMACROS
+
+
+#define ISOSDacInterface19_QueryInterface(This,riid,ppvObject)	\
+    ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) )
+
+#define ISOSDacInterface19_AddRef(This)	\
+    ( (This)->lpVtbl -> AddRef(This) )
+
+#define ISOSDacInterface19_Release(This)	\
+    ( (This)->lpVtbl -> Release(This) )
+
+
+#define ISOSDacInterface19_GetGCInfoX86Header(This,ip,header)	\
+    ( (This)->lpVtbl -> GetGCInfoX86Header(This,ip,header) )
+
+#define ISOSDacInterface19_GetGCInfoX86Epilogs(This,ip,count,offsets,pNeeded)	\
+    ( (This)->lpVtbl -> GetGCInfoX86Epilogs(This,ip,count,offsets,pNeeded) )
+
+#define ISOSDacInterface19_GetGCInfoX86Transitions(This,ip,count,transitions,pNeeded)	\
+    ( (This)->lpVtbl -> GetGCInfoX86Transitions(This,ip,count,transitions,pNeeded) )
+
+#endif /* COBJMACROS */
+
+
+#endif 	/* C style interface */
+
+
+
+
+#endif 	/* __ISOSDacInterface19_INTERFACE_DEFINED__ */
+
+
+
 /* Additional Prototypes for ALL interfaces */
 
 /* end of Additional Prototypes */

@@ -6,12 +6,42 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Text;
 using Xunit;
 
 namespace System.Tests
 {
     public class Decimal32Tests
     {
+        [Theory]
+        [InlineData("-219.1358", "6.76911e-96")]
+        [InlineData("-219.6328", "4.11801e-96")]
+        public static void ExpSubnormalRoundingTest(string input, string expected)
+        {
+            Assert.Equal(Decimal32.Parse(expected, CultureInfo.InvariantCulture),
+                Decimal32.Exp(Decimal32.Parse(input, CultureInfo.InvariantCulture)));
+        }
+
+        [Theory]
+        [InlineData(-102, 0)]
+        [InlineData(-101, 1)]
+        [InlineData(-100, 10)]
+        public static void Exp10SubnormalAccuracyTest(int input, int expectedUnits)
+        {
+            Assert.Equal(Decimal32.Epsilon * (Decimal32)expectedUnits, Decimal32.Exp10((Decimal32)input));
+        }
+
+        [Theory]
+        [InlineData("0.9999999", "0.000447213599226738", "-1.00000005e-7", "3.14159265358974e-7")]
+        public static void TranscendentalBoundaryAccuracyTest(string input, string acos, string log, string sinPi)
+        {
+            Decimal32 x = Decimal32.Parse(input, CultureInfo.InvariantCulture);
+            Assert.Equal(Decimal32.Parse(acos, CultureInfo.InvariantCulture), Decimal32.Acos(x));
+            Assert.Equal(Decimal32.Parse(log, CultureInfo.InvariantCulture), Decimal32.Log(x));
+            Assert.Equal(Decimal32.Parse(sinPi, CultureInfo.InvariantCulture), Decimal32.SinPi(x));
+            Assert.Equal(Decimal32.SinPi(x), Decimal32.SinCosPi(x).SinPi);
+        }
+
         public static IEnumerable<object[]> Parse_Valid_TestData()
         {
             NumberStyles defaultStyle = NumberStyles.Number;
@@ -68,6 +98,20 @@ namespace System.Tests
             yield return new object[] { "-1" + new string('0', 97), NumberStyles.Any, invariantFormat, Decimal32.NegativeInfinity };
         }
 
+        [Fact]
+        public static void ParseSpecialValueWithHyphen()
+        {
+            NumberFormatInfo format = new() { NegativeSign = "\u2212" };
+
+            Assert.True(Decimal32.IsNaN(Decimal32.Parse("-NaN", NumberStyles.Float, format)));
+            Assert.True(Decimal32.IsNaN(Decimal32.Parse("-NaN"u8, NumberStyles.Float, format)));
+
+            format = CultureInfo.GetCultureInfo("sv-SE").NumberFormat;
+            string value = "-" + format.NaNSymbol;
+
+            Assert.True(Decimal32.IsNaN(Decimal32.Parse(value, NumberStyles.Float, format)));
+            Assert.True(Decimal32.IsNaN(Decimal32.Parse(Encoding.UTF8.GetBytes(value), NumberStyles.Float, format)));
+        }
 
         [Theory]
         [MemberData(nameof(Parse_Valid_TestData))]
@@ -1993,20 +2037,25 @@ namespace System.Tests
         [InlineData(0x7C000000U, 0x32800002U, 0x7C000000U)] // log(NaN, 2) = NaN
         [InlineData(0x32800002U, 0x7C000000U, 0x7C000000U)] // log(2, NaN) = NaN
         [InlineData(0x32800002U, 0x32800001U, 0x7C000000U)] // log(2, 1) = NaN (base 1)
+        [InlineData(0x310003E8U, 0x32000005U, 0xB2800000U)] // log(1.000, 0.5) = -0
         public static void LogNewBaseTest(uint value, uint newBase, uint expected)
         {
             Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(Decimal32.Log(Unsafe.BitCast<uint, Decimal32>(value), Unsafe.BitCast<uint, Decimal32>(newBase))));
         }
 
         [Theory]
-        [InlineData(8.0, 2.0)]
-        [InlineData(100.0, 10.0)]
-        [InlineData(2.5, 3.0)]
-        public static void LogNewBaseAccuracyTest(double input, double newBase)
+        [InlineData("8", "2", "3.000000")]
+        [InlineData("100", "10", "2.000000")]
+        [InlineData("2.5", "3", "0.8340437671464697300975132933358795420083467265341692611822354509568071")]
+        [InlineData("1.000001", "0.9999999", "-9.99999450000357499733708545573573529")]
+        public static void LogNewBaseAccuracyTest(string input, string newBase, string oracle)
         {
-            double expected = double.Log(input, newBase);
-            double actual = (double)Decimal32.Log((Decimal32)input, (Decimal32)newBase);
-            Assert.True(double.Abs(actual - expected) <= 5e-7 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"log({input}, {newBase}): expected {expected}, got {actual}");
+            Decimal32 actual = Decimal32.Log(Decimal32.Parse(input, CultureInfo.InvariantCulture),
+                Decimal32.Parse(newBase, CultureInfo.InvariantCulture));
+            Decimal32 expected = Decimal32.Parse(oracle, CultureInfo.InvariantCulture);
+            DecimalIeee754IntelTestData.AssertResultWithinUlp(
+                Unsafe.BitCast<Decimal32, uint>(actual),
+                Unsafe.BitCast<Decimal32, uint>(expected), recordedUlp: 0, limit: 1);
         }
 
         [Theory]
@@ -2173,6 +2222,78 @@ namespace System.Tests
             Assert.True(double.Abs(actual - expected) <= 5e-7 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"cbrt({input}): expected {expected}, got {actual}");
         }
 
+        // The near-tie inputs are the significands whose exact product sits closest to a rounding
+        // boundary, which is where carrying the constant to fewer digits would decide the result
+        // differently; the expected values were computed independently at several hundred digits.
+        [Theory]
+        [InlineData(0x7C000000U, 0x7C000000U)] // NaN
+        [InlineData(0x7C001234U, 0x7C001234U)] // NaN payload
+        [InlineData(0x78000000U, 0x78000000U)] // +Infinity
+        [InlineData(0xF8000000U, 0xF8000000U)] // -Infinity
+        [InlineData(0x32800000U, 0x2A000000U)] // +0
+        [InlineData(0xB2800000U, 0xAA000000U)] // -0
+        [InlineData(0x32800001U, 0x2E9AA1B1U)] // 1
+        [InlineData(0xB2800001U, 0xAE9AA1B1U)] // -1
+        [InlineData(0x328000B4U, 0x2FAFEFD9U)] // 180
+        [InlineData(0x3280005AU, 0x2F97F7ECU)] // 90
+        [InlineData(0x77F8967FU, 0x5F1AA1B1U)] // MaxValue
+        [InlineData(0xF7F8967FU, 0xDF1AA1B1U)] // MinValue
+        [InlineData(0x00000001U, 0x00000000U)] // Epsilon
+        [InlineData(0x80000001U, 0x80000000U)] // -Epsilon
+        [InlineData(0x000F4240U, 0x0000442DU)] // MinNormal
+        [InlineData(0x32E53CFFU, 0x3211AB5EU)] // near tie 6634751
+        [InlineData(0x00E53CFFU, 0x0011AB5EU)] // near tie 6634751 subnormal
+        [InlineData(0x32C8BD57U, 0x31FEF45EU)] // near tie 4767063
+        [InlineData(0x00C8BD57U, 0x000CB209U)] // near tie 4767063 subnormal
+        [InlineData(0x32AA4456U, 0x31C9C50CU)] // near tie 2770006
+        [InlineData(0x00AA4456U, 0x00076081U)] // near tie 2770006 subnormal
+        [InlineData(0x32CFC6FBU, 0x6C6B3CD3U)] // near tie 5228283
+        [InlineData(0x00CFC6FBU, 0x000DEC7CU)] // near tie 5228283 subnormal
+        [InlineData(0x6CA4F64DU, 0x321734CEU)] // near tie 8713805
+        [InlineData(0x6024F64DU, 0x001734CEU)] // near tie 8713805 subnormal
+        [InlineData(0x32F8F270U, 0x32151BF7U)] // near tie 7926384
+        [InlineData(0x00F8F270U, 0x00151BF7U)] // near tie 7926384 subnormal
+        public static void DegreesToRadiansTest(uint value, uint expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(Decimal32.DegreesToRadians(Unsafe.BitCast<uint, Decimal32>(value))));
+        }
+
+        // The near-tie inputs are the significands whose exact product sits closest to a rounding
+        // boundary, which is where carrying the constant to fewer digits would decide the result
+        // differently; the expected values were computed independently at several hundred digits.
+        [Theory]
+        [InlineData(0x7C000000U, 0x7C000000U)] // NaN
+        [InlineData(0x7C001234U, 0x7C001234U)] // NaN payload
+        [InlineData(0x78000000U, 0x78000000U)] // +Infinity
+        [InlineData(0xF8000000U, 0xF8000000U)] // -Infinity
+        [InlineData(0x32800000U, 0x2B800000U)] // +0
+        [InlineData(0xB2800000U, 0xAB800000U)] // -0
+        [InlineData(0x32800001U, 0x30576D2AU)] // 1
+        [InlineData(0xB2800001U, 0xB0576D2AU)] // -1
+        [InlineData(0x328000B4U, 0x318FBC9CU)] // 180
+        [InlineData(0x3280005AU, 0x314EAF0CU)] // 90
+        [InlineData(0x77F8967FU, 0x78000000U)] // MaxValue
+        [InlineData(0xF7F8967FU, 0xF8000000U)] // MinValue
+        [InlineData(0x00000001U, 0x00000039U)] // Epsilon
+        [InlineData(0x80000001U, 0x80000039U)] // -Epsilon
+        [InlineData(0x000F4240U, 0x00D76D2AU)] // MinNormal
+        [InlineData(0x32E53CFFU, 0x33BA0158U)] // near tie 6634751
+        [InlineData(0x00E53CFFU, 0x01BA0158U)] // near tie 6634751 subnormal
+        [InlineData(0x32C8BD57U, 0x33A9AD3EU)] // near tie 4767063
+        [InlineData(0x00C8BD57U, 0x01A9AD3EU)] // near tie 4767063 subnormal
+        [InlineData(0x32AA4456U, 0x33983799U)] // near tie 2770006
+        [InlineData(0x00AA4456U, 0x01983799U)] // near tie 2770006 subnormal
+        [InlineData(0x32CFC6FBU, 0x33ADB581U)] // near tie 5228283
+        [InlineData(0x00CFC6FBU, 0x01ADB581U)] // near tie 5228283 subnormal
+        [InlineData(0x6CA4F64DU, 0x33CC2E82U)] // near tie 8713805
+        [InlineData(0x6024F64DU, 0x01CC2E82U)] // near tie 8713805 subnormal
+        [InlineData(0x32F8F270U, 0x33C54C2CU)] // near tie 7926384
+        [InlineData(0x00F8F270U, 0x01C54C2CU)] // near tie 7926384 subnormal
+        public static void RadiansToDegreesTest(uint value, uint expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(Decimal32.RadiansToDegrees(Unsafe.BitCast<uint, Decimal32>(value))));
+        }
+
         [Theory]
         [InlineData(0x7C000000U, 0x78000000U, 0x78000000U)] // hypot(NaN, +Infinity) = +Infinity
         [InlineData(0x78000000U, 0x7C000000U, 0x78000000U)] // hypot(+Infinity, NaN) = +Infinity
@@ -2222,6 +2343,9 @@ namespace System.Tests
         [InlineData(0x32800000U, -5, 0x78000000U)] // rootn(+0, n < 0) = +Infinity
         [InlineData(0xB2800000U, -5, 0xF8000000U)] // rootn(-0, odd < 0) = -Infinity
         [InlineData(0xB2800004U, 2, 0x7C000000U)] // rootn(-4, even) = NaN
+        [InlineData(0x30801B58U, 1, 0x2F6ACFC0U)] // rootn(0.7000, 1) uses the full-precision cohort
+        [InlineData(0xB0801B58U, 1, 0xAF6ACFC0U)] // rootn(-0.7000, 1) uses the full-precision cohort
+        [InlineData(0x02800001U, 1, 0x000186A0U)] // subnormal padding stops at the minimum quantum
         public static void RootNTest(uint value, int n, uint expected)
         {
             Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(Decimal32.RootN(Unsafe.BitCast<uint, Decimal32>(value), n)));

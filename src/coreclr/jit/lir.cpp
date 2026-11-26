@@ -1453,57 +1453,62 @@ public:
 
             if (nodeInfo.IsLclVarWrite())
             {
-                // If this node is a lclVar write, it must not alias a lclVar with an outstanding read
-                SmallHashTable<GenTree*, GenTree*>* reads;
-                if (unusedLclVarReads.TryGetValue(nodeInfo.LclNum(), &reads))
-                {
-                    for (auto read : *reads)
+                nodeInfo.VisitLocalWrites([&](const auto& def) {
+                    // If this node is a lclVar write, it must not alias a lclVar with an outstanding read
+                    unsigned                            lclNum = def.GetLclNum();
+                    SmallHashTable<GenTree*, GenTree*>* reads;
+                    if (unusedLclVarReads.TryGetValue(lclNum, &reads))
                     {
-                        GenTree*           readNode = read.Key();
-                        AliasSet::NodeInfo readInfo(compiler, readNode);
-                        assert(readInfo.IsLclVarRead() && readInfo.LclNum() == nodeInfo.LclNum());
-
-                        unsigned readStart  = readInfo.LclOffs();
-                        unsigned readEnd    = readStart + genTypeSize(readNode);
-                        unsigned writeStart = nodeInfo.LclOffs();
-                        unsigned writeEnd   = writeStart + genTypeSize(node);
-                        if ((readEnd > writeStart) && (writeEnd > readStart))
+                        unsigned  writeStart = static_cast<unsigned>(def.GetOffset(compiler));
+                        ValueSize size       = def.GetSize(compiler);
+                        unsigned  writeEnd   = size.IsExact() ? writeStart + size.GetExact() : UINT_MAX;
+                        for (auto read : *reads)
                         {
-                            JITDUMP("Write to local overlaps outstanding read (write: %u..%u, read: %u..%u)\n",
-                                    writeStart, writeEnd, readStart, readEnd);
+                            GenTree*           readNode = read.Key();
+                            AliasSet::NodeInfo readInfo(compiler, readNode);
+                            assert(readInfo.IsLclVarRead() && readInfo.ReadLclNum() == lclNum);
 
-                            LIR::Use use;
-                            bool     found = const_cast<LIR::Range*>(range)->TryGetUse(readNode, &use);
-                            GenTree* user  = found ? use.User() : nullptr;
-
-                            for (GenTree* rangeNode : *range)
+                            unsigned readStart = readInfo.ReadLclOffs();
+                            unsigned readEnd   = readStart + genTypeSize(readNode);
+                            if ((readEnd > writeStart) && (writeEnd > readStart))
                             {
-                                const char* prefix = nullptr;
-                                if (rangeNode == readNode)
+                                JITDUMP("Write to local overlaps outstanding read (write: %u..%u, read: %u..%u)\n",
+                                        writeStart, writeEnd, readStart, readEnd);
+
+                                LIR::Use use;
+                                bool     found = const_cast<LIR::Range*>(range)->TryGetUse(readNode, &use);
+                                GenTree* user  = found ? use.User() : nullptr;
+
+                                for (GenTree* rangeNode : *range)
                                 {
-                                    prefix = "read:  ";
-                                }
-                                else if (rangeNode == node)
-                                {
-                                    prefix = "write: ";
-                                }
-                                else if (rangeNode == user)
-                                {
-                                    prefix = "user:  ";
-                                }
-                                else
-                                {
-                                    prefix = "       ";
+                                    const char* prefix = nullptr;
+                                    if (rangeNode == readNode)
+                                    {
+                                        prefix = "read:  ";
+                                    }
+                                    else if (rangeNode == node)
+                                    {
+                                        prefix = "write: ";
+                                    }
+                                    else if (rangeNode == user)
+                                    {
+                                        prefix = "user:  ";
+                                    }
+                                    else
+                                    {
+                                        prefix = "       ";
+                                    }
+
+                                    compiler->gtDispLIRNode(rangeNode, prefix);
                                 }
 
-                                compiler->gtDispLIRNode(rangeNode, prefix);
+                                assert(!"Write to unaliased local overlaps outstanding read");
+                                break;
                             }
-
-                            assert(!"Write to unaliased local overlaps outstanding read");
-                            break;
                         }
                     }
-                }
+                    return GenTree::VisitResult::Continue;
+                });
             }
         }
 
@@ -1542,7 +1547,7 @@ private:
     void PushLclVarRead(const AliasSet::NodeInfo& defInfo)
     {
         SmallHashTable<GenTree*, GenTree*>* reads;
-        if (!unusedLclVarReads.TryGetValue(defInfo.LclNum(), &reads))
+        if (!unusedLclVarReads.TryGetValue(defInfo.ReadLclNum(), &reads))
         {
             if (!lclVarReadsMapsCache.Empty())
             {
@@ -1554,7 +1559,7 @@ private:
                     SmallHashTable<GenTree*, GenTree*>(compiler->getAllocator(CMK_DebugOnly));
             }
 
-            unusedLclVarReads.AddOrUpdate(defInfo.LclNum(), reads);
+            unusedLclVarReads.AddOrUpdate(defInfo.ReadLclNum(), reads);
         }
 
         reads->AddOrUpdate(defInfo.Node(), defInfo.Node());
@@ -1569,7 +1574,7 @@ private:
     void PopLclVarRead(const AliasSet::NodeInfo& defInfo)
     {
         SmallHashTable<GenTree*, GenTree*>* reads;
-        const bool                          foundReads = unusedLclVarReads.TryGetValue(defInfo.LclNum(), &reads);
+        const bool                          foundReads = unusedLclVarReads.TryGetValue(defInfo.ReadLclNum(), &reads);
         assert(foundReads);
 
         bool found = reads->TryRemove(defInfo.Node());
@@ -1578,7 +1583,7 @@ private:
 
         if (reads->Count() == 0)
         {
-            unusedLclVarReads.Remove(defInfo.LclNum());
+            unusedLclVarReads.Remove(defInfo.ReadLclNum());
             lclVarReadsMapsCache.Push(reads);
         }
     }
@@ -1629,6 +1634,12 @@ bool LIR::Range::CheckLIR(Compiler* compiler, bool checkUnusedValues) const
     {
         // Verify that the node is allowed in LIR.
         assert(node->OperIsLIR());
+
+        if (node->isContained())
+        {
+            assert(node->canBeContained());
+            assert(!node->IsUnusedValue());
+        }
 
         // Some nodes should never be marked unused, as they must be contained in the backend.
         // These may be marked as unused during dead code elimination traversal, but they *must* be subsequently

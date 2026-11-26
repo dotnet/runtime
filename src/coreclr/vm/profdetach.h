@@ -56,7 +56,7 @@ private:
 
     // Signaled by RequestProfilerDetach() when there is detach work ready to be
     // done by the DetachThread
-    static CLREvent           s_eventDetachWorkAvailable;
+    static CLREventStatic     s_eventDetachWorkAvailable;
 
     static Volatile<BOOL>     s_profilerDetachThreadCreated;
 

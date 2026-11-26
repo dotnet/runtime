@@ -107,14 +107,7 @@ namespace System.Formats.Tar
                 throw new IOException(SR.Format(SR.TarUnsupportedFile, fullPath));
             }
 
-            TarEntry entry = Format switch
-            {
-                TarEntryFormat.V7 => new V7TarEntry(entryType, entryName),
-                TarEntryFormat.Ustar => new UstarTarEntry(entryType, entryName),
-                TarEntryFormat.Pax => new PaxTarEntry(entryType, entryName),
-                TarEntryFormat.Gnu => new GnuTarEntry(entryType, entryName),
-                _ => throw new InvalidDataException(SR.Format(SR.TarInvalidFormat, Format)),
-            };
+            TarEntry entry = CreateEntryForFormat(entryType, entryName);
 
             entry._header._mTime = fileInfo.ftLastWriteTime.ToDateTimeUtc();
             // We do not set atime and ctime by default because many external tools are unable to read GNU entries
@@ -141,7 +134,8 @@ namespace System.Formats.Tar
                 Debug.Assert(entry._header._dataStream == null);
                 try
                 {
-                    entry._header._dataStream = new FileStream(fullPath, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, fileOptions);
+                    entry._header._dataStream = new FileStream(fullPath, FileMode.Open, FileAccess.Read, FileShare.Read, 0,
+                        fileOptions | FileOptions.SequentialScan);
                 }
                 catch (Exception e) when ((attributes & FileAttributes.ReparsePoint) != 0 && (e is IOException or UnauthorizedAccessException))
                 {

@@ -693,11 +693,9 @@ function(add_jit jitName)
         link_natvis_sources_for_target(${jitName} PRIVATE clrjit.natvis)
     endif()
 
-    target_compile_definitions(${jitName} PRIVATE JIT_STANDALONE_BUILD)
-
     # add the install targets
     if (${jitName} MATCHES "clrjit_universal_wasm")
-        # TODO-WASM: add the WASM Jit to alljits once that becomes necessary.
+        install_clr(TARGETS ${jitName} DESTINATIONS . COMPONENT alljits)
         install_clr(TARGETS ${jitName} DESTINATIONS . COMPONENT wasmjit)
     else()
         install_clr(TARGETS ${jitName} DESTINATIONS . COMPONENT alljits)
@@ -756,10 +754,6 @@ else()
   target_compile_definitions(clrjit_universal_arm_${ARCH_HOST_NAME} PRIVATE CONFIGURABLE_ARM_ABI)
   create_standalone_jit(TARGET clrjit_win_x86_${ARCH_HOST_NAME} OS win ARCH x86)
 endif (CLR_CMAKE_TARGET_ARCH_RISCV64)
-
-if (CLR_CMAKE_TARGET_ARCH_I386 AND CLR_CMAKE_TARGET_UNIX)
-  create_standalone_jit(TARGET clrjit_unix_x86_${ARCH_HOST_NAME} OS unix ARCH x86)
-endif (CLR_CMAKE_TARGET_ARCH_I386 AND CLR_CMAKE_TARGET_UNIX)
 
 if (CLR_CMAKE_TARGET_UNIX)
     if (NOT ARCH_TARGET_NAME STREQUAL s390x AND NOT ARCH_TARGET_NAME STREQUAL armv6 AND NOT ARCH_TARGET_NAME STREQUAL ppc64le AND NOT ARCH_TARGET_NAME STREQUAL riscv64 AND NOT ARCH_TARGET_NAME STREQUAL wasm)

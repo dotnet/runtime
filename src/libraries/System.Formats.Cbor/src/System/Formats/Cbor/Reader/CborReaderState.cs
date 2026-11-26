@@ -72,5 +72,13 @@ namespace System.Formats.Cbor
         /// the reader will report this value even if the buffer contains trailing bytes.</para>
         /// </summary>
         Finished,
+
+        /// <summary>
+        /// <para>Indicates that the reader cannot determine whether another data item is available
+        /// from the current non-final buffer: the next data item may be incomplete, or the buffer may end
+        /// after a complete root-level value when <see cref="CborReader.AllowMultipleRootLevelValues" /> is enabled.</para>
+        /// <para>Supply more data using <see cref="CborReader.SlideData" />.</para>
+        /// </summary>
+        NeedsMoreData,
     }
 }

@@ -491,7 +491,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [OuterLoop]
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [MemberData(nameof(LoopbacksAndBuffers))]
         public async Task SendRecvPollSync_TcpListener_Socket(IPAddress listenAt, bool pollBeforeOperation)
         {
@@ -666,6 +666,31 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        public async Task Receive_BoundUdpSocket_Success()
+        {
+            using (Socket receiver = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp))
+            using (Socket sender = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp))
+            {
+                receiver.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                byte[] buffer = new byte[10];
+
+                for (int i = 0; i < 3; i++)
+                {
+                    // Receive issued before the datagram arrives.
+                    Task<int> receive = ReceiveAsync(receiver, buffer);
+                    await SendToAsync(sender, new byte[] { 42 }, receiver.LocalEndPoint!);
+                    Assert.Equal(1, await receive.WaitAsync(TestSettings.PassingTestTimeout));
+                    Assert.Equal(42, buffer[0]);
+
+                    // Receive issued after the datagram arrives.
+                    await SendToAsync(sender, new byte[] { 43 }, receiver.LocalEndPoint!);
+                    Assert.Equal(1, await ReceiveAsync(receiver, buffer).WaitAsync(TestSettings.PassingTestTimeout));
+                    Assert.Equal(43, buffer[0]);
+                }
+            }
+        }
+
+        [Fact]
         public async Task Send_0ByteSendTo_Success()
         {
             using (Socket server = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp))
@@ -730,6 +755,35 @@ namespace System.Net.Sockets.Tests
                     Assert.Equal(0, await receive);
                 }
             }
+        }
+
+        [Fact]
+        public async Task Receive0Byte_NotConnected_Throws()
+        {
+            using Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+
+            SocketException ex = await Assert.ThrowsAsync<SocketException>(() => ReceiveAsync(socket, new ArraySegment<byte>(Array.Empty<byte>())))
+                .WaitAsync(TestSettings.PassingTestTimeout);
+            Assert.Equal(SocketError.NotConnected, ex.SocketErrorCode);
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)] // Windows consumes the datagram on a zero-byte receive.
+        public async Task Receive0Byte_Udp_CompletesWhenDatagramArrives()
+        {
+            using Socket receiver = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            using Socket sender = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            receiver.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+
+            Task<int> receive = ReceiveAsync(receiver, new ArraySegment<byte>(Array.Empty<byte>()));
+            Assert.False(receive.IsCompleted, $"Task should not have been completed, was {receive.Status}");
+
+            await SendToAsync(sender, new byte[] { 42 }, receiver.LocalEndPoint!);
+            Assert.Equal(0, await receive.WaitAsync(TestSettings.PassingTestTimeout));
+
+            byte[] buffer = new byte[1];
+            Assert.Equal(1, await ReceiveAsync(receiver, buffer).WaitAsync(TestSettings.PassingTestTimeout));
+            Assert.Equal(42, buffer[0]);
         }
 
         [Theory]
@@ -860,8 +914,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [Fact]
-        [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support PortBlocker")]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task SendAsync_ConcurrentDispose_SucceedsOrThrowsAppropriateException()
         {
             if (UsesSync) return;
@@ -899,8 +952,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [Fact]
-        [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support PortBlocker")]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task ReceiveAsync_ConcurrentDispose_SucceedsOrThrowsAppropriateException()
         {
             if (UsesSync) return;
@@ -1031,7 +1083,7 @@ namespace System.Net.Sockets.Tests
         [MemberData(nameof(TcpReceiveSendGetsCanceledByDispose_Data))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50568", TestPlatforms.Android | TestPlatforms.LinuxBionic)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/124079", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
-        [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support PortBlocker")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "WASI can't abort a connection (no SO_LINGER), so the peer sees a graceful close instead of ConnectionReset")]
         public async Task TcpReceiveSendGetsCanceledByDispose(bool receiveOrSend, bool ipv6Server, bool dualModeClient, bool owning)
         {
             // Aborting sync operations for non-owning handles is not supported on Unix.
@@ -1059,6 +1111,7 @@ namespace System.Net.Sockets.Tests
                 (Socket socket1, Socket socket2) = SocketTestExtensions.CreateConnectedSocketPair(ipv6Server, dualModeClient);
                 using SafeSocketHandle? owner = ReplaceWithNonOwning(ref socket1, owning);
 
+                using (socket1)
                 using (socket2)
                 {
                     Task socketOperation;
@@ -1138,6 +1191,15 @@ namespace System.Net.Sockets.Tests
                                 peerSocketError = se.SocketErrorCode;
                                 break;
                             }
+                            catch (TimeoutException ex) when (!receiveOrSend && (PlatformDetection.IsApplePlatform || PlatformDetection.IsFreeBSD))
+                            {
+                                // BSD TCP stacks may reject a valid reset when sent data has not yet
+                                // been acknowledged. Retry with fresh sockets, not another receive.
+                                const string Message = "Timed out waiting for the peer to observe the connection reset, retry.";
+                                _output?.WriteLine(Message);
+                                _output?.WriteLine(ex.ToString());
+                                Assert.Fail(Message);
+                            }
                         }
 
                         try
@@ -1154,7 +1216,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support PortBlocker")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/137519", TestPlatforms.Wasi)]
         public async Task TcpPeerReceivesFinOnShutdownWithPendingData()
         {
             // We try this a couple of times to deal with a timing race: if the Dispose happens
@@ -1164,7 +1226,7 @@ namespace System.Net.Sockets.Tests
             byte[] receiveBuffer = new byte[1024];
             await RetryHelper.ExecuteAsync(async () =>
             {
-                (Socket socket1, Socket socket2) = SocketTestExtensions.CreateConnectedSocketPair();
+                (Socket socket1, Socket socket2) = await SocketTestExtensions.CreateConnectedSocketPairAsync();
                 using (socket1)
                 using (socket2)
                 {
@@ -1198,7 +1260,6 @@ namespace System.Net.Sockets.Tests
 
         [OuterLoop]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support PortBlocker")]
         public async Task BlockingRead_DoesntRequireAnotherThreadPoolThread()
         {
             await RemoteExecutor.Invoke(() =>
@@ -1254,7 +1315,6 @@ namespace System.Net.Sockets.Tests
         public SendReceive_SyncForceNonBlocking(ITestOutputHelper output) : base(output) {}
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class SendReceive_Apm : SendReceive<SocketHelperApm>
     {
         public SendReceive_Apm(ITestOutputHelper output) : base(output) {}
@@ -1447,14 +1507,13 @@ namespace System.Net.Sockets.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support PortBlocker")]
         public async Task SendAsync_CanceledDuringOperation_Throws(bool ipv6)
         {
             const int CancelAfter = 200; // ms
             const int NumOfSends = 100;
             const int SendBufferSize = 1024;
 
-            (Socket client, Socket server) = SocketTestExtensions.CreateConnectedSocketPair(ipv6);
+            (Socket client, Socket server) = await SocketTestExtensions.CreateConnectedSocketPairAsync(ipv6);
             byte[] buffer = new byte[1024 * 64];
             using (client)
             using (server)
@@ -1482,10 +1541,9 @@ namespace System.Net.Sockets.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support PortBlocker")]
         public async Task ReceiveAsync_CanceledDuringOperation_Throws(bool ipv6)
         {
-            (Socket client, Socket server) = SocketTestExtensions.CreateConnectedSocketPair(ipv6);
+            (Socket client, Socket server) = await SocketTestExtensions.CreateConnectedSocketPairAsync(ipv6);
             using (client)
             using (server)
             {

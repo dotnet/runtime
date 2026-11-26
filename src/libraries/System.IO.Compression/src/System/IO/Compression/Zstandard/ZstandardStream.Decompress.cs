@@ -50,7 +50,15 @@ namespace System.IO.Compression
             _mode = CompressionMode.Decompress;
             _leaveOpen = leaveOpen;
 
-            _decoder = new ZstandardDecoder(decompressionOptions);
+            try
+            {
+                _decoder = new ZstandardDecoder(decompressionOptions);
+            }
+            catch
+            {
+                _buffer.Dispose();
+                throw;
+            }
         }
 
         // Decompresses buffered input for the current frame only. Returns true when there is a result for
@@ -436,7 +444,7 @@ namespace System.IO.Compression
             {
                 // Rewind the stream to the exact end of the compressed data
                 stream.Seek(-unconsumedBytes, SeekOrigin.Current);
-                _buffer.Discard(unconsumedBytes);
+                _buffer.DiscardAll();
             }
         }
 

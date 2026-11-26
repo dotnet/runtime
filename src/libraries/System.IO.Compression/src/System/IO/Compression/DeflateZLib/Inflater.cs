@@ -23,6 +23,8 @@ namespace System.IO.Compression
         private MemoryHandle _inputBufferHandle;                    // The handle to the buffer that provides input to _zlibStream
         private readonly long _uncompressedSize;
         private long _currentInflatedCount;
+        private int _gzipConcatProbeBytes;                          // Count of leftover bytes speculatively consumed as a possible concatenated GZip member that hasn't been confirmed (only ever 0 or 1, the lone GZip ID1 byte)
+        private bool _endOfStream;                                  // Set once an unconfirmed GZip concatenation probe has been resolved as trailing data at the end of the stream
 
         private object SyncLock => this;                    // Used to make writing to unmanaged structures atomic
 
@@ -43,17 +45,22 @@ namespace System.IO.Compression
         /// </summary>
         public bool Finished() => _finished;
 
-        public unsafe bool Inflate(out byte b)
+        public bool Inflate(out byte b)
         {
-            fixed (byte* bufPtr = &b)
+            int bytesRead;
+            // SAFETY: To be audited
+            unsafe
             {
-                int bytesRead = InflateVerified(bufPtr, 1);
-                Debug.Assert(bytesRead == 0 || bytesRead == 1);
-                return bytesRead != 0;
+                fixed (byte* bufPtr = &b)
+                {
+                    bytesRead = InflateVerified(bufPtr, 1);
+                }
             }
+            Debug.Assert(bytesRead == 0 || bytesRead == 1);
+            return bytesRead != 0;
         }
 
-        public unsafe int Inflate(byte[] bytes, int offset, int length)
+        public int Inflate(byte[] bytes, int offset, int length)
         {
             // If Inflate is called on an invalid or unready inflater, return 0 to indicate no bytes have been read.
             if (length == 0)
@@ -62,38 +69,62 @@ namespace System.IO.Compression
             Debug.Assert(null != bytes, "Can't pass in a null output buffer!");
             fixed (byte* bufPtr = bytes)
             {
-                return InflateVerified(bufPtr + offset, length);
+                // SAFETY: To be audited
+                unsafe
+                {
+                    return InflateVerified(bufPtr + offset, length);
+                }
             }
         }
 
-        public unsafe int Inflate(Span<byte> destination)
+        public int Inflate(Span<byte> destination)
         {
             // If Inflate is called on an invalid or unready inflater, return 0 to indicate no bytes have been read.
             if (destination.Length == 0)
                 return 0;
 
-            fixed (byte* bufPtr = &MemoryMarshal.GetReference(destination))
+            // SAFETY: To be audited
+            unsafe
             {
-                return InflateVerified(bufPtr, destination.Length);
+                fixed (byte* bufPtr = &MemoryMarshal.GetReference(destination))
+                {
+                    return InflateVerified(bufPtr, destination.Length);
+                }
             }
         }
 
         public unsafe int InflateVerified(byte* bufPtr, int length)
         {
+            // Once a lone GZip ID1 (0x1F) probe has been confirmed as trailing data at the end of the
+            // stream, the inflater is terminally finished. Returning 0 here prevents DeflateStream from
+            // re-reading (and re-consuming) the byte that was already rewound in the base stream.
+            if (_endOfStream)
+            {
+                return 0;
+            }
+
             // State is valid; attempt inflation
             try
             {
                 int bytesRead = 0;
                 if (_uncompressedSize == -1)
                 {
-                    ReadOutput(bufPtr, length, out bytesRead);
+                    // SAFETY: To be audited
+                    unsafe
+                    {
+                        ReadOutput(bufPtr, length, out bytesRead);
+                    }
                 }
                 else
                 {
                     if (_uncompressedSize > _currentInflatedCount)
                     {
                         length = (int)Math.Min(length, _uncompressedSize - _currentInflatedCount);
-                        ReadOutput(bufPtr, length, out bytesRead);
+                        // SAFETY: To be audited
+                        unsafe
+                        {
+                            ReadOutput(bufPtr, length, out bytesRead);
+                        }
                         _currentInflatedCount += bytesRead;
                     }
                     else
@@ -116,15 +147,19 @@ namespace System.IO.Compression
 
         private unsafe void ReadOutput(byte* bufPtr, int length, out int bytesRead)
         {
-            if (ReadInflateOutput(bufPtr, length, ZLibNative.FlushCode.NoFlush, out bytesRead) == ZLibNative.ErrorCode.StreamEnd)
+            // SAFETY: To be audited
+            unsafe
             {
-                if (!NeedsInput() && IsGzipStream() && IsInputBufferHandleAllocated)
+                if (ReadInflateOutput(bufPtr, length, ZLibNative.FlushCode.NoFlush, out bytesRead) == ZLibNative.ErrorCode.StreamEnd)
                 {
-                    _finished = ResetStreamForLeftoverInput();
-                }
-                else
-                {
-                    _finished = true;
+                    if (!NeedsInput() && IsGzipStream() && IsInputBufferHandleAllocated)
+                    {
+                        _finished = ResetStreamForLeftoverInput();
+                    }
+                    else
+                    {
+                        _finished = true;
+                    }
                 }
             }
         }
@@ -135,7 +170,7 @@ namespace System.IO.Compression
         ///
         /// Returns false if the leftover input is another GZip data stream.
         /// </summary>
-        private unsafe bool ResetStreamForLeftoverInput()
+        private bool ResetStreamForLeftoverInput()
         {
             Debug.Assert(!NeedsInput());
             Debug.Assert(IsGzipStream());
@@ -143,14 +178,28 @@ namespace System.IO.Compression
 
             lock (SyncLock)
             {
+                // Re-evaluating the leftover input supersedes any previously recorded probe.
+                _gzipConcatProbeBytes = 0;
+
                 byte* nextInPointer = (byte*)_zlibStream.NextIn;
                 uint nextAvailIn = _zlibStream.AvailIn;
 
                 // Check the leftover bytes to see if they start with the gzip header ID bytes
-                if (*nextInPointer != ZLibNative.GZip_Header_ID1 || (nextAvailIn > 1 && *(nextInPointer + 1) != ZLibNative.GZip_Header_ID2))
+                // SAFETY: To be audited
+                unsafe
                 {
-                    return true;
+                    if (*nextInPointer != ZLibNative.GZip_Header_ID1 || (nextAvailIn > 1 && *(nextInPointer + 1) != ZLibNative.GZip_Header_ID2))
+                    {
+                        return true;
+                    }
                 }
+
+                // A single leftover 0x1F (GZip ID1) is ambiguous: it may be the first byte of a
+                // concatenated member whose ID2 byte hasn't been read yet, or it may be trailing content
+                // after the member. We optimistically treat it as the start of a concatenated member
+                // (resetting below), but remember it as an unconfirmed probe so that DeflateStream can
+                // rewind it if the base stream turns out to have no further data.
+                _gzipConcatProbeBytes = nextAvailIn == 1 ? 1 : 0;
 
                 // Reset our existing zstream.
                 _zlibStream.InflateReset2_(_windowBits);
@@ -169,6 +218,30 @@ namespace System.IO.Compression
 
         internal int GetAvailableInput() => (int)_zlibStream.AvailIn;
 
+        /// <summary>
+        /// Number of bytes that were speculatively consumed as a possible concatenated GZip member
+        /// header but haven't been confirmed as such (either 0, or 1 for a lone trailing GZip ID1 byte).
+        /// </summary>
+        internal int UnconfirmedGZipProbeBytes => _gzipConcatProbeBytes;
+
+        /// <summary>
+        /// Whether the inflater consumed a lone GZip ID1 (0x1F) byte as an unconfirmed concatenated
+        /// member probe. If the base stream has no further data, that byte was actually trailing
+        /// content and should be rewound.
+        /// </summary>
+        internal bool HasUnconfirmedGZipProbe => _gzipConcatProbeBytes > 0;
+
+        /// <summary>
+        /// Whether an unconfirmed GZip concatenation probe has been resolved as trailing data at the end of the stream.
+        /// </summary>
+        internal bool EndOfStreamReached => _endOfStream;
+
+        /// <summary>
+        /// Marks the inflater as terminally finished after an unconfirmed GZip concatenation probe has
+        /// been rewound, so that subsequent reads don't re-consume the rewound byte from the base stream.
+        /// </summary>
+        internal void MarkEndOfStream() => _endOfStream = true;
+
         public void SetInput(byte[] inputBuffer, int startIndex, int count)
         {
             Debug.Assert(NeedsInput(), "We have something left in previous input!");
@@ -179,7 +252,7 @@ namespace System.IO.Compression
             SetInput(inputBuffer.AsMemory(startIndex, count));
         }
 
-        public unsafe void SetInput(ReadOnlyMemory<byte> inputBuffer)
+        public void SetInput(ReadOnlyMemory<byte> inputBuffer)
         {
             Debug.Assert(NeedsInput(), "We have something left in previous input!");
             Debug.Assert(!IsInputBufferHandleAllocated);
@@ -190,10 +263,17 @@ namespace System.IO.Compression
             lock (SyncLock)
             {
                 _inputBufferHandle = inputBuffer.Pin();
-                _zlibStream.NextIn = (IntPtr)_inputBufferHandle.Pointer;
+                // SAFETY: To be audited
+                unsafe
+                {
+                    _zlibStream.NextIn = (IntPtr)_inputBufferHandle.Pointer;
+                }
                 _zlibStream.AvailIn = (uint)inputBuffer.Length;
                 _finished = false;
                 _nonEmptyInput = true;
+
+                // Feeding new input resolves any pending lone-0x1F probe: the byte wasn't trailing data.
+                _gzipConcatProbeBytes = 0;
             }
         }
 
@@ -282,14 +362,24 @@ namespace System.IO.Compression
         }
 
         /// <summary>
+        /// Discards any unconsumed input previously set via SetInput, releasing the pinned reference (if any).
+        /// Must be called if an in-progress operation is abandoned (e.g. due to an exception or cancellation) so
+        /// the inflater doesn't retain a dangling reference to a buffer the caller may have since reused or freed.
+        /// </summary>
+        internal void UnsetInput() => DeallocateInputBufferHandle(resetStreamHandle: true);
+
+        /// <summary>
         /// Frees the GCHandle being used to store the input buffer
         /// </summary>
         private void DeallocateInputBufferHandle(bool resetStreamHandle)
         {
-            Debug.Assert(IsInputBufferHandleAllocated);
-
             lock (SyncLock)
             {
+                if (!IsInputBufferHandleAllocated)
+                {
+                    return;
+                }
+
                 if (resetStreamHandle)
                 {
                     _zlibStream.AvailIn = 0;
@@ -309,6 +399,16 @@ namespace System.IO.Compression
             return new Inflater(windowBits, uncompressedSize, zlibStream);
         }
 
-        private unsafe bool IsInputBufferHandleAllocated => _inputBufferHandle.Pointer != default;
+        private bool IsInputBufferHandleAllocated
+        {
+            get
+            {
+                // SAFETY: To be audited
+                unsafe
+                {
+                    return _inputBufferHandle.Pointer != default;
+                }
+            }
+        }
     }
 }

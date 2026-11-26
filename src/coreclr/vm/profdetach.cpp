@@ -10,6 +10,7 @@
 // ======================================================================================
 
 #include "common.h"
+#include "CLREventBase.h"
 
 #ifdef FEATURE_PROFAPI_ATTACH_DETACH
 
@@ -21,7 +22,7 @@
 
 // Class static member variables
 CQuickArrayList<ProfilerDetachInfo> ProfilingAPIDetach::s_profilerDetachInfos;
-CLREvent                            ProfilingAPIDetach::s_eventDetachWorkAvailable;
+CLREventStatic                      ProfilingAPIDetach::s_eventDetachWorkAvailable;
 Volatile<BOOL>                      ProfilingAPIDetach::s_profilerDetachThreadCreated;
 
 // ---------------------------------------------------------------------------------------
@@ -175,7 +176,7 @@ HRESULT ProfilingAPIDetach::RequestProfilerDetach(ProfilerInfo *pProfilerInfo, D
     }
 
     {
-        CRITSEC_Holder csh(ProfilingAPIUtility::GetStatusCrst());
+        CRITSEC_Holder csh = ClrTakeCriticalSection(ProfilingAPIUtility::GetStatusCrst());
 
         EEToProfInterfaceImpl *pEEToProf = pProfilerInfo->pProfInterface;
 
@@ -290,7 +291,7 @@ void ProfilingAPIDetach::ExecuteEvacuationLoop()
         // Wait until there's a profiler to detach (or until this thread should "wake up"
         // for some other reason, such as exiting due to an unsuccessful startup-load of a
         // profiler).
-        DWORD dwRet = s_eventDetachWorkAvailable.Wait(INFINITE, FALSE /* alertable */);
+        DWORD dwRet = s_eventDetachWorkAvailable.Wait(INFINITE, FALSE /* alertable */, false);
         if (dwRet != WAIT_OBJECT_0)
         {
             // The wait ended due to a failure or a reason other than the event getting
@@ -320,7 +321,7 @@ void ProfilingAPIDetach::ExecuteEvacuationLoop()
         }
 
         {
-            CRITSEC_Holder csh(ProfilingAPIUtility::GetStatusCrst());
+            CRITSEC_Holder csh = ClrTakeCriticalSection(ProfilingAPIUtility::GetStatusCrst());
 
             while (s_profilerDetachInfos.Size() > 0)
             {
@@ -407,7 +408,7 @@ void ProfilingAPIDetach::SleepWhileProfilerEvacuates(ProfilerDetachInfo *pDetach
     ULONGLONG ui64ExpectedCompletionMilliseconds;
     ULONGLONG ui64DetachStartTime;
     {
-        CRITSEC_Holder csh(ProfilingAPIUtility::GetStatusCrst());
+        CRITSEC_Holder csh = ClrTakeCriticalSection(ProfilingAPIUtility::GetStatusCrst());
 
         _ASSERTE(pDetachInfo->m_pProfilerInfo != NULL);
         ui64ExpectedCompletionMilliseconds = pDetachInfo->m_dwExpectedCompletionMilliseconds;
@@ -449,7 +450,7 @@ void ProfilingAPIDetach::SleepWhileProfilerEvacuates(ProfilerDetachInfo *pDetach
     // At this point it's safe to cast ui64SleepMilliseconds down to a DWORD since we
     // know it's between s_dwMinSleepMs & s_dwMaxSleepMs
     _ASSERTE(ui64SleepMilliseconds <= 0xFFFFffff);
-    ClrSleepEx((DWORD) ui64SleepMilliseconds, FALSE /* alertable */);
+    minipal_sleep((DWORD)ui64SleepMilliseconds);
 }
 
 
@@ -481,7 +482,7 @@ void ProfilingAPIDetach::UnloadProfiler(ProfilerDetachInfo *pDetachInfo)
     _ASSERTE(pDetachInfo->m_pProfilerInfo->curProfStatus.Get() == kProfStatusDetaching);
 
     {
-        CRITSEC_Holder csh(ProfilingAPIUtility::GetStatusCrst());
+        CRITSEC_Holder csh = ClrTakeCriticalSection(ProfilingAPIUtility::GetStatusCrst());
 
         // Notify profiler it's about to be unloaded
         _ASSERTE(pDetachInfo->m_pProfilerInfo != NULL);
@@ -604,7 +605,7 @@ HRESULT ProfilingAPIDetach::CreateDetachThread()
     }
 
     {
-        CRITSEC_Holder csh(ProfilingAPIUtility::GetStatusCrst());
+        CRITSEC_Holder csh = ClrTakeCriticalSection(ProfilingAPIUtility::GetStatusCrst());
 
         if (!s_profilerDetachThreadCreated)
         {
@@ -645,7 +646,7 @@ BOOL ProfilingAPIDetach::IsEEToProfPtrRegisteredForDetach(EEToProfInterfaceImpl 
 {
     LIMITED_METHOD_CONTRACT;
 
-    CRITSEC_Holder csh(ProfilingAPIUtility::GetStatusCrst());
+    CRITSEC_Holder csh = ClrTakeCriticalSection(ProfilingAPIUtility::GetStatusCrst());
 
     for (SIZE_T pos = 0; pos < s_profilerDetachInfos.Size(); ++pos)
     {

@@ -64,7 +64,7 @@ EXTERN_C void QCALLTYPE NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjust
 EXTERN_C void QCALLTYPE NativeRuntimeEventSource_LogThreadPoolIOEnqueue(
     void * NativeOverlapped,
     void * Overlapped,
-    bool MultiDequeues,
+    BOOL MultiDequeues,
     uint16_t ClrInstanceID)
 {
 }
@@ -90,6 +90,14 @@ EXTERN_C void QCALLTYPE NativeRuntimeEventSource_LogWaitHandleWaitStart(uint8_t 
 }
 
 EXTERN_C void QCALLTYPE NativeRuntimeEventSource_LogWaitHandleWaitStop(uint16_t ClrInstanceID)
+{
+}
+
+EXTERN_C void QCALLTYPE NativeRuntimeEventSource_LogIncreaseMemoryPressure(uint64_t BytesAllocated)
+{
+}
+
+EXTERN_C void QCALLTYPE NativeRuntimeEventSource_LogDecreaseMemoryPressure(uint64_t BytesFreed)
 {
 }
 

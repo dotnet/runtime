@@ -37,6 +37,12 @@ namespace System.Net.Http.Functional.Tests
         [Theory, MemberData(nameof(RemoteServersAndReadModes))]
         public async Task GetStreamAsync_ReadToEnd_Success(Configuration.Http.RemoteServer remoteServer, int readMode)
         {
+            if (IsWasiHttpHandler && readMode is 0 or 2 or 4 or 5 or 6)
+            {
+                // WasiHttpHandler's response stream doesn't support synchronous reads.
+                return;
+            }
+
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer))
             {
                 string customHeaderValue = Guid.NewGuid().ToString("N");
@@ -178,7 +184,7 @@ namespace System.Net.Http.Functional.Tests
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer))
             using (Stream stream = await client.GetStreamAsync(remoteServer.EchoUri))
             {
-                if (PlatformDetection.IsNotBrowser)
+                if (PlatformDetection.IsNotBrowser && !IsWasiHttpHandler) // WasiHttpHandler's response stream doesn't support synchronous reads.
                 {
                     Assert.Equal(0, stream.Read(new byte[1], 0, 0));
 #if !NETFRAMEWORK
@@ -565,10 +571,6 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
-        // Browser+CoreCLR currently surfaces a TaskCanceledException (100s HttpClient.Timeout)
-        // instead of the expected HttpRequestException ("TypeError: Failed to fetch"); the
-        // CoreCLR-wasm streaming-request-over-HTTP/1 path differs from Mono-wasm (which passes).
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/129758", typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
         public async Task BrowserHttpHandler_StreamingRequest_Http1Fails()
         {
             var WebAssemblyEnableStreamingRequestKey = new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingRequest");

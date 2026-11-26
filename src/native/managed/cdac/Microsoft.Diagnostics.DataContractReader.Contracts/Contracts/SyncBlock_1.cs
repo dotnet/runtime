@@ -6,29 +6,36 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 internal readonly struct SyncBlock_1 : ISyncBlock
 {
     private readonly Target _target;
-    private readonly TargetPointer _syncTableEntries;
+    private readonly CachedValue<TargetPointer> _syncTableEntries;
 
     internal SyncBlock_1(Target target)
     {
         _target = target;
-        _syncTableEntries = target.ReadPointer(target.ReadGlobalPointer(Constants.Globals.SyncTableEntries));
+        _syncTableEntries = new(() => target.ReadPointer(target.ReadGlobalPointer(Constants.Globals.SyncTableEntries)));
     }
+
+    public void Flush(FlushScope scope)
+    {
+        _syncTableEntries.Clear();
+    }
+
+    private TargetPointer SyncTableEntries => _syncTableEntries;
 
     public TargetPointer GetSyncBlock(uint index)
     {
-        Data.SyncTableEntry ste = _target.ProcessedData.GetOrAdd<Data.SyncTableEntry>(_syncTableEntries + index * Data.SyncTableEntry.GetSize(_target));
+        Data.SyncTableEntry ste = _target.ProcessedData.GetOrAdd<Data.SyncTableEntry>(SyncTableEntries + index * Data.SyncTableEntry.GetSize(_target));
         return ste.SyncBlock?.Address ?? TargetPointer.Null;
     }
 
     public TargetPointer GetSyncBlockObject(uint index)
     {
-        Data.SyncTableEntry ste = _target.ProcessedData.GetOrAdd<Data.SyncTableEntry>(_syncTableEntries + index * Data.SyncTableEntry.GetSize(_target));
+        Data.SyncTableEntry ste = _target.ProcessedData.GetOrAdd<Data.SyncTableEntry>(SyncTableEntries + index * Data.SyncTableEntry.GetSize(_target));
         return ste.Object?.Address ?? TargetPointer.Null;
     }
 
     public bool IsSyncBlockFree(uint index)
     {
-        Data.SyncTableEntry ste = _target.ProcessedData.GetOrAdd<Data.SyncTableEntry>(_syncTableEntries + index * Data.SyncTableEntry.GetSize(_target));
+        Data.SyncTableEntry ste = _target.ProcessedData.GetOrAdd<Data.SyncTableEntry>(SyncTableEntries + index * Data.SyncTableEntry.GetSize(_target));
         return (ste.Object?.Address & 1) != 0;
     }
 

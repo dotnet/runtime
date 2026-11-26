@@ -5626,6 +5626,40 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Theory]
+        [InlineData(double.Epsilon, 1e-12)]
+        [InlineData(double.MaxValue, 1e-12)]
+        [InlineData(-0.0, 0.0)]
+        [InlineData(-1.0, 0.0)]
+        [InlineData(double.NegativeInfinity, 0.0)]
+        [InlineData(double.PositiveInfinity, 0.0)]
+        [InlineData(double.NaN, 0.0)]
+        public void LogAndLog2DoubleMixedLanesTest(double value, double variance)
+        {
+            Vector128<double> input = Vector128.Create(value, 2.0);
+            Vector128<double> allowedVariance = Vector128.Create(variance, GenericMathTestMemberData.DoubleCrossPlatformMachineEpsilon);
+
+            AssertEqual(Vector128.Create(double.Log(value), double.Log(2.0)), Vector128.Log(input), allowedVariance);
+            AssertEqual(Vector128.Create(double.Log2(value), 1.0), Vector128.Log2(input), allowedVariance);
+        }
+
+        [Theory]
+        [InlineData(float.Epsilon, 1e-4f)]
+        [InlineData(float.MaxValue, 1e-4f)]
+        [InlineData(-0.0f, 0.0f)]
+        [InlineData(-1.0f, 0.0f)]
+        [InlineData(float.NegativeInfinity, 0.0f)]
+        [InlineData(float.PositiveInfinity, 0.0f)]
+        [InlineData(float.NaN, 0.0f)]
+        public void LogAndLog2SingleMixedLanesTest(float value, float variance)
+        {
+            Vector128<float> input = Vector128.Create(value, 2.0f, value, 2.0f);
+            Vector128<float> allowedVariance = Vector128.Create(variance, 4.76837158e-07f, variance, 4.76837158e-07f);
+
+            AssertEqual(Vector128.Create(float.Log(value), float.Log(2.0f), float.Log(value), float.Log(2.0f)), Vector128.Log(input), allowedVariance);
+            AssertEqual(Vector128.Create(float.Log2(value), 1.0f, float.Log2(value), 1.0f), Vector128.Log2(input), allowedVariance);
+        }
+
+        [Theory]
         [MemberData(nameof(GenericMathTestMemberData.FusedMultiplyAddDouble), MemberType = typeof(GenericMathTestMemberData))]
         public void FusedMultiplyAddDoubleTest(double left, double right, double addend, double expectedResult)
         {
@@ -5803,6 +5837,38 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             AssertEqual(Vector128.Create(expectedResult), Vector128.Hypot(Vector128.Create(+y), Vector128.Create(-x)), Vector128.Create(variance));
             AssertEqual(Vector128.Create(expectedResult), Vector128.Hypot(Vector128.Create(+y), Vector128.Create(+x)), Vector128.Create(variance));
         }
+
+        private void IntegerClassification<T>(T value)
+            where T : IFloatingPointIeee754<T>
+        {
+            Vector128<T> vector = Vector128<T>.Zero;
+            Vector128<T> integer = Vector128<T>.Zero;
+            Vector128<T> even = Vector128<T>.Zero;
+            Vector128<T> odd = Vector128<T>.Zero;
+            T allBitsSet = Vector128<T>.AllBitsSet.GetElement(0);
+            T two = T.CreateChecked(2);
+
+            for (int i = 0; i < Vector128<T>.Count; i++)
+            {
+                T element = (i % 2 == 0) ? value : T.CreateChecked(i - 1);
+                vector = vector.WithElement(i, element);
+                integer = integer.WithElement(i, (element % T.One == T.Zero) ? allBitsSet : T.Zero);
+                even = even.WithElement(i, (element % two == T.Zero) ? allBitsSet : T.Zero);
+                odd = odd.WithElement(i, (T.Abs(element % two) == T.One) ? allBitsSet : T.Zero);
+            }
+
+            Assert.Equal(integer.AsByte(), Vector128.IsInteger(vector).AsByte());
+            Assert.Equal(even.AsByte(), Vector128.IsEvenInteger(vector).AsByte());
+            Assert.Equal(odd.AsByte(), Vector128.IsOddInteger(vector).AsByte());
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IntegerClassificationDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void IntegerClassificationDoubleTest(double value) => IntegerClassification(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IntegerClassificationSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IntegerClassificationSingleTest(float value) => IntegerClassification(value);
 
         private void IsEvenInteger<T>(T value)
             where T : INumber<T>
@@ -7453,6 +7519,122 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             // A variable index is never lowered, but it must still be bounds checked.
             Assert.Throws<ArgumentOutOfRangeException>(() => Vector128<int>.Zero.GetElement(index));
             Assert.Throws<ArgumentOutOfRangeException>(() => Vector128<int>.Zero.WithElement(index, 1));
+        }
+
+        private enum StoreKind
+        {
+            Store,
+            StoreUnsafe,
+            StoreUnsafeWithOffset,
+        }
+
+        /// <summary>
+        /// Stores a vector holding a distinct byte per lane at every alignment from 0 to 15 and checks
+        /// the whole buffer, so a wrong store destination, a reversed operand pair, or a byte written
+        /// outside the 16-byte window is caught rather than masked by a uniform fill.
+        /// </summary>
+        private static unsafe void ValidateStore<T>(StoreKind kind)
+            where T : unmanaged
+        {
+            const int Guard = 16;
+            const int MaxAlignmentOffset = 16;
+            const byte Filler = 0x5A;
+
+            byte[] pattern = new byte[Vector128<byte>.Count];
+            for (int i = 0; i < pattern.Length; i++)
+            {
+                pattern[i] = (byte)(0xA0 + i);
+            }
+
+            Vector128<T> vector = Vector128.Create<byte>(new ReadOnlySpan<byte>(pattern)).As<byte, T>();
+
+            byte[] buffer = new byte[Guard + MaxAlignmentOffset + pattern.Length + Guard];
+            byte[] expected = new byte[buffer.Length];
+
+            for (int offset = 0; offset < MaxAlignmentOffset; offset++)
+            {
+                Array.Fill(buffer, Filler);
+                Array.Fill(expected, Filler);
+                pattern.CopyTo(expected, Guard + offset);
+
+                fixed (byte* pBuffer = buffer)
+                {
+                    T* destination = (T*)(pBuffer + Guard + offset);
+
+                    switch (kind)
+                    {
+                        case StoreKind.Store:
+                            vector.Store(destination);
+                            break;
+
+                        case StoreKind.StoreUnsafe:
+                            vector.StoreUnsafe(ref *destination);
+                            break;
+
+                        case StoreKind.StoreUnsafeWithOffset:
+                            // Bias the destination backwards and let the element offset undo it, so a
+                            // dropped offset argument shows up as a wrongly placed store.
+                            vector.StoreUnsafe(ref *(destination - 1), elementOffset: 1);
+                            break;
+
+                        default:
+                            throw new InvalidOperationException($"Unexpected {nameof(StoreKind)}: {kind}");
+                    }
+                }
+
+                Assert.Equal(expected, buffer);
+            }
+        }
+
+        [Fact]
+        public unsafe void Vector128StoreUnalignedTest()
+        {
+            ValidateStore<byte>(StoreKind.Store);
+            ValidateStore<sbyte>(StoreKind.Store);
+            ValidateStore<short>(StoreKind.Store);
+            ValidateStore<ushort>(StoreKind.Store);
+            ValidateStore<int>(StoreKind.Store);
+            ValidateStore<uint>(StoreKind.Store);
+            ValidateStore<long>(StoreKind.Store);
+            ValidateStore<ulong>(StoreKind.Store);
+            ValidateStore<float>(StoreKind.Store);
+            ValidateStore<double>(StoreKind.Store);
+            ValidateStore<nint>(StoreKind.Store);
+            ValidateStore<nuint>(StoreKind.Store);
+        }
+
+        [Fact]
+        public unsafe void Vector128StoreUnsafeUnalignedTest()
+        {
+            ValidateStore<byte>(StoreKind.StoreUnsafe);
+            ValidateStore<sbyte>(StoreKind.StoreUnsafe);
+            ValidateStore<short>(StoreKind.StoreUnsafe);
+            ValidateStore<ushort>(StoreKind.StoreUnsafe);
+            ValidateStore<int>(StoreKind.StoreUnsafe);
+            ValidateStore<uint>(StoreKind.StoreUnsafe);
+            ValidateStore<long>(StoreKind.StoreUnsafe);
+            ValidateStore<ulong>(StoreKind.StoreUnsafe);
+            ValidateStore<float>(StoreKind.StoreUnsafe);
+            ValidateStore<double>(StoreKind.StoreUnsafe);
+            ValidateStore<nint>(StoreKind.StoreUnsafe);
+            ValidateStore<nuint>(StoreKind.StoreUnsafe);
+        }
+
+        [Fact]
+        public unsafe void Vector128StoreUnsafeElementOffsetUnalignedTest()
+        {
+            ValidateStore<byte>(StoreKind.StoreUnsafeWithOffset);
+            ValidateStore<sbyte>(StoreKind.StoreUnsafeWithOffset);
+            ValidateStore<short>(StoreKind.StoreUnsafeWithOffset);
+            ValidateStore<ushort>(StoreKind.StoreUnsafeWithOffset);
+            ValidateStore<int>(StoreKind.StoreUnsafeWithOffset);
+            ValidateStore<uint>(StoreKind.StoreUnsafeWithOffset);
+            ValidateStore<long>(StoreKind.StoreUnsafeWithOffset);
+            ValidateStore<ulong>(StoreKind.StoreUnsafeWithOffset);
+            ValidateStore<float>(StoreKind.StoreUnsafeWithOffset);
+            ValidateStore<double>(StoreKind.StoreUnsafeWithOffset);
+            ValidateStore<nint>(StoreKind.StoreUnsafeWithOffset);
+            ValidateStore<nuint>(StoreKind.StoreUnsafeWithOffset);
         }
     }
 }
