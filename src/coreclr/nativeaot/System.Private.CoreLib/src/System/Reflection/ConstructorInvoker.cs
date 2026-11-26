@@ -20,6 +20,8 @@ namespace System.Reflection
 
         public static ConstructorInvoker Create(ConstructorInfo constructor)
         {
+            ArgumentNullException.ThrowIfNull(constructor);
+
             if (constructor is not RuntimeConstructorInfo runtimeConstructor)
             {
                 throw new ArgumentException(SR.Argument_MustBeRuntimeConstructorInfo, nameof(constructor));

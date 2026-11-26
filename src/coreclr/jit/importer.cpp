@@ -1410,7 +1410,7 @@ bool Compiler::impIsCastHelperEligibleForClassProbe(GenTree* tree)
 //
 bool Compiler::impIsCastHelperMayHaveProfileData(CorInfoHelpFunc helper)
 {
-    if ((JitConfig.JitConsumeProfileForCasts() != 1) || !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT))
+    if ((JitConfig.JitConsumeProfileForCasts() != 1) || !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PGO_OPT))
     {
         return false;
     }
@@ -11400,7 +11400,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 /******************************** NYI *******************************/
 
             case 0xCC:
+#ifdef HOST_WINDOWS
                 OutputDebugStringA("CLR: Invalid x86 breakpoint in IL stream\n");
+#endif // HOST_WINDOWS
                 FALLTHROUGH;
 
             case CEE_ILLEGAL:

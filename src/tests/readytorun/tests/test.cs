@@ -26,6 +26,18 @@ public static class Assert
     }
 }
 
+public class ClassThatGainsFinalizer
+{
+    public static int FinalizedCount;
+
+#if V2
+    ~ClassThatGainsFinalizer()
+    {
+        System.Threading.Interlocked.Increment(ref FinalizedCount);
+    }
+#endif
+}
+
 public interface IMyInterface
 {
 #if V2

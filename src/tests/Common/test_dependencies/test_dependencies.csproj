@@ -30,7 +30,8 @@
 
   <Target Name="Build" DependsOnTargets="$(TraversalBuildDependsOn)" />
 
-  <Target Name="AddLibrariesToCoreRoot" BeforeTargets="CopyDependencyToCoreRoot" DependsOnTargets="ResolveLibrariesFromLocalBuild">
+  <!-- NativeAOT tests compile against the runtime pack (IlcFrameworkPath) and don't load the framework from Core_Root. -->
+  <Target Name="AddLibrariesToCoreRoot" BeforeTargets="CopyDependencyToCoreRoot" DependsOnTargets="ResolveLibrariesFromLocalBuild" Condition="'$(TestBuildMode)' != 'nativeaot'">
     <ItemGroup>
       <RuntimeCopyLocalItems Include="@(LibrariesRuntimeFiles)" />
     </ItemGroup>

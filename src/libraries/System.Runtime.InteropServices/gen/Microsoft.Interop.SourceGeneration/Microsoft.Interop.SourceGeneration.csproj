@@ -1,6 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <!-- TODO: Remove once migrated to unsafe-v2. -->
+    <MemorySafetyRulesVersion>1</MemorySafetyRulesVersion>
     <!-- Plural so static graph builds reach the netstandard2.0 build pinned by SetTargetFramework in eng/generators.targets. -->
     <TargetFrameworks>netstandard2.0</TargetFrameworks>
     <RootNamespace>Microsoft.Interop</RootNamespace>
@@ -18,6 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="$(CommonPath)Polyfills\MemoryExtensionsPolyfills.cs" Link="Common\Polyfills\MemoryExtensionsPolyfills.cs" />
     <Compile Include="$(CommonPath)Roslyn\GetBestTypeByMetadataName.cs" Link="Common\Roslyn\GetBestTypeByMetadataName.cs" />
     <Compile Include="$(CommonPath)Roslyn\Hash.cs" Link="Common\Roslyn\Hash.cs" />
     <Compile Include="$(CommonPath)Roslyn\MemorySafetyRulesPolyfills.cs" Link="Common\Roslyn\MemorySafetyRulesPolyfills.cs" />

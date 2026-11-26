@@ -19,11 +19,7 @@ namespace System.DirectoryServices
             }
             else
             {
-                _context = new byte[context.Length];
-                for (int i = 0; i < context.Length; i++)
-                {
-                    _context[i] = context[i];
-                }
+                _context = context.AsSpan().ToArray();
             }
         }
 

@@ -15,7 +15,6 @@ namespace System.Linq.Expressions.Interpreter
     {
         private const int MaxHelpers = 5;
 
-#if FEATURE_FAST_CREATE
         private const int MaxArgs = 3;
 
         /// <summary>
@@ -157,7 +156,6 @@ namespace System.Linq.Expressions.Interpreter
                 default: return SlowCreate(target, pi);
             }
         }
-#endif
 
         [return: DynamicallyAccessedMembersAttribute(DynamicallyAccessedMemberTypes.PublicConstructors)]
         [RequiresDynamicCode(Expression.DelegateCreationRequiresDynamicCode)]

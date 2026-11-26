@@ -30,7 +30,8 @@ config_create_provider (
 	const ep_char8_t *provider_name,
 	EventPipeCallback callback_func,
 	void *callback_data,
-	EventPipeProviderCallbackDataQueue *provider_callback_data_queue);
+	EventPipeProviderCallbackDataQueue *provider_callback_data_queue,
+	const EventPipeEventTable *event_table);
 
 // _Requires_lock_held (config)
 void

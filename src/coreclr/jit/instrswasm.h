@@ -56,6 +56,7 @@ INST(deferred_call,        "deferred.call",        0, IF_DEFERRED_CALL, 0x10)
 INST(deferred_return_call, "deferred.return_call", 0, IF_DEFERRED_CALL, 0x12)
 
 INST(drop,        "drop",        0, IF_OPCODE,  0x1A)
+INST(select,      "select",      0, IF_OPCODE,  0x1B)
 INST(try_table,   "try_table",   0, IF_TRY_TABLE,   0x1F)
 
 INST(local_get,    "local.get",    0, IF_ULEB128,   0x20)

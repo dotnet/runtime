@@ -9,7 +9,7 @@
     <EmccLinkOptimizationFlag Condition="'$(EmccLinkOptimizationFlag)' == '' and '$(Configuration)' == 'Checked'">-O2</EmccLinkOptimizationFlag>
   </PropertyGroup>
 
-  <Import Project="$(BrowserProjectRoot)build\BrowserWasmApp.CoreCLR.targets" />
+  <Import Project="$(BrowserProjectRoot)build\WasmApp.InTree.targets" />
 
   <PropertyGroup>
     <InvariantGlobalization>$(BrowserHostInvariantGlobalization)</InvariantGlobalization>
@@ -48,6 +48,7 @@
                             _CoreCLRWasmInitialize;
                             AcquireEmscriptenSdk;
                             _CoreCLRSetupEmscripten;
+                            _CoreCLRResolveWasmOpt;
                             _CoreCLRPrepareForNativeBuild;
                             _CoreCLRWriteLinkRsp;
                             _CoreCLRLinkNative;
