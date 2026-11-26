@@ -89,8 +89,59 @@ void KnownBitsAnalysis::Bounds::ApplyRelop(Compiler::optAssertionKind kind, cons
         case Compiler::OAK_GE:
             SMin = APInt::smax(SMin, other.SMin);
             break;
+        case Compiler::OAK_NOT_EQUAL:
+            // Only useful when the constant is one of the bounds.
+            if (other.UMin == other.UMax)
+            {
+                const APInt& cns = other.UMin;
+                if ((UMin == cns) && UMin.ult(UMax))
+                {
+                    UMin = UMin + 1;
+                }
+                else if ((UMax == cns) && UMin.ult(UMax))
+                {
+                    UMax = UMax - 1;
+                }
+                if ((SMin == cns) && SMin.slt(SMax))
+                {
+                    SMin = SMin + 1;
+                }
+                else if ((SMax == cns) && SMin.slt(SMax))
+                {
+                    SMax = SMax - 1;
+                }
+            }
+            break;
         default:
             break;
+    }
+}
+
+//------------------------------------------------------------------------
+// SwapRelop: Get the relop that holds for "y relop' x" when "x relop y" holds.
+//
+static Compiler::optAssertionKind SwapRelop(Compiler::optAssertionKind kind)
+{
+    switch (kind)
+    {
+        case Compiler::OAK_LT:
+            return Compiler::OAK_GT;
+        case Compiler::OAK_LT_UN:
+            return Compiler::OAK_GT_UN;
+        case Compiler::OAK_LE:
+            return Compiler::OAK_GE;
+        case Compiler::OAK_LE_UN:
+            return Compiler::OAK_GE_UN;
+        case Compiler::OAK_GT:
+            return Compiler::OAK_LT;
+        case Compiler::OAK_GT_UN:
+            return Compiler::OAK_LT_UN;
+        case Compiler::OAK_GE:
+            return Compiler::OAK_LE;
+        case Compiler::OAK_GE_UN:
+            return Compiler::OAK_LE_UN;
+        default:
+            return kind;
     }
 }
 
@@ -112,6 +163,8 @@ void KnownBitsAnalysis::Bounds::Normalize()
     {
         UMin = APInt::umax(UMin, SMin);
         UMax = APInt::umin(UMax, SMax);
+        SMin = APInt::smax(SMin, UMin);
+        SMax = APInt::smin(SMax, UMax);
     }
 }
 
@@ -129,15 +182,13 @@ KnownBitsAnalysis::KnownBitsAnalysis(Compiler* comp, int phiDepth)
     , m_phiDepth(phiDepth)
     , m_maxPhiDepth(MaxPhiDepth)
     , m_followVNAssertions(true)
-    , m_followIntPhis(false)
 {
 #ifdef DEBUG
-    // JIT stress: look deeper (and through 32-bit PHIs) to get more coverage of the analysis.
+    // JIT stress: look deeper to get more coverage of the analysis.
     if (comp->compStressCompile(Compiler::STRESS_KNOWNBITS_BUDGET, 50))
     {
         m_budget *= 16;
         m_maxPhiDepth *= 4;
-        m_followIntPhis = true;
     }
 #endif
 }
@@ -236,6 +287,66 @@ RelopEvaluationResult KnownBitsAnalysis::EvalRelop(GenTreeOp* relop, ASSERT_VALA
 }
 
 //------------------------------------------------------------------------
+// ComputeBounds: Compute the bounds of the value of a tree.
+//
+// Arguments:
+//    tree       - the tree
+//    assertions - the assertions that hold for the tree, can be uninit
+//    pBounds    - [out] the bounds
+//
+// Return Value:
+//    true if something is known about the value.
+//
+bool KnownBitsAnalysis::ComputeBounds(GenTree* tree, ASSERT_VALARG_TP assertions, Bounds* pBounds)
+{
+    const unsigned width = GetWidth(tree->TypeGet());
+    if (width == 0)
+    {
+        return false;
+    }
+
+    *pBounds              = Bounds(KnownBits(width));
+    const KnownBits known = Compute(m_compiler->optConservativeNormalVN(tree), width, assertions, pBounds);
+    if (known.isUnknown() && pBounds->IsUnknown())
+    {
+        return false;
+    }
+
+    // The known bits can be more precise than the bounds (e.g. after an EQ assertion).
+    const Bounds fromKnown(known);
+    pBounds->UMin = APInt::umax(pBounds->UMin, fromKnown.UMin);
+    pBounds->UMax = APInt::umin(pBounds->UMax, fromKnown.UMax);
+    pBounds->SMin = APInt::smax(pBounds->SMin, fromKnown.SMin);
+    pBounds->SMax = APInt::smin(pBounds->SMax, fromKnown.SMax);
+    return true;
+}
+
+//------------------------------------------------------------------------
+// IsInRange: Check if the value of a tree is in the given signed range.
+//
+// Arguments:
+//    tree       - the tree, of TYP_INT or TYP_LONG
+//    lo         - the lower bound (inclusive), must fit into the type of the tree
+//    hi         - the upper bound (inclusive), must fit into the type of the tree
+//    assertions - the assertions that hold for the tree, can be uninit
+//
+// Return Value:
+//    true if the value is known to be in [lo..hi].
+//
+bool KnownBitsAnalysis::IsInRange(GenTree* tree, int64_t lo, int64_t hi, ASSERT_VALARG_TP assertions)
+{
+    Bounds bounds{KnownBits(1)};
+    if (!ComputeBounds(tree, assertions, &bounds))
+    {
+        return false;
+    }
+
+    const unsigned width = bounds.SMin.getBitWidth();
+    assert((width == 64) || (FitsIn<int32_t>(lo) && FitsIn<int32_t>(hi)));
+    return bounds.SMin.sge(APInt(width, (uint64_t)lo)) && bounds.SMax.sle(APInt(width, (uint64_t)hi));
+}
+
+//------------------------------------------------------------------------
 // GetWidth: Get the bit width of the values of the given type.
 //
 // Arguments:
@@ -307,20 +418,55 @@ KnownBits KnownBitsAnalysis::Compute(ValueNum vn, unsigned width, ASSERT_VALARG_
         known.Zero.setBitsFrom(genTypeSize(vnType) * BITS_PER_BYTE);
     }
 
+    // The number of low bits a value is sign-extended from, if any: we can't express that with known bits.
+    unsigned sextBits =
+        (varTypeIsSmall(vnType) && !varTypeIsUnsigned(vnType)) ? genTypeSize(vnType) * BITS_PER_BYTE : 0;
+
+    Bounds    funcBounds{KnownBits(width)};
     VNFuncApp funcApp;
     if (m_vnStore->GetVNFunc(vn, &funcApp))
     {
-        known = known.unionWith(ComputeForFunc(funcApp, width, assertions));
+        known = known.unionWith(ComputeForFunc(funcApp, width, assertions, &funcBounds));
+        if (funcApp.FuncIs(VNF_Cast, VNF_CastOvf))
+        {
+            var_types castToType;
+            bool      srcIsUnsigned;
+            m_vnStore->GetCastOperFromVN(funcApp.GetArg(1), &castToType, &srcIsUnsigned);
+            const unsigned srcWidth = GetWidth(m_vnStore->TypeOfVN(funcApp.GetArg(0)));
+            if (varTypeIsSmall(castToType) && !varTypeIsUnsigned(castToType))
+            {
+                sextBits = genTypeSize(castToType) * BITS_PER_BYTE;
+            }
+            else if ((srcWidth != 0) && (srcWidth < width) && !srcIsUnsigned)
+            {
+                sextBits = srcWidth;
+            }
+        }
     }
-    else if (((width == 64) || m_followIntPhis) && m_vnStore->IsPhiDef(vn))
+    else if (m_vnStore->IsPhiDef(vn))
     {
-        // TP: PHIs are expensive, and RangeCheck::GetRangeFromAssertions already looks through
-        // them for 32-bit values, so we only do it for the 64-bit ones.
-        // TODO-CQ: do it for the 32-bit PHIs too (for their bit patterns).
         known = known.unionWith(ComputeForPhi(vn, width));
     }
 
     Bounds bounds(known);
+    if ((sextBits != 0) && (sextBits < width))
+    {
+        bounds.SMin = APInt::smax(bounds.SMin, APInt::getSignedMinValue(sextBits).sext(width));
+        bounds.SMax = APInt::smin(bounds.SMax, APInt::getSignedMaxValue(sextBits).sext(width));
+        bounds.Normalize();
+    }
+    if (!funcBounds.IsUnknown())
+    {
+        bounds.UMin = APInt::umax(bounds.UMin, funcBounds.UMin);
+        bounds.UMax = APInt::umin(bounds.UMax, funcBounds.UMax);
+        bounds.SMin = APInt::smax(bounds.SMin, funcBounds.SMin);
+        bounds.SMax = APInt::smin(bounds.SMax, funcBounds.SMax);
+        bounds.Normalize();
+        if (bounds.UMin.ule(bounds.UMax))
+        {
+            known = known.unionWith(KnownBitsRange::toKnownBits(bounds.UMin, bounds.UMax));
+        }
+    }
     MergeAssertions(vn, width, assertions, &known, &bounds);
 
     if (known.hasConflict())
@@ -405,11 +551,15 @@ KnownBits KnownBitsAnalysis::ComputeForPhi(ValueNum vn, unsigned width)
 //    funcApp    - the function application
 //    width      - the bit width of its value (32 or 64)
 //    assertions - the assertions that hold for the operands, can be uninit
+//    pBounds    - [out] the bounds of the value, if more precise than the known bits imply
 //
 // Return Value:
 //    The known bits.
 //
-KnownBits KnownBitsAnalysis::ComputeForFunc(const VNFuncApp& funcApp, unsigned width, ASSERT_VALARG_TP assertions)
+KnownBits KnownBitsAnalysis::ComputeForFunc(const VNFuncApp& funcApp,
+                                            unsigned         width,
+                                            ASSERT_VALARG_TP assertions,
+                                            Bounds*          pBounds)
 {
     KnownBits    known(width);
     const VNFunc func = funcApp.GetFunc();
@@ -559,7 +709,20 @@ KnownBits KnownBitsAnalysis::ComputeForFunc(const VNFuncApp& funcApp, unsigned w
                 break;
             }
 
-            KnownBits src = Compute(funcApp.GetArg(0), srcWidth, assertions);
+            Bounds    srcBounds{KnownBits(srcWidth)};
+            KnownBits src = Compute(funcApp.GetArg(0), srcWidth, assertions, &srcBounds);
+
+            // A non-negative source that fits into the target (and its sign bit) keeps its bounds.
+            const unsigned fitBits = min(castBits, width);
+            if ((pBounds != nullptr) && srcBounds.SMin.isNonNegative() &&
+                ((srcWidth - srcBounds.UMax.countLeadingZeros()) < fitBits))
+            {
+                pBounds->UMin = srcBounds.UMin.zextOrTrunc(width);
+                pBounds->UMax = srcBounds.UMax.zextOrTrunc(width);
+                pBounds->SMin = pBounds->UMin;
+                pBounds->SMax = pBounds->UMax;
+            }
+
             if (castBits < srcWidth)
             {
                 // A truncation that is followed by an extension to the stack type (for small types).
@@ -625,20 +788,44 @@ void KnownBitsAnalysis::MergeAssertions(
 
     BitVecOps::VisitBits(m_compiler->apTraits, assertions, [&](unsigned index) {
         const Compiler::AssertionDsc& assertion = m_compiler->optGetAssertion(GetAssertionIndex(index));
-        if (!assertion.GetOp1().KindIs(Compiler::O1K_VN) || (assertion.GetOp1().GetVN() != vn) ||
-            assertion.KindIs(Compiler::OAK_NOT_EQUAL))
+        if (!assertion.GetOp1().KindIs(Compiler::O1K_VN))
         {
             return true;
         }
 
         const auto& op2 = assertion.GetOp2();
+        if (assertion.GetOp1().GetVN() != vn)
+        {
+            // "otherVN relop vn", e.g. the "idx u< len" bounds check for "len".
+            if (m_followVNAssertions && op2.KindIs(Compiler::O2K_VN_ADD_CNS) && (op2.GetVN() == vn) &&
+                (op2.GetCns() == 0) && !assertion.KindIs(Compiler::OAK_NOT_EQUAL))
+            {
+                Bounds otherBounds{KnownBits(width)};
+                m_followVNAssertions  = false;
+                const KnownBits other = Compute(assertion.GetOp1().GetVN(), width, assertions, &otherBounds);
+                m_followVNAssertions  = true;
+                if (op2.IsVNNeverNegative())
+                {
+                    pBounds->ApplyRelop(Compiler::OAK_GE, KnownBits::makeConstant(APInt(width, 0)));
+                }
+
+                pBounds->ApplyRelop(SwapRelop(assertion.GetKind()), otherBounds);
+                if (assertion.KindIs(Compiler::OAK_EQUAL))
+                {
+                    *pKnown = pKnown->unionWith(other);
+                }
+            }
+            return true;
+        }
+
         if (op2.KindIs(Compiler::O2K_CONST_INT) && !op2.HasIconFlag())
         {
             // "vn relop cns". Handles are not known at this point (relocs).
             pBounds->ApplyRelop(assertion.GetKind(),
                                 KnownBits::makeConstant(APInt(width, (uint64_t)op2.GetIntConstant())));
         }
-        else if (m_followVNAssertions && op2.KindIs(Compiler::O2K_VN_ADD_CNS) && (op2.GetCns() == 0))
+        else if (m_followVNAssertions && op2.KindIs(Compiler::O2K_VN_ADD_CNS) && (op2.GetCns() == 0) &&
+                 !assertion.KindIs(Compiler::OAK_NOT_EQUAL))
         {
             // "vn relop otherVN". Don't use such assertions for "otherVN" and its operands,
             // that would send us in circles.

@@ -35,7 +35,6 @@ class KnownBitsAnalysis
     int            m_phiDepth;
     int            m_maxPhiDepth;
     bool           m_followVNAssertions; // whether to use "vn relop otherVN" assertions
-    bool           m_followIntPhis;      // whether to look through 32-bit PHIs
 
     // Unsigned and signed bounds of a value.
     struct Bounds
@@ -56,11 +55,13 @@ class KnownBitsAnalysis
 
     KnownBits Compute(ValueNum vn, unsigned width, ASSERT_VALARG_TP assertions, Bounds* pBounds = nullptr);
     KnownBits ComputeForPhi(ValueNum vn, unsigned width);
-    KnownBits ComputeForFunc(const VNFuncApp& funcApp, unsigned width, ASSERT_VALARG_TP assertions);
+    KnownBits ComputeForFunc(const VNFuncApp& funcApp, unsigned width, ASSERT_VALARG_TP assertions, Bounds* pBounds);
     void MergeAssertions(ValueNum vn, unsigned width, ASSERT_VALARG_TP assertions, KnownBits* pKnown, Bounds* pBounds);
+    bool ComputeBounds(GenTree* tree, ASSERT_VALARG_TP assertions, Bounds* pBounds);
 
 public:
     KnownBitsAnalysis(Compiler* comp, int phiDepth = 0);
 
     RelopEvaluationResult EvalRelop(GenTreeOp* relop, ASSERT_VALARG_TP assertions);
+    bool                  IsInRange(GenTree* tree, int64_t lo, int64_t hi, ASSERT_VALARG_TP assertions);
 };
