@@ -1740,11 +1740,13 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                     break;
                 }
             }
-            else if (!m_compiler->IsAot() && !m_compiler->opts.compReloc && targetType == TYP_I_IMPL &&
-                     con->TypeIs(TYP_I_IMPL) &&
-                     con->IsIconHandle(GTF_ICON_CLASS_HDL, GTF_ICON_METHOD_HDL, GTF_ICON_FIELD_HDL, GTF_ICON_SCOPE_HDL,
-                                       GTF_ICON_STATIC_HDL, GTF_ICON_FTN_ADDR, GTF_ICON_CONST_PTR, GTF_ICON_GLOBAL_PTR,
-                                       GTF_ICON_STATIC_ADDR_PTR, GTF_ICON_STR_HDL, GTF_ICON_STATIC_BOX_PTR) &&
+            else if (!m_compiler->IsAot() && !m_compiler->opts.compReloc && con->TypeIs(targetType) &&
+                     ((targetType == TYP_REF && con->IsIconHandle(GTF_ICON_OBJ_HDL)) ||
+                      (targetType == TYP_I_IMPL &&
+                       con->IsIconHandle(GTF_ICON_CLASS_HDL, GTF_ICON_METHOD_HDL, GTF_ICON_FIELD_HDL,
+                                         GTF_ICON_SCOPE_HDL, GTF_ICON_STATIC_HDL, GTF_ICON_FTN_ADDR, GTF_ICON_CONST_PTR,
+                                         GTF_ICON_GLOBAL_PTR, GTF_ICON_STATIC_ADDR_PTR, GTF_ICON_STR_HDL,
+                                         GTF_ICON_STATIC_BOX_PTR))) &&
                      !emitter::emitIns_valid_imm_for_mov(cnsVal, EA_8BYTE))
             {
                 // ADRP + ADD wins only if the absolute address takes at least three instructions.
@@ -1752,7 +1754,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                 if ((fill.zeros < 2) && (fill.ones < 2) &&
                     (m_compiler->eeGetRelocTypeHint((void*)cnsVal) == CorInfoReloc::ARM64_PAGEBASE_REL21))
                 {
-                    GetEmitter()->emitIns_R_AI(INS_adrp, EA_PTR_DSP_RELOC, targetReg,
+                    GetEmitter()->emitIns_R_AI(INS_adrp, EA_SET_FLG(attr, EA_DSP_RELOC_FLG), targetReg,
                                                cnsVal DEBUGARG(con->GetTargetHandle()) DEBUGARG(con->gtFlags));
                     regSet.verifyRegUsed(targetReg);
                     break;
