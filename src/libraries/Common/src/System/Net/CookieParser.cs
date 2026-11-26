@@ -591,6 +591,7 @@ namespace System.Net
             bool commentUriSet = false;
             bool domainSet = false;
             bool expiresSet = false;
+            bool maxAgeSet = false;
             bool pathSet = false;
             bool portSet = false; // Special case: may have no value in header.
             bool versionSet = false;
@@ -642,7 +643,8 @@ namespace System.Net
                                     break;
 
                                 case CookieToken.Expires:
-                                    if (!expiresSet)
+                                    // Max-Age takes precedence over Expires (RFC 6265 section 4.1.2.2).
+                                    if (!expiresSet && !maxAgeSet)
                                     {
                                         expiresSet = true;
 
@@ -660,16 +662,17 @@ namespace System.Net
                                     break;
 
                                 case CookieToken.MaxAge:
-                                    if (!expiresSet)
+                                    if (!maxAgeSet)
                                     {
-                                        expiresSet = true;
+                                        maxAgeSet = true;
                                         if (int.TryParse(CheckQuotedSpan(_tokenizer.Value), out int parsed))
                                         {
                                             cookie!.Expires = DateTime.UtcNow.AddSeconds(parsed);
                                         }
-                                        else
+                                        else if (!expiresSet)
                                         {
-                                            // This cookie will be rejected
+                                            // This cookie will be rejected, unless an Expires attribute came first,
+                                            // in which case the invalid Max-Age is ignored and Expires is kept.
                                             InternalSetNameMethod(cookie!, string.Empty);
                                         }
                                     }
