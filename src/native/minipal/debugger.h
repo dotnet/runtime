@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#ifndef HAVE_MINIPAL_IS_NATIVE_DEBUGGER_PRESENT_H
-#define HAVE_MINIPAL_IS_NATIVE_DEBUGGER_PRESENT_H
+#ifndef HAVE_MINIPAL_DEBUGGER_H
+#define HAVE_MINIPAL_DEBUGGER_H
 
 #include <stdbool.h>
 
@@ -28,4 +28,4 @@ bool minipal_is_native_debugger_present(void);
 }
 #endif
 
-#endif // HAVE_MINIPAL_IS_NATIVE_DEBUGGER_PRESENT_H
+#endif // HAVE_MINIPAL_DEBUGGER_H
