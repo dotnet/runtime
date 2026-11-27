@@ -353,15 +353,16 @@ namespace System.Numerics.Tests
         [OuterLoop("The test needs ~1.2GB memory")]
         public static void TryParse_VeryLargeNegativeNumber()
         {
-            // 8 is from IBigIntegerHexOrBinaryParser<BigIntegerHexParser<char>, char>.DigitsPerBlock;
-            Span<char> largeSpan = new char[BigInteger.MaxLength * 8 + 2].AsSpan();
+            const int HexDigitsPerByte = 2;
+            int hexDigitsPerLimb = nint.Size * HexDigitsPerByte;
+            Span<char> largeSpan = new char[BigInteger.MaxLength * hexDigitsPerLimb + 2].AsSpan();
             largeSpan.Fill('0');
             largeSpan[0] = 'F';
 
             Assert.False(BigInteger.TryParse(largeSpan, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out _));
             Assert.True(BigInteger.TryParse(largeSpan[..^2], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out _));
 
-            // The following line shouldn't throw. Previously it threw rather than returned false.
+            // The leading 'F' is sign extension, but the magnitude still needs one extra limb.
             Assert.False(BigInteger.TryParse(largeSpan[..^1], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out _));
         }
 
