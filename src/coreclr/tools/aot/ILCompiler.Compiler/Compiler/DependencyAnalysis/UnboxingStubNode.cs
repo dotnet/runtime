@@ -39,11 +39,10 @@ namespace ILCompiler.DependencyAnalysis
             Method = target;
         }
 
+        // The runtime decodes unboxing stubs to their target (e.g. to map delegates back to methods),
+        // so the target needs a unique address even if its body was folded.
         private ISymbolNode GetUnderlyingMethodEntrypoint(NodeFactory factory)
-        {
-            ISymbolNode node = factory.MethodEntrypoint(Method);
-            return node;
-        }
+            => factory.AddressTakenMethodEntrypoint(Method);
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {

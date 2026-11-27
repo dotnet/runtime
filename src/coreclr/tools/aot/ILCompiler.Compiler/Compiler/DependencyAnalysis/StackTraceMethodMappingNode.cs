@@ -81,8 +81,10 @@ namespace ILCompiler.DependencyAnalysis
             int currentSignature = 0;
             int currentName = 0;
 
-            // The first int contains the number of entries
-            objData.EmitInt(mapping.Count);
+            // The first int contains the number of entries that have a method address. On WASM, records
+            // for folded methods only have a function pointer.
+            ObjectDataBuilder.Reservation entryCountReservation = objData.ReserveInt();
+            int entriesWithMethodAddress = 0;
 
             foreach (var entry in mapping)
             {
@@ -124,8 +126,10 @@ namespace ILCompiler.DependencyAnalysis
                     command |= StackTraceDataCommand.IsStackTraceHidden;
                 }
 
-                // On WASM, record the function table index of the method if it can be observed at runtime: either
-                // the method's address was taken, or the method is the target of an unboxing stub (so that results
+                bool isFolded = (entry.Flags & StackTraceRecordFlags.IsFoldedAddressTaken) != 0;
+
+                // On WASM, record the function table index of the method if it can be observed at runtime because
+                // the method's address was taken. Targets of unboxing stubs are always address taken (so that results
                 // of RuntimeAugments.GetTargetOfWrapperStub can be mapped back to the method).
                 ISymbolNode functionPointerNode = null;
                 if (factory.Target.IsWasm)
@@ -133,10 +137,12 @@ namespace ILCompiler.DependencyAnalysis
                     var addressTakenNode = factory.AddressTakenMethodEntrypoint(entry.Method);
                     if (addressTakenNode.Marked)
                         functionPointerNode = addressTakenNode;
-                    else if (entry.Method.OwningType.IsValueType
-                        && !entry.Method.Signature.IsStatic
-                        && factory.MethodEntrypoint(entry.Method, unboxingStub: true).Marked)
-                        functionPointerNode = factory.MethodEntrypoint(entry.Method);
+
+                    if (isFolded)
+                    {
+                        Debug.Assert(functionPointerNode != null);
+                        command |= StackTraceDataCommand.IsFunctionPointerOnly;
+                    }
                 }
 
                 if (functionPointerNode != null)
@@ -145,13 +151,26 @@ namespace ILCompiler.DependencyAnalysis
                 }
 
                 objData.EmitByte(commandReservation, command);
-                objData.EmitReloc(factory.MethodEntrypoint(entry.Method),
-                    factory.Target.IsWasm ? RelocType.WASM_METHOD_RELATIVE_VIRTUAL_IP_I32 : RelocType.IMAGE_REL_BASED_RELPTR32);
+                if (!factory.Target.IsWasm)
+                {
+                    // Folded methods are represented by their unique address-taken jump stub.
+                    objData.EmitReloc(isFolded ? factory.AddressTakenMethodEntrypoint(entry.Method) : factory.MethodEntrypoint(entry.Method),
+                        RelocType.IMAGE_REL_BASED_RELPTR32);
+                    entriesWithMethodAddress++;
+                }
+                else if (!isFolded)
+                {
+                    objData.EmitReloc(factory.MethodEntrypoint(entry.Method), RelocType.WASM_METHOD_RELATIVE_VIRTUAL_IP_I32);
+                    entriesWithMethodAddress++;
+                }
+
                 if (functionPointerNode != null)
                 {
                     objData.EmitReloc(functionPointerNode, RelocType.WASM_TABLE_INDEX_I32);
                 }
             }
+
+            objData.EmitInt(entryCountReservation, entriesWithMethodAddress);
 
             return objData.ToObjectData();
         }

@@ -56,7 +56,7 @@ namespace ILCompiler.DependencyAnalysis
 
             foreach (StackTraceMapping mapping in factory.MetadataManager.GetStackTraceMapping(factory))
             {
-                if ((factory.MetadataManager.StackTracePolicy.GetMethodVisibility(mapping.Method) & MethodStackTraceVisibilityFlags.HasLineNumbers) == 0)
+                if ((mapping.Flags & StackTraceRecordFlags.HasLineNumbers) == 0)
                     continue;
 
                 var entrypointSymbol = factory.MethodEntrypoint(mapping.Method);

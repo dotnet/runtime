@@ -186,16 +186,31 @@ namespace Internal.StackTraceMetadata
         public static unsafe DiagnosticMethodInfo? GetDiagnosticMethodInfoFromStartAddressIfAvailable(IntPtr methodStartAddress)
         {
             IntPtr moduleStartAddress = RuntimeAugments.GetOSModuleFromPointer(methodStartAddress);
-            int rva = (int)((byte*)methodStartAddress - (byte*)moduleStartAddress);
             foreach (NativeFormatModuleInfo moduleInfo in ModuleList.EnumerateModules())
             {
-                if (moduleInfo.Handle.OsModuleBase == moduleStartAddress)
+                IntPtr osModuleBase = moduleInfo.Handle.OsModuleBase;
+#if TARGET_WASM
+                if (osModuleBase != moduleStartAddress)
+                    continue;
+
+                int rva = (int)((byte*)methodStartAddress - (byte*)osModuleBase);
+#else
+                // Jump stubs of folded methods whose address was taken are outside of the managed code range
+                // and GetOSModuleFromPointer doesn't find their module. The lookup is by exact address, so
+                // probing every module cannot match an address that is outside of the module.
+                if (moduleStartAddress != IntPtr.Zero && osModuleBase != moduleStartAddress)
+                    continue;
+
+                nint offset = methodStartAddress - osModuleBase;
+                if (offset is < 0 or > int.MaxValue)
+                    continue;
+
+                int rva = (int)offset;
+#endif
+                PerModuleMethodNameResolver resolver = _perModuleMethodNameResolverHashtable.GetOrCreateValue(moduleInfo.Handle.GetIntPtrUNSAFE());
+                if (resolver.TryGetStackTraceData(rva, out var data))
                 {
-                    PerModuleMethodNameResolver resolver = _perModuleMethodNameResolverHashtable.GetOrCreateValue(moduleInfo.Handle.GetIntPtrUNSAFE());
-                    if (resolver.TryGetStackTraceData(rva, out var data))
-                    {
-                        return CreateDiagnosticMethodInfo(resolver.Reader, data.OwningType, data.Name);
-                    }
+                    return CreateDiagnosticMethodInfo(resolver.Reader, data.OwningType, data.Name);
                 }
             }
 
@@ -389,7 +404,7 @@ namespace Internal.StackTraceMetadata
             private readonly StackTraceData[] _stacktraceDatas;
 
 #if TARGET_WASM
-            private readonly Dictionary<IntPtr, int> _functionPointerToRva = new Dictionary<IntPtr, int>();
+            private readonly Dictionary<IntPtr, StackTraceData> _functionPointerToData = new Dictionary<IntPtr, StackTraceData>();
 #endif
 
             /// <summary>
@@ -493,6 +508,22 @@ namespace Internal.StackTraceMetadata
                     }
 
 #if TARGET_WASM
+                    if ((command & StackTraceDataCommand.IsFunctionPointerOnly) != 0)
+                    {
+                        // Folded method: there's no method body to map, only the address-taken stub.
+                        Debug.Assert((command & StackTraceDataCommand.HasFunctionPointer) != 0);
+                        IntPtr foldedFunctionPointer = (IntPtr)(nuint)NativePrimitiveDecoder.ReadUInt32(ref pCurrent);
+                        _functionPointerToData.Add(foldedFunctionPointer, new StackTraceData
+                        {
+                            IsHidden = (command & StackTraceDataCommand.IsStackTraceHidden) != 0,
+                            OwningType = currentOwningType,
+                            Name = currentName,
+                            Signature = currentSignature,
+                            GenericArguments = currentMethodInst,
+                        });
+                        continue;
+                    }
+
                     void* pMethod = (void*)(nuint)NativePrimitiveDecoder.ReadUInt32(ref pCurrent);
 #else
                     void* pMethod = ReadRelPtr32(pCurrent);
@@ -502,15 +533,7 @@ namespace Internal.StackTraceMetadata
                     Debug.Assert((nint)pMethod > handle.OsModuleBase);
                     int methodRva = (int)((nint)pMethod - handle.OsModuleBase);
 
-#if TARGET_WASM
-                    if ((command & StackTraceDataCommand.HasFunctionPointer) != 0)
-                    {
-                        IntPtr functionPointer = (IntPtr)(nuint)NativePrimitiveDecoder.ReadUInt32(ref pCurrent);
-                        _functionPointerToRva.Add(functionPointer, methodRva);
-                    }
-#endif
-
-                    _stacktraceDatas[current++] = new StackTraceData
+                    var data = new StackTraceData
                     {
                         Rva = methodRva,
                         IsHidden = (command & StackTraceDataCommand.IsStackTraceHidden) != 0,
@@ -519,6 +542,16 @@ namespace Internal.StackTraceMetadata
                         Signature = currentSignature,
                         GenericArguments = currentMethodInst,
                     };
+
+#if TARGET_WASM
+                    if ((command & StackTraceDataCommand.HasFunctionPointer) != 0)
+                    {
+                        IntPtr functionPointer = (IntPtr)(nuint)NativePrimitiveDecoder.ReadUInt32(ref pCurrent);
+                        _functionPointerToData.Add(functionPointer, data);
+                    }
+#endif
+
+                    _stacktraceDatas[current++] = data;
 
 #if !TARGET_WASM
                     static void* ReadRelPtr32(byte* address)
@@ -533,13 +566,7 @@ namespace Internal.StackTraceMetadata
 
 #if TARGET_WASM
             public bool TryGetStackTraceDataFromFunctionPointer(IntPtr functionPointer, out StackTraceData data)
-            {
-                if (_functionPointerToRva.TryGetValue(functionPointer, out int rva))
-                    return TryGetStackTraceData(rva, out data);
-
-                data = default;
-                return false;
-            }
+                => _functionPointerToData.TryGetValue(functionPointer, out data);
 #endif
 
             /// <summary>
