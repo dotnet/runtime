@@ -9,6 +9,7 @@
 
 #include <errno.h>
 #include <fcntl.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -23,39 +24,53 @@
 #endif
 
 #if defined(TARGET_BROWSER) || defined(__APPLE__) || defined(__OpenBSD__) || defined(__HAIKU__) || defined(__GLIBC__) || defined(TARGET_ANDROID)
-// Packs the arguments into a single NULL-terminated allocation that can be released with one free().
+// Packs the arguments into a single allocation that can be released with one free().
 static char** PackCommandLine(int32_t count, const char* const* args, int32_t* argc)
 {
-    size_t stringBytes = 0;
-    for (int32_t i = 0; i < count; i++)
+    if (count < 0 || (size_t)count > SIZE_MAX / sizeof(char*))
     {
-        stringBytes += strlen(args[i]) + 1;
+        return NULL;
     }
 
-    char** result = (char**)malloc(((size_t)count + 1) * sizeof(char*) + stringBytes);
+    size_t size = (size_t)count * sizeof(char*);
+    for (int32_t i = 0; i < count; i++)
+    {
+        size_t length = strlen(args[i]) + 1;
+        if (length > SIZE_MAX - size)
+        {
+            return NULL;
+        }
+
+        size += length;
+    }
+
+    char** result = (char**)malloc(size);
     if (result == NULL)
     {
         return NULL;
     }
 
-    char* strings = (char*)(result + count + 1);
+    // The arguments can be modified concurrently (e.g. by setproctitle implementations that reuse
+    // the argv memory), so bound each copy by the space left, keeping one byte for each remaining argument.
+    char* strings = (char*)(result + count);
+    char* end = (char*)result + size;
     for (int32_t i = 0; i < count; i++)
     {
-        size_t length = strlen(args[i]) + 1;
+        size_t length = strnlen(args[i], (size_t)(end - strings) - (size_t)(count - i));
         memcpy(strings, args[i], length);
+        strings[length] = '\0';
         result[i] = strings;
-        strings += length;
+        strings += length + 1;
     }
 
-    result[count] = NULL;
     *argc = count;
     return result;
 }
 #endif
 
 #if defined(__linux__) || defined(__sun) || defined(__FreeBSD__)
-// Packs into a single NULL-terminated allocation up to maxCount arguments stored back to back as
-// NUL-terminated strings, so that it can be released with one free().
+// Packs into a single allocation up to maxCount arguments stored back to back as NUL-terminated
+// strings, so that it can be released with one free().
 static char** PackNulSeparatedCommandLine(const char* buffer, size_t length, int32_t maxCount, int32_t* argc)
 {
     int32_t count = 0;
@@ -67,13 +82,19 @@ static char** PackNulSeparatedCommandLine(const char* buffer, size_t length, int
         count++;
     }
 
-    char** result = (char**)malloc(((size_t)count + 1) * sizeof(char*) + used + 1);
+    // count is at most used, which is at most length, so only the final size can overflow.
+    if ((size_t)count > (SIZE_MAX - used - 1) / sizeof(char*))
+    {
+        return NULL;
+    }
+
+    char** result = (char**)malloc((size_t)count * sizeof(char*) + used + 1);
     if (result == NULL)
     {
         return NULL;
     }
 
-    char* strings = (char*)(result + count + 1);
+    char* strings = (char*)(result + count);
     memcpy(strings, buffer, used);
     strings[used] = '\0';
 
@@ -83,7 +104,6 @@ static char** PackNulSeparatedCommandLine(const char* buffer, size_t length, int
         strings += strlen(strings) + 1;
     }
 
-    result[count] = NULL;
     *argc = count;
     return result;
 }

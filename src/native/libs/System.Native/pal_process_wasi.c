@@ -137,25 +137,25 @@ char** SystemNative_GetCommandLine(int32_t* argc)
 
     size_t count;
     size_t bufferSize;
-    if (SystemNative_WasiArgsSizesGet(&count, &bufferSize) != 0 || count >= INT32_MAX)
+    if (SystemNative_WasiArgsSizesGet(&count, &bufferSize) != 0 || count > INT32_MAX ||
+        count > (SIZE_MAX - bufferSize) / sizeof(char*))
     {
         return NULL;
     }
 
     // args_get fills in both the pointers and the strings, so a single allocation can hold them all.
-    char** result = (char**)malloc((count + 1) * sizeof(char*) + bufferSize);
+    char** result = (char**)malloc(count * sizeof(char*) + bufferSize);
     if (result == NULL)
     {
         return NULL;
     }
 
-    if (SystemNative_WasiArgsGet((uint8_t**)result, (uint8_t*)(result + count + 1)) != 0)
+    if (SystemNative_WasiArgsGet((uint8_t**)result, (uint8_t*)(result + count)) != 0)
     {
         free(result);
         return NULL;
     }
 
-    result[count] = NULL;
     *argc = (int32_t)count;
     return result;
 }

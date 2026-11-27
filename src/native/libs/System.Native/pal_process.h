@@ -245,7 +245,7 @@ PALEXPORT int32_t SystemNative_SchedGetAffinity(int32_t pid, intptr_t* mask);
 PALEXPORT char* SystemNative_GetProcessPath(void);
 
 /**
- * Returns the command line arguments of the current process as a NULL-terminated array of strings,
+ * Returns the command line arguments of the current process as an array of argc strings,
  * or NULL if they cannot be obtained. The array and the strings are a single allocation that the
  * caller is responsible for releasing with free().
  */

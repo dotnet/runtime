@@ -102,16 +102,14 @@ namespace System
         private static unsafe string[] GetCommandLineArgsNative()
         {
             byte** nativeArgv = Interop.Sys.GetCommandLine(out int argc);
-            if (nativeArgv == null || argc <= 0)
-            {
-                NativeMemory.Free(nativeArgv);
-
-                // Keep the contract that the first element is the program name, even if it is unknown.
-                return [string.Empty];
-            }
-
             try
             {
+                if (argc <= 0)
+                {
+                    // Keep the contract that the first element is the program name, even if it is unknown.
+                    return [string.Empty];
+                }
+
                 string[] args = new string[argc];
                 for (int i = 0; i < argc; i++)
                 {
