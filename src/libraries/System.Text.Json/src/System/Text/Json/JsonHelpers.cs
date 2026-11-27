@@ -322,7 +322,7 @@ namespace System.Text.Json
 
             foreach (char c in source)
             {
-                if ((uint)(c - '0') > 9)
+                if (!char.IsAsciiDigit(c))
                 {
                     return false;
                 }
