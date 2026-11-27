@@ -20,6 +20,7 @@ add_executable(NativeMinipalTestsDriver
     ${NATIVE_TEST_COMMON_DIR}/driver.c
     ${NATIVE_TEST_COMMON_DIR}/test.c
     native-minipal-tests-driver.c
+    cgroup-tests.c
     utf8-tests.c
     u16-tests.cpp
     ${DN_U16_SOURCE})

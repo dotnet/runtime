@@ -45,6 +45,48 @@ static char* s_cpu_cgroup_path;
 
 static bool s_initialized;
 
+static void unescape_mountinfo_path(char* path)
+{
+    char* destination = strchr(path, '\\');
+    if (destination == NULL)
+        return;
+
+    // Mount table paths escape space, tab, LF, and backslash as four-character octal sequences.
+    // https://man7.org/linux/man-pages/man3/getmntent.3.html
+    const size_t escapeLength = 4;
+    const char* source = destination;
+    while (*source != '\0')
+    {
+        char value = *source;
+        if (value == '\\')
+        {
+            if (strncmp(source, "\\040", escapeLength) == 0)
+                value = ' ';
+            else if (strncmp(source, "\\011", escapeLength) == 0)
+                value = '\t';
+            else if (strncmp(source, "\\012", escapeLength) == 0)
+                value = '\n';
+            else if (strncmp(source, "\\134", escapeLength) == 0)
+                value = '\\';
+            else
+            {
+                *destination++ = *source++;
+                continue;
+            }
+
+            source += escapeLength;
+        }
+        else
+        {
+            source++;
+        }
+
+        *destination++ = value;
+    }
+
+    *destination = '\0';
+}
+
 static bool read_memory_value_from_file(const char* filename, uint64_t* val)
 {
     bool result = false;
@@ -209,9 +251,18 @@ static void find_hierarchy_mount(bool (*is_subsystem)(const char*), char** pmoun
                 if (mountroot == NULL)
                     goto done;
 
-                sscanfRet = sscanf(line, "%*s %*s %*s %s %s ", mountroot, mountpath);
+                // Root and mount point are fields 4 and 5 in proc_pid_mountinfo(5). The kernel escapes space, tab,
+                // newline and backslash in them, but not other whitespace, so each field ends at the next space.
+                // https://man7.org/linux/man-pages/man5/proc_pid_mountinfo.5.html
+                sscanfRet = sscanf(line, "%*s %*s %*s %[^ ] %[^ ]", mountroot, mountpath);
                 if (sscanfRet != 2)
-                    assert(!"Failed to parse mount info file contents with sscanf.");
+                {
+                    assert(!"Failed to parse mount info file paths.");
+                    goto done;
+                }
+
+                unescape_mountinfo_path(mountroot);
+                unescape_mountinfo_path(mountpath);
 
                 // assign the output arguments and clear the locals so we don't free them.
                 *pmountpath = mountpath;
@@ -264,7 +315,7 @@ static char* find_cgroup_path_for_subsystem(bool (*is_subsystem)(const char*))
         if (s_cgroup_version == 1)
         {
             // See man page of proc to get format for /proc/self/cgroup file
-            int sscanfRet = sscanf(line, "%*[^:]:%[^:]:%s", subsystem_list, cgroup_path);
+            int sscanfRet = sscanf(line, "%*[^:]:%[^:]:%[^\n]", subsystem_list, cgroup_path);
             if (sscanfRet != 2)
             {
                 assert(!"Failed to parse cgroup info file contents with sscanf.");
@@ -287,7 +338,7 @@ static char* find_cgroup_path_for_subsystem(bool (*is_subsystem)(const char*))
         {
             // See https://www.kernel.org/doc/Documentation/cgroup-v2.txt
             // Look for a "0::/some/path"
-            if (sscanf(line, "0::%s", cgroup_path) == 1)
+            if (sscanf(line, "0::%[^\n]", cgroup_path) == 1)
             {
                 result = true;
             }

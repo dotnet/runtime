@@ -16,4 +16,8 @@ public class NativeMinipalTests
         Console.Error.Write(error);
         Assert.Equal(0, exitCode);
     }
+
+    [Fact]
+    [PlatformSpecific(TestPlatforms.Linux)]
+    public static void RunCgroupSuite() => RunSuite("cgroup");
 }
