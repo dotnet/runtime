@@ -2609,6 +2609,54 @@ public class R2RTestSuites
         }
     }
 
+    /// <summary>
+    /// Tests inlining the async variant of a synchronous task-returning method from an --opt-cross-module
+    /// library into runtime-async code. The variant's IL is rewritten so that its tokens refer to the
+    /// mutable module, so they must be resolved there rather than in the library's own metadata.
+    /// </summary>
+    [Fact]
+    public void AsyncVariantCrossModuleInlining()
+    {
+        var asyncVariantInlineeLib = new CompiledAssembly
+        {
+            AssemblyName = "AsyncVariantInlineeLib",
+            SourceResourceNames = ["CrossModuleInlining/Dependencies/AsyncVariantInlineeLib.cs"],
+            Features = { RuntimeAsyncFeature },
+        };
+        var consumer = new CompiledAssembly
+        {
+            AssemblyName = "AsyncVariantInlineeConsumer",
+            SourceResourceNames = ["CrossModuleInlining/AsyncVariantInlineeConsumer.cs"],
+            References = [asyncVariantInlineeLib],
+            Features = { RuntimeAsyncFeature },
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(AsyncVariantCrossModuleInlining),
+            [
+                new(consumer.AssemblyName,
+                [
+                    new CrossgenAssembly(consumer),
+                    new CrossgenAssembly(asyncVariantInlineeLib)
+                    {
+                        Kind = Crossgen2InputKind.Reference,
+                        Options = [Crossgen2AssemblyOption.CrossModuleOptimization],
+                    },
+                ])
+                {
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            string diag;
+            Assert.True(R2RAssert.HasManifestRef(reader, "AsyncVariantInlineeLib", out diag), diag);
+            Assert.True(R2RAssert.HasCrossModuleInlinedMethod(reader, "AwaitInlined", "GetValueTask", out diag), diag);
+            Assert.True(R2RAssert.HasCrossModuleInlinedMethod(reader, "AwaitInlined", "GetCanceledOrValue", out diag), diag);
+        }
+    }
+
     [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsNotWasmTarget))]
     public void CompositeBasic()
     {
