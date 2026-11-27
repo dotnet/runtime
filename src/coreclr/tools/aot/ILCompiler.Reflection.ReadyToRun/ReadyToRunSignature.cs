@@ -2125,6 +2125,9 @@ namespace ILCompiler.Reflection.ReadyToRun
                 case ReadyToRunHelper.R2RToInterpreter:
                     builder.Append("R2R_TO_INTERPRETER");
                     break;
+                case ReadyToRunHelper.InterfaceDispatch:
+                    builder.Append("INTERFACE_DISPATCH");
+                    break;
 
                 default:
                     throw new BadImageFormatException(helperType.ToString());

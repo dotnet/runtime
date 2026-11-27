@@ -637,6 +637,12 @@ namespace ILCompiler.DependencyAnalysis
 
         public ImportSectionNode DispatchImports;
 
+        /// <summary>
+        /// Interface call sites pass their dispatch cell to the interface dispatch helper instead of calling
+        /// through the cell. The cells are laid out as { MethodTable, Code, Token } for cached interface dispatch.
+        /// </summary>
+        public bool UseInterfaceDispatchHelper => OptimizationFlags.EnableCachedInterfaceDispatchSupport && !Target.IsWasm;
+
         public ImportSectionNode StringImports;
 
         public ImportSectionNode HelperImports;
@@ -1329,7 +1335,7 @@ namespace ILCompiler.DependencyAnalysis
                 "DispatchImports",
                 ReadyToRunImportSectionType.StubDispatch,
                 ReadyToRunImportSectionFlags.PCode,
-                (this.OptimizationFlags.EnableCachedInterfaceDispatchSupport && !Target.IsWasm) ? (byte)(2 * Target.PointerSize) : (byte)Target.PointerSize,
+                UseInterfaceDispatchHelper ? (byte)(3 * Target.PointerSize) : (byte)Target.PointerSize,
                 emitPrecode: false,
                 emitGCRefMap: true);
             ImportSectionsTable.AddEmbeddedObject(DispatchImports);

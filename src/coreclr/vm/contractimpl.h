@@ -274,11 +274,7 @@ public:
 
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
     //------------------------------------------------------------------------
-    // A Cached Interface DispatchToken uses the low bit to indicate that it is a dispatch token, and not a cache entry
-    static inline BOOL IsCachedInterfaceDispatchToken(UINT_PTR maybeToken)
-    {
-        return maybeToken & 0x1;
-    }
+    // A Cached Interface DispatchToken sets the low bit so that a valid token is never zero
     static inline DispatchToken FromCachedInterfaceDispatchToken(UINT_PTR token)
     {
         return DispatchToken(token >> 1);

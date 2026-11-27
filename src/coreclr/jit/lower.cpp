@@ -7560,14 +7560,22 @@ GenTree* Lowering::LowerVirtualStubCall(GenTreeCall* call)
         }
 
         CORINFO_CONST_LOOKUP helperLookup = m_compiler->compGetHelperFtn(CORINFO_HELP_INTERFACEDISPATCH_FOR_SLOT);
-        assert(helperLookup.accessType == IAT_VALUE);
-        call->gtCallType          = CT_USER_FUNC;
-        call->gtCallMethHnd       = nullptr;
-        call->gtDirectCallAddress = helperLookup.addr;
+        call->gtCallType                  = CT_USER_FUNC;
+        call->gtCallMethHnd               = Compiler::eeFindHelper(CORINFO_HELP_INTERFACEDISPATCH_FOR_SLOT);
         call->gtFlags &= ~GTF_CALL_VIRT_STUB;
         call->gtCallMoreFlags &= ~GTF_CALL_M_VIRTSTUB_REL_INDIRECT;
 
-        return nullptr;
+        if (helperLookup.accessType == IAT_VALUE)
+        {
+            call->gtDirectCallAddress = helperLookup.addr;
+            return nullptr;
+        }
+
+        // The helper is called through an indirection cell (e.g. ReadyToRun). The cell register
+        // holds the dispatch cell, so the helper address is loaded from its cell explicitly.
+        assert(helperLookup.accessType == IAT_PVALUE);
+        GenTree* helperCellAddr = AddrGen(helperLookup.addr);
+        return m_compiler->gtNewIndir(TYP_I_IMPL, helperCellAddr, GTF_IND_NONFAULTING);
     }
 
     // An x86 JIT which uses full stub dispatch must generate only

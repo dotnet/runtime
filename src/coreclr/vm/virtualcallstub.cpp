@@ -87,15 +87,6 @@ EXTERN_C size_t g_dispatch_cache_chain_success_counter;
 
 SPTR_IMPL_INIT(VirtualCallStubManagerManager, VirtualCallStubManagerManager, g_pManager, NULL);
 
-#ifdef FEATURE_CACHED_INTERFACE_DISPATCH
-struct CachedIndirectionCellBlockListNode
-{
-    CachedIndirectionCellBlockListNode *m_pNext;
-    TADDR m_pFiller; // Used to ensure that the Indirection Cells are double pointer aligned
-    InterfaceDispatchCell m_rgIndCells[0];
-};
-#endif // FEATURE_CACHED_INTERFACE_DISPATCH
-
 #ifndef DACCESS_COMPILE
 
 BYTE* GenerateDispatchStubCellEntryMethodDesc(LoaderAllocator *pLoaderAllocator, TypeHandle ownerType, MethodDesc *pMD, LCGMethodResolver *pResolver)
@@ -124,7 +115,7 @@ BYTE* GenerateDispatchStubCellEntrySlot(LoaderAllocator *pLoaderAllocator, TypeH
 
     PCODE addr;
     INTERFACE_DISPATCH_CACHED_OR_VSD(
-        addr = (PCODE)RhpInitialInterfaceDispatch // Always use the initial dispatch stub for cached interface dispatch
+        addr = (PCODE)RhpInterfaceDispatch // Call sites call the dispatch helper, not the cell, for cached interface dispatch
         ,
         addr = pMgr->GetCallStub(token))          // Acquire a stub which is token specific in the VSD case
 
@@ -715,26 +706,6 @@ VirtualCallStubManager::~VirtualCallStubManager()
     // freeing their memory takes CrstExecutableAllocatorLock, which is at the same lock level.
 #endif // FEATURE_VIRTUAL_STUB_DISPATCH
 
-#ifdef FEATURE_CACHED_INTERFACE_DISPATCH
-    if (m_loaderAllocator->IsCollectible() && UseCachedInterfaceDispatch())
-    {
-        CachedIndirectionCellBlockListNode * pBlockNode = m_indirectionBlocks;
-        while (pBlockNode != NULL)
-        {
-            for (UINT32 i = 0; i < INDCELLS_PER_BLOCK; i++)
-            {
-                InterfaceDispatchCacheHeader* cache = pBlockNode->m_rgIndCells[i].GetCache();
-                if (cache != NULL)
-                {
-                    InterfaceDispatch_DiscardCacheHeader(cache);
-                }
-            }
-
-            pBlockNode = pBlockNode->m_pNext;
-        }
-    }
-#endif
-
     if (indcell_heap)     { delete indcell_heap;     indcell_heap     = NULL;}
 #ifdef FEATURE_VIRTUAL_STUB_DISPATCH
     if (lookup_heap)      { delete lookup_heap;      lookup_heap      = NULL;}
@@ -773,8 +744,14 @@ void VirtualCallStubManager::InitStatic()
     STANDARD_VM_CONTRACT;
 
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
-    InterfaceDispatch_Initialize();
-#endif
+    if (!InterfaceDispatch_Initialize())
+        COMPlusThrowOM();
+
+#ifndef TARGET_WASM
+    if (UseCachedInterfaceDispatch())
+        SetJitHelperFunction(CORINFO_HELP_INTERFACEDISPATCH_FOR_SLOT, RhpInterfaceDispatch);
+#endif // !TARGET_WASM
+#endif // FEATURE_CACHED_INTERFACE_DISPATCH
 
 #ifdef STUB_LOGGING
     // Note if you change these values using environment variables then you must use hex values :-(
@@ -979,7 +956,22 @@ BOOL VirtualCallStubManager::TraceManager(Thread *thread,
     *pRetAddr = (BYTE *)StubManagerHelpers::GetReturnAddress(pContext);
 
     // Get the token from the stub
-    DispatchToken token(GetTokenFromStub(pStub, pContext));
+    DispatchToken token;
+#if defined(FEATURE_CACHED_INTERFACE_DISPATCH) && !defined(DACCESS_COMPILE)
+    InterfaceDispatchCell * pCell = isCachedInterfaceDispatchStub(pStub) ?
+        (InterfaceDispatchCell *)StubManagerHelpers::GetIndirectionCellArg(pContext) : NULL;
+    if (pCell != NULL && !pCell->HasToken())
+    {
+        // The call site has a ReadyToRun dispatch cell that wasn't dispatched through yet.
+        MethodDesc * pNonVirtualMD = NULL;
+        if (!DecodeReadyToRunDispatchCell((TADDR)pCell, &token, &pNonVirtualMD))
+            return FALSE;
+    }
+    else
+#endif
+    {
+        token = DispatchToken(GetTokenFromStub(pStub, pContext));
+    }
 
     // Get the this object from ECX
     Object *pObj = StubManagerHelpers::GetThisPtr(pContext);
@@ -1193,30 +1185,8 @@ BYTE *VirtualCallStubManager::GenerateStubIndirection(PCODE target, DispatchToke
     // Allocate from loader heap
     if (!ret)
     {
-        size_t alignment;
-        INTERFACE_DISPATCH_CACHED_OR_VSD(alignment = sizeof(TADDR) * 2, alignment = sizeof(TADDR));
-
         // Free list is empty, allocate a block of indcells from indcell_heap and insert it into the free list.
-        size_t cellsAllocationSize = cellsPerBlock * sizeOfIndCell;
-        size_t allocationSize = cellsAllocationSize;
-
-#ifdef FEATURE_CACHED_INTERFACE_DISPATCH
-        if (m_loaderAllocator->IsCollectible() && UseCachedInterfaceDispatch())
-        {
-            allocationSize += sizeof(CachedIndirectionCellBlockListNode);
-        }
-#endif // FEATURE_CACHED_INTERFACE_DISPATCH
-        BYTE ** pBlock = (BYTE **) (void *) indcell_heap->AllocAlignedMem(allocationSize, alignment);
-
-#ifdef FEATURE_CACHED_INTERFACE_DISPATCH
-        if (m_loaderAllocator->IsCollectible() && UseCachedInterfaceDispatch())
-        {
-            CachedIndirectionCellBlockListNode * pBlockNode = (CachedIndirectionCellBlockListNode *)pBlock;
-            pBlockNode->m_pNext = m_indirectionBlocks;
-            m_indirectionBlocks = pBlockNode;
-            pBlock = (BYTE **)(&pBlockNode->m_rgIndCells[0]);
-        }
-#endif // FEATURE_CACHED_INTERFACE_DISPATCH
+        BYTE ** pBlock = (BYTE **) (void *) indcell_heap->AllocAlignedMem(cellsPerBlock * sizeOfIndCell, sizeof(TADDR));
 
         // return the first cell in the block and add the rest to the free list
         ret = (BYTE *)pBlock;
@@ -1233,9 +1203,7 @@ BYTE *VirtualCallStubManager::GenerateStubIndirection(PCODE target, DispatchToke
     }
 
     INTERFACE_DISPATCH_CACHED_OR_VSD(
-        InterfaceDispatchCell * pCell = (InterfaceDispatchCell *)ret;
-        pCell->m_pStub = target;
-        pCell->m_pCache = DispatchToken::ToCachedInterfaceDispatchToken(token);
+        ((InterfaceDispatchCell *)ret)->Initialize(token);
         ,
         *((PCODE *)ret) = target;
     )
@@ -1295,17 +1263,9 @@ size_t VirtualCallStubManager::GetTokenFromStub(PCODE stub, T_CONTEXT *pContext)
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
     if (isCachedInterfaceDispatchStub(stub))
     {
-        TADDR indcell = StubManagerHelpers::GetIndirectionCellArg(pContext);
-        VirtualCallStubManagerIterator it =
-            VirtualCallStubManagerManager::GlobalManager()->IterateVirtualCallStubManagers();
-        while (it.Next())
-        {
-            if (it.Current()->indcell_rangeList.IsInRange(indcell))
-            {
-                InterfaceDispatchCell * pCell = (InterfaceDispatchCell *)indcell;
-                return pCell->GetDispatchCellInfo().Token.To_SIZE_T();
-            }
-        }
+        // Cells in ReadyToRun images don't have a token until the first dispatch through them.
+        InterfaceDispatchCell * pCell = (InterfaceDispatchCell *)StubManagerHelpers::GetIndirectionCellArg(pContext);
+        return pCell->HasToken() ? pCell->GetToken().To_SIZE_T() : 0;
     }
 #endif // FEATURE_CACHED_INTERFACE_DISPATCH
 
@@ -1419,11 +1379,46 @@ PCODE CachedInterfaceDispatchResolveWorker(StubCallSite* pCallSite, OBJECTREF *p
 
     if (patch && pCallSite != NULL)
     {
-        DispatchCellInfo cellInfo = ((InterfaceDispatchCell*)pCallSite->GetIndirectCell())->GetDispatchCellInfo();
-        InterfaceDispatch_UpdateDispatchCellCache((InterfaceDispatchCell*)pCallSite->GetIndirectCell(), target, objectType, &cellInfo);
+        TADDR pCell = (TADDR)pCallSite->GetIndirectCell();
+        LoaderAllocator* pCellLoaderAllocator = VirtualCallStubManager::FindLoaderAllocatorForDispatchCell(pCell);
+        LoaderAllocator* pTypeLoaderAllocator = objectType->GetLoaderAllocator();
+
+        // A cell must not cache a type that can be unloaded before the cell itself.
+        bool fCacheInCell = (pCellLoaderAllocator != NULL) &&
+            (!pTypeLoaderAllocator->IsCollectible() || (pTypeLoaderAllocator == pCellLoaderAllocator));
+
+        // The global dispatch cache is not flushed when a LoaderAllocator is unloaded.
+        bool fCacheInTable = (pCellLoaderAllocator != NULL) &&
+            !pCellLoaderAllocator->IsCollectible() && !pTypeLoaderAllocator->IsCollectible();
+
+        InterfaceDispatch_UpdateDispatchCellCache((InterfaceDispatchCell*)pCell, target, objectType, fCacheInCell, fCacheInTable);
     }
 
     return target;
+}
+
+LoaderAllocator* VirtualCallStubManager::FindLoaderAllocatorForDispatchCell(TADDR pCell)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    VirtualCallStubManagerIterator it =
+        VirtualCallStubManagerManager::GlobalManager()->IterateVirtualCallStubManagers();
+    while (it.Next())
+    {
+        if (it.Current()->indcell_rangeList.IsInRange(pCell))
+            return it.Current()->m_loaderAllocator;
+    }
+
+    Module* pModule = ExecutionManager::FindReadyToRunModule(pCell);
+    if (pModule != NULL)
+        return pModule->GetLoaderAllocator();
+
+    return NULL;
 }
 
 // Resolve a dispatch on a virtual open delegate without updating any pointers
@@ -1499,13 +1494,27 @@ extern "C" PCODE CID_VirtualOpenDelegateDispatchWorker(TransitionBlock * pTransi
     return target;
 }
 
+static void SetRepresentativeSlotForDispatchToken(StubDispatchFrame * pSDFrame, DispatchToken token, MethodTable * pObjectMT)
+{
+    WRAPPER_NO_CONTRACT;
+
+    MethodTable * pRepresentativeMT = pObjectMT;
+    if (token.IsTypedToken())
+    {
+        pRepresentativeMT = AppDomain::GetCurrentDomain()->LookupType(token.GetTypeID());
+        CONSISTENCY_CHECK(CheckPointer(pRepresentativeMT));
+    }
+
+    pSDFrame->SetRepresentativeSlot(pRepresentativeMT, token.GetSlotNumber());
+}
+
 /* Resolve to a method and return its address or NULL if there is none
    Our return value is the target address that control should continue to.  Our caller will
    enter the target address as if a direct call with the original stack frame had been made from
    the actual call site.  Hence our strategy is to either return a target address
    of the actual method implementation, or the prestub if we cannot find the actual implementation.
-   If we are returning a real method address, we may patch the original cell site to point to different
-   stub. Note, if we encounter a method that hasn't been jitted
+   If we are returning a real method address, we may cache it in the dispatch cell or in the global
+   dispatch cache. Note, if we encounter a method that hasn't been jitted
    yet, we will return the prestub, which should cause it to be jitted and we will
    be able to build the dispatching stub on a later call thru the call site.  If we encounter
    any other kind of problem, rather than throwing an exception, we will also return the
@@ -1555,15 +1564,17 @@ extern "C" PCODE CID_ResolveWorker(TransitionBlock * pTransitionBlock,
 
     pSDFrame->SetCallSite(NULL, (TADDR)callSite.GetIndirectCell());
 
-    DispatchToken representativeToken(indirectionCell->GetDispatchCellInfo().Token);
-    MethodTable * pRepresentativeMT = pObj->GetMethodTable();
-    if (representativeToken.IsTypedToken())
+    // Cells in ReadyToRun images get their token on the first dispatch through them. Until then,
+    // the frame reports the arguments using the GC ref map of the import cell.
+    bool fHasToken = indirectionCell->HasToken();
+    if (fHasToken)
     {
-        pRepresentativeMT = AppDomain::GetCurrentDomain()->LookupType(representativeToken.GetTypeID());
-        CONSISTENCY_CHECK(CheckPointer(pRepresentativeMT));
+        SetRepresentativeSlotForDispatchToken(pSDFrame, indirectionCell->GetToken(), pObj->GetMethodTable());
     }
-
-    pSDFrame->SetRepresentativeSlot(pRepresentativeMT, representativeToken.GetSlotNumber());
+    else
+    {
+        _ASSERTE(pSDFrame->GetGCRefMap() != NULL);
+    }
 
     pSDFrame->Push(CURRENT_THREAD);
     INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(pSDFrame);
@@ -1572,10 +1583,30 @@ extern "C" PCODE CID_ResolveWorker(TransitionBlock * pTransitionBlock,
 
     GCStress<vsd_on_resolve>::MaybeTriggerAndProtect(pObj);
 
-    target = CachedInterfaceDispatchResolveWorker(&callSite, protectedObj, representativeToken);
+    DispatchToken representativeToken;
+    MethodDesc * pNonVirtualMD = NULL;
+    if (fHasToken)
+    {
+        representativeToken = indirectionCell->GetToken();
+    }
+    else if (DecodeReadyToRunDispatchCell((TADDR)indirectionCell, &representativeToken, &pNonVirtualMD))
+    {
+        indirectionCell->SetToken(representativeToken);
+        SetRepresentativeSlotForDispatchToken(pSDFrame, representativeToken, (*protectedObj)->GetMethodTable());
+    }
+
+    if (pNonVirtualMD != NULL)
+    {
+        // The method is no longer virtual in the version of the code we are running against.
+        target = pNonVirtualMD->GetMultiCallableAddrOfCode();
+    }
+    else
+    {
+        target = CachedInterfaceDispatchResolveWorker(&callSite, protectedObj, representativeToken);
+    }
 
 #if _DEBUG
-    if (pSDFrame->GetGCRefMap() != NULL)
+    if (pSDFrame->GetGCRefMap() != NULL && pSDFrame->GetFunction() != NULL)
     {
         GCX_PREEMP();
         _ASSERTE(CheckGCRefMapEqual(pSDFrame->GetGCRefMap(), pSDFrame->GetFunction(), true));
@@ -1787,7 +1818,7 @@ PCODE VSD_ResolveWorkerForInterfaceLookupSlot(TransitionBlock * pTransitionBlock
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
     if (UseCachedInterfaceDispatch())
     {
-        DispatchToken representativeToken(((InterfaceDispatchCell*)siteAddrForRegisterIndirect)->GetDispatchCellInfo().Token);
+        DispatchToken representativeToken(((InterfaceDispatchCell*)siteAddrForRegisterIndirect)->GetToken());
         target = CachedInterfaceDispatchResolveWorker(&callSite, protectedObj, representativeToken);
     }
     else
@@ -4156,28 +4187,6 @@ VirtualCallStubManager *VirtualCallStubManagerIterator::Current()
 
 #ifndef DACCESS_COMPILE
 
-#ifdef FEATURE_CACHED_INTERFACE_DISPATCH
-extern "C" void RhpInterfaceDispatch1();
-extern "C" void RhpInterfaceDispatch2();
-extern "C" void RhpInterfaceDispatch4();
-extern "C" void RhpInterfaceDispatch8();
-extern "C" void RhpInterfaceDispatch16();
-extern "C" void RhpInterfaceDispatch32();
-extern "C" void RhpInterfaceDispatch64();
-
-extern "C" void RhpVTableOffsetDispatch();
-
-extern "C" void RhpInterfaceDispatchAVLocation1();
-extern "C" void RhpInterfaceDispatchAVLocation2();
-extern "C" void RhpInterfaceDispatchAVLocation4();
-extern "C" void RhpInterfaceDispatchAVLocation8();
-extern "C" void RhpInterfaceDispatchAVLocation16();
-extern "C" void RhpInterfaceDispatchAVLocation32();
-extern "C" void RhpInterfaceDispatchAVLocation64();
-extern "C" void RhpVTableOffsetDispatchAVLocation();
-
-#endif // FEATURE_CACHED_INTERFACE_DISPATCH
-
 /////////////////////////////////////////////////////////////////////////////////////////////
 VirtualCallStubManagerManager::VirtualCallStubManagerManager()
     : m_pManagers(NULL),
@@ -4187,35 +4196,20 @@ VirtualCallStubManagerManager::VirtualCallStubManagerManager()
     LIMITED_METHOD_CONTRACT;
 
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
-#define CACHED_INTERFACE_DISPATCH_HELPER_COUNT 9
+#define CACHED_INTERFACE_DISPATCH_HELPER_COUNT 1
     size_t helperCount = 0;
 
 #define RECORD_CACHED_INTERFACE_DISPATCH_HELPER(helper) _ASSERTE(helperCount < CACHED_INTERFACE_DISPATCH_HELPER_COUNT); pCachedInterfaceDispatchHelpers[helperCount++] = (PCODE)helper;
 #define RECORD_CACHED_INTERFACE_DISPATCH_HELPER_AVLOCATION(helper) _ASSERTE(helperCount < CACHED_INTERFACE_DISPATCH_HELPER_COUNT); pCachedInterfaceDispatchHelpersAVLocation[helperCount++] = (PCODE)helper;
 
     pCachedInterfaceDispatchHelpers = new PCODE[CACHED_INTERFACE_DISPATCH_HELPER_COUNT];
-    RECORD_CACHED_INTERFACE_DISPATCH_HELPER(RhpInterfaceDispatch1);
-    RECORD_CACHED_INTERFACE_DISPATCH_HELPER(RhpInterfaceDispatch2);
-    RECORD_CACHED_INTERFACE_DISPATCH_HELPER(RhpInterfaceDispatch4);
-    RECORD_CACHED_INTERFACE_DISPATCH_HELPER(RhpInterfaceDispatch8);
-    RECORD_CACHED_INTERFACE_DISPATCH_HELPER(RhpInterfaceDispatch16);
-    RECORD_CACHED_INTERFACE_DISPATCH_HELPER(RhpInterfaceDispatch32);
-    RECORD_CACHED_INTERFACE_DISPATCH_HELPER(RhpInterfaceDispatch64);
-    RECORD_CACHED_INTERFACE_DISPATCH_HELPER(RhpVTableOffsetDispatch);
-    RECORD_CACHED_INTERFACE_DISPATCH_HELPER(RhpInitialInterfaceDispatch);
+    RECORD_CACHED_INTERFACE_DISPATCH_HELPER(RhpInterfaceDispatch);
     _ASSERTE(helperCount == CACHED_INTERFACE_DISPATCH_HELPER_COUNT);
 
+    // RhpInterfaceDispatch loads the MethodTable of 'this' in its first instruction
     helperCount = 0;
     pCachedInterfaceDispatchHelpersAVLocation = new PCODE[CACHED_INTERFACE_DISPATCH_HELPER_COUNT];
-    RECORD_CACHED_INTERFACE_DISPATCH_HELPER_AVLOCATION(RhpInterfaceDispatchAVLocation1);
-    RECORD_CACHED_INTERFACE_DISPATCH_HELPER_AVLOCATION(RhpInterfaceDispatchAVLocation2);
-    RECORD_CACHED_INTERFACE_DISPATCH_HELPER_AVLOCATION(RhpInterfaceDispatchAVLocation4);
-    RECORD_CACHED_INTERFACE_DISPATCH_HELPER_AVLOCATION(RhpInterfaceDispatchAVLocation8);
-    RECORD_CACHED_INTERFACE_DISPATCH_HELPER_AVLOCATION(RhpInterfaceDispatchAVLocation16);
-    RECORD_CACHED_INTERFACE_DISPATCH_HELPER_AVLOCATION(RhpInterfaceDispatchAVLocation32);
-    RECORD_CACHED_INTERFACE_DISPATCH_HELPER_AVLOCATION(RhpInterfaceDispatchAVLocation64);
-    RECORD_CACHED_INTERFACE_DISPATCH_HELPER_AVLOCATION(RhpVTableOffsetDispatchAVLocation);
-    RECORD_CACHED_INTERFACE_DISPATCH_HELPER_AVLOCATION(RhpInitialInterfaceDispatch);
+    RECORD_CACHED_INTERFACE_DISPATCH_HELPER_AVLOCATION(RhpInterfaceDispatch);
     _ASSERTE(helperCount == CACHED_INTERFACE_DISPATCH_HELPER_COUNT);
 
     countCachedInterfaceDispatchHelpers = helperCount;

@@ -44,6 +44,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 _delayLoadHelper = factory.WasmImportThunkPortableEntrypoint(this);
             }
+            else if (useVirtualCall && factory.UseInterfaceDispatchHelper)
+            {
+                // Call sites pass the cell to the interface dispatch helper, which resolves it on the first call.
+                _delayLoadHelper = null;
+            }
             else
             {
                 _delayLoadHelper = factory.ImportThunk(helper, importSectionNode, useVirtualCall, useJumpableStub);
@@ -88,13 +93,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 dataBuilder.EmitNaturalInt(0);
             }
 
-            if (Table.EntrySize == (factory.Target.PointerSize * 2))
+            Debug.Assert(Table.EntrySize % factory.Target.PointerSize == 0);
+            for (int offset = factory.Target.PointerSize; offset < Table.EntrySize; offset += factory.Target.PointerSize)
             {
                 dataBuilder.EmitNaturalInt(0);
-            }
-            else
-            {
-                Debug.Assert(Table.EntrySize == factory.Target.PointerSize);
             }
         }
 

@@ -501,17 +501,15 @@ ASMCONSTANTS_C_ASSERT(CallCountingStubData__TargetForThresholdReached == offseto
 #endif // FEATURE_TIERED_COMPILATION
 
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
-#define OFFSETOF__InterfaceDispatchCache__m_rgEntries 0x20
-ASMCONSTANTS_C_ASSERT(OFFSETOF__InterfaceDispatchCache__m_rgEntries == offsetof(InterfaceDispatchCache, m_rgEntries))
-
-#define OFFSETOF__InterfaceDispatchCache__m_cEntries 0x18
-ASMCONSTANTS_C_ASSERT(OFFSETOF__InterfaceDispatchCache__m_cEntries == offsetof(InterfaceDispatchCache, m_cEntries))
-
-#define OFFSETOF__InterfaceDispatchCell__m_pCache 0x08
-ASMCONSTANTS_C_ASSERT(OFFSETOF__InterfaceDispatchCell__m_pCache == offsetof(InterfaceDispatchCell, m_pCache))
-
-#define IDC_CACHE_POINTER_MASK 0x3
-ASMCONSTANTS_C_ASSERT(IDC_CACHE_POINTER_MASK == ::IDC_CachePointerMask)
+// RhpInterfaceDispatch hardcodes the layout of the dispatch cell and of the dispatch cache
+ASMCONSTANTS_C_ASSERT(offsetof(InterfaceDispatchCell, m_pMethodTable) == 0x00)
+ASMCONSTANTS_C_ASSERT(offsetof(InterfaceDispatchCell, m_pCode) == 0x08)
+ASMCONSTANTS_C_ASSERT(offsetof(DispatchCacheTable, m_length) == 0x08)
+ASMCONSTANTS_C_ASSERT(offsetof(DispatchCacheTable, m_entries) == 0x10)
+ASMCONSTANTS_C_ASSERT(sizeof(DispatchCacheEntry) == 0x20)
+ASMCONSTANTS_C_ASSERT(offsetof(DispatchCacheEntry, m_pCell) == 0x08)
+ASMCONSTANTS_C_ASSERT(offsetof(DispatchCacheEntry, m_pInstanceType) == 0x10)
+ASMCONSTANTS_C_ASSERT(offsetof(DispatchCacheEntry, m_pTargetCode) == 0x18)
 #endif // FEATURE_CACHED_INTERFACE_DISPATCH
 
 #define OFFSETOF__ThreadLocalInfo__m_pThread 0

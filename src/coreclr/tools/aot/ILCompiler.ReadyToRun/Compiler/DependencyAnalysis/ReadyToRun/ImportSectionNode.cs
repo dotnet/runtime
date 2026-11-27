@@ -52,7 +52,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _entrySize = entrySize;
             _emitPrecode = emitPrecode;
 
-            _imports = new ImportTable(_name + "_ImportBegin", entrySize);
+            _imports = new ImportTable(_name + "_ImportBegin", (byte)EntryAlignment);
             _signatures = new ArrayOfEmbeddedPointersNode<Signature>(_name + "_SigBegin", new EmbeddedObjectNodeComparer(CompilerComparer.Instance));
             _signatureList = new List<Signature>();
         }
@@ -156,5 +156,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         }
 
         public int EntrySize => _entrySize;
+
+        // Entries are laid out back to back, so each one is aligned to the largest power of two dividing the entry size.
+        public int EntryAlignment => _entrySize & -_entrySize;
     }
 }

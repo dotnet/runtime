@@ -330,17 +330,4 @@ public:
     static void AlignedFree(void* memblock);
 };
 
-#if defined(HOST_64BIT) && defined(FEATURE_CACHED_INTERFACE_DISPATCH)
-EXTERN_C uint8_t _InterlockedCompareExchange128(int64_t volatile *, int64_t, int64_t, int64_t *);
-
-#if defined(HOST_WINDOWS)
-#pragma intrinsic(_InterlockedCompareExchange128)
-#endif
-
-FORCEINLINE uint8_t PalInterlockedCompareExchange128(_Inout_ int64_t volatile *pDst, int64_t iValueHigh, int64_t iValueLow, int64_t *pComparandAndResult)
-{
-    return _InterlockedCompareExchange128(pDst, iValueHigh, iValueLow, pComparandAndResult);
-}
-#endif // defined(HOST_64BIT) && defined(FEATURE_CACHED_INTERFACE_DISPATCH)
-
 #endif // CORECLR_MINIPAL_H
