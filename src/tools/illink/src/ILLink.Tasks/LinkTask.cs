@@ -10,12 +10,12 @@ using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 using System.Text;
 using Microsoft.Build.Framework;
-using Microsoft.Build.Utilities;
 using Microsoft.NET.Build.Tasks;
 
 namespace ILLink.Tasks
 {
-    public class ILLink : ToolTask
+    [MSBuildMultiThreadableTask]
+    public class ILLink : CachedToolTask
     {
         private static readonly InvocationCacheConfiguration s_cacheConfiguration =
             new("ILLink", "ILLINK_EXPERIMENTAL_CACHE", "ILLINK_EXPERIMENTAL_CACHE_PATH");
@@ -252,10 +252,11 @@ namespace ILLink.Tasks
                 if (!string.IsNullOrEmpty(_dotnetPath))
                     return _dotnetPath;
 
-                _dotnetPath = Environment.GetEnvironmentVariable(DotNetHostPathEnvironmentName);
+                _dotnetPath = TaskEnvironment.GetEnvironmentVariable(DotNetHostPathEnvironmentName);
                 if (string.IsNullOrEmpty(_dotnetPath))
                     throw new InvalidOperationException($"{DotNetHostPathEnvironmentName} is not set");
 
+                _dotnetPath = TaskEnvironment.GetAbsolutePath(_dotnetPath);
                 return _dotnetPath;
             }
         }
@@ -269,16 +270,13 @@ namespace ILLink.Tasks
 
         protected override string GenerateFullPathToTool() => DotNetPath;
 
-        protected override int ExecuteTool(string pathToTool, string responseFileCommands, string commandLineCommands)
-            => InvocationCache.ExecuteCached(Log, s_cacheConfiguration,
-                () => DescribeInvocation(pathToTool, responseFileCommands, commandLineCommands),
-                () => ExecuteNormally(pathToTool, responseFileCommands, commandLineCommands));
+        private protected override InvocationCacheConfiguration CacheConfiguration => s_cacheConfiguration;
 
-        private int ExecuteNormally(string pathToTool, string responseFileCommands, string commandLineCommands)
+        protected override int ExecuteToolCore(string pathToTool, string responseFileCommands, string commandLineCommands)
         {
             try
             {
-                string outputDirectory = Path.GetFullPath(OutputDirectory.ItemSpec);
+                string outputDirectory = TaskEnvironment.GetAbsolutePath(OutputDirectory.ItemSpec);
                 if (Directory.Exists(outputDirectory))
                     Directory.Delete(outputDirectory, recursive: true);
                 Directory.CreateDirectory(outputDirectory);
@@ -289,11 +287,11 @@ namespace ILLink.Tasks
                 return -1;
             }
 
-            return base.ExecuteTool(pathToTool, responseFileCommands, commandLineCommands);
+            return base.ExecuteToolCore(pathToTool, responseFileCommands, commandLineCommands);
         }
 
 #nullable enable annotations
-        private InvocationDescription? DescribeInvocation(string pathToTool, string responseFileCommands, string commandLineCommands)
+        private protected override InvocationDescription? DescribeInvocation(string pathToTool, string responseFileCommands, string commandLineCommands)
         {
             if (CustomSteps?.Length > 0 || CustomData?.Length > 0 || DumpDependencies ||
                 !string.IsNullOrEmpty(DependenciesFileFormat) || EnvironmentVariables?.Length > 0)
@@ -346,9 +344,10 @@ namespace ILLink.Tasks
                 {
                     commandLineCommands,
                     responseFileCommands
-                }, InvocationOutputs.FromDirectory(OutputDirectory.ItemSpec));
+                }, InvocationOutputs.FromDirectory(TaskEnvironment.GetAbsolutePath(OutputDirectory.ItemSpec)),
+                    TaskEnvironment.ProjectDirectory);
 
-                void AddFile(string path) => files.Add(Path.GetFullPath(path));
+                void AddFile(string path) => files.Add(Path.GetFullPath(TaskEnvironment.GetAbsolutePath(path)));
 
                 void AddOptionalFile(string path)
                 {
@@ -358,7 +357,7 @@ namespace ILLink.Tasks
 
                 void AddAssembly(string path)
                 {
-                    path = Path.GetFullPath(path);
+                    path = Path.GetFullPath(TaskEnvironment.GetAbsolutePath(path));
                     if (!assemblies.Add(path))
                         return;
 
@@ -414,15 +413,41 @@ namespace ILLink.Tasks
 
             while (!arguments.TrimStart().IsEmpty)
             {
-                if (!TryReadArgument(ref arguments, out option) ||
-                    option is not ("--link-attributes" or "--substitutions" or "-d") ||
+                if (!TryReadArgument(ref arguments, out option))
+                    return false;
+
+                if (option == "--ignore-substitutions")
+                {
+                    if (!TryReadArgument(ref arguments, out value) ||
+                        value is not ("true" or "false"))
+                    {
+                        return false;
+                    }
+
+                    continue;
+                }
+
+                if (option == "--feature")
+                {
+                    if (!TryReadArgument(ref arguments, out string feature) ||
+                        string.IsNullOrEmpty(feature) ||
+                        !TryReadArgument(ref arguments, out value) ||
+                        value is not ("true" or "false"))
+                    {
+                        return false;
+                    }
+
+                    continue;
+                }
+
+                if (option is not ("--link-attributes" or "--substitutions" or "-d") ||
                     !TryReadArgument(ref arguments, out string path) ||
                     string.IsNullOrEmpty(path))
                 {
                     return false;
                 }
 
-                string fullPath = Path.GetFullPath(path);
+                string fullPath = Path.GetFullPath(TaskEnvironment.GetAbsolutePath(path));
                 if (option == "-d")
                     directories.Add(fullPath);
                 else
@@ -477,6 +502,9 @@ namespace ILLink.Tasks
 
         private string _illinkPath = "";
 
+        /// <summary>
+        /// Gets or sets the path to the linker assembly.
+        /// </summary>
         public string ILLinkPath
         {
             get

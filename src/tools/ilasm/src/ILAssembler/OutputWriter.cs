@@ -7,7 +7,7 @@ using System.IO;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 
-namespace ILAssembler;
+namespace Microsoft.DotNet.ILAssembler;
 
 /// <summary>
 /// Writes an assembled image and its Portable PDB through the streams of an <see cref="IOutputStreams"/>, and

@@ -106,7 +106,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         public static void BindCore(IConfiguration configuration, ref string[] instance, bool defaultValueIfNotFound, BinderOptions? binderOptions)
         {
-            var temp1 = new List<string>();
+            var temp1 = new global::System.Collections.Generic.List<string>();
 
             foreach (IConfigurationSection section in configuration.GetChildren())
             {

@@ -294,6 +294,7 @@ namespace ILCompiler
                 {
                     OutputDirectory = _generatePortableCallHelpers,
                     PInvokeModules = Get(_command.DirectPInvoke),
+                    PInvokeModuleLists = Get(_command.DirectPInvokeList),
                     // The normalized name, so that platform attributes match regardless of how
                     // --targetos was spelled on the command line.
                     TargetOS = targetOS.ToString().ToLowerInvariant(),
@@ -494,7 +495,7 @@ namespace ILCompiler
                     groupConfig.CrossModuleInlineable = crossModuleInlineableCode;
                     groupConfig.CompileAllPossibleCrossModuleCode = false;
                     groupConfig.InstructionSetSupport = instructionSetSupport;
-                    groupConfig.DirectPInvokeModules = Get(_command.DirectPInvoke);
+                    groupConfig.DirectPInvokes = new DirectPInvokeSet(typeSystemContext.Target, Get(_command.DirectPInvoke), Get(_command.DirectPInvokeList));
 
                     // Handle non-local generics command line option
                     ModuleDesc nonLocalGenericsHome = compileBubbleGenerics ? inputModules[0] : null;
@@ -703,6 +704,7 @@ namespace ILCompiler
                         .UsePdbFile(Get(_command.Pdb), Get(_command.PdbPath))
                         .UsePerfMapFile(Get(_command.PerfMap), Get(_command.PerfMapPath), Get(_command.PerfMapFormatVersion))
                         .UseWasmDebugInfo(Get(_command.WasmDebugInfoOption))
+                        .UseDeferredWasmCalls(!Get(_command.DisableDeferredWasmCalls))
                         .UseProfileFile(jsonProfile != null)
                         .UseProfileData(profileDataManager)
                         .UseNodeFactoryOptimizationFlags(nodeFactoryFlags)

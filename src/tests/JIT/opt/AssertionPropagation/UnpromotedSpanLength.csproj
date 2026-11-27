@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Needed for CLRTestEnvironmentVariable -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>None</DebugType>
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="UnpromotedSpanLength.cs">
+      <HasDisasmCheck>true</HasDisasmCheck>
+    </Compile>
+    <CLRTestEnvironmentVariable Include="DOTNET_TieredCompilation" Value="0" />
+    <CLRTestEnvironmentVariable Include="DOTNET_JITMinOpts" Value="0" />
+    <!-- Exercise field loads even on ABIs that normally promote the span. -->
+    <CLRTestEnvironmentVariable Include="DOTNET_JitNoStructPromotion" Value="1" />
+    <CLRTestEnvironmentVariable Include="DOTNET_JitEnablePhysicalPromotion" Value="0" />
+  </ItemGroup>
+</Project>

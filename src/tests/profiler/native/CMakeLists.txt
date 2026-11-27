@@ -30,6 +30,7 @@ set(SOURCES
     handlesprofiler/handlesprofiler.cpp
     ijw/ijwprofiler.cpp
     inlining/inlining.cpp
+    instrumentedilmap/instrumentedilmap.cpp
     metadatagetdispenser/metadatagetdispenser.cpp
     moduleload/moduleload.cpp
     multiple/multiple.cpp

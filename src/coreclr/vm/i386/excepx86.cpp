@@ -68,7 +68,7 @@ AdjustContextForVirtualStub(
     PCODE f_IP = GetIP(pContext);
 
     StubCodeBlockKind sk;
-    VirtualCallStubManager *pMgr = VirtualCallStubManager::FindStubManager(f_IP, &sk);
+    VirtualCallStubManager::FindStubManager(f_IP, &sk);
 
     if (sk == STUB_CODE_BLOCK_VSD_DISPATCH_STUB)
     {
@@ -111,7 +111,6 @@ AdjustContextForVirtualStub(
     // put ESP back to what it was before the call.
     TADDR sp = GetSP(pContext) + sizeof(void*);
 
-#ifndef UNIX_X86_ABI
     // set the ESP to what it would be after the call (remove pushed arguments)
 
     size_t stackArgumentsSize;
@@ -120,10 +119,8 @@ AdjustContextForVirtualStub(
         ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
 
         DispatchHolder *holder = DispatchHolder::FromDispatchEntry(f_IP);
-        MethodTable *pMT = (MethodTable*)holder->stub()->expectedMT();
-        DispatchToken token(VirtualCallStubManager::GetTokenFromStubQuick(pMgr, f_IP, sk));
-        MethodDesc* pMD = VirtualCallStubManager::GetRepresentativeMethodDescFromToken(token, pMT);
-        stackArgumentsSize = pMD->SizeOfArgStack();
+        ResolveHolder *resolveHolder = ResolveHolder::FromFailEntry(holder->stub()->failTarget());
+        stackArgumentsSize = resolveHolder->stub()->stackArgumentsSize();
     }
     else
     {
@@ -133,7 +130,6 @@ AdjustContextForVirtualStub(
     }
 
     sp += stackArgumentsSize;
-#endif // UNIX_X86_ABI
 
     SetSP(pContext, dac_cast<PCODE>(dac_cast<PTR_BYTE>(sp)));
 

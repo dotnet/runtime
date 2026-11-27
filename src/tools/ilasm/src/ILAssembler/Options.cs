@@ -3,7 +3,7 @@
 
 using System.Reflection.PortableExecutable;
 
-namespace ILAssembler
+namespace Microsoft.DotNet.ILAssembler
 {
     /// <summary>
     /// Debug mode for the assembler, controlling JIT optimization and sequence points.
@@ -166,7 +166,7 @@ namespace ILAssembler
         /// </summary>
         /// <remarks>
         /// It does not change which files are read or written, and it does not change the paths in diagnostics.
-        /// The default is <see cref="ILAssembler.PathMap.Empty"/>, which records every path as it is.
+        /// The default is <see cref="Microsoft.DotNet.ILAssembler.PathMap.Empty"/>, which records every path as it is.
         /// </remarks>
         public PathMap PathMap { get; set; } = PathMap.Empty;
 

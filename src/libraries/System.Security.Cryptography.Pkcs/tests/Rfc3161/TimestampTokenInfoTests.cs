@@ -269,11 +269,15 @@ namespace System.Security.Cryptography.Pkcs.Tests
 
             Assert.Equal(tsaName1.Length, tsaName2.Length);
 
-            Assert.True(
-                Unsafe.AreSame(
-                    ref MemoryMarshal.GetReference(tsaName1.Span),
-                    ref MemoryMarshal.GetReference(tsaName2.Span)),
-                "Second call to GetTimestampAuthorityName is over the same memory");
+            // SAFETY: To be audited
+            unsafe
+            {
+                Assert.True(
+                    Unsafe.AreSame(
+                        ref MemoryMarshal.GetReference(tsaName1.Span),
+                        ref MemoryMarshal.GetReference(tsaName2.Span)),
+                    "Second call to GetTimestampAuthorityName is over the same memory");
+            }
         }
 
         [Fact]

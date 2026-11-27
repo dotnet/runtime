@@ -9,10 +9,408 @@ using System.Reflection.Metadata.Ecma335;
 using Internal.IL;
 using Xunit;
 
-namespace ILAssembler.Tests
+namespace Microsoft.DotNet.ILAssembler.Tests
 {
     public class MemberReferenceTests
     {
+        [Theory]
+        [InlineData("method void [External]Owner::M()", "method void [External]Owner::M()", "method void [External]Other::M()")]
+        [InlineData("method void [External]Owner::M()", "method void [External]Owner::M()", "method void [External]Owner::N()")]
+        [InlineData("method void [External]Owner::M()", "method void [External]Owner::M()", "method int32 [External]Owner::M()")]
+        [InlineData("field int32 [External]Owner::F", "field int32 [External]Owner::F", "field int64 [External]Owner::F")]
+        [InlineData("method vararg void [External]Owner::M(int32, ..., string)", "method vararg void [External]Owner::M(int32, ..., string)", "method vararg void [External]Owner::M(int32, ..., int64)")]
+        [InlineData("method vararg void Test::VarArg(int32, ..., string)", "method vararg void Test::VarArg(int32, ..., string)", "method vararg void Test::VarArg(int32, ..., int64)")]
+        [InlineData("field class [test]Payload [External]Owner::F", "field class Payload [External]Owner::F", "field class Payload[] [External]Owner::F")]
+        public void EquivalentMemberReferences_ReuseRow(string reference, string equivalentReference, string distinctReference)
+        {
+            string source = $$"""
+                .assembly extern External { }
+                .assembly test { }
+                .class Payload { }
+                .class Test
+                {
+                    .method public static vararg void VarArg(int32) cil managed { ret }
+                    .method public static void A() cil managed { ldtoken {{reference}} pop ret }
+                    .method public static void B() cil managed { ldtoken {{equivalentReference}} pop ret }
+                    .method public static void C() cil managed { ldtoken {{distinctReference}} pop ret }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            MetadataReader reader = pe.GetMetadataReader();
+            int first = DocumentCompilerTestHelpers.GetFirstTokenOperand(pe, reader, "A", ILOpcode.ldtoken);
+            int repeated = DocumentCompilerTestHelpers.GetFirstTokenOperand(pe, reader, "B", ILOpcode.ldtoken);
+            int distinct = DocumentCompilerTestHelpers.GetFirstTokenOperand(pe, reader, "C", ILOpcode.ldtoken);
+
+            Assert.Equal(HandleKind.MemberReference, MetadataTokens.EntityHandle(first).Kind);
+            Assert.Equal(first, repeated);
+            Assert.NotEqual(first, distinct);
+            Assert.Equal(2, reader.GetTableRowCount(TableIndex.MemberRef));
+            Assert.Equal(reference.Contains("Test::VarArg") ? HandleKind.MethodDefinition : HandleKind.TypeReference,
+                reader.GetMemberReference((MemberReferenceHandle)MetadataTokens.EntityHandle(first)).Parent.Kind);
+        }
+
+        [Theory]
+        [InlineData("class Payload", "class [test]Payload")]
+        [InlineData("class [test]Payload", "class Payload")]
+        public void LocalVarargReferences_WithEquivalentFixedSignatures_ReuseMethodDefParent(string definitionType, string equivalentType)
+        {
+            string source = $$"""
+                .assembly test { }
+                .class Payload { }
+                .class Other { }
+                .class Test
+                {
+                    .method public static vararg void VarArg({{definitionType}}) cil managed { ret }
+                    .method public static vararg void VarArg(class Other) cil managed { ret }
+                    .method public static void A() cil managed { ldtoken method vararg void Test::VarArg({{definitionType}}, ..., string) pop ret }
+                    .method public static void B() cil managed { ldtoken method vararg void Test::VarArg({{equivalentType}}, ..., string) pop ret }
+                    .method public static void C() cil managed { ldtoken method vararg void Test::VarArg(class Other, ..., string) pop ret }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            MetadataReader reader = pe.GetMetadataReader();
+            int first = DocumentCompilerTestHelpers.GetFirstTokenOperand(pe, reader, "A", ILOpcode.ldtoken);
+            int equivalent = DocumentCompilerTestHelpers.GetFirstTokenOperand(pe, reader, "B", ILOpcode.ldtoken);
+            int distinct = DocumentCompilerTestHelpers.GetFirstTokenOperand(pe, reader, "C", ILOpcode.ldtoken);
+
+            Assert.Equal(first, equivalent);
+            Assert.NotEqual(first, distinct);
+            Assert.Equal(2, reader.GetTableRowCount(TableIndex.MemberRef));
+            Assert.Equal(MetadataTokens.MethodDefinitionHandle(1),
+                reader.GetMemberReference((MemberReferenceHandle)MetadataTokens.EntityHandle(first)).Parent);
+            Assert.Equal(MetadataTokens.MethodDefinitionHandle(2),
+                reader.GetMemberReference((MemberReferenceHandle)MetadataTokens.EntityHandle(distinct)).Parent);
+        }
+
+        [Fact]
+        public void LocalVarargReferences_CompareCompactedTypeSpecificationsOnce()
+        {
+            string source = """
+                .assembly test { }
+                .class Payload { }
+                .class Test
+                {
+                    .method public static void Prepare() cil managed
+                    {
+                        ldtoken class [test]Payload[]
+                        pop
+                        ldtoken class Payload[]
+                        pop
+                        ldtoken int32[]
+                        pop
+                        ret
+                    }
+                    .method public static vararg void VarArg(class Payload, int32 modopt(int32[])) cil managed { ret }
+                    .method public static void A() cil managed { ldtoken method vararg void Test::VarArg(class Payload, int32 modopt(int32[]), ..., string) pop ret }
+                    .method public static void B() cil managed { ldtoken method vararg void Test::VarArg(class [test]Payload, int32 modopt(int32[]), ..., string) pop ret }
+                    .method public static void C() cil managed { ldtoken method vararg void Test::VarArg(class Payload, int32 modopt(class Payload[]), ..., string) pop ret }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            MetadataReader reader = pe.GetMetadataReader();
+            int first = DocumentCompilerTestHelpers.GetFirstTokenOperand(pe, reader, "A", ILOpcode.ldtoken);
+            int equivalent = DocumentCompilerTestHelpers.GetFirstTokenOperand(pe, reader, "B", ILOpcode.ldtoken);
+            int distinct = DocumentCompilerTestHelpers.GetFirstTokenOperand(pe, reader, "C", ILOpcode.ldtoken);
+
+            Assert.Equal(2, reader.GetTableRowCount(TableIndex.TypeSpec));
+            Assert.Equal(first, equivalent);
+            Assert.NotEqual(first, distinct);
+            Assert.Equal(MetadataTokens.MethodDefinitionHandle(2),
+                reader.GetMemberReference((MemberReferenceHandle)MetadataTokens.EntityHandle(first)).Parent);
+            Assert.Equal(HandleKind.TypeDefinition,
+                reader.GetMemberReference((MemberReferenceHandle)MetadataTokens.EntityHandle(distinct)).Parent.Kind);
+        }
+
+        [Theory]
+        [InlineData("int32[]", "int32[]", "int64[]")]
+        [InlineData("!0", "!0", "!1")]
+        [InlineData("class [test]Payload[]", "class Payload[]", "class Payload[,]")]
+        public void EquivalentTypeSpecifications_ReuseRow(string firstType, string equivalentType, string distinctType)
+        {
+            string source = $$"""
+                .assembly test { }
+                .class Payload { }
+                .class Test`2<T, U>
+                {
+                    .method public static void A() cil managed { ldtoken {{firstType}} pop ret }
+                    .method public static void B() cil managed { ldtoken {{equivalentType}} pop ret }
+                    .method public static void C() cil managed { ldtoken {{distinctType}} pop ret }
+                }
+                .class Other`2<T, U>
+                {
+                    .method public static void D() cil managed { ldtoken {{equivalentType}} pop ret }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            MetadataReader reader = pe.GetMetadataReader();
+            int first = DocumentCompilerTestHelpers.GetFirstTokenOperand(pe, reader, "A", ILOpcode.ldtoken);
+            int equivalent = DocumentCompilerTestHelpers.GetFirstTokenOperand(pe, reader, "B", ILOpcode.ldtoken);
+            int distinct = DocumentCompilerTestHelpers.GetFirstTokenOperand(pe, reader, "C", ILOpcode.ldtoken);
+            int otherContext = DocumentCompilerTestHelpers.GetFirstTokenOperand(pe, reader, "D", ILOpcode.ldtoken);
+
+            Assert.Equal(HandleKind.TypeSpecification, MetadataTokens.EntityHandle(first).Kind);
+            Assert.Equal(first, equivalent);
+            Assert.Equal(first, otherContext);
+            Assert.NotEqual(first, distinct);
+            Assert.Equal(2, reader.GetTableRowCount(TableIndex.TypeSpec));
+            Assert.NotEqual(
+                reader.GetTypeSpecification((TypeSpecificationHandle)MetadataTokens.EntityHandle(first)).Signature,
+                reader.GetTypeSpecification((TypeSpecificationHandle)MetadataTokens.EntityHandle(distinct)).Signature);
+        }
+
+        [Theory]
+        [InlineData("void [External]Owner::M<int32>()", "void [External]Owner::M<int32>()", "void [External]Owner::M<int64>()", 1)]
+        [InlineData("void [External]Owner::M<int32>()", "void [External]Owner::M<int32>()", "void [External]Other::M<int32>()", 2)]
+        [InlineData("void Test::Generic<int32>()", "void [test]Test::Generic<int32>()", "void Test::Generic<int64>()", 0)]
+        [InlineData("void [External]Owner::M<class [test]Payload>()", "void [External]Owner::M<class Payload>()", "void [External]Owner::M<class Payload[]>()", 1)]
+        public void EquivalentMethodSpecifications_ReuseRow(string method, string equivalentMethod, string distinctMethod, int memberRefCount)
+        {
+            string source = $$"""
+                .assembly extern External { }
+                .assembly test { }
+                .class Payload { }
+                .class Test
+                {
+                    .method public static void Generic<T>() cil managed { ret }
+                    .method public static void A() cil managed { ldtoken method {{method}} pop ret }
+                    .method public static void B() cil managed { ldtoken method {{equivalentMethod}} pop ret }
+                    .method public static void C() cil managed { ldtoken method {{distinctMethod}} pop ret }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            MetadataReader reader = pe.GetMetadataReader();
+            int first = DocumentCompilerTestHelpers.GetFirstTokenOperand(pe, reader, "A", ILOpcode.ldtoken);
+            int equivalent = DocumentCompilerTestHelpers.GetFirstTokenOperand(pe, reader, "B", ILOpcode.ldtoken);
+            int distinct = DocumentCompilerTestHelpers.GetFirstTokenOperand(pe, reader, "C", ILOpcode.ldtoken);
+
+            Assert.Equal(HandleKind.MethodSpecification, MetadataTokens.EntityHandle(first).Kind);
+            Assert.Equal(first, equivalent);
+            Assert.NotEqual(first, distinct);
+            Assert.Equal(2, reader.GetTableRowCount(TableIndex.MethodSpec));
+            Assert.Equal(memberRefCount, reader.GetTableRowCount(TableIndex.MemberRef));
+            MethodSpecification firstSpec = reader.GetMethodSpecification((MethodSpecificationHandle)MetadataTokens.EntityHandle(first));
+            MethodSpecification distinctSpec = reader.GetMethodSpecification((MethodSpecificationHandle)MetadataTokens.EntityHandle(distinct));
+            Assert.True(firstSpec.Method != distinctSpec.Method || firstSpec.Signature != distinctSpec.Signature);
+        }
+
+        [Fact]
+        public void EquivalentTypeSpecifications_UpdateMemberParentsAndSignatureTokens()
+        {
+            string source = """
+                .assembly test { }
+                .class Payload { }
+                .class Test
+                {
+                    .method public static void Caller() cil managed
+                    {
+                        ldtoken class [test]Payload[]
+                        pop
+                        ldtoken class Payload[]
+                        pop
+                        ldtoken int32[]
+                        pop
+                        ldtoken method void int32[]::M<int32>()
+                        pop
+                        call void int32[]::N()
+                        ret
+                    }
+                    .method public static void LocalSignature() cil managed
+                    {
+                        .locals init ([0] ... int32 modopt(int32[]) a)
+                        ret
+                    }
+                    .field public int32 modopt(int32[]) F
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            MetadataReader reader = pe.GetMetadataReader();
+
+            Assert.Equal(2, reader.GetTableRowCount(TableIndex.TypeSpec));
+            Assert.Equal(2, reader.MemberReferences.Count);
+            Assert.Equal(1, reader.GetTableRowCount(TableIndex.MethodSpec));
+            Assert.All(reader.MemberReferences, handle =>
+                Assert.Equal(MetadataTokens.TypeSpecificationHandle(2), reader.GetMemberReference(handle).Parent));
+            Assert.Equal(MetadataTokens.MemberReferenceHandle(1),
+                reader.GetMethodSpecification(MetadataTokens.MethodSpecificationHandle(1)).Method);
+            Assert.Equal(new byte[] { 0x1D, 0x08 },
+                reader.GetBlobBytes(reader.GetTypeSpecification(MetadataTokens.TypeSpecificationHandle(2)).Signature));
+            Assert.Equal(new byte[] { 0x06, 0x20, 0x0A, 0x08 },
+                reader.GetBlobBytes(reader.GetFieldDefinition(Assert.Single(reader.FieldDefinitions)).Signature));
+            MethodBodyBlock body = DocumentCompilerTestHelpers.GetMethodBody(pe, "LocalSignature");
+            Assert.Equal(new byte[] { 0x07, 0x01, 0x41, 0x20, 0x0A, 0x08 },
+                reader.GetBlobBytes(reader.GetStandaloneSignature(body.LocalSignature).Signature));
+        }
+
+        [Fact]
+        public void NumericTokens_AreWrittenWithoutRemappingWhenReferencesAreCompacted()
+        {
+            string source = """
+                .assembly extern External { }
+                .assembly test { }
+                .class Payload { }
+                .class Test
+                {
+                    .method public static void Caller() cil managed
+                    {
+                        ldtoken mdtoken(0x1B000003)
+                        pop
+                        ldtoken mdtoken(0x2B000003)
+                        pop
+                        ldtoken method mdtoken(0x2B000003)
+                        pop
+                        ldtoken method mdtoken(0x7F000003)
+                        pop
+                        box mdtoken(0x1B000003)
+                        pop
+                        ldtoken class [test]Payload[]
+                        pop
+                        ldtoken class Payload[]
+                        pop
+                        ldtoken int32[]
+                        pop
+                        ldtoken method void [External]Owner::M<int32>()
+                        pop
+                        ldtoken method void [External]Owner::M<int32>()
+                        pop
+                        ldtoken method void [External]Owner::M<int64>()
+                        pop
+                        ldtoken method mdtoken(0x2B000003)
+                        pop
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            MetadataReader reader = pe.GetMetadataReader();
+            ImmutableArray<int> tokens =
+                DocumentCompilerTestHelpers.GetTokenOperands(pe, reader, "Caller", ILOpcode.ldtoken);
+            ImmutableArray<int> boxTokens =
+                DocumentCompilerTestHelpers.GetTokenOperands(pe, reader, "Caller", ILOpcode.box);
+
+            Assert.Equal(2, reader.GetTableRowCount(TableIndex.TypeSpec));
+            Assert.Equal(2, reader.GetTableRowCount(TableIndex.MethodSpec));
+            Assert.Equal(0x1B000003, tokens[0]);
+            Assert.Equal(0x2B000003, tokens[1]);
+            Assert.Equal(0x2B000003, tokens[2]);
+            Assert.Equal(0x7F000003, tokens[3]);
+            Assert.Equal(0x2B000003, tokens[^1]);
+            Assert.Equal(0x1B000003, Assert.Single(boxTokens));
+        }
+
+        [Fact]
+        public void NumericMethodTypedefs_PreserveTokensBeforeAndAfterReferencesAreRecorded()
+        {
+            string source = """
+                .assembly extern External { }
+                .assembly test { }
+                .typedef method mdtoken(0x2B000003) as Forward
+                .typedef method mdtoken(0x7F000003) as Invalid
+                .class Producer
+                {
+                    .method public static void References() cil managed
+                    {
+                        ldtoken method void [External]Owner::M<int32>()
+                        pop
+                        ldtoken method void [External]Owner::M<int32>()
+                        pop
+                        ldtoken method void [External]Owner::M<int64>()
+                        pop
+                        ret
+                    }
+                }
+                .typedef method mdtoken(0x2B000003) as Backward
+                .typedef method Forward as Chained
+                .typedef method void [External]Owner::M<int64>() as Symbolic
+                .class Consumer
+                {
+                    .method public static void Caller() cil managed
+                    {
+                        ldtoken method Forward
+                        pop
+                        ldtoken method Backward
+                        pop
+                        ldtoken method Chained
+                        pop
+                        ldtoken method Invalid
+                        pop
+                        ldtoken method Symbolic
+                        pop
+                        call Forward
+                        call Backward
+                        call Invalid
+                        call Symbolic
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            MetadataReader reader = pe.GetMetadataReader();
+            ImmutableArray<int> tokens =
+                DocumentCompilerTestHelpers.GetTokenOperands(pe, reader, "Caller", ILOpcode.ldtoken);
+            ImmutableArray<int> callTokens =
+                DocumentCompilerTestHelpers.GetTokenOperands(pe, reader, "Caller", ILOpcode.call);
+
+            Assert.Equal(2, reader.GetTableRowCount(TableIndex.MethodSpec));
+            Assert.Equal(new[] { 0x2B000003, 0x2B000003, 0x2B000003, 0x7F000003, 0x2B000002 }, tokens);
+            Assert.Equal(new[] { 0x2B000003, 0x2B000003, 0x7F000003, 0x2B000002 }, callTokens);
+        }
+
+        [Fact]
+        public void NumericMemberReferenceTokens_AreWrittenWithoutRemappingWhenReferencesAreCompacted()
+        {
+            string source = """
+                .assembly extern External { }
+                .assembly test { }
+                .class Test
+                {
+                    .method public static void Caller() cil managed
+                    {
+                        ldtoken mdtoken(0x0A000002)
+                        pop
+                        ldtoken mdtoken(0x0A000003)
+                        pop
+                        call mdtoken(0x0A000003)
+                        ldsfld mdtoken(0x0A000003)
+                        ldtoken method void [External]Owner::M()
+                        pop
+                        ldtoken method void [External]Owner::M()
+                        pop
+                        ldtoken method void [External]Owner::N()
+                        pop
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            MetadataReader reader = pe.GetMetadataReader();
+            ImmutableArray<int> tokens =
+                DocumentCompilerTestHelpers.GetTokenOperands(pe, reader, "Caller", ILOpcode.ldtoken);
+            ImmutableArray<int> callTokens =
+                DocumentCompilerTestHelpers.GetTokenOperands(pe, reader, "Caller", ILOpcode.call);
+            ImmutableArray<int> fieldTokens =
+                DocumentCompilerTestHelpers.GetTokenOperands(pe, reader, "Caller", ILOpcode.ldsfld);
+
+            Assert.Equal(2, reader.GetTableRowCount(TableIndex.MemberRef));
+            Assert.Equal(0x0A000002, tokens[0]);
+            Assert.Equal(0x0A000003, tokens[1]);
+            Assert.Equal(0x0A000003, Assert.Single(callTokens));
+            Assert.Equal(0x0A000003, Assert.Single(fieldTokens));
+            Assert.Equal(0x0A000001, tokens[2]);
+            Assert.Equal(tokens[2], tokens[3]);
+            Assert.Equal(0x0A000002, tokens[4]);
+            Assert.Equal("M", reader.GetString(reader.GetMemberReference(MetadataTokens.MemberReferenceHandle(1)).Name));
+            Assert.Equal("N", reader.GetString(reader.GetMemberReference(MetadataTokens.MemberReferenceHandle(2)).Name));
+        }
+
         [Fact]
         public void UnqualifiedGlobalMethodReference_ResolvesToMethodDefinition()
         {

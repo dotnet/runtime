@@ -9,19 +9,183 @@ using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
+using System.Xml;
+using System.Xml.Linq;
+using Microsoft.Build.Construction;
+using Microsoft.Build.Evaluation;
+using Microsoft.Build.Execution;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.NET.Build.Tasks;
 using Mono.Linker;
 using Xunit;
+using Task = System.Threading.Tasks.Task;
 
 namespace ILLink.Tasks.Tests
 {
+    [CollectionDefinition(nameof(TaskArgumentTests), DisableParallelization = true)]
+    public class TaskArgumentTestsCollection { }
+
     // These tests ensure that the task options correctly flow from
     // the task -> response file -> parsed arguments -> options on LinkContext
+    [Collection(nameof(TaskArgumentTests))]
     public class TaskArgumentTests
     {
+        [Fact]
+        public void TaskDeclaresMultithreadedSupport()
+        {
+            Assert.NotNull(typeof(ILLink).GetCustomAttribute<MSBuildMultiThreadableTaskAttribute>(inherit: false));
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task TaskEnvironmentsAreIsolated(bool relativeHostPath)
+        {
+            string processDirectory = Environment.CurrentDirectory;
+            string processHost = Environment.GetEnvironmentVariable("DOTNET_HOST_PATH");
+            await Task.WhenAll(Enumerable.Range(0, 2).Select(index => Task.Run(() =>
+            {
+                string projectDirectory = Path.Combine(processDirectory, $"project{index}");
+                string hostPath = Path.Combine(projectDirectory, "dotnet");
+                var task = new MockTask
+                {
+                    TaskEnvironment = TaskEnvironment.CreateWithProjectDirectoryAndEnvironment(
+                        projectDirectory, new Dictionary<string, string>
+                        {
+                            { "DOTNET_HOST_PATH", relativeHostPath ? "dotnet" : hostPath },
+                            { "ILLINK_TEST_ENVIRONMENT", index.ToString() }
+                        }),
+                    BuildEngine = new MockBuildEngine(),
+                    AssemblyPaths = new ITaskItem[] { new TaskItem("Assembly.dll") },
+                    ReferenceAssemblyPaths = new ITaskItem[] { new TaskItem("Reference.dll") },
+                    OutputDirectory = new TaskItem("linked")
+                };
+
+                Assert.Equal(hostPath, task.GetToolPath());
+                var startInfo = task.GetStartInfo();
+                Assert.Equal(projectDirectory, startInfo.WorkingDirectory);
+                Assert.Equal(relativeHostPath ? "dotnet" : hostPath, startInfo.Environment["DOTNET_HOST_PATH"]);
+                Assert.Equal(index.ToString(), startInfo.Environment["ILLINK_TEST_ENVIRONMENT"]);
+                using var driver = task.CreateDriver();
+                // Relative arguments are passed through and resolved by the tool's working directory.
+                Assert.Equal(new[] { "Assembly.dll", "Reference.dll" }, driver.GetReferenceAssemblies());
+                Assert.Equal("linked", driver.Context.OutputDirectory);
+            })));
+            Assert.Equal(processDirectory, Environment.CurrentDirectory);
+            Assert.Equal(processHost, Environment.GetEnvironmentVariable("DOTNET_HOST_PATH"));
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        public void MissingTaskLocalHostPath(string hostPath)
+        {
+            var task = new MockTask
+            {
+                TaskEnvironment = TaskEnvironment.CreateWithProjectDirectoryAndEnvironment(
+                    Environment.CurrentDirectory, new Dictionary<string, string>())
+            };
+            task.TaskEnvironment.SetEnvironmentVariable("DOTNET_HOST_PATH", hostPath);
+            Assert.Equal("DOTNET_HOST_PATH is not set", Assert.Throws<InvalidOperationException>(() => task.GetToolPath()).Message);
+        }
+
+        [Theory]
+        [InlineData(false, null, false)]
+        [InlineData(false, false, false)]
+        [InlineData(false, true, false)]
+        [InlineData(true, null, false)]
+        [InlineData(true, false, false)]
+        [InlineData(true, true, false)]
+        [InlineData(false, true, true)]
+        [InlineData(true, true, true)]
+        public void XmlPathParameters(bool multiThreaded, bool? optionalInputs, bool absolutePaths)
+        {
+            string projectDirectory = Directory.CreateTempSubdirectory().FullName;
+            try
+            {
+                string assemblyPath = Path.Combine("input with spaces;percent%", "Assembly.dll");
+                string referencePath = Path.Combine("ref", "Reference.dll");
+                string descriptorPath = Path.Combine("descriptors", "root.xml");
+                string stepPath = Path.Combine("steps", "custom.dll");
+                string linkerPath = Path.Combine("tools", "illink.dll");
+                string outputPath = "output with spaces";
+                var taskElement = new XElement(nameof(XmlBindingTask),
+                    new XAttribute("AssemblyPaths", "@(Assembly)"),
+                    new XAttribute("RootAssemblyNames", "Assembly"),
+                    new XAttribute("OutputDirectory", InputPath(outputPath)),
+                    new XElement("Output", new XAttribute("TaskParameter", nameof(XmlBindingTask.ResponseFile)), new XAttribute("PropertyName", "ResponseFile")),
+                    new XElement("Output", new XAttribute("TaskParameter", nameof(XmlBindingTask.CommandLine)), new XAttribute("PropertyName", "CommandLine")),
+                    new XElement("Output", new XAttribute("TaskParameter", nameof(XmlBindingTask.TaskProcessId)), new XAttribute("PropertyName", "TaskProcessId")));
+                if (optionalInputs is bool includeInputs)
+                {
+                    taskElement.Add(
+                        new XAttribute("ReferenceAssemblyPaths", includeInputs ? InputPath(referencePath) : ""),
+                        new XAttribute("RootDescriptorFiles", includeInputs ? "@(Descriptor)" : ""),
+                        new XAttribute("CustomSteps", includeInputs ? "@(Step)" : ""),
+                        new XAttribute("ILLinkPath", includeInputs ? InputPath(linkerPath) : ""));
+                }
+                var xml = new XElement("Project",
+                    new XElement("UsingTask",
+                        new XAttribute("TaskName", nameof(XmlBindingTask)),
+                        new XAttribute("AssemblyFile", typeof(XmlBindingTask).Assembly.Location)),
+                    new XElement("ItemGroup",
+                        new XElement("Assembly", new XAttribute("Include", InputPath(assemblyPath)),
+                            new XElement("TrimMode", "copy"), new XElement("TrimmerSingleWarn", "false")),
+                        new XElement("Descriptor", new XAttribute("Include", InputPath(descriptorPath))),
+                        new XElement("Step", new XAttribute("Include", InputPath(stepPath)),
+                            new XElement("Type", "Custom.Step"), new XElement("BeforeStep", "MarkStep"))),
+                    new XElement("Target", new XAttribute("Name", "Run"), taskElement));
+                using var collection = new ProjectCollection();
+                using XmlReader reader = xml.CreateReader();
+                var root = ProjectRootElement.Create(reader, collection);
+                root.FullPath = Path.Combine(projectDirectory, "test.proj");
+                var project = new ProjectInstance(root, null, null, collection);
+                using var manager = new BuildManager();
+                var parameters = new BuildParameters(collection)
+                {
+                    EnableNodeReuse = false,
+                    MaxNodeCount = 1,
+                    MultiThreaded = multiThreaded
+                };
+                BuildResult result = manager.Build(parameters,
+                    new BuildRequestData(project, new[] { "Run" }, null, BuildRequestDataFlags.ProvideProjectStateAfterBuild));
+                Assert.Equal(BuildResultCode.Success, result.OverallResult);
+                Assert.Equal(Environment.ProcessId.ToString(), result.ProjectStateAfterBuild.GetPropertyValue("TaskProcessId"));
+                string response = result.ProjectStateAfterBuild.GetPropertyValue("ResponseFile");
+                Assert.Contains($"-reference \"{ExpectedPath(assemblyPath)}\"", response);
+                Assert.Contains("--action copy \"Assembly\"", response);
+                Assert.Contains("--singlewarn- \"Assembly\"", response);
+                Assert.Contains("-a \"Assembly\"", response);
+                Assert.Contains($"-out \"{ExpectedPath(outputPath)}\"", response);
+                string command = result.ProjectStateAfterBuild.GetPropertyValue("CommandLine");
+                if (optionalInputs == true)
+                {
+                    Assert.Contains($"-reference \"{ExpectedPath(referencePath)}\"", response);
+                    Assert.Contains($"-x \"{ExpectedPath(descriptorPath)}\"", response);
+                    Assert.Contains($"--custom-step \"-MarkStep:Custom.Step,{ExpectedPath(stepPath)}\"", response);
+                    Assert.Equal($"\"{ExpectedPath(linkerPath)}\"", command);
+                }
+                else
+                {
+                    Assert.DoesNotContain("-x ", response);
+                    Assert.DoesNotContain("--custom-step ", response);
+                    Assert.DoesNotContain("Reference.dll", response);
+                    string taskDirectory = Path.GetDirectoryName(typeof(ILLink).Assembly.Location);
+                    string defaultLinkerPath = Path.Combine(Path.GetDirectoryName(taskDirectory), "net", "illink.dll");
+                    Assert.Equal($"\"{defaultLinkerPath}\"", command);
+                }
+
+                string ExpectedPath(string path) => absolutePaths ? Path.Combine(projectDirectory, path) : path;
+                string InputPath(string path) => ProjectCollection.Escape(ExpectedPath(path));
+            }
+            finally
+            {
+                Directory.Delete(projectDirectory, recursive: true);
+            }
+        }
+
         public static IEnumerable<object[]> AssemblyPathsCases => new List<object[]> {
             new object [] {
                 new ITaskItem [] {
@@ -1271,8 +1435,44 @@ namespace ILLink.Tasks.Tests
             Assert.Matches("^[0-9a-f]{64}$", key);
         }
 
+        [Fact]
+        public void CacheKeyAllowsRuntimeIgnoreSubstitutionsArgument()
+        {
+            using var test = new OutputDirectoryTest();
+            string host = PrepareCacheKeyTest(test);
+            test.Task.ExtraArgs = "--ignore-link-attributes true --ignore-substitutions true";
+
+            Assert.True(test.Task.TryGetCacheKey(host, out string withIgnore));
+
+            test.Task.ExtraArgs = "--ignore-link-attributes true --ignore-substitutions false";
+
+            Assert.True(test.Task.TryGetCacheKey(host, out string withoutIgnore));
+            Assert.NotEqual(withIgnore, withoutIgnore);
+        }
+
+        [Fact]
+        public void CacheKeyAllowsRuntimeFeatureArgument()
+        {
+            using var test = new OutputDirectoryTest();
+            string host = PrepareCacheKeyTest(test);
+            test.Task.ExtraArgs = "--ignore-link-attributes true --feature Feature.Switch false";
+
+            Assert.True(test.Task.TryGetCacheKey(host, out string disabled));
+
+            test.Task.ExtraArgs = "--ignore-link-attributes true --feature Feature.Switch true";
+
+            Assert.True(test.Task.TryGetCacheKey(host, out string enabled));
+            Assert.NotEqual(disabled, enabled);
+        }
+
         [Theory]
         [InlineData("--ignore-link-attributes false")]
+        [InlineData("--ignore-link-attributes true --ignore-substitutions")]
+        [InlineData("--ignore-link-attributes true --ignore-substitutions yes")]
+        [InlineData("--ignore-link-attributes true --feature")]
+        [InlineData("--ignore-link-attributes true --feature Feature.Switch")]
+        [InlineData("--ignore-link-attributes true --feature Feature.Switch yes")]
+        [InlineData("--ignore-link-attributes true --feature \"\" false")]
         [InlineData("--link-attributes attributes.xml")]
         [InlineData("--ignore-link-attributes true --help")]
         [InlineData("--ignore-link-attributes true --link-attributes")]
@@ -1418,11 +1618,14 @@ namespace ILLink.Tasks.Tests
         }
 
         [Theory]
-        [InlineData("argument")]
-        [InlineData("metadata")]
-        [InlineData("output")]
-        [InlineData("input-path")]
-        public void CacheKeyTracksInvocation(string change)
+        [InlineData("argument", true)]
+        [InlineData("metadata", true)]
+        [InlineData("output", true)]
+        [InlineData("input-path", true)]
+        [InlineData("stdout-importance", false)]
+        [InlineData("stderr-importance", false)]
+        [InlineData("stderr-as-error", false)]
+        public void CacheKeyTracksInvocation(string change, bool affectsKey)
         {
             using var test = new OutputDirectoryTest();
             string host = PrepareCacheKeyTest(test);
@@ -1443,10 +1646,19 @@ namespace ILLink.Tasks.Tests
                     File.Copy(test.Task.AssemblyPaths[0].ItemSpec, newPath);
                     test.Task.AssemblyPaths[0] = new TaskItem(newPath);
                     break;
+                case "stdout-importance":
+                    test.Task.StandardOutputImportance = "High";
+                    break;
+                case "stderr-importance":
+                    test.Task.StandardErrorImportance = "Low";
+                    break;
+                case "stderr-as-error":
+                    test.Task.LogStandardErrorAsError = true;
+                    break;
             }
 
             Assert.True(test.Task.TryGetCacheKey(host, out string changed));
-            Assert.NotEqual(original, changed);
+            Assert.Equal(affectsKey, original != changed);
         }
 
         [Theory]
@@ -1695,6 +1907,381 @@ namespace ILLink.Tasks.Tests
             }, corruptEntry.ToString()).Dispose();
         }
 
+        [Theory]
+        [InlineData("warning")]
+        [InlineData("suppressed")]
+        [InlineData("tool-error")]
+        [InlineData("corrupt-output")]
+        [InlineData("corrupt-diagnostics")]
+        [InlineData("engine-error")]
+        [InlineData("engine-per-code")]
+        [InlineData("engine-exception")]
+        [InlineData("engine-cold")]
+        public void TaskReplaysCompilerWarnings(string mode)
+        {
+            RemoteExecutor.Invoke(static mode =>
+            {
+                var engine = new WarningPolicyBuildEngine { TreatWarningsAsErrors = mode == "engine-cold" };
+                using var test = new OutputDirectoryTest(engine);
+                string input = Path.Combine(test.Root, "WarningInput.dll");
+                WriteWarningAssembly(input);
+                string cacheDirectory = Path.Combine(test.Root, "cache");
+                Environment.SetEnvironmentVariable("ILLINK_EXPERIMENTAL_CACHE", "true");
+                Environment.SetEnvironmentVariable("ILLINK_EXPERIMENTAL_CACHE_PATH", cacheDirectory);
+                ILLink task = CreateTask();
+
+                Assert.Equal(mode is not ("tool-error" or "engine-cold"), task.Execute());
+                if (mode == "engine-cold")
+                {
+                    Assert.True(task.Log.HasLoggedErrors);
+                    Assert.Equal(-1, task.ExitCode);
+                    Assert.Equal("IL2026", Assert.Single(engine.Errors).Code);
+                    Assert.Contains(engine.Messages, message => message.Message.StartsWith("ILLink cache stored:"));
+                    for (int i = 0; i < 2; i++)
+                    {
+                        engine.Errors.Clear();
+                        engine.Warnings.Clear();
+                        engine.Messages.Clear();
+                        engine.TreatWarningsAsErrors = i == 0;
+                        task = CreateTask();
+                        Assert.Equal(i == 1, task.Execute());
+                        Assert.Equal(i == 0 ? -1 : 0, task.ExitCode);
+                        Assert.Contains(engine.Messages, message => message.Message.StartsWith("ILLink cache hit:"));
+                        if (i == 0)
+                        {
+                            Assert.Equal("IL2026", Assert.Single(engine.Errors).Code);
+                            Assert.Empty(engine.Warnings);
+                        }
+                        else
+                        {
+                            Assert.Equal("IL2026", Assert.Single(engine.Warnings).Code);
+                            Assert.Empty(engine.Errors);
+                        }
+                    }
+                    return;
+                }
+                if (mode == "tool-error")
+                {
+                    Assert.Equal(1, task.ExitCode);
+                    Assert.Contains(test.BuildEngine.Errors, error => error.Code == "IL2026");
+                    Assert.False(Directory.Exists(cacheDirectory));
+                    return;
+                }
+
+                Assert.Equal(0, task.ExitCode);
+                BuildWarningEventArgs original = mode == "suppressed" ? null : Assert.Single(test.BuildEngine.Warnings);
+                if (original is not null)
+                    Assert.Equal("IL2026", original.Code);
+                Assert.Contains(test.BuildEngine.Messages, message => message.Message.StartsWith("ILLink cache stored:"));
+                engine.TreatWarningsAsErrors = mode is "engine-error" or "engine-exception";
+                engine.WarningsAsErrors = mode == "engine-per-code" ? "IL2026" : null;
+                engine.WarningsNotAsErrors = mode == "engine-exception" ? "IL2026" : null;
+                if (mode.StartsWith("engine-", StringComparison.Ordinal))
+                    task = CreateTask();
+                bool corruptEntry = mode is "corrupt-output" or "corrupt-diagnostics";
+                if (corruptEntry)
+                {
+                    string entry = Assert.Single(Directory.GetDirectories(Path.Combine(cacheDirectory, "v1")));
+                    string path = mode == "corrupt-output" ? Path.Combine(entry, "outputs", "WarningInput.dll") : Path.Combine(entry, "diagnostics");
+                    File.WriteAllText(path, "corrupt");
+                }
+
+                for (int i = 0; i < 2; i++)
+                {
+                    test.BuildEngine.Warnings.Clear();
+                    test.BuildEngine.Messages.Clear();
+                    bool escalated = mode is "engine-error" or "engine-per-code";
+                    Assert.Equal(!escalated, task.Execute());
+                    Assert.Equal(escalated, task.Log.HasLoggedErrors);
+                    Assert.Equal(escalated ? -1 : 0, task.ExitCode);
+                    Assert.Contains(test.BuildEngine.Messages, message => message.Message.StartsWith(
+                        corruptEntry ? "ILLink cache restore failed" : "ILLink cache hit:"));
+                    if (original is null)
+                    {
+                        Assert.Empty(test.BuildEngine.Warnings);
+                    }
+                    else if (escalated)
+                    {
+                        BuildErrorEventArgs replayed = Assert.Single(engine.Errors);
+                        Assert.Equal(original.Code, replayed.Code);
+                        Assert.Equal(original.Message, replayed.Message);
+                        Assert.Empty(engine.Warnings);
+                    }
+                    else
+                    {
+                        BuildWarningEventArgs replayed = Assert.Single(test.BuildEngine.Warnings);
+                        Assert.Equal(original.Code, replayed.Code);
+                        Assert.Equal(original.Message, replayed.Message);
+                        Assert.Equal(original.File, replayed.File);
+                        Assert.Equal(original.Subcategory, replayed.Subcategory);
+                        Assert.Equal(original.LineNumber, replayed.LineNumber);
+                        Assert.Equal(original.ColumnNumber, replayed.ColumnNumber);
+                        Assert.Equal(original.EndLineNumber, replayed.EndLineNumber);
+                        Assert.Equal(original.EndColumnNumber, replayed.EndColumnNumber);
+                    }
+                    if (!escalated)
+                        Assert.Empty(test.BuildEngine.Errors);
+                    if (escalated)
+                        break;
+                }
+
+                ILLink CreateTask() => new ILLink
+                {
+                    BuildEngine = test.BuildEngine,
+                    ToolPath = test.Task.ToolPath,
+                    ToolExe = test.Task.ToolExe,
+                    ILLinkPath = test.Task.ILLinkPath,
+                    AssemblyPaths = new ITaskItem[] { new TaskItem(input) },
+                    ReferenceAssemblyPaths = Directory.GetFiles(Path.GetDirectoryName(typeof(object).Assembly.Location), "*.dll")
+                        .Where(Utils.IsManagedAssembly)
+                        .Select(path => (ITaskItem)new TaskItem(path)).ToArray(),
+                    RootAssemblyNames = new ITaskItem[] { new TaskItem("WarningInput", new Dictionary<string, string> { { "RootMode", "EntryPoint" } }) },
+                    OutputDirectory = new TaskItem(test.Output),
+                    TreatWarningsAsErrors = mode == "tool-error",
+                    NoWarn = mode == "suppressed" ? "IL2026" : null,
+                    SingleWarn = false
+                };
+            }, mode).Dispose();
+        }
+
+        [Theory]
+        [InlineData("unchanged")]
+        [InlineData("stdout-importance")]
+        [InlineData("stderr-importance")]
+        [InlineData("stderr-as-error")]
+        [InlineData("cold-stderr-as-error")]
+        public void TaskReplaysCurrentStreamPolicy(string mode)
+        {
+            RemoteExecutor.Invoke(static mode =>
+            {
+                var engine = new DeferredOutputBuildEngine();
+                using var test = new OutputDirectoryTest(engine);
+                string input = Path.Combine(test.Root, "Input.dll");
+                WriteTestAssembly(input);
+                string tool = Path.Combine(test.Root, "OutputTool.dll");
+                WriteOutputTool(tool);
+                File.Copy(Path.ChangeExtension(typeof(TaskArgumentTests).Assembly.Location, ".runtimeconfig.json"),
+                    Path.ChangeExtension(tool, ".runtimeconfig.json"));
+                string cacheDirectory = Path.Combine(test.Root, "cache");
+                engine.CacheDirectory = cacheDirectory;
+                Environment.SetEnvironmentVariable("ILLINK_EXPERIMENTAL_CACHE", "true");
+                Environment.SetEnvironmentVariable("ILLINK_EXPERIMENTAL_CACHE_PATH", cacheDirectory);
+                ILLink task = CreateTask();
+                bool coldError = mode == "cold-stderr-as-error";
+                task.LogStandardErrorAsError = coldError;
+
+                Assert.Equal(!coldError, task.Execute());
+                if (coldError)
+                {
+                    Assert.Equal(-1, task.ExitCode);
+                    Assert.Equal(2, test.BuildEngine.Errors.Count);
+                    Assert.Contains(test.BuildEngine.Messages, message => message.Message.StartsWith("ILLink cache stored:"));
+                    test.BuildEngine.Errors.Clear();
+                    test.BuildEngine.Messages.Clear();
+                    task = CreateTask();
+                    Assert.True(task.Execute());
+                    Assert.Contains(test.BuildEngine.Messages, message => message.Message.StartsWith("ILLink cache hit:"));
+                    Assert.Empty(test.BuildEngine.Errors);
+                    Assert.Equal("IL2026", Assert.Single(test.BuildEngine.Warnings).Code);
+                    Assert.Single(test.BuildEngine.Messages, message => message.Message == "stderr {0}");
+                    return;
+                }
+
+                Assert.Contains(test.BuildEngine.Messages, message => message.Message.StartsWith("ILLink cache stored:"));
+                Assert.Equal(MessageImportance.Low, Assert.Single(test.BuildEngine.Messages, message => message.Message == "stdout {0}").Importance);
+                Assert.Equal(MessageImportance.High, Assert.Single(test.BuildEngine.Messages, message => message.Message == "stderr {0}").Importance);
+                Assert.Equal("IL2026", Assert.Single(test.BuildEngine.Warnings).Code);
+                test.BuildEngine.Messages.Clear();
+                test.BuildEngine.Warnings.Clear();
+
+                task = CreateTask();
+                task.StandardOutputImportance = mode == "stdout-importance" ? "hIgH" : null;
+                task.StandardErrorImportance = mode == "stderr-importance" ? "Low" : null;
+                task.LogStandardErrorAsError = mode == "stderr-as-error";
+                bool escalated = task.LogStandardErrorAsError;
+                Assert.Equal(!escalated, task.Execute());
+                Assert.Equal(escalated ? -1 : 0, task.ExitCode);
+                Assert.Contains(test.BuildEngine.Messages, message => message.Message.StartsWith("ILLink cache hit:"));
+                Assert.Single(Directory.GetDirectories(Path.Combine(cacheDirectory, "v1")));
+                Assert.Equal(mode == "stdout-importance" ? MessageImportance.High : MessageImportance.Low,
+                    Assert.Single(test.BuildEngine.Messages, message => message.Message == "stdout {0}").Importance);
+                if (escalated)
+                {
+                    Assert.Empty(test.BuildEngine.Warnings);
+                    Assert.Contains(test.BuildEngine.Errors, error => error.Message == "stderr {0}");
+                    Assert.Contains(test.BuildEngine.Errors, error =>
+                        error.Message == "source.cs(4,2,4,8): Trim analysis warning IL2026: warning {0}");
+                    Assert.Equal(2, test.BuildEngine.Errors.Count);
+                }
+                else
+                {
+                    Assert.Empty(test.BuildEngine.Errors);
+                    Assert.Equal(mode == "stderr-importance" ? MessageImportance.Low : MessageImportance.High,
+                        Assert.Single(test.BuildEngine.Messages, message => message.Message == "stderr {0}").Importance);
+                    BuildWarningEventArgs warning = Assert.Single(test.BuildEngine.Warnings);
+                    Assert.Equal("IL2026", warning.Code);
+                    Assert.Equal("warning {0}", warning.Message);
+                    Assert.Equal("Trim analysis", warning.Subcategory);
+                    Assert.Equal("source.cs", warning.File);
+                    Assert.Equal(4, warning.LineNumber);
+                    Assert.Equal(2, warning.ColumnNumber);
+                    Assert.Equal(4, warning.EndLineNumber);
+                    Assert.Equal(8, warning.EndColumnNumber);
+                }
+
+                ILLink CreateTask() => new ILLink
+                {
+                    BuildEngine = test.BuildEngine,
+                    ToolPath = test.Task.ToolPath,
+                    ToolExe = test.Task.ToolExe,
+                    ILLinkPath = tool,
+                    AssemblyPaths = new ITaskItem[] { new TaskItem(input) },
+                    RootAssemblyNames = new ITaskItem[] { new TaskItem("Input") },
+                    OutputDirectory = new TaskItem(test.Output)
+                };
+            }, mode).Dispose();
+        }
+
+        [Fact]
+        public void TaskReplaysOutputAndClearsCaptureAfterExecutionException()
+        {
+            RemoteExecutor.Invoke(static () =>
+            {
+                using var test = new OutputDirectoryTest();
+                string input = Path.Combine(test.Root, "Input.dll");
+                WriteTestAssembly(input);
+                string tool = Path.Combine(test.Root, "OutputTool.dll");
+                WriteOutputTool(tool);
+                File.Copy(Path.ChangeExtension(typeof(TaskArgumentTests).Assembly.Location, ".runtimeconfig.json"),
+                    Path.ChangeExtension(tool, ".runtimeconfig.json"));
+                string cacheDirectory = Path.Combine(test.Root, "cache");
+                Environment.SetEnvironmentVariable("ILLINK_EXPERIMENTAL_CACHE", "true");
+                Environment.SetEnvironmentVariable("ILLINK_EXPERIMENTAL_CACHE_PATH", cacheDirectory);
+                var task = new ThrowingExecutionTask
+                {
+                    BuildEngine = test.BuildEngine,
+                    ToolPath = test.Task.ToolPath,
+                    ToolExe = test.Task.ToolExe,
+                    ILLinkPath = tool,
+                    AssemblyPaths = new ITaskItem[] { new TaskItem(input) },
+                    RootAssemblyNames = new ITaskItem[] { new TaskItem("Input") },
+                    OutputDirectory = new TaskItem(test.Output),
+                    ThrowAfterExecution = true
+                };
+
+                InvalidOperationException exception = Assert.Throws<InvalidOperationException>(() => task.Execute());
+
+                Assert.Equal("execute", exception.Message);
+                AssertOutput();
+                Assert.False(Directory.Exists(cacheDirectory));
+                test.BuildEngine.Messages.Clear();
+                test.BuildEngine.Warnings.Clear();
+
+                Environment.SetEnvironmentVariable("ILLINK_EXPERIMENTAL_CACHE", "false");
+                task.ThrowAfterExecution = false;
+                Assert.True(task.Execute());
+                AssertOutput();
+
+                void AssertOutput()
+                {
+                    Assert.Single(test.BuildEngine.Messages, message => message.Message == "stdout {0}");
+                    Assert.Single(test.BuildEngine.Messages, message => message.Message == "stderr {0}");
+                    Assert.Equal("IL2026", Assert.Single(test.BuildEngine.Warnings).Code);
+                    Assert.Empty(test.BuildEngine.Errors);
+                }
+            }).Dispose();
+        }
+
+        private sealed class ThrowingExecutionTask : ILLink
+        {
+            internal bool ThrowAfterExecution { get; set; }
+
+            protected override int ExecuteToolCore(string pathToTool, string responseFileCommands, string commandLineCommands)
+            {
+                int exitCode = base.ExecuteToolCore(pathToTool, responseFileCommands, commandLineCommands);
+                if (ThrowAfterExecution)
+                    throw new InvalidOperationException("execute");
+
+                return exitCode;
+            }
+        }
+
+        private sealed class DeferredOutputBuildEngine : MockBuildEngine, IBuildEngine
+        {
+            internal string CacheDirectory { get; set; }
+
+            void IBuildEngine.LogMessageEvent(BuildMessageEventArgs e)
+            {
+                if (e.Message is "stdout {0}" or "stderr {0}")
+                    Assert.True(Directory.Exists(CacheDirectory));
+                base.LogMessageEvent(e);
+            }
+
+            void IBuildEngine.LogWarningEvent(BuildWarningEventArgs e)
+            {
+                Assert.True(Directory.Exists(CacheDirectory));
+                base.LogWarningEvent(e);
+            }
+
+            void IBuildEngine.LogErrorEvent(BuildErrorEventArgs e)
+            {
+                Assert.True(Directory.Exists(CacheDirectory));
+                base.LogErrorEvent(e);
+            }
+        }
+
+        private static void WriteOutputTool(string path)
+        {
+            using var assembly = Mono.Cecil.AssemblyDefinition.CreateAssembly(
+                new Mono.Cecil.AssemblyNameDefinition("OutputTool", new Version(1, 0)),
+                "OutputTool.dll", Mono.Cecil.ModuleKind.Console);
+            Mono.Cecil.ModuleDefinition module = assembly.MainModule;
+            var type = new Mono.Cecil.TypeDefinition("", "Program", Mono.Cecil.TypeAttributes.Public, module.TypeSystem.Object);
+            module.Types.Add(type);
+            var main = new Mono.Cecil.MethodDefinition("Main",
+                Mono.Cecil.MethodAttributes.Public | Mono.Cecil.MethodAttributes.Static, module.TypeSystem.Void);
+            Mono.Cecil.Cil.ILProcessor il = main.Body.GetILProcessor();
+            il.Emit(Mono.Cecil.Cil.OpCodes.Ldstr, "stdout {0}");
+            il.Emit(Mono.Cecil.Cil.OpCodes.Call, module.ImportReference(
+                typeof(Console).GetMethod(nameof(Console.WriteLine), new[] { typeof(string) })));
+            foreach (string line in new[] { "stderr {0}", "source.cs(4,2,4,8): Trim analysis warning IL2026: warning {0}" })
+            {
+                il.Emit(Mono.Cecil.Cil.OpCodes.Call, module.ImportReference(typeof(Console).GetProperty(nameof(Console.Error)).GetMethod));
+                il.Emit(Mono.Cecil.Cil.OpCodes.Ldstr, line);
+                il.Emit(Mono.Cecil.Cil.OpCodes.Callvirt, module.ImportReference(
+                    typeof(TextWriter).GetMethod(nameof(TextWriter.WriteLine), new[] { typeof(string) })));
+            }
+            il.Emit(Mono.Cecil.Cil.OpCodes.Ret);
+            type.Methods.Add(main);
+            module.EntryPoint = main;
+            assembly.Write(path);
+        }
+
+        private static void WriteWarningAssembly(string path)
+        {
+            using var assembly = Mono.Cecil.AssemblyDefinition.CreateAssembly(
+                new Mono.Cecil.AssemblyNameDefinition("WarningInput", new Version(1, 0)),
+                "WarningInput.dll", Mono.Cecil.ModuleKind.Console);
+            Mono.Cecil.ModuleDefinition module = assembly.MainModule;
+            var type = new Mono.Cecil.TypeDefinition("", "Program", Mono.Cecil.TypeAttributes.Public, module.TypeSystem.Object);
+            module.Types.Add(type);
+            var dangerous = new Mono.Cecil.MethodDefinition("Dangerous",
+                Mono.Cecil.MethodAttributes.Public | Mono.Cecil.MethodAttributes.Static, module.TypeSystem.Void);
+            var attribute = new Mono.Cecil.CustomAttribute(module.ImportReference(
+                typeof(System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute).GetConstructor(new[] { typeof(string) })));
+            attribute.ConstructorArguments.Add(new Mono.Cecil.CustomAttributeArgument(module.TypeSystem.String, "Warning replay {0}"));
+            dangerous.CustomAttributes.Add(attribute);
+            dangerous.Body.Instructions.Add(Mono.Cecil.Cil.Instruction.Create(Mono.Cecil.Cil.OpCodes.Ret));
+            type.Methods.Add(dangerous);
+            var main = new Mono.Cecil.MethodDefinition("Main",
+                Mono.Cecil.MethodAttributes.Public | Mono.Cecil.MethodAttributes.Static, module.TypeSystem.Void);
+            main.Body.Instructions.Add(Mono.Cecil.Cil.Instruction.Create(Mono.Cecil.Cil.OpCodes.Call, dangerous));
+            main.Body.Instructions.Add(Mono.Cecil.Cil.Instruction.Create(Mono.Cecil.Cil.OpCodes.Ret));
+            type.Methods.Add(main);
+            module.EntryPoint = main;
+            assembly.Write(path);
+        }
+
         private static void WriteTestAssembly(string path, string informationalVersion = null, Guid? mvid = null)
         {
             using var assembly = Mono.Cecil.AssemblyDefinition.CreateAssembly(
@@ -1762,11 +2349,12 @@ namespace ILLink.Tasks.Tests
         {
             public string Root { get; } = Path.Combine(Path.GetTempPath(), "illink-task-output-" + Guid.NewGuid().ToString("N"));
             public string Output => Path.Combine(Root, "linked output");
-            public MockBuildEngine BuildEngine { get; } = new MockBuildEngine();
+            public MockBuildEngine BuildEngine { get; }
             public MockTask Task { get; }
 
-            public OutputDirectoryTest()
+            public OutputDirectoryTest(MockBuildEngine buildEngine = null)
             {
+                BuildEngine = buildEngine ?? new MockBuildEngine();
                 Directory.CreateDirectory(Root);
                 string corelibPath = typeof(object).Assembly.Location;
                 string dotnetRoot = Path.GetDirectoryName(Path.GetDirectoryName(Path.GetDirectoryName(Path.GetDirectoryName(corelibPath))));

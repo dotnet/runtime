@@ -46,7 +46,7 @@ from jitutil import TempDir, ChangeDir, remove_prefix, is_zero_length_file, is_n
     make_safe_filename, find_file, download_one_url, download_files, report_azure_error, \
     require_azure_storage_libraries, authenticate_using_azure, \
     create_unique_directory_name, create_unique_file_name, get_files_from_path, determine_jit_name, \
-    get_deepest_existing_directory, run_command
+    get_deepest_existing_directory, run_command, get_assembly_simple_name, is_managed_assembly
 
 locale.setlocale(locale.LC_ALL, '')  # Use '' for auto, or force e.g. to 'en_US.UTF-8'
 
@@ -576,73 +576,6 @@ def decode_clrjit_build_string(clrjit_path):
 # Helper classes
 ################################################################################
 
-def get_assembly_simple_name(filename):
-    """ Get the assembly simple name crossgen2 will key a module by, i.e. the file name
-        without its directory or extension, lowercased for comparison.
-
-    Args:
-        filename (str) : path to the assembly
-
-    Returns:
-        The lowercased simple name.
-    """
-
-    return os.path.splitext(os.path.basename(filename))[0].lower()
-
-
-def is_managed_assembly(filename):
-    """ Determine if a file is a managed assembly by looking for a non-empty CLI header
-        in its PE data directory. Used to keep native binaries out of the crossgen2
-        composite input set, which crossgen2 refuses to load.
-
-    Args:
-        filename (str) : path to the file to check
-
-    Returns:
-        True if the file is a managed assembly, False otherwise (including if it
-        can't be read or isn't a PE file at all).
-    """
-
-    try:
-        with open(filename, "rb") as file_handle:
-            if file_handle.read(2) != b"MZ":
-                return False
-
-            file_handle.seek(0x3C)
-            pe_header_offset_bytes = file_handle.read(4)
-            if len(pe_header_offset_bytes) != 4:
-                return False
-            pe_header_offset = int.from_bytes(pe_header_offset_bytes, "little")
-
-            file_handle.seek(pe_header_offset)
-            if file_handle.read(4) != b"PE\0\0":
-                return False
-
-            # Skip the COFF header (20 bytes) to reach the optional header.
-            optional_header_offset = pe_header_offset + 4 + 20
-            file_handle.seek(optional_header_offset)
-            magic_bytes = file_handle.read(2)
-            if len(magic_bytes) != 2:
-                return False
-            magic = int.from_bytes(magic_bytes, "little")
-            if magic == 0x10B:      # PE32
-                data_directory_offset = optional_header_offset + 96
-            elif magic == 0x20B:    # PE32+
-                data_directory_offset = optional_header_offset + 112
-            else:
-                return False
-
-            # The CLI header is data directory entry 14; each entry is 8 bytes.
-            file_handle.seek(data_directory_offset + 14 * 8)
-            cli_header_entry = file_handle.read(8)
-            # Require a complete entry with a nonzero CLI header RVA (first 4 bytes) and size (last 4 bytes).
-            return len(cli_header_entry) == 8 and \
-                int.from_bytes(cli_header_entry[:4], "little") != 0 and \
-                int.from_bytes(cli_header_entry[4:], "little") != 0
-    except OSError:
-        return False
-
-
 def get_crossgen2_reference_assemblies(reference_directory):
     """ Get managed composite inputs, filtering out native binaries and rejecting an empty result. """
 
@@ -721,8 +654,6 @@ class AsyncSubprocessHelper:
             subprocess_count
         """
 
-        reset_env = os.environ.copy()
-
         try:
             if sys.version_info[:2] >= (3, 7):
                 loop = asyncio.get_running_loop()
@@ -738,8 +669,6 @@ class AsyncSubprocessHelper:
             asyncio.set_event_loop(loop)
 
         loop.run_until_complete(self.__run_to_completion__(async_callback, *extra_args))
-        os.environ.clear()
-        os.environ.update(reset_env)
 
 ################################################################################
 # SuperPMI Collect
@@ -1070,7 +999,8 @@ class SuperPMICollect:
                         proc = await asyncio.create_subprocess_shell(
                             command_string,
                             stdout=stdout_file_handle,
-                            stderr=stderr_file_handle)
+                            stderr=stderr_file_handle,
+                            env=pmi_command_env)
 
                         await proc.communicate()
 
@@ -1116,14 +1046,8 @@ class SuperPMICollect:
 
                 set_and_report_env(pmi_command_env, pmi_root_env, pmi_dotnet_env)
 
-                old_env = os.environ.copy()
-                os.environ.update(pmi_command_env)
-
                 helper = AsyncSubprocessHelper(assemblies, verbose=True)
                 helper.run_to_completion(run_pmi, self)
-
-                os.environ.clear()
-                os.environ.update(old_env)
             ################################################################################################ end of "self.coreclr_args.pmi is True"
 
             ################################################################################################ Do collection using crossgen2
@@ -1171,6 +1095,8 @@ class SuperPMICollect:
                     # -r:<reference_dir>\Microsoft.*.dll
                     # -r:<reference_dir>\mscorlib.dll   /// System.*.dll above includes CoreLib
                     # -r:<reference_dir>\netstandard.dll
+                    # -r:<reference_dir>\*.dll          /// cross-target non-composite mode only
+                    # -r:<input_dir>\*.dll              /// cross-target non-composite mode only
                     # --jitpath:<self.collection_shim_name>
                     # --codegenopt:<option>=<value>   /// for each member of dotnet_env
                     #
@@ -1218,6 +1144,14 @@ class SuperPMICollect:
                         rsp_write_handle.write("-r:" + os.path.join(reference_directory, "Microsoft.*.dll") + "\n")
                         rsp_write_handle.write("-r:" + os.path.join(reference_directory, "mscorlib.dll") + "\n")
                         rsp_write_handle.write("-r:" + os.path.join(reference_directory, "netstandard.dll") + "\n")
+                        if self.coreclr_args.crossgen2_reference_directory and not is_composite:
+                            # A cross-target reference directory is a staged set of target assemblies
+                            # (e.g. xunit and test infrastructure besides the framework), so reference
+                            # all of it. Then let an input such as a test resolve dependencies copied
+                            # next to it. crossgen2 binds a reference simple name to the first match,
+                            # so the staged set wins over stale copies in the input's directory.
+                            rsp_write_handle.write("-r:" + os.path.join(reference_directory, "*.dll") + "\n")
+                            rsp_write_handle.write("-r:" + os.path.join(os.path.dirname(input_assemblies[0]), "*.dll") + "\n")
                         rsp_write_handle.write("--parallelism:1" + "\n")
                         rsp_write_handle.write("--jitpath:" + os.path.join(self.core_root, self.collection_shim_name) + "\n")
                         # If we are cross-compiling (target != host), tell crossgen2 explicitly which
@@ -1251,7 +1185,8 @@ class SuperPMICollect:
                         proc = await asyncio.create_subprocess_exec(
                             *command,
                             stdout=stdout_file_handle,
-                            stderr=stderr_file_handle)
+                            stderr=stderr_file_handle,
+                            env=crossgen2_command_env)
 
                         await proc.communicate()
 
@@ -1288,9 +1223,6 @@ class SuperPMICollect:
                 crossgen2_command_env = env_copy.copy()
                 set_and_report_env(crossgen2_command_env, root_env)
 
-                old_env = os.environ.copy()
-                os.environ.update(crossgen2_command_env)
-
                 # Note: crossgen2 compiles in parallel by default. However, it seems to lead to sharing violations
                 # in SuperPMI collection, accessing the MC file. So, disable crossgen2 parallism by using
                 # the "--parallelism:1" switch, and allowing coarse-grained (per-assembly) parallelism here.
@@ -1324,9 +1256,6 @@ class SuperPMICollect:
 
                 helper = AsyncSubprocessHelper(crossgen2_work_items, verbose=True)
                 helper.run_to_completion(run_crossgen2, self)
-
-                os.environ.clear()
-                os.environ.update(old_env)
             ################################################################################################ end of "self.coreclr_args.crossgen2 is True"
 
             ################################################################################################ Do collection using nativeaot
@@ -1446,7 +1375,8 @@ class SuperPMICollect:
                         proc = await asyncio.create_subprocess_shell(
                             command_string,
                             stdout=stdout_file_handle,
-                            stderr=stderr_file_handle)
+                            stderr=stderr_file_handle,
+                            env=nativeaot_command_env)
 
                         await proc.communicate()
 
@@ -1483,15 +1413,9 @@ class SuperPMICollect:
                 nativeaot_command_env = env_copy.copy()
                 set_and_report_env(nativeaot_command_env, root_env)
 
-                old_env = os.environ.copy()
-                os.environ.update(nativeaot_command_env)
-
                 ilc_rsps = list(filter(lambda ilc_rsp: ilc_rsp.endswith(".ilc.rsp"), ilc_rsps))
                 helper = AsyncSubprocessHelper(ilc_rsps, verbose=True)
                 helper.run_to_completion(run_nativeaot, self)
-
-                os.environ.clear()
-                os.environ.update(old_env)
             ################################################################################################ end of "self.coreclr_args.nativeaot is True"
 
         mc_files = [os.path.join(self.temp_location, item) for item in os.listdir(self.temp_location) if item.endswith(".mc")]
@@ -2850,13 +2774,17 @@ class SuperPMIReplayAsmDiffs:
                     diff_text = "Could not find a git executable in PATH"
                 else:
                     git_diff_command = [ git_path, "diff", "--diff-algorithm=histogram", "--no-index", "--", base_dasm_path, diff_dasm_path ]
-                    git_diff_proc = subprocess.Popen(git_diff_command, stdout=subprocess.PIPE)
-                    (stdout, _) = git_diff_proc.communicate()
+                    git_diff_proc = subprocess.Popen(git_diff_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                    (stdout, stderr) = git_diff_proc.communicate()
                     code = git_diff_proc.returncode
                     diff_lines = stdout.decode().splitlines()
                     diff_lines = diff_lines[4:] # Exclude patch header
 
-                    if code == 0 or len(diff_lines) <= 0:
+                    # git diff --no-index exits with 0 for no differences, 1 for differences, and anything else on failure.
+                    if code not in (0, 1):
+                        diff_text = "git diff failed with exit code {}:\n```\n{}\n```".format(code, stderr.decode().strip())
+                        logging.warning("Warning: '%s' failed with exit code %d: %s", " ".join(git_diff_command), code, stderr.decode().strip())
+                    elif code == 0 or len(diff_lines) <= 0:
                         diff_text = "No diffs found?"
                     else:
                         if len(diff_lines) > 250:

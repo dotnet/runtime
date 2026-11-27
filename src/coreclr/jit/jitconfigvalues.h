@@ -55,6 +55,8 @@ CONFIG_INTEGER(EnablePCRelAddr, "JitEnablePCRelAddr", 1) // Whether absolute add
                                                          // RyuJIT where possible
 CONFIG_INTEGER(JitAssertOnMaxRAPasses, "JitAssertOnMaxRAPasses", 0)
 CONFIG_INTEGER(JitBreakEmitOutputInstr, "JitBreakEmitOutputInstr", -1)
+// Assert if the xarch encoder emits a different number of bytes than its estimator predicted; set to 0 to disable.
+CONFIG_INTEGER(JitAssertOnEmitSizeMismatch, "JitAssertOnEmitSizeMismatch", 1)
 CONFIG_INTEGER(JitBreakMorphTree, "JitBreakMorphTree", 0xffffffff)
 CONFIG_INTEGER(JitBreakOnBadCode, "JitBreakOnBadCode", 0)
 CONFIG_INTEGER(JitBreakOnMinOpts, "JITBreakOnMinOpts", 0) // Halt if jit switches to MinOpts
@@ -590,6 +592,8 @@ OPT_CONFIG_INTEGER(JitDoRangeAnalysis, "JitDoRangeAnalysis", 1)                 
 OPT_CONFIG_INTEGER(JitDoVNBasedDeadStoreRemoval, "JitDoVNBasedDeadStoreRemoval", 1) // Perform VN-based dead store
                                                                                     // removal
 OPT_CONFIG_INTEGER(JitDoRedundantBranchOpts, "JitDoRedundantBranchOpts", 1) // Perform redundant branch optimizations
+// Max number of dominating compares redundant branch opts inspects for each relop
+CONFIG_INTEGER(JitRboDominatorLimit, "JitRboDominatorLimit", 128)
 OPT_CONFIG_STRING(JitEnableRboRange, "JitEnableRboRange")
 OPT_CONFIG_STRING(JitEnableHeadTailMergeRange, "JitEnableHeadTailMergeRange")
 OPT_CONFIG_STRING(JitEnableVNBasedDeadStoreRemovalRange, "JitEnableVNBasedDeadStoreRemovalRange")
@@ -902,8 +906,6 @@ CONFIG_STRING(JitRawHexCodeFile, "JitRawHexCodeFile")
 //    1: disable frames that save FP/LR registers with the callee-saved registers (at the top of the frame)
 //    2: force all frames to use the frame types that save FP/LR registers with the callee-saved registers (at the top
 //    of the frame)
-//    3: force all frames to use the frame types that save FP/LR registers with the callee-saved registers (at the top
-//    of the frame) and also force using the large funclet frame variation (frame 5) if possible.
 CONFIG_INTEGER(JitSaveFpLrWithCalleeSavedRegisters, "JitSaveFpLrWithCalleeSavedRegisters", 0)
 
 // Experimental support for vector length agnostic implementation of Vector<T>

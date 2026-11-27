@@ -89,6 +89,7 @@ struct JumpThreadInfo;     // defined in redundantbranchopts.cpp
 class ProfileSynthesis;    // defined in profilesynthesis.h
 class PerLoopInfo;         // defined in inductionvariableopts.cpp
 class RangeCheck;          // defined in rangecheck.h
+struct KnownBits;          // defined in knownbits.h
 #ifdef TARGET_WASM
 class WasmInterval; // defined in fgwasm.h
 enum class WasmValueType : unsigned;
@@ -584,6 +585,10 @@ public:
                                           // in earlier phase and the information might not be appropriate
                                           // in LSRA.
 
+#ifdef TARGET_WASM
+    unsigned char lvWasmGCWriteThru : 1; // GC register candidate with an up-to-date pinned shadow-stack home.
+#endif                                   // TARGET_WASM
+
     unsigned char lvHasExceptionalUsesHint : 1; // hint for CopyProp
 
 #ifndef TARGET_64BIT
@@ -768,6 +773,16 @@ public:
     bool IsAddressExposed() const
     {
         return m_addrExposed;
+    }
+
+    bool RequiresGlobRefFlag() const
+    {
+#if FEATURE_IMPLICIT_BYREFS
+        // Copy-omission candidates must be ordered before their addresses escape.
+        return IsAddressExposed() || lvIsLastUseCopyOmissionCandidate;
+#else
+        return IsAddressExposed();
+#endif // FEATURE_IMPLICIT_BYREFS
     }
 
 #ifdef DEBUG
@@ -1233,10 +1248,16 @@ public:
     //-----------------------------------------------------------------------------
     //  IsAlwaysAliveInMemory: Determines if this variable's value is always
     //     up-to-date on stack. This is possible if this is an EH-var or
-    //     we decided to spill after single-def.
+    //     we decided to spill after single-def, or it is a Wasm GC write-through local.
     //
     bool IsAlwaysAliveInMemory() const
     {
+#ifdef TARGET_WASM
+        if (lvWasmGCWriteThru)
+        {
+            return true;
+        }
+#endif // TARGET_WASM
         return IsLiveInOutOfHandler() || lvSpillAtSingleDef;
     }
 
@@ -1813,6 +1834,21 @@ constexpr unsigned ROOT_FUNC_IDX = 0;
 
 class emitLocation;
 
+#if defined(TARGET_AMD64)
+// Unwind Information V3 for a function or funclet. Like the V1 codes in FuncInfoDsc, the prolog
+// WODs and their IP offsets are filled from the end of their arrays backwards, which leaves them
+// in the reverse execution order V3 requires. Maximum of 31 prolog WODs, each at most the size of
+// WOD_ALLOC_HUGE; the JIT emits at most 24 (see "Limits" in unwindamd64.cpp).
+struct UnwindInfoV3
+{
+    UNWIND_INFO_V3 header;
+    BYTE           wods[UNWIND_INFO_V3_MAX_OPS * sizeof(WOD_ALLOC_HUGE)];
+    unsigned       wodSlot;
+    BYTE           ipOffsets[UNWIND_INFO_V3_MAX_OPS];
+    unsigned       ipOffsetSlot;
+};
+#endif // TARGET_AMD64
+
 struct FuncInfoDsc
 {
     FuncKind       funKind;
@@ -1866,6 +1902,9 @@ struct FuncInfoDsc
     // number of codes, the VM or Zapper will 4-byte align the whole thing.
     BYTE     unwindCodes[offsetof(UNWIND_INFO, UnwindCode) + (0xFF * sizeof(UNWIND_CODE))];
     unsigned unwindCodeSlot;
+
+    // Unwind Information V3, allocated by unwindBegPrologV3; nullptr unless V3 is used.
+    UnwindInfoV3* unwindV3;
 
 #elif defined(TARGET_X86)
 
@@ -3330,6 +3369,12 @@ public:
     GenTreeIntCon* gtNewTrue();
     GenTreeIntCon* gtNewFalse();
 
+    GenTree* gtNewValueSize(ValueSize size, var_types type);
+
+#ifdef FEATURE_SIMD
+    GenTree* gtNewVectorTSizeNode(var_types type);
+#endif
+
     GenTreeILOffset* gtNewILOffsetNode(const DebugInfo& di DEBUGARG(IL_OFFSET lastOffset));
 
     GenTree* gtNewPhysRegNode(regNumber reg, var_types type);
@@ -3373,6 +3418,8 @@ public:
     GenTreeVecCon* gtNewVconNode(var_types type, const void* data);
 #if defined(TARGET_ARM64)
     GenTreeVecCon* gtNewSimdVconNode(var_types type, var_types baseType, SimdScalableKind kind, uint64_t index, uint64_t step = 0);
+    GenTreeVecCon* gtNewScalableRepeatedConstant(float value);
+    GenTreeVecCon* gtNewScalableRepeatedConstant(double value);
 
     inline GenTreeVecCon* gtNewSimdVconNode(var_types type, const simdscalable_t* con)
     {
@@ -4019,7 +4066,7 @@ public:
     GenTree* gtReverseCond(GenTree* tree);
     bool     gtTryReverseCond(GenTree* tree);
 
-    static bool gtHasRef(GenTree* tree, unsigned lclNum);
+    bool gtHasRef(GenTree* tree, unsigned lclNum);
 
     bool gtHasLocalsWithAddrOp(GenTree* tree);
     bool gtHasAddressExposedLocals(GenTree* tree);
@@ -4185,6 +4232,9 @@ public:
     CORINFO_CLASS_HANDLE gtGetFieldClassHandle(CORINFO_FIELD_HANDLE fieldHnd, bool* pIsExact, bool* pIsNonNull);
     // Check if this tree is a typeof()
     bool gtIsTypeof(GenTree* tree, CORINFO_CLASS_HANDLE* handle = nullptr);
+
+    // Check if this tree loads the length field of a Span<T>
+    bool gtIsSpanLength(GenTree* tree);
 
     GenTreeLclVarCommon* gtCallGetDefinedRetBufLclAddr(GenTreeCall* call);
     GenTreeLclVarCommon* gtCallGetDefinedAsyncResumedLclAddr(GenTreeCall* call);
@@ -4408,6 +4458,8 @@ public:
     };
     jitstd::vector<WasmSpillSlot>* m_wasmSpillSlots = nullptr;
     BitVec* m_wasmGCRefCandidates = nullptr;
+    ArrayStack<BasicBlock*>* m_wasmLocalCopyBlocks = nullptr; // Blocks with local-to-local copies, set by lowering
+    ArrayStack<BasicBlock*>* m_wasmRematBlocks     = nullptr; // Blocks with stores of invariant values, set by lowering
 #endif // defined(TARGET_WASM)
 
     unsigned lvaInlinedPInvokeFrameVar = BAD_VAR_NUM; // variable representing the InlinedCallFrame
@@ -5664,6 +5716,7 @@ public:
     bool impMatchAsyncVersionTailCall(const BYTE* codeAddr, const BYTE* codeEndp, int*        prefixFlags, int*        numBytesMatched);
     bool impMatchStlocLdloca(const BYTE** codeAddr, const BYTE* codeEndp, unsigned* lclNum);
 
+    bool impIsCovariantAwait(CorInfoType asyncVariantRetType, IL_OFFSET awaitOffset);
     bool impCheckOptimizeAwait(IL_OFFSET awaitOffset);
 
     GenTree* impCastClassOrIsInstToTree(
@@ -5886,6 +5939,7 @@ private:
     void impLoadArg(unsigned ilArgNum, IL_OFFSET offset);
     void impLoadLoc(unsigned ilLclNum, IL_OFFSET offset);
     bool impReturnInstruction(int prefixFlags, OPCODE& opcode);
+    void impDiscardTopOfStack();
     bool impWrapTopOfStackInAwait();
     bool impFoldAwaitedTopOfStack();
     void impPoisonImplicitByrefsBeforeReturn();
@@ -7027,6 +7081,10 @@ public:
     PhaseStatus fgWasmTransformSccs();
     PhaseStatus fgWasmRepairTryEntries();
     PhaseStatus fgWasmVirtualIP();
+    PhaseStatus fgWasmForwardLocalCopies();
+    bool        fgWasmRematerializeInvariantLocals();
+    static bool fgWasmIsRematerializableValue(GenTree* node);
+    bool        fgWasmMayEmitCall();
     PhaseStatus fgWasmFindGCRefCandidates();
     PhaseStatus fgWasmSpillRefs();
     PhaseStatus fgWasmProfInstrument();
@@ -7326,6 +7384,7 @@ private:
 
     void fgMarkAddrModeForFieldAddr(GenTreeIndir* indir);
 
+    bool     fgTreeMayModifyLocal(GenTree* tree, unsigned lclNum);
     GenTree* fgMorphIndexAddr(GenTreeIndexAddr* tree);
     GenTree* fgMorphExpandCast(GenTreeCast* tree);
     GenTreeFieldList* fgMorphLclToFieldList(GenTreeLclVar* lcl);
@@ -7343,7 +7402,6 @@ private:
 public:
     bool fgAddrCouldBeNull(GenTree* addr);
     bool fgAddrCouldBeHeap(GenTree* addr);
-    void fgAssignSetVarDef(GenTree* tree);
 
 private:
     GenTree* fgMorphFieldAddr(GenTree* tree);
@@ -7753,8 +7811,8 @@ protected:
     // Return true if the tree looks profitable to hoist out of "loop"
     bool optIsProfitableToHoistTree(GenTree* tree, FlowGraphNaturalLoop* loop, LoopHoistContext* hoistCtxt, bool defExecuted);
 
-    // Performs the hoisting "tree" into the PreHeader for "loop"
-    void optHoistCandidate(GenTree* tree, BasicBlock* treeBb, FlowGraphNaturalLoop* loop, LoopHoistContext* hoistCtxt, bool defExecuted);
+    // Returns true if "tree" was hoisted or its value was already hoisted in "loop".
+    bool optHoistCandidate(GenTree* tree, BasicBlock* treeBb, FlowGraphNaturalLoop* loop, LoopHoistContext* hoistCtxt, bool defExecuted);
 
     // Note the new SSA uses in tree
     void optRecordSsaUses(GenTree* tree, BasicBlock* block);
@@ -8028,10 +8086,14 @@ protected:
     void     optValnumCSE_Init();
     unsigned optValnumCSE_Index(GenTree* tree, Statement* stmt);
     bool optValnumCSE_Locate(CSE_HeuristicCommon* heuristic);
+#ifdef TARGET_XARCH
+    void optValnumCSE_ScreenMemoryUpdates();
+#endif
     void optValnumCSE_InitDataFlow();
     void optValnumCSE_SetUpAsyncByrefKills();
     void optValnumCSE_DataFlow();
     void optValnumCSE_Availability();
+    ValueNum optValnumCSE_ImpliedExcSet(GenTree* tree);
     void optValnumCSE_Heuristic(CSE_HeuristicCommon* heuristic);
     GenTree* optExtractSideEffectsForCSE(GenTree* tree);
 
@@ -8463,6 +8525,7 @@ public:
 
     BitVecTraits* optReachableBitVecTraits;
     BitVec        optReachableBitVec;
+    bool          optRboNeedsSsaRebuild = false; // RBO must rebuild SSA and VNs (set by jump threading)
     void          optRelopImpliesRelop(RelopImplicationInfo* rii);
     bool          optRelopTryInferWithOneEqualOperand(const VNFuncApp&      domApp,
                                                       const VNFuncApp&      treeApp,
@@ -9304,6 +9367,9 @@ protected:
     bool optLocalAssertionProp;  // indicates that we are performing local assertion prop
     bool optAssertionPropagated; // set to true if we modified the trees
     bool optAssertionPropagatedCurrentStmt;
+    // Set when global assertion prop only made indirections non-faulting in the current statement,
+    // so its side effect flags need updating but it does not need re-morphing.
+    bool optAssertionPropNonFaultingCurrentStmt = false;
 #ifdef DEBUG
     GenTree* optAssertionPropCurrentTree;
 #endif
@@ -9337,7 +9403,10 @@ public:
     {
         return optAssertionCount;
     }
-    ASSERT_TP* bbJtrueAssertionOut;
+    // The known bits of PHIs, see KnownBitsAnalysis::ComputeForPhi.
+    typedef JitHashTable<ValueNum, JitSmallPrimitiveKeyFuncs<ValueNum>, KnownBits> KnownBitsPhiCache;
+    KnownBitsPhiCache*                                                             optKnownBitsPhiCache = nullptr;
+    ASSERT_TP*                                                                     bbJtrueAssertionOut;
 
     // Assertion prop helpers.
     ASSERT_TP&          GetAssertionDep(unsigned lclNum, bool mustExist = false);
@@ -9349,6 +9418,7 @@ public:
     // Assertion prop data flow functions.
     PhaseStatus optAssertionPropMain();
     Statement*  optVNAssertionPropCurStmt(BasicBlock* block, Statement* stmt);
+    void        optAssertionPropUpdateNonFaultingStmt(BasicBlock* block, Statement* stmt);
     ASSERT_TP*  optInitAssertionDataflowFlags();
     ASSERT_TP*  optComputeAssertionGen();
 
@@ -10198,6 +10268,14 @@ private:
     void unwindSetFrameRegWindows(regNumber reg, unsigned offset);
     void unwindSaveRegWindows(regNumber reg, unsigned offset);
 
+    void  unwindBegPrologV3();
+    BYTE* unwindAllocWodV3(FuncInfoDsc* func, unsigned size);
+    void  unwindPushV3(regNumber reg);
+    void  unwindPush2V3(regNumber reg1, regNumber reg2);
+    void  unwindAllocStackV3(unsigned size);
+    void  unwindSetFrameRegV3(regNumber reg, unsigned offset);
+    void  unwindSaveRegV3(regNumber reg, unsigned offset);
+
 #ifdef UNIX_AMD64_ABI
     void unwindSaveRegCFI(regNumber reg, unsigned offset);
 #endif // UNIX_AMD64_ABI
@@ -10949,7 +11027,7 @@ private:
     //
     bool isSIMDTypeLocalAligned(unsigned varNum)
     {
-#if defined(FEATURE_SIMD) && ALIGN_SIMD_TYPES && !defined(UNIX_X86_ABI)
+#if defined(FEATURE_SIMD) && ALIGN_SIMD_TYPES
         LclVarDsc* lcl = lvaGetDesc(varNum);
         if (varTypeIsSIMD(lcl))
         {
@@ -11471,17 +11549,17 @@ public:
 
         bool IsInstrumented() const
         {
-            return jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR);
+            return jitFlags->IsSet(JitFlags::JIT_FLAG_PGO_INSTR);
         }
 
         bool IsOptimizedWithProfile() const
         {
-            return OptimizationEnabled() && jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT);
+            return OptimizationEnabled() && jitFlags->IsSet(JitFlags::JIT_FLAG_PGO_OPT);
         }
 
         bool IsInstrumentedAndOptimized() const
         {
-            return IsInstrumented() && jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT);
+            return IsInstrumented() && jitFlags->IsSet(JitFlags::JIT_FLAG_PGO_OPT);
         }
 
         bool DoEarlyBlockMerging() const
@@ -11867,6 +11945,8 @@ public:
         STRESS_MODE(POISON_IMPLICIT_BYREFS)                                                     \
         STRESS_MODE(THREE_OPT_LAYOUT)                                                           \
         STRESS_MODE(GET_RANGE) /* Force slow SSA-based range walk in GetRange */                \
+        STRESS_MODE(KNOWNBITS_BUDGET) /* Use larger budgets in KnownBitsAnalysis */             \
+        STRESS_MODE(KNOWNBITS_RELOPS) /* Let KnownBitsAnalysis try to fold all EQ/NE relops */  \
         STRESS_MODE(COUNT)
 
     enum                compStressArea

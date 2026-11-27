@@ -87,10 +87,25 @@ namespace ILCompiler.Reflection.ReadyToRun
                 case Machine.RiscV64:
                     return ((RiscV64.Registers)regnum).ToString();
                 case WasmMachine.Wasm32:
-                    return $"NYI '{regnum}'"; // WASM-TODO Implement this correctly.
+                    return GetWasmRegister(regnum);
                 default:
                     throw new NotImplementedException($"No implementation for machine type {machine}.");
             }
+        }
+
+        private static string GetWasmRegister(int regnum)
+        {
+            // Keep in sync with ICorDebugInfo::WASM_LOCAL_REGNUM_BASE in cordebuginfo.h.
+            const int WasmLocalRegisterBase = 3;
+
+            return regnum switch
+            {
+                0 => "PC",
+                1 => "REGNUM_COUNT",
+                2 => "ambient SP",
+                >= WasmLocalRegisterBase => $"${regnum - WasmLocalRegisterBase}",
+                _ => $"Unknown '{regnum}'",
+            };
         }
 
         private void EnsureInitialized()

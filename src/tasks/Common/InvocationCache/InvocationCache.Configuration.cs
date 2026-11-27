@@ -12,9 +12,14 @@ namespace Microsoft.NET.Build.Tasks;
 
 internal sealed partial class InvocationCache
 {
-    internal static InvocationCache? TryCreateFromEnvironment(TaskLoggingHelper log, InvocationCacheConfiguration configuration)
+    internal static InvocationCache? TryCreateFromEnvironment(
+        TaskLoggingHelper log,
+        InvocationCacheConfiguration configuration,
+        Func<string, string?>? getEnvironmentVariable = null,
+        string? baseDirectory = null)
     {
-        string? setting = Environment.GetEnvironmentVariable(configuration.EnabledEnvironmentVariable);
+        getEnvironmentVariable ??= Environment.GetEnvironmentVariable;
+        string? setting = getEnvironmentVariable(configuration.EnabledEnvironmentVariable);
         if (string.IsNullOrEmpty(setting))
             return null;
 
@@ -24,13 +29,28 @@ internal sealed partial class InvocationCache
             return null;
         }
 
-        return enabled ? TryCreate(Environment.GetEnvironmentVariable(configuration.PathEnvironmentVariable), log, configuration.ToolName) : null;
+        return enabled ? TryCreate(getEnvironmentVariable(configuration.PathEnvironmentVariable), log, configuration.ToolName, getEnvironmentVariable, baseDirectory) : null;
     }
 
-    internal static InvocationCache? TryCreate(string? cacheDirectory, TaskLoggingHelper log, string toolName)
+    /// <param name="cacheDirectory">
+    /// The configured cache location, which may be relative. When null or empty, the per-user default is used.
+    /// </param>
+    /// <param name="getEnvironmentVariable">
+    /// Reads environment variables for the default location; tasks pass their task environment.
+    /// </param>
+    /// <param name="baseDirectory">
+    /// The absolute directory that a relative <paramref name="cacheDirectory"/> resolves against, typically the
+    /// project directory. When null, the process current directory is used.
+    /// </param>
+    internal static InvocationCache? TryCreate(
+        string? cacheDirectory,
+        TaskLoggingHelper log,
+        string toolName,
+        Func<string, string?>? getEnvironmentVariable = null,
+        string? baseDirectory = null)
     {
         if (string.IsNullOrEmpty(cacheDirectory))
-            cacheDirectory = InvocationCacheConfiguration.GetDefaultCacheDirectory(toolName);
+            cacheDirectory = InvocationCacheConfiguration.GetDefaultCacheDirectory(toolName, getEnvironmentVariable);
 
         if (cacheDirectory is null)
         {
@@ -40,7 +60,7 @@ internal sealed partial class InvocationCache
 
         try
         {
-            string fullPath = Path.GetFullPath(cacheDirectory);
+            string fullPath = Path.GetFullPath(baseDirectory is null ? cacheDirectory : Path.Combine(baseDirectory, cacheDirectory));
             if (File.Exists(fullPath))
                 throw new IOException($"Cache location is a file: '{fullPath}'.");
             return new InvocationCache(fullPath, log, toolName);

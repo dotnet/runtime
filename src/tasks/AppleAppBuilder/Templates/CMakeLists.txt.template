@@ -28,10 +28,6 @@ endif()
 
 %Defines%
 
-if(%HasMonoIncludes%)
-    include_directories(%MonoInclude%)
-endif()
-
 set_target_properties(%ProjectName% %AotTargetsList% PROPERTIES
     XCODE_ATTRIBUTE_SUPPORTS_MACCATALYST "YES"
 )

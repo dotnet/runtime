@@ -14,21 +14,19 @@ SET_DEFAULT_DEBUG_CHANNEL(PAL); // some headers have code with asserts, so do th
 
 #include "pal/thread.hpp"
 #include "pal/procobj.hpp"
-#include "pal/file.hpp"
-#include "pal/map.hpp"
 #include "../objmgr/listedobjectmanager.hpp"
 #include "pal/seh.hpp"
 #include "pal/palinternal.h"
 #include "pal/process.h"
 #include "../thread/procprivate.hpp"
 #include "pal/module.h"
-#include "pal/environ.h"
+#include <minipal/utf8.h>
 #include "pal/utils.h"
 #include "pal/debug.h"
 #include "pal/init.h"
 #include "pal/stackstring.hpp"
-#include "pal/cgroup.h"
 #include <minipal/getexepath.h>
+#include <minipal/thread.h>
 #include <minipal/memorybarrierprocesswide.h>
 #include <minipal/descriptorlimit.h>
 
@@ -300,7 +298,7 @@ Initialize(
     if (init_count == 0)
     {
         // Set our pid.
-        gPID = getpid();
+        gPID = minipal_get_current_process_id();
 
         // Initialize the thread local storage
         if (FALSE == TLSInitialize())
@@ -339,15 +337,6 @@ Initialize(
         }
 #endif // FEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION
 
-        InitializeCGroup();
-
-        // Initialize the environment.
-        if (FALSE == EnvironInitialize())
-        {
-            palError = ERROR_PALINIT_ENV;
-            goto CLEANUP1;
-        }
-
         if (!minipal_increase_descriptor_limit())
         {
             ERROR("Unable to increase the file descriptor limit!\n");
@@ -362,7 +351,7 @@ Initialize(
         {
             ERROR("SEHInitializeMachExceptions failed!\n");
             palError = ERROR_PALINIT_INITIALIZE_MACH_EXCEPTION;
-            goto CLEANUP1;
+            goto CLEANUP1a;
         }
 #endif // HAVE_MACH_EXCEPTIONS
 
@@ -456,14 +445,6 @@ Initialize(
 
         palError = ERROR_GEN_FAILURE;
 
-        /* Initialize the File mapping critical section. */
-        if (FALSE == MAPInitialize())
-        {
-            ERROR("Unable to initialize file mapping support\n");
-            palError = ERROR_PALINIT_MAP;
-            goto CLEANUP6;
-        }
-
         if (flags & PAL_INITIALIZE_FLUSH_PROCESS_WRITE_BUFFERS)
         {
             // Initialize before first thread is created for faster load on Linux
@@ -481,17 +462,6 @@ Initialize(
             ERROR("Unable to initialize SEH support\n");
             palError = ERROR_PALINIT_SEH;
             goto CLEANUP10;
-        }
-
-        if (flags & PAL_INITIALIZE_STD_HANDLES)
-        {
-            /* create file objects for standard handles */
-            if (!FILEInitStdHandles())
-            {
-                ERROR("Unable to initialize standard file handles\n");
-                palError = ERROR_PALINIT_STD_HANDLES;
-                goto CLEANUP14;
-            }
         }
 
         TRACE("First-time PAL initialization complete.\n");
@@ -515,11 +485,7 @@ Initialize(
     }
     goto done;
 
-CLEANUP14:
-    SEHCleanup();
 CLEANUP10:
-    MAPCleanup();
-CLEANUP6:
     // Cleanup initial process data
 CLEANUP2:
     free(exe_path);
@@ -530,8 +496,6 @@ CLEANUP1b:
     // Cleanup initial thread data
 CLEANUP1a:
     // Cleanup global process data
-CLEANUP1:
-    CleanupCGroup();
 CLEANUP0a:
     TLSCleanup();
     ERROR("PAL_Initialize failed\n");
@@ -716,7 +680,7 @@ Return:
 static LPWSTR INIT_GetCurrentEXEPath()
 {
     LPWSTR return_value;
-    INT return_size;
+    size_t return_size;
 
     char* path = minipal_getexepath();
     if (!path)
@@ -729,10 +693,10 @@ static LPWSTR INIT_GetCurrentEXEPath()
     real_path.Set(path, strlen(path));
     free(path);
 
-    return_size = MultiByteToWideChar(CP_ACP, 0, real_path, -1, nullptr, 0);
+    return_size = minipal_get_length_utf8_to_utf16(real_path, strlen(real_path) + 1, 0);
     if (0 == return_size)
     {
-        ASSERT("MultiByteToWideChar failure\n");
+        ASSERT("UTF-8 to UTF-16 conversion failure\n");
         return nullptr;
     }
 
@@ -744,10 +708,9 @@ static LPWSTR INIT_GetCurrentEXEPath()
     }
     else
     {
-        if (!MultiByteToWideChar(CP_ACP, 0, real_path, -1,
-                                return_value, return_size))
+        if (!minipal_convert_utf8_to_utf16(real_path, strlen(real_path) + 1, (CHAR16_T*)return_value, return_size, 0))
         {
-            ASSERT("MultiByteToWideChar failure\n");
+            ASSERT("UTF-8 to UTF-16 conversion failure\n");
             free(return_value);
             return_value = nullptr;
         }

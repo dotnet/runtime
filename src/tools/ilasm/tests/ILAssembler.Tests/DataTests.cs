@@ -18,7 +18,7 @@ using System.Threading.Tasks;
 using Internal.IL;
 using Xunit;
 
-namespace ILAssembler.Tests
+namespace Microsoft.DotNet.ILAssembler.Tests
 {
     public class DataTests
     {

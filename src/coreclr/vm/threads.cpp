@@ -593,6 +593,19 @@ static void DeleteThread(Thread* pThread)
     }
 }
 
+struct SetupThreadHolderTraits final
+{
+    using Type = Thread*;
+    static constexpr Type Default() { return NULL; }
+
+    static void Free(Type pThread) noexcept
+    {
+        WRAPPER_NO_CONTRACT;
+        if (pThread != NULL)
+            DeleteThread(pThread);
+    }
+};
+
 static void EnsurePreemptive()
 {
     WRAPPER_NO_CONTRACT;
@@ -643,13 +656,13 @@ Thread* SetupThread()
 
     if (ThreadStore::s_pThreadStore->GetPendingThreadCount() != 0)
     {
-        DWORD  ourOSThreadId = ::GetCurrentThreadId();
+        size_t ourOSThreadId = minipal_get_current_thread_id();
         {
             ThreadStoreLockHolder TSLockHolder;
             _ASSERTE(pThread == NULL);
             while ((pThread = ThreadStore::s_pThreadStore->GetAllThreadList(pThread, Thread::TS_Unstarted | Thread::TS_FailStarted, Thread::TS_Unstarted)) != NULL)
             {
-                if (pThread->GetOSThreadId() == ourOSThreadId)
+                if (pThread->GetOSThreadId64() == ourOSThreadId)
                 {
                     break;
                 }
@@ -676,30 +689,30 @@ Thread* SetupThread()
     // First time we've seen this thread in the runtime:
     pThread = new Thread();
 
-// What state are we in here? COOP???
+    {
+        LifetimeHolder<SetupThreadHolderTraits> threadHolder(pThread);
 
-    Holder<Thread*,DoNothing<Thread*>,DeleteThread> threadHolder(pThread);
+        SetupTLSForThread();
+        pThread->InitThread();
+        pThread->PrepareApartmentAndContext();
 
-    SetupTLSForThread();
-    pThread->InitThread();
-    pThread->PrepareApartmentAndContext();
+        // reset any unstarted bits on the thread object
+        pThread->ResetThreadState(Thread::TS_Unstarted);
 
-    // reset any unstarted bits on the thread object
-    pThread->ResetThreadState(Thread::TS_Unstarted);
+        ThreadStore::AddThread(pThread);
 
-    ThreadStore::AddThread(pThread);
-
-    SetThread(pThread);
+        SetThread(pThread);
 
 #ifdef FEATURE_INTEROP_DEBUGGING
-    // Ensure that debugger word slot is allocated
-    TlsSetValue(g_debuggerWordTLSIndex, 0);
+        // Ensure that debugger word slot is allocated
+        TlsSetValue(g_debuggerWordTLSIndex, 0);
 #endif
 
-    // We now have a Thread object visable to the RS. unmark special status.
-    hCantStop.Release();
+        // We now have a Thread object visable to the RS. unmark special status.
+        hCantStop.Release();
 
-    threadHolder.SuppressRelease();
+        threadHolder.Detach();
+    }
 
     pThread->SetThreadState(Thread::TS_FullyInitialized);
 
@@ -730,7 +743,7 @@ Thread* SetupThread()
                 (ThreadID)pThread);
         }
 
-        DWORD osThreadId = ::GetCurrentThreadId();
+        DWORD osThreadId = (DWORD)minipal_get_current_thread_id();
         (&g_profControlBlock)->ThreadAssignedToOSThread(
             (ThreadID)pThread, osThreadId);
         END_PROFILER_CALLBACK();
@@ -1514,9 +1527,9 @@ Thread::Thread()
     // of accessing a partially constructed Thread via Thread Id lookup.
     //
 
-    exposedObjectHolder.SuppressRelease();
-    strongHndToExposedObjectHolder.SuppressRelease();
-    contextHolder.SuppressRelease();
+    exposedObjectHolder.Detach();
+    strongHndToExposedObjectHolder.Detach();
+    contextHolder.Detach();
 
 #ifdef FEATURE_COMINTEROP
     m_uliInitializeSpyCookie.QuadPart = 0ul;
@@ -1831,7 +1844,7 @@ BOOL Thread::HasStarted()
 
         GC_ON_TRANSITIONS(gcOnTransition);
 
-        DWORD osThreadId = ::GetCurrentThreadId();
+        DWORD osThreadId = (DWORD)minipal_get_current_thread_id();
         (&g_profControlBlock)->ThreadAssignedToOSThread(
             (ThreadID) this, osThreadId);
         END_PROFILER_CALLBACK();
@@ -3175,51 +3188,55 @@ OBJECTREF Thread::GetExposedObject()
         THREADBASEREF attempt = (THREADBASEREF) AllocateObject(g_pThreadClass);
         GCPROTECT_BEGIN(attempt);
 
-        // The exposed object keeps us alive until it is GC'ed.  This
-        // doesn't mean the physical thread continues to run, of course.
-        // We have to set this outside of the ThreadStore lock, because this might trigger a GC.
-        attempt->SetInternal(this);
-
-        BOOL fNeedThreadStore = (! ThreadStore::HoldingThreadStore(pCurThread));
-        // Take a lock to make sure that only one thread creates the object.
-        ThreadStoreLockHolder tsHolder(fNeedThreadStore);
-
-        // Check to see if another thread has not already created the exposed object.
-        if (ObjectFromHandle(m_ExposedObject) == NULL)
         {
-            // Keep a weak reference to the exposed object.
-            StoreObjectInHandle(m_ExposedObject, (OBJECTREF) attempt);
+            BOOL fNeedThreadStore = (! ThreadStore::HoldingThreadStore(pCurThread));
+            // Take a lock to make sure that only one thread creates the object.
+            ThreadStoreLockHolder tsHolder(fNeedThreadStore);
 
-            ObjectInHandleHolder exposedHolder(m_ExposedObject);
+            // Check to see if another thread has not already created the exposed object.
+            if (ObjectFromHandle(m_ExposedObject) == NULL)
+            {
+                // The exposed object keeps us alive until it is GC'ed.  This
+                // doesn't mean the physical thread continues to run.
+                attempt->SetInternal(this);
 
-            // Increase the external ref count. We can't call IncExternalCount because we
-            // already hold the thread lock and IncExternalCount won't be able to take it.
-            ULONG retVal = InterlockedIncrement ((LONG*)&m_ExternalRefCount);
+                // Keep a weak reference to the exposed object.
+                StoreObjectInHandle(m_ExposedObject, (OBJECTREF) attempt);
 
-            // Check to see if we need to store a strong pointer to the object.
-            if (retVal > 1)
-                StoreObjectInHandle(m_StrongHndToExposedObject, (OBJECTREF) attempt);
+                ObjectInHandleHolder exposedHolder(m_ExposedObject);
 
-            ObjectInHandleHolder strongHolder(m_StrongHndToExposedObject);
+                // Increase the external ref count. We can't call IncExternalCount because we
+                // already hold the thread lock and IncExternalCount won't be able to take it.
+                ULONG retVal = InterlockedIncrement ((LONG*)&m_ExternalRefCount);
+
+                // Check to see if we need to store a strong pointer to the object.
+                if (retVal > 1)
+                    StoreObjectInHandle(m_StrongHndToExposedObject, (OBJECTREF) attempt);
+
+                ObjectInHandleHolder strongHolder(m_StrongHndToExposedObject);
 
 
-            attempt->SetManagedThreadId(GetThreadId());
+                attempt->SetManagedThreadId(GetThreadId());
 
 
-            // Note that we are NOT calling the constructor on the Thread.  That's
-            // because this is an internal create where we don't want a Start
-            // address.  And we don't want to expose such a constructor for our
-            // customers to accidentally call.  The following is in lieu of a true
-            // constructor:
-            attempt->InitExisting();
+                // Initialize the native-backed properties of the runtime-created wrapper.
+                attempt->InitExisting();
 
-            exposedHolder.SuppressRelease();
-            strongHolder.SuppressRelease();
+                exposedHolder.Detach();
+                strongHolder.Detach();
+            }
         }
-        else
+
+#ifdef FEATURE_MULTITHREADING
+        if (attempt->GetInternal() != nullptr)
         {
-            attempt->ClearInternal();
+            // Registering memory pressure can trigger a GC, so do it after
+            // releasing our ThreadStore lock.
+            _ASSERTE(!ThreadStore::HoldingThreadStore(pCurThread));
+            UnmanagedCallersOnlyCaller registerMemoryPressure(METHOD__THREAD__REGISTER_MEMORY_PRESSURE);
+            registerMemoryPressure.InvokeThrowing();
         }
+#endif // FEATURE_MULTITHREADING
 
         GCPROTECT_END();
     }
@@ -3595,11 +3612,7 @@ void Thread::PrepareApartmentAndContext()
 {
     STANDARD_VM_CONTRACT;
 
-#ifdef TARGET_UNIX
-    m_OSThreadId = ::PAL_GetCurrentOSThreadId();
-#else
-    m_OSThreadId = ::GetCurrentThreadId();
-#endif
+    m_OSThreadId = minipal_get_current_thread_id();
 
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
     // Be very careful in here because we haven't set up e.g. TLS yet.
@@ -3634,10 +3647,10 @@ void Thread::PrepareApartmentAndContext()
     // only if the internal config switch is on.
     if (g_pConfig->EnableRCWCleanupOnSTAShutdown())
     {
-        NewHolder<ApartmentSpyImpl> pSpyImpl = new ApartmentSpyImpl();
+        NewHolder<ApartmentSpyImpl> pSpyImpl(new ApartmentSpyImpl());
 
         IfFailThrow(CoRegisterInitializeSpy(pSpyImpl, &m_uliInitializeSpyCookie));
-        pSpyImpl.SuppressRelease();
+        pSpyImpl.Detach();
 
         m_fInitializeSpyRegistered = true;
     }
@@ -3768,7 +3781,7 @@ Thread::ApartmentState Thread::SetApartment(ApartmentState state)
     CONTRACTL_END;
 
     // This method can be called on current thread only
-    _ASSERTE(m_OSThreadId == ::GetCurrentThreadId());
+    _ASSERTE(m_OSThreadId == minipal_get_current_thread_id());
 
     // Setting the state to AS_Unknown indicates we should CoUninitialize
     // the thread.
@@ -4201,8 +4214,8 @@ void ThreadStore::IncrementDeadThreadCountForGCTrigger()
         return;
     }
 
-    SIZE_T gcLastMilliseconds = gcHeap->GetLastGCStartTime(gcHeap->GetMaxGeneration());
-    SIZE_T gcNowMilliseconds = gcHeap->GetNow();
+    int64_t gcLastMilliseconds = gcHeap->GetLastGCStartTime(gcHeap->GetMaxGeneration());
+    int64_t gcNowMilliseconds = gcHeap->GetNow();
     if (gcNowMilliseconds - gcLastMilliseconds < s_DeadThreadGCTriggerPeriodMilliseconds)
     {
         return;
@@ -4332,8 +4345,8 @@ void ThreadStore::TriggerGCForDeadThreadsIfNecessary()
         // Make sure that enough time has elapsed since the last GC of the desired generation. We don't want to trigger GCs
         // based on this heuristic too often. Give it some time to let the memory pressure trigger GCs automatically, and only
         // if it doesn't in the given time, this heuristic may kick in to trigger a GC.
-        SIZE_T gcLastMilliseconds = gcHeap->GetLastGCStartTime(gcGenerationToTrigger);
-        SIZE_T gcNowMilliseconds = gcHeap->GetNow();
+        int64_t gcLastMilliseconds = gcHeap->GetLastGCStartTime(gcGenerationToTrigger);
+        int64_t gcNowMilliseconds = gcHeap->GetNow();
         if (gcNowMilliseconds - gcLastMilliseconds < s_DeadThreadGCTriggerPeriodMilliseconds)
         {
             return;
@@ -6548,7 +6561,7 @@ void DeadlockAwareLock::LeaveLock()
 // DLL_THREAD_ATTACH notification of an (IJW?) module calls into managed code.  This
 // is incredibly dangerous.  If a GC is provoked, the system may have trouble performing
 // the GC because its threads aren't available yet.
-static DWORD SpecialEEThreads[10];
+static size_t SpecialEEThreads[10];
 static LONG  cnt_SpecialEEThreads = 0;
 
 void dbgOnly_IdentifySpecialEEThread()
@@ -6558,14 +6571,14 @@ void dbgOnly_IdentifySpecialEEThread()
     LONG  ourCount = InterlockedIncrement(&cnt_SpecialEEThreads);
 
     _ASSERTE(ourCount < (LONG) ARRAY_SIZE(SpecialEEThreads));
-    SpecialEEThreads[ourCount-1] = ::GetCurrentThreadId();
+    SpecialEEThreads[ourCount-1] = minipal_get_current_thread_id();
 }
 
 BOOL dbgOnly_IsSpecialEEThread()
 {
     WRAPPER_NO_CONTRACT;
 
-    DWORD   ourId = ::GetCurrentThreadId();
+    size_t  ourId = minipal_get_current_thread_id();
 
     for (LONG i=0; i<cnt_SpecialEEThreads; i++)
         if (ourId == SpecialEEThreads[i])
@@ -6578,7 +6591,7 @@ BOOL dbgOnly_IsSpecialEEThread()
     {
         //<TODO>We probably should use Thread::GetThreadId</TODO>
         DWORD helperID = g_pDebugInterface->GetHelperThreadID();
-        if (helperID == ourId)
+        if (helperID == (DWORD)ourId)
             return TRUE;
     }
     #endif
@@ -6817,16 +6830,14 @@ extern "C" InterpThreadContext* STDCALL GetInterpThreadContextWithPossiblyMissin
 
         EX_TRY
         {
-            bool propagateExceptionToNativeCode = IsCallDescrWorkerInternalReturnAddress(pTransitionBlock->m_ReturnAddress);
-
             INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(pPFrame);
-            INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX;
-            INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX;
+            INSTALL_MANAGED_EXCEPTION_DISPATCHER;
+            INSTALL_UNWIND_AND_CONTINUE_HANDLER;
 
             pThreadContext = GetInterpThreadContextWithPossiblyMissingThreadOrCallStub_Worker(CURRENT_THREAD, pByteCodeStart);
 
-            UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(propagateExceptionToNativeCode);
-            UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(propagateExceptionToNativeCode);
+            UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+            UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
             UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
         }
         EX_CATCH

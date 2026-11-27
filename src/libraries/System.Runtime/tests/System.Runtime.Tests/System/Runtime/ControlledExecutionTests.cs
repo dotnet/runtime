@@ -1,8 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.RemoteExecutor;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 // Disable warnings for ControlledExecution.Run
@@ -68,6 +71,66 @@ namespace System.Runtime.Tests
                 _readyForCancellation = true;
                 RunInfiniteLoop();
                 _finishedExecution = true;
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime), nameof(PlatformDetection.IsNotNativeAot), nameof(PlatformDetection.IsMultithreadingSupported))]
+        public void CancelRepeatedlyOnSameThread()
+        {
+            if (!RemoteExecutor.IsSupported)
+            {
+                throw new SkipTestException("RemoteExecutor is not supported on this platform.");
+            }
+
+            RemoteExecutor.Invoke(() =>
+            {
+                for (int i = 0; i < 3; i++)
+                {
+                    using var cts = new CancellationTokenSource();
+                    OperationCanceledException exception = Assert.Throws<OperationCanceledException>(() =>
+                        ControlledExecution.Run(() =>
+                        {
+                            cts.CancelAfter(100);
+                            // Avoid calls in the loop so cancellation requires thread activation.
+                            while (true) { }
+                        }, cts.Token));
+                    Assert.Equal(cts.Token, exception.CancellationToken);
+                }
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.IsX64Process))]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void CancelAtStartOfTryRunsHandlers()
+        {
+            using var cts = new CancellationTokenSource();
+            RunTest(() => SpinInTry(cts), cts.Token);
+
+            Assert.IsType<OperationCanceledException>(_exception);
+            Assert.True(_finishedExecution);
+            Assert.True(_caughtException);
+
+            [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+            void SpinInTry(CancellationTokenSource source)
+            {
+                source.CancelAfter(100);
+                try
+                {
+                    try
+                    {
+                        // The loop is a single backward branch at the start of the inner try.
+                        while (true) { }
+                    }
+                    finally
+                    {
+                        _finishedExecution = true;
+                    }
+                }
+                catch (ThreadAbortException)
+                {
+                    _caughtException = true;
+                    throw;
+                }
             }
         }
 
@@ -204,7 +267,8 @@ namespace System.Runtime.Tests
         }
 
         // Tests cancellation by the action itself
-//        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime), nameof(PlatformDetection.IsNotNativeAot))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime), nameof(PlatformDetection.IsNotNativeAot))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/135914", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void CancelItselfOutsideOfTryCatchFinally()
         {
             var cts = new CancellationTokenSource();

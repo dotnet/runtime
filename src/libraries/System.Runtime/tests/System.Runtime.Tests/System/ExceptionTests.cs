@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Collections.Tests;
 using System.IO;
 using System.Reflection;
@@ -175,6 +176,207 @@ namespace System.Tests
         private static void ThrowException()
         {
             throw new Exception("Boom!");
+        }
+
+        [Theory]
+        [InlineData(nameof(ArgumentAfterFilteredCatch), "name: InvalidDataException")]
+        [InlineData(nameof(ArgumentAfterPlainCatch), "name: InvalidDataException")]
+        [InlineData(nameof(ExceptionFilterProbe.LocalsSetInFilteredCatch), "0 0 True")]
+        [InlineData(nameof(LocalBeforeFilteredCatch), 28)]
+        [InlineData(nameof(IntegerArgumentAfterFilteredCatch), 42)]
+        [InlineData(nameof(ArgumentInFilter), true)]
+        [InlineData(nameof(ArgumentInsideFilteredCatch), "name: InvalidDataException")]
+        [InlineData(nameof(ArgumentInOuterFilteredCatch), "name x")]
+        public static void ExceptionFilter_PreservesArgumentsAndLocals(string scenario, object expected)
+        {
+            object actual = scenario switch
+            {
+                nameof(ArgumentAfterFilteredCatch) => ArgumentAfterFilteredCatch("name"),
+                nameof(ArgumentAfterPlainCatch) => ArgumentAfterPlainCatch("name"),
+                nameof(ExceptionFilterProbe.LocalsSetInFilteredCatch) => new ExceptionFilterProbe { Flag = true }.LocalsSetInFilteredCatch(),
+                nameof(LocalBeforeFilteredCatch) => LocalBeforeFilteredCatch(7),
+                nameof(IntegerArgumentAfterFilteredCatch) => IntegerArgumentAfterFilteredCatch(42),
+                nameof(ArgumentInFilter) => ArgumentInFilter("x"),
+                nameof(ArgumentInsideFilteredCatch) => ArgumentInsideFilteredCatch("name"),
+                nameof(ArgumentInOuterFilteredCatch) => ArgumentInOuterFilteredCatch("name"),
+                _ => throw new ArgumentException($"Unknown scenario: {scenario}", nameof(scenario))
+            };
+
+            Assert.Equal(expected, actual);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void ExceptionFilter_PreservesArgumentChanges(bool matches)
+        {
+            Assert.Equal("49: name-filter", ChangedArgumentsInFilter(42, "name", matches));
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void ThrowForFilter() => throw new InvalidDataException("x");
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static string ArgumentAfterFilteredCatch(string name)
+        {
+            string result;
+            try
+            {
+                ThrowForFilter();
+                result = "ok";
+            }
+            catch (Exception e) when (e is InvalidDataException or NotSupportedException)
+            {
+                result = e.GetType().Name;
+            }
+            return name + ": " + result;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static string ArgumentAfterPlainCatch(string name)
+        {
+            string result;
+            try
+            {
+                ThrowForFilter();
+                result = "ok";
+            }
+            catch (Exception e)
+            {
+                if (e is not InvalidDataException)
+                    throw;
+                result = e.GetType().Name;
+            }
+            return name + ": " + result;
+        }
+
+        private sealed class ExceptionFilterProbe
+        {
+            public bool Flag { get; set; }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public string LocalsSetInFilteredCatch()
+            {
+                List<int> a;
+                List<int> b;
+                bool lost = false;
+                try
+                {
+                    ThrowForFilter();
+                    a = [1];
+                    b = [2];
+                }
+                catch (InvalidDataException) when (Flag)
+                {
+                    (a, b, lost) = ([], [], true);
+                }
+                return $"{a.Count} {b.Count} {lost}";
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static int LocalBeforeFilteredCatch(int value)
+        {
+            int local = value * 3;
+            try
+            {
+                ThrowForFilter();
+            }
+            catch (Exception e) when (e is InvalidDataException)
+            {
+            }
+            return local + value;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static int IntegerArgumentAfterFilteredCatch(int value)
+        {
+            try
+            {
+                ThrowForFilter();
+            }
+            catch (Exception e) when (e is InvalidDataException)
+            {
+            }
+            return value;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static bool ArgumentInFilter(string value)
+        {
+            try
+            {
+                ThrowForFilter();
+                return false;
+            }
+            catch (Exception) when (value == "x")
+            {
+                return true;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static string ArgumentInsideFilteredCatch(string name)
+        {
+            try
+            {
+                ThrowForFilter();
+                return "";
+            }
+            catch (Exception e) when (e is InvalidDataException or NotSupportedException)
+            {
+                return $"{name}: {e.GetType().Name}";
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static string ArgumentInOuterFilteredCatch(string name)
+        {
+            try
+            {
+                return RejectedInnerFilter();
+            }
+            catch (Exception e) when (e is InvalidDataException)
+            {
+                return name + " " + e.Message;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static string RejectedInnerFilter()
+        {
+            try
+            {
+                ThrowForFilter();
+                return "";
+            }
+            catch (Exception e) when (e is NotSupportedException)
+            {
+                return "wrong";
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static string ChangedArgumentsInFilter(int value, string name, bool matches)
+        {
+            try
+            {
+                ThrowForFilter();
+            }
+            catch (InvalidDataException) when (ChangeFilterArguments(ref value, ref name, matches))
+            {
+            }
+            catch (InvalidDataException)
+            {
+            }
+            return $"{value}: {name}";
+        }
+
+        private static bool ChangeFilterArguments(ref int value, ref string name, bool matches)
+        {
+            value += 7;
+            name += "-filter";
+            return matches;
         }
 
         [Fact]

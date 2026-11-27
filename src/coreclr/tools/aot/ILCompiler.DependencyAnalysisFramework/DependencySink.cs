@@ -128,10 +128,7 @@ namespace ILCompiler.DependencyAnalysisFramework
 
             public void AddRange(params ReadOnlySpan<DependencyNodeCore<DependencyContextType>.DependencyListEntry> dependencies)
             {
-                foreach (DependencyNodeCore<DependencyContextType>.DependencyListEntry dependency in dependencies)
-                {
-                    Add(dependency);
-                }
+                _dependencies.AddRange(dependencies);
             }
         }
     }

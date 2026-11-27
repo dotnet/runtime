@@ -172,8 +172,6 @@ Exception
 
 class Exception
 {
-    friend bool DebugIsEECxxExceptionPointer(void* pv);
-
  private:
     static const int c_type = 0x524f4f54;   // 'ROOT'
     static Exception * g_OOMException;
@@ -300,8 +298,6 @@ using ExceptionHolder = LifetimeHolder<ExceptionTraits>;
 
 class HRException : public Exception
 {
-    friend bool DebugIsEECxxExceptionPointer(void* pv);
-
  protected:
     HRESULT             m_hr;
 
@@ -339,8 +335,6 @@ class HRException : public Exception
 
 class HRMsgException : public HRException
 {
-    friend bool DebugIsEECxxExceptionPointer(void* pv);
-
  protected:
     SString             m_msg;
 
@@ -365,8 +359,6 @@ class HRMsgException : public HRException
 
 class COMException : public HRException
 {
-    friend bool DebugIsEECxxExceptionPointer(void* pv);
-
 #ifdef FEATURE_COMINTEROP
  private:
     IErrorInfo          *m_pErrorInfo;
@@ -403,8 +395,6 @@ class COMException : public HRException
 #ifdef TARGET_WINDOWS
 class SEHException : public Exception
 {
-    friend bool DebugIsEECxxExceptionPointer(void* pv);
-
  public:
     EXCEPTION_RECORD        m_exception;
 
@@ -1077,10 +1067,10 @@ Exception *GetExceptionFromCxxException();
 //
 // do this:
 //
-//     Holder<Thing> thing = new Thing();   //DO THIS INSTEAD
+//     NewHolder<Thing> thing(new Thing());   //DO THIS INSTEAD
 //     blah
 //     // If we got here, we succeeded. So tell holder we want to keep the thing.
-//     thing.SuppressRelease();
+//     thing.Detach();
 //
 //	We won't rethrow the exception if it is a Stack Overflow exception. Instead, we'll throw a new
 //   exception. This will allow the stack to unwind point, and so we won't be jeopardizing a

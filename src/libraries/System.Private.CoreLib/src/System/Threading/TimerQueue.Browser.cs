@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -23,24 +22,18 @@ namespace System.Threading
         private static List<TimerQueue>? s_scheduledTimersToFire;
         private static long s_shortestDueTimeMs = long.MaxValue;
 
-        // this means that it's in the s_scheduledTimers collection, not that it's the one which would run on the next TimeoutCallback
+        // Tracks membership in s_scheduledTimers, not whether this queue is due on the next callback.
         private bool _isScheduled;
         private long _scheduledDueTimeMs;
         private TimerQueue(int _)
         {
         }
 
-        // This replaces the current pending setTimeout with shorter one
-#if MONO
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern unsafe void MainThreadScheduleTimer(void* callback, int shortestDueTimeMs);
-#else
         [LibraryImport(RuntimeHelpers.QCall)]
-        private static unsafe partial void SystemJS_ScheduleTimer(int shortestDueTimeMs);
-#endif
+        private static partial void SystemJS_ScheduleTimer(int shortestDueTimeMs);
 
+        // JavaScript invokes this export to process due timers.
         [UnmanagedCallersOnly(EntryPoint = "SystemJS_ExecuteTimerCallback")]
-        // this callback will arrive on the main thread, called from mono_wasm_execute_timer
         private static void TimerHandler()
         {
             try
@@ -78,8 +71,7 @@ namespace System.Threading
         }
 
         // shortest time of all TimerQueues
-        [DynamicDependency("TimerHandler")] // https://github.com/dotnet/runtime/issues/101434
-        private static unsafe void ReplaceNextTimer(long shortestDueTimeMs, long currentTimeMs)
+        private static void ReplaceNextTimer(long shortestDueTimeMs, long currentTimeMs)
         {
             if (shortestDueTimeMs == long.MaxValue)
             {
@@ -91,12 +83,8 @@ namespace System.Threading
             {
                 s_shortestDueTimeMs = shortestDueTimeMs;
                 int shortestWait = Math.Max((int)(shortestDueTimeMs - currentTimeMs), 0);
-                // this would cancel the previous schedule and create shorter one, it is expensive callback
-#if MONO
-                MainThreadScheduleTimer((void*)(delegate* unmanaged<void>)&TimerHandler, shortestWait);
-#else
+                // Replace the pending JavaScript timeout only when a timer is due sooner.
                 SystemJS_ScheduleTimer(shortestWait);
-#endif
             }
         }
 

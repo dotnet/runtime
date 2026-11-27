@@ -1,4 +1,0 @@
-﻿{
-  "workloads/wasm-tools-net9/description": ".NET 9.0 WebAssembly 生成工具",
-  "workloads/wasm-experimental-net9/description": ".NET 9.0 WebAssembly 实验工具"
-}

@@ -1775,9 +1775,10 @@ public:
         return StatementList(FirstNonPhiDef());
     }
 
-    // True if any non-phi statement/node in the block has side effects.
+    // True if the block's non-phi statements/nodes can be executed on paths
+    // where they previously were not.
     //
-    bool hasSideEffects() const;
+    bool isSafeToSpeculate() const;
 
     // Simple "size" estimates
     //

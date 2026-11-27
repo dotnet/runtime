@@ -585,16 +585,16 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         if (assertOptions.BuildOptions.GlobalizationMode is GlobalizationMode.Custom)
         {
             string srcPath = assertOptions.BuildOptions.CustomIcuFile!;
-            // Prefer the runtime-pack root the build actually resolved (from MSBuild output),
-            // since that is the same pack the publish output was produced from. The SDK's
-            // workload-pack dir (GetRuntimeNativeDir) can diverge from it on CoreCLR no-workload
-            // runs where the publish-time pack comes from a per-test NuGet cache.
-            string runtimePackDir = !string.IsNullOrEmpty(assertOptions.RuntimePackDir)
-                ? Path.Combine(assertOptions.RuntimePackDir, "runtimes", BuildEnvironment.DefaultRuntimeIdentifier, "native")
-                : BuildTestBase.s_buildEnv.GetRuntimeNativeDir(assertOptions.BuildOptions.TargetFramework, assertOptions.BuildOptions.RuntimeType);
-            if (!Path.IsPathRooted(srcPath))
-                srcPath = Path.Combine(runtimePackDir, assertOptions.BuildOptions.CustomIcuFile!);
-            TestUtils.AssertSameFile(srcPath, actual.Single());
+            if (Path.IsPathRooted(srcPath))
+            {
+                TestUtils.AssertSameFile(srcPath, actual.Single());
+            }
+            else
+            {
+                var runtimePack = new RuntimePackAssets(assertOptions.RuntimePackDir ??
+                    BuildTestBase.s_buildEnv.GetRuntimePackDir(assertOptions.BuildOptions.TargetFramework, assertOptions.BuildOptions.RuntimeType));
+                runtimePack.AssertFileSize(RuntimePackAssets.GetNativePath(srcPath), actual.Single());
+            }
         }
     }
 
