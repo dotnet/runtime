@@ -105,6 +105,18 @@ namespace ILCompiler.DependencyAnalysis
             get;
         }
 
+        public CompactUnwindTableNode CompactUnwindTable
+        {
+            get;
+            internal set;
+        }
+
+        public CompactUnwindRecordsNode CompactUnwindRecords
+        {
+            get;
+            internal set;
+        }
+
         public NameMangler NameMangler
         {
             get;
