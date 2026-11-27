@@ -197,6 +197,9 @@ FORCEINLINE bool OptimizeLdrStr(instruction ins,
 
 bool OptimizePostIndexed(instruction ins, regNumber reg, ssize_t imm, emitAttr regAttr);
 
+void emitIns_Adrp(regNumber    reg,
+                  ssize_t addr DEBUGARG(size_t targetHandle = 0) DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
+
 // Try to fold the page offset of a preceding relocatable "add Rd,Rd,#:lo12:sym" (PAGEOFFSET_12A)
 // into a "ldr Rd,[Rd]" to form "ldr Rd,[Rd,#:lo12:sym]" (PAGEOFFSET_12L), removing the add.
 void emitPageOffsetLoad(emitAttr attr, regNumber reg, void* sym);
@@ -1827,10 +1830,9 @@ void emitIns_Adrp_Ldr_Add(emitAttr     attr,
                           regNumber    reg2,
                           ssize_t addr DEBUGARG(size_t targetHandle = 0) DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
 
-void emitIns_R_AI(instruction  ins,
-                  emitAttr     attr,
-                  regNumber    ireg,
-                  ssize_t disp DEBUGARG(size_t targetHandle = 0) DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
+void emitPageRelativeAddress(emitAttr     attr,
+                             regNumber    ireg,
+                             ssize_t disp DEBUGARG(size_t targetHandle = 0) DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
 
 void emitIns_AR_R(instruction ins, emitAttr attr, regNumber ireg, regNumber reg, int offs);
 

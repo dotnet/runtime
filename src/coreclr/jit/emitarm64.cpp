@@ -9047,25 +9047,16 @@ void emitter::emitIns_Adrp_Ldr_Add(emitAttr     attr,
     appendToCurIG(addId);
 }
 
-// Materialize a relocatable address (ADR or ADRP + ADD), or load a pointer from it (ADRP + LDR).
-void emitter::emitIns_R_AI(instruction  ins,
-                           emitAttr     attr,
-                           regNumber    ireg,
-                           ssize_t addr DEBUGARG(size_t targetHandle) DEBUGARG(GenTreeFlags gtFlags))
+// Emit the untracked page address shared by relocatable handle loads and address materialization.
+void emitter::emitIns_Adrp(regNumber reg, ssize_t addr DEBUGARG(size_t targetHandle) DEBUGARG(GenTreeFlags gtFlags))
 {
-    assert(EA_IS_RELOC(attr));
-    assert((ins == INS_adr) || (ins == INS_adrp) || (ins == INS_ldr));
-
-    emitAttr  size = EA_SIZE(attr);
-    insFormat fmt  = IF_DI_1E;
-    // ADRP writes a page address. Only the following ADD or LDR can produce a GC reference.
     instrDescJmp* id = emitNewInstrJmp();
-    id->idIns(ins == INS_ldr ? INS_adrp : ins);
-    id->idInsFmt(fmt);
+    id->idIns(INS_adrp);
+    id->idInsFmt(IF_DI_1E);
     id->idInsOpt(INS_OPTS_NONE);
-    id->idOpSize(size);
+    id->idOpSize(EA_PTRSIZE);
     id->idAddr()->iiaAddr = (BYTE*)addr;
-    id->idReg1(ireg);
+    id->idReg1(reg);
     id->idSetIsDspReloc();
 #ifdef DEBUG
     id->idDebugOnlyInfo()->idMemCookie = targetHandle;
@@ -9074,33 +9065,30 @@ void emitter::emitIns_R_AI(instruction  ins,
 
     dispIns(id);
     appendToCurIG(id);
+}
 
-    if (ins == INS_ldr)
-    {
-        assert(size == EA_PTRSIZE && ((size_t)addr % TARGET_POINTER_SIZE) == 0);
-        // The ADRP above leaves a page address in the register, so only the load
-        // may carry the GC type of the loaded value.
-        emitPageOffsetLoad(EA_IS_GCREF(attr) ? EA_GCREF : size, ireg, (void*)addr);
-    }
-    else if (ins == INS_adrp)
-    {
-        // add reg, reg, imm
-        ins           = INS_add;
-        fmt           = IF_DI_2A;
-        instrDesc* id = emitNewInstr(attr);
-        id->idSetIsDspReloc();
+// Materialize a relocatable address with ADRP and ADD.
+void emitter::emitPageRelativeAddress(emitAttr     attr,
+                                      regNumber    ireg,
+                                      ssize_t addr DEBUGARG(size_t targetHandle) DEBUGARG(GenTreeFlags gtFlags))
+{
+    assert(EA_IS_RELOC(attr));
+    emitIns_Adrp(ireg, addr DEBUGARG(targetHandle) DEBUGARG(gtFlags));
 
-        id->idIns(ins);
-        id->idInsFmt(fmt);
-        id->idInsOpt(INS_OPTS_NONE);
-        id->idOpSize(size);
-        id->idAddr()->iiaAddr = (BYTE*)addr;
-        id->idReg1(ireg);
-        id->idReg2(ireg);
+    // The ADD completes the address and carries the result's GC type.
+    instrDesc* id = emitNewInstr(attr);
+    id->idSetIsDspReloc();
 
-        dispIns(id);
-        appendToCurIG(id);
-    }
+    id->idIns(INS_add);
+    id->idInsFmt(IF_DI_2A);
+    id->idInsOpt(INS_OPTS_NONE);
+    id->idOpSize(EA_SIZE(attr));
+    id->idAddr()->iiaAddr = (BYTE*)addr;
+    id->idReg1(ireg);
+    id->idReg2(ireg);
+
+    dispIns(id);
+    appendToCurIG(id);
 }
 
 void emitter::emitIns_AR_R(instruction ins, emitAttr attr, regNumber ireg, regNumber reg, int offs)
@@ -15044,10 +15032,11 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
         if (addr->IsIconHandle() && !addr->IsIconHandle(GTF_ICON_TLS_HDL))
         {
             assert(ins == INS_ldr && EA_SIZE(attr) == EA_PTRSIZE && !EA_IS_BYREF(attr));
-            GenTreeIntCon* cell      = addr->AsIntCon();
-            emitAttr       relocAttr = EA_IS_GCREF(attr) ? EA_SET_FLG(EA_GCREF, EA_DSP_RELOC_FLG) : EA_PTR_DSP_RELOC;
-            emitIns_R_AI(INS_ldr, relocAttr, dataReg,
-                         cell->IconValue() DEBUGARG(cell->GetTargetHandle()) DEBUGARG(cell->gtFlags));
+            GenTreeIntCon* cell = addr->AsIntCon();
+            ssize_t        sym  = cell->IconValue();
+            assert(((size_t)sym % TARGET_POINTER_SIZE) == 0);
+            emitIns_Adrp(dataReg, sym DEBUGARG(cell->GetTargetHandle()) DEBUGARG(cell->gtFlags));
+            emitPageOffsetLoad(attr, dataReg, (void*)sym);
             return;
         }
 

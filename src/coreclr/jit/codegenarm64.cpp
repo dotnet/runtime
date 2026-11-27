@@ -1641,7 +1641,7 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr       size,
     if (EA_IS_RELOC(size))
     {
         // This emits a pair of adrp/add (two instructions) with fix-ups.
-        GetEmitter()->emitIns_R_AI(INS_adrp, size, reg, imm DEBUGARG(targetHandle) DEBUGARG(gtFlags));
+        GetEmitter()->emitPageRelativeAddress(size, reg, imm DEBUGARG(targetHandle) DEBUGARG(gtFlags));
     }
     else if (imm == 0)
     {
@@ -4691,9 +4691,9 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
         if (m_compiler->opts.compReloc)
         {
             // adrp + add with relocations will be emitted
-            GetEmitter()->emitIns_R_AI(INS_adrp, EA_PTR_DSP_RELOC, callTargetReg,
-                                       (ssize_t)pAddr DEBUGARG((size_t)m_compiler->eeFindHelper(helper))
-                                           DEBUGARG(GTF_ICON_METHOD_HDL));
+            GetEmitter()->emitPageRelativeAddress(EA_PTR_DSP_RELOC, callTargetReg,
+                                                  (ssize_t)pAddr DEBUGARG((size_t)m_compiler->eeFindHelper(helper))
+                                                      DEBUGARG(GTF_ICON_METHOD_HDL));
         }
         else
         {
