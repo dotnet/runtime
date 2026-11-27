@@ -6,7 +6,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
-    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <TargetFramework>$(NetCoreAppMinimum)</TargetFramework>
     <SignAssembly>true</SignAssembly>
     <StrongNameKeyId>Open</StrongNameKeyId>
     <RunAnalyzers>false</RunAnalyzers>
