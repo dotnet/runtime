@@ -74,7 +74,8 @@ internal static class TypeMapOutput
                         case "TypeMapAssemblyTargetAttribute`1":
                             if (attribute.ConstructorArguments is not [{ Value: string targetAssemblyName }])
                                 throw new BadImageFormatException(string.Format(SharedStrings.TypeMapOutputInvalidAttribute, attribute));
-                            if (context.TryResolve(AssemblyNameReference.Parse(targetAssemblyName)) is AssemblyDefinition targetAssembly)
+                            if (LinkContext.TryParseAssemblyName(targetAssemblyName) is AssemblyNameReference targetAssemblyRef &&
+                                context.TryResolve(targetAssemblyRef) is AssemblyDefinition targetAssembly)
                                 pending.Enqueue(targetAssembly);
                             break;
 

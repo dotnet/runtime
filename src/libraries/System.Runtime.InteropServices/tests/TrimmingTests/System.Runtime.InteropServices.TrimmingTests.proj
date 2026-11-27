@@ -24,7 +24,7 @@
     </TestConsoleAppSourceFiles>
 
     <!-- Validate the type map behavior, and the XML output of the retained type maps. -->
-    <TestConsoleAppSourceFiles Include="TypeMap.cs" Condition="'$(UseMonoRuntime)' != 'true'">
+    <TestConsoleAppSourceFiles Include="TypeMap.cs">
       <EnabledProperties>IlcGenerateMstatFile;IlcGenerateDgmlFile;Optimize</EnabledProperties>
       <SkipOnTestRuntimes>browser-wasm</SkipOnTestRuntimes>
       <AdditionalProjectReferences>$(MSBuildProjectDirectory)/Dependencies/TypeMapTestLibrary.csproj</AdditionalProjectReferences>
