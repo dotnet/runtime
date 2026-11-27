@@ -13,34 +13,12 @@
 #include <clrdata.h>
 #include <xclrdata.h>
 #include <sospriv.h>
+#include <mslayout.h>
 
 #ifndef TARGET_UNIX
 // It is unfortunate having to include this header just to get the definition of GenericModeBlock
 #include <msodw.h>
 #endif // TARGET_UNIX
-
-//
-// Whenever a structure is marshalled between different platforms, we need to ensure the
-// layout is the same in both cases.  We tell GCC to use the MSVC-style packing with
-// the following attribute.  The main thing this appears to control is whether
-// 8-byte values are aligned at 4-bytes (GCC default) or 8-bytes (MSVC default).
-// This attribute affects only the immediate struct it is applied to, you must also apply
-// it to any nested structs if you want their layout affected as well.  You also must
-// apply this to unions embedded in other structures, since it can influence the starting
-// alignment.
-//
-// Note that there doesn't appear to be any disadvantage to applying this a little
-// more agressively than necessary, so we generally use it on all classes / structures
-// defined in a file that defines marshalled data types (eg. DacDbiStructures.h)
-// The -mms-bitfields compiler option also does this for the whole file, but we don't
-// want to go changing the layout of, for example, structures defined in OS header files
-// so we explicitly opt-in with this attribute.
-//
-#if defined(__GNUC__) && defined(HOST_X86)
-#define MSLAYOUT __attribute__((__ms_struct__))
-#else
-#define MSLAYOUT
-#endif
 
 #include <livedatatarget.h>
 
@@ -64,6 +42,33 @@ enum
 {
     DACSTACKPRIV_REQUEST_FRAME_DATA = 0xf0000000
 };
+
+#ifdef CDAC_STRESS
+// Private requests for the cDAC stress harness.
+enum
+{
+    DACSTRESSPRIV_REQUEST_FLUSH_TARGET_STATE   = 0xf2000000,
+    DACSTRESSPRIV_REQUEST_COMPUTE_ARG_GCREFMAP = 0xf2000001
+};
+
+// In/out request descriptor for DACSTRESSPRIV_REQUEST_COMPUTE_ARG_GCREFMAP.
+// outBuffer is unused; the caller-allocated blob destination + size are
+// carried by this struct, and the handler writes cbFilled and cbNeeded in
+// place.
+//   S_OK                                              blob fit; cbFilled bytes written to *BlobBuffer; cbNeeded == cbFilled.
+//   HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER)    cbFilled = 0, cbNeeded = required size; *BlobBuffer untouched.
+//   E_NOTIMPL                                         encoder declined this MD (bucketed as ARG_SKIP).
+//   E_FAIL                                            encoder threw (bucketed as ARG_ERROR).
+//   E_INVALIDARG                                      bad inBuffer.
+struct DacStressArgGCRefMapRequest
+{
+    CLRDATA_ADDRESS MethodDesc;     // [in]
+    CLRDATA_ADDRESS BlobBuffer;     // [in]  caller-allocated destination (in-proc pointer)
+    ULONG32         BlobBufferLen;  // [in]  capacity at BlobBuffer
+    ULONG32         cbFilled;       // [out] bytes actually written to *BlobBuffer
+    ULONG32         cbNeeded;       // [out] total bytes the blob requires
+};
+#endif // CDAC_STRESS
 
 enum DacpObjectType { OBJ_STRING=0,OBJ_FREE,OBJ_OBJECT,OBJ_ARRAY,OBJ_OTHER };
 struct MSLAYOUT DacpObjectData

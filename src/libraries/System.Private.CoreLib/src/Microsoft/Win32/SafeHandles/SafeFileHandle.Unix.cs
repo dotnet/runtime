@@ -34,12 +34,15 @@ namespace Microsoft.Win32.SafeHandles
             UnixFileMode.OtherRead |
             UnixFileMode.OtherWrite;
 
-        internal static bool DisableFileLocking { get; } = OperatingSystem.IsBrowser() || OperatingSystem.IsWasi()// #40065: Emscripten does not support file locking
-            || AppContextConfigHelper.GetBooleanConfig("System.IO.DisableFileLocking", "DOTNET_SYSTEM_IO_DISABLEFILELOCKING", defaultValue: false);
+        internal static bool DisableFileLocking { get; } = OperatingSystem.IsBrowser() || OperatingSystem.IsWasi() // #40065: Emscripten does not support file locking
+            || AppContextConfigHelper.GetBooleanConfig(
+                "System.IO.DisableFileLocking",
+                "DOTNET_SYSTEM_IO_DISABLEFILELOCKING",
+                defaultValue: (OperatingSystem.IsIOS() && !OperatingSystem.IsMacCatalyst()) || OperatingSystem.IsTvOS());
 
         // not using bool? as it's not thread safe
-        private volatile NullableBool _canSeek = NullableBool.Undefined;
-        private volatile NullableBool _supportsRandomAccess = NullableBool.Undefined;
+        private NullableBool _supportsRandomAccess /* = NullableBool.Undefined */;
+        private NullableBool _isAsync /* = NullableBool.Undefined */;
         private bool _deleteOnClose;
         private bool _isLocked;
 
@@ -53,9 +56,25 @@ namespace Microsoft.Win32.SafeHandles
             SetHandle(new IntPtr(-1));
         }
 
-        public bool IsAsync { get; private set; }
+        public bool IsAsync
+        {
+            get
+            {
+                NullableBool isAsync = _isAsync;
+                if (isAsync == NullableBool.Undefined && !IsClosed)
+                {
+                    if (Interop.Sys.Fcntl.GetIsNonBlocking(this, out bool isNonBlocking) != 0)
+                    {
+                        throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo(), Path);
+                    }
 
-        internal bool CanSeek => !IsClosed && GetCanSeek();
+                    _isAsync = isAsync = isNonBlocking ? NullableBool.True : NullableBool.False;
+                }
+
+                return isAsync == NullableBool.True;
+            }
+            private set => _isAsync = value ? NullableBool.True : NullableBool.False;
+        }
 
         internal bool SupportsRandomAccess
         {
@@ -64,7 +83,7 @@ namespace Microsoft.Win32.SafeHandles
                 NullableBool supportsRandomAccess = _supportsRandomAccess;
                 if (supportsRandomAccess == NullableBool.Undefined)
                 {
-                    _supportsRandomAccess = supportsRandomAccess = GetCanSeek() ? NullableBool.True : NullableBool.False;
+                    _supportsRandomAccess = supportsRandomAccess = CanSeek ? NullableBool.True : NullableBool.False;
                 }
 
                 return supportsRandomAccess == NullableBool.True;
@@ -159,6 +178,49 @@ namespace Microsoft.Win32.SafeHandles
                 long h = (long)handle;
                 return h < 0 || h > int.MaxValue;
             }
+        }
+
+        public static partial void CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle, bool asyncRead, bool asyncWrite)
+        {
+            // Allocate the handles first, so in case of OOM we don't leak any handles.
+            SafeFileHandle tempReadHandle = new();
+            SafeFileHandle tempWriteHandle = new();
+
+            Interop.Sys.PipeFlags flags = Interop.Sys.PipeFlags.O_CLOEXEC;
+            if (asyncRead)
+            {
+                flags |= Interop.Sys.PipeFlags.O_NONBLOCK_READ;
+            }
+
+            if (asyncWrite)
+            {
+                flags |= Interop.Sys.PipeFlags.O_NONBLOCK_WRITE;
+            }
+
+            int readFd, writeFd;
+            unsafe
+            {
+                int* fds = stackalloc int[2];
+                if (Interop.Sys.Pipe(fds, flags) != 0)
+                {
+                    Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
+                    tempReadHandle.Dispose();
+                    tempWriteHandle.Dispose();
+                    throw Interop.GetExceptionForIoErrno(error);
+                }
+
+                readFd = fds[Interop.Sys.ReadEndOfPipe];
+                writeFd = fds[Interop.Sys.WriteEndOfPipe];
+            }
+
+            tempReadHandle.SetHandle(readFd);
+            tempReadHandle.IsAsync = asyncRead;
+
+            tempWriteHandle.SetHandle(writeFd);
+            tempWriteHandle.IsAsync = asyncWrite;
+
+            readHandle = tempReadHandle;
+            writeHandle = tempWriteHandle;
         }
 
         // Specialized Open that returns the file length and permissions of the opened file.
@@ -293,7 +355,7 @@ namespace Microsoft.Win32.SafeHandles
             }
 
             // Translate some FileOptions; some just aren't supported, and others will be handled after calling open.
-            // - Asynchronous: Handled in ctor, setting _useAsync and SafeFileHandle.IsAsync to true
+            // - Asynchronous: Unix does not support O_NONBLOCK for regular files, only for pipes and sockets.
             // - DeleteOnClose: Doesn't have a Unix equivalent, but we approximate it in Dispose
             // - Encrypted: No equivalent on Unix and is ignored
             // - RandomAccess: Implemented after open if posix_fadvise is available
@@ -346,7 +408,7 @@ namespace Microsoft.Win32.SafeHandles
                 filePermissions = ((UnixFileMode)status.Mode) & PermissionMask;
             }
 
-            IsAsync = (options & FileOptions.Asynchronous) != 0;
+            IsAsync = false; // Unix does not support O_NONBLOCK for regular files.
 
             // Lock the file if requested via FileShare.  This is only advisory locking. FileShare.None implies an exclusive
             // lock on the file and all other modes use a shared lock.  While this is not as granular as Windows, not mandatory,
@@ -483,19 +545,7 @@ namespace Microsoft.Win32.SafeHandles
             }
         }
 
-        private bool GetCanSeek()
-        {
-            Debug.Assert(!IsClosed);
-            Debug.Assert(!IsInvalid);
-
-            NullableBool canSeek = _canSeek;
-            if (canSeek == NullableBool.Undefined)
-            {
-                _canSeek = canSeek = Interop.Sys.LSeek(this, 0, Interop.Sys.SeekWhence.SEEK_CUR) >= 0 ? NullableBool.True : NullableBool.False;
-            }
-
-            return canSeek == NullableBool.True;
-        }
+        private bool GetCanSeekCore() => Interop.Sys.LSeek(this, 0, Interop.Sys.SeekWhence.SEEK_CUR) >= 0;
 
         internal FileHandleType GetFileTypeCore()
         {
@@ -527,13 +577,6 @@ namespace Microsoft.Win32.SafeHandles
             int result = Interop.Sys.FStat(this, out Interop.Sys.FileStatus status);
             FileStreamHelpers.CheckFileCall(result, Path);
             return status.Size;
-        }
-
-        private enum NullableBool
-        {
-            Undefined = 0,
-            False = -1,
-            True = 1
         }
     }
 }

@@ -1058,6 +1058,46 @@ namespace System.Xml.Tests
             return TEST_PASS;
         }
 
+        public int TestReadBase64_InvalidChar_ErrorMessageBounded()
+        {
+            int totalfilesize = Convert.ToInt32(CurVariation.Params[0].ToString());
+            CError.WriteLine(" totalfilesize = " + totalfilesize);
+
+            string content = "!" + new string('A', totalfilesize);
+
+            string fileName = "base64_invalidchar_" + CurVariation.Params[0].ToString() + ".xml";
+            MemoryStream mems = new MemoryStream();
+            StreamWriter sw = new StreamWriter(mems);
+            sw.Write("<root><base64>");
+            sw.Write(content);
+            sw.Write("</base64></root>");
+            sw.Flush();
+            FilePathUtil.addStream(fileName, mems);
+            ReloadSource(fileName);
+
+            DataReader.PositionOnElement("base64");
+            if (CheckCanReadBinaryContent()) return TEST_PASS;
+            byte[] buffer = new byte[4096];
+
+            try
+            {
+                DataReader.ReadElementContentAsBase64(buffer, 0, buffer.Length);
+                return TEST_FAIL;
+            }
+            catch (XmlException ex)
+            {
+                // The exception message should not contain the entire input.
+                if (ex.Message.Length > 100)
+                {
+                    CError.WriteLine("Exception message is unexpectedly large: " + ex.Message.Length + " chars");
+                    return TEST_FAIL;
+                }
+                DataReader.Close();
+                return TEST_PASS;
+            }
+            finally { DataReader.Close(); }
+        }
+
         [Variation("WS:WireCompat:hex binary fails to send/return data after 1787 bytes")]
         public int TestReadBase64ReadsTheContent()
         {

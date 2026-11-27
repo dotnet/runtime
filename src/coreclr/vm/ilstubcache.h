@@ -32,6 +32,7 @@ public:
 };
 
 class LoaderAllocator;
+class ILStubResolver;
 
 //
 // This class caches MethodDesc's for dynamically generated IL stubs, it is not
@@ -65,6 +66,9 @@ public:
 
     void AddMethodDescChunkWithLockTaken(MethodDesc *pMD);
 
+    // Frees compile-time state of IL stubs created in a collectible LoaderAllocator.
+    void FreeCollectibleStubsCompileTimeState();
+
     static MethodDesc* CreateAndLinkNewILStubMethodDesc(
         LoaderAllocator* pAllocator,
         MethodTable* pMT,
@@ -75,6 +79,18 @@ public:
         SigTypeContext *pTypeContext,
         ILStubLinker* pStubLinker,
         BOOL isAsync = FALSE);
+
+    // Creates a DynamicMethodDesc that wraps pre-compiled R2R stub code.
+    // Unlike regular IL stubs, this does not create a resolver or precode - it points
+    // directly to the R2R native code.
+    MethodDesc* CreateR2RBackedILStub(
+        LoaderAllocator* pAllocator,
+        MethodTable* pMT,
+        PCODE r2rEntryPoint,
+        DWORD stubType,         // DynamicMethodDesc::ILStubType
+        PCCOR_SIGNATURE pSig,
+        DWORD cbSig,
+        AllocMemTracker* pamTracker);
 
     MethodTable * GetStubMethodTable()
     {
@@ -127,6 +143,10 @@ private:
     LoaderAllocator*m_pAllocator;
     MethodTable*    m_pStubMT;
     SHash<ILStubCacheTraits> m_hashMap;
+
+    // Resolvers of stubs created in a collectible LoaderAllocator,
+    // linked through ILStubResolver::m_pNextCollectibleResolver.
+    ILStubResolver* m_pCollectibleStubResolvers;
 };
 
 #endif //_ILSTUBCACHE_H

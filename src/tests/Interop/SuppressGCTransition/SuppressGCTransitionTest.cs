@@ -95,7 +95,10 @@ unsafe static class SuppressGCTransitionNative
             $"lib{nameof(SuppressGCTransitionNative)}.dylib",
         };
 
-        string binDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+        // NativeAOT executables are in a native subdirectory of the test assets.
+        string binDir = Utilities.IsNativeAot
+            ? new DirectoryInfo(AppContext.BaseDirectory).Parent.FullName
+            : Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
         foreach (var ln in libNames)
         {
             if (NativeLibrary.TryLoad(Path.Combine(binDir, ln), out IntPtr mod))
@@ -290,7 +293,6 @@ public unsafe class SuppressGCTransitionTest
     [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/70490", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/82859", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoMiniJIT), nameof(PlatformDetection.IsArm64Process))]
-    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/165", typeof(Utilities), nameof(Utilities.IsNativeAot))]
     [Xunit.SkipOnCoreClrAttribute("Depends on marshalled pinvoke calli", RuntimeTestModes.InterpreterActive)]
     [Fact]
     public static void TestEntryPoint()

@@ -80,24 +80,10 @@ PATCH_LABEL ThePreStubPatchLabel
     ret lr
 LEAF_END ThePreStubPatch, _TEXT
 
-// ------------------------// ------------------------------------------------------------------
-// __declspec(naked) void F_CALL_CONV JIT_WriteBarrier_Callable(Object **dst, Object* val)
-LEAF_ENTRY  JIT_WriteBarrier_Callable, _TEXT
-
-    // Setup args for JIT_WriteBarrier. x14 = dst ; x15 = val
-    mov     x14, x0                     // x14 = dst
-    mov     x15, x1                     // x15 = val
-
-    // Branch to the write barrier
-    PREPARE_EXTERNAL_VAR JIT_WriteBarrier_Loc, x17
-    ldr     x17, [x17]
-    br      x17
-LEAF_END JIT_WriteBarrier_Callable, _TEXT
-
 //
 // x12 = UMEntryThunkData*
 //
-NESTED_ENTRY TheUMEntryPrestub, _TEXT, UnhandledExceptionHandlerUnix
+NESTED_ENTRY TheUMEntryPrestub, _TEXT, NoHandler
 
     // Save arguments and return address
     PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -224
@@ -123,8 +109,9 @@ NESTED_END TheUMEntryPrestub, _TEXT
 #ifdef FEATURE_HIJACK
 // ------------------------------------------------------------------
 // Hijack function for functions which return a scalar type or a struct (value type)
+.arch_extension pauth
 NESTED_ENTRY OnHijackTripThread, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, -192
+    PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, -208
     // Spill callee saved registers
     PROLOG_SAVE_REG_PAIR   x19, x20, 16
     PROLOG_SAVE_REG_PAIR   x21, x22, 32
@@ -160,7 +147,15 @@ NESTED_ENTRY OnHijackTripThread, _TEXT, NoHandler
     EPILOG_RESTORE_REG_PAIR   x23, x24, 48
     EPILOG_RESTORE_REG_PAIR   x25, x26, 64
     EPILOG_RESTORE_REG_PAIR   x27, x28, 80
-    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr,   192
+    ldr x16, [sp, #192]
+    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr,   208
+    cbz x16, LOCAL_LABEL(HijackReturn)
+    // Code compiled with return address signing can run on hardware without pointer authentication,
+    // where autia is undefined. autia1716 is in the hint space, so it is a NOP there.
+    mov x17, lr
+    autia1716
+    mov lr, x17
+LOCAL_LABEL(HijackReturn):
     EPILOG_RETURN
 NESTED_END OnHijackTripThread, _TEXT
 
@@ -180,82 +175,6 @@ NESTED_END OnHijackTripThread, _TEXT
 GenerateRedirectedHandledJITCaseStub GCStress
 #endif
 
-
-// ------------------------------------------------------------------
-
-// This helper enables us to call into a funclet after restoring Fp register
-NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
-    // On entry:
-    //
-    // X0 = throwable
-    // X1 = PC to invoke
-    // X2 = address of CONTEXT record; used to restore the non-volatile registers of CrawlFrame
-    // X3 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
-    //
-
-    // Using below prolog instead of PROLOG_SAVE_REG_PAIR_INDEXED fp,lr, -96
-    // is intentional. Above statement would also emit instruction to save
-    // sp in fp. If sp is saved in fp in prolog then it is not expected that fp can change in the body
-    // of method. However, this method needs to be able to change fp before calling funclet.
-    // This is required to access locals in funclet.
-    PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED   x29, lr, -96
-
-    // Spill callee saved registers
-    PROLOG_SAVE_REG_PAIR   x19, x20, 16
-    PROLOG_SAVE_REG_PAIR   x21, x22, 32
-    PROLOG_SAVE_REG_PAIR   x23, x24, 48
-    PROLOG_SAVE_REG_PAIR   x25, x26, 64
-    PROLOG_SAVE_REG_PAIR   x27, x28, 80
-
-    // Save the SP of this function
-    mov x4, sp
-    str x4, [x3]
-
-    ldp x19, x20, [x2, #OFFSETOF__CONTEXT__X19]
-    ldp x21, x22, [x2, #(OFFSETOF__CONTEXT__X19 + 16)]
-    ldp x23, x24, [x2, #(OFFSETOF__CONTEXT__X19 + 32)]
-    ldp x25, x26, [x2, #(OFFSETOF__CONTEXT__X19 + 48)]
-    ldp x27, x28, [x2, #(OFFSETOF__CONTEXT__X19 + 64)]
-    ldr fp, [x2, #OFFSETOF__CONTEXT__Fp]
-
-    // Invoke the funclet
-    blr x1
-    nop
-
-    EPILOG_RESTORE_REG_PAIR   x19, x20, 16
-    EPILOG_RESTORE_REG_PAIR   x21, x22, 32
-    EPILOG_RESTORE_REG_PAIR   x23, x24, 48
-    EPILOG_RESTORE_REG_PAIR   x25, x26, 64
-    EPILOG_RESTORE_REG_PAIR   x27, x28, 80
-    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr,   96
-    EPILOG_RETURN
-
-NESTED_END CallEHFunclet, _TEXT
-
-// This helper enables us to call into a filter funclet after restoring Fp register
-NESTED_ENTRY CallEHFilterFunclet, _TEXT, NoHandler
-
-    PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED   fp, lr, -16
-
-    // On entry:
-    //
-    // X0 = throwable
-    // X1 = FP of main function
-    // X2 = PC to invoke
-    // X3 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
-    //
-    // Save the SP of this function
-    mov fp, sp
-    str fp, [x3]
-    // Restore frame pointer
-    mov fp, x1
-    // Invoke the filter funclet
-    blr x2
-
-    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr,   16
-    EPILOG_RETURN
-
-NESTED_END CallEHFilterFunclet, _TEXT
 
 #define FaultingExceptionFrame_StackAlloc (SIZEOF__FaultingExceptionFrame)
 #define FaultingExceptionFrame_FrameOffset 0
@@ -475,48 +394,6 @@ DynamicHelper DynamicHelperFrameFlags_ObjectArg, _Obj
 DynamicHelper DynamicHelperFrameFlags_ObjectArg | DynamicHelperFrameFlags_ObjectArg2, _ObjObj
 #endif
 
-//
-// JIT Static access helpers when coreclr host specifies single appdomain flag
-//
-
-// ------------------------------------------------------------------
-// void* JIT_GetDynamicNonGCStaticBase(DynamicStaticsInfo* pStaticsInfo)
-
-LEAF_ENTRY JIT_GetDynamicNonGCStaticBase_SingleAppDomain, _TEXT
-    // If class is not initialized, bail to C++ helper
-    add x1, x0, #OFFSETOF__DynamicStaticsInfo__m_pNonGCStatics
-    ldar x1, [x1]
-    tbnz x1, #0, LOCAL_LABEL(JIT_GetDynamicNonGCStaticBase_SingleAppDomain_CallHelper)
-    mov x0, x1
-    ret lr
-
-LOCAL_LABEL(JIT_GetDynamicNonGCStaticBase_SingleAppDomain_CallHelper):
-    // Tail call GetNonGCStaticBase
-    ldr x0, [x0, #OFFSETOF__DynamicStaticsInfo__m_pMethodTable]
-    PREPARE_EXTERNAL_VAR g_pGetNonGCStaticBase, x1
-    ldr      x1, [x1]
-    br       x1
-LEAF_END JIT_GetDynamicNonGCStaticBase_SingleAppDomain, _TEXT
-
-// ------------------------------------------------------------------
-// void* JIT_GetDynamicGCStaticBase(DynamicStaticsInfo* pStaticsInfo)
-
-LEAF_ENTRY JIT_GetDynamicGCStaticBase_SingleAppDomain, _TEXT
-    // If class is not initialized, bail to C++ helper
-    add x1, x0, #OFFSETOF__DynamicStaticsInfo__m_pGCStatics
-    ldar x1, [x1]
-    tbnz x1, #0, LOCAL_LABEL(JIT_GetDynamicGCStaticBase_SingleAppDomain_CallHelper)
-    mov x0, x1
-    ret lr
-
-LOCAL_LABEL(JIT_GetDynamicGCStaticBase_SingleAppDomain_CallHelper):
-    // Tail call GetGCStaticBase
-    ldr x0, [x0, #OFFSETOF__DynamicStaticsInfo__m_pMethodTable]
-    PREPARE_EXTERNAL_VAR g_pGetGCStaticBase, x1
-    ldr      x1, [x1]
-    br       x1
-LEAF_END JIT_GetDynamicGCStaticBase_SingleAppDomain, _TEXT
-
 #ifdef PROFILING_SUPPORTED
 
 // ------------------------------------------------------------------
@@ -661,17 +538,6 @@ LEAF_END GetTLSResolverAddress, _TEXT
 #endif // TARGET_ANDROID
 #endif // !TARGET_APPLE
 
-LEAF_ENTRY  JIT_PollGC, _TEXT
-        PREPARE_EXTERNAL_VAR g_TrapReturningThreads, x9
-        ldr     w9, [x9]
-        cbnz    w9, LOCAL_LABEL(JIT_PollGCRarePath)
-        ret
-LOCAL_LABEL(JIT_PollGCRarePath):
-        PREPARE_EXTERNAL_VAR g_pPollGC, x9
-        ldr     x9, [x9]
-        br x9
-LEAF_END  JIT_PollGC, _TEXT
-
 //x0 -This pointer
 //x1 -ReturnBuffer
 LEAF_ENTRY ThisPtrRetBufPrecodeWorker, _TEXT
@@ -698,6 +564,9 @@ NESTED_ENTRY InterpreterStub, _TEXT, NoHandler
     mov x22, x0
 #endif
     INLINE_GETTHREAD x20 // thrashes x0 on Apple OSes (and possibly other arg registers on other Unixes)
+#ifdef TARGET_APPLE
+    mov x0, x22
+#endif
     cbz x20, LOCAL_LABEL(NoManagedThreadOrCallStub)
 
     ldr x11, [x20, #OFFSETOF__Thread__m_pInterpThreadContext]
@@ -707,8 +576,6 @@ LOCAL_LABEL(NoManagedThreadOrCallStub):
 #ifdef TARGET_APPLE
     // GetInterpThreadContextWithPossiblyMissingThreadOrCallStub can destroy all argument registers, so we
     // need to save them. For non-Apple, they have been already saved in the PROLOG_WITH_TRANSITION_BLOCK
-    // Restore x0 thrashed by the INLINE_GETTHREAD
-    mov x0, x22
     SAVE_ARGUMENT_REGISTERS sp, __PWTB_ArgumentRegisters
     SAVE_FLOAT_ARGUMENT_REGISTERS sp, __PWTB_FloatArgumentRegisters
 #endif
@@ -727,9 +594,6 @@ LOCAL_LABEL(HaveInterpThreadContext):
 
 #ifdef TARGET_APPLE
 LOCAL_LABEL(HaveInterpThreadContext):
-    // On Apple, the INLINE_GETTHREAD is guaranteed to not to thrash argument registers other than x0
-    // So we restore just the x0
-    mov x0, x22
 #endif // TARGET_APPLE
 
     ldr x9, [x19] // InterpMethod*
@@ -3526,4 +3390,3 @@ NESTED_ENTRY IL_Rethrow, _TEXT, NoHandler
     // Should never return
     brk     #0
 NESTED_END IL_Rethrow, _TEXT
-

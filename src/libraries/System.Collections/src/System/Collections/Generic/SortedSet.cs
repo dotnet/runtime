@@ -1066,7 +1066,7 @@ namespace System.Collections.Generic
         {
             ArgumentNullException.ThrowIfNull(other);
 
-            if (count == 0)
+            if (Count == 0)
                 return;
 
             if (other == this)
@@ -1363,7 +1363,7 @@ namespace System.Collections.Generic
         /// An earlier implementation used delegates to perform these checks rather than returning
         /// an ElementCount struct; however this was changed due to the perf overhead of delegates.
         /// </summary>
-        private ElementCount CheckUniqueAndUnfoundElements(IEnumerable<T> other, bool returnIfUnfound)
+        private unsafe ElementCount CheckUniqueAndUnfoundElements(IEnumerable<T> other, bool returnIfUnfound)
         {
             ElementCount result;
 

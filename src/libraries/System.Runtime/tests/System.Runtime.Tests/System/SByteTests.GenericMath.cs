@@ -193,6 +193,20 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void Log10Test()
+        {
+            Assert.Equal((sbyte)0, BinaryIntegerHelper<sbyte>.Log10((sbyte)0));
+            Assert.Equal((sbyte)0, BinaryIntegerHelper<sbyte>.Log10((sbyte)1));
+            Assert.Equal((sbyte)0, BinaryIntegerHelper<sbyte>.Log10((sbyte)9));
+            Assert.Equal((sbyte)1, BinaryIntegerHelper<sbyte>.Log10((sbyte)10));
+            Assert.Equal((sbyte)1, BinaryIntegerHelper<sbyte>.Log10((sbyte)99));
+            Assert.Equal((sbyte)2, BinaryIntegerHelper<sbyte>.Log10((sbyte)100));
+            Assert.Equal((sbyte)2, BinaryIntegerHelper<sbyte>.Log10((sbyte)127));
+            Assert.Throws<ArgumentOutOfRangeException>(() => BinaryIntegerHelper<sbyte>.Log10((sbyte)(-128)));
+            Assert.Throws<ArgumentOutOfRangeException>(() => BinaryIntegerHelper<sbyte>.Log10((sbyte)(-1)));
+        }
+
+        [Fact]
         public static void PopCountTest()
         {
             Assert.Equal((sbyte)0x00, BinaryIntegerHelper<sbyte>.PopCount((sbyte)0x00));
@@ -944,27 +958,27 @@ namespace System.Tests
 
             Assert.True(BinaryIntegerHelper<sbyte>.TryWriteBigEndian((sbyte)0x00, destination, out bytesWritten));
             Assert.Equal(1, bytesWritten);
-            Assert.Equal(new byte[] { 0x00 }, destination.ToArray());
+            Assert.Equal<byte>([0x00], destination);
 
             Assert.True(BinaryIntegerHelper<sbyte>.TryWriteBigEndian((sbyte)0x01, destination, out bytesWritten));
             Assert.Equal(1, bytesWritten);
-            Assert.Equal(new byte[] { 0x01 }, destination.ToArray());
+            Assert.Equal<byte>([0x01], destination);
 
             Assert.True(BinaryIntegerHelper<sbyte>.TryWriteBigEndian((sbyte)0x7F, destination, out bytesWritten));
             Assert.Equal(1, bytesWritten);
-            Assert.Equal(new byte[] { 0x7F }, destination.ToArray());
+            Assert.Equal<byte>([0x7F], destination);
 
             Assert.True(BinaryIntegerHelper<sbyte>.TryWriteBigEndian(unchecked((sbyte)0x80), destination, out bytesWritten));
             Assert.Equal(1, bytesWritten);
-            Assert.Equal(new byte[] { 0x80 }, destination.ToArray());
+            Assert.Equal<byte>([0x80], destination);
 
             Assert.True(BinaryIntegerHelper<sbyte>.TryWriteBigEndian(unchecked((sbyte)0xFF), destination, out bytesWritten));
             Assert.Equal(1, bytesWritten);
-            Assert.Equal(new byte[] { 0xFF }, destination.ToArray());
+            Assert.Equal<byte>([0xFF], destination);
 
             Assert.False(BinaryIntegerHelper<sbyte>.TryWriteBigEndian(default, Span<byte>.Empty, out bytesWritten));
             Assert.Equal(0, bytesWritten);
-            Assert.Equal(new byte[] { 0xFF }, destination.ToArray());
+            Assert.Equal<byte>([0xFF], destination);
         }
 
         [Fact]
@@ -975,27 +989,27 @@ namespace System.Tests
 
             Assert.True(BinaryIntegerHelper<sbyte>.TryWriteLittleEndian((sbyte)0x00, destination, out bytesWritten));
             Assert.Equal(1, bytesWritten);
-            Assert.Equal(new byte[] { 0x00 }, destination.ToArray());
+            Assert.Equal<byte>([0x00], destination);
 
             Assert.True(BinaryIntegerHelper<sbyte>.TryWriteLittleEndian((sbyte)0x01, destination, out bytesWritten));
             Assert.Equal(1, bytesWritten);
-            Assert.Equal(new byte[] { 0x01 }, destination.ToArray());
+            Assert.Equal<byte>([0x01], destination);
 
             Assert.True(BinaryIntegerHelper<sbyte>.TryWriteLittleEndian((sbyte)0x7F, destination, out bytesWritten));
             Assert.Equal(1, bytesWritten);
-            Assert.Equal(new byte[] { 0x7F }, destination.ToArray());
+            Assert.Equal<byte>([0x7F], destination);
 
             Assert.True(BinaryIntegerHelper<sbyte>.TryWriteLittleEndian(unchecked((sbyte)0x80), destination, out bytesWritten));
             Assert.Equal(1, bytesWritten);
-            Assert.Equal(new byte[] { 0x80 }, destination.ToArray());
+            Assert.Equal<byte>([0x80], destination);
 
             Assert.True(BinaryIntegerHelper<sbyte>.TryWriteLittleEndian(unchecked((sbyte)0xFF), destination, out bytesWritten));
             Assert.Equal(1, bytesWritten);
-            Assert.Equal(new byte[] { 0xFF }, destination.ToArray());
+            Assert.Equal<byte>([0xFF], destination);
 
             Assert.False(BinaryIntegerHelper<sbyte>.TryWriteLittleEndian(default, Span<byte>.Empty, out bytesWritten));
             Assert.Equal(0, bytesWritten);
-            Assert.Equal(new byte[] { 0xFF }, destination.ToArray());
+            Assert.Equal<byte>([0xFF], destination);
         }
 
         //
@@ -1298,6 +1312,24 @@ namespace System.Tests
             Assert.Equal((sbyte)0x3F, NumberHelper<sbyte>.Clamp((sbyte)0x7F, unchecked((sbyte)0xC0), (sbyte)0x3F));
             Assert.Equal(unchecked((sbyte)0xC0), NumberHelper<sbyte>.Clamp(unchecked((sbyte)0x80), unchecked((sbyte)0xC0), (sbyte)0x3F));
             Assert.Equal(unchecked((sbyte)0xFF), NumberHelper<sbyte>.Clamp(unchecked((sbyte)0xFF), unchecked((sbyte)0xC0), (sbyte)0x3F));
+        }
+
+        [Fact]
+        public static void CopySignTest()
+        {
+            Assert.Equal((sbyte)0x00, NumberHelper<sbyte>.CopySign((sbyte)0x00, 1));
+            Assert.Equal((sbyte)0x01, NumberHelper<sbyte>.CopySign((sbyte)0x01, 1));
+            Assert.Equal((sbyte)0x7F, NumberHelper<sbyte>.CopySign((sbyte)0x7F, 1));
+            Assert.Equal((sbyte)0x01, NumberHelper<sbyte>.CopySign(unchecked((sbyte)0xFF), 1));
+
+            Assert.Equal((sbyte)0x00, NumberHelper<sbyte>.CopySign((sbyte)0x00, -1));
+            Assert.Equal(unchecked((sbyte)0xFF), NumberHelper<sbyte>.CopySign((sbyte)0x01, -1));
+            Assert.Equal(unchecked((sbyte)0x81), NumberHelper<sbyte>.CopySign((sbyte)0x7F, -1));
+            Assert.Equal(unchecked((sbyte)0x80), NumberHelper<sbyte>.CopySign(unchecked((sbyte)0x80), -1));
+            Assert.Equal(unchecked((sbyte)0xFF), NumberHelper<sbyte>.CopySign(unchecked((sbyte)0xFF), -1));
+
+            Assert.Throws<OverflowException>(() => NumberHelper<sbyte>.CopySign(unchecked((sbyte)0x80), 0));
+            Assert.Throws<OverflowException>(() => NumberHelper<sbyte>.CopySign(unchecked((sbyte)0x80), 1));
         }
 
         [Fact]

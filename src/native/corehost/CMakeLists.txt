@@ -6,6 +6,9 @@ include(${CLR_ENG_NATIVE_DIR}/configurecompiler.cmake)
 
 set(COREHOST_ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 
+option(CLR_CMAKE_BUILD_HOST_PRODUCT "Build host product components" ON)
+option(CLR_CMAKE_BUILD_HOST_TESTS "Build host test components" OFF)
+
 if (MSVC)
     # Host components don't try to handle asynchronous exceptions
     set_property(DIRECTORY PROPERTY CLR_EH_OPTION /EHsc)
@@ -39,6 +42,8 @@ endif()
 if("${CLI_CMAKE_FALLBACK_OS}" STREQUAL "${CLR_CMAKE_TARGET_OS}")
     add_compile_definitions(FALLBACK_OS_IS_SAME_AS_TARGET_OS)
 endif()
+
+string(TOUPPER "${CLR_CMAKE_TARGET_ARCH}" CLR_CMAKE_TARGET_ARCH_UPPER)
 
 # Find support libraries that we need if they're present on the system.
 find_library(PTHREAD_LIB pthread)
@@ -76,9 +81,9 @@ if(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_SUNOS)
     add_link_options(LINKER:-Bsymbolic)
 endif()
 
-if(NOT CLR_CMAKE_TARGET_BROWSER)
+if(NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI)
     add_library(fxr_resolver INTERFACE)
-    target_sources(fxr_resolver INTERFACE fxr_resolver.cpp)
+    target_sources(fxr_resolver INTERFACE fxr_resolver.c)
     target_include_directories(fxr_resolver INTERFACE fxr)
 
     add_compile_definitions(RAPIDJSON_HAS_CXX17)
@@ -87,27 +92,54 @@ if(NOT CLR_CMAKE_TARGET_BROWSER)
         include_directories(${CLR_SRC_NATIVE_DIR}/external/)
     endif()
 
+    add_subdirectory(${CLR_SRC_NATIVE_DIR}/minipal minipal)
+
+    # minipal_objects is embedded into static libraries we ship for external
+    # consumption (libnethost, libhostfxr), so LTCG must be disabled to ensure
+    # that non-MSVC toolchains can work with them.
+    set_target_properties(minipal_objects PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
+    if (MSVC)
+        # Embed debug info in the object files (/Z7). CMake does not assign a
+        # compile PDB to OBJECT libraries, so the objects archived into the shipped
+        # libnethost/libhostfxr would otherwise reference an absent vc140.pdb,
+        # producing LNK4099 for consumers.
+        set_target_properties(minipal_objects PROPERTIES MSVC_DEBUG_INFORMATION_FORMAT Embedded)
+    endif()
+
     add_subdirectory(hostcommon)
     add_subdirectory(hostmisc)
-    add_subdirectory(fxr)
-    add_subdirectory(hostpolicy)
-
-    add_subdirectory(apphost)
-    add_subdirectory(dotnet)
     add_subdirectory(nethost)
-    add_subdirectory(test)
-else()
+
+    if(CLR_CMAKE_BUILD_HOST_PRODUCT)
+        add_subdirectory(fxr)
+        add_subdirectory(hostpolicy)
+        add_subdirectory(apphost)
+        add_subdirectory(dotnet)
+    endif()
+    if(CLR_CMAKE_BUILD_HOST_TESTS)
+        add_subdirectory(test)
+    endif()
+elseif(CLR_CMAKE_TARGET_BROWSER)
     add_subdirectory(hostmisc)
     add_subdirectory(browserhost)
+else() # CLR_CMAKE_TARGET_WASI
+    # The wasi host is self-contained (shares the corerun pal header, no hostmisc dependency).
+    add_subdirectory(wasihost)
 endif()
 
 # If there's a dynamic ASAN runtime, then install it in the directories where we put our executables.
 if (NOT "${ASAN_RUNTIME}" STREQUAL "")
-    install(FILES ${ASAN_RUNTIME} DESTINATION corehost)
-    install(FILES ${ASAN_RUNTIME} DESTINATION corehost_test)
+    if(CLR_CMAKE_BUILD_HOST_PRODUCT)
+        install(FILES ${ASAN_RUNTIME} DESTINATION corehost)
+    endif()
+    if(CLR_CMAKE_BUILD_HOST_TESTS)
+        install(FILES ${ASAN_RUNTIME} DESTINATION corehost_test)
+    endif()
 endif()
 
 if(CLR_CMAKE_HOST_WIN32)
-    add_subdirectory(comhost)
     add_subdirectory(ijwhost)
+    if(CLR_CMAKE_BUILD_HOST_PRODUCT)
+        add_subdirectory(comhost)
+    endif()
 endif()

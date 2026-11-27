@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Internal.NativeFormat;
+using Internal.Text;
 
 namespace Internal.TypeSystem
 {
@@ -53,6 +54,12 @@ namespace Internal.TypeSystem
 
         // Value of <see cref="EmbeddedSignatureData.index" /> for any custom modifiers on the return type
         public const string IndexOfCustomModifiersOnReturnType = "0.1.1.1";
+
+        // Parameter index 0 represents the return type, and indices 1-n represent the parameters to the signature
+        public static string GetIndexOfCustomModifierOnTypeByParameterIndex(int parameterIndex)
+        {
+            return $"0.1.{(parameterIndex + 1).ToStringInvariant()}.1";
+        }
 
         // Value of <see cref="EmbeddedSignatureData.index" /> for any custom modifiers on
         // SomeStruct when SomeStruct *, or SomeStruct & is the type of a parameter or return type
@@ -183,6 +190,30 @@ namespace Internal.TypeSystem
             {
                 return _embeddedSignatureData != null && _embeddedSignatureData.Length != 0;
             }
+        }
+
+        public bool HasCustomModifierOnTypeByParameterIndex(
+            int parameterIndex,
+            EmbeddedSignatureDataKind kind,
+            TypeDesc modifierType)
+        {
+            Debug.Assert(kind is EmbeddedSignatureDataKind.RequiredCustomModifier or EmbeddedSignatureDataKind.OptionalCustomModifier);
+
+            if (_embeddedSignatureData == null)
+                return false;
+
+            string modifierIndex = null;
+            foreach (EmbeddedSignatureData data in _embeddedSignatureData)
+            {
+                if ((data.kind == kind) && (data.type == modifierType))
+                {
+                    modifierIndex ??= GetIndexOfCustomModifierOnTypeByParameterIndex(parameterIndex);
+                    if (data.index == modifierIndex)
+                        return true;
+                }
+            }
+
+            return false;
         }
 
         public bool EmbeddedSignatureMismatchPermitted
@@ -557,7 +588,7 @@ namespace Internal.TypeSystem
             {
                 // TODO: Precise check
                 // TODO: Cache?
-                return this.Name.SequenceEqual(".ctor"u8);
+                return this.Name == ".ctor"u8;
             }
         }
 
@@ -587,11 +618,11 @@ namespace Internal.TypeSystem
         /// <summary>
         /// Gets the name of the method as specified in the metadata.
         /// </summary>
-        public virtual ReadOnlySpan<byte> Name
+        public virtual Utf8Span Name
         {
             get
             {
-                return [];
+                return Array.Empty<byte>();
             }
         }
 
@@ -600,6 +631,8 @@ namespace Internal.TypeSystem
             return System.Text.Encoding.UTF8.GetString(Name
 #if NETSTANDARD
                 .ToArray()
+#else
+                .AsSpan()
 #endif
                 );
         }
@@ -727,7 +760,7 @@ namespace Internal.TypeSystem
             get
             {
                 TypeDesc owningType = OwningType;
-                return (owningType.IsObject && Name.SequenceEqual("Finalize"u8)) || (owningType.HasFinalizer && owningType.GetFinalizer() == this);
+                return (owningType.IsObject && Name == "Finalize"u8) || (owningType.HasFinalizer && owningType.GetFinalizer() == this);
             }
         }
 

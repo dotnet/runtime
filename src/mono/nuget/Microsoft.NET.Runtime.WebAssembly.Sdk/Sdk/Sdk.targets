@@ -1,0 +1,19 @@
+<Project>
+  <!-- Property overrides -->
+  <PropertyGroup>
+    <UseMonoRuntime>false</UseMonoRuntime>
+
+    <_TasksDir Condition="'$(MSBuildRuntimeType)' == 'Core'">$(MSBuildThisFileDirectory)..\tasks\net\</_TasksDir>
+    <_TasksDir Condition="'$(MSBuildRuntimeType)' != 'Core'">$(MSBuildThisFileDirectory)..\tasks\netframework\</_TasksDir>
+
+    <WasmAppBuilderTasksAssemblyPath>$(_TasksDir)WasmAppBuilder.dll</WasmAppBuilderTasksAssemblyPath>
+    <WasmBuildTasksAssemblyPath>$(_TasksDir)WasmBuildTasks.dll</WasmBuildTasksAssemblyPath>
+    <WasmAppHostDir>$([MSBuild]::NormalizeDirectory($(MSBuildThisFileDirectory), '..', 'WasmAppHost'))</WasmAppHostDir>
+
+    <!-- only for non-blazor projects -->
+    <WasmEmitSymbolMap Condition="'$(UsingMicrosoftNETSdkBlazorWebAssembly)' != 'true' and '$(UsingMicrosoftNETSdkWebAssembly)' != 'true' and '$(WasmEmitSymbolMap)' == ''">true</WasmEmitSymbolMap>
+  </PropertyGroup>
+
+  <!-- NativeAOT uses the shared task setup, but not CoreCLR relinking or ReadyToRun targets. -->
+  <Import Project="$(MSBuildThisFileDirectory)\BrowserWasmApp.CoreCLR.targets" Condition="'$(PublishAot)' != 'true'" />
+</Project>

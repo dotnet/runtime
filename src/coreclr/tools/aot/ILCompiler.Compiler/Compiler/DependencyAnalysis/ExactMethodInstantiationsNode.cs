@@ -8,6 +8,7 @@ using Internal.Text;
 using Internal.TypeSystem;
 using Internal.NativeFormat;
 using Internal.Runtime;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -72,9 +73,11 @@ namespace ILCompiler.DependencyAnalysis
                 }
 
                 int flags = 0;
-                MethodDesc methodForMetadata = GetMethodForMetadata(method, out bool isAsyncVariant);
+                MethodDesc methodForMetadata = GetMethodForMetadata(method, out bool isAsyncVariant, out bool isReturnDroppingAsyncThunk);
                 if (isAsyncVariant)
                     flags |= GenericMethodsHashtableConstants.IsAsyncVariant; // Same flag as the other hashtable! Readers are shared.
+                if (isReturnDroppingAsyncThunk)
+                    flags |= GenericMethodsHashtableConstants.IsReturnDroppingAsyncThunk;
 
                 int token = factory.MetadataManager.GetMetadataHandleForMethod(factory, methodForMetadata);
 
@@ -98,9 +101,8 @@ namespace ILCompiler.DependencyAnalysis
             return new ObjectData(streamBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
         }
 
-        public static void GetExactMethodInstantiationDependenciesForMethod(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
+        public static void GetExactMethodInstantiationDependenciesForMethod(DependencySink dependencies, NodeFactory factory, MethodDesc method)
         {
-            dependencies ??= new DependencyList();
 
             // Method entry point dependency
             bool getUnboxingStub = method.OwningType.IsValueType && !method.Signature.IsStatic;
@@ -115,18 +117,26 @@ namespace ILCompiler.DependencyAnalysis
             foreach (var arg in method.Instantiation)
                 dependencies.Add(new DependencyListEntry(factory.NecessaryTypeSymbol(arg), "Exact method instantiation entry"));
 
-            factory.MetadataManager.GetNativeLayoutMetadataDependencies(ref dependencies, factory, GetMethodForMetadata(method, out _));
+            factory.MetadataManager.AddNativeLayoutMetadataDependencies(dependencies, factory, GetMethodForMetadata(method, out _, out _));
         }
 
-        private static MethodDesc GetMethodForMetadata(MethodDesc method, out bool isAsyncVariant)
+        private static MethodDesc GetMethodForMetadata(MethodDesc method, out bool isAsyncVariant, out bool isReturnDroppingAsyncThunk)
         {
             MethodDesc result = method.GetTypicalMethodDefinition();
+            if (result is ReturnDroppingAsyncThunk rdThunk)
+            {
+                isAsyncVariant = false;
+                isReturnDroppingAsyncThunk = true;
+                return rdThunk.AsyncVariantTarget.Target;
+            }
             if (result is AsyncMethodVariant asyncVariant)
             {
                 isAsyncVariant = true;
+                isReturnDroppingAsyncThunk = false;
                 return asyncVariant.Target;
             }
             isAsyncVariant = false;
+            isReturnDroppingAsyncThunk = false;
             return result;
         }
 

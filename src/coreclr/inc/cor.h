@@ -49,9 +49,7 @@ EXTERN_GUID(MetaDataNotificationForTokenMovement, 0xe5d71a4c, 0xd7da, 0x11d2, 0x
 EXTERN_GUID(MetaDataSetUpdate, 0x2eee315c, 0xd7db, 0x11d2, 0x9f, 0x80, 0x0, 0xc0, 0x4f, 0x79, 0xa0, 0xa3);
 #define MetaDataSetENC MetaDataSetUpdate
 
-// Use this guid in SetOption to indicate if the import enumerator should skip over
-// delete items or not. The default is yes.
-//
+// Legacy import option accepted by SetOption for compatibility; all records are enumerated.
 // {79700F36-4AAC-11d3-84C3-009027868CB1}
 EXTERN_GUID(MetaDataImportOption, 0x79700f36, 0x4aac, 0x11d3, 0x84, 0xc3, 0x0, 0x90, 0x27, 0x86, 0x8c, 0xb1);
 
@@ -1663,6 +1661,14 @@ typedef enum
 FORCEINLINE int CorIsPrimitiveType(CorElementType elementtype)
 {
     return (elementtype < ELEMENT_TYPE_PTR || elementtype == ELEMENT_TYPE_I || elementtype == ELEMENT_TYPE_U);
+}
+
+// Returns true if the element type is a real or integer type.
+FORCEINLINE bool CorIsNumericalType(CorElementType elementType)
+{
+    return ((elementType >= ELEMENT_TYPE_I1) && (elementType <= ELEMENT_TYPE_R8))
+        || (elementType == ELEMENT_TYPE_I)
+        || (elementType == ELEMENT_TYPE_U);
 }
 
 

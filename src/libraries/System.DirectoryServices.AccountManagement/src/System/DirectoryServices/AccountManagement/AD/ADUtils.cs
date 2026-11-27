@@ -153,6 +153,10 @@ namespace System.DirectoryServices.AccountManagement
             {
                 switch (c)
                 {
+                    case '\0':
+                        sb.Append(@"\00");
+                        break;
+
                     case '(':
                         sb.Append(@"\28");
                         break;

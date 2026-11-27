@@ -10,6 +10,8 @@
 #ifndef IL_INSTRUMENTATION_H
 #define IL_INSTRUMENTATION_H
 
+#include "cdacdata.h"
+
 // declare an array type of COR_IL_MAP entries
 typedef ArrayDPTR(COR_IL_MAP) ARRAY_PTR_COR_IL_MAP;
 
@@ -34,16 +36,94 @@ public:
     // Release the memory used by the array of COR_IL_MAPs.
     void Clear();
 
-    void SetMappingInfo(SIZE_T cMap, COR_IL_MAP * rgMap);
+    void SetMappingInfo(UINT cMap, COR_IL_MAP * rgMap);
 #endif // !DACCESS_COMPILE
 
-    SIZE_T               GetCount()   const;
+    UINT                 GetCount()   const;
     ARRAY_PTR_COR_IL_MAP GetOffsets() const;
 
 private:
-    SIZE_T               m_cMap;        // the number of elements in m_rgMap
+    UINT                 m_cMap;        // the number of elements in m_rgMap
     ARRAY_PTR_COR_IL_MAP m_rgMap;       // an array of COR_IL_MAPs
+
+    friend struct ::cdac_data<InstrumentedILOffsetMapping>;
 };
+
+template<>
+struct cdac_data<InstrumentedILOffsetMapping>
+{
+    static constexpr size_t Count = offsetof(InstrumentedILOffsetMapping, m_cMap);
+    static constexpr size_t Map = offsetof(InstrumentedILOffsetMapping, m_rgMap);
+};
+
+#if !defined(DACCESS_COMPILE)
+//---------------------------------------------------------------------------------------
+//
+// Owns a mapping returned by Module::GetInstrumentedILOffsetMapping and frees its array when
+// it leaves scope. Only for the Module table's map: the ReJIT per-version map lives on the
+// loader heap and must not be freed.
+//
+class InstrumentedILOffsetMappingHolder
+{
+public:
+    InstrumentedILOffsetMappingHolder() = default;
+
+    explicit InstrumentedILOffsetMappingHolder(const InstrumentedILOffsetMapping & mapping)
+        : m_mapping(mapping)
+    {
+        LIMITED_METHOD_CONTRACT;
+    }
+
+    ~InstrumentedILOffsetMappingHolder()
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_mapping.Clear();
+    }
+
+    InstrumentedILOffsetMappingHolder(const InstrumentedILOffsetMappingHolder &) = delete;
+    InstrumentedILOffsetMappingHolder & operator=(const InstrumentedILOffsetMappingHolder &) = delete;
+
+    InstrumentedILOffsetMappingHolder(InstrumentedILOffsetMappingHolder && other)
+        : m_mapping(other.m_mapping)
+    {
+        LIMITED_METHOD_CONTRACT;
+        other.m_mapping = InstrumentedILOffsetMapping();
+    }
+
+    InstrumentedILOffsetMappingHolder & operator=(InstrumentedILOffsetMappingHolder && other)
+    {
+        LIMITED_METHOD_CONTRACT;
+        if (this != &other)
+        {
+            m_mapping.Clear();
+            m_mapping = other.m_mapping;
+            other.m_mapping = InstrumentedILOffsetMapping();
+        }
+        return *this;
+    }
+
+    // Takes ownership of a fresh mapping from the getter, freeing any array already held.
+    InstrumentedILOffsetMappingHolder & operator=(const InstrumentedILOffsetMapping & mapping)
+    {
+        LIMITED_METHOD_CONTRACT;
+        if (&mapping != &m_mapping)
+        {
+            m_mapping.Clear();
+            m_mapping = mapping;
+        }
+        return *this;
+    }
+
+    const InstrumentedILOffsetMapping & Get() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_mapping;
+    }
+
+private:
+    InstrumentedILOffsetMapping m_mapping;
+};
+#endif // !DACCESS_COMPILE
 
 //---------------------------------------------------------------------------------------
 //

@@ -72,14 +72,15 @@ internal static class UnwindDataSize
                 uint unwindWords;
                 uint epilogScopes;
 
-                // If both Epilog Count and Code Word is not zero
-                // Info of Epilog and Unwind scopes are given by 1 word header
-                // Otherwise this info is given by a 2 word header
-                if ((xdata0 >> 27) != 0)
+                unwindWords = (xdata0 >> 27) & 0x1f;
+                epilogScopes = (xdata0 >> 22) & 0x1f;
+
+                // If either Epilog Count or Code Word is non-zero,
+                // epilog/unwind scope info is in the 1-word header.
+                // Otherwise this info is given by a 2-word header.
+                if (unwindWords != 0 || epilogScopes != 0)
                 {
                     size = 4;
-                    epilogScopes = (xdata0 >> 22) & 0x1f;
-                    unwindWords = (xdata0 >> 27) & 0x1f;
                 }
                 else
                 {
@@ -97,9 +98,28 @@ internal static class UnwindDataSize
                 size += 4; // exception handler RVA
                 return size;
             }
+            case RuntimeInfoArchitecture.Wasm:
+            {
+                uint size = GetULEB128Size(target, unwindInfo);
+                size += GetULEB128Size(target, unwindInfo + size);
+                return size;
+            }
             default:
                 throw new NotSupportedException($"GetUnwindDataSize not supported for architecture: {arch}");
         }
+    }
+
+    private static uint GetULEB128Size(Target target, TargetPointer address)
+    {
+        const int MaxBytes = 5;
+
+        for (uint offset = 0; offset < MaxBytes; offset++)
+        {
+            if ((target.Read<byte>(address + offset) & 0x80) == 0)
+                return offset + 1;
+        }
+
+        throw new InvalidOperationException("Malformed ULEB128 value in WASM unwind data.");
     }
 
     private static uint AlignUp(int offset, int align)

@@ -9,7 +9,6 @@ using TestLibrary;
 public class Runtime_76219
 {
     [MethodImpl(MethodImplOptions.Synchronized)]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/78899", TestRuntimes.CoreCLR)]
     [Fact]
     public static void TestEntryPoint()
     {

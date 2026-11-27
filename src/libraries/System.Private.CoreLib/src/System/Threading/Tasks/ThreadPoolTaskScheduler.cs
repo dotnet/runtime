@@ -49,7 +49,7 @@ namespace System.Threading.Tasks
                 new Thread(s_longRunningThreadWork)
                 {
                     IsBackground = true,
-                    Name = ".NET Long Running Task"
+                    Name = ".NET Long Task"
                 }.UnsafeStart(task);
             }
             else

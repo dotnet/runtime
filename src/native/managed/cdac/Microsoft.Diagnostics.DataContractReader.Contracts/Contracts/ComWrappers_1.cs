@@ -4,19 +4,32 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Data;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal readonly struct ComWrappers_1 : IComWrappers
 {
-    private const string NativeObjectWrapperNamespace = "System.Runtime.InteropServices";
-    private const string NativeObjectWrapperName = "ComWrappers+NativeObjectWrapper";
+    private static readonly Guid IID_IUnknown = new Guid("00000000-0000-0000-C000-000000000046");
+    private const int CallerDefinedIUnknown = 1;
+    private readonly CachedValue<TargetPointer> _mowTableAddr;
+    private readonly CachedValue<TargetPointer> _nativeObjectWrapperCWTAddr;
     private readonly Target _target;
 
     public ComWrappers_1(Target target)
     {
         _target = target;
+        _mowTableAddr = new(() => Data.ComWrappers.AllManagedObjectWrapperTable(target)
+            ?? throw new InvalidOperationException("Failed to resolve ComWrappers.s_allManagedObjectWrapperTable static field."));
+        _nativeObjectWrapperCWTAddr = new(() => Data.ComWrappers.NativeObjectWrapperTable(target)
+            ?? throw new InvalidOperationException("Failed to resolve ComWrappers.s_nativeObjectWrapperTable static field."));
+    }
+
+    public void Flush(FlushScope scope)
+    {
+        _mowTableAddr.Clear();
+        _nativeObjectWrapperCWTAddr.Clear();
     }
 
     public TargetPointer GetComWrappersIdentity(TargetPointer address)
@@ -41,8 +54,9 @@ internal readonly struct ComWrappers_1 : IComWrappers
         if (!GetComWrappersCCWVTableQIAddress(ccw, out _, out TargetPointer qiAddress))
             return false;
 
-        TargetPointer comWrappersVtablePtrs = _target.ReadGlobalPointer(Constants.Globals.ComWrappersVtablePtrs);
-        Data.ComWrappersVtablePtrs comWrappersVtableStruct = _target.ProcessedData.GetOrAdd<Data.ComWrappersVtablePtrs>(comWrappersVtablePtrs);
+        if (!_target.TryReadGlobalPointer(Constants.Globals.ComWrappersVtablePtrs, out TargetPointer? comWrappersVtablePtrs))
+            return false;
+        Data.ComWrappersVtablePtrs comWrappersVtableStruct = _target.ProcessedData.GetOrAdd<Data.ComWrappersVtablePtrs>(comWrappersVtablePtrs.Value);
         return comWrappersVtableStruct.ComWrappersInterfacePointers.Contains(CodePointerUtils.CodePointerFromAddress(qiAddress, _target));
     }
 
@@ -57,8 +71,7 @@ internal readonly struct ComWrappers_1 : IComWrappers
 
     public TargetPointer GetComWrappersObjectFromMOW(TargetPointer mow)
     {
-        TargetPointer objHandle = _target.ReadPointer(mow);
-        Data.ObjectHandle handle = _target.ProcessedData.GetOrAdd<Data.ObjectHandle>(objHandle);
+        Data.ObjectHandle handle = _target.ProcessedData.GetOrAdd<Data.ObjectHandle>(mow);
         Data.ManagedObjectWrapperHolderObject mowHolderObject = _target.ProcessedData.GetOrAdd<Data.ManagedObjectWrapperHolderObject>(handle.Object);
         return mowHolderObject.WrappedObject;
     }
@@ -69,18 +82,85 @@ internal readonly struct ComWrappers_1 : IComWrappers
         return layout.RefCount;
     }
 
+    private TargetPointer IndexIntoDispatchSection(int index, TargetPointer dispatches)
+    {
+        uint dispatchSize = Data.InternalComInterfaceDispatch.GetSize(_target);
+        uint entriesPerThisPtr = (dispatchSize / (uint)_target.PointerSize) - 1;
+
+        TargetPointer dispatchAddress = dispatches + (ulong)((uint)(index / (int)entriesPerThisPtr) * dispatchSize);
+        Data.InternalComInterfaceDispatch dispatch = _target.ProcessedData.GetOrAdd<Data.InternalComInterfaceDispatch>(dispatchAddress);
+
+        return dispatch.Entries + (ulong)((uint)(index % (int)entriesPerThisPtr) * (uint)_target.PointerSize);
+    }
+
+    public TargetPointer GetIdentityForMOW(TargetPointer mow)
+    {
+        Data.ManagedObjectWrapperLayout layout = _target.ProcessedData.GetOrAdd<Data.ManagedObjectWrapperLayout>(mow);
+
+        if ((layout.Flags & CallerDefinedIUnknown) == 0)
+        {
+            return IndexIntoDispatchSection(layout.UserDefinedCount, layout.Dispatches);
+        }
+
+        uint entrySize = Data.ComInterfaceEntry.GetSize(_target);
+
+        for (int i = 0; i < layout.UserDefinedCount; i++)
+        {
+            TargetPointer entryAddress = layout.UserDefined + (ulong)((uint)i * entrySize);
+            Data.ComInterfaceEntry entry = _target.ProcessedData.GetOrAdd<Data.ComInterfaceEntry>(entryAddress);
+            if (entry.IID == IID_IUnknown)
+            {
+                return IndexIntoDispatchSection(i, layout.Dispatches);
+            }
+        }
+
+        return TargetPointer.Null;
+    }
+
+    public List<TargetPointer> GetMOWs(TargetPointer obj, out bool hasMOWTable)
+    {
+        hasMOWTable = false;
+        TargetPointer mowTableAddr = _mowTableAddr;
+
+        List<TargetPointer> mows = new List<TargetPointer>();
+
+        if (mowTableAddr == TargetPointer.Null)
+            return mows;
+        IConditionalWeakTable cwt = _target.Contracts.ConditionalWeakTable;
+        if (cwt.TryGetValue(mowTableAddr, obj, out TargetPointer mowListObj))
+        {
+            hasMOWTable = true;
+            Data.List listData = _target.ProcessedData.GetOrAdd<Data.List>(mowListObj);
+            TargetPointer listItemsPtr = listData.Items;
+            int size = listData.Size;
+
+            if (size > 0 && listItemsPtr != TargetPointer.Null)
+            {
+                Data.Array listItemsArray = _target.ProcessedData.GetOrAdd<Data.Array>(listItemsPtr);
+                for (int i = 0; i < size; i++)
+                {
+                    TargetPointer mow = _target.ReadPointer(listItemsArray.DataPointer + (ulong)(i * _target.PointerSize));
+                    Data.ManagedObjectWrapperHolderObject mowHolderObject = _target.ProcessedData.GetOrAdd<Data.ManagedObjectWrapperHolderObject>(mow);
+                    mows.Add(mowHolderObject.Wrapper);
+                }
+            }
+        }
+        return mows;
+    }
+
     public bool IsComWrappersRCW(TargetPointer rcw)
     {
         TargetPointer mt = _target.Contracts.Object.GetMethodTableAddress(rcw);
+        return mt == Data.NativeObjectWrapper.TypeHandle(_target).Address;
+    }
 
-        // get system module
-        ILoader loader = _target.Contracts.Loader;
-        TargetPointer systemAssembly = loader.GetSystemAssembly();
-        ModuleHandle moduleHandle = loader.GetModuleHandleFromAssemblyPtr(systemAssembly);
-
-        // lookup by name
-        IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-        TargetPointer typeHandlePtr = rts.GetTypeByNameAndModule(NativeObjectWrapperName, NativeObjectWrapperNamespace, moduleHandle).Address;
-        return mt == typeHandlePtr;
+    public TargetPointer GetComWrappersRCWForObject(TargetPointer obj)
+    {
+        TargetPointer nativeObjectWrapperCWTAddr = _nativeObjectWrapperCWTAddr;
+        if (nativeObjectWrapperCWTAddr == TargetPointer.Null)
+            return TargetPointer.Null;
+        IConditionalWeakTable cwt = _target.Contracts.ConditionalWeakTable;
+        _ = cwt.TryGetValue(nativeObjectWrapperCWTAddr, obj, out TargetPointer rcw);
+        return rcw;
     }
 }

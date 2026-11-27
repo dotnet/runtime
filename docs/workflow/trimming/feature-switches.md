@@ -8,9 +8,9 @@ configurations but their defaults might vary as any SDK can set the defaults dif
 
 | MSBuild Property Name | AppContext Setting | Description |
 |-|-|-|
-| DisableDependencyInjectionDynamicEngine | Microsoft.Extensions.DependencyInjection.DisableDynamicEngine | When set to true, DependencyInjection will avoid using System.Reflection.Emit when realizing services. |
 | DynamicCodeSupport | System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported | Changes RuntimeFeature.IsDynamicCodeSupported to false to allow testing AOT-safe fallback code without publishing for Native AOT. |
 | EnableGeneratedComInterfaceComImportInterop | System.Runtime.InteropServices.Marshalling.EnableGeneratedComInterfaceComImportInterop | When set to true, enables casting source-generated COM object wrappers to built-in COM-based COM interfaces. |
+| LinqExpressionsInterpreterPrecompiledCallSupport | System.Linq.Expressions.Interpreter.IsPrecompiledCallSupported | When set to false during trimming, the System.Linq.Expressions interpreter creates call instructions for methods with up to two arguments via reflection instead of statically referenced generic instantiations, so those instantiations can be trimmed and are not precompiled. Defaults to false for browser WebAssembly apps. The switch cannot be changed at runtime. |
 | VerifyDependencyInjectionOpenGenericServiceTrimmability | Microsoft.Extensions.DependencyInjection.VerifyOpenGenericServiceTrimmability | When set to true, DependencyInjection will verify trimming annotations applied to open generic services are correct. |
 | _ComObjectDescriptorSupport | System.ComponentModel.TypeDescriptor.IsComObjectDescriptorSupported | When set to true, supports creating a TypeDescriptor based view of COM objects. |
 | _DataSetXmlSerializationSupport | System.Data.DataSet.XmlSerializationIsSupported | When set to false, DataSet implementation of IXmlSerializable will throw instead of using trim-incompatible XML serialization. |
@@ -18,6 +18,7 @@ configurations but their defaults might vary as any SDK can set the defaults dif
 | _DesignerHostSupport | System.ComponentModel.Design.IDesignerHost.IsSupported | When set to true, supports creating design components at runtime. |
 | _EnableConsumingManagedCodeFromNativeHosting | System.Runtime.InteropServices.EnableConsumingManagedCodeFromNativeHosting | Getting a managed function from native hosting is disabled when set to false and related functionality can be trimmed. |
 | _UseManagedNtlm | System.Net.Security.UseManagedNtlm | When set to true, uses built-in managed implementation of NTLM and SPNEGO algorithm for HTTP, SMTP authentication, and NegotiateAuthentication API instead of system provided GSSAPI implementation. |
+| - | Microsoft.Extensions.Configuration.DisableConfigurationReferences | When set to true, Configuration hands values back exactly as their providers hold them, so `$ref(...)` values are not resolved and reference resolution can be trimmed away. |
 
 Any feature-switch which defines property can be set in csproj file or
 on the command line as any other MSBuild property. Those without predefined property name

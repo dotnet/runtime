@@ -3,7 +3,7 @@
   xmlns:asn="http://schemas.dot.net/asnxml/201808/"
   name="DssParms"
   namespace="System.Security.Cryptography.Asn1"
-  rebind="false">
+  emitType="ref">
 
   <!--
     https://tools.ietf.org/html/rfc3279#section-2.3.2
@@ -14,7 +14,7 @@
         g             INTEGER
     }
   -->
-  <asn:Integer name="P" />
-  <asn:Integer name="Q" />
-  <asn:Integer name="G" />
+  <asn:Integer name="P" backingType="ReadOnlyMemory"/>
+  <asn:Integer name="Q" backingType="ReadOnlyMemory"/>
+  <asn:Integer name="G" backingType="ReadOnlyMemory"/>
 </asn:Sequence>

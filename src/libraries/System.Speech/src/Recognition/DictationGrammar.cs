@@ -29,7 +29,7 @@ namespace System.Speech.Recognition
         #endregion
 
         #region Public Methods
-        public void SetDictationContext(string precedingText, string subsequentText)
+        public void SetDictationContext(string? precedingText, string? subsequentText)
         {
             if (State != GrammarState.Loaded)
             {

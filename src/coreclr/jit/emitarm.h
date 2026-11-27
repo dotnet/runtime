@@ -205,7 +205,7 @@ inline static unsigned getBitWidth(emitAttr size)
 /*                   Output target-independent instructions             */
 /************************************************************************/
 
-void emitIns_J(instruction ins, BasicBlock* dst, int instrCount = 0);
+void emitIns_J(instruction ins, BasicBlock* dst, bool keepShort = false);
 
 /************************************************************************/
 /*           The public entry points to output instructions             */

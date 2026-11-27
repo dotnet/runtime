@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using ILLink.Shared.DataFlow;
 using Mono.Cecil;
@@ -107,35 +108,12 @@ namespace ILLink.Shared.TrimAnalysis
             StringBuilder result = new();
             result.Append("Array Size:");
             result.Append(this.ValueToString(Size));
-
             result.Append(", Values:(");
-            bool first = true;
-            foreach (var element in IndexValues)
-            {
-                if (!first)
-                {
-                    result.Append(',');
-                    first = false;
-                }
 
-                result.Append('(');
-                result.Append(element.Key);
-                result.Append(",(");
-                bool firstValue = true;
-                foreach (var v in element.Value.Value.AsEnumerable())
-                {
-                    if (firstValue)
-                    {
-                        result.Append(',');
-                        firstValue = false;
-                    }
+            result.Append(string.Join(",", IndexValues.Select(element =>
+                $"({element.Key},({string.Join(",", element.Value.Value.AsEnumerable())}))")));
 
-                    result.Append(v.ToString());
-                }
-                result.Append("))");
-            }
             result.Append(')');
-
             return result.ToString();
         }
     }

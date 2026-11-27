@@ -3,28 +3,20 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class LoaderAllocator : IData<LoaderAllocator>
+[CdacType(nameof(DataType.LoaderAllocator))]
+internal sealed partial class LoaderAllocator : IData<LoaderAllocator>
 {
-    static LoaderAllocator IData<LoaderAllocator>.Create(Target target, TargetPointer address)
-        => new LoaderAllocator(target, address);
-
-    public LoaderAllocator(Target target, TargetPointer address)
-    {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.LoaderAllocator);
-
-        ReferenceCount = target.Read<uint>(address + (ulong)type.Fields[nameof(ReferenceCount)].Offset);
-        HighFrequencyHeap = target.ReadPointer(address + (ulong)type.Fields[nameof(HighFrequencyHeap)].Offset);
-        LowFrequencyHeap = target.ReadPointer(address + (ulong)type.Fields[nameof(LowFrequencyHeap)].Offset);
-        StubHeap = target.ReadPointer(address + (ulong)type.Fields[nameof(StubHeap)].Offset);
-        ObjectHandle = target.ProcessedData.GetOrAdd<ObjectHandle>(
-            target.ReadPointer(address + (ulong)type.Fields[nameof(ObjectHandle)].Offset));
-    }
-
-    public uint ReferenceCount { get; init; }
-    public TargetPointer HighFrequencyHeap { get; init; }
-    public TargetPointer LowFrequencyHeap { get; init; }
-    public TargetPointer StubHeap { get; init; }
-    public ObjectHandle ObjectHandle { get; init; }
-
+    [Field] public partial uint ReferenceCount { get; }
+    [Field] public partial TargetPointer HighFrequencyHeap { get; }
+    [Field] public partial TargetPointer LowFrequencyHeap { get; }
+    [Field] public partial TargetPointer StaticsHeap { get; }
+    [Field] public partial TargetPointer ExecutableHeap { get; }
+    [Field] public partial TargetPointer? FixupPrecodeHeap { get; }
+    [Field] public partial TargetPointer? NewStubPrecodeHeap { get; }
+    [Field] public partial TargetPointer? DynamicHelpersStubHeap { get; }
+    [Field] public partial TargetPointer VirtualCallStubManager { get; }
+    [Field] public partial ObjectHandle ObjectHandle { get; }
+    [Field] public partial bool IsCollectible { get; }
+    [Field] public partial ulong CreationNumber { get; }
     public bool IsAlive => ReferenceCount != 0;
 }

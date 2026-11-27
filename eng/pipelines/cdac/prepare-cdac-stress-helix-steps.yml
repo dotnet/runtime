@@ -1,0 +1,56 @@
+# prepare-cdac-stress-helix-steps.yml - Steps for preparing cDAC stress test Helix payloads.
+#
+# Used by CdacStressTests stage in runtime-diagnostics.yml.
+# Handles: building stress test debuggees, preparing Helix payload, finding testhost.
+
+steps:
+- script: $(Build.SourcesDirectory)$(dir).dotnet$(dir)dotnet$(exeExt) msbuild
+    $(Build.SourcesDirectory)/src/native/managed/cdac/tests/StressTests/Microsoft.Diagnostics.DataContractReader.StressTests.csproj
+    /t:BuildDebuggeesOnly
+    /p:Configuration=$(_BuildConfig)
+    /p:TargetArchitecture=$(archType)
+    -bl:$(Build.SourcesDirectory)/artifacts/log/BuildStressDebuggees.binlog
+  displayName: 'Build Stress Debuggees'
+
+- script: $(Build.SourcesDirectory)$(dir).dotnet$(dir)dotnet$(exeExt) build
+    $(Build.SourcesDirectory)/src/native/managed/cdac/tests/StressTests/Microsoft.Diagnostics.DataContractReader.StressTests.csproj
+    /p:PrepareHelixPayload=true
+    /p:Configuration=$(_BuildConfig)
+    /p:HelixPayloadDir=$(Build.SourcesDirectory)/artifacts/helixPayload/cdac-stress
+    -bl:$(Build.SourcesDirectory)/artifacts/log/StressTestPayload.binlog
+  displayName: 'Prepare Stress Test Helix Payload'
+
+- pwsh: |
+    $testhostDir = Get-ChildItem -Directory -Path "$(Build.SourcesDirectory)/artifacts/bin/testhost/net*-$(osGroup)-*-$(archType)" | Select-Object -First 1 -ExpandProperty FullName
+    if (-not $testhostDir) {
+        Write-Error "No testhost directory found"
+        exit 1
+    }
+    Write-Host "TestHost root: $testhostDir"
+    Write-Host "##vso[task.setvariable variable=StressTestHostRootDir]$testhostDir"
+
+    # Diagnostic: list mscordaccore* files in the testhost shared framework dir
+    # and in artifacts/bin/coreclr/* so we can see whether the cDAC reader
+    # was built and copied into the test payload.
+    $sharedDir = Get-ChildItem -Directory -Path "$testhostDir/shared/Microsoft.NETCore.App/*" | Select-Object -First 1 -ExpandProperty FullName
+    Write-Host ""
+    Write-Host "--- Diagnostic: mscordaccore* files in testhost ($sharedDir) ---"
+    Get-ChildItem -Path $sharedDir -Filter "*mscordaccore*" -ErrorAction SilentlyContinue | Select-Object Name, Length | Format-Table -AutoSize | Out-String | Write-Host
+    Write-Host "--- Diagnostic: mscordaccore* files in artifacts/bin/coreclr ---"
+    Get-ChildItem -Path "$(Build.SourcesDirectory)/artifacts/bin/coreclr" -Recurse -Filter "*mscordaccore*" -ErrorAction SilentlyContinue | Select-Object FullName, Length | Format-Table -AutoSize | Out-String | Write-Host
+    Write-Host ""
+
+    $queue = switch ("$(osGroup)_$(archType)") {
+        "windows_x64"   { "$(helix_windows_x64)" }
+        "windows_x86"   { "$(helix_windows_x64)" }
+        "windows_arm64" { "$(helix_windows_arm64)" }
+        "linux_x64"     { "$(helix_linux_x64_oldest)" }
+        "linux_arm64"   { "$(helix_linux_arm64_oldest)" }
+        "linux_arm"     { "$(helix_linux_arm32_oldest)" }
+        "osx_x64"       { "$(helix_macos_x64)" }
+        "osx_arm64"     { "$(helix_macos_arm64)" }
+        default         { Write-Error "Unsupported platform: $(osGroup)_$(archType)"; exit 1 }
+    }
+    Write-Host "Helix queue: $queue"
+    Write-Host "##vso[task.setvariable variable=CdacStressHelixQueue]$queue"
+  displayName: 'Find Stress TestHost and Helix Queue'

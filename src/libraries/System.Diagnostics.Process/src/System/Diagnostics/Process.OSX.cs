@@ -14,11 +14,7 @@ namespace System.Diagnostics
 
         private const int MicrosecondsToSecondsFactor = 1_000_000;
 
-        /// <summary>Gets the amount of time the process has spent running code inside the operating system core.</summary>
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        [SupportedOSPlatform("maccatalyst")]
-        public TimeSpan PrivilegedProcessorTime
+        public partial TimeSpan PrivilegedProcessorTime
         {
             get
             {
@@ -52,20 +48,33 @@ namespace System.Diagnostics
         }
 
         /// <summary>Gets execution path</summary>
-        private static string GetPathToOpenFile()
+        internal static string GetPathToOpenFile()
         {
             return "/usr/bin/open";
         }
 
         /// <summary>
-        /// Gets the amount of time the associated process has spent utilizing the CPU.
-        /// It is the sum of the <see cref='System.Diagnostics.Process.UserProcessorTime'/> and
-        /// <see cref='System.Diagnostics.Process.PrivilegedProcessorTime'/>.
+        /// Gets or sets which processors the threads in this process can be scheduled to run on.
         /// </summary>
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        [SupportedOSPlatform("maccatalyst")]
-        public TimeSpan TotalProcessorTime
+        private static IntPtr ProcessorAffinityCore
+        {
+            get
+            {
+                throw new PlatformNotSupportedException(SR.ProcessorAffinityNotSupported);
+            }
+            set
+            {
+                throw new PlatformNotSupportedException(SR.ProcessorAffinityNotSupported);
+            }
+        }
+
+        private void GetWorkingSetLimits(out IntPtr minWorkingSet, out IntPtr maxWorkingSet) =>
+            GetWorkingSetLimitsBsd(out minWorkingSet, out maxWorkingSet);
+
+        private void SetWorkingSetLimitsCore(IntPtr? newMin, IntPtr? newMax, out IntPtr resultingMin, out IntPtr resultingMax) =>
+            SetWorkingSetLimitsCoreBsd(newMin, newMax, out resultingMin, out resultingMax);
+
+        public partial TimeSpan TotalProcessorTime
         {
             get
             {
@@ -80,14 +89,7 @@ namespace System.Diagnostics
             }
         }
 
-        /// <summary>
-        /// Gets the amount of time the associated process has spent running code
-        /// inside the application portion of the process (not the operating system core).
-        /// </summary>
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        [SupportedOSPlatform("maccatalyst")]
-        public TimeSpan UserProcessorTime
+        public partial TimeSpan UserProcessorTime
         {
             get
             {

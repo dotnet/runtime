@@ -74,6 +74,11 @@ namespace System.Net.Tests
             yield return new object[] { "GET {path} HTTP/1.1", null, new string[] { "Content-Length: -9223372036854775809" }, "\r\n", "Bad Request" };
 
             yield return new object[] { "GET {path} HTTP/1.1", null, new string[] { "Content-Length: 1", "Content-Length: 2" }, "\r\n", "Bad Request" };
+            if (Helpers.IsManagedImplementation)
+            {
+                yield return new object[] { "POST {path} HTTP/1.1", null, new string[] { "Content-Length: 9223372036854775808" }, "\r\n", "Bad Request" }; // long.MaxValue + 1
+                yield return new object[] { "POST {path} HTTP/1.1", null, new string[] { "Content-Length: 18446744073709551615" }, "\r\n", "Bad Request" }; // ulong.MaxValue
+            }
 
             yield return new object[] { "GET {path} HTTP/1.1", null, new string[] { "Transfer-Encoding: garbage" }, "\r\n", "Not Implemented" };
             yield return new object[] { "POST {path} HTTP/1.1", null, new string[] { "Transfer-Encoding: garbage" }, "\r\n", "Not Implemented" };
@@ -84,6 +89,19 @@ namespace System.Net.Tests
             yield return new object[] { "GET {path} HTTP/1.1", null, new string[] { ":" }, null, "Bad Request" };
             yield return new object[] { "GET {path} HTTP/1.1", null, new string[] { "\0:value" }, null, "Bad Request" };
             yield return new object[] { "GET {path} HTTP/1.1", null, new string[] { "value:\0" }, null, "Bad Request" };
+            if (Helpers.IsManagedImplementation)
+            {
+                yield return new object[] { "GET {path} HTTP/1.1", null, new string[] { " Header: value" }, null, "Bad Request" };
+                yield return new object[] { "GET {path} HTTP/1.1", null, new string[] { "\tHeader: value" }, null, "Bad Request" };
+                yield return new object[] { "GET {path} HTTP/1.1", null, new string[] { "Header : value" }, null, "Bad Request" };
+                yield return new object[] { "GET {path} HTTP/1.1", null, new string[] { "Header\t: value" }, null, "Bad Request" };
+            }
+
+            // Bare CR, i.e. a CR that isn't immediately followed by a LF
+            yield return new object[] { "GET {path}a\rb HTTP/1.1", null, null, null, "Bad Request" };
+            yield return new object[] { "GET {path} HTTP/1.1", null, new string[] { "Content-Le\rngth: 0" }, "\r\n", "Bad Request" };
+            yield return new object[] { "GET {path} HTTP/1.1", null, new string[] { "Header: val\rue" }, "\r\n", "Bad Request" };
+            yield return new object[] { "GET {path} HTTP/1.1", null, new string[] { "Header: value\r" }, "\r\n", "Bad Request" };
 
             yield return new object[] { "GET {path} HTTP/1.1", "", null, null, "Bad Request" };
             yield return new object[] { "GET {path} HTTP/1.1", "Host: \r\n", null, null, "Bad Request" };
@@ -145,6 +163,48 @@ namespace System.Net.Tests
                     Assert.False(serverTask.IsCompleted, $"Server task was completed: {serverTask.Status}");
                 }
             }
+
+        }
+
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [Theory]
+        [InlineData(1, 65536)]
+        [InlineData(128, 512)]
+        public async Task GetContext_HeadersLargerThanLimit_DoesNotGetContext(int headerCount, int headerValueLength)
+        {
+            const int MaxRequestHeaderSize = 65536;
+            const int FragmentSize = 1024;
+
+            using Socket client = Factory.GetConnectedSocket();
+            Uri listeningUri = new Uri(Factory.ListeningUrl);
+            var request = new StringBuilder($"GET {listeningUri.PathAndQuery} HTTP/1.1\r\nHost: {listeningUri.Host}\r\n");
+            for (int i = 0; i < headerCount; i++)
+            {
+                request.Append("X-Test-");
+                request.Append(i);
+                request.Append(": ");
+                request.Append('a', headerValueLength);
+                request.Append("\r\n");
+            }
+
+            byte[] requestBytes = Encoding.ASCII.GetBytes(request.ToString());
+            Assert.True(requestBytes.Length > MaxRequestHeaderSize);
+
+            Task<HttpListenerContext> serverTask = Factory.GetListener().GetContextAsync();
+            for (int offset = 0; offset < requestBytes.Length;)
+            {
+                int bytesToSend = Math.Min(FragmentSize, requestBytes.Length - offset);
+                int bytesSent = await client.SendAsync(requestBytes.AsMemory(offset, bytesToSend));
+                Assert.NotEqual(0, bytesSent);
+                offset += bytesSent;
+            }
+
+            byte[] errorMessageBytes = new byte[512];
+            int bytesReceived = await client.ReceiveAsync(errorMessageBytes).WaitAsync(TimeSpan.FromSeconds(30));
+            string errorMessage = Encoding.Default.GetString(errorMessageBytes, 0, bytesReceived);
+
+            Assert.Contains("Bad Request", errorMessage);
+            Assert.False(serverTask.IsCompleted, $"Server task was completed: {serverTask.Status}");
         }
     }
 }

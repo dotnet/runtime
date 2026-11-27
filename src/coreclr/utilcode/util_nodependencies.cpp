@@ -612,6 +612,7 @@ void ConfigDWORD::init(const CLRConfig::ConfigDWORDInfo & info)
     CONTRACTL
     {
         NOTHROW;
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
@@ -662,15 +663,13 @@ void TrimWhiteSpace(_Outptr_result_buffer_(*pcch)  LPCWSTR *pwsz, __inout LPDWOR
     *pcch = cch;
 } // TrimWhiteSpace
 
+#ifndef HOST_UNIX
 void OutputDebugStringUtf8(LPCUTF8 utf8DebugMsg)
 {
-#ifdef TARGET_UNIX
-    OutputDebugStringA(utf8DebugMsg);
-#else
     if (utf8DebugMsg == NULL)
         utf8DebugMsg = "";
 
     MAKE_WIDEPTR_FROMUTF8_NOTHROW(wideDebugMsg, utf8DebugMsg);
     OutputDebugStringW(wideDebugMsg);
-#endif // !TARGET_UNIX
 }
+#endif // !HOST_UNIX

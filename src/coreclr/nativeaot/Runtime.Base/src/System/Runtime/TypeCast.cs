@@ -803,7 +803,7 @@ namespace System.Runtime
                 goto notExactMatch;
 
         doWrite:
-            InternalCalls.RhpAssignRef(ref element, obj);
+            RuntimeHelpers.WriteBarrier(ref element, obj);
             return;
 
         assigningNull:
@@ -826,7 +826,7 @@ namespace System.Runtime
             CastResult result = s_castCache.TryGet((nuint)obj.GetMethodTable() + (int)AssignmentVariation.BoxedSource, (nuint)elementType);
             if (result == CastResult.CanCast)
             {
-                InternalCalls.RhpAssignRef(ref element, obj);
+                RuntimeHelpers.WriteBarrier(ref element, obj);
                 return;
             }
 
@@ -843,7 +843,7 @@ namespace System.Runtime
                 throw elementType->GetClasslibException(ExceptionIDs.ArrayTypeMismatch);
             }
 
-            InternalCalls.RhpAssignRef(ref element, obj);
+            RuntimeHelpers.WriteBarrier(ref element, castedObj);
         }
 
         private static unsafe object IsInstanceOfArray(MethodTable* pTargetType, object obj)
@@ -1231,10 +1231,9 @@ namespace System.Runtime
             }
 
             //
-            // Update the cache. We only consider type-based conversion rules here.
-            // Therefore a negative result cannot rule out convertibility for IDynamicInterfaceCastable.
+            // Update the cache
             //
-            if (retObj != null || !(pTargetType->IsInterface && pSourceType->IsIDynamicInterfaceCastable))
+            if (!pSourceType->IsIDynamicInterfaceCastable || !pTargetType->IsInterface)
             {
                 nuint sourceAndVariation = (nuint)pSourceType + (uint)AssignmentVariation.BoxedSource;
                 s_castCache.TrySet(sourceAndVariation, (nuint)pTargetType, retObj != null);
@@ -1273,8 +1272,11 @@ namespace System.Runtime
             //
             // Update the cache
             //
-            nuint sourceAndVariation = (nuint)pSourceType + (uint)AssignmentVariation.BoxedSource;
-            s_castCache.TrySet(sourceAndVariation, (nuint)pTargetType, true);
+            if (!pSourceType->IsIDynamicInterfaceCastable || !pTargetType->IsInterface)
+            {
+                nuint sourceAndVariation = (nuint)pSourceType + (uint)AssignmentVariation.BoxedSource;
+                s_castCache.TrySet(sourceAndVariation, (nuint)pTargetType, true);
+            }
 
             return obj;
         }

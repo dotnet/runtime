@@ -47,6 +47,7 @@ private:
     void AddInlining(FunctionID inliner, FunctionID inlinee);
 
     bool FunctionSeen(FunctionID func);
+    void CheckILToNativeMapping2(FunctionID functionId);
 
     FunctionID GetFunctionIDFromToken(ModuleID module, mdMethodDef token, bool invalidArgNotFailure);
     mdMethodDef GetMethodDefForFunction(FunctionID functionId);
@@ -56,14 +57,19 @@ private:
     std::atomic<int> _failures;
     std::atomic<int> _rejits;
     std::atomic<int> _reverts;
+    std::atomic<int> _runtimeAsyncRejits;
     std::map<FunctionID, std::shared_ptr<std::unordered_set<FunctionID>>> _inlinings;
     FunctionID _triggerFuncId;
     FunctionID _targetFuncId;
     ModuleID _targetModuleId;
     mdMethodDef _targetMethodDef;
+    ModuleID _runtimeAsyncTargetModuleId;
+    mdMethodDef _runtimeAsyncTargetMethodDef;
 
     const String ReJITTriggerMethodName = WCHAR("TriggerReJIT");
     const String RevertTriggerMethodName = WCHAR("TriggerRevert");
+    const String RuntimeAsyncReJITTriggerMethodName = WCHAR("TriggerRuntimeAsyncReJIT");
+    const String RuntimeAsyncTargetMethodName = WCHAR("RuntimeAsyncTarget");
     const String TargetMethodName = WCHAR("InlineeTarget");
     const String TargetModuleName = WCHAR("rejit.dll");
 };

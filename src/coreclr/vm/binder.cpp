@@ -19,10 +19,14 @@
 #include "dllimport.h"
 #include "clrvarargs.h"
 #include "sigbuilder.h"
-#include "olevariant.h"
 #include "configuration.h"
 #include "conditionalweaktable.h"
-#include "interoplibinterface_comwrappers.h"
+#include "interoplibinterface.h"
+#include "assemblynative.hpp"
+
+#if defined(_DEBUG) && defined(DEBUGGING_SUPPORTED)
+#include "../debug/inc/dbgipcevents.h"
+#endif
 
 //
 // Retrieve structures from ID.
@@ -49,7 +53,7 @@ PTR_MethodTable CoreLibBinder::LookupClassLocal(BinderClassID id)
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(ThrowOutOfMemory());
+        MODE_ANY;
 
         PRECONDITION(id != CLASS__NIL);
         PRECONDITION(id <= m_cClasses);
@@ -127,7 +131,7 @@ MethodDesc * CoreLibBinder::LookupMethodLocal(BinderMethodID id)
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(ThrowOutOfMemory());
+        MODE_ANY;
 
         PRECONDITION(id != METHOD__NIL);
         PRECONDITION(id <= m_cMethods);
@@ -186,7 +190,7 @@ FieldDesc * CoreLibBinder::LookupFieldLocal(BinderFieldID id)
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(ThrowOutOfMemory());
+        MODE_ANY;
 
         PRECONDITION(id != FIELD__NIL);
         PRECONDITION(id <= m_cFields);
@@ -216,7 +220,6 @@ NOINLINE PTR_MethodTable CoreLibBinder::LookupClassIfExist(BinderClassID id)
     {
         GC_NOTRIGGER;
         NOTHROW;
-        FORBID_FAULT;
         MODE_ANY;
 
         PRECONDITION(id != CLASS__NIL);
@@ -252,7 +255,6 @@ Signature CoreLibBinder::GetSignature(LPHARDCODEDMETASIG pHardcodedSig)
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
         MODE_ANY;
     }
     CONTRACTL_END
@@ -282,7 +284,6 @@ Signature CoreLibBinder::GetTargetSignature(LPHARDCODEDMETASIG pHardcodedSig)
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
         MODE_ANY;
     }
     CONTRACTL_END
@@ -297,7 +298,6 @@ Signature CoreLibBinder::GetSignatureLocal(LPHARDCODEDMETASIG pHardcodedSig)
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
         MODE_ANY;
     }
     CONTRACTL_END
@@ -463,7 +463,6 @@ const BYTE* CoreLibBinder::ConvertSignature(LPHARDCODEDMETASIG pHardcodedSig, co
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
         MODE_ANY;
     }
     CONTRACTL_END
@@ -505,7 +504,6 @@ void CoreLibBinder::TriggerGCUnderStress()
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(ThrowOutOfMemory());
     }
     CONTRACTL_END;
 
@@ -621,18 +619,20 @@ void CoreLibBinder::Check()
                 // The same NameHandle must be used to retain the scope to look for the nested type.
                 NameHandle nameHandle(GetModule(), mdtBaseType);
 
-                SString splitName(SString::Utf8, name, (COUNT_T)(nestedTypeMaybe - name));
-                nameHandle.SetName(nameSpace, splitName.GetUTF8());
+                do
+                {
+                    SString splitName(SString::Utf8, name, (COUNT_T)(nestedTypeMaybe - name));
+                    nameHandle.SetName(nameSpace, splitName.GetUTF8());
 
-                // The side-effect of updating the scope in the NameHandle is the point of the call.
-                (void)ClassLoader::LoadTypeByNameThrowing(GetModule()->GetAssembly(), &nameHandle);
+                    // Retain the resolved enclosing scope for the next nested type.
+                    (void)ClassLoader::LoadTypeByNameThrowing(GetModule()->GetAssembly(), &nameHandle);
 
-                // Now load the nested type.
-                nameHandle.SetName("", nestedTypeMaybe + 1);
+                    name = nestedTypeMaybe + 1;
+                    nameSpace = "";
+                    nestedTypeMaybe = strchr(name, '+');
+                } while (nestedTypeMaybe != NULL);
 
-                // We don't support nested types in nested types.
-                _ASSERTE(strchr(nameHandle.GetName(), '+') == NULL);
-
+                nameHandle.SetName("", name);
                 // We don't support nested types with explicit namespaces
                 _ASSERTE(strchr(nameHandle.GetName(), '.') == NULL);
                 pMT = ClassLoader::LoadTypeByNameThrowing(GetModule()->GetAssembly(), &nameHandle).AsMethodTable();
@@ -1100,10 +1100,8 @@ void CoreLibBinder::CheckExtended()
     }
 
     //
-    // CoreLib referencing VM (ecalllist.h)
+    // CoreLib referencing native entrypoints.
     //
-    SetSHash<DWORD> usedECallIds;
-
     HRESULT hr = S_OK;
     Module *pModule = CoreLibBinder::m_pModule;
     IMDInternalImport *pInternalImport = pModule->GetMDImport();
@@ -1160,14 +1158,16 @@ void CoreLibBinder::CheckExtended()
             pMD = pMD->FindOrCreateTypicalSharedInstantiation();
         }
 
-        DWORD id = 0;
+        PCODE implementation = (PCODE)NULL;
 
         if (pMD->IsFCall())
         {
-            id = ((FCallMethodDesc *)pMD)->GetECallID();
-            if (id == 0) {
-                id = ECall::GetIDForMethod(pMD);
-            }
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+            // This declaration supplies a helper signature, not an executable method.
+            if (pMD == CoreLibBinder::GetMethod(METHOD__RUNTIME_HELPERS__NEWOBJ_HELPER_DUMMY))
+                continue;
+#endif
+            implementation = ECall::GetFCallImpl(pMD, false);
         }
         else
         if (pMD->IsPInvoke())
@@ -1175,7 +1175,7 @@ void CoreLibBinder::CheckExtended()
             PInvokeMethodDesc* pNMD = (PInvokeMethodDesc*)pMD;
             PInvoke::PopulatePInvokeMethodDesc(pNMD);
 
-            if (pNMD->IsQCall() && QCallResolveDllImport(pNMD->GetEntrypointName()) == nullptr)
+            if (pNMD->IsQCall() && ResolveRuntimeHelperEntrypoint(pNMD->GetEntrypointName()) == nullptr)
             {
                 LPCUTF8 pszClassName;
                 LPCUTF8 pszNameSpace;
@@ -1197,8 +1197,7 @@ void CoreLibBinder::CheckExtended()
             continue;
         }
 
-        // ... check that the method is in the fcall table.
-        if (id == 0) {
+        if (implementation == (PCODE)NULL) {
             LPCUTF8 pszClassName;
             LPCUTF8 pszNameSpace;
             if (FAILED(pInternalImport->GetNameOfTypeDef(tdClass, &pszClassName, &pszNameSpace)))
@@ -1213,23 +1212,15 @@ void CoreLibBinder::CheckExtended()
             minipal_log_print_error("CheckExtended: Unable to find internalcall implementation: %s.%s::%s\n", pszNameSpace, pszClassName, pszName);
         }
 
-        if (id != 0)
-        {
-            usedECallIds.Add(id);
-        }
-
 #ifdef CHECK_FCALL_SIGNATURE
         if (pMD->IsFCall())
         {
-            FCallCheckSignature(pMD, ECall::GetFCallImpl(pMD));
+            FCallCheckSignature(pMD, implementation);
         }
 #endif // CHECK_FCALL_SIGNATURE
     }
 
     pInternalImport->EnumClose(&hEnum);
-
-    // Verify that there are no unused entries in the ecall table
-    ECall::CheckUnusedECalls(usedECallIds);
 
     //
     // Stub constants

@@ -120,7 +120,8 @@ __checkReturn
 HRESULT CLiteWeightStgdbRW::InitOnMem(
     ULONG       cbData,                 // count of bytes in pData
     LPCVOID     pData,                  // points to meta data section in memory
-    int         bReadOnly)              // If true, read-only.
+    int         bReadOnly,              // If true, read-only.
+    bool        fIsDelta)               // Is this metadata being loaded to apply an EnC delta?
 {
     StgIO       *pStgIO = NULL;         // For file i/o.
     HRESULT     hr = NOERROR;
@@ -138,7 +139,7 @@ HRESULT CLiteWeightStgdbRW::InitOnMem(
         NULL)   // LPSecurityAttributes
          );
 
-    IfFailGo( InitFileForRead(pStgIO, bReadOnly) );
+    IfFailGo( InitFileForRead(pStgIO, bReadOnly, fIsDelta) );
 
 ErrExit:
     if (SUCCEEDED(hr))
@@ -162,7 +163,8 @@ __checkReturn
 HRESULT
 CLiteWeightStgdbRW::InitFileForRead(
     StgIO * pStgIO,     // For file i/o.
-    int     bReadOnly)  // If read-only open.
+    int     bReadOnly,  // If read-only open.
+    bool    fIsDelta)   // Is this metadata being loaded to apply an EnC delta?
 {
     TiggerStorage * pStorage = NULL;
     void          * pvData;
@@ -186,6 +188,7 @@ CLiteWeightStgdbRW::InitFileForRead(
     if (SUCCEEDED(pStorage->OpenStream(MINIMAL_MD_STREAM, &cbData, &pvData)))
     {
         m_MiniMd.m_fMinimalDelta = TRUE;
+        m_MiniMd.m_fAll4ByteColumns = TRUE;
     }
 
     // Load the string pool.
@@ -263,7 +266,7 @@ CLiteWeightStgdbRW::InitFileForRead(
     {
         IfFailGo(pStorage->OpenStream(ENC_MODEL_STREAM, &cbData, &pvData));
     }
-    IfFailGo(m_MiniMd.InitOnMem(pvData, cbData, bReadOnly));
+    IfFailGo(m_MiniMd.InitOnMem(pvData, cbData, bReadOnly, fIsDelta));
     IfFailGo(m_MiniMd.PostInit(0));
 
 ErrExit:
@@ -416,32 +419,6 @@ ErrExit:
     return hr;
 }
 
-#ifdef FEATURE_METADATA_CUSTOM_DATA_SOURCE
-// Open a metadata section for read/write
-__checkReturn
-HRESULT CLiteWeightStgdbRW::OpenForRead(
-    IMDCustomDataSource *pDataSource,   // data to open on top of
-    DWORD       dwFlags)                // Flags for the open.
-{
-    LPCWSTR     pNoFile = W("");            // Constant for empty file name.
-    StgIO       *pStgIO = NULL;         // For file i/o.
-    HRESULT     hr;
-
-    m_pImage = NULL;
-    m_dwImageSize = 0;
-    m_eFileType = FILETYPE_UNKNOWN;
-
-    IfFailGo(m_MiniMd.InitOnCustomDataSource(pDataSource));
-    IfFailGo(m_MiniMd.PostInit(0));
-
-    // Save off everything.
-    IfFailGo(SetFileName(pNoFile));
-
-ErrExit:
-    return hr;
-}
-#endif
-
 // Read/Write versions.
 //*****************************************************************************
 // Init the Stgdb and its subcomponents.
@@ -458,6 +435,7 @@ HRESULT CLiteWeightStgdbRW::InitNew()
     return m_MiniMd.InitNew();
 }
 
+#ifdef FEATURE_METADATA_PERSISTENCE
 //*****************************************************************************
 // Determine what the size of the saved data will be.
 //*****************************************************************************
@@ -936,6 +914,7 @@ ErrExit:
         delete pStorage;
     return hr;
 } // CLiteWeightStgdbRW::Save
+#endif
 
 //*****************************************************************************
 // Pull the PEKind and Machine out of PE headers -- if we have PE headers.
@@ -1014,11 +993,6 @@ HRESULT CLiteWeightStgdbRW::GetRawData(
     const void **ppvMd,                 // [OUT] put pointer to MD section here (aka, 'BSJB').
     ULONG   *pcbMd)                     // [OUT] put size of the stream here.
 {
-#ifdef FEATURE_METADATA_CUSTOM_DATA_SOURCE
-    if (m_pStgIO == NULL)
-        return COR_E_NOTSUPPORTED;
-#endif
-
     *ppvMd = (const void*) m_pStgIO->m_pData;
     *pcbMd = m_pStgIO->m_cbData;
     return S_OK;
@@ -1042,11 +1016,6 @@ CLiteWeightStgdbRW::GetRawStreamInfo(
     ULONG          i;               // Loop control.
     void          *pData;
     ULONG          cbData;
-
-#ifdef FEATURE_METADATA_CUSTOM_DATA_SOURCE
-    if (m_pStgIO == NULL)
-        IfFailGo(COR_E_NOTSUPPORTED);
-#endif
 
     pData = m_pStgIO->m_pData;
     cbData = m_pStgIO->m_cbData;

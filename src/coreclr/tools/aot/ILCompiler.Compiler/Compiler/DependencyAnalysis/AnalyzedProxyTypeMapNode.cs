@@ -11,37 +11,37 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    internal sealed class AnalyzedProxyTypeMapNode(TypeDesc typeMapGroup, IReadOnlyDictionary<TypeDesc, TypeDesc> entries) : DependencyNodeCore<NodeFactory>, IProxyTypeMapNode
+    internal sealed class AnalyzedProxyTypeMapNode(TypeDesc typeMapGroup, IReadOnlyDictionary<TypeDesc, TypeDesc> entries) : SortableDependencyNode, IProxyTypeMapNode
     {
         public TypeDesc TypeMapGroup => typeMapGroup;
-        public Vertex CreateTypeMap(NodeFactory factory, NativeWriter writer, Section section, ExternalReferencesTableNode externalReferences)
+        public Vertex CreateTypeMap(NodeFactory factory, NativeWriter writer, Section section, INativeFormatTypeReferenceProvider externalReferences)
         {
             VertexHashtable typeMapHashTable = new();
 
             foreach ((TypeDesc key, TypeDesc type) in entries)
             {
-                Vertex keyVertex = writer.GetUnsignedConstant(externalReferences.GetIndex(factory.MaximallyConstructableType(key)));
-                Vertex valueVertex = writer.GetUnsignedConstant(externalReferences.GetIndex(factory.MetadataTypeSymbol(type)));
+                Vertex keyVertex = externalReferences.EncodeReferenceToType(writer, key, null);
+                Vertex valueVertex = externalReferences.EncodeReferenceToType(writer, type, null);
                 Vertex entry = writer.GetTuple(keyVertex, valueVertex);
                 typeMapHashTable.Append((uint)key.GetHashCode(), section.Place(entry));
             }
 
             Vertex typeMapStateVertex = writer.GetUnsignedConstant(1); // Valid type map state
-            Vertex typeMapGroupVertex = writer.GetUnsignedConstant(externalReferences.GetIndex(factory.NecessaryTypeSymbol(TypeMapGroup)));
+            Vertex typeMapGroupVertex = externalReferences.EncodeReferenceToType(writer, TypeMapGroup, null);
             Vertex tuple = writer.GetTuple(typeMapGroupVertex, typeMapStateVertex, typeMapHashTable);
             return section.Place(tuple);
         }
 
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context) => [];
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory context) { }
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory context)
         {
             foreach (var (sourceType, proxyType) in entries)
             {
-                yield return new DependencyListEntry(context.MaximallyConstructableType(sourceType), "Analyzed proxy type map entry source type");
-                yield return new DependencyListEntry(context.MetadataTypeSymbol(proxyType), "Analyzed proxy type map entry proxy type");
+                sink.Add(context.MaximallyConstructableType(sourceType), "Analyzed proxy type map entry source type");
+                sink.Add(context.MetadataTypeSymbol(proxyType), "Analyzed proxy type map entry proxy type");
             }
         }
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context) => [];
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink sink, NodeFactory context) { }
         protected override string GetName(NodeFactory context) => $"Analyzed Proxy Type Map: {typeMapGroup}";
         public IProxyTypeMapNode ToAnalysisBasedNode(NodeFactory factory) => this;
         public override bool InterestingForDynamicDependencyAnalysis => false;
@@ -52,9 +52,9 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool StaticDependenciesAreComputed => true;
 
-        public int ClassCode => 171742984;
+        public override int ClassCode => 171742984;
 
-        public int CompareToImpl(ISortableNode other, CompilerComparer comparer)
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             AnalyzedProxyTypeMapNode otherEntry = (AnalyzedProxyTypeMapNode)other;
             return comparer.Compare(TypeMapGroup, otherEntry.TypeMapGroup);

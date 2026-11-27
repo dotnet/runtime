@@ -96,55 +96,47 @@ public:
     CLR_BOOL _isPinned;
 };
 
-extern "C" BOOL QCALLTYPE MdUtf8String_EqualsCaseInsensitive(LPCUTF8 szLhs, LPCUTF8 szRhs, INT32 stringNumBytes);
+extern "C" BOOL QCALLTYPE MdUtf8String_EqualsCaseInsensitive(LPCUTF8 szLhs, LPCUTF8 szRhs, INT32 stringNumBytes, QCallExceptionStatus* qcallError);
 
 class RuntimeTypeHandle
 {
 public:
     ReflectClassBaseObject *pRuntimeTypeDONOTUSEDIRECTLY;
-
-    // Static method on RuntimeTypeHandle
-    static FCDECL1(AssemblyBaseObject*, GetAssemblyIfExists, ReflectClassBaseObject *pType);
-    static FCDECL1(ReflectModuleBaseObject*, GetModuleIfExists, ReflectClassBaseObject* pType);
-    static FCDECL1(INT32, GetAttributes, ReflectClassBaseObject* pType);
-    static FCDECL1(INT32, GetToken, ReflectClassBaseObject* pType);
-    static FCDECL1(LPCUTF8, GetUtf8Name, MethodTable* pMT);
-    static FCDECL1(INT32, GetArrayRank, ReflectClassBaseObject* pType);
-
-    static FCDECL1(FC_BOOL_RET, IsUnmanagedFunctionPointer, ReflectClassBaseObject *pTypeUNSAFE);
-
-    static
-    FCDECL1(FC_BOOL_RET, IsGenericVariable, PTR_ReflectClassBaseObject pType);
-
-    static
-    FCDECL1(INT32, GetGenericVariableIndex, PTR_ReflectClassBaseObject pType);
-
-    static
-    FCDECL1(FC_BOOL_RET, ContainsGenericVariables, PTR_ReflectClassBaseObject pType);
-
-    static FCDECL2(FC_BOOL_RET, CompareCanonicalHandles, PTR_ReflectClassBaseObject pLeft, PTR_ReflectClassBaseObject pRight);
-    static FCDECL1(Object*, InternalAllocNoChecks_FastPath, MethodTable* pMT);
-
-    static FCDECL1(EnregisteredTypeHandle, GetElementTypeHandle, EnregisteredTypeHandle th);
-    static FCDECL1(INT32, GetNumVirtuals, ReflectClassBaseObject *pType);
-
-    static FCDECL1(MethodDesc *, GetFirstIntroducedMethod, ReflectClassBaseObject* pType);
-    static FCDECL1(void, GetNextIntroducedMethod, MethodDesc **ppMethod);
 };
 
-extern "C" void QCALLTYPE RuntimeTypeHandle_GetRuntimeTypeFromHandleSlow(void* typeHandleRaw, QCall::ObjectHandleOnStack result);
+extern "C"
+{
+    FCDECL1(AssemblyBaseObject*, RuntimeTypeHandle_GetAssemblyIfExists, ReflectClassBaseObject *pType);
+    FCDECL1(ReflectModuleBaseObject*, RuntimeTypeHandle_GetModuleIfExists, ReflectClassBaseObject* pType);
+    FCDECL1(INT32, RuntimeTypeHandle_GetAttributes, ReflectClassBaseObject* pType);
+    FCDECL1(INT32, RuntimeTypeHandle_GetToken, ReflectClassBaseObject* pType);
+    FCDECL1(LPCUTF8, RuntimeTypeHandle_GetUtf8NameInternal, MethodTable* pMT);
+    FCDECL1(INT32, RuntimeTypeHandle_GetArrayRank, ReflectClassBaseObject* pType);
+    FCDECL1(FC_BOOL_RET, RuntimeTypeHandle_IsUnmanagedFunctionPointer, ReflectClassBaseObject *pTypeUNSAFE);
+    FCDECL1(FC_BOOL_RET, RuntimeTypeHandle_IsGenericVariable, PTR_ReflectClassBaseObject pType);
+    FCDECL1(INT32, RuntimeTypeHandle_GetGenericVariableIndex, PTR_ReflectClassBaseObject pType);
+    FCDECL1(FC_BOOL_RET, RuntimeTypeHandle_ContainsGenericVariables, PTR_ReflectClassBaseObject pType);
+    FCDECL2(FC_BOOL_RET, RuntimeTypeHandle_CompareCanonicalHandles, PTR_ReflectClassBaseObject pLeft, PTR_ReflectClassBaseObject pRight);
+    FCDECL1(Object*, RuntimeTypeHandle_InternalAllocNoChecks_FastPath, MethodTable* pMT);
+    FCDECL1(EnregisteredTypeHandle, RuntimeTypeHandle_GetElementTypeHandle, EnregisteredTypeHandle th);
+    FCDECL1(INT32, RuntimeTypeHandle_GetNumVirtuals, ReflectClassBaseObject *pType);
+    FCDECL1(MethodDesc *, RuntimeTypeHandle_GetFirstIntroducedMethod, ReflectClassBaseObject* pType);
+    FCDECL1(void, RuntimeTypeHandle_GetNextIntroducedMethod, MethodDesc **ppMethod);
+}
+
+extern "C" void QCALLTYPE RuntimeTypeHandle_GetRuntimeTypeFromHandleSlow(void* typeHandleRaw, QCall::ObjectHandleOnStack result, QCallExceptionStatus* qcallError);
 #ifdef FEATURE_TYPEEQUIVALENCE
-extern "C" BOOL QCALLTYPE RuntimeTypeHandle_IsEquivalentTo(QCall::TypeHandle rtType1, QCall::TypeHandle rtType2);
+extern "C" BOOL QCALLTYPE RuntimeTypeHandle_IsEquivalentTo(QCall::TypeHandle rtType1, QCall::TypeHandle rtType2, QCallExceptionStatus* qcallError);
 #endif // FEATURE_TYPEEQUIVALENCE
-extern "C" void QCALLTYPE RuntimeTypeHandle_CreateInstanceForAnotherGenericParameter(QCall::TypeHandle pTypeHandle, TypeHandle *pInstArray, INT32 cInstArray, QCall::ObjectHandleOnStack pInstantiatedObject);
-extern "C" void QCALLTYPE RuntimeTypeHandle_InternalAlloc(MethodTable* pMT, QCall::ObjectHandleOnStack allocated);
+extern "C" void QCALLTYPE RuntimeTypeHandle_CreateInstanceForAnotherGenericParameter(QCall::TypeHandle pTypeHandle, TypeHandle *pInstArray, INT32 cInstArray, QCall::ObjectHandleOnStack pInstantiatedObject, QCallExceptionStatus* qcallError);
+extern "C" void QCALLTYPE RuntimeTypeHandle_InternalAlloc(MethodTable* pMT, QCall::ObjectHandleOnStack allocated, QCallExceptionStatus* qcallError);
 
-extern "C" void QCALLTYPE RuntimeTypeHandle_InternalAllocNoChecks(MethodTable* pMT, QCall::ObjectHandleOnStack allocated);
-extern "C" void* QCALLTYPE RuntimeTypeHandle_AllocateTypeAssociatedMemory(QCall::TypeHandle type, uint32_t size);
-extern "C" void* QCALLTYPE RuntimeTypeHandle_AllocateTypeAssociatedMemoryAligned(QCall::TypeHandle type, uint32_t size, uint32_t alignment);
+extern "C" void QCALLTYPE RuntimeTypeHandle_InternalAllocNoChecks(MethodTable* pMT, QCall::ObjectHandleOnStack allocated, QCallExceptionStatus* qcallError);
+extern "C" void* QCALLTYPE RuntimeTypeHandle_AllocateTypeAssociatedMemory(QCall::TypeHandle type, uint32_t size, QCallExceptionStatus* qcallError);
+extern "C" void* QCALLTYPE RuntimeTypeHandle_AllocateTypeAssociatedMemoryAligned(QCall::TypeHandle type, uint32_t size, uint32_t alignment, QCallExceptionStatus* qcallError);
 
-extern "C" PVOID QCALLTYPE QCall_GetGCHandleForTypeHandle(QCall::TypeHandle pTypeHandle, INT32 handleType);
-extern "C" void QCALLTYPE QCall_FreeGCHandleForTypeHandle(QCall::TypeHandle pTypeHandle, OBJECTHANDLE objHandle);
+extern "C" PVOID QCALLTYPE QCall_GetGCHandleForTypeHandle(QCall::TypeHandle pTypeHandle, INT32 handleType, QCallExceptionStatus* qcallError);
+extern "C" void QCALLTYPE QCall_FreeGCHandleForTypeHandle(QCall::TypeHandle pTypeHandle, OBJECTHANDLE objHandle, QCallExceptionStatus* qcallError);
 
 extern "C" void QCALLTYPE RuntimeTypeHandle_GetActivationInfo(
     QCall::ObjectHandleOnStack pRuntimeType,
@@ -152,165 +144,156 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_GetActivationInfo(
     void** pvAllocatorFirstArg,
     PCODE* ppfnCtor,
     PCODE* ppfnValueCtor,
-    BOOL* pfCtorIsPublic);
+    BOOL* pfCtorIsPublic,
+    QCallExceptionStatus* qcallError);
 #ifdef FEATURE_COMINTEROP
-extern "C" void QCALLTYPE RuntimeTypeHandle_AllocateComObject(void* pClassFactory, QCall::ObjectHandleOnStack result);
+extern "C" void QCALLTYPE RuntimeTypeHandle_AllocateComObject(void* pClassFactory, QCall::ObjectHandleOnStack result, QCallExceptionStatus* qcallError);
 #endif // FEATURE_COMINTEROP
-extern "C" void QCALLTYPE RuntimeTypeHandle_MakeByRef(QCall::TypeHandle pTypeHandle, QCall::ObjectHandleOnStack retType);
-extern "C" void QCALLTYPE RuntimeTypeHandle_MakePointer(QCall::TypeHandle pTypeHandle, QCall::ObjectHandleOnStack retType);
-extern "C" void QCALLTYPE RuntimeTypeHandle_MakeSZArray(QCall::TypeHandle pTypeHandle, QCall::ObjectHandleOnStack retType);
-extern "C" void QCALLTYPE RuntimeTypeHandle_MakeArray(QCall::TypeHandle pTypeHandle, INT32 rank, QCall::ObjectHandleOnStack retType);
-extern "C" void QCALLTYPE RuntimeTypeHandle_MakeFunctionPointer(TypeHandle* pRetAndArgTypes, INT32 numArgs, BOOL isUnmanaged, QCall::ObjectHandleOnStack retType);
+extern "C" void QCALLTYPE RuntimeTypeHandle_MakeByRef(QCall::TypeHandle pTypeHandle, QCall::ObjectHandleOnStack retType, QCallExceptionStatus* qcallError);
+extern "C" void QCALLTYPE RuntimeTypeHandle_MakePointer(QCall::TypeHandle pTypeHandle, QCall::ObjectHandleOnStack retType, QCallExceptionStatus* qcallError);
+extern "C" void QCALLTYPE RuntimeTypeHandle_MakeSZArray(QCall::TypeHandle pTypeHandle, QCall::ObjectHandleOnStack retType, QCallExceptionStatus* qcallError);
+extern "C" void QCALLTYPE RuntimeTypeHandle_MakeArray(QCall::TypeHandle pTypeHandle, INT32 rank, QCall::ObjectHandleOnStack retType, QCallExceptionStatus* qcallError);
+extern "C" void QCALLTYPE RuntimeTypeHandle_MakeFunctionPointer(TypeHandle* pRetAndArgTypes, INT32 numArgs, BOOL isUnmanaged, QCall::ObjectHandleOnStack retType, QCallExceptionStatus* qcallError);
 extern "C" void QCALLTYPE RuntimeTypeHandle_PrepareMemberInfoCache(QCall::TypeHandle pMemberInfoCache);
-extern "C" void QCALLTYPE RuntimeTypeHandle_ConstructName(QCall::TypeHandle pTypeHandle, DWORD format, QCall::StringHandleOnStack retString);
-extern "C" void QCALLTYPE RuntimeTypeHandle_GetInterfaces(MethodTable* pMT, QCall::ObjectHandleOnStack result);
-extern "C" BOOL QCALLTYPE RuntimeTypeHandle_IsVisible(QCall::TypeHandle pTypeHandle);
-extern "C" BOOL QCALLTYPE RuntimeTypeHandle_SatisfiesConstraints(QCall::TypeHandle paramType, QCall::TypeHandle typeContext, MethodDesc* methodContext, QCall::TypeHandle toType);
-extern "C" void QCALLTYPE RuntimeTypeHandle_GetInstantiation(QCall::TypeHandle pTypeHandle, QCall::ObjectHandleOnStack retType, BOOL fAsRuntimeTypeArray);
-extern "C" void QCALLTYPE RuntimeTypeHandle_Instantiate(QCall::TypeHandle pTypeHandle, TypeHandle * pInstArray, INT32 cInstArray, QCall::ObjectHandleOnStack retType);
-extern "C" void QCALLTYPE RuntimeTypeHandle_GetGenericTypeDefinition(QCall::TypeHandle pTypeHandle, QCall::ObjectHandleOnStack retType);
-extern "C" void QCALLTYPE RuntimeTypeHandle_GetConstraints(QCall::TypeHandle pTypeHandle, QCall::ObjectHandleOnStack retTypes);
-extern "C" void QCALLTYPE RuntimeTypeHandle_GetArgumentTypesFromFunctionPointer(QCall::TypeHandle pTypeHandle, QCall::ObjectHandleOnStack argTypes);
-extern "C" void QCALLTYPE RuntimeTypeHandle_GetAssemblySlow(QCall::ObjectHandleOnStack type, QCall::ObjectHandleOnStack assembly);
-extern "C" void QCALLTYPE RuntimeTypeHandle_GetModuleSlow(QCall::ObjectHandleOnStack type, QCall::ObjectHandleOnStack module);
-extern "C" INT32 QCALLTYPE RuntimeTypeHandle_GetNumVirtualsAndStaticVirtuals(QCall::TypeHandle pTypeHandle);
-extern "C" MethodDesc* QCALLTYPE RuntimeTypeHandle_GetMethodAt(MethodTable* pMT, INT32 slot);
-extern "C" BOOL QCALLTYPE RuntimeTypeHandle_GetFields(MethodTable* pMT, intptr_t* result, INT32* pCount);
-extern "C" void QCALLTYPE RuntimeTypeHandle_VerifyInterfaceIsImplemented(QCall::TypeHandle pTypeHandle, QCall::TypeHandle pIFaceHandle);
-extern "C" MethodDesc* QCALLTYPE RuntimeTypeHandle_GetInterfaceMethodImplementation(QCall::TypeHandle pTypeHandle, QCall::TypeHandle pOwner, MethodDesc * pMD);
-extern "C" void QCALLTYPE RuntimeTypeHandle_GetDeclaringMethodForGenericParameter(QCall::TypeHandle pTypeHandle, QCall::ObjectHandleOnStack result);
-extern "C" EnregisteredTypeHandle QCALLTYPE RuntimeTypeHandle_GetDeclaringTypeHandleForGenericVariable(EnregisteredTypeHandle pTypeHandle);
-extern "C" EnregisteredTypeHandle QCALLTYPE RuntimeTypeHandle_GetDeclaringTypeHandle(EnregisteredTypeHandle pTypeHandle);
-extern "C" void QCALLTYPE RuntimeTypeHandle_RegisterCollectibleTypeDependency(QCall::TypeHandle pTypeHandle, QCall::AssemblyHandle pAssembly);
+extern "C" void QCALLTYPE RuntimeTypeHandle_ConstructName(QCall::TypeHandle pTypeHandle, DWORD format, QCall::StringHandleOnStack retString, QCallExceptionStatus* qcallError);
+extern "C" void QCALLTYPE RuntimeTypeHandle_GetInterfaces(MethodTable* pMT, QCall::ObjectHandleOnStack result, QCallExceptionStatus* qcallError);
+extern "C" BOOL QCALLTYPE RuntimeTypeHandle_IsVisible(QCall::TypeHandle pTypeHandle, QCallExceptionStatus* qcallError);
+extern "C" BOOL QCALLTYPE RuntimeTypeHandle_SatisfiesConstraints(QCall::TypeHandle paramType, QCall::TypeHandle typeContext, MethodDesc* methodContext, QCall::TypeHandle toType, QCallExceptionStatus* qcallError);
+extern "C" void QCALLTYPE RuntimeTypeHandle_GetInstantiation(QCall::TypeHandle pTypeHandle, QCall::ObjectHandleOnStack retType, BOOL fAsRuntimeTypeArray, QCallExceptionStatus* qcallError);
+extern "C" void QCALLTYPE RuntimeTypeHandle_Instantiate(QCall::TypeHandle pTypeHandle, TypeHandle * pInstArray, INT32 cInstArray, QCall::ObjectHandleOnStack retType, QCallExceptionStatus* qcallError);
+extern "C" void QCALLTYPE RuntimeTypeHandle_GetGenericTypeDefinition(QCall::TypeHandle pTypeHandle, QCall::ObjectHandleOnStack retType, QCallExceptionStatus* qcallError);
+extern "C" void QCALLTYPE RuntimeTypeHandle_GetConstraints(QCall::TypeHandle pTypeHandle, QCall::ObjectHandleOnStack retTypes, QCallExceptionStatus* qcallError);
+extern "C" void QCALLTYPE RuntimeTypeHandle_GetArgumentTypesFromFunctionPointer(QCall::TypeHandle pTypeHandle, QCall::ObjectHandleOnStack argTypes, QCallExceptionStatus* qcallError);
+extern "C" void QCALLTYPE RuntimeTypeHandle_GetAssemblySlow(QCall::ObjectHandleOnStack type, QCall::ObjectHandleOnStack assembly, QCallExceptionStatus* qcallError);
+extern "C" void QCALLTYPE RuntimeTypeHandle_GetModuleSlow(QCall::ObjectHandleOnStack type, QCall::ObjectHandleOnStack module, QCallExceptionStatus* qcallError);
+extern "C" INT32 QCALLTYPE RuntimeTypeHandle_GetNumVirtualsAndStaticVirtuals(QCall::TypeHandle pTypeHandle, QCallExceptionStatus* qcallError);
+extern "C" MethodDesc* QCALLTYPE RuntimeTypeHandle_GetMethodAt(MethodTable* pMT, INT32 slot, QCallExceptionStatus* qcallError);
+extern "C" BOOL QCALLTYPE RuntimeTypeHandle_GetFields(MethodTable* pMT, intptr_t* result, INT32* pCount, QCallExceptionStatus* qcallError);
+extern "C" void QCALLTYPE RuntimeTypeHandle_VerifyInterfaceIsImplemented(QCall::TypeHandle pTypeHandle, QCall::TypeHandle pIFaceHandle, QCallExceptionStatus* qcallError);
+extern "C" MethodDesc* QCALLTYPE RuntimeTypeHandle_GetInterfaceMethodImplementation(QCall::TypeHandle pTypeHandle, QCall::TypeHandle pOwner, MethodDesc * pMD, QCallExceptionStatus* qcallError);
+extern "C" void QCALLTYPE RuntimeTypeHandle_GetDeclaringMethodForGenericParameter(QCall::TypeHandle pTypeHandle, QCall::ObjectHandleOnStack result, QCallExceptionStatus* qcallError);
+extern "C" EnregisteredTypeHandle QCALLTYPE RuntimeTypeHandle_GetDeclaringTypeHandleForGenericVariable(EnregisteredTypeHandle pTypeHandle, QCallExceptionStatus* qcallError);
+extern "C" EnregisteredTypeHandle QCALLTYPE RuntimeTypeHandle_GetDeclaringTypeHandle(EnregisteredTypeHandle pTypeHandle, QCallExceptionStatus* qcallError);
+extern "C" void QCALLTYPE RuntimeTypeHandle_RegisterCollectibleTypeDependency(QCall::TypeHandle pTypeHandle, QCall::AssemblyHandle pAssembly, QCallExceptionStatus* qcallError);
 
-class RuntimeMethodHandle
+extern "C"
 {
-public:
-    static FCDECL1(FC_BOOL_RET, IsCollectible, MethodDesc *pMethod);
-    static FCDECL1(INT32, GetAttributes, MethodDesc *pMethod);
-    static FCDECL1(INT32, GetImplAttributes, ReflectMethodObject *pMethodUNSAFE);
-    static FCDECL1(MethodTable*, GetMethodTable, MethodDesc *pMethod);
-    static FCDECL1(INT32, GetSlot, MethodDesc *pMethod);
-    static FCDECL1(INT32, GetMethodDef, MethodDesc *pMethod);
-    static FCDECL1(LPCUTF8, GetUtf8Name, MethodDesc *pMethod);
-    static
-    FCDECL1(FC_BOOL_RET, HasMethodInstantiation, MethodDesc *pMethod);
+    FCDECL1(FC_BOOL_RET, RuntimeMethodHandle_IsCollectible, MethodDesc *pMethod);
+    FCDECL1(INT32, RuntimeMethodHandle_GetAttributes, MethodDesc *pMethod);
+    FCDECL1(INT32, RuntimeMethodHandle_GetImplAttributes, ReflectMethodObject *pMethodUNSAFE);
+    FCDECL1(MethodTable*, RuntimeMethodHandle_GetMethodTable, MethodDesc *pMethod);
+    FCDECL1(INT32, RuntimeMethodHandle_GetSlot, MethodDesc *pMethod);
+    FCDECL1(INT32, RuntimeMethodHandle_GetMethodDef, MethodDesc *pMethod);
+    FCDECL1(LPCUTF8, RuntimeMethodHandle_GetUtf8NameInternal, MethodDesc *pMethod);
+    FCDECL1(FC_BOOL_RET, RuntimeMethodHandle_HasMethodInstantiation, MethodDesc *pMethod);
 
-    static
-    FCDECL1(FC_BOOL_RET, IsGenericMethodDefinition, MethodDesc *pMethod);
+    FCDECL1(FC_BOOL_RET, RuntimeMethodHandle_IsGenericMethodDefinition, MethodDesc *pMethod);
 
-    static
-    FCDECL1(FC_BOOL_RET, IsTypicalMethodDefinition, ReflectMethodObject *pMethodUNSAFE);
+    FCDECL1(FC_BOOL_RET, RuntimeMethodHandle_IsTypicalMethodDefinition, ReflectMethodObject *pMethodUNSAFE);
 
-    static
-    FCDECL1(INT32, GetGenericParameterCount, MethodDesc * pMethod);
+    FCDECL1(INT32, RuntimeMethodHandle_GetGenericParameterCount, MethodDesc * pMethod);
 
     // see comment in the cpp file
-    static FCDECL2(MethodDesc*, GetStubIfNeededInternal, MethodDesc *pMethod, ReflectClassBaseObject *pType);
-    static FCDECL2(MethodDesc*, GetMethodFromCanonical, MethodDesc *pMethod, PTR_ReflectClassBaseObject pType);
+    FCDECL2(MethodDesc*, RuntimeMethodHandle_GetStubIfNeededInternal, MethodDesc *pMethod, ReflectClassBaseObject *pType);
+    FCDECL2(MethodDesc*, RuntimeMethodHandle_GetMethodFromCanonical, MethodDesc *pMethod, PTR_ReflectClassBaseObject pType);
 
-    static
-    FCDECL1(FC_BOOL_RET, IsDynamicMethod, MethodDesc * pMethod);
+    FCDECL1(FC_BOOL_RET, RuntimeMethodHandle_IsDynamicMethod, MethodDesc * pMethod);
 
-    static
-    FCDECL1(Object*, GetResolver, MethodDesc * pMethod);
+    FCDECL1(Object*, RuntimeMethodHandle_GetResolver, MethodDesc * pMethod);
 
-    static FCDECL1(FC_BOOL_RET, IsConstructor, MethodDesc *pMethod);
+    FCDECL1(FC_BOOL_RET, RuntimeMethodHandle_IsConstructor, MethodDesc *pMethod);
 
-    static FCDECL1(FC_BOOL_RET, IsAsyncMethod, MethodDesc *pMethod);
+    FCDECL1(FC_BOOL_RET, RuntimeMethodHandle_IsAsyncMethod, MethodDesc *pMethod);
 
-    static FCDECL1(Object*, GetLoaderAllocatorInternal, MethodDesc *pMethod);
-};
+    FCDECL1(Object*, RuntimeMethodHandle_GetLoaderAllocatorInternal, MethodDesc *pMethod);
+}
 
-extern "C" MethodDesc* QCALLTYPE MethodBase_GetCurrentMethod(QCall::StackCrawlMarkHandle stackMark);
+extern "C" MethodDesc* QCALLTYPE MethodBase_GetCurrentMethod(QCall::StackCrawlMarkHandle stackMark, QCallExceptionStatus* qcallError);
 
 extern "C" BOOL QCALLTYPE RuntimeMethodHandle_IsCAVisibleFromDecoratedType(
         QCall::TypeHandle targetTypeHandle,
         MethodDesc * pTargetCtor,
         QCall::TypeHandle sourceTypeHandle,
-        QCall::ModuleHandle sourceModuleHandle);
+        QCall::ModuleHandle sourceModuleHandle,
+        QCallExceptionStatus* qcallError);
 
-extern "C" void QCALLTYPE RuntimeMethodHandle_GetMethodInstantiation(MethodDesc * pMethod, QCall::ObjectHandleOnStack retTypes, BOOL fAsRuntimeTypeArray);
+extern "C" void QCALLTYPE RuntimeMethodHandle_GetMethodInstantiation(MethodDesc * pMethod, QCall::ObjectHandleOnStack retTypes, BOOL fAsRuntimeTypeArray, QCallExceptionStatus* qcallError);
 
-extern "C" void QCALLTYPE RuntimeMethodHandle_InvokeMethod(
-    QCall::ObjectHandleOnStack target,
-    PVOID* args,
-    QCall::ObjectHandleOnStack pSigUNSAFE,
-    BOOL fConstructor,
-    QCall::ObjectHandleOnStack result);
-
-extern "C" void QCALLTYPE RuntimeMethodHandle_ConstructInstantiation(MethodDesc * pMethod, DWORD format, QCall::StringHandleOnStack retString);
-extern "C" void* QCALLTYPE RuntimeMethodHandle_GetFunctionPointer(MethodDesc * pMethod);
+extern "C" void QCALLTYPE RuntimeMethodHandle_ConstructInstantiation(MethodDesc * pMethod, DWORD format, QCall::StringHandleOnStack retString, QCallExceptionStatus* qcallError);
+extern "C" void* QCALLTYPE RuntimeMethodHandle_GetFunctionPointer(MethodDesc * pMethod, QCallExceptionStatus* qcallError);
+extern "C" void* QCALLTYPE RuntimeMethodHandle_GetVirtualFunctionPointer(MethodDesc* pMethod, QCall::TypeHandle declaringType, QCall::ObjectHandleOnStack target, QCallExceptionStatus* qcallError);
 extern "C" BOOL QCALLTYPE RuntimeMethodHandle_GetIsCollectible(MethodDesc * pMethod);
-extern "C" void QCALLTYPE RuntimeMethodHandle_GetTypicalMethodDefinition(MethodDesc * pMethod, QCall::ObjectHandleOnStack refMethod);
-extern "C" void QCALLTYPE RuntimeMethodHandle_StripMethodInstantiation(MethodDesc * pMethod, QCall::ObjectHandleOnStack refMethod);
-extern "C" void QCALLTYPE RuntimeMethodHandle_Destroy(MethodDesc * pMethod);
-extern "C" MethodDesc* QCALLTYPE RuntimeMethodHandle_GetStubIfNeededSlow(MethodDesc* pMethod, QCall::TypeHandle declaringTypeHandle, QCall::ObjectHandleOnStack methodInstantiation);
-extern "C" void QCALLTYPE RuntimeMethodHandle_GetMethodBody(MethodDesc* pMethod, QCall::TypeHandle pDeclaringType, QCall::ObjectHandleOnStack result);
+extern "C" void QCALLTYPE RuntimeMethodHandle_GetTypicalMethodDefinition(MethodDesc * pMethod, QCall::ObjectHandleOnStack refMethod, QCallExceptionStatus* qcallError);
+extern "C" void QCALLTYPE RuntimeMethodHandle_StripMethodInstantiation(MethodDesc * pMethod, QCall::ObjectHandleOnStack refMethod, QCallExceptionStatus* qcallError);
+extern "C" void QCALLTYPE RuntimeMethodHandle_Destroy(MethodDesc * pMethod, QCallExceptionStatus* qcallError);
+extern "C" MethodDesc* QCALLTYPE RuntimeMethodHandle_GetStubIfNeededSlow(MethodDesc* pMethod, QCall::TypeHandle declaringTypeHandle, QCall::ObjectHandleOnStack methodInstantiation, QCallExceptionStatus* qcallError);
+extern "C" PCODE QCALLTYPE RuntimeMethodHandle_GetDiagnosticCodeStart(MethodDesc* pMethod, QCallExceptionStatus* qcallError);
+extern "C" void QCALLTYPE RuntimeMethodHandle_GetMethodBody(MethodDesc* pMethod, QCall::TypeHandle pDeclaringType, QCall::ObjectHandleOnStack result, QCallExceptionStatus* qcallError);
 
-class RuntimeFieldHandle
+extern "C"
 {
-public:
-    static FCDECL1(FC_BOOL_RET, IsFastPathSupported, ReflectFieldObject *pField);
-    static FCDECL1(INT32, GetInstanceFieldOffset, ReflectFieldObject *pField);
-    static FCDECL1(void*, GetStaticFieldAddress, ReflectFieldObject *pField);
-    static FCDECL1(LPCUTF8, GetUtf8Name, FieldDesc *pField);
+    FCDECL1(FC_BOOL_RET, RuntimeFieldHandle_IsFastPathSupported, ReflectFieldObject *pField);
+    FCDECL1(INT32, RuntimeFieldHandle_GetInstanceFieldOffset, ReflectFieldObject *pField);
+    FCDECL1(void*, RuntimeFieldHandle_GetStaticFieldAddress, ReflectFieldObject *pField);
+    FCDECL1(LPCUTF8, RuntimeFieldHandle_GetUtf8NameInternal, FieldDesc *pField);
 
-    static FCDECL1(INT32, GetAttributes, FieldDesc *pField);
-    static FCDECL1(MethodTable*, GetApproxDeclaringMethodTable, FieldDesc *pField);
-    static FCDECL1(INT32, GetToken, FieldDesc* pField);
-    static FCDECL2(FieldDesc*, GetStaticFieldForGenericType, FieldDesc *pField, MethodTable *pMT);
-    static FCDECL1(FC_BOOL_RET, AcquiresContextFromThis, FieldDesc *pField);
-    static FCDECL1(Object*, GetLoaderAllocatorInternal, FieldDesc *pField);
-};
+    FCDECL1(INT32, RuntimeFieldHandle_GetAttributes, FieldDesc *pField);
+    FCDECL1(MethodTable*, RuntimeFieldHandle_GetApproxDeclaringMethodTable, FieldDesc *pField);
+    FCDECL1(INT32, RuntimeFieldHandle_GetToken, FieldDesc* pField);
+    FCDECL2(FieldDesc*, RuntimeFieldHandle_GetStaticFieldForGenericType, FieldDesc *pField, MethodTable *pMT);
+    FCDECL1(FC_BOOL_RET, RuntimeFieldHandle_AcquiresContextFromThis, FieldDesc *pField);
+    FCDECL1(Object*, RuntimeFieldHandle_GetLoaderAllocatorInternal, FieldDesc *pField);
+}
 
-extern "C" void QCALLTYPE RuntimeFieldHandle_GetValue(FieldDesc* fieldDesc, QCall::ObjectHandleOnStack instance, QCall::TypeHandle fieldType, QCall::TypeHandle declaringType, BOOL *pIsClassInitialized, QCall::ObjectHandleOnStack result);
-extern "C" void QCALLTYPE RuntimeFieldHandle_SetValue(FieldDesc* fieldDesc, QCall::ObjectHandleOnStack instance, QCall::ObjectHandleOnStack value, QCall::TypeHandle fieldType, QCall::TypeHandle declaringType, BOOL* pIsClassInitialized);
-extern "C" void QCALLTYPE RuntimeFieldHandle_GetValueDirect(FieldDesc* fieldDesc, TypedByRef *pTarget, QCall::TypeHandle fieldTypeHandle, QCall::TypeHandle declaringTypeHandle, QCall::ObjectHandleOnStack result);
-extern "C" void QCALLTYPE RuntimeFieldHandle_SetValueDirect(FieldDesc* fieldDesc, TypedByRef *pTarget, QCall::ObjectHandleOnStack newValue, QCall::TypeHandle fieldType, QCall::TypeHandle declaringType);
-extern "C" void* QCALLTYPE RuntimeFieldHandle_GetEnCFieldAddr(QCall::ObjectHandleOnStack target, FieldDesc* pFD);
-extern "C" BOOL QCALLTYPE RuntimeFieldHandle_GetRVAFieldInfo(FieldDesc* pField, void** address, UINT* size);
-extern "C" void QCALLTYPE RuntimeFieldHandle_GetFieldDataReference(FieldDesc* pField, QCall::ObjectHandleOnStack instance, QCall::ByteRefOnStack offset);
+extern "C" void QCALLTYPE RuntimeFieldHandle_GetValue(FieldDesc* fieldDesc, QCall::ObjectHandleOnStack instance, QCall::TypeHandle fieldType, QCall::TypeHandle declaringType, BOOL *pIsClassInitialized, QCall::ObjectHandleOnStack result, QCallExceptionStatus* qcallError);
+extern "C" void QCALLTYPE RuntimeFieldHandle_SetValue(FieldDesc* fieldDesc, QCall::ObjectHandleOnStack instance, QCall::ObjectHandleOnStack value, QCall::TypeHandle fieldType, QCall::TypeHandle declaringType, BOOL* pIsClassInitialized, QCallExceptionStatus* qcallError);
+extern "C" void QCALLTYPE RuntimeFieldHandle_GetValueDirect(FieldDesc* fieldDesc, TypedByRef *pTarget, QCall::TypeHandle fieldTypeHandle, QCall::TypeHandle declaringTypeHandle, QCall::ObjectHandleOnStack result, QCallExceptionStatus* qcallError);
+extern "C" void QCALLTYPE RuntimeFieldHandle_SetValueDirect(FieldDesc* fieldDesc, TypedByRef *pTarget, QCall::ObjectHandleOnStack newValue, QCall::TypeHandle fieldType, QCall::TypeHandle declaringType, QCallExceptionStatus* qcallError);
+extern "C" void* QCALLTYPE RuntimeFieldHandle_GetEnCFieldAddr(QCall::ObjectHandleOnStack target, FieldDesc* pFD, QCallExceptionStatus* qcallError);
+extern "C" BOOL QCALLTYPE RuntimeFieldHandle_GetRVAFieldInfo(FieldDesc* pField, void** address, UINT* size, QCallExceptionStatus* qcallError);
+extern "C" void QCALLTYPE RuntimeFieldHandle_GetFieldDataReference(FieldDesc* pField, QCall::ObjectHandleOnStack instance, QCall::ByteRefOnStack offset, QCallExceptionStatus* qcallError);
 
 extern "C" INT32 QCALLTYPE ModuleHandle_GetMDStreamVersion(QCall::ModuleHandle pModule);
-extern "C" void QCALLTYPE ModuleHandle_GetModuleType(QCall::ModuleHandle pModule, QCall::ObjectHandleOnStack retType);
+extern "C" void QCALLTYPE ModuleHandle_GetModuleType(QCall::ModuleHandle pModule, QCall::ObjectHandleOnStack retType, QCallExceptionStatus* qcallError);
 
 extern "C" INT32 QCALLTYPE ModuleHandle_GetToken(QCall::ModuleHandle pModule);
 
-extern "C" void QCALLTYPE ModuleHandle_ResolveType(QCall::ModuleHandle pModule, INT32 tkType, TypeHandle *typeArgs, INT32 typeArgsCount, TypeHandle *methodArgs, INT32 methodArgsCount, QCall::ObjectHandleOnStack retType);
+extern "C" void QCALLTYPE ModuleHandle_ResolveType(QCall::ModuleHandle pModule, INT32 tkType, TypeHandle *typeArgs, INT32 typeArgsCount, TypeHandle *methodArgs, INT32 methodArgsCount, QCall::ObjectHandleOnStack retType, QCallExceptionStatus* qcallError);
 
-extern "C" MethodDesc * QCALLTYPE ModuleHandle_ResolveMethod(QCall::ModuleHandle pModule, INT32 tkMemberRef, TypeHandle *typeArgs, INT32 typeArgsCount, TypeHandle *methodArgs, INT32 methodArgsCount);
+extern "C" MethodDesc * QCALLTYPE ModuleHandle_ResolveMethod(QCall::ModuleHandle pModule, INT32 tkMemberRef, TypeHandle *typeArgs, INT32 typeArgsCount, TypeHandle *methodArgs, INT32 methodArgsCount, QCallExceptionStatus* qcallError);
 
-extern "C" void QCALLTYPE ModuleHandle_ResolveField(QCall::ModuleHandle pModule, INT32 tkMemberRef, TypeHandle *typeArgs, INT32 typeArgsCount, TypeHandle *methodArgs, INT32 methodArgsCount, QCall::ObjectHandleOnStack retField);
+extern "C" void QCALLTYPE ModuleHandle_ResolveField(QCall::ModuleHandle pModule, INT32 tkMemberRef, TypeHandle *typeArgs, INT32 typeArgsCount, TypeHandle *methodArgs, INT32 methodArgsCount, QCall::ObjectHandleOnStack retField, QCallExceptionStatus* qcallError);
 
-extern "C" void QCALLTYPE ModuleHandle_GetPEKind(QCall::ModuleHandle pModule, DWORD* pdwPEKind, DWORD* pdwMachine);
+extern "C" void QCALLTYPE ModuleHandle_GetPEKind(QCall::ModuleHandle pModule, DWORD* pdwPEKind, DWORD* pdwMachine, QCallExceptionStatus* qcallError);
 
-extern "C" void QCALLTYPE ModuleHandle_GetDynamicMethod(QCall::ModuleHandle pModule, const char* name, byte* sig, INT32 sigLen, QCall::ObjectHandleOnStack resolver, QCall::ObjectHandleOnStack result);
+extern "C" void QCALLTYPE ModuleHandle_GetDynamicMethod(QCall::ModuleHandle pModule, const char* name, byte* sig, INT32 sigLen, QCall::ObjectHandleOnStack resolver, BOOL isDiagnosticsHidden, QCall::ObjectHandleOnStack result, QCallExceptionStatus* qcallError);
 
-class AssemblyHandle
+extern "C"
 {
-public:
-    static FCDECL1(ReflectModuleBaseObject*, GetManifestModule, AssemblyBaseObject *pAssemblyUNSAFE);
-    static FCDECL1(INT32, GetTokenInternal, AssemblyBaseObject *pAssemblyUNSAFE);
-};
+    FCDECL1(ReflectModuleBaseObject*, RuntimeAssembly_GetManifestModule, AssemblyBaseObject *pAssemblyUNSAFE);
+    FCDECL1(INT32, RuntimeAssembly_GetTokenInternal, AssemblyBaseObject *pAssemblyUNSAFE);
+}
 
-extern "C" void QCALLTYPE AssemblyHandle_GetManifestModuleSlow(QCall::ObjectHandleOnStack assembly, QCall::ObjectHandleOnStack module);
+extern "C" void QCALLTYPE AssemblyHandle_GetManifestModuleSlow(QCall::ObjectHandleOnStack assembly, QCall::ObjectHandleOnStack module, QCallExceptionStatus* qcallError);
 
 extern "C" void QCALLTYPE Signature_Init(
     QCall::ObjectHandleOnStack sigObj,
     PCCOR_SIGNATURE pCorSig, DWORD cCorSig,
     FieldDesc* pFieldDesc,
-    MethodDesc* pMethodDesc);
+    MethodDesc* pMethodDesc,
+    QCallExceptionStatus* qcallError);
 
 extern "C" BOOL QCALLTYPE Signature_AreEqual(
     PCCOR_SIGNATURE sig1, INT32 cSig1, QCall::TypeHandle handle1,
-    PCCOR_SIGNATURE sig2, INT32 cSig2, QCall::TypeHandle handle2);
+    PCCOR_SIGNATURE sig2, INT32 cSig2, QCall::TypeHandle handle2,
+    QCallExceptionStatus* qcallError);
 
 extern "C" void QCALLTYPE Signature_GetCustomModifiersAtOffset(
     QCall::ObjectHandleOnStack sigObj,
     INT32 offset,
     BOOL fRequired,
-    QCall::ObjectHandleOnStack result);
+    QCall::ObjectHandleOnStack result,
+    QCallExceptionStatus* qcallError);
 
 class SignatureNative : public Object
 {
@@ -318,16 +301,11 @@ class SignatureNative : public Object
         QCall::ObjectHandleOnStack sigObj,
         PCCOR_SIGNATURE pCorSig, DWORD cCorSig,
         FieldDesc* pFieldDesc,
-        MethodDesc* pMethodDesc);
+        MethodDesc* pMethodDesc,
+        QCallExceptionStatus* qcallError);
     friend class ArgIteratorForMethodInvoke;
 
 public:
-    static FCDECL3(INT32, GetParameterOffsetInternal, PCCOR_SIGNATURE sig, DWORD csig, INT32 parameterIndex);
-
-    static FCDECL4(INT32, GetTypeParameterOffsetInternal, PCCOR_SIGNATURE sig, DWORD csig, INT32 offset, INT32 index);
-
-    static FCDECL3(INT32, GetCallingConventionFromFunctionPointerAtOffsetInternal, PCCOR_SIGNATURE sig, DWORD csig, INT32 offset);
-
     BOOL HasThis() { LIMITED_METHOD_CONTRACT; return (_managedCallingConventionAndArgIteratorFlags & CALLCONV_HasThis); }
     INT32 NumFixedArgs() { WRAPPER_NO_CONTRACT; return _arguments->GetNumComponents(); }
     TypeHandle GetReturnTypeHandle()
@@ -487,6 +465,13 @@ private:
     INT32 _nSizeOfArgStack;
     MethodDesc* _pMethod;
 };
+
+extern "C"
+{
+    FCDECL3(INT32, Signature_GetParameterOffsetInternal, PCCOR_SIGNATURE sig, DWORD csig, INT32 parameterIndex);
+    FCDECL4(INT32, Signature_GetTypeParameterOffsetInternal, PCCOR_SIGNATURE sig, DWORD csig, INT32 offset, INT32 index);
+    FCDECL3(INT32, Signature_GetCallingConventionFromFunctionPointerAtOffsetInternal, PCCOR_SIGNATURE sig, DWORD csig, INT32 offset);
+}
 
 typedef DPTR(SignatureNative) PTR_SignatureNative;
 

@@ -13,9 +13,13 @@ using Xunit;
 
 namespace System.Runtime.Intrinsics.Wasm.Tests
 {
-    [PlatformSpecific(TestPlatforms.Browser)]
+    [PlatformSpecific(TestPlatforms.Browser | TestPlatforms.Wasi)]
+    [ConditionalClass(typeof(PackedSimdTests), nameof(IsSupported))]
     public sealed class PackedSimdTests
     {
+        // The CoreCLR interpreter does not implement PackedSimd; ReadyToRun code does.
+        public static bool IsSupported => PlatformDetection.IsMonoRuntime || PlatformDetection.IsReadyToRunCompiled;
+
         [Fact]
         [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(PackedSimd))]
         public unsafe void PackedSimdIsSupported()
@@ -478,6 +482,46 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
 
             var swizzled = PackedSimd.Swizzle(v, indices);
             Assert.Equal(Vector128.Create((byte)4, 3, 2, 1, 8, 7, 6, 5, 12, 11, 10, 9, 16, 15, 14, 13), swizzled);
+        }
+
+        [Fact]
+        public void ShuffleConstantIndicesTest()
+        {
+            Vector128<byte> lower = Vector128.Create((byte)0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);
+            Vector128<byte> upper = Vector128.Create((byte)16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31);
+
+            Vector128<byte> interleaved = PackedSimd.Shuffle(lower, upper, Vector128.Create((byte)0, 16, 1, 17, 2, 18, 3, 19, 4, 20, 5, 21, 6, 22, 7, 23));
+            Assert.Equal(Vector128.Create((byte)0, 16, 1, 17, 2, 18, 3, 19, 4, 20, 5, 21, 6, 22, 7, 23), interleaved);
+
+            Vector128<sbyte> reversed = PackedSimd.Shuffle(lower.AsSByte(), upper.AsSByte(), Vector128.Create((sbyte)31, 30, 29, 28, 27, 26, 25, 24, 7, 6, 5, 4, 3, 2, 1, 0));
+            Assert.Equal(Vector128.Create((sbyte)31, 30, 29, 28, 27, 26, 25, 24, 7, 6, 5, 4, 3, 2, 1, 0), reversed);
+        }
+
+        [Theory]
+        [InlineData(new byte[] { 0, 16, 1, 17, 2, 18, 3, 19, 4, 20, 5, 21, 6, 22, 7, 23 })]
+        [InlineData(new byte[] { 31, 30, 29, 28, 27, 26, 25, 24, 7, 6, 5, 4, 3, 2, 1, 0 })]
+        [InlineData(new byte[] { 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30 })]
+        public void ShuffleVariableIndicesTest(byte[] indices)
+        {
+            Vector128<byte> lower = Vector128.Create((byte)100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115);
+            Vector128<byte> upper = Vector128.Create((byte)116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131);
+            Vector128<byte> indexVector = Vector128.Create(indices);
+
+            Vector128<byte> expected = indexVector + Vector128.Create((byte)100);
+
+            Assert.Equal(expected, PackedSimd.Shuffle(lower, upper, indexVector));
+            Assert.Equal(expected.AsSByte(), PackedSimd.Shuffle(lower.AsSByte(), upper.AsSByte(), indexVector.AsSByte()));
+        }
+
+        [Theory]
+        [InlineData((byte)32)]
+        [InlineData((byte)0xFF)]
+        [SkipOnMono("Mono masks out-of-range shuffle indices instead of throwing.")]
+        public void ShuffleVariableIndicesOutOfRangeThrows(byte outOfRangeIndex)
+        {
+            Vector128<byte> indices = Vector128.Create((byte)0).WithElement(5, outOfRangeIndex);
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => PackedSimd.Shuffle(Vector128<byte>.Zero, Vector128<byte>.One, indices));
         }
 
         [Fact]

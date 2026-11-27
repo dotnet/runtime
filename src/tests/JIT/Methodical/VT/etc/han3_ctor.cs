@@ -69,14 +69,22 @@ namespace JitTest_han3_ctor_cs
             return C;
         }
 
-        [Fact]
-        [OuterLoop]
-        public static int TestEntryPoint()
+        public static int Run()
         {
             return move(new Column(17, 17),
                         new Column(17, 0),
                         new Column(17, 0),
                         17) - 130971;
+        }
+    }
+
+    public class Han3CtorTest
+    {
+        [Fact]
+        [OuterLoop]
+        public static int TestEntryPoint()
+        {
+            return Column.Run();
         }
     }
 }

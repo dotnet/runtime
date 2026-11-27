@@ -309,6 +309,45 @@ namespace System.Runtime.Loader
             return AssemblyName.GetAssemblyName(assemblyPath);
         }
 
+        // Callback that, when set, can override the value returned by Assembly.Location.
+        private static Func<Assembly, string, string>? s_assemblyLocationOverride;
+
+        /// <summary>
+        /// Sets a process-wide callback that overrides the value returned by <see cref="Assembly.Location"/>.
+        /// </summary>
+        /// <remarks>
+        /// The callback can only be set once for the lifetime of the process. The callback should not
+        /// call <see cref="Assembly.Location"/> on the provided assembly to avoid recursion.
+        /// </remarks>
+        /// <param name="locationOverride">
+        /// A callback that receives an <see cref="Assembly"/> and the location the runtime computed for it, and
+        /// returns the value that <see cref="Assembly.Location"/> should report.
+        /// </param>
+        /// <exception cref="ArgumentNullException"><paramref name="locationOverride"/> is <see langword="null"/>.</exception>
+        /// <exception cref="InvalidOperationException">The location override has already been set.</exception>
+        public static void SetAssemblyLocationOverride(Func<Assembly, string, string> locationOverride)
+        {
+            ArgumentNullException.ThrowIfNull(locationOverride);
+
+            if (Interlocked.CompareExchange(ref s_assemblyLocationOverride, locationOverride, null) is not null)
+            {
+                throw new InvalidOperationException(SR.InvalidOperation_AssemblyLocationOverrideAlreadySet);
+            }
+        }
+
+        // Applies the location override callback (if any) to the location the runtime computed for the assembly.
+        // Called from each runtime's RuntimeAssembly.Location implementation.
+        internal static string ResolveAssemblyLocation(Assembly assembly, string originalLocation)
+        {
+            Func<Assembly, string, string>? locationOverride = s_assemblyLocationOverride;
+            if (locationOverride is null)
+            {
+                return originalLocation;
+            }
+
+            return locationOverride(assembly, originalLocation);
+        }
+
         // Custom AssemblyLoadContext implementations can override this
         // method to perform custom processing and use one of the protected
         // helpers above to load the assembly.
@@ -345,7 +384,7 @@ namespace System.Runtime.Loader
             {
                 VerifyIsAlive();
 
-                return InternalLoadFromPath(assemblyPath, null);
+                return InternalLoadFromPath(assemblyPath);
             }
         }
 
@@ -368,7 +407,7 @@ namespace System.Runtime.Loader
             {
                 VerifyIsAlive();
 
-                return InternalLoadFromPath(assemblyPath, nativeImagePath);
+                return InternalLoadFromPath(assemblyPath);
             }
         }
 
@@ -625,7 +664,7 @@ namespace System.Runtime.Loader
                 {
                     TraceResolvingHandlerInvoked(
                         assemblyName.FullName,
-                        handler.Method.Name,
+                        handler.Method.DeclaringType is Type declaringType ? $"{declaringType.FullName}.{handler.Method.Name}" : handler.Method.Name,
                         this != Default ? ToString() : Name,
                         resolvedAssembly?.FullName,
                         resolvedAssembly != null && !resolvedAssembly.IsDynamic ? resolvedAssembly.Location : null);
@@ -722,7 +761,7 @@ namespace System.Runtime.Loader
                 {
                     TraceAssemblyResolveHandlerInvoked(
                         name,
-                        handler.Method.Name,
+                        handler.Method.DeclaringType is Type declaringType ? $"{declaringType.FullName}.{handler.Method.Name}" : handler.Method.Name,
                         asm?.FullName,
                         asm != null && !asm.IsDynamic ? asm.Location : null);
                 }
@@ -858,11 +897,29 @@ namespace System.Runtime.Loader
             AssemblyLoadContext parentALC = GetLoadContext(parentAssembly)!;
 
             string? parentDirectory = Path.GetDirectoryName(parentAssembly.Location);
+
+#if TARGET_BROWSER
+            // On Browser/WASM, assemblies loaded via external_assembly_probe have empty Location
+            // (PEAssembly::GetPath returns empty for IsExternalData). Satellite assemblies are
+            // registered in JS loadedAssemblies with virtual paths like "/{culture}/{name}.dll".
+            // Construct the path matching the JS loader's normalizeVirtualPath format.
+            string assemblyPath = string.IsNullOrEmpty(parentDirectory)
+                ? $"/{assemblyName.CultureName}/{assemblyName.Name}.dll"
+                : Path.Combine(parentDirectory, assemblyName.CultureName!, $"{assemblyName.Name}.dll");
+
+            try
+            {
+                return (RuntimeAssembly?)parentALC.LoadFromAssemblyPath(assemblyPath);
+            }
+            catch (FileNotFoundException)
+            {
+                return null;
+            }
+#else
             if (parentDirectory == null)
                 return null;
 
             string assemblyPath = Path.Combine(parentDirectory, assemblyName.CultureName!, $"{assemblyName.Name}.dll");
-
             bool exists = FileSystem.FileExists(assemblyPath);
             if (!exists && PathInternal.IsCaseSensitive)
             {
@@ -885,6 +942,7 @@ namespace System.Runtime.Loader
 #endif // CORECLR
 
             return asm;
+#endif // TARGET_BROWSER
         }
 
         internal IntPtr GetResolvedUnmanagedDll(Assembly assembly, string unmanagedDllName)

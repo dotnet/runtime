@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -106,10 +106,10 @@ namespace System.Text
         /// <summary>Parse the composite format string into segments.</summary>
         /// <param name="format">The format string.</param>
         /// <param name="segments">The list into which to store the segments.</param>
-        /// <param name="failureOffset">The offset at which a parsing error occured if <see langword="false"/> is returned.</param>
+        /// <param name="failureOffset">The offset at which a parsing error occurred if <see langword="false"/> is returned.</param>
         /// <param name="failureReason">The reason for a parsing failure if <see langword="false"/> is returned.</param>
         /// <returns>true if the format string can be parsed successfully; otherwise, false.</returns>
-        private static bool TryParseLiterals(ReadOnlySpan<char> format, List<(string? Literal, int ArgIndex, int Alignment, string? Format)> segments, ref int failureOffset, ref ExceptionResource failureReason)
+        private static unsafe bool TryParseLiterals(ReadOnlySpan<char> format, List<(string? Literal, int ArgIndex, int Alignment, string? Format)> segments, ref int failureOffset, ref ExceptionResource failureReason)
         {
             // This parsing logic is copied from string.Format.  It's the same code modified to not format
             // as part of parsing and instead store the parsed literals and argument specifiers (alignment

@@ -1,1 +1,5 @@
-<Project />
+<Project>
+  <PropertyGroup>
+    <UseMonoRuntime>false</UseMonoRuntime>
+  </PropertyGroup>
+</Project>

@@ -16,11 +16,11 @@ namespace System.Security.Cryptography
         };
 
         internal static void ReadDsaPrivateKey(
-            ReadOnlyMemory<byte> xBytes,
-            in AlgorithmIdentifierAsn algId,
+            ReadOnlySpan<byte> xBytes,
+            in ValueAlgorithmIdentifierAsn algId,
             out DSAParameters ret)
         {
-            if (!algId.Parameters.HasValue)
+            if (!algId.HasParameters)
             {
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }
@@ -30,7 +30,7 @@ namespace System.Security.Cryptography
             try
             {
                 ReadOnlySpan<byte> xSpan = AsnDecoder.ReadIntegerBytes(
-                    xBytes.Span,
+                    xBytes,
                     AsnEncodingRules.DER,
                     out int consumed);
 
@@ -47,7 +47,11 @@ namespace System.Security.Cryptography
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
             }
 
-            DssParms parms = DssParms.Decode(algId.Parameters.Value, AsnEncodingRules.BER);
+            ValueDssParms.Decode(algId.Parameters, AsnEncodingRules.BER, out ValueDssParms parms);
+
+            BigInteger p = new BigInteger(parms.P, isBigEndian: true);
+            BigInteger q = new BigInteger(parms.Q, isBigEndian: true);
+            BigInteger g = new BigInteger(parms.G, isBigEndian: true);
 
             // Sanity checks from FIPS 186-4 4.1/4.2.  Since FIPS 186-5 withdrew DSA/DSS
             // these will never change again.
@@ -55,38 +59,40 @@ namespace System.Security.Cryptography
             // This technically allows a non-standard combination of 1024-bit P and 256-bit Q,
             // but that will get filtered out by the underlying provider.
             // These checks just prevent obviously bad data from wasting work on reinterpretation.
-            if (parms.P.Sign < 0 ||
-                parms.Q.Sign < 0 ||
-                !IsValidPLength(parms.P.GetBitLength()) ||
-                !IsValidQLength(parms.Q.GetBitLength()) ||
-                parms.G <= 1 ||
-                parms.G >= parms.P ||
+            if (p.Sign < 0 ||
+                q.Sign < 0 ||
+                !IsValidPLength(p.GetBitLength()) ||
+                !IsValidQLength(q.GetBitLength()) ||
+                g <= 1 ||
+                g >= p ||
                 x <= 1 ||
-                x >= parms.Q)
+                x >= q)
             {
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }
 
+            // BigInteger.ToByteArray saves us the trouble of skipping over padding zeroes
+            // compared to params.P.
             ret = new DSAParameters
             {
-                P = parms.P.ToByteArray(isUnsigned: true, isBigEndian: true),
-                Q = parms.Q.ToByteArray(isUnsigned: true, isBigEndian: true),
+                P = p.ToByteArray(isUnsigned: true, isBigEndian: true),
+                Q = q.ToByteArray(isUnsigned: true, isBigEndian: true),
             };
 
-            ret.G = parms.G.ExportKeyParameter(ret.P.Length);
+            ret.G = g.ExportKeyParameter(ret.P.Length);
             ret.X = x.ExportKeyParameter(ret.Q.Length);
 
             // The public key is not contained within the format, calculate it.
-            BigInteger y = BigInteger.ModPow(parms.G, x, parms.P);
+            BigInteger y = BigInteger.ModPow(g, x, p);
             ret.Y = y.ExportKeyParameter(ret.P.Length);
         }
 
         internal static void ReadDsaPublicKey(
-            ReadOnlyMemory<byte> yBytes,
-            in AlgorithmIdentifierAsn algId,
+            ReadOnlySpan<byte> yBytes,
+            in ValueAlgorithmIdentifierAsn algId,
             out DSAParameters ret)
         {
-            if (!algId.Parameters.HasValue)
+            if (!algId.HasParameters)
             {
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }
@@ -96,7 +102,7 @@ namespace System.Security.Cryptography
             try
             {
                 y = AsnDecoder.ReadInteger(
-                    yBytes.Span,
+                    yBytes,
                     AsnEncodingRules.DER,
                     out int consumed);
 
@@ -110,7 +116,11 @@ namespace System.Security.Cryptography
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
             }
 
-            DssParms parms = DssParms.Decode(algId.Parameters.Value, AsnEncodingRules.BER);
+            ValueDssParms.Decode(algId.Parameters, AsnEncodingRules.BER, out ValueDssParms parms);
+
+            BigInteger p = new BigInteger(parms.P, isBigEndian: true);
+            BigInteger q = new BigInteger(parms.Q, isBigEndian: true);
+            BigInteger g = new BigInteger(parms.G, isBigEndian: true);
 
             // Sanity checks from FIPS 186-4 4.1/4.2.  Since FIPS 186-5 withdrew DSA/DSS
             // these will never change again.
@@ -118,25 +128,27 @@ namespace System.Security.Cryptography
             // This technically allows a non-standard combination of 1024-bit P and 256-bit Q,
             // but that will get filtered out by the underlying provider.
             // These checks just prevent obviously bad data from wasting work on reinterpretation.
-            if (parms.P.Sign < 0 ||
-                parms.Q.Sign < 0 ||
-                !IsValidPLength(parms.P.GetBitLength()) ||
-                !IsValidQLength(parms.Q.GetBitLength()) ||
-                parms.G <= 1 ||
-                parms.G >= parms.P ||
+            if (p.Sign < 0 ||
+                q.Sign < 0 ||
+                !IsValidPLength(p.GetBitLength()) ||
+                !IsValidQLength(q.GetBitLength()) ||
+                g <= 1 ||
+                g >= p ||
                 y <= 1 ||
-                y >= parms.P)
+                y >= p)
             {
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }
 
+            // BigInteger.ToByteArray saves us the trouble of skipping over padding zeroes
+            // compared to params.P.
             ret = new DSAParameters
             {
-                P = parms.P.ToByteArray(isUnsigned: true, isBigEndian: true),
-                Q = parms.Q.ToByteArray(isUnsigned: true, isBigEndian: true),
+                P = p.ToByteArray(isUnsigned: true, isBigEndian: true),
+                Q = q.ToByteArray(isUnsigned: true, isBigEndian: true),
             };
 
-            ret.G = parms.G.ExportKeyParameter(ret.P.Length);
+            ret.G = g.ExportKeyParameter(ret.P.Length);
             ret.Y = y.ExportKeyParameter(ret.P.Length);
         }
 
@@ -170,16 +182,6 @@ namespace System.Security.Cryptography
                 ReadDsaPublicKey,
                 out bytesRead,
                 out key);
-        }
-
-        internal static ReadOnlyMemory<byte> ReadSubjectPublicKeyInfo(
-             ReadOnlyMemory<byte> source,
-             out int bytesRead)
-        {
-            return KeyFormatHelper.ReadSubjectPublicKeyInfo(
-                s_validOids,
-                source,
-                out bytesRead);
         }
 
         internal static void ReadPkcs8(

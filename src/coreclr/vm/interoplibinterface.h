@@ -43,7 +43,7 @@ public: // Identification
 public: // Exceptions
     static void* GetPropagatingExceptionCallback(
         _In_ EECodeInfo* codeInfo,
-        _In_ OBJECTHANDLE throwable,
+        _In_ OBJECTREF throwable,
         _Outptr_ void** context);
 
 public: // GC interaction
@@ -52,20 +52,40 @@ public: // GC interaction
     static void OnEnteredFinalizerQueue(_In_ OBJECTREF object);
 };
 
+class ObjcTrackingInformationObject final : public Object
+{
+    friend class CoreLibBinder;
+public:
+    INT_PTR _memory;
+    INT_PTR _longWeakHandle;
+};
+
+#ifdef USE_CHECKED_OBJECTREFS
+using OBJC_TRACKING_INFO_REF = REF<ObjcTrackingInformationObject>;
+#else
+using OBJC_TRACKING_INFO_REF = DPTR(ObjcTrackingInformationObject);
+#endif
+
 
 extern "C" BOOL QCALLTYPE ObjCMarshal_TryInitializeReferenceTracker(
     _In_ ObjCMarshalNative::BeginEndCallback beginEndCallback,
     _In_ ObjCMarshalNative::IsReferencedCallback isReferencedCallback,
-    _In_ ObjCMarshalNative::EnteredFinalizationCallback trackedObjectEnteredFinalization);
+    _In_ ObjCMarshalNative::EnteredFinalizationCallback trackedObjectEnteredFinalization,
+    _In_ QCall::ObjectHandleOnStack objectTrackingInfoTable,
+    QCallExceptionStatus* qcallError);
 
-extern "C" void* QCALLTYPE ObjCMarshal_CreateReferenceTrackingHandle(
+extern "C" void* QCALLTYPE ObjCMarshal_AllocateReferenceTrackingHandle(_In_ QCall::ObjectHandleOnStack obj, QCallExceptionStatus* qcallError);
+
+extern "C" void QCALLTYPE ObjCMarshal_GetOrCreateReferenceTrackingMemory(
     _In_ QCall::ObjectHandleOnStack obj,
     _Out_ int* memInSizeT,
     _Outptr_ void** mem);
 
 extern "C" BOOL QCALLTYPE ObjCMarshal_TrySetGlobalMessageSendCallback(
     _In_ ObjCMarshalNative::MessageSendFunction msgSendFunction,
-    _In_ void* fptr);
+    _In_ void* fptr,
+    QCallExceptionStatus* qcallError);
+
 #endif // FEATURE_OBJCMARSHAL
 
 #ifdef FEATURE_JAVAMARSHAL
@@ -77,16 +97,19 @@ public: // GC interaction
 };
 
 extern "C" BOOL QCALLTYPE JavaMarshal_Initialize(
-    _In_ void* markCrossReferences);
+    _In_ void* markCrossReferences,
+    QCallExceptionStatus* qcallError);
 
 extern "C" void* QCALLTYPE JavaMarshal_CreateReferenceTrackingHandle(
     _In_ QCall::ObjectHandleOnStack obj,
-    _In_ void* context);
+    _In_ void* context,
+    QCallExceptionStatus* qcallError);
 
 extern "C" void QCALLTYPE JavaMarshal_FinishCrossReferenceProcessing(
     _In_ MarkCrossReferencesArgs *crossReferences,
     _In_ size_t length,
-    _In_ void* unreachableObjectHandles);
+    _In_ void* unreachableObjectHandles,
+    QCallExceptionStatus* qcallError);
 
 extern "C" BOOL QCALLTYPE JavaMarshal_GetContext(
     _In_ OBJECTHANDLE handle,
@@ -105,7 +128,7 @@ public:
 
     static ManagedToNativeExceptionCallback GetPropagatingExceptionCallback(
         _In_ EECodeInfo* codeInfo,
-        _In_ OBJECTHANDLE throwable,
+        _In_ OBJECTREF throwable,
         _Outptr_ void** context);
 
     // Notify started/finished when GC is running.
@@ -126,6 +149,10 @@ public:
 #ifdef FEATURE_JAVAMARSHAL
 
     static bool IsGCBridgeActive();
+
+    static bool TryGetObjectFromHandleWithoutBridgeWait(
+        _In_ OBJECTHANDLE handle,
+        _Out_ Object** result);
 
     static void WaitForGCBridgeFinish();
 

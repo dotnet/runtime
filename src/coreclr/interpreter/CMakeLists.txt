@@ -25,9 +25,9 @@ if(CLR_CMAKE_HOST_WIN32)
     ${STATIC_MT_CRT_LIB}
     ${STATIC_MT_VCRT_LIB}
   )
-  list(APPEND INTERPRETER_SOURCES
-    Native.rc
-  )
+  # Native.rc is added only to the shared library, not to the statically linked one,
+  # to prevent VERSION duplicates
+  set(INTERPRETER_RESOURCES Native.rc)
   add_definitions(-DFX_VER_INTERNALNAME_STR=clrinterpreter.dll)
 endif()
 
@@ -47,12 +47,27 @@ add_library_clr(clrinterpreter_objects OBJECT ${INTERPRETER_SOURCES})
 
 target_include_directories(clrinterpreter_objects PRIVATE ../jitshared)
 
+if (FEATURE_INTERPRETER_DIRECT_CALLS)
+  target_include_directories(clrinterpreter_objects PRIVATE
+    ../vm
+    ../vm/${ARCH_SOURCES_DIR}
+    ../interop/inc
+    ${CLR_SRC_NATIVE_DIR}
+    ${RUNTIME_DIR}
+  )
+  add_dependencies(clrinterpreter_objects eventing_headers)
+endif()
+
+if (FEATURE_PERFTRACING AND FEATURE_PERFTRACING_DISABLE_THREADS)
+  target_compile_definitions(clrinterpreter_objects PRIVATE PERFTRACING_DISABLE_THREADS)
+endif()
+
 if (NOT CMAKE_GENERATOR MATCHES "Visual Studio")
   set_target_properties(clrinterpreter_objects PROPERTIES EXCLUDE_FROM_ALL $<NOT:${FEATURE_INTERPRETER}>)
 endif()
 
-if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
-  add_library_clr(clrinterpreter SHARED $<TARGET_OBJECTS:clrinterpreter_objects> $<TARGET_OBJECTS:dn-containers>)
+if (FEATURE_DYNAMIC_CODE_COMPILED AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
+  add_library_clr(clrinterpreter SHARED $<TARGET_OBJECTS:clrinterpreter_objects> $<TARGET_OBJECTS:dn-containers> ${INTERPRETER_RESOURCES})
 else()
   add_library_clr(clrinterpreter STATIC $<TARGET_OBJECTS:clrinterpreter_objects> $<TARGET_OBJECTS:dn-containers>)
 endif()

@@ -1,12 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <Nullable>disable</Nullable>
     <Win32Resource>EventLogMessages.res</Win32Resource>
     <!-- Override the parent Directory.Build.props -->
     <SupportedOSPlatforms />
     <EnableLibraryImportGenerator>false</EnableLibraryImportGenerator>
     <SkipIncludePolyfills>true</SkipIncludePolyfills>
     <SkipIncludeNullableAttributes>true</SkipIncludeNullableAttributes>
+    <!-- Must contain no types, but the updated memory safety rules make the compiler embed attribute types. -->
+    <MemorySafetyRulesVersion>1</MemorySafetyRulesVersion>
   </PropertyGroup>
 </Project>

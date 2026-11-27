@@ -8,14 +8,10 @@ using System.Runtime.InteropServices;
 
 namespace System.Security.Cryptography.X509Certificates.Asn1
 {
-    [StructLayout(LayoutKind.Sequential)]
-    internal partial struct TimeAsn
-    {
-        internal DateTimeOffset? UtcTime;
-        internal DateTimeOffset? GeneralTime;
-
 #if DEBUG
-        static TimeAsn()
+    file static class ValidateTimeAsn
+    {
+        static ValidateTimeAsn()
         {
             var usedTags = new System.Collections.Generic.Dictionary<Asn1Tag, string>();
             Action<Asn1Tag, string> ensureUniqueTag = (tag, fieldName) =>
@@ -30,6 +26,25 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
 
             ensureUniqueTag(Asn1Tag.UtcTime, "UtcTime");
             ensureUniqueTag(Asn1Tag.GeneralizedTime, "GeneralTime");
+        }
+
+        [System.Runtime.CompilerServices.MethodImpl(
+            System.Runtime.CompilerServices.MethodImplOptions.NoInlining |
+            System.Runtime.CompilerServices.MethodImplOptions.NoOptimization)]
+        internal static void Validate() { }
+    }
+#endif
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal partial struct TimeAsn
+    {
+        internal DateTimeOffset? UtcTime;
+        internal DateTimeOffset? GeneralTime;
+
+#if DEBUG
+        static TimeAsn()
+        {
+            ValidateTimeAsn.Validate();
         }
 #endif
 

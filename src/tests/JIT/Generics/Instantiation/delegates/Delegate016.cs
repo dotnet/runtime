@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+namespace JitTest_Generics_Instantiation_delegates_Delegate016;
+
 using System;
 using System.Threading;
 using Xunit;
@@ -23,6 +25,7 @@ internal struct Foo<T> : IFoo<T>
 
 public class Test_Delegate016
 {
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

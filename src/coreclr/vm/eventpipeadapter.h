@@ -216,7 +216,7 @@ public:
 		ep_char8_t *outputPathUTF8 = NULL;
 		if (outputPath)
 			outputPathUTF8 = ep_rt_utf16_to_utf8_string (reinterpret_cast<const ep_char16_t *>(outputPath));
-		EventPipeSessionID result = ep_enable (
+		EventPipeSessionID result = ep_init_session (
 			outputPathUTF8,
 			circularBufferSizeInMB,
 			providerConfigs.GetProviderConfigs(),
@@ -254,7 +254,7 @@ public:
 		}
 		CONTRACTL_END;
 
-		ep_start_streaming(id);
+		ep_start_session(id);
 	}
 
 	static inline EventPipeSession * GetSession(EventPipeSessionID id)
@@ -284,6 +284,15 @@ public:
 
 		return !ep_rt_wait_event_wait (ep_session_get_wait_event (session), (uint32_t)timeoutMs, false) ? true : false;
 	}
+
+#if defined(TARGET_WASI) && defined(PERFTRACING_DISABLE_THREADS)
+	// Runs the queued EventPipe jobs; returns true if any remain queued.
+	static inline bool RunWasiJobs()
+	{
+		STATIC_CONTRACT_NOTHROW;
+		return ep_rt_coreclr_wasi_run_jobs ();
+	}
+#endif // TARGET_WASI && PERFTRACING_DISABLE_THREADS
 
 	static inline FILETIME GetSessionStartTime(EventPipeSession *session)
 	{
@@ -320,7 +329,7 @@ public:
 		ep_add_provider_to_session (provider, session);
 	}
 
-	static inline EventPipeProvider * CreateProvider(const WCHAR* providerName, EventPipeCallback callback, void* callbackContext = nullptr)
+	static inline EventPipeProvider * CreateProvider(const WCHAR* providerName, EventPipeCallback callback, void* callbackContext = nullptr, const EventPipeEventTable *eventTable = nullptr)
 	{
 		CONTRACTL
 		{
@@ -331,7 +340,7 @@ public:
 		CONTRACTL_END;
 
 		ep_char8_t *providerNameUTF8 = ep_rt_utf16_to_utf8_string(reinterpret_cast<const ep_char16_t *>(providerName));
-		EventPipeProvider * provider = ep_create_provider (providerNameUTF8, callback, callbackContext);
+		EventPipeProvider * provider = ep_create_provider_with_events (providerNameUTF8, callback, callbackContext, eventTable);
 		ep_rt_utf8_string_free (providerNameUTF8);
 		return provider;
 	}

@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
@@ -15,6 +15,7 @@ namespace System
         /// Compute a Marvin OrdinalIgnoreCase hash and collapse it into a 32-bit hash.
         /// n.b. <paramref name="count"/> is specified as char count, not byte count.
         /// </summary>
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static int ComputeHash32OrdinalIgnoreCase(ref char data, int count, uint p0, uint p1)
         {
             uint ucount = (uint)count; // in chars
@@ -78,7 +79,7 @@ namespace System
             return ComputeHash32OrdinalIgnoreCaseSlow(ref Unsafe.AddByteOffset(ref data, byteOffset), (int)ucount, p0, p1);
         }
 
-        private static int ComputeHash32OrdinalIgnoreCaseSlow(ref char data, int count, uint p0, uint p1)
+        private static unsafe int ComputeHash32OrdinalIgnoreCaseSlow(ref char data, int count, uint p0, uint p1)
         {
             Debug.Assert(count > 0);
 

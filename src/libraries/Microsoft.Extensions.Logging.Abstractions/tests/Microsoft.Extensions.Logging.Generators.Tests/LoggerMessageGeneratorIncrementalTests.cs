@@ -3,6 +3,7 @@
 
 #if ROSLYN4_8_OR_GREATER
 
+using System;
 using System.Collections.Immutable;
 using System.Linq;
 using Microsoft.CodeAnalysis;

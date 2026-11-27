@@ -5,20 +5,24 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System
 {
     public partial class String
     {
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe string FastAllocateString(MethodTable *pMT, nint length);
+        private static extern unsafe string FastAllocateString(MethodTable *pMT, nint length);
 
         [DebuggerHidden]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe string FastAllocateString(nint length)
         {
             return FastAllocateString(TypeHandle.TypeHandleOf<string>().AsMethodTable(), length);
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "String_Intern")]
         private static partial void Intern(StringHandleOnStack src);
 
@@ -29,6 +33,7 @@ namespace System
             return str;
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "String_IsInterned")]
         private static partial void IsInterned(StringHandleOnStack src);
 

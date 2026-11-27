@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Net.Http.WinHttpHandlerUnitTests;
 
 namespace System.Net.Http
@@ -52,7 +53,8 @@ namespace System.Net.Http
             return System.Runtime.InteropServices.Marshal.UnsafeAddrOfPinnedArrayElement<T>(arr, index);
         }
 
-        public static T PtrToStructure<T>(IntPtr ptr)
+        public static T PtrToStructure<
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] T>(IntPtr ptr)
         {
             return System.Runtime.InteropServices.Marshal.PtrToStructure<T>(ptr);
         }

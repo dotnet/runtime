@@ -51,7 +51,7 @@ For debugging instructions including VS Code and Chrome DevTools setup, see the 
 
 ### Running coreclr callhelpers generator
 
-After building the runtime, use the `generate-coreclr-helpers` script for your platform (`.cmd` or `.sh`) in `src/tasks/WasmAppBuilder` to [re]generate the call helpers in `src/coreclr/vm/wasm`.
+After building the runtime, use the `generate-coreclr-helpers` script for your platform (`.cmd` or `.sh`) in `src/coreclr/vm/wasm` to [re]generate the call helpers in `src/coreclr/vm/wasm`.
 
 ## Features and Configuration
 
@@ -63,10 +63,10 @@ After building the runtime, use the `generate-coreclr-helpers` script for your p
 - **[JSInterop in Wasm](https://learn.microsoft.com/en-us/aspnet/core/client-side/dotnet-interop/wasm-browser-app)** - JavaScript interoperability for WebAssembly applications
 
 ### Globalization and ICU
-- **[ICU for WebAssembly](../../design/features/globalization-icu-wasm.md)** - Globalization and ICU database configuration
+- **[ICU for WebAssembly](../design/features/globalization-icu-wasm.md)** - Globalization and ICU database configuration
 
 ### Testing WebAssembly Changes
-For testing WebAssembly implementation changes end-to-end, see the [testing documentation](../testing/mono/testing.md#testing-webassembly).
+For testing WebAssembly implementation changes end-to-end, see the [testing documentation](testing/mono/testing.md#testing-webassembly).
 
 ## Advanced Topics
 
@@ -78,7 +78,6 @@ For testing WebAssembly implementation changes end-to-end, see the [testing docu
 ### Samples and Examples
 Located in `src/mono/sample/wasm/`:
 - **browser-bench**: Performance benchmarking sample
-- **browser-profile**: Profiling sample
 - **console**: Console application samples
 
 ### Workloads
@@ -97,7 +96,7 @@ See the [Building for WebAssembly](#building-for-webassembly) section above for 
 
 ### How do I test Wasm changes end to end?
 
-Use Wasm.Build.Tests or Wasi.Build.Tests. See the [Wasm.Build.Tests README](../../src/mono/wasm/Wasm.Build.Tests/README.md) for detailed instructions.
+Use Wasm.Build.Tests for browser scenarios. For WASI scenarios, validate against a sample app under `src/mono/sample/wasi`.
 
 ### How do I enable multi-threading?
 
@@ -113,12 +112,13 @@ See the [WebAssembly Debugging](debugging/mono/wasm-debugging.md#collecting-stac
 
 ### How do I run tests with different configurations?
 
-- **With AOT**: Add `/p:RunAOTCompilation=true`
 - **With trimming**: Add `/p:EnableAggressiveTrimming=true`
 - **Different JS engine**: Add `/p:JSEngine=SpiderMonkey`
 - **Outer loop tests**: Add `/p:Outerloop=true`
 
 ## Contributing
+
+- [Reviewing WebAssembly Changes](wasm-review.md) - SDK/workload ownership, configuration, incremental assets and Wasm.Build.Tests conventions
 
 ### Code Style
 - Runtime JavaScript code uses ESLint rules in `.eslintrc.js`

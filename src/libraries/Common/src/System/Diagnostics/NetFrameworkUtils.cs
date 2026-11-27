@@ -14,13 +14,13 @@ namespace System.Diagnostics
 {
     internal static partial class NetFrameworkUtils
     {
-        internal static void EnterMutex(string name, ref Mutex mutex)
+        internal static void EnterMutex(string name, ref Mutex? mutex)
         {
             string mutexName = "Global\\" + name;
             EnterMutexWithoutGlobal(mutexName, ref mutex);
         }
 
-        internal static void EnterMutexWithoutGlobal(string mutexName, ref Mutex mutex)
+        internal static void EnterMutexWithoutGlobal(string mutexName, ref Mutex? mutex)
         {
             Mutex tmpMutex = new Mutex(false, mutexName, out bool createdNew);
 
@@ -47,7 +47,7 @@ namespace System.Diagnostics
         // just to allow us to poll for abort). A limitation of CERs in Whidbey (and part of the problem that put us in this
         // position in the first place) is that a CER root in a method will cause the entire method to delay thread aborts. So we
         // need to carefully partition the real CER part of out logic in a sub-method (and ensure the jit doesn't inline on us).
-        private static bool SafeWaitForMutex(Mutex mutexIn, ref Mutex mutexOut)
+        private static bool SafeWaitForMutex(Mutex mutexIn, ref Mutex? mutexOut)
         {
             Debug.Assert(mutexOut == null, "You must pass in a null ref Mutex");
 
@@ -71,7 +71,7 @@ namespace System.Diagnostics
         // The portion of SafeWaitForMutex that runs under a CER and thus must not block for a arbitrary period of time.
         // This method must not be inlined (to stop the CER accidently spilling into the calling method).
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        private static bool SafeWaitForMutexOnce(Mutex mutexIn, ref Mutex mutexOut)
+        private static bool SafeWaitForMutexOnce(Mutex mutexIn, ref Mutex? mutexOut)
         {
             bool ret;
 
@@ -120,8 +120,8 @@ namespace System.Diagnostics
         internal static string GetLatestBuildDllDirectory(string machineName)
         {
             string dllDir = "";
-            RegistryKey baseKey = null;
-            RegistryKey complusReg = null;
+            RegistryKey? baseKey = null;
+            RegistryKey? complusReg = null;
 
             try
             {
@@ -136,7 +136,7 @@ namespace System.Diagnostics
                 complusReg = baseKey.OpenSubKey("SOFTWARE\\Microsoft\\.NETFramework");
                 if (complusReg != null)
                 {
-                    string installRoot = (string)complusReg.GetValue("InstallRoot");
+                    string? installRoot = (string?)complusReg.GetValue("InstallRoot");
                     if (installRoot != null && installRoot != string.Empty)
                     {
                         // the "policy" subkey contains a v{major}.{minor} subkey for each version installed.  There are also
@@ -144,17 +144,17 @@ namespace System.Diagnostics
 
                         // first we figure out what version we are...
                         string versionPrefix = "v" + Environment.Version.Major + "." + Environment.Version.Minor;
-                        RegistryKey policyKey = complusReg.OpenSubKey("policy");
+                        RegistryKey? policyKey = complusReg.OpenSubKey("policy");
 
                         // This is the full version string of the install on the remote machine we want to use (for example "v2.0.50727")
-                        string version = null;
+                        string? version = null;
 
                         if (policyKey != null)
                         {
                             try
                             {
                                 // First check to see if there is a version of the runtime with the same minor and major number:
-                                RegistryKey bestKey = policyKey.OpenSubKey(versionPrefix);
+                                RegistryKey? bestKey = policyKey.OpenSubKey(versionPrefix);
 
                                 if (bestKey != null)
                                 {
@@ -194,7 +194,7 @@ namespace System.Diagnostics
                                                 continue;
                                             }
 
-                                            RegistryKey k = policyKey.OpenSubKey(majorVersion);
+                                            RegistryKey? k = policyKey.OpenSubKey(majorVersion);
                                             if (k == null)
                                             {
                                                 // We may be able to use another subkey

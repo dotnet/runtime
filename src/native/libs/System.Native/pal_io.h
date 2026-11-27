@@ -34,6 +34,7 @@ typedef struct
     int64_t RDev;      // ID of the device if it is a special file
     int64_t Ino;       // inode number of the file
     uint32_t UserFlags; // user defined flags
+    uint32_t HardLinkCount; // Number of hard links to the file
 } FileStatus;
 
 typedef struct
@@ -180,6 +181,14 @@ enum
     PAL_O_TRUNC = 0x0080,    // Truncate file to length 0 if it already exists
     PAL_O_SYNC = 0x0100,     // Block writes call will block until physically written
     PAL_O_NOFOLLOW = 0x0200, // Fails to open the target if it's a symlink, parent symlinks are allowed
+    PAL_O_NONBLOCK_READ = 0x0400,  // Set O_NONBLOCK on the read end of a pipe
+    PAL_O_NONBLOCK_WRITE = 0x0800, // Set O_NONBLOCK on the write end of a pipe
+    PAL_O_DIRECTORY = 0x1000, // Fails to open the target if it's not a directory
+};
+
+enum
+{
+    PAL_AT_REMOVEDIR = 0x0001, // Remove the entry as a directory
 };
 
 /**
@@ -340,6 +349,7 @@ typedef enum
     PAL_IN_ONLYDIR = 0x01000000,
     PAL_IN_DONT_FOLLOW = 0x02000000,
     PAL_IN_EXCL_UNLINK = 0x04000000,
+    PAL_IN_MOVE_SELF = 0x00000800,
     PAL_IN_ISDIR = 0x40000000,
 } NotifyEvents;
 
@@ -372,6 +382,13 @@ PALEXPORT int32_t SystemNative_LStat(const char* path, FileStatus* output);
 PALEXPORT intptr_t SystemNative_Open(const char* path, int32_t flags, int32_t mode);
 
 /**
+ * Open or create a file or device relative to a directory descriptor. Implemented as shim to openat(2).
+ *
+ * Returns file descriptor or -1 for failure. Sets errno on failure.
+ */
+PALEXPORT intptr_t SystemNative_OpenAt(intptr_t dirfd, const char* path, int32_t flags, int32_t mode);
+
+/**
  * Close a file descriptor. Implemented as shim to open(2).
  *
  * Returns 0 for success, -1 for failure. Sets errno on failure.
@@ -391,6 +408,13 @@ PALEXPORT intptr_t SystemNative_Dup(intptr_t oldfd);
  * Returns 0 for success, -1 for failure. Sets errno on failure.
  */
 PALEXPORT int32_t SystemNative_Unlink(const char* path);
+
+/**
+ * Delete an entry relative to a directory descriptor. Implemented as shim to unlinkat(2).
+ *
+ * Returns 0 for success, -1 for failure. Sets errno on failure.
+ */
+PALEXPORT int32_t SystemNative_UnlinkAt(intptr_t dirfd, const char* path, int32_t flags);
 
 /**
  * Check if the system supports memfd_create(2). 
@@ -439,12 +463,18 @@ PALEXPORT int32_t SystemNative_CloseDir(DIR* dir);
 
 /**
  * Creates a pipe. Implemented as shim to pipe(2) or pipe2(2) if available.
- * Flags are ignored if pipe2 is not available.
  *
  * Returns 0 for success, -1 for failure. Sets errno on failure.
  */
 PALEXPORT int32_t SystemNative_Pipe(int32_t pipefd[2], // [out] pipefds[0] gets read end, pipefd[1] gets write end.
-                        int32_t flags);    // 0 for defaults or PAL_O_CLOEXEC for close-on-exec
+                        int32_t flags);    // 0 for defaults. Use PAL_O_CLOEXEC, PAL_O_NONBLOCK_READ, and PAL_O_NONBLOCK_WRITE for additional behavior.
+
+/**
+ * Determines if the current platform supports atomically creating pipes with non-inheritable file descriptors (pipe2).
+ *
+ * Returns 1 if supported, 0 if not supported.
+ */
+PALEXPORT int32_t SystemNative_IsAtomicNonInheritablePipeCreationSupported(void);
 
 // NOTE: Rather than a general fcntl shim, we opt to export separate functions
 // for each command. This allows use to have strongly typed arguments and saves
@@ -509,6 +539,13 @@ PALEXPORT int32_t SystemNative_FcntlGetIsNonBlocking(intptr_t fd, int32_t* isNon
  * Returns 0 for success, -1 for failure. Sets errno for failure.
  */
 PALEXPORT int32_t SystemNative_MkDir(const char* path, int32_t mode);
+
+/**
+ * Create a directory relative to a directory descriptor. Implemented as a shim to mkdirat(2).
+ *
+ * Returns 0 for success, -1 for failure. Sets errno for failure.
+ */
+PALEXPORT int32_t SystemNative_MkDirAt(intptr_t dirfd, const char* path, int32_t mode);
 
 /**
  * Change permissions of a file. Implemented as a shim to chmod(2).
@@ -705,6 +742,14 @@ PALEXPORT int32_t SystemNative_FAllocate(intptr_t fd, int64_t offset, int64_t le
 PALEXPORT int32_t SystemNative_Read(intptr_t fd, void* buffer, int32_t bufferSize);
 
 /**
+ * Reads the number of bytes specified into the provided buffer from the specified, opened non-blocking file descriptor.
+ * If no data is currently available, polls the file descriptor until data arrives or the pipe/socket is closed.
+ *
+ * Returns the number of bytes read on success; 0 on EOF; otherwise, -1 is returned and errno is set.
+ */
+PALEXPORT int32_t SystemNative_ReadFromNonblocking(intptr_t fd, void* buffer, int32_t bufferSize);
+
+/**
  * Takes a path to a symbolic link and attempts to place the link target path into the buffer. If the buffer is too
  * small, the path will be truncated. No matter what, the buffer will not be null terminated.
  *
@@ -738,6 +783,14 @@ PALEXPORT void SystemNative_Sync(void);
  * Returns the number of bytes written on success; otherwise, returns -1 and sets errno
  */
 PALEXPORT int32_t SystemNative_Write(intptr_t fd, const void* buffer, int32_t bufferSize);
+
+/**
+ * Writes the specified buffer to the provided open non-blocking file descriptor.
+ * If the write buffer is currently full, polls the file descriptor until space is available or the pipe/socket is closed.
+ *
+ * Returns the number of bytes written on success; otherwise, returns -1 and sets errno.
+ */
+PALEXPORT int32_t SystemNative_WriteToNonblocking(intptr_t fd, const void* buffer, int32_t bufferSize);
 
 /**
  * Copies all data from the source file descriptor to the destination file descriptor.
@@ -858,13 +911,62 @@ PALEXPORT int32_t SystemNative_PWrite(intptr_t fd, void* buffer, int32_t bufferS
 /**
  * Reads the number of bytes specified into the provided buffers from the specified, opened file descriptor at specified offset.
  *
- * Returns the number of bytes read on success; otherwise, -1 is returned an errno is set.
+ * Returns the number of bytes read on success; otherwise, -1 is returned and errno is set.
  */
 PALEXPORT int64_t SystemNative_PReadV(intptr_t fd, IOVector* vectors, int32_t vectorCount, int64_t fileOffset);
 
 /**
  * Writes the number of bytes specified in the buffers into the specified, opened file descriptor at specified offset.
  *
- * Returns the number of bytes written on success; otherwise, -1 is returned an errno is set.
+ * Returns the number of bytes written on success; otherwise, -1 is returned and errno is set.
  */
 PALEXPORT int64_t SystemNative_PWriteV(intptr_t fd, IOVector* vectors, int32_t vectorCount, int64_t fileOffset);
+
+/**
+ * Reads the number of bytes specified into the provided buffers from the specified, opened file descriptor.
+ *
+ * Returns the number of bytes read on success; otherwise, -1 is returned and errno is set.
+ */
+PALEXPORT int64_t SystemNative_ReadV(intptr_t fd, IOVector* vectors, int32_t vectorCount);
+
+/**
+ * Writes the number of bytes specified in the buffers into the specified, opened file descriptor
+ *
+ * Returns the number of bytes written on success; otherwise, -1 is returned and errno is set.
+ */
+PALEXPORT int64_t SystemNative_WriteV(intptr_t fd, IOVector* vectors, int32_t vectorCount);
+
+/*
+ * Handle async events.
+ */
+typedef enum
+{
+    HandleEvents_NONE = 0x00,
+    HandleEvents_READ = 0x01,
+    HandleEvents_WRITE = 0x02,
+    HandleEvents_READCLOSE = 0x04,
+    HandleEvents_CLOSE = 0x08,
+    HandleEvents_ERROR = 0x10,
+    // Force the enum to use int32_t instead of uint32_t
+    HandleEvents__IGNORE_SIGNED = -1,
+} HandleEvents;
+
+typedef struct
+{
+    uintptr_t Data;      // User data for this event
+    int32_t Events;      // Event flags
+    uint32_t Padding;    // Pad out to 8-byte alignment
+} HandleEvent;
+
+PALEXPORT int32_t SystemNative_CreateHandleEventPort(intptr_t* port);
+
+PALEXPORT int32_t SystemNative_CloseHandleEventPort(intptr_t port);
+
+PALEXPORT int32_t SystemNative_CreateHandleEventBuffer(int32_t count, HandleEvent** buffer);
+
+PALEXPORT int32_t SystemNative_FreeHandleEventBuffer(HandleEvent* buffer);
+
+PALEXPORT int32_t SystemNative_TryChangeHandleEventRegistration(
+    intptr_t port, intptr_t socket, int32_t currentEvents, int32_t newEvents, uintptr_t data);
+
+PALEXPORT int32_t SystemNative_WaitForHandleEvents(intptr_t port, HandleEvent* buffer, int32_t* count);

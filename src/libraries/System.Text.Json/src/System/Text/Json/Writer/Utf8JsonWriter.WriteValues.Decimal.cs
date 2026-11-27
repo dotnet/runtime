@@ -94,7 +94,7 @@ namespace System.Text.Json
             BytesPending += bytesWritten;
         }
 
-        internal void WriteNumberValueAsString(decimal value)
+        internal unsafe void WriteNumberValueAsString(decimal value)
         {
             Span<byte> utf8Number = stackalloc byte[JsonConstants.MaximumFormatDecimalLength];
             bool result = Utf8Formatter.TryFormat(value, utf8Number, out int bytesWritten);

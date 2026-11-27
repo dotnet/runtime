@@ -26,14 +26,10 @@ public class BringUpTest
 
     public static int Main()
     {
-        if (!OperatingSystem.IsAndroid())
-        {
-            // Disabled on Android due to https://github.com/dotnet/runtime/issues/121353
 
-            // This test also doubles as server GC test
-            if (!System.Runtime.GCSettings.IsServerGC)
-                return 42;
-        }
+        // This test also doubles as server GC test
+        if (Environment.ProcessorCount > 1 && !System.Runtime.GCSettings.IsServerGC)
+            return 42;
 
         if (string.Empty.Length > 0)
         {

@@ -445,7 +445,6 @@ public:
             THROWS;
             GC_NOTRIGGER;
             MODE_ANY;
-            INJECT_FAULT(COMPlusThrowOM());
             PRECONDITION(m_nextID != 0);
         } CONTRACTL_END;
         UINT32 id = m_nextID;
@@ -474,7 +473,6 @@ public:
             THROWS;
             GC_NOTRIGGER;
             MODE_ANY;
-            INJECT_FAULT(COMPlusThrowOM());
             PRECONDITION(m_nextFatID != 0);
         } CONTRACTL_END;
         UINT32 id = m_nextFatID;
@@ -882,6 +880,38 @@ protected:
     static const INT32 ENCODING_TARGET_SLOT_DELTA = 1;
 
 public:
+    // Class MethodImpl aliases precede the ordinary interface-dispatch encoding.
+    // Keeping slots rather than MethodDesc pointers makes this reusable across instantiations.
+    class ClassSlotIterator
+    {
+        Decoder m_decoder;
+        UINT32 m_remaining;
+
+    public:
+        ClassSlotIterator(DispatchMap* pMap)
+            : m_remaining(0)
+        {
+            LIMITED_METHOD_DAC_CONTRACT;
+            if (pMap != nullptr)
+            {
+                m_decoder.Init(pMap->GetEncodedMapData());
+                if ((m_decoder.Next() & 1) != 0)
+                    m_remaining = m_decoder.Next();
+            }
+        }
+
+        bool Next(UINT32* pSource, UINT32* pTarget)
+        {
+            LIMITED_METHOD_DAC_CONTRACT;
+            if (m_remaining == 0)
+                return false;
+            *pSource = m_decoder.Next();
+            *pTarget = m_decoder.Next();
+            m_remaining--;
+            return true;
+        }
+    };
+
     //------------------------------------------------------------------------
     // Need to make sure that you allocate GetObjectSize(pMap) bytes for any
     // instance of DispatchMap, as this constructor assumes that m_rgMap is
@@ -906,6 +936,16 @@ public:
 
     //------------------------------------------------------------------------
     UINT32 GetMapSize();
+
+    //------------------------------------------------------------------------
+    // Returns a pointer to the raw encoded mapping bytes. Used when reusing the
+    // encoded dispatch map of a generic type's typical instantiation for its
+    // non-typical instantiations (the encoding is instantiation-independent).
+    PTR_BYTE GetEncodedMapData()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return dac_cast<PTR_BYTE>(PTR_HOST_MEMBER_TADDR(DispatchMap, this, m_rgMap));
+    }
 
 #ifdef DACCESS_COMPILE
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);

@@ -32,6 +32,96 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
+        public void SetEqualsMismatchedComparersOriginInsensitiveOtherSensitive()
+        {
+            var ignoreCaseSet = ImmutableHashSet.Create(StringComparer.OrdinalIgnoreCase, "a");
+            var sensitiveSet = ImmutableHashSet.Create(StringComparer.Ordinal, "a", "A");
+
+            Assert.True(ignoreCaseSet.SetEquals(sensitiveSet));
+        }
+
+        [Fact]
+        public void SetEqualsMismatchedComparersOriginSensitiveOtherInsensitive()
+        {
+            var sensitiveSetMain = ImmutableHashSet.Create(StringComparer.Ordinal, "a");
+            var insensitiveMutable = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "a", "A" };
+
+            Assert.True(sensitiveSetMain.SetEquals(insensitiveMutable));
+        }
+
+        [Fact]
+        public void SetEqualsICollectionWithDuplicatesValidatesCorrectness()
+        {
+            var ignoreCaseSet = ImmutableHashSet.Create(StringComparer.OrdinalIgnoreCase, "a");
+            var listWithDupes = new List<string> { "a", "a", "a", "a" };
+
+            Assert.True(ignoreCaseSet.SetEquals(listWithDupes));
+        }
+
+        [Fact]
+        public void SetEqualsDifferentContent()
+        {
+            var ignoreCaseSet = ImmutableHashSet.Create(StringComparer.OrdinalIgnoreCase, "a");
+            var setB = ImmutableHashSet.Create(StringComparer.Ordinal, "b");
+
+            Assert.False(ignoreCaseSet.SetEquals(setB));
+        }
+
+        [Fact]
+        public void SetEqualsMismatchedComparersOtherCountSmaller()
+        {
+            var originTwoElements = ImmutableHashSet.Create(StringComparer.OrdinalIgnoreCase, "a", "b");
+            var otherOneElement = ImmutableHashSet.Create(StringComparer.Ordinal, "a");
+
+            Assert.False(originTwoElements.SetEquals(otherOneElement));
+        }
+
+        [Fact]
+        public void SetEqualsMatchedComparersDifferentCounts()
+        {
+            var matchedSet1 = ImmutableHashSet.Create(StringComparer.Ordinal, "a", "b");
+            var matchedSet2 = ImmutableHashSet.Create(StringComparer.Ordinal, "a");
+
+            Assert.False(matchedSet1.SetEquals(matchedSet2));
+        }
+
+        [Fact]
+        public void SetEqualsMatchedComparersSameContent()
+        {
+            var matchedSet1 = ImmutableHashSet.Create(StringComparer.Ordinal, "a", "b");
+            var matchedSet2 = ImmutableHashSet.Create(StringComparer.Ordinal, "a", "b");
+
+            Assert.True(matchedSet1.SetEquals(matchedSet2));
+        }
+
+        [Fact]
+        public void SetEqualsEmptySetsDifferentComparers()
+        {
+            var empty1 = ImmutableHashSet<string>.Empty.WithComparer(StringComparer.Ordinal);
+            var empty2 = ImmutableHashSet<string>.Empty.WithComparer(StringComparer.OrdinalIgnoreCase);
+
+            Assert.True(empty1.SetEquals(empty2));
+        }
+
+        [Fact]
+        public void SetEqualsMismatchedComparersOriginSensitiveOtherInsensitiveSameCount()
+        {
+            var sensitiveSet = ImmutableHashSet.Create(StringComparer.Ordinal, "a", "A");
+            var insensitiveSet = ImmutableHashSet.Create(StringComparer.OrdinalIgnoreCase, "a", "b");
+
+            Assert.False(sensitiveSet.SetEquals(insensitiveSet));
+        }
+
+        [Fact]
+        public void SetEqualsMismatchedComparersOtherIsLarger()
+        {
+            var origin = ImmutableHashSet.Create(StringComparer.OrdinalIgnoreCase, "a");
+            var other = ImmutableHashSet.Create(StringComparer.Ordinal, "a", "b");
+
+            Assert.False(origin.SetEquals(other));
+        }
+
+        [Fact]
         public void ChangeUnorderedEqualityComparer()
         {
             ImmutableHashSet<string> ordinalSet = ImmutableHashSet<string>.Empty

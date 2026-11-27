@@ -13,7 +13,7 @@ namespace Microsoft.Extensions.FileProviders
     public class NotFoundFileInfo : IFileInfo
     {
         /// <summary>
-        /// Initializes an instance of <see cref="NotFoundFileInfo"/>.
+        /// Initializes a new instance of the <see cref="NotFoundFileInfo"/> class.
         /// </summary>
         /// <param name="name">The name of the file that could not be found.</param>
         public NotFoundFileInfo(string name)

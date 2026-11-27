@@ -67,11 +67,12 @@ namespace System
          * src/vm/ecall.cpp for instructions on how to add new overloads.
          */
 
+        /// <safety>The runtime FCall builds the string by copying from the supplied managed char array, whose length it reads safely; it takes no raw pointer and touches no caller-supplied unmanaged memory.</safety>
         [MethodImpl(MethodImplOptions.InternalCall)]
 #if MONO
         [DynamicDependency("Ctor(System.Char[])")]
 #endif
-        public extern String(char[]? value);
+        public extern safe String(char[]? value);
 
         private static string Ctor(char[]? value)
         {
@@ -88,11 +89,12 @@ namespace System
             return result;
         }
 
+        /// <safety>The runtime FCall validates the start index and length against the managed array's bounds before copying; it takes no raw pointer and touches no caller-supplied unmanaged memory.</safety>
         [MethodImpl(MethodImplOptions.InternalCall)]
 #if MONO
         [DynamicDependency("Ctor(System.Char[],System.Int32,System.Int32)")]
 #endif
-        public extern String(char[] value, int startIndex, int length);
+        public extern safe String(char[] value, int startIndex, int length);
 
         private static string Ctor(char[] value, int startIndex, int length)
         {
@@ -280,11 +282,12 @@ namespace System
             return enc.GetString(new ReadOnlySpan<byte>(pStart, length));
         }
 
+        /// <safety>The runtime FCall builds the string from the character and count values alone; it takes no pointer and touches no caller-supplied memory.</safety>
         [MethodImpl(MethodImplOptions.InternalCall)]
 #if MONO
         [DynamicDependency("Ctor(System.Char,System.Int32)")]
 #endif
-        public extern String(char c, int count);
+        public extern safe String(char c, int count);
 
         private static string Ctor(char c, int count)
         {
@@ -302,11 +305,12 @@ namespace System
             return result;
         }
 
+        /// <safety>The runtime FCall copies from the bounds-checked managed span; it takes no raw pointer and touches no caller-supplied unmanaged memory.</safety>
         [MethodImpl(MethodImplOptions.InternalCall)]
 #if MONO
         [DynamicDependency("Ctor(System.ReadOnlySpan{System.Char})")]
 #endif
-        public extern String(ReadOnlySpan<char> value);
+        public extern safe String(ReadOnlySpan<char> value);
 
         private static string Ctor(ReadOnlySpan<char> value)
         {
@@ -368,20 +372,11 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal bool TryGetSpan(int startIndex, int count, out ReadOnlySpan<char> slice)
         {
-#if TARGET_64BIT
-            // See comment in Span<T>.Slice for how this works.
-            if ((ulong)(uint)startIndex + (ulong)(uint)count > (ulong)(uint)Length)
-            {
-                slice = default;
-                return false;
-            }
-#else
             if ((uint)startIndex > (uint)Length || (uint)count > (uint)(Length - startIndex))
             {
                 slice = default;
                 return false;
             }
-#endif
 
             slice = new ReadOnlySpan<char>(ref Unsafe.Add(ref _firstChar, (nint)(uint)startIndex /* force zero-extension */), count);
             return true;

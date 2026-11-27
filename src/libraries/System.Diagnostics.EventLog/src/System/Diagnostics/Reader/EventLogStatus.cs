@@ -13,13 +13,13 @@ namespace System.Diagnostics.Eventing.Reader
     /// </summary>
     public sealed class EventLogStatus
     {
-        internal EventLogStatus(string channelName, int win32ErrorCode)
+        internal EventLogStatus(string? channelName, int win32ErrorCode)
         {
             LogName = channelName;
             StatusCode = win32ErrorCode;
         }
 
-        public string LogName { get; }
+        public string? LogName { get; }
 
         public int StatusCode { get; }
     }

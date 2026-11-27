@@ -1,4 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="genericcontext.il" />
   </ItemGroup>

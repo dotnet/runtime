@@ -18,7 +18,8 @@ namespace System.Diagnostics
         /// <param name="name">The name of the <see cref="ActivitySourceOptions"/> object</param>
         public ActivitySourceOptions(string name)
         {
-            _name = name ?? throw new ArgumentNullException(nameof(name));
+            ArgumentNullException.ThrowIfNull(name);
+            _name = name;
         }
 
         /// <summary>
@@ -27,7 +28,11 @@ namespace System.Diagnostics
         public string Name
         {
             get => _name;
-            set => _name = value ?? throw new ArgumentNullException(nameof(value));
+            set
+            {
+                ArgumentNullException.ThrowIfNull(value);
+                _name = value;
+            }
         }
 
         /// <summary>
@@ -39,6 +44,12 @@ namespace System.Diagnostics
         /// The optional list of key-value pair tags associated with the <see cref="ActivitySourceOptions"/>.
         /// </summary>
         public IEnumerable<KeyValuePair<string, object?>>? Tags { get; set; }
+
+        /// <summary>
+        /// The optional opaque object to attach to the <see cref="ActivitySource"/>. The scope object can be attached
+        /// to multiple activity sources for scoping purposes.
+        /// </summary>
+        public object? Scope { get; set; }
 
         /// <summary>
         /// The optional schema URL specifies a location of a <see href="https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/schemas/file_format_v1.1.0.md">Schema File</see> that

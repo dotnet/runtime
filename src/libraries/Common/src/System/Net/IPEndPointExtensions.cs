@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -8,7 +8,7 @@ namespace System.Net.Sockets
 {
     internal static partial class IPEndPointExtensions
     {
-        public static IPAddress GetIPAddress(ReadOnlySpan<byte> socketAddressBuffer)
+        public static unsafe IPAddress GetIPAddress(ReadOnlySpan<byte> socketAddressBuffer)
         {
             AddressFamily family = SocketAddressPal.GetAddressFamily(socketAddressBuffer);
 
@@ -29,7 +29,7 @@ namespace System.Net.Sockets
             throw new SocketException((int)SocketError.AddressFamilyNotSupported);
         }
 
-        public static void SetIPAddress(Span<byte> socketAddressBuffer, IPAddress address)
+        public static unsafe void SetIPAddress(Span<byte> socketAddressBuffer, IPAddress address)
         {
             SocketAddressPal.SetAddressFamily(socketAddressBuffer, address.AddressFamily);
             SocketAddressPal.SetPort(socketAddressBuffer, 0);
@@ -61,7 +61,7 @@ namespace System.Net.Sockets
             SocketAddressPal.SetPort(destination, (ushort)endPoint.Port);
         }
 
-        public static bool Equals(this IPEndPoint endPoint, ReadOnlySpan<byte> socketAddressBuffer)
+        public static unsafe bool Equals(this IPEndPoint endPoint, ReadOnlySpan<byte> socketAddressBuffer)
         {
             if (socketAddressBuffer.Length >= SocketAddress.GetMaximumAddressSize(endPoint.AddressFamily) &&
                 endPoint.AddressFamily == SocketAddressPal.GetAddressFamily(socketAddressBuffer) &&

@@ -10,6 +10,7 @@
 
 #define INSTRFMT_K64
 #include <stublink.h>
+#include <minipal/instructioncache.h>
 
 #ifndef TARGET_UNIX
 #define USE_REDIRECT_FOR_GCSTRESS
@@ -46,19 +47,9 @@
     CALLEE_SAVED_REGISTER(F[26]) \
     CALLEE_SAVED_REGISTER(F[27])
 
-EXTERN_C void getFPReturn(int fpSize, INT64 *pRetVal);
-EXTERN_C void setFPReturn(int fpSize, INT64 retVal);
-
-
 class ComCallMethodDesc;
 
 extern PCODE GetPreStubEntryPoint();
-
-#define COMMETHOD_PREPAD                        24   // # extra bytes to allocate in addition to sizeof(ComCallMethodDesc)
-#ifdef FEATURE_COMINTEROP
-#define COMMETHOD_CALL_PRESTUB_SIZE             24
-#define COMMETHOD_CALL_PRESTUB_ADDRESS_OFFSET   16   // the offset of the call target address inside the prestub
-#endif // FEATURE_COMINTEROP
 
 #define STACK_ALIGN_SIZE                        16
 
@@ -80,8 +71,7 @@ extern PCODE GetPreStubEntryPoint();
 #define ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE 16  // bytes (two int registers: a0 and a1)
 #define ENREGISTERED_PARAMTYPE_MAXSIZE          16  // bytes (max value type size that can be passed by value)
 
-#define CALLDESCR_ARGREGS                       1   // CallDescrWorker has ArgumentRegister parameter
-#define CALLDESCR_FPARGREGS                     1   // CallDescrWorker has FloatArgumentRegisters parameter
+#define HAS_FLOAT_ARGUMENT_REGISTERS            1   // Calling convention has separate floating-point argument registers
 
 #define FLOAT_REGISTER_SIZE 8 // each register in FloatArgumentRegisters is 8 bytes.
 
@@ -98,14 +88,6 @@ inline unsigned StackElemSize(unsigned parmSize, bool isValueType, bool isFloatH
     const unsigned stackSlotSize = 8;
     return ALIGN_UP(parmSize, stackSlotSize);
 }
-
-//
-// JIT HELPERS.
-//
-// Create alias for optimized implementations of helpers provided on this platform
-//
-#define JIT_GetDynamicGCStaticBase           JIT_GetDynamicGCStaticBase_SingleAppDomain
-#define JIT_GetDynamicNonGCStaticBase        JIT_GetDynamicNonGCStaticBase_SingleAppDomain
 
 //**********************************************************************
 // Frames
@@ -291,13 +273,9 @@ inline TADDR GetMem(PCODE address, SIZE_T size, bool signExtend)
     return mem;
 }
 
-#ifdef FEATURE_COMINTEROP
-void emitCOMStubCall (ComCallMethodDesc *pCOMMethodRX, ComCallMethodDesc *pCOMMethodRW, PCODE target);
-#endif // FEATURE_COMINTEROP
-
-inline BOOL ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode, bool hasCodeExecutedBefore = false)
+inline void ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode, bool hasCodeExecutedBefore = false)
 {
-    return FlushInstructionCache(GetCurrentProcess(), pCodeAddr, sizeOfCode);
+    minipal_flush_instruction_cache(pCodeAddr, sizeOfCode);
 }
 
 //------------------------------------------------------------------------
@@ -309,14 +287,22 @@ inline void emitBackToBackJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target
     // We require 8-byte alignment so the LD instruction is aligned properly
     _ASSERTE(((UINT_PTR)pCode & 7) == 0);
 
-    // auipc ra, 0
-    // ld    ra, ra, 16
-    // jalr  x0, ra, 0
+    // The stub sits between a call and its target, so it may only use a register that
+    // neither side expects to survive the call. The link register is not one: a call
+    // arrives here with ra holding the return address, and a tail jump with ra holding
+    // the caller's return address. Of the temporaries, t0/t1 carry the profiler enter
+    // arguments, t2 the secret stub parameter and the dispatch token, t3/t4 the write
+    // barrier arguments and t5 the indirection cell. t6 (REG_OPT_RSVD in the JIT) carries
+    // nothing across a call, and the write barrier already declares it trashed.
+
+    // auipc t6, 0
+    // ld    t6, 16(t6)
+    // jalr  x0, t6, 0
     // nop    //padding.
 
-    pCode[0] = 0x00000097; // auipc ra, 0
-    pCode[1] = 0x0100b083; // ld    ra, 16(ra)
-    pCode[2] = 0x00008067; // jalr  x0, ra, 0
+    pCode[0] = 0x00000f97; // auipc t6, 0
+    pCode[1] = 0x010fbf83; // ld    t6, 16(t6)
+    pCode[2] = 0x000f8067; // jalr  x0, t6, 0
     pCode[3] = 0x00000013; // padding nop.
 
     // Ensure that the updated instructions get updated in the I-Cache
@@ -413,6 +399,11 @@ struct HijackArgs
              DWORD64 A1;
          };
         size_t ReturnValue[2];
+    };
+    union
+    {
+        DWORD64 A2;
+        size_t AsyncRet;
     };
     union
     {

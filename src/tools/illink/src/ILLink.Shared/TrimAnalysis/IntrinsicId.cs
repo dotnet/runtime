@@ -49,6 +49,10 @@ namespace ILLink.Shared.TrimAnalysis
         /// <see cref="System.Reflection.MethodBase.MethodHandle"/>
         /// </summary>
         MethodBase_get_MethodHandle,
+        /// <summary>
+        /// <see cref="System.Type.Assembly"/>
+        /// </summary>
+        Type_get_Assembly,
 
         // Anything above this marker will require the method to be run through
         // the reflection body scanner.
@@ -299,6 +303,14 @@ namespace ILLink.Shared.TrimAnalysis
         /// </list>
         /// </summary>
         Assembly_CreateInstance,
+        /// <summary>
+        /// <list type="table">
+        /// <item><see cref="System.Reflection.Assembly.GetType(string)"/></item>
+        /// <item><see cref="System.Reflection.Assembly.GetType(string, bool)"/></item>
+        /// <item><see cref="System.Reflection.Assembly.GetType(string, bool, bool)"/></item>
+        /// </list>
+        /// </summary>
+        Assembly_GetType,
         /// <summary>
         /// <see cref="System.Reflection.Assembly.Location"/>
         /// </summary>

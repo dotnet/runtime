@@ -7,6 +7,7 @@ parameters:
   platforms: []
   shouldContinueOnError: false
   extraBuildArgs: ''
+  useHelixMonitor: false
 
 jobs:
 
@@ -50,47 +51,26 @@ jobs:
         nameSuffix: CoreCLR_WasmBuildTests
 
         preBuildSteps:
-          # Download single threaded runtime packs, and tasks needed to build WBT
-          - task: DownloadBuildArtifacts@0
-            displayName: Download built nugets for singlethreaded runtime
+          - task: DownloadPipelineArtifact@2
+            displayName: Download CoreCLR runtime and workload packages
             inputs:
               buildType: current
               artifactName: 'BuildArtifacts_browser_wasm_$(_hostedOs)_Release_CoreCLR'
-              downloadType: single
-              downloadPath: '$(Build.SourcesDirectory)/artifacts'
+              targetPath: '$(Build.SourcesDirectory)/artifacts/BuildArtifacts_browser_wasm_$(_hostedOs)_Release_CoreCLR'
 
           - task: CopyFiles@2
-            displayName: Copy single threaded assets
+            displayName: Copy CoreCLR build artifacts
             inputs:
               SourceFolder: '$(Build.SourcesDirectory)/artifacts/BuildArtifacts_browser_wasm_$(_hostedOs)_Release_CoreCLR'
               TargetFolder: '$(Build.SourcesDirectory)/artifacts'
               CleanTargetFolder: false
 
-          # Download for multi-threaded
-          # - task: DownloadBuildArtifacts@0
-          #   displayName: Download built nugets for multi-threaded runtime
-          #   inputs:
-          #     buildType: current
-          #     artifactName: BuildArtifacts_browser_wasm_$(_hostedOs)_Release_MultiThreaded_BuildOnly
-          #     downloadType: single
-          #     downloadPath: '$(Build.SourcesDirectory)/artifacts'
-
-          # - task: CopyFiles@2
-          #   displayName: Copy multithreading runtime pack
-          #   inputs:
-          #     SourceFolder: '$(Build.SourcesDirectory)/artifacts/BuildArtifacts_browser_wasm_$(_hostedOs)_Release_MultiThreaded_BuildOnly'
-          #     Contents: packages/$(_BuildConfig)/Shipping/Microsoft.NETCore.App.Runtime.Mono.multithread.*
-          #     TargetFolder: '$(Build.SourcesDirectory)/artifacts'
-          #     CleanTargetFolder: false
-
-          # Download WBT - TODO-WASM: This points to "mono" build, altough 
-          - task: DownloadBuildArtifacts@0
+          - task: DownloadPipelineArtifact@2
             displayName: Download Wasm.Build.Tests
             inputs:
               buildType: current
               artifactName: WasmBuildTests_$(_hostedOs)_CoreCLR
-              downloadType: single
-              downloadPath: '$(Build.SourcesDirectory)/artifacts'
+              targetPath: '$(Build.SourcesDirectory)/artifacts/WasmBuildTests_$(_hostedOs)_CoreCLR'
 
           - task: CopyFiles@2
             displayName: Copy Wasm.Build.Tests archive
@@ -105,9 +85,8 @@ jobs:
           $(wbtProjectArg) $(Build.SourcesDirectory)/src/mono/wasm/Wasm.Build.Tests/Wasm.Build.Tests.csproj
           /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/Build.binlog
           /p:Configuration=$(_BuildConfig)
-          /p:TestUsingWorkloads=false
+          /p:TestUsingWorkloads=true
           /p:InstallWorkloadForTesting=true
-          /p:WasmSkipMissingRuntimePackBuild=true
           /p:PreparePackagesForWorkloadInstall=false
           /p:WorkloadsTestPreviousVersions=$(workloadsTestPreviousVersionsVar)
           /p:RuntimeFlavor=CoreCLR
@@ -123,6 +102,12 @@ jobs:
             parameters:
               creator: dotnet-bot
               testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)_$(_hostedOs)
-              extraHelixArguments: /p:BrowserHost=$(_hostedOs)
+              # WBT (buildwasmapps) fans out into several sendtohelixhelp.proj invocations
+              # (Workloads/Webcil/Fingerprinting/Bundler combos). sendtohelix.proj already builds
+              # them with BuildInParallel=true, but that only parallelizes when the msbuild running
+              # it has multiple nodes. /maxcpucount lets the Helix jobs be sent (and waited on)
+              # concurrently instead of one-send-then-wait-for-completion serially (see issue #118938).
+              extraHelixArguments: /p:BrowserHost=$(_hostedOs) /maxcpucount:8
               scenarios:
               - buildwasmapps
+              useHelixMonitor: ${{ parameters.useHelixMonitor }}

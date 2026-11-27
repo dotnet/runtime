@@ -245,7 +245,9 @@ void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowe
 //
 // Arguments:
 //    regsToRestoreMask       - The mask of callee-saved registers to restore. If empty, this function does nothing.
+//    baseReg                 - Base register to use when loading values
 //    lowestCalleeSavedOffset - The offset from SP that is the beginning of the callee-saved register area.
+//    reportUnwindData        - If true, report the change in unwind data. Otherwise, do not report it.
 //
 // Here's an example restore sequence:
 //      ld    s11, #xxx(sp)
@@ -263,7 +265,10 @@ void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowe
 // Return Value:
 //    None.
 
-void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, int lowestCalleeSavedOffset)
+void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask,
+                                                 regNumber baseReg,
+                                                 int       lowestCalleeSavedOffset,
+                                                 bool      reportUnwindData)
 {
     // The FP and RA are not in RBM_CALLEE_SAVED.
     assert(!(regsToRestoreMask & (~RBM_CALLEE_SAVED)));
@@ -284,8 +289,12 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
         if (maskSaveRegs < 0)
         {
             highestCalleeSavedOffset -= REGSIZE_BYTES;
-            emit->emitIns_R_R_I(INS_fld, EA_8BYTE, (regNumber)regNum, REG_SP, highestCalleeSavedOffset);
-            m_compiler->unwindSaveReg((regNumber)regNum, highestCalleeSavedOffset);
+            emit->emitIns_R_R_I(INS_fld, EA_8BYTE, (regNumber)regNum, baseReg, highestCalleeSavedOffset);
+
+            if (reportUnwindData)
+            {
+                m_compiler->unwindSaveReg((regNumber)regNum, highestCalleeSavedOffset);
+            }
         }
         maskSaveRegs <<= 1;
         regNum -= 1;
@@ -299,14 +308,43 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
         if (maskSaveRegs < 0)
         {
             highestCalleeSavedOffset -= REGSIZE_BYTES;
-            emit->emitIns_R_R_I(INS_ld, EA_8BYTE, (regNumber)regNum, REG_SP, highestCalleeSavedOffset);
-            m_compiler->unwindSaveReg((regNumber)regNum, highestCalleeSavedOffset);
+            emit->emitIns_R_R_I(INS_ld, EA_8BYTE, (regNumber)regNum, baseReg, highestCalleeSavedOffset);
+
+            if (reportUnwindData)
+            {
+                m_compiler->unwindSaveReg((regNumber)regNum, highestCalleeSavedOffset);
+            }
         }
         maskSaveRegs <<= 1;
         regNum -= 1;
     } while (maskSaveRegs != 0);
 
     assert(highestCalleeSavedOffset >= 16); // the callee-saved regs always above ra/fp.
+}
+
+//-----------------------------------------------------------------------------
+// genOSRHandleTier0CalleeSavedRegistersAndFrame:
+//   Handle the tier0 callee saves by restoring them from the original tier0 frame.
+//   Also report phantom unwind data for the allocated stack by the tier0 frame.
+//
+void CodeGen::genOSRHandleTier0CalleeSavedRegistersAndFrame()
+{
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
+    assert(m_compiler->opts.IsOSR());
+    assert(m_compiler->funCurrentFunc()->funKind == FuncKind::FUNC_ROOT);
+
+    PatchpointInfo* const patchpointInfo = m_compiler->info.compPatchpointInfo;
+    regMaskTP const       tier0CalleeSaves(patchpointInfo->CalleeSaveRegisters());
+
+    JITDUMP("--OSR--- tier0 has already saved ");
+    JITDUMPEXEC(dspRegMask(tier0CalleeSaves));
+    JITDUMP("\nEmitting restores\n");
+
+    genRestoreCalleeSavedRegistersHelp(tier0CalleeSaves & ~(RBM_FP | RBM_RA), REG_FP, 16, /* reportUnwindData */ false);
+    GetEmitter()->emitIns_R_R_I(INS_ld, EA_PTRSIZE, REG_RA, REG_FP, 8);
+    GetEmitter()->emitIns_R_R_I(INS_ld, EA_PTRSIZE, REG_FP, REG_FP, 0);
+
+    m_compiler->unwindAllocStack(patchpointInfo->TotalFrameSize());
 }
 
 // clang-format off
@@ -326,57 +364,40 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
  *     filter:         a0 = non-zero if the handler should handle the exception, zero otherwise (see GT_RETFILT)
  *     finally/fault:  none
  *
- *  The RISC-V64 funclet prolog is the following (Note: #framesz is total funclet frame size,
- *  including everything; #outsz is outgoing argument space. #framesz must be a multiple of 16):
+ *  The runtime calls funclets with FP set to the FP of the parent function, and the funclet does not change it.
+ *  Funclets access the locals of the parent function relative to FP. Funclets do not save the callee-saved
+ *  registers: the runtime preserves them around funclets that it calls, and the main function saves the ones used
+ *  by the funclets in its own prolog. Call-to-finally sites do not keep any values in registers across the call.
+ *  All temps are allocated in the parent frame, so the funclet frame only needs to hold RA and the outgoing
+ *  argument space.
  *
- *  Frame type liking:
- *     addi sp, sp, -#framesz    ; establish the frame
- *     sd s1, #outsz(sp)         ; save callee-saved registers, as necessary
- *     sd s2, #(outsz+8)(sp)
- *     sd ra, #(outsz+?+8)(sp)   ; save RA (8 bytes)
- *     sd fp, #(outsz+?)(sp)     ; save FP (8 bytes)
+ *  The funclet prolog sequence is (Note: #outsz is the outgoing argument space, aligned to 16):
  *
- *  The funclet frame layout:
+ *     addi sp, sp, -16          ; allocate the RA save slot
+ *     sd ra, 8(sp)              ; save RA
+ *     addi sp, sp, -#outsz      ; create space for outgoing argument space, if any
+ *
+ *  The funclet frame is thus:
  *
  *      |                       |
  *      |-----------------------|
  *      |  incoming arguments   |
  *      +=======================+ <---- Caller's SP
- *      |  Varargs regs space   | // Only for varargs main functions; not used for RV64.
+ *      |   Saved RA, padding   | // 16 bytes
  *      |-----------------------|
- *      |    MonitorAcquired    | // 8 bytes; for synchronized methods
- *      |-----------------------|
- *      ~  alignment padding    ~ // To make the whole frame 16 byte aligned
- *      |-----------------------|
- *      |Callee saved registers | // multiple of 8 bytes, not including FP/RA
- *      |-----------------------|
- *      |      Saved FP, RA     | // 16 bytes
- *      |-----------------------|
- *      |   Outgoing arg space  | // multiple of 8 bytes; if required (i.e., #outsz != 0)
+ *      |   Outgoing arg space  | // multiple of 16 bytes (optional; if #outsz > 0)
  *      |-----------------------| <---- Ambient SP
  *      |       |               |
  *      ~       | Stack grows   ~
  *      |       | downward      |
  *              V
  *
+ *  The epilog sequence is then:
  *
- * The outgoing argument size, however, can be very large, if we call a function that takes a large number of
- * arguments (note that we currently use the same outgoing argument space size in the funclet as for the main
- * function, even if the funclet doesn't have any calls, or has a much smaller, or larger, maximum number of
- * outgoing arguments for any call).
- *
- * Funclets do not have varargs arguments.
- *
- * Note that localloc cannot be used in a funclet.
- *
- *  An example epilog sequence:
  *     addi sp, sp, #outsz       ; if any outgoing argument space
- *     ld s1, #(xxx-8)(sp)       ; restore callee-saved registers
- *     ld s2, #xxx(sp)
- *     ld ra, #(xxx+?+8)(sp)     ; restore RA
- *     ld fp, #(xxx+?)(sp)       ; restore FP
- *     addi sp, sp, #framesz
- *     jarl zero, ra
+ *     ld ra, 8(sp)
+ *     addi sp, sp, 16
+ *     jalr zero, ra
  */
 // clang-format on
 
@@ -389,68 +410,22 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
     }
 #endif
 
-    // TODO-RISCV64: Implement varargs (NYI_RISCV64)
-
     assert(block != NULL);
     assert(m_compiler->bbIsFuncletBeg(block));
-
-    ScopedSetVariable<bool> _setGeneratingProlog(&m_compiler->compGeneratingProlog, true);
 
     gcInfo.gcResetForBB();
 
     m_compiler->unwindBegProlog();
 
-    bool isFilter  = block->CatchTypeIs(BBCT_FILTER);
-    int  frameSize = genFuncletInfo.fiSpDelta;
-    assert(frameSize < 0);
+    genStackPointerAdjustment(-STACK_ALIGN, REG_SCRATCH, nullptr, /* reportUnwindData */ true);
 
-    regMaskTP maskArgRegsLiveIn;
-    if (isFilter)
+    GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_RA, REG_SPBASE, REGSIZE_BYTES);
+    m_compiler->unwindSaveReg(REG_RA, REGSIZE_BYTES);
+
+    if (genFuncletInfo.fiSpDelta > 0)
     {
-        maskArgRegsLiveIn = RBM_A0 | RBM_A1;
-    }
-    else if (block->CatchTypeIs(BBCT_FINALLY, BBCT_FAULT))
-    {
-        maskArgRegsLiveIn = RBM_NONE;
-    }
-    else
-    {
-        maskArgRegsLiveIn = RBM_A0;
-    }
-
-    regMaskTP maskSaveRegs = genFuncletInfo.fiSaveRegs & RBM_CALLEE_SAVED;
-    int       FP_offset    = genFuncletInfo.fiSP_to_CalleeSaved_delta;
-
-    if ((FP_offset + (genCountBits(maskSaveRegs) << 3)) <= (2040 - 16)) // no FP/RA.
-    {
-        genStackPointerAdjustment(frameSize, REG_SCRATCH, nullptr, /* reportUnwindData */ true);
-
-        GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_FP, REG_SPBASE, FP_offset);
-        m_compiler->unwindSaveReg(REG_FP, FP_offset);
-
-        GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_RA, REG_SPBASE, FP_offset + 8);
-        m_compiler->unwindSaveReg(REG_RA, FP_offset + 8);
-
-        genSaveCalleeSavedRegistersHelp(maskSaveRegs, FP_offset + 16);
-    }
-    else
-    {
-        assert(frameSize < -2040);
-
-        genStackPointerAdjustment(frameSize + (FP_offset & -16), REG_SCRATCH, nullptr, true);
-
-        frameSize = -(FP_offset & -16);
-        FP_offset &= 0xf;
-
-        GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_FP, REG_SPBASE, FP_offset);
-        m_compiler->unwindSaveReg(REG_FP, FP_offset);
-
-        GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_RA, REG_SPBASE, FP_offset + 8);
-        m_compiler->unwindSaveReg(REG_RA, FP_offset + 8);
-
-        genSaveCalleeSavedRegistersHelp(maskSaveRegs, FP_offset + 16);
-
-        genStackPointerAdjustment(frameSize, REG_SCRATCH, nullptr, true);
+        genStackPointerAdjustment(-(int)genFuncletInfo.fiSpDelta, REG_SCRATCH, nullptr,
+                                  /* reportUnwindData */ true);
     }
 
     // This is the end of the OS-reported prolog for purposes of unwinding
@@ -461,9 +436,9 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
  *
  *  Generates code for an EH funclet epilog.
  *
- *  See the description of frame shapes at genFuncletProlog().
+ *  See the description of the funclet frame at genFuncletProlog().
  */
-void CodeGen::genFuncletEpilog()
+void CodeGen::genFuncletEpilog(BasicBlock* /* block */)
 {
 #ifdef DEBUG
     if (verbose)
@@ -472,35 +447,18 @@ void CodeGen::genFuncletEpilog()
     }
 #endif
 
-    ScopedSetVariable<bool> _setGeneratingEpilog(&m_compiler->compGeneratingEpilog, true);
-
     m_compiler->unwindBegEpilog();
 
-    int frameSize = genFuncletInfo.fiSpDelta;
-    assert(frameSize < 0);
-
-    regMaskTP maskSaveRegs = genFuncletInfo.fiSaveRegs & RBM_CALLEE_SAVED;
-    int       FP_offset    = genFuncletInfo.fiSP_to_CalleeSaved_delta;
-
-    if ((FP_offset + (genCountBits(maskSaveRegs) << 3)) > (2040 - 16)) // no FP/RA.
+    if (genFuncletInfo.fiSpDelta > 0)
     {
-        assert(frameSize < -2040);
-
-        genStackPointerAdjustment(FP_offset & -16, REG_SCRATCH, nullptr, /* reportUnwindData */ true);
-
-        frameSize += FP_offset & -16;
-        FP_offset = FP_offset & 0xf;
+        genStackPointerAdjustment((int)genFuncletInfo.fiSpDelta, REG_SCRATCH, nullptr,
+                                  /* reportUnwindData */ true);
     }
 
-    genRestoreCalleeSavedRegistersHelp(maskSaveRegs, FP_offset + 16);
+    GetEmitter()->emitIns_R_R_I(INS_ld, EA_PTRSIZE, REG_RA, REG_SPBASE, REGSIZE_BYTES);
+    m_compiler->unwindSaveReg(REG_RA, REGSIZE_BYTES);
 
-    GetEmitter()->emitIns_R_R_I(INS_ld, EA_PTRSIZE, REG_RA, REG_SPBASE, FP_offset + 8);
-    m_compiler->unwindSaveReg(REG_RA, FP_offset + 8);
-
-    GetEmitter()->emitIns_R_R_I(INS_ld, EA_PTRSIZE, REG_FP, REG_SPBASE, FP_offset);
-    m_compiler->unwindSaveReg(REG_FP, FP_offset);
-
-    genStackPointerAdjustment(-frameSize, REG_SCRATCH, nullptr, /* reportUnwindData */ true);
+    genStackPointerAdjustment(STACK_ALIGN, REG_SCRATCH, nullptr, /* reportUnwindData */ true);
 
     GetEmitter()->emitIns_R_R_I(INS_jalr, emitActualTypeSize(TYP_I_IMPL), REG_R0, REG_RA, 0);
     m_compiler->unwindReturn(REG_RA);
@@ -512,8 +470,7 @@ void CodeGen::genFuncletEpilog()
  *
  *  Capture the information used to generate the funclet prologs and epilogs.
  *  Note that all funclet prologs are identical, and all funclet epilogs are
- *  identical (per type: filters are identical, and non-filters are identical).
- *  Thus, we compute the data used for these just once.
+ *  identical. Thus, we compute the data used for these just once.
  *
  *  See genFuncletProlog() for more information about the prolog/epilog sequences.
  */
@@ -528,49 +485,16 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
     // The frame size and offsets must be finalized
     assert(m_compiler->lvaDoneFrameLayout == Compiler::FINAL_FRAME_LAYOUT);
 
-    regMaskTP rsMaskSaveRegs = regSet.rsMaskCalleeSaved;
-    assert((rsMaskSaveRegs & RBM_RA) != 0);
-    assert((rsMaskSaveRegs & RBM_FP) != 0);
-
-    /* Now save it for future use */
-    int funcletFrameSize = m_compiler->lvaOutgoingArgSpaceSize;
-
-    genFuncletInfo.fiSP_to_CalleeSaved_delta = funcletFrameSize;
-
-    funcletFrameSize += genCountBits(rsMaskSaveRegs) * REGSIZE_BYTES;
-
-    int delta_PSP = -TARGET_POINTER_SIZE;
-    if ((m_compiler->lvaMonAcquired != BAD_VAR_NUM) && !m_compiler->opts.IsOSR())
-    {
-        delta_PSP -= TARGET_POINTER_SIZE;
-    }
-    if ((m_compiler->lvaAsyncExecutionContextVar != BAD_VAR_NUM) && !m_compiler->opts.IsOSR())
-    {
-        delta_PSP -= TARGET_POINTER_SIZE;
-    }
-    if ((m_compiler->lvaAsyncSynchronizationContextVar != BAD_VAR_NUM) && !m_compiler->opts.IsOSR())
-    {
-        delta_PSP -= TARGET_POINTER_SIZE;
-    }
-
-    funcletFrameSize = funcletFrameSize - delta_PSP;
-    funcletFrameSize = roundUp((unsigned)funcletFrameSize, STACK_ALIGN);
-
-    genFuncletInfo.fiSpDelta  = -funcletFrameSize;
-    genFuncletInfo.fiSaveRegs = rsMaskSaveRegs;
+    assert(m_compiler->lvaOutgoingArgSpaceSize % REGSIZE_BYTES == 0);
+    genFuncletInfo.fiSpDelta = roundUp(m_compiler->lvaOutgoingArgSpaceSize, STACK_ALIGN);
 
 #ifdef DEBUG
     if (verbose)
     {
         printf("\n");
         printf("Funclet prolog / epilog info\n");
-        printf("                        Save regs: ");
-        dspRegMask(genFuncletInfo.fiSaveRegs);
-        printf("\n");
-        printf("  SP to CalleeSaved location delta: %d\n", genFuncletInfo.fiSP_to_CalleeSaved_delta);
-        printf("                       SP delta: %d\n", genFuncletInfo.fiSpDelta);
+        printf("              Outgoing arg space: %u\n", genFuncletInfo.fiSpDelta);
     }
-    assert(genFuncletInfo.fiSP_to_CalleeSaved_delta >= 0);
 #endif // DEBUG
 }
 
@@ -582,8 +506,6 @@ void CodeGen::genFnEpilog(BasicBlock* block)
         printf("*************** In genFnEpilog()\n");
     }
 #endif // DEBUG
-
-    ScopedSetVariable<bool> _setGeneratingEpilog(&m_compiler->compGeneratingEpilog, true);
 
     VarSetOps::Assign(m_compiler, gcInfo.gcVarPtrSetCur, GetEmitter()->emitInitGCrefVars);
     gcInfo.gcRegGCrefSetCur = GetEmitter()->emitInitGCrefRegs;
@@ -792,14 +714,15 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
                 GetEmitter()->emitIns_R_R_R(INS_add, EA_PTRSIZE, rEndAddr, rEndAddr, rAddr);
             }
 
-            // TODO-RISCV64-RVC: Remove hardcoded branch offset here
+            BasicBlock* loopHead = genCreateTempLabel();
+            genDefineInlineTempLabel(loopHead);
             GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, padding);
             GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, padding + REGSIZE_BYTES);
             GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, padding + 2 * REGSIZE_BYTES);
             GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, padding + 3 * REGSIZE_BYTES);
 
             GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, rAddr, rAddr, 4 * REGSIZE_BYTES);
-            GetEmitter()->emitIns_R_R_I(INS_bltu, EA_PTRSIZE, rAddr, rEndAddr, -5 << 2);
+            GetEmitter()->emitIns_J_cond_la(INS_bltu, loopHead, rAddr, rEndAddr);
 
             uLclBytes -= uLoopBytes;
             uAddrCurr = 0;
@@ -836,7 +759,13 @@ void CodeGen::inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock)
     GetEmitter()->emitIns_J(emitter::emitJumpKindToIns(jmp), tgtBlock);
 }
 
-BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
+//------------------------------------------------------------------------
+// genCallFinally: Generate a call to a finally.
+//
+// Arguments:
+//   block - callfinally block
+//
+void CodeGen::genCallFinally(BasicBlock* block)
 {
     assert(block->KindIs(BBJ_CALLFINALLY));
 
@@ -861,7 +790,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
             instGen(INS_ebreak); // This should never get executed
         }
 
-        return block;
+        return;
     }
     else
     {
@@ -887,8 +816,6 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
         }
 
         GetEmitter()->emitEnableGC();
-
-        return nextBlock;
     }
 }
 
@@ -968,7 +895,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             }
 
             instGen_Set_Reg_To_Imm(attr, targetReg, cnsVal,
-                                   INS_FLAGS_DONT_CARE DEBUGARG(con->gtTargetHandle) DEBUGARG(con->gtFlags));
+                                   INS_FLAGS_DONT_CARE DEBUGARG(con->GetTargetHandle()) DEBUGARG(con->gtFlags));
             regSet.verifyRegUsed(targetReg);
         }
         break;
@@ -1279,7 +1206,9 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
             else if (data->IsIntegralConst())
             {
                 ssize_t cnsVal = data->AsIntConCommon()->IconValue();
-                dataReg        = (targetReg == REG_NA) ? rsGetRsvdReg() : targetReg; // Use tempReg if spilled
+                // If spilled, use RA as the temp: the reserved register may be needed below
+                // to form the address of a stack local whose offset does not fit in simm12.
+                dataReg = (targetReg == REG_NA) ? REG_RA : targetReg;
 
                 if (data->IsIconHandle() && data->AsIntCon()->FitsInAddrBase(m_compiler) &&
                     data->AsIntCon()->AddrNeedsReloc(m_compiler))
@@ -1430,7 +1359,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         assert(size->isContained());
 
         // If amount is zero then return null in targetReg
-        amount = size->AsIntCon()->gtIconVal;
+        amount = size->AsIntCon()->IconValue();
         if (amount == 0)
         {
             instGen_Set_Reg_To_Zero(EA_PTRSIZE, targetReg);
@@ -1829,7 +1758,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
         // Check divisorOp first as we can always allow it to be a contained immediate
         if (divisorOp->isContainedIntOrIImmed())
         {
-            ssize_t intConst = (int)(divisorOp->AsIntCon()->gtIconVal);
+            ssize_t intConst = (int)(divisorOp->AsIntCon()->IconValue());
             if (!emitter::isGeneralRegister(divisorReg))
             {
                 tempReg    = internalRegisters.GetSingle(tree);
@@ -2020,204 +1949,6 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
     }
 }
 
-// Generate code for CpObj nodes which copy structs that have interleaved
-// GC pointers.
-// For this case we'll generate a sequence of loads/stores in the case of struct
-// slots that don't contain GC pointers.  The generated code will look like:
-// ld tempReg, 8(a5)
-// sd tempReg, 8(a6)
-//
-// In the case of a GC-Pointer we'll call the ByRef write barrier helper
-// who happens to use the same registers as the previous call to maintain
-// the same register requirements and register killsets:
-// call CORINFO_HELP_ASSIGN_BYREF
-//
-// So finally an example would look like this:
-// ld tempReg, 8(a5)
-// sd tempReg 8(a6)
-// call CORINFO_HELP_ASSIGN_BYREF
-// ld tempReg, 8(a5)
-// sd tempReg, 8(a6)
-// call CORINFO_HELP_ASSIGN_BYREF
-// ld tempReg, 8(a5)
-// sd tempReg, 8(a6)
-void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
-{
-    GenTree*  dstAddr       = cpObjNode->Addr();
-    GenTree*  source        = cpObjNode->Data();
-    var_types srcAddrType   = TYP_BYREF;
-    bool      sourceIsLocal = false;
-
-    assert(source->isContained());
-    if (source->OperIs(GT_IND))
-    {
-        GenTree* srcAddr = source->gtGetOp1();
-        assert(!srcAddr->isContained());
-        srcAddrType = srcAddr->TypeGet();
-    }
-    else
-    {
-        noway_assert(source->IsLocal());
-        sourceIsLocal = true;
-    }
-
-    bool dstOnStack = cpObjNode->IsAddressNotOnHeap(m_compiler);
-
-#ifdef DEBUG
-    assert(!dstAddr->isContained());
-
-    // This GenTree node has data about GC pointers, this means we're dealing
-    // with CpObj.
-    assert(cpObjNode->GetLayout()->HasGCPtr());
-#endif // DEBUG
-
-    // Consume the operands and get them into the right registers.
-    // They may now contain gc pointers (depending on their type; gcMarkRegPtrVal will "do the right thing").
-    genConsumeBlockOp(cpObjNode, REG_WRITE_BARRIER_DST_BYREF, REG_WRITE_BARRIER_SRC_BYREF, REG_NA);
-    gcInfo.gcMarkRegPtrVal(REG_WRITE_BARRIER_SRC_BYREF, srcAddrType);
-    gcInfo.gcMarkRegPtrVal(REG_WRITE_BARRIER_DST_BYREF, dstAddr->TypeGet());
-
-    ClassLayout* layout = cpObjNode->GetLayout();
-    unsigned     slots  = layout->GetSlotCount();
-
-    // Temp register(s) used to perform the sequence of loads and stores.
-    regNumber tmpReg  = internalRegisters.Extract(cpObjNode);
-    regNumber tmpReg2 = REG_NA;
-
-    assert(genIsValidIntReg(tmpReg));
-    assert(tmpReg != REG_WRITE_BARRIER_SRC_BYREF);
-    assert(tmpReg != REG_WRITE_BARRIER_DST_BYREF);
-
-    if (slots > 1)
-    {
-        tmpReg2 = internalRegisters.GetSingle(cpObjNode);
-        assert(tmpReg2 != tmpReg);
-        assert(genIsValidIntReg(tmpReg2));
-        assert(tmpReg2 != REG_WRITE_BARRIER_DST_BYREF);
-        assert(tmpReg2 != REG_WRITE_BARRIER_SRC_BYREF);
-    }
-
-    if (cpObjNode->IsVolatile())
-    {
-        // issue a full memory barrier before a volatile CpObj operation
-        instGen_MemoryBarrier();
-    }
-
-    emitter* emit = GetEmitter();
-
-    emitAttr attrSrcAddr = emitActualTypeSize(srcAddrType);
-    emitAttr attrDstAddr = emitActualTypeSize(dstAddr->TypeGet());
-
-    // If we can prove it's on the stack we don't need to use the write barrier.
-    if (dstOnStack)
-    {
-        unsigned i = 0;
-        // Check if two or more remaining slots and use two ld/sd sequence
-        while (i < slots - 1)
-        {
-            emitAttr attr0 = emitTypeSize(layout->GetGCPtrType(i + 0));
-            emitAttr attr1 = emitTypeSize(layout->GetGCPtrType(i + 1));
-            if ((i + 2) == slots)
-            {
-                attrSrcAddr = EA_8BYTE;
-                attrDstAddr = EA_8BYTE;
-            }
-
-            emit->emitIns_R_R_I(INS_ld, attr0, tmpReg, REG_WRITE_BARRIER_SRC_BYREF, 0);
-            emit->emitIns_R_R_I(INS_ld, attr1, tmpReg2, REG_WRITE_BARRIER_SRC_BYREF, TARGET_POINTER_SIZE);
-            emit->emitIns_R_R_I(INS_addi, attrSrcAddr, REG_WRITE_BARRIER_SRC_BYREF, REG_WRITE_BARRIER_SRC_BYREF,
-                                2 * TARGET_POINTER_SIZE);
-            emit->emitIns_R_R_I(INS_sd, attr0, tmpReg, REG_WRITE_BARRIER_DST_BYREF, 0);
-            emit->emitIns_R_R_I(INS_sd, attr1, tmpReg2, REG_WRITE_BARRIER_DST_BYREF, TARGET_POINTER_SIZE);
-            emit->emitIns_R_R_I(INS_addi, attrDstAddr, REG_WRITE_BARRIER_DST_BYREF, REG_WRITE_BARRIER_DST_BYREF,
-                                2 * TARGET_POINTER_SIZE);
-            i += 2;
-        }
-
-        // Use a ld/sd sequence for the last remainder
-        if (i < slots)
-        {
-            emitAttr attr0 = emitTypeSize(layout->GetGCPtrType(i + 0));
-            if (i + 1 >= slots)
-            {
-                attrSrcAddr = EA_8BYTE;
-                attrDstAddr = EA_8BYTE;
-            }
-
-            emit->emitIns_R_R_I(INS_ld, attr0, tmpReg, REG_WRITE_BARRIER_SRC_BYREF, 0);
-            emit->emitIns_R_R_I(INS_addi, attrSrcAddr, REG_WRITE_BARRIER_SRC_BYREF, REG_WRITE_BARRIER_SRC_BYREF,
-                                TARGET_POINTER_SIZE);
-            emit->emitIns_R_R_I(INS_sd, attr0, tmpReg, REG_WRITE_BARRIER_DST_BYREF, 0);
-            emit->emitIns_R_R_I(INS_addi, attrDstAddr, REG_WRITE_BARRIER_DST_BYREF, REG_WRITE_BARRIER_DST_BYREF,
-                                TARGET_POINTER_SIZE);
-        }
-    }
-    else
-    {
-        unsigned gcPtrCount = cpObjNode->GetLayout()->GetGCPtrCount();
-
-        unsigned i = 0;
-        while (i < slots)
-        {
-            if (!layout->IsGCPtr(i))
-            {
-                // Check if the next slot's type is also TYP_GC_NONE and use two ld/sd
-                if ((i + 1 < slots) && !layout->IsGCPtr(i + 1))
-                {
-                    if ((i + 2) == slots)
-                    {
-                        attrSrcAddr = EA_8BYTE;
-                        attrDstAddr = EA_8BYTE;
-                    }
-                    emit->emitIns_R_R_I(INS_ld, EA_8BYTE, tmpReg, REG_WRITE_BARRIER_SRC_BYREF, 0);
-                    emit->emitIns_R_R_I(INS_ld, EA_8BYTE, tmpReg2, REG_WRITE_BARRIER_SRC_BYREF, TARGET_POINTER_SIZE);
-                    emit->emitIns_R_R_I(INS_addi, attrSrcAddr, REG_WRITE_BARRIER_SRC_BYREF, REG_WRITE_BARRIER_SRC_BYREF,
-                                        2 * TARGET_POINTER_SIZE);
-                    emit->emitIns_R_R_I(INS_sd, EA_8BYTE, tmpReg, REG_WRITE_BARRIER_DST_BYREF, 0);
-                    emit->emitIns_R_R_I(INS_sd, EA_8BYTE, tmpReg2, REG_WRITE_BARRIER_DST_BYREF, TARGET_POINTER_SIZE);
-                    emit->emitIns_R_R_I(INS_addi, attrDstAddr, REG_WRITE_BARRIER_DST_BYREF, REG_WRITE_BARRIER_DST_BYREF,
-                                        2 * TARGET_POINTER_SIZE);
-                    ++i; // extra increment of i, since we are copying two items
-                }
-                else
-                {
-                    if (i + 1 >= slots)
-                    {
-                        attrSrcAddr = EA_8BYTE;
-                        attrDstAddr = EA_8BYTE;
-                    }
-                    emit->emitIns_R_R_I(INS_ld, EA_8BYTE, tmpReg, REG_WRITE_BARRIER_SRC_BYREF, 0);
-                    emit->emitIns_R_R_I(INS_addi, attrSrcAddr, REG_WRITE_BARRIER_SRC_BYREF, REG_WRITE_BARRIER_SRC_BYREF,
-                                        TARGET_POINTER_SIZE);
-                    emit->emitIns_R_R_I(INS_sd, EA_8BYTE, tmpReg, REG_WRITE_BARRIER_DST_BYREF, 0);
-                    emit->emitIns_R_R_I(INS_addi, attrDstAddr, REG_WRITE_BARRIER_DST_BYREF, REG_WRITE_BARRIER_DST_BYREF,
-                                        TARGET_POINTER_SIZE);
-                }
-            }
-            else
-            {
-                // In the case of a GC-Pointer we'll call the ByRef write barrier helper
-                genEmitHelperCall(CORINFO_HELP_ASSIGN_BYREF, 0, EA_PTRSIZE);
-                gcPtrCount--;
-            }
-            ++i;
-        }
-        assert(gcPtrCount == 0);
-    }
-
-    if (cpObjNode->IsVolatile())
-    {
-        // issue a INS_BARRIER_RMB after a volatile CpObj operation
-        // TODO-RISCV64: there is only BARRIER_FULL for RISCV64.
-        instGen_MemoryBarrier(BARRIER_FULL);
-    }
-
-    // Clear the gcInfo for REG_WRITE_BARRIER_SRC_BYREF and REG_WRITE_BARRIER_DST_BYREF.
-    // While we normally update GC info prior to the last instruction that uses them,
-    // these actually live into the helper call.
-    gcInfo.gcMarkRegSetNpt(RBM_WRITE_BARRIER_SRC_BYREF | RBM_WRITE_BARRIER_DST_BYREF);
-}
-
 // generate code do a switch statement based on a table of ip-relative offsets
 void CodeGen::genTableBasedSwitch(GenTree* treeNode)
 {
@@ -2258,7 +1989,7 @@ void CodeGen::genJumpTable(GenTree* treeNode)
     // Access to inline data is 'abstracted' by a special type of static member
     // (produced by eeFindJitDataOffs) which the emitter recognizes as being a reference
     // to constant data, not a real static field.
-    GetEmitter()->emitIns_R_C(INS_addi, emitActualTypeSize(TYP_I_IMPL), treeNode->GetRegNum(), REG_NA,
+    GetEmitter()->emitIns_R_C(INS_addi, EA_PTRSIZE, treeNode->GetRegNum(), REG_NA,
                               m_compiler->eeFindJitDataOffs(jmpTabBase));
     genProduceReg(treeNode);
 }
@@ -2271,9 +2002,45 @@ void CodeGen::genJumpTable(GenTree* treeNode)
 //
 void CodeGen::genAsyncResumeInfo(GenTreeVal* treeNode)
 {
-    GetEmitter()->emitIns_R_C(INS_addi, emitActualTypeSize(TYP_I_IMPL), treeNode->GetRegNum(), REG_NA,
+    emitAttr attr = EA_PTRSIZE;
+    if (m_compiler->eeDataWithCodePointersNeedsRelocs())
+    {
+        attr = EA_SET_FLG(EA_PTRSIZE, EA_CNS_RELOC_FLG);
+    }
+
+    GetEmitter()->emitIns_R_C(INS_addi, attr, treeNode->GetRegNum(), REG_NA,
                               genEmitAsyncResumeInfo((unsigned)treeNode->gtVal1));
     genProduceReg(treeNode);
+}
+
+//------------------------------------------------------------------------
+// genFtnEntry: emits address of the current function being compiled
+//
+// Parameters:
+//   treeNode - the GT_FTN_ENTRY node
+//
+void CodeGen::genFtnEntry(GenTree* treeNode)
+{
+    GetEmitter()->emitIns_R_L(INS_lea, EA_PTRSIZE, GetEmitter()->emitGetFirstPrologIG(), treeNode->GetRegNum());
+    genProduceReg(treeNode);
+}
+
+//------------------------------------------------------------------------
+// genNonLocalJmp: Emit jump to the specified address.
+//
+// Parameters:
+//   tree - the GT_NONLOCAL_JMP node
+//
+void CodeGen::genNonLocalJmp(GenTreeUnOp* tree)
+{
+    // Non-local jumps cannot handle the case where this function has been
+    // hijacked, since the VM may not restore the original LR at the right
+    // location in the new frame.
+    SetHasTailCalls(true);
+
+    genConsumeOperands(tree->AsOp());
+    // jalr with rd=x0 is an indirect jump (no link)
+    GetEmitter()->emitIns_R_R_I(INS_jalr, EA_PTRSIZE, REG_R0, tree->gtGetOp1()->GetRegNum(), 0);
 }
 
 //------------------------------------------------------------------------
@@ -2343,18 +2110,18 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
     GenTree* valOp       = treeNode->Data();
     GenTree* comparandOp = treeNode->Comparand();
 
-    regNumber target    = treeNode->GetRegNum();
-    regNumber loc       = locOp->GetRegNum();
-    regNumber val       = !valOp->isContained() ? valOp->GetRegNum() : REG_ZERO;
-    regNumber comparand = REG_ZERO;
+    regNumber target            = treeNode->GetRegNum();
+    regNumber loc               = locOp->GetRegNum();
+    regNumber val               = !valOp->isContained() ? valOp->GetRegNum() : REG_ZERO;
+    regNumber comparand         = REG_ZERO;
+    regNumber comparandToExtend = REG_NA;
     if (!comparandOp->isContained())
     {
         comparand = comparandOp->GetRegNum();
         if (comparandOp->TypeIs(TYP_INT, TYP_UINT))
         {
-            regNumber signExtendedComparand = internalRegisters.Extract(treeNode);
-            GetEmitter()->emitIns_R_R(INS_sext_w, EA_4BYTE, signExtendedComparand, comparand);
-            comparand = signExtendedComparand;
+            comparandToExtend = comparand;
+            comparand         = internalRegisters.Extract(treeNode);
         }
     }
     regNumber storeErr = internalRegisters.GetSingle(treeNode);
@@ -2377,6 +2144,12 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
     genConsumeAddress(locOp);
     genConsumeRegs(valOp);
     genConsumeRegs(comparandOp);
+
+    // The comparand may have been reloaded from its spill location by genConsumeRegs above
+    if (comparandToExtend != REG_NA)
+    {
+        GetEmitter()->emitIns_R_R(INS_sext_w, EA_4BYTE, comparand, comparandToExtend);
+    }
 
     // NOTE: `genConsumeAddress` marks consumed register as not a GC pointer, assuming the input
     // registers die at the first generated instruction. However, here the input registers are reused,
@@ -2857,7 +2630,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
         // 'data' goes into REG_T4 (REG_WRITE_BARRIER_SRC)
         genCopyRegIfNeeded(data, REG_WRITE_BARRIER_SRC);
 
-        genGCWriteBarrier(tree, writeBarrierForm);
+        genGCWriteBarrier(writeBarrierForm);
     }
     else // A normal store, not a WriteBarrier store
     {
@@ -3241,8 +3014,8 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
         if (oper == GT_LE && op2->isContainedIntOrIImmed())
         {
             oper = GT_LT;
-            assert(op2->AsIntCon()->gtIconVal == 0);
-            op2->AsIntCon()->gtIconVal = 1;
+            assert(op2->AsIntCon()->IconValue() == 0);
+            op2->AsIntCon()->SetIconValue(1);
         }
 
         isReversed = (oper == GT_LE || oper == GT_GE);
@@ -3262,7 +3035,7 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
         if (op2->isContainedIntOrIImmed())
         {
             instruction slti = isUnsigned ? INS_sltiu : INS_slti;
-            emit->emitIns_R_R_I(slti, EA_PTRSIZE, targetReg, reg1, op2->AsIntCon()->gtIconVal);
+            emit->emitIns_R_R_I(slti, EA_PTRSIZE, targetReg, reg1, op2->AsIntCon()->IconValue());
         }
         else
         {
@@ -3273,6 +3046,61 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
 
     if (isReversed)
         emit->emitIns_R_R_I(INS_xori, EA_8BYTE, targetReg, targetReg, 1);
+
+    genProduceReg(tree);
+}
+
+//------------------------------------------------------------------------
+// genCodeForSelect: Produce branch-free code for a GT_SELECT node using Zicond.
+//
+//   SELECT(cond, trueVal, falseVal) =>
+//     czero.nez tmp,   falseVal, cond   ; tmp     = (cond != 0) ? 0 : falseVal
+//     czero.eqz dst,   trueVal,  cond   ; dst     = (cond == 0) ? 0 : trueVal
+//     or        dst,   dst,      tmp
+//
+// Degenerate cases (one operand is the zero register) collapse to a single czero.
+//
+// Arguments:
+//    tree - the GT_SELECT node
+//
+void CodeGen::genCodeForSelect(GenTreeOp* tree)
+{
+    assert(tree->OperIs(GT_SELECT));
+    assert(m_compiler->compOpportunisticallyDependsOn(InstructionSet_Zicond));
+    assert(varTypeIsIntegralOrI(tree));
+
+    GenTreeConditional* sel      = tree->AsConditional();
+    GenTree*            cond     = sel->gtCond;
+    GenTree*            trueVal  = sel->gtOp1;
+    GenTree*            falseVal = sel->gtOp2;
+
+    genConsumeRegs(cond);
+    genConsumeRegs(trueVal);
+    genConsumeRegs(falseVal);
+
+    regNumber targetReg = tree->GetRegNum();
+    regNumber condReg   = cond->GetRegNum();
+    regNumber trueReg   = trueVal->isContained() ? REG_ZERO : trueVal->GetRegNum();
+    regNumber falseReg  = falseVal->isContained() ? REG_ZERO : falseVal->GetRegNum();
+
+    emitter* emit = GetEmitter();
+    emitAttr attr = emitActualTypeSize(tree);
+
+    if (falseReg == REG_ZERO)
+    {
+        emit->emitIns_R_R_R(INS_czero_eqz, attr, targetReg, trueReg, condReg);
+    }
+    else if (trueReg == REG_ZERO)
+    {
+        emit->emitIns_R_R_R(INS_czero_nez, attr, targetReg, falseReg, condReg);
+    }
+    else
+    {
+        regNumber tmpReg = internalRegisters.GetSingle(tree);
+        emit->emitIns_R_R_R(INS_czero_nez, attr, tmpReg, falseReg, condReg);
+        emit->emitIns_R_R_R(INS_czero_eqz, attr, targetReg, trueReg, condReg);
+        emit->emitIns_R_R_R(INS_add, attr, targetReg, targetReg, tmpReg);
+    }
 
     genProduceReg(tree);
 }
@@ -3365,14 +3193,6 @@ int CodeGenInterface::genSPtoFPdelta() const
     {
         delta -= TARGET_POINTER_SIZE;
     }
-    if ((m_compiler->lvaAsyncExecutionContextVar != BAD_VAR_NUM) && !m_compiler->opts.IsOSR())
-    {
-        delta -= TARGET_POINTER_SIZE;
-    }
-    if ((m_compiler->lvaAsyncSynchronizationContextVar != BAD_VAR_NUM) && !m_compiler->opts.IsOSR())
-    {
-        delta -= TARGET_POINTER_SIZE;
-    }
 
     assert(delta >= 0);
     return delta;
@@ -3392,8 +3212,6 @@ int CodeGenInterface::genTotalFrameSize() const
     // included in the compCalleeRegsPushed count. This is like prespill on ARM32, but
     // since we don't use "push" instructions to save them, we don't have to do the
     // save of these varargs register arguments as the first thing in the prolog.
-
-    assert(!IsUninitialized(m_compiler->compCalleeRegsPushed));
 
     int totalFrameSize = m_compiler->compCalleeRegsPushed * REGSIZE_BYTES + m_compiler->compLclFrameSize;
 
@@ -4075,6 +3893,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForCompare(treeNode->AsOp());
             break;
 
+        case GT_SELECT:
+            genCodeForSelect(treeNode->AsConditional());
+            break;
+
         case GT_JCMP:
             genCodeForJumpCompare(treeNode->AsOpCC());
             break;
@@ -4168,24 +3990,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_CATCH_ARG:
-
-            noway_assert(handlerGetsXcptnObj(m_compiler->compCurBB->GetCatchType()));
-
-            /* Catch arguments get passed in a register. genCodeForBBlist()
-               would have marked it as holding a GC object, but not used. */
-
-            noway_assert(gcInfo.gcRegGCrefSetCur & RBM_EXCEPTION_OBJECT);
-            genConsumeReg(treeNode);
-            break;
-
-        case GT_PINVOKE_PROLOG:
-            noway_assert(((gcInfo.gcRegGCrefSetCur | gcInfo.gcRegByrefSetCur) &
-                          ~fullIntArgRegMask(m_compiler->info.compCallConv)) == 0);
-
-// the runtime side requires the codegen here to be consistent
-#ifdef PSEUDORANDOM_NOP_INSERTION
-            emit->emitDisableRandomNops();
-#endif // PSEUDORANDOM_NOP_INSERTION
+            genCodeForCatchArg(treeNode);
             break;
 
         case GT_LABEL:
@@ -4193,8 +3998,28 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             emit->emitIns_R_L(INS_ld, EA_PTRSIZE, genPendingCallLabel, targetReg);
             break;
 
+        case GT_RETURN_SUSPEND:
+            genReturnSuspend(treeNode->AsUnOp());
+            break;
+
+        case GT_ASYNC_CONTINUATION:
+            genCodeForAsyncContinuation(treeNode);
+            break;
+
         case GT_ASYNC_RESUME_INFO:
             genAsyncResumeInfo(treeNode->AsVal());
+            break;
+
+        case GT_RECORD_ASYNC_RESUME:
+            genRecordAsyncResume(treeNode->AsVal());
+            break;
+
+        case GT_FTN_ENTRY:
+            genFtnEntry(treeNode);
+            break;
+
+        case GT_NONLOCAL_JMP:
+            genNonLocalJmp(treeNode->AsUnOp());
             break;
 
         case GT_STORE_BLK:
@@ -4213,16 +4038,9 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             // Do nothing; this node is a marker for debug info.
             break;
 
-        case GT_RECORD_ASYNC_RESUME:
-            genRecordAsyncResume(treeNode->AsVal());
-            break;
-
-        case GT_ASYNC_CONTINUATION:
-            genCodeForAsyncContinuation(treeNode);
-            break;
-
-        case GT_RETURN_SUSPEND:
-            genReturnSuspend(treeNode->AsUnOp());
+        case GT_PATCHPOINT:
+        case GT_PATCHPOINT_FORCED:
+            genPatchpoint(treeNode->AsOp());
             break;
 
         case GT_SH1ADD:
@@ -4270,7 +4088,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 //
 void CodeGen::genSetGSSecurityCookie(regNumber initReg, bool* pInitRegZeroed)
 {
-    assert(m_compiler->compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
 
     if (!m_compiler->getNeedsGSSecurityCookie())
     {
@@ -4362,6 +4180,71 @@ void CodeGen::genIntrinsic(GenTreeIntrinsic* treeNode)
 {
     GenTree* op1 = treeNode->gtGetOp1();
     GenTree* op2 = treeNode->gtGetOp2IfPresent();
+
+    // Handle integer-domain saturation intrinsics separately; they use branches
+    // and a temporary register rather than the single-instruction pattern below.
+    switch (treeNode->gtIntrinsicName)
+    {
+        case NI_PRIMITIVE_SaturateToInt8:
+        case NI_PRIMITIVE_SaturateToInt16:
+        case NI_PRIMITIVE_SaturateToUInt8:
+        case NI_PRIMITIVE_SaturateToUInt16:
+        {
+            ssize_t minVal, maxVal;
+            switch (treeNode->gtIntrinsicName)
+            {
+                case NI_PRIMITIVE_SaturateToInt8:
+                    minVal = INT8_MIN;
+                    maxVal = INT8_MAX;
+                    break;
+                case NI_PRIMITIVE_SaturateToInt16:
+                    minVal = INT16_MIN;
+                    maxVal = INT16_MAX;
+                    break;
+                case NI_PRIMITIVE_SaturateToUInt8:
+                    minVal = 0;
+                    maxVal = UINT8_MAX;
+                    break;
+                case NI_PRIMITIVE_SaturateToUInt16:
+                    minVal = 0;
+                    maxVal = UINT16_MAX;
+                    break;
+                default:
+                    unreached();
+            }
+
+            genConsumeOperands(treeNode->AsOp());
+            regNumber dst    = treeNode->GetRegNum();
+            regNumber src    = op1->GetRegNum();
+            regNumber tmpReg = internalRegisters.GetSingle(treeNode);
+            emitter*  emit   = GetEmitter();
+
+            // Copy src to dst, normalizing to a sign-extended 32-bit value so the
+            // subsequent full-register bge compares against the (signed) clamp bounds
+            // are well-defined. `sext.w rd, rs` sign-extends bits[31:0] into rd[63:0].
+            emit->emitIns_R_R(INS_sext_w, EA_4BYTE, dst, src);
+
+            // Clamp lower bound: if dst < minVal, dst = minVal.
+            BasicBlock* skipLo = genCreateTempLabel();
+            instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, minVal);
+            emit->emitIns_J_cond_la(INS_bge, skipLo, dst, tmpReg); // skip if dst >= minVal
+            emit->emitIns_R_R(INS_mov, EA_PTRSIZE, dst, tmpReg);   // dst = minVal
+            genDefineTempLabel(skipLo);
+
+            // Clamp upper bound: if dst > maxVal, dst = maxVal.
+            BasicBlock* skipHi = genCreateTempLabel();
+            instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, maxVal);
+            emit->emitIns_J_cond_la(INS_bge, skipHi, tmpReg, dst); // skip if maxVal >= dst
+            emit->emitIns_R_R(INS_mov, EA_PTRSIZE, dst, tmpReg);   // dst = maxVal
+            genDefineTempLabel(skipHi);
+
+            genProduceReg(treeNode);
+            return;
+        }
+
+        default:
+            break;
+    }
 
     emitAttr size = emitActualTypeSize(op1);
     bool     is4  = (size == EA_4BYTE);
@@ -4791,7 +4674,7 @@ void CodeGen::genCodeForShift(GenTree* tree)
             }
             else
             {
-                unsigned shiftByImm = (unsigned)shiftBy->AsIntCon()->gtIconVal;
+                unsigned shiftByImm = (unsigned)shiftBy->AsIntCon()->IconValue();
                 assert(shiftByImm < immWidth);
                 if (!isR)
                 {
@@ -4823,7 +4706,7 @@ void CodeGen::genCodeForShift(GenTree* tree)
             }
             else
             {
-                unsigned shiftByImm = (unsigned)shiftBy->AsIntCon()->gtIconVal;
+                unsigned shiftByImm = (unsigned)shiftBy->AsIntCon()->IconValue();
                 if (shiftByImm >= 32 && shiftByImm < 64)
                 {
                     immWidth = 64;
@@ -4855,7 +4738,7 @@ void CodeGen::genCodeForShift(GenTree* tree)
         {
             assert(isImmed(tree));
             instruction ins        = genGetInsForOper(tree);
-            unsigned    shiftByImm = (unsigned)shiftBy->AsIntCon()->gtIconVal;
+            unsigned    shiftByImm = (unsigned)shiftBy->AsIntCon()->IconValue();
 
             // should check shiftByImm for riscv64-ins.
             shiftByImm &= (immWidth - 1);
@@ -5015,13 +4898,13 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
     emitAttr attr = emitActualTypeSize(node);
     // Can we use a shift instruction for multiply ?
     //
-    if (isPow2(node->gtElemSize))
+    if (isPow2(node->GetElemSize()))
     {
         DWORD scale;
-        BitScanForward(&scale, node->gtElemSize);
+        BitScanForward(&scale, node->GetElemSize());
 
         // dest = base + (index << scale)
-        if (node->gtElemSize <= 64)
+        if (node->GetElemSize() <= 64)
         {
             instruction shxaddIns = getShxaddVariant(scale, (genTypeSize(index) == 4));
 
@@ -5057,7 +4940,7 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
     else // we have to load the element size and use a MADD (multiply-add) instruction
     {
         // tempReg = element size
-        instGen_Set_Reg_To_Imm(EA_4BYTE, tempReg, (ssize_t)node->gtElemSize);
+        instGen_Set_Reg_To_Imm(EA_4BYTE, tempReg, (ssize_t)node->GetElemSize());
 
         // dest = index * tempReg + base
         instruction ins;
@@ -5383,7 +5266,6 @@ void CodeGen::genCall(GenTreeCall* call)
 
         if (target != nullptr)
         {
-            // Indirect fast tail calls materialize call target either in gtControlExpr or in gtCallAddr.
             genConsumeReg(target);
         }
 #ifdef FEATURE_READYTORUN
@@ -5428,7 +5310,7 @@ void CodeGen::genCall(GenTreeCall* call)
     regMaskTP killMask = RBM_CALLEE_TRASH;
     if (call->IsHelperCall())
     {
-        CorInfoHelpFunc helpFunc = m_compiler->eeGetHelperNum(call->gtCallMethHnd);
+        CorInfoHelpFunc helpFunc = call->GetHelperNum();
         killMask                 = m_compiler->compHelperCallKillSet(helpFunc);
     }
 
@@ -5534,19 +5416,9 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         }
     }
 
-    params.isJump      = call->IsFastTailCall();
-    params.hasAsyncRet = call->IsAsync();
-
-    // We need to propagate the debug information to the call instruction, so we can emit
-    // an IL to native mapping record for the call, to support managed return value debugging.
-    // We don't want tail call helper calls that were converted from normal calls to get a record,
-    // so we skip this hash table lookup logic in that case.
-    if (m_compiler->opts.compDbgInfo && m_compiler->genCallSite2DebugInfoMap != nullptr && !call->IsTailCall())
-    {
-        DebugInfo di;
-        (void)m_compiler->genCallSite2DebugInfoMap->Lookup(call, &di);
-        params.debugInfo = di;
-    }
+    params.isJump          = call->IsFastTailCall();
+    params.hasAsyncRet     = call->IsAsync();
+    params.returnValueCall = call;
 
 #ifdef DEBUG
     // Pass the call signature information down into the emitter so the emitter can associate
@@ -5555,34 +5427,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     {
         params.sigInfo = call->callSig;
     }
-
-    if (call->IsFastTailCall())
-    {
-        regMaskTP trashedByEpilog = RBM_CALLEE_SAVED;
-
-        // The epilog may use and trash some registers for the GS cookie check.
-        // Make sure we have no non-standard args that may be trash if this is
-        // a tailcall.
-        if (m_compiler->getNeedsGSSecurityCookie())
-        {
-            trashedByEpilog |= genGetGSCookieTempRegs(/* tailCall */ true);
-        }
-
-        for (CallArg& arg : call->gtArgs.Args())
-        {
-            for (unsigned i = 0; i < arg.AbiInfo.NumSegments; i++)
-            {
-                const ABIPassingSegment& seg = arg.AbiInfo.Segment(i);
-                if (seg.IsPassedInRegister() && ((trashedByEpilog & seg.GetRegisterMask()) != 0))
-                {
-                    JITDUMP("Tail call node:\n");
-                    DISPTREE(call);
-                    JITDUMP("Register used: %s\n", getRegName(seg.GetRegister()));
-                    assert(!"Argument to tailcall may be trashed by epilog");
-                }
-            }
-        }
-    }
+    genCheckTailCallEpilogRegisters(call);
 #endif // DEBUG
     GenTree* target = getCallTarget(call, &params.methHnd);
 
@@ -5601,20 +5446,21 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 
         if (target->isContainedIntOrIImmed())
         {
+            // A direct call: auipc + jalr with a relocation. No register is needed for the target, and ireg is
+            // left unset because the emitter chooses the auipc and jalr registers itself.
             params.callType = EC_FUNC_TOKEN;
-            params.ireg     = internalRegisters.GetSingle(call);
             params.addr     = (void*)target->AsIntCon()->IconValue();
         }
         else
         {
             params.callType = EC_INDIR_R;
             params.ireg     = target->GetRegNum();
-        }
 
-        // We have already generated code for gtControlExpr evaluating it into a register.
-        // We just need to emit "call reg" in this case.
-        //
-        assert(genIsValidIntReg(params.ireg));
+            // We have already generated code for gtControlExpr evaluating it into a register.
+            // We just need to emit "call reg" in this case.
+            //
+            assert(genIsValidIntReg(params.ireg));
+        }
 
         genEmitCallWithCurrentGC(params);
     }
@@ -5628,7 +5474,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         // CORINFO_HELP_DISPATCH_INDIRECT_CALL in which case we still have the
         // indirection cell but we should not try to optimize.
         regNumber callThroughIndirReg = REG_NA;
-        if (!call->IsHelperCall(m_compiler, CORINFO_HELP_DISPATCH_INDIRECT_CALL))
+        if (!call->IsHelperCall(CORINFO_HELP_DISPATCH_INDIRECT_CALL))
         {
             callThroughIndirReg = getCallIndirectionCellReg(call);
         }
@@ -5756,7 +5602,11 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
                 const bool     isDstSigned = !varTypeIsUnsigned(cast->gtCastType);
                 const unsigned excludeMsb  = isDstSigned ? 1 : 0;
                 const unsigned typeSize    = 8 * castSize - excludeMsb;
-                GetEmitter()->emitIns_R_R_I(INS_srli, EA_8BYTE, tempReg, reg, typeSize);
+                // The upper 32 bits of an (u)int source are not guaranteed to be sign-extended,
+                // so only shift within the lower 32 bits
+                const bool isSrcInt = desc.CheckSrcSize() == 4;
+                GetEmitter()->emitIns_R_R_I(isSrcInt ? INS_srliw : INS_srli, isSrcInt ? EA_4BYTE : EA_8BYTE, tempReg,
+                                            reg, typeSize);
                 genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, tempReg, nullptr, REG_R0);
             }
             else // Signed to signed cast
@@ -5765,7 +5615,17 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
                 const auto extensionSize = (8 - castSize) * 8;
                 GetEmitter()->emitIns_R_R_I(INS_slli, EA_8BYTE, tempReg, reg, extensionSize);
                 GetEmitter()->emitIns_R_R_I(INS_srai, EA_8BYTE, tempReg, tempReg, extensionSize);
-                genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, tempReg, nullptr, reg);
+                if (desc.CheckSrcSize() == 4) // int
+                {
+                    // The upper 32 bits of an int source are not guaranteed to be sign-extended,
+                    // so compare only the lower 32 bits
+                    GetEmitter()->emitIns_R_R_R(INS_subw, EA_4BYTE, tempReg, tempReg, reg);
+                    genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, tempReg, nullptr, REG_R0);
+                }
+                else
+                {
+                    genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, tempReg, nullptr, reg);
+                }
             }
         }
         break;
@@ -5948,6 +5808,9 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned            codeSize,
 #ifdef FEATURE_REMAP_FUNCTION
     if (m_compiler->opts.compDbgEnC)
     {
+        // TODO: lvaMonAcquired, lvaAsyncExecutionContextVar and lvaAsyncSynchronizationContextVar locals are special
+        // that is necessary to allocate in the top of the stack frame and included as part of the EnC frame header
+        // for EnC to work.
         NYI_RISCV64("compDbgEnc in genCreateAndStoreGCInfo-----unimplemented/unused on RISCV64 yet----");
     }
 #endif // FEATURE_REMAP_FUNCTION
@@ -5986,11 +5849,6 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
 
     switch (blkOp->gtBlkOpKind)
     {
-        case GenTreeBlk::BlkOpKindCpObjUnroll:
-            assert(!blkOp->gtBlkOpGcUnsafe);
-            genCodeForCpObj(blkOp->AsBlk());
-            break;
-
         case GenTreeBlk::BlkOpKindLoop:
             assert(!isCopyBlk);
             genCodeForInitBlkLoop(blkOp);
@@ -6131,7 +5989,7 @@ void CodeGen::genCodeForSlliUw(GenTreeOp* tree)
 
     assert(shiftBy->IsCnsIntOrI());
 
-    unsigned shamt = (unsigned)shiftBy->AsIntCon()->gtIconVal;
+    unsigned shamt = (unsigned)shiftBy->AsIntCon()->IconValue();
 
     GetEmitter()->emitIns_R_R_I(INS_slli_uw, attr, tree->GetRegNum(), tree->gtOp1->GetRegNum(), shamt);
 
@@ -6147,7 +6005,7 @@ void CodeGen::genCodeForSlliUw(GenTreeOp* tree)
 //
 void CodeGen::genEstablishFramePointer(int delta, bool reportUnwindData)
 {
-    assert(m_compiler->compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
 
     assert(emitter::isValidSimm12(delta));
     GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_FPBASE, REG_SPBASE, delta);
@@ -6271,7 +6129,7 @@ void CodeGen::genJumpToThrowHlpBlk_la(
 // instGen_MemoryBarrier: Emit a MemoryBarrier instruction
 //
 // Arguments:
-//     barrierKind - kind of barrier to emit (Only supports the Full now!! This depends on the CPU).
+//     barrierKind - kind of barrier to emit
 //
 // Notes:
 //     All MemoryBarriers instructions can be removed by DOTNET_JitNoMemoryBarriers=1
@@ -6285,8 +6143,21 @@ void CodeGen::instGen_MemoryBarrier(BarrierKind barrierKind)
     }
 #endif // DEBUG
 
-    // TODO-RISCV64: Use the exact barrier type depending on the CPU.
-    GetEmitter()->emitIns_I(INS_fence, EA_4BYTE, INS_BARRIER_FULL);
+    insBarrier barrier;
+    switch (barrierKind)
+    {
+        case BARRIER_LOAD_ONLY:
+            barrier = INS_BARRIER_LOAD_ONLY;
+            break;
+        case BARRIER_STORE_ONLY:
+            barrier = INS_BARRIER_STORE_ONLY;
+            break;
+        default:
+            barrier = INS_BARRIER_FULL;
+            break;
+    }
+
+    GetEmitter()->emitIns_I(INS_fence, EA_4BYTE, barrier);
 }
 
 /*-----------------------------------------------------------------------------
@@ -6362,7 +6233,7 @@ void CodeGen::instGen_MemoryBarrier(BarrierKind barrierKind)
  */
 void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroed)
 {
-    assert(m_compiler->compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
 
     regMaskTP rsPushRegs = regSet.rsGetModifiedCalleeSavedRegsMask();
 
@@ -6431,14 +6302,6 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
     {
         localFrameSize -= TARGET_POINTER_SIZE;
     }
-    if ((m_compiler->lvaAsyncExecutionContextVar != BAD_VAR_NUM) && !m_compiler->opts.IsOSR())
-    {
-        localFrameSize -= TARGET_POINTER_SIZE;
-    }
-    if ((m_compiler->lvaAsyncSynchronizationContextVar != BAD_VAR_NUM) && !m_compiler->opts.IsOSR())
-    {
-        localFrameSize -= TARGET_POINTER_SIZE;
-    }
 
 #ifdef DEBUG
     if (m_compiler->opts.disAsm)
@@ -6497,7 +6360,7 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
 
 void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
 {
-    assert(m_compiler->compGeneratingEpilog);
+    assert(GetEmitter()->emitGeneratingEpilogOrFuncletEpilog());
 
     regMaskTP regsToRestoreMask = regSet.rsGetModifiedCalleeSavedRegsMask();
 
@@ -6506,14 +6369,6 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
     int totalFrameSize = genTotalFrameSize();
     int localFrameSize = m_compiler->compLclFrameSize;
     if ((m_compiler->lvaMonAcquired != BAD_VAR_NUM) && !m_compiler->opts.IsOSR())
-    {
-        localFrameSize -= TARGET_POINTER_SIZE;
-    }
-    if ((m_compiler->lvaAsyncExecutionContextVar != BAD_VAR_NUM) && !m_compiler->opts.IsOSR())
-    {
-        localFrameSize -= TARGET_POINTER_SIZE;
-    }
-    if ((m_compiler->lvaAsyncSynchronizationContextVar != BAD_VAR_NUM) && !m_compiler->opts.IsOSR())
     {
         localFrameSize -= TARGET_POINTER_SIZE;
     }
@@ -6564,7 +6419,7 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
     }
 
     JITDUMP("    calleeSaveSPOffset=%d\n", FP_offset + 16);
-    genRestoreCalleeSavedRegistersHelp(regsToRestoreMask, FP_offset + 16);
+    genRestoreCalleeSavedRegistersHelp(regsToRestoreMask, REG_SPBASE, FP_offset + 16, /* reportUnwindData */ true);
 
     emit->emitIns_R_R_I(INS_ld, EA_PTRSIZE, REG_RA, REG_SPBASE, FP_offset + 8);
     m_compiler->unwindSaveReg(REG_RA, FP_offset + 8);
@@ -6615,7 +6470,7 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
 //
 void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
 {
-    assert(m_compiler->compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
 
     if (!m_compiler->compIsProfilerHookNeeded())
     {

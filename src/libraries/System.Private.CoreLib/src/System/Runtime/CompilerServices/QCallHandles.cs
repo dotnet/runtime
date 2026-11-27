@@ -3,6 +3,7 @@
 
 // Wrappers used to pass objects to and from QCalls.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 
 namespace System.Runtime.CompilerServices
@@ -50,6 +51,7 @@ namespace System.Runtime.CompilerServices
     internal unsafe ref struct ByteRefOnStack
     {
         private readonly void* _pByteRef;
+
         private ByteRefOnStack(void* pByteRef)
         {
             _pByteRef = pByteRef;

@@ -2,18 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*++
-
-
-
 Module Name:
-
     include/pal/thread.hpp
 
 Abstract:
     Header file for thread structures
-
-
-
 --*/
 
 #ifndef _PAL_THREAD_HPP_
@@ -28,18 +21,19 @@ Abstract:
 
 #include "threadsusp.hpp"
 #include "threadinfo.hpp"
-#include "synchobjects.hpp"
 #include <errno.h>
 #include <minipal/thread.h>
 #include <minipal/mutex.h>
 
 namespace CorUnix
 {
-    enum PalThreadType
+    enum THREAD_STATE
     {
-        UserCreatedThread,
-        PalWorkerThread,
-        SignalHandlerThread
+        TS_IDLE,
+        TS_STARTING,
+        TS_RUNNING,
+        TS_FAILED,
+        TS_DONE,
     };
 
     PAL_ERROR
@@ -50,7 +44,6 @@ namespace CorUnix
         LPTHREAD_START_ROUTINE lpStartAddress,
         LPVOID lpParameter,
         DWORD dwCreationFlags,
-        PalThreadType eThreadType,
         SIZE_T* pThreadId,
         HANDLE *phThread
         );
@@ -83,14 +76,6 @@ namespace CorUnix
         );
 
     PAL_ERROR
-    InternalCreateDummyThread(
-        CPalThread *pThread,
-        LPSECURITY_ATTRIBUTES lpThreadAttributes,
-        CPalThread **ppDummyThread,
-        HANDLE *phThread
-        );
-
-    PAL_ERROR
     CreateThreadData(
         CPalThread **ppThread
         );
@@ -101,12 +86,6 @@ namespace CorUnix
         CPalThread *pNewThread,
         HANDLE *phThread
         );
-
-    BOOL
-    GetThreadTimesInternal(
-        IN HANDLE hThread,
-        OUT LPFILETIME lpKernelTime,
-        OUT LPFILETIME lpUserTime);
 
 #if HAVE_MACH_EXCEPTIONS
 
@@ -162,18 +141,8 @@ namespace CorUnix
                 LPTHREAD_START_ROUTINE,
                 LPVOID,
                 DWORD,
-                PalThreadType,
                 SIZE_T*,
                 HANDLE*
-                );
-
-        friend
-            PAL_ERROR
-            InternalCreateDummyThread(
-                CPalThread *pThread,
-                LPSECURITY_ATTRIBUTES lpThreadAttributes,
-                CPalThread **ppDummyThread,
-                HANDLE *phThread
                 );
 
         friend
@@ -206,6 +175,7 @@ namespace CorUnix
         minipal_mutex m_mtxLock;
         bool m_fLockInitialized;
         bool m_fIsDummy;
+        THREAD_STATE m_threadState;
 
         //
         // Minimal reference count, used primarily for cleanup purposes. A
@@ -253,7 +223,6 @@ namespace CorUnix
         BOOL m_bCreateSuspended;
 
         int m_iThreadPriority;
-        PalThreadType m_eThreadType;
 
         //
         // pthread mutex / condition variable for gating thread startup.
@@ -274,6 +243,7 @@ namespace CorUnix
         void* m_stackLimit;
         // Signal handler's alternate stack to help with stack overflow
         void* m_alternateStack;
+        size_t m_alternateStackSize;
 
         //
         // The thread entry routine (called from InternalCreateThread)
@@ -298,7 +268,6 @@ namespace CorUnix
         // Embedded information for areas owned by other subsystems
         //
 
-        CThreadSynchronizationInfo synchronizationInfo;
         CThreadSuspensionInfo suspensionInfo;
 
         CPalThread()
@@ -308,6 +277,7 @@ namespace CorUnix
             m_fExitCodeSet(FALSE),
             m_fLockInitialized(FALSE),
             m_fIsDummy(FALSE),
+            m_threadState(TS_IDLE),
             m_lRefCount(1),
             m_pThreadObject(NULL),
             m_threadId(0),
@@ -321,13 +291,13 @@ namespace CorUnix
             m_lpStartParameter(NULL),
             m_bCreateSuspended(FALSE),
             m_iThreadPriority(THREAD_PRIORITY_NORMAL),
-            m_eThreadType(UserCreatedThread),
             m_fStartItemsInitialized(FALSE),
             m_fStartStatus(FALSE),
             m_fStartStatusSet(FALSE),
             m_stackBase(NULL),
             m_stackLimit(NULL),
-            m_alternateStack(NULL)
+            m_alternateStack(NULL),
+            m_alternateStackSize(0)
         {
         };
 
@@ -381,35 +351,6 @@ namespace CorUnix
         {
             minipal_mutex_leave(&m_mtxLock);
         };
-
-        //
-        // The following three methods provide access to the
-        // native lock used to protect thread native wait data.
-        //
-
-        void
-        AcquireNativeWaitLock(
-            void
-            )
-        {
-            synchronizationInfo.AcquireNativeWaitLock();
-        }
-
-        void
-        ReleaseNativeWaitLock(
-            void
-            )
-        {
-            synchronizationInfo.ReleaseNativeWaitLock();
-        }
-
-        bool
-        TryAcquireNativeWaitLock(
-            void
-            )
-        {
-            return synchronizationInfo.TryAcquireNativeWaitLock();
-        }
 
         static void
         SetLastError(
@@ -523,14 +464,6 @@ namespace CorUnix
             return m_bCreateSuspended;
         };
 
-        PalThreadType
-        GetThreadType(
-            void
-            )
-        {
-            return m_eThreadType;
-        };
-
         int
         GetThreadPriority(
             void
@@ -554,6 +487,16 @@ namespace CorUnix
         {
             return m_fIsDummy;
         };
+
+        THREAD_STATE GetThreadState()
+        {
+            return m_threadState;
+        }
+
+        void SetThreadState(THREAD_STATE threadState)
+        {
+            m_threadState = threadState;
+        }
 
         CPalThread*
         GetNext(

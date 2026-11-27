@@ -3,24 +3,25 @@
 
 using System.Collections;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization.Converters
 {
-    internal class StackOrQueueConverter<TCollection>
+    internal sealed class StackOrQueueConverter<TCollection>
         : JsonCollectionConverter<TCollection, object?>
         where TCollection : IEnumerable
     {
         internal override bool CanPopulate => true;
 
-        protected sealed override void Add(in object? value, ref ReadStack state)
+        protected override void Add(in object? value, ref ReadStack state)
         {
             var addMethodDelegate = ((Action<TCollection, object?>?)state.Current.JsonTypeInfo.AddMethodDelegate);
-            Debug.Assert(addMethodDelegate != null);
+            Debug.Assert(addMethodDelegate is not null);
             addMethodDelegate((TCollection)state.Current.ReturnValue!, value);
         }
 
-        protected sealed override void CreateCollection(ref Utf8JsonReader reader, scoped ref ReadStack state, JsonSerializerOptions options)
+        protected override void CreateCollection(ref Utf8JsonReader reader, scoped ref ReadStack state, JsonSerializerOptions options)
         {
             if (state.ParentProperty?.TryGetPrePopulatedValue(ref state) == true)
             {
@@ -30,20 +31,20 @@ namespace System.Text.Json.Serialization.Converters
             JsonTypeInfo typeInfo = state.Current.JsonTypeInfo;
             Func<object>? constructorDelegate = typeInfo.CreateObject;
 
-            if (constructorDelegate == null)
+            if (constructorDelegate is null)
             {
                 ThrowHelper.ThrowNotSupportedException_CannotPopulateCollection(Type, ref reader, ref state);
             }
 
             state.Current.ReturnValue = constructorDelegate();
 
-            Debug.Assert(typeInfo.AddMethodDelegate != null);
+            Debug.Assert(typeInfo.AddMethodDelegate is not null);
         }
 
-        protected sealed override bool OnWriteResume(Utf8JsonWriter writer, TCollection value, JsonSerializerOptions options, ref WriteStack state)
+        protected override bool OnWriteResume(Utf8JsonWriter writer, TCollection value, JsonSerializerOptions options, ref WriteStack state)
         {
             IEnumerator enumerator;
-            if (state.Current.CollectionEnumerator == null)
+            if (state.Current.CollectionEnumerator is null)
             {
                 enumerator = value.GetEnumerator();
                 state.Current.CollectionEnumerator = enumerator;
@@ -75,6 +76,13 @@ namespace System.Text.Json.Serialization.Converters
             } while (enumerator.MoveNext());
 
             return true;
+        }
+
+        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
+        internal override void ConfigureJsonTypeInfoUsingReflection(JsonTypeInfo jsonTypeInfo, JsonSerializerOptions options)
+        {
+            jsonTypeInfo.AddMethodDelegate = DefaultJsonTypeInfoResolver.MemberAccessor.CreateAddMethodDelegate<TCollection>();
         }
     }
 }

@@ -28,17 +28,33 @@ namespace Wasm.Build.NativeRebuild.Tests
                         new object[] { /*cflags*/ "/p:EmccExtraCFlags=-g", /*ldflags*/ "/p:EmccExtraLDFlags=-g" }
             ).UnwrapItemsAsArrays();
 
+        public static IEnumerable<object?[]> FlagsChangesForCurrentRuntime()
+            => FlagsChangesForNativeRelinkingData(aot: false);
+
         [Theory]
-        [MemberData(nameof(FlagsChangesForNativeRelinkingData), parameters: /*aot*/ false)]
-        [MemberData(nameof(FlagsChangesForNativeRelinkingData), parameters: /*aot*/ true)]
+        [MemberData(nameof(FlagsChangesForCurrentRuntime))]
         public async Task ExtraEmccFlagsSetButNoRealChange(Configuration config, bool aot, string extraCFlags, string extraLDFlags)
         {
             ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "rebuild_flags");
             BuildPaths paths = await FirstNativeBuildAndRun(info, config, aot, requestNativeRelink: true, invariant: false);
             var pathsDict = GetFilesTable(info.ProjectName, aot, paths, unchanged: true);
-            bool dotnetNativeFilesUnchanged = extraLDFlags.Length == 0;
+            bool dotnetNativeFilesUnchanged = extraLDFlags.Length == 0 && extraCFlags.Length == 0;
             if (!dotnetNativeFilesUnchanged)
+            {
                 pathsDict.UpdateTo(unchanged: false, "dotnet.native.wasm", "dotnet.native.js");
+                pathsDict.UpdateTo(unchanged: false, "dotnet.native.js.symbols");
+            }
+
+            if (extraCFlags.Length > 0)
+            {
+                pathsDict.UpdateTo(unchanged: false,
+                    "callhelpers-interp-to-managed.o",
+                    "callhelpers-pinvoke.o",
+                    "callhelpers-reverse.o",
+                    "emcc-compile-generated.rsp");
+            }
+            if (extraLDFlags.Length > 0)
+                pathsDict.UpdateTo(unchanged: false, "emcc-link.rsp");
 
             var originalStat = StatFiles(pathsDict);
 
@@ -59,9 +75,7 @@ namespace Wasm.Build.NativeRebuild.Tests
                 Assert.DoesNotContain("var PIPEFS", dotnetNativeJs);
             }
 
-            // cflags: pinvoke get's compiled, but doesn't overwrite pinvoke.o
-            // and thus doesn't cause relinking
-            TestUtils.AssertSubstring("pinvoke.c -> pinvoke.o", output, contains: extraCFlags.Length > 0);
+            TestUtils.AssertSubstring("callhelpers-pinvoke.cpp -> callhelpers-pinvoke.o", output, contains: extraCFlags.Length > 0);
 
             // ldflags: link step args change, so it should trigger relink
             TestUtils.AssertSubstring("Linking with emcc", output, contains: !dotnetNativeFilesUnchanged);

@@ -4,16 +4,121 @@
 using System;
 using System.ComponentModel;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
+using Microsoft.Win32.SafeHandles;
 using Xunit;
 
 namespace System.Diagnostics.Tests
 {
     public partial class ProcessTests
     {
+        private static bool IsPreciseGcAndRemoteExecutorSupported =>
+            PlatformDetection.IsPreciseGcSupported && RemoteExecutor.IsSupported;
+
+        private static bool IsNotNanoServerNotServerCoreAndRemoteExecutorSupported =>
+            PlatformDetection.IsNotWindowsNanoServer &&
+            PlatformDetection.IsNotWindowsServerCore &&
+            RemoteExecutor.IsSupported;
+
+        [ConditionalFact(typeof(ProcessTests), nameof(IsPreciseGcAndRemoteExecutorSupported))]
+        public void RedirectedOutputHandlesAreFinalizedAfterAsyncReads()
+        {
+            (WeakReference<SafeFileHandle> output, WeakReference<SafeFileHandle> error) = ReadOutputAndError();
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+
+            Assert.False(output.TryGetTarget(out _));
+            Assert.False(error.TryGetTarget(out _));
+        }
+
+        // The helper is synchronous on purpose: the continuation of an async helper references the process
+        // until the thread that completed it is done with it, which races with the GC in the test.
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static (WeakReference<SafeFileHandle>, WeakReference<SafeFileHandle>) ReadOutputAndError()
+        {
+            RemoteInvokeOptions options = new()
+            {
+                StartInfo = new ProcessStartInfo { RedirectStandardOutput = true, RedirectStandardError = true }
+            };
+
+            using RemoteInvokeHandle handle = RemoteExecutor.Invoke(static () =>
+            {
+                Console.Write("out");
+                Console.Error.Write("err");
+            }, options);
+
+            Process process = handle.Process;
+            WeakReference<SafeFileHandle> outputHandle = new(((FileStream)process.StandardOutput.BaseStream).SafeFileHandle, trackResurrection: true);
+            WeakReference<SafeFileHandle> errorHandle = new(((FileStream)process.StandardError.BaseStream).SafeFileHandle, trackResurrection: true);
+
+            Task<string> outputTask = process.StandardOutput.ReadToEndAsync();
+            Task<string> errorTask = process.StandardError.ReadToEndAsync();
+            Assert.Equal("out", outputTask.Result);
+            Assert.Equal("err", errorTask.Result);
+            process.WaitForExit();
+
+            return (outputHandle, errorHandle);
+        }
+
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+        private static extern int MessageBoxW(IntPtr hWnd, string lpText, string lpCaption, uint uType);
+
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+        private static extern IntPtr FindWindowW(string? lpClassName, string? lpWindowName);
+
+        // Creates a visible top-level window with a known title.
+        // Shows a MessageBox on a background thread, waits until the window is visible via FindWindowW,
+        // then signals the parent via stdout and blocks until killed by the parent.
+        private static int CreateMainWindowWithTitle()
+        {
+            // MessageBoxW blocks the current thread until the user closes the message box
+            Thread t = new Thread(() => MessageBoxW(IntPtr.Zero, string.Empty, "Test Main Window", 0 /* MB_OK */));
+            t.IsBackground = true;
+            t.Start();
+
+            // Spin until the MessageBox window is actually visible before signaling the parent.
+            SpinWait.SpinUntil(() => FindWindowW(null, "Test Main Window") != IntPtr.Zero);
+
+            // Signal the parent that the window is ready.
+            Console.WriteLine("ready");
+
+            // Block until the parent kills this process.
+            Thread.Sleep(Timeout.Infinite);
+            return RemoteExecutor.SuccessExitCode;
+        }
+
+        [ConditionalFact(typeof(ProcessTests), nameof(IsNotNanoServerNotServerCoreAndRemoteExecutorSupported))]
+        [OuterLoop("Pops UI")]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public async Task MainWindowHandle_And_Title_GetWithGui_ShouldRefresh_Windows()
+        {
+            using Process process = CreateProcess(CreateMainWindowWithTitle);
+            process.StartInfo.RedirectStandardOutput = true;
+            process.Start();
+
+            try
+            {
+                // Wait for child to signal that its window is ready.
+                Assert.Equal("ready", await process.StandardOutput.ReadLineAsync());
+
+                process.Refresh();
+                Assert.NotEqual(IntPtr.Zero, process.MainWindowHandle);
+                Assert.Equal("Test Main Window", process.MainWindowTitle);
+            }
+            finally
+            {
+                process.Kill();
+                process.WaitForExit();
+            }
+        }
+
         private string WriteScriptFile(string directory, string name, int returnValue)
         {
             string filename = Path.Combine(directory, name);
@@ -22,8 +127,13 @@ namespace System.Diagnostics.Tests
             return filename;
         }
         
-        private static void SendSignal(PosixSignal signal, int processId)
+        private static void SendSignal(PosixSignal signal, Process process, bool entireProcessGroup = false)
         {
+            // Windows console control events are delivered to console process groups via
+            // GenerateConsoleCtrlEvent; this implementation cannot distinguish between
+            // signaling only the process and signaling its entire process group.
+            _ = entireProcessGroup;
+
             uint dwCtrlEvent = signal switch
             {
                 PosixSignal.SIGINT => Interop.Kernel32.CTRL_C_EVENT,
@@ -31,7 +141,7 @@ namespace System.Diagnostics.Tests
                 _ => throw new ArgumentOutOfRangeException(nameof(signal))
             };
 
-            if (!Interop.GenerateConsoleCtrlEvent(dwCtrlEvent, (uint)processId))
+            if (!Interop.GenerateConsoleCtrlEvent(dwCtrlEvent, (uint)process.Id))
             {
                 int error = Marshal.GetLastWin32Error();
                 if (error == Interop.Errors.ERROR_INVALID_FUNCTION && PlatformDetection.IsInContainer)
@@ -60,6 +170,11 @@ namespace System.Diagnostics.Tests
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void Kill_EntireProcessTree_MinimalExceptions()
+        {
+            RemoteExecutor.Invoke(KillEntireProcessTreeMinimalExceptions).Dispose();
+        }
+
+        private static void KillEntireProcessTreeMinimalExceptions()
         {
             // This test validates that Kill(true) doesn't throw excessive exceptions internally
             // during process enumeration, which causes severe performance degradation with debugger attached.

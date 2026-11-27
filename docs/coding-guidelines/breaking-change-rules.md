@@ -169,6 +169,8 @@ Breaking Change Rules
 
 * Changing a `struct` type to a `ref struct` type and vice versa
 
+* Changing a `struct` type to an `enum` type and vice versa
+
 * Changing the underlying type of an enum
 
     This is a compile-time and behavioral breaking change as well as a binary breaking change which can make attribute arguments unparsable.
@@ -268,6 +270,8 @@ successfully bind to that overload, if simply passing an `int` value. However, i
     * It breaks source compatibility when developers use [named parameters](http://msdn.microsoft.com/en-us/library/dd264739.aspx).
 
 * Changing a parameter modifier from `ref` to `out`, or vice versa
+
+* Adding the `unsafe` modifier when compiled with the [updated memory safety rules](https://github.com/dotnet/csharplang/issues/9704)
 
 ### Attributes
 &#10003; **Allowed**

@@ -3,7 +3,6 @@
     <BundleTestAppTargets>$(BundleTestAppTargets);BundleTestAndroidApp</BundleTestAppTargets>
   </PropertyGroup>
 
-  <Import Project="$(MonoProjectRoot)\msbuild\common\LibraryBuilder.props" />
   <Import Project="$(MonoProjectRoot)\msbuild\android\build\AndroidBuild.props" />
   <Import Project="$(MonoProjectRoot)\msbuild\android\build\AndroidBuild.InTree.targets" />
 
@@ -26,9 +25,13 @@
   </ItemGroup>
   <PropertyGroup Condition="'$(TestNativeAOT)' == 'true'">
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <_UseNativeLibPrefix>true</_UseNativeLibPrefix>
     <_SuppressNativeLibEventSourceWarning>true</_SuppressNativeLibEventSourceWarning>
   </PropertyGroup>
+  <ItemGroup Condition="'$(TestNativeAOT)' == 'true'">
+    <!-- Android test APKs link the crypto archive directly; keep the Java native trust-manager callback visible. -->
+    <IlcArg Include="--export-dynamic-symbol:Java_net_dot_android_crypto_DotnetProxyTrustManager_verifyRemoteCertificate" />
+    <LinkerArg Include="-Wl,-u,Java_net_dot_android_crypto_DotnetProxyTrustManager_verifyRemoteCertificate" />
+  </ItemGroup>
 
   <!-- Target that kicks off the whole test build and run flow -->
   <Target Name="BundleTestAndroidApp" DependsOnTargets="$(BundleTestAndroidAppDependsOn)" />
@@ -59,7 +62,6 @@
 
     <ItemGroup>
       <AndroidAssembliesToBundle Include="@(NativeLibraries->'$(PublishDir)%(Identity)')">
-        <_InternalForceInterpret>true</_InternalForceInterpret>
         <_IsNative>true</_IsNative>
       </AndroidAssembliesToBundle>
 
@@ -67,7 +69,6 @@
       <_SatelliteAssemblies Include="$(PublishDir)\**\*.resources.dll" />
 
       <AndroidAssembliesToBundle Include="@(_PublishAssemblies)">
-        <_InternalForceInterpret Condition="'$(UseMonoJustInterp)' == 'true' and '%(FileName)%(Extension)' != 'System.Private.CoreLib.dll'">true</_InternalForceInterpret>
         <_IsNative>false</_IsNative>
       </AndroidAssembliesToBundle>
 

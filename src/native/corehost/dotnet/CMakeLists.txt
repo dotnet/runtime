@@ -1,6 +1,14 @@
 # Licensed to the .NET Foundation under one or more agreements.
 # The .NET Foundation licenses this file to you under the MIT license.
 
+if (CLR_CMAKE_HOST_APPLE)
+    # Prevent exporting symbols from dotnet. This is necessary to avoid a problem with
+    # local typeinfo for standard C++ EH types like std::bad_alloc, std::out_of_range etc.
+    # being exposed for binding for external shared libraries and causing mismatch in
+    # catch type matching.
+    add_link_options(LINKER:-no_exported_symbols)
+endif()
+
 if(CLR_CMAKE_TARGET_WIN32)
     list(APPEND SOURCES
         dotnet.manifest
@@ -8,13 +16,17 @@ if(CLR_CMAKE_TARGET_WIN32)
 endif()
 
 list(APPEND SOURCES
-    ../apphost/standalone/hostfxr_resolver.cpp
-    ../corehost.cpp
+    hostfxr_resolver.cpp
+    dotnet.cpp
 )
 
 add_executable(dotnet ${SOURCES})
 
 target_link_libraries(dotnet PRIVATE hostmisc fxr_resolver)
+
+if(CLR_CMAKE_TARGET_OSX)
+    set_macos_bundle_identifier(dotnet com.microsoft.dotnet.dotnet)
+endif()
 
 add_sanitizer_runtime_support(dotnet)
 

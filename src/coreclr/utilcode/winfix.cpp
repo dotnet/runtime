@@ -1,14 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//*****************************************************************************
-// WinWrap.cpp
-//
-//*****************************************************************************
 
 #include "stdafx.h"                     // Precompiled header key.
 #include "winwrap.h"                    // Header for macros and functions.
 #include "utilcode.h"
 #include "holder.h"
+
+#ifndef HOST_UNIX
 
 // The only purpose of this function is to make a local copy of lpCommandLine.
 // Because windows implementation of CreateProcessW can actually change lpCommandLine,
@@ -31,7 +29,7 @@ WszCreateProcess(
     DWORD err;
     {
         size_t commandLineLength = u16_strlen(lpCommandLine) + 1;
-        NewArrayHolder<WCHAR> nonConstCommandLine(new (nothrow) WCHAR[commandLineLength]);
+        WStringHolder nonConstCommandLine{ new (nothrow) WCHAR[commandLineLength] };
         if (nonConstCommandLine == NULL)
         {
             SetLastError(ERROR_OUTOFMEMORY);
@@ -52,16 +50,13 @@ WszCreateProcess(
                                    lpProcessInformation);
 
         // At the end of the current scope, the last error code will be overwritten by the destructor of
-        // NewArrayHolder. So we save the error code here, and restore it after the end of the current scope.
+        // the array holder. So we save the error code here, and restore it after the end of the current scope.
         err = GetLastError();
     }
 
     SetLastError(err);
     return fResult;
 }
-
-#ifndef HOST_UNIX
-
 
 #include "psapi.h"
 #include "winnls.h"
@@ -73,7 +68,6 @@ static volatile ULONG g_dwMaxDBCSCharByteSize = 0;
 DWORD GetMaxDBCSCharByteSize()
 {
     STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_FORBID_FAULT;
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
 
     if (g_dwMaxDBCSCharByteSize == 0)

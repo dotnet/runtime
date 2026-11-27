@@ -108,18 +108,7 @@ namespace System.Text
 
         private static int CompareOrdinal(string s1, string s2, int index, int length)
         {
-            int count = s1.Length;
-            if (count > length)
-                count = length;
-
-            int i = 0;
-            while (i < count && s1[i] == s2[index + i])
-                i++;
-
-            if (i < count)
-                return (int)(s1[i] - s2[index + i]);
-
-            return s1.Length - length;
+            return s1.AsSpan().SequenceCompareTo(s2.AsSpan(index, length));
         }
 
         internal static string? GetWebNameFromCodePage(int codePage)

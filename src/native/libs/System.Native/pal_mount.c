@@ -34,14 +34,14 @@
 #endif // __HAIKU__
 
 // Android does not define MNTOPT_RO
-#ifndef MNTOPT_RO
+#if !defined(MNTOPT_RO) && (HAVE_SYS_MNTENT_H || HAVE_MNTENT_H)
 #define MNTOPT_RO "r"
 #endif
 #endif
 
 int32_t SystemNative_GetAllMountPoints(MountPointFound onFound, void* context)
 {
-#if HAVE_MNTINFO
+#if HAVE_MNTINFO && HAVE_STATFS_MOUNT
     // Use getfsstat which is thread-safe (unlike getmntinfo which uses internal static buffers)
 #if HAVE_STATFS
     struct statfs* mounts = NULL;
@@ -98,7 +98,15 @@ int32_t SystemNative_GetAllMountPoints(MountPointFound onFound, void* context)
         }
 
         // Get actual mount point information
+#if HAVE_GETFSSTAT_SIZE_T
+        count = getfsstat(mounts, bufferSize, MNT_NOWAIT);
+#elif HAVE_GETFSSTAT_LONG
+        count = getfsstat(mounts, (long)bufferSize, MNT_NOWAIT);
+#elif HAVE_GETFSSTAT_INT
         count = getfsstat(mounts, (int)bufferSize, MNT_NOWAIT);
+#else
+        count = getfsstat(mounts, bufferSize, MNT_NOWAIT);
+#endif
         if (count < 0)
         {
             free(mounts);

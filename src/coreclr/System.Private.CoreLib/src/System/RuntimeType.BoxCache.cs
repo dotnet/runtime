@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -129,6 +130,7 @@ namespace System
                 valueTypeSize = valueTypeSizeTemp;
             }
 
+            [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
             [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ReflectionInvocation_GetBoxInfo")]
             private static partial void GetBoxInfo(
                 QCallTypeHandle type,

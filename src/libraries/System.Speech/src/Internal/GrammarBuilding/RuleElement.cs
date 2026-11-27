@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Speech.Internal.SrgsParser;
 
 namespace System.Speech.Internal.GrammarBuilding
@@ -24,10 +25,9 @@ namespace System.Speech.Internal.GrammarBuilding
         #endregion
 
         #region Public Methods
-        public override bool Equals(object obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            RuleElement refObj = obj as RuleElement;
-            if (refObj == null)
+            if (obj is not RuleElement refObj)
             {
                 return false;
             }
@@ -54,7 +54,7 @@ namespace System.Speech.Internal.GrammarBuilding
             return rule;
         }
 
-        internal override IElement CreateElement(IElementFactory elementFactory, IElement parent, IRule rule, IdentifierCollection ruleIds)
+        internal override IElement CreateElement(IElementFactory elementFactory, IElement parent, IRule? rule, IdentifierCollection ruleIds)
         {
             if (_rule == null)
             {
@@ -73,7 +73,7 @@ namespace System.Speech.Internal.GrammarBuilding
             return _rule;
         }
 
-        internal override int CalcCount(BuilderElements parent)
+        internal override int CalcCount(BuilderElements? parent)
         {
             // clear any existing value
             _rule = null;
@@ -100,7 +100,7 @@ namespace System.Speech.Internal.GrammarBuilding
             }
         }
 
-        internal string RuleName
+        internal string? RuleName
         {
             get
             {
@@ -113,8 +113,8 @@ namespace System.Speech.Internal.GrammarBuilding
         #region Private Fields
 
         private readonly string _name;
-        private string _ruleName;
-        private IRule _rule;
+        private string? _ruleName;
+        private IRule? _rule;
 
         #endregion
     }

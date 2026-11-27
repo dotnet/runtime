@@ -12,19 +12,21 @@
 #include "common.h"
 #include "comdependenthandle.h"
 
-FCIMPL2(OBJECTHANDLE, DependentHandle::InternalAlloc, Object *target, Object *dependent)
+FCIMPL2(OBJECTHANDLE, DependentHandle_InternalAlloc, Object *target, Object *dependent)
 {
     FCALL_CONTRACT;
 
+#ifdef PROFILING_SUPPORTED
     // Use slow path if profiler is tracking GC
     if (CORProfilerTrackGC())
         return NULL;
+#endif // PROFILING_SUPPORTED
 
     return GetAppDomain()->GetHandleStore()->CreateDependentHandle(target, dependent);
 }
 FCIMPLEND
 
-extern "C" OBJECTHANDLE QCALLTYPE DependentHandle_InternalAllocWithGCTransition(QCall::ObjectHandleOnStack target, QCall::ObjectHandleOnStack dependent)
+extern "C" OBJECTHANDLE QCALLTYPE DependentHandle_InternalAllocWithGCTransition(QCall::ObjectHandleOnStack target, QCall::ObjectHandleOnStack dependent, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -40,7 +42,7 @@ extern "C" OBJECTHANDLE QCALLTYPE DependentHandle_InternalAllocWithGCTransition(
     return result;
 }
 
-FCIMPL1(Object*, DependentHandle::InternalGetTarget, OBJECTHANDLE handle)
+FCIMPL1(Object*, DependentHandle_InternalGetTargetWithDebugValidation, OBJECTHANDLE handle)
 {
     FCALL_CONTRACT;
 
@@ -50,7 +52,7 @@ FCIMPL1(Object*, DependentHandle::InternalGetTarget, OBJECTHANDLE handle)
 }
 FCIMPLEND
 
-FCIMPL1(Object*, DependentHandle::InternalGetDependent, OBJECTHANDLE handle)
+FCIMPL1(Object*, DependentHandle_InternalGetDependent, OBJECTHANDLE handle)
 {
     FCALL_CONTRACT;
 
@@ -65,7 +67,7 @@ FCIMPL1(Object*, DependentHandle::InternalGetDependent, OBJECTHANDLE handle)
 }
 FCIMPLEND
 
-FCIMPL2(Object*, DependentHandle::InternalGetTargetAndDependent, OBJECTHANDLE handle, Object **outDependent)
+FCIMPL2(Object*, DependentHandle_InternalGetTargetAndDependent, OBJECTHANDLE handle, Object **outDependent)
 {
     FCALL_CONTRACT;
 
@@ -81,7 +83,7 @@ FCIMPL2(Object*, DependentHandle::InternalGetTargetAndDependent, OBJECTHANDLE ha
 }
 FCIMPLEND
 
-FCIMPL1(VOID, DependentHandle::InternalSetTargetToNull, OBJECTHANDLE handle)
+FCIMPL1(VOID, DependentHandle_InternalSetTargetToNull, OBJECTHANDLE handle)
 {
     FCALL_CONTRACT;
 
@@ -92,7 +94,7 @@ FCIMPL1(VOID, DependentHandle::InternalSetTargetToNull, OBJECTHANDLE handle)
 }
 FCIMPLEND
 
-FCIMPL2(VOID, DependentHandle::InternalSetDependent, OBJECTHANDLE handle, Object *_dependent)
+FCIMPL2(VOID, DependentHandle_InternalSetDependent, OBJECTHANDLE handle, Object *_dependent)
 {
     FCALL_CONTRACT;
 
@@ -103,22 +105,24 @@ FCIMPL2(VOID, DependentHandle::InternalSetDependent, OBJECTHANDLE handle, Object
 }
 FCIMPLEND
 
-FCIMPL1(FC_BOOL_RET, DependentHandle::InternalFree, OBJECTHANDLE handle)
+FCIMPL1(FC_BOOL_RET, DependentHandle_InternalFree, OBJECTHANDLE handle)
 {
     FCALL_CONTRACT;
 
     _ASSERTE(handle != NULL);
 
+#ifdef PROFILING_SUPPORTED
     // Use slow path if profiler is tracking GC
     if (CORProfilerTrackGC())
         FC_RETURN_BOOL(false);
+#endif // PROFILING_SUPPORTED
 
     DestroyDependentHandle(handle);
     FC_RETURN_BOOL(true);
 }
 FCIMPLEND
 
-extern "C" void QCALLTYPE DependentHandle_InternalFreeWithGCTransition(OBJECTHANDLE handle)
+extern "C" void QCALLTYPE DependentHandle_InternalFreeWithGCTransition(OBJECTHANDLE handle, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 

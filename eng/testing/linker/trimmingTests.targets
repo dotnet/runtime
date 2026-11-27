@@ -95,7 +95,6 @@
                       Lines="$([System.IO.File]::ReadAllText('$(ProjectTemplate)')
                                                  .Replace('{TargetFramework}', '%(TestConsoleApps.TargetFramework)')
                                                  .Replace('{NetCoreAppMaximumVersion}', '$(NetCoreAppMaximumVersion)')
-                                                 .Replace('{UseMonoRuntime}','$(UseMonoRuntime)')
                                                  .Replace('{RuntimeIdentifier}','%(TestConsoleApps.TestRuntimeIdentifier)')
                                                  .Replace('{PublishAot}','$(RunNativeAotTestApps)')
                                                  .Replace('{ExtraTrimmerArgs}', '%(TestConsoleApps.ExtraTrimmerArgs)')
@@ -105,17 +104,14 @@
                                                  .Replace('{RuntimeHostConfigurationOptions}', '$(_runtimeHostConfigurationOptionsString)')
                                                  .Replace('{AdditionalProjectReferences}', '$(_additionalProjectReferencesString)')
                                                  .Replace('{RepositoryEngineeringDir}', '$(RepositoryEngineeringDir)')
-                                                 .Replace('{MonoAOTCompilerDir}', '$(MonoAOTCompilerDir)')
                                                  .Replace('{MonoProjectRoot}', '$(MonoProjectRoot)')
                                                  .Replace('{BrowserProjectRoot}', '$(BrowserProjectRoot)')
                                                  .Replace('{WasmProjectRoot}', '$(WasmProjectRoot)')
                                                  .Replace('{WasiProjectRoot}', '$(WasiProjectRoot)')
-                                                 .Replace('{MonoAOTCompilerTasksAssemblyPath}', '$(MonoAOTCompilerTasksAssemblyPath)')
-                                                 .Replace('{MonoTargetsTasksAssemblyPath}', '$(MonoTargetsTasksAssemblyPath)')
                                                  .Replace('{WasmAppBuilderTasksAssemblyPath}', '$(WasmAppBuilderTasksAssemblyPath)')
                                                  .Replace('{MicrosoftNetCoreAppRuntimePackRidDir}', '$(MicrosoftNetCoreAppRuntimePackRidDir)')
                                                  .Replace('{WasmSdkPackBuildPath}', '$(MonoProjectRoot)nuget/Microsoft.NET.Sdk.WebAssembly.Pack/build/')
-                                                 .Replace('{WasmSdkPackTasksPath}', '$(ArtifactsBinDir)Microsoft.NET.Sdk.WebAssembly.Pack.Tasks/$(RuntimeConfiguration)/')
+                                                 .Replace('{WasmSdkPackTasksPath}', '$(ArtifactsBinDir)Microsoft.NET.Sdk.WebAssembly.Pack.Tasks/$(RuntimeConfiguration)/net/')
                                                  .Replace('{ProductVersion}', '$(ProductVersion)')
                                                  .Replace('{NetCoreAppCurrent}', '$(NetCoreAppCurrent)')
                                                  .Replace('{NetCoreAppToolCurrent}', '$(NetCoreAppToolCurrent)')
@@ -160,7 +156,7 @@
           DependsOnTargets="PublishTrimmedProjects"
           Inputs="%(TestConsoleApps.Identity)"
           Outputs="_unused"
-          Condition="'$(ArchiveTests)' != 'true'">
+          Condition="'$(ArchiveTests)' != 'true' and '$(SkipTrimmingTestsRun)' != 'true'">
 
     <Message Importance="High" Text="[Trimming Tests] Running test: %(TestConsoleApps.ProjectCompileItems) ..." />
     <Exec IgnoreExitCode="true" Command="%(TestConsoleApps.TestCommand)" StandardOutputImportance="Low" WorkingDirectory="%(TestConsoleApps.TestExecutionDirectory)">

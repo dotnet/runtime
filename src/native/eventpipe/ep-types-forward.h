@@ -16,6 +16,8 @@ typedef struct _EventPipeBlock EventPipeBlock;
 typedef struct _EventPipeBlockVtable EventPipeBlockVtable;
 typedef struct _EventPipeConfiguration EventPipeConfiguration;
 typedef struct _EventPipeEvent EventPipeEvent;
+typedef struct _EventPipeEventDefinition EventPipeEventDefinition;
+typedef struct _EventPipeEventTable EventPipeEventTable;
 typedef struct _EventPipeEventBlockBase EventPipeEventBlockBase;
 typedef struct _EventPipeEventBlock EventPipeEventBlock;
 typedef struct _EventPipeEventHeader EventPipeEventHeader;
@@ -158,6 +160,22 @@ typedef enum {
 } EventPipeSessionType ;
 
 typedef enum {
+	// Producers drop events when the circular buffer is full (default, lossy).
+	EP_BUFFERING_MODE_DROP,
+	// Producers block until the reader frees buffer capacity (non-lossy).
+	EP_BUFFERING_MODE_BLOCK
+} EventPipeBufferingMode;
+
+typedef enum {
+	// The event was written to a buffer.
+	EP_WRITE_EVENT_RESULT_WRITTEN,
+	// The event was not written (buffers full and dropping, oversized, suspended, or not enabled).
+	EP_WRITE_EVENT_RESULT_NOT_WRITTEN,
+	// The buffers are full in Block mode; the caller should park until the reader frees capacity, then retry.
+	EP_WRITE_EVENT_RESULT_BLOCKED
+} EventPipeWriteEventResult;
+
+typedef enum {
 	EP_STATE_NOT_INITIALIZED,
 	EP_STATE_INITIALIZED,
 	EP_STATE_SHUTTING_DOWN
@@ -191,7 +209,7 @@ typedef int64_t ep_system_timestamp_t;
 // Define the event pipe callback to match the ETW callback signature.
 typedef void (EP_CALLBACK_CALLTYPE *EventPipeCallback)(
 	const uint8_t *source_id,
-	unsigned long is_enabled,
+	uint32_t is_enabled,
 	uint8_t level,
 	uint64_t match_any_keywords,
 	uint64_t match_all_keywords,

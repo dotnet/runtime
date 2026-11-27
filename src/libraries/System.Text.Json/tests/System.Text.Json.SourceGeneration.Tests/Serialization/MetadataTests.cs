@@ -36,6 +36,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(StructWithParameterizedCtor))]
         [JsonSerializable(typeof(ClassWithRequiredMember))]
         [JsonSerializable(typeof(ClassWithInitOnlyProperty))]
+        [JsonSerializable(typeof(ClassWithInitOnlyAndRequiredMembers))]
         [JsonSerializable(typeof(ClassWithMultipleConstructors))]
         [JsonSerializable(typeof(DerivedClassWithShadowingProperties))]
         [JsonSerializable(typeof(IDerivedInterface))]

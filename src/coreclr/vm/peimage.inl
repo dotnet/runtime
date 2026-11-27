@@ -1,10 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// --------------------------------------------------------------------------------
-// PEImage.inl
-//
-
-// --------------------------------------------------------------------------------
 
 #ifndef PEIMAGE_INL_
 #define PEIMAGE_INL_
@@ -14,15 +9,15 @@
 
 inline ULONG PEImage::AddRef()
 {
-    CONTRACT(ULONG)
+    CONTRACTL
     {
         PRECONDITION(m_refCount>0 && m_refCount < COUNT_T_MAX);
         NOTHROW;
         GC_NOTRIGGER;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
-    RETURN (static_cast<ULONG>(InterlockedIncrement(&m_refCount)));
+    return static_cast<ULONG>(InterlockedIncrement(&m_refCount));
 }
 
 inline const SString &PEImage::GetPath()
@@ -199,28 +194,11 @@ inline BOOL PEImage::IsOpened()
     return m_pLayouts[IMAGE_LOADED]!=NULL || m_pLayouts[IMAGE_FLAT] !=NULL;
 }
 
-
-inline BOOL PEImage::IsReferenceAssembly()
+inline BOOL PEImage::HasHeaders()
 {
-    CONTRACTL
-    {
-        PRECONDITION(HasCorHeader());
-    }
-    CONTRACTL_END;
-
-    IMDInternalImport* mdImport = this->GetMDImport();
-    HRESULT hr = mdImport->GetCustomAttributeByName(TokenFromRid(1, mdtAssembly),
-                                           g_ReferenceAssemblyAttribute,
-                                           NULL,
-                                           NULL);
-    IfFailThrow(hr);
-    if (hr == S_OK) {
-        return TRUE;
-    }
-    _ASSERTE(hr == S_FALSE);
-    return FALSE;
+    WRAPPER_NO_CONTRACT;
+    return GetOrCreateLayout(PEImageLayout::LAYOUT_ANY)->HasHeaders();
 }
-
 
 inline BOOL PEImage::HasNTHeaders()
 {
@@ -350,7 +328,7 @@ inline PTR_PEImage PEImage::OpenImage(LPCWSTR pPath, MDInternalImportFlags flags
     {
         PEImageHolder pImage(new PEImage{pPath});
         pImage->Init(probeExtensionResult);
-        return dac_cast<PTR_PEImage>(pImage.Extract());
+        return dac_cast<PTR_PEImage>(pImage.Detach());
     }
 
     CrstHolder holder(&s_hashLock);
@@ -368,7 +346,7 @@ inline PTR_PEImage PEImage::OpenImage(LPCWSTR pPath, MDInternalImportFlags flags
         pImage->Init(probeExtensionResult);
 
         pImage->AddToHashMap();
-        return dac_cast<PTR_PEImage>(pImage.Extract());
+        return dac_cast<PTR_PEImage>(pImage.Detach());
     }
 
     found->AddRef();

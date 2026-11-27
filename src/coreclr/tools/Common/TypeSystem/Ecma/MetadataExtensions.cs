@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices;
+using Internal.Text;
 
 namespace Internal.TypeSystem.Ecma
 {
@@ -319,7 +320,7 @@ namespace Internal.TypeSystem.Ecma
             return new ReadOnlySpan<byte>(blobReader.CurrentPointer, blobReader.Length);
         }
 
-        public static unsafe bool StringEquals(this MetadataReader reader, StringHandle handle, ReadOnlySpan<byte> otherString)
+        public static unsafe bool StringEquals(this MetadataReader reader, StringHandle handle, Utf8Span otherString)
         {
             int stringOffset = reader.GetHeapOffset(handle);
 
@@ -332,14 +333,7 @@ namespace Internal.TypeSystem.Ecma
             if (*(currentChar + otherString.Length) != 0)
                 return false;
 
-            // Compare characters
-            for (int i = 0; i < otherString.Length; i++)
-            {
-                if (otherString[i] != *(currentChar++))
-                    return false;
-            }
-
-            return true;
+            return new ReadOnlySpan<byte>(currentChar, otherString.Length).SequenceEqual(otherString.AsSpan());
         }
     }
 }

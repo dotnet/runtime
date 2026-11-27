@@ -206,15 +206,6 @@ bool Compiler::optUnmarkCSE(GenTree* tree)
     }
 }
 
-Compiler::fgWalkResult Compiler::optCSE_MaskHelper(GenTree** pTree, fgWalkData* walkData)
-{
-    GenTree*         tree      = *pTree;
-    Compiler*        comp      = walkData->m_compiler;
-    optCSE_MaskData* pUserData = (optCSE_MaskData*)(walkData->pCallbackData);
-
-    return WALK_CONTINUE;
-}
-
 // This functions walks all the node for an given tree
 // and return the mask of CSE defs and uses for the tree
 //
@@ -677,8 +668,13 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
                 {
                     ValueNum prevExceptionSet = vnStore->VNExceptionSet(prevVnLib);
                     ValueNum curExceptionSet  = vnStore->VNExceptionSet(vnLib);
+                    // The first value remains a valid def for the second if evaluating it already
+                    // rules out the extra exceptions.
                     if ((prevExceptionSet != curExceptionSet) &&
-                        vnStore->VNExcIsSubset(curExceptionSet, prevExceptionSet))
+                        vnStore->VNExcIsSubset(curExceptionSet, prevExceptionSet) &&
+                        !vnStore->VNExcIsSubset(vnStore->VNExcSetUnion(prevExceptionSet,
+                                                                       optValnumCSE_ImpliedExcSet(prevTree)),
+                                                curExceptionSet))
                     {
                         JITDUMP("Skipping CSE candidate for tree [%06u]; tree [%06u] is a better candidate with "
                                 "more exceptions\n",
@@ -693,6 +689,14 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
             }
 
             hashDsc->csdIsSharedConst = isSharedConst;
+        }
+
+        // Availability only needs the exceptions that defs rule out when occurrences
+        // differ in their exception sets.
+        if (!hashDsc->csdMixedExcSets && (vnStore->VNExceptionSet(vnLib) !=
+                                          vnStore->VNExceptionSet(hashDsc->csdTreeList.tslTree->GetVN(VNK_Liberal))))
+        {
+            hashDsc->csdMixedExcSets = true;
         }
 
         // Append this expression to the end of the list
@@ -766,6 +770,7 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
             hashDsc->csdConstDefVN     = vnStore->VNForNull(); // uninit value
             hashDsc->csdIndex          = 0;
             hashDsc->csdIsSharedConst  = false;
+            hashDsc->csdMixedExcSets   = false;
             hashDsc->csdLiveAcrossCall = false;
             hashDsc->csdDefCount       = 0;
             hashDsc->csdUseCount       = 0;
@@ -836,7 +841,7 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
             else
             {
                 size_t kVal = Compiler::Decode_Shared_Const_CSE_Value(key);
-                printf("K_%p", dspPtr(kVal));
+                printf("K_%zx", (size_t)dspPtr(kVal));
             }
 
             printf(" in " FMT_BB ", [cost=%2u, size=%2u]: \n", compCurBB->bbNum, tree->GetCostEx(), tree->GetCostSz());
@@ -906,8 +911,134 @@ bool Compiler::optValnumCSE_Locate(CSE_HeuristicCommon* heuristic)
 
     optCSEstop();
 
+#ifdef TARGET_XARCH
+    optValnumCSE_ScreenMemoryUpdates();
+#endif
+
     return true;
 }
+
+#ifdef TARGET_XARCH
+//------------------------------------------------------------------------
+// GetMemoryUpdateOp: Is this load the source of an in-place memory update?
+//
+// Arguments:
+//    load - The GT_IND to check
+//
+// Return Value:
+//    The operator, if the load feeds one that has a memory-operand form
+//    (e.g. "add [mem], reg") whose result is stored back to the same address;
+//    otherwise nullptr.
+//
+static GenTree* GetMemoryUpdateOp(GenTree* load)
+{
+    if (!load->OperIs(GT_IND) || !varTypeIsIntegral(load))
+    {
+        return nullptr;
+    }
+
+    GenTree* op    = load->gtGetParent(nullptr);
+    GenTree* store = (op != nullptr) ? op->gtGetParent(nullptr) : nullptr;
+    if ((store == nullptr) || !store->OperIs(GT_STOREIND) || (store->AsStoreInd()->Data() != op))
+    {
+        return nullptr;
+    }
+
+    if (op->gtOverflowEx())
+    {
+        return nullptr;
+    }
+
+    if (!op->OperIs(GT_NOT, GT_NEG) &&
+        (!op->OperIsBinary() || !op->OperIsRMWMemOp() || ((op->gtGetOp1() != load) && !op->OperIsCommutative())))
+    {
+        return nullptr;
+    }
+
+    // Match the address the way lowering does.
+    return GenTree::Compare(store->AsStoreInd()->Addr(), load->AsIndir()->Addr()) ? op : nullptr;
+}
+
+//------------------------------------------------------------------------
+// optValnumCSE_ScreenMemoryUpdates: Remove CSE occurrences that would block
+//    an in-place memory update.
+//
+// Notes:
+//    Replacing (or defining) the load in "*p = *p op x" with a CSE temp keeps
+//    its value in a register, which prevents lowering from using the
+//    memory-operand form of 'op'. Such loads are removed from their candidates
+//    after the candidates are located, so the remaining occurrences can still
+//    be CSE'd.
+//
+//    Initially all such loads are disqualified. A load is then reinstated if
+//    'op' is itself a CSE candidate whose occurrences include another
+//    still-qualified one besides 'op': the result of 'op' may have other uses,
+//    so lowering might not be able to use the memory-operand form anyway.
+//    A load can itself be an occurrence of another load's 'op' (as in
+//    "*p &= a; *p |= b;"), so reinstating one load can reinstate others; this
+//    is repeated until no further loads are reinstated.
+//
+void Compiler::optValnumCSE_ScreenMemoryUpdates()
+{
+    struct MemoryUpdate
+    {
+        GenTree* load;
+        GenTree* op;
+        int      cseIndex;
+    };
+
+    ArrayStack<MemoryUpdate> updates(getAllocator(CMK_CSE));
+
+    for (unsigned inx = 0; inx < optCSECandidateCount; inx++)
+    {
+        for (treeStmtLst* lst = &optCSEtab[inx]->csdTreeList; lst != nullptr; lst = lst->tslNext)
+        {
+            GenTree* const tree = lst->tslTree;
+            GenTree* const op   = GetMemoryUpdateOp(tree);
+            if (op != nullptr)
+            {
+                updates.Push({tree, op, tree->gtCSEnum});
+                tree->gtCSEnum = NO_CSE;
+            }
+        }
+    }
+
+    bool changed = !updates.Empty();
+    while (changed)
+    {
+        changed = false;
+        for (const MemoryUpdate& update : updates.BottomUpOrder())
+        {
+            if (IS_CSE_INDEX(update.load->gtCSEnum) || !IS_CSE_INDEX(update.op->gtCSEnum))
+            {
+                continue;
+            }
+
+            for (treeStmtLst* lst = &optCSEfindDsc(GET_CSE_INDEX(update.op->gtCSEnum))->csdTreeList; lst != nullptr;
+                 lst              = lst->tslNext)
+            {
+                if ((lst->tslTree != update.op) && IS_CSE_INDEX(lst->tslTree->gtCSEnum))
+                {
+                    update.load->gtCSEnum = (signed char)update.cseIndex;
+                    changed               = true;
+                    break;
+                }
+            }
+        }
+    }
+
+#ifdef DEBUG
+    for (const MemoryUpdate& update : updates.BottomUpOrder())
+    {
+        if (!IS_CSE_INDEX(update.load->gtCSEnum))
+        {
+            JITDUMP("Removed " FMT_CSE " occurrence [%06u]: source of an in-place memory update\n", update.cseIndex,
+                    dspTreeID(update.load));
+        }
+    }
+#endif
+}
+#endif // TARGET_XARCH
 
 /*****************************************************************************
  *
@@ -993,6 +1124,14 @@ void Compiler::optValnumCSE_InitDataFlow()
 
         while (lst != nullptr)
         {
+            // Some occurrences may have been dropped because they are part of an
+            // in-place memory update (see optValnumCSE_ScreenMemoryUpdates).
+            if (!IS_CSE_INDEX(lst->tslTree->gtCSEnum))
+            {
+                lst = lst->tslNext;
+                continue;
+            }
+
             BasicBlock* block                = lst->tslBlock;
             unsigned    cseAvailBit          = getCSEAvailBit(CSEindex);
             unsigned    cseAvailCrossCallBit = getCSEAvailCrossCallBit(CSEindex);
@@ -1094,8 +1233,6 @@ void Compiler::optValnumCSE_InitDataFlow()
             }
         }
     }
-
-    fgDebugCheckLinks();
 
 #endif // DEBUG
 }
@@ -1407,6 +1544,76 @@ void Compiler::optValnumCSE_DataFlow()
 #endif // DEBUG
 }
 
+//------------------------------------------------------------------------
+// optValnumCSE_ImpliedExcSet: Compute exceptions that cannot be raised once a tree has
+//   been evaluated without raising an exception.
+//
+// Arguments:
+//    tree - the tree
+//
+// Return Value:
+//    A liberal exception set. Each indirection in the tree proves that its base address is
+//    non-null and each integer division proves that it did not divide by zero or overflow.
+//    Earlier phases may have marked these operations as unable to fault, which removes the
+//    exceptions from their VNs, but other trees with the same operands still carry them.
+//
+ValueNum Compiler::optValnumCSE_ImpliedExcSet(GenTree* tree)
+{
+    class ImpliedExcSetVisitor final : public GenTreeVisitor<ImpliedExcSetVisitor>
+    {
+    public:
+        enum
+        {
+            DoPreOrder = true,
+        };
+
+        ValueNum m_excSet;
+
+        ImpliedExcSetVisitor(Compiler* compiler)
+            : GenTreeVisitor<ImpliedExcSetVisitor>(compiler)
+            , m_excSet(compiler->vnStore->VNForEmptyExcSet())
+        {
+        }
+
+        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            GenTree* const node = *use;
+
+            GenTree* addr = nullptr;
+            if (node->OperIsIndir())
+            {
+                addr = node->AsIndir()->Addr();
+            }
+            else if (node->OperIs(GT_ARR_LENGTH, GT_MDARR_LENGTH, GT_MDARR_LOWER_BOUND))
+            {
+                addr = node->AsArrCommon()->ArrRef();
+            }
+
+            ValueNumStore* const vnStore = m_compiler->vnStore;
+
+            if (addr != nullptr)
+            {
+                m_excSet = vnStore->VNExcSetUnion(m_excSet,
+                                                  m_compiler->fgValueNumberIndirNullCheckExceptions(addr).GetLiberal());
+            }
+            else if (node->OperIs(GT_DIV, GT_UDIV, GT_MOD, GT_UMOD) && varTypeIsIntegral(node))
+            {
+                m_excSet = vnStore->VNExcSetUnion(m_excSet, m_compiler
+                                                                ->fgValueNumberDivisionExceptions(node->OperGet(),
+                                                                                                  node->gtGetOp1(),
+                                                                                                  node->gtGetOp2())
+                                                                .GetLiberal());
+            }
+
+            return fgWalkResult::WALK_CONTINUE;
+        }
+    };
+
+    ImpliedExcSetVisitor visitor(this);
+    visitor.WalkTree(&tree, nullptr);
+    return visitor.m_excSet;
+}
+
 //---------------------------------------------------------------------------
 // optValnumCSE_Availability:
 //
@@ -1440,6 +1647,13 @@ void Compiler::optValnumCSE_DataFlow()
 //        e.g. m.a = p.a;
 //             e1 = (m.a + q.b)  :: e1 and e2 have different exception sets.
 //             e2 = (p.a + q.b)     but both compute the same normal value
+//     3. An earlier phase proved that an operation cannot fault in one place but not
+//        in another, e.g. local assertion prop marks only some indirections of the
+//        same address as non-faulting.
+//
+//     A use may also rely on exceptions that a def rules out by executing even though
+//     they are not in the def's exception set (see optValnumCSE_ImpliedExcSet). This
+//     handles case 3.
 //
 void Compiler::optValnumCSE_Availability()
 {
@@ -1538,13 +1752,22 @@ void Compiler::optValnumCSE_Availability()
                     {
                         // This is a CSE def
 
+                        // Besides the exceptions in its own VN, a def rules out the exceptions that the
+                        // operations it evaluates would raise if they could fault.
+                        //
+                        ValueNum defExcSet = theLiberalExcSet;
+                        if (desc->csdMixedExcSets)
+                        {
+                            defExcSet = vnStore->VNExcSetUnion(theLiberalExcSet, optValnumCSE_ImpliedExcSet(tree));
+                        }
+
                         // Is defExcSetCurrent still set to the uninit marker value of VNForNull() ?
                         if (desc->defExcSetCurrent == vnStore->VNForNull())
                         {
                             // This is the first time visited, so record this defs exception set
-                            desc->defExcSetCurrent = theLiberalExcSet;
+                            desc->defExcSetCurrent = defExcSet;
                         }
-                        else if (desc->defExcSetCurrent != theLiberalExcSet)
+                        else if (desc->defExcSetCurrent != defExcSet)
                         {
                             // We will change the value of desc->defExcSetCurrent to be the intersection of
                             // these two sets.
@@ -1552,7 +1775,7 @@ void Compiler::optValnumCSE_Availability()
                             // far)
                             //
                             ValueNum intersectionExcSet =
-                                vnStore->VNExcSetIntersection(desc->defExcSetCurrent, theLiberalExcSet);
+                                vnStore->VNExcSetIntersection(desc->defExcSetCurrent, defExcSet);
 #ifdef DEBUG
                             if (this->verbose)
                             {
@@ -1560,8 +1783,8 @@ void Compiler::optValnumCSE_Availability()
                                 vnStore->vnDumpExc(this, desc->defExcSetCurrent);
                                 printf("\n");
 
-                                printf(">>> theLiberalExcSet is ");
-                                vnStore->vnDumpExc(this, theLiberalExcSet);
+                                printf(">>> defExcSet is ");
+                                vnStore->vnDumpExc(this, defExcSet);
                                 printf("\n");
 
                                 printf(">>> the intersectionExcSet is ");
@@ -1580,9 +1803,9 @@ void Compiler::optValnumCSE_Availability()
                         //
                         if (desc->defExcSetPromise != vnStore->VNForEmptyExcSet())
                         {
-                            // The exception set held in desc->defExcSetPromise must be a subset of theLiberalExcSet
+                            // The exception set held in desc->defExcSetPromise must be a subset of defExcSet
                             //
-                            if (vnStore->VNExcIsSubset(theLiberalExcSet, desc->defExcSetPromise))
+                            if (vnStore->VNExcIsSubset(defExcSet, desc->defExcSetPromise))
                             {
                                 // This new def still satisfies any promise made to all the CSE uses that we have
                                 // encountered
@@ -1796,13 +2019,27 @@ bool CSE_HeuristicCommon::CanConsiderTree(GenTree* tree, bool isReturn)
         }
     }
 
-    // Don't allow non-SIMD struct CSEs under a return; we don't fully
-    // re-morph these if we introduce a CSE store, and so may create
-    // IR that lower is not yet prepared to handle.
-    //
-    if (isReturn && varTypeIsStruct(tree->gtType) && !varTypeIsSIMD(tree->gtType))
+    if (varTypeIsStruct(tree->gtType) && !varTypeIsSIMD(tree->gtType))
     {
-        return false;
+        // Don't allow non-SIMD struct CSEs under a return; we don't fully
+        // re-morph these if we introduce a CSE store, and so may create
+        // IR that lower is not yet prepared to handle.
+        //
+        if (isReturn)
+        {
+            return false;
+        }
+
+        // Skip all multireg nodes. The locals we introduce cannot be
+        // enregistered in multiple registers since we do not promote them, so
+        // they would always be spilled. Also, for correctness we would need to
+        // DNER existing store destinations when replacing the CSE uses and we
+        // do not currently do that.
+        //
+        if (tree->IsMultiRegNode())
+        {
+            return false;
+        }
     }
 
     // No good if the expression contains side effects or if it was marked as DONT CSE
@@ -1868,8 +2105,7 @@ bool CSE_HeuristicCommon::CanConsiderTree(GenTree* tree, bool isReturn)
             // more exceptions (NullRef) so we abandon this CSE.
             // If we don't mark CALL ALLOC_HELPER as a CSE candidate, we are able
             // to use GT_IND(x) in [2] as a CSE def.
-            if (call->IsHelperCall() &&
-                Compiler::s_helperCallProperties.IsAllocator(m_compiler->eeGetHelperNum(call->gtCallMethHnd)))
+            if (call->IsHelperCall() && Compiler::s_helperCallProperties.IsAllocator(call->GetHelperNum()))
             {
                 return false;
             }
@@ -3417,7 +3653,7 @@ void CSE_HeuristicRL::Announce()
 
     if (m_updateParameters)
     {
-        JITDUMP("Operating in update mode with sequence %ls, rewards %ls, and alpha %f\n", JitConfig.JitReplayCSE(),
+        JITDUMP("Operating in update mode with sequence %s, rewards %s, and alpha %f\n", JitConfig.JitReplayCSE(),
                 JitConfig.JitReplayCSEReward(), m_alpha);
     }
 }
@@ -4316,15 +4552,16 @@ void CSE_Heuristic::SortCandidates()
 
             if (!Compiler::Is_Shared_Const_CSE(dsc->csdHashKey))
             {
-                printf(FMT_CSE ", {$%-3x, $%-3x} useCnt=%d: [def=%3f, use=%3f, cost=%3u%s]\n        :: ", dsc->csdIndex,
-                       dsc->csdHashKey, dsc->defExcSetPromise, dsc->csdUseCount, def, use, cost,
+                printf(FMT_CSE ", {$%-3zx, $%-3x} useCnt=%d: [def=%3f, use=%3f, cost=%3u%s]\n        :: ",
+                       dsc->csdIndex, dsc->csdHashKey, dsc->defExcSetPromise, dsc->csdUseCount, def, use, cost,
                        dsc->csdLiveAcrossCall ? ", call" : "      ");
             }
             else
             {
                 size_t kVal = Compiler::Decode_Shared_Const_CSE_Value(dsc->csdHashKey);
-                printf(FMT_CSE ", {K_%p} useCnt=%d: [def=%3f, use=%3f, cost=%3u%s]\n        :: ", dsc->csdIndex,
-                       dspPtr(kVal), dsc->csdUseCount, def, use, cost, dsc->csdLiveAcrossCall ? ", call" : "      ");
+                printf(FMT_CSE ", {K_%zx} useCnt=%d: [def=%3f, use=%3f, cost=%3u%s]\n        :: ", dsc->csdIndex,
+                       (size_t)dspPtr(kVal), dsc->csdUseCount, def, use, cost,
+                       dsc->csdLiveAcrossCall ? ", call" : "      ");
             }
 
             m_compiler->gtDispTree(expr, nullptr, nullptr, true);
@@ -4976,8 +5213,8 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
         {
             if (isSharedConst)
             {
-                printf("\nWe have shared Const CSE's and selected " FMT_VN " with a value of 0x%p as the base.\n",
-                       dsc->csdConstDefVN, dspPtr(dsc->csdConstDefValue));
+                printf("\nWe have shared Const CSE's and selected " FMT_VN " with a value of 0x%zx as the base.\n",
+                       dsc->csdConstDefVN, (size_t)dspPtr(dsc->csdConstDefValue));
             }
             else // !isSharedConst
             {
@@ -5170,8 +5407,6 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
             cse->gtVNPair = m_compiler->vnStore->VNPNormalPair(exp->gtVNPair);
         }
 
-        INDEBUG(cse->gtDebugFlags |= GTF_DEBUG_VAR_CSE_REF);
-
         // Now we need to unmark any nested CSE's uses that are found in 'exp'
         // As well we extract any nested CSE defs that are found in 'exp' and
         // these are appended to the sideEffList
@@ -5359,15 +5594,15 @@ void CSE_HeuristicCommon::ConsiderCandidates()
         {
             if (!Compiler::Is_Shared_Const_CSE(dsc->csdHashKey))
             {
-                printf("\nConsidering " FMT_CSE " {$%-3x, $%-3x} [def=%3f, use=%3f, cost=%3u%s]\n",
+                printf("\nConsidering " FMT_CSE " {$%-3zx, $%-3x} [def=%3f, use=%3f, cost=%3u%s]\n",
                        candidate.CseIndex(), dsc->csdHashKey, dsc->defExcSetPromise, candidate.DefCount(),
                        candidate.UseCount(), candidate.Cost(), dsc->csdLiveAcrossCall ? ", call" : "      ");
             }
             else
             {
                 size_t kVal = Compiler::Decode_Shared_Const_CSE_Value(dsc->csdHashKey);
-                printf("\nConsidering " FMT_CSE " {K_%p} [def=%3f, use=%3f, cost=%3u%s]\n", candidate.CseIndex(),
-                       dspPtr(kVal), candidate.DefCount(), candidate.UseCount(), candidate.Cost(),
+                printf("\nConsidering " FMT_CSE " {K_%zx} [def=%3f, use=%3f, cost=%3u%s]\n", candidate.CseIndex(),
+                       (size_t)dspPtr(kVal), candidate.DefCount(), candidate.UseCount(), candidate.Cost(),
                        dsc->csdLiveAcrossCall ? ", call" : "      ");
             }
             printf("CSE Expression : \n");

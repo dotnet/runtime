@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -36,6 +37,12 @@ namespace System.Runtime
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern void UnregisterForGCReporting(GCFrameRegistration* pRegistration);
+#elif NATIVEAOT
+        internal static void RegisterForGCReporting(GCFrameRegistration* pRegistration) =>
+            RuntimeImports.RhRegisterForGCReporting(pRegistration);
+
+        internal static void UnregisterForGCReporting(GCFrameRegistration* pRegistration) =>
+            RuntimeImports.RhUnregisterForGCReporting(pRegistration);
 #endif
     }
 }

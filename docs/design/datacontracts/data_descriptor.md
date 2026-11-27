@@ -125,7 +125,8 @@ multiple times, later definitions take precedence.
 
 ### Version
 
-This is version 0 of the physical descriptor.
+This is version 2 of the physical descriptor. Diagnostic tooling must reject physical descriptors
+whose version is not 2.
 
 ### Summary
 
@@ -135,14 +136,14 @@ compact.  The in-memory descriptor will typically be compact.
 
 The toplevel dictionary will contain:
 
-* `"version": 0`
+* `"version": 2`
 * optional `"baseline": "BASELINE_ID"` see below
 * `"types": TYPES_DESCRIPTOR` see below
 * `"globals": GLOBALS_DESCRIPTOR` see below
 * optional `"sub-descriptors": SUB_DESCRIPTORS_DESCRIPTOR` see below
 
 Additional toplevel keys may be present. For example, the in-memory data descriptor will contain a
-`"contracts"` key (see [contract descriptor](./contract_descriptor.md#Compatible_contracts)) for the
+`"contracts"` key (see [contract descriptor](./contract-descriptor.md#Compatible_contracts)) for the
 set of compatible contracts.
 
 ### Baseline data descriptor identifier
@@ -308,10 +309,10 @@ The baseline is given in the "regular" format.
 
 ```jsonc
 {
-  "version": 0,
+  "version": 2,
   "types": [
     {
-      "name": "GCHandle",
+      "name": "ObjectHandle",
       "size": 8,
       "fields": [
         { "name": "Value", "type": "pointer", "offset": 0 }
@@ -345,7 +346,7 @@ The following is an example of an in-memory descriptor that references the above
 
 ```jsonc
 {
-  "version": "0",
+  "version": 2,
   "baseline": "example-64",
   "types":
   {
@@ -369,7 +370,7 @@ If the indirect values table has the values `0x0100ffe0` in offset 0, then a pos
 
 | Type        | Size          | Field Name  | Field Type | Field Offset |
 | ----------- | ------------- | ----------- | ---------- | ------------ |
-| GCHandle    | 8             | Value       | pointer    | 0            |
+| ObjectHandle| 8             | Value       | pointer    | 0            |
 | Thread      | indeterminate | ThreadState | uint32     | 0            |
 |             |               | ThreadId    | uint32     | 32           |
 |             |               | Next        | pointer    | 128          |

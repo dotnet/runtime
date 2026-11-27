@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -10,7 +10,7 @@ namespace System.Reflection
 {
     internal static class AssemblyNameFormatter
     {
-        public static string ComputeDisplayName(string name, Version? version, string? cultureName, byte[]? pkt, AssemblyNameFlags flags = 0, AssemblyContentType contentType = 0, byte[]? pk = null)
+        public static unsafe string ComputeDisplayName(string name, Version? version, string? cultureName, byte[]? pkt, AssemblyNameFlags flags = 0, AssemblyContentType contentType = 0, byte[]? pk = null)
         {
             ValueStringBuilder vsb = new(stackalloc char[256]);
             AppendDisplayName(ref vsb, name, version, cultureName, pkt, flags, contentType, pk);
@@ -99,15 +99,13 @@ namespace System.Reflection
 
         private static void AppendQuoted(this ref ValueStringBuilder vsb, string s)
         {
-            bool needsQuoting = false;
+            // You can use double or single quotes to quote a name. We use double quotes consistently.
             const char quoteChar = '\"';
-
-            // App-compat: You can use double or single quotes to quote a name, and Fusion (or rather the IdentityAuthority) picks one
-            // by some algorithm. Rather than guess at it, we use double quotes consistently.
             ReadOnlySpan<char> span = s.AsSpan();
-            if (s.Length != span.Trim().Length || span.IndexOfAny('\"', '\'') >= 0)
-                needsQuoting = true;
 
+            // Only whitespace recognized by the assembly name parser needs quoting.
+            Debug.Assert(!span.IsEmpty);
+            bool needsQuoting = IsWhiteSpace(span[0]) || IsWhiteSpace(span[span.Length - 1]) || span.IndexOfAny('\"', '\'') >= 0;
             if (needsQuoting)
                 vsb.Append(quoteChar);
 
@@ -138,6 +136,8 @@ namespace System.Reflection
 
             if (needsQuoting)
                 vsb.Append(quoteChar);
+
+            static bool IsWhiteSpace(char ch) => ch is '\n' or '\r' or ' ' or '\t';
         }
 
 #if !NET

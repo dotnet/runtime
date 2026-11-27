@@ -60,6 +60,7 @@ namespace Mono.Linker
         protected readonly Dictionary<ExportedType, TypePreserveMembers> preserved_exportedtype_members = new();
         protected readonly Dictionary<IMemberDefinition, List<MethodDefinition>> preserved_methods = new Dictionary<IMemberDefinition, List<MethodDefinition>>();
         readonly HashSet<AssemblyDefinition> assemblies_with_root_all_members = new();
+        readonly HashSet<AssemblyDefinition> library_root_assemblies = new();
         protected readonly HashSet<IMetadataTokenProvider> public_api = new HashSet<IMetadataTokenProvider>();
         protected readonly Dictionary<AssemblyDefinition, ISymbolReader> symbol_readers = new Dictionary<AssemblyDefinition, ISymbolReader>();
         readonly Dictionary<IMemberDefinition, LinkerAttributesInformation> linker_attributes = new Dictionary<IMemberDefinition, LinkerAttributesInformation>();
@@ -71,6 +72,9 @@ namespace Mono.Linker
         protected readonly HashSet<MethodDefinition> indirectly_called = new HashSet<MethodDefinition>();
         protected readonly HashSet<TypeDefinition> types_relevant_to_variant_casting = new HashSet<TypeDefinition>();
         readonly HashSet<IMemberDefinition> reflection_used = new();
+        readonly List<(MethodDefinition Method, MessageOrigin Origin)> pending_reflection_visible_methods = new();
+        readonly List<(FieldDefinition Field, MessageOrigin Origin)> pending_reflection_visible_fields = new();
+        readonly List<(TypeDefinition Type, MessageOrigin Origin)> pending_reflection_visible_types = new();
         AssemblyDefinition? entry_assembly;
 
         public AnnotationStore(LinkContext context)
@@ -243,6 +247,45 @@ namespace Mono.Linker
             return types_relevant_to_variant_casting.Contains(type);
         }
 
+        /// <summary>
+        /// Schedules a method for reflection-visible marking by MarkStep.
+        /// </summary>
+        internal void MarkPendingReflectionVisibleMethod(MethodDefinition method, in MessageOrigin origin)
+            => pending_reflection_visible_methods.Add((method, origin));
+
+        /// <summary>
+        /// Schedules a field for reflection-visible marking by MarkStep.
+        /// </summary>
+        internal void MarkPendingReflectionVisibleField(FieldDefinition field, in MessageOrigin origin)
+            => pending_reflection_visible_fields.Add((field, origin));
+
+        /// <summary>
+        /// Schedules a type for reflection-visible marking by MarkStep.
+        /// </summary>
+        internal void MarkPendingReflectionVisibleType(TypeDefinition type, in MessageOrigin origin)
+            => pending_reflection_visible_types.Add((type, origin));
+
+        internal (MethodDefinition Method, MessageOrigin Origin)[] DrainPendingReflectionVisibleMethods()
+        {
+            var result = pending_reflection_visible_methods.ToArray();
+            pending_reflection_visible_methods.Clear();
+            return result;
+        }
+
+        internal (FieldDefinition Field, MessageOrigin Origin)[] DrainPendingReflectionVisibleFields()
+        {
+            var result = pending_reflection_visible_fields.ToArray();
+            pending_reflection_visible_fields.Clear();
+            return result;
+        }
+
+        internal (TypeDefinition Type, MessageOrigin Origin)[] DrainPendingReflectionVisibleTypes()
+        {
+            var result = pending_reflection_visible_types.ToArray();
+            pending_reflection_visible_types.Clear();
+            return result;
+        }
+
         public bool SetProcessed(IMetadataTokenProvider provider)
         {
             if (processed.Add(provider))
@@ -390,6 +433,16 @@ namespace Mono.Linker
         public bool IsRootAssembly(AssemblyDefinition assembly)
         {
             return assemblies_with_root_all_members.Contains(assembly);
+        }
+
+        internal void SetLibraryRootAssembly(AssemblyDefinition assembly)
+        {
+            library_root_assemblies.Add(assembly);
+        }
+
+        internal bool IsLibraryRootAssembly(AssemblyDefinition assembly)
+        {
+            return library_root_assemblies.Contains(assembly);
         }
 
         public bool TryGetMethodStubValue(MethodDefinition method, out object? value)

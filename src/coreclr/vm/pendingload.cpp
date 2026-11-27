@@ -118,9 +118,7 @@ VOID DECLSPEC_NORETURN PendingTypeLoadTable::Entry::ThrowException()
 {
     CONTRACTL
     {
-        THROWS;
-        GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
+        STANDARD_VM_CHECK;
     }
     CONTRACTL_END;
 
@@ -158,7 +156,6 @@ void PendingTypeLoadTable::Entry::SetException(Exception *pException)
     // the details - so be it
     EX_TRY
     {
-        FAULT_NOT_FATAL();
         m_pException = pException->Clone();
     }
     EX_CATCH
@@ -310,7 +307,7 @@ PendingTypeLoadTable::Entry* PendingTypeLoadTable::Shard::InsertPendingTypeLoadE
     {
         NewHolder<DynamicallyAllocatedEntry> dynamicResult(new DynamicallyAllocatedEntry(typeKey));
         dynamicResult->Init(m_pLinkedListOfActiveEntries, hash, typeHnd);
-        result = dynamicResult.Extract();
+        result = dynamicResult.Detach();
     }
 
     m_pLinkedListOfActiveEntries = result;

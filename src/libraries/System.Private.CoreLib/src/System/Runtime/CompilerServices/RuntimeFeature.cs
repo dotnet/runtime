@@ -82,26 +82,29 @@ namespace System.Runtime.CompilerServices
         [UnsupportedOSPlatformGuard("wasi")]
         [FeatureSwitchDefinition("System.Runtime.CompilerServices.RuntimeFeature.IsMultithreadingSupported")]
         public static bool IsMultithreadingSupported
-#if FEATURE_SINGLE_THREADED
-            => false;
-#else
+#if FEATURE_MULTITHREADING
             => true;
+#else
+            => false;
 #endif
 
-#if FEATURE_SINGLE_THREADED
+#if FEATURE_WASM_MANAGED_THREADS
+        internal static void ThrowIfBlockingIsNotSupported(long millisecondsTimeout = System.Threading.Timeout.Infinite)
+        {
+            if (millisecondsTimeout == System.Threading.Timeout.Infinite)
+            {
+                System.Threading.Thread.AssureBlockingPossible();
+            }
+        }
+#elif !FEATURE_MULTITHREADING
         [DoesNotReturn]
-        internal static void ThrowIfMultithreadingIsNotSupported()
+        internal static void ThrowIfBlockingIsNotSupported(long millisecondsTimeout = System.Threading.Timeout.Infinite)
         {
             throw new PlatformNotSupportedException();
         }
-#elif FEATURE_WASM_MANAGED_THREADS
-        internal static void ThrowIfMultithreadingIsNotSupported()
-        {
-            System.Threading.Thread.AssureBlockingPossible();
-        }
 #else
         [Conditional("unnecessary")]
-        internal static void ThrowIfMultithreadingIsNotSupported()
+        internal static void ThrowIfBlockingIsNotSupported(long millisecondsTimeout = System.Threading.Timeout.Infinite)
         {
         }
 #endif

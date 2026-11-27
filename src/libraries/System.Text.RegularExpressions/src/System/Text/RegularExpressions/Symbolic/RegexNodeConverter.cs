@@ -234,12 +234,12 @@ namespace System.Text.RegularExpressions.Symbolic
                                     SymbolicRegexNode<BDD> elem = childResult.Count == 1 ?
                                         childResult.FirstElement :
                                         _builder.CreateConcatAlreadyReversed(childResult);
-                                    if (elem.IsNothing(_builder._solver))
+                                    if (elem.IsNothing(_builder))
                                     {
                                         continue;
                                     }
 
-                                    or = elem.IsAnyStar(_builder._solver) ?
+                                    or = elem.IsAnyStar(_builder) ?
                                         elem : // .* is the absorbing element
                                         SymbolicRegexNode<BDD>.CreateAlternate(_builder, elem, or);
                                 }
@@ -323,7 +323,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>Creates a BDD from the <see cref="RegexCharClass"/> set string to determine whether a char is in the set.</summary>
         /// <param name="set">The RegexCharClass set string.</param>
         /// <returns>A BDD that, when queried with a char, answers whether that char is in the specified set.</returns>
-        private BDD CreateBDDFromSetString(string set)
+        private unsafe BDD CreateBDDFromSetString(string set)
         {
             // If we're too deep on the stack, continue any recursion on another thread.
             if (!StackHelper.TryEnsureSufficientExecutionStack())

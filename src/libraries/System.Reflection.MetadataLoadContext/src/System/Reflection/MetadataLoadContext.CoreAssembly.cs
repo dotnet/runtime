@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
 using System.IO;
 using System.Reflection.TypeLoading;
 
@@ -11,21 +10,25 @@ namespace System.Reflection
     {
         private static readonly string[] s_CoreNames = { "mscorlib", "System.Runtime", "netstandard" };
 
-        // Cache loaded coreAssembly and core types.
-        internal RoAssembly? TryGetCoreAssembly(string? coreAssemblyName, out Exception? e)
+        internal RoAssembly LoadCoreAssembly(string? coreAssemblyName)
         {
-            Debug.Assert(_coreAssembly == null);
+            RoAssembly? coreAssembly;
+            Exception? e;
             if (coreAssemblyName == null)
             {
-                _coreAssembly = TryGetDefaultCoreAssembly(out e);
+                coreAssembly = TryGetDefaultCoreAssembly(out e);
             }
             else
             {
                 RoAssemblyName roAssemblyName = new AssemblyName(coreAssemblyName).ToRoAssemblyName();
-                _coreAssembly = TryResolveAssembly(roAssemblyName, out e);
+                coreAssembly = TryResolveAssembly(roAssemblyName, out e);
             }
 
-            return _coreAssembly;
+            if (coreAssembly == null)
+            {
+                throw e!;
+            }
+            return coreAssembly;
         }
 
         private RoAssembly? TryGetDefaultCoreAssembly(out Exception? e)
@@ -47,7 +50,7 @@ namespace System.Reflection
             return null;
         }
 
-        private RoAssembly? _coreAssembly;
+        private readonly RoAssembly _coreAssembly;
 
         /// <summary>
         /// Returns a lazily created and cached Type instance corresponding to the indicated core type. This method throws
@@ -85,6 +88,6 @@ namespace System.Reflection
         // one reason, we have to instance it per MetadataLoadContext.
         //
         internal Binder GetDefaultBinder() => _lazyDefaultBinder ??= new DefaultBinder(this);
-        private volatile Binder? _lazyDefaultBinder;
+        private Binder? _lazyDefaultBinder;
     }
 }

@@ -12,7 +12,7 @@ The general responsibilities of the runtime-async code generator
 
 2. Allow the async thunk logic to work.
 
-3. Generate Async Debug info (Not yet described in this document)f
+3. Generate Async Debug info (Not yet described in this document)
 
 
 
@@ -37,7 +37,7 @@ call       <Await> One of the functions which matches NI_System_Runtime_Compiler
 
 A search for this sequence is done if Method is known to be async.
 
-The dispatch to async functions save the `ExecutionContext` on suspension and restore it on resumption via `AsyncHelpers.CaptureExecutionContext` and `AsyncHelpers.RestoreExecutionContext` respectively
+The dispatch to async functions saves the `ExecutionContext` on suspension to be restored before resumption by `DispatchContinuations`.
 
 If PREFIX_TASK_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT, then continuation mode shall be ContinuationContextHandling::ContinueOnCapturedContext otherwise ContinuationContextHandling::ContinueOnThreadPool.
 
@@ -59,9 +59,21 @@ The dispatch to these functions will save and restore the execution context only
 
 When encountered, triggers the function to suspend immediately, and return the passed in Continuation.
 
+# Accessing known continuation fields
+
+The continuation flags encode how to access several well-known fields if they are present in the continuation.
+- The execution context
+- The continuation context
+- The exception object
+- The return value
+
+Each field has a pair of (first bit, number of bits) used to indicate where its details are encoded in the flags.
+When the field is present the index is non-zero and the offset is computed as (DataStart + (index - 1) * PointerSize).
+If a field is not present the index is zero.
+
 # Saving and restoring of contexts
 
-Capture the execution context before the suspension, and when the function resumes, call `AsyncHelpers.RestoreExecutionContext`. The context should be stored into the Continuation. The context may be captured by calling `AsyncHelpers.CaptureExecutionContext`.
+Capture the execution context before the suspension. The context should be stored into the Continuation and its offset encoded via the scheme above. The context may be captured by calling `AsyncHelpers.CaptureExecutionContext`.
 
 # ABI for async function handling
 
@@ -87,8 +99,8 @@ if (continuation != NULL)
     // Resumption point
 
     // Copy values out of continuation (including captured sync context and execution context locals)
-    // If the continuation may have an exception, check to see if its there, and if it is, throw it. Do this if CORINFO\_CONTINUATION\_HAS\_EXCEPTION is set.
-    // If the continuation has a return value, copy it out of the continuation. (CORINFO\_CONTINUATION\_HAS\_RESULT is set)
+    // If the continuation may have an exception, check to see if its there, and if it is, throw it. Do this if the flags indicate an exception object is present.
+    // If the continuation has a return value, copy it out of the continuation. Do this if the flags indicate a result is present.
 }
 ```
 
@@ -109,16 +121,16 @@ This only applies to calls which where ContinuationContextHandling is not Contin
 
 If set to ContinuationContextHandling::ContinueOnCapturedContext
 
-- The Continuation shall have an allocated data member for the captured context, and the CORINFO_CONTINUATION_HAS_CONTINUATION_CONTEXT flag shall be set on the continuation.
+- The Continuation shall have an allocated data member for the captured context, and its offset is encoded in the flags based on the scheme above.
 
-- The Continuation will store the captured synchronization context. This is done by calling `AsyncHelpers.CaptureContinuationContext(ref newContinuation.ContinuationContext, ref newContinuation.Flags)` while filling in the `Continuation`.
+- The Continuation will store the captured synchronization context. This can be done by calling `AsyncHelpers.CaptureContinuationContext(ref newContinuation.ContinuationContext, ref newContinuation.Flags)` while filling in the `Continuation`.
 
 If set to ContinuationContextHandling::ContinueOnThreadPool
 - The Continuation shall have the CORINFO_CONTINUATION_CONTINUE_ON_THREAD_POOL flag set
 
 # Exception handling behavior
 
-If an async function is called within a try block (In the jit hasTryIndex return true), set the CORINFO\_CONTINUATION\_HAS\_EXCEPTION bit on the Continuation and make it large enough.
+If an async function is called within a try block (In the jit hasTryIndex return true), allocate space for an exception in the continuation and encode its offset in the flags based on the scheme above.
 
 # Locals handling
 

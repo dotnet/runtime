@@ -55,7 +55,7 @@ namespace System.Text.Json
 
                     if (createExtensionProperty)
                     {
-                        Debug.Assert(obj != null, "obj is null");
+                        Debug.Assert(obj is not null, "obj is null");
                         CreateExtensionDataProperty(obj, dataExtProperty, options);
                     }
 
@@ -94,7 +94,7 @@ namespace System.Text.Json
                     }
                     else
                     {
-                        ThrowHelper.ThrowUnexpectedMetadataException(propertyName, ref reader, ref state);
+                        ThrowHelper.ThrowJsonException_MetadataUnexpectedProperty(propertyName, ref state);
                     }
                 }
             }
@@ -107,16 +107,16 @@ namespace System.Text.Json
             JsonPropertyInfo jsonPropertyInfo,
             JsonSerializerOptions options)
         {
-            Debug.Assert(jsonPropertyInfo != null);
+            Debug.Assert(jsonPropertyInfo is not null);
 
             object? extensionData = jsonPropertyInfo.GetValueAsObject(obj);
 
-            // For IReadOnlyDictionary, if there's an existing non-null instance, we need to create a new mutable
-            // Dictionary seeded with the existing contents so we can add the deserialized extension data to it.
+            // For IReadOnlyDictionary, reuse an existing Dictionary or create a mutable copy
+            // seeded with the existing contents so we can add the deserialized extension data to it.
             bool isReadOnlyDictionary = jsonPropertyInfo.PropertyType == typeof(IReadOnlyDictionary<string, object>) ||
                                         jsonPropertyInfo.PropertyType == typeof(IReadOnlyDictionary<string, JsonElement>);
 
-            if (extensionData == null || (isReadOnlyDictionary && extensionData != null))
+            if (extensionData is null || (isReadOnlyDictionary && extensionData is not null))
             {
                 // Create the appropriate dictionary type. We already verified the types.
 #if DEBUG
@@ -129,7 +129,7 @@ namespace System.Text.Json
                 Debug.Assert(genericArgs.Length == 2);
                 Debug.Assert(genericArgs[0].UnderlyingSystemType == typeof(string));
                 Debug.Assert(
-                    genericArgs[1].UnderlyingSystemType == JsonTypeInfo.ObjectType ||
+                    genericArgs[1].UnderlyingSystemType == typeof(object) ||
                     genericArgs[1].UnderlyingSystemType == typeof(JsonElement) ||
                     genericArgs[1].UnderlyingSystemType == typeof(Nodes.JsonNode));
 #endif
@@ -137,7 +137,7 @@ namespace System.Text.Json
                 Func<object>? createObjectForExtensionDataProp = jsonPropertyInfo.JsonTypeInfo.CreateObject
                     ?? jsonPropertyInfo.JsonTypeInfo.CreateObjectForExtensionDataProperty;
 
-                if (createObjectForExtensionDataProp == null)
+                if (createObjectForExtensionDataProp is null)
                 {
                     // Avoid a reference to the JsonNode type for trimming
                     if (jsonPropertyInfo.PropertyType.FullName == JsonTypeInfo.JsonObjectTypeName)
@@ -148,7 +148,12 @@ namespace System.Text.Json
                     // create a Dictionary<TKey, TValue> instance seeded with any existing contents.
                     else if (jsonPropertyInfo.PropertyType == typeof(IReadOnlyDictionary<string, object>))
                     {
-                        if (extensionData != null)
+                        if (extensionData is Dictionary<string, object>)
+                        {
+                            return;
+                        }
+
+                        if (extensionData is not null)
                         {
                             var existing = (IReadOnlyDictionary<string, object>)extensionData;
                             var newDict = new Dictionary<string, object>();
@@ -162,13 +167,18 @@ namespace System.Text.Json
                         {
                             extensionData = new Dictionary<string, object>();
                         }
-                        Debug.Assert(jsonPropertyInfo.Set != null);
+                        Debug.Assert(jsonPropertyInfo.Set is not null);
                         jsonPropertyInfo.Set(obj, extensionData);
                         return;
                     }
                     else if (jsonPropertyInfo.PropertyType == typeof(IReadOnlyDictionary<string, JsonElement>))
                     {
-                        if (extensionData != null)
+                        if (extensionData is Dictionary<string, JsonElement>)
+                        {
+                            return;
+                        }
+
+                        if (extensionData is not null)
                         {
                             var existing = (IReadOnlyDictionary<string, JsonElement>)extensionData;
                             var newDict = new Dictionary<string, JsonElement>();
@@ -182,7 +192,7 @@ namespace System.Text.Json
                         {
                             extensionData = new Dictionary<string, JsonElement>();
                         }
-                        Debug.Assert(jsonPropertyInfo.Set != null);
+                        Debug.Assert(jsonPropertyInfo.Set is not null);
                         jsonPropertyInfo.Set(obj, extensionData);
                         return;
                     }
@@ -193,7 +203,7 @@ namespace System.Text.Json
                 }
 
                 extensionData = createObjectForExtensionDataProp();
-                Debug.Assert(jsonPropertyInfo.Set != null);
+                Debug.Assert(jsonPropertyInfo.Set is not null);
                 jsonPropertyInfo.Set(obj, extensionData);
             }
 

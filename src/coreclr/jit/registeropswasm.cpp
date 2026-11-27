@@ -81,7 +81,10 @@ WasmValueType TypeToWasmValueType(var_types type)
         WasmValueType::F64,     // TYP_DOUBLE,
         WasmValueType::I,       // TYP_REF,
         WasmValueType::I,       // TYP_BYREF,
-        WasmValueType::Invalid, // TYP_STRUCT
+        WasmValueType::Invalid, // TYP_STRUCT,
+        WasmValueType::V128,    // TYP_SIMD8,
+        WasmValueType::V128,    // TYP_SIMD12
+        WasmValueType::V128,    // TYP_SIMD16
         WasmValueType::Invalid, // TYP_UNKNOWN
     };
     static_assert(ArrLen(s_mapping) == TYP_COUNT);
@@ -121,7 +124,10 @@ WasmValueType ActualTypeToWasmValueType(var_types type)
         WasmValueType::F64,     // TYP_DOUBLE,
         WasmValueType::I,       // TYP_REF,
         WasmValueType::I,       // TYP_BYREF,
-        WasmValueType::Invalid, // TYP_STRUCT
+        WasmValueType::Invalid, // TYP_STRUCT,
+        WasmValueType::V128,    // TYP_SIMD8,
+        WasmValueType::V128,    // TYP_SIMD12
+        WasmValueType::V128,    // TYP_SIMD16
         WasmValueType::Invalid, // TYP_UNKNOWN
     };
     static_assert(ArrLen(s_mapping) == TYP_COUNT);
@@ -141,6 +147,8 @@ const char* WasmValueTypeName(WasmValueType type)
         "i64",
         "f32",
         "f64",
+        "v128",
+        "exnref",
     };
     static_assert(ArrLen(WasmValueTypeNames) == static_cast<unsigned>(WasmValueType::Count));
     // clang-format on
@@ -226,7 +234,7 @@ bool genIsValidFloatReg(regNumber reg)
 {
     WasmValueType type;
     UnpackWasmReg(reg, &type);
-    return (type == WasmValueType::F32) || (type == WasmValueType::F64);
+    return (type == WasmValueType::F32) || (type == WasmValueType::F64) || (type == WasmValueType::V128);
 }
 
 const char* getRegName(regNumber reg)

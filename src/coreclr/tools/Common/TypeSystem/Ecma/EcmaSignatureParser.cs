@@ -9,7 +9,7 @@ using System.Collections.Generic;
 
 namespace Internal.TypeSystem.Ecma
 {
-    public struct EcmaSignatureParser
+    public partial struct EcmaSignatureParser
     {
         private TypeSystemContext _tsc;
         private Func<EntityHandle, NotFoundBehavior, TypeDesc> _typeResolver;
@@ -52,6 +52,10 @@ namespace Internal.TypeSystem.Ecma
         }
 
         public ResolutionFailure ResolutionFailure => _resolutionFailure;
+
+        partial void ReportInvalidTypeSpecEncoding(EntityHandle typeSpecHandle);
+
+        partial void ReportTypeSpecUsedAsCustomModifier(EntityHandle typeSpecHandle);
 
         private TypeDesc ResolveHandle(EntityHandle handle)
         {
@@ -248,6 +252,10 @@ namespace Internal.TypeSystem.Ecma
                         return _tsc.GetFunctionPointerType(sig);
                     else
                         return null;
+                case SignatureTypeCode.Sentinel:
+                    // Varargs are not supported
+                    ThrowHelper.ThrowInvalidProgramException();
+                    return null; // unreached
                 default:
                     ThrowHelper.ThrowBadImageFormatException();
                     return null;
@@ -269,13 +277,21 @@ namespace Internal.TypeSystem.Ecma
 
         private SignatureTypeCode ParseTypeCodeImpl(bool skipPinned = true)
         {
-            for (; ; )
-            {
-                SignatureTypeCode typeCode = _reader.ReadSignatureTypeCode();
+            return ParseTypeCodeImpl(_reader.ReadSignatureTypeCode(), skipPinned);
+        }
 
+        private SignatureTypeCode ParseTypeCodeImpl(SignatureTypeCode typeCode, bool skipPinned = true)
+        {
+            for (; ; typeCode = _reader.ReadSignatureTypeCode())
+            {
                 if (typeCode == SignatureTypeCode.RequiredModifier)
                 {
                     EntityHandle typeHandle = _reader.ReadTypeHandle();
+                    if (typeHandle.Kind == HandleKind.TypeSpecification)
+                    {
+                        ReportTypeSpecUsedAsCustomModifier(typeHandle);
+                    }
+
                     _embeddedSignatureDataList?.Add(new EmbeddedSignatureData { index = string.Join(".", _indexStack), kind = EmbeddedSignatureDataKind.RequiredCustomModifier, type = ResolveHandle(typeHandle) });
                     continue;
                 }
@@ -283,6 +299,11 @@ namespace Internal.TypeSystem.Ecma
                 if (typeCode == SignatureTypeCode.OptionalModifier)
                 {
                     EntityHandle typeHandle = _reader.ReadTypeHandle();
+                    if (typeHandle.Kind == HandleKind.TypeSpecification)
+                    {
+                        ReportTypeSpecUsedAsCustomModifier(typeHandle);
+                    }
+
                     _embeddedSignatureDataList?.Add(new EmbeddedSignatureData { index = string.Join(".", _indexStack), kind = EmbeddedSignatureDataKind.OptionalCustomModifier, type = ResolveHandle(typeHandle) });
                     continue;
                 }
@@ -314,6 +335,33 @@ namespace Internal.TypeSystem.Ecma
         private TypeDesc ParseTypeImpl()
         {
             return ParseType(ParseTypeCode());
+        }
+
+        public TypeDesc ParseTypeSpec(TypeSpecificationHandle typeSpecHandle)
+        {
+            SignatureTypeCode typeCode = _reader.ReadSignatureTypeCode();
+
+            // The augments permit leading custom modifiers on signature Types, including those encoded in a
+            // TypeSpec. C# encodes the 'unmanaged' constraint this way:
+            // modreq(System.Runtime.InteropServices.UnmanagedType) class System.ValueType.
+            bool hasCustomModifiers = typeCode is SignatureTypeCode.RequiredModifier or SignatureTypeCode.OptionalModifier;
+            typeCode = ParseTypeCodeImpl(typeCode);
+
+            switch (typeCode)
+            {
+                case SignatureTypeCode.Pointer:
+                case SignatureTypeCode.FunctionPointer:
+                case SignatureTypeCode.Array:
+                case SignatureTypeCode.SZArray:
+                case SignatureTypeCode.GenericTypeInstance:
+                case SignatureTypeCode.GenericTypeParameter:
+                case SignatureTypeCode.GenericMethodParameter:
+                // A class or value type with custom modifiers cannot be encoded as a TypeDefOrRef token.
+                case SignatureTypeCode.TypeHandle when hasCustomModifiers:
+                    return ParseType(typeCode);
+            }
+            ReportInvalidTypeSpecEncoding(typeSpecHandle);
+            return ParseType(typeCode);
         }
 
         public bool IsFieldSignature
@@ -609,6 +657,18 @@ namespace Internal.TypeSystem.Ecma
                         if (_reader.RemainingBytes != 0)
                         {
                             _reader.ReadSerializedString();
+                        }
+                    }
+                    break;
+                case NativeTypeKind.IUnknown:
+                case NativeTypeKind.IDispatch:
+                case NativeTypeKind.Intf:
+                    {
+                        if (_reader.RemainingBytes != 0)
+                        {
+                            // There's nobody to consume COM marshalling, so let's just parse the data
+                            // to avoid asserting later.
+                            _reader.ReadCompressedInteger();
                         }
                     }
                     break;

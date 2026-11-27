@@ -2,7 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using ILLink.Shared;
 using Mono.Cecil;
@@ -13,14 +12,12 @@ namespace Mono.Linker
     {
         public SubstitutionInfo PrimarySubstitutionInfo { get; }
         private readonly Dictionary<AssemblyDefinition, SubstitutionInfo?> _embeddedXmlInfos;
-        private readonly Dictionary<MethodDefinition, bool> _featureCheckValues;
         readonly LinkContext _context;
 
         public MemberActionStore(LinkContext context)
         {
             PrimarySubstitutionInfo = new SubstitutionInfo();
             _embeddedXmlInfos = new Dictionary<AssemblyDefinition, SubstitutionInfo?>();
-            _featureCheckValues = new Dictionary<MethodDefinition, bool>();
             _context = context;
         }
 
@@ -71,11 +68,30 @@ namespace Mono.Linker
             return false;
         }
 
+        internal bool IsFeatureSwitchWithoutSetting(MethodDefinition method)
+        {
+            if (!method.IsStatic || !method.IsGetter)
+                return false;
+
+            foreach (var property in method.DeclaringType.Properties)
+            {
+                if (property.GetMethod != method)
+                    continue;
+
+                foreach (var attribute in _context.CustomAttributes.GetCustomAttributes(property, "System.Diagnostics.CodeAnalysis", "FeatureSwitchDefinitionAttribute"))
+                {
+                    if (attribute.ConstructorArguments is [CustomAttributeArgument { Value: string switchName }])
+                        return !_context.FeatureSettings.ContainsKey(switchName);
+                }
+
+                return false;
+            }
+
+            return false;
+        }
+
         internal bool TryGetFeatureCheckValue(MethodDefinition method, out bool value)
         {
-            if (_featureCheckValues.TryGetValue(method, out value))
-                return true;
-
             value = false;
 
             if (!method.IsStatic)
@@ -98,10 +114,7 @@ namespace Mono.Linker
                 // If there's a FeatureSwitchDefinition, don't continue looking for FeatureGuard.
                 // We don't want to infer feature switch settings from FeatureGuard.
                 if (_context.FeatureSettings.TryGetValue(switchName, out value))
-                {
-                    _featureCheckValues[method] = value;
                     return true;
-                }
                 return false;
             }
 
@@ -118,17 +131,13 @@ namespace Mono.Linker
                     switch (featureType.Name)
                     {
                         case "RequiresUnreferencedCodeAttribute":
-                            _featureCheckValues[method] = value;
                             return true;
                         case "RequiresDynamicCodeAttribute":
                             if (_context.FeatureSettings.TryGetValue(
                                     "System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported",
                                     out bool isDynamicCodeSupported)
                                 && !isDynamicCodeSupported)
-                            {
-                                _featureCheckValues[method] = value;
                                 return true;
-                            }
                             break;
                     }
                 }

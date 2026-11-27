@@ -1,6 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <!-- TODO: Remove once migrated to unsafe-v2. -->
+    <MemorySafetyRulesVersion>1</MemorySafetyRulesVersion>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)</TargetFrameworks>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -39,9 +41,6 @@
     <Compile Include="System\Transactions\VolatileEnlistmentMultiplexing.cs" />
     <Compile Include="System\Transactions\VolatileEnlistmentState.cs" />
     <Compile Include="System\Transactions\Configuration\AppSettings.cs" />
-    <Compile Include="System\Transactions\Configuration\ConfigurationStrings.cs" />
-    <Compile Include="System\Transactions\Configuration\DefaultSettingsSection.cs" />
-    <Compile Include="System\Transactions\Configuration\MachineSettingsSection.cs" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
 

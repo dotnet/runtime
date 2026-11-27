@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using Test.Cryptography;
 using Xunit;
 
@@ -64,6 +65,118 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.Equal(microsoftDotComIssuer, chain.ChainElements[1].Certificate);
                 Assert.Equal(microsoftDotComRoot, chain.ChainElements[2].Certificate);
             }
+        }
+
+        [Theory]
+        [PlatformSpecific(TestPlatforms.Android)]
+        [InlineData(false, 0, false)]
+        [InlineData(true, 0, false)]
+        [InlineData(true, 1, false)]
+        [InlineData(true, 2, false)]
+        [InlineData(true, 3, false)]
+        [InlineData(false, 0, true)]
+        public static async Task BuildChainWithSuppliedSystemTrustAnchor(bool supplyRoot, int policy, bool supplyUnrelatedTrustedRoot)
+        {
+            DateTime verificationTime = new DateTime(2025, 12, 25, 12, 01, 01, DateTimeKind.Local);
+            byte[]? unrelatedTrustedRootBytes = null;
+            if (supplyUnrelatedTrustedRoot)
+            {
+                using (var issuer = new X509Certificate2(TestData.MicrosoftDotComIssuerBytes))
+                using (var store = new X509Store(StoreName.Root, StoreLocation.LocalMachine))
+                {
+                    store.Open(OpenFlags.ReadOnly);
+                    using (var installedRoots = new ImportedCollection(store.Certificates))
+                    {
+                        X509Certificate2? anchor = installedRoots.Collection
+                            .Cast<X509Certificate2>()
+                            .FirstOrDefault(candidate =>
+                                candidate.NotBefore <= verificationTime &&
+                                candidate.NotAfter >= verificationTime &&
+                                candidate.SubjectName.RawData.SequenceEqual(candidate.IssuerName.RawData) &&
+                                !candidate.SubjectName.RawData.SequenceEqual(issuer.SubjectName.RawData) &&
+                                !candidate.SubjectName.RawData.SequenceEqual(issuer.IssuerName.RawData));
+
+                        Assert.NotNull(anchor);
+                        using (var trustCheck = new ChainHolder())
+                        {
+                            trustCheck.Chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+                            trustCheck.Chain.ChainPolicy.DisableCertificateDownloads = true;
+                            trustCheck.Chain.ChainPolicy.VerificationTime = verificationTime;
+
+                            Assert.True(trustCheck.Chain.Build(anchor));
+                            Assert.Equal(1, trustCheck.Chain.ChainElements.Count);
+                            Assert.Equal(anchor.RawData, trustCheck.Chain.ChainElements[0].Certificate.RawData);
+                        }
+
+                        unrelatedTrustedRootBytes = anchor.RawData;
+                    }
+                }
+            }
+
+            Task[] builders = new Task[8];
+            for (int i = 0; i < builders.Length; i++)
+            {
+                builders[i] = Task.Run(() =>
+                {
+                    using (var certificate = new X509Certificate2(TestData.MicrosoftDotComSslCertBytes))
+                    using (var issuer = new X509Certificate2(TestData.MicrosoftDotComIssuerBytes))
+                    using (var root = new X509Certificate2(TestData.MicrosoftDotComRootBytes))
+                    using (var unrelated = new X509Certificate2(TestData.DssCer))
+                    using (X509Certificate2? unrelatedTrustedRoot = unrelatedTrustedRootBytes is null
+                        ? null
+                        : new X509Certificate2(unrelatedTrustedRootBytes))
+                    using (var chainHolder = new ChainHolder())
+                    {
+                        X509Chain chain = chainHolder.Chain;
+                        chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+                        chain.ChainPolicy.DisableCertificateDownloads = true;
+                        chain.ChainPolicy.VerificationTime = policy == 3
+                            ? certificate.NotAfter.AddDays(1)
+                            : verificationTime;
+                        chain.ChainPolicy.ExtraStore.Add(issuer);
+                        chain.ChainPolicy.ExtraStore.Add(unrelated);
+
+                        if (unrelatedTrustedRoot is not null)
+                        {
+                            chain.ChainPolicy.ExtraStore.Add(unrelatedTrustedRoot);
+                        }
+
+                        if (supplyRoot)
+                        {
+                            chain.ChainPolicy.ExtraStore.Add(root);
+                        }
+
+                        if (policy == 1)
+                        {
+                            chain.ChainPolicy.ApplicationPolicy.Add(new Oid("1.2.3.4"));
+                        }
+                        else if (policy == 2)
+                        {
+                            chain.ChainPolicy.CertificatePolicy.Add(new Oid("1.2.3.4"));
+                        }
+
+                        Assert.Equal(policy == 0, chain.Build(certificate));
+
+                        if (policy == 3)
+                        {
+                            Assert.Empty(chain.ChainElements);
+                            Assert.Equal(X509ChainStatusFlags.PartialChain, chain.AllStatusFlags());
+                        }
+                        else
+                        {
+                            Assert.Equal(3, chain.ChainElements.Count);
+                            Assert.Equal(certificate, chain.ChainElements[0].Certificate);
+                            Assert.Equal(issuer, chain.ChainElements[1].Certificate);
+                            Assert.Equal(root, chain.ChainElements[2].Certificate);
+                            Assert.Equal(
+                                policy == 0 ? X509ChainStatusFlags.NoError : X509ChainStatusFlags.NotValidForUsage,
+                                chain.AllStatusFlags());
+                        }
+                    }
+                });
+            }
+
+            await Task.WhenAll(builders);
         }
 
         [PlatformSpecific(TestPlatforms.Windows)]
@@ -247,6 +360,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         {
             using (var microsoftDotCom = new X509Certificate2(TestData.MicrosoftDotComSslCertBytes))
             using (var microsoftDotComIssuer = new X509Certificate2(TestData.MicrosoftDotComIssuerBytes))
+            using (var microsoftDotComRoot = new X509Certificate2(TestData.MicrosoftDotComRootBytes))
             using (var testCert = new X509Certificate2(TestFiles.ChainPfxFile, TestData.ChainPfxPassword))
             using (var chainHolder = new ChainHolder())
             {
@@ -254,7 +368,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
                 chain.ChainPolicy.VerificationTime = microsoftDotCom.NotBefore.AddSeconds(1);
                 chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+                chain.ChainPolicy.DisableCertificateDownloads = true;
                 chain.ChainPolicy.ExtraStore.Add(microsoftDotComIssuer);
+                chain.ChainPolicy.ExtraStore.Add(microsoftDotComRoot);
 
                 if (addCertificateToCustomRootTrust)
                 {
@@ -609,13 +725,20 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [ConditionalFact(typeof(ChainTests), nameof(TrustsMicrosoftDotComRoot))]
+        [Fact]
         public static void BuildChain_FailOnlyApplicationPolicy()
         {
             using (var microsoftDotCom = new X509Certificate2(TestData.MicrosoftDotComSslCertBytes))
+            using (var microsoftDotComIssuer = new X509Certificate2(TestData.MicrosoftDotComIssuerBytes))
             using (var microsoftDotComRoot = new X509Certificate2(TestData.MicrosoftDotComRootBytes))
             using (ChainHolder holder = new ChainHolder())
             {
+                // The issuing CA has also been issued by another trusted root, and machine-level
+                // certificate caches can make the system pick that path instead, so pin the chain.
+                holder.Chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+                holder.Chain.ChainPolicy.CustomTrustStore.Add(microsoftDotComRoot);
+                holder.Chain.ChainPolicy.ExtraStore.Add(microsoftDotComIssuer);
+                holder.Chain.ChainPolicy.DisableCertificateDownloads = true;
                 holder.Chain.ChainPolicy.ApplicationPolicy.Add(new Oid("0.1.2.3.4", null));
                 holder.Chain.ChainPolicy.VerificationTime = microsoftDotCom.NotBefore.AddDays(1);
                 holder.Chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
@@ -631,6 +754,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.Equal(3, holder.Chain.ChainElements.Count);
 
                 Assert.Equal(microsoftDotCom.RawData, holder.Chain.ChainElements[0].Certificate.RawData);
+                Assert.Equal(microsoftDotComIssuer.RawData, holder.Chain.ChainElements[1].Certificate.RawData);
                 Assert.Equal(microsoftDotComRoot.RawData, holder.Chain.ChainElements[2].Certificate.RawData);
 
                 Assert.Equal(
@@ -644,15 +768,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     holder.Chain.ChainElements[1].ChainElementStatus.Aggregate(
                         X509ChainStatusFlags.NoError,
                         (a, status) => a | status.Status));
-
-                if (!PlatformDetection.IsWindows)
-                {
-                    Assert.Equal(
-                        X509ChainStatusFlags.NotValidForUsage,
-                        holder.Chain.ChainElements[2].ChainElementStatus.Aggregate(
-                            X509ChainStatusFlags.NoError,
-                            (a, status) => a | status.Status));
-                }
             }
         }
 

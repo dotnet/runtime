@@ -21,6 +21,8 @@ namespace Microsoft.Extensions
             = true;
 #endif
 
+        public const bool SourceGenMode = !NotSourceGenMode;
+
         public static IConfiguration GetConfigurationFromJsonString(string json)
         {
             var builder = new ConfigurationBuilder();
@@ -63,6 +65,9 @@ namespace Microsoft.Extensions
 
         [ConfigurationKeyName("Named_Property")]
         public string NamedProperty { get; set; }
+
+        [ConfigurationIgnore]
+        public string IgnoredProperty { get; set; } = "Default";
 
         protected string ProtectedPrivateSet { get; private set; }
 
@@ -136,6 +141,18 @@ namespace Microsoft.Extensions
     public class NestedOptions
     {
         public int Integer { get; set; }
+    }
+
+    public class OptionsWithEscapedConfigurationKeyNames
+    {
+        [ConfigurationKeyName("quoted\"key")]
+        public string QuotedKey { get; set; }
+
+        [ConfigurationKeyName(@"path\key")]
+        public string BackslashKey { get; set; }
+
+        [ConfigurationKeyName("line\nbreak")]
+        public string NewlineKey { get; set; }
     }
 
     public class UnsupportedTypeInHashSet { }

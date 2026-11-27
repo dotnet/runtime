@@ -9,6 +9,11 @@ if ("${CMAKE_CURRENT_SOURCE_DIR}" STREQUAL "${CMAKE_SOURCE_DIR}")
     include(../../../eng/native/configurepaths.cmake)
     include(${CLR_ENG_NATIVE_DIR}/configurecompiler.cmake)
 
+    if (CLR_CMAKE_TARGET_BROWSER AND CLR_CMAKE_WASM_ENABLE_THREADS)
+        add_compile_options(-pthread)
+        add_link_options(-pthread)
+    endif ()
+
     add_subdirectory(${CLR_SRC_NATIVE_DIR}/minipal minipal)
 endif()
 
@@ -21,11 +26,7 @@ if (CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
     set(GEN_SHARED_LIB 0)
     add_definitions(-DGEN_PINVOKE=${GEN_PINVOKE})
     if (NOT STATIC_LIB_DESTINATION)
-        if (BUILD_LIBS_NATIVE_BROWSER)
-            set(STATIC_LIB_DESTINATION ${CMAKE_BINARY_DIR}/lib)
-        else ()
-            set(STATIC_LIB_DESTINATION .)
-        endif ()
+        set(STATIC_LIB_DESTINATION .)
     endif ()
 elseif (STATIC_LIBS_ONLY)
     # Suppress exporting of the PAL APIs
@@ -40,7 +41,7 @@ endif ()
 
 if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
     set(CMAKE_MACOSX_RPATH ON)
-    if (CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+    if (CLR_CMAKE_TARGET_APPLE_MOBILE)
         set(CMAKE_BUILD_WITH_INSTALL_NAME_DIR ON)
         set(CMAKE_INSTALL_NAME_DIR "@rpath")
     endif ()
@@ -72,8 +73,6 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
         endif ()
     endif ()
 
-    string(TOUPPER ${CMAKE_BUILD_TYPE} UPPERCASE_CMAKE_BUILD_TYPE)
-
     if (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG OR UPPERCASE_CMAKE_BUILD_TYPE STREQUAL CHECKED)
         if (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG)
             add_compile_options(-O0)
@@ -83,23 +82,17 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
 
         add_definitions(-DDEBUG)
     elseif (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL RELEASE)
-        # Use O1 option when the clang version is smaller than 3.9
-        # Otherwise use O3 option in release build
-        if (CLR_CMAKE_TARGET_ARCH_ARMV7L AND DEFINED ENV{CROSSCOMPILE} AND CMAKE_C_COMPILER_VERSION VERSION_LESS 3.9)
-            add_compile_options (-O1)
-        else ()
-            if(CLR_CMAKE_TARGET_ANDROID)
-                # -O2 optimization generates faster/smaller code on Android
-                # TODO: This duplicates the settings in eng/native/configureoptimization.cmake, we should unify it
-                add_compile_options (-O2)
-            elseif (CLR_CMAKE_TARGET_BROWSER)
-                add_compile_options (-Oz)
-            else()
-                add_compile_options (-O3)
-            endif ()
+        if(CLR_CMAKE_TARGET_ANDROID)
+            # -O2 optimization generates faster/smaller code on Android
+            # TODO: This duplicates the settings in eng/native/configureoptimization.cmake, we should unify it
+            add_compile_options (-O2)
+        elseif (CLR_CMAKE_TARGET_BROWSER)
+            add_compile_options (-Oz)
+        else()
+            add_compile_options (-O3)
         endif ()
     else ()
-        message(FATAL_ERROR "Unknown build type. Set CMAKE_BUILD_TYPE to DEBUG or RELEASE.")
+        message(FATAL_ERROR "Unknown build type. Set CMAKE_BUILD_TYPE to Debug, Checked, or Release.")
     endif ()
 
     if (CLR_CMAKE_TARGET_APPLE)
@@ -116,8 +109,7 @@ endif ()
 
 add_subdirectory(System.IO.Compression.Native)
 
-# Only when Browser for CoreCLR
-if (CLR_CMAKE_TARGET_BROWSER AND BUILD_LIBS_NATIVE_BROWSER)
+if (CLR_CMAKE_TARGET_BROWSER)
     add_subdirectory(System.Native.Browser)
     if (NOT CORERUN_LIBS_ONLY)
         add_subdirectory(System.Runtime.InteropServices.JavaScript.Native)
@@ -150,6 +142,7 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
         if (CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
             add_compile_options(-Wno-unsafe-buffer-usage)
             add_compile_options(-Wno-cast-function-type-strict)
+            add_compile_options(-Wno-c++-keyword)
         endif ()
     endif ()
 
@@ -166,7 +159,8 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
         add_subdirectory(System.Security.Cryptography.Native.Apple)
     elseif (CLR_CMAKE_TARGET_ANDROID AND NOT FORCE_ANDROID_OPENSSL)
         add_subdirectory(System.Security.Cryptography.Native.Android)
-    elseif (FORCE_ANDROID_OPENSSL)
+    elseif (FORCE_ANDROID_OPENSSL OR CLR_CMAKE_TARGET_OPENHARMONY)
+        # Both paths use the OpenSSL crypto shim and skip System.Net.Security.Native.
         add_subdirectory(System.Security.Cryptography.Native)
     else ()
         add_subdirectory(System.Net.Security.Native)

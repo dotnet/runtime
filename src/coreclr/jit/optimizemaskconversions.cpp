@@ -120,7 +120,6 @@ public:
     {
         DoPreOrder        = true,
         UseExecutionOrder = true,
-        DoLclVarsOnly     = true,
     };
 
     MaskConversionsCheckVisitor(Compiler* compiler, weight_t bbWeight, MaskConversionsWeightTable* weightsTable)
@@ -132,7 +131,26 @@ public:
 
     Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
     {
-        GenTreeLclVarCommon* lclOp  = (*use)->AsLclVarCommon();
+        GenTree* node = *use;
+        if (!node->OperIsNonPhiLocal() && !node->OperIs(GT_LCL_ADDR))
+        {
+            // Other definitions of locals (e.g. by calls) are not handled.
+            node->VisitLogicalLocalDefs(m_compiler, [=](const auto& def) {
+                unsigned lclNum = def.GetLclNum();
+                if (varTypeIsSIMDOrMask(m_compiler->lvaGetDesc(lclNum)))
+                {
+                    JITDUMP("%s defining V%02d at [%06u] is unhandled. ", GenTree::OpName(node->OperGet()), lclNum,
+                            m_compiler->dspTreeID(node));
+                    weightsTable->LookupPointerOrAdd(lclNum, MaskConversionsWeight())->InvalidateWeight();
+                }
+
+                return GenTree::VisitResult::Continue;
+            });
+
+            return fgWalkResult::WALK_CONTINUE;
+        }
+
+        GenTreeLclVarCommon* lclOp  = node->AsLclVarCommon();
         LclVarDsc*           varDsc = m_compiler->lvaGetDesc(lclOp);
 
         if (!varTypeIsSIMDOrMask(varDsc))
@@ -510,18 +528,18 @@ PhaseStatus Compiler::fgOptimizeMaskConversions()
         for (Statement* const stmt : block->Statements())
         {
             // Only check statements where there is a local of type TYP_SIMD/TYP_MASK.
-            for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
-            {
-                if (varTypeIsSIMDOrMask(lvaGetDesc(lcl)))
+            stmt->VisitLogicalLocalOccurrencesViaLocalsTreeList([&](const auto& occurrence) {
+                if (varTypeIsSIMDOrMask(lvaGetDesc(occurrence.GetLclNum())))
                 {
                     // Parse the entire statement.
                     MaskConversionsCheckVisitor ev(this, block->getBBWeight(this), &weightsTable);
                     GenTree*                    root = stmt->GetRootNode();
                     ev.WalkTree(&root, nullptr);
                     foundConversion |= ev.foundConversions;
-                    break;
+                    return GenTree::VisitResult::Abort;
                 }
-            }
+                return GenTree::VisitResult::Continue;
+            });
         }
     }
 
@@ -538,9 +556,8 @@ PhaseStatus Compiler::fgOptimizeMaskConversions()
         for (Statement* const stmt : block->Statements())
         {
             // Only check statements where there is a local of type TYP_SIMD/TYP_MASK.
-            for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
-            {
-                if (varTypeIsSIMDOrMask(lcl))
+            stmt->VisitLogicalLocalOccurrencesViaLocalsTreeList([&](const auto& occurrence) {
+                if (!occurrence.GetNode()->OperIs(GT_LCL_ADDR) && varTypeIsSIMDOrMask(occurrence.GetAccessType(this)))
                 {
                     // Parse the entire statement.
                     MaskConversionsUpdateVisitor ev(this, stmt, &weightsTable);
@@ -550,9 +567,10 @@ PhaseStatus Compiler::fgOptimizeMaskConversions()
                     {
                         fgSequenceLocals(stmt);
                     }
-                    break;
+                    return GenTree::VisitResult::Abort;
                 }
-            }
+                return GenTree::VisitResult::Continue;
+            });
         }
     }
 

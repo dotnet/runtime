@@ -215,7 +215,7 @@ namespace System
             }
         }
 
-        public static bool TryGetUnicodeEquivalent(string hostname, ref ValueStringBuilder dest)
+        public static unsafe bool TryGetUnicodeEquivalent(string hostname, ref ValueStringBuilder dest)
         {
             Debug.Assert(ReferenceEquals(hostname, UriHelper.StripBidiControlCharacters(hostname, hostname)));
 

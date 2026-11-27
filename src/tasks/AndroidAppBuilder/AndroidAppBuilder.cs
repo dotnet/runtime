@@ -39,9 +39,9 @@ public class AndroidAppBuilderTask : Task
     public ITaskItem[] ExtraLinkerArguments { get; set; } = Array.Empty<ITaskItem>();
 
     /// <summary>
-    /// Prefer FullAOT mode for Emulator over JIT
+    /// Additional native source files to compile alongside the main program
     /// </summary>
-    public bool ForceAOT { get; set; }
+    public ITaskItem[] ExtraNativeSources { get; set; } = Array.Empty<ITaskItem>();
 
     /// <summary>
     /// Indicates if we want to AOT all assemblies or not
@@ -62,11 +62,6 @@ public class AndroidAppBuilderTask : Task
     /// Static linked runtime
     /// </summary>
     public bool StaticLinkedRuntime { get; set; }
-
-    /// <summary>
-    /// List of enabled runtime components
-    /// </summary>
-    public string[] RuntimeComponents { get; set; } = Array.Empty<string>();
 
     /// <summary>
     /// Diagnostic ports configuration string
@@ -96,7 +91,7 @@ public class AndroidAppBuilderTask : Task
 
     public bool StripDebugSymbols { get; set; }
 
-    public string RuntimeFlavor { get; set; } = nameof(RuntimeFlavorEnum.Mono);
+    public bool UseNativeAOTRuntime { get; set; }
 
     /// <summary>
     /// Path to a custom MainActivity.java with custom UI
@@ -104,9 +99,21 @@ public class AndroidAppBuilderTask : Task
     /// </summary>
     public string? NativeMainSource { get; set; }
 
+    public string? RuntimeConfigFile { get; set; }
+
     public string? KeyStorePath { get; set; }
 
-    public bool ForceInterpreter { get; set; }
+    /// <summary>
+    /// Path to a network_security_config.xml file to include in the APK.
+    /// When set, enables custom trust anchors and certificate pinning via Android's network security config.
+    /// </summary>
+    public string? NetworkSecurityConfig { get; set; }
+
+    /// <summary>
+    /// Optional path to a resources directory containing additional files for the network security config
+    /// (e.g., res/raw/ with certificate files referenced by the config).
+    /// </summary>
+    public string? NetworkSecurityConfigResourcesDir { get; set; }
 
     [Output]
     public string ApkBundlePath { get; set; } = ""!;
@@ -128,19 +135,20 @@ public class AndroidAppBuilderTask : Task
         apkBuilder.BuildToolsVersion = BuildToolsVersion;
         apkBuilder.StripDebugSymbols = StripDebugSymbols;
         apkBuilder.NativeMainSource = NativeMainSource;
+        apkBuilder.RuntimeConfigFile = RuntimeConfigFile;
         apkBuilder.KeyStorePath = KeyStorePath;
-        apkBuilder.ForceInterpreter = ForceInterpreter;
-        apkBuilder.ForceAOT = ForceAOT;
         apkBuilder.ForceFullAOT = ForceFullAOT;
         apkBuilder.EnvironmentVariables = EnvironmentVariables;
         apkBuilder.StaticLinkedRuntime = StaticLinkedRuntime;
-        apkBuilder.RuntimeComponents = RuntimeComponents;
         apkBuilder.DiagnosticPorts = DiagnosticPorts;
         apkBuilder.Assemblies = Assemblies;
         apkBuilder.IsLibraryMode = IsLibraryMode;
         apkBuilder.NativeDependencies = NativeDependencies;
         apkBuilder.ExtraLinkerArguments = ExtraLinkerArguments;
-        apkBuilder.RuntimeFlavor = RuntimeFlavor;
+        apkBuilder.ExtraNativeSources = ExtraNativeSources;
+        apkBuilder.UseNativeAOTRuntime = UseNativeAOTRuntime;
+        apkBuilder.NetworkSecurityConfig = NetworkSecurityConfig;
+        apkBuilder.NetworkSecurityConfigResourcesDir = NetworkSecurityConfigResourcesDir;
         (ApkBundlePath, ApkPackageId) = apkBuilder.BuildApk(RuntimeIdentifier, MainLibraryFileName, RuntimeHeaders);
 
         return true;

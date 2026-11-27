@@ -50,20 +50,22 @@ namespace System.Formats.Cbor
                 throw new ArgumentOutOfRangeException(nameof(definiteLength));
             }
 
+            EnsureMaxDepthNotExceeded();
             WriteUnsignedInteger(CborMajorType.Array, (ulong)definiteLength);
             PushDataItem(CborMajorType.Array, definiteLength);
         }
 
         private void WriteStartArrayIndefiniteLength()
         {
-            if (!ConvertIndefiniteLengthEncodings && CborConformanceModeHelpers.RequiresDefiniteLengthItems(ConformanceMode))
+            if (!ConvertIndefiniteLengthEncodings && _requiresDefiniteLengthItems)
             {
                 throw new InvalidOperationException(SR.Format(SR.Cbor_ConformanceMode_IndefiniteLengthItemsNotSupported, ConformanceMode));
             }
 
+            EnsureMaxDepthNotExceeded();
             EnsureWriteCapacity(1);
             WriteInitialByte(new CborInitialByte(CborMajorType.Array, CborAdditionalInfo.IndefiniteLength));
-            PushDataItem(CborMajorType.Array, definiteLength: null);
+            PushDataItem(CborMajorType.Array, definiteLength: NoDefiniteLength);
         }
 
         // perform an in-place conversion of an indefinite-length encoding into an equivalent definite-length

@@ -172,6 +172,8 @@ public:
         return m_size;
     }
 
+    unsigned GetAlignmentRequirement(Compiler* comp) const;
+
     var_types GetType() const
     {
         return m_type;
@@ -265,6 +267,8 @@ public:
     bool IntersectsGCPtr(unsigned offset, unsigned size) const;
 
     const SegmentList& GetNonPadding(Compiler* comp);
+
+    ClassLayout* SliceLayout(Compiler* compiler, unsigned offset, unsigned size);
 
     static bool AreCompatible(const ClassLayout* layout1, const ClassLayout* layout2);
 

@@ -283,9 +283,12 @@ namespace System.IO.Pipes
             if (disposing)
             {
                 _threadPoolBinding?.Dispose();
-                Interlocked.Exchange(ref _reusableReadValueTaskSource, null)?.Dispose();
-                Interlocked.Exchange(ref _reusableWriteValueTaskSource, null)?.Dispose();
             }
+
+            // The cached instances are rooted by their PreAllocatedOverlapped, so they need to be disposed also when the stream
+            // is finalized. An instance that is used by an in-flight operation references the stream and keeps it alive.
+            Interlocked.Exchange(ref _reusableReadValueTaskSource, null)?.Dispose();
+            Interlocked.Exchange(ref _reusableWriteValueTaskSource, null)?.Dispose();
         }
 
         private unsafe int ReadCore(Span<byte> buffer)
@@ -332,6 +335,7 @@ namespace System.IO.Pipes
             Debug.Assert(_isAsync);
 
             ReadWriteValueTaskSource vts = Interlocked.Exchange(ref _reusableReadValueTaskSource, null) ?? new ReadWriteValueTaskSource(this, isWrite: false);
+            vts._pipeStream = this;
             try
             {
                 vts.PrepareForOperation(buffer);
@@ -406,6 +410,7 @@ namespace System.IO.Pipes
             Debug.Assert(_isAsync);
 
             ReadWriteValueTaskSource vts = Interlocked.Exchange(ref _reusableWriteValueTaskSource, null) ?? new ReadWriteValueTaskSource(this, isWrite: true);
+            vts._pipeStream = this;
             try
             {
                 vts.PrepareForOperation(buffer);
@@ -581,16 +586,8 @@ namespace System.IO.Pipes
             }
         }
 
-        internal static unsafe Interop.Kernel32.SECURITY_ATTRIBUTES GetSecAttrs(HandleInheritability inheritability)
-        {
-            Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = new Interop.Kernel32.SECURITY_ATTRIBUTES
-            {
-                nLength = (uint)sizeof(Interop.Kernel32.SECURITY_ATTRIBUTES),
-                bInheritHandle = ((inheritability & HandleInheritability.Inheritable) != 0) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE
-            };
-
-            return secAttrs;
-        }
+        internal static Interop.Kernel32.SECURITY_ATTRIBUTES GetSecAttrs(HandleInheritability inheritability) =>
+            Interop.Kernel32.SECURITY_ATTRIBUTES.Create((inheritability & HandleInheritability.Inheritable) != 0);
 
         internal static unsafe Interop.Kernel32.SECURITY_ATTRIBUTES GetSecAttrs(HandleInheritability inheritability, PipeSecurity? pipeSecurity, ref GCHandle pinningHandle)
         {

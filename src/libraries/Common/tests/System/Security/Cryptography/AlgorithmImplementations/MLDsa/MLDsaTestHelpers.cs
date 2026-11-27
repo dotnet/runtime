@@ -14,10 +14,9 @@ namespace System.Security.Cryptography.Tests
     {
         internal static bool MLDsaIsNotSupported => !MLDsa.IsSupported;
 
-        // TODO (https://github.com/dotnet/runtime/issues/118609): Windows currently does not support PKCS#8 export when imported as private key.
-        internal static bool SupportsExportingPrivateKeyPkcs8 => MLDsa.IsSupported && !PlatformDetection.IsWindows;
+        internal static bool ExternalMuIsSupported => MLDsa.IsSupported && !PlatformDetection.IsWindows && !PlatformDetection.IsAzureLinux;
 
-        internal static bool ExternalMuIsSupported => MLDsa.IsSupported && !PlatformDetection.IsWindows;
+        internal static bool PreHashIsSupported => MLDsa.IsSupported && !PlatformDetection.IsAzureLinux;
 
         // DER encoding of ASN.1 BitString "foo"
         internal static readonly ReadOnlyMemory<byte> s_derBitStringFoo = new byte[] { 0x03, 0x04, 0x00, 0x66, 0x6f, 0x6f };
@@ -138,9 +137,9 @@ namespace System.Security.Cryptography.Tests
             }
 
             AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
-            MLDsaPrivateKeyAsn privateKeyAsn = new MLDsaPrivateKeyAsn
+            ValueMLDsaPrivateKeyAsn privateKeyAsn = new ValueMLDsaPrivateKeyAsn
             {
-                ExpandedKey = privateKey
+                ExpandedKey = privateKey,
             };
             privateKeyAsn.Encode(writer);
 
@@ -178,7 +177,7 @@ namespace System.Security.Cryptography.Tests
             }
 
             AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
-            MLDsaPrivateKeyAsn privateKey = new MLDsaPrivateKeyAsn
+            ValueMLDsaPrivateKeyAsn privateKey = new ValueMLDsaPrivateKeyAsn
             {
                 Seed = privateSeed,
             };
@@ -301,10 +300,29 @@ namespace System.Security.Cryptography.Tests
             });
 
             AssertExportPkcs8PrivateKey(exportPkcs8 =>
+            {
                 indirectCallback(mldsa =>
-                    MLDsaPrivateKeyAsn.Decode(
-                        PrivateKeyInfoAsn.Decode(
-                            exportPkcs8(mldsa), AsnEncodingRules.DER).PrivateKey, AsnEncodingRules.DER).ExpandedKey?.ToArray()));
+                {
+                    ValuePrivateKeyInfoAsn.Decode(
+                        exportPkcs8(mldsa),
+                        AsnEncodingRules.DER,
+                        out ValuePrivateKeyInfoAsn privateKeyInfo);
+
+                    ValueMLDsaPrivateKeyAsn.Decode(
+                        privateKeyInfo.PrivateKey,
+                        AsnEncodingRules.DER,
+                        out ValueMLDsaPrivateKeyAsn mldsaPrivateKeyInfo);
+
+                    if (mldsaPrivateKeyInfo.HasExpandedKey)
+                    {
+                        return mldsaPrivateKeyInfo.ExpandedKey.ToArray();
+                    }
+                    else
+                    {
+                        return null;
+                    }
+                });
+            });
         }
 
         internal static void AssertExportMLDsaPrivateSeed(Action<Func<MLDsa, byte[]>> callback) =>
@@ -320,10 +338,29 @@ namespace System.Security.Cryptography.Tests
             });
 
             AssertExportPkcs8PrivateKey(exportPkcs8 =>
+            {
                 indirectCallback(mldsa =>
-                    MLDsaPrivateKeyAsn.Decode(
-                        PrivateKeyInfoAsn.Decode(
-                            exportPkcs8(mldsa), AsnEncodingRules.DER).PrivateKey, AsnEncodingRules.DER).Seed?.ToArray()));
+                {
+                    ValuePrivateKeyInfoAsn.Decode(
+                        exportPkcs8(mldsa),
+                        AsnEncodingRules.DER,
+                        out ValuePrivateKeyInfoAsn privateKeyInfo);
+
+                    ValueMLDsaPrivateKeyAsn.Decode(
+                        privateKeyInfo.PrivateKey,
+                        AsnEncodingRules.DER,
+                        out ValueMLDsaPrivateKeyAsn mldsaPrivateKeyInfo);
+
+                    if (mldsaPrivateKeyInfo.HasSeed)
+                    {
+                        return mldsaPrivateKeyInfo.Seed.ToArray();
+                    }
+                    else
+                    {
+                        return null;
+                    }
+                });
+            });
         }
 
         internal static void AssertExportPkcs8PrivateKey(MLDsa mldsa, Action<byte[]> callback) =>

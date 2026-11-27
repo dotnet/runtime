@@ -34,6 +34,8 @@ namespace ILCompiler
             new("--file-layout") { CustomParser = MakeFileLayoutAlgorithm, DefaultValueFactory = MakeFileLayoutAlgorithm, Description = "Layout algorithm used by profile-driven optimization for arranging non-method contents in a file.", HelpName = "arg" };
         public Option<string> OrderFile { get; } =
             new("--order") { Description = "File that specifies order of symbols within the generated object file" };
+        public Option<int?> FunctionAlignment { get; } =
+            new("--function-alignment") { Description = "Alignment in bytes of method bodies not optimized for size (a power of two)" };
         public Option<string[]> SatelliteFilePaths { get; } =
             new("--satellite") { DefaultValueFactory = _ => Array.Empty<string>(), Description = "Satellite assemblies associated with inputs/references" };
         public Option<bool> EnableDebugInfo { get; } =
@@ -44,6 +46,8 @@ namespace ILCompiler
             new("--nativelib") { Description = "Compile as static or shared library" };
         public Option<bool> SplitExeInitialization { get; } =
             new("--splitinit") { Description = "Split initialization of an executable between the library entrypoint and a main entrypoint" };
+        public Option<string[]> AggregateExeLibrary { get; } =
+            new("--aggregateexe") { Description = "Specify aggregate executable library entrypoint modules (format: 'assemblyName=MainEntryPointName')" };
         public Option<string> ExportsFile { get; } =
             new("--exportsfile") { Description = "File to write exported symbol and method definitions" };
         public Option<bool> ExportUnmanagedEntryPoints { get; } =
@@ -160,10 +164,10 @@ namespace ILCompiler
             new("--trim") { DefaultValueFactory = _ => Array.Empty<string>(), Description = "Trim the specified assembly" };
         public Option<bool> RootDefaultAssemblies { get; } =
             new("--defaultrooting") { Description = "Root assemblies that are not marked [IsTrimmable]" };
-        public Option<TargetArchitecture> TargetArchitecture { get; } =
-            new("--targetarch") { CustomParser = MakeTargetArchitecture, DefaultValueFactory = MakeTargetArchitecture, Description = "Target architecture for cross compilation", HelpName = "arg" };
-        public Option<TargetOS> TargetOS { get; } =
-            new("--targetos") { CustomParser = result => Helpers.GetTargetOS(result.Tokens.Count > 0 ? result.Tokens[0].Value : null), DefaultValueFactory = result => Helpers.GetTargetOS(result.Tokens.Count > 0 ? result.Tokens[0].Value : null), Description = "Target OS for cross compilation", HelpName = "arg" };
+        public Option<string> TargetArchitecture { get; } =
+            new("--targetarch") { Description = "Target architecture for cross compilation" };
+        public Option<string> TargetOS { get; } =
+            new("--targetos") { Description = "Target OS for cross compilation" };
         public Option<string> JitPath { get; } =
             new("--jitpath") { Description = "Path to JIT compiler library" };
         public Option<string> SingleMethodTypeName { get; } =
@@ -187,8 +191,6 @@ namespace ILCompiler
 
         public OptimizationMode OptimizationMode { get; private set; }
         public ParseResult Result;
-        public static bool IsArmel { get; private set; }
-
         public ILCompilerRootCommand(string[] args) : base(".NET Native IL Compiler")
         {
             Arguments.Add(InputFilePaths);
@@ -201,11 +203,13 @@ namespace ILCompiler
             Options.Add(MethodLayout);
             Options.Add(FileLayout);
             Options.Add(OrderFile);
+            Options.Add(FunctionAlignment);
             Options.Add(SatelliteFilePaths);
             Options.Add(EnableDebugInfo);
             Options.Add(UseDwarf5);
             Options.Add(NativeLib);
             Options.Add(SplitExeInitialization);
+            Options.Add(AggregateExeLibrary);
             Options.Add(ExportsFile);
             Options.Add(ExportDynamicSymbols);
             Options.Add(ExportUnmanagedEntryPoints);
@@ -349,12 +353,9 @@ namespace ILCompiler
             Console.WriteLine("Use the '--' option to disambiguate between input files that have begin with -- and options. After a '--' option, all arguments are " +
                 "considered to be input files. If no input files begin with '--' then this option is not necessary.\n");
 
-            string[] ValidArchitectures = new string[] { "arm", "arm64", "x86", "x64", "riscv64", "loongarch64" };
-            string[] ValidOS = new string[] { "windows", "linux", "freebsd", "osx", "maccatalyst", "ios", "iossimulator", "tvos", "tvossimulator" };
+            Console.WriteLine("Valid switches for {0} are: '{1}'. The default value is '{2}'\n", "--targetos", string.Join("', '", Helpers.ValidOS), Helpers.GetTargetOS(null).ToString().ToLowerInvariant());
 
-            Console.WriteLine("Valid switches for {0} are: '{1}'. The default value is '{2}'\n", "--targetos", string.Join("', '", ValidOS), Helpers.GetTargetOS(null).ToString().ToLowerInvariant());
-
-            Console.WriteLine(string.Format("Valid switches for {0} are: '{1}'. The default value is '{2}'\n", "--targetarch", string.Join("', '", ValidArchitectures), Helpers.GetTargetArchitecture(null).ToString().ToLowerInvariant()));
+            Console.WriteLine(string.Format("Valid switches for {0} are: '{1}'. The default value is '{2}'\n", "--targetarch", string.Join("', '", Helpers.ValidArchitectures), Helpers.GetTargetArchitecture(null).ToString().ToLowerInvariant()));
 
             Console.WriteLine("The allowable values for the --instruction-set option are described in the table below. Each architecture has a different set of valid " +
                 "instruction sets, and multiple instruction sets may be specified by separating the instructions sets by a ','. By default other instruction sets not " +
@@ -362,7 +363,7 @@ namespace ILCompiler
                 "All such light-up can be disallowed by specifying '-optimistic'. The instruction sets supported by the machine invoking the tool can be targeted by " +
                 "specifying 'native'. For example 'native', 'avx,aes', 'avx,aes,-avx2', or 'avx,aes,-optimistic'");
 
-            foreach (string arch in ValidArchitectures)
+            foreach (string arch in Helpers.ValidArchitectures)
             {
                 TargetArchitecture targetArch = Helpers.GetTargetArchitecture(arch);
                 bool first = true;
@@ -393,18 +394,6 @@ namespace ILCompiler
             Console.WriteLine();
             Console.WriteLine("The following CPU names are predefined groups of instruction sets and can be used in --instruction-set too:");
             Console.WriteLine(string.Join(", ", Internal.JitInterface.InstructionSetFlags.AllCpuNames));
-        }
-
-        private static TargetArchitecture MakeTargetArchitecture(ArgumentResult result)
-        {
-            string firstToken = result.Tokens.Count > 0 ? result.Tokens[0].Value : null;
-            if (firstToken != null && firstToken.Equals("armel", StringComparison.OrdinalIgnoreCase))
-            {
-                IsArmel = true;
-                return Internal.TypeSystem.TargetArchitecture.ARM;
-            }
-
-            return Helpers.GetTargetArchitecture(firstToken);
         }
 
         private static int MakeParallelism(ArgumentResult result)

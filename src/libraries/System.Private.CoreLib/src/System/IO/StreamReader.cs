@@ -1,10 +1,11 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -71,14 +72,22 @@ namespace System.IO
 
         // We don't guarantee thread safety on StreamReader, but we should at
         // least prevent users from trying to read anything while an Async
-        // read from the same thread is in progress.
+        // read from the same thread is in progress. We track this with the
+        // following fields.
+        //
+        // Generally we prefer to use the bool _asyncIOInProgress, but in
+        // certain cases for async1 this would require introducing a wrapper
+        // state machine, and in those cases we use the Task _asyncReadTask
+        // instead.
+        //
+        private bool _asyncIOInProgress;
         private Task _asyncReadTask = Task.CompletedTask;
 
         private void CheckAsyncTaskInProgress()
         {
-            // We are not locking the access to _asyncReadTask because this is not meant to guarantee thread safety.
+            // We are not locking this access because this is not meant to guarantee thread safety.
             // We are simply trying to deter calling any Read APIs while an async Read from the same thread is in progress.
-            if (!_asyncReadTask.IsCompleted)
+            if (_asyncIOInProgress || !_asyncReadTask.IsCompleted)
             {
                 ThrowAsyncIOInProgress();
             }
@@ -87,6 +96,24 @@ namespace System.IO
         [DoesNotReturn]
         private static void ThrowAsyncIOInProgress() =>
             throw new InvalidOperationException(SR.InvalidOperation_AsyncIOInProgress);
+
+        private ThrowOnReadsScope GuardAgainstOtherReads()
+        {
+            return new ThrowOnReadsScope(this);
+        }
+
+        private readonly struct ThrowOnReadsScope : IDisposable
+        {
+            private readonly StreamReader _reader;
+
+            public ThrowOnReadsScope(StreamReader reader)
+            {
+                reader._asyncIOInProgress = true;
+                _reader = reader;
+            }
+
+            public void Dispose() => _reader._asyncIOInProgress = false;
+        }
 
         // StreamReader by default will ignore illegal UTF8 characters. We don't want to
         // throw here because we want to be able to read ill-formed data without choking.
@@ -793,7 +820,7 @@ namespace System.IO
         // contain the terminating carriage return and/or line feed. The returned
         // value is null if the end of the input stream has been reached.
         //
-        public override string? ReadLine()
+        public override unsafe string? ReadLine()
         {
             ThrowIfDisposed();
             CheckAsyncTaskInProgress();
@@ -898,14 +925,13 @@ namespace System.IO
             ThrowIfDisposed();
             CheckAsyncTaskInProgress();
 
-            Task<string?> task = ReadLineAsyncInternal(cancellationToken);
-            _asyncReadTask = task;
-
-            return new ValueTask<string?>(task);
+            return new ValueTask<string?>(ReadLineAsyncInternal(cancellationToken));
         }
 
         private async Task<string?> ReadLineAsyncInternal(CancellationToken cancellationToken)
         {
+            using ThrowOnReadsScope _ = GuardAgainstOtherReads();
+
             if (_charPos == _charLen && (await ReadBufferAsync(cancellationToken).ConfigureAwait(false)) == 0)
             {
                 return null;
@@ -1026,14 +1052,13 @@ namespace System.IO
             ThrowIfDisposed();
             CheckAsyncTaskInProgress();
 
-            Task<string> task = ReadToEndAsyncInternal(cancellationToken);
-            _asyncReadTask = task;
-
-            return task;
+            return ReadToEndAsyncInternal(cancellationToken);
         }
 
         private async Task<string> ReadToEndAsyncInternal(CancellationToken cancellationToken)
         {
+            using ThrowOnReadsScope _ = GuardAgainstOtherReads();
+
             // Call ReadBuffer, then pull data out of charBuffer.
             StringBuilder sb = new StringBuilder(_charLen - _charPos);
             do
@@ -1070,10 +1095,20 @@ namespace System.IO
             ThrowIfDisposed();
             CheckAsyncTaskInProgress();
 
+            if (RuntimeHelpers.IsRuntimeAsync())
+            {
+                return ReadAsyncInternalWithGuard(new Memory<char>(buffer, index, count), CancellationToken.None);
+            }
+
             Task<int> task = ReadAsyncInternal(new Memory<char>(buffer, index, count), CancellationToken.None).AsTask();
             _asyncReadTask = task;
-
             return task;
+
+            async Task<int> ReadAsyncInternalWithGuard(Memory<char> buffer, CancellationToken cancellationToken)
+            {
+                using ThrowOnReadsScope _ = GuardAgainstOtherReads();
+                return await ReadAsyncInternal(buffer, cancellationToken).ConfigureAwait(false);
+            }
         }
 
         public override ValueTask<int> ReadAsync(Memory<char> buffer, CancellationToken cancellationToken = default)
@@ -1108,9 +1143,6 @@ namespace System.IO
             // data read in, let's try writing directly to the user's buffer.
             bool readToUserBuffer = false;
 
-            byte[] tmpByteBuffer = _byteBuffer;
-            Stream tmpStream = _stream;
-
             int count = buffer.Length;
             while (count > 0)
             {
@@ -1140,7 +1172,7 @@ namespace System.IO
                         {
                             Debug.Assert(_bytePos <= _encoding.Preamble.Length, "possible bug in _compressPreamble.  Are two threads using this StreamReader at the same time?");
                             int tmpBytePos = _bytePos;
-                            int len = await tmpStream.ReadAsync(new Memory<byte>(tmpByteBuffer, tmpBytePos, tmpByteBuffer.Length - tmpBytePos), cancellationToken).ConfigureAwait(false);
+                            int len = await _stream.ReadAsync(new Memory<byte>(_byteBuffer, tmpBytePos, _byteBuffer.Length - tmpBytePos), cancellationToken).ConfigureAwait(false);
                             Debug.Assert(len >= 0, "Stream.Read returned a negative number!  This is a bug in your stream class.");
 
                             if (len == 0)
@@ -1151,12 +1183,12 @@ namespace System.IO
                                 {
                                     if (readToUserBuffer)
                                     {
-                                        n = _decoder.GetChars(new ReadOnlySpan<byte>(tmpByteBuffer, 0, _byteLen), buffer.Span.Slice(charsRead), flush: false);
+                                        n = _decoder.GetChars(new ReadOnlySpan<byte>(_byteBuffer, 0, _byteLen), buffer.Span.Slice(charsRead), flush: false);
                                         _charLen = 0;  // StreamReader's buffer is empty.
                                     }
                                     else
                                     {
-                                        n = _decoder.GetChars(tmpByteBuffer, 0, _byteLen, _charBuffer, 0);
+                                        n = _decoder.GetChars(_byteBuffer, 0, _byteLen, _charBuffer, 0);
                                         _charLen += n;  // Number of chars in StreamReader's buffer.
                                     }
                                 }
@@ -1176,7 +1208,7 @@ namespace System.IO
                         {
                             Debug.Assert(_bytePos == 0, "_bytePos can be non zero only when we are trying to _checkPreamble.  Are two threads using this StreamReader at the same time?");
 
-                            _byteLen = await tmpStream.ReadAsync(new Memory<byte>(tmpByteBuffer), cancellationToken).ConfigureAwait(false);
+                            _byteLen = await _stream.ReadAsync(new Memory<byte>(_byteBuffer), cancellationToken).ConfigureAwait(false);
 
                             Debug.Assert(_byteLen >= 0, "Stream.Read returned a negative number!  This is a bug in your stream class.");
 
@@ -1190,7 +1222,7 @@ namespace System.IO
                         // _isBlocked == whether we read fewer bytes than we asked for.
                         // Note we must check it here because CompressBuffer or
                         // DetectEncoding will change _byteLen.
-                        _isBlocked = (_byteLen < tmpByteBuffer.Length);
+                        _isBlocked = (_byteLen < _byteBuffer.Length);
 
                         // Check for preamble before detect encoding. This is not to override the
                         // user supplied Encoding for the one we implicitly detect. The user could
@@ -1215,12 +1247,12 @@ namespace System.IO
                         _charPos = 0;
                         if (readToUserBuffer)
                         {
-                            n = _decoder.GetChars(new ReadOnlySpan<byte>(tmpByteBuffer, 0, _byteLen), buffer.Span.Slice(charsRead), flush: false);
+                            n = _decoder.GetChars(new ReadOnlySpan<byte>(_byteBuffer, 0, _byteLen), buffer.Span.Slice(charsRead), flush: false);
                             _charLen = 0;  // StreamReader's buffer is empty.
                         }
                         else
                         {
-                            n = _decoder.GetChars(tmpByteBuffer, 0, _byteLen, _charBuffer, 0);
+                            n = _decoder.GetChars(_byteBuffer, 0, _byteLen, _charBuffer, 0);
                             _charLen += n;  // Number of chars in StreamReader's buffer.
                         }
                     } while (n == 0);
@@ -1281,10 +1313,20 @@ namespace System.IO
             ThrowIfDisposed();
             CheckAsyncTaskInProgress();
 
+            if (RuntimeHelpers.IsRuntimeAsync())
+            {
+                return ReadBlockAsyncWithGuard(buffer, index, count);
+            }
+
             Task<int> task = base.ReadBlockAsync(buffer, index, count);
             _asyncReadTask = task;
-
             return task;
+
+            async Task<int> ReadBlockAsyncWithGuard(char[] buffer, int index, int count)
+            {
+                using ThrowOnReadsScope _ = GuardAgainstOtherReads();
+                return await base.ReadBlockAsync(buffer, index, count).ConfigureAwait(false);
+            }
         }
 
         public override ValueTask<int> ReadBlockAsync(Memory<char> buffer, CancellationToken cancellationToken = default)
@@ -1304,6 +1346,11 @@ namespace System.IO
                 return ValueTask.FromCanceled<int>(cancellationToken);
             }
 
+            if (RuntimeHelpers.IsRuntimeAsync())
+            {
+                return ReadBlockAsyncInternalWithGuard(buffer, cancellationToken);
+            }
+
             ValueTask<int> vt = ReadBlockAsyncInternal(buffer, cancellationToken);
             if (vt.IsCompletedSuccessfully)
             {
@@ -1313,14 +1360,18 @@ namespace System.IO
             Task<int> t = vt.AsTask();
             _asyncReadTask = t;
             return new ValueTask<int>(t);
+
+            async ValueTask<int> ReadBlockAsyncInternalWithGuard(Memory<char> buffer, CancellationToken token)
+            {
+                using ThrowOnReadsScope _ = GuardAgainstOtherReads();
+                return await ReadBlockAsyncInternal(buffer, token).ConfigureAwait(false);
+            }
         }
 
         private async ValueTask<int> ReadBufferAsync(CancellationToken cancellationToken)
         {
             _charLen = 0;
             _charPos = 0;
-            byte[] tmpByteBuffer = _byteBuffer;
-            Stream tmpStream = _stream;
 
             if (!_checkPreamble)
             {
@@ -1335,7 +1386,7 @@ namespace System.IO
                 {
                     Debug.Assert(_bytePos <= _encoding.Preamble.Length, "possible bug in _compressPreamble. Are two threads using this StreamReader at the same time?");
                     int tmpBytePos = _bytePos;
-                    int len = await tmpStream.ReadAsync(tmpByteBuffer.AsMemory(tmpBytePos), cancellationToken).ConfigureAwait(false);
+                    int len = await _stream.ReadAsync(_byteBuffer.AsMemory(tmpBytePos), cancellationToken).ConfigureAwait(false);
                     Debug.Assert(len >= 0, "Stream.Read returned a negative number!  This is a bug in your stream class.");
 
                     if (len == 0)
@@ -1349,7 +1400,7 @@ namespace System.IO
                 else
                 {
                     Debug.Assert(_bytePos == 0, "_bytePos can be non zero only when we are trying to _checkPreamble. Are two threads using this StreamReader at the same time?");
-                    _byteLen = await tmpStream.ReadAsync(new Memory<byte>(tmpByteBuffer), cancellationToken).ConfigureAwait(false);
+                    _byteLen = await _stream.ReadAsync(new Memory<byte>(_byteBuffer), cancellationToken).ConfigureAwait(false);
                     Debug.Assert(_byteLen >= 0, "Stream.Read returned a negative number!  Bug in stream class.");
 
                     if (_byteLen == 0)
@@ -1362,7 +1413,7 @@ namespace System.IO
                 // _isBlocked == whether we read fewer bytes than we asked for.
                 // Note we must check it here because CompressBuffer or
                 // DetectEncoding will change _byteLen.
-                _isBlocked = (_byteLen < tmpByteBuffer.Length);
+                _isBlocked = (_byteLen < _byteBuffer.Length);
 
                 // Check for preamble before detect encoding. This is not to override the
                 // user supplied Encoding for the one we implicitly detect. The user could
@@ -1380,7 +1431,7 @@ namespace System.IO
                 }
 
                 Debug.Assert(_charPos == 0 && _charLen == 0, "We shouldn't be trying to decode more data if we made progress in an earlier iteration.");
-                _charLen = _decoder.GetChars(tmpByteBuffer, 0, _byteLen, _charBuffer, 0, flush: false);
+                _charLen = _decoder.GetChars(_byteBuffer, 0, _byteLen, _charBuffer, 0, flush: false);
             } while (_charLen == 0);
 
             if (eofReached)

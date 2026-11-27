@@ -12,7 +12,6 @@ using TestLibrary;
 [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
 public class DelegateTest
 {
-    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/176: IDispatch", typeof(Utilities), nameof(Utilities.IsNativeAot))]
     [Fact]
     public static void TestFunctionPointer()
     {

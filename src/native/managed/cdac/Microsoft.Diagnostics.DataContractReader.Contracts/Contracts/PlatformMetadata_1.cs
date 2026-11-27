@@ -1,19 +1,19 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal readonly partial struct PlatformMetadata_1 : IPlatformMetadata
+internal readonly struct PlatformMetadata_1 : IPlatformMetadata
 {
     internal readonly Target _target;
-    private readonly Data.PlatformMetadata _cdacMetadata;
+    private readonly TargetPointer _cdacMetadataAddress;
+    private Data.PlatformMetadata _cdacMetadata
+        => _target.ProcessedData.GetOrAdd<Data.PlatformMetadata>(_cdacMetadataAddress);
 
-    public PlatformMetadata_1(Target target, Data.PlatformMetadata cdacMetadata)
+    public PlatformMetadata_1(Target target)
     {
         _target = target;
-        _cdacMetadata = cdacMetadata;
+        _cdacMetadataAddress = target.ReadGlobalPointer(Constants.Globals.PlatformMetadata);
     }
 
     TargetPointer IPlatformMetadata.GetPrecodeMachineDescriptor()
@@ -25,4 +25,7 @@ internal readonly partial struct PlatformMetadata_1 : IPlatformMetadata
     {
         return (CodePointerFlags)_cdacMetadata.CodePointerFlags;
     }
+
+    ulong IPlatformMetadata.GetPointerAuthenticationMask()
+        => _cdacMetadata.PointerAuthenticationMask ?? 0;
 }

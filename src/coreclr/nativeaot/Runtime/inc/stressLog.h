@@ -47,6 +47,8 @@
 
 #if defined(STRESS_LOG)
 
+#include "cdacdata.h"
+
 //
 // Logging levels and facilities
 //
@@ -206,7 +208,6 @@ enum LogFacilitiesEnum: unsigned int {
 //
 // forward declarations:
 //
-class CrstStatic;
 class Thread;
 typedef DPTR(Thread) PTR_Thread;
 class StressLog;
@@ -216,14 +217,10 @@ typedef DPTR(ThreadStressLog) PTR_ThreadStressLog;
 struct StressLogChunk;
 typedef DPTR(StressLogChunk) PTR_StressLogChunk;
 struct DacpStressLogEnumCBArgs;
-extern "C" void PopulateDebugHeaders();
-
-
 //==========================================================================================
 // StressLog - per-thread circular queue of stresslog messages
 //
 class StressLog {
-    friend void PopulateDebugHeaders();
 public:
 // private:
     unsigned facilitiesToLog;               // Bitvector of facilities to log (see loglf.h)
@@ -233,7 +230,7 @@ public:
     int32_t totalChunk;                       // current number of total chunks allocated
     PTR_ThreadStressLog logs;               // the list of logs for every thread.
     int32_t deadCount;                        // count of dead threads in the log
-    CrstStatic *pLock;                      // lock
+    minipal_mutex lock;                     // lock
     uint64_t tickFrequency;         // number of ticks per second
     uint64_t startTimeStamp;        // start time from when tick counter started
     uint64_t startTime;                     // time the application started in Windows FILETIME precision (100ns since 01 Jan 1601)
@@ -452,7 +449,6 @@ public:
     static const int64_t maxOffset = (int64_t)1 << (formatOffsetLowBits + formatOffsetHighBits);
     static constexpr size_t maxMsgSize = sizeof(uint64_t) * 2 + maxArgCnt * sizeof(void*);
 
-    friend void PopulateDebugHeaders();
 };
 
 static_assert(sizeof(StressMsg) == sizeof(uint64_t) * 2, "StressMsg bitfields aren't aligned correctly");
@@ -532,7 +528,7 @@ class ThreadStressLog {
     PTR_Thread pThread;         // thread associated with these stress logs
     StressMsg * origCurPtr;     // this holds the original curPtr before we start the dump
 
-    friend void PopulateDebugHeaders();
+    template<typename T> friend struct ::cdac_data;
     friend class StressLog;
 
 #ifndef DACCESS_COMPILE
@@ -792,5 +788,18 @@ inline StressMsg* ThreadStressLog::AdvWritePastBoundary(int cArgs) {
 #define STRESS_LOG_RESERVE_MEM(numChunks)   do { } WHILE_0
 #endif // !STRESS_LOG || DACCESS_COMPILE
 #endif // !__GCENV_BASE_INCLUDED__
+
+#if defined(STRESS_LOG)
+template<> struct cdac_data<ThreadStressLog>
+{
+    static constexpr size_t Next = offsetof(ThreadStressLog, next);
+    static constexpr size_t ThreadId = offsetof(ThreadStressLog, threadId);
+    static constexpr size_t WriteHasWrapped = offsetof(ThreadStressLog, writeHasWrapped);
+    static constexpr size_t CurrentPtr = offsetof(ThreadStressLog, curPtr);
+    static constexpr size_t ChunkListHead = offsetof(ThreadStressLog, chunkListHead);
+    static constexpr size_t ChunkListTail = offsetof(ThreadStressLog, chunkListTail);
+    static constexpr size_t CurrentWriteChunk = offsetof(ThreadStressLog, curWriteChunk);
+};
+#endif // STRESS_LOG
 
 #endif // StressLog_h

@@ -135,20 +135,10 @@ namespace {Namespace}
             int psize = esize / 8;
 
             {RetBaseType}[] elemArray = new {RetBaseType}[elements];
+            {RetBaseType} trueValue = {RetVectorType}<{RetBaseType}>.AllBitsSet[0];
             for (int e = 0; e < elements; e++)
             {
-                if (typeof({RetBaseType}) == typeof(Single))
-                {
-                    elemArray[e] = Unsafe.BitCast<int, {RetBaseType}>(e < count ? 1 : 0);
-                }
-                else if (typeof({RetBaseType}) == typeof(Double))
-                {
-                    elemArray[e] = Unsafe.BitCast<long, {RetBaseType}>(e < count ? 1 : 0);
-                }
-                else
-                {
-                    elemArray[e] = ({RetBaseType})(e < count ? 1 : 0);
-                }
+                elemArray[e] = e < count ? trueValue : default;
             }
 
             return new {RetVectorType}<{RetBaseType}>(elemArray);
@@ -211,9 +201,13 @@ namespace {Namespace}
             bool succeeded = true;
 
             {RetVectorType}<{RetBaseType}> expected = PtrueOp(pattern, sizeof({RetBaseType}) * 8);
-            if (!Vector.EqualsAll(expected, result))
+            for (int i = 0; i < {RetVectorType}<{RetBaseType}>.Count; i++)
             {
-                succeeded = false;
+                if (!Helpers.BitwiseEqual(expected[i], result[i]))
+                {
+                    succeeded = false;
+                    break;
+                }
             }
 
             if (!succeeded)

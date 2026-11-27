@@ -18,7 +18,7 @@ namespace System.Reflection.Emit
         // We capture the creation context so that we can do the checks against the same context,
         // irrespective of when the method gets compiled. Note that the DynamicMethod does not know when
         // it is ready for use since there is not API which indictates that IL generation has completed.
-        private static volatile Module? s_anonymouslyHostedDynamicMethodsModule;
+        private static Module? s_anonymouslyHostedDynamicMethodsModule;
         private static readonly object s_anonymouslyHostedDynamicMethodsModuleLock = new object();
 
         //
@@ -351,7 +351,7 @@ namespace System.Reflection.Emit
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
             bool includeMethodImplAttribute = attributeType.IsAssignableFrom(typeof(MethodImplAttribute));
-            object[] result = CustomAttribute.CreateAttributeArrayHelper(attributeRuntimeType, includeMethodImplAttribute ? 1 : 0);
+            object[] result = RuntimeCustomAttribute.CreateAttributeArrayHelper(attributeRuntimeType, includeMethodImplAttribute ? 1 : 0);
             if (includeMethodImplAttribute)
             {
                 result[0] = new MethodImplAttribute((MethodImplOptions)GetMethodImplementationFlags());

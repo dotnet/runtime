@@ -16,6 +16,7 @@
 #define __cgenx86_h__
 
 #include "utilcode.h"
+#include <minipal/instructioncache.h>
 
 // Given a return address retrieved during stackwalk,
 // this is the offset by which it should be decremented to lend somewhere in a call instruction.
@@ -30,12 +31,6 @@ class Module;
 class ComCallMethodDesc;
 
 #define GetEEFuncEntryPoint(pfn) GFN_TADDR(pfn)
-
-#define COMMETHOD_PREPAD                        8   // # extra bytes to allocate in addition to sizeof(ComCallMethodDesc)
-#ifdef FEATURE_COMINTEROP
-#define COMMETHOD_CALL_PRESTUB_SIZE             5   // x86: CALL(E8) xx xx xx xx
-#define COMMETHOD_CALL_PRESTUB_ADDRESS_OFFSET   1   // the offset of the call target address inside the prestub
-#endif // FEATURE_COMINTEROP
 
 #define STACK_ALIGN_SIZE                        4
 
@@ -56,7 +51,6 @@ class ComCallMethodDesc;
 
 #define ENREGISTERED_RETURNTYPE_MAXSIZE         8
 #define ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE 4
-#define CALLDESCR_ARGREGS                       1   // CallDescrWorker has ArgumentRegister parameter
 
 //**********************************************************************
 // Parameter size
@@ -213,22 +207,6 @@ inline INT32 rel32UsingJumpStub(INT32 UNALIGNED * pRel32, PCODE target, MethodDe
     return (INT32)(target - baseAddr);
 }
 
-#ifdef FEATURE_COMINTEROP
-inline void emitCOMStubCall (ComCallMethodDesc *pCOMMethodRX, ComCallMethodDesc *pCOMMethodRW, PCODE target)
-{
-    WRAPPER_NO_CONTRACT;
-
-    BYTE *pBufferRW = (BYTE*)pCOMMethodRW - COMMETHOD_CALL_PRESTUB_SIZE;
-    BYTE *pBufferRX = (BYTE*)pCOMMethodRX - COMMETHOD_CALL_PRESTUB_SIZE;
-
-    pBufferRW[0] = X86_INSTR_CALL_REL32; //CALLNEAR32
-    *((LPVOID*)(1+pBufferRW)) = (LPVOID) (((LPBYTE)target) - (pBufferRX+5));
-
-    _ASSERTE(IS_ALIGNED(pBufferRX + COMMETHOD_CALL_PRESTUB_ADDRESS_OFFSET, sizeof(void*)) &&
-        *((SSIZE_T*)(pBufferRX + COMMETHOD_CALL_PRESTUB_ADDRESS_OFFSET)) == ((LPBYTE)target - (LPBYTE)pCOMMethodRX));
-}
-#endif // FEATURE_COMINTEROP
-
 //------------------------------------------------------------------------
 WORD GetUnpatchedCodeData(LPCBYTE pAddr);
 
@@ -342,11 +320,6 @@ inline PCODE decodeBackToBackJump(PCODE pCode)
     return rel32Decode(pCode+1);
 }
 
-
-EXTERN_C void __stdcall setFPReturn(int fpSize, INT64 retVal);
-EXTERN_C void __stdcall getFPReturn(int fpSize, INT64 *pretval);
-
-
 // SEH info forward declarations
 
 struct HijackArgs
@@ -382,17 +355,16 @@ struct HijackArgs
 // Currently ClrFlushInstructionCache has no effect on X86
 //
 
-inline BOOL ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode, bool hasCodeExecutedBefore = false)
+inline void ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode, bool hasCodeExecutedBefore = false)
 {
     if (hasCodeExecutedBefore)
     {
-        FlushInstructionCache(GetCurrentProcess(), pCodeAddr, sizeOfCode);
+        minipal_flush_instruction_cache(pCodeAddr, sizeOfCode);
     }
     else
     {
         MemoryBarrier();
     }
-    return TRUE;
 }
 
 //

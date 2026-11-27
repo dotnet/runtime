@@ -13,9 +13,10 @@ import {
     getArgJsHandle, getArgLength, getArgType, getArgU16, getArgU8,
     getMarshalerToJsByType, getSignatureArg1Type, getSignatureArg2Type, getSignatureArg3Type, getSignatureResType,
     setArgType, setJsHandle,
+    isReceiverShouldFree,
 } from "./marshal";
 import { marshalExceptionToCs } from "./marshal-to-cs";
-import { lookupJsOwnedObject, getJsHandleFromJSObject, getJSObjectFromJSHandle, registerWithJsvHandle, releaseCSOwnedObject, setupManagedProxy, teardownManagedProxy, proxyDebugSymbol } from "./gc-handles";
+import { lookupJsOwnedObject, getJsHandleFromJSObject, getJSObjectFromJSHandle, registerWithJsvHandle, releaseCSOwnedObject, setupManagedProxy, teardownManagedProxy, proxyDebugSymbol, eagerTaskHandleSymbol } from "./gc-handles";
 import { assertRuntimeRunning, fixupPointer, isRuntimeRunning } from "./utils";
 import { ArraySegment, ManagedError, ManagedObject, MemoryViewType, Span } from "./marshaled-types";
 import { callDelegate } from "./managed-exports";
@@ -242,7 +243,19 @@ export function beginMarshalTaskToJs(arg: JSMarshalerArgument, _?: MarshalerType
     }
     setJsHandle(arg, jsHandle);
     setArgType(arg, MarshalerType.TaskPreCreated);
+    // the caller only gets the promise back, so it needs a way to find the handle again.
+    // storing the number rather than the holder keeps the promise from retaining it.
+    (holder.promise as any)[eagerTaskHandleSymbol] = jsHandle;
     return holder.promise;
+}
+
+// the eagerly created Promise was never handed to managed code, drop its proxy
+export function releaseEagerTaskHolder(eagerPromise: Promise<any> | null | undefined): void {
+    if (!eagerPromise) return;
+    const jsHandle = (eagerPromise as any)[eagerTaskHandleSymbol];
+    dotnetAssert.check(jsHandle, "Expected JSHandle on the eagerly created promise");
+    (eagerPromise as any)[eagerTaskHandleSymbol] = undefined;
+    releaseCSOwnedObject(jsHandle);
 }
 
 export function endMarshalTaskToJs(args: JSMarshalerArguments, resConverter: MarshalerToJs | undefined, eagerPromise: Promise<any> | null) {
@@ -256,8 +269,7 @@ export function endMarshalTaskToJs(args: JSMarshalerArguments, resConverter: Mar
     }
 
     // otherwise drop the eagerPromise's handle
-    const jsHandle = getJsHandleFromJSObject(eagerPromise);
-    releaseCSOwnedObject(jsHandle);
+    releaseEagerTaskHolder(eagerPromise);
 
     // get the synchronous result
     const promise = tryMarshalSyncTaskToJs(res, type, resConverter);
@@ -525,7 +537,9 @@ export function resolveOrRejectPromise(args: JSMarshalerArguments): void {
     }
     args = fixupPointer(args, 0);
     const exc = getArg(args, 0);
-    // TODO-WASM const receiver_should_free = WasmEnableThreads && is_receiver_should_free(args);
+    // TODO-MT: always false until threads are enabled, only the cross-thread post paths set it.
+    // Keep in sync with resolve_or_reject_promise in src/mono/browser/runtime.
+    const receiverShouldFree = isReceiverShouldFree(args);
     try {
         assertRuntimeRunning();
 
@@ -540,18 +554,19 @@ export function resolveOrRejectPromise(args: JSMarshalerArguments): void {
         dotnetAssert.fastCheck(holder, () => `Cannot find Promise for JSHandle ${jsHandle}`);
 
         holder.resolveOrReject(type, jsHandle, argValue);
-        /* TODO-WASM if (receiver_should_free) {
+        if (receiverShouldFree) {
             // this works together with AllocHGlobal in JSFunctionBinding.ResolveOrRejectPromise
-            free(args as any);
-        } else {*/
-        setArgType(res, MarshalerType.Void);
-        setArgType(exc, MarshalerType.None);
-        //}
+            Module._free(args as any);
+        } else {
+            setArgType(res, MarshalerType.Void);
+            setArgType(exc, MarshalerType.None);
+        }
 
     } catch (ex: any) {
-        /* TODO-WASM if (receiver_should_free) {
-            mono_assert(false, () => `Failed to resolve or reject promise ${ex}`);
-        }*/
+        if (receiverShouldFree) {
+            Module._free(args as any);
+            dotnetAssert.fastCheck(false, () => `Failed to resolve or reject promise. ${ex}`);
+        }
         marshalExceptionToCs(exc, ex);
     }
 }

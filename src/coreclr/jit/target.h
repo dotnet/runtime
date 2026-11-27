@@ -41,10 +41,6 @@ inline bool compFeatureArgSplit()
     return TargetArchitecture::IsLoongArch64 || TargetArchitecture::IsArm32 || TargetArchitecture::IsRiscV64 ||
            (TargetOS::IsWindows && TargetArchitecture::IsArm64);
 }
-inline bool compUnixX86Abi()
-{
-    return TargetArchitecture::IsX86 && TargetOS::IsUnix;
-}
 
 /*****************************************************************************/
 // The following are human readable names for the target architectures
@@ -588,11 +584,6 @@ static uint32_t BitScanForward(const regMaskTP& mask)
 #define DSP_DST_OPER_LEFT  1
 #define DSP_DST_OPER_RIGHT 0
 #endif
-
-/*****************************************************************************/
-
-// The pseudorandom nop insertion is not necessary for current scenarios
-// #define PSEUDORANDOM_NOP_INSERTION
 
 /*****************************************************************************/
 

@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -358,7 +358,7 @@ internal sealed class ManifestBuilder
             throw new ArgumentException(msg);
     }
 
-    private string CreateManifestString()
+    private unsafe string CreateManifestString()
     {
         Span<char> ulongHexScratch = stackalloc char[16]; // long enough for ulong.MaxValue formatted as hex
 
@@ -366,8 +366,7 @@ internal sealed class ManifestBuilder
         if (channelTab != null)
         {
             sb?.AppendLine(" <channels>");
-            var sortedChannels = new List<KeyValuePair<int, ChannelInfo>>();
-            foreach (KeyValuePair<int, ChannelInfo> p in channelTab) { sortedChannels.Add(p); }
+            var sortedChannels = new List<KeyValuePair<int, ChannelInfo>>(channelTab);
             sortedChannels.Sort((p1, p2) => -Comparer<ulong>.Default.Compare(p1.Value.Keywords, p2.Value.Keywords));
 
             foreach (KeyValuePair<int, ChannelInfo> kvpair in sortedChannels)

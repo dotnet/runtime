@@ -388,7 +388,6 @@ namespace Microsoft.Extensions.Configuration.Xml
 
             void AddToConfiguration(string key, string value, int? lineNumber, int? linePosition)
             {
-#if NETSTANDARD2_1
                 if (!configuration.TryAdd(key, value))
                 {
                     var lineInfo = lineNumber == null || linePosition == null
@@ -396,17 +395,6 @@ namespace Microsoft.Extensions.Configuration.Xml
                         : SR.Format(SR.Msg_LineInfo, lineNumber.Value, linePosition.Value);
                     throw new FormatException(SR.Format(SR.Error_KeyIsDuplicated, key, lineInfo));
                 }
-#else
-                if (configuration.ContainsKey(key))
-                {
-                    var lineInfo = lineNumber == null || linePosition == null
-                        ? string.Empty
-                        : SR.Format(SR.Msg_LineInfo, lineNumber.Value, linePosition.Value);
-                    throw new FormatException(SR.Format(SR.Error_KeyIsDuplicated, key, lineInfo));
-                }
-
-                configuration.Add(key, value);
-#endif
             }
         }
     }

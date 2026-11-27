@@ -124,13 +124,11 @@ void COMInterfaceMarshaler::CreateObjectRef(BOOL fDuplicate, OBJECTREF *pComObj,
         _ASSERTE(!"Creating a COM wrapper for WinRT delegates (which do not inherit from __ComObject) is not supported.");
     }
 
-    // make sure we "pin" the syncblock before switching to preemptive mode
+    // Get the sync block index before switching to preemptive mode.
     SyncBlock *pSB = (*pComObj)->GetSyncBlock();
-    pSB->SetPrecious();
     DWORD dwSyncBlockIndex = pSB->GetSyncBlockIndex();
 
-    NewRCWHolder pNewRCW;
-    pNewRCW = RCW::CreateRCW(m_pUnknown, dwSyncBlockIndex, m_flags, m_typeHandle.GetMethodTable());
+    NewRCWHolder pNewRCW(RCW::CreateRCW(m_pUnknown, dwSyncBlockIndex, m_flags, m_typeHandle.GetMethodTable()));
 
     if (fDuplicate)
     {
@@ -165,12 +163,9 @@ void COMInterfaceMarshaler::CreateObjectRef(BOOL fDuplicate, OBJECTREF *pComObj,
             MethodDesc *pCtorMD = m_typeHandle.GetMethodTable()->GetDefaultConstructor();
             if (pCtorMD)
             {
-                PREPARE_NONVIRTUAL_CALLSITE_USING_METHODDESC(pCtorMD);
-                DECLARE_ARGHOLDER_ARRAY(CtorArgs, 1);
-                CtorArgs[ARGNUM_0]  = OBJECTREF_TO_ARGHOLDER(*pComObj);
+                UnmanagedCallersOnlyCaller defaultCtorInvoker{METHOD__RUNTIME_HELPERS__CALL_DEFAULT_CONSTRUCTOR};
 
-                // Call the ctor...
-                CALL_MANAGED_METHOD_NORET(CtorArgs);
+                defaultCtorInvoker.InvokeThrowing(pComObj, pCtorMD->GetSingleCallableAddrOfCode());
             }
         }
     }
@@ -208,7 +203,7 @@ void COMInterfaceMarshaler::CreateObjectRef(BOOL fDuplicate, OBJECTREF *pComObj,
                 fInserted = m_pWrapperCache->FindOrInsertWrapper_NoLock(m_pIdentity, &pRCW, !fExisting);
                 _ASSERTE(fInserted);
 
-                pNewRCW.SuppressRelease();
+                pNewRCW.Detach();
             }
             else
             {
@@ -219,7 +214,7 @@ void COMInterfaceMarshaler::CreateObjectRef(BOOL fDuplicate, OBJECTREF *pComObj,
         else
         {
             // If we did insert this wrapper in the table, make sure we don't delete it.
-            pNewRCW.SuppressRelease();
+            pNewRCW.Detach();
         }
     }
 

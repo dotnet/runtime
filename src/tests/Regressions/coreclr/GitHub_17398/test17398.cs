@@ -16,6 +16,8 @@ public class X
 
     public override string ToString() => s;
 
+    public X() { }
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     X(int x)
     {

@@ -34,7 +34,7 @@ namespace ContextualReflectionTest
 
         [ActiveIssue("https://github.com/dotnet/runtimelab/issues/165", typeof(Utilities), nameof(Utilities.IsNativeAot))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34072", TestRuntimes.Mono)]
-        [Fact]
+        [ConditionalFact(typeof(Utilities), nameof(Utilities.HasAssemblyFiles))]
         public static void TestEntryPoint()
         {
             Program program = new Program(isolated:false);
@@ -49,7 +49,7 @@ namespace ContextualReflectionTest
             InitializeIsolation(true);
         }
 
-        public Program(bool isolated)
+        internal Program(bool isolated)
         {
             InitializeIsolation(isolated);
         }
@@ -785,4 +785,3 @@ namespace ContextualReflectionTest
         }
     }
 }
-

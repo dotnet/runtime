@@ -22,11 +22,12 @@ import { dotnetAssert, dotnetLoaderExports, dotnetLogger, dotnetUpdateInternals,
 import { rejectRunMainPromise, resolveRunMainPromise, getRunMainPromise, abortStartup } from "./run";
 import { createPromiseCompletionSource, getPromiseCompletionSource, isControllablePromise } from "./promise-completion-source";
 import { fetchLazyAssembly, fetchSatelliteAssemblies, instantiateMainWasm } from "./assets";
+import { getAppSettingsFiles, getAppSettingsBytes } from "../appsettings";
 
 export function dotnetInitializeModule(): RuntimeAPI {
 
     const dotnetApi: Partial<RuntimeAPI> = {
-        INTERNAL: {},
+        INTERNAL: { getAppSettingsFiles, getAppSettingsBytes },
         Module: {} as any,
         runtimeId: undefined,
         runtimeBuildInfo: {
@@ -66,6 +67,7 @@ export function dotnetInitializeModule(): RuntimeAPI {
         addOnExitListener,
         abortStartup,
         quitNow,
+        exit,
         normalizeException,
         fetchSatelliteAssemblies,
         fetchLazyAssembly,
@@ -115,6 +117,7 @@ export function dotnetInitializeModule(): RuntimeAPI {
             dotnetLoaderExports.addOnExitListener,
             dotnetLoaderExports.abortStartup,
             dotnetLoaderExports.quitNow,
+            dotnetLoaderExports.exit,
             dotnetLoaderExports.normalizeException,
             dotnetLoaderExports.fetchSatelliteAssemblies,
             dotnetLoaderExports.fetchLazyAssembly,

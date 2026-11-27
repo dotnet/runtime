@@ -28,6 +28,7 @@ public class Test_445488
     //public static PerformanceCounter PC;
 
 
+    [SkipOnCoreClr("This test is not compatible with GC stress.", RuntimeTestModes.AnyGCStress)]
     [Fact]
     public static void TestEntryPoint()
     {

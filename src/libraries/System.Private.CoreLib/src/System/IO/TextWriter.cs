@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
@@ -142,7 +142,7 @@ namespace System.IO
         /// Writes a rune to the text stream.
         /// </summary>
         /// <param name="value">The rune to write to the text stream.</param>
-        public virtual void Write(Rune value)
+        public virtual unsafe void Write(Rune value)
         {
             // Convert value to span
             ReadOnlySpan<char> valueChars = value.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
@@ -271,6 +271,20 @@ namespace System.IO
             Write(value.ToString(FormatProvider));
         }
 
+        internal void WriteNumber<T>(T value) where T : struct, ISpanFormattable
+        {
+            IFormatProvider provider = FormatProvider;
+            Span<char> buffer = stackalloc char[128]; // arbitrary limit
+            if (value.TryFormat(buffer, out int charsWritten, format: default, provider))
+            {
+                Write(buffer.Slice(0, charsWritten));
+            }
+            else
+            {
+                Write(value.ToString(null, provider));
+            }
+        }
+
         // Writes a string to the text stream. If the given string is null, nothing
         // is written to the text stream.
         //
@@ -377,7 +391,7 @@ namespace System.IO
         /// Writes a rune followed by a line terminator to the text stream.
         /// </summary>
         /// <param name="value">The rune to write to the text stream.</param>
-        public virtual void WriteLine(Rune value)
+        public virtual unsafe void WriteLine(Rune value)
         {
             // Convert value to span
             ReadOnlySpan<char> valueChars = value.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
@@ -597,7 +611,7 @@ namespace System.IO
         /// </summary>
         /// <param name="value">The rune to write to the text stream.</param>
         /// <returns>A task that represents the asynchronous write operation.</returns>
-        public virtual Task WriteAsync(Rune value)
+        public virtual unsafe Task WriteAsync(Rune value)
         {
             ReadOnlySpan<char> valueChars = value.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
 
@@ -691,7 +705,7 @@ namespace System.IO
         /// </summary>
         /// <param name="value">The rune to write to the text stream.</param>
         /// <returns>A task that represents the asynchronous write operation.</returns>
-        public virtual Task WriteLineAsync(Rune value)
+        public virtual unsafe Task WriteLineAsync(Rune value)
         {
             ReadOnlySpan<char> valueChars = value.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
 

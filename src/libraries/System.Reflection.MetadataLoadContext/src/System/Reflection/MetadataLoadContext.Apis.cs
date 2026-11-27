@@ -12,8 +12,8 @@ namespace System.Reflection
     /// A MetadataLoadContext represents a closed universe of Type objects loaded for inspection-only purposes.
     /// Each MetadataLoadContext can have its own binding rules and is isolated from all other MetadataLoadContexts.
     ///
-    /// A MetadataLoadContext serves as a dictionary that binds assembly names to Assembly instances that were previously
-    /// loaded into the context or need to be loaded.
+    /// A MetadataLoadContext maintains bindings between assembly names and the Assembly instances returned by its
+    /// MetadataAssemblyResolver. Explicitly loading an assembly into the context does not establish such a binding.
     ///
     /// Assemblies are treated strictly as metadata. There are no restrictions on loading assemblies based
     /// on target platform, CPU architecture or pointer size. There are no restrictions on the assembly designated
@@ -43,8 +43,8 @@ namespace System.Reflection
     /// That method should load the requested assembly and return it.
     /// To do this, it can use LoadFromAssemblyPath() or one of its variants (LoadFromStream(), LoadFromByteArray()).
     ///
-    /// Once an assembly has been bound, no assembly with the same assembly name identity
-    /// can be bound again from a different location unless the Mvids are identical.
+    /// Once an assembly has been loaded, no assembly with the same assembly name identity
+    /// can be loaded again from a different location unless the Mvids are identical.
     ///
     /// Once loaded, the underlying file may be locked for the duration of the MetadataLoadContext's lifetime. You can
     /// release the locks by disposing the MetadataLoadContext object. The behavior of any Type, Assembly or other reflection
@@ -109,20 +109,18 @@ namespace System.Reflection
 
             this.resolver = resolver;
 
-            if (coreAssemblyName != null)
-            {
-                // Validate now that the value is a parsable assembly name.
-                new AssemblyName(coreAssemblyName);
-            }
-
             // Resolve the core assembly now
-            _coreTypes = new CoreTypes(this, coreAssemblyName);
+            _coreAssembly = LoadCoreAssembly(coreAssemblyName);
+            _coreTypes = new CoreTypes(_coreAssembly);
         }
 
         /// <summary>
-        /// Loads an assembly from a specific path on the disk and binds its assembly name to it in the MetadataLoadContext. If a prior
-        /// assembly with the same name was already loaded into the MetadataLoadContext, the prior assembly will be returned. If the
+        /// Loads an assembly from a specific path on the disk into the MetadataLoadContext. If a prior
+        /// assembly with the same name was already loaded into the MetadataLoadContext, the prior assembly is returned. If the
         /// two assemblies do not have the same Mvid, this method throws a FileLoadException.
+        ///
+        /// Loading an assembly does not automatically make it available for resolution by name. References to the assembly and
+        /// calls to LoadFromAssemblyName() are resolved through the MetadataAssemblyResolver, which may return the loaded assembly.
         /// </summary>
         public Assembly LoadFromAssemblyPath(string assemblyPath)
         {
@@ -134,9 +132,12 @@ namespace System.Reflection
         }
 
         /// <summary>
-        /// Loads an assembly from a byte array and binds its assembly name to it in the MetadataLoadContext. If a prior
-        /// assembly with the same name was already loaded into the MetadataLoadContext, the prior assembly will be returned. If the
+        /// Loads an assembly from a byte array into the MetadataLoadContext. If a prior
+        /// assembly with the same name was already loaded into the MetadataLoadContext, the prior assembly is returned. If the
         /// two assemblies do not have the same Mvid, this method throws a FileLoadException.
+        ///
+        /// Loading an assembly does not automatically make it available for resolution by name. References to the assembly and
+        /// calls to LoadFromAssemblyName() are resolved through the MetadataAssemblyResolver, which may return the loaded assembly.
         /// </summary>
         public Assembly LoadFromByteArray(byte[] assembly)
         {
@@ -148,9 +149,12 @@ namespace System.Reflection
         }
 
         /// <summary>
-        /// Loads an assembly from a stream and binds its assembly name to it in the MetadataLoadContext. If a prior
-        /// assembly with the same name was already loaded into the MetadataLoadContext, the prior assembly will be returned. If the
+        /// Loads an assembly from a stream into the MetadataLoadContext. If a prior
+        /// assembly with the same name was already loaded into the MetadataLoadContext, the prior assembly is returned. If the
         /// two assemblies do not have the same Mvid, this method throws a FileLoadException.
+        ///
+        /// Loading an assembly does not automatically make it available for resolution by name. References to the assembly and
+        /// calls to LoadFromAssemblyName() are resolved through the MetadataAssemblyResolver, which may return the loaded assembly.
         ///
         /// The MetadataLoadContext takes ownership of the Stream passed into this method. The original owner must not mutate its position, dispose the Stream or
         /// assume that its position will stay unchanged.
@@ -166,11 +170,9 @@ namespace System.Reflection
         }
 
         /// <summary>
-        /// Resolves the supplied assembly name to an assembly. If an assembly was previously bound by to this name, that assembly is returned.
+        /// Resolves the supplied assembly name to an assembly. If an assembly was previously bound to this name, that assembly is returned.
         /// Otherwise, the MetadataLoadContext calls the specified MetadataAssemblyResolver. If the resolver returns null, this method throws a FileNotFoundException.
-        ///
-        /// Note that this behavior matches the behavior of AssemblyLoadContext.LoadFromAssemblyName() but does not match the behavior of
-        /// Assembly.ReflectionOnlyLoad(). (the latter gives up without raising its resolve event.)
+        /// That failure is remembered as well: later requests for the same name throw without calling the resolver again.
         /// </summary>
         public Assembly LoadFromAssemblyName(string assemblyName)
         {
@@ -184,11 +186,9 @@ namespace System.Reflection
         }
 
         /// <summary>
-        /// Resolves the supplied assembly name to an assembly. If an assembly was previously bound by to this name, that assembly is returned.
+        /// Resolves the supplied assembly name to an assembly. If an assembly was previously bound to this name, that assembly is returned.
         /// Otherwise, the MetadataLoadContext calls the specified MetadataAssemblyResolver. If the resolver returns null, this method throws a FileNotFoundException.
-        ///
-        /// Note that this behavior matches the behavior of AssemblyLoadContext.LoadFromAssemblyName() resolve event but does not match the behavior of
-        /// Assembly.ReflectionOnlyLoad(). (the latter gives up without raising its resolve event.)
+        /// That failure is remembered as well: later requests for the same name throw without calling the resolver again.
         /// </summary>
         public Assembly LoadFromAssemblyName(AssemblyName assemblyName)
         {
@@ -205,10 +205,9 @@ namespace System.Reflection
         /// The core assembly is treated differently than other assemblies because references to these well-known types do
         /// not include the assembly reference, unlike normal types.
         ///
-        /// Typically, this assembly is named "mscorlib", or "netstandard". If the core assembly cannot be found, the value will be
-        /// null and many other reflection methods, including those that parse method signatures, will throw.
+        /// Typically, this assembly is named "System.Runtime", "mscorlib", or "netstandard".
         ///
-        /// The CoreAssembly is determined by passing the coreAssemblyName parameter passed to the MetadataAssemblyResolver constructor
+        /// The CoreAssembly is determined by passing the coreAssemblyName parameter passed to the MetadataLoadContext constructor
         /// to the MetadataAssemblyResolver's Resolve method.
         /// If no coreAssemblyName argument was specified in the constructor of MetadataLoadContext, then default values are used
         /// including "mscorlib", "System.Runtime" and "netstandard".
@@ -220,27 +219,9 @@ namespace System.Reflection
         /// such as DllImportAttribute. However, it can serve if you have no interest in those attributes. The CustomAttributes api
         /// will skip those attributes if the core assembly does not include the necessary types.
         ///
-        /// The CoreAssembly is not loaded until necessary. These APIs do not trigger the search for the core assembly:
-        ///    MetadataLoadContext.LoadFromStream(), LoadFromAssemblyPath(), LoadFromByteArray()
-        ///    Assembly.GetName(), Assembly.FullName, Assembly.GetReferencedAssemblies()
-        ///    Assembly.GetTypes(), Assembly.DefinedTypes, Assembly.GetExportedTypes(), Assembly.GetForwardedTypes()
-        ///    Assembly.GetType(string, bool, bool)
-        ///    Type.Name, Type.FullName, Type.AssemblyQualifiedName
-        ///
-        /// If a core assembly cannot be found or if the core assembly is missing types, this will affect the behavior of the MetadataLoadContext as follows:
-        ///
-        /// - Apis that need to parse signatures or typespecs and return the results as Types will throw. For example,
-        ///   MethodBase.ReturnType, MethodBase.GetParameters(), Type.BaseType, Type.GetInterfaces().
-        ///
-        /// - Apis that need to compare types to well known core types will not throw and the comparison will evaluate to "false."
-        ///   For example, if you do not specify a core assembly, Type.IsPrimitive will return false for everything,
-        ///   even types named "System.Int32". Similarly, Type.GetTypeCode() will return TypeCode.Object for everything.
-        ///
-        /// - If a metadata entity sets flags that surface as a pseudo-custom attribute, and the core assembly does not contain the pseudo-custom attribute
-        ///   type, the necessary constructor or any of the parameter types of the constructor, the MetadataLoadContext will not throw. It will omit the pseudo-custom
-        ///   attribute from the list of returned attributes.
+        /// If a core assembly cannot be found or if the core assembly is missing types, the constructor of MetadataLoadContext will throw an exception.
         /// </summary>
-        public Assembly? CoreAssembly
+        public Assembly CoreAssembly
         {
             get
             {
@@ -260,6 +241,17 @@ namespace System.Reflection
                 throw new ObjectDisposedException(nameof(MetadataLoadContext));
 
             return _loadedAssemblies.Values;
+        }
+
+        /// <summary>
+        /// Returns the <see cref="MetadataLoadContext"/> that an <see cref="Assembly"/> was loaded into,
+        /// or <see langword="null"/> if the assembly was not loaded by a <see cref="MetadataLoadContext"/>.
+        /// </summary>
+        /// <param name="assembly">The assembly object to examine.</param>
+        public static MetadataLoadContext? GetLoadContext(Assembly assembly)
+        {
+            ArgumentNullException.ThrowIfNull(assembly);
+            return (assembly as RoAssembly)?.Loader;
         }
 
         /// <summary>

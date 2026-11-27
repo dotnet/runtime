@@ -10,4 +10,7 @@
     <Compile Include="VolatileTest_op_and.cs" />
     <Compile Include="VolatileTest_op_shr.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

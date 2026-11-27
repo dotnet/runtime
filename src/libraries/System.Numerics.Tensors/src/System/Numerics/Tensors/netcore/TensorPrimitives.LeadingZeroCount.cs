@@ -29,9 +29,12 @@ namespace System.Numerics.Tensors
         internal readonly unsafe struct LeadingZeroCountOperator<T> : IUnaryOperator<T, T> where T : IBinaryInteger<T>
         {
             public static bool Vectorizable =>
-                (Avx512CD.VL.IsSupported && (sizeof(T) == 2 || sizeof(T) == 4 || sizeof(T) == 8)) ||
-                (Avx512Vbmi.VL.IsSupported && sizeof(T) == 1) ||
-                (AdvSimd.IsSupported && (sizeof(T) == 1 || sizeof(T) == 2 || sizeof(T) == 4));
+                // byte/ushort: the software fallback (bit-smear + PopCount) is a measured win at these widths.
+                // uint/ulong: a serial smear chain over only 2-4 lanes doesn't beat a single-instruction scalar
+                // clz (x86 lzcnt, wasm i32/i64.clz), so we only vectorize them with a hardware vector clz.
+                (sizeof(T) == 1 || sizeof(T) == 2) ||
+                (Avx512CD.VL.IsSupported && (sizeof(T) == 4 || sizeof(T) == 8)) ||
+                (AdvSimd.IsSupported && sizeof(T) == 4);
 
             public static T Invoke(T x) => T.LeadingZeroCount(x);
 
@@ -77,13 +80,36 @@ namespace System.Numerics.Tensors
                     }
                 }
 
-                Debug.Assert(AdvSimd.IsSupported);
+                if (AdvSimd.IsSupported)
                 {
                     if (sizeof(T) == 1) return AdvSimd.LeadingZeroCount(x.AsByte()).As<byte, T>();
                     if (sizeof(T) == 2) return AdvSimd.LeadingZeroCount(x.AsUInt16()).As<ushort, T>();
 
                     Debug.Assert(sizeof(T) == 4);
                     return AdvSimd.LeadingZeroCount(x.AsUInt32()).As<uint, T>();
+                }
+
+                // Software fallback (byte/ushort only): smear the most-significant set bit down so every
+                // lower bit is set, then LeadingZeroCount == bitWidth - PopCount(smeared).
+                if (sizeof(T) == 1)
+                {
+                    // Byte shifts are unavailable on some ISAs, so shift as 16-bit and mask off the
+                    // bits that bleed in from the adjacent higher byte.
+                    Vector128<byte> v = x.AsByte();
+                    v |= (v.AsUInt16() >> 1).AsByte() & Vector128.Create((byte)0x7F);
+                    v |= (v.AsUInt16() >> 2).AsByte() & Vector128.Create((byte)0x3F);
+                    v |= (v.AsUInt16() >> 4).AsByte() & Vector128.Create((byte)0x0F);
+                    return (Vector128.Create((byte)8) - PopCountOperator<byte>.Invoke(v)).As<byte, T>();
+                }
+
+                Debug.Assert(sizeof(T) == 2);
+                {
+                    Vector128<ushort> v = x.AsUInt16();
+                    v |= v >> 1;
+                    v |= v >> 2;
+                    v |= v >> 4;
+                    v |= v >> 8;
+                    return (Vector128.Create((ushort)16) - PopCountOperator<ushort>.Invoke(v)).As<ushort, T>();
                 }
             }
 

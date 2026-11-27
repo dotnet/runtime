@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -22,7 +22,7 @@ namespace System.IO
         /// <exception cref="PathTooLongException">Thrown if we have a string that is too large to fit into a UNICODE_STRING.</exception>
         /// <exception cref="IOException">Thrown if the path is empty.</exception>
         /// <returns>Normalized path</returns>
-        internal static string Normalize(string path)
+        internal static unsafe string Normalize(string path)
         {
             var builder = new ValueStringBuilder(stackalloc char[PathInternal.MaxShortPath]);
 
@@ -31,7 +31,7 @@ namespace System.IO
 
             // If we have the exact same string we were passed in, don't allocate another string.
             // TryExpandShortName does this input identity check.
-            string result = builder.AsSpan().IndexOf('~') >= 0
+            string result = builder.AsSpan().Contains('~')
                 ? TryExpandShortFileName(ref builder, originalPath: path)
                 : builder.AsSpan().Equals(path.AsSpan(), StringComparison.Ordinal) ? path : builder.ToString();
 
@@ -46,7 +46,7 @@ namespace System.IO
         /// <remarks>
         /// Exceptions are the same as the string overload.
         /// </remarks>
-        internal static string Normalize(ref ValueStringBuilder path)
+        internal static unsafe string Normalize(ref ValueStringBuilder path)
         {
             var builder = new ValueStringBuilder(stackalloc char[PathInternal.MaxShortPath]);
 
@@ -54,7 +54,7 @@ namespace System.IO
             path.NullTerminate();
             GetFullPathName(path.AsSpan(), ref builder);
 
-            string result = builder.AsSpan().IndexOf('~') >= 0
+            string result = builder.AsSpan().Contains('~')
                 ? TryExpandShortFileName(ref builder, originalPath: null)
                 : builder.ToString();
 

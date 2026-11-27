@@ -18,7 +18,6 @@
 #include "daccess.h"
 #include "stressLog.h"
 #include "holder.h"
-#include "Crst.h"
 #include "rhassert.h"
 #include "slist.h"
 #include "regdisplay.h"
@@ -30,6 +29,7 @@
 #include "thread.inl"
 #include "volatile.h"
 #include "minipal/time.h"
+#include "minipal/thread.h"
 
 #ifdef STRESS_LOG
 
@@ -96,10 +96,10 @@ void StressLog::Initialize(unsigned facilities,  unsigned level, unsigned maxByt
         return;
     }
 
-    g_pStressLog = &theLog;
+    bool success = minipal_mutex_init(&theLog.lock);
+    _ASSERTE(success);
 
-    theLog.pLock = new (nothrow) CrstStatic();
-    theLog.pLock->Init(CrstStressLog);
+    g_pStressLog = &theLog;
     if (maxBytesPerThread < STRESSLOG_CHUNK_SIZE)
     {
         maxBytesPerThread = STRESSLOG_CHUNK_SIZE;
@@ -146,8 +146,7 @@ ThreadStressLog* StressLog::CreateThreadStressLog(Thread * pThread) {
         return NULL;
     }
 
-    CrstHolder holder(theLog.pLock);
-
+    minipal::MutexHolder holder(theLog.lock);
     msgs = CreateThreadStressLogHelper(pThread);
 
     return msgs;
@@ -337,7 +336,7 @@ void ThreadStressLog::LogMsg ( uint32_t facility, int cArgs, const char* format,
         msg->args[i] = data;
     }
 
-    ASSERT(IsValid() && threadId == PalGetCurrentOSThreadId());
+    ASSERT(IsValid() && threadId == minipal_get_current_thread_id());
 }
 
 
@@ -345,7 +344,7 @@ void ThreadStressLog::Activate (Thread * pThread)
 {
     _ASSERTE(pThread != NULL);
     //there is no need to zero buffers because we could handle garbage contents
-    threadId = PalGetCurrentOSThreadId();
+    threadId = minipal_get_current_thread_id();
     isDead = FALSE;
     curWriteChunk = chunkListTail;
     curPtr = (StressMsg *)curWriteChunk->EndPtr ();
@@ -578,4 +577,3 @@ void StressLog::EnumStressLogMemRanges(/*STRESSLOGMEMRANGECALLBACK*/void* slmrcb
 #endif // !DACCESS_COMPILE
 
 #endif // STRESS_LOG
-

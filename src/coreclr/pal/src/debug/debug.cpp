@@ -2,40 +2,27 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*++
-
-
-
 Module Name:
-
     debug.c
 
 Abstract:
-
     Implementation of Win32 debugging API functions.
-
-Revision History:
-
-
-
 --*/
-
 
 #include "pal/dbgmsg.h"
 SET_DEFAULT_DEBUG_CHANNEL(DEBUG); // some headers have code with asserts, so do this first
 
 #include "pal/thread.hpp"
 #include "pal/procobj.hpp"
-#include "pal/file.hpp"
 
 #include "pal/palinternal.h"
 #include "pal/process.h"
 #include "pal/context.h"
 #include "pal/debug.h"
-#include "pal/environ.h"
 #include "pal/module.h"
 #include "pal/stackstring.hpp"
-#include "pal/virtual.h"
 #include "pal/utils.h"
+#include <minipal/environ.h>
 
 #include <signal.h>
 #include <unistd.h>
@@ -65,10 +52,6 @@ SET_DEFAULT_DEBUG_CHANNEL(DEBUG); // some headers have code with asserts, so do 
 #endif
 #endif // __APPLE__
 
-#ifdef __EMSCRIPTEN__
-#include <emscripten/heap.h>
-#endif // __EMSCRIPTEN__
-
 #if HAVE_MACH_EXCEPTIONS
 #include "../exception/machexception.h"
 #endif // HAVE_MACH_EXCEPTIONS
@@ -76,13 +59,6 @@ SET_DEFAULT_DEBUG_CHANNEL(DEBUG); // some headers have code with asserts, so do 
 using namespace CorUnix;
 
 extern "C" void DBG_DebugBreak_End();
-extern size_t OffsetWithinPage(off_t addr);
-
-#if HAVE_PROCFS_CTL
-#define CTL_ATTACH      "attach"
-#define CTL_DETACH      "detach"
-#define CTL_WAIT        "wait"
-#endif   // HAVE_PROCFS_CTL
 
 /* ------------------- Constant definitions ----------------------------------*/
 
@@ -90,7 +66,6 @@ extern size_t OffsetWithinPage(off_t addr);
 const BOOL DBG_ATTACH       = TRUE;
 const BOOL DBG_DETACH       = FALSE;
 #endif
-static const char PAL_OUTPUTDEBUGSTRING[]    = "PAL_OUTPUTDEBUGSTRING";
 
 #if defined(_DEBUG) && !defined(TARGET_IOS) && !defined(TARGET_TVOS)
 #define ENABLE_RUN_ON_DEBUG_BREAK 1
@@ -101,140 +76,6 @@ static const char PAL_RUN_ON_DEBUG_BREAK[]   = "PAL_RUN_ON_DEBUG_BREAK";
 #endif // ENABLE_RUN_ON_DEBUG_BREAK
 
 extern "C" {
-
-/*++
-Function:
-  FlushInstructionCache
-
-The FlushInstructionCache function flushes the instruction cache for
-the specified process.
-
-Remarks
-
-This is a no-op for x86 architectures where the instruction and data
-caches are coherent in hardware. For non-X86 architectures, this call
-usually maps to a kernel API to flush the D-caches on all processors.
-
-It is also no-op on wasm. We don't have a way to flush the instruction
-cache and it is also not needed.
-
---*/
-BOOL
-PALAPI
-FlushInstructionCache(
-        IN HANDLE hProcess,
-        IN LPCVOID lpBaseAddress,
-        IN SIZE_T dwSize)
-{
-    BOOL Ret;
-
-    PERF_ENTRY(FlushInstructionCache);
-    ENTRY("FlushInstructionCache (hProcess=%p, lpBaseAddress=%p dwSize=%d)\
-          \n", hProcess, lpBaseAddress, dwSize);
-
-    if (lpBaseAddress != NULL)
-    {
-        Ret = DBG_FlushInstructionCache(lpBaseAddress, dwSize);
-    }
-    else
-    {
-        Ret = TRUE;
-    }
-
-    LOGEXIT("FlushInstructionCache returns BOOL %d\n", Ret);
-    PERF_EXIT(FlushInstructionCache);
-    return Ret;
-}
-
-
-/*++
-Function:
-  OutputDebugStringA
-
-See MSDN doc.
---*/
-VOID
-PALAPI
-OutputDebugStringA(
-        IN LPCSTR lpOutputString)
-{
-    PERF_ENTRY(OutputDebugStringA);
-    ENTRY("OutputDebugStringA (lpOutputString=%p (%s))\n",
-          lpOutputString ? lpOutputString : "NULL",
-          lpOutputString ? lpOutputString : "NULL");
-
-    // As we don't support debug events, we are going to output the debug string
-    // to stderr instead of generating OUT_DEBUG_STRING_EVENT. It's safe to tell
-    // EnvironGetenv not to make a copy of the value here since we only want to
-    // check whether it exists, not actually use it.
-    if ((lpOutputString != NULL) &&
-        (NULL != EnvironGetenv(PAL_OUTPUTDEBUGSTRING, /* copyValue */ FALSE)))
-    {
-        fprintf(stderr, "%s", lpOutputString);
-    }
-
-    LOGEXIT("OutputDebugStringA returns\n");
-    PERF_EXIT(OutputDebugStringA);
-}
-
-/*++
-Function:
-  OutputDebugStringW
-
-See MSDN doc.
---*/
-VOID
-PALAPI
-OutputDebugStringW(
-        IN LPCWSTR lpOutputString)
-{
-    CHAR *lpOutputStringA;
-    int strLen;
-
-    PERF_ENTRY(OutputDebugStringW);
-    ENTRY("OutputDebugStringW (lpOutputString=%p (%S))\n",
-          lpOutputString ? lpOutputString: W16_NULLSTRING,
-          lpOutputString ? lpOutputString: W16_NULLSTRING);
-
-    if (lpOutputString == NULL)
-    {
-        OutputDebugStringA("");
-        goto EXIT;
-    }
-
-    if ((strLen = WideCharToMultiByte(CP_ACP, 0, lpOutputString, -1, NULL, 0,
-                                      NULL, NULL))
-        == 0)
-    {
-        ASSERT("failed to get wide chars length\n");
-        SetLastError(ERROR_INTERNAL_ERROR);
-        goto EXIT;
-    }
-
-    /* strLen includes the null terminator */
-    if ((lpOutputStringA = (LPSTR) malloc((strLen * sizeof(CHAR)))) == NULL)
-    {
-        ERROR("Insufficient memory available !\n");
-        SetLastError(ERROR_NOT_ENOUGH_MEMORY);
-        goto EXIT;
-    }
-
-    if(! WideCharToMultiByte(CP_ACP, 0, lpOutputString, -1,
-                             lpOutputStringA, strLen, NULL, NULL))
-    {
-        ASSERT("failed to convert wide chars to multibytes\n");
-        SetLastError(ERROR_INTERNAL_ERROR);
-        free(lpOutputStringA);
-        goto EXIT;
-    }
-
-    OutputDebugStringA(lpOutputStringA);
-    free(lpOutputStringA);
-
-EXIT:
-    LOGEXIT("OutputDebugStringW returns\n");
-    PERF_EXIT(OutputDebugStringW);
-}
 
 #ifdef ENABLE_RUN_ON_DEBUG_BREAK
 /*
@@ -268,9 +109,12 @@ EXIT:
        'set -x; ddd $PAL_EXE_NAME $PAL_EXE_PID'
 */
 
+#define PID_TEXT "PAL_EXE_PID="
+#define EXE_TEXT "PAL_EXE_NAME="
+
 static
 int
-run_debug_command (const char *command)
+run_debug_command (const char *command, char *pid_entry, char *exe_entry)
 {
     int pid;
     Volatile<int> spin = 1;
@@ -279,17 +123,46 @@ run_debug_command (const char *command)
         return 1;
     }
 
+    char **environment = minipal_environ_get();
+    size_t count = 0;
+    while (environment[count] != NULL)
+    {
+        count++;
+    }
+
+    char **child_environment = (char **)malloc((count + 3) * sizeof(char *));
+    if (child_environment == NULL)
+    {
+        return -1;
+    }
+
+    size_t child_count = 0;
+    child_environment[child_count++] = pid_entry;
+    child_environment[child_count++] = exe_entry;
+    for (size_t i = 0; i < count; i++)
+    {
+        if (strncmp(environment[i], PID_TEXT, strlen(PID_TEXT)) != 0 &&
+            strncmp(environment[i], EXE_TEXT, strlen(EXE_TEXT)) != 0)
+        {
+            child_environment[child_count++] = environment[i];
+        }
+    }
+    child_environment[child_count] = NULL;
+
     printf("Spawning command: %s\n", command);
 
     pid = fork();
     if (pid == -1) {
+        free(child_environment);
         return -1;
     }
     if (pid == 0) {
         const char *argv[4] = { "sh", "-c", command, 0 };
-        execv("/bin/sh", (char **)argv);
+        execve("/bin/sh", (char **)argv, child_environment);
         exit(127);
     }
+
+    free(child_environment);
 
     /* We continue either when the spawned process has stopped, or when
        an attached debugger sets spin to 0 */
@@ -321,9 +194,6 @@ run_debug_command (const char *command)
 }
 #endif // ENABLE_RUN_ON_DEBUG_BREAK
 
-#define PID_TEXT "PAL_EXE_PID="
-#define EXE_TEXT "PAL_EXE_NAME="
-
 static
 int
 DebugBreakCommand()
@@ -331,7 +201,7 @@ DebugBreakCommand()
 #ifdef ENABLE_RUN_ON_DEBUG_BREAK
     extern MODSTRUCT exe_module;
 
-    char *command_string = EnvironGetenv(PAL_RUN_ON_DEBUG_BREAK);
+    const char *command_string = getenv(PAL_RUN_ON_DEBUG_BREAK);
     if (command_string)
     {
         char pid_buf[sizeof (PID_TEXT) + 32];
@@ -340,7 +210,7 @@ DebugBreakCommand()
 
         if (exe_module.lib_name != NULL)
         {
-            libNameLength = PAL_wcslen(exe_module.lib_name);
+            libNameLength = minipal_u16_strlen((const CHAR16_T*)exe_module.lib_name);
         }
 
         SIZE_T dwexe_buf = strlen(EXE_TEXT) + libNameLength + 1;
@@ -362,21 +232,12 @@ DebugBreakCommand()
         }
 
         exe_bufString.CloseBuffer(dwexe_buf);
-        /* strictly speaking, we might want to only set these environment
-           variables in the child process, but if we do that we can't check
-           for errors. putenv/setenv can fail when out of memory */
 
-        if (!EnvironPutenv (pid_buf, FALSE) || !EnvironPutenv (exe_buf, FALSE))
+        if (run_debug_command (command_string, pid_buf, exe_buf))
         {
             goto FAILED;
         }
 
-        if (run_debug_command (command_string))
-        {
-            goto FAILED;
-        }
-
-        free(command_string);
         return 1;
     }
 
@@ -386,7 +247,6 @@ FAILED:
     if (command_string)
     {
         fprintf (stderr, "Failed to execute command: '%s'\n", command_string);
-        free(command_string);
     }
 
     return -1;
@@ -472,7 +332,7 @@ GetThreadContext(
         if (!pTargetThread->IsDummy())
         {
             ret = CONTEXT_GetThreadContext(
-                GetCurrentProcessId(),
+                gPID,
                 pTargetThread->GetPThreadSelf(),
                 lpContext
                 );
@@ -533,7 +393,7 @@ SetThreadContext(
         if (!pTargetThread->IsDummy())
         {
             ret = CONTEXT_SetThreadContext(
-                GetCurrentProcessId(),
+                gPID,
                 pTargetThread->GetPThreadSelf(),
                 lpContext
                 );
@@ -557,285 +417,6 @@ SetThreadContext(
     return ret;
 }
 
-/*++
-Function:
-  PAL_OpenProcessMemory
 
-Abstract
-  Creates the handle for PAL_ReadProcessMemory.
-
-Parameter
-  processId : process id to read memory
-  pHandle : returns a platform specific handle or UINT32_MAX if failed
-
-Return
-  true successful, false invalid process id or not supported.
---*/
-BOOL
-PALAPI
-PAL_OpenProcessMemory(
-    IN DWORD processId,
-    OUT DWORD* pHandle
-)
-{
-    ENTRY("PAL_OpenProcessMemory(pid=%d)\n", processId);
-    _ASSERTE(pHandle != nullptr);
-    *pHandle = UINT32_MAX;
-#ifdef __APPLE__
-    mach_port_name_t port;
-    kern_return_t result = ::task_for_pid(mach_task_self(), (int)processId, &port);
-    if (result != KERN_SUCCESS)
-    {
-        ERROR("task_for_pid(%d) FAILED %x %s\n", processId, result, mach_error_string(result));
-        LOGEXIT("PAL_OpenProcessMemory FALSE\n");
-        return FALSE;
-    }
-    *pHandle = port;
-#else
-    char memPath[128];
-    _snprintf_s(memPath, sizeof(memPath), sizeof(memPath), "/proc/%lu/mem", processId);
-
-    int fd = open(memPath, O_RDONLY);
-    if (fd == -1)
-    {
-        ERROR("open(%s) FAILED %d (%s)\n", memPath, errno, strerror(errno));
-        LOGEXIT("PAL_OpenProcessMemory FALSE\n");
-        return FALSE;
-    }
-    *pHandle = fd;
-#endif
-    LOGEXIT("PAL_OpenProcessMemory TRUE\n");
-    return TRUE;
-}
-
-/*++
-Function:
-  PAL_CloseProcessMemory
-
-Abstract
-  Closes the PAL_OpenProcessMemory handle.
-
-Parameter
-  handle : from PAL_OpenProcessMemory
-
-Return
-  none
---*/
-VOID
-PALAPI
-PAL_CloseProcessMemory(
-    IN DWORD handle
-)
-{
-    ENTRY("PAL_CloseProcessMemory(handle=%x)\n", handle);
-    if (handle != UINT32_MAX)
-    {
-#ifdef __APPLE__
-        kern_return_t result = ::mach_port_deallocate(mach_task_self(), (mach_port_name_t)handle);
-        if (result != KERN_SUCCESS)
-        {
-            ERROR("mach_port_deallocate FAILED %x %s\n", result, mach_error_string(result));
-        }
-#else
-        close(handle);
-#endif
-    }
-    LOGEXIT("PAL_CloseProcessMemory\n");
-}
-
-/*++
-Function:
-  PAL_ReadProcessMemory
-
-Abstract
-  Reads process memory.
-
-Parameter
-  handle : from PAL_OpenProcessMemory
-  address : address of memory to read
-  buffer : buffer to read memory to
-  size : number of bytes to read
-  numberOfBytesRead: number of bytes read (optional)
-
-Return
-  true read memory is successful, false if not.
---*/
-BOOL
-PALAPI
-PAL_ReadProcessMemory(
-    IN DWORD handle,
-    IN ULONG64 address,
-    IN LPVOID buffer,
-    IN SIZE_T size,
-    OUT SIZE_T* numberOfBytesRead)
-{
-    ENTRY("PAL_ReadProcessMemory(handle=%x, address=%p buffer=%p size=%d)\n", handle, (void*)address, buffer, size);
-    _ASSERTE(handle != 0);
-    _ASSERTE(numberOfBytesRead != nullptr);
-    BOOL result = TRUE;
-    size_t read = 0;
-#ifdef __APPLE__
-    vm_map_t task = (vm_map_t)handle;
-
-    // vm_read_overwrite usually requires that the address be page-aligned
-    // and the size be a multiple of the page size.  We can't differentiate
-    // between the cases in which that's required and those in which it
-    // isn't, so we do it all the time.
-    const size_t pageSize = GetVirtualPageSize();
-    vm_address_t addressAligned = ALIGN_DOWN(address, pageSize);
-    ssize_t offset = OffsetWithinPage(address);
-    ssize_t bytesLeft = size;
-
-    char *data = (char*)malloc(pageSize);
-    if (data != nullptr)
-    {
-        while (bytesLeft > 0)
-        {
-            vm_size_t bytesRead = pageSize;
-            kern_return_t result = ::vm_read_overwrite(task, addressAligned, pageSize, (vm_address_t)data, &bytesRead);
-            if (result != KERN_SUCCESS || bytesRead != pageSize)
-            {
-                TRACE("PAL_ReadProcessMemory(%p %d): vm_read_overwrite failed bytesLeft %d bytesRead %d from %p: %x %s\n",
-                    (void*)address, size, bytesLeft, bytesRead, (void*)addressAligned, result, mach_error_string(result));
-                break;
-            }
-            ssize_t bytesToCopy = pageSize - offset;
-            if (bytesToCopy > bytesLeft)
-            {
-                bytesToCopy = bytesLeft;
-            }
-            memcpy((LPSTR)buffer + read, data + offset, bytesToCopy);
-            addressAligned = addressAligned + pageSize;
-            read += bytesToCopy;
-            bytesLeft -= bytesToCopy;
-            offset = 0;
-        }
-        result = size == 0 || read > 0;
-    }
-    else
-    {
-        ERROR("malloc(%d) FAILED\n", pageSize);
-        result = FALSE;
-    }
-
-    if (data != nullptr)
-    {
-        free(data);
-    }
-#else
-    // Android's heap allocator (scudo) uses ARM64 Top-Byte Ignore (TBI) for memory tagging.
-    // pread on /proc/<pid>/mem treats the offset as a file position, not a virtual address,
-    // so the kernel does not apply TBI — tagged pointers cause EINVAL.
-    // See https://www.kernel.org/doc/html/latest/arch/arm64/tagged-address-abi.html
-    //
-    // Currently only Android allocators set a non-zero top byte, so on other ARM64 Linux
-    // configurations this is a no-op. However, any future use of TBI tagging (e.g., ARM MTE)
-    // on other Linux distros would hit the same issue.
-#ifdef TARGET_ARM64
-    address &= 0x00FFFFFFFFFFFFFFULL;
-#endif
-    read = pread(handle, buffer, size, address);
-    if (read == (size_t)-1)
-    {
-        result = FALSE;
-    }
-#endif
-    *numberOfBytesRead = read;
-    LOGEXIT("PAL_ReadProcessMemory result=%d bytes read=%d\n", result, read);
-    return result;
-}
-
-/*++
-Function:
-  PAL_ProbeMemory
-
-Abstract
-
-Parameter
-  pBuffer : address of memory to validate
-  cbBuffer : size of memory region to validate
-  fWriteAccess : if true, validate writable access, else just readable.
-
-Return
-  true if memory is valid, false if not.
---*/
-BOOL
-PALAPI
-PAL_ProbeMemory(
-    PVOID pBuffer,
-    DWORD cbBuffer,
-    BOOL fWriteAccess)
-{
-#if defined(TARGET_BROWSER)
-    if ((uintptr_t)((PBYTE)pBuffer + cbBuffer) <= emscripten_get_heap_size())
-    {
-        return TRUE;
-    }
-    return FALSE;
-#elif defined(TARGET_WASI)
-    if ((uintptr_t)((PBYTE)pBuffer + cbBuffer) <= (__builtin_wasm_memory_size(0) * 65536))
-    {
-        return TRUE;
-    }
-    return FALSE;
-#else // TARGET_BROWSER || TARGET_WASI
-    int fds[2];
-    int flags;
-
-    if (pipe(fds) != 0)
-    {
-        ASSERT("pipe failed: errno is %d (%s)\n", errno, strerror(errno));
-        return FALSE;
-    }
-
-    flags = fcntl(fds[0], F_GETFL, 0);
-    fcntl(fds[0], F_SETFL, flags | O_NONBLOCK);
-
-    flags = fcntl(fds[1], F_GETFL, 0);
-    fcntl(fds[1], F_SETFL, flags | O_NONBLOCK);
-
-    PVOID pEnd = (PBYTE)pBuffer + cbBuffer;
-    BOOL result = TRUE;
-
-    // Validate the first byte in the buffer, then validate the first byte on each page after that.
-    while (pBuffer < pEnd)
-    {
-        int written = write(fds[1], pBuffer, 1);
-        if (written == -1)
-        {
-            if (errno != EFAULT)
-            {
-                ASSERT("write failed: errno is %d (%s)\n", errno, strerror(errno));
-            }
-            result = FALSE;
-            break;
-        }
-        else
-        {
-            if (fWriteAccess)
-            {
-                int rd = read(fds[0], pBuffer, 1);
-                if (rd == -1)
-                {
-                    if (errno != EFAULT)
-                    {
-                        ASSERT("read failed: errno is %d (%s)\n", errno, strerror(errno));
-                    }
-                    result = FALSE;
-                    break;
-                }
-            }
-        }
-
-        // Round to the beginning of the next page
-        pBuffer = PVOID(ALIGN_DOWN((SIZE_T)pBuffer, GetVirtualPageSize()) + GetVirtualPageSize());
-    }
-
-    close(fds[0]);
-    close(fds[1]);
-
-    return result;
-#endif // TARGET_BROWSER || TARGET_WASI
-}
 
 } // extern "C"

@@ -3,11 +3,13 @@
 
 using System.Buffers.Binary;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using Xunit;
 
 namespace System.IO.Hashing.Tests
 {
+    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
     public abstract class NonCryptoHashTestDriver
     {
         private readonly int _hashLengthInBytes;
@@ -463,7 +465,12 @@ namespace System.IO.Hashing.Tests
             public IEnumerable<ReadOnlyMemory<byte>> EnumerateDataChunks()
             {
 #if NET
-                byte[] chunk = GC.AllocateUninitializedArray<byte>(1024 * 1024);
+                byte[] chunk;
+                // SAFETY: To be audited
+                unsafe
+                {
+                    chunk = GC.AllocateUninitializedArray<byte>(1024 * 1024);
+                }
 #else
                 byte[] chunk = new byte[1024 * 1024];
 #endif

@@ -270,7 +270,9 @@ There is another random number generator in `upstream/emscripten/src/determinist
 which needs the same treatment.
 
 Running `make patch-deterministic` in `src/mono/wasm` will patch the
-emscripten installation in `src/mono/browser/emsdk` with these changes.
+provisioned emscripten installation with these changes. Run
+`./build.sh -s provision.emsdk -os browser` first and use the reported path,
+or set `EMSDK_PATH` to point at your own installation.
 
 ### Debugging Signature Mismatch Errors
 
@@ -528,7 +530,7 @@ Replace it with this (note that for a `blazor` project, `Blazor.start` needs an 
 
 ## References
 
-- [Testing Libraries on WebAssembly](../testing/libraries/testing-wasm.md)
+- [Testing Libraries on WebAssembly](../../testing/libraries/testing-wasm.md)
 - [Debugging WebAssembly Libraries](../testing/libraries/debugging-wasm.md)
-- [WASI Support](../../src/mono/wasi/README.md)
-- [VS Code Debugging Guide](debugging/libraries/debugging-vscode.md)
+- [WASI Support](../../../../src/mono/wasi/README.md)
+- [VS Code Debugging Guide](../libraries/debugging-vscode.md)

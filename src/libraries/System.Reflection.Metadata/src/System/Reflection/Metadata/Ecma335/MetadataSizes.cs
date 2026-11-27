@@ -3,6 +3,7 @@
 
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Numerics;
 using System.Reflection.Internal;
 
 namespace System.Reflection.Metadata.Ecma335
@@ -360,14 +361,14 @@ namespace System.Reflection.Metadata.Ecma335
                 const int StandalonePdbStreamHeaderSize = 16;
 
                 Debug.Assert(RegularStreamHeaderSizes ==
-                    GetMetadataStreamHeaderSize("#~") +
-                    GetMetadataStreamHeaderSize("#Strings") +
-                    GetMetadataStreamHeaderSize("#US") +
-                    GetMetadataStreamHeaderSize("#GUID") +
-                    GetMetadataStreamHeaderSize("#Blob"));
+                    GetMetadataStreamHeaderSize("#~"u8) +
+                    GetMetadataStreamHeaderSize("#Strings"u8) +
+                    GetMetadataStreamHeaderSize("#US"u8) +
+                    GetMetadataStreamHeaderSize("#GUID"u8) +
+                    GetMetadataStreamHeaderSize("#Blob"u8));
 
-                Debug.Assert(EncDeltaMarkerStreamHeaderSize == GetMetadataStreamHeaderSize("#JTD"));
-                Debug.Assert(StandalonePdbStreamHeaderSize == GetMetadataStreamHeaderSize("#Pdb"));
+                Debug.Assert(EncDeltaMarkerStreamHeaderSize == GetMetadataStreamHeaderSize("#JTD"u8));
+                Debug.Assert(StandalonePdbStreamHeaderSize == GetMetadataStreamHeaderSize("#Pdb"u8));
 
                 return
                     sizeof(uint) +                 // signature
@@ -384,7 +385,7 @@ namespace System.Reflection.Metadata.Ecma335
             }
         }
 
-        internal static int GetMetadataStreamHeaderSize(string streamName)
+        internal static int GetMetadataStreamHeaderSize(ReadOnlySpan<byte> streamName)
         {
             return
                 sizeof(int) + // offset
@@ -403,7 +404,7 @@ namespace System.Reflection.Metadata.Ecma335
         public int GetAlignedHeapSize(HeapIndex index)
         {
             int i = (int)index;
-            if (i < 0 || i > HeapSizes.Length)
+            if (i < 0 || i >= HeapSizes.Length)
             {
                 Throw.ArgumentOutOfRange(nameof(index));
             }
@@ -440,7 +441,7 @@ namespace System.Reflection.Metadata.Ecma335
                 PdbIdSize +                                                         // PDB ID
                 sizeof(int) +                                                       // EntryPoint
                 sizeof(long) +                                                      // ReferencedTypeSystemTables
-                BitArithmetic.CountBits(ExternalTablesMask) * sizeof(int); // External row counts
+                BitOperations.PopCount(ExternalTablesMask) * sizeof(int); // External row counts
 
             Debug.Assert(result % StreamAlignment == 0);
             return result;

@@ -9,7 +9,6 @@ namespace Wasm.Build.Tests;
 
 public record PublishOptions : MSBuildOptions
 {
-    public bool BuildOnlyAfterPublish { get; init; }
     public bool ExpectRelinkDirWhenPublishing { get; init; }
 
     public PublishOptions(
@@ -26,10 +25,8 @@ public record PublishOptions : MSBuildOptions
         bool WarnAsError                                            = true,
         RuntimeVariant RuntimeType                                  = RuntimeVariant.SingleThreaded,
         IDictionary<string, string>? ExtraBuildEnvironmentVariables = null,
-        string? BootConfigFileName                                  = null,
         string NonDefaultFrameworkDir                               = "",
         string ExtraMSBuildArgs                                     = "",
-        bool BuildOnlyAfterPublish                                  = true,
         bool ExpectRelinkDirWhenPublishing                          = false,
         bool EnableDiagnostics                                      = false
     ) : base(
@@ -46,14 +43,12 @@ public record PublishOptions : MSBuildOptions
         WarnAsError,
         RuntimeType,
         ExtraBuildEnvironmentVariables,
-        BootConfigFileName,
         NonDefaultFrameworkDir,
         ExtraMSBuildArgs,
         EnableDiagnostics
     )
     {
         this.IsPublish = IsPublish;
-        this.BuildOnlyAfterPublish = BuildOnlyAfterPublish;
         this.ExpectRelinkDirWhenPublishing = ExpectRelinkDirWhenPublishing;
     }
 }

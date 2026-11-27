@@ -99,7 +99,9 @@ PALEXPORT uint32_t NetSecurityNative_ReleaseName(uint32_t* minorStatus, GssName*
 /*
 Shims the gss_acquire_cred method with GSS_C_ACCEPT.
 */
-PALEXPORT uint32_t NetSecurityNative_AcquireAcceptorCred(uint32_t* minorStatus, GssCredId** outputCredHandle);
+PALEXPORT uint32_t NetSecurityNative_AcquireAcceptorCred(uint32_t* minorStatus,
+                                                      int32_t packageType,
+                                                      GssCredId** outputCredHandle);
 
 /*
 Shims the gss_acquire_cred method with SPNEGO oids with  GSS_C_INITIATE.
@@ -147,6 +149,8 @@ Shims the gss_accept_sec_context method.
 PALEXPORT uint32_t NetSecurityNative_AcceptSecContext(uint32_t* minorStatus,
                                                       GssCredId* acceptorCredHandle,
                                                       GssCtxId** contextHandle,
+                                                      void* cbt,
+                                                      int32_t cbtSize,
                                                       uint8_t* inputBytes,
                                                       uint32_t inputLength,
                                                       PAL_GssBuffer* outBuffer,
@@ -214,11 +218,37 @@ Shims the gss_indicate_mechs method to detect if NTLM mech is installed.
 PALEXPORT uint32_t NetSecurityNative_IsNtlmInstalled(void);
 
 /*
+Returns whether gss_get_name_attribute is available from the loaded GSSAPI implementation.
+*/
+PALEXPORT int32_t NetSecurityNative_IsGetNameAttributeSupported(void);
+
+/*
 Shims gss_inquire_context and gss_display_name to get the remote user principal name.
 */
 PALEXPORT uint32_t NetSecurityNative_GetUser(uint32_t* minorStatus,
                                              GssCtxId* contextHandle,
                                              PAL_GssBuffer* outBuffer);
+
+/*
+Shims gss_inquire_context and gss_get_name_attribute to retrieve a named attribute of the
+peer principal, such as "urn:mspac:logon-info" for the Kerberos PAC logon information.
+
+Name attributes are an optional GSSAPI feature (RFC 6680) and individual attributes are
+frequently absent, so neither condition is reported as an error. Both are reported by
+setting isAvailable to 0 and returning GSS_S_COMPLETE with an empty outBuffer. Failures
+while querying the established context or retrieving an available attribute are returned
+to the caller.
+
+isAuthenticated reports whether the GSSAPI mechanism vouches for the attribute value. A
+value of 0 means the mechanism could not verify it and it must not be trusted.
+*/
+PALEXPORT uint32_t NetSecurityNative_GetNameAttribute(uint32_t* minorStatus,
+                                                      GssCtxId* contextHandle,
+                                                      const char* attributeName,
+                                                      uint32_t attributeNameLen,
+                                                      int32_t* isAvailable,
+                                                      int32_t* isAuthenticated,
+                                                      PAL_GssBuffer* outBuffer);
 
 /*
 Performs initialization of GSS shim, if necessary.

@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
@@ -11,7 +11,7 @@ internal static partial class Interop
     /// the correct size of buffer to make. So invoke the interop call with an
     /// increasing buffer until the size is big enough.
     /// </summary>
-    internal static bool CallStringMethod<TArg1, TArg2, TArg3>(
+    internal static unsafe bool CallStringMethod<TArg1, TArg2, TArg3>(
         SpanFunc<char, TArg1, TArg2, TArg3, Globalization.ResultCode> interopCall,
         TArg1 arg1, TArg2 arg2, TArg3 arg3,
         out string? result)

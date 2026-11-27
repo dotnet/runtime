@@ -114,9 +114,8 @@ namespace System.Runtime.Tests
             Assert.True(afterCompiledMethodCount == 0, $"After Compiled method count not equal to 0! ({afterCompiledMethodCount})");
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsMultithreadingSupported))]
         [SkipOnMono("Mono does not track thread specific JIT information")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void JitInfoCurrentThreadIsPopulated()
         {
             TimeSpan t1_beforeCompilationTime = TimeSpan.Zero;

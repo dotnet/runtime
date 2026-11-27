@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Speech.Internal.SrgsParser;
 using System.Speech.Recognition;
 
@@ -19,11 +20,11 @@ namespace System.Speech.Internal.GrammarBuilding
         }
 
         internal ItemElement(int minRepeat, int maxRepeat)
-            : this((GrammarBuilderBase)null, minRepeat, maxRepeat)
+            : this((GrammarBuilderBase?)null, minRepeat, maxRepeat)
         {
         }
 
-        internal ItemElement(GrammarBuilderBase builder, int minRepeat, int maxRepeat)
+        internal ItemElement(GrammarBuilderBase? builder, int minRepeat, int maxRepeat)
         {
             if (builder != null)
             {
@@ -35,29 +36,22 @@ namespace System.Speech.Internal.GrammarBuilding
 
         internal ItemElement(List<GrammarBuilderBase> builders, int minRepeat, int maxRepeat)
         {
-            foreach (GrammarBuilderBase builder in builders)
-            {
-                Items.Add(builder);
-            }
+            Items.AddRange(builders);
             _minRepeat = minRepeat;
             _maxRepeat = maxRepeat;
         }
 
         internal ItemElement(GrammarBuilder builders)
         {
-            foreach (GrammarBuilderBase builder in builders.InternalBuilder.Items)
-            {
-                Items.Add(builder);
-            }
+            Items.AddRange(builders.InternalBuilder.Items);
         }
 
         #endregion
 
         #region Public Methods
-        public override bool Equals(object obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            ItemElement refObj = obj as ItemElement;
-            if (refObj == null)
+            if (obj is not ItemElement refObj)
             {
                 return false;
             }

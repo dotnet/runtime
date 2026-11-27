@@ -23,8 +23,6 @@ struct _EventPipeSession {
 #else
 struct _EventPipeSession_Internal {
 #endif
-	// When the session is of IPC or FILE stream type, this becomes a reference to the streaming thread.
-	ep_rt_thread_handle_t streaming_thread;
 	// Event object used to signal Disable that the streaming thread is done.
 	ep_rt_wait_event_handle_t rt_thread_shutdown_event;
 	// The set of configurations for each provider in the session.
@@ -107,7 +105,8 @@ ep_session_alloc (
 	uint32_t providers_len,
 	EventPipeSessionSynchronousCallback sync_callback,
 	void *callback_additional_data,
-	int user_events_data_fd);
+	int user_events_data_fd,
+	EventPipeBufferingMode buffering_mode);
 
 void
 ep_session_inc_ref (EventPipeSession *session);
@@ -169,16 +168,18 @@ ep_session_add_session_provider (
 void
 ep_session_disable (EventPipeSession *session);
 
+// A final flush requires the session to be unpublished and all in-flight writers to have completed.
 bool
 ep_session_write_all_buffers_to_file (
 	EventPipeSession *session,
+	bool is_final_flush,
 	bool *events_written);
 
 // If a session is non-synchronous (i.e. a file, pipe, etc) WriteEvent will
 // put the event in a buffer and return as quick as possible. If a session is
 // synchronous (callback to the profiler) then this method will block until the
 // profiler is done parsing and reacting to it.
-bool
+EventPipeWriteEventResult
 ep_session_write_event (
 	EventPipeSession *session,
 	ep_rt_thread_handle_t thread,

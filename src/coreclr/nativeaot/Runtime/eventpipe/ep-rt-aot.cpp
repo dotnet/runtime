@@ -8,6 +8,7 @@
 #include <eventpipe/ep.h>
 #include <eventpipe/ep-stack-contents.h>
 #include <eventpipe/ep-rt.h>
+#include <minipal/thread.h>
 
 #ifdef HOST_WINDOWS
 #include <windows.h>
@@ -17,6 +18,7 @@
 #include <unistd.h>
 #endif
 
+#include "ProcessEnvironment.h"
 #include <minipal/random.h>
 #include <minipal/time.h>
 
@@ -26,6 +28,7 @@
 #include "threadstore.inl"
 #include "eventtrace_context.h"
 #include "eventtracebase.h"
+#include "thread.inl"
 
 // Uses _rt_aot_lock_internal_t that has CrstStatic as a field
 // This is initialized at the beginning and EventPipe library requires the lock handle to be maintained by the runtime
@@ -122,9 +125,11 @@ ep_rt_aot_sample_profiler_write_sampling_event_for_threads (
 
         // Walk the stack and write it out as an event.
         if (ep_rt_aot_walk_managed_stack_for_thread (target_thread, current_stack_contents) && !ep_stack_contents_is_empty (current_stack_contents)) {
-            // Set the payload.
-            // TODO: We can actually detect whether we are in managed or external code but does it matter?!
-            uint32_t payload_data = EP_SAMPLE_PROFILER_SAMPLE_TYPE_EXTERNAL;
+            // Set the payload. If the thread is trapped for suspension, it was in cooperative mode
+            // (managed code). Otherwise, it was in preemptive mode (external code).
+            uint32_t payload_data = target_thread->IsSuspensionTrapped()
+                ? EP_SAMPLE_PROFILER_SAMPLE_TYPE_MANAGED
+                : EP_SAMPLE_PROFILER_SAMPLE_TYPE_EXTERNAL;
 
             // Write the sample.
             ep_write_sample_profile_event (
@@ -405,7 +410,7 @@ ep_rt_aot_wait_event_wait (
     STATIC_CONTRACT_NOTHROW;
     EP_ASSERT (wait_event != NULL && wait_event->event != NULL);
 
-    return wait_event->event->Wait (timeout, alertable);
+    return wait_event->event->Wait (timeout, alertable, false);
 }
 
 bool
@@ -480,25 +485,21 @@ void
 ep_rt_aot_thread_sleep (uint64_t ns)
 {
     STATIC_CONTRACT_NOTHROW;
-    PalSleep(static_cast<uint32_t>(ns/1000000));
+    minipal_sleep(static_cast<uint32_t>(ns/1000000));
 }
 
 uint32_t
 ep_rt_aot_current_process_get_id (void)
 {
     STATIC_CONTRACT_NOTHROW;
-    return PalGetCurrentProcessId ();
+    return minipal_get_current_process_id ();
 }
 
 ep_rt_thread_id_t
 ep_rt_aot_current_thread_get_id (void)
 {
     STATIC_CONTRACT_NOTHROW;
-#ifdef TARGET_UNIX
-    return static_cast<ep_rt_thread_id_t>(PalGetCurrentOSThreadId());
-#else
-    return static_cast<ep_rt_thread_id_t>(::GetCurrentThreadId ());
-#endif
+    return static_cast<ep_rt_thread_id_t>(minipal_get_current_thread_id());
 }
 
 int64_t
@@ -624,7 +625,7 @@ ep_rt_aot_spin_lock_alloc (ep_rt_spin_lock_handle_t *spin_lock)
     // EventPipe library will intialize using thread, EventPipeBufferManager instances and will maintain these on the EventPipe library side
 
     spin_lock->lock = new (nothrow) CrstStatic ();
-    spin_lock->lock->InitNoThrow (CrstType::CrstEventPipe);
+    spin_lock->lock->Init (CrstType::CrstEventPipe);
 }
 
 void
@@ -789,7 +790,7 @@ void ep_rt_aot_init (void)
     extern CrstStatic _ep_rt_aot_config_lock;
 
     _ep_rt_aot_config_lock_handle.lock = &_ep_rt_aot_config_lock;
-    _ep_rt_aot_config_lock_handle.lock->InitNoThrow (CrstType::CrstEventPipeConfig);
+    _ep_rt_aot_config_lock_handle.lock->Init (CrstType::CrstEventPipeConfig);
 }
 
 bool ep_rt_aot_lock_acquire (ep_rt_lock_handle_t *lock)
@@ -832,22 +833,6 @@ bool ep_rt_aot_spin_lock_release (ep_rt_spin_lock_handle_t *spin_lock)
     return false;
 }
 
-#ifndef HOST_WIN32
-#if defined(__APPLE__)
-#if defined (HOST_OSX)
-extern "C" {char ***_NSGetEnviron(void);}
-#define environ (*_NSGetEnviron())
-#else
-static char *_ep_rt_aot_environ[1] = { NULL };
-#define environ _ep_rt_aot_environ
-#endif /* defined (HOST_OSX) */
-#else
-extern "C" {
-extern char **environ;
-}
-#endif /* defined (__APPLE__) */
-#endif /* !defined (HOST_WIN32) */
-
 void ep_rt_aot_os_environment_get_utf16 (dn_vector_ptr_t *env_array)
 {
     STATIC_CONTRACT_NOTHROW;
@@ -864,9 +849,10 @@ void ep_rt_aot_os_environment_get_utf16 (dn_vector_ptr_t *env_array)
         FreeEnvironmentStringsW (reinterpret_cast<LPWSTR>(envs));
     }
 #else
-    ep_char8_t **next = NULL;
-    for (next = environ; *next != NULL; ++next)
-        dn_vector_ptr_push_back (env_array, ep_rt_utf8_to_utf16le_string (*next));
+    ProcessEnvironment_EnumerateVariablesUtf8 ([](const char *entry, void *context)
+    {
+        dn_vector_ptr_push_back (reinterpret_cast<dn_vector_ptr_t *>(context), ep_rt_utf8_to_utf16le_string (entry));
+    }, env_array);
 #endif
 }
 

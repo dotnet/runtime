@@ -10,6 +10,16 @@ namespace System.Formats.Tar
     // Unix specific methods for the TarEntry class.
     public abstract partial class TarEntry
     {
+        private static bool IsExistingNonLink(string path)
+        {
+            if (Interop.Sys.LStat(path, out Interop.Sys.FileStatus status) == 0)
+            {
+                return (status.Mode & Interop.Sys.FileTypes.S_IFMT) != Interop.Sys.FileTypes.S_IFLNK;
+            }
+
+            return false;
+        }
+
         // Unix specific implementation of the method that extracts the current entry as a block device.
         private void ExtractAsBlockDevice(string destinationFileName)
         {
@@ -31,13 +41,15 @@ namespace System.Formats.Tar
             Interop.CheckIo(Interop.Sys.MkFifo(destinationFileName, (uint)Mode), destinationFileName);
         }
 
-        // Unix specific implementation of the method that extracts the current entry as a hard link.
-        private void ExtractAsHardLink(string targetFilePath, string hardLinkFilePath)
+        // On Unix-like systems no explicit step is needed to make a file sparse: the kernel
+        // creates a hole whenever a write is preceded by a seek past the previous end. Most
+        // modern file systems (ext4, btrfs, xfs, APFS, ...) support sparse files; on those that
+        // do not, the SetLength call performed after the segment copy will still produce a
+        // correct (but fully allocated) result.
+#pragma warning disable IDE0060
+        private static void TryMarkFileSparse(FileStream fs)
         {
-            Debug.Assert(EntryType is TarEntryType.HardLink);
-            Debug.Assert(!string.IsNullOrEmpty(targetFilePath));
-            Debug.Assert(!string.IsNullOrEmpty(hardLinkFilePath));
-            File.CreateHardLink(hardLinkFilePath, targetFilePath);
         }
+#pragma warning restore IDE0060
     }
 }

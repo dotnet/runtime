@@ -12,6 +12,7 @@ internal static partial class Interop
         internal const string Credui = "credui.dll";
         internal const string Crypt32 = "crypt32.dll";
         internal const string CryptUI = "cryptui.dll";
+        internal const string Dnsapi = "dnsapi.dll";
         internal const string Dsrole = "dsrole.dll";
         internal const string Gdi32 = "gdi32.dll";
         internal const string HttpApi = "httpapi.dll";
@@ -48,7 +49,7 @@ internal static partial class Interop
         internal const string Xolehlp = "xolehlp.dll";
         internal const string Comdlg32 = "comdlg32.dll";
         internal const string Gdiplus = "gdiplus.dll";
-        internal const string Oleaut32 = "oleaut32.dll";
         internal const string Winspool = "winspool.drv";
+        internal const string Synch = "api-ms-win-core-synch-l1-2-0.dll";
     }
 }

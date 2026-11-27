@@ -1,15 +1,27 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#if ILTRIM
+extern alias TypeSystem;
+using TypeSystemEntity = TypeSystem::Internal.TypeSystem.TypeSystemEntity;
+using MethodForInstantiatedType = TypeSystem::Internal.TypeSystem.MethodForInstantiatedType;
+using MetadataType = TypeSystem::Internal.TypeSystem.MetadataType;
+using EcmaType = TypeSystem::Internal.TypeSystem.Ecma.EcmaType;
+using EcmaMethod = TypeSystem::Internal.TypeSystem.Ecma.EcmaMethod;
+using EcmaField = TypeSystem::Internal.TypeSystem.Ecma.EcmaField;
+#else
+using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
+using Internal.IL.Stubs;
+
+using MetadataType = Internal.TypeSystem.MetadataType;
+#endif
+
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Metadata.Ecma335;
 using ILCompiler;
-using Internal.IL.Stubs;
-using Internal.TypeSystem;
-using Internal.TypeSystem.Ecma;
 using Mono.Cecil;
-using MetadataType = Internal.TypeSystem.MetadataType;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
@@ -31,7 +43,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
                 EcmaField field => (field.Module.Assembly.GetName().Name, MetadataTokens.GetToken(field.Handle)),
                 PropertyPseudoDesc property => (property.OwningType.Module.Assembly.GetName().Name, MetadataTokens.GetToken(property.Handle)),
                 EventPseudoDesc @event => (@event.OwningType.Module.Assembly.GetName().Name, MetadataTokens.GetToken(@event.Handle)),
+#if !ILTRIM
                 ILStubMethod => (null, 0), // Ignore compiler generated methods
+#endif
                 MetadataType mt when mt.GetType().Name == "BoxedValueType" => (null, 0),
                 _ => throw new NotSupportedException($"The infra doesn't support getting a token for {entity} yet.")
             };

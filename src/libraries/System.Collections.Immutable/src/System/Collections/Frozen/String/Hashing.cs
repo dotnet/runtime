@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -47,27 +48,26 @@ namespace System.Collections.Frozen
                         return (int)(Hash1Start + (hash2 * Factor));
 
                     case 4:
-                        hash1 = (BitOperations.RotateLeft(Hash1Start, 5) + Hash1Start) ^ ((uint*)src)[0];
-                        hash2 = (BitOperations.RotateLeft(Hash1Start, 5) + Hash1Start) ^ ((uint*)src)[1];
+                        hash1 = (BitOperations.RotateLeft(Hash1Start, 5) + Hash1Start) ^ Unsafe.ReadUnaligned<uint>(src);
+                        hash2 = (BitOperations.RotateLeft(Hash1Start, 5) + Hash1Start) ^ Unsafe.ReadUnaligned<uint>(src + 2);
                         return (int)(hash1 + (hash2 * Factor));
 
                     default:
                         hash1 = Hash1Start;
                         hash2 = hash1;
 
-                        uint* ptrUInt32 = (uint*)src;
+                        char* ptr = src;
                         while (length >= 4)
                         {
-                            hash1 = (BitOperations.RotateLeft(hash1, 5) + hash1) ^ ptrUInt32[0];
-                            hash2 = (BitOperations.RotateLeft(hash2, 5) + hash2) ^ ptrUInt32[1];
-                            ptrUInt32 += 2;
+                            hash1 = (BitOperations.RotateLeft(hash1, 5) + hash1) ^ Unsafe.ReadUnaligned<uint>(ptr);
+                            hash2 = (BitOperations.RotateLeft(hash2, 5) + hash2) ^ Unsafe.ReadUnaligned<uint>(ptr + 2);
+                            ptr += 4;
                             length -= 4;
                         }
 
-                        char* ptrChar = (char*)ptrUInt32;
                         while (length-- > 0)
                         {
-                            hash2 = (BitOperations.RotateLeft(hash2, 5) + hash2) ^ *ptrChar++;
+                            hash2 = (BitOperations.RotateLeft(hash2, 5) + hash2) ^ *ptr++;
                         }
 
                         return (int)(hash1 + (hash2 * Factor));
@@ -111,28 +111,27 @@ namespace System.Collections.Frozen
                         return (int)(Hash1Start + (hash2 * Factor));
 
                     case 4:
-                        hash1 = (BitOperations.RotateLeft(Hash1Start, 5) + Hash1Start) ^ (((uint*)src)[0] | LowercaseUInt32);
-                        hash2 = (BitOperations.RotateLeft(Hash1Start, 5) + Hash1Start) ^ (((uint*)src)[1] | LowercaseUInt32);
+                        hash1 = (BitOperations.RotateLeft(Hash1Start, 5) + Hash1Start) ^ (Unsafe.ReadUnaligned<uint>(src) | LowercaseUInt32);
+                        hash2 = (BitOperations.RotateLeft(Hash1Start, 5) + Hash1Start) ^ (Unsafe.ReadUnaligned<uint>(src + 2) | LowercaseUInt32);
                         return (int)(hash1 + (hash2 * Factor));
 
                     default:
                         hash1 = Hash1Start;
                         hash2 = hash1;
 
-                        uint* ptrUInt32 = (uint*)src;
+                        char* ptr = src;
                         while (length >= 4)
                         {
-                            hash1 = (BitOperations.RotateLeft(hash1, 5) + hash1) ^ (ptrUInt32[0] | LowercaseUInt32);
-                            hash2 = (BitOperations.RotateLeft(hash2, 5) + hash2) ^ (ptrUInt32[1] | LowercaseUInt32);
-                            ptrUInt32 += 2;
+                            hash1 = (BitOperations.RotateLeft(hash1, 5) + hash1) ^ (Unsafe.ReadUnaligned<uint>(ptr) | LowercaseUInt32);
+                            hash2 = (BitOperations.RotateLeft(hash2, 5) + hash2) ^ (Unsafe.ReadUnaligned<uint>(ptr + 2) | LowercaseUInt32);
+                            ptr += 4;
                             length -= 4;
                         }
 
-                        char* ptrChar = (char*)ptrUInt32;
                         while (length-- > 0)
                         {
-                            hash2 = (BitOperations.RotateLeft(hash2, 5) + hash2) ^ (*ptrChar | LowercaseUInt32);
-                            ptrChar++;
+                            hash2 = (BitOperations.RotateLeft(hash2, 5) + hash2) ^ (*ptr | LowercaseUInt32);
+                            ptr++;
                         }
 
                         return (int)(hash1 + (hash2 * Factor));

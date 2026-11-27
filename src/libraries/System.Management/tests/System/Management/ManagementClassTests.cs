@@ -3,7 +3,10 @@
 
 using System;
 using System.CodeDom;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Linq;
+using System.Reflection;
 using Xunit;
 
 namespace System.Management.Tests
@@ -23,6 +26,25 @@ namespace System.Management.Tests
                 CodeTypeDeclaration classDom = managementClass.GetStronglyTypedClassCode(includeSystemClassInClassDef, systemPropertyClass);
                 Assert.Equal(systemPropertyClass ? "ManagementSystemProperties" : "LogicalDisk", classDom.Name);
             }
+        }
+
+        [ConditionalFact(typeof(WmiTestHelper), nameof(WmiTestHelper.IsWmiSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34360", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework uses its inbox System.Management implementation")]
+        public void GeneratedCollectionAndEnumeratorImplementIDisposable()
+        {
+            using var managementClass = new ManagementClass(null, "Win32_LogicalDisk", null);
+            CodeTypeDeclaration classDom = managementClass.GetStronglyTypedClassCode(false, false);
+
+            CodeTypeDeclaration collection = Assert.Single(
+                classDom.Members.OfType<CodeTypeDeclaration>(),
+                type => type.Members.OfType<CodeMemberField>().Any(field => field.Name == "privColObj"));
+            AssertDisposableWrapper(collection, "privColObj");
+
+            CodeTypeDeclaration enumerator = Assert.Single(
+                collection.Members.OfType<CodeTypeDeclaration>(),
+                type => type.Members.OfType<CodeMemberField>().Any(field => field.Name == "privObjEnum"));
+            AssertDisposableWrapper(enumerator, "privObjEnum");
         }
 
         [ConditionalTheory(typeof(WmiTestHelper), nameof(WmiTestHelper.IsWmiSupported))]
@@ -115,6 +137,34 @@ namespace System.Management.Tests
             }
         }
 
+#if NET
+        [ConditionalFact(typeof(WmiTestHelper), nameof(WmiTestHelper.IsWmiSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34689", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        public void MoveNext_ThrowsManagementException_ForEmptySuccessfulBatch()
+        {
+            ManagementObjectCollection collection = CreateManagementObjectCollection(EmptySuccessfulWbemEnumeratorProxy.Create());
+            ManagementObjectCollection.ManagementObjectEnumerator enumerator = null;
+
+            try
+            {
+                enumerator = collection.GetEnumerator();
+                ManagementException exception = Assert.Throws<ManagementException>(() => enumerator.MoveNext());
+                Assert.Equal(ManagementStatus.Failed, exception.ErrorCode);
+
+                ManagementException retryException = Assert.Throws<ManagementException>(() => enumerator.MoveNext());
+                Assert.Equal(ManagementStatus.Failed, retryException.ErrorCode);
+            }
+            finally
+            {
+                // The managed proxy is not a COM RCW, so its owners must not call ReleaseComObject in their finalizers.
+                if (enumerator is not null)
+                    GC.SuppressFinalize(enumerator);
+
+                GC.SuppressFinalize(collection);
+            }
+        }
+#endif
+
         [ConditionalFact(typeof(WmiTestHelper), nameof(WmiTestHelper.IsElevatedAndSupportsWmi))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34689", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void Create_Delete_Namespace()
@@ -135,6 +185,61 @@ namespace System.Management.Tests
                 ManagementException managementException = Assert.Throws<ManagementException>(() => targetNamespace.Get());
                 Assert.Equal(ManagementStatus.NotFound, managementException.ErrorCode);
             }
+        }
+
+#if NET
+        private static ManagementObjectCollection CreateManagementObjectCollection(object enumWbem)
+        {
+            Type enumWbemType = typeof(ManagementObjectCollection).Assembly.GetType("System.Management.IEnumWbemClassObject", throwOnError: true);
+            ConstructorInfo constructor = Assert.IsAssignableFrom<ConstructorInfo>(
+                typeof(ManagementObjectCollection).GetConstructor(
+                    BindingFlags.Instance | BindingFlags.NonPublic,
+                    binder: null,
+                    new Type[] { typeof(ManagementScope), typeof(EnumerationOptions), enumWbemType },
+                    modifiers: null));
+
+            return (ManagementObjectCollection)constructor.Invoke(new object[] { null, new EnumerationOptions { Rewindable = false }, enumWbem });
+        }
+
+        [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "The test uses DispatchProxy only to create a fake internal WMI enumerator for this reflection-based regression test.")]
+        private class EmptySuccessfulWbemEnumeratorProxy : DispatchProxy
+        {
+            public static object Create()
+            {
+                Type enumWbemType = typeof(ManagementObjectCollection).Assembly.GetType("System.Management.IEnumWbemClassObject", throwOnError: true);
+                return DispatchProxy.Create(enumWbemType, typeof(EmptySuccessfulWbemEnumeratorProxy));
+            }
+
+            protected override object Invoke(MethodInfo targetMethod, object[] args)
+            {
+                if (targetMethod.Name == "Next_")
+                {
+                    args[3] = (uint)0;
+                    return 0;
+                }
+
+                throw new NotImplementedException(targetMethod.Name);
+            }
+        }
+#endif
+
+        private static void AssertDisposableWrapper(CodeTypeDeclaration wrapper, string wrappedFieldName)
+        {
+            Assert.Contains(wrapper.BaseTypes.Cast<CodeTypeReference>(), type => type.BaseType == typeof(IDisposable).FullName);
+
+            CodeMemberMethod disposeMethod = Assert.Single(
+                wrapper.Members.OfType<CodeMemberMethod>(),
+                method => method.Name == nameof(IDisposable.Dispose));
+            Assert.Contains(
+                disposeMethod.ImplementationTypes.Cast<CodeTypeReference>(),
+                type => type.BaseType == typeof(IDisposable).FullName);
+
+            CodeExpressionStatement statement = Assert.IsType<CodeExpressionStatement>(
+                Assert.Single(disposeMethod.Statements.Cast<CodeStatement>()));
+            CodeMethodInvokeExpression invocation = Assert.IsType<CodeMethodInvokeExpression>(statement.Expression);
+            Assert.Equal(nameof(IDisposable.Dispose), invocation.Method.MethodName);
+            CodeVariableReferenceExpression target = Assert.IsType<CodeVariableReferenceExpression>(invocation.Method.TargetObject);
+            Assert.Equal(wrappedFieldName, target.VariableName);
         }
     }
 }

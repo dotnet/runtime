@@ -84,15 +84,17 @@ class CallStubGenerator
         ReturnTypeU2,
         ReturnTypeI8,
         ReturnTypeDouble,
-#ifdef TARGET_32BIT
+#if defined(TARGET_32BIT) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
         ReturnTypeI4,
+#endif // TARGET_32BIT || TARGET_RISCV64 || TARGET_LOONGARCH64
+#ifdef TARGET_32BIT
         ReturnTypeFloat,
 #endif // TARGET_32BIT
 #if defined(TARGET_AMD64) || defined(TARGET_ARM)
         ReturnTypeBuffArg1,
         ReturnTypeBuffArg2,
 #else
-#if defined(TARGET_ARM64) && defined(TARGET_WINDOWS)
+#if (defined(TARGET_ARM64) && defined(TARGET_WINDOWS)) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
         ReturnTypeBuffArg2,
 #endif
         ReturnTypeBuff,
@@ -124,12 +126,14 @@ class CallStubGenerator
         ReturnTypeSwiftLowered,
 #endif // TARGET_APPLE
 #endif // TARGET_ARM64
-#if defined(TARGET_RISCV64)
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+        ReturnTypeFloat,
+        ReturnType2Float,
         ReturnType2I8,
         ReturnType2Double,
-        ReturnTypeFloatInt,
-        ReturnTypeIntFloat,
-#endif // TARGET_RISCV64
+        // Struct returned by the hardware floating-point calling convention in a layout not covered by the above
+        ReturnTypeFpStruct,
+#endif // TARGET_RISCV64 || TARGET_LOONGARCH64
     };
 
     enum class RoutineType
@@ -173,6 +177,15 @@ class CallStubGenerator
 
     CallStubHeader::InvokeFunctionPtr m_pInvokeFunction = NULL;
     bool m_interpreterToNative = false;
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+    // Bitmask of the argument registers that carry integers of 32 bits or less and must be sign-extended
+    uint32_t m_signExtendArgRegsMask = 0;
+    // Field layout of the return value when it is ReturnTypeFpStruct
+    FpStructInRegistersInfo m_fpStructReturnInfo = {};
+
+    PCODE GetFieldAtOffsetRoutine(bool isFloat, int reg, unsigned size);
+    void ProcessFpStructArgument(const FpStructInRegistersInfo& info, ArgLocDesc& argLocDesc, int argSize, PCODE *pRoutines);
+#endif // TARGET_RISCV64 || TARGET_LOONGARCH64
 
 #if !defined(UNIX_AMD64_ABI) && defined(ENREGISTERED_PARAMTYPE_MAXSIZE)
     PCODE GetGPRegRefRoutine(int r);
@@ -237,7 +250,7 @@ class CallStubGenerator
 public:
     // Generate the call stub for the given method.
     CallStubHeader *GenerateCallStub(MethodDesc *pMD, AllocMemTracker *pamTracker, bool interpreterToNative);
-    CallStubHeader *GenerateCallStubForSig(MetaSig &sig);
+    CallStubHeader *GenerateCallStubForSig(MetaSig &sig, MethodDesc *pContextMD = nullptr);
 
 private:
     static size_t ComputeTempStorageSize(const MetaSig& sig)
@@ -252,6 +265,11 @@ private:
         // - Return lowering: up to 4 elements * 2 slots + terminator = 9 slots
         // Use numArgs * 8 as a conservative estimate for arg lowering plus 9 for return.
         baseSize += (numArgs * 8 + 9) * sizeof(PCODE);
+#endif
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+        // Struct fields moved one by one: up to 4 slots per argument. Sign extension of narrow integers: 2 slots per
+        // stack argument plus 2 slots for the argument registers. FpStructInRegistersInfo of the return value: 1 slot.
+        baseSize += (numArgs * 6 + 3) * sizeof(PCODE);
 #endif
         return baseSize;
     }

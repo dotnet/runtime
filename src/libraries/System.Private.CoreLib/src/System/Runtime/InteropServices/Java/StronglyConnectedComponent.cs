@@ -23,6 +23,7 @@ namespace System.Runtime.InteropServices.Java
         /// Contains pointers to context passed during
         /// creation of each GCHandle.
         /// </summary>
+        /// <safety>Reading or writing this field only copies a pointer value; it never dereferences the pointed-to memory. The sequential-layout struct overlaps no managed reference, and the field holds caller-supplied context pointers rather than any runtime-internal structure.</safety>
         public void** Contexts;
     }
 }

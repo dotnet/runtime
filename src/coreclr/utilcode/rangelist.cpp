@@ -6,8 +6,9 @@
 #include "loaderheap_shared.h"
 #include "ex.h"
 #include "pedecoder.h"
-#define DONOT_DEFINE_ETW_CALLBACK
+#ifndef SELF_NO_HOST
 #include "eventtracebase.h"
+#endif // !SELF_NO_HOST
 
 #ifndef DACCESS_COMPILE
 
@@ -60,7 +61,6 @@ BOOL RangeList::AddRangeWorker(const BYTE *start, const BYTE *end, void *id)
         INSTANCE_CHECK;
         NOTHROW;
         GC_NOTRIGGER;
-        INJECT_FAULT(return FALSE;);
     }
     CONTRACTL_END
 
@@ -129,7 +129,6 @@ void RangeList::RemoveRangesWorker(void *id)
         INSTANCE_CHECK;
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -187,7 +186,6 @@ BOOL RangeList::IsInRangeWorker(TADDR address)
     {
         INSTANCE_CHECK;
         NOTHROW;
-        FORBID_FAULT;
         GC_NOTRIGGER;
     }
     CONTRACTL_END
@@ -273,5 +271,3 @@ RangeList::RangeListBlock::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 }
 
 #endif // #ifdef DACCESS_COMPILE
-
-

@@ -24,7 +24,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // locations must remain correct after the prolog and epilogs are generated.
 //
 // For the prolog, instructions are put in the special, preallocated, prolog instruction group.
-// We don't want to expose the emitPrologIG unnecessarily (locations are actually pointers to
+// We don't want to expose the prolog IG unnecessarily (locations are actually pointers to
 // emitter instruction groups). Since we know the offset of the start of the function/funclet,
 // where the prolog is, will be zero, we use a nullptr start location to indicate that.
 //
@@ -113,22 +113,12 @@ void Compiler::unwindGetFuncLocations(FuncInfoDsc*             func,
     }
     else
     {
-        EHblkDsc* HBtab = ehGetDsc(func->funEHIndex);
+        BasicBlock* const startBlock = func->GetStartBlock(this);
+        BasicBlock* const lastBlock  = func->GetLastBlock(this);
 
-        if (func->funKind == FUNC_FILTER)
-        {
-            assert(HBtab->HasFilter());
-            *ppStartLoc = new (this, CMK_UnwindInfo) emitLocation(ehEmitCookie(HBtab->ebdFilter));
-            *ppEndLoc   = new (this, CMK_UnwindInfo) emitLocation(ehEmitCookie(HBtab->ebdHndBeg));
-        }
-        else
-        {
-            assert(func->funKind == FUNC_HANDLER);
-            *ppStartLoc = new (this, CMK_UnwindInfo) emitLocation(ehEmitCookie(HBtab->ebdHndBeg));
-            *ppEndLoc   = HBtab->ebdHndLast->IsLast() ? nullptr
-                                                      : new (this, CMK_UnwindInfo)
-                                                          emitLocation(ehEmitCookie(HBtab->ebdHndLast->Next()));
-        }
+        *ppStartLoc = new (this, CMK_UnwindInfo) emitLocation(ehEmitCookie(startBlock));
+        *ppEndLoc =
+            lastBlock->IsLast() ? nullptr : new (this, CMK_UnwindInfo) emitLocation(ehEmitCookie(lastBlock->Next()));
     }
 }
 
@@ -143,7 +133,7 @@ void Compiler::createCfiCode(FuncInfoDsc* func, UNATIVE_OFFSET codeOffset, UCHAR
 
 void Compiler::unwindPushPopCFI(regNumber reg)
 {
-    assert(compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
 
     FuncInfoDsc*   func     = funCurrentFunc();
     UNATIVE_OFFSET cbProlog = unwindGetCurrentOffset(func);
@@ -175,7 +165,7 @@ void Compiler::unwindPushPopCFI(regNumber reg)
 }
 
 //------------------------------------------------------------------------
-// Compiler::unwindPush2Pop2CFI: Record  push/save of 2 registers simultaneously.
+// Compiler::unwindPush2Pop2CFI: Record push/save of 2 registers simultaneously.
 //
 // Arguments:
 //    reg1 - The first register being pushed/saved.
@@ -183,16 +173,39 @@ void Compiler::unwindPushPopCFI(regNumber reg)
 //
 void Compiler::unwindPush2Pop2CFI(regNumber reg1, regNumber reg2)
 {
-    // ToDo: This is a placeholder till OS has unwind support for push2/pop2.
-    unwindPushPopCFI(reg1);
-    unwindPushPopCFI(reg2);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
+
+    FuncInfoDsc*   func     = funCurrentFunc();
+    UNATIVE_OFFSET cbProlog = unwindGetCurrentOffset(func);
+
+    regMaskTP relOffsetMask = RBM_CALLEE_SAVED
+#if defined(UNIX_AMD64_ABI) && ETW_EBP_FRAMED
+                              // In case of ETW_EBP_FRAMED defined the REG_FPBASE (RBP)
+                              // is excluded from the callee-save register list.
+                              // Make sure the register gets PUSH unwind info in this case,
+                              // since it is pushed as a frame register.
+                              | RBM_FPBASE
+#endif
+        ;
+
+    createCfiCode(func, cbProlog, CFI_ADJUST_CFA_OFFSET, DWARF_REG_ILLEGAL, 2 * REGSIZE_BYTES);
+
+    if (relOffsetMask & genRegMask(reg1))
+    {
+        createCfiCode(func, cbProlog, CFI_REL_OFFSET, mapRegNumToDwarfReg(reg1), REGSIZE_BYTES);
+    }
+
+    if (relOffsetMask & genRegMask(reg2))
+    {
+        createCfiCode(func, cbProlog, CFI_REL_OFFSET, mapRegNumToDwarfReg(reg2), 0);
+    }
 }
 
 typedef jitstd::vector<CFI_CODE> CFICodeVector;
 
 void Compiler::unwindBegPrologCFI()
 {
-    assert(compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
 
     FuncInfoDsc* func = funCurrentFunc();
 
@@ -244,10 +257,10 @@ void Compiler::unwindPushPopMaskCFI(regMaskTP regMask, bool isFloat)
 
 void Compiler::unwindAllocStackCFI(unsigned size)
 {
-    assert(compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
     FuncInfoDsc*   func     = funCurrentFunc();
     UNATIVE_OFFSET cbProlog = 0;
-    if (compGeneratingProlog)
+    if (GetEmitter()->emitGeneratingPrologOrFuncletProlog())
     {
         cbProlog = unwindGetCurrentOffset(func);
     }
@@ -263,7 +276,7 @@ void Compiler::unwindAllocStackCFI(unsigned size)
 //
 void Compiler::unwindSetFrameRegCFI(regNumber reg, unsigned offset)
 {
-    assert(compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
     FuncInfoDsc*   func     = funCurrentFunc();
     UNATIVE_OFFSET cbProlog = unwindGetCurrentOffset(func);
 
@@ -408,8 +421,13 @@ void Compiler::DumpCfiInfo(bool                  isHotCode,
                 assert(dwarfReg == DWARF_REG_ILLEGAL);
                 printf("    CodeOffset: 0x%02X Op: AdjustCfaOffset Offset:0x%X\n", codeOffset, offset);
                 break;
+            case CFI_NEGATE_RA_STATE:
+                assert(dwarfReg == DWARF_REG_ILLEGAL);
+                assert(offset == 0);
+                printf("    CodeOffset: 0x%02X Op: NegateRAState\n", codeOffset);
+                break;
             default:
-                printf("    Unrecognized CFI_CODE: 0x%llX\n", *(UINT64*)pCode);
+                printf("    Unrecognized CFI_CODE: 0x%llX\n", (unsigned long long)*(UINT64*)pCode);
                 break;
         }
     }
@@ -430,27 +448,12 @@ void Compiler::DumpCfiInfo(bool                  isHotCode,
 //
 UNATIVE_OFFSET Compiler::unwindGetCurrentOffset(FuncInfoDsc* func)
 {
-    assert(compGeneratingProlog);
-    UNATIVE_OFFSET offset;
-    if (func->funKind == FUNC_ROOT)
-    {
-        offset = GetEmitter()->emitGetPrologOffsetEstimate();
-    }
-    else
-    {
-        if (TargetArchitecture::IsX64 ||
-            (TargetOS::IsUnix &&
-             (TargetArchitecture::IsArmArch || TargetArchitecture::IsX86 || TargetArchitecture::IsLoongArch64)))
-        {
-            assert(func->startLoc != nullptr);
-            offset = func->startLoc->GetFuncletPrologOffset(GetEmitter());
-        }
-        else
-        {
-            offset = 0; // TODO ???
-        }
-    }
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
+    emitLocation* loc = func->startLoc;
+    insGroup*     ig  = (loc != nullptr) ? loc->GetIG() : nullptr;
+    assert((ig == nullptr) || (loc->GetInsOffset() == 0));
 
+    UNATIVE_OFFSET offset = GetEmitter()->emitGetCurrentCodeOffsetFrom(ig);
     return offset;
 }
 

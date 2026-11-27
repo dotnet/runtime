@@ -10,15 +10,18 @@
 #include "gcrefmap.h"
 #include "threads.h"
 
+#if defined(TARGET_ARM64)
+extern "C" void* PacStripPtr(void* ptr);
+#endif // TARGET_ARM64
 
-FCIMPL0(void*, TailCallHelp::GetTailCallArgBuffer)
+FCIMPL0(void*, RuntimeHelpers_GetTailCallArgBuffer)
 {
     FCALL_CONTRACT;
     return GetThread()->GetTailCallTls()->GetArgBuffer();
 }
 FCIMPLEND
 
-extern "C" void* QCALLTYPE TailCallHelp_AllocTailCallArgBufferInternal(int size)
+extern "C" void* QCALLTYPE TailCallHelp_AllocTailCallArgBufferInternal(int size, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -33,13 +36,21 @@ extern "C" void* QCALLTYPE TailCallHelp_AllocTailCallArgBufferInternal(int size)
     return retVal;
 }
 
-FCIMPL2(void*, TailCallHelp::GetTailCallInfo, void** retAddrSlot, void** retAddr)
+FCIMPL2(void*, RuntimeHelpers_GetTailCallInfo, void** retAddrSlot, void** retAddr)
 {
     FCALL_CONTRACT;
 
     Thread* thread = GetThread();
 
-    *retAddr = thread->GetReturnAddress(retAddrSlot);
+    void* retAddrFromSlot = thread->GetReturnAddress(retAddrSlot);
+
+#if defined(TARGET_ARM64)
+    // We strip the return address here as it's only used for comparison and
+    // not being used to branch execution to.
+    retAddrFromSlot = PacStripPtr(retAddrFromSlot);
+#endif // TARGET_ARM64
+    *retAddr = retAddrFromSlot;
+
     return thread->GetTailCallTls();
 }
 FCIMPLEND
@@ -107,7 +118,7 @@ MethodDesc* TailCallHelp::GetOrLoadTailCallDispatcherMD()
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(ThrowOutOfMemory());
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -282,7 +293,8 @@ bool TailCallHelp::GenerateGCDescriptor(
         TypeHandle tyHnd = val.TyHnd;
         if (tyHnd.IsValueType())
         {
-            if (!tyHnd.GetMethodTable()->ContainsGCPointers())
+            // Byref-like structs (e.g. Span<T>) have no GC series but can contain byref fields.
+            if (!tyHnd.GetMethodTable()->ContainsGCPointers() && !tyHnd.GetMethodTable()->IsByRefLike())
             {
 #ifndef TARGET_X86
                 // The generic instantiation arg is right after this pointer
@@ -357,16 +369,15 @@ MethodDesc* TailCallHelp::CreateStoreArgsStub(TailCallInfo& info)
         pGcDesc = AllocateBlob(info.LoaderAllocator, gcDesc, gcDescLen);
     }
 
-    pCode->EmitLDC(info.ArgBufLayout.Size);
-    pCode->EmitLDC(DWORD_PTR(pGcDesc));
-    pCode->EmitCONV_I();
+    pCode->EmitLDC_I4(info.ArgBufLayout.Size);
+    pCode->EmitLDC_I(DWORD_PTR(pGcDesc));
     pCode->EmitCALL(METHOD__RUNTIME_HELPERS__ALLOC_TAILCALL_ARG_BUFFER, 2, 1);
     pCode->EmitSTLOC(bufferLcl);
 
     auto emitOffs = [&](UINT offs)
     {
         pCode->EmitLDLOC(bufferLcl);
-        pCode->EmitLDC(offs);
+        pCode->EmitLDC_I4(offs);
         pCode->EmitADD();
     };
 
@@ -475,14 +486,13 @@ MethodDesc* TailCallHelp::CreateCallTargetStub(const TailCallInfo& info)
     auto emitOffs = [&](UINT offs)
     {
         pCode->EmitLDARG(ARG_ARG_BUFFER);
-        pCode->EmitLDC(offs);
+        pCode->EmitLDC_I4(offs);
         pCode->EmitADD();
     };
 
     // pFrame->NextCall = 0;
     pCode->EmitLDARG(ARG_PTR_FRAME);
-    pCode->EmitLDC(0);
-    pCode->EmitCONV_U();
+    pCode->EmitLDC_I(0);
     pCode->EmitSTFLD(FIELD__PORTABLE_TAIL_CALL_FRAME__NEXT_CALL);
 
     // pFrame->TailCallAwareReturnAddress = NextCallReturnAddress();
@@ -507,7 +517,7 @@ MethodDesc* TailCallHelp::CreateCallTargetStub(const TailCallInfo& info)
         // argument is just a regular IntPtr on the stack. It is safe to stop reporting it only after the target method
         // takes over.
         pCode->EmitLDARG(ARG_ARG_BUFFER);
-        pCode->EmitLDC(info.ArgBufLayout.HasInstArg ? TAILCALLARGBUFFER_INSTARG_ONLY : TAILCALLARGBUFFER_INACTIVE);
+        pCode->EmitLDC_I4(info.ArgBufLayout.HasInstArg ? TAILCALLARGBUFFER_INSTARG_ONLY : TAILCALLARGBUFFER_INACTIVE);
         pCode->EmitSTIND_I4();
     }
 

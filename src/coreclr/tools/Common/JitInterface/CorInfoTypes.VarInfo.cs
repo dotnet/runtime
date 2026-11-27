@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Runtime.InteropServices;
 
 //
@@ -34,6 +33,7 @@ namespace Internal.JitInterface
     {
         public uint startOffset;
         public uint endOffset;
+        public uint callReturnValueILOffset;
         public uint varNumber;
         public VarLoc varLoc;
     };
@@ -42,12 +42,12 @@ namespace Internal.JitInterface
     [StructLayout(LayoutKind.Sequential)]
     public struct VarLoc
     {
-        public IntPtr A; // vlType + padding
+        public uint A; // vlType
         public int B;
         public int C;
         public int D;
 
-        public VarLocType LocationType => (VarLocType)(A.ToInt64() & 0xFFFFFFFF);
+        public VarLocType LocationType => (VarLocType)A;
 
         /*
            Changes to the following types may require revisiting the above layout.
@@ -166,14 +166,6 @@ namespace Internal.JitInterface
                     {
                         unsigned        vlfvOffset;
                     } vlFixedVarArg;
-
-                    // VLT_MEMORY
-
-                    struct
-                    {
-                        void        *rpValue; // pointer to the in-process
-                        // location of the value.
-                    } vlMemory;
                 };
             };
         */

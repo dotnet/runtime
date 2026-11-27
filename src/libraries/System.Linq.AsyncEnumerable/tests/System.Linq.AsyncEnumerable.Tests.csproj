@@ -29,6 +29,7 @@
     <Compile Include="ExceptTests.cs" />
     <Compile Include="FirstAsyncTests.cs" />
     <Compile Include="FirstOrDefaultAsyncTests.cs" />
+    <Compile Include="FullJoinTests.cs" />
     <Compile Include="GroupByTests.cs" />
     <Compile Include="GroupJoinTests.cs" />
     <Compile Include="IndexTests.cs" />

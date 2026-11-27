@@ -33,7 +33,7 @@ namespace System.Text.Json
 
         public int Capacity => _buffer.Capacity;
 
-        public void Clear() => _buffer.Discard(_buffer.ActiveLength);
+        public void Clear() => _buffer.DiscardAll();
 
         public void ClearAndReturnBuffers() => _buffer.ClearAndReturnBuffer();
 
@@ -78,6 +78,11 @@ namespace System.Text.Json
             Debug.Assert(_stream is not null);
             await _stream.WriteAsync(WrittenMemory, cancellationToken).ConfigureAwait(false);
             Clear();
+
+            // Flushing a PipeWriter makes the written data available to the reader, so do the equivalent
+            // for the destination stream. This ensures that consumers of streaming payloads (e.g. values
+            // of an IAsyncEnumerable) aren't held back by any intermediate buffering.
+            await _stream.FlushAsync(cancellationToken).ConfigureAwait(false);
 
             return new FlushResult(isCanceled: false, isCompleted: false);
         }

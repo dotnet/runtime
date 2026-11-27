@@ -611,9 +611,7 @@ bool emitter::emitGenNoGCLst(Callback& cb, bool skipMainPrologsAndEpilogs /* = f
     {
         if (skipMainPrologsAndEpilogs)
         {
-            if (ig == emitPrologIG)
-                continue;
-            if (ig->igFlags & IGF_EPILOG)
+            if ((ig->igFlags & (IGF_PROLOG | IGF_EPILOG)) != 0)
                 continue;
         }
         if ((ig->igFlags & IGF_NOGCINTERRUPT) && ig->igSize > 0)

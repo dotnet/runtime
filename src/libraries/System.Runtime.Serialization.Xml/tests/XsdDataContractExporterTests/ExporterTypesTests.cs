@@ -76,16 +76,6 @@ namespace System.Runtime.Serialization.Xml.XsdDataContractExporterTests
             SchemaUtils.OrderedContains(@"<xs:schema xmlns:tns=""http://schemas.microsoft.com/2003/10/Serialization/Arrays"" elementFormDefault=""qualified"" targetNamespace=""http://schemas.microsoft.com/2003/10/Serialization/Arrays"" xmlns:xs=""http://www.w3.org/2001/XMLSchema"">", ref schemas);
         }
 
-        public static IEnumerable<object[]> GetDynamicallyVersionedTypesTestNegativeData()
-        {
-            // Need this case in a member data because inline data only accepts constant expressions
-            yield return new object[] {
-                typeof(TypeWithReadWriteCollectionAndNoCtorOnCollection),
-                typeof(InvalidDataContractException),
-                $@"System.Runtime.Serialization.Xml.XsdDataContractExporterTests.ExporterTypesTests+CollectionWithoutParameterlessCtor`1[[System.Runtime.Serialization.Xml.XsdDataContractExporterTests.ExporterTypesTests+Person, System.Runtime.Serialization.Xml.Tests, Version={Reflection.Assembly.GetExecutingAssembly().GetName().Version.Major}.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51]] does not have a default constructor."
-            };
-        }
-
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.DataSetXmlSerializationIsSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/82967", TestPlatforms.Browser | TestPlatforms.Wasi)]
         [InlineData(typeof(NoDataContractWithoutParameterlessConstructor), typeof(InvalidDataContractException), @"Type 'System.Runtime.Serialization.Xml.XsdDataContractExporterTests.ExporterTypesTests+NoDataContractWithoutParameterlessConstructor' cannot be serialized. Consider marking it with the DataContractAttribute attribute, and marking all of its members you want serialized with the DataMemberAttribute attribute. Alternatively, you can ensure that the type is public and has a parameterless constructor - all public members of the type will then be serialized, and no attributes will be required.")]
@@ -95,13 +85,71 @@ namespace System.Runtime.Serialization.Xml.XsdDataContractExporterTests
         [InlineData(typeof(ArrayContainer), typeof(InvalidOperationException), @"DataContract for type 'System.Runtime.Serialization.Xml.XsdDataContractExporterTests.ExporterTypesTests+ArrayB' cannot be added to DataContractSet since type 'System.Runtime.Serialization.Xml.XsdDataContractExporterTests.ExporterTypesTests+ArrayA' with the same data contract name 'Array' in namespace 'http://schemas.datacontract.org/2004/07/System.Runtime.Serialization.Xml.XsdDataContractExporterTests' is already present and the contracts are not equivalent.")]
         [InlineData(typeof(KeyValueNameSame), typeof(InvalidDataContractException), @"The collection data contract type 'System.Runtime.Serialization.Xml.XsdDataContractExporterTests.ExporterTypesTests+KeyValueNameSame' specifies the same value 'MyName' for both the KeyName and the ValueName properties. This is not allowed. Consider changing either the KeyName or the ValueName property.")]
         [InlineData(typeof(AnyWithRoot), typeof(InvalidDataContractException), @"Type 'System.Runtime.Serialization.Xml.XsdDataContractExporterTests.ExporterTypesTests+AnyWithRoot' cannot specify an XmlRootAttribute attribute because its IsAny setting is 'true'. This type must write all its contents including the root element. Verify that the IXmlSerializable implementation is correct.")]
-        [MemberData(nameof(GetDynamicallyVersionedTypesTestNegativeData))]
         public void TypesTest_Negative(Type badType, Type exType, string exMsg = null)
         {
             XsdDataContractExporter exporter = new XsdDataContractExporter();
             var ex = Assert.Throws(exType, () => exporter.Export(badType));
             if (exMsg != null)
                 Assert.Equal(exMsg, ex.Message);
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.DataSetXmlSerializationIsSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/82967", TestPlatforms.Browser | TestPlatforms.Wasi)]
+        // Full-schema export - unprimed: a collection seen cold (read-write first) caches the plain collection shape (no constructor check).
+        [InlineData(typeof(Admin), "ArrayOfExporterTypesTests.Admin", false, false)]
+        // Full-schema export - primed: a collection first seen through a get-only member caches the "constructor-check" shape.
+        [InlineData(typeof(Engineer), "ArrayOfExporterTypesTests.Engineer", true, false)]
+        // Name-only export - unprimed (cold) collection.
+        [InlineData(typeof(Employee), "ArrayOfExporterTypesTests.Employee", false, true)]
+        // Name-only export - primed (get-only-first) collection.
+        [InlineData(typeof(Architect), "ArrayOfExporterTypesTests.Architect", true, true)]
+        public void ReadWriteCollectionWithoutParameterlessConstructor_ExportsConsistently(Type itemType, string collectionSchemaName, bool primeGetOnlyContractFirst, bool nameOnlyExport)
+        {
+            // A schema describes the shape of data, not whether an instance of a type can be
+            // constructed, so a collection type that lacks a parameterless constructor is still fully
+            // describable. Depending on whether such a collection is first seen through a get-only
+            // member or through a read-write reference, its DataContract is cached in one of two shapes
+            // in the process-global cache (first-write-wins). Exporting used to throw only when the
+            // get-only shape had been cached first - a purely cache-order-dependent difference, since a
+            // cold export of the identical type emitted schema without throwing. Export must now behave
+            // the same regardless of which shape was cached first, across both the full-schema surface
+            // and the name-only entry points (which bypass the DataContractSet walk).
+            //
+            // Because the cache keeps whichever shape it sees first, the two orderings use different
+            // collection types (keyed by their distinct item types) so both shapes can be produced
+            // deterministically in a single process: the primed cases force the get-only shape by
+            // exporting a get-only holder first; the unprimed cases only ever reference a collection type
+            // that nothing else touches get-only, so it is always seen cold. Neither may throw. The
+            // constructibility requirement is unchanged and is still enforced by the serializer at
+            // (de)serialization time.
+            if (primeGetOnlyContractFirst)
+            {
+                // Referencing the collection through a get-only member first caches its DataContract with
+                // the constructor-check flag set - the state that used to make the later export throw.
+                new XsdDataContractExporter().Export(typeof(TypeWithGetOnlyCollectionWithoutCtor<>).MakeGenericType(itemType));
+            }
+
+            XsdDataContractExporter exporter = new XsdDataContractExporter();
+
+            if (!nameOnlyExport)
+            {
+                // Export a container that references the collection through a read-write member; the
+                // collection's complexType is emitted as part of the container's schema.
+                exporter.Export(typeof(TypeWithReadWriteCollectionAndNoCtorOnCollection<>).MakeGenericType(itemType));
+
+                string schemas = SchemaUtils.DumpSchema(exporter.Schemas);
+                _output.WriteLine(schemas);
+                Assert.Contains($@"<xs:complexType name=""{collectionSchemaName}"">", schemas);
+            }
+            else
+            {
+                // The name-only entry points are queried against the collection type itself - the type
+                // whose cached shape used to make these calls throw - not a container that references it.
+                var collectionType = typeof(CollectionWithoutParameterlessCtor<>).MakeGenericType(itemType);
+                Assert.Equal(collectionSchemaName, exporter.GetSchemaTypeName(collectionType).Name);
+                Assert.Null(exporter.GetSchemaType(collectionType));
+                Assert.Equal(collectionSchemaName, exporter.GetRootElementName(collectionType).Name);
+            }
         }
 
         [Theory]
@@ -499,11 +547,25 @@ namespace System.Runtime.Serialization.Xml.XsdDataContractExporterTests
             }
         }
 
-        public class TypeWithReadWriteCollectionAndNoCtorOnCollection
+        public class TypeWithGetOnlyCollectionWithoutCtor<T>
+        {
+            private CollectionWithoutParameterlessCtor<T> friends;
+
+            public CollectionWithoutParameterlessCtor<T> Friends
+            {
+                get
+                {
+                    friends = friends ?? new CollectionWithoutParameterlessCtor<T>(2);
+                    return friends;
+                }
+            }
+        }
+
+        public class TypeWithReadWriteCollectionAndNoCtorOnCollection<T>
         {
             private double[] potentialSalaries;
             private double[] potentialExpenditures;
-            CollectionWithoutParameterlessCtor<Person> friends;
+            CollectionWithoutParameterlessCtor<T> friends;
 
             public double[] PotentialSalaries
             {
@@ -527,11 +589,11 @@ namespace System.Runtime.Serialization.Xml.XsdDataContractExporterTests
             }
 
 
-            public CollectionWithoutParameterlessCtor<Person> Friends
+            public CollectionWithoutParameterlessCtor<T> Friends
             {
                 get
                 {
-                    friends = friends ?? new CollectionWithoutParameterlessCtor<Person>(2);
+                    friends = friends ?? new CollectionWithoutParameterlessCtor<T>(2);
                     return friends;
                 }
                 set

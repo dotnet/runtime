@@ -12,6 +12,7 @@
 
 #include "gcenv.h"
 #include "gc.h"
+#include <minipal/utf8.h>
 
 IGCHeapInternal* g_theGCHeap;
 IGCHandleManager* g_theGCHandleManager;
@@ -131,7 +132,16 @@ FILE* CreateLogFile(const GCConfigStringHolder& temp_logfile_name, bool is_confi
     const char* suffix = is_config ? ".config.log" : ".log";
     //_snprintf_s(logfile_name, MAX_LONGPATH+1, _TRUNCATE, "%s.%d%s", temp_logfile_name.Get(), pid, suffix);
     _snprintf_s(logfile_name, MAX_LONGPATH+1, _TRUNCATE, "%s%s", temp_logfile_name.Get(), suffix);
+#ifdef TARGET_WINDOWS
+    // Config strings are UTF-8; fopen would interpret them as the ANSI code page.
+    size_t nameLen = strlen(logfile_name) + 1;
+    size_t wlen = minipal_get_length_utf8_to_utf16(logfile_name, nameLen, 0);
+    WCHAR* wpath = (WCHAR*)_alloca(wlen * sizeof(WCHAR));
+    minipal_convert_utf8_to_utf16(logfile_name, nameLen, (CHAR16_T*)wpath, wlen, 0);
+    logFile = _wfopen(wpath, L"wb");
+#else
     logFile = fopen(logfile_name, "wb");
+#endif
 
     if (logFile == NULL)
     {
@@ -270,6 +280,7 @@ void GCLog (const char *fmt, ... )
 }
 #endif //TRACE_GC && SIMPLE_DPRINTF
 
+#ifdef FEATURE_HOST_TRACE
 // We log initialization errors to the host to help with diagnostics. By default these will show up in stdout.
 // You can also redirect them to a file. See docs/design/features/host-tracing.md.
 void log_init_error_to_host (const char* format, ...)
@@ -281,6 +292,7 @@ void log_init_error_to_host (const char* format, ...)
     GCToEEInterface::LogErrorToHost (error_buf);
     va_end (args);
 }
+#endif // FEATURE_HOST_TRACE
 
 static double g_QPFus = 0.0;
 
@@ -288,8 +300,8 @@ uint64_t GetHighPrecisionTimeStamp()
 {
     if (g_QPFus == 0.0)
     {
-        g_QPFus = 1000.0 * 1000.0 / (double)GCToOSInterface::QueryPerformanceFrequency();
+        g_QPFus = 1000.0 * 1000.0 / (double)minipal_hires_tick_frequency();
     }
-    return (uint64_t)((double)GCToOSInterface::QueryPerformanceCounter() * g_QPFus);
+    return (uint64_t)((double)minipal_hires_ticks() * g_QPFus);
 }
 #endif // !DACCESS_COMPILE

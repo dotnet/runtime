@@ -15,6 +15,7 @@ namespace System.ServiceModel.Syndication
     [XmlRoot(ElementName = App10Constants.Service, Namespace = App10Constants.Namespace)]
     public class AtomPub10ServiceDocumentFormatter : ServiceDocumentFormatter, IXmlSerializable
     {
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
         private readonly Type _documentType;
         private readonly int _maxExtensionSize;
 
@@ -22,7 +23,7 @@ namespace System.ServiceModel.Syndication
         {
         }
 
-        public AtomPub10ServiceDocumentFormatter(Type documentTypeToCreate) : base()
+        public AtomPub10ServiceDocumentFormatter([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type documentTypeToCreate) : base()
         {
             ArgumentNullException.ThrowIfNull(documentTypeToCreate);
 

@@ -12,6 +12,7 @@ using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 using Internal.CorConstants;
 using System.Diagnostics;
+using ILCompiler.ReadyToRun.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
@@ -57,7 +58,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             ModuleToken token;
             if (type is EcmaType ecmaType)
             {
-                if (_compilationModuleGroup.VersionsWithType(ecmaType))
+                // The global module type always has TypeDef token 0x02000001 (ECMA-335 II.22.37),
+                // so its token remains valid even outside the version bubble.
+                if (_compilationModuleGroup.VersionsWithType(ecmaType) || ecmaType.IsModuleType)
                 {
                     return new ModuleToken(ecmaType.Module, (mdToken)MetadataTokens.GetToken(ecmaType.Handle));
                 }
@@ -100,7 +103,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             method = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
 
-            if (method.GetTypicalMethodDefinition() is EcmaMethod ecmaMethod)
+            if (method.GetPrimaryMethodDesc().GetTypicalMethodDefinition() is EcmaMethod ecmaMethod)
             {
                 if (_compilationModuleGroup.VersionsWithMethodBody(ecmaMethod))
                 {
@@ -159,7 +162,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 return default(ModuleToken);
             }
         }
-
 
         public void AddModuleTokenForMethod(MethodDesc method, ModuleToken token)
         {
@@ -331,6 +333,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 {
                     SetModuleTokenForTypeSystemEntity(_typeToRefTokens, ecmaType, token);
                 }
+            }
+            else if (type.IsCanonicalDefinitionType(CanonicalFormKind.Specific))
+            {
+                return;
             }
             else if (!specialTypeFound)
             {

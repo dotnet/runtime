@@ -64,6 +64,8 @@ namespace System
 
         public static TSelf LeadingZeroCount(TSelf value) => TSelf.LeadingZeroCount(value);
 
+        public static TSelf Log10(TSelf value) => TSelf.Log10(value);
+
         public static TSelf PopCount(TSelf value) => TSelf.PopCount(value);
 
         public static TSelf ReadBigEndian(byte[] source, bool isUnsigned) => TSelf.ReadBigEndian(source, isUnsigned);
@@ -430,6 +432,12 @@ namespace System
         public static bool TryParse(string s, NumberStyles style, IFormatProvider provider, out TSelf result) => TSelf.TryParse(s, style, provider, out result);
 
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider provider, out TSelf result) => TSelf.TryParse(s, style, provider, out result);
+
+        public static bool TryParsePartial(string s, NumberStyles style, IFormatProvider provider, out TSelf result, out int charsConsumed) => TSelf.TryParsePartial(s, style, provider, out result, out charsConsumed);
+
+        public static bool TryParsePartial(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider provider, out TSelf result, out int bytesConsumed) => TSelf.TryParsePartial(utf8Text, style, provider, out result, out bytesConsumed);
+
+        public static bool TryParsePartial(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider provider, out TSelf result, out int charsConsumed) => TSelf.TryParsePartial(s, style, provider, out result, out charsConsumed);
     }
 
     public static class NumberHelper<TSelf>

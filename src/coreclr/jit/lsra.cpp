@@ -191,7 +191,7 @@ weight_t LinearScan::getWeight(RefPosition* refPos)
             if (refPos->getInterval()->isSpilled)
             {
                 // Decrease the weight if the interval has already been spilled.
-                if (varDsc->lvLiveInOutOfHndlr || refPos->getInterval()->firstRefPosition->singleDefSpill)
+                if (varDsc->IsLiveInOutOfHandler() || refPos->getInterval()->firstRefPosition->singleDefSpill)
                 {
                     // An EH-var/single-def is always spilled at defs, and we'll decrease the weight by half,
                     // since only the reload is needed.
@@ -953,13 +953,8 @@ LinearScan::LinearScan(Compiler* theCompiler)
     availableIntRegs &= ~RBM_FPBASE.GetIntRegSet();
 #endif // ETW_EBP_FRAMED
 
-#ifdef TARGET_AMD64
     availableFloatRegs  = RBM_ALLFLOAT.GetFloatRegSet();
     availableDoubleRegs = RBM_ALLDOUBLE.GetFloatRegSet();
-#else
-    availableFloatRegs  = RBM_ALLFLOAT.GetFloatRegSet();
-    availableDoubleRegs = RBM_ALLDOUBLE.GetFloatRegSet();
-#endif
 
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
     availableMaskRegs = RBM_ALLMASK.GetPredicateRegSet();
@@ -983,6 +978,22 @@ LinearScan::LinearScan(Compiler* theCompiler)
 #endif // TARGET_XARCH
     }
 #endif // TARGET_AMD64 || TARGET_ARM64
+
+#ifdef TARGET_AMD64
+    // On x64 the OSR method does not restore float/mask registers from the
+    // tier0 frame, so disallow using those in the tier0 method.
+    if (m_compiler->doesMethodHavePatchpoints())
+    {
+#if defined(UNIX_AMD64_ABI)
+        availableFloatRegs &= ~RBM_FLT_CALLEE_SAVED;
+        availableDoubleRegs &= ~RBM_FLT_CALLEE_SAVED;
+#else
+        availableFloatRegs &= ~RBM_FLT_CALLEE_SAVED.GetFloatRegSet();
+        availableDoubleRegs &= ~RBM_FLT_CALLEE_SAVED.GetFloatRegSet();
+#endif // UNIX_AMD64_ABI
+        availableMaskRegs &= ~RBM_MSK_CALLEE_SAVED;
+    }
+#endif
 
 #if defined(TARGET_AMD64)
     if (evexIsSupported)
@@ -1408,10 +1419,6 @@ PhaseStatus LinearScan::doRegisterAllocation()
 
     DBEXEC(VERBOSE, TupleStyleDump(LSRA_DUMP_POST));
 
-#ifdef DEBUG
-    m_compiler->fgDebugCheckLinks();
-#endif
-
     m_compiler->compRegAllocDone = true;
 
     // If edge resolution didn't create new blocks,
@@ -1564,7 +1571,7 @@ void LinearScan::identifyCandidatesExceptionDataflow()
         unsigned   varNum = m_compiler->lvaTrackedIndexToLclNum(varIndex);
         LclVarDsc* varDsc = m_compiler->lvaGetDesc(varNum);
 
-        assert(varDsc->lvLiveInOutOfHndlr);
+        assert(varDsc->IsLiveInOutOfHandler());
 
         if (varTypeIsGC(varDsc) && VarSetOps::IsMember(m_compiler, finallyVars, varIndex) && !varDsc->lvIsParam &&
             !varDsc->lvIsParamRegTarget)
@@ -1743,6 +1750,8 @@ void LinearScan::identifyCandidates()
         // the same register assignment throughout
         varDsc->lvRegister = false;
 
+        checkForDNER(lclNum, varDsc);
+
         if (!isRegCandidate(varDsc))
         {
             varDsc->lvLRACandidate = 0;
@@ -1803,7 +1812,7 @@ void LinearScan::identifyCandidates()
                 newInt->isStructField = true;
             }
 
-            if (varDsc->lvLiveInOutOfHndlr)
+            if (varDsc->IsLiveInOutOfHandler())
             {
                 newInt->isWriteThru = varDsc->lvSingleDefRegCandidate;
                 setIntervalAsSpilled(newInt);
@@ -2585,6 +2594,16 @@ void LinearScan::setFrameType()
     }
 #endif // TARGET_ARM
 
+#if defined(TARGET_ARM64)
+    if (m_compiler->compUsesUnknownSizeFrame)
+    {
+        // We reserve x19 for addressing vector and mask locals on the UnknownSizeFrame.
+        m_compiler->codeGen->regSet.rsMaskResvd |= RBM_UNKBASE;
+        JITDUMP("  Reserved REG_UNKBASE (%s) due to presence of UnknownSizeFrame\n", getRegName(REG_UNKBASE));
+        removeMask |= RBM_UNKBASE.GetIntRegSet();
+    }
+#endif
+
     if ((removeMask != RBM_NONE) && ((availableIntRegs & removeMask) != 0))
     {
         // We know that we're already in "read mode" for availableIntRegs. However,
@@ -2921,10 +2940,11 @@ bool LinearScan::canSpillReg(RegRecord* physRegRecord, LsraLocation refLocation)
 
     if (recentAssignedRef != nullptr)
     {
-        // We can't spill a register that's active at the current location.
-        // We should already have determined this with isRegBusy before calling this method.
-        assert(!isRefPositionActive(recentAssignedRef, refLocation));
-        return true;
+        bool isActive = isRefPositionActive(recentAssignedRef, refLocation);
+        bool isHome   = isHomeReg(physRegRecord);
+        // An active interval can only be displaced from a stale copy register.
+        assert(!(isActive && isHome));
+        return !(isActive && isHome);
     }
     // recentAssignedRef can only be null if this is a parameter that has not yet been
     // moved to a register (or stack), in which case we can't spill it yet.
@@ -4147,6 +4167,14 @@ bool LinearScan::isAssignedToInterval(Interval* interval, RegRecord* regRec)
     isAssigned |= isSecondHalfReg(regRec, interval);
 #endif
     return isAssigned;
+}
+
+// Returns whether regRec is the recorded home of its assigned interval.
+// The interval need not be active.
+bool LinearScan::isHomeReg(RegRecord* regRec)
+{
+    Interval* interval = regRec->assignedInterval;
+    return (interval != nullptr) && isAssignedToInterval(interval, regRec);
 }
 
 void LinearScan::unassignIntervalBlockStart(RegRecord* regRecord, VarToRegMap inVarToRegMap)
@@ -5874,17 +5902,25 @@ void LinearScan::allocateRegisters()
                 RefPosition* nextRefPosition        = currentRefPosition.nextRefPosition;
                 bool         isExtraUpperVectorSave = currentRefPosition.IsExtraUpperVectorSave();
 
-                if ((lclVarInterval->physReg == REG_NA) || isExtraUpperVectorSave ||
+                bool profHookUpperHalfPreserved = CanSkipUpperVectorSave(&currentRefPosition, lclVarInterval);
+
+                if ((lclVarInterval->physReg == REG_NA) || isExtraUpperVectorSave || profHookUpperHalfPreserved ||
                     (lclVarInterval->isPartiallySpilled && (currentInterval->physReg == REG_STK)))
                 {
-                    if (!currentRefPosition.liveVarUpperSave)
+                    if (!currentRefPosition.liveVarUpperSave || profHookUpperHalfPreserved)
                     {
                         if (isExtraUpperVectorSave)
                         {
-                            // If this was just an extra upperVectorSave that do not have corresponding
+                            // If this was just an extra upperVectorSave that does not have a corresponding
                             // upperVectorRestore, we do not need to mark this as isPartiallySpilled
                             // or need to insert the save/restore.
                             currentRefPosition.skipSaveRestore = true;
+                        }
+                        else if (profHookUpperHalfPreserved)
+                        {
+                            currentRefPosition.skipSaveRestore = true;
+                            assert(nextRefPosition->refType == RefTypeUpperVectorRestore);
+                            nextRefPosition->skipSaveRestore = true;
                         }
 
                         if (assignedRegister != REG_NA)
@@ -7377,6 +7413,32 @@ void LinearScan::insertCopyOrReload(BasicBlock* block, GenTree* tree, unsigned m
 
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
 //------------------------------------------------------------------------
+// CanSkipUpperVectorSave: Determine whether an UpperVectorSave ref position doesn't actually require a save.
+//
+// Arguments:
+//    refPosition             - The RefTypeUpperVectorSave RefPosition.
+//    lclVarInterval          - The Interval for the local variable whose upper vector half might be saved.
+//
+bool LinearScan::CanSkipUpperVectorSave(RefPosition* refPosition, Interval* lclVarInterval)
+{
+    assert(refPosition->refType == RefTypeUpperVectorSave);
+
+#ifdef TARGET_ARM64
+    // PROF_HOOK preserves upper halves of q0-q7, LSRA must be told explicitly that saving these is not needed
+    // So skip the save if reg is assigned, ref is a PROF_HOOK, kill set does not contain reg, and reg is not
+    // a upper-half-only-callee saved reg
+    return (lclVarInterval->physReg != REG_NA) && (refPosition->treeNode != nullptr) &&
+           refPosition->treeNode->OperIs(GT_PROF_HOOK) &&
+           !getKillSetForProfilerHook().IsRegNumInMask(lclVarInterval->physReg) &&
+           !RBM_FLT_CALLEE_SAVED.IsRegNumInMask(lclVarInterval->physReg);
+#else
+    // Tail call profiler stub for amd64 target explicitly calls out that upper halves of ymm registers are not
+    // preserved
+    return false;
+#endif
+}
+
+//------------------------------------------------------------------------
 // insertUpperVectorSave: Insert code to save the upper half of a vector that lives
 //                        in a callee-save register at the point of a kill (the upper half is
 //                        not preserved).
@@ -8078,6 +8140,15 @@ void LinearScan::resolveRegisters()
                 {
                     if (treeNode != nullptr)
                     {
+#ifdef TARGET_XARCH
+                        // A narrow producer can still need a full-width reload or register copy.
+                        // Record it before codegen decides where calls need vzeroupper.
+                        if (varTypeIsSIMD(treeNode))
+                        {
+                            SetContainsAVXFlags(genTypeSize(treeNode->TypeGet()));
+                        }
+#endif // TARGET_XARCH
+
                         if (currentRefPosition->spillAfter)
                         {
                             treeNode->gtFlags |= GTF_SPILL;
@@ -8154,6 +8225,19 @@ void LinearScan::resolveRegisters()
                         unreached();
                     }
                 }
+
+#ifdef TARGET_XARCH
+                // A local store only dirties upper state when it copies to a different register.
+                // Its final destination is not known until local reference resolution above.
+                if (varTypeIsSIMD(treeNode) && treeNode->OperIsLocalStore() && (treeNode->GetRegNum() != REG_NA))
+                {
+                    GenTree* source = treeNode->AsLclVarCommon()->Data();
+                    if (!source->isContained() && (source->GetRegNum() != treeNode->GetRegNum()))
+                    {
+                        SetContainsAVXFlags(genTypeSize(treeNode->TypeGet()));
+                    }
+                }
+#endif // TARGET_XARCH
             }
         }
 
@@ -10810,7 +10894,7 @@ void LinearScan::TupleStyleDump(LsraTupleDumpMode mode)
                 assert(reg == assignedReg || varDsc->lvRegister == false);
                 if (reg != argReg)
                 {
-                    printf(getRegName(argReg));
+                    printf("%s", getRegName(argReg));
                     printf("=>");
                 }
                 printf("%s)", getRegName(reg));
@@ -11052,29 +11136,20 @@ void LinearScan::dumpLsraAllocationEvent(LsraDumpEvent event,
             printf("DUconflict    ");
             dumpRegRecords();
             break;
-        case LSRA_EVENT_DEFUSE_CASE1:
-            printf(indentFormat, "  Case #1 use defRegAssignment");
+        case LSRA_EVENT_DEFUSE_DEF_IN_FIXED_USE:
+            printf(indentFormat, "  Define in fixed use reg");
             dumpRegRecords();
             break;
-        case LSRA_EVENT_DEFUSE_CASE2:
-            printf(indentFormat, "  Case #2 use useRegAssignment");
+        case LSRA_EVENT_DEFUSE_DEF_IN_USE:
+            printf(indentFormat, "  Define in candidate use reg");
             dumpRegRecords();
             break;
-        case LSRA_EVENT_DEFUSE_CASE3:
-            printf(indentFormat, "  Case #3 use useRegAssignment");
-            dumpRegRecords();
-            dumpRegRecords();
-            break;
-        case LSRA_EVENT_DEFUSE_CASE4:
-            printf(indentFormat, "  Case #4 use defRegAssignment");
+        case LSRA_EVENT_DEFUSE_ANY_DEF:
+            printf(indentFormat, "  Define in any reg");
             dumpRegRecords();
             break;
-        case LSRA_EVENT_DEFUSE_CASE5:
-            printf(indentFormat, "  Case #5 set def to all regs");
-            dumpRegRecords();
-            break;
-        case LSRA_EVENT_DEFUSE_CASE6:
-            printf(indentFormat, "  Case #6 need a copy");
+        case LSRA_EVENT_DEFUSE_COPY:
+            printf(indentFormat, "  Need a copy");
             dumpRegRecords();
             if (interval == nullptr)
             {
@@ -11247,7 +11322,6 @@ void LinearScan::dumpLsraAllocationEvent(LsraDumpEvent event,
             break;
 
         // We currently don't dump anything for these events.
-        case LSRA_EVENT_DEFUSE_FIXED_DELAY_USE:
         case LSRA_EVENT_SPILL_EXTENDED_LIFETIME:
         case LSRA_EVENT_END_BB:
         case LSRA_EVENT_FREE_REGS:
@@ -12911,8 +12985,69 @@ void LinearScan::RegisterSelection::try_REG_ORDER()
     // This will always result in a single candidate. That is, it is the tie-breaker
     // for free candidates, and doesn't make sense as anything other than the last
     // heuristic for free registers.
-    unsigned         lowestRegOrder    = UINT_MAX;
-    SingleTypeRegSet lowestRegOrderBit = RBM_NONE;
+#ifdef TARGET_ARM64
+    // These groups preserve REG_VAR_ORDER and REG_VAR_ORDER_FLT in targetarm64.h. Select from
+    // the first nonempty group instead of visiting every candidate's rank.
+    SingleTypeRegSet preferred;
+    SingleTypeRegSet lowestRegOrderBit;
+    if (varTypeUsesFloatReg(regType))
+    {
+        // Mask off V0-V15 to select the V16-V31 group.
+        preferred = candidates & (RBM_ALLFLOAT.GetFloatRegSet() & ~((1ULL << REG_V16) - 1));
+        if (preferred != RBM_NONE)
+        {
+            lowestRegOrderBit = genFindLowestBit(preferred);
+        }
+        else
+        {
+            preferred = candidates & (RBM_V4 | RBM_V5 | RBM_V6 | RBM_V7).GetFloatRegSet();
+            if (preferred != RBM_NONE)
+            {
+                // V7..V4 are preferred in descending register-number order.
+                lowestRegOrderBit = 1ULL << BitOperations::BitScanReverse(preferred);
+            }
+            else
+            {
+                preferred =
+                    candidates &
+                    (RBM_V8 | RBM_V9 | RBM_V10 | RBM_V11 | RBM_V12 | RBM_V13 | RBM_V14 | RBM_V15).GetFloatRegSet();
+                if (preferred != RBM_NONE)
+                {
+                    lowestRegOrderBit = genFindLowestBit(preferred);
+                }
+                else
+                {
+                    // The remaining floating-point registers are V3..V0.
+                    lowestRegOrderBit = 1ULL << BitOperations::BitScanReverse(candidates);
+                }
+            }
+        }
+    }
+    else if (varTypeIsMask(regType))
+    {
+        // ARM64 predicate registers have equal regOrder ranks.
+        lowestRegOrderBit = genFindLowestBit(candidates);
+    }
+    else
+    {
+        preferred = candidates & (((1ULL << REG_R12) - 1) | (RBM_R13 | RBM_R14).GetIntRegSet());
+        if (preferred == RBM_NONE)
+        {
+            // After R13/R14, the remaining ranked registers are in ascending order.
+            preferred = candidates & RBM_ALLINT.GetIntRegSet();
+            if (preferred == RBM_NONE)
+            {
+                // Registers absent from REG_VAR_ORDER retain the same last rank.
+                preferred = candidates;
+            }
+        }
+        lowestRegOrderBit = genFindLowestBit(preferred);
+    }
+#endif // TARGET_ARM64
+
+#if !defined(TARGET_ARM64) || defined(DEBUG)
+    unsigned  lowestRegOrder = UINT_MAX;
+    regNumber lowestReg      = REG_NA;
     for (SingleTypeRegSet regOrderCandidates = candidates; regOrderCandidates != RBM_NONE;)
     {
         regNumber        regOrderCandidateRegNum = genFirstRegNumFromMask(regOrderCandidates, regType);
@@ -12922,10 +13057,19 @@ void LinearScan::RegisterSelection::try_REG_ORDER()
         unsigned thisRegOrder = linearScan->getRegisterRecord(regOrderCandidateRegNum)->regOrder;
         if (thisRegOrder < lowestRegOrder)
         {
-            lowestRegOrder    = thisRegOrder;
-            lowestRegOrderBit = regOrderCandidateBit;
+            lowestRegOrder = thisRegOrder;
+            lowestReg      = regOrderCandidateRegNum;
         }
     }
+    assert(lowestReg != REG_NA);
+    SingleTypeRegSet scannedRegOrderBit = genSingleTypeRegMask(lowestReg);
+#ifdef TARGET_ARM64
+    // Check the grouped selection against the rank scan, including stress modes.
+    assert(lowestRegOrderBit == scannedRegOrderBit);
+#else
+    SingleTypeRegSet lowestRegOrderBit = scannedRegOrderBit;
+#endif
+#endif // !TARGET_ARM64 || DEBUG
     assert(lowestRegOrderBit != RBM_NONE);
     found = applySingleRegSelection(REG_ORDER, lowestRegOrderBit);
 }

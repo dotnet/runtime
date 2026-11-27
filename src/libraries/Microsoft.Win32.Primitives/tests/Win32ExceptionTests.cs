@@ -18,7 +18,7 @@ namespace System.ComponentModel.Tests
         private const int E_FAIL = unchecked((int)0x80004005);
 
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode, EntryPoint = "FormatMessageW", SetLastError = true, BestFitMapping = true)]
-        private static extern int FormatMessage(
+        private static unsafe extern int FormatMessage(
             int dwFlags,
             IntPtr lpSource_mustBeNull,
             uint dwMessageId,
@@ -31,11 +31,17 @@ namespace System.ComponentModel.Tests
         {
             StringBuilder sb = new StringBuilder(FirstPassBufferSize); // Buffer length in the first pass in the implementation.
 
-            int result = FormatMessage(FORMAT_MESSAGE_IGNORE_INSERTS |
+            int result;
+            // SAFETY: To be audited
+            unsafe
+            {
+                result = FormatMessage(FORMAT_MESSAGE_IGNORE_INSERTS |
                                        FORMAT_MESSAGE_FROM_SYSTEM |
                                        FORMAT_MESSAGE_ARGUMENT_ARRAY,
                                        IntPtr.Zero, (uint)errorCode, 0, sb, sb.Capacity,
                                        null);
+            }
+
             if (result == 0)
             {
                 return (Marshal.GetLastPInvokeError() == ERROR_INSUFFICIENT_BUFFER);

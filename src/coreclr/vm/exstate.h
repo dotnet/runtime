@@ -50,17 +50,9 @@ class ThreadExceptionState
 
 public:
 
-#ifdef _DEBUG
-    typedef enum
-    {
-        STEC_All,
-        STEC_CurrentTrackerEqualNullOkHackForFatalStackOverflow,
-    } SetThrowableErrorChecking;
-#endif
-
-    void                SetThrowable(OBJECTREF throwable DEBUG_ARG(SetThrowableErrorChecking stecFlags = STEC_All));
     OBJECTREF           GetThrowable();
-    OBJECTHANDLE        GetThrowableAsHandle();
+    OBJECTHANDLE        GetThrowableAsPseudoHandle();
+    BOOL                IsThrowableNull();
     DWORD               GetExceptionCode();
     BOOL                IsComPlusException();
     EXCEPTION_POINTERS* GetExceptionPointers();
@@ -123,8 +115,6 @@ public:
     }
 
 private:
-    Thread* GetMyThread();
-
     PTR_ExInfo m_pCurrentTracker;
 public:
     PTR_ExInfo GetCurrentExceptionTracker()

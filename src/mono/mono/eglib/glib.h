@@ -346,8 +346,8 @@ typedef struct {
 
 void    g_clear_error (GError **gerror);
 void    g_error_free (GError *gerror);
-GError *g_error_new  (gpointer domain, gint code, const char *format, ...);
-void    g_set_error  (GError **err, gpointer domain, gint code, const gchar *format, ...);
+GError *g_error_new  (gpointer domain, gint code, const char *format, ...) G_ATTR_FORMAT_PRINTF(3, 4);
+void    g_set_error  (GError **err, gpointer domain, gint code, const gchar *format, ...) G_ATTR_FORMAT_PRINTF(4, 5);
 void    g_propagate_error (GError **dest, GError *src);
 
 /*
@@ -724,17 +724,17 @@ typedef enum {
 G_ENUM_FUNCTIONS (GLogLevelFlags)
 
 gint           g_printv               (const gchar *format, va_list args);
-void           g_print                (const gchar *format, ...);
-void           g_printerr             (const gchar *format, ...);
+void           g_print                (const gchar *format, ...) G_ATTR_FORMAT_PRINTF(1, 2);
+void           g_printerr             (const gchar *format, ...) G_ATTR_FORMAT_PRINTF(1, 2);
 GLogLevelFlags g_log_set_always_fatal (GLogLevelFlags fatal_mask);
 GLogLevelFlags g_log_set_fatal_mask   (const gchar *log_domain, GLogLevelFlags fatal_mask);
 void           g_logv                 (const gchar *log_domain, GLogLevelFlags log_level, const gchar *format, va_list args);
 G_EXTERN_C // Used by MonoPosixHelper or MonoSupportW, at least.
-void           g_log                  (const gchar *log_domain, GLogLevelFlags log_level, const gchar *format, ...);
+void           g_log                  (const gchar *log_domain, GLogLevelFlags log_level, const gchar *format, ...) G_ATTR_FORMAT_PRINTF(3, 4);
 void           g_log_disabled         (const gchar *log_domain, GLogLevelFlags log_level, const char *file, int line);
 G_EXTERN_C // Used by MonoPosixHelper or MonoSupportW, at least.
 G_ATTR_NORETURN void
-               g_assertion_message    (const gchar *format, ...);
+               g_assertion_message    (const gchar *format, ...) G_ATTR_FORMAT_PRINTF(1, 2);
 G_ATTR_NORETURN void
                mono_assertion_message_disabled  (const char *file, int line);
 G_ATTR_NORETURN void
@@ -1031,7 +1031,7 @@ g_async_safe_vfprintf (int handle, gchar const *format, va_list args)
 	return ret;
 }
 
-static inline gint
+static inline gint G_ATTR_FORMAT_PRINTF(2, 3)
 g_async_safe_fprintf (int handle, gchar const *format, ...)
 {
 	va_list args;
@@ -1047,7 +1047,7 @@ g_async_safe_vprintf (gchar const *format, va_list args)
 	return g_async_safe_vfprintf (1, format, args);
 }
 
-static inline gint
+static inline gint G_ATTR_FORMAT_PRINTF(1, 2)
 g_async_safe_printf (gchar const *format, ...)
 {
 	va_list args;

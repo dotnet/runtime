@@ -1,10 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-browser</TargetFrameworks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
     <!-- NegotiateStream Tests -->
     <Compile Include="NegotiateStreamLoopbackTest.cs" />
+    <Compile Include="NegotiateAuthenticationTest.cs" />
 
     <!-- Common test files -->
     <Compile Include="$(CommonPath)System\Net\ArrayBuffer.cs"

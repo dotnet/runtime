@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "Crst.h"
+#include "cdacdata.h"
 
 class Thread;
 class CLREventStatic;
@@ -15,11 +16,10 @@ enum class TrapThreadsFlags
     TrapThreads = 1,
 };
 
-extern "C" void PopulateDebugHeaders();
-
 class ThreadStore
 {
-    friend void PopulateDebugHeaders();
+    friend class RuntimeInstance;
+    friend struct ::cdac_data<ThreadStore>;
 
     SList<Thread>       m_ThreadList;
     PTR_RuntimeInstance m_pRuntimeInstance;
@@ -29,6 +29,7 @@ private:
     ThreadStore();
 
 public:
+    SPTR_DECL(ThreadStore, s_pThreadStore);
     void                    LockThreadStore();
     void                    UnlockThreadStore();
 
@@ -56,8 +57,6 @@ public:
     static void             DetachCurrentThread();
 #ifndef DACCESS_COMPILE
     static void             SaveCurrentThreadOffsetForDAC();
-#else
-    static PTR_Thread       GetThreadFromTEB(TADDR pvTEB);
 #endif
 
     void        Destroy();
@@ -67,6 +66,11 @@ public:
     static bool IsTrapThreadsRequested();
 };
 typedef DPTR(ThreadStore) PTR_ThreadStore;
+
+template<> struct cdac_data<ThreadStore>
+{
+    static constexpr size_t FirstThreadLink = offsetof(ThreadStore, m_ThreadList);
+};
 
 ThreadStore * GetThreadStore();
 
@@ -79,5 +83,4 @@ ThreadStore * GetThreadStore();
 
 #define END_FOREACH_THREAD  \
     }                       \
-}                           \
-
+}

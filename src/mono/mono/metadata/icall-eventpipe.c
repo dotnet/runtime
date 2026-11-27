@@ -80,7 +80,7 @@ ves_icall_System_Diagnostics_Tracing_EventPipeInternal_Enable (
 	if (output_file)
 		output_file_utf8 = mono_utf16_to_utf8 (output_file, g_utf16_len (output_file), error);
 
-	session_id = mono_component_event_pipe ()->enable (
+	session_id = mono_component_event_pipe ()->init_session (
 		output_file_utf8,
 		circular_buffer_size_mb,
 		(EventPipeProviderConfigurationNative *)providers,
@@ -91,7 +91,7 @@ ves_icall_System_Diagnostics_Tracing_EventPipeInternal_Enable (
 		NULL,
 		NULL);
 
-	mono_component_event_pipe ()->start_streaming (session_id);
+	mono_component_event_pipe ()->start_session (session_id);
 
 	g_free (output_file_utf8);
 	return (uint64_t)session_id;

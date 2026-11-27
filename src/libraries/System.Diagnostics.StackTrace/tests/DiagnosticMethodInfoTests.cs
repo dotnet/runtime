@@ -23,7 +23,7 @@ namespace System.Diagnostics.Tests
         public static IEnumerable<object[]> Create_OpenDelegate_TestData()
         {
             // Tracked at https://github.com/dotnet/runtime/issues/100748
-            bool hasGvmOpenDelegateBug = !PlatformDetection.IsMonoRuntime && !PlatformDetection.IsNativeAot && !PlatformDetection.IsAppleMobile;
+            bool hasGvmOpenDelegateBug = !PlatformDetection.IsMonoRuntime && !PlatformDetection.IsNativeAot;
 
             const string TestNamespace = nameof(System) + "." + nameof(System.Diagnostics) + "." + nameof(System.Diagnostics.Tests) + ".";
 
@@ -183,7 +183,13 @@ namespace System.Diagnostics.Tests
         public unsafe void Create_MarshalledPointer()
         {
             void* pMem = NativeMemory.Alloc(1);
-            Action del = Marshal.GetDelegateForFunctionPointer<Action>((nint)pMem);
+            Action del;
+            // SAFETY: To be audited
+            unsafe
+            {
+                del = Marshal.GetDelegateForFunctionPointer<Action>((nint)pMem);
+            }
+
             NativeMemory.Free(pMem);
 
             DiagnosticMethodInfo dmi = DiagnosticMethodInfo.Create(del);

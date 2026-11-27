@@ -5,6 +5,7 @@
 // Simple Logging Facility
 //
 #include "stdafx.h"
+#include <minipal/thread.h>
 
 //
 // Define LOGGING by default in a checked build. If you want to log in a free
@@ -77,7 +78,7 @@ VOID InitLogging()
     if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_LogWithPid))
     {
         WCHAR pidSuffix[ARRAY_SIZE(".") + MaxUnsigned32BitDecString] = W(".");
-        DWORD pid = GetCurrentProcessId();
+        DWORD pid = minipal_get_current_process_id();
         FormatInteger(pidSuffix + 1, ARRAY_SIZE(pidSuffix) - 1, "%u", pid);
         // Append the format ".%u" to the end of the file name
         wcscat_s(szLogFileName.Ptr(), szLogFileName.Size(), pidSuffix);
@@ -290,7 +291,7 @@ VOID LogSpewAlwaysValist(const char *fmt, va_list args)
     static bool needsPrefix = true;
 
     if (needsPrefix)
-        buflen = sprintf_s(pBuffer, ARRAY_SIZE(rgchBuffer), "TID %04x: ", GetCurrentThreadId());
+        buflen = sprintf_s(pBuffer, ARRAY_SIZE(rgchBuffer), "TID %04zx: ", minipal_get_current_thread_id());
 
     needsPrefix = (fmt[strlen(fmt)-1] == '\n');
 
@@ -346,7 +347,7 @@ VOID LogSpewAlwaysValist(const char *fmt, va_list args)
 
     if (LogFlags & LOG_ENABLE_DEBUGGER_LOGGING)
     {
-        OutputDebugStringA(pBuffer);
+        OutputDebugStringUtf8(pBuffer);
     }
 
     LeaveLogLock();

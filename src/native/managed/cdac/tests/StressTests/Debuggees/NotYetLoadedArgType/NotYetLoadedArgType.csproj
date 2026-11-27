@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <!-- The library's source lives under Lib/ and is compiled by
+         Lib/NotYetLoadedArgLib.csproj. Exclude it from the exe's auto-include
+         glob so NotYetLoadedArg comes from the lib assembly, not this csproj. -->
+    <Compile Remove="Lib\**" />
+
+    <!-- Compile-time reference ONLY (Private=false): NotYetLoadedArgLib.dll is kept
+         out of the app base so the default binder fails to find it at runtime
+         and raises AssemblyResolve. That gives us a controlled managed callback
+         (which allocates) while the NotYetLoadedArg TypeRef is still unresolved,
+         the exact window the cDAC out-of-process scan mishandles. -->
+    <ProjectReference Include="Lib\NotYetLoadedArgLib.csproj" Private="false" />
+  </ItemGroup>
+
+  <!-- Stage NotYetLoadedArgLib.dll into a subdirectory the AssemblyResolve handler
+       loads from. It is present in the debuggee output (Helix copies **/* under
+       the debuggee dir recursively) but NOT in the app base, so it stays
+       unresolved until Derived.Func's first JIT. -->
+  <Target Name="StageLazyDep" AfterTargets="Build">
+    <MSBuild Projects="Lib\NotYetLoadedArgLib.csproj"
+             Targets="GetTargetPath"
+             Properties="Configuration=$(Configuration)">
+      <Output TaskParameter="TargetOutputs" ItemName="_LazyDep" />
+    </MSBuild>
+    <Copy SourceFiles="@(_LazyDep)"
+          DestinationFolder="$(OutDir)lazydep"
+          SkipUnchangedFiles="true" />
+  </Target>
+</Project>

@@ -13,6 +13,8 @@
 #include <iomanip>
 #include <minipal/debugger.h>
 #include <minipal/random.h>
+#include <minipal/environ.h>
+#include <minipal/utf8.h>
 
 static bool breakOnDebugBreakorAV = false;
 
@@ -58,11 +60,11 @@ char* GetEnvironmentVariableWithDefaultA(const char* envVarName, const char* def
     char* retString = nullptr;
 
     // Figure out how much space we need to allocate
-    DWORD dwRetVal = ::GetEnvironmentVariableA(envVarName, nullptr, 0);
+    DWORD dwRetVal = minipal_environ_get_variable(envVarName, nullptr, 0);
     if (dwRetVal != 0)
     {
         retString = new char[dwRetVal];
-        dwRetVal  = ::GetEnvironmentVariableA(envVarName, retString, dwRetVal);
+        dwRetVal  = minipal_environ_get_variable(envVarName, retString, dwRetVal);
     }
     else
     {
@@ -82,11 +84,11 @@ WCHAR* GetEnvironmentVariableWithDefaultW(const WCHAR* envVarName, const WCHAR* 
     WCHAR* retString = nullptr;
 
     // Figure out how much space we need to allocate
-    DWORD dwRetVal = ::GetEnvironmentVariableW(envVarName, nullptr, 0);
+    DWORD dwRetVal = minipal_environ_get_variable_u16((const CHAR16_T*)envVarName, nullptr, 0);
     if (dwRetVal != 0)
     {
         retString = new WCHAR[dwRetVal];
-        dwRetVal  = ::GetEnvironmentVariableW(envVarName, retString, dwRetVal);
+        dwRetVal  = minipal_environ_get_variable_u16((const CHAR16_T*)envVarName, (CHAR16_T*)retString, dwRetVal);
     }
     else
     {
@@ -103,7 +105,7 @@ WCHAR* GetEnvironmentVariableWithDefaultW(const WCHAR* envVarName, const WCHAR* 
 
 const char* GetEnvWithDefault(const char* envVarName, const char* defaultValue)
 {
-    // getenv isn't thread safe, but it's simple and sufficient since we are development-only tool
+    // Intentionally uses getenv for a non-owning pointer into the process environment.
     char* env = getenv(envVarName);
     return env ? env : defaultValue;
 }
@@ -293,6 +295,16 @@ void PutArm64Rel12(UINT32* pCode, INT32 imm12)
     addInstr &= 0xFFC003FF;
     addInstr |= (imm12 << 10);
     *pCode = addInstr;
+}
+
+void PutArm64Rel12Ldr(UINT32* pCode, INT32 imm12)
+{
+    // For a 64-bit LDR the encoded immediate is scaled by the access size (8).
+    INT32  scaledImm12 = imm12 >> 3;
+    UINT32 ldrInstr    = *pCode;
+    ldrInstr &= 0xFFC003FF;
+    ldrInstr |= (scaledImm12 << 10);
+    *pCode = ldrInstr;
 }
 
 void PutThumb2Imm16(UINT16* p, UINT16 imm16)
@@ -518,11 +530,23 @@ void PutRiscV64AuipcCombo(UINT32 * pCode, INT64 offset, bool isStype)
     INT32 hi20 = INT32(offset - lo12);
     _ASSERTE(INT64(lo12) + INT64(hi20) == offset);
 
-    _ASSERTE(GetRiscV64AuipcCombo(pCode, isStype) == 0);
-    pCode[0] |= hi20;
-    int bottomBitsPos = isStype ? 7 : 20;
-    pCode[1] |= (lo12 >> 5) << 25; // top 7 bits are in the same spot
-    pCode[1] |= (lo12 & 0x1F) << bottomBitsPos;
+    // Replace existing immediate bits because RISC-V relocation placeholders may already carry addends.
+    pCode[0] &= 0x00000FFF;
+    pCode[0] |= hi20 & 0xFFFFF000;
+
+    UINT32 lo12Bits = UINT32(lo12) & 0xFFF;
+    if (isStype)
+    {
+        pCode[1] &= 0x01FFF07F;
+        pCode[1] |= (lo12Bits & 0xFE0) << 20;
+        pCode[1] |= (lo12Bits & 0x01F) << 7;
+    }
+    else
+    {
+        pCode[1] &= 0x000FFFFF;
+        pCode[1] |= lo12Bits << 20;
+    }
+
     _ASSERTE(GetRiscV64AuipcCombo(pCode, isStype) == offset);
 }
 
@@ -563,11 +587,10 @@ std::string getClassName(MethodContext* mc, CORINFO_CLASS_HANDLE clsHnd)
 
 std::string ConvertToUtf8(const WCHAR* str)
 {
-    unsigned len = WideCharToMultiByte(CP_UTF8, 0, str, -1, nullptr, 0, nullptr, nullptr);
-    if (len == 0)
-        return{};
+    size_t length = u16_strlen(str) + 1;
+    size_t len    = minipal_get_length_utf16_to_utf8((const CHAR16_T*)str, length, 0);
 
     std::vector<char> buf(len + 1);
-    WideCharToMultiByte(CP_UTF8, 0, str, -1, buf.data(), len + 1, nullptr, nullptr);
+    minipal_convert_utf16_to_utf8((const CHAR16_T*)str, length, buf.data(), len + 1, 0);
     return std::string{ buf.data() };
 }

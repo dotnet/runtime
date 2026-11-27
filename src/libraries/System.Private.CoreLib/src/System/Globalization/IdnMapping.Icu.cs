@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -7,7 +7,7 @@ namespace System.Globalization
 {
     public sealed partial class IdnMapping
     {
-        private string IcuGetAsciiCore(string unicodeString, int index, int count)
+        private unsafe string IcuGetAsciiCore(string unicodeString, int index, int count)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(!GlobalizationMode.UseNls);
@@ -74,7 +74,7 @@ namespace System.Globalization
             return false;
         }
 
-        private string IcuGetUnicodeCore(string asciiString, int index, int count)
+        private unsafe string IcuGetUnicodeCore(string asciiString, int index, int count)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(!GlobalizationMode.UseNls);

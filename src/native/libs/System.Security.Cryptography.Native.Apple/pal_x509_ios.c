@@ -69,7 +69,7 @@ int32_t AppleCryptoNative_X509ImportCertificate(uint8_t* pbData,
         {
             if (CFArrayGetCount(p12Items) > 0)
             {
-                CFDictionaryRef item_dict = CFArrayGetValueAtIndex(p12Items, 0);
+                CFDictionaryRef item_dict = (CFDictionaryRef)CFArrayGetValueAtIndex(p12Items, 0);
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wcast-qual"
                 *pIdentityOut = (SecIdentityRef)CFRetain(CFDictionaryGetValue(item_dict, kSecImportItemIdentity));
@@ -169,7 +169,7 @@ int32_t AppleCryptoNative_X509ImportCollection(uint8_t* pbData,
 
             for (int i = 0; i < CFArrayGetCount(p12Items); i++)
             {
-                CFDictionaryRef item_dict = CFArrayGetValueAtIndex(p12Items, i);
+                CFDictionaryRef item_dict = (CFDictionaryRef)CFArrayGetValueAtIndex(p12Items, i);
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wcast-qual"
                 SecIdentityRef identity =

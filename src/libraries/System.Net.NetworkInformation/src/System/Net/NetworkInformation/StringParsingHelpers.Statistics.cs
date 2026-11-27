@@ -401,7 +401,7 @@ namespace System.Net.NetworkInformation
             };
         }
 
-        internal static IPInterfaceStatisticsTable ParseInterfaceStatisticsTableFromFile(string filePath, string name)
+        internal static unsafe IPInterfaceStatisticsTable ParseInterfaceStatisticsTableFromFile(string filePath, string name)
         {
             using (StreamReader sr = OpenStreamReader(filePath))
             {

@@ -5,7 +5,6 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using static System.IO.Hashing.VectorHelper;
 
@@ -73,38 +72,35 @@ namespace System.IO.Hashing
             [MethodImpl(MethodImplOptions.NoInlining)]
             private uint UpdateVectorizedCore(uint crc, ReadOnlySpan<byte> source, out int bytesConsumed)
             {
-                ref byte srcRef = ref MemoryMarshal.GetReference(source);
-                int length = source.Length;
+                ReadOnlySpan<byte> remaining = source;
 
                 Vector128<ulong> x1;
                 Vector128<ulong> x2;
 
-                if (length >= Vector128<byte>.Count * 4)
+                if (remaining.Length >= Vector128<byte>.Count * 4)
                 {
-                    x1 = Vector128.LoadUnsafe(ref srcRef).AsUInt64();
-                    x2 = Vector128.LoadUnsafe(ref srcRef, 16).AsUInt64();
-                    Vector128<ulong> x3 = Vector128.LoadUnsafe(ref srcRef, 32).AsUInt64();
-                    Vector128<ulong> x4 = Vector128.LoadUnsafe(ref srcRef, 48).AsUInt64();
+                    x1 = Vector128.Create<byte>(remaining).AsUInt64();
+                    x2 = Vector128.Create<byte>(remaining.Slice(16)).AsUInt64();
+                    Vector128<ulong> x3 = Vector128.Create<byte>(remaining.Slice(32)).AsUInt64();
+                    Vector128<ulong> x4 = Vector128.Create<byte>(remaining.Slice(48)).AsUInt64();
 
-                    srcRef = ref Unsafe.Add(ref srcRef, Vector128<byte>.Count * 4);
-                    length -= Vector128<byte>.Count * 4;
+                    remaining = remaining.Slice(Vector128<byte>.Count * 4);
 
                     x1 ^= Vector128.CreateScalar(crc).AsUInt64();
 
-                    while (length >= Vector128<byte>.Count * 4)
+                    while (remaining.Length >= Vector128<byte>.Count * 4)
                     {
-                        Vector128<ulong> y5 = Vector128.LoadUnsafe(ref srcRef).AsUInt64();
-                        Vector128<ulong> y6 = Vector128.LoadUnsafe(ref srcRef, 16).AsUInt64();
-                        Vector128<ulong> y7 = Vector128.LoadUnsafe(ref srcRef, 32).AsUInt64();
-                        Vector128<ulong> y8 = Vector128.LoadUnsafe(ref srcRef, 48).AsUInt64();
+                        Vector128<ulong> y5 = Vector128.Create<byte>(remaining).AsUInt64();
+                        Vector128<ulong> y6 = Vector128.Create<byte>(remaining.Slice(16)).AsUInt64();
+                        Vector128<ulong> y7 = Vector128.Create<byte>(remaining.Slice(32)).AsUInt64();
+                        Vector128<ulong> y8 = Vector128.Create<byte>(remaining.Slice(48)).AsUInt64();
 
                         x1 = FoldPolynomialPair(y5, x1, _k1k2);
                         x2 = FoldPolynomialPair(y6, x2, _k1k2);
                         x3 = FoldPolynomialPair(y7, x3, _k1k2);
                         x4 = FoldPolynomialPair(y8, x4, _k1k2);
 
-                        srcRef = ref Unsafe.Add(ref srcRef, Vector128<byte>.Count * 4);
-                        length -= Vector128<byte>.Count * 4;
+                        remaining = remaining.Slice(Vector128<byte>.Count * 4);
                     }
 
                     x1 = FoldPolynomialPair(x2, x1, _k3k4);
@@ -113,19 +109,17 @@ namespace System.IO.Hashing
                 }
                 else
                 {
-                    x1 = Vector128.LoadUnsafe(ref srcRef).AsUInt64();
+                    x1 = Vector128.Create<byte>(remaining).AsUInt64();
                     x1 ^= Vector128.CreateScalar(crc).AsUInt64();
 
-                    srcRef = ref Unsafe.Add(ref srcRef, Vector128<byte>.Count);
-                    length -= Vector128<byte>.Count;
+                    remaining = remaining.Slice(Vector128<byte>.Count);
                 }
 
-                while (length >= Vector128<byte>.Count)
+                while (remaining.Length >= Vector128<byte>.Count)
                 {
-                    x1 = FoldPolynomialPair(Vector128.LoadUnsafe(ref srcRef).AsUInt64(), x1, _k3k4);
+                    x1 = FoldPolynomialPair(Vector128.Create<byte>(remaining).AsUInt64(), x1, _k3k4);
 
-                    srcRef = ref Unsafe.Add(ref srcRef, Vector128<byte>.Count);
-                    length -= Vector128<byte>.Count;
+                    remaining = remaining.Slice(Vector128<byte>.Count);
                 }
 
                 // Fold 128 bits to 64 bits.
@@ -140,7 +134,7 @@ namespace System.IO.Hashing
                 x2 = CarrylessMultiplyLower(x2, _polyMu);
                 x1 ^= x2;
 
-                bytesConsumed = source.Length - length;
+                bytesConsumed = source.Length - remaining.Length;
                 return x1.AsUInt32().GetElement(1);
             }
         }
@@ -183,9 +177,9 @@ namespace System.IO.Hashing
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            private static Vector128<ulong> LoadReversed(ref byte source, nuint elementOffset)
+            private static Vector128<ulong> LoadReversed(ReadOnlySpan<byte> source)
             {
-                Vector128<byte> vector = Vector128.LoadUnsafe(ref source, elementOffset);
+                Vector128<byte> vector = Vector128.Create<byte>(source);
 
                 if (BitConverter.IsLittleEndian)
                 {
@@ -212,37 +206,34 @@ namespace System.IO.Hashing
             [MethodImpl(MethodImplOptions.NoInlining)]
             private uint UpdateVectorizedCore(uint crc, ReadOnlySpan<byte> source, out int bytesConsumed)
             {
-                ref byte srcRef = ref MemoryMarshal.GetReference(source);
-                int length = source.Length;
+                ReadOnlySpan<byte> remaining = source;
 
                 Vector128<ulong> x1;
 
-                if (length >= Vector128<byte>.Count * 4)
+                if (remaining.Length >= Vector128<byte>.Count * 4)
                 {
-                    x1 = LoadReversed(ref srcRef, 0);
-                    Vector128<ulong> x2 = LoadReversed(ref srcRef, 16);
-                    Vector128<ulong> x3 = LoadReversed(ref srcRef, 32);
-                    Vector128<ulong> x4 = LoadReversed(ref srcRef, 48);
+                    x1 = LoadReversed(remaining);
+                    Vector128<ulong> x2 = LoadReversed(remaining.Slice(16));
+                    Vector128<ulong> x3 = LoadReversed(remaining.Slice(32));
+                    Vector128<ulong> x4 = LoadReversed(remaining.Slice(48));
 
-                    srcRef = ref Unsafe.Add(ref srcRef, Vector128<byte>.Count * 4);
-                    length -= Vector128<byte>.Count * 4;
+                    remaining = remaining.Slice(Vector128<byte>.Count * 4);
 
                     x1 ^= ShiftLowerToUpper(Vector128.CreateScalar((ulong)crc << 32));
 
-                    while (length >= Vector128<byte>.Count * 4)
+                    while (remaining.Length >= Vector128<byte>.Count * 4)
                     {
-                        Vector128<ulong> y5 = LoadReversed(ref srcRef, 0);
-                        Vector128<ulong> y6 = LoadReversed(ref srcRef, 16);
-                        Vector128<ulong> y7 = LoadReversed(ref srcRef, 32);
-                        Vector128<ulong> y8 = LoadReversed(ref srcRef, 48);
+                        Vector128<ulong> y5 = LoadReversed(remaining);
+                        Vector128<ulong> y6 = LoadReversed(remaining.Slice(16));
+                        Vector128<ulong> y7 = LoadReversed(remaining.Slice(32));
+                        Vector128<ulong> y8 = LoadReversed(remaining.Slice(48));
 
                         x1 = FoldPolynomialPair(y5, x1, _k1k2);
                         x2 = FoldPolynomialPair(y6, x2, _k1k2);
                         x3 = FoldPolynomialPair(y7, x3, _k1k2);
                         x4 = FoldPolynomialPair(y8, x4, _k1k2);
 
-                        srcRef = ref Unsafe.Add(ref srcRef, Vector128<byte>.Count * 4);
-                        length -= Vector128<byte>.Count * 4;
+                        remaining = remaining.Slice(Vector128<byte>.Count * 4);
                     }
 
                     x1 = FoldPolynomialPair(x2, x1, _k3k4);
@@ -251,19 +242,17 @@ namespace System.IO.Hashing
                 }
                 else
                 {
-                    x1 = LoadReversed(ref srcRef, 0);
+                    x1 = LoadReversed(remaining);
                     x1 ^= ShiftLowerToUpper(Vector128.CreateScalar((ulong)crc << 32));
 
-                    srcRef = ref Unsafe.Add(ref srcRef, Vector128<byte>.Count);
-                    length -= Vector128<byte>.Count;
+                    remaining = remaining.Slice(Vector128<byte>.Count);
                 }
 
-                while (length >= Vector128<byte>.Count)
+                while (remaining.Length >= Vector128<byte>.Count)
                 {
-                    x1 = FoldPolynomialPair(LoadReversed(ref srcRef, 0), x1, _k3k4);
+                    x1 = FoldPolynomialPair(LoadReversed(remaining), x1, _k3k4);
 
-                    srcRef = ref Unsafe.Add(ref srcRef, Vector128<byte>.Count);
-                    length -= Vector128<byte>.Count;
+                    remaining = remaining.Slice(Vector128<byte>.Count);
                 }
 
                 x1 = FoldPolynomialPair(Vector128<ulong>.Zero, x1, _foldConstants);
@@ -280,7 +269,7 @@ namespace System.IO.Hashing
                 x1 = CarrylessMultiplyLower(x1, Vector128.CreateScalar<ulong>(Polynomial));
                 x1 ^= temp;
 
-                bytesConsumed = source.Length - length;
+                bytesConsumed = source.Length - remaining.Length;
                 return x1.AsUInt32().GetElement(0);
             }
         }

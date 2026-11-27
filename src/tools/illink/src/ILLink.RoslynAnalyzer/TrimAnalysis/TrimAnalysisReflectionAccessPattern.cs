@@ -48,14 +48,14 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
             var location = Operation.Syntax.GetLocation();
             var typeNameResolver = new TypeNameResolver(context.Compilation);
             var reflectionAccessAnalyzer = new ReflectionAccessAnalyzer(reportDiagnostic, typeNameResolver, typeHierarchyType: null);
-            if (context.EnableTrimAnalyzer &&
+            if (context.TrimAnalyzer is not null &&
                 !OwningSymbol.IsInRequiresUnreferencedCodeAttributeScope(out _) &&
                 !FeatureContext.IsEnabled(RequiresUnreferencedCodeAnalyzer.FullyQualifiedRequiresUnreferencedCodeAttribute))
             {
                 reflectionAccessAnalyzer.GetDiagnosticsForReflectionAccessToDAMOnMethod(location, ReferencedMethod);
             }
 
-            DiagnosticContext diagnosticContext = new(location, reportDiagnostic);
+            DiagnosticContext diagnosticContext = new(location, reportDiagnostic, context.Compilation);
             foreach (var requiresAnalyzer in context.EnabledRequiresAnalyzers)
                 requiresAnalyzer.CheckAndCreateRequiresDiagnostic(Operation, ReferencedMethod, OwningSymbol, context, FeatureContext, diagnosticContext);
         }

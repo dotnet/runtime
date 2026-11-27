@@ -18,7 +18,19 @@ typedef struct
 #define DllImportEntry(impl) \
     {#impl, (void*)&impl},
 
-static const void* minipal_resolve_dllimport(const Entry* resolutionTable, size_t tableLength, const char* name)
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/**
+ * Look up an entry point in a DllImport resolution table.
+ *
+ * @param resolutionTable The table of entries, typically built with DllImportEntry.
+ * @param tableLength Number of entries in the table.
+ * @param name The name of the entry point.
+ * @return The entry point, or NULL if the table does not have it.
+ */
+inline const void* minipal_resolve_dllimport(const Entry* resolutionTable, size_t tableLength, const char* name)
 {
     for (size_t i = 0; i < tableLength; i++)
     {
@@ -30,5 +42,9 @@ static const void* minipal_resolve_dllimport(const Entry* resolutionTable, size_
 
     return NULL;
 }
+
+#ifdef __cplusplus
+}
+#endif // extern "C"
 
 #endif // HAVE_MINIPAL_ENTRYPOINTS_H

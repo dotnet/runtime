@@ -40,7 +40,7 @@ namespace System.IO.Tests
                 using (FileStream newFs = CreateFileStream(fs.SafeFileHandle, FileAccess.ReadWrite, 4096, !isAsync))
                 {
                     // Verify that the new FileStream uses handle's IsAsync, not the parameter
-                    Assert.Equal(isAsync, newFs.IsAsync);
+                    Assert.Equal(IsAsyncIoSupportedForRegularFiles && isAsync, newFs.IsAsync);
 
                     // Perform async write, seek to beginning, and async read to verify functionality
                     byte[] writeBuffer = new byte[] { 1, 2, 3, 4, 5 };

@@ -1090,6 +1090,18 @@ namespace System.Tests
         }
 
         [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static void TryFormatUtf8_UnpairedSurrogate(bool highSurrogate)
+        {
+            char value = highSurrogate ? '\uD800' : '\uDC00';
+            Span<byte> destination = stackalloc byte[3];
+
+            Assert.True(((IUtf8SpanFormattable)value).TryFormat(destination, out int bytesWritten, default, null));
+            Assert.Equal("\uFFFD"u8, destination[..bytesWritten]);
+        }
+
+        [Theory]
         [InlineData(new byte[0], typeof(FormatException))] // empty buffer
         [InlineData(new byte[] { 0x30, 0x40, 0x50 }, typeof(FormatException))] // Multiple ASCII bytes
         [InlineData(new byte[] { 0x80 }, typeof(FormatException))] // standalone continuation byte
@@ -1343,8 +1355,8 @@ namespace System.Tests
                 {
                     // We'll build up the exception message ourselves so the dev knows what code point failed.
                     throw EqualException.ForMismatchedValues(
-                        expected: expected,
-                        actual: char.GetUnicodeCategory((char)i),
+                        expected: expected.ToString(),
+                        actual: char.GetUnicodeCategory((char)i).ToString(),
                         banner: FormattableString.Invariant($@"char.GetUnicodeCategory('\u{i:X4}') returned wrong value."));
                 }
             }
@@ -1363,8 +1375,8 @@ namespace System.Tests
                 {
                     // We'll build up the exception message ourselves so the dev knows what code point failed.
                     throw EqualException.ForMismatchedValues(
-                        expected: UnicodeData.IsLetter((char)i),
-                        actual: char.IsLetter((char)i),
+                        expected: UnicodeData.IsLetter((char)i).ToString(),
+                        actual: char.IsLetter((char)i).ToString(),
                         banner: FormattableString.Invariant($@"char.IsLetter('\u{i:X4}') returned wrong value."));
                 }
             }
@@ -1384,8 +1396,8 @@ namespace System.Tests
                 {
                     // We'll build up the exception message ourselves so the dev knows what code point failed.
                     throw EqualException.ForMismatchedValues(
-                        expected: expected,
-                        actual: char.IsLower((char)i),
+                        expected: expected.ToString(),
+                        actual: char.IsLower((char)i).ToString(),
                         banner: FormattableString.Invariant($@"char.IsLower('\u{i:X4}') returned wrong value."));
                 }
             }
@@ -1406,8 +1418,8 @@ namespace System.Tests
                 {
                     // We'll build up the exception message ourselves so the dev knows what code point failed.
                     throw EqualException.ForMismatchedValues(
-                        expected: expected,
-                        actual: char.IsUpper((char)i),
+                        expected: expected.ToString(),
+                        actual: char.IsUpper((char)i).ToString(),
                         banner: FormattableString.Invariant($@"char.IsUpper('\u{i:X4}') returned wrong value."));
                 }
             }
@@ -1426,8 +1438,8 @@ namespace System.Tests
                 {
                     // We'll build up the exception message ourselves so the dev knows what code point failed.
                     throw EqualException.ForMismatchedValues(
-                        expected: UnicodeData.IsWhiteSpace(i),
-                        actual: char.IsWhiteSpace((char)i),
+                        expected: UnicodeData.IsWhiteSpace(i).ToString(),
+                        actual: char.IsWhiteSpace((char)i).ToString(),
                         banner: FormattableString.Invariant($@"char.IsWhiteSpace('\u{i:X4}') returned wrong value."));
                 }
             }

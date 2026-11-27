@@ -1,0 +1,57 @@
+<!--
+***********************************************************************************************
+Microsoft.NET.Sdk.WebAssembly.Browser.CoreCLR.ReadyToRun.InBuild.targets
+
+ReadyToRun compiler override for CoreCLR browser-wasm when an in-build crossgen2 is provided.
+Appended after the optional Crossgen2Tasks shim so this resolver wins. Mirrors AppleBuild.ReadyToRun.targets.
+
+Copyright (c) .NET Foundation. All rights reserved.
+***********************************************************************************************
+-->
+<Project>
+  <Target Name="ResolveReadyToRunCompilers"
+          Condition="'$(UseMonoRuntime)' == 'false' and '$(PublishReadyToRun)' == 'true'"
+          DependsOnTargets="$(ResolveReadyToRunCompilersDependsOn)">
+    <PropertyGroup>
+      <_WasmCrossgen2InBuildUsable Condition="'$(Crossgen2InBuildDir)' != '' and Exists('$(Crossgen2InBuildDir)')">true</_WasmCrossgen2InBuildUsable>
+      <_WasmCrossgen2ExeSuffix Condition="'$(ExeSuffix)' != ''">$(ExeSuffix)</_WasmCrossgen2ExeSuffix>
+      <_WasmCrossgen2ExeSuffix Condition="'$(_WasmCrossgen2ExeSuffix)' == '' and $([MSBuild]::IsOSPlatform('windows'))">.exe</_WasmCrossgen2ExeSuffix>
+      <!-- Accept both layouts: the raw in-build dir has crossgen2 at its root, the shipped
+           Microsoft.NETCore.App.Crossgen2.<hostRid> pack has it under tools/. -->
+      <_WasmCrossgen2RootExe>$([MSBuild]::NormalizePath('$(Crossgen2InBuildDir)', 'crossgen2$(_WasmCrossgen2ExeSuffix)'))</_WasmCrossgen2RootExe>
+      <_WasmCrossgen2ToolsExe>$([MSBuild]::NormalizePath('$([MSBuild]::NormalizeDirectory('$(Crossgen2InBuildDir)', 'tools'))', 'crossgen2$(_WasmCrossgen2ExeSuffix)'))</_WasmCrossgen2ToolsExe>
+      <Crossgen2Path Condition="'$(_WasmCrossgen2InBuildUsable)' == 'true' and Exists('$(_WasmCrossgen2RootExe)')">$(_WasmCrossgen2RootExe)</Crossgen2Path>
+      <Crossgen2Path Condition="'$(_WasmCrossgen2InBuildUsable)' == 'true' and '$(Crossgen2Path)' == '' and Exists('$(_WasmCrossgen2ToolsExe)')">$(_WasmCrossgen2ToolsExe)</Crossgen2Path>
+      <!-- Directory of the resolved crossgen2, so _WasmCoreClrConservativeR2RInputs can add the wasm JIT
+           crossgen2 auto-loads to the R2R inputs. -->
+      <_WasmResolvedCrossgen2Dir Condition="'$(Crossgen2Path)' != ''">$([MSBuild]::EnsureTrailingSlash($([System.IO.Path]::GetDirectoryName('$(Crossgen2Path)'))))</_WasmResolvedCrossgen2Dir>
+      <!-- RunReadyToRunCompiler (NETSDK1158) requires non-empty TargetOS/TargetArch on the Crossgen2Tool item
+           when JitPath is unset (crossgen2 then auto-loads its own clrjit_universal_wasm). In-tree builds set
+           $(TargetOS)/$(TargetArchitecture); a standalone SDK app does not. -->
+      <_WasmR2RTargetOS Condition="'$(TargetOS)' != ''">$(TargetOS)</_WasmR2RTargetOS>
+      <_WasmR2RTargetOS Condition="'$(_WasmR2RTargetOS)' == ''">browser</_WasmR2RTargetOS>
+      <_WasmR2RTargetArch Condition="'$(TargetArchitecture)' != ''">$(TargetArchitecture)</_WasmR2RTargetArch>
+      <_WasmR2RTargetArch Condition="'$(_WasmR2RTargetArch)' == ''">wasm</_WasmR2RTargetArch>
+    </PropertyGroup>
+
+    <ItemGroup Condition="'$(Crossgen2Path)' != ''">
+      <Crossgen2Tool Include="$(Crossgen2Path)"
+                     TargetArch="$(_WasmR2RTargetArch)"
+                     TargetOS="$(_WasmR2RTargetOS)"
+                     PerfmapFormatVersion="$(PublishReadyToRunPerfmapFormatVersion)" />
+    </ItemGroup>
+
+    <ResolveReadyToRunCompilers Condition="'$(Crossgen2Path)' == '' and '@(ResolvedCrossgen2Pack)' != ''"
+                                RuntimePacks="@(ResolvedRuntimePack)"
+                                Crossgen2Packs="@(ResolvedCrossgen2Pack)"
+                                TargetingPacks="@(ResolvedTargetingPack)"
+                                RuntimeGraphPath="$(RuntimeIdentifierGraphPath)"
+                                NETCoreSdkRuntimeIdentifier="$(NETCoreSdkRuntimeIdentifier)"
+                                EmitSymbols="$(PublishReadyToRunEmitSymbols)"
+                                ReadyToRunUseCrossgen2="$(PublishReadyToRunUseCrossgen2)"
+                                PerfmapFormatVersion="$(PublishReadyToRunPerfmapFormatVersion)">
+      <Output TaskParameter="CrossgenTool" ItemName="CrossgenTool" />
+      <Output TaskParameter="Crossgen2Tool" ItemName="Crossgen2Tool" />
+    </ResolveReadyToRunCompilers>
+  </Target>
+</Project>

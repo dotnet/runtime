@@ -143,6 +143,9 @@ public:
     void DoEncodedVarLocType(ICorDebugInfo::VarLocType & dw) { m_w.WriteEncodedU32(dw); }
     void DoEncodedUnsigned(unsigned & dw) { m_w.WriteEncodedU32(dw); }
 
+    void DoImplicitCallReturnValueILOffset(uint32_t& ilOffset) { }
+    void DoImplicitEndOffset(uint32_t& endOffset, uint32_t startOffset) { }
+
     // Stack offsets are aligned on a DWORD boundary, so that lets us shave off 2 bits.
     void DoEncodedStackOffset(signed & dwOffset)
     {
@@ -250,6 +253,17 @@ public:
         dw = (unsigned) m_r.ReadEncodedU32_NoThrow();
     }
 
+    void DoImplicitCallReturnValueILOffset(uint32_t& ilOffset)
+    {
+        SUPPORTS_DAC;
+        ilOffset = 0;
+    }
+
+    void DoImplicitEndOffset(uint32_t& endOffset, uint32_t startOffset)
+    {
+        SUPPORTS_DAC;
+        endOffset = startOffset + 1;
+    }
 
     // Stack offsets are aligned on a DWORD boundary, so that lets us shave off 2 bits.
     void DoEncodedStackOffset(signed & dwOffset)
@@ -340,14 +354,21 @@ static void DoNativeVarInfo(
     // - VarLoc information. This is a tagged variant.
     // The entries aren't sorted in any particular order.
     trans.DoCookie(0xB);
+    // record var number.
+    trans.DoEncodedAdjustedU32(pVar->varNumber, (DWORD)ICorDebugInfo::MAX_ILNUM);
+
     trans.DoEncodedU32(pVar->startOffset);
 
-
-    trans.DoEncodedDeltaU32(pVar->endOffset, pVar->startOffset);
-
-    // record var number.
-    trans.DoEncodedAdjustedU32(pVar->varNumber, (DWORD) ICorDebugInfo::MAX_ILNUM);
-
+    if (pVar->varNumber == (DWORD)ICorDebugInfo::CALL_RETURN_ILNUM)
+    {
+        trans.DoEncodedU32(pVar->callReturnValueILOffset);
+        trans.DoImplicitEndOffset(pVar->endOffset, pVar->startOffset);
+    }
+    else
+    {
+        trans.DoEncodedDeltaU32(pVar->endOffset, pVar->startOffset);
+        trans.DoImplicitCallReturnValueILOffset(pVar->callReturnValueILOffset);
+    }
 
     // Now write the VarLoc... This is a variant like structure and so we'll get different
     // compressioned depending on what we've got.
@@ -537,7 +558,7 @@ void CompressDebugInfo::CompressBoundaries(
             if (i > 0)
             {
                 prevNativeOffset = pMap[i - 1].nativeOffset;
-            }   
+            }
             uint32_t nativeOffsetDelta = pMap[i].nativeOffset - prevNativeOffset;
             maxNativeOffsetDelta = u32_max(nativeOffsetDelta, maxNativeOffsetDelta);
         }
@@ -561,7 +582,7 @@ void CompressDebugInfo::CompressBoundaries(
             BitScanReverse((DWORD*)&nativeOffsetBits, maxNativeOffsetDelta);
             nativeOffsetBits++; // BitScanReverse finds the index of the highest set bit, which is one less than the number of bits needed.
         }
-        
+
         pWriter->WriteEncodedU32(cMap);
         pWriter->WriteEncodedU32(nativeOffsetBits - 1);
         pWriter->WriteEncodedU32(ilOffsetBits - 1);
@@ -577,7 +598,7 @@ void CompressDebugInfo::CompressBoundaries(
             if (i > 0)
             {
                 prevNativeOffset = pMap[i - 1].nativeOffset;
-            }   
+            }
             uint32_t nativeOffsetDelta = pMap[i].nativeOffset - prevNativeOffset;
 
             ICorDebugInfo::OffsetMapping * pBound = &pMap[i];
@@ -596,8 +617,8 @@ void CompressDebugInfo::CompressBoundaries(
             // Should be encodable in BITS_FOR_SOURCE_TYPE bits
             _ASSERTE((sourceBits & ~((1u << BITS_FOR_SOURCE_TYPE) - 1)) == 0);
 
-            uint64_t mappingDataEncoded = sourceBits | 
-                ((uint64_t)nativeOffsetDelta << BITS_FOR_SOURCE_TYPE) | 
+            uint64_t mappingDataEncoded = sourceBits |
+                ((uint64_t)nativeOffsetDelta << BITS_FOR_SOURCE_TYPE) |
                 ((uint64_t)((int32_t)pBound->ilOffset - (int32_t)ICorDebugInfo::MAX_MAPPING_VALUE) << (BITS_FOR_SOURCE_TYPE + nativeOffsetBits));
 
             for (uint8_t bitsToWrite = (uint8_t)bitWidth; bitsToWrite > 0;)
@@ -887,6 +908,7 @@ PTR_BYTE CompressDebugInfo::Compress(
 {
     CONTRACTL {
         THROWS; // compression routines throw
+        MODE_ANY;
         PRECONDITION((iOffsetMapping == 0) == (pOffsetMapping == NULL));
         PRECONDITION((iNativeVarInfo == 0) == (pNativeVarInfo == NULL));
         PRECONDITION((iInlineTree == 0) || (pInlineTree != NULL));
@@ -1216,7 +1238,7 @@ void CompressDebugInfo::RestoreBoundariesAndVars(
     {
         uint32_t iEntry = 0;
         DoBounds(addrBounds, cbBounds,
-            [fpNew, pNewData, &pcMap, &ppMap](uint32_t cNumEntries) 
+            [fpNew, pNewData, &pcMap, &ppMap](uint32_t cNumEntries)
             {
                 if (pcMap != NULL)
                     *pcMap = cNumEntries;
@@ -1234,7 +1256,7 @@ void CompressDebugInfo::RestoreBoundariesAndVars(
                 }
                 return false;
             },
-            [&iEntry, &ppMap](ICorDebugInfo::OffsetMapping bound) 
+            [&iEntry, &ppMap](ICorDebugInfo::OffsetMapping bound)
             {
                 (*ppMap)[iEntry++] = bound;
                 return true;
@@ -1302,11 +1324,11 @@ size_t CompressDebugInfo::WalkILOffsets(
     {
         size_t callbackResult = 0;
         DoBounds(addrBounds, cbBounds,
-            [](uint32_t cNumEntries) 
+            [](uint32_t cNumEntries)
             {
                 return true;
             },
-            [&callbackResult, pfnWalkILOffsets, pContext](ICorDebugInfo::OffsetMapping bound) 
+            [&callbackResult, pfnWalkILOffsets, pContext](ICorDebugInfo::OffsetMapping bound)
             {
                 callbackResult = pfnWalkILOffsets(&bound, pContext);
                 return callbackResult == 0;

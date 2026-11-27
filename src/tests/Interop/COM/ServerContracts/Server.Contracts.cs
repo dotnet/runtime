@@ -310,6 +310,37 @@ namespace Server.Contract
 
         [DispId(/*DISPID_NEWENUM*/-4)]
         System.Collections.IEnumerator GetEnumerator();
+
+        int Sum_IntArray_SafeArray([MarshalAs(UnmanagedType.SafeArray, SafeArraySubType = VarEnum.VT_I4)] int[] d);
+
+        // Test matching signatures and different metadata (ie DISPID)
+
+        [DispId(1000)]
+        string GetDispIdAsString();
+
+        [DispId(1001)]
+        string GetDispIdAsString2();
+
+        void ModifyStaticVariantArray(
+            [In, Out, MarshalAs(UnmanagedType.SafeArray, SafeArraySubType = VarEnum.VT_VARIANT)] ref object[] values);
+        object CreateUnrelatedArrayElement();
+        bool AcceptExpectedArray(
+            [MarshalAs(UnmanagedType.SafeArray, SafeArraySubType = VarEnum.VT_UNKNOWN)] ExpectedArrayElement[] values);
+
+        int PropertySetterRegressionTest { get; set; }
+    }
+
+    [ComVisible(true)]
+    [ClassInterface(ClassInterfaceType.AutoDispatch)]
+    public class ExpectedArrayElement
+    {
+    }
+
+    [ComVisible(true)]
+    [ClassInterface(ClassInterfaceType.AutoDispatch)]
+    public class UnrelatedArrayElement
+    {
+        public int Value => 0;
     }
 
     [ComVisible(true)]
@@ -446,6 +477,8 @@ namespace Server.Contract
     internal interface ITrackMyLifetimeTesting
     {
         IntPtr GetAllocationCountCallback();
+        ITrackMyLifetimeTesting CreateAgileInstance();
+        void Method();
     }
 }
 

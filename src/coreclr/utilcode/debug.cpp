@@ -17,6 +17,7 @@
 #endif
 
 #include <minipal/debugger.h>
+#include <minipal/thread.h>
 
 #ifdef _DEBUG
 #define LOGGING
@@ -65,6 +66,7 @@ static void DECLSPEC_NORETURN FailFastOnAssert()
     CreateCrashDumpIfEnabled();
 #endif
     RaiseFailFastException(NULL, NULL, 0);
+    UNREACHABLE();
 }
 
 #ifdef _DEBUG
@@ -87,7 +89,6 @@ void DoRaiseExceptionOnAssert(DWORD chance)
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_DEBUG_ONLY;
-    STATIC_CONTRACT_FORBID_FAULT;
     STATIC_CONTRACT_SUPPORTS_DAC;
 
 #if !defined(DACCESS_COMPILE)
@@ -117,7 +118,6 @@ BOOL RaiseExceptionOnAssert(RaiseOnAssertOptions option = rTestAndRaise)
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_DEBUG_ONLY;
-    STATIC_CONTRACT_FORBID_FAULT;
     STATIC_CONTRACT_SUPPORTS_DAC;
 
     // ok for debug-only code to take locks
@@ -163,8 +163,8 @@ VOID LogAssert(
     STRESS_LOG2(LF_ASSERT, LL_ALWAYS, "ASSERT:%s:%d\n", szFile, iLine);
 
     struct timespec ts;
-#if defined(HOST_IOS) || defined(HOST_TVOS) || defined(HOST_MACCATALYST) || defined(HOST_ANDROID)
-    // timespec_get is only available on iOS 13.0+ and not supported on Android API levels we target, use gettimeofday instead
+#if defined(HOST_ANDROID)
+    // timespec_get is not supported on Android API levels we target, use gettimeofday instead
     struct timeval tv;
     gettimeofday(&tv, nullptr);
     ts.tv_sec = tv.tv_sec;
@@ -185,11 +185,11 @@ VOID LogAssert(
 
     LOG((LF_ASSERT,
          LL_FATALERROR,
-         "FAILED ASSERT(PID %d [0x%08x], Thread: %d [0x%x]) (%d/%d/%d: %02d:%02d:%02d %s): File: %s, Line %d : %s\n",
-         GetCurrentProcessId(),
-         GetCurrentProcessId(),
-         GetCurrentThreadId(),
-         GetCurrentThreadId(),
+         "FAILED ASSERT(PID %d [0x%08x], Thread: %zu [0x%zx]) (%d/%d/%d: %02d:%02d:%02d %s): File: %s, Line %d : %s\n",
+         minipal_get_current_process_id(),
+         minipal_get_current_process_id(),
+         minipal_get_current_thread_id(),
+         minipal_get_current_thread_id(),
          local.tm_mon,
          local.tm_mday,
          local.tm_year,
@@ -234,10 +234,9 @@ bool _DbgBreakCheck(
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
     STATIC_CONTRACT_DEBUG_ONLY;
 
-    CONTRACT_VIOLATION(FaultNotFatal | GCViolation | TakesLockViolation);
+    CONTRACT_VIOLATION(GCViolation | TakesLockViolation);
 
     char formatBuffer[4096];
 
@@ -253,11 +252,11 @@ bool _DbgBreakCheck(
             GetExecutableFileNameUtf8(modulePath);
 
             sprintf_s(formatBuffer, sizeof(formatBuffer),
-                "\nAssert failure(PID %d [0x%08x], Thread: %d [0x%04x]): %s\n"
+                "\nAssert failure(PID %d [0x%08x], Thread: %zu [0x%04zx]): %s\n"
                 "    File: %s:%d\n"
                 "    Image: %s\n\n",
-                GetCurrentProcessId(), GetCurrentProcessId(),
-                GetCurrentThreadId(), GetCurrentThreadId(),
+                minipal_get_current_process_id(), minipal_get_current_process_id(),
+                minipal_get_current_thread_id(), minipal_get_current_thread_id(),
                 szExpr, szFile, iLine, modulePath.GetUTF8());
 
             formattedMessages = TRUE;
@@ -310,7 +309,6 @@ bool _DbgBreakCheckNoThrow(
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
     STATIC_CONTRACT_DEBUG_ONLY;
 
     bool failed = false;
@@ -363,7 +361,6 @@ VOID DbgAssertDialog(const char *szFile, int iLine, const char *szExpr)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
     STATIC_CONTRACT_SUPPORTS_DAC_HOST_ONLY;
 
     DEBUG_ONLY_FUNCTION;
@@ -422,7 +419,6 @@ VOID DbgAssertDialog(const char *szFile, int iLine, const char *szExpr)
 #ifndef DACCESS_COMPILE
         EX_TRY
         {
-            FAULT_NOT_FATAL();
             szExprToDisplay = &g_szExprWithStack2[0];
             strcpy(szExprToDisplay, szExpr);
             strcat_s(szExprToDisplay, ARRAY_SIZE(g_szExprWithStack2), "\n\n");
@@ -460,7 +456,6 @@ bool GetStackTraceAtContext(SString & s, CONTEXT * pContext)
      // NULL means use the current context.
     bool fSuccess = false;
 
-    FAULT_NOT_FATAL();
 
 #ifndef TARGET_UNIX
     EX_TRY
@@ -496,10 +491,10 @@ void DECLSPEC_NORETURN __FreeBuildAssertFail(const char *szFile, int iLine, cons
     GetExecutableFileNameUtf8(modulePath);
 
     SString buffer;
-    buffer.Printf("CLR: Assert failure(PID %d [0x%08x], Thread: %d [0x%x]): %s\n"
+    buffer.Printf("CLR: Assert failure(PID %d [0x%08x], Thread: %zu [0x%zx]): %s\n"
                 "    File: %s:%d Image:\n%s\n",
-                GetCurrentProcessId(), GetCurrentProcessId(),
-                GetCurrentThreadId(), GetCurrentThreadId(),
+                minipal_get_current_process_id(), minipal_get_current_process_id(),
+                minipal_get_current_thread_id(), minipal_get_current_thread_id(),
                 szExpr, szFile, iLine, modulePath.GetUTF8());
     OutputDebugStringUtf8(buffer.GetUTF8());
 

@@ -3,14 +3,13 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 
 namespace System.Threading.Tasks
 {
     public static class TaskTimeoutExtensions
     {
         #region WaitAsync polyfills
-        // Test polyfills when targeting a platform that doesn't have these ConfigureAwait overloads on Task
+        // Test polyfills when targeting a platform that doesn't have these WaitAsync overloads on Task
 
         public static Task WaitAsync(this Task task, int millisecondsTimeout) =>
             WaitAsync(task, TimeSpan.FromMilliseconds(millisecondsTimeout), default);

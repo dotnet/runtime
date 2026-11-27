@@ -145,7 +145,8 @@ namespace System.Security.Cryptography
             string blobType,
             ReadOnlySpan<byte> keyBlob,
             string curveName,
-            SafeNCryptProviderHandle provider)
+            SafeNCryptProviderHandle provider,
+            int flags = 0)
         {
             ErrorCode errorCode;
             SafeNCryptKeyHandle keyHandle;
@@ -173,7 +174,7 @@ namespace System.Security.Cryptography
                         out keyHandle,
                         ref MemoryMarshal.GetReference(keyBlob),
                         keyBlob.Length,
-                        0);
+                        flags);
                 }
             }
 

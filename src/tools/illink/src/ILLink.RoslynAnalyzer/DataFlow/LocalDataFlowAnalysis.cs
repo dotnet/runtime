@@ -80,6 +80,12 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                 return succeeded;
             }
 
+            // Delegate types with default parameter values produce operation blocks whose
+            // OwningSymbol is the delegate INamedTypeSymbol. These blocks contain only
+            // simple constant initializers with no interesting dataflow, so skip them.
+            if (Context.OwningSymbol is INamedTypeSymbol { TypeKind: TypeKind.Delegate })
+                return succeeded;
+
             Debug.Assert(Context.OwningSymbol is not IMethodSymbol methodSymbol ||
                 methodSymbol.MethodKind is not (MethodKind.LambdaMethod or MethodKind.LocalFunction));
             var startMethod = new MethodBodyValue(Context.OwningSymbol, Context.GetControlFlowGraph(OperationBlock));

@@ -5,7 +5,6 @@
 #include "loaderheap.h"
 #include "ex.h"
 #include "pedecoder.h"
-#define DONOT_DEFINE_ETW_CALLBACK
 #include "eventtracebase.h"
 
 AllocMemTracker::AllocMemTracker()
@@ -13,7 +12,7 @@ AllocMemTracker::AllocMemTracker()
     CONTRACTL
     {
         NOTHROW;
-        FORBID_FAULT;
+        GC_NOTRIGGER;
         CANNOT_TAKE_LOCK;
     }
     CONTRACTL_END
@@ -30,7 +29,7 @@ AllocMemTracker::~AllocMemTracker()
     CONTRACTL
     {
         NOTHROW;
-        FORBID_FAULT;
+        GC_NOTRIGGER;
     }
     CONTRACTL_END
 
@@ -92,7 +91,7 @@ void *AllocMemTracker::Track(TaggedMemAllocPtr tmap)
     CONTRACTL
     {
         THROWS;
-        INJECT_FAULT(ThrowOutOfMemory(););
+        GC_NOTRIGGER;
     }
     CONTRACTL_END
 
@@ -109,7 +108,7 @@ void *AllocMemTracker::Track_NoThrow(TaggedMemAllocPtr tmap)
     CONTRACTL
     {
         NOTHROW;
-        INJECT_FAULT(return NULL;);
+        GC_NOTRIGGER;
     }
     CONTRACTL_END
 

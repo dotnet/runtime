@@ -9,6 +9,7 @@ using Xunit;
 
 namespace System.Net.Http.Functional.Tests
 {
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi, "ConnectCallback is not supported on Browser and Wasi")]
     public sealed class Http1CloseResponseStreamConformanceTests : ResponseConnectedStreamConformanceTests
     {
         protected override string GetResponseHeaders() => "HTTP/1.1 200 OK\r\nConnection: close\r\n\r\n";
@@ -23,6 +24,7 @@ namespace System.Net.Http.Functional.Tests
 
     }
 
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi, "ConnectCallback is not supported on Browser and Wasi")]
     public sealed class Http1RawResponseStreamConformanceTests : ResponseConnectedStreamConformanceTests
     {
         protected override string GetResponseHeaders() => "HTTP/1.1 101 Switching Protocols\r\n\r\n";
@@ -37,6 +39,7 @@ namespace System.Net.Http.Functional.Tests
 
     }
 
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi, "ConnectCallback is not supported on Browser and Wasi")]
     public sealed class Http1ContentLengthResponseStreamConformanceTests : ResponseStandaloneStreamConformanceTests
     {
         protected override async Task WriteResponseAsync(Stream responseStream, byte[] bodyData)
@@ -46,6 +49,7 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi, "ConnectCallback is not supported on Browser and Wasi")]
     public sealed class Http1SingleChunkResponseStreamConformanceTests : ResponseStandaloneStreamConformanceTests
     {
         protected override async Task WriteResponseAsync(Stream responseStream, byte[] bodyData)
@@ -62,6 +66,7 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi, "ConnectCallback is not supported on Browser and Wasi")]
     public sealed class Http1MultiChunkResponseStreamConformanceTests : ResponseStandaloneStreamConformanceTests
     {
         protected override async Task WriteResponseAsync(Stream responseStream, byte[] bodyData)

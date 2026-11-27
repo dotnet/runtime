@@ -149,6 +149,25 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
+        public void IEnumerableGetEnumeratorThrowsOnMutation()
+        {
+            var builder = ImmutableSortedSet.CreateBuilder<int>();
+            builder.Add(1);
+            builder.Add(2);
+            builder.Add(3);
+
+            IEnumerable<int> enumerable = builder;
+
+            Assert.Throws<InvalidOperationException>(() =>
+            {
+                foreach (int item in enumerable)
+                {
+                    builder.Add(4);
+                }
+            });
+        }
+
+        [Fact]
         public void MaxMin()
         {
             ImmutableSortedSet<int>.Builder builder = ImmutableSortedSet.Create(1, 2, 3).ToBuilder();
@@ -218,12 +237,33 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
+        public void UnionWithItself()
+        {
+            int[] values = Enumerable.Range(1, 3).ToArray();
+            var builder = ImmutableSortedSet.CreateRange(values).ToBuilder();
+
+            builder.UnionWith(builder);
+
+            Assert.Equal(values, builder);
+        }
+
+        [Fact]
         public void ExceptWith()
         {
             ImmutableSortedSet<int>.Builder builder = ImmutableSortedSet.Create(1, 2, 3).ToBuilder();
             AssertExtensions.Throws<ArgumentNullException>("other", () => builder.ExceptWith(null));
             builder.ExceptWith(new[] { 2, 3, 4 });
             Assert.Equal(new[] { 1 }, builder);
+        }
+
+        [Fact]
+        public void ExceptWithItself()
+        {
+            var builder = ImmutableSortedSet.Create(1, 2, 3).ToBuilder();
+
+            builder.ExceptWith(builder);
+
+            Assert.Empty(builder);
         }
 
         [Fact]
@@ -304,6 +344,27 @@ namespace System.Collections.Immutable.Tests
         {
             ImmutableSortedSet<string>.Builder builder = ImmutableSortedSet.Create("a", "b").ToBuilder();
             Assert.Equal(new[] { "b", "a" }, builder.Reverse());
+        }
+
+        [Fact]
+        public void ReverseThrowsOnMutation()
+        {
+            ImmutableSortedSet<int>.Builder builder = ImmutableSortedSet.CreateBuilder<int>();
+            builder.Add(0);
+            builder.Add(2);
+            builder.Add(4);
+            builder.Add(6);
+
+            Assert.Throws<InvalidOperationException>(() =>
+            {
+                foreach (int item in builder.Reverse())
+                {
+                    if (item == 6)
+                    {
+                        builder.Remove(0);
+                    }
+                }
+            });
         }
 
         [Fact]

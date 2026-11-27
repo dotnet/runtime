@@ -52,7 +52,7 @@ internal sealed class ResettableValueTaskSource : IValueTaskSource
     public Action<object?> CancellationAction { init { _cancellationAction = value; } }
 
     /// <summary>
-    /// Returns <c>true</c> is this task source has entered its final state, i.e. <see cref="TrySetResult(bool)"/> or <see cref="TrySetException(Exception)"/>
+    /// Returns <c>true</c> if this task source has entered its final state, i.e. <see cref="TrySetResult(bool)"/> or <see cref="TrySetException(Exception)"/>
     /// was called with <c>final</c> set to <c>true</c> and the result was propagated.
     /// </summary>
     public bool IsCompleted => (State)Volatile.Read(ref Unsafe.As<State, byte>(ref _state)) == State.Completed;

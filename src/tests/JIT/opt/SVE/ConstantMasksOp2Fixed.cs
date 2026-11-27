@@ -119,7 +119,6 @@ public class ConstantMasks
     [MethodImpl(MethodImplOptions.NoInlining)]
     static void CndSelectEmbeddedTrueMaskZ(Vector<int> op1, Vector<int> op2) {
         //ARM6-FULL-LINE: ptrue {{p[0-9]+}}.s
-        //ARM6-FULL-LINE-NEXT: movprfx {{z[0-9]+}}.s, {{p[0-9]+}}/m, {{z[0-9]+}}.s
         //ARM6-FULL-LINE-NEXT: sabd {{z[0-9]+}}.s, {{p[0-9]+}}/m, {{z[0-9]+}}.s, {{z[0-9]+}}.s
         var result = Sve.ConditionalSelect(Sve.CreateTrueMaskInt32(), Sve.AbsoluteDifference(op1, op2), Vector<int>.Zero);
         Consume(result);

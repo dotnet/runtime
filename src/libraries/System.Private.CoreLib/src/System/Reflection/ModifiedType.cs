@@ -56,13 +56,13 @@ namespace System.Reflection
         public override Type[] GetRequiredCustomModifiers()
         {
             // No caching is performed; as is the case with FieldInfo.GetCustomModifiers and friends.
-            return GetCustomModifiers(required: true);
+            return GetCustomModifiers(isOptional: false);
         }
 
         public override Type[] GetOptionalCustomModifiers()
         {
             // No caching is performed; as is the case with FieldInfo.GetCustomModifiers and friends.
-            return GetCustomModifiers(required: false);
+            return GetCustomModifiers(isOptional: true);
         }
 
         // Modified types do not support Equals. That would need to include custom modifiers and any parameterized types recursively.
@@ -78,6 +78,7 @@ namespace System.Reflection
         public override bool ContainsGenericParameters => _unmodifiedType.ContainsGenericParameters;
         public override Type GetGenericTypeDefinition() => _unmodifiedType.GetGenericTypeDefinition();
         public override bool IsGenericType => _unmodifiedType.IsGenericType;
+        public override Type? GetNullableUnderlyingType() => _unmodifiedType.GetNullableUnderlyingType() is not null ? GetGenericArguments()[0] : null;
 
         [DynamicallyAccessedMembers(InvokeMemberMembers)]
         public override object? InvokeMember(string name, BindingFlags invokeAttr, Binder? binder, object? target,

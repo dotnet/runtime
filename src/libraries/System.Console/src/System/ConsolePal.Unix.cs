@@ -36,12 +36,14 @@ namespace System
         private static int s_cursorTop;     // Cached CursorTop, invalid when s_cursorLeft == -1.
         private static int s_windowWidth;   // Cached WindowWidth, -1 when invalid.
         private static int s_windowHeight;  // Cached WindowHeight, invalid when s_windowWidth == -1.
-        private static int s_invalidateCachedSettings = 1; // Tracks whether we should invalidate the cached settings.
+        private static byte s_invalidateCachedSettings = 1; // Tracks whether we should invalidate the cached settings.
         private static SafeFileHandle? s_terminalHandle; // Tracks the handle used for writing to the terminal.
 
         /// <summary>Gets the lazily-initialized terminal information for the terminal.</summary>
-        public static TerminalFormatStrings TerminalFormatStringsInstance { get { return s_terminalFormatStringsInstance.Value; } }
-        private static readonly Lazy<TerminalFormatStrings> s_terminalFormatStringsInstance = new(() => new TerminalFormatStrings(TermInfo.DatabaseFactory.ReadActiveDatabase()));
+        public static TerminalFormatStrings TerminalFormatStringsInstance =>
+            field ??
+            Interlocked.CompareExchange(ref field, new TerminalFormatStrings(TermInfo.DatabaseFactory.ReadActiveDatabase()), null) ??
+            field;
 
         public static Stream OpenStandardInput()
         {
@@ -436,7 +438,7 @@ namespace System
         /// <param name="left">Cursor column.</param>
         /// <param name="top">Cursor row.</param>
         /// <param name="reinitializeForRead">Indicates whether this method is called as part of a on-going Read operation.</param>
-        internal static bool TryGetCursorPosition(out int left, out int top, bool reinitializeForRead = false)
+        internal static unsafe bool TryGetCursorPosition(out int left, out int top, bool reinitializeForRead = false)
         {
             Debug.Assert(!Console.IsInputRedirected);
 
@@ -1112,9 +1114,9 @@ namespace System
             Volatile.Write(ref s_invalidateCachedSettings, 1);
         }
 
-        // Ansi colors are enabled when stdout is a terminal or when
-        // DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION is set.
-        // In both cases, they are written to stdout.
+        // ANSI colors are enabled when stdout is a terminal, when
+        // FORCE_COLOR is set, or when DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION is set.
+        // In all cases, they are written to stdout.
         internal static void WriteTerminalAnsiColorString(string? value)
             => WriteTerminalAnsiString(value, OpenStandardOutputHandle(), mayChangeCursorPosition: false);
 
@@ -1122,7 +1124,7 @@ namespace System
         /// <param name="value">The string to write.</param>
         /// <param name="handle">Handle to use instead of s_terminalHandle.</param>
         /// <param name="mayChangeCursorPosition">Writing this value may change the cursor position.</param>
-        internal static void WriteTerminalAnsiString(string? value, SafeFileHandle? handle = null, bool mayChangeCursorPosition = true)
+        internal static unsafe void WriteTerminalAnsiString(string? value, SafeFileHandle? handle = null, bool mayChangeCursorPosition = true)
         {
             if (string.IsNullOrEmpty(value))
                 return;

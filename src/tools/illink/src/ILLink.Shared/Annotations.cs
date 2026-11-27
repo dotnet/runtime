@@ -94,6 +94,7 @@ namespace ILLink.Shared
                 // but it is a breaking change for other UnderlyingTypeValues.
                 // https://github.com/dotnet/runtime/issues/93800
                 NullableValueWithDynamicallyAccessedMembers { UnderlyingTypeValue: FieldValue or MethodReturnValue } nullable => nullable.UnderlyingTypeValue,
+                NullableUnwrappedGenericParameterValue unwrappedGenericParam => unwrappedGenericParam.GenericParameter,
                 _ => source
             };
             DiagnosticId diagnosticId = (source, target) switch

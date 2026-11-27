@@ -4,6 +4,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading;
+using Microsoft.Win32.SafeHandles;
 using Test.Cryptography;
 using Xunit;
 
@@ -56,6 +58,64 @@ namespace System.Security.Cryptography.Tests
                     CngAlgorithm.ECDsaP256,
                     creationOption: creationOption,
                     keySuffix: creationOption.ToString()));
+        }
+
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [Fact]
+        public void Handle_ConcurrentFirstAccess()
+        {
+            const int IterationCount = 10;
+            const int ThreadCount = 8;
+            TimeSpan timeout = TimeSpan.FromSeconds(30);
+
+            for (int iteration = 0; iteration < IterationCount; iteration++)
+            {
+                using CngKey key = CngKey.Create(CngAlgorithm.ECDsaP256);
+                using Barrier barrier = new Barrier(ThreadCount);
+                var handles = new SafeNCryptKeyHandle?[ThreadCount];
+                var exceptions = new Exception?[ThreadCount];
+                var threads = new Thread[ThreadCount];
+
+                for (int i = 0; i < threads.Length; i++)
+                {
+                    int index = i;
+                    threads[i] = new Thread(() =>
+                    {
+                        try
+                        {
+                            Assert.True(barrier.SignalAndWait(timeout), "Timed out waiting for concurrent handle access.");
+                            handles[index] = key.Handle;
+                        }
+                        catch (Exception e)
+                        {
+                            exceptions[index] = e;
+                        }
+                    });
+                    threads[i].IsBackground = true;
+                    threads[i].Start();
+                }
+
+                foreach (Thread thread in threads)
+                {
+                    Assert.True(thread.Join(timeout), "Timed out waiting for handle access thread.");
+                }
+
+                Assert.All(exceptions, Assert.Null);
+                Assert.All(handles, Assert.NotNull);
+
+                key.Dispose();
+
+                for (int i = 0; i < handles.Length - 1; i++)
+                {
+                    handles[i]!.Dispose();
+                }
+
+                using SafeNCryptKeyHandle remainingHandle = handles[^1]!;
+                using CngKey remainingKey = CngKey.Open(
+                    remainingHandle,
+                    CngKeyHandleOpenOptions.EphemeralKey);
+                Assert.Equal(CngAlgorithm.ECDsaP256, remainingKey.Algorithm);
+            }
         }
 
         private static void SignAndVerifyECDsa(CngKey key)

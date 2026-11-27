@@ -5,8 +5,7 @@ add_definitions(-D_UNICODE)
 add_definitions(-D_FEATURE_NO_HOST)
 add_definitions(-D__ILASM__)
 add_definitions(-DFEATURE_METADATA_EMIT_PORTABLE_PDB)
-
-add_definitions(-DFEATURE_CORECLR)
+add_definitions(-DSELF_NO_HOST)
 
 include_directories(.)
 
@@ -75,12 +74,16 @@ add_executable_clr(ilasm
   ${ILASM_RESOURCES}
 )
 
+if(CLR_CMAKE_TARGET_OSX)
+  set_macos_bundle_identifier(ilasm com.microsoft.dotnet.ilasm)
+endif()
+
 set(ILASM_LINK_LIBRARIES
   utilcodestaticnohost
   mscorpe
   # libraries that have circular references
   $<LINK_GROUP:RESCAN,mdcompiler_ppdb,mdruntime_ppdb,mdruntimerw_ppdb>
-  ceefgen
+  ceefgen_nohost
   corguids
 )
 

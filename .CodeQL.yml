@@ -31,3 +31,27 @@ queries:
         # APIs. Those call sites are well-reviewed and don't benefit from extra alerts regarding
         # the possibility of loading malicious code.
         - "cs/deserialization-unexpected-subtypes"
+  #
+  # Don't warn about usage of non-compliant crypto within our own implementations or interop code,
+  # since the rule would noisily try to warn us about *ourselves*. These exclusions are scoped
+  # to just the crypto code itself. We still want alerts when consumers of crypto (even within this
+  # repo) try to use non-compliant primitives; those call sites must be manually inspected
+  # and suppressed if appropriate.
+  #
+  - exclude:
+      queryid:
+        - "cs/ecb-encryption"
+        - "cs/encryption-with-vulnerable-cipher-mode"
+        - "cs/weak-symmetric-algorithm"
+        - "cs/obsolete-password-key-derivation"
+        - "cs/cryptography/unapproved-usage-of-dsa"
+        - "cs/weak-crypto"
+        - "cs/weak-hmacs"
+        - "java/weak-crypto-algorithm-or-hash"
+      path:
+        - "src/libraries/Common/src/Interop/Windows/BCrypt/**"
+        - "src/libraries/Common/src/System/Security/Cryptography/**"
+        - "src/libraries/Microsoft.Bcl.Cryptography/**"
+        - "src/libraries/System.Security.Cryptography/**"
+        - "src/libraries/System.Security.Cryptography.*/**"
+        - "src/native/libs/System.Security.Cryptography.*/**"

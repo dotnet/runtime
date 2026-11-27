@@ -8,18 +8,15 @@
     <WasmEmitSymbolMap>true</WasmEmitSymbolMap>
     <EmccEnableAssertions>true</EmccEnableAssertions>
     <EmccEnvironment>web,worker</EmccEnvironment>
+    <WasmEnableHotReload>false</WasmEnableHotReload>
     <!-- add OpenGL emulation -->
     <EmccExtraLDFlags> -s USE_CLOSURE_COMPILER=1 -s LEGACY_GL_EMULATION=1 -lGL -lSDL -lidbfs.js</EmccExtraLDFlags>
     <!-- just to prove we don't do JS eval() -->
-    <_ServeHeaders>$(_ServeHeaders) -h &quot;Content-Security-Policy: default-src 'self' 'wasm-unsafe-eval'&quot; -h &quot;Timing-Allow-Origin: *&quot; -h &quot;Cross-Origin-Opener-Policy: same-origin&quot; -h &quot;Cross-Origin-Embedder-Policy: require-corp&quot; </_ServeHeaders>
-    <!-- enable reporting to profiler in browser dev tools -->
-    <!-- for callspec see diagnostics-tracing.md -->
-    <WasmProfilers>browser:callspec=N:Sample</WasmProfilers>
+    <_ServeHeaders>$(_ServeHeaders) -h &quot;Content-Security-Policy: default-src 'self' 'wasm-unsafe-eval'&quot; -h &quot;Cross-Origin-Opener-Policy: same-origin&quot; -h &quot;Cross-Origin-Embedder-Policy: require-corp&quot; </_ServeHeaders>
 
     <_ExtraTrimmerArgs>$(_ExtraTrimmerArgs) --dump-dependencies</_ExtraTrimmerArgs>
 
     <!-- 
-    <RunAOTCompilation>true</RunAOTCompilation>
     <WasmNativeDebugSymbols>true</WasmNativeDebugSymbols>
     <WasmNativeStrip>false</WasmNativeStrip>
     -->
@@ -29,6 +26,7 @@
     <EmccExportedRuntimeMethod Include="GL" />
     <NativeFileReference Include="fibonacci.c" />
     <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
+    <StaticWebAssetFingerprintPattern Include="JS" Pattern="advanced-sample.lib.module.js" Expression="" />
   </ItemGroup>
 
   <Target Name="RunSample" DependsOnTargets="RunSampleWithBrowserAndSimpleServer" />

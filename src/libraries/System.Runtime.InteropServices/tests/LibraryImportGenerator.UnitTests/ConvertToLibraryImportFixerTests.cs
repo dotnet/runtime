@@ -1229,13 +1229,66 @@ namespace LibraryImportGenerator.UnitTests
             await VerifyCodeFixAsync(source, fixedSource);
         }
 
-        private static async Task VerifyCodeFixAsync(string source, string fixedSource, LanguageVersion languageVersion = LanguageVersion.Default, string? editorconfig = null)
+        [Fact]
+        public async Task UnsafeModifierIsPreserved()
+        {
+            string source = """
+                using System.Runtime.InteropServices;
+                partial class Test
+                {
+                    [DllImport("DoesNotExist")]
+                    public static unsafe extern void [|Method|](int* i);
+                }
+
+               """;
+
+            string fixedSource = """
+                 using System.Runtime.InteropServices;
+                 partial class Test
+                 {
+                     [LibraryImport("DoesNotExist")]
+                     public static unsafe partial void {|CS8795:Method|}(int* i);
+                 }
+
+                """;
+
+            await VerifyCodeFixAsync(source, fixedSource);
+        }
+
+        [Fact]
+        public async Task SafeModifierIsPreserved()
+        {
+            string source = """
+                using System.Runtime.InteropServices;
+                partial class Test
+                {
+                    [DllImport("DoesNotExist")]
+                    public static safe extern void [|Method|]();
+                }
+
+               """;
+
+            string fixedSource = """
+                 using System.Runtime.InteropServices;
+                 partial class Test
+                 {
+                     [LibraryImport("DoesNotExist")]
+                     public static safe partial void {|CS8795:Method|}();
+                 }
+
+                """;
+
+            await VerifyCodeFixAsync(source, fixedSource, updatedMemorySafetyRules: true);
+        }
+
+        private static async Task VerifyCodeFixAsync(string source, string fixedSource, LanguageVersion languageVersion = LanguageVersion.Default, string? editorconfig = null, bool updatedMemorySafetyRules = false)
         {
             var test = new TestWithLanguageVersion
             {
                 TestCode = source,
                 FixedCode = fixedSource,
-                LanguageVersion = languageVersion,
+                LanguageVersion = updatedMemorySafetyRules ? LanguageVersion.Preview : languageVersion,
+                UpdatedMemorySafetyRules = updatedMemorySafetyRules,
             };
 
             if (editorconfig is not null)
@@ -1296,7 +1349,20 @@ namespace LibraryImportGenerator.UnitTests
         {
             public LanguageVersion LanguageVersion { get; set; }
 
-            protected override ParseOptions CreateParseOptions() => ((CSharpParseOptions)base.CreateParseOptions()).WithLanguageVersion(LanguageVersion);
+            public bool UpdatedMemorySafetyRules { get; set; }
+
+            protected override ParseOptions CreateParseOptions() =>
+                ((CSharpParseOptions)base.CreateParseOptions()).WithLanguageVersion(LanguageVersion);
+
+            protected override CompilationOptions CreateCompilationOptions()
+            {
+                var options = (CSharpCompilationOptions)base.CreateCompilationOptions();
+#pragma warning disable RSEXPERIMENTAL006
+                return UpdatedMemorySafetyRules
+                    ? options.WithMemorySafetyRulesVersion(MemorySafetyRulesVersion.Version2)
+                    : options;
+#pragma warning restore RSEXPERIMENTAL006
+            }
         }
     }
 }

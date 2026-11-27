@@ -128,7 +128,6 @@ namespace LibraryImportGenerator.UnitTests
         {
             string source = $$"""
                 using System.Runtime.InteropServices;
-                {{CodeSnippets.LibraryImportAttributeDeclaration}}
                 partial class C
                 {
                     [LibraryImportAttribute("DoesNotExist")]

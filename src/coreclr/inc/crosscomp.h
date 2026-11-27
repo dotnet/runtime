@@ -1,8 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
+
 // crosscomp.h - cross-compilation enablement structures.
-//
 
 #pragma once
 
@@ -210,7 +209,9 @@ typedef struct _T_DISPATCHER_CONTEXT {
 #define ARM64_MAX_BREAKPOINTS     8
 #define ARM64_MAX_WATCHPOINTS     2
 
+#ifndef CONTEXT_UNWOUND_TO_CALL
 #define CONTEXT_UNWOUND_TO_CALL 0x20000000
+#endif
 
 typedef union _NEON128 {
     struct {
@@ -410,10 +411,9 @@ enum
 // however, almost no one implements more than 4 of each.
 //
 
-#define LOONGARCH64_MAX_BREAKPOINTS     8
-#define LOONGARCH64_MAX_WATCHPOINTS     2
-
+#ifndef CONTEXT_UNWOUND_TO_CALL
 #define CONTEXT_UNWOUND_TO_CALL 0x20000000
+#endif
 
 typedef struct DECLSPEC_ALIGN(16) _T_CONTEXT {
 
@@ -543,10 +543,9 @@ typedef struct _T_KNONVOLATILE_CONTEXT_POINTERS {
 // will track.
 //
 
-#define RISCV64_MAX_BREAKPOINTS     8
-#define RISCV64_MAX_WATCHPOINTS     2
-
+#ifndef CONTEXT_UNWOUND_TO_CALL
 #define CONTEXT_UNWOUND_TO_CALL 0x20000000
+#endif
 
 typedef struct DECLSPEC_ALIGN(16) _T_CONTEXT {
 
@@ -723,7 +722,7 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS_EX
 #define DAC_MUTEX_MAX_SIZE 96
 #elif defined(TARGET_FREEBSD)
 #define DAC_MUTEX_MAX_SIZE 16
-#elif defined(TARGET_LINUX) || defined(TARGET_ANDROID)
+#elif defined(TARGET_LINUX)
 #define DAC_MUTEX_MAX_SIZE 64
 #elif defined(TARGET_WINDOWS)
 #ifdef TARGET_64BIT

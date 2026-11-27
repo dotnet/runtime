@@ -25,17 +25,21 @@ namespace System.IO.Packaging
         {
             if (_zipArchiveEntry != null)
             {
-                // Reset the stream when FileMode.Create is specified.  Since ZipArchiveEntry only
-                // ever supports opening once when the backing archive is in Create mode, we'll avoid
-                // calling SetLength since the stream returned won't be seekable. You could still open
-                // an archive in Update mode then call part.GetStream(FileMode.Create), in which case
-                // we'll want this call to SetLength.
+                // Reset the stream when FileMode.Create is specified. When the backing archive is in
+                // Create mode, ZipArchiveEntry only ever supports opening once, so there is nothing to
+                // reset. When the archive is in Update mode, the existing content must be discarded.
                 if (streamFileMode == FileMode.Create && _zipArchiveEntry.Archive.Mode != ZipArchiveMode.Create)
                 {
+#if NET11_0_OR_GREATER
+                    // Opening with discardExistingContent skips decompressing and loading the existing
+                    // content into memory only to truncate it.
+                    return _zipStreamManager.Open(_zipArchiveEntry, streamFileAccess, discardExistingContent: true);
+#else
                     using (var tempStream = _zipStreamManager.Open(_zipArchiveEntry, streamFileAccess))
                     {
                         tempStream.SetLength(0);
                     }
+#endif
                 }
 
                 var stream = _zipStreamManager.Open(_zipArchiveEntry, streamFileAccess);

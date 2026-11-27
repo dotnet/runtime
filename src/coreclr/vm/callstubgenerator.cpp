@@ -605,17 +605,25 @@ extern "C" void Store_R2_R3();
 extern "C" void Store_R3();
 
 extern "C" void Load_R0_R1_4B();
+extern "C" void Load_R0_R1_R2_4B();
 extern "C" void Load_R0_R1_R2_R3_4B();
+extern "C" void Load_R1_R2_4B();
+extern "C" void Load_R1_R2_R3_4B();
 extern "C" void Load_R2_R3_4B();
+extern "C" void Load_R3_4B();
 extern "C" void Load_Stack_4B();
 extern "C" void Store_R0_R1_4B();
+extern "C" void Store_R0_R1_R2_4B();
 extern "C" void Store_R0_R1_R2_R3_4B();
+extern "C" void Store_R1_R2_4B();
+extern "C" void Store_R1_R2_R3_4B();
 extern "C" void Store_R2_R3_4B();
+extern "C" void Store_R3_4B();
 extern "C" void Store_Stack_4B();
 
 #endif // TARGET_ARM
 
-#ifdef TARGET_RISCV64
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
 
 extern "C" void Load_A0();
 extern "C" void Load_A0_A1();
@@ -783,11 +791,185 @@ extern "C" void Store_FA6();
 extern "C" void Store_FA6_FA7();
 extern "C" void Store_FA7();
 
-#endif // TARGET_RISCV64
+extern "C" void SignExtend_ArgRegs();
+extern "C" void SignExtend_Stack();
+
+#define DECLARE_FIELD_AT_OFFSET_ROUTINES(i) \
+    extern "C" void Load_FA##i##_F_AtOffset(); \
+    extern "C" void Load_FA##i##_D_AtOffset(); \
+    extern "C" void Load_A##i##_W_AtOffset(); \
+    extern "C" void Load_A##i##_D_AtOffset(); \
+    extern "C" void Store_FA##i##_F_AtOffset(); \
+    extern "C" void Store_FA##i##_D_AtOffset(); \
+    extern "C" void Store_A##i##_W_AtOffset(); \
+    extern "C" void Store_A##i##_D_AtOffset();
+
+DECLARE_FIELD_AT_OFFSET_ROUTINES(0)
+DECLARE_FIELD_AT_OFFSET_ROUTINES(1)
+DECLARE_FIELD_AT_OFFSET_ROUTINES(2)
+DECLARE_FIELD_AT_OFFSET_ROUTINES(3)
+DECLARE_FIELD_AT_OFFSET_ROUTINES(4)
+DECLARE_FIELD_AT_OFFSET_ROUTINES(5)
+DECLARE_FIELD_AT_OFFSET_ROUTINES(6)
+DECLARE_FIELD_AT_OFFSET_ROUTINES(7)
+#undef DECLARE_FIELD_AT_OFFSET_ROUTINES
+
+PCODE CallStubGenerator::GetFieldAtOffsetRoutine(bool isFloat, int reg, unsigned size)
+{
+    LIMITED_METHOD_CONTRACT;
+
+#define FIELD_AT_OFFSET_ROUTINES(prefix, suffix) { \
+        (PCODE)prefix##0##suffix, (PCODE)prefix##1##suffix, (PCODE)prefix##2##suffix, (PCODE)prefix##3##suffix, \
+        (PCODE)prefix##4##suffix, (PCODE)prefix##5##suffix, (PCODE)prefix##6##suffix, (PCODE)prefix##7##suffix }
+
+    // Indexed by [interpreter to native][float][8 bytes][register]
+    static const PCODE routines[2][2][2][8] = {
+        {
+            { FIELD_AT_OFFSET_ROUTINES(Store_A, _W_AtOffset), FIELD_AT_OFFSET_ROUTINES(Store_A, _D_AtOffset) },
+            { FIELD_AT_OFFSET_ROUTINES(Store_FA, _F_AtOffset), FIELD_AT_OFFSET_ROUTINES(Store_FA, _D_AtOffset) },
+        },
+        {
+            { FIELD_AT_OFFSET_ROUTINES(Load_A, _W_AtOffset), FIELD_AT_OFFSET_ROUTINES(Load_A, _D_AtOffset) },
+            { FIELD_AT_OFFSET_ROUTINES(Load_FA, _F_AtOffset), FIELD_AT_OFFSET_ROUTINES(Load_FA, _D_AtOffset) },
+        },
+    };
+#undef FIELD_AT_OFFSET_ROUTINES
+
+    _ASSERTE((reg >= 0) && (reg < 8));
+    // Integer fields narrower than 4 bytes are moved as 4 bytes; the bytes after them are padding before the FP field
+    // or the end of the struct.
+    _ASSERTE(isFloat ? (size == 4 || size == 8) : (size <= 8));
+    return routines[m_interpreterToNative ? 1 : 0][isFloat ? 1 : 0][(size == 8) ? 1 : 0][reg];
+}
+
+// Packs the FpStructInRegistersInfo of a return value into a routines array slot
+static PCODE PackFpStructInRegistersInfo(const FpStructInRegistersInfo& info)
+{
+    _ASSERTE((info.offset1st < 16) && (info.offset2nd < 16));
+    return (PCODE)((uint64_t)info.flags | ((uint64_t)info.offset1st << 32) | ((uint64_t)info.offset2nd << 48));
+}
+
+static FpStructInRegistersInfo UnpackFpStructInRegistersInfo(PCODE packed)
+{
+    FpStructInRegistersInfo info;
+    info.flags = (FpStruct::Flags)(uint32_t)packed;
+    info.offset1st = (uint32_t)(((uint64_t)packed >> 32) & 0xFFFF);
+    info.offset2nd = (uint32_t)((uint64_t)packed >> 48);
+    return info;
+}
+
+// Return registers of a struct passed by the hardware floating-point calling convention,
+// as spilled by CallJittedMethodRetFpStruct and filled for InterpreterStubRetFpStruct
+struct FpStructReturnRegisters
+{
+    uint64_t fa0;
+    uint64_t fa1;
+    uint64_t a0;
+};
+
+// Returns the registers holding the 1st and 2nd field. The FP fields use fa0 and then fa1, the integer field uses a0.
+static void GetFpStructFieldRegisters(const FpStructInRegistersInfo& info, FpStructReturnRegisters* pRegs, uint64_t** ppReg1st, uint64_t** ppReg2nd)
+{
+    if (info.flags & FpStruct::IntFloat)
+    {
+        *ppReg1st = &pRegs->a0;
+        *ppReg2nd = &pRegs->fa0;
+    }
+    else
+    {
+        *ppReg1st = &pRegs->fa0;
+        *ppReg2nd = (info.flags & FpStruct::FloatInt) ? &pRegs->a0 : &pRegs->fa1;
+    }
+}
+
+static bool IsFpStructFieldFloat(const FpStructInRegistersInfo& info, bool first)
+{
+    if (info.flags & (FpStruct::OnlyOne | FpStruct::BothFloat))
+        return true;
+    return first ? ((info.flags & FpStruct::FloatInt) != 0) : ((info.flags & FpStruct::IntFloat) != 0);
+}
+
+// Converts a field value to its representation in a 64-bit register: NaN-boxed for single-precision values
+// and sign-extended for 32-bit integers, as required by the psABI.
+static uint64_t FpStructFieldToRegister(const int8_t* pField, unsigned size, bool isFloat)
+{
+    switch (size)
+    {
+        case 1:
+            return *(const uint8_t*)pField;
+        case 2:
+            return *(const uint16_t*)pField;
+        case 4:
+            return isFloat ? (0xFFFFFFFF00000000ull | *(const uint32_t*)pField) : (uint64_t)(int64_t)*(const int32_t*)pField;
+        default:
+            _ASSERTE(size == 8);
+            return *(const uint64_t*)pField;
+    }
+}
+
+// Called by CallJittedMethodRetFpStruct to copy the returned registers to the struct on the interpreter stack
+extern "C" void InterpFpStructReturnFromNative(FpStructReturnRegisters* pRegs, int8_t* pRet, PCODE* pRoutines)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    CallStubHeader* pHeader = (CallStubHeader*)((uint8_t*)pRoutines - offsetof(CallStubHeader, Routines));
+    FpStructInRegistersInfo info = UnpackFpStructInRegistersInfo(pRoutines[pHeader->TargetSlotIndex + 1]);
+
+    uint64_t* pReg1st;
+    uint64_t* pReg2nd;
+    GetFpStructFieldRegisters(info, pRegs, &pReg1st, &pReg2nd);
+    memcpy(pRet + info.offset1st, pReg1st, info.Size1st());
+    if ((info.flags & FpStruct::OnlyOne) == 0)
+    {
+        memcpy(pRet + info.offset2nd, pReg2nd, info.Size2nd());
+    }
+}
+
+// Called by InterpreterStubRetFpStruct to load the struct returned on the interpreter stack into the return registers
+extern "C" void InterpFpStructReturnToNative(FpStructReturnRegisters* pRegs, const int8_t* pRet, const PCODE* pInfo)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    FpStructInRegistersInfo info = UnpackFpStructInRegistersInfo(*pInfo);
+
+    uint64_t* pReg1st;
+    uint64_t* pReg2nd;
+    GetFpStructFieldRegisters(info, pRegs, &pReg1st, &pReg2nd);
+    *pReg1st = FpStructFieldToRegister(pRet + info.offset1st, info.Size1st(), IsFpStructFieldFloat(info, true));
+    if ((info.flags & FpStruct::OnlyOne) == 0)
+    {
+        *pReg2nd = FpStructFieldToRegister(pRet + info.offset2nd, info.Size2nd(), IsFpStructFieldFloat(info, false));
+    }
+}
+
+// Moves the fields of a struct passed by the hardware floating-point calling convention one by one, as they are not
+// laid out in consecutive 8 byte slots on the interpreter stack. Also used for floats to NaN-box them.
+void CallStubGenerator::ProcessFpStructArgument(const FpStructInRegistersInfo& info, ArgLocDesc& argLocDesc, int argSize, PCODE *pRoutines)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    TerminateCurrentRoutineIfNotOfNewType(RoutineType::None, pRoutines);
+
+    bool hasTwoFields = (info.flags & FpStruct::OnlyOne) == 0;
+    bool isFloat1st = IsFpStructFieldFloat(info, true);
+    bool isFloat2nd = IsFpStructFieldFloat(info, false);
+    uint64_t advance = ALIGN_UP(argSize, INTERP_STACK_SLOT_SIZE);
+    int fpReg = argLocDesc.m_idxFloatReg;
+
+    pRoutines[m_routineIndex++] = GetFieldAtOffsetRoutine(isFloat1st, isFloat1st ? fpReg++ : argLocDesc.m_idxGenReg, info.Size1st());
+    pRoutines[m_routineIndex++] = (PCODE)(info.offset1st | ((hasTwoFields ? 0 : advance) << 32));
+    if (hasTwoFields)
+    {
+        pRoutines[m_routineIndex++] = GetFieldAtOffsetRoutine(isFloat2nd, isFloat2nd ? fpReg : argLocDesc.m_idxGenReg, info.Size2nd());
+        pRoutines[m_routineIndex++] = (PCODE)(info.offset2nd | (advance << 32));
+    }
+}
+
+#endif // TARGET_RISCV64 || TARGET_LOONGARCH64
 
 PCODE CallStubGenerator::GetStackRoutine()
 {
-    LOG2((LF2_INTERPRETER, LL_INFO10000, "Load_Stack\n"));
+    LOG2((LF2_INTERPRETER, LL_INFO10000, "GetStackRoutine\n"));
     return m_interpreterToNative ? (PCODE)Load_Stack : (PCODE)Store_Stack;
 }
 
@@ -879,7 +1061,7 @@ PCODE CallStubGenerator::GetGPRegRangeRoutine(int r1, int r2)
         (PCODE)0, (PCODE)0, (PCODE)Store_R2, (PCODE)Store_R2_R3,
         (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Store_R3
     };
-#elif defined(TARGET_RISCV64)
+#elif defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
     static const PCODE GPRegsLoadRoutines[] = {
         (PCODE)Load_A0, (PCODE)Load_A0_A1, (PCODE)Load_A0_A1_A2, (PCODE)Load_A0_A1_A2_A3, (PCODE)Load_A0_A1_A2_A3_A4, (PCODE)Load_A0_A1_A2_A3_A4_A5, (PCODE)Load_A0_A1_A2_A3_A4_A5_A6, (PCODE)Load_A0_A1_A2_A3_A4_A5_A6_A7,
         (PCODE)0, (PCODE)Load_A1, (PCODE)Load_A1_A2, (PCODE)Load_A1_A2_A3, (PCODE)Load_A1_A2_A3_A4, (PCODE)Load_A1_A2_A3_A4_A5, (PCODE)Load_A1_A2_A3_A4_A5_A6, (PCODE)Load_A1_A2_A3_A4_A5_A6_A7,
@@ -931,7 +1113,7 @@ PCODE CallStubGenerator::GetGPRegRefRoutine(int r)
         (PCODE)Store_Ref_X0, (PCODE)Store_Ref_X1, (PCODE)Store_Ref_X2, (PCODE)Store_Ref_X3,
         (PCODE)Store_Ref_X4, (PCODE)Store_Ref_X5, (PCODE)Store_Ref_X6, (PCODE)Store_Ref_X7
     };
-#elif defined(TARGET_RISCV64)
+#elif defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
     static const PCODE GPRegsRefLoadRoutines[] = {
         (PCODE)Load_Ref_A0, (PCODE)Load_Ref_A1, (PCODE)Load_Ref_A2, (PCODE)Load_Ref_A3,
         (PCODE)Load_Ref_A4, (PCODE)Load_Ref_A5, (PCODE)Load_Ref_A6, (PCODE)Load_Ref_A7
@@ -1017,7 +1199,7 @@ PCODE CallStubGenerator::GetFPRegRangeRoutine(int x1, int x2)
         (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Store_D6, (PCODE)Store_D6_D7,
         (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Store_D7
     };
-#elif defined(TARGET_RISCV64)
+#elif defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
     static const PCODE FPRegsLoadRoutines[] = {
         (PCODE)Load_FA0, (PCODE)Load_FA0_FA1, (PCODE)Load_FA0_FA1_FA2, (PCODE)Load_FA0_FA1_FA2_FA3, (PCODE)Load_FA0_FA1_FA2_FA3_FA4, (PCODE)Load_FA0_FA1_FA2_FA3_FA4_FA5, (PCODE)Load_FA0_FA1_FA2_FA3_FA4_FA5_FA6, (PCODE)Load_FA0_FA1_FA2_FA3_FA4_FA5_FA6_FA7,
         (PCODE)0, (PCODE)Load_FA1, (PCODE)Load_FA1_FA2, (PCODE)Load_FA1_FA2_FA3, (PCODE)Load_FA1_FA2_FA3_FA4, (PCODE)Load_FA1_FA2_FA3_FA4_FA5, (PCODE)Load_FA1_FA2_FA3_FA4_FA5_FA6, (PCODE)Load_FA1_FA2_FA3_FA4_FA5_FA6_FA7,
@@ -1119,20 +1301,22 @@ PCODE CallStubGenerator::GetRegRoutine_4B(int r1, int r2)
     LOG2((LF2_INTERPRETER, LL_INFO10000, "GetRegRoutine_4B\n"));
 #endif
     static const PCODE GPRegLoadRoutines_4B[] = {
-        (PCODE)0, (PCODE)Load_R0_R1_4B, (PCODE)0, (PCODE)Load_R0_R1_R2_R3_4B,
-        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0,
+        (PCODE)0, (PCODE)Load_R0_R1_4B, (PCODE)Load_R0_R1_R2_4B, (PCODE)Load_R0_R1_R2_R3_4B,
+        (PCODE)0, (PCODE)0, (PCODE)Load_R1_R2_4B, (PCODE)Load_R1_R2_R3_4B,
         (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Load_R2_R3_4B,
-        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Load_R3_4B
     };
     static const PCODE GPRegStoreRoutines_4B[] = {
-        (PCODE)0, (PCODE)Store_R0_R1_4B, (PCODE)0, (PCODE)Store_R0_R1_R2_R3_4B,
-        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0,
+        (PCODE)0, (PCODE)Store_R0_R1_4B, (PCODE)Store_R0_R1_R2_4B, (PCODE)Store_R0_R1_R2_R3_4B,
+        (PCODE)0, (PCODE)0, (PCODE)Store_R1_R2_4B, (PCODE)Store_R1_R2_R3_4B,
         (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Store_R2_R3_4B,
-        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Store_R3_4B
     };
 
     int index = r1 * NUM_ARGUMENT_REGISTERS + r2;
-    return m_interpreterToNative ? GPRegLoadRoutines_4B[index] : GPRegStoreRoutines_4B[index];
+    PCODE routine = m_interpreterToNative ? GPRegLoadRoutines_4B[index] : GPRegStoreRoutines_4B[index];
+    _ASSERTE(routine != 0);
+    return routine;
 }
 
 PCODE CallStubGenerator::GetStackRoutine_4B()
@@ -1262,6 +1446,9 @@ extern "C" void InterpreterStubRetBuffR1();
 #if defined(TARGET_ARM64) && defined(TARGET_WINDOWS)
 extern "C" void CallJittedMethodRetBuffX1(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
 extern "C" void InterpreterStubRetBuffX1();
+#elif defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+extern "C" void CallJittedMethodRetBuffA1(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void InterpreterStubRetBuffA1();
 #endif
 extern "C" void CallJittedMethodRetBuff(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
 extern "C" void InterpreterStubRetBuff();
@@ -1315,16 +1502,19 @@ extern "C" void InterpreterStubRet3Vector128();
 extern "C" void InterpreterStubRet4Vector128();
 #endif // TARGET_ARM64
 
-#if defined(TARGET_RISCV64)
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+extern "C" void CallJittedMethodRetFloat(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRet2Float(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
 extern "C" void CallJittedMethodRet2I8(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
 extern "C" void CallJittedMethodRet2Double(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
-extern "C" void CallJittedMethodRetFloatInt(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
-extern "C" void CallJittedMethodRetIntFloat(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRetFpStruct(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void InterpreterStubRetFloat();
+extern "C" void InterpreterStubRet2Float();
 extern "C" void InterpreterStubRet2I8();
 extern "C" void InterpreterStubRet2Double();
-extern "C" void InterpreterStubRetFloatInt();
-extern "C" void InterpreterStubRetIntFloat();
-#endif // TARGET_RISCV64
+extern "C" void InterpreterStubRetFpStruct();
+extern "C" void InterpreterStubRetI4();
+#endif // TARGET_RISCV64 || TARGET_LOONGARCH64
 
 #define INVOKE_FUNCTION_PTR(functionPtrName) LOG2((LF2_INTERPRETER, LL_INFO10000, #functionPtrName "\n")); return functionPtrName
 
@@ -1380,6 +1570,11 @@ CallStubHeader::InvokeFunctionPtr CallStubGenerator::GetInvokeFunctionPtr(CallSt
             INVOKE_FUNCTION_PTR(CallJittedMethodRetBuffR0);
         case ReturnTypeBuffArg2:
             INVOKE_FUNCTION_PTR(CallJittedMethodRetBuffR1);
+#elif defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+        case ReturnTypeBuffArg2:
+            INVOKE_FUNCTION_PTR(CallJittedMethodRetBuffA1);
+        case ReturnTypeBuff:
+            INVOKE_FUNCTION_PTR(CallJittedMethodRetBuff);
 #else // !TARGET_AMD64 && !TARGET_ARM && !(TARGET_ARM64 && TARGET_WINDOWS)
         case ReturnTypeBuff:
             INVOKE_FUNCTION_PTR(CallJittedMethodRetBuff);
@@ -1432,16 +1627,20 @@ CallStubHeader::InvokeFunctionPtr CallStubGenerator::GetInvokeFunctionPtr(CallSt
             INVOKE_FUNCTION_PTR(CallJittedMethodRetSwiftLowered);
 #endif // TARGET_APPLE
 #endif // TARGET_ARM64
-#if defined(TARGET_RISCV64)
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+        case ReturnTypeFloat:
+            INVOKE_FUNCTION_PTR(CallJittedMethodRetFloat);
+        case ReturnType2Float:
+            INVOKE_FUNCTION_PTR(CallJittedMethodRet2Float);
         case ReturnType2I8:
             INVOKE_FUNCTION_PTR(CallJittedMethodRet2I8);
         case ReturnType2Double:
             INVOKE_FUNCTION_PTR(CallJittedMethodRet2Double);
-        case ReturnTypeFloatInt:
-            INVOKE_FUNCTION_PTR(CallJittedMethodRetFloatInt);
-        case ReturnTypeIntFloat:
-            INVOKE_FUNCTION_PTR(CallJittedMethodRetIntFloat);
-#endif // TARGET_RISCV64
+        case ReturnTypeFpStruct:
+            INVOKE_FUNCTION_PTR(CallJittedMethodRetFpStruct);
+        case ReturnTypeI4:
+            INVOKE_FUNCTION_PTR(CallJittedMethodRetI8);
+#endif // TARGET_RISCV64 || TARGET_LOONGARCH64
         default:
             _ASSERTE(!"Unexpected return type for interpreter stub");
             return NULL; // This should never happen, but just in case.
@@ -1462,12 +1661,22 @@ PCODE CallStubGenerator::GetInterpreterReturnTypeHandler(CallStubGenerator::Retu
 #ifndef ARM_SOFTFP
             RETURN_TYPE_HANDLER(InterpreterStubRetDouble);
 #endif // !ARM_SOFTFP
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+        case ReturnTypeI1:
+        case ReturnTypeU1:
+        case ReturnTypeI2:
+        case ReturnTypeU2:
+            RETURN_TYPE_HANDLER(InterpreterStubRetI4);
+        case ReturnTypeI8:
+            RETURN_TYPE_HANDLER(InterpreterStubRetI8);
+#else
         case ReturnTypeI1:
         case ReturnTypeU1:
         case ReturnTypeI8:
         case ReturnTypeI2:
         case ReturnTypeU2:
             RETURN_TYPE_HANDLER(InterpreterStubRetI8);
+#endif // TARGET_RISCV64 || TARGET_LOONGARCH64
 #ifdef TARGET_32BIT
         case ReturnTypeFloat:
 #ifndef ARM_SOFTFP
@@ -1499,6 +1708,11 @@ PCODE CallStubGenerator::GetInterpreterReturnTypeHandler(CallStubGenerator::Retu
             RETURN_TYPE_HANDLER(InterpreterStubRetBuffR0);
         case ReturnTypeBuffArg2:
             RETURN_TYPE_HANDLER(InterpreterStubRetBuffR1);
+#elif defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+        case ReturnTypeBuffArg2:
+            RETURN_TYPE_HANDLER(InterpreterStubRetBuffA1);
+        case ReturnTypeBuff:
+            RETURN_TYPE_HANDLER(InterpreterStubRetBuff);
 #else // !TARGET_AMD64 && !TARGET_ARM && !(TARGET_ARM64 && TARGET_WINDOWS)
         case ReturnTypeBuff:
             RETURN_TYPE_HANDLER(InterpreterStubRetBuff);
@@ -1547,16 +1761,20 @@ PCODE CallStubGenerator::GetInterpreterReturnTypeHandler(CallStubGenerator::Retu
         case ReturnType4Vector128:
             RETURN_TYPE_HANDLER(InterpreterStubRet4Vector128);
 #endif // TARGET_ARM64
-#if defined(TARGET_RISCV64)
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+        case ReturnTypeFloat:
+            RETURN_TYPE_HANDLER(InterpreterStubRetFloat);
+        case ReturnType2Float:
+            RETURN_TYPE_HANDLER(InterpreterStubRet2Float);
         case ReturnType2I8:
             RETURN_TYPE_HANDLER(InterpreterStubRet2I8);
         case ReturnType2Double:
             RETURN_TYPE_HANDLER(InterpreterStubRet2Double);
-        case ReturnTypeFloatInt:
-            RETURN_TYPE_HANDLER(InterpreterStubRetFloatInt);
-        case ReturnTypeIntFloat:
-            RETURN_TYPE_HANDLER(InterpreterStubRetIntFloat);
-#endif // TARGET_RISCV64
+        case ReturnTypeFpStruct:
+            RETURN_TYPE_HANDLER(InterpreterStubRetFpStruct);
+        case ReturnTypeI4:
+            RETURN_TYPE_HANDLER(InterpreterStubRetI4);
+#endif // TARGET_RISCV64 || TARGET_LOONGARCH64
         default:
             _ASSERTE(!"Unexpected return type for interpreter stub");
             return 0; // This should never happen, but just in case.
@@ -1570,9 +1788,8 @@ CallStubHeader *CallStubGenerator::GenerateCallStub(MethodDesc *pMD, AllocMemTra
     STANDARD_VM_CONTRACT;
 
     // String constructors are special cases, and have a special calling convention that is associated with the actual function executed (which is a static function with no this parameter)
-    if (pMD->GetMethodTable()->IsString() && pMD->IsCtor())
+    if (pMD->IsStringCtor())
     {
-        _ASSERTE(pMD->IsFCall());
         MethodDesc *pMDActualImplementation = NonVirtualEntry2MethodDesc(ECall::GetFCallImpl(pMD));
         _ASSERTE(pMDActualImplementation != pMD);
         pMD = pMDActualImplementation;
@@ -1604,7 +1821,12 @@ CallStubHeader *CallStubGenerator::GenerateCallStub(MethodDesc *pMD, AllocMemTra
 #endif
 
     int targetSlotIndex = m_interpreterToNative ? m_targetSlotIndex : (m_routineIndex - 1);
+#ifdef TARGET_ARM
+    // AAPCS compliant stack alignment for function calls
+    CallStubHeader *pHeader = new (pHeaderStorage) CallStubHeader(m_routineIndex, targetSlotIndex, pRoutines, ALIGN_UP(m_totalStackSize, CALL_STACK_ALIGN_SIZE), sig.IsAsyncCall(), hasSwiftError, hasSwiftReturnLowering, m_pInvokeFunction);
+#else
     CallStubHeader *pHeader = new (pHeaderStorage) CallStubHeader(m_routineIndex, targetSlotIndex, pRoutines, ALIGN_UP(m_totalStackSize, STACK_ALIGN_SIZE), sig.IsAsyncCall(), hasSwiftError, hasSwiftReturnLowering, m_pInvokeFunction);
+#endif // TARGET_ARM
 
     return pHeader;
 }
@@ -1687,7 +1909,7 @@ void InitCallStubGenerator()
     s_callStubCache = new CallStubCacheHash;
 }
 
-CallStubHeader *CallStubGenerator::GenerateCallStubForSig(MetaSig &sig)
+CallStubHeader *CallStubGenerator::GenerateCallStubForSig(MetaSig &sig, MethodDesc *pContextMD)
 {
     STANDARD_VM_CONTRACT;
 
@@ -1699,14 +1921,21 @@ CallStubHeader *CallStubGenerator::GenerateCallStubForSig(MetaSig &sig)
 
     m_interpreterToNative = true; // We always generate the interpreter to native call stub here
 
-    ComputeCallStub(sig, pRoutines, NULL);
+    ComputeCallStub(sig, pRoutines, pContextMD);
 
-    xxHash hashState;
+    int totalStackSize = m_totalStackSize;
+#ifdef TARGET_ARM
+    // AAPCS compliant stack alignment for function calls
+    totalStackSize = ALIGN_UP(totalStackSize, CALL_STACK_ALIGN_SIZE);
+#endif // TARGET_ARM
+
+    xxHash<xxHashDefaultTraits> hashState;
     for (int i = 0; i < m_routineIndex; i++)
     {
         hashState.AddPointer((void*)pRoutines[i]);
     }
-    hashState.Add(m_totalStackSize);
+
+    hashState.Add(totalStackSize);
     hashState.AddPointer((void*)m_pInvokeFunction);
     hashState.Add(sig.IsAsyncCall() ? 1 : 0);
     hashState.Add(m_targetSlotIndex);
@@ -1719,7 +1948,7 @@ CallStubHeader *CallStubGenerator::GenerateCallStubForSig(MetaSig &sig)
         m_routineIndex,
         m_targetSlotIndex,
         pRoutines,
-        ALIGN_UP(m_totalStackSize, STACK_ALIGN_SIZE),
+        ALIGN_UP(totalStackSize, STACK_ALIGN_SIZE),
         sig.IsAsyncCall(),
 #if defined(TARGET_APPLE) && defined(TARGET_ARM64)
         m_hasSwiftError,
@@ -1745,9 +1974,9 @@ CallStubHeader *CallStubGenerator::GenerateCallStubForSig(MetaSig &sig)
         void* pHeaderStorage = amTracker.Track(SystemDomain::GetGlobalLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(finalCachedCallStubSize)));
         // hasSwiftReturnLowering is always false here because m_interpreterToNative = true (see line 1601's logic)
 #if defined(TARGET_APPLE) && defined(TARGET_ARM64)
-        CachedCallStub *pHeader = new (pHeaderStorage) CachedCallStub(cachedHeaderKey.HashCode, m_routineIndex, m_targetSlotIndex, pRoutines, ALIGN_UP(m_totalStackSize, STACK_ALIGN_SIZE), sig.IsAsyncCall(), m_hasSwiftError, false /* hasSwiftReturnLowering */, m_pInvokeFunction);
+        CachedCallStub *pHeader = new (pHeaderStorage) CachedCallStub(cachedHeaderKey.HashCode, m_routineIndex, m_targetSlotIndex, pRoutines, ALIGN_UP(totalStackSize, STACK_ALIGN_SIZE), sig.IsAsyncCall(), m_hasSwiftError, false /* hasSwiftReturnLowering */, m_pInvokeFunction);
 #else
-        CachedCallStub *pHeader = new (pHeaderStorage) CachedCallStub(cachedHeaderKey.HashCode, m_routineIndex, m_targetSlotIndex, pRoutines, ALIGN_UP(m_totalStackSize, STACK_ALIGN_SIZE), sig.IsAsyncCall(), false, false, m_pInvokeFunction);
+        CachedCallStub *pHeader = new (pHeaderStorage) CachedCallStub(cachedHeaderKey.HashCode, m_routineIndex, m_targetSlotIndex, pRoutines, ALIGN_UP(totalStackSize, STACK_ALIGN_SIZE), sig.IsAsyncCall(), false, false, m_pInvokeFunction);
 #endif
         s_callStubCache->Add(pHeader);
         amTracker.SuppressRelease();
@@ -1870,7 +2099,7 @@ void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines, MethodDe
         PInvoke::GetCallingConvention_IgnoreErrors(pMD, &unmanagedCallConv, NULL);
         hasUnmanagedCallConv = true;
     }
-    else if (pMD != NULL && pMD->IsILStub())
+    else if (pMD != NULL && pMD->IsILStub() && !pMD->AsDynamicMethodDesc()->IsReversePInvokeStub())
     {
         MethodDesc* pTargetMD = pMD->AsDynamicMethodDesc()->GetILStubResolver()->GetStubTargetMethodDesc();
         if (pTargetMD != NULL && pTargetMD->IsPInvoke())
@@ -1885,7 +2114,7 @@ void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines, MethodDe
 #endif
         }
     }
-    else if (pMD != NULL && pMD->HasUnmanagedCallersOnlyAttribute())
+    else if (pMD != NULL && !pMD->IsILStub() && pMD->HasUnmanagedCallersOnlyAttribute())
     {
         if (CallConv::TryGetCallingConventionFromUnmanagedCallersOnly(pMD, &unmanagedCallConv))
         {
@@ -2071,6 +2300,9 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
     m_x2 = 0;
     m_s1 = NoRange; // indicates that there is no active range of stack arguments
     m_s2 = 0;
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+    m_signExtendArgRegsMask = 0;
+#endif // TARGET_RISCV64 || TARGET_LOONGARCH64
     m_routineIndex = 0;
     m_totalStackSize = argIt.SizeOfArgStack();
     LOG2((LF2_INTERPRETER, LL_INFO10000, "ComputeCallStub\n"));
@@ -2276,29 +2508,70 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
             }
         }
         else
-#elif defined(TARGET_ARM) && defined(ARM_SOFTFP)
-        if (argLocDesc.m_cGenReg != 0 && argLocDesc.m_byteStackSize != 0)
-        {
-            ArgLocDesc argLocDescReg = {};
-            argLocDescReg.m_idxGenReg = argLocDesc.m_idxGenReg;
-            argLocDescReg.m_cGenReg = argLocDesc.m_cGenReg;
-            ProcessArgument(&argIt, argLocDescReg, pRoutines);
-
-            ArgLocDesc argLocDescStack = {};
-            argLocDescStack.m_byteStackIndex = argLocDesc.m_byteStackIndex;
-            argLocDescStack.m_byteStackSize = argLocDesc.m_byteStackSize;
-            ProcessArgument(&argIt, argLocDescStack, pRoutines);
-        }
-        else
 #endif // UNIX_AMD64_ABI
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+        if ((argLocDesc.m_cFloatReg != 0) && (argLocDesc.m_structFields.flags != FpStruct::UseIntCallConv))
+        {
+            ProcessFpStructArgument(argLocDesc.m_structFields, argLocDesc, argIt.GetArgSize(), pRoutines);
+        }
+#ifdef TARGET_RISCV64
+        else if (m_interpreterToNative && (corType == ELEMENT_TYPE_R4) && (argLocDesc.m_cFloatReg != 0))
+        {
+            FpStructInRegistersInfo floatInfo = {};
+            floatInfo.flags = (FpStruct::Flags)(FpStruct::OnlyOne | (2 << FpStruct::PosSizeShift1st));
+            ProcessFpStructArgument(floatInfo, argLocDesc, sizeof(float), pRoutines);
+        }
+#endif // TARGET_RISCV64
+        else
+#endif // TARGET_RISCV64 || TARGET_LOONGARCH64
         {
             ProcessArgument(&argIt, argLocDesc, pRoutines);
         }
+
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+        if (m_interpreterToNative)
+        {
+            switch (corType)
+            {
+                case ELEMENT_TYPE_BOOLEAN:
+                case ELEMENT_TYPE_CHAR:
+                case ELEMENT_TYPE_I1:
+                case ELEMENT_TYPE_U1:
+                case ELEMENT_TYPE_I2:
+                case ELEMENT_TYPE_U2:
+                case ELEMENT_TYPE_I4:
+                case ELEMENT_TYPE_U4:
+                    if (argLocDesc.m_cGenReg != 0)
+                    {
+                        m_signExtendArgRegsMask |= 1u << argLocDesc.m_idxGenReg;
+                    }
+                    else
+                    {
+                        _ASSERTE(argLocDesc.m_byteStackSize != 0);
+                        // The pending stack range has to be copied before its slot can be sign-extended in place
+                        TerminateCurrentRoutineIfNotOfNewType(RoutineType::None, pRoutines);
+                        pRoutines[m_routineIndex++] = (PCODE)SignExtend_Stack;
+                        pRoutines[m_routineIndex++] = (PCODE)argLocDesc.m_byteStackIndex;
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+#endif // TARGET_RISCV64 || TARGET_LOONGARCH64
     }
 
     // All arguments were processed, but there is likely a pending ranges to store.
     // Process such a range if any.
     TerminateCurrentRoutineIfNotOfNewType(RoutineType::None, pRoutines);
+
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+    if (m_signExtendArgRegsMask != 0)
+    {
+        pRoutines[m_routineIndex++] = (PCODE)SignExtend_ArgRegs;
+        pRoutines[m_routineIndex++] = (PCODE)m_signExtendArgRegsMask;
+    }
+#endif // TARGET_RISCV64 || TARGET_LOONGARCH64
 
     ReturnType returnType = GetReturnType(&argIt);
 
@@ -2314,6 +2587,13 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
             EmitSwiftReturnLoweringRoutines(pRoutines);
         }
 #endif // TARGET_APPLE && TARGET_ARM64
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+        if (returnType == ReturnTypeFpStruct)
+        {
+            // Read by InterpFpStructReturnFromNative
+            pRoutines[m_routineIndex++] = PackFpStructInRegistersInfo(m_fpStructReturnInfo);
+        }
+#endif // TARGET_RISCV64 || TARGET_LOONGARCH64
     }
     else
     {
@@ -2352,6 +2632,13 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
 #endif // TARGET_APPLE && TARGET_ARM64
         {
             pRoutines[m_routineIndex++] = GetInterpreterReturnTypeHandler(returnType);
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+            if (returnType == ReturnTypeFpStruct)
+            {
+                // Read by InterpreterStubRetFpStruct
+                pRoutines[m_routineIndex++] = PackFpStructInRegistersInfo(m_fpStructReturnInfo);
+            }
+#endif // TARGET_RISCV64 || TARGET_LOONGARCH64
         }
     }
 }
@@ -2365,9 +2652,10 @@ void CallStubGenerator::ProcessArgument(ArgIteratorType *pArgIt, ArgLocDesc& arg
 
     RoutineType argType = RoutineType::None;
 #ifdef TARGET_ARM
-    if (argLocDesc.m_cGenReg == 2 || argLocDesc.m_byteStackSize >= 8)
+    bool useRoutine4B = false;
+    if ((argLocDesc.m_cGenReg * 4 + argLocDesc.m_byteStackSize) >= 8)
     {
-        /* do nothing */
+        useRoutine4B = true;
     }
     else
 #endif // TARGET_ARM
@@ -2403,7 +2691,7 @@ void CallStubGenerator::ProcessArgument(ArgIteratorType *pArgIt, ArgLocDesc& arg
     {
         LOG2((LF2_INTERPRETER, LL_INFO10000, "m_cGenReg=%d\n", (int)argLocDesc.m_cGenReg));
 #ifdef TARGET_ARM
-        if (argLocDesc.m_cGenReg == 2)
+        if (useRoutine4B)
         {
             pRoutines[m_routineIndex++] = GetRegRoutine_4B(argLocDesc.m_idxGenReg, argLocDesc.m_idxGenReg + argLocDesc.m_cGenReg - 1);
         }
@@ -2487,7 +2775,7 @@ void CallStubGenerator::ProcessArgument(ArgIteratorType *pArgIt, ArgLocDesc& arg
     {
         LOG2((LF2_INTERPRETER, LL_INFO10000, "m_byteStackSize=%d\n", (int)argLocDesc.m_byteStackSize));
 #ifdef TARGET_ARM
-        if (argLocDesc.m_byteStackSize >= 8)
+        if (useRoutine4B)
         {
             pRoutines[m_routineIndex++] = GetStackRoutine_4B();
             pRoutines[m_routineIndex++] = argLocDesc.m_byteStackIndex;
@@ -2590,6 +2878,15 @@ void CallStubGenerator::ProcessArgument(ArgIteratorType *pArgIt, ArgLocDesc& arg
     }
 #endif // ENREGISTERED_PARAMTYPE_MAXSIZE
 #endif // UNIX_AMD64_ABI
+#ifdef TARGET_ARM
+    if (useRoutine4B)
+    {
+        if ((argLocDesc.m_cGenReg * 4 + argLocDesc.m_byteStackSize) % INTERP_STACK_SLOT_SIZE != 0)
+        {
+            pRoutines[m_routineIndex++] = (PCODE)InjectInterpStackAlign;
+        }
+    }
+#endif // TARGET_ARM
 
     m_currentRoutineType = argType;
 }
@@ -2622,6 +2919,12 @@ CallStubGenerator::ReturnType CallStubGenerator::GetReturnType(ArgIteratorType *
             _ASSERTE(pArgIt->HasThis());
             return ReturnTypeBuffArg2;
         }
+#elif defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+        // The return buffer follows the this argument
+        if (pArgIt->HasThis())
+        {
+            return ReturnTypeBuffArg2;
+        }
 #endif
         return ReturnTypeBuff;
 #endif // TARGET_AMD64
@@ -2645,6 +2948,9 @@ CallStubGenerator::ReturnType CallStubGenerator::GetReturnType(ArgIteratorType *
                 return ReturnTypeU2;
             case ELEMENT_TYPE_I4:
             case ELEMENT_TYPE_U4:
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+                return ReturnTypeI4;
+#endif // TARGET_RISCV64 || TARGET_LOONGARCH64
             case ELEMENT_TYPE_I:
             case ELEMENT_TYPE_U:
             case ELEMENT_TYPE_CLASS:
@@ -2652,7 +2958,6 @@ CallStubGenerator::ReturnType CallStubGenerator::GetReturnType(ArgIteratorType *
             case ELEMENT_TYPE_STRING:
             case ELEMENT_TYPE_PTR:
             case ELEMENT_TYPE_BYREF:
-            case ELEMENT_TYPE_TYPEDBYREF:
             case ELEMENT_TYPE_ARRAY:
             case ELEMENT_TYPE_SZARRAY:
             case ELEMENT_TYPE_FNPTR:
@@ -2665,15 +2970,24 @@ CallStubGenerator::ReturnType CallStubGenerator::GetReturnType(ArgIteratorType *
                 return ReturnTypeI8;
                 break;
             case ELEMENT_TYPE_R4:
-#if defined(TARGET_ARM64) || defined(TARGET_32BIT)
+#if defined(TARGET_ARM64) || defined(TARGET_32BIT) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
                 return ReturnTypeFloat;
-#endif // TARGET_ARM64 || TARGET_32BIT
+#endif // TARGET_ARM64 || TARGET_32BIT || TARGET_RISCV64 || TARGET_LOONGARCH64
             case ELEMENT_TYPE_R8:
                 return ReturnTypeDouble;
                 break;
             case ELEMENT_TYPE_VOID:
                 return ReturnTypeVoid;
                 break;
+            case ELEMENT_TYPE_TYPEDBYREF:
+#if defined(UNIX_AMD64_ABI)
+                return ReturnTypeI8I8;
+#elif defined(TARGET_ARM64) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+                return ReturnType2I8;
+#else
+                _ASSERTE(!"Implement TypedByRef return support for this platform");
+                break;
+#endif
             case ELEMENT_TYPE_VALUETYPE:
 #ifdef TARGET_AMD64
 #ifdef TARGET_WINDOWS
@@ -2821,34 +3135,29 @@ CallStubGenerator::ReturnType CallStubGenerator::GetReturnType(ArgIteratorType *
                         _ASSERTE(!"The return types should be <= 8 bytes in size");
                         break;
                 }
-#elif defined(TARGET_RISCV64)
+#elif defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
                 {
                     FpStructInRegistersInfo info = pArgIt->GetReturnFpStructInRegistersInfo();
-                    // RISC-V pass floating-point struct fields in FA registers
-                    if ((info.flags & FpStruct::OnlyOne) != 0)
+                    // RISC-V and LoongArch64 pass floating-point struct fields in FA/F registers.
+                    // The fixed return types cover fields at the start of consecutive 4 or 8 byte slots,
+                    // any other layout is scattered or gathered by ReturnTypeFpStruct.
+                    if (((info.flags & FpStruct::OnlyOne) != 0) && (info.offset1st == 0))
                     {
-                        // Single field - could be float or int in single register
-                        return ReturnTypeDouble; // Use Double routine for both float and double (NaN-boxed)
+                        return (info.Size1st() == sizeof(float)) ? ReturnTypeFloat : ReturnTypeDouble;
                     }
-                    else if ((info.flags & FpStruct::BothFloat) != 0)
+                    else if (((info.flags & FpStruct::BothFloat) != 0) && (info.offset1st == 0) &&
+                             (info.Size1st() == info.Size2nd()) && (info.offset2nd == info.Size1st()))
                     {
-                        // Two float/double fields
-                        return ReturnType2Double;
+                        return (info.Size1st() == sizeof(float)) ? ReturnType2Float : ReturnType2Double;
                     }
-                    else if ((info.flags & FpStruct::FloatInt) != 0)
+                    else if (info.flags != FpStruct::UseIntCallConv)
                     {
-                        // First field float, second int
-                        return ReturnTypeFloatInt;
-                    }
-                    else if ((info.flags & FpStruct::IntFloat) != 0)
-                    {
-                        // First field int, second float
-                        return ReturnTypeIntFloat;
+                        m_fpStructReturnInfo = info;
+                        return ReturnTypeFpStruct;
                     }
                     else
                     {
                         _ASSERTE(info.flags == FpStruct::UseIntCallConv);
-                        _ASSERTE(thReturnValueType.AsMethodTable()->IsRegPassedStruct());
                         unsigned size = thReturnValueType.GetSize();
                         if (size <= 8)
                         {

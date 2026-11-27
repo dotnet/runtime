@@ -32,7 +32,7 @@ public:
     BYTE* GetCodeInfo(unsigned* pCodeSize, unsigned* pStackSize, CorInfoOptions* pOptions, unsigned* pEHSize);
     SigPointer GetLocalSig();
 
-    OBJECTHANDLE ConstructStringLiteral(mdToken metaTok);
+    STRINGREF* ConstructStringLiteral(mdToken metaTok);
     BOOL IsValidStringRef(mdToken metaTok);
     STRINGREF GetStringLiteral(mdToken metaTok);
     void ResolveToken(mdToken token, ResolvedToken* resolvedToken);
@@ -57,9 +57,6 @@ public:
     COR_ILMETHOD_DECODER* GetILHeader();
 
 #ifndef DACCESS_COMPILE
-    // This is only set for StructMarshal interop stubs.
-    // See callsites for more details.
-    void SetLoaderHeap(PTR_LoaderHeap pLoaderHeap);
     void SetTokenLookupMap(TokenLookupMap* pMap);
     void SetJitFlags(CORJIT_FLAGS jitFlags);
     void SetStubMethodDesc(MethodDesc* pStubMD);
@@ -69,7 +66,7 @@ public:
     COR_ILMETHOD_DECODER* AllocGeneratedIL(size_t cbCode, DWORD cbLocalSig, UINT maxStack);
     COR_ILMETHOD_SECT_EH* AllocEHSect(size_t nClauses);
 
-    COR_ILMETHOD_DECODER* FinalizeILStub(ILStubLinker* sl);
+    COR_ILMETHOD_DECODER* FinalizeILStub(ILStubLinker* sl, CORJIT_FLAGS corJitFlags = CORJIT_FLAGS(CORJIT_FLAGS::CORJIT_FLAG_IL_STUB));
 #endif // !DACCESS_COMPILE
 
     static void StubGenFailed(ILStubResolver* pResolver);
@@ -83,7 +80,6 @@ protected:
     };
 
     void ClearCompileTimeState(CompileTimeStatePtrSpecialValues newState);
-    bool UseLoaderHeap();
 
     //
     // This stuff is only needed during JIT
@@ -105,9 +101,24 @@ protected:
     PTR_MethodDesc          m_pStubMD;
     PTR_MethodDesc          m_pStubTargetMD;
     CORJIT_FLAGS            m_jitFlags;
-    PTR_LoaderHeap          m_loaderHeap;
+
+    // Next resolver in the owning collectible LoaderAllocator's ILStubCache.
+    PTR_ILStubResolver      m_pNextCollectibleResolver;
 };
 
-typedef Holder<ILStubResolver*, DoNothing<ILStubResolver*>, ILStubResolver::StubGenFailed, 0> ILStubGenHolder;
+struct ILStubGenHolderTraits final
+{
+    using Type = ILStubResolver*;
+    static constexpr Type Default() { return NULL; }
+
+    static void Free(Type resolver) noexcept
+    {
+        WRAPPER_NO_CONTRACT;
+        if (resolver != NULL)
+            ILStubResolver::StubGenFailed(resolver);
+    }
+};
+
+using ILStubGenHolder = LifetimeHolder<ILStubGenHolderTraits>;
 
 #endif // __ILSTUBRESOLVER_H__

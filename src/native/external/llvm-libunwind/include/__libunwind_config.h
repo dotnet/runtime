@@ -41,8 +41,8 @@
 # endif
 # if defined(__i386__)
 #  define _LIBUNWIND_TARGET_I386
-#  define _LIBUNWIND_CONTEXT_SIZE 13
-#  define _LIBUNWIND_CURSOR_SIZE 20
+#  define _LIBUNWIND_CONTEXT_SIZE 8
+#  define _LIBUNWIND_CURSOR_SIZE 15
 #  define _LIBUNWIND_HIGHEST_DWARF_REGISTER _LIBUNWIND_HIGHEST_DWARF_REGISTER_X86
 # elif defined(__x86_64__)
 #  define _LIBUNWIND_TARGET_X86_64 1
@@ -57,8 +57,8 @@
 #    define _LIBUNWIND_CONTEXT_SIZE 21
 #    define _LIBUNWIND_CURSOR_SIZE 28
 #  else
-#    define _LIBUNWIND_CONTEXT_SIZE 38
-#    define _LIBUNWIND_CURSOR_SIZE 50
+#    define _LIBUNWIND_CONTEXT_SIZE 21
+#    define _LIBUNWIND_CURSOR_SIZE 33
 #  endif
 #  define _LIBUNWIND_HIGHEST_DWARF_REGISTER _LIBUNWIND_HIGHEST_DWARF_REGISTER_X86_64
 # elif defined(__powerpc64__)
@@ -73,11 +73,11 @@
 #  define _LIBUNWIND_HIGHEST_DWARF_REGISTER _LIBUNWIND_HIGHEST_DWARF_REGISTER_PPC
 # elif defined(__aarch64__)
 #  define _LIBUNWIND_TARGET_AARCH64 1
-#  define _LIBUNWIND_CONTEXT_SIZE 100
+#define _LIBUNWIND_CONTEXT_SIZE 67
 #  if defined(__SEH__)
-#    define _LIBUNWIND_CURSOR_SIZE 198
+#    define _LIBUNWIND_CURSOR_SIZE 164
 #  else
-#    define _LIBUNWIND_CURSOR_SIZE 112
+#define _LIBUNWIND_CURSOR_SIZE 79
 #  endif
 #  define _LIBUNWIND_HIGHEST_DWARF_REGISTER _LIBUNWIND_HIGHEST_DWARF_REGISTER_ARM64
 # elif defined(__arm__)
@@ -89,8 +89,8 @@
 #    define _LIBUNWIND_CONTEXT_SIZE 61
 #    define _LIBUNWIND_CURSOR_SIZE 68
 #  else
-#    define _LIBUNWIND_CONTEXT_SIZE 50
-#    define _LIBUNWIND_CURSOR_SIZE 57
+#    define _LIBUNWIND_CONTEXT_SIZE 42
+#    define _LIBUNWIND_CURSOR_SIZE 49
 #  endif
 #  define _LIBUNWIND_HIGHEST_DWARF_REGISTER _LIBUNWIND_HIGHEST_DWARF_REGISTER_ARM
 # elif defined(__or1k__)
@@ -154,7 +154,7 @@
 #  else
 #   define RISCV_FLEN 0
 #  endif
-#  define _LIBUNWIND_CONTEXT_SIZE (32 * (__riscv_xlen + RISCV_FLEN) / 64) + 32
+#  define _LIBUNWIND_CONTEXT_SIZE (32 * (__riscv_xlen + RISCV_FLEN) / 64)
 #  if __riscv_xlen == 32
 #   define _LIBUNWIND_CURSOR_SIZE (_LIBUNWIND_CONTEXT_SIZE + 7)
 #  elif __riscv_xlen == 64
@@ -176,15 +176,14 @@
 #elif defined(__loongarch__)
 #define _LIBUNWIND_TARGET_LOONGARCH 1
 #if __loongarch_grlen == 64
-#define _LIBUNWIND_CONTEXT_SIZE 98
-#define _LIBUNWIND_CURSOR_SIZE 110
+#define _LIBUNWIND_CONTEXT_SIZE 65
+#define _LIBUNWIND_CURSOR_SIZE 77
 #else
 #error "Unsupported LoongArch ABI"
 #endif
 #define _LIBUNWIND_HIGHEST_DWARF_REGISTER                                      \
   _LIBUNWIND_HIGHEST_DWARF_REGISTER_LOONGARCH
 #elif defined(__wasm__)
-#define _LIBUNWIND_TARGET_WASM 1
 // Unused
 #define _LIBUNWIND_CONTEXT_SIZE 0
 #define _LIBUNWIND_CURSOR_SIZE 0
@@ -212,5 +211,14 @@
 # define _LIBUNWIND_CURSOR_SIZE 204
 # define _LIBUNWIND_HIGHEST_DWARF_REGISTER 287
 #endif // _LIBUNWIND_IS_NATIVE_ONLY
+
+#if defined(__has_feature)
+#  if __has_feature(ptrauth_calls) && __has_feature(ptrauth_returns)
+#    define _LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING 1
+#  elif __has_feature(ptrauth_calls) != __has_feature(ptrauth_returns)
+#    error "Either both or none of ptrauth_calls and ptrauth_returns "\
+           "is allowed to be enabled"
+#  endif
+#endif
 
 #endif // ____LIBUNWIND_CONFIG_H__

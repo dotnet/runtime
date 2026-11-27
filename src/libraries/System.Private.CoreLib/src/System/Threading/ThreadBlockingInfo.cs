@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -85,7 +86,7 @@ namespace System.Threading
                     case ObjectKind.Lock:
                         return ((Lock)Unsafe.AsRef<object>(_objectPtr)).OwningManagedThreadId;
 
-#if !MONO
+#if FEATURE_MULTITHREADING
                     case ObjectKind.Condition:
                         Debug.Assert(_objectKind == ObjectKind.Condition);
                         return ((Condition)Unsafe.AsRef<object>(_objectPtr)).AssociatedLock.OwningManagedThreadId;
@@ -106,7 +107,7 @@ namespace System.Threading
             public Scope(Lock lockObj, int timeoutMs) : this(lockObj, ObjectKind.Lock, timeoutMs) { }
 #pragma warning restore CS9216
 
-#if !MONO
+#if FEATURE_MULTITHREADING
             public Scope(Condition condition, int timeoutMs) : this(condition, ObjectKind.Condition, timeoutMs) { }
 #endif
 

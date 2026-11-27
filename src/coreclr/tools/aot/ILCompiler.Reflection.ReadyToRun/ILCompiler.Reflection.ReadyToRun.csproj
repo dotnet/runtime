@@ -26,8 +26,29 @@
     <Compile Include="..\..\Common\Internal\Runtime\ModuleHeaders.cs" Link="Common\ModuleHeaders.cs" />
     <Compile Include="..\..\Common\Internal\Runtime\ReadyToRunConstants.cs" Link="Common\ReadyToRunConstants.cs" />
     <Compile Include="..\..\Common\Internal\Runtime\ReadyToRunInstructionSet.cs" Link="Common\ReadyToRunInstructionSet.cs" />
+    <Compile Include="..\..\Common\Compiler\ObjectWriter\Dwarf\DwarfHelper.cs" Link="Common\DwarfHelper.cs" />
     <Compile Include="..\..\Common\MachO\**\*.cs" Link="MachO\%(RecursiveDir)%(Filename)%(Extension)" />
     <Compile Include="..\..\Common\Pgo\PgoFormat.cs" Link="Common\PgoFormat.cs" />
+    <Compile Include="..\..\Common\Wasm\Webcil.cs" Link="Webcil\Webcil.cs" />
+  </ItemGroup>
+
+  <!-- GC info decoders shared with the cDAC (GC info version 4 and later). See Cdac\CdacTarget.cs. -->
+  <PropertyGroup>
+    <CdacAbstractionsDir>$(RepoRoot)src\native\managed\cdac\Microsoft.Diagnostics.DataContractReader.Abstractions\</CdacAbstractionsDir>
+    <CdacContractsDir>$(RepoRoot)src\native\managed\cdac\Microsoft.Diagnostics.DataContractReader.Contracts\</CdacContractsDir>
+    <!-- The shared sources use nullable annotations; this project's public surface stays nullable-oblivious. -->
+    <NoWarn>$(NoWarn);CS8632</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(CdacAbstractionsDir)TargetPointer.cs" Link="Cdac\Shared\TargetPointer.cs" />
+    <Compile Include="$(CdacAbstractionsDir)FlushScope.cs" Link="Cdac\Shared\FlushScope.cs" />
+    <Compile Include="$(CdacAbstractionsDir)Contracts\IContract.cs" Link="Cdac\Shared\IContract.cs" />
+    <Compile Include="$(CdacAbstractionsDir)Contracts\IGCInfo.cs" Link="Cdac\Shared\IGCInfo.cs" />
+    <Compile Include="$(CdacAbstractionsDir)Contracts\IRuntimeInfo.cs" Link="Cdac\Shared\IRuntimeInfo.cs" />
+    <Compile Include="$(CdacContractsDir)Contracts\GCInfo\GCInfoDecoder.cs" Link="Cdac\Shared\GCInfo\GCInfoDecoder.cs" />
+    <Compile Include="$(CdacContractsDir)Contracts\GCInfo\IGCInfoDecoder.cs" Link="Cdac\Shared\GCInfo\IGCInfoDecoder.cs" />
+    <Compile Include="$(CdacContractsDir)Contracts\GCInfo\PlatformTraits\*.cs" Link="Cdac\Shared\GCInfo\PlatformTraits\%(Filename)%(Extension)" />
+    <Compile Include="$(CdacContractsDir)Contracts\GCInfo\X86\*.cs" Link="Cdac\Shared\GCInfo\X86\%(Filename)%(Extension)" />
   </ItemGroup>
 
 </Project>

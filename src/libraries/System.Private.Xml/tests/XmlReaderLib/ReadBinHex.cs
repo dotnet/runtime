@@ -970,7 +970,17 @@ namespace System.Xml.Tests
                 DataReader.ReadElementContentAsBinHex(base64, 0, 4096);
                 return TEST_FAIL;
             }
-            catch (XmlException) { DataReader.Close(); return TEST_PASS; }
+            catch (XmlException ex)
+            {
+                // The exception message should not contain the entire input.
+                if (ex.Message.Length > 100)
+                {
+                    CError.WriteLine("Exception message is unexpectedly large: " + ex.Message.Length + " chars");
+                    return TEST_FAIL;
+                }
+                DataReader.Close();
+                return TEST_PASS;
+            }
             finally { DataReader.Close(); }
         }
 

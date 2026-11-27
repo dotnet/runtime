@@ -13,10 +13,12 @@
 #include <string>
 #include <sstream>
 #include <vector>
-#include <set>
 #include <functional>
 #include <memory>
 #include <minipal/utils.h>
+#include <minipal/environ.h>
+#include <minipal/utf8.h>
+#include <minipal/thread.h>
 
 // Class used to perform specific actions.
 class platform_specific_actions;
@@ -73,25 +75,25 @@ namespace pal
     inline bool is_cli_option(const char_t option_maybe) { return option_maybe == W('-') || option_maybe == W('/'); }
     inline string_t getenv(const char_t* var)
     {
-        DWORD needed = ::GetEnvironmentVariableW(var, nullptr, 0);
+        uint32_t needed = minipal_environ_get_variable_u16((const CHAR16_T*)var, nullptr, 0);
         if (needed == 0)
             return {};
 
         malloc_ptr<char_t> buffer{ (char_t*)::malloc(needed * sizeof(char_t)) };
         assert(buffer != nullptr);
-        DWORD wrote = ::GetEnvironmentVariableW(var, buffer.get(), needed);
+        uint32_t wrote = minipal_environ_get_variable_u16((const CHAR16_T*)var, (CHAR16_T*)buffer.get(), needed);
         assert(wrote < needed);
         return { buffer.get() };
     }
     inline string_utf8_t getenvA(const char* var)
     {
-        DWORD needed = ::GetEnvironmentVariableA(var, nullptr, 0);
+        uint32_t needed = minipal_environ_get_variable(var, nullptr, 0);
         if (needed == 0)
             return {};
 
         malloc_ptr<char> buffer{ (char*)::malloc(needed * sizeof(char)) };
         assert(buffer != nullptr);
-        DWORD wrote = ::GetEnvironmentVariableA(var, buffer.get(), needed);
+        uint32_t wrote = minipal_environ_get_variable(var, buffer.get(), needed);
         assert(wrote < needed);
         return { buffer.get() };
     }
@@ -212,12 +214,13 @@ namespace pal
 
     inline string_utf8_t convert_to_utf8(const char_t* str)
     {
-        int bytes_req = ::WideCharToMultiByte(CP_UTF8, 0, str, -1, nullptr, 0, nullptr, nullptr);
+        size_t length = ::wcslen(str) + 1;
+        size_t bytes_req = minipal_get_length_utf16_to_utf8((const CHAR16_T*)str, length, 0);
 
         malloc_ptr<char> buffer{ (char*)::malloc(bytes_req) };
         assert(buffer != nullptr);
 
-        int written = ::WideCharToMultiByte(CP_UTF8, 0, str, -1, buffer.get(), bytes_req, nullptr, nullptr);
+        size_t written = minipal_convert_utf16_to_utf8((const CHAR16_T*)str, length, buffer.get(), bytes_req, 0);
         assert(bytes_req == written);
 
         return { buffer.get() };
@@ -225,12 +228,13 @@ namespace pal
 
     inline string_t convert_from_utf8(const char* str)
     {
-        int wchar_req = ::MultiByteToWideChar(CP_UTF8, 0, str, -1, nullptr, 0);
+        size_t length = ::strlen(str) + 1;
+        size_t wchar_req = minipal_get_length_utf8_to_utf16(str, length, 0);
 
         malloc_ptr<wchar_t> buffer{ (wchar_t*)::malloc(wchar_req * sizeof(wchar_t)) };
         assert(buffer != nullptr);
 
-        int written = ::MultiByteToWideChar(CP_UTF8, 0, str, -1, buffer.get(), wchar_req);
+        size_t written = minipal_convert_utf8_to_utf16(str, length, (CHAR16_T*)buffer.get(), wchar_req, 0);
         assert(wchar_req == written);
 
         return { buffer.get() };
@@ -384,6 +388,16 @@ public:
 #include <link.h>
 #include <elf.h>
 #include <cstring>
+
+// glibc defines the ElfW() macro to select the native-width Elf type, but some
+// libcs (e.g. OpenBSD) don't provide it. Fall back to the appropriate fixed-width type.
+#ifndef ElfW
+#if defined(TARGET_64BIT)
+#define ElfW(type) Elf64_##type
+#else
+#define ElfW(type) Elf32_##type
+#endif
+#endif // ElfW
 #endif
 
 // CMake generated
@@ -480,7 +494,7 @@ namespace pal
 
     inline uint32_t get_process_id()
     {
-        return (uint32_t)getpid();
+        return minipal_get_current_process_id();
     }
 
     inline bool does_file_exist(const char_t* file_path)
@@ -713,6 +727,11 @@ namespace pal
 
     inline bool try_load_library(const pal::string_t& path, pal::mod_t& hMod)
     {
+#ifdef TARGET_WASI
+        // wasi-libc has no dlopen; callers treat false as "not available".
+        (void)path; hMod = nullptr;
+        return false;
+#else
         hMod = (pal::mod_t)dlopen(path.c_str(), RTLD_NOW | RTLD_LOCAL);
         if (hMod == nullptr)
         {
@@ -720,6 +739,7 @@ namespace pal
             return false;
         }
         return true;
+#endif
     }
 
 

@@ -19,7 +19,7 @@ namespace System.Net.WebSockets.Tests
         protected override bool UsableAfterCanceledReads => false;
         protected override Type UnsupportedConcurrentExceptionType => null;
 
-        protected static (WebSocket webSocket1, WebSocket webSocket2) CreateWebSockets()
+        internal static (WebSocket webSocket1, WebSocket webSocket2) CreateWebSockets()
         {
             (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
 
@@ -30,7 +30,9 @@ namespace System.Net.WebSockets.Tests
         }
     }
 
-    public sealed class WebSocketStreamCreateTests : WebSocketStreamTests
+    // Synchronously disposing a WebSocketStream.Create stream blocks on the close handshake, which requires another thread.
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+    public sealed class WebSocketStreamCreateConformanceTests : WebSocketStreamTests
     {
         protected override Task<StreamPair> CreateConnectedStreamsAsync()
         {
@@ -39,6 +41,11 @@ namespace System.Net.WebSockets.Tests
                 WebSocketStream.Create(webSocket1, WebSocketMessageType.Binary, TimeSpan.FromSeconds(120)),
                 WebSocketStream.Create(webSocket2, WebSocketMessageType.Binary, TimeSpan.FromSeconds(120))));
         }
+    }
+
+    public sealed class WebSocketStreamCreateTests
+    {
+        private static (WebSocket webSocket1, WebSocket webSocket2) CreateWebSockets() => WebSocketStreamTests.CreateWebSockets();
 
         [Fact]
         public void Create_InvalidArgs_Throws()
@@ -186,6 +193,12 @@ namespace System.Net.WebSockets.Tests
         [InlineData(true, 1)]
         public async Task Dispose_TimeoutApplies(bool useAsync, int timeoutSeconds)
         {
+            if (!useAsync && timeoutSeconds != 0 && !PlatformDetection.IsMultithreadingSupported)
+            {
+                // Synchronous Dispose blocks on the close handshake, which requires multithreading
+                return;
+            }
+
             (WebSocket webSocket1, _) = CreateWebSockets();
 
             WebSocketStream stream = WebSocketStream.Create(webSocket1, WebSocketMessageType.Text, TimeSpan.FromSeconds(timeoutSeconds));
@@ -205,6 +218,12 @@ namespace System.Net.WebSockets.Tests
         [InlineData(true)]
         public async Task Dispose_InfiniteTimeout(bool useAsync)
         {
+            if (!useAsync && !PlatformDetection.IsMultithreadingSupported)
+            {
+                // Synchronous Dispose blocks on the close handshake, which requires multithreading
+                return;
+            }
+
             (WebSocket webSocket1, WebSocket webSocket2) = CreateWebSockets();
 
             WebSocketStream stream = WebSocketStream.Create(webSocket1, WebSocketMessageType.Text, Timeout.InfiniteTimeSpan);

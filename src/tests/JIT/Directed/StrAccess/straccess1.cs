@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+namespace JitTest_Directed_StrAccess_straccess1;
+
 using System;
 using Xunit;
 
@@ -219,7 +221,6 @@ public class StrAccess1
         }
     }
 }
-
 
 
 

@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <TargetFramework>$(CDacTfm)</TargetFramework>
     <RootNamespace>Microsoft.Diagnostics.DataContractReader.Legacy</RootNamespace>
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -17,5 +17,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Microsoft.Diagnostics.DataContractReader\Microsoft.Diagnostics.DataContractReader.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Microsoft.Diagnostics.DataContractReader.Tests" />
+    <InternalsVisibleTo Include="Microsoft.Diagnostics.DataContractReader.DumpTests" />
   </ItemGroup>
 </Project>

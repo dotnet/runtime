@@ -1,32 +1,32 @@
 ﻿// Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using NUnit.Framework;
+using Xunit;
 
 namespace Mono.Linker.Tests
 {
-    [TestFixture]
     public class PreserveActionComparisonTests
     {
-        [TestCase(TypePreserve.All, TypePreserve.All, TypePreserve.All)]
-        [TestCase(TypePreserve.All, TypePreserve.Methods, TypePreserve.All)]
-        [TestCase(TypePreserve.All, TypePreserve.Fields, TypePreserve.All)]
-        [TestCase(TypePreserve.All, TypePreserve.Nothing, TypePreserve.All)]
-        [TestCase(TypePreserve.Methods, TypePreserve.All, TypePreserve.All)]
-        [TestCase(TypePreserve.Methods, TypePreserve.Methods, TypePreserve.Methods)]
-        [TestCase(TypePreserve.Methods, TypePreserve.Fields, TypePreserve.All)]
-        [TestCase(TypePreserve.Methods, TypePreserve.Nothing, TypePreserve.Methods)]
-        [TestCase(TypePreserve.Fields, TypePreserve.All, TypePreserve.All)]
-        [TestCase(TypePreserve.Fields, TypePreserve.Methods, TypePreserve.All)]
-        [TestCase(TypePreserve.Fields, TypePreserve.Fields, TypePreserve.Fields)]
-        [TestCase(TypePreserve.Fields, TypePreserve.Nothing, TypePreserve.Fields)]
-        [TestCase(TypePreserve.Nothing, TypePreserve.All, TypePreserve.All)]
-        [TestCase(TypePreserve.Nothing, TypePreserve.Methods, TypePreserve.Methods)]
-        [TestCase(TypePreserve.Nothing, TypePreserve.Fields, TypePreserve.Fields)]
+        [Theory]
+        [InlineData(TypePreserve.All, TypePreserve.All, TypePreserve.All)]
+        [InlineData(TypePreserve.All, TypePreserve.Methods, TypePreserve.All)]
+        [InlineData(TypePreserve.All, TypePreserve.Fields, TypePreserve.All)]
+        [InlineData(TypePreserve.All, TypePreserve.Nothing, TypePreserve.All)]
+        [InlineData(TypePreserve.Methods, TypePreserve.All, TypePreserve.All)]
+        [InlineData(TypePreserve.Methods, TypePreserve.Methods, TypePreserve.Methods)]
+        [InlineData(TypePreserve.Methods, TypePreserve.Fields, TypePreserve.All)]
+        [InlineData(TypePreserve.Methods, TypePreserve.Nothing, TypePreserve.Methods)]
+        [InlineData(TypePreserve.Fields, TypePreserve.All, TypePreserve.All)]
+        [InlineData(TypePreserve.Fields, TypePreserve.Methods, TypePreserve.All)]
+        [InlineData(TypePreserve.Fields, TypePreserve.Fields, TypePreserve.Fields)]
+        [InlineData(TypePreserve.Fields, TypePreserve.Nothing, TypePreserve.Fields)]
+        [InlineData(TypePreserve.Nothing, TypePreserve.All, TypePreserve.All)]
+        [InlineData(TypePreserve.Nothing, TypePreserve.Methods, TypePreserve.Methods)]
+        [InlineData(TypePreserve.Nothing, TypePreserve.Fields, TypePreserve.Fields)]
         public void VerifyBehaviorOfChoosePreserveActionWhichPreservesTheMost(TypePreserve left, TypePreserve right, TypePreserve expected)
         {
-            Assert.That(expected, Is.EqualTo(AnnotationStore.ChoosePreserveActionWhichPreservesTheMost(left, right)));
-            Assert.That(expected, Is.EqualTo(AnnotationStore.ChoosePreserveActionWhichPreservesTheMost(right, left)));
+            Assert.Equal(expected, AnnotationStore.ChoosePreserveActionWhichPreservesTheMost(left, right));
+            Assert.Equal(expected, AnnotationStore.ChoosePreserveActionWhichPreservesTheMost(right, left));
         }
     }
 }

@@ -34,6 +34,29 @@ namespace System.Collections.Generic
             return new DelegateEqualityComparer<T>(equals, getHashCode);
         }
 
+        /// <summary>
+        /// Creates an <see cref="EqualityComparer{T}"/> by using the specified key selector and optional key comparer.
+        /// </summary>
+        /// <param name="keySelector">The delegate to use to select a comparison key from each element.</param>
+        /// <param name="keyComparer">An optional comparer to use when comparing keys. The default comparer of <typeparamref name="TKey"/> is used if none is specified.</param>
+        /// <returns>The new comparer.</returns>
+        /// <exception cref="ArgumentNullException">The <paramref name="keySelector"/> delegate was null.</exception>
+        public static EqualityComparer<T> Create<TKey>(Func<T?, TKey?> keySelector, IEqualityComparer<TKey>? keyComparer = null)
+        {
+            ArgumentNullException.ThrowIfNull(keySelector);
+
+            keyComparer ??= EqualityComparer<TKey>.Default;
+
+            return new DelegateEqualityComparer<T>(
+                equals: (itemX, itemY) =>
+                    keyComparer.Equals(x: keySelector(itemX), y: keySelector(itemY)),
+                getHashCode: obj =>
+                {
+                    TKey? key = keySelector(obj);
+                    return key is null ? 0 : keyComparer.GetHashCode(key);
+                });
+        }
+
         public abstract bool Equals(T? x, T? y);
         public abstract int GetHashCode([DisallowNull] T obj);
 
@@ -130,7 +153,7 @@ namespace System.Collections.Generic
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override int GetHashCode([DisallowNull] T obj) =>
-            obj?.GetHashCode() ?? 0;
+            obj is null ? 0 : obj.GetHashCode();
 
         // Equals method for the comparer itself.
         public override bool Equals([NotNullWhen(true)] object? obj) =>
@@ -199,7 +222,7 @@ namespace System.Collections.Generic
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override int GetHashCode([DisallowNull] T obj) =>
-            obj?.GetHashCode() ?? 0;
+            obj is null ? 0 : obj.GetHashCode();
 
         // Equals method for the comparer itself.
         public override bool Equals([NotNullWhen(true)] object? obj) =>
@@ -297,7 +320,7 @@ namespace System.Collections.Generic
 
         public override bool Equals(string? x, string? y) => string.Equals(x, y);
 
-        public override int GetHashCode([DisallowNull] string obj) => obj?.GetHashCode() ?? 0;
+        public override int GetHashCode([DisallowNull] string obj) => obj is null ? 0 : obj.GetHashCode();
 
         public bool Equals(ReadOnlySpan<char> span, string target)
         {

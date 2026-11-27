@@ -7,6 +7,7 @@
 #include "gchandleutilities.h"
 
 #include "gceventstatus.h"
+#include "gcinterface.h"
 
 // This is the global GC heap, maintained by the VM.
 GPTR_IMPL(IGCHeap, g_pGCHeap);
@@ -32,6 +33,7 @@ bool g_sw_ww_enabled_for_gc_heap = false;
 #endif
 
 IGCHandleManager* g_pGCHandleManager = nullptr;
+IGCHandleStore* g_pGlobalHandleStore = nullptr;
 
 GcDacVars g_gc_dac_vars;
 GPTR_IMPL(GcDacVars, g_gcDacGlobals);
@@ -71,6 +73,8 @@ HRESULT GCHeapUtilities::InitializeDefaultGC()
 
     IGCHeap* heap;
     IGCHandleManager* manager;
+    g_gc_dac_vars.major_version_number = GC_INTERFACE_MAJOR_VERSION;
+    g_gc_dac_vars.minor_version_number = GC_INTERFACE_MINOR_VERSION;
     HRESULT initResult = GC_Initialize(nullptr, &heap, &manager, &g_gc_dac_vars);
     if (initResult == S_OK)
     {

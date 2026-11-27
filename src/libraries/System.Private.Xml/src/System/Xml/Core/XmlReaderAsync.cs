@@ -10,9 +10,10 @@ using System.Xml.Schema;
 
 namespace System.Xml
 {
-    // Represents a reader that provides fast, non-cached forward only stream access to XML data.
+#pragma warning disable PLATDOC002 // Async partial uses established TypeNameAsync.cs naming convention
     [DebuggerDisplay($"{{{nameof(DebuggerDisplayProxy)}}}")]
     public abstract partial class XmlReader : IDisposable
+#pragma warning restore PLATDOC002
     {
         public virtual Task<string> GetValueAsync()
         {

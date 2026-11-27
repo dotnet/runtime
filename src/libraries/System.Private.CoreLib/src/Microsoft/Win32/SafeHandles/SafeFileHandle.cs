@@ -8,7 +8,27 @@ namespace Microsoft.Win32.SafeHandles
     public sealed partial class SafeFileHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         private string? _path;
-        private volatile int _cachedFileType = -1;
+        private int _cachedFileType = -1;
+        // not using bool? as it's not thread safe
+        private NullableBool _canSeek /* = NullableBool.Undefined */;
+
+        /// <summary>
+        /// Creates an anonymous pipe.
+        /// </summary>
+        /// <param name="readHandle">When this method returns, contains the read end of the pipe.</param>
+        /// <param name="writeHandle">When this method returns, contains the write end of the pipe.</param>
+        /// <param name="asyncRead"><see langword="true"/> to enable asynchronous IO for the read end of the pipe; otherwise, <see langword="false"/>.</param>
+        /// <param name="asyncWrite"><see langword="true"/> to enable asynchronous IO for the write end of the pipe; otherwise, <see langword="false"/>.</param>
+        /// <remarks>
+        /// <para>
+        /// The created handles are not inheritable by design to avoid accidental handle leaks to child processes.
+        /// </para>
+        /// <para>
+        /// On Windows, async handles are created with the FILE_FLAG_OVERLAPPED flag.
+        /// On Unix, async handles are created with the O_NONBLOCK flag.
+        /// </para>
+        /// </remarks>
+        public static partial void CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle, bool asyncRead = false, bool asyncWrite = false);
 
         /// <summary>
         /// Creates a <see cref="T:Microsoft.Win32.SafeHandles.SafeFileHandle" /> around a file handle.
@@ -21,6 +41,25 @@ namespace Microsoft.Win32.SafeHandles
         }
 
         internal string? Path => _path;
+
+        internal bool CanSeek
+        {
+            get
+            {
+                if (IsClosed)
+                {
+                    return false;
+                }
+
+                NullableBool canSeek = _canSeek;
+                if (canSeek == NullableBool.Undefined)
+                {
+                    _canSeek = canSeek = GetCanSeekCore() ? NullableBool.True : NullableBool.False;
+                }
+
+                return canSeek == NullableBool.True;
+            }
+        }
 
         /// <summary>
         /// Gets the type of the file that this handle represents.
@@ -36,7 +75,7 @@ namespace Microsoft.Win32.SafeHandles
                 int cachedType = _cachedFileType;
                 if (cachedType == -1)
                 {
-                    cachedType = _cachedFileType = (int)GetFileTypeCore();
+                    _cachedFileType = cachedType = (int)GetFileTypeCore();
                 }
 
                 return (System.IO.FileHandleType)cachedType;

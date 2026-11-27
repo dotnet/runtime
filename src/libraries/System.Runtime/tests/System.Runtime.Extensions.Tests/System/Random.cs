@@ -2,9 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
+using System.Numerics;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -997,6 +1000,522 @@ namespace System.Tests
             }
         }
 
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public void NextIntegerT_InvalidArguments_Throws(bool derived, bool seeded)
+        {
+            Random r = Create(derived, seeded);
+
+            // Negative maxValue throws for all signed types.
+            Assert.Throws<ArgumentOutOfRangeException>(() => r.NextInteger<sbyte>(-1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => r.NextInteger<short>(-1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => r.NextInteger<int>(-1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => r.NextInteger<long>(-1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => r.NextInteger<nint>(-1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => r.NextInteger<Int128>(-1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => r.NextInteger<BigInteger>(-1));
+
+            // minValue > maxValue throws.
+            Assert.Throws<ArgumentOutOfRangeException>(() => r.NextInteger<int>(2, 1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => r.NextInteger<long>(2, 1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => r.NextInteger<byte>((byte)5, (byte)3));
+            Assert.Throws<ArgumentOutOfRangeException>(() => r.NextInteger<uint>(10u, 5u));
+            Assert.Throws<ArgumentOutOfRangeException>(() => r.NextInteger<Int128>((Int128)10, (Int128)5));
+            Assert.Throws<ArgumentOutOfRangeException>(() => r.NextInteger<BigInteger>(10, 5));
+        }
+
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public void NextIntegerT_ZeroMaxValue_ReturnsZero(bool derived, bool seeded)
+        {
+            Random r = Create(derived, seeded);
+            AssertNextIntegerTZeroMaxValue<byte>(r);
+            AssertNextIntegerTZeroMaxValue<sbyte>(r);
+            AssertNextIntegerTZeroMaxValue<short>(r);
+            AssertNextIntegerTZeroMaxValue<ushort>(r);
+            AssertNextIntegerTZeroMaxValue<char>(r);
+            AssertNextIntegerTZeroMaxValue<int>(r);
+            AssertNextIntegerTZeroMaxValue<uint>(r);
+            AssertNextIntegerTZeroMaxValue<long>(r);
+            AssertNextIntegerTZeroMaxValue<ulong>(r);
+            AssertNextIntegerTZeroMaxValue<nint>(r);
+            AssertNextIntegerTZeroMaxValue<nuint>(r);
+            AssertNextIntegerTZeroMaxValue<Int128>(r);
+            AssertNextIntegerTZeroMaxValue<UInt128>(r);
+
+            static void AssertNextIntegerTZeroMaxValue<T>(Random r) where T : IBinaryInteger<T>
+            {
+                Assert.Equal(T.Zero, r.NextInteger<T>(T.Zero));
+                Assert.Equal(T.Zero, r.NextInteger<T>(T.Zero, T.Zero));
+            }
+        }
+
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public void NextIntegerT_EqualMinMax_ReturnsMinValue(bool derived, bool seeded)
+        {
+            Random r = Create(derived, seeded);
+            AssertNextIntegerTEqualMinMax<byte>(r, (byte)42);
+            AssertNextIntegerTEqualMinMax<sbyte>(r, (sbyte)-10);
+            AssertNextIntegerTEqualMinMax<short>(r, (short)1000);
+            AssertNextIntegerTEqualMinMax<ushort>(r, (ushort)500);
+            AssertNextIntegerTEqualMinMax<int>(r, 12345);
+            AssertNextIntegerTEqualMinMax<uint>(r, 99u);
+            AssertNextIntegerTEqualMinMax<long>(r, -42L);
+            AssertNextIntegerTEqualMinMax<ulong>(r, 100UL);
+            AssertNextIntegerTEqualMinMax<nint>(r, (nint)7);
+            AssertNextIntegerTEqualMinMax<nuint>(r, (nuint)7);
+            AssertNextIntegerTEqualMinMax<Int128>(r, (Int128)(-77));
+            AssertNextIntegerTEqualMinMax<UInt128>(r, (UInt128)200);
+
+            static void AssertNextIntegerTEqualMinMax<T>(Random r, T value) where T : IBinaryInteger<T>
+            {
+                Assert.Equal(value, r.NextInteger<T>(value, value));
+            }
+        }
+
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public void NextIntegerT_SingleElementRange_ReturnsMinValue(bool derived, bool seeded)
+        {
+            Random r = Create(derived, seeded);
+            AssertNextIntegerTSingleElement<byte>(r, (byte)5, (byte)6);
+            AssertNextIntegerTSingleElement<sbyte>(r, (sbyte)-3, (sbyte)-2);
+            AssertNextIntegerTSingleElement<short>(r, (short)100, (short)101);
+            AssertNextIntegerTSingleElement<ushort>(r, (ushort)200, (ushort)201);
+            AssertNextIntegerTSingleElement<int>(r, 42, 43);
+            AssertNextIntegerTSingleElement<uint>(r, 42u, 43u);
+            AssertNextIntegerTSingleElement<long>(r, -1L, 0L);
+            AssertNextIntegerTSingleElement<ulong>(r, 99UL, 100UL);
+            AssertNextIntegerTSingleElement<nint>(r, (nint)10, (nint)11);
+            AssertNextIntegerTSingleElement<nuint>(r, (nuint)10, (nuint)11);
+            AssertNextIntegerTSingleElement<Int128>(r, (Int128)(-1), (Int128)0);
+            AssertNextIntegerTSingleElement<UInt128>(r, (UInt128)50, (UInt128)51);
+
+            static void AssertNextIntegerTSingleElement<T>(Random r, T min, T max) where T : IBinaryInteger<T>
+            {
+                for (int i = 0; i < 10; i++)
+                {
+                    Assert.Equal(min, r.NextInteger<T>(min, max));
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public void NextIntegerT_AllBuiltInTypes_MaxValueInRange(bool derived, bool seeded)
+        {
+            Random r = Create(derived, seeded);
+            AssertNextIntegerTMaxValueInRange<byte>(r, (byte)100);
+            AssertNextIntegerTMaxValueInRange<sbyte>(r, (sbyte)50);
+            AssertNextIntegerTMaxValueInRange<short>(r, (short)500);
+            AssertNextIntegerTMaxValueInRange<ushort>(r, (ushort)500);
+            AssertNextIntegerTMaxValueInRange<char>(r, (char)100);
+            AssertNextIntegerTMaxValueInRange<int>(r, 1000);
+            AssertNextIntegerTMaxValueInRange<uint>(r, 1000u);
+            AssertNextIntegerTMaxValueInRange<long>(r, 1000L);
+            AssertNextIntegerTMaxValueInRange<ulong>(r, 1000UL);
+            AssertNextIntegerTMaxValueInRange<nint>(r, (nint)1000);
+            AssertNextIntegerTMaxValueInRange<nuint>(r, (nuint)1000);
+            AssertNextIntegerTMaxValueInRange<Int128>(r, (Int128)1000);
+            AssertNextIntegerTMaxValueInRange<UInt128>(r, (UInt128)1000);
+        }
+
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public void NextIntegerT_AllBuiltInTypes_MinMaxInRange(bool derived, bool seeded)
+        {
+            Random r = Create(derived, seeded);
+            AssertNextIntegerTMinMaxInRange<byte>(r, (byte)10, (byte)200);
+            AssertNextIntegerTMinMaxInRange<sbyte>(r, (sbyte)-50, (sbyte)50);
+            AssertNextIntegerTMinMaxInRange<short>(r, (short)-500, (short)500);
+            AssertNextIntegerTMinMaxInRange<ushort>(r, (ushort)100, (ushort)1000);
+            AssertNextIntegerTMinMaxInRange<int>(r, -1000, 1000);
+            AssertNextIntegerTMinMaxInRange<uint>(r, 50u, 500u);
+            AssertNextIntegerTMinMaxInRange<long>(r, -100_000L, 100_000L);
+            AssertNextIntegerTMinMaxInRange<ulong>(r, 100UL, 1000UL);
+            AssertNextIntegerTMinMaxInRange<nint>(r, (nint)(-100), (nint)100);
+            AssertNextIntegerTMinMaxInRange<nuint>(r, (nuint)10, (nuint)500);
+            AssertNextIntegerTMinMaxInRange<Int128>(r, (Int128)(-1000), (Int128)1000);
+            AssertNextIntegerTMinMaxInRange<UInt128>(r, (UInt128)50, (UInt128)500);
+        }
+
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public void NextIntegerT_AllValuesInSmallRangeHit(bool derived, bool seeded)
+        {
+            Random r = Create(derived, seeded);
+            const int rangeSize = 5;
+            AssertAllValuesHit<byte>(r, (byte)rangeSize);
+            AssertAllValuesHit<sbyte>(r, (sbyte)rangeSize);
+            AssertAllValuesHit<short>(r, (short)rangeSize);
+            AssertAllValuesHit<ushort>(r, (ushort)rangeSize);
+            AssertAllValuesHit<int>(r, rangeSize);
+            AssertAllValuesHit<uint>(r, (uint)rangeSize);
+            AssertAllValuesHit<long>(r, (long)rangeSize);
+            AssertAllValuesHit<ulong>(r, (ulong)rangeSize);
+            AssertAllValuesHit<nint>(r, (nint)rangeSize);
+            AssertAllValuesHit<nuint>(r, (nuint)rangeSize);
+            AssertAllValuesHit<Int128>(r, (Int128)rangeSize);
+            AssertAllValuesHit<UInt128>(r, (UInt128)rangeSize);
+
+            static void AssertAllValuesHit<T>(Random r, T maxExclusive) where T : IBinaryInteger<T>
+            {
+                HashSet<T> seen = [];
+                for (int i = 0; i < 10_000; i++)
+                {
+                    seen.Add(r.NextInteger<T>(maxExclusive));
+                }
+
+                for (T v = T.Zero; v < maxExclusive; v++)
+                {
+                    Assert.Contains(v, seen);
+                }
+
+                Assert.DoesNotContain(maxExclusive, seen);
+            }
+        }
+
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public void NextIntegerT_Parameterless_AllTypes(bool derived, bool seeded)
+        {
+            Random r = Create(derived, seeded);
+            AssertNextIntegerTParameterless<byte>(r);
+            AssertNextIntegerTParameterless<sbyte>(r);
+            AssertNextIntegerTParameterless<short>(r);
+            AssertNextIntegerTParameterless<ushort>(r);
+            AssertNextIntegerTParameterless<char>(r);
+            AssertNextIntegerTParameterless<int>(r);
+            AssertNextIntegerTParameterless<uint>(r);
+            AssertNextIntegerTParameterless<long>(r);
+            AssertNextIntegerTParameterless<ulong>(r);
+            AssertNextIntegerTParameterless<nint>(r);
+            AssertNextIntegerTParameterless<nuint>(r);
+            AssertNextIntegerTParameterless<Int128>(r);
+            AssertNextIntegerTParameterless<UInt128>(r);
+
+            static void AssertNextIntegerTParameterless<T>(Random r) where T : IBinaryInteger<T>, IMinMaxValue<T>
+            {
+                for (int i = 0; i < 100; i++)
+                {
+                    T value = r.NextInteger<T>();
+                    Assert.True(value >= T.Zero, $"NextInteger<{typeof(T).Name}>() returned negative value: {value}");
+                    Assert.True(value <= T.MaxValue, $"NextInteger<{typeof(T).Name}>() returned a value greater than MaxValue: {value}");
+                }
+            }
+        }
+
+        [Fact]
+        public void NextIntegerT_Parameterless_CanReturnMaxValue()
+        {
+            Random r = new MaxValueRandom();
+            Assert.Equal(byte.MaxValue, r.NextInteger<byte>());
+            Assert.Equal(sbyte.MaxValue, r.NextInteger<sbyte>());
+            Assert.Equal(short.MaxValue, r.NextInteger<short>());
+            Assert.Equal(ushort.MaxValue, r.NextInteger<ushort>());
+            Assert.Equal(char.MaxValue, r.NextInteger<char>());
+            Assert.Equal(int.MaxValue, r.NextInteger<int>());
+            Assert.Equal(uint.MaxValue, r.NextInteger<uint>());
+            Assert.Equal(long.MaxValue, r.NextInteger<long>());
+            Assert.Equal(ulong.MaxValue, r.NextInteger<ulong>());
+            Assert.Equal(nint.MaxValue, r.NextInteger<nint>());
+            Assert.Equal(nuint.MaxValue, r.NextInteger<nuint>());
+            Assert.Equal(Int128.MaxValue, r.NextInteger<Int128>());
+            Assert.Equal(UInt128.MaxValue, r.NextInteger<UInt128>());
+        }
+
+        public static IEnumerable<object[]> NextIntegerT_SignedOverflowRange_MemberData() =>
+            from derived in new[] { false, true }
+            from seeded in new[] { false, true }
+            select new object[] { derived, seeded };
+
+        [Theory]
+        [MemberData(nameof(NextIntegerT_SignedOverflowRange_MemberData))]
+        public void NextIntegerT_SignedOverflow_FullRange(bool derived, bool seeded)
+        {
+            Random r = Create(derived, seeded);
+
+            // These ranges exceed T.MaxValue, triggering the NextBinaryIntegerFullRange path.
+            AssertNextIntegerTMinMaxInRange<sbyte>(r, sbyte.MinValue, sbyte.MaxValue);
+            AssertNextIntegerTMinMaxInRange<short>(r, short.MinValue, short.MaxValue);
+            AssertNextIntegerTMinMaxInRange<int>(r, int.MinValue, int.MaxValue);
+            AssertNextIntegerTMinMaxInRange<long>(r, long.MinValue, long.MaxValue);
+            AssertNextIntegerTMinMaxInRange<nint>(r, nint.MinValue, nint.MaxValue);
+            AssertNextIntegerTMinMaxInRange<Int128>(r, Int128.MinValue, Int128.MaxValue);
+
+            // Ranges that cross zero with large span.
+            AssertNextIntegerTMinMaxInRange<int>(r, int.MinValue, 0);
+            AssertNextIntegerTMinMaxInRange<int>(r, -1, int.MaxValue);
+            AssertNextIntegerTMinMaxInRange<long>(r, long.MinValue, 0L);
+            AssertNextIntegerTMinMaxInRange<long>(r, -1L, long.MaxValue);
+        }
+
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public void NextIntegerT_LargeUnsignedValues(bool derived, bool seeded)
+        {
+            Random r = Create(derived, seeded);
+
+            // ulong values beyond long.MaxValue.
+            for (int i = 0; i < 100; i++)
+            {
+                ulong value = r.NextInteger<ulong>(ulong.MaxValue);
+                Assert.True(value < ulong.MaxValue);
+            }
+
+            // Full uint range.
+            AssertNextIntegerTMaxValueInRange<uint>(r, uint.MaxValue);
+
+            // UInt128 large range.
+            AssertNextIntegerTMinMaxInRange<UInt128>(r, (UInt128)0, UInt128.MaxValue);
+
+            // nuint on the current platform.
+            AssertNextIntegerTMaxValueInRange<nuint>(r, nuint.MaxValue);
+
+            // Int128/UInt128 values that exceed ulong.MaxValue - these must bypass the
+            // ulong fast path and use rejection sampling.
+            UInt128 largeUInt128Max = ((UInt128)ulong.MaxValue << 1) + 5;
+            AssertNextIntegerTMaxValueInRange<UInt128>(r, largeUInt128Max);
+
+            Int128 largeInt128Max = (Int128)ulong.MaxValue + 100;
+            AssertNextIntegerTMaxValueInRange<Int128>(r, largeInt128Max);
+
+            // UInt128 maxExclusive = 2^64 (exactly one more than ulong.MaxValue)
+            // This previously truncated to 0 via ulong.CreateTruncating.
+            UInt128 twoTo64 = (UInt128)ulong.MaxValue + 1;
+            for (int i = 0; i < 100; i++)
+            {
+                UInt128 value = r.NextInteger<UInt128>(twoTo64);
+                Assert.True(value < twoTo64, $"NextInteger<UInt128>({twoTo64}) returned {value}");
+            }
+
+            // Int128 maxExclusive that truncates to a small value when cast to ulong
+            Int128 tricky = ((Int128)1 << 64) + 5;
+            for (int i = 0; i < 100; i++)
+            {
+                Int128 value = r.NextInteger<Int128>(tricky);
+                Assert.True(value >= Int128.Zero && value < tricky, $"NextInteger<Int128>({tricky}) returned {value}");
+            }
+        }
+
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public void NextIntegerT_BigInteger_InRange(bool derived, bool seeded)
+        {
+            Random r = Create(derived, seeded);
+
+            AssertNextIntegerTMaxValueInRange<BigInteger>(r, new BigInteger(1_000));
+            AssertNextIntegerTMinMaxInRange<BigInteger>(r, new BigInteger(-1_000), new BigInteger(1_000));
+
+            BigInteger largeMax = BigInteger.One << 3_000;
+            AssertNextIntegerTMaxValueInRange<BigInteger>(r, largeMax, iterations: 10);
+            AssertNextIntegerTMinMaxInRange<BigInteger>(r, -largeMax, largeMax, iterations: 10);
+        }
+
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public void NextIntegerT_NegativeRanges(bool derived, bool seeded)
+        {
+            Random r = Create(derived, seeded);
+            AssertNextIntegerTMinMaxInRange<sbyte>(r, (sbyte)-100, (sbyte)-10);
+            AssertNextIntegerTMinMaxInRange<short>(r, (short)-1000, (short)-1);
+            AssertNextIntegerTMinMaxInRange<int>(r, -1_000_000, -1);
+            AssertNextIntegerTMinMaxInRange<long>(r, -1_000_000_000L, -1L);
+            AssertNextIntegerTMinMaxInRange<Int128>(r, (Int128)(-1000), (Int128)(-1));
+        }
+
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public void NextBinaryFloatT_AllTypes_InRange(bool derived, bool seeded)
+        {
+            Random r = Create(derived, seeded);
+            AssertNextBinaryFloatInRange<Half>(r);
+            AssertNextBinaryFloatInRange<BFloat16>(r);
+            AssertNextBinaryFloatInRange<float>(r);
+            AssertNextBinaryFloatInRange<double>(r);
+            AssertNextBinaryFloatInRange<NFloat>(r);
+
+            static void AssertNextBinaryFloatInRange<T>(Random r) where T : IBinaryFloatingPointIeee754<T>
+            {
+                for (int i = 0; i < 1000; i++)
+                {
+                    T value = r.NextBinaryFloat<T>();
+                    Assert.True(value >= T.Zero, $"NextBinaryFloat<{typeof(T).Name}>() returned {value}, expected >= 0");
+                    Assert.True(value < T.One, $"NextBinaryFloat<{typeof(T).Name}>() returned {value}, expected < 1");
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public void NextBinaryFloatT_ProducesVariedValues(bool derived, bool seeded)
+        {
+            Random r = Create(derived, seeded);
+            AssertNextBinaryFloatVaried<Half>(r);
+            AssertNextBinaryFloatVaried<BFloat16>(r);
+            AssertNextBinaryFloatVaried<float>(r);
+            AssertNextBinaryFloatVaried<double>(r);
+            AssertNextBinaryFloatVaried<NFloat>(r);
+
+            static void AssertNextBinaryFloatVaried<T>(Random r) where T : IBinaryFloatingPointIeee754<T>
+            {
+                HashSet<T> seen = [];
+                for (int i = 0; i < 100; i++)
+                {
+                    seen.Add(r.NextBinaryFloat<T>());
+                }
+
+                Assert.True(seen.Count > 50, $"NextBinaryFloat<{typeof(T).Name}>() produced only {seen.Count} distinct values in 100 calls");
+            }
+        }
+
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public void NextIntegerT_CustomReferenceType(bool derived, bool seeded)
+        {
+            Random r = Create(derived, seeded);
+
+            AssertNextIntegerTMaxValueInRange<BinaryIntegerReference<int>>(r, 10);
+            AssertNextIntegerTMinMaxInRange<BinaryIntegerReference<int>>(r, -5, 5);
+        }
+
+        [Fact]
+        public void NextIntegerT_CustomReferenceType_ParameterlessCanReturnMaxValue()
+        {
+            Random r = new MaxValueRandom();
+
+            Assert.Equal(BinaryIntegerReference<int>.MaxValue, r.NextInteger<BinaryIntegerReference<int>>());
+        }
+
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public void NextBinaryFloatT_CustomReferenceType(bool derived, bool seeded)
+        {
+            Random r = Create(derived, seeded);
+            HashSet<BinaryFloatingPointIeee754Reference<float>> seen = [];
+            string typeName = nameof(BinaryFloatingPointIeee754Reference<float>);
+
+            for (int i = 0; i < 100; i++)
+            {
+                BinaryFloatingPointIeee754Reference<float> value = r.NextBinaryFloat<BinaryFloatingPointIeee754Reference<float>>();
+                Assert.True(value >= BinaryFloatingPointIeee754Reference<float>.Zero, $"NextBinaryFloat<{typeName}>() returned {value}, expected >= 0");
+                Assert.True(value < BinaryFloatingPointIeee754Reference<float>.One, $"NextBinaryFloat<{typeName}>() returned {value}, expected < 1");
+                seen.Add(value);
+            }
+
+            Assert.True(seen.Count > 50, $"NextBinaryFloat<{typeName}>() produced only {seen.Count} distinct values in 100 calls");
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void NextIntegerT_DerivedType_DispatchesThroughVirtuals(bool seeded)
+        {
+            // NextInteger<T>() routes through Next(int), NextInt64(long), or NextBytes(Span<byte>),
+            // all of which are virtual. For a derived Random, these must reach the derived
+            // type's overrides so that subclass behavior (e.g. custom RNG) is preserved.
+            // SubRandom.Next() sets NextCalled; the compat path routes Next(int)/NextInt64/
+            // NextSingle/NextDouble through Sample(), which sets SampleCalled.
+
+            SubRandom r;
+
+            // Integer types that hit Next(int) -> Sample()
+            r = seeded ? new SubRandom(42) : new SubRandom();
+            r.NextInteger<int>(42);
+            Assert.True(r.SampleCalled, "NextInteger<int> should dispatch through Sample on derived type");
+
+            // Integer types that hit NextInt64(long) -> Sample()
+            r = seeded ? new SubRandom(42) : new SubRandom();
+            r.NextInteger<long>(42L);
+            Assert.True(r.SampleCalled, "NextInteger<long> should dispatch through Sample on derived type");
+
+            // Large types that hit NextBytes -> Next() -> NextCalled
+            r = seeded ? new SubRandom(42) : new SubRandom();
+            r.NextInteger<UInt128>(UInt128.MaxValue);
+            Assert.True(r.NextCalled, "NextInteger<UInt128> should dispatch through Next on derived type");
+
+            // NextBinaryFloat<float> -> NextSingle() -> Sample()
+            r = seeded ? new SubRandom(42) : new SubRandom();
+            r.NextBinaryFloat<float>();
+            Assert.True(r.SampleCalled, "NextBinaryFloat<float> should dispatch through Sample on derived type");
+
+            // NextBinaryFloat<double> -> NextDouble() -> Sample()
+            r = seeded ? new SubRandom(42) : new SubRandom();
+            r.NextBinaryFloat<double>();
+            Assert.True(r.SampleCalled, "NextBinaryFloat<double> should dispatch through Sample on derived type");
+
+            // NextBinaryFloat<Half> -> NextInt64() -> Sample()
+            r = seeded ? new SubRandom(42) : new SubRandom();
+            r.NextBinaryFloat<Half>();
+            Assert.True(r.SampleCalled, "NextBinaryFloat<Half> should dispatch through Sample on derived type");
+        }
+
+        private static void AssertNextIntegerTMaxValueInRange<T>(Random r, T maxExclusive, int iterations = 100) where T : IBinaryInteger<T>
+        {
+            for (int i = 0; i < iterations; i++)
+            {
+                T value = r.NextInteger<T>(maxExclusive);
+                Assert.True(!T.IsNegative(value), $"NextInteger<{typeof(T).Name}>({maxExclusive}) returned negative: {value}");
+                Assert.True(value < maxExclusive, $"NextInteger<{typeof(T).Name}>({maxExclusive}) returned {value}, expected < {maxExclusive}");
+            }
+        }
+
+        private static void AssertNextIntegerTMinMaxInRange<T>(Random r, T min, T max, int iterations = 100) where T : IBinaryInteger<T>
+        {
+            for (int i = 0; i < iterations; i++)
+            {
+                T value = r.NextInteger<T>(min, max);
+                Assert.True(value >= min, $"NextInteger<{typeof(T).Name}>({min}, {max}) returned {value}, expected >= {min}");
+                Assert.True(value < max, $"NextInteger<{typeof(T).Name}>({min}, {max}) returned {value}, expected < {max}");
+            }
+        }
+
         private static Random Create(bool derived, bool seeded) =>
             (derived, seeded) switch
             {
@@ -1025,6 +1544,444 @@ namespace System.Tests
             {
                 NextCalled = true;
                 return base.Next();
+            }
+        }
+
+        private sealed class BinaryIntegerReference<T> : IBinaryInteger<BinaryIntegerReference<T>>, IMinMaxValue<BinaryIntegerReference<T>>
+            where T : IBinaryInteger<T>, IMinMaxValue<T>
+        {
+            public BinaryIntegerReference(T value) => Value = value;
+
+            public T Value { get; }
+
+            public static implicit operator BinaryIntegerReference<T>(T value) => new(value);
+            public static implicit operator T(BinaryIntegerReference<T> value) => value.Value;
+
+            public static BinaryIntegerReference<T> AdditiveIdentity => T.AdditiveIdentity;
+            public static BinaryIntegerReference<T> MaxValue => T.MaxValue;
+            public static BinaryIntegerReference<T> MinValue => T.MinValue;
+            public static BinaryIntegerReference<T> MultiplicativeIdentity => T.MultiplicativeIdentity;
+            public static BinaryIntegerReference<T> One => T.One;
+            public static int Radix => T.Radix;
+            public static BinaryIntegerReference<T> Zero => T.Zero;
+
+            public static BinaryIntegerReference<T> Abs(BinaryIntegerReference<T> value) => T.Abs(value);
+            public static bool IsCanonical(BinaryIntegerReference<T> value) => T.IsCanonical(value);
+            public static bool IsComplexNumber(BinaryIntegerReference<T> value) => T.IsComplexNumber(value);
+            public static bool IsEvenInteger(BinaryIntegerReference<T> value) => T.IsEvenInteger(value);
+            public static bool IsFinite(BinaryIntegerReference<T> value) => T.IsFinite(value);
+            public static bool IsImaginaryNumber(BinaryIntegerReference<T> value) => T.IsImaginaryNumber(value);
+            public static bool IsInfinity(BinaryIntegerReference<T> value) => T.IsInfinity(value);
+            public static bool IsInteger(BinaryIntegerReference<T> value) => T.IsInteger(value);
+            public static bool IsNaN(BinaryIntegerReference<T> value) => T.IsNaN(value);
+            public static bool IsNegative(BinaryIntegerReference<T> value) => T.IsNegative(value);
+            public static bool IsNegativeInfinity(BinaryIntegerReference<T> value) => T.IsNegativeInfinity(value);
+            public static bool IsNormal(BinaryIntegerReference<T> value) => T.IsNormal(value);
+            public static bool IsOddInteger(BinaryIntegerReference<T> value) => T.IsOddInteger(value);
+            public static bool IsPositive(BinaryIntegerReference<T> value) => T.IsPositive(value);
+            public static bool IsPositiveInfinity(BinaryIntegerReference<T> value) => T.IsPositiveInfinity(value);
+            public static bool IsPow2(BinaryIntegerReference<T> value) => T.IsPow2(value);
+            public static bool IsRealNumber(BinaryIntegerReference<T> value) => T.IsRealNumber(value);
+            public static bool IsSubnormal(BinaryIntegerReference<T> value) => T.IsSubnormal(value);
+            public static bool IsZero(BinaryIntegerReference<T> value) => T.IsZero(value);
+            public static BinaryIntegerReference<T> Log2(BinaryIntegerReference<T> value) => T.Log2(value);
+            public static BinaryIntegerReference<T> MaxMagnitude(BinaryIntegerReference<T> x, BinaryIntegerReference<T> y) => T.MaxMagnitude(x, y);
+            public static BinaryIntegerReference<T> MaxMagnitudeNumber(BinaryIntegerReference<T> x, BinaryIntegerReference<T> y) => T.MaxMagnitudeNumber(x, y);
+            public static BinaryIntegerReference<T> MinMagnitude(BinaryIntegerReference<T> x, BinaryIntegerReference<T> y) => T.MinMagnitude(x, y);
+            public static BinaryIntegerReference<T> MinMagnitudeNumber(BinaryIntegerReference<T> x, BinaryIntegerReference<T> y) => T.MinMagnitudeNumber(x, y);
+            public static BinaryIntegerReference<T> Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider) => T.Parse(s, style, provider);
+            public static BinaryIntegerReference<T> Parse(string s, NumberStyles style, IFormatProvider? provider) => T.Parse(s, style, provider);
+            public static BinaryIntegerReference<T> Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => T.Parse(s, provider);
+            public static BinaryIntegerReference<T> Parse(string s, IFormatProvider? provider) => T.Parse(s, provider);
+            public static BinaryIntegerReference<T> PopCount(BinaryIntegerReference<T> value) => T.PopCount(value);
+            public static BinaryIntegerReference<T> TrailingZeroCount(BinaryIntegerReference<T> value) => T.TrailingZeroCount(value);
+
+            public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, [MaybeNullWhen(false)] out BinaryIntegerReference<T> result)
+            {
+                bool succeeded = T.TryParse(s, style, provider, out T actualResult);
+                result = actualResult;
+                return succeeded;
+            }
+
+            public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, [MaybeNullWhen(false)] out BinaryIntegerReference<T> result)
+            {
+                bool succeeded = T.TryParse(s, style, provider, out T actualResult);
+                result = actualResult;
+                return succeeded;
+            }
+
+            public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, [MaybeNullWhen(false)] out BinaryIntegerReference<T> result)
+            {
+                bool succeeded = T.TryParse(s, provider, out T actualResult);
+                result = actualResult;
+                return succeeded;
+            }
+
+            public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, [MaybeNullWhen(false)] out BinaryIntegerReference<T> result)
+            {
+                bool succeeded = T.TryParse(s, provider, out T actualResult);
+                result = actualResult;
+                return succeeded;
+            }
+
+            public static bool TryReadBigEndian(ReadOnlySpan<byte> source, bool isUnsigned, out BinaryIntegerReference<T> value)
+            {
+                bool succeeded = T.TryReadBigEndian(source, isUnsigned, out T actualValue);
+                value = actualValue;
+                return succeeded;
+            }
+
+            public static bool TryReadLittleEndian(ReadOnlySpan<byte> source, bool isUnsigned, out BinaryIntegerReference<T> value)
+            {
+                bool succeeded = T.TryReadLittleEndian(source, isUnsigned, out T actualValue);
+                value = actualValue;
+                return succeeded;
+            }
+
+            public int CompareTo(object? obj)
+            {
+                if (obj is not BinaryIntegerReference<T> other)
+                {
+                    return obj is null ? 1 : throw new ArgumentException();
+                }
+
+                return CompareTo(other);
+            }
+
+            public int CompareTo(BinaryIntegerReference<T>? other) => other is null ? 1 : Value.CompareTo(other.Value);
+            public override bool Equals([NotNullWhen(true)] object? obj) => obj is BinaryIntegerReference<T> other && Equals(other);
+            public bool Equals(BinaryIntegerReference<T>? other) => other is not null && Value.Equals(other.Value);
+            public int GetByteCount() => Value.GetByteCount();
+            public override int GetHashCode() => Value.GetHashCode();
+            public int GetShortestBitLength() => Value.GetShortestBitLength();
+            public override string ToString() => Value.ToString()!;
+            public string ToString(string? format, IFormatProvider? formatProvider) => Value.ToString(format, formatProvider);
+            public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) => Value.TryFormat(destination, out charsWritten, format, provider);
+            public bool TryWriteBigEndian(Span<byte> destination, out int bytesWritten) => Value.TryWriteBigEndian(destination, out bytesWritten);
+            public bool TryWriteLittleEndian(Span<byte> destination, out int bytesWritten) => Value.TryWriteLittleEndian(destination, out bytesWritten);
+
+            static bool INumberBase<BinaryIntegerReference<T>>.TryConvertFromChecked<TOther>(TOther value, out BinaryIntegerReference<T> result)
+            {
+                if (typeof(TOther) == typeof(T))
+                {
+                    result = (T)(object)value;
+                    return true;
+                }
+
+                bool succeeded = T.TryConvertFromChecked(value, out T actualResult);
+
+                if (!succeeded)
+                {
+                    succeeded = TOther.TryConvertToChecked(value, out actualResult);
+                }
+
+                result = actualResult;
+                return succeeded;
+            }
+
+            static bool INumberBase<BinaryIntegerReference<T>>.TryConvertFromSaturating<TOther>(TOther value, out BinaryIntegerReference<T> result)
+            {
+                if (typeof(TOther) == typeof(T))
+                {
+                    result = (T)(object)value;
+                    return true;
+                }
+
+                bool succeeded = T.TryConvertFromSaturating(value, out T actualResult);
+
+                if (!succeeded)
+                {
+                    succeeded = TOther.TryConvertToSaturating(value, out actualResult);
+                }
+
+                result = actualResult;
+                return succeeded;
+            }
+
+            static bool INumberBase<BinaryIntegerReference<T>>.TryConvertFromTruncating<TOther>(TOther value, out BinaryIntegerReference<T> result)
+            {
+                if (typeof(TOther) == typeof(T))
+                {
+                    result = (T)(object)value;
+                    return true;
+                }
+
+                bool succeeded = T.TryConvertFromTruncating(value, out T actualResult);
+
+                if (!succeeded)
+                {
+                    succeeded = TOther.TryConvertToTruncating(value, out actualResult);
+                }
+
+                result = actualResult;
+                return succeeded;
+            }
+
+            static bool INumberBase<BinaryIntegerReference<T>>.TryConvertToChecked<TOther>(BinaryIntegerReference<T> value, out TOther result) => T.TryConvertToChecked(value.Value, out result);
+            static bool INumberBase<BinaryIntegerReference<T>>.TryConvertToSaturating<TOther>(BinaryIntegerReference<T> value, out TOther result) => T.TryConvertToSaturating(value.Value, out result);
+            static bool INumberBase<BinaryIntegerReference<T>>.TryConvertToTruncating<TOther>(BinaryIntegerReference<T> value, out TOther result) => T.TryConvertToTruncating(value.Value, out result);
+
+            public static BinaryIntegerReference<T> operator +(BinaryIntegerReference<T> value) => +value.Value;
+            public static BinaryIntegerReference<T> operator +(BinaryIntegerReference<T> left, BinaryIntegerReference<T> right) => left.Value + right.Value;
+            public static BinaryIntegerReference<T> operator -(BinaryIntegerReference<T> value) => -value.Value;
+            public static BinaryIntegerReference<T> operator -(BinaryIntegerReference<T> left, BinaryIntegerReference<T> right) => left.Value - right.Value;
+            public static BinaryIntegerReference<T> operator ~(BinaryIntegerReference<T> value) => ~value.Value;
+            public static BinaryIntegerReference<T> operator ++(BinaryIntegerReference<T> value) => value.Value + T.One;
+            public static BinaryIntegerReference<T> operator --(BinaryIntegerReference<T> value) => value.Value - T.One;
+            public static BinaryIntegerReference<T> operator *(BinaryIntegerReference<T> left, BinaryIntegerReference<T> right) => left.Value * right.Value;
+            public static BinaryIntegerReference<T> operator /(BinaryIntegerReference<T> left, BinaryIntegerReference<T> right) => left.Value / right.Value;
+            public static BinaryIntegerReference<T> operator %(BinaryIntegerReference<T> left, BinaryIntegerReference<T> right) => left.Value % right.Value;
+            public static BinaryIntegerReference<T> operator &(BinaryIntegerReference<T> left, BinaryIntegerReference<T> right) => left.Value & right.Value;
+            public static BinaryIntegerReference<T> operator |(BinaryIntegerReference<T> left, BinaryIntegerReference<T> right) => left.Value | right.Value;
+            public static BinaryIntegerReference<T> operator ^(BinaryIntegerReference<T> left, BinaryIntegerReference<T> right) => left.Value ^ right.Value;
+            public static BinaryIntegerReference<T> operator <<(BinaryIntegerReference<T> value, int shiftAmount) => value.Value << shiftAmount;
+            public static BinaryIntegerReference<T> operator >>(BinaryIntegerReference<T> value, int shiftAmount) => value.Value >> shiftAmount;
+            public static bool operator ==(BinaryIntegerReference<T>? left, BinaryIntegerReference<T>? right) => left is null ? right is null : left.Equals(right);
+            public static bool operator !=(BinaryIntegerReference<T>? left, BinaryIntegerReference<T>? right) => !(left == right);
+            public static bool operator <(BinaryIntegerReference<T> left, BinaryIntegerReference<T> right) => left.Value < right.Value;
+            public static bool operator >(BinaryIntegerReference<T> left, BinaryIntegerReference<T> right) => left.Value > right.Value;
+            public static bool operator <=(BinaryIntegerReference<T> left, BinaryIntegerReference<T> right) => left.Value <= right.Value;
+            public static bool operator >=(BinaryIntegerReference<T> left, BinaryIntegerReference<T> right) => left.Value >= right.Value;
+            public static BinaryIntegerReference<T> operator >>>(BinaryIntegerReference<T> value, int shiftAmount) => value.Value >>> shiftAmount;
+        }
+
+        private sealed class BinaryFloatingPointIeee754Reference<T> : IBinaryFloatingPointIeee754<BinaryFloatingPointIeee754Reference<T>>
+            where T : IBinaryFloatingPointIeee754<T>
+        {
+            public BinaryFloatingPointIeee754Reference(T value) => Value = value;
+
+            public T Value { get; }
+
+            public static implicit operator BinaryFloatingPointIeee754Reference<T>(T value) => new(value);
+            public static implicit operator T(BinaryFloatingPointIeee754Reference<T> value) => value.Value;
+
+            public static BinaryFloatingPointIeee754Reference<T> AdditiveIdentity => T.AdditiveIdentity;
+            public static BinaryFloatingPointIeee754Reference<T> E => T.E;
+            public static BinaryFloatingPointIeee754Reference<T> Epsilon => T.Epsilon;
+            public static BinaryFloatingPointIeee754Reference<T> MultiplicativeIdentity => T.MultiplicativeIdentity;
+            public static BinaryFloatingPointIeee754Reference<T> NaN => T.NaN;
+            public static BinaryFloatingPointIeee754Reference<T> NegativeInfinity => T.NegativeInfinity;
+            public static BinaryFloatingPointIeee754Reference<T> NegativeOne => T.NegativeOne;
+            public static BinaryFloatingPointIeee754Reference<T> NegativeZero => T.NegativeZero;
+            public static BinaryFloatingPointIeee754Reference<T> One => T.One;
+            public static BinaryFloatingPointIeee754Reference<T> Pi => T.Pi;
+            public static BinaryFloatingPointIeee754Reference<T> PositiveInfinity => T.PositiveInfinity;
+            public static int Radix => T.Radix;
+            public static BinaryFloatingPointIeee754Reference<T> Tau => T.Tau;
+            public static BinaryFloatingPointIeee754Reference<T> Zero => T.Zero;
+
+            public static BinaryFloatingPointIeee754Reference<T> Abs(BinaryFloatingPointIeee754Reference<T> value) => T.Abs(value);
+            public static BinaryFloatingPointIeee754Reference<T> Acos(BinaryFloatingPointIeee754Reference<T> x) => T.Acos(x);
+            public static BinaryFloatingPointIeee754Reference<T> Acosh(BinaryFloatingPointIeee754Reference<T> x) => T.Acosh(x);
+            public static BinaryFloatingPointIeee754Reference<T> AcosPi(BinaryFloatingPointIeee754Reference<T> x) => T.AcosPi(x);
+            public static BinaryFloatingPointIeee754Reference<T> Asin(BinaryFloatingPointIeee754Reference<T> x) => T.Asin(x);
+            public static BinaryFloatingPointIeee754Reference<T> Asinh(BinaryFloatingPointIeee754Reference<T> x) => T.Asinh(x);
+            public static BinaryFloatingPointIeee754Reference<T> AsinPi(BinaryFloatingPointIeee754Reference<T> x) => T.AsinPi(x);
+            public static BinaryFloatingPointIeee754Reference<T> Atan(BinaryFloatingPointIeee754Reference<T> x) => T.Atan(x);
+            public static BinaryFloatingPointIeee754Reference<T> Atan2(BinaryFloatingPointIeee754Reference<T> y, BinaryFloatingPointIeee754Reference<T> x) => T.Atan2(y, x);
+            public static BinaryFloatingPointIeee754Reference<T> Atan2Pi(BinaryFloatingPointIeee754Reference<T> y, BinaryFloatingPointIeee754Reference<T> x) => T.Atan2Pi(y, x);
+            public static BinaryFloatingPointIeee754Reference<T> Atanh(BinaryFloatingPointIeee754Reference<T> x) => T.Atanh(x);
+            public static BinaryFloatingPointIeee754Reference<T> AtanPi(BinaryFloatingPointIeee754Reference<T> x) => T.AtanPi(x);
+            public static BinaryFloatingPointIeee754Reference<T> BitDecrement(BinaryFloatingPointIeee754Reference<T> x) => T.BitDecrement(x);
+            public static BinaryFloatingPointIeee754Reference<T> BitIncrement(BinaryFloatingPointIeee754Reference<T> x) => T.BitIncrement(x);
+            public static BinaryFloatingPointIeee754Reference<T> Cbrt(BinaryFloatingPointIeee754Reference<T> x) => T.Cbrt(x);
+            public static BinaryFloatingPointIeee754Reference<T> Cos(BinaryFloatingPointIeee754Reference<T> x) => T.Cos(x);
+            public static BinaryFloatingPointIeee754Reference<T> Cosh(BinaryFloatingPointIeee754Reference<T> x) => T.Cosh(x);
+            public static BinaryFloatingPointIeee754Reference<T> CosPi(BinaryFloatingPointIeee754Reference<T> x) => T.CosPi(x);
+            public static BinaryFloatingPointIeee754Reference<T> Exp(BinaryFloatingPointIeee754Reference<T> x) => T.Exp(x);
+            public static BinaryFloatingPointIeee754Reference<T> Exp2(BinaryFloatingPointIeee754Reference<T> x) => T.Exp2(x);
+            public static BinaryFloatingPointIeee754Reference<T> Exp10(BinaryFloatingPointIeee754Reference<T> x) => T.Exp10(x);
+            public static BinaryFloatingPointIeee754Reference<T> FusedMultiplyAdd(BinaryFloatingPointIeee754Reference<T> left, BinaryFloatingPointIeee754Reference<T> right, BinaryFloatingPointIeee754Reference<T> addend) => T.FusedMultiplyAdd(left, right, addend);
+            public static BinaryFloatingPointIeee754Reference<T> Hypot(BinaryFloatingPointIeee754Reference<T> x, BinaryFloatingPointIeee754Reference<T> y) => T.Hypot(x, y);
+            public static BinaryFloatingPointIeee754Reference<T> Ieee754Remainder(BinaryFloatingPointIeee754Reference<T> left, BinaryFloatingPointIeee754Reference<T> right) => T.Ieee754Remainder(left, right);
+            public static int ILogB(BinaryFloatingPointIeee754Reference<T> x) => T.ILogB(x);
+            public static bool IsCanonical(BinaryFloatingPointIeee754Reference<T> value) => T.IsCanonical(value);
+            public static bool IsComplexNumber(BinaryFloatingPointIeee754Reference<T> value) => T.IsComplexNumber(value);
+            public static bool IsEvenInteger(BinaryFloatingPointIeee754Reference<T> value) => T.IsEvenInteger(value);
+            public static bool IsFinite(BinaryFloatingPointIeee754Reference<T> value) => T.IsFinite(value);
+            public static bool IsImaginaryNumber(BinaryFloatingPointIeee754Reference<T> value) => T.IsImaginaryNumber(value);
+            public static bool IsInfinity(BinaryFloatingPointIeee754Reference<T> value) => T.IsInfinity(value);
+            public static bool IsInteger(BinaryFloatingPointIeee754Reference<T> value) => T.IsInteger(value);
+            public static bool IsNaN(BinaryFloatingPointIeee754Reference<T> value) => T.IsNaN(value);
+            public static bool IsNegative(BinaryFloatingPointIeee754Reference<T> value) => T.IsNegative(value);
+            public static bool IsNegativeInfinity(BinaryFloatingPointIeee754Reference<T> value) => T.IsNegativeInfinity(value);
+            public static bool IsNormal(BinaryFloatingPointIeee754Reference<T> value) => T.IsNormal(value);
+            public static bool IsOddInteger(BinaryFloatingPointIeee754Reference<T> value) => T.IsOddInteger(value);
+            public static bool IsPositive(BinaryFloatingPointIeee754Reference<T> value) => T.IsPositive(value);
+            public static bool IsPositiveInfinity(BinaryFloatingPointIeee754Reference<T> value) => T.IsPositiveInfinity(value);
+            public static bool IsPow2(BinaryFloatingPointIeee754Reference<T> value) => T.IsPow2(value);
+            public static bool IsRealNumber(BinaryFloatingPointIeee754Reference<T> value) => T.IsRealNumber(value);
+            public static bool IsSubnormal(BinaryFloatingPointIeee754Reference<T> value) => T.IsSubnormal(value);
+            public static bool IsZero(BinaryFloatingPointIeee754Reference<T> value) => T.IsZero(value);
+            public static BinaryFloatingPointIeee754Reference<T> Log(BinaryFloatingPointIeee754Reference<T> x) => T.Log(x);
+            public static BinaryFloatingPointIeee754Reference<T> Log(BinaryFloatingPointIeee754Reference<T> x, BinaryFloatingPointIeee754Reference<T> newBase) => T.Log(x, newBase);
+            public static BinaryFloatingPointIeee754Reference<T> Log2(BinaryFloatingPointIeee754Reference<T> x) => BinaryLog2(x.Value);
+            public static BinaryFloatingPointIeee754Reference<T> Log10(BinaryFloatingPointIeee754Reference<T> x) => T.Log10(x);
+            public static BinaryFloatingPointIeee754Reference<T> MaxMagnitude(BinaryFloatingPointIeee754Reference<T> x, BinaryFloatingPointIeee754Reference<T> y) => T.MaxMagnitude(x, y);
+            public static BinaryFloatingPointIeee754Reference<T> MaxMagnitudeNumber(BinaryFloatingPointIeee754Reference<T> x, BinaryFloatingPointIeee754Reference<T> y) => T.MaxMagnitudeNumber(x, y);
+            public static BinaryFloatingPointIeee754Reference<T> MinMagnitude(BinaryFloatingPointIeee754Reference<T> x, BinaryFloatingPointIeee754Reference<T> y) => T.MinMagnitude(x, y);
+            public static BinaryFloatingPointIeee754Reference<T> MinMagnitudeNumber(BinaryFloatingPointIeee754Reference<T> x, BinaryFloatingPointIeee754Reference<T> y) => T.MinMagnitudeNumber(x, y);
+            public static BinaryFloatingPointIeee754Reference<T> Pow(BinaryFloatingPointIeee754Reference<T> x, BinaryFloatingPointIeee754Reference<T> y) => T.Pow(x, y);
+            public static BinaryFloatingPointIeee754Reference<T> Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider) => T.Parse(s, style, provider);
+            public static BinaryFloatingPointIeee754Reference<T> Parse(string s, NumberStyles style, IFormatProvider? provider) => T.Parse(s, style, provider);
+            public static BinaryFloatingPointIeee754Reference<T> Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => T.Parse(s, provider);
+            public static BinaryFloatingPointIeee754Reference<T> Parse(string s, IFormatProvider? provider) => T.Parse(s, provider);
+            public static BinaryFloatingPointIeee754Reference<T> RootN(BinaryFloatingPointIeee754Reference<T> x, int n) => T.RootN(x, n);
+            public static BinaryFloatingPointIeee754Reference<T> Round(BinaryFloatingPointIeee754Reference<T> x, int digits, MidpointRounding mode) => T.Round(x, digits, mode);
+            public static BinaryFloatingPointIeee754Reference<T> ScaleB(BinaryFloatingPointIeee754Reference<T> x, int n) => T.ScaleB(x, n);
+            public static BinaryFloatingPointIeee754Reference<T> Sin(BinaryFloatingPointIeee754Reference<T> x) => T.Sin(x);
+            public static (BinaryFloatingPointIeee754Reference<T> Sin, BinaryFloatingPointIeee754Reference<T> Cos) SinCos(BinaryFloatingPointIeee754Reference<T> x) => T.SinCos(x);
+            public static (BinaryFloatingPointIeee754Reference<T> SinPi, BinaryFloatingPointIeee754Reference<T> CosPi) SinCosPi(BinaryFloatingPointIeee754Reference<T> x) => T.SinCosPi(x);
+            public static BinaryFloatingPointIeee754Reference<T> Sinh(BinaryFloatingPointIeee754Reference<T> x) => T.Sinh(x);
+            public static BinaryFloatingPointIeee754Reference<T> SinPi(BinaryFloatingPointIeee754Reference<T> x) => T.SinPi(x);
+            public static BinaryFloatingPointIeee754Reference<T> Sqrt(BinaryFloatingPointIeee754Reference<T> x) => T.Sqrt(x);
+            public static BinaryFloatingPointIeee754Reference<T> Tan(BinaryFloatingPointIeee754Reference<T> x) => T.Tan(x);
+            public static BinaryFloatingPointIeee754Reference<T> Tanh(BinaryFloatingPointIeee754Reference<T> x) => T.Tanh(x);
+            public static BinaryFloatingPointIeee754Reference<T> TanPi(BinaryFloatingPointIeee754Reference<T> x) => T.TanPi(x);
+
+            public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, [MaybeNullWhen(false)] out BinaryFloatingPointIeee754Reference<T> result)
+            {
+                bool succeeded = T.TryParse(s, style, provider, out T actualResult);
+                result = actualResult;
+                return succeeded;
+            }
+
+            public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, [MaybeNullWhen(false)] out BinaryFloatingPointIeee754Reference<T> result)
+            {
+                bool succeeded = T.TryParse(s, style, provider, out T actualResult);
+                result = actualResult;
+                return succeeded;
+            }
+
+            public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, [MaybeNullWhen(false)] out BinaryFloatingPointIeee754Reference<T> result)
+            {
+                bool succeeded = T.TryParse(s, provider, out T actualResult);
+                result = actualResult;
+                return succeeded;
+            }
+
+            public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, [MaybeNullWhen(false)] out BinaryFloatingPointIeee754Reference<T> result)
+            {
+                bool succeeded = T.TryParse(s, provider, out T actualResult);
+                result = actualResult;
+                return succeeded;
+            }
+
+            public int CompareTo(object? obj)
+            {
+                if (obj is not BinaryFloatingPointIeee754Reference<T> other)
+                {
+                    return obj is null ? 1 : throw new ArgumentException();
+                }
+
+                return CompareTo(other);
+            }
+
+            public int CompareTo(BinaryFloatingPointIeee754Reference<T>? other) => other is null ? 1 : Value.CompareTo(other.Value);
+            public override bool Equals([NotNullWhen(true)] object? obj) => obj is BinaryFloatingPointIeee754Reference<T> other && Equals(other);
+            public bool Equals(BinaryFloatingPointIeee754Reference<T>? other) => other is not null && Value.Equals(other.Value);
+            public int GetExponentByteCount() => Value.GetExponentByteCount();
+            public int GetExponentShortestBitLength() => Value.GetExponentShortestBitLength();
+            public override int GetHashCode() => Value.GetHashCode();
+            public int GetSignificandBitLength() => Value.GetSignificandBitLength();
+            public int GetSignificandByteCount() => Value.GetSignificandByteCount();
+            public override string ToString() => Value.ToString()!;
+            public string ToString(string? format, IFormatProvider? formatProvider) => Value.ToString(format, formatProvider);
+            public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) => Value.TryFormat(destination, out charsWritten, format, provider);
+            public bool TryWriteExponentBigEndian(Span<byte> destination, out int bytesWritten) => Value.TryWriteExponentBigEndian(destination, out bytesWritten);
+            public bool TryWriteExponentLittleEndian(Span<byte> destination, out int bytesWritten) => Value.TryWriteExponentLittleEndian(destination, out bytesWritten);
+            public bool TryWriteSignificandBigEndian(Span<byte> destination, out int bytesWritten) => Value.TryWriteSignificandBigEndian(destination, out bytesWritten);
+            public bool TryWriteSignificandLittleEndian(Span<byte> destination, out int bytesWritten) => Value.TryWriteSignificandLittleEndian(destination, out bytesWritten);
+
+            static bool INumberBase<BinaryFloatingPointIeee754Reference<T>>.TryConvertFromChecked<TOther>(TOther value, out BinaryFloatingPointIeee754Reference<T> result)
+            {
+                if (typeof(TOther) == typeof(T))
+                {
+                    result = (T)(object)value;
+                    return true;
+                }
+
+                bool succeeded = T.TryConvertFromChecked(value, out T actualResult);
+
+                if (!succeeded)
+                {
+                    succeeded = TOther.TryConvertToChecked(value, out actualResult);
+                }
+
+                result = actualResult;
+                return succeeded;
+            }
+
+            static bool INumberBase<BinaryFloatingPointIeee754Reference<T>>.TryConvertFromSaturating<TOther>(TOther value, out BinaryFloatingPointIeee754Reference<T> result)
+            {
+                if (typeof(TOther) == typeof(T))
+                {
+                    result = (T)(object)value;
+                    return true;
+                }
+
+                bool succeeded = T.TryConvertFromSaturating(value, out T actualResult);
+
+                if (!succeeded)
+                {
+                    succeeded = TOther.TryConvertToSaturating(value, out actualResult);
+                }
+
+                result = actualResult;
+                return succeeded;
+            }
+
+            static bool INumberBase<BinaryFloatingPointIeee754Reference<T>>.TryConvertFromTruncating<TOther>(TOther value, out BinaryFloatingPointIeee754Reference<T> result)
+            {
+                if (typeof(TOther) == typeof(T))
+                {
+                    result = (T)(object)value;
+                    return true;
+                }
+
+                bool succeeded = T.TryConvertFromTruncating(value, out T actualResult);
+
+                if (!succeeded)
+                {
+                    succeeded = TOther.TryConvertToTruncating(value, out actualResult);
+                }
+
+                result = actualResult;
+                return succeeded;
+            }
+
+            static bool INumberBase<BinaryFloatingPointIeee754Reference<T>>.TryConvertToChecked<TOther>(BinaryFloatingPointIeee754Reference<T> value, out TOther result) => T.TryConvertToChecked(value.Value, out result);
+            static bool INumberBase<BinaryFloatingPointIeee754Reference<T>>.TryConvertToSaturating<TOther>(BinaryFloatingPointIeee754Reference<T> value, out TOther result) => T.TryConvertToSaturating(value.Value, out result);
+            static bool INumberBase<BinaryFloatingPointIeee754Reference<T>>.TryConvertToTruncating<TOther>(BinaryFloatingPointIeee754Reference<T> value, out TOther result) => T.TryConvertToTruncating(value.Value, out result);
+
+            public static BinaryFloatingPointIeee754Reference<T> operator +(BinaryFloatingPointIeee754Reference<T> value) => +value.Value;
+            public static BinaryFloatingPointIeee754Reference<T> operator +(BinaryFloatingPointIeee754Reference<T> left, BinaryFloatingPointIeee754Reference<T> right) => left.Value + right.Value;
+            public static BinaryFloatingPointIeee754Reference<T> operator -(BinaryFloatingPointIeee754Reference<T> value) => -value.Value;
+            public static BinaryFloatingPointIeee754Reference<T> operator -(BinaryFloatingPointIeee754Reference<T> left, BinaryFloatingPointIeee754Reference<T> right) => left.Value - right.Value;
+            public static BinaryFloatingPointIeee754Reference<T> operator ~(BinaryFloatingPointIeee754Reference<T> value) => ~value.Value;
+            public static BinaryFloatingPointIeee754Reference<T> operator ++(BinaryFloatingPointIeee754Reference<T> value) => value.Value + T.One;
+            public static BinaryFloatingPointIeee754Reference<T> operator --(BinaryFloatingPointIeee754Reference<T> value) => value.Value - T.One;
+            public static BinaryFloatingPointIeee754Reference<T> operator *(BinaryFloatingPointIeee754Reference<T> left, BinaryFloatingPointIeee754Reference<T> right) => left.Value * right.Value;
+            public static BinaryFloatingPointIeee754Reference<T> operator /(BinaryFloatingPointIeee754Reference<T> left, BinaryFloatingPointIeee754Reference<T> right) => left.Value / right.Value;
+            public static BinaryFloatingPointIeee754Reference<T> operator %(BinaryFloatingPointIeee754Reference<T> left, BinaryFloatingPointIeee754Reference<T> right) => left.Value % right.Value;
+            public static BinaryFloatingPointIeee754Reference<T> operator &(BinaryFloatingPointIeee754Reference<T> left, BinaryFloatingPointIeee754Reference<T> right) => left.Value & right.Value;
+            public static BinaryFloatingPointIeee754Reference<T> operator |(BinaryFloatingPointIeee754Reference<T> left, BinaryFloatingPointIeee754Reference<T> right) => left.Value | right.Value;
+            public static BinaryFloatingPointIeee754Reference<T> operator ^(BinaryFloatingPointIeee754Reference<T> left, BinaryFloatingPointIeee754Reference<T> right) => left.Value ^ right.Value;
+            public static bool operator ==(BinaryFloatingPointIeee754Reference<T>? left, BinaryFloatingPointIeee754Reference<T>? right) => left is null ? right is null : left.Equals(right);
+            public static bool operator !=(BinaryFloatingPointIeee754Reference<T>? left, BinaryFloatingPointIeee754Reference<T>? right) => !(left == right);
+            public static bool operator <(BinaryFloatingPointIeee754Reference<T> left, BinaryFloatingPointIeee754Reference<T> right) => left.Value < right.Value;
+            public static bool operator >(BinaryFloatingPointIeee754Reference<T> left, BinaryFloatingPointIeee754Reference<T> right) => left.Value > right.Value;
+            public static bool operator <=(BinaryFloatingPointIeee754Reference<T> left, BinaryFloatingPointIeee754Reference<T> right) => left.Value <= right.Value;
+            public static bool operator >=(BinaryFloatingPointIeee754Reference<T> left, BinaryFloatingPointIeee754Reference<T> right) => left.Value >= right.Value;
+
+            private static TNumber BinaryLog2<TNumber>(TNumber value) where TNumber : IBinaryNumber<TNumber> => TNumber.Log2(value);
+        }
+
+        private sealed class MaxValueRandom : Random
+        {
+            public override void NextBytes(Span<byte> buffer)
+            {
+                buffer.Fill(byte.MaxValue);
             }
         }
     }

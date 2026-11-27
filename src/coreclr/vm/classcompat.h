@@ -11,7 +11,7 @@
 /*
  *  Include Files
  */
-#include "eecontract.h"
+#include <contract.h>
 #include "argslot.h"
 #include "vars.hpp"
 #include "cor.h"
@@ -48,7 +48,6 @@ class   MethodNameHash;
 class   MethodTable;
 class   Module;
 class   Object;
-class   Stub;
 class   Substitution;
 class   SystemDomain;
 class   TypeHandle;

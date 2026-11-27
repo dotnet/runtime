@@ -17,19 +17,16 @@
     <ProjectReference Include="..\DeltaHelper\DeltaHelper.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Microsoft.DotNet.HotReload.Utils.Generator.BuildTool" Version="$(MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion)" />
-  </ItemGroup>
+  <PropertyGroup>
+    <DeltaScript>deltascript.json</DeltaScript>
+  </PropertyGroup>
+
+  <Import Project="$(RepositoryEngineeringDir)testing\hotreload-delta-gen.targets" />
 
   <ItemGroup>
     <Compile Include="Program.cs" />
     <Compile Include="TestClass.cs" />
   </ItemGroup>
-
-
-  <PropertyGroup>
-    <DeltaScript>deltascript.json</DeltaScript>
-  </PropertyGroup>
 
   <PropertyGroup Condition="'$(BuiltRuntimeConfiguration)' != ''">
     <HotReloadDeltaGeneratorExtraArgs>$(HotReloadDeltaGeneratorExtraArgs) -p:BuiltRuntimeConfiguration=$(BuiltRuntimeConfiguration)</HotReloadDeltaGeneratorExtraArgs>

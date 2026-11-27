@@ -13,9 +13,10 @@ However, in the context of .NET Core, Microsoft supports using public signed ass
 
 Known issues when debugging and testing public signed assemblies on .NET Framework:
 
-- You will not be able to install the assembly to the [Global Assembly Cache (GAC)](https://msdn.microsoft.com/en-us/library/yf1d93sz.aspx)
+- You will not be able to install the assembly to the [Global Assembly Cache (GAC)](https://learn.microsoft.com/dotnet/framework/app-domains/gac)
 - You will not be able to load the assembly in an AppDomain where shadow copying is turned on.
 - You will not be able to load the assembly in a partially trusted AppDomain
+- You will not be able to generate the native image for the assembly using [NGen tool](https://learn.microsoft.com/dotnet/framework/tools/ngen-exe-native-image-generator)
 - You will not be able to pre-compile ASP.NET applications
 - You may not be able to load the assembly if the `app.config` file specifies `<configuration>`/`<runtime>`/`<NetFx40_LegacySecurityPolicy enabled="true" />`
 

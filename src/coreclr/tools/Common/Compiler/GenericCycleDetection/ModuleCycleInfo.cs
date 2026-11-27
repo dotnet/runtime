@@ -230,6 +230,15 @@ namespace ILCompiler
                 }
             }
 
+            /// <summary>
+            /// Returns true if the given entity (method or type definition) could be part of a
+            /// generic cycle.
+            /// </summary>
+            public bool CanBeInCycle(TypeSystemEntity entity)
+            {
+                return FormsCycle(entity, out _);
+            }
+
             public void DetectCycle(TypeSystemEntity owner, TypeSystemEntity referent)
             {
                 // This allows to disable cycle detection completely (typically for perf reasons as the algorithm is pretty slow)

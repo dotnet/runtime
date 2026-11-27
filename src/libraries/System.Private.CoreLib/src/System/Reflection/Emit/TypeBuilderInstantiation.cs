@@ -217,6 +217,7 @@ namespace System.Reflection.Emit
         protected override TypeAttributes GetAttributeFlagsImpl() { return _genericType.Attributes; }
 
         public override bool IsTypeDefinition => false;
+        public override bool IsByRefLike => _genericType.IsByRefLike;
         public override bool IsSZArray => false;
 
         protected override bool IsArrayImpl() { return false; }
@@ -249,6 +250,7 @@ namespace System.Reflection.Emit
         }
         public override MethodBase? DeclaringMethod => null;
         public override Type GetGenericTypeDefinition() { return _genericType; }
+        public override Type? GetNullableUnderlyingType() => _genericType.GetNullableUnderlyingType() is not null ? _typeArguments[0] : null;
 
         [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public override Type MakeGenericType(params Type[] inst) { throw new InvalidOperationException(SR.Format(SR.Arg_NotGenericTypeDefinition, this)); }

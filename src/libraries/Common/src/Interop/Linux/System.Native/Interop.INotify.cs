@@ -51,6 +51,7 @@ internal static partial class Interop
             IN_MOVED_TO    = 0x00000080,
             IN_CREATE      = 0x00000100,
             IN_DELETE      = 0x00000200,
+            IN_MOVE_SELF   = 0x00000800,
             IN_Q_OVERFLOW  = 0x00004000,
             IN_IGNORED     = 0x00008000,
             IN_ONLYDIR     = 0x01000000,

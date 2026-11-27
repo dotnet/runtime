@@ -29,10 +29,16 @@ namespace Wasm.Build.Tests
                     .Where(item => !(item.ElementAt(0) is Configuration config && config == Configuration.Debug && item.ElementAt(1) is bool aotValue && aotValue))
                     .UnwrapItemsAsArrays();
 
+        public static IEnumerable<object?[]> MainAssemblyTestDataForCurrentRuntime()
+            => SatelliteAssemblyTestData(aot: false, relinking: false)
+                .Concat(SatelliteAssemblyTestData(aot: false, relinking: true));
+
+        public static IEnumerable<object?[]> ProjectReferenceTestDataForCurrentRuntime()
+            => SatelliteAssemblyTestData(aot: false, relinking: false)
+                .Concat(SatelliteAssemblyTestData(aot: false, relinking: true));
+
         [Theory]
-        [MemberData(nameof(SatelliteAssemblyTestData), parameters: new object[] { /*aot*/ false, /*relinking*/ false })]
-        [MemberData(nameof(SatelliteAssemblyTestData), parameters: new object[] { /*aot*/ false, /*relinking*/ true })]
-        [MemberData(nameof(SatelliteAssemblyTestData), parameters: new object[] { /*aot*/ true,  /*relinking*/ false })]
+        [MemberData(nameof(MainAssemblyTestDataForCurrentRuntime))]
         [TestCategory("native")]
         public async Task ResourcesFromMainAssembly(Configuration config, bool aot, bool nativeRelink, string? argCulture)
         {
@@ -57,9 +63,7 @@ namespace Wasm.Build.Tests
         }
 
         [Theory]
-        [MemberData(nameof(SatelliteAssemblyTestData), parameters: new object[] { /*aot*/ false, /*relinking*/ false })]
-        [MemberData(nameof(SatelliteAssemblyTestData), parameters: new object[] { /*aot*/ false, /*relinking*/ true })]
-        [MemberData(nameof(SatelliteAssemblyTestData), parameters: new object[] { /*aot*/ true,  /*relinking*/ true })]
+        [MemberData(nameof(ProjectReferenceTestDataForCurrentRuntime))]
         [TestCategory("native")]
         public async Task ResourcesFromProjectReference(Configuration config, bool aot, bool nativeRelink, string? argCulture)
         {
@@ -81,9 +85,13 @@ namespace Wasm.Build.Tests
                 Path.Combine(_projectDir, "..", "LibraryWithResources"));
             CreateProgramForCultureTest("LibraryWithResources.resx.words", "LibraryWithResources.Class1");
             // move src/mono/wasm/testassets/SatelliteAssemblyFromProjectRef/LibraryWithResources to the test project
-            // The root D.B* should be empty
-            File.WriteAllText(Path.Combine(_projectDir, "..", "Directory.Build.props"), "<Project />");
-            File.WriteAllText(Path.Combine(_projectDir, "..", "Directory.Build.targets"), "<Project />");
+            // Only runtime selection belongs in the root props; targets use the non-Wasm targeting-pack setup.
+            File.WriteAllText(
+                Path.Combine(_projectDir, "..", "Directory.Build.props"),
+                "<Project><PropertyGroup><UseMonoRuntime>false</UseMonoRuntime></PropertyGroup></Project>");
+            File.Copy(
+                Path.Combine(BuildEnvironment.TestDataPath, "Local.Directory.Build.targets"),
+                Path.Combine(_projectDir, "..", "Directory.Build.targets"));
             // NativeFilesType dotnetWasmFileType = nativeRelink ? NativeFilesType.Relinked : aot ? NativeFilesType.AOT : NativeFilesType.FromRuntimePack;
             
             PublishProject(info, config, new PublishOptions(AOT: aot), isNativeBuild: nativeRelink);
@@ -95,7 +103,7 @@ namespace Wasm.Build.Tests
 #pragma warning disable xUnit1026
         [Theory]
         [BuildAndRun(aot: true, config: Configuration.Release)]
-        [TestCategory("native")]
+        [TestCategory("native"), TestCategory("mono")]
         public void CheckThatSatelliteAssembliesAreNotAOTed(Configuration config, bool aot)
         {
             string extraProperties = $@"<EmccCompileOptimizationFlag>-O1</EmccCompileOptimizationFlag>

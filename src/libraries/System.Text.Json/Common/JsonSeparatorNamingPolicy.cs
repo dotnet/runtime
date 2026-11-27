@@ -10,25 +10,33 @@ namespace System.Text.Json
 {
     internal abstract class JsonSeparatorNamingPolicy : JsonNamingPolicy
     {
-        private readonly bool _lowercase;
-        private readonly char _separator;
+        private readonly char? _separator;
+        private readonly WordCasing _wordCasing;
 
         internal JsonSeparatorNamingPolicy(bool lowercase, char separator)
         {
             Debug.Assert(char.IsPunctuation(separator));
 
-            _lowercase = lowercase;
             _separator = separator;
+            _wordCasing = lowercase ? WordCasing.LowerCase : WordCasing.UpperCase;
+        }
+
+        internal JsonSeparatorNamingPolicy(WordCasing wordCasing)
+        {
+            Debug.Assert(wordCasing is WordCasing.PascalCase);
+
+            _separator = null;
+            _wordCasing = wordCasing;
         }
 
         public sealed override string ConvertName(string name)
         {
             ArgumentNullException.ThrowIfNull(name);
 
-            return ConvertNameCore(_separator, _lowercase, name.AsSpan());
+            return ConvertNameCore(_separator, _wordCasing, name.AsSpan());
         }
 
-        private static string ConvertNameCore(char separator, bool lowercase, ReadOnlySpan<char> chars)
+        private static string ConvertNameCore(char? separator, WordCasing wordCasing, ReadOnlySpan<char> chars)
         {
             char[]? rentedBuffer = null;
 
@@ -54,16 +62,23 @@ namespace System.Text.Json
                 {
                     case UnicodeCategory.UppercaseLetter:
 
+                        bool isWordBoundary = false;
+
                         switch (state)
                         {
                             case SeparatorState.NotStarted:
+                                isWordBoundary = true;
                                 break;
 
                             case SeparatorState.LowercaseLetterOrDigit:
                             case SeparatorState.SpaceSeparator:
                                 // An uppercase letter following a sequence of lowercase letters or spaces
                                 // denotes the start of a new grouping: emit a separator character.
-                                WriteChar(separator, ref destination);
+                                isWordBoundary = true;
+                                if (separator.HasValue)
+                                {
+                                    WriteChar(separator.Value, ref destination);
+                                }
                                 break;
 
                             case SeparatorState.UppercaseLetter:
@@ -74,7 +89,11 @@ namespace System.Text.Json
                                 // however 'SHA512Hash' should render as 'sha512-hash'.
                                 if (i + 1 < chars.Length && char.IsLower(chars[i + 1]))
                                 {
-                                    WriteChar(separator, ref destination);
+                                    isWordBoundary = true;
+                                    if (separator.HasValue)
+                                    {
+                                        WriteChar(separator.Value, ref destination);
+                                    }
                                 }
                                 break;
 
@@ -83,10 +102,12 @@ namespace System.Text.Json
                                 break;
                         }
 
-                        if (lowercase)
+                        current = wordCasing switch
                         {
-                            current = char.ToLowerInvariant(current);
-                        }
+                            WordCasing.LowerCase => char.ToLowerInvariant(current),
+                            WordCasing.PascalCase => isWordBoundary ? current : char.ToLowerInvariant(current),
+                            _ => current,
+                        };
 
                         WriteChar(current, ref destination);
                         state = SeparatorState.UppercaseLetter;
@@ -95,15 +116,25 @@ namespace System.Text.Json
                     case UnicodeCategory.LowercaseLetter:
                     case UnicodeCategory.DecimalDigitNumber:
 
+                        bool isWordStart = state is SeparatorState.SpaceSeparator or SeparatorState.NotStarted;
+
                         if (state is SeparatorState.SpaceSeparator)
                         {
                             // Normalize preceding spaces to one separator.
-                            WriteChar(separator, ref destination);
+                            if (separator.HasValue)
+                            {
+                                WriteChar(separator.Value, ref destination);
+                            }
                         }
 
-                        if (!lowercase && category is UnicodeCategory.LowercaseLetter)
+                        if (category is UnicodeCategory.LowercaseLetter)
                         {
-                            current = char.ToUpperInvariant(current);
+                            current = wordCasing switch
+                            {
+                                WordCasing.UpperCase => char.ToUpperInvariant(current),
+                                WordCasing.PascalCase => isWordStart ? char.ToUpperInvariant(current) : current,
+                                _ => current,
+                            };
                         }
 
                         WriteChar(current, ref destination);
@@ -174,6 +205,13 @@ namespace System.Text.Json
             UppercaseLetter,
             LowercaseLetterOrDigit,
             SpaceSeparator,
+        }
+
+        internal enum WordCasing
+        {
+            LowerCase,
+            UpperCase,
+            PascalCase,
         }
     }
 }

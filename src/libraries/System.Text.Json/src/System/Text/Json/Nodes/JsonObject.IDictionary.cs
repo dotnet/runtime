@@ -54,16 +54,9 @@ namespace System.Text.Json.Nodes
         /// </returns>
         public bool TryAdd(string propertyName, JsonNode? value, out int index)
         {
-            if (propertyName is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
-            }
-#if NET9_0
-            bool success = Dictionary.TryAdd(propertyName, value);
-            index = success ? Dictionary.Count - 1 : Dictionary.IndexOf(propertyName);
-#else
+            ArgumentNullException.ThrowIfNull(propertyName);
+
             bool success = Dictionary.TryAdd(propertyName, value, out index);
-#endif
             if (success)
             {
                 value?.AssignParent(this);
@@ -301,7 +294,7 @@ namespace System.Text.Json.Nodes
             // however the order of read/write operations guarantees that that's only
             // possible if the value of _dictionary is non-null.
             jsonElement = _jsonElement;
-            Interlocked.MemoryBarrier();
+            Volatile.ReadBarrier();
             dictionary = _dictionary;
         }
     }

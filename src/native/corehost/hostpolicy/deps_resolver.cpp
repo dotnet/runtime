@@ -71,23 +71,6 @@ namespace
         existing->insert(path);
     }
 
-    // Return the filename from deps path; a deps path always uses a '/' for the separator.
-    pal::string_t get_deps_filename(const pal::string_t& path)
-    {
-        if (path.empty())
-        {
-            return path;
-        }
-
-        auto name_pos = path.find_last_of('/');
-        if (name_pos == pal::string_t::npos)
-        {
-            return path;
-        }
-
-        return path.substr(name_pos + 1);
-    }
-
     // A uniqifying append helper that doesn't let two entries with the same
     // "asset_name" be part of the "items" paths.
     void add_tpa_asset(
@@ -346,8 +329,14 @@ probe_result_t deps_resolver_t::probe_deps_entry(const deps_entry_t& entry, cons
                 {
                     // Bundles are expected to be RID-specific themselves, so RID-specific assets are not expected to be found in the bundle.
                     assert(!entry.is_rid_specific || !found_in_bundle);
+                    if (found_in_bundle)
+                    {
+                        trace::verbose(_X("    Probed deps dir and matched in bundle"));
+                        return probe_result_t::bundled;
+                    }
+
                     trace::verbose(_X("    Probed deps dir and matched '%s'"), candidate->c_str());
-                    return found_in_bundle ? probe_result_t::bundled : probe_result_t::found;
+                    return probe_result_t::found;
                 }
             }
 
@@ -415,11 +404,37 @@ bool report_missing_assembly_in_manifest(const deps_entry_t& entry, bool continu
     return continueResolving;
 }
 
+void probe_paths_t::tpa_t::add(pal::string_t&& path)
+{
+    size_t file_name_offset = path.find_last_of(DIR_SEPARATOR);
+    assert(file_name_offset != pal::string_t::npos);
+    ++file_name_offset;
+    assert(file_name_offset < path.size());
+
+    size_t directory_index = 0;
+    for (; directory_index < directories.size(); ++directory_index)
+    {
+        const entry_t& existing = entries[directories[directory_index]];
+        if (existing.file_name_offset == file_name_offset &&
+            path.compare(0, file_name_offset, existing.path, 0, existing.file_name_offset) == 0)
+        {
+            break;
+        }
+    }
+
+    if (directory_index == directories.size())
+    {
+        directories.push_back(entries.size());
+    }
+
+    entries.push_back({ std::move(path), directory_index, file_name_offset });
+}
+
 /**
  *  Resolve the TPA assembly locations
  */
 bool deps_resolver_t::resolve_tpa_list(
-        pal::string_t* output,
+        probe_paths_t::tpa_t* output,
         std::unordered_set<pal::string_t>* breadcrumb,
         bool ignore_missing_assemblies)
 {
@@ -434,7 +449,7 @@ bool deps_resolver_t::resolve_tpa_list(
         }
 
         // Ignore placeholders
-        if (utils::ends_with(entry.asset.relative_path, _X("/_._"), false))
+        if (utils::ends_with(entry.asset.relative_path, DIR_SEPARATOR_STR _X("_._"), false))
         {
             return true;
         }
@@ -465,7 +480,7 @@ bool deps_resolver_t::resolve_tpa_list(
         else
         {
             // Verify the extension is the same as the previous verified entry
-            if (get_deps_filename(entry.asset.relative_path) != get_filename(existing->second.resolved_path))
+            if (get_filename(entry.asset.relative_path) != get_filename(existing->second.resolved_path))
             {
                 trace::error(
                     DuplicateAssemblyWithDifferentExtensionMessage,
@@ -576,11 +591,10 @@ bool deps_resolver_t::resolve_tpa_list(
         }
     }
 
-    // Convert the paths into a string and return it
-    for (const auto& item : items)
+    output->entries.reserve(output->entries.size() + items.size());
+    for (std::pair<const pal::string_t, deps_resolved_asset_t>& item : items)
     {
-        output->append(item.second.resolved_path);
-        output->push_back(PATH_SEPARATOR);
+        output->add(std::move(item.second.resolved_path));
     }
 
     return true;
@@ -780,7 +794,7 @@ bool deps_resolver_t::resolve_probe_dirs(
         }
 
         // Ignore placeholders
-        if (utils::ends_with(entry.asset.relative_path, _X("/_._"), false))
+        if (utils::ends_with(entry.asset.relative_path, DIR_SEPARATOR_STR _X("_._"), false))
         {
             return true;
         }

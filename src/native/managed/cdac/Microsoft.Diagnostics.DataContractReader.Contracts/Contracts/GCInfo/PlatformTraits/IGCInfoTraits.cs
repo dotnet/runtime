@@ -7,6 +7,8 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts.GCInfoHelpers;
 
 internal interface IGCInfoTraits
 {
+    static virtual bool IsInterpreter => false;
+    static virtual bool UsesStackPointerAsAmbientSP => false;
     static virtual int NO_GS_COOKIE { get; } = -1;
     static virtual uint NO_STACK_BASE_REGISTER { get; } = 0xFFFFFFFF;
     static virtual uint NO_SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA { get; } = 0xFFFFFFFF;
@@ -47,4 +49,26 @@ internal interface IGCInfoTraits
     static abstract int NUM_INTERRUPTIBLE_RANGES_ENCBASE { get; }
 
     static abstract bool HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA { get; }
+
+    // Fields that are only present in GC info versions before 4 (R2R images before 11.0).
+    static virtual int SIZE_OF_RETURN_KIND_IN_SLIM_HEADER => 2;
+    static virtual int SIZE_OF_RETURN_KIND_IN_FAT_HEADER => 4;
+    static virtual int PSP_SYM_STACK_SLOT_ENCBASE => 6;
+    static virtual int SECURITY_OBJECT_STACK_SLOT_ENCBASE => 6;
+
+    // False for encodings whose code is never interruptible (Wasm R2R).
+    static virtual bool HAS_INTERRUPTIBLE_RANGES => true;
+
+    /// <summary>
+    /// Returns true if the given register is a scratch (volatile) register.
+    /// Scratch register slots should only be reported for the active (leaf) stack frame.
+    /// </summary>
+    static abstract bool IsScratchRegister(uint regNum);
+
+    // These are the same across all platforms
+    static virtual int POINTER_SIZE_ENCBASE { get; } = 3;
+    static virtual int LIVESTATE_RLE_RUN_ENCBASE { get; } = 2;
+    static virtual int LIVESTATE_RLE_SKIP_ENCBASE { get; } = 4;
+    static virtual uint NUM_NORM_CODE_OFFSETS_PER_CHUNK { get; } = 64;
+    static virtual int NUM_NORM_CODE_OFFSETS_PER_CHUNK_LOG2 { get; } = 6;
 }

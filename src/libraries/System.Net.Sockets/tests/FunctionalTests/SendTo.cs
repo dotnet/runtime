@@ -96,6 +96,7 @@ namespace System.Net.Sockets.Tests
 
         [ConditionalFact]
         [SkipOnPlatform(TestPlatforms.FreeBSD, "FreeBSD allows sendto() to broadcast")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support Broadcast")]
         public async Task Datagram_UDP_AccessDenied_Throws_DoesNotBind()
         {
             IPEndPoint invalidEndpoint = new IPEndPoint(IPAddress.Broadcast, 1234);
@@ -147,7 +148,6 @@ namespace System.Net.Sockets.Tests
         public SendTo_SyncForceNonBlocking(ITestOutputHelper output) : base(output) {}
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class SendTo_Apm : SendTo<SocketHelperApm>
     {
         public SendTo_Apm(ITestOutputHelper output) : base(output) {}

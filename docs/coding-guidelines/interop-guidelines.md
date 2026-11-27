@@ -10,6 +10,7 @@ We have the following goals related to interop code being used in dotnet/runtime
   - We should only define a given interop signature in a single place. This stuff is tricky, and we shouldn't be copy-and-pasting it.
 - Minimize unnecessary IL in assemblies.
   - Interop signatures should only be compiled into the assemblies that actually consume them. Having extra signatures bloats assemblies and makes it more difficult to do static analysis over assemblies to understand what they actually use. It also leads to problems when such static verification is used as a gate, e.g. if a store verifies that only certain APIs are used by apps in the store.
+  - An assembly's `unix` build serves several Unix OSes, so it compiles the OS-specific signatures each of them consumes. Calls to OS-specific signatures must be guarded by `OperatingSystem.IsXxx()` checks. These checks are constants in the implementation assemblies the libraries are trimmed against, so the shipped assembly for a given OS only contains the signatures that OS uses (see [Project Files](#project-files)).
 - Keep interop code isolated and consolidated.
   - This is both for good hygiene and to help keep platform-specific code separated from platform-neutral code, which is important for maximizing reusable code above PAL layers.
 - Ensure maximal managed code reuse across different OS flavors which have  the same API but not the same ABI.
@@ -34,7 +35,7 @@ internal static partial class Interop
 ...
 internal static partial class Interop
 {
-    internal static partial class mincore { ... }
+    internal static partial class Mincore { ... }
 }
 ```
 - With few exceptions, the only methods that should be defined in these interop types are DllImports.
@@ -49,7 +50,9 @@ internal static partial class Interop
 ```
 \Common\src\Interop
     \Windows
-        \mincore
+        \Kernel32
+            ... interop files
+        \Mincore
             ... interop files
     \Unix
         \libc
@@ -59,7 +62,7 @@ internal static partial class Interop
             ... interop files
 ```
 
-As shown above, platforms may be additive, in that an assembly may use functionality from multiple folders, e.g. System.IO.FileSystem's Linux build will use functionality both from Unix (common across all Unix systems) and from Linux (specific to Linux and not available across non-Linux Unix systems).
+As shown above, platforms may be additive, in that an assembly may use functionality from multiple folders, e.g. System.Diagnostics.Process's `unix` build uses functionality from Unix (common across all Unix systems) as well as from Linux, FreeBSD, OpenBSD and SunOS (each specific to that OS and not available on the other Unix systems), selecting the OS-specific functionality with `OperatingSystem.IsXxx()` checks.
 
 - Interop.*.cs files are created in a way such that every assembly consuming the file will need every DllImport it contains.
   - If multiple related DllImports will all be needed by every consumer, they may be declared in the same file, named for the functionality grouping, e.g. Interop.IOErrors.cs.
@@ -71,8 +74,8 @@ As shown above, platforms may be additive, in that an assembly may use functiona
         \libc
             \Interop.strerror.cs
     \Windows
-        \mincore
-            \Interop.OutputDebugString.cs
+        \Mincore
+            \Interop.WaitOnAddress.cs    <-- Also contains WakeByAddressSingle
 ```
 
 - If structs/constants will be used on their own without an associated DllImport, or if they may be used with multiple DllImports not in the same file, they should be declared in a separate file.
@@ -81,9 +84,9 @@ As shown above, platforms may be additive, in that an assembly may use functiona
 ```
 \Common\src\Interop
     \Windows
-        \mincore
-            \Interop.DuplicateHandle_SafeTokenHandle.cs
-            \Interop.DuplicateHandle_IntPtr.cs
+        \Kernel32
+            \Interop.DuplicateHandle_SafeFileHandle.cs
+            \Interop.DuplicateHandle_SafePipeHandle.cs
 ```
 
 - The library names used per-platform are stored in internal constants in the Interop class in a private Libraries class in a per-platform file named Interop.Libraries.cs. These constants are then used for all DllImports to that library, rather than having the string duplicated each time, e.g.
@@ -94,12 +97,9 @@ internal static partial class Interop // contents of Common\src\Interop\Windows\
     private static class Libraries
     {
         internal const string Kernel32 = "kernel32.dll";
+        internal const string OleAut32 = "oleaut32.dll";
         internal const string Localization = "api-ms-win-core-localization-l1-2-0.dll";
-        internal const string Handle = "api-ms-win-core-handle-l1-1-0.dll";
-        internal const string ProcessThreads = "api-ms-win-core-processthreads-l1-1-0.dll";
-        internal const string File = "api-ms-win-core-file-l1-1-0.dll";
-        internal const string NamedPipe = "api-ms-win-core-namedpipe-l1-1-0.dll";
-        internal const string IO = "api-ms-win-core-io-l1-1-0.dll";
+        internal const string Synch = "api-ms-win-core-synch-l1-2-0.dll";
         ...
     }
 }
@@ -126,6 +126,8 @@ When building dotnet/runtime, we use the "TargetOS" property to control what tar
 
 #### Project Files
 Whenever possible, a single .csproj should be used per assembly, spanning all target platforms, e.g. System.Console.csproj includes conditional entries for when targeting Windows vs when targeting Linux. A property can be passed to dotnet build to control which flavor is built, e.g. `dotnet build /p:TargetOS=osx System.Console.csproj`.
+
+Unix OSes should share a single `unix` target framework (e.g. `$(NetCoreAppCurrent)-unix`) rather than having a target framework per OS. The interop files for each OS are included for `unix`, and the code that calls them is guarded with `OperatingSystem.IsXxx()` checks. When the libraries are built for a given `TargetOS`, they are trimmed against the implementation assemblies of that OS, where these checks are constants, so the code paths and interop signatures of the other OSes are removed from the shipped assembly. Separate target frameworks are still appropriate when the platform needs a different build altogether, e.g. Apple platforms, or Apple mobile platforms that get a PlatformNotSupported assembly.
 
 ### Constants
 - Wherever possible, constants should be defined as "const". Only if the data type doesn't support this (e.g. IntPtr) should they instead be static readonly fields.
@@ -167,6 +169,10 @@ The runtime repo makes use of [source-generated p/invokes](../design/features/so
 If implicit framework references are disabled (as is the case for most libraries projects), explicit references to the below are required for marshalling arrays:
   - `System.Memory`
   - `System.Runtime.CompilerServices.Unsafe`
+
+### Search paths
+
+System.Private.CoreLib and libraries assemblies all set `DefaultDllImportSearchPaths` to `DllImportSearchPath.Assembly | DllImportSearchPath.System32` at the module level. This first looks in the assembly directory (application directory for single-file), then system directory on Windows or default search on non-Windows. For Windows P/Invokes that should only ever load from the system directory, this can be narrowed with `[DefaultDllImportSearchPaths(DllImportSearchPath.System32)]` on the P/Invoke.
 
 ## UNIX shims
 

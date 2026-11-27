@@ -3,22 +3,23 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class ExceptionInfo : IData<ExceptionInfo>
+[CdacType(nameof(DataType.ExceptionInfo))]
+internal sealed partial class ExceptionInfo : IData<ExceptionInfo>
 {
-    static ExceptionInfo IData<ExceptionInfo>.Create(Target target, TargetPointer address)
-        => new ExceptionInfo(target, address);
+    [Field] public partial TargetPointer PreviousNestedInfo { get; }
+    [Field] public partial TargetPointer ThrownObject { get; }
+    [Field] public partial uint ExceptionFlags { get; }
+    [Field] public partial TargetPointer StackLowBound { get; }
+    [Field] public partial TargetPointer StackHighBound { get; }
+    [Field] public partial TargetPointer ExceptionRecord { get; }
+    [Field] public partial TargetPointer ContextRecord { get; }
 
-    public ExceptionInfo(Target target, TargetPointer address)
-    {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.ExceptionInfo);
-
-        PreviousNestedInfo = target.ReadPointer(address + (ulong)type.Fields[nameof(PreviousNestedInfo)].Offset);
-        ThrownObjectHandle = target.ReadPointer(address + (ulong)type.Fields[nameof(ThrownObjectHandle)].Offset);
-        if (type.Fields.ContainsKey(nameof(ExceptionWatsonBucketTrackerBuckets)))
-            ExceptionWatsonBucketTrackerBuckets = target.ReadPointer(address + (ulong)type.Fields[nameof(ExceptionWatsonBucketTrackerBuckets)].Offset);
-    }
-
-    public TargetPointer PreviousNestedInfo { get; init; }
-    public TargetPointer ThrownObjectHandle { get; init; }
-    public TargetPointer ExceptionWatsonBucketTrackerBuckets { get; init; }
+    // Only present on Windows platforms
+    [Field] public partial TargetPointer? ExceptionWatsonBucketTrackerBuckets { get; }
+    [Field] public partial byte PassNumber { get; }
+    [Field] public partial TargetPointer CSFEHClause { get; }
+    [Field] public partial TargetPointer CSFEnclosingClause { get; }
+    [Field] public partial TargetPointer CallerOfActualHandlerFrame { get; }
+    [Field] public partial uint ClauseForCatchHandlerStartPC { get; }
+    [Field] public partial uint ClauseForCatchHandlerEndPC { get; }
 }

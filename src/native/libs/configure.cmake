@@ -8,6 +8,7 @@ include(CheckSymbolExists)
 include(CheckTypeSize)
 include(CheckLibraryExists)
 include(CheckFunctionExists)
+include(CMakePushCheckState)
 
 if (CLR_CMAKE_TARGET_APPLE)
     # Xcode's clang does not include /usr/local/include by default, but brew's does.
@@ -22,9 +23,8 @@ elseif (CLR_CMAKE_TARGET_FREEBSD)
     include_directories(SYSTEM ${CROSS_ROOTFS}/usr/local/include)
     set(CMAKE_REQUIRED_INCLUDES ${CROSS_ROOTFS}/usr/local/include)
 elseif (CLR_CMAKE_TARGET_OPENBSD)
-    include_directories(SYSTEM ${CROSS_ROOTFS}/usr/local/include)
-    set(CMAKE_REQUIRED_INCLUDES ${CROSS_ROOTFS}/usr/local/include)
-    set(CMAKE_REQUIRED_INCLUDES ${CROSS_ROOTFS}/heimdal/include)
+    include_directories(SYSTEM ${CROSS_ROOTFS}/usr/local/include ${CROSS_ROOTFS}/usr/local/heimdal/include ${CROSS_ROOTFS}/usr/local/include/inotify)
+    set(CMAKE_REQUIRED_INCLUDES ${CROSS_ROOTFS}/usr/local/include ${CROSS_ROOTFS}/usr/local/heimdal/include ${CROSS_ROOTFS}/usr/local/include/inotify)
 elseif (CLR_CMAKE_TARGET_SUNOS)
     # requires /opt/tools when building in Global Zone (GZ)
     include_directories(SYSTEM /opt/local/include /opt/tools/include)
@@ -44,15 +44,6 @@ endif()
 set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -Werror -Wno-error=unused-value -Wno-error=unused-variable")
 if (CMAKE_C_COMPILER_ID MATCHES "Clang")
     set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -Wno-error=builtin-requires-header")
-endif()
-
-# Apple platforms like macOS/iOS allow targeting older operating system versions with a single SDK,
-# the mere presence of a symbol in the SDK doesn't tell us whether the deployment target really supports it.
-# The compiler raises a warning when using an unsupported API, turn that into an error so check_symbol_exists()
-# can correctly identify whether the API is supported on the target.
-check_c_compiler_flag("-Wunguarded-availability" "C_SUPPORTS_WUNGUARDED_AVAILABILITY")
-if(C_SUPPORTS_WUNGUARDED_AVAILABILITY)
-  set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -Wunguarded-availability")
 endif()
 
 # in_pktinfo: Find whether this struct exists
@@ -163,6 +154,11 @@ check_symbol_exists(
     HAVE_FORK)
 
 check_symbol_exists(
+    posix_spawn_file_actions_addchdir_np
+    spawn.h
+    HAVE_POSIX_SPAWN_FILE_ACTIONS_ADDCHDIR_NP)
+
+check_symbol_exists(
     lseek64
     unistd.h
     HAVE_LSEEK64)
@@ -193,18 +189,37 @@ check_symbol_exists(
     HAVE_VFORK)
 
 check_symbol_exists(
+    PR_SET_PDEATHSIG
+    "sys/prctl.h"
+    HAVE_PR_SET_PDEATHSIG)
+
+check_symbol_exists(
     pipe
     unistd.h
     HAVE_PIPE)
 
+cmake_push_check_state()
+list(APPEND CMAKE_REQUIRED_DEFINITIONS -D_GNU_SOURCE)
 check_symbol_exists(
     pipe2
     unistd.h
     HAVE_PIPE2)
+cmake_pop_check_state()
+
+# close_range is available as a function on FreeBSD 12.2+ and Linux (glibc >= 2.34).
+# On Linux with older glibc it is still accessible via the __NR_close_range syscall number.
+check_function_exists(
+    close_range
+    HAVE_CLOSE_RANGE)
+
+# fdwalk is available on Illumos/Solaris and is used as a fallback when close_range is not available.
+check_function_exists(
+    fdwalk
+    HAVE_FDWALK)
 
 check_symbol_exists(
     getmntinfo
-    sys/mount.h
+    "sys/types.h;sys/mount.h"
     HAVE_MNTINFO)
 
 check_symbol_exists(
@@ -216,11 +231,6 @@ check_symbol_exists(
     strlcpy
     string.h
     HAVE_STRLCPY)
-
-check_symbol_exists(
-    strlcat
-    string.h
-    HAVE_STRLCAT)
 
 check_symbol_exists(
     posix_fadvise
@@ -242,10 +252,14 @@ check_symbol_exists(
     sys/uio.h
     HAVE_PWRITEV)
 
+cmake_push_check_state()
+# Bionic also declares an overloaded ioctl, whose address can't be taken.
+list(APPEND CMAKE_REQUIRED_DEFINITIONS -DBIONIC_IOCTL_NO_SIGNEDNESS_OVERLOAD)
 check_symbol_exists(
     ioctl
     sys/ioctl.h
     HAVE_IOCTL)
+cmake_pop_check_state()
 
 check_symbol_exists(
     sched_getaffinity
@@ -261,6 +275,11 @@ check_symbol_exists(
     sched_getcpu
     "sched.h"
     HAVE_SCHED_GETCPU)
+
+check_symbol_exists(
+    pthread_cpu_number_np
+    "pthread.h"
+    HAVE_PTHREAD_CPU_NUMBER_NP)
 
 check_symbol_exists(
     pthread_setcancelstate
@@ -351,8 +370,6 @@ check_struct_has_member(
     "sys/statvfs.h"
     HAVE_STATVFS_BASETYPE)
 
-set(CMAKE_EXTRA_INCLUDE_FILES dirent.h)
-
 # statfs: Find whether this struct exists
 if (HAVE_STATFS_FSTYPENAME OR HAVE_STATVFS_FSTYPENAME)
     set (STATFS_INCLUDES sys/mount.h)
@@ -360,28 +377,15 @@ else ()
     set (STATFS_INCLUDES sys/statfs.h)
 endif ()
 
-set(CMAKE_EXTRA_INCLUDE_FILES ${STATFS_INCLUDES})
-
 check_symbol_exists(
     "statfs"
-    ${STATFS_INCLUDES}
+    "sys/types.h;${STATFS_INCLUDES}"
     HAVE_STATFS)
 
 check_symbol_exists(
     "getrlimit"
     "sys/resource.h"
     HAVE_GETRLIMIT)
-
-check_symbol_exists(
-    "setrlimit"
-    "sys/resource.h"
-    HAVE_SETRLIMIT)
-
-check_type_size(
-    "struct statfs"
-    STATFS_SIZE
-    BUILTIN_TYPES_ONLY)
-set(CMAKE_EXTRA_INCLUDE_FILES) # reset CMAKE_EXTRA_INCLUDE_FILES
 # /statfs
 
 check_c_source_compiles(
@@ -559,19 +563,7 @@ check_symbol_exists(
     stdlib.h
     HAVE_POSIX_MEMALIGN)
 
-if(CLR_CMAKE_TARGET_IOS)
-    # Manually set results from check_c_source_runs() since it's not possible to actually run it during CMake configure checking
-    unset(HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP)
-    unset(HAVE_ALIGNED_ALLOC)   # only exists on iOS 13+
-    set(HAVE_CLOCK_REALTIME 1)
-    unset(HAVE_FORK) # exists but blocked by kernel
-elseif(CLR_CMAKE_TARGET_MACCATALYST)
-    # Manually set results from check_c_source_runs() since it's not possible to actually run it during CMake configure checking
-    unset(HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP)
-    unset(HAVE_ALIGNED_ALLOC)   # only exists on iOS 13+
-    set(HAVE_CLOCK_REALTIME 1)
-    unset(HAVE_FORK) # exists but blocked by kernel
-elseif(CLR_CMAKE_TARGET_TVOS)
+if(CLR_CMAKE_TARGET_APPLE_MOBILE)
     # Manually set results from check_c_source_runs() since it's not possible to actually run it during CMake configure checking
     unset(HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP)
     unset(HAVE_ALIGNED_ALLOC)   # only exists on iOS 13+
@@ -585,6 +577,7 @@ elseif(CLR_CMAKE_TARGET_ANDROID)
 elseif(CLR_CMAKE_TARGET_WASI)
     set(HAVE_FORK 0)
     unset(HAVE_GETNAMEINFO) # WASIp2 libc has empty function with TODO and abort()
+    unset(HAVE_GETHOSTNAME) # WASI sysroot declares gethostname in unistd.h but libc.a has no definition
 elseif(CLR_CMAKE_TARGET_BROWSER)
     set(HAVE_FORK 0)
 else()
@@ -740,8 +733,29 @@ check_prototype_definition(
     statfs
     "int statfs(const char *path, struct statfs *buf)"
     0
-    ${STATFS_INCLUDES}
+    "sys/types.h;${STATFS_INCLUDES}"
     HAVE_NON_LEGACY_STATFS)
+
+check_prototype_definition(
+    getfsstat
+    "int getfsstat(struct statfs *buf, size_t bufsize, int flags)"
+    0
+    "sys/types.h;sys/mount.h"
+    HAVE_GETFSSTAT_SIZE_T)
+
+check_prototype_definition(
+    getfsstat
+    "int getfsstat(struct statfs *buf, int bufsize, int flags)"
+    0
+    "sys/types.h;sys/mount.h"
+    HAVE_GETFSSTAT_INT)
+
+check_prototype_definition(
+    getfsstat
+    "int getfsstat(struct statfs *buf, long bufsize, int flags)"
+    0
+    "sys/types.h;sys/mount.h"
+    HAVE_GETFSSTAT_LONG)
 
 check_prototype_definition(
     ioctl
@@ -892,7 +906,7 @@ check_include_files(
     "pthread.h"
     HAVE_PTHREAD_H)
 
-if(CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+if(CLR_CMAKE_TARGET_APPLE_MOBILE)
     set(HAVE_IOS_NET_ROUTE_H 1)
     set(HAVE_IOS_NET_IFMEDIA_H 1)
     set(HAVE_IOS_NETINET_TCPFSM_H 1)
@@ -973,38 +987,59 @@ check_include_files(
     IOKit/serial/ioss.h
     HAVE_IOSS_H)
 
+check_include_files(
+    OS.h
+    HAVE_OS_H)
+
 check_symbol_exists(
     getpeereid
-    unistd.h
+    "unistd.h;sys/types.h;sys/socket.h"
     HAVE_GETPEEREID)
 
-check_symbol_exists(
-    getdomainname
-    unistd.h
-    HAVE_GETDOMAINNAME)
+set (PREVIOUS_CMAKE_REQUIRED_LIBRARIES ${CMAKE_REQUIRED_LIBRARIES})
+if (CLR_CMAKE_TARGET_SUNOS)
+    # On SunOS, getdomainname is in libnsl but not declared in any header
+    set(CMAKE_REQUIRED_LIBRARIES socket nsl)
+    check_function_exists(
+        getdomainname
+        HAVE_GETDOMAINNAME)
+else()
+    check_symbol_exists(
+        getdomainname
+        unistd.h
+        HAVE_GETDOMAINNAME)
+endif()
 
-# getdomainname on OSX takes an 'int' instead of a 'size_t'
-# check if compiling with 'size_t' would cause a warning
-set (PREVIOUS_CMAKE_REQUIRED_FLAGS ${CMAKE_REQUIRED_FLAGS})
-set (CMAKE_REQUIRED_FLAGS "-Werror -Weverything")
-check_c_source_compiles(
-    "
-    #include <unistd.h>
-    int main(void)
-    {
-        size_t namelen = 20;
-        char name[20];
-        int dummy = getdomainname(name, namelen);
-        (void)dummy;
-        return 0;
-    }
-    "
-    HAVE_GETDOMAINNAME_SIZET)
-set (CMAKE_REQUIRED_FLAGS ${PREVIOUS_CMAKE_REQUIRED_FLAGS})
+# Some platforms (e.g. macOS, SunOS) define getdomainname with an 'int' length parameter
+# Check whether using 'size_t' for the length parameter would cause a warning
+if (CLR_CMAKE_TARGET_SUNOS)
+    # SunOS uses int, not size_t
+    set (HAVE_GETDOMAINNAME_SIZET 0)
+else()
+    set (PREVIOUS_CMAKE_REQUIRED_FLAGS ${CMAKE_REQUIRED_FLAGS})
+    set (CMAKE_REQUIRED_FLAGS "-Werror -Weverything")
+    check_c_source_compiles(
+        "
+        #include <unistd.h>
+        int main(void)
+        {
+            size_t namelen = 20;
+            char name[20];
+            int dummy = getdomainname(name, namelen);
+            (void)dummy;
+            return 0;
+        }
+        "
+        HAVE_GETDOMAINNAME_SIZET)
+    set (CMAKE_REQUIRED_FLAGS ${PREVIOUS_CMAKE_REQUIRED_FLAGS})
+endif()
+set (CMAKE_REQUIRED_LIBRARIES ${PREVIOUS_CMAKE_REQUIRED_LIBRARIES})
 
 set (PREVIOUS_CMAKE_REQUIRED_LIBRARIES ${CMAKE_REQUIRED_LIBRARIES})
-if (HAVE_SYS_INOTIFY_H AND (CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_OPENBSD))
+if (HAVE_SYS_INOTIFY_H AND CLR_CMAKE_TARGET_FREEBSD)
     set (CMAKE_REQUIRED_LIBRARIES "-linotify -L${CROSS_ROOTFS}/usr/local/lib")
+elseif (HAVE_SYS_INOTIFY_H AND CLR_CMAKE_TARGET_OPENBSD)
+    set (CMAKE_REQUIRED_LIBRARIES "-linotify -lpthread -L${CROSS_ROOTFS}/usr/local/lib/inotify")
 endif()
 
 check_symbol_exists(
@@ -1055,6 +1090,35 @@ else ()
         GSS_SPNEGO_MECHANISM
         "gssapi/gssapi.h"
         HAVE_GSS_SPNEGO_MECHANISM)
+endif ()
+
+# gss_get_name_attribute (RFC 6680 naming extensions) is optional. It is used to
+# retrieve the Kerberos PAC of the peer and is absent in some GSSAPI implementations.
+# The check must not link, because on Linux libgssapi_krb5 is loaded on demand rather
+# than linked, so only the declaration is required at build time.
+if (HAVE_GSSFW_HEADERS)
+    set (GSS_GET_NAME_ATTRIBUTE_HEADER "GSS/GSS.h")
+elseif (HAVE_HEIMDAL_HEADERS)
+    set (GSS_GET_NAME_ATTRIBUTE_HEADER "gssapi/gssapi.h")
+else ()
+    set (GSS_GET_NAME_ATTRIBUTE_HEADER "gssapi/gssapi_ext.h")
+endif ()
+
+if (DEFINED CMAKE_TRY_COMPILE_TARGET_TYPE)
+    set (SAVED_CMAKE_TRY_COMPILE_TARGET_TYPE "${CMAKE_TRY_COMPILE_TARGET_TYPE}")
+endif ()
+set (CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
+check_c_source_compiles(
+    "
+    #include <${GSS_GET_NAME_ATTRIBUTE_HEADER}>
+    int main(void) { __typeof__(gss_get_name_attribute)* p = 0; (void)p; return 0; }
+    "
+    HAVE_GSS_GET_NAME_ATTRIBUTE)
+if (DEFINED SAVED_CMAKE_TRY_COMPILE_TARGET_TYPE)
+    set (CMAKE_TRY_COMPILE_TARGET_TYPE "${SAVED_CMAKE_TRY_COMPILE_TARGET_TYPE}")
+    unset (SAVED_CMAKE_TRY_COMPILE_TARGET_TYPE)
+else ()
+    unset (CMAKE_TRY_COMPILE_TARGET_TYPE)
 endif ()
 
 check_symbol_exists(getauxval sys/auxv.h HAVE_GETAUXVAL)

@@ -55,15 +55,14 @@ namespace System.Threading
             SafeWaitHandle myHandle;
             int errorCode;
             Thread.CurrentUserSecurityDescriptorInfo securityDescriptorInfo = default;
-            Interop.Kernel32.SECURITY_ATTRIBUTES securityAttributes = default;
+            Interop.Kernel32.SECURITY_ATTRIBUTES securityAttributes;
             if (!string.IsNullOrEmpty(name) && options.WasSpecified)
             {
                 name = options.GetNameWithSessionPrefix(name);
                 if (options.CurrentUserOnly)
                 {
                     securityDescriptorInfo = new(CurrentUserOnlyAceRights);
-                    securityAttributes.nLength = (uint)sizeof(Interop.Kernel32.SECURITY_ATTRIBUTES);
-                    securityAttributes.lpSecurityDescriptor = (void*)securityDescriptorInfo.SecurityDescriptor;
+                    securityAttributes = Interop.Kernel32.SECURITY_ATTRIBUTES.Create((void*)securityDescriptorInfo.SecurityDescriptor);
                     securityAttributesPtr = &securityAttributes;
                 }
             }

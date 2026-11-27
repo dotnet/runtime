@@ -12,6 +12,8 @@ namespace System.Reflection.Emit
         {
         }
 
+        public override Type? GetNullableUnderlyingType() => null;
+
         public const int UnspecifiedTypeSize = 0;
 
         public PackingSize PackingSize

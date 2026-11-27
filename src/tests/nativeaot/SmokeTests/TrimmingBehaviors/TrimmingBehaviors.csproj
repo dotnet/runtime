@@ -3,6 +3,7 @@
     <OutputType>Exe</OutputType>
     <CLRTestPriority>0</CLRTestPriority>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IlcExportUnmanagedEntrypoints>true</IlcExportUnmanagedEntrypoints>
     <NullabilityInfoContextSupport>false</NullabilityInfoContextSupport>
 
     <!-- We don't run the scanner in optimized builds -->
@@ -27,6 +28,7 @@
     <Compile Include="ILLinkDescriptor.cs" />
     <Compile Include="ILLinkLinkAttributes.cs" />
     <Compile Include="FeatureSwitches.cs" />
+    <Compile Include="UnmanagedCallersOnlyAssociatedSourceType.cs" />
     <Compile Include="Main.cs" />
   </ItemGroup>
 

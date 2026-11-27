@@ -2,7 +2,8 @@
 <asn:Sequence
   xmlns:asn="http://schemas.dot.net/asnxml/201808/"
   name="PBEParameter"
-  namespace="System.Security.Cryptography.Asn1">
+  namespace="System.Security.Cryptography.Asn1"
+  emitType="ref">
 
   <!--
     https://tools.ietf.org/html/rfc2898#appendix-A.3
@@ -11,7 +12,7 @@
         salt OCTET STRING (SIZE(8)),
         iterationCount INTEGER
     }
-    
+
     The version from PKCS#12 (pkcs-12PbeParams, https://tools.ietf.org/html/rfc7292#appendix-C)
     is the same, without limiting the size of the salt value.
   -->

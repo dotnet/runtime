@@ -1,5 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
+    <!-- This .il file has no .entrypoint and is only consumed as a
+         ProjectReference from the surrounding Methodical_*.csproj
+         aggregate runners (it provides the `implicit_promotion`
+         namespace used by implicit_promotion.cs). Mark it Library so
+         the standalone build flow doesn't try to treat it as Exe and
+         fail ilasm with "No entry point declared for executable". -->
+    <OutputType>Library</OutputType>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>PdbOnly</DebugType>
@@ -8,3 +15,5 @@
     <Compile Include="implicit_promotion_il.il" />
   </ItemGroup>
 </Project>
+
+

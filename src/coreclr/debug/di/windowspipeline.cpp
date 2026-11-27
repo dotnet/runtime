@@ -56,20 +56,6 @@ public:
 
     virtual BOOL DebugSetProcessKillOnExit(bool fKillOnExit);
 
-    // Create
-    virtual HRESULT CreateProcessUnderDebugger(
-        MachineInfo machineInfo,
-        LPCWSTR lpApplicationName,
-        LPCWSTR lpCommandLine,
-        LPSECURITY_ATTRIBUTES lpProcessAttributes,
-        LPSECURITY_ATTRIBUTES lpThreadAttributes,
-        BOOL bInheritHandles,
-        DWORD dwCreationFlags,
-        LPVOID lpEnvironment,
-        LPCWSTR lpCurrentDirectory,
-        LPSTARTUPINFOW lpStartupInfo,
-        LPPROCESS_INFORMATION lpProcessInformation);
-
     // Attach
     virtual HRESULT DebugActiveProcess(MachineInfo machineInfo, const ProcessDescriptor& processDescriptor);
 
@@ -85,7 +71,7 @@ public:
     );
 
     // Return a handle for the debuggee process.
-    virtual HANDLE GetProcessHandle();
+    virtual WaitHandle *GetProcessHandle();
 
     // Terminate the debuggee process.
     virtual BOOL TerminateProcess(UINT32 exitCode);
@@ -123,43 +109,6 @@ BOOL WindowsNativePipeline::DebugSetProcessKillOnExit(bool fKillOnExit)
     // has spawned a debuggee. So cache the value now and call it later.
     m_fKillOnExit = fKillOnExit;
     return TRUE;
-}
-
-// Create an process under the debugger.
-HRESULT WindowsNativePipeline::CreateProcessUnderDebugger(
-    MachineInfo machineInfo,
-    LPCWSTR lpApplicationName,
-    LPCWSTR lpCommandLine,
-    LPSECURITY_ATTRIBUTES lpProcessAttributes,
-    LPSECURITY_ATTRIBUTES lpThreadAttributes,
-    BOOL bInheritHandles,
-    DWORD dwCreationFlags,
-    LPVOID lpEnvironment,
-    LPCWSTR lpCurrentDirectory,
-    LPSTARTUPINFOW lpStartupInfo,
-    LPPROCESS_INFORMATION lpProcessInformation)
-{
-    // This is always doing Native-debugging at the OS-level.
-    dwCreationFlags |= (DEBUG_PROCESS | DEBUG_ONLY_THIS_PROCESS);
-
-    BOOL ret = ::WszCreateProcess(
-          lpApplicationName,
-          lpCommandLine,
-          lpProcessAttributes,
-          lpThreadAttributes,
-          bInheritHandles,
-          dwCreationFlags,
-          lpEnvironment,
-          lpCurrentDirectory,
-          lpStartupInfo,
-          lpProcessInformation);
-    if (!ret)
-    {
-        return HRESULT_FROM_GetLastError();
-    }
-
-    m_dwProcessId = lpProcessInformation->dwProcessId;
-    return S_OK;
 }
 
 // Attach the debugger to this process.
@@ -207,19 +156,48 @@ BOOL WindowsNativePipeline::ContinueDebugEvent(
 }
 
 // Return a handle for the debuggee process.
-HANDLE WindowsNativePipeline::GetProcessHandle()
+WaitHandle *WindowsNativePipeline::GetProcessHandle()
 {
     _ASSERTE(m_dwProcessId != 0);
 
-    return ::OpenProcess(PROCESS_DUP_HANDLE        |
-                         PROCESS_QUERY_INFORMATION |
-                         PROCESS_TERMINATE         |
-                         PROCESS_VM_OPERATION      |
-                         PROCESS_VM_READ           |
-                         PROCESS_VM_WRITE          |
-                         SYNCHRONIZE,
-                         FALSE,
-                         m_dwProcessId);
+    HANDLE processHandle = ::OpenProcess(PROCESS_DUP_HANDLE        |
+                                         PROCESS_QUERY_INFORMATION |
+                                         PROCESS_TERMINATE         |
+                                         PROCESS_VM_OPERATION      |
+                                         PROCESS_VM_READ           |
+                                         PROCESS_VM_WRITE          |
+                                         SYNCHRONIZE,
+                                         FALSE,
+                                         m_dwProcessId);
+    if (processHandle == NULL)
+    {
+        return nullptr;
+    }
+
+    NativeHandle nativeHandle(processHandle);
+    DWORD error = GetLastError();
+    CloseHandle(processHandle);
+
+    if (!nativeHandle.IsValid())
+    {
+        SetLastError(error);
+        return nullptr;
+    }
+
+    WaitHandle *waitHandle = new (nothrow) WaitHandle(nativeHandle);
+    DWORD duplicateError = GetLastError();
+    if (waitHandle == nullptr)
+    {
+        SetLastError(ERROR_NOT_ENOUGH_MEMORY);
+    }
+    else if (!waitHandle->IsValid())
+    {
+        delete waitHandle;
+        waitHandle = nullptr;
+        SetLastError(duplicateError);
+    }
+
+    return waitHandle;
 }
 
 // Terminate the debuggee process.
@@ -228,7 +206,7 @@ BOOL WindowsNativePipeline::TerminateProcess(UINT32 exitCode)
     _ASSERTE(m_dwProcessId != 0);
 
     // Get a process handle for the process ID.
-    HandleHolder hProc = OpenProcess(PROCESS_TERMINATE, FALSE, m_dwProcessId);
+    HandleHolder hProc{ OpenProcess(PROCESS_TERMINATE, FALSE, m_dwProcessId) };
 
     if (hProc == NULL)
     {

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
@@ -19,8 +20,8 @@ namespace System.Diagnostics
         internal byte[] dataBuf;
         internal int bufOffset;
         private readonly EventLogInternal owner;
-        private string category;
-        private string message;
+        private string? category;
+        private string? message;
 
         internal EventLogEntry(byte[] buf, int offset, EventLogInternal log)
         {
@@ -91,8 +92,8 @@ namespace System.Diagnostics
             {
                 if (category == null)
                 {
-                    string dllName = GetMessageLibraryNames("CategoryMessageFile");
-                    string cat = owner.FormatMessageWrapper(dllName, (uint)CategoryNumber, null);
+                    string? dllName = GetMessageLibraryNames("CategoryMessageFile");
+                    string? cat = owner.FormatMessageWrapper(dllName, (uint)CategoryNumber, null);
                     if (cat == null)
                         category = "(" + CategoryNumber.ToString(CultureInfo.CurrentCulture) + ")";
                     else
@@ -148,9 +149,9 @@ namespace System.Diagnostics
             {
                 if (message == null)
                 {
-                    string dllNames = GetMessageLibraryNames("EventMessageFile");
+                    string? dllNames = GetMessageLibraryNames("EventMessageFile");
                     int msgId = IntFrom(dataBuf, bufOffset + FieldOffsets.EVENTID);
-                    string msg = owner.FormatMessageWrapper(dllNames, (uint)msgId, ReplacementStrings);
+                    string? msg = owner.FormatMessageWrapper(dllNames, (uint)msgId, ReplacementStrings);
                     if (msg == null)
                     {
                         StringBuilder msgBuf = new StringBuilder(SR.Format(SR.MessageNotFormatted, msgId, Source));
@@ -246,7 +247,7 @@ namespace System.Diagnostics
         {
             get
             {
-                return beginningOfTime.AddSeconds(IntFrom(dataBuf, bufOffset + FieldOffsets.TIMEGENERATED)).ToLocalTime();
+                return DateTime.UnixEpoch.AddSeconds(IntFrom(dataBuf, bufOffset + FieldOffsets.TIMEGENERATED)).ToLocalTime();
             }
         }
 
@@ -257,14 +258,14 @@ namespace System.Diagnostics
         {
             get
             {
-                return beginningOfTime.AddSeconds(IntFrom(dataBuf, bufOffset + FieldOffsets.TIMEWRITTEN)).ToLocalTime();
+                return DateTime.UnixEpoch.AddSeconds(IntFrom(dataBuf, bufOffset + FieldOffsets.TIMEWRITTEN)).ToLocalTime();
             }
         }
 
         /// <summary>
         /// The username of the account associated with this entry by the writing application.
         /// </summary>
-        public string UserName
+        public string? UserName
         {
             get
             {
@@ -298,26 +299,13 @@ namespace System.Diagnostics
             return (char)ShortFrom(buf, offset);
         }
 
-        public bool Equals(EventLogEntry otherEntry)
+        public bool Equals([NotNullWhen(true)] EventLogEntry? otherEntry)
         {
             if (otherEntry == null)
                 return false;
             int ourLen = IntFrom(dataBuf, bufOffset + FieldOffsets.LENGTH);
             int theirLen = IntFrom(otherEntry.dataBuf, otherEntry.bufOffset + FieldOffsets.LENGTH);
-            if (ourLen != theirLen)
-            {
-                return false;
-            }
-            int min = bufOffset;
-            int max = bufOffset + ourLen;
-            int j = otherEntry.bufOffset;
-            for (int i = min; i < max; i++, j++)
-                if (dataBuf[i] != otherEntry.dataBuf[j])
-                {
-                    return false;
-                }
-
-            return true;
+            return dataBuf.AsSpan(bufOffset, ourLen).SequenceEqual(otherEntry.dataBuf.AsSpan(otherEntry.bufOffset, theirLen));
         }
 
         private static int IntFrom(byte[] buf, int offset)
@@ -336,11 +324,11 @@ namespace System.Diagnostics
             int startCopyIdx = 0;
             int msgLength = msg.Length;
             StringBuilder buf = new StringBuilder();
-            string paramDLLNames = GetMessageLibraryNames("ParameterMessageFile");
+            string? paramDLLNames = GetMessageLibraryNames("ParameterMessageFile");
 
             while (percentIdx >= 0)
             {
-                string param = null;
+                string? param = null;
                 int lasNumIdx = percentIdx + 1;
                 while (lasNumIdx < msgLength && char.IsDigit(msg, lasNumIdx))
                     lasNumIdx++;
@@ -369,10 +357,10 @@ namespace System.Diagnostics
             return buf.ToString();
         }
 
-        private static RegistryKey GetSourceRegKey(string logName, string source, string machineName)
+        private static RegistryKey? GetSourceRegKey(string logName, string source, string machineName)
         {
-            RegistryKey eventKey = null;
-            RegistryKey logKey = null;
+            RegistryKey? eventKey = null;
+            RegistryKey? logKey = null;
 
             try
             {
@@ -387,17 +375,17 @@ namespace System.Diagnostics
             }
         }
 
-        private string GetMessageLibraryNames(string libRegKey)
+        private string? GetMessageLibraryNames(string libRegKey)
         {
             // get the value stored in the registry
-            string fileName = null;
-            RegistryKey regKey = null;
+            string? fileName = null;
+            RegistryKey? regKey = null;
             try
             {
                 regKey = GetSourceRegKey(owner.Log, Source, owner.MachineName);
                 if (regKey != null)
                 {
-                    fileName = (string)regKey.GetValue(libRegKey);
+                    fileName = (string?)regKey.GetValue(libRegKey);
                 }
             }
             finally
@@ -474,7 +462,5 @@ namespace System.Diagnostics
             internal const int DATAOFFSET = 52;
             internal const int RAWDATA = 56;
         }
-
-        private static readonly DateTime beginningOfTime = new DateTime(1970, 1, 1, 0, 0, 0);
     }
 }

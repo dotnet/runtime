@@ -93,7 +93,7 @@ mono_array_new_specific_internal (MonoVTable *vtable, uintptr_t n, gboolean pinn
 static GENERATE_GET_CLASS_WITH_CACHE (pointer, "System.Reflection", "Pointer")
 static GENERATE_GET_CLASS_WITH_CACHE (unhandled_exception_event_args, "System", "UnhandledExceptionEventArgs")
 static GENERATE_GET_CLASS_WITH_CACHE (first_chance_exception_event_args, "System.Runtime.ExceptionServices", "FirstChanceExceptionEventArgs")
-static GENERATE_GET_CLASS_WITH_CACHE (sta_thread_attribute, "System", "STAThreadAttribute")
+static GENERATE_TRY_GET_CLASS_WITH_CACHE (sta_thread_attribute, "System", "STAThreadAttribute")
 static GENERATE_GET_CLASS_WITH_CACHE (activation_services, "System.Runtime.Remoting.Activation", "ActivationServices")
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (execution_context, "System.Threading", "ExecutionContext")
 
@@ -862,6 +862,11 @@ compute_class_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset, int
 		max_size = mono_class_data_size (klass) / wordsize;
 	else
 		max_size = m_class_get_instance_size (klass) / wordsize;
+	// `bitmap` can hold all necessary per ref bits even if `max_size > size`, in the scenario where we are passed
+	// a negative `offset`. Avoid reallocation of bitmap in those cases, since recursive calls from below expect
+	// only initialization of the provided `bitmap`.
+	max_size += offset;
+	g_assert (max_size >= 0);
 	if (max_size > size) {
 		g_assert (offset <= 0);
 		bitmap = (gsize *)g_malloc0 ((max_size + BITMAP_EL_SIZE - 1) / BITMAP_EL_SIZE * sizeof (gsize));
@@ -1586,6 +1591,8 @@ build_imt_slots (MonoClass *klass, MonoVTable *vt, gpointer* imt, int slot_num)
 				 * add_imt_builder_entry anyway.
 				 */
 				method = mono_class_get_method_by_index (mono_class_get_generic_class (iface)->container_class, method_slot_in_interface);
+				if (mono_method_get_is_reabstracted (method))
+					continue;
 				if (m_method_is_static (method)) {
 					if (m_method_is_virtual (method))
 						vt_slot ++;
@@ -1597,6 +1604,8 @@ build_imt_slots (MonoClass *klass, MonoVTable *vt, gpointer* imt, int slot_num)
 				}
 			}
 			method = mono_class_get_method_by_index (iface, method_slot_in_interface);
+			if (mono_method_get_is_reabstracted (method))
+				continue;
 			if (method->is_generic) {
 				if (m_method_is_virtual (method)) {
 					has_generic_virtual = TRUE;
@@ -4533,7 +4542,7 @@ mono_first_chance_exception_checked (MonoObjectHandle exc, MonoError *error)
 
 		static gboolean inited;
 		if (!inited) {
-			field = mono_class_get_field_from_name_full (mono_defaults.appcontext_class, "FirstChanceException", NULL);
+			field = mono_class_get_field_from_name_full (mono_defaults.appcontext_class, "s_firstChanceException", NULL);
 			inited = TRUE;
 		}
 
@@ -4591,7 +4600,7 @@ mono_unhandled_exception_checked (MonoObjectHandle exc, MonoError *error)
 
 		static gboolean inited;
 		if (!inited) {
-			field = mono_class_get_field_from_name_full (mono_defaults.appcontext_class, "UnhandledException", NULL);
+			field = mono_class_get_field_from_name_full (mono_defaults.appcontext_class, "s_unhandledException", NULL);
 			inited = TRUE;
 		}
 
@@ -4664,6 +4673,7 @@ prepare_thread_to_exec_main (MonoMethod *method)
 	MONO_REQ_GC_UNSAFE_MODE;
 	MonoInternalThread* thread = mono_thread_internal_current ();
 	MonoCustomAttrInfo* cinfo;
+	MonoClass *sta_thread_attribute_class = mono_class_try_get_sta_thread_attribute_class ();
 	gboolean has_stathread_attribute;
 
 	if (!mono_runtime_get_entry_assembly ())
@@ -4673,7 +4683,7 @@ prepare_thread_to_exec_main (MonoMethod *method)
 	cinfo = mono_custom_attrs_from_method_checked (method, cattr_error);
 	mono_error_cleanup (cattr_error); /* FIXME warn here? */
 	if (cinfo) {
-		has_stathread_attribute = mono_custom_attrs_has_attr (cinfo, mono_class_get_sta_thread_attribute_class ());
+		has_stathread_attribute = sta_thread_attribute_class && mono_custom_attrs_has_attr (cinfo, sta_thread_attribute_class);
 		if (!cinfo->cached)
 			mono_custom_attrs_free (cinfo);
 	} else {

@@ -6,6 +6,7 @@
 //*****************************************************************************
 
 #include "stdafx.h"                     // Standard header.
+#include <minipal/debugger.h>
 #include <utilcode.h>                   // Utility helpers.
 #include <corerror.h>
 #include <clrversion.h>
@@ -47,8 +48,6 @@ static int MessageBoxImpl(
 {
     CONTRACTL
     {
-        INJECT_FAULT(return IDCANCEL;);
-
         // Assert if none of MB_ICON is set
         PRECONDITION((uType & MB_ICONMASK) != 0);
     }
@@ -100,7 +99,6 @@ static int UtilMessageBoxNonLocalized(
     CONTRACTL
     {
         NOTHROW;
-        INJECT_FAULT(return IDCANCEL;);
 
         // Assert if none of MB_ICON is set
         PRECONDITION((uType & MB_ICONMASK) != 0);
@@ -126,9 +124,6 @@ static int UtilMessageBoxNonLocalized(
             1024,                   // event identifier
             NULL,                   // no user security identifier
             message.GetUnicode());
-
-        OutputDebugString(lpTitle);
-        OutputDebugString(lpText);
 #endif // HOST_UNIX
 #endif //!defined(FEATURE_UTILCODE_NO_DEPENDENCIES)
 
@@ -152,7 +147,6 @@ int NotifyUserOfFaultMessageBox(
     CONTRACTL
     {
         NOTHROW;
-        INJECT_FAULT(return IDCANCEL;);
     }
     CONTRACTL_END;
 

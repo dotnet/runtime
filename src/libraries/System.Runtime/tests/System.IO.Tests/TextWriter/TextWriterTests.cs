@@ -4,6 +4,7 @@
 using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
@@ -18,6 +19,55 @@ namespace System.IO.Tests
     public class TextWriterTests
     {
         protected static CharArrayTextWriter NewTextWriter => new CharArrayTextWriter() { NewLine = "---" };
+
+        public static IEnumerable<object[]> NumericWriteData()
+        {
+            object[] values = [int.MinValue, uint.MaxValue, long.MinValue, ulong.MaxValue, -1234.5f, -1234.5d, -1234.50m];
+
+            foreach (object value in values)
+            {
+                yield return [value, false];
+                yield return [value, true];
+            }
+        }
+
+        internal static void WriteNumber(TextWriter writer, object value, bool appendNewLine)
+        {
+            if (appendNewLine)
+            {
+                switch (value)
+                {
+                    case int number: writer.WriteLine(number); break;
+                    case uint number: writer.WriteLine(number); break;
+                    case long number: writer.WriteLine(number); break;
+                    case ulong number: writer.WriteLine(number); break;
+                    case float number: writer.WriteLine(number); break;
+                    case double number: writer.WriteLine(number); break;
+                    case decimal number: writer.WriteLine(number); break;
+                    default: throw new UnreachableException();
+                }
+            }
+            else
+            {
+                switch (value)
+                {
+                    case int number: writer.Write(number); break;
+                    case uint number: writer.Write(number); break;
+                    case long number: writer.Write(number); break;
+                    case ulong number: writer.Write(number); break;
+                    case float number: writer.Write(number); break;
+                    case double number: writer.Write(number); break;
+                    case decimal number: writer.Write(number); break;
+                    default: throw new UnreachableException();
+                }
+            }
+        }
+
+        internal static NumberFormatInfo CreateNumericFormat(int symbolLength) => new NumberFormatInfo
+        {
+            NegativeSign = new string('~', symbolLength),
+            NumberDecimalSeparator = new string(':', symbolLength)
+        };
 
         #region Write Overloads
 
@@ -1049,6 +1099,7 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
+        [UnconditionalSuppressMessage("Trimming", "IL2075", Justification = "Test is skipped under trimming via IsNotBuiltWithAggressiveTrimming.")]
         public void CreateBroadcasting_AllMethodsOverridden()
         {
             HashSet<string> exempted = ["Close", "Dispose", "get_NewLine", "set_NewLine"];

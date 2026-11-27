@@ -27,7 +27,7 @@ namespace System.Diagnostics
 
         private static long s_lastInstanceLifetimeSweepTick;
         private const long InstanceLifetimeSweepWindow = 30 * 10000000; //ticks
-        private static volatile ProcessData s_procData;
+        private static ProcessData s_procData;
 
         private static ProcessData ProcessData
         {
@@ -1690,9 +1690,7 @@ namespace System.Diagnostics
                         throw new InvalidOperationException(SR.SetSecurityDescriptorFailed);
                     }
 
-                    Interop.Kernel32.SECURITY_ATTRIBUTES securityAttributes = default;
-                    securityAttributes.lpSecurityDescriptor = pSecurityDescriptor;
-                    securityAttributes.bInheritHandle = Interop.BOOL.FALSE;
+                    Interop.Kernel32.SECURITY_ATTRIBUTES securityAttributes = Interop.Kernel32.SECURITY_ATTRIBUTES.Create(pSecurityDescriptor);
 
                     //
                     //

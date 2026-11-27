@@ -8,7 +8,6 @@
 // Common include file for utility code.
 //*****************************************************************************
 
-#define _CRT_DEPENDENCY_  //this code depends on the crt file functions
 #include <crtwrap.h>
 #include <string.h>
 #include <limits.h>

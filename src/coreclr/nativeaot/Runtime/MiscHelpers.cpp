@@ -28,7 +28,6 @@
 #include "TypeManager.h"
 #include "MethodTable.h"
 #include "ObjectLayout.h"
-#include "slist.inl"
 #include "MethodTable.inl"
 #include "CommonMacros.inl"
 #include "volatile.h"
@@ -43,29 +42,6 @@ FCIMPL0(void, RhDebugBreak)
     PalDebugBreak();
 }
 FCIMPLEND
-
-// Busy spin for the given number of iterations.
-EXTERN_C void QCALLTYPE RhSpinWait(int32_t iterations)
-{
-    ASSERT(iterations > 0);
-
-    // limit the spin count in coop mode.
-    ASSERT_MSG(iterations <= 1024 || !ThreadStore::GetCurrentThread()->IsCurrentThreadInCooperativeMode(),
-        "This is too long wait for coop mode. You must p/invoke with GC transition.");
-
-    YieldProcessorNormalizationInfo normalizationInfo;
-    YieldProcessorNormalized(normalizationInfo, iterations);
-}
-
-// Yield the cpu to another thread ready to process, if one is available.
-EXTERN_C UInt32_BOOL QCALLTYPE RhYield()
-{
-    // This must be called via p/invoke -- it's a wait operation and we don't want to block thread suspension on this.
-    ASSERT_MSG(!ThreadStore::GetCurrentThread()->IsCurrentThreadInCooperativeMode(),
-        "You must p/invoke to RhYield");
-
-    return PalSwitchToThread();
-}
 
 // Get the list of currently loaded NativeAOT modules (as OS HMODULE handles). The caller provides a reference
 // to an array of pointer-sized elements and we return the total number of modules currently loaded (whether
@@ -187,6 +163,18 @@ inline int32_t GetThumb2BlRel24(uint16_t * p)
     return (ret << 7) >> 7;
 }
 #endif // TARGET_ARM
+
+#if TARGET_ARM64
+//*****************************************************************************
+//  Extract the page address from an adrp instruction
+//*****************************************************************************
+static FORCEINLINE uint8_t * GetArm64AdrpPage(uint32_t * p)
+{
+    // imm = SignExtend(immhi:immlo:Zeros(12), 64), relative to (PC & ~0xfff)
+    int64_t distToPage = (((((int64_t)p[0] & ~0x1f) << 40) >> 31) | ((p[0] >> 17) & 0x3000));
+    return (uint8_t *)(((int64_t)p & ~0xfff) + distToPage);
+}
+#endif // TARGET_ARM64
 
 // Given a pointer to code, find out if this points to an import stub
 // or unboxing stub, and if so, return the address that stub jumps to
@@ -310,12 +298,9 @@ FCIMPL1(uint8_t *, RhGetCodeTarget, uint8_t * pCodeOrg)
         (pCode[1] & 0xffc003ff) == 0xf9400210 &&
         pCode[2] == 0xd61f0200)
     {
-        // normal import stub - dist to IAT cell is relative to (PC & ~0xfff)
-        // adrp: imm = SignExtend(immhi:immlo:Zeros(12), 64);
-        int64_t distToIatCell = (((((int64_t)pCode[0] & ~0x1f) << 40) >> 31) | ((pCode[0] >> 17) & 0x3000));
+        // normal import stub
         // ldr: offset = LSL(ZeroExtend(imm12, 64), 3);
-        distToIatCell += (pCode[1] >> 7) & 0x7ff8;
-        uint8_t ** pIatCell = (uint8_t **)(((int64_t)pCode & ~0xfff) + distToIatCell);
+        uint8_t ** pIatCell = (uint8_t **)(GetArm64AdrpPage(pCode) + ((pCode[1] >> 7) & 0x7ff8));
         return *pIatCell;
     }
     // is this an unboxing stub followed by a relative jump?
@@ -324,7 +309,36 @@ FCIMPL1(uint8_t *, RhGetCodeTarget, uint8_t * pCodeOrg)
         // relative jump - dist is relative to the instruction
         // offset = SignExtend(imm26:'00', 64);
         int64_t distToTarget = ((int64_t)pCode[0] << 38) >> 36;
-        return (uint8_t *)pCode + distToTarget;
+        uint32_t * pTarget = (uint32_t *)((uint8_t *)pCode + distToTarget);
+
+        // is the jump to a range extension thunk the linker placed for a target out of branch range?
+        uint8_t * pThunkTarget = NULL;
+        // adrp xip0,#imm21; add xip0,xip0,#imm12; br xip0
+        if ((pTarget[0] & 0x9f00001f) == 0x90000010 &&
+            (pTarget[1] & 0xffc003ff) == 0x91000210 &&
+            pTarget[2] == 0xd61f0200)
+        {
+            // add: imm = ZeroExtend(imm12, 64);
+            pThunkTarget = GetArm64AdrpPage(pTarget) + ((pTarget[1] >> 10) & 0xfff);
+        }
+        // lld, when the image is not position independent: ldr xip0,#8; br xip0; .xword target
+        else if (pTarget[0] == 0x58000050 && pTarget[1] == 0xd61f0200)
+        {
+            pThunkTarget = *(uint8_t **)(pTarget + 2);
+        }
+        // lld, when the thunk itself is in branch range of the target: b target
+        else if ((pTarget[0] >> 26) == 0x5)
+        {
+            pThunkTarget = (uint8_t *)pTarget + (((int64_t)pTarget[0] << 38) >> 36);
+        }
+
+        // A method can start with the same instructions; a thunk is not part of any method.
+        if (pThunkTarget != NULL && GetRuntimeInstance()->FindMethodStartAddress(pTarget) == NULL)
+        {
+            return pThunkTarget;
+        }
+
+        return (uint8_t *)pTarget;
     }
 
 #elif TARGET_LOONGARCH64

@@ -17,7 +17,7 @@ namespace System.Reflection
         /// </summary>
         public static bool MatchesParameterTypeExactly(this Type pattern, ParameterInfo parameter)
         {
-            if (pattern.IsSignatureType())
+            if (pattern.IsSignatureType)
                 return pattern.MatchesExactly(parameter.ParameterType);
             else
                 return pattern == (object)(parameter.ParameterType);
@@ -32,15 +32,15 @@ namespace System.Reflection
         /// </summary>
         internal static bool MatchesExactly(this Type pattern, Type actual)
         {
-            Debug.Assert(pattern.IsSignatureType());
+            Debug.Assert(pattern.IsSignatureType);
 
-            if (pattern.IsSZArray())
+            if (pattern.IsSZArray)
             {
-                return actual.IsSZArray() && pattern.GetElementType()!.MatchesExactly(actual.GetElementType()!);
+                return actual.IsSZArray && pattern.GetElementType()!.MatchesExactly(actual.GetElementType()!);
             }
-            else if (pattern.IsVariableBoundArray())
+            else if (pattern.IsVariableBoundArray)
             {
-                return actual.IsVariableBoundArray() && pattern.GetArrayRank() == actual.GetArrayRank() && pattern.GetElementType()!.MatchesExactly(actual.GetElementType()!);
+                return actual.IsVariableBoundArray && pattern.GetArrayRank() == actual.GetArrayRank() && pattern.GetElementType()!.MatchesExactly(actual.GetElementType()!);
             }
             else if (pattern.IsByRef)
             {
@@ -64,7 +64,7 @@ namespace System.Reflection
                 for (int i = 0; i < count; i++)
                 {
                     Type patternGenericTypeArgument = patternGenericTypeArguments[i];
-                    if (patternGenericTypeArgument.IsSignatureType())
+                    if (patternGenericTypeArgument.IsSignatureType)
                     {
                         if (!patternGenericTypeArgument.MatchesExactly(actualGenericTypeArguments[i]))
                             return false;
@@ -77,9 +77,9 @@ namespace System.Reflection
                 }
                 return true;
             }
-            else if (pattern.IsGenericMethodParameter())
+            else if (pattern.IsGenericMethodParameter)
             {
-                if (!actual.IsGenericMethodParameter())
+                if (!actual.IsGenericMethodParameter)
                     return false;
                 if (pattern.GenericParameterPosition != actual.GenericParameterPosition)
                     return false;
@@ -104,19 +104,19 @@ namespace System.Reflection
         /// </summary>
         internal static Type? TryResolveAgainstGenericMethod(this Type signatureType, MethodInfo genericMethod)
         {
-            Debug.Assert(signatureType.IsSignatureType());
+            Debug.Assert(signatureType.IsSignatureType);
             return signatureType.TryResolve(genericMethod.GetGenericArguments());
         }
 
         private static Type? TryResolve(this Type signatureType, Type[] genericMethodParameters)
         {
-            Debug.Assert(signatureType.IsSignatureType());
+            Debug.Assert(signatureType.IsSignatureType);
 
-            if (signatureType.IsSZArray())
+            if (signatureType.IsSZArray)
             {
                 return signatureType.GetElementType()!.TryResolve(genericMethodParameters)?.TryMakeArrayType();
             }
-            else if (signatureType.IsVariableBoundArray())
+            else if (signatureType.IsVariableBoundArray)
             {
                 return signatureType.GetElementType()!.TryResolve(genericMethodParameters)?.TryMakeArrayType(signatureType.GetArrayRank());
             }
@@ -136,7 +136,7 @@ namespace System.Reflection
                 for (int i = 0; i < count; i++)
                 {
                     Type genericTypeArgument = genericTypeArguments[i];
-                    if (genericTypeArgument.IsSignatureType())
+                    if (genericTypeArgument.IsSignatureType)
                     {
                         newGenericTypeArguments[i] = genericTypeArgument.TryResolve(genericMethodParameters);
                         if (newGenericTypeArguments[i] == null)
@@ -149,7 +149,7 @@ namespace System.Reflection
                 }
                 return signatureType.GetGenericTypeDefinition().TryMakeGenericType(newGenericTypeArguments!);
             }
-            else if (signatureType.IsGenericMethodParameter())
+            else if (signatureType.IsGenericMethodParameter)
             {
                 int position = signatureType.GenericParameterPosition;
                 if (position >= genericMethodParameters.Length)

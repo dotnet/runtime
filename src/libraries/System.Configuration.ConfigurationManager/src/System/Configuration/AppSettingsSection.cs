@@ -9,9 +9,9 @@ namespace System.Configuration
 {
     public sealed class AppSettingsSection : ConfigurationSection
     {
-        private static volatile ConfigurationPropertyCollection s_properties;
-        private static volatile ConfigurationProperty s_propAppSettings;
-        private static volatile ConfigurationProperty s_propFile;
+        private static ConfigurationPropertyCollection s_properties;
+        private static ConfigurationProperty s_propAppSettings;
+        private static ConfigurationProperty s_propFile;
 
         private KeyValueInternalCollection _keyValueCollection;
 

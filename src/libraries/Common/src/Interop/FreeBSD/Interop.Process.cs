@@ -6,27 +6,19 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.Marshalling;
+using System.Text;
 
 #pragma warning disable CA1823 // analyzer incorrectly flags fixed buffer length const (https://github.com/dotnet/roslyn/issues/37593)
 
 internal static partial class Interop
 {
-    internal static partial class Process
+    internal static partial class FreeBSDProcess
     {
         private const ulong SecondsToNanoseconds = 1000000000;
         private const ulong MicroSecondsToNanoSeconds = 1000;
 
         // Constants from sys/sysctl.h
         private const int KERN_PROC_PATHNAME = 12;
-
-        internal struct proc_stats
-        {
-            internal long startTime;        /* time_t */
-            internal int nice;
-            internal ulong userTime;        /* in ticks */
-            internal ulong systemTime;      /* in ticks */
-        }
 
         /// <summary>
         /// Queries the OS for the list of all running processes and returns the PID for each
@@ -93,6 +85,26 @@ internal static partial class Interop
             }
         }
 
+        /// <summary>Gets the parent process ID of a given process</summary>
+        /// <param name="pid">The PID (process ID) of the process</param>
+        public static unsafe int GetParentPid(int pid)
+        {
+            kinfo_proc* processInfo = GetProcInfo(pid, false, out int count);
+            try
+            {
+                if (count <= 0)
+                {
+                    throw new Win32Exception(SR.ProcessInformationUnavailable);
+                }
+
+                return processInfo->ki_ppid;
+            }
+            finally
+            {
+                NativeMemory.Free(processInfo);
+            }
+        }
+
         /// <summary>
         /// Gets the process information for a given process
         /// </summary>
@@ -108,9 +120,11 @@ internal static partial class Interop
 
             ProcessInfo info;
 
-            kinfo_proc* kinfo = GetProcInfo(pid, true, out int count);
+            kinfo_proc* kinfo = null;
             try
             {
+                kinfo = GetProcInfo(pid, true, out int count);
+
                 ArgumentOutOfRangeException.ThrowIfLessThan(count, 1, nameof(pid));
 
                 var process = new ReadOnlySpan<kinfo_proc>(kinfo, count);
@@ -118,7 +132,9 @@ internal static partial class Interop
                 // Get the process information for the specified pid
                 info = new ProcessInfo();
 
-                info.ProcessName = Utf8StringMarshaller.ConvertToManaged(kinfo->ki_comm)!;
+                ReadOnlySpan<byte> comm = kinfo->ki_comm;
+                int nul = comm.IndexOf((byte)0);
+                info.ProcessName = Encoding.UTF8.GetString(nul >= 0 ? comm[..nul] : comm);
                 info.BasePriority = kinfo->ki_nice;
                 info.VirtualBytes = (long)kinfo->ki_size;
                 info.WorkingSet = kinfo->ki_rssize;
@@ -153,9 +169,9 @@ internal static partial class Interop
         /// Returns basic info about thread. If tis is 0, it will return
         /// info for process e.g. main thread.
         /// </returns>
-        public static unsafe proc_stats GetThreadInfo(int pid, int tid)
+        public static unsafe Process.proc_stats GetThreadInfo(int pid, int tid)
         {
-            proc_stats ret = default;
+            Process.proc_stats ret = default;
             int count;
 
             kinfo_proc* info = GetProcInfo(pid, (tid != 0), out count);

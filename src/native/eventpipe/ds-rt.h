@@ -28,26 +28,6 @@
 extern const ep_char8_t *_ds_portable_rid_info;
 
 /*
-* AutoTrace.
-*/
-
-static
-void
-ds_rt_auto_trace_init (void);
-
-static
-void
-ds_rt_auto_trace_launch (void);
-
-static
-void
-ds_rt_auto_trace_signal (void);
-
-static
-void
-ds_rt_auto_trace_wait (void);
-
-/*
  * DiagnosticsConfiguration.
  */
 
@@ -70,20 +50,6 @@ ds_rt_config_value_get_default_port_suspend (void);
 static
 ds_ipc_result_t
 ds_rt_generate_core_dump (DiagnosticsDumpCommandId commandId, DiagnosticsGenerateCoreDumpCommandPayload *payload, ep_char8_t *errorMessageBuffer, int32_t cbErrorMessageBuffer);
-
-/*
- * DiagnosticsIpc.
- */
-
-static
-bool
-ds_rt_transport_get_default_name (
-	ep_char8_t *name,
-	int32_t name_len,
-	const ep_char8_t *prefix,
-	int32_t id,
-	const ep_char8_t *group_id,
-	const ep_char8_t *suffix);
 
 /*
 * DiagnosticsProfiler.

@@ -1,0 +1,79 @@
+# Contract AuxiliarySymbols
+
+This contract provides name resolution for helper functions. It may include other functions in the future but at minimum it has functions:
+* whose executing code resides at dynamically-determined addresses or
+* that are native helpers used to implement new.
+
+## APIs of contract
+
+``` csharp
+// Enumerates all known auxiliary symbols and their code addresses.
+IEnumerable<(TargetCodePointer Address, string Name)> EnumerateAuxiliarySymbols();
+
+// Attempts to resolve a code address to a helper function name.
+// Returns true if the address matches a known helper, with the name in symbolName.
+// Returns false if the address does not match any known helper.
+bool TryGetAuxiliarySymbolName(TargetPointer ip, out string symbolName);
+```
+
+## Version 1
+
+<!-- BEGIN GENERATED: usage contract=AuxiliarySymbols version=c1 -->
+### Data descriptors used
+
+| Data Descriptor | Field | Type | Meaning |
+| --- | --- | --- | --- |
+| `AuxiliarySymbolInfo` | *(type size)* | `uint32` | Size in bytes of each entry in the auxiliary symbol array |
+| `AuxiliarySymbolInfo` | `Address` | `CodePointer` | Code pointer to the helper function |
+| `AuxiliarySymbolInfo` | `Name` | `pointer` | Pointer to a null-terminated char string with the helper name |
+
+### Global variables used
+
+| Global | Type | Meaning |
+| --- | --- | --- |
+| `AuxiliarySymbolCount` | `pointer` | Pointer to the count of populated entries in the array |
+| `AuxiliarySymbols` | `pointer` | Pointer to an array of AuxiliarySymbolInfo entries |
+
+### Contracts used
+
+| Contract Name |
+| --- |
+| `PlatformMetadata` |
+<!-- END GENERATED: usage contract=AuxiliarySymbols version=c1 -->
+
+
+``` csharp
+IEnumerable<(TargetCodePointer Address, string Name)> EnumerateAuxiliarySymbols()
+{
+    TargetPointer helperArray = target.ReadGlobalPointer("AuxiliarySymbols");
+    uint count = target.Read<uint>(target.ReadGlobalPointer("AuxiliarySymbolCount"));
+    uint entrySize = /* AuxiliarySymbolInfo size */;
+
+    for (uint i = 0; i < count; i++)
+    {
+        TargetPointer entryAddr = helperArray + (i * entrySize);
+        TargetCodePointer address = target.ReadCodePointer(entryAddr + /* AuxiliarySymbolInfo::Address offset */);
+        TargetPointer namePointer = target.ReadPointer(entryAddr + /* AuxiliarySymbolInfo::Name offset */);
+
+        if (namePointer != TargetPointer.Null)
+            yield return (address, target.ReadUtf8String(namePointer));
+    }
+}
+
+bool TryGetAuxiliarySymbolName(TargetPointer ip, out string? symbolName)
+{
+    symbolName = null;
+    TargetCodePointer codePointer = CodePointerFromAddress(ip);
+
+    foreach ((TargetCodePointer address, string name) in EnumerateAuxiliarySymbols())
+    {
+        if (address == codePointer)
+        {
+            symbolName = name;
+            return true;
+        }
+    }
+
+    return false;
+}
+```

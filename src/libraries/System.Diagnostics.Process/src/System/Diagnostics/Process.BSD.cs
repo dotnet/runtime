@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.Versioning;
 
@@ -10,52 +9,9 @@ namespace System.Diagnostics
     public partial class Process
     {
         /// <summary>
-        /// Creates an array of <see cref="Process"/> components that are associated with process resources on a
-        /// remote computer. These process resources share the specified process name.
-        /// </summary>
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        [SupportedOSPlatform("maccatalyst")]
-        public static Process[] GetProcessesByName(string? processName, string machineName)
-        {
-            ProcessManager.ThrowIfRemoteMachine(machineName);
-
-            int[] procIds = ProcessManager.GetProcessIds();
-            var processes = new ArrayBuilder<Process>(string.IsNullOrEmpty(processName) ? procIds.Length : 0);
-
-            // Iterate through all process IDs to load information about each process
-            foreach (int pid in procIds)
-            {
-                ProcessInfo? processInfo = ProcessManager.CreateProcessInfo(pid, processName);
-                if (processInfo != null)
-                {
-                    processes.Add(new Process(machineName, isRemoteMachine: false, pid, processInfo));
-                }
-            }
-
-            return processes.ToArray();
-        }
-
-        /// <summary>
-        /// Gets or sets which processors the threads in this process can be scheduled to run on.
-        /// </summary>
-        private static IntPtr ProcessorAffinityCore
-        {
-            get
-            {
-                throw new PlatformNotSupportedException(SR.ProcessorAffinityNotSupported);
-            }
-            set
-            {
-                throw new PlatformNotSupportedException(SR.ProcessorAffinityNotSupported);
-            }
-        }
-
-
-        /// <summary>
         /// Make sure we have obtained the min and max working set limits.
         /// </summary>
-        private void GetWorkingSetLimits(out IntPtr minWorkingSet, out IntPtr maxWorkingSet)
+        private void GetWorkingSetLimitsBsd(out IntPtr minWorkingSet, out IntPtr maxWorkingSet)
         {
             EnsureState(State.HaveNonExitedId);
 
@@ -86,7 +42,7 @@ namespace System.Diagnostics
         /// <param name="newMax">The new maximum working set limit, or null not to change it.</param>
         /// <param name="resultingMin">The resulting minimum working set limit after any changes applied.</param>
         /// <param name="resultingMax">The resulting maximum working set limit after any changes applied.</param>
-        private void SetWorkingSetLimitsCore(IntPtr? newMin, IntPtr? newMax, out IntPtr resultingMin, out IntPtr resultingMax)
+        private void SetWorkingSetLimitsCoreBsd(IntPtr? newMin, IntPtr? newMax, out IntPtr resultingMin, out IntPtr resultingMax)
         {
             EnsureState(State.HaveNonExitedId);
 

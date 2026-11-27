@@ -20,10 +20,10 @@ namespace Internal.IL.Stubs
 #endif // READYTORUN
             MethodDesc method)
         {
-            Debug.Assert(((MetadataType)method.OwningType).Name.SequenceEqual("Interlocked"u8));
+            Debug.Assert(((MetadataType)method.OwningType).Name == "Interlocked"u8);
             Debug.Assert(!method.IsGenericMethodDefinition);
 
-            if (method.HasInstantiation && method.Name.SequenceEqual("CompareExchange"u8))
+            if (method.HasInstantiation && method.Name == "CompareExchange"u8)
             {
 #if READYTORUN
                 // Check to see if the tokens needed to describe the CompareExchange are naturally present within

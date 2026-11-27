@@ -24,8 +24,8 @@ namespace System.ComponentModel.Composition.Hosting
     {
         private readonly object _thisLock = new object();
         private readonly ICompositionElement _definitionOrigin;
-        private volatile Assembly _assembly;
-        private volatile ComposablePartCatalog? _innerCatalog;
+        private Assembly _assembly;
+        private ComposablePartCatalog? _innerCatalog;
         private int _isDisposed;
 
         private readonly ReflectionContext? _reflectionContext;

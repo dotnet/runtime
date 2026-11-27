@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 namespace System.Text.Json.Serialization
@@ -138,6 +138,11 @@ namespace System.Text.Json.Serialization
         public bool RespectRequiredConstructorParameters { get; set; }
 
         /// <summary>
+        /// Specifies the default value of <see cref="JsonSerializerOptions.TypeClassifiers"/> when set.
+        /// </summary>
+        public Type[]? TypeClassifiers { get; set; }
+
+        /// <summary>
         /// Specifies the default value of <see cref="JsonSerializerOptions.UnknownTypeHandling"/> when set.
         /// </summary>
         public JsonUnknownTypeHandling UnknownTypeHandling { get; set; }
@@ -182,5 +187,17 @@ namespace System.Text.Json.Serialization
         /// Specifies the default value of <see cref="JsonSerializerOptions.AllowDuplicateProperties"/> when set.
         /// </summary>
         public bool AllowDuplicateProperties { get; set; }
+
+        /// <summary>
+        /// Specifies the default value of <see cref="JsonSerializerOptions.InferClosedTypePolymorphism"/> when set.
+        /// </summary>
+        /// <remarks>
+        /// If a type declares one or more <see cref="JsonDerivedTypeAttribute"/> registrations, inference is
+        /// skipped for that type and only the explicitly registered derived types are used. Polymorphism
+        /// configuration declared on derived types applies to their respective contracts and does not affect
+        /// inference for the base type. Closed derived types are expanded recursively and only terminal derived
+        /// types are registered.
+        /// </remarks>
+        public bool InferClosedTypePolymorphism { get; set; }
     }
 }

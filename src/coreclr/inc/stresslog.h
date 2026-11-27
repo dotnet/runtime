@@ -30,6 +30,7 @@
 #define StressLog_h  1
 
 #include "log.h"
+#include <minipal/thread.h>
 
 #if defined(STRESS_LOG) && !defined(FEATURE_NO_STRESSLOG)
 #include "holder.h"
@@ -291,7 +292,7 @@ public:
     static BOOL InlinedStressLogOn(unsigned facility, unsigned level);
     static BOOL InlinedETWLogOn(unsigned facility, unsigned level);
 
-    static void LogMsg(unsigned level, unsigned facility, int cArgs, const char* format, ... );
+    static void LogMsg(unsigned level, unsigned facility, int cArgs, const char* format, ... ) MINIPAL_ATTR_FORMAT_PRINTF(4, 5);
 
     static void LogMsg(unsigned level, unsigned facility, const StressLogMsg& msg);
 
@@ -313,7 +314,7 @@ public:
 #endif
 
     static void LogMsgOL(const char* format)
-    { LogMsg(LL_ALWAYS, LF_GC, 0, format); }
+    { LogMsg(LL_ALWAYS, LF_GC, 0, "%s", format); }
 
     template<typename... Ts>
     static void LogMsgOL(const char* format, Ts... args)
@@ -381,8 +382,6 @@ inline void* StressLog::ConvertArgument(int64_t arg)
     return (void*)(size_t)arg;
 }
 #endif
-
-typedef Holder<CRITSEC_COOKIE, StressLog::Enter, StressLog::Leave, 0, CompareDefault<CRITSEC_COOKIE>> StressLogLockHolder;
 
 #if defined(DACCESS_COMPILE)
 inline BOOL StressLog::LogOn(unsigned facility, unsigned level)
@@ -703,7 +702,7 @@ public:
     {
 #ifndef STRESS_LOG_READONLY
         //there is no need to zero buffers because we could handle garbage contents
-        threadId = GetCurrentThreadId ();
+        threadId = minipal_get_current_thread_id();
         isDead = FALSE;
         curWriteChunk = chunkListTail;
         curPtr = (StressMsg *)curWriteChunk->EndPtr ();
@@ -754,7 +753,7 @@ public:
         return "StressLog TaskSwitch Marker\n";
     }
 
-    void LogMsg(unsigned facility, int cArgs, const char* format, ...);
+    void LogMsg(unsigned facility, int cArgs, const char* format, ...) MINIPAL_ATTR_FORMAT_PRINTF(4, 5);
 
     FORCEINLINE void LogMsg (unsigned facility, int cArgs, const char* format, va_list Args);
 #ifdef STRESS_LOG_READONLY

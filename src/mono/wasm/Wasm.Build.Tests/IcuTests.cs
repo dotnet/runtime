@@ -20,9 +20,8 @@ public class IcuTests : IcuTestsBase
         : base(output, buildContext) { }
 
     public static IEnumerable<object[]> FullIcuWithICustomIcuTestData(Configuration config) =>
-        from aot in boolOptions
-            from fullIcu in boolOptions
-            select new object[] { config, aot, fullIcu };
+        from fullIcu in boolOptions
+        select new object[] { config, fullIcu };
 
     public static IEnumerable<object[]> FullIcuWithInvariantTestData(Configuration config)
     {
@@ -34,9 +33,8 @@ public class IcuTests : IcuTestsBase
             new object[] { false, false, GetEfigsTestedLocales() },
             new object[] { false, true,  s_fullIcuTestedLocales }
         }; 
-        return from aot in boolOptions
-            from locale in locales
-            select new object[] { config, aot, locale[0], locale[1], locale[2] };
+        return from locale in locales
+            select new object[] { config, locale[0], locale[1], locale[2] };
     }
 
     public static IEnumerable<object[]> IncorrectIcuTestData(Configuration config)
@@ -54,30 +52,29 @@ public class IcuTests : IcuTestsBase
     [Theory]
     [MemberData(nameof(FullIcuWithInvariantTestData), parameters: new object[] { Configuration.Release })]
     [TestCategory("native")]
-    public async Task FullIcuFromRuntimePackWithInvariant(Configuration config=Configuration.Release, bool aot=false, bool invariant=true, bool fullIcu=true, string testedLocales="Array.Empty<Locale>()") =>
+    public async Task FullIcuFromRuntimePackWithInvariant(Configuration config=Configuration.Release, bool invariant=true, bool fullIcu=true, string testedLocales="Array.Empty<Locale>()") =>
         await PublishAndRunIcuTest(
             config,
             Template.WasmBrowser,
-            aot,
             testedLocales,
             globalizationMode: invariant ? GlobalizationMode.Invariant : fullIcu ? GlobalizationMode.FullIcu : GlobalizationMode.Sharded,
             extraProperties:
                 // https://github.com/dotnet/runtime/issues/94133: "wasmbrowser" should use WasmIncludeFullIcuData, not BlazorWebAssemblyLoadAllGlobalizationData
-                $"<InvariantGlobalization>{invariant}</InvariantGlobalization><BlazorWebAssemblyLoadAllGlobalizationData>{fullIcu}</BlazorWebAssemblyLoadAllGlobalizationData><RunAOTCompilation>{aot}</RunAOTCompilation>");
+                $"<InvariantGlobalization>{invariant}</InvariantGlobalization><BlazorWebAssemblyLoadAllGlobalizationData>{fullIcu}</BlazorWebAssemblyLoadAllGlobalizationData>");
 
     [Theory]
     [MemberData(nameof(FullIcuWithICustomIcuTestData), parameters: new object[] { Configuration.Release })]
     [TestCategory("native")]
-    public async Task FullIcuFromRuntimePackWithCustomIcu(Configuration config, bool aot, bool fullIcu)
+    public async Task FullIcuFromRuntimePackWithCustomIcu(Configuration config, bool fullIcu)
     {
         string customIcuProperty = "BlazorIcuDataFileName";
         string fullIcuProperty = "BlazorWebAssemblyLoadAllGlobalizationData";
-        string extraProperties = $"<{customIcuProperty}>{CustomIcuPath}</{customIcuProperty}><{fullIcuProperty}>{fullIcu}</{fullIcuProperty}><RunAOTCompilation>{aot}</RunAOTCompilation>";
+        string extraProperties = $"<{customIcuProperty}>{CustomIcuPath}</{customIcuProperty}><{fullIcuProperty}>{fullIcu}</{fullIcuProperty}>";
         
         string testedLocales = fullIcu ? s_fullIcuTestedLocales : s_customIcuTestedLocales;
         GlobalizationMode globalizationMode = fullIcu ? GlobalizationMode.FullIcu : GlobalizationMode.Custom;
         string customIcuFile = fullIcu ? "" : CustomIcuPath;
-        string output = await PublishAndRunIcuTest(config, Template.WasmBrowser, aot, testedLocales, globalizationMode, extraProperties, icuFileName: customIcuFile);
+        string output = await PublishAndRunIcuTest(config, Template.WasmBrowser, testedLocales, globalizationMode, extraProperties, icuFileName: customIcuFile);
         if (fullIcu)
             Assert.Contains($"$({customIcuProperty}) has no effect when $({fullIcuProperty}) is set to true.", output);
     }
@@ -90,7 +87,7 @@ public class IcuTests : IcuTestsBase
         string customIcuProperty = "BlazorIcuDataFileName";
         string extraProperties = $"<{customIcuProperty}>{customIcu}</{customIcuProperty}>";
     
-        ProjectInfo info = CreateIcuProject(config, Template.WasmBrowser, aot: false, "Array.Empty<Locale>()", extraProperties);
+        ProjectInfo info = CreateIcuProject(config, Template.WasmBrowser, "Array.Empty<Locale>()", extraProperties);
         (string _, string output) = BuildProject(info, config, new BuildOptions(
             GlobalizationMode: GlobalizationMode.Custom,
             CustomIcuFile: customIcu,

@@ -17,6 +17,7 @@
 #include <palsuite.h>
 
 DWORD PALAPI CreateTestThread_DuplicateHandle_test8(LPVOID lpParam);
+LONG completedThreadCount_DuplicateHandle_test8 = 0;
 
 PALTEST(threading_DuplicateHandle_test8_paltest_duplicatehandle_test8, "threading/DuplicateHandle/test8/paltest_duplicatehandle_test8")
 {
@@ -134,17 +135,7 @@ PALTEST(threading_DuplicateHandle_test8_paltest_duplicatehandle_test8, "threadin
         Fail("");
     }
 
-    /* Wait on the original thread.*/
-    if((WaitForSingleObject(hThread, 100)) != WAIT_OBJECT_0)
-    {
-        Trace("ERROR:%u: hCurrentThread=0x%lx is in a non-signalled "
-              "mode, yet created signalled.\n",
-              GetLastError(),
-              hThread);
-        CloseHandle(hThread);
-        CloseHandle(hDupThread);
-        Fail("");
-    }
+    WaitForThreadCompletion(&completedThreadCount_DuplicateHandle_test8, 1);
 
     /* Clean-up thread and Terminate the PAL.*/
     CloseHandle(hThread);
@@ -159,5 +150,6 @@ PALTEST(threading_DuplicateHandle_test8_paltest_duplicatehandle_test8, "threadin
 /*Thread testing function, only return '0'*/
 DWORD PALAPI CreateTestThread_DuplicateHandle_test8(LPVOID lpParam)
 {
+    InterlockedIncrement(&completedThreadCount_DuplicateHandle_test8);
     return (DWORD)0;
 }

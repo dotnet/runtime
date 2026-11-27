@@ -12,6 +12,7 @@
 
 #define INSTRFMT_K64
 #include <stublink.h>
+#include <minipal/instructioncache.h>
 
 #ifndef TARGET_UNIX
 #define USE_REDIRECT_FOR_GCSTRESS
@@ -41,19 +42,15 @@
     CALLEE_SAVED_REGISTER(V[14].Low) \
     CALLEE_SAVED_REGISTER(V[15].Low)
 
-EXTERN_C void getFPReturn(int fpSize, INT64 *pRetVal);
-EXTERN_C void setFPReturn(int fpSize, INT64 retVal);
-
-
 class ComCallMethodDesc;
 
 extern PCODE GetPreStubEntryPoint();
 
-#define COMMETHOD_PREPAD                        24   // # extra bytes to allocate in addition to sizeof(ComCallMethodDesc)
-#ifdef FEATURE_COMINTEROP
-#define COMMETHOD_CALL_PRESTUB_SIZE             24
-#define COMMETHOD_CALL_PRESTUB_ADDRESS_OFFSET   16   // the offset of the call target address inside the prestub
-#endif // FEATURE_COMINTEROP
+#ifndef DACCESS_COMPILE
+extern "C" void* PacAuthPtr(void* ptr, void* sp);
+extern "C" void* PacSignPtr(void* ptr, void* sp);
+extern "C" void* PacStripPtr(void* ptr);
+#endif
 
 #define STACK_ALIGN_SIZE                        16
 
@@ -75,30 +72,14 @@ extern PCODE GetPreStubEntryPoint();
 #define ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE 16  // bytes (two int registers: x0 and x1)
 #define ENREGISTERED_PARAMTYPE_MAXSIZE          16  // bytes (max value type size that can be passed by value)
 
-#define CALLDESCR_ARGREGS                       1   // CallDescrWorker has ArgumentRegister parameter
-#define CALLDESCR_FPARGREGS                     1   // CallDescrWorker has FloatArgumentRegisters parameter
-#define CALLDESCR_RETBUFFARGREG                 1   // CallDescrWorker has RetBuffArg parameter that's separate from arg regs
+#define HAS_FLOAT_ARGUMENT_REGISTERS            1   // Calling convention has separate floating-point argument registers
+#define HAS_RETBUFF_ARGUMENT_REGISTER           1   // Calling convention has a dedicated return-buffer argument register
 
 #define FLOAT_REGISTER_SIZE 16 // each register in FloatArgumentRegisters is 16 bytes.
 
 // Given a return address retrieved during stackwalk,
 // this is the offset by which it should be decremented to arrive at the callsite.
 #define STACKWALK_CONTROLPC_ADJUST_OFFSET 4
-
-inline
-ARG_SLOT FPSpillToR8(void* pSpillSlot)
-{
-    LIMITED_METHOD_CONTRACT;
-    return *(SIZE_T*)pSpillSlot;
-}
-
-inline
-void     R8ToFPSpill(void* pSpillSlot, SIZE_T  srcDoubleAsSIZE_T)
-{
-    LIMITED_METHOD_CONTRACT;
-    *(SIZE_T*)pSpillSlot = srcDoubleAsSIZE_T;
-    *((SIZE_T*)pSpillSlot + 1) = 0;
-}
 
 //**********************************************************************
 // Parameter size
@@ -125,14 +106,6 @@ inline unsigned StackElemSize(unsigned parmSize, bool isValueType, bool isFloatH
     const unsigned stackSlotSize = 8;
     return ALIGN_UP(parmSize, stackSlotSize);
 }
-
-//
-// JIT HELPERS.
-//
-// Create alias for optimized implementations of helpers provided on this platform
-//
-#define JIT_GetDynamicGCStaticBase           JIT_GetDynamicGCStaticBase_SingleAppDomain
-#define JIT_GetDynamicNonGCStaticBase        JIT_GetDynamicNonGCStaticBase_SingleAppDomain
 
 //**********************************************************************
 // Frames
@@ -343,13 +316,9 @@ inline NEON128 GetSimdMem(PCODE ip)
     return mem;
 }
 
-#ifdef FEATURE_COMINTEROP
-void emitCOMStubCall (ComCallMethodDesc *pCOMMethodRX, ComCallMethodDesc *pCOMMethodRW, PCODE target);
-#endif // FEATURE_COMINTEROP
-
-inline BOOL ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode, bool hasCodeExecutedBefore = false)
+inline void ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode, bool hasCodeExecutedBefore = false)
 {
-    return FlushInstructionCache(GetCurrentProcess(), pCodeAddr, sizeOfCode);
+    minipal_flush_instruction_cache(pCodeAddr, sizeOfCode);
 }
 
 //------------------------------------------------------------------------
@@ -538,6 +507,7 @@ struct HijackArgs
          };
         NEON128 FPReturnValue[4];
     };
+    DWORD64 SpForPacSign;
 };
 
 #endif // __cgencpu_h__

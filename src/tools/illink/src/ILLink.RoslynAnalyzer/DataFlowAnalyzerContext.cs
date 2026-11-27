@@ -23,34 +23,41 @@ namespace ILLink.RoslynAnalyzer
 
         public Compilation Compilation { get; }
 
-        public readonly bool EnableTrimAnalyzer { get; }
+        public readonly RequiresUnreferencedCodeAnalyzer? TrimAnalyzer { get; }
 
-        public readonly bool AnyAnalyzersEnabled => EnableTrimAnalyzer || _enabledAnalyzers.Count > 0;
+        public readonly bool AnyAnalyzersEnabled => TrimAnalyzer is not null || _enabledAnalyzers.Count > 0;
 
         private DataFlowAnalyzerContext(
             Dictionary<RequiresAnalyzerBase, ImmutableArray<ISymbol>> enabledAnalyzers,
-            bool enableTrimAnalyzer,
+            RequiresUnreferencedCodeAnalyzer? trimAnalyzer,
             Compilation compilation)
         {
             _enabledAnalyzers = enabledAnalyzers;
-            EnableTrimAnalyzer = enableTrimAnalyzer;
+            TrimAnalyzer = trimAnalyzer;
             Compilation = compilation;
         }
 
         public static DataFlowAnalyzerContext Create(AnalyzerOptions options, Compilation compilation, ImmutableArray<RequiresAnalyzerBase> requiresAnalyzers)
         {
             var enabledAnalyzers = new Dictionary<RequiresAnalyzerBase, ImmutableArray<ISymbol>>();
+            RequiresUnreferencedCodeAnalyzer? trimAnalyzer = null;
+
             foreach (var analyzer in requiresAnalyzers)
             {
                 if (analyzer.IsAnalyzerEnabled(options))
                 {
                     var incompatibleMembers = analyzer.GetSpecialIncompatibleMembers(compilation);
                     enabledAnalyzers.Add(analyzer, incompatibleMembers);
+
+                    if (analyzer is RequiresUnreferencedCodeAnalyzer rucAnalyzer)
+                    {
+                        trimAnalyzer = rucAnalyzer;
+                    }
                 }
             }
             return new DataFlowAnalyzerContext(
                 enabledAnalyzers,
-                options.IsMSBuildPropertyValueTrue(MSBuildPropertyOptionNames.EnableTrimAnalyzer),
+                trimAnalyzer,
                 compilation);
         }
     }

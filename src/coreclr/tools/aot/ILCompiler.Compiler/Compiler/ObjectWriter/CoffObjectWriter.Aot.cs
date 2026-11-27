@@ -60,6 +60,8 @@ namespace ILCompiler.ObjectWriter
         private static readonly ObjectNodeSection PDataSection = new ObjectNodeSection("pdata", SectionType.UnwindData);
         private SectionWriter _pdataSectionWriter;
 
+        private protected override bool LinkerPlacesRangeExtensionThunks => true;
+
         private protected override void CreateEhSections()
         {
             // Create .pdata
@@ -188,10 +190,10 @@ namespace ILCompiler.ObjectWriter
 
         private protected override void EmitDebugFunctionInfo(
             uint methodTypeIndex,
+            Utf8String methodDisplayName,
             Utf8String methodName,
             SymbolDefinition methodSymbol,
-            INodeWithDebugInfo debugNode,
-            bool hasSequencePoints)
+            INodeWithDebugInfo debugNode)
         {
             DebugEHClauseInfo[] clauses = null;
             CodeViewSymbolsBuilder debugSymbolsBuilder;
@@ -214,13 +216,14 @@ namespace ILCompiler.ObjectWriter
             }
 
             debugSymbolsBuilder.EmitSubprogramInfo(
+                methodDisplayName,
                 methodName,
                 methodSymbol.Size,
                 methodTypeIndex,
                 debugNode.GetDebugVars().Select(debugVar => (debugVar, GetVarTypeIndex(debugNode.IsStateMachineMoveNextMethod, debugVar))),
                 clauses ?? Array.Empty<DebugEHClauseInfo>());
 
-            if (hasSequencePoints)
+            if (debugNode.GetNativeSequencePoints().Any())
             {
                 debugSymbolsBuilder.EmitLineInfo(
                     _debugFileTableBuilder,

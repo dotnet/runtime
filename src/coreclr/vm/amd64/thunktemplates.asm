@@ -22,6 +22,7 @@ LEAF_ENTRY FixupPrecodeCode, _TEXT
         jmp    QWORD PTR [DATA_SLOT(FixupPrecode, PrecodeFixupThunk)]
 LEAF_END_MARKED FixupPrecodeCode, _TEXT
 
+ifdef FEATURE_TIERED_COMPILATION
 LEAF_ENTRY CallCountingStubCode, _TEXT
         mov    rax,QWORD PTR [DATA_SLOT(CallCountingStub, RemainingCallCountCell)]
         dec    WORD PTR [rax]
@@ -30,5 +31,6 @@ LEAF_ENTRY CallCountingStubCode, _TEXT
     CountReachedZero:
         jmp    QWORD PTR [DATA_SLOT(CallCountingStub, TargetForThresholdReached)]
 LEAF_END_MARKED CallCountingStubCode, _TEXT
+endif ; FEATURE_TIERED_COMPILATION
 
         end

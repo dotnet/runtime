@@ -1,0 +1,136 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System.Diagnostics;
+using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
+using Antlr4.Runtime;
+
+namespace Microsoft.DotNet.ILAssembler;
+
+internal sealed partial class GrammarActions
+{
+    internal void EmitMethodReferenceInstruction(IToken opcodeToken, CILParser.MethodRefContext context)
+    {
+        if (context.HasSyntaxError || StartInstruction(opcodeToken) is not { } instruction)
+        {
+            return;
+        }
+
+        ILOpCode opcode = instruction.OpCode;
+        CurrentMethodContext method = instruction.Method;
+        bool expectInstance = opcode is ILOpCode.Callvirt or ILOpCode.Newobj;
+        _expectInstance = expectInstance;
+        try
+        {
+            method.Definition.MethodBody.OpCode(opcode);
+            if (context.Value is TokenMethodReferenceValue token)
+            {
+                method.Definition.MethodBody.Token(token.Token);
+            }
+            else
+            {
+                WriteInstructionToken(method, MaterializeMethodReference(context));
+            }
+        }
+        finally
+        {
+            if (expectInstance)
+            {
+                _expectInstance = false;
+            }
+        }
+    }
+
+    internal void EmitFieldReferenceInstruction(IToken opcodeToken, CILParser.FieldRefContext context)
+    {
+        if (context.HasSyntaxError || StartInstruction(opcodeToken) is not { } instruction)
+        {
+            return;
+        }
+
+        instruction.Method.Definition.MethodBody.OpCode(instruction.OpCode);
+        WriteInstructionToken(instruction.Method, MaterializeFieldReference(context));
+    }
+
+    internal void EmitMetadataTokenInstruction(IToken opcodeToken, CILParser.MdtokenContext context)
+    {
+        if (context.HasSyntaxError || StartInstruction(opcodeToken) is not { } instruction)
+        {
+            return;
+        }
+
+        instruction.Method.Definition.MethodBody.OpCode(instruction.OpCode);
+        instruction.Method.Definition.MethodBody.Token(context.Value);
+    }
+
+    internal void EmitTypeReferenceInstruction(IToken opcodeToken, CILParser.TypeSpecContext context)
+    {
+        if (context.HasSyntaxError || StartInstruction(opcodeToken) is not { } instruction)
+        {
+            return;
+        }
+
+        instruction.Method.Definition.MethodBody.OpCode(instruction.OpCode);
+        if (context.Value is ClassTypeSpecificationValue { ClassName: TokenClassNameValue token })
+        {
+            instruction.Method.Definition.MethodBody.Token(token.Token);
+        }
+        else
+        {
+            WriteInstructionToken(instruction.Method, ResolveTypeSpecification(context));
+        }
+    }
+
+    internal void EmitCalliInstruction(IToken opcodeToken, CILParser.CalliSignatureContext context)
+    {
+        if (context.HasSyntaxError || StartInstruction(opcodeToken) is not { } instruction)
+        {
+            return;
+        }
+
+        Debug.Assert(instruction.OpCode == ILOpCode.Calli);
+        instruction.Method.Definition.MethodBody.OpCode(instruction.OpCode);
+        instruction.Method.Definition.MethodBody.Token(
+            _entityRegistry.GetOrCreateStandaloneSignature(
+                MaterializeCalliSignature(context.Value)).Handle);
+    }
+
+    internal void EmitOwnerTokenInstruction(IToken opcodeToken, CILParser.OwnerTypeContext context)
+    {
+        if (context.HasSyntaxError || StartInstruction(opcodeToken) is not { } instruction)
+        {
+            return;
+        }
+
+        instruction.Method.Definition.MethodBody.OpCode(instruction.OpCode);
+        if (context.Value switch
+        {
+            MemberOwnerValue { Member: TokenMemberReferenceValue token } => token.Token,
+            MemberOwnerValue { Member: MethodMemberReferenceValue { Method: TokenMethodReferenceValue token } } => token.Token,
+            TypeOwnerValue { Type: ClassTypeSpecificationValue { ClassName: TokenClassNameValue token } } => token.Token,
+            _ => (int?)null
+        } is int rawToken)
+        {
+            instruction.Method.Definition.MethodBody.Token(rawToken);
+        }
+        else
+        {
+            WriteInstructionToken(instruction.Method, MaterializeOwnerType(context));
+        }
+    }
+
+    private static void WriteInstructionToken(CurrentMethodContext method, EntityRegistry.EntityBase entity)
+    {
+        if (entity is EntityRegistry.LiteralTokenEntity literal)
+        {
+            // IL operands can contain arbitrary values that are not valid metadata handles.
+            method.Definition.MethodBody.Token(literal.Token);
+            return;
+        }
+
+        entity.RecordBlobToWriteResolvedToken(
+            method.Definition.MethodBody.CodeBuilder.ReserveBytes(sizeof(int)));
+    }
+
+}

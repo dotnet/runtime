@@ -1,5 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <!-- TODO: Remove once migrated to unsafe-v2. -->
+    <MemorySafetyRulesVersion>1</MemorySafetyRulesVersion>
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
@@ -7,6 +9,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
     <_WasmPThreadPoolUnusedSize>10</_WasmPThreadPoolUnusedSize>
+    <XunitShowProgress Condition="'$(WasmEnableThreads)' == 'true'">true</XunitShowProgress>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AsyncLocalTests.cs" />
@@ -26,6 +29,7 @@
     <Compile Include="ManualResetEventSlimTests.cs" />
     <Compile Include="MonitorTests.cs" />
     <Compile Include="MutexTests.cs" />
+    <Compile Include="NamedMutexFileLockTests.cs" />
     <Compile Include="SemaphoreSlimCancellationTests.cs" />
     <Compile Include="SemaphoreSlimTests.cs" />
     <Compile Include="SemaphoreTests.cs" />

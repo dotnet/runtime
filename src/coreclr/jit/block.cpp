@@ -16,6 +16,9 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #endif
 
 #include "jitstd/algorithm.h"
+#ifdef TARGET_WASM
+#include "fgwasm.h" // for WasmInterval, used in CanRemoveJumpToNext
+#endif
 
 #if MEASURE_BLOCK_SIZE
 /* static  */
@@ -404,24 +407,44 @@ bool BasicBlock::IsFirstColdBlock(Compiler* compiler) const
 bool BasicBlock::CanRemoveJumpToNext(Compiler* compiler) const
 {
     assert(KindIs(BBJ_ALWAYS));
-    return JumpsToNext() && !IsLastHotBlock(compiler);
+    return CanRemoveJumpToTarget(GetTarget(), compiler);
 }
 
 //------------------------------------------------------------------------
 // CanRemoveJumpToTarget: determine if jump to target can be omitted
 //
 // Arguments:
-//    target - true/false target of the BBJ_COND block
+//    target - target of the BBJ_ALWAYS/BBJ_CALLFINALLYRET or true/false target of the BBJ_COND block
 //    compiler - current compiler instance
 //
 // Returns:
-//    true if block is a BBJ_COND that can fall into target
+//    true if this block can fall into target
 //
 bool BasicBlock::CanRemoveJumpToTarget(BasicBlock* target, Compiler* compiler) const
 {
-    assert(KindIs(BBJ_COND));
-    assert(TrueTargetIs(target) || FalseTargetIs(target));
-    return NextIs(target) && !IsLastHotBlock(compiler);
+    assert((KindIs(BBJ_ALWAYS, BBJ_CALLFINALLYRET) && (GetTarget() == target)) ||
+           (KindIs(BBJ_COND) && (TrueTargetIs(target) || FalseTargetIs(target))));
+    if (!NextIs(target) || IsLastHotBlock(compiler))
+    {
+        return false;
+    }
+#ifdef TARGET_WASM
+    // Fall-through across a Try/ExnRefWrapper end injects an `unreachable`
+    // or an exnref `local.set` that would trap or fail validation.
+    //
+    if (compiler->fgWasmIntervals != nullptr)
+    {
+        unsigned const targetIndex = target->bbPreorderNum;
+        for (WasmInterval* const interval : *compiler->fgWasmIntervals)
+        {
+            if ((interval->IsTry() || interval->IsExnRefWrapper()) && (interval->End() == targetIndex))
+            {
+                return false;
+            }
+        }
+    }
+#endif
+    return true;
 }
 
 #ifdef DEBUG
@@ -495,7 +518,6 @@ void BasicBlock::dspFlags() const
         {BBF_REMOVED, "del"},
         {BBF_DONT_REMOVE, "keep"},
         {BBF_INTERNAL, "internal"},
-        {BBF_HAS_SUPPRESSGC_CALL, "sup-gc"},
         {BBF_HAS_LABEL, "label"},
         {BBF_HAS_JMP, "jmp"},
         {BBF_HAS_CALL, "hascall"},
@@ -506,7 +528,7 @@ void BasicBlock::dspFlags() const
         {BBF_BACKWARD_JUMP, "bwd"},
         {BBF_BACKWARD_JUMP_TARGET, "bwd-target"},
         {BBF_BACKWARD_JUMP_SOURCE, "bwd-src"},
-        {BBF_PATCHPOINT, "ppoint"},
+        {BBF_OSR_PATCHPOINT, "osr-ppoint"},
         {BBF_PARTIAL_COMPILATION_PATCHPOINT, "pc-ppoint"},
         {BBF_HAS_HISTOGRAM_PROFILE, "hist"},
         {BBF_TAILCALL_SUCCESSOR, "tail-succ"},
@@ -524,8 +546,10 @@ void BasicBlock::dspFlags() const
         {BBF_NEEDS_GCPOLL, "gcpoll"},
         {BBF_HAS_VALUE_PROFILE, "val-prof"},
         {BBF_MAY_HAVE_BOUNDS_CHECKS, "bnds-chk"},
-        {BBF_ASYNC_RESUMPTION, "resume"},
+        {BBF_ASYNC_RESUMPTION, "a-resume"},
+        {BBF_CATCH_RESUMPTION, "c-resume"},
         {BBF_THROW_HELPER, "throw-hlpr"},
+        {BBF_STALE_PREDICATE, "stale-pred"},
     };
 
     bool first = true;
@@ -936,12 +960,21 @@ GenTree* BasicBlock::lastNode() const
 //    If the first block has a predecessor (which it may have, if it is the target of
 //    a backedge), we never want to consider it "unique" because the prolog is an
 //    implicit predecessor.
+//
+//    Similarly, a handler or filter's entry block may appear to have a unique
+//    explicit predecessor (for example, a filter's BBJ_EHFILTERRET block, or a
+//    single BBJ_CALLFINALLY reaching an unclonable finally), but that edge does
+//    not capture all of the ways control can actually reach the block: exception
+//    dispatch (and any intervening two-pass "finally" funclets it runs) can enter
+//    the handler without any explicit flow edge. So we never want to consider such
+//    a block's predecessor "unique" either.
 
 BasicBlock* BasicBlock::GetUniquePred(Compiler* compiler) const
 {
     assert(compiler->fgPredsComputed);
 
-    if ((bbPreds == nullptr) || (bbPreds->getNextPredEdge() != nullptr) || (this == compiler->fgFirstBB))
+    if ((bbPreds == nullptr) || (bbPreds->getNextPredEdge() != nullptr) || (this == compiler->fgFirstBB) ||
+        compiler->bbIsHandlerBeg(this))
     {
         return nullptr;
     }
@@ -1005,6 +1038,47 @@ bool BasicBlock::isEmpty() const
         for (GenTree* node : LIR::AsRange(this))
         {
             if (!node->OperIs(GT_IL_OFFSET))
+            {
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------
+// isSafeToSpeculate: check if the block can be executed on paths where
+//   it previously was not.
+//
+// Returns:
+//   True if no non-phi statement or node in the block has side effects or
+//   ordering side effects.
+//
+// Notes:
+//   Ordering side effects mark nodes that rely on a dominating check, for
+//   example an indirection made non-faulting by a dominating null check.
+//   Such nodes are unsafe to execute if that check is removed or bypassed.
+//
+bool BasicBlock::isSafeToSpeculate() const
+{
+    const GenTreeFlags unsafeFlags = GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF;
+
+    if (!IsLIR())
+    {
+        for (Statement* const stmt : NonPhiStatements())
+        {
+            if ((stmt->GetRootNode()->gtFlags & unsafeFlags) != 0)
+            {
+                return false;
+            }
+        }
+    }
+    else
+    {
+        for (GenTree* node : LIR::AsRange(this))
+        {
+            if ((node->gtFlags & unsafeFlags) != 0)
             {
                 return false;
             }

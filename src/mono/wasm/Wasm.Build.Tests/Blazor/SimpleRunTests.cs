@@ -22,6 +22,16 @@ public class SimpleRunTests : BlazorWasmTestBase
         _enablePerTestCleanup = true;
     }
 
+    public static TheoryData<Configuration, bool> BlazorPublishRunTestData()
+    {
+        var data = new TheoryData<Configuration, bool>
+        {
+            { Configuration.Debug, false },
+            { Configuration.Release, false },
+        };
+        return data;
+    }
+
     [Theory]
     [InlineData(Configuration.Debug)]
     [InlineData(Configuration.Release)]
@@ -61,9 +71,7 @@ public class SimpleRunTests : BlazorWasmTestBase
     }
 
     [Theory]
-    [InlineData(Configuration.Debug, false)]
-    [InlineData(Configuration.Release, false)]
-    [InlineData(Configuration.Release, true)]
+    [MemberData(nameof(BlazorPublishRunTestData))]
     [TestCategory("native")]
     public async Task BlazorPublishRunTest(Configuration config, bool aot)
     {

@@ -34,6 +34,7 @@ namespace R2RTest
                     OutputDirectory,
                     Crossgen2Path,
                     TargetArch,
+                    TargetOs,
                     VerifyTypeAndFieldLayout,
                     NoJit,
                     NoCrossgen2,
@@ -72,6 +73,7 @@ namespace R2RTest
                     OutputDirectory,
                     Crossgen2Path,
                     TargetArch,
+                    TargetOs,
                     VerifyTypeAndFieldLayout,
                     NoJit,
                     NoCrossgen2,
@@ -107,6 +109,7 @@ namespace R2RTest
                 {
                     Crossgen2Path,
                     TargetArch,
+                    TargetOs,
                     VerifyTypeAndFieldLayout,
                     NoCrossgen2,
                     NoCleanup,
@@ -280,6 +283,9 @@ namespace R2RTest
         public Option<string> TargetArch { get; } =
             new("--target-arch") { Description = "Target architecture for crossgen2" };
 
+        public Option<string> TargetOs { get; } =
+            new("--target-os") { Description = "Target OS for crossgen2" };
+
         //
         // compile-nuget specific options
         //
@@ -306,6 +312,7 @@ namespace R2RTest
             Crossgen2Path = res.GetValue(cmd.Crossgen2Path);
             VerifyTypeAndFieldLayout = res.GetValue(cmd.VerifyTypeAndFieldLayout);
             TargetArch = res.GetValue(cmd.TargetArch);
+            TargetOs = res.GetValue(cmd.TargetOs);
             Exe = res.GetValue(cmd.Exe);
             NoJit = res.GetValue(cmd.NoJit);
             NoCrossgen2 = res.GetValue(cmd.NoCrossgen2);
@@ -345,6 +352,7 @@ namespace R2RTest
         public FileInfo Crossgen2Path { get; }
         public bool VerifyTypeAndFieldLayout { get; }
         public string TargetArch { get; }
+        public string TargetOs { get; }
         public bool Exe { get; }
         public bool NoJit { get; set; }
         public bool NoCrossgen2 { get; }

@@ -157,6 +157,13 @@ bool NearDiffer::InitAsmDiff()
             {
                 coreDisTargetArchitecture = Target_RiscV64;
             }
+            else if ((0 == _stricmp(TargetArchitecture, "wasm")) || (0 == _stricmp(TargetArchitecture, "wasm32")))
+            {
+                // Requires coredistools >= 1.7.0 (Target_Wasm32 + framed entry points).
+                // Existing NearDiffCodeBlocks / DumpCodeBlock / DumpDiffBlocks auto-route
+                // to the Wasm framing-aware implementations inside coredistools.
+                coreDisTargetArchitecture = Target_Wasm32;
+            }
             else
             {
                 LogError("Illegal target architecture '%s'", TargetArchitecture);
@@ -545,6 +552,16 @@ bool NearDiffer::compareOffsets(
         return true;
     }
 
+    // For wasm32, recorded relocations are the source of truth: handles materialize
+    // as i32.const immediates with padded ULEB128/SLEB128 placeholders that the JIT
+    // separately records in a reloc table. Defer the "are these two distinct
+    // immediates semantically equivalent" decision to a wasm-specific path that
+    // consults the reloc tables instead of replaying generic IP-relative heuristics.
+    if (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_WASM32)
+    {
+        return compareOffsetsWasm(payload, blockOffset, instrLen, offset1, offset2);
+    }
+
     const DiffData* data         = (const DiffData*)payload;
     size_t          ip1          = data->originalBlock1 + blockOffset;
     size_t          ip2          = data->originalBlock2 + blockOffset;
@@ -620,6 +637,97 @@ bool NearDiffer::compareOffsets(
         return true;
     }
 
+    return false;
+}
+
+//
+// Wasm32-specific offset comparator.
+//
+// For wasm32, integer immediates that materialize JIT handles (function indices,
+// type indices, memory addresses, globals) are emitted as 5-byte ULEB128/SLEB128
+// placeholders (`80 80 80 80 00`) that the JIT separately records in a reloc
+// table. For un-prefixed forms like `i32.const`/`call`, the placeholder sits at
+// `opcode-byte + 1`. For un-prefixed memory ops (`i32.load`, `i32.store`, ...),
+// the layout is `<opcode> <align>:u32 <reloc-offset>:u32`, so the relocatable
+// payload sits at `opcode-byte + 2`. Either way, both baseline and diff JITs
+// write the same placeholder bytes, so byte-by-byte comparison naturally
+// succeeds at reloc sites without any patching. Any immediate mismatch surfaced
+// to this comparator therefore falls into one of three cases:
+//
+//   1. Hard-coded non-reloc literal that genuinely differs across baseline/diff.
+//      This is a real codegen change; return false.
+//
+//   2. Reloc sites where both sides recorded a reloc but the immediates somehow
+//      differ (e.g. a future change patches the placeholder into real bytes).
+//      Treat as equivalent when both reloc kinds match and the targets are equal
+//      after addlDelta correction.
+//
+//   3. A reloc on one side but not the other - genuinely asymmetric codegen.
+//      Return false.
+//
+// `blockOffset` is the opcode-byte offset within the framed buffer, per the
+// coredistools Wasm32 contract. The recorded reloc location is the payload byte,
+// which may be `opcode-byte + 1` (un-prefixed i32.const/call/etc.),
+// `opcode-byte + 2` (un-prefixed loads/stores after the align u32), or further
+// for prefixed opcodes. We search the entire immediate window
+// `[blockOffset+1, blockOffset+instrLen)` to handle all of these uniformly.
+//
+bool NearDiffer::compareOffsetsWasm(
+    const void* payload, size_t blockOffset, size_t instrLen, uint64_t offset1, uint64_t offset2)
+{
+    if (offset1 == offset2)
+    {
+        return true;
+    }
+
+    const DiffData* data = (const DiffData*)payload;
+
+    // The relocated payload byte may live at `opcode-byte + 1` (un-prefixed
+    // i32.const/call/etc.), `opcode-byte + 2` (un-prefixed memory ops, after
+    // the align u32), or even deeper for prefixed forms (0xFC/0xFD/0xFE).
+    // Rather than threading per-opcode payload offsets through coredistools,
+    // walk the entire immediate window [blockOffset+1, blockOffset+instrLen)
+    // and accept the first reloc found. Multiple relocs in a single instruction
+    // are not emitted today.
+    const size_t windowStart = blockOffset + 1;
+    const size_t windowSize  = (instrLen > 1) ? (instrLen - 1) : 0;
+
+    if (windowSize == 0)
+    {
+        // Single-byte opcode (no immediate) -- this comparator should not have
+        // been called at all. Treat as a real mismatch.
+        return false;
+    }
+
+    const Agnostic_RecordRelocation* reloc1 =
+        data->cr1->findRelocationInRange(data->originalBlock1, windowStart, windowSize);
+    const Agnostic_RecordRelocation* reloc2 =
+        data->cr2->findRelocationInRange(data->originalBlock2, windowStart, windowSize);
+
+    if ((reloc1 == nullptr) || (reloc2 == nullptr))
+    {
+        // At most one side has a reloc here. Either a genuine non-reloc immediate
+        // mismatch (case 1) or an asymmetric reloc (case 3). Real diff.
+        return false;
+    }
+
+    if (reloc1->fRelocType != reloc2->fRelocType)
+    {
+        // Different reloc kinds at the same site is a real codegen change.
+        return false;
+    }
+
+    const uint64_t target1 = (uint64_t)reloc1->target + (int32_t)reloc1->addlDelta;
+    const uint64_t target2 = (uint64_t)reloc2->target + (int32_t)reloc2->addlDelta;
+    if (target1 == target2)
+    {
+        return true;
+    }
+
+    // Targets differ. This is the "different handle picked for the same source"
+    // case. For now, treat as a real mismatch; a future revision can plug in
+    // handle-equivalence logic mirroring the cr1->cr2 handle remapping used by
+    // the non-wasm `compareOffsets` heuristics.
     return false;
 }
 

@@ -15,11 +15,12 @@ if (process.env.ProductVersion === undefined) {
     throw new Error("ProductVersion environment variable is not defined");
 }
 
-export const configuration = process.env.Configuration !== "Release" && process.env.Configuration !== "RELEASE" ? "Debug" : "Release";
+export const isDebug = process.env.Configuration.toLowerCase() !== "release";
+export const configuration = isDebug ? "Debug" : "Release";
 export const runtimeFlavor = process.env.RuntimeFlavor || "CoreCLR";
 export const productVersion = process.env.ProductVersion;
 export const isContinuousIntegrationBuild = process.env.ContinuousIntegrationBuild === "true" ? true : false;
-export const staticLibDestination = process.env.StaticLibDestination || `../../artifacts/obj/native/net${productVersion}-browser-${configuration}-wasm/lib`;
+export const staticLibDestination = process.env.StaticLibDestination || `../../artifacts/obj/native/net${productVersion}-browser-${configuration}-wasm`;
 
 console.log(`Rollup configuration: Configuration=${configuration}, RuntimeFlavor=${runtimeFlavor}, ProductVersion=${productVersion}, ContinuousIntegrationBuild=${isContinuousIntegrationBuild}`);
 
@@ -37,7 +38,6 @@ export const reserved = [
 
 export const externalDependencies = ["module", "process", "perf_hooks", "node:crypto"];
 export const artifactsObjDir = "../../artifacts/obj";
-export const isDebug = process.env.Configuration !== "Release";
 
 export let gitHash;
 try {

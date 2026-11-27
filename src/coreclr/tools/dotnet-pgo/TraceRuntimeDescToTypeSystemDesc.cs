@@ -405,7 +405,18 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                             throw new Exception($"Invalid typedef {tinfo.TypeValue.TypeNameID:4x}");
                         }
 
-                        TypeDefinitionHandle typedef = MetadataTokens.TypeDefinitionHandle(tinfo.TypeValue.TypeNameID & 0xFFFFFF);
+                        int typedefRow = tinfo.TypeValue.TypeNameID & 0xFFFFFF;
+                        // The runtime emits BulkType events for "minimal" MethodTables created by
+                        // CreateMinimalMethodTable in coreclr (used for Reflection.Emit DynamicMethod
+                        // hosts and the IL stub cache). These MTs have no typedef token and surface
+                        // here as TypeNameID == 0x02000000 (rid 0). Treat them as unresolvable
+                        // dynamic types so trace processing can continue.
+                        if (typedefRow == 0)
+                        {
+                            dependsOnKnownNonLoadableType = true;
+                            return null;
+                        }
+                        TypeDefinitionHandle typedef = MetadataTokens.TypeDefinitionHandle(typedefRow);
                         MetadataType uninstantiatedType = (MetadataType)ecmaModule.GetType(typedef);
                         // Instantiate the type if requested
                         if ((tinfo.TypeValue.TypeParameters.Length != 0) && uninstantiatedType != null)
@@ -426,7 +437,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                         }
                         else
                         {
-                            if ((uninstantiatedType.Name.SequenceEqual("__Canon"u8)) && uninstantiatedType.Namespace.SequenceEqual("System"u8) && (uninstantiatedType.Module == uninstantiatedType.Context.SystemModule))
+                            if ((uninstantiatedType.Name == "__Canon"u8) && uninstantiatedType.Namespace == "System"u8 && (uninstantiatedType.Module == uninstantiatedType.Context.SystemModule))
                             {
                                 tinfo.Type = uninstantiatedType.Context.CanonType;
                             }

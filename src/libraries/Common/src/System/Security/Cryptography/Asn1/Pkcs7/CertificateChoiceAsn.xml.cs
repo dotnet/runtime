@@ -8,17 +8,10 @@ using System.Runtime.InteropServices;
 
 namespace System.Security.Cryptography.Asn1.Pkcs7
 {
-    [StructLayout(LayoutKind.Sequential)]
-    internal partial struct CertificateChoiceAsn
-    {
-        internal ReadOnlyMemory<byte>? Certificate;
-        internal ReadOnlyMemory<byte>? ExtendedCertificate;
-        internal ReadOnlyMemory<byte>? AttributeCertificateV1;
-        internal ReadOnlyMemory<byte>? AttributeCertificateV2;
-        internal System.Security.Cryptography.Asn1.Pkcs7.OtherCertificateFormat? OtherCertificateFormat;
-
 #if DEBUG
-        static CertificateChoiceAsn()
+    file static class ValidateCertificateChoiceAsn
+    {
+        static ValidateCertificateChoiceAsn()
         {
             var usedTags = new System.Collections.Generic.Dictionary<Asn1Tag, string>();
             Action<Asn1Tag, string> ensureUniqueTag = (tag, fieldName) =>
@@ -36,6 +29,28 @@ namespace System.Security.Cryptography.Asn1.Pkcs7
             ensureUniqueTag(new Asn1Tag(TagClass.ContextSpecific, 1), "AttributeCertificateV1");
             ensureUniqueTag(new Asn1Tag(TagClass.ContextSpecific, 2), "AttributeCertificateV2");
             ensureUniqueTag(new Asn1Tag(TagClass.ContextSpecific, 3), "OtherCertificateFormat");
+        }
+
+        [System.Runtime.CompilerServices.MethodImpl(
+            System.Runtime.CompilerServices.MethodImplOptions.NoInlining |
+            System.Runtime.CompilerServices.MethodImplOptions.NoOptimization)]
+        internal static void Validate() { }
+    }
+#endif
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal partial struct CertificateChoiceAsn
+    {
+        internal ReadOnlyMemory<byte>? Certificate;
+        internal ReadOnlyMemory<byte>? ExtendedCertificate;
+        internal ReadOnlyMemory<byte>? AttributeCertificateV1;
+        internal ReadOnlyMemory<byte>? AttributeCertificateV2;
+        internal System.Security.Cryptography.Asn1.Pkcs7.OtherCertificateFormat? OtherCertificateFormat;
+
+#if DEBUG
+        static CertificateChoiceAsn()
+        {
+            ValidateCertificateChoiceAsn.Validate();
         }
 #endif
 

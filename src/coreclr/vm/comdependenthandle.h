@@ -37,19 +37,18 @@
 // such cycles can be broken.
 //
 // Almost all the interesting for DependentHandle is in code:Ref_ScanDependentHandles
-class DependentHandle
+extern "C"
 {
-public:
-    static FCDECL2(OBJECTHANDLE, InternalAlloc, Object *target, Object *dependent);
-    static FCDECL1(Object *, InternalGetTarget, OBJECTHANDLE handle);
-    static FCDECL1(Object *, InternalGetDependent, OBJECTHANDLE handle);
-    static FCDECL2(Object *, InternalGetTargetAndDependent, OBJECTHANDLE handle, Object **outDependent);
-    static FCDECL1(VOID, InternalSetTargetToNull, OBJECTHANDLE handle);
-    static FCDECL2(VOID, InternalSetDependent, OBJECTHANDLE handle, Object *dependent);
-    static FCDECL1(FC_BOOL_RET, InternalFree, OBJECTHANDLE handle);
-};
+    FCDECL2(OBJECTHANDLE, DependentHandle_InternalAlloc, Object *target, Object *dependent);
+    FCDECL1(Object *, DependentHandle_InternalGetTargetWithDebugValidation, OBJECTHANDLE handle);
+    FCDECL1(Object *, DependentHandle_InternalGetDependent, OBJECTHANDLE handle);
+    FCDECL2(Object *, DependentHandle_InternalGetTargetAndDependent, OBJECTHANDLE handle, Object **outDependent);
+    FCDECL1(VOID, DependentHandle_InternalSetTargetToNull, OBJECTHANDLE handle);
+    FCDECL2(VOID, DependentHandle_InternalSetDependent, OBJECTHANDLE handle, Object *dependent);
+    FCDECL1(FC_BOOL_RET, DependentHandle_InternalFree, OBJECTHANDLE handle);
+}
 
-extern "C" OBJECTHANDLE QCALLTYPE DependentHandle_InternalAllocWithGCTransition(QCall::ObjectHandleOnStack target, QCall::ObjectHandleOnStack dependent);
-extern "C" void QCALLTYPE DependentHandle_InternalFreeWithGCTransition(OBJECTHANDLE handle);
+extern "C" OBJECTHANDLE QCALLTYPE DependentHandle_InternalAllocWithGCTransition(QCall::ObjectHandleOnStack target, QCall::ObjectHandleOnStack dependent, QCallExceptionStatus* qcallError);
+extern "C" void QCALLTYPE DependentHandle_InternalFreeWithGCTransition(OBJECTHANDLE handle, QCallExceptionStatus* qcallError);
 
 #endif

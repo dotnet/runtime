@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -336,7 +336,7 @@ namespace System
         }
 
         /// <summary>Gets a message that describes the exception.</summary>
-        public override string Message
+        public override unsafe string Message
         {
             get
             {

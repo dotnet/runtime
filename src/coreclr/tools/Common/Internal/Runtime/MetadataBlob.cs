@@ -45,8 +45,7 @@ namespace Internal.Runtime
         GenericMethodsHashtable                     = 35,
         ExactMethodInstantiationsHashtable          = 36,
 
-        // Type map blobs:
-        ExternalTypeMap                             = 40,
-        ProxyTypeMap                                = 41,
+        // WASM-only: pairs of (unboxing stub, target) function table indices
+        UnboxingStubMap                             = 37,
     }
 }

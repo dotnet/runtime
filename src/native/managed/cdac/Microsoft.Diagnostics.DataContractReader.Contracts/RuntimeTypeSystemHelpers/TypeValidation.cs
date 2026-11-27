@@ -9,13 +9,19 @@ namespace Microsoft.Diagnostics.DataContractReader.RuntimeTypeSystemHelpers;
 internal sealed class TypeValidation
 {
     private readonly Target _target;
-    private readonly TargetPointer _continuationMethodTablePointer;
+    private readonly CachedValue<TargetPointer> _continuationMethodTablePointer;
+    private readonly CachedValue<TargetPointer> _continuationSingletonEEClassPointer;
 
-    internal TypeValidation(Target target, TargetPointer continuationMethodTablePointer)
+    internal TypeValidation(Target target, CachedValue<TargetPointer> continuationMethodTablePointer, CachedValue<TargetPointer> continuationSingletonEEClassPointer)
     {
         _target = target;
         _continuationMethodTablePointer = continuationMethodTablePointer;
+        _continuationSingletonEEClassPointer = continuationSingletonEEClassPointer;
     }
+
+    private TargetPointer ContinuationMethodTablePointer => _continuationMethodTablePointer;
+
+    private TargetPointer ContinuationSingletonEEClassPointer => _continuationSingletonEEClassPointer;
 
     // This doesn't need as many properties as MethodTable because we don't want to be operating on
     // a NonValidatedMethodTable for too long
@@ -70,7 +76,8 @@ internal sealed class TypeValidation
             }
         }
 
-        internal readonly bool ValidateReadable() => ValidateDataReadable<MethodTable>(_target, Address);
+        internal readonly bool ValidateReadable() => new MethodTable(_target, Address).TryReadAllFields();
+
         internal TargetPointer ParentMethodTable => _target.ReadPointer(Address + (ulong)_type.Fields[nameof(ParentMethodTable)].Offset);
     }
 
@@ -90,7 +97,7 @@ internal sealed class TypeValidation
 
         internal TargetPointer MethodTable => _target.ReadPointer(Address + (ulong)_type.Fields[nameof(MethodTable)].Offset);
 
-        internal readonly bool ValidateReadable() => ValidateDataReadable<EEClass>(_target, Address);
+        internal readonly bool ValidateReadable() => new EEClass(_target, Address).TryReadAllFields();
     }
 
     internal static NonValidatedMethodTable GetMethodTableData(Target target, TargetPointer methodTablePointer)
@@ -167,7 +174,7 @@ internal sealed class TypeValidation
             {
                 return true;
             }
-            if (methodTable.Flags.HasInstantiation || methodTable.Flags.IsArray || IsContinuation(methodTable))
+            if (methodTable.Flags.HasInstantiation || methodTable.Flags.IsArray || IsContinuationWithoutMetadata(methodTable))
             {
                 NonValidatedMethodTable methodTableFromClass = GetMethodTableData(_target, methodTablePtrFromClass);
                 if (!methodTableFromClass.ValidateReadable())
@@ -194,19 +201,6 @@ internal sealed class TypeValidation
         return true;
     }
 
-    private static bool ValidateDataReadable<T>(Target target, TargetPointer dataAddress) where T : IData<T>
-    {
-        try
-        {
-            T dataClass = T.Create(target, dataAddress);
-            return true;
-        }
-        catch (VirtualReadException)
-        {
-            return false;
-        }
-    }
-
     private TargetPointer GetClassThrowing(NonValidatedMethodTable methodTable)
     {
         TargetPointer eeClassOrCanonMT = methodTable.EEClassOrCanonMT;
@@ -227,14 +221,16 @@ internal sealed class TypeValidation
         }
     }
 
-    // NOTE: The continuation check is duplicated here and in RuntimeTypeSystem_1.IsContinuation.
+    // NOTE: The continuation check is duplicated here and in RuntimeTypeSystem_1.IsContinuationWithoutMetadata.
     // TypeValidation runs before the MethodTable is added to the RuntimeTypeSystem's cache, so we
     // cannot call into RuntimeTypeSystem_1 — the type handle does not exist yet. Instead we
     // duplicate the check using the raw ParentMethodTable read from target memory.
-    private bool IsContinuation(NonValidatedMethodTable methodTable)
+    private bool IsContinuationWithoutMetadata(NonValidatedMethodTable methodTable)
     {
-        return _continuationMethodTablePointer != TargetPointer.Null
-            && methodTable.ParentMethodTable == _continuationMethodTablePointer;
+        return ContinuationMethodTablePointer != TargetPointer.Null
+            && methodTable.ParentMethodTable == ContinuationMethodTablePointer
+            && ContinuationSingletonEEClassPointer != TargetPointer.Null
+            && GetClassThrowing(methodTable) == ContinuationSingletonEEClassPointer;
     }
 
     internal bool TryValidateMethodTablePointer(TargetPointer methodTablePointer)

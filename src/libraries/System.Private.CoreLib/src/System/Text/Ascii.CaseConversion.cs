@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -115,7 +116,7 @@ namespace System.Text
             => ChangeCase<ushort, byte, ToLowerConversion>(MemoryMarshal.Cast<char, ushort>(source), destination, out bytesWritten);
 
         /// <summary>
-        /// Performs in-place uppercase conversion.
+        /// Performs in-place lowercase conversion.
         /// </summary>
         /// <param name="value">The ASCII text buffer.</param>
         /// <param name="bytesWritten">The number of processed bytes.</param>
@@ -125,7 +126,7 @@ namespace System.Text
             => ChangeCase<byte, ToLowerConversion>(value, out bytesWritten);
 
         /// <summary>
-        /// Performs in-place uppercase conversion.
+        /// Performs in-place lowercase conversion.
         /// </summary>
         /// <param name="value">The ASCII text buffer.</param>
         /// <param name="charsWritten">The number of processed characters.</param>
@@ -135,7 +136,7 @@ namespace System.Text
             => ChangeCase<ushort, ToLowerConversion>(MemoryMarshal.Cast<char, ushort>(value), out charsWritten);
 
         /// <summary>
-        /// Performs in-place lowercase conversion.
+        /// Performs in-place uppercase conversion.
         /// </summary>
         /// <param name="value">The ASCII text buffer.</param>
         /// <param name="bytesWritten">The number of processed bytes.</param>
@@ -145,7 +146,7 @@ namespace System.Text
             => ChangeCase<byte, ToUpperConversion>(value, out bytesWritten);
 
         /// <summary>
-        /// Performs in-place lowercase conversion.
+        /// Performs in-place uppercase conversion.
         /// </summary>
         /// <param name="value">The ASCII text buffer.</param>
         /// <param name="charsWritten">The number of processed characters.</param>

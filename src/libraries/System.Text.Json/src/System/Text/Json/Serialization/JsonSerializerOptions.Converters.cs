@@ -23,6 +23,24 @@ namespace System.Text.Json
         public IList<JsonConverter> Converters => _converters ??= new(this);
 
         /// <summary>
+        /// Gets the list of custom type classifier factories.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Each <see cref="JsonTypeClassifierFactory"/> in the list is consulted (in declaration order) when
+        /// configuring a union or polymorphic type for which no per-type classifier was set via
+        /// <see cref="JsonUnionAttribute.TypeClassifier"/> or <see cref="JsonPolymorphicAttribute.TypeClassifier"/>.
+        /// The first factory whose
+        /// <see cref="JsonTypeClassifierFactory.CanClassify(JsonTypeClassifierContext)"/> returns <see langword="true"/>
+        /// is used; otherwise the built-in type resolution for that metadata shape applies.
+        /// </para>
+        /// <para>
+        /// Once serialization or deserialization occurs, the list cannot be modified.
+        /// </para>
+        /// </remarks>
+        public IList<JsonTypeClassifierFactory> TypeClassifiers => _typeClassifiers ??= new(this);
+
+        /// <summary>
         /// Returns the converter for the specified type.
         /// </summary>
         /// <param name="typeToConvert">The type to return a converter for.</param>
@@ -71,6 +89,22 @@ namespace System.Text.Json
                 foreach (JsonConverter item in converterList)
                 {
                     if (item.CanConvert(typeToConvert))
+                    {
+                        return item;
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        internal JsonTypeClassifierFactory? GetTypeClassifierFromList(JsonTypeClassifierContext context)
+        {
+            if (_typeClassifiers is { } classifierList)
+            {
+                foreach (JsonTypeClassifierFactory item in classifierList)
+                {
+                    if (item.CanClassify(context))
                     {
                         return item;
                     }

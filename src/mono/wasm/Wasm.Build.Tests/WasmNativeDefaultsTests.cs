@@ -11,7 +11,7 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.Tests
 {
-    [TestCategory("native")]
+    [TestCategory("native"), TestCategory("mono")]
     public class WasmNativeDefaultsTests : WasmTemplateTestsBase
     {
         private static Regex s_regex = new("\\*\\* WasmBuildNative:.*");
@@ -29,7 +29,6 @@ namespace Wasm.Build.Tests
                 ("InvariantTimezone", false),
                 ("InvariantGlobalization", false),
                 // ("WasmNativeStrip", true) -- tested separately because it has special handling in targets
-                // ("RunAOTCompilation", false) -- tested separately as it changes build behavior significantly
             };
 
             TheoryData<Configuration, string, bool, bool, bool> data = new();

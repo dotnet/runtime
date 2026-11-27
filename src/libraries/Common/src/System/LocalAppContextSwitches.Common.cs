@@ -16,21 +16,34 @@ namespace System
 
         // Returns value of given switch using provided cache.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static bool GetCachedSwitchValue(string switchName, ref int cachedSwitchValue)
+        internal static bool GetCachedSwitchValue(string switchName, ref int cachedSwitchValue, bool defaultValue = false)
         {
             // The cached switch value has 3 states: 0 - unknown, 1 - true, -1 - false
             if (cachedSwitchValue < 0) return false;
             if (cachedSwitchValue > 0) return true;
 
-            return GetCachedSwitchValueInternal(switchName, ref cachedSwitchValue);
+            return GetCachedSwitchValueInternal(switchName, null, ref cachedSwitchValue, defaultValue);
         }
 
-        private static bool GetCachedSwitchValueInternal(string switchName, ref int cachedSwitchValue)
+        // Returns value of given switch or environment variable using provided cache.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool GetCachedSwitchValue(string switchName, string? envVariable, ref int cachedSwitchValue, bool defaultValue = false)
         {
-            bool hasSwitch = AppContext.TryGetSwitch(switchName, out bool isSwitchEnabled);
-            if (!hasSwitch)
+            // The cached switch value has 3 states: 0 - unknown, 1 - true, -1 - false
+            if (cachedSwitchValue < 0) return false;
+            if (cachedSwitchValue > 0) return true;
+
+            return GetCachedSwitchValueInternal(switchName, envVariable, ref cachedSwitchValue, defaultValue);
+        }
+
+        private static bool GetCachedSwitchValueInternal(string switchName, string? envVariable, ref int cachedSwitchValue, bool defaultValue)
+        {
+            if (!AppContext.TryGetSwitch(switchName, out bool isSwitchEnabled))
             {
-                isSwitchEnabled = GetSwitchDefaultValue(switchName);
+                if (envVariable == null || !TryGetBooleanEnvironmentVariable(envVariable, out isSwitchEnabled))
+                {
+                    isSwitchEnabled = defaultValue;
+                }
             }
 
             AppContext.TryGetSwitch("TestSwitch.LocalAppContext.DisableCaching", out bool disableCaching);
@@ -42,24 +55,27 @@ namespace System
             return isSwitchEnabled;
         }
 
-        // Provides default values for switches if they're not always false by default
-        private static bool GetSwitchDefaultValue(string switchName)
+        private static bool TryGetBooleanEnvironmentVariable(string envVariable, out bool value)
         {
-            if (switchName == "Switch.System.Runtime.Serialization.SerializationGuard")
+            if (Environment.GetEnvironmentVariable(envVariable) is string str)
             {
-                return true;
+                if (str == "1" || string.Equals(str, bool.TrueString, StringComparison.OrdinalIgnoreCase))
+                {
+                    value = true;
+                    return true;
+                }
+
+                if (str == "0" || string.Equals(str, bool.FalseString, StringComparison.OrdinalIgnoreCase))
+                {
+                    value = false;
+                    return true;
+                }
+
+                value = false;
+                return false;
             }
 
-            if (switchName == "System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization")
-            {
-                return true;
-            }
-
-            if (switchName == "System.Xml.XmlResolver.IsNetworkingEnabledByDefault")
-            {
-                return true;
-            }
-
+            value = false;
             return false;
         }
     }

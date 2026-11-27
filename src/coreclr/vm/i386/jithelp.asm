@@ -32,10 +32,6 @@ g_lowest_address                TEXTEQU <_g_lowest_address>
 g_highest_address               TEXTEQU <_g_highest_address>
 g_card_table                    TEXTEQU <_g_card_table>
 WriteBarrierAssert              TEXTEQU <_WriteBarrierAssert@8>
-JIT_LLsh                        TEXTEQU <_JIT_LLsh@0>
-JIT_LRsh                        TEXTEQU <_JIT_LRsh@0>
-JIT_LRsz                        TEXTEQU <_JIT_LRsz@0>
-JIT_LMul                        TEXTEQU <@JIT_LMul@16>
 JIT_WriteBarrierReg_PreGrow     TEXTEQU <_JIT_WriteBarrierReg_PreGrow@0>
 JIT_WriteBarrierReg_PostGrow    TEXTEQU <_JIT_WriteBarrierReg_PostGrow@0>
 JIT_TailCall                    TEXTEQU <_JIT_TailCall@0>
@@ -43,9 +39,6 @@ JIT_TailCallLeave               TEXTEQU <_JIT_TailCallLeave@0>
 JIT_TailCallVSDLeave            TEXTEQU <_JIT_TailCallVSDLeave@0>
 JIT_TailCallHelper              TEXTEQU <_JIT_TailCallHelper@4>
 JIT_TailCallReturnFromVSD       TEXTEQU <_JIT_TailCallReturnFromVSD@0>
-
-g_pPollGC                       TEXTEQU <_g_pPollGC>
-g_TrapReturningThreads          TEXTEQU <_g_TrapReturningThreads>
 
 EXTERN  g_ephemeral_low:DWORD
 EXTERN  g_ephemeral_high:DWORD
@@ -59,9 +52,6 @@ ifdef FEATURE_HIJACK
 EXTERN  JIT_TailCallHelper:PROC
 endif
 EXTERN @JIT_FailFast@0:PROC
-
-EXTERN g_pPollGC:DWORD
-EXTERN g_TrapReturningThreads:DWORD
 
 
 ifdef WRITE_BARRIER_CHECK
@@ -267,143 +257,6 @@ _JIT_CheckedWriteBarrier&rg&@0 ENDP
 ENDM
 
 
-;***
-;JIT_ByRefWriteBarrier* - GC write barrier helper
-;
-;Purpose:
-;   Helper calls in order to assign an object to a byref field
-;   Enables book-keeping of the GC.
-;
-;Entry:
-;   EDI - address of ref-field (assigned to)
-;   ESI - address of the data  (source)
-;   ECX can be trashed
-;
-;Exit:
-;
-;Uses:
-;   EDI and ESI are incremented by a DWORD
-;
-;Exceptions:
-;
-;*******************************************************************************
-
-; The code here is tightly coupled with AdjustContextForJITHelpers, if you change
-; anything here, you might need to change AdjustContextForJITHelpers as well
-
-ByRefWriteBarrierHelper MACRO
-        ALIGN 4
-PUBLIC _JIT_ByRefWriteBarrier@0
-_JIT_ByRefWriteBarrier@0 PROC
-        ;;test for dest in range
-        mov     ecx, [esi]
-        cmp     edi, g_lowest_address
-        jb      ByRefWriteBarrier_NotInHeap
-        cmp     edi, g_highest_address
-        jae     ByRefWriteBarrier_NotInHeap
-
-ifndef WRITE_BARRIER_CHECK
-        ;;write barrier
-        mov     [edi],ecx
-endif
-
-ifdef WRITE_BARRIER_CHECK
-        ; Test dest here so if it is bad AV would happen before we change register/stack
-        ; status. This makes job of AdjustContextForJITHelpers easier.
-        cmp     [edi], 0
-
-        ;; ALSO update the shadow GC heap if that is enabled
-
-        ; use edx for address in GC Shadow,
-        push    edx
-
-        ;if g_GCShadow is 0, don't do the update
-        cmp     g_GCShadow, 0
-        je      ByRefWriteBarrier_NoShadow
-
-        mov     edx, edi
-        sub     edx, g_lowest_address   ; U/V
-        jb      ByRefWriteBarrier_NoShadow
-        add     edx, [g_GCShadow]
-        cmp     edx, [g_GCShadowEnd]
-        jae     ByRefWriteBarrier_NoShadow
-
-        ; TODO: In Orcas timeframe if we move to P4+ only on X86 we should enable
-        ; mfence barriers on either side of these two writes to make sure that
-        ; they stay as close together as possible
-
-        ; edi contains address in GC
-        ; edx contains address in ShadowGC
-        ; ecx is the value to assign
-
-        ;; When we're writing to the shadow GC heap we want to be careful to minimize
-        ;; the risk of a race that can occur here where the GC and ShadowGC don't match
-        mov     DWORD PTR [edi], ecx
-        mov     DWORD PTR [edx], ecx
-
-        ;; We need a scratch register to verify the shadow heap.  We also need to
-        ;; construct a memory barrier so that the write to the shadow heap happens
-        ;; before the read from the GC heap.  We can do both by using SUB/XCHG
-        ;; rather than PUSH.
-        ;;
-        ;; TODO: Should be changed to a push if the mfence described above is added.
-        ;;
-        sub     esp, 4
-        xchg    [esp], eax
-
-        ;; As part of our race avoidance (see above) we will now check whether the values
-        ;; in the GC and ShadowGC match. There is a possibility that we're wrong here but
-        ;; being overaggressive means we might mask a case where someone updates GC refs
-        ;; without going to a write barrier, but by its nature it will be indeterminant
-        ;; and we will find real bugs whereas the current implementation is indeterminant
-        ;; but only leads to investigations that find that this code is fundamentally flawed
-
-        mov     eax, [edi]
-        cmp     [edx], eax
-        je      ByRefWriteBarrier_CleanupShadowCheck
-        mov     [edx], INVALIDGCVALUE
-ByRefWriteBarrier_CleanupShadowCheck:
-        pop     eax
-        jmp     ByRefWriteBarrier_ShadowCheckEnd
-
-ByRefWriteBarrier_NoShadow:
-        ; If we come here then we haven't written the value to the GC and need to.
-        mov     DWORD PTR [edi], ecx
-
-ByRefWriteBarrier_ShadowCheckEnd:
-        pop     edx
-endif
-        ;;test for *src in ephemeral segement
-        cmp     ecx, g_ephemeral_low
-        jb      ByRefWriteBarrier_NotInEphemeral
-        cmp     ecx, g_ephemeral_high
-        jae     ByRefWriteBarrier_NotInEphemeral
-
-        mov     ecx, edi
-        add     esi,4
-        add     edi,4
-
-        shr     ecx, 10
-        add     ecx, [g_card_table]
-        cmp     byte ptr [ecx], 0FFh
-        jne     ByRefWriteBarrier_UpdateCardTable
-        ret
-ByRefWriteBarrier_UpdateCardTable:
-        mov     byte ptr [ecx], 0FFh
-        ret
-
-ByRefWriteBarrier_NotInHeap:
-        ; If it wasn't in the heap then we haven't updated the dst in memory yet
-        mov     [edi],ecx
-ByRefWriteBarrier_NotInEphemeral:
-        ; If it is in the GC Heap but isn't in the ephemeral range we've already
-        ; updated the Heap with the Object*.
-        add     esi,4
-        add     edi,4
-        ret
-_JIT_ByRefWriteBarrier@0 ENDP
-ENDM
-
 ;*******************************************************************************
 ; Write barrier wrappers with fcall calling convention
 ;
@@ -423,14 +276,6 @@ _JIT_WriteBarrierGroup@0 PROC
 ret
 _JIT_WriteBarrierGroup@0 ENDP
 
-        ALIGN 4
-PUBLIC @JIT_WriteBarrier_Callable@8
-@JIT_WriteBarrier_Callable@8 PROC
-        mov eax,edx
-        mov edx,ecx
-        jmp DWORD PTR [_JIT_WriteBarrierEAX_Loc]
-
-@JIT_WriteBarrier_Callable@8 ENDP
 
 UniversalWriteBarrierHelper MACRO name
         ALIGN 4
@@ -456,180 +301,11 @@ WriteBarrierHelper <ESI>
 WriteBarrierHelper <EDI>
 WriteBarrierHelper <EBP>
 
-ByRefWriteBarrierHelper
-
 ; This is the first function outside the "keep together range". Used by BBT scripts.
 PUBLIC _JIT_WriteBarrierGroup_End@0
 _JIT_WriteBarrierGroup_End@0 PROC
 ret
 _JIT_WriteBarrierGroup_End@0 ENDP
-
-;*********************************************************************/
-;llshl - long shift left
-;
-;Purpose:
-;   Does a Long Shift Left (signed and unsigned are identical)
-;   Shifts a long left any number of bits.
-;
-;       NOTE:  This routine has been adapted from the Microsoft CRTs.
-;
-;Entry:
-;   EDX:EAX - long value to be shifted
-;       ECX - number of bits to shift by
-;
-;Exit:
-;   EDX:EAX - shifted value
-;
-        ALIGN 16
-PUBLIC JIT_LLsh
-JIT_LLsh PROC
-; Reduce shift amount mod 64
-        and     ecx, 63
-; Handle shifts of between bits 0 and 31
-        cmp     ecx, 32
-        jae     short LLshMORE32
-        shld    edx,eax,cl
-        shl     eax,cl
-        ret
-; Handle shifts of between bits 32 and 63
-LLshMORE32:
-        ; The x86 shift instructions only use the lower 5 bits.
-        mov     edx,eax
-        xor     eax,eax
-        shl     edx,cl
-        ret
-JIT_LLsh ENDP
-
-
-;*********************************************************************/
-;LRsh - long shift right
-;
-;Purpose:
-;   Does a signed Long Shift Right
-;   Shifts a long right any number of bits.
-;
-;       NOTE:  This routine has been adapted from the Microsoft CRTs.
-;
-;Entry:
-;   EDX:EAX - long value to be shifted
-;       ECX - number of bits to shift by
-;
-;Exit:
-;   EDX:EAX - shifted value
-;
-        ALIGN 16
-PUBLIC JIT_LRsh
-JIT_LRsh PROC
-; Reduce shift amount mod 64
-        and     ecx, 63
-; Handle shifts of between bits 0 and 31
-        cmp     ecx, 32
-        jae     short LRshMORE32
-        shrd    eax,edx,cl
-        sar     edx,cl
-        ret
-; Handle shifts of between bits 32 and 63
-LRshMORE32:
-        ; The x86 shift instructions only use the lower 5 bits.
-        mov     eax,edx
-        sar     edx, 31
-        sar     eax,cl
-        ret
-JIT_LRsh ENDP
-
-
-;*********************************************************************/
-; LRsz:
-;Purpose:
-;   Does a unsigned Long Shift Right
-;   Shifts a long right any number of bits.
-;
-;       NOTE:  This routine has been adapted from the Microsoft CRTs.
-;
-;Entry:
-;   EDX:EAX - long value to be shifted
-;       ECX - number of bits to shift by
-;
-;Exit:
-;   EDX:EAX - shifted value
-;
-        ALIGN 16
-PUBLIC JIT_LRsz
-JIT_LRsz PROC
-; Reduce shift amount mod 64
-        and     ecx, 63
-; Handle shifts of between bits 0 and 31
-        cmp     ecx, 32
-        jae     short LRszMORE32
-        shrd    eax,edx,cl
-        shr     edx,cl
-        ret
-; Handle shifts of between bits 32 and 63
-LRszMORE32:
-        ; The x86 shift instructions only use the lower 5 bits.
-        mov     eax,edx
-        xor     edx,edx
-        shr     eax,cl
-        ret
-JIT_LRsz ENDP
-
-;*********************************************************************/
-; LMul:
-;Purpose:
-;   Does a long multiply (same for signed/unsigned)
-;
-;       NOTE:  This routine has been adapted from the Microsoft CRTs.
-;
-;Entry:
-;   Parameters are passed on the stack:
-;               1st pushed: multiplier (QWORD)
-;               2nd pushed: multiplicand (QWORD)
-;
-;Exit:
-;   EDX:EAX - product of multiplier and multiplicand
-;
-        ALIGN 16
-PUBLIC JIT_LMul
-JIT_LMul PROC
-
-;       AHI, BHI : upper 32 bits of A and B
-;       ALO, BLO : lower 32 bits of A and B
-;
-;             ALO * BLO
-;       ALO * BHI
-; +     BLO * AHI
-; ---------------------
-
-        mov     eax,[esp + 8]   ; AHI
-        mov     ecx,[esp + 16]  ; BHI
-        or      ecx,eax         ;test for both hiwords zero.
-        mov     ecx,[esp + 12]  ; BLO
-        jnz     LMul_hard       ;both are zero, just mult ALO and BLO
-
-        mov     eax,[esp + 4]
-        mul     ecx
-
-        ret     16              ; callee restores the stack
-
-LMul_hard:
-        push    ebx
-
-        mul     ecx             ;eax has AHI, ecx has BLO, so AHI * BLO
-        mov     ebx,eax         ;save result
-
-        mov     eax,[esp + 8]   ; ALO
-        mul     dword ptr [esp + 20] ;ALO * BHI
-        add     ebx,eax         ;ebx = ((ALO * BHI) + (AHI * BLO))
-
-        mov     eax,[esp + 8]   ; ALO   ;ecx = BLO
-        mul     ecx             ;so edx:eax = ALO*BLO
-        add     edx,ebx         ;now edx has all the LO*HI stuff
-
-        pop     ebx
-
-        ret     16              ; callee restores the stack
-
-JIT_LMul ENDP
 
 ;*********************************************************************/
 ; This is the small write barrier thunk we use when we know the
@@ -1066,54 +742,5 @@ _JIT_PatchedWriteBarrierGroup_End@0 ENDP
 _JIT_PatchedCodeLast@0 proc public
 ret
 _JIT_PatchedCodeLast@0 endp
-
-; This is the first function outside the "keep together range". Used by BBT scripts.
-_JIT_PatchedCodeEnd@0 proc public
-ret
-_JIT_PatchedCodeEnd@0 endp
-
-; The following helper will access ("probe") a word on each page of the stack
-; starting with the page right beneath esp down to the one pointed to by eax.
-; The procedure is needed to make sure that the "guard" page is pushed down below the allocated stack frame.
-; The call to the helper will be emitted by JIT in the function prolog when large (larger than 0x3000 bytes) stack frame is required.
-;
-; NOTE: this helper will modify a value of esp and must establish the frame pointer.
-PROBE_PAGE_SIZE equ 1000h
-
-_JIT_StackProbe@0 PROC public
-    ; On entry:
-    ;   eax - the lowest address of the stack frame being allocated (i.e. [InitialSp - FrameSize])
-    ;
-    ; NOTE: this helper will probe at least one page below the one pointed by esp.
-    push    ebp
-    mov     ebp, esp
-
-    and     esp, -PROBE_PAGE_SIZE ; esp points to the **lowest address** on the last probed page
-                                  ; This is done to make the loop end condition simpler.
-ProbeLoop:
-    test    [esp - 4], eax        ; esp points to the lowest address on the **last probed** page
-    sub     esp, PROBE_PAGE_SIZE  ; esp points to the lowest address of the **next page** to probe
-    cmp     esp, eax
-    jg      ProbeLoop             ; if esp > eax, then we need to probe at least one more page.
-
-    mov     esp, ebp
-    pop     ebp
-    ret
-
-_JIT_StackProbe@0 ENDP
-
-PUBLIC _JIT_StackProbe_End@0
-_JIT_StackProbe_End@0 PROC
-    ret
-_JIT_StackProbe_End@0 ENDP
-
-@JIT_PollGC@0 PROC public
-    cmp [g_TrapReturningThreads], 0
-    jnz JIT_PollGCRarePath
-    ret
-JIT_PollGCRarePath:
-    mov eax, g_pPollGC
-    jmp eax
-@JIT_PollGC@0 ENDP
 
     end

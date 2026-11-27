@@ -47,6 +47,24 @@ namespace System.Security.Cryptography.X509Certificates
             AddGeneralName(new GeneralNameAsn { IPAddress = ipAddress.GetAddressBytes() });
         }
 
+        /// <summary>
+        /// Adds a Registered ID (OID) to the Subject Alternative Name.
+        /// </summary>
+        /// <param name="registeredId">The registered ID OID to add, in dotted decimal notation.</param>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="registeredId" /> is <see langword="null" /> or <see cref="string.Empty" />.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <paramref name="registeredId" /> is not a valid OID.
+        /// </exception>
+        public void AddRegisteredId(string registeredId)
+        {
+            if (string.IsNullOrEmpty(registeredId))
+                throw new ArgumentOutOfRangeException(nameof(registeredId), SR.Arg_EmptyOrNullString);
+
+            AddGeneralName(new GeneralNameAsn { RegisteredId = registeredId });
+        }
+
         public void AddUserPrincipalName(string upn)
         {
             if (string.IsNullOrEmpty(upn))

@@ -35,10 +35,7 @@ namespace System.Net.NetworkInformation
             if (sendIpHeader)
             {
                 iph.VersionAndLength = 0x45;
-                unsafe
-                {
-                    totalLength = sizeof(IpHeader) + checked(sizeof(IcmpHeader) + buffer.Length);
-                }
+                totalLength = sizeof(IpHeader) + checked(sizeof(IcmpHeader) + buffer.Length);
                 // On OSX this strangely must be host byte order.
                 iph.TotalLength = OperatingSystem.IsFreeBSD() ? (ushort)IPAddress.HostToNetworkOrder((short)totalLength) : (ushort)totalLength;
                 iph.Protocol = 1; // ICMP
@@ -297,7 +294,7 @@ namespace System.Net.NetworkInformation
             }
         }
 
-        private static PingReply CreatePingReplyForUnreachableHost(IPAddress address, Socket socket)
+        private static unsafe PingReply CreatePingReplyForUnreachableHost(IPAddress address, Socket socket)
         {
             Span<byte> socketAddress = stackalloc byte[SocketAddress.GetMaximumAddressSize(address.AddressFamily)];
             unsafe

@@ -37,6 +37,9 @@ namespace ILCompiler.Reflection.ReadyToRun
                 case Machine.RiscV64:
                     return RiscV64TransitionBlock.Instance;
 
+                case WasmMachine.Wasm32:
+                    return Wasm32TransitionBlock.Instance;
+
                 default:
                     throw new NotImplementedException();
             }
@@ -97,6 +100,23 @@ namespace ILCompiler.Reflection.ReadyToRun
                 {
                     return OffsetOfArgs + (pos - NumArgumentRegisters) * PointerSize;
                 }
+            }
+        }
+
+        private sealed class Wasm32TransitionBlock : TransitionBlock
+        {
+            public static readonly TransitionBlock Instance = new Wasm32TransitionBlock();
+
+            public override int PointerSize => 4;
+            public override int NumArgumentRegisters => 0;
+            public override int NumCalleeSavedRegisters => 0;
+            // Argument registers, callee-save registers, return address
+            public override int SizeOfTransitionBlock => 8;
+            public override int OffsetOfArgumentRegisters => SizeOfTransitionBlock;
+
+            public override int OffsetFromGCRefMapPos(int pos)
+            {
+                return OffsetOfArgumentRegisters + pos * PointerSize;
             }
         }
 

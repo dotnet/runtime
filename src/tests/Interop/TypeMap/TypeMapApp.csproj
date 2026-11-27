@@ -3,8 +3,6 @@
     <!-- Needed for CMakeProjectReference -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-    <MonoAotIncompatible>true</MonoAotIncompatible>
-    <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'mono'">true</DisableProjectBuild>
     <IlcGenerateMstatFile>true</IlcGenerateMstatFile>
     <IlcGenerateDgmlFile>true</IlcGenerateDgmlFile>
   </PropertyGroup>
@@ -18,5 +16,8 @@
     </ProjectReference>
     <ProjectReference Include="TypeMapLib3.csproj" />
     <ProjectReference Include="TypeMapLib4.csproj" />
+    <ProjectReference Include="TypeMapLib5.csproj" />
+    <ProjectReference Include="TypeMapBlobOnlyLib.ilproj" />
+    <ProjectReference Include="NoTypeMapEntries.csproj" />
   </ItemGroup>
 </Project>

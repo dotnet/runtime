@@ -295,13 +295,6 @@
 #endif
 #endif
 
-// If the UNIX_X86_ABI is defined make sure that TARGET_X86 is also defined.
-#if defined(UNIX_X86_ABI)
-#if !defined(TARGET_X86)
-#error When UNIX_X86_ABI is defined you must define TARGET_X86 defined as well.
-#endif
-#endif
-
 typedef ptrdiff_t ssize_t;
 
 // Include the AMD64 unwind codes when appropriate.
@@ -318,7 +311,30 @@ typedef ptrdiff_t ssize_t;
                                  // with our new(compiler*) pattern.
 
 #include "utilcode.h" // this defines assert as _ASSERTE
-#include "host.h"     // this redefines assert for the JIT to use assertAbort
+
+#include <new>
+
+// Shared headers can use the global allocator. Diagnose uses in the JIT.
+// clang-format off
+[[deprecated("Use a JIT allocator instead")]]
+void* __cdecl operator new(std::size_t size);
+[[deprecated("Use a JIT allocator instead")]]
+void* __cdecl operator new[](std::size_t size);
+[[deprecated("Use a JIT allocator instead")]]
+void* __cdecl operator new(std::size_t size, std::align_val_t alignment);
+[[deprecated("Use a JIT allocator instead")]]
+void* __cdecl operator new[](std::size_t size, std::align_val_t alignment);
+[[deprecated("Use a JIT allocator instead")]]
+void* __cdecl operator new(std::size_t size, const std::nothrow_t& tag) noexcept;
+[[deprecated("Use a JIT allocator instead")]]
+void* __cdecl operator new[](std::size_t size, const std::nothrow_t& tag) noexcept;
+[[deprecated("Use a JIT allocator instead")]]
+void* __cdecl operator new(std::size_t size, std::align_val_t alignment, const std::nothrow_t& tag) noexcept;
+[[deprecated("Use a JIT allocator instead")]]
+void* __cdecl operator new[](std::size_t size, std::align_val_t alignment, const std::nothrow_t& tag) noexcept;
+// clang-format on
+
+#include "host.h" // this redefines assert for the JIT to use assertAbort
 #include "utils.h"
 #include "targetosarch.h"
 
@@ -342,6 +358,12 @@ typedef ptrdiff_t ssize_t;
 #else
 #define INDEBUG(x)
 #define DEBUGARG(x)
+#endif
+
+#if defined(DEBUG) || defined(TARGET_WASM)
+#define INDEBUG_OR_WASM(x) x
+#else
+#define INDEBUG_OR_WASM(x)
 #endif
 
 #if defined(DEBUG) || defined(LATE_DISASM)
@@ -655,12 +677,16 @@ const bool dspGCtbls = true;
 
 #ifdef DEBUG
 
-// Forward declarations for UninitializedWord and IsUninitialized are needed by alloc.h
-template <typename T>
-inline T UninitializedWord(Compiler* comp);
+// The byte that the JIT fills uninitialized memory with in DEBUG builds. Used by alloc.h.
+const unsigned char UninitializedFillByte = 0xcd;
 
+// Returns a word filled with UninitializedFillByte.
 template <typename T>
-inline bool IsUninitialized(T data);
+inline T UninitializedWord()
+{
+    const uint64_t word = 0x0101010101010101ULL * UninitializedFillByte;
+    return (T)word;
+}
 
 #endif // DEBUG
 
@@ -725,12 +751,12 @@ inline size_t unsigned_abs(ssize_t x)
     return ((size_t)std::abs((int64_t)x));
 }
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__OpenBSD__)
 inline size_t unsigned_abs(int64_t x)
 {
     return ((size_t)std::abs(x));
 }
-#endif // __APPLE__
+#endif // __APPLE__ || __OpenBSD__
 #endif // TARGET_64BIT
 
 /*****************************************************************************/
@@ -829,40 +855,6 @@ public:
 //  Include the definition of Compiler for use by these template functions
 //
 #include "compiler.h"
-
-//****************************************************************************
-//
-//  Returns a word filled with the JITs allocator default fill value.
-//
-template <typename T>
-inline T UninitializedWord(Compiler* comp)
-{
-    unsigned char defaultFill = 0xdd;
-    if (comp == nullptr)
-    {
-        comp = JitTls::GetCompiler();
-    }
-    defaultFill = Compiler::compGetJitDefaultFill(comp);
-    assert(defaultFill <= 0xff);
-    int64_t word = 0x0101010101010101LL * defaultFill;
-    return (T)word;
-}
-
-//****************************************************************************
-//
-//  Tries to determine if this value is coming from uninitialized JIT memory
-//    - Returns true if the value matches what we initialized the memory to.
-//
-//  Notes:
-//    - Asserts that use this are assuming that the UninitializedWord value
-//      isn't a legal value for 'data'.  Thus using a default fill value of
-//      0x00 will often trigger such asserts.
-//
-template <typename T>
-inline bool IsUninitialized(T data)
-{
-    return data == UninitializedWord<T>(JitTls::GetCompiler());
-}
 
 #pragma warning(push)
 #pragma warning(disable : 4312)

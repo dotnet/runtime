@@ -1,8 +1,9 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -103,7 +104,7 @@ namespace System.Text
             // non-shipping slow reference implementation is provided below for convenience.
 
 #if false
-            Span<byte> bytes = stackalloc byte[4]; // max 4 bytes per input scalar
+            Span<byte> bytes = [0, 0, 0, 0]; // max 4 bytes per input scalar
 
             OperationStatus opStatus = EncodeRune(value, bytes, out byteCount);
             Debug.Assert(opStatus == OperationStatus.Done || opStatus == OperationStatus.InvalidData, "Unexpected return value.");

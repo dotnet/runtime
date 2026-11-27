@@ -7,6 +7,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Win32.SafeHandles;
 using Xunit;
 
 namespace System.IO.Pipes.Tests
@@ -779,6 +780,29 @@ namespace System.IO.Pipes.Tests
             var server = new AnonymousPipeServerStream(PipeDirection.Out);
             var client = new AnonymousPipeClientStream(PipeDirection.In, server.ClientSafePipeHandle);
             return (server, client);
+        }
+    }
+
+    public class AnonymousPipeTest_SafeFileHandle_CreateAnonymousPipe : AnonymousPipeStreamConformanceTests
+    {
+        protected override (AnonymousPipeServerStream Server, AnonymousPipeClientStream Client) CreateServerAndClientStreams()
+        {
+            SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle);
+
+            SafePipeHandle readPipeHandle = TransferOwnershipToPipeHandle(readHandle);
+            SafePipeHandle writePipeHandle = TransferOwnershipToPipeHandle(writeHandle);
+
+            AnonymousPipeServerStream server = new(PipeDirection.Out, serverSafePipeHandle: writePipeHandle, clientSafePipeHandle: readPipeHandle);
+            AnonymousPipeClientStream client = new(PipeDirection.In, server.ClientSafePipeHandle);
+            return (server, client);
+        }
+
+        private static SafePipeHandle TransferOwnershipToPipeHandle(SafeFileHandle handle)
+        {
+            SafePipeHandle pipeHandle = new(handle.DangerousGetHandle(), ownsHandle: true);
+            handle.SetHandleAsInvalid();
+            handle.Dispose();
+            return pipeHandle;
         }
     }
 

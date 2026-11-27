@@ -2,12 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.InteropServices;
+using System.Security.Cryptography.Tests;
 
 namespace System.Security.Cryptography.EcDsa.Tests
 {
-    public partial class ECDsaProvider : IECDsaProvider
+    public partial class DefaultECDsaProvider : ECDsaProvider
     {
-        public bool IsCurveValid(Oid oid)
+        private static readonly Lazy<bool> s_explicitCurvesSupported = new(ProbeExplicitCurveImport);
+
+        public override bool IsCurveValid(Oid oid)
         {
             if (PlatformDetection.IsApplePlatform)
             {
@@ -21,17 +24,31 @@ namespace System.Security.Cryptography.EcDsa.Tests
             return IsValueOrFriendlyNameValid(oid.FriendlyName);
         }
 
-        public bool ExplicitCurvesSupported
+        public override bool ExplicitCurvesSupported => !PlatformDetection.IsApplePlatform && OpenSslExplicitCurvesSupported;
+
+        internal static bool OpenSslExplicitCurvesSupported => !PlatformDetection.IsSymCryptOpenSsl || s_explicitCurvesSupported.Value;
+
+        // Azure Linux can have SymCrypt installed without OpenSSL selecting it for EC.
+        // SymCrypt rejects explicit curves, so probe support by importing an explicit P-256 key.
+        private static bool ProbeExplicitCurveImport()
         {
-            get
+            using (ECDsa key = ECDsa.Create())
             {
-                if (PlatformDetection.IsApplePlatform || PlatformDetection.IsSymCryptOpenSsl)
+                try
+                {
+                    key.ImportParameters(EccTestData.GetNistP256ExplicitTestData());
+                }
+                catch (CryptographicException)
                 {
                     return false;
                 }
-
-                return true;
+                catch (PlatformNotSupportedException)
+                {
+                    return false;
+                }
             }
+
+            return true;
         }
 
         private static bool IsValueOrFriendlyNameValid(string friendlyNameOrValue)

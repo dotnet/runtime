@@ -28,7 +28,7 @@ CHAR16_T minipal_toupper_invariant(CHAR16_T code);
 CHAR16_T minipal_tolower_invariant(CHAR16_T code);
 
 /**
- * @brief Get the length of a null-terminated UTF-16 string.
+ * Get the length of a null-terminated UTF-16 string.
  *
  * @param str The null-terminated UTF-16 string.
  * @return The length of the string.
@@ -39,4 +39,4 @@ size_t minipal_u16_strlen(const CHAR16_T* str);
 }
 #endif // __cplusplus
 
-#endif /* HAVE_MINIPAL_STRINGS_H */
+#endif // HAVE_MINIPAL_STRINGS_H

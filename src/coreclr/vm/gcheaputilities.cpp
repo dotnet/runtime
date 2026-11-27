@@ -4,11 +4,16 @@
 #include "common.h"
 #include "configuration.h"
 #include "gcheaputilities.h"
+#ifdef HOST_UNIX
+#include <dlfcn.h>
+#endif
 #include "appdomain.hpp"
 #include "hostinformation.h"
 
 #include "../gc/env/gcenv.ee.h"
+#ifdef FEATURE_STANDALONE_GC
 #include "../gc/env/gctoeeinterface.standalone.inl"
+#endif // FEATURE_STANDALONE_GC
 
 // These globals are variables used within the GC and maintained
 // by the EE for use in write barriers. It is the responsibility
@@ -41,6 +46,7 @@ bool g_sw_ww_enabled_for_gc_heap = false;
 
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 
+// Unused - kept for GC data contract c1 compatibility, see datadescriptor/datadescriptor.inc.
 GVAL_IMPL_INIT(ee_alloc_context, g_global_alloc_context, {});
 
 thread_local ee_alloc_context::PerThreadRandom ee_alloc_context::t_random = PerThreadRandom();
@@ -65,8 +71,6 @@ VersionInfo g_gc_version_info;
 
 // The module that contains the GC.
 PTR_VOID g_gc_module_base;
-
-bool GCHeapUtilities::s_useThreadAllocationContexts;
 
 // GC entrypoints for the linked-in GC. These symbols are invoked
 // directly if we are not using a standalone GC.
@@ -115,7 +119,7 @@ void FinalizeLoad(IGCHeap* gcHeap, IGCHandleManager* handleMgr, PTR_VOID pGcModu
     g_pGCHeap = gcHeap;
 
     {
-        DangerousNonHostedSpinLockHolder lockHolder(&g_eventStashLock);
+        DangerousNonHostedSpinLockHolder lockHolder = g_eventStashLock.TakeLock();
 
         // Ultimately, g_eventStashLock ensures that no two threads call ControlEvents at any
         // point in time.
@@ -135,7 +139,7 @@ void FinalizeLoad(IGCHeap* gcHeap, IGCHandleManager* handleMgr, PTR_VOID pGcModu
 
 void StashKeywordAndLevel(bool isPublicProvider, GCEventKeyword keywords, GCEventLevel level)
 {
-    DangerousNonHostedSpinLockHolder lockHolder(&g_eventStashLock);
+    DangerousNonHostedSpinLockHolder lockHolder = g_eventStashLock.TakeLock();
     if (!g_gcEventTracingInitialized)
     {
         if (isPublicProvider)
@@ -184,7 +188,8 @@ HMODULE LoadStandaloneGc(LPCWSTR libFileName, LPCWSTR libFilePath)
     //
     if (!ValidateModuleName(libFileName))
     {
-        LOG((LF_GC, LL_INFO100, "Invalid GC name found %s\n", libFileName));
+        MAKE_UTF8PTR_FROMWIDE(libFileNameUtf8, libFileName);
+        LOG((LF_GC, LL_INFO100, "Invalid GC name found %s\n", libFileNameUtf8));
         return nullptr;
     }
 
@@ -308,7 +313,12 @@ HRESULT LoadAndInitializeGC(LPCWSTR standaloneGCName, LPCWSTR standaloneGCPath)
 #if TARGET_WINDOWS
         pGcModuleBase = (PTR_VOID)hMod;
 #else
-        pGcModuleBase = (PTR_VOID)PAL_GetSymbolModuleBase((PVOID)initFunc);
+#ifdef TARGET_WASM // no modules on wasm
+        pGcModuleBase = NULL;
+#else
+        Dl_info info;
+        pGcModuleBase = dladdr((void*)initFunc, &info) != 0 ? (PTR_VOID)info.dli_fbase : NULL;
+#endif
 #endif
 
         FinalizeLoad(heap, manager, pGcModuleBase);
@@ -369,19 +379,6 @@ HRESULT InitializeDefaultGC()
 HRESULT GCHeapUtilities::LoadAndInitialize()
 {
     LIMITED_METHOD_CONTRACT;
-
-    // When running on a single-proc Intel system, it's more efficient to use a single global
-    // allocation context for SOH allocations than to use one for every thread.
-#if (defined(TARGET_X86) || defined(TARGET_AMD64)) && !defined(TARGET_UNIX)
-#if DEBUG
-    bool useGlobalAllocationContext = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GCUseGlobalAllocationContext) != 0);
-#else
-    bool useGlobalAllocationContext = false;
-#endif
-    s_useThreadAllocationContexts = !useGlobalAllocationContext && (IsServerHeap() || ::g_SystemInfo.dwNumberOfProcessors != 1 || CPUGroupInfo::CanEnableGCCPUGroups());
-#else
-    s_useThreadAllocationContexts = true;
-#endif
 
     // we should only call this once on startup. Attempting to load a GC
     // twice is an error.

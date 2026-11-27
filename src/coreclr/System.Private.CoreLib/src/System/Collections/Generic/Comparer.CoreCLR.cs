@@ -7,9 +7,13 @@ namespace System.Collections.Generic
 {
     public abstract partial class Comparer<T> : IComparer, IComparer<T>
     {
+        // This method is special cased in R2R, with its implementation replaced by IL helper
+        [Intrinsic]
+        private static Comparer<T> Create() => (Comparer<T>)ComparerHelpers.CreateDefaultComparer(typeof(T));
+
         // To minimize generic instantiation overhead of creating the comparer per type, we keep the generic portion of the code as small
         // as possible and define most of the creation logic in a non-generic class.
-        public static Comparer<T> Default { [Intrinsic] get; } = (Comparer<T>)ComparerHelpers.CreateDefaultComparer(typeof(T));
+        public static Comparer<T> Default { [Intrinsic] get; } = Create();
     }
 
     internal sealed partial class EnumComparer<T> : Comparer<T> where T : struct, Enum

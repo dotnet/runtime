@@ -223,6 +223,27 @@ extern "C" DLL_EXPORT HRESULT STDMETHODCALLTYPE VerifyInterfaceArray(SAFEARRAY* 
     return S_OK;
 }
 
+extern "C" DLL_EXPORT HRESULT STDMETHODCALLTYPE VerifyInterfaceArrayElements(SAFEARRAY* d, VARTYPE expectedType, IUnknown* first, IUnknown* second)
+{
+    HRESULT hr;
+    VARTYPE elementType;
+    RETURN_IF_FAILED(::SafeArrayGetVartype(d, &elementType));
+    if (elementType != expectedType || ::SafeArrayGetDim(d) != 1)
+        return E_INVALIDARG;
+
+    LONG lowerBound, upperBound;
+    RETURN_IF_FAILED(::SafeArrayGetLBound(d, 1, &lowerBound));
+    RETURN_IF_FAILED(::SafeArrayGetUBound(d, 1, &upperBound));
+    if (upperBound - lowerBound != 1)
+        return E_INVALIDARG;
+
+    IUnknown** values;
+    RETURN_IF_FAILED(::SafeArrayAccessData(d, (void**)&values));
+    bool match = values[0] == first && values[1] == second;
+    RETURN_IF_FAILED(::SafeArrayUnaccessData(d));
+    return match ? S_OK : E_FAIL;
+}
+
 extern "C" DLL_EXPORT HRESULT STDMETHODCALLTYPE MeanVariantIntArray(SAFEARRAY* d, int* result)
 {
     HRESULT hr;
@@ -308,4 +329,236 @@ struct StructWithSafeArray
 extern "C" DLL_EXPORT HRESULT STDMETHODCALLTYPE XorBoolArrayInStruct(StructWithSafeArray str, BOOL* result)
 {
     return XorBoolArray(str.array, result);
+}
+
+// Creates a 2D SAFEARRAY of VT_I4 with dimensions [rows x cols].
+// Data is filled by logical indices with value = row * cols + col.
+extern "C" DLL_EXPORT HRESULT STDMETHODCALLTYPE Create2DIntSafeArray(int rows, int cols, SAFEARRAY** ppResult)
+{
+    if (rows < 0 || cols < 0)
+        return E_INVALIDARG;
+
+    SAFEARRAYBOUND bounds[2];
+    bounds[0].lLbound = 0;
+    bounds[0].cElements = (ULONG)rows;
+    bounds[1].lLbound = 0;
+    bounds[1].cElements = (ULONG)cols;
+
+    SAFEARRAY* psa = ::SafeArrayCreate(VT_I4, 2, bounds);
+    if (!psa)
+        return E_OUTOFMEMORY;
+
+    for (LONG r = 0; r < rows; r++)
+    {
+        for (LONG c = 0; c < cols; c++)
+        {
+            LONG indices[2] = { r, c };
+            int value = r * cols + c;
+            HRESULT hr = ::SafeArrayPutElement(psa, indices, &value);
+            if (FAILED(hr))
+            {
+                ::SafeArrayDestroy(psa);
+                return hr;
+            }
+        }
+    }
+
+    *ppResult = psa;
+    return S_OK;
+}
+
+// Verifies a 2D SAFEARRAY of VT_I4 with dimensions [rows x cols].
+// Expected value at [r,c] = r * cols + c.
+extern "C" DLL_EXPORT HRESULT STDMETHODCALLTYPE Verify2DIntSafeArray(SAFEARRAY* psa, int rows, int cols)
+{
+    HRESULT hr;
+    VARTYPE vt;
+    RETURN_IF_FAILED(::SafeArrayGetVartype(psa, &vt));
+    if (vt != VT_I4)
+        return E_INVALIDARG;
+
+    if (psa->cDims != 2)
+        return E_INVALIDARG;
+
+    for (LONG r = 0; r < rows; r++)
+    {
+        for (LONG c = 0; c < cols; c++)
+        {
+            LONG indices[2] = { r, c };
+            int value = 0;
+            RETURN_IF_FAILED(::SafeArrayGetElement(psa, indices, &value));
+            int expected = r * cols + c;
+            if (value != expected)
+                return E_FAIL;
+        }
+    }
+
+    return S_OK;
+}
+
+// Creates a 2D SAFEARRAY of VT_BOOL with dimensions [rows x cols].
+// Value at [r,c] = ((r + c) % 2 == 0) ? VARIANT_TRUE : VARIANT_FALSE.
+extern "C" DLL_EXPORT HRESULT STDMETHODCALLTYPE Create2DBoolSafeArray(int rows, int cols, SAFEARRAY** ppResult)
+{
+    if (rows < 0 || cols < 0)
+        return E_INVALIDARG;
+
+    SAFEARRAYBOUND bounds[2];
+    bounds[0].lLbound = 0;
+    bounds[0].cElements = (ULONG)rows;
+    bounds[1].lLbound = 0;
+    bounds[1].cElements = (ULONG)cols;
+
+    SAFEARRAY* psa = ::SafeArrayCreate(VT_BOOL, 2, bounds);
+    if (!psa)
+        return E_OUTOFMEMORY;
+
+    for (LONG r = 0; r < rows; r++)
+    {
+        for (LONG c = 0; c < cols; c++)
+        {
+            LONG indices[2] = { r, c };
+            VARIANT_BOOL value = ((r + c) % 2 == 0) ? VARIANT_TRUE : VARIANT_FALSE;
+            HRESULT hr = ::SafeArrayPutElement(psa, indices, &value);
+            if (FAILED(hr))
+            {
+                ::SafeArrayDestroy(psa);
+                return hr;
+            }
+        }
+    }
+
+    *ppResult = psa;
+    return S_OK;
+}
+
+// Verifies a 2D SAFEARRAY of VT_BOOL with dimensions [rows x cols].
+extern "C" DLL_EXPORT HRESULT STDMETHODCALLTYPE Verify2DBoolSafeArray(SAFEARRAY* psa, int rows, int cols)
+{
+    HRESULT hr;
+    VARTYPE vt;
+    RETURN_IF_FAILED(::SafeArrayGetVartype(psa, &vt));
+    if (vt != VT_BOOL)
+        return E_INVALIDARG;
+
+    if (psa->cDims != 2)
+        return E_INVALIDARG;
+
+    for (LONG r = 0; r < rows; r++)
+    {
+        for (LONG c = 0; c < cols; c++)
+        {
+            LONG indices[2] = { r, c };
+            VARIANT_BOOL value = VARIANT_FALSE;
+            RETURN_IF_FAILED(::SafeArrayGetElement(psa, indices, &value));
+            VARIANT_BOOL expected = ((r + c) % 2 == 0) ? VARIANT_TRUE : VARIANT_FALSE;
+            if (value != expected)
+                return E_FAIL;
+        }
+    }
+
+    return S_OK;
+}
+
+// Creates a 2D SAFEARRAY of VT_BSTR with dimensions [rows x cols].
+// Value at [r,c] = "r,c".
+extern "C" DLL_EXPORT HRESULT STDMETHODCALLTYPE Create2DStringSafeArray(int rows, int cols, SAFEARRAY** ppResult)
+{
+    if (rows < 0 || cols < 0)
+        return E_INVALIDARG;
+
+    SAFEARRAYBOUND bounds[2];
+    bounds[0].lLbound = 0;
+    bounds[0].cElements = (ULONG)rows;
+    bounds[1].lLbound = 0;
+    bounds[1].cElements = (ULONG)cols;
+
+    SAFEARRAY* psa = ::SafeArrayCreate(VT_BSTR, 2, bounds);
+    if (!psa)
+        return E_OUTOFMEMORY;
+
+    for (LONG r = 0; r < rows; r++)
+    {
+        for (LONG c = 0; c < cols; c++)
+        {
+            LONG indices[2] = { r, c };
+            WCHAR buf[32];
+            swprintf_s(buf, 32, L"%d,%d", (int)r, (int)c);
+            BSTR bstr = TP_SysAllocString(buf);
+            if (!bstr)
+            {
+                ::SafeArrayDestroy(psa);
+                return E_OUTOFMEMORY;
+            }
+            HRESULT hr = ::SafeArrayPutElement(psa, indices, bstr);
+            ::SysFreeString(bstr);
+            if (FAILED(hr))
+            {
+                ::SafeArrayDestroy(psa);
+                return hr;
+            }
+        }
+    }
+
+    *ppResult = psa;
+    return S_OK;
+}
+
+// Verifies a 2D SAFEARRAY of VT_BSTR with dimensions [rows x cols].
+extern "C" DLL_EXPORT HRESULT STDMETHODCALLTYPE Verify2DStringSafeArray(SAFEARRAY* psa, int rows, int cols)
+{
+    HRESULT hr;
+    VARTYPE vt;
+    RETURN_IF_FAILED(::SafeArrayGetVartype(psa, &vt));
+    if (vt != VT_BSTR)
+        return E_INVALIDARG;
+
+    if (psa->cDims != 2)
+        return E_INVALIDARG;
+
+    for (LONG r = 0; r < rows; r++)
+    {
+        for (LONG c = 0; c < cols; c++)
+        {
+            LONG indices[2] = { r, c };
+            BSTR value = nullptr;
+            RETURN_IF_FAILED(::SafeArrayGetElement(psa, indices, &value));
+
+            WCHAR expected[32];
+            swprintf_s(expected, 32, L"%d,%d", (int)r, (int)c);
+
+            bool match = (value != nullptr && wcscmp(value, expected) == 0);
+            ::SysFreeString(value);
+            if (!match)
+                return E_FAIL;
+        }
+    }
+
+    return S_OK;
+}
+
+using VariantArrayCallback = void(__cdecl*)(SAFEARRAY*);
+
+extern "C" DLL_EXPORT HRESULT STDMETHODCALLTYPE ReplaceVariantArrayElement(
+    VariantArrayCallback callback,
+    LONG* nativeValue,
+    VARTYPE* elementType)
+{
+    if (callback == nullptr || nativeValue == nullptr || elementType == nullptr)
+        return E_POINTER;
+
+    SAFEARRAY* array = ::SafeArrayCreateVector(VT_VARIANT, 0, 1);
+    if (array == nullptr)
+        return E_OUTOFMEMORY;
+
+    LONG native = 4;
+    VARIANT* elements = static_cast<VARIANT*>(array->pvData);
+    V_VT(&elements[0]) = VT_BYREF | VT_I4;
+    V_I4REF(&elements[0]) = &native;
+
+    callback(array);
+
+    *nativeValue = native;
+    *elementType = V_VT(&elements[0]);
+    return ::SafeArrayDestroy(array);
 }

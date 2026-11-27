@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -30,7 +30,7 @@ namespace System.Globalization
         /// between names with extensions and those without. For example, we may have a name like en-US and en-US-u-xx. Although .NET doesn't support the extension xx,
         /// we still include it in the name to distinguish it from the name without the extension.
         /// </remarks>
-        private static string NormalizeCultureName(string name, ReadOnlySpan<char> extension, string originalName, out int collationStart)
+        private static unsafe string NormalizeCultureName(string name, ReadOnlySpan<char> extension, string originalName, out int collationStart)
         {
             Debug.Assert(name is not null);
             Debug.Assert(name.Length <= ICU_ULOC_FULLNAME_CAPACITY);
@@ -217,7 +217,7 @@ namespace System.Globalization
 #if TARGET_BROWSER && !FEATURE_WASM_MANAGED_THREADS
             if (type == LocaleStringData.NativeDisplayName)
             {
-                return JSGetNativeDisplayName(_sWindowsName, uiCultureName ?? _sWindowsName);
+                return JSGetNativeDisplayName(uiCultureName ?? _sWindowsName, _sWindowsName);
             }
 #endif
             return IcuGetLocaleInfo(_sWindowsName, type, uiCultureName);
@@ -338,7 +338,7 @@ namespace System.Globalization
         private string IcuGetLanguageDisplayName(string cultureName)
         {
 #if TARGET_BROWSER
-            return JSGetNativeDisplayName(CultureInfo.CurrentUICulture.Name, cultureName);
+            return JSGetNativeDisplayName(cultureName, CultureInfo.CurrentUICulture.Name);
 #else
             return IcuGetLocaleInfo(cultureName, LocaleStringData.LocalizedDisplayName, CultureInfo.CurrentUICulture.Name);
 #endif
@@ -362,7 +362,7 @@ namespace System.Globalization
             }
         }
 
-        private static string ConvertIcuTimeFormatString(ReadOnlySpan<char> icuFormatString)
+        private static unsafe string ConvertIcuTimeFormatString(ReadOnlySpan<char> icuFormatString)
         {
             Debug.Assert(icuFormatString.Length < ICU_ULOC_FULLNAME_CAPACITY);
             Span<char> result = stackalloc char[ICU_ULOC_FULLNAME_CAPACITY];

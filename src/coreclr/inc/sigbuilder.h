@@ -6,6 +6,7 @@
 #define _SIGBUILDER_H_
 
 #include "contract.h"
+#include "corhdr.h"
 
 //
 // Simple signature builder

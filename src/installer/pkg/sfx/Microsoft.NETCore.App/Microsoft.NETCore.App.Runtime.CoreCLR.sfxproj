@@ -6,6 +6,8 @@
   </PropertyGroup>
   <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
   <Import Project="Sdk.props" Sdk="Microsoft.DotNet.SharedFramework.Sdk" />
+  <Import Project="$(WasmPInvokeModulesPropsPath)"
+          Condition="'$(TargetOS)' == 'browser'" />
 
   <PropertyGroup>
     <PlatformPackageType>RuntimePack</PlatformPackageType>
@@ -14,22 +16,37 @@
     <VSInsertionShortComponentName>NetCore.SharedFramework</VSInsertionShortComponentName>
     <UseTemplatedPlatformManifest>true</UseTemplatedPlatformManifest>
     <UseRidGraph>true</UseRidGraph>
+    <!-- WASM CoreCLR ships static libs in the runtime pack so apps can relink with emcc. -->
+    <IncludeStaticLibrariesInPack Condition="'$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi'">true</IncludeStaticLibrariesInPack>
   </PropertyGroup>
 
   <ItemGroup>
     <LinuxPackageDependency Include="dotnet-hostfxr-$(MajorVersion).$(MinorVersion);dotnet-runtime-deps-$(MajorVersion).$(MinorVersion)" Version="$(InstallerPackageVersion)" />
+    <ProjectReference Include="$(SharedNativeRoot)corehost\browserhost\browserhost.proj"
+                      Condition="'$(TargetOS)' == 'browser' and '$(MSBuildRestoreSessionId)' != ''" />
+    <ProjectReference Include="$(RepoTasksDir)Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks.csproj"
+                      ReferenceOutputAssembly="false"
+                      SetConfiguration="Configuration=$(TasksConfiguration)"
+                      Condition="'$(TargetOS)' == 'browser'" />
   </ItemGroup>
 
   <PropertyGroup>
     <PublishReadyToRun>true</PublishReadyToRun>
     <!-- Disable crossgen on NetBSD, illumos, Solaris and Haiku for now. This can be revisited when we have full support. -->
     <PublishReadyToRun Condition="'$(TargetOS)' == 'netbsd' or '$(TargetOS)' == 'illumos' or '$(TargetOS)' == 'solaris' or '$(TargetOS)' == 'haiku'">false</PublishReadyToRun>
-    <!-- TODO-WASM: we will have WASM R2R after https://github.com/dotnet/runtime/issues/121257 -->
-    <PublishReadyToRun Condition="'$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi'">false</PublishReadyToRun>
+    <PublishReadyToRun Condition="'$(TargetOS)' == 'wasi'">false</PublishReadyToRun>
     <PublishReadyToRun Condition="'$(StageTwoBuild)'=='true'">false</PublishReadyToRun>
     <UsesMuxerHostModel Condition="'$(TargetsMobile)' != 'true'">true</UsesMuxerHostModel>
     <IncludeDiaSymReaderNative Condition="'$(TargetOS)' == 'windows'">true</IncludeDiaSymReaderNative>
     <UseLocalCrossgen2Pack>$(PublishReadyToRun)</UseLocalCrossgen2Pack>
+    <_PublishReadyToRunCrossgen2ExtraArgs Condition="'$(FeatureDynamicCodeCompiled)' != ''">$(_PublishReadyToRunCrossgen2ExtraArgs);--target-allows-runtime-code-generation:$(FeatureDynamicCodeCompiled)</_PublishReadyToRunCrossgen2ExtraArgs>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetOS)' == 'browser' and '$(PublishReadyToRun)' == 'true'">
+    <PublishReadyToRunComposite>false</PublishReadyToRunComposite>
+    <PublishReadyToRunContainerFormat>wasm</PublishReadyToRunContainerFormat>
+    <PublishReadyToRunEmitSymbols>false</PublishReadyToRunEmitSymbols>
+    <_PublishReadyToRunCrossgen2ExtraArgs>$(_PublishReadyToRunCrossgen2ExtraArgs);--opt-cross-module:*</_PublishReadyToRunCrossgen2ExtraArgs>
   </PropertyGroup>
 
   <!-- Use the Mach-O format for Apple mobile platforms as we can't load native code from PE files on these platforms -->
@@ -38,7 +55,57 @@
     <PublishReadyToRunContainerFormat>macho</PublishReadyToRunContainerFormat>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <CoreLibConfiguration>$(CoreCLRConfiguration)</CoreLibConfiguration>
+    <LibrariesRuntimeFlavor Condition="'$(LibrariesRuntimeFlavor)' == ''">CoreCLR</LibrariesRuntimeFlavor>
+    <UseRuntimeCoreLibProjectReference>false</UseRuntimeCoreLibProjectReference>
+    <UseRuntimeManagedProjectReferences>true</UseRuntimeManagedProjectReferences>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PublishReadyToRunExclude Include="System.Private.CoreLib.dll" />
+    <ProjectReference Include="$(CoreClrProjectRoot)crossgen-corelib.proj"
+                      GlobalPropertiesToRemove="LibrariesRuntimeFlavor;RuntimeFlavor;RuntimeIdentifier;TargetFramework"
+                      OutputItemType="_RuntimeCoreLibFile"
+                      ReferenceOutputAssembly="false"
+                      SetConfiguration="Configuration=$(CoreCLRConfiguration)"
+                      SkipGetTargetFrameworkProperties="true"
+                      Targets="Build;GetRuntimePackCoreLib" />
+    <ProjectReference Include="$(CoreLibProject)"
+                      Condition="'$(TargetOS)' == 'browser'"
+                      AdditionalProperties="BuildAllProjects=true"
+                      GlobalPropertiesToRemove="LibrariesRuntimeFlavor;RuntimeFlavor;RuntimeIdentifier;TargetFramework"
+                      OutputItemType="_WasmCoreLibIL"
+                      ReferenceOutputAssembly="false"
+                      SetConfiguration="Configuration=$(CoreCLRConfiguration)"
+                      SkipGetTargetFrameworkProperties="true" />
+  </ItemGroup>
+
+  <Target Name="AddCoreCLRRuntimeManagedFiles"
+          BeforeTargets="AddRuntimeFilesToPackage"
+          DependsOnTargets="ResolveProjectReferences">
+    <ItemGroup>
+      <RuntimeFiles Include="@(_RuntimeCoreLibFile)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="ResolveRuntimeMibcFile"
+          DependsOnTargets="ResolveProjectReferences">
+    <ItemGroup>
+      <RuntimeMibcFile Include="@(MergedMibcFile)" />
+    </ItemGroup>
+  </Target>
+
   <Import Project="Microsoft.NETCore.App.Runtime.props" />
+  <Import Project="$(RepositoryEngineeringDir)WasmRuntimePack.targets" Condition="'$(TargetOS)' == 'browser'" />
+
+  <Target Name="BuildBrowserHost"
+          BeforeTargets="ResolveLibrariesNativeRuntimeFilesFromLocalBuild"
+          Condition="'$(TargetOS)' == 'browser'">
+    <MSBuild Projects="$(SharedNativeRoot)corehost\browserhost\browserhost.proj"
+             Targets="Build"
+             Properties="Configuration=$(HostConfiguration);LibrariesConfiguration=$(LibrariesConfiguration);RuntimeConfiguration=$(RuntimeConfiguration)" />
+  </Target>
 
   <PropertyGroup>
     <PublishReadyToRunComposite Condition="$(ForcePublishReadyToRunComposite) == 'true'">true</PublishReadyToRunComposite>
@@ -48,14 +115,12 @@
   <Target Name="ResolveReadyToRunCompilers" DependsOnTargets="ResolveRuntimeFilesFromLocalBuild">
     <PropertyGroup>
       <Crossgen2Path>$([MSBuild]::NormalizePath('$(Crossgen2InBuildDir)', 'crossgen2$(ExeSuffix)'))</Crossgen2Path>
-      <_CrossGenTargetOS Condition="'$(TargetsAndroid)' != 'true'">$(TargetOS)</_CrossGenTargetOS>
-      <_CrossGenTargetOS Condition="'$(TargetsAndroid)' == 'true'">linux</_CrossGenTargetOS>
     </PropertyGroup>
 
     <ItemGroup>
       <Crossgen2Tool Include="$(Crossgen2Path)"
                      TargetArch="$(TargetArchitecture)"
-                     TargetOS="$(_CrossGenTargetOS)"
+                     TargetOS="$(TargetOS)"
                      PerfmapFormatVersion="$(PublishReadyToRunPerfmapFormatVersion)"/>
     </ItemGroup>
 
@@ -64,15 +129,88 @@
     </PropertyGroup>
   </Target>
 
+  <!-- WASM framework R2R uses the SDK compilation pipeline, but keeps the IL in lib/ and puts the
+       webcil-in-wasm R2R images under native/r2r/ for trimming and per-app R2R. -->
+  <Target Name="_ConfigureBrowserFrameworkR2R"
+          Condition="'$(TargetOS)' == 'browser' and '$(PublishReadyToRun)' == 'true'"
+          BeforeTargets="_PrepareForReadyToRunCompilation"
+          DependsOnTargets="ResolveProjectReferences;ResolveRuntimeFilesFromLocalBuild">
+    <ItemGroup>
+      <_WasmFrameworkR2RReference Include="@(_NetCoreAppLibrarySourceAssembly)"
+                                  Condition="'%(_NetCoreAppLibrarySourceAssembly.Extension)' == '.dll' and
+                                             '%(_NetCoreAppLibrarySourceAssembly.Filename)' != 'System.Private.CoreLib'" />
+      <_WasmFrameworkR2RInput Include="@(_WasmFrameworkR2RReference)" />
+      <_WasmFrameworkR2RInput Remove="@(_WasmFrameworkR2RInput)"
+                              Condition="'$(WasmFrameworkR2RSubset)' != '' and !$([System.String]::Copy(';$(WasmFrameworkR2RSubset);').Contains(';%(FileName);'))" />
+      <_WasmFrameworkR2RExclude Include="@(_WasmFrameworkR2RReference)"
+                                Exclude="@(_WasmFrameworkR2RInput)" />
+      <PublishReadyToRunExclude Include="@(_WasmFrameworkR2RExclude->'%(FileName)%(Extension)')" />
+    </ItemGroup>
+    <PropertyGroup>
+      <_WasmCrossgen2Exe>$([MSBuild]::NormalizePath('$(Crossgen2InBuildDir)', 'crossgen2$(ExeSuffix)'))</_WasmCrossgen2Exe>
+      <_PublishReadyToRunCrossgen2ExtraArgs>$(_PublishReadyToRunCrossgen2ExtraArgs);@(WasmCoreClrFrameworkPInvokeModule->WithMetadataValue('Browser', 'true')->WithMetadataValue('PrebuiltR2RDirect', 'true')->'--directpinvoke:%(Identity)', ';')</_PublishReadyToRunCrossgen2ExtraArgs>
+    </PropertyGroup>
+    <Error Condition="'@(_WasmCoreLibIL)' == ''"
+           Text="PublishReadyToRun is true but the System.Private.CoreLib project did not produce its IL assembly. Build CoreCLR first or set PublishReadyToRun=false." />
+    <Error Condition="!Exists('$(_WasmCrossgen2Exe)')"
+           Text="PublishReadyToRun is true but crossgen2 was not found at '$(_WasmCrossgen2Exe)'. Build the crossgen2 pack or set PublishReadyToRun=false." />
+    <ItemGroup>
+      <_ReadyToRunCompilerInputs Include="@(_WasmFrameworkR2RReference);@(_WasmCoreLibIL)" />
+      <_ReadyToRunCompilerInputs Include="$(Crossgen2InBuildDir)*jit*.dll;$(Crossgen2InBuildDir)*jit*.dylib;$(Crossgen2InBuildDir)*jit*.so" />
+      <_ReadyToRunCompilerInputs Include="$(WasmCoreClrFrameworkPInvokeModuleListFile)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="_AddBrowserFrameworkR2RToPackage"
+          Condition="'$(TargetOS)' == 'browser' and '$(PublishReadyToRun)' == 'true'"
+          AfterTargets="_ReadyToRunSharedFramework">
+    <ItemGroup>
+      <_WasmFrameworkR2RCompileInput Include="@(_ReadyToRunCompileList)"
+                                     Condition="$([System.String]::Copy('%(OutputR2RImage)').EndsWith('.wasm'))" />
+      <_WasmFrameworkR2ROutput Include="@(_WasmFrameworkR2RCompileInput->'%(OutputR2RImage)')" />
+      <_WasmFrameworkR2ROutput Include="$(CoreCLRArtifactsPath)System.Private.CoreLib.wasm"
+                               Condition="Exists('$(CoreCLRArtifactsPath)System.Private.CoreLib.wasm')" />
+      <FilesToPackage Include="@(_WasmFrameworkR2RCompileInput)"
+                      IsNative=""
+                      DestinationSubDirectory=""
+                      RelativePath="%(FileName)%(Extension)"
+                      TargetPath="runtimes/$(RuntimeIdentifier)/lib/$(TargetFramework)" />
+      <FilesToPackage Remove="@(_WasmFrameworkR2ROutput)" />
+      <FilesToPackage Include="@(_WasmFrameworkR2ROutput)"
+                      IsNative="true"
+                      TargetPath="runtimes/$(RuntimeIdentifier)/native/r2r" />
+      <PlatformManifestFileEntry Include="@(_WasmFrameworkR2ROutput->'%(FileName)%(Extension)')" IsNative="true" />
+      <_WasmFrameworkR2RLayoutExpected Include="@(_WasmFrameworkR2ROutput)">
+        <LayoutPath>$([MSBuild]::NormalizePath('$(MicrosoftNetCoreAppRuntimePackNativeDir)', 'r2r', '%(FileName)%(Extension)'))</LayoutPath>
+      </_WasmFrameworkR2RLayoutExpected>
+      <!-- Remove out-of-date R2R images left in the in-tree runtime-pack layout by a previous build. -->
+      <_WasmFrameworkR2RLayoutObsolete Include="$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRuntimePackNativeDir)', 'r2r'))*.wasm"
+                                       Exclude="@(_WasmFrameworkR2RLayoutExpected->'%(LayoutPath)')"
+                                       Condition="'$(MicrosoftNetCoreAppRuntimePackNativeDir)' != ''" />
+    </ItemGroup>
+    <Delete Files="@(_WasmFrameworkR2RLayoutObsolete)" />
+    <Copy Condition="'$(MicrosoftNetCoreAppRuntimePackNativeDir)' != '' and '@(_WasmFrameworkR2ROutput)' != ''"
+          SourceFiles="@(_WasmFrameworkR2ROutput)"
+          DestinationFolder="$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRuntimePackNativeDir)', 'r2r'))"
+          SkipUnchangedFiles="true" />
+  </Target>
+
+  <Target Name="_CleanDisabledBrowserFrameworkR2RLayout"
+          Condition="'$(TargetOS)' == 'browser' and '$(PublishReadyToRun)' != 'true' and '$(MicrosoftNetCoreAppRuntimePackNativeDir)' != ''"
+          BeforeTargets="AddFrameworkFilesToPackage">
+    <RemoveDir Directories="$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRuntimePackNativeDir)', 'r2r'))" />
+  </Target>
+
   <!--
     Put the mibc file into tools and not into PgoData. Add it after GetFilesToPackage to ensure it isn't automatically classified.
     Putting it in tools will also hide it from being part of the RuntimeList.xml.
   -->
   <Target Name="AddMibcFilesToPackage"
-          AfterTargets="GetFilesToPackage">
+          AfterTargets="GetFilesToPackage"
+          DependsOnTargets="ResolveRuntimeMibcFile">
     <ItemGroup>
-      <FilesToPackageMibcData Include="$(CoreCLRArtifactsPath)StandardOptimizationData.mibc"
-                              Condition="Exists('$(CoreCLRArtifactsPath)StandardOptimizationData.mibc')">
+      <FilesToPackageMibcData Include="@(RuntimeMibcFile)"
+                              Condition="Exists('%(RuntimeMibcFile.Identity)')">
         <TargetPath>tools</TargetPath>
       </FilesToPackageMibcData>
       <FilesToPackage Include="@(FilesToPackageMibcData)"/>

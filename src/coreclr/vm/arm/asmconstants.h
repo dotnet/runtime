@@ -89,6 +89,9 @@ ASMCONSTANTS_C_ASSERT(SIZEOF__CONTEXT == sizeof(T_CONTEXT));
 #define OFFSETOF__CONTEXT__R4         0x14
 ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__R4 == offsetof(T_CONTEXT, R4));
 
+#define OFFSETOF__CONTEXT__D          0x50
+ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__D == offsetof(T_CONTEXT, D));
+
 #define SIZEOF__CalleeSavedRegisters 0x24
 ASMCONSTANTS_C_ASSERT(SIZEOF__CalleeSavedRegisters == sizeof(CalleeSavedRegisters))
 
@@ -125,27 +128,8 @@ ASMCONSTANTS_C_ASSERT(ASM__VTABLE_SLOTS_PER_CHUNK == VTABLE_SLOTS_PER_CHUNK)
 #define ASM__VTABLE_SLOTS_PER_CHUNK_LOG2 3
 ASMCONSTANTS_C_ASSERT(ASM__VTABLE_SLOTS_PER_CHUNK_LOG2 == VTABLE_SLOTS_PER_CHUNK_LOG2)
 
-#define VASigCookie__pPInvokeILStub 0x4
-ASMCONSTANTS_C_ASSERT(VASigCookie__pPInvokeILStub == offsetof(VASigCookie, pPInvokeILStub))
-
 #define CONTEXT_Pc 0x040
 ASMCONSTANTS_C_ASSERT(CONTEXT_Pc == offsetof(T_CONTEXT,Pc))
-
-#define CallDescrData__pSrc                0x00
-#define CallDescrData__numStackSlots       0x04
-#define CallDescrData__pArgumentRegisters  0x08
-#define CallDescrData__pFloatArgumentRegisters 0x0C
-#define CallDescrData__fpReturnSize        0x10
-#define CallDescrData__pTarget             0x14
-#define CallDescrData__returnValue         0x18
-
-ASMCONSTANTS_C_ASSERT(CallDescrData__pSrc                 == offsetof(CallDescrData, pSrc))
-ASMCONSTANTS_C_ASSERT(CallDescrData__numStackSlots        == offsetof(CallDescrData, numStackSlots))
-ASMCONSTANTS_C_ASSERT(CallDescrData__pArgumentRegisters   == offsetof(CallDescrData, pArgumentRegisters))
-ASMCONSTANTS_C_ASSERT(CallDescrData__pFloatArgumentRegisters == offsetof(CallDescrData, pFloatArgumentRegisters))
-ASMCONSTANTS_C_ASSERT(CallDescrData__fpReturnSize         == offsetof(CallDescrData, fpReturnSize))
-ASMCONSTANTS_C_ASSERT(CallDescrData__pTarget              == offsetof(CallDescrData, pTarget))
-ASMCONSTANTS_C_ASSERT(CallDescrData__returnValue          == offsetof(CallDescrData, returnValue))
 
 #define SIZEOF__FaultingExceptionFrame                  (SIZEOF__Frame + 0x8 + SIZEOF__CONTEXT)
 #define FaultingExceptionFrame__m_fFilterExecuted       SIZEOF__Frame
@@ -211,11 +195,7 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__ThreadLocalInfo__m_pThread == offsetof(ThreadLoc
 #endif
 ASMCONSTANTS_C_ASSERT(OFFSETOF__InterpMethod__pCallStub == offsetof(InterpMethod, pCallStub))
 
-#ifdef TARGET_UNIX
-#define OFFSETOF__Thread__m_pInterpThreadContext 0x630
-#else // TARGET_UNIX
-#define OFFSETOF__Thread__m_pInterpThreadContext 0x0
-#endif // TARGET_UNIX
+#define OFFSETOF__Thread__m_pInterpThreadContext 0x1c
 ASMCONSTANTS_C_ASSERT(OFFSETOF__Thread__m_pInterpThreadContext == offsetof(Thread, m_pInterpThreadContext))
 
 #define OFFSETOF__InterpThreadContext__pStackPointer 0x8

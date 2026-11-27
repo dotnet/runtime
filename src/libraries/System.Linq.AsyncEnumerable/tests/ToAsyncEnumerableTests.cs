@@ -1,8 +1,10 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -47,6 +49,14 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void SourceImplementsIAsyncEnumerable_ReturnsSameInstance()
+        {
+            var source = new DualEnumerable<int>([1, 2, 3]);
+            IAsyncEnumerable<int> result = ((IEnumerable<int>)source).ToAsyncEnumerable();
+            Assert.Same(source, result);
+        }
+
+        [Fact]
         public async Task InterfaceCalls_ExpectedCounts()
         {
             TrackingAsyncEnumerable<int> source = CreateSource(2, 4, 8, 16).Track();
@@ -54,6 +64,20 @@ namespace System.Linq.Tests
             Assert.Equal(5, source.MoveNextAsyncCount);
             Assert.Equal(4, source.CurrentCount);
             Assert.Equal(1, source.DisposeAsyncCount);
+        }
+
+        private sealed class DualEnumerable<T>(T[] items) : IEnumerable<T>, IAsyncEnumerable<T>
+        {
+            IEnumerator<T> IEnumerable<T>.GetEnumerator() => ((IEnumerable<T>)items).GetEnumerator();
+            IEnumerator IEnumerable.GetEnumerator() => items.GetEnumerator();
+
+            async IAsyncEnumerator<T> IAsyncEnumerable<T>.GetAsyncEnumerator(CancellationToken cancellationToken)
+            {
+                foreach (T item in items)
+                {
+                    yield return item;
+                }
+            }
         }
     }
 }

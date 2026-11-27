@@ -1,7 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Needed for CLRTestEnvironmentVariable -->
+    <!-- Needed for CLRTestEnvironmentVariable, GCStressIncompatible -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <!-- This test creates threads at a very high rate, which can lead to OOM under GC stress -->
+    <GCStressIncompatible>true</GCStressIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />

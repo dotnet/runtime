@@ -64,12 +64,15 @@ typedef struct pollfd ds_ipc_pollfd_t;
 typedef mode_t ds_ipc_mode_t;
 #endif
 
+#ifdef DS_IPC_PAL_AF_UNIX
+#include <minipal/transportname.h>
+#endif
+
 #ifndef EP_NO_RT_DEPENDENCY
 #include "ds-rt.h"
 #else
 #ifdef FEATURE_CORECLR
 #include <pal.h>
-#include "processdescriptor.h"
 #endif
 
 #ifndef ep_return_null_if_nok
@@ -310,9 +313,9 @@ inline
 ds_ipc_mode_t
 ipc_socket_set_default_umask (void)
 {
-#if defined(DS_IPC_PAL_AF_UNIX) && (defined(__APPLE__) || defined(__FreeBSD__))
+#if defined(DS_IPC_PAL_AF_UNIX) && (defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__))
 	// This will set the default permission bit to 600
-	return umask (~(S_IRUSR | S_IWUSR));
+	return umask (~(S_IRUSR | S_IWUSR) & (S_IRWXU | S_IRWXG | S_IRWXO));
 #else
 	return 0;
 #endif
@@ -323,7 +326,7 @@ inline
 void
 ipc_socket_reset_umask (ds_ipc_mode_t mode)
 {
-#if defined(DS_IPC_PAL_AF_UNIX) && (defined(__APPLE__) || defined(__FreeBSD__))
+#if defined(DS_IPC_PAL_AF_UNIX) && (defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__))
 	umask (mode);
 #endif
 }
@@ -431,7 +434,7 @@ inline
 int
 ipc_socket_set_permission (ds_ipc_socket_t s)
 {
-#if defined(DS_IPC_PAL_AF_UNIX) && !(defined(__APPLE__) || defined(__FreeBSD__) || defined(__HAIKU__))
+#if defined(DS_IPC_PAL_AF_UNIX) && !(defined(__APPLE__) || defined(__FreeBSD__) || defined(__HAIKU__) || defined(__OpenBSD__))
 	int result_fchmod;
 	DS_ENTER_BLOCKING_PAL_SECTION;
 	do {
@@ -716,28 +719,7 @@ ipc_transport_get_default_name (
 	int32_t name_len)
 {
 #ifdef DS_IPC_PAL_AF_UNIX
-#ifndef EP_NO_RT_DEPENDENCY
-	return ds_rt_transport_get_default_name (
-		name,
-		name_len,
-		"dotnet-diagnostic",
-		ep_rt_current_process_get_id (),
-		NULL,
-		"socket");
-#elif defined (EP_NO_RT_DEPENDENCY) && defined (FEATURE_CORECLR)
-	// generate the default socket name in TMP Path
-	const ProcessDescriptor pd = ProcessDescriptor::FromCurrentProcess();
-	PAL_GetTransportName(
-		name_len,
-		name,
-		"dotnet-diagnostic",
-		pd.m_Pid,
-		pd.m_ApplicationGroupId,
-		"socket");
-	return true;
-#else
-	return false;
-#endif
+	return minipal_get_transport_name (name, name_len, "dotnet-diagnostic", (uint32_t)getpid (), NULL, "socket");
 #else
 	return false;
 #endif
@@ -813,7 +795,7 @@ ipc_alloc_uds_address (
 	EP_ASSERT (ipc != NULL);
 
 	struct sockaddr_un *server_address = ep_rt_object_alloc (struct sockaddr_un);
-	ep_return_null_if_nok (server_address != NULL);
+	ep_raise_error_if_nok (server_address != NULL);
 
 	server_address->sun_family = AF_UNIX;
 
@@ -823,20 +805,29 @@ ipc_alloc_uds_address (
 			sizeof (server_address->sun_path),
 			"%s",
 			ipc_name);
-		if (result <= 0 || result >= (int32_t)(sizeof (server_address->sun_path)))
-			server_address->sun_path [0] = '\0';
+		ep_raise_error_if_nok (result > 0 && result < (int32_t)(sizeof (server_address->sun_path)));
 	} else {
 		// generate the default socket name
-		ipc_transport_get_default_name (
+		ep_raise_error_if_nok (ipc_transport_get_default_name (
 			server_address->sun_path,
-			sizeof (server_address->sun_path));
+			sizeof (server_address->sun_path)));
 	}
+
+	// An empty sun_path would bind to the Linux abstract namespace, which is not supported.
+	ep_raise_error_if_nok (server_address->sun_path [0] != '\0');
 
 	ipc->server_address = (ds_ipc_socket_address_t *)server_address;
 	ipc->server_address_len = sizeof (struct sockaddr_un);
 	ipc->server_address_family = server_address->sun_family;
+	server_address = NULL;
 
+ep_on_exit:
 	return ipc;
+
+ep_on_error:
+	ep_rt_object_free (server_address);
+	ipc = NULL;
+	ep_exit_error_handler ();
 #else
 	return NULL;
 #endif

@@ -29,7 +29,7 @@ void NativeWalker::Decode()
     m_skipIP = NULL;
     m_nextIP = NULL;
 
-    LOG((LF_CORDB, LL_INFO100000, "NW:Decode: m_ip 0x%x\n", m_ip));
+    LOG((LF_CORDB, LL_INFO100000, "NW:Decode: m_ip %p\n", const_cast<void*>(static_cast<const void*>(m_ip))));
     //
     // Skip instruction prefixes
     //
@@ -68,7 +68,8 @@ void NativeWalker::Decode()
     // Read the opcode
     m_opcode = *ip++;
 
-    LOG((LF_CORDB, LL_INFO100000, "NW:Decode: ip 0x%x, m_opcode:%0.2x\n", ip, m_opcode));
+    LOG((LF_CORDB, LL_INFO100000, "NW:Decode: ip %p, m_opcode:%0.2x\n",
+         const_cast<void*>(static_cast<const void*>(ip)), m_opcode));
 
     if (m_opcode == 0xcc)
     {

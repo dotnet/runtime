@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- This debuggee is intentionally Windows-only (COM interop). -->
+    <NoWarn>$(NoWarn);CA1416</NoWarn>
+    <DumpTypes>Full</DumpTypes>
+    <WindowsOnly>true</WindowsOnly>
+  </PropertyGroup>
+</Project>

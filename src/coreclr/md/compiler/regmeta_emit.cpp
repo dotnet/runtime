@@ -28,7 +28,7 @@
 
 #include <metamodelrw.h>
 
-#if defined(_DEBUG)
+#if defined(_DEBUG) && defined(FEATURE_METADATA_PUBLIC_INTERFACES)
 #define LOGGING
 #endif
 #include <log.h>
@@ -65,6 +65,7 @@ ErrExit:
     return hr;
 } // STDMETHODIMP RegMeta::SetModuleProps()
 
+#ifdef FEATURE_METADATA_PERSISTENCE
 //*****************************************************************************
 // Saves a scope to a file of a given name.
 //*****************************************************************************
@@ -93,7 +94,7 @@ STDMETHODIMP RegMeta::Save(                     // S_OK or error.
         int DumpMD_impl(RegMeta *pMD);
         DumpMD_impl(this);
     }
-#endif // _DEBUG
+#endif // _DEBUG && FEATURE_METADATA_PUBLIC_INTERFACES
 
 ErrExit:
     return hr;
@@ -115,13 +116,13 @@ STDMETHODIMP RegMeta::SaveToStream(     // S_OK or error.
     hr = _SaveToStream(pIStream, dwSaveFlags);
 
 
-#if defined(_DEBUG)
+#if defined(_DEBUG) && defined(FEATURE_METADATA_PUBLIC_INTERFACES)
     if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_MD_RegMetaDump))
     {
         int DumpMD_impl(RegMeta *pMD);
         DumpMD_impl(this);
     }
-#endif // _DEBUG
+#endif // _DEBUG && FEATURE_METADATA_PUBLIC_INTERFACES
 
 ErrExit:
     return hr;
@@ -238,6 +239,35 @@ STDMETHODIMP RegMeta::GetSaveSize(      // S_OK or error.
 ErrExit:
     return hr;
 } // RegMeta::GetSaveSize
+#else
+STDMETHODIMP RegMeta::Save(
+    LPCWSTR szFile,
+    DWORD dwSaveFlags)
+{
+    return E_NOTIMPL;
+}
+
+STDMETHODIMP RegMeta::SaveToStream(
+    IStream *pIStream,
+    DWORD dwSaveFlags)
+{
+    return E_NOTIMPL;
+}
+
+STDMETHODIMP RegMeta::SaveToMemory(
+    void *pbData,
+    ULONG cbData)
+{
+    return E_NOTIMPL;
+}
+
+STDMETHODIMP RegMeta::GetSaveSize(
+    CorSaveSize fSave,
+    DWORD *pdwSaveSize)
+{
+    return E_NOTIMPL;
+}
+#endif
 
 #ifdef FEATURE_METADATA_EMIT_ALL
 
@@ -322,7 +352,7 @@ HRESULT RegMeta::UnmarkAll()
 
     if (m_OptionValue.m_LinkerOption == MDNetModule)
     {
-        // Mark global function if NetModule. We will not keep _Delete method.
+        // Mark global function if NetModule.
         IfFailGo(m_pStgdb->m_MiniMd.GetTypeDefRecord(1, &pRec));
         iStart = m_pStgdb->m_MiniMd.getMethodListOfTypeDef(pRec);
         IfFailGo(m_pStgdb->m_MiniMd.getEndMethodListOfTypeDef(1, (RID *)&iEnd));
@@ -333,23 +363,11 @@ HRESULT RegMeta::UnmarkAll()
             IfFailGo(m_pStgdb->m_MiniMd.GetMethodRid(i, &rid));
             IfFailGo(m_pStgdb->m_MiniMd.GetMethodRecord(rid, &pMethodRec));
 
-            // check the name
-            if (IsMdRTSpecialName(pMethodRec->GetFlags()))
+            if (IsMdRTSpecialName(pMethodRec->GetFlags()) ||
+                !IsMiForwardRef(pMethodRec->GetImplFlags()) ||
+                IsMiRuntime(pMethodRec->GetImplFlags()) ||
+                IsMdPinvokeImpl(pMethodRec->GetFlags()))
             {
-                LPCUTF8 szName;
-                IfFailGo(m_pStgdb->m_MiniMd.getNameOfMethod(pMethodRec, &szName));
-
-                // Only mark method if not a _Deleted method
-                if (strcmp(szName, COR_DELETED_NAME_A) != 0)
-                    IfFailGo( m_pFilterManager->Mark( TokenFromRid( rid, mdtMethodDef) ) );
-            }
-            else
-            {
-                //
-            if (!IsMiForwardRef(pMethodRec->GetImplFlags()) ||
-                    IsMiRuntime(pMethodRec->GetImplFlags())    ||
-                    IsMdPinvokeImpl(pMethodRec->GetFlags()) )
-
                 IfFailGo( m_pFilterManager->Mark( TokenFromRid( rid, mdtMethodDef) ) );
             }
         }
@@ -623,6 +641,7 @@ ErrExit:
 // Internal helper functions.
 //*******************************************************************************
 
+#ifdef FEATURE_METADATA_PERSISTENCE
 //*******************************************************************************
 // Perform optimizations of the metadata prior to saving.
 //*******************************************************************************
@@ -704,6 +723,7 @@ ErrExit:
 
     return hr;
 } // RegMeta::PreSave
+#endif
 
 //*******************************************************************************
 // Perform optimizations of ref to def
@@ -873,8 +893,7 @@ HRESULT RegMeta::_DefineTypeRef(
     mdToken     tkResolutionScope,          // [IN] ModuleRef or AssemblyRef.
     const void  *szName,                    // [IN] Name of the TypeRef.
     BOOL        isUnicode,                  // [IN] Specifies whether the URL is unicode.
-    mdTypeRef   *ptk,                       // [OUT] Put mdTypeRef here.
-    eCheckDups  eCheck)                     // [IN] Specifies whether to check for duplicates.
+    mdTypeRef   *ptk)                       // [OUT] Put mdTypeRef here.
 {
     HRESULT     hr = S_OK;
     LPUTF8      szUTF8FullQualName;
@@ -914,7 +933,7 @@ HRESULT RegMeta::_DefineTypeRef(
     _ASSERTE(bSuccess);
 
     // Search for existing TypeRef record.
-    if (eCheck==eCheckYes || (eCheck==eCheckDefault && CheckDups(MDDupTypeRef)))
+    if (CheckDups(MDDupTypeRef))
     {
         hr = ImportHelper::FindTypeRefByName(&(m_pStgdb->m_MiniMd), tkResolutionScope,
                                              (LPCUTF8)qbNamespace.Ptr(),
@@ -1333,10 +1352,6 @@ HRESULT RegMeta::_DefineEvent(          // Return hresult.
     IfFailGo(m_pStgdb->m_MiniMd.PutString(TBL_Event, EventRec::COL_Name, pEventRec, szUTF8Event));
     IfFailGo(_SetEventProps1(*pmdEvent, dwEventFlags, tkEventType));
 
-    // Add the <Event token, typedef token> to the lookup table
-    if (m_pStgdb->m_MiniMd.HasIndirectTable(TBL_Event))
-        IfFailGo( m_pStgdb->m_MiniMd.AddEventToLookUpTable(*pmdEvent, td) );
-
     IfFailGo(UpdateENCLog(*pmdEvent));
 
 ErrExit:
@@ -1448,6 +1463,9 @@ HRESULT RegMeta::_SetPermissionSetProps(         // Return hresult.
     void const  *pvPermission,          // [IN] Permission blob.
     ULONG       cbPermission)           // [IN] Count of bytes of pvPermission.
 {
+#ifndef FEATURE_METADATA_PERMISSION_SETS
+    return E_NOTIMPL;
+#else // FEATURE_METADATA_PERMISSION_SETS
     DeclSecurityRec *pRecord;
     HRESULT     hr = S_OK;
 
@@ -1460,6 +1478,7 @@ HRESULT RegMeta::_SetPermissionSetProps(         // Return hresult.
                                         pRecord, pvPermission, cbPermission));
 ErrExit:
     return hr;
+#endif // FEATURE_METADATA_PERMISSION_SETS
 } // HRESULT RegMeta::_SetPermissionSetProps()
 
 //******************************************************************************
@@ -1908,4 +1927,3 @@ ErrExit:
 } // RegMeta::_DefineTypeDef
 
 #endif //FEATURE_METADATA_EMIT
-

@@ -219,6 +219,7 @@ size_t DecodeGCHdrInfo(GCInfoToken gcInfoToken,
     infoPtr->ebpFrame        = header.ebpFrame;
     infoPtr->interruptible   = header.interruptible;
     infoPtr->returnKind      = (ReturnKind) header.returnKind;
+    infoPtr->isAsync         = header.isAsync;
 
     infoPtr->prologSize      = header.prologSize;
     infoPtr->epilogSize      = header.epilogSize;
@@ -555,7 +556,7 @@ inline size_t GetSizeOfFrameHeaderForEnC(MethodDesc* pMD, hdrInfo * info)
                         info->localloc +
                         info->genericsContext + // For CORINFO_GENERICS_CTXT_FROM_PARAMTYPEARG
                         ((info->syncStartOffset != INVALID_SYNC_OFFSET) ? 1 : 0) + // Is this method synchronized
-                        (pMD->RequiresAsyncContextSaveAndRestore() ? 2 : 0) + // Does this method save async contexts?
+                        (pMD->RequiresAsyncContextSaveAndRestore() ? 4 : 0) + // Does this method save indicator + thread + async contexts?
                         1; // for ebpFrame
     return position * sizeof(TADDR);
 }
@@ -2250,13 +2251,13 @@ unsigned SKIP_ALLOC_FRAME(int size, PTR_CBYTE base, unsigned offset)
             }
             else
             {
-                // In .NET 5.0 and later JIT emits a call to JIT_StackProbe helper.
+                // In .NET 5.0 and later JIT emits a call to RhpStackProbe helper.
 
                 if (pushedStubParam)
                 {
                     // lea eax, [esp-size+4]
                     offset = SKIP_LEA_EAX_ESP(-size + 4, base, offset);
-                    // call JIT_StackProbe
+                    // call RhpStackProbe
                     offset = SKIP_HELPER_CALL(base, offset);
                     // pop eax
                     offset = SKIP_POP_REG(base, offset);
@@ -2267,7 +2268,7 @@ unsigned SKIP_ALLOC_FRAME(int size, PTR_CBYTE base, unsigned offset)
                 {
                     // lea eax, [esp-size]
                     offset = SKIP_LEA_EAX_ESP(-size, base, offset);
-                    // call JIT_StackProbe
+                    // call RhpStackProbe
                     offset = SKIP_HELPER_CALL(base, offset);
                     // mov esp, eax
                     return SKIP_MOV_REG_REG(base, offset);
@@ -2901,18 +2902,6 @@ bool UnwindEbpDoubleAlignFrame(
             // Set baseSP as initial SP
             baseSP += GetPushedArgSize(info, table, curOffs);
 
-#ifdef UNIX_X86_ABI
-            // 16-byte stack alignment padding (allocated in genFuncletProlog)
-            // Current funclet frame layout (see CodeGen::genFuncletProlog() and genFuncletEpilog()):
-            //   prolog: sub esp, 12
-            //   epilog: add esp, 12
-            //           ret
-            // SP alignment padding should be added for all instructions except the first one and the last one.
-            // Epilog may not exist (unreachable), so we need to check the instruction code.
-            if (funcletStart != methodStart + curOffs && methodStart[curOffs] != X86_INSTR_RETN)
-                baseSP += 12;
-#endif
-
             SetRegdisplayPCTAddr(pContext, (TADDR)baseSP);
 
             pContext->SP = (DWORD)(baseSP + sizeof(TADDR));
@@ -3011,16 +3000,6 @@ bool UnwindStackFrameX86(PREGDISPLAY     pContext,
             return false;
     }
 
-    // TODO [DAVBR]: For the full fix for VsWhidbey 450273, all the below
-    // may be uncommented once isLegalManagedCodeCaller works properly
-    // with non-return address inputs, and with non-DEBUG builds
-    /*
-    // Ensure isLegalManagedCodeCaller succeeds for speculative stackwalks.
-    // (We just assert this below for non-speculative stackwalks.)
-    //
-    FAIL_IF_SPECULATIVE_WALK(isLegalManagedCodeCaller(GetControlPC(pContext)));
-    */
-
     return true;
 }
 
@@ -3038,7 +3017,12 @@ bool EnumGcRefsX86(PREGDISPLAY     pContext,
     if (flags & ParentOfFuncletStackFrame)
     {
         LOG((LF_GCROOTS, LL_INFO100000, "Not reporting this frame because it was already reported via another funclet.\n"));
-        return true;
+#if !defined(FEATURE_NATIVEAOT) && !defined(DACCESS_COMPILE)
+        if ((flags & GcRootScan) == 0 || !static_cast<GCCONTEXT*>(hCallBack)->sc->promotion)
+#endif
+        {
+            return true;
+        }
     }
 
     unsigned  EBP     = GetRegdisplayFP(pContext);
@@ -3063,6 +3047,34 @@ bool EnumGcRefsX86(PREGDISPLAY     pContext,
 
     _ASSERTE( curOffs <= info.methodSize);
 
+#if !defined(FEATURE_NATIVEAOT) && !defined(DACCESS_COMPILE)
+    // The generic context is live even when ordinary live-slot reporting skips the frame.
+    if ((flags & GcRootScan) != 0 && info.genericsContext &&
+        info.prologOffs == hdrInfo::NOT_IN_PROLOG &&
+        info.epilogOffs == hdrInfo::NOT_IN_EPILOG)
+    {
+        GCCONTEXT* gcctx = static_cast<GCCONTEXT*>(hCallBack);
+        if (gcctx->sc->promotion)
+        {
+            PTR_VOID paramTypeArg = PTR_VOID(*PTR_TADDR(EBP - GetParamTypeArgOffset(&info)));
+            // Async methods can restore this context from the continuation after resuming.
+            _ASSERTE(paramTypeArg != NULL || info.isAsync);
+            if (paramTypeArg != NULL)
+            {
+                LoaderAllocator* pLoaderAllocator = info.genericsContextIsMethodDesc
+                    ? static_cast<MethodDesc*>(paramTypeArg)->GetLoaderAllocator()
+                    : static_cast<MethodTable*>(paramTypeArg)->GetLoaderAllocator();
+                GcReportLoaderAllocator(gcctx->f, gcctx->sc, pLoaderAllocator);
+            }
+        }
+    }
+
+    if (flags & ParentOfFuncletStackFrame)
+    {
+        return true;
+    }
+#endif // !FEATURE_NATIVEAOT && !DACCESS_COMPILE
+
 #ifdef  _DEBUG
 //    if ((gcInfoToken.Info == (void*)0x37760d0) && (curOffs == 0x264))
 //        __asm int 3;
@@ -3082,10 +3094,14 @@ bool EnumGcRefsX86(PREGDISPLAY     pContext,
     }
 #endif
 
-    /* Are we in the prolog or epilog of the method? */
+    /* Are we in the prolog or epilog of the method, or is this a
+     * non-interruptible method that will not resume execution at this offset?
+     * In either case, GC slots may not be initialized at the current offset
+     * and we can simply skip all reporting. */
 
     if (info.prologOffs != hdrInfo::NOT_IN_PROLOG ||
-        info.epilogOffs != hdrInfo::NOT_IN_EPILOG)
+        info.epilogOffs != hdrInfo::NOT_IN_EPILOG ||
+        ((flags & ExecutionAborted) && !info.interruptible))
     {
 
 #if !DUMP_PTR_REFS
@@ -3214,18 +3230,6 @@ bool EnumGcRefsX86(PREGDISPLAY     pContext,
                     TADDR baseSP = ESP;
                     // Set baseSP as initial SP
                     baseSP += GetPushedArgSize(&info, table, curOffs);
-
-#ifdef UNIX_X86_ABI
-                    // 16-byte stack alignment padding (allocated in genFuncletProlog)
-                    // Current funclet frame layout (see CodeGen::genFuncletProlog() and genFuncletEpilog()):
-                    //   prolog: sub esp, 12
-                    //   epilog: add esp, 12
-                    //           ret
-                    // SP alignment padding should be added for all instructions except the first one and the last one.
-                    // Epilog may not exist (unreachable), so we need to check the instruction code.
-                    if (funcletStart != methodStart + curOffs && methodStart[curOffs] != X86_INSTR_RETN)
-                        baseSP += 12;
-#endif
 
                     // -sizeof(void*) because we want to point *AT* first parameter
                     pPendingArgFirst = (DWORD *)(size_t)(baseSP - sizeof(void*));
@@ -3630,10 +3634,10 @@ bool EnumGcRefsX86(PREGDISPLAY     pContext,
        do not contain ANY arguments except 'this' (even if they
        were statically declared */
 
-    if (info.varargs) {
-#ifdef FEATURE_NATIVEAOT
-        PORTABILITY_ASSERT("EnumGCRefs: VarArgs");
+#if !defined(FEATURE_VARARGS)
+    _ASSERTE(!info.varargs);
 #else
+    if (info.varargs) {
         LOG((LF_GCINFO, LL_INFO100, "Reporting incoming vararg GC refs\n"));
 
         PTR_BYTE argsStart;
@@ -3654,8 +3658,8 @@ bool EnumGcRefsX86(PREGDISPLAY     pContext,
         PTR_VASigCookie varArgSig = *PTR_PTR_VASigCookie(argsStart);
 
         promoteVarArgs(argsStart, varArgSig, pCtx);
-#endif
     }
+#endif // FEATURE_VARARGS
 
     return true;
 }

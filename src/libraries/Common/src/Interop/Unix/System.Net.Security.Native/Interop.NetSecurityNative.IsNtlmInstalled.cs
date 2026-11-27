@@ -12,27 +12,24 @@ internal static partial class Interop
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool IsNtlmInstalled();
 
+        [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint = "NetSecurityNative_IsGetNameAttributeSupported")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool IsGetNameAttributeSupported();
+
         [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint = "NetSecurityNative_EnsureGssInitialized")]
-        private static partial int EnsureGssInitialized();
+        private static unsafe partial int EnsureGssInitialized();
+
+        private const string GssApiLibraryName = "libgssapi_krb5.so.2";
 
         static NetSecurityNative()
         {
-            GssInitializer.Initialize();
-        }
-
-        internal static class GssInitializer
-        {
-            static GssInitializer()
+            // SAFETY: To be audited
+            unsafe
             {
                 if (EnsureGssInitialized() != 0)
                 {
-                    throw new InvalidOperationException();
+                    throw new DllNotFoundException(GssApiLibraryName);
                 }
-            }
-
-            internal static void Initialize()
-            {
-                // No-op that exists to provide a hook for other static constructors.
             }
         }
     }

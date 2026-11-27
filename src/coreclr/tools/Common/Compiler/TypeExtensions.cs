@@ -29,7 +29,11 @@ namespace ILCompiler
         /// </summary>
         public static DefType GetClosestDefType(this TypeDesc type)
         {
+#if ILTRIM
+            return type.IsArray ? type.Context.GetWellKnownType(WellKnownType.Array) : (DefType)type;
+#else
             return ((CompilerTypeSystemContext)type.Context).GetClosestDefType(type);
+#endif
         }
 
         /// <summary>
@@ -641,6 +645,67 @@ namespace ILCompiler
             Debug.Assert(method != null);
 
             return method;
+        }
+
+        // Rebind a resolved constrained target to its runtime-determined declaring context and
+        // method arguments. An ambiguous declaring context still requires constrained dispatch.
+        public static MethodDesc TryGetRuntimeDeterminedConstrainedMethod(this TypeDesc constrainedType,
+            MethodDesc method, Instantiation methodInstantiation)
+        {
+            TypeDesc owner = TryGetRuntimeDeterminedDeclaringType(constrainedType, method.OwningType);
+            if (owner == null)
+                return null;
+
+            MethodDesc result;
+            if (owner is RuntimeDeterminedType runtimeOwner)
+                result = method.Context.GetMethodForRuntimeDeterminedType(method.GetTypicalMethodDefinition(), runtimeOwner);
+            else if (owner is InstantiatedType instantiatedOwner)
+                result = method.Context.GetMethodForInstantiatedType(method.GetTypicalMethodDefinition(), instantiatedOwner);
+            else
+                result = method.GetMethodDefinition();
+
+            if (result.HasInstantiation)
+                result = result.MakeInstantiatedMethod(methodInstantiation);
+
+            Debug.Assert(result.GetCanonMethodTarget(CanonicalFormKind.Specific) == method.GetCanonMethodTarget(CanonicalFormKind.Specific));
+            return result;
+        }
+
+        private static TypeDesc TryGetRuntimeDeterminedDeclaringType(TypeDesc constrainedType, TypeDesc declaringType)
+        {
+            TypeDesc constraintDefinition = constrainedType is RuntimeDeterminedType runtimeType
+                ? runtimeType.CanonicalType : constrainedType;
+            if (constraintDefinition.HasSameTypeDefinition(declaringType))
+                return constrainedType;
+
+            if (constrainedType.IsRuntimeDeterminedType)
+                return null;
+
+            TypeDesc canonicalOwner = declaringType.ConvertToCanonForm(CanonicalFormKind.Specific);
+            if (!declaringType.IsInterface)
+            {
+                for (TypeDesc current = constrainedType.BaseType; current != null; current = current.BaseType)
+                {
+                    if (current.ConvertToCanonForm(CanonicalFormKind.Specific) == canonicalOwner)
+                        return current;
+                }
+                Debug.Fail("Not a base?");
+                return null;
+            }
+
+            TypeDesc result = null;
+            foreach (DefType iface in constrainedType.RuntimeInterfaces)
+            {
+                if (iface.ConvertToCanonForm(CanonicalFormKind.Specific) != canonicalOwner)
+                    continue;
+
+                if (result != null && result != iface)
+                    return null;
+
+                result = iface;
+            }
+            Debug.Assert(result != null, "Not an implemented interface?");
+            return result;
         }
 
         private static TypeDesc MergeClassWithInterface(TypeDesc type, TypeDesc interfaceType)

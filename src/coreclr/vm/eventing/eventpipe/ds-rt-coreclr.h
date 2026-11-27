@@ -11,13 +11,12 @@
 #include "ep-rt-coreclr.h"
 #include <clrconfignocache.h>
 #include <generatedumpflags.h>
+#include "ProcessEnvironment.h"
 #include <minipal/log.h>
 #include <eventpipe/ds-process-protocol.h>
 #include <eventpipe/ds-profiler-protocol.h>
 #include <eventpipe/ds-dump-protocol.h>
-#ifdef FEATURE_PERFMAP
 #include "perfmap.h"
-#endif
 
 #undef DS_LOG_ALWAYS_0
 #define DS_LOG_ALWAYS_0(msg) STRESS_LOG0(LF_DIAGNOSTICS_PORT, LL_ALWAYS, msg "\n")
@@ -71,78 +70,6 @@
 #define DS_EXIT_BLOCKING_PAL_SECTION
 
 /*
-* AutoTrace.
-*/
-
-#ifdef FEATURE_AUTO_TRACE
-#include "autotrace.h"
-#endif
-
-static
-void
-ds_rt_auto_trace_init (void)
-{
-	STATIC_CONTRACT_NOTHROW;
-
-#ifdef FEATURE_AUTO_TRACE
-	EX_TRY
-	{
-		auto_trace_init ();
-	}
-	EX_CATCH {}
-	EX_END_CATCH
-#endif
-}
-
-static
-void
-ds_rt_auto_trace_launch (void)
-{
-	STATIC_CONTRACT_NOTHROW;
-
-#ifdef FEATURE_AUTO_TRACE
-	EX_TRY
-	{
-		auto_trace_launch ();
-	}
-	EX_CATCH {}
-	EX_END_CATCH
-#endif
-}
-
-static
-void
-ds_rt_auto_trace_signal (void)
-{
-	STATIC_CONTRACT_NOTHROW;
-
-#ifdef FEATURE_AUTO_TRACE
-	EX_TRY
-	{
-		auto_trace_signal ();
-	}
-	EX_CATCH {}
-	EX_END_CATCH
-#endif
-}
-
-static
-void
-ds_rt_auto_trace_wait (void)
-{
-	STATIC_CONTRACT_NOTHROW;
-
-#ifdef FEATURE_AUTO_TRACE
-	EX_TRY
-	{
-		auto_trace_wait ();
-	}
-	EX_CATCH {}
-	EX_END_CATCH
-#endif
-}
-
-/*
  * DiagnosticsConfiguration.
  */
 
@@ -167,7 +94,7 @@ ds_rt_config_value_get_ports (void)
 	STATIC_CONTRACT_NOTHROW;
 
 	CLRConfigStringHolder value(CLRConfig::GetConfigValue (CLRConfig::EXTERNAL_DOTNET_DiagnosticPorts));
-	return ep_rt_utf16_to_utf8_string (reinterpret_cast<ep_char16_t *>(value.GetValue ()));
+	return ep_rt_utf16_to_utf8_string (reinterpret_cast<ep_char16_t *>(static_cast<LPWSTR>(value)));
 }
 
 static
@@ -212,29 +139,6 @@ ds_rt_generate_core_dump (
 	EX_CATCH {}
 	EX_END_CATCH
 	return result;
-}
-
-/*
- * DiagnosticsIpc.
- */
-
-static
-inline
-bool
-ds_rt_transport_get_default_name (
-	ep_char8_t *name,
-	int32_t name_len,
-	const ep_char8_t *prefix,
-	int32_t id,
-	const ep_char8_t *group_id,
-	const ep_char8_t *suffix)
-{
-	STATIC_CONTRACT_NOTHROW;
-
-#ifdef TARGET_UNIX
-	PAL_GetTransportName (name_len, name, prefix, id, group_id, suffix);
-#endif
-	return true;
 }
 
 /*
@@ -298,14 +202,15 @@ static
 uint32_t
 ds_rt_set_environment_variable (const ep_char16_t *name, const ep_char16_t *value)
 {
-	return SetEnvironmentVariableW(reinterpret_cast<LPCWSTR>(name), reinterpret_cast<LPCWSTR>(value)) ? S_OK : HRESULT_FROM_WIN32(GetLastError());
+	uint32_t error = ProcessEnvironment_SetVariable((const CHAR16_T*)name, (const CHAR16_T*)value);
+	return HRESULT_FROM_WIN32(error);
 }
 
 static
 uint32_t
 ds_rt_enable_perfmap (uint32_t type)
 {
-	LIMITED_METHOD_CONTRACT;
+    STANDARD_VM_CONTRACT;
 
 #ifdef FEATURE_PERFMAP
 	PerfMap::PerfMapType perfMapType = (PerfMap::PerfMapType)type;
@@ -388,11 +293,7 @@ ds_rt_server_log_pause_message (void)
 	STATIC_CONTRACT_NOTHROW;
 
 	const char diagPortsName[] = "DiagnosticPorts";
-#ifdef HOST_WINDOWS
     CLRConfigNoCache diagPorts = CLRConfigNoCache::Get(diagPortsName);
-#else
-    CLRConfigNoCache diagPorts = CLRConfigNoCache::Get(diagPortsName, /* noPrefix */ false, &PAL_getenv);
-#endif
 	LPCSTR ports = nullptr;
 	if (diagPorts.IsSet())
 	{

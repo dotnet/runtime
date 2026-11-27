@@ -255,6 +255,7 @@ private:
 
 class ExceptionFlags
 {
+    friend struct ::cdac_data<ExInfo>;
 public:
     ExceptionFlags()
     {
@@ -346,7 +347,7 @@ private:
     {
         // Unused                       = 0x00000001,
         Ex_UnwindingToFindResumeFrame   = 0x00000002,
-        Ex_UnwindHasStarted             = 0x00000004,
+        Ex_UnwindHasStarted             = 0x00000004,        // [cDAC] [StackWalk]: Contract depends on this value
         Ex_UseExInfoForStackwalk        = 0x00000008,        // Use this ExInfo to unwind a fault (AV, zerodiv) back to managed code?
 
 #ifdef DEBUGGING_SUPPORTED
@@ -419,11 +420,8 @@ private:
         // Bucket details were captured for ThreadAbort
         Wb_CapturedForThreadAbort = 1,
 
-        // Bucket details were captured at AD Transition
-        Wb_CapturedAtADTransition = 2,
-
         // Bucket details were captured during Reflection invocation
-        Wb_CapturedAtReflectionInvocation = 4
+        Wb_CapturedAtReflectionInvocation = 2
     };
 
     DWORD m_DebugFlags;
@@ -445,10 +443,6 @@ public:
     BOOL CapturedForThreadAbort()      { LIMITED_METHOD_CONTRACT; return m_DebugFlags & Wb_CapturedForThreadAbort; }
     void SetCapturedForThreadAbort()   { LIMITED_METHOD_CONTRACT; m_DebugFlags |= Wb_CapturedForThreadAbort; }
     void ResetCapturedForThreadAbort() { LIMITED_METHOD_CONTRACT; m_DebugFlags &= ~Wb_CapturedForThreadAbort; }
-
-    BOOL CapturedAtADTransition()      { LIMITED_METHOD_CONTRACT; return m_DebugFlags & Wb_CapturedAtADTransition; }
-    void SetCapturedAtADTransition()   { LIMITED_METHOD_CONTRACT; m_DebugFlags |= Wb_CapturedAtADTransition; }
-    void ResetCapturedAtADTransition() { LIMITED_METHOD_CONTRACT; m_DebugFlags &= ~Wb_CapturedAtADTransition; }
 
     BOOL CapturedAtReflectionInvocation()      { LIMITED_METHOD_CONTRACT; return m_DebugFlags & Wb_CapturedAtReflectionInvocation; }
     void SetCapturedAtReflectionInvocation()   { LIMITED_METHOD_CONTRACT; m_DebugFlags |= Wb_CapturedAtReflectionInvocation; }

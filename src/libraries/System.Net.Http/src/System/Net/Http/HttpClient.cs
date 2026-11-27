@@ -73,6 +73,11 @@ namespace System.Net.Http
             get => _defaultVersionPolicy;
             set
             {
+                if ((uint)value > (uint)HttpVersionPolicy.RequestVersionExact)
+                {
+                    throw new ArgumentException(SR.Format(SR.net_invalid_enum, nameof(HttpVersionPolicy)), nameof(value));
+                }
+
                 CheckDisposedOrStarted();
                 _defaultVersionPolicy = value;
             }
@@ -182,6 +187,7 @@ namespace System.Net.Http
 
             (CancellationTokenSource cts, bool disposeCts, CancellationTokenSource pendingRequestsCts) = PrepareCancellationTokenSource(cancellationToken);
             HttpResponseMessage? response = null;
+            HttpContent.LimitArrayPoolWriteStream? buffer = null;
             try
             {
                 // Wait for the response message and make sure it completed successfully.
@@ -199,7 +205,7 @@ namespace System.Net.Http
 
                 // Since the underlying byte[] will never be exposed, we use an ArrayPool-backed
                 // stream to which we copy all of the data from the response.
-                using var buffer = new HttpContent.LimitArrayPoolWriteStream(
+                buffer = new HttpContent.LimitArrayPoolWriteStream(
                     _maxResponseContentBufferSize,
                     c.Headers.ContentLength.GetValueOrDefault(),
                     getFinalSizeFromPool: true);
@@ -224,6 +230,7 @@ namespace System.Net.Http
             }
             finally
             {
+                buffer?.ReturnAllPooledBuffers();
                 FinishSend(response, cts, disposeCts, telemetryStarted, responseContentTelemetryStarted);
             }
         }
@@ -254,6 +261,7 @@ namespace System.Net.Http
 
             (CancellationTokenSource cts, bool disposeCts, CancellationTokenSource pendingRequestsCts) = PrepareCancellationTokenSource(cancellationToken);
             HttpResponseMessage? response = null;
+            HttpContent.LimitArrayPoolWriteStream? buffer = null;
             try
             {
                 // Wait for the response message and make sure it completed successfully.
@@ -275,7 +283,7 @@ namespace System.Net.Http
                 // the buffer potentially several times and that it's unlikely the underlying buffer
                 // at the end will be the exact size needed, in which case it's more beneficial to use
                 // ArrayPool buffers and copy out to a new array at the end.
-                using var buffer = new HttpContent.LimitArrayPoolWriteStream(
+                buffer = new HttpContent.LimitArrayPoolWriteStream(
                     _maxResponseContentBufferSize,
                     c.Headers.ContentLength.GetValueOrDefault(),
                     getFinalSizeFromPool: false);
@@ -299,6 +307,7 @@ namespace System.Net.Http
             }
             finally
             {
+                buffer?.ReturnAllPooledBuffers();
                 FinishSend(response, cts, disposeCts, telemetryStarted, responseContentTelemetryStarted);
             }
         }
@@ -421,6 +430,78 @@ namespace System.Net.Http
         public Task<HttpResponseMessage> PatchAsync(Uri? requestUri, HttpContent? content, CancellationToken cancellationToken)
         {
             HttpRequestMessage request = CreateRequestMessage(HttpMethod.Patch, requestUri);
+            request.Content = content;
+            return SendAsync(request, cancellationToken);
+        }
+
+        /// <summary>Sends a QUERY request to the specified URI as an asynchronous operation.</summary>
+        /// <param name="requestUri">The URI the request is sent to.</param>
+        /// <param name="content">The HTTP request content sent to the server.</param>
+        /// <returns>The task object representing the asynchronous operation.</returns>
+        /// <remarks>
+        /// This operation doesn't block. The returned <see cref="Task{TResult}"/> object will complete after the whole response (including content) is read.
+        /// </remarks>
+        /// <exception cref="InvalidOperationException">The <paramref name="requestUri"/> is not an absolute URI and <see cref="BaseAddress"/> isn't set.</exception>
+        /// <exception cref="ObjectDisposedException">The current instance has been disposed.</exception>
+        /// <exception cref="HttpRequestException">The request failed due to an issue getting a valid HTTP response, such as network connectivity failure, DNS failure, server certificate validation error, or invalid server response. The reason is indicated by <see cref="HttpRequestException.HttpRequestError"/>.</exception>
+        /// <exception cref="OperationCanceledException">The request timed out.</exception>
+        /// <exception cref="UriFormatException">The provided request URI is not a valid relative or absolute URI.</exception>
+        public Task<HttpResponseMessage> QueryAsync([StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri, HttpContent? content) =>
+            QueryAsync(CreateUri(requestUri), content);
+
+        /// <summary>Sends a QUERY request to the specified URI as an asynchronous operation.</summary>
+        /// <param name="requestUri">The URI the request is sent to.</param>
+        /// <param name="content">The HTTP request content sent to the server.</param>
+        /// <returns>The task object representing the asynchronous operation.</returns>
+        /// <remarks>
+        /// This operation doesn't block. The returned <see cref="Task{TResult}"/> object will complete after the whole response (including content) is read.
+        /// </remarks>
+        /// <exception cref="InvalidOperationException">The <paramref name="requestUri"/> is not an absolute URI and <see cref="BaseAddress"/> isn't set.</exception>
+        /// <exception cref="ObjectDisposedException">The current instance has been disposed.</exception>
+        /// <exception cref="HttpRequestException">The request failed due to an issue getting a valid HTTP response, such as network connectivity failure, DNS failure, server certificate validation error, or invalid server response. The reason is indicated by <see cref="HttpRequestException.HttpRequestError"/>.</exception>
+        /// <exception cref="OperationCanceledException">The request timed out.</exception>
+        public Task<HttpResponseMessage> QueryAsync(Uri? requestUri, HttpContent? content) =>
+            QueryAsync(requestUri, content, CancellationToken.None);
+
+        /// <summary>Sends a QUERY request to the specified URI with a cancellation token as an asynchronous operation.</summary>
+        /// <param name="requestUri">The URI the request is sent to.</param>
+        /// <param name="content">The HTTP request content sent to the server.</param>
+        /// <param name="cancellationToken">A cancellation token that can be used to cancel the operation.</param>
+        /// <returns>The task object representing the asynchronous operation.</returns>
+        /// <remarks>
+        /// This operation doesn't block. The returned <see cref="Task{TResult}"/> object will complete after the whole response (including content) is read.
+        /// </remarks>
+        /// <exception cref="InvalidOperationException">The <paramref name="requestUri"/> is not an absolute URI and <see cref="BaseAddress"/> isn't set.</exception>
+        /// <exception cref="ObjectDisposedException">The current instance has been disposed.</exception>
+        /// <exception cref="HttpRequestException">The request failed due to an issue getting a valid HTTP response, such as network connectivity failure, DNS failure, server certificate validation error, or invalid server response. The reason is indicated by <see cref="HttpRequestException.HttpRequestError"/>.</exception>
+        /// <exception cref="UriFormatException">The provided request URI is not a valid relative or absolute URI.</exception>
+        /// <exception cref="OperationCanceledException">
+        /// The operation was canceled.
+        /// <para>-or-</para>
+        /// The request timed out.
+        /// </exception>
+        public Task<HttpResponseMessage> QueryAsync([StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri, HttpContent? content, CancellationToken cancellationToken) =>
+            QueryAsync(CreateUri(requestUri), content, cancellationToken);
+
+        /// <summary>Sends a QUERY request to the specified URI with a cancellation token as an asynchronous operation.</summary>
+        /// <param name="requestUri">The URI the request is sent to.</param>
+        /// <param name="content">The HTTP request content sent to the server.</param>
+        /// <param name="cancellationToken">A cancellation token that can be used to cancel the operation.</param>
+        /// <returns>The task object representing the asynchronous operation.</returns>
+        /// <remarks>
+        /// This operation doesn't block. The returned <see cref="Task{TResult}"/> object will complete after the whole response (including content) is read.
+        /// </remarks>
+        /// <exception cref="InvalidOperationException">The <paramref name="requestUri"/> is not an absolute URI and <see cref="BaseAddress"/> isn't set.</exception>
+        /// <exception cref="ObjectDisposedException">The current instance has been disposed.</exception>
+        /// <exception cref="HttpRequestException">The request failed due to an issue getting a valid HTTP response, such as network connectivity failure, DNS failure, server certificate validation error, or invalid server response. The reason is indicated by <see cref="HttpRequestException.HttpRequestError"/>.</exception>
+        /// <exception cref="OperationCanceledException">
+        /// The operation was canceled.
+        /// <para>-or-</para>
+        /// The request timed out.
+        /// </exception>
+        public Task<HttpResponseMessage> QueryAsync(Uri? requestUri, HttpContent? content, CancellationToken cancellationToken)
+        {
+            HttpRequestMessage request = CreateRequestMessage(HttpMethod.Query, requestUri);
             request.Content = content;
             return SendAsync(request, cancellationToken);
         }

@@ -649,6 +649,22 @@ namespace System.Diagnostics.Metrics
             ValidateHistogram(histogram, expectedScale: -2, expectedSum: 0, expectedCount: 0, expectedZeroCount: 0, expectedMin: double.MaxValue, expectedMax: double.MinValue);
         }
 
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(-1)]
+        public void CircularBufferBucketsRejectsInvalidCapacity(int capacity)
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => new CircularBufferBuckets(capacity));
+        }
+
+        [Fact]
+        public void CircularBufferBucketsAcceptsCapacityOfTwo()
+        {
+            var buckets = new CircularBufferBuckets(2);
+            Assert.Equal(2, buckets.Capacity);
+        }
+
         //
         // Helper methods
         //

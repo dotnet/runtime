@@ -11,6 +11,87 @@ using Xunit;
 
 public class PredicateInstructions
 {
+    private static readonly float[] s_floatValues = new float[64];
+    private static readonly double[] s_doubleValues = new double[64];
+
+    [ConditionalFact(typeof(Sve), nameof(Sve.IsSupported))]
+    public static void TestMaskElementGranularity()
+    {
+        int[] integers = Array.CreateFilled(Vector<int>.Count, 1);
+        integers[0] = 0;
+
+        short[] shorts = Array.CreateFilled<short>(Vector<short>.Count, 1);
+        shorts[0] = 0;
+
+        Vector<int> right = new Vector<int>(integers);
+        Vector<byte> reversed = ReverseReinterpretedComparison(Vector<int>.Zero, right);
+        Vector<byte> anded = AndReinterpretedComparisons(Vector<int>.Zero, right, Vector<short>.Zero, new Vector<short>(shorts));
+        Vector<byte> selected = SelectReinterpretedComparisons(Vector<byte>.AllBitsSet, Vector<int>.Zero, right);
+
+        for (int i = 0; i < Vector<byte>.Count; i++)
+        {
+            Assert.Equal(i >= Vector<byte>.Count - sizeof(int) ? byte.MaxValue : (byte)0, reversed[i]);
+            Assert.Equal(i < sizeof(short) ? byte.MaxValue : (byte)0, anded[i]);
+            Assert.Equal(i < sizeof(int) ? byte.MaxValue : (byte)0, selected[i]);
+        }
+    }
+
+    [ConditionalFact(typeof(Sve), nameof(Sve.IsSupported))]
+    public static void TestReinterpretedBitwiseClearSelect()
+    {
+        Vector<byte> allTrue = SelectReinterpretedBitwiseClear(Vector<int>.Zero, Vector<int>.Zero);
+        for (int i = 0; i < Vector<byte>.Count; i++)
+        {
+            Assert.Equal((byte)0x5A, allTrue[i]);
+        }
+
+        int[] left = new int[Vector<int>.Count];
+        int[] right = new int[Vector<int>.Count];
+        for (int i = 0; i < left.Length; i++)
+        {
+            left[i] = i;
+            right[i] = i + ((i % 3) - 1);
+        }
+
+        Vector<byte> selected = SelectReinterpretedBitwiseClear(new Vector<int>(left), new Vector<int>(right));
+        Vector<byte> direct = SelectReinterpretedDirectBitwiseClear(new Vector<int>(left), new Vector<int>(right));
+
+        for (int i = 0; i < Vector<byte>.Count; i++)
+        {
+            byte expected = left[i / sizeof(int)] == right[i / sizeof(int)] ? (byte)0x5A : (byte)0xA5;
+            Assert.Equal(expected, selected[i]);
+            Assert.Equal(expected, direct[i]);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Vector<byte> SelectReinterpretedBitwiseClear(Vector<int> left, Vector<int> right)
+    {
+        Vector<int> firstMask = Sve.CompareEqual(left, right);
+        Vector<int> secondMask = Sve.CompareGreaterThan(left, right);
+        return Sve.ConditionalSelect(Vector.AsVectorByte(firstMask & ~secondMask),
+            Vector.Create((byte)0x5A), Vector.Create((byte)0xA5));
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Vector<byte> SelectReinterpretedDirectBitwiseClear(Vector<int> left, Vector<int> right)
+    {
+        Vector<int> mask = Sve.BitwiseClear(Sve.CompareEqual(left, right), Sve.CompareGreaterThan(left, right));
+        return Sve.ConditionalSelect(Vector.AsVectorByte(mask), Vector.Create((byte)0x5A), Vector.Create((byte)0xA5));
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Vector<byte> ReverseReinterpretedComparison(Vector<int> left, Vector<int> right) =>
+        Sve.ReverseElement(Vector.AsVectorByte(Sve.CompareEqual(left, right)));
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Vector<byte> AndReinterpretedComparisons(Vector<int> left, Vector<int> right, Vector<short> leftShort, Vector<short> rightShort) =>
+        Sve.And(Vector.AsVectorByte(Sve.CompareEqual(left, right)), Vector.AsVectorByte(Sve.CompareEqual(leftShort, rightShort)));
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Vector<byte> SelectReinterpretedComparisons(Vector<byte> condition, Vector<int> left, Vector<int> right) =>
+        Sve.ConditionalSelect(condition, Vector.AsVectorByte(Sve.CompareEqual(left, right)), Vector.AsVectorByte(Sve.CompareGreaterThan(left, right)));
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     [Fact]
     public static void TestPredicateInstructions()
@@ -39,7 +120,24 @@ public class PredicateInstructions
 
             UnzipEvenZipLowMask(vecs, vecs);
             TransposeEvenAndMask(vecs, vecs, vecs);
+            Assert.Equal(Vector.Create<short>(1), AndMaskWithOnes(Vector.Create<short>(3), vecs));
+            VectorAndNot(vecs, vecs);
+            PredicateBitwiseClearFloat(Vector.Create<float>(1), Vector.Create<float>(2));
+            Assert.Equal(Vector<int>.Zero, PredicateBitwiseClearMixedWidths(veci, Vector.Create<int>(5), vecl, vecl + vecl));
+            Assert.Equal(Vector.Create(-1), PredicateBitwiseClearMixedWidthsReversed(veci, veci, vecl, vecl + vecl));
+            Assert.Equal(Vector.Create(-1), PredicateBitwiseClearReinterpreted(vecl, vecl + vecl));
 
+            PredicateCastFloatLoad(s_floatValues, 0, s_floatValues.Length);
+            PredicateCastFloatLocalLoad(s_floatValues, 0, s_floatValues.Length);
+            PointerCastFloatLoad(s_floatValues, 0, s_floatValues.Length);
+            WhileLessThanSingleFloatLoad(s_floatValues, 0, s_floatValues.Length);
+            PredicateCastFloatLoop(s_floatValues, s_floatValues, s_floatValues.Length);
+
+            PredicateCastDoubleLoad(s_doubleValues, 0, s_doubleValues.Length);
+            PredicateCastDoubleLocalLoad(s_doubleValues, 0, s_doubleValues.Length);
+            PointerCastDoubleLoad(s_doubleValues, 0, s_doubleValues.Length);
+            WhileLessThanDoubleLoad(s_doubleValues, 0, s_doubleValues.Length);
+            PredicateCastDoubleLoop(s_doubleValues, s_doubleValues, s_doubleValues.Length);
         }
     }
 
@@ -178,5 +276,230 @@ public class PredicateInstructions
                     Sve.CreateTrueMaskInt16(),
                     Sve.And(Sve.CompareGreaterThan(a, b), Sve.CompareEqual(a, b)),
                     Sve.CompareLessThan(a, b)));
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector<short> AndMaskWithOnes(Vector<short> a, Vector<short> b)
+    {
+        // A vector containing ones is not a per-element mask. Ensure this remains a vector AND
+        // so that true lanes contain one rather than all bits set.
+        //ARM64-FULL-LINE: and {{z[0-9]+}}.d, {{z[0-9]+}}.d, {{z[0-9]+}}.d
+        return Sve.And(Sve.CompareGreaterThan(a, b), Vector.Create<short>(1));
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector<short> VectorAndNot(Vector<short> a, Vector<short> b)
+    {
+        // Verify that ordinary vector AND-NOT expressions still reach AdvSimd BitwiseClear lowering.
+        //ARM64-FULL-LINE: bic {{v[0-9]+}}.8h, {{v[0-9]+}}.8h, {{v[0-9]+}}.8h
+        return ~a & b;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector<float> PredicateBitwiseClearFloat(Vector<float> left, Vector<float> right)
+    {
+        //ARM64-FULL-LINE: {{bic .*}}
+        // {{p[0-9]+}}.b, {{p[0-9]+}}/z, {{p[0-9]+}}.b, {{p[0-9]+}}.b
+        Vector<float> firstMask = Sve.CompareLessThan(left, right);
+        Vector<float> secondMask = Sve.ZipLow(
+            Sve.CompareGreaterThan(left, right),
+            Sve.CompareEqual(left, right));
+
+        return firstMask & ~secondMask;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector<int> PredicateBitwiseClearMixedWidths(Vector<int> a, Vector<int> b, Vector<long> c, Vector<long> d)
+    {
+        //ARM64-FULL-LINE: bic {{v[0-9]+}}.4s, {{v[0-9]+}}.4s, {{v[0-9]+}}.4s
+        Vector<int> maskS = Sve.CompareLessThan(a, b);
+        Vector<long> maskD = Sve.CompareLessThan(c, d);
+        return maskS & ~Vector.AsVectorInt32(maskD);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector<int> PredicateBitwiseClearMixedWidthsReversed(Vector<int> a, Vector<int> b, Vector<long> c, Vector<long> d)
+    {
+        //ARM64-FULL-LINE: bic {{v[0-9]+}}.4s, {{v[0-9]+}}.4s, {{v[0-9]+}}.4s
+        Vector<int> maskS = Sve.CompareLessThan(a, b);
+        Vector<long> maskD = Sve.CompareLessThan(c, d);
+        return ~maskS & Vector.AsVectorInt32(maskD);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector<int> PredicateBitwiseClearReinterpreted(Vector<long> a, Vector<long> b)
+    {
+        //ARM64-FULL-LINE: bic {{v[0-9]+}}.4s, {{v[0-9]+}}.4s, {{v[0-9]+}}.4s
+        Vector<long> firstMask = Sve.CompareLessThan(a, b);
+        Vector<long> secondMask = Sve.CompareGreaterThan(a, b);
+        return Vector.AsVectorInt32(firstMask) & ~Vector.AsVectorInt32(secondMask);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static unsafe Vector<float> PredicateCastFloatLoad(float[] values, int index, int length)
+    {
+        //ARM64-FULL-LINE: whilelt {{p[0-9]+}}.s, {{w[0-9]+}}, {{w[0-9]+}}
+        //ARM64-NOT: mov {{z[0-9]+}}.s, {{p[0-9]+}}/z, #1
+        //ARM64-NOT: {{^ *}}cmp
+        //ARM64-FULL-LINE: ld1w { {{z[0-9]+}}.s }, {{p[0-9]+}}/z, [{{x[0-9]+}}]
+        fixed (float* ptr = values)
+        {
+            Vector<uint> mask = Sve.CreateWhileLessThanMaskUInt32(index, length);
+            return Sve.LoadVector((Vector<float>)mask, ptr + index);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static unsafe Vector<float> PointerCastFloatLoad(float[] values, int index, int length)
+    {
+        //ARM64-FULL-LINE: whilelt {{p[0-9]+}}.s, {{w[0-9]+}}, {{w[0-9]+}}
+        //ARM64-NOT: mov {{z[0-9]+}}.s, {{p[0-9]+}}/z, #1
+        //ARM64-NOT: {{^ *}}cmp
+        //ARM64-FULL-LINE: ld1w { {{z[0-9]+}}.s }, {{p[0-9]+}}/z, [{{x[0-9]+}}]
+        fixed (float* ptr = values)
+        {
+            Vector<uint> mask = Sve.CreateWhileLessThanMaskUInt32(index, length);
+            return (Vector<float>)Sve.LoadVector(mask, (uint*)(ptr + index));
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static unsafe Vector<float> PredicateCastFloatLocalLoad(float[] values, int index, int length)
+    {
+        //ARM64-FULL-LINE: whilelt {{p[0-9]+}}.s, {{w[0-9]+}}, {{w[0-9]+}}
+        //ARM64-NOT: mov {{z[0-9]+}}.s, {{p[0-9]+}}/z, #1
+        //ARM64-NOT: {{^ *}}cmp
+        //ARM64-FULL-LINE: ld1w { {{z[0-9]+}}.s }, {{p[0-9]+}}/z, [{{x[0-9]+}}]
+        fixed (float* ptr = values)
+        {
+            Vector<uint> uintMask = Sve.CreateWhileLessThanMaskUInt32(index, length);
+            Vector<float> floatMask = (Vector<float>)uintMask;
+            return Sve.LoadVector(floatMask, ptr + index);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static unsafe Vector<float> WhileLessThanSingleFloatLoad(float[] values, int index, int length)
+    {
+        //ARM64-FULL-LINE: whilelt {{p[0-9]+}}.s, {{w[0-9]+}}, {{w[0-9]+}}
+        //ARM64-NOT: mov {{z[0-9]+}}.s, {{p[0-9]+}}/z, #1
+        //ARM64-NOT: {{^ *}}cmp
+        //ARM64-FULL-LINE: ld1w { {{z[0-9]+}}.s }, {{p[0-9]+}}/z, [{{x[0-9]+}}]
+        fixed (float* ptr = values)
+        {
+            Vector<float> mask = Sve.CreateWhileLessThanMaskSingle(index, length);
+            return Sve.LoadVector(mask, ptr + index);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static unsafe void PredicateCastFloatLoop(float[] input, float[] output, int length)
+    {
+        //ARM64-FULL-LINE: whilelt {{p[0-9]+}}.s, {{w[0-9]+}}, {{w[0-9]+}}
+        //ARM64-NOT: mov {{z[0-9]+}}.s, {{p[0-9]+}}/z, #1
+        //ARM64-NOT: {{^ *}}cmp
+        //ARM64-FULL-LINE: ld1w { {{z[0-9]+}}.s }, {{p[0-9]+}}/z, [{{x[0-9]+}}]
+        //ARM64-NOT: mov {{z[0-9]+}}.s, {{p[0-9]+}}/z, #1
+        //ARM64-NOT: {{^ *}}cmp
+        //ARM64-FULL-LINE: st1w { {{z[0-9]+}}.s }, {{p[0-9]+}}, [{{x[0-9]+}}]
+        fixed (float* inputPtr = input, outputPtr = output)
+        {
+            int i = 0;
+            int count = (int)Sve.Count32BitElements();
+
+            while (i < length)
+            {
+                Vector<uint> loopMask = Sve.CreateWhileLessThanMaskUInt32(i, length);
+                Vector<float> floatMask = (Vector<float>)loopMask;
+                Vector<float> value = Sve.LoadVector(floatMask, inputPtr + i);
+                Sve.StoreAndZip(floatMask, outputPtr + i, value);
+
+                i += count;
+            }
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static unsafe Vector<double> PredicateCastDoubleLoad(double[] values, int index, int length)
+    {
+        //ARM64-FULL-LINE: whilelt {{p[0-9]+}}.d, {{w[0-9]+}}, {{w[0-9]+}}
+        //ARM64-NOT: mov {{z[0-9]+}}.d, {{p[0-9]+}}/z, #1
+        //ARM64-NOT: {{^ *}}cmp
+        //ARM64-FULL-LINE: ld1d { {{z[0-9]+}}.d }, {{p[0-9]+}}/z, [{{x[0-9]+}}]
+        fixed (double* ptr = values)
+        {
+            Vector<ulong> mask = Sve.CreateWhileLessThanMaskUInt64(index, length);
+            return Sve.LoadVector((Vector<double>)mask, ptr + index);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static unsafe Vector<double> PointerCastDoubleLoad(double[] values, int index, int length)
+    {
+        //ARM64-FULL-LINE: whilelt {{p[0-9]+}}.d, {{w[0-9]+}}, {{w[0-9]+}}
+        //ARM64-NOT: mov {{z[0-9]+}}.d, {{p[0-9]+}}/z, #1
+        //ARM64-NOT: {{^ *}}cmp
+        //ARM64-FULL-LINE: ld1d { {{z[0-9]+}}.d }, {{p[0-9]+}}/z, [{{x[0-9]+}}]
+        fixed (double* ptr = values)
+        {
+            Vector<ulong> mask = Sve.CreateWhileLessThanMaskUInt64(index, length);
+            return (Vector<double>)Sve.LoadVector(mask, (ulong*)(ptr + index));
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static unsafe Vector<double> PredicateCastDoubleLocalLoad(double[] values, int index, int length)
+    {
+        //ARM64-FULL-LINE: whilelt {{p[0-9]+}}.d, {{w[0-9]+}}, {{w[0-9]+}}
+        //ARM64-NOT: mov {{z[0-9]+}}.d, {{p[0-9]+}}/z, #1
+        //ARM64-NOT: {{^ *}}cmp
+        //ARM64-FULL-LINE: ld1d { {{z[0-9]+}}.d }, {{p[0-9]+}}/z, [{{x[0-9]+}}]
+        fixed (double* ptr = values)
+        {
+            Vector<ulong> ulongMask = Sve.CreateWhileLessThanMaskUInt64(index, length);
+            Vector<double> doubleMask = (Vector<double>)ulongMask;
+            return Sve.LoadVector(doubleMask, ptr + index);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static unsafe Vector<double> WhileLessThanDoubleLoad(double[] values, int index, int length)
+    {
+        //ARM64-FULL-LINE: whilelt {{p[0-9]+}}.d, {{w[0-9]+}}, {{w[0-9]+}}
+        //ARM64-NOT: mov {{z[0-9]+}}.d, {{p[0-9]+}}/z, #1
+        //ARM64-NOT: {{^ *}}cmp
+        //ARM64-FULL-LINE: ld1d { {{z[0-9]+}}.d }, {{p[0-9]+}}/z, [{{x[0-9]+}}]
+        fixed (double* ptr = values)
+        {
+            Vector<double> mask = Sve.CreateWhileLessThanMaskDouble(index, length);
+            return Sve.LoadVector(mask, ptr + index);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static unsafe void PredicateCastDoubleLoop(double[] input, double[] output, int length)
+    {
+        //ARM64-FULL-LINE: whilelt {{p[0-9]+}}.d, {{w[0-9]+}}, {{w[0-9]+}}
+        //ARM64-NOT: mov {{z[0-9]+}}.d, {{p[0-9]+}}/z, #1
+        //ARM64-NOT: {{^ *}}cmp
+        //ARM64-FULL-LINE: ld1d { {{z[0-9]+}}.d }, {{p[0-9]+}}/z, [{{x[0-9]+}}]
+        //ARM64-NOT: mov {{z[0-9]+}}.d, {{p[0-9]+}}/z, #1
+        //ARM64-NOT: {{^ *}}cmp
+        //ARM64-FULL-LINE: st1d { {{z[0-9]+}}.d }, {{p[0-9]+}}, [{{x[0-9]+}}]
+        fixed (double* inputPtr = input, outputPtr = output)
+        {
+            int i = 0;
+            int count = (int)Sve.Count64BitElements();
+
+            while (i < length)
+            {
+                Vector<ulong> loopMask = Sve.CreateWhileLessThanMaskUInt64(i, length);
+                Vector<double> doubleMask = (Vector<double>)loopMask;
+                Vector<double> value = Sve.LoadVector(doubleMask, inputPtr + i);
+                Sve.StoreAndZip(doubleMask, outputPtr + i, value);
+
+                i += count;
+            }
+        }
     }
 }

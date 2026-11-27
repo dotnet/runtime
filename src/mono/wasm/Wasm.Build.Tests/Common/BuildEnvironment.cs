@@ -27,7 +27,6 @@ namespace Wasm.Build.Tests
 
         public bool UseWebcil { get; init; }
         public bool IsWorkloadWithMultiThreadingForDefaultFramework { get; init; }
-        public bool IsMonoRuntime { get; init; }
         public bool IsRunningOnCI => EnvironmentVariables.IsRunningOnCI;
 
         public static readonly string           RelativeTestAssetsPath = @"..\testassets\";
@@ -104,16 +103,7 @@ namespace Wasm.Build.Tests
                 DirectoryBuildTargetsContents = s_directoryBuildTargetsForLocal;
             }
 
-            IsWorkloadWithMultiThreadingForDefaultFramework = IsMultiThreadingRuntimePackAvailableFor(BuildTestBase.DefaultTargetFramework);
-            if (IsWorkload && EnvironmentVariables.IsRunningOnCI && !IsWorkloadWithMultiThreadingForDefaultFramework)
-            {
-                throw new Exception(
-                            "Expected the multithreading runtime pack to be available when running on CI." +
-                            $" {nameof(IsRunningOnCI)} is true but {nameof(IsWorkloadWithMultiThreadingForDefaultFramework)} is false.");
-            }
-
-            UseWebcil = EnvironmentVariables.UseWebcil && EnvironmentVariables.RuntimeFlavor != "CoreCLR"; // TODO-WASM: CoreCLR support for Webcil https://github.com/dotnet/runtime/issues/120248
-            IsMonoRuntime = EnvironmentVariables.RuntimeFlavor == "Mono";
+            UseWebcil = EnvironmentVariables.UseWebcil;
 
             if (EnvironmentVariables.BuiltNuGetsPath is null || !Directory.Exists(EnvironmentVariables.BuiltNuGetsPath))
                 throw new Exception($"Cannot find 'BUILT_NUGETS_PATH={EnvironmentVariables.BuiltNuGetsPath}'");
@@ -141,15 +131,10 @@ namespace Wasm.Build.Tests
                 EnvVars["WasmFingerprintAssets"] = "false";
             }
 
-            if (EnvironmentVariables.RuntimeFlavor == "CoreCLR")
-            {
-                EnvVars["WasmTestSupport"] = "true";
-                EnvVars["WasmTestExitOnUnhandledError"] = "true";
-                EnvVars["WasmTestLogExitCode"] = "true";
-                // EnvVars["WasmTestForwardConsole"] = "true"; // only necessary for firefox, because chromedriver supports it natively
-                // EnvVars["WasmTestAsyncFlushOnExit"] = "true"; // only necessary for old nodejs versions
-                // EnvVars["WasmTestAppendElementOnExit"] = "true"; // only used by xharness // https://github.com/dotnet/xharness/blob/799df8d4c86ff50c83b7a57df9e3691eeab813ec/src/Microsoft.DotNet.XHarness.CLI/Commands/WASM/Browser/WasmBrowserTestRunner.cs#L122-L141
-            }
+            EnvVars["WasmTestSupport"] = "true";
+            EnvVars["WasmTestExitOnUnhandledError"] = "true";
+            EnvVars["WasmTestLogExitCode"] = "true";
+            // EnvVars["WasmTestAppendElementOnExit"] = "true"; // only used by xharness // https://github.com/dotnet/xharness/blob/799df8d4c86ff50c83b7a57df9e3691eeab813ec/src/Microsoft.DotNet.XHarness.CLI/Commands/WASM/Browser/WasmBrowserTestRunner.cs#L122-L141
 
             DotNet = Path.Combine(sdkForWorkloadPath!, "dotnet");
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -179,15 +164,18 @@ namespace Wasm.Build.Tests
                     : throw new ArgumentException($"No runtime pack version found for tfm={tfm} .");
 
         public string GetRuntimePackDir(string tfm, RuntimeVariant runtimeType = RuntimeVariant.SingleThreaded)
-            => Path.Combine(WorkloadPacksDir,
-                    runtimeType is RuntimeVariant.SingleThreaded
-                        ? $"Microsoft.NETCore.App.Runtime.Mono.{DefaultRuntimeIdentifier}"
-                        : $"Microsoft.NETCore.App.Runtime.Mono.multithread.{DefaultRuntimeIdentifier}",
-                    GetRuntimePackVersion(tfm));
+            => Path.Combine(WorkloadPacksDir, GetRuntimePackName(runtimeType), GetRuntimePackVersion(tfm));
+
+        private string GetRuntimePackName(RuntimeVariant runtimeType)
+        {
+            return runtimeType is RuntimeVariant.SingleThreaded
+                ? $"Microsoft.NETCore.App.Runtime.{DefaultRuntimeIdentifier}"
+                : $"Microsoft.NETCore.App.Runtime.multithread.{DefaultRuntimeIdentifier}";
+        }
         public string GetRuntimeNativeDir(string tfm, RuntimeVariant runtimeType = RuntimeVariant.SingleThreaded)
             => Path.Combine(GetRuntimePackDir(tfm, runtimeType), "runtimes", DefaultRuntimeIdentifier, "native");
         public bool IsMultiThreadingRuntimePackAvailableFor(string tfm)
-            => IsWorkload && File.Exists(Path.Combine(GetRuntimeNativeDir(tfm, RuntimeVariant.MultiThreaded), "dotnet.native.worker.mjs"));
+            => IsWorkload && File.Exists(Path.Combine(GetRuntimeNativeDir(tfm, RuntimeVariant.MultiThreaded), "dotnet.native.wasm"));
 
         public static string WasmOverridePacksTargetsPath = Path.Combine(TestDataPath, "WasmOverridePacks.targets");
 

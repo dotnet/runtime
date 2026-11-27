@@ -37,7 +37,10 @@ extends:
           - windows_arm64
           jobParameters:
             disableComponentGovernance: true # Not a shipping artifact
-            buildArgs: -s clr.alljits+clr.spmi -c $(_BuildConfig)
+            # clr.wasmjit produces the wasm cross-targeting JIT on x64/arm64 hosts.
+            # The rolling build is consumed as the baseline for SPMI asmdiffs, which
+            # cover the wasm jit when wasm MCH collections are available.
+            buildArgs: -s clr.alljits+clr.spmi+clr.wasmjit -c $(_BuildConfig)
             postBuildSteps:
               - template: /eng/pipelines/coreclr/templates/upload-jits-steps.yml
             extraVariablesTemplates:
@@ -58,7 +61,7 @@ extends:
           - windows_arm64
           jobParameters:
             disableComponentGovernance: true # Not a shipping artifact
-            buildArgs: -s clr.alljits+clr.spmi -c $(_BuildConfig) /p:NoPgoOptimize=true
+            buildArgs: -s clr.alljits+clr.spmi+clr.wasmjit -c $(_BuildConfig) /p:NoPgoOptimize=true
             postBuildSteps:
               - template: /eng/pipelines/coreclr/templates/upload-jits-steps.yml
             extraVariablesTemplates:

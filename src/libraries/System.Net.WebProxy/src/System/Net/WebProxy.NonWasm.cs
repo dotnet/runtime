@@ -9,8 +9,8 @@ namespace System.Net
 {
     public partial class WebProxy : IWebProxy, ISerializable
     {
-        private static volatile string? s_domainName;
-        private static volatile IPAddress[]? s_localAddresses;
+        private static string? s_domainName;
+        private static IPAddress[]? s_localAddresses;
         private static bool s_networkChangeRegistered;
 
         private static bool IsLocal(Uri host)
@@ -20,7 +20,8 @@ namespace System.Net
                 return true;
             }
 
-            string hostString = host.Host;
+            // Use IdnHost rather than Host so that any non-ASCII dot separators (e.g. U+3002) are normalized to '.'.
+            string hostString = host.IdnHost;
 
             if (IPAddress.TryParse(hostString, out IPAddress? hostAddress))
             {

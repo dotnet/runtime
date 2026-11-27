@@ -174,7 +174,7 @@ namespace System.Formats.Asn1
         ///   <paramref name="flagsEnumType"/> is <see langword="null" />
         /// </exception>
         /// <seealso cref="ReadNamedBitListValue{TFlagsEnum}"/>
-        public static Enum ReadNamedBitListValue(
+        public static unsafe Enum ReadNamedBitListValue(
             ReadOnlySpan<byte> source,
             AsnEncodingRules ruleSet,
             Type flagsEnumType,

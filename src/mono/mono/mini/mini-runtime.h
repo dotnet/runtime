@@ -131,8 +131,6 @@ typedef struct {
 	MonoJitInfo *ji;
 	int clause_index;
 	MonoContext ctx, new_ctx;
-	/* FIXME: GC */
-	gpointer        ex_obj;
 	MonoLMF *lmf;
 	int first_filter_idx, filter_idx;
 	/* MonoMethodILState */
@@ -638,6 +636,9 @@ mono_runtime_setup_stat_profiler (void);
 
 void
 mono_runtime_posix_install_handlers (void);
+
+void
+mono_runtime_posix_restore_handler (int signo);
 
 void
 mono_gdb_render_native_backtraces (pid_t crashed_pid);

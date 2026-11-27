@@ -10,6 +10,14 @@
     <Platform Name="x86" />
   </Configurations>
   <Folder Name="/gen/">
+    <Project Path="../../../eng/analyzers/PlatformDocAnalyzer/PlatformDocAnalyzer.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
     <Project Path="../System.Private.CoreLib/gen/EventSourceGenerator.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
@@ -667,14 +675,6 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="tests/System.Globalization.Calendars.Tests/Hybrid/System.Globalization.Calendars.IOS.Tests.csproj">
-      <BuildType Solution="Checked|*" Project="Debug" />
-      <Build Solution="*|arm" Project="false" />
-      <Build Solution="*|arm64" Project="false" />
-      <Build Solution="Checked|Any CPU" Project="false" />
-      <Build Solution="Checked|x64" Project="false" />
-      <Build Solution="Checked|x86" Project="false" />
-    </Project>
     <Project Path="tests/System.Globalization.Calendars.Tests/System.Globalization.Calendars.Tests.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
@@ -685,14 +685,6 @@
     </Project>
   </Folder>
   <Folder Name="/tests/System.Globalization.Extensions.Tests/">
-    <Project Path="tests/System.Globalization.Extensions.Tests/Hybrid/System.Globalization.Extensions.iOS.Tests.csproj">
-      <BuildType Solution="Checked|*" Project="Debug" />
-      <Build Solution="*|arm" Project="false" />
-      <Build Solution="*|arm64" Project="false" />
-      <Build Solution="Checked|Any CPU" Project="false" />
-      <Build Solution="Checked|x64" Project="false" />
-      <Build Solution="Checked|x86" Project="false" />
-    </Project>
     <Project Path="tests/System.Globalization.Extensions.Tests/NlsTests/System.Globalization.Extensions.Nls.Tests.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
@@ -711,22 +703,6 @@
     </Project>
   </Folder>
   <Folder Name="/tests/System.Globalization.Tests/">
-    <Project Path="tests/System.Globalization.Tests/Hybrid/AppleHybrid.Tests.csproj">
-      <BuildType Solution="Checked|*" Project="Debug" />
-      <Build Solution="*|arm" Project="false" />
-      <Build Solution="*|arm64" Project="false" />
-      <Build Solution="Checked|Any CPU" Project="false" />
-      <Build Solution="Checked|x64" Project="false" />
-      <Build Solution="Checked|x86" Project="false" />
-    </Project>
-    <Project Path="tests/System.Globalization.Tests/Hybrid/System.Globalization.IOS.Tests.csproj">
-      <BuildType Solution="Checked|*" Project="Debug" />
-      <Build Solution="*|arm" Project="false" />
-      <Build Solution="*|arm64" Project="false" />
-      <Build Solution="Checked|Any CPU" Project="false" />
-      <Build Solution="Checked|x64" Project="false" />
-      <Build Solution="Checked|x86" Project="false" />
-    </Project>
     <Project Path="tests/System.Globalization.Tests/IcuAppLocal/IcuAppLocal.Tests.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
@@ -1079,14 +1055,6 @@
     </Project>
   </Folder>
   <Folder Name="/tests/System.Runtime.Tests/">
-    <Project Path="tests/System.Runtime.Tests/Hybrid/System.Runtime.IOS.Tests.csproj">
-      <BuildType Solution="Checked|*" Project="Debug" />
-      <Build Solution="*|arm" Project="false" />
-      <Build Solution="*|arm64" Project="false" />
-      <Build Solution="Checked|Any CPU" Project="false" />
-      <Build Solution="Checked|x64" Project="false" />
-      <Build Solution="Checked|x86" Project="false" />
-    </Project>
     <Project Path="tests/System.Runtime.Tests/InvariantTimezone/System.Runtime.InvariantTimezone.Tests.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />

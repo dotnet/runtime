@@ -8,14 +8,10 @@ using System.Runtime.InteropServices;
 
 namespace System.Security.Cryptography.Pkcs.Asn1
 {
-    [StructLayout(LayoutKind.Sequential)]
-    internal partial struct RecipientInfoAsn
-    {
-        internal System.Security.Cryptography.Pkcs.Asn1.KeyTransRecipientInfoAsn? Ktri;
-        internal System.Security.Cryptography.Pkcs.Asn1.KeyAgreeRecipientInfoAsn? Kari;
-
 #if DEBUG
-        static RecipientInfoAsn()
+    file static class ValidateRecipientInfoAsn
+    {
+        static ValidateRecipientInfoAsn()
         {
             var usedTags = new System.Collections.Generic.Dictionary<Asn1Tag, string>();
             Action<Asn1Tag, string> ensureUniqueTag = (tag, fieldName) =>
@@ -30,6 +26,27 @@ namespace System.Security.Cryptography.Pkcs.Asn1
 
             ensureUniqueTag(Asn1Tag.Sequence, "Ktri");
             ensureUniqueTag(new Asn1Tag(TagClass.ContextSpecific, 1), "Kari");
+            ensureUniqueTag(new Asn1Tag(TagClass.ContextSpecific, 4), "Ori");
+        }
+
+        [System.Runtime.CompilerServices.MethodImpl(
+            System.Runtime.CompilerServices.MethodImplOptions.NoInlining |
+            System.Runtime.CompilerServices.MethodImplOptions.NoOptimization)]
+        internal static void Validate() { }
+    }
+#endif
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal partial struct RecipientInfoAsn
+    {
+        internal System.Security.Cryptography.Pkcs.Asn1.KeyTransRecipientInfoAsn? Ktri;
+        internal System.Security.Cryptography.Pkcs.Asn1.KeyAgreeRecipientInfoAsn? Kari;
+        internal System.Security.Cryptography.Pkcs.Asn1.OtherRecipientInfoAsn? Ori;
+
+#if DEBUG
+        static RecipientInfoAsn()
+        {
+            ValidateRecipientInfoAsn.Validate();
         }
 #endif
 
@@ -52,6 +69,15 @@ namespace System.Security.Cryptography.Pkcs.Asn1
                     throw new CryptographicException();
 
                 Kari.Value.Encode(writer, new Asn1Tag(TagClass.ContextSpecific, 1));
+                wroteValue = true;
+            }
+
+            if (Ori.HasValue)
+            {
+                if (wroteValue)
+                    throw new CryptographicException();
+
+                Ori.Value.Encode(writer, new Asn1Tag(TagClass.ContextSpecific, 4));
                 wroteValue = true;
             }
 
@@ -106,6 +132,13 @@ namespace System.Security.Cryptography.Pkcs.Asn1
                 System.Security.Cryptography.Pkcs.Asn1.KeyAgreeRecipientInfoAsn tmpKari;
                 System.Security.Cryptography.Pkcs.Asn1.KeyAgreeRecipientInfoAsn.Decode(ref reader, new Asn1Tag(TagClass.ContextSpecific, 1), rebind, out tmpKari);
                 decoded.Kari = tmpKari;
+
+            }
+            else if (tag.HasSameClassAndValue(new Asn1Tag(TagClass.ContextSpecific, 4)))
+            {
+                System.Security.Cryptography.Pkcs.Asn1.OtherRecipientInfoAsn tmpOri;
+                System.Security.Cryptography.Pkcs.Asn1.OtherRecipientInfoAsn.Decode(ref reader, new Asn1Tag(TagClass.ContextSpecific, 4), rebind, out tmpOri);
+                decoded.Ori = tmpOri;
 
             }
             else

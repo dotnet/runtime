@@ -25,12 +25,14 @@ public class MemoryTests : WasmTemplateTestsBase
     public async Task AllocateLargeHeapThenRepeatedlyInterop_NoWorkload() =>
         await AllocateLargeHeapThenRepeatedlyInterop();
 
-    [Fact]
+    [Fact, TestCategory("mono")] // TODO-WASM https://github.com/dotnet/runtime/issues/132555
     public async Task AllocateLargeHeapThenRepeatedlyInterop()
     {
         Configuration config = Configuration.Release;
         ProjectInfo info = CopyTestAsset(config, false, TestAsset.WasmBasicTestApp, "MemoryTests");
-        string extraArgs = "-p:EmccMaximumHeapSize=4294901760";
+        string extraArgs = "-p:EmccMaximumHeapSize=4294901760 -p:WasmBuildNative=true";
+        // TODO-WASM https://github.com/dotnet/runtime/issues/126100 Pass default property values from runtime (pack) build to the relink.
+
         BuildProject(info,
             config,
             new BuildOptions(ExtraMSBuildArgs: extraArgs, ExpectSuccess: BuildTestBase.IsUsingWorkloads),
@@ -39,10 +41,14 @@ public class MemoryTests : WasmTemplateTestsBase
 
         if (BuildTestBase.IsUsingWorkloads)
         {
-            await RunForBuildWithDotnetRun(new BrowserRunOptions(
+            RunResult result = await RunForBuildWithDotnetRun(new BrowserRunOptions(
                 Configuration: config,
                 TestScenario: "AllocateLargeHeapThenInterop"
             ));
+
+            Assert.Contains(result.TestOutput, line => line.Contains("Great success, MemoryTest finished without errors."));
+            // above the 2GB boundary the jiterpreter used to encode negative pointers and emit invalid wasm modules
+            Assert.DoesNotContain(result.ConsoleOutput, line => line.Contains("code generation failed"));
         }
     }
 }

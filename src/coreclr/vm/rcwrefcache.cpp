@@ -125,7 +125,7 @@ void RCWRefCache::ShrinkDependentHandles()
         {
 
             LOG((LF_INTEROP, LL_INFO100,
-                "\t[RCWRefCache 0x%p] Shrinking dependent handle cache. Total SLOTS = %d\n",
+                "\t[RCWRefCache 0x%p] Shrinking dependent handle cache. Total SLOTS = %zu\n",
                 this, m_depHndList.Size()
                 ));
 

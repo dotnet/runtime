@@ -241,8 +241,12 @@ namespace System.Security.Cryptography
                     Interop.NCrypt.NCryptBuffer* buffers = stackalloc Interop.NCrypt.NCryptBuffer[3];
 
                     Interop.NCrypt.PBE_PARAMS pbeParams = default;
+#if NET
+                    Span<byte> salt = pbeParams.rgbSalt;
+#else
                     Span<byte> salt = new Span<byte>(pbeParams.rgbSalt, Interop.NCrypt.PBE_PARAMS.RgbSaltSize);
-                    RandomNumberGenerator.Fill(salt);
+#endif
+                    RngFill(salt);
                     pbeParams.Params.cbSalt = salt.Length;
                     pbeParams.Params.iIterations = kdfCount;
 
@@ -338,10 +342,48 @@ namespace System.Security.Cryptography
             }
         }
 
-        [SupportedOSPlatform("windows")]
         internal static CngKey Duplicate(this SafeNCryptKeyHandle keyHandle, bool isEphemeral)
         {
+#pragma warning disable CA1416 // only supported on: 'windows'
             return CngKey.Open(keyHandle, isEphemeral ? CngKeyHandleOpenOptions.EphemeralKey : CngKeyHandleOpenOptions.None);
+#pragma warning restore CA1416 // only supported on: 'windows'
+        }
+
+        internal static CngKey Duplicate(this CngKey key)
+        {
+#if SYSTEM_SECURITY_CRYPTOGRAPHY
+            return Duplicate(key.HandleNoDuplicate, key.IsEphemeral);
+#else
+#pragma warning disable CA1416 // only supported on: 'windows'
+            using (SafeNCryptKeyHandle handle = key.Handle)
+            {
+                return Duplicate(handle, key.IsEphemeral);
+            }
+#pragma warning restore CA1416 // only supported on: 'windows'
+#endif
+        }
+
+        private static void RngFill(Span<byte> destination)
+        {
+#if NET
+            RandomNumberGenerator.Fill(destination);
+#else
+            byte[] tmp = new byte[destination.Length];
+
+            try
+            {
+                using (RandomNumberGenerator rng = RandomNumberGenerator.Create())
+                {
+                    rng.GetBytes(tmp);
+                }
+
+                tmp.AsSpan().CopyTo(destination);
+            }
+            finally
+            {
+                CryptographicOperations.ZeroMemory(tmp);
+            }
+#endif
         }
     }
 }

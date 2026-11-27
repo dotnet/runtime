@@ -130,7 +130,9 @@ Section3:
         {
             var configuration = BuildConfigRoot(LoadThroughProvider(TestSection.TestConfig));
 
+#pragma warning disable IL2026, IL3050 // https://github.com/dotnet/runtime/issues/126862
             var options = configuration.Get<AsOptions>();
+#pragma warning restore IL2026, IL3050
 
             Assert.Equal("Value1", options.Key1);
             Assert.Equal("Value12", options.Section1.Key2);

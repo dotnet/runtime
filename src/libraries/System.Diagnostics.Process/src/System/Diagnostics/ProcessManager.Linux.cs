@@ -9,85 +9,12 @@ namespace System.Diagnostics
 {
     internal static partial class ProcessManager
     {
-        private static volatile int _procMatchesPidNamespace;
-
-        /// <summary>Gets the IDs of all processes on the current machine.</summary>
-        public static int[] GetProcessIds() => new List<int>(EnumerateProcessIds()).ToArray();
-
-        /// <summary>Gets process infos for each process on the specified machine.</summary>
-        /// <param name="processNameFilter">Optional process name to use as an inclusion filter.</param>
-        /// <param name="machineName">The target machine.</param>
-        /// <returns>An array of process infos, one per found process.</returns>
-        public static ProcessInfo[] GetProcessInfos(string? processNameFilter, string machineName)
-        {
-            Debug.Assert(processNameFilter is null, "Not used on Linux");
-            ThrowIfRemoteMachine(machineName);
-
-            // Iterate through all process IDs to load information about each process
-            IEnumerable<int> pids = EnumerateProcessIds();
-            ArrayBuilder<ProcessInfo> processes = default;
-            foreach (int pid in pids)
-            {
-                ProcessInfo? pi = CreateProcessInfo(pid);
-                if (pi != null)
-                {
-                    processes.Add(pi);
-                }
-            }
-
-            return processes.ToArray();
-        }
-
-        /// <summary>Gets an array of module infos for the specified process.</summary>
-        /// <param name="processId">The ID of the process whose modules should be enumerated.</param>
-        /// <returns>The array of modules.</returns>
-        internal static ProcessModuleCollection GetModules(int processId)
-        {
-            ProcessModuleCollection? modules = null;
-            if (TryGetProcPid(processId, out Interop.procfs.ProcPid procPid))
-            {
-                modules = Interop.procfs.ParseMapsModules(procPid);
-
-                // Move the main executable module to be the first in the list if it's not already
-                if (modules is not null && Process.GetExePath(procPid) is string exePath)
-                {
-                    for (int i = 0; i < modules.Count; i++)
-                    {
-                        ProcessModule module = modules[i];
-                        if (module.FileName == exePath)
-                        {
-                            if (i > 0)
-                            {
-                                modules.RemoveAt(i);
-                                modules.Insert(0, module);
-                            }
-                            break;
-                        }
-                    }
-                }
-            }
-
-            return modules ?? new(capacity: 0);
-        }
-
-        /// <summary>
-        /// Creates a ProcessInfo from the specified process ID.
-        /// </summary>
-        internal static ProcessInfo? CreateProcessInfo(int pid)
-        {
-            if (TryGetProcPid(pid, out Interop.procfs.ProcPid procPid) &&
-                Interop.procfs.TryReadStatFile(procPid, out Interop.procfs.ParsedStat stat))
-            {
-                Interop.procfs.TryReadStatusFile(procPid, out Interop.procfs.ParsedStatus status);
-                return CreateProcessInfo(procPid, ref stat, ref status);
-            }
-            return null;
-        }
+        private static NullableBool _procMatchesPidNamespace;
 
         /// <summary>
         /// Creates a ProcessInfo from the data parsed from a /proc/pid/stat file and the associated tasks directory.
         /// </summary>
-        internal static ProcessInfo CreateProcessInfo(Interop.procfs.ProcPid procPid, ref Interop.procfs.ParsedStat procFsStat, ref Interop.procfs.ParsedStatus procFsStatus, string? processName = null)
+        internal static unsafe ProcessInfo CreateProcessInfo(Interop.procfs.ProcPid procPid, ref Interop.procfs.ParsedStat procFsStat, ref Interop.procfs.ParsedStatus procFsStatus, string? processName = null)
         {
             int pid = procFsStat.pid;
 
@@ -144,35 +71,6 @@ namespace System.Diagnostics
 
             // Finally return what we've built up
             return pi;
-        }
-
-        // ----------------------------------
-        // ---- Unix PAL layer ends here ----
-        // ----------------------------------
-
-        /// <summary>Enumerates the IDs of all processes on the current machine.</summary>
-        internal static IEnumerable<int> EnumerateProcessIds()
-        {
-            if (ProcMatchesPidNamespace)
-            {
-                // Parse /proc for any directory that's named with a number.  Each such
-                // directory represents a process.
-                foreach (string procDir in Directory.EnumerateDirectories(Interop.procfs.RootPath))
-                {
-                    string dirName = Path.GetFileName(procDir);
-                    int pid;
-                    if (int.TryParse(dirName, NumberStyles.Integer, CultureInfo.InvariantCulture, out pid))
-                    {
-                        Debug.Assert(pid >= 0);
-                        yield return pid;
-                    }
-                }
-            }
-            else
-            {
-                // Limit to our own process. For other processes, the pids from /proc don't match with those in the process namespace.
-                yield return Environment.ProcessId;
-            }
         }
 
         /// <summary>Gets a ThreadState to represent the value returned from the status field of /proc/pid/stat.</summary>
@@ -266,11 +164,7 @@ namespace System.Diagnostics
         {
             get
             {
-                // _procMatchesPidNamespace is set to:
-                // - 0: when uninitialized,
-                // - 1: '/proc' and the process pid namespace match,
-                // - 2: when they don't match.
-                if (_procMatchesPidNamespace == 0)
+                if (_procMatchesPidNamespace == NullableBool.Undefined)
                 {
                     // '/proc/self' is a symlink to the pid used by '/proc' for the current process.
                     // We compare it with the pid of the current process to see if the '/proc' and pid namespace match up.
@@ -282,9 +176,9 @@ namespace System.Diagnostics
                     }
                     Debug.Assert(procSelfPid.HasValue);
 
-                    _procMatchesPidNamespace = !procSelfPid.HasValue || procSelfPid == Environment.ProcessId ? 1 : 2;
+                    _procMatchesPidNamespace = !procSelfPid.HasValue || procSelfPid == Environment.ProcessId ? NullableBool.True : NullableBool.False;
                 }
-                return _procMatchesPidNamespace == 1;
+                return _procMatchesPidNamespace == NullableBool.True;
             }
         }
     }

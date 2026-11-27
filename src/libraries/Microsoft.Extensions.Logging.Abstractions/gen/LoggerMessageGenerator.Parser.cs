@@ -38,7 +38,7 @@ namespace Microsoft.Extensions.Logging.Generators
             private readonly INamedTypeSymbol _stringSymbol;
             private readonly Action<Diagnostic>? _reportDiagnostic;
 
-            public List<DiagnosticInfo> Diagnostics { get; } = new();
+            public List<Diagnostic> Diagnostics { get; } = new();
 
             public Parser(
                 INamedTypeSymbol loggerMessageAttribute,
@@ -242,7 +242,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                         EventId = eventId,
                                         EventName = eventName,
                                         IsExtensionMethod = logMethodSymbol.IsExtensionMethod,
-                                        Modifiers = method.Modifiers.ToString(),
+                                        Modifiers = string.Join(" ", method.Modifiers.Select(static modifier => modifier.Text)),
                                         SkipEnabledCheck = skipEnabledCheck
                                     };
 
@@ -342,6 +342,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                         Diag(DiagnosticDescriptors.RedundantQualifierInMessage, ma.GetLocation(), method.Identifier.ToString());
                                     }
 
+                                    bool hasMessage = !string.IsNullOrEmpty(msg);
                                     bool foundLogger = false;
                                     bool foundException = false;
                                     bool foundLogLevel = level != null;
@@ -456,11 +457,11 @@ namespace Microsoft.Extensions.Logging.Generators
                                             Diag(DiagnosticDescriptors.ShouldntMentionLogLevelInMessage, paramSymbol.Locations[0], paramName);
                                             forceAsTemplateParams = true;
                                         }
-                                        else if (lp.IsLogLevel && level != null && !lm.TemplateMap.ContainsKey(paramName) && !lm.TemplateMap.ContainsKey(lp.CodeName))
+                                        else if (hasMessage && lp.IsLogLevel && level != null && !lm.TemplateMap.ContainsKey(paramName) && !lm.TemplateMap.ContainsKey(lp.CodeName))
                                         {
                                             Diag(DiagnosticDescriptors.ArgumentHasNoCorrespondingTemplate, paramSymbol.Locations[0], paramName);
                                         }
-                                        else if (lp.IsTemplateParameter && !lm.TemplateMap.ContainsKey(paramName) && !lm.TemplateMap.ContainsKey($"@{paramName}") && !lm.TemplateMap.ContainsKey(lp.CodeName))
+                                        else if (hasMessage && lp.IsTemplateParameter && !lm.TemplateMap.ContainsKey(paramName) && !lm.TemplateMap.ContainsKey($"@{paramName}") && !lm.TemplateMap.ContainsKey(lp.CodeName))
                                         {
                                             Diag(DiagnosticDescriptors.ArgumentHasNoCorrespondingTemplate, paramSymbol.Locations[0], paramName);
                                         }
@@ -652,25 +653,15 @@ namespace Microsoft.Extensions.Logging.Generators
 
             private static string GenerateClassName(TypeDeclarationSyntax typeDeclaration)
             {
-                if (typeDeclaration.TypeParameterList != null &&
+                if (typeDeclaration.TypeParameterList is not null &&
                     typeDeclaration.TypeParameterList.Parameters.Count != 0)
                 {
-                    // The source generator produces a partial class that the compiler merges with the original
-                    // class definition in the user code. If the user applies attributes to the generic types
-                    // of the class, it is necessary to remove these attribute annotations from the generated
-                    // code. Failure to do so may result in a compilation error (CS0579: Duplicate attribute).
-                    for (int i = 0; i < typeDeclaration.TypeParameterList.Parameters.Count; i++)
-                    {
-                        TypeParameterSyntax parameter = typeDeclaration.TypeParameterList.Parameters[i];
-
-                        if (parameter.AttributeLists.Count > 0)
-                        {
-                            typeDeclaration = typeDeclaration.ReplaceNode(parameter, parameter.WithAttributeLists([]));
-                        }
-                    }
+                    // Copy only identifiers to avoid duplicating attributes or copying unbalanced directives.
+                    return typeDeclaration.Identifier.Text + "<" +
+                        string.Join(", ", typeDeclaration.TypeParameterList.Parameters.Select(static parameter => parameter.Identifier.Text)) + ">";
                 }
 
-                return typeDeclaration.Identifier.ToString() + typeDeclaration.TypeParameterList;
+                return typeDeclaration.Identifier.Text;
             }
 
             private (string? loggerField, bool multipleLoggerFields) FindLoggerField(SemanticModel sm, TypeDeclarationSyntax classDec, ITypeSymbol loggerSymbol)
@@ -811,12 +802,14 @@ namespace Microsoft.Extensions.Logging.Generators
 
             private void Diag(DiagnosticDescriptor desc, Location? location, params object?[]? messageArgs)
             {
+                Diagnostic diagnostic = Diagnostic.Create(desc, location, messageArgs);
+
                 // Report immediately if callback is provided (preserves pragma suppression with original locations)
-                _reportDiagnostic?.Invoke(Diagnostic.Create(desc, location, messageArgs));
+                _reportDiagnostic?.Invoke(diagnostic);
 
                 // Also collect for scenarios that need the diagnostics list; in Roslyn 4.0+ incremental generators,
-                // this list is exposed via parser.Diagnostics (as ImmutableEquatableArray<DiagnosticInfo>) and reported in Execute.
-                Diagnostics.Add(DiagnosticInfo.Create(desc, location, messageArgs));
+                // this list is exposed via parser.Diagnostics and reported in the diagnostic pipeline.
+                Diagnostics.Add(diagnostic);
             }
 
             private static bool IsBaseOrIdentity(ITypeSymbol source, ITypeSymbol dest, Compilation compilation)

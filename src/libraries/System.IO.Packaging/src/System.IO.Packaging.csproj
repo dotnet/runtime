@@ -1,13 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <!-- TODO: Remove once migrated to unsafe-v2. -->
+    <MemorySafetyRulesVersion>1</MemorySafetyRulesVersion>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides classes that support storage of multiple data objects in a single container.</PackageDescription>
-    <!-- TODO: Add package README file: https://github.com/dotnet/runtime/issues/99358 -->
-    <EnableDefaultPackageReadmeFile>false</EnableDefaultPackageReadmeFile>
     <IncludeSpanPolyfills>true</IncludeSpanPolyfills>
   </PropertyGroup>
 
@@ -52,6 +52,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <Compile Include="$(CommonPath)Polyfills\EnumPolyfills.cs" Link="Common\Polyfills\EnumPolyfills.cs" />
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
   </ItemGroup>
 

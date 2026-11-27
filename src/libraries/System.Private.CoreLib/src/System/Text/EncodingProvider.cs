@@ -8,7 +8,7 @@ namespace System.Text
 {
     public abstract class EncodingProvider
     {
-        private static volatile EncodingProvider[]? s_providers;
+        private static EncodingProvider[]? s_providers;
 
         public EncodingProvider() { }
         public abstract Encoding? GetEncoding(string name);

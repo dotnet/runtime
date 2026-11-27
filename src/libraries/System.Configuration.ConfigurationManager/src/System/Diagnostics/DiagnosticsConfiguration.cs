@@ -8,7 +8,7 @@ namespace System.Diagnostics
 {
     internal static class DiagnosticsConfiguration
     {
-        private static volatile SystemDiagnosticsSection s_configSection;
+        private static SystemDiagnosticsSection s_configSection;
         private static volatile InitState s_initState = InitState.NotInitialized;
 
         // Setting for Switch.switchSetting

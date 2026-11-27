@@ -71,7 +71,8 @@ namespace System.Diagnostics.Metrics
 
         private void Initialize(string name, string? version, IEnumerable<KeyValuePair<string, object?>>? tags, object? scope = null, string? telemetrySchemaUrl = null)
         {
-            Name = name ?? throw new ArgumentNullException(nameof(name));
+            ArgumentNullException.ThrowIfNull(name);
+            Name = name;
             Version = version;
             if (tags is not null)
             {

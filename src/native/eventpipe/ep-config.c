@@ -80,7 +80,9 @@ config_compute_keyword_and_level (
 	for (int i = 0; i < EP_MAX_NUMBER_OF_SESSIONS; i++) {
 		// Entering EventPipe lock gave us a barrier, we don't need more of them.
 		EventPipeSession *session = ep_volatile_load_session_without_barrier (i);
-		if (session) {
+		// Skip sessions that are published but not yet enabled (session init ran but enable holding lock has
+		// not): their allow_write bit is clear. Including them would let a provider observe a session not yet tracing.
+		if (session && (ep_volatile_load_allow_write () & ((uint64_t)1 << i))) {
 			EventPipeSessionProviderList *providers = ep_session_get_providers (session);
 			EP_ASSERT (providers != NULL);
 
@@ -119,7 +121,10 @@ config_register_provider (
 	for (int i = 0; i < EP_MAX_NUMBER_OF_SESSIONS; i++) {
 		// Entering EventPipe lock gave us a barrier, we don't need more of them.
 		EventPipeSession *session = ep_volatile_load_session_without_barrier (i);
-		if (session) {
+		// Skip sessions that are published but not yet enabled (session init ran but enable holding lock has
+		// not): their allow_write bit is clear. config_enable_disable from enable holding lock sets up the
+		// provider for such a session once it is enabled.
+		if (session && (ep_volatile_load_allow_write () & ((uint64_t)1 << i))) {
 			EventPipeSessionProviderList *providers = ep_session_get_providers (session);
 			EP_ASSERT (providers != NULL);
 
@@ -285,7 +290,7 @@ ep_config_create_provider (
 
 	EventPipeProvider *provider = NULL;
 	EP_LOCK_ENTER (section1)
-		provider = config_create_provider (config, provider_name, callback_func, callback_data, provider_callback_data_queue);
+		provider = config_create_provider (config, provider_name, callback_func, callback_data, provider_callback_data_queue, NULL);
 		ep_raise_error_if_nok_holding_lock (provider != NULL, section1);
 	EP_LOCK_EXIT (section1)
 
@@ -497,7 +502,8 @@ config_create_provider (
 	const ep_char8_t *provider_name,
 	EventPipeCallback callback_func,
 	void *callback_data,
-	EventPipeProviderCallbackDataQueue *provider_callback_data_queue)
+	EventPipeProviderCallbackDataQueue *provider_callback_data_queue,
+	const EventPipeEventTable *event_table)
 {
 	EP_ASSERT (config != NULL);
 	EP_ASSERT (provider_name != NULL);
@@ -507,6 +513,7 @@ config_create_provider (
 	EventPipeProvider *provider = ep_provider_alloc (config, provider_name, callback_func, callback_data);
 	ep_raise_error_if_nok (provider != NULL);
 
+	ep_provider_set_event_table (provider, event_table);
 	config_register_provider (config, provider, provider_callback_data_queue);
 
 ep_on_exit:

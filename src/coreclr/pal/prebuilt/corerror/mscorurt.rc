@@ -246,7 +246,6 @@ BEGIN
 	MSG_FOR_URT_HR(CORDBG_E_CANNOT_BE_ON_ATTACH) "Requested operation cannot be performed during an attach operation."
 	MSG_FOR_URT_HR(CORDBG_E_NGEN_NOT_SUPPORTED) "NGEN is not supported."
 	MSG_FOR_URT_HR(CORDBG_E_ILLEGAL_SHUTDOWN_ORDER) "Trying to shutdown out of order."
-	MSG_FOR_URT_HR(CORDBG_E_CANNOT_DEBUG_FIBER_PROCESS) "Debugging fiber mode managed process is not supported."
 	MSG_FOR_URT_HR(CORDBG_E_MUST_BE_IN_CREATE_PROCESS) "Must be in context of CreateProcess callback to perform requested operation."
 	MSG_FOR_URT_HR(CORDBG_E_DETACH_FAILED_OUTSTANDING_EVALS) "All outstanding func-evals have not completed, detaching is not allowed at this time."
 	MSG_FOR_URT_HR(CORDBG_E_DETACH_FAILED_OUTSTANDING_STEPPERS) "All outstanding steppers have not been closed, detaching is not allowed at this time."

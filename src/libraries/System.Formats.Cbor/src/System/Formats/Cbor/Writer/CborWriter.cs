@@ -6,28 +6,40 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace System.Formats.Cbor
 {
     /// <summary>A writer for Concise Binary Object Representation (CBOR) encoded data.</summary>
     public partial class CborWriter
     {
+        private const int DefaultMaxDepth = 1000;
         private const int DefaultCapacitySentinel = -1;
+        private const CborMajorType NoMajorType = (CborMajorType)0xFF; // the root context
+        private const int NoDefiniteLength = -1; // indefinite-length context, or a root context allowing multiple values
+        private const int NoOffset = -1;
         private static readonly ArrayPool<byte> s_bufferPool = ArrayPool<byte>.Create();
+
+        // Conformance-mode behaviors
+        private readonly bool _requiresUniqueKeys;
+        private readonly bool _requiresSortedKeys;
+        private readonly bool _requiresDefiniteLengthItems;
+        private readonly bool _tracksMapKeys; // map key and value offsets are only needed by the unique and sorted key checks
+        private readonly Encoding _encoding;
 
         private byte[] _buffer;
         private int _offset;
 
         private Stack<StackFrame>? _nestedDataItems;
-        private CborMajorType? _currentMajorType; // major type of the current data item context
-        private int? _definiteLength; // predetermined definite-length of current data item context
+        private CborMajorType _currentMajorType = NoMajorType; // major type of the current data item context
+        private int _definiteLength; // predetermined definite-length of current data item context, or NoDefiniteLength
         private int _itemsWritten; // number of items written in the current context
         private int _frameOffset; // buffer offset particular to the current data item context
         private bool _isTagContext; // true if writer is expecting a tagged value
 
         // Map-specific book-keeping
-        private int? _currentKeyOffset; // offset for the current key encoding
-        private int? _currentValueOffset; // offset for the current value encoding
+        private int _currentKeyOffset = NoOffset; // offset for the current key encoding
+        private int _currentValueOffset = NoOffset; // offset for the current value encoding
         private bool _keysRequireSorting; // tracks whether key/value pair encodings need to be sorted
         private List<KeyValuePairEncodingRange>? _keyValuePairEncodingRanges; // all key/value pair encoding ranges
         private HashSet<(int Offset, int Length)>? _keyEncodingRanges; // all key encoding ranges up to encoding equality
@@ -44,6 +56,10 @@ namespace System.Formats.Cbor
         /// <value><see langword="true" /> if the writer allows multiple root-level CBOR data items; otherwise, <see langword="false" />.</value>
         public bool AllowMultipleRootLevelValues { get; }
 
+        /// <summary>Gets the maximum depth allowed when writing nested CBOR data items.</summary>
+        /// <value>The maximum depth allowed when writing nested CBOR data items.</value>
+        public int MaxDepth { get; }
+
         /// <summary>Gets the writer's current level of nestedness in the CBOR document.</summary>
         /// <value>A number that represents the current level of nestedness in the CBOR document.</value>
         public int CurrentDepth => _nestedDataItems is null ? 0 : _nestedDataItems.Count;
@@ -54,7 +70,43 @@ namespace System.Formats.Cbor
 
         /// <summary>Declares whether the writer has completed writing a complete root-level CBOR document, or sequence of root-level CBOR documents.</summary>
         /// <value><see langword="true" /> if the writer has completed writing a complete root-level CBOR document, or sequence of root-level CBOR documents; <see langword="false" /> otherwise.</value>
-        public bool IsWriteCompleted => _currentMajorType is null && _itemsWritten > 0;
+        public bool IsWriteCompleted => _currentMajorType == NoMajorType && _itemsWritten > 0;
+
+        /// <summary>Initializes a new instance of the <see cref="CborWriter"/> class using the provided options.</summary>
+        /// <param name="options">The options for configuring the writer.</param>
+        public CborWriter(CborWriterOptions? options)
+        {
+            CborConformanceMode conformanceMode = CborConformanceMode.Strict;
+            bool convertIndefiniteLengthEncodings = false;
+            bool allowMultipleRootLevelValues = false;
+            int initialCapacity = DefaultCapacitySentinel;
+            int maxDepth = DefaultMaxDepth;
+
+            if (options is not null)
+            {
+                conformanceMode = options.ConformanceMode;
+                convertIndefiniteLengthEncodings = options.ConvertIndefiniteLengthEncodings;
+                allowMultipleRootLevelValues = options.AllowMultipleRootLevelValues;
+                maxDepth = options.MaxDepth;
+                initialCapacity = options.InitialCapacity;
+
+                Debug.Assert(maxDepth >= -1);
+                Debug.Assert(initialCapacity >= -1);
+            }
+
+            ConformanceMode = conformanceMode;
+            _requiresUniqueKeys = CborConformanceModeHelpers.RequiresUniqueKeys(conformanceMode);
+            _requiresSortedKeys = CborConformanceModeHelpers.RequiresSortedKeys(conformanceMode);
+            _requiresDefiniteLengthItems = CborConformanceModeHelpers.RequiresDefiniteLengthItems(conformanceMode);
+            _tracksMapKeys = _requiresUniqueKeys || _requiresSortedKeys;
+            _encoding = CborConformanceModeHelpers.GetUtf8Encoding(conformanceMode);
+            ConvertIndefiniteLengthEncodings = convertIndefiniteLengthEncodings;
+            AllowMultipleRootLevelValues = allowMultipleRootLevelValues;
+            MaxDepth = maxDepth < 0 ? DefaultMaxDepth : maxDepth;
+            _definiteLength = allowMultipleRootLevelValues ? NoDefiniteLength : 1;
+
+            _buffer = initialCapacity > 0 ? new byte[initialCapacity] : Array.Empty<byte>();
+        }
 
         /// <summary>Initializes a new instance of <see cref="CborWriter" /> class using the specified configuration.</summary>
         /// <param name="conformanceMode">One of the enumeration values that specifies the guidance on the conformance checks performed on the encoded data.
@@ -88,9 +140,15 @@ namespace System.Formats.Cbor
             CborConformanceModeHelpers.Validate(conformanceMode);
 
             ConformanceMode = conformanceMode;
+            _requiresUniqueKeys = CborConformanceModeHelpers.RequiresUniqueKeys(conformanceMode);
+            _requiresSortedKeys = CborConformanceModeHelpers.RequiresSortedKeys(conformanceMode);
+            _requiresDefiniteLengthItems = CborConformanceModeHelpers.RequiresDefiniteLengthItems(conformanceMode);
+            _tracksMapKeys = _requiresUniqueKeys || _requiresSortedKeys;
+            _encoding = CborConformanceModeHelpers.GetUtf8Encoding(conformanceMode);
             ConvertIndefiniteLengthEncodings = convertIndefiniteLengthEncodings;
             AllowMultipleRootLevelValues = allowMultipleRootLevelValues;
-            _definiteLength = allowMultipleRootLevelValues ? null : (int?)1;
+            MaxDepth = DefaultMaxDepth;
+            _definiteLength = allowMultipleRootLevelValues ? NoDefiniteLength : 1;
 
             _buffer = initialCapacity switch
             {
@@ -109,14 +167,14 @@ namespace System.Formats.Cbor
 
                 _offset = 0;
                 _nestedDataItems?.Clear();
-                _currentMajorType = null;
-                _definiteLength = AllowMultipleRootLevelValues ? null : (int?)1;
+                _currentMajorType = NoMajorType;
+                _definiteLength = AllowMultipleRootLevelValues ? NoDefiniteLength : 1;
                 _itemsWritten = 0;
                 _frameOffset = 0;
                 _isTagContext = false;
 
-                _currentKeyOffset = null;
-                _currentValueOffset = null;
+                _currentKeyOffset = NoOffset;
+                _currentValueOffset = NoOffset;
                 _keysRequireSorting = false;
                 _keyValuePairEncodingRanges?.Clear();
                 _keyEncodingRanges?.Clear();
@@ -131,7 +189,7 @@ namespace System.Formats.Cbor
         /// <para><paramref name="encodedValue" /> is not valid under the current conformance mode.</para></exception>
         public void WriteEncodedValue(ReadOnlySpan<byte> encodedValue)
         {
-            ValidateEncoding(encodedValue, ConformanceMode);
+            ValidateEncoding(encodedValue, ConformanceMode, MaxDepth - CurrentDepth);
             EnsureWriteCapacity(encodedValue.Length);
 
             // even though the encoding might be valid CBOR, it might not be valid within the current writer context.
@@ -151,12 +209,20 @@ namespace System.Formats.Cbor
 
             AdvanceDataItemCounters();
 
-            static unsafe void ValidateEncoding(ReadOnlySpan<byte> encodedValue, CborConformanceMode conformanceMode)
+            static unsafe void ValidateEncoding(ReadOnlySpan<byte> encodedValue, CborConformanceMode conformanceMode, int allowedDepth)
             {
                 fixed (byte* ptr = &MemoryMarshal.GetReference(encodedValue))
                 {
                     using var manager = new PointerMemoryManager<byte>(ptr, encodedValue.Length);
-                    var reader = new CborReader(manager.Memory, conformanceMode: conformanceMode, allowMultipleRootLevelValues: false);
+
+                    var options = new CborReaderOptions
+                    {
+                        AllowMultipleRootLevelValues = false,
+                        ConformanceMode = conformanceMode,
+                        MaxDepth = allowedDepth,
+                    };
+
+                    var reader = new CborReader(manager.Memory, options);
 
                     try
                     {
@@ -241,11 +307,7 @@ namespace System.Formats.Cbor
             if (currentCapacity < requiredCapacity)
             {
                 int newCapacity = currentCapacity == 0 ? 1024 : currentCapacity * 2;
-                const uint MaxArrayLength = 0x7FFFFFC7; // Array.MaxLength
-#if NET
-                Debug.Assert(MaxArrayLength == Array.MaxLength);
-#endif
-                if ((uint)newCapacity > MaxArrayLength || newCapacity < requiredCapacity)
+                if ((uint)newCapacity > (uint)Array.MaxLength || newCapacity < requiredCapacity)
                 {
                     newCapacity = requiredCapacity;
                 }
@@ -256,8 +318,18 @@ namespace System.Formats.Cbor
             }
         }
 
-        private void PushDataItem(CborMajorType newMajorType, int? definiteLength)
+        private void EnsureMaxDepthNotExceeded()
         {
+            if (CurrentDepth >= MaxDepth)
+            {
+                throw new InvalidOperationException(SR.Format(SR.Cbor_Writer_MaximumDepthExceeded, MaxDepth));
+            }
+        }
+
+        private void PushDataItem(CborMajorType newMajorType, int definiteLength)
+        {
+            Debug.Assert(CurrentDepth < MaxDepth);
+
             _nestedDataItems ??= new Stack<StackFrame>();
 
             var frame = new StackFrame(
@@ -278,8 +350,8 @@ namespace System.Formats.Cbor
             _frameOffset = _offset;
             _definiteLength = definiteLength;
             _itemsWritten = 0;
-            _currentKeyOffset = null;
-            _currentValueOffset = null;
+            _currentKeyOffset = NoOffset;
+            _currentValueOffset = NoOffset;
             _keysRequireSorting = false;
             _keyEncodingRanges = null;
             _keyValuePairEncodingRanges = null;
@@ -291,7 +363,7 @@ namespace System.Formats.Cbor
             // Validate that the pop operation can be performed
             if (typeToPop != _currentMajorType)
             {
-                if (_currentMajorType.HasValue)
+                if (_currentMajorType != NoMajorType)
                 {
                     throw new InvalidOperationException(SR.Format(SR.Cbor_PopMajorTypeMismatch, (int)_currentMajorType));
                 }
@@ -309,7 +381,7 @@ namespace System.Formats.Cbor
                 throw new InvalidOperationException(SR.Format(SR.Cbor_PopMajorTypeMismatch, (int)CborMajorType.Tag));
             }
 
-            if (_definiteLength - _itemsWritten > 0)
+            if (_definiteLength > _itemsWritten)
             {
                 throw new InvalidOperationException(SR.Cbor_NotAtEndOfDefiniteLengthDataItem);
             }
@@ -317,12 +389,12 @@ namespace System.Formats.Cbor
             // Perform encoding fixups that require the current context and must be done before popping
             // NB map key sorting must happen _before_ indefinite-length patching
 
-            if (typeToPop == CborMajorType.Map)
+            if (_tracksMapKeys && typeToPop == CborMajorType.Map)
             {
                 CompleteMapWrite();
             }
 
-            if (_definiteLength == null)
+            if (_definiteLength == NoDefiniteLength)
             {
                 CompleteIndefiniteLengthWrite(typeToPop);
             }
@@ -343,7 +415,7 @@ namespace System.Formats.Cbor
         // Advance writer state after a data item has been written to the buffer
         private void AdvanceDataItemCounters()
         {
-            if (_currentMajorType == CborMajorType.Map)
+            if (_tracksMapKeys && _currentMajorType == CborMajorType.Map)
             {
                 if (_itemsWritten % 2 == 0)
                 {
@@ -361,7 +433,7 @@ namespace System.Formats.Cbor
 
         private void WriteInitialByte(CborInitialByte initialByte)
         {
-            if (_definiteLength - _itemsWritten == 0)
+            if (_definiteLength == _itemsWritten)
             {
                 throw new InvalidOperationException(SR.Cbor_Writer_DefiniteLengthExceeded);
             }
@@ -388,7 +460,7 @@ namespace System.Formats.Cbor
 
         private void CompleteIndefiniteLengthWrite(CborMajorType type)
         {
-            Debug.Assert(_definiteLength == null);
+            Debug.Assert(_definiteLength == NoDefiniteLength);
 
             if (ConvertIndefiniteLengthEncodings)
             {
@@ -422,12 +494,12 @@ namespace System.Formats.Cbor
         private readonly struct StackFrame
         {
             public StackFrame(
-                CborMajorType? type,
+                CborMajorType type,
                 int frameOffset,
-                int? definiteLength,
+                int definiteLength,
                 int itemsWritten,
-                int? currentKeyOffset,
-                int? currentValueOffset,
+                int currentKeyOffset,
+                int currentValueOffset,
                 bool keysRequireSorting,
                 List<KeyValuePairEncodingRange>? keyValuePairEncodingRanges,
                 HashSet<(int Offset, int Length)>? keyEncodingRanges)
@@ -443,13 +515,13 @@ namespace System.Formats.Cbor
                 KeyEncodingRanges = keyEncodingRanges;
             }
 
-            public CborMajorType? MajorType { get; }
+            public CborMajorType MajorType { get; }
             public int FrameOffset { get; }
-            public int? DefiniteLength { get; }
+            public int DefiniteLength { get; }
             public int ItemsWritten { get; }
 
-            public int? CurrentKeyOffset { get; }
-            public int? CurrentValueOffset { get; }
+            public int CurrentKeyOffset { get; }
+            public int CurrentValueOffset { get; }
             public bool KeysRequireSorting { get; }
             public List<KeyValuePairEncodingRange>? KeyValuePairEncodingRanges { get; }
             public HashSet<(int Offset, int Length)>? KeyEncodingRanges { get; }

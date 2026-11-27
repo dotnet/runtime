@@ -1,10 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime;
+
 namespace System.Numerics
 {
     /// <summary>Defines an integer type that is represented in a base-2 format.</summary>
     /// <typeparam name="TSelf">The type that implements the interface.</typeparam>
+    [SuppressReadyToRunCanonicalRooting]
     public interface IBinaryInteger<TSelf>
         : IBinaryNumber<TSelf>,
           IShiftOperators<TSelf, int, TSelf>
@@ -260,6 +263,35 @@ namespace System.Numerics
             return remainder;
         }
 
+        /// <summary>Computes the integer logarithm base 10 of a value.</summary>
+        /// <param name="value">The value whose integer logarithm base 10 is to be computed.</param>
+        /// <returns>The integer logarithm base 10 of <paramref name="value" />.</returns>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="value" /> is negative.</exception>
+        /// <remarks>The result of computing the integer logarithm base 10 of zero is zero.</remarks>
+        static virtual TSelf Log10(TSelf value)
+        {
+            if (!typeof(TSelf).IsValueType)
+            {
+                ArgumentNullException.ThrowIfNull(value);
+            }
+
+            if (TSelf.IsNegative(value))
+            {
+                ThrowHelper.ThrowValueArgumentOutOfRange_NeedNonNegNumException();
+            }
+
+            TSelf ten = TSelf.CreateChecked(10);
+            TSelf result = TSelf.Zero;
+
+            while (value >= ten)
+            {
+                value /= ten;
+                result++;
+            }
+
+            return result;
+        }
+
         /// <summary>Computes the number of leading zero bits in a value.</summary>
         /// <param name="value">The value whose leading zero bits are to be counted.</param>
         /// <returns>The number of leading zero bits in <paramref name="value" />.</returns>
@@ -410,14 +442,14 @@ namespace System.Numerics
         /// <param name="source">The span from which the two's complement number should be read.</param>
         /// <param name="isUnsigned"><c>true</c> if <paramref name="source" /> represents an unsigned two's complement number; otherwise, <c>false</c> to indicate it represents a signed two's complement number.</param>
         /// <param name="value">On return, contains the value read from <paramref name="source" /> or <c>default</c> if a value could not be read.</param>
-        /// <returns><c>true</c> if the value was succesfully read from <paramref name="source" />; otherwise, <c>false</c>.</returns>
+        /// <returns><c>true</c> if the value was successfully read from <paramref name="source" />; otherwise, <c>false</c>.</returns>
         static abstract bool TryReadBigEndian(ReadOnlySpan<byte> source, bool isUnsigned, out TSelf value);
 
         /// <summary>Tries to read a two's complement number from a span, in little-endian format, and convert it to an instance of the current type.</summary>
         /// <param name="source">The span from which the two's complement number should be read.</param>
         /// <param name="isUnsigned"><c>true</c> if <paramref name="source" /> represents an unsigned two's complement number; otherwise, <c>false</c> to indicate it represents a signed two's complement number.</param>
         /// <param name="value">On return, contains the value read from <paramref name="source" /> or <c>default</c> if a value could not be read.</param>
-        /// <returns><c>true</c> if the value was succesfully read from <paramref name="source" />; otherwise, <c>false</c>.</returns>
+        /// <returns><c>true</c> if the value was successfully read from <paramref name="source" />; otherwise, <c>false</c>.</returns>
         static abstract bool TryReadLittleEndian(ReadOnlySpan<byte> source, bool isUnsigned, out TSelf value);
 
         /// <summary>Gets the number of bytes that will be written as part of <see cref="TryWriteLittleEndian(Span{byte}, out int)" />.</summary>

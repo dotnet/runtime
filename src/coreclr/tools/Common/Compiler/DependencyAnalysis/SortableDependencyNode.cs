@@ -61,7 +61,7 @@ namespace ILCompiler.DependencyAnalysis
             //
             Win32ResourcesNode,
             CorHeaderNode,
-            ReadyToRunHeaderNode,
+            GlobalHeaderNode,
             ReadyToRunAssemblyHeaderNode,
             ImportSectionsTableNode,
             ImportSectionNode,
@@ -101,10 +101,15 @@ namespace ILCompiler.DependencyAnalysis
             ProxyTypeMapObjectNode,
             StackTraceLineNumbersNode,
             StackTraceDocumentsNode,
-            ExternalReferencesTableNode,
             StackTraceEmbeddedMetadataNode,
             StackTraceMethodMappingNode,
+            UnboxingStubMapNode,
             ArrayOfEmbeddedDataNode,
+            InterfaceDispatchCellInfoSection,
+            InterfaceDispatchCellSection,
+            GvmDispatchCellInfoSection,
+            GvmDispatchCellSection,
+            ExternalReferencesTableNode,
 
             //
             // Wasm type signatures (need to be emitted some time before the unordered phase)

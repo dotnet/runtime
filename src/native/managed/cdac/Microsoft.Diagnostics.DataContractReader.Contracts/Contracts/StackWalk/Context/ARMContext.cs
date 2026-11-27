@@ -29,7 +29,14 @@ internal struct ARMContext : IPlatformContext
     }
 
     public readonly uint Size => 0x1a0;
-    public readonly uint DefaultContextFlags => (uint)ContextFlagsValues.CONTEXT_ALL;
+
+    public readonly uint ContextControlFlags => (uint)ContextFlagsValues.CONTEXT_CONTROL;
+
+    public readonly uint FullContextFlags => (uint)ContextFlagsValues.CONTEXT_FULL;
+
+    public readonly uint AllContextFlags => (uint)ContextFlagsValues.CONTEXT_ALL;
+
+    public readonly int StackPointerRegister => 13;
 
     public TargetPointer StackPointer
     {
@@ -37,7 +44,7 @@ internal struct ARMContext : IPlatformContext
         set => Sp = (uint)value.Value;
     }
 
-    public TargetPointer InstructionPointer
+    public TargetCodePointer InstructionPointer
     {
         readonly get => new(Pc);
         set => Pc = (uint)value.Value;
@@ -49,10 +56,152 @@ internal struct ARMContext : IPlatformContext
         set => R11 = (uint)value.Value;
     }
 
+    public uint RawContextFlags { readonly get => ContextFlags; set => ContextFlags = value; }
+
     public void Unwind(Target target)
     {
         ARMUnwinder unwinder = new(target);
         unwinder.Unwind(ref this);
+    }
+
+    public void UnsetSingleStepFlag() { }
+    public bool TrySetRegister(string name, TargetNUInt value)
+    {
+        if (name.Equals("r0", StringComparison.OrdinalIgnoreCase)) { R0 = (uint)value.Value; return true; }
+        if (name.Equals("r1", StringComparison.OrdinalIgnoreCase)) { R1 = (uint)value.Value; return true; }
+        if (name.Equals("r2", StringComparison.OrdinalIgnoreCase)) { R2 = (uint)value.Value; return true; }
+        if (name.Equals("r3", StringComparison.OrdinalIgnoreCase)) { R3 = (uint)value.Value; return true; }
+        if (name.Equals("r4", StringComparison.OrdinalIgnoreCase)) { R4 = (uint)value.Value; return true; }
+        if (name.Equals("r5", StringComparison.OrdinalIgnoreCase)) { R5 = (uint)value.Value; return true; }
+        if (name.Equals("r6", StringComparison.OrdinalIgnoreCase)) { R6 = (uint)value.Value; return true; }
+        if (name.Equals("r7", StringComparison.OrdinalIgnoreCase)) { R7 = (uint)value.Value; return true; }
+        if (name.Equals("r8", StringComparison.OrdinalIgnoreCase)) { R8 = (uint)value.Value; return true; }
+        if (name.Equals("r9", StringComparison.OrdinalIgnoreCase)) { R9 = (uint)value.Value; return true; }
+        if (name.Equals("r10", StringComparison.OrdinalIgnoreCase)) { R10 = (uint)value.Value; return true; }
+        if (name.Equals("r11", StringComparison.OrdinalIgnoreCase)) { R11 = (uint)value.Value; return true; }
+        if (name.Equals("r12", StringComparison.OrdinalIgnoreCase)) { R12 = (uint)value.Value; return true; }
+        if (name.Equals("sp", StringComparison.OrdinalIgnoreCase)) { Sp = (uint)value.Value; return true; }
+        if (name.Equals("lr", StringComparison.OrdinalIgnoreCase)) { Lr = (uint)value.Value; return true; }
+        if (name.Equals("pc", StringComparison.OrdinalIgnoreCase)) { Pc = (uint)value.Value; return true; }
+        if (name.Equals("cpsr", StringComparison.OrdinalIgnoreCase)) { Cpsr = (uint)value.Value; return true; }
+        if (name.Equals("fpscr", StringComparison.OrdinalIgnoreCase)) { Fpscr = (uint)value.Value; return true; }
+        return false;
+    }
+
+    public bool TryReadRegister(string name, out TargetNUInt value)
+    {
+        value = default;
+        if (name.Equals("r0", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(R0); return true; }
+        if (name.Equals("r1", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(R1); return true; }
+        if (name.Equals("r2", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(R2); return true; }
+        if (name.Equals("r3", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(R3); return true; }
+        if (name.Equals("r4", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(R4); return true; }
+        if (name.Equals("r5", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(R5); return true; }
+        if (name.Equals("r6", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(R6); return true; }
+        if (name.Equals("r7", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(R7); return true; }
+        if (name.Equals("r8", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(R8); return true; }
+        if (name.Equals("r9", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(R9); return true; }
+        if (name.Equals("r10", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(R10); return true; }
+        if (name.Equals("r11", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(R11); return true; }
+        if (name.Equals("r12", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(R12); return true; }
+        if (name.Equals("sp", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Sp); return true; }
+        if (name.Equals("lr", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Lr); return true; }
+        if (name.Equals("pc", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Pc); return true; }
+        if (name.Equals("cpsr", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Cpsr); return true; }
+        if (name.Equals("fpscr", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Fpscr); return true; }
+        return false;
+    }
+
+    public bool TrySetRegister(int number, TargetNUInt value)
+    {
+        switch (number)
+        {
+            case 0: R0 = (uint)value.Value; return true;
+            case 1: R1 = (uint)value.Value; return true;
+            case 2: R2 = (uint)value.Value; return true;
+            case 3: R3 = (uint)value.Value; return true;
+            case 4: R4 = (uint)value.Value; return true;
+            case 5: R5 = (uint)value.Value; return true;
+            case 6: R6 = (uint)value.Value; return true;
+            case 7: R7 = (uint)value.Value; return true;
+            case 8: R8 = (uint)value.Value; return true;
+            case 9: R9 = (uint)value.Value; return true;
+            case 10: R10 = (uint)value.Value; return true;
+            case 11: R11 = (uint)value.Value; return true;
+            case 12: R12 = (uint)value.Value; return true;
+            case 13: Sp = (uint)value.Value; return true;
+            case 14: Lr = (uint)value.Value; return true;
+            case 15: Pc = (uint)value.Value; return true;
+            case 16: Cpsr = (uint)value.Value; return true;
+            default: return false;
+        }
+    }
+
+    public bool TryReadRegister(int number, out TargetNUInt value)
+    {
+        switch (number)
+        {
+            case 0: value = new TargetNUInt(R0); return true;
+            case 1: value = new TargetNUInt(R1); return true;
+            case 2: value = new TargetNUInt(R2); return true;
+            case 3: value = new TargetNUInt(R3); return true;
+            case 4: value = new TargetNUInt(R4); return true;
+            case 5: value = new TargetNUInt(R5); return true;
+            case 6: value = new TargetNUInt(R6); return true;
+            case 7: value = new TargetNUInt(R7); return true;
+            case 8: value = new TargetNUInt(R8); return true;
+            case 9: value = new TargetNUInt(R9); return true;
+            case 10: value = new TargetNUInt(R10); return true;
+            case 11: value = new TargetNUInt(R11); return true;
+            case 12: value = new TargetNUInt(R12); return true;
+            case 13: value = new TargetNUInt(Sp); return true;
+            case 14: value = new TargetNUInt(Lr); return true;
+            case 15: value = new TargetNUInt(Pc); return true;
+            case 16: value = new TargetNUInt(Cpsr); return true;
+            default: value = default; return false;
+        }
+    }
+
+    // D0-D31 are the 64-bit views of the VFP/NEON register file, an 8-byte stride.
+    private const int DRegisterCount = 32;
+    private const int DRegisterStride = 8;
+
+    public readonly bool TryReadFloatingPointRegister(int index, out double value)
+        => SimdRegisterAccess.TryReadRegister(MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(in this, 1)),
+            (int)Marshal.OffsetOf<ARMContext>(nameof(D)), DRegisterStride, DRegisterCount, index, out value);
+
+    public bool TryWriteFloatingPointRegister(int index, double value)
+        => SimdRegisterAccess.TryWriteRegister(MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref this, 1)),
+            (int)Marshal.OffsetOf<ARMContext>(nameof(D)), DRegisterStride, DRegisterCount, index, value);
+
+    public void CopyContext(ReadOnlySpan<byte> source)
+    {
+        uint flags = RawContextFlags & MemoryMarshal.Read<ARMContext>(source).RawContextFlags;
+        Span<byte> destination = MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref this, 1));
+        if ((flags & (uint)ContextFlagsValues.CONTEXT_CONTROL) == (uint)ContextFlagsValues.CONTEXT_CONTROL)
+        {
+            int start = (int)Marshal.OffsetOf<ARMContext>(nameof(Sp));
+            int end = (int)Marshal.OffsetOf<ARMContext>(nameof(Fpscr));
+            source[start..end].CopyTo(destination[start..end]);
+        }
+        if ((flags & (uint)ContextFlagsValues.CONTEXT_INTEGER) == (uint)ContextFlagsValues.CONTEXT_INTEGER)
+        {
+            int start = (int)Marshal.OffsetOf<ARMContext>(nameof(R0));
+            int end = (int)Marshal.OffsetOf<ARMContext>(nameof(Sp));
+            source[start..end].CopyTo(destination[start..end]);
+        }
+        if ((flags & (uint)ContextFlagsValues.CONTEXT_FLOATING_POINT) == (uint)ContextFlagsValues.CONTEXT_FLOATING_POINT)
+        {
+            int start = (int)Marshal.OffsetOf<ARMContext>(nameof(Fpscr));
+            int end = (int)Marshal.OffsetOf<ARMContext>(nameof(Bvr));
+            source[start..end].CopyTo(destination[start..end]);
+        }
+        if ((flags & (uint)ContextFlagsValues.CONTEXT_DEBUG_REGISTERS) == (uint)ContextFlagsValues.CONTEXT_DEBUG_REGISTERS)
+        {
+            int start = (int)Marshal.OffsetOf<ARMContext>(nameof(Bvr));
+            int end = (int)Marshal.OffsetOf<ARMContext>(nameof(Wcr)) + sizeof(uint);
+            source[start..end].CopyTo(destination[start..end]);
+        }
     }
 
     // Control flags
@@ -130,7 +279,7 @@ internal struct ARMContext : IPlatformContext
     [FieldOffset(0x40)]
     public uint Pc;
 
-    [Register(RegisterType.General)]
+    [Register(RegisterType.Control)]
     [FieldOffset(0x44)]
     public uint Cpsr;
 

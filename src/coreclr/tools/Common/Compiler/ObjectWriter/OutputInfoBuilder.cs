@@ -43,7 +43,7 @@ namespace ILCompiler.ObjectWriter
         /// <summary>
         /// Offset relative to section beginning
         /// </summary>
-        public readonly ulong Offset;
+        public ulong Offset { get; internal set; }
 
         /// <summary>
         /// Item name
@@ -67,7 +67,7 @@ namespace ILCompiler.ObjectWriter
         /// Node length (number of bytes). This doesn't include any external alignment
         /// applied when concatenating the nodes to form sections.
         /// </summary>
-        public readonly int Length;
+        public int Length { get; internal set; }
 
         /// <summary>
         /// Number of file-level relocations (.reloc section entries) used by the node.
@@ -162,6 +162,26 @@ namespace ILCompiler.ObjectWriter
         public void AddMethod(IMethodNode method, ISymbolDefinitionNode symbol)
         {
             _methodSymbolMap.Add(symbol, method);
+        }
+
+        /// <summary>
+        /// Corrects code-section node offsets and lengths after the wasm writer LEB128-shrinks code
+        /// relocations during final emission. The map gives the final on-disk content offset for each
+        /// pre-shrink entry boundary, so a method node's start and end (which both fall on entry
+        /// boundaries) resolve to its real position and length in the emitted module for the perfmap.
+        /// </summary>
+        internal void RemapMethodNodeOffsets(int sectionIndex, IReadOnlyDictionary<ulong, ulong> offsetMap)
+        {
+            foreach (OutputNode node in _nodes)
+            {
+                if (node.SectionIndex == sectionIndex
+                    && offsetMap.TryGetValue(node.Offset, out ulong postStart)
+                    && offsetMap.TryGetValue(node.Offset + (ulong)node.Length, out ulong postEnd))
+                {
+                    node.Length = (int)(postEnd - postStart);
+                    node.Offset = postStart;
+                }
+            }
         }
 
         public void Sort()

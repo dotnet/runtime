@@ -280,7 +280,7 @@ extern "C" void assertAbort(const char* why, const char* file, unsigned line)
                     env->compiler->info.compMethodHash(), env->compiler->compGetTieringName(/* short name */ true));
         msg = buff;
     }
-    printf(""); // null string means flush
+    fflush(jitstdout());
 
 #if FUNC_INFO_LOGGING
     if (Compiler::compJitFuncInfoFile != nullptr)
@@ -340,10 +340,12 @@ int vflogf(FILE* file, const char* fmt, va_list args)
     char      buffer[BUFF_SIZE];
     int       written = _vsnprintf_s(&buffer[0], BUFF_SIZE, _TRUNCATE, fmt, args);
 
+#ifdef HOST_WINDOWS
     if (JitConfig.JitDumpToDebugger())
     {
         OutputDebugStringA(buffer);
     }
+#endif // HOST_WINDOWS
 
     if (file == procstdout())
     {

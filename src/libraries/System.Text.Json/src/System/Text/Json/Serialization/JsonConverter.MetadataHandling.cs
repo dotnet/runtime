@@ -15,9 +15,8 @@ namespace System.Text.Json.Serialization
         {
             Debug.Assert(!IsValueType);
             Debug.Assert(CanHaveMetadata);
-            Debug.Assert((state.Current.MetadataPropertyNames & MetadataPropertyName.Type) != 0);
+            Debug.Assert((state.Current.MetadataPropertyNames & MetadataPropertyName.Type) != 0 || state.PolymorphicResolvedType is not null);
             Debug.Assert(state.Current.PolymorphicSerializationState != PolymorphicSerializationState.PolymorphicReEntryStarted);
-            Debug.Assert(jsonTypeInfo.PolymorphicTypeResolver?.UsesTypeDiscriminators == true);
 
             JsonConverter? polymorphicConverter = null;
 
@@ -25,10 +24,25 @@ namespace System.Text.Json.Serialization
             {
                 case PolymorphicSerializationState.None:
                     Debug.Assert(!state.IsContinuation);
-                    Debug.Assert(state.PolymorphicTypeDiscriminator != null);
 
-                    PolymorphicTypeResolver resolver = jsonTypeInfo.PolymorphicTypeResolver;
-                    if (resolver.TryGetDerivedJsonTypeInfo(state.PolymorphicTypeDiscriminator, out JsonTypeInfo? resolvedType))
+                    PolymorphicTypeResolver resolver = jsonTypeInfo.PolymorphicTypeResolver!;
+                    JsonTypeInfo? resolvedType;
+
+                    if (state.PolymorphicResolvedType is Type classifiedType)
+                    {
+                        // Type resolved by custom TypeClassifier — resolve directly.
+                        resolver.TryResolveDerivedJsonTypeInfo(classifiedType, out resolvedType);
+                        state.PolymorphicResolvedType = null;
+                    }
+                    else
+                    {
+                        // Standard discriminator-based resolution.
+                        Debug.Assert(state.PolymorphicTypeDiscriminator is not null);
+                        Debug.Assert(resolver.UsesTypeDiscriminators);
+                        resolver.TryGetDerivedJsonTypeInfo(state.PolymorphicTypeDiscriminator, out resolvedType);
+                    }
+
+                    if (resolvedType is not null)
                     {
                         Debug.Assert(Type!.IsAssignableFrom(resolvedType.Type));
 
@@ -69,8 +83,8 @@ namespace System.Text.Json.Serialization
         internal JsonConverter? ResolvePolymorphicConverter(object value, JsonTypeInfo jsonTypeInfo, JsonSerializerOptions options, ref WriteStack state)
         {
             Debug.Assert(!IsValueType);
-            Debug.Assert(value != null && Type!.IsAssignableFrom(value.GetType()));
-            Debug.Assert(CanBePolymorphic || jsonTypeInfo.PolymorphicTypeResolver != null);
+            Debug.Assert(value is not null && Type!.IsAssignableFrom(value.GetType()));
+            Debug.Assert(CanBePolymorphic || jsonTypeInfo.PolymorphicTypeResolver is not null);
             Debug.Assert(state.PolymorphicTypeDiscriminator is null);
 
             JsonConverter? polymorphicConverter = null;
@@ -139,7 +153,7 @@ namespace System.Text.Json.Serialization
         {
             Debug.Assert(!IsValueType);
             Debug.Assert(!state.IsContinuation);
-            Debug.Assert(value != null);
+            Debug.Assert(value is not null);
 
             switch (options.ReferenceHandlingStrategy)
             {

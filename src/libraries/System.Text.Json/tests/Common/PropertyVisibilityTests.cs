@@ -1,9 +1,10 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
@@ -1785,7 +1786,7 @@ namespace System.Text.Json.Serialization.Tests
         [Theory]
         [InlineData(typeof(ClassWithProperty_IgnoreConditionAlways))]
         [InlineData(typeof(ClassWithProperty_IgnoreConditionAlways_Ctor))]
-        public async Task JsonIgnoreConditionSetToAlwaysWorks(Type type)
+        public async Task JsonIgnoreConditionSetToAlwaysWorks([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type type)
         {
             string json = """{"MyString":"Random","MyDateTime":"2020-03-23","MyInt":4}""";
 
@@ -1830,7 +1831,7 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [MemberData(nameof(JsonIgnoreConditionWhenWritingDefault_ClassProperty_TestData))]
-        public async Task JsonIgnoreConditionWhenWritingDefault_ClassProperty(Type type, JsonSerializerOptions options)
+        public async Task JsonIgnoreConditionWhenWritingDefault_ClassProperty([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type type, JsonSerializerOptions options)
         {
             // Property shouldn't be ignored if it isn't null.
             string json = """{"Int1":1,"MyString":"Random","Int2":2}""";
@@ -1916,7 +1917,7 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [MemberData(nameof(JsonIgnoreConditionWhenWritingDefault_StructProperty_TestData))]
-        public async Task JsonIgnoreConditionWhenWritingDefault_StructProperty(Type type, JsonSerializerOptions options)
+        public async Task JsonIgnoreConditionWhenWritingDefault_StructProperty([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type type, JsonSerializerOptions options)
         {
             // Property shouldn't be ignored if it isn't null.
             string json = """{"Int1":1,"MyInt":3,"Int2":2}""";
@@ -1974,7 +1975,7 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [MemberData(nameof(JsonIgnoreConditionNever_TestData))]
-        public async Task JsonIgnoreConditionNever(Type type)
+        public async Task JsonIgnoreConditionNever([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type type)
         {
             // Property should always be (de)serialized, even when null.
             string json = """{"Int1":1,"MyString":"Random","Int2":2}""";
@@ -2017,7 +2018,7 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [MemberData(nameof(JsonIgnoreConditionNever_TestData))]
-        public async Task JsonIgnoreConditionNever_IgnoreNullValues_True(Type type)
+        public async Task JsonIgnoreConditionNever_IgnoreNullValues_True([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type type)
         {
             // Property should always be (de)serialized.
             string json = """{"Int1":1,"MyString":"Random","Int2":2}""";
@@ -2084,6 +2085,194 @@ namespace System.Text.Json.Serialization.Tests
         {
             yield return new object[] { typeof(ClassWithStructProperty_IgnoreConditionNever) };
             yield return new object[] { typeof(ClassWithStructProperty_IgnoreConditionNever_Ctor) };
+        }
+
+        [Fact]
+        public async Task JsonIgnoreCondition_TypeLevel_WhenWritingNull()
+        {
+            var obj = new ClassWithTypeLevelIgnore_WhenWritingNull
+            {
+                MyString = null,
+                MyInt = 42,
+                MyOtherString = "hello"
+            };
+
+            string json = await Serializer.SerializeWrapper(obj);
+            Assert.Contains(@"""MyInt"":42", json);
+            Assert.Contains(@"""MyOtherString"":""hello""", json);
+            Assert.DoesNotContain(@"""MyString"":", json);
+
+            obj.MyString = "value";
+            json = await Serializer.SerializeWrapper(obj);
+            Assert.Contains(@"""MyString"":""value""", json);
+        }
+
+        [Fact]
+        public async Task JsonIgnoreCondition_TypeLevel_WhenWritingDefault()
+        {
+            var obj = new ClassWithTypeLevelIgnore_WhenWritingDefault
+            {
+                MyString = null,
+                MyInt = 0,
+            };
+
+            string json = await Serializer.SerializeWrapper(obj);
+            Assert.DoesNotContain(@"""MyString"":", json);
+            Assert.DoesNotContain(@"""MyInt"":", json);
+
+            obj.MyString = "value";
+            obj.MyInt = 1;
+            json = await Serializer.SerializeWrapper(obj);
+            Assert.Contains(@"""MyString"":""value""", json);
+            Assert.Contains(@"""MyInt"":1", json);
+        }
+
+        [Fact]
+        public virtual async Task JsonIgnoreCondition_TypeLevel_Always_ThrowsInvalidOperation()
+        {
+            var obj = new ClassWithTypeLevelIgnore_Always
+            {
+                MyString = "value",
+                MyInt = 42
+            };
+
+            await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.SerializeWrapper(obj));
+            await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.DeserializeWrapper<ClassWithTypeLevelIgnore_Always>(@"{""MyString"":""value"",""MyInt"":42}"));
+        }
+
+        [Fact]
+        public async Task JsonIgnoreCondition_TypeLevel_PropertyOverridesType()
+        {
+            var obj = new ClassWithTypeLevelIgnore_PropertyOverride
+            {
+                MyString = null,
+                MyInt = 42,
+                AlwaysPresent = "test"
+            };
+
+            string json = await Serializer.SerializeWrapper(obj);
+            // MyString should be ignored (inherited WhenWritingNull, value is null)
+            Assert.DoesNotContain(@"""MyString"":", json);
+            // MyInt should be serialized (inherited WhenWritingNull doesn't apply to value types)
+            Assert.Contains(@"""MyInt"":42", json);
+            // AlwaysPresent has property-level [JsonIgnore(Condition = Never)] which overrides type-level
+            Assert.Contains(@"""AlwaysPresent"":""test""", json);
+
+            // When AlwaysPresent is null, it should still be present due to Never override
+            obj.AlwaysPresent = null;
+            json = await Serializer.SerializeWrapper(obj);
+            Assert.Contains(@"""AlwaysPresent"":null", json);
+        }
+
+        [Fact]
+        public async Task JsonIgnoreCondition_TypeLevel_Struct()
+        {
+            var obj = new StructWithTypeLevelIgnore_WhenWritingNull
+            {
+                MyString = null,
+                MyInt = 42,
+            };
+
+            string json = await Serializer.SerializeWrapper(obj);
+            Assert.DoesNotContain(@"""MyString"":", json);
+            Assert.Contains(@"""MyInt"":42", json);
+        }
+
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public class ClassWithTypeLevelIgnore_WhenWritingNull
+        {
+            public string? MyString { get; set; }
+            public int MyInt { get; set; }
+            public string? MyOtherString { get; set; }
+        }
+
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+        public class ClassWithTypeLevelIgnore_WhenWritingDefault
+        {
+            public string? MyString { get; set; }
+            public int MyInt { get; set; }
+        }
+
+        [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
+        public class ClassWithTypeLevelIgnore_Always
+        {
+            public string? MyString { get; set; }
+            public int MyInt { get; set; }
+        }
+
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public class ClassWithTypeLevelIgnore_PropertyOverride
+        {
+            public string? MyString { get; set; }
+            public int MyInt { get; set; }
+            [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
+            public string? AlwaysPresent { get; set; }
+        }
+
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public struct StructWithTypeLevelIgnore_WhenWritingNull
+        {
+            public string? MyString { get; set; }
+            public int MyInt { get; set; }
+        }
+
+        [Fact]
+        public async Task JsonIgnoreCondition_TypeLevel_InheritedProperties()
+        {
+            var obj = new DerivedClassWithTypeLevelIgnore
+            {
+                BaseString = null,
+                DerivedString = null,
+                BaseInt = 42,
+            };
+
+            string json = await Serializer.SerializeWrapper(obj);
+            // Both BaseString and DerivedString are null so should be ignored (WhenWritingNull)
+            Assert.DoesNotContain(@"""BaseString"":", json);
+            Assert.DoesNotContain(@"""DerivedString"":", json);
+            // BaseInt is a value type, WhenWritingNull doesn't apply
+            Assert.Contains(@"""BaseInt"":42", json);
+
+            obj.BaseString = "base";
+            obj.DerivedString = "derived";
+            json = await Serializer.SerializeWrapper(obj);
+            Assert.Contains(@"""BaseString"":""base""", json);
+            Assert.Contains(@"""DerivedString"":""derived""", json);
+        }
+
+        public class BaseClassWithProperties
+        {
+            public string? BaseString { get; set; }
+            public int BaseInt { get; set; }
+        }
+
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public class DerivedClassWithTypeLevelIgnore : BaseClassWithProperties
+        {
+            public string? DerivedString { get; set; }
+        }
+
+        [Fact]
+        public async Task JsonIgnoreCondition_TypeLevel_OverridesGlobalJSO()
+        {
+            // Global JSO says WhenWritingDefault (ignores null strings AND zero ints),
+            // but the type-level attribute says WhenWritingNull (only ignores null strings).
+            // The type-level attribute should override the global setting.
+            var options = new JsonSerializerOptions { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault };
+            var obj = new ClassWithTypeLevelIgnore_WhenWritingNull
+            {
+                MyString = null,
+                MyInt = 0,
+                MyOtherString = null
+            };
+
+            string json = await Serializer.SerializeWrapper(obj, options);
+            // MyString and MyOtherString are null: both global (WhenWritingDefault) and type-level (WhenWritingNull) would ignore them.
+            Assert.DoesNotContain(@"""MyString"":", json);
+            Assert.DoesNotContain(@"""MyOtherString"":", json);
+            // MyInt is 0: the global WhenWritingDefault would ignore it, but the type-level WhenWritingNull should override,
+            // and WhenWritingNull doesn't apply to non-nullable value types so MyInt should still be serialized.
+            Assert.Contains(@"""MyInt"":0", json);
         }
 
         [Fact]
@@ -2715,7 +2904,7 @@ namespace System.Text.Json.Serialization.Tests
         [Theory]
         [InlineData(typeof(ClassWithBadIgnoreAttribute))]
         [InlineData(typeof(StructWithBadIgnoreAttribute))]
-        public virtual async Task JsonIgnoreCondition_WhenWritingNull_OnValueType_Fail(Type type)
+        public virtual async Task JsonIgnoreCondition_WhenWritingNull_OnValueType_Fail([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type type)
         {
             InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.DeserializeWrapper("{}", type));
             string exAsStr = ex.ToString();
@@ -2735,7 +2924,7 @@ namespace System.Text.Json.Serialization.Tests
         [Theory]
         [InlineData(typeof(ClassWithBadIgnoreAttribute))]
         [InlineData(typeof(StructWithBadIgnoreAttribute))]
-        public virtual async Task JsonIgnoreCondition_WhenWritingNull_OnValueType_Fail_EmptyJson(Type type)
+        public virtual async Task JsonIgnoreCondition_WhenWritingNull_OnValueType_Fail_EmptyJson([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type type)
         {
             InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.DeserializeWrapper("", type));
             string exAsStr = ex.ToString();

@@ -9,7 +9,6 @@
 #include "common.h"
 #include "classhash.h"
 #include "dacenumerablehash.inl"
-#include "fstring.h"
 #include "classhash.inl"
 
 PTR_EEClassHashEntry EEClassHashEntry::GetEncloser()
@@ -73,9 +72,8 @@ EEClassHashTable *EEClassHashTable::Create(Module *pModule, DWORD dwNumBuckets, 
     CONTRACTL
     {
         THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
         PRECONDITION(!FORBIDGC_LOADER_USE_ENABLED());
 
     }
@@ -99,7 +97,6 @@ EEClassHashEntry_t *EEClassHashTable::AllocNewEntry(AllocMemTracker *pamTracker)
     {
         THROWS;
         GC_NOTRIGGER;
-        INJECT_FAULT(COMPlusThrowOM(););
         MODE_ANY;
 
         PRECONDITION(!FORBIDGC_LOADER_USE_ENABLED());
@@ -120,7 +117,6 @@ VOID EEClassHashTable::UncompressModuleAndNonExportClassDef(HashDatum Data, Modu
         INSTANCE_CHECK;
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         MODE_ANY;
         SUPPORTS_DAC;
     }
@@ -138,20 +134,18 @@ bool EEClassHashTable::UncompressModuleAndClassDef(HashDatum Data, Loader::LoadF
                                                    Module **ppModule, mdTypeDef *pCL,
                                                    mdExportedType *pmdFoundExportedType)
 {
-    CONTRACT(bool)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM();); }
         MODE_ANY;
 
         PRECONDITION(CheckPointer(pCL));
         PRECONDITION(CheckPointer(ppModule));
-        POSTCONDITION(*ppModule != nullptr || loadFlag != Loader::Load);
         SUPPORTS_DAC;
     }
-    CONTRACT_END
+    CONTRACTL_END
 
     DWORD dwData = (DWORD)dac_cast<TADDR>(Data);
     _ASSERTE((dwData & EECLASSHASH_TYPEHANDLE_DISCR) == EECLASSHASH_TYPEHANDLE_DISCR);
@@ -166,7 +160,8 @@ bool EEClassHashTable::UncompressModuleAndClassDef(HashDatum Data, Loader::LoadF
         _ASSERTE(*ppModule != nullptr); // Should never fail.
     }
 
-    RETURN (*ppModule != nullptr);
+    _ASSERTE(*ppModule != nullptr || loadFlag != Loader::Load);
+    return *ppModule != nullptr;
 }
 
 /* static */
@@ -176,7 +171,6 @@ mdToken EEClassHashTable::UncompressModuleAndClassDef(HashDatum Data)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         MODE_ANY;
         SUPPORTS_DAC;
     }
@@ -223,7 +217,6 @@ VOID EEClassHashTable::ConstructKeyFromData(PTR_EEClassHashEntry pEntry, // IN  
         THROWS;
         WRAPPER(MODE_ANY);
         WRAPPER(GC_TRIGGERS);
-        if (IsCaseInsensitiveTable()) INJECT_FAULT(COMPlusThrowOM();); else WRAPPER(FORBID_FAULT);
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
@@ -299,7 +292,7 @@ VOID EEClassHashTable::ConstructKeyFromData(PTR_EEClassHashEntry pEntry, // IN  
         else
         {
 #ifndef DACCESS_COMPILE
-            CONTRACT_VIOLATION(ThrowsViolation | FaultViolation);
+            CONTRACT_VIOLATION(ThrowsViolation);
             ConstructKeyFromDataCaseInsensitive(pCallback, pszNameSpace, pszName);
 #else
             DacNotImpl();
@@ -324,7 +317,6 @@ EEClassHashEntry_t *EEClassHashTable::InsertValueUsingPreallocatedEntry(EEClassH
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        FORBID_FAULT;
 
         PRECONDITION(!FORBIDGC_LOADER_USE_ENABLED());
     }
@@ -372,7 +364,6 @@ BOOL EEClassHashTable::CompareKeys(PTR_EEClassHashEntry pEntry, LPCUTF8 * pKey2)
     {
         if (IsCaseInsensitiveTable()) THROWS; else NOTHROW;
         if (IsCaseInsensitiveTable()) GC_TRIGGERS; else GC_NOTRIGGER;
-        if (IsCaseInsensitiveTable()) INJECT_FAULT(COMPlusThrowOM();); else FORBID_FAULT;
         MODE_ANY;
         SUPPORTS_DAC;
     }
@@ -439,7 +430,6 @@ EEClassHashTable *EEClassHashTable::MakeCaseInsensitiveTable(Module *pModule, Al
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
 
         PRECONDITION(!FORBIDGC_LOADER_USE_ENABLED());
     }
@@ -487,7 +477,6 @@ BOOL CompareNestedEntryWithExportedType(IMDInternalImport *  pImport,
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        FORBID_FAULT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
@@ -561,7 +550,6 @@ BOOL CompareNestedEntryWithTypeDef(IMDInternalImport *  pImport,
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        FORBID_FAULT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
@@ -617,7 +605,6 @@ BOOL CompareNestedEntryWithTypeRef(IMDInternalImport *  pImport,
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        FORBID_FAULT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
@@ -676,8 +663,7 @@ BOOL EEClassHashTable::IsNested(ModuleBase *pModule, mdToken token, mdToken *mdE
     CONTRACTL
     {
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
-        if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
+        GC_NOTRIGGER;
         MODE_ANY;
         SUPPORTS_DAC;
     }
@@ -685,7 +671,7 @@ BOOL EEClassHashTable::IsNested(ModuleBase *pModule, mdToken token, mdToken *mdE
 
     switch(TypeFromToken(token)) {
         case mdtTypeDef:
-            return (SUCCEEDED(pModule->GetMDImport()->GetNestedClassProps(token, mdEncloser)));
+            return SUCCEEDED(pModule->GetMDImport()->GetNestedClassProps(token, mdEncloser));
 
         case mdtTypeRef:
             IfFailThrow(pModule->GetMDImport()->GetResolutionScopeOfTypeRef(token, mdEncloser));
@@ -714,8 +700,7 @@ BOOL EEClassHashTable::IsNested(const NameHandle* pName, mdToken *mdEncloser)
     CONTRACTL
     {
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
-        if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
+        GC_NOTRIGGER;
         MODE_ANY;
         SUPPORTS_DAC;
     }

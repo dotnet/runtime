@@ -60,7 +60,8 @@ namespace System.Net.Security.Tests
                 Assert.Equal(IsEncryptedAndSigned, client.IsEncrypted);
                 Assert.False(client.IsMutuallyAuthenticated);
                 Assert.False(client.IsServer);
-                Assert.Equal(IsEncryptedAndSigned, client.IsSigned);
+                // Windows may negotiate NTLM signing even when ProtectionLevel.None is requested.
+                Assert.True(client.IsSigned || !IsEncryptedAndSigned);
                 Assert.False(client.LeaveInnerStreamOpen);
 
                 IIdentity serverIdentity = client.RemoteIdentity;
@@ -77,7 +78,7 @@ namespace System.Net.Security.Tests
                 Assert.Equal(IsEncryptedAndSigned, server.IsEncrypted);
                 Assert.False(server.IsMutuallyAuthenticated);
                 Assert.True(server.IsServer);
-                Assert.Equal(IsEncryptedAndSigned, server.IsSigned);
+                Assert.Equal(client.IsSigned, server.IsSigned);
                 Assert.False(server.LeaveInnerStreamOpen);
 
                 IIdentity clientIdentity = server.RemoteIdentity;
@@ -156,7 +157,8 @@ namespace System.Net.Security.Tests
                 Assert.Equal(IsEncryptedAndSigned, client.IsEncrypted);
                 Assert.False(client.IsMutuallyAuthenticated);
                 Assert.False(client.IsServer);
-                Assert.Equal(IsEncryptedAndSigned, client.IsSigned);
+                // Windows may negotiate NTLM signing even when ProtectionLevel.None is requested.
+                Assert.True(client.IsSigned || !IsEncryptedAndSigned);
                 Assert.False(client.LeaveInnerStreamOpen);
 
                 IIdentity serverIdentity = client.RemoteIdentity;
@@ -173,7 +175,7 @@ namespace System.Net.Security.Tests
                 Assert.Equal(IsEncryptedAndSigned, server.IsEncrypted);
                 Assert.False(server.IsMutuallyAuthenticated);
                 Assert.True(server.IsServer);
-                Assert.Equal(IsEncryptedAndSigned, server.IsSigned);
+                Assert.Equal(client.IsSigned, server.IsSigned);
                 Assert.False(server.LeaveInnerStreamOpen);
 
                 IIdentity clientIdentity = server.RemoteIdentity;
@@ -254,6 +256,64 @@ namespace System.Net.Security.Tests
 
                     IdentityValidator.AssertHasName(clientIdentity, new SecurityIdentifier(WellKnownSidType.AnonymousSid, null).Translate(typeof(NTAccount)).Value);
                 }
+            }
+        }
+
+        [ConditionalFact(typeof(NegotiateStreamStreamToStreamTest), nameof(IsNtlmInstalled))]
+        public async Task NegotiateStream_StreamToStream_ReadFailsMidFrame_DoesNotReturnStaleBufferOnNextRead()
+        {
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
+            using (var client = new NegotiateStream(stream1))
+            {
+                var server = new NegotiateStream(stream2);
+                try
+                {
+                    await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                        AuthenticateAsClientAsync(client, CredentialCache.DefaultNetworkCredentials, string.Empty),
+                        AuthenticateAsServerAsync(server));
+
+                    // The mid-frame failure scenario only applies when NegotiateStream is actually
+                    // framing the payload (i.e., encryption or signing is in effect). With
+                    // ProtectionLevel.None, NegotiateStream.Read forwards directly to the inner stream
+                    // and there is no _readBufferCount to leave stale.
+                    if (!client.IsEncrypted && !client.IsSigned)
+                    {
+                        return;
+                    }
+
+                    // Inject only a frame header that promises a body, then close the inner stream so the
+                    // client's body read fails mid-frame. With the bug, NegotiateStream pre-populates
+                    // _readBufferCount with the announced body size, and a subsequent Read returns up to
+                    // that many bytes of stale (zero-filled / never populated) buffer contents.
+                    const int FakeFrameSize = 100;
+                    byte[] fakeHeader = new byte[4];
+                    System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian(fakeHeader, FakeFrameSize);
+                    await stream2.WriteAsync(fakeHeader);
+                }
+                finally
+                {
+                    // Dispose the server NegotiateStream to close its inner stream and force EOF on the
+                    // client side mid-frame.
+                    server.Dispose();
+                }
+
+                // First read must observe the mid-frame failure.
+                byte[] buffer = new byte[200];
+                await Assert.ThrowsAsync<IOException>(() => ReadAsync(client, buffer, 0, buffer.Length));
+
+                // A subsequent read must NOT return stale buffer data. The inner stream is at EOF so
+                // the only correct outcomes are zero bytes (graceful EOF) or another IOException.
+                int read;
+                try
+                {
+                    read = await ReadAsync(client, buffer, 0, buffer.Length);
+                }
+                catch (IOException)
+                {
+                    return;
+                }
+
+                Assert.Equal(0, read);
             }
         }
     }

@@ -9,9 +9,10 @@
 #if defined(FEATURE_PERFMAP) && !defined(DACCESS_COMPILE)
 #include <clrconfignocache.h>
 #include "perfmap.h"
+#include "perfjitdump.h"
+#include "ProcessEnvironment.h"
 #include "pal.h"
 #include <dn-stdio.h>
-
 
 // The code addresses are actually native image offsets during crossgen. Print
 // them as 32-bit numbers for consistent output when cross-targeting and to
@@ -33,6 +34,7 @@ PerfMap * PerfMap::s_Current = nullptr;
 bool PerfMap::s_ShowOptimizationTiers = false;
 bool PerfMap::s_GroupStubsOfSameType = false;
 bool PerfMap::s_IndividualAllocationStubReporting = false;
+bool PerfMap::s_LogStubs = false;
 
 unsigned PerfMap::s_StubsMapped = 0;
 CrstStatic PerfMap::s_csPerfMap;
@@ -47,24 +49,49 @@ void PerfMap::Initialize()
 {
     LIMITED_METHOD_CONTRACT;
 
-    s_csPerfMap.Init(CrstPerfMap);
+    // Use CRST_UNSAFE_ANYMODE to avoid a GC-mode toggle deadlock: callers such as
+    // CodeFragmentHeap::RealAllocAlignedMem hold CRST_UNSAFE_ANYMODE locks in cooperative
+    // mode. A default Crst here would toggle cooperative->preemptive->acquire->cooperative,
+    // and the post-acquire DisablePreemptiveGC can block on a pending GC suspension,
+    // forming a deadlock cycle with threads waiting on the outer UNSAFE_ANYMODE lock.
+    // All data accessed under this lock is native (FILE*, fd, SString) so holding it
+    // in cooperative mode does not introduce new GC-safety issues. Doing I/O
+    // in cooperative mode is still less than ideal.
+    s_csPerfMap.Init(CrstPerfMap, CrstFlags(CRST_UNSAFE_ANYMODE));
 
     PerfMapType perfMapType = (PerfMapType)CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_PerfMapEnabled);
     PerfMap::Enable(perfMapType, false);
 }
 
-const char * PerfMap::InternalConstructPath()
+char * PerfMap::InternalConstructPath()
 {
-#ifdef HOST_WINDOWS
-    CLRConfigNoCache value = CLRConfigNoCache::Get("PerfMapJitDumpPath");
-#else
-    CLRConfigNoCache value = CLRConfigNoCache::Get("PerfMapJitDumpPath", /* noPrefix */ false, &PAL_getenv);
-#endif
-    if (value.IsSet())
+    STANDARD_VM_CONTRACT;
+
+    // Read the runtime's copy of the environment so that a path set through the diagnostic server is used.
+    const char* names[] = { DOTNET_PREFIX_A "PerfMapJitDumpPath", COMPLUS_PREFIX_A "PerfMapJitDumpPath" };
+    for (const char* name : names)
     {
-        return value.AsString();
+        // The value may change between calls, so retry until it fits. An empty value uses the default.
+        uint32_t length = ProcessEnvironment_GetVariableUtf8(name, nullptr, 0);
+        while (length > 1)
+        {
+            NewArrayHolder<char> path{ new char[length] };
+            uint32_t written = ProcessEnvironment_GetVariableUtf8(name, path, length);
+            if (written == 0)
+            {
+                break;
+            }
+
+            if (written < length)
+            {
+                return path.Detach();
+            }
+
+            length = written;
+        }
     }
-    return TEMP_DIRECTORY_PATH;
+
+    return nullptr;
 }
 
 void PerfMap::InitializeConfiguration()
@@ -77,11 +104,12 @@ void PerfMap::InitializeConfiguration()
     DWORD granularity = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_PerfMapStubGranularity);
     s_GroupStubsOfSameType = (granularity & 1) != 1;
     s_IndividualAllocationStubReporting = (granularity & 2) != 0;
+    s_LogStubs = (granularity & 4) == 0;
 }
 
 void PerfMap::Enable(PerfMapType type, bool sendExisting)
 {
-    LIMITED_METHOD_CONTRACT;
+    STANDARD_VM_CONTRACT;
 
     if (type == PerfMapType::DISABLED)
     {
@@ -91,7 +119,8 @@ void PerfMap::Enable(PerfMapType type, bool sendExisting)
     {
         CrstHolder ch(&(s_csPerfMap));
 
-        const char* basePath = InternalConstructPath();
+        NewArrayHolder<char> configuredPath{ InternalConstructPath() };
+        const char* basePath = configuredPath != nullptr ? (const char*)configuredPath : TEMP_DIRECTORY_PATH;
 
         if (s_Current == nullptr && (type == PerfMapType::ALL || type == PerfMapType::PERFMAP))
         {
@@ -105,14 +134,14 @@ void PerfMap::Enable(PerfMapType type, bool sendExisting)
 
             InitializeConfiguration();
 
-            int currentPid = GetCurrentProcessId();
+            int currentPid = getpid();
             s_Current->OpenFileForPid(currentPid, basePath);
             s_enabled = true;
         }
 
-        if (!PAL_PerfJitDump_IsStarted() && (type == PerfMapType::ALL || type == PerfMapType::JITDUMP))
+        if (!PerfJitDump_IsStarted() && (type == PerfMapType::ALL || type == PerfMapType::JITDUMP))
         {
-            PAL_PerfJitDump_Start(basePath);
+            PerfJitDump_Start(basePath);
 
             InitializeConfiguration();
 
@@ -133,10 +162,14 @@ void PerfMap::Enable(PerfMapType type, bool sendExisting)
             return;
         }
 
+#ifndef FEATURE_PORTABLE_HELPERS
+        ReportCopiedWriteBarriersToPerfMap();
+#endif // !FEATURE_PORTABLE_HELPERS
+
         AppDomain::AssemblyIterator assemblyIterator = GetAppDomain()->IterateAssembliesEx(
             (AssemblyIterationFlags)(kIncludeLoaded | kIncludeExecution));
-        CollectibleAssemblyHolder<Assembly *> pAssembly;
-        while (assemblyIterator.Next(pAssembly.This()))
+        CollectibleAssemblyHolder pAssembly;
+        while (assemblyIterator.Next(&pAssembly))
         {
             // PerfMap does not log R2R methods so only proceed if we are emitting jitdumps
             if (type == PerfMapType::ALL || type == PerfMapType::JITDUMP)
@@ -169,6 +202,19 @@ void PerfMap::Enable(PerfMapType type, bool sendExisting)
                 MethodDesc * pMethod = heapIterator.GetMethod();
                 if (pMethod == nullptr)
                 {
+                    StubCodeBlockKind stubCodeBlockKind = heapIterator.GetStubCodeBlockKind();
+                    if (stubCodeBlockKind != STUB_CODE_BLOCK_UNKNOWN)
+                    {
+                        // CodeHeapIterator cannot reconstruct individual stubs within a block, so
+                        // on-demand maps report the block regardless of live block/individual granularity.
+                        PerfMap::LogStubs(
+                            "ReportStubBlock",
+                            GetStubCodeBlockKindString(stubCodeBlockKind),
+                            PINSTRToPCODE(heapIterator.GetMethodCode()),
+                            heapIterator.GetCodeSize(),
+                            PerfMapStubType::Block,
+                            /* applyGranularityFilter */ false);
+                    }
                     continue;
                 }
 
@@ -215,8 +261,8 @@ void PerfMap::Disable()
             s_Current = nullptr;
         }
 
-        // PAL_PerfJitDump_Finish is lock protected and can safely be called multiple times
-        PAL_PerfJitDump_Finish();
+        // PerfJitDump_Finish is lock protected and can safely be called multiple times
+        PerfJitDump_Finish();
     }
 }
 
@@ -294,12 +340,8 @@ void PerfMap::WriteLine(SString& line)
 
 void PerfMap::LogJITCompiledMethod(MethodDesc * pMethod, PCODE pCode, size_t codeSize, PrepareCodeConfig *pConfig)
 {
-    LIMITED_METHOD_CONTRACT;
-
     CONTRACTL{
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
+        STANDARD_VM_CHECK;
         PRECONDITION(pMethod != nullptr);
         PRECONDITION(pCode != nullptr);
         PRECONDITION(codeSize > 0);
@@ -329,7 +371,7 @@ void PerfMap::LogJITCompiledMethod(MethodDesc * pMethod, PCODE pCode, size_t cod
             name.AppendPrintf("[%s]", optimizationTier);
         }
         SString line;
-        line.Printf(FMT_CODE_ADDR " %x %s\n", pCode, codeSize, name.GetUTF8());
+        line.Printf(FMT_CODE_ADDR " %zx %s\n", (void*)pCode, codeSize, name.GetUTF8());
 
         {
             CrstHolder ch(&(s_csPerfMap));
@@ -339,7 +381,7 @@ void PerfMap::LogJITCompiledMethod(MethodDesc * pMethod, PCODE pCode, size_t cod
                 s_Current->WriteLine(line);
             }
 
-            PAL_PerfJitDump_LogMethod((void*)pCode, codeSize, name.GetUTF8(), nullptr, nullptr);
+            PerfJitDump_LogMethod((void*)pCode, codeSize, name.GetUTF8(), nullptr, nullptr, /*reportCodeBlock*/true);
         }
     }
     EX_CATCH{} EX_END_CATCH
@@ -349,7 +391,7 @@ void PerfMap::LogJITCompiledMethod(MethodDesc * pMethod, PCODE pCode, size_t cod
 // Log a pre-compiled method to the perfmap.
 void PerfMap::LogPreCompiledMethod(MethodDesc * pMethod, PCODE pCode)
 {
-    LIMITED_METHOD_CONTRACT;
+    STANDARD_VM_CONTRACT;
 
     if (!s_enabled)
     {
@@ -380,36 +422,82 @@ void PerfMap::LogPreCompiledMethod(MethodDesc * pMethod, PCODE pCode)
         if (methodRegionInfo.hotSize > 0)
         {
             CrstHolder ch(&(s_csPerfMap));
-            PAL_PerfJitDump_LogMethod((void*)methodRegionInfo.hotStartAddress, methodRegionInfo.hotSize, name.GetUTF8(), nullptr, nullptr);
+            PerfJitDump_LogMethod((void*)methodRegionInfo.hotStartAddress, methodRegionInfo.hotSize, name.GetUTF8(), nullptr, nullptr, /*reportCodeBlock*/true);
         }
 
         if (methodRegionInfo.coldSize > 0)
         {
-            CrstHolder ch(&(s_csPerfMap));
-
             if (s_ShowOptimizationTiers)
             {
                 pMethod->GetFullMethodInfo(name);
                 name.Append(W("[PreJit-cold]"));
             }
 
-            PAL_PerfJitDump_LogMethod((void*)methodRegionInfo.coldStartAddress, methodRegionInfo.coldSize, name.GetUTF8(), nullptr, nullptr);
+            CrstHolder ch(&(s_csPerfMap));
+
+            PerfJitDump_LogMethod((void*)methodRegionInfo.coldStartAddress, methodRegionInfo.coldSize, name.GetUTF8(), nullptr, nullptr, /*reportCodeBlock*/true);
         }
     }
     EX_CATCH{} EX_END_CATCH
 }
 
-// Log a set of stub to the map.
-void PerfMap::LogStubs(const char* stubType, const char* stubOwner, PCODE pCode, size_t codeSize, PerfMapStubType stubAllocationType)
+#ifdef FEATURE_INTERPRETER
+// Log an interpreter IR bytecode range to the perfmap.
+// This allows symbolication from perf scripts, when the interpreter IP is allocated to a fixed
+// register in InterpExecMethod
+void PerfMap::LogInterpreterMethod(MethodDesc * pMethod, PCODE irAddress, size_t irSize)
 {
-    LIMITED_METHOD_CONTRACT;
+    CONTRACTL
+    {
+        STANDARD_VM_CHECK;
+        PRECONDITION(pMethod != nullptr);
+        PRECONDITION(irAddress != nullptr);
+        PRECONDITION(irSize > 0);
+    } CONTRACTL_END;
 
     if (!s_enabled)
     {
         return;
     }
 
-    if (stubAllocationType != PerfMapStubType::Individual)
+    EX_TRY
+    {
+        SString name;
+        pMethod->GetFullMethodInfo(name);
+
+        SString line;
+        line.Printf(FMT_CODE_ADDR " %zx [Interpreter] %s\n", (void*)irAddress, irSize,
+                    name.GetUTF8());
+
+        {
+            CrstHolder ch(&(s_csPerfMap));
+
+            if (s_Current != nullptr)
+            {
+                s_Current->WriteLine(line);
+            }
+        }
+    }
+    EX_CATCH{} EX_END_CATCH
+}
+#endif // FEATURE_INTERPRETER
+
+// Log a set of stub to the map.
+void PerfMap::LogStubs(const char* stubType, const char* stubOwner, PCODE pCode, size_t codeSize, PerfMapStubType stubAllocationType, bool applyGranularityFilter)
+{
+    CONTRACTL
+    {
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
+    }
+    CONTRACTL_END;
+
+    if (!s_enabled || !s_LogStubs)
+    {
+        return;
+    }
+
+    if (applyGranularityFilter && stubAllocationType != PerfMapStubType::Individual)
     {
         if ((stubAllocationType == PerfMapStubType::IndividualWithinBlock) != s_IndividualAllocationStubReporting)
         {
@@ -440,7 +528,7 @@ void PerfMap::LogStubs(const char* stubType, const char* stubOwner, PCODE pCode,
             name.Printf("stub<%d> %s<%s>", ++(s_StubsMapped), stubType, stubOwner);
         }
         SString line;
-        line.Printf(FMT_CODE_ADDR " %x %s\n", pCode, codeSize, name.GetUTF8());
+        line.Printf(FMT_CODE_ADDR " %zx %s\n", (void*)pCode, codeSize, name.GetUTF8());
 
         {
             CrstHolder ch(&(s_csPerfMap));
@@ -450,7 +538,14 @@ void PerfMap::LogStubs(const char* stubType, const char* stubOwner, PCODE pCode,
                 s_Current->WriteLine(line);
             }
 
-            PAL_PerfJitDump_LogMethod((void*)pCode, codeSize, name.GetUTF8(), nullptr, nullptr);
+            // For block-level stub allocations, the memory may be reserved but not yet committed.
+            // Emitting code bytes in that case can cause jitdump logging to fail, and the bytes
+            // are optional in the jitdump specification.
+            //
+            // Even when the memory is committed, block-level stubs are reported at commit time
+            // before the actual stub code has been written, so the code bytes would be zeros or
+            // uninitialized. We therefore skip code bytes for block allocations entirely.
+            PerfJitDump_LogMethod((void*)pCode, codeSize, name.GetUTF8(), nullptr, nullptr, /*reportCodeBlock*/ stubAllocationType != PerfMapStubType::Block);
         }
     }
     EX_CATCH{} EX_END_CATCH

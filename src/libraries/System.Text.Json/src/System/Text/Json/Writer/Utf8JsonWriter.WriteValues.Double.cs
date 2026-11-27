@@ -142,7 +142,7 @@ namespace System.Text.Json
 #endif
         }
 
-        internal void WriteNumberValueAsString(double value)
+        internal unsafe void WriteNumberValueAsString(double value)
         {
             Span<byte> utf8Number = stackalloc byte[JsonConstants.MaximumFormatDoubleLength];
             bool result = TryFormatDouble(value, utf8Number, out int bytesWritten);

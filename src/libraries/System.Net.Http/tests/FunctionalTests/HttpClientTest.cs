@@ -295,6 +295,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser, "Socket is not supported on Browser")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129223", typeof(PlatformDetection), nameof(PlatformDetection.IsWasi))]
         public async Task GetContentAsync_WhenCannotConnect_ExceptionContainsHostInfo()
         {
             const string Host = "localhost:1234";
@@ -756,6 +757,7 @@ namespace System.Net.Http.Functional.Tests
             Assert.Throws<ObjectDisposedException>(() => { client.GetStringAsync(CreateFakeUri()); });
             Assert.Throws<ObjectDisposedException>(() => { client.PostAsync(CreateFakeUri(), new ByteArrayContent(new byte[1])); });
             Assert.Throws<ObjectDisposedException>(() => { client.PutAsync(CreateFakeUri(), new ByteArrayContent(new byte[1])); });
+            Assert.Throws<ObjectDisposedException>(() => { client.QueryAsync(CreateFakeUri(), new ByteArrayContent(new byte[1])); });
             Assert.Throws<ObjectDisposedException>(() => { client.SendAsync(new HttpRequestMessage(HttpMethod.Get, CreateFakeUri())); });
             Assert.Throws<ObjectDisposedException>(() => { client.Send(new HttpRequestMessage(HttpMethod.Get, CreateFakeUri())); });
             Assert.Throws<ObjectDisposedException>(() => { client.Timeout = TimeSpan.FromSeconds(1); });
@@ -765,6 +767,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(false)]
         [InlineData(true)]
         [SkipOnPlatform(TestPlatforms.Browser, "System.Net.Sockets is not supported on this platform")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129223", typeof(PlatformDetection), nameof(PlatformDetection.IsWasi))]
         public void CancelAllPending_AllPendingOperationsCanceled(bool withInfiniteTimeout)
         {
             using (var client = new HttpClient(new CustomResponseHandler((r, c) => WhenCanceled<HttpResponseMessage>(c))))
@@ -783,6 +786,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(HttpCompletionOption.ResponseContentRead)]
         [InlineData(HttpCompletionOption.ResponseHeadersRead)]
         [SkipOnPlatform(TestPlatforms.Browser, "System.Net.Sockets is not supported on this platform")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129223", typeof(PlatformDetection), nameof(PlatformDetection.IsWasi))]
         public void Timeout_TooShort_AllPendingOperationsCanceled(HttpCompletionOption completionOption)
         {
             using (var client = new HttpClient(new CustomResponseHandler((r, c) => WhenCanceled<HttpResponseMessage>(c))))
@@ -820,6 +824,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(HttpCompletionOption.ResponseContentRead)]
         [InlineData(HttpCompletionOption.ResponseHeadersRead)]
         [SkipOnPlatform(TestPlatforms.Browser, "System.Net.Sockets is not supported on this platform")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129223", typeof(PlatformDetection), nameof(PlatformDetection.IsWasi))]
         public void Timeout_CallerCanceledTokenBeforeTimeout_TimeoutIsNotDetected(HttpCompletionOption completionOption)
         {
             using (var client = new HttpClient(new CustomResponseHandler((r, c) => WhenCanceled<HttpResponseMessage>(c))))
@@ -906,6 +911,34 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public async Task DefaultProxy_DoesNotKeepExecutionContextAlive()
+        {
+            await RemoteExecutor.Invoke(() =>
+            {
+                Environment.SetEnvironmentVariable("HTTP_PROXY", null);
+                Environment.SetEnvironmentVariable("HTTPS_PROXY", null);
+                Environment.SetEnvironmentVariable("ALL_PROXY", null);
+
+                WeakReference contextValue = InitializeDefaultProxy();
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+                GC.Collect();
+                Assert.False(contextValue.IsAlive);
+
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                static WeakReference InitializeDefaultProxy()
+                {
+                    var local = new AsyncLocal<object> { Value = new object() };
+                    var contextValue = new WeakReference(local.Value);
+                    Assert.NotNull(HttpClient.DefaultProxy);
+                    local.Value = null;
+                    return contextValue;
+                }
+            }).DisposeAsync();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public async Task DefaultProxy_SetGet_Roundtrips()
         {
             await RemoteExecutor.Invoke(() =>
@@ -978,6 +1011,92 @@ namespace System.Net.Http.Functional.Tests
             Assert.Throws<ObjectDisposedException>(() => { client.PatchAsync(CreateFakeUri(), new ByteArrayContent(new byte[1])); });
         }
 
+        [Fact]
+        public async Task QueryAsync_Canceled_Throws()
+        {
+            using (var client = new HttpClient(new CustomResponseHandler((r, c) => WhenCanceled<HttpResponseMessage>(c))))
+            {
+                var content = new ByteArrayContent(new byte[1]);
+                var cts = new CancellationTokenSource();
+
+                Task t1 = client.QueryAsync(CreateFakeUri(), content, cts.Token);
+
+                cts.Cancel();
+
+                TaskCanceledException tce = await Assert.ThrowsAsync<TaskCanceledException>(() => t1);
+                Assert.Equal(cts.Token, tce.CancellationToken);
+            }
+        }
+
+        [Fact]
+        public async Task QueryAsync_Success()
+        {
+            HttpRequestMessage? lastRequest = null;
+            using (var client = new HttpClient(new CustomResponseHandler((r, c) =>
+            {
+                lastRequest = r;
+                return Task.FromResult(new HttpResponseMessage());
+            })))
+            {
+                string fakeUriString = CreateFakeUri();
+                Uri fakeUri = new Uri(fakeUriString);
+                var content1 = new ByteArrayContent(new byte[1]);
+                var content2 = new ByteArrayContent(new byte[1]);
+                var content3 = new ByteArrayContent(new byte[1]);
+                var content4 = new ByteArrayContent(new byte[1]);
+
+                // 1. QueryAsync(string?, HttpContent?)
+                using (HttpResponseMessage response = await client.QueryAsync(fakeUriString, content1))
+                {
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                    Assert.NotNull(lastRequest);
+                    Assert.Equal(HttpMethod.Query, lastRequest.Method);
+                    Assert.Equal(fakeUri, lastRequest.RequestUri);
+                    Assert.Same(content1, lastRequest.Content);
+                }
+
+                // 2. QueryAsync(string?, HttpContent?, CancellationToken)
+                using (HttpResponseMessage response = await client.QueryAsync(fakeUriString, content2, CancellationToken.None))
+                {
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                    Assert.NotNull(lastRequest);
+                    Assert.Equal(HttpMethod.Query, lastRequest.Method);
+                    Assert.Equal(fakeUri, lastRequest.RequestUri);
+                    Assert.Same(content2, lastRequest.Content);
+                }
+
+                // 3. QueryAsync(Uri?, HttpContent?)
+                using (HttpResponseMessage response = await client.QueryAsync(fakeUri, content3))
+                {
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                    Assert.NotNull(lastRequest);
+                    Assert.Equal(HttpMethod.Query, lastRequest.Method);
+                    Assert.Equal(fakeUri, lastRequest.RequestUri);
+                    Assert.Same(content3, lastRequest.Content);
+                }
+
+                // 4. QueryAsync(Uri?, HttpContent?, CancellationToken)
+                using (HttpResponseMessage response = await client.QueryAsync(fakeUri, content4, CancellationToken.None))
+                {
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                    Assert.NotNull(lastRequest);
+                    Assert.Equal(HttpMethod.Query, lastRequest.Method);
+                    Assert.Equal(fakeUri, lastRequest.RequestUri);
+                    Assert.Same(content4, lastRequest.Content);
+                }
+            }
+        }
+
+        [Fact]
+        public void Dispose_UseQueryAfterDispose_Throws()
+        {
+            var client = new HttpClient(new CustomResponseHandler((r, c) => Task.FromResult(new HttpResponseMessage())));
+            client.Dispose();
+
+            Assert.Throws<ObjectDisposedException>(() => { client.QueryAsync(CreateFakeUri(), new ByteArrayContent(new byte[1])); });
+            Assert.Throws<ObjectDisposedException>(() => { client.QueryAsync(new Uri(CreateFakeUri()), new ByteArrayContent(new byte[1])); });
+        }
+
         [Theory]
         [InlineData(HttpCompletionOption.ResponseContentRead)]
         [InlineData(HttpCompletionOption.ResponseHeadersRead)]
@@ -1016,6 +1135,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(HttpCompletionOption.ResponseHeadersRead)]
         [SkipOnPlatform(TestPlatforms.Browser, "Synchronous Send is not supported on Browser")]
         [SkipOnPlatform(TestPlatforms.Android, "Synchronous Send is not supported on Android")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Synchronous Send is not supported on Wasi")]
         public async Task Send_SingleThread_Loopback_Succeeds(HttpCompletionOption completionOption)
         {
             string content = "Test content";
@@ -1071,6 +1191,7 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop]
         [SkipOnPlatform(TestPlatforms.Browser, "Synchronous Send is not supported on Browser")]
         [SkipOnPlatform(TestPlatforms.Android, "Synchronous Send is not supported on Android")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Synchronous Send is not supported on Wasi")]
         public async Task Send_CancelledRequestContent_Throws()
         {
             CancellationTokenSource cts = new CancellationTokenSource();
@@ -1117,7 +1238,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Fact]
         [OuterLoop]
-        [SkipOnPlatform(TestPlatforms.Android, "Synchronous Send is not supported on Android")]
+        [SkipOnPlatform(TestPlatforms.Android | TestPlatforms.Browser, "Synchronous Send is not supported on Android or Browser")]
         public async Task Send_TimeoutRequestContent_Throws()
         {
             var semaphore = new SemaphoreSlim(0);
@@ -1162,6 +1283,7 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop]
         [SkipOnPlatform(TestPlatforms.Browser, "Synchronous Send is not supported on Browser")]
         [SkipOnPlatform(TestPlatforms.Android, "Synchronous Send is not supported on Android")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Synchronous Send is not supported on Wasi")]
         public async Task Send_CancelledResponseContent_Throws()
         {
             string content = "Test content";
@@ -1214,6 +1336,7 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop]
         [SkipOnPlatform(TestPlatforms.Browser, "Synchronous Send is not supported on Browser")]
         [SkipOnPlatform(TestPlatforms.Android, "Synchronous Send is not supported on Android")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Synchronous Send is not supported on Wasi")]
         public async Task Send_TimeoutResponseContent_Throws()
         {
             const string Content = "Test content";
@@ -1272,6 +1395,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [MemberData(nameof(VersionSelectionMemberData))]
         [SkipOnPlatform(TestPlatforms.Browser, "Version is ignored on Browser")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Version is ignored on Wasi")]
         public async Task SendAsync_CorrectVersionSelected_LoopbackServer(Version requestVersion, HttpVersionPolicy versionPolicy, Version serverVersion, bool useSsl, object expectedResult)
         {
             await HttpAgnosticLoopbackServer.CreateClientAndServerAsync(
@@ -1322,6 +1446,7 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop("Uses external servers")]
         [MemberData(nameof(VersionSelectionMemberData))]
         [SkipOnPlatform(TestPlatforms.Browser, "Version is ignored on Browser")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Version is ignored on Wasi")]
         public async Task SendAsync_CorrectVersionSelected_ExternalServer(Version requestVersion, HttpVersionPolicy versionPolicy, Version serverVersion, bool useSsl, object expectedResult)
         {
             RemoteServer remoteServer = null;
@@ -1393,6 +1518,20 @@ namespace System.Net.Http.Functional.Tests
                 AssertExtensions.Throws<ArgumentNullException>("value", () => client.DefaultRequestVersion = null);
                 client.DefaultRequestVersion = new Version(1, 0); // still usable after
                 Assert.Equal(new Version(1, 0), client.DefaultRequestVersion);
+            }
+        }
+
+        [Theory]
+        [InlineData((HttpVersionPolicy)(-1))]
+        [InlineData((HttpVersionPolicy)3)]
+        [InlineData((HttpVersionPolicy)int.MaxValue)]
+        public void DefaultVersionPolicy_SetInvalidValue_ThrowsArgumentException(HttpVersionPolicy invalidValue)
+        {
+            using (var client = new HttpClient())
+            {
+                AssertExtensions.Throws<ArgumentException>("value", () => client.DefaultVersionPolicy = invalidValue);
+                client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact; // still usable after
+                Assert.Equal(HttpVersionPolicy.RequestVersionExact, client.DefaultVersionPolicy);
             }
         }
 
@@ -1639,6 +1778,7 @@ namespace System.Net.Http.Functional.Tests
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         [SkipOnPlatform(TestPlatforms.Android, "The Send method is not implemented on mobile platforms")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129223", typeof(PlatformDetection), nameof(PlatformDetection.IsWasi))]
         public void Send_NullRequest_ThrowsException()
         {
             using var client = new CustomHttpClient();

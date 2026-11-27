@@ -13,7 +13,7 @@ namespace System
         public static bool BinaryFormatterEnabled
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => GetCachedSwitchValue("System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization", ref s_binaryFormatterEnabled);
+            get => GetCachedSwitchValue("System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization", ref s_binaryFormatterEnabled, defaultValue: true);
         }
     }
 }

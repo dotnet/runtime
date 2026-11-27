@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
@@ -446,10 +447,10 @@ namespace System
         //
         public override bool Equals([NotNullWhen(true)] object? value) =>
             value is decimal other &&
-            DecCalc.VarDecCmp(in this, in other) == 0;
+            DecCalc.Equals(in this, in other);
 
         public bool Equals(decimal value) =>
-            DecCalc.VarDecCmp(in this, in value) == 0;
+            DecCalc.Equals(in this, in value);
 
         // Returns the hash code for this Decimal.
         //
@@ -460,7 +461,7 @@ namespace System
         //
         public static bool Equals(decimal d1, decimal d2)
         {
-            return DecCalc.VarDecCmp(in d1, in d2) == 0;
+            return DecCalc.Equals(in d1, in d2);
         }
 
         // Rounds a Decimal to an integer value. The Decimal argument is rounded
@@ -534,7 +535,7 @@ namespace System
 
         public static decimal Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Number, IFormatProvider? provider = null)
         {
-            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
+            NumberFormatInfo.ValidateParseStyleDecimal(style);
             return Number.ParseDecimal(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
@@ -550,20 +551,14 @@ namespace System
 
         public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out decimal result)
         {
-            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
-
-            if (s == null)
-            {
-                result = 0;
-                return false;
-            }
-            return Number.TryParseDecimal(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
+            NumberFormatInfo.ValidateParseStyleDecimal(style);
+            return Number.TryParseDecimal(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result, out _) == Number.ParsingStatus.OK;
         }
 
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out decimal result)
         {
-            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
-            return Number.TryParseDecimal(s, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
+            NumberFormatInfo.ValidateParseStyleDecimal(style);
+            return Number.TryParseDecimal(s, style, NumberFormatInfo.GetInstance(provider), out result, out _) == Number.ParsingStatus.OK;
         }
 
         // Returns a binary representation of a Decimal. The return value is an
@@ -962,6 +957,10 @@ namespace System
 
         public static explicit operator double(decimal value) => DecCalc.VarR8FromDec(in value);
 
+        internal static Half VarHalfFromDec(in decimal value) => DecCalc.VarHalfFromDec(in value);
+
+        internal static BFloat16 VarBFloat16FromDec(in decimal value) => DecCalc.VarBFloat16FromDec(in value);
+
         public static decimal operator +(decimal d) => d;
 
         public static decimal operator -(decimal d) => new decimal(in d, d._flags ^ SignMask);
@@ -1006,10 +1005,10 @@ namespace System
         }
 
         /// <inheritdoc cref="IEqualityOperators{TSelf, TOther, TResult}.op_Equality(TSelf, TOther)" />
-        public static bool operator ==(decimal d1, decimal d2) => DecCalc.VarDecCmp(in d1, in d2) == 0;
+        public static bool operator ==(decimal d1, decimal d2) => DecCalc.Equals(in d1, in d2);
 
         /// <inheritdoc cref="IEqualityOperators{TSelf, TOther, TResult}.op_Inequality(TSelf, TOther)" />
-        public static bool operator !=(decimal d1, decimal d2) => DecCalc.VarDecCmp(in d1, in d2) != 0;
+        public static bool operator !=(decimal d1, decimal d2) => !DecCalc.Equals(in d1, in d2);
 
         /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThan(TSelf, TOther)" />
         public static bool operator <(decimal d1, decimal d2) => DecCalc.VarDecCmp(in d1, in d2) < 0;
@@ -1119,10 +1118,12 @@ namespace System
         //
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.ConvertToInteger{TInteger}(TSelf)" />
+        [SuppressReadyToRunCanonicalRooting]
         public static TInteger ConvertToInteger<TInteger>(decimal value)
             where TInteger : IBinaryInteger<TInteger> => TInteger.CreateSaturating(value);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.ConvertToIntegerNative{TInteger}(TSelf)" />
+        [SuppressReadyToRunCanonicalRooting]
         public static TInteger ConvertToIntegerNative<TInteger>(decimal value)
             where TInteger : IBinaryInteger<TInteger> => TInteger.CreateSaturating(value);
 
@@ -1175,20 +1176,8 @@ namespace System
         {
             if (destination.Length >= (sizeof(uint) + sizeof(ulong)))
             {
-                uint hi32 = _hi32;
-                ulong lo64 = _lo64;
-
-                if (BitConverter.IsLittleEndian)
-                {
-                    hi32 = BinaryPrimitives.ReverseEndianness(hi32);
-                    lo64 = BinaryPrimitives.ReverseEndianness(lo64);
-                }
-
-                ref byte address = ref MemoryMarshal.GetReference(destination);
-
-                Unsafe.WriteUnaligned(ref address, hi32);
-                Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref address, sizeof(uint)), lo64);
-
+                BinaryPrimitives.WriteUInt32BigEndian(destination, _hi32);
+                BinaryPrimitives.WriteUInt64BigEndian(destination.Slice(sizeof(uint)), _lo64);
                 bytesWritten = sizeof(uint) + sizeof(ulong);
                 return true;
             }
@@ -1204,20 +1193,8 @@ namespace System
         {
             if (destination.Length >= (sizeof(ulong) + sizeof(uint)))
             {
-                ulong lo64 = _lo64;
-                uint hi32 = _hi32;
-
-                if (!BitConverter.IsLittleEndian)
-                {
-                    lo64 = BinaryPrimitives.ReverseEndianness(lo64);
-                    hi32 = BinaryPrimitives.ReverseEndianness(hi32);
-                }
-
-                ref byte address = ref MemoryMarshal.GetReference(destination);
-
-                Unsafe.WriteUnaligned(ref address, lo64);
-                Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref address, sizeof(ulong)), hi32);
-
+                BinaryPrimitives.WriteUInt64LittleEndian(destination, _lo64);
+                BinaryPrimitives.WriteUInt32LittleEndian(destination.Slice(sizeof(ulong)), _hi32);
                 bytesWritten = sizeof(ulong) + sizeof(uint);
                 return true;
             }
@@ -1313,6 +1290,7 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.CreateChecked{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         public static decimal CreateChecked<TOther>(TOther value)
             where TOther : INumberBase<TOther>
         {
@@ -1332,6 +1310,7 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.CreateSaturating{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         public static decimal CreateSaturating<TOther>(TOther value)
             where TOther : INumberBase<TOther>
         {
@@ -1351,6 +1330,7 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.CreateTruncating{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         public static decimal CreateTruncating<TOther>(TOther value)
             where TOther : INumberBase<TOther>
         {
@@ -1371,9 +1351,7 @@ namespace System
         /// <inheritdoc cref="INumberBase{TSelf}.IsCanonical(TSelf)" />
         public static bool IsCanonical(decimal value)
         {
-            uint scale = (byte)(value._flags >> ScaleShift);
-
-            if (scale == 0)
+            if ((value._flags & ScaleMask) == 0)
             {
                 // We have an exact integer represented with no trailing zero
                 return true;
@@ -1382,13 +1360,17 @@ namespace System
             // We have some value where some fractional part is specified. So,
             // if the least significant digit is 0, then we are not canonical
 
-            if (value._hi32 == 0)
+            ulong tmp = value._lo64;
+            if (value._hi32 != 0)
             {
-                return (value._lo64 % 10) != 0;
+                // The magnitude is high64 * 2^32 + low32. Since (a * b + c) % 10 depends only on a % 10,
+                // reduce high64 first, then fold in low32.
+                tmp = ((ulong)value._hi32 << 32) | (tmp >> 32);
+                tmp %= 10;
+                tmp = (tmp << 32) | (uint)value._lo64;
             }
 
-            var significand = new UInt128(value._hi32, value._lo64);
-            return (significand % 10U) != 0U;
+            return (tmp % 10) != 0;
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.IsComplexNumber(TSelf)" />
@@ -1423,7 +1405,7 @@ namespace System
         static bool INumberBase<decimal>.IsNegativeInfinity(decimal value) => false;
 
         /// <inheritdoc cref="INumberBase{TSelf}.IsNormal(TSelf)" />
-        static bool INumberBase<decimal>.IsNormal(decimal value) => value != 0;
+        static bool INumberBase<decimal>.IsNormal(decimal value) => (value._hi32 | value._lo64) != 0;
 
         /// <inheritdoc cref="INumberBase{TSelf}.IsOddInteger(TSelf)" />
         public static bool IsOddInteger(decimal value)
@@ -1445,20 +1427,19 @@ namespace System
         static bool INumberBase<decimal>.IsSubnormal(decimal value) => false;
 
         /// <inheritdoc cref="INumberBase{TSelf}.IsZero(TSelf)" />
-        static bool INumberBase<decimal>.IsZero(decimal value) => (value == 0);
+        static bool INumberBase<decimal>.IsZero(decimal value) => (value._hi32 | value._lo64) == 0;
 
         /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitude(TSelf, TSelf)" />
         public static decimal MaxMagnitude(decimal x, decimal y)
         {
-            decimal ax = Abs(x);
-            decimal ay = Abs(y);
+            int c = DecCalc.VarDecCmp(Abs(x), Abs(y));
 
-            if (ax > ay)
+            if (c > 0)
             {
                 return x;
             }
 
-            if (ax == ay)
+            if (c == 0)
             {
                 return IsNegative(x) ? y : x;
             }
@@ -1472,15 +1453,14 @@ namespace System
         /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitude(TSelf, TSelf)" />
         public static decimal MinMagnitude(decimal x, decimal y)
         {
-            decimal ax = Abs(x);
-            decimal ay = Abs(y);
+            int c = DecCalc.VarDecCmp(Abs(x), Abs(y));
 
-            if (ax < ay)
+            if (c < 0)
             {
                 return x;
             }
 
-            if (ax == ay)
+            if (c == 0)
             {
                 return IsNegative(x) ? x : y;
             }
@@ -1496,9 +1476,11 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromChecked{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         static bool INumberBase<decimal>.TryConvertFromChecked<TOther>(TOther value, out decimal result) => TryConvertFromChecked(value, out result);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         private static bool TryConvertFromChecked<TOther>(TOther value, out decimal result)
             where TOther : INumberBase<TOther>
         {
@@ -1562,6 +1544,7 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromSaturating{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         static bool INumberBase<decimal>.TryConvertFromSaturating<TOther>(TOther value, out decimal result)
         {
             return TryConvertFrom(value, out result);
@@ -1569,12 +1552,14 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromTruncating{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         static bool INumberBase<decimal>.TryConvertFromTruncating<TOther>(TOther value, out decimal result)
         {
             return TryConvertFrom(value, out result);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         private static bool TryConvertFrom<TOther>(TOther value, out decimal result)
             where TOther : INumberBase<TOther>
         {
@@ -1620,7 +1605,7 @@ namespace System
             else if (typeof(TOther) == typeof(UInt128))
             {
                 UInt128 actualValue = (UInt128)(object)value;
-                result = (actualValue >= new UInt128(0x0000_0000_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)) ? MaxValue : (decimal)actualValue;
+                result = actualValue.Upper > uint.MaxValue ? MaxValue : (decimal)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(nuint))
@@ -1638,6 +1623,7 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToChecked{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         static bool INumberBase<decimal>.TryConvertToChecked<TOther>(decimal value, [MaybeNullWhen(false)] out TOther result)
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
@@ -1712,6 +1698,7 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToSaturating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         static bool INumberBase<decimal>.TryConvertToSaturating<TOther>(decimal value, [MaybeNullWhen(false)] out TOther result)
         {
             return TryConvertTo(value, out result);
@@ -1719,12 +1706,14 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToTruncating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         static bool INumberBase<decimal>.TryConvertToTruncating<TOther>(decimal value, [MaybeNullWhen(false)] out TOther result)
         {
             return TryConvertTo(value, out result);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         private static bool TryConvertTo<TOther>(decimal value, [MaybeNullWhen(false)] out TOther result)
             where TOther : INumberBase<TOther>
         {
@@ -1803,6 +1792,27 @@ namespace System
             }
         }
 
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParsePartial(string, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        public static bool TryParsePartial([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out decimal result, out int charsConsumed)
+        {
+            NumberFormatInfo.ValidateParseStyleDecimal(style);
+            return Number.TryParseDecimal(s.AsSpan(), style | Number.AllowTrailingInvalidCharacters, NumberFormatInfo.GetInstance(provider), out result, out charsConsumed) == Number.ParsingStatus.OK;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParsePartial(ReadOnlySpan{char}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        public static bool TryParsePartial(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out decimal result, out int charsConsumed)
+        {
+            NumberFormatInfo.ValidateParseStyleDecimal(style);
+            return Number.TryParseDecimal(s, style | Number.AllowTrailingInvalidCharacters, NumberFormatInfo.GetInstance(provider), out result, out charsConsumed) == Number.ParsingStatus.OK;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParsePartial(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        public static bool TryParsePartial(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out decimal result, out int bytesConsumed)
+        {
+            NumberFormatInfo.ValidateParseStyleDecimal(style);
+            return Number.TryParseDecimal(utf8Text, style | Number.AllowTrailingInvalidCharacters, NumberFormatInfo.GetInstance(provider), out result, out bytesConsumed) == Number.ParsingStatus.OK;
+        }
+
         //
         // IParsable
         //
@@ -1834,15 +1844,15 @@ namespace System
         /// <inheritdoc cref="INumberBase{TSelf}.Parse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?)" />
         public static decimal Parse(ReadOnlySpan<byte> utf8Text, NumberStyles style = NumberStyles.Number, IFormatProvider? provider = null)
         {
-            NumberFormatInfo.ValidateParseStyleInteger(style);
+            NumberFormatInfo.ValidateParseStyleDecimal(style);
             return Number.ParseDecimal(utf8Text, style, NumberFormatInfo.GetInstance(provider));
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?, out TSelf)" />
         public static bool TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out decimal result)
         {
-            NumberFormatInfo.ValidateParseStyleInteger(style);
-            return Number.TryParseDecimal(utf8Text, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
+            NumberFormatInfo.ValidateParseStyleDecimal(style);
+            return Number.TryParseDecimal(utf8Text, style, NumberFormatInfo.GetInstance(provider), out result, out _) == Number.ParsingStatus.OK;
         }
 
         /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.Parse(ReadOnlySpan{byte}, IFormatProvider?)" />

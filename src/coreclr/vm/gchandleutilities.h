@@ -350,46 +350,30 @@ inline void DestroyTypedHandle(OBJECTHANDLE handle)
 // Handle holders/wrappers
 
 #ifndef FEATURE_NATIVEAOT
-typedef Wrapper<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, DestroyHandle>                   OHWrapper;
-typedef Wrapper<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, DestroyPinningHandle, 0>      PinningHandleHolder;
-typedef Wrapper<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, DestroyAsyncPinningHandle, 0> AsyncPinningHandleHolder;
-typedef Wrapper<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, DestroyRefcountedHandle>         RefCountedOHWrapper;
-
-typedef Holder<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, DestroyLongWeakHandle>            LongWeakHandleHolder;
-typedef Holder<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, DestroyGlobalStrongHandle>        GlobalStrongHandleHolder;
-typedef Holder<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, DestroyGlobalShortWeakHandle>     GlobalShortWeakHandleHolder;
-typedef Holder<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, DestroyWeakInteriorHandle>        WeakInteriorHandleHolder;
-typedef Holder<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, ResetOBJECTHANDLE>                ObjectInHandleHolder;
-
-class RCOBJECTHANDLEHolder : public RefCountedOHWrapper
+template<void (*RELEASE)(OBJECTHANDLE)>
+struct ObjectHandleHolderTraits final
 {
-public:
-    FORCEINLINE RCOBJECTHANDLEHolder(OBJECTHANDLE p = NULL) : RefCountedOHWrapper(p)
-    {
-        LIMITED_METHOD_CONTRACT;
-    }
-    FORCEINLINE void operator=(OBJECTHANDLE p)
+    using Type = OBJECTHANDLE;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type handle) noexcept
     {
         WRAPPER_NO_CONTRACT;
-
-        RefCountedOHWrapper::operator=(p);
+        if (handle != NULL)
+            RELEASE(handle);
     }
 };
 
-class OBJECTHANDLEHolder : public OHWrapper
-{
-public:
-    FORCEINLINE OBJECTHANDLEHolder(OBJECTHANDLE p = NULL) : OHWrapper(p)
-    {
-        LIMITED_METHOD_CONTRACT;
-    }
-    FORCEINLINE void operator=(OBJECTHANDLE p)
-    {
-        WRAPPER_NO_CONTRACT;
+using OBJECTHANDLEHolder = LifetimeHolder<ObjectHandleHolderTraits<DestroyHandle>>;
+using PinningHandleHolder = LifetimeHolder<ObjectHandleHolderTraits<DestroyPinningHandle>>;
+using LongWeakHandleHolder = LifetimeHolder<ObjectHandleHolderTraits<DestroyLongWeakHandle>>;
+using GlobalStrongHandleHolder = LifetimeHolder<ObjectHandleHolderTraits<DestroyGlobalStrongHandle>>;
+using GlobalShortWeakHandleHolder = LifetimeHolder<ObjectHandleHolderTraits<DestroyGlobalShortWeakHandle>>;
+using WeakInteriorHandleHolder = LifetimeHolder<ObjectHandleHolderTraits<DestroyWeakInteriorHandle>>;
+using StrongHandleHolder = LifetimeHolder<ObjectHandleHolderTraits<DestroyStrongHandle>>;
+using RefcountedHandleHolder = LifetimeHolder<ObjectHandleHolderTraits<DestroyRefcountedHandle>>;
 
-        OHWrapper::operator=(p);
-    }
-};
+// Clears the object without destroying the handle.
+using ObjectInHandleHolder = LifetimeHolder<ObjectHandleHolderTraits<ResetOBJECTHANDLE>>;
 
 #endif // !FEATURE_NATIVEAOT
 

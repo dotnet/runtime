@@ -97,7 +97,7 @@ namespace
                                     // to include the UnsafeAccessorTypeAttribute types.
         MetaSig DeclarationMetaSig;
         NewArrayHolder<ParamDetails> TranslatedParams; // Redefined types from UnsafeAccessorTypeAttribute usage.
-                                                       // Return type is at 0 index. Function arguments are 1 to N.
+                                                            // Return type is at 0 index. Function arguments are 1 to N.
         SigPointer TargetTypeSig;
         TypeHandle TargetType;
         bool IsTargetStatic;
@@ -849,7 +849,7 @@ namespace
     {
         STANDARD_VM_CONTRACT;
 
-        NewHolder<ILStubResolver> ilResolver = new ILStubResolver();
+        NewHolder<ILStubResolver> ilResolver(new ILStubResolver());
 
         // Initialize the resolver target details.
         ilResolver->SetStubMethodDesc(cxt.Declaration);
@@ -1020,7 +1020,7 @@ namespace
 
         // Generate all IL associated data for JIT
         *methodILDecoder = ilResolver->FinalizeILStub(&sl);
-        *resolver = ilResolver.Extract();
+        *resolver = ilResolver.Detach();
     }
 }
 
@@ -1172,7 +1172,7 @@ bool MethodDesc::TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMET
     return true;
 }
 
-extern "C" void* QCALLTYPE UnsafeAccessors_ResolveGenericParamToTypeHandle(MethodDesc* unsafeAccessorMethod, BOOL isMethodParam, DWORD paramIndex)
+extern "C" void* QCALLTYPE UnsafeAccessors_ResolveGenericParamToTypeHandle(MethodDesc* unsafeAccessorMethod, BOOL isMethodParam, DWORD paramIndex, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
     _ASSERTE(unsafeAccessorMethod != NULL);

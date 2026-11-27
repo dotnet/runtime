@@ -24,6 +24,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             AssertExtensions.Throws<ArgumentNullException>("ipAddress", () => builder.AddIpAddress(null));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("upn", () => builder.AddUserPrincipalName(null));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("upn", () => builder.AddUserPrincipalName(string.Empty));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("registeredId", () => builder.AddRegisteredId(null));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("registeredId", () => builder.AddRegisteredId(string.Empty));
         }
 
         [Fact]
@@ -163,6 +165,25 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         }
 
         [Fact]
+        public static void SingleValue_RegisteredId()
+        {
+            SubjectAlternativeNameBuilder builder = new();
+
+            builder.AddRegisteredId("1.2.3.4");
+
+            X509Extension extension = builder.Build();
+            Assert.Equal(SubjectAltNameOid, extension.Oid.Value);
+            Assert.Equal("300588032A0304", extension.RawData.ByteArrayToHex());
+        }
+
+        [Fact]
+        public static void SingleValue_RegisteredId_InvalidOid()
+        {
+            SubjectAlternativeNameBuilder builder = new();
+            Assert.Throws<CryptographicException>(() => builder.AddRegisteredId("not-an-oid"));
+        }
+
+        [Fact]
         public static void MultiValue()
         {
             // This produces the same value as the "ComplexGetNameInfo" certificate/test suite.
@@ -204,6 +225,22 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             Assert.Equal(
                 expectedHex,
                 extension.RawData.ByteArrayToHex());
+        }
+
+        [Fact]
+        public static void MultiValue_WithRegisteredId()
+        {
+            const string expectedHex = "3021820F7777772E6578616D706C652E6F726788032A030487047F0000018803550403";
+
+            SubjectAlternativeNameBuilder builder = new();
+            builder.AddDnsName("www.example.org");
+            builder.AddRegisteredId("1.2.3.4");
+            builder.AddIpAddress(IPAddress.Loopback);
+            builder.AddRegisteredId("2.5.4.3");
+
+            X509Extension extension = builder.Build();
+            Assert.Equal(SubjectAltNameOid, extension.Oid.Value);
+            Assert.Equal(expectedHex, extension.RawData.ByteArrayToHex());
         }
 
         [Fact]

@@ -14,7 +14,6 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.Tests
 {
-    [TestCategory("native")]
     public class PInvokeTableGeneratorTests : PInvokeTableGeneratorTestsBase
     {
         public PInvokeTableGeneratorTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
@@ -23,6 +22,153 @@ namespace Wasm.Build.Tests
         }
 
         [Theory]
+        [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { false })]
+        [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { true })]
+        [TestCategory("native"), TestCategory("coreclr"), TestCategory("workload"), TestCategory("wasm-opt")]
+        public async Task UnusedQCallsAreTrimmed(Configuration config, bool aot, bool useQCall)
+        {
+            string extraProperties = "<WasmBuildNative>true</WasmBuildNative><WasmEmitSymbolMap>true</WasmEmitSymbolMap>";
+            if (useQCall)
+                extraProperties += "<DefineConstants>$(DefineConstants);USE_QCALL</DefineConstants>";
+
+            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, $"qcall_{useQCall}", extraProperties: extraProperties);
+            ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "QCallTrimming.cs"));
+            ReplaceMainJsWithMinimalRunMain();
+
+            PublishProject(info, config, new PublishOptions(AOT: aot, AssertAppBundle: false,
+                ExtraMSBuildArgs: ReadyToRunTests.GetR2RBuildArgs(config)), isNativeBuild: true);
+
+            string nativeBuildDir = Path.Combine(_projectDir, "obj", config.ToString(), DefaultTargetFramework, "wasm", "for-publish");
+            string symbols = File.ReadAllText(Path.Combine(nativeBuildDir, "dotnet.native.js.symbols"));
+            Assert.Equal(useQCall, symbols.Contains("GCInterface_GetTotalMemory", StringComparison.Ordinal));
+
+            string table = File.ReadAllText(Path.Combine(nativeBuildDir, "callhelpers-pinvoke.cpp"));
+            Assert.Contains("const void* ResolveRuntimeHelperEntrypoint(const char* name)", table);
+            Assert.Equal(useQCall, table.Contains("{ \"GCInterface_GetTotalMemory\",", StringComparison.Ordinal));
+            Assert.DoesNotContain("{\"QCall\",", table);
+
+            RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(config, TestScenario: "DotnetRun", ExpectedExitCode: 42));
+            Assert.Contains(result.TestOutput, line => line.Contains("QCall trimming sample passed", StringComparison.Ordinal));
+        }
+
+        [Theory]
+        [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { false, false })]
+        [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { true, false })]
+        [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { false, true })]
+        [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { true, true })]
+        [TestCategory("native"), TestCategory("coreclr"), TestCategory("workload")]
+        public async Task UnusedCoreLibEntryPointsAreTrimmed(Configuration config, bool aot, bool useEntryPoints, bool readyToRun)
+        {
+            string extraProperties = $"<WasmBuildNative>true</WasmBuildNative><WasmEmitSymbolMap>true</WasmEmitSymbolMap><AllowUnsafeBlocks>true</AllowUnsafeBlocks><PublishTrimmed>true</PublishTrimmed><PublishReadyToRun>{readyToRun}</PublishReadyToRun>";
+            if (useEntryPoints)
+                extraProperties += "<DefineConstants>$(DefineConstants);USE_ENTRYPOINTS</DefineConstants>";
+
+            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, $"entrypoints_{useEntryPoints}_{readyToRun}", extraProperties: extraProperties);
+            ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "CoreLibEntryPointTrimming.cs"));
+            ReplaceMainJsWithMinimalRunMain();
+            PublishProject(info, config, new PublishOptions(AOT: aot, AssertAppBundle: false,
+                ExtraMSBuildArgs: ReadyToRunTests.GetR2RBuildArgs(config)), isNativeBuild: true);
+
+            string nativeBuildDir = Path.Combine(_projectDir, "obj", config.ToString(), DefaultTargetFramework, "wasm", "for-publish");
+            string symbols = File.ReadAllText(Path.Combine(nativeBuildDir, "dotnet.native.js.symbols"));
+            string table = File.ReadAllText(Path.Combine(nativeBuildDir, "callhelpers-pinvoke.cpp"));
+            Assert.Contains("const void* ResolveRuntimeHelperEntrypoint(const char* name)", table);
+            Assert.DoesNotContain("{\"QCall\",", table);
+            foreach (string entryPoint in new[] { "GCInterface_GetTotalMemory", "Math_Asinh" })
+            {
+                Assert.Equal(useEntryPoints, symbols.Split('\n').Any(line => line.TrimEnd('\r').EndsWith($":{entryPoint}", StringComparison.Ordinal)));
+                Assert.Equal(useEntryPoints, table.Contains($"{{ \"{entryPoint}\",", StringComparison.Ordinal));
+            }
+            Assert.False(File.Exists(Path.Combine(nativeBuildDir, "callhelpers-ecalls.cpp")));
+
+            RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(config, TestScenario: "DotnetRun", ExpectedExitCode: 42));
+            Assert.Contains(result.TestOutput, line => line.Contains("CoreLib entrypoint trimming sample passed", StringComparison.Ordinal));
+
+            if (useEntryPoints)
+                return;
+
+            string linkedDir = Path.GetRelativePath(_projectDir, Path.Combine(GetObjDir(config), "linked")) + Path.DirectorySeparatorChar;
+            Assert.True(File.Exists(Path.Combine(_projectDir, linkedDir, "System.Private.CoreLib.dll")));
+            UpdateFile(Path.Combine("Common", "Program.cs"), new Dictionary<string, string>
+            {
+                { "#if USE_ENTRYPOINTS", "#if true" },
+            });
+            PublishProject(info, config, new PublishOptions(AOT: aot, AssertAppBundle: false, UseCache: false, Label: "untrimmed",
+                ExtraMSBuildArgs: $"{ReadyToRunTests.GetR2RBuildArgs(config)} -p:PublishTrimmed=false -p:IntermediateLinkDir={linkedDir}"), isNativeBuild: true);
+
+            symbols = File.ReadAllText(Path.Combine(nativeBuildDir, "dotnet.native.js.symbols"));
+            table = File.ReadAllText(Path.Combine(nativeBuildDir, "callhelpers-pinvoke.cpp"));
+            foreach (string entryPoint in new[] { "GCInterface_GetTotalMemory", "Math_Asinh" })
+            {
+                Assert.Contains(symbols.Split('\n'), line => line.TrimEnd('\r').EndsWith($":{entryPoint}", StringComparison.Ordinal));
+                Assert.Contains($"{{ \"{entryPoint}\",", table);
+            }
+
+            result = await RunForPublishWithWebServer(new BrowserRunOptions(config, TestScenario: "DotnetRun", ExpectedExitCode: 42));
+            Assert.Contains(result.TestOutput, line => line.Contains("CoreLib entrypoint trimming sample passed", StringComparison.Ordinal));
+        }
+
+        [Theory]
+        [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { false, "entry" })]
+        [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { true, "entry" })]
+        [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { true, "list" })]
+        [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { true, "module" })]
+        [TestCategory("native"), TestCategory("coreclr"), TestCategory("workload")]
+        public async Task DirectPInvokeBindsListedEntryPoints(Configuration config, bool aot, bool readyToRun, string form)
+        {
+            const string ListFileName = "direct-pinvokes.txt";
+            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, $"directpinvoke_{readyToRun}_{form}",
+                extraProperties: $"<PublishReadyToRun>{readyToRun}</PublishReadyToRun><AllowUnsafeBlocks>true</AllowUnsafeBlocks>" +
+                    (form == "module" ? "<DefineConstants>$(DefineConstants);DIRECT_PINVOKE_WHOLE_MODULE</DefineConstants>" : ""),
+                extraItems: form switch
+                {
+                    "list" => $"<DirectPInvokeList Include=\"{ListFileName}\" />",
+                    "module" => "<DirectPInvoke Include=\"libc\" />",
+                    _ => "<DirectPInvoke Include=\"libc!strlen\" />",
+                });
+            if (form == "list")
+                File.WriteAllText(Path.Combine(_projectDir, ListFileName), "# Bound statically\nlibc!strlen\n");
+            ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "DirectPInvoke.cs"));
+            ReplaceMainJsWithMinimalRunMain();
+
+            PublishProject(info, config, new PublishOptions(AOT: aot, AssertAppBundle: false,
+                ExtraMSBuildArgs: ReadyToRunTests.GetR2RBuildArgs(config)), isNativeBuild: true);
+
+            string nativeBuildDir = Path.Combine(_projectDir, "obj", config.ToString(), DefaultTargetFramework, "wasm", "for-publish");
+            string table = File.ReadAllText(Path.Combine(nativeBuildDir, "callhelpers-pinvoke.cpp"));
+            Assert.Contains("{ \"strlen\", (void*)&direct_pinvoke::strlen },", table);
+            Assert.Single(table.Split('\n'), line => line.Contains("__asm__(\"strlen\")", StringComparison.Ordinal));
+            Assert.Contains("{\"libc\", s_libc, 1}", table);
+            Assert.DoesNotContain("definitely_not_in_libc", table);
+
+            RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(config, TestScenario: "DotnetRun", ExpectedExitCode: 42));
+            Assert.Contains(result.TestOutput, line => line.Contains("DirectPInvoke sample passed", StringComparison.Ordinal));
+        }
+
+        [Theory]
+        [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { false })]
+        [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { true })]
+        [TestCategory("native"), TestCategory("coreclr"), TestCategory("workload")]
+        public async Task DirectPInvokeSkipsIncompatibleSignatures(Configuration config, bool aot, bool readyToRun)
+        {
+            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, $"directpinvoke_incompatible_{readyToRun}",
+                extraProperties: $"<PublishReadyToRun>{readyToRun}</PublishReadyToRun><AllowUnsafeBlocks>true</AllowUnsafeBlocks><DefineConstants>$(DefineConstants);DIRECT_PINVOKE_CONFLICT</DefineConstants>",
+                extraItems: "<DirectPInvoke Include=\"libc!strlen\" /><DirectPInvoke Include=\"libc!llabs\" /><DirectPInvoke Include=\"libc!open\" />");
+            ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "DirectPInvoke.cs"));
+            ReplaceMainJsWithMinimalRunMain();
+
+            (_, string output) = PublishProject(info, config, new PublishOptions(AOT: aot, AssertAppBundle: false,
+                ExtraMSBuildArgs: ReadyToRunTests.GetR2RBuildArgs(config)), isNativeBuild: true);
+            Assert.Contains("Found a native function (llabs) with signatures that lower to different WebAssembly signatures in libc", output);
+            Assert.Contains("Found a native function (open) with varargs in libc", output);
+
+            RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(config, TestScenario: "DotnetRun", ExpectedExitCode: 42));
+            Assert.Contains(result.TestOutput, line => line.Contains("DirectPInvoke sample passed", StringComparison.Ordinal));
+        }
+
+        // Only Mono's generator rejects a non-blittable callback signature; crossgen2 leaves the
+        // check to Roslyn and the runtime.
+        [Theory, TestCategory("mono")]
         [BuildAndRun()]
         public void UnmanagedStructAndMethodIn_SameAssembly_WithoutDisableRuntimeMarshallingAttribute_NotConsideredBlittable
                         (Configuration config, bool aot)
@@ -91,19 +237,49 @@ namespace Wasm.Build.Tests
                     new object[] { /*libraryHasAttribute*/ true, /*appHasAttribute*/ true, /*expectSuccess*/ true }
                 ).UnwrapItemsAsArrays();
 
-        [Theory]
+        // The library's struct is made non-blittable by a type the generator recognises by name, which
+        // only Mono's generator still does. Kept here so that path stays covered; the CoreCLR
+        // equivalent is the LayoutKind.Auto theory below.
+        [Theory, TestCategory("mono")]
         [MemberData(nameof(SeparateAssemblyWithDisableMarshallingAttributeTestData), parameters: Configuration.Debug)]
         [MemberData(nameof(SeparateAssemblyWithDisableMarshallingAttributeTestData), parameters: Configuration.Release)]
-        public async Task UnmanagedStructsAreConsideredBlittableFromDifferentAssembly
+        public Task UnmanagedStructsAreConsideredBlittableFromDifferentAssembly
                         (Configuration config, bool aot, bool libraryHasAttribute, bool appHasAttribute, bool expectSuccess)
+            => BlittableFromDifferentAssembly(
+                config, aot, libraryHasAttribute, appHasAttribute, expectSuccess, useAutoLayout: false);
+
+        // Same scenario, with the struct made non-blittable by its layout rather than by a name only a
+        // test can produce. What is under test either way is that the DisableRuntimeMarshalling the
+        // generator honours is the one on the assembly declaring the callback, not the struct.
+        [Theory, TestCategory("mono")]
+        [MemberData(nameof(SeparateAssemblyWithDisableMarshallingAttributeTestData), parameters: Configuration.Debug)]
+        [MemberData(nameof(SeparateAssemblyWithDisableMarshallingAttributeTestData), parameters: Configuration.Release)]
+        public Task UnmanagedStructsAreConsideredBlittableFromDifferentAssembly_WithAutoLayout
+                        (Configuration config, bool aot, bool libraryHasAttribute, bool appHasAttribute, bool expectSuccess)
+            => BlittableFromDifferentAssembly(
+                config, aot, libraryHasAttribute, appHasAttribute, expectSuccess, useAutoLayout: true);
+
+        private async Task BlittableFromDifferentAssembly
+                        (Configuration config, bool aot, bool libraryHasAttribute, bool appHasAttribute, bool expectSuccess, bool useAutoLayout)
         {
             string extraProperties = aot ? string.Empty : "<WasmBuildNative>true</WasmBuildNative>";
             string extraItems =  @$"<ProjectReference Include=""..\\Library\\Library.csproj"" />";
             string libRelativePath = Path.Combine("..", "Library", "Library.cs");
             string programRelativePath = Path.Combine("Common", "Program.cs");
-            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "blittable_different_library", extraProperties: extraProperties, extraItems: extraItems);
+            string prefix = useAutoLayout ? "blittable_different_library_auto" : "blittable_different_library";
+            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, prefix, extraProperties: extraProperties, extraItems: extraItems);
             ReplaceFile(libRelativePath, Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "BittableDifferentAssembly_Lib.cs"));
             ReplaceFile(programRelativePath, Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "BittableDifferentAssembly.cs"));
+            if (useAutoLayout)
+            {
+                // Drop the marker type and let the layout make S non-blittable instead.
+                UpdateFile(libRelativePath, new Dictionary<string, string>
+                {
+                    { "public struct __NonBlittableTypeForAutomatedTests__ { }", "" },
+                    { "public struct S {", "[System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Auto)]\n    public struct S {" },
+                    { "public __NonBlittableTypeForAutomatedTests__ NonBlittable;", "public float Value2;" },
+                });
+            }
             if (!libraryHasAttribute)
             {
                 UpdateFile(libRelativePath, new Dictionary<string, string> { { "[assembly: System.Runtime.CompilerServices.DisableRuntimeMarshalling]", "" } });
@@ -180,98 +356,53 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun()]
-        public void IcallWithOverloadedParametersAndEnum(Configuration config, bool aot)
+        public async Task UnmanagedCallersOnly_Nested(Configuration config, bool aot)
         {
-            string appendToTheEnd =
-            """
-                <UsingTask TaskName="ManagedToNativeGenerator" AssemblyFile="###WasmAppBuilder###" />
-                <Target Name="Build">
-                  <PropertyGroup>
-                    <WasmPInvokeTablePath>pinvoke-table.h</WasmPInvokeTablePath>
-                    <WasmInterpToNativeTablePath>wasm_m2n_invoke.g.h</WasmInterpToNativeTablePath>
-                    <WasmRuntimeICallTablePath>runtime-icall-table.h</WasmRuntimeICallTablePath>
-                  </PropertyGroup>
+            // Regression coverage for the wasm reverse-P/Invoke (native-to-interp) thunk key of a
+            // nested [UnmanagedCallersOnly] type. Reflection reports the enclosing namespace for a
+            // nested type while the runtime reads the (empty) metadata namespace; if PInvokeCollector
+            // emits the reflection namespace the key never matches, so the lookup returns null -
+            // CoreCLR asserts on the first cold ldftn and Mono traps as "null function". Executed on
+            // browser-wasm in CI for both the Mono and CoreCLR generators (the wasi leg is build-only).
+            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "cb_nested");
+            string programRelativePath = Path.Combine("Common", "Program.cs");
+            ReplaceFile(programRelativePath, Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "UnmanagedCallbackNested.cs"));
 
-                  <ItemGroup>
-                    <WasmPInvokeModule Include="libSystem.Native" />
-                    ###WasmPInvokeModule###
-                  </ItemGroup>
+            string output = PublishForVariadicFunctionTests(info, config, aot);
+            Assert.DoesNotMatch(".*(warning|error).*>[A-Z0-9]+__Foo", output);
 
-                  <ManagedToNativeGenerator
-                    Assemblies="@(WasmPInvokeAssembly)"
-                    PInvokeModules="@(WasmPInvokeModule)"
-                    PInvokeOutputPath="$(WasmPInvokeTablePath)"
-                    RuntimeIcallTableFile="$(WasmRuntimeICallTablePath)"
-                    InterpToNativeOutputPath="$(WasmInterpToNativeTablePath)">
-                    <Output TaskParameter="FileWrites" ItemName="FileWrites" />
-                  </ManagedToNativeGenerator>
-                </Target>
-            """;
+            RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(
+                config,
+                TestScenario: "DotnetRun",
+                ExpectedExitCode: 42
+            ));
+            Assert.Contains("Namespaced.Outer.Nested.C", result.TestOutput);
+            Assert.Contains("Namespaced.Outer.Nested.Deeper.D", result.TestOutput);
+        }
 
-            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "icall_enum", insertAtEnd: appendToTheEnd);
-            // build a library containing icalls with overloaded parameters.
-            ReplaceFile(Path.Combine("..", "Library", "Library.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "ICall_Lib.cs"));
-            // temporarily change the project directory to build the library
-            _projectDir = Path.Combine(_projectDir, "..", "Library");
-            bool isPublish = false;
-            // libraries do not have framework dirs
-            string hypotheticalFrameworkDir = Path.Combine(GetBinFrameworkDir(config, isPublish));
-            string libAssemblyPath = Path.Combine(hypotheticalFrameworkDir, "..", "..");
-            BuildProject(info, config, new BuildOptions(AssertAppBundle: false, AOT: aot));
-            // restore the project directory
-            _projectDir = Path.Combine(_projectDir, "..", "App");
+        [Theory]
+        [BuildAndRun()]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/130739")]
+        public async Task UnmanagedCallersOnly_NestedConflict(Configuration config, bool aot)
+        {
+            // The reverse-P/Invoke thunk key drops the enclosing-type chain, keying only on the
+            // simple type name plus the (empty) nested namespace. Two nested types that share a
+            // simple name under different enclosing types therefore collide and currently fail the
+            // build. This encodes the desired behavior (both callbacks resolve and run) and is
+            // skipped until #130739 removes the limitation.
+            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "cb_nested_conflict");
+            string programRelativePath = Path.Combine("Common", "Program.cs");
+            ReplaceFile(programRelativePath, Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "UnmanagedCallbackNestedConflict.cs"));
 
-            string icallTable =
-            """
-            [
-             { "klass":"Interop", "icalls": [{} 	,{ "name": "Square(Numbers)", "func": "ves_abc", "handles": false }
-            	,{ "name": "Add(Numbers,Numbers)", "func": "ves_def", "handles": false }
-            ]}
-            ]
+            PublishForVariadicFunctionTests(info, config, aot);
 
-            """;
-            UpdateFile(Path.Combine(_projectDir, "runtime-icall-table.h"), icallTable);
-
-            string tasksBaseDir = Path.Combine(s_buildEnv.WorkloadPacksDir,
-                                                "Microsoft.NET.Runtime.WebAssembly.Sdk",
-                                                s_buildEnv.GetRuntimePackVersion(DefaultTargetFramework),
-                                                "tasks");
-            if (!Directory.Exists(tasksBaseDir))
-                throw new DirectoryNotFoundException($"Could not find tasks base directory {tasksBaseDir}");
-
-            string[] taskDirectories = Directory.GetDirectories(tasksBaseDir);
-            // select the first non-net4.x directory
-            string? tasksDir = taskDirectories.FirstOrDefault(dir =>
-            {
-                string tfm = Path.GetFileName(dir);
-                return tfm.StartsWith("net", StringComparison.OrdinalIgnoreCase) && !tfm.StartsWith("net4", StringComparison.OrdinalIgnoreCase);
-            });
-
-            if (string.IsNullOrEmpty(tasksDir))
-                throw new DirectoryNotFoundException($"Could not find any valid TFM directories in {tasksBaseDir} : {string.Join(", ", taskDirectories)}");
-
-            string? taskPath = Directory.EnumerateFiles(tasksDir, "WasmAppBuilder.dll", SearchOption.AllDirectories)
-                                            .FirstOrDefault();
-            if (string.IsNullOrEmpty(taskPath))
-                throw new FileNotFoundException($"Could not find WasmAppBuilder.dll in {tasksDir}");
-
-            _testOutput.WriteLine("Using WasmAppBuilder.dll from {0}", taskPath);
-
-            string AddAssembly(string assemblyLocation, string name) => $"<WasmPInvokeAssembly Include=\"{Path.Combine(assemblyLocation, name + ".dll")}\" />";
-            string frameworkDir = Path.Combine(GetBinFrameworkDir(config, isPublish));
-            string appAssemblyPath = Path.Combine(frameworkDir, "..", "..");
-            string pinvokeReplacement =
-                AddAssembly(appAssemblyPath, "System.Private.CoreLib") +
-                AddAssembly(appAssemblyPath, "System.Runtime") +
-                AddAssembly(libAssemblyPath, "Library");
-            UpdateFile("WasmBasicTestApp.csproj", new Dictionary<string, string> {
-                { "###WasmPInvokeModule###", pinvokeReplacement },
-                { "###WasmAppBuilder###", taskPath }
-            });
-
-            // Build a project with ManagedToNativeGenerator task reading icalls from the above library and runtime-icall-table.h
-            (_, string output) = BuildProject(info, config, new BuildOptions(UseCache: false, AOT: aot));
-            Assert.DoesNotMatch(".*warning.*Numbers", output);
+            RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(
+                config,
+                TestScenario: "DotnetRun",
+                ExpectedExitCode: 42
+            ));
+            Assert.Contains("Conflicting.OuterA.Conflict.C", result.TestOutput);
+            Assert.Contains("Conflicting.OuterB.Conflict.C", result.TestOutput);
         }
 
         [Theory]
@@ -288,6 +419,10 @@ namespace Wasm.Build.Tests
             ReplaceFile(programRelativePath, Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "BuildNative.cs"));
             string cCodeFilename = "simple.c";
             File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", cCodeFilename), Path.Combine(_projectDir, cCodeFilename));
+            // The BuildNative test program does not use JS interop, so the JS interop assembly
+            // would be linked away by the trimmer (CoreCLR-Wasm) and the template main.js (which
+            // calls getAssemblyExports) would fail at startup.
+            ReplaceMainJsWithMinimalRunMain();
 
             var extraEnvVars = new Dictionary<string, string> {
                 { "LANG", culture },
@@ -328,13 +463,14 @@ namespace Wasm.Build.Tests
             // FIXME: Not possible in in-process mode for some reason, even with verbosity at "diagnostic"
             // Assert.Contains("Adding pinvoke signature FD for method 'Test.", output);
 
-            string pinvokeTable = File.ReadAllText(Path.Combine(objDir, "pinvoke-table.h"));
+            string pinvokeTable = File.ReadAllText(Path.Combine(objDir, "callhelpers-pinvoke.cpp"));
             // Verify that the invoke is in the pinvoke table. Under various circumstances we will silently skip it,
             //  for example if the module isn't found
-            Assert.Contains("\"accept_double_struct_and_return_float_struct\", accept_double_struct_and_return_float_struct", pinvokeTable);
+            string pinvokeTableEntry = "{ \"accept_double_struct_and_return_float_struct\", (void*)&direct_pinvoke::accept_double_struct_and_return_float_struct }";
+            Assert.Contains(pinvokeTableEntry, pinvokeTable);
             // Verify the signature of the C function prototype. Wasm ABI specifies that the structs should both decompose into scalars.
-            Assert.Contains("float accept_double_struct_and_return_float_struct (double);", pinvokeTable);
-            Assert.Contains("int64_t accept_and_return_i64_struct (int64_t);", pinvokeTable);
+            Assert.Contains("float accept_double_struct_and_return_float_struct (double)", pinvokeTable);
+            Assert.Contains("int64_t accept_and_return_i64_struct (int64_t)", pinvokeTable);
 
             var runOptions = new BrowserRunOptions(config, TestScenario: "DotnetRun", ExpectedExitCode: 3);
             RunResult result = isPublish ? await RunForPublishWithWebServer(runOptions) : await RunForBuildWithDotnetRun(runOptions);
@@ -347,20 +483,75 @@ namespace Wasm.Build.Tests
             Assert.Contains(result.TestOutput, m => m.Contains("iares[0]=32"));
             Assert.Contains(result.TestOutput, m => m.Contains("iares[1]=2"));
             Assert.Contains("fares.elements[1]=2", result.TestOutput);
+            // https://github.com/dotnet/runtime/issues/112262: 64-bit enum pinvoke args
+            Assert.Contains("eu (eu)=18374966859414961921", result.TestOutput);
+            Assert.Contains("ei (ei)=-2", result.TestOutput);
         }
 
         [Theory]
         [BuildAndRun(aot: true, config: Configuration.Release)]
+        [TestCategory("native"), TestCategory("mono")]
         public async Task EnsureWasmAbiRulesAreFollowedInAOT(Configuration config, bool aot) =>
             await EnsureWasmAbiRulesAreFollowed(config, aot);
 
         [Theory]
         [BuildAndRun(aot: false)]
+        [TestCategory("native")]
         public async Task EnsureWasmAbiRulesAreFollowedInInterpreter(Configuration config, bool aot) =>
             await EnsureWasmAbiRulesAreFollowed(config, aot);
 
         [Theory]
+        [BuildAndRun(aot: false)]
+        [TestCategory("native")]
+        public void UnsupportedOSPlatformPInvokeIsSkipped(Configuration config, bool aot)
+        {
+            // https://github.com/dotnet/runtime/issues/110870: a Windows-only pinvoke with
+            // non-blittable parameters must be skipped (not analyzed) when building for the
+            // browser, so it must not emit WASM0060/WASM0062/WASM0001.
+            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "osplatform_pinvoke",
+                extraProperties: "<WasmBuildNative>true</WasmBuildNative>");
+            ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "UnsupportedOSPlatform.cs"));
+            (_, string output) = BuildProject(info, config, new BuildOptions(AssertAppBundle: false, AOT: aot), isNativeBuild: true);
+            Assert.DoesNotContain("WASM0001", output);
+            Assert.DoesNotContain("WASM0060", output);
+            Assert.DoesNotContain("WASM0062", output);
+        }
+
+        [Theory]
+        [BuildAndRun(aot: false)]
+        [TestCategory("native")]
+        public async Task VersionedOSPlatformPInvokeIsIncluded(Configuration config, bool aot)
+        {
+            // Regression coverage for https://github.com/dotnet/runtime/issues/132297:
+            // a versioned platform attribute like [SupportedOSPlatform("browser1.0")] must still
+            // be treated as matching TargetOS=browser, so the pinvoke must be kept (not silently
+            // filtered out), while a versioned attribute for a different OS (e.g. "windows1.0")
+            // must still be filtered out.
+            string extraItems = @"<NativeFileReference Include=""versioned-osplatform.c"" />";
+            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "versioned_osplatform_pinvoke",
+                extraItems: extraItems, extraProperties: "<WasmBuildNative>true</WasmBuildNative>");
+            ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "VersionedOSPlatform.cs"));
+            File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", "versioned-osplatform.c"), Path.Combine(_projectDir, "versioned-osplatform.c"));
+
+            (_, string output) = BuildProject(info, config, new BuildOptions(AssertAppBundle: false, AOT: aot), isNativeBuild: true);
+            Assert.DoesNotContain("WASM0001", output);
+
+            string objDir = Path.Combine(_projectDir, "obj", config.ToString(), DefaultTargetFramework, "wasm", "for-build");
+            string pinvokeTable = File.ReadAllText(Path.Combine(objDir, "callhelpers-pinvoke.cpp"));
+
+            string includedPInvokeTableEntry = "{ \"versioned_browser_add\", (void*)&direct_pinvoke::versioned_browser_add }";
+            Assert.Contains(includedPInvokeTableEntry, pinvokeTable);
+
+            string excludedPInvokeTableEntry = "\"versioned_windows_add\"";
+            Assert.DoesNotContain(excludedPInvokeTableEntry, pinvokeTable);
+
+            RunResult result = await RunForBuildWithDotnetRun(new BrowserRunOptions(config, TestScenario: "DotnetRun", ExpectedExitCode: 42));
+            Assert.Contains("sum: 42", result.TestOutput);
+        }
+
+        [Theory]
         [BuildAndRun(aot: true, config: Configuration.Release)]
+        [TestCategory("native"), TestCategory("mono")]
         public void EnsureComInteropCompilesInAOT(Configuration config, bool aot)
         {
             ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "com");
@@ -369,6 +560,19 @@ namespace Wasm.Build.Tests
             (string libraryDir, string output) = isPublish ?
                 PublishProject(info, config, new PublishOptions(AOT: aot)) :
                 BuildProject(info, config, new BuildOptions(AOT: aot));
+        }
+
+        [Theory]
+        [BuildAndRun(aot: true, config: Configuration.Release)]
+        [TestCategory("native"), TestCategory("mono")]
+        public void EnsureUnmanagedCallConvCompilesInAOT(Configuration config, bool aot)
+        {
+            // Regression coverage for https://github.com/dotnet/runtime/issues/136351: decoding the
+            // CallConvs of [UnmanagedCallConv] allocated a managed Type[] inside the AOT compiler,
+            // which asserted in sgen while the native wrappers were built.
+            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "unmanaged_callconv");
+            ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "UnmanagedCallConv.cs"));
+            PublishProject(info, config, new PublishOptions(AOT: aot));
         }
 
         [Theory]
@@ -381,6 +585,10 @@ namespace Wasm.Build.Tests
             ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "UnmanagedCallback.cs"));
             string cCodeFilename = "local.c";
             File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", cCodeFilename), Path.Combine(_projectDir, cCodeFilename));
+            // The UnmanagedCallback test program does not use JS interop, so the JS interop assembly
+            // would be linked away by the trimmer (CoreCLR-Wasm) and the template main.js (which
+            // calls getAssemblyExports) would fail at startup.
+            ReplaceMainJsWithMinimalRunMain();
 
             PublishProject(info, config, new PublishOptions(AOT: aot), isNativeBuild: true);
             RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(
@@ -390,6 +598,36 @@ namespace Wasm.Build.Tests
             ));
             Assert.DoesNotContain("Conflict.A.Managed8\u4F60Func(123) -> 123", result.TestOutput);
             Assert.Contains("ManagedFunc returned 42", result.TestOutput);
+        }
+
+        [Theory]
+        [BuildAndRun(aot: false)]
+        public async Task UnmanagedCallbackWithManyArgs(Configuration config, bool aot)
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/109338:
+            // [UnmanagedCallersOnly] exports with more than MAX_INTERP_ENTRY_ARGS (8)
+            // arguments trapped with "null function or function signature mismatch"
+            // when invoked from native code.
+            var extraProperties = "<AllowUnsafeBlocks>true</AllowUnsafeBlocks>";
+            var extraItems = @"<NativeFileReference Include=""local.c"" />";
+            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "uco_manyargs", extraItems: extraItems, extraProperties: extraProperties);
+            ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "UnmanagedCallbackManyArgs.cs"));
+            File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", "local_manyargs.c"), Path.Combine(_projectDir, "local.c"));
+            // The test program does not use JS interop, so the JS interop assembly would be
+            // linked away by the trimmer and the template main.js (which calls
+            // getAssemblyExports) would fail at startup.
+            ReplaceMainJsWithMinimalRunMain();
+
+            PublishProject(info, config, new PublishOptions(AOT: aot), isNativeBuild: true);
+            RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(
+                config,
+                TestScenario: "DotnetRun",
+                ExpectedExitCode: 42
+            ));
+            Assert.Contains("ManagedSum8 returned 36", result.TestOutput);
+            Assert.Contains("ManagedSum9 returned 45", result.TestOutput);
+            Assert.Contains("ManagedSum16 returned 136", result.TestOutput);
+            Assert.Contains("ManagedVoid12 stored 78", result.TestOutput);
         }
     }
 }

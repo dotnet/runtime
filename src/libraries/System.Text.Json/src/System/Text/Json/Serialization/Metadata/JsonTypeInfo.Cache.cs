@@ -9,11 +9,6 @@ namespace System.Text.Json.Serialization.Metadata
 {
     public abstract partial class JsonTypeInfo
     {
-        /// <summary>
-        /// Cached typeof(object). It is faster to cache this than to call typeof(object) multiple times.
-        /// </summary>
-        internal static readonly Type ObjectType = typeof(object);
-
         // The number of parameters the deserialization constructor has. If this is not equal to ParameterCache.Count, this means
         // that not all parameters are bound to object properties, and an exception will be thrown if deserialization is attempted.
         internal int ParameterCount { get; private protected set; }
@@ -33,7 +28,7 @@ namespace System.Text.Json.Serialization.Metadata
             get
             {
                 Debug.Assert(IsConfigured);
-                return _parameterCache != null;
+                return _parameterCache is not null;
             }
         }
 
@@ -181,7 +176,7 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 PropertyRef[] newCache = cacheBuilder.ToArray();
                 Debug.Assert(newCache.Length <= PropertyRefCacheBuilder.MaxCapacity);
-                _utf8PropertyCache = cacheBuilder.ToArray();
+                _utf8PropertyCache = newCache;
             }
 
             frame.PropertyRefCacheBuilder = null;

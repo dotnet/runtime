@@ -91,7 +91,6 @@ namespace HostActivation.Tests
             Command.Create(app.AppExe)
                 .EnableTracingAndCaptureOutputs()
                 .DotNetRoot("non_existent_path")
-                .MultilevelLookup(false)
                 .EnvironmentVariable(
                     Constants.TestOnlyEnvironmentVariables.GloballyRegisteredPath,
                     HostTestContext.BuiltDotNet.BinPath)
@@ -110,7 +109,6 @@ namespace HostActivation.Tests
             Command.Create(app.AppExe)
                 .EnableTracingAndCaptureOutputs()
                 .DotNetRoot(app.Location)
-                .MultilevelLookup(false)
                 .EnvironmentVariable(
                     Constants.TestOnlyEnvironmentVariables.GloballyRegisteredPath,
                     HostTestContext.BuiltDotNet.BinPath)

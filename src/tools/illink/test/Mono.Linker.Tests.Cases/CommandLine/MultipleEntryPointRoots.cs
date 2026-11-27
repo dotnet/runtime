@@ -8,8 +8,8 @@ namespace Mono.Linker.Tests.Cases.CommandLine;
 
 [ExpectNonZeroExitCode(1)]
 [SetupCompileBefore("other.exe", new[] { "Dependencies/MultipleEntryPointRoots_Lib.cs" })]
-[SetupLinkerArgument("-a", "test.exe", "entrypoint")]
-[SetupLinkerArgument("-a", "other.exe", "entrypoint")]
+[SetupLinkerArgument("-a", "test", "entrypoint")]
+[SetupLinkerArgument("-a", "other", "entrypoint")]
 [LogContains("IL1048")]
 [NoLinkedOutput]
 public class MultipleEntryPointRoots

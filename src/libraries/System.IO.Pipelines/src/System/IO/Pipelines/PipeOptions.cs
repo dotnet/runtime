@@ -34,14 +34,19 @@ namespace System.IO.Pipelines
         {
             MinimumSegmentSize = minimumSegmentSize == -1 ? DefaultMinimumSegmentSize : minimumSegmentSize;
 
-            // TODO: These *should* be computed based on how much users want to buffer and the minimum segment size. Today we don't have a way
-            // to let users specify the maximum buffer size, so we pick a reasonable number based on defaults. They can influence
-            // how much gets buffered by increasing the minimum segment size.
-
-            // With a default segment size of 4K this maps to 16K
-            InitialSegmentPoolSize = 4;
-
-            // With a default segment size of 4K this maps to 1MB. If the pipe has large segments this will be bigger than 1MB...
+            // Cap the per-pipe segment-object pool to bound memory in edge cases.
+            // Buffers are returned to the MemoryPool on Reset() before a segment is pooled, so a
+            // pooled BufferSegment holds no bytes buffers and itself is ~96 bytes on 64-bit.
+            // The cap therefore costs at most ~24 KB per pipe (256 * ~96 bytes);
+            // the backing memory is pooled separately.
+            //
+            // Normal pipes never approach this cap. The pool only grows to the peak number of
+            // simultaneously-live segments, which for a throttled pipe is roughly
+            // PauseWriterThreshold / MinimumSegmentSize - with the defaults that is
+            // 64 KB / 4 KB = ~16 segments. Reaching 256 requires either a very large
+            // PauseWriterThreshold (>= 256 * MinimumSegmentSize, e.g. 1 MB of unconsumed data at
+            // 4 KB segments) or an unbounded pipe (pauseWriterThreshold: 0) whose producer
+            // consistently outruns the consumer.
             MaxSegmentPoolSize = 256;
 
             // By default, we'll throttle the writer at 64K of buffered data
@@ -117,11 +122,6 @@ namespace System.IO.Pipelines
         /// Returns true if Pool is <see cref="MemoryPool{Byte}"/>.Shared
         /// </summary>
         internal bool IsDefaultSharedMemoryPool { get; }
-
-        /// <summary>
-        /// The initialize size of the segment pool
-        /// </summary>
-        internal int InitialSegmentPoolSize { get; }
 
         /// <summary>
         /// The maximum number of segments to pool

@@ -174,6 +174,9 @@
   <data name="net_http_content_stream_copy_error" xml:space="preserve">
     <value>Error while copying content to a stream.</value>
   </data>
+  <data name="net_http_content_buffer_stream_disposed" xml:space="preserve">
+    <value>The stream passed to SerializeToStream(Async) is owned by HttpContent and must not be disposed by user code.</value>
+  </data>
   <data name="net_http_content_read_as_stream_has_task" xml:space="preserve">
     <value>The content's stream has already been retrieved via async ReadAsStreamAsync and cannot be subsequently accessed synchronously.</value>
   </data>
@@ -321,6 +324,9 @@
   <data name="net_http_invalid_response_chunk_terminator_invalid" xml:space="preserve">
     <value>Received an invalid chunk terminator: '{0}'.</value>
   </data>
+  <data name="net_http_invalid_response_chunk_line_ending" xml:space="preserve">
+    <value>Received an invalid chunk line ending. Chunked encoding lines must be terminated by CRLF.</value>
+  </data>
   <data name="net_http_invalid_response_status_line" xml:space="preserve">
     <value>Received an invalid status line: '{0}'.</value>
   </data>
@@ -420,6 +426,9 @@
   <data name="net_http_http2_invalidinitialstreamwindowsize" xml:space="preserve">
     <value>The initial HTTP/2 stream window size must be between {0} and {1}.</value>
   </data>
+  <data name="net_http_http2_frame_limit_exceeded" xml:space="preserve">
+    <value>The HTTP/2 connection was aborted because the size of the frame queue exceeded an internal limit.</value>
+  </data>
   <data name="net_MethodNotImplementedException" xml:space="preserve">
     <value>This method is not implemented by this class.</value>
   </data>
@@ -491,6 +500,9 @@
   </data>
   <data name="net_http_content_write_larger_than_content_length" xml:space="preserve">
     <value>Unable to write content to request stream; content would exceed Content-Length.</value>
+  </data>
+  <data name="net_http_qpack_invalid_index" xml:space="preserve">
+    <value>The HTTP/3 server attempted to reference the static table index {0}, which does not exist.</value>
   </data>
   <data name="net_http_qpack_no_dynamic_table" xml:space="preserve">
     <value>The HTTP/3 server attempted to reference a dynamic table index that does not exist.</value>
@@ -583,7 +595,7 @@
     <value>The HTTP/1.1 response chunk was too large.</value>
   </data>
   <data name="net_unsupported_extended_connect" xml:space="preserve">
-    <value>Failed to establish web socket connection over HTTP/2 because extended CONNECT is not supported. Try to downgrade the request version to HTTP/1.1.</value>
+    <value>The HTTP/2 server does not support extended CONNECT requests. Try to downgrade the request version to HTTP/1.1.</value>
   </data>
   <data name="net_ping_request_timed_out" xml:space="preserve">
     <value>The HTTP/2 server didn't respond to a ping request within the configured KeepAlivePingDelay.</value>

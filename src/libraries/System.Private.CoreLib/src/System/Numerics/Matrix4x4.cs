@@ -3,6 +3,10 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.Wasm;
+using System.Runtime.Intrinsics.X86;
 
 namespace System.Numerics
 {
@@ -16,6 +20,11 @@ namespace System.Numerics
         internal const int RowCount = 4;
         internal const int ColumnCount = 4;
 
+        private const float BillboardEpsilon = 1e-4f;
+        private const float BillboardMinAngle = 1.0f - (0.1f * (float.Pi / 180.0f)); // 0.1 degrees
+        private const float DecomposeEpsilon = 0.0001f;
+        private const float InvertEpsilon = 2.938737E-39f;
+
         // In an ideal world, we'd have 4x Vector4 fields. However, Matrix4x4 was shipped with
         // 16x public float fields and as such we cannot change the "backing" fields without it being
         // a breaking change. Likewise, we cannot switch to using something like ExplicitLayout
@@ -25,6 +34,26 @@ namespace System.Numerics
         // value type bitcasts as a no-op. Effectively the entire implementation is here in this type
         // and the public facing Matrix4x4 just defers to it with simple reinterpret casts inserted
         // at the relevant points.
+
+        [UnscopedRef]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal ref Impl AsImpl() => ref Unsafe.As<Matrix4x4, Impl>(ref this);
+
+        [UnscopedRef]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal readonly ref readonly Impl AsROImpl() => ref Unsafe.As<Matrix4x4, Impl>(ref Unsafe.AsRef(in this));
+
+        internal struct Impl
+        {
+            [UnscopedRef]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public ref Matrix4x4 AsM4x4() => ref Unsafe.As<Impl, Matrix4x4>(ref this);
+
+            public Vector128<float> X;
+            public Vector128<float> Y;
+            public Vector128<float> Z;
+            public Vector128<float> W;
+        }
 
         /// <summary>The first element of the first row.</summary>
         /// <remarks>This element exists at index: <c>[0, 0]</c> and is part of row <see cref="X" />.</remarks>
@@ -107,6 +136,7 @@ namespace System.Numerics
         /// <param name="m42">The value to assign to <see cref="M42" />.</param>
         /// <param name="m43">The value to assign to <see cref="M43" />.</param>
         /// <param name="m44">The value to assign to <see cref="M44" />.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Matrix4x4(float m11, float m12, float m13, float m14,
                          float m21, float m22, float m23, float m24,
                          float m31, float m32, float m33, float m34,
@@ -123,6 +153,7 @@ namespace System.Numerics
         /// <summary>Initializes a <see cref="Matrix4x4" /> using the specified <see cref="Matrix3x2" />.</summary>
         /// <param name="value">The <see cref="Matrix3x2" /> to assign to the first two elements of <see cref="X" />, <see cref="Y" />, and <see cref="W" />.</param>
         /// <remarks>The last two elements of <see cref="X" />, <see cref="Y" />, and <see cref="W" /> are initialized to zero; while <see cref="Z" /> is initialized to <see cref="Vector4.UnitZ" />.</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Matrix4x4(Matrix3x2 value)
         {
             this = Create(value);
@@ -133,7 +164,17 @@ namespace System.Numerics
         public static Matrix4x4 Identity
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => Create(Vector4.UnitX, Vector4.UnitY, Vector4.UnitZ, Vector4.UnitW);
+            get
+            {
+                Impl result;
+
+                result.X = Vector128.CreateScalar(1.0f);
+                result.Y = Vector128.Create(0.0f, 1.0f, 0.0f, 0.0f);
+                result.Z = Vector128.Create(0.0f, 0.0f, 1.0f, 0.0f);
+                result.W = Vector128.Create(0.0f, 0.0f, 0.0f, 1.0f);
+
+                return result.AsM4x4();
+            }
         }
 
         /// <summary>Indicates whether the current matrix is the identity matrix.</summary>
@@ -141,10 +182,14 @@ namespace System.Numerics
         public readonly bool IsIdentity
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => (X == Vector4.UnitX)
-                && (Y == Vector4.UnitY)
-                && (Z == Vector4.UnitZ)
-                && (W == Vector4.UnitW);
+            get
+            {
+                ref readonly Impl impl = ref AsROImpl();
+                return (impl.X == Vector128.CreateScalar(1.0f)) &&
+                       (impl.Y == Vector128.Create(0.0f, 1.0f, 0.0f, 0.0f)) &&
+                       (impl.Z == Vector128.Create(0.0f, 0.0f, 1.0f, 0.0f)) &&
+                       (impl.W == Vector128.Create(0.0f, 0.0f, 0.0f, 1.0f));
+            }
         }
 
         /// <summary>Gets or sets the translation component of this matrix.</summary>
@@ -152,10 +197,14 @@ namespace System.Numerics
         public Vector3 Translation
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            readonly get => W.AsVector3();
+            readonly get => AsROImpl().W.AsVector3();
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set => W = Vector4.Create(value, W.W);
+            set
+            {
+                ref Impl impl = ref AsImpl();
+                impl.W = value.AsVector128Unsafe().WithElement(3, impl.W.GetElement(3));
+            }
         }
 
         /// <summary>Gets or sets the first row of the matrix.</summary>
@@ -163,10 +212,10 @@ namespace System.Numerics
         public Vector4 X
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            readonly get => AsROImpl().X;
+            readonly get => AsROImpl().X.AsVector4();
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set => AsImpl().X = value;
+            set => AsImpl().X = value.AsVector128();
         }
 
         /// <summary>Gets or sets the second row of the matrix.</summary>
@@ -174,10 +223,10 @@ namespace System.Numerics
         public Vector4 Y
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            readonly get => AsROImpl().Y;
+            readonly get => AsROImpl().Y.AsVector4();
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set => AsImpl().Y = value;
+            set => AsImpl().Y = value.AsVector128();
         }
 
         /// <summary>Gets or sets the third row of the matrix.</summary>
@@ -185,10 +234,10 @@ namespace System.Numerics
         public Vector4 Z
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            readonly get => AsROImpl().Z;
+            readonly get => AsROImpl().Z.AsVector4();
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set => AsImpl().Z = value;
+            set => AsImpl().Z = value.AsVector128();
         }
 
         /// <summary>Gets or sets the fourth row of the matrix.</summary>
@@ -196,10 +245,10 @@ namespace System.Numerics
         public Vector4 W
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            readonly get => AsROImpl().W;
+            readonly get => AsROImpl().W.AsVector4();
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set => AsImpl().W = value;
+            set => AsImpl().W = value.AsVector128();
         }
 
         /// <summary>Gets or sets the row at the specified index.</summary>
@@ -225,22 +274,22 @@ namespace System.Numerics
                     {
                         case 0:
                         {
-                            return impl.X;
+                            return impl.X.AsVector4();
                         }
 
                         case 1:
                         {
-                            return impl.Y;
+                            return impl.Y.AsVector4();
                         }
 
                         case 2:
                         {
-                            return impl.Z;
+                            return impl.Z.AsVector4();
                         }
 
                         case 3:
                         {
-                            return impl.W;
+                            return impl.W.AsVector4();
                         }
 
                         default:
@@ -256,7 +305,7 @@ namespace System.Numerics
                     {
                         ThrowHelper.ThrowArgumentOutOfRangeException();
                     }
-                    return Unsafe.Add(ref Unsafe.AsRef(in impl.X), row);
+                    return Unsafe.Add(ref Unsafe.AsRef(in impl.X), row).AsVector4();
                 }
             }
 
@@ -271,25 +320,25 @@ namespace System.Numerics
                     {
                         case 0:
                         {
-                            impl.X = value;
+                            impl.X = value.AsVector128();
                             break;
                         }
 
                         case 1:
                         {
-                            impl.Y = value;
+                            impl.Y = value.AsVector128();
                             break;
                         }
 
                         case 2:
                         {
-                            impl.Z = value;
+                            impl.Z = value.AsVector128();
                             break;
                         }
 
                         case 3:
                         {
-                            impl.W = value;
+                            impl.W = value.AsVector128();
                             break;
                         }
 
@@ -306,7 +355,7 @@ namespace System.Numerics
                     {
                         ThrowHelper.ThrowArgumentOutOfRangeException();
                     }
-                    Unsafe.Add(ref Unsafe.AsRef(in impl.X), row) = value;
+                    Unsafe.Add(ref Unsafe.AsRef(in impl.X), row) = value.AsVector128();
                 }
             }
         }
@@ -333,10 +382,10 @@ namespace System.Numerics
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             readonly get
             {
+                ref readonly Impl impl = ref AsROImpl();
+
                 if (RuntimeHelpers.IsKnownConstant(row) && RuntimeHelpers.IsKnownConstant(column))
                 {
-                    ref readonly Impl impl = ref AsROImpl();
-
                     switch (row)
                     {
                         case 0:
@@ -372,17 +421,17 @@ namespace System.Numerics
                     {
                         ThrowHelper.ThrowArgumentOutOfRangeException();
                     }
-                    return Unsafe.Add(ref Unsafe.AsRef(in M11), (row * ColumnCount) + column);
+                    return Unsafe.Add(ref Unsafe.As<Impl, float>(ref Unsafe.AsRef(in impl)), (row * ColumnCount) + column);
                 }
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             set
             {
+                ref Impl impl = ref AsImpl();
+
                 if (RuntimeHelpers.IsKnownConstant(row) && RuntimeHelpers.IsKnownConstant(column))
                 {
-                    ref Impl impl = ref AsImpl();
-
                     switch (row)
                     {
                         case 0:
@@ -422,7 +471,7 @@ namespace System.Numerics
                     {
                         ThrowHelper.ThrowArgumentOutOfRangeException();
                     }
-                    Unsafe.Add(ref Unsafe.AsRef(in M11), (row * ColumnCount) + column) = value;
+                    Unsafe.Add(ref Unsafe.As<Impl, float>(ref Unsafe.AsRef(in impl)), (row * ColumnCount) + column) = value;
                 }
             }
         }
@@ -434,7 +483,19 @@ namespace System.Numerics
         /// <remarks>The <see cref="op_Addition" /> method defines the operation of the addition operator for <see cref="Matrix4x4" /> objects.</remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Matrix4x4 operator +(Matrix4x4 value1, Matrix4x4 value2)
-            => (value1.AsImpl() + value2.AsImpl()).AsM4x4();
+        {
+            ref readonly Impl left = ref value1.AsROImpl();
+            ref readonly Impl right = ref value2.AsROImpl();
+
+            Impl result;
+
+            result.X = left.X + right.X;
+            result.Y = left.Y + right.Y;
+            result.Z = left.Z + right.Z;
+            result.W = left.W + right.W;
+
+            return result.AsM4x4();
+        }
 
         /// <summary>Returns a value that indicates whether the specified matrices are equal.</summary>
         /// <param name="value1">The first matrix to compare.</param>
@@ -443,7 +504,15 @@ namespace System.Numerics
         /// <remarks>Two matrices are equal if all their corresponding elements are equal.</remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(Matrix4x4 value1, Matrix4x4 value2)
-            => value1.AsImpl() == value2.AsImpl();
+        {
+            ref readonly Impl left = ref value1.AsROImpl();
+            ref readonly Impl right = ref value2.AsROImpl();
+
+            return (left.X == right.X)
+                && (left.Y == right.Y)
+                && (left.Z == right.Z)
+                && (left.W == right.W);
+        }
 
         /// <summary>Returns a value that indicates whether the specified matrices are not equal.</summary>
         /// <param name="value1">The first matrix to compare.</param>
@@ -451,20 +520,35 @@ namespace System.Numerics
         /// <returns><see langword="true" /> if <paramref name="value1" /> and <paramref name="value2" /> are not equal; otherwise, <see langword="false" />.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator !=(Matrix4x4 value1, Matrix4x4 value2)
-            => value1.AsImpl() != value2.AsImpl();
+        {
+            ref readonly Impl left = ref value1.AsROImpl();
+            ref readonly Impl right = ref value2.AsROImpl();
+
+            return (left.X != right.X)
+                || (left.Y != right.Y)
+                || (left.Z != right.Z)
+                || (left.W != right.W);
+        }
 
         /// <summary>Multiplies two matrices together to compute the product.</summary>
         /// <param name="value1">The first matrix.</param>
         /// <param name="value2">The second matrix.</param>
         /// <returns>The product matrix.</returns>
         /// <remarks>The <see cref="Matrix4x4.op_Multiply" /> method defines the operation of the multiplication operator for <see cref="Matrix4x4" /> objects.</remarks>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Matrix4x4 operator *(Matrix4x4 value1, Matrix4x4 value2) => Create(
-            Vector4.Transform(value1.X, value2),
-            Vector4.Transform(value1.Y, value2),
-            Vector4.Transform(value1.Z, value2),
-            Vector4.Transform(value1.W, value2)
-        );
+        public static Matrix4x4 operator *(Matrix4x4 value1, Matrix4x4 value2)
+        {
+            ref readonly Impl left = ref value1.AsROImpl();
+            ref readonly Impl right = ref value2.AsROImpl();
+
+            Impl result;
+
+            result.X = Vector4.Transform(left.X, in right);
+            result.Y = Vector4.Transform(left.Y, in right);
+            result.Z = Vector4.Transform(left.Z, in right);
+            result.W = Vector4.Transform(left.W, in right);
+
+            return result.AsM4x4();
+        }
 
         /// <summary>Multiplies a matrix by a float to compute the product.</summary>
         /// <param name="value1">The matrix to scale.</param>
@@ -473,7 +557,18 @@ namespace System.Numerics
         /// <remarks>The <see cref="Matrix4x4.op_Multiply" /> method defines the operation of the multiplication operator for <see cref="Matrix4x4" /> objects.</remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Matrix4x4 operator *(Matrix4x4 value1, float value2)
-            => (value1.AsImpl() * value2).AsM4x4();
+        {
+            ref readonly Impl left = ref value1.AsROImpl();
+
+            Impl result;
+
+            result.X = left.X * value2;
+            result.Y = left.Y * value2;
+            result.Z = left.Z * value2;
+            result.W = left.W * value2;
+
+            return result.AsM4x4();
+        }
 
         /// <summary>Subtracts each element in a second matrix from its corresponding element in a first matrix.</summary>
         /// <param name="value1">The first matrix.</param>
@@ -482,46 +577,99 @@ namespace System.Numerics
         /// <remarks>The <see cref="op_Subtraction" /> method defines the operation of the subtraction operator for <see cref="Matrix4x4" /> objects.</remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Matrix4x4 operator -(Matrix4x4 value1, Matrix4x4 value2)
-            => (value1.AsImpl() - value2.AsImpl()).AsM4x4();
+        {
+            ref readonly Impl left = ref value1.AsROImpl();
+            ref readonly Impl right = ref value2.AsROImpl();
+
+            Impl result;
+
+            result.X = left.X - right.X;
+            result.Y = left.Y - right.Y;
+            result.Z = left.Z - right.Z;
+            result.W = left.W - right.W;
+
+            return result.AsM4x4();
+        }
 
         /// <summary>Negates the specified matrix by multiplying all its values by -1.</summary>
         /// <param name="value">The matrix to negate.</param>
         /// <returns>The negated matrix.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Matrix4x4 operator -(Matrix4x4 value)
-            => (-value.AsImpl()).AsM4x4();
+        {
+            ref readonly Impl impl = ref value.AsROImpl();
+
+            Impl result;
+
+            result.X = -impl.X;
+            result.Y = -impl.Y;
+            result.Z = -impl.Z;
+            result.W = -impl.W;
+
+            return result.AsM4x4();
+        }
 
         /// <summary>Adds each element in one matrix with its corresponding element in a second matrix.</summary>
         /// <param name="value1">The first matrix.</param>
         /// <param name="value2">The second matrix.</param>
         /// <returns>The matrix that contains the summed values of <paramref name="value1" /> and <paramref name="value2" />.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Matrix4x4 Add(Matrix4x4 value1, Matrix4x4 value2)
-            => (value1.AsImpl() + value2.AsImpl()).AsM4x4();
+        public static Matrix4x4 Add(Matrix4x4 value1, Matrix4x4 value2) => value1 + value2;
 
         /// <summary>Creates a <see cref="Matrix4x4" /> whose 16 elements are set to the specified value.</summary>
         /// <param name="value">The value to assign to all 16 elements.</param>
         /// <returns>A <see cref="Matrix4x4" /> whose 16 elements are set to <paramref name="value" />.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Matrix4x4 Create(float value) => Create(Vector4.Create(value));
+        public static Matrix4x4 Create(float value)
+        {
+            Vector128<float> vector = Vector128.Create(value);
+
+            Impl result;
+
+            result.X = vector;
+            result.Y = vector;
+            result.Z = vector;
+            result.W = vector;
+
+            return result.AsM4x4();
+        }
 
         /// <summary>Creates a <see cref="Matrix4x4" /> from the specified <see cref="Matrix3x2" />.</summary>
         /// <param name="value">The <see cref="Matrix3x2" /> to assign to the first two elements of <see cref="X" />, <see cref="Y" />, and <see cref="W" />.</param>
         /// <returns>A <see cref="Matrix4x4" /> that was initialized using the elements from <paramref name="value" />.</returns>
         /// <remarks>The last two elements of <see cref="X" />, <see cref="Y" />, and <see cref="W" /> are initialized to zero; while <see cref="Z" /> is initialized to <see cref="Vector4.UnitZ" />.</remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Matrix4x4 Create(Matrix3x2 value) => Create(
-            value.X.AsVector4(),
-            value.Y.AsVector4(),
-            Vector4.UnitZ,
-            Vector4.Create(value.Z, 0, 1)
-        );
+        public static Matrix4x4 Create(Matrix3x2 value)
+        {
+            ref readonly Matrix3x2.Impl impl = ref value.AsImpl();
+
+            Impl result;
+
+            result.X = impl.X.AsVector128();
+            result.Y = impl.Y.AsVector128();
+            result.Z = Vector128.Create(0.0f, 0.0f, 1.0f, 0.0f);
+            result.W = impl.Z.AsVector128().WithElement(3, 1.0f);
+
+            return result.AsM4x4();
+        }
 
         /// <summary>Creates a <see cref="Matrix4x4" /> whose 4 rows are set to the specified value.</summary>
         /// <param name="value">The value to assign to all 4 rows.</param>
         /// <returns>A <see cref="Matrix4x4" /> whose 4 rows are set to <paramref name="value" />.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Matrix4x4 Create(Vector4 value) => Create(value, value, value, value);
+        public static Matrix4x4 Create(Vector4 value)
+        {
+            Vector128<float> vector = value.AsVector128();
+
+            Impl result;
+
+            result.X = vector;
+            result.Y = vector;
+            result.Z = vector;
+            result.W = vector;
+
+            return result.AsM4x4();
+        }
 
         /// <summary>Creates a <see cref="Matrix4x4" /> from the specified rows.</summary>
         /// <param name="x">The value to assign to <see cref="X" />.</param>
@@ -532,14 +680,14 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Matrix4x4 Create(Vector4 x, Vector4 y, Vector4 z, Vector4 w)
         {
-            Unsafe.SkipInit(out Matrix4x4 result);
+            Impl result;
 
-            result.X = x;
-            result.Y = y;
-            result.Z = z;
-            result.W = w;
+            result.X = x.AsVector128();
+            result.Y = y.AsVector128();
+            result.Z = z.AsVector128();
+            result.W = w.AsVector128();
 
-            return result;
+            return result.AsM4x4();
         }
 
         /// <summary>Creates a <see cref="Matrix3x2" /> from the specified elements.</summary>
@@ -564,12 +712,17 @@ namespace System.Numerics
         public static Matrix4x4 Create(float m11, float m12, float m13, float m14,
                                        float m21, float m22, float m23, float m24,
                                        float m31, float m32, float m33, float m34,
-                                       float m41, float m42, float m43, float m44) => Create(
-            Vector4.Create(m11, m12, m13, m14),
-            Vector4.Create(m21, m22, m23, m24),
-            Vector4.Create(m31, m32, m33, m34),
-            Vector4.Create(m41, m42, m43, m44)
-        );
+                                       float m41, float m42, float m43, float m44)
+        {
+            Impl result;
+
+            result.X = Vector128.Create(m11, m12, m13, m14);
+            result.Y = Vector128.Create(m21, m22, m23, m24);
+            result.Z = Vector128.Create(m31, m32, m33, m34);
+            result.W = Vector128.Create(m41, m42, m43, m44);
+
+            return result.AsM4x4();
+        }
 
         /// <summary>Creates a right-handed spherical billboard matrix that rotates around a specified object position.</summary>
         /// <param name="objectPosition">The position of the object that the billboard will rotate around.</param>
@@ -578,7 +731,29 @@ namespace System.Numerics
         /// <param name="cameraForwardVector">The forward vector of the camera.</param>
         /// <returns>The created billboard.</returns>
         public static Matrix4x4 CreateBillboard(Vector3 objectPosition, Vector3 cameraPosition, Vector3 cameraUpVector, Vector3 cameraForwardVector)
-            => Impl.CreateBillboard(in objectPosition, in cameraPosition, in cameraUpVector, in cameraForwardVector).AsM4x4();
+        {
+            Vector128<float> vObjectPosition = objectPosition.AsVector128();
+
+            // In a right-handed coordinate system, the object's positive z-axis is in the opposite direction as its forward vector,
+            // and spherical billboards by construction always face the camera.
+            Vector128<float> axisZ = vObjectPosition - cameraPosition.AsVector128();
+
+            // When object and camera position are approximately the same, the object should just face the
+            // same direction as the camera is facing.
+            axisZ = (Vector128.LengthSquared(axisZ) < BillboardEpsilon) ? -(cameraForwardVector.AsVector128()) : Vector128.Normalize(axisZ);
+
+            Vector128<float> axisX = Vector128.Normalize(Vector3.Cross(cameraUpVector.AsVector128(), axisZ));
+            Vector128<float> axisY = Vector3.Cross(axisZ, axisX);
+
+            Impl result;
+
+            result.X = axisX;
+            result.Y = axisY;
+            result.Z = axisZ;
+            result.W = vObjectPosition.WithElement(3, 1.0f);
+
+            return result.AsM4x4();
+        }
 
         /// <summary>Creates a left-handed spherical billboard matrix that rotates around a specified object position.</summary>
         /// <param name="objectPosition">The position of the object that the billboard will rotate around.</param>
@@ -587,7 +762,29 @@ namespace System.Numerics
         /// <param name="cameraForwardVector">The forward vector of the camera.</param>
         /// <returns>The created billboard.</returns>
         public static Matrix4x4 CreateBillboardLeftHanded(Vector3 objectPosition, Vector3 cameraPosition, Vector3 cameraUpVector, Vector3 cameraForwardVector)
-            => Impl.CreateBillboardLeftHanded(in objectPosition, in cameraPosition, in cameraUpVector, in cameraForwardVector).AsM4x4();
+        {
+            Vector128<float> vObjectPosition = objectPosition.AsVector128();
+
+            // In a left-handed coordinate system, the object's positive z-axis is in the same direction as its forward vector,
+            // and spherical billboards by construction always face the camera.
+            Vector128<float> axisZ = cameraPosition.AsVector128() - vObjectPosition;
+
+            // When object and camera position are approximately the same, the object should just face the
+            // same direction as the camera is facing.
+            axisZ = (Vector128.LengthSquared(axisZ) < BillboardEpsilon) ? cameraForwardVector.AsVector128() : Vector128.Normalize(axisZ);
+
+            Vector128<float> axisX = Vector128.Normalize(Vector3.Cross(cameraUpVector.AsVector128(), axisZ));
+            Vector128<float> axisY = Vector3.Cross(axisZ, axisX);
+
+            Impl result;
+
+            result.X = axisX;
+            result.Y = axisY;
+            result.Z = axisZ;
+            result.W = vObjectPosition.WithElement(3, 1.0f);
+
+            return result.AsM4x4();
+        }
 
         /// <summary>Creates a right-handed cylindrical billboard matrix that rotates around a specified axis.</summary>
         /// <param name="objectPosition">The position of the object that the billboard will rotate around.</param>
@@ -597,7 +794,59 @@ namespace System.Numerics
         /// <param name="objectForwardVector">The forward vector of the object.</param>
         /// <returns>The billboard matrix.</returns>
         public static Matrix4x4 CreateConstrainedBillboard(Vector3 objectPosition, Vector3 cameraPosition, Vector3 rotateAxis, Vector3 cameraForwardVector, Vector3 objectForwardVector)
-            => Impl.CreateConstrainedBillboard(in objectPosition, in cameraPosition, in rotateAxis, in cameraForwardVector, in objectForwardVector).AsM4x4();
+        {
+            Vector128<float> vObjectPosition = objectPosition.AsVector128();
+
+            // First find the Z-axis of the spherical/unconstrained rotation. We call this faceDir and in a right-handed coordinate system
+            // it will be in the opposite direction as from the object to the camera.
+            Vector128<float> faceDir = vObjectPosition - cameraPosition.AsVector128();
+
+            // When object and camera position are approximately the same this indicates that the object should also just face the
+            // same direction as the camera is facing.
+            faceDir = (Vector128.LengthSquared(faceDir) < BillboardEpsilon) ? -cameraForwardVector.AsVector128() : Vector128.Normalize(faceDir);
+
+            Vector128<float> axisY = rotateAxis.AsVector128();
+
+            float dot = Vector128.Dot(axisY, faceDir);
+
+            // Generally the approximation for small angles is cos theta = 1 - theta^2 / 2,
+            // but it seems that here we are using cos theta = 1 - theta. Letting theta be the angle
+            // between the rotate axis and the faceDir,
+            //
+            // dot = cos theta ~ 1 - theta > 1 - .1 * pi/180 = 1 - (.1 degree) => theta < .1 degree
+            //
+            // So this condition checks if the faceDir is approximately the same as the rotate axis
+            // by checking if the angle between them is less than .1 degree.
+            if (float.Abs(dot) > BillboardMinAngle)
+            {
+                // If the faceDir is approximately the same as the rotate axis, then fallback to using object forward vector
+                // as the faceDir.
+                faceDir = objectForwardVector.AsVector128();
+
+                dot = Vector128.Dot(axisY, faceDir);
+
+                // Similar to before, check if the faceDir is still is approximately the rotate axis.
+                // If so, then use either -UnitZ or UnitX as the fallback faceDir.
+                if (float.Abs(dot) > BillboardMinAngle)
+                {
+                    // |axisY.Z| = |dot(axisY, -UnitZ)|, so this is checking if the rotate axis is approximately the same as -UnitZ.
+                    // If is, then use UnitX as the fallback.
+                    faceDir = (float.Abs(axisY.GetElement(2)) > BillboardMinAngle) ? Vector128.CreateScalar(1.0f) : Vector128.Create(0.0f, 0.0f, -1.0f, 0.0f);
+                }
+            }
+
+            Vector128<float> axisX = Vector128.Normalize(Vector3.Cross(axisY, faceDir));
+            Vector128<float> axisZ = Vector128.Normalize(Vector3.Cross(axisX, axisY));
+
+            Impl result;
+
+            result.X = axisX;
+            result.Y = axisY;
+            result.Z = axisZ;
+            result.W = vObjectPosition.WithElement(3, 1.0f);
+
+            return result.AsM4x4();
+        }
 
         /// <summary>Creates a left-handed cylindrical billboard matrix that rotates around a specified axis.</summary>
         /// <param name="objectPosition">The position of the object that the billboard will rotate around.</param>
@@ -607,38 +856,140 @@ namespace System.Numerics
         /// <param name="objectForwardVector">The forward vector of the object.</param>
         /// <returns>The billboard matrix.</returns>
         public static Matrix4x4 CreateConstrainedBillboardLeftHanded(Vector3 objectPosition, Vector3 cameraPosition, Vector3 rotateAxis, Vector3 cameraForwardVector, Vector3 objectForwardVector)
-            => Impl.CreateConstrainedBillboardLeftHanded(in objectPosition, in cameraPosition, in rotateAxis, in cameraForwardVector, in objectForwardVector).AsM4x4();
+        {
+            Vector128<float> vObjectPosition = objectPosition.AsVector128();
+
+            // First find the Z-axis of the spherical/unconstrained rotation. We call this faceDir and in a left-handed coordinate system
+            // it will be in the same direction as from the object to the camera.
+            Vector128<float> faceDir = cameraPosition.AsVector128() - vObjectPosition;
+
+            // When object and camera position are approximately the same this indicates that the object should also just face the
+            // same direction as the camera is facing.
+            faceDir = (Vector128.LengthSquared(faceDir) < BillboardEpsilon) ? cameraForwardVector.AsVector128() : Vector128.Normalize(faceDir);
+
+            Vector128<float> axisY = rotateAxis.AsVector128();
+
+            float dot = Vector128.Dot(axisY, faceDir);
+
+            // Generally the approximation for small angles is cos theta = 1 - theta^2 / 2,
+            // but it seems that here we are using cos theta = 1 - theta. Letting theta be the angle
+            // between the rotate axis and the faceDir,
+            //
+            // dot = cos theta ~ 1 - theta > 1 - .1 * pi/180 = 1 - (.1 degree) => theta < .1 degree
+            //
+            // So this condition checks if the faceDir is approximately the same as the rotate axis
+            // by checking if the angle between them is less than .1 degree.
+            if (float.Abs(dot) > BillboardMinAngle)
+            {
+                // If the faceDir is approximately the same as the rotate axis, then fallback to using object forward vector
+                // as the faceDir.
+                faceDir = -objectForwardVector.AsVector128();
+
+                dot = Vector128.Dot(axisY, faceDir);
+
+                // Similar to before, check if the faceDir is still is approximately the rotate axis.
+                // If so, then use either -UnitZ or -UnitX as the fallback faceDir.
+                if (float.Abs(dot) > BillboardMinAngle)
+                {
+                    // |axisY.Z| = |dot(axisY, -UnitZ)|, so this is checking if the rotate axis is approximately the same as -UnitZ.
+                    // If is, then use -UnitX as the fallback.
+                    faceDir = (float.Abs(axisY.GetElement(2)) > BillboardMinAngle) ? Vector128.Create(-1.0f, 0.0f, 0.0f, 0.0f) : Vector128.Create(0.0f, 0.0f, -1.0f, 0.0f);
+                }
+            }
+
+            Vector128<float> axisX = Vector128.Normalize(Vector3.Cross(axisY, faceDir));
+            Vector128<float> axisZ = Vector128.Normalize(Vector3.Cross(axisX, axisY));
+
+            Impl result;
+
+            result.X = axisX;
+            result.Y = axisY;
+            result.Z = axisZ;
+            result.W = vObjectPosition.WithElement(3, 1.0f);
+
+            return result.AsM4x4();
+        }
 
         /// <summary>Creates a matrix that rotates around an arbitrary vector.</summary>
         /// <param name="axis">The axis to rotate around.</param>
         /// <param name="angle">The angle to rotate around <paramref name="axis" />, in radians.</param>
         /// <returns>The rotation matrix.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Matrix4x4 CreateFromAxisAngle(Vector3 axis, float angle)
-            => Impl.CreateFromAxisAngle(in axis, angle).AsM4x4();
+        {
+            Vector128<float> q = Quaternion.CreateFromAxisAngle(axis.AsVector128Unsafe(), angle);
+            return CreateFromQuaternion(q).AsM4x4();
+        }
 
         /// <summary>Creates a rotation matrix from the specified Quaternion rotation value.</summary>
         /// <param name="quaternion">The source Quaternion.</param>
         /// <returns>The rotation matrix.</returns>
-        public static Matrix4x4 CreateFromQuaternion(Quaternion quaternion)
-            => Impl.CreateFromQuaternion(in quaternion).AsM4x4();
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Matrix4x4 CreateFromQuaternion(Quaternion quaternion) => CreateFromQuaternion(quaternion.AsVector128()).AsM4x4();
+
+        internal static Impl CreateFromQuaternion(Vector128<float> quaternion)
+        {
+            // TODO: Optimize
+
+            float xx = quaternion.GetElement(0) * quaternion.GetElement(0);
+            float yy = quaternion.GetElement(1) * quaternion.GetElement(1);
+            float zz = quaternion.GetElement(2) * quaternion.GetElement(2);
+
+            float xy = quaternion.GetElement(0) * quaternion.GetElement(1);
+            float wz = quaternion.GetElement(2) * quaternion.GetElement(3);
+            float xz = quaternion.GetElement(0) * quaternion.GetElement(2);
+            float wy = quaternion.GetElement(1) * quaternion.GetElement(3);
+            float yz = quaternion.GetElement(1) * quaternion.GetElement(2);
+            float wx = quaternion.GetElement(0) * quaternion.GetElement(3);
+
+            Impl result;
+
+            result.X = Vector128.Create(
+                1.0f - 2.0f * (yy + zz),
+                2.0f * (xy + wz),
+                2.0f * (xz - wy),
+                0
+            );
+            result.Y = Vector128.Create(
+                2.0f * (xy - wz),
+                1.0f - 2.0f * (zz + xx),
+                2.0f * (yz + wx),
+                0
+            );
+            result.Z = Vector128.Create(
+                2.0f * (xz + wy),
+                2.0f * (yz - wx),
+                1.0f - 2.0f * (yy + xx),
+                0
+            );
+            result.W = Vector128.Create(0.0f, 0.0f, 0.0f, 1.0f);
+
+            return result;
+        }
 
         /// <summary>Creates a rotation matrix from the specified yaw, pitch, and roll.</summary>
         /// <param name="yaw">The angle of rotation, in radians, around the Y axis.</param>
         /// <param name="pitch">The angle of rotation, in radians, around the X axis.</param>
         /// <param name="roll">The angle of rotation, in radians, around the Z axis.</param>
         /// <returns>The rotation matrix.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Matrix4x4 CreateFromYawPitchRoll(float yaw, float pitch, float roll)
-            => Impl.CreateFromYawPitchRoll(yaw, pitch, roll).AsM4x4();
+        {
+            Quaternion q = Quaternion.CreateFromYawPitchRoll(yaw, pitch, roll);
+            return CreateFromQuaternion(q.AsVector128()).AsM4x4();
+        }
 
         /// <summary>Creates a right-handed view matrix.</summary>
         /// <param name="cameraPosition">The position of the camera.</param>
         /// <param name="cameraTarget">The target towards which the camera is pointing.</param>
         /// <param name="cameraUpVector">The direction that is "up" from the camera's point of view.</param>
         /// <returns>The right-handed view matrix.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Matrix4x4 CreateLookAt(Vector3 cameraPosition, Vector3 cameraTarget, Vector3 cameraUpVector)
         {
-            Vector3 cameraDirection = cameraTarget - cameraPosition;
-            return Impl.CreateLookTo(in cameraPosition, in cameraDirection, in cameraUpVector).AsM4x4();
+            Vector128<float> vCameraPosition = cameraPosition.AsVector128();
+            Vector128<float> vCameraDirection = vCameraPosition - cameraTarget.AsVector128();
+            return CreateLookToLeftHanded(vCameraPosition, vCameraDirection, cameraUpVector.AsVector128()).AsM4x4();
         }
 
         /// <summary>Creates a left-handed view matrix.</summary>
@@ -646,10 +997,12 @@ namespace System.Numerics
         /// <param name="cameraTarget">The target towards which the camera is pointing.</param>
         /// <param name="cameraUpVector">The direction that is "up" from the camera's point of view.</param>
         /// <returns>The left-handed view matrix.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Matrix4x4 CreateLookAtLeftHanded(Vector3 cameraPosition, Vector3 cameraTarget, Vector3 cameraUpVector)
         {
-            Vector3 cameraDirection = cameraTarget - cameraPosition;
-            return Impl.CreateLookToLeftHanded(in cameraPosition, in cameraDirection, in cameraUpVector).AsM4x4();
+            Vector128<float> vCameraPosition = cameraPosition.AsVector128();
+            Vector128<float> cameraDirection = cameraTarget.AsVector128() - vCameraPosition;
+            return CreateLookToLeftHanded(vCameraPosition, cameraDirection, cameraUpVector.AsVector128()).AsM4x4();
         }
 
         /// <summary>Creates a right-handed view matrix.</summary>
@@ -657,17 +1010,41 @@ namespace System.Numerics
         /// <param name="cameraDirection">The direction in which the camera is pointing.</param>
         /// <param name="cameraUpVector">The direction that is "up" from the camera's point of view.</param>
         /// <returns>The right-handed view matrix.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Matrix4x4 CreateLookTo(Vector3 cameraPosition, Vector3 cameraDirection, Vector3 cameraUpVector)
-            => Impl.CreateLookTo(in cameraPosition, in cameraDirection, in cameraUpVector).AsM4x4();
+        {
+            // This implementation is based on the DirectX Math Library XMMatrixLookToRH method
+            // https://github.com/microsoft/DirectXMath/blob/master/Inc/DirectXMathMatrix.inl
+            return CreateLookToLeftHanded(cameraPosition.AsVector128(), -(cameraDirection.AsVector128()), cameraUpVector.AsVector128()).AsM4x4();
+        }
 
         /// <summary>Creates a left-handed view matrix.</summary>
         /// <param name="cameraPosition">The position of the camera.</param>
         /// <param name="cameraDirection">The direction in which the camera is pointing.</param>
         /// <param name="cameraUpVector">The direction that is "up" from the camera's point of view.</param>
         /// <returns>The left-handed view matrix.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Matrix4x4 CreateLookToLeftHanded(Vector3 cameraPosition, Vector3 cameraDirection, Vector3 cameraUpVector)
+            => CreateLookToLeftHanded(cameraPosition.AsVector128(), cameraDirection.AsVector128(), cameraUpVector.AsVector128()).AsM4x4();
+
+        internal static Impl CreateLookToLeftHanded(Vector128<float> cameraPosition, Vector128<float> cameraDirection, Vector128<float> cameraUpVector)
         {
-            return Impl.CreateLookToLeftHanded(in cameraPosition, in cameraDirection, in cameraUpVector).AsM4x4();
+            // This implementation is based on the DirectX Math Library XMMatrixLookToLH method
+            // https://github.com/microsoft/DirectXMath/blob/master/Inc/DirectXMathMatrix.inl
+
+            Vector128<float> axisZ = Vector128.Normalize(cameraDirection);
+            Vector128<float> axisX = Vector128.Normalize(Vector3.Cross(cameraUpVector, axisZ));
+            Vector128<float> axisY = Vector3.Cross(axisZ, axisX);
+            Vector128<float> negativeCameraPosition = -cameraPosition;
+
+            Impl result;
+
+            result.X = axisX.WithElement(3, Vector128.Dot(axisX, negativeCameraPosition));
+            result.Y = axisY.WithElement(3, Vector128.Dot(axisY, negativeCameraPosition));
+            result.Z = axisZ.WithElement(3, Vector128.Dot(axisZ, negativeCameraPosition));
+            result.W = Vector128.Create(0.0f, 0.0f, 0.0f, 1.0f);
+
+            return Transpose(result);
         }
 
         /// <summary>Creates a right-handed orthographic perspective matrix from the given view volume dimensions.</summary>
@@ -676,8 +1053,23 @@ namespace System.Numerics
         /// <param name="zNearPlane">The minimum Z-value of the view volume.</param>
         /// <param name="zFarPlane">The maximum Z-value of the view volume.</param>
         /// <returns>The right-handed orthographic projection matrix.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Matrix4x4 CreateOrthographic(float width, float height, float zNearPlane, float zFarPlane)
-            => Impl.CreateOrthographic(width, height, zNearPlane, zFarPlane).AsM4x4();
+        {
+            // This implementation is based on the DirectX Math Library XMMatrixOrthographicRH method
+            // https://github.com/microsoft/DirectXMath/blob/master/Inc/DirectXMathMatrix.inl
+
+            float range = 1.0f / (zNearPlane - zFarPlane);
+
+            Impl result;
+
+            result.X = Vector128.Create(2.0f / width, 0, 0, 0);
+            result.Y = Vector128.Create(0, 2.0f / height, 0, 0);
+            result.Z = Vector128.Create(0, 0, range, 0);
+            result.W = Vector128.Create(0, 0, range * zNearPlane, 1);
+
+            return result.AsM4x4();
+        }
 
         /// <summary>Creates a left-handed orthographic perspective matrix from the given view volume dimensions.</summary>
         /// <param name="width">The width of the view volume.</param>
@@ -685,8 +1077,23 @@ namespace System.Numerics
         /// <param name="zNearPlane">The minimum Z-value of the view volume.</param>
         /// <param name="zFarPlane">The maximum Z-value of the view volume.</param>
         /// <returns>The left-handed orthographic projection matrix.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Matrix4x4 CreateOrthographicLeftHanded(float width, float height, float zNearPlane, float zFarPlane)
-            => Impl.CreateOrthographicLeftHanded(width, height, zNearPlane, zFarPlane).AsM4x4();
+        {
+            // This implementation is based on the DirectX Math Library XMMatrixOrthographicLH method
+            // https://github.com/microsoft/DirectXMath/blob/master/Inc/DirectXMathMatrix.inl
+
+            float range = 1.0f / (zFarPlane - zNearPlane);
+
+            Impl result;
+
+            result.X = Vector128.Create(2.0f / width, 0, 0, 0);
+            result.Y = Vector128.Create(0, 2.0f / height, 0, 0);
+            result.Z = Vector128.Create(0, 0, range, 0);
+            result.W = Vector128.Create(0, 0, -range * zNearPlane, 1);
+
+            return result.AsM4x4();
+        }
 
         /// <summary>Creates a right-handed customized orthographic projection matrix.</summary>
         /// <param name="left">The minimum X-value of the view volume.</param>
@@ -697,7 +1104,28 @@ namespace System.Numerics
         /// <param name="zFarPlane">The maximum Z-value of the view volume.</param>
         /// <returns>The right-handed orthographic projection matrix.</returns>
         public static Matrix4x4 CreateOrthographicOffCenter(float left, float right, float bottom, float top, float zNearPlane, float zFarPlane)
-            => Impl.CreateOrthographicOffCenter(left, right, bottom, top, zNearPlane, zFarPlane).AsM4x4();
+        {
+            // This implementation is based on the DirectX Math Library XMMatrixOrthographicOffCenterRH method
+            // https://github.com/microsoft/DirectXMath/blob/master/Inc/DirectXMathMatrix.inl
+
+            float reciprocalWidth = 1.0f / (right - left);
+            float reciprocalHeight = 1.0f / (top - bottom);
+            float range = 1.0f / (zNearPlane - zFarPlane);
+
+            Impl result;
+
+            result.X = Vector128.Create(reciprocalWidth + reciprocalWidth, 0, 0, 0);
+            result.Y = Vector128.Create(0, reciprocalHeight + reciprocalHeight, 0, 0);
+            result.Z = Vector128.Create(0, 0, range, 0);
+            result.W = Vector128.Create(
+                -(left + right) * reciprocalWidth,
+                -(top + bottom) * reciprocalHeight,
+                range * zNearPlane,
+                1
+            );
+
+            return result.AsM4x4();
+        }
 
         /// <summary>Creates a left-handed customized orthographic projection matrix.</summary>
         /// <param name="left">The minimum X-value of the view volume.</param>
@@ -708,7 +1136,28 @@ namespace System.Numerics
         /// <param name="zFarPlane">The maximum Z-value of the view volume.</param>
         /// <returns>The left-handed orthographic projection matrix.</returns>
         public static Matrix4x4 CreateOrthographicOffCenterLeftHanded(float left, float right, float bottom, float top, float zNearPlane, float zFarPlane)
-            => Impl.CreateOrthographicOffCenterLeftHanded(left, right, bottom, top, zNearPlane, zFarPlane).AsM4x4();
+        {
+            // This implementation is based on the DirectX Math Library XMMatrixOrthographicOffCenterLH method
+            // https://github.com/microsoft/DirectXMath/blob/master/Inc/DirectXMathMatrix.inl
+
+            float reciprocalWidth = 1.0f / (right - left);
+            float reciprocalHeight = 1.0f / (top - bottom);
+            float range = 1.0f / (zFarPlane - zNearPlane);
+
+            Impl result;
+
+            result.X = Vector128.Create(reciprocalWidth + reciprocalWidth, 0, 0, 0);
+            result.Y = Vector128.Create(0, reciprocalHeight + reciprocalHeight, 0, 0);
+            result.Z = Vector128.Create(0, 0, range, 0);
+            result.W = Vector128.Create(
+                -(left + right) * reciprocalWidth,
+                -(top + bottom) * reciprocalHeight,
+                -range * zNearPlane,
+                1
+            );
+
+            return result.AsM4x4();
+        }
 
         /// <summary>Creates a right-handed perspective projection matrix from the given view volume dimensions.</summary>
         /// <param name="width">The width of the view volume at the near view plane.</param>
@@ -722,7 +1171,26 @@ namespace System.Numerics
         /// -or-
         /// <paramref name="nearPlaneDistance" /> is greater than or equal to <paramref name="farPlaneDistance" />.</exception>
         public static Matrix4x4 CreatePerspective(float width, float height, float nearPlaneDistance, float farPlaneDistance)
-            => Impl.CreatePerspective(width, height, nearPlaneDistance, farPlaneDistance).AsM4x4();
+        {
+            // This implementation is based on the DirectX Math Library XMMatrixPerspectiveRH method
+            // https://github.com/microsoft/DirectXMath/blob/master/Inc/DirectXMathMatrix.inl
+
+            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(nearPlaneDistance, 0.0f);
+            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(farPlaneDistance, 0.0f);
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(nearPlaneDistance, farPlaneDistance);
+
+            float dblNearPlaneDistance = nearPlaneDistance + nearPlaneDistance;
+            float range = float.IsPositiveInfinity(farPlaneDistance) ? -1.0f : farPlaneDistance / (nearPlaneDistance - farPlaneDistance);
+
+            Impl result;
+
+            result.X = Vector128.Create(dblNearPlaneDistance / width, 0, 0, 0);
+            result.Y = Vector128.Create(0, dblNearPlaneDistance / height, 0, 0);
+            result.Z = Vector128.Create(0, 0, range, -1.0f);
+            result.W = Vector128.Create(0, 0, range * nearPlaneDistance, 0);
+
+            return result.AsM4x4();
+        }
 
         /// <summary>Creates a left-handed perspective projection matrix from the given view volume dimensions.</summary>
         /// <param name="width">The width of the view volume at the near view plane.</param>
@@ -736,7 +1204,26 @@ namespace System.Numerics
         /// -or-
         /// <paramref name="nearPlaneDistance" /> is greater than or equal to <paramref name="farPlaneDistance" />.</exception>
         public static Matrix4x4 CreatePerspectiveLeftHanded(float width, float height, float nearPlaneDistance, float farPlaneDistance)
-            => Impl.CreatePerspectiveLeftHanded(width, height, nearPlaneDistance, farPlaneDistance).AsM4x4();
+        {
+            // This implementation is based on the DirectX Math Library XMMatrixPerspectiveLH method
+            // https://github.com/microsoft/DirectXMath/blob/master/Inc/DirectXMathMatrix.inl
+
+            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(nearPlaneDistance, 0.0f);
+            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(farPlaneDistance, 0.0f);
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(nearPlaneDistance, farPlaneDistance);
+
+            float dblNearPlaneDistance = nearPlaneDistance + nearPlaneDistance;
+            float range = float.IsPositiveInfinity(farPlaneDistance) ? 1.0f : farPlaneDistance / (farPlaneDistance - nearPlaneDistance);
+
+            Impl result;
+
+            result.X = Vector128.Create(dblNearPlaneDistance / width, 0, 0, 0);
+            result.Y = Vector128.Create(0, dblNearPlaneDistance / height, 0, 0);
+            result.Z = Vector128.Create(0, 0, range, 1.0f);
+            result.W = Vector128.Create(0, 0, -range * nearPlaneDistance, 0);
+
+            return result.AsM4x4();
+        }
 
         /// <summary>Creates a right-handed perspective projection matrix based on a field of view, aspect ratio, and near and far view plane distances.</summary>
         /// <param name="fieldOfView">The field of view in the y direction, in radians.</param>
@@ -753,7 +1240,30 @@ namespace System.Numerics
         /// -or-
         /// <paramref name="nearPlaneDistance" /> is greater than or equal to <paramref name="farPlaneDistance" />.</exception>
         public static Matrix4x4 CreatePerspectiveFieldOfView(float fieldOfView, float aspectRatio, float nearPlaneDistance, float farPlaneDistance)
-            => Impl.CreatePerspectiveFieldOfView(fieldOfView, aspectRatio, nearPlaneDistance, farPlaneDistance).AsM4x4();
+        {
+            // This implementation is based on the DirectX Math Library XMMatrixPerspectiveFovRH method
+            // https://github.com/microsoft/DirectXMath/blob/master/Inc/DirectXMathMatrix.inl
+
+            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(fieldOfView, 0.0f);
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(fieldOfView, float.Pi);
+
+            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(nearPlaneDistance, 0.0f);
+            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(farPlaneDistance, 0.0f);
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(nearPlaneDistance, farPlaneDistance);
+
+            float height = 1.0f / float.Tan(fieldOfView * 0.5f);
+            float width = height / aspectRatio;
+            float range = float.IsPositiveInfinity(farPlaneDistance) ? -1.0f : farPlaneDistance / (nearPlaneDistance - farPlaneDistance);
+
+            Impl result;
+
+            result.X = Vector128.Create(width, 0, 0, 0);
+            result.Y = Vector128.Create(0, height, 0, 0);
+            result.Z = Vector128.Create(0, 0, range, -1.0f);
+            result.W = Vector128.Create(0, 0, range * nearPlaneDistance, 0);
+
+            return result.AsM4x4();
+        }
 
         /// <summary>Creates a left-handed perspective projection matrix based on a field of view, aspect ratio, and near and far view plane distances.</summary>
         /// <param name="fieldOfView">The field of view in the y direction, in radians.</param>
@@ -770,7 +1280,30 @@ namespace System.Numerics
         /// -or-
         /// <paramref name="nearPlaneDistance" /> is greater than or equal to <paramref name="farPlaneDistance" />.</exception>
         public static Matrix4x4 CreatePerspectiveFieldOfViewLeftHanded(float fieldOfView, float aspectRatio, float nearPlaneDistance, float farPlaneDistance)
-            => Impl.CreatePerspectiveFieldOfViewLeftHanded(fieldOfView, aspectRatio, nearPlaneDistance, farPlaneDistance).AsM4x4();
+        {
+            // This implementation is based on the DirectX Math Library XMMatrixPerspectiveFovLH method
+            // https://github.com/microsoft/DirectXMath/blob/master/Inc/DirectXMathMatrix.inl
+
+            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(fieldOfView, 0.0f);
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(fieldOfView, float.Pi);
+
+            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(nearPlaneDistance, 0.0f);
+            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(farPlaneDistance, 0.0f);
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(nearPlaneDistance, farPlaneDistance);
+
+            float height = 1.0f / float.Tan(fieldOfView * 0.5f);
+            float width = height / aspectRatio;
+            float range = float.IsPositiveInfinity(farPlaneDistance) ? 1.0f : farPlaneDistance / (farPlaneDistance - nearPlaneDistance);
+
+            Impl result;
+
+            result.X = Vector128.Create(width, 0, 0, 0);
+            result.Y = Vector128.Create(0, height, 0, 0);
+            result.Z = Vector128.Create(0, 0, range, 1.0f);
+            result.W = Vector128.Create(0, 0, -range * nearPlaneDistance, 0);
+
+            return result.AsM4x4();
+        }
 
         /// <summary>Creates a right-handed customized perspective projection matrix.</summary>
         /// <param name="left">The minimum x-value of the view volume at the near view plane.</param>
@@ -786,7 +1319,33 @@ namespace System.Numerics
         /// -or-
         /// <paramref name="nearPlaneDistance" /> is greater than or equal to <paramref name="farPlaneDistance" />.</exception>
         public static Matrix4x4 CreatePerspectiveOffCenter(float left, float right, float bottom, float top, float nearPlaneDistance, float farPlaneDistance)
-            => Impl.CreatePerspectiveOffCenter(left, right, bottom, top, nearPlaneDistance, farPlaneDistance).AsM4x4();
+        {
+            // This implementation is based on the DirectX Math Library XMMatrixPerspectiveOffCenterRH method
+            // https://github.com/microsoft/DirectXMath/blob/master/Inc/DirectXMathMatrix.inl
+
+            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(nearPlaneDistance, 0.0f);
+            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(farPlaneDistance, 0.0f);
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(nearPlaneDistance, farPlaneDistance);
+
+            float dblNearPlaneDistance = nearPlaneDistance + nearPlaneDistance;
+            float reciprocalWidth = 1.0f / (right - left);
+            float reciprocalHeight = 1.0f / (top - bottom);
+            float range = float.IsPositiveInfinity(farPlaneDistance) ? -1.0f : farPlaneDistance / (nearPlaneDistance - farPlaneDistance);
+
+            Impl result;
+
+            result.X = Vector128.Create(dblNearPlaneDistance * reciprocalWidth, 0, 0, 0);
+            result.Y = Vector128.Create(0, dblNearPlaneDistance * reciprocalHeight, 0, 0);
+            result.Z = Vector128.Create(
+                (left + right) * reciprocalWidth,
+                (top + bottom) * reciprocalHeight,
+                range,
+                -1.0f
+            );
+            result.W = Vector128.Create(0, 0, range * nearPlaneDistance, 0);
+
+            return result.AsM4x4();
+        }
 
         /// <summary>Creates a left-handed customized perspective projection matrix.</summary>
         /// <param name="left">The minimum x-value of the view volume at the near view plane.</param>
@@ -802,60 +1361,223 @@ namespace System.Numerics
         /// -or-
         /// <paramref name="nearPlaneDistance" /> is greater than or equal to <paramref name="farPlaneDistance" />.</exception>
         public static Matrix4x4 CreatePerspectiveOffCenterLeftHanded(float left, float right, float bottom, float top, float nearPlaneDistance, float farPlaneDistance)
-            => Impl.CreatePerspectiveOffCenterLeftHanded(left, right, bottom, top, nearPlaneDistance, farPlaneDistance).AsM4x4();
+        {
+            // This implementation is based on the DirectX Math Library XMMatrixPerspectiveOffCenterLH method
+            // https://github.com/microsoft/DirectXMath/blob/master/Inc/DirectXMathMatrix.inl
+
+            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(nearPlaneDistance, 0.0f);
+            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(farPlaneDistance, 0.0f);
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(nearPlaneDistance, farPlaneDistance);
+
+            float dblNearPlaneDistance = nearPlaneDistance + nearPlaneDistance;
+            float reciprocalWidth = 1.0f / (right - left);
+            float reciprocalHeight = 1.0f / (top - bottom);
+            float range = float.IsPositiveInfinity(farPlaneDistance) ? 1.0f : farPlaneDistance / (farPlaneDistance - nearPlaneDistance);
+
+            Impl result;
+
+            result.X = Vector128.Create(dblNearPlaneDistance * reciprocalWidth, 0, 0, 0);
+            result.Y = Vector128.Create(0, dblNearPlaneDistance * reciprocalHeight, 0, 0);
+            result.Z = Vector128.Create(
+                -(left + right) * reciprocalWidth,
+                -(top + bottom) * reciprocalHeight,
+                range,
+                1.0f
+            );
+            result.W = Vector128.Create(0, 0, -range * nearPlaneDistance, 0);
+
+            return result.AsM4x4();
+        }
 
         /// <summary>Creates a matrix that reflects the coordinate system about a specified plane.</summary>
         /// <param name="value">The plane about which to create a reflection.</param>
         /// <returns>A new matrix expressing the reflection.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Matrix4x4 CreateReflection(Plane value)
-            => Impl.CreateReflection(in value).AsM4x4();
+        {
+            // This implementation is based on the DirectX Math Library XMMatrixReflect method
+            // https://github.com/microsoft/DirectXMath/blob/master/Inc/DirectXMathMatrix.inl
+
+            Vector128<float> p = Plane.Normalize(value.AsVector128());
+            Vector128<float> s = p * Vector128.Create(-2.0f, -2.0f, -2.0f, 0.0f);
+
+            Impl result;
+
+            result.X = Vector128.MultiplyAddEstimate(s, Vector128.Create(p.GetElement(0)), Vector128.CreateScalar(1.0f));
+            result.Y = Vector128.MultiplyAddEstimate(s, Vector128.Create(p.GetElement(1)), Vector128.Create(0.0f, 1.0f, 0.0f, 0.0f));
+            result.Z = Vector128.MultiplyAddEstimate(s, Vector128.Create(p.GetElement(2)), Vector128.Create(0.0f, 0.0f, 1.0f, 0.0f));
+            result.W = Vector128.MultiplyAddEstimate(s, Vector128.Create(p.GetElement(3)), Vector128.Create(0.0f, 0.0f, 0.0f, 1.0f));
+
+            return result.AsM4x4();
+        }
 
         /// <summary>Creates a matrix for rotating points around the X axis.</summary>
         /// <param name="radians">The amount, in radians, by which to rotate around the X axis.</param>
         /// <returns>The rotation matrix.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Matrix4x4 CreateRotationX(float radians)
-            => Impl.CreateRotationX(radians).AsM4x4();
+        {
+            (float s, float c) = float.SinCos(radians);
+
+            // [  1  0  0  0 ]
+            // [  0  c  s  0 ]
+            // [  0 -s  c  0 ]
+            // [  0  0  0  1 ]
+
+            Impl result;
+
+            result.X = Vector128.CreateScalar(1.0f);
+            result.Y = Vector128.Create(0, c, s, 0);
+            result.Z = Vector128.Create(0, -s, c, 0);
+            result.W = Vector128.Create(0.0f, 0.0f, 0.0f, 1.0f);
+
+            return result.AsM4x4();
+        }
 
         /// <summary>Creates a matrix for rotating points around the X axis from a center point.</summary>
         /// <param name="radians">The amount, in radians, by which to rotate around the X axis.</param>
         /// <param name="centerPoint">The center point.</param>
         /// <returns>The rotation matrix.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Matrix4x4 CreateRotationX(float radians, Vector3 centerPoint)
-            => Impl.CreateRotationX(radians, in centerPoint).AsM4x4();
+        {
+            (float s, float c) = float.SinCos(radians);
+
+            float y = float.MultiplyAddEstimate(centerPoint.Y, 1 - c, +centerPoint.Z * s);
+            float z = float.MultiplyAddEstimate(centerPoint.Z, 1 - c, -centerPoint.Y * s);
+
+            // [  1  0  0  0 ]
+            // [  0  c  s  0 ]
+            // [  0 -s  c  0 ]
+            // [  0  y  z  1 ]
+
+            Impl result;
+
+            result.X = Vector128.CreateScalar(1.0f);
+            result.Y = Vector128.Create(0, c, s, 0);
+            result.Z = Vector128.Create(0, -s, c, 0);
+            result.W = Vector128.Create(0, y, z, 1);
+
+            return result.AsM4x4();
+        }
 
         /// <summary>Creates a matrix for rotating points around the Y axis.</summary>
         /// <param name="radians">The amount, in radians, by which to rotate around the Y-axis.</param>
         /// <returns>The rotation matrix.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Matrix4x4 CreateRotationY(float radians)
-            => Impl.CreateRotationY(radians).AsM4x4();
+        {
+            (float s, float c) = float.SinCos(radians);
+
+            // [  c  0 -s  0 ]
+            // [  0  1  0  0 ]
+            // [  s  0  c  0 ]
+            // [  0  0  0  1 ]
+
+            Impl result;
+
+            result.X = Vector128.Create(c, 0, -s, 0);
+            result.Y = Vector128.Create(0.0f, 1.0f, 0.0f, 0.0f);
+            result.Z = Vector128.Create(s, 0, c, 0);
+            result.W = Vector128.Create(0.0f, 0.0f, 0.0f, 1.0f);
+
+            return result.AsM4x4();
+        }
 
         /// <summary>The amount, in radians, by which to rotate around the Y axis from a center point.</summary>
         /// <param name="radians">The amount, in radians, by which to rotate around the Y-axis.</param>
         /// <param name="centerPoint">The center point.</param>
         /// <returns>The rotation matrix.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Matrix4x4 CreateRotationY(float radians, Vector3 centerPoint)
-            => Impl.CreateRotationY(radians, in centerPoint).AsM4x4();
+        {
+            (float s, float c) = float.SinCos(radians);
+
+            float x = float.MultiplyAddEstimate(centerPoint.X, 1 - c, -centerPoint.Z * s);
+            float z = float.MultiplyAddEstimate(centerPoint.Z, 1 - c, +centerPoint.X * s);
+
+            // [  c  0 -s  0 ]
+            // [  0  1  0  0 ]
+            // [  s  0  c  0 ]
+            // [  x  0  z  1 ]
+
+            Impl result;
+
+            result.X = Vector128.Create(c, 0, -s, 0);
+            result.Y = Vector128.Create(0.0f, 1.0f, 0.0f, 0.0f);
+            result.Z = Vector128.Create(s, 0, c, 0);
+            result.W = Vector128.Create(x, 0, z, 1);
+
+            return result.AsM4x4();
+        }
 
         /// <summary>Creates a matrix for rotating points around the Z axis.</summary>
         /// <param name="radians">The amount, in radians, by which to rotate around the Z-axis.</param>
         /// <returns>The rotation matrix.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Matrix4x4 CreateRotationZ(float radians)
-            => Impl.CreateRotationZ(radians).AsM4x4();
+        {
+            (float s, float c) = float.SinCos(radians);
+
+            // [  c  s  0  0 ]
+            // [ -s  c  0  0 ]
+            // [  0  0  1  0 ]
+            // [  0  0  0  1 ]
+
+            Impl result;
+
+            result.X = Vector128.Create(c, s, 0, 0);
+            result.Y = Vector128.Create(-s, c, 0, 0);
+            result.Z = Vector128.Create(0.0f, 0.0f, 1.0f, 0.0f);
+            result.W = Vector128.Create(0.0f, 0.0f, 0.0f, 1.0f);
+
+            return result.AsM4x4();
+        }
 
         /// <summary>Creates a matrix for rotating points around the Z axis from a center point.</summary>
         /// <param name="radians">The amount, in radians, by which to rotate around the Z-axis.</param>
         /// <param name="centerPoint">The center point.</param>
         /// <returns>The rotation matrix.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Matrix4x4 CreateRotationZ(float radians, Vector3 centerPoint)
-            => Impl.CreateRotationZ(radians, in centerPoint).AsM4x4();
+        {
+            (float s, float c) = float.SinCos(radians);
+
+            float x = float.MultiplyAddEstimate(centerPoint.X, 1 - c, +centerPoint.Y * s);
+            float y = float.MultiplyAddEstimate(centerPoint.Y, 1 - c, -centerPoint.X * s);
+
+            // [  c  s  0  0 ]
+            // [ -s  c  0  0 ]
+            // [  0  0  1  0 ]
+            // [  x  y  0  1 ]
+
+            Impl result;
+
+            result.X = Vector128.Create(c, s, 0, 0);
+            result.Y = Vector128.Create(-s, c, 0, 0);
+            result.Z = Vector128.Create(0.0f, 0.0f, 1.0f, 0.0f);
+            result.W = Vector128.Create(x, y, 0, 1);
+
+            return result.AsM4x4();
+        }
 
         /// <summary>Creates a scaling matrix from the specified X, Y, and Z components.</summary>
         /// <param name="xScale">The value to scale by on the X axis.</param>
         /// <param name="yScale">The value to scale by on the Y axis.</param>
         /// <param name="zScale">The value to scale by on the Z axis.</param>
         /// <returns>The scaling matrix.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Matrix4x4 CreateScale(float xScale, float yScale, float zScale)
-            => Impl.CreateScale(xScale, yScale, zScale).AsM4x4();
+        {
+            Impl result;
+
+            result.X = Vector128.Create(xScale, 0, 0, 0);
+            result.Y = Vector128.Create(0, yScale, 0, 0);
+            result.Z = Vector128.Create(0, 0, zScale, 0);
+            result.W = Vector128.Create(0.0f, 0.0f, 0.0f, 1.0f);
+
+            return result.AsM4x4();
+        }
 
         /// <summary>Creates a scaling matrix that is offset by a given center point.</summary>
         /// <param name="xScale">The value to scale by on the X axis.</param>
@@ -863,55 +1585,141 @@ namespace System.Numerics
         /// <param name="zScale">The value to scale by on the Z axis.</param>
         /// <param name="centerPoint">The center point.</param>
         /// <returns>The scaling matrix.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Matrix4x4 CreateScale(float xScale, float yScale, float zScale, Vector3 centerPoint)
-            => Impl.CreateScale(xScale, yScale, zScale, in centerPoint).AsM4x4();
+        {
+            Impl result;
+
+            result.X = Vector128.Create(xScale, 0, 0, 0);
+            result.Y = Vector128.Create(0, yScale, 0, 0);
+            result.Z = Vector128.Create(0, 0, zScale, 0);
+            result.W = (centerPoint.AsVector128() * (Vector128<float>.One - Vector128.Create(xScale, yScale, zScale, 0))).WithElement(3, 1.0f);
+
+            return result.AsM4x4();
+        }
 
         /// <summary>Creates a scaling matrix from the specified vector scale.</summary>
         /// <param name="scales">The scale to use.</param>
         /// <returns>The scaling matrix.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Matrix4x4 CreateScale(Vector3 scales)
-            => Impl.CreateScale(in scales).AsM4x4();
+        {
+            Impl result;
+
+            result.X = Vector128.Create(scales.X, 0, 0, 0);
+            result.Y = Vector128.Create(0, scales.Y, 0, 0);
+            result.Z = Vector128.Create(0, 0, scales.Z, 0);
+            result.W = Vector128.Create(0.0f, 0.0f, 0.0f, 1.0f);
+
+            return result.AsM4x4();
+        }
 
         /// <summary>Creates a scaling matrix with a center point.</summary>
         /// <param name="scales">The vector that contains the amount to scale on each axis.</param>
         /// <param name="centerPoint">The center point.</param>
         /// <returns>The scaling matrix.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Matrix4x4 CreateScale(Vector3 scales, Vector3 centerPoint)
-            => Impl.CreateScale(scales, in centerPoint).AsM4x4();
+        {
+            Impl result;
+
+            result.X = Vector128.Create(scales.X, 0, 0, 0);
+            result.Y = Vector128.Create(0, scales.Y, 0, 0);
+            result.Z = Vector128.Create(0, 0, scales.Z, 0);
+            result.W = (centerPoint.AsVector128() * (Vector128<float>.One - scales.AsVector128())).WithElement(3, 1.0f);
+
+            return result.AsM4x4();
+        }
 
         /// <summary>Creates a uniform scaling matrix that scale equally on each axis.</summary>
         /// <param name="scale">The uniform scaling factor.</param>
         /// <returns>The scaling matrix.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Matrix4x4 CreateScale(float scale)
-            => Impl.CreateScale(scale).AsM4x4();
+        {
+            Impl result;
+
+            result.X = Vector128.Create(scale, 0, 0, 0);
+            result.Y = Vector128.Create(0, scale, 0, 0);
+            result.Z = Vector128.Create(0, 0, scale, 0);
+            result.W = Vector128.Create(0.0f, 0.0f, 0.0f, 1.0f);
+
+            return result.AsM4x4();
+        }
 
         /// <summary>Creates a uniform scaling matrix that scales equally on each axis with a center point.</summary>
         /// <param name="scale">The uniform scaling factor.</param>
         /// <param name="centerPoint">The center point.</param>
         /// <returns>The scaling matrix.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Matrix4x4 CreateScale(float scale, Vector3 centerPoint)
-            => Impl.CreateScale(scale, in centerPoint).AsM4x4();
+        {
+            Impl result;
+
+            result.X = Vector128.Create(scale, 0, 0, 0);
+            result.Y = Vector128.Create(0, scale, 0, 0);
+            result.Z = Vector128.Create(0, 0, scale, 0);
+            result.W = (centerPoint.AsVector128() * (1.0f - scale)).WithElement(3, 1.0f);
+
+            return result.AsM4x4();
+        }
 
         /// <summary>Creates a matrix that flattens geometry into a specified plane as if casting a shadow from a specified light source.</summary>
         /// <param name="lightDirection">The direction from which the light that will cast the shadow is coming.</param>
         /// <param name="plane">The plane onto which the new matrix should flatten geometry so as to cast a shadow.</param>
         /// <returns>A new matrix that can be used to flatten geometry onto the specified plane from the specified direction.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Matrix4x4 CreateShadow(Vector3 lightDirection, Plane plane)
-            => Impl.CreateShadow(in lightDirection, in plane).AsM4x4();
+        {
+            Vector128<float> p = Plane.Normalize(plane.AsVector128());
+            Vector128<float> l = lightDirection.AsVector128();
+            float dot = Vector128.Dot(p, l);
+
+            p = -p;
+
+            Impl result;
+
+            result.X = Vector128.MultiplyAddEstimate(l, Vector128.Create(p.GetElement(0)), Vector128.Create(dot, 0, 0, 0));
+            result.Y = Vector128.MultiplyAddEstimate(l, Vector128.Create(p.GetElement(1)), Vector128.Create(0, dot, 0, 0));
+            result.Z = Vector128.MultiplyAddEstimate(l, Vector128.Create(p.GetElement(2)), Vector128.Create(0, 0, dot, 0));
+            result.W = Vector128.MultiplyAddEstimate(l, Vector128.Create(p.GetElement(3)), Vector128.Create(0, 0, 0, dot));
+
+            return result.AsM4x4();
+        }
 
         /// <summary>Creates a translation matrix from the specified 3-dimensional vector.</summary>
         /// <param name="position">The amount to translate in each axis.</param>
         /// <returns>The translation matrix.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Matrix4x4 CreateTranslation(Vector3 position)
-            => Impl.CreateTranslation(in position).AsM4x4();
+        {
+            Impl result;
+
+            result.X = Vector128.CreateScalar(1.0f);
+            result.Y = Vector128.Create(0.0f, 1.0f, 0.0f, 0.0f);
+            result.Z = Vector128.Create(0.0f, 0.0f, 1.0f, 0.0f);
+            result.W = position.AsVector128Unsafe().WithElement(3, 1.0f);
+
+            return result.AsM4x4();
+        }
 
         /// <summary>Creates a translation matrix from the specified X, Y, and Z components.</summary>
         /// <param name="xPosition">The amount to translate on the X axis.</param>
         /// <param name="yPosition">The amount to translate on the Y axis.</param>
         /// <param name="zPosition">The amount to translate on the Z axis.</param>
         /// <returns>The translation matrix.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Matrix4x4 CreateTranslation(float xPosition, float yPosition, float zPosition)
-            => Impl.CreateTranslation(xPosition, yPosition, zPosition).AsM4x4();
+        {
+            Impl result;
+
+            result.X = Vector128.CreateScalar(1.0f);
+            result.Y = Vector128.Create(0.0f, 1.0f, 0.0f, 0.0f);
+            result.Z = Vector128.Create(0.0f, 0.0f, 1.0f, 0.0f);
+            result.W = Vector128.Create(xPosition, yPosition, zPosition, 1);
+
+            return result.AsM4x4();
+        }
 
         /// <summary>Creates a right-handed viewport matrix from the specified parameters.</summary>
         /// <param name="x">X coordinate of the viewport upper left corner.</param>
@@ -928,8 +1736,22 @@ namespace System.Numerics
         /// |       0       |        0       | minDepth - maxDepth | 0 |
         /// | x + width / 2 | y + height / 2 |       minDepth      | 1 |
         /// </remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Matrix4x4 CreateViewport(float x, float y, float width, float height, float minDepth, float maxDepth)
-            => Impl.CreateViewport(x, y, width, height, minDepth, maxDepth).AsM4x4();
+        {
+            Impl result;
+
+            // 4x SIMD fields to get a lot better codegen
+            result.W = Vector128.Create(width, height, 0f, 0f);
+            result.W *= Vector128.Create(0.5f, 0.5f, 0f, 0f);
+
+            result.X = Vector128.Create(result.W.GetElement(0), 0f, 0f, 0f);
+            result.Y = Vector128.Create(0f, -result.W.GetElement(1), 0f, 0f);
+            result.Z = Vector128.Create(0f, 0f, minDepth - maxDepth, 0f);
+            result.W += Vector128.Create(x, y, minDepth, 1f);
+
+            return result.AsM4x4();
+        }
 
         /// <summary>Creates a left-handed viewport matrix from the specified parameters.</summary>
         /// <param name="x">X coordinate of the viewport upper left corner.</param>
@@ -946,8 +1768,22 @@ namespace System.Numerics
         /// |       0       |        0       | maxDepth - minDepth | 0 |
         /// | x + width / 2 | y + height / 2 |       minDepth      | 1 |
         /// </remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Matrix4x4 CreateViewportLeftHanded(float x, float y, float width, float height, float minDepth, float maxDepth)
-            => Impl.CreateViewportLeftHanded(x, y, width, height, minDepth, maxDepth).AsM4x4();
+        {
+            Impl result;
+
+            // 4x SIMD fields to get a lot better codegen
+            result.W = Vector128.Create(width, height, 0f, 0f);
+            result.W *= Vector128.Create(0.5f, 0.5f, 0f, 0f);
+
+            result.X = Vector128.Create(result.W.GetElement(0), 0f, 0f, 0f);
+            result.Y = Vector128.Create(0f, -result.W.GetElement(1), 0f, 0f);
+            result.Z = Vector128.Create(0f, 0f, maxDepth - minDepth, 0f);
+            result.W += Vector128.Create(x, y, minDepth, 1f);
+
+            return result.AsM4x4();
+        }
 
         /// <summary>Creates a world matrix with the specified parameters.</summary>
         /// <param name="position">The position of the object.</param>
@@ -955,8 +1791,22 @@ namespace System.Numerics
         /// <param name="up">The upward direction of the object. Its value is usually <c>[0, 1, 0]</c>.</param>
         /// <returns>The world matrix.</returns>
         /// <remarks><paramref name="position" /> is used in translation operations.</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Matrix4x4 CreateWorld(Vector3 position, Vector3 forward, Vector3 up)
-            => Impl.CreateWorld(in position, in forward, in up).AsM4x4();
+        {
+            Vector128<float> axisZ = Vector128.Normalize(-(forward.AsVector128()));
+            Vector128<float> axisX = Vector128.Normalize(Vector3.Cross(up.AsVector128(), axisZ));
+            Vector128<float> axisY = Vector3.Cross(axisZ, axisX);
+
+            Impl result;
+
+            result.X = axisX;
+            result.Y = axisY;
+            result.Z = axisZ;
+            result.W = position.AsVector128().WithElement(3, 1.0f);
+
+            return result.AsM4x4();
+        }
 
         /// <summary>Attempts to extract the scale, translation, and rotation components from the given scale, rotation, or translation matrix. The return value indicates whether the operation succeeded.</summary>
         /// <param name="matrix">The source matrix.</param>
@@ -964,17 +1814,414 @@ namespace System.Numerics
         /// <param name="rotation">When this method returns, contains the rotation component of the transformation matrix if the operation succeeded.</param>
         /// <param name="translation">When the method returns, contains the translation component of the transformation matrix if the operation succeeded.</param>
         /// <returns><see langword="true" /> if <paramref name="matrix" /> was decomposed successfully; otherwise,  <see langword="false" />.</returns>
-        public static bool Decompose(Matrix4x4 matrix, out Vector3 scale, out Quaternion rotation, out Vector3 translation)
-            => Impl.Decompose(in matrix.AsImpl(), out scale, out rotation, out translation);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe bool Decompose(Matrix4x4 matrix, out Vector3 scale, out Quaternion rotation, out Vector3 translation)
+            => Decompose(matrix.AsImpl(), out scale, out rotation, out translation);
+
+        internal static unsafe bool Decompose(in Impl matrix, out Vector3 scale, out Quaternion rotation, out Vector3 translation)
+        {
+            Impl matTemp = Identity.AsImpl();
+
+            Vector128<float>* canonicalBasis = stackalloc Vector128<float>[3] {
+                Vector128.Create(1.0f, 0.0f, 0.0f, 0.0f),
+                Vector128.Create(0.0f, 1.0f, 0.0f, 0.0f),
+                Vector128.Create(0.0f, 0.0f, 1.0f, 0.0f),
+            };
+
+            translation = matrix.W.AsVector3();
+
+            Vector128<float>** vectorBasis = stackalloc Vector128<float>*[3] {
+                &matTemp.X,
+                &matTemp.Y,
+                &matTemp.Z,
+            };
+
+            *(vectorBasis[0]) = matrix.X.WithElement(3, 0.0f);
+            *(vectorBasis[1]) = matrix.Y.WithElement(3, 0.0f);
+            *(vectorBasis[2]) = matrix.Z.WithElement(3, 0.0f);
+
+            float* scales = stackalloc float[3] {
+                Vector128.Length(*(vectorBasis[0])),
+                Vector128.Length(*(vectorBasis[1])),
+                Vector128.Length(*(vectorBasis[2])),
+            };
+
+            #region Ranking
+            int a = 0;
+            int b = 1;
+            int c = 2;
+
+            float x = scales[0];
+            float y = scales[1];
+            float z = scales[2];
+
+            if (x < y)
+            {
+                if (y < z)
+                {
+                    // 2, 1, 0
+                    (a, c) = (c, a);
+                }
+                else if (x < z)
+                {
+                    // 1, 2, 0
+                    (a, b) = (b, a);
+                }
+                else
+                {
+                    // 1, 0, 2
+                    (a, b) = (b, a);
+                    (b, c) = (c, b);
+                }
+            }
+            else if (x < z)
+            {
+                // 2, 0, 1
+                (b, c) = (c, b);
+                (a, c) = (c, a);
+            }
+            else if (y < z)
+            {
+                // 0, 2, 1
+                (b, c) = (c, b);
+            }
+            else
+            {
+                // 0, 1, 2
+            }
+            #endregion
+
+            if (scales[a] < DecomposeEpsilon)
+            {
+                *(vectorBasis[a]) = canonicalBasis[a];
+            }
+
+            *vectorBasis[a] = Vector128.Normalize(*vectorBasis[a]);
+
+            if (scales[b] < DecomposeEpsilon)
+            {
+                Vector128<float> fAbs = Vector128.Abs(*vectorBasis[a]);
+
+                float fAbsX = fAbs.GetElement(0);
+                float fAbsY = fAbs.GetElement(1);
+                float fAbsZ = fAbs.GetElement(2);
+
+                #region Ranking
+                int cc;
+
+                if (fAbsX < fAbsY)
+                {
+                    cc = ((fAbsY < fAbsZ) || (fAbsX < fAbsZ)) ? 0 : 2;
+                }
+                else
+                {
+                    cc = ((fAbsX < fAbsZ) || (fAbsY < fAbsZ)) ? 1 : 2;
+                }
+                #endregion
+
+                *vectorBasis[b] = Vector3.Cross(*vectorBasis[a], canonicalBasis[cc]);
+            }
+
+            *vectorBasis[b] = Vector128.Normalize(*vectorBasis[b]);
+
+            if (scales[c] < DecomposeEpsilon)
+            {
+                *vectorBasis[c] = Vector3.Cross(*vectorBasis[a], *vectorBasis[b]);
+            }
+
+            *vectorBasis[c] = Vector128.Normalize(*vectorBasis[c]);
+
+            float det = GetDeterminant(in matTemp);
+
+            // use Kramer's rule to check for handedness of coordinate system
+            if (float.IsNegative(det))
+            {
+                // switch coordinate system by negating the scale and inverting the basis vector on the x-axis
+                scales[a] = -scales[a];
+                *vectorBasis[a] = -(*vectorBasis[a]);
+
+                det = -det;
+            }
+
+            det -= 1.0f;
+            det *= det;
+
+            bool result;
+
+            if (DecomposeEpsilon < det)
+            {
+                // Non-SRT matrix encountered
+                rotation = Vector128.Create(0.0f, 0.0f, 0.0f, 1.0f).AsQuaternion();
+                result = false;
+            }
+            else
+            {
+                // generate the quaternion from the matrix
+                rotation = Quaternion.CreateFromRotationMatrix(in matTemp).AsQuaternion();
+                result = true;
+            }
+
+            scale = *(Vector3*)scales;
+            return result;
+        }
 
         /// <summary>Tries to invert the specified matrix. The return value indicates whether the operation succeeded.</summary>
         /// <param name="matrix">The matrix to invert.</param>
         /// <param name="result">When this method returns, contains the inverted matrix if the operation succeeded.</param>
         /// <returns><see langword="true" /> if <paramref name="matrix" /> was converted successfully; otherwise,  <see langword="false" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool Invert(Matrix4x4 matrix, out Matrix4x4 result)
         {
             Unsafe.SkipInit(out result);
-            return Impl.Invert(in matrix.AsImpl(), out result.AsImpl());
+            return Invert(in matrix.AsROImpl(), out Unsafe.As<Matrix4x4, Impl>(ref result));
+        }
+
+        internal static bool Invert(in Impl matrix, out Impl result)
+        {
+            // This implementation is based on the DirectX Math Library XMMatrixInverse method
+            // https://github.com/microsoft/DirectXMath/blob/master/Inc/DirectXMathMatrix.inl
+
+            //                                       -1
+            // If you have matrix M, inverse Matrix M   can compute
+            //
+            //     -1       1
+            //    M   = --------- A
+            //            det(M)
+            //
+            // A is adjugate (adjoint) of M, where,
+            //
+            //      T
+            // A = C
+            //
+            // C is Cofactor matrix of M, where,
+            //           i + j
+            // C   = (-1)      * det(M  )
+            //  ij                    ij
+            //
+            //     [ a b c d ]
+            // M = [ e f g h ]
+            //     [ i j k l ]
+            //     [ m n o p ]
+            //
+            // First Row
+            //           2 | f g h |
+            // C   = (-1)  | j k l | = + ( f ( kp - lo ) - g ( jp - ln ) + h ( jo - kn ) )
+            //  11         | n o p |
+            //
+            //           3 | e g h |
+            // C   = (-1)  | i k l | = - ( e ( kp - lo ) - g ( ip - lm ) + h ( io - km ) )
+            //  12         | m o p |
+            //
+            //           4 | e f h |
+            // C   = (-1)  | i j l | = + ( e ( jp - ln ) - f ( ip - lm ) + h ( in - jm ) )
+            //  13         | m n p |
+            //
+            //           5 | e f g |
+            // C   = (-1)  | i j k | = - ( e ( jo - kn ) - f ( io - km ) + g ( in - jm ) )
+            //  14         | m n o |
+            //
+            // Second Row
+            //           3 | b c d |
+            // C   = (-1)  | j k l | = - ( b ( kp - lo ) - c ( jp - ln ) + d ( jo - kn ) )
+            //  21         | n o p |
+            //
+            //           4 | a c d |
+            // C   = (-1)  | i k l | = + ( a ( kp - lo ) - c ( ip - lm ) + d ( io - km ) )
+            //  22         | m o p |
+            //
+            //           5 | a b d |
+            // C   = (-1)  | i j l | = - ( a ( jp - ln ) - b ( ip - lm ) + d ( in - jm ) )
+            //  23         | m n p |
+            //
+            //           6 | a b c |
+            // C   = (-1)  | i j k | = + ( a ( jo - kn ) - b ( io - km ) + c ( in - jm ) )
+            //  24         | m n o |
+            //
+            // Third Row
+            //           4 | b c d |
+            // C   = (-1)  | f g h | = + ( b ( gp - ho ) - c ( fp - hn ) + d ( fo - gn ) )
+            //  31         | n o p |
+            //
+            //           5 | a c d |
+            // C   = (-1)  | e g h | = - ( a ( gp - ho ) - c ( ep - hm ) + d ( eo - gm ) )
+            //  32         | m o p |
+            //
+            //           6 | a b d |
+            // C   = (-1)  | e f h | = + ( a ( fp - hn ) - b ( ep - hm ) + d ( en - fm ) )
+            //  33         | m n p |
+            //
+            //           7 | a b c |
+            // C   = (-1)  | e f g | = - ( a ( fo - gn ) - b ( eo - gm ) + c ( en - fm ) )
+            //  34         | m n o |
+            //
+            // Fourth Row
+            //           5 | b c d |
+            // C   = (-1)  | f g h | = - ( b ( gl - hk ) - c ( fl - hj ) + d ( fk - gj ) )
+            //  41         | j k l |
+            //
+            //           6 | a c d |
+            // C   = (-1)  | e g h | = + ( a ( gl - hk ) - c ( el - hi ) + d ( ek - gi ) )
+            //  42         | i k l |
+            //
+            //           7 | a b d |
+            // C   = (-1)  | e f h | = - ( a ( fl - hj ) - b ( el - hi ) + d ( ej - fi ) )
+            //  43         | i j l |
+            //
+            //           8 | a b c |
+            // C   = (-1)  | e f g | = + ( a ( fk - gj ) - b ( ek - gi ) + c ( ej - fi ) )
+            //  44         | i j k |
+
+            // Load the matrix values into rows
+            Vector128<float> row1 = matrix.X;
+            Vector128<float> row2 = matrix.Y;
+            Vector128<float> row3 = matrix.Z;
+            Vector128<float> row4 = matrix.W;
+
+            // Transpose the matrix
+            Vector128<float> vTemp1 = Vector128.ConcatLowerLower(row1, row2);
+            Vector128<float> vTemp3 = Vector128.ConcatUpperUpper(row1, row2);
+            Vector128<float> vTemp2 = Vector128.ConcatLowerLower(row3, row4);
+            Vector128<float> vTemp4 = Vector128.ConcatUpperUpper(row3, row4);
+
+            row1 = Vector128.UnzipEven(vTemp1, vTemp2);
+            row2 = Vector128.UnzipOdd(vTemp1, vTemp2);
+            row3 = Vector128.UnzipEven(vTemp3, vTemp4);
+            row4 = Vector128.UnzipOdd(vTemp3, vTemp4);
+
+            Vector128<float> V00 = Vector128.Shuffle(row3, Vector128.Create(0, 0, 1, 1));
+            Vector128<float> V10 = Vector128.Shuffle(row4, Vector128.Create(2, 3, 2, 3));
+            Vector128<float> V01 = Vector128.Shuffle(row1, Vector128.Create(0, 0, 1, 1));
+            Vector128<float> V11 = Vector128.Shuffle(row2, Vector128.Create(2, 3, 2, 3));
+            Vector128<float> V02 = Vector128.UnzipEven(row3, row1);
+            Vector128<float> V12 = Vector128.UnzipOdd(row4, row2);
+
+            Vector128<float> D0 = V00 * V10;
+            Vector128<float> D1 = V01 * V11;
+            Vector128<float> D2 = V02 * V12;
+
+            V00 = Vector128.Shuffle(row3, Vector128.Create(2, 3, 2, 3));
+            V10 = Vector128.Shuffle(row4, Vector128.Create(0, 0, 1, 1));
+            V01 = Vector128.Shuffle(row1, Vector128.Create(2, 3, 2, 3));
+            V11 = Vector128.Shuffle(row2, Vector128.Create(0, 0, 1, 1));
+            V02 = Vector128.UnzipOdd(row3, row1);
+            V12 = Vector128.UnzipEven(row4, row2);
+
+            D0 = Vector128.MultiplyAddEstimate(-V00, V10, D0);
+            D1 = Vector128.MultiplyAddEstimate(-V01, V11, D1);
+            D2 = Vector128.MultiplyAddEstimate(-V02, V12, D2);
+
+            // V11 = D0Y,D0W,D2Y,D2Y
+            V11 = Shuffle2(D0, D2, 1, 3, 1, 1);
+            V00 = Vector128.Shuffle(row2, Vector128.Create(1, 2, 0, 1));
+            V10 = Shuffle2(V11, D0, 2, 0, 3, 0);
+            V01 = Vector128.Shuffle(row1, Vector128.Create(2, 0, 1, 0));
+            V11 = Shuffle2(V11, D0, 1, 2, 1, 2);
+
+            // V13 = D1Y,D1W,D2W,D2W
+            Vector128<float> V13 = Shuffle2(D1, D2, 1, 3, 3, 3);
+            V02 = Vector128.Shuffle(row4, Vector128.Create(1, 2, 0, 1));
+            V12 = Shuffle2(V13, D1, 2, 0, 3, 0);
+            Vector128<float> V03 = Vector128.Shuffle(row3, Vector128.Create(2, 0, 1, 0));
+            V13 = Shuffle2(V13, D1, 1, 2, 1, 2);
+
+            Vector128<float> C0 = V00 * V10;
+            Vector128<float> C2 = V01 * V11;
+            Vector128<float> C4 = V02 * V12;
+            Vector128<float> C6 = V03 * V13;
+
+            // V11 = D0X,D0Y,D2X,D2X
+            V11 = Shuffle2(D0, D2, 0, 1, 0, 0);
+            V00 = Vector128.Shuffle(row2, Vector128.Create(2, 3, 1, 2));
+            V10 = Shuffle2(D0, V11, 3, 0, 1, 2);
+            V01 = Vector128.Shuffle(row1, Vector128.Create(3, 2, 3, 1));
+            V11 = Shuffle2(D0, V11, 2, 1, 2, 0);
+
+            // V13 = D1X,D1Y,D2Z,D2Z
+            V13 = Shuffle2(D1, D2, 0, 1, 2, 2);
+            V02 = Vector128.Shuffle(row4, Vector128.Create(2, 3, 1, 2));
+            V12 = Shuffle2(D1, V13, 3, 0, 1, 2);
+            V03 = Vector128.Shuffle(row3, Vector128.Create(3, 2, 3, 1));
+            V13 = Shuffle2(D1, V13, 2, 1, 2, 0);
+
+            C0 = Vector128.MultiplyAddEstimate(-V00, V10, C0);
+            C2 = Vector128.MultiplyAddEstimate(-V01, V11, C2);
+            C4 = Vector128.MultiplyAddEstimate(-V02, V12, C4);
+            C6 = Vector128.MultiplyAddEstimate(-V03, V13, C6);
+
+            V00 = Vector128.Shuffle(row2, Vector128.Create(3, 0, 3, 0));
+
+            // V10 = D0Z,D0Z,D2X,D2Y
+            V10 = Shuffle2(D0, D2, 2, 2, 0, 1);
+            V10 = Vector128.Shuffle(V10, Vector128.Create(0, 3, 2, 0));
+            V01 = Vector128.Shuffle(row1, Vector128.Create(1, 3, 0, 2));
+
+            // V11 = D0X,D0W,D2X,D2Y
+            V11 = Shuffle2(D0, D2, 0, 3, 0, 1);
+            V11 = Vector128.Shuffle(V11, Vector128.Create(3, 0, 1, 2));
+            V02 = Vector128.Shuffle(row4, Vector128.Create(3, 0, 3, 0));
+
+            // V12 = D1Z,D1Z,D2Z,D2W
+            V12 = Shuffle2(D1, D2, 2, 2, 2, 3);
+            V12 = Vector128.Shuffle(V12, Vector128.Create(0, 3, 2, 0));
+            V03 = Vector128.Shuffle(row3, Vector128.Create(1, 3, 0, 2));
+
+            // V13 = D1X,D1W,D2Z,D2W
+            V13 = Shuffle2(D1, D2, 0, 3, 2, 3);
+            V13 = Vector128.Shuffle(V13, Vector128.Create(3, 0, 1, 2));
+
+            V00 *= V10;
+            V01 *= V11;
+            V02 *= V12;
+            V03 *= V13;
+
+            Vector128<float> C1 = C0 - V00;
+            C0 += V00;
+
+            Vector128<float> C3 = C2 + V01;
+            C2 -= V01;
+
+            Vector128<float> C5 = C4 - V02;
+            C4 += V02;
+
+            Vector128<float> C7 = C6 + V03;
+            C6 -= V03;
+
+            C0 = Shuffle2(C0, C1, 0, 2, 1, 3);
+            C2 = Shuffle2(C2, C3, 0, 2, 1, 3);
+            C4 = Shuffle2(C4, C5, 0, 2, 1, 3);
+            C6 = Shuffle2(C6, C7, 0, 2, 1, 3);
+
+            C0 = Vector128.Shuffle(C0, Vector128.Create(0, 2, 1, 3));
+            C2 = Vector128.Shuffle(C2, Vector128.Create(0, 2, 1, 3));
+            C4 = Vector128.Shuffle(C4, Vector128.Create(0, 2, 1, 3));
+            C6 = Vector128.Shuffle(C6, Vector128.Create(0, 2, 1, 3));
+
+            // Get the determinant
+            float det = Vector4.Dot(C0.AsVector4(), row1.AsVector4());
+
+            // Check determinant is not zero
+            if (float.Abs(det) < InvertEpsilon)
+            {
+                Vector128<float> vNaN = Vector128<float>.NaN;
+
+                result.X = vNaN;
+                result.Y = vNaN;
+                result.Z = vNaN;
+                result.W = vNaN;
+
+                return false;
+            }
+
+            // Create Vector128<float> copy of the determinant and invert them.
+
+            Vector128<float> vTemp = Vector128<float>.One / det;
+
+            result.X = C0 * vTemp;
+            result.Y = C2 * vTemp;
+            result.Z = C4 * vTemp;
+            result.W = C6 * vTemp;
+
+            return true;
         }
 
         /// <summary>Performs a linear interpolation from one matrix to a second matrix based on a value that specifies the weighting of the second matrix.</summary>
@@ -984,12 +2231,26 @@ namespace System.Numerics
         /// <returns>The interpolated matrix.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Matrix4x4 Lerp(Matrix4x4 matrix1, Matrix4x4 matrix2, float amount)
-            => Impl.Lerp(in matrix1.AsImpl(), in matrix2.AsImpl(), amount).AsM4x4();
+        {
+            ref readonly Impl left = ref matrix1.AsROImpl();
+            ref readonly Impl right = ref matrix2.AsROImpl();
+            Vector128<float> vAmount = Vector128.Create(amount);
+
+            Impl result;
+
+            result.X = Vector128.Lerp(left.X, right.X, vAmount);
+            result.Y = Vector128.Lerp(left.Y, right.Y, vAmount);
+            result.Z = Vector128.Lerp(left.Z, right.Z, vAmount);
+            result.W = Vector128.Lerp(left.W, right.W, vAmount);
+
+            return result.AsM4x4();
+        }
 
         /// <summary>Multiplies two matrices together to compute the product.</summary>
         /// <param name="value1">The first matrix.</param>
         /// <param name="value2">The second matrix.</param>
         /// <returns>The product matrix.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Matrix4x4 Multiply(Matrix4x4 value1, Matrix4x4 value2) => value1 * value2;
 
         /// <summary>Multiplies a matrix by a float to compute the product.</summary>
@@ -997,36 +2258,117 @@ namespace System.Numerics
         /// <param name="value2">The scaling value to use.</param>
         /// <returns>The scaled matrix.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Matrix4x4 Multiply(Matrix4x4 value1, float value2)
-            => (value1.AsImpl() * value2).AsM4x4();
+        public static Matrix4x4 Multiply(Matrix4x4 value1, float value2) => value1 * value2;
 
         /// <summary>Negates the specified matrix by multiplying all its values by -1.</summary>
         /// <param name="value">The matrix to negate.</param>
         /// <returns>The negated matrix.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Matrix4x4 Negate(Matrix4x4 value)
-            => (-value.AsImpl()).AsM4x4();
+        public static Matrix4x4 Negate(Matrix4x4 value) => -value;
 
         /// <summary>Subtracts each element in a second matrix from its corresponding element in a first matrix.</summary>
         /// <param name="value1">The first matrix.</param>
         /// <param name="value2">The second matrix.</param>
         /// <returns>The matrix containing the values that result from subtracting each element in <paramref name="value2" /> from its corresponding element in <paramref name="value1" />.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Matrix4x4 Subtract(Matrix4x4 value1, Matrix4x4 value2)
-            => (value1.AsImpl() - value2.AsImpl()).AsM4x4();
+        public static Matrix4x4 Subtract(Matrix4x4 value1, Matrix4x4 value2) => value1 - value2;
 
         /// <summary>Transforms the specified matrix by applying the specified Quaternion rotation.</summary>
         /// <param name="value">The matrix to transform.</param>
         /// <param name="rotation">The rotation t apply.</param>
         /// <returns>The transformed matrix.</returns>
         public static Matrix4x4 Transform(Matrix4x4 value, Quaternion rotation)
-            => Impl.Transform(in value.AsImpl(), in rotation).AsM4x4();
+        {
+            // Compute rotation matrix.
+            float x2 = rotation.X + rotation.X;
+            float y2 = rotation.Y + rotation.Y;
+            float z2 = rotation.Z + rotation.Z;
+
+            float wx2 = rotation.W * x2;
+            float wy2 = rotation.W * y2;
+            float wz2 = rotation.W * z2;
+
+            float xx2 = rotation.X * x2;
+            float xy2 = rotation.X * y2;
+            float xz2 = rotation.X * z2;
+
+            float yy2 = rotation.Y * y2;
+            float yz2 = rotation.Y * z2;
+            float zz2 = rotation.Z * z2;
+
+            float q11 = 1.0f - yy2 - zz2;
+            float q21 = xy2 - wz2;
+            float q31 = xz2 + wy2;
+
+            float q12 = xy2 + wz2;
+            float q22 = 1.0f - xx2 - zz2;
+            float q32 = yz2 - wx2;
+
+            float q13 = xz2 - wy2;
+            float q23 = yz2 + wx2;
+            float q33 = 1.0f - xx2 - yy2;
+
+            Impl result;
+
+            result.X = Vector128.Create(
+                value.X.X * q11 + value.X.Y * q21 + value.X.Z * q31,
+                value.X.X * q12 + value.X.Y * q22 + value.X.Z * q32,
+                value.X.X * q13 + value.X.Y * q23 + value.X.Z * q33,
+                value.X.W
+            );
+            result.Y = Vector128.Create(
+                value.Y.X * q11 + value.Y.Y * q21 + value.Y.Z * q31,
+                value.Y.X * q12 + value.Y.Y * q22 + value.Y.Z * q32,
+                value.Y.X * q13 + value.Y.Y * q23 + value.Y.Z * q33,
+                value.Y.W
+            );
+            result.Z = Vector128.Create(
+                value.Z.X * q11 + value.Z.Y * q21 + value.Z.Z * q31,
+                value.Z.X * q12 + value.Z.Y * q22 + value.Z.Z * q32,
+                value.Z.X * q13 + value.Z.Y * q23 + value.Z.Z * q33,
+                value.Z.W
+            );
+            result.W = Vector128.Create(
+                value.W.X * q11 + value.W.Y * q21 + value.W.Z * q31,
+                value.W.X * q12 + value.W.Y * q22 + value.W.Z * q32,
+                value.W.X * q13 + value.W.Y * q23 + value.W.Z * q33,
+                value.W.W
+            );
+
+            return result.AsM4x4();
+        }
 
         /// <summary>Transposes the rows and columns of a matrix.</summary>
         /// <param name="matrix">The matrix to transpose.</param>
         /// <returns>The transposed matrix.</returns>
-        public static Matrix4x4 Transpose(Matrix4x4 matrix)
-            => Impl.Transpose(in matrix.AsImpl()).AsM4x4();
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Matrix4x4 Transpose(Matrix4x4 matrix) => Transpose(in matrix.AsROImpl()).AsM4x4();
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Impl Transpose(in Impl matrix)
+        {
+            // This implementation is based on the DirectX Math Library XMMatrixTranspose method
+            // https://github.com/microsoft/DirectXMath/blob/master/Inc/DirectXMathMatrix.inl
+
+            Impl result;
+
+            Vector128<float> x = matrix.X;
+            Vector128<float> y = matrix.Y;
+            Vector128<float> z = matrix.Z;
+            Vector128<float> w = matrix.W;
+
+            Vector128<float> lowerXZ = Vector128.ZipLower(x, z); // x[0], z[0], x[1], z[1]
+            Vector128<float> lowerYW = Vector128.ZipLower(y, w); // y[0], w[0], y[1], w[1]
+            Vector128<float> upperXZ = Vector128.ZipUpper(x, z); // x[2], z[2], x[3], z[3]
+            Vector128<float> upperYW = Vector128.ZipUpper(y, w); // y[2], w[2], y[3], w[3]
+
+            result.X = Vector128.ZipLower(lowerXZ, lowerYW);     // x[0], y[0], z[0], w[0]
+            result.Y = Vector128.ZipUpper(lowerXZ, lowerYW);     // x[1], y[1], z[1], w[1]
+            result.Z = Vector128.ZipLower(upperXZ, upperYW);     // x[2], y[2], z[2], w[2]
+            result.W = Vector128.ZipUpper(upperXZ, upperYW);     // x[3], y[3], z[3], w[3]
+
+            return result;
+        }
 
         /// <summary>Returns a value that indicates whether this instance and a specified object are equal.</summary>
         /// <param name="obj">The object to compare with the current instance.</param>
@@ -1034,19 +2376,105 @@ namespace System.Numerics
         /// <remarks>The current instance and <paramref name="obj" /> are equal if <paramref name="obj" /> is a <see cref="Matrix4x4" /> object and the corresponding elements of each matrix are equal.</remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override readonly bool Equals([NotNullWhen(true)] object? obj)
-            => AsROImpl().Equals(obj);
+            => (obj is Matrix4x4 other) && Equals(other);
 
         /// <summary>Returns a value that indicates whether this instance and another 4x4 matrix are equal.</summary>
         /// <param name="other">The other matrix.</param>
         /// <returns><see langword="true" /> if the two matrices are equal; otherwise, <see langword="false" />.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly bool Equals(Matrix4x4 other)
-            => AsROImpl().Equals(in other.AsImpl());
+        {
+            ref readonly Impl left = ref AsROImpl();
+            ref readonly Impl right = ref other.AsROImpl();
+
+            // This function needs to account for floating-point equality around NaN
+            // and so must behave equivalently to the underlying float/double.Equals
+
+            return left.X.Equals(right.X) &&
+                   left.Y.Equals(right.Y) &&
+                   left.Z.Equals(right.Z) &&
+                   left.W.Equals(right.W);
+        }
 
         /// <summary>Calculates the determinant of the current 4x4 matrix.</summary>
         /// <returns>The determinant.</returns>
-        public readonly float GetDeterminant()
-            => AsROImpl().GetDeterminant();
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public readonly float GetDeterminant() => GetDeterminant(in AsROImpl());
+
+        internal static float GetDeterminant(in Impl impl)
+        {
+            // | a b c d |     | f g h |     | e g h |     | e f h |     | e f g |
+            // | e f g h | = a | j k l | - b | i k l | + c | i j l | - d | i j k |
+            // | i j k l |     | n o p |     | m o p |     | m n p |     | m n o |
+            // | m n o p |
+            //
+            //   | f g h |
+            // a | j k l | = a ( f ( kp - lo ) - g ( jp - ln ) + h ( jo - kn ) )
+            //   | n o p |
+            //
+            //   | e g h |
+            // b | i k l | = b ( e ( kp - lo ) - g ( ip - lm ) + h ( io - km ) )
+            //   | m o p |
+            //
+            //   | e f h |
+            // c | i j l | = c ( e ( jp - ln ) - f ( ip - lm ) + h ( in - jm ) )
+            //   | m n p |
+            //
+            //   | e f g |
+            // d | i j k | = d ( e ( jo - kn ) - f ( io - km ) + g ( in - jm ) )
+            //   | m n o |
+
+            Vector128<float> x = impl.X;
+            Vector128<float> y = impl.Y;
+            Vector128<float> z = impl.Z;
+            Vector128<float> w = impl.W;
+
+            Vector128<float> z_kjji = Vector128.Shuffle(z, Vector128.Create(2, 1, 1, 0));
+            Vector128<float> z_iiij = Vector128.Shuffle(z, Vector128.Create(0, 0, 0, 1));
+            Vector128<float> w_ppop = Vector128.Shuffle(w, Vector128.Create(3, 3, 2, 3));
+            Vector128<float> w_onpo = Vector128.Shuffle(w, Vector128.Create(2, 1, 3, 2));
+            Vector128<float> z_llkl = Vector128.Shuffle(z, Vector128.Create(3, 3, 2, 3));
+            Vector128<float> z_kjlk = Vector128.Shuffle(z, Vector128.Create(2, 1, 3, 2));
+            Vector128<float> w_onnm = Vector128.Shuffle(w, Vector128.Create(2, 1, 1, 0));
+            Vector128<float> w_mmmn = Vector128.Shuffle(w, Vector128.Create(0, 0, 0, 1));
+            Vector128<float> y_feee = Vector128.Shuffle(y, Vector128.Create(1, 0, 0, 0));
+            Vector128<float> y_ggff = Vector128.Shuffle(y, Vector128.Create(2, 2, 1, 1));
+            Vector128<float> y_hhhg = Vector128.Shuffle(y, Vector128.Create(3, 3, 3, 2));
+
+            // tmp1[0] = kp_lo
+            // tmp1[1] = jp_ln
+            // tmp1[2] = jo_kn
+            // tmp1[3] = ip_lm
+            Vector128<float> tmp1 = z_kjji * w_ppop - z_llkl * w_onnm;
+
+            // tmp2[0] = io_km
+            // tmp2[1] = in_jm
+            // tmp2[2] = ip_lm
+            // tmp2[3] = jo_kn
+            Vector128<float> tmp2 = z_iiij * w_onpo - z_kjlk * w_mmmn;
+
+            // tmp3[0] = kp_lo
+            // tmp3[1] = kp_lo
+            // tmp3[2] = jp_ln
+            // tmp3[3] = jo_kn
+            Vector128<float> tmp3 = Vector128.Shuffle(tmp1, Vector128.Create(0, 0, 1, 2));
+
+            // tmp4[0] = jp_ln
+            // tmp4[1] = ip_lm
+            // tmp4[2] = ip_lm
+            // tmp4[3] = io_km
+            Vector128<float> tmp4 = Shuffle2(tmp1, tmp2, 1, 3, 2, 0);
+
+            // tmp5[0] = jo_kn
+            // tmp5[1] = io_km
+            // tmp5[2] = in_jm
+            // tmp5[3] = in_jm
+            Vector128<float> tmp5 = Vector128.Shuffle(tmp2, Vector128.Create(3, 0, 1, 1));
+
+            Vector128<float> tmp6 = x * (y_feee * tmp3 - y_ggff * tmp4 + y_hhhg * tmp5);
+            Vector128<float> tmp7 = tmp6 - Vector128.Shuffle(tmp6, Vector128.Create(1, 0, 3, 0));
+            return tmp7[0] + tmp7[2];
+        }
 
         /// <summary>Gets the element at the specified row and column.</summary>
         /// <param name="row">The index of the row containing the element to get.</param>
@@ -1069,9 +2497,11 @@ namespace System.Numerics
 
         /// <summary>Returns the hash code for this instance.</summary>
         /// <returns>The hash code.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override readonly int GetHashCode()
-            => AsROImpl().GetHashCode();
+        {
+            ref readonly Impl impl = ref AsROImpl();
+            return HashCode.Combine(impl.X, impl.Y, impl.Z, impl.W);
+        }
 
         /// <summary>Returns a string that represents this matrix.</summary>
         /// <returns>The string representation of this matrix.</returns>
@@ -1108,6 +2538,33 @@ namespace System.Numerics
             Matrix4x4 result = this;
             result[index] = value;
             return result;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector128<float> Shuffle2(Vector128<float> lower, Vector128<float> upper, [ConstantExpected] byte xIndex, [ConstantExpected] byte yIndex, [ConstantExpected] byte zIndex, [ConstantExpected] byte wIndex)
+        {
+            if (RuntimeHelpers.IsKnownConstant(xIndex) && RuntimeHelpers.IsKnownConstant(yIndex) && RuntimeHelpers.IsKnownConstant(zIndex) && RuntimeHelpers.IsKnownConstant(wIndex))
+            {
+                if (Sse.IsSupported)
+                {
+#pragma warning disable CA1857 // The parameter expects a constant for optimal performance
+                    return Sse.Shuffle(lower, upper, (byte)((wIndex << 6) | (zIndex << 4) | (yIndex << 2) | xIndex));
+#pragma warning restore CA1857 // The parameter expects a constant for optimal performance
+                }
+                else if (AdvSimd.Arm64.IsSupported)
+                {
+                    return AdvSimd.Arm64.VectorTableLookup((lower.AsByte(), upper.AsByte()), ((Vector128.Create(xIndex, yIndex, zIndex, wIndex) * Vector128.Create(0x04040404)) + Vector128.Create(0x03020100, 0x03020100, 0x13121110, 0x13121110)).AsByte()).AsSingle();
+                }
+                else if (PackedSimd.IsSupported)
+                {
+                    return PackedSimd.Shuffle(lower.AsByte(), upper.AsByte(), ((Vector128.Create(xIndex, yIndex, zIndex, wIndex) * Vector128.Create(0x04040404)) + Vector128.Create(0x03020100, 0x03020100, 0x13121110, 0x13121110)).AsByte()).AsSingle();
+                }
+            }
+
+            return Vector128.ConcatLowerLower(
+                Vector128.Shuffle(lower, Vector128.Create(xIndex, yIndex, 0, 0)),
+                Vector128.Shuffle(upper, Vector128.Create(zIndex, wIndex, 0, 0))
+            );
         }
     }
 }

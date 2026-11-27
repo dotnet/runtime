@@ -13,7 +13,7 @@ namespace System.Speech.Internal.SrgsCompiler
         #region Constructors
 
         internal GrammarElement(Backend backend, CustomGrammar cg)
-            : base(null)
+            : base(null!)
         {
             _cg = cg;
             _backend = backend;
@@ -23,7 +23,7 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #region Internal Method
 
-        string IGrammar.Root
+        string? IGrammar.Root
         {
             get
             {
@@ -76,7 +76,7 @@ namespace System.Speech.Internal.SrgsCompiler
             return rule;
         }
 
-        void IElement.PostParse(IElement parent)
+        void IElement.PostParse(IElement? parent)
         {
             if (_sRoot != null && !_hasRoot)
             {
@@ -118,7 +118,7 @@ namespace System.Speech.Internal.SrgsCompiler
         /// <summary>
         /// Base URI of grammar (xml:base)
         /// </summary>
-        Uri IGrammar.XmlBase
+        Uri? IGrammar.XmlBase
         {
             set
             {
@@ -213,7 +213,7 @@ namespace System.Speech.Internal.SrgsCompiler
         /// <summary>
         /// language
         /// </summary>
-        string IGrammar.Language
+        string? IGrammar.Language
         {
             get
             {
@@ -228,7 +228,7 @@ namespace System.Speech.Internal.SrgsCompiler
         /// <summary>
         /// namespace
         /// </summary>
-        string IGrammar.Namespace
+        string? IGrammar.Namespace
         {
             get
             {
@@ -319,7 +319,7 @@ namespace System.Speech.Internal.SrgsCompiler
             System.Diagnostics.Debug.Assert(!string.IsNullOrEmpty(sRuleId));
 
             // Check if RuleID is unique.
-            Rule rule = _backend.FindRule(sRuleId);
+            Rule? rule = _backend.FindRule(sRuleId);
 
             if (rule != null)
             {
@@ -344,7 +344,7 @@ namespace System.Speech.Internal.SrgsCompiler
             }
             else
             {
-                // Rule not yet defined.  Create a new rule and return the InitalState.
+                // Rule not yet defined.  Create a new rule and return the InitialState.
                 rule = _backend.CreateRule(sRuleId, dwAttributes);
             }
 
@@ -361,7 +361,7 @@ namespace System.Speech.Internal.SrgsCompiler
         private List<Rule> _undefRules = new();
         private CustomGrammar _cg;
 
-        private string _sRoot;
+        private string? _sRoot;
 
         private bool _hasRoot;
 

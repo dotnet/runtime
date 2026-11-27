@@ -1,10 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <!-- TODO: Remove once migrated to unsafe-v2. -->
+    <MemorySafetyRulesVersion>1</MemorySafetyRulesVersion>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-browser;$(NetFrameworkCurrent)</TargetFrameworks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <NoWarn>NU1511</NoWarn>
     <EventSourceSupport Condition="'$(TestNativeAot)' == 'true'">true</EventSourceSupport>
+    <!-- https://github.com/dotnet/runtime/issues/126862 -->
+    <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
+    <EnableAotAnalyzer>false</EnableAotAnalyzer>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
     <!-- Enable diagnostic features. They will add appropriate RuntimeHostConfigurationOption values to runtime config and ILLink.
@@ -23,15 +28,19 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="$(CommonPath)Internal\Padding.cs" Link="Common\Internal\Padding.cs" />
     <Compile Include="$(CommonTestPath)System\Diagnostics\DebuggerAttributes.cs" Link="Common\System\Diagnostics\DebuggerAttributes.cs" />
     <Compile Include="..\src\System\Diagnostics\DsesSamplerBuilder.cs" Link="DsesSamplerBuilder.cs" />
     <Compile Include="..\src\System\Diagnostics\RateLimiter.cs" Link="RateLimiter.cs" />
     <Compile Include="..\src\System\Diagnostics\Helpers.cs" Link="Helpers.cs" />
+    <Compile Include="..\src\System\Diagnostics\Metrics\AggregationManager.cs" Link="AggregationManager.cs" />
     <Compile Include="..\src\System\Diagnostics\Metrics\Aggregator.cs" Link="Aggregator.cs" />
     <Compile Include="..\src\System\Diagnostics\Metrics\AggregatorStore.cs" Link="AggregatorStore.cs" />
     <Compile Include="..\src\System\Diagnostics\Metrics\Base2ExponentialHistogramAggregator.cs" Link="Base2ExponentialHistogramAggregator.cs" />
     <Compile Include="..\src\System\Diagnostics\Metrics\CircularBufferBuckets.cs" Link="CircularBufferBuckets.cs" />
+    <Compile Include="..\src\System\Diagnostics\Metrics\CounterAggregator.cs" Link="CounterAggregator.cs" />
     <Compile Include="..\src\System\Diagnostics\Metrics\ExponentialHistogramAggregator.cs" Link="ExponentialHistogramAggregator.cs" />
+    <Compile Include="..\src\System\Diagnostics\Metrics\InstrumentState.cs" Link="InstrumentState.cs" />
     <Compile Include="..\src\System\Diagnostics\Metrics\LastValueAggregator.cs" Link="LastValueAggregator.cs" />
     <Compile Include="..\src\System\Diagnostics\Metrics\ObjectSequence.cs" Link="ObjectSequence.cs" />
     <Compile Include="..\src\System\Diagnostics\Metrics\ObjectSequence.netcore.cs" Link="ObjectSequence.netcore.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
@@ -61,18 +70,25 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
     <Compile Include="HttpHandlerDiagnosticListenerTests.cs" />
     <Compile Include="ActivityDateTimeTests.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Configuration.cs" Link="Common\System\Net\Configuration.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Configuration.Http.cs" Link="Common\System\Net\Configuration.Http.cs" />
   </ItemGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <ProjectReference Include="..\src\System.Diagnostics.DiagnosticSource.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Reference Include="System.Net.Http" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <Compile Include="$(CommonPath)Polyfills\ArrayPolyfills.cs" Link="Common\Polyfills\ArrayPolyfills.cs" />
+    <Compile Include="$(CommonPath)Polyfills\BitOperationsPolyfills.cs" Link="Common\Polyfills\BitOperationsPolyfills.cs" />
+    <Compile Include="$(CommonPath)Polyfills\DoublePolyfills.cs" Link="Common\Polyfills\DoublePolyfills.cs" />
   </ItemGroup>
 
 </Project>

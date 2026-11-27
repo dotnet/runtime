@@ -208,7 +208,6 @@ BYTE Decoder::Nibbles::Next()
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
     STATIC_CONTRACT_SUPPORTS_DAC;
 
     BYTE result = Read();
@@ -237,7 +236,6 @@ unsigned Decoder::Nibbles::Bits(unsigned number)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
     STATIC_CONTRACT_SUPPORTS_DAC;
 
     unsigned n = number;
@@ -261,7 +259,6 @@ void Decoder::Init(PTR_BYTE bytes)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
     STATIC_CONTRACT_SUPPORTS_DAC_HOST_ONLY;
 
     state = emptyDecode;
@@ -288,7 +285,6 @@ unsigned Decoder::Next()
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
     STATIC_CONTRACT_SUPPORTS_DAC;
 
 tryagain:
@@ -324,7 +320,6 @@ signed Decoder::NextSigned()
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
     STATIC_CONTRACT_SUPPORTS_DAC;
 
     signed v = (signed) Next();
@@ -360,7 +355,6 @@ void Encoder::EncodeSigned(signed value)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
 
     if (!signedNumbers)
@@ -378,7 +372,6 @@ void Encoder::Encode(unsigned value)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
 
     if (value < BASE_1)
@@ -420,7 +413,6 @@ void Encoder::Encode(signed value, BOOL isSigned)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     if (isSigned)
         EncodeSigned(value);
@@ -436,7 +428,6 @@ void Encoder::Add(unsigned value, unsigned length)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     _ASSERTE(!done);
     while (length >= unusedBits)
@@ -458,7 +449,6 @@ void Encoder::Add64(uint64_t value, unsigned length)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     _ASSERTE(!done);
     while (length >= unusedBits)

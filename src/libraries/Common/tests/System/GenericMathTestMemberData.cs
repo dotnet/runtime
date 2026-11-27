@@ -42,6 +42,11 @@ namespace System.Tests
         internal const double MaxSubnormalDouble = 2.2250738585072009E-308;
         internal const float MaxSubnormalSingle = 1.17549421E-38f;
 
+        private static readonly double PositiveNaNDouble = BitConverter.Int64BitsToDouble(0x7FF8_0000_0000_0001);
+        private static readonly double NegativeNaNDouble = BitConverter.Int64BitsToDouble(unchecked((long)0xFFF8_0000_0000_0001));
+        private static readonly float PositiveNaNSingle = BitConverter.Int32BitsToSingle(0x7FC0_0001);
+        private static readonly float NegativeNaNSingle = BitConverter.Int32BitsToSingle(unchecked((int)0xFFC0_0001));
+
         public static IEnumerable<object[]> ClampDouble
         {
             get
@@ -195,6 +200,58 @@ namespace System.Tests
                 yield return new object[] {  float.PositiveInfinity,     0.0f,                       float.PositiveInfinity };
                 yield return new object[] {  float.PositiveInfinity,     3.14159265f,                float.PositiveInfinity };
                 yield return new object[] {  float.PositiveInfinity,     float.PositiveInfinity,     float.PositiveInfinity };
+            }
+        }
+
+        public static IEnumerable<object[]> AsinDouble
+        {
+            get
+            {
+                yield return new object[] {  double.NegativeInfinity,  double.NaN,          0.0 };
+                yield return new object[] { -1.0,                     -1.5707963267948966,  DoubleCrossPlatformMachineEpsilon * 10 };
+                yield return new object[] { -0.78539816339744831,     -0.90333911076651274, DoubleCrossPlatformMachineEpsilon };      // value: -(pi / 4)
+                yield return new object[] { -0.70710678118654752,     -0.78539816339744839, DoubleCrossPlatformMachineEpsilon };      // value: -(1 / sqrt(2)),  expected: -(pi / 4)
+                yield return new object[] { -0.69314718055994531,     -0.76584619481908023, DoubleCrossPlatformMachineEpsilon };      // value: -(ln(2))
+                yield return new object[] { -0.63661977236758134,     -0.69010709137453996, DoubleCrossPlatformMachineEpsilon };      // value: -(2 / pi)
+                yield return new object[] { -0.43429448190325183,     -0.44925489068206964, DoubleCrossPlatformMachineEpsilon };      // value: -(log10(e))
+                yield return new object[] { -0.31830988618379067,     -0.32394610693198073, DoubleCrossPlatformMachineEpsilon };      // value: -(1 / pi)
+                yield return new object[] { -0.0,                     -0.0,                 0.0 };
+                yield return new object[] {  double.NaN,               double.NaN,          0.0 };
+                yield return new object[] {  0.0,                      0.0,                 0.0 };
+                yield return new object[] {  0.31830988618379067,      0.32394610693198073, DoubleCrossPlatformMachineEpsilon };      // value:  (1 / pi)
+                yield return new object[] {  0.43429448190325183,      0.44925489068206964, DoubleCrossPlatformMachineEpsilon };      // value:  (log10(e))
+                yield return new object[] {  0.63661977236758134,      0.69010709137453996, DoubleCrossPlatformMachineEpsilon };      // value:  (2 / pi)
+                yield return new object[] {  0.69314718055994531,      0.76584619481908023, DoubleCrossPlatformMachineEpsilon };      // value:  (ln(2))
+                yield return new object[] {  0.70710678118654752,      0.78539816339744839, DoubleCrossPlatformMachineEpsilon };      // value:  (1 / sqrt(2)),  expected:  (pi / 4)
+                yield return new object[] {  0.78539816339744831,      0.90333911076651274, DoubleCrossPlatformMachineEpsilon };      // value:  (pi / 4)
+                yield return new object[] {  1.0,                      1.5707963267948966,  DoubleCrossPlatformMachineEpsilon * 10 };
+                yield return new object[] {  double.PositiveInfinity,  double.NaN,          0.0 };
+            }
+        }
+
+        public static IEnumerable<object[]> AsinSingle
+        {
+            get
+            {
+                yield return new object[] {  float.NegativeInfinity,  float.NaN,    0.0f };
+                yield return new object[] { -1.0f,                   -1.57079637f, SingleCrossPlatformMachineEpsilon * 10 };
+                yield return new object[] { -0.785398163f,           -0.903339148f, SingleCrossPlatformMachineEpsilon };      // value: -(pi / 4)
+                yield return new object[] { -0.707106781f,           -0.785398126f, SingleCrossPlatformMachineEpsilon };      // value: -(1 / sqrt(2)),  expected: -(pi / 4)
+                yield return new object[] { -0.693147181f,           -0.765846193f, SingleCrossPlatformMachineEpsilon };      // value: -(ln(2))
+                yield return new object[] { -0.636619772f,           -0.690107048f, SingleCrossPlatformMachineEpsilon };      // value: -(2 / pi)
+                yield return new object[] { -0.434294482f,           -0.449254900f, SingleCrossPlatformMachineEpsilon };      // value: -(log10(e))
+                yield return new object[] { -0.318309886f,           -0.323946089f, SingleCrossPlatformMachineEpsilon };      // value: -(1 / pi)
+                yield return new object[] { -0.0f,                   -0.0f,         0.0f };
+                yield return new object[] {  float.NaN,               float.NaN,    0.0f };
+                yield return new object[] {  0.0f,                    0.0f,         0.0f };
+                yield return new object[] {  0.318309886f,            0.323946089f, SingleCrossPlatformMachineEpsilon };      // value:  (1 / pi)
+                yield return new object[] {  0.434294482f,            0.449254900f, SingleCrossPlatformMachineEpsilon };      // value:  (log10(e))
+                yield return new object[] {  0.636619772f,            0.690107048f, SingleCrossPlatformMachineEpsilon };      // value:  (2 / pi)
+                yield return new object[] {  0.693147181f,            0.765846193f, SingleCrossPlatformMachineEpsilon };      // value:  (ln(2))
+                yield return new object[] {  0.707106781f,            0.785398126f, SingleCrossPlatformMachineEpsilon };      // value:  (1 / sqrt(2)),  expected:  (pi / 4)
+                yield return new object[] {  0.785398163f,            0.903339148f, SingleCrossPlatformMachineEpsilon };      // value:  (pi / 4)
+                yield return new object[] {  1.0f,                    1.57079637f,  SingleCrossPlatformMachineEpsilon * 10 };
+                yield return new object[] {  float.PositiveInfinity,  float.NaN,    0.0f };
             }
         }
 
@@ -673,6 +730,40 @@ namespace System.Tests
                 yield return new object[] { float.PositiveInfinity, 2.71828183f,            float.PositiveInfinity, 0.0f };
                 yield return new object[] { float.PositiveInfinity, 10.0f,                  float.PositiveInfinity, 0.0f };
                 yield return new object[] { float.PositiveInfinity, float.PositiveInfinity, float.PositiveInfinity, 0.0f };
+            }
+        }
+
+        public static IEnumerable<object[]> IntegerClassificationDouble
+        {
+            get
+            {
+                double[] boundaries = [1.0, 2.0, 4_503_599_627_370_496.0, 9_007_199_254_740_992.0];
+                foreach (double boundary in boundaries)
+                {
+                    yield return new object[] { boundary };
+                    yield return new object[] { -boundary };
+                    yield return new object[] { double.BitDecrement(boundary) };
+                    yield return new object[] { -double.BitDecrement(boundary) };
+                    yield return new object[] { double.BitIncrement(boundary) };
+                    yield return new object[] { -double.BitIncrement(boundary) };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> IntegerClassificationSingle
+        {
+            get
+            {
+                float[] boundaries = [1.0f, 2.0f, 8_388_608.0f, 16_777_216.0f];
+                foreach (float boundary in boundaries)
+                {
+                    yield return new object[] { boundary };
+                    yield return new object[] { -boundary };
+                    yield return new object[] { float.BitDecrement(boundary) };
+                    yield return new object[] { -float.BitDecrement(boundary) };
+                    yield return new object[] { float.BitIncrement(boundary) };
+                    yield return new object[] { -float.BitIncrement(boundary) };
+                }
             }
         }
 
@@ -1315,6 +1406,8 @@ namespace System.Tests
                 yield return new object[] {  double.NegativeInfinity,    double.NaN,                double.NaN };
                 yield return new object[] {  double.NaN,                 double.PositiveInfinity,   double.NaN };
                 yield return new object[] {  double.NaN,                 double.NegativeInfinity,   double.NaN };
+                yield return new object[] {  PositiveNaNDouble,          -0.0,                      PositiveNaNDouble };
+                yield return new object[] { -0.0,                        NegativeNaNDouble,          NegativeNaNDouble };
                 yield return new object[] { -0.0f,                       0.0f,                      0.0f };
                 yield return new object[] {  0.0f,                      -0.0f,                      0.0f };
                 yield return new object[] {  2.0f,                      -3.0f,                      2.0f };
@@ -1339,6 +1432,8 @@ namespace System.Tests
                 yield return new object[] {  float.NegativeInfinity,     float.NaN,                 float.NaN };
                 yield return new object[] {  float.NaN,                  float.PositiveInfinity,    float.NaN };
                 yield return new object[] {  float.NaN,                  float.NegativeInfinity,    float.NaN };
+                yield return new object[] {  PositiveNaNSingle,          -0.0f,                      PositiveNaNSingle };
+                yield return new object[] { -0.0f,                       NegativeNaNSingle,          NegativeNaNSingle };
                 yield return new object[] { -0.0f,                       0.0f,                      0.0f };
                 yield return new object[] {  0.0f,                      -0.0f,                      0.0f };
                 yield return new object[] {  2.0f,                      -3.0f,                      2.0f };
@@ -1459,6 +1554,8 @@ namespace System.Tests
                 yield return new object[] {  double.NegativeInfinity,    double.NaN,                double.NegativeInfinity };
                 yield return new object[] {  double.NaN,                 double.PositiveInfinity,   double.PositiveInfinity };
                 yield return new object[] {  double.NaN,                 double.NegativeInfinity,   double.NegativeInfinity };
+                yield return new object[] {  PositiveNaNDouble,          -0.0,                     -0.0 };
+                yield return new object[] { -0.0,                        NegativeNaNDouble,         -0.0 };
                 yield return new object[] { -0.0f,                       0.0f,                      0.0f };
                 yield return new object[] {  0.0f,                      -0.0f,                      0.0f };
                 yield return new object[] {  2.0f,                      -3.0f,                      2.0f };
@@ -1483,6 +1580,8 @@ namespace System.Tests
                 yield return new object[] {  float.NegativeInfinity,     float.NaN,                 float.NegativeInfinity };
                 yield return new object[] {  float.NaN,                  float.PositiveInfinity,    float.PositiveInfinity };
                 yield return new object[] {  float.NaN,                  float.NegativeInfinity,    float.NegativeInfinity };
+                yield return new object[] {  PositiveNaNSingle,          -0.0f,                     -0.0f };
+                yield return new object[] { -0.0f,                       NegativeNaNSingle,         -0.0f };
                 yield return new object[] { -0.0f,                       0.0f,                      0.0f };
                 yield return new object[] {  0.0f,                      -0.0f,                      0.0f };
                 yield return new object[] {  2.0f,                      -3.0f,                      2.0f };
@@ -1507,6 +1606,8 @@ namespace System.Tests
                 yield return new object[] {  double.NegativeInfinity,    double.NaN,                 double.NaN };
                 yield return new object[] {  double.NaN,                 double.PositiveInfinity,    double.NaN };
                 yield return new object[] {  double.NaN,                 double.NegativeInfinity,    double.NaN };
+                yield return new object[] {  PositiveNaNDouble,          -0.0,                       PositiveNaNDouble };
+                yield return new object[] { -0.0,                        NegativeNaNDouble,           NegativeNaNDouble };
                 yield return new object[] { -0.0f,                       0.0f,                      -0.0f };
                 yield return new object[] {  0.0f,                      -0.0f,                      -0.0f };
                 yield return new object[] {  2.0f,                      -3.0f,                      -3.0f };
@@ -1531,6 +1632,8 @@ namespace System.Tests
                 yield return new object[] {  float.NegativeInfinity,     float.NaN,                  float.NaN };
                 yield return new object[] {  float.NaN,                  float.PositiveInfinity,     float.NaN };
                 yield return new object[] {  float.NaN,                  float.NegativeInfinity,     float.NaN };
+                yield return new object[] {  PositiveNaNSingle,          -0.0f,                       PositiveNaNSingle };
+                yield return new object[] { -0.0f,                       NegativeNaNSingle,           NegativeNaNSingle };
                 yield return new object[] { -0.0f,                       0.0f,                      -0.0f };
                 yield return new object[] {  0.0f,                      -0.0f,                      -0.0f };
                 yield return new object[] {  2.0f,                      -3.0f,                      -3.0f };
@@ -1651,6 +1754,8 @@ namespace System.Tests
                 yield return new object[] {  double.NegativeInfinity,    double.NaN,                 double.NegativeInfinity };
                 yield return new object[] {  double.NaN,                 double.PositiveInfinity,    double.PositiveInfinity };
                 yield return new object[] {  double.NaN,                 double.NegativeInfinity,    double.NegativeInfinity };
+                yield return new object[] {  PositiveNaNDouble,          -0.0,                       -0.0 };
+                yield return new object[] { -0.0,                        NegativeNaNDouble,           -0.0 };
                 yield return new object[] { -0.0f,                       0.0f,                      -0.0f };
                 yield return new object[] {  0.0f,                      -0.0f,                      -0.0f };
                 yield return new object[] {  2.0f,                      -3.0f,                      -3.0f };
@@ -1675,6 +1780,8 @@ namespace System.Tests
                 yield return new object[] {  float.NegativeInfinity,     float.NaN,                  float.NegativeInfinity };
                 yield return new object[] {  float.NaN,                  float.PositiveInfinity,     float.PositiveInfinity };
                 yield return new object[] {  float.NaN,                  float.NegativeInfinity,     float.NegativeInfinity };
+                yield return new object[] {  PositiveNaNSingle,          -0.0f,                       -0.0f };
+                yield return new object[] { -0.0f,                       NegativeNaNSingle,           -0.0f };
                 yield return new object[] { -0.0f,                       0.0f,                      -0.0f };
                 yield return new object[] {  0.0f,                      -0.0f,                      -0.0f };
                 yield return new object[] {  2.0f,                      -3.0f,                      -3.0f };

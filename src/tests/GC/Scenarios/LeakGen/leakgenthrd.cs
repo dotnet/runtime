@@ -6,6 +6,7 @@ namespace LGen {
     using System.Threading;
     using System;
     using System.IO;
+    using TestLibrary;
 
     public class LeakGenThrd
     {
@@ -15,6 +16,12 @@ namespace LGen {
 
         public static int Main(System.String [] Args)
         {
+            if (!PlatformDetection.IsMultithreadingSupported)
+            {
+                Console.WriteLine("Multithreading is not supported, skipping test.");
+                return 100;
+            }
+
             int iRep = 2;
             int iObj = 15; //the number of MB memory will be allocted in MakeLeak()
 

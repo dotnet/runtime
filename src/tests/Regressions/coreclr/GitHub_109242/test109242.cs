@@ -18,6 +18,9 @@ public class Test109242
         }
 
         Assembly.Load("System.Runtime");
+
+        // Hint for trimming to keep System.Runtime
+        Type.GetType("System.Object, System.Runtime");
     }
 }
 

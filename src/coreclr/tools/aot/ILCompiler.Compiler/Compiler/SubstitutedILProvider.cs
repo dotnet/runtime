@@ -414,8 +414,8 @@ namespace ILCompiler
                     {
                         var callee = method.GetObject(reader.ReadILToken(), NotFoundBehavior.ReturnNull) as EcmaMethod;
                         if (callee != null && callee.IsSpecialName && callee.OwningType is EcmaType calleeType
-                            && calleeType.Name.SequenceEqual(InlineableStringsResourceNode.ResourceAccessorTypeName)
-                            && calleeType.Namespace.SequenceEqual(InlineableStringsResourceNode.ResourceAccessorTypeNamespace)
+                            && calleeType.Name == InlineableStringsResourceNode.ResourceAccessorTypeName
+                            && calleeType.Namespace == InlineableStringsResourceNode.ResourceAccessorTypeNamespace
                             && callee.Signature is { Length: 0, IsStatic: true }
                             && callee.Name.StartsWith("get_"u8))
                         {
@@ -629,10 +629,10 @@ namespace ILCompiler
                 debugInfo = new SubstitutedDebugInformation(debugInfo, sequencePoints.ToArray());
             }
 
-            // We only optimize EcmaMethods because there we can find out the highest string token RID
+            // We only optimize IL backed by an ECMA module because we can find the highest string token RID
             // in use.
             ArrayBuilder<string> newStrings = default;
-            if (hasGetResourceStringCall && method.GetMethodILDefinition() is EcmaMethodIL ecmaMethodIL)
+            if (hasGetResourceStringCall && method.GetMethodILDefinition() is IEcmaMethodIL ecmaMethodIL)
             {
                 // We're going to inject new string tokens. Start where the last token of the module left off.
                 // We don't need this token to be globally unique because all token resolution happens in the context
@@ -822,9 +822,9 @@ namespace ILCompiler
                         {
                             return true;
                         }
-                        else if (method.IsIntrinsic && (method.Name.SequenceEqual("get_IsValueType"u8) || method.Name.SequenceEqual("get_IsEnum"u8))
+                        else if (method.IsIntrinsic && (method.Name == "get_IsValueType"u8 || method.Name == "get_IsEnum"u8)
                             && method.OwningType is MetadataType mdt
-                            && mdt.Name.SequenceEqual("Type"u8) && mdt.Namespace.SequenceEqual("System"u8) && mdt.Module == mdt.Context.SystemModule
+                            && mdt.Name == "Type"u8 && mdt.Namespace == "System"u8 && mdt.Module == mdt.Context.SystemModule
                             && TryExpandTypeIs(methodIL, body, flags, currentOffset, method.GetName(), out constant))
                         {
                             return true;
@@ -1095,6 +1095,10 @@ namespace ILCompiler
             if (type.IsCanonicalDefinitionType(CanonicalFormKind.Any))
                 return false;
 
+            // Nullable<T> isinst checks operate on boxed T, not a constructed Nullable<T> MethodTable.
+            if (type.IsNullable)
+                return false;
+
             // We don't track types without a constructed MethodTable very well.
             if (!ConstructedEETypeNode.CreationAllowed(type))
                 return false;
@@ -1133,7 +1137,7 @@ namespace ILCompiler
 
             MethodDesc method = (MethodDesc)methodIL.GetObject(reader.ReadILToken());
 
-            if (!method.IsIntrinsic || !method.Name.SequenceEqual("GetTypeFromHandle"u8))
+            if (!method.IsIntrinsic || method.Name != "GetTypeFromHandle"u8)
                 return false;
 
             if ((flags[reader.Offset] & OpcodeFlags.BasicBlockStart) != 0)
@@ -1182,7 +1186,7 @@ namespace ILCompiler
             {
                 // If this is a string token, it could be one of the new string tokens we injected.
                 if ((token >>> 24) == TokenTypeString
-                    && _wrappedMethodIL.GetMethodILDefinition() is EcmaMethodIL ecmaMethodIL)
+                    && _wrappedMethodIL.GetMethodILDefinition() is IEcmaMethodIL ecmaMethodIL)
                 {
                     int rid = token & 0xFFFFFF;
                     int maxRealTokenRid = ecmaMethodIL.Module.MetadataReader.GetHeapSize(HeapIndex.UserString);

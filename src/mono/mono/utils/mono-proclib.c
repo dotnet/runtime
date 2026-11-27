@@ -7,6 +7,7 @@
 
 #include "config.h"
 #include <mono/utils/mono-proclib.h>
+#include <minipal/cpucount.h>
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -78,23 +79,14 @@ mono_cpu_count (void)
 #else
 #ifdef HOST_ANDROID
 	/* Android tries really hard to save power by powering off CPUs on SMP phones which
-	 * means the normal way to query cpu count returns a wrong value with userspace API.
+	 * means the normal way to query cpu count can underestimate the number of available CPUs.
 	 * Instead we use /sys entries to query the actual hardware CPU count.
 	 */
-	int count = 0;
-	char buffer[8] = {'\0'};
-	int present = open ("/sys/devices/system/cpu/present", O_RDONLY);
-	/* Format of the /sys entry is a cpulist of indexes which in the case
-	 * of present is always of the form "0-(n-1)" when there is more than
-	 * 1 core, n being the number of CPU cores in the system. Otherwise
-	 * the value is simply 0
-	 */
-	if (present != -1 && read (present, (char*)buffer, sizeof (buffer)) > 3)
-		count = strtol (((char*)buffer) + 2, NULL, 10);
-	if (present != -1)
-		close (present);
-	if (count > 0)
-		return count + 1;
+	{
+		int count = minipal_get_cpu_present_count ();
+		if (count > 0)
+			return count;
+	}
 #endif
 
 #if defined(HOST_ARM) || defined (HOST_ARM64)

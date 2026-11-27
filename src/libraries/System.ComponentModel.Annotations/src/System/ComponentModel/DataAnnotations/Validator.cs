@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.ComponentModel.DataAnnotations
 {
@@ -81,6 +83,11 @@ namespace System.ComponentModel.DataAnnotations
         ///         failure.  If <paramref name="validationResults" /> is non-null, then all validation attributes will be
         ///         evaluated.
         ///     </para>
+        ///     <para>
+        ///         Validation runs in three stages: property validation, type-level attribute validation, and object-level validation.
+        ///         Each stage runs only if the preceding stages succeed.
+        ///         Object-level validation invokes <see cref="IValidatableObject.Validate" /> if implemented.
+        ///     </para>
         /// </remarks>
         /// <param name="instance">The object instance to test.  It cannot be <c>null</c>.</param>
         /// <param name="validationContext">Describes the object to validate and provides services and context for the validators.</param>
@@ -114,6 +121,11 @@ namespace System.ComponentModel.DataAnnotations
         ///     <para>
         ///         For any given property, if it has a <see cref="RequiredAttribute" /> that fails validation, no other validators
         ///         will be evaluated for that property.
+        ///     </para>
+        ///     <para>
+        ///         Validation runs in three stages: property validation, type-level attribute validation, and object-level validation.
+        ///         Each stage runs only if the preceding stages succeed.
+        ///         Object-level validation invokes <see cref="IValidatableObject.Validate" /> if implemented.
         ///     </para>
         /// </remarks>
         /// <param name="instance">The object instance to test.  It cannot be null.</param>
@@ -233,6 +245,11 @@ namespace System.ComponentModel.DataAnnotations
         /// </summary>
         /// <remarks>
         ///     This method evaluates all <see cref="ValidationAttribute" />s attached to the object's type.
+        ///     <para>
+        ///         Validation runs in three stages: property validation, type-level attribute validation, and object-level validation.
+        ///         Each stage runs only if the preceding stages succeed.
+        ///         Object-level validation invokes <see cref="IValidatableObject.Validate" /> if implemented.
+        ///     </para>
         /// </remarks>
         /// <param name="instance">The object instance to test.  It cannot be null.</param>
         /// <param name="validationContext">
@@ -258,6 +275,11 @@ namespace System.ComponentModel.DataAnnotations
         /// <remarks>
         ///     This method evaluates all <see cref="ValidationAttribute" />s attached to the object's type.
         ///     If <paramref name="validateAllProperties" /> is <c>true</c> it also validates all the object's properties.
+        ///     <para>
+        ///         Validation runs in three stages: property validation, type-level attribute validation, and object-level validation.
+        ///         Each stage runs only if the preceding stages succeed.
+        ///         Object-level validation invokes <see cref="IValidatableObject.Validate" /> if implemented.
+        ///     </para>
         /// </remarks>
         /// <param name="instance">The object instance to test.  It cannot be null.</param>
         /// <param name="validationContext">
@@ -319,6 +341,690 @@ namespace System.ComponentModel.DataAnnotations
             {
                 errors[0].ThrowValidationException();
             }
+        }
+
+        /// <summary>
+        ///     Asynchronously tests whether the given property value is valid.
+        /// </summary>
+        /// <remarks>
+        ///     This method tests each <see cref="ValidationAttribute" /> associated with the property
+        ///     identified by <paramref name="validationContext" />.  If <paramref name="validationResults" /> is non-null,
+        ///     this method adds a <see cref="ValidationResult" /> to it for each validation failure.
+        ///     <para>
+        ///         If there is a <see cref="RequiredAttribute" /> found on the property, it is evaluated before all other
+        ///         validation attributes. If the required validator fails, validation stops, adding that single failure to the
+        ///         <paramref name="validationResults" /> collection when applicable and returning <see langword="false" />.
+        ///     </para>
+        ///     <para>
+        ///         Any <see cref="AsyncValidationAttribute" /> instances are evaluated asynchronously after all synchronous
+        ///         validation attributes have passed.
+        ///     </para>
+        /// </remarks>
+        /// <param name="value">The value to test.</param>
+        /// <param name="validationContext">
+        ///     Describes the property member to validate and provides services and context for the validators.
+        /// </param>
+        /// <param name="validationResults">
+        ///     An optional collection that receives validation failures as <see cref="ValidationResult" /> instances.
+        /// </param>
+        /// <param name="cancellationToken">A <see cref="CancellationToken" /> to observe while waiting for the task to complete.</param>
+        /// <returns>A <see cref="Task{Boolean}" /> that is <c>true</c> if the value is valid, <c>false</c> if any validation errors are encountered.</returns>
+        /// <exception cref="ArgumentNullException">
+        ///     <paramref name="validationContext" /> is null, or
+        ///     <see cref="ValidationContext.MemberName" /> is null or empty.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///     <see cref="ValidationContext.MemberName" /> does not identify a valid public, non-indexer property,
+        ///     or <paramref name="value" /> cannot be assigned to that property.
+        /// </exception>
+        /// <exception cref="OperationCanceledException">The validation operation was canceled.</exception>
+        [RequiresUnreferencedCode("The Type of validationContext.ObjectType cannot be statically discovered.")]
+        public static async Task<bool> TryValidatePropertyAsync(
+            object? value,
+            ValidationContext validationContext,
+            ICollection<ValidationResult>? validationResults,
+            CancellationToken cancellationToken = default)
+        {
+            var propertyType = _store.GetPropertyType(validationContext);
+            var propertyName = validationContext.MemberName!;
+            EnsureValidPropertyType(propertyName, propertyType, value);
+
+            var result = true;
+            var breakOnFirstError = (validationResults == null);
+
+            var attributes = _store.GetPropertyValidationAttributes(validationContext);
+
+            foreach (var err in await GetValidationErrorsAsync(value, validationContext, attributes, breakOnFirstError, cancellationToken).ConfigureAwait(false))
+            {
+                result = false;
+
+                validationResults?.Add(err.ValidationResult);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        ///     Asynchronously tests whether the given object instance is valid.
+        /// </summary>
+        /// <remarks>
+        ///     This method evaluates all <see cref="ValidationAttribute" />s attached to the object instance's type.  It also
+        ///     checks to ensure all properties marked with <see cref="RequiredAttribute" /> are set.  It does not validate
+        ///     the <see cref="ValidationAttribute" />s on individual properties of the object unless
+        ///     <see cref="TryValidateObjectAsync(object, ValidationContext, ICollection{ValidationResult}?, bool, CancellationToken)" />
+        ///     is called with <c>validateAllProperties</c> set to <see langword="true" />.
+        ///     <para>
+        ///         Validation runs in three stages: property validation, type-level attribute validation, and object-level validation.
+        ///         Each stage runs only if the preceding stages succeed.
+        ///         Object-level validation prefers invoking <see cref="IAsyncValidatableObject.ValidateAsync" /> when implemented,
+        ///         with <see cref="IValidatableObject.Validate" /> as a fallback for objects that implement only the synchronous interface.
+        ///         It does not invoke both.
+        ///     </para>
+        /// </remarks>
+        /// <param name="instance">The object instance to test.  It cannot be <c>null</c>.</param>
+        /// <param name="validationContext">Describes the object to validate and provides services and context for the validators.</param>
+        /// <param name="validationResults">
+        ///     An optional collection that receives validation failures as <see cref="ValidationResult" /> instances.
+        /// </param>
+        /// <param name="cancellationToken">A <see cref="CancellationToken" /> to observe while waiting for the task to complete.</param>
+        /// <returns>A <see cref="Task{Boolean}" /> that is <c>true</c> if the object is valid, <c>false</c> if any validation errors are encountered.</returns>
+        /// <exception cref="ArgumentNullException">When <paramref name="instance" /> is null.</exception>
+        /// <exception cref="ArgumentNullException">When <paramref name="validationContext" /> is null.</exception>
+        /// <exception cref="ArgumentException">
+        ///     When <paramref name="instance" /> doesn't match the
+        ///     <see cref="ValidationContext.ObjectInstance" /> on <paramref name="validationContext" />.
+        /// </exception>
+        /// <exception cref="OperationCanceledException">The validation operation was canceled.</exception>
+        [RequiresUnreferencedCode(ValidationContext.InstanceTypeNotStaticallyDiscovered)]
+        public static Task<bool> TryValidateObjectAsync(
+            object instance,
+            ValidationContext validationContext,
+            ICollection<ValidationResult>? validationResults,
+            CancellationToken cancellationToken = default) =>
+            TryValidateObjectAsync(instance, validationContext, validationResults, validateAllProperties: false, cancellationToken);
+
+        /// <summary>
+        ///     Asynchronously tests whether the given object instance is valid.
+        /// </summary>
+        /// <remarks>
+        ///     This method evaluates all <see cref="ValidationAttribute" />s attached to the object instance's type.  It also
+        ///     checks to ensure all properties marked with <see cref="RequiredAttribute" /> are set.  If
+        ///     <paramref name="validateAllProperties" />
+        ///     is <c>true</c>, this method also evaluates the <see cref="ValidationAttribute" />s for all the immediate
+        ///     properties of this object.  This process is not recursive.
+        ///     <para>
+        ///         When <paramref name="validateAllProperties" /> is <c>true</c>, validation is started for each
+        ///         property in sequence. Synchronous attributes for a property run before that property's
+        ///         asynchronous attributes are awaited. Asynchronous validation that remains in progress can
+        ///         overlap with asynchronous validation for other properties.
+        ///     </para>
+        ///     <para>
+        ///         When <paramref name="validationResults" /> is <c>null</c>, validation stops after the
+        ///         first property error (cross-property short-circuit). Any in-flight async validators on
+        ///         other properties are cancelled cooperatively. When <paramref name="validationResults" />
+        ///         is non-null, all properties complete and all errors are collected.
+        ///     </para>
+        ///     <para>
+        ///         Returns <see cref="Task{Boolean}" /> for interoperability with standard async
+        ///         composition patterns such as <c>Task.WhenAll</c> and <c>Task.WhenAny</c>.
+        ///     </para>
+        ///     <para>
+        ///         Validation runs in three stages: property validation, type-level attribute validation, and object-level validation.
+        ///         Each stage runs only if the preceding stages succeed.
+        ///         Object-level validation prefers invoking <see cref="IAsyncValidatableObject.ValidateAsync" /> when implemented,
+        ///         with <see cref="IValidatableObject.Validate" /> as a fallback for objects that implement only the synchronous interface.
+        ///         It does not invoke both.
+        ///     </para>
+        /// </remarks>
+        /// <param name="instance">The object instance to test.  It cannot be null.</param>
+        /// <param name="validationContext">Describes the object to validate and provides services and context for the validators.</param>
+        /// <param name="validationResults">
+        ///     An optional collection that receives validation failures as <see cref="ValidationResult" /> instances.
+        /// </param>
+        /// <param name="validateAllProperties">
+        ///     If <c>true</c>, also evaluates all properties of the object (this process is not recursive over properties of the properties).
+        /// </param>
+        /// <param name="cancellationToken">A <see cref="CancellationToken" /> to observe while waiting for the task to complete.</param>
+        /// <returns>A <see cref="Task{Boolean}" /> that is <c>true</c> if the object is valid, <c>false</c> if any validation errors are encountered.</returns>
+        /// <exception cref="ArgumentNullException">When <paramref name="instance" /> is null.</exception>
+        /// <exception cref="ArgumentNullException">When <paramref name="validationContext" /> is null.</exception>
+        /// <exception cref="ArgumentException">
+        ///     When <paramref name="instance" /> doesn't match the
+        ///     <see cref="ValidationContext.ObjectInstance" /> on <paramref name="validationContext" />.
+        /// </exception>
+        /// <exception cref="OperationCanceledException">The validation operation was canceled.</exception>
+        [RequiresUnreferencedCode(ValidationContext.InstanceTypeNotStaticallyDiscovered)]
+        public static async Task<bool> TryValidateObjectAsync(
+            object instance,
+            ValidationContext validationContext,
+            ICollection<ValidationResult>? validationResults,
+            bool validateAllProperties,
+            CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(instance);
+
+            if (validationContext != null && instance != validationContext.ObjectInstance)
+            {
+                throw new ArgumentException(SR.Validator_InstanceMustMatchValidationContextInstance, nameof(instance));
+            }
+
+            var result = true;
+            var breakOnFirstError = (validationResults == null);
+
+            foreach (ValidationError err in await GetObjectValidationErrorsAsync(instance, validationContext!, validateAllProperties, breakOnFirstError, cancellationToken).ConfigureAwait(false))
+            {
+                result = false;
+
+                validationResults?.Add(err.ValidationResult);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        ///     Asynchronously tests whether the given value is valid against a specified list of <see cref="ValidationAttribute" />s.
+        /// </summary>
+        /// <remarks>
+        ///     This method tests each specified <see cref="ValidationAttribute" />.  If
+        ///     <paramref name="validationResults" /> is non-null, this method adds a <see cref="ValidationResult" />
+        ///     to it for each validation failure.
+        ///     <para>
+        ///         Any <see cref="AsyncValidationAttribute" /> instances are evaluated asynchronously after all synchronous
+        ///         validation attributes have passed.
+        ///     </para>
+        /// </remarks>
+        /// <param name="value">The value to test.</param>
+        /// <param name="validationContext">Describes the object being validated and provides services and context for the validators.</param>
+        /// <param name="validationResults">
+        ///     An optional collection that receives validation failures as <see cref="ValidationResult" /> instances.
+        /// </param>
+        /// <param name="validationAttributes">The list of <see cref="ValidationAttribute" />s to validate this <paramref name="value" /> against.</param>
+        /// <param name="cancellationToken">A <see cref="CancellationToken" /> to observe while waiting for the task to complete.</param>
+        /// <returns>A <see cref="Task{Boolean}" /> that is <c>true</c> if the value is valid, <c>false</c> if any validation errors are encountered.</returns>
+        /// <exception cref="ArgumentNullException">When <paramref name="validationContext" /> is null.</exception>
+        /// <exception cref="ArgumentNullException">When <paramref name="validationAttributes" /> is null.</exception>
+        /// <exception cref="OperationCanceledException">The validation operation was canceled.</exception>
+        public static async Task<bool> TryValidateValueAsync(
+            object? value,
+            ValidationContext validationContext,
+            ICollection<ValidationResult>? validationResults,
+            IEnumerable<ValidationAttribute> validationAttributes,
+            CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(validationAttributes);
+
+            var result = true;
+            var breakOnFirstError = validationResults == null;
+
+            foreach (var err in await GetValidationErrorsAsync(value, validationContext, validationAttributes, breakOnFirstError, cancellationToken).ConfigureAwait(false))
+            {
+                result = false;
+
+                validationResults?.Add(err.ValidationResult);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        ///     Asynchronously throws a <see cref="ValidationException" /> if the given property <paramref name="value" /> is not valid.
+        /// </summary>
+        /// <param name="value">The value to test.</param>
+        /// <param name="validationContext">Describes the object being validated and provides services and context for the validators.</param>
+        /// <param name="cancellationToken">A <see cref="CancellationToken" /> to observe while waiting for the task to complete.</param>
+        /// <returns>A <see cref="Task" /> representing the asynchronous validation operation.</returns>
+        /// <exception cref="ArgumentNullException">
+        ///     <paramref name="validationContext" /> is null, or
+        ///     <see cref="ValidationContext.MemberName" /> is null or empty.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///     <see cref="ValidationContext.MemberName" /> does not identify a valid public, non-indexer property,
+        ///     or <paramref name="value" /> cannot be assigned to that property.
+        /// </exception>
+        /// <exception cref="ValidationException">When <paramref name="value" /> is invalid for this property.</exception>
+        /// <exception cref="OperationCanceledException">The validation operation was canceled.</exception>
+        [RequiresUnreferencedCode("The Type of validationContext.ObjectType cannot be statically discovered.")]
+        public static async Task ValidatePropertyAsync(
+            object? value,
+            ValidationContext validationContext,
+            CancellationToken cancellationToken = default)
+        {
+            var propertyType = _store.GetPropertyType(validationContext);
+            EnsureValidPropertyType(validationContext.MemberName!, propertyType, value);
+
+            var attributes = _store.GetPropertyValidationAttributes(validationContext);
+
+            List<ValidationError> errors = await GetValidationErrorsAsync(value, validationContext, attributes, false, cancellationToken).ConfigureAwait(false);
+            if (errors.Count > 0)
+            {
+                errors[0].ThrowValidationException();
+            }
+        }
+
+        /// <summary>
+        ///     Asynchronously throws a <see cref="ValidationException" /> if the given <paramref name="instance" /> is not valid.
+        /// </summary>
+        /// <remarks>
+        ///     <para>
+        ///         This method checks the <see cref="RequiredAttribute" /> attributes on the object's properties.
+        ///         If property validation succeeds, the method evaluates the <see cref="ValidationAttribute" />
+        ///         attributes attached to the object's type.
+        ///     </para>
+        ///     <para>
+        ///         This overload does not evaluate other property-level validation attributes. To evaluate those attributes,
+        ///         call the overload that accepts <c>validateAllProperties</c> with that argument set to <see langword="true" />.
+        ///     </para>
+        ///     <para>
+        ///         Validation runs in three stages: property validation, type-level attribute validation, and object-level validation.
+        ///         Each stage runs only if the preceding stages succeed.
+        ///         Object-level validation prefers invoking <see cref="IAsyncValidatableObject.ValidateAsync" /> when implemented,
+        ///         with <see cref="IValidatableObject.Validate" /> as a fallback for objects that implement only the synchronous interface.
+        ///         It does not invoke both.
+        ///     </para>
+        /// </remarks>
+        /// <param name="instance">The object instance to test.  It cannot be null.</param>
+        /// <param name="validationContext">Describes the object being validated and provides services and context for the validators.</param>
+        /// <param name="cancellationToken">A <see cref="CancellationToken" /> to observe while waiting for the task to complete.</param>
+        /// <returns>A <see cref="Task" /> representing the asynchronous validation operation.</returns>
+        /// <exception cref="ArgumentNullException">When <paramref name="instance" /> is null.</exception>
+        /// <exception cref="ArgumentNullException">When <paramref name="validationContext" /> is null.</exception>
+        /// <exception cref="ArgumentException">
+        ///     When <paramref name="instance" /> doesn't match the
+        ///     <see cref="ValidationContext.ObjectInstance" /> on <paramref name="validationContext" />.
+        /// </exception>
+        /// <exception cref="ValidationException">When <paramref name="instance" /> is found to be invalid.</exception>
+        /// <exception cref="OperationCanceledException">The validation operation was canceled.</exception>
+        [RequiresUnreferencedCode(ValidationContext.InstanceTypeNotStaticallyDiscovered)]
+        public static Task ValidateObjectAsync(
+            object instance,
+            ValidationContext validationContext,
+            CancellationToken cancellationToken = default)
+        {
+            return ValidateObjectAsync(instance, validationContext, false, cancellationToken);
+        }
+
+        /// <summary>
+        ///     Asynchronously throws a <see cref="ValidationException" /> if the given object instance is not valid.
+        /// </summary>
+        /// <remarks>
+        ///     <para>
+        ///         This method checks the <see cref="RequiredAttribute" /> attributes on the object's properties even when
+        ///         <paramref name="validateAllProperties" /> is <see langword="false" />. If property validation succeeds,
+        ///         the method evaluates the <see cref="ValidationAttribute" /> attributes attached to the object's type.
+        ///     </para>
+        ///     <para>
+        ///         If <paramref name="validateAllProperties" /> is <see langword="true" />, the method also evaluates other
+        ///         validation attributes on the object's immediate properties. This process does not recursively validate property values.
+        ///     </para>
+        ///     <para>
+        ///         Validation runs in three stages: property validation, type-level attribute validation, and object-level validation.
+        ///         Each stage runs only if the preceding stages succeed.
+        ///         Object-level validation prefers invoking <see cref="IAsyncValidatableObject.ValidateAsync" /> when implemented,
+        ///         with <see cref="IValidatableObject.Validate" /> as a fallback for objects that implement only the synchronous interface.
+        ///         It does not invoke both.
+        ///     </para>
+        /// </remarks>
+        /// <param name="instance">The object instance to test.  It cannot be null.</param>
+        /// <param name="validationContext">Describes the object being validated and provides services and context for the validators.</param>
+        /// <param name="validateAllProperties">If <c>true</c>, also validates all the <paramref name="instance" />'s properties.</param>
+        /// <param name="cancellationToken">A <see cref="CancellationToken" /> to observe while waiting for the task to complete.</param>
+        /// <returns>A <see cref="Task" /> representing the asynchronous validation operation.</returns>
+        /// <exception cref="ArgumentNullException">When <paramref name="instance" /> is null.</exception>
+        /// <exception cref="ArgumentNullException">When <paramref name="validationContext" /> is null.</exception>
+        /// <exception cref="ArgumentException">
+        ///     When <paramref name="instance" /> doesn't match the
+        ///     <see cref="ValidationContext.ObjectInstance" /> on <paramref name="validationContext" />.
+        /// </exception>
+        /// <exception cref="ValidationException">When <paramref name="instance" /> is found to be invalid.</exception>
+        /// <exception cref="OperationCanceledException">The validation operation was canceled.</exception>
+        [RequiresUnreferencedCode(ValidationContext.InstanceTypeNotStaticallyDiscovered)]
+        public static async Task ValidateObjectAsync(
+            object instance,
+            ValidationContext validationContext,
+            bool validateAllProperties,
+            CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(instance);
+            ArgumentNullException.ThrowIfNull(validationContext);
+
+            if (instance != validationContext.ObjectInstance)
+            {
+                throw new ArgumentException(SR.Validator_InstanceMustMatchValidationContextInstance, nameof(instance));
+            }
+
+            List<ValidationError> errors = await GetObjectValidationErrorsAsync(instance, validationContext, validateAllProperties, false, cancellationToken).ConfigureAwait(false);
+            if (errors.Count > 0)
+            {
+                errors[0].ThrowValidationException();
+            }
+        }
+
+        /// <summary>
+        ///     Asynchronously throws a <see cref="ValidationException" /> if the given value is not valid for the
+        ///     <see cref="ValidationAttribute" />s.
+        /// </summary>
+        /// <param name="value">The value to test.</param>
+        /// <param name="validationContext">Describes the object being tested.</param>
+        /// <param name="validationAttributes">The list of <see cref="ValidationAttribute" />s to validate this <paramref name="value" /> against.</param>
+        /// <param name="cancellationToken">A <see cref="CancellationToken" /> to observe while waiting for the task to complete.</param>
+        /// <returns>A <see cref="Task" /> representing the asynchronous validation operation.</returns>
+        /// <exception cref="ArgumentNullException">When <paramref name="validationContext" /> is null.</exception>
+        /// <exception cref="ArgumentNullException">When <paramref name="validationAttributes" /> is null.</exception>
+        /// <exception cref="ValidationException">When <paramref name="value" /> is found to be invalid.</exception>
+        /// <exception cref="OperationCanceledException">The validation operation was canceled.</exception>
+        public static async Task ValidateValueAsync(
+            object? value,
+            ValidationContext validationContext,
+            IEnumerable<ValidationAttribute> validationAttributes,
+            CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(validationContext);
+            ArgumentNullException.ThrowIfNull(validationAttributes);
+
+            List<ValidationError> errors = await GetValidationErrorsAsync(value, validationContext, validationAttributes, false, cancellationToken).ConfigureAwait(false);
+            if (errors.Count > 0)
+            {
+                errors[0].ThrowValidationException();
+            }
+        }
+
+        /// <summary>
+        ///     Asynchronous version of <see cref="GetObjectValidationErrors" />.
+        ///     Implements a 3-step pipeline: properties → type attrs → IAsyncValidatableObject or IValidatableObject.
+        /// </summary>
+        [RequiresUnreferencedCode(ValidationContext.InstanceTypeNotStaticallyDiscovered)]
+        private static async Task<List<ValidationError>> GetObjectValidationErrorsAsync(
+            object instance,
+            ValidationContext validationContext,
+            bool validateAllProperties,
+            bool breakOnFirstError,
+            CancellationToken cancellationToken)
+        {
+            ArgumentNullException.ThrowIfNull(validationContext);
+
+            Debug.Assert(instance != null);
+
+            // Step 1: Validate the object properties' validation attributes
+            List<ValidationError> errors = await GetObjectPropertyValidationErrorsAsync(instance, validationContext, validateAllProperties, breakOnFirstError, cancellationToken).ConfigureAwait(false);
+
+            // We only proceed to Step 2 if there are no errors
+            if (errors.Count > 0)
+            {
+                return errors;
+            }
+
+            // Step 2: Validate the object's validation attributes
+            var attributes = _store.GetTypeValidationAttributes(validationContext);
+            errors.AddRange(await GetValidationErrorsAsync(instance, validationContext, attributes, breakOnFirstError, cancellationToken).ConfigureAwait(false));
+
+            // We only proceed to Step 3 if there are no errors
+            if (errors.Count > 0)
+            {
+                return errors;
+            }
+
+            // Step 3: Test for IAsyncValidatableObject implementation (preferred), fall back to IValidatableObject
+            if (instance is IAsyncValidatableObject asyncValidatable)
+            {
+                IAsyncEnumerable<ValidationResult>? results = asyncValidatable.ValidateAsync(validationContext, cancellationToken);
+
+                if (results is not null)
+                {
+                    await foreach (ValidationResult result in results.ConfigureAwait(false))
+                    {
+                        if (result != ValidationResult.Success)
+                        {
+                            errors.Add(new ValidationError(null, instance, result));
+                        }
+                    }
+                }
+            }
+            else if (instance is IValidatableObject validatable)
+            {
+                var results = validatable.Validate(validationContext);
+
+                if (results != null)
+                {
+                    foreach (ValidationResult result in results)
+                    {
+                        if (result != ValidationResult.Success)
+                        {
+                            errors.Add(new ValidationError(null, instance, result));
+                        }
+                    }
+                }
+            }
+
+            return errors;
+        }
+
+        /// <summary>
+        ///     Asynchronous version of <see cref="GetObjectPropertyValidationErrors" />.
+        ///     Iterates all properties and validates each using <see cref="GetValidationErrorsAsync" />.
+        /// </summary>
+        [RequiresUnreferencedCode(ValidationContext.InstanceTypeNotStaticallyDiscovered)]
+        private static async Task<List<ValidationError>> GetObjectPropertyValidationErrorsAsync(
+            object instance,
+            ValidationContext validationContext,
+            bool validateAllProperties,
+            bool breakOnFirstError,
+            CancellationToken cancellationToken)
+        {
+            var properties = GetPropertyValues(instance, validationContext);
+            var errors = new List<ValidationError>();
+
+            if (validateAllProperties)
+            {
+                using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+
+                var tasks = new List<Task<List<ValidationError>>>(properties.Count);
+                try
+                {
+                    foreach (var property in properties)
+                    {
+                        var attributes = _store.GetPropertyValidationAttributes(property.Key);
+                        tasks.Add(GetValidationErrorsAsync(
+                            property.Value, property.Key, attributes,
+                            breakOnFirstError, linkedCts.Token));
+                    }
+
+                    while (tasks.Count > 0)
+                    {
+                        Task<List<ValidationError>> completed = await Task.WhenAny(tasks).ConfigureAwait(false);
+                        tasks.Remove(completed);
+
+                        List<ValidationError> propertyErrors;
+                        try
+                        {
+                            propertyErrors = await completed.ConfigureAwait(false);
+                        }
+                        catch (OperationCanceledException) when (linkedCts.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+                        {
+                            continue;
+                        }
+
+                        if (propertyErrors.Count > 0)
+                        {
+                            errors.AddRange(propertyErrors);
+
+                            if (breakOnFirstError)
+                            {
+                                linkedCts.Cancel();
+                                break;
+                            }
+                        }
+                    }
+                }
+                finally
+                {
+                    // Cancel and await any remaining in-flight tasks on every exit path
+                    // (success short-circuit, external cancellation, or unexpected exception)
+                    // so control can't return while tasks still use the instance and context.
+                    if (tasks.Count > 0)
+                    {
+                        linkedCts.Cancel();
+                        foreach (Task<List<ValidationError>> remaining in tasks)
+                        {
+                            try { await remaining.ConfigureAwait(false); }
+                            catch { }
+                        }
+                    }
+                }
+            }
+            else
+            {
+                foreach (var property in properties)
+                {
+                    var attributes = _store.GetPropertyValidationAttributes(property.Key);
+                    foreach (ValidationAttribute attribute in attributes)
+                    {
+                        if (attribute is RequiredAttribute reqAttr)
+                        {
+                            var validationResult = reqAttr.GetValidationResult(property.Value, property.Key);
+                            if (validationResult != ValidationResult.Success)
+                            {
+                                errors.Add(new ValidationError(reqAttr, property.Value, validationResult!));
+                            }
+                            break;
+                        }
+                    }
+
+                    if (breakOnFirstError && errors.Count > 0)
+                    {
+                        break;
+                    }
+                }
+            }
+
+            return errors;
+        }
+
+        /// <summary>
+        ///     Asynchronous version of <see cref="GetValidationErrors" />.
+        ///     Implements two-phase validation: sync attributes first, async attributes only if no sync errors.
+        /// </summary>
+        private static async Task<List<ValidationError>> GetValidationErrorsAsync(
+            object? value,
+            ValidationContext validationContext,
+            IEnumerable<ValidationAttribute> attributes,
+            bool breakOnFirstError,
+            CancellationToken cancellationToken)
+        {
+            ArgumentNullException.ThrowIfNull(validationContext);
+
+            var errors = new List<ValidationError>();
+            List<AsyncValidationAttribute>? asyncAttributes = null;
+            ValidationError? validationError;
+
+            // Get the required validator if there is one and test it first, aborting on failure
+            RequiredAttribute? required = null;
+            foreach (ValidationAttribute attribute in attributes)
+            {
+                required = attribute as RequiredAttribute;
+                if (required is not null)
+                {
+                    if (!TryValidate(value, validationContext, required, out validationError))
+                    {
+                        errors.Add(validationError);
+                        return errors;
+                    }
+                    break;
+                }
+            }
+
+            // Phase 1: Iterate through sync validators, collecting async ones for later
+            foreach (ValidationAttribute attr in attributes)
+            {
+                if (attr != required)
+                {
+                    if (attr is AsyncValidationAttribute asyncAttr)
+                    {
+                        (asyncAttributes ??= new List<AsyncValidationAttribute>()).Add(asyncAttr);
+                    }
+                    else
+                    {
+                        if (!TryValidate(value, validationContext, attr, out validationError))
+                        {
+                            errors.Add(validationError);
+
+                            if (breakOnFirstError)
+                            {
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Phase 2: Only run async validators if all sync validators passed — run in parallel
+            if (errors.Count == 0 && asyncAttributes is not null)
+            {
+                using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+
+                var tasks = new List<Task<(AsyncValidationAttribute Attr, ValidationResult? Result)>>(asyncAttributes.Count);
+                try
+                {
+                    foreach (AsyncValidationAttribute asyncAttr in asyncAttributes)
+                    {
+                        tasks.Add(RunAsyncValidation(asyncAttr, value, validationContext, linkedCts.Token));
+                    }
+
+                    while (tasks.Count > 0)
+                    {
+                        Task<(AsyncValidationAttribute Attr, ValidationResult? Result)> completed =
+                            await Task.WhenAny(tasks).ConfigureAwait(false);
+                        tasks.Remove(completed);
+
+                        (AsyncValidationAttribute attr, ValidationResult? result) completedResult;
+                        try
+                        {
+                            completedResult = await completed.ConfigureAwait(false);
+                        }
+                        catch (OperationCanceledException) when (linkedCts.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+                        {
+                            continue;
+                        }
+
+                        if (completedResult.result != ValidationResult.Success)
+                        {
+                            errors.Add(new ValidationError(completedResult.attr, value, completedResult.result!));
+
+                            if (breakOnFirstError)
+                            {
+                                linkedCts.Cancel();
+                                break;
+                            }
+                        }
+                    }
+                }
+                finally
+                {
+                    // Cancel and await any remaining in-flight tasks on every exit path
+                    // (success short-circuit, external cancellation, or unexpected exception)
+                    // so control can't return while tasks still use the value and context.
+                    if (tasks.Count > 0)
+                    {
+                        linkedCts.Cancel();
+                        foreach (var remaining in tasks)
+                        {
+                            try { await remaining.ConfigureAwait(false); }
+                            catch { }
+                        }
+                    }
+                }
+            }
+
+            return errors;
+        }
+
+        private static async Task<(AsyncValidationAttribute Attr, ValidationResult? Result)> RunAsyncValidation(
+            AsyncValidationAttribute attr,
+            object? value,
+            ValidationContext validationContext,
+            CancellationToken cancellationToken)
+        {
+            ValidationResult? result = await attr.GetValidationResultAsync(value, validationContext, cancellationToken).ConfigureAwait(false);
+            return (attr, result);
         }
 
         /// <summary>

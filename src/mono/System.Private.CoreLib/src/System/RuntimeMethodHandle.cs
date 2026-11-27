@@ -35,6 +35,15 @@ namespace System
             return GetFunctionPointer(value);
         }
 
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern IntPtr GetNativeCode(IntPtr m);
+
+        // Returns the code start address that diagnostic tools use to identify the method.
+        internal static IntPtr GetDiagnosticCodeStart(IntPtr methodHandleValue)
+        {
+            return GetNativeCode(methodHandleValue);
+        }
+
         public override bool Equals(object? obj)
         {
             if (obj == null || GetType() != obj.GetType())

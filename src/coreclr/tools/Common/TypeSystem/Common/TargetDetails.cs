@@ -22,6 +22,7 @@ namespace Internal.TypeSystem
         tvOSSimulator,
         FreeBSD,
         NetBSD,
+        OpenBSD,
         SunOS,
         Browser,
         Wasi
@@ -80,6 +81,7 @@ namespace Internal.TypeSystem
                     case TargetArchitecture.X64:
                     case TargetArchitecture.LoongArch64:
                     case TargetArchitecture.RiscV64:
+                    case TargetArchitecture.Wasm64:
                         return 8;
                     case TargetArchitecture.ARM:
                     case TargetArchitecture.X86:
@@ -95,7 +97,8 @@ namespace Internal.TypeSystem
         {
             get
             {
-                return Architecture != TargetArchitecture.Wasm32;
+                // Relative-pointer encodings are not implemented for WebAssembly targets.
+                return !IsWasm;
             }
         }
 
@@ -161,15 +164,9 @@ namespace Internal.TypeSystem
         /// <summary>
         /// Gets the alignment that is optimal for this platform.
         /// </summary>
-        public int OptimumFunctionAlignment
-        {
-            get
-            {
-                // Matches the choice in the C++ compiler.
-                // We want a number that is optimized for micro-op caches in the processor.
-                return 16;
-            }
-        }
+        // The default matches the choice in the C++ compiler.
+        // We want a number that is optimized for micro-op caches in the processor.
+        public int OptimumFunctionAlignment { get; } = 16;
 
         public int MinimumCodeAlignment
         {
@@ -288,6 +285,7 @@ namespace Internal.TypeSystem
                 case TargetArchitecture.ARM64:
                 case TargetArchitecture.LoongArch64:
                 case TargetArchitecture.RiscV64:
+                case TargetArchitecture.Wasm64:
                     return new LayoutInt(8);
                 case TargetArchitecture.X86:
                     return new LayoutInt(4);
@@ -303,7 +301,7 @@ namespace Internal.TypeSystem
         {
             get
             {
-                return Architecture == TargetArchitecture.Wasm32;
+                return Architecture is TargetArchitecture.Wasm32 or TargetArchitecture.Wasm64;
             }
         }
 

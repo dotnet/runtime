@@ -187,8 +187,8 @@ namespace Internal.Runtime
 
             if (type is MetadataType mdType &&
                             mdType.Module == mdType.Context.SystemModule &&
-                            (mdType.Name.SequenceEqual("WeakReference"u8) || mdType.Name.SequenceEqual("WeakReference`1"u8)) &&
-                            mdType.Namespace.SequenceEqual("System"u8))
+                            (mdType.Name == "WeakReference"u8 || mdType.Name == "WeakReference`1"u8) &&
+                            mdType.Namespace == "System"u8)
             {
                 flagsEx |= (ushort)EETypeFlagsEx.HasEagerFinalizerFlag;
             }
@@ -273,8 +273,8 @@ namespace Internal.Runtime
 
                 if (type is MetadataType mdType &&
                             mdType.Module == mdType.Context.SystemModule &&
-                            mdType.Name.SequenceEqual("CriticalFinalizerObject"u8) &&
-                            mdType.Namespace.SequenceEqual("System.Runtime.ConstrainedExecution"u8))
+                            mdType.Name == "CriticalFinalizerObject"u8 &&
+                            mdType.Namespace == "System.Runtime.ConstrainedExecution"u8)
                     return true;
 
                 type = type.BaseType;

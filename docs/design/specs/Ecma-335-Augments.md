@@ -8,6 +8,7 @@ This is a list of additions and edits to be made in ECMA-335 specifications. It 
 - [Heap sizes](#heap-sizes)
 - [Metadata merging](#metadata-merging)
 - [Metadata logical format](#metadata-logical-format)
+- [DeclSecurity binary permission-set encoding](#declsecurity-binary-permission-set-encoding)
 - [Module Initializer](#module-initializer)
 - [Default Interface Methods](#default-interface-methods)
 - [Static Interface Methods](#static-interface-methods)
@@ -26,6 +27,7 @@ This is a list of additions and edits to be made in ECMA-335 specifications. It 
 - [Debug Interchange Format](#debug-interchange-format)
 - [Extended layout](#extended-layout)
 - [Implicit argument coercion rules](#implicit-argument-coercion-rules)
+- [Init-only static fields](#init-only-static-fields)
 
 ## Signatures
 
@@ -146,33 +148,21 @@ TypeSpecBlob ::=
 
 3. PEVerify, the CLR runtime and C# compiler prior to VS 2015 report an error when encountering an encoded TypeSpec in the positions described above.
 
-### 2. `(CMOD_OPT | CMOD_REQ) <TypeSpec>` is permitted in practice
+### 2. `(CMOD_OPT | CMOD_REQ) <TypeSpec>` is invalid
 
 In II.23.2.7, it is noted that CMOD_OPT or CMOD_REQD is followed
-by a TypeRef or TypeDef metadata token, but TypeSpec tokens are
-also allowed by ilasm, csc, peverify, and the CLR.
+by a TypeRef or TypeDef metadata token. TypeSpec tokens in this
+position should be treated as invalid metadata.
 
-Note, in particular, that TypeSpecs are used there by C++/CLI to
-represent strongly-typed boxing in C++/CLI. e.g. `Nullable<int>^`
-in C++/CLI becomes
-``[mscorlib]System.ValueType modopt([mscorlib]System.Nullable`1<int>) modopt([mscorlib]System.Runtime.CompilerServices.IsBoxed)``
-in IL.
-
-This tolerance adds a loophole to the rule above whereby cyclical
-signatures are in fact possible, e.g.:
-
-* `TypeSpec #1: PTR CMOD_OPT <TypeSpec #1> I4`
-
-Such signatures can currently cause crashes in the runtime and various
-tools, so if the spec is amended to permit TypeSpecs as modifiers,
-then there should be a clarification that cycles are nonetheless not
-permitted, and ideally readers would detect such cycles and handle the
-error with a suitable message rather than a stack overflow.
+Allowing TypeSpec custom modifier types creates a path for
+recursive TypeSpec encodings that are complicated to detect.
+Such metadata should be rejected rather than cycle-detected.
 
 Related issues:
 
 * https://github.com/dotnet/roslyn/issues/7971
 * https://github.com/dotnet/runtime/issues/4945
+* https://github.com/dotnet/runtime/pull/123819#discussion_r2810397721
 
 #### Proposed specification change
 
@@ -185,9 +175,9 @@ for details
 with
 
 > The CMOD_OPT or CMOD_REQD is followed by a metadata token that indexes a row in the TypeDef
-table, TypeRef table, or TypeSpec table. However, these tokens are encoded and compressed –
-see §II.23.2.8 for details. Furthermore, if a row in the TypeSpec table is indicated,
-it must not create cycle.
+table or TypeRef table. However, these tokens are encoded and compressed –
+see §II.23.2.8 for details. TypeSpec tokens are not valid in this position; this
+restriction prevents custom modifiers from forming recursive TypeSpec encodings.
 
 ### 3. Custom modifiers can go in more places than specified
 
@@ -323,17 +313,6 @@ sense in `TypeSpec` are `(CLASS | VALUETYPE) TypeDefOrRef` since
 `TypeDefOrRef` tokens can be used directly and the indirection through
 a `TypeSpec` would serve no purpose.
 
-In the same way as `constrained.`, (assuming #2 is a spec bug and not
-an ilasm/peverify/CLR quirk), custom modifiers can beget `TypeSpec`s
-beyond what is allowed by II.23.2.14, e.g. `modopt(int32)` creates a
-typespec with signature I4.
-
-Even more obscurely, this gives us a way to use `VOID`, `TYPEDBYREF`,
-`CMOD_OPT`, and `CMOD_REQ` at the root of a `TypeSpec`, which are not even
-specified as valid at the root of a `Type`: `modopt(int32 modopt(int32))`,
-`modopt(void)`, and `modopt(typedref)` all work in
-practice. `CMOD_OPT` and `CMOD_REQ` at the root can also be obtained by putting
-a modifier on the type used with `constrained.`.
 
 ## Heap sizes
 
@@ -389,6 +368,38 @@ In addition to the TypeDef table having a special ordering constraint, the Expor
 This line should be changed.
 
 > Finally, this TypeDef _and ExportedType_ ~~table has~~ _tables have_ a special ordering constraint: the definition of an enclosing class shall precede the definition of all classes it encloses.
+
+## DeclSecurity binary permission-set encoding
+
+The binary permission-set encoding in §II.22.11 is updated as follows: The _PermissionSet_ is a 'blob' having the following format:
+
+```mermaid
+flowchart LR
+  subgraph PermissionSet["PermissionSet blob"]
+    direction LR
+    Marker["Byte: '.'"]
+    AttributeCount["Compressed unsigned integer: attribute count"]
+    AttributeSequence["Attribute[attribute count]"]
+    Marker --> AttributeCount --> AttributeSequence
+  end
+
+  subgraph Attribute["Each security attribute"]
+    direction LR
+    TypeName["SerString: type name"]
+    ArgumentsLength["Compressed unsigned integer: argument byte length"]
+    subgraph Arguments["Encoded arguments (argument byte length)"]
+      direction LR
+      NamedArgumentCount["Compressed unsigned integer: named-argument count"]
+      NamedArguments["NamedArg[named-argument count] (§II.23.3)"]
+      NamedArgumentCount --> NamedArguments
+    end
+    TypeName --> ArgumentsLength --> NamedArgumentCount
+  end
+
+  AttributeSequence -. "repeats once per attribute" .-> TypeName
+```
+
+Unlike the custom attribute format in §II.23.3, this permission-set format prefixes each attribute's named-argument block with its compressed byte length and encodes the named-argument count as a compressed integer rather than an unsigned 16-bit integer.
 
 ## Module Initializer
 
@@ -1032,6 +1043,22 @@ Changes to signatures:
   - Managed pointers which point at the address just past the end of an object, or the address where an element just past the end of an array would be stored, are permitted but not dereferenceable.
   - Null managed pointers are permitted to be dereferenced resulting in a `NullReferenceException`.
 
+### III.1.7.7 Opt-in restrictions
+Add a new section "III.1.7.7 Opt-in restrictions" under section "III.1.7 Restrictions on CIL code sequences":
+
+Applying the custom attribute `System.Runtime.CompilerServices.RefSafetyRulesAttribute` on a module opts the module into further restrictions based on the version value specified in the attribute. These restrictions permit an optimizing compiler to further optimize certain code patterns.
+
+Languages may define more rules based on this attribute, but for the purpose of defining valid IL only the following restrictions must be satisfied.
+
+#### III.1.7.7.1 (Version 11 and above) Escaping `this` from value type instance methods
+A pointer value is said to escape when it becomes accessible outside the given scope. A pointer escapes if the pointer itself, or a pointer value derived from it (for example, by applying a field offset), is stored, returned, or otherwise propagated such that code executing outside the given scope can access it.
+
+Valid IL shall ensure that the `this` argument of an instance method on a value type does not escape the method unless at least one of the following conditions holds:
+- The method and any method it overrides are annotated with `System.Diagnostics.CodeAnalysis.UnscopedRefAttribute`. For a property accessor, the annotation may be applied to the property instead.
+- The value type instance resides in unmanaged memory, stack-allocated storage, or pinned GC heap storage.
+
+This restriction permits an optimizing compiler to eliminate boxing of value types when it is safe to do so.
+
 ## <a name="byreflike-generics"></a> ByRefLike types in generics
 
 ByRefLike types, defined in C# with the `ref struct` syntax, represent types that cannot escape to the managed heap and must remain on the stack. It is possible for these types to be used as generic parameters, but in order to improve utility certain affordances are required. See [ref struct Generic Parameters](https://github.com/dotnet/csharplang/blob/main/proposals/csharp-13.0/ref-struct-interfaces.md#ref-struct-generic-parameters) for C# language counterpart.
@@ -1197,3 +1224,7 @@ In section II.23.1.15, the following row is added to the table:
 ## Implict argument coercion rules
 
 Implicit argument coercion as defined in section III.1.6 does not match with existing practice in CLR runtimes. Notably, implicit argument coercion of an `int32` on the IL evaluation stack to a `native unsigned int` is a sign extending operation, not a zero-extending operation.
+
+## Init-only static fields
+
+The notes in sections "III.4.28 stfld" and "III.4.30 stsfld" are replaced with: "Changing the value of a static, init-only field outside the body of the class initializer can compromise memory integrity and type safety." Init-only instance fields are not affected.

@@ -40,10 +40,13 @@ add_custom_command(
 set_source_files_properties(${EventingHeaders} PROPERTIES GENERATED TRUE)
 
 add_custom_target(eventing_headers DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/eventing_headers.timestamp)
-add_dependencies(eventing_headers eventprovider)
-
-add_subdirectory(eventpipe)
 
 if(CLR_CMAKE_HOST_WIN32)
   add_subdirectory(EtwProvider)
 endif()
+
+if (TARGET eventprovider)
+  add_dependencies(eventing_headers eventprovider)
+endif()
+
+add_subdirectory(eventpipe)

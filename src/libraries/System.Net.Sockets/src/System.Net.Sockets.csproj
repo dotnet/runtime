@@ -1,6 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <!-- TODO: Remove once migrated to unsafe-v2. -->
+    <MemorySafetyRulesVersion>1</MemorySafetyRulesVersion>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-tvos;$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)-wasi;$(NetCoreAppCurrent)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- SYSTEM_NET_SOCKETS_DLL is required to allow source-level code sharing for types defined within the
@@ -14,7 +16,7 @@
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' == 'browser' or '$(TargetPlatformIdentifier)' == ''">SR.SystemNetSockets_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
     <IsApplePlatform Condition="'$(TargetPlatformIdentifier)' == 'osx' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'tvos'">true</IsApplePlatform>
-    <DefineConstants Condition="'$(IsApplePlatform)' == 'true'">$(DefineConstants);SYSTEM_NET_SOCKETS_APPLE_PLATFROM</DefineConstants>
+    <DefineConstants Condition="'$(IsApplePlatform)' == 'true'">$(DefineConstants);SYSTEM_NET_SOCKETS_APPLE_PLATFORM</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'browser'">
@@ -78,6 +80,10 @@
              Link="Common\System\Net\TcpValidationHelpers.cs" />
     <Compile Include="$(CommonPath)System\Net\SocketAddressExtensions.cs"
              Link="Common\System\Net\SocketAddressExtensions.cs" />
+    <Compile Include="$(CommonPath)System\LocalAppContextSwitches.Common.cs"
+             Link="Common\System\LocalAppContextSwitches.Common.cs" />
+    <Compile Include="$(CommonPath)System\Net\LocalAppContextSwitches.Net.cs"
+             Link="Common\System\Net\LocalAppContextSwitches.Net.cs" />
     <Compile Include="$(CommonPath)System\Net\SocketProtocolSupportPal.cs"
              Link="Common\System\Net\SocketProtocolSupportPal.cs" />
     <Compile Include="$(CommonPath)System\Net\Sockets\SocketExceptionFactory.cs"
@@ -188,18 +194,10 @@
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'wasi'">
     <Compile Include="System\Net\Sockets\UnixDomainSocketEndPoint.Wasi.cs" />
-    <Compile Include="System\Net\Sockets\SocketAsyncContext.Wasi.cs" />
-    <Compile Include="System\Net\Sockets\SocketAsyncEngine.Wasi.cs"/>
-    <Compile Include="System\Net\Sockets\SocketPal.Wasi.cs" />
-    <Compile Include="$(CommonPath)Interop\Wasi\System.Native\Interop.SocketEvent.cs"
-             Link="Common\Interop\Wasi\System.Native\Interop.SocketEvent.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix' or '$(TargetPlatformIdentifier)' == 'osx' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'tvos'">
     <Compile Include="System\Net\Sockets\UnixDomainSocketEndPoint.Unix.cs"/>
-    <Compile Include="System\Net\Sockets\SocketAsyncEngine.Unix.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SocketEvent.cs"
-             Link="Common\Interop\Unix\System.Native\Interop.SocketEvent.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix' or '$(TargetPlatformIdentifier)' == 'wasi' or '$(TargetPlatformIdentifier)' == 'osx' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'tvos'">
@@ -323,6 +321,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'windows'">
+    <ProjectReference Include="$(CoreLibProject)" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.Thread\src\System.Threading.Thread.csproj" />
   </ItemGroup>
 

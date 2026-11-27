@@ -17,7 +17,7 @@ namespace JitTest_gcreport_cs
     {
         private StressTest2 _m_internal;
 
-        private StressTest()
+        public StressTest()
         {
             _m_internal = new StressTest2();
             _m_internal.m_parent = this;

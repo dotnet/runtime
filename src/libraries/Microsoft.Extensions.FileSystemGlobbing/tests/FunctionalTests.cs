@@ -685,6 +685,80 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
         }
 
         [Theory]
+        [InlineData(true, false)]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        public void RootDir_IsSameAsFile_WithInMemory(bool isPathRoot, bool trailingSeparator)
+        {
+            string rootDir = isPathRoot ? Path.GetPathRoot(_context.RootPath)! : _context.RootPath;
+            if (trailingSeparator)
+            {
+                rootDir += Path.DirectorySeparatorChar;
+            }
+
+            foreach (string pattern in new[] { "MyFile.txt", "*", "**/*" })
+            {
+                var matcher = new Matcher();
+                matcher.AddInclude(pattern);
+
+                string rootDirWithSeparator = rootDir.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+                foreach (string file in new[] { rootDir, rootDirWithSeparator, ".", "./", "" })
+                {
+                    PatternMatchingResult result = matcher.Match(rootDir, file);
+
+                    Assert.False(result.HasMatches);
+                    Assert.Empty(result.Files);
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData(true, false)]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        public void RootDir_IsIncludedWithFiles_WithInMemory(bool isPathRoot, bool trailingSeparator)
+        {
+            string rootDir = isPathRoot ? Path.GetPathRoot(_context.RootPath)! : _context.RootPath;
+            if (trailingSeparator)
+            {
+                rootDir += Path.DirectorySeparatorChar;
+            }
+
+            var matcher = new Matcher();
+            matcher.AddInclude("**/*");
+
+            string[] files =
+            [
+                rootDir,
+                ".",
+                "./",
+                "",
+                Path.Combine(rootDir, "a"),
+                Path.Combine(rootDir, "b", "MyFile.txt")
+            ];
+            PatternMatchingResult result = matcher.Match(rootDir, files);
+
+            Assert.True(result.HasMatches);
+            Assert.Equal(new[] { "a", "b/MyFile.txt" }, result.Files.Select(file => file.Path).OrderBy(path => path, StringComparer.Ordinal));
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        [InlineData(@"\\?\C:\project")]
+        [InlineData(@"\\?\C:\project\")]
+        public void RootDir_ExtendedPathWithRepeatedSeparators_WithInMemory(string rootDir)
+        {
+            string rootWithRepeatedSeparators = @"\\?\C:\project\\";
+            var directory = new InMemoryDirectoryInfo(rootDir, [rootWithRepeatedSeparators, rootWithRepeatedSeparators + "a"]);
+
+            // Check the immediate child before recursive matching so a regression fails without recursing.
+            Assert.IsAssignableFrom<FileInfoBase>(Assert.Single(directory.EnumerateFileSystemInfos()));
+
+            var matcher = new Matcher();
+            matcher.AddInclude("**/*");
+            Assert.Equal("a", Assert.Single(matcher.Execute(directory).Files).Path);
+        }
+
+        [Theory]
         [InlineData("/src/project", '/')]
         [InlineData("/src/project/", '/')]
         public void RootDir_IsAbsolutePath_WithInMemory_AllOS(string rootDir, char separator)
@@ -945,6 +1019,82 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
 
             Assert.False(patternMatchingResult.HasMatches);
             Assert.Equal(0, patternMatchingResult.Files.Count());
+        }
+
+        [Fact]
+        public void StemIsCorrectForMultipleWildcardSiblingDirectories()
+        {
+            var matcher = new Matcher();
+            matcher.AddInclude("sys*/1*/*.dll");
+
+            var files = new[]
+            {
+                "system32/1028/VsGraphicsResources.dll",
+                "system32/1028/vsjitdebuggerui.dll",
+                "system32/1029/VsGraphicsResources.dll",
+                "system32/1029/vsjitdebuggerui.dll",
+                "system32/1031/VsGraphicsResources.dll",
+                "system32/1031/vsjitdebuggerui.dll",
+             };
+
+            var results = matcher.Match("./", files);
+
+            var actual = results.Files.Select(f => f.Stem);
+            var expected = new[]
+            {
+                "system32/1028/VsGraphicsResources.dll",
+                "system32/1028/vsjitdebuggerui.dll",
+                "system32/1029/VsGraphicsResources.dll",
+                "system32/1029/vsjitdebuggerui.dll",
+                "system32/1031/VsGraphicsResources.dll",
+                "system32/1031/vsjitdebuggerui.dll",
+             };
+
+            AssertExtensions.CollectionEqual(expected, actual, StringComparer.OrdinalIgnoreCase);
+        }
+
+        [Fact]
+        public void StemIsCorrectForRecursiveWildcardWithSiblingDirectories()
+        {
+            var matcher = new Matcher();
+            matcher.AddInclude("sys*/**/*.dll");
+
+            var files = new[]
+            {
+                "system32/drivers/acpi.dll",
+                "system32/drivers/usb.dll",
+                "system32/config/sam.dll",
+                "system32/config/security.dll",
+            };
+
+            var results = matcher.Match("./", files);
+
+            var actual = results.Files.Select(f => f.Stem);
+            var expected = new[]
+            {
+                "drivers/acpi.dll",
+                "drivers/usb.dll",
+                "config/sam.dll",
+                "config/security.dll",
+            };
+
+            AssertExtensions.CollectionEqual(expected, actual, StringComparer.OrdinalIgnoreCase);
+        }
+
+        [Fact]
+        public void VerifyInMemoryDirectoryInfo_ParentPatternMatches()
+        {
+            string rootDir = "/Folder1";
+            string[] files = ["/Folder1/File1.txt", "/Folder2/File2.txt"];
+
+            var matcher = new Matcher();
+            matcher.AddInclude("../Folder2/**");
+
+            var result = matcher.Execute(new InMemoryDirectoryInfo(rootDir, files));
+
+            Assert.True(result.HasMatches);
+            Assert.Single(result.Files);
+            Assert.Equal("../Folder2/File2.txt", result.Files.First().Path);
         }
     }
 }

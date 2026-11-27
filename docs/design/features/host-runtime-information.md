@@ -20,7 +20,22 @@ Hex string representation of a pointer to a [`host_runtime_contract` struct](/sr
 
 The `get_runtime_property` function provides key-value string information (like that provided for runtime initialization). This removes the requirement to pre-compute and store all properties. [Existing properties](#well-known-runtime-properties) can be migrated to go through this mechanism, allowing for pay-for-play properties and reducing the cost of properties.
 
-Some existing properties (for example, [probing path properties](#probing-paths)) would benefit from being structured data rather than a single string. The contract can be extended to allow querying for that specific, structured information rather than relying only on strings. For backwards compatibility for existing properties, we would still allow getting the string via `get_runtime_property`, but that would be an on-demand cost.
+Some existing properties benefit from being provided as structured data rather than a single string. The contract can expose callbacks for querying this information while continuing to provide the corresponding string through `get_runtime_property` for backwards compatibility.
+
+### Application assembly paths
+
+**Added in .NET 12**
+
+The host provides resolved assembly paths through two callbacks:
+
+- `get_assembly_names` returns the simple names of all host-resolved assemblies.
+- `resolve_assembly_to_path` resolves a simple name to directory and file name components.
+
+The returned strings are owned by the host and remain valid for the lifetime of the process. The runtime records the assembly names during initialization and resolves each path on demand.
+
+Both callbacks must be available for the structured representation to be used. If either callback is unavailable or `get_assembly_names` returns `false`, the runtime falls back to the [`TRUSTED_PLATFORM_ASSEMBLIES`](#probing-paths) property.
+
+For compatibility, `get_runtime_property` returns the path-separated `TRUSTED_PLATFORM_ASSEMBLIES` string on demand. A custom host can explicitly set that property to use the legacy representation instead of the structured callbacks.
 
 ## Well-known runtime properties
 
@@ -39,6 +54,10 @@ Directory containing the application. This is used for [`AppContext.BaseDirector
 `RUNTIME_IDENTIFIER`
 
 [Runtime identifier](https://learn.microsoft.com/dotnet/core/rid-catalog) for the application. This is used for [`RuntimeInformation.RuntimeIdentifier`](https://learn.microsoft.com/dotnet/api/system.runtime.interopservices.runtimeinformation.runtimeidentifier).
+
+`ARGV0`
+
+The name used to invoke an application host, corresponding to the native process's `argv[0]`. The apphost provides this property for the first element returned by [`Environment.GetCommandLineArgs()`](https://learn.microsoft.com/dotnet/api/system.environment.getcommandlineargs). Muxer-style hosts, including `dotnet` and `corerun`, do not provide this property, preserving the managed application path as the first element.
 
 ### Deps files
 
@@ -62,6 +81,8 @@ List of assemblies (paths or names) containing a [`StartupHook`](./host-startup-
 
 List of platform and application assembly file paths. Paths are delimited by a [platform-specific path separator](#path-separator). This is used in [managed assembly probing](https://learn.microsoft.com/dotnet/core/dependency-loading/default-probing#managed-assembly-default-probing).
 
+**.NET 12 and above** The host provides this information through the [application assembly callbacks](#application-assembly-paths) by default. The string representation remains available through `host_runtime_contract.get_runtime_property` and can still be explicitly supplied by a custom host.
+
 `NATIVE_DLL_SEARCH_DIRECTORIES`
 
 List of directory paths to search for unmanaged (native) libraries. Paths are delimited by a [platform-specific path separator](#path-separator). This is used in [unmanaged (native) assembly probing](https://learn.microsoft.com/dotnet/core/dependency-loading/default-probing#unmanaged-native-library-probing).
@@ -77,6 +98,10 @@ List of directory paths to search for managed assemblies. Paths are delimited by
 `PROBING_DIRECTORIES`
 
 List of directory paths corresponding to shared store paths and additional probing paths used by the host for [probing paths](./host-probing.md#probing-paths). Paths are delimited by a [platform-specific path separator](#path-separator).
+
+`SYSTEM_CORELIB_DIRECTORY`
+
+Absolute path to the directory containing `System.Private.CoreLib.dll`. When set, the runtime loads `System.Private.CoreLib` from this directory instead of looking for it beside `coreclr`. This is intended for hosts where `System.Private.CoreLib.dll` is not placed alongside `coreclr`. For hosts providing an assembly probe extension, a valid probe result takes precedence over this property. Otherwise, when this property is set, no fallback search is performed - if the file cannot be loaded from the specified directory, startup fails. Host is only allowed to specify directory since the runtime expects corelib to always be called `System.Private.CoreLib.dll`.
 
 ### Single-file
 

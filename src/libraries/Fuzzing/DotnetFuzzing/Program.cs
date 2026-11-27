@@ -13,7 +13,13 @@ namespace DotnetFuzzing;
 
 public static class Program
 {
-    public static async Task Main(string[] args)
+    public static void Main(string[] args)
+    {
+        // Fuzzer constructors can run instrumented code before the libFuzzer loop initializes tracing.
+        Fuzzer.Run(_ => MainAsync(args).GetAwaiter().GetResult());
+    }
+
+    private static async Task MainAsync(string[] args)
     {
         IFuzzer[] fuzzers = typeof(Program).Assembly.GetTypes()
             .Where(t => t.IsClass && !t.IsAbstract)
@@ -80,6 +86,9 @@ public static class Program
     {
         if (!string.IsNullOrEmpty(inputFiles))
         {
+            Console.WriteLine($"PID: {Environment.ProcessId}");
+            Console.WriteLine();
+
             string[] files = Directory.Exists(inputFiles)
                 ? Directory.GetFiles(inputFiles)
                 : [inputFiles];
@@ -197,12 +206,9 @@ public static class Program
 
     private static IEnumerable<(string Assembly, string? Prefixes)> GetInstrumentationTargets(IFuzzer fuzzer)
     {
-        bool instrumentCoreLib = fuzzer.TargetCoreLibPrefixes.Length > 0;
+        yield return ("DotnetFuzzing.dll", "DotnetFuzzing.Fuzzers. System.");
 
-        if (!instrumentCoreLib && fuzzer.TargetAssemblies.Length == 0)
-        {
-            throw new Exception($"Specify at least one target in {nameof(IFuzzer.TargetAssemblies)} or {nameof(IFuzzer.TargetCoreLibPrefixes)}.");
-        }
+        bool instrumentCoreLib = fuzzer.TargetCoreLibPrefixes.Length > 0;
 
         foreach (string assembly in fuzzer.TargetAssemblies)
         {
@@ -397,6 +403,8 @@ public static class Program
         {
             script += " -dict=%~dp0dictionary";
         }
+
+        script += " -timeout=60";
 
         // Pass any additional arguments to the fuzzer.
         script += " %*";

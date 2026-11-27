@@ -40,31 +40,6 @@ c_static_assert(CRYPTO_EX_INDEX_SSL_SESSION == 2);
 
 /*
 Function:
-MakeTimeT
-
-Used to convert the constituent elements of a struct tm into a time_t. As time_t does not have
-a guaranteed blitting size, this function is static and cannot be p/invoked. It is here merely
-as a utility.
-
-Return values:
-A time_t representation of the input date. See also man mktime(3).
-*/
-static time_t
-MakeTimeT(int32_t year, int32_t month, int32_t day, int32_t hour, int32_t minute, int32_t second, int32_t isDst)
-{
-    struct tm currentTm;
-    currentTm.tm_year = year - 1900;
-    currentTm.tm_mon = month - 1;
-    currentTm.tm_mday = day;
-    currentTm.tm_hour = hour;
-    currentTm.tm_min = minute;
-    currentTm.tm_sec = second;
-    currentTm.tm_isdst = isDst;
-    return mktime(&currentTm);
-}
-
-/*
-Function:
 GetX509Thumbprint
 
 Used by System.Security.Cryptography.X509Certificates' OpenSslX509CertificateReader to copy the SHA1
@@ -388,7 +363,7 @@ int32_t CryptoNative_GetAsn1StringBytes(ASN1_STRING* asn1, uint8_t* pBuf, int32_
         return 0;
     }
 
-    int length = asn1->length;
+    int length = ASN1_STRING_length(asn1);
     assert(length >= 0);
     if (length < 0)
     {
@@ -400,7 +375,7 @@ int32_t CryptoNative_GetAsn1StringBytes(ASN1_STRING* asn1, uint8_t* pBuf, int32_
         return -length;
     }
 
-    memcpy_s(pBuf, Int32ToSizeT(cBuf), asn1->data, Int32ToSizeT(length));
+    memcpy_s(pBuf, Int32ToSizeT(cBuf), ASN1_STRING_get0_data(asn1), Int32ToSizeT(length));
     return 1;
 }
 
@@ -494,28 +469,28 @@ BIO* CryptoNative_GetX509NameInfo(X509* x509, int32_t nameType, int32_t forIssue
     // UrlName: SAN.Entries.FirstOrDefault(type == GEN_URI);
     if (nameType == NAME_TYPE_SIMPLE)
     {
-        X509_NAME* name = forIssuer ? X509_get_issuer_name(x509) : X509_get_subject_name(x509);
+        const X509_NAME* name = forIssuer ? X509_get_issuer_name(x509) : X509_get_subject_name(x509);
 
         if (name)
         {
-            ASN1_STRING* cn = NULL;
-            ASN1_STRING* ou = NULL;
-            ASN1_STRING* o = NULL;
-            ASN1_STRING* e = NULL;
-            ASN1_STRING* firstRdn = NULL;
+            const ASN1_STRING* cn = NULL;
+            const ASN1_STRING* ou = NULL;
+            const ASN1_STRING* o = NULL;
+            const ASN1_STRING* e = NULL;
+            const ASN1_STRING* firstRdn = NULL;
 
             // Walk the list backwards because it is stored in stack order
             for (int i = X509_NAME_entry_count(name) - 1; i >= 0; --i)
             {
-                X509_NAME_ENTRY* entry = X509_NAME_get_entry(name, i);
+                const X509_NAME_ENTRY* entry = X509_NAME_get_entry(name, i);
 
                 if (!entry)
                 {
                     continue;
                 }
 
-                ASN1_OBJECT* oid = X509_NAME_ENTRY_get_object(entry);
-                ASN1_STRING* str = X509_NAME_ENTRY_get_data(entry);
+                const ASN1_OBJECT* oid = X509_NAME_ENTRY_get_object(entry);
+                const ASN1_STRING* str = X509_NAME_ENTRY_get_data(entry);
 
                 if (!oid || !str)
                 {
@@ -548,7 +523,7 @@ BIO* CryptoNative_GetX509NameInfo(X509* x509, int32_t nameType, int32_t forIssue
                 }
             }
 
-            ASN1_STRING* answer = cn;
+            const ASN1_STRING* answer = cn;
 
             // If there was no CN, but there was something, then perform fallbacks.
             if (!answer && firstRdn)
@@ -644,7 +619,7 @@ BIO* CryptoNative_GetX509NameInfo(X509* x509, int32_t nameType, int32_t forIssue
                                 if (sizeof(szOidUpn) == cchLocalOid &&
                                     0 == strncmp(localOid, szOidUpn, sizeof(szOidUpn)))
                                 {
-                                    if (value->value)
+                                    if (value->value && value->value->type == V_ASN1_UTF8STRING)
                                     {
                                         // OTHERNAME->ASN1_TYPE->union.field
                                         str = value->value->value.asn1_string;
@@ -672,7 +647,7 @@ BIO* CryptoNative_GetX509NameInfo(X509* x509, int32_t nameType, int32_t forIssue
 
     if (nameType == NAME_TYPE_EMAIL || nameType == NAME_TYPE_DNS)
     {
-        X509_NAME* name = forIssuer ? X509_get_issuer_name(x509) : X509_get_subject_name(x509);
+        const X509_NAME* name = forIssuer ? X509_get_issuer_name(x509) : X509_get_subject_name(x509);
         int expectedNid = NID_undef;
 
         switch (nameType)
@@ -690,15 +665,15 @@ BIO* CryptoNative_GetX509NameInfo(X509* x509, int32_t nameType, int32_t forIssue
             // Walk the list backwards because it is stored in stack order
             for (int i = X509_NAME_entry_count(name) - 1; i >= 0; --i)
             {
-                X509_NAME_ENTRY* entry = X509_NAME_get_entry(name, i);
+                const X509_NAME_ENTRY* entry = X509_NAME_get_entry(name, i);
 
                 if (!entry)
                 {
                     continue;
                 }
 
-                ASN1_OBJECT* oid = X509_NAME_ENTRY_get_object(entry);
-                ASN1_STRING* str = X509_NAME_ENTRY_get_data(entry);
+                const ASN1_OBJECT* oid = X509_NAME_ENTRY_get_object(entry);
+                const ASN1_STRING* str = X509_NAME_ENTRY_get_data(entry);
 
                 if (!oid || !str)
                 {
@@ -718,6 +693,51 @@ BIO* CryptoNative_GetX509NameInfo(X509* x509, int32_t nameType, int32_t forIssue
     }
 
     return NULL;
+}
+
+static int32_t CheckX509Hostname(X509* x509, const char* hostname, int32_t cchHostname, unsigned int flags)
+{
+    // OpenSSL 4.1 changed the default behavior of X509_check_host to always ignore the subject of a certificate and
+    // only consult the SAN. X509_CHECK_FLAG_ALWAYS_CHECK_SUBJECT can be used to change the lookup to consult the subject,
+    // but passing this unconditionally isn't the same as the previous behavior. This flag means always look at the subject,
+    // even if the SAN does not match.
+    // To match the previous behavior, we add the X509_CHECK_FLAG_ALWAYS_CHECK_SUBJECT lookup only if the SAN is absent.
+    if (OpenSSL_version_num() >= OPENSSL_VERSION_4_1_RTM)
+    {
+        bool hasDnsSan = false;
+        GENERAL_NAMES* san = (GENERAL_NAMES*)X509_get_ext_d2i(x509, NID_subject_alt_name, NULL, NULL);
+
+        if (san != NULL)
+        {
+            int count = sk_GENERAL_NAME_num(san);
+
+            for (int i = 0; i < count; i++)
+            {
+                // A DNS SAN suppresses CN fallback, even when it does not match.
+                if (sk_GENERAL_NAME_value(san, i)->type == GEN_DNS)
+                {
+                    hasDnsSan = true;
+                    break;
+                }
+            }
+
+            GENERAL_NAMES_free(san);
+        }
+
+        // X509_get_ext_d2i can return NULL for a number of reasons, including the extension being absent, or being
+        // malformed. This is indicated in the *crit value. However, previous versions of OpenSSL did not make a
+        // distinction for why the SAN could not be consulted, including being malformed.
+        // https://github.com/openssl/openssl/blob/67b5686b4419b4cb8caa502711c41815f5279751/crypto/x509/v3_utl.c#L904
+        // Therefore we won't make a distinction, either.
+
+        // If we don't have a SAN, then check the subject.
+        if (!hasDnsSan)
+        {
+            flags |= X509_CHECK_FLAG_ALWAYS_CHECK_SUBJECT;
+        }
+    }
+
+    return X509_check_host(x509, hostname, (size_t)cchHostname, flags, NULL);
 }
 
 /*
@@ -752,12 +772,7 @@ int32_t CryptoNative_CheckX509Hostname(X509* x509, const char* hostname, int32_t
         return 0;
     }
 
-    return X509_check_host(
-        x509,
-        hostname,
-        (size_t)cchHostname,
-        X509_CHECK_FLAG_NO_PARTIAL_WILDCARDS,
-        NULL);
+    return CheckX509Hostname(x509, hostname, cchHostname, X509_CHECK_FLAG_NO_PARTIAL_WILDCARDS);
 }
 
 /*
@@ -770,7 +785,7 @@ the server is applicable to the hostname (an IP address) requested.
 Return values:
 1 if the hostname is a match
 0 if the hostname is not a match
-Any negative number indicates an error in the arguments.
+Any negative number indicates an error.
 */
 int32_t CryptoNative_CheckX509IpAddress(
     X509* x509, const uint8_t* addressBytes, int32_t addressBytesLen, const char* hostname, int32_t cchHostname)
@@ -788,7 +803,6 @@ int32_t CryptoNative_CheckX509IpAddress(
 
     ERR_clear_error();
 
-    int subjectNid = NID_commonName;
     int sanGenType = GEN_IPADD;
     GENERAL_NAMES* san = (GENERAL_NAMES*)(X509_get_ext_d2i(x509, NID_subject_alt_name, NULL, NULL));
     int success = 0;
@@ -810,12 +824,19 @@ int32_t CryptoNative_CheckX509IpAddress(
 
             ipAddr = sanEntry->d.iPAddress;
 
-            if (!ipAddr || !ipAddr->data || ipAddr->length != addressBytesLen)
+            if (!ipAddr || ASN1_STRING_length(ipAddr) != addressBytesLen)
             {
                 continue;
             }
 
-            if (!memcmp(addressBytes, ipAddr->data, (size_t)addressBytesLen))
+            const uint8_t* ipAddrData = ASN1_STRING_get0_data(ipAddr);
+
+            if (!ipAddrData)
+            {
+                continue;
+            }
+
+            if (!memcmp(addressBytes, ipAddrData, (size_t)addressBytesLen))
             {
                 success = 1;
                 break;
@@ -827,27 +848,9 @@ int32_t CryptoNative_CheckX509IpAddress(
 
     if (!success)
     {
-        // This is a shared/interor pointer, do not free!
-        X509_NAME* subject = X509_get_subject_name(x509);
-
-        if (subject)
-        {
-            int i = -1;
-
-            while ((i = X509_NAME_get_index_by_NID(subject, subjectNid, i)) >= 0)
-            {
-                // Shared/interior pointers, do not free!
-                X509_NAME_ENTRY* nameEnt = X509_NAME_get_entry(subject, i);
-                ASN1_STRING* cn = X509_NAME_ENTRY_get_data(nameEnt);
-
-                if (cn->length == cchHostname &&
-                    !strncasecmp((const char*)cn->data, hostname, (size_t)cchHostname))
-                {
-                    success = 1;
-                    break;
-                }
-            }
-        }
+        // Windows compatibility: match the IP literal as text against DNS SANs,
+        // falling back to CN only when no DNS SANs exist. Disable wildcard matching.
+        success = CheckX509Hostname(x509, hostname, cchHostname, X509_CHECK_FLAG_NO_WILDCARDS);
     }
 
     return success;
@@ -904,20 +907,14 @@ Function:
 SetX509StoreVerifyTime
 
 Used by System.Security.Cryptography.X509Certificates' OpenSslX509ChainProcessor to assign the
-verification time to the chain building.  The input is in LOCAL time, not UTC.
+verification time to the chain building. The input is an absolute instant as Unix time
+(seconds since 1970-01-01 UTC), directly convertible to a time_t value.
 
 Return values:
-0 if ctx is NULL, if ctx has no X509_VERIFY_PARAM, or the date inputs don't produce a valid time_t;
+0 if ctx is NULL, if ctx has no X509_VERIFY_PARAM, or if the time is out of bounds on a 32-bit time environment.
 1 on success.
 */
-int32_t CryptoNative_X509StoreSetVerifyTime(X509_STORE* ctx,
-                                            int32_t year,
-                                            int32_t month,
-                                            int32_t day,
-                                            int32_t hour,
-                                            int32_t minute,
-                                            int32_t second,
-                                            int32_t isDst)
+int32_t CryptoNative_X509StoreSetVerifyTime(X509_STORE* ctx, int64_t unixTime)
 {
     ERR_clear_error();
 
@@ -926,12 +923,7 @@ int32_t CryptoNative_X509StoreSetVerifyTime(X509_STORE* ctx,
         return 0;
     }
 
-    time_t verifyTime = MakeTimeT(year, month, day, hour, minute, second, isDst);
-
-    if (verifyTime == (time_t)-1)
-    {
-        return 0;
-    }
+    time_t verifyTime = (time_t)unixTime;
 
     X509_VERIFY_PARAM* verifyParams = X509_STORE_get0_param(ctx);
 
@@ -940,7 +932,7 @@ int32_t CryptoNative_X509StoreSetVerifyTime(X509_STORE* ctx,
         return 0;
     }
 
-#if defined(FEATURE_DISTRO_AGNOSTIC_SSL) && defined(TARGET_ARM) && defined(TARGET_LINUX)
+#if defined(FEATURE_DISTRO_AGNOSTIC_SSL) && defined(TARGET_ARM) && defined(TARGET_LINUX) && !defined(TARGET_ANDROID)
     if (g_libSslUses32BitTime)
     {
         if (verifyTime > INT_MAX || verifyTime < INT_MIN)
@@ -1031,6 +1023,13 @@ int32_t CryptoNative_BioSeek(BIO* bio, int32_t ofs)
     return BIO_seek(bio, ofs);
 }
 
+#ifdef FEATURE_DISTRO_AGNOSTIC_SSL
+static void local_sk_X509_freefunc_thunk(OPENSSL_sk_freefunc freefunc_arg, void* ptr)
+{
+    freefunc_arg(ptr);
+}
+#endif
+
 /*
 Function:
 NewX509Stack
@@ -1044,7 +1043,19 @@ A STACK_OF(X509*) with no comparator.
 STACK_OF(X509) * CryptoNative_NewX509Stack(void)
 {
     ERR_clear_error();
+
+#ifdef FEATURE_DISTRO_AGNOSTIC_SSL
+    OPENSSL_STACK* sk = OPENSSL_sk_new_null();
+
+    if (API_EXISTS(OPENSSL_sk_set_thunks))
+    {
+        OPENSSL_sk_set_thunks(sk, local_sk_X509_freefunc_thunk);
+    }
+
+    return (STACK_OF(X509)*)sk;
+#else
     return sk_X509_new_null();
+#endif
 }
 
 /*
@@ -1338,7 +1349,10 @@ static void HandleShutdown(void)
 
 static int32_t EnsureOpenSsl11Initialized(void)
 {
-    OPENSSL_init_ssl(
+    // OPENSSL_init_ssl returns 1 on success, 0 on failure.
+    // When OPENSSL_INIT_LOAD_CONFIG is specified with a broken configuration,
+    // this call can fail or leave OpenSSL in a partially initialized state.
+    if (!OPENSSL_init_ssl(
             OPENSSL_INIT_ADD_ALL_CIPHERS |
             OPENSSL_INIT_ADD_ALL_DIGESTS |
             OPENSSL_INIT_LOAD_CONFIG |
@@ -1346,7 +1360,22 @@ static int32_t EnsureOpenSsl11Initialized(void)
             OPENSSL_INIT_NO_ATEXIT |
             OPENSSL_INIT_LOAD_CRYPTO_STRINGS |
             OPENSSL_INIT_LOAD_SSL_STRINGS,
-        NULL);
+        NULL))
+    {
+        // Try again without loading the config. This allows the application
+        // to continue even if the openssl.cnf is malformed (e.g., missing
+        // provider sections, referencing non-existent modules).
+        if (!OPENSSL_init_ssl(
+                OPENSSL_INIT_ADD_ALL_CIPHERS |
+                OPENSSL_INIT_ADD_ALL_DIGESTS |
+                OPENSSL_INIT_NO_ATEXIT |
+                OPENSSL_INIT_LOAD_CRYPTO_STRINGS |
+                OPENSSL_INIT_LOAD_SSL_STRINGS,
+            NULL))
+        {
+            return 1;
+        }
+    }
 
     // As a fallback for when the NO_ATEXIT isn't respected, register a later
     // atexit handler, so we will indicate that we're in the shutdown state

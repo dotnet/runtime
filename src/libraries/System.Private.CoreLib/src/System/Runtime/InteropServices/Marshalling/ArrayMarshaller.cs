@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace System.Runtime.InteropServices.Marshalling
@@ -109,7 +110,7 @@ namespace System.Runtime.InteropServices.Marshalling
             => Marshal.FreeCoTaskMem((IntPtr)unmanaged);
 
         /// <summary>
-        /// Marshaller for marshalling a array from managed to unmanaged.
+        /// Marshaller for marshalling an array from managed to unmanaged.
         /// </summary>
         public ref struct ManagedToUnmanagedIn
         {

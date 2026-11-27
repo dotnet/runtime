@@ -5,8 +5,12 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
+using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Microsoft.NET.Sdk.WebAssembly;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -21,9 +25,25 @@ public class ModuleConfigTests : WasmTemplateTestsBase
     {
     }
 
+    [Fact]
+    public async Task ConfigLoadedCallbacks()
+    {
+        Configuration config = Configuration.Debug;
+        ProjectInfo info = CopyTestAsset(config, false, TestAsset.WasmBasicTestApp, "ModuleConfigTests_ConfigLoadedCallbacks");
+        PublishProject(info, config);
+
+        var result = await RunForPublishWithWebServer(new BrowserRunOptions(
+            Configuration: config,
+            TestScenario: "ConfigLoadedCallbacks"
+        ));
+
+        string[] expected = ["ConfigLoaded: first", "ConfigLoaded: second", "ConfigLoaded: ready"];
+        Assert.Equal(expected, result.TestOutput.Where(message => message.StartsWith("ConfigLoaded:", StringComparison.Ordinal)));
+    }
+
     [Theory]
     [InlineData(false)]
-    // [InlineData(true)] // ActiveIssue: https://github.com/dotnet/runtime/issues/124946
+    [InlineData(true)]
     public async Task DownloadProgressFinishes(bool failAssemblyDownload)
     {
         Configuration config = Configuration.Debug;
@@ -35,6 +55,7 @@ public class ModuleConfigTests : WasmTemplateTestsBase
             TestScenario: "DownloadResourceProgressTest",
             BrowserQueryString: new NameValueCollection { {"failAssemblyDownload", failAssemblyDownload.ToString().ToLowerInvariant() } }
         ));
+        Assert.Contains("onDotnetReady called", result.TestOutput);
         Assert.True(
             result.TestOutput.Any(m => m.Contains("DownloadResourceProgress: Finished")),
             "The download progress test didn't emit expected error message"
@@ -50,14 +71,41 @@ public class ModuleConfigTests : WasmTemplateTestsBase
             "The download progress test did emit unexpected message about second download retry"
         );
         Assert.True(
-            result.TestOutput.Any(m => m.Contains("Throw error instead of downloading resource") == failAssemblyDownload),
+            result.TestOutput.Any(m => m.Contains("Throw error instead of downloading resource")) == failAssemblyDownload,
             failAssemblyDownload
                 ? "The download progress test didn't emit expected message about failing download"
                 : "The download progress test did emit unexpected message about failing download"
         );
     }
 
-    [ConditionalFact(typeof(BuildTestBase), nameof(IsMonoRuntime)), TestCategory("bundler-friendly")]
+    [Fact]
+    public async Task DownloadRetryRecoversFromFailure()
+    {
+        Configuration config = Configuration.Release;
+        ProjectInfo info = CopyTestAsset(config, false, TestAsset.WasmBasicTestApp, "ModuleConfigTests_DownloadRetryRecoversFromFailure");
+        PublishProject(info, config);
+
+        var result = await RunForPublishWithWebServer(new BrowserRunOptions(
+            Configuration: config,
+            TestScenario: "DownloadResourceProgressTest",
+            BrowserQueryString: new NameValueCollection { {"failAssemblyDownload", "true" } }
+        ));
+        Assert.Contains("onDotnetReady called", result.TestOutput);
+        Assert.True(
+            result.TestOutput.Any(m => m.Contains("DownloadResourceProgress: Finished")),
+            "Download progress didn't finish after retries"
+        );
+        Assert.True(
+            result.ConsoleOutput.Any(m => m.Contains("Retrying download")),
+            "Expected retry log message was not emitted"
+        );
+        Assert.False(
+            result.ConsoleOutput.Any(m => m.Contains("Retrying download (2)")),
+            "Second retry should not be needed since first retry succeeds"
+        );
+    }
+
+    [Fact, TestCategory("bundler-friendly")]
     public async Task OutErrOverrideWorks()
     {
         Configuration config = Configuration.Debug;
@@ -78,32 +126,43 @@ public class ModuleConfigTests : WasmTemplateTestsBase
         );
     }
 
-    [ConditionalTheory(typeof(BuildTestBase), nameof(IsMonoRuntime))]
-    [InlineData(Configuration.Release, true)]
-    [InlineData(Configuration.Release, false)]
-    public async Task OverrideBootConfigName(Configuration config, bool isPublish)
+    [Theory]
+    [InlineData("not-found", false)]
+    [InlineData("network", false)]
+    [InlineData("not-found", true)]
+    [InlineData("network", true)]
+    [InlineData("none", false)]
+    [TestCategory("coreclr")]
+    public async Task NativeSymbolsDownloadDoesNotHang(string failure, bool ignorePdbLoadErrors)
     {
-        ProjectInfo info = CopyTestAsset(config, false, TestAsset.WasmBasicTestApp, $"OverrideBootConfigName_{isPublish}");
+        Configuration config = Configuration.Release;
+        ProjectInfo info = CopyTestAsset(
+            config, aot: false, TestAsset.WasmBasicTestApp,
+            $"NativeSymbolsDownload_{failure}_{ignorePdbLoadErrors}",
+            extraProperties: "<WasmEmitSymbolMap>true</WasmEmitSymbolMap><WasmBuildNative>false</WasmBuildNative>");
+        PublishProject(info, config, new PublishOptions(
+            AssertAppBundle: false,
+            ExtraMSBuildArgs: "-p:WasmFingerprintAssets=true"));
 
-        if (isPublish)
-            PublishProject(info, config, new PublishOptions(BootConfigFileName: "boot.json", UseCache: false));
-        else
-            BuildProject(info, config, new BuildOptions(BootConfigFileName: "boot.json", UseCache: false));
-
-        var runOptions = new BrowserRunOptions(
+        bool expectSuccess = failure is "none" || (failure is "not-found" && ignorePdbLoadErrors);
+        var result = await RunForPublishWithWebServer(new BrowserRunOptions(
             Configuration: config,
-            TestScenario: "OverrideBootConfigName"
-        );
-        var result = await (isPublish
-            ? RunForPublishWithWebServer(runOptions)
-            : RunForBuildWithDotnetRun(runOptions)
-        );
+            TestScenario: "NativeSymbolsDownload",
+            DetectRuntimeFailures: expectSuccess,
+            ExpectedExitCode: expectSuccess ? 0 : 1,
+            BrowserQueryString: new NameValueCollection
+            {
+                { "failure", failure },
+                { "ignorePdbLoadErrors", ignorePdbLoadErrors.ToString().ToLowerInvariant() }
+            }));
 
-        Assert.Collection(
-            result.TestOutput,
-            m => Assert.Equal("ConfigSrc: boot.json", m),
-            m => Assert.Equal("Managed code has run", m)
-        );
+        Assert.Equal("Native symbols fetch: force-cache", Assert.Single(
+            result.TestOutput.Where(message => message.StartsWith("Native symbols fetch:", StringComparison.Ordinal))));
+        Assert.Equal(expectSuccess, result.TestOutput.Contains("Native symbols startup completed"));
+        if (!expectSuccess)
+        {
+            Assert.Contains(result.ConsoleOutput, message => message.Contains("Failed to load resource 'dotnet.native.", StringComparison.Ordinal));
+        }
     }
 
     [Fact, TestCategory("bundler-friendly")]
@@ -123,6 +182,85 @@ public class ModuleConfigTests : WasmTemplateTestsBase
         );
     }
 
+	[Theory, TestCategory("coreclr"), TestCategory("no-workload")]
+	[InlineData(false, null, null, true, true)]
+	[InlineData(true, null, null, true, true)]
+	[InlineData(false, true, null, true, true)]
+	[InlineData(true, true, null, true, true)]
+	[InlineData(false, false, null, true, true)]
+	[InlineData(true, false, null, true, true)]
+	[InlineData(false, true, true, true, true)]
+	[InlineData(true, false, false, true, true)]
+	[InlineData(true, null, null, false, true)]
+	[InlineData(true, true, null, false, true)]
+	[InlineData(true, null, null, true, false)]
+	public async Task FetchIntegrityConfiguration(bool publish, bool? enableIntegrityCheck, bool? disableIntegrityCheck, bool fingerprintAssets, bool preloadAssets)
+	{
+		Configuration config = Configuration.Debug;
+		ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.WasmBasicTestApp, "FetchIntegrity");
+		string args = $"-p:WasmFingerprintAssets={fingerprintAssets.ToString().ToLowerInvariant()} -p:WasmPreloadAssets={preloadAssets.ToString().ToLowerInvariant()}";
+		if (enableIntegrityCheck is bool enable)
+		{
+			args += $" -p:WasmEnableIntegrityCheck={enable.ToString().ToLowerInvariant()}";
+		}
+		if (publish)
+		{
+			PublishProject(info, config, new PublishOptions(AssertAppBundle: fingerprintAssets, ExtraMSBuildArgs: args));
+		}
+		else
+		{
+			BuildProject(info, config, new BuildOptions(ExtraMSBuildArgs: args));
+		}
+		AssertWasmEndpointIntegrity(config, publish);
+
+		var query = new NameValueCollection();
+		if (disableIntegrityCheck is bool disable)
+		{
+			query.Add("disableIntegrityCheck", disable.ToString().ToLowerInvariant());
+		}
+		var options = new BrowserRunOptions(config, TestScenario: "FetchIntegrity", BrowserQueryString: query);
+		RunResult result = publish
+			? await RunForPublishWithWebServer(options)
+			: await RunForBuildWithDotnetRun(options);
+		string[] preloads = result.TestOutput.Where(message => message.StartsWith("HTML preload integrity: ", StringComparison.Ordinal)).ToArray();
+		Assert.Equal(preloadAssets ? 1 : 0, preloads.Length);
+		Assert.All(preloads, message => Assert.StartsWith("HTML preload integrity: yes ", message, StringComparison.Ordinal));
+		string[] imports = result.TestOutput.Where(message => message.StartsWith("Import-map integrity: ", StringComparison.Ordinal)).ToArray();
+		if (fingerprintAssets || !publish)
+		{
+			Assert.Contains(imports, message => message.EndsWith("/dotnet.js", StringComparison.Ordinal));
+		}
+		Assert.All(imports, message => Assert.StartsWith("Import-map integrity: yes ", message, StringComparison.Ordinal));
+		bool expectIntegrity = disableIntegrityCheck is bool disableOverride ? !disableOverride : enableIntegrityCheck ?? false;
+		foreach (string phase in new[] { "prefetch", "create" })
+		{
+			string prefix = $"Fetch integrity ({phase}): ";
+			string[] fetches = result.TestOutput.Where(message => message.StartsWith(prefix, StringComparison.Ordinal)).ToArray();
+			string nativeFetch = Assert.Single(fetches.Where(message => message.Contains("/dotnet.native", StringComparison.Ordinal)));
+			Assert.Equal(!fingerprintAssets, nativeFetch.EndsWith("/dotnet.native.wasm", StringComparison.Ordinal));
+			Assert.Contains(fetches, message => message.Contains("System.Private.CoreLib", StringComparison.Ordinal));
+			string expected = prefix + (expectIntegrity ? "yes " : "no ");
+			Assert.All(fetches, message => Assert.StartsWith(expected, message, StringComparison.Ordinal));
+		}
+	}
+
+    [Fact]
+    public async Task BufferedAssetsTest()
+    {
+        Configuration config = Configuration.Debug;
+        ProjectInfo info = CopyTestAsset(
+            config,
+            aot: false,
+            TestAsset.WasmBasicTestApp,
+            "ModuleConfigTests_BufferedAssetsTest",
+            extraProperties: "<WasmEmitSymbolMap>true</WasmEmitSymbolMap>");
+        PublishProject(info, config, new PublishOptions(AssertAppBundle: false));
+        await RunForPublishWithWebServer(new BrowserRunOptions(
+            Configuration: config,
+            TestScenario: "BufferedAssetsTest"
+        ));
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -136,10 +274,97 @@ public class ModuleConfigTests : WasmTemplateTestsBase
     public void SymbolMapFileNotEmitted(bool isPublish)
         => SymbolMapFileEmittedCore(emitSymbolMap: false, isPublish);
 
+    [Fact]
+    [TestCategory("coreclr")]
+    public void RuntimePackSymbolMapMatchesFinalWasm()
+    {
+        (byte[] wasmBytes, byte[] symbolsBytes) = ReadRuntimePackNativeSymbols();
+        NativeWasmSymbolMapInfo info = NativeWasmSymbolMapValidator.Validate(wasmBytes, symbolsBytes);
+
+        Assert.True(info.ImportedFunctionCount > 0);
+        Assert.Equal(info.DefinedFunctionCount, info.CodeFunctionCount);
+        Assert.Equal(info.ImportedFunctionCount + info.DefinedFunctionCount, info.Symbols.Count);
+        Assert.Equal(
+            "InterpExecMethod(InterpreterFrame*, InterpMethodContextFrame*, InterpThreadContext*, ExceptionClauseArgs*)",
+            Assert.Single(info.Symbols, entry => entry.Value.StartsWith("InterpExecMethod(", StringComparison.Ordinal)).Value);
+        Assert.Contains(info.Symbols, entry => entry.Value == "ExecuteInterpretedMethod");
+        Assert.Contains(
+            info.Symbols,
+            entry => entry.Value.StartsWith("ExecuteInterpretedMethodWithArgs_PortableEntryPoint(", StringComparison.Ordinal));
+        Assert.Contains(info.Symbols, entry => Regex.IsMatch(entry.Value, @"^non-virtual thunk to .+_\d+$"));
+        Assert.DoesNotContain(info.Symbols, entry => entry.Value.Contains("WasmR2RToInterpreterThunk", StringComparison.Ordinal));
+        Assert.DoesNotContain(info.Symbols, entry => entry.Value.Contains("WasmInterpreterToR2RThunk", StringComparison.Ordinal));
+
+        int browserHostIndex = info.FunctionExports["BrowserHost_InitializeDotnet"];
+        Assert.Equal("BrowserHost_InitializeDotnet", info.Symbols[browserHostIndex]);
+
+        int mallocIndex = info.FunctionExports["malloc"];
+        Assert.Equal("emscripten_builtin_malloc", info.Symbols[mallocIndex]);
+    }
+
+    [Fact]
+    [TestCategory("coreclr")]
+    public void RuntimePackSymbolMapRejectsIndexAndIdentityMismatches()
+    {
+        (byte[] wasmBytes, byte[] symbolsBytes) = ReadRuntimePackNativeSymbols();
+        string wasmIntegrity = NativeWasmSymbolMapValidator.ComputeIntegrity(wasmBytes);
+        string symbolsIntegrity = NativeWasmSymbolMapValidator.ComputeIntegrity(symbolsBytes);
+
+        byte[] shiftedSymbols = Encoding.UTF8.GetBytes(
+            string.Join(
+                Environment.NewLine,
+                Encoding.UTF8.GetString(symbolsBytes)
+                    .Split('\n', StringSplitOptions.RemoveEmptyEntries)
+                    .Select(line =>
+                    {
+                        int separator = line.IndexOf(':');
+                        int index = int.Parse(line.AsSpan(0, separator));
+                        return $"{index + 1}:{line[(separator + 1)..].TrimEnd('\r')}";
+                    })) +
+            Environment.NewLine);
+
+        InvalidDataException shiftedException = Assert.Throws<InvalidDataException>(
+            () => NativeWasmSymbolMapValidator.Validate(
+                wasmBytes,
+                shiftedSymbols,
+                wasmIntegrity,
+                NativeWasmSymbolMapValidator.ComputeIntegrity(shiftedSymbols)));
+        Assert.Contains("expected absolute function index 0", shiftedException.Message);
+
+        byte[] staleWasm = (byte[])wasmBytes.Clone();
+        staleWasm[^1] ^= 1;
+        InvalidDataException staleWasmException = Assert.Throws<InvalidDataException>(
+            () => NativeWasmSymbolMapValidator.Validate(staleWasm, symbolsBytes, wasmIntegrity, symbolsIntegrity));
+        Assert.Contains("Wasm SHA-256 mismatch", staleWasmException.Message);
+
+        byte[] staleSymbols = (byte[])symbolsBytes.Clone();
+        staleSymbols[^2] ^= 1;
+        InvalidDataException staleSymbolsException = Assert.Throws<InvalidDataException>(
+            () => NativeWasmSymbolMapValidator.Validate(wasmBytes, staleSymbols, wasmIntegrity, symbolsIntegrity));
+        Assert.Contains("symbol map SHA-256 mismatch", staleSymbolsException.Message);
+    }
+
+    private static (byte[] WasmBytes, byte[] SymbolsBytes) ReadRuntimePackNativeSymbols()
+    {
+        string runtimePackVersion = s_buildEnv.GetRuntimePackVersion(DefaultTargetFramework);
+        string packagePath = Path.Combine(
+            s_buildEnv.BuiltNuGetsPath,
+            $"Microsoft.NETCore.App.Runtime.browser-wasm.{runtimePackVersion}.nupkg");
+
+        using ZipArchive package = ZipFile.OpenRead(packagePath);
+        var runtimePack = new RuntimePackAssets(packagePath, package);
+        return (
+            runtimePack.ReadBytes(RuntimePackAssets.GetNativePath("dotnet.native.wasm")),
+            runtimePack.ReadBytes(RuntimePackAssets.GetNativePath("dotnet.native.js.symbols")));
+    }
+
     private void SymbolMapFileEmittedCore(bool emitSymbolMap, bool isPublish)
     {
         Configuration config = Configuration.Release;
-        string extraProperties = $"<WasmEmitSymbolMap>{emitSymbolMap.ToString().ToLowerInvariant()}</WasmEmitSymbolMap>";
+        string extraProperties =
+            $"<WasmEmitSymbolMap>{emitSymbolMap.ToString().ToLowerInvariant()}</WasmEmitSymbolMap>" +
+            "<WasmBuildNative>false</WasmBuildNative>";
+
         ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.WasmBasicTestApp,
             $"SymbolMapFile_{emitSymbolMap}_{isPublish}", extraProperties: extraProperties);
 
@@ -148,11 +373,55 @@ public class ModuleConfigTests : WasmTemplateTestsBase
         else
             BuildProject(info, config, new BuildOptions(AssertAppBundle: false));
 
-        string frameworkDir = GetBinFrameworkDir(config, forPublish: isPublish);
+        // Locate the emitted symbols file. With CopyToOutputDirectory=Never, framework files are
+        // no longer in bin/_framework during build: the native symbols file lives in
+        // obj/{config}/{tfm}/wasm/for-build/ (native rebuild) and the materialized copy ends up
+        // in obj/{config}/{tfm}/fx/{name}/_framework/. The publish path still has them in
+        // bin/{config}/{tfm}/publish/wwwroot/_framework/.
+        // The file may be fingerprinted (e.g. dotnet.native.<hash>.js.symbols), so use a glob.
+        const string symbolsPattern = "dotnet.native*.js.symbols";
+        string? symbolsFile;
+        if (isPublish)
+        {
+            string frameworkDir = GetBinFrameworkDir(config, forPublish: true);
+            symbolsFile = Directory.EnumerateFiles(frameworkDir, symbolsPattern).SingleOrDefault();
+        }
+        else
+        {
+            string objDir = Path.Combine(_projectDir, "obj", config.ToString(), DefaultTargetFramework);
+            string fxBaseDir = Path.Combine(objDir, "fx");
+            string[] searchDirs = [
+                Path.Combine(objDir, "wasm", "for-build"),
+                .. Directory.Exists(fxBaseDir)
+                    ? Directory.GetDirectories(fxBaseDir).Select(d => Path.Combine(d, "_framework"))
+                    : Array.Empty<string>()
+            ];
+            symbolsFile = searchDirs
+                .Where(Directory.Exists)
+                .SelectMany(d => Directory.EnumerateFiles(d, symbolsPattern))
+                .SingleOrDefault();
+        }
 
-        // The file may be fingerprinted (e.g. dotnet.native.<hash>.js.symbols),
-        // so use a glob pattern to find it.
-        bool symbolsFileExists = Directory.EnumerateFiles(frameworkDir, "dotnet.native*.js.symbols").Any();
-        Assert.Equal(emitSymbolMap, symbolsFileExists);
+        Assert.Equal(emitSymbolMap, symbolsFile is not null);
+        if (!emitSymbolMap || !isPublish)
+            return;
+
+        string symbolsPath = Assert.IsType<string>(symbolsFile);
+        string frameworkDirectory = GetBinFrameworkDir(config, forPublish: true);
+        WasmSdkBasedProjectProvider provider = GetProvider<WasmSdkBasedProjectProvider>();
+        BootJsonData bootJson = provider.GetBootJson(provider.GetBootConfigPath(frameworkDirectory));
+        AssetsData assets = Assert.IsType<AssetsData>(bootJson.resources);
+        SymbolsAsset symbolAsset = Assert.Single(assets.wasmSymbols);
+        WasmAsset wasmAsset = Assert.Single(assets.wasmNative);
+
+        Assert.Equal(Path.GetFileName(symbolsPath), symbolAsset.name);
+        Assert.StartsWith("sha256-", symbolAsset.hash);
+        Assert.StartsWith("sha256-", wasmAsset.hash);
+        string wasmPath = Path.Combine(frameworkDirectory, wasmAsset.name);
+        NativeWasmSymbolMapValidator.Validate(
+            wasmPath,
+            symbolsPath,
+            expectedWasmIntegrity: wasmAsset.hash,
+            expectedSymbolsIntegrity: symbolAsset.hash);
     }
 }

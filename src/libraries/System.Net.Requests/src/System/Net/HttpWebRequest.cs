@@ -83,7 +83,7 @@ namespace System.Net
         private DecompressionMethods _automaticDecompression = HttpHandlerDefaults.DefaultAutomaticDecompression;
 
         private static readonly object s_syncRoot = new object();
-        private static volatile HttpClient? s_cachedHttpClient;
+        private static HttpClient? s_cachedHttpClient;
         private static HttpClientParameters? s_cachedHttpClientParameters;
         private bool _disposeRequired;
         private HttpClient? _httpClient;

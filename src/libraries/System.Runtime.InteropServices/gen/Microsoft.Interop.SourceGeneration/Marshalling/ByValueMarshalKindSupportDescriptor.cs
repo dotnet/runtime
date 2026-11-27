@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Immutable;
 using System.Diagnostics;
 
 namespace Microsoft.Interop
@@ -18,14 +17,6 @@ namespace Microsoft.Interop
                     new GeneratorDiagnostic.NotRecommended(info)
                     {
                         Details = details
-                    },
-                ByValueMarshalKindSupport.Unnecessary =>
-                    new GeneratorDiagnostic.UnnecessaryData(
-                           info,
-                           ImmutableArray.Create(info.ByValueMarshalAttributeLocations.OutLocation))
-                    {
-                        UnnecessaryDataName = SR.InOutAttributes,
-                        UnnecessaryDataDetails = details
                     },
                 ByValueMarshalKindSupport.NotSupported =>
                     new GeneratorDiagnostic.NotSupported(info)
@@ -48,7 +39,7 @@ namespace Microsoft.Interop
         ByValueMarshalKindSupportInfo InOutSupport)
     {
         /// <summary>
-        /// A default <see cref="ByValueMarshalKindSupportDescriptor"/> for by value parameters. [In] is allowed, but unnecessary. Out is not allowed.
+        /// A default <see cref="ByValueMarshalKindSupportDescriptor"/> for by value parameters. [In] and [Out] are not allowed.
         /// </summary>
         public static readonly ByValueMarshalKindSupportDescriptor Default = new ByValueMarshalKindSupportDescriptor(
             DefaultSupport: new(ByValueMarshalKindSupport.Supported, null),

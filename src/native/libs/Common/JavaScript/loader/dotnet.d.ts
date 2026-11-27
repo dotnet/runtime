@@ -46,9 +46,12 @@ type TypedArray = Int8Array | Uint8Array | Uint8ClampedArray | Int16Array | Uint
 interface DotnetHostBuilder {
     /**
      * @param config default values for the runtime configuration. It will be merged with the default values.
-     * Note that if you provide resources and don't provide custom configSrc URL, the dotnet.boot.js will be downloaded and applied by default.
      */
     withConfig(config: LoaderConfig): DotnetHostBuilder;
+    /**
+     * @deprecated This method is no longer supported and will be removed in a future version.
+     */
+    withConfigSrc(configSrc: string): DotnetHostBuilder;
     /**
      * "command line" arguments for the Main() method.
      * @param args
@@ -97,14 +100,30 @@ interface DotnetHostBuilder {
      */
     withApplicationCulture(applicationCulture?: string): DotnetHostBuilder;
     /**
+     * Sets a callback that is invoked after each resource finishes downloading.
+     */
+    withDownloadResourceProgress(callback?: (resourcesLoaded: number, totalResources: number) => void): DotnetHostBuilder;
+    /**
+     * Adds a callback that is invoked after the runtime configuration is loaded.
+     * Callbacks run in registration order, awaiting each callback before invoking the next.
+     * If a callback throws or rejects, subsequent callbacks are not invoked and startup fails.
+     * Callbacks registered during invocation are not included in the current invocation.
+     * Passing undefined has no effect.
+     */
+    withConfigLoaded(callback?: (config: LoaderConfig) => void | Promise<void>): DotnetHostBuilder;
+    /**
      * Overrides the built-in boot resource loading mechanism so that boot resources can be fetched
      * from a custom source, such as an external CDN.
      */
     withResourceLoader(loadBootResource?: LoadBootResourceCallback): DotnetHostBuilder;
     /**
      * Downloads all the assets but doesn't create the runtime instance.
+     * @param httpCacheOnly If true, resources are only fetched into the browser HTTP cache
+     *   and discarded. A subsequent create() call will re-fetch from cache and do full init.
+     *   If false (default), resources are downloaded and loaded into WASM memory, so that
+     *   a subsequent create() call only needs to initialize the managed runtime.
      */
-    download(): Promise<void>;
+    download(httpCacheOnly?: boolean): Promise<void>;
     /**
      * Starts the runtime and returns promise of the API object.
      */
@@ -238,7 +257,6 @@ interface Assets {
     lazyAssembly?: AssemblyAsset[];
     corePdb?: PdbAsset[];
     pdb?: PdbAsset[];
-    jsModuleWorker?: JsAsset[];
     jsModuleDiagnostics?: JsAsset[];
     jsModuleNative: JsAsset[];
     jsModuleRuntime: JsAsset[];
@@ -251,8 +269,8 @@ interface Assets {
     modulesAfterConfigLoaded?: JsAsset[];
     modulesAfterRuntimeReady?: JsAsset[];
     extensions?: ResourceExtensions;
-    coreVfs?: VfsAsset[];
     vfs?: VfsAsset[];
+    appsettings?: AppSettings[];
 }
 type Asset = {
     /**
@@ -298,11 +316,15 @@ type JsAsset = Asset & {
 };
 type SymbolsAsset = Asset & {
     name: string;
+    hash?: string | null | "";
 };
 type VfsAsset = Asset & {
     virtualPath: string;
     name: string;
     hash?: string | null | "";
+};
+type AppSettings = VfsAsset & {
+    loadIntoVfs: boolean;
 };
 type IcuAsset = Asset & {
     virtualPath: string;
@@ -335,51 +357,6 @@ interface LoadingResource {
     url: string;
     response: Promise<Response>;
 }
-interface AssetEntry {
-    /**
-     * the name of the asset, including extension.
-     */
-    name: string;
-    /**
-     * determines how the asset will be handled once loaded
-     */
-    behavior: AssetBehaviors;
-    /**
-     * this should be absolute url to the asset
-     */
-    resolvedUrl?: string;
-    /**
-     * the integrity hash of the asset (if any)
-     */
-    hash?: string | null | "";
-    /**
-     * If specified, overrides the path of the asset in the virtual filesystem and similar data structures once downloaded.
-     */
-    virtualPath?: string;
-    /**
-     * Culture code
-     */
-    culture?: string;
-    /**
-     * If true, the runtime startup would not fail if the asset download was not successful.
-     */
-    isOptional?: boolean;
-    /**
-     * If provided, runtime doesn't have to fetch the data.
-     * Runtime would set the buffer to null after instantiation to free the memory.
-     */
-    buffer?: ArrayBuffer | Promise<ArrayBuffer>;
-    /**
-     * If provided, runtime doesn't have to import it's JavaScript modules.
-     * This will not work for multi-threaded runtime.
-     */
-    moduleExports?: any | Promise<any>;
-    /**
-     * It's metadata + fetch-like Promise<Response>
-     * If provided, the runtime doesn't have to initiate the download. It would just await the response.
-     */
-    pendingDownload?: LoadingResource;
-}
 type SingleAssetBehaviors = 
 /**
  * The binary of the .NET runtime.
@@ -389,10 +366,6 @@ type SingleAssetBehaviors =
  * The javascript module for loader.
  */
  | "js-module-dotnet"
-/**
- * The javascript module for threads.
- */
- | "js-module-threads"
 /**
  * The javascript module for diagnostic server and client.
  */
@@ -439,6 +412,10 @@ type AssetBehaviors = SingleAssetBehaviors |
  */
  | "vfs"
 /**
+ * Retain application settings in JavaScript memory and optionally install them into VFS.
+ */
+ | "appsettings"
+/**
  * The javascript module that came from nuget package .
  */
  | "js-module-library-initializer"
@@ -466,10 +443,6 @@ declare const enum GlobalizationMode {
 }
 type DotnetModuleConfig = {
     config?: LoaderConfig;
-    configSrc?: string;
-    onConfigLoaded?: (config: LoaderConfig) => void | Promise<void>;
-    onDotnetReady?: () => void | Promise<void>;
-    onDownloadResourceProgress?: (resourcesLoaded: number, totalResources: number) => void;
     imports?: any;
     exports?: string[];
 } & Partial<EmscriptenModule>;
@@ -497,12 +470,6 @@ type RunAPIType = {
      * @param reason could be a string or an Error object.
      */
     exit: (code: number, reason?: any) => void;
-    /**
-     * Sets the environment variable for the "process"
-     * @param name
-     * @param value
-     */
-    setEnvironmentVariable: (name: string, value: string) => void;
     /**
      * Returns the [JSExport] methods of the assembly with the given name
      * @param assemblyName
@@ -668,22 +635,28 @@ type MemoryAPIType = {
 };
 type DiagnosticsAPIType = {
     /**
-     * creates diagnostic trace file. Default is 60 seconds.
+     * Creates diagnostic trace file. Default is 60 seconds.
      * It could be opened in PerfView or Visual Studio as is.
      */
     collectCpuSamples: (options?: DiagnosticCommandOptions) => Promise<Uint8Array[]>;
     /**
-     * creates diagnostic trace file. Default is 60 seconds.
+     * Creates diagnostic trace file. Default is 60 seconds.
      * It could be opened in PerfView or Visual Studio as is.
      * It could be summarized by `dotnet-trace report xxx.nettrace topN -n 10`
      */
     collectMetrics: (options?: DiagnosticCommandOptions) => Promise<Uint8Array[]>;
     /**
-     * creates diagnostic trace file.
+     * Creates diagnostic trace file.
      * It could be opened in PerfView as is.
      * It could be converted for Visual Studio using `dotnet-gcdump convert`.
      */
     collectGcDump: (options?: DiagnosticCommandOptions) => Promise<Uint8Array[]>;
+    /**
+     * Creates a startup PGO trace file (method list, and block counts when the interpreter is instrumented).
+     * The trace stops and downloads automatically after `durationSeconds` (default 10s).
+     * Convert it with `dotnet-pgo create-mibc --trace xxx.nettrace ...` to drive a profile-guided crossgen2 build.
+     */
+    collectPgoTrace: (options?: DiagnosticCommandOptions) => Promise<Uint8Array[]>;
     /**
      * changes DOTNET_DiagnosticPorts and makes a new connection to WebSocket on that URL.
      */
@@ -692,7 +665,7 @@ type DiagnosticsAPIType = {
 type DiagnosticCommandProviderV2 = {
     keywords: [number, number];
     logLevel: number;
-    provider_name: string;
+    providerName: string;
     arguments: string | null;
 };
 type DiagnosticCommandOptions = {
@@ -760,4 +733,4 @@ declare global {
 }
 
 export { GlobalizationMode, createDotnetRuntime as default, dotnet, exit };
-export type { AssetBehaviors, AssetEntry, CreateDotnetRuntimeType, DotnetHostBuilder, DotnetModuleConfig, EmscriptenModule, IMemoryView, LoaderConfig, ModuleAPI, RuntimeAPI };
+export type { AppSettings, AssemblyAsset, Asset, AssetBehaviors, Assets, BootModule, CreateDotnetRuntimeType, DotnetHostBuilder, DotnetModuleConfig, EmscriptenModule, IMemoryView, IcuAsset, JsAsset, LoadBootResourceCallback, LoaderConfig, LoadingResource, ModuleAPI, PdbAsset, ResourceExtensions, ResourceList, RuntimeAPI, SymbolsAsset, VfsAsset, WasmAsset, WebAssemblyBootResourceType };

@@ -23,14 +23,14 @@ class PEAssembly;
 enum StackTraceElementFlags
 {
     // Set if this element represents the last frame of the foreign exception stack trace
-    STEF_LAST_FRAME_FROM_FOREIGN_STACK_TRACE = 0x0001,
+    STEF_LAST_FRAME_FROM_FOREIGN_STACK_TRACE = 0x0001, // [cDAC] [Exception]: Contract depends on this value.
 
     // Set if the "ip" field has already been adjusted (decremented)
-    STEF_IP_ADJUSTED = 0x0002,
+    STEF_IP_ADJUSTED = 0x0002, // [cDAC] [Exception]: Contract depends on this value.
 
     // Set if the element references a method that needs a keep alive object
     STEF_KEEPALIVE = 0x0004,
-    STEF_CONTINUATION = 0x0008,
+    STEF_CONTINUATION = 0x0008, // [cDAC] [Exception]: Contract depends on this value.
 };
 
 // This struct is used by SOS in the diagnostic repo.
@@ -70,9 +70,7 @@ class StackTraceInfo
     static OBJECTREF GetKeepAliveObject(MethodDesc* pMethod);
     static void EnsureStackTraceArray(StackTraceArrayProtect *pStackTraceArrayProtected, size_t neededSize);
     static void EnsureKeepAliveArray(PTRARRAYREF *ppKeepAliveArray, size_t neededSize);
-    static void AppendElementImpl(OBJECTREF pThrowable, UINT_PTR currentIP, UINT_PTR currentSP, MethodDesc* pFunc, CrawlFrame* pCf, Thread* pThread, BOOL fRaisingForeignException);
 public:
-    static void AppendElement(OBJECTHANDLE hThrowable, UINT_PTR currentIP, UINT_PTR currentSP, MethodDesc* pFunc, CrawlFrame* pCf);
     static void AppendElement(OBJECTREF pThrowable, UINT_PTR currentIP, UINT_PTR currentSP, MethodDesc* pFunc, CrawlFrame* pCf);
 };
 
@@ -83,7 +81,6 @@ public:
 // ---------------------------------------------------------------------------
 class CLRException : public Exception
 {
-    friend bool DebugIsEECxxExceptionPointer(void* pv);
     friend class CLRLastThrownObjectException;
  private:
     static const int c_type = 0x434c5220;   // 'CLR '
@@ -180,7 +177,7 @@ public:
         HandlerState(Thread * pThread);
         HandlerState(Thread * pThread, NonNullThread dummy);
 
-        void CleanupTry();
+        void CleanupTry() noexcept;
         void SetupCatch(INDEBUG_COMMA(_In_z_ const char * szFile) int lineNum);
 #ifdef LOGGING // Use parent implementation that inlines into nothing in retail build
         void SucceedCatch();
@@ -200,8 +197,6 @@ void GetLastThrownObjectExceptionFromThread(Exception **ppException);
 
 class EEException : public CLRException
 {
-    friend bool DebugIsEECxxExceptionPointer(void* pv);
-
  private:
     static const int c_type = 0x45452020;   // 'EE '
 
@@ -247,14 +242,6 @@ class EEException : public CLRException
   protected:
     static HRESULT GetHRFromKind(RuntimeExceptionKind reKind);
 
-#ifdef _DEBUG
-    EEException() : m_kind(kException)
-    {
-        // Used only for DebugIsEECxxExceptionPointer to get the vtable pointer.
-        // We need a variant which does not allocate memory.
-    }
-#endif // _DEBUG
-
     virtual Exception *CloneHelper()
     {
         WRAPPER_NO_CONTRACT;
@@ -270,8 +257,6 @@ class EEException : public CLRException
 
 class EEMessageException : public EEException
 {
-    friend bool DebugIsEECxxExceptionPointer(void* pv);
-
  private:
     HRESULT             m_hr;
     UINT                m_resID;
@@ -303,7 +288,7 @@ class EEMessageException : public EEException
 
     static BOOL IsEEMessageException(Exception *pException)
     {
-        return (*(PVOID*)pException == GetEEMessageExceptionVPtr());
+        return *(PVOID*)pException == GetEEMessageExceptionVPtr();
     }
 
  protected:
@@ -320,28 +305,20 @@ class EEMessageException : public EEException
 
     static PVOID GetEEMessageExceptionVPtr()
     {
-        CONTRACT (PVOID)
+        CONTRACTL
         {
             WRAPPER(THROWS);
             WRAPPER(GC_TRIGGERS);
             MODE_ANY;
-            POSTCONDITION(CheckPointer(RETVAL));
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
         EEMessageException boilerplate(E_FAIL);
-        RETURN (PVOID&)boilerplate;
+        return (PVOID&)boilerplate;
     }
 
     BOOL GetResourceMessage(UINT iResourceID, SString &result);
 
-#ifdef _DEBUG
-    EEMessageException()
-    {
-        // Used only for DebugIsEECxxExceptionPointer to get the vtable pointer.
-        // We need a variant which does not allocate memory.
-    }
-#endif // _DEBUG
 };
 
 // ---------------------------------------------------------------------------
@@ -351,8 +328,6 @@ class EEMessageException : public EEException
 
 class EEResourceException : public EEException
 {
-    friend bool DebugIsEECxxExceptionPointer(void* pv);
-
  private:
     InlineSString<32>        m_resourceName;
 
@@ -372,15 +347,6 @@ class EEResourceException : public EEException
         WRAPPER_NO_CONTRACT;
         return new EEResourceException(m_kind, m_resourceName);
     }
-
-private:
-#ifdef _DEBUG
-    EEResourceException()
-    {
-        // Used only for DebugIsEECxxExceptionPointer to get the vtable pointer.
-        // We need a variant which does not allocate memory.
-    }
-#endif // _DEBUG
 };
 
 #ifdef FEATURE_COMINTEROP
@@ -403,8 +369,6 @@ struct ExceptionData
 
 class EECOMException : public EEException
 {
-    friend bool DebugIsEECxxExceptionPointer(void* pv);
-
  private:
     ExceptionData m_ED;
 
@@ -432,15 +396,6 @@ class EECOMException : public EEException
         return new EECOMException(&m_ED);
     }
 
-private:
-#ifdef _DEBUG
-    EECOMException()
-    {
-        // Used only for DebugIsEECxxExceptionPointer to get the vtable pointer.
-        // We need a variant which does not allocate memory.
-        ZeroMemory(&m_ED, sizeof(m_ED));
-    }
-#endif // _DEBUG
 };
 #endif // FEATURE_COMINTEROP
 
@@ -449,8 +404,6 @@ private:
 // ---------------------------------------------------------------------------
 class EEFieldException : public EEException
 {
-    friend bool DebugIsEECxxExceptionPointer(void* pv);
-
  private:
     FieldDesc   *m_pFD;
     MethodDesc  *m_pAccessingMD;
@@ -471,14 +424,6 @@ protected:
         return new EEFieldException(m_pFD, m_pAccessingMD, m_additionalContext, m_messageID);
     }
 
-private:
-#ifdef _DEBUG
-    EEFieldException()
-    {
-        // Used only for DebugIsEECxxExceptionPointer to get the vtable pointer.
-        // We need a variant which does not allocate memory.
-    }
-#endif // _DEBUG
 };
 
 // ---------------------------------------------------------------------------
@@ -487,8 +432,6 @@ private:
 
 class EEMethodException : public EEException
 {
-    friend bool DebugIsEECxxExceptionPointer(void* pv);
-
  private:
     MethodDesc *m_pMD;
     MethodDesc *m_pAccessingMD;
@@ -509,14 +452,6 @@ class EEMethodException : public EEException
         return new EEMethodException(m_pMD, m_pAccessingMD, m_additionalContext, m_messageID);
     }
 
-private:
-#ifdef _DEBUG
-    EEMethodException()
-    {
-        // Used only for DebugIsEECxxExceptionPointer to get the vtable pointer.
-        // We need a variant which does not allocate memory.
-    }
-#endif // _DEBUG
 };
 
 // ---------------------------------------------------------------------------
@@ -526,8 +461,6 @@ private:
 
 class EETypeAccessException : public EEException
 {
-    friend bool DebugIsEECxxExceptionPointer(void* pv);
-
  private:
     MethodTable *m_pMT;
     MethodDesc  *m_pAccessingMD;
@@ -548,14 +481,6 @@ class EETypeAccessException : public EEException
         return new EETypeAccessException(m_pMT, m_pAccessingMD, m_additionalContext, m_messageID);
     }
 
-private:
-#ifdef _DEBUG
-    EETypeAccessException()
-    {
-        // Used only for DebugIsEECxxExceptionPointer to get the vtable pointer.
-        // We need a variant which does not allocate memory.
-    }
-#endif // _DEBUG
 };
 
 // ---------------------------------------------------------------------------
@@ -565,8 +490,6 @@ private:
 
 class EEArgumentException : public EEException
 {
-    friend bool DebugIsEECxxExceptionPointer(void* pv);
-
  private:
     InlineSString<32>        m_argumentName;
     InlineSString<32>        m_resourceName;
@@ -587,14 +510,6 @@ class EEArgumentException : public EEException
         return new EEArgumentException(m_kind, m_argumentName, m_resourceName);
     }
 
-private:
-#ifdef _DEBUG
-    EEArgumentException()
-    {
-        // Used only for DebugIsEECxxExceptionPointer to get the vtable pointer.
-        // We need a variant which does not allocate memory.
-    }
-#endif // _DEBUG
 };
 
 // ---------------------------------------------------------------------------
@@ -604,8 +519,6 @@ private:
 
 class EETypeLoadException : public EEException
 {
-    friend bool DebugIsEECxxExceptionPointer(void* pv);
-
   private:
     InlineSString<64>   m_fullName;
     SString             m_pAssemblyName;
@@ -644,13 +557,6 @@ class EETypeLoadException : public EEException
     }
 
 
-#ifdef _DEBUG
-    EETypeLoadException()
-    {
-        // Used only for DebugIsEECxxExceptionPointer to get the vtable pointer.
-        // We need a variant which does not allocate memory.
-    }
-#endif // _DEBUG
 };
 
 // ---------------------------------------------------------------------------
@@ -660,16 +566,22 @@ class EETypeLoadException : public EEException
 
 class EEFileLoadException : public EEException
 {
-    friend bool DebugIsEECxxExceptionPointer(void* pv);
-
   private:
     SString m_name;
     HRESULT m_hr;
+    SString m_diagnosticInfo;
+    SString m_requestingAssemblyChain;
 
   public:
 
     EEFileLoadException(const SString &name, HRESULT hr, Exception *pInnerException = NULL);
-    ~EEFileLoadException();
+    EEFileLoadException(const SString &name, HRESULT hr, const SString &diagnosticInfo);
+
+    void SetRequestingAssemblyChain(const SString &requestingAssemblyChain)
+    {
+        WRAPPER_NO_CONTRACT;
+        m_requestingAssemblyChain = requestingAssemblyChain;
+    }
 
     // virtual overrides
     HRESULT GetHR()
@@ -683,6 +595,7 @@ class EEFileLoadException : public EEException
 
     static RuntimeExceptionKind GetFileLoadKind(HRESULT hr);
     static void DECLSPEC_NORETURN Throw(AssemblySpec *pSpec, HRESULT hr, Exception *pInnerException = NULL);
+    static void DECLSPEC_NORETURN Throw(AssemblySpec *pSpec, HRESULT hr, const SString &diagnosticInfo, Exception *pInnerException = NULL);
     static void DECLSPEC_NORETURN Throw(PEAssembly *pPEAssembly, HRESULT hr, Exception *pInnerException = NULL);
     static void DECLSPEC_NORETURN Throw(LPCWSTR path, HRESULT hr, Exception *pInnerException = NULL);
     static void DECLSPEC_NORETURN Throw(PEAssembly *parent, const void *memory, COUNT_T size, HRESULT hr, Exception *pInnerException = NULL);
@@ -692,17 +605,12 @@ class EEFileLoadException : public EEException
     virtual Exception *CloneHelper()
     {
         WRAPPER_NO_CONTRACT;
-        return new EEFileLoadException(m_name, m_hr);
+        EEFileLoadException *pClone = new EEFileLoadException(m_name, m_hr, m_diagnosticInfo);
+        pClone->SetRequestingAssemblyChain(m_requestingAssemblyChain);
+        return pClone;
     }
 
  private:
-#ifdef _DEBUG
-    EEFileLoadException()
-    {
-        // Used only for DebugIsEECxxExceptionPointer to get the vtable pointer.
-        // We need a variant which does not allocate memory.
-    }
-#endif // _DEBUG
 
     void SetFileName(const SString &fileName, BOOL removePath);
 };
@@ -747,7 +655,7 @@ class EEFileLoadException : public EEException
 #if defined(_DEBUG)
   // Redefine GET_EXCEPTION to validate CLRLastThrownObjectException as much as possible.
   #undef GET_EXCEPTION
-  #define GET_EXCEPTION() (__pException == NULL ? __defaultException.Validate() : __pException.GetValue())
+  #define GET_EXCEPTION() (__pException == NULL ? __defaultException.Validate() : static_cast<Exception*>(__pException))
 #endif // _DEBUG
 
 LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv);
@@ -804,8 +712,8 @@ LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv);
             /* a findstr /n will allow you to locate it in a pinch */                   \
             STRESS_LOG1(LF_EH, LL_INFO100,                                              \
                 "EX_RETHROW " INDEBUG(__FILE__) " line %d\n", __LINE__);                \
-            __pException.SuppressRelease();                                             \
-            if ((!__state.DidCatchCxx()) && (GetThreadNULLOk() != NULL))                      \
+            __pException.Detach();                                                      \
+            if ((!__state.DidCatchCxx()) && (GetThreadNULLOk() != NULL))                \
             {                                                                           \
                 if (GetThread()->PreemptiveGCDisabled())                                \
                 {                                                                       \
@@ -834,18 +742,6 @@ LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv);
 #define EX_ENDTRY                                           \
     PAL_CPP_ENDTRY
 
-
-// CLRException::GetErrorInfo below invokes GetComIPFromObjectRef
-// that invokes ObjHeader::GetSyncBlock which has the INJECT_FAULT contract.
-//
-// This EX_CATCH_HRESULT implementation can be used in functions
-// that have FORBID_FAULT contracts.
-//
-// However, failure due to OOM (or any other potential exception) in GetErrorInfo
-// implies that we couldnt get the interface pointer from the objectRef and would be
-// returned NULL.
-//
-// Thus, the scoped use of FAULT_NOT_FATAL macro.
 #undef EX_CATCH_HRESULT
 #ifdef FEATURE_COMINTEROP
 #define EX_CATCH_HRESULT(_hr)                                                   \
@@ -853,7 +749,6 @@ LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv);
     {                                                                           \
         (_hr) = GET_EXCEPTION()->GetHR();                                       \
         {                                                                       \
-            FAULT_NOT_FATAL();                                                  \
             HRESULT hrErrorInfo = GET_EXCEPTION()->SetErrorInfo();              \
             if (FAILED(hrErrorInfo))                                            \
             {                                                                   \
@@ -957,7 +852,7 @@ inline CLRException::CLRException()
 
 inline void CLRException::SetThrowableHandle(OBJECTHANDLE throwable)
 {
-    STRESS_LOG1(LF_EH, LL_INFO100, "in CLRException::SetThrowableHandle: obj = %x\n", throwable);
+    STRESS_LOG1(LF_EH, LL_INFO100, "in CLRException::SetThrowableHandle: obj = %p\n", (void*)throwable);
     m_throwableHandle = throwable;
 }
 
@@ -1118,8 +1013,6 @@ inline EEArgumentException::EEArgumentException(RuntimeExceptionKind reKind, LPC
 
 class ObjrefException : public CLRException
 {
-    friend bool DebugIsEECxxExceptionPointer(void* pv);
-
  public:
 
     ObjrefException();
@@ -1147,8 +1040,6 @@ protected:
 
 class CLRLastThrownObjectException : public CLRException
 {
-    friend bool DebugIsEECxxExceptionPointer(void* pv);
-
  public:
     CLRLastThrownObjectException();
 
@@ -1177,4 +1068,3 @@ class CLRLastThrownObjectException : public CLRException
 bool IsHRESULTForExceptionKind(HRESULT hr, RuntimeExceptionKind kind);
 
 #endif // _CLREX_H_
-

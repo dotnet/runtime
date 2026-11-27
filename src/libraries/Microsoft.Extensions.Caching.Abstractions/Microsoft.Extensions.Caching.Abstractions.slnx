@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/gen/">
+    <Project Path="../../../eng/analyzers/PlatformDocAnalyzer/PlatformDocAnalyzer.csproj" />
     <Project Path="../System.Runtime.InteropServices/gen/DownlevelLibraryImportGenerator/DownlevelLibraryImportGenerator.csproj" />
     <Project Path="../System.Runtime.InteropServices/gen/Microsoft.Interop.SourceGeneration/Microsoft.Interop.SourceGeneration.csproj" />
   </Folder>
@@ -10,6 +11,9 @@
   <Folder Name="/src/">
     <Project Path="../Microsoft.Extensions.Primitives/src/Microsoft.Extensions.Primitives.csproj" />
     <Project Path="src/Microsoft.Extensions.Caching.Abstractions.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Microsoft.Extensions.Caching.Abstractions.Tests.csproj" />
   </Folder>
   <Folder Name="/tools/" />
   <Folder Name="/tools/gen/">

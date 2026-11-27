@@ -8,7 +8,12 @@ using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public class TrimmingDescriptorNode : DependencyNodeCore<NodeFactory>, ICompilationRootProvider
+    public class TrimmingDescriptorNode : DependencyNodeCore<NodeFactory>
+#if !ILTRIM
+#pragma warning disable SA1001
+        , ICompilationRootProvider
+#pragma warning restore SA1001
+#endif
     {
         private readonly string _fileName;
 
@@ -17,12 +22,19 @@ namespace ILCompiler.DependencyAnalysis
             _fileName = fileName;
         }
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory factory)
         {
             using (Stream fs = File.OpenRead(_fileName))
             {
+#if ILTRIM
+                foreach (DependencyListEntry dependency in DescriptorMarker.GetDependencies(factory.Logger, factory, fs, default, default, _fileName, factory.Settings.FeatureSettings))
+#else
                 var metadataManager = (UsageBasedMetadataManager)factory.MetadataManager;
-                return DescriptorMarker.GetDependencies(metadataManager.Logger, factory, fs, default, default, _fileName, metadataManager.FeatureSwitches);
+                foreach (DependencyListEntry dependency in DescriptorMarker.GetDependencies(metadataManager.Logger, factory, fs, default, default, _fileName, metadataManager.FeatureSwitches))
+#endif
+                {
+                    sink.Add(dependency);
+                }
             }
         }
 
@@ -35,8 +47,10 @@ namespace ILCompiler.DependencyAnalysis
         public override bool HasDynamicDependencies => false;
         public override bool HasConditionalStaticDependencies => false;
         public override bool StaticDependenciesAreComputed => true;
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context) => null;
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context) => null;
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory context) { }
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink sink, NodeFactory context) { }
+#if !ILTRIM
         void ICompilationRootProvider.AddCompilationRoots(IRootingServiceProvider rootProvider) => rootProvider.AddCompilationRoot(this, "Descriptor from command line");
+#endif
     }
 }

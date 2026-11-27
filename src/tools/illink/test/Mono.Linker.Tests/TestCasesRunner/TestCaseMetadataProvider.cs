@@ -82,7 +82,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
                                 values[0] = string.Concat(values[0].AsSpan(0, pos + 1), Path.Combine(inputPath, custom_assembly_path));
                         }
                         break;
-                    case "-a":
+                    case "-reference":
                         if (!Path.IsPathRooted(values[0]))
                             values[0] = Path.Combine(inputPath, values[0]);
 
@@ -102,6 +102,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
             return tclo;
         }
 
+#if !ILTRIM
         public virtual void CustomizeTrimming(TrimmingDriver linker, TrimmingCustomizations customizations)
         {
             if (!_testCaseTypeDefinition.CustomAttributes.Any(a => a.AttributeType.IsTypeOf<SkipKeptItemsValidationAttribute>())
@@ -145,6 +146,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
             return false;
         }
+#endif
 
         public virtual IEnumerable<SourceAndDestinationPair> GetResponseFiles()
         {

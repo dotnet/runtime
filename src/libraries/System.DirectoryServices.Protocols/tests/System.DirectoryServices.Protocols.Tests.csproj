@@ -1,6 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-linux;$(NetCoreAppCurrent)-osx;$(NetFrameworkCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetFrameworkCurrent)</TargetFrameworks>
+    <!-- OpenLDAP (libldap) is not available on Apple mobile platforms. -->
+    <IgnoreForCI Condition="'$(TargetsAppleMobile)' == 'true'">true</IgnoreForCI>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="BerConverterTests.cs" />
@@ -53,6 +55,8 @@
     <Compile Include="AddRequestTests.cs" />
     <Compile Include="DirectoryServicesProtocolsTests.cs" />
     <Compile Include="DirectoryServicesTestHelpers.cs" />
+    <Compile Include="TestServer\LdapTestServer.cs" />
+    <Compile Include="TestServer\LdapTestServer.Protocol.cs" />
     <Compile Include="$(CommonTestPath)System\DirectoryServices\LdapConfiguration.cs"
              Link="Common\DirectoryServices\LdapConfiguration.cs" />
   </ItemGroup>
@@ -68,5 +72,7 @@
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Reference Include="System.DirectoryServices" />
     <Reference Include="System.DirectoryServices.Protocols" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Bcl.Cryptography\src\Microsoft.Bcl.Cryptography.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Formats.Asn1\src\System.Formats.Asn1.csproj" />
   </ItemGroup>
 </Project>

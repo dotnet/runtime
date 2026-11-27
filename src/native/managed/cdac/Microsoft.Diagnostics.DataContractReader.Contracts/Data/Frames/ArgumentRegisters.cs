@@ -5,22 +5,20 @@ using System.Collections.Generic;
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal class ArgumentRegisters : IData<ArgumentRegisters>
+[CdacType(nameof(DataType.ArgumentRegisters))]
+internal partial class ArgumentRegisters : IData<ArgumentRegisters>
 {
-    static ArgumentRegisters IData<ArgumentRegisters>.Create(Target target, TargetPointer address)
-        => new ArgumentRegisters(target, address);
+    [CustomInit(nameof(InitRegisters))] public partial IReadOnlyDictionary<string, TargetNUInt> Registers { get; }
 
-    public ArgumentRegisters(Target target, TargetPointer address)
+    private partial IReadOnlyDictionary<string, TargetNUInt> InitRegisters(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.ArgumentRegisters);
-        Dictionary<string, TargetNUInt> registers = new Dictionary<string, TargetNUInt>(type.Fields.Count);
+        Dictionary<string, TargetNUInt> registers = new(type.Fields.Count);
         foreach ((string name, Target.FieldInfo field) in type.Fields)
         {
             TargetNUInt value = target.ReadNUInt(address + (ulong)field.Offset);
             registers.Add(name, value);
         }
-        Registers = registers;
+        return registers;
     }
-
-    public IReadOnlyDictionary<string, TargetNUInt> Registers { get; }
 }

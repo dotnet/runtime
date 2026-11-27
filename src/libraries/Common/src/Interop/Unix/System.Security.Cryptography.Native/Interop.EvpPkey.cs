@@ -14,7 +14,7 @@ internal static partial class Interop
         internal static partial SafeEvpPKeyHandle EvpPkeyCreate();
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPkeyDestroy")]
-        internal static partial void EvpPkeyDestroy(IntPtr pkey, IntPtr extraHandle);
+        internal static partial void EvpPkeyDestroy(IntPtr pkey);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPKeyBits")]
         internal static partial int EvpPKeyBits(SafeEvpPKeyHandle pkey);
@@ -37,12 +37,7 @@ internal static partial class Interop
         }
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_UpRefEvpPkey")]
-        private static partial int UpRefEvpPkey(SafeEvpPKeyHandle handle, IntPtr extraHandle);
-
-        internal static int UpRefEvpPkey(SafeEvpPKeyHandle handle)
-        {
-            return UpRefEvpPkey(handle, handle.ExtraHandle);
-        }
+        internal static partial int UpRefEvpPkey(SafeEvpPKeyHandle handle);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPKeyType")]
         internal static partial EvpAlgorithmId EvpPKeyType(SafeEvpPKeyHandle handle);
@@ -282,21 +277,31 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.CryptoNative, StringMarshalling = StringMarshalling.Utf8)]
         private static partial IntPtr CryptoNative_LoadKeyFromProvider(
-            string providerName,
+            [MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPUTF8Str, SizeParamIndex = 1)]
+            string[] providerNames,
+            int providerNameCount,
             string keyUri,
+            string? propertyQuery,
             ref IntPtr extraHandle,
             [MarshalAs(UnmanagedType.Bool)] out bool haveProvider);
 
         internal static SafeEvpPKeyHandle LoadKeyFromProvider(
-            string providerName,
-            string keyUri)
+            string[] providerNames,
+            string keyUri,
+            string? propertyQuery,
+            ref IntPtr extraHandle)
         {
-            IntPtr extraHandle = IntPtr.Zero;
             IntPtr evpPKeyHandle = IntPtr.Zero;
 
             try
             {
-                evpPKeyHandle = CryptoNative_LoadKeyFromProvider(providerName, keyUri, ref extraHandle, out bool haveProvider);
+                evpPKeyHandle = CryptoNative_LoadKeyFromProvider(
+                    providerNames,
+                    providerNames.Length,
+                    keyUri,
+                    propertyQuery,
+                    ref extraHandle,
+                    out bool haveProvider);
 
                 if (!haveProvider)
                 {
@@ -304,9 +309,10 @@ internal static partial class Interop
                     throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyOpenSSLProvidersNotSupported);
                 }
 
+                // extraHandle should have been set to non-NULL during the key load even if it was NULL when
+                // LoadKeyFromProvider was called.
                 if (evpPKeyHandle == IntPtr.Zero || extraHandle == IntPtr.Zero)
                 {
-                    Debug.Assert(evpPKeyHandle == IntPtr.Zero, "extraHandle should not be null if evpPKeyHandle is not null");
                     throw CreateOpenSslCryptographicException();
                 }
 
@@ -314,9 +320,9 @@ internal static partial class Interop
             }
             catch
             {
-                if (evpPKeyHandle != IntPtr.Zero || extraHandle != IntPtr.Zero)
+                if (evpPKeyHandle != IntPtr.Zero)
                 {
-                    EvpPkeyDestroy(evpPKeyHandle, extraHandle);
+                    EvpPkeyDestroy(evpPKeyHandle);
                 }
 
                 throw;

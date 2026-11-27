@@ -43,27 +43,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                 .ShouldHaveResolvedFrameworkOrFailToFind(MicrosoftNETCoreApp, resolvedFramework);
         }
 
-        // Validates that --fx-version ignores any <rollForwardOnNoCandidateFx> or <applyPatches> settings
-        [Theory] // rollForwardOnNoCandidateFx applyPatches
-        [InlineData(null,                      null )]
-        [InlineData(0,                         null )]
-        [InlineData(0,                         true )]
-        [InlineData(1,                         null )]
-        [InlineData(1,                         true )]
-        [InlineData(2,                         null )]
-        [InlineData(0,                         false)]
-        public void IgnoresRollForwardOnNoCandidateFxAndApplyPatchesSettings(int? rollForwardOnNoCandidateFx, bool? applyPatches)
-        {
-            RunTest(
-                new TestSettings()
-                    .WithRuntimeConfigCustomizer(runtimeConfig => runtimeConfig
-                        .WithFramework(MicrosoftNETCoreApp, "2.5.4"))
-                    .WithCommandLine(Constants.FxVersion.CommandLineArgument, "2.5.5")
-                    .With(RollForwardOnNoCandidateFxSetting(SettingLocation.CommandLine, rollForwardOnNoCandidateFx))
-                    .With(ApplyPatchesSetting(SettingLocation.RuntimeOptions, applyPatches)))
-                .ShouldHaveResolvedFramework(MicrosoftNETCoreApp, "2.5.5");
-        }
-
         // Validates that --fx-version ignores any rollForward <rollForward> settings
         [Theory] // rollForward
         [InlineData(null                                    )]

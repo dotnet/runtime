@@ -28,8 +28,10 @@ class Dataflow
         TestObjectGetTypeDataflow.Run();
         TestMakeGenericDataflow.Run();
         TestMakeGenericDataflowInvalid.Run();
+        TestMakeGenericConstrainedDataflow.Run();
         TestMarshalIntrinsics.Run();
         Regression97758.Run();
+        TestMakeGenericDataflowInLocalMethod.Run();
 
         return 100;
     }
@@ -698,6 +700,26 @@ class Dataflow
         }
     }
 
+    class TestMakeGenericConstrainedDataflow
+    {
+        struct Atom;
+
+        class Gen<T, U, V> where U : IFoo, new();
+
+        interface IFoo;
+        class Foo : IFoo;
+
+        public static object Handle<T, U>() where U : new()
+        {
+            return Activator.CreateInstance(typeof(Gen<,,>).MakeGenericType(typeof(T), typeof(U), typeof(object)));
+        }
+
+        public static void Run()
+        {
+            Handle<Atom, Foo>().ToString();
+        }
+    }
+
     class TestMarshalIntrinsics
     {
         [StructLayout(LayoutKind.Sequential)]
@@ -769,6 +791,28 @@ class Dataflow
         public static void Run()
         {
             Foo<int>.Trigger();
+        }
+    }
+
+    class TestMakeGenericDataflowInLocalMethod
+    {
+        class Gen<T> { }
+
+        struct Atom { }
+
+        class GenMethods
+        {
+            public static void Bridge<T>() { }
+        }
+
+        public static void Run()
+        {
+            MakeGenericType<Atom>();
+            MakeGenericMethod<Atom>();
+
+            static object MakeGenericType<T>() => Activator.CreateInstance(typeof(Gen<>).MakeGenericType(typeof(T)));
+
+            static void MakeGenericMethod<T>() => typeof(GenMethods).GetMethod(nameof(GenMethods.Bridge)).MakeGenericMethod(typeof(T)).Invoke(null, []);
         }
     }
 }

@@ -139,7 +139,7 @@ namespace System.Xml.Serialization
         private bool _isReflectionBasedSerializer;
 
         private static readonly TempAssemblyCache s_cache = new TempAssemblyCache();
-        private static volatile XmlSerializerNamespaces? s_defaultNamespaces;
+        private static XmlSerializerNamespaces? s_defaultNamespaces;
         private static readonly XmlWriterSettings s_writerSettings = new XmlWriterSettings() { Encoding = new UTF8Encoding(false), Indent = true };
 
         private static XmlSerializerNamespaces DefaultNamespaces
@@ -486,6 +486,8 @@ namespace System.Xml.Serialization
             events.sender = this;
             try
             {
+                AdvancePastTopLevelEndElementIfNeeded(xmlReader);
+
                 if (_primitiveType != null)
                 {
                     if (encodingStyle != null && encodingStyle.Length > 0)
@@ -542,6 +544,8 @@ namespace System.Xml.Serialization
 
         public virtual bool CanDeserialize(XmlReader xmlReader)
         {
+            AdvancePastTopLevelEndElementIfNeeded(xmlReader);
+
             if (_primitiveType != null)
             {
                 TypeDesc typeDesc = (TypeDesc)TypeScope.PrimtiveTypes[_primitiveType]!;
@@ -837,6 +841,16 @@ namespace System.Xml.Serialization
             _tempAssembly = tempAssembly;
             _mapping = mapping;
             _typedSerializer = true;
+        }
+
+        private static void AdvancePastTopLevelEndElementIfNeeded(XmlReader xmlReader)
+        {
+            if (LocalAppContextSwitches.UseXmlSerializerReadEndElementWorkaround &&
+                xmlReader.NodeType == XmlNodeType.EndElement &&
+                xmlReader.Depth == 0)
+            {
+                xmlReader.Read();
+            }
         }
 
         private static XmlTypeMapping? GetKnownMapping(Type type, string? ns)

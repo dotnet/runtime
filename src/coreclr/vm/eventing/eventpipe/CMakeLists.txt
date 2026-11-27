@@ -3,6 +3,7 @@ include(FindPython)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(GENERATE_SCRIPT ${CLR_DIR}/scripts/genEventPipe.py)
+set(GENERATE_SHARED_SCRIPT ${CLR_DIR}/scripts/genEventing.py)
 set(GENERATE_COMMAND ${Python_EXECUTABLE} ${GENERATE_SCRIPT} --man ${EVENT_MANIFEST} --exc ${EVENT_EXCLUSIONS} --intermediate ${CMAKE_CURRENT_BINARY_DIR} ${NONEXTERN_ARG})
 
 execute_process(
@@ -26,10 +27,11 @@ endforeach()
 
 add_custom_command(OUTPUT ${GEN_EVENTPIPE_SOURCES}
   COMMAND ${GENERATE_COMMAND}
-  DEPENDS ${GENERATE_SCRIPT} ${EVENT_MANIFEST} ${EVENT_EXCLUSIONS})
+  DEPENDS ${GENERATE_SCRIPT} ${GENERATE_SHARED_SCRIPT} ${EVENT_MANIFEST} ${EVENT_EXCLUSIONS})
 
 list(APPEND CORECLR_EVENTPIPE_SHIM_SOURCES
   ep-rt-coreclr.cpp
+  ep-rt-coreclr-wasm-sampling.cpp
 )
 
 list(APPEND CORECLR_EVENTPIPE_SHIM_HEADERS
@@ -44,6 +46,7 @@ add_library_clr(eventpipe_gen_objs OBJECT ${GEN_EVENTPIPE_SOURCES})
 target_precompile_headers(eventpipe_gen_objs PRIVATE [["common.h"]])
 set_target_properties(eventpipe_gen_objs PROPERTIES LINKER_LANGUAGE CXX)
 add_dependencies(eventpipe_gen_objs eventing_headers)
+target_compile_definitions(eventpipe_gen_objs PRIVATE FEATURE_PERFTRACING)
 
 add_library_clr(eventpipe_objs OBJECT ${CORECLR_EVENTPIPE_SHIM_SOURCES} ${CORECLR_EVENTPIPE_SHIM_HEADERS})
 set_target_properties(eventpipe_objs PROPERTIES
@@ -53,6 +56,10 @@ set_target_properties(eventpipe_objs PROPERTIES
 )
 add_dependencies(eventpipe_objs eventing_headers)
 target_link_libraries(eventpipe_objs PRIVATE dn-diagnosticserver dn-eventpipe)
+target_compile_definitions(eventpipe_objs PRIVATE FEATURE_PERFTRACING)
+if (FEATURE_PERFTRACING_DISABLE_THREADS)
+  target_compile_definitions(eventpipe_objs PRIVATE PERFTRACING_DISABLE_THREADS)
+endif()
 
 # The CoreCLR EventPipe runtime is C++, but the EventPipe and DiagnosticServer sources are C.
 # Forcibly override them to build as C++.

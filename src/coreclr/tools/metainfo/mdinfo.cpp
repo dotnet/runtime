@@ -17,6 +17,7 @@
 
 #include <cahlpr.h>
 #include <limits.h>
+#include <inttypes.h>
 
 #include "mdinfo.h"
 
@@ -197,7 +198,7 @@ const char *g_szNativeType[] =
 
 static const char* ConvertToUtf8(LPCWSTR name, _Out_writes_(bufLen) char* buffer, ULONG bufLen)
 {
-    int res = WideCharToMultiByte(CP_UTF8, 0, name, -1, buffer, bufLen, NULL, NULL);
+    size_t res = minipal_convert_utf16_to_utf8((const CHAR16_T*)name, u16_strlen(name) + 1, buffer, bufLen, 0);
     if (res == 0)
         buffer[0] = '\0';
     return buffer;
@@ -251,8 +252,6 @@ MDInfo::MDInfo(IMetaDataImport2 *pImport, IMetaDataAssemblyImport *pAssemblyImpo
 MDInfo::MDInfo(IMetaDataDispenserEx *pDispenser, LPCWSTR szScope, strPassBackFn inPBFn, ULONG DumpFilter)
 {
     HRESULT     hr = S_OK;
-    VARIANT     value;
-
     _ASSERTE(pDispenser != NULL && inPBFn != NULL);
     _ASSERTE(ARRAY_SIZE(g_szMapElementType) == ARRAY_SIZE(g_szMapUndecorateType));
     _ASSERTE(ARRAY_SIZE(g_szMapElementType) == ELEMENT_TYPE_MAX);
@@ -260,20 +259,7 @@ MDInfo::MDInfo(IMetaDataDispenserEx *pDispenser, LPCWSTR szScope, strPassBackFn 
     Init(inPBFn, (DUMP_FILTER)DumpFilter);
 
     // Attempt to open scope on given file
-    V_VT(&value) = VT_UI4;
-    V_UI4(&value) = MDImportOptionAll;
-    if (FAILED(hr = pDispenser->SetOption(MetaDataImportOption, &value)))
-            Error("SetOption failed.", hr);
-
     hr = pDispenser->OpenScope(szScope, ofNoTransform, IID_IMetaDataImport2, (IUnknown**)&m_pImport);
-    if (hr == CLDB_E_BADUPDATEMODE)
-    {
-        V_VT(&value) = VT_UI4;
-        V_UI4(&value) = MDUpdateIncremental;
-        if (FAILED(hr = pDispenser->SetOption(MetaDataSetUpdate, &value)))
-            Error("SetOption failed.", hr);
-        hr = pDispenser->OpenScope(szScope, ofNoTransform, IID_IMetaDataImport2, (IUnknown**)&m_pImport);
-    }
     if (FAILED(hr))
         Error("OpenScope failed", hr);
 
@@ -298,11 +284,6 @@ MDInfo::MDInfo(IMetaDataDispenserEx *pDispenser, PBYTE pbMetaData, DWORD dwSize,
     // overloaded until we remove LM -a assemblies, at which point this
     // constructor should probably be removed too).
     HRESULT hr;
-    VARIANT     value;
-    V_VT(&value) = VT_UI4;
-    V_UI4(&value) = MDImportOptionAll;
-    if (FAILED(hr = pDispenser->SetOption(MetaDataImportOption, &value)))
-            Error("SetOption failed.", hr);
     if (SUCCEEDED(hr = pDispenser->OpenScopeOnMemory(pbMetaData, dwSize, ofNoTransform,
                             IID_IMetaDataImport2, (IUnknown**)&m_pImport)))
     {
@@ -1954,7 +1935,7 @@ void MDInfo::DisplayCustomAttributeInfo(mdCustomAttribute inValue, const char *p
         LPWSTR pwzName = (LPWSTR)(new WCHAR[iLen]);
         if(pwzName)
         {
-            MultiByteToWideChar(CP_UTF8,0, pMethName,-1, pwzName,iLen);
+            minipal_convert_utf8_to_utf16(pMethName, strlen(pMethName) + 1, (CHAR16_T*)pwzName, iLen, 0);
             PrettyPrintSigLegacy(pSig, cbSig, pwzName, &qSigName, m_pImport);
             delete [] pwzName;
         }
