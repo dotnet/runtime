@@ -7533,23 +7533,55 @@ void FlowGraphDominanceFrontiers::Dump()
 //   block - The block
 //
 // Returns:
-//   Loop or nullptr if the block is not contained in any loop.
+//   Loop or nullptr if the block is not contained in any loop, or was created
+//   after the map was built.
+//
+// Remarks:
+//   The map is keyed by bbID, so it remains usable if a later DFS renumbers blocks.
 //
 FlowGraphNaturalLoop* BlockToNaturalLoopMap::GetLoop(BasicBlock* block)
 {
-    const FlowGraphDfsTree* dfs = m_loops->GetDfsTree();
-    if (!dfs->Contains(block))
+    if (!IsKnownBlock(block))
     {
         return nullptr;
     }
 
-    unsigned index = m_indices[block->bbPostorderNum];
+    unsigned index = m_indices[block->bbID];
     if (index == UINT_MAX)
     {
         return nullptr;
     }
 
     return m_loops->GetLoopByIndex(index);
+}
+
+//------------------------------------------------------------------------
+// BlockToNaturalLoopMap::IsInLoop: Check whether a block is contained in a loop.
+//
+// Parameters:
+//   loop  - The loop; must be one of the loops the map was built from
+//   block - The block; must have existed when the map was built
+//
+// Returns:
+//   True if the block is contained in the loop.
+//
+// Remarks:
+//   Unlike FlowGraphNaturalLoop::ContainsBlock this does not depend on
+//   bbPostorderNum, so it remains accurate if a later DFS renumbers blocks.
+//
+bool BlockToNaturalLoopMap::IsInLoop(FlowGraphNaturalLoop* loop, BasicBlock* block)
+{
+    assert(IsKnownBlock(block));
+
+    for (FlowGraphNaturalLoop* blockLoop = GetLoop(block); blockLoop != nullptr; blockLoop = blockLoop->GetParent())
+    {
+        if (blockLoop == loop)
+        {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 //------------------------------------------------------------------------
@@ -7563,12 +7595,12 @@ FlowGraphNaturalLoop* BlockToNaturalLoopMap::GetLoop(BasicBlock* block)
 //
 BlockToNaturalLoopMap* BlockToNaturalLoopMap::Build(FlowGraphNaturalLoops* loops)
 {
-    const FlowGraphDfsTree* dfs  = loops->GetDfsTree();
-    Compiler*               comp = dfs->GetCompiler();
-    unsigned*               indices =
-        dfs->GetPostOrderCount() == 0 ? nullptr : (new (comp, CMK_Loops) unsigned[dfs->GetPostOrderCount()]);
+    const FlowGraphDfsTree* dfs        = loops->GetDfsTree();
+    Compiler*               comp       = dfs->GetCompiler();
+    const unsigned          numIndices = comp->compBasicBlockID;
+    unsigned*               indices    = numIndices == 0 ? nullptr : (new (comp, CMK_Loops) unsigned[numIndices]);
 
-    for (unsigned i = 0; i < dfs->GetPostOrderCount(); i++)
+    for (unsigned i = 0; i < numIndices; i++)
     {
         indices[i] = UINT_MAX;
     }
@@ -7578,12 +7610,13 @@ BlockToNaturalLoopMap* BlockToNaturalLoopMap::Build(FlowGraphNaturalLoops* loops
     for (FlowGraphNaturalLoop* loop : loops->InReversePostOrder())
     {
         loop->VisitLoopBlocks([=](BasicBlock* block) {
-            indices[block->bbPostorderNum] = loop->GetIndex();
+            assert(block->bbID < numIndices);
+            indices[block->bbID] = loop->GetIndex();
             return BasicBlockVisit::Continue;
         });
     }
 
-    return new (comp, CMK_Loops) BlockToNaturalLoopMap(loops, indices);
+    return new (comp, CMK_Loops) BlockToNaturalLoopMap(loops, indices, numIndices);
 }
 
 #ifdef DEBUG
@@ -7602,14 +7635,16 @@ void BlockToNaturalLoopMap::Dump() const
         printf("block : loop index\n");
         for (unsigned i = 0; i < blockCount; i++)
         {
-            if (m_indices[i] == UINT_MAX)
+            BasicBlock* const block = dfs->GetPostOrder(i);
+            unsigned const    index = IsKnownBlock(block) ? m_indices[block->bbID] : UINT_MAX;
+            if (index == UINT_MAX)
             {
                 // Just leave the loop space empty if there is no enclosing loop
-                printf(FMT_BB " : \n", dfs->GetPostOrder(i)->bbNum);
+                printf(FMT_BB " : \n", block->bbNum);
             }
             else
             {
-                printf(FMT_BB " : " FMT_LP "\n", dfs->GetPostOrder(i)->bbNum, m_indices[i]);
+                printf(FMT_BB " : " FMT_LP "\n", block->bbNum, index);
             }
         }
     }

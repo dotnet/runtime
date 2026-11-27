@@ -109,14 +109,17 @@ static Range GetRange(Compiler*        comp,
 //
 bool Compiler::optIsBoundInvariantInLoopsOf(ValueNum xVN, ValueNum bndVN)
 {
-    if (m_blockToLoop == nullptr)
+    // The block to loop map must describe the loops that value numbering used.
+    FlowGraphNaturalLoops* const vnLoops = vnStore->GetLoops();
+    if ((vnLoops == nullptr) || (m_blockToLoop == nullptr) || (m_blockToLoop->GetLoops() != vnLoops))
     {
+        assert(!"Block to loop map does not describe the value numbering loops");
         return false;
     }
 
     // Irreducible cycles are not natural loops, so we can't tell whether the bound
     // varies across their iterations.
-    if (m_blockToLoop->GetLoops()->ImproperLoopHeaders() > 0)
+    if (vnLoops->ImproperLoopHeaders() > 0)
     {
         return false;
     }
@@ -139,8 +142,14 @@ bool Compiler::optIsBoundInvariantInLoopsOf(ValueNum xVN, ValueNum bndVN)
         VNFuncApp funcApp;
         if (vnStore->GetPhiDef(vn, &phiDef))
         {
-            BasicBlock*           defBlock = lvaGetDesc(phiDef.LclNum)->GetPerSsaData(phiDef.SsaDef)->GetBlock();
-            FlowGraphNaturalLoop* loop     = m_blockToLoop->GetLoop(defBlock);
+            BasicBlock* defBlock = lvaGetDesc(phiDef.LclNum)->GetPerSsaData(phiDef.SsaDef)->GetBlock();
+            if (!m_blockToLoop->IsKnownBlock(defBlock))
+            {
+                assert(!"Phi def block was created after value numbering");
+                return false;
+            }
+
+            FlowGraphNaturalLoop* loop = m_blockToLoop->GetLoop(defBlock);
             if ((loop != nullptr) && (loop->GetHeader() == defBlock))
             {
                 VNSet invariantCache(getAllocator(CMK_AssertionProp));

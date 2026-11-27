@@ -2660,20 +2660,31 @@ public:
 };
 
 // Represents a reverse mapping from block back to its (most nested) containing loop.
+// Keyed by bbID, so it remains valid if blocks are later renumbered by a new DFS.
 class BlockToNaturalLoopMap
 {
     FlowGraphNaturalLoops* m_loops;
-    // Array from postorder num -> index of most-nested loop containing the
+    // Array from bbID -> index of most-nested loop containing the
     // block, or UINT_MAX if no loop contains it.
     unsigned* m_indices;
+    // Number of entries in m_indices; blocks with larger IDs were created after the map.
+    unsigned m_numIndices;
 
-    BlockToNaturalLoopMap(FlowGraphNaturalLoops* loops, unsigned* indices)
-        : m_loops(loops), m_indices(indices)
+    BlockToNaturalLoopMap(FlowGraphNaturalLoops* loops, unsigned* indices, unsigned numIndices)
+        : m_loops(loops), m_indices(indices), m_numIndices(numIndices)
     {
     }
 
 public:
     FlowGraphNaturalLoop* GetLoop(BasicBlock* block);
+
+    bool IsInLoop(FlowGraphNaturalLoop* loop, BasicBlock* block);
+
+    // Returns true if the block existed when the map was built.
+    bool IsKnownBlock(BasicBlock* block) const
+    {
+        return block->bbID < m_numIndices;
+    }
 
     FlowGraphNaturalLoops* GetLoops() const
     {
@@ -7825,6 +7836,9 @@ protected:
     //   Constants and init values are always loop invariant.
     //   VNPhi's connect VN's to the SSA definition, so we can know if the SSA def occurs in the loop.
     bool optVNIsLoopInvariant(ValueNum vn, FlowGraphNaturalLoop* loop, VNSet* recordedVNs);
+
+    // Conservatively check whether a loop computed for value numbering contains a block.
+    bool optVNLoopMayContainBlock(FlowGraphNaturalLoop* loop, BasicBlock* block);
 
     // Records the set of "side effects" of all loops: fields (object instance and static)
     // written to, and SZ-array element type equivalence classes updated.
