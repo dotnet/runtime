@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="..\shim\Shim.props" />
+
+  <PropertyGroup>
+    <AssemblyName>superpmi-shim-collector</AssemblyName>
+  </PropertyGroup>
+</Project>

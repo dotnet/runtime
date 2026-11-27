@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="..\shim\Shim.props" />
+
+  <PropertyGroup>
+    <AssemblyName>superpmi-shim-counter</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\shim\ForwardingShim.cs" Link="Shim\ForwardingShim.cs" />
+  </ItemGroup>
+</Project>

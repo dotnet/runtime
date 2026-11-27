@@ -1,11 +1,6 @@
-include(configure.cmake)
-include_directories(${CMAKE_CURRENT_BINARY_DIR})
+# The native parts of the managed SuperPMI tools (managed/), which the managed projects publish next to them.
+add_subdirectory(jitinterface)
 
-add_subdirectory(superpmi)
-add_subdirectory(mcs)
-add_subdirectory(superpmi-shim-collector)
-add_subdirectory(superpmi-shim-counter)
-add_subdirectory(superpmi-shim-simple)
-
-set_target_properties(superpmi mcs superpmi-shim-collector superpmi-shim-counter superpmi-shim-simple
+# They implement and forward ICorJitInfo, so they must see it as the JIT does.
+set_target_properties(superpmi-jitinterface superpmi-shim-jitinterface
   PROPERTIES IGNORE_FEATURE_INTERPRETER_DIRECT_CALLS TRUE)

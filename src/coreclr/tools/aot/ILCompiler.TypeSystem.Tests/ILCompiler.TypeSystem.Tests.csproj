@@ -69,6 +69,7 @@
     <Compile Include="../../Common/Compiler/DecimalFieldLayoutAlgorithm.cs" Link="Compiler/DecimalFieldLayoutAlgorithm.cs" />
     <Compile Include="../../Common/JitInterface/CorInfoHelpFunc.cs" Link="JitInterface/CorInfoHelpFunc.cs" />
     <Compile Include="../../Common/JitInterface/CorInfoInstructionSet.cs" Link="JitInterface/CorInfoInstructionSet.cs" />
+    <Compile Include="../../Common/JitInterface/CorInfoInstructionSetParser.cs" Link="JitInterface/CorInfoInstructionSetParser.cs" />
     <Compile Include="../../Common/JitInterface/CorInfoTypes.cs" Link="JitInterface/CorInfoTypes.cs" />
     <Compile Include="../../Common/JitInterface/SwiftPhysicalLowering.cs" Link="JitInterface/SwiftPhysicalLowering.cs" />
     <Compile Include="../../Common/Pgo/PgoFormat.cs" Link="Pgo/PgoFormat.cs" />
