@@ -3,9 +3,13 @@
 
 //
 
+#if defined(NATIVEAOT)
+#include "UnwinderPal.h"
+#else
 #include "stdafx.h"
 #include "utilcode.h"
 #include "crosscomp.h"
+#endif
 
 #include "unwinder.h"
 

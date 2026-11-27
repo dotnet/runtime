@@ -1,1422 +1,785 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#include "common.h"
-#include "daccess.h"
-#include "rhassert.h"
-#include <minipal/utils.h>
-
-#define UNW_STEP_SUCCESS 1
-#define UNW_STEP_END     0
-
-#if defined(TARGET_APPLE)
-#include <mach-o/getsect.h>
-#endif
-
+#include "UnwinderPal.h"
 #include <regdisplay.h>
 #include "UnwindHelpers.h"
+#include "unwinder.h"
 
-// libunwind headers
-#include <libunwind.h>
-#include <external/llvm-libunwind/src/config.h>
-#include <external/llvm-libunwind/src/Registers.hpp>
-#include <external/llvm-libunwind/src/AddressSpace.hpp>
-#if defined(TARGET_ARM)
-#include <external/llvm-libunwind/src/libunwind_ext.h>
-#endif
-#include <external/llvm-libunwind/src/UnwindCursor.hpp>
-
-template <class To, class From>
-inline To unwindhelpers_bitcast(From from)
+// The unwinder looks up the function entry of the target of a jump out of the frame to tell a tail call from a
+// jump to another part of the same function. Managed code isn't split, so such a jump is always a tail call.
+HRESULT OOPStackUnwinder::GetModuleBase(DWORD64 address, _Out_ PDWORD64 pdwBase)
 {
-    static_assert(sizeof(From)==sizeof(To), "Sizes must match");
-
-    To to;
-    memcpy(&to, &from, sizeof(To));
-    return to;
+    return E_FAIL;
 }
 
+HRESULT OOPStackUnwinder::GetFunctionEntry(DWORD64 address, _Out_writes_(cbBuffer) PVOID pBuffer, DWORD cbBuffer)
+{
+    return E_FAIL;
+}
+
+uint32_t UnwindHelpers::GetUnwindInfoSize(PTR_uint8_t pUnwindInfo)
+{
 #if defined(TARGET_AMD64)
-using libunwind::Registers_x86_64;
-using libunwind::CompactUnwinder_x86_64;
-#elif defined(TARGET_ARM)
-using libunwind::Registers_arm;
-#elif defined(TARGET_ARM64)
-using libunwind::Registers_arm64;
-using libunwind::CompactUnwinder_arm64;
-#elif defined(TARGET_LOONGARCH64)
-using libunwind::Registers_loongarch;
-#elif defined(TARGET_RISCV64)
-using libunwind::Registers_riscv;
+    PTR_UNWIND_INFO pInfo = dac_cast<PTR_UNWIND_INFO>(pUnwindInfo);
+
+    // Managed code has no chained unwind information and no handlers
+    ASSERT((pInfo->Flags & (UNW_FLAG_EHANDLER | UNW_FLAG_UHANDLER | UNW_FLAG_CHAININFO)) == 0);
+    return offsetof(UNWIND_INFO, UnwindCode) + sizeof(UNWIND_CODE) * pInfo->CountOfUnwindCodes;
 #else
-#error "Unwinding is not implemented for this architecture yet."
-#endif
-using libunwind::LocalAddressSpace;
-using libunwind::EHHeaderParser;
-#if _LIBUNWIND_SUPPORT_DWARF_UNWIND
-using libunwind::DwarfInstructions;
-#endif
-using libunwind::UnwindInfoSections;
-
-LocalAddressSpace _addressSpace;
-
-#ifdef TARGET_AMD64
-
-// Shim that implements methods required by libunwind over REGDISPLAY
-struct Registers_REGDISPLAY : REGDISPLAY
-{
-    typedef uint64_t reg_t;
-    typedef uint64_t link_reg_t;
-    typedef const link_reg_t &link_hardened_reg_arg_t;
-
-    static int  getArch() { return libunwind::REGISTERS_X86_64; }
-
-    inline uint64_t getRegister(int regNum) const
-    {
-        switch (regNum)
-        {
-        case UNW_REG_IP:
-        case UNW_X86_64_RIP:
-            return IP;
-        case UNW_REG_SP:
-            return SP;
-        case UNW_X86_64_RAX:
-            return *pRax;
-        case UNW_X86_64_RDX:
-            return *pRdx;
-        case UNW_X86_64_RCX:
-            return *pRcx;
-        case UNW_X86_64_RBX:
-            return *pRbx;
-        case UNW_X86_64_RSI:
-            return *pRsi;
-        case UNW_X86_64_RDI:
-            return *pRdi;
-        case UNW_X86_64_RBP:
-            return *pRbp;
-        case UNW_X86_64_RSP:
-            return SP;
-        case UNW_X86_64_R8:
-            return *pR8;
-        case UNW_X86_64_R9:
-            return *pR9;
-        case UNW_X86_64_R10:
-            return *pR10;
-        case UNW_X86_64_R11:
-            return *pR11;
-        case UNW_X86_64_R12:
-            return *pR12;
-        case UNW_X86_64_R13:
-            return *pR13;
-        case UNW_X86_64_R14:
-            return *pR14;
-        case UNW_X86_64_R15:
-            return *pR15;
-        }
-
-        // Unsupported register requested
-        abort();
-    }
-
-    // Callee-saved registers are tracked by the location they were saved at, see setRegisterLocation
-    inline void setRegister(int regNum, uint64_t value)
-    {
-        switch (regNum)
-        {
-        case UNW_REG_IP:
-        case UNW_X86_64_RIP:
-            IP = value;
-            return;
-        case UNW_REG_SP:
-        case UNW_X86_64_RSP:
-            SP = value;
-            return;
-        }
-    }
-
-    inline void setRegisterLocation(int regNum, uint64_t location)
-    {
-        switch (regNum)
-        {
-        case UNW_REG_IP:
-        case UNW_X86_64_RIP:
-        case UNW_REG_SP:
-        case UNW_X86_64_RSP:
-            return;
-        case UNW_X86_64_RAX:
-            pRax = (PTR_uintptr_t)location;
-            return;
-        case UNW_X86_64_RDX:
-            pRdx = (PTR_uintptr_t)location;
-            return;
-        case UNW_X86_64_RCX:
-            pRcx = (PTR_uintptr_t)location;
-            return;
-        case UNW_X86_64_RBX:
-            pRbx = (PTR_uintptr_t)location;
-            return;
-        case UNW_X86_64_RSI:
-            pRsi = (PTR_uintptr_t)location;
-            return;
-        case UNW_X86_64_RDI:
-            pRdi = (PTR_uintptr_t)location;
-            return;
-        case UNW_X86_64_RBP:
-            pRbp = (PTR_uintptr_t)location;
-            return;
-        case UNW_X86_64_R8:
-            pR8 = (PTR_uintptr_t)location;
-            return;
-        case UNW_X86_64_R9:
-            pR9 = (PTR_uintptr_t)location;
-            return;
-        case UNW_X86_64_R10:
-            pR10 = (PTR_uintptr_t)location;
-            return;
-        case UNW_X86_64_R11:
-            pR11 = (PTR_uintptr_t)location;
-            return;
-        case UNW_X86_64_R12:
-            pR12 = (PTR_uintptr_t)location;
-            return;
-        case UNW_X86_64_R13:
-            pR13 = (PTR_uintptr_t)location;
-            return;
-        case UNW_X86_64_R14:
-            pR14 = (PTR_uintptr_t)location;
-            return;
-        case UNW_X86_64_R15:
-            pR15 = (PTR_uintptr_t)location;
-            return;
-        }
-
-        // Unsupported x86_64 register
-        abort();
-    }
-
-    // N/A for x86_64
-    inline bool validFloatRegister(int) { return false; }
-    inline bool validVectorRegister(int) { return false; }
-
-    static constexpr int lastDwarfRegNum() { return 16; }
-
-    inline bool validRegister(int regNum) const
-    {
-        if (regNum == UNW_REG_IP)
-            return true;
-        if (regNum == UNW_REG_SP)
-            return true;
-        if (regNum < 0)
-            return false;
-        if (regNum > 16)
-            return false;
-        return true;
-    }
-
-    // N/A for x86_64
-    inline double getFloatRegister(int) const { abort(); }
-    inline   void setFloatRegister(int, double) { abort(); }
-    inline double getVectorRegister(int) const { abort(); }
-    inline   void setVectorRegister(int, ...) { abort(); }
-
-    uint64_t  getSP() const { return SP; }
-    void      setSP(uint64_t value) { SP = value; }
-
-    uint64_t  getIP() const { return IP; }
-
-    void      setIP(uint64_t value) { IP = value; }
-
-    // Called by the compact unwinder, which reports where each register was saved through
-    // setRegisterLocation right after. REGDISPLAY only tracks that location, so the value is unused.
-    uint64_t  getRBP() const { return *pRbp; }
-    void      setRBP(uint64_t) { }
-    uint64_t  getRBX() const { return *pRbx; }
-    void      setRBX(uint64_t) { }
-    uint64_t  getR12() const { return *pR12; }
-    void      setR12(uint64_t) { }
-    uint64_t  getR13() const { return *pR13; }
-    void      setR13(uint64_t) { }
-    uint64_t  getR14() const { return *pR14; }
-    void      setR14(uint64_t) { }
-    uint64_t  getR15() const { return *pR15; }
-    void      setR15(uint64_t) { }
-};
-
-#endif // TARGET_AMD64
+    // The header word has the number of words of unwind codes and the number of epilog scopes, or an extension
+    // word follows with them, see https://learn.microsoft.com/cpp/build/arm64-exception-handling
+    uint32_t header = *dac_cast<PTR_uint32_t>(pUnwindInfo);
 #if defined(TARGET_ARM)
+    uint32_t codeWords = header >> 28;
+    uint32_t epilogScopes = (header >> 23) & 0x1F;
+#else
+    uint32_t codeWords = header >> 27;
+    uint32_t epilogScopes = (header >> 22) & 0x1F;
+#endif
+    uint32_t size = 4;
+    if (codeWords == 0 && epilogScopes == 0)
+    {
+        uint32_t extension = *dac_cast<PTR_uint32_t>(pUnwindInfo + 4);
+        codeWords = (extension >> 16) & 0xFF;
+        epilogScopes = extension & 0xFFFF;
+        size += 4;
+    }
 
-struct Registers_REGDISPLAY : REGDISPLAY
+    // Without the E bit the epilog scopes follow the header
+    if ((header & (1 << 21)) == 0)
+        size += 4 * epilogScopes;
+
+    // Managed code has no exception handler data (X bit)
+    ASSERT((header & (1 << 20)) == 0);
+    return size + 4 * codeWords;
+#endif
+}
+
+// The registers the unwinder can restore, as the CONTEXT and REGDISPLAY fields
+#if defined(TARGET_AMD64)
+#define FOR_EACH_REGISTER(F) \
+    F(Rax, pRax) F(Rcx, pRcx) F(Rdx, pRdx) F(Rbx, pRbx) F(Rbp, pRbp) F(Rsi, pRsi) F(Rdi, pRdi) \
+    F(R8, pR8) F(R9, pR9) F(R10, pR10) F(R11, pR11) F(R12, pR12) F(R13, pR13) F(R14, pR14) F(R15, pR15)
+#define CONTEXT_PC Rip
+#define CONTEXT_SP Rsp
+#elif defined(TARGET_ARM)
+#define FOR_EACH_REGISTER(F) \
+    F(R4, pR4) F(R5, pR5) F(R6, pR6) F(R7, pR7) F(R8, pR8) F(R9, pR9) F(R10, pR10) F(R11, pR11) F(Lr, pLR)
+#define FOR_EACH_FLOAT_REGISTER(OP) for (int i = 0; i < 8; i++) { OP(D[8 + i], D[i]) }
+#define CONTEXT_PC Pc
+#define CONTEXT_SP Sp
+#elif defined(TARGET_ARM64)
+#define FOR_EACH_REGISTER(F) \
+    F(X19, pX19) F(X20, pX20) F(X21, pX21) F(X22, pX22) F(X23, pX23) F(X24, pX24) F(X25, pX25) \
+    F(X26, pX26) F(X27, pX27) F(X28, pX28) F(Fp, pFP) F(Lr, pLR)
+#define FOR_EACH_FLOAT_REGISTER(OP) for (int i = 0; i < 8; i++) { OP(V[8 + i].Low, D[i]) }
+#define CONTEXT_PC Pc
+#define CONTEXT_SP Sp
+#elif defined(TARGET_LOONGARCH64)
+#define FOR_EACH_REGISTER(F) \
+    F(S0, pR23) F(S1, pR24) F(S2, pR25) F(S3, pR26) F(S4, pR27) F(S5, pR28) F(S6, pR29) F(S7, pR30) \
+    F(S8, pR31) F(Fp, pFP) F(Ra, pRA)
+#define FOR_EACH_FLOAT_REGISTER(OP) for (int i = 0; i < 8; i++) { OP(F[24 + i], F[i]) }
+#define CONTEXT_PC Pc
+#define CONTEXT_SP Sp
+#elif defined(TARGET_RISCV64)
+#define FOR_EACH_REGISTER(F) \
+    F(S1, pS1) F(S2, pS2) F(S3, pS3) F(S4, pS4) F(S5, pS5) F(S6, pS6) F(S7, pS7) F(S8, pS8) F(S9, pS9) \
+    F(S10, pS10) F(S11, pS11) F(Fp, pFP) F(Ra, pRA)
+#define FOR_EACH_FLOAT_REGISTER(OP) for (int i = 0; i < 32; i++) { OP(F[i], F[i]) }
+#define CONTEXT_PC Pc
+#define CONTEXT_SP Sp
+#endif
+
+#if !defined(TARGET_AMD64)
+// The epilog scopes of the unwind information that the compact unwind table shares have no start offsets when the
+// first one is 0. The 16-bit start offsets of the frame are then right before its LSDA, which pEpilogStarts points to.
+static uint32_t ExternalEpilogStart(PTR_uint8_t pEpilogStarts, uint32_t epilogScopes, uint32_t index)
 {
-    typedef uint32_t reg_t;
-    typedef uint32_t link_reg_t;
-    typedef const link_reg_t &link_hardened_reg_arg_t;
+    PTR_uint8_t pStart = pEpilogStarts - 2 * (epilogScopes - index);
+    return pStart[0] | ((uint32_t)pStart[1] << 8);
+}
+#endif
 
-    inline static int  getArch() { return libunwind::REGISTERS_ARM; }
-    static constexpr int lastDwarfRegNum() { return _LIBUNWIND_HIGHEST_DWARF_REGISTER_ARM; }
+#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
 
-    bool        validRegister(int num) const;
-    bool        validFloatRegister(int num) const;
-    bool        validVectorRegister(int num) const { return false; }
+// The integer registers that frame bodies restore are numbered from kFirstBodyRegister in BodyUnwindState and
+// BodyUnwindSummary
+#if defined(TARGET_ARM64)
+const int kFirstBodyRegister = 19;
+const int kBodyRegisterCount = 12;
 
-    uint32_t    getRegister(int num) const;
-    void        setRegister(int num, uint32_t value);
-    void        setRegisterLocation(int num, uint32_t location);
+// Returns the location of the integer register with the given number (19-30) in the REGDISPLAY
+static PTR_uintptr_t* RegisterLocation(REGDISPLAY *regs, int reg)
+{
+    static_assert(offsetof(REGDISPLAY, pFP) == offsetof(REGDISPLAY, pX0) + 29 * sizeof(PTR_uintptr_t), "pX0-pX28, pFP and pLR must be contiguous");
+    static_assert(offsetof(REGDISPLAY, pLR) == offsetof(REGDISPLAY, pX0) + 30 * sizeof(PTR_uintptr_t), "pX0-pX28, pFP and pLR must be contiguous");
+    return &regs->pX0 + reg;
+}
 
-    unw_fpreg_t getFloatRegister(int num) const;
-    void        setFloatRegister(int num, unw_fpreg_t value);
+// The caller's PC, once the REGDISPLAY has the caller's registers
+static PCODE CallerIP(REGDISPLAY *regs)
+{
+    return *regs->pLR;
+}
+#else
+const int kFirstBodyRegister = 0;
+const int kBodyRegisterCount = 16;
 
-    libunwind::v128    getVectorRegister(int num) const { abort(); }
-    void        setVectorRegister(int num, libunwind::v128 value) { abort(); }
+// Returns the location of the integer register with the given number (0-15, except rsp) in the REGDISPLAY
+static PTR_uintptr_t* RegisterLocation(REGDISPLAY *regs, int reg)
+{
+    static_assert(offsetof(REGDISPLAY, pRbp) == offsetof(REGDISPLAY, pRax) + 4 * sizeof(PTR_uintptr_t), "pRax-pR15 must be contiguous, without rsp");
+    static_assert(offsetof(REGDISPLAY, pR15) == offsetof(REGDISPLAY, pRax) + 14 * sizeof(PTR_uintptr_t), "pRax-pR15 must be contiguous, without rsp");
+    ASSERT(reg != 4);
+    return &regs->pRax + (reg < 4 ? reg : reg - 1);
+}
 
-    uint32_t    getSP() const         { return SP; }
-    void        setSP(uint32_t value) { SP = value; }
-    uint32_t    getIP() const         { return IP; }
-    void        setIP(uint32_t value) { IP = value; }
-    uint32_t    getFP() const         { return *pR11; }
+// The caller's PC, once the REGDISPLAY has the caller's stack pointer, which is right above the return address
+static PCODE CallerIP(REGDISPLAY *regs)
+{
+    return *dac_cast<PTR_PCODE>(regs->SP - sizeof(PCODE));
+}
+#endif
+
+// The locations of the integer registers and of d8-d15 that unwinding a frame body restores, which only replace
+// the ones of the REGDISPLAY once the whole frame is unwound
+struct BodyUnwindState
+{
+    uintptr_t sp;
+    uint32_t restoredRegisters;
+    uint32_t restoredFloats;
+    PTR_uintptr_t locations[kBodyRegisterCount];
+    PTR_uint64_t floatLocations[8];
+    // The codes set the stack pointer from baseRegister, after restoring registers relative to the stack pointer
+    // when mixedBase
+    bool fpBased;
+    bool mixedBase;
+    int baseRegister;
 };
 
-struct ArmUnwindCursor : public libunwind::AbstractUnwindCursor
+static_assert(kBodyRegisterCount <= BodyUnwindSummary::FirstFloat, "the integer registers come before the floating point ones");
+
+// Returns the address that unwinding the frame body makes relative to, its frame register or stack pointer
+static uintptr_t BodyUnwindBase(REGDISPLAY *regs, bool fpBased, int baseRegister)
 {
-  Registers_REGDISPLAY *_registers;
-public:
-  ArmUnwindCursor(Registers_REGDISPLAY *registers) : _registers(registers) {}
-  virtual bool        validReg(int num) { return _registers->validRegister(num); }
-  virtual unw_word_t  getReg(int num) { return _registers->getRegister(num); }
-  virtual void        setReg(int num, unw_word_t value) { _registers->setRegister(num, value); }
-  virtual void        setRegLocation(int num, unw_word_t location) { _registers->setRegisterLocation(num, location); }
-  virtual bool        validFloatReg(int num) { return _registers->validFloatRegister(num); }
-  virtual unw_fpreg_t getFloatReg(int num) { return _registers->getFloatRegister(num); }
-  virtual void        setFloatReg(int num, unw_fpreg_t value) { _registers->setFloatRegister(num, value); }
-  virtual int         step(bool stage2 = false) { abort(); }
-  virtual void        getInfo(unw_proc_info_t *) { abort(); }
-  virtual void        jumpto() { abort(); }
-  virtual bool        isSignalFrame() { return false; }
-  virtual bool        getFunctionName(char *buf, size_t len, unw_word_t *off) { abort(); }
-  virtual void        setInfoBasedOnIPRegister(bool isReturnAddress = false) { abort(); }
-  virtual const char *getRegisterName(int num) { abort(); }
-  virtual void        saveVFPAsX() { abort(); }
-};
-
-inline bool Registers_REGDISPLAY::validRegister(int num) const {
-    if (num == UNW_REG_SP || num == UNW_ARM_SP)
-        return true;
-
-    if (num == UNW_ARM_LR)
-        return true;
-
-    if (num == UNW_REG_IP || num == UNW_ARM_IP)
-        return true;
-
-    if (num >= UNW_ARM_R0 && num <= UNW_ARM_R12)
-        return true;
-
-    return false;
+    return fpBased ? **RegisterLocation(regs, baseRegister) : regs->SP;
 }
 
-inline bool Registers_REGDISPLAY::validFloatRegister(int num) const {
-    return num >= UNW_ARM_D8 && num <= UNW_ARM_D15;
-}
+// Records the effect of the codes of a frame body relative to its frame register or stack pointer, for the other
+// frames with the same unwind information
+static void StoreBodyUnwindSummary(BodyUnwindSummary* pSummary, const BodyUnwindState& state, uintptr_t base, uint32_t prologSize)
+{
+    // The prolog checks use the prolog size of a computed summary, so a summary is only computed with it
+    if (prologSize > BodyUnwindSummary::PrologSizeMask)
+        return;
 
-inline uint32_t Registers_REGDISPLAY::getRegister(int regNum) const {
-    if (regNum == UNW_REG_SP || regNum == UNW_ARM_SP)
-        return SP;
-
-    if (regNum == UNW_ARM_LR)
-        return *pLR;
-
-    if (regNum == UNW_REG_IP || regNum == UNW_ARM_IP)
-        return IP;
-
-    switch (regNum)
+    uint32_t summaryState = BodyUnwindSummary::Computed | (prologSize << BodyUnwindSummary::PrologSizeShift);
+    intptr_t cfaOffset = (intptr_t)(state.sp - base);
+    bool representable = !state.mixedBase && cfaOffset == (int32_t)cfaOffset;
+    for (uint32_t i = 0; i < BodyUnwindSummary::FirstFloat + 8 && representable; i++)
     {
-    case (UNW_ARM_R0):
-        return *pR0;
-    case (UNW_ARM_R1):
-        return *pR1;
-    case (UNW_ARM_R2):
-        return *pR2;
-    case (UNW_ARM_R3):
-        return *pR3;
-    case (UNW_ARM_R4):
-        return *pR4;
-    case (UNW_ARM_R5):
-        return *pR5;
-    case (UNW_ARM_R6):
-        return *pR6;
-    case (UNW_ARM_R7):
-        return *pR7;
-    case (UNW_ARM_R8):
-        return *pR8;
-    case (UNW_ARM_R9):
-        return *pR9;
-    case (UNW_ARM_R10):
-        return *pR10;
-    case (UNW_ARM_R11):
-        return *pR11;
-    case (UNW_ARM_R12):
-        return *pR12;
+        bool isFloat = i >= BodyUnwindSummary::FirstFloat;
+        uint32_t bit = isFloat ? i - BodyUnwindSummary::FirstFloat : i;
+        if (((isFloat ? state.restoredFloats : state.restoredRegisters) & (1u << bit)) == 0)
+            continue;
+        intptr_t delta = (intptr_t)(isFloat ? (TADDR)state.floatLocations[bit] : (TADDR)state.locations[bit]) - (intptr_t)base;
+        representable = delta % 8 == 0 && delta / 8 == (int8_t)(delta / 8);
+        pSummary->Offsets[i] = (int8_t)(delta / 8);
     }
-
-    PORTABILITY_ASSERT("unsupported arm register");
-}
-
-// Callee-saved registers are tracked by the location they were saved at, see setRegisterLocation
-void Registers_REGDISPLAY::setRegister(int num, uint32_t value)
-{
-    if (num == UNW_REG_SP || num == UNW_ARM_SP) {
-        SP = (uintptr_t )value;
-        return;
-    }
-
-    if (num == UNW_REG_IP || num == UNW_ARM_IP) {
-        IP = value;
-        return;
-    }
-}
-
-void Registers_REGDISPLAY::setRegisterLocation(int num, uint32_t location)
-{
-    if (num == UNW_REG_SP || num == UNW_ARM_SP || num == UNW_REG_IP || num == UNW_ARM_IP)
-        return;
-
-    if (num == UNW_ARM_LR) {
-        pLR = (PTR_uintptr_t)location;
-        return;
-    }
-
-    switch (num)
+    if (representable)
     {
-    case (UNW_ARM_R0):
-        pR0 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_ARM_R1):
-        pR1 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_ARM_R2):
-        pR2 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_ARM_R3):
-        pR3 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_ARM_R4):
-        pR4 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_ARM_R5):
-        pR5 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_ARM_R6):
-        pR6 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_ARM_R7):
-        pR7 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_ARM_R8):
-        pR8 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_ARM_R9):
-        pR9 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_ARM_R10):
-        pR10 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_ARM_R11):
-        pR11 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_ARM_R12):
-        pR12 = (PTR_uintptr_t)location;
-        break;
-    default:
-        PORTABILITY_ASSERT("unsupported arm register");
+        pSummary->SavedMask = state.restoredRegisters | (state.restoredFloats << BodyUnwindSummary::FirstFloat);
+        pSummary->CfaOffset = (int32_t)cfaOffset;
+        summaryState |= BodyUnwindSummary::Usable;
+        if (state.fpBased)
+            summaryState |= BodyUnwindSummary::FpBased | ((uint32_t)state.baseRegister << BodyUnwindSummary::BaseRegisterShift);
     }
+    __atomic_store_n(&pSummary->State, summaryState, __ATOMIC_RELEASE);
 }
 
-unw_fpreg_t Registers_REGDISPLAY::getFloatRegister(int num) const
+static bool ApplyBodyCodes(BodyUnwindState& state, REGDISPLAY *regs, PTR_uint8_t pUnwindInfo, PTR_uint8_t pCodes, PTR_uint8_t pCodesEnd);
+static uint32_t BodyPrologSize(PTR_uint8_t pUnwindInfo, PTR_uint8_t pCodes, PTR_uint8_t pCodesEnd);
+
+// Unwinds a frame whose PC is in the body of the function, outside the prolog and the epilogs, with the cached
+// effect of its unwind codes, or by applying them to the REGDISPLAY and caching their effect. The unwinders do
+// the same through a CONTEXT. Returns false for the codes it doesn't handle, without changing the REGDISPLAY.
+static bool StepFrameBody(REGDISPLAY *regs, BodyUnwindSummary* pSummary, uint32_t summaryState, PTR_uint8_t pUnwindInfo,
+    PTR_uint8_t pCodes, PTR_uint8_t pCodesEnd)
 {
-    assert(validFloatRegister(num));
-    return unwindhelpers_bitcast<unw_fpreg_t>(D[num - UNW_ARM_D8]);
+    if ((summaryState & BodyUnwindSummary::Usable) != 0)
+    {
+        uintptr_t base = BodyUnwindBase(regs, (summaryState & BodyUnwindSummary::FpBased) != 0,
+            (int)(summaryState >> BodyUnwindSummary::BaseRegisterShift));
+        for (uint32_t mask = pSummary->SavedMask & ((1u << BodyUnwindSummary::FirstFloat) - 1); mask != 0; mask &= mask - 1)
+        {
+            uint32_t i = __builtin_ctz(mask);
+            *RegisterLocation(regs, kFirstBodyRegister + i) = (PTR_uintptr_t)(base + 8 * (intptr_t)pSummary->Offsets[i]);
+        }
+#if defined(TARGET_ARM64)
+        for (uint32_t mask = pSummary->SavedMask >> BodyUnwindSummary::FirstFloat; mask != 0; mask &= mask - 1)
+        {
+            uint32_t i = __builtin_ctz(mask);
+            regs->D[i] = *(PTR_uint64_t)(base + 8 * (intptr_t)pSummary->Offsets[BodyUnwindSummary::FirstFloat + i]);
+        }
+#endif
+        regs->SP = base + pSummary->CfaOffset;
+        regs->IP = CallerIP(regs);
+        return true;
+    }
+    if ((summaryState & BodyUnwindSummary::Unsupported) != 0)
+        return false;
+
+    BodyUnwindState state;
+    state.sp = regs->SP;
+    state.restoredRegisters = 0;
+    state.restoredFloats = 0;
+    state.fpBased = false;
+    state.mixedBase = false;
+    state.baseRegister = 0;
+    if (!ApplyBodyCodes(state, regs, pUnwindInfo, pCodes, pCodesEnd))
+    {
+        if (pSummary != NULL)
+            __atomic_store_n(&pSummary->State, BodyUnwindSummary::Computed | BodyUnwindSummary::Unsupported, __ATOMIC_RELEASE);
+        return false;
+    }
+
+    if (pSummary != NULL)
+        StoreBodyUnwindSummary(pSummary, state, BodyUnwindBase(regs, state.fpBased, state.baseRegister),
+            BodyPrologSize(pUnwindInfo, pCodes, pCodesEnd));
+
+    for (uint32_t mask = state.restoredRegisters; mask != 0; mask &= mask - 1)
+    {
+        uint32_t i = __builtin_ctz(mask);
+        *RegisterLocation(regs, kFirstBodyRegister + i) = state.locations[i];
+    }
+#if defined(TARGET_ARM64)
+    for (uint32_t mask = state.restoredFloats; mask != 0; mask &= mask - 1)
+    {
+        uint32_t i = __builtin_ctz(mask);
+        regs->D[i] = *state.floatLocations[i];
+    }
+#endif
+    regs->SP = state.sp;
+    regs->IP = CallerIP(regs);
+    return true;
 }
 
-void Registers_REGDISPLAY::setFloatRegister(int num, unw_fpreg_t value)
-{
-    assert(validFloatRegister(num));
-    D[num - UNW_ARM_D8] = unwindhelpers_bitcast<uint64_t>(value);
-}
-
-#endif // TARGET_ARM
+#endif // TARGET_ARM64 || TARGET_AMD64
 
 #if defined(TARGET_ARM64)
 
-// Shim that implements methods required by libunwind over REGDISPLAY
-struct Registers_REGDISPLAY : REGDISPLAY
+// Number of instructions of the codes from pCode up to the end code
+static uint32_t ScopeSize(PTR_uint8_t pCode, PTR_uint8_t pEnd)
 {
-    typedef uint64_t reg_t;
-    typedef uint64_t link_reg_t;
-    typedef const link_reg_t &link_hardened_reg_arg_t;
-
-    inline static int  getArch() { return libunwind::REGISTERS_ARM64; }
-    static constexpr int lastDwarfRegNum() { return _LIBUNWIND_HIGHEST_DWARF_REGISTER_ARM64; }
-
-    bool        validRegister(int num) const;
-    bool        validFloatRegister(int num) const;
-    bool        validVectorRegister(int num) const { return false; }
-
-    uint64_t    getRegister(int num) const;
-    void        setRegister(int num, uint64_t value);
-    void        setRegisterLocation(int num, uint64_t location);
-
-    double      getFloatRegister(int num) const;
-    void        setFloatRegister(int num, double value);
-
-    libunwind::v128    getVectorRegister(int num) const { abort(); }
-    void        setVectorRegister(int num, libunwind::v128 value) { abort(); }
-
-    uint64_t    getSP() const         { return SP; }
-    void        setSP(uint64_t value) { SP = value; }
-    uint64_t    getIP() const         { return IP; }
-    void        setIP(uint64_t value) { IP = value; }
-    uint64_t    getFP() const         { return *pFP; }
-    // Called by the compact unwinder, which reports where FP was saved through setRegisterLocation
-    // right after. REGDISPLAY only tracks that location, so the value is unused.
-    void        setFP(uint64_t) { }
-};
-
-inline bool Registers_REGDISPLAY::validRegister(int num) const {
-    if (num == UNW_REG_SP || num == UNW_ARM64_SP)
-        return true;
-
-    if (num == UNW_ARM64_FP)
-        return true;
-
-    if (num == UNW_ARM64_LR)
-        return true;
-
-    if (num == UNW_REG_IP)
-        return true;
-
-    if (num >= UNW_ARM64_X0 && num <= UNW_ARM64_X28)
-        return true;
-
-    return false;
-}
-
-bool Registers_REGDISPLAY::validFloatRegister(int num) const
-{
-    return num >= UNW_ARM64_D8 && num <= UNW_ARM64_D15;
-}
-
-inline uint64_t Registers_REGDISPLAY::getRegister(int regNum) const {
-    if (regNum == UNW_REG_SP || regNum == UNW_ARM64_SP)
-        return SP;
-
-    if (regNum == UNW_ARM64_FP)
-        return *pFP;
-
-    if (regNum == UNW_ARM64_LR)
-        return *pLR;
-
-    if (regNum == UNW_REG_IP)
-        return IP;
-
-    switch (regNum)
+    static const uint8_t s_sizeOfE0toFF[32] = { 4,1,2,1,1,1,1,3, 1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1, 2,3,4,5,1,1,1,1 };
+    static const uint8_t s_instructionsOfE0toFF[32] = { 1,1,1,1,1,1,1,1, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 1,1,1,1,1,1,1,1 };
+    uint32_t size = 0;
+    while (pCode < pEnd && (*pCode & 0xFE) != 0xE4)
     {
-    case (UNW_ARM64_X0):
-        return *pX0;
-    case (UNW_ARM64_X1):
-        return *pX1;
-    case (UNW_ARM64_X2):
-        return *pX2;
-    case (UNW_ARM64_X3):
-        return *pX3;
-    case (UNW_ARM64_X4):
-        return *pX4;
-    case (UNW_ARM64_X5):
-        return *pX5;
-    case (UNW_ARM64_X6):
-        return *pX6;
-    case (UNW_ARM64_X7):
-        return *pX7;
-    case (UNW_ARM64_X8):
-        return *pX8;
-    case (UNW_ARM64_X9):
-        return *pX9;
-    case (UNW_ARM64_X10):
-        return *pX10;
-    case (UNW_ARM64_X11):
-        return *pX11;
-    case (UNW_ARM64_X12):
-        return *pX12;
-    case (UNW_ARM64_X13):
-        return *pX13;
-    case (UNW_ARM64_X14):
-        return *pX14;
-    case (UNW_ARM64_X15):
-        return *pX15;
-    case (UNW_ARM64_X16):
-        return *pX16;
-    case (UNW_ARM64_X17):
-        return *pX17;
-    case (UNW_ARM64_X18):
-        return *pX18;
-    case (UNW_ARM64_X19):
-        return *pX19;
-    case (UNW_ARM64_X20):
-        return *pX20;
-    case (UNW_ARM64_X21):
-        return *pX21;
-    case (UNW_ARM64_X22):
-        return *pX22;
-    case (UNW_ARM64_X23):
-        return *pX23;
-    case (UNW_ARM64_X24):
-        return *pX24;
-    case (UNW_ARM64_X25):
-        return *pX25;
-    case (UNW_ARM64_X26):
-        return *pX26;
-    case (UNW_ARM64_X27):
-        return *pX27;
-    case (UNW_ARM64_X28):
-        return *pX28;
+        uint8_t code = *pCode;
+        if (code < 0xE0)
+        {
+            size++;
+            pCode += code < 0xC0 ? 1 : 2;
+        }
+        else
+        {
+            size += s_instructionsOfE0toFF[code - 0xE0];
+            pCode += s_sizeOfE0toFF[code - 0xE0];
+        }
     }
-
-    PORTABILITY_ASSERT("unsupported arm64 register");
+    return size;
 }
 
-// Callee-saved registers are tracked by the location they were saved at, see setRegisterLocation
-void Registers_REGDISPLAY::setRegister(int num, uint64_t value)
+// Restores count registers from [sp + spOffset], or from [sp] and then adds -spOffset to sp when it's negative. The
+// integer registers are numbered from 32, to tell them from the floating point ones.
+static inline __attribute__((always_inline)) void RestoreRange(BodyUnwindState &state, int32_t spOffset, int firstRegister, uint32_t count)
 {
-    if (num == UNW_REG_SP || num == UNW_ARM64_SP) {
-        SP = (uintptr_t )value;
-        return;
-    }
-
-    if (num == UNW_REG_IP) {
-        IP = value;
-        return;
-    }
-}
-
-void Registers_REGDISPLAY::setRegisterLocation(int num, uint64_t location)
-{
-    if (num == UNW_REG_SP || num == UNW_ARM64_SP || num == UNW_REG_IP)
-        return;
-
-    if (num == UNW_ARM64_FP) {
-        pFP = (PTR_uintptr_t)location;
-        return;
-    }
-
-    if (num == UNW_ARM64_LR) {
-        pLR = (PTR_uintptr_t)location;
-        return;
-    }
-
-    switch (num)
+    uintptr_t address = spOffset >= 0 ? state.sp + spOffset : state.sp;
+    for (uint32_t i = 0; i < count; i++, address += 8)
     {
-    case (UNW_ARM64_X0):
-        pX0 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_ARM64_X1):
-        pX1 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_ARM64_X2):
-        pX2 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_ARM64_X3):
-        pX3 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_ARM64_X4):
-        pX4 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_ARM64_X5):
-        pX5 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_ARM64_X6):
-        pX6 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_ARM64_X7):
-        pX7 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_ARM64_X8):
-        pX8 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_ARM64_X9):
-        pX9 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_ARM64_X10):
-        pX10 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_ARM64_X11):
-        pX11 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_ARM64_X12):
-        pX12 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_ARM64_X13):
-        pX13 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_ARM64_X14):
-        pX14 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_ARM64_X15):
-        pX15 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_ARM64_X16):
-        pX16 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_ARM64_X17):
-        pX17 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_ARM64_X18):
-        pX18 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_ARM64_X19):
-        pX19 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_ARM64_X20):
-        pX20 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_ARM64_X21):
-        pX21 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_ARM64_X22):
-        pX22 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_ARM64_X23):
-        pX23 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_ARM64_X24):
-        pX24 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_ARM64_X25):
-        pX25 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_ARM64_X26):
-        pX26 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_ARM64_X27):
-        pX27 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_ARM64_X28):
-        pX28 = (PTR_uintptr_t)location;
-        break;
-    default:
-        PORTABILITY_ASSERT("unsupported arm64 register");
+        int reg = firstRegister + (int)i;
+        if (reg >= 32 + 19)
+        {
+            state.locations[reg - 32 - 19] = (PTR_uintptr_t)address;
+            state.restoredRegisters |= 1u << (reg - 32 - 19);
+        }
+        else if (reg >= 8 && reg < 16)
+        {
+            state.floatLocations[reg - 8] = (PTR_uint64_t)address;
+            state.restoredFloats |= 1u << (reg - 8);
+        }
     }
+    if (spOffset < 0)
+        state.sp -= spOffset;
 }
 
-double Registers_REGDISPLAY::getFloatRegister(int num) const
+static uint32_t BodyPrologSize(PTR_uint8_t pUnwindInfo, PTR_uint8_t pCodes, PTR_uint8_t pCodesEnd)
 {
-    assert(validFloatRegister(num));
-    return unwindhelpers_bitcast<double>(D[num - UNW_ARM64_D8]);
+    return ScopeSize(pCodes, pCodesEnd);
 }
 
-void Registers_REGDISPLAY::setFloatRegister(int num, double value)
+// Unwinds a frame whose PC is in the body of the function, outside the prolog and the epilogs, by applying its unwind
+// codes to the REGDISPLAY, which the arm64 unwinder does through a CONTEXT. Returns false for the frames it doesn't
+// handle, without changing the REGDISPLAY. The function length of the unwind information comes from the frame.
+static bool TryStepFrameBody(REGDISPLAY *regs, TADDR frameStart, TADDR frameEnd, PTR_uint8_t pUnwindInfo, bool packed, PTR_uint8_t pEpilogStarts,
+    BodyUnwindSummary* pSummary)
 {
-    assert(validFloatRegister(num));
-    D[num - UNW_ARM64_D8] = unwindhelpers_bitcast<uint64_t>(value);
+    uint32_t offset = (uint32_t)(regs->IP - frameStart) / 4;
+    uint32_t functionLength = (uint32_t)(frameEnd - frameStart) / 4;
+
+    if (packed)
+    {
+        // The chained frame of the packed form without homed parameters: the integer registers from x19 and the
+        // floating point registers from d8 at the top of the frame, then the locals with the frame record at the
+        // bottom, which the frame pointer points to
+        uint32_t data = *dac_cast<PTR_uint32_t>(pUnwindInfo);
+        uint32_t regF = (data >> 13) & 0x7;
+        uint32_t regI = (data >> 16) & 0xF;
+        uint32_t h = (data >> 20) & 0x1;
+        uint32_t cr = (data >> 21) & 0x3;
+        uint32_t frameSize = (data >> 23) * 16;
+        uint32_t fpCount = regF != 0 ? regF + 1 : 0;
+        uint32_t saveSize = ((regI + fpCount + 1) & ~1u) * 8;
+        if ((data & 3) != 1 || cr != 3 || h != 0 || frameSize <= saveSize)
+            return false;
+
+        uint32_t localSize = frameSize - saveSize;
+        uint32_t prologSize = regI / 2 + regI % 2 + fpCount / 2 + fpCount % 2 + (localSize <= 512 ? 2 : 3);
+
+        // The epilog mirrors the prolog without the set_fp, plus the ret
+        if (offset < prologSize || offset >= functionLength - prologSize)
+            return false;
+
+        uintptr_t fp = *regs->pFP;
+        uintptr_t cfa = fp + frameSize;
+        uintptr_t saveArea = cfa - saveSize;
+        for (uint32_t i = 0; i < regI; i++)
+            *RegisterLocation(regs, 19 + i) = (PTR_uintptr_t)(saveArea + 8 * i);
+        for (uint32_t i = 0; i < fpCount; i++)
+            regs->D[i] = *(uint64_t*)(saveArea + 8 * (regI + i));
+        regs->pFP = (PTR_uintptr_t)fp;
+        regs->pLR = (PTR_uintptr_t)(fp + 8);
+        regs->SP = cfa;
+        regs->IP = *regs->pLR;
+        return true;
+    }
+
+    uint32_t header = *dac_cast<PTR_uint32_t>(pUnwindInfo);
+    uint32_t codeWords = header >> 27;
+    uint32_t epilogScopes = (header >> 22) & 0x1F;
+    PTR_uint8_t p = pUnwindInfo + 4;
+    if (codeWords == 0 && epilogScopes == 0)
+    {
+        uint32_t extension = *dac_cast<PTR_uint32_t>(p);
+        codeWords = (extension >> 16) & 0xFF;
+        epilogScopes = extension & 0xFFFF;
+        p += 4;
+    }
+
+    bool singleEpilog = (header & (1 << 21)) != 0;
+    PTR_uint8_t pScopes = p;
+    PTR_uint8_t pCodes = singleEpilog ? p : p + 4 * epilogScopes;
+    PTR_uint8_t pCodesEnd = pCodes + 4 * codeWords;
+
+    uint32_t summaryState = pSummary != NULL ? __atomic_load_n(&pSummary->State, __ATOMIC_ACQUIRE) : 0;
+    if ((summaryState & BodyUnwindSummary::Computed) != 0
+        ? offset < ((summaryState >> BodyUnwindSummary::PrologSizeShift) & BodyUnwindSummary::PrologSizeMask)
+        : offset < 4 * codeWords && offset < ScopeSize(pCodes, pCodesEnd))
+        return false;
+
+    if (singleEpilog)
+    {
+        if (offset + 4 * codeWords - epilogScopes >= functionLength &&
+            offset >= functionLength - (ScopeSize(pCodes + epilogScopes, pCodesEnd) + 1))
+            return false;
+    }
+    else
+    {
+        bool externalStarts = pEpilogStarts != NULL && (*dac_cast<PTR_uint32_t>(pScopes) & 0x3FFFF) == 0;
+        for (uint32_t i = 0; i < epilogScopes; i++)
+        {
+            uint32_t scope = *dac_cast<PTR_uint32_t>(pScopes + 4 * i);
+            uint32_t scopeStart = externalStarts ? ExternalEpilogStart(pEpilogStarts, epilogScopes, i) : scope & 0x3FFFF;
+            if (offset < scopeStart)
+                break;
+            uint32_t index = scope >> 22;
+            if (offset < scopeStart + 4 * codeWords - index && offset < scopeStart + ScopeSize(pCodes + index, pCodesEnd) + 1)
+                return false;
+        }
+    }
+
+    return StepFrameBody(regs, pSummary, summaryState, pUnwindInfo, pCodes, pCodesEnd);
+}
+
+// Applies the codes from the last prolog instruction to the first, like RtlpUnwindFunctionFull does. Returns false
+// for the codes it doesn't handle.
+static bool ApplyBodyCodes(BodyUnwindState& state, REGDISPLAY *regs, PTR_uint8_t pUnwindInfo, PTR_uint8_t pCodes, PTR_uint8_t pCodesEnd)
+{
+    uint32_t saveNexts = 0;
+    const int X = 32;
+
+    // The codes that save_next doesn't extend fail when it precedes them
+    for (PTR_uint8_t pCode = pCodes; pCode < pCodesEnd;)
+    {
+        uint8_t code = *pCode++;
+        uint8_t next;
+        switch (code)
+        {
+        case 0x00 ... 0x1F:
+            if (saveNexts != 0) return false;
+            state.sp += 16 * code;
+            break;
+        case 0x20 ... 0x3F:
+            RestoreRange(state, -8 * (code & 0x1F), X + 19, 2 + 2 * saveNexts);
+            saveNexts = 0;
+            break;
+        case 0x40 ... 0x7F:
+            if (saveNexts != 0) return false;
+            RestoreRange(state, 8 * (code & 0x3F), X + 29, 2);
+            break;
+        case 0x80 ... 0xBF:
+            if (saveNexts != 0) return false;
+            RestoreRange(state, -8 * ((code & 0x3F) + 1), X + 29, 2);
+            break;
+        case 0xC0 ... 0xC7:
+            if (saveNexts != 0) return false;
+            state.sp += 16 * (((code & 7) << 8) | *pCode++);
+            break;
+        case 0xC8 ... 0xCB:
+            next = *pCode++;
+            RestoreRange(state, 8 * (next & 0x3F), X + 19 + ((code & 3) << 2) + (next >> 6), 2 + 2 * saveNexts);
+            saveNexts = 0;
+            break;
+        case 0xCC ... 0xCF:
+            next = *pCode++;
+            RestoreRange(state, -8 * ((next & 0x3F) + 1), X + 19 + ((code & 3) << 2) + (next >> 6), 2 + 2 * saveNexts);
+            saveNexts = 0;
+            break;
+        case 0xD0 ... 0xD3:
+            if (saveNexts != 0) return false;
+            next = *pCode++;
+            RestoreRange(state, 8 * (next & 0x3F), X + 19 + ((code & 3) << 2) + (next >> 6), 1);
+            break;
+        case 0xD4 ... 0xD5:
+            if (saveNexts != 0) return false;
+            next = *pCode++;
+            RestoreRange(state, -8 * ((next & 0x1F) + 1), X + 19 + ((code & 1) << 3) + (next >> 5), 1);
+            break;
+        case 0xD6 ... 0xD7:
+        {
+            if (saveNexts != 0) return false;
+            next = *pCode++;
+            int reg = 19 + 2 * (((code & 1) << 2) + (next >> 6));
+            RestoreRange(state, 8 * (next & 0x3F), X + reg, 1);
+            RestoreRange(state, 8 * (next & 0x3F) + 8, X + 30, 1);
+            break;
+        }
+        case 0xD8 ... 0xD9:
+            next = *pCode++;
+            RestoreRange(state, 8 * (next & 0x3F), 8 + ((code & 1) << 2) + (next >> 6), 2 + 2 * saveNexts);
+            saveNexts = 0;
+            break;
+        case 0xDA ... 0xDB:
+            next = *pCode++;
+            RestoreRange(state, -8 * ((next & 0x3F) + 1), 8 + ((code & 1) << 2) + (next >> 6), 2 + 2 * saveNexts);
+            saveNexts = 0;
+            break;
+        case 0xDC ... 0xDD:
+            if (saveNexts != 0) return false;
+            next = *pCode++;
+            RestoreRange(state, 8 * (next & 0x3F), 8 + ((code & 1) << 2) + (next >> 6), 1);
+            break;
+        case 0xDE:
+            if (saveNexts != 0) return false;
+            next = *pCode++;
+            RestoreRange(state, -8 * ((next & 0x1F) + 1), 8 + (next >> 5), 1);
+            break;
+        case 0xE0:
+            if (saveNexts != 0) return false;
+            state.sp += 16 * (((uint32_t)pCode[0] << 16) | ((uint32_t)pCode[1] << 8) | pCode[2]);
+            pCode += 3;
+            break;
+        case 0xE1:
+        case 0xE2:
+            // set_fp and add_fp come first, before the frame pointer is restored
+            if (saveNexts != 0 || (state.restoredRegisters & (1u << (29 - 19))) != 0)
+                return false;
+            state.sp = *regs->pFP - (code == 0xE2 ? 8 * (uintptr_t)*pCode++ : 0);
+            state.mixedBase |= (state.restoredRegisters | state.restoredFloats) != 0;
+            state.fpBased = true;
+            state.baseRegister = 29;
+            break;
+        case 0xE3:
+            if (saveNexts != 0) return false;
+            break;
+        case 0xE4:
+        case 0xE5:
+            pCode = pCodesEnd;
+            break;
+        case 0xE6:
+            saveNexts++;
+            break;
+        case 0xF9:
+        {
+            // save_regp_rev, the NativeAOT extension: <reg + 1, reg> at [sp+#Z*8], or with p at [sp-(#Z+1)*8]!
+            if (saveNexts != 0) return false;
+            next = pCode[0];
+            bool preIndexed = (next & 0x80) != 0;
+            int first = ((next & 0x40) != 0 ? 8 : X + 19) + (next & 0x1F);
+            int32_t z = pCode[1] & 0x3F;
+            int32_t low = preIndexed ? 0 : 8 * z;
+            RestoreRange(state, low + 8, first, 1);
+            RestoreRange(state, preIndexed ? -8 * (z + 1) : low, first + 1, 1);
+            pCode += 2;
+            break;
+        }
+        default:
+            // pac_sign_lr and the codes managed code doesn't use
+            return false;
+        }
+    }
+
+    return saveNexts == 0;
 }
 
 #endif // TARGET_ARM64
 
-#if defined(TARGET_LOONGARCH64)
-
-// Shim that implements methods required by libunwind over REGDISPLAY
-struct Registers_REGDISPLAY : REGDISPLAY
-{
-    typedef uint64_t reg_t;
-    typedef uint64_t link_reg_t;
-    typedef const link_reg_t &link_hardened_reg_arg_t;
-
-    inline static int  getArch() { return libunwind::REGISTERS_LOONGARCH; }
-    static constexpr int lastDwarfRegNum() { return _LIBUNWIND_HIGHEST_DWARF_REGISTER_LOONGARCH; }
-
-    bool        validRegister(int num) const;
-    bool        validFloatRegister(int num) const;
-    bool        validVectorRegister(int num) const { return false; }
-
-    uint64_t    getRegister(int num) const;
-    void        setRegister(int num, uint64_t value);
-    void        setRegisterLocation(int num, uint64_t location);
-
-    double      getFloatRegister(int num) const;
-    void        setFloatRegister(int num, double value);
-
-    libunwind::v128    getVectorRegister(int num) const { abort(); }
-    void        setVectorRegister(int num, libunwind::v128 value) { abort(); }
-
-    uint64_t    getSP() const         { return SP; }
-    void        setSP(uint64_t value) { SP = value; }
-    uint64_t    getIP() const         { return IP; }
-    void        setIP(uint64_t value) { IP = value; }
-    uint64_t    getFP() const         { return *pFP; }
-};
-
-inline bool Registers_REGDISPLAY::validRegister(int num) const {
-    if (num == UNW_REG_SP || num == UNW_LOONGARCH_R3)
-        return true;
-
-    if (num == UNW_LOONGARCH_R22)
-        return true;
-
-    if (num == UNW_REG_IP)
-        return true;
-
-    if (num >= UNW_LOONGARCH_R0 && num <= UNW_LOONGARCH_R31)
-        return true;
-
-    if (num >= UNW_LOONGARCH_F24 && num <= UNW_LOONGARCH_F31)
-        return true;
-
-    return false;
-}
-
-bool Registers_REGDISPLAY::validFloatRegister(int num) const
-{
-    return num >= UNW_LOONGARCH_F24 && num <= UNW_LOONGARCH_F31;
-}
-
-inline uint64_t Registers_REGDISPLAY::getRegister(int regNum) const {
-    if (regNum == UNW_REG_SP || regNum == UNW_LOONGARCH_R3)
-        return SP;
-
-    if (regNum == UNW_LOONGARCH_R22)
-        return *pFP;
-
-    if (regNum == UNW_LOONGARCH_R1)
-        return *pRA;
-
-    if (regNum == UNW_REG_IP)
-        return IP;
-
-    switch (regNum)
-    {
-    case (UNW_LOONGARCH_R0):
-        return *pR0;
-    case (UNW_LOONGARCH_R2):
-        return *pR2;
-    case (UNW_LOONGARCH_R4):
-        return *pR4;
-    case (UNW_LOONGARCH_R5):
-        return *pR5;
-    case (UNW_LOONGARCH_R6):
-        return *pR6;
-    case (UNW_LOONGARCH_R7):
-        return *pR7;
-    case (UNW_LOONGARCH_R8):
-        return *pR8;
-    case (UNW_LOONGARCH_R9):
-        return *pR9;
-    case (UNW_LOONGARCH_R10):
-        return *pR10;
-    case (UNW_LOONGARCH_R11):
-        return *pR11;
-    case (UNW_LOONGARCH_R12):
-        return *pR12;
-    case (UNW_LOONGARCH_R13):
-        return *pR13;
-    case (UNW_LOONGARCH_R14):
-        return *pR14;
-    case (UNW_LOONGARCH_R15):
-        return *pR15;
-    case (UNW_LOONGARCH_R16):
-        return *pR16;
-    case (UNW_LOONGARCH_R17):
-        return *pR17;
-    case (UNW_LOONGARCH_R18):
-        return *pR18;
-    case (UNW_LOONGARCH_R19):
-        return *pR19;
-    case (UNW_LOONGARCH_R20):
-        return *pR20;
-    case (UNW_LOONGARCH_R21):
-        return *pR21;
-    case (UNW_LOONGARCH_R23):
-        return *pR23;
-    case (UNW_LOONGARCH_R24):
-        return *pR24;
-    case (UNW_LOONGARCH_R25):
-        return *pR25;
-    case (UNW_LOONGARCH_R26):
-        return *pR26;
-    case (UNW_LOONGARCH_R27):
-        return *pR27;
-    case (UNW_LOONGARCH_R28):
-        return *pR28;
-    case (UNW_LOONGARCH_R29):
-        return *pR29;
-    case (UNW_LOONGARCH_R30):
-        return *pR30;
-    case (UNW_LOONGARCH_R31):
-        return *pR31;
-    }
-
-    PORTABILITY_ASSERT("unsupported loongarch64 register");
-}
-
-// Callee-saved registers are tracked by the location they were saved at, see setRegisterLocation
-void Registers_REGDISPLAY::setRegister(int num, uint64_t value)
-{
-    if (num == UNW_REG_SP || num == UNW_LOONGARCH_R3) {
-        SP = (uintptr_t )value;
-        return;
-    }
-
-    if (num == UNW_REG_IP) {
-        IP = value;
-        return;
-    }
-}
-
-void Registers_REGDISPLAY::setRegisterLocation(int num, uint64_t location)
-{
-    if (num == UNW_REG_SP || num == UNW_LOONGARCH_R3 || num == UNW_REG_IP)
-        return;
-
-    if (num == UNW_LOONGARCH_R22) {
-        pFP = (PTR_uintptr_t)location;
-        return;
-    }
-
-    if (num == UNW_LOONGARCH_R1) {
-        pRA = (PTR_uintptr_t)location;
-        return;
-    }
-
-    switch (num)
-    {
-    case (UNW_LOONGARCH_R0):
-        pR0 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_LOONGARCH_R2):
-        pR2 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_LOONGARCH_R4):
-        pR4 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_LOONGARCH_R5):
-        pR5 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_LOONGARCH_R6):
-        pR6 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_LOONGARCH_R7):
-        pR7 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_LOONGARCH_R8):
-        pR8 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_LOONGARCH_R9):
-        pR9 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_LOONGARCH_R10):
-        pR10 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_LOONGARCH_R11):
-        pR11 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_LOONGARCH_R12):
-        pR12 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_LOONGARCH_R13):
-        pR13 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_LOONGARCH_R14):
-        pR14 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_LOONGARCH_R15):
-        pR15 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_LOONGARCH_R16):
-        pR16 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_LOONGARCH_R17):
-        pR17 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_LOONGARCH_R18):
-        pR18 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_LOONGARCH_R19):
-        pR19 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_LOONGARCH_R20):
-        pR20 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_LOONGARCH_R21):
-        pR21 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_LOONGARCH_R23):
-        pR23 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_LOONGARCH_R24):
-        pR24 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_LOONGARCH_R25):
-        pR25 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_LOONGARCH_R26):
-        pR26 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_LOONGARCH_R27):
-        pR27 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_LOONGARCH_R28):
-        pR28 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_LOONGARCH_R29):
-        pR29 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_LOONGARCH_R30):
-        pR30 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_LOONGARCH_R31):
-        pR31 = (PTR_uintptr_t)location;
-        break;
-    default:
-        PORTABILITY_ASSERT("unsupported loongarch64 register");
-    }
-}
-
-double Registers_REGDISPLAY::getFloatRegister(int num) const
-{
-    assert(validFloatRegister(num));
-    return unwindhelpers_bitcast<double>(F[num - UNW_LOONGARCH_F24]);
-}
-
-void Registers_REGDISPLAY::setFloatRegister(int num, double value)
-{
-    assert(validFloatRegister(num));
-    F[num - UNW_LOONGARCH_F24] = unwindhelpers_bitcast<uint64_t>(value);
-}
-
-#endif // TARGET_LOONGARCH64
-
-#if defined(TARGET_RISCV64)
-
-// Shim that implements methods required by libunwind over REGDISPLAY
-struct Registers_REGDISPLAY : REGDISPLAY
-{
-    typedef uint64_t reg_t;
-    typedef uint64_t link_reg_t;
-    typedef const link_reg_t &link_hardened_reg_arg_t;
-
-    inline static int  getArch() { return libunwind::REGISTERS_RISCV; }
-    static constexpr int lastDwarfRegNum() { return _LIBUNWIND_HIGHEST_DWARF_REGISTER_RISCV; }
-
-    bool        validRegister(int num) const;
-    bool        validFloatRegister(int num) const;
-    bool        validVectorRegister(int num) const { return false; }
-
-    uint64_t    getRegister(int num) const;
-    void        setRegister(int num, uint64_t value);
-    void        setRegisterLocation(int num, uint64_t location);
-
-    double      getFloatRegister(int num) const;
-    void        setFloatRegister(int num, double value);
-
-    libunwind::v128    getVectorRegister(int num) const { abort(); }
-    void        setVectorRegister(int num, libunwind::v128 value) { abort(); }
-
-    uint64_t    getSP() const         { return SP; }
-    void        setSP(uint64_t value) { SP = value; }
-    uint64_t    getIP() const         { return IP; }
-    void        setIP(uint64_t value) { IP = value; }
-    uint64_t    getFP() const         { return *pFP; }
-};
-
-inline bool Registers_REGDISPLAY::validRegister(int num) const {
-    if (num == UNW_REG_SP || num == UNW_RISCV_X2)
-        return true;
-
-    if (num == UNW_REG_IP)
-        return true;
-
-    if (num >= UNW_RISCV_X0 && num <= UNW_RISCV_X31)
-        return true;
-
-    return false;
-}
-
-inline bool Registers_REGDISPLAY::validFloatRegister(int num) const {
-    if (num == UNW_RISCV_F8 || num == UNW_RISCV_F9)
-        return true;
-
-    if (num >= UNW_RISCV_F18 && num <= UNW_RISCV_F27)
-        return true;
-
-    return false;
-}
-
-inline uint64_t Registers_REGDISPLAY::getRegister(int regNum) const {
-    switch (regNum) {
-    case UNW_REG_IP:
-        return IP;
-    case UNW_RISCV_X1:
-        return *pRA;
-    case UNW_REG_SP:
-    case UNW_RISCV_X2:
-        return SP;
-    case UNW_RISCV_X3:
-        return *pGP;
-    case UNW_RISCV_X4:
-        return *pTP;
-    case UNW_RISCV_X5:
-        return *pT0;
-    case UNW_RISCV_X6:
-        return *pT1;
-    case UNW_RISCV_X7:
-        return *pT2;
-    case UNW_RISCV_X28:
-        return *pT3;
-    case UNW_RISCV_X29:
-        return *pT4;
-    case UNW_RISCV_X30:
-        return *pT5;
-    case UNW_RISCV_X31:
-        return *pT6;
-
-    case UNW_RISCV_X8:
-        return *pFP;
-    case UNW_RISCV_X9:
-        return *pS1;
-
-    case UNW_RISCV_X18:
-        return *pS2;
-    case UNW_RISCV_X19:
-        return *pS3;
-    case UNW_RISCV_X20:
-        return *pS4;
-    case UNW_RISCV_X21:
-        return *pS5;
-    case UNW_RISCV_X22:
-        return *pS6;
-    case UNW_RISCV_X23:
-        return *pS7;
-
-    default:
-        PORTABILITY_ASSERT("unsupported RISC-V register");
-    }
-}
-
-// Callee-saved registers are tracked by the location they were saved at, see setRegisterLocation
-void Registers_REGDISPLAY::setRegister(int regNum, uint64_t value)
-{
-    switch (regNum) {
-    case UNW_REG_IP:
-        IP = (uintptr_t)value;
-        break;
-    case UNW_REG_SP:
-    case UNW_RISCV_X2:
-        SP = (uintptr_t)value;
-        break;
-    }
-}
-
-void Registers_REGDISPLAY::setRegisterLocation(int regNum, uint64_t location)
-{
-    switch (regNum) {
-    case UNW_REG_IP:
-    case UNW_REG_SP:
-    case UNW_RISCV_X2:
-        break;
-    case UNW_RISCV_X1:
-        pRA = (PTR_uintptr_t)location;
-        break;
-    case UNW_RISCV_X3:
-        pGP = (PTR_uintptr_t)location;
-        break;
-    case UNW_RISCV_X4:
-        pTP = (PTR_uintptr_t)location;
-        break;
-    case UNW_RISCV_X5:
-        pT0 = (PTR_uintptr_t)location;
-        break;
-    case UNW_RISCV_X6:
-        pT1 = (PTR_uintptr_t)location;
-        break;
-    case UNW_RISCV_X7:
-        pT2 = (PTR_uintptr_t)location;
-        break;
-    case UNW_RISCV_X28:
-        pT3 = (PTR_uintptr_t)location;
-        break;
-    case UNW_RISCV_X29:
-        pT4 = (PTR_uintptr_t)location;
-        break;
-    case UNW_RISCV_X30:
-        pT5 = (PTR_uintptr_t)location;
-        break;
-    case UNW_RISCV_X31:
-        pT6 = (PTR_uintptr_t)location;
-        break;
-
-    case UNW_RISCV_X8:
-        pFP = (PTR_uintptr_t)location;
-        break;
-    case UNW_RISCV_X9:
-        pS1 = (PTR_uintptr_t)location;
-        break;
-    case UNW_RISCV_X18:
-        pS2 = (PTR_uintptr_t)location;
-        break;
-    case UNW_RISCV_X19:
-        pS3 = (PTR_uintptr_t)location;
-        break;
-    case UNW_RISCV_X20:
-        pS4 = (PTR_uintptr_t)location;
-        break;
-    case UNW_RISCV_X21:
-        pS5 = (PTR_uintptr_t)location;
-        break;
-    case UNW_RISCV_X22:
-        pS6 = (PTR_uintptr_t)location;
-        break;
-    case UNW_RISCV_X23:
-        pS7 = (PTR_uintptr_t)location;
-        break;
-    case UNW_RISCV_X24:
-        pS8 = (PTR_uintptr_t)location;
-        break;
-    case UNW_RISCV_X25:
-        pS9 = (PTR_uintptr_t)location;
-        break;
-    case UNW_RISCV_X26:
-        pS10 = (PTR_uintptr_t)location;
-        break;
-    case UNW_RISCV_X27:
-        pS11 = (PTR_uintptr_t)location;
-        break;
-
-
-    default:
-        PORTABILITY_ASSERT("unsupported RISC-V register");
-    }
-}
-
-double Registers_REGDISPLAY::getFloatRegister(int num) const
-{
-    assert(validFloatRegister(num));
-    int index = (num < UNW_RISCV_F18) ? (num - UNW_RISCV_F8) : (num - UNW_RISCV_F18 + 2);
-    return unwindhelpers_bitcast<double>(F[index]);
-}
-
-void Registers_REGDISPLAY::setFloatRegister(int num, double value)
-{
-    assert(validFloatRegister(num));
-    int index = (num < UNW_RISCV_F18) ? (num - UNW_RISCV_F8) : (num - UNW_RISCV_F18 + 2);
-    F[index] = unwindhelpers_bitcast<uint64_t>(value);
-}
-
-#endif // TARGET_RISCV64
-
-bool UnwindHelpers::StepFrame(REGDISPLAY *regs, unw_word_t start_ip, uint32_t format, unw_word_t unwind_info)
-{
-#if _LIBUNWIND_SUPPORT_DWARF_UNWIND
-
-#if _LIBUNWIND_SUPPORT_COMPACT_UNWIND
-
-#if defined(TARGET_ARM64)
-    if ((format & UNWIND_ARM64_MODE_MASK) != UNWIND_ARM64_MODE_DWARF) {
-        CompactUnwinder_arm64<LocalAddressSpace, Registers_REGDISPLAY> compactInst;
-        int stepRet = compactInst.stepWithCompactEncoding(format, start_ip, _addressSpace, *(Registers_REGDISPLAY*)regs);
-        return stepRet == UNW_STEP_SUCCESS;
-    }
-#elif defined(TARGET_LOONGARCH64)
-    if ((format & UNWIND_LOONGARCH64_MODE_MASK) != UNWIND_LOONGARCH64_MODE_DWARF) {
-        CompactUnwinder_loongarch64<LocalAddressSpace, Registers_REGDISPLAY> compactInst;
-        int stepRet = compactInst.stepWithCompactEncoding(format, start_ip, _addressSpace, *(Registers_REGDISPLAY*)regs);
-        return stepRet == UNW_STEP_SUCCESS;
-    }
-#elif defined(TARGET_RISCV64)
-    if ((format & UNWIND_RISCV64_MODE_MASK) != UNWIND_RISCV64_MODE_DWARF) {
-        CompactUnwinder_riscv64<LocalAddressSpace, Registers_REGDISPLAY> compactInst;
-        int stepRet = compactInst.stepWithCompactEncoding(format, start_ip, _addressSpace, *(Registers_REGDISPLAY*)regs);
-        return stepRet == UNW_STEP_SUCCESS;
-    }
-#elif defined(TARGET_AMD64)
-    if ((format & UNWIND_X86_64_MODE_MASK) != UNWIND_X86_64_MODE_DWARF) {
-        CompactUnwinder_x86_64<LocalAddressSpace, Registers_REGDISPLAY> compactInst;
-        int stepRet = compactInst.stepWithCompactEncoding(format, start_ip, _addressSpace, *(Registers_REGDISPLAY*)regs);
-        return stepRet == UNW_STEP_SUCCESS;
-    }
-#else
-    PORTABILITY_ASSERT("DoTheStep");
-#endif
-
-#endif
-
-    // libunwind applies only the CFI rows before pc; pass pc + 1 so the row at pc applies too,
-    // which unwinding from an interrupted instruction requires.
-    uintptr_t pc = regs->GetIP() + 1;
-    bool isSignalFrame = false;
-
-    DwarfInstructions<LocalAddressSpace, Registers_REGDISPLAY> dwarfInst;
-    int stepRet = dwarfInst.stepWithDwarf(_addressSpace, pc, unwind_info, *(Registers_REGDISPLAY*)regs, isSignalFrame, /* stage2 */ false);
-
-    if (stepRet != UNW_STEP_SUCCESS)
-    {
-        return false;
-    }
-
-#elif defined(_LIBUNWIND_ARM_EHABI)
-    size_t len = 0;
-    size_t off = 0;
-    const uint32_t *ehtp = decode_eht_entry(reinterpret_cast<const uint32_t *>(unwind_info), &off, &len);
-    ArmUnwindCursor unwindCursor((Registers_REGDISPLAY*)regs);
-    if (_Unwind_VRS_Interpret((_Unwind_Context *)&unwindCursor, ehtp, off, len) != _URC_CONTINUE_UNWIND)
-    {
-        return false;
-    }
-#else
-    PORTABILITY_ASSERT("StepFrame");
-#endif
-
-    return true;
-}
-
-#if _LIBUNWIND_SUPPORT_DWARF_UNWIND && defined(_LIBUNWIND_SUPPORT_DWARF_INDEX)
-// Finds the FDE covering the address through the .eh_frame_hdr binary search table, and returns false
-// only when that table is present and no FDE covers the address. libunwind would otherwise scan the
-// whole .eh_frame section, which in a large image takes long enough that a thread interrupted for
-// suspension in a range extension thunk between two sections of managed code makes no progress.
-template <typename R>
-static bool FindFdeOffsetInDwarfIndex(PCODE pc, const UnwindInfoSections &uwInfoSections, uint32_t *pDwarfOffset)
-{
-    LocalAddressSpace::pint_t indexStart = uwInfoSections.dwarf_index_section;
-    if (indexStart == 0)
-    {
-        return true;
-    }
-
-    LocalAddressSpace::pint_t indexEnd = indexStart + uwInfoSections.dwarf_index_section_length;
-    libunwind::EHHeaderParser<LocalAddressSpace>::EHHeaderInfo indexInfo;
-    if (!libunwind::EHHeaderParser<LocalAddressSpace>::decodeEHHdr(_addressSpace, indexStart, indexEnd, indexInfo) ||
-        indexInfo.fde_count == 0)
-    {
-        return true;
-    }
-
-    libunwind::CFI_Parser<LocalAddressSpace>::FDE_Info fdeInfo;
-    libunwind::CFI_Parser<LocalAddressSpace>::CIE_Info cieInfo;
-    if (!libunwind::EHHeaderParser<LocalAddressSpace>::template findFDE<R>(
-            _addressSpace, pc, indexStart, (uint32_t)uwInfoSections.dwarf_index_section_length, &fdeInfo, &cieInfo))
-    {
-        return false;
-    }
-
-    *pDwarfOffset = (uint32_t)(fdeInfo.fdeStart - uwInfoSections.dwarf_section);
-    return true;
-}
-#endif
-
-bool UnwindHelpers::GetUnwindProcInfo(PCODE pc, UnwindInfoSections &uwInfoSections, unw_proc_info_t *procInfo)
-{
 #if defined(TARGET_AMD64)
-    using NativeRegisters = Registers_x86_64;
-#elif defined(TARGET_ARM)
-    using NativeRegisters = Registers_arm;
-#elif defined(TARGET_ARM64)
-    using NativeRegisters = Registers_arm64;
-#elif defined(HOST_LOONGARCH64)
-    using NativeRegisters = Registers_loongarch;
-#elif defined(HOST_RISCV64)
-    using NativeRegisters = Registers_riscv;
-#else
-    #error "Unwinding is not implemented for this architecture yet."
-#endif
-    libunwind::UnwindCursor<LocalAddressSpace, NativeRegisters> uc(_addressSpace, nullptr);
 
-#if _LIBUNWIND_SUPPORT_DWARF_UNWIND
-    uint32_t dwarfOffsetHint = 0;
-
-#if _LIBUNWIND_SUPPORT_COMPACT_UNWIND
-    // If there is a compact unwind encoding table, look there first.
-    if (uwInfoSections.compact_unwind_section != 0 && uc.getInfoFromCompactEncodingSection(pc, uwInfoSections)) {
-        uc.getInfo(procInfo);
-
-#if defined(TARGET_ARM64)
-        if ((procInfo->format & UNWIND_ARM64_MODE_MASK) != UNWIND_ARM64_MODE_DWARF) {
-            return true;
-        } else {
-            dwarfOffsetHint = procInfo->format & UNWIND_ARM64_DWARF_SECTION_OFFSET;
-        }
-#elif defined(TARGET_LOONGARCH64)
-        if ((procInfo->format & UNWIND_LOONGARCH64_MODE_MASK) != UNWIND_LOONGARCH64_MODE_DWARF) {
-            return true;
-        } else {
-            dwarfOffsetHint = procInfo->format & UNWIND_LOONGARCH64_DWARF_SECTION_OFFSET;
-        }
-#elif defined(TARGET_RISCV64)
-        if ((procInfo->format & UNWIND_RISCV64_MODE_MASK) != UNWIND_RISCV64_MODE_DWARF) {
-            return true;
-        } else {
-            dwarfOffsetHint = procInfo->format & UNWIND_RISCV64_DWARF_SECTION_OFFSET;
-        }
-#elif defined(TARGET_AMD64)
-        if ((procInfo->format & UNWIND_X86_64_MODE_MASK) != UNWIND_X86_64_MODE_DWARF) {
-            return true;
-        } else {
-            dwarfOffsetHint = procInfo->format & UNWIND_X86_64_DWARF_SECTION_OFFSET;
-        }
-#else
-        PORTABILITY_ASSERT("GetUnwindProcInfo");
-#endif
-    }
-#endif
-
-#if defined(_LIBUNWIND_SUPPORT_DWARF_INDEX)
-    if (dwarfOffsetHint == 0 && !FindFdeOffsetInDwarfIndex<NativeRegisters>(pc, uwInfoSections, &dwarfOffsetHint))
-    {
-        return false;
-    }
-#endif
-
-    bool retVal = uc.getInfoFromDwarfSection(pc, uwInfoSections, dwarfOffsetHint);
-    if (!retVal)
-    {
-        return false;
-    }
-
-#elif defined(_LIBUNWIND_ARM_EHABI)
-    if (uwInfoSections.arm_section == 0 || !uc.getInfoFromEHABISection(pc, uwInfoSections))
-    {
-        return false;
-    }
-#else
-    PORTABILITY_ASSERT("GetUnwindProcInfo");
-#endif
-
-    uc.getInfo(procInfo);
-    return true;
-}
-
-#if defined(TARGET_APPLE)
-// Apple considers _dyld_find_unwind_sections to be private API that cannot be used
-// by apps submitted to App Store and TestFlight, both for iOS-like and macOS platforms.
-// We reimplement it using public API surface.
-//
-// Ref: https://github.com/llvm/llvm-project/blob/c37145cab12168798a603e22af6b6bf6f606b705/libunwind/src/AddressSpace.hpp#L67-L93
-bool _dyld_find_unwind_sections(void* addr, dyld_unwind_sections* info)
+static uint32_t BodyPrologSize(PTR_uint8_t pUnwindInfo, PTR_uint8_t pCodes, PTR_uint8_t pCodesEnd)
 {
-    // Find mach-o image containing address.
-    Dl_info dlinfo;
-    if (!dladdr(addr, &dlinfo))
-      return false;
+    return dac_cast<PTR_UNWIND_INFO>(pUnwindInfo)->SizeOfProlog;
+}
 
-    const struct mach_header_64 *mh = (const struct mach_header_64 *)dlinfo.dli_fbase;
+// Applies the codes from the last prolog instruction to the first, like the unwinder does for a PC in the body.
+// Returns false for the codes it doesn't handle.
+static bool ApplyBodyCodes(BodyUnwindState& state, REGDISPLAY *regs, PTR_uint8_t pUnwindInfo, PTR_uint8_t pCodes, PTR_uint8_t pCodesEnd)
+{
+    PTR_UNWIND_INFO pInfo = dac_cast<PTR_UNWIND_INFO>(pUnwindInfo);
+    DPTR(UNWIND_CODE) pCode = dac_cast<DPTR(UNWIND_CODE)>(pCodes);
+    uint32_t count = pInfo->CountOfUnwindCodes;
 
-    // Initialize the return struct
-    info->mh = (const struct mach_header *)mh;
-    info->dwarf_section = getsectiondata(mh, "__TEXT", "__eh_frame", &info->dwarf_section_length);
-    info->compact_unwind_section = getsectiondata(mh, "__TEXT", "__unwind_info", &info->compact_unwind_section_length);
+    // The saved registers are relative to the stack pointer of the body, or to the stack pointer that the frame
+    // register was set from
+    state.fpBased = pInfo->FrameRegister != 0;
+    state.baseRegister = pInfo->FrameRegister;
+    uintptr_t frameBase = state.fpBased ? **RegisterLocation(regs, state.baseRegister) - 16 * pInfo->FrameOffset : regs->SP;
+    bool frameRegisterSet = false;
 
-    if (!info->dwarf_section) {
-        info->dwarf_section_length = 0;
+    for (uint32_t i = 0; i < count; i++)
+    {
+        uint32_t opInfo = pCode[i].OpInfo;
+        switch (pCode[i].UnwindOp)
+        {
+        case UWOP_PUSH_NONVOL:
+            if (opInfo == 4)
+                return false;
+            state.mixedBase |= state.fpBased && !frameRegisterSet;
+            state.locations[opInfo] = (PTR_uintptr_t)state.sp;
+            state.restoredRegisters |= 1u << opInfo;
+            state.sp += 8;
+            break;
+        case UWOP_ALLOC_LARGE:
+            if (opInfo == 0)
+            {
+                state.sp += 8 * (uintptr_t)pCode[i + 1].FrameOffset;
+                i += 1;
+            }
+            else
+            {
+                state.sp += pCode[i + 1].FrameOffset + ((uintptr_t)pCode[i + 2].FrameOffset << 16);
+                i += 2;
+            }
+            break;
+        case UWOP_ALLOC_SMALL:
+            state.sp += 8 * opInfo + 8;
+            break;
+        case UWOP_SET_FPREG:
+            state.sp = frameBase;
+            frameRegisterSet = true;
+            break;
+        case UWOP_SAVE_NONVOL:
+        case UWOP_SAVE_NONVOL_FAR:
+        {
+            if (opInfo == 4)
+                return false;
+            uintptr_t offset = pCode[i].UnwindOp == UWOP_SAVE_NONVOL
+                ? 8 * (uintptr_t)pCode[i + 1].FrameOffset
+                : pCode[i + 1].FrameOffset + ((uintptr_t)pCode[i + 2].FrameOffset << 16);
+            i += pCode[i].UnwindOp == UWOP_SAVE_NONVOL ? 1 : 2;
+            state.locations[opInfo] = (PTR_uintptr_t)(frameBase + offset);
+            state.restoredRegisters |= 1u << opInfo;
+            break;
+        }
+        default:
+            // The large frame register offset, the xmm registers, which aren't callee saved on Unix, and the machine
+            // frames
+            return false;
+        }
     }
-    if (!info->compact_unwind_section) {
-        info->compact_unwind_section_length = 0;
-    }
 
+    // Pop the return address
+    state.sp += 8;
     return true;
 }
+
+// Unwinds a frame whose PC is in the body of the function, outside the prolog and the epilogs. Returns false for the
+// frames it doesn't handle, without changing the REGDISPLAY.
+static bool TryStepFrameBody(REGDISPLAY *regs, TADDR frameStart, TADDR frameEnd, PTR_uint8_t pUnwindInfo, BodyUnwindSummary* pSummary)
+{
+    PTR_UNWIND_INFO pInfo = dac_cast<PTR_UNWIND_INFO>(pUnwindInfo);
+    if (regs->IP - frameStart < pInfo->SizeOfProlog)
+        return false;
+
+    // The unwinder tells an epilog by its instructions: an optional add or lea to rsp, the pops, then a ret or a
+    // jmp out of the function. The JIT puts a nop between a call and an epilog, so return addresses are never in an
+    // epilog. A PC at a pop, a ret or a jmp out of the function can be in an epilog, which the unwinder handles. A
+    // PC at the add or lea is at the start of an epilog, which unwinds like the body.
+    PTR_uint8_t pInstr = dac_cast<PTR_uint8_t>(regs->IP);
+    bool rex = (pInstr[0] & 0xF0) == 0x40;
+    uint8_t opcode = pInstr[rex ? 1 : 0];
+    uint8_t next = pInstr[rex ? 2 : 1];
+    if ((opcode >= 0x58 && opcode <= 0x5F) || opcode == 0xC3 || opcode == 0xC2 || (opcode == 0xF3 && next == 0xC3) ||
+        (opcode == 0xFF && ((next >> 3) & 7) >= 4 && ((next >> 3) & 7) <= 5))
+        return false;
+    if (!rex && (opcode == 0xE9 || opcode == 0xEB))
+    {
+        TADDR target = opcode == 0xEB
+            ? regs->IP + 2 + (int8_t)next
+            : regs->IP + 5 + (int32_t)(pInstr[1] | ((uint32_t)pInstr[2] << 8) | ((uint32_t)pInstr[3] << 16) | ((uint32_t)pInstr[4] << 24));
+        if (target < frameStart || target >= frameEnd)
+            return false;
+    }
+
+    uint32_t summaryState = pSummary != NULL ? __atomic_load_n(&pSummary->State, __ATOMIC_ACQUIRE) : 0;
+    return StepFrameBody(regs, pSummary, summaryState, pUnwindInfo, dac_cast<PTR_uint8_t>(&pInfo->UnwindCode[0]),
+        dac_cast<PTR_uint8_t>(&pInfo->UnwindCode[pInfo->CountOfUnwindCodes]));
+}
+
+#endif // TARGET_AMD64
+
+bool UnwindHelpers::StepFrame(REGDISPLAY *regs, TADDR frameStart, TADDR frameEnd, PTR_uint8_t pUnwindInfo, bool packed, PTR_uint8_t pEpilogStarts,
+    BodyUnwindSummary *pSummary, uintptr_t *pSpForPacSign)
+{
+#if defined(TARGET_ARM64)
+    if (TryStepFrameBody(regs, frameStart, frameEnd, pUnwindInfo, packed, pEpilogStarts, pSummary))
+        return true;
+#elif defined(TARGET_AMD64)
+    if (TryStepFrameBody(regs, frameStart, frameEnd, pUnwindInfo, pSummary))
+        return true;
 #endif
+
+    CONTEXT context;
+    KNONVOLATILE_CONTEXT_POINTERS contextPointers;
+
+#ifdef _DEBUG
+    memset(&context, 0xDD, sizeof(context));
+    memset(&contextPointers, 0xDD, sizeof(contextPointers));
+#endif
+
+#define REGDISPLAY_TO_CONTEXT(contextField, regDisplayField) \
+    contextPointers.contextField = (decltype(contextPointers.contextField))regs->regDisplayField; \
+    if (regs->regDisplayField != NULL) context.contextField = *regs->regDisplayField;
+#define FLOAT_REGDISPLAY_TO_CONTEXT(contextField, regDisplayField) context.contextField = regs->regDisplayField;
+
+    FOR_EACH_REGISTER(REGDISPLAY_TO_CONTEXT);
+#ifdef FOR_EACH_FLOAT_REGISTER
+    FOR_EACH_FLOAT_REGISTER(FLOAT_REGDISPLAY_TO_CONTEXT);
+#endif
+    context.CONTEXT_SP = regs->SP;
+    context.CONTEXT_PC = regs->IP;
+
+    PVOID handlerData;
+    bool success;
+
+#if defined(TARGET_AMD64)
+    // The function entry refers to the code and the unwind information relative to an image base below both
+    TADDR imageBase = frameStart < (TADDR)pUnwindInfo ? frameStart : (TADDR)pUnwindInfo;
+    ASSERT(frameEnd - imageBase <= UINT32_MAX && (TADDR)pUnwindInfo - imageBase <= UINT32_MAX);
+    _IMAGE_RUNTIME_FUNCTION_ENTRY functionEntry;
+    functionEntry.BeginAddress = (DWORD)(frameStart - imageBase);
+    functionEntry.EndAddress = (DWORD)(frameEnd - imageBase);
+    functionEntry.UnwindInfoAddress = (DWORD)((TADDR)pUnwindInfo - imageBase);
+
+    DWORD64 establisherFrame;
+    success = SUCCEEDED(OOPStackUnwinderAMD64::VirtualUnwind(0, imageBase, regs->IP, &functionEntry, &context,
+        &handlerData, &establisherFrame, &contextPointers, NULL));
+#else
+    // The unwind information of the table doesn't have the function length, so the unwinder gets a copy with it.
+    // The unwinders only use the image base to compute offsets, so the function and the copy of the unwind
+    // information are given relative to an image base below the copy, with a control PC at the same offset in the
+    // function.
+#if defined(TARGET_ARM) || defined(TARGET_RISCV64)
+    const uint32_t lengthUnit = 2;
+#else
+    const uint32_t lengthUnit = 4;
+#endif
+    uint32_t functionLength = (uint32_t)(frameEnd - frameStart) / lengthUnit;
+    uint32_t unwindInfoSize = packed ? 0 : GetUnwindInfoSize(pUnwindInfo);
+    uint32_t* pCopy = (uint32_t*)__builtin_alloca(unwindInfoSize + 4);
+    memcpy(pCopy, pUnwindInfo, unwindInfoSize);
+    pCopy[0] = (pCopy[0] & ~0x3FFFFu) | functionLength;
+#if !defined(TARGET_ARM)
+    if (!packed && (pCopy[0] & (1 << 21)) == 0 && pEpilogStarts != NULL)
+    {
+        uint32_t epilogScopes = (pCopy[0] >> 22) & 0x1F;
+        uint32_t* pScopes = pCopy + 1;
+        if ((pCopy[0] >> 27) == 0 && epilogScopes == 0)
+        {
+            epilogScopes = pCopy[1] & 0xFFFF;
+            pScopes++;
+        }
+        if (epilogScopes != 0 && (pScopes[0] & 0x3FFFF) == 0)
+        {
+            for (uint32_t i = 0; i < epilogScopes; i++)
+                pScopes[i] |= ExternalEpilogStart(pEpilogStarts, epilogScopes, i);
+        }
+    }
+#endif
+
+    TADDR fakeImageBase = (TADDR)pCopy - 0x1000;
+    TADDR controlPc = fakeImageBase + (regs->IP - frameStart);
+    RUNTIME_FUNCTION functionEntry;
+    functionEntry.BeginAddress = 0;
+    functionEntry.UnwindData = packed ? (*dac_cast<PTR_uint32_t>(pUnwindInfo) | (functionLength << 2)) : 0x1000;
+
+#if defined(TARGET_ARM)
+    // The control PC of a caller frame is its return address, which has the Thumb bit
+    ULONG establisherFrame;
+    RtlVirtualUnwind(0, (ULONG)fakeImageBase, (ULONG)(controlPc & ~(TADDR)1), &functionEntry, &context,
+        &handlerData, &establisherFrame, &contextPointers);
+#elif defined(TARGET_ARM64)
+    ULONG64 establisherFrame;
+    ULONG64 spForPacSign = 0;
+    RtlVirtualUnwindWithSpForPacSign(0, fakeImageBase, controlPc, &functionEntry, &context, &handlerData,
+        &establisherFrame, &contextPointers, &spForPacSign);
+    if (pSpForPacSign != NULL)
+        *pSpForPacSign = (uintptr_t)spForPacSign;
+#else
+    ULONG64 establisherFrame;
+    RtlVirtualUnwind(0, fakeImageBase, controlPc, &functionEntry, &context, &handlerData, &establisherFrame,
+        &contextPointers);
+#endif
+
+    // The unwinders clear the PC when they fail
+    success = context.CONTEXT_PC != 0;
+#endif
+
+    if (!success)
+        return false;
+
+#define CONTEXT_TO_REGDISPLAY(contextField, regDisplayField) \
+    regs->regDisplayField = (PTR_uintptr_t)contextPointers.contextField;
+#define FLOAT_CONTEXT_TO_REGDISPLAY(contextField, regDisplayField) regs->regDisplayField = context.contextField;
+
+    FOR_EACH_REGISTER(CONTEXT_TO_REGDISPLAY);
+#ifdef FOR_EACH_FLOAT_REGISTER
+    FOR_EACH_FLOAT_REGISTER(FLOAT_CONTEXT_TO_REGDISPLAY);
+#endif
+    regs->SP = context.CONTEXT_SP;
+    regs->IP = context.CONTEXT_PC;
+    return true;
+}

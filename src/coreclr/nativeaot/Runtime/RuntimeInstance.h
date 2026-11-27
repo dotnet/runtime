@@ -88,6 +88,7 @@ public:
     void RegisterCodeManager(ICodeManager * pCodeManager, PTR_VOID pvStartRange, uint32_t cbRange);
 
     ICodeManager * GetCodeManagerForAddress(PTR_VOID ControlPC);
+    ICodeManager * GetCodeManager() { return m_CodeManager; }
     PTR_VOID GetClasslibFunctionFromCodeAddress(PTR_VOID address, ClasslibFunctionId functionId);
 
     bool RegisterTypeManager(TypeManager * pTypeManager);

@@ -22,10 +22,6 @@
 
 #include "eventtracebase.h"
 
-#if defined(TARGET_APPLE)
-#include <mach-o/compact_unwind_encoding.h>
-#endif // TARGET_APPLE
-
 #if defined(TARGET_ARM64)
 extern "C" void* PacStripPtr(void* ptr);
 #endif // TARGET_ARM64
@@ -44,22 +40,18 @@ struct UnixNativeMethodInfo
     PTR_VOID pMethodStartAddress;
     PTR_uint8_t pMainLSDA;
     PTR_uint8_t pLSDA;
-
-    // Subset of unw_proc_info_t required for unwinding
-    unw_word_t start_ip;
-    unw_word_t unwind_info;
-    uint32_t format;
+    PTR_uint8_t pUnwindInfo;
+    BodyUnwindSummary* pSummary;
+    TADDR frameStart;
+    uint32_t frameLength;
+    bool packedUnwindInfo;
+    bool unwindInfoFromTable;
 
     bool executionAborted;
 };
 
 // Ensure that UnixNativeMethodInfo fits into the space reserved by MethodInfo
 static_assert(sizeof(UnixNativeMethodInfo) <= sizeof(MethodInfo), "UnixNativeMethodInfo too big");
-
-struct UnwindSectionsLookupArgs
-{
-    typedef uintptr_t link_hardened_reg_arg_t;
-};
 
 UnixNativeCodeManager::UnixNativeCodeManager(TADDR moduleBase,
                                              PTR_VOID pvManagedCodeStartRange, uint32_t cbManagedCodeRange,
@@ -68,176 +60,379 @@ UnixNativeCodeManager::UnixNativeCodeManager(TADDR moduleBase,
       m_pvManagedCodeStartRange(pvManagedCodeStartRange), m_cbManagedCodeRange(cbManagedCodeRange),
       m_pClasslibFunctions(pClasslibFunctions), m_nClasslibFunctions(nClasslibFunctions)
 {
-    // Cache the location of unwind sections
-    libunwind::LocalAddressSpace::sThisAddressSpace.findUnwindSections<UnwindSectionsLookupArgs>(
-        (uintptr_t)pvManagedCodeStartRange, m_UnwindInfoSections);
+}
+
+// Sizes of the header and of a block header, see CompactUnwindTableNode
+#define COMPACT_UNWIND_HEADER_SIZE 24
+#define COMPACT_UNWIND_BLOCK_SIZE 14
+
+// See CompactUnwindRecordsNode in ILCompiler
+struct CompactUnwindRecord
+{
+    int32_t Start;
+    uint32_t Length;
+    int32_t Blob;
+};
+
+namespace
+{
+    // Reads the unaligned little endian uint32 at p
+    uint32_t ReadCompactUnwindUInt32(PTR_uint8_t p)
+    {
+        uint32_t value;
+        memcpy(&value, dac_cast<PTR_uint8_t>(p), sizeof(value));
+        return value;
+    }
+
+    // Reads count (at most 32) bits at bit position of the bit stream, least significant bit first. ILC pads the
+    // stream with 8 bytes, so reading 8 bytes at any position in the stream stays in the table.
+    uint32_t ReadCompactUnwindBits(PTR_uint8_t pStream, uint64_t position, uint32_t count)
+    {
+        uint64_t bits;
+        memcpy(&bits, dac_cast<PTR_uint8_t>(pStream + (position >> 3)), sizeof(bits));
+        return (uint32_t)((bits >> (position & 7)) & ((1ull << count) - 1));
+    }
+
+    // Resolves the relative pointer at p
+    PTR_uint8_t ResolveCompactUnwindRelPtr(const int32_t* p)
+    {
+        return dac_cast<PTR_uint8_t>((TADDR)p + *p);
+    }
+
+    TADDR GetCompactUnwindRecordStart(PTR_uint8_t pRecord)
+    {
+        return (TADDR)ResolveCompactUnwindRelPtr(&((const CompactUnwindRecord*)pRecord)->Start);
+    }
+
+    int CompareCompactUnwindRecords(const void* x, const void* y)
+    {
+        TADDR xStart = GetCompactUnwindRecordStart(*(PTR_uint8_t const*)x);
+        TADDR yStart = GetCompactUnwindRecordStart(*(PTR_uint8_t const*)y);
+        return xStart < yStart ? -1 : xStart > yStart ? 1 : 0;
+    }
+}
+
+bool CompactUnwindTable::Initialize(void* pTable, int length)
+{
+    PTR_uint8_t p = dac_cast<PTR_uint8_t>(pTable);
+
+    uint32_t entryCount = *dac_cast<PTR_uint32_t>(p + 4);
+    uint32_t blockCount = *dac_cast<PTR_uint32_t>(p + 8);
+    uint32_t streamBits = *dac_cast<PTR_uint32_t>(p + 12);
+
+    // Blocks follow the header, and the bit stream follows the blocks
+    uint32_t blocksOffset = COMPACT_UNWIND_HEADER_SIZE;
+    uint32_t streamOffset = blocksOffset + blockCount * COMPACT_UNWIND_BLOCK_SIZE;
+    uint32_t offsetsOffset = ALIGN_UP(streamOffset + (streamBits + 7) / 8 + 8, 4);
+    uint32_t unwindCount = *dac_cast<PTR_uint32_t>(p + 20);
+    m_wideUnwindOffsets = (p[17] & 2) != 0;
+    m_unitShift = p[18];
+    m_pUnwindOffsets = p + offsetsOffset;
+    m_pUnwindInfos = p + ALIGN_UP(offsetsOffset + unwindCount * (m_wideUnwindOffsets ? 4 : 2), 4);
+    ASSERT(m_pUnwindInfos <= p + length);
+    ASSERT((entryCount == 0) == (blockCount == 0));
+
+    m_pLsdaBase = p + *dac_cast<PTR_int32_t>(p);
+    m_packedBits = p[17] & 1;
+    m_pStream = p + streamOffset;
+
+    if (blockCount == 0)
+        return true;
+
+    // Decode the block headers, and index the blocks by page of code so that a lookup only compares the few
+    // blocks of a page. There is about one page per block.
+    PTR_uint8_t pBlocks = p + blocksOffset;
+    m_codeBase = (TADDR)pBlocks + (int32_t)ReadCompactUnwindUInt32(pBlocks);
+    m_pBlocks = new (nothrow) Block[blockCount];
+    if (m_pBlocks == NULL)
+        return false;
+
+#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
+    m_pSummaries = new (nothrow) BodyUnwindSummary[unwindCount]();
+    if (m_pSummaries == NULL)
+        return false;
+#endif
+
+    for (uint32_t i = 0; i < blockCount; i++)
+    {
+        PTR_uint8_t pBlock = pBlocks + i * COMPACT_UNWIND_BLOCK_SIZE;
+        TADDR start = (TADDR)pBlock + (int32_t)ReadCompactUnwindUInt32(pBlock);
+        ASSERT(start >= m_codeBase && (uint64_t)(start - m_codeBase) <= UINT32_MAX);
+        ASSERT(i == 0 || start > m_codeBase + m_pBlocks[i - 1].Start);
+
+        uint32_t bitOffset = ReadCompactUnwindUInt32(pBlock + 8);
+        uint32_t widths = pBlock[12] | ((uint32_t)pBlock[13] << 8);
+        uint32_t entryBits = (widths & 0x1F) + ((widths >> 5) & 0x1F) + ((widths >> 10) & 0x1F) + 3;
+        uint32_t endBitOffset = i + 1 == blockCount ? streamBits : ReadCompactUnwindUInt32(pBlock + COMPACT_UNWIND_BLOCK_SIZE + 8);
+        uint32_t count = (endBitOffset - bitOffset) / entryBits;
+        ASSERT(count != 0 && count <= UINT16_MAX && count * entryBits == endBitOffset - bitOffset);
+
+        m_pBlocks[i].Start = (uint32_t)(start - m_codeBase);
+        m_pBlocks[i].BlobBase = ReadCompactUnwindUInt32(pBlock + 4);
+        m_pBlocks[i].BitOffset = bitOffset;
+        m_pBlocks[i].Count = (uint16_t)count;
+        m_pBlocks[i].Widths = (uint16_t)widths;
+    }
+
+    uint32_t codeSize = m_pBlocks[blockCount - 1].Start;
+    uint32_t pageShift = 6;
+    while (pageShift < 31 && (codeSize >> pageShift) >= blockCount)
+        pageShift++;
+
+    uint32_t pageCount = (codeSize >> pageShift) + 1;
+    m_pPageBlocks = new (nothrow) uint32_t[pageCount + 1];
+    if (m_pPageBlocks == NULL)
+        return false;
+
+    uint32_t block = 0;
+    for (uint32_t page = 0; page < pageCount; page++)
+    {
+        while (block + 1 < blockCount && m_pBlocks[block + 1].Start <= (page << pageShift))
+            block++;
+        m_pPageBlocks[page] = block;
+    }
+    m_pPageBlocks[pageCount] = blockCount - 1;
+
+    m_nPages = pageCount;
+    m_pageShift = pageShift;
+    m_nBlocks = blockCount;
+    return true;
+}
+
+CompactUnwindTable::~CompactUnwindTable()
+{
+    delete[] m_pBlocks;
+    delete[] m_pPageBlocks;
+    delete[] m_pSummaries;
+}
+
+bool CompactUnwindTable::FindEntry(TADDR controlPC, CompactUnwindEntry* pEntry) const
+{
+    if (m_nBlocks == 0 || controlPC < m_codeBase)
+        return false;
+
+#ifdef TARGET_64BIT
+    if (controlPC - m_codeBase > UINT32_MAX)
+        return false;
+#endif
+
+    uint32_t offset = (uint32_t)(controlPC - m_codeBase);
+
+    // Find the last block that starts at or before controlPC. It is between the block that contains the start
+    // of the page and the one that contains the start of the next page.
+    uint32_t page = offset >> m_pageShift;
+    if (page >= m_nPages)
+        page = m_nPages - 1;
+
+    uint32_t block = m_pPageBlocks[page];
+    uint32_t lastBlock = m_pPageBlocks[page + 1];
+    while (block < lastBlock && m_pBlocks[block + 1].Start <= offset)
+        block++;
+
+    const Block* pBlock = &m_pBlocks[block];
+    uint32_t codeBits = (pBlock->Widths & 0x1F) + 1;
+    uint32_t lsdaBits = ((pBlock->Widths >> 5) & 0x1F) + 1;
+    uint32_t unwindBits = ((pBlock->Widths >> 10) & 0x1F) + 1;
+    uint32_t entryBits = codeBits + lsdaBits + unwindBits;
+    uint32_t bitOffset = pBlock->BitOffset;
+    uint32_t count = pBlock->Count;
+    TADDR blockStart = m_codeBase + pBlock->Start;
+    offset -= pBlock->Start;
+
+    // Find the last entry of the block that starts at or before controlPC. The first one does.
+    uint32_t low = 1;
+    uint32_t high = count;
+    while (low < high)
+    {
+        uint32_t mid = low + (high - low) / 2;
+        if (ReadCompactUnwindBits(m_pStream, bitOffset + (uint64_t)mid * entryBits, codeBits) <= offset)
+            low = mid + 1;
+        else
+            high = mid;
+    }
+
+    uint32_t index = low - 1;
+    uint64_t position = bitOffset + (uint64_t)index * entryBits;
+    uint32_t lsda = ReadCompactUnwindBits(m_pStream, position + codeBits, lsdaBits);
+
+    // Code without unwind information, such as code between managed code sections, or the end of a section
+    if (lsda == 0)
+        return false;
+
+    // Each section ends with an entry without an LSDA, so a frame ends at the next entry of the same section
+    ASSERT(index + 1 < count || block + 1 < m_nBlocks);
+
+    pEntry->Start = blockStart + ReadCompactUnwindBits(m_pStream, position, codeBits);
+    pEntry->pLsda = m_pLsdaBase + pBlock->BlobBase + lsda - 1;
+    uint32_t unwind = ReadCompactUnwindBits(m_pStream, position + codeBits + lsdaBits, unwindBits);
+    pEntry->Packed = (unwind & m_packedBits) != 0;
+    pEntry->FromTable = true;
+    unwind >>= m_packedBits;
+    uint32_t unwindOffset = m_wideUnwindOffsets
+        ? dac_cast<PTR_uint32_t>(m_pUnwindOffsets)[unwind]
+        : dac_cast<DPTR(uint16_t)>(m_pUnwindOffsets)[unwind];
+    pEntry->pUnwindInfo = m_pUnwindInfos + (unwindOffset << m_unitShift);
+    pEntry->pSummary = m_pSummaries != NULL ? m_pSummaries + unwind : NULL;
+
+    TADDR next = index + 1 < count
+        ? blockStart + ReadCompactUnwindBits(m_pStream, position + entryBits, codeBits)
+        : m_codeBase + m_pBlocks[block + 1].Start;
+    pEntry->Length = (uint32_t)(next - pEntry->Start);
+    return true;
+}
+
+bool UnixNativeCodeManager::AddCompactUnwindTable(void* pTable, int length)
+{
+    ASSERT(m_pCompactUnwindRecordsStart == NULL);
+
+    CompactUnwindTable* pNewTable = new (nothrow) CompactUnwindTable();
+    if (pNewTable == NULL)
+        return false;
+
+    if (!pNewTable->Initialize(pTable, length))
+    {
+        delete pNewTable;
+        return false;
+    }
+
+    // Each module of a Mach-O multi-file compilation has a table. Modules are registered at startup.
+    pNewTable->m_pNext = m_pCompactUnwindTables;
+    m_pCompactUnwindTables = pNewTable;
+    return true;
+}
+
+bool UnixNativeCodeManager::SetCompactUnwindRecords(void* pHeader, int length)
+{
+    static_assert(sizeof(CompactUnwindRecord) == 12, "Must match CompactUnwindRecordsNode");
+    ASSERT(length == 2 * sizeof(int32_t));
+    ASSERT(m_pCompactUnwindTables == NULL);
+
+    const int32_t* pRelPtrs = (const int32_t*)pHeader;
+    PTR_uint8_t pStart = ResolveCompactUnwindRelPtr(pRelPtrs);
+    PTR_uint8_t pEnd = ResolveCompactUnwindRelPtr(pRelPtrs + 1);
+
+    // The linker merges the records of all the modules of the image, which therefore refer to the same range
+    if (m_pCompactUnwindRecordsStart != NULL)
+    {
+        ASSERT(pStart == m_pCompactUnwindRecordsStart && pEnd == m_pCompactUnwindRecordsEnd);
+        return true;
+    }
+
+    ASSERT((pEnd - pStart) % sizeof(CompactUnwindRecord) == 0);
+    uint32_t count = (uint32_t)((pEnd - pStart) / sizeof(CompactUnwindRecord));
+
+    // Linkers usually keep the records in the order of the code, which makes the index unnecessary
+    bool sorted = true;
+    for (uint32_t i = 1; i < count && sorted; i++)
+    {
+        sorted = GetCompactUnwindRecordStart(pStart + (i - 1) * sizeof(CompactUnwindRecord)) <=
+            GetCompactUnwindRecordStart(pStart + i * sizeof(CompactUnwindRecord));
+    }
+
+    if (!sorted)
+    {
+        PTR_uint8_t* pIndex = new (nothrow) PTR_uint8_t[count];
+        if (pIndex == NULL)
+            return false;
+
+        for (uint32_t i = 0; i < count; i++)
+            pIndex[i] = pStart + i * sizeof(CompactUnwindRecord);
+
+        qsort(pIndex, count, sizeof(PTR_uint8_t), CompareCompactUnwindRecords);
+        m_pCompactUnwindRecordIndex = pIndex;
+    }
+
+    m_nCompactUnwindRecords = count;
+    m_pCompactUnwindRecordsStart = pStart;
+    m_pCompactUnwindRecordsEnd = pEnd;
+    return true;
+}
+
+PTR_uint8_t UnixNativeCodeManager::GetCompactUnwindRecord(uint32_t index)
+{
+    return m_pCompactUnwindRecordIndex != NULL
+        ? m_pCompactUnwindRecordIndex[index]
+        : m_pCompactUnwindRecordsStart + index * sizeof(CompactUnwindRecord);
+}
+
+bool UnixNativeCodeManager::FindCompactUnwindRecord(TADDR controlPC, CompactUnwindEntry* pEntry)
+{
+    // Find the last record that starts at or before controlPC
+    uint32_t low = 0;
+    uint32_t high = m_nCompactUnwindRecords;
+    while (low < high)
+    {
+        uint32_t mid = low + (high - low) / 2;
+        if (GetCompactUnwindRecordStart(GetCompactUnwindRecord(mid)) <= controlPC)
+            low = mid + 1;
+        else
+            high = mid;
+    }
+
+    if (low == 0)
+        return false;
+
+    const CompactUnwindRecord* pRecord = (const CompactUnwindRecord*)GetCompactUnwindRecord(low - 1);
+    TADDR start = GetCompactUnwindRecordStart((PTR_uint8_t)pRecord);
+
+    // Code without unwind information, such as linker generated code, isn't covered by any record
+    if (controlPC - start >= pRecord->Length)
+        return false;
+
+    pEntry->Start = start;
+    pEntry->Length = pRecord->Length;
+    pEntry->pUnwindInfo = ResolveCompactUnwindRelPtr(&pRecord->Blob);
+    pEntry->pLsda = pEntry->pUnwindInfo + UnwindHelpers::GetUnwindInfoSize(pEntry->pUnwindInfo);
+    pEntry->Packed = false;
+    pEntry->FromTable = false;
+    pEntry->pSummary = NULL;
+    return true;
+}
+
+bool UnixNativeCodeManager::FindCompactUnwindEntry(TADDR controlPC, CompactUnwindEntry* pEntry)
+{
+    for (const CompactUnwindTable* pTable = m_pCompactUnwindTables; pTable != NULL; pTable = pTable->m_pNext)
+    {
+        if (pTable->FindEntry(controlPC, pEntry))
+            return true;
+    }
+
+    if (m_pCompactUnwindRecordsStart != NULL)
+        return FindCompactUnwindRecord(controlPC, pEntry);
+
+    return false;
+}
+
+extern "C" bool RhpAddCompactUnwindTable(ICodeManager* pCodeManager, void* pTable, int length)
+{
+    return static_cast<UnixNativeCodeManager*>(pCodeManager)->AddCompactUnwindTable(pTable, length);
+}
+
+extern "C" bool RhpSetCompactUnwindRecords(ICodeManager* pCodeManager, void* pHeader, int length)
+{
+    return static_cast<UnixNativeCodeManager*>(pCodeManager)->SetCompactUnwindRecords(pHeader, length);
 }
 
 UnixNativeCodeManager::~UnixNativeCodeManager()
 {
+    while (m_pCompactUnwindTables != NULL)
+    {
+        CompactUnwindTable* pTable = m_pCompactUnwindTables;
+        m_pCompactUnwindTables = pTable->m_pNext;
+        delete pTable;
+    }
+
+    delete[] m_pCompactUnwindRecordIndex;
 }
-
-#if defined(TARGET_ARM64)
-static size_t readULEB(const uint8_t *&p, const uint8_t *end)
-{
-    size_t result = 0;
-    unsigned shift = 0;
-    while (p < end)
-    {
-        uint8_t byte = *p++;
-        result |= size_t(byte & 0x7F) << shift;
-        if ((byte & 0x80) == 0) // clear top bit indicates the last by of the value
-            break;
-        shift += 7;
-    }
-    return result;
-}
-
-static ssize_t readSLEB(const uint8_t *&p, const uint8_t *end)
-{
-    ssize_t result = 0;
-    unsigned shift = 0;
-    uint8_t byte = 0;
-
-    while (p < end)
-    {
-        byte = *p++;
-        result |= ssize_t(byte & 0x7F) << shift;
-        shift += 7;
-        if ((byte & 0x80) == 0) // clear top bit indicates the last by of the value
-        {
-            break;
-        }
-    }
-
-    if ((shift < (sizeof(result) * 8)) && ((byte & 0x40) != 0))
-    {
-        result |= -((ssize_t)1 << shift);
-    }
-
-    return result;
-}
-
-static bool TryGetPacIsPacPresent(UnixNativeMethodInfo *pNativeMethodInfo, bool *pHasPac)
-{
-    *pHasPac = false;
-
-#if defined(TARGET_APPLE)
-    // PAC-enabled Apple ARM64 methods use DWARF to preserve negate_ra_state;
-    // compact unwind has no PAC state to parse.
-    if ((pNativeMethodInfo->format & UNWIND_ARM64_MODE_MASK) != UNWIND_ARM64_MODE_DWARF)
-    {
-        return true;
-    }
-#endif // TARGET_APPLE
-
-    const uint8_t* p = (const uint8_t*)pNativeMethodInfo->unwind_info;
-    uint32_t fdeLength = *dac_cast<PTR_uint32_t>((uint8_t*)p);
-    const uint8_t* end = p + fdeLength;
-    p += sizeof(uint32_t); // FDE length
-
-    if (*dac_cast<PTR_uint32_t>((uint8_t*)p) == 0)
-        return false;
-
-    p += sizeof(uint32_t); // CIE pointer
-    p += sizeof(uint32_t); // PC start
-    p += sizeof(uint32_t); // function length
-
-    size_t augmentationLength = readULEB(p, end);
-    if ((size_t)(end - p) < augmentationLength)
-        return false;
-    p += augmentationLength;
-
-    bool hasPac = false;
-
-    while (p < end)
-    {
-        uint8_t op = *p++;
-
-        if (op == DW_CFA_AARCH64_negate_ra_state)
-        {
-            hasPac = true;
-            continue;
-        }
-
-        if ((op & 0xC0) == DW_CFA_advance_loc)
-        {
-            continue;
-        }
-
-        if ((op & 0xC0) == DW_CFA_offset)
-        {
-            readULEB(p, end); // offset
-            continue;
-        }
-
-        switch (op)
-        {
-            case DW_CFA_nop:
-                break;
-
-            case DW_CFA_advance_loc1:
-                p += sizeof(uint8_t);
-                break;
-
-            case DW_CFA_advance_loc2:
-                p += sizeof(uint16_t);
-                break;
-
-            case DW_CFA_advance_loc4:
-                p += sizeof(uint32_t);
-                break;
-
-            case DW_CFA_offset_extended:
-                readULEB(p, end); // register
-                readULEB(p, end); // offset
-                break;
-
-            case DW_CFA_offset_extended_sf:
-                readULEB(p, end); // register
-                readSLEB(p, end); // offset
-                break;
-
-            case DW_CFA_def_cfa:
-                readULEB(p, end); // register
-                readULEB(p, end); // offset
-                break;
-
-            case DW_CFA_def_cfa_register:
-                readULEB(p, end); // register
-                break;
-
-            case DW_CFA_def_cfa_offset:
-                readULEB(p, end); // offset
-                break;
-
-            case DW_CFA_def_cfa_sf:
-                readULEB(p, end); // register
-                readSLEB(p, end); // offset
-                break;
-
-            case DW_CFA_def_cfa_offset_sf:
-                readSLEB(p, end); // offset
-                break;
-
-            default:
-                return false;
-        }
-    }
-
-    *pHasPac = hasPac;
-    return true;
-}
-
-#endif // TARGET_ARM64
 
 // Virtually unwind stack to the caller of the context specified by the REGDISPLAY
-bool UnixNativeCodeManager::VirtualUnwind(MethodInfo* pMethodInfo, REGDISPLAY* pRegisterSet)
+bool UnixNativeCodeManager::VirtualUnwind(MethodInfo* pMethodInfo, REGDISPLAY* pRegisterSet, uintptr_t* pSpForPacSign)
 {
     UnixNativeMethodInfo * pNativeMethodInfo = (UnixNativeMethodInfo *)pMethodInfo;
-
-    return UnwindHelpers::StepFrame(
-        pRegisterSet, pNativeMethodInfo->start_ip, pNativeMethodInfo->format, pNativeMethodInfo->unwind_info);
+    return UnwindHelpers::StepFrame(pRegisterSet, pNativeMethodInfo->frameStart,
+        pNativeMethodInfo->frameStart + pNativeMethodInfo->frameLength, pNativeMethodInfo->pUnwindInfo,
+        pNativeMethodInfo->packedUnwindInfo, pNativeMethodInfo->unwindInfoFromTable ? pNativeMethodInfo->pLSDA : NULL,
+        pNativeMethodInfo->pSummary, pSpForPacSign);
 }
 
 bool UnixNativeCodeManager::FindMethodInfo(PTR_VOID        ControlPC,
@@ -254,22 +449,21 @@ bool UnixNativeCodeManager::FindMethodInfo(PTR_VOID        ControlPC,
 
     // Find LSDA and start address for a function at address controlPC
 
-    unw_proc_info_t procInfo;
-
-    if (!UnwindHelpers::GetUnwindProcInfo((TADDR)ControlPC, m_UnwindInfoSections, &procInfo))
-    {
+    CompactUnwindEntry entry;
+    if (!FindCompactUnwindEntry((TADDR)ControlPC, &entry))
         return false;
-    }
 
-    assert((procInfo.start_ip <= (TADDR)ControlPC) && ((TADDR)ControlPC < procInfo.end_ip));
+    // The blob of the frame is its unwind information followed by its LSDA
+    TADDR startIp = entry.Start;
+    PTR_uint8_t pLsda = entry.pLsda;
+    pMethodInfo->pUnwindInfo = entry.pUnwindInfo;
+    pMethodInfo->packedUnwindInfo = entry.Packed;
+    pMethodInfo->unwindInfoFromTable = entry.FromTable;
+    pMethodInfo->pSummary = entry.pSummary;
+    pMethodInfo->frameStart = entry.Start;
+    pMethodInfo->frameLength = entry.Length;
 
-    pMethodInfo->start_ip = procInfo.start_ip;
-    pMethodInfo->format = procInfo.format;
-    pMethodInfo->unwind_info = procInfo.unwind_info;
-
-    uintptr_t lsda = procInfo.lsda;
-
-    PTR_uint8_t p = dac_cast<PTR_uint8_t>(lsda);
+    PTR_uint8_t p = pLsda;
 
     pMethodInfo->pLSDA = p;
 
@@ -281,12 +475,12 @@ bool UnixNativeCodeManager::FindMethodInfo(PTR_VOID        ControlPC,
         pMethodInfo->pMainLSDA = p + NativePrimitiveDecoder::PeekInt32(p);
         p += sizeof(int32_t);
 
-        pMethodInfo->pMethodStartAddress = dac_cast<PTR_VOID>(procInfo.start_ip - NativePrimitiveDecoder::PeekInt32(p));
+        pMethodInfo->pMethodStartAddress = dac_cast<PTR_VOID>(startIp - NativePrimitiveDecoder::PeekInt32(p));
     }
     else
     {
-        pMethodInfo->pMainLSDA = dac_cast<PTR_uint8_t>(lsda);
-        pMethodInfo->pMethodStartAddress = dac_cast<PTR_VOID>(procInfo.start_ip);
+        pMethodInfo->pMainLSDA = pLsda;
+        pMethodInfo->pMethodStartAddress = dac_cast<PTR_VOID>(startIp);
     }
 
     pMethodInfo->executionAborted = false;
@@ -534,788 +728,8 @@ bool UnixNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
 
 bool UnixNativeCodeManager::IsUnwindable(PTR_VOID pvAddress)
 {
-    MethodInfo * pMethodInfo = NULL;
-
-#if defined(TARGET_ARM)
-    ASSERT(((uintptr_t)pvAddress & 1) == 0);
-#endif
-
-#if defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    MethodInfo methodInfo;
-    FindMethodInfo(pvAddress, &methodInfo);
-    pMethodInfo = &methodInfo;
-#endif
-
-#if (defined(TARGET_APPLE) && defined(TARGET_ARM64)) || defined(TARGET_ARM)
-    // VirtualUnwind can't unwind epilogues and some prologues.
-    return TrailingEpilogueInstructionsCount(pMethodInfo, pvAddress) == 0 && IsInProlog(pMethodInfo, pvAddress) != 1;
-#else
-    // VirtualUnwind can't unwind epilogues.
-    return TrailingEpilogueInstructionsCount(pMethodInfo, pvAddress) == 0;
-#endif
-}
-
-#if defined(TARGET_ARM)
-
-// SUB<c> SP, SP, #<imm>
-// 1011 0000 1xxx xxxx
-#define SUB_SP_IMM_BITS 0xB080
-#define SUB_SP_IMM_MASK 0xFF80
-
-// SUB{S}<c>.W SP, SP, #<const>
-// 1111 0x01 101x 1101 0xxx 1101 xxxx xxxx
-#define SUB_W_SP_IMM_BITS 0xF1AD0D00
-#define SUB_W_SP_IMM_MASK 0xFBEF8F00
-
-// SUBW<c> SP, SP, #<imm12>
-// 1111 0x10 1010 1101 0xxx 1101 xxxx xxxx
-#define SUBW_SP_IMM_BITS 0xF2AD0D00
-#define SUBW_SP_IMM_MASK 0xFBFF8F00
-
-// SUB<c> SP, <Rm>
-// 0100 0100 1xxx x101
-#define SUB_SP_REG_BITS 0x4485
-#define SUB_SP_REG_MASK 0xFF87
-
-// SUB{S}<c>.W SP, SP, <Rm>{, <shift>}
-// 1110 1011 101x 1101 0xxx 1101 xxxx xxxx
-#define SUB_W_SP_REG_BITS 0xEBAD0D00
-#define SUB_W_SP_REG_MASK 0xFFEF8F00
-
-// ADD{S}<c>.W FP, SP, #<const>
-// 1111 0x01 000x 1101 0xxx 1011 xxxx xxxx
-#define ADD_W_FP_SP_BITS 0xF10D0B00
-#define ADD_W_FP_SP_MASK 0xFBEF8F00
-
-// PUSH<c> <registers>
-// 1011 010x xxxx xxxx
-#define PUSH_BITS 0xB400
-#define PUSH_MASK 0xFE00
-
-// PUSH<c>.W <registers>
-// 1110 1001 0010 1101 0x0x xxxx xxxx xxxx
-#define PUSH_W_BITS_T2 0xE92D0000
-#define PUSH_W_MASK_T2 0xFFFFA000
-
-// PUSH<c>.W <registers>
-// 1111 1000 0100 1101 xxxx 1101 0000 0100
-#define PUSH_W_BITS_T3 0xF84D0D04
-#define PUSH_W_MASK_T3 0xFFFF0FFF
-
-// VPUSH<c> <list>
-// 1110 1101 0x10 1101 xxxx 1011 xxxx xxxx
-#define VPUSH_BITS_T1 0xED2D0B00
-#define VPUSH_MASK_T1 0xFFBF0F00
-
-// VPUSH<c> <list>
-// 1110 1101 0x10 1101 xxxx 1010 xxxx xxxx
-#define VPUSH_BITS_T2 0xED2D0A00
-#define VPUSH_MASK_T2 0xFFBF0F00
-
-// POP<c> <registers>
-// 1011 110x xxxx xxxx
-#define POP_BITS 0xBC00
-#define POP_MASK 0xFE00
-
-// POP<c>.W <registers>
-// 1110 1000 1011 1101
-#define POP_W_T2 0xE8BD
-
-// POP<c>.W <registers>
-// 1111 1000 0101 1101
-#define POP_W_T3 0xF85D
-
-// BX LR
-#define BX_LR_BITS 0x4770
-#define BX_LR_MASK 0xFFFF
-
-// MOV SP, R4
-#define MOV_SP_R4 0x46A5
-
-// MOV R9, SP
-#define MOV_R9_SP 0x46E9
-
-static bool IsArmPrologInstruction(uint16_t* pInstr)
-{
-    uint32_t instr = *pInstr;
-
-    if ((instr & SUB_SP_IMM_MASK) == SUB_SP_IMM_BITS ||
-        (instr & PUSH_MASK) == PUSH_BITS ||
-        instr == MOV_R9_SP)
-    {
-        return 1;
-    }
-
-    instr <<= 16;
-    instr |= *(pInstr + 1);
-
-    if ((instr & SUB_W_SP_IMM_MASK) == SUB_W_SP_IMM_BITS ||
-        (instr & SUBW_SP_IMM_MASK) == SUBW_SP_IMM_BITS ||
-        (instr & SUB_W_SP_REG_MASK) == SUB_W_SP_REG_BITS ||
-        (instr & ADD_W_FP_SP_MASK) == ADD_W_FP_SP_BITS ||
-        (instr & PUSH_W_MASK_T2) == PUSH_W_BITS_T2 ||
-        (instr & PUSH_W_MASK_T3) == PUSH_W_BITS_T3 ||
-        (instr & VPUSH_MASK_T1) == VPUSH_BITS_T1 ||
-        (instr & VPUSH_MASK_T2) == VPUSH_BITS_T2)
-    {
-        return 1;
-    }
-
-    return 0;
-}
-
-#endif
-
-#if defined(TARGET_ARM64) || defined(TARGET_ARM)
-// checks for known prolog instructions generated by ILC and returns
-//  1 - in prolog
-//  0 - not in prolog
-int UnixNativeCodeManager::IsInProlog(MethodInfo * pMethodInfo, PTR_VOID pvAddress)
-{
-#if defined(TARGET_ARM64)
-
-// post/pre
-
-
-// stp with signed offset
-// x010 1001 00xx xxxx xxxx xxxx xxxx xxxx
-#define STP_BITS1 0x29000000
-#define STP_MASK1 0x7FC00000
-
-// stp with pre/post/no offset
-// x010 100x x0xx xxxx xxxx xxxx xxxx xxxx
-#define STP_BITS2 0x28000000
-#define STP_MASK2 0x7E400000
-
-// add fp, sp, x
-// mov fp, sp
-// 1001 0001 0xxx xxxx xxxx xx11 1111 1101
-#define ADD_FP_SP_BITS 0x910003FD
-#define ADD_FP_SP_MASK 0xFF8003FF
-
-#define STP_RT2_RT_MASK  0x7C1F
-#define STP_RT2_RT_FP_LR 0x781D
-#define STP_RN_MASK      0x3E0
-#define STP_RN_SP        0x3E0
-#define STP_RN_FP        0x3A0
-
-    UnixNativeMethodInfo * pNativeMethodInfo = (UnixNativeMethodInfo *)pMethodInfo;
-    ASSERT(pNativeMethodInfo != NULL);
-
-    uint32_t* start  = (uint32_t*)pNativeMethodInfo->pMethodStartAddress;
-    bool savedFpLr = false;
-    bool establishedFp = false;
-
-    for (uint32_t* pInstr = (uint32_t*)start; pInstr < pvAddress && !(savedFpLr && establishedFp); pInstr++)
-    {
-        uint32_t instr = *pInstr;
-
-        if (((instr & STP_MASK1) == STP_BITS1 || (instr & STP_MASK2) == STP_BITS2) &&
-            ((instr & STP_RN_MASK) == STP_RN_SP || (instr & STP_RN_MASK) == STP_RN_FP))
-        {
-            // SP/FP-relative store of pair of registers
-            savedFpLr |= (instr & STP_RT2_RT_MASK) == STP_RT2_RT_FP_LR;
-        }
-        else if ((instr & ADD_FP_SP_MASK) == ADD_FP_SP_BITS)
-        {
-            establishedFp = true;
-        }
-        else
-        {
-            // JIT generates other patterns into the prolog that we currently don't
-            // recognize (saving unpaired register, stack pointer adjustments). We
-            // don't need to recognize these patterns unless a compact unwinding code
-            // is generated for them in ILC.
-            // https://github.com/dotnet/runtime/issues/76371
-            return -1;
-        }
-    }
-
-    return savedFpLr && establishedFp ? 0 : 1;
-
-#elif defined(TARGET_ARM)
-
-    UnixNativeMethodInfo * pNativeMethodInfo = (UnixNativeMethodInfo *)pMethodInfo;
-    ASSERT(pNativeMethodInfo != NULL);
-
-    uint16_t* pInstr = (uint16_t*)pvAddress;
-
-    // First check if the current instruction is any of the recognized prolog
-    // instructions. That may be a false positive but it's not going to be a
-    // false negative (with the exception of localloc pattern below).
-    if (IsArmPrologInstruction(pInstr))
-    {
-        // Verify that everything in front of the instruction was also a prolog.
-        pInstr = (uint16_t*)pNativeMethodInfo->pMethodStartAddress;
-        while (pInstr < pvAddress)
-        {
-            if (!IsArmPrologInstruction(pInstr))
-            {
-                return 0;
-            }
-
-            uint16_t instr = *pInstr;
-            if (instr == MOV_R9_SP)
-            {
-                // The frame has been established, so anything that follows is
-                // not considered a prolog (ie. unwinding works).
-                return 0;
-            }
-
-            // Skip over to next instruction
-            pInstr += (instr & 0xE000) == 0xE000 && (instr & 0xF800) != 0xE000 ? 2 : 1;
-        }
-
-        return 1;
-    }
-
-    // The localloc pattern generated by JIT looks like:
-    //
-    //    movw  r4, #frameSize
-    //    sub   r4, sp, r4
-    //    bl    CORINFO_HELP_STACK_PROBE
-    //    mov   sp, r4
-    //
-    // or
-    //
-    //    movw  r4, #frameSizeLo16
-    //    movt  r4, #frameSizeHi16
-    //    sub   r4, sp, r4
-    //    bl    CORINFO_HELP_STACK_PROBE
-    //    mov   sp, r4
-    //
-    // We can look ahead by couple of instructions and look for "mov sp, rXX".
-    for (int c = 5; c >= 0; --c)
-    {
-        uint16_t instr = *pInstr;
-        if (instr == MOV_SP_R4)
-        {
-            return 1;
-        }
-
-        // Bail out on any instruction that's clearly an epilog and can be
-        // end of the method.
-        if ((instr & POP_MASK) == POP_BITS ||
-            (instr & BX_LR_MASK) == BX_LR_BITS ||
-            instr == POP_W_T2 || instr == POP_W_T3)
-        {
-            return 0;
-        }
-
-        // Skip over to next instruction
-        pInstr += (instr & 0xE000) == 0xE000 && (instr & 0xF800) != 0xE000 ? 2 : 1;
-    }
-
-    return 0;
-
-#else
-#error Unsupported architecture
-#endif
-}
-#endif
-
-// when stopped in an epilogue, returns the count of remaining stack-consuming instructions
-// otherwise returns
-//  0 - not in epilogue,
-// -1 - unknown.
-int UnixNativeCodeManager::TrailingEpilogueInstructionsCount(MethodInfo * pMethodInfo, PTR_VOID pvAddress)
-{
-#ifdef TARGET_AMD64
-
-#define SIZE64_PREFIX 0x48
-#define ADD_IMM8_OP 0x83
-#define ADD_IMM32_OP 0x81
-#define JMP_IMM8_OP 0xeb
-#define JMP_IMM32_OP 0xe9
-#define JMP_IND_OP 0xff
-#define LEA_OP 0x8d
-#define REPNE_PREFIX 0xf2
-#define REP_PREFIX 0xf3
-#define POP_OP 0x58
-#define RET_OP 0xc3
-#define RET_OP_2 0xc2
-#define INT3_OP 0xcc
-
-#define IS_REX_PREFIX(x) (((x) & 0xf0) == 0x40)
-
-    //
-    // Everything below is inspired by the code in minkernel\ntos\rtl\amd64\exdsptch.c file from Windows
-    // For details see similar code in OOPStackUnwinderAMD64::UnwindEpilogue
-    //
-    //
-    //
-    // A canonical epilogue sequence consists of the following operations:
-    //
-    // 1. Optional cleanup of fixed and dynamic stack allocations, which is
-    //    considered to be outside of the epilogue region.
-    //
-    //    add rsp, imm
-    //        or
-    //    lea rsp, disp[fp]
-    //
-    // 2. Zero or more pop nonvolatile-integer-register[0..15] instructions.
-    //
-    //    pop r64
-    //        or
-    //    REX.R pop r64
-    //
-    // 3. An optional one-byte pop r64 to a volatile register to clean up an
-    //    RFLAGS register pushed with pushfq.
-    //
-    //    pop rcx
-    //
-    // 4. A control transfer instruction (ret or jump, in a case of a tailcall)
-    //    For the purpose of inferring the state of the stack, ret and jump can be
-    //    considered the same.
-    //
-    //    ret 0
-    //        or
-    //    jmp imm
-    //        or
-    //    jmp [target]
-    //
-    // 5. Occasionally we may see a breakpoint, possibly placed by the debugger.
-    //    In such case we do not know what instruction it was and return -1 (unknown)
-    //
-    //    int 3
-    //
-
-    // if we are in an epilogue, there will be at least one instruction left.
-    int trailingEpilogueInstructions = 1;
-    uint8_t* pNextByte = (uint8_t*)pvAddress;
-
-    //
-    // Check for any number of:
-    //
-    //   pop nonvolatile-integer-register[0..15].
-    //
-
-    while (true)
-    {
-        if ((pNextByte[0] & 0xf8) == POP_OP)
-        {
-            pNextByte += 1;
-            trailingEpilogueInstructions++;
-        }
-        else if (IS_REX_PREFIX(pNextByte[0]) && ((pNextByte[1] & 0xf8) == POP_OP))
-        {
-            pNextByte += 2;
-            trailingEpilogueInstructions++;
-        }
-        else
-        {
-            break;
-        }
-    }
-
-    //
-    // A REPNE prefix may optionally precede a control transfer
-    // instruction with no effect on unwinding.
-    //
-
-    if (pNextByte[0] == REPNE_PREFIX)
-    {
-        pNextByte += 1;
-    }
-
-    if (((pNextByte[0] == RET_OP) ||
-        (pNextByte[0] == RET_OP_2)) ||
-        (((pNextByte[0] == REP_PREFIX) && (pNextByte[1] == RET_OP))))
-    {
-        //
-        // A return is an unambiguous indication of an epilogue.
-        //
-        return trailingEpilogueInstructions;
-    }
-
-    if ((pNextByte[0] == JMP_IMM8_OP) ||
-        (pNextByte[0] == JMP_IMM32_OP))
-    {
-        //
-        // An unconditional branch to a target that is equal to the start of
-        // or outside of this routine is logically a call to another function.
-        //
-
-        size_t branchTarget = (size_t)pNextByte;
-        if (pNextByte[0] == JMP_IMM8_OP)
-        {
-            branchTarget += 2 + (int8_t)pNextByte[1];
-        }
-        else
-        {
-            uint32_t delta =
-                (uint32_t)pNextByte[1] |
-                ((uint32_t)pNextByte[2] << 8) |
-                ((uint32_t)pNextByte[3] << 16) |
-                ((uint32_t)pNextByte[4] << 24);
-
-            branchTarget += 5 + (int32_t)delta;
-        }
-
-        //
-        // Determine whether the branch target refers to code within this
-        // function. If not, then it is an epilogue indicator.
-        //
-        // A branch to the start of self implies a recursive call, so
-        // is treated as an epilogue.
-        //
-
-        if ((uintptr_t)pvAddress >= (uintptr_t)m_pvManagedCodeStartRange &&
-            (uintptr_t)pvAddress < (uintptr_t)m_pvManagedCodeStartRange + m_cbManagedCodeRange)
-        {
-            unw_proc_info_t procInfo;
-
-            bool result = UnwindHelpers::GetUnwindProcInfo(PINSTRToPCODE((TADDR)pvAddress), m_UnwindInfoSections, &procInfo);
-            ASSERT(result);
-
-            if (branchTarget <= procInfo.start_ip || branchTarget >= procInfo.end_ip)
-            {
-                return trailingEpilogueInstructions;
-            }
-        }
-    }
-    else if ((pNextByte[0] == JMP_IND_OP) && (pNextByte[1] == 0x25))
-    {
-        //
-        // An unconditional jump indirect.
-        //
-        // This is a jmp outside of the function, probably a tail call
-        // to an import function.
-        //
-
-        return trailingEpilogueInstructions;
-    }
-    else if (((pNextByte[0] & 0xf8) == SIZE64_PREFIX) &&
-        (pNextByte[1] == 0xff) &&
-        (pNextByte[2] & 0x38) == 0x20)
-    {
-        //
-        // This is an indirect jump opcode: 0x48 0xff /4.  The 64-bit
-        // flag (REX.W) is always redundant here, so its presence is
-        // overloaded to indicate a branch out of the function - a tail
-        // call.
-        //
-        // Such an opcode is an unambiguous epilogue indication.
-        //
-
-        return trailingEpilogueInstructions;
-    }
-    else if (pNextByte[0] == INT3_OP)
-    {
-        //
-        // A breakpoint, possibly placed by the debugger - we do not know what was here.
-        //
-        return -1;
-    }
-
-#elif defined(TARGET_ARM64)
-
-#define AUTIASP_INSTR 0xD50323BF
-#define AUTIBSP_INSTR 0xD50323FF
-
-// ldr with unsigned immediate
-// 1x11 1001 x1xx xxxx xxxx xxxx xxxx xxxx
-#define LDR_BITS1 0xB9400000
-#define LDR_MASK1 0xBF400000
-
-// ldr with pre/post/no offset
-// 1x11 1000 010x xxxx xxxx xxxx xxxx xxxx
-#define LDR_BITS2 0xB8400000
-#define LDR_MASK2 0xBFE00000
-
-// ldr with register offset
-// 1x11 1000 011x xxxx xxxx 10xx xxxx xxxx
-#define LDR_BITS3 0xB8600800
-#define LDR_MASK3 0xBFE00C00
-
-// ldp with signed offset
-// x010 1001 01xx xxxx xxxx xxxx xxxx xxxx
-#define LDP_BITS1 0x29400000
-#define LDP_MASK1 0x7FC00000
-
-// ldp with pre/post/no offset
-// x010 100x x1xx xxxx xxxx xxxx xxxx xxxx
-#define LDP_BITS2 0x28400000
-#define LDP_MASK2 0x7E400000
-
-// Branches, Exception Generating and System instruction group
-// xxx1 01xx xxxx xxxx xxxx xxxx xxxx xxxx
-#define BEGS_BITS 0x14000000
-#define BEGS_MASK 0x1C000000
-
-    UnixNativeMethodInfo * pNativeMethodInfo = (UnixNativeMethodInfo *)pMethodInfo;
-    ASSERT(pNativeMethodInfo != NULL);
-
-    uint32_t* start  = (uint32_t*)pNativeMethodInfo->pMethodStartAddress;
-
-    // Since we stop on branches, the search is roughly limited by the containing basic block.
-    // We typically examine just 1-5 instructions and in rare cases up to 30.
-    //
-    // TODO: we can also limit the search by the longest possible epilogue length, but
-    // we must be sure the longest length considers all possibilities,
-    // which is somewhat nontrivial to derive/prove.
-    // It does not seem urgent, but it could be nice to have a constant upper bound.
-    for (uint32_t* pInstr = (uint32_t*)pvAddress - 1; pInstr > start; pInstr--)
-    {
-        uint32_t instr = *pInstr;
-
-        // check for Branches, Exception Generating and System instruction group.
-        // If we see such instruction before seeing FP or LR restored, we are not in an epilog.
-        // Note: this includes RET, BRK, branches, calls, tailcalls, fences, etc...
-        if ((instr & BEGS_MASK) == BEGS_BITS)
-        {
-            // Scan past authentication instructions to find the FP/LR restore.
-            if (instr == AUTIASP_INSTR || instr == AUTIBSP_INSTR)
-            {
-                continue;
-            }
-            // not in an epilogue
-            break;
-        }
-
-        // check for restoring FP or LR with ldr or ldp
-        int operand = instr & 0x1f;
-        if (operand == 30 || operand == 29)
-        {
-            if ((instr & LDP_MASK1) == LDP_BITS1 ||
-                (instr & LDP_MASK2) == LDP_BITS2 ||
-                (instr & LDR_MASK1) == LDR_BITS1 ||
-                (instr & LDR_MASK2) == LDR_BITS2 ||
-                (instr & LDR_MASK3) == LDR_BITS3)
-            {
-                return -1;
-            }
-        }
-
-        // check for restoring FP or LR with ldp (as Rt2)
-        operand = (instr >> 10) & 0x1f;
-        if (operand == 30 || operand == 29)
-        {
-            if ((instr & LDP_MASK1) == LDP_BITS1 ||
-                (instr & LDP_MASK2) == LDP_BITS2)
-            {
-                return -1;
-            }
-        }
-    }
-
-#elif defined(TARGET_ARM)
-
-// ADD<c> SP, SP, #<imm>
-// 1011 0000 0xxx xxxx
-#define ADD_SP_IMM_BITS 0xB000
-#define ADD_SP_IMM_MASK 0xFF80
-
-// ADD{S}<c>.W SP, SP, #<const>
-// 1111 0x01 000x 1101 0xxx 1101 xxxx xxxx
-#define ADD_W_SP_IMM_BITS 0xF10D0D00
-#define ADD_W_SP_IMM_MASK 0xFBEF8F00
-
-// ADDW<c> SP, SP, #<imm12>
-// 1111 0x10 0000 1101 0xxx 1101 xxxx xxxx
-#define ADDW_SP_IMM_BITS 0xF20D0D00
-#define ADDW_SP_IMM_MASK 0xFBFF8F00
-
-// ADD<c> SP, <Rm>
-// 0100 0100 1xxx x101
-#define ADD_SP_REG_BITS 0x4485
-#define ADD_SP_REG_MASK 0xFF87
-
-// ADD{S}<c>.W SP, SP, <Rm>{, <shift>}
-// 1110 1011 000x 1101 0xxx 1101 xxxx xxxx
-#define ADD_W_SP_REG_BITS 0xEB0D0D00
-#define ADD_W_SP_REG_MASK 0xFFEF8F00
-
-// POP<c>.W <registers>
-// 1110 1000 1011 1101 xx0x xxxx xxxx xxxx
-#define POP_W_BITS_T2 0xE8BD0000
-#define POP_W_MASK_T2 0xFFFF2000
-
-// POP<c>.W <registers>
-// 1111 1000 0101 1101 xxxx 1011 0000 0100
-#define POP_W_BITS_T3 0xF85D0B04
-#define POP_W_MASK_T3 0xFFFF0FFF
-
-// VPOP <list>
-// 1110 1100 1x11 1101 xxxx 1011 xxxx xxxx
-#define VPOP_BITS_T1 0xECBD0B00
-#define VPOP_MASK_T1 0xFFBF0F00
-
-// VPOP <list>
-// 1110 1100 1x11 1101 xxxx 1010 xxxx xxxx
-#define VPOP_BITS_T2 0xECBD0A00
-#define VPOP_MASK_T2 0xFFBF0F00
-
-    uint16_t *pInstr = (uint16_t *)pvAddress;
-    uint32_t instr;
-
-    while (1)
-    {
-        instr = *pInstr;
-
-        if ((instr & 0xE000) == 0xE000 && (instr & 0xF800) != 0xE000)
-        {
-            // 32-bit instruction
-            instr <<= 16;
-            instr |= *(pInstr + 1);
-            pInstr += 2;
-        }
-        else
-        {
-            pInstr++;
-        }
-
-        // POP, VPOP and BX LR are definitely epilog
-        if ((instr & POP_MASK) == POP_BITS ||
-            (instr & BX_LR_MASK) == BX_LR_BITS ||
-            (instr & POP_W_MASK_T2) == POP_W_BITS_T2 ||
-            (instr & POP_W_MASK_T3) == POP_W_BITS_T3 ||
-            (instr & VPOP_MASK_T1) == VPOP_BITS_T1 ||
-            (instr & VPOP_MASK_T2) == VPOP_BITS_T2)
-        {
-            return -1;
-        }
-
-        // ADD SP, xxx may be part of epilog but in methods with frame
-        // pointer it can also appear in the body. Skip to the next
-        // instruction and check if it's still epilog.
-        if ((instr & ADD_SP_IMM_MASK) == ADD_SP_IMM_BITS ||
-            (instr & ADD_SP_REG_MASK) == ADD_SP_REG_BITS ||
-            (instr & ADD_W_SP_IMM_MASK) == ADD_W_SP_IMM_BITS ||
-            (instr & ADDW_SP_IMM_MASK) == ADDW_SP_IMM_BITS ||
-            (instr & ADD_W_SP_REG_MASK) == ADD_W_SP_REG_BITS)
-        {
-            continue;
-        }
-
-        return 0;
-    }
-
-#elif defined(TARGET_LOONGARCH64)
-
-// addi.d $sp, $sp, x
-// 0000 0010 11xx xxxx xxxx xx00 0110 0011
-#define ADDI_D_SP_SP_BITS 0x02C00063
-#define ADDI_D_SP_SP_MASK 0xFFC003FF
-
-// ld.d
-// 0010 1000 11xx xxxx xxxx xxxx xxxx xxxx
-#define LD_BITS 0x28C00000
-#define LD_MASK 0xFFC00000
-
-// ldx.d with register offset
-// 0011 1000 0000 1100 0xxx xxxx xxxx xxxx
-#define LDX_BITS 0x380C0000
-#define LDX_MASK 0xFFFF7000
-
-// Branches, Exception Generating and System instruction group
-// 01xx xxxx xxxx xxxx xxxx xxxx xxxx xxxx
-#define BEGS_BITS 0x40000000
-#define BEGS_MASK 0xC0000000
-
-    UnixNativeMethodInfo * pNativeMethodInfo = (UnixNativeMethodInfo *)pMethodInfo;
-    ASSERT(pNativeMethodInfo != NULL);
-
-    uint32_t* start  = (uint32_t*)pNativeMethodInfo->pMethodStartAddress;
-
-    // Since we stop on branches, the search is roughly limited by the containing basic block.
-    // We typically examine just 1-5 instructions and in rare cases up to 30.
-    //
-    // TODO: we can also limit the search by the longest possible epilogue length, but
-    // we must be sure the longest length considers all possibilities,
-    // which is somewhat nontrivial to derive/prove.
-    // It does not seem urgent, but it could be nice to have a constant upper bound.
-    for (uint32_t* pInstr = (uint32_t*)pvAddress - 1; pInstr > start; pInstr--)
-    {
-        uint32_t instr = *pInstr;
-
-        // check for Branches, Exception Generating and System instruction group.
-        // If we see such instruction before seeing FP or RA restored, we are not in an epilog.
-        // Note: this includes RET, BRK, branches, calls, tailcalls, fences, etc...
-        if ((instr & BEGS_MASK) == BEGS_BITS)
-        {
-            // not in an epilogue
-            break;
-        }
-
-        // check for restoring FP or RA with ld.d
-        if ((instr & LD_MASK) == LD_BITS)
-        {
-            int rd = (instr & 0x1f);
-            if (rd == 22 || rd == 1)
-            {
-                return -1;
-            }
-        }
-
-        // Check for adjusting stack pointer
-        if ((instr & ADDI_D_SP_SP_MASK) == ADDI_D_SP_SP_BITS)
-        {
-            return -1;
-        }
-    }
-
-#elif defined(TARGET_RISCV64)
-
-// addi sp, sp, x
-#define ADD_SP_SP_BITS 0x00010113
-#define ADD_SP_SP_MASK 0x000FFFFF
-
-// Load with register offset
-// LD with register offset
-#define LD_BITS 0x00000003
-#define LD_MASK 0x0000007F
-
-// Branches
-// BEQ, BNE, etc.
-#define BEGS_BITS 0x00000063
-#define BEGS_MASK 0x0000007F
-
-    UnixNativeMethodInfo * pNativeMethodInfo = (UnixNativeMethodInfo *)pMethodInfo;
-    ASSERT(pNativeMethodInfo != NULL);
-
-    uint32_t* start  = (uint32_t*)pNativeMethodInfo->pMethodStartAddress;
-
-    // Since we stop on branches, the search is roughly limited by the containing basic block.
-    // We typically examine just 1-5 instructions and in rare cases up to 30.
-    //
-    // TODO: we can also limit the search by the longest possible epilogue length, but
-    // we must be sure the longest length considers all possibilities,
-    // which is somewhat nontrivial to derive/prove.
-    // It does not seem urgent, but it could be nice to have a constant upper bound.
-    for (uint32_t* pInstr = (uint32_t*)pvAddress - 1; pInstr > start; pInstr--)
-    {
-        uint32_t instr = *pInstr;
-
-        // Check for branches, jumps, or system calls.
-        // If we see such instructions before registers are restored, we are not in an epilogue.
-        // Note: this includes RET, branches, jumps, and system calls.
-        if ((instr & BEGS_MASK) == BEGS_BITS)
-        {
-            // not in an epilogue
-            break;
-        }
-
-        // Check for restoring registers (FP or RA) with `ld`
-        if ((instr & LD_MASK) == LD_BITS)  // Match `ld` instruction
-        {
-            int rd = (instr >> 7) & 0x1F;  // Extract the destination register
-            if (rd == 8 || rd == 1)  // Check for FP (x8) or RA (x1)
-            {
-                return -1;
-            }
-        }
-
-        // Check for adjusting stack pointer
-        if ((instr & ADD_SP_SP_MASK) == ADD_SP_SP_BITS)
-        {
-            return -1;
-        }
-    }
-
-#endif
-
-    return 0;
+    // The Windows unwind information describes the prolog, and the unwinder recognizes the epilogs.
+    return true;
 }
 
 bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodInfo,
@@ -1339,41 +753,6 @@ bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
     // with the GC on the way back to native code.
     if ((unwindBlockFlags & UBF_FUNC_REVERSE_PINVOKE) != 0)
         return false;
-
-#if defined(TARGET_ARM)
-    // Ensure that PC doesn't have the Thumb bit set. Prolog and epilog
-    // checks depend on it.
-    ASSERT(((uintptr_t)pRegisterSet->IP & 1) == 0);
-#endif
-
-    int epilogueInstructions = TrailingEpilogueInstructionsCount(pMethodInfo, (PTR_VOID)pRegisterSet->IP);
-    if (epilogueInstructions < 0)
-    {
-        // can't figure, possibly a breakpoint instruction
-        return false;
-    }
-
-    if (epilogueInstructions > 0)
-    {
-        *ppvRetAddrLocation = (PTR_PTR_VOID)(pRegisterSet->GetSP() + (sizeof(TADDR) * (epilogueInstructions - 1)));
-        return true;
-    }
-
-#if (defined(TARGET_APPLE) && defined(TARGET_ARM64)) || defined(TARGET_ARM)
-    // If we are inside a prolog without a saved frame then we cannot safely unwind.
-    //
-    // Some known frame layouts use compact unwind encoding which cannot handle unwinding
-    // inside prolog or epilog, so don't even try that. These known sequences must be
-    // recognized by IsInProlog. Any other instruction sequence, known or unknown, falls
-    // through to the platform unwinder which should have DWARF information about the
-    // frame.
-    if (IsInProlog(pMethodInfo, (PTR_VOID)pRegisterSet->IP) == 1)
-    {
-        return false;
-    }
-#endif
-
-    ASSERT(IsUnwindable((PTR_VOID)pRegisterSet->IP));
 
     // Unwind the current method context to the caller's context to get its stack pointer
     // and obtain the location of the return address on the stack
@@ -1410,16 +789,8 @@ bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
         return false;
     }
 
-#if defined(TARGET_ARM64)
-    bool hasPac;
-    if (!TryGetPacIsPacPresent(pNativeMethodInfo, &hasPac))
-    {
-        return false;
-    }
-#endif
-
     PTR_uintptr_t oldLocation = pRegisterSet->GetReturnAddressRegisterLocation();
-    if (!VirtualUnwind(pMethodInfo, pRegisterSet))
+    if (!VirtualUnwind(pMethodInfo, pRegisterSet, pSpForArm64PacSign))
     {
         return false;
     }
@@ -1433,14 +804,6 @@ bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
         //    or has return address register already popped off.
         return false;
     }
-
-#if defined(TARGET_ARM64)
-    if (hasPac)
-    {
-        // Unwinding recovers the entry SP, which NativeAOT used to sign LR.
-        *pSpForArm64PacSign = pRegisterSet->GetSP();
-    }
-#endif
 
     *ppvRetAddrLocation = (PTR_PTR_VOID)pRegisterSet->GetReturnAddressRegisterLocation();
     return true;

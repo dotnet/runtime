@@ -46,6 +46,10 @@ namespace ILCompiler.ObjectWriter
         private uint _localSymbolCount;
         private readonly Dictionary<Utf8String, ElfSectionDefinition> _comdatNameToElfSection = new();
 
+        // Undefined data symbols that the linker defines in the image, such as the __start_ and __stop_ symbols
+        // of a section, which are referenced without going through the GOT or a thunk
+        private readonly HashSet<Utf8String> _hiddenUndefinedSymbols = new();
+
         // Symbol table
         private readonly Dictionary<Utf8String, uint> _symbolNameToIndex = new();
 
@@ -100,11 +104,6 @@ namespace ILCompiler.ObjectWriter
             {
                 type = SHT_PROGBITS;
                 flags = SHF_MERGE | SHF_STRINGS;
-            }
-            else if (_machine == EM_ARM && section.Type == SectionType.UnwindData)
-            {
-                type = SHT_ARM_EXIDX;
-                flags = SHF_ALLOC | SHF_LINK_ORDER;
             }
             else
             {
@@ -304,13 +303,15 @@ namespace ILCompiler.ObjectWriter
             {
                 if (!_symbolNameToIndex.ContainsKey(externSymbol))
                 {
+                    bool hidden = _hiddenUndefinedSymbols.Contains(externSymbol);
                     sortedSymbols.Add(new ElfSymbol
                     {
                         Name = externSymbol,
                         Info = (STB_GLOBAL << 4),
+                        Other = hidden ? STV_HIDDEN : STV_DEFAULT,
                     });
 
-                    if (useArmThunks)
+                    if (useArmThunks && !hidden)
                     {
                         sortedSymbols.Add(new ElfSymbol
                         {
@@ -833,10 +834,6 @@ namespace ILCompiler.ObjectWriter
             // User sections and their relocations
             foreach (var section in _sections)
             {
-                if (section.LinkSection != null)
-                {
-                    section.SectionHeader.Link = section.LinkSection.SectionIndex;
-                }
                 section.SectionHeader.NameIndex = _stringTable.GetStringOffset(new Utf8String(section.Name));
                 section.SectionHeader.Write<TSize>(outputFileStream);
 
@@ -922,7 +919,6 @@ namespace ILCompiler.ObjectWriter
             public required Stream Stream { get; init; }
             public Stream RelocationStream { get; set; } = Stream.Null;
             public ElfSectionDefinition GroupSection { get; init; }
-            public ElfSectionDefinition LinkSection { get; set; }
         }
 
         private sealed class ElfHeader
