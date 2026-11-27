@@ -65,7 +65,7 @@ namespace System.Formats.Cbor
             EnsureMaxDepthNotExceeded();
             EnsureWriteCapacity(1);
             WriteInitialByte(new CborInitialByte(CborMajorType.Array, CborAdditionalInfo.IndefiniteLength));
-            PushDataItem(CborMajorType.Array, definiteLength: null);
+            PushDataItem(CborMajorType.Array, definiteLength: NoDefiniteLength);
         }
 
         // perform an in-place conversion of an indefinite-length encoding into an equivalent definite-length

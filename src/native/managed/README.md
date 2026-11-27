@@ -20,7 +20,7 @@ In `src/native/managed/libMyNewLibrary/src/libMyNewLibrary.csproj`:
     ```xml
       <ItemGroup>
           <InstallRuntimeComponentDestination Include="." />
-          <InstallRuntimeComponentDestination Include="sharedFramework" Condition="'$(RuntimeFlavor)' == 'coreclr'"/>
+          <InstallRuntimeComponentDestination Include="sharedFramework" />
       </ItemGroup>
     ```
 

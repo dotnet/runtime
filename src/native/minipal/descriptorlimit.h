@@ -11,6 +11,12 @@ extern "C"
 {
 #endif // __cplusplus
 
+/**
+ * Raise the soft limit on open file descriptors of the current process to its hard limit (capped at
+ * OPEN_MAX on Apple platforms). Does nothing on WebAssembly and on musl-based Linux.
+ *
+ * @return false if the limit could not be queried or set, true otherwise.
+ */
 bool minipal_increase_descriptor_limit(void);
 
 #ifdef __cplusplus

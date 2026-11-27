@@ -15,7 +15,10 @@
   <PropertyGroup>
     <_MibcConfiguration Condition="'$(CoreCLRConfiguration)' == ''">$(Configuration)</_MibcConfiguration>
     <_MibcConfiguration Condition="'$(CoreCLRConfiguration)' != ''">$(CoreCLRConfiguration)</_MibcConfiguration>
+    <!-- Source generators are never ReadyToRun compiled, and merge-mibc's own build (dotnet-pgo) uses them, so a
+         PublishReadyToRun that reaches one, such as a global property, must not add the reference: it is a cycle. -->
     <UseMibcProjectReference Condition="'$(UseMibcProjectReference)' == '' and
+                                        '$(IsGeneratorProject)' != 'true' and
                                         '$(DotNetBuildSourceOnly)' != 'true' and
                                         '$(PublishReadyToRun)' == 'true'">true</UseMibcProjectReference>
   </PropertyGroup>

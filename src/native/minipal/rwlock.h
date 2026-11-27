@@ -30,22 +30,49 @@ typedef struct _minipal_rwlock
     MINIPAL_RWLOCK_IMPL _impl;
 } minipal_rwlock;
 
-// Initialize the read-write lock.
+/**
+ * Initialize the read-write lock.
+ *
+ * @param rwlock The read-write lock.
+ * @return true on success, false otherwise.
+ */
 bool minipal_rwlock_init(minipal_rwlock* rwlock) MINIPAL_RWLOCK_NOEXCEPT;
 
-// Destroy the read-write lock.
+/**
+ * Destroy the read-write lock.
+ *
+ * @param rwlock The read-write lock.
+ */
 void minipal_rwlock_destroy(minipal_rwlock* rwlock) MINIPAL_RWLOCK_NOEXCEPT;
 
-// Enter the read-write lock in shared mode. Blocks until the lock can be entered.
+/**
+ * Enter the read-write lock in shared mode. Blocks until the lock can be entered.
+ *
+ * @param rwlock The read-write lock.
+ * @return true on success, false otherwise.
+ */
 bool minipal_rwlock_enter_read(minipal_rwlock* rwlock) MINIPAL_RWLOCK_NOEXCEPT;
 
-// Leave the read-write lock from shared mode.
+/**
+ * Leave the read-write lock from shared mode.
+ *
+ * @param rwlock The read-write lock.
+ */
 void minipal_rwlock_leave_read(minipal_rwlock* rwlock) MINIPAL_RWLOCK_NOEXCEPT;
 
-// Enter the read-write lock in exclusive mode. Blocks until the lock can be entered.
+/**
+ * Enter the read-write lock in exclusive mode. Blocks until the lock can be entered.
+ *
+ * @param rwlock The read-write lock.
+ * @return true on success, false otherwise.
+ */
 bool minipal_rwlock_enter_write(minipal_rwlock* rwlock) MINIPAL_RWLOCK_NOEXCEPT;
 
-// Leave the read-write lock from exclusive mode.
+/**
+ * Leave the read-write lock from exclusive mode.
+ *
+ * @param rwlock The read-write lock.
+ */
 void minipal_rwlock_leave_write(minipal_rwlock* rwlock) MINIPAL_RWLOCK_NOEXCEPT;
 
 #ifdef __cplusplus

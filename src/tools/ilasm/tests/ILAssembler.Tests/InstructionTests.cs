@@ -91,6 +91,15 @@ namespace Microsoft.DotNet.ILAssembler.Tests
         }
 
         [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void NoPrefix_EmitsOpcodeAndOperand(bool optimize)
+        {
+            Assert.Equal(new byte[] { 0xFE, 0x19, 0x01, 0x2A },
+                DocumentCompilerTestHelpers.CompileMethodIL("no. 1\nret", new Options { Optimize = optimize }));
+        }
+
+        [Theory]
         [MemberData(nameof(IntegerConstants))]
         public void IntegerConstantEncodings(int value, byte[] optimized)
         {

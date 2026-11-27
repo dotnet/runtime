@@ -996,6 +996,15 @@ private:
     void        ClearSearchPath();
     SearchPath* m_pSearchPath;
 
+    // Separate search path for IsMonotonicallyIncreasing walks with rejectNegativeConst set,
+    // so that cycles visited without it are re-checked for negative constants.
+    SearchPath* GetRejectNegativeSearchPath();
+    bool        HasRejectNegativeSearchPath() const
+    {
+        return m_pRejectNegativeSearchPath != nullptr;
+    }
+    SearchPath* m_pRejectNegativeSearchPath;
+
     Compiler*     m_compiler;
     CompAllocator m_alloc;
 

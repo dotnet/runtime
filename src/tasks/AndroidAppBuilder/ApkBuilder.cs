@@ -12,13 +12,6 @@ using Microsoft.Android.Build;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
-public enum RuntimeFlavorEnum
-{
-    Mono,
-    CoreCLR,
-    NativeAOT
-}
-
 public partial class ApkBuilder
 {
     private const string DefaultMinApiLevel = "24";
@@ -37,27 +30,19 @@ public partial class ApkBuilder
     public string? NativeMainSource { get; set; }
     public string? RuntimeConfigFile { get; set; }
     public string? KeyStorePath { get; set; }
-    public bool ForceInterpreter { get; set; }
-    public bool ForceAOT { get; set; }
     public bool ForceFullAOT { get; set; }
     public ITaskItem[] EnvironmentVariables { get; set; } = Array.Empty<ITaskItem>();
     public bool EnableRuntimeLogging { get; set; }
     public bool StaticLinkedRuntime { get; set; }
-    public string[] RuntimeComponents { get; set; } = Array.Empty<string>();
     public string? DiagnosticPorts { get; set; }
     public bool IsLibraryMode { get; set; }
     public ITaskItem[] Assemblies { get; set; } = Array.Empty<ITaskItem>();
     public ITaskItem[] ExtraLinkerArguments { get; set; } = Array.Empty<ITaskItem>();
     public ITaskItem[] ExtraNativeSources { get; set; } = Array.Empty<ITaskItem>();
     public string[] NativeDependencies { get; set; } = Array.Empty<string>();
-    public string RuntimeFlavor { get; set; } = nameof(RuntimeFlavorEnum.Mono);
     public string? NetworkSecurityConfig { get; set; }
     public string? NetworkSecurityConfigResourcesDir { get; set; }
-
-    private RuntimeFlavorEnum parsedRuntimeFlavor;
-    private bool IsMono => parsedRuntimeFlavor == RuntimeFlavorEnum.Mono;
-    private bool IsCoreCLR => parsedRuntimeFlavor == RuntimeFlavorEnum.CoreCLR;
-    private bool IsNativeAOT => parsedRuntimeFlavor == RuntimeFlavorEnum.NativeAOT;
+    public bool UseNativeAOTRuntime { get; set; }
 
     private TaskLoggingHelper logger;
 
@@ -71,11 +56,6 @@ public partial class ApkBuilder
         string mainLibraryFileName,
         string[] runtimeHeaders)
     {
-        if (!Enum.TryParse(RuntimeFlavor, true, out parsedRuntimeFlavor))
-        {
-            throw new ArgumentException($"Unknown RuntimeFlavor value: {RuntimeFlavor}. '{nameof(RuntimeFlavor)}' must be one of: {string.Join(",", Enum.GetNames(typeof(RuntimeFlavorEnum)))}");
-        }
-
         if (string.IsNullOrEmpty(AppDir) || !Directory.Exists(AppDir))
         {
             throw new ArgumentException($"AppDir='{AppDir}' is empty or doesn't exist");
@@ -116,15 +96,6 @@ public partial class ApkBuilder
             throw new ArgumentException($"Android NDK='{AndroidNdk}' was not found or empty (can be set via ANDROID_NDK_ROOT envvar).");
         }
 
-        if (ForceInterpreter && ForceAOT)
-        {
-            throw new InvalidOperationException("Interpreter and AOT cannot be enabled at the same time");
-        }
-
-        if (IsMono && !string.IsNullOrEmpty(DiagnosticPorts) && !Array.Exists(RuntimeComponents, runtimeComponent => string.Equals(runtimeComponent, "diagnostics_tracing", StringComparison.OrdinalIgnoreCase)))
-        {
-            throw new ArgumentException($"Using DiagnosticPorts targeting Mono requires diagnostics_tracing runtime component, which was not included in 'RuntimeComponents' item group. @RuntimeComponents: '{string.Join(", ", RuntimeComponents)}'");
-        }
 
         AndroidSdkHelper androidSdkHelper = new AndroidSdkHelper(AndroidSdk, BuildApiLevel, BuildToolsVersion);
 
@@ -151,16 +122,11 @@ public partial class ApkBuilder
             }
         }
 
-        if (!Enum.TryParse(RuntimeFlavor, true, out parsedRuntimeFlavor))
-        {
-            throw new ArgumentException($"Unknown RuntimeFlavor value: {RuntimeFlavor}. '{nameof(RuntimeFlavor)}' must be one of: {string.Join(",", Enum.GetNames(typeof(RuntimeFlavorEnum)))}");
-        }
-
         var assemblerFiles = new StringBuilder();
         var assemblerFilesToLink = new StringBuilder();
         var aotLibraryFiles = new List<string>();
 
-        if (!(IsLibraryMode || IsNativeAOT))
+        if (!(IsLibraryMode || UseNativeAOTRuntime))
         {
             foreach (ITaskItem file in Assemblies)
             {
@@ -186,11 +152,6 @@ public partial class ApkBuilder
                 {
                     aotLibraryFiles.Add(lib);
                 }
-            }
-
-            if (ForceAOT && assemblerFiles.Length == 0 && aotLibraryFiles.Count == 0)
-            {
-                throw new InvalidOperationException("Need list of AOT files.");
             }
         }
 
@@ -250,25 +211,9 @@ public partial class ApkBuilder
         {
             nativeLibraries = string.Join("\n    ", NativeDependencies.Select(dep => dep));
         }
-        else if (!IsNativeAOT)
+        else if (!UseNativeAOTRuntime)
         {
-            string runtimeLib = "";
-            if (StaticLinkedRuntime && IsMono)
-            {
-                runtimeLib = Path.Combine(AppDir, "libmonosgen-2.0.a");
-            }
-            else if (IsMono)
-            {
-                runtimeLib = Path.Combine(AppDir, "libmonosgen-2.0.so");
-            }
-            else if (StaticLinkedRuntime && IsCoreCLR)
-            {
-                runtimeLib = Path.Combine(AppDir, "libcoreclr_static.a");
-            }
-            else if (IsCoreCLR)
-            {
-                runtimeLib = Path.Combine(AppDir, "libcoreclr.so");
-            }
+            string runtimeLib = Path.Combine(AppDir, StaticLinkedRuntime ? "libcoreclr_static.a" : "libcoreclr.so");
 
             if (!File.Exists(runtimeLib))
             {
@@ -279,47 +224,10 @@ public partial class ApkBuilder
                 nativeLibraries += $"{runtimeLib}{Environment.NewLine}";
             }
 
-            if (StaticLinkedRuntime && IsMono)
+            if (StaticLinkedRuntime)
             {
-                string[] staticComponentStubLibs = Directory.GetFiles(AppDir, "libmono-component-*-stub-static.a");
-
-                // by default, component stubs will be linked and depending on how mono runtime has been build,
-                // stubs can disable or dynamic load components.
-                foreach (string staticComponentStubLib in staticComponentStubLibs)
-                {
-                    string componentLibToLink = staticComponentStubLib;
-                    foreach (string runtimeComponent in RuntimeComponents)
-                    {
-                        if (componentLibToLink.Contains(runtimeComponent, StringComparison.OrdinalIgnoreCase))
-                        {
-                            // static link component.
-                            componentLibToLink = componentLibToLink.Replace("-stub-static.a", "-static.a", StringComparison.OrdinalIgnoreCase);
-                            break;
-                        }
-                    }
-
-                    // if lib doesn't exist (primarily due to runtime build without static lib support), fallback linking stub lib.
-                    if (!File.Exists(componentLibToLink))
-                    {
-                        logger.LogMessage(MessageImportance.High, $"\nCouldn't find static component library: {componentLibToLink}, linking static component stub library: {staticComponentStubLib}.\n");
-                        componentLibToLink = staticComponentStubLib;
-                    }
-
-                    nativeLibraries += $"    {componentLibToLink}{Environment.NewLine}";
-                }
-
-                // There's a circular dependency between static mono runtime lib and static component libraries.
-                // Adding mono runtime lib before and after component libs will resolve issues with undefined symbols
-                // due to circular dependency.
-                nativeLibraries += $"    {runtimeLib}{Environment.NewLine}";
-            }
-
-            if (StaticLinkedRuntime && IsCoreCLR)
-            {
-                string[] staticMonoStubs = Directory.GetFiles(AppDir, "libmono*.a");
                 string[] staticLibs = Directory.GetFiles(AppDir, "*.a")
-                    .Where(lib => !Path.GetFileName(lib).Equals("libcoreclr_static.a", StringComparison.OrdinalIgnoreCase) &&
-                                  !staticMonoStubs.Contains(lib, StringComparer.OrdinalIgnoreCase))
+                    .Where(lib => !Path.GetFileName(lib).Equals("libcoreclr_static.a", StringComparison.OrdinalIgnoreCase))
                     .ToArray();
 
                 foreach (string lib in staticLibs)
@@ -332,7 +240,7 @@ public partial class ApkBuilder
             }
         }
         string abi;
-        if (IsNativeAOT)
+        if (UseNativeAOTRuntime)
         {
             abi = AndroidProject.DetermineAbi(runtimeIdentifier);
         }
@@ -344,7 +252,7 @@ public partial class ApkBuilder
                 extraLinkerArgs.AppendLine($"    \"{item.ItemSpec}\"");
             }
 
-            if (StaticLinkedRuntime && IsCoreCLR)
+            if (StaticLinkedRuntime)
             {
                 // Ensure global symbol references in the shared library are resolved to definitions in
                 // the same shared library. For the static linked runtime specifically, we need this for
@@ -355,8 +263,7 @@ public partial class ApkBuilder
             nativeLibraries += assemblerFilesToLink.ToString();
 
             string aotSources = assemblerFiles.ToString();
-            string monodroidSource = IsCoreCLR ?
-                "monodroid-coreclr.c" : (IsLibraryMode) ? "monodroid-librarymode.c" : "monodroid.c";
+            string monodroidSource = IsLibraryMode ? "monodroid-librarymode.c" : "monodroid-coreclr.c";
             string runtimeInclude = string.Join(" ", runtimeHeaders.Select(h => $"\"{NormalizePathToUnix(h)}\""));
 
             var extraSources = new StringBuilder();
@@ -375,18 +282,6 @@ public partial class ApkBuilder
                 .Replace("%APP_LINKER_ARGS%", extraLinkerArgs.ToString());
 
             var defines = new StringBuilder();
-            if (ForceInterpreter)
-            {
-                defines.AppendLine("add_definitions(-DFORCE_INTERPRETER=1)");
-            }
-            else if (ForceAOT)
-            {
-                defines.AppendLine("add_definitions(-DFORCE_AOT=1)");
-                if (aotLibraryFiles.Count == 0)
-                {
-                    defines.AppendLine("add_definitions(-DSTATIC_AOT=1)");
-                }
-            }
 
             if (ForceFullAOT)
             {
@@ -403,10 +298,7 @@ public partial class ApkBuilder
             File.WriteAllText(Path.Combine(OutputDir, "CMakeLists.txt"), cmakeLists);
 
             string monodroidContent = Utils.GetEmbeddedResource(monodroidSource);
-            if (IsCoreCLR)
-            {
-                monodroidContent = RenderMonodroidCoreClrTemplate(monodroidContent);
-            }
+            monodroidContent = RenderMonodroidCoreClrTemplate(monodroidContent);
             File.WriteAllText(Path.Combine(OutputDir, monodroidSource), monodroidContent);
 
             AndroidProject project = new AndroidProject("monodroid", runtimeIdentifier, AndroidNdk, logger);
@@ -450,15 +342,15 @@ public partial class ApkBuilder
         }
 
         string jniLibraryName;
-        if (IsLibraryMode || IsNativeAOT)
+        if (IsLibraryMode || UseNativeAOTRuntime)
             jniLibraryName = ProjectName!;
-        else if (StaticLinkedRuntime && IsCoreCLR)
+        else if (StaticLinkedRuntime && !UseNativeAOTRuntime)
             jniLibraryName = "monodroid";
         else
             jniLibraryName = "System.Security.Cryptography.Native.Android";
 
         List<string> librariesToLoad = [jniLibraryName];
-        if (!IsNativeAOT)
+        if (!UseNativeAOTRuntime)
             librariesToLoad.Add("monodroid");
 
         string monoRunner = Utils.GetEmbeddedResource("MonoRunner.java")
@@ -541,7 +433,7 @@ public partial class ApkBuilder
         Utils.RunProcess(logger, androidSdkHelper.AaptPath, $"package -f -m -F {apkFile} -A assets {resourceDirArg}-M AndroidManifest.xml -I {androidJar} {debugModeArg}", workingDir: OutputDir);
 
         var dynamicLibs = new List<string>();
-        if (!IsNativeAOT)
+        if (!UseNativeAOTRuntime)
             dynamicLibs.Add(Path.Combine(OutputDir, "monodroid", "libmonodroid.so"));
 
         if (IsLibraryMode)
@@ -551,7 +443,7 @@ public partial class ApkBuilder
         else
         {
             var excludedLibs = new HashSet<string> { "libmonodroid.so" };
-            if (IsCoreCLR)
+            if (!UseNativeAOTRuntime)
             {
                 if (StripDebugSymbols)
                 {
@@ -570,39 +462,6 @@ public partial class ApkBuilder
         {
             string dynamicLibName = Path.GetFileName(dynamicLib);
             string destRelative = Path.Combine("lib", abi, dynamicLibName);
-
-            if (dynamicLibName == "libmonosgen-2.0.so" && StaticLinkedRuntime)
-            {
-                // we link mono runtime statically into libmonodroid.so
-                // make sure dynamic runtime is not included in package.
-                if (File.Exists(destRelative))
-                    File.Delete(destRelative);
-                continue;
-            }
-
-            if (dynamicLibName.Contains("libmono-component-", StringComparison.OrdinalIgnoreCase))
-            {
-                bool includeComponent = false;
-                if (!StaticLinkedRuntime)
-                {
-                    foreach (string runtimeComponent in RuntimeComponents)
-                    {
-                        if (dynamicLibName.Contains(runtimeComponent, StringComparison.OrdinalIgnoreCase))
-                        {
-                            includeComponent = true;
-                            break;
-                        }
-                    }
-                }
-
-                if (!includeComponent)
-                {
-                    // make sure dynamic component is not included in package.
-                    if (File.Exists(destRelative))
-                        File.Delete(destRelative);
-                    continue;
-                }
-            }
 
             // NOTE: we can run android-strip tool from NDK to shrink native binaries here even more.
             File.Copy(dynamicLib, Path.Combine(OutputDir, destRelative), true);
@@ -757,4 +616,5 @@ public partial class ApkBuilder
             .Replace("%AppContextValues%", appContextValues.ToString().TrimEnd());
         return updatedContent;
     }
+
 }

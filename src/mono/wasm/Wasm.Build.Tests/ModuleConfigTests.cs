@@ -352,19 +352,10 @@ public class ModuleConfigTests : WasmTemplateTestsBase
             $"Microsoft.NETCore.App.Runtime.browser-wasm.{runtimePackVersion}.nupkg");
 
         using ZipArchive package = ZipFile.OpenRead(packagePath);
+        var runtimePack = new RuntimePackAssets(packagePath, package);
         return (
-            ReadEntry("runtimes/browser-wasm/native/dotnet.native.wasm"),
-            ReadEntry("runtimes/browser-wasm/native/dotnet.native.js.symbols"));
-
-        byte[] ReadEntry(string entryName)
-        {
-            ZipArchiveEntry? entry = package.GetEntry(entryName);
-            Assert.NotNull(entry);
-            using Stream stream = entry.Open();
-            using MemoryStream buffer = new(checked((int)entry.Length));
-            stream.CopyTo(buffer);
-            return buffer.ToArray();
-        }
+            runtimePack.ReadBytes(RuntimePackAssets.GetNativePath("dotnet.native.wasm")),
+            runtimePack.ReadBytes(RuntimePackAssets.GetNativePath("dotnet.native.js.symbols")));
     }
 
     private void SymbolMapFileEmittedCore(bool emitSymbolMap, bool isPublish)

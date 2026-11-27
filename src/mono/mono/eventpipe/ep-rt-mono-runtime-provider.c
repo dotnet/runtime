@@ -4633,7 +4633,7 @@ void
 EP_CALLBACK_CALLTYPE
 EventPipeEtwCallbackDotNETRuntime (
 	const uint8_t *source_id,
-	unsigned long is_enabled,
+	uint32_t is_enabled,
 	uint8_t level,
 	uint64_t match_any_keywords,
 	uint64_t match_all_keywords,

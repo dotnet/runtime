@@ -539,6 +539,17 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord,
     else
     {
         void *sp = (void*)GetSP(pContextRecord);
+#ifdef FEATURE_HIJACK
+        Frame* pFrame = pThread->GetFrame();
+        if ((pFrame < sp) && (pFrame->GetFrameIdentifier() == FrameIdentifier::RedirectedThreadFrame))
+        {
+            // The exception came from a thread interrupted in managed code, so this context
+            // points to the interrupted instruction, not a return address.
+            _ASSERTE(GetSP(static_cast<RedirectedThreadFrame*>(pFrame)->GetContext()) == GetSP(pContextRecord));
+            _ASSERTE(GetIP(static_cast<RedirectedThreadFrame*>(pFrame)->GetContext()) == GetIP(pContextRecord));
+            pContextRecord->ContextFlags |= CONTEXT_EXCEPTION_ACTIVE;
+        }
+#endif
         PopExplicitFrames(pThread, sp, NULL /* targetCallerSp */, false /* popGCFrames */);
         ExInfo::PopExInfos(pThread, sp);
 

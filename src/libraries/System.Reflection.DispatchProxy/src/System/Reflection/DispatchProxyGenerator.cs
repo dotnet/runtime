@@ -58,7 +58,7 @@ namespace System.Reflection
         private static MethodInfo UnboxPointerMethod =>
             field ??= typeof(DispatchProxyGenerator).GetMethod(nameof(UnboxPointer), BindingFlags.NonPublic | BindingFlags.Static)!;
 
-        private static unsafe IntPtr UnboxPointer(object? value, Type type)
+        private static IntPtr UnboxPointer(object? value, Type type)
         {
             if (value is Pointer pointer)
             {
@@ -69,7 +69,11 @@ namespace System.Reflection
                     throw new InvalidCastException(SR.Format(SR.InvalidCast_PointerType, pointerType, type));
                 }
 
-                return (IntPtr)pointer.Value;
+                // SAFETY: To be audited
+                unsafe
+                {
+                    return (IntPtr)pointer.Value;
+                }
             }
 
             return value is null ? IntPtr.Zero : (IntPtr)value;
