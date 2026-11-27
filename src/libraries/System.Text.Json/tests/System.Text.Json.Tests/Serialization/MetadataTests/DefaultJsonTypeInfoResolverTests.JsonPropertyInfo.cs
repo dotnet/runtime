@@ -1502,9 +1502,9 @@ namespace System.Text.Json.Serialization.Tests
 
             string fullJson = $@"{{""Value"":{json}}}";
 
-            // sanity check: deserialization is not supported using the default contract
+            // The default contract deserializes setter-only collection properties.
             ClassWithSetterOnlyProperty<T> result = JsonSerializer.Deserialize<ClassWithSetterOnlyProperty<T>>(fullJson);
-            Assert.Null(result.GetValue());
+            Assert.Equal(json, JsonSerializer.Serialize(result.GetValue()));
 
             var options = new JsonSerializerOptions
             {
