@@ -3305,44 +3305,26 @@ namespace System.Tests
             { new DateTime(2025, 4, 19, 15, 0, 0), "Europe/Berlin", false },
             // should not be invalid, but BCL DateTimeZone detects it to be invalid
             { new DateTime(1995, 3, 26, 3, 0, 0), "Europe/Lisbon", false },
+            // Kiritimati skipped the whole day of Dec 31st in 1994 due to an offset change
+            { new DateTime(1994, 12, 31, 0, 0, 0), "Pacific/Kiritimati", true },
+            { new DateTime(1994, 12, 31, 12, 0, 0), "Pacific/Kiritimati", true },
+            { new DateTime(1994, 12, 31, 12, 23, 59), "Pacific/Kiritimati", true },
             // Moscow switched to UTC+4 in 2011
             { new DateTime(2011, 3, 27, 2, 0, 0), "Europe/Moscow", true },
         };
 
-        [Theory]
+        [ConditionalTheory]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         [MemberData(nameof(InvalidTimeTestData))]
         public static void IsInvalidTimeTestOnLinux(DateTime testTime, string timeZoneId, bool expectedIsInvalid)
         {
-            TimeZoneInfo timeZone = TimeZoneInfo.FindSystemTimeZoneById(timeZoneId);
-            Assert.Equal(expectedIsInvalid, timeZone.IsInvalidTime(testTime));
-        }
-
-        [Theory]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [InlineData(0, 0, 0)]
-        [InlineData(12, 0, 0)]
-        [InlineData(12, 23, 59)]
-        [InlineData(23, 59, 59)]
-        public static void IsInvalidTime_KiritimatiSkippedDay(int hour, int minute, int second)
-        {
-            TimeZoneInfo timeZone = TimeZoneInfo.FindSystemTimeZoneById("Pacific/Kiritimati");
-            DateTime transitionUtc = new DateTime(1994, 12, 31, 10, 0, 0, DateTimeKind.Utc);
-            TimeSpan offsetBefore = TimeSpan.FromHours(-10);
-
-            // tzdata before 2018d records the skipped day as January 1 rather than December 31.
-            if (timeZone.GetUtcOffset(transitionUtc) == offsetBefore)
+            if (timeZoneId == "Pacific/Kiritimati" && OperatingSystem.IsAndroid() && !OperatingSystem.IsAndroidVersionAtLeast(29))
             {
-                transitionUtc = transitionUtc.AddDays(1);
+                throw new SkipTestException("Kiritimati time zone data may be outdated on Android API levels below 29.");
             }
 
-            Assert.Equal(offsetBefore, timeZone.GetUtcOffset(transitionUtc.AddTicks(-1)));
-            Assert.Equal(TimeSpan.FromHours(14), timeZone.GetUtcOffset(transitionUtc));
-
-            DateTime skippedDay = DateTime.SpecifyKind(transitionUtc + offsetBefore, DateTimeKind.Unspecified);
-            Assert.True(timeZone.IsInvalidTime(skippedDay + new TimeSpan(hour, minute, second)));
-            Assert.False(timeZone.IsInvalidTime(skippedDay.AddTicks(-1)));
-            Assert.False(timeZone.IsInvalidTime(skippedDay.AddDays(1)));
+            TimeZoneInfo timeZone = TimeZoneInfo.FindSystemTimeZoneById(timeZoneId);
+            Assert.Equal(expectedIsInvalid, timeZone.IsInvalidTime(testTime));
         }
 
         public static TheoryData<string, DateTime, DateTime> InvalidLocalTimeToUniversalTimeData => new()
