@@ -8,6 +8,7 @@ parameters:
     _wasm_specific_only: [
         eng/testing/bump-chrome-version.proj
         eng/testing/BrowserVersions.props
+        eng/testing/WasmBatchRunner*
         eng/testing/WasmRunner*
         eng/testing/WasiRunner*
         eng/testing/tests.browser.targets
@@ -33,6 +34,7 @@ parameters:
         src/mono/wasi/*
         src/mono/wasm/*
         src/mono/mono/mini/interp/jiterpreter*
+        src/tasks/HelixTestTasks/*
         src/tasks/WasmAppBuilder/*
         src/tasks/WasmBuildTasks/*
         src/tasks/WorkloadBuildTasks/*
@@ -330,6 +332,15 @@ jobs:
       include:
       - ${{ parameters._const_paths._wasm_chrome }}
 
+    # Browser version bumps and browser runner / Helix batching infrastructure
+    - subset: wasm_browser_infra
+      include:
+      - ${{ parameters._const_paths._wasm_chrome }}
+      - eng/testing/WasmBatchRunner*
+      - eng/testing/WasmRunnerTemplate*
+      - src/libraries/sendtohelix-browser.targets
+      - src/tasks/HelixTestTasks/*
+
     # anything other than mono, or wasm specific paths
     - subset: non_mono_and_wasm
       exclude:
@@ -343,6 +354,7 @@ jobs:
       - src/tasks/AndroidAppBuilder/*
       - src/tasks/AotCompilerTask/*
       - src/tasks/AppleAppBuilder/*
+      - src/tasks/HelixTestTasks/*
       - src/tasks/MonoTargetsTasks/*
       - src/tasks/WasmAppBuilder/*
       - src/tasks/WasmBuildTasks/*

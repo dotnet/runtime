@@ -14,8 +14,33 @@ parameters:
 
 jobs:
 
-# Manual library entry point; retain the existing full R2R suites.
+# Manual library entry point; retain the full interpreter and ReadyToRun suites.
 - ${{ if and(ne(parameters.isExtraPlatformsBuild, true), ne(parameters.excludeLibTests, true), ne(parameters.debuggerTestsOnly, true)) }}:
+  - template: /eng/pipelines/common/templates/wasm-coreclr-library-tests.yml
+    parameters:
+      platforms:
+        - browser_wasm
+      extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+      isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+      isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
+      alwaysRun: true
+      useHelixMonitor: ${{ parameters.useHelixMonitor }}
+      scenarios:
+        - WasmTestOnChrome
+        - WasmTestOnFirefox
+
+  - template: /eng/pipelines/common/templates/wasm-coreclr-library-tests.yml
+    parameters:
+      platforms:
+        - browser_wasm_win
+      extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+      isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+      isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
+      alwaysRun: true
+      useHelixMonitor: ${{ parameters.useHelixMonitor }}
+      scenarios:
+        - WasmTestOnChrome
+
   # Full trimmed CoreCLR ReadyToRun library tests, available through runtime-wasm-libtests.
   - ${{ if eq(parameters.runFullR2RLibraryTests, true) }}:
     - template: /eng/pipelines/common/templates/wasm-coreclr-library-tests.yml

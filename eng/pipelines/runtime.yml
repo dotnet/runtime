@@ -1227,6 +1227,31 @@ extends:
           useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
           scenarios:
             - WasmTestOnChrome
+            - ${{ if eq(variables.isRollingBuild, true) }}:
+              - WasmTestOnFirefox
+
+      - ${{ if ne(variables.isRollingBuild, true) }}:
+        - template: /eng/pipelines/common/templates/wasm-coreclr-library-tests.yml
+          parameters:
+            platforms:
+              - browser_wasm
+            nameSuffix: _Firefox
+            runOnlyOnBrowserInfraChanges: true
+            extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+            useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
+            scenarios:
+              - WasmTestOnFirefox
+
+      - template: /eng/pipelines/common/templates/wasm-coreclr-library-tests.yml
+        parameters:
+          platforms:
+            - browser_wasm_win
+          alwaysRun: ${{ variables.isRollingBuild }}
+          runOnlyOnBrowserInfraChanges: true
+          extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+          useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
+          scenarios:
+            - WasmTestOnChrome
 
       # WebAssembly CoreCLR with trimmed ReadyToRun smoke tests
       - template: /eng/pipelines/common/templates/wasm-coreclr-library-tests.yml
