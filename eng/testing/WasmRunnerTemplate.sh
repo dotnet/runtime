@@ -76,6 +76,11 @@ if [[ -n "$XUNIT_RANDOM_ORDER_SEED" ]]; then
     WasmXHarnessMonoArgs="${WasmXHarnessMonoArgs} --setenv=XUNIT_RANDOM_ORDER_SEED=${XUNIT_RANDOM_ORDER_SEED}"
 fi
 
+# The app doesn't inherit the host environment, so tell it when it runs in CI ([SkipOnCI], PlatformDetection.IsNotBrowserOnCI).
+if [[ -n "$HELIX_WORKITEM_ROOT" || -n "$DOTNET_CI" ]]; then
+    WasmXHarnessMonoArgs="${WasmXHarnessMonoArgs} --setenv=DOTNET_CI=true"
+fi
+
 echo PATH=$PATH
 echo EXECUTION_DIR=$EXECUTION_DIR
 echo SCENARIO=$SCENARIO

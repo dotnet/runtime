@@ -54,8 +54,11 @@
     <_IsOuterloopTestScope Condition="'$(TestScope)' == 'outerloop' or '$(TestScope)' == 'all'">true</_IsOuterloopTestScope>
     <_WasmBatchMinutesPerSuite Condition="'$(_WasmBatchMinutesPerSuite)' == '' and '$(_IsOuterloopTestScope)' == 'true'">40</_WasmBatchMinutesPerSuite>
     <_WasmBatchMinutesPerSuite Condition="'$(_WasmBatchMinutesPerSuite)' == ''">20</_WasmBatchMinutesPerSuite>
+    <!-- wasm64 uses a 06:00:00 outerloop suite timeout (see tests.wasm.targets). -->
+    <_WasmBatchMinimumMinutes Condition="'$(_WasmBatchMinimumMinutes)' == '' and '$(_IsOuterloopTestScope)' == 'true' and '$(TargetsWasm64)' == 'true'">390</_WasmBatchMinimumMinutes>
     <_WasmBatchMinimumMinutes Condition="'$(_WasmBatchMinimumMinutes)' == '' and '$(_IsOuterloopTestScope)' == 'true'">270</_WasmBatchMinimumMinutes>
     <_WasmBatchMinimumMinutes Condition="'$(_WasmBatchMinimumMinutes)' == ''">30</_WasmBatchMinimumMinutes>
+    <_WasmBatchMaximumMinutes Condition="'$(_WasmBatchMaximumMinutes)' == '' and '$(_IsOuterloopTestScope)' == 'true' and '$(TargetsWasm64)' == 'true'">420</_WasmBatchMaximumMinutes>
     <_WasmBatchMaximumMinutes Condition="'$(_WasmBatchMaximumMinutes)' == '' and '$(_IsOuterloopTestScope)' == 'true'">300</_WasmBatchMaximumMinutes>
     <_WasmBatchMaximumMinutes Condition="'$(_WasmBatchMaximumMinutes)' == ''">1439</_WasmBatchMaximumMinutes>
 

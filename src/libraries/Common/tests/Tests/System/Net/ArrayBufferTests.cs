@@ -195,7 +195,7 @@ namespace Tests.System.Net
         }
 
         [OuterLoop]
-        [ConditionalTheory(typeof(Environment), nameof(Environment.Is64BitProcess))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess), nameof(PlatformDetection.IsNotBrowserOnCI))]
         [InlineData(true)]
         [InlineData(false)]
         public void CanResizeToMaxArraySize(bool usePool)

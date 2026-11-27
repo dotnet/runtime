@@ -141,6 +141,7 @@ extends:
               runtimeFlavor: coreclr
               platforms:
               - browser_wasm
+              - browser_wasm64
               jobParameters:
                 testScope: all
                 nameSuffix: LibraryTestsCoreCLR
@@ -169,6 +170,7 @@ extends:
             parameters:
               platforms:
                 - browser_wasm
+                - browser_wasm64
               nameSuffix: _R2R
               readyToRun: true
               testScope: all

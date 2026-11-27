@@ -37,6 +37,8 @@
          Innerloop keeps the existing 01:30:00 budget. Keep this in sync with
          the per-batch and AzDO job timeouts in src/libraries/sendtohelix-browser.targets and
          eng/pipelines/libraries/outerloop.yml (suite <= batch <= job). -->
+    <!-- wasm64 runs the 64-bit-only large-allocation tests and is slower; System.Memory.Tests alone exceeds 4 hours. -->
+    <WasmXHarnessTestsTimeout Condition="'$(WasmXHarnessTestsTimeout)' == '' and ('$(TestScope)' == 'outerloop' or '$(TestScope)' == 'all') and '$(TargetsWasm64)' == 'true'">06:00:00</WasmXHarnessTestsTimeout>
     <WasmXHarnessTestsTimeout Condition="'$(WasmXHarnessTestsTimeout)' == '' and ('$(TestScope)' == 'outerloop' or '$(TestScope)' == 'all')">04:00:00</WasmXHarnessTestsTimeout>
     <WasmXHarnessTestsTimeout Condition="'$(WasmXHarnessTestsTimeout)' == ''">01:30:00</WasmXHarnessTestsTimeout>
     <RunWorkingDirectory>$(BundleDir)</RunWorkingDirectory>

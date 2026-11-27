@@ -59,6 +59,8 @@ namespace System
         public static bool IsWasi => RuntimeInformation.IsOSPlatform(OSPlatform.Create("WASI"));
         public static bool IsWasm => IsBrowser || IsWasi;
         public static bool IsNotBrowser => !IsBrowser;
+        // Browser test runners forward DOTNET_CI to the app on CI; for tests that exhaust CI machine memory but can run locally.
+        public static bool IsNotBrowserOnCI => !IsBrowser || string.IsNullOrEmpty(Environment.GetEnvironmentVariable("DOTNET_CI"));
         public static bool IsNotWasi => !IsWasi;
         public static bool IsMobile => IsBrowser || IsWasi || IsAppleMobile || IsAndroid;
         public static bool IsNotMobile => !IsMobile;
