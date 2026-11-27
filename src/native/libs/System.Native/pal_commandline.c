@@ -176,11 +176,19 @@ char** SystemNative_GetCommandLine(int32_t* argc)
 #endif
 
     int fd;
+#if HAVE_O_CLOEXEC
     while ((fd = open("/proc/self/cmdline", O_RDONLY | O_CLOEXEC)) < 0 && errno == EINTR);
+#else
+    while ((fd = open("/proc/self/cmdline", O_RDONLY)) < 0 && errno == EINTR);
+#endif
     if (fd < 0)
     {
         return NULL;
     }
+
+#if !HAVE_O_CLOEXEC
+    fcntl(fd, F_SETFD, FD_CLOEXEC);
+#endif
 
     size_t capacity = 4096;
     size_t length = 0;
