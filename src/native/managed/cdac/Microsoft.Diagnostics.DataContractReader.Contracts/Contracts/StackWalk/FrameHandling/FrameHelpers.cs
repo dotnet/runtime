@@ -606,7 +606,10 @@ internal sealed class FrameHelpers
             return new LoongArch64FrameHandler(_target, loongArch64Context);
 
         if (TargetArchitectureSupport.IsWasmSupported && context is ContextHolder<WasmContext> wasmContext)
-            return new WasmFrameHandler(_target, wasmContext);
+            return new WasmFrameHandler<WasmContext>(_target, wasmContext);
+
+        if (TargetArchitectureSupport.IsWasmSupported && context is ContextHolder<Wasm64Context> wasm64Context)
+            return new WasmFrameHandler<Wasm64Context>(_target, wasm64Context);
 
         throw new InvalidOperationException($"Unsupported context type {context.GetType()}");
     }

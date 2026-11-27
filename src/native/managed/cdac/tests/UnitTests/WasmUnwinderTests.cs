@@ -27,10 +27,10 @@ public class WasmUnwinderTests
 
     private sealed class FakeWasmR2RInfo : IWasmR2RInfo
     {
-        public Dictionary<uint, ulong> VirtualIpBases { get; } = new();
+        public Dictionary<ulong, ulong> VirtualIpBases { get; } = new();
         public Dictionary<ulong, ulong> UnwindData { get; } = new();
 
-        public bool TryGetVirtualIPBase(uint frameIdentity, out ulong baseVirtualIP, out TargetPointer unwindDataAddress)
+        public bool TryGetVirtualIPBase(ulong frameIdentity, out ulong baseVirtualIP, out TargetPointer unwindDataAddress)
         {
             bool found = VirtualIpBases.TryGetValue(frameIdentity, out baseVirtualIP);
             unwindDataAddress = new TargetPointer(UnwindData.GetValueOrDefault(baseVirtualIP, BlobsBase + 0x100));
@@ -63,9 +63,15 @@ public class WasmUnwinderTests
             => UnwindInfo[codeInfoHandle.Address.Value].BaseAddress;
     }
 
+    // wasm64 (memory64 + table64): pointers, and the frame identity, are 8 bytes.
+    private static readonly MockTarget.Architecture Wasm64Arch = new() { IsLittleEndian = true, Is64Bit = true };
+
     private static TestPlaceholderTarget CreateTarget(MockMemorySpace.HeapFragment[] fragments)
+        => CreateTarget(WasmArch, fragments);
+
+    private static TestPlaceholderTarget CreateTarget(MockTarget.Architecture arch, MockMemorySpace.HeapFragment[] fragments)
     {
-        TestPlaceholderTarget.Builder builder = new(WasmArch);
+        TestPlaceholderTarget.Builder builder = new(arch);
         builder.MemoryBuilder.AddHeapFragment(Blob(BlobsBase + 0x100, [0, 3], "defaultMultiIPUnwind"));
         foreach (MockMemorySpace.HeapFragment fragment in fragments)
             builder.MemoryBuilder.AddHeapFragment(fragment);
@@ -79,6 +85,16 @@ public class WasmUnwinderTests
         byte[] data = new byte[16];
         helpers.Write(data.AsSpan(0, sizeof(uint)), frameIdentity);
         helpers.Write(data.AsSpan(4, sizeof(uint)), localVirtualIPHalf);
+        return new MockMemorySpace.HeapFragment { Address = address, Data = data, Name = name };
+    }
+
+    // Builds a wasm64 R2R frame: [0] = frame identity (UINT_PTR), [8] = function-local virtual IP / 2.
+    private static MockMemorySpace.HeapFragment Frame64(ulong address, ulong frameIdentity, uint localVirtualIPHalf, string name)
+    {
+        TargetTestHelpers helpers = new(Wasm64Arch);
+        byte[] data = new byte[16];
+        helpers.Write(data.AsSpan(0, sizeof(ulong)), frameIdentity);
+        helpers.Write(data.AsSpan(8, sizeof(uint)), localVirtualIPHalf);
         return new MockMemorySpace.HeapFragment { Address = address, Data = data, Name = name };
     }
 
@@ -195,6 +211,35 @@ public class WasmUnwinderTests
 
         // baseVirtualIP + (localVirtualIPHalf * 2) == 0x50000 + 6
         Assert.Equal(VirtualIpBase + 6, unwinder.GetVirtualIP(new TargetPointer(FramesBase)).Value);
+    }
+
+    [Fact]
+    public void GetVirtualIP_Wasm64_ReadsLocalVirtualIPFromSecondPointerSlot()
+    {
+        FakeWasmR2RInfo info = new();
+        info.VirtualIpBases[FuncIndexLeaf] = VirtualIpBase;
+
+        TestPlaceholderTarget target = CreateTarget(Wasm64Arch, [Frame64(FramesBase, FuncIndexLeaf, 3, "leaf")]);
+        WasmUnwinder unwinder = new(target, info);
+
+        Assert.Equal(VirtualIpBase + 6, unwinder.GetVirtualIP(new TargetPointer(FramesBase)).Value);
+    }
+
+    [Fact]
+    public void TryGetLogicalFramePointer_Wasm64_EstablishingFrameAbove4GiB_ReturnsRootFrame()
+    {
+        const ulong funcletFp = 0x1_0000_0000;
+        const ulong establishingFp = funcletFp + 0x200;
+
+        TestPlaceholderTarget target = CreateTarget(Wasm64Arch,
+        [
+            Frame64(funcletFp, establishingFp + 2, 3, "funclet"),
+            Frame64(establishingFp, FuncIndexLeaf, 0, "establishingFrame"),
+        ]);
+        WasmUnwinder unwinder = new(target, new FakeWasmR2RInfo());
+
+        Assert.True(unwinder.TryGetLogicalFramePointer(new TargetPointer(funcletFp), out TargetPointer framePointer));
+        Assert.Equal(establishingFp, framePointer.Value);
     }
 
     [Theory]
