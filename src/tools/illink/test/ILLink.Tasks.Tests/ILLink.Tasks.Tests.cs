@@ -9,19 +9,183 @@ using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
+using System.Xml;
+using System.Xml.Linq;
+using Microsoft.Build.Construction;
+using Microsoft.Build.Evaluation;
+using Microsoft.Build.Execution;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.NET.Build.Tasks;
 using Mono.Linker;
 using Xunit;
+using Task = System.Threading.Tasks.Task;
 
 namespace ILLink.Tasks.Tests
 {
+    [CollectionDefinition(nameof(TaskArgumentTests), DisableParallelization = true)]
+    public class TaskArgumentTestsCollection { }
+
     // These tests ensure that the task options correctly flow from
     // the task -> response file -> parsed arguments -> options on LinkContext
+    [Collection(nameof(TaskArgumentTests))]
     public class TaskArgumentTests
     {
+        [Fact]
+        public void TaskDeclaresMultithreadedSupport()
+        {
+            Assert.NotNull(typeof(ILLink).GetCustomAttribute<MSBuildMultiThreadableTaskAttribute>(inherit: false));
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task TaskEnvironmentsAreIsolated(bool relativeHostPath)
+        {
+            string processDirectory = Environment.CurrentDirectory;
+            string processHost = Environment.GetEnvironmentVariable("DOTNET_HOST_PATH");
+            await Task.WhenAll(Enumerable.Range(0, 2).Select(index => Task.Run(() =>
+            {
+                string projectDirectory = Path.Combine(processDirectory, $"project{index}");
+                string hostPath = Path.Combine(projectDirectory, "dotnet");
+                var task = new MockTask
+                {
+                    TaskEnvironment = TaskEnvironment.CreateWithProjectDirectoryAndEnvironment(
+                        projectDirectory, new Dictionary<string, string>
+                        {
+                            { "DOTNET_HOST_PATH", relativeHostPath ? "dotnet" : hostPath },
+                            { "ILLINK_TEST_ENVIRONMENT", index.ToString() }
+                        }),
+                    BuildEngine = new MockBuildEngine(),
+                    AssemblyPaths = new ITaskItem[] { new TaskItem("Assembly.dll") },
+                    ReferenceAssemblyPaths = new ITaskItem[] { new TaskItem("Reference.dll") },
+                    OutputDirectory = new TaskItem("linked")
+                };
+
+                Assert.Equal(hostPath, task.GetToolPath());
+                var startInfo = task.GetStartInfo();
+                Assert.Equal(projectDirectory, startInfo.WorkingDirectory);
+                Assert.Equal(relativeHostPath ? "dotnet" : hostPath, startInfo.Environment["DOTNET_HOST_PATH"]);
+                Assert.Equal(index.ToString(), startInfo.Environment["ILLINK_TEST_ENVIRONMENT"]);
+                using var driver = task.CreateDriver();
+                // Relative arguments are passed through and resolved by the tool's working directory.
+                Assert.Equal(new[] { "Assembly.dll", "Reference.dll" }, driver.GetReferenceAssemblies());
+                Assert.Equal("linked", driver.Context.OutputDirectory);
+            })));
+            Assert.Equal(processDirectory, Environment.CurrentDirectory);
+            Assert.Equal(processHost, Environment.GetEnvironmentVariable("DOTNET_HOST_PATH"));
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        public void MissingTaskLocalHostPath(string hostPath)
+        {
+            var task = new MockTask
+            {
+                TaskEnvironment = TaskEnvironment.CreateWithProjectDirectoryAndEnvironment(
+                    Environment.CurrentDirectory, new Dictionary<string, string>())
+            };
+            task.TaskEnvironment.SetEnvironmentVariable("DOTNET_HOST_PATH", hostPath);
+            Assert.Equal("DOTNET_HOST_PATH is not set", Assert.Throws<InvalidOperationException>(() => task.GetToolPath()).Message);
+        }
+
+        [Theory]
+        [InlineData(false, null, false)]
+        [InlineData(false, false, false)]
+        [InlineData(false, true, false)]
+        [InlineData(true, null, false)]
+        [InlineData(true, false, false)]
+        [InlineData(true, true, false)]
+        [InlineData(false, true, true)]
+        [InlineData(true, true, true)]
+        public void XmlPathParameters(bool multiThreaded, bool? optionalInputs, bool absolutePaths)
+        {
+            string projectDirectory = Directory.CreateTempSubdirectory().FullName;
+            try
+            {
+                string assemblyPath = Path.Combine("input with spaces;percent%", "Assembly.dll");
+                string referencePath = Path.Combine("ref", "Reference.dll");
+                string descriptorPath = Path.Combine("descriptors", "root.xml");
+                string stepPath = Path.Combine("steps", "custom.dll");
+                string linkerPath = Path.Combine("tools", "illink.dll");
+                string outputPath = "output with spaces";
+                var taskElement = new XElement(nameof(XmlBindingTask),
+                    new XAttribute("AssemblyPaths", "@(Assembly)"),
+                    new XAttribute("RootAssemblyNames", "Assembly"),
+                    new XAttribute("OutputDirectory", InputPath(outputPath)),
+                    new XElement("Output", new XAttribute("TaskParameter", nameof(XmlBindingTask.ResponseFile)), new XAttribute("PropertyName", "ResponseFile")),
+                    new XElement("Output", new XAttribute("TaskParameter", nameof(XmlBindingTask.CommandLine)), new XAttribute("PropertyName", "CommandLine")),
+                    new XElement("Output", new XAttribute("TaskParameter", nameof(XmlBindingTask.TaskProcessId)), new XAttribute("PropertyName", "TaskProcessId")));
+                if (optionalInputs is bool includeInputs)
+                {
+                    taskElement.Add(
+                        new XAttribute("ReferenceAssemblyPaths", includeInputs ? InputPath(referencePath) : ""),
+                        new XAttribute("RootDescriptorFiles", includeInputs ? "@(Descriptor)" : ""),
+                        new XAttribute("CustomSteps", includeInputs ? "@(Step)" : ""),
+                        new XAttribute("ILLinkPath", includeInputs ? InputPath(linkerPath) : ""));
+                }
+                var xml = new XElement("Project",
+                    new XElement("UsingTask",
+                        new XAttribute("TaskName", nameof(XmlBindingTask)),
+                        new XAttribute("AssemblyFile", typeof(XmlBindingTask).Assembly.Location)),
+                    new XElement("ItemGroup",
+                        new XElement("Assembly", new XAttribute("Include", InputPath(assemblyPath)),
+                            new XElement("TrimMode", "copy"), new XElement("TrimmerSingleWarn", "false")),
+                        new XElement("Descriptor", new XAttribute("Include", InputPath(descriptorPath))),
+                        new XElement("Step", new XAttribute("Include", InputPath(stepPath)),
+                            new XElement("Type", "Custom.Step"), new XElement("BeforeStep", "MarkStep"))),
+                    new XElement("Target", new XAttribute("Name", "Run"), taskElement));
+                using var collection = new ProjectCollection();
+                using XmlReader reader = xml.CreateReader();
+                var root = ProjectRootElement.Create(reader, collection);
+                root.FullPath = Path.Combine(projectDirectory, "test.proj");
+                var project = new ProjectInstance(root, null, null, collection);
+                using var manager = new BuildManager();
+                var parameters = new BuildParameters(collection)
+                {
+                    EnableNodeReuse = false,
+                    MaxNodeCount = 1,
+                    MultiThreaded = multiThreaded
+                };
+                BuildResult result = manager.Build(parameters,
+                    new BuildRequestData(project, new[] { "Run" }, null, BuildRequestDataFlags.ProvideProjectStateAfterBuild));
+                Assert.Equal(BuildResultCode.Success, result.OverallResult);
+                Assert.Equal(Environment.ProcessId.ToString(), result.ProjectStateAfterBuild.GetPropertyValue("TaskProcessId"));
+                string response = result.ProjectStateAfterBuild.GetPropertyValue("ResponseFile");
+                Assert.Contains($"-reference \"{ExpectedPath(assemblyPath)}\"", response);
+                Assert.Contains("--action copy \"Assembly\"", response);
+                Assert.Contains("--singlewarn- \"Assembly\"", response);
+                Assert.Contains("-a \"Assembly\"", response);
+                Assert.Contains($"-out \"{ExpectedPath(outputPath)}\"", response);
+                string command = result.ProjectStateAfterBuild.GetPropertyValue("CommandLine");
+                if (optionalInputs == true)
+                {
+                    Assert.Contains($"-reference \"{ExpectedPath(referencePath)}\"", response);
+                    Assert.Contains($"-x \"{ExpectedPath(descriptorPath)}\"", response);
+                    Assert.Contains($"--custom-step \"-MarkStep:Custom.Step,{ExpectedPath(stepPath)}\"", response);
+                    Assert.Equal($"\"{ExpectedPath(linkerPath)}\"", command);
+                }
+                else
+                {
+                    Assert.DoesNotContain("-x ", response);
+                    Assert.DoesNotContain("--custom-step ", response);
+                    Assert.DoesNotContain("Reference.dll", response);
+                    string taskDirectory = Path.GetDirectoryName(typeof(ILLink).Assembly.Location);
+                    string defaultLinkerPath = Path.Combine(Path.GetDirectoryName(taskDirectory), "net", "illink.dll");
+                    Assert.Equal($"\"{defaultLinkerPath}\"", command);
+                }
+
+                string ExpectedPath(string path) => absolutePaths ? Path.Combine(projectDirectory, path) : path;
+                string InputPath(string path) => ProjectCollection.Escape(ExpectedPath(path));
+            }
+            finally
+            {
+                Directory.Delete(projectDirectory, recursive: true);
+            }
+        }
+
         public static IEnumerable<object[]> AssemblyPathsCases => new List<object[]> {
             new object [] {
                 new ITaskItem [] {

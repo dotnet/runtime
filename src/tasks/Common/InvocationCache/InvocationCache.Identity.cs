@@ -37,7 +37,7 @@ internal sealed partial class InvocationCache
         using var data = new MemoryStream();
         using var writer = new BinaryWriter(data, Encoding.UTF8, leaveOpen: true);
         writer.Write("invocation-cache-key-v1");
-        writer.Write(Environment.CurrentDirectory);
+        writer.Write(invocation.WorkingDirectory);
         writer.Write(RuntimeInformation.OSDescription);
         writer.Write(RuntimeInformation.ProcessArchitecture.ToString());
         writer.Write(CultureInfo.CurrentCulture.Name);

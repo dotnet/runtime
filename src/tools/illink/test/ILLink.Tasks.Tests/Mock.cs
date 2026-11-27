@@ -4,6 +4,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -54,6 +55,10 @@ namespace ILLink.Tasks.Tests
             }
         }
 
+        public string GetToolPath() => GenerateFullPathToTool();
+
+        public ProcessStartInfo GetStartInfo() => GetProcessStartInfo(GetToolPath(), "", "");
+
         public static string[] OptimizationNames
         {
             get
@@ -90,6 +95,27 @@ namespace ILLink.Tasks.Tests
         }
 
         protected override void LogEventsFromTextOutput(string singleLine, MessageImportance messageImportance) => Messages.Add((messageImportance, singleLine));
+    }
+
+    [MSBuildMultiThreadableTask]
+    public class XmlBindingTask : ILLink
+    {
+        [Output]
+        public string ResponseFile { get; set; }
+
+        [Output]
+        public string CommandLine { get; set; }
+
+        [Output]
+        public int TaskProcessId { get; set; }
+
+        public override bool Execute()
+        {
+            ResponseFile = GenerateResponseFileCommands();
+            CommandLine = GenerateCommandLineCommands();
+            TaskProcessId = Environment.ProcessId;
+            return true;
+        }
     }
 
     public class MockBuildEngine : IBuildEngine

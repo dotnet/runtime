@@ -19,10 +19,7 @@
   <ItemGroup Condition="'@(ProjectReference)' != ''">
     <_coreLibProjectReference Include="@(ProjectReference->WithMetadataValue('Identity', '$(CoreLibProject)'))" />
     <ProjectReference Update="@(_coreLibProjectReference)">
-      <SetConfiguration Condition="'$(RuntimeFlavor)' == 'CoreCLR' and
-                                   '$(Configuration)' != '$(CoreCLRConfiguration)'">Configuration=$(CoreCLRConfiguration)</SetConfiguration>
-      <SetConfiguration Condition="'$(RuntimeFlavor)' == 'Mono' and
-                                   '$(Configuration)' != '$(MonoConfiguration)'">Configuration=$(MonoConfiguration)</SetConfiguration>
+      <SetConfiguration Condition="'$(Configuration)' != '$(CoreCLRConfiguration)'">Configuration=$(CoreCLRConfiguration)</SetConfiguration>
     </ProjectReference>
   </ItemGroup>
 

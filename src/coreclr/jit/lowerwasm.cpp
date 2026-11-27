@@ -230,7 +230,14 @@ GenTreeAddrMode* Lowering::GetFoldableAddrMode(GenTreeIndir* indirNode)
         return nullptr;
     }
 
-    if (!IsInvariantInRange(lea->Base(), indirNode))
+    // Ignore an ordering side effect on the base, unless it is a volatile load. Non-null assertion prop marks
+    // indirections it proves non-faulting with GTF_ORDER_SIDEEFF only to keep them from being hoisted above the
+    // proof, and folding moves the base later, not earlier.
+    const GenTree* const base        = lea->Base();
+    const bool           isVolatile  = base->OperIsIndir() && ((base->gtFlags & GTF_IND_VOLATILE) != 0);
+    const GenTreeFlags   ignoreFlags = isVolatile ? GTF_EMPTY : GTF_ORDER_SIDEEFF;
+
+    if (!IsInvariantInRange(lea->Base(), indirNode, ignoreFlags))
     {
         return nullptr;
     }

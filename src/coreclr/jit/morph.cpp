@@ -6369,7 +6369,9 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
         assert(!call->CanTailCall());
 
 #if FEATURE_MULTIREG_RET
-        if (fgGlobalMorph && call->HasMultiRegRetVal() && varTypeIsStruct(call->TypeGet()))
+        GenTree* stmtRoot = compCurStmt->GetRootNode();
+        if (fgGlobalMorph && call->HasMultiRegRetVal() && varTypeIsStruct(call->TypeGet()) &&
+            !(stmtRoot->OperIs(GT_STORE_LCL_VAR) && (stmtRoot->Data() == call)))
         {
             // The tail call has been rejected so we must finish the work deferred
             // by impFixupCallStructReturn for multi-reg-returning calls and transform

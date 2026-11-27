@@ -85,7 +85,7 @@ namespace System.Formats.Cbor
 
             EnsureWriteCapacity(1);
             WriteInitialByte(new CborInitialByte(CborMajorType.ByteString, CborAdditionalInfo.IndefiniteLength));
-            PushDataItem(CborMajorType.ByteString, definiteLength: null);
+            PushDataItem(CborMajorType.ByteString, definiteLength: NoDefiniteLength);
         }
 
         /// <summary>Writes the end of an indefinite-length byte string (major type 2).</summary>
@@ -181,7 +181,7 @@ namespace System.Formats.Cbor
 
             EnsureWriteCapacity(1);
             WriteInitialByte(new CborInitialByte(CborMajorType.TextString, CborAdditionalInfo.IndefiniteLength));
-            PushDataItem(CborMajorType.TextString, definiteLength: null);
+            PushDataItem(CborMajorType.TextString, definiteLength: NoDefiniteLength);
         }
 
         /// <summary>Writes the end of an indefinite-length UTF-8 string (major type 3).</summary>

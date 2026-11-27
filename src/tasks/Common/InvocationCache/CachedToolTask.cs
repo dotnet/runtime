@@ -34,7 +34,8 @@ public abstract class CachedToolTask : ToolTask
         out int exitCode)
     {
         exitCode = -1;
-        InvocationCache? cache = InvocationCache.TryCreateFromEnvironment(Log, CacheConfiguration);
+        InvocationCache? cache = InvocationCache.TryCreateFromEnvironment(
+            Log, CacheConfiguration, TaskEnvironment.GetEnvironmentVariable, TaskEnvironment.ProjectDirectory);
         if (cache is null)
             return false;
 
