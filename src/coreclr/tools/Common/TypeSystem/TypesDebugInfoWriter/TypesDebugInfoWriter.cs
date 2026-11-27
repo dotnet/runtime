@@ -13,7 +13,7 @@ namespace Internal.TypeSystem.TypesDebugInfo
         uint GetClassTypeIndex(ClassTypeDescriptor classTypeDescriptor);
 
         uint GetCompleteClassTypeIndex(ClassTypeDescriptor classTypeDescriptor, ClassFieldsTypeDescriptor classFieldsTypeDescriptor,
-                                       DataFieldDescriptor[] fields, StaticDataFieldDescriptor[] statics);
+                                       DataFieldDescriptor[] fields, StaticDataFieldDescriptor[] statics, uint forwardDeclarationTypeIndex = 0);
 
         uint GetArrayTypeIndex(ClassTypeDescriptor classDescriptor, ArrayTypeDescriptor arrayTypeDescriprtor);
 

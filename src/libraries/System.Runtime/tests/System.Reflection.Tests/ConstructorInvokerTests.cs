@@ -49,6 +49,12 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        public void NullTypeValidation()
+        {
+            Assert.Throws<ArgumentNullException>("constructor", () => ConstructorInvoker.Create(null));
+        }
+
+        [Fact]
         public void Args_0()
         {
             ConstructorInvoker invoker = ConstructorInvoker.Create(typeof(TestClass).GetConstructor(new Type[] { }));

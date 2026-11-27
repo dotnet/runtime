@@ -47,6 +47,21 @@ Read and follow these in order:
 2. the caller workflow or tool instructions that selected this failure and decided it is in scope
 3. any workflow-specific formatting or dry-run requirements for the current caller
 
+When the caller already provides a complete, conclusive result from the shared
+lookup, reuse it. Otherwise run the applicable shared lookup before creating or
+updating anything. This preserves direct use of the skill while avoiding a
+duplicate broad search for callers that already completed it.
+
+The shared instructions may classify the failure as a `dotnet/dnceng`
+infrastructure outcome. In that case:
+
+- do not use the runtime KBE body template,
+- report an existing dnceng KBE directly when one matched,
+- use [`create-dnceng-kbe`](../create-dnceng-kbe/SKILL.md) for a requested local
+  dnceng draft,
+- publish to dnceng only through the explicit-permission path documented by the
+  caller; runtime publication authorization does not transfer.
+
 ## Core rules
 
 - One failure shape = one KBE outcome.

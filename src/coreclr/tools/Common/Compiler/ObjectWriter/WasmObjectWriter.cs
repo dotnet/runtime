@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.Wasm;
 using ILCompiler.DependencyAnalysisFramework;
@@ -22,6 +23,9 @@ namespace ILCompiler.ObjectWriter
     /// </summary>
     internal abstract partial class WasmObjectWriter : ObjectWriter
     {
+        private static readonly Utf8String s_compilerVersion = new(
+            Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion);
+
         private readonly Dictionary<ObjectNodeSection, WasmSectionType> _sectionToType = new()
         {
             { WasmObjectNodeSection.MemorySection, WasmSectionType.Memory },
@@ -79,6 +83,7 @@ namespace ILCompiler.ObjectWriter
         private int ActualFunctionCount => _wasmSymbolManager.GetDefinitionCount(WasmIndexSpace.Function);
 
         private protected virtual bool ShouldDeduplicateFunctionBodies => false;
+        private protected abstract string WasmProducerName { get; }
 
         private readonly struct FoldedFunctionAlias
         {
@@ -119,6 +124,44 @@ namespace ILCompiler.ObjectWriter
         protected WasmObjectWriter(NodeFactory factory, ObjectWritingOptions options, OutputInfoBuilder outputInfoBuilder)
             : base(factory, options, outputInfoBuilder)
         {
+        }
+
+        private protected void EmitProducersSection(Stream outputFileStream)
+        {
+            using MemoryStream payload = CreateProducersSectionPayload();
+            var section = new WasmCustomSection(payload, new Utf8String("producers"), sectionIndex: -1);
+            section.EmitToStream(outputFileStream);
+        }
+
+        private protected MemoryStream CreateProducersSectionPayload()
+        {
+            MemoryStream payload = new();
+            WriteULEB128(payload, 2);
+            WriteProducerField(payload, new Utf8String("processed-by"), new Utf8String(WasmProducerName), s_compilerVersion);
+            WriteProducerField(payload, new Utf8String("sdk"), new Utf8String(".NET"), s_compilerVersion);
+            payload.Position = 0;
+            return payload;
+        }
+
+        private static void WriteProducerField(Stream output, Utf8String field, Utf8String name, Utf8String version)
+        {
+            WriteName(output, field);
+            WriteULEB128(output, 1);
+            WriteName(output, name);
+            WriteName(output, version);
+        }
+
+        private protected static void WriteName(Stream output, Utf8String value)
+        {
+            WriteULEB128(output, (ulong)value.Length);
+            output.Write(value.AsSpan());
+        }
+
+        private protected static void WriteULEB128(Stream output, ulong value)
+        {
+            Span<byte> buffer = stackalloc byte[(int)DwarfHelper.SizeOfULEB128(value)];
+            int written = DwarfHelper.WriteULEB128(buffer, value);
+            output.Write(buffer.Slice(0, written));
         }
 
         public override void EmitObject(

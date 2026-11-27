@@ -31,7 +31,7 @@ namespace System.IO.Packaging
             _package = package;
 
             // Initialize literals as Xml Atomic strings.
-            _nameTable = PackageXmlStringTable.NameTable;
+            _nameTable = PackageXmlStringTable.CreateNameTable();
 
             ReadPropertyValuesFromPackage();
 
@@ -838,7 +838,7 @@ namespace System.IO.Packaging
         private readonly Dictionary<PackageXmlEnum, object> _propertyDictionary = new Dictionary<PackageXmlEnum, object>(NumCoreProperties);
         private bool _dirty;
 
-        // This System.Xml.NameTable makes sure that we use the same references to strings
+        // This per-package System.Xml.NameTable makes sure that we use the same references to strings
         // throughout (including when parsing Xml) and so can perform reference comparisons
         // rather than value comparisons.
         private readonly NameTable _nameTable;

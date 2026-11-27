@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Microsoft.NET.Sdk.WebAssembly;
 using Microsoft.NET.WebAssembly.Webcil;
 using Microsoft.Playwright;
+using Wasm.Build.NativeRebuild.Tests;
 using Xunit;
 using Xunit.Abstractions;
 using SL = Microsoft.Build.Logging.StructuredLogger;
@@ -585,27 +586,29 @@ namespace Wasm.Build.Tests
 
             int tableSize = GetReadyToRunTableSize(coreLib!);
             if (expectReadyToRun)
+            {
                 Assert.True(tableSize > 0, $"Expected a ReadyToRun table in '{coreLib}', but the R2R table size was 0.");
+                WasmMetadataSectionsTests.AssertContentBuildId(coreLib!, optimized: false);
+            }
             else
                 Assert.Equal(0, tableSize);
         }
 
         private static void AssertPrebuiltFrameworkReadyToRun(string webcilDir, string buildOutput)
         {
-            string? runtimePackDir = ProjectProviderBase.TryGetRuntimePackDirFromBuildOutput(buildOutput);
-            Assert.NotNull(runtimePackDir);
-            string prebuiltDir = Path.Combine(runtimePackDir!, "runtimes", "browser-wasm", "native", "r2r");
-            Assert.True(Directory.Exists(prebuiltDir), $"Expected prebuilt ReadyToRun images in '{prebuiltDir}'.");
+            string runtimePackDir = Assert.IsType<string>(ProjectProviderBase.TryGetRuntimePackDirFromBuildOutput(buildOutput));
+            var runtimePack = new RuntimePackAssets(runtimePackDir);
             AssertCoreLibReadyToRun(webcilDir, expectReadyToRun: true);
             Assert.True(File.Exists(Path.Combine(webcilDir, "BlazorBasicTestApp.wasm")));
 
             foreach (string webcilPath in Directory.EnumerateFiles(webcilDir, "*.wasm"))
             {
-                string prebuiltPath = Path.Combine(prebuiltDir, Path.GetFileName(webcilPath));
-                if (File.Exists(prebuiltPath))
-                    Assert.Equal(File.ReadAllBytes(prebuiltPath), File.ReadAllBytes(webcilPath));
+                string prebuiltPath = RuntimePackAssets.GetNativePath("r2r/" + Path.GetFileName(webcilPath));
+                if (runtimePack.TryReadBytes(prebuiltPath) is byte[] prebuilt)
+                    Assert.Equal(prebuilt, File.ReadAllBytes(webcilPath));
                 else
-                    Assert.Equal(0, GetReadyToRunTableSize(webcilPath));
+                    Assert.True(GetReadyToRunTableSize(webcilPath) == 0,
+                        $"'{webcilPath}' contains ReadyToRun code, but '{prebuiltPath}' was not found in runtime pack '{runtimePackDir}'.");
             }
         }
 
@@ -644,6 +647,7 @@ namespace Wasm.Build.Tests
 
             string compositePath = Path.Combine(frameworkDir, composite.name);
             Assert.True(GetReadyToRunTableSize(compositePath) > 0, $"Expected compiled methods in '{compositePath}'.");
+            WasmMetadataSectionsTests.AssertContentBuildId(compositePath, optimized: EnvironmentVariables.UseWasmOpt);
             Assert.True(Directory.EnumerateFiles(frameworkDir, "System.Private.CoreLib*.wasm").Any(),
                 $"Expected a component stub for System.Private.CoreLib in '{frameworkDir}'.");
         }

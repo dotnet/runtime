@@ -351,4 +351,5 @@ Copyright (c) .NET Foundation. All rights reserved.
     <Delete Files="@(_WasmStalePerAppR2R)" />
   </Target>
 
+  <Import Project="Microsoft.NET.Sdk.WebAssembly.Browser.Precompressed.targets" />
 </Project>

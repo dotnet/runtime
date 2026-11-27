@@ -445,7 +445,11 @@ namespace System.Collections.Immutable
             /// </returns>
             public IEnumerable<T> Reverse()
             {
-                return new ReverseEnumerable(_root);
+                using var enumerator = new Enumerator(Root, this, reverse: true);
+                while (enumerator.MoveNext())
+                {
+                    yield return enumerator.Current;
+                }
             }
 
             /// <summary>

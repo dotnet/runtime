@@ -2308,8 +2308,9 @@ bool Compiler::fgTryMorphStructArg(CallArg* arg)
             return false;
         }
 
-        ClassLayout* layout     = argNode->TypeIs(TYP_STRUCT) ? argNode->GetLayout(this) : nullptr;
-        unsigned     structSize = argNode->TypeIs(TYP_STRUCT) ? layout->GetSize() : genTypeSize(argNode);
+        ClassLayout* layout         = argNode->TypeIs(TYP_STRUCT) ? argNode->GetLayout(this) : nullptr;
+        unsigned     structSize     = argNode->TypeIs(TYP_STRUCT) ? layout->GetSize() : genTypeSize(argNode);
+        GenTree*     addrSpillStore = nullptr;
 
         if (layout != nullptr)
         {
@@ -2335,6 +2336,27 @@ bool Compiler::fgTryMorphStructArg(CallArg* arg)
             {
                 // Cannot create multiple uses of the address. Bail.
                 return false;
+            }
+
+            // Each slot below gets its own use of the address. If computing
+            // the address reads mutable memory, cloning it would re-read that
+            // memory for each slot and could observe different values (a torn
+            // struct), so evaluate the address once into a temp instead.
+            auto readsMutableMemory = [this](GenTree* node) {
+                if (node->OperIsIndir())
+                {
+                    return (node->gtFlags & GTF_IND_INVARIANT) == 0;
+                }
+
+                return node->OperIsLocalRead() && lvaGetDesc(node->AsLclVarCommon())->IsAddressExposed();
+            };
+
+            if ((arg->AbiInfo.CountRegsAndStackSlots() > 1) &&
+                (gtFindNodeInTree<GTF_GLOB_REF>(indirAddr, readsMutableMemory) != nullptr))
+            {
+                TempInfo addrTemp          = fgMakeTemp(indirAddr);
+                addrSpillStore             = addrTemp.store;
+                argNode->AsIndir()->Addr() = addrTemp.load;
             }
         }
 
@@ -2428,7 +2450,16 @@ bool Compiler::fgTryMorphStructArg(CallArg* arg)
                     addr                  = gtNewOperNode(GT_ADD, indirAddr->TypeGet(), indirAddrDup, offsetNode);
                 }
 
-                return gtNewIndir(type, addr);
+                GenTree* indir = gtNewIndir(type, addr, argNode->gtFlags & GTF_IND_COPYABLE_FLAGS);
+
+                // A nonfaulting load may depend on a guarding check (e.g. from
+                // non-null assertion prop); keep it ordered after that guard.
+                if (((argNode->gtFlags & GTF_IND_NONFAULTING) != 0) && ((argNode->gtFlags & GTF_ORDER_SIDEEFF) != 0))
+                {
+                    indir->SetHasOrderingSideEffect();
+                }
+
+                return indir;
             }
         };
 
@@ -2456,6 +2487,11 @@ bool Compiler::fgTryMorphStructArg(CallArg* arg)
         }
 
         newArg = newArg->AsFieldList()->SoleFieldOrThis();
+
+        if (addrSpillStore != nullptr)
+        {
+            newArg = gtNewOperNode(GT_COMMA, newArg->TypeGet(), addrSpillStore, newArg);
+        }
     }
 
     JITDUMP("fgTryMorphStructArg created tree:\n");
@@ -6333,7 +6369,9 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
         assert(!call->CanTailCall());
 
 #if FEATURE_MULTIREG_RET
-        if (fgGlobalMorph && call->HasMultiRegRetVal() && varTypeIsStruct(call->TypeGet()))
+        GenTree* stmtRoot = compCurStmt->GetRootNode();
+        if (fgGlobalMorph && call->HasMultiRegRetVal() && varTypeIsStruct(call->TypeGet()) &&
+            !(stmtRoot->OperIs(GT_STORE_LCL_VAR) && (stmtRoot->Data() == call)))
         {
             // The tail call has been rejected so we must finish the work deferred
             // by impFixupCallStructReturn for multi-reg-returning calls and transform

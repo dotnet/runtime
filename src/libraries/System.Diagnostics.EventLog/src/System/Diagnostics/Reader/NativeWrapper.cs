@@ -1287,12 +1287,7 @@ namespace System.Diagnostics.Eventing.Reader
             }
             else
             {
-                T[] array = new T[val.Count];
-                for (int i = 0; i < val.Count; i++)
-                {
-                    array[i] = ptr[i];
-                }
-                return array;
+                return new ReadOnlySpan<T>(ptr, (int)val.Count).ToArray();
             }
         }
 

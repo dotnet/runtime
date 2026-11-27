@@ -1,6 +1,6 @@
-# Prototype WASI support
+# Experimental WASI support
 
-This directory contains a build configuration for WASI support, plus a basic sample. This is not intended for production use, nor is it currently supported. This is a step towards possible future support.
+This directory contains the CoreCLR-WASI app build targets and sample projects. This is not intended for production use, nor is it currently supported.
 
 For WebAssembly documentation, see [WebAssembly Documentation](../../../docs/workflow/wasm-documentation.md).
 
@@ -38,51 +38,29 @@ you will need to separately download a WASI SDK from https://github.com/WebAssem
 - `InvariantGlobalization` - remove globalization support, decrease the publish size.
 - More details can be found at https://github.com/dotnet/runtime/blob/main/src/mono/wasm/build/WasmApp.Common.targets and https://github.com/dotnet/runtime/blob/main/src/mono/wasi/build/WasiApp.targets
 
-## Properties That Trigger Relinking
+## Native linking and ReadyToRun
 
-### What is Relinking?
+CoreCLR-WASI links the `wasihost` corehost for each application. The implementation is in
+[`WasiApp.CoreCLR.targets`](build/WasiApp.CoreCLR.targets), which generates the application's
+call-helper tables and runtime configuration source before linking the host.
 
-Relinking in WASI builds refers to regenerating the native WASI runtime artifacts (such as `dotnet.native.wasi`, etc.) to reflect changes in configuration, features, or source. This process is essential for producing correct, optimized binaries for WASI environments.
-
-### Properties That Trigger Relinking in `wasi.proj`
-
-The following MSBuild properties will trigger a relinking during the WASI build process:
-
-- **`WasiBuildNative`** - `/p:WasiBuildNative=true` - Forces a rebuild of all native WASI binaries, regardless of detected changes.
-- **`WasiRelinkNative`** - `/p:WasiRelinkNative=true` - Explicitly requests relinking of native WASI artifacts.
-- **`RunAOTCompilation`** - `/p:RunAOTCompilation=true` - Enables AOT compilation for WASI. Changing this property requires relinking for correct WASI output.
-- **`WasmSingleFileBundle`** - `/p:WasmSingleFileBundle=true` - Bundles all assets into the `.wasm` file, requiring native relinking.
-- **`EnableDiagnostics`** - `/p:EnableDiagnostics=true` - Enables or disables diagnostic features in the native runtime.
-- **`WasmProfilers`** - `/p:WasmProfilers=...` - Changes profiler configuration in the native runtime.
-- **`WasmEnableSIMD`** - `/p:WasmEnableSIMD=true` - Enables or disables SIMD instruction support.
-- **`WasiBuildArgs`** - Any change to `/p:WasiBuildArgs=...` (custom build flags or feature toggles) can trigger a relink.
-- **Configuration/Target Architecture** - Changing `/p:Configuration=Debug|Release` or `/p:RuntimeIdentifier=wasi-wasm`, etc., may require relinking.
-
-#### Notes
-
-- Correct relinking ensures WASI binaries are up-to-date and accurately reflect the intended configuration.
-- Avoid unnecessary relinking for faster incremental builds.
-- The relink logic is defined in `wasi.proj` and supporting MSBuild files.
-- Source changes to native sources in `src/mono/wasi` or related directories will always trigger a relink.
+ReadyToRun compilation is enabled with `/p:PublishReadyToRun=true`. CoreCLR-WASI requires a
+composite WebAssembly ReadyToRun image and does not support `WasmSingleFileBundle`.
 
 For more detailed WASI build and configuration guidance, see the [WASI build documentation](../../../docs/workflow/building/libraries/webassembly-instructions.md).
 
 ## How it works
 
-The mechanism for executing .NET code in a WASI runtime environment is equivalent to how `dotnet.wasm` executes .NET code in a browser environment. That is, it runs the Mono interpreter to execute .NET bytecode that has been built in the normal way. It should also work with AOT but this is not yet attempted.
+The application bundle contains the managed framework and application assemblies alongside a
+per-application linked `wasihost` CoreCLR host. Wasmtime loads the component and the host starts
+CoreCLR using the bundled managed framework.
 
 ## How to build the runtime
 
 on Linux:
 ```.sh
-./build.sh -bl -os wasi -subset mono+libs -c Debug
+./build.sh -bl -os wasi -subset clr+libs+host -c Debug
 ```
-or for just native rebuild
-```.sh
-./build.sh -bl -os wasi -subset mono.runtime+libs.native+mono.wasiruntime -c Debug
-```
-You can enable full assertion messages for local release builds using
-`-p:MonoEnableAssertMessages=true`
 
 And you can use that runtime pack when building outside of the `dotnet/runtime` tree by overriding the runtime pack via
 

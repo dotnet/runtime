@@ -145,5 +145,9 @@ namespace ILVerify
         ExpectedSignatureToken, // Expected signature token.
         ReadOnlyInMkrefany, // A readonly ByRef cannot be used with mkrefany.
         LocallocInHandler, // localloc cannot be used in an exception filter or handler.
+        EndfinallyInNestedTry, // Endfinally inside a try block nested in a finally handler.
+        EndfinallyInNestedFilter, // Endfinally inside a filter nested in a finally handler.
+        EndfaultInNestedTry, // Endfault inside a try block nested in a fault handler.
+        EndfaultInNestedFilter, // Endfault inside a filter nested in a fault handler.
     }
 }

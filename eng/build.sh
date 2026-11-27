@@ -40,8 +40,6 @@ usage()
   echo "                                  Checked is exclusive to the CLR runtime. It is the same as Debug, except code is"
   echo "                                  compiled with optimizations enabled."
   echo "                                  [Default: Debug]"
-  echo "  -runtimeFlavor (-rf)            Runtime flavor: CoreCLR or Mono."
-  echo "                                  [Default: CoreCLR]"
   echo "  --subset (-s)                   Build a subset, print available subsets with -subset help."
   echo "                                 '--subset' can be omitted if the subset is given as the first argument."
   echo "                                  [Default: Builds the entire repo.]"
@@ -122,14 +120,8 @@ usage()
   echo "Further information on this can be found here:"
   echo "https://github.com/dotnet/runtime/blob/main/docs/workflow/building/coreclr/cross-building.md"
   echo ""
-  echo "* Build Mono runtime for Linux x64 on Release configuration."
-  echo "./build.sh mono -c release"
-  echo ""
   echo "* Build Release coreclr corelib, crossgen corelib and update Debug libraries testhost to run test on an updated corelib."
   echo "./build.sh clr.corelib+clr.nativecorelib+libs.pretest -rc release"
-  echo ""
-  echo "* Build Debug mono corelib and update Release libraries testhost to run test on an updated corelib."
-  echo "./build.sh mono.corelib+libs.pretest -rc debug -c release"
   echo ""
   echo ""
   echo "For more general information, check out https://github.com/dotnet/runtime/blob/main/docs/workflow/README.md"
@@ -365,26 +357,6 @@ while [[ $# -gt 0 ]]; do
           ;;
       esac
       arguments+=("/p:RuntimeConfiguration=$val")
-      shift 2
-      ;;
-
-     -runtimeflavor|-rf)
-      if [ -z ${2+x} ]; then
-        echo "No runtime flavor supplied. See help (--help) for supported runtime flavors." 1>&2
-        exit 1
-      fi
-      passedRuntimeFlav="$(echo "$2" | tr "[:upper:]" "[:lower:]")"
-      case "$passedRuntimeFlav" in
-        coreclr|mono)
-          val="$(tr '[:lower:]' '[:upper:]' <<< ${passedRuntimeFlav:0:1})${passedRuntimeFlav:1}"
-          ;;
-        *)
-          echo "Unsupported runtime flavor '$2'."
-          echo "The allowed values are CoreCLR and Mono."
-          exit 1
-          ;;
-      esac
-      arguments+=("/p:RuntimeFlavor=$val")
       shift 2
       ;;
 

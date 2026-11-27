@@ -42,21 +42,7 @@ public class ReadyToRunLibraryRootProviderTests
     {
         ReadyToRunCompilerContext context = CreateContext(targetArchitecture: TargetArchitecture.Wasm32);
         EcmaModule coreLib = (EcmaModule)context.SystemModule;
-        ReadyToRunSingleAssemblyCompilationModuleGroup group = new(new ReadyToRunCompilationModuleGroupConfig
-        {
-            Context = context,
-            CompilationModuleSet = [coreLib],
-            VersionBubbleModuleSet = [coreLib],
-            CrossModuleInlineable = [],
-            InstructionSetSupport = context.InstructionSetSupport,
-        });
-        context.SetCompilationGroup(group);
-        ProfileDataManager profile = new(new Logger(TextWriter.Null, isVerbose: false),
-            possibleReferenceModules: [coreLib], inputModules: [coreLib], versionBubbleModules: [coreLib],
-            crossModuleInlineModules: [], nonLocalGenericsHome: null, mibcFiles: [], parseRule: default,
-            callChainProfile: null, context: context, compilationGroup: group, embedPgoDataInR2RImage: false,
-            parseIbcData: false, canBeIncludedInCurrentCompilation: _ => true, synthesizeRandomPgoData: false);
-        group.ApplyProfileGuidedOptimizationData(profile, partial: true);
+        ReadyToRunSingleAssemblyCompilationModuleGroup group = CreatePartialCoreLibGroup(context, out ProfileDataManager profile);
 
         MethodDesc query = coreLib.GetType(Encoding.UTF8.GetBytes(typeNamespace), Encoding.UTF8.GetBytes(typeName))
             .GetMethod("get_IsHardwareAccelerated"u8, null);
@@ -68,6 +54,52 @@ public class ReadyToRunLibraryRootProviderTests
         Assert.True(group.ContainsMethodBody(query, unboxingStub: false));
         Assert.False(group.ContainsMethodBody(
             context.GetWellKnownType(WellKnownType.Int32).GetMethod("GetHashCode"u8, null), unboxingStub: false));
+    }
+
+    [Fact]
+    public void PartialNoJitCompilationContainsManagedJitHelpers()
+    {
+        ReadyToRunCompilerContext context = CreateContext(targetArchitecture: TargetArchitecture.Wasm32);
+        ReadyToRunSingleAssemblyCompilationModuleGroup group = CreatePartialCoreLibGroup(context, out ProfileDataManager profile);
+
+        RecordingRootingServiceProvider roots = new();
+        new ReadyToRunJitHelperRootProvider(context).AddCompilationRoots(roots);
+
+        Assert.Contains(((EcmaModule)context.SystemModule).GetType("System"u8, "RuntimeTypeHandle"u8)
+            .GetMethod("GetRuntimeTypeFromHandle"u8, null), roots.Methods);
+        MetadataType genericsHelpers = ((EcmaModule)context.SystemModule).GetType("System.Runtime.CompilerServices"u8, "GenericsHelpers"u8);
+        Assert.Contains(genericsHelpers.GetMethod("MethodWithSlotAndModule"u8, null), roots.Methods);
+        Assert.Contains(genericsHelpers.GetMethod("ClassWithSlotAndModule"u8, null), roots.Methods);
+        Assert.Null(ReadyToRunJitHelperRootProvider.GetManagedHelper(context, CorInfoHelpFunc.CORINFO_HELP_UNDEF));
+        Assert.All(roots.Methods, helper =>
+        {
+            Assert.False(profile.IsMethodInInputProfileData(helper));
+            Assert.True(group.ContainsMethodBody(helper, unboxingStub: false), helper.ToString());
+        });
+        Assert.False(group.ContainsMethodBody(
+            context.GetWellKnownType(WellKnownType.Int32).GetMethod("GetHashCode"u8, null), unboxingStub: false));
+    }
+
+    private static ReadyToRunSingleAssemblyCompilationModuleGroup CreatePartialCoreLibGroup(
+        ReadyToRunCompilerContext context, out ProfileDataManager profile)
+    {
+        EcmaModule coreLib = (EcmaModule)context.SystemModule;
+        ReadyToRunSingleAssemblyCompilationModuleGroup group = new(new ReadyToRunCompilationModuleGroupConfig
+        {
+            Context = context,
+            CompilationModuleSet = [coreLib],
+            VersionBubbleModuleSet = [coreLib],
+            CrossModuleInlineable = [],
+            InstructionSetSupport = context.InstructionSetSupport,
+        });
+        context.SetCompilationGroup(group);
+        profile = new(new Logger(TextWriter.Null, isVerbose: false),
+            possibleReferenceModules: [coreLib], inputModules: [coreLib], versionBubbleModules: [coreLib],
+            crossModuleInlineModules: [], nonLocalGenericsHome: null, mibcFiles: [], parseRule: default,
+            callChainProfile: null, context: context, compilationGroup: group, embedPgoDataInR2RImage: false,
+            parseIbcData: false, canBeIncludedInCurrentCompilation: _ => true, synthesizeRandomPgoData: false);
+        group.ApplyProfileGuidedOptimizationData(profile, partial: true);
+        return group;
     }
 
     [Theory]
