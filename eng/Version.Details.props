@@ -6,49 +6,50 @@ This file should be imported by eng/Versions.props
 <Project>
   <PropertyGroup>
     <!-- dotnet-dotnet dependencies -->
-    <MicrosoftCodeAnalysisPackageVersion>5.14.0-1.26575.106</MicrosoftCodeAnalysisPackageVersion>
-    <MicrosoftCodeAnalysisAnalyzersPackageVersion>5.14.0-1.26575.106</MicrosoftCodeAnalysisAnalyzersPackageVersion>
-    <MicrosoftCodeAnalysisBannedApiAnalyzersPackageVersion>5.14.0-1.26575.106</MicrosoftCodeAnalysisBannedApiAnalyzersPackageVersion>
-    <MicrosoftCodeAnalysisCSharpPackageVersion>5.14.0-1.26575.106</MicrosoftCodeAnalysisCSharpPackageVersion>
-    <MicrosoftCodeAnalysisCSharpWorkspacesPackageVersion>5.14.0-1.26575.106</MicrosoftCodeAnalysisCSharpWorkspacesPackageVersion>
-    <MicrosoftCodeAnalysisNetAnalyzersPackageVersion>12.0.100-alpha.1.26575.106</MicrosoftCodeAnalysisNetAnalyzersPackageVersion>
-    <MicrosoftCodeAnalysisWorkspacesMSBuildPackageVersion>5.14.0-1.26575.106</MicrosoftCodeAnalysisWorkspacesMSBuildPackageVersion>
-    <MicrosoftDotNetApiCompatTaskPackageVersion>12.0.100-alpha.1.26575.106</MicrosoftDotNetApiCompatTaskPackageVersion>
-    <MicrosoftDotNetArcadeSdkPackageVersion>12.0.0-beta.26575.106</MicrosoftDotNetArcadeSdkPackageVersion>
-    <MicrosoftDotNetBuildTasksArchivesPackageVersion>12.0.0-beta.26575.106</MicrosoftDotNetBuildTasksArchivesPackageVersion>
-    <MicrosoftDotNetBuildTasksFeedPackageVersion>12.0.0-beta.26575.106</MicrosoftDotNetBuildTasksFeedPackageVersion>
-    <MicrosoftDotNetBuildTasksFileCatalogPackageVersion>12.0.0-beta.26575.106</MicrosoftDotNetBuildTasksFileCatalogPackageVersion>
-    <MicrosoftDotNetBuildTasksInstallersPackageVersion>12.0.0-beta.26575.106</MicrosoftDotNetBuildTasksInstallersPackageVersion>
-    <MicrosoftDotNetBuildTasksPackagingPackageVersion>12.0.0-beta.26575.106</MicrosoftDotNetBuildTasksPackagingPackageVersion>
-    <MicrosoftDotNetBuildTasksTargetFrameworkPackageVersion>12.0.0-beta.26575.106</MicrosoftDotNetBuildTasksTargetFrameworkPackageVersion>
-    <MicrosoftDotNetBuildTasksTemplatingPackageVersion>12.0.0-beta.26575.106</MicrosoftDotNetBuildTasksTemplatingPackageVersion>
-    <MicrosoftDotNetCecilPackageVersion>0.11.5-preview.26575.106</MicrosoftDotNetCecilPackageVersion>
-    <MicrosoftDotNetCodeAnalysisPackageVersion>12.0.0-beta.26575.106</MicrosoftDotNetCodeAnalysisPackageVersion>
-    <MicrosoftDotNetGenAPIPackageVersion>12.0.0-beta.26575.106</MicrosoftDotNetGenAPIPackageVersion>
-    <MicrosoftDotNetGenAPITaskPackageVersion>12.0.100-alpha.1.26575.106</MicrosoftDotNetGenAPITaskPackageVersion>
-    <MicrosoftDotNetGenFacadesPackageVersion>12.0.0-beta.26575.106</MicrosoftDotNetGenFacadesPackageVersion>
-    <MicrosoftDotNetHelixJobMonitorPackageVersion>12.0.0-beta.26575.106</MicrosoftDotNetHelixJobMonitorPackageVersion>
-    <MicrosoftDotNetHelixSdkPackageVersion>12.0.0-beta.26575.106</MicrosoftDotNetHelixSdkPackageVersion>
-    <MicrosoftDotNetPackageTestingPackageVersion>12.0.0-beta.26575.106</MicrosoftDotNetPackageTestingPackageVersion>
-    <MicrosoftDotNetRemoteExecutorPackageVersion>12.0.0-beta.26575.106</MicrosoftDotNetRemoteExecutorPackageVersion>
-    <MicrosoftDotNetSharedFrameworkSdkPackageVersion>12.0.0-beta.26575.106</MicrosoftDotNetSharedFrameworkSdkPackageVersion>
-    <MicrosoftDotNetXliffTasksPackageVersion>12.0.0-beta.26575.106</MicrosoftDotNetXliffTasksPackageVersion>
-    <MicrosoftDotNetXUnitConsoleRunnerPackageVersion>2.9.3-beta.26575.106</MicrosoftDotNetXUnitConsoleRunnerPackageVersion>
-    <MicrosoftDotNetXUnitExtensionsPackageVersion>12.0.0-beta.26575.106</MicrosoftDotNetXUnitExtensionsPackageVersion>
-    <MicrosoftNetCompilersToolsetPackageVersion>5.14.0-1.26575.106</MicrosoftNetCompilersToolsetPackageVersion>
-    <MicrosoftNETRuntimeEmscriptenInternalPackageVersion>12.0.0-alpha.1.26575.106</MicrosoftNETRuntimeEmscriptenInternalPackageVersion>
-    <MicrosoftNETSdkILPackageVersion>12.0.0-alpha.1.26575.106</MicrosoftNETSdkILPackageVersion>
-    <MicrosoftNETCoreAppRefPackageVersion>12.0.0-alpha.1.26575.106</MicrosoftNETCoreAppRefPackageVersion>
-    <MicrosoftNETCoreILAsmPackageVersion>12.0.0-alpha.1.26575.106</MicrosoftNETCoreILAsmPackageVersion>
-    <NuGetFrameworksPackageVersion>8.2.0-rc.57606</NuGetFrameworksPackageVersion>
-    <NuGetPackagingPackageVersion>8.2.0-rc.57606</NuGetPackagingPackageVersion>
-    <NuGetProjectModelPackageVersion>8.2.0-rc.57606</NuGetProjectModelPackageVersion>
-    <NuGetVersioningPackageVersion>8.2.0-rc.57606</NuGetVersioningPackageVersion>
-    <runtimenativeSystemIOPortsPackageVersion>12.0.0-alpha.1.26575.106</runtimenativeSystemIOPortsPackageVersion>
-    <SystemCommandLinePackageVersion>4.0.0-alpha.1.26575.106</SystemCommandLinePackageVersion>
-    <SystemReflectionMetadataPackageVersion>12.0.0-alpha.1.26575.106</SystemReflectionMetadataPackageVersion>
-    <SystemReflectionMetadataLoadContextPackageVersion>12.0.0-alpha.1.26575.106</SystemReflectionMetadataLoadContextPackageVersion>
-    <SystemTextJsonPackageVersion>12.0.0-alpha.1.26575.106</SystemTextJsonPackageVersion>
+    <MicrosoftCodeAnalysisPackageVersion>5.14.0-1.26575.112</MicrosoftCodeAnalysisPackageVersion>
+    <MicrosoftCodeAnalysisAnalyzersPackageVersion>5.14.0-1.26575.112</MicrosoftCodeAnalysisAnalyzersPackageVersion>
+    <MicrosoftCodeAnalysisBannedApiAnalyzersPackageVersion>5.14.0-1.26575.112</MicrosoftCodeAnalysisBannedApiAnalyzersPackageVersion>
+    <MicrosoftCodeAnalysisCSharpPackageVersion>5.14.0-1.26575.112</MicrosoftCodeAnalysisCSharpPackageVersion>
+    <MicrosoftCodeAnalysisCSharpWorkspacesPackageVersion>5.14.0-1.26575.112</MicrosoftCodeAnalysisCSharpWorkspacesPackageVersion>
+    <MicrosoftCodeAnalysisNetAnalyzersPackageVersion>12.0.100-alpha.1.26575.112</MicrosoftCodeAnalysisNetAnalyzersPackageVersion>
+    <MicrosoftCodeAnalysisWorkspacesMSBuildPackageVersion>5.14.0-1.26575.112</MicrosoftCodeAnalysisWorkspacesMSBuildPackageVersion>
+    <MicrosoftDotNetApiCompatTaskPackageVersion>12.0.100-alpha.1.26575.112</MicrosoftDotNetApiCompatTaskPackageVersion>
+    <MicrosoftDotNetArcadeSdkPackageVersion>12.0.0-beta.26575.112</MicrosoftDotNetArcadeSdkPackageVersion>
+    <MicrosoftDotNetBuildTasksArchivesPackageVersion>12.0.0-beta.26575.112</MicrosoftDotNetBuildTasksArchivesPackageVersion>
+    <MicrosoftDotNetBuildTasksFeedPackageVersion>12.0.0-beta.26575.112</MicrosoftDotNetBuildTasksFeedPackageVersion>
+    <MicrosoftDotNetBuildTasksFileCatalogPackageVersion>12.0.0-beta.26575.112</MicrosoftDotNetBuildTasksFileCatalogPackageVersion>
+    <MicrosoftDotNetBuildTasksInstallersPackageVersion>12.0.0-beta.26575.112</MicrosoftDotNetBuildTasksInstallersPackageVersion>
+    <MicrosoftDotNetBuildTasksPackagingPackageVersion>12.0.0-beta.26575.112</MicrosoftDotNetBuildTasksPackagingPackageVersion>
+    <MicrosoftDotNetBuildTasksTargetFrameworkPackageVersion>12.0.0-beta.26575.112</MicrosoftDotNetBuildTasksTargetFrameworkPackageVersion>
+    <MicrosoftDotNetBuildTasksTemplatingPackageVersion>12.0.0-beta.26575.112</MicrosoftDotNetBuildTasksTemplatingPackageVersion>
+    <MicrosoftDotNetCecilPackageVersion>0.11.5-preview.26575.112</MicrosoftDotNetCecilPackageVersion>
+    <MicrosoftDotNetCodeAnalysisPackageVersion>12.0.0-beta.26575.112</MicrosoftDotNetCodeAnalysisPackageVersion>
+    <MicrosoftDotNetGenAPIPackageVersion>12.0.0-beta.26575.112</MicrosoftDotNetGenAPIPackageVersion>
+    <MicrosoftDotNetGenAPITaskPackageVersion>12.0.100-alpha.1.26575.112</MicrosoftDotNetGenAPITaskPackageVersion>
+    <MicrosoftDotNetGenFacadesPackageVersion>12.0.0-beta.26575.112</MicrosoftDotNetGenFacadesPackageVersion>
+    <MicrosoftDotNetHelixJobMonitorPackageVersion>12.0.0-beta.26575.112</MicrosoftDotNetHelixJobMonitorPackageVersion>
+    <MicrosoftDotNetHelixSdkPackageVersion>12.0.0-beta.26575.112</MicrosoftDotNetHelixSdkPackageVersion>
+    <MicrosoftDotNetPackageTestingPackageVersion>12.0.0-beta.26575.112</MicrosoftDotNetPackageTestingPackageVersion>
+    <MicrosoftDotNetRemoteExecutorPackageVersion>12.0.0-beta.26575.112</MicrosoftDotNetRemoteExecutorPackageVersion>
+    <MicrosoftDotNetSharedFrameworkSdkPackageVersion>12.0.0-beta.26575.112</MicrosoftDotNetSharedFrameworkSdkPackageVersion>
+    <MicrosoftDotNetXliffTasksPackageVersion>12.0.0-beta.26575.112</MicrosoftDotNetXliffTasksPackageVersion>
+    <MicrosoftDotNetXUnitConsoleRunnerPackageVersion>2.9.3-beta.26575.112</MicrosoftDotNetXUnitConsoleRunnerPackageVersion>
+    <MicrosoftDotNetXUnitExtensionsPackageVersion>12.0.0-beta.26575.112</MicrosoftDotNetXUnitExtensionsPackageVersion>
+    <MicrosoftNetCompilersToolsetPackageVersion>5.14.0-1.26575.112</MicrosoftNetCompilersToolsetPackageVersion>
+    <MicrosoftNETSdkILPackageVersion>12.0.0-alpha.1.26575.112</MicrosoftNETSdkILPackageVersion>
+    <MicrosoftNETCoreAppRefPackageVersion>12.0.0-alpha.1.26575.112</MicrosoftNETCoreAppRefPackageVersion>
+    <MicrosoftNETCoreILAsmPackageVersion>12.0.0-alpha.1.26575.112</MicrosoftNETCoreILAsmPackageVersion>
+    <NuGetFrameworksPackageVersion>8.2.0-rc.57612</NuGetFrameworksPackageVersion>
+    <NuGetPackagingPackageVersion>8.2.0-rc.57612</NuGetPackagingPackageVersion>
+    <NuGetProjectModelPackageVersion>8.2.0-rc.57612</NuGetProjectModelPackageVersion>
+    <NuGetVersioningPackageVersion>8.2.0-rc.57612</NuGetVersioningPackageVersion>
+    <runtimenativeSystemIOPortsPackageVersion>12.0.0-alpha.1.26575.112</runtimenativeSystemIOPortsPackageVersion>
+    <SystemCommandLinePackageVersion>4.0.0-alpha.1.26575.112</SystemCommandLinePackageVersion>
+    <SystemReflectionMetadataPackageVersion>12.0.0-alpha.1.26575.112</SystemReflectionMetadataPackageVersion>
+    <SystemReflectionMetadataLoadContextPackageVersion>12.0.0-alpha.1.26575.112</SystemReflectionMetadataLoadContextPackageVersion>
+    <SystemTextJsonPackageVersion>12.0.0-alpha.1.26575.112</SystemTextJsonPackageVersion>
+    <!-- dotnet-emsdk dependencies -->
+    <MicrosoftNETRuntimeEmscriptenInternalPackageVersion>12.0.0-alpha.1.26575.1</MicrosoftNETRuntimeEmscriptenInternalPackageVersion>
     <!-- dotnet-icu dependencies -->
     <MicrosoftNETCoreRuntimeICUTransportPackageVersion>12.0.0-alpha.1.26569.1</MicrosoftNETCoreRuntimeICUTransportPackageVersion>
     <!-- dotnet-llvm-project dependencies -->
@@ -153,7 +154,6 @@ This file should be imported by eng/Versions.props
     <MicrosoftDotNetXUnitConsoleRunnerVersion>$(MicrosoftDotNetXUnitConsoleRunnerPackageVersion)</MicrosoftDotNetXUnitConsoleRunnerVersion>
     <MicrosoftDotNetXUnitExtensionsVersion>$(MicrosoftDotNetXUnitExtensionsPackageVersion)</MicrosoftDotNetXUnitExtensionsVersion>
     <MicrosoftNetCompilersToolsetVersion>$(MicrosoftNetCompilersToolsetPackageVersion)</MicrosoftNetCompilersToolsetVersion>
-    <MicrosoftNETRuntimeEmscriptenInternalVersion>$(MicrosoftNETRuntimeEmscriptenInternalPackageVersion)</MicrosoftNETRuntimeEmscriptenInternalVersion>
     <MicrosoftNETSdkILVersion>$(MicrosoftNETSdkILPackageVersion)</MicrosoftNETSdkILVersion>
     <MicrosoftNETCoreAppRefVersion>$(MicrosoftNETCoreAppRefPackageVersion)</MicrosoftNETCoreAppRefVersion>
     <MicrosoftNETCoreILAsmVersion>$(MicrosoftNETCoreILAsmPackageVersion)</MicrosoftNETCoreILAsmVersion>
@@ -166,6 +166,8 @@ This file should be imported by eng/Versions.props
     <SystemReflectionMetadataVersion>$(SystemReflectionMetadataPackageVersion)</SystemReflectionMetadataVersion>
     <SystemReflectionMetadataLoadContextVersion>$(SystemReflectionMetadataLoadContextPackageVersion)</SystemReflectionMetadataLoadContextVersion>
     <SystemTextJsonVersion>$(SystemTextJsonPackageVersion)</SystemTextJsonVersion>
+    <!-- dotnet-emsdk dependencies -->
+    <MicrosoftNETRuntimeEmscriptenInternalVersion>$(MicrosoftNETRuntimeEmscriptenInternalPackageVersion)</MicrosoftNETRuntimeEmscriptenInternalVersion>
     <!-- dotnet-icu dependencies -->
     <MicrosoftNETCoreRuntimeICUTransportVersion>$(MicrosoftNETCoreRuntimeICUTransportPackageVersion)</MicrosoftNETCoreRuntimeICUTransportVersion>
     <!-- dotnet-llvm-project dependencies -->
