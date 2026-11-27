@@ -671,10 +671,13 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord,
         if ((pFrame < sp) && (pFrame->GetFrameIdentifier() == FrameIdentifier::RedirectedThreadFrame))
         {
             // The exception came from a thread interrupted in managed code, so this context
-            // points to the interrupted instruction, not a return address.
-            _ASSERTE(GetSP(static_cast<RedirectedThreadFrame*>(pFrame)->GetContext()) == GetSP(pContextRecord));
-            _ASSERTE(GetIP(static_cast<RedirectedThreadFrame*>(pFrame)->GetContext()) == GetIP(pContextRecord));
-            pContextRecord->ContextFlags |= CONTEXT_EXCEPTION_ACTIVE;
+            // points to the interrupted instruction, not a return address, unless the OS
+            // dispatched a caller instead, as after an interruption at an epilog start.
+            T_CONTEXT* pInterruptedContext = static_cast<RedirectedThreadFrame*>(pFrame)->GetContext();
+            if ((GetSP(pInterruptedContext) == GetSP(pContextRecord)) && (GetIP(pInterruptedContext) == GetIP(pContextRecord)))
+            {
+                pContextRecord->ContextFlags |= CONTEXT_EXCEPTION_ACTIVE;
+            }
         }
 #endif
 #ifndef TARGET_X86
