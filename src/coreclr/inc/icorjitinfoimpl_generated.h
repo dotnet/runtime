@@ -553,6 +553,11 @@ uint32_t getAddressAlignment(
 void getWasmWellKnownGlobals(
           CORINFO_WASM_WELLKNOWN_GLOBALS* pWellKnownGlobalsOut) CORINFO_OVERRIDE;
 
+void reportWasmBranchHint(
+          uint32_t functionOrdinal,
+          uint32_t codeOffset,
+          bool isLikelyTaken) CORINFO_OVERRIDE;
+
 uint32_t getThreadTLSIndex(
           void** ppIndirection) CORINFO_OVERRIDE;
 

@@ -169,7 +169,34 @@ namespace ILCompiler.ObjectWriter
 
             ObjectNode.ObjectData candidateData = candidate.GetData(factory);
             return data.Data.AsSpan().SequenceEqual(candidateData.Data)
-                && RelocationsEqual(node, data.Relocs, candidate, candidateData.Relocs);
+                && RelocationsEqual(node, data.Relocs, candidate, candidateData.Relocs)
+                && BranchHintsEqual(node, candidate);
+        }
+
+        private static bool BranchHintsEqual(ObjectNode left, ObjectNode right)
+        {
+            IReadOnlyList<WasmBranchHint> leftHints =
+                left is INodeWithWasmBranchHints leftNode ? leftNode.WasmBranchHints : Array.Empty<WasmBranchHint>();
+            IReadOnlyList<WasmBranchHint> rightHints =
+                right is INodeWithWasmBranchHints rightNode ? rightNode.WasmBranchHints : Array.Empty<WasmBranchHint>();
+            if (leftHints.Count != rightHints.Count)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < leftHints.Count; i++)
+            {
+                WasmBranchHint leftHint = leftHints[i];
+                WasmBranchHint rightHint = rightHints[i];
+                if (leftHint.FunctionOrdinal != rightHint.FunctionOrdinal
+                    || leftHint.CodeOffset != rightHint.CodeOffset
+                    || leftHint.IsLikelyTaken != rightHint.IsLikelyTaken)
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         private static bool RelocationsEqual(
@@ -215,6 +242,16 @@ namespace ILCompiler.ObjectWriter
             HashCode hash = new HashCode();
             hash.Add(WasmLowering.GetSignature(node).FuncType);
             hash.AddBytes(data.Data);
+
+            if (objectNode is INodeWithWasmBranchHints nodeWithHints)
+            {
+                foreach (WasmBranchHint hint in nodeWithHints.WasmBranchHints)
+                {
+                    hash.Add(hint.FunctionOrdinal);
+                    hash.Add(hint.CodeOffset);
+                    hash.Add(hint.IsLikelyTaken);
+                }
+            }
 
             if (data.Relocs is not null)
             {

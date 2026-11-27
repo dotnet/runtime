@@ -36,6 +36,13 @@ bool interceptor_ICJI::canValueClassInstancePointerEscape(CORINFO_METHOD_HANDLE 
     return temp;
 }
 
+void interceptor_ICJI::reportWasmBranchHint(uint32_t functionOrdinal, uint32_t codeOffset, bool isLikelyTaken)
+{
+    mc->cr->AddCall("reportWasmBranchHint");
+    original_ICorJitInfo->reportWasmBranchHint(functionOrdinal, codeOffset, isLikelyTaken);
+    mc->recReportWasmBranchHint(functionOrdinal, codeOffset, isLikelyTaken);
+}
+
 bool interceptor_ICJI::notifyMethodInfoUsage(CORINFO_METHOD_HANDLE ftn)
 {
     mc->cr->AddCall("notifyMethodInfoUsage");

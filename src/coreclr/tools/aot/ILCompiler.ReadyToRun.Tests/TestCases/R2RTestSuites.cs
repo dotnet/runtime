@@ -14,6 +14,8 @@ using ILCompiler.ReadyToRun.Tests.TestCasesRunner;
 using ILCompiler.Reflection.ReadyToRun;
 using Internal.ReadyToRunConstants;
 using Internal.Runtime;
+using WasmBranchHint = crossgen2::ILCompiler.DependencyAnalysis.Wasm.WasmBranchHint;
+using WasmObjectWriter = crossgen2::ILCompiler.ObjectWriter.WasmObjectWriter;
 using DwarfHelper = crossgen2::ILCompiler.ObjectWriter.DwarfHelper;
 using Xunit;
 using Xunit.Abstractions;
@@ -33,6 +35,49 @@ public class R2RTestSuites
     public R2RTestSuites(ITestOutputHelper output)
     {
         _output = output;
+    }
+
+    [Fact]
+    public void WasmBranchHintSectionPayloadUsesFunctionIndicesAndULEB128()
+    {
+        Dictionary<int, List<WasmBranchHint>> hints = new()
+        {
+            [0] = [new WasmBranchHint(0, 130, isLikelyTaken: true)],
+            [2] = [new WasmBranchHint(0, 7, isLikelyTaken: false)],
+        };
+
+        byte[] payload = WasmObjectWriter.EncodeBranchHintSectionPayload(hints, functionImportCount: 2, functionCount: 3);
+
+        Assert.Equal(
+            new byte[] { 0x02, 0x02, 0x01, 0x82, 0x01, 0x01, 0x01, 0x04, 0x01, 0x07, 0x01, 0x00 },
+            payload);
+    }
+
+    [ConditionalTheory(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void WasmBranchHintsRequireProfileWeights(bool enableBranchHints)
+    {
+        CompiledAssembly input = new()
+        {
+            AssemblyName = nameof(WasmBranchHintsRequireProfileWeights),
+            SourceResourceNames = ["ManagedHelpers/HelperCalls.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(WasmBranchHintsRequireProfileWeights),
+            [
+                new(nameof(WasmBranchHintsRequireProfileWeights), [new CrossgenAssembly(input)])
+                {
+                    AdditionalArgs = enableBranchHints ? ["--instruction-set:+branch-hints"] : [],
+                    OutputFileExtension = ".wasm",
+                    Validate = reader =>
+                    {
+                        WebcilImageReader webcilReader = Assert.IsType<WebcilImageReader>(reader.CompositeReader);
+                        Assert.False(WasmR2RAssert.WasmImageHasBranchHintSection(webcilReader));
+                    },
+                },
+            ]));
     }
 
     [ConditionalTheory(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]

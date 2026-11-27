@@ -15514,6 +15514,12 @@ void CEEInfo::reportMetadata(const char* key, const void* value, size_t length)
     UNREACHABLE();      // only called on derived class.
 }
 
+void CEEInfo::reportWasmBranchHint(uint32_t functionOrdinal, uint32_t codeOffset, bool isLikelyTaken)
+{
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE();      // only called on derived class.
+}
+
 void CEEInfo::setPatchpointInfo(PatchpointInfo* patchpointInfo)
 {
     LIMITED_METHOD_CONTRACT;

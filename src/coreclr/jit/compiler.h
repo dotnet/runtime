@@ -4456,6 +4456,7 @@ public:
         bool     byRef;
         bool     inUse;
     };
+    jitstd::vector<WasmBranchHintRecord>* m_wasmBranchHints = nullptr;
     jitstd::vector<WasmSpillSlot>* m_wasmSpillSlots = nullptr;
     BitVec* m_wasmGCRefCandidates = nullptr;
     ArrayStack<BasicBlock*>* m_wasmLocalCopyBlocks = nullptr; // Blocks with local-to-local copies, set by lowering
@@ -12394,6 +12395,11 @@ public:
     //------------ Some utility functions --------------
 
     CORINFO_CONST_LOOKUP compGetHelperFtn(CorInfoHelpFunc ftnNum);
+
+#if defined(TARGET_WASM)
+    void recordWasmBranchHint(uint32_t functionOrdinal, uint32_t codeOffset, bool isLikelyTaken);
+    void publishWasmBranchHints();
+#endif
 
 #ifdef DEBUG
     // Components used by the compiler may write unit test suites, and

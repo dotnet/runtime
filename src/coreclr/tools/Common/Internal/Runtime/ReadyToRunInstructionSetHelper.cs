@@ -92,6 +92,7 @@ namespace Internal.ReadyToRunConstants
                         case InstructionSet.Wasm32_PackedSimd: return ReadyToRunInstructionSet.PackedSimd;
                         case InstructionSet.Wasm32_Vector128: return null;
                         case InstructionSet.Wasm32_RelaxedSimd: return ReadyToRunInstructionSet.RelaxedSimd;
+                        case InstructionSet.Wasm32_WasmBranchHints: return null;
 
                         default: throw new Exception("Unknown instruction set");
                     }

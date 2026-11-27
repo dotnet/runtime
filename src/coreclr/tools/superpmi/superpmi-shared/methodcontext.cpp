@@ -7913,3 +7913,49 @@ void SetDebugDumpVariables()
         g_debugRep = true;
     }
 }
+
+void MethodContext::recReportWasmBranchHint(uint32_t functionOrdinal, uint32_t codeOffset, bool isLikelyTaken)
+{
+    if (ReportWasmBranchHint == nullptr)
+    {
+        ReportWasmBranchHint = new LightWeightMap<DDD, DWORD>();
+    }
+
+    DDD key;
+    ZeroMemory(&key, sizeof(key));
+    key.A = functionOrdinal;
+    key.B = codeOffset;
+    key.C = isLikelyTaken ? 1 : 0;
+
+    DWORD value = 0;
+    ReportWasmBranchHint->Add(key, value);
+    DEBUG_REC(dmpReportWasmBranchHint(key, value));
+}
+
+void MethodContext::dmpReportWasmBranchHint(const DDD& key, DWORD value)
+{
+    printf(
+        "ReportWasmBranchHint function-%u, offset-%u, likelyTaken-%u, value-%u",
+        key.A,
+        key.B,
+        key.C,
+        value);
+}
+
+void MethodContext::repReportWasmBranchHint(uint32_t functionOrdinal, uint32_t codeOffset, bool isLikelyTaken)
+{
+    DDD key;
+    ZeroMemory(&key, sizeof(key));
+    key.A = functionOrdinal;
+    key.B = codeOffset;
+    key.C = isLikelyTaken ? 1 : 0;
+
+    DWORD value = LookupByKeyOrMiss(
+        ReportWasmBranchHint,
+        key,
+        ": function-%u, offset-%u, likelyTaken-%u",
+        key.A,
+        key.B,
+        key.C);
+    DEBUG_REP(dmpReportWasmBranchHint(key, value));
+}

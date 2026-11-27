@@ -7588,6 +7588,30 @@ public:
 /*****************************************************************************/
 
 // Compile a single method
+#if defined(TARGET_WASM)
+void Compiler::recordWasmBranchHint(uint32_t functionOrdinal, uint32_t codeOffset, bool isLikelyTaken)
+{
+    if (m_wasmBranchHints == nullptr)
+    {
+        m_wasmBranchHints = new (this, CMK_Codegen) jitstd::vector<WasmBranchHintRecord>(getAllocator(CMK_Codegen));
+    }
+
+    m_wasmBranchHints->push_back({functionOrdinal, codeOffset, isLikelyTaken});
+}
+
+void Compiler::publishWasmBranchHints()
+{
+    if (m_wasmBranchHints == nullptr)
+    {
+        return;
+    }
+
+    for (const WasmBranchHintRecord& hint : *m_wasmBranchHints)
+    {
+        info.compCompHnd->reportWasmBranchHint(hint.functionOrdinal, hint.codeOffset, hint.isLikelyTaken);
+    }
+}
+#endif // defined(TARGET_WASM)
 
 int jitNativeCode(CORINFO_METHOD_HANDLE methodHnd,
                   CORINFO_MODULE_HANDLE classPtr,
@@ -7708,6 +7732,12 @@ START:
             // Now generate the code
             pParam->result =
                 pParam->pComp->compCompileAfterInit(pParam->classPtr, pParam->methodCodePtr, pParam->methodCodeSize, pParam->compileFlags);
+#if defined(TARGET_WASM)
+            if (pParam->result == CORJIT_OK)
+            {
+                pParam->pComp->publishWasmBranchHints();
+            }
+#endif
         }
         finallyErrorTrap()
         {

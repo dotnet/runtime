@@ -943,6 +943,14 @@ void interceptor_ICJI::getWasmWellKnownGlobals(
     original_ICorJitInfo->getWasmWellKnownGlobals(pWellKnownGlobalsOut);
 }
 
+void interceptor_ICJI::reportWasmBranchHint(
+          uint32_t functionOrdinal,
+          uint32_t codeOffset,
+          bool isLikelyTaken)
+{
+    original_ICorJitInfo->reportWasmBranchHint(functionOrdinal, codeOffset, isLikelyTaken);
+}
+
 uint32_t interceptor_ICJI::getThreadTLSIndex(
           void** ppIndirection)
 {

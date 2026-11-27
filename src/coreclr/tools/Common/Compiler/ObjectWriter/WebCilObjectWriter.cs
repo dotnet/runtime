@@ -486,6 +486,9 @@ namespace ILCompiler.ObjectWriter
                 webcilSections,
                 ImageBaseOffsetExpr);
 
+            ResolveCodeSectionRelocations();
+            WriteWasmBranchHints();
+
             // Writing our memory import <- size of the webcil segment (for an accurate minimum size)
             WriteMemoryImport((ulong)webcilPayloadSegment.ContentSize);
             FinalizeSectionEntryCounts();
@@ -623,6 +626,35 @@ namespace ILCompiler.ObjectWriter
         private readonly record struct PendingBaseReloc(int SectionIndex, long Offset, RelocType FileRelocType);
         private readonly List<PendingBaseReloc> _pendingBaseRelocs = new();
 
+        private void ResolveCodeSectionRelocations()
+        {
+            if (!_sections.Contains(ObjectNodeSection.WasmCodeSection.Name))
+            {
+                return;
+            }
+
+            int sectionIndex = _sections.GetSectionIndex(ObjectNodeSection.WasmCodeSection.Name);
+            SectionDataEmitter section = _sections[sectionIndex];
+            if (_resolvableRelocations.Remove(sectionIndex, out List<SymbolicRelocation> relocations))
+            {
+                using Stream originalStream = section.ContentReadStream;
+                MemoryStream destinationStream = new((int)originalStream.Length);
+                originalStream.Position = 0;
+                ResolveRelocations(sectionIndex, originalStream, destinationStream, relocations, sectionStart: 0, shrink: true);
+                section.ContentReadStream = destinationStream;
+                return;
+            }
+
+            Stream codeStream = section.ContentReadStream;
+            codeStream.Position = 0;
+            List<CodeBlob> blobs = ParseCodeBlobs(codeStream);
+            Debug.Assert(blobs.Count == ActualFunctionCount);
+            for (int i = 0; i < blobs.Count; i++)
+            {
+                AdjustWasmBranchHintOffsets(i, Array.Empty<WasmCodeOffsetAdjustment>(), checked((uint)blobs[i].Size));
+            }
+        }
+
         private protected override void EmitRelocations(int sectionIndex, List<SymbolicRelocation> relocationList)
         {
             foreach (var reloc in relocationList)
@@ -742,6 +774,8 @@ namespace ILCompiler.ObjectWriter
             for (int b = 0; b < blobs.Count; b++)
             {
                 CodeBlob blob = blobs[b];
+                List<WasmCodeOffsetAdjustment> branchHintAdjustments = [];
+                uint totalRelocationShrink = 0;
                 // writeCursor is the post-shrink offset where this entry's (new) size prefix will be written.
                 postEntryStart[b] = writeCursor;
                 Debug.Assert(writeCursor <= blobs[b].Start, $"Write cursor {writeCursor} is beyond the start of blob {blobs[b].Start}");
@@ -775,7 +809,14 @@ namespace ILCompiler.ObjectWriter
                         }
 
                         int size = ResolveReloc(sectionIndex, sectionStream, curReloc.Offset, tempStream, tempStream.Position, curReloc, relocScratchBuffer, shrink: shrink);
-                        blobShrink[b] += (int)Relocation.GetSize(curReloc.Type) - size;
+                        int relocationShrink = (int)Relocation.GetSize(curReloc.Type) - size;
+                        blobShrink[b] += relocationShrink;
+                        if (relocationShrink > 0)
+                        {
+                            totalRelocationShrink = checked(totalRelocationShrink + (uint)relocationShrink);
+                            uint relocationEndOffset = checked((uint)(curReloc.Offset - blob.Start + Relocation.GetSize(curReloc.Type)));
+                            branchHintAdjustments.Add(new WasmCodeOffsetAdjustment(relocationEndOffset, totalRelocationShrink));
+                        }
 
                         long nextStart = curReloc.Offset + Relocation.GetSize(curReloc.Type);
                         long nextEnd = nextReloc is not null ? nextReloc.Offset : blob.End;
@@ -814,6 +855,11 @@ namespace ILCompiler.ObjectWriter
                     CopyOnly(src: sectionStream, srcPos: blob.Start, dest: sectionStream, destPos: writeCursor, count: blob.Size);
                     writeCursor += blob.Size;
                 }
+
+                AdjustWasmBranchHintOffsets(
+                    b,
+                    branchHintAdjustments,
+                    checked((uint)(blob.Size - blobShrink[b])));
             }
             sectionStream.SetLength(writeCursor);
 
