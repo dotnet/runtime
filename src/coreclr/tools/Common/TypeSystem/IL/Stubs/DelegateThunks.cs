@@ -725,6 +725,7 @@ namespace Internal.IL.Stubs
 
             codeStream.Emit(ILOpcode.br, returnNullLabel);
 
+            TypeDesc systemDelegate = Context.GetWellKnownType(WellKnownType.MulticastDelegate).BaseType;
             for (DelegateThunkKind i = 0; i < DelegateThunkCollection.MaxThunkKind; i++)
             {
                 MethodDesc thunk = _delegateInfo.Thunks[i];
@@ -734,6 +735,21 @@ namespace Internal.IL.Stubs
                 MethodDesc targetMethod = thunk.InstantiateAsOpen();
 
                 codeStream.EmitLabel(labels[(int)i]);
+
+                // Only the creation helpers can put these thunks into a delegate. Comparisons
+                // against the thunk must not keep it alive when the helper is unreachable.
+                MethodDesc characteristic = i switch
+                {
+                    DelegateThunkKind.MulticastThunk => systemDelegate.GetMethod("MulticastDelegatesPresent"u8, null),
+                    DelegateThunkKind.ObjectArrayThunk => systemDelegate.GetMethod("ObjectArrayDelegatesPresent"u8, null),
+                    _ => null,
+                };
+                if (characteristic is not null)
+                {
+                    codeStream.Emit(ILOpcode.call, emitter.NewToken(characteristic));
+                    codeStream.Emit(ILOpcode.brfalse, returnNullLabel);
+                }
+
                 codeStream.Emit(ILOpcode.ldftn, emitter.NewToken(targetMethod));
                 codeStream.Emit(ILOpcode.ret);
             }

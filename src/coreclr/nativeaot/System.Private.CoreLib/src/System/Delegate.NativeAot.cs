@@ -111,6 +111,14 @@ namespace System
             return IntPtr.Zero;
         }
 
+        [Intrinsic]
+        [AnalysisCharacteristic]
+        private static extern bool MulticastDelegatesPresent();
+
+        [Intrinsic]
+        [AnalysisCharacteristic]
+        private static extern bool ObjectArrayDelegatesPresent();
+
         /// <summary>
         /// The reflection apis use this api to figure out what MethodInfo is related
         /// to a delegate.

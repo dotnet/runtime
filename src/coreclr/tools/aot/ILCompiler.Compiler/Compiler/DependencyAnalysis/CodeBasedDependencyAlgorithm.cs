@@ -25,6 +25,18 @@ namespace ILCompiler.DependencyAnalysis
             if (method.OwningType is MetadataType mdType)
                 ModuleUseBasedDependencyAlgorithm.AddDependenciesDueToModuleUse(dependencies, factory, mdType.Module);
 
+            if (method.OwningType == factory.TypeSystemContext.GetWellKnownType(WellKnownType.MulticastDelegate).BaseType)
+            {
+                if (method.Name == "NewMulticastDelegate"u8)
+                {
+                    dependencies.Add(factory.AnalysisCharacteristic("MulticastDelegatesPresent"), "Multicast delegate creation");
+                }
+                else if (method.Name == "CreateObjectArrayDelegate"u8)
+                {
+                    dependencies.Add(factory.AnalysisCharacteristic("ObjectArrayDelegatesPresent"), "Object array delegate creation");
+                }
+            }
+
             if (method.IsIntrinsic)
             {
                 if (method.OwningType is MetadataType owningType)
