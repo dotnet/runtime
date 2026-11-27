@@ -114,7 +114,7 @@ public static partial class MountHelper
         }
         else
         {
-            hardLinkProcess.StartInfo.FileName = "/bin/ln";
+            hardLinkProcess.StartInfo.FileName = LnPath;
             hardLinkProcess.StartInfo.Arguments = string.Format("\"{0}\" \"{1}\"", targetPath, linkPath);
         }
         hardLinkProcess.StartInfo.UseShellExecute = false;
@@ -154,7 +154,7 @@ public static partial class MountHelper
         }
         else
         {
-            symLinkProcess.StartInfo.FileName = "/bin/ln";
+            symLinkProcess.StartInfo.FileName = LnPath;
             symLinkProcess.StartInfo.Arguments = string.Format("-s \"{0}\" \"{1}\"", targetPath, linkPath);
         }
         symLinkProcess.StartInfo.UseShellExecute = false;
@@ -166,6 +166,14 @@ public static partial class MountHelper
 
         return symLinkProcess.ExitCode == 0;
     }
+
+    // Android versions before 10 have no /bin; command-line tools are under /system/bin.
+    private static string LnPath =>
+#if NETFRAMEWORK
+        "/bin/ln";
+#else
+        OperatingSystem.IsAndroid() ? "/system/bin/ln" : "/bin/ln";
+#endif
 
     private static bool IsProcessStartSupported()
     {
