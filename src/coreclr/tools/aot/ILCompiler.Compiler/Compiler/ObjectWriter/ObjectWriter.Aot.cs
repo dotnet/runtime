@@ -19,14 +19,14 @@ namespace ILCompiler.ObjectWriter
 {
     public abstract partial class ObjectWriter
     {
-        public static void EmitObject(string objectFilePath, IReadOnlyCollection<DependencyNode> nodes, NodeFactory factory, ObjectWritingOptions options, IObjectDumper dumper, Logger logger)
+        public static void EmitObject(string objectFilePath, IReadOnlyCollection<DependencyNode> nodes, NodeFactory factory, ObjectWritingOptions options, IObjectDumper dumper, Logger logger, InstructionSetSupport instructionSetSupport)
         {
             var stopwatch = Stopwatch.StartNew();
 
             ObjectWriter objectWriter =
                 factory.Target.IsApplePlatform ? new MachObjectWriter(factory, options) :
                 factory.Target.OperatingSystem == TargetOS.Windows ? new CoffObjectWriter(factory, options) :
-                factory.Target.Architecture == TargetArchitecture.Wasm32 ? new WasmRelocatableObjectWriter(factory, options) :
+                factory.Target.Architecture == TargetArchitecture.Wasm32 ? new WasmRelocatableObjectWriter(factory, options, instructionSetSupport) :
                 new ElfObjectWriter(factory, options);
 
             using Stream outputFileStream = new FileStream(objectFilePath, FileMode.Create);

@@ -15,8 +15,6 @@ namespace System.Threading.Tasks.Tests
 {
     public class RuntimeAsyncTests
     {
-        private static bool IsRemoteExecutorAndRuntimeAsyncSupported => RemoteExecutor.IsSupported && PlatformDetection.IsRuntimeAsyncSupported;
-
         private static readonly FieldInfo s_asyncDebuggingEnabledField = GetCorLibClassStaticField("System.Threading.Tasks.Task", "s_asyncDebuggingEnabled");
         private static readonly FieldInfo s_taskTimestampsField = GetCorLibClassStaticField("System.Threading.Tasks.Task", "s_runtimeAsyncTaskTimestamps");
         private static readonly FieldInfo s_continuationTimestampsField = GetCorLibClassStaticField("System.Threading.Tasks.Task", "s_runtimeAsyncContinuationTimestamps");
@@ -256,7 +254,7 @@ namespace System.Threading.Tasks.Tests
             Assert.InRange(GetContinuationTimestampCount(), 0, 10);
         }
 
-        [ConditionalFact(typeof(RuntimeAsyncTests), nameof(IsRemoteExecutorAndRuntimeAsyncSupported))]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void RuntimeAsync_TaskCompleted()
         {
             RemoteExecutor.Invoke(async () =>
@@ -275,7 +273,7 @@ namespace System.Threading.Tasks.Tests
             }).Dispose();
         }
 
-        [ConditionalFact(typeof(RuntimeAsyncTests), nameof(IsRemoteExecutorAndRuntimeAsyncSupported))]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void RuntimeAsync_ExceptionCleanup()
         {
             RemoteExecutor.Invoke(async () =>
@@ -300,7 +298,7 @@ namespace System.Threading.Tasks.Tests
             }).Dispose();
         }
 
-        [ConditionalFact(typeof(RuntimeAsyncTests), nameof(IsRemoteExecutorAndRuntimeAsyncSupported))]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void RuntimeAsync_DebuggerDetach()
         {
             RemoteExecutor.Invoke(async () =>
@@ -360,7 +358,7 @@ namespace System.Threading.Tasks.Tests
             }).Dispose();
         }
 
-        [ConditionalFact(typeof(RuntimeAsyncTests), nameof(IsRemoteExecutorAndRuntimeAsyncSupported))]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void RuntimeAsync_ValueTypeResult()
         {
             RemoteExecutor.Invoke(async () =>
@@ -380,7 +378,7 @@ namespace System.Threading.Tasks.Tests
             }).Dispose();
         }
 
-        [ConditionalFact(typeof(RuntimeAsyncTests), nameof(IsRemoteExecutorAndRuntimeAsyncSupported))]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void RuntimeAsync_HandledExceptionPartialUnwind()
         {
             RemoteExecutor.Invoke(async () =>
@@ -399,7 +397,7 @@ namespace System.Threading.Tasks.Tests
             }).Dispose();
         }
 
-        [ConditionalFact(typeof(RuntimeAsyncTests), nameof(IsRemoteExecutorAndRuntimeAsyncSupported))]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void RuntimeAsync_CancellationCleanup()
         {
             RemoteExecutor.Invoke(async () =>
@@ -427,7 +425,7 @@ namespace System.Threading.Tasks.Tests
             }).Dispose();
         }
 
-        [ConditionalFact(typeof(RuntimeAsyncTests), nameof(IsRemoteExecutorAndRuntimeAsyncSupported))]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void RuntimeAsync_TimestampsTrackedWhileInFlight()
         {
             RemoteExecutor.Invoke(async () =>
@@ -489,7 +487,7 @@ namespace System.Threading.Tasks.Tests
             }).Dispose();
         }
 
-        [ConditionalFact(typeof(RuntimeAsyncTests), nameof(IsRemoteExecutorAndRuntimeAsyncSupported))]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void RuntimeAsync_ContinuationTimestampObservedDuringResume()
         {
             RemoteExecutor.Invoke(async () =>
@@ -521,7 +519,7 @@ namespace System.Threading.Tasks.Tests
             }).Dispose();
         }
 
-        [ConditionalFact(typeof(RuntimeAsyncTests), nameof(IsRemoteExecutorAndRuntimeAsyncSupported))]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void RuntimeAsync_InFlightInstrumentationUpgrade()
         {
             RemoteExecutor.Invoke(async () =>
@@ -570,7 +568,7 @@ namespace System.Threading.Tasks.Tests
             }).Dispose();
         }
 
-        [ConditionalFact(typeof(RuntimeAsyncTests), nameof(IsRemoteExecutorAndRuntimeAsyncSupported))]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void RuntimeAsync_TplEvents()
         {
             RemoteExecutor.Invoke(() =>
@@ -604,7 +602,7 @@ namespace System.Threading.Tasks.Tests
             }).Dispose();
         }
 
-        [ConditionalFact(typeof(RuntimeAsyncTests), nameof(IsRemoteExecutorAndRuntimeAsyncSupported))]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void RuntimeAsync_TaskWaitEvents()
         {
             RemoteExecutor.Invoke(() =>
@@ -686,7 +684,7 @@ namespace System.Threading.Tasks.Tests
             }).Dispose();
         }
 
-        [ConditionalFact(typeof(RuntimeAsyncTests), nameof(IsRemoteExecutorAndRuntimeAsyncSupported))]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void RuntimeAsync_TaskWaitEndEventsForFaultedAndCanceledTasks()
         {
             RemoteExecutor.Invoke(() =>
@@ -744,7 +742,7 @@ namespace System.Threading.Tasks.Tests
             }).Dispose();
         }
 
-        [ConditionalFact(typeof(RuntimeAsyncTests), nameof(IsRemoteExecutorAndRuntimeAsyncSupported))]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void RuntimeAsync_TaskWaitEventsArePayForPlay()
         {
             RemoteExecutor.Invoke(() =>
@@ -767,7 +765,7 @@ namespace System.Threading.Tasks.Tests
             }).Dispose();
         }
 
-        [ConditionalFact(typeof(RuntimeAsyncTests), nameof(IsRemoteExecutorAndRuntimeAsyncSupported))]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void RuntimeAsync_SuspensionTimestampsAreDistinct()
         {
             RemoteExecutor.Invoke(async () =>
@@ -788,7 +786,7 @@ namespace System.Threading.Tasks.Tests
             }).Dispose();
         }
 
-        [ConditionalFact(typeof(RuntimeAsyncTests), nameof(IsRemoteExecutorAndRuntimeAsyncSupported))]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void RuntimeAsync_NoTplEventsWithoutDebugger()
         {
             RemoteExecutor.Invoke(() =>

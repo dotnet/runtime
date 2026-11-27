@@ -84,7 +84,7 @@ public class GenerateWasmBootJson : Task
 
     public bool IsPublish { get; set; }
 
-    public bool IsAot { get; set; }
+    public bool IsAot { get; set; }  // legacy, only used when targeting net11.0 and earlier
 
     public bool IsMultiThreaded { get; set; }
 
@@ -110,11 +110,21 @@ public class GenerateWasmBootJson : Task
 
     public override bool Execute()
     {
-        var entryAssemblyName = AssemblyName.GetAssemblyName(AssemblyPath).Name;
-
         try
         {
-            WriteBootConfig(entryAssemblyName);
+            bool targetingNet12OrLater = IsTargeting120OrLater();
+            bool isMonoRuntime = string.IsNullOrEmpty(UseMonoRuntime)
+                ? !targetingNet12OrLater
+                : string.Equals(UseMonoRuntime, "true", StringComparison.OrdinalIgnoreCase);
+
+            if (isMonoRuntime && targetingNet12OrLater)
+            {
+                Log.LogError("Mono runtime is no longer supported when targeting .NET 12 or later.");
+                return false;
+            }
+
+            var entryAssemblyName = AssemblyName.GetAssemblyName(AssemblyPath).Name;
+            WriteBootConfig(entryAssemblyName, isMonoRuntime);
         }
         catch (Exception ex)
         {
@@ -124,9 +134,8 @@ public class GenerateWasmBootJson : Task
         return !Log.HasLoggedErrors;
     }
 
-    private void WriteBootConfig(string entryAssemblyName)
+    private void WriteBootConfig(string entryAssemblyName, bool isMonoRuntime)
     {
-        bool isMonoRuntime = string.IsNullOrEmpty(UseMonoRuntime) || string.Equals(UseMonoRuntime, "true", StringComparison.OrdinalIgnoreCase);
         var helper = new BootJsonBuilderHelper(Log, DebugLevel, IsMultiThreaded, IsPublish, ParsedTargetFrameworkVersion, isMonoRuntime);
 
         // ReadyToRun webcil-in-wasm images carry payload/table sizes that the loader needs before

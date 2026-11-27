@@ -21,16 +21,13 @@ namespace Wasm.Build.Tests;
     public class GenerateWasmBootJsonTests
     {
 		[Theory]
+		[InlineData("v12.0", null, null, true)]
 		[InlineData("v12.0", "false", null, true)]
 		[InlineData("v13.0", "false", null, true)]
-		[InlineData("v12.0", "true", null, null)]
-		[InlineData("v12.0", null, null, null)]
 		[InlineData("v11.0", "false", null, null)]
 		[InlineData("v10.0", "true", null, null)]
 		[InlineData("v12.0", "false", "true", false)]
 		[InlineData("v12.0", "false", "false", true)]
-		[InlineData("v12.0", "true", "true", false)]
-		[InlineData("v12.0", "true", "false", true)]
 		[InlineData("v11.0", "false", "true", false)]
 		[InlineData("v11.0", "false", "false", true)]
 		public void IntegrityCheckConfiguration(string framework, string? useMonoRuntime, string? enableIntegrityCheck, bool? expectedDisableIntegrityCheck)
@@ -56,11 +53,32 @@ namespace Wasm.Build.Tests;
 			Assert.Equal(expectedDisableIntegrityCheck, actual);
 		}
 
+        [Fact]
+        public void Net12RejectsMonoRuntime()
+        {
+            using var dir = new TempDirectory();
+            string outputPath = Path.Combine(dir.Path, "boot.json");
+            var buildEngine = new TestBuildEngine();
+            var task = new GenerateWasmBootJson
+            {
+                BuildEngine = buildEngine,
+                AssemblyPath = typeof(GenerateWasmBootJsonTests).Assembly.Location,
+                Resources = [],
+                Endpoints = [],
+                TargetFrameworkVersion = "v12.0",
+                UseMonoRuntime = "true",
+                OutputPath = outputPath
+            };
+
+            Assert.False(task.Execute());
+            Assert.Equal(["Mono runtime is no longer supported when targeting .NET 12 or later."], buildEngine.Errors);
+            Assert.False(File.Exists(outputPath));
+        }
+
         [Theory]
         [InlineData("v12.0", false, false, true)]
         [InlineData("v12.0", false, true, true)]
         [InlineData("v13.0", false, false, true)]
-        [InlineData("v12.0", true, false, false)]
         [InlineData("v11.0", false, false, false)]
         [InlineData("v11.0", false, true, false)]
         [InlineData("v11.0", true, false, false)]
@@ -275,12 +293,14 @@ namespace Wasm.Build.Tests;
 
         private sealed class TestBuildEngine : IBuildEngine
         {
+            public List<string> Errors { get; } = [];
+            public List<string> Warnings { get; } = [];
             public bool ContinueOnError => false;
             public int LineNumberOfTaskNode => 0;
             public int ColumnNumberOfTaskNode => 0;
             public string ProjectFileOfTaskNode => string.Empty;
-            public void LogErrorEvent(BuildErrorEventArgs e) => throw new InvalidOperationException(e.Message);
-            public void LogWarningEvent(BuildWarningEventArgs e) => throw new InvalidOperationException(e.Message);
+            public void LogErrorEvent(BuildErrorEventArgs e) => Errors.Add(e.Message ?? string.Empty);
+            public void LogWarningEvent(BuildWarningEventArgs e) => Warnings.Add(e.Message ?? string.Empty);
             public void LogMessageEvent(BuildMessageEventArgs e) { }
             public void LogCustomEvent(CustomBuildEventArgs e) { }
             public bool BuildProjectFile(string projectFileName, string[] targetNames, IDictionary globalProperties, IDictionary targetOutputs)

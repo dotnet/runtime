@@ -13,12 +13,12 @@
 #ifdef HOST_WINDOWS
 #include <windows.h>
 #else
-#include <fcntl.h>
-#include <sys/stat.h>
+#include <errno.h>
 #include <unistd.h>
 #endif
 
 #include "ProcessEnvironment.h"
+#include <minipal/fileio.h>
 #include <minipal/random.h>
 #include <minipal/time.h>
 
@@ -534,29 +534,21 @@ ep_rt_file_handle_t
 ep_rt_aot_file_open_write (const ep_char8_t *path)
 {
     if (!path)
-        return INVALID_HANDLE_VALUE;
+        return NULL;
 
-#ifdef TARGET_WINDOWS
-    ep_char16_t *path_utf16 = ep_rt_utf8_to_utf16le_string (path);
-    if (!path_utf16)
-        return INVALID_HANDLE_VALUE;
+    intptr_t file_handle = minipal_create_owner_only_file_for_overwrite (path);
+    if (file_handle == -1)
+        return NULL;
 
-    HANDLE res = ::CreateFileW (reinterpret_cast<LPCWSTR>(path_utf16), GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-    ep_rt_utf16_string_free (path_utf16);
-    return static_cast<ep_rt_file_handle_t>(res);
-#else
-    mode_t perms = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH;
-    int fd = creat (path, perms);
-    if (fd == -1)
-        return INVALID_HANDLE_VALUE;
-
-    return (ep_rt_file_handle_t)(ptrdiff_t)fd;
-#endif
+    return reinterpret_cast<ep_rt_file_handle_t>(file_handle);
 }
 
 bool
 ep_rt_aot_file_close (ep_rt_file_handle_t file_handle)
 {
+    if (!file_handle)
+        return false;
+
 #ifdef TARGET_WINDOWS
     return ::CloseHandle (file_handle) != FALSE;
 #else

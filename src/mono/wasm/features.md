@@ -17,7 +17,7 @@ The WebAssembly version of .NET exposes a number of MSBuild properties that can 
 
 For a support matrix of WebAssembly features see [https://webassembly.org/roadmap/](https://webassembly.org/roadmap/). †
 
-For the full set of MSBuild properties that configure a client application's use of these features, see the top of [BrowserWasmApp.targets](../browser/build/BrowserWasmApp.targets). All of these properties must be placed in your application's `.csproj` file (inside of a `PropertyGroup`) to have any effect.
+For the full set of MSBuild properties that configure a client application's use of these features, see the top of [BrowserWasmApp.CoreCLR.targets](../browser/build/BrowserWasmApp.CoreCLR.targets). All of these properties must be placed in your application's `.csproj` file (inside of a `PropertyGroup`) to have any effect.
 
 Some of these properties require a unique build of the runtime, which means that changing them will produce a different set of `.wasm` and `.js` files for your application. Some of these properties also require you to install the [wasm-tools workload](#wasm-tools-workload).
 
@@ -92,11 +92,6 @@ If you are using more than 1GB, please make sure that you test it properly. Usin
 The JITerpreter is a browser-specific compiler which will optimize frequently executed code when running in interpreted (non-AOT) mode. While this significantly improves application performance, it will cause increased memory usage. You can disable it via `<BlazorWebAssemblyJiterpreter>false</BlazorWebAssemblyJiterpreter>`, and configure it in more detail via the use of runtime options.
 
 For more information including a list of relevant runtime options, see [jiterpreter.md](../../../docs/design/mono/jiterpreter.md).
-
-### AOT
-AOT compilation greatly improves application performance but will increase the size of the application, resulting in longer downloads and slower startup, so it is currently disabled by default. To enable it, use `<RunAOTCompilation>true</RunAOTCompilation>`. This is effective only when publishing the project. The resulting ahead-of-time compiled code will be included in your application's `dotnet.native.wasm` file.
-
-This feature only works if you have the [wasm-tools workload](#wasm-tools-workload) installed.
 
 ### IL trimming
 Trimming will remove unused code from your application, which reduces application startup time and memory usage. Trimming also reduces the amount of time spent during AOT compilation if it is in use. To enable trimming of managed code, use `<PublishTrimmed>true</PublishTrimmed>` and `<TrimMode>full</TrimMode>`.

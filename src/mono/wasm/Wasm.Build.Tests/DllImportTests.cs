@@ -22,29 +22,6 @@ namespace Wasm.Build.Tests
         }
 
         [Theory]
-        [BuildAndRun(aot: false)]
-        // The "warning ... native function ... varargs" check is emitted by Mono's PInvokeTableGenerator.
-        // CoreCLR's PInvokeTableGenerator does not emit that warning, so this test is Mono-only.
-        [TestCategory("mono")]
-        public async Task NativeLibraryWithVariadicFunctions(Configuration config, bool aot)
-        {
-            ProjectInfo info = PrepareProjectForVariadicFunction(config, aot, "variadic");
-            ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "VariadicFunctions.cs"));
-            string output = PublishForVariadicFunctionTests(info, config, aot);
-            Assert.Matches("warning.*native function.*sum.*varargs", output);
-            Assert.Contains("System.Int32 sum_one(System.Int32)", output);
-            Assert.Contains("System.Int32 sum_two(System.Int32, System.Int32)", output);
-            Assert.Contains("System.Int32 sum_three(System.Int32, System.Int32, System.Int32)", output);
-
-            RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(
-                config,
-                TestScenario: "DotnetRun",
-                ExpectedExitCode: 42
-            ));
-            Assert.Contains("Main running", result.TestOutput);
-        }
-
-        [Theory]
         [BuildAndRun()]
         public async Task DllImportWithFunctionPointersCompilesWithoutWarning(Configuration config, bool aot)
         {

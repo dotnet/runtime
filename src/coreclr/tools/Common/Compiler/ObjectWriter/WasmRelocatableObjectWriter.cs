@@ -19,6 +19,7 @@ namespace ILCompiler.ObjectWriter
     {
         private protected override string WasmProducerName => "ILCompiler";
 
+        private readonly InstructionSetSupport _instructionSetSupport;
         private WasmDataSection _dataSection;
         private DwarfBuilder _dwarfBuilder;
         private SectionWriter _pdataSectionWriter;
@@ -70,8 +71,9 @@ namespace ILCompiler.ObjectWriter
         private readonly Dictionary<int, List<SymbolicRelocation>> _relocations = new();
         private readonly Dictionary<int, long> _functionOffsets = new();
 
-        public WasmRelocatableObjectWriter(NodeFactory factory, ObjectWritingOptions options, OutputInfoBuilder outputInfoBuilder = null) : base(factory, options, outputInfoBuilder)
+        public WasmRelocatableObjectWriter(NodeFactory factory, ObjectWritingOptions options, InstructionSetSupport instructionSetSupport, OutputInfoBuilder outputInfoBuilder = null) : base(factory, options, outputInfoBuilder)
         {
+            _instructionSetSupport = instructionSetSupport;
         }
 
         private protected override ObjectNodeSection GetEmitSection(ObjectNodeSection section)
@@ -162,9 +164,11 @@ namespace ILCompiler.ObjectWriter
             using MemoryStream linking = CreateLinkingSection(fileSectionIndices);
             sections.Add(new WasmCustomSection(linking, new Utf8String("linking"), sections.Count));
             using MemoryStream producers = CreateProducersSectionPayload();
-            // Metadata custom sections are not linkable sections. Emit producers after the mandatory
+            // Metadata custom sections are not linkable sections. Emit them after the mandatory
             // linking section without adding it to the linking symbol table or relocation bookkeeping.
             sections.Add(new WasmCustomSection(producers, new Utf8String("producers"), sections.Count));
+            using MemoryStream targetFeatures = CreateTargetFeaturesSectionPayload();
+            sections.Add(new WasmCustomSection(targetFeatures, new Utf8String("target_features"), sections.Count));
             Dictionary<int, (string Name, MemoryStream Entries, int Count)> relocationSections = new();
             try
             {
@@ -224,6 +228,38 @@ namespace ILCompiler.ObjectWriter
                     relocationSection.Entries.Dispose();
                 }
             }
+        }
+
+        private MemoryStream CreateTargetFeaturesSectionPayload()
+        {
+            // https://github.com/WebAssembly/tool-conventions/blob/main/Linking.md#target-features-section
+            // These features are used by the JIT, stubs, and object format. SIMD128 is also used by
+            // the v128 ABI even when SIMD instruction selection is disabled.
+            List<string> features =
+            [
+                "bulk-memory",
+                "exception-handling",
+                "mutable-globals",
+                "nontrapping-fptoint",
+                "reference-types",
+                "sign-ext",
+                "simd128",
+                "tail-call",
+            ];
+            if (_instructionSetSupport.IsInstructionSetOptimisticallySupported(InstructionSet.Wasm32_RelaxedSimd))
+            {
+                features.Add("relaxed-simd");
+            }
+
+            MemoryStream payload = new();
+            WriteULEB128(payload, (ulong)features.Count);
+            foreach (string feature in features)
+            {
+                payload.WriteByte((byte)'+');
+                WriteName(payload, new Utf8String(feature));
+            }
+            payload.Position = 0;
+            return payload;
         }
 
         private MemoryStream CreateLinkingSection(Dictionary<int, int> fileSectionIndices)

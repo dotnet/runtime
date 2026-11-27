@@ -22,8 +22,9 @@ internal sealed class InvocationCacheConfiguration
         PathEnvironmentVariable = pathEnvironmentVariable;
     }
 
-    internal static string? GetDefaultCacheDirectory(string toolName)
+    internal static string? GetDefaultCacheDirectory(string toolName, Func<string, string?>? getEnvironmentVariable = null)
     {
+        getEnvironmentVariable ??= Environment.GetEnvironmentVariable;
         string cacheDirectoryName = toolName.ToLowerInvariant();
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
@@ -36,12 +37,14 @@ internal sealed class InvocationCacheConfiguration
         bool isMacOS = RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
         if (!isMacOS)
         {
-            string? cacheHome = Environment.GetEnvironmentVariable("XDG_CACHE_HOME");
+            string? cacheHome = getEnvironmentVariable("XDG_CACHE_HOME");
             if (!string.IsNullOrEmpty(cacheHome) && Path.IsPathRooted(cacheHome))
                 return Path.Combine(cacheHome, cacheDirectoryName);
         }
 
-        string home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile, Environment.SpecialFolderOption.DoNotVerify);
+        string? home = getEnvironmentVariable("HOME");
+        if (string.IsNullOrEmpty(home) || !Path.IsPathRooted(home))
+            home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile, Environment.SpecialFolderOption.DoNotVerify);
         if (string.IsNullOrEmpty(home) || !Path.IsPathRooted(home))
             return null;
 

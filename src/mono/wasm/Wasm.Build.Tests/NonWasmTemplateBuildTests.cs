@@ -71,7 +71,6 @@ public class NonWasmTemplateBuildTests : WasmTemplateTestsBase
         .MultiplyWithSingleArgs
         (
             "",
-            "/p:RunAOTCompilation=true",
             "/p:WasmBuildNative=true"
         )
         .MultiplyWithSingleArgs

@@ -50,6 +50,7 @@ public class BuildPublishTests : BlazorWasmTestBase
 
     [Theory]
     [MemberData(nameof(TestDataForDefaultTemplate_WithWorkload), parameters: new object[] { true })]
+    // TODO-WASM: https://github.com/dotnet/runtime/issues/135046
     [TestCategory("native"), TestCategory("mono")]
     public void DefaultTemplate_AOT_WithWorkload(Configuration config, bool testUnicode)
     {
@@ -127,36 +128,4 @@ public class BuildPublishTests : BlazorWasmTestBase
         }
     }
 
-    [Theory]
-    [InlineData("", true)] // Default case
-    [InlineData("false", false)] // the other case
-    [TestCategory("native"), TestCategory("mono")]
-    public async Task Test_WasmStripILAfterAOT(string stripILAfterAOT, bool expectILStripping)
-    {
-        Configuration config = Configuration.Release;
-        string extraProperties = "<RunAOTCompilation>true</RunAOTCompilation>";
-        if (!string.IsNullOrEmpty(stripILAfterAOT))
-            extraProperties += $"<WasmStripILAfterAOT>{stripILAfterAOT}</WasmStripILAfterAOT>";
-        ProjectInfo info = CopyTestAsset(config, aot: true, TestAsset.BlazorBasicTestApp, "blz_WasmStripILAfterAOT", extraProperties: extraProperties);
-
-        BlazorPublish(info, config);
-        await RunForPublishWithWebServer(new BlazorRunOptions(config));
-
-        string frameworkDir = Path.Combine(_projectDir, "bin", config.ToString(), BuildTestBase.DefaultTargetFrameworkForBlazor, "publish", "wwwroot", "_framework");
-        string objBuildDir = Path.Combine(_projectDir, "obj", config.ToString(), BuildTestBase.DefaultTargetFrameworkForBlazor, "wasm", "for-publish");
-
-        WasmTemplateTests.TestWasmStripILAfterAOTOutput(objBuildDir, frameworkDir, expectILStripping, _testOutput);
-    }
-
-    [Theory]
-    [InlineData(Configuration.Debug)]
-    [TestCategory("native"), TestCategory("mono")]
-    public void BlazorWasm_CannotAOT_InDebug(Configuration config)
-    {
-        ProjectInfo info = CopyTestAsset(
-            config, aot: true, TestAsset.BlazorBasicTestApp, "blazorwasm", extraProperties: "<RunAOTCompilation>true</RunAOTCompilation>");
-
-        (string _, string output) = PublishProject(info, config, new PublishOptions(ExpectSuccess: false));
-        Assert.Contains("AOT is not supported in debug configuration", output);
-    }
 }
