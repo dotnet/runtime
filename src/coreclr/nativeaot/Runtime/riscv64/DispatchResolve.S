@@ -136,16 +136,8 @@ LOCAL_LABEL(CacheMiss\@):
 .if \ReturnTarget
         tail    C_FUNC(RhpCidResolve_Worker)
 .else
-        // Calling convention of the universal thunk is:
-        //  t0: target address for the thunk to call
-        //  t1: parameter of the thunk's target
-        PREPARE_EXTERNAL_VAR RhpCidResolve, t0
-        mv      t1, \DispatchCellReg
-        // The tail call is written out by hand because the "tail" pseudo-instruction
-        // expands through t1, which is carrying the thunk parameter set just above.
-1:
-        auipc   t2, %pcrel_hi(C_FUNC(RhpUniversalTransitionTailCall))
-        jalr    x0, t2, %pcrel_lo(1b)
+        // DispatchCellReg (t5) contains the indirection cell address
+        tail    C_FUNC(RhpInterfaceDispatchSlow)
 .endif
 
 LEAF_END \DispatchName, _TEXT

@@ -3,6 +3,9 @@
 
 #include "AsmOffsets.inc"
 
+// Size of the float argument register save area of PROLOG_WITH_TRANSITION_BLOCK
+#define SIZEOF__FloatArgumentRegisters 0x40
+
 #include <loongarch64/AsmMacros_Unix.inc>
 
 // Inlined version of RhpGetThread. Target cannot be a0.

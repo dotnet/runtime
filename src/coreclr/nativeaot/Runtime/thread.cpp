@@ -690,11 +690,7 @@ void Thread::HijackReturnAddressWorker(StackFrameIterator* frameIterator, Hijack
 
         ASSERT(pvRetAddr != NULL);
 
-#if defined(TARGET_ARM64)
-        ASSERT(StackFrameIterator::IsValidReturnAddress(PacStripPtr(pvRetAddr)));
-#else
-        ASSERT(StackFrameIterator::IsValidReturnAddress(pvRetAddr));
-#endif // TARGET_ARM64
+        ASSERT(StackFrameIterator::IsValidReturnAddress(pvRetAddr, false));
 
         m_ppvHijackedReturnAddressLocation = ppvRetAddrLocation;
         m_pvHijackedReturnAddress = pvRetAddr;

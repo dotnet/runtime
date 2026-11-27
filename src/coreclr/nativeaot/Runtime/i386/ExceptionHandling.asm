@@ -46,27 +46,15 @@ FASTCALL_FUNC  RhpThrowHwEx, 8
 
         sub         esp, SIZEOF__ExInfo
 
-        INLINE_GETTHREAD        eax, edx        ;; eax <- thread, edx <- trashed
+        mov     ebx, ecx                                            ;; ebx <- exception code
 
+        lea     ecx, [esp + esp_offsetof_ExInfo]                    ;; ecx <- ExInfo*
+        lea     edx, [esp + esp_offsetof_Context]                   ;; edx <- PAL_LIMITED_CONTEXT*
+        push    2                                                   ;; ExKind.HardwareFault
+        call    RhpPushExInfo
+
+        mov     ecx, ebx                                            ;; ecx <- exception code
         lea     edx, [esp + esp_offsetof_ExInfo]                    ;; edx <- ExInfo*
-
-        xor     esi, esi
-        mov     [edx + OFFSETOF__ExInfo__m_exception], esi          ;; init the exception object to null
-        mov     byte ptr [edx + OFFSETOF__ExInfo__m_passNumber], 1  ;; init to the first pass
-        mov     dword ptr [edx + OFFSETOF__ExInfo__m_idxCurClause], 0FFFFFFFFh
-        mov     byte ptr [edx + OFFSETOF__ExInfo__m_kind], 2        ;; ExKind.HardwareFault
-
-        ;; link the ExInfo into the thread's ExInfo chain
-        mov     ebx, [eax + OFFSETOF__Thread__m_pExInfoStackHead]
-        mov     [edx + OFFSETOF__ExInfo__m_pPrevExInfo], ebx        ;; pExInfo->m_pPrevExInfo = m_pExInfoStackHead
-        mov     [eax + OFFSETOF__Thread__m_pExInfoStackHead], edx   ;; m_pExInfoStackHead = pExInfo
-
-        ;; set the exception context field on the ExInfo
-        lea     ebx, [esp + esp_offsetof_Context]                   ;; ebx <- PAL_LIMITED_CONTEXT*
-        mov     [edx + OFFSETOF__ExInfo__m_pExContext], ebx         ;; init ExInfo.m_pExContext
-
-        ;; ecx still contains the exception code
-        ;; edx contains the address of the ExInfo
         call    RhThrowHwEx
 
 ALTERNATE_ENTRY _RhpThrowHwEx2
@@ -134,41 +122,15 @@ FASTCALL_FUNC  RhpThrowImpl, 8
 
         sub         esp, SIZEOF__ExInfo
 
-        ;; -------------------------
+        mov     ebx, ecx                                            ;; ebx <- exception object
 
-        lea                     ebx, [ebp+4]    ;; ebx <- addr of return address
-        INLINE_GETTHREAD        eax, edi        ;; eax <- thread, edi <- trashed
+        lea     ecx, [esp + esp_offsetof_ExInfo]                    ;; ecx <- ExInfo*
+        push    edx                                                 ;; ExKind
+        lea     edx, [esp + 4 + esp_offsetof_Context]               ;; edx <- PAL_LIMITED_CONTEXT*
+        call    RhpPushExInfo
 
-        ;; There is runtime C# code that can tail call to RhpThrowEx using a binder intrinsic.  So the return
-        ;; address could have been hijacked when we were in that C# code and we must remove the hijack and
-        ;; reflect the correct return address in our exception context record.  The other throw helpers don't
-        ;; need this because they cannot be tail-called from C#.
-
-        INLINE_THREAD_UNHIJACK  eax, esi, edi       ;; trashes esi, edi
-
-        mov                     edi, [ebx]          ;; edi <- return address
-        mov                     [esp + esp_offsetof_Context + OFFSETOF__PAL_LIMITED_CONTEXT__IP], edi   ;; set 'faulting' IP after unhijack
-
-        lea     edi, [esp + esp_offsetof_ExInfo]    ;; edi <- ExInfo*
-
-        xor     esi, esi
-        mov     [edi + OFFSETOF__ExInfo__m_exception], esi          ;; init the exception object to null
-        mov     byte ptr [edi + OFFSETOF__ExInfo__m_passNumber], 1  ;; init to the first pass
-        mov     dword ptr [edi + OFFSETOF__ExInfo__m_idxCurClause], 0FFFFFFFFh
-        mov     byte ptr [edi + OFFSETOF__ExInfo__m_kind], dl       ;; ExKind
-
-        ;; link the ExInfo into the thread's ExInfo chain
-        mov     ebx, [eax + OFFSETOF__Thread__m_pExInfoStackHead]
-        mov     [edi + OFFSETOF__ExInfo__m_pPrevExInfo], ebx        ;; pExInfo->m_pPrevExInfo = m_pExInfoStackHead
-        mov     [eax + OFFSETOF__Thread__m_pExInfoStackHead], edi   ;; m_pExInfoStackHead = pExInfo
-
-        ;; set the exception context field on the ExInfo
-        lea     ebx, [esp + esp_offsetof_Context]                   ;; ebx <- PAL_LIMITED_CONTEXT*
-        mov     [edi + OFFSETOF__ExInfo__m_pExContext], ebx         ;; init ExInfo.m_pExContext
-        mov     edx, edi
-
-        ;; ecx still contains the exception object
-        ;; edx contains the address of the ExInfo
+        mov     ecx, ebx                                            ;; ecx <- exception object
+        lea     edx, [esp + esp_offsetof_ExInfo]                    ;; edx <- ExInfo*
         call    RhThrowEx
 
 ALTERNATE_ENTRY _RhpThrowImpl2
@@ -216,28 +178,13 @@ FASTCALL_FUNC  RhpRethrow, 0
 
         ;; -------------------------
 
-        lea                     ebx, [eax-4]    ;; ebx <- addr of return address
-        INLINE_GETTHREAD        eax, edx        ;; eax <- thread, edx <- trashed
+        lea     ecx, [esp + esp_offsetof_ExInfo]                    ;; ecx <- ExInfo*
+        lea     edx, [esp + esp_offsetof_Context]                   ;; edx <- PAL_LIMITED_CONTEXT*
+        push    0                                                   ;; ExKind.None
+        call    RhpPushExInfo
 
-        lea     edx, [esp + esp_offsetof_ExInfo]    ;; edx <- ExInfo*
-
-        xor     esi, esi
-        mov     [edx + OFFSETOF__ExInfo__m_exception], esi          ;; init the exception object to null
-        mov     byte ptr [edx + OFFSETOF__ExInfo__m_passNumber], 1  ;; init to the first pass
-        mov     dword ptr [edx + OFFSETOF__ExInfo__m_idxCurClause], 0FFFFFFFFh
-        mov     byte ptr [edx + OFFSETOF__ExInfo__m_kind], 0        ;; init to a deterministic value (ExKind.None)
-
-        ;; link the ExInfo into the thread's ExInfo chain
-        mov     ecx, [eax + OFFSETOF__Thread__m_pExInfoStackHead]   ;; ecx <- currently active ExInfo
-        mov     [edx + OFFSETOF__ExInfo__m_pPrevExInfo], ecx        ;; pExInfo->m_pPrevExInfo = m_pExInfoStackHead
-        mov     [eax + OFFSETOF__Thread__m_pExInfoStackHead], edx   ;; m_pExInfoStackHead = pExInfo
-
-        ;; set the exception context field on the ExInfo
-        lea     ebx, [esp + esp_offsetof_Context]                   ;; ebx <- PAL_LIMITED_CONTEXT*
-        mov     [edx + OFFSETOF__ExInfo__m_pExContext], ebx         ;; init ExInfo.m_pExContext
-
-        ;; ecx contains the currently active ExInfo
-        ;; edx contains the address of the new ExInfo
+        mov     ecx, eax                                            ;; ecx <- currently active ExInfo
+        lea     edx, [esp + esp_offsetof_ExInfo]                    ;; edx <- ExInfo*
         call    RhRethrow
 
 ALTERNATE_ENTRY _RhpRethrow2

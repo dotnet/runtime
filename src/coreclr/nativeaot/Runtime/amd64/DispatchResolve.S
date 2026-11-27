@@ -122,8 +122,7 @@ LOCAL_LABEL(CacheMiss\@):
         mov     rcx, [rsp - 8]
 
         // DispatchCellReg contains indirection cell address
-        lea     r10, [C_VAR(RhpCidResolve)]
-        jmp     C_FUNC(RhpUniversalTransitionTailCall)
+        jmp     C_FUNC(RhpInterfaceDispatchSlow)
 .endif
 
 LEAF_END \DispatchName, _TEXT
