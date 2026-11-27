@@ -7723,7 +7723,7 @@ void BlockReachabilitySets::Dump()
         {
             const char* sep = "";
             BitVecOps::VisitBits(&postOrderTraits, m_reachabilitySets[block->bbPostorderNum],
-                                 [=, &sep](unsigned poNum) {
+                                 [=, &sep](unsigned poNum) FORCEINLINE_LAMBDA {
                 printf("%s" FMT_BB, sep, m_dfsTree->GetPostOrder(poNum)->bbNum);
                 sep = " ";
                 return true;
@@ -8062,7 +8062,7 @@ void FlowGraphTryRegion::Dump(FlowGraphTryRegion* region)
     {
         printf(" [bbNum]:");
 
-        BitVecOps::VisitBits(regions->GetBlockBitVecTraits(), region->m_blocks, [=](unsigned index) {
+        BitVecOps::VisitBits(regions->GetBlockBitVecTraits(), region->m_blocks, [=](unsigned index) FORCEINLINE_LAMBDA {
             printf(" " FMT_BB, index);
             return true;
         });

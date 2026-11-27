@@ -2770,7 +2770,7 @@ bool Compiler::fgExposeUnpropagatedLocals(bool propagatedAny, LocalEqualsLocalAd
 void Compiler::fgExposeLocalsInBitVec(BitVec_ValArg_T bitVec)
 {
     BitVecTraits localsTraits(lvaCount, this);
-    BitVecOps::VisitBits(&localsTraits, bitVec, [=](unsigned lclNum) {
+    BitVecOps::VisitBits(&localsTraits, bitVec, [=](unsigned lclNum) FORCEINLINE_LAMBDA {
         lvaSetVarAddrExposed(lclNum DEBUGARG(AddressExposedReason::ESCAPE_ADDRESS));
         return true;
     });

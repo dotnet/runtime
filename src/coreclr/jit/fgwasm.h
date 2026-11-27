@@ -656,7 +656,7 @@ unsigned FgWasm::WasmRunSubgraphDfs(VisitPreorder  visitPreorder,
     //
     ArrayStack<BasicBlock*> entries(comp->getAllocator(CMK_WasmSccTransform));
 
-    BitVecOps::VisitBits(&m_traits, subgraph, [=, &entries](unsigned poNum) {
+    BitVecOps::VisitBits(&m_traits, subgraph, [=, &entries](unsigned poNum) FORCEINLINE_LAMBDA {
         BasicBlock* const block   = m_dfsTree->GetPostOrder(poNum);
         bool              hasPred = false;
         for (BasicBlock* const pred : block->PredBlocks())

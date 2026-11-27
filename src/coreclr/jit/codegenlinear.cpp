@@ -274,7 +274,8 @@ void CodeGen::genCodeForBlock(BasicBlock* block)
 #endif
     VarSetOps::VisitBits(m_compiler, block->bbLiveIn,
                          [=, &newLiveRegSet, &newRegGCrefSet,
-                          &newRegByrefSet DEBUGARG(&removedGCVars) DEBUGARG(&addedGCVars)](unsigned varIndex) {
+                          &newRegByrefSet DEBUGARG(&removedGCVars) DEBUGARG(&addedGCVars)](unsigned varIndex)
+                             FORCEINLINE_LAMBDA {
         LclVarDsc* varDsc = m_compiler->lvaGetDescByTrackedIndex(varIndex);
 
         if (varDsc->lvIsInReg())
@@ -670,7 +671,8 @@ void CodeGen::genCodeForBlock(BasicBlock* block)
     VarSetOps::UnionD(m_compiler, mismatchLiveVars,
                       VarSetOps::Diff(m_compiler, m_compiler->compCurLife, block->bbLiveOut));
     bool foundMismatchedRegVar = false;
-    VarSetOps::VisitBits(m_compiler, mismatchLiveVars, [=, &foundMismatchedRegVar](unsigned mismatchLiveVarIndex) {
+    VarSetOps::VisitBits(m_compiler, mismatchLiveVars,
+                         [=, &foundMismatchedRegVar](unsigned mismatchLiveVarIndex) FORCEINLINE_LAMBDA {
         LclVarDsc* varDsc = m_compiler->lvaGetDescByTrackedIndex(mismatchLiveVarIndex);
         if (varDsc->lvIsRegCandidate())
         {

@@ -9102,7 +9102,7 @@ void dumpConvertedVarSet(Compiler* comp, VARSET_VALARG_TP vars)
     pVarNumSet            = (BYTE*)_alloca(varNumSetBytes);
     memset(pVarNumSet, 0, varNumSetBytes); // empty the set
 
-    VarSetOps::VisitBits(comp, vars, [=](unsigned varIndex) {
+    VarSetOps::VisitBits(comp, vars, [=](unsigned varIndex) FORCEINLINE_LAMBDA {
         unsigned varNum    = comp->lvaTrackedIndexToLclNum(varIndex);
         pVarNumSet[varNum] = 1; // This varNum is in the set
         return true;

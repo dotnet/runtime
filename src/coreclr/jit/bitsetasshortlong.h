@@ -14,6 +14,15 @@
 
 typedef size_t* BitSetShortLongRep;
 
+// Placed after the parameter list of a functor passed to VisitBits or VisitBitsReverse, so the
+// functor body is inlined and the visit compiles like a hand-written loop. MSVC needs this on
+// the lambda itself, since call-site inlining attributes do not survive link-time code generation.
+#if defined(_MSC_VER) && !defined(__clang__)
+#define FORCEINLINE_LAMBDA [[msvc::forceinline]]
+#else
+#define FORCEINLINE_LAMBDA __attribute__((always_inline))
+#endif
+
 template <typename Env, typename BitSetTraits>
 class BitSetOps</*BitSetType*/ BitSetShortLongRep,
                 /*Brand*/ BSShortLong,
@@ -585,7 +594,7 @@ public:
     //   and iteration was aborted.
     //
     template <typename TFunc>
-    static bool VisitBits(Env env, BitSetShortLongRep bs, TFunc func)
+    FORCEINLINE static bool VisitBits(Env env, BitSetShortLongRep bs, TFunc func)
     {
 #ifdef HOST_64BIT
 #define BitScanForwardSizeT BitScanForward64
@@ -631,7 +640,7 @@ public:
     //   and iteration was aborted.
     //
     template <typename TFunc>
-    static bool VisitBitsReverse(Env env, BitSetShortLongRep bs, TFunc func)
+    FORCEINLINE static bool VisitBitsReverse(Env env, BitSetShortLongRep bs, TFunc func)
     {
 #ifdef HOST_64BIT
 #define BitScanReverseSizeT BitScanReverse64

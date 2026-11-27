@@ -336,7 +336,7 @@ void SsaBuilder::InsertPhiFunctions()
         }
 
         // For each local var number "lclNum" that "block" assigns to...
-        VarSetOps::VisitBits(m_compiler, block->bbVarDef, [=, &blockIDF](unsigned varIndex) {
+        VarSetOps::VisitBits(m_compiler, block->bbVarDef, [=, &blockIDF](unsigned varIndex) FORCEINLINE_LAMBDA {
             unsigned lclNum = m_compiler->lvaTrackedIndexToLclNum(varIndex);
             DBG_SSA_JITDUMP("  Considering local var V%02u:\n", lclNum);
 

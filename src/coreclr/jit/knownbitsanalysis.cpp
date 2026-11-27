@@ -623,7 +623,7 @@ void KnownBitsAnalysis::MergeAssertions(
         return;
     }
 
-    BitVecOps::VisitBits(m_compiler->apTraits, assertions, [&](unsigned index) {
+    BitVecOps::VisitBits(m_compiler->apTraits, assertions, [&](unsigned index) FORCEINLINE_LAMBDA {
         const Compiler::AssertionDsc& assertion = m_compiler->optGetAssertion(GetAssertionIndex(index));
         if (!assertion.GetOp1().KindIs(Compiler::O1K_VN) || (assertion.GetOp1().GetVN() != vn) ||
             assertion.KindIs(Compiler::OAK_NOT_EQUAL))

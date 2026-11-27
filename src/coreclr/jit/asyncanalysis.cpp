@@ -217,7 +217,7 @@ static void UpdateMutatedLocals(Compiler* compiler, GenTree* node, VARSET_TP& mu
 void AsyncAnalysis::PrintVarSet(Compiler* comp, VARSET_VALARG_TP set)
 {
     const char* sep = "";
-    VarSetOps::VisitBits(comp, set, [=, &sep](unsigned varIndex) {
+    VarSetOps::VisitBits(comp, set, [=, &sep](unsigned varIndex) FORCEINLINE_LAMBDA {
         unsigned lclNum = comp->lvaTrackedToVarNum[varIndex];
         printf("%sV%02u", sep, lclNum);
         sep = " ";

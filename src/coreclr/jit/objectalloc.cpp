@@ -600,7 +600,8 @@ void ObjectAllocator::DoAnalysis()
         JITDUMP("digraph ConnectionGraph {\n");
         for (unsigned int i = 0; i < m_bvCount; i++)
         {
-            BitVecOps::VisitBits(&m_bitVecTraits, m_ConnGraphAdjacencyMatrix[i], [=](unsigned lclIndex) {
+            BitVecOps::VisitBits(&m_bitVecTraits, m_ConnGraphAdjacencyMatrix[i],
+                                 [=](unsigned lclIndex) FORCEINLINE_LAMBDA {
                 JITDUMPEXEC(DumpIndex(lclIndex));
                 JITDUMP(" -> ");
                 JITDUMPEXEC(DumpIndex(i));
@@ -945,7 +946,7 @@ void ObjectAllocator::ComputeEscapingNodes(BitVecTraits* bitVecTraits, BitVec& e
 
             BitVecOps::VisitBits(bitVecTraits, escapingNodesToProcess,
                                  [=, &doOneMoreIteration, &newEscapingNodes, &escapingNodesToProcess,
-                                  &escapingNodes](unsigned lclIndex) {
+                                  &escapingNodes](unsigned lclIndex) FORCEINLINE_LAMBDA {
                 if (m_ConnGraphAdjacencyMatrix[lclIndex] != nullptr)
                 {
                     doOneMoreIteration = true;
@@ -966,7 +967,8 @@ void ObjectAllocator::ComputeEscapingNodes(BitVecTraits* bitVecTraits, BitVec& e
                     //
                     if (!BitVecOps::IsEmpty(bitVecTraits, newEscapingNodes))
                     {
-                        BitVecOps::VisitBits(bitVecTraits, newEscapingNodes, [=](unsigned newLclIndex) {
+                        BitVecOps::VisitBits(bitVecTraits, newEscapingNodes,
+                                             [=](unsigned newLclIndex) FORCEINLINE_LAMBDA {
                             JITDUMPEXEC(DumpIndex(lclIndex));
                             JITDUMP(" causes ");
                             JITDUMPEXEC(DumpIndex(newLclIndex));
@@ -1022,7 +1024,8 @@ void ObjectAllocator::ComputeConnGraphClosure(BitVecTraits* bitVecTraits, BitVec
         doOneMoreIteration = false;
 
         BitVecOps::VisitBits(bitVecTraits, nodesToProcess,
-                             [=, &doOneMoreIteration, &newNodes, &nodesToProcess, &nodes](unsigned lclIndex) {
+                             [=, &doOneMoreIteration, &newNodes, &nodesToProcess, &nodes](unsigned lclIndex)
+                                 FORCEINLINE_LAMBDA {
             if (m_ConnGraphAdjacencyMatrix[lclIndex] != nullptr)
             {
                 doOneMoreIteration = true;
@@ -1036,7 +1039,7 @@ void ObjectAllocator::ComputeConnGraphClosure(BitVecTraits* bitVecTraits, BitVec
 #ifdef DEBUG
                 if (!BitVecOps::IsEmpty(bitVecTraits, newNodes))
                 {
-                    BitVecOps::VisitBits(bitVecTraits, newNodes, [=](unsigned newLclIndex) {
+                    BitVecOps::VisitBits(bitVecTraits, newNodes, [=](unsigned newLclIndex) FORCEINLINE_LAMBDA {
                         JITDUMPEXEC(DumpIndex(lclIndex));
                         JITDUMP(" causes ");
                         JITDUMPEXEC(DumpIndex(newLclIndex));
@@ -1116,7 +1119,8 @@ void ObjectAllocator::ComputeStackObjectPointers(BitVecTraits* bitVecTraits)
     {
         printf("Definitely stack-pointing locals:");
         {
-            BitVecOps::VisitBits(bitVecTraits, m_DefinitelyStackPointingPointers, [=](unsigned index) {
+            BitVecOps::VisitBits(bitVecTraits, m_DefinitelyStackPointingPointers,
+                                 [=](unsigned index) FORCEINLINE_LAMBDA {
                 DumpIndex(index);
                 return true;
             });
@@ -1125,7 +1129,7 @@ void ObjectAllocator::ComputeStackObjectPointers(BitVecTraits* bitVecTraits)
 
         printf("Possibly stack-pointing locals:");
         {
-            BitVecOps::VisitBits(bitVecTraits, m_PossiblyStackPointingPointers, [=](unsigned index) {
+            BitVecOps::VisitBits(bitVecTraits, m_PossiblyStackPointingPointers, [=](unsigned index) FORCEINLINE_LAMBDA {
                 if (!BitVecOps::IsMember(bitVecTraits, m_DefinitelyStackPointingPointers, index))
                 {
                     DumpIndex(index);
@@ -3193,7 +3197,7 @@ bool ObjectAllocator::AnalyzePseudoForCloning(BitVecTraits* bitVecTraits, BitVec
     // Check if each conditionally escaping local escapes on its own; if so cloning is of no use
     //
     {
-        if (!BitVecOps::VisitBits(bitVecTraits, pseudoAdjacencies, [=](unsigned lclNumIndex) {
+        if (!BitVecOps::VisitBits(bitVecTraits, pseudoAdjacencies, [=](unsigned lclNumIndex) FORCEINLINE_LAMBDA {
             if (BitVecOps::IsMember(bitVecTraits, escapingNodes, lclNumIndex))
             {
                 // The enumerator var or a related var had escaping uses somewhere in the method,

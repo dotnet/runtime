@@ -1546,7 +1546,8 @@ AssertionIndex Compiler::optAddAssertion(const AssertionDsc& newAssertion)
 
         unsigned       lclNum        = newAssertion.GetOp1().GetLclNum();
         AssertionIndex existingIndex = NO_ASSERTION_INDEX;
-        BitVecOps::VisitBits(apTraits, GetAssertionDep(lclNum), [=, &newAssertion, &existingIndex](unsigned bvIndex) {
+        BitVecOps::VisitBits(apTraits, GetAssertionDep(lclNum),
+                             [=, &newAssertion, &existingIndex](unsigned bvIndex) FORCEINLINE_LAMBDA {
             AssertionIndex const index        = GetAssertionIndex(bvIndex);
             const AssertionDsc&  curAssertion = optGetAssertion(index);
 
@@ -2656,7 +2657,7 @@ AssertionIndex Compiler::optAssertionIsSubrange(GenTree* tree, IntegralRange ran
     assert(optLocalAssertionProp); // Subrange assertions are local only.
 
     AssertionIndex result = NO_ASSERTION_INDEX;
-    BitVecOps::VisitBits(apTraits, assertions, [=, &result](unsigned bvIndex) {
+    BitVecOps::VisitBits(apTraits, assertions, [=, &result](unsigned bvIndex) FORCEINLINE_LAMBDA {
         AssertionIndex const index        = GetAssertionIndex(bvIndex);
         const AssertionDsc&  curAssertion = optGetAssertion(index);
         if (curAssertion.CanPropSubRange())
@@ -2721,7 +2722,7 @@ bool Compiler::optAssertionVNIsSubtype(ValueNum objVN, ValueNum castToVN, ASSERT
 
     // Now look through assertions directly on the VN.
     // We're looking for "vn is (exactly/subtype) cls" assertions that can help us prove the cast.
-    if (!BitVecOps::VisitBits(apTraits, assertions, [=](unsigned bvIndex) {
+    if (!BitVecOps::VisitBits(apTraits, assertions, [=](unsigned bvIndex) FORCEINLINE_LAMBDA {
         AssertionIndex const index        = GetAssertionIndex(bvIndex);
         const AssertionDsc&  curAssertion = optGetAssertion(index);
 
@@ -4147,7 +4148,7 @@ GenTree* Compiler::optAssertionProp_LclFld(ASSERT_VALARG_TP assertions, GenTreeL
     ASSERT_TP filteredAssertions = BitVecOps::Intersection(apTraits, dep, assertions);
 
     GenTree* result = nullptr;
-    BitVecOps::VisitBits(apTraits, filteredAssertions, [=, &result](unsigned index) {
+    BitVecOps::VisitBits(apTraits, filteredAssertions, [=, &result](unsigned index) FORCEINLINE_LAMBDA {
         AssertionIndex assertionIndex = GetAssertionIndex(index);
         if (assertionIndex > optAssertionCount)
         {
@@ -4326,7 +4327,7 @@ void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
     }
 
     const ValueNum treeVN = vnStore->VNConservativeNormalValue(tree->gtVNPair);
-    BitVecOps::VisitBits(apTraits, assertions, [=](unsigned index) {
+    BitVecOps::VisitBits(apTraits, assertions, [=](unsigned index) FORCEINLINE_LAMBDA {
         const AssertionDsc& curAssertion = optGetAssertion(GetAssertionIndex(index));
 
         // First, analyze possible X ==/!= CNS assertions.
@@ -4548,7 +4549,7 @@ AssertionIndex Compiler::optLocalAssertionIsEqualOrNotEqual(
     ASSERT_TP apDependent = BitVecOps::Intersection(apTraits, dep, assertions);
 
     AssertionIndex result = NO_ASSERTION_INDEX;
-    BitVecOps::VisitBits(apTraits, apDependent, [=, &result](unsigned bvIndex) {
+    BitVecOps::VisitBits(apTraits, apDependent, [=, &result](unsigned bvIndex) FORCEINLINE_LAMBDA {
         AssertionIndex const index        = GetAssertionIndex(bvIndex);
         const AssertionDsc&  curAssertion = optGetAssertion(index);
 
@@ -4649,7 +4650,7 @@ ValueNum Compiler::optGetPreferredBoundForRange(ValueNum vn, ASSERT_VALARG_TP as
     }
 
     ValueNum result = ValueNumStore::NoVN;
-    BitVecOps::VisitBits(apTraits, assertions, [=, &result](unsigned index) {
+    BitVecOps::VisitBits(apTraits, assertions, [=, &result](unsigned index) FORCEINLINE_LAMBDA {
         const AssertionDsc& curAssertion = optGetAssertion(GetAssertionIndex(index));
         if (curAssertion.IsRelop() && (curAssertion.GetOp1().GetVN() == vn) &&
             curAssertion.GetOp2().KindIs(O2K_VN_ADD_CNS) &&
@@ -4733,7 +4734,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
         ValueNum falseVN = vnStore->VNZeroForType(TYP_INT);
 
         GenTree* updatedTree = nullptr;
-        BitVecOps::VisitBits(apTraits, assertions, [=, &newTree, &updatedTree](unsigned index) {
+        BitVecOps::VisitBits(apTraits, assertions, [=, &newTree, &updatedTree](unsigned index) FORCEINLINE_LAMBDA {
             const AssertionDsc& curAssertion = optGetAssertion(GetAssertionIndex(index));
 
             // Look for a relop-like assertion that matches the current relop exactly.
@@ -4909,7 +4910,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
 
     // Find an equal or not equal assertion involving "op1" and "op2".
     GenTree* updatedTree = nullptr;
-    BitVecOps::VisitBits(apTraits, assertions, [=, &newTree, &updatedTree](unsigned index) {
+    BitVecOps::VisitBits(apTraits, assertions, [=, &newTree, &updatedTree](unsigned index) FORCEINLINE_LAMBDA {
         const AssertionDsc& curAssertion = optGetAssertion(GetAssertionIndex(index));
         if (!curAssertion.CanPropEqualOrNotEqual() || (curAssertion.GetOp2().GetVN() != op2VN))
         {
@@ -5290,7 +5291,7 @@ bool Compiler::optAssertionIsNonNull(GenTree* op, ASSERT_VALARG_TP assertions)
 
         // Scan those looking for a suitable assertion
         //
-        if (!BitVecOps::VisitBits(apTraits, apDependent, [=](unsigned index) {
+        if (!BitVecOps::VisitBits(apTraits, apDependent, [=](unsigned index) FORCEINLINE_LAMBDA {
             AssertionIndex      assertionIndex = GetAssertionIndex(index);
             const AssertionDsc& curAssertion   = optGetAssertion(assertionIndex);
 
@@ -5351,7 +5352,7 @@ bool Compiler::optAssertionVNIsNonNull(ValueNum vn, ASSERT_VALARG_TP assertions,
     //
     if (!BitVecOps::MayBeUninit(assertions))
     {
-        if (!BitVecOps::VisitBits(apTraits, assertions, [=](unsigned index) {
+        if (!BitVecOps::VisitBits(apTraits, assertions, [=](unsigned index) FORCEINLINE_LAMBDA {
             AssertionIndex      assertionIndex = GetAssertionIndex(index);
             const AssertionDsc& curAssertion   = optGetAssertion(assertionIndex);
             if (curAssertion.CanPropNonNull() &&
@@ -5850,7 +5851,7 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions,
         // "length != 0" assertion for it.
         if ((idxLo == 0) && (idxHi == 0) && (lenLo <= 0))
         {
-            if (!BitVecOps::VisitBits(apTraits, assertions, [=](unsigned bvIndex) {
+            if (!BitVecOps::VisitBits(apTraits, assertions, [=](unsigned bvIndex) FORCEINLINE_LAMBDA {
                 const AssertionDsc& assertion = optGetAssertion(GetAssertionIndex(bvIndex));
                 if (assertion.IsConstantInt32Assertion() && assertion.KindIs(OAK_NOT_EQUAL) &&
                     (assertion.GetOp1().GetVN() == vnCurLen) && (assertion.GetOp2().GetIntConstant() == 0))

@@ -1227,7 +1227,7 @@ void CodeGenInterface::VariableLiveKeeper::siStartOrCloseVariableLiveRanges(VARS
 {
     if (m_compiler->opts.compDbgInfo)
     {
-        VarSetOps::VisitBits(m_compiler, varsIndexSet, [=](unsigned varIndex) {
+        VarSetOps::VisitBits(m_compiler, varsIndexSet, [=](unsigned varIndex) FORCEINLINE_LAMBDA {
             unsigned int     varNum = m_compiler->lvaTrackedIndexToLclNum(varIndex);
             const LclVarDsc* varDsc = m_compiler->lvaGetDesc(varNum);
             siStartOrCloseVariableLiveRange(varDsc, varNum, isBorn, isDying);
@@ -1360,7 +1360,7 @@ void CodeGenInterface::VariableLiveKeeper::siEndAllVariableLiveRange(VARSET_VALA
     {
         if (m_compiler->lvaTrackedCount > 0 || !m_compiler->opts.OptimizationDisabled())
         {
-            VarSetOps::VisitBits(m_compiler, varsToClose, [=](unsigned varIndex) {
+            VarSetOps::VisitBits(m_compiler, varsToClose, [=](unsigned varIndex) FORCEINLINE_LAMBDA {
                 unsigned int varNum = m_compiler->lvaTrackedIndexToLclNum(varIndex);
                 siEndVariableLiveRange(varNum);
                 return true;

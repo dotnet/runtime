@@ -1873,7 +1873,7 @@ void ReplaceVisitor::PlanReadBacks()
 
             BasicBlock* common    = nullptr;
             weight_t    oldWeight = 0;
-            BitVecOps::VisitBits(&m_postOrderTraits, sites, [&](unsigned j) {
+            BitVecOps::VisitBits(&m_postOrderTraits, sites, [&](unsigned j) FORCEINLINE_LAMBDA {
                 BasicBlock* block = m_dfsTree->GetPostOrder(j);
                 if (!placementDfs->Contains(block))
                 {
@@ -1969,7 +1969,7 @@ void ReplaceVisitor::StartBlock(BasicBlock* block)
         // Only mixed incoming states need reconciliation; unanimous pending states
         // can remain lazy. Do this before dropping fields that are not live-in.
         BitVecOps::DiffD(m_replacementsTraits, m_reconcileReadBacks, m_needsReadBack);
-        BitVecOps::VisitBits(m_replacementsTraits, m_structCurrent, [&](unsigned index) {
+        BitVecOps::VisitBits(m_replacementsTraits, m_structCurrent, [&](unsigned index) FORCEINLINE_LAMBDA {
             const ReplacementInfo& info = m_replacementInfo[index];
             if (!m_liveness->IsReplacementLiveIn(block, info.Aggregate->LclNum, info.Index))
             {
@@ -1980,7 +1980,7 @@ void ReplaceVisitor::StartBlock(BasicBlock* block)
         });
     }
 
-    BitVecOps::VisitBits(m_replacementsTraits, m_reconcileReadBacks, [&](unsigned index) {
+    BitVecOps::VisitBits(m_replacementsTraits, m_reconcileReadBacks, [&](unsigned index) FORCEINLINE_LAMBDA {
         const ReplacementInfo& info = m_replacementInfo[index];
         AggregateInfo*         agg  = info.Aggregate;
         if (!m_liveness->IsReplacementLiveIn(block, agg->LclNum, info.Index))
@@ -2061,7 +2061,7 @@ void ReplaceVisitor::EndBlock()
     bool materialize =
         BitVecOps::IsMember(&m_postOrderTraits, m_requiresReadBackOnExit, m_currentBlock->bbPostorderNum);
 
-    BitVecOps::VisitBits(m_replacementsTraits, m_needsReadBack, [&](unsigned index) {
+    BitVecOps::VisitBits(m_replacementsTraits, m_needsReadBack, [&](unsigned index) FORCEINLINE_LAMBDA {
         const ReplacementInfo& info = m_replacementInfo[index];
         AggregateInfo*         agg  = info.Aggregate;
         Replacement&           rep  = agg->Replacements[info.Index];

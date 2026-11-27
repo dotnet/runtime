@@ -151,7 +151,7 @@ static void RunVisitBitsTests(CompAllocator env, const unsigned* bits, unsigned 
     }
 
     unsigned k         = 0;
-    bool     completed = LclBitSetOps::VisitBits(env, bs, [&](unsigned bitNum) {
+    bool     completed = LclBitSetOps::VisitBits(env, bs, [&](unsigned bitNum) FORCEINLINE_LAMBDA {
         assert(bitNum == bits[k]);
         k++;
         return true;
@@ -159,7 +159,7 @@ static void RunVisitBitsTests(CompAllocator env, const unsigned* bits, unsigned 
     assert(completed && (k == count));
 
     k         = count;
-    completed = LclBitSetOps::VisitBitsReverse(env, bs, [&](unsigned bitNum) {
+    completed = LclBitSetOps::VisitBitsReverse(env, bs, [&](unsigned bitNum) FORCEINLINE_LAMBDA {
         k--;
         assert(bitNum == bits[k]);
         return true;
@@ -168,7 +168,7 @@ static void RunVisitBitsTests(CompAllocator env, const unsigned* bits, unsigned 
 
     // Stop after the second element.
     k         = 0;
-    completed = LclBitSetOps::VisitBits(env, bs, [&](unsigned bitNum) {
+    completed = LclBitSetOps::VisitBits(env, bs, [&](unsigned bitNum) FORCEINLINE_LAMBDA {
         assert(bitNum == bits[k]);
         k++;
         return k < 2;
@@ -176,7 +176,7 @@ static void RunVisitBitsTests(CompAllocator env, const unsigned* bits, unsigned 
     assert(!completed && (k == 2));
 
     k         = 0;
-    completed = LclBitSetOps::VisitBitsReverse(env, bs, [&](unsigned bitNum) {
+    completed = LclBitSetOps::VisitBitsReverse(env, bs, [&](unsigned bitNum) FORCEINLINE_LAMBDA {
         k++;
         assert(bitNum == bits[count - k]);
         return k < 2;

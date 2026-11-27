@@ -5050,7 +5050,7 @@ ContinuationLayoutBuilder* ContinuationLayoutBuilder::CreateSharedLayout(Compile
         }
     }
 
-    BitVecOps::VisitBits(&traits, locals, [=](unsigned localNum) {
+    BitVecOps::VisitBits(&traits, locals, [=](unsigned localNum) FORCEINLINE_LAMBDA {
         sharedLayout->AddLocal(localNum);
         return true;
     });
