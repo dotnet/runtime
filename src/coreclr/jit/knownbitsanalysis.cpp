@@ -34,6 +34,17 @@ bool KnownBitsAnalysis::Bounds::IsUnknown() const
 }
 
 //------------------------------------------------------------------------
+// IntersectWith: Refine the bounds with other bounds that hold for the same value.
+//
+void KnownBitsAnalysis::Bounds::IntersectWith(const Bounds& other)
+{
+    UMin = APInt::umax(UMin, other.UMin);
+    UMax = APInt::umin(UMax, other.UMax);
+    SMin = APInt::smax(SMin, other.SMin);
+    SMax = APInt::smin(SMax, other.SMax);
+}
+
+//------------------------------------------------------------------------
 // ApplyRelop: Refine the bounds given that "this relop other" holds.
 //
 // Arguments:
@@ -140,8 +151,11 @@ static Compiler::optAssertionKind SwapRelop(Compiler::optAssertionKind kind)
             return Compiler::OAK_LE;
         case Compiler::OAK_GE_UN:
             return Compiler::OAK_LE_UN;
-        default:
+        case Compiler::OAK_EQUAL:
+        case Compiler::OAK_NOT_EQUAL:
             return kind;
+        default:
+            unreached();
     }
 }
 
@@ -307,18 +321,7 @@ bool KnownBitsAnalysis::ComputeBounds(GenTree* tree, ASSERT_VALARG_TP assertions
 
     *pBounds              = Bounds(KnownBits(width));
     const KnownBits known = Compute(m_compiler->optConservativeNormalVN(tree), width, assertions, pBounds);
-    if (known.isUnknown() && pBounds->IsUnknown())
-    {
-        return false;
-    }
-
-    // The known bits can be more precise than the bounds (e.g. after an EQ assertion).
-    const Bounds fromKnown(known);
-    pBounds->UMin = APInt::umax(pBounds->UMin, fromKnown.UMin);
-    pBounds->UMax = APInt::umin(pBounds->UMax, fromKnown.UMax);
-    pBounds->SMin = APInt::smax(pBounds->SMin, fromKnown.SMin);
-    pBounds->SMax = APInt::smin(pBounds->SMax, fromKnown.SMax);
-    return true;
+    return !known.isUnknown() || !pBounds->IsUnknown();
 }
 
 //------------------------------------------------------------------------
@@ -375,8 +378,8 @@ unsigned KnownBitsAnalysis::GetWidth(var_types type)
 //    vn                 - the value number
 //    width              - the bit width of the value (32 or 64)
 //    assertions         - the assertions that hold for "vn", can be uninit
-//    pBounds            - [out, optional] the bounds of the value, these can be more
-//                         precise than the ones the known bits imply
+//    pBounds            - [out, optional] the bounds of the value, these incorporate the
+//                         known bits and can be more precise than the ones they imply
 //
 // Return Value:
 //    The known bits; "unknown" when nothing is known (including the case of "vn" not
@@ -457,10 +460,7 @@ KnownBits KnownBitsAnalysis::Compute(ValueNum vn, unsigned width, ASSERT_VALARG_
     }
     if (!funcBounds.IsUnknown())
     {
-        bounds.UMin = APInt::umax(bounds.UMin, funcBounds.UMin);
-        bounds.UMax = APInt::umin(bounds.UMax, funcBounds.UMax);
-        bounds.SMin = APInt::smax(bounds.SMin, funcBounds.SMin);
-        bounds.SMax = APInt::smin(bounds.SMax, funcBounds.SMax);
+        bounds.IntersectWith(funcBounds);
         bounds.Normalize();
         if (bounds.UMin.ule(bounds.UMax))
         {
@@ -478,6 +478,8 @@ KnownBits KnownBitsAnalysis::Compute(ValueNum vn, unsigned width, ASSERT_VALARG_
 
     if (pBounds != nullptr)
     {
+        // The known bits can be more precise than the bounds (e.g. after an EQ assertion).
+        bounds.IntersectWith(Bounds(known));
         *pBounds = bounds;
     }
     return known;

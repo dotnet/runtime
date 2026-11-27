@@ -47,6 +47,7 @@ class KnownBitsAnalysis
         Bounds(const KnownBits& known);
 
         bool IsUnknown() const;
+        void IntersectWith(const Bounds& other);
         void ApplyRelop(Compiler::optAssertionKind kind, const Bounds& other);
         void Normalize();
     };
