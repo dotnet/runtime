@@ -8,8 +8,6 @@ namespace System.IO.MemoryMappedFiles
 {
     internal sealed partial class MemoryMappedView
     {
-        internal const ulong EmptyViewNativeLength = 1;
-
         public static MemoryMappedView CreateView(
             SafeMemoryMappedFileHandle memMappedFileHandle, MemoryMappedFileAccess access,
             long requestedOffset, long requestedSize)
@@ -97,9 +95,10 @@ namespace System.IO.MemoryMappedFiles
                 // we create a map that extends beyond the end of the underlying file, as that'll fail on some platforms at the
                 // time of the map's creation.  Instead, since there's no data to be read/written, it doesn't actually matter
                 // what backs the view, so we just create an anonymous mapping.
+                nativeSize = (ulong)pageSize;
                 addr = Interop.Sys.MMap(
                     IntPtr.Zero,
-                    EmptyViewNativeLength, // mmap requires a nonzero length for an empty view
+                    nativeSize,
                     viewProtForCreation,
                     flags | Interop.Sys.MemoryMappedFlags.MAP_ANONYMOUS,
                     new SafeFileHandle(new IntPtr(-1), false),        // ignore the actual fd even if there was one

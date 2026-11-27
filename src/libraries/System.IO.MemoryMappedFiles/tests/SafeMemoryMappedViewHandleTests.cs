@@ -67,12 +67,13 @@ namespace System.IO.MemoryMappedFiles.Tests
         }
 
         [Fact]
-        public void EmptyViewHandleRetainsZeroLength()
+        public void EmptyViewHasNativeMappingButZeroLogicalLength()
         {
             using MemoryMappedFile mmf = MemoryMappedFile.CreateNew(null, 4096);
             using MemoryMappedViewStream view = mmf.CreateViewStream(4096, 0);
 
-            Assert.Equal(0UL, view.SafeMemoryMappedViewHandle.ByteLength);
+            Assert.Equal(0, view.Length);
+            Assert.True(view.SafeMemoryMappedViewHandle.ByteLength > 0);
         }
 
         [LibraryImport("libc")]
