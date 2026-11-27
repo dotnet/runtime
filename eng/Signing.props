@@ -117,8 +117,7 @@
       </ItemGroup>
       <ItemGroup Condition="'$(TargetRid)' == 'browser-wasm' and '$(WasmEnableThreads)' != 'true'">
         <PackageArtifacts
-          Include="$(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.WorkloadTesting.Internal.*.nupkg;
-                  $(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.WebAssembly.Sdk.*.nupkg;
+          Include="$(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.WebAssembly.Sdk.*.nupkg;
                   $(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.WebAssembly.Templates.net*.*.nupkg;
                   $(ArtifactsPackagesDir)**\Microsoft.NET.Sdk.WebAssembly.Pack.*.nupkg;
                   $(ArtifactsPackagesDir)**\Microsoft.NET.Workload.Mono.ToolChain.*.nupkg" />
