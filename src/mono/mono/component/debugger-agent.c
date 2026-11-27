@@ -3837,8 +3837,28 @@ static void
 runtime_initialized (MonoProfiler *prof)
 {
 	process_profiler_event (EVENT_KIND_VM_START, mono_thread_current ());
-	if (CHECK_PROTOCOL_VERSION (2, 59))
-		process_profiler_event (EVENT_KIND_ASSEMBLY_LOAD, (mono_get_corlib ()->assembly));
+	if (CHECK_PROTOCOL_VERSION (2, 59)) {
+		MonoAssembly *corlib = mono_get_corlib ()->assembly;
+		process_profiler_event (EVENT_KIND_ASSEMBLY_LOAD, corlib);
+		/*
+		 * Other assemblies may have been loaded before the VM_START event was sent (for instance
+		 * when an AOT image eagerly loads its references), and their ASSEMBLY_LOAD events were
+		 * dropped. Send them now, except those still pending, which will be sent later.
+		 */
+		GPtrArray *assemblies = mono_alc_get_all_loaded_assemblies ();
+		for (guint i = 0; i < assemblies->len; ++i) {
+			MonoAssembly *assembly = (MonoAssembly *) g_ptr_array_index (assemblies, i);
+			if (assembly == corlib)
+				continue;
+			dbg_lock ();
+			gboolean pending = g_ptr_array_find (pending_assembly_loads, assembly, NULL);
+			dbg_unlock ();
+			if (pending)
+				continue;
+			process_profiler_event (EVENT_KIND_ASSEMBLY_LOAD, assembly);
+		}
+		g_ptr_array_free (assemblies, TRUE);
+	}
 	if (agent_config.defer) {
 		ERROR_DECL (error);
 		start_debugger_thread_func (error);
