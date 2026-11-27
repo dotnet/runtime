@@ -875,7 +875,7 @@ namespace System.Net.Http.Functional.Tests
     {
         public SocketsHttpHandler_HttpClientHandler_Proxy_Test(ITestOutputHelper output) : base(output) { }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsTlsSupported))]
         public async Task ProxyTunnelFailure_RedactsUriInException()
         {
             await LoopbackServer.CreateClientAndServerAsync(async proxyAddress =>
