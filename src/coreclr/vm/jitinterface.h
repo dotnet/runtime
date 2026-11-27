@@ -825,11 +825,7 @@ public:
     }
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)
-    void SetAllowOptionalRelocs(BOOL fAllowOptionalRelocs)
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_fAllowOptionalRelocs = fAllowOptionalRelocs;
-    }
+    void SetAllowOptionalRelocs(BOOL fAllowOptionalRelocs);
 #endif
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)
@@ -845,10 +841,22 @@ public:
         return m_fJumpStubOverflow;
     }
 
+#if defined(TARGET_ARM64)
+    BOOL IsPageRelocOverflow()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_fPageRelocOverflow;
+    }
+#endif
+
     BOOL JitAgain() CORINFO_OVERRIDE
     {
         LIMITED_METHOD_CONTRACT;
+#if defined(TARGET_ARM64)
+        return m_fJumpStubOverflow || m_fPageRelocOverflow;
+#else
         return m_fJumpStubOverflow;
+#endif
     }
 
     size_t GetReserveForJumpStubs()
@@ -969,6 +977,10 @@ protected :
     ULONG                   m_usedUnwindInfos;
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)
+#if defined(TARGET_ARM64)
+    UINT_PTR                m_pageRelocSourcePage = 0;
+    BOOL                    m_fPageRelocOverflow = FALSE;
+#endif
     BOOL                    m_fAllowOptionalRelocs; // Allow optional PC-relative addressing
     BOOL                    m_fJumpStubOverflow;   // Overflow while trying to alocate jump stub slot within PC relative branch region
                                                    // The code will need to be regenerated (with optional PC-relative addressing disabled).

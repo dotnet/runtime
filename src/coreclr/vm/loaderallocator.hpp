@@ -397,6 +397,12 @@ public:
     BYTE *GetVSDHeapInitialBlock(DWORD *pSize);
     BYTE *GetCodeHeapInitialBlock(const BYTE * loAddr, const BYTE * hiAddr, DWORD minimumSize, DWORD *pSize);
 
+#ifdef TARGET_ARM64
+    // After a real ADRP miss, remember the observed JIT code page for subsequent reach estimates.
+    // This is a numeric hint only. Concurrent compilations may observe different placements.
+    Volatile<UINT_PTR> m_pageRelocSourcePage{0};
+#endif
+
     // ExecutionManager caches
     void * m_pLastUsedCodeHeap;
     void * m_pLastUsedDynamicCodeHeap;

@@ -12035,6 +12035,11 @@ void CEEJitInfo::recordRelocation(void *       location,
         //
         if (!FitsInRel28(delta))
         {
+            // Budget every far branch even if a page miss has already forced a retry.
+            m_reserveForJumpStubs = max((size_t)0x400, m_reserveForJumpStubs + 2*BACK_TO_BACK_JUMP_ALLOCATE_SIZE);
+            if (m_fPageRelocOverflow)
+                break;
+
             TADDR jumpStubAddr;
 
             if (m_fJumpStubOverflow)
@@ -12063,10 +12068,6 @@ void CEEJitInfo::recordRelocation(void *       location,
                                                           (BYTE *) hiAddr,
                                                           NULL);
             }
-
-            // Keep track of conservative estimate of how much memory may be needed by jump stubs. We will use it to reserve extra memory
-            // on retry to increase chances that the retry succeeds.
-            m_reserveForJumpStubs = max((size_t)0x400, m_reserveForJumpStubs + 2*BACK_TO_BACK_JUMP_ALLOCATE_SIZE);
 
             if (jumpStubAddr == 0)
             {
@@ -12102,10 +12103,9 @@ void CEEJitInfo::recordRelocation(void *       location,
         _ASSERTE(addlDelta == 0);
 
         // Write the 21 bits pc-relative page address into location.
-        INT64 targetPage = (INT64)target & 0xFFFFFFFFFFFFF000LL;
-        INT64 locationPage = (INT64)location & 0xFFFFFFFFFFFFF000LL;
-        INT64 relPage = (INT64)(targetPage - locationPage);
-        INT64 pages = relPage >> 12;
+        INT64 sourcePage = (UINT_PTR)location >> 12;
+        INT64 targetPage = (UINT_PTR)target >> 12;
+        INT64 pages = targetPage - sourcePage;
 #ifdef _DEBUG
         static ConfigDWORD forcePageRelocOverflow;
         if (m_fAllowOptionalRelocs &&
@@ -12121,7 +12121,14 @@ void CEEJitInfo::recordRelocation(void *       location,
             {
                 // The instruction address is known only after allocation. Discard this
                 // compilation and use absolute cell addresses on the retry.
-                m_fJumpStubOverflow = TRUE;
+                // Stress can force the retry even when the actual pages are in range.
+                if (!FitsInArm64PageDelta(targetPage - sourcePage))
+                {
+                    LoaderAllocator* allocator = m_pMethodBeingCompiled->GetLoaderAllocator();
+                    allocator->m_pageRelocSourcePage.StoreWithoutBarrier((UINT_PTR)sourcePage);
+                }
+
+                m_fPageRelocOverflow = TRUE;
                 break;
             }
 
@@ -12259,10 +12266,12 @@ void CEEJitInfo::recordRelocation(void *       location,
 // and static fields in a preferred memory region and base the decision on this
 // region.
 //
-// If we guess wrong we will recover in recordRelocation if we notice that we
-// cannot actually use the kind of reloc: in that case we will rejit the
-// function and turn off the use of those relocs in the future. This scheme
-// works based on two assumptions:
+// On arm64, a page relocation overflow disables optional relocations for the retry.
+// Subsequent compilations also check reach from the loader allocator's observed code
+// placement until allocations return to the preferred range.
+//
+// The rel32 policy retries the method and disables optional rel32 for future
+// compilations. It relies on two assumptions:
 //
 // 1) The JIT will ask about relocs only for memory that was allocated by the
 //    loader heap in the preferred region.
@@ -12286,7 +12295,11 @@ CorInfoReloc CEEJitInfo::getRelocTypeHint(void * target)
     // Alignment constraints are the consumer's: a folded page-offset load needs a
     // scaled offset, materializing an address with ADRP and ADD does not.
     if (m_fAllowOptionalRelocs && ExecutableAllocator::IsInPreferredPageRelativeRange(target))
-        return CorInfoReloc::ARM64_PAGEBASE_REL21;
+    {
+        INT64 targetPage = (UINT_PTR)target >> 12;
+        if (m_pageRelocSourcePage == 0 || FitsInArm64PageDelta(targetPage - (INT64)m_pageRelocSourcePage))
+            return CorInfoReloc::ARM64_PAGEBASE_REL21;
+    }
 #endif
 
     // No hints
@@ -12864,6 +12877,16 @@ void CEEJitInfo::allocMem (AllocMemArgs *pArgs)
     m_moduleBase = m_pCodeHeap->GetModuleBase();
 
     BYTE* start = (BYTE *)((CodeHeader*)m_CodeHeader)->GetCodeStartAddress();
+#ifdef TARGET_ARM64
+    // Once misses occur, track placement until allocation returns to the preferred range.
+    // Refresh even on an absolute-address retry, which can land in a different heap.
+    UINT_PTR sourcePage = (UINT_PTR)start >> 12;
+    if (m_pageRelocSourcePage != 0 && m_pageRelocSourcePage != sourcePage)
+    {
+        UINT_PTR nextHint = ExecutableAllocator::IsPreferredExecutableRange(start) ? 0 : sourcePage;
+        m_pMethodBeingCompiled->GetLoaderAllocator()->m_pageRelocSourcePage.StoreWithoutBarrier(nextHint);
+    }
+#endif
     size_t offset = 0;
     size_t writeableOffset = (BYTE *)m_CodeHeaderRW - (BYTE *)m_CodeHeader;
 
@@ -13418,6 +13441,17 @@ static TADDR UnsafeJitFunctionWorker(
     return (TADDR)nativeEntry;
 }
 
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)
+void CEEJitInfo::SetAllowOptionalRelocs(BOOL allow)
+{
+    LIMITED_METHOD_CONTRACT;
+    m_fAllowOptionalRelocs = allow;
+#ifdef TARGET_ARM64
+    m_pageRelocSourcePage = m_pMethodBeingCompiled->GetLoaderAllocator()->m_pageRelocSourcePage.LoadWithoutBarrier();
+#endif
+}
+#endif
+
 class JumpStubOverflowCheck final
 {
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)
@@ -13478,19 +13512,17 @@ public:
         STANDARD_VM_CONTRACT;
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)
-        if (jitInfo.IsJumpStubOverflow())
+        if (jitInfo.JitAgain())
         {
-            // Retry with optional PC-relative addressing disabled.
-
-#if defined(TARGET_AMD64) || defined(TARGET_RISCV64)
-            // Disallow rel32 relocs in future.
-            g_fAllowRel32 = FALSE;
-#endif // TARGET_AMD64 || TARGET_RISCV64
-            _fAllowOptionalRelocs = FALSE;
 #if defined(TARGET_ARM64)
-            _fForceJumpStubOverflow = FALSE;
-#endif // TARGET_ARM64
+            if (jitInfo.IsPageRelocOverflow())
+                _fAllowOptionalRelocs = FALSE;
 
+            _fForceJumpStubOverflow = FALSE;
+#else
+            g_fAllowRel32 = FALSE;
+            _fAllowOptionalRelocs = FALSE;
+#endif
             _reserveForJumpStubs = jitInfo.GetReserveForJumpStubs();
             return true;
         }
