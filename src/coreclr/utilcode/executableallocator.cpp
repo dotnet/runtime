@@ -277,6 +277,10 @@ void ExecutableAllocator::InitLazyPreferredRange(size_t base, size_t size, int r
     // to coreclr.dll.  This avoids having to create jump stubs for calls to
     // helpers and R2R images loaded close to coreclr.dll.
     //
+    // Windows arm64 keeps the existing radius. BL reaches 128 MiB, while ADRP can
+    // span the nearly 4 GiB between the endpoints. Code allocated past one end can
+    // lose reach to data near the other. Measure how much of the range arm64 workloads
+    // use before changing its size.
     SIZE_T reach = 0x7FFF0000u;
 
     // We will choose the preferred code region based on the address of coreclr.dll. The JIT helpers
