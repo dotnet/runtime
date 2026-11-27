@@ -416,7 +416,9 @@ namespace Internal.IL
             public override bool IsInitLocals => _methodIL.IsInitLocals;
             public override int MaxStack => _methodIL.MaxStack;
 
-            public IEcmaModule Module => ((EcmaType)(_variant.OwningType)).Module;
+            // Tokens in the wrapped IL are relative to its module, which differs from the variant's
+            // owning module when the target's IL was rewritten into the mutable module for cross-module inlining.
+            public IEcmaModule Module => _methodIL is IEcmaMethodIL ecmaMethodIL ? ecmaMethodIL.Module : ((EcmaType)(_variant.OwningType)).Module;
         }
     }
 }
