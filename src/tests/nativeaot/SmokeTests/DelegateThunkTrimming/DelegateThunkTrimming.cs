@@ -8,6 +8,12 @@ public class DelegateThunkTrimming
 {
     public static int Main()
     {
+#if OPTIMIZED
+        const bool ExpectThunks = false;
+#else
+        const bool ExpectThunks = true;
+#endif
+
         Func<int, int> d = Identity;
         if (d(42) != 42 || d.Target is not null)
             return 1;
@@ -18,9 +24,10 @@ public class DelegateThunkTrimming
         object objectArrayThunk = typeof(Delegate).GetField("ObjectArrayThunk", BindingFlags.Static | BindingFlags.NonPublic).GetRawConstantValue();
         foreach (object thunkKind in new[] { multicastThunk, objectArrayThunk })
         {
-            if ((IntPtr)getThunk.Invoke(d, new object[] { thunkKind }) != IntPtr.Zero)
+            bool hasThunk = (IntPtr)getThunk.Invoke(d, new object[] { thunkKind }) != IntPtr.Zero;
+            if (hasThunk != ExpectThunks)
             {
-                Console.WriteLine($"Unexpected thunk {thunkKind}");
+                Console.WriteLine($"Thunk {thunkKind}: expected presence {ExpectThunks}, got {hasThunk}");
                 return 2;
             }
         }
