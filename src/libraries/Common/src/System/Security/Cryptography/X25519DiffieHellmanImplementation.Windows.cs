@@ -217,7 +217,7 @@ namespace System.Security.Cryptography
             }
 
             requiredReduction = X25519WindowsHelpers.ReducePublicKey(source, reducedPublicKey);
-            reducedZeroPublicKey = reducedPublicKey.IndexOfAnyExcept((byte)0) < 0;
+            reducedZeroPublicKey = !reducedPublicKey.ContainsAnyExcept((byte)0);
 
             if (reducedZeroPublicKey)
             {

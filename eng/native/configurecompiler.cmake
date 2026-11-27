@@ -75,7 +75,13 @@ endif()
 
 if (CMAKE_CONFIGURATION_TYPES) # multi-configuration generator?
     set(CMAKE_CONFIGURATION_TYPES "Debug;Checked;Release;RelWithDebInfo" CACHE STRING "" FORCE)
-endif (CMAKE_CONFIGURATION_TYPES)
+else ()
+    # Set the values to display when interactively configuring CMAKE_BUILD_TYPE.
+    set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug;Checked;Release;RelWithDebInfo")
+endif ()
+
+# Use uppercase CMAKE_BUILD_TYPE for the string comparisons below
+string(TOUPPER "${CMAKE_BUILD_TYPE}" UPPERCASE_CMAKE_BUILD_TYPE)
 
 set(CMAKE_C_FLAGS_CHECKED "")
 set(CMAKE_CXX_FLAGS_CHECKED "")
@@ -185,12 +191,6 @@ if (MSVC)
   add_linker_flag(/OPT:ICF RELWITHDEBINFO)
 
 elseif (CLR_CMAKE_HOST_UNIX)
-  # Set the values to display when interactively configuring CMAKE_BUILD_TYPE
-  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "DEBUG;CHECKED;RELEASE;RELWITHDEBINFO")
-
-  # Use uppercase CMAKE_BUILD_TYPE for the string comparisons below
-  string(TOUPPER ${CMAKE_BUILD_TYPE} UPPERCASE_CMAKE_BUILD_TYPE)
-
   if(CLR_CMAKE_HOST_BROWSER OR CLR_CMAKE_HOST_WASI)
     # The emscripten build has additional warnings so -Werror breaks
     add_compile_options(-Wno-unused-parameter)
@@ -663,6 +663,20 @@ if (CLR_CMAKE_HOST_UNIX OR CLR_CMAKE_HOST_WASI)
     add_compile_options(-fstack-protector-strong)
   endif()
 
+  if(CLR_CMAKE_HOST_OPENHARMONY)
+    # The OHOS NDK toolchain injects --gcc-toolchain (via CMAKE_C_COMPILER_EXTERNAL_TOOLCHAIN)
+    # which clang reports as unused; silence it (in CMAKE_C_FLAGS so try_compile checks
+    # inherit it) so -Werror doesn't fail the build. Applies to assembly too.
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Qunused-arguments")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Qunused-arguments")
+    set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -Qunused-arguments")
+    # The arm64 asm helpers access t_ThreadStatics/t_runtime_thread_locals via TLS
+    # descriptors; the C++ definitions must use native (non-emulated) TLS to match.
+    # (-fno-emulated-tls already makes the OHOS NDK clang use the global-dynamic
+    # model, so an explicit -ftls-model flag is redundant.)
+    add_compile_options(-fno-emulated-tls)
+  endif()
+
   # Suppress warnings-as-errors in release branches to reduce servicing churn
   if (PRERELEASE)
     add_compile_options(-Werror)
@@ -854,6 +868,9 @@ if(CLR_CMAKE_TARGET_UNIX)
     add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_LINUX>)
     if(CLR_CMAKE_TARGET_LINUX_MUSL)
         add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_LINUX_MUSL>)
+    endif()
+    if(CLR_CMAKE_TARGET_OPENHARMONY)
+      add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_OPENHARMONY>)
     endif()
     if(CLR_CMAKE_TARGET_ANDROID)
       add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_ANDROID>)
@@ -1119,7 +1136,6 @@ endif()
 if(CLR_CMAKE_ENABLE_CODE_COVERAGE)
 
   if(CLR_CMAKE_HOST_UNIX)
-    string(TOUPPER ${CMAKE_BUILD_TYPE} UPPERCASE_CMAKE_BUILD_TYPE)
     if(NOT UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG)
       message( WARNING "Code coverage results with an optimised (non-Debug) build may be misleading" )
     endif(NOT UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG)

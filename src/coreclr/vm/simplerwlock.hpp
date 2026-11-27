@@ -137,6 +137,30 @@ private:
     static void ReleaseWriteLock(SimpleRWLock *s) { };
 #endif // DACCESS_COMPILE
 
+    struct ReadLockHolderTraits final
+    {
+        using Type = SimpleRWLock*;
+        static constexpr Type Default() { return NULL; }
+        static void Free(Type lock) noexcept
+        {
+            STATIC_CONTRACT_WRAPPER;
+            if (lock != NULL)
+                ReleaseReadLock(lock);
+        }
+    };
+
+    struct WriteLockHolderTraits final
+    {
+        using Type = SimpleRWLock*;
+        static constexpr Type Default() { return NULL; }
+        static void Free(Type lock) noexcept
+        {
+            STATIC_CONTRACT_WRAPPER;
+            if (lock != NULL)
+                ReleaseWriteLock(lock);
+        }
+    };
+
 public:
     SimpleRWLock (GC_MODE gcMode, LOCK_TYPE locktype)
         : m_gcMode (gcMode)
@@ -147,7 +171,11 @@ public:
         } CONTRACTL_END;
 
         m_RWLock = 0;
+#ifndef DACCESS_COMPILE
         m_spinCount = (GetCurrentProcessCpuCount() == 1) ? 0 : 4000;
+#else
+        m_spinCount = 0;
+#endif
         m_WriterWaiting = FALSE;
 
 #ifdef _DEBUG
@@ -201,8 +229,26 @@ public:
 
 #endif // DACCESS_COMPILE
 
-    typedef DacHolder<SimpleRWLock *, SimpleRWLock::AcquireReadLock, SimpleRWLock::ReleaseReadLock> SimpleReadLockHolder;
-    typedef DacHolder<SimpleRWLock *, SimpleRWLock::AcquireWriteLock, SimpleRWLock::ReleaseWriteLock> SimpleWriteLockHolder;
+    using SimpleReadLockHolder = LifetimeHolder<ReadLockHolderTraits>;
+    using SimpleWriteLockHolder = LifetimeHolder<WriteLockHolderTraits>;
+
+    static SimpleReadLockHolder TakeReadLock(SimpleRWLock* lock)
+    {
+        WRAPPER_NO_CONTRACT;
+        SUPPORTS_DAC;
+        if (lock != NULL)
+            AcquireReadLock(lock);
+        return SimpleReadLockHolder(lock);
+    }
+
+    static SimpleWriteLockHolder TakeWriteLock(SimpleRWLock* lock)
+    {
+        WRAPPER_NO_CONTRACT;
+        SUPPORTS_DAC;
+        if (lock != NULL)
+            AcquireWriteLock(lock);
+        return SimpleWriteLockHolder(lock);
+    }
 
 #ifdef _DEBUG
     BOOL LockTaken ()

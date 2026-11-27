@@ -14,8 +14,11 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Net.NetworkInformation;
+using System.Net.Security;
 using System.Net.Sockets;
 using System.Reflection;
+using System.Security.Authentication;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
@@ -78,6 +81,113 @@ namespace System.Net.Mail.Tests
         {
             Smtp.EnableSsl = value;
             Assert.Equal(value, Smtp.EnableSsl);
+        }
+
+        [Fact]
+        public void SslOptions_DefaultsAndIdentity()
+        {
+            SslClientAuthenticationOptions options = Smtp.SslOptions;
+            Assert.Same(options, Smtp.SslOptions);
+            Assert.Null(options.TargetHost);
+            Assert.Null(options.ClientCertificates);
+            Assert.Null(options.RemoteCertificateValidationCallback);
+            Assert.Equal(SslProtocols.None, options.EnabledSslProtocols);
+            Assert.Equal(X509RevocationMode.NoCheck, options.CertificateRevocationCheckMode);
+
+            using var other = new SmtpClient();
+            Assert.NotSame(options, other.SslOptions);
+
+            var replacement = new SslClientAuthenticationOptions();
+            Smtp.SslOptions = replacement;
+            Assert.Same(replacement, Smtp.SslOptions);
+            AssertExtensions.Throws<ArgumentNullException>("value", () => Smtp.SslOptions = null!);
+            Assert.Same(replacement, Smtp.SslOptions);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void ClientCertificates_ForwardsToSslOptions(bool getCertificatesFirst)
+        {
+            if (getCertificatesFirst)
+            {
+                Assert.Empty(Smtp.ClientCertificates);
+            }
+
+            var certificates = new X509CertificateCollection();
+            var options = new SslClientAuthenticationOptions { ClientCertificates = certificates };
+            Smtp.SslOptions = options;
+            Assert.Same(certificates, Smtp.ClientCertificates);
+
+            var replacement = new X509CertificateCollection();
+            options.ClientCertificates = replacement;
+            Assert.Same(replacement, Smtp.ClientCertificates);
+
+            options.ClientCertificates = null;
+            X509CertificateCollection initialized = Smtp.ClientCertificates;
+            Assert.Empty(initialized);
+            Assert.Same(initialized, options.ClientCertificates);
+            Assert.Same(initialized, Smtp.ClientCertificates);
+
+            Smtp.SslOptions = new SslClientAuthenticationOptions();
+            Assert.NotSame(initialized, Smtp.ClientCertificates);
+            Assert.Same(Smtp.ClientCertificates, Smtp.SslOptions.ClientCertificates);
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task SslOptions_ServicePointManagerIgnored(bool customValidation)
+        {
+            await RemoteExecutor.Invoke(async useCustomValidation =>
+            {
+                int globalCallbackCalls = 0;
+#pragma warning disable SYSLIB0014 // Verify that SMTP no longer uses these global settings.
+                ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls13;
+                ServicePointManager.CheckCertificateRevocationList = true;
+                ServicePointManager.ServerCertificateValidationCallback = (sender, certificate, chain, errors) =>
+                {
+                    globalCallbackCalls++;
+                    return !bool.Parse(useCustomValidation);
+                };
+#pragma warning restore SYSLIB0014
+
+                using var certificates = new CertificateSetup();
+                using var server = new LoopbackSmtpServer();
+                server.SslOptions = new SslServerAuthenticationOptions
+                {
+                    ServerCertificateContext = certificates.CreateSslStreamCertificateContext(),
+                    EnabledSslProtocols = SslProtocols.Tls12,
+                };
+                using SmtpClient client = server.CreateClient();
+                client.EnableSsl = true;
+                Assert.Equal(SslProtocols.None, client.SslOptions.EnabledSslProtocols);
+                Assert.Equal(X509RevocationMode.NoCheck, client.SslOptions.CertificateRevocationCheckMode);
+                Assert.Null(client.SslOptions.RemoteCertificateValidationCallback);
+
+                if (bool.Parse(useCustomValidation))
+                {
+                    int clientCallbackCalls = 0;
+                    client.SslOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, errors) =>
+                    {
+                        clientCallbackCalls++;
+                        Assert.Equal(X509RevocationMode.NoCheck, chain.ChainPolicy.RevocationMode);
+                        return true;
+                    };
+
+                    await client.SendMailAsync("from@example.com", "to@example.com", "subject", "body");
+                    Assert.Equal(1, clientCallbackCalls);
+                    Assert.True(server.IsEncrypted);
+                }
+                else
+                {
+                    SmtpException exception = await Assert.ThrowsAsync<SmtpException>(() =>
+                        client.SendMailAsync("from@example.com", "to@example.com", "subject", "body"));
+                    Assert.IsType<AuthenticationException>(exception.InnerException);
+                }
+
+                Assert.Equal(0, globalCallbackCalls);
+            }, customValidation.ToString()).DisposeAsync();
         }
 
         [Theory]

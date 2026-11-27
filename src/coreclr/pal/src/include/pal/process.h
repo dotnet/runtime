@@ -2,21 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*++
-
-
-
 Module Name:
-
     include/pal/process.h
 
 Abstract:
-
     Miscellaneous process related functions.
-
-Revision History:
-
-
-
 --*/
 
 #ifndef _PAL_PROCESS_H_
@@ -47,32 +37,7 @@ extern DWORD gPID;
 
 extern LPWSTR pAppDir;
 
-// The Mac sandbox application group ID (if exists) and container (shared) path
-#ifdef __APPLE__
-extern LPCSTR gApplicationGroupId;
-extern int gApplicationGroupIdLength;
-#endif // __APPLE__
 extern PathCharString *gSharedFilesPath;
-
-/*++
-Function:
-  PROCCreateInitialProcess
-
-Abstract
-  Initialize all the structures for the initial process.
-
-Parameter
-  lpwstrCmdLine:   Command line.
-  lpwstrFullPath : Full path to executable
-
-Return
-  TRUE: if successful
-  FALSE: otherwise
-
-Notes :
-    This function takes ownership of lpwstrCmdLine, but not of lpwstrFullPath
---*/
-BOOL PROCCreateInitialProcess(LPWSTR lpwstrCmdLine, LPWSTR lpwstrFullPath);
 
 /*++
 Function

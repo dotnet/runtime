@@ -37,10 +37,21 @@ namespace System.Formats.Cbor
         /// <para>The written data is not accepted under the current conformance mode.</para></exception>
         public void WriteDateTimeOffset(DateTimeOffset value)
         {
+#if NET
+            const int MaxRfc3339Length = 33; // yyyy-MM-ddTHH:mm:ss.fffffff+HH:mm
+            Span<char> buffer = stackalloc char[MaxRfc3339Length];
+            bool success =
+                value.TotalOffsetMinutes == 0 ?
+                value.UtcDateTime.TryFormat(buffer, out int charsWritten, Rfc3339FormatString, CultureInfo.InvariantCulture) : // prefer 'Z' over '+00:00'
+                value.TryFormat(buffer, out charsWritten, Rfc3339FormatString, CultureInfo.InvariantCulture);
+            Debug.Assert(success);
+            ReadOnlySpan<char> dateString = buffer.Slice(0, charsWritten);
+#else
             string dateString =
                 value.TotalOffsetMinutes == 0 ?
                 value.UtcDateTime.ToString(Rfc3339FormatString, CultureInfo.InvariantCulture) : // prefer 'Z' over '+00:00'
                 value.ToString(Rfc3339FormatString, CultureInfo.InvariantCulture);
+#endif
 
             WriteTag(CborTag.DateTimeString);
             WriteTextString(dateString);
@@ -95,7 +106,7 @@ namespace System.Formats.Cbor
             WriteByteString(unsignedBigEndianEncoding);
         }
 
-        /// <summary>Writes the provided value value as a tagged decimal fraction encoding, as described in RFC7049 section 2.4.3</summary>
+        /// <summary>Writes the provided value as a tagged decimal fraction encoding, as described in RFC7049 section 2.4.3</summary>
         /// <param name="value">The value to write.</param>
         /// <exception cref="InvalidOperationException"><para>Writing a new value exceeds the definite length of the parent data item.</para>
         /// <para>-or-</para>
@@ -143,7 +154,7 @@ namespace System.Formats.Cbor
             public static void Deconstruct(decimal value, out decimal mantissa, out byte scale)
             {
                 Span<int> buf = [0, 0, 0, 0];
-                CborHelpers.GetBitsFromDecimal(value, buf);
+                decimal.GetBits(value, buf);
 
                 int flags = buf[3];
                 bool isNegative = (flags & SignMask) == SignMask;
@@ -155,7 +166,7 @@ namespace System.Formats.Cbor
             private static decimal ReconstructFromNegativeScale(decimal mantissa, byte scale)
             {
                 Span<int> buf = [0, 0, 0, 0];
-                CborHelpers.GetBitsFromDecimal(mantissa, buf);
+                decimal.GetBits(mantissa, buf);
 
                 int flags = buf[3];
                 bool isNegative = (flags & SignMask) == SignMask;

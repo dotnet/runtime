@@ -15,9 +15,19 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
         public UnwindInfo() { }
 
         public UnwindInfo(NativeReader imageReader, int offset)
+            : this(imageReader, offset, hasFuncletUnwindInfo: false)
+        {
+        }
+
+        /// <param name="hasFuncletUnwindInfo">
+        /// True for R2R images that use funclets on x86 (major version 14 and later), where the unwind data is
+        /// an UNWIND_INFO structure holding the funclet length and the GC info follows it. Before that the
+        /// unwind data is the GC info itself, which begins with the encoded method size.
+        /// </param>
+        public UnwindInfo(NativeReader imageReader, int offset, bool hasFuncletUnwindInfo)
         {
             int startOffset = offset;
-            FunctionLength = imageReader.DecodeUnsignedGc(ref offset);
+            FunctionLength = hasFuncletUnwindInfo ? imageReader.ReadUInt32(ref offset) : imageReader.DecodeUnsignedGc(ref offset);
             Size = offset - startOffset;
         }
 

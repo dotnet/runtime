@@ -6,6 +6,7 @@ package net.dot.android.crypto;
 import android.net.http.X509TrustManagerExtensions;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.util.List;
 import javax.net.ssl.X509TrustManager;
 
 /**
@@ -39,36 +40,31 @@ public final class DotnetProxyTrustManager implements X509TrustManager {
 
     public void checkClientTrusted(X509Certificate[] chain, String authType)
             throws CertificateException {
-        if (!verifyRemoteCertificate(sslStreamProxyHandle, getClientTrustValidationError(chain, authType))) {
+        if (!verifyRemoteCertificate(sslStreamProxyHandle, getClientTrustValidationError(chain, authType), null)) {
             throw new CertificateException();
         }
     }
 
     public void checkServerTrusted(X509Certificate[] chain, String authType)
             throws CertificateException {
-        if (!verifyRemoteCertificate(sslStreamProxyHandle, getServerTrustValidationError(chain, authType))) {
-            throw new CertificateException();
-        }
-    }
-
-    /**
-     * Checks the server's certificate chain against the platform trust manager.
-     * Returns null if the platform trusts the chain, or the platform's textual
-     * rejection reason otherwise.
-     * A non-null result does NOT abort the handshake — it is forwarded to the managed
-     * SslStream validation code, which treats a non-null reason as a chain error while
-     * also surfacing the text for diagnostics.
-     */
-    private String getServerTrustValidationError(X509Certificate[] chain, String authType) {
+        String validationError = null;
+        X509Certificate trustAnchor = null;
         try {
             if (targetHost != null) {
-                platformTrustManagerExtensions.checkServerTrusted(chain, authType, targetHost);
+                List<X509Certificate> trustedChain =
+                    platformTrustManagerExtensions.checkServerTrusted(chain, authType, targetHost);
+                if (!trustedChain.isEmpty()) {
+                    // A lookup hint only; managed validation independently checks system membership and PKIX policy.
+                    trustAnchor = trustedChain.get(trustedChain.size() - 1);
+                }
             } else {
                 platformTrustManager.checkServerTrusted(chain, authType);
             }
-            return null;
         } catch (CertificateException e) {
-            return e.toString();
+            validationError = e.toString();
+        }
+        if (!verifyRemoteCertificate(sslStreamProxyHandle, validationError, trustAnchor)) {
+            throw new CertificateException();
         }
     }
 
@@ -87,5 +83,6 @@ public final class DotnetProxyTrustManager implements X509TrustManager {
         return new X509Certificate[0];
     }
 
-    static native boolean verifyRemoteCertificate(long sslStreamProxyHandle, String platformValidationError);
+    static native boolean verifyRemoteCertificate(
+        long sslStreamProxyHandle, String platformValidationError, X509Certificate platformTrustAnchor);
 }

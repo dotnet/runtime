@@ -52,9 +52,8 @@ namespace ILCompiler.DependencyAnalysis
             _reference = reference;
         }
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory factory)
         {
-            yield break;
         }
 
         protected override EntityHandle WriteInternal(ModuleWritingContext writeContext)

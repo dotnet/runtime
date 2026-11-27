@@ -497,6 +497,35 @@ namespace System.Collections.Tests
             Assert.Equal(count, dictionary.Count);
         }
 
+        [Theory]
+        [MemberData(nameof(ValidPositiveCollectionSizes))]
+        public void OrderedDictionary_Generic_EnsureCapacityAndTrimExcess_DoNotInvalidateEnumeration(int count)
+        {
+            OrderedDictionary<TKey, TValue> dictionary = (OrderedDictionary<TKey, TValue>)GenericIDictionaryFactory(count);
+            var expected = new List<KeyValuePair<TKey, TValue>>(dictionary);
+
+            using OrderedDictionary<TKey, TValue>.Enumerator enumerator = dictionary.GetEnumerator();
+            Assert.True(enumerator.MoveNext());
+            var actual = new List<KeyValuePair<TKey, TValue>> { enumerator.Current };
+
+            int oldCapacity = dictionary.Capacity;
+            dictionary.EnsureCapacity(oldCapacity * 2);
+            Assert.InRange(dictionary.Capacity, oldCapacity * 2, int.MaxValue);
+            if (enumerator.MoveNext())
+            {
+                actual.Add(enumerator.Current);
+            }
+
+            dictionary.TrimExcess();
+            Assert.InRange(dictionary.Capacity, dictionary.Count, oldCapacity);
+            while (enumerator.MoveNext())
+            {
+                actual.Add(enumerator.Current);
+            }
+
+            Assert.Equal(expected, actual);
+        }
+
         #endregion
 
         #region IReadOnlyDictionary<TKey, TValue>.Keys

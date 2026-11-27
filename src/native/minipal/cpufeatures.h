@@ -52,6 +52,7 @@
 #define ARM64IntrinsicConstants_SveSm4 (1 << 15)
 #define ARM64IntrinsicConstants_Cssc (1 << 16)
 #define ARM64IntrinsicConstants_Fp16 (1 << 17)
+#define ARM64IntrinsicConstants_SvePmull128 (1 << 18)
 
 #include <assert.h>
 
@@ -72,11 +73,23 @@ extern "C"
 {
 #endif // __cplusplus
 
+/**
+ * Get the instruction sets that the CPU and the OS support.
+ *
+ * @return A combination of the IntrinsicConstants flags of the host architecture, with IntrinsicConstants_Invalid
+ *         set if a baseline instruction set is not supported.
+ */
 int minipal_getcpufeatures(void);
+
+/**
+ * Check if the current process is running under the Apple Rosetta x64 emulator.
+ *
+ * @return true under Rosetta, false otherwise (always false when not running as x86 or x64).
+ */
 bool minipal_detect_rosetta(void);
 
 #ifdef __cplusplus
 }
 #endif // __cplusplus
 
-#endif
+#endif // HAVE_MINIPAL_CPUFEATURES_H

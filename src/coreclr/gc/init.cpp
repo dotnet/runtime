@@ -1113,25 +1113,6 @@ gc_heap* gc_heap::make_gc_heap (
 #endif //MULTIPLE_HEAPS
 }
 
-// Destroys resources owned by gc. It is assumed that a last GC has been performed and that
-// the finalizer queue has been drained.
-void gc_heap::shutdown_gc()
-{
-    destroy_semi_shared();
-
-#ifdef MULTIPLE_HEAPS
-    //delete the heaps array
-    delete[] g_heaps;
-    destroy_thread_support();
-    n_heaps = 0;
-#endif //MULTIPLE_HEAPS
-    //destroy seg_manager
-
-    destroy_initial_memory();
-
-    GCToOSInterface::Shutdown();
-}
-
 void gc_heap::init_records()
 {
     // An option is to move this to be after we figure out which gen to condemn so we don't
@@ -1315,14 +1296,11 @@ bool gc_heap::compute_hard_limit()
     large_pages_emulation_mode_p = (large_pages_config == 2);
 #endif //HOST_64BIT
 
+#ifndef HOST_WASM
     // Large pages are pre-committed and cannot be decommitted, so they imply
-    // never_decommit_p. On WASM, reserve == commit (posix_memalign allocates real
-    // memory) and there is no way to give memory back to the engine.
-#if defined(HOST_WASM) || defined(__wasm__)
-    never_decommit_p = true;
-#else
+    // never_decommit_p.
     never_decommit_p = use_large_pages_p;
-#endif // defined(HOST_WASM) || defined(__wasm__)
+#endif // !HOST_WASM
 
     if (heap_hard_limit_oh[soh] || heap_hard_limit_oh[loh] || heap_hard_limit_oh[poh])
     {

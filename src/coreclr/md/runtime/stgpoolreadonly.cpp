@@ -1,13 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //*****************************************************************************
 // StgPoolReadOnly.cpp
 //
-
-//
 // Read only pools are used to reduce the amount of data actually required in the database.
-//
 //*****************************************************************************
+
 #include "stdafx.h"                     // Standard include.
 #include <stgpool.h>                    // Our interface definitions.
 
@@ -71,27 +70,6 @@ void StgPoolReadOnly::Uninit() noexcept
 
     m_pSegData = (BYTE*)m_zeros;
     m_pNextSeg = 0;
-}
-
-
-//*****************************************************************************
-// Convert a string to UNICODE into the caller's buffer.
-//*****************************************************************************
-HRESULT StgPoolReadOnly::GetStringW(        // Return code.
-    ULONG       iOffset,                    // Offset of string in pool.
-    _Out_writes_(cchBuffer) LPWSTR szOut,   // Output buffer for string.
-    int         cchBuffer)                  // Size of output buffer.
-{
-    STATIC_CONTRACT_NOTHROW;
-    HRESULT hr;
-    LPCSTR  pString;                // The string in UTF8.
-    int     iChars;
-
-    IfFailRet(GetString(iOffset, &pString));
-    iChars = ::MultiByteToWideChar(CP_UTF8, 0, pString, -1, szOut, cchBuffer);
-    if (iChars == 0)
-        return (BadError(HRESULT_FROM_NT(GetLastError())));
-    return S_OK;
 }
 
 //*****************************************************************************

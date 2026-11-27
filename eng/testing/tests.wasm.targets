@@ -18,10 +18,7 @@
 
     <!--
       - For regular library tests, it will use the symbols file from the runtime pack.
-      - for AOT library tests, we avoid WasmNativeDebugSymbols and we WasmNativeStrip so that we don't run OOM on helix during wasm-opt
     -->
-    <WasmNativeStrip Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(RunAOTCompilation)' == 'true'">true</WasmNativeStrip>
-    <WasmNativeDebugSymbols Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(RunAOTCompilation)' == 'true'">false</WasmNativeDebugSymbols>
     <WasmNativeDebugSymbols Condition="'$(DebuggerSupport)' == 'true' and '$(WasmNativeDebugSymbols)' == ''">true</WasmNativeDebugSymbols>
 
     <TrimMode Condition="'$(TrimMode)' == ''">full</TrimMode>
@@ -37,12 +34,11 @@
     <XUnitUseRandomizedTestOrderer Condition="'$(XUnitUseRandomizedTestOrderer)' == '' and '$(IsTestProject)' == 'true'">true</XUnitUseRandomizedTestOrderer>
     <!-- Outerloop wasm/CoreCLR runs the slow [OuterLoop] suites; give each suite a much larger
          per-suite xharness timeout so a long suite is not killed mid-run (xharness exit code 71).
-         Innerloop keeps the existing 01:30:00 (CoreCLR) / 00:30:00 budgets. Keep this in sync with
+         Innerloop keeps the existing 01:30:00 budget. Keep this in sync with
          the per-batch and AzDO job timeouts in src/libraries/sendtohelix-browser.targets and
          eng/pipelines/libraries/outerloop.yml (suite <= batch <= job). -->
-    <WasmXHarnessTestsTimeout Condition="'$(WasmXHarnessTestsTimeout)' == '' and '$(RuntimeFlavor)' == 'CoreCLR' and ('$(TestScope)' == 'outerloop' or '$(TestScope)' == 'all')">04:00:00</WasmXHarnessTestsTimeout>
-    <WasmXHarnessTestsTimeout Condition="'$(WasmXHarnessTestsTimeout)' == '' and '$(RuntimeFlavor)' == 'CoreCLR'">01:30:00</WasmXHarnessTestsTimeout>
-    <WasmXHarnessTestsTimeout Condition="'$(WasmXHarnessTestsTimeout)' == ''">00:30:00</WasmXHarnessTestsTimeout>
+    <WasmXHarnessTestsTimeout Condition="'$(WasmXHarnessTestsTimeout)' == '' and ('$(TestScope)' == 'outerloop' or '$(TestScope)' == 'all')">04:00:00</WasmXHarnessTestsTimeout>
+    <WasmXHarnessTestsTimeout Condition="'$(WasmXHarnessTestsTimeout)' == ''">01:30:00</WasmXHarnessTestsTimeout>
     <RunWorkingDirectory>$(BundleDir)</RunWorkingDirectory>
 
     <WasmCommonTargetsPath Condition="Exists('$(MSBuildThisFileDirectory)WasmApp.Common.props')">$(MSBuildThisFileDirectory)</WasmCommonTargetsPath>
@@ -71,49 +67,13 @@
   </Target>
 
   <PropertyGroup>
-    <BuildAOTTestsOn Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(Scenario)' == 'BuildWasmApps'">helix</BuildAOTTestsOn>
-    <BuildAOTTestsOn Condition="'$(BuildAOTTestsOnHelix)' == 'true'">helix</BuildAOTTestsOn>
-    <BuildAOTTestsOn Condition="'$(BuildAOTTestsOn)' == ''">local</BuildAOTTestsOn>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(BuildAOTTestsOn)' == 'local' and '$(TargetOS)' != 'wasi'">
-    <!--
-      When building for BuildAOTTestsOnHelix=true, the BrowserWasmApp.targets are *not* imported, because
-      they get instead used by the AOT proxy project on helix.
-
-      On the build machine only the regular part of the build is run, which includes trimming. But if
-      BrowserWasmApp.targets modify any trimming arguments, then those will not get picked up by this build.
-      For example - linker substitution files used with simd builds.
-
-      So, set those parameters explicitly here.
-      -->
-    <_WasmIntrinsicsSubstitutions Condition="'$(WasmEnableSIMD)' != 'false'">WasmIntrinsics</_WasmIntrinsicsSubstitutions>
-    <_WasmIntrinsicsSubstitutions Condition="'$(WasmEnableSIMD)' == 'false'">NoWasmIntrinsics</_WasmIntrinsicsSubstitutions>
-    <!-- WasmEnableSIMD is about native codegen, and CoreCLR browser-wasm forces it on, but the CoreCLR
-         interpreter maps every System.Runtime.Intrinsics arch intrinsic except get_IsSupported to
-         PlatformNotSupportedException. Only crossgen'd code can execute them, so without ReadyToRun stubbing
-         IsSupported to true leaves a guarded SIMD path unconditionally reachable and it throws at startup. -->
-    <_WasmIntrinsicsSubstitutions Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(PublishReadyToRun)' != 'true'">NoWasmIntrinsics</_WasmIntrinsicsSubstitutions>
-    <_ExtraTrimmerArgs>$(_ExtraTrimmerArgs) --substitutions "$(BrowserProjectRoot)build\ILLink.Substitutions.$(_WasmIntrinsicsSubstitutions).xml"</_ExtraTrimmerArgs>
-  </PropertyGroup>
-
-  <ItemGroup>
-    <_AOT_InternalForceInterpretAssemblies Include="@(HighAotMemoryUsageAssembly)" />
-  </ItemGroup>
-
-  <PropertyGroup>
     <!-- non-library tests have IsWasmProject==false -->
-    <BundleTestWasmAppDependsOn Condition="'$(BuildAOTTestsOn)' == 'local'">WasmTriggerPublishApp</BundleTestWasmAppDependsOn>
-    <BundleTestWasmAppDependsOn Condition="'$(BuildAOTTestsOnHelix)' == 'true'">$(BundleTestWasmAppDependsOn);_BundleAOTTestWasmAppForHelix</BundleTestWasmAppDependsOn>
+    <BundleTestWasmAppDependsOn>WasmTriggerPublishApp</BundleTestWasmAppDependsOn>
 
     <!-- Use BundleDir here, since WasmAppDir is set in a target, and `dotnet run` reads
          $(Run*) without running any targets -->
     <_RuntimeConfigJsonPath>$([MSBuild]::NormalizePath($(BundleDir), 'WasmTestRunner.runtimeconfig.json'))</_RuntimeConfigJsonPath>
     <RunArguments>exec &quot;$([MSBuild]::NormalizePath($(WasmAppHostDir), 'WasmAppHost.dll'))&quot; --runtime-config &quot;$(_RuntimeConfigJsonPath)&quot; $(WasmHostArguments) $(StartArguments) $(WasmXHarnessMonoArgs) $(_AppArgs)</RunArguments>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(BuildAOTTestsOnHelix)' == 'true'">
-    <!-- wasm targets are not imported at all, in this case, because we run the wasm build on helix -->
   </PropertyGroup>
 
   <ItemGroup Condition="'$(_UseWasmSymbolicator)' == 'true'">
@@ -122,98 +82,20 @@
   </ItemGroup>
 
   <Target Name="BundleTestWasmApp" DependsOnTargets="$(BundleTestWasmAppDependsOn)" Condition="'$(IsWasmProject)' != 'false'">
-    <ForceMSBuildGC Condition="'$(RuntimeFlavor)' != 'CoreCLR'" />
   </Target>
 
-  <UsingTask Condition="'$(BuildAOTTestsOnHelix)' == 'true'"
-             TaskName="Microsoft.WebAssembly.Build.Tasks.GenerateAOTProps"
-             AssemblyFile="$(WasmBuildTasksAssemblyPath)" TaskFactory="TaskHostFactory" />
-
-  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.ForceMSBuildGC" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
-
-  <Target Name="_BundleAOTTestWasmAppForHelix" DependsOnTargets="$(_BundleAOTTestWasmAppForHelixDependsOn)">
-    <PropertyGroup>
-      <_MainAssemblyPath Condition="'%(WasmAssembliesToBundle.FileName)' == $(AssemblyName) and '%(WasmAssembliesToBundle.Extension)' == '.dll'">%(WasmAssembliesToBundle.Identity)</_MainAssemblyPath>
-      <RuntimeConfigFilePath>$([System.IO.Path]::ChangeExtension($(_MainAssemblyPath), '.runtimeconfig.json'))</RuntimeConfigFilePath>
-    </PropertyGroup>
-
-    <Error Text="Item WasmAssembliesToBundle is empty. This is likely an authoring error." Condition="@(WasmAssembliesToBundle->Count()) == 0" />
-
-    <ItemGroup>
-      <BundleFiles Include="@(WasmAssembliesToBundle)"          TargetDir="publish\%(WasmAssembliesToBundle.RecursiveDir)" />
-      <BundleFiles Include="$(RuntimeConfigFilePath)"           TargetDir="publish" />
-
-      <BundleFiles Include="$(WasmProjectRoot)data\aot-tests\*" TargetDir="publish" />
-      <!-- FIXME: what would be the correct place to do this? -->
-      <BundleFiles Include="$(WasmProjectRoot)build\WasmApp.Common*"  TargetDir="publish" />
-    </ItemGroup>
-
-    <ItemGroup Condition="'$(DebuggerSupport)' == 'true'">
-      <!-- Add any pdb files, if available -->
-      <_BundlePdbFiles Include="$([System.IO.Path]::ChangeExtension('%(WasmAssembliesToBundle.Identity)', '.pdb'))" />
-      <BundleFiles Include="@(_BundlePdbFiles)" TargetDir="publish" Condition="Exists(%(_BundlePdbFiles.Identity))" />
-    </ItemGroup>
-
-    <!-- To recreate the original project on helix, we need to set the wasm properties also, same as the
-         library test project. Eg. $(InvariantGlobalization) -->
-    <ItemGroup>
-      <_WasmPropertyNames Include="AOTMode" />
-      <_WasmPropertyNames Include="AssemblyName" />
-      <_WasmPropertyNames Include="DisableParallelAot" />
-      <_WasmPropertyNames Include="IncludeSatelliteAssembliesInVFS" />
-      <_WasmPropertyNames Include="InvariantGlobalization" />
-      <_WasmPropertyNames Include="WasmBuildNative" />
-      <_WasmPropertyNames Include="WasmDebugLevel" />
-      <_WasmPropertyNames Include="WasmDedup" />
-      <_WasmPropertyNames Include="WasmLinkIcalls" />
-      <_WasmPropertyNames Include="WasmNativeStrip" />
-      <_WasmPropertyNames Include="WasmNativeDebugSymbols" />
-      <_WasmPropertyNames Include="_WasmDevel" />
-      <_WasmPropertyNames Include="_WasmStrictVersionMatch" />
-      <_WasmPropertyNames Include="WasmEmitSymbolMap" />
-
-      <_WasmPropertiesToPass
-        Include="$(%(_WasmPropertyNames.Identity))"
-        Name="%(_WasmPropertyNames.Identity)"
-        ConditionToUse__="%(_WasmPropertyNames.ConditionToUse__)" />
-
-      <_WasmVFSFilesToCopy Include="@(WasmFilesToIncludeInFileSystem)" />
-      <_WasmVFSFilesToCopy TargetPath="%(FileName)%(Extension)" Condition="'%(_WasmVFSFilesToCopy.TargetPath)' == ''" />
-
-      <_WasmExtraFilesToCopy Include="@(WasmExtraFilesToDeploy)" />
-      <_WasmExtraFilesToCopy TargetPath="%(FileName)%(Extension)" Condition="'%(_WasmExtraFilesToCopy.TargetPath)' == ''" />
-
-      <!-- Example of passing items to the project
-
-          <_WasmItemsToPass Include="@(BundleFiles)" OriginalItemName__="BundleFiles" ConditionToUse__="'$(Foo)' != 'true'" />
-
-      -->
-
-      <_WasmItemsToPass Include="@(_AOT_InternalForceInterpretAssemblies)" OriginalItemName__="_AOT_InternalForceInterpretAssemblies" />
-
-    </ItemGroup>
-
-    <!-- This file gets imported by the project file on helix -->
-    <GenerateAOTProps
-        Properties="@(_WasmPropertiesToPass)"
-        Items="@(_WasmItemsToPass)"
-        OutputFile="$(BundleDir)publish\ProxyProjectForAOTOnHelix.props" />
-
-    <Copy SourceFiles="@(BundleFiles)"         DestinationFolder="$(BundleDir)%(TargetDir)" />
-    <Copy SourceFiles="@(_WasmVFSFilesToCopy)" DestinationFiles="$(BundleDir)\vfsFiles\%(_WasmVFSFilesToCopy.TargetPath)" />
-    <Copy SourceFiles="@(_WasmExtraFilesToCopy)" DestinationFiles="$(BundleDir)\extraFiles\%(_WasmExtraFilesToCopy.TargetPath)" />
-  </Target>
-
-  <!-- linker automatically picks up the .pdb files, but they are not added to the publish list.
-       Add them explicitly here, so they can be used with WasmAppBuilder -->
+  <!-- Add PDBs adjacent to the selected assemblies, including linker output, to the publish list for WasmAppBuilder.
+       Replace existing PDBs at the same publish path so the symbols match the selected assembly,
+       including when a runtime-pack DLL replaces a project-reference DLL. -->
   <Target Name="AddPdbFilesToPublishList" AfterTargets="ILLink" Condition="'$(DebuggerSupport)' == 'true'">
     <ItemGroup>
       <_PdbFilesToCheck Include="$([System.IO.Path]::ChangeExtension('%(ResolvedFileToPublish.Identity)', '.pdb'))"
-                        Condition="'%(ResolvedFileToPublish.Extension)' == '.dll'" />
+                        Condition="'%(ResolvedFileToPublish.Extension)' == '.dll'"
+                        RelativePath="$([System.IO.Path]::ChangeExtension('%(ResolvedFileToPublish.RelativePath)', '.pdb'))" />
 
-      <ResolvedFileToPublish Include="@(_PdbFilesToCheck)"
-                             Condition="Exists(%(_PdbFilesToCheck.Identity))"
-                             RelativePath="%(_PdbFilesToCheck.FileName)%(_PdbFilesToCheck.Extension)" />
+      <_PdbFilesToPublish Include="@(_PdbFilesToCheck)" Condition="Exists('%(_PdbFilesToCheck.Identity)')" />
+      <ResolvedFileToPublish Remove="@(_PdbFilesToPublish)" MatchOnMetadata="RelativePath" MatchOnMetadataOptions="PathLike" />
+      <ResolvedFileToPublish Include="@(_PdbFilesToPublish)" />
     </ItemGroup>
   </Target>
 

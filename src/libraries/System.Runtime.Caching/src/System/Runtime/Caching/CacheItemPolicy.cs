@@ -11,8 +11,8 @@ namespace System.Runtime.Caching
         private DateTimeOffset _absExpiry;
         private TimeSpan _sldExpiry;
         private CacheItemPriority _priority;
-        private CacheEntryRemovedCallback _removedCallback;
-        private CacheEntryUpdateCallback _updateCallback;
+        private CacheEntryRemovedCallback? _removedCallback;
+        private CacheEntryUpdateCallback? _updateCallback;
 
         public DateTimeOffset AbsoluteExpiration
         {
@@ -28,7 +28,7 @@ namespace System.Runtime.Caching
             set { _priority = value; }
         }
 
-        public CacheEntryRemovedCallback RemovedCallback
+        public CacheEntryRemovedCallback? RemovedCallback
         {
             get { return _removedCallback; }
             set { _removedCallback = value; }
@@ -40,7 +40,7 @@ namespace System.Runtime.Caching
             set { _sldExpiry = value; }
         }
 
-        public CacheEntryUpdateCallback UpdateCallback
+        public CacheEntryUpdateCallback? UpdateCallback
         {
             get { return _updateCallback; }
             set { _updateCallback = value; }

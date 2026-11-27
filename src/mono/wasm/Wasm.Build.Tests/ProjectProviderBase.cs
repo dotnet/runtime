@@ -461,7 +461,11 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         return $"^{Regex.Escape(defaultPrefix)}{s_dotnetVersionHashRegex}{Regex.Escape(extension)}$";
     }
 
-    public static void AssertRuntimePackPath(string buildOutput, string targetFramework, RuntimeVariant runtimeType = RuntimeVariant.SingleThreaded)
+    public static void AssertRuntimePackPath(
+        string buildOutput,
+        string targetFramework,
+        RuntimeVariant runtimeType = RuntimeVariant.SingleThreaded,
+        string? compatibleTargetFramework = null)
     {
         var match = s_runtimePackPathRegex.Match(buildOutput);
         if (!match.Success || match.Groups.Count != 2)
@@ -469,8 +473,41 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
 
         string expectedRuntimePackDir = BuildTestBase.s_buildEnv.GetRuntimePackDir(targetFramework, runtimeType);
         string actualPath = match.Groups[1].Value;
-        if (string.Compare(actualPath, expectedRuntimePackDir) != 0)
+        if (Directory.Exists(expectedRuntimePackDir) &&
+            string.Compare(actualPath, expectedRuntimePackDir) != 0 &&
+            !IsCompatibleRuntimePack(actualPath))
+        {
             throw new XunitException($"Runtime pack path doesn't match.{Environment.NewLine}Expected: '{expectedRuntimePackDir}'{Environment.NewLine}Actual:   '{actualPath}'");
+        }
+
+        if (!Directory.Exists(expectedRuntimePackDir))
+        {
+            var expectedPackDirectory = new DirectoryInfo(expectedRuntimePackDir);
+            var actualPackDirectory = new DirectoryInfo(actualPath);
+            string expectedPackName = expectedPackDirectory.Parent!.Name;
+            string expectedPackVersion = expectedPackDirectory.Name;
+            string actualPackName = actualPackDirectory.Parent!.Name;
+            string actualPackVersion = actualPackDirectory.Name;
+
+            if ((!string.Equals(actualPackName, expectedPackName, StringComparison.OrdinalIgnoreCase) ||
+                !string.Equals(actualPackVersion, expectedPackVersion, StringComparison.Ordinal)) &&
+                !IsCompatibleRuntimePack(actualPath))
+            {
+                throw new XunitException($"Runtime pack doesn't match.{Environment.NewLine}Expected: '{expectedPackName}/{expectedPackVersion}'{Environment.NewLine}Actual:   '{actualPackName}/{actualPackVersion}'");
+            }
+        }
+
+        bool IsCompatibleRuntimePack(string runtimePackPath)
+        {
+            if (compatibleTargetFramework is null)
+                return false;
+
+            var expectedPackDirectory = new DirectoryInfo(expectedRuntimePackDir);
+            var actualPackDirectory = new DirectoryInfo(runtimePackPath);
+            string compatibleTargetFrameworkVersion = compatibleTargetFramework["net".Length..];
+            return string.Equals(actualPackDirectory.Parent!.Name, expectedPackDirectory.Parent!.Name, StringComparison.OrdinalIgnoreCase) &&
+                actualPackDirectory.Name.StartsWith($"{compatibleTargetFrameworkVersion}.", StringComparison.Ordinal);
+        }
     }
 
     // Extract the runtime pack root that the build actually resolved (printed by
@@ -548,16 +585,16 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         if (assertOptions.BuildOptions.GlobalizationMode is GlobalizationMode.Custom)
         {
             string srcPath = assertOptions.BuildOptions.CustomIcuFile!;
-            // Prefer the runtime-pack root the build actually resolved (from MSBuild output),
-            // since that is the same pack the publish output was produced from. The SDK's
-            // workload-pack dir (GetRuntimeNativeDir) can diverge from it on CoreCLR no-workload
-            // runs where the publish-time pack comes from a per-test NuGet cache.
-            string runtimePackDir = !string.IsNullOrEmpty(assertOptions.RuntimePackDir)
-                ? Path.Combine(assertOptions.RuntimePackDir, "runtimes", BuildEnvironment.DefaultRuntimeIdentifier, "native")
-                : BuildTestBase.s_buildEnv.GetRuntimeNativeDir(assertOptions.BuildOptions.TargetFramework, assertOptions.BuildOptions.RuntimeType);
-            if (!Path.IsPathRooted(srcPath))
-                srcPath = Path.Combine(runtimePackDir, assertOptions.BuildOptions.CustomIcuFile!);
-            TestUtils.AssertSameFile(srcPath, actual.Single());
+            if (Path.IsPathRooted(srcPath))
+            {
+                TestUtils.AssertSameFile(srcPath, actual.Single());
+            }
+            else
+            {
+                var runtimePack = new RuntimePackAssets(assertOptions.RuntimePackDir ??
+                    BuildTestBase.s_buildEnv.GetRuntimePackDir(assertOptions.BuildOptions.TargetFramework, assertOptions.BuildOptions.RuntimeType));
+                runtimePack.AssertFileSize(RuntimePackAssets.GetNativePath(srcPath), actual.Single());
+            }
         }
     }
 

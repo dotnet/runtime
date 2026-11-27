@@ -61,7 +61,7 @@ enum MarshalFlags
 // Captures arguments for C array marshaling.
 struct CREATE_MARSHALER_CARRAY_OPERANDS
 {
-    MethodTable*    methodTable;
+    TypeHandle      elementTypeHandle;
     UINT32          multiplier;
     UINT32          additive;
     VARTYPE         elementType;
@@ -397,7 +397,7 @@ public:
     void GetMops(CREATE_MARSHALER_CARRAY_OPERANDS* pMopsOut)
     {
         WRAPPER_NO_CONTRACT;
-        pMopsOut->methodTable = m_hndArrayElemType.AsMethodTable();
+        pMopsOut->elementTypeHandle = m_hndArrayElemType;
         pMopsOut->elementType = m_arrayElementType;
         pMopsOut->elementNativeType = m_arrayElementNativeType;
         pMopsOut->countParamIdx = m_countParamIdx;

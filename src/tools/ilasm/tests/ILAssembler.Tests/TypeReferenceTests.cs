@@ -15,12 +15,137 @@ using System.Text;
 using System.Threading.Tasks;
 using Internal.IL;
 using Xunit;
-using DocumentCompilerTestHelpers = ILAssembler.Tests.DocumentCompilerTestHelpers;
 
-namespace ILAssembler.Tests
+namespace Microsoft.DotNet.ILAssembler.Tests
 {
     public class TypeReferenceTests
     {
+        [Theory]
+        [InlineData(".mscorlib\n.assembly netstandard { }", false)]
+        [InlineData(".mscorlib\n.assembly netstandard { }", true)]
+        [InlineData(".assembly mscorlib { }", false)]
+        [InlineData(".assembly System.Private.CoreLib { }", false)]
+        [InlineData(".assembly System.Runtime { }", false)]
+        [InlineData(".assembly netstandard { }", false)]
+        [InlineData(".mscorlib\n.assembly test { }", false)]
+        public void CoreLibrary_LocalTypesDoNotIntroduceAssemblyReferences(string assembly, bool debug)
+        {
+            string source = $$"""
+                {{assembly}}
+                .class public User
+                {
+                    .field public class System.String Text
+                    .field public class System.Exception Error
+                    .method public static class System.Object Identity(class System.Object arg) cil managed
+                    {
+                        ldarg.0
+                        ret
+                    }
+                }
+                .class public System.Object { }
+                .class public System.String { }
+                .class public System.Exception { }
+                .class public abstract System.ValueType { }
+                .class public abstract System.Enum extends System.ValueType { }
+                .class public sealed Number extends System.ValueType { }
+                .class public value ValueByKeyword { }
+                .class public sealed enum EnumByKeyword
+                {
+                    .field public specialname rtspecialname int32 value__
+                }
+                .class public System.Diagnostics.DebuggableAttribute
+                {
+                    .class nested public sealed DebuggingModes extends System.Enum
+                    {
+                        .field public specialname rtspecialname int32 value__
+                    }
+                    .method public specialname rtspecialname instance void .ctor(
+                        valuetype System.Diagnostics.DebuggableAttribute/DebuggingModes modes) cil managed
+                    {
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options { Debug = debug });
+            MetadataReader reader = pe.GetMetadataReader();
+            Assert.Empty(reader.AssemblyReferences);
+            Dictionary<string, TypeDefinitionHandle> types = reader.TypeDefinitions.ToDictionary(
+                handle =>
+                {
+                    TypeDefinition type = reader.GetTypeDefinition(handle);
+                    return $"{reader.GetString(type.Namespace)}.{reader.GetString(type.Name)}";
+                });
+            Assert.True(reader.GetTypeDefinition(types["System.Object"]).BaseType.IsNil);
+            Assert.Equal((EntityHandle)types["System.Object"], reader.GetTypeDefinition(types[".User"]).BaseType);
+            Assert.Equal((EntityHandle)types["System.ValueType"], reader.GetTypeDefinition(types[".Number"]).BaseType);
+            Assert.Equal((EntityHandle)types["System.ValueType"], reader.GetTypeDefinition(types[".ValueByKeyword"]).BaseType);
+            Assert.Equal((EntityHandle)types["System.Enum"], reader.GetTypeDefinition(types[".EnumByKeyword"]).BaseType);
+            Assert.Equal((EntityHandle)types["System.ValueType"], reader.GetTypeDefinition(types["System.Enum"]).BaseType);
+
+            TypeDefinition user = reader.GetTypeDefinition(types[".User"]);
+            MethodDefinition identity = reader.GetMethodDefinition(Assert.Single(user.GetMethods()));
+            BlobReader methodSignature = reader.GetBlobReader(identity.Signature);
+            Assert.Equal(SignatureKind.Method, methodSignature.ReadSignatureHeader().Kind);
+            Assert.Equal(1, methodSignature.ReadCompressedInteger());
+            Assert.Equal(SignatureTypeCode.TypeHandle, methodSignature.ReadSignatureTypeCode());
+            Assert.Equal((EntityHandle)types["System.Object"], methodSignature.ReadTypeHandle());
+            Assert.Equal(SignatureTypeCode.TypeHandle, methodSignature.ReadSignatureTypeCode());
+            Assert.Equal((EntityHandle)types["System.Object"], methodSignature.ReadTypeHandle());
+            Assert.Equal(0, methodSignature.RemainingBytes);
+
+            string[] fieldTypes = ["System.String", "System.Exception"];
+            int fieldIndex = 0;
+            foreach (FieldDefinitionHandle handle in user.GetFields())
+            {
+                BlobReader signature = reader.GetBlobReader(reader.GetFieldDefinition(handle).Signature);
+                Assert.Equal(SignatureKind.Field, signature.ReadSignatureHeader().Kind);
+                Assert.Equal(SignatureTypeCode.TypeHandle, signature.ReadSignatureTypeCode());
+                Assert.Equal((EntityHandle)types[fieldTypes[fieldIndex++]], signature.ReadTypeHandle());
+                Assert.Equal(0, signature.RemainingBytes);
+            }
+            Assert.Equal(fieldTypes.Length, fieldIndex);
+
+            if (debug)
+            {
+                CustomAttribute attribute = reader.GetCustomAttribute(Assert.Single(reader.CustomAttributes));
+                Assert.Equal(HandleKind.MemberReference, attribute.Constructor.Kind);
+                MemberReference constructor = reader.GetMemberReference((MemberReferenceHandle)attribute.Constructor);
+                Assert.Equal((EntityHandle)types["System.Diagnostics.DebuggableAttribute"], constructor.Parent);
+            }
+        }
+
+        [Theory]
+        [InlineData("mscorlib", "System.Console")]
+        [InlineData("OtherAssembly", "Other.Type")]
+        public void CoreLibrary_ExplicitAssemblyReferencesArePreserved(string assemblyName, string typeName)
+        {
+            string source = $$"""
+                .mscorlib
+                .assembly netstandard { }
+                .assembly extern {{assemblyName}} { }
+                .class public System.Object { }
+                .class public User
+                {
+                    .field public class [{{assemblyName}}]{{typeName}} External
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            MetadataReader reader = pe.GetMetadataReader();
+            AssemblyReferenceHandle assemblyHandle = Assert.Single(reader.AssemblyReferences);
+            Assert.Equal(assemblyName, reader.GetString(reader.GetAssemblyReference(assemblyHandle).Name));
+            TypeDefinition user = reader.GetTypeDefinition(MetadataTokens.TypeDefinitionHandle(3));
+            FieldDefinition field = reader.GetFieldDefinition(Assert.Single(user.GetFields()));
+            BlobReader signature = reader.GetBlobReader(field.Signature);
+            Assert.Equal(SignatureKind.Field, signature.ReadSignatureHeader().Kind);
+            Assert.Equal(SignatureTypeCode.TypeHandle, signature.ReadSignatureTypeCode());
+            EntityHandle typeHandle = signature.ReadTypeHandle();
+            Assert.Equal(HandleKind.TypeReference, typeHandle.Kind);
+            TypeReference type = reader.GetTypeReference((TypeReferenceHandle)typeHandle);
+            Assert.Equal((EntityHandle)assemblyHandle, type.ResolutionScope);
+            Assert.Equal(typeName, $"{reader.GetString(type.Namespace)}.{reader.GetString(type.Name)}");
+        }
 
         [Fact]
         public void ThisOutsideClass_ReportsError()

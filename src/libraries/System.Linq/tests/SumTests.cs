@@ -388,9 +388,8 @@ namespace System.Linq.Tests
         [Fact]
         public void SumOfInt_SourceSumsToOverflowVectorHorizontally_OverflowExceptionThrown()
         {
-            int[] sourceInt = new int[Vector<int>.Count * 4];
-            Array.Fill(sourceInt, 0);
-
+            int[] sourceInt = Array.CreateFilled(Vector<int>.Count * 4, 0);
+            
             for (int i = 0; i < Vector<int>.Count; i++)
             {
                 sourceInt[i] = int.MaxValue - 3;
@@ -407,8 +406,7 @@ namespace System.Linq.Tests
         [MemberData(nameof(SumOverflowsVerticalVectorLanes))]
         public void SumOfInt_SourceSumsToOverflowVectorVertically_OverflowExceptionThrown(int element, int verticalOffset)
         {
-            int[] sourceInt = new int[Vector<int>.Count * 6];
-            Array.Fill(sourceInt, 0);
+            int[] sourceInt = Array.CreateFilled(Vector<int>.Count * 6, 0);
 
             sourceInt[element] = int.MaxValue;
             sourceInt[element + Vector<int>.Count * verticalOffset] = 1;
@@ -435,9 +433,8 @@ namespace System.Linq.Tests
         [Fact]
         public void SumOfLong_SourceSumsToOverflowVectorHorizontally_OverflowExceptionThrown()
         {
-            long[] sourceLong = new long[Vector<long>.Count * 4];
-            Array.Fill(sourceLong, 0);
-
+            long[] sourceLong = Array.CreateFilled<long>(Vector<long>.Count * 4, 0);
+            
             for (int i = 0; i < Vector<long>.Count; i++)
             {
                 sourceLong[i] = long.MaxValue - 3;
@@ -454,9 +451,8 @@ namespace System.Linq.Tests
         [MemberData(nameof(SumOverflowsVerticalVectorLanes))]
         public void SumOfLong_SourceSumsToOverflowVectorVertically_OverflowExceptionThrown(int element, int verticalOffset)
         {
-            long[] sourceLong = new long[Vector<long>.Count * 6];
-            Array.Fill(sourceLong, 0);
-
+            long[] sourceLong = Array.CreateFilled<long>(Vector<long>.Count * 6, 0);
+            
             sourceLong[element] = long.MaxValue;
             sourceLong[element + Vector<long>.Count * verticalOffset] = 1;
 
@@ -845,5 +841,58 @@ namespace System.Linq.Tests
             Assert.Equal(23.5f, source.Sum(e => e.num));
         }
 
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(100)]
+        public void Sum_Selector_AllSourceTypes_ProperSumReturned(int count)
+        {
+            (int Value, bool HasValue)[] items = Enumerable.Range(1, count).Select(i => (i, i % 3 != 0)).ToArray();
+
+            int expected = 0;
+            int expectedNullable = 0;
+            foreach ((int value, bool hasValue) in items)
+            {
+                expected += value;
+                if (hasValue)
+                {
+                    expectedNullable += value;
+                }
+            }
+
+            foreach (IEnumerable<(int Value, bool HasValue)> source in CreateSources(items))
+            {
+                Assert.Equal(expected, source.Sum(x => x.Value));
+                Assert.Equal((long)expected, source.Sum(x => (long)x.Value));
+                Assert.Equal((float)expected, source.Sum(x => (float)x.Value));
+                Assert.Equal((double)expected, source.Sum(x => (double)x.Value));
+                Assert.Equal((decimal)expected, source.Sum(x => (decimal)x.Value));
+
+                Assert.Equal(expectedNullable, source.Sum(x => x.HasValue ? x.Value : (int?)null));
+                Assert.Equal((long)expectedNullable, source.Sum(x => x.HasValue ? x.Value : (long?)null));
+                Assert.Equal((float)expectedNullable, source.Sum(x => x.HasValue ? x.Value : (float?)null));
+                Assert.Equal((double)expectedNullable, source.Sum(x => x.HasValue ? x.Value : (double?)null));
+                Assert.Equal((decimal)expectedNullable, source.Sum(x => x.HasValue ? x.Value : (decimal?)null));
+            }
+        }
+
+        [Fact]
+        public void Sum_Selector_AllSourceTypes_Overflow()
+        {
+            foreach (IEnumerable<int> source in CreateSources(new[] { 1, 2 }))
+            {
+                Assert.Throws<OverflowException>(() => source.Sum(x => int.MaxValue));
+                Assert.Throws<OverflowException>(() => source.Sum(x => (int?)int.MaxValue));
+                Assert.Throws<OverflowException>(() => source.Sum(x => long.MaxValue));
+                Assert.Throws<OverflowException>(() => source.Sum(x => (long?)long.MaxValue));
+                Assert.Throws<OverflowException>(() => source.Sum(x => decimal.MaxValue));
+                Assert.Throws<OverflowException>(() => source.Sum(x => (decimal?)decimal.MaxValue));
+
+                Assert.True(float.IsPositiveInfinity(source.Sum(x => float.MaxValue)));
+                Assert.True(float.IsPositiveInfinity(source.Sum(x => (float?)float.MaxValue).Value));
+                Assert.True(double.IsPositiveInfinity(source.Sum(x => double.MaxValue)));
+                Assert.True(double.IsPositiveInfinity(source.Sum(x => (double?)double.MaxValue).Value));
+            }
+        }
     }
 }

@@ -75,7 +75,7 @@ namespace Internal.TypeSystem
             public const int IsInt128OrHasInt128Fields = 0x800;
 
             /// <summary>
-            /// True if the type transitively has a Vector<T> in it or is Vector<T>
+            /// True if the type transitively has a Vector&lt;T&gt; in it or is Vector&lt;T&gt;
             /// </summary>
             public const int IsVectorTOrHasVectorTFields = 0x1000;
 
@@ -190,7 +190,7 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
-        /// Is a type Vector<T> or transitively have any fields of a type Vector<T>.
+        /// Is a type Vector&lt;T&gt; or transitively have any fields of a type Vector&lt;T&gt;.
         /// </summary>
         public virtual bool IsVectorTOrHasVectorTFields
         {

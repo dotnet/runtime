@@ -4,7 +4,7 @@
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <!-- TODO: Re-enable when browser CoreCLR emits the expected runtime configuration events.
          Tracked by https://github.com/dotnet/runtime/issues/131321. -->
-    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'">true</CLRTestTargetUnsupported>
+    <CLRTestTargetUnsupported Condition="'$(TargetOS)' == 'browser'">true</CLRTestTargetUnsupported>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- Tracing tests routinely time out with jitstress and gcstress -->
     <GCStressIncompatible>true</GCStressIncompatible>
@@ -12,7 +12,6 @@
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
     <!-- RuntimeEventSourceTest.cs uses top-level statements with no [Fact] method; use MSBuild property to skip -->
     <JitOptimizationSensitive>true</JitOptimizationSensitive>
-    <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'mono'">true</DisableProjectBuild>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="RuntimeEventSourceTest.cs" />

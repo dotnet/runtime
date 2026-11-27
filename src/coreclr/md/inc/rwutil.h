@@ -171,7 +171,6 @@ struct OptionValue
     ULONG                       m_UpdateMode;           // (CorSetENC) Specifies whether ENC or Extension mode is on.
     CorErrorIfEmitOutOfOrder    m_ErrorIfEmitOutOfOrder;    // Do not generate pointer tables
     CorThreadSafetyOptions      m_ThreadSafetyOptions;  // specify if thread safety is turn on or not.
-    CorImportOptions            m_ImportOption;         // import options such as to skip over deleted items or not
     CorLinkerOptions            m_LinkerOption;         // Linker option. Currently only used in UnmarkAll
     BOOL                        m_GenerateTCEAdapters;  // Do not generate the TCE adapters for COM CPC.
     LPSTR                       m_RuntimeVersion;       // CLR Version stamp

@@ -24,7 +24,7 @@ namespace System.Diagnostics.Metrics
 
         public int MaxTimeSeries { get; }
         public int MaxHistograms { get; }
-        private Dictionary<Instrument, bool> _instruments = new();
+        private readonly ConcurrentDictionary<Instrument, bool> _instruments = new();
         private readonly ConcurrentDictionary<Instrument, InstrumentState> _instrumentStates = new();
         private readonly CancellationTokenSource _cts = new();
         private Thread? _collectThread;
@@ -144,7 +144,7 @@ namespace System.Diagnostics.Metrics
 
         private void CompletedMeasurements(Instrument instrument, object? cookie)
         {
-            _instruments.Remove(instrument);
+            _instruments.TryRemove(instrument, out _);
             Debug.Assert(cookie is not null);
             _endInstrumentMeasurements(instrument, (InstrumentState)cookie);
             RemoveInstrumentState(instrument);
@@ -157,15 +157,11 @@ namespace System.Diagnostics.Metrics
             if (state != null)
             {
                 _beginInstrumentMeasurements(instrument, state);
-#pragma warning disable CA1864 // Prefer the 'IDictionary.TryAdd(TKey, TValue)' method. IDictionary.TryAdd() is not available in one of the builds
-                if (!_instruments.ContainsKey(instrument))
-#pragma warning restore CA1864
+                if (_instruments.TryAdd(instrument, true))
                 {
-                    // This has side effects that prompt MeasurementsCompleted
-                    // to be called if this is called multiple times on an
-                    // instrument in a shared MetricsEventSource.
+                    // Claim the instrument before enabling: a disposed meter or listener
+                    // causes EnableMeasurementEvents to call CompletedMeasurements synchronously.
                     _listener.EnableMeasurementEvents(instrument, state);
-                    _instruments.Add(instrument, true);
                 }
             }
         }

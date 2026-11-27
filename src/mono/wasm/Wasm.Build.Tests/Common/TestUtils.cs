@@ -35,22 +35,25 @@ public static class TestUtils
     }
 
     public static void AssertSameFile(string file0, string file1, string? label = null) => AssertFile(file0, file1, label, same: true);
-    public static void AssertNotSameFile(string file0, string file1, string? label = null) => AssertFile(file0, file1, label, same: false);
 
     public static void AssertFile(string file0, string file1, string? label = null, bool same = true)
     {
         string prefix = label != null ? $"{label}: " : string.Empty;
         Assert.True(File.Exists(file0), $"{prefix}Expected to find {file0}");
+        AssertFileSize(file0, new FileInfo(file0).Length, file1, label, same);
+    }
+
+    internal static void AssertFileSize(string file0, long expectedLength, string file1, string? label, bool same)
+    {
+        string prefix = label != null ? $"{label}: " : string.Empty;
         Assert.True(File.Exists(file1), $"{prefix}Expected to find {file1}");
+        long actualLength = new FileInfo(file1).Length;
 
-        FileInfo finfo0 = new(file0);
-        FileInfo finfo1 = new(file1);
+        if (same && expectedLength != actualLength)
+            throw new XunitException($"{label}:{Environment.NewLine}  File sizes don't match for {file0} ({expectedLength}), and {file1} ({actualLength})");
 
-        if (same && finfo0.Length != finfo1.Length)
-            throw new XunitException($"{label}:{Environment.NewLine}  File sizes don't match for {file0} ({finfo0.Length}), and {file1} ({finfo1.Length})");
-
-        if (!same && finfo0.Length == finfo1.Length)
-            throw new XunitException($"{label}:{Environment.NewLine}  File sizes should not match for {file0} ({finfo0.Length}), and {file1} ({finfo1.Length})");
+        if (!same && expectedLength == actualLength)
+            throw new XunitException($"{label}:{Environment.NewLine}  File sizes should not match for {file0} ({expectedLength}), and {file1} ({actualLength})");
     }
     public static string FindSubDirIgnoringCase(string parentDir, string dirName)
     {

@@ -13,6 +13,7 @@
 #include "gcenv.ee.h"
 #include "gcenv.windows.inl"
 #include "volatile.h"
+#include <minipal/thread.h>
 #include "gcconfig.h"
 #include <minipal/time.h>
 
@@ -572,7 +573,7 @@ void GCToOSInterface::Shutdown()
 //  Numeric id of the current thread or 0 if the
 uint64_t GCToOSInterface::GetCurrentThreadIdForLogging()
 {
-    return ::GetCurrentThreadId();
+    return (uint64_t)minipal_get_current_thread_id();
 }
 
 // Get id of the process
@@ -656,6 +657,12 @@ uint32_t GCToOSInterface::GetCurrentProcessorNumber()
 bool GCToOSInterface::CanGetCurrentProcessorNumber()
 {
     // on all Windows platforms we support this API exists
+    return true;
+}
+
+// Check if the OS supports setting thread affinity
+bool GCToOSInterface::CanSetThreadAffinity()
+{
     return true;
 }
 

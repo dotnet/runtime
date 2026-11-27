@@ -2,6 +2,8 @@
 
 This contract provides support for examining [precode](../coreclr/botr/method-descriptor.md#precode): small fragments of code used to implement temporary entry points and an efficient wrapper for stubs.
 
+Runtimes built with `FEATURE_PORTABLE_ENTRYPOINTS` do not advertise this contract because they have no executable precode stubs.
+
 ## APIs of contract
 
 ```csharp
@@ -306,34 +308,3 @@ computes the entry point of the precode.
         return new TargetPointer(entryPointAddress);
     }
 ```
-
-## Version 2
-
-<!-- BEGIN GENERATED: usage contract=PrecodeStubs version=c2 -->
-### Data descriptors used
-
-| Data Descriptor | Field | Type | Meaning |
-| --- | --- | --- | --- |
-| `PortableEntryPoint` | `MethodDesc` | `pointer` | Method desc of portable entrypoint (only defined if `FeaturePortableEntrypoints` is enabled) |
-
-### Global variables used
-
-_None._
-
-### Contracts used
-
-_None._
-<!-- END GENERATED: usage contract=PrecodeStubs version=c2 -->
-
-Version 2 is advertised by runtimes built with `FEATURE_PORTABLE_ENTRYPOINTS` (for example WebAssembly). Those runtimes have no executable precode stubs and do not describe `PrecodeMachineDescriptor`: every entry point is a `PortableEntryPoint` that records its owning `MethodDesc`.
-
-```csharp
-    // Mirrors the FEATURE_PORTABLE_ENTRYPOINTS path of MethodDesc::GetMethodDescFromPrecode.
-    TargetPointer IPrecodeStubs.GetMethodDescFromStubAddress(TargetCodePointer entryPoint)
-    {
-        Data.PortableEntryPoint portableEntryPoint = // read PortableEntryPoint at entryPoint
-        return portableEntryPoint.MethodDesc;
-    }
-```
-
-There are no interpreter precodes, so `GetInterpreterCodeFromInterpreterPrecodeIfPresent` returns the entry point unchanged. `GetPrecodeEntryPointFromInteriorAddress` is not supported.

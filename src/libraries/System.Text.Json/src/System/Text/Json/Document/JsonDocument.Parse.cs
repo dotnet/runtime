@@ -605,8 +605,8 @@ namespace System.Text.Json
 
                             valueSequence = sequence.Slice(reader.TokenStartIndex, payloadLength);
                             Debug.Assert(
-                                valueSequence.First.Span[0] == (byte)'"',
-                                $"Calculated sequence starts with {valueSequence.First.Span[0]}");
+                                valueSequence.FirstSpan[0] == (byte)'"',
+                                $"Calculated sequence starts with {valueSequence.FirstSpan[0]}");
 
                             Debug.Assert(
                                 valueSequence.ToArray()[payloadLength - 1] == (byte)'"',

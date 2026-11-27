@@ -9,6 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Kerberos.NET.Configuration;
 using Kerberos.NET.Crypto;
+using Kerberos.NET.Entities.Pac;
 using Kerberos.NET.Server;
 using Kerberos.NET.Logging;
 using Xunit.Abstractions;
@@ -105,15 +106,45 @@ public class KerberosExecutor : IDisposable
  
     public void AddUser(string name, string password = DefaultUserPassword)
     {
+        AddUserCore(name, password);
+    }
+
+    /// <summary>
+    /// Adds a user for which the KDC issues a PAC describing its domain group membership,
+    /// as an Active Directory KDC would.
+    /// </summary>
+    public void AddUserWithPac(string name, uint userId, uint[]? groupIds = null, SecurityIdentifier[]? extraGroupSids = null, string password = DefaultUserPassword)
+    {
+        FakeKerberosPrincipal principal = AddUserCore(name, password);
+        principal.UserId = userId;
+        if (groupIds is not null)
+        {
+            principal.GroupIds = groupIds;
+        }
+        if (extraGroupSids is not null)
+        {
+            principal.ExtraGroupSids = extraGroupSids;
+        }
+    }
+
+    private FakeKerberosPrincipal AddUserCore(string name, string password)
+    {
         var principal = new FakeKerberosPrincipal(PrincipalType.User, name, _realm, Encoding.Unicode.GetBytes(password));
         _principalService.Add(name, principal);
         _principalService.Add($"{name}@{_realm}", principal);
+        return principal;
     }
 
     public async Task Invoke(Action method)
     {
         await PrepareInvoke();
         _invokeHandle = RemoteExecutor.Invoke(method);
+    }
+
+    public async Task Invoke(Action<string, string> method, string arg1, string arg2)
+    {
+        await PrepareInvoke();
+        _invokeHandle = RemoteExecutor.Invoke(method, arg1, arg2);
     }
 
     public async Task Invoke(Func<Task> method)

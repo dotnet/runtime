@@ -9,13 +9,16 @@ namespace System.Tests
     public static partial class TimeZoneInfoTests
     {
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134954", TestPlatforms.Wasi)]
         public static void IsInvariant()
         {
-            Assert.True(GetInvariant(null));
+            // SAFETY: To be audited
+            unsafe
+            {
+                Assert.True(GetInvariant(null));
+            }
 
             [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "get_Invariant")]
-            static extern bool GetInvariant(TimeZoneInfo t);
+            static unsafe extern bool GetInvariant(TimeZoneInfo t);
         }
 
         [Fact]

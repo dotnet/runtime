@@ -79,6 +79,10 @@ extern int     getpeereid(int, uid_t *__restrict__, gid_t *__restrict__);
 #include <procfs.h>
 #endif
 
+#if defined(TARGET_WASI)
+#include <sys/random.h> // getentropy
+#endif
+
 #ifdef __linux__
 #include <sys/utsname.h>
 
@@ -311,7 +315,7 @@ static int32_t ConvertOpenFlags(int32_t flags)
             return -1;
     }
 
-    if (flags & ~(PAL_O_ACCESS_MODE_MASK | PAL_O_CLOEXEC | PAL_O_CREAT | PAL_O_EXCL | PAL_O_TRUNC | PAL_O_SYNC | PAL_O_NOFOLLOW))
+    if (flags & ~(PAL_O_ACCESS_MODE_MASK | PAL_O_CLOEXEC | PAL_O_CREAT | PAL_O_EXCL | PAL_O_TRUNC | PAL_O_SYNC | PAL_O_NOFOLLOW | PAL_O_DIRECTORY))
     {
         assert_msg(false, "Unknown Open flag", (int)flags);
         return -1;
@@ -331,18 +335,15 @@ static int32_t ConvertOpenFlags(int32_t flags)
         ret |= O_SYNC;
     if (flags & PAL_O_NOFOLLOW)
         ret |= O_NOFOLLOW;
+    if (flags & PAL_O_DIRECTORY)
+        ret |= O_DIRECTORY;
 
     assert(ret != -1);
     return ret;
 }
 
-intptr_t SystemNative_Open(const char* path, int32_t flags, int32_t mode)
+static int32_t ConvertOpenFlagsAndAddDefaults(int32_t flags)
 {
-// these two ifdefs are for platforms where we dont have the open version of CLOEXEC and thus
-// must simulate it by doing a fcntl with the SETFFD version after the open instead
-#if !HAVE_O_CLOEXEC
-    int32_t old_flags = flags;
-#endif
     flags = ConvertOpenFlags(flags);
     if (flags == -1)
     {
@@ -356,15 +357,47 @@ intptr_t SystemNative_Open(const char* path, int32_t flags, int32_t mode)
 #ifndef TARGET_WASM
     flags |= O_NOCTTY;
 #endif
+    return flags;
+}
 
-    int result;
-    while ((result = open(path, flags, (mode_t)mode)) < 0 && errno == EINTR);
+static void SetCloseOnExecIfNeeded(int result, int32_t flags)
+{
 #if !HAVE_O_CLOEXEC
-    if (old_flags & PAL_O_CLOEXEC)
+    if (result >= 0 && (flags & PAL_O_CLOEXEC))
     {
         fcntl(result, F_SETFD, FD_CLOEXEC);
     }
+#else
+    (void)result;
+    (void)flags;
 #endif
+}
+
+intptr_t SystemNative_Open(const char* path, int32_t flags, int32_t mode)
+{
+    int32_t nativeFlags = ConvertOpenFlagsAndAddDefaults(flags);
+    if (nativeFlags == -1)
+    {
+        return -1;
+    }
+
+    int result;
+    while ((result = open(path, nativeFlags, (mode_t)mode)) < 0 && errno == EINTR);
+    SetCloseOnExecIfNeeded(result, flags);
+    return result;
+}
+
+intptr_t SystemNative_OpenAt(intptr_t dirfd, const char* path, int32_t flags, int32_t mode)
+{
+    int32_t nativeFlags = ConvertOpenFlagsAndAddDefaults(flags);
+    if (nativeFlags == -1)
+    {
+        return -1;
+    }
+
+    int result;
+    while ((result = openat(ToFileDescriptor(dirfd), path, nativeFlags, (mode_t)mode)) < 0 && errno == EINTR);
+    SetCloseOnExecIfNeeded(result, flags);
     return result;
 }
 
@@ -396,6 +429,27 @@ int32_t SystemNative_Unlink(const char* path)
 {
     int32_t result;
     while ((result = unlink(path)) < 0 && errno == EINTR);
+    return result;
+}
+
+int32_t SystemNative_UnlinkAt(intptr_t dirfd, const char* path, int32_t flags)
+{
+    int nativeFlags;
+    switch (flags)
+    {
+        case 0:
+            nativeFlags = 0;
+            break;
+        case PAL_AT_REMOVEDIR:
+            nativeFlags = AT_REMOVEDIR;
+            break;
+        default:
+            errno = EINVAL;
+            return -1;
+    }
+
+    int32_t result;
+    while ((result = unlinkat(ToFileDescriptor(dirfd), path, nativeFlags)) < 0 && errno == EINTR);
     return result;
 }
 
@@ -766,6 +820,13 @@ int32_t SystemNative_MkDir(const char* path, int32_t mode)
     return result;
 }
 
+int32_t SystemNative_MkDirAt(intptr_t dirfd, const char* path, int32_t mode)
+{
+    int32_t result;
+    while ((result = mkdirat(ToFileDescriptor(dirfd), path, (mode_t)mode)) < 0 && errno == EINTR);
+    return result;
+}
+
 int32_t SystemNative_ChMod(const char* path, int32_t mode)
 {
 #if HAVE_CHMOD
@@ -916,6 +977,57 @@ int32_t SystemNative_MkFifo(const char* pathName, uint32_t mode)
 #endif /* TARGET_WASI */
 }
 
+#if defined(TARGET_WASI)
+// wasi-libc provides neither mkstemp(s) nor mkdtemp, so emulate them the way libc does:
+// replace the trailing XXXXXX with random characters and try to create the entry exclusively,
+// retrying on name collisions.
+#define TEMP_NAME_RANDOM_CHARS 6
+#define TEMP_NAME_MAX_ATTEMPTS 100
+
+// Validates the template and returns a pointer to the first of the six 'X' characters that
+// precede a suffix of suffixLength characters. Returns NULL and sets errno on failure.
+static char* GetTempNameRandomChars(char* pathTemplate, int32_t suffixLength)
+{
+    size_t pathTemplateLength = strlen(pathTemplate);
+    if (suffixLength < 0 || pathTemplateLength < TEMP_NAME_RANDOM_CHARS || (size_t)suffixLength > pathTemplateLength - TEMP_NAME_RANDOM_CHARS)
+    {
+        errno = EINVAL;
+        return NULL;
+    }
+
+    char* randomChars = pathTemplate + pathTemplateLength - (size_t)suffixLength - TEMP_NAME_RANDOM_CHARS;
+    for (int32_t i = 0; i < TEMP_NAME_RANDOM_CHARS; i++)
+    {
+        if (randomChars[i] != 'X')
+        {
+            errno = EINVAL;
+            return NULL;
+        }
+    }
+
+    return randomChars;
+}
+
+// Replaces the six characters at randomChars with random [A-Za-z0-9] characters.
+// Returns 0 on success, or -1 with errno set on failure.
+static int32_t FillTempNameRandomChars(char* randomChars)
+{
+    static const char s_chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    uint8_t randomBytes[TEMP_NAME_RANDOM_CHARS];
+    if (getentropy(randomBytes, sizeof(randomBytes)) != 0)
+    {
+        return -1;
+    }
+
+    for (int32_t i = 0; i < TEMP_NAME_RANDOM_CHARS; i++)
+    {
+        randomChars[i] = s_chars[randomBytes[i] % (sizeof(s_chars) - 1)];
+    }
+
+    return 0;
+}
+#endif /* TARGET_WASI */
+
 char* SystemNative_MkdTemp(char* pathTemplate)
 {
 #if !defined(TARGET_WASI)
@@ -923,6 +1035,33 @@ char* SystemNative_MkdTemp(char* pathTemplate)
     while ((result = mkdtemp(pathTemplate)) == NULL && errno == EINTR);
     return result;
 #else /* TARGET_WASI */
+    char* randomChars = GetTempNameRandomChars(pathTemplate, 0);
+    if (randomChars == NULL)
+    {
+        return NULL;
+    }
+
+    for (int32_t attempt = 0; attempt < TEMP_NAME_MAX_ATTEMPTS; attempt++)
+    {
+        if (FillTempNameRandomChars(randomChars) != 0)
+        {
+            return NULL;
+        }
+
+        int result;
+        while ((result = mkdir(pathTemplate, 0700)) < 0 && errno == EINTR);
+        if (result == 0)
+        {
+            return pathTemplate;
+        }
+
+        if (errno != EEXIST)
+        {
+            return NULL;
+        }
+    }
+
+    errno = EEXIST;
     return NULL;
 #endif /* TARGET_WASI */
 }
@@ -966,8 +1105,28 @@ intptr_t SystemNative_MksTemps(char* pathTemplate, int32_t suffixLength)
     {
         pathTemplate[firstSuffixIndex] = firstSuffixChar;
     }
-#elif TARGET_WASI
-    assert_msg(false, "Not supported on WASI", 0);
+#elif defined(TARGET_WASI)
+    char* randomChars = GetTempNameRandomChars(pathTemplate, suffixLength);
+    if (randomChars == NULL)
+    {
+        return -1;
+    }
+
+    for (int32_t attempt = 0; attempt < TEMP_NAME_MAX_ATTEMPTS; attempt++)
+    {
+        if (FillTempNameRandomChars(randomChars) != 0)
+        {
+            return -1;
+        }
+
+        while ((result = open(pathTemplate, O_RDWR | O_CREAT | O_EXCL | O_CLOEXEC, 0600)) < 0 && errno == EINTR);
+        if (result >= 0 || errno != EEXIST)
+        {
+            return result;
+        }
+    }
+
+    errno = EEXIST;
     result = -1;
 #else
 #error "Cannot find mkstemps nor mkstemp on this platform"

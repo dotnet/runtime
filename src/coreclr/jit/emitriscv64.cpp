@@ -427,6 +427,8 @@ void emitter::emitIns_S_R_R(instruction ins, emitAttr attr, regNumber reg1, regN
         // If immediate does not fit to store immediate 12 bits, construct necessary value in rsRsvdReg()
         // and keep tmpReg hint value unchanged.
         assert(isValidSimm20((imm + 0x800) >> 12));
+        // The value being stored must not live in rsRsvdReg(), it would be overwritten by the address
+        assert(reg1 != codeGen->rsGetRsvdReg());
 
         emitIns_R_I(INS_lui, EA_PTRSIZE, codeGen->rsGetRsvdReg(), (imm + 0x800) >> 12);
         emitIns_R_R_R(INS_add, EA_PTRSIZE, codeGen->rsGetRsvdReg(), codeGen->rsGetRsvdReg(), reg2);
@@ -1922,7 +1924,7 @@ int emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
         if (doEmit)
         {
             assert(!emitGeneratingPrologOrFuncletProlog() && !emitGeneratingEpilogOrFuncletEpilog());
-            auto constAddr = emitDataConst(&originalImm, sizeof(long), sizeof(long), TYP_LONG);
+            auto constAddr = emitDataConst(&originalImm, sizeof(originalImm), sizeof(originalImm), TYP_LONG);
             emitIns_R_C(INS_ld, EA_PTRSIZE, reg, REG_NA, m_compiler->eeFindJitDataOffs(constAddr));
         }
         return -1;
@@ -1958,7 +1960,7 @@ void emitter::emitIns_Call(const EmitCallParams& params)
     /* Sanity check the arguments depending on callType */
 
     assert(params.callType < EC_COUNT);
-    assert(isGeneralRegister(params.ireg));
+    assert((params.callType == EC_FUNC_TOKEN) || isGeneralRegister(params.ireg));
     assert(params.callType < EC_INDIR_R || params.addr == nullptr);
 
     // RISCV64 never uses these
@@ -1987,19 +1989,6 @@ void emitter::emitIns_Call(const EmitCallParams& params)
         printf("\n");
     }
 #endif
-
-    ssize_t jalrOffset = 0;
-    if (params.callType == EC_FUNC_TOKEN && !IsAddressInRange(params.addr))
-    {
-        // Load upper bits of the absolute call address into a register:
-        // li   ireg, addr_upper
-        // jalr zero/ra, ireg, addr_lo12 (emitted below)
-        assert(params.addr != nullptr);
-        ssize_t imm = (ssize_t)params.addr;
-        jalrOffset  = (imm << (64 - 12)) >> (64 - 12); // low 12-bits, sign-extended
-        imm -= jalrOffset;
-        emitLoadImmediate<true>(EA_PTRSIZE, params.ireg, imm); // upper bits
-    }
 
     /*
         We need to allocate the appropriate instruction descriptor based
@@ -2066,19 +2055,18 @@ void emitter::emitIns_Call(const EmitCallParams& params)
     id->idInsOpt(INS_OPTS_C);
 
     /* Record the address: method, indirection, or funcptr */
-    if ((params.callType == EC_INDIR_R) || (params.callType == EC_FUNC_TOKEN && !IsAddressInRange(params.addr)))
+    if (params.callType == EC_INDIR_R)
     {
         /* This is an indirect call (either a virtual call or func ptr call) */
 
-        //      jalr zero/ra, ireg, offset
+        //      jalr zero/ra, ireg, 0
 
         id->idSetIsCallRegPtr();
 
         regNumber reg_jalr = params.isJump ? REG_R0 : REG_RA;
         id->idReg4(reg_jalr);
         id->idReg3(params.ireg); // NOTE: for EC_INDIR_R, using idReg3.
-        // Backward navigation leaves only 11 small-constant bits; the offset needs 12.
-        id->idAddr()->iiaSetInstrEncode((code_t)jalrOffset);
+        id->idSmallCns(0);
         id->idCodeSize(4);
     }
     else
@@ -2087,10 +2075,12 @@ void emitter::emitIns_Call(const EmitCallParams& params)
 
         //      auipc t2/ra, offset-hi20
         //      jalr zero/ra, t2/ra, offset-lo12
+        //
+        // Always PC-relative, with a relocation for the VM to resolve: when the target is out of reach
+        // of the auipc + jalr pair the VM inserts a jump stub, as it does for arm64 and amd64 calls.
 
         assert(params.callType == EC_FUNC_TOKEN);
         assert(params.addr != nullptr);
-        assert(IsAddressInRange(params.addr));
 
         void* addr =
             (void*)(((size_t)params.addr) + (params.isJump ? 0 : 1)); // NOTE: low-bit0 is used for jalr ra/r0,rd,0
@@ -3205,7 +3195,7 @@ void emitter::EmitLogic_OptsC(TEmitPolicy& policy, const instrDesc* id)
 {
     if (id->idIsCallRegPtr())
     { // EC_INDIR_R
-        ssize_t offset = (int32_t)id->idAddr()->iiaGetInstrEncode();
+        ssize_t offset = id->idSmallCns();
         policy.EmitIType(INS_jalr, id->idReg4(), id->idReg3(), TrimSignedToImm12(offset));
     }
     else

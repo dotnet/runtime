@@ -432,16 +432,22 @@ namespace System.Net.Http
                     switch (value)
                     {
                         case ClientCertificateOption.Manual:
+#if !TARGET_WASI // System.Net.Security isn't supported on WASI
                             ThrowForModifiedManagedSslOptionsIfStarted();
-                            _clientCertificateOptions = value;
                             _socketHandler!.SslOptions.LocalCertificateSelectionCallback = (sender, targetHost, localCertificates, remoteCertificate, acceptableIssuers) => CertificateHelper.GetEligibleClientCertificate(ClientCertificates)!;
+#endif
+                            _clientCertificateOptions = value;
                             break;
 
                         case ClientCertificateOption.Automatic:
+#if TARGET_WASI
+                            throw new PlatformNotSupportedException(); // System.Net.Security isn't supported on WASI
+#else
                             ThrowForModifiedManagedSslOptionsIfStarted();
-                            _clientCertificateOptions = value;
                             _socketHandler!.SslOptions.LocalCertificateSelectionCallback = (sender, targetHost, localCertificates, remoteCertificate, acceptableIssuers) => CertificateHelper.GetEligibleClientCertificate()!;
+                            _clientCertificateOptions = value;
                             break;
+#endif
 
                         default:
                             throw new ArgumentOutOfRangeException(nameof(value));
@@ -789,6 +795,10 @@ namespace System.Net.Http
         [FeatureSwitchDefinition("System.Net.Http.UseNativeHttpHandler")]
         private static bool IsNativeHandlerEnabled => RuntimeSettingParser.QueryRuntimeSettingSwitch(
                 "System.Net.Http.UseNativeHttpHandler",
+#if TARGET_WASI
+                true);
+#else
                 false);
+#endif
     }
 }

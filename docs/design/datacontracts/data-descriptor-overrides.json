@@ -4,6 +4,9 @@
       "type.<type size>": "uint32",
       "type.Table": "pointer",
       "type.TableSize": "uint32"
+    },
+    "StackWalk@c2": {
+      "MethodTableAuxiliaryData.<type size>": "uint32"
     }
   }
 }

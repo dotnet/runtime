@@ -28,6 +28,7 @@
   .method public static void Test_Scenario1() cil managed noinlining
   {
     ldtoken BaseScenario1
+    call string [TypeHierarchyCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     pop
     ret
   } // end of method Test_Scenario1

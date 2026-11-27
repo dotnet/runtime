@@ -266,7 +266,7 @@ namespace System.ComponentModel.Composition.AttributedModel
                 {
                     AttributedExportDefinition attributedExportDefinition = CreateExportDefinition(member, exportAttribute);
 
-                    if (exportAttribute.GetType() == CompositionServices.InheritedExportAttributeType)
+                    if (exportAttribute.GetType() == typeof(InheritedExportAttribute))
                     {
                         // Any InheritedExports on the type itself are contributed during this pass
                         // and we need to do the book keeping for those.
@@ -386,7 +386,7 @@ namespace System.ComponentModel.Composition.AttributedModel
             // Stopping at object instead of null to help with performance. It is a noticable performance
             // gain (~5%) if we don't have to try and pull the attributes we know don't exist on object.
             // We also need the null check in case we're passed a type that doesn't live in the runtime context.
-            while (currentType != null && currentType.UnderlyingSystemType != CompositionServices.ObjectType)
+            while (currentType != null && currentType.UnderlyingSystemType != typeof(object))
             {
                 if (IsInheritedExport(currentType))
                 {
@@ -458,7 +458,7 @@ namespace System.ComponentModel.Composition.AttributedModel
                 // Stopping at object instead of null to help with performance. It is a noticable performance
                 // gain (~5%) if we don't have to try and pull the attributes we know don't exist on object.
                 // We also need the null check in case we're passed a type that doesn't live in the runtime context.
-                while (baseType != null && baseType.UnderlyingSystemType != CompositionServices.ObjectType)
+                while (baseType != null && baseType.UnderlyingSystemType != typeof(object))
                 {
                     foreach (MemberInfo member in GetDeclaredOnlyImportMembers(baseType))
                     {

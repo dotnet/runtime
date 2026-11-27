@@ -13,6 +13,7 @@
 
 #include "common.h"
 #include "assemblybindercommon.hpp"
+#include "hostinformation.h"
 #include "assemblyname.hpp"
 #include "assembly.hpp"
 #include "applicationcontext.hpp"
@@ -208,7 +209,7 @@ namespace BINDER_SPACE
     Retry:
         {
             // Lock the binding application context
-            CRITSEC_Holder contextLock(pApplicationContext->GetCriticalSectionCookie());
+            CRITSEC_Holder contextLock = ClrTakeCriticalSection(pApplicationContext->GetCriticalSectionCookie());
 
             _ASSERTE(pAssemblyName != NULL);
             IF_FAIL_GO(BindByName(pApplicationContext,
@@ -897,11 +898,21 @@ namespace BINDER_SPACE
             // Is assembly on TPA list?
             SimpleNameToFileNameMap * tpaMap = pApplicationContext->GetTpaList();
             const SimpleNameToFileNameMapEntry *pTpaEntry = tpaMap->LookupPtr(simpleName.GetUnicode());
+            SString fileName;
             if (pTpaEntry != nullptr)
             {
-                _ASSERTE(pTpaEntry->m_wszILFileName != nullptr);
-                SString fileName(pTpaEntry->m_wszILFileName);
+                if (pTpaEntry->m_wszILFileName != nullptr)
+                {
+                    fileName.Set(pTpaEntry->m_wszILFileName);
+                }
+                else
+                {
+                    HostInformation::ResolveAssemblyToPath(pTpaEntry->m_wszSimpleName, fileName);
+                }
+            }
 
+            if (!fileName.IsEmpty())
+            {
                 ReleaseHolder<Assembly> pAssembly;
                 SString getAssemblyDiag;
                 hr = GetAssembly(fileName,
@@ -1095,7 +1106,7 @@ namespace BINDER_SPACE
 
             {
                 // Lock the application context
-                CRITSEC_Holder contextLock(pApplicationContext->GetCriticalSectionCookie());
+                CRITSEC_Holder contextLock = ClrTakeCriticalSection(pApplicationContext->GetCriticalSectionCookie());
 
                 // Only perform costly validation if other binds succeeded before us
                 if (kContextVersion != pApplicationContext->GetVersion())
@@ -1207,7 +1218,7 @@ Retry:
     bool mvidMismatch = false;
     {
         // Lock the application context
-        CRITSEC_Holder contextLock(pApplicationContext->GetCriticalSectionCookie());
+        CRITSEC_Holder contextLock = ClrTakeCriticalSection(pApplicationContext->GetCriticalSectionCookie());
 
         // Attempt uncached bind and register stream if possible
         // We skip version compatibility check - so assemblies with same simple name will be reported
@@ -1316,7 +1327,7 @@ HRESULT AssemblyBinderCommon::CreateDefaultBinder(DefaultAssemblyBinder** ppDefa
             if (SUCCEEDED(hr))
             {
                 pBinder->SetAssemblyLoadContext((INT_PTR)NULL);
-                *ppDefaultBinder = pBinder.Extract();
+                *ppDefaultBinder = pBinder.Detach();
             }
         }
     }
@@ -1349,5 +1360,3 @@ BOOL AssemblyBinderCommon::IsValidArchitecture(PEKIND kArchitecture)
 
 #endif // !defined(DACCESS_COMPILE)
 };
-
-

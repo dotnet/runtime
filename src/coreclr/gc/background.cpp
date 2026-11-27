@@ -71,29 +71,6 @@ void gc_heap::switch_one_quantum()
     disable_preemptive (true);
 }
 
-void gc_heap::reset_ww_by_chunk (uint8_t* start_address, size_t total_reset_size)
-{
-    size_t reset_size = 0;
-    size_t remaining_reset_size = 0;
-    size_t next_reset_size = 0;
-
-    while (reset_size != total_reset_size)
-    {
-        remaining_reset_size = total_reset_size - reset_size;
-        next_reset_size = ((remaining_reset_size >= ww_reset_quantum) ?
-            ww_reset_quantum : remaining_reset_size);
-        if (next_reset_size)
-        {
-            reset_write_watch_for_gc_heap(start_address, next_reset_size);
-            reset_size += next_reset_size;
-
-            switch_one_quantum();
-        }
-    }
-
-    assert (reset_size == total_reset_size);
-}
-
 // This does a Sleep(1) for every reset ww_reset_quantum bytes of reset
 // we do concurrently.
 void gc_heap::switch_on_reset (BOOL concurrent_p, size_t* current_total_reset_size, size_t last_reset_size)
@@ -2269,9 +2246,19 @@ void gc_heap::background_mark_phase ()
         }
     }
 
-    // We need to void alloc contexts here 'cause while background_ephemeral_sweep is running
+    // We need to retire alloc contexts here 'cause while background_ephemeral_sweep is running
     // we can't let the user code consume the left over parts in these alloc contexts.
-    repair_allocation_contexts (FALSE);
+#ifdef MULTIPLE_HEAPS
+    // Allocation contexts are process-wide, so a single GC thread must retire their accounting.
+    bgc_t_join.join(this, gc_join_bgc_retire_alloc_contexts);
+    if (bgc_t_join.joined())
+#endif //MULTIPLE_HEAPS
+    {
+        repair_allocation_contexts (FALSE);
+#ifdef MULTIPLE_HEAPS
+        bgc_t_join.restart();
+#endif //MULTIPLE_HEAPS
+    }
 
     dprintf (2, ("end of bgc mark: gen2 free list space: %zu, free obj space: %zu",
         generation_free_list_space (generation_of (max_generation)),

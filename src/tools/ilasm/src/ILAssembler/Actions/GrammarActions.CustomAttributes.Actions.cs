@@ -5,7 +5,7 @@ using System.Collections.Immutable;
 using System.Reflection.Metadata;
 using Antlr4.Runtime;
 
-namespace ILAssembler;
+namespace Microsoft.DotNet.ILAssembler;
 
 #pragma warning disable CA1822 // Parser actions are invoked through the per-parser GrammarActions instance.
 internal sealed partial class GrammarActions
@@ -156,20 +156,29 @@ internal sealed partial class GrammarActions
         result.WriteInt16((short)namedArguments.Length);
         foreach (CustomAttributeNamedArgumentValue argument in namedArguments)
         {
-            result.WriteByte(argument.Kind);
-            MaterializeSerializationType(argument.Type).WriteContentTo(result);
-            result.WriteSerializedString(argument.Name);
-            MaterializeSerializedInitializer(argument.Value).WriteContentTo(result);
+            WriteCustomBlobNamedArgument(result, argument);
         }
     }
 
+    private void WriteCustomBlobNamedArgument(
+        BlobBuilder result,
+        CustomAttributeNamedArgumentValue argument)
+    {
+        result.WriteByte(argument.Kind);
+        MaterializeSerializationType(argument.Type).WriteContentTo(result);
+        result.WriteSerializedString(argument.Name);
+        MaterializeSerializedInitializer(argument.Value).WriteContentTo(result);
+    }
+
     private EntityRegistry.CustomAttributeEntity MaterializeCustomAttribute(
-        CustomAttributeDescriptorValue descriptor)
+        CustomAttributeDescriptorValue descriptor,
+        IToken location)
     {
         EntityRegistry.EntityBase constructor = MaterializeMethodReference(descriptor.Constructor);
         BlobBuilder value = MaterializeCustomAttributeBlob(descriptor.Value);
         EntityRegistry.CustomAttributeEntity attribute =
             _entityRegistry.CreateCustomAttribute(constructor, value);
+        attribute.Location = Location.From(location, _documents);
         if (descriptor.Owner is { } owner)
         {
             attribute.Owner = MaterializeOwnerType(owner);
@@ -196,6 +205,7 @@ internal sealed partial class GrammarActions
             EntityRegistry.CustomAttributeEntity typedefAttribute =
                 _entityRegistry.CreateCustomAttribute(resolved.Constructor, resolved.Value);
             typedefAttribute.Owner = resolved.Owner;
+            typedefAttribute.Location = Location.From(location, _documents);
             return typedefAttribute;
         }
 
@@ -204,7 +214,7 @@ internal sealed partial class GrammarActions
             return null;
         }
 
-        EntityRegistry.CustomAttributeEntity attribute = MaterializeCustomAttribute(descriptor);
+        EntityRegistry.CustomAttributeEntity attribute = MaterializeCustomAttribute(descriptor, location);
         return descriptor.Owner is null ? attribute : null;
     }
 
@@ -214,7 +224,7 @@ internal sealed partial class GrammarActions
 
     internal EntityRegistry.CustomAttributeEntity MaterializeCustomAttributeDescriptor(
         CILParser.CustomDescrContext context)
-        => MaterializeCustomAttribute(context.Value);
+        => MaterializeCustomAttribute(context.Value, context.Start);
 
     internal EntityRegistry.CustomAttributeEntity? MaterializeMethodBodyCustomAttributeDeclaration(
         CILParser.CustomDescrInMethodBodyContext context)

@@ -24,7 +24,7 @@ namespace Internal.TypeVerifier
             private get;
         }
 
-        private void VerificationError(VerifierError error, params object[] args)
+        private void Invalid(VerifierError error, params object[] args)
         {
             ReportVerificationError(error, args);
         }
@@ -41,7 +41,8 @@ namespace Internal.TypeVerifier
         {
             VerifyBaseType();
 
-            VerifyInterfaces();
+            HashSet<MethodDesc> invalidMethodImplDeclarations = VerifyMethodImpls();
+            VerifyInterfaces(invalidMethodImplDeclarations);
         }
 
         private void VerifyBaseType()
@@ -53,7 +54,7 @@ namespace Internal.TypeVerifier
             {
                 if (!type.IsObject && !type.IsModuleType && !type.IsInterface)
                 {
-                    VerificationError(VerifierError.InvalidBaseType, Format(type), Format(baseType));
+                    Invalid(VerifierError.InvalidBaseType, Format(type), Format(baseType));
                     return;
                 }
             }
@@ -65,12 +66,34 @@ namespace Internal.TypeVerifier
                     resolvedBaseType.IsInterface ||
                     !resolvedBaseType.IsDefType)
                 {
-                    VerificationError(VerifierError.InvalidBaseType, Format(type), Format(baseType));
+                    Invalid(VerifierError.InvalidBaseType, Format(type), Format(baseType));
                 }
             }
         }
 
-        public void VerifyInterfaces()
+        private HashSet<MethodDesc> VerifyMethodImpls()
+        {
+            MetadataReader reader = _module.MetadataReader;
+            TypeDefinition typeDefinition = reader.GetTypeDefinition(_typeDefinitionHandle);
+            HashSet<MethodDesc> invalidDeclarations = null;
+
+            foreach (MethodImplementationHandle handle in typeDefinition.GetMethodImplementations())
+            {
+                MethodImplementation methodImpl = reader.GetMethodImplementation(handle);
+                MethodDesc declaration = _module.GetMethod(methodImpl.MethodDeclaration);
+                MethodDesc body = _module.GetMethod(methodImpl.MethodBody);
+
+                if (!VerifyMethodImpl(declaration, body))
+                {
+                    invalidDeclarations ??= new HashSet<MethodDesc>();
+                    invalidDeclarations.Add(declaration);
+                }
+            }
+
+            return invalidDeclarations;
+        }
+
+        private void VerifyInterfaces(HashSet<MethodDesc> invalidMethodImplDeclarations)
         {
             TypeDefinition typeDefinition = _module.MetadataReader.GetTypeDefinition(_typeDefinitionHandle);
             EcmaType type = _module.GetType(_typeDefinitionHandle);
@@ -112,7 +135,7 @@ namespace Internal.TypeVerifier
                 }
                 else
                 {
-                    VerificationError(VerifierError.InterfaceImplHasDuplicate, Format(type), Format(imo.InterfaceType, _module, imo.InterfaceImplementation));
+                    Invalid(VerifierError.InterfaceImplHasDuplicate, Format(type), Format(imo.InterfaceType, _module, imo.InterfaceImplementation));
                 }
             }
 
@@ -128,18 +151,51 @@ namespace Internal.TypeVerifier
                             continue;
                         }
 
-                        if (type.ResolveInterfaceMethodTarget(method) is not MethodDesc resolvedMethod)
+                        if (invalidMethodImplDeclarations is not null && invalidMethodImplDeclarations.Contains(method))
+                        {
+                            continue;
+                        }
+
+                        MethodDesc resolvedMethod = method.Signature.IsStatic ?
+                            type.ResolveInterfaceMethodToStaticVirtualMethodOnType(method) :
+                            type.ResolveInterfaceMethodTarget(method);
+
+                        if (resolvedMethod is null)
                         {
                             type.ResolveInterfaceMethodToDefaultImplementationOnType(method, out resolvedMethod);
                         }
 
                         if (resolvedMethod is null)
                         {
-                            VerificationError(VerifierError.InterfaceMethodNotImplemented, Format(type), Format(implementedInterface.InterfaceType, _module, implementedInterface.InterfaceImplementation), Format(method));
+                            Invalid(VerifierError.InterfaceMethodNotImplemented, Format(type), Format(implementedInterface.InterfaceType, _module, implementedInterface.InterfaceImplementation), Format(method));
+                        }
+                        else
+                        {
+                            VerifyMethodImpl(method, resolvedMethod);
                         }
                     }
                 }
             }
+        }
+
+        private bool VerifyMethodImpl(MethodDesc declaration, MethodDesc body)
+        {
+            VerifierError error;
+            if (body.Signature.IsStatic != declaration.Signature.IsStatic)
+            {
+                error = VerifierError.MethodImplStaticMismatch;
+            }
+            else if (!declaration.Signature.IsStatic && !body.IsVirtual)
+            {
+                error = VerifierError.MethodImplBodyNotVirtual;
+            }
+            else
+            {
+                return true;
+            }
+
+            Invalid(error, Format(body), Format(declaration));
+            return false;
         }
 
         private string Format(TypeDesc type)

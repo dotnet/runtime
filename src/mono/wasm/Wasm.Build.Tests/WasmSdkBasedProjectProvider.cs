@@ -142,21 +142,12 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
         if (!BuildTestBase.IsUsingWorkloads)
             return;
 
-        // Compare files with the runtime pack
         string objBuildDir = Path.Combine(ProjectDir!, "obj", assertOptions.Configuration.ToString(), assertOptions.BuildOptions.TargetFramework, "wasm", assertOptions.BuildOptions.IsPublish ? "for-publish" : "for-build");
-
-        string runtimeNativeDir = BuildTestBase.s_buildEnv.GetRuntimeNativeDir(assertOptions.BuildOptions.TargetFramework, assertOptions.BuildOptions.RuntimeType);
-
-        string srcDirForNativeFileToCompareAgainst = assertOptions.ExpectedFileType switch
-        {
-            NativeFilesType.FromRuntimePack => runtimeNativeDir,
-            NativeFilesType.Relinked => objBuildDir,
-            NativeFilesType.AOT => objBuildDir,
-            _ => throw new ArgumentOutOfRangeException(nameof(assertOptions.BuildOptions.ExpectedFileType))
-        };
-
+        var runtimePack = new RuntimePackAssets(assertOptions.RuntimePackDir ??
+            BuildTestBase.s_buildEnv.GetRuntimePackDir(assertOptions.BuildOptions.TargetFramework, assertOptions.BuildOptions.RuntimeType));
+        bool fromRuntimePack = assertOptions.ExpectedFileType == NativeFilesType.FromRuntimePack;
         string buildType = assertOptions.BuildOptions.IsPublish ? "publish" : "build";
-        var nativeFilesToCheck = new List<string>() { "dotnet.native.wasm", "dotnet.native.js" };
+        string[] nativeFilesToCheck = ["dotnet.native.wasm", "dotnet.native.js"];
 
         foreach (string nativeFilename in nativeFilesToCheck)
         {
@@ -164,18 +155,14 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
             {
                 throw new XunitException($"Could not find {nativeFilename}. Actual files on disk: {string.Join($"{Environment.NewLine}  ", actualDotnetFiles.Values.Select(a => a.ActualPath).Order())}");
             }
-            // For any *type*, check against the expected path
-            TestUtils.AssertSameFile(Path.Combine(srcDirForNativeFileToCompareAgainst, nativeFilename),
-                           actualDotnetFiles[nativeFilename].ActualPath,
-                           buildType);
+            string packPath = RuntimePackAssets.GetNativePath(nativeFilename);
+            if (fromRuntimePack)
+                runtimePack.AssertFileSize(packPath, dotnetFile.ActualPath, buildType);
+            else
+                TestUtils.AssertSameFile(Path.Combine(objBuildDir, nativeFilename), dotnetFile.ActualPath, buildType);
 
             if (assertOptions.BuildOptions.ExpectedFileType != NativeFilesType.FromRuntimePack)
-            {
-                // Confirm that it doesn't match the file from the runtime pack
-                TestUtils.AssertNotSameFile(Path.Combine(runtimeNativeDir, nativeFilename),
-                                   actualDotnetFiles[nativeFilename].ActualPath,
-                                   buildType);
-            }
+                runtimePack.AssertFileSize(packPath, dotnetFile.ActualPath, buildType, same: false);
         }
     }
 
@@ -184,7 +171,14 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
         if (isUsingWorkloads && buildOutput is not null)
         {
             // In no-workload case, the path would be from a restored nuget
-            ProjectProviderBase.AssertRuntimePackPath(buildOutput, buildOptions.TargetFramework ?? DefaultTargetFramework, buildOptions.RuntimeType);
+            bool usesBootstrapBlazorTargetFramework =
+                buildOptions.TargetFramework == BuildTestBase.DefaultTargetFrameworkForBlazorTemplate &&
+                buildOptions.TargetFramework != BuildTestBase.DefaultTargetFramework;
+            ProjectProviderBase.AssertRuntimePackPath(
+                buildOutput,
+                buildOptions.TargetFramework,
+                buildOptions.RuntimeType,
+                compatibleTargetFramework: usesBootstrapBlazorTargetFramework ? BuildTestBase.DefaultTargetFramework : null);
         }
 
         // Capture the runtime-pack root the build actually used so downstream asserts (e.g. ICU
@@ -197,7 +191,7 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
         }
         else if (string.IsNullOrEmpty(buildOptions.NonDefaultFrameworkDir))
         {
-            AssertBuildBundle(config, buildOptions, isUsingWorkloads, isNativeBuild);
+            AssertBuildBundle(config, buildOptions, isUsingWorkloads, isNativeBuild, runtimePackDir);
         }
         else
         {
@@ -219,7 +213,7 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
     ///   obj/{config}/{tfm}/webcil/                   → assembly .wasm files (webcil-converted)
     ///   obj/{config}/{tfm}/wasm/for-build/           → native assets only when native build (AOT/relink)
     /// </summary>
-    private void AssertBuildBundle(Configuration config, MSBuildOptions buildOptions, bool isUsingWorkloads, bool? isNativeBuild)
+    private void AssertBuildBundle(Configuration config, MSBuildOptions buildOptions, bool isUsingWorkloads, bool? isNativeBuild, string? runtimePackDir)
     {
         EnsureProjectDirIsSet();
 
@@ -300,18 +294,11 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
             }
         }
 
-        // --- Native file comparison against runtime pack ---
-        if (isUsingWorkloads)
+        if (isUsingWorkloads && expectedFileType == NativeFilesType.FromRuntimePack)
         {
-            string runtimeNativeDir = BuildTestBase.s_buildEnv.GetRuntimeNativeDir(tfm, buildOptions.RuntimeType);
+            var runtimePack = new RuntimePackAssets(runtimePackDir ?? BuildTestBase.s_buildEnv.GetRuntimePackDir(tfm, buildOptions.RuntimeType));
             foreach (string nativeFilename in nativeFiles)
-            {
-                string actualPath = Path.Combine(nativeDir, nativeFilename);
-                if (expectedFileType == NativeFilesType.FromRuntimePack)
-                {
-                    TestUtils.AssertSameFile(Path.Combine(runtimeNativeDir, nativeFilename), actualPath, "build");
-                }
-            }
+                runtimePack.AssertFileSize(RuntimePackAssets.GetNativePath(nativeFilename), Path.Combine(nativeDir, nativeFilename), "build");
         }
     }
 
