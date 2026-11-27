@@ -12269,6 +12269,8 @@ void CEEJitInfo::recordRelocation(void *       location,
 // On arm64, a page relocation overflow disables optional relocations for the retry.
 // Subsequent compilations also check reach from the loader allocator's observed code
 // placement until allocations return to the preferred range.
+// Consecutive methods often share a code heap. If allocations alternate between
+// near and far heaps, the first method back in a far heap can miss again.
 //
 // The rel32 policy retries the method and disables optional rel32 for future
 // compilations. It relies on two assumptions:
@@ -13447,6 +13449,7 @@ void CEEJitInfo::SetAllowOptionalRelocs(BOOL allow)
     LIMITED_METHOD_CONTRACT;
     m_fAllowOptionalRelocs = allow;
 #ifdef TARGET_ARM64
+    // Use the same placement estimate for all hints in this compilation attempt.
     m_pageRelocSourcePage = m_pMethodBeingCompiled->GetLoaderAllocator()->m_pageRelocSourcePage.LoadWithoutBarrier();
 #endif
 }

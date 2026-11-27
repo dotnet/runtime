@@ -285,6 +285,7 @@ RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_JITMinOpts, W("JITMinOpts"), 0, "Forces Min
 // noise for jit-diff like tools.
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_JitEnableOptionalRelocs, W("JitEnableOptionalRelocs"), 1, "Allow optional relocs")
 #ifdef TARGET_ARM64
+CONFIG_STRING_INFO(INTERNAL_JitStressCodePlacement, W("JitStressCodePlacement"), "Prefer a far code heap for JIT methods with this name and the preferred range for other methods")
 CONFIG_DWORD_INFO(INTERNAL_JitForcePageRelocOverflow, W("JitForcePageRelocOverflow"), 0, "Force optional ADRP relocations out of range on the first JIT attempt")
 #endif
 RETAIL_CONFIG_STRING_INFO(EXTERNAL_JitName, W("JitName"), "Primary jit to use")

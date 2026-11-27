@@ -265,6 +265,9 @@ HRESULT EEConfig::Cleanup()
     delete [] pszBreakOnClassLoad;
     delete [] pszBreakOnClassBuild;
     delete [] pszBreakOnInstantiation;
+#ifdef TARGET_ARM64
+    delete [] m_jitStressCodePlacement;
+#endif
     delete [] pszBreakOnMethodName;
     delete [] pszDumpOnClassLoad;
     delete [] pszBreakOnInteropStubSetup;
@@ -553,6 +556,20 @@ HRESULT EEConfig::sync()
     IfFailRet(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_BreakOnInstantiation, (LPWSTR*)&pszBreakOnInstantiation));
     pszBreakOnInstantiation = NarrowWideChar((LPWSTR)pszBreakOnInstantiation);
 
+#ifdef TARGET_ARM64
+    {
+        CLRConfigStringHolder name;
+        IfFailRet(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_JitStressCodePlacement, &name));
+        if (name != nullptr)
+        {
+            StackSString methodName(name);
+            LPCUTF8 utf8 = methodName.GetUTF8();
+            size_t length = strlen(utf8) + 1;
+            m_jitStressCodePlacement = new char[length];
+            memcpy(m_jitStressCodePlacement, utf8, length);
+        }
+    }
+#endif
     IfFailRet(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_BreakOnMethodName, (LPWSTR*)&pszBreakOnMethodName));
     pszBreakOnMethodName = NarrowWideChar((LPWSTR)pszBreakOnMethodName);
 

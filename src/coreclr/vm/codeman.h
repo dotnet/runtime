@@ -462,6 +462,10 @@ public:
     bool   IsDynamicDomain()                    { return m_isDynamicDomain;    }
     void   SetDynamicDomain()                   { m_isDynamicDomain = true;    }
 
+#if defined(_DEBUG) && defined(TARGET_ARM64) && !defined(FEATURE_PORTABLE_ENTRYPOINTS)
+    void SetStressCodeRange(bool far);
+    void ClearStressCodeRange() { m_loAddr = m_hiAddr = nullptr; }
+#endif
     const BYTE* GetLoAddr()                     { return m_loAddr;             }
     const BYTE* GetHiAddr()                     { return m_hiAddr;             }
 

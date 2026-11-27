@@ -339,6 +339,24 @@ bool ExecutableAllocator::IsPreferredExecutableRange(void * p)
 }
 
 #ifdef TARGET_ARM64
+#ifdef _DEBUG
+void ExecutableAllocator::GetStressCodeRange(bool far, const BYTE*& lo, const BYTE*& hi)
+{
+    LIMITED_METHOD_CONTRACT;
+    lo = g_preferredRangeMin;
+    hi = g_preferredRangeMax;
+    if (far && lo < hi)
+    {
+        // An approved target may itself be up to 4 GiB outside the preferred range.
+        const UINT_PTR gap = 8ull << 30;
+        const UINT_PTR size = 1ull << 30;
+        UINT_PTR start = (UINT_PTR)lo > gap + size ? (UINT_PTR)lo - gap - size : (UINT_PTR)hi + gap;
+        lo = (BYTE*)start;
+        hi = (BYTE*)(start + size);
+    }
+}
+#endif
+
 bool ExecutableAllocator::IsInPreferredPageRelativeRange(void* target)
 {
     LIMITED_METHOD_CONTRACT;

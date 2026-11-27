@@ -2678,6 +2678,14 @@ void * LoaderCodeHeap::AllocMemForCode_NoThrow(size_t header, size_t size, DWORD
     return p;
 }
 
+#if defined(_DEBUG) && defined(TARGET_ARM64) && !defined(FEATURE_PORTABLE_ENTRYPOINTS)
+void CodeHeapRequestInfo::SetStressCodeRange(bool far)
+{
+    LIMITED_METHOD_CONTRACT;
+    ExecutableAllocator::GetStressCodeRange(far, m_loAddr, m_hiAddr);
+}
+#endif
+
 CodeHeapRequestInfo::CodeHeapRequestInfo(MethodDesc* pMD)
     : CodeHeapRequestInfo{ pMD, NULL, NULL, NULL }
 {
@@ -3108,6 +3116,14 @@ void EECodeGenManager::AllocCode(MethodDesc* pMD, size_t blockSize, size_t reser
     else
 #endif // FEATURE_INTERPRETER
     {
+#if defined(_DEBUG) && defined(TARGET_ARM64) && !defined(FEATURE_PORTABLE_ENTRYPOINTS)
+        LPCUTF8 farMethod = g_pConfig->GetJitStressCodePlacement();
+        if (farMethod != nullptr && !requestInfo.IsDynamicDomain())
+        {
+            LPCUTF8 name = pMD->GetName();
+            requestInfo.SetStressCodeRange(name != nullptr && strcmp(farMethod, name) == 0);
+        }
+#endif
         requestInfo.SetReserveForJumpStubs(reserveForJumpStubs);
 
         realHeaderSize = offsetof(RealCodeHeader, unwindInfos[0]) + (sizeof(T_RUNTIME_FUNCTION) * nUnwindInfos);
@@ -3145,6 +3161,14 @@ void EECodeGenManager::AllocCode(MethodDesc* pMD, size_t blockSize, size_t reser
 
         *ppCodeHeap = NULL;
         TADDR pCode = (TADDR) AllocCodeWorker(&requestInfo, sizeof(TCodeHeader), totalSize, alignment, ppCodeHeap);
+#if defined(_DEBUG) && defined(TARGET_ARM64) && !defined(FEATURE_PORTABLE_ENTRYPOINTS)
+        if (pCode == 0 && requestInfo.IsSpecificMemoryRangeRequested())
+        {
+            // Stress placement is best effort. The requested range may be full.
+            requestInfo.ClearStressCodeRange();
+            pCode = (TADDR)AllocCodeWorker(&requestInfo, sizeof(TCodeHeader), totalSize, alignment, ppCodeHeap);
+        }
+#endif
         _ASSERTE(*ppCodeHeap);
         _ASSERTE(IS_ALIGNED(pCode, alignment));
 

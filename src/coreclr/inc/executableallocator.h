@@ -242,6 +242,9 @@ public:
 #ifdef TARGET_ARM64
     // Can ADRP reach the target from every page in the preferred code range?
     static bool IsInPreferredPageRelativeRange(void* target);
+#if defined(_DEBUG) && !defined(FEATURE_PORTABLE_ENTRYPOINTS)
+    static void GetStressCodeRange(bool far, const BYTE*& lo, const BYTE*& hi);
+#endif
 #endif
 
     // Reserve the specified amount of virtual address space for executable mapping.
