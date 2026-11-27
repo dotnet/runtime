@@ -3,7 +3,7 @@
 
 using System.Diagnostics;
 
-namespace ILAssembler;
+namespace Microsoft.DotNet.ILAssembler;
 
 internal sealed partial class GrammarActions
 {

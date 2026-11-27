@@ -22,6 +22,7 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
         GenericInstContext,
         EditAndContinue,
         ReversePInvoke,
+        StackParameterArea,
         InterruptibleRanges,
         SlotTable,
         Complete,
@@ -118,6 +119,8 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
     private uint _validRangeEnd;
     private int _gsCookieStackSlot;
     private int _pspSymStackSlot;
+    private uint? _returnKind;
+    private int? _securityObjectStackSlot;
     private int _genericsInstContextStackSlot;
     private uint _sizeOfEnCPreservedArea;
     private uint _sizeOfEnCFixedStackFrame;
@@ -130,6 +133,7 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
     private uint _numInterruptibleRanges;
     private List<InterruptibleRange> _interruptibleRanges = [];
     private List<uint> _safePoints = [];
+    private List<uint> _legacyReportedSafePoints = [];
 
     /* Slot Table Fields */
     private uint _numRegisters;
@@ -315,8 +319,8 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
             uint rangeStartOffsetNormalized = lastInterruptibleRangeStopOffsetNormalized + normStartDelta;
             uint rangeStopOffsetNormalized = rangeStartOffsetNormalized + normStopDelta;
 
-            uint rangeStartOffset = TTraits.DenormalizeCodeOffset(rangeStartOffsetNormalized);
-            uint rangeStopOffset = TTraits.DenormalizeCodeOffset(rangeStopOffsetNormalized);
+            uint rangeStartOffset = DenormalizeCodeOffset(rangeStartOffsetNormalized);
+            uint rangeStopOffset = DenormalizeCodeOffset(rangeStopOffsetNormalized);
 
             Debug.Assert(rangeStartOffset < rangeStopOffset);
             Debug.Assert(rangeStartOffset >= prevEndOffset);
@@ -332,13 +336,22 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
 
     private IEnumerable<DecodePoints> DecodeSafePoints()
     {
-        uint numBitsPerOffset = CeilOfLog2(TTraits.NormalizeCodeOffset(_codeLength));
+        uint numBitsPerOffset = CeilOfLog2(NormalizeCodeOffset(_codeLength));
 
         _safePoints = new List<uint>((int)_numSafePoints);
         for (uint i = 0; i < _numSafePoints; i++)
         {
-            uint offset = TTraits.DenormalizeCodeOffset((uint)_reader.ReadBits((int)numBitsPerOffset, ref _bitOffset));
+            uint offset = DenormalizeCodeOffset((uint)_reader.ReadBits((int)numBitsPerOffset, ref _bitOffset));
             _safePoints.Add(offset);
+        }
+
+        if (IsLegacyFormat)
+        {
+            // Before v4, safe points are encoded with a -1 adjustment. Native EnumerateSafePoints
+            // reports them with the adjustment undone.
+            _legacyReportedSafePoints = new List<uint>(_safePoints.Count);
+            foreach (uint offset in _safePoints)
+                _legacyReportedSafePoints.Add(offset + 1);
         }
 
         yield break;
@@ -370,6 +383,9 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
             _headerFlags = default;
             _stackBaseRegister = TTraits.NO_STACK_BASE_REGISTER;
         }
+
+        if (HasReturnKind)
+            _returnKind = (uint)_reader.ReadBits(TTraits.SIZE_OF_RETURN_KIND_IN_SLIM_HEADER, ref _bitOffset);
         yield return DecodePoints.ReturnKind;
         yield return DecodePoints.VarArg;
 
@@ -380,6 +396,7 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
         _validRangeEnd = 0;
         _gsCookieStackSlot = TTraits.NO_GS_COOKIE;
         _pspSymStackSlot = TTraits.NO_PSP_SYM;
+        _securityObjectStackSlot = null;
         _genericsInstContextStackSlot = TTraits.NO_GENERICS_INST_CONTEXT;
         _sizeOfEnCPreservedArea = TTraits.NO_SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA;
         _sizeOfEnCFixedStackFrame = 0;
@@ -395,6 +412,7 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
         yield return DecodePoints.GenericInstContext;
         yield return DecodePoints.EditAndContinue;
         yield return DecodePoints.ReversePInvoke;
+        yield return DecodePoints.StackParameterArea;
 
         if (PartiallyInterruptibleGCSupported)
         {
@@ -406,7 +424,11 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
 
     private IEnumerable<DecodePoints> DecodeFatHeader()
     {
-        _headerFlags = (GcInfoHeaderFlags)_reader.ReadBits((int)GcInfoHeaderFlags.GC_INFO_FLAGS_BIT_SIZE, ref _bitOffset);
+        int numFlagBits = _gcVersion == 1 ? (int)GcInfoHeaderFlags.GC_INFO_FLAGS_BIT_SIZE_VERSION_1 : (int)GcInfoHeaderFlags.GC_INFO_FLAGS_BIT_SIZE;
+        _headerFlags = (GcInfoHeaderFlags)_reader.ReadBits(numFlagBits, ref _bitOffset);
+
+        if (HasReturnKind)
+            _returnKind = (uint)_reader.ReadBits(TTraits.SIZE_OF_RETURN_KIND_IN_FAT_HEADER, ref _bitOffset);
         yield return DecodePoints.ReturnKind;
         yield return DecodePoints.VarArg;
 
@@ -417,21 +439,22 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
         {
             // Note that normalization as a code offset can be different than
             // normalization as code length
-            uint normCodeLength = TTraits.NormalizeCodeLength(_codeLength);
+            uint normCodeLength = IsLegacyFormat ? NormalizeCodeOffset(_codeLength) : TTraits.NormalizeCodeLength(_codeLength);
 
             // Decode prolog/epilog information
             uint normPrologSize = _reader.DecodeVarLengthUnsigned(TTraits.NORM_PROLOG_SIZE_ENCBASE, ref _bitOffset) + 1;
             uint normEpilogSize = _reader.DecodeVarLengthUnsigned(TTraits.NORM_EPILOG_SIZE_ENCBASE, ref _bitOffset);
 
-            _validRangeStart = TTraits.DenormalizeCodeOffset(normPrologSize);
-            _validRangeEnd = TTraits.DenormalizeCodeOffset(normCodeLength - normEpilogSize);
+            _validRangeStart = DenormalizeCodeOffset(normPrologSize);
+            _validRangeEnd = DenormalizeCodeOffset(normCodeLength - normEpilogSize);
             Debug.Assert(_validRangeStart < _validRangeEnd);
         }
-        else if ((_headerFlags & GcInfoHeaderFlags.GC_INFO_HAS_GENERICS_INST_CONTEXT_MASK) != GcInfoHeaderFlags.GC_INFO_HAS_GENERICS_INST_CONTEXT_NONE)
+        else if ((_headerFlags & GcInfoHeaderFlags.GC_INFO_HAS_GENERICS_INST_CONTEXT_MASK) != GcInfoHeaderFlags.GC_INFO_HAS_GENERICS_INST_CONTEXT_NONE
+            || HasLegacySecurityObject)
         {
             // Decode prolog information
             uint normPrologSize = _reader.DecodeVarLengthUnsigned(TTraits.NORM_PROLOG_SIZE_ENCBASE, ref _bitOffset) + 1;
-            _validRangeStart = TTraits.DenormalizeCodeOffset(normPrologSize);
+            _validRangeStart = DenormalizeCodeOffset(normPrologSize);
             // satisfy asserts that assume m_GSCookieValidRangeStart != 0 ==> m_GSCookieValidRangeStart < m_GSCookieValidRangeEnd
             _validRangeEnd = _validRangeStart + 1;
         }
@@ -442,12 +465,18 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
         }
         yield return DecodePoints.PrologLength;
 
+        _securityObjectStackSlot = HasLegacySecurityObject ?
+            TTraits.DenormalizeStackSlot(_reader.DecodeVarLengthSigned(TTraits.SECURITY_OBJECT_STACK_SLOT_ENCBASE, ref _bitOffset)) :
+            null;
+
         _gsCookieStackSlot = _headerFlags.HasFlag(GcInfoHeaderFlags.GC_INFO_HAS_GS_COOKIE) ?
             TTraits.DenormalizeStackSlot(_reader.DecodeVarLengthSigned(TTraits.GS_COOKIE_STACK_SLOT_ENCBASE, ref _bitOffset)) :
             TTraits.NO_GS_COOKIE;
         yield return DecodePoints.GSCookie;
 
-        _pspSymStackSlot = TTraits.NO_PSP_SYM;
+        _pspSymStackSlot = IsLegacyFormat && _headerFlags.HasFlag(GcInfoHeaderFlags.GC_INFO_HAS_PSP_SYM) ?
+            TTraits.DenormalizeStackSlot(_reader.DecodeVarLengthSigned(TTraits.PSP_SYM_STACK_SLOT_ENCBASE, ref _bitOffset)) :
+            TTraits.NO_PSP_SYM;
         yield return DecodePoints.PSPSym;
 
         _genericsInstContextStackSlot = (_headerFlags & GcInfoHeaderFlags.GC_INFO_HAS_GENERICS_INST_CONTEXT_MASK) != GcInfoHeaderFlags.GC_INFO_HAS_GENERICS_INST_CONTEXT_NONE ?
@@ -487,6 +516,7 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
             _fixedStackParameterScratchArea =
                 TTraits.DenormalizeSizeOfStackArea(_reader.DecodeVarLengthUnsigned(TTraits.SIZE_OF_STACK_AREA_ENCBASE, ref _bitOffset));
         }
+        yield return DecodePoints.StackParameterArea;
 
         if (PartiallyInterruptibleGCSupported)
         {
@@ -514,7 +544,7 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
 
     public GCInfoHeader GetHeader()
     {
-        EnsureDecodedTo(DecodePoints.ReversePInvoke);
+        EnsureDecodedTo(DecodePoints.StackParameterArea);
 
         GcInfoHeaderFlags genericsInstContextFlags = _headerFlags & GcInfoHeaderFlags.GC_INFO_HAS_GENERICS_INST_CONTEXT_MASK;
         SpecialSlot? gsCookie = _gsCookieStackSlot != TTraits.NO_GS_COOKIE ? new SpecialSlot(_gsCookieStackSlot) : null;
@@ -624,13 +654,15 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
         // Mirrors native GcInfoDecoder::IsSafePoint.
         if (_numSafePoints == 0)
             return false;
-        return FindSafePoint(instructionOffset) != _numSafePoints;
+        // Before v4, safe points are encoded with a -1 adjustment (native IsSafePoint).
+        uint safePointOffset = IsLegacyFormat ? instructionOffset - 1 : instructionOffset;
+        return FindSafePoint(safePointOffset) != _numSafePoints;
     }
 
     public IReadOnlyList<uint> GetSafePoints()
     {
         EnsureDecodedTo(DecodePoints.InterruptibleRanges);
-        return _safePoints;
+        return IsLegacyFormat ? _legacyReportedSafePoints : _safePoints;
     }
 
     public IReadOnlyList<GCSlotLifetime> GetSlotLifetimes()
@@ -768,8 +800,8 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
         uint numInterruptibleLength = 0;
         for (int i = 0; i < _interruptibleRanges.Count; i++)
         {
-            uint normStart = TTraits.NormalizeCodeOffset(_interruptibleRanges[i].StartOffset);
-            uint normStop = TTraits.NormalizeCodeOffset(_interruptibleRanges[i].EndOffset);
+            uint normStart = NormalizeCodeOffset(_interruptibleRanges[i].StartOffset);
+            uint normStop = NormalizeCodeOffset(_interruptibleRanges[i].EndOffset);
             numInterruptibleLength += normStop - normStart;
         }
 
@@ -898,13 +930,13 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
         uint accumulated = 0;
         for (int i = 0; i < _interruptibleRanges.Count; i++)
         {
-            uint normStart = TTraits.NormalizeCodeOffset(_interruptibleRanges[i].StartOffset);
-            uint normStop = TTraits.NormalizeCodeOffset(_interruptibleRanges[i].EndOffset);
+            uint normStart = NormalizeCodeOffset(_interruptibleRanges[i].StartOffset);
+            uint normStop = NormalizeCodeOffset(_interruptibleRanges[i].EndOffset);
             uint rangeLen = normStop - normStart;
             if (normOffset < accumulated + rangeLen)
             {
                 uint delta = normOffset - accumulated;
-                return TTraits.DenormalizeCodeOffset(normStart + delta);
+                return DenormalizeCodeOffset(normStart + delta);
             }
             accumulated += rangeLen;
         }
@@ -919,6 +951,120 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
     }
 
     public uint NumTrackedSlots => _numSlots - _numUntrackedSlots;
+
+    #region Accessors for ILCompiler.Reflection.ReadyToRun
+    // Not used by the cDAC. ILCompiler.Reflection.ReadyToRun (R2RDump) compiles this file as shared
+    // source and uses these members to display GC info fields that IGCInfoDecoder does not expose.
+
+    internal bool IsSlimHeader
+    {
+        get
+        {
+            EnsureDecodedTo(DecodePoints.CodeLength);
+            return _slimHeader;
+        }
+    }
+
+    internal uint ValidRangeEnd
+    {
+        get
+        {
+            EnsureDecodedTo(DecodePoints.PrologLength);
+            return _validRangeEnd;
+        }
+    }
+
+    internal uint? SizeOfEditAndContinuePreservedArea
+    {
+        get
+        {
+            EnsureDecodedTo(DecodePoints.EditAndContinue);
+            return _sizeOfEnCPreservedArea != TTraits.NO_SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA ? _sizeOfEnCPreservedArea : null;
+        }
+    }
+
+    internal uint SizeOfEditAndContinueFixedStackFrame
+    {
+        get
+        {
+            EnsureDecodedTo(DecodePoints.EditAndContinue);
+            return _sizeOfEnCFixedStackFrame;
+        }
+    }
+
+    internal int? ReversePInvokeFrameStackSlot
+    {
+        get
+        {
+            EnsureDecodedTo(DecodePoints.ReversePInvoke);
+            return _reversePInvokeFrameStackSlot != TTraits.NO_REVERSE_PINVOKE_FRAME ? _reversePInvokeFrameStackSlot : null;
+        }
+    }
+
+    internal bool HasStackBaseRegister
+    {
+        get
+        {
+            EnsureDecodedTo(DecodePoints.StackParameterArea);
+            return _stackBaseRegister != TTraits.NO_STACK_BASE_REGISTER;
+        }
+    }
+
+    /// <summary>
+    /// All slots in slot table order: registers, then stack slots, then untracked slots.
+    /// </summary>
+    internal IReadOnlyList<GcSlotDesc> Slots
+    {
+        get
+        {
+            EnsureDecodedTo(DecodePoints.SlotTable);
+            return _slots;
+        }
+    }
+
+    internal uint NumRegisters
+    {
+        get
+        {
+            EnsureDecodedTo(DecodePoints.SlotTable);
+            return _numRegisters;
+        }
+    }
+
+    internal uint NumUntrackedSlots
+    {
+        get
+        {
+            EnsureDecodedTo(DecodePoints.SlotTable);
+            return _numUntrackedSlots;
+        }
+    }
+
+    /// <summary>
+    /// The encoded ReturnKind (GC info versions 2 and 3 only), or null.
+    /// </summary>
+    internal uint? ReturnKind
+    {
+        get
+        {
+            EnsureDecodedTo(DecodePoints.ReturnKind);
+            return _returnKind;
+        }
+    }
+
+    /// <summary>
+    /// The security object stack slot (GC info before version 4 only), or null.
+    /// </summary>
+    internal int? SecurityObjectStackSlot
+    {
+        get
+        {
+            EnsureDecodedTo(DecodePoints.GSCookie);
+            return _securityObjectStackSlot;
+        }
+    }
+
+    #endregion
 
     IReadOnlyList<LiveSlot> IGCInfoDecoder.EnumerateLiveSlots(
         uint instructionOffset,
@@ -956,7 +1102,7 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
         if (numTracked == 0)
             return ReportUntrackedAndSucceed();
 
-        uint normBreakOffset = TTraits.NormalizeCodeOffset(instructionOffset);
+        uint normBreakOffset = NormalizeCodeOffset(instructionOffset);
 
         // Find safe point index
         uint safePointIndex = _numSafePoints;
@@ -990,8 +1136,8 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
                 int countIntersections = 0;
                 for (int i = 0; i < _interruptibleRanges.Count; i++)
                 {
-                    uint normStart = TTraits.NormalizeCodeOffset(_interruptibleRanges[i].StartOffset);
-                    uint normStop = TTraits.NormalizeCodeOffset(_interruptibleRanges[i].EndOffset);
+                    uint normStart = NormalizeCodeOffset(_interruptibleRanges[i].StartOffset);
+                    uint normStop = NormalizeCodeOffset(_interruptibleRanges[i].EndOffset);
 
                     if (normBreakOffset >= normStart && normBreakOffset < normStop)
                     {
@@ -1269,6 +1415,22 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
 
     #endregion
     #region Helper Methods
+
+    // GC info before version 4 (R2R images before 11.0) is only produced for ReadyToRun images,
+    // which the cDAC never decodes. Supporting it lets ILCompiler.Reflection.ReadyToRun (R2RDump)
+    // share this decoder. Mirrors the native DECODE_OLD_FORMATS handling, plus the version 1 header
+    // and the security object that were removed from the native decoder.
+    private bool IsLegacyFormat => _gcVersion < 4;
+
+    // ReturnKind was added in version 2 and removed in version 4.
+    private bool HasReturnKind => _gcVersion is 2 or 3;
+
+    private bool HasLegacySecurityObject => IsLegacyFormat && _headerFlags.HasFlag(GcInfoHeaderFlags.GC_INFO_HAS_SECURITY_OBJECT);
+
+    // Code offsets are only normalized from version 4 on.
+    private uint NormalizeCodeOffset(uint offset) => IsLegacyFormat ? offset : TTraits.NormalizeCodeOffset(offset);
+
+    private uint DenormalizeCodeOffset(uint offset) => IsLegacyFormat ? offset : TTraits.DenormalizeCodeOffset(offset);
 
     private static uint CeilOfLog2(ulong value)
     {

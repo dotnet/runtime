@@ -56,13 +56,7 @@ namespace System.DirectoryServices
 
         public byte[] GetDirectorySynchronizationCookie()
         {
-            byte[] tempcookie = new byte[_cookie.Length];
-            for (int i = 0; i < _cookie.Length; i++)
-            {
-                tempcookie[i] = _cookie[i];
-            }
-
-            return tempcookie;
+            return _cookie.AsSpan().ToArray();
         }
 
         public void ResetDirectorySynchronizationCookie() => _cookie = Array.Empty<byte>();
@@ -75,11 +69,7 @@ namespace System.DirectoryServices
             }
             else
             {
-                _cookie = new byte[cookie.Length];
-                for (int i = 0; i < cookie.Length; i++)
-                {
-                    _cookie[i] = cookie[i];
-                }
+                _cookie = cookie.AsSpan().ToArray();
             }
         }
 

@@ -23,7 +23,6 @@ public class WorkloadRequiredTests : BlazorWasmTestBase
     {
         ("RunAOTCompilation", true),
         ("WasmEnableSIMD", false),
-        ("WasmEnableRelaxedSimd", true),
         ("WasmEnableExceptionHandling", false),
         ("InvariantTimezone", true),
         //("InvariantGlobalization", true), - not applicable for blazor
@@ -89,11 +88,11 @@ public class WorkloadRequiredTests : BlazorWasmTestBase
     [Theory, TestCategory("no-workload")]
     [InlineData(Configuration.Debug)]
     [InlineData(Configuration.Release)]
-    public void NativeRef_EmitsWarningBecauseItRequiresWorkload(Configuration config)
+    public void NativeRef_RequiresWorkload(Configuration config)
     {
         CommandResult res = PublishForRequiresWorkloadTest(config, extraItems: "<NativeFileReference Include=\"native-lib.o\" />");
-        res.EnsureSuccessful();
-        Assert.Matches("warning : .*but the native references won't be linked in", res.Output);
+        Assert.NotEqual(0, res.ExitCode);
+        Assert.Contains("following workloads must be installed: wasm-tools", res.Output);
     }
 
     [Theory, TestCategory("no-workload")]

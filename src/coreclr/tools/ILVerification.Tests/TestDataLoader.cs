@@ -161,6 +161,25 @@ namespace ILVerification.Tests
         }
 
         /// <summary>
+        /// Returns the methods of <see cref="GetMethodsWithValidIL"/> and <see cref="GetMethodsWithInvalidIL"/>, expecting the
+        /// same errors in validation-only mode unless an Invalid method name ends with the following suffix:
+        /// _Validation_[Valid | ExpectedVerifierError1.ExpectedVerifierError2....ExpectedVerifierErrorN]
+        /// E.g.: 'LocAlloc_Invalid_Unverifiable_Validation_Valid'
+        /// </summary>
+        public static IEnumerable<object[]> GetMethodsForValidationOnlyMode()
+        {
+            var methodSelector = new Func<string[], MethodDefinitionHandle, TestCase>((mparams, methodHandle) =>
+            {
+                if (mparams is [_, "Valid"] or [_, "Invalid", _])
+                {
+                    return new ValidationOnlyTestCase { MetadataToken = MetadataTokens.GetToken(methodHandle) };
+                }
+                return null;
+            });
+            return GetTestMethodsFromDll(methodSelector);
+        }
+
+        /// <summary>
         /// Parses an expected error name from a test name. An unknown name throws, so that a misspelled
         /// name fails the tests instead of silently dropping out of the expected errors.
         /// </summary>
@@ -190,17 +209,20 @@ namespace ILVerification.Tests
                     if (!methodName.Contains('_', StringComparison.Ordinal))
                         continue;
 
-                    var index = methodName.LastIndexOf("_Valid", StringComparison.Ordinal);
+                    var names = methodName.Split("_Validation_");
+                    var index = names[0].LastIndexOf("_Valid", StringComparison.Ordinal);
                     if (index < 0)
-                        index = methodName.LastIndexOf("_Invalid", StringComparison.Ordinal);
+                        index = names[0].LastIndexOf("_Invalid", StringComparison.Ordinal);
+                    if (names.Length > 1 && (names.Length > 2 || index < 0 || names[0].Substring(index + 1).Split('_') is not ["Invalid", _]))
+                        throw new ArgumentException($"Test '{methodName}' has a malformed '_Validation_' suffix: only an Invalid test can have one.");
                     if (index < 0)
                         continue;
 
-                    var substring = methodName.Substring(index + 1);
+                    var substring = names[0].Substring(index + 1);
                     var split = substring.Split('_');
                     string[] mparams = new string[split.Length + 1];
                     split.CopyTo(mparams, 1);
-                    mparams[0] = methodName.Substring(0, index);
+                    mparams[0] = names[0].Substring(0, index);
                     // examples of methodName to mparams transformation:
                     //   * `get_Property` -> [ 'get_Property' ]
                     //   * `CheckSomething_Valid` -> [ 'CheckSomething', 'Valid' ]
@@ -216,6 +238,13 @@ namespace ILVerification.Tests
                         newItem.TestName = mparams[0];
                         newItem.MethodName = methodName;
                         newItem.ModuleName = testDllName;
+
+                        if (newItem is ValidationOnlyTestCase validationOnlyTestCase)
+                        {
+                            var errors = names.Length > 1 ? names[1] : mparams[^1];
+                            validationOnlyTestCase.ExpectedVerifierErrors = errors == "Valid" ? new List<VerifierError>()
+                                : new List<VerifierError>(Array.ConvertAll(errors.Split('.'), e => ParseExpectedError(e, mparams[0])));
+                        }
 
                         retVal.Add(new[] { newItem });
                     }
@@ -401,6 +430,11 @@ namespace ILVerification.Tests
 
             return errorsString.ToString();
         }
+    }
+
+    public class ValidationOnlyTestCase : InvalidILTestCase
+    {
+        public override string ToString() => base.ToString() + " [validation-only]";
     }
 
     public class ValidTypeTestCase : TestCase { }

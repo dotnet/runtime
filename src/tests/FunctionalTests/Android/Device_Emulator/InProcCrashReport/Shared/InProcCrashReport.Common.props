@@ -1,7 +1,6 @@
 <Project>
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <RunAOTCompilation>false</RunAOTCompilation>
     <TestRuntime>true</TestRuntime>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <ExpectedExitCode>100</ExpectedExitCode>

@@ -858,7 +858,7 @@ void TypeVarTypeDesc::LoadConstraints(ClassLoadLevel level, WhichConstraintsToLo
                 mdToken tkConstraintType, tkParam;
                 if (FAILED(pInternalImport->GetGenericParamConstraintProps(tkConstraint, &tkParam, &tkConstraintType)))
                 {
-                    GetModule()->GetAssembly()->ThrowTypeLoadException(pInternalImport, pMT->GetCl(), IDS_CLASSLOAD_BADFORMAT);
+                    GetModule()->GetAssembly()->ThrowTypeLoadException(pInternalImport, pMT != NULL ? pMT->GetCl() : defToken, IDS_CLASSLOAD_BADFORMAT);
                 }
                 _ASSERTE(tkParam == GetToken());
                 TypeHandle thConstraint;
@@ -872,7 +872,7 @@ void TypeVarTypeDesc::LoadConstraints(ClassLoadLevel level, WhichConstraintsToLo
 
                     if (FAILED(pInternalImport->GetTypeSpecFromToken(tkConstraintType, &pSig, &cSig)))
                     {
-                        GetModule()->GetAssembly()->ThrowTypeLoadException(pInternalImport, pMT->GetCl(), IDS_CLASSLOAD_BADFORMAT);
+                        GetModule()->GetAssembly()->ThrowTypeLoadException(pInternalImport, pMT != NULL ? pMT->GetCl() : defToken, IDS_CLASSLOAD_BADFORMAT);
                     }
 
                     SigPointer investigatePtr(pSig, cSig);
@@ -999,8 +999,8 @@ BOOL TypeVarTypeDesc::ConstrainedAsObjRef()
 {
     CONTRACTL
     {
-        NOTHROW;
-        GC_NOTRIGGER;
+        THROWS;
+        GC_TRIGGERS;
         MODE_ANY;
         PRECONDITION(ConstraintsLoaded(WhichConstraintsToLoad::TypeOrMethodVarsAndNonInterfacesOnly));
     }
@@ -1029,14 +1029,14 @@ BOOL TypeVarTypeDesc::ConstrainedAsObjRefHelper()
 {
     CONTRACTL
     {
-        NOTHROW;
-        GC_NOTRIGGER;
+        THROWS;
+        GC_TRIGGERS;
         MODE_ANY;
     }
     CONTRACTL_END;
 
     DWORD dwNumConstraints = 0;
-    TypeHandle* constraints = GetCachedConstraints(&dwNumConstraints, WhichConstraintsToLoad::TypeOrMethodVarsAndNonInterfacesOnly);
+    TypeHandle* constraints = GetConstraints(&dwNumConstraints, CLASS_DEPENDENCIES_LOADED, WhichConstraintsToLoad::TypeOrMethodVarsAndNonInterfacesOnly);
 
     for (DWORD i = 0; i < dwNumConstraints; i++)
     {
@@ -1071,10 +1071,9 @@ BOOL TypeVarTypeDesc::ConstrainedAsValueType()
 {
     CONTRACTL
     {
-        NOTHROW;
-        GC_NOTRIGGER;
+        THROWS;
+        GC_TRIGGERS;
         MODE_ANY;
-        PRECONDITION(ConstraintsLoaded(WhichConstraintsToLoad::TypeOrMethodVarsAndNonInterfacesOnly));
     }
     CONTRACTL_END;
 
@@ -1091,7 +1090,7 @@ BOOL TypeVarTypeDesc::ConstrainedAsValueType()
         return TRUE;
 
     DWORD dwNumConstraints = 0;
-    TypeHandle* constraints = GetCachedConstraints(&dwNumConstraints, WhichConstraintsToLoad::TypeOrMethodVarsAndNonInterfacesOnly);
+    TypeHandle* constraints = GetConstraints(&dwNumConstraints, CLASS_DEPENDENCIES_LOADED, WhichConstraintsToLoad::TypeOrMethodVarsAndNonInterfacesOnly);
 
     for (DWORD i = 0; i < dwNumConstraints; i++)
     {

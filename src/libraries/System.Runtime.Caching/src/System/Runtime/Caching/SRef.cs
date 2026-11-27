@@ -29,7 +29,7 @@ namespace System.Runtime.Caching
     where T : class, IDisposable
     {
         private GCHandle _handle;
-        private T _t;
+        private T? _t;
 
         public GCHandleRef(T t)
         {
@@ -42,7 +42,7 @@ namespace System.Runtime.Caching
             {
                 try
                 {
-                    T t = (T)_handle.Target;
+                    T? t = (T?)_handle.Target;
                     if (t != null)
                     {
                         return t;
@@ -52,7 +52,7 @@ namespace System.Runtime.Caching
                 {
                     // use the normal reference instead of throwing an exception when _handle is already freed
                 }
-                return _t;
+                return _t!;
             }
         }
 
@@ -66,7 +66,7 @@ namespace System.Runtime.Caching
                 // However after _handle is freed we no longer have access to its Target
                 // which will cause AVs and various concurrency issues under stress.
                 // We revert to using normal references after disposing the GC handle
-                _t = (T)_handle.Target;
+                _t = (T?)_handle.Target;
                 _handle.Free();
             }
         }

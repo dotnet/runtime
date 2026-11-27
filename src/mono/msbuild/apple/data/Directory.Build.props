@@ -12,7 +12,6 @@
     <_CommonTargetsDir Condition="'$(_CommonTargetsDir)' != ''">$([MSBuild]::EnsureTrailingSlash($(_CommonTargetsDir)))</_CommonTargetsDir>
   </PropertyGroup>
 
-  <Import Project="$(_CommonTargetsDir)LibraryBuilder.props" Condition="Exists('$(_CommonTargetsDir)LibraryBuilder.props')" />
   <Import Project="$(_AppleTargetsDir)AppleBuild.LocalBuild.props" Condition="Exists('$(_AppleTargetsDir)AppleBuild.LocalBuild.props')" />
   <PropertyGroup>
     <AppleBuildDependsOn>PrepareForAppleBuild;$(AppleBuildDependsOn)</AppleBuildDependsOn>

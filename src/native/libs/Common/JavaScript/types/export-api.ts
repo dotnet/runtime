@@ -3,6 +3,7 @@
 
 import type { CreateDotnetRuntimeType, DotnetHostBuilder, DotnetModuleConfig, ModuleAPI, LoaderConfig, IMemoryView, Assets, Asset, AssemblyAsset, AssetBehaviors, BootModule, GlobalizationMode, IcuAsset, JsAsset, LoadBootResourceCallback, LoadingResource, PdbAsset, ResourceExtensions, ResourceList, RuntimeAPI, SymbolsAsset, VfsAsset, WasmAsset, WebAssemblyBootResourceType, dotnet, exit } from "./public-api";
 import type { EmscriptenModule } from "./emscripten";
+import type { AppSettings } from "./public-api";
 
 declare const createDotnetRuntime: CreateDotnetRuntimeType;
 
@@ -13,6 +14,7 @@ declare global {
 export default createDotnetRuntime;
 
 export {
+    AppSettings,
     EmscriptenModule,
     RuntimeAPI, ModuleAPI, DotnetHostBuilder, DotnetModuleConfig, CreateDotnetRuntimeType, LoaderConfig, IMemoryView, Assets, Asset, AssemblyAsset, AssetBehaviors, BootModule, GlobalizationMode, IcuAsset, JsAsset, LoadBootResourceCallback, LoadingResource, PdbAsset, ResourceExtensions, ResourceList, SymbolsAsset, VfsAsset, WasmAsset, WebAssemblyBootResourceType,
     dotnet, exit

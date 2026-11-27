@@ -261,7 +261,6 @@ namespace System.Net.Sockets.Tests
     }
 
     [Trait("IPv4", "true")]
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class LocalEndPointTestIPv4Apm : LocalEndPointTestIPv4<SocketHelperApm>
     {
         public LocalEndPointTestIPv4Apm(ITestOutputHelper output) : base(output) { }
@@ -294,7 +293,6 @@ namespace System.Net.Sockets.Tests
     }
 
     [Trait("IPv6", "true")]
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class LocalEndPointTestIPv6Apm : LocalEndPointTestIPv6<SocketHelperApm>
     {
         public LocalEndPointTestIPv6Apm(ITestOutputHelper output) : base(output) { }

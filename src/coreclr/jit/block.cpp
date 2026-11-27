@@ -960,12 +960,21 @@ GenTree* BasicBlock::lastNode() const
 //    If the first block has a predecessor (which it may have, if it is the target of
 //    a backedge), we never want to consider it "unique" because the prolog is an
 //    implicit predecessor.
+//
+//    Similarly, a handler or filter's entry block may appear to have a unique
+//    explicit predecessor (for example, a filter's BBJ_EHFILTERRET block, or a
+//    single BBJ_CALLFINALLY reaching an unclonable finally), but that edge does
+//    not capture all of the ways control can actually reach the block: exception
+//    dispatch (and any intervening two-pass "finally" funclets it runs) can enter
+//    the handler without any explicit flow edge. So we never want to consider such
+//    a block's predecessor "unique" either.
 
 BasicBlock* BasicBlock::GetUniquePred(Compiler* compiler) const
 {
     assert(compiler->fgPredsComputed);
 
-    if ((bbPreds == nullptr) || (bbPreds->getNextPredEdge() != nullptr) || (this == compiler->fgFirstBB))
+    if ((bbPreds == nullptr) || (bbPreds->getNextPredEdge() != nullptr) || (this == compiler->fgFirstBB) ||
+        compiler->bbIsHandlerBeg(this))
     {
         return nullptr;
     }
@@ -1039,20 +1048,29 @@ bool BasicBlock::isEmpty() const
 }
 
 //------------------------------------------------------------------------
-// hasSideEffects: check if block has side effects
+// isSafeToSpeculate: check if the block can be executed on paths where
+//   it previously was not.
 //
 // Returns:
-//   True if any non-phi statement or node in the block has side effects.
+//   True if no non-phi statement or node in the block has side effects or
+//   ordering side effects.
 //
-bool BasicBlock::hasSideEffects() const
+// Notes:
+//   Ordering side effects mark nodes that rely on a dominating check, for
+//   example an indirection made non-faulting by a dominating null check.
+//   Such nodes are unsafe to execute if that check is removed or bypassed.
+//
+bool BasicBlock::isSafeToSpeculate() const
 {
+    const GenTreeFlags unsafeFlags = GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF;
+
     if (!IsLIR())
     {
         for (Statement* const stmt : NonPhiStatements())
         {
-            if ((stmt->GetRootNode()->gtFlags & GTF_SIDE_EFFECT) != 0)
+            if ((stmt->GetRootNode()->gtFlags & unsafeFlags) != 0)
             {
-                return true;
+                return false;
             }
         }
     }
@@ -1060,14 +1078,14 @@ bool BasicBlock::hasSideEffects() const
     {
         for (GenTree* node : LIR::AsRange(this))
         {
-            if ((node->gtFlags & GTF_SIDE_EFFECT) != 0)
+            if ((node->gtFlags & unsafeFlags) != 0)
             {
-                return true;
+                return false;
             }
         }
     }
 
-    return false;
+    return true;
 }
 
 //------------------------------------------------------------------------

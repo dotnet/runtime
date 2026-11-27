@@ -172,4 +172,13 @@ internal struct WasmContext : IPlatformContext
         value = default;
         return false;
     }
+
+    public readonly bool TryReadFloatingPointRegister(int index, out double value)
+    {
+        value = default;
+        return false;
+    }
+
+    public readonly bool TryWriteFloatingPointRegister(int index, double value) => false;
+    public readonly void CopyContext(ReadOnlySpan<byte> source) { }
 }

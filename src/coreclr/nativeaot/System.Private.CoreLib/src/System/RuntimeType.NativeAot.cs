@@ -384,6 +384,45 @@ namespace System
             return GetRuntimeTypeInfo().GetInterfaces();
         }
 
+        public override Type[] GetInterfacesWithSameMetadataDefinitionAs(Type interfaceType)
+        {
+            ArgumentNullException.ThrowIfNull(interfaceType);
+
+            // The interfaces of a runtime type are runtime types, so an interfaceType that isn't a RuntimeType never matches.
+            if (interfaceType is not RuntimeType runtimeInterfaceType)
+            {
+                return EmptyTypes;
+            }
+
+            MethodTable* pEEType = _pUnderlyingEEType;
+            MethodTable* pInterfaceEEType = runtimeInterfaceType._pUnderlyingEEType;
+            if (pEEType == null || pEEType->IsGenericTypeDefinition || pInterfaceEEType == null)
+            {
+                return base.GetInterfacesWithSameMetadataDefinitionAs(interfaceType);
+            }
+
+            // Any instantiation of a generic interface matches the same interfaces as its generic type definition.
+            if (pInterfaceEEType->IsGeneric)
+            {
+                pInterfaceEEType = pInterfaceEEType->GenericDefinition;
+            }
+
+            // Compare MethodTables directly and only create Type objects for the matches.
+            // Usually a single interface matches, which ListBuilder handles without allocating backing storage.
+            ListBuilder<Type> matches = default;
+            int count = pEEType->NumInterfaces;
+            for (int i = 0; i < count; i++)
+            {
+                MethodTable* pImplementedInterface = pEEType->InterfaceMap[i];
+                if ((pImplementedInterface->IsGeneric ? pImplementedInterface->GenericDefinition : pImplementedInterface) == pInterfaceEEType)
+                {
+                    matches.Add(GetTypeFromMethodTable(pImplementedInterface));
+                }
+            }
+
+            return matches.ToArray();
+        }
+
         public override bool IsTypeDefinition
         {
             get

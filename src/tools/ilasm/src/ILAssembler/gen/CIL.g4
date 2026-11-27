@@ -542,7 +542,9 @@ finally {
 	}
 }
 
-mscorlib: '.mscorlib';
+mscorlib
+@after {Actions.ProcessCoreLibraryDirective();}
+: '.mscorlib';
 
 languageDecl returns [CILParser.LanguageDirectiveValue? Value, bool HasSyntaxError]
 locals [int InitialSyntaxErrorCount]
@@ -1025,7 +1027,7 @@ locals [CILParser.SwitchInstructionBuilder SwitchBuilder]
 	| op = INSTR_STRING 'bytearray' '(' rawString = bytes ')' {Actions.EmitRawStringInstruction($op, $rawString.Value);}
 	| op = INSTR_TOK rawToken = int32 {Actions.EmitRawTokenInstruction($op, $rawToken.start);}
 	| op = INSTR_SWITCH {_localctx.SwitchBuilder = Actions.CreateSwitchInstruction($op);}
-		('(' labels[_localctx.SwitchBuilder] ')' | '()')
+		'(' labels[_localctx.SwitchBuilder] ')'
 ;
 
 calliSignature
@@ -1075,7 +1077,6 @@ locals [System.Collections.Immutable.ImmutableArray<CILParser.SignatureArgumentV
 	'(' (argument = sigArg {_localctx.Builder.Add($argument.Value);} ',')*
 		lastArgument = sigArg {_localctx.Builder.Add($lastArgument.Value);} ')'
 	| '(' ')'
-	| '()'
 ;
 finally {_localctx.Value = _localctx.Builder.ToImmutable();}
 
@@ -1966,7 +1967,6 @@ locals [CILParser.PInvokeBuilder Builder]
 			('as' entryPoint = compQstring {Actions.SetPInvokeEntryPoint(_localctx.Builder, $entryPoint.Value);})?)?
 		(attribute = pinvAttr {Actions.AddPInvokeAttribute(_localctx.Builder, $attribute.Value);})*
 	')'
-	| 'pinvokeimpl' '()'
 ;
 finally {_localctx.Value = Actions.CreatePInvoke(_localctx.Builder);}
 

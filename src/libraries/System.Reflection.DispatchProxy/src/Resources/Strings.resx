@@ -138,4 +138,7 @@
   <data name="ProxyType_Must_Be_Derived_From_DispatchProxy" xml:space="preserve">
     <value>The provided proxy type '{0}' must be derived from 'DispatchProxy'.</value>
   </data>
+  <data name="InvalidCast_PointerType" xml:space="preserve">
+    <value>Unable to cast a pointer of type '{0}' to type '{1}'.</value>
+  </data>
 </root>

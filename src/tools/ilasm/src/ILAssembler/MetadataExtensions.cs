@@ -5,7 +5,7 @@ using System.Reflection;
 using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
 
-namespace ILAssembler;
+namespace Microsoft.DotNet.ILAssembler;
 
 internal static class MetadataExtensions
 {
@@ -39,5 +39,8 @@ internal static class MetadataExtensions
     extension(ILOpCode)
     {
         public static ILOpCode Unused => (ILOpCode)0xFE22;
+
+        // The 'no.' prefix (ECMA-335 III.2.2).
+        public static ILOpCode No => (ILOpCode)0xFE19;
     }
 }

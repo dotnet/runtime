@@ -333,10 +333,20 @@ internal static partial class Interop
             internal uint cumulativeConnections;
         }
 
+        /// <summary>
+        /// MIB_IPSTATS_FORWARDING: the possible values returned by
+        /// `GetIpStatisticsEx` on Windows in `MIB_IPSTATS.dwForwarding`.
+        /// </summary>
+        internal enum MibIpStatsForwarding : uint
+        {
+            Forwarding = 1, // Windows `MIB_IP_FORWARDING`
+            NotForwarding = 2, // Windows `MIB_IP_NOT_FORWARDING`
+        }
+
         [StructLayout(LayoutKind.Sequential)]
         internal struct MibIpStats
         {
-            internal int forwardingEnabled;
+            internal MibIpStatsForwarding forwarding;
             internal uint defaultTtl;
             internal uint packetsReceived;
             internal uint receivedPacketsWithHeaderErrors;

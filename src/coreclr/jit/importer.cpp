@@ -815,8 +815,8 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
             }
 
 #if !defined(TARGET_ARM)
-            // Unmanaged instance methods on Windows or Unix X86 need the retbuf arg after the first (this) parameter
-            if ((TargetOS::IsWindows || compUnixX86Abi()) && srcCall->IsUnmanaged())
+            // Unmanaged instance methods on Windows need the retbuf arg after the first (this) parameter
+            if (TargetOS::IsWindows && srcCall->IsUnmanaged())
             {
                 if (callConvIsInstanceMethodCallConv(srcCall->GetUnmanagedCallConv()))
                 {
@@ -1410,7 +1410,7 @@ bool Compiler::impIsCastHelperEligibleForClassProbe(GenTree* tree)
 //
 bool Compiler::impIsCastHelperMayHaveProfileData(CorInfoHelpFunc helper)
 {
-    if ((JitConfig.JitConsumeProfileForCasts() != 1) || !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT))
+    if ((JitConfig.JitConsumeProfileForCasts() != 1) || !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PGO_OPT))
     {
         return false;
     }
@@ -4033,6 +4033,17 @@ GenTree* Compiler::impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORI
                 if (simdWidth > 0)
                 {
                     assert((totalSize <= 64) && (totalSize <= MaxStructSize));
+
+#if defined(TARGET_ARM64)
+                    // The VM returns the concrete runtime contents of the field, but a scalable GT_CNS_VEC
+                    // represents a pattern rather than an arbitrary byte sequence. Leave the field as a load
+                    // since the runtime contents cannot, in general, be represented as a scalable constant.
+                    if (simdWidth == SIZE_UNKNOWN)
+                    {
+                        return nullptr;
+                    }
+#endif // TARGET_ARM64
+
                     var_types simdType = getSIMDTypeForSize(simdWidth);
 
                     bool hwAccelerated = true;
@@ -4467,7 +4478,7 @@ void Compiler::impAnnotateFieldIndir(GenTreeIndir* indir)
     {
         GenTreeFieldAddr* addr = indir->Addr()->AsFieldAddr();
 
-        if (addr->IsInstance() && addr->GetFldObj()->OperIs(GT_LCL_ADDR))
+        if (!indir->IsVolatile() && addr->IsInstance() && addr->GetFldObj()->OperIs(GT_LCL_ADDR))
         {
             indir->gtFlags &= ~GTF_GLOB_REF;
             if (indir->OperIsStore())
@@ -9508,6 +9519,13 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     return;
                 }
 
+                if (((prefixFlags & PREFIX_IS_TASK_AWAIT) != 0) &&
+                    impIsCovariantAwait(callInfo.sig.retType, opcodeOffs))
+                {
+                    JITDUMP("\nDiscarding unused result after folded task await\n");
+                    impDiscardTopOfStack();
+                }
+
                 // For tail awaits we also import the ret right after.
                 // Also, we may have covariant cases like Task<int> return from a Task method,
                 // and in those cases we end up with an extra IL stack entry here.
@@ -9516,16 +9534,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     if ((info.compRetType == TYP_VOID) && (stackState.esStackDepth > 0))
                     {
                         JITDUMP("\nHave extra IL stack entry after tail await\n");
-                        GenTree* val = impPopStack().val;
-                        if ((val->gtFlags & GTF_SIDE_EFFECT) != 0)
-                        {
-                            if (varTypeIsStruct(val))
-                            {
-                                val = impNormStructVal(val, CHECK_SPILL_ALL);
-                            }
-
-                            impAppendTree(gtUnusedValNode(val), CHECK_SPILL_ALL, impCurStmtDI);
-                        }
+                        impDiscardTopOfStack();
                     }
 
                     prefixFlags &= ~PREFIX_TAILCALL;
@@ -11391,7 +11400,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 /******************************** NYI *******************************/
 
             case 0xCC:
+#ifdef HOST_WINDOWS
                 OutputDebugStringA("CLR: Invalid x86 breakpoint in IL stream\n");
+#endif // HOST_WINDOWS
                 FALLTHROUGH;
 
             case CEE_ILLEGAL:
@@ -11415,6 +11426,37 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
     return;
 #undef _impResolveToken
+}
+
+//------------------------------------------------------------------------
+// impIsCovariantAwait:
+//   Check for a Task<T>-returning call followed by AsyncHelpers.Await(Task),
+//   whose folded async call result must be discarded.
+//
+// Arguments:
+//   asyncVariantRetType - Return type of the async variant of the awaited call
+//   awaitOffset         - IL offset of the call to the AsyncHelpers.Await method
+//
+// Returns:
+//   True if the async variant returns a value but Await returns void.
+//
+bool Compiler::impIsCovariantAwait(CorInfoType asyncVariantRetType, IL_OFFSET awaitOffset)
+{
+    if (asyncVariantRetType == CORINFO_TYPE_VOID)
+    {
+        return false;
+    }
+
+    const BYTE* awaitTokenAddr = info.compCode + awaitOffset + 1;
+    // In normal cases a Task<T>-returning function is followed by 'T AsyncHelpers.Await(Task<T>)'.
+    // However, it is also legal IL to follow it up with 'void AsyncHelpers.Await(Task)'. Such IL may occur
+    // in C# code like `await (Task)Foo()`.
+    // In the latter case, the IL does not expect a pushed IL entry, but we are going to push one as part
+    // of handling the call.
+    // To differentiate the cases we can look for a MethodSpec token since that unequivocally means
+    // 'T AsyncHelpers.Await(Task<T>)'; if not seen then this is the void overload and we know to discard
+    // the additional IL entry.
+    return TypeFromToken(getU4LittleEndian(awaitTokenAddr)) != mdtMethodSpec;
 }
 
 //------------------------------------------------------------------------
@@ -11977,6 +12019,24 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
     impNoteLastILoffs();
 #endif
     return true;
+}
+
+//------------------------------------------------------------------------
+// impDiscardTopOfStack:
+//   Discard the top IL stack value while preserving its side effects.
+//
+void Compiler::impDiscardTopOfStack()
+{
+    GenTree* val = impPopStack().val;
+    if ((val->gtFlags & GTF_SIDE_EFFECT) != 0)
+    {
+        if (varTypeIsStruct(val))
+        {
+            val = impNormStructVal(val, CHECK_SPILL_ALL);
+        }
+
+        impAppendTree(gtUnusedValNode(val), CHECK_SPILL_ALL, impCurStmtDI);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -13752,38 +13812,21 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
     }
 
     // Inspect callee's arguments (and the actual values at the callsite for them)
-    CORINFO_SIG_INFO        sig    = info.compMethodInfo->args;
-    CORINFO_ARG_LIST_HANDLE sigArg = sig.args;
-
-    CallArg* argUse = pInlineInfo == nullptr ? nullptr : pInlineInfo->iciCall->AsCall()->gtArgs.Args().begin().GetArg();
-
-    for (unsigned i = 0; i < info.compMethodInfo->args.numArgs; i++)
+    if (pInlineInfo != nullptr)
     {
-        if ((argUse != nullptr) && (argUse->GetWellKnownArg() == WellKnownArg::ThisPointer))
+        // impInlineInitVars has already matched the IL arguments with the
+        // call arguments and recorded their signature types.
+        const unsigned firstArg = pInlineInfo->iciCall->gtArgs.HasThisPointer() ? 1 : 0;
+        for (unsigned argNum = firstArg; argNum < pInlineInfo->argCnt; argNum++)
         {
-            argUse = argUse->GetNext();
-        }
+            const InlLclVarInfo& lclInfo = pInlineInfo->lclVarInfo[argNum];
+            GenTree*             argNode = pInlineInfo->inlArgInfo[argNum].arg->GetEarlyNode();
 
-        CORINFO_CLASS_HANDLE sigClass;
-        CorInfoType          corType = strip(info.compCompHnd->getArgType(&sig, sigArg, &sigClass));
-        GenTree*             argNode = argUse == nullptr ? nullptr : argUse->GetEarlyNode();
+            if (varTypeIsStruct(lclInfo.lclTypeInfo))
+            {
+                inlineResult->Note(InlineObservation::CALLEE_ARG_STRUCT);
+            }
 
-        if (corType == CORINFO_TYPE_CLASS)
-        {
-            sigClass = info.compCompHnd->getArgClass(&sig, sigArg);
-        }
-        else if (corType == CORINFO_TYPE_VALUECLASS)
-        {
-            inlineResult->Note(InlineObservation::CALLEE_ARG_STRUCT);
-        }
-        else if (corType == CORINFO_TYPE_BYREF)
-        {
-            sigClass = info.compCompHnd->getArgClass(&sig, sigArg);
-            corType  = info.compCompHnd->getChildType(sigClass, &sigClass);
-        }
-
-        if (argNode != nullptr)
-        {
             bool                 isExact   = false;
             bool                 isNonNull = false;
             CORINFO_CLASS_HANDLE argCls    = gtGetClassHandle(argNode, &isExact, &isNonNull);
@@ -13794,14 +13837,14 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
                 if (isExact && !isArgValueType)
                 {
                     inlineResult->Note(InlineObservation::CALLSITE_ARG_EXACT_CLS);
-                    if ((argCls != sigClass) && (sigClass != nullptr))
+                    if ((argCls != lclInfo.lclTypeHandle) && (lclInfo.lclTypeHandle != NO_CLASS_HANDLE))
                     {
                         // .. but the signature accepts a less concrete type.
                         inlineResult->Note(InlineObservation::CALLSITE_ARG_EXACT_CLS_SIG_IS_NOT);
                     }
                 }
                 // Arg is a reference type in the signature and a boxed value type was passed.
-                else if (isArgValueType && (corType == CORINFO_TYPE_CLASS))
+                else if (isArgValueType && (lclInfo.lclTypeInfo == TYP_REF))
                 {
                     inlineResult->Note(InlineObservation::CALLSITE_ARG_BOXED);
                 }
@@ -13811,9 +13854,20 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
             {
                 inlineResult->Note(InlineObservation::CALLSITE_ARG_CONST);
             }
-            argUse = argUse->GetNext();
         }
-        sigArg = info.compCompHnd->getArgNext(sigArg);
+    }
+    else
+    {
+        CORINFO_SIG_INFO*       sig    = &info.compMethodInfo->args;
+        CORINFO_ARG_LIST_HANDLE sigArg = sig->args;
+        for (unsigned i = 0; i < sig->numArgs; i++, sigArg = info.compCompHnd->getArgNext(sigArg))
+        {
+            CORINFO_CLASS_HANDLE sigClass;
+            if (strip(info.compCompHnd->getArgType(sig, sigArg, &sigClass)) == CORINFO_TYPE_VALUECLASS)
+            {
+                inlineResult->Note(InlineObservation::CALLEE_ARG_STRUCT);
+            }
+        }
     }
 
     // Note if the callee's return type is a value type

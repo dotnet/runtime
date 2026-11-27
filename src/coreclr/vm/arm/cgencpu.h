@@ -9,6 +9,7 @@
 #define __cgencpu_h__
 
 #include "utilcode.h"
+#include <minipal/instructioncache.h>
 
 // preferred alignment for data
 #define DATA_ALIGNMENT 4
@@ -75,8 +76,7 @@ EXTERN_C void checkStack(void);
 #define ENREGISTERED_RETURNTYPE_MAXSIZE         32  // bytes (maximum HFA size is 4 doubles)
 #define ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE 4   // bytes
 
-#define CALLDESCR_ARGREGS                       1   // CallDescrWorker has ArgumentRegister parameter
-#define CALLDESCR_FPARGREGS                     1   // CallDescrWorker has FloatArgumentRegisters parameter
+#define HAS_FLOAT_ARGUMENT_REGISTERS            1   // Calling convention has separate floating-point argument registers
 
 // Given a return address retrieved during stackwalk,
 // this is the offset by which it should be decremented to arrive at the callsite.
@@ -767,9 +767,9 @@ struct HijackArgs
 // Currently ClrFlushInstructionCache has no effect on X86
 //
 
-inline BOOL ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode, bool hasCodeExecutedBefore = false)
+inline void ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode, bool hasCodeExecutedBefore = false)
 {
-    return FlushInstructionCache(GetCurrentProcess(), pCodeAddr, sizeOfCode);
+    minipal_flush_instruction_cache(pCodeAddr, sizeOfCode);
 }
 
 //

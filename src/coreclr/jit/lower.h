@@ -156,6 +156,7 @@ private:
 #ifdef TARGET_WASM
     void AddWasmPortableEntryPointArg(GenTreeCall* call, GenTree* value);
     void LowerPEPCall(GenTreeCall* call);
+    void TryMoveWasmSelectCondition(GenTreeConditional* select);
 #endif
     void MovePutArgNodesUpToCall(GenTreeCall* call);
     void MovePutArgUpToCall(GenTreeCall* call, GenTree* node);
@@ -578,7 +579,7 @@ public:
         return false;
     }
 
-    bool IsContainableLclAddr(GenTreeLclFld* lclAddr, unsigned accessSize) const;
+    bool IsContainableLclAddr(GenTreeLclFld* lclAddr, ValueSize accessSize) const;
 
 #ifdef TARGET_ARM64
     bool IsContainableUnaryOrBinaryOp(GenTree* parentNode, GenTree* childNode) const;

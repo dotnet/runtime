@@ -411,7 +411,7 @@ namespace ILCompiler.DependencyAnalysis
             return imm28;
         }
 
-        private static bool FitsInArm64Rel28(long imm28)
+        public static bool FitsInArm64Rel28(long imm28)
         {
             return (imm28 >= -0x08000000L) && (imm28 < 0x08000000L);
         }
@@ -651,12 +651,14 @@ namespace ILCompiler.DependencyAnalysis
                     PutArm64TlsRel12((uint*)location, (int)value);
                     break;
                 case RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A:
+                    PutArm64Rel12((uint*)location, (int)(value & 0xfff));
+                    break;
                 case RelocType.IMAGE_REL_AARCH64_TLSDESC_ADD_LO12:
                 case RelocType.IMAGE_REL_ARM64_TLS_SECREL_LOW12A:
                     PutArm64Rel12((uint*)location, (int)value);
                     break;
                 case RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12L:
-                    PutArm64Rel12Ldr((uint*)location, (int)value);
+                    PutArm64Rel12Ldr((uint*)location, (int)(value & 0xfff));
                     break;
                 case RelocType.IMAGE_REL_BASED_LOONGARCH64_PC:
                     PutLoongArch64PC12((uint*)location, value);

@@ -23,7 +23,11 @@ namespace Mono.Linker.Steps
     {
         readonly LinkContext _context;
         readonly Dictionary<MethodDefinition, MethodResult?> _cache_method_results = new(2048);
+        // Feature switches without a setting aren't folded in library root assemblies, and those results must not
+        // keep the rest of the app from folding them
+        readonly Dictionary<MethodDefinition, MethodResult?> _cache_library_root_method_results = new();
         readonly Stack<MethodDefinition> _resursion_guard = new();
+        bool _processingLibraryRoot;
 
         MethodDefinition? IntPtrSize, UIntPtrSize;
 
@@ -46,6 +50,8 @@ namespace Mono.Linker.Steps
                 return;
 
             var reducer = new BodyReducer(method.Body, _context);
+            bool processingLibraryRoot = _processingLibraryRoot;
+            _processingLibraryRoot = _context.Annotations.IsLibraryRootAssembly(method.Module.Assembly);
 
             try
             {
@@ -75,6 +81,10 @@ namespace Mono.Linker.Steps
             catch (Exception e)
             {
                 throw new InternalErrorException($"Could not process the body of method '{method.GetDisplayName()}'.", e);
+            }
+            finally
+            {
+                _processingLibraryRoot = processingLibraryRoot;
             }
         }
 
@@ -256,6 +266,13 @@ namespace Mono.Linker.Steps
             if (!_context.IsOptimizationEnabled(CodeOptimizations.IPConstantPropagation, method))
                 return null;
 
+            // A library build must not decide feature switch values on behalf of the app. Even a getter
+            // with a constant body can be substituted at application publish time, so don't analyze
+            // feature switch getters when no --feature value was supplied.
+            if (_processingLibraryRoot &&
+                _context.Annotations.MemberActions.IsFeatureSwitchWithoutSetting(method))
+                return null;
+
             var analyzer = new ConstantExpressionMethodAnalyzer(this);
             if (analyzer.Analyze(callee, callStack))
                 return new MethodResult(analyzer.Result, analyzer.SideEffectFreeResult);
@@ -285,10 +302,11 @@ namespace Mono.Linker.Steps
             MethodDefinition method = callee.Method;
             if (!method.HasMetadataParameters() || callee.HasUnknownArguments)
             {
-                if (!_cache_method_results.TryGetValue(method, out value) && !IsDeepStack(callStack))
+                var cache = _processingLibraryRoot ? _cache_library_root_method_results : _cache_method_results;
+                if (!cache.TryGetValue(method, out value) && !IsDeepStack(callStack))
                 {
                     value = AnalyzeMethodForConstantResult(callee, callStack);
-                    _cache_method_results.Add(method, value);
+                    cache.Add(method, value);
                 }
 
                 return value;
@@ -1200,7 +1218,9 @@ namespace Mono.Linker.Steps
                     for (int handlerIndex = 0; handlerIndex < handlerCount; handlerIndex++)
                     {
                         ExceptionHandler handler = ExceptionHandlers[handlerIndex];
-                        exceptionHandlerRanges[handlerIndex] = (instructions.IndexOf(handler.TryStart), instructions.IndexOf(handler.TryEnd) - 1);
+                        // Cecil represents the end of the method with a null TryEnd.
+                        int end = handler.TryEnd is null ? reachable.Length - 1 : instructions.IndexOf(handler.TryEnd) - 1;
+                        exceptionHandlerRanges[handlerIndex] = (instructions.IndexOf(handler.TryStart), end);
                     }
                 }
 

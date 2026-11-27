@@ -8,6 +8,19 @@
 
 #ifdef HAVE_GCCOVER
 
+#ifndef DACCESS_COMPILE
+// R2R image pages are not owned by the JIT executable allocator.
+class GCStressCodeWriter
+{
+    ExecutableWriterHolderNoLog<BYTE> m_writer;
+    BYTE* m_addressRW;
+
+public:
+    GCStressCodeWriter(BYTE* address, size_t size);
+    BYTE* GetRW() const { return m_addressRW; }
+};
+#endif // !DACCESS_COMPILE
+
 /****************************************************************************/
 /* GCCOverageInfo holds the state of which instructions have been visited by
    a GC and which ones have not */

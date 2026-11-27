@@ -189,7 +189,7 @@ private:
         GenTree* ppCounterAddr = compiler->gtNewLclVarAddrNode(ppCounterLclNum);
 
         GenTree* patchpointNode = compiler->gtNewOperNode(GT_PATCHPOINT, TYP_VOID, ppCounterAddr, ilOffsetNode);
-        patchpointNode->gtFlags |= GTF_CALL;
+        patchpointNode->gtFlags |= GTF_CALL | GTF_GLOB_REF;
 
         compiler->fgNewStmtAtEnd(helperBlock, patchpointNode);
     }
@@ -244,7 +244,7 @@ private:
         GenTree* ilOffsetNode = compiler->gtNewIconNode(ilOffset, TYP_INT);
 
         GenTree* patchpointNode = compiler->gtNewOperNode(GT_PATCHPOINT_FORCED, TYP_VOID, ilOffsetNode);
-        patchpointNode->gtFlags |= GTF_CALL;
+        patchpointNode->gtFlags |= GTF_CALL | GTF_GLOB_REF;
 
         compiler->fgNewStmtAtEnd(block, patchpointNode);
     }

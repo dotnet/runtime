@@ -33,7 +33,7 @@ public:
         if(pwzName)
         {
             memset(pwzName,0,sizeof(WCHAR)*cTemp);
-            MultiByteToWideChar(g_uCodePage,0,name,-1,pwzName,cTemp);
+            minipal_convert_utf8_to_utf16(name,strlen(name)+1,(CHAR16_T*)pwzName,cTemp,0);
         }
         m_dwAttrs = attrs;
     };
@@ -119,7 +119,7 @@ public:
             WCHAR*              wzDllName = new WCHAR [cTemp];
             // Convert name to UNICODE
             memset(wzDllName,0,sizeof(WCHAR)*cTemp);
-            MultiByteToWideChar(g_uCodePage,0,tp->name,-1,wzDllName,cTemp);
+            minipal_convert_utf8_to_utf16(tp->name,strlen(tp->name)+1,(CHAR16_T*)wzDllName,cTemp,0);
             nam[i] = (LPCWSTR)wzDllName;
             b[i] = tp->bound;
             if (attr)

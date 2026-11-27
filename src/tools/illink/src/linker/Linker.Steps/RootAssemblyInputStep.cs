@@ -91,6 +91,10 @@ namespace Mono.Linker.Steps
                         CodeOptimizations.OptimizeTypeHierarchyAnnotations |
                         CodeOptimizations.SubstituteFeatureGuards, assembly.Name.Name);
 
+                    // The library is trimmed again when an app is published, so its references keep the assemblies
+                    // it was compiled against and feature switches without a setting are left for the app to decide
+                    Annotations.SetLibraryRootAssembly(assembly);
+
                     // Enable EventSource special handling
                     Context.DisableEventSourceSpecialHandling = false;
 

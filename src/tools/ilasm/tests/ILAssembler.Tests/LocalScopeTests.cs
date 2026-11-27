@@ -8,7 +8,7 @@ using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 using Xunit;
 
-namespace ILAssembler.Tests
+namespace Microsoft.DotNet.ILAssembler.Tests
 {
     /// <summary>
     /// The Portable PDB LocalScope and LocalVariable rows of named locals (docs/design/specs/PortablePdb-Metadata.md,

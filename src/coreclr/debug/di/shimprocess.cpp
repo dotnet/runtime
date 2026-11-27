@@ -604,7 +604,7 @@ void ShimProcess::AddDuplicateCreationEvent(void * pKey)
 {
     NewHolder<DuplicateCreationEventEntry> pEntry(new DuplicateCreationEventEntry(pKey));
     m_pDupeEventsHashTable->Add(pEntry);
-    pEntry.SuppressRelease();
+    pEntry.Detach();
 }
 
 
@@ -1075,15 +1075,16 @@ void ShimProcess::QueueFakeAssemblyAndModuleEvent(ICorDebugAssembly * pAssembly)
     GetShimCallback()->LoadAssembly(pAppDomain, pAssembly);
     AddDuplicateCreationEvent(pAssembly);
 
-    BOOL isModuleLoaded;
-    CordbAssembly * pAssemblyInternal = static_cast<CordbAssembly *> (pAssembly);
-    VMPTR_Assembly vmAssembly = pAssemblyInternal->GetAssemblyPtr();
-    VMPTR_Module vmModule = VMPTR_Module::NullPtr();
-    static_cast<CordbProcess *>(m_pProcess)->GetDAC()->GetModuleForAssembly(vmAssembly, &vmModule, &isModuleLoaded);
-    if (isModuleLoaded)
+    CordbModule * pModule = NULL;
+    EX_TRY
     {
-        CordbModule * pModule = pAssemblyInternal->GetAppDomain()->LookupOrCreateModule(vmAssembly, vmModule);
+        pModule = m_pProcess->GetLoadedModuleForShim(pAssembly);
+    }
+    EX_CATCH_HRESULT(hr);
+    SIMPLIFYING_ASSUMPTION_SUCCEEDED(hr);
 
+    if (pModule != NULL)
+    {
         GetShimCallback()->FakeLoadModule(pAppDomain, pModule);
         AddDuplicateCreationEvent(pModule);
 
@@ -1465,10 +1466,8 @@ ShimStackWalk * ShimProcess::LookupOrCreateShimStackWalk(ICorDebugThread * pThre
             if (pSW == NULL)
             {
                 m_pShimStackWalkHashTable->Add(pNewSW);
-                pSW = pNewSW;
-
                 // don't release the memory if all goes well
-                pNewSW.SuppressRelease();
+                pSW = pNewSW.Detach();
             }
             else
             {

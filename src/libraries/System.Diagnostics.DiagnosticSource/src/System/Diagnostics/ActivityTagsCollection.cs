@@ -275,7 +275,14 @@ namespace System.Diagnostics
             object IEnumerator.Current => ((IEnumerator)_enumerator).Current;
             public void Dispose() => _enumerator.Dispose();
             public bool MoveNext() => _enumerator.MoveNext();
-            void IEnumerator.Reset() => ((IEnumerator)_enumerator).Reset();
+            void IEnumerator.Reset()
+            {
+                // Reset is explicit on List<T>.Enumerator, so this boxes a copy.
+                // Copy it back to preserve the reset state.
+                IEnumerator enumerator = _enumerator;
+                enumerator.Reset();
+                _enumerator = (List<KeyValuePair<string, object?>>.Enumerator)enumerator;
+            }
         }
     }
 }

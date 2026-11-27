@@ -19,12 +19,16 @@ namespace System.IO.Compression
         // the other platforms; only the assembly dependency differs. The interop throws when the
         // platform cannot produce random bytes, so a header is never written with a predictable
         // salt.
-        private static unsafe void FillHeaderRandomBytes(Span<byte> header)
+        private static void FillHeaderRandomBytes(Span<byte> header)
         {
             Span<byte> randomBytes = header.Slice(0, 10);
             fixed (byte* pRandomBytes = randomBytes)
             {
-                Interop.GetCryptographicallySecureRandomBytes(pRandomBytes, randomBytes.Length);
+                // SAFETY: To be audited
+                unsafe
+                {
+                    Interop.GetCryptographicallySecureRandomBytes(pRandomBytes, randomBytes.Length);
+                }
             }
         }
     }

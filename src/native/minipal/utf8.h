@@ -19,46 +19,49 @@ extern "C"
 #endif // __cplusplus
 
 /**
- * Get length of destination needed for UTF-8 to UTF-16 (UCS-2) conversion
+ * Get length of destination needed for UTF-8 to UTF-16 conversion
  *
  * @param source The source string in UTF-8 format.
  * @param sourceLength Length of the source string.
  * @param flags Flags to alter the behavior of converter. Supported flags are MINIPAL_MB_NO_REPLACE_INVALID_CHARS and MINIPAL_TREAT_AS_LITTLE_ENDIAN.
- * @return Length of UTF-16 buffer required by the conversion.
+ * @return Length of UTF-16 buffer required by the conversion, or 0 with errno set to MINIPAL_ERROR_NO_UNICODE_TRANSLATION
+ *         if MINIPAL_MB_NO_REPLACE_INVALID_CHARS is set and the source has an ill-formed sequence.
  */
 size_t minipal_get_length_utf8_to_utf16(const char* source, size_t sourceLength, unsigned int flags);
 
 /**
- * Get length of destination needed for UTF-16 (UCS-2) to UTF-8 conversion
+ * Get length of destination needed for UTF-16 to UTF-8 conversion
  *
  * @param source The source string in UTF-16 format.
  * @param sourceLength Length of the source string.
- * @param flags Flags to alter the behavior of converter. Supported flags are MINIPAL_MB_NO_REPLACE_INVALID_CHARS and MINIPAL_TREAT_AS_LITTLE_ENDIAN.
+ * @param flags Flags to alter the behavior of converter. Supported flag is MINIPAL_TREAT_AS_LITTLE_ENDIAN. Lone surrogates are always replaced.
  * @return Length of UTF-8 buffer required by the conversion.
  */
 size_t minipal_get_length_utf16_to_utf8(const CHAR16_T* source, size_t sourceLength, unsigned int flags);
 
 /**
- * Convert a string from UTF-8 to UTF-16 (UCS-2) with preallocated memory
+ * Convert a string from UTF-8 to UTF-16 with preallocated memory
  *
  * @param source The source string in UTF-8 format.
  * @param sourceLength Length of the source string.
- * @param destination Pointer to the destination UTF-16 string. It can be NULL to query number of items required by the conversion.
+ * @param destination Pointer to the destination UTF-16 string. Use minipal_get_length_utf8_to_utf16 for the number of items required.
  * @param destinationLength Length of the destination string.
  * @param flags Flags to alter the behavior of converter. Supported flags are MINIPAL_MB_NO_REPLACE_INVALID_CHARS and MINIPAL_TREAT_AS_LITTLE_ENDIAN.
- * @return Number of items written by the conversion.
+ * @return Number of items written by the conversion, or 0 with errno set to MINIPAL_ERROR_INSUFFICIENT_BUFFER or
+ *         MINIPAL_ERROR_NO_UNICODE_TRANSLATION if it fails. errno is 0 when the conversion succeeds.
  */
 size_t minipal_convert_utf8_to_utf16(const char* source, size_t sourceLength, CHAR16_T* destination, size_t destinationLength, unsigned int flags);
 
 /**
- * Convert a string from UTF-16 (UCS-2) to UTF-8 with preallocated memory
+ * Convert a string from UTF-16 to UTF-8 with preallocated memory
  *
  * @param source The source string in UTF-16 format.
  * @param sourceLength Length of the source string.
- * @param destination Pointer to the destination UTF-8 string. It can be NULL to query number of items required by the conversion.
+ * @param destination Pointer to the destination UTF-8 string. Use minipal_get_length_utf16_to_utf8 for the number of items required.
  * @param destinationLength Length of the destination string.
- * @param flags Flags to alter the behavior of converter. Supported flags are MINIPAL_MB_NO_REPLACE_INVALID_CHARS and MINIPAL_TREAT_AS_LITTLE_ENDIAN.
- * @return Number of items written by the conversion.
+ * @param flags Flags to alter the behavior of converter. Supported flag is MINIPAL_TREAT_AS_LITTLE_ENDIAN. Lone surrogates are always replaced.
+ * @return Number of items written by the conversion, or 0 with errno set to MINIPAL_ERROR_INSUFFICIENT_BUFFER if it fails.
+ *         errno is 0 when the conversion succeeds.
  */
 size_t minipal_convert_utf16_to_utf8(const CHAR16_T* source, size_t sourceLength, char* destination, size_t destinationLength, unsigned int flags);
 
@@ -66,4 +69,4 @@ size_t minipal_convert_utf16_to_utf8(const CHAR16_T* source, size_t sourceLength
 }
 #endif // __cplusplus
 
-#endif /* HAVE_MINIPAL_UTF8_H */
+#endif // HAVE_MINIPAL_UTF8_H

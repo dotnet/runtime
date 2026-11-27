@@ -77,7 +77,7 @@ namespace System.Runtime.InteropServices
         /// <para>This method doesn't validate the provided handle value. The caller must ensure the validity of the handle.</para>
         /// <para>
         /// The <see cref="IntPtr"/> representation of <see cref="WeakGCHandle{T}"/> is not
-        /// interchangable with <see cref="GCHandle"/>.
+        /// interchangeable with <see cref="GCHandle"/>.
         /// </para>
         /// </remarks>
         public static WeakGCHandle<T> FromIntPtr(IntPtr value) => new WeakGCHandle<T>(value);
@@ -89,7 +89,7 @@ namespace System.Runtime.InteropServices
         /// <returns>An <see cref="IntPtr"/> object that represents a <see cref="WeakGCHandle{T}"/> object.</returns>
         /// <remarks>
         /// The <see cref="IntPtr"/> representation of <see cref="WeakGCHandle{T}"/> is not
-        /// interchangable with <see cref="GCHandle"/>.
+        /// interchangeable with <see cref="GCHandle"/>.
         /// </remarks>
         public static IntPtr ToIntPtr(WeakGCHandle<T> value) => value._handle;
 

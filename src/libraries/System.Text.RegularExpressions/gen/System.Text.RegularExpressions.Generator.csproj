@@ -1,6 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <!-- TODO: Remove once migrated to unsafe-v2. -->
+    <MemorySafetyRulesVersion>1</MemorySafetyRulesVersion>
     <!--
       Source generators must target netstandard2.0, which doesn't support nullable reference types. In order
       to enable the nullable reference type compiler checks, we also target NetCoreAppToolCurrent. Note that

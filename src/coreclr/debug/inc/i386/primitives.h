@@ -11,6 +11,7 @@
 
 #ifndef PRIMITIVES_H_
 #define PRIMITIVES_H_
+#include <minipal/instructioncache.h>
 
 typedef const BYTE                  CORDB_ADDRESS_TYPE;
 typedef DPTR(CORDB_ADDRESS_TYPE)    PTR_CORDB_ADDRESS_TYPE;
@@ -72,19 +73,19 @@ inline CorDebugRegister ConvertRegNumToCorDebugRegister(ICorDebugInfo::RegNum re
 //
 // inline function to access/modify the CONTEXT
 //
-inline LPVOID CORDbgGetIP(DT_CONTEXT *context) {
+inline LPVOID CORDbgGetIP(T_CONTEXT *context) {
     LIMITED_METHOD_CONTRACT;
 
     return (LPVOID)(size_t)(context->Eip);
 }
 
-inline void CORDbgSetIP(DT_CONTEXT *context, LPVOID eip) {
+inline void CORDbgSetIP(T_CONTEXT *context, LPVOID eip) {
     LIMITED_METHOD_CONTRACT;
 
     context->Eip = (UINT32)(size_t)eip;
 }
 
-inline CORDB_ADDRESS CORDbgGetSP(const DT_CONTEXT * context) {
+inline CORDB_ADDRESS CORDbgGetSP(const T_CONTEXT * context) {
     LIMITED_METHOD_CONTRACT;
 
     return (CORDB_ADDRESS)(context->Esp);
@@ -146,7 +147,7 @@ inline void CORDbgInsertBreakpoint(UNALIGNED CORDB_ADDRESS_TYPE *address)
     LIMITED_METHOD_CONTRACT;
 
     *((unsigned char*)address) = 0xCC; // int 3 (single byte patch)
-    FlushInstructionCache(GetCurrentProcess(), address, 1);
+    minipal_flush_instruction_cache(address, 1);
 }
 
 inline void CORDbgSetInstruction(CORDB_ADDRESS_TYPE* address,
@@ -157,13 +158,13 @@ inline void CORDbgSetInstruction(CORDB_ADDRESS_TYPE* address,
 
     *((unsigned char*)address)
           = (unsigned char) instruction; // setting one byte is important
-    FlushInstructionCache(GetCurrentProcess(), address, 1);
+    minipal_flush_instruction_cache(address, 1);
 }
 
 // After a breakpoint exception, the CPU points to _after_ the break instruction.
 // Adjust the IP so that it points at the break instruction. This lets us patch that
 // opcode and re-execute what was underneath the bp.
-inline void CORDbgAdjustPCForBreakInstruction(DT_CONTEXT* pContext)
+inline void CORDbgAdjustPCForBreakInstruction(T_CONTEXT* pContext)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -178,14 +179,14 @@ inline bool AddressIsBreakpoint(CORDB_ADDRESS_TYPE* address)
 }
 
 // Set the hardware trace flag.
-inline void SetSSFlag(DT_CONTEXT *context)
+inline void SetSSFlag(T_CONTEXT *context)
 {
     _ASSERTE(context != NULL);
     context->EFlags |= 0x100;
 }
 
 // Unset the hardware trace flag.
-inline void UnsetSSFlag(DT_CONTEXT *context)
+inline void UnsetSSFlag(T_CONTEXT *context)
 {
     SUPPORTS_DAC;
     _ASSERTE(context != NULL);
@@ -193,7 +194,7 @@ inline void UnsetSSFlag(DT_CONTEXT *context)
 }
 
 // return true if the hardware trace flag applied.
-inline bool IsSSFlagEnabled(DT_CONTEXT * context)
+inline bool IsSSFlagEnabled(T_CONTEXT * context)
 {
     _ASSERTE(context != NULL);
     return (context->EFlags & 0x100) != 0;

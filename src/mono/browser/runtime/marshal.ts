@@ -525,8 +525,9 @@ abstract class MemoryView implements IMemoryView {
         mono_check(!this.isDisposed, "ObjectDisposedException");
         return this._viewType == MemoryViewType.Byte ? this._length
             : this._viewType == MemoryViewType.Int32 ? this._length << 2
-                : this._viewType == MemoryViewType.Double ? this._length << 3
-                    : 0;
+                : this._viewType == MemoryViewType.Single ? this._length << 2
+                    : this._viewType == MemoryViewType.Double ? this._length << 3
+                        : 0;
     }
 }
 
