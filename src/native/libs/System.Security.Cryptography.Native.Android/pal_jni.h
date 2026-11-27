@@ -226,6 +226,21 @@ extern jmethodID g_keyPairGenInitializeMethod;
 extern jmethodID g_keyPairGenInitializeWithParamsMethod;
 extern jmethodID g_keyPairGenGenKeyPairMethod;
 
+extern bool      g_DsaNeedsFips1863Workaround;
+
+// java/security/AlgorithmParameterGenerator
+extern jclass    g_AlgorithmParameterGeneratorClass;
+extern jmethodID g_AlgorithmParameterGeneratorGetInstanceWithProviderMethod;
+extern jmethodID g_AlgorithmParameterGeneratorInitMethod;
+extern jmethodID g_AlgorithmParameterGeneratorGenerateParametersMethod;
+
+// java/security/AlgorithmParameters
+extern jclass    g_AlgorithmParametersClass;
+extern jmethodID g_AlgorithmParametersGetParameterSpecMethod;
+
+// java/security/spec/DSAParameterSpec
+extern jclass    g_DSAParameterSpecClass;
+
 // java/security/KeyStore
 extern jclass    g_KeyStoreClass;
 extern jmethodID g_KeyStoreGetDefaultType;

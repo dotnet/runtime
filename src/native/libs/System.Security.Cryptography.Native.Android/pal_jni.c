@@ -3,6 +3,7 @@
 
 #include "pal_jni.h"
 #include "pal_trust_manager.h"
+#include <android/api-level.h>
 #include <pthread.h>
 
 JavaVM* gJvm;
@@ -137,6 +138,18 @@ jmethodID g_keyPairGenGetInstanceMethod;
 jmethodID g_keyPairGenInitializeWithParamsMethod;
 jmethodID g_keyPairGenInitializeMethod;
 jmethodID g_keyPairGenGenKeyPairMethod;
+
+bool      g_DsaNeedsFips1863Workaround;
+
+jclass    g_AlgorithmParameterGeneratorClass;
+jmethodID g_AlgorithmParameterGeneratorGetInstanceWithProviderMethod;
+jmethodID g_AlgorithmParameterGeneratorInitMethod;
+jmethodID g_AlgorithmParameterGeneratorGenerateParametersMethod;
+
+jclass    g_AlgorithmParametersClass;
+jmethodID g_AlgorithmParametersGetParameterSpecMethod;
+
+jclass    g_DSAParameterSpecClass;
 
 // java/security/KeyStore
 jclass    g_KeyStoreClass;
@@ -865,6 +878,21 @@ jint AndroidCryptoNative_InitLibraryOnLoad (JavaVM *vm, void *reserved)
     g_keyPairGenInitializeMethod =           GetMethod(env, false, g_keyPairGenClass, "initialize", "(I)V");
     g_keyPairGenInitializeWithParamsMethod = GetMethod(env, false, g_keyPairGenClass, "initialize", "(Ljava/security/spec/AlgorithmParameterSpec;)V");
     g_keyPairGenGenKeyPairMethod =           GetMethod(env, false, g_keyPairGenClass, "genKeyPair", "()Ljava/security/KeyPair;");
+
+    int apiLevel = android_get_device_api_level();
+    if (apiLevel == __ANDROID_API_N__ || apiLevel == __ANDROID_API_N_MR1__)
+    {
+        g_DsaNeedsFips1863Workaround = true;
+        g_AlgorithmParameterGeneratorClass = GetClassGRef(env, "java/security/AlgorithmParameterGenerator");
+        g_AlgorithmParameterGeneratorGetInstanceWithProviderMethod = GetMethod(env, true, g_AlgorithmParameterGeneratorClass, "getInstance", "(Ljava/lang/String;Ljava/lang/String;)Ljava/security/AlgorithmParameterGenerator;");
+        g_AlgorithmParameterGeneratorInitMethod = GetMethod(env, false, g_AlgorithmParameterGeneratorClass, "init", "(I)V");
+        g_AlgorithmParameterGeneratorGenerateParametersMethod = GetMethod(env, false, g_AlgorithmParameterGeneratorClass, "generateParameters", "()Ljava/security/AlgorithmParameters;");
+
+        g_AlgorithmParametersClass = GetClassGRef(env, "java/security/AlgorithmParameters");
+        g_AlgorithmParametersGetParameterSpecMethod = GetMethod(env, false, g_AlgorithmParametersClass, "getParameterSpec", "(Ljava/lang/Class;)Ljava/security/spec/AlgorithmParameterSpec;");
+
+        g_DSAParameterSpecClass = GetClassGRef(env, "java/security/spec/DSAParameterSpec");
+    }
 
     g_KeyStoreClass =               GetClassGRef(env, "java/security/KeyStore");
     g_KeyStoreGetDefaultType =      GetMethod(env, true, g_KeyStoreClass, "getDefaultType", "()Ljava/lang/String;");

@@ -11,33 +11,66 @@ int32_t AndroidCryptoNative_DsaGenerateKey(jobject* dsa, int32_t bits)
 {
     abort_if_invalid_pointer_argument (dsa);
 
+    // On Android 7 (API 24 and 25), generate FIPS 186-3 parameters explicitly
+    // for sizes above 1024 bits; size-only initialization can produce a 160-bit q.
+    //
     // KeyPairGenerator kpg = KeyPairGenerator.getInstance("DSA");
-    // kpg.initialize(bits);
-    // KeyPair kp = kpg.genKeyPair();
+    // if (bits > 1024 && (Build.VERSION.SDK_INT == 24 || Build.VERSION.SDK_INT == 25)) {
+    //     AlgorithmParameterGenerator parameterGenerator = AlgorithmParameterGenerator.getInstance("DSA", "BC");
+    //     parameterGenerator.init(bits);
+    //     AlgorithmParameters algorithmParameters = parameterGenerator.generateParameters();
+    //     DSAParameterSpec dsaParameters = algorithmParameters.getParameterSpec(DSAParameterSpec.class);
+    //     kpg.initialize(dsaParameters);
+    // } else {
+    //     kpg.initialize(bits);
+    // }
+    // KeyPair keyPair = kpg.genKeyPair();
 
     JNIEnv* env = GetJNIEnv();
-    jobject dsaStr = make_java_string(env, "DSA");
-    jobject kpgObj =  (*env)->CallStaticObjectMethod(env, g_keyPairGenClass, g_keyPairGenGetInstanceMethod, dsaStr);
-    (*env)->DeleteLocalRef(env, dsaStr);
-    if (CheckJNIExceptions(env))
+    int32_t ret = FAIL;
+    INIT_LOCALS(loc, dsaStr, kpgObj, keyPair, providerStr, parameterGenerator, algorithmParameters, dsaParameters);
+
+    loc[dsaStr] = make_java_string(env, "DSA");
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+
+    loc[kpgObj] = (*env)->CallStaticObjectMethod(env, g_keyPairGenClass, g_keyPairGenGetInstanceMethod, loc[dsaStr]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+
+    if (bits > 1024 && g_DsaNeedsFips1863Workaround)
     {
-        return FAIL;
+        loc[providerStr] = make_java_string(env, "BC");
+        ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+        loc[parameterGenerator] = (*env)->CallStaticObjectMethod(env, g_AlgorithmParameterGeneratorClass, g_AlgorithmParameterGeneratorGetInstanceWithProviderMethod, loc[dsaStr], loc[providerStr]);
+        ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+        (*env)->CallVoidMethod(env, loc[parameterGenerator], g_AlgorithmParameterGeneratorInitMethod, bits);
+        ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+        loc[algorithmParameters] = (*env)->CallObjectMethod(env, loc[parameterGenerator], g_AlgorithmParameterGeneratorGenerateParametersMethod);
+        ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+        loc[dsaParameters] = (*env)->CallObjectMethod(env, loc[algorithmParameters], g_AlgorithmParametersGetParameterSpecMethod, g_DSAParameterSpecClass);
+        ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+        (*env)->CallVoidMethod(env, loc[kpgObj], g_keyPairGenInitializeWithParamsMethod, loc[dsaParameters]);
+        ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    }
+    else
+    {
+        (*env)->CallVoidMethod(env, loc[kpgObj], g_keyPairGenInitializeMethod, bits);
+        ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     }
 
-    (*env)->CallVoidMethod(env, kpgObj, g_keyPairGenInitializeMethod, bits);
-    if (CheckJNIExceptions(env))
+    loc[keyPair] = (*env)->CallObjectMethod(env, loc[kpgObj], g_keyPairGenGenKeyPairMethod);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    *dsa = ToGRef(env, loc[keyPair]);
+    loc[keyPair] = NULL;
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    if (*dsa == NULL)
     {
-        (*env)->DeleteLocalRef(env, kpgObj);
-        return FAIL;
+        goto cleanup;
     }
-    jobject keyPair = (*env)->CallObjectMethod(env, kpgObj, g_keyPairGenGenKeyPairMethod);
-    (*env)->DeleteLocalRef(env, kpgObj);
-    if (CheckJNIExceptions(env))
-    {
-        return FAIL;
-    }
-    *dsa = ToGRef(env, keyPair);
-    return SUCCESS;
+    ret = SUCCESS;
+
+cleanup:
+    RELEASE_LOCALS_ENV(loc, ReleaseLRef);
+    return ret;
 }
 
 ARGS_NON_NULL_ALL static jobject GetQParameter(JNIEnv* env, jobject dsa)
