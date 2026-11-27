@@ -259,7 +259,9 @@ namespace Internal.IL
                 if (asyncTargetMethodIL == null)
                     return null;
 
-                return new AsyncMethodIL(amv, asyncTargetMethodIL);
+                return asyncTargetMethodIL is IEcmaMethodIL ecmaIL
+                    ? new EcmaAsyncMethodIL(amv, asyncTargetMethodIL, ecmaIL.Module)
+                    : new AsyncMethodIL(amv, asyncTargetMethodIL);
             }
             else if (method is MethodForInstantiatedType || method is InstantiatedMethod)
             {
@@ -396,7 +398,7 @@ namespace Internal.IL
             }
         }
 
-        public sealed class AsyncMethodIL : MethodIL, IEcmaMethodIL
+        public class AsyncMethodIL : MethodIL
         {
             private readonly AsyncMethodVariant _variant;
             private readonly MethodIL _methodIL;
@@ -415,8 +417,18 @@ namespace Internal.IL
             public override object GetObject(int token, NotFoundBehavior notFoundBehavior = NotFoundBehavior.Throw) => _methodIL.GetObject(token, notFoundBehavior);
             public override bool IsInitLocals => _methodIL.IsInitLocals;
             public override int MaxStack => _methodIL.MaxStack;
+        }
 
-            public IEcmaModule Module => ((EcmaType)(_variant.OwningType)).Module;
+        public sealed class EcmaAsyncMethodIL : AsyncMethodIL, IEcmaMethodIL
+        {
+            public EcmaAsyncMethodIL(AsyncMethodVariant variant, MethodIL methodIL, IEcmaModule module)
+                : base(variant, methodIL)
+            {
+                Module = module;
+            }
+
+            // The wrapped IL's module, which is the mutable module when the target's IL was rewritten for cross-module inlining.
+            public IEcmaModule Module { get; }
         }
     }
 }
