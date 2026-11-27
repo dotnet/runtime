@@ -403,12 +403,14 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             Compilation compilation = CompilationHelper.CreateCompilationWithDerivedJsonConverterAttributeAnnotations();
             JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
 
+            Location contextWithoutTypesLocation = compilation.GetSymbolsWithName("ClassWithPropertyConverterDeclaration").First().Locations[0];
             Location typeAttrLocation = compilation.GetSymbolsWithName("ClassWithConverterDeclaration").First().GetAttributes()[0].GetLocation();
             Location jsonSerializableAttrLocation = compilation.GetSymbolsWithName("JsonContext").First().GetAttributes()[0].GetLocation();
             Location propAttrLocation = compilation.GetSymbolsWithName("Value").First().GetAttributes()[0].GetLocation();
 
             var expectedDiagnostics = new DiagnosticData[]
             {
+                new(DiagnosticSeverity.Error, contextWithoutTypesLocation, "JsonSerializerContext type 'HelloWorld.ClassWithPropertyConverterDeclaration' has no JsonSerializableAttribute annotations. Add at least one type to generate serialization metadata."),
                 new(DiagnosticSeverity.Warning, typeAttrLocation, "The custom attribute 'HelloWorld.MyJsonConverterAttribute' deriving from JsonConverterAttribute is not supported by the source generator."),
                 new(DiagnosticSeverity.Warning, jsonSerializableAttrLocation, "Did not generate serialization metadata for type 'HelloWorld.ClassWithConverterDeclaration'."),
                 new(DiagnosticSeverity.Warning, propAttrLocation, "The custom attribute 'HelloWorld.MyJsonConverterAttribute' deriving from JsonConverterAttribute is not supported by the source generator."),
