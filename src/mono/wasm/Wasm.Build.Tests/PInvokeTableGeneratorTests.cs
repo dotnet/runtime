@@ -166,19 +166,6 @@ namespace Wasm.Build.Tests
             Assert.Contains(result.TestOutput, line => line.Contains("DirectPInvoke sample passed", StringComparison.Ordinal));
         }
 
-        // Only Mono's generator rejects a non-blittable callback signature; crossgen2 leaves the
-        // check to Roslyn and the runtime.
-        [Theory, TestCategory("mono")]
-        [BuildAndRun()]
-        public void UnmanagedStructAndMethodIn_SameAssembly_WithoutDisableRuntimeMarshallingAttribute_NotConsideredBlittable
-                        (Configuration config, bool aot)
-        {
-            ProjectInfo info = PrepreProjectForBlittableTests(
-                config, aot, "not_blittable", disableRuntimeMarshalling: false, useAutoLayout: true);
-            (_, string output) = BuildProject(info, config, new BuildOptions(ExpectSuccess: false, AOT: aot));
-            Assert.Matches("error.*Parameter.*types.*pinvoke.*.*blittable", output);
-        }
-
         [Theory]
         [BuildAndRun()]
         public void UnmanagedStructAndMethodIn_SameAssembly_WithoutDisableRuntimeMarshallingAttribute_WithStructLayout_ConsideredBlittable
@@ -237,49 +224,28 @@ namespace Wasm.Build.Tests
                     new object[] { /*libraryHasAttribute*/ true, /*appHasAttribute*/ true, /*expectSuccess*/ true }
                 ).UnwrapItemsAsArrays();
 
-        // The library's struct is made non-blittable by a type the generator recognises by name, which
-        // only Mono's generator still does. Kept here so that path stays covered; the CoreCLR
-        // equivalent is the LayoutKind.Auto theory below.
-        [Theory, TestCategory("mono")]
-        [MemberData(nameof(SeparateAssemblyWithDisableMarshallingAttributeTestData), parameters: Configuration.Debug)]
-        [MemberData(nameof(SeparateAssemblyWithDisableMarshallingAttributeTestData), parameters: Configuration.Release)]
-        public Task UnmanagedStructsAreConsideredBlittableFromDifferentAssembly
-                        (Configuration config, bool aot, bool libraryHasAttribute, bool appHasAttribute, bool expectSuccess)
-            => BlittableFromDifferentAssembly(
-                config, aot, libraryHasAttribute, appHasAttribute, expectSuccess, useAutoLayout: false);
-
-        // Same scenario, with the struct made non-blittable by its layout rather than by a name only a
-        // test can produce. What is under test either way is that the DisableRuntimeMarshalling the
-        // generator honours is the one on the assembly declaring the callback, not the struct.
+        // The struct is made non-blittable by its layout. What is under test is that the
+        // DisableRuntimeMarshalling attribute the generator honours is the one on the assembly
+        // declaring the callback, not the struct.
+        // TODO-WASM: https://github.com/dotnet/runtime/issues/135046
         [Theory, TestCategory("mono")]
         [MemberData(nameof(SeparateAssemblyWithDisableMarshallingAttributeTestData), parameters: Configuration.Debug)]
         [MemberData(nameof(SeparateAssemblyWithDisableMarshallingAttributeTestData), parameters: Configuration.Release)]
         public Task UnmanagedStructsAreConsideredBlittableFromDifferentAssembly_WithAutoLayout
                         (Configuration config, bool aot, bool libraryHasAttribute, bool appHasAttribute, bool expectSuccess)
             => BlittableFromDifferentAssembly(
-                config, aot, libraryHasAttribute, appHasAttribute, expectSuccess, useAutoLayout: true);
+                config, aot, libraryHasAttribute, appHasAttribute, expectSuccess);
 
         private async Task BlittableFromDifferentAssembly
-                        (Configuration config, bool aot, bool libraryHasAttribute, bool appHasAttribute, bool expectSuccess, bool useAutoLayout)
+                        (Configuration config, bool aot, bool libraryHasAttribute, bool appHasAttribute, bool expectSuccess)
         {
             string extraProperties = aot ? string.Empty : "<WasmBuildNative>true</WasmBuildNative>";
             string extraItems =  @$"<ProjectReference Include=""..\\Library\\Library.csproj"" />";
             string libRelativePath = Path.Combine("..", "Library", "Library.cs");
             string programRelativePath = Path.Combine("Common", "Program.cs");
-            string prefix = useAutoLayout ? "blittable_different_library_auto" : "blittable_different_library";
-            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, prefix, extraProperties: extraProperties, extraItems: extraItems);
+            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "blittable_different_library_auto", extraProperties: extraProperties, extraItems: extraItems);
             ReplaceFile(libRelativePath, Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "BittableDifferentAssembly_Lib.cs"));
             ReplaceFile(programRelativePath, Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "BittableDifferentAssembly.cs"));
-            if (useAutoLayout)
-            {
-                // Drop the marker type and let the layout make S non-blittable instead.
-                UpdateFile(libRelativePath, new Dictionary<string, string>
-                {
-                    { "public struct __NonBlittableTypeForAutomatedTests__ { }", "" },
-                    { "public struct S {", "[System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Auto)]\n    public struct S {" },
-                    { "public __NonBlittableTypeForAutomatedTests__ NonBlittable;", "public float Value2;" },
-                });
-            }
             if (!libraryHasAttribute)
             {
                 UpdateFile(libRelativePath, new Dictionary<string, string> { { "[assembly: System.Runtime.CompilerServices.DisableRuntimeMarshalling]", "" } });
@@ -489,12 +455,6 @@ namespace Wasm.Build.Tests
         }
 
         [Theory]
-        [BuildAndRun(aot: true, config: Configuration.Release)]
-        [TestCategory("native"), TestCategory("mono")]
-        public async Task EnsureWasmAbiRulesAreFollowedInAOT(Configuration config, bool aot) =>
-            await EnsureWasmAbiRulesAreFollowed(config, aot);
-
-        [Theory]
         [BuildAndRun(aot: false)]
         [TestCategory("native")]
         public async Task EnsureWasmAbiRulesAreFollowedInInterpreter(Configuration config, bool aot) =>
@@ -547,32 +507,6 @@ namespace Wasm.Build.Tests
 
             RunResult result = await RunForBuildWithDotnetRun(new BrowserRunOptions(config, TestScenario: "DotnetRun", ExpectedExitCode: 42));
             Assert.Contains("sum: 42", result.TestOutput);
-        }
-
-        [Theory]
-        [BuildAndRun(aot: true, config: Configuration.Release)]
-        [TestCategory("native"), TestCategory("mono")]
-        public void EnsureComInteropCompilesInAOT(Configuration config, bool aot)
-        {
-            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "com");
-            ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "ComInterop.cs"));
-            bool isPublish = aot;
-            (string libraryDir, string output) = isPublish ?
-                PublishProject(info, config, new PublishOptions(AOT: aot)) :
-                BuildProject(info, config, new BuildOptions(AOT: aot));
-        }
-
-        [Theory]
-        [BuildAndRun(aot: true, config: Configuration.Release)]
-        [TestCategory("native"), TestCategory("mono")]
-        public void EnsureUnmanagedCallConvCompilesInAOT(Configuration config, bool aot)
-        {
-            // Regression coverage for https://github.com/dotnet/runtime/issues/136351: decoding the
-            // CallConvs of [UnmanagedCallConv] allocated a managed Type[] inside the AOT compiler,
-            // which asserted in sgen while the native wrappers were built.
-            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "unmanaged_callconv");
-            ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "UnmanagedCallConv.cs"));
-            PublishProject(info, config, new PublishOptions(AOT: aot));
         }
 
         [Theory]

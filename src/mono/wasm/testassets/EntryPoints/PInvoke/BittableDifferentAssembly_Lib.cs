@@ -2,9 +2,9 @@
 
 namespace WasmAppBuilderTests
 {
-    public struct __NonBlittableTypeForAutomatedTests__ { }
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Auto)]
     public struct S {
         public int Value;
-        public __NonBlittableTypeForAutomatedTests__ NonBlittable;
+        public float Value2;
     }
 }

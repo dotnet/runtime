@@ -124,9 +124,9 @@ Managed JSON parsing remains the consumer's responsibility.
 
 ## How to add tests
 
-Blazor specific tests should be located in `Blazor` directory. New test classes are picked up automatically - the per-class Helix work item list is generated from the built test assembly, so there is no list to update. Tests run against CoreCLR by default, so no runtime category is needed for CoreCLR tests. Existing `[TestCategory("mono")]` tests are excluded from CoreCLR runs. If you are adding a new test to an existing class, make sure it does not prolong the execution time significantly. Tests run on parallel on CI and having one class running much longer than the average prolongs the total execution time.
+Blazor specific tests should be located in `Blazor` directory. New test classes are picked up automatically - the per-class Helix work item list is generated from the built test assembly, so there is no list to update. Tests run against CoreCLR, so no runtime category is needed for new tests. The remaining `[TestCategory("mono")]` tests are retained only for tracked CoreCLR coverage gaps or cases that still need individual disposition. If you are adding a new test to an existing class, make sure it does not prolong the execution time significantly. Tests run on parallel on CI and having one class running much longer than the average prolongs the total execution time.
 
-Native relinking tests can run on both runtimes. For theories that also cover Mono AOT, use runtime-aware test data to keep the non-AOT cases on CoreCLR without removing the existing Mono cases. Incremental rebuild assertions must track the appropriate runtime's generated files: CoreCLR uses the portable call-helper sources and objects rather than Mono's P/Invoke tables and driver objects.
+Use native relinking or ReadyToRun for CoreCLR precompiled-mode coverage. Incremental rebuild assertions must track CoreCLR's portable call-helper sources and objects.
 
 `Blazor.AssetCachingTests` exercises the browser HTTP cache using the hosted
 `BlazorWebWasm` test asset. Its recovery cases seed cacheable invalid boot

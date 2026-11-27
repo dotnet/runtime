@@ -103,6 +103,7 @@ namespace Wasm.Build.Tests
 #pragma warning disable xUnit1026
         [Theory]
         [BuildAndRun(aot: true, config: Configuration.Release)]
+        // TODO-WASM: https://github.com/dotnet/runtime/issues/135046
         [TestCategory("native"), TestCategory("mono")]
         public void CheckThatSatelliteAssembliesAreNotAOTed(Configuration config, bool aot)
         {

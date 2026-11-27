@@ -50,6 +50,7 @@ public class BuildPublishTests : BlazorWasmTestBase
 
     [Theory]
     [MemberData(nameof(TestDataForDefaultTemplate_WithWorkload), parameters: new object[] { true })]
+    // TODO-WASM: https://github.com/dotnet/runtime/issues/135046
     [TestCategory("native"), TestCategory("mono")]
     public void DefaultTemplate_AOT_WithWorkload(Configuration config, bool testUnicode)
     {
@@ -127,15 +128,4 @@ public class BuildPublishTests : BlazorWasmTestBase
         }
     }
 
-    [Theory]
-    [InlineData(Configuration.Debug)]
-    [TestCategory("native"), TestCategory("mono")]
-    public void BlazorWasm_CannotAOT_InDebug(Configuration config)
-    {
-        ProjectInfo info = CopyTestAsset(
-            config, aot: true, TestAsset.BlazorBasicTestApp, "blazorwasm", extraProperties: "<RunAOTCompilation>true</RunAOTCompilation>");
-
-        (string _, string output) = PublishProject(info, config, new PublishOptions(ExpectSuccess: false));
-        Assert.Contains("AOT is not supported in debug configuration", output);
-    }
 }

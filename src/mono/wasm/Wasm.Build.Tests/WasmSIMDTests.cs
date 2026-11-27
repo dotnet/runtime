@@ -50,6 +50,7 @@ namespace Wasm.Build.Tests
         [MemberData(nameof(MainMethodSimdTestData), parameters: new object[] { /*aot*/ true, /* simd */ true })]
         [MemberData(nameof(MainMethodSimdTestData), parameters: new object[] { /*aot*/ false, /* simd */ true })]
         [MemberData(nameof(MainMethodSimdTestData), parameters: new object[] { /*aot*/ true, /* simd */ false })]
+        // TODO-WASM: https://github.com/dotnet/runtime/issues/135046
         [TestCategory("native"), TestCategory("mono")]
         public async Task PublishSIMD_AOT(Configuration config, bool aot, bool simd)
         {
