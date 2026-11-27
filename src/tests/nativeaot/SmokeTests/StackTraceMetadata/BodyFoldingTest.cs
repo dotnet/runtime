@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -21,6 +24,14 @@ class BodyFoldingTest
         public object Return1DelInstance() => new object();
         public object Return2DelInstance() => new object();
     }
+
+    class FoldedGenericDelegateTargets
+    {
+        public static object ReturnNull<T>() => null;
+    }
+
+    // Not using Func to avoid making the targets reflectable through Delegate.Method use elsewhere
+    delegate object NonReflectedDelegate();
 
     class BaseDelegateTargets
     {
@@ -228,6 +239,14 @@ class BodyFoldingTest
     {
         public object Return1Del() => new object();
         public object Return2Del() => new object();
+        public object Return1GenericDel<U>() => new object();
+        public object Return2GenericDel<U>() => new object();
+    }
+
+    struct FoldedUnboxingStruct<T>
+    {
+        public object Return() => new object();
+        public object ReturnGeneric<U>() => new object();
     }
 
     struct ReflectedUnboxingThunkStruct<T>
@@ -414,6 +433,32 @@ class BodyFoldingTest
 
         ConstructedInGenericContextToGenerics<int>.Test();
         ConstructedInGenericContextToGenerics<object>.Test();
+        TestUnboxingDelegateMethods<int>();
+        TestUnboxingDelegateMethods<object>();
+        typeof(BodyFoldingTest).GetMethod(nameof(TestUnboxingDelegateMethods), BindingFlags.NonPublic | BindingFlags.Static)
+            .MakeGenericMethod(GetUnboxingDelegateArgument())
+            .Invoke(null, []);
+
+        static Type GetUnboxingDelegateArgument() => typeof(string);
+
+        TestFoldedUnboxingDelegateMethods<int>();
+        TestFoldedUnboxingDelegateMethods<object>();
+
+        // Instantiations of a generic method that get folded together
+        {
+            NonReflectedDelegate f1 = FoldedGenericDelegateTargets.ReturnNull<int>;
+            NonReflectedDelegate f2 = FoldedGenericDelegateTargets.ReturnNull<long>;
+            if (f1.Equals(f2))
+                throw new Exception();
+
+#if !STRIPPED
+            foreach (NonReflectedDelegate f in new[] { f1, f2 })
+            {
+                if (DiagnosticMethodInfo.Create(f)?.Name != nameof(FoldedGenericDelegateTargets.ReturnNull))
+                    throw new Exception();
+            }
+#endif
+        }
 
         // Interface generic virtual methods (shared)
         {
@@ -485,6 +530,72 @@ class BodyFoldingTest
                 throw new Exception();
         }
     }
+
+    static void TestUnboxingDelegateMethods<T>()
+    {
+        var o = new UnboxingThunkStruct<T>();
+        Verify(o.Return1Del, nameof(UnboxingThunkStruct<T>.Return1Del));
+        Verify(o.Return2Del, nameof(UnboxingThunkStruct<T>.Return2Del));
+        Verify(o.Return1GenericDel<object>, nameof(UnboxingThunkStruct<T>.Return1GenericDel), typeof(object));
+        Verify(o.Return2GenericDel<object>, nameof(UnboxingThunkStruct<T>.Return2GenericDel), typeof(object));
+        Verify(o.Return1GenericDel<int>, nameof(UnboxingThunkStruct<T>.Return1GenericDel), typeof(int));
+        Verify(o.Return2GenericDel<int>, nameof(UnboxingThunkStruct<T>.Return2GenericDel), typeof(int));
+
+        static void Verify(Func<object> target, string expectedName, Type genericArgument = null)
+        {
+            MethodInfo method = target.Method;
+            if (method.Name != expectedName || method.DeclaringType != typeof(UnboxingThunkStruct<T>))
+                throw new Exception($"Unexpected delegate method: {method}");
+
+            Type[] genericArguments = method.GetGenericArguments();
+            if (genericArgument is null
+                ? genericArguments.Length != 0
+                : genericArguments.Length != 1 || genericArguments[0] != genericArgument)
+                throw new Exception($"Unexpected generic arguments for delegate method: {method}");
+
+            if (target() is null)
+                throw new Exception($"Unexpected result from delegate method: {method}");
+
+#if !STRIPPED
+            DiagnosticMethodInfo diagnosticMethod = DiagnosticMethodInfo.Create(target);
+            if (diagnosticMethod is null || diagnosticMethod.Name != expectedName)
+                throw new Exception($"Unexpected diagnostic method for delegate method: {method}");
+#endif
+        }
+    }
+
+    // The targets of the unboxing stubs fold together and are not reflectable. When bodies of different methods
+    // fold (StackTraceMetadata_FoldAll), diagnostic information must come from the records of the unboxing stubs.
+    static void TestFoldedUnboxingDelegateMethods<T>()
+    {
+        var o = new FoldedUnboxingStruct<T>();
+        Verify(o.Return, nameof(FoldedUnboxingStruct<T>.Return));
+        Verify(o.ReturnGeneric<object>, nameof(FoldedUnboxingStruct<T>.ReturnGeneric));
+        Verify(o.ReturnGeneric<int>, nameof(FoldedUnboxingStruct<T>.ReturnGeneric));
+
+        static void Verify(NonReflectedDelegate target, string expectedName)
+        {
+            if (target() is null)
+                throw new Exception($"Unexpected result from delegate method {expectedName}");
+
+            DiagnosticMethodInfo diagnosticMethod = DiagnosticMethodInfo.Create(target);
+#if STRIPPED
+            if (diagnosticMethod is not null)
+                throw new Exception($"Unexpected diagnostic method for {expectedName}: {diagnosticMethod.Name}");
+#else
+            if (diagnosticMethod?.Name != expectedName)
+                throw new Exception($"Unexpected diagnostic method for {expectedName}: {diagnosticMethod?.Name}");
+#endif
+
+            // Make sure the information didn't come from reflection metadata
+            if (GetMethodSecretly(typeof(FoldedUnboxingStruct<T>), expectedName) is not null)
+                throw new Exception($"{expectedName} is unexpectedly reflectable");
+        }
+    }
+
+    [UnconditionalSuppressMessage("", "IL2070")]
+    private static MethodInfo GetMethodSecretly(Type t, string name)
+        => t.GetMethod(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance);
 
     delegate object RefParamDelegate<T>(ref T inst);
 }

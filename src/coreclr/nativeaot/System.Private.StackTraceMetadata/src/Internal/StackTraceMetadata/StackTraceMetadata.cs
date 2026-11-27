@@ -213,7 +213,8 @@ namespace Internal.StackTraceMetadata
 
         private static DiagnosticMethodInfo GetDiagnosticMethodInfoFromFunctionPointerIfAvailable(IntPtr functionPointer)
         {
-#if TARGET_WASM
+            // Function pointers can point to stubs outside of managed code, so the module cannot be found through
+            // the code manager.
             foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules())
             {
                 PerModuleMethodNameResolver resolver = _perModuleMethodNameResolverHashtable.GetOrCreateValue(module.Handle.GetIntPtrUNSAFE());
@@ -228,9 +229,6 @@ namespace Internal.StackTraceMetadata
                 return CreateDiagnosticMethodInfo(reader, typeHandle, reader.GetMethod(methodHandle).Name);
             }
             return null;
-#else
-            return GetDiagnosticMethodInfoFromStartAddressIfAvailable(functionPointer);
-#endif
         }
 
         private static DiagnosticMethodInfo CreateDiagnosticMethodInfo(MetadataReader reader, Handle owningType, ConstantStringValueHandle name)
@@ -389,7 +387,9 @@ namespace Internal.StackTraceMetadata
             private readonly StackTraceData[] _stacktraceDatas;
 
 #if TARGET_WASM
-            private readonly Dictionary<IntPtr, int> _functionPointerToRva = new Dictionary<IntPtr, int>();
+            private readonly Dictionary<IntPtr, StackTraceData> _functionPointerToData = new Dictionary<IntPtr, StackTraceData>();
+#else
+            private readonly IntPtr _osModuleBase;
 #endif
 
             /// <summary>
@@ -410,6 +410,9 @@ namespace Internal.StackTraceMetadata
                 _moduleAddress = moduleAddress;
 
                 TypeManagerHandle handle = new TypeManagerHandle(moduleAddress);
+#if !TARGET_WASM
+                _osModuleBase = handle.OsModuleBase;
+#endif
                 ModuleInfo moduleInfo;
                 if (!ModuleList.Instance.TryGetModuleInfoByHandle(handle, out moduleInfo))
                 {
@@ -492,7 +495,24 @@ namespace Internal.StackTraceMetadata
                         currentMethodInst = new Handle(HandleType.ConstantStringArray, (int)NativePrimitiveDecoder.DecodeUnsigned(ref pCurrent)).ToConstantStringArrayHandle(Reader);
                     }
 
+                    var data = new StackTraceData
+                    {
+                        IsHidden = (command & StackTraceDataCommand.IsStackTraceHidden) != 0,
+                        OwningType = currentOwningType,
+                        Name = currentName,
+                        Signature = currentSignature,
+                        GenericArguments = currentMethodInst,
+                    };
+
 #if TARGET_WASM
+                    if ((command & StackTraceDataCommand.IsStub) != 0)
+                    {
+                        // Stubs don't have a virtual IP and can only be looked up by their function pointer
+                        IntPtr stubFunctionPointer = (IntPtr)(nuint)NativePrimitiveDecoder.ReadUInt32(ref pCurrent);
+                        _functionPointerToData.Add(stubFunctionPointer, data);
+                        continue;
+                    }
+
                     void* pMethod = (void*)(nuint)NativePrimitiveDecoder.ReadUInt32(ref pCurrent);
 #else
                     void* pMethod = ReadRelPtr32(pCurrent);
@@ -500,25 +520,17 @@ namespace Internal.StackTraceMetadata
 #endif
 
                     Debug.Assert((nint)pMethod > handle.OsModuleBase);
-                    int methodRva = (int)((nint)pMethod - handle.OsModuleBase);
+                    data = data with { Rva = (int)((nint)pMethod - handle.OsModuleBase) };
 
 #if TARGET_WASM
                     if ((command & StackTraceDataCommand.HasFunctionPointer) != 0)
                     {
                         IntPtr functionPointer = (IntPtr)(nuint)NativePrimitiveDecoder.ReadUInt32(ref pCurrent);
-                        _functionPointerToRva.Add(functionPointer, methodRva);
+                        _functionPointerToData.Add(functionPointer, data);
                     }
 #endif
 
-                    _stacktraceDatas[current++] = new StackTraceData
-                    {
-                        Rva = methodRva,
-                        IsHidden = (command & StackTraceDataCommand.IsStackTraceHidden) != 0,
-                        OwningType = currentOwningType,
-                        Name = currentName,
-                        Signature = currentSignature,
-                        GenericArguments = currentMethodInst,
-                    };
+                    _stacktraceDatas[current++] = data;
 
 #if !TARGET_WASM
                     static void* ReadRelPtr32(byte* address)
@@ -534,8 +546,15 @@ namespace Internal.StackTraceMetadata
 #if TARGET_WASM
             public bool TryGetStackTraceDataFromFunctionPointer(IntPtr functionPointer, out StackTraceData data)
             {
-                if (_functionPointerToRva.TryGetValue(functionPointer, out int rva))
-                    return TryGetStackTraceData(rva, out data);
+                return _functionPointerToData.TryGetValue(functionPointer, out data);
+            }
+#else
+            public bool TryGetStackTraceDataFromFunctionPointer(IntPtr functionPointer, out StackTraceData data)
+            {
+                // Only an exact match with an address in this module is considered a match
+                nint rva = functionPointer - _osModuleBase;
+                if (rva is >= 0 and <= int.MaxValue)
+                    return TryGetStackTraceData((int)rva, out data);
 
                 data = default;
                 return false;
