@@ -723,7 +723,13 @@ namespace ILCompiler.Reflection.ReadyToRun
             // Initialize R2RHeader
             Debug.Assert(_readyToRunHeaderRVA != 0);
             int r2rHeaderOffset = GetOffset(_readyToRunHeaderRVA);
-            _readyToRunHeader = new ReadyToRunHeader(ImageReader, _readyToRunHeaderRVA, r2rHeaderOffset);
+            ReadyToRunHeader header = new ReadyToRunHeader(ImageReader, _readyToRunHeaderRVA, r2rHeaderOffset);
+            if (_machine == WasmMachine.Wasm32 && header.MajorVersion < ReadyToRunHeaderConstants.MinimumWasmMajorVersion)
+            {
+                throw new BadImageFormatException(
+                    $"Wasm ReadyToRun images before format {ReadyToRunHeaderConstants.MinimumWasmMajorVersion}.0 use an unsupported GC/unwind encoding. Recompile '{Filename}' with current crossgen2.");
+            }
+            _readyToRunHeader = header;
 
             FindOwnerCompositeExecutable();
 

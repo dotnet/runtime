@@ -120,7 +120,7 @@ namespace ILCompiler.Reflection.ReadyToRun.Cdac
                     slot.RegisterNumber,
                     slot.SpOffset,
                     (GcStackSlotBase)slot.Base,
-                    // The shared decoder does not record GC_SLOT_UNTRACKED on the untracked slots it decodes.
+                    // The shared decoder does not mark untracked slots before version 6.
                     i >= numTracked ? (GcSlotFlags)slot.Flags | GcSlotFlags.GC_SLOT_UNTRACKED : (GcSlotFlags)slot.Flags,
                     result));
             }

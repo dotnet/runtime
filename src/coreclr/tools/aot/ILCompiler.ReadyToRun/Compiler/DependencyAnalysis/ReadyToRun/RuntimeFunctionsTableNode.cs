@@ -107,12 +107,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         /// <summary>
         /// Read the virtual IP count from a WASM unwind blob.
-        /// The blob format is: ULEB128(frameSize) followed by ULEB128(virtualIPCount).
         /// </summary>
         private static uint GetFunctionLocalVirtualIPCountFromUnwindBlob(byte[] blobData)
         {
-            DwarfHelper.ReadULEB128(blobData.AsSpan(), out int offset); // skip frame size
-            return (uint)DwarfHelper.ReadULEB128(blobData.AsSpan(offset), out _) * 2; // Multiply by 2 to force all virtual IPs to be an even number.
+            ulong encoded = DwarfHelper.ReadULEB128(blobData.AsSpan());
+            return (uint)(((encoded >> 4) & 0xF) | (((encoded >> 12) & 0xF) << 4) |
+                          (((encoded >> 32) & 0xFFFF) << 8)) * 2;
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)

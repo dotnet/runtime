@@ -3710,7 +3710,7 @@ public:
     {
     }
 
-    GcSlotId GetStackSlotId(INT32 spOffset, GcSlotFlags flags, GcStackSlotBase spBase = GC_CALLER_SP_REL)
+    GcSlotId GetStackSlotId(INT32 spOffset, GcSlotFlags flags, GcStackSlotBase spBase)
     {
         GcSlotId newSlotId = m_gcInfoEncoder->GetStackSlotId(spOffset, flags, spBase);
         if (m_doLogging)
@@ -4278,6 +4278,10 @@ void GCInfo::gcMakeRegPtrTable(
                     flags = (GcSlotFlags)(flags | GC_SLOT_INTERIOR);
                 }
 
+#ifdef TARGET_WASM
+                flags = static_cast<GcSlotFlags>(flags | GC_SLOT_PINNED);
+#endif // TARGET_WASM
+
                 GcStackSlotBase stackSlotBase = GC_SP_REL;
                 if (varDsc->lvFramePointerBased)
                 {
@@ -4315,6 +4319,10 @@ void GCInfo::gcMakeRegPtrTable(
                     flags = (GcSlotFlags)(flags | GC_SLOT_INTERIOR);
                 }
 
+#ifdef TARGET_WASM
+                flags = static_cast<GcSlotFlags>(flags | GC_SLOT_PINNED);
+#endif // TARGET_WASM
+
                 GcStackSlotBase stackSlotBase = GC_SP_REL;
                 if (m_compiler->isFramePointerUsed())
                 {
@@ -4342,6 +4350,10 @@ void GCInfo::gcMakeRegPtrTable(
                 // Or in GC_SLOT_INTERIOR for 'byref' pointer tracking
                 flags = (GcSlotFlags)(flags | GC_SLOT_INTERIOR);
             }
+
+#ifdef TARGET_WASM
+            flags = static_cast<GcSlotFlags>(flags | GC_SLOT_PINNED);
+#endif // TARGET_WASM
 
             GcStackSlotBase stackSlotBase = m_compiler->isFramePointerUsed() ? GC_FRAMEREG_REL : GC_SP_REL;
 

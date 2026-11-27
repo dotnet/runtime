@@ -411,6 +411,49 @@ public class R2RTestSuites
     }
 
     [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void WasmGcEncodingRejectsOlderReadyToRunHeaders(bool composite)
+    {
+        const ushort CompactWasmGcFormatVersion = 35;
+        CompiledAssembly input = new()
+        {
+            AssemblyName = nameof(WasmGcEncodingRejectsOlderReadyToRunHeaders),
+            SourceResourceNames = ["Webcil/WasmWebcilModule.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(WasmGcEncodingRejectsOlderReadyToRunHeaders),
+            [
+                new(nameof(WasmGcEncodingRejectsOlderReadyToRunHeaders), [new CrossgenAssembly(input)])
+                {
+                    Options = composite ? [Crossgen2Option.Composite] : [],
+                    OutputFileExtension = TestPaths.IsWasmTarget ? ".wasm" : ".dll",
+                    Validate = reader =>
+                    {
+                        Assert.Equal(CompactWasmGcFormatVersion, reader.ReadyToRunHeader.MajorVersion);
+                        int headerOffset = reader.GetOffset(reader.ReadyToRunHeader.RelativeVirtualAddress);
+                        foreach (ushort majorVersion in new ushort[] { 31, 32, 33, 34, CompactWasmGcFormatVersion })
+                        {
+                            byte[] image = (byte[])reader.Image.Clone();
+                            BinaryPrimitives.WriteUInt16LittleEndian(image.AsSpan(headerOffset + sizeof(uint)), majorVersion);
+                            ReadyToRunReader patchedReader = new(null, reader.Filename, image);
+                            if (TestPaths.IsWasmTarget && majorVersion < CompactWasmGcFormatVersion)
+                            {
+                                Assert.Throws<BadImageFormatException>(() => _ = patchedReader.ReadyToRunHeader);
+                                Assert.Throws<BadImageFormatException>(() => _ = patchedReader.ReadyToRunHeader);
+                            }
+                            else
+                            {
+                                Assert.Equal(majorVersion, patchedReader.ReadyToRunHeader.MajorVersion);
+                            }
+                        }
+                    },
+                },
+            ]));
+    }
+
+    [Theory]
     [InlineData(false, false)]
     [InlineData(false, true)]
     [InlineData(true, false)]
@@ -1705,6 +1748,25 @@ public class R2RTestSuites
             }
             AssertSafepointCovered(gcSlotIdentity, gcSlotRoot, markers);
 
+            // GC fields of an on-frame struct are untracked roots too, so they must also be pinned.
+            ReadyToRunMethod gcStructFields = GetMethod(methods, "GcStructFieldsAcrossSafepoint");
+            RuntimeFunction gcStructRoot = GetRoot(gcStructFields);
+            NativeVarInfo pair = AssertStackRecord(gcStructRoot, VariableType.Local, 0, VarLocType.VLT_STK);
+            AssertSafepointCovered(gcStructFields, gcStructRoot, pair);
+            ILCompiler.Reflection.ReadyToRun.Cdac.CdacGcInfo gcStructInfo =
+                Assert.IsType<ILCompiler.Reflection.ReadyToRun.Cdac.CdacGcInfo>(gcStructFields.GcInfo);
+            ILCompiler.Reflection.ReadyToRun.Cdac.CdacGcSlot[] pairFieldSlots = gcStructInfo.Slots
+                .Where(slot => slot.StackSlot is { } stackSlot
+                    && stackSlot.SpOffset >= pair.VariableLocation.Data2
+                    && stackSlot.SpOffset < pair.VariableLocation.Data2 + (3 * sizeof(int)))
+                .ToArray();
+            Assert.Equal(2, pairFieldSlots.Length);
+            Assert.All(pairFieldSlots, slot =>
+            {
+                Assert.Equal(GcStackSlotBase.GC_FRAMEREG_REL, slot.StackSlot.Base);
+                Assert.Equal(GcSlotFlags.GC_SLOT_PINNED | GcSlotFlags.GC_SLOT_UNTRACKED, slot.Flags);
+            });
+
             // Has a catch clause, so the JIT emits a try_table catch_ref that references the
             // imported restore-context exception tag.
             Assert.True(methods.Exists(method =>
@@ -1876,11 +1938,13 @@ public class R2RTestSuites
             {
                 ILCompiler.Reflection.ReadyToRun.Cdac.CdacGcInfo gcInfo =
                     Assert.IsType<ILCompiler.Reflection.ReadyToRun.Cdac.CdacGcInfo>(method.GcInfo);
+                Assert.Equal(6, gcInfo.Version);
                 Assert.Equal(0u, gcInfo.NumRegisters);
                 ILCompiler.Reflection.ReadyToRun.Cdac.CdacGcSlot slot = Assert.Single(
                     gcInfo.Slots,
                     candidate => candidate.StackSlot?.SpOffset == record.VariableLocation.Data2);
                 Assert.Equal(GcStackSlotBase.GC_FRAMEREG_REL, slot.StackSlot.Base);
+                Assert.Equal(GcSlotFlags.GC_SLOT_PINNED | GcSlotFlags.GC_SLOT_UNTRACKED, slot.Flags);
             }
 
             static void AssertSafepointCovered(ReadyToRunMethod method, RuntimeFunction root, params NativeVarInfo[] records)

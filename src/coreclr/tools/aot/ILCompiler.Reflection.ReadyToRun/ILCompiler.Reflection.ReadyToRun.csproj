@@ -32,7 +32,7 @@
     <Compile Include="..\..\Common\Wasm\Webcil.cs" Link="Webcil\Webcil.cs" />
   </ItemGroup>
 
-  <!-- GC info decoders shared with the cDAC (GC info version 4 and later). See Cdac\CdacTarget.cs. -->
+  <!-- GC info decoders shared with the cDAC. See Cdac\CdacTarget.cs. -->
   <PropertyGroup>
     <CdacAbstractionsDir>$(RepoRoot)src\native\managed\cdac\Microsoft.Diagnostics.DataContractReader.Abstractions\</CdacAbstractionsDir>
     <CdacContractsDir>$(RepoRoot)src\native\managed\cdac\Microsoft.Diagnostics.DataContractReader.Contracts\</CdacContractsDir>

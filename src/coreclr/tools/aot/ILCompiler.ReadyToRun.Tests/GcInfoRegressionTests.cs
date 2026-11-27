@@ -339,6 +339,7 @@ public class GcInfoRegressionTests
     [InlineData(1)]
     [InlineData(3)]
     [InlineData(5)]
+    [InlineData(6)]
     public void CdacX86TrackedEbpSlotsUseSignedOffsets(int version)
     {
         // One VarPtr entry: EBP-8, live in [2, 6).
@@ -390,6 +391,38 @@ public class GcInfoRegressionTests
         Assert.Equal(-3 * stackSlotScale, info.Header.GSCookie?.SpOffset);
         Assert.Equal(-4 * stackSlotScale, info.Header.PSPSym?.SpOffset);
         Assert.Contains($"PSPSymStackSlot: caller.sp{-4 * stackSlotScale}", info.ToString());
+        Assert.Equal(writer.ByteCount, info.Size);
+    }
+
+    [Theory]
+    [InlineData(Machine.Amd64, 1, 0x10)]
+    [InlineData(Machine.ArmThumb2, 2, 0x10)]
+    [InlineData(Machine.Arm64, 3, 0x10)]
+    [InlineData(Machine.ArmThumb2, 2, 0x02)]
+    [InlineData(Machine.Arm64, 3, 0x02)]
+    public void CdacLegacyFatHeaderWithoutGSCookieUsesUnnormalizedProlog(Machine machine, int version, int flags)
+    {
+        bool isArm = machine == Machine.ArmThumb2;
+        int stackOffset = isArm ? -8 : -16;
+        BitWriter writer = new();
+        writer.Write(1, 1);
+        writer.Write(flags, version == 1 ? 9 : 10);
+        if (version >= 2)
+            writer.Write(1, isArm ? 2 : 4);
+        writer.WriteUnsigned(20, isArm ? 7 : 8);
+        writer.WriteUnsigned(3, 5);
+        writer.WriteSigned(-2, isArm ? 5 : 6);
+        writer.WriteUnsigned(0, 3);
+        writer.WriteUnsigned(0, machine == Machine.Amd64 ? 2 : 3);
+        writer.WriteUnsigned(0, isArm ? 2 : 1);
+        writer.Write(0, 2);
+
+        CdacGcInfo info = Assert.IsType<CdacGcInfo>(DecodeCdac(writer, machine, version));
+        Assert.Equal(4u, info.ValidRangeStart);
+        Assert.Equal(5u, info.ValidRangeEnd);
+        Assert.Null(info.Header.GSCookie);
+        Assert.Equal(flags == 0x02 ? stackOffset : null, info.SecurityObjectStackSlot);
+        Assert.Equal(flags == 0x10 ? stackOffset : null, info.Header.GenericsInstContext?.SpOffset);
         Assert.Equal(writer.ByteCount, info.Size);
     }
 

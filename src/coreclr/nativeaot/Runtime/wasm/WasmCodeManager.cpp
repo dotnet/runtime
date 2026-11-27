@@ -65,6 +65,7 @@ WasmCodeManager::WasmCodeManager(const WasmRuntimeFunction* pFunctions, uint32_t
 // RyuJIT's shadow frame begins with an identity and a virtual IP. With localloc, SP
 // instead points at an indirection to FP. Funclet identities point at the establishing
 // frame, tagged with 2; ordinary NativeAOT identities are (method start virtual IP << 1) | 1.
+// As in CoreCLR, the frame's virtual IP and EH clause offsets hold half the method-relative virtual IP.
 uintptr_t ICodeManager::GetFramePointerFromSP(uintptr_t shadowSP)
 {
     uintptr_t fp = GetPhysicalFramePointer(shadowSP);
@@ -89,7 +90,7 @@ uintptr_t ICodeManager::GetIPFromSP(uintptr_t shadowSP)
     uint32_t virtualIP = *reinterpret_cast<uint32_t*>(fp + sizeof(uintptr_t));
     uintptr_t identity = *reinterpret_cast<uintptr_t*>(GetFramePointerFromSP(shadowSP));
     ASSERT((identity & 1) != 0 && identity != 1);
-    return (identity >> 1) + virtualIP;
+    return (identity >> 1) + virtualIP * 2;
 }
 
 void ICodeManager::UnwindEHHelperFrame(REGDISPLAY* pRegisterSet)
@@ -291,11 +292,12 @@ bool WasmCodeManager::EHEnumNext(EHEnumState * pEHEnumState, EHClause * pEHClaus
 
     pEnumState->uClause++;
 
-    pEHClauseOut->m_tryStartOffset = NativePrimitiveDecoder::ReadUnsigned(pEnumState->pEHInfo);
+    // EH clause offsets hold half the method-relative virtual IP.
+    pEHClauseOut->m_tryStartOffset = NativePrimitiveDecoder::ReadUnsigned(pEnumState->pEHInfo) * 2;
 
     uint32_t tryEndDeltaAndClauseKind = NativePrimitiveDecoder::ReadUnsigned(pEnumState->pEHInfo);
     pEHClauseOut->m_clauseKind = (EHClauseKind)(tryEndDeltaAndClauseKind & 0x3);
-    pEHClauseOut->m_tryEndOffset = pEHClauseOut->m_tryStartOffset + (tryEndDeltaAndClauseKind >> 2);
+    pEHClauseOut->m_tryEndOffset = pEHClauseOut->m_tryStartOffset + (tryEndDeltaAndClauseKind >> 2) * 2;
 
     // For each clause, we have up to 4 integers:
     //      1)  try start offset
@@ -309,7 +311,7 @@ bool WasmCodeManager::EHEnumNext(EHEnumState * pEHEnumState, EHClause * pEHClaus
     switch (pEHClauseOut->m_clauseKind)
     {
     case EH_CLAUSE_TYPED:
-        pEHClauseOut->m_handlerAddress = dac_cast<uint8_t*>(PINSTRToPCODE(dac_cast<TADDR>(pEnumState->pMethodStartAddress))) + NativePrimitiveDecoder::ReadUnsigned(pEnumState->pEHInfo);
+        pEHClauseOut->m_handlerAddress = dac_cast<uint8_t*>(PINSTRToPCODE(dac_cast<TADDR>(pEnumState->pMethodStartAddress))) + NativePrimitiveDecoder::ReadUnsigned(pEnumState->pEHInfo) * 2;
 
         // Read target type
         {
@@ -321,11 +323,11 @@ bool WasmCodeManager::EHEnumNext(EHEnumState * pEHEnumState, EHClause * pEHClaus
         }
         break;
     case EH_CLAUSE_FAULT:
-        pEHClauseOut->m_handlerAddress = dac_cast<uint8_t*>(PINSTRToPCODE(dac_cast<TADDR>(pEnumState->pMethodStartAddress))) + NativePrimitiveDecoder::ReadUnsigned(pEnumState->pEHInfo);
+        pEHClauseOut->m_handlerAddress = dac_cast<uint8_t*>(PINSTRToPCODE(dac_cast<TADDR>(pEnumState->pMethodStartAddress))) + NativePrimitiveDecoder::ReadUnsigned(pEnumState->pEHInfo) * 2;
         break;
     case EH_CLAUSE_FILTER:
-        pEHClauseOut->m_handlerAddress = dac_cast<uint8_t*>(PINSTRToPCODE(dac_cast<TADDR>(pEnumState->pMethodStartAddress))) + NativePrimitiveDecoder::ReadUnsigned(pEnumState->pEHInfo);
-        pEHClauseOut->m_filterAddress = dac_cast<uint8_t*>(PINSTRToPCODE(dac_cast<TADDR>(pEnumState->pMethodStartAddress))) + NativePrimitiveDecoder::ReadUnsigned(pEnumState->pEHInfo);
+        pEHClauseOut->m_handlerAddress = dac_cast<uint8_t*>(PINSTRToPCODE(dac_cast<TADDR>(pEnumState->pMethodStartAddress))) + NativePrimitiveDecoder::ReadUnsigned(pEnumState->pEHInfo) * 2;
+        pEHClauseOut->m_filterAddress = dac_cast<uint8_t*>(PINSTRToPCODE(dac_cast<TADDR>(pEnumState->pMethodStartAddress))) + NativePrimitiveDecoder::ReadUnsigned(pEnumState->pEHInfo) * 2;
         break;
     default:
         UNREACHABLE_MSG("unexpected EHClauseKind");

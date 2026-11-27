@@ -19,10 +19,10 @@
 //  src/coreclr/nativeaot/Runtime/inc/ModuleHeaders.h
 // If you update this, ensure you run `git grep MINIMUM_READYTORUN_MAJOR_VERSION`
 // and handle pending work.
-#define READYTORUN_MAJOR_VERSION 34
-#define READYTORUN_MINOR_VERSION 0x0001
+#define READYTORUN_MAJOR_VERSION 35
+#define READYTORUN_MINOR_VERSION 0x0000
 
-#define MINIMUM_READYTORUN_MAJOR_VERSION 34
+#define MINIMUM_READYTORUN_MAJOR_VERSION 35
 
 // R2R Version 2.1 adds the InliningInfo section
 // R2R Version 2.2 adds the ProfileDataInfo section
@@ -90,6 +90,9 @@
 //                only the return address, and the runtime preserves the callee-saved registers around the
 //                funclets that it calls
 // R2R Version 34.1 adds AuxiliaryModuleMetadata sections
+// R2R Version 35 uses GCInfo v6, with shrinking slot flag bits and offsets relative within flags/base groups.
+//     Wasm also compacts stack slot offsets and packs scaled unwind frame sizes and virtual IP counts into one ULEB128.
+//     Wasm images from earlier versions must be regenerated.
 
 struct READYTORUN_CORE_HEADER
 {

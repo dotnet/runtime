@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers.Wasm;
 
@@ -21,7 +22,7 @@ internal interface IWasmR2RInfo
 
     /// <summary>
     /// Returns the address of the WASM unwind blob for the function containing
-    /// <paramref name="controlPC"/>. The blob begins with a ULEB128 fixed frame size.
+    /// <paramref name="controlPC"/>. The blob contains a ULEB128 interleaving the frame size and virtual IP count.
     /// </summary>
     bool TryGetUnwindData(TargetCodePointer controlPC, out TargetPointer unwindDataAddress);
 }
@@ -147,10 +148,9 @@ internal sealed class WasmUnwinder
         if (!_r2rInfo.TryGetVirtualIPBase(frameIdentity, out ulong baseVirtualIP, out TargetPointer unwindData) || baseVirtualIP == 0)
             return TargetCodePointer.Null;
 
-        ulong address = unwindData.Value;
-        DecodeULEB128(ref address); // Skip the fixed frame size.
-        uint virtualIPLength = DecodeULEB128(ref address);
-        uint functionLocalVirtualIP = virtualIPLength == 2 ? 2 : _target.Read<uint>(frameBase.Value + VirtualIpOffset) * 2;
+        DecodeUnwindData(unwindData, out _, out uint virtualIPCount);
+        // A count of 4 covers only the prolog and the sole observable IP, whose store is elided.
+        uint functionLocalVirtualIP = virtualIPCount == 4 ? 2 : _target.Read<uint>(frameBase.Value + VirtualIpOffset) * 2;
 
         return new TargetCodePointer(baseVirtualIP + functionLocalVirtualIP);
     }
@@ -179,8 +179,7 @@ internal sealed class WasmUnwinder
         }
 
         uint frameIdentity = _target.Read<uint>(frameBase.Value + FrameIdentityOffset);
-        ulong address = unwindData.Value;
-        uint frameSize = DecodeULEB128(ref address);
+        DecodeUnwindData(unwindData, out uint frameSize, out _);
         if (frameSize == 0)
         {
             // A zero frame size makes no progress; terminate rather than risk an unbounded walk.
@@ -221,22 +220,14 @@ internal sealed class WasmUnwinder
             && TryGetEstablishingFramePointer(frameBase, out framePointer);
     }
 
-    // Standard little-endian base-128 varint, matching the native DecodeULEB128AsU32. A ULEB128
-    // uint32 is at most 5 bytes (5 * 7 = 35 >= 32 bits); a longer encoding is malformed.
-    private uint DecodeULEB128(ref ulong address)
+    // Mirrors the native DecodeWasmUnwindInfo: the frame size (16-byte units) and virtual IP count
+    // (2-IP units) are interleaved in one uint64 ULEB128 value.
+    private void DecodeUnwindData(TargetPointer unwindData, out uint frameSize, out uint virtualIPCount)
     {
-        const int MaxBytes = 5;
-        uint result = 0;
-        int shift = 0;
-        for (ulong offset = 0; offset < MaxBytes; offset++)
-        {
-            byte b = _target.Read<byte>(address++);
-            result |= (uint)(b & 0x7F) << shift;
-            if ((b & 0x80) == 0)
-                return result;
-            shift += 7;
-        }
-
-        throw new InvalidOperationException("Malformed ULEB128 value in WASM unwind data.");
+        ulong encoded = UnwindDataSize.ReadWasmUnwindData(_target, unwindData, out _);
+        frameSize = (uint)((encoded & 0xF) | (((encoded >> 8) & 0xF) << 4) |
+                           (((encoded >> 16) & 0xFFFF) << 8)) * 16;
+        virtualIPCount = (uint)(((encoded >> 4) & 0xF) | (((encoded >> 12) & 0xF) << 4) |
+                                (((encoded >> 32) & 0xFFFF) << 8)) * 2;
     }
 }

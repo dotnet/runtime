@@ -8,6 +8,9 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts.GCInfoHelpers;
 internal interface IGCInfoTraits
 {
     static virtual bool IsInterpreter => false;
+    static virtual bool USES_COMPACT_WASM_HEADER => false;
+    static virtual bool HAS_REGISTER_SLOTS => true;
+    static virtual bool HAS_STACK_SLOT_BASE => true;
     static virtual bool UsesStackPointerAsAmbientSP => false;
     static virtual int NO_GS_COOKIE { get; } = -1;
     static virtual uint NO_STACK_BASE_REGISTER { get; } = 0xFFFFFFFF;
@@ -43,6 +46,7 @@ internal interface IGCInfoTraits
     static abstract int INTERRUPTIBLE_RANGE_DELTA2_ENCBASE { get; }
     static abstract int REGISTER_ENCBASE { get; }
     static abstract int REGISTER_DELTA_ENCBASE { get; }
+    static virtual int REGISTER_BITS => 5;
     static abstract int STACK_SLOT_ENCBASE { get; }
     static abstract int STACK_SLOT_DELTA_ENCBASE { get; }
     static abstract int NUM_SAFE_POINTS_ENCBASE { get; }
