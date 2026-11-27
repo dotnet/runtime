@@ -38,7 +38,7 @@
 #define EMIT_INSTLIST_VERBOSE (m_compiler->verbose)
 #endif
 
-#if defined(TARGET_XARCH) || defined(TARGET_WASM)
+#if defined(TARGET_XARCH) || defined(TARGET_RISCV64) || defined(TARGET_WASM)
 #define EMIT_BACKWARDS_NAVIGATION 1 // If 1, enable backwards navigation code for MIR (insGroup/instrDesc).
 #else
 #define EMIT_BACKWARDS_NAVIGATION 0

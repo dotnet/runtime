@@ -26,6 +26,64 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 /*****************************************************************************/
 
+//------------------------------------------------------------------------
+// AreUpper32BitsZero: Check whether the last instruction zeroed the upper
+// 32 bits of a register, optionally followed by a boolean inversion, without
+// crossing control-flow or GC boundaries.
+//
+bool emitter::AreUpper32BitsZero(regNumber reg)
+{
+    if (!m_compiler->opts.OptimizationEnabled() || !emitCanPeepholeLastIns())
+    {
+        return false;
+    }
+
+    bool result = false;
+    bool sawXor = false;
+    emitPeepholeIterateLastInstrs([&](instrDesc* id) {
+        if (id->idReg1() != reg)
+        {
+            return PEEPHOLE_ABORT;
+        }
+
+        switch (id->idIns())
+        {
+            case INS_lbu:
+            case INS_lhu:
+            case INS_slt:
+            case INS_sltu:
+            case INS_slti:
+            case INS_sltiu:
+            case INS_zext_h:
+                result = true;
+                break;
+
+            case INS_andi:
+                // The 12-bit immediate is sign-extended by the instruction.
+                result = (id->idAddr()->iiaGetInstrEncode() >> 31) == 0;
+                break;
+
+            case INS_srli:
+                result = ((id->idAddr()->iiaGetInstrEncode() >> 20) & 0x3f) >= 32;
+                break;
+
+            case INS_xori:
+                if (!sawXor && ((id->idAddr()->iiaGetInstrEncode() >> 20) == 1))
+                {
+                    sawXor = true;
+                    reg    = id->idReg2();
+                    return PEEPHOLE_CONTINUE;
+                }
+                break;
+
+            default:
+                break;
+        }
+        return PEEPHOLE_ABORT;
+    });
+    return result;
+}
+
 const instruction emitJumpKindInstructions[] = {
     INS_nop,
 
@@ -790,7 +848,6 @@ void emitter::emitIns_R_R_I(
     id->idIns(ins);
     id->idReg1(reg1);
     id->idReg2(reg2);
-    id->idSmallCns(imm);
     id->idAddr()->iiaSetInstrEncode(code);
     id->idCodeSize(4);
 
