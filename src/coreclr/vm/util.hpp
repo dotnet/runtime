@@ -15,6 +15,9 @@
 #include "posterror.h"
 #include <type_traits>
 #include "minipal/time.h"
+#ifdef HOST_UNIX
+#include <dlfcn.h>
+#endif
 
 #ifndef DACCESS_COMPILE
 #if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
@@ -202,9 +205,9 @@ typedef GCAssert<FALSE>                 GCAssertPreemp;
 // This occurs in two principal shapes:
 //
 //   - The holder spans a transition into managed execution from which an exception can be handled
-//     by an older managed frame. Examples include CallDescrWorker, interpreter-to-managed calls,
-//     and UnmanagedCallersOnlyCaller::InvokeDirect when invoking Ex::RhThrowEx, Ex::RhThrowHwEx,
-//     or Ex::RhRethrow. The foreign tag bypasses native typed catches while unwinding toward the
+//     by an older managed frame. Examples include interpreter-to-managed calls and
+//     UnmanagedCallersOnlyCaller::InvokeDirect when invoking Ex::RhThrowEx, Ex::RhThrowHwEx, or
+//     Ex::RhRethrow. The foreign tag bypasses native typed catches while unwinding toward the
 //     managed catch continuation.
 //
 //   - The holder's scope contains a complete INSTALL/UNINSTALL_UNWIND_AND_CONTINUE_HANDLER or
@@ -525,53 +528,7 @@ HMODULE CLRLoadLibrary(LPCWSTR lpLibFileName);
 
 BOOL CLRFreeLibrary(HMODULE hModule);
 
-LPVOID
-CLRMapViewOfFile(
-    IN HANDLE hFileMappingObject,
-    IN DWORD dwDesiredAccess,
-    IN DWORD dwFileOffsetHigh,
-    IN DWORD dwFileOffsetLow,
-    IN SIZE_T dwNumberOfBytesToMap,
-    IN LPVOID lpBaseAddress = NULL);
-
-BOOL
-CLRUnmapViewOfFile(
-    IN LPVOID lpBaseAddress
-    ) noexcept;
-
-struct CLRMapViewTraits final
-{
-    using Type = void*;
-    static constexpr Type Default() { return NULL; }
-    static void Free(Type ptr) noexcept
-    {
-        STATIC_CONTRACT_WRAPPER;
-#ifndef DACCESS_COMPILE
-        if (ptr != NULL)
-            CLRUnmapViewOfFile(ptr);
-#endif
-    }
-};
-using CLRMapViewHolder = LifetimeHolder<CLRMapViewTraits>;
-
 BOOL IsIPInModule(PTR_VOID pModuleBaseAddress, PCODE ip);
-
-#ifdef TARGET_UNIX
-struct PALPEFileTraits final
-{
-    using Type = void*;
-    static constexpr Type Default() { return NULL; }
-    static void Free(Type ptr) noexcept
-    {
-        STATIC_CONTRACT_WRAPPER;
-#ifndef DACCESS_COMPILE
-        if (ptr != NULL)
-            PAL_LOADUnloadPEFile(ptr);
-#endif
-    }
-};
-using PALPEFileHolder = LifetimeHolder<PALPEFileTraits>;
-#endif // TARGET_UNIX
 
 #define SetupThreadForComCall(OOMRetVal)            \
     MAKE_CURRENT_THREAD_AVAILABLE_EX(GetThreadNULLOk()); \
@@ -598,7 +555,7 @@ struct NativeLibraryHandleTraits final
             return;
 
 #ifdef HOST_UNIX
-        PAL_FreeLibraryDirect(h);
+        dlclose(h);
 #else
         FreeLibrary(h);
 #endif
@@ -848,5 +805,10 @@ inline UINT32 FastMod(UINT32 value, UINT32 divisor, UINT64 multiplier)
     return highbits;
 }
 #endif
+
+//******************************************************************************
+// Returns the number of processors that a process has been configured to run on
+//******************************************************************************
+int GetCurrentProcessCpuCount();
 
 #endif /* _H_UTIL */

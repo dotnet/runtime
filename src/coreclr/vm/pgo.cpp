@@ -62,8 +62,10 @@ void PgoManager::Initialize()
 
     s_pgoMgrLock.Init(CrstLeafLock, CRST_DEFAULT);
 
-    // If we're reading in counts, do that now
+#ifdef FEATURE_DYNAMIC_CODE_COMPILED
+    // Text profiles are consumed by the JIT, not by the interpreter.
     ReadPgoData();
+#endif // FEATURE_DYNAMIC_CODE_COMPILED
 }
 
 void PgoManager::Shutdown()
@@ -73,7 +75,12 @@ void PgoManager::Shutdown()
     if (!written)
     {
         written = true;
+#ifndef PERFTRACING_DISABLE_THREADS
+        LogInstrumentationData();
+#endif
+#ifdef FEATURE_DYNAMIC_CODE_COMPILED
         WritePgoData();
+#endif // FEATURE_DYNAMIC_CODE_COMPILED
     }
 }
 
@@ -154,12 +161,20 @@ public:
 
 #ifndef DACCESS_COMPILE
 
-void CallFClose(FILE* file)
+struct FILEHolderTraits final
 {
-    fclose(file);
-}
+    using Type = FILE*;
+    static constexpr Type Default() { return NULL; }
 
-typedef Holder<FILE*, DoNothing, CallFClose> FILEHolder;
+    static void Free(Type file) noexcept
+    {
+        WRAPPER_NO_CONTRACT;
+        if (file != NULL)
+            fclose(file);
+    }
+};
+
+using FILEHolder = LifetimeHolder<FILEHolderTraits>;
 
 void PgoManager::LogInstrumentationData()
 {
@@ -186,10 +201,6 @@ void PgoManager::LogInstrumentationData()
 
 void PgoManager::WritePgoData()
 {
-#ifndef PERFTRACING_DISABLE_THREADS
-    LogInstrumentationData();
-#endif
-
     if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_WritePGOData) == 0)
     {
         return;
@@ -374,7 +385,7 @@ void PgoManager::ReadPgoData()
     {
         return;
     }
-    
+
     FILE* pgoDataFile = NULL;
 
     if (fopen_lp(&pgoDataFile, fileName,  W("wb")) != 0)
@@ -729,6 +740,8 @@ HRESULT PgoManager::allocPgoInstrumentationBySchemaInstance(MethodDesc* pMD,
     prevSchema.Offset = offsetOfInstrumentationDataFromStartOfDataRegion;
     for (UINT32 iSchema = 0; iSchema < countSchemaItems; iSchema++)
     {
+        // The data region is only size_t aligned, and readers re-derive this layout from offset 0.
+        _ASSERTE(InstrumentationKindToAlignment(pSchema[iSchema].InstrumentationKind) <= sizeof(size_t));
         LayoutPgoInstrumentationSchema(prevSchema, &pSchema[iSchema]);
         prevSchema = pSchema[iSchema];
     }
@@ -1138,7 +1151,7 @@ HRESULT PgoManager::getPgoInstrumentationResultsFromR2RFormat(ReadyToRunInfo *pR
             r2rReader.instrumentationData.Append(0);
         }
         size_t schemaDataSize = r2rReader.schemaArray.GetCount() * sizeof(ICorJitInfo::PgoInstrumentationSchema);
-        NewArrayHolder<BYTE> allocatedData = new BYTE[r2rReader.instrumentationData.GetCount() + schemaDataSize];
+        NewArrayHolder<BYTE> allocatedData(new BYTE[r2rReader.instrumentationData.GetCount() + schemaDataSize]);
 
         *pInstrumentationData = (BYTE*)allocatedData;
         *pCountSchemaItems = r2rReader.schemaArray.GetCount();
@@ -1148,8 +1161,7 @@ HRESULT PgoManager::getPgoInstrumentationResultsFromR2RFormat(ReadyToRunInfo *pR
         memcpy(*ppSchema, r2rReader.schemaArray.OpenRawBuffer(), schemaDataSize);
         r2rReader.schemaArray.CloseRawBuffer();
 
-        allocatedData.SuppressRelease();
-        *pAllocatedData = allocatedData;
+        *pAllocatedData = allocatedData.Detach();
         return S_OK;
     }
 }

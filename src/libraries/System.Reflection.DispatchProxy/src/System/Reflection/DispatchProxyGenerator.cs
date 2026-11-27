@@ -52,6 +52,33 @@ namespace System.Reflection
         private static readonly MethodInfo s_getTypeFromHandleMethod = typeof(Type).GetMethod("GetTypeFromHandle", new Type[] { typeof(RuntimeTypeHandle) })!;
         private static readonly MethodInfo s_makeGenericMethodMethod = GetGenericMethodMethodInfo();
 
+        private static MethodInfo PointerBoxMethod =>
+            field ??= typeof(Pointer).GetMethod(nameof(Pointer.Box), new Type[] { typeof(void*), typeof(Type) })!;
+
+        private static MethodInfo UnboxPointerMethod =>
+            field ??= typeof(DispatchProxyGenerator).GetMethod(nameof(UnboxPointer), BindingFlags.NonPublic | BindingFlags.Static)!;
+
+        private static IntPtr UnboxPointer(object? value, Type type)
+        {
+            if (value is Pointer pointer)
+            {
+                Type pointerType = pointer.PointerType;
+                // Any pointer converts to void*, so a void* target takes a Pointer of any pointer type.
+                if (type != typeof(void*) && !pointerType.IsAssignableTo(type))
+                {
+                    throw new InvalidCastException(SR.Format(SR.InvalidCast_PointerType, pointerType, type));
+                }
+
+                // SAFETY: To be audited
+                unsafe
+                {
+                    return (IntPtr)pointer.Value;
+                }
+            }
+
+            return value is null ? IntPtr.Zero : (IntPtr)value;
+        }
+
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "MakeGenericMethod is safe here because the user code invoking the generic method will reference " +
             "the GenericTypes being used, which will guarantee the requirements of the generic method.")]
@@ -421,7 +448,6 @@ namespace System.Reflection
 
             private MethodBuilder AddMethodImpl(MethodInfo mi, int methodInfoIndex)
             {
-                // Reflection returns the custom modifiers of one kind in the reverse of the order DefineMethod takes them in.
                 ParameterInfo[] parameters = mi.GetParameters();
                 Type[] paramTypes = new Type[parameters.Length];
                 Type[][] paramReqMods = new Type[paramTypes.Length][];
@@ -431,9 +457,7 @@ namespace System.Reflection
                 {
                     paramTypes[i] = parameters[i].ParameterType;
                     paramReqMods[i] = parameters[i].GetRequiredCustomModifiers();
-                    Array.Reverse(paramReqMods[i]);
                     paramOptMods[i] = parameters[i].GetOptionalCustomModifiers();
-                    Array.Reverse(paramOptMods[i]);
                 }
 
                 MethodAttributes attributes = MethodAttributes.Public;
@@ -441,12 +465,8 @@ namespace System.Reflection
                 attributes |= mi.IsStatic ? MethodAttributes.Static : MethodAttributes.Virtual;
 
                 ParameterInfo returnParameter = mi.ReturnParameter;
-                Type[] returnReqMods = returnParameter.GetRequiredCustomModifiers();
-                Array.Reverse(returnReqMods);
-                Type[] returnOptMods = returnParameter.GetOptionalCustomModifiers();
-                Array.Reverse(returnOptMods);
                 MethodBuilder mdb = _tb.DefineMethod(mi.Name, attributes, CallingConventions.Standard,
-                    mi.ReturnType, returnReqMods, returnOptMods,
+                    mi.ReturnType, returnParameter.GetRequiredCustomModifiers(), returnParameter.GetOptionalCustomModifiers(),
                     paramTypes, paramReqMods, paramOptMods);
 
                 if (mi.ContainsGenericParameters)
@@ -477,11 +497,11 @@ namespace System.Reflection
                     return mdb;
                 }
 
-                ParametersArray args = new ParametersArray(il, paramTypes);
+                ParametersArray args = new ParametersArray(_assembly, il, paramTypes);
 
                 // object[] args = new object[paramCount];
                 il.Emit(OpCodes.Nop);
-                GenericArray<object> argsArr = new GenericArray<object>(il, parameters.Length);
+                GenericArray<object> argsArr = new GenericArray<object>(_assembly, il, parameters.Length);
 
                 for (int i = 0; i < parameters.Length; i++)
                 {
@@ -510,7 +530,7 @@ namespace System.Reflection
                     il.Emit(OpCodes.Ldloc, methodInfoLocal);
 
                     Type[] genericTypes = mi.GetGenericArguments();
-                    GenericArray<Type> typeArr = new GenericArray<Type>(il, genericTypes.Length);
+                    GenericArray<Type> typeArr = new GenericArray<Type>(_assembly, il, genericTypes.Length);
                     for (int i = 0; i < genericTypes.Length; ++i)
                     {
                         typeArr.BeginSet(i);
@@ -557,7 +577,7 @@ namespace System.Reflection
                 {
                     // return (mi.ReturnType)result;
                     il.Emit(OpCodes.Ldloc, resultLocal);
-                    Convert(il, typeof(object), mi.ReturnType, false);
+                    Convert(_assembly, il, typeof(object), mi.ReturnType, false);
                 }
 
                 il.Emit(OpCodes.Ret);
@@ -634,7 +654,7 @@ namespace System.Reflection
                 OpCodes.Stind_Ref, //String = 18,
             };
 
-            private static void Convert(ILGenerator il, Type source, Type target, bool isAddress)
+            private static void Convert(ProxyAssembly assembly, ILGenerator il, Type source, Type target, bool isAddress)
             {
                 Debug.Assert(!target.IsByRef);
                 if (target == source)
@@ -645,7 +665,22 @@ namespace System.Reflection
                     Debug.Assert(!isAddress);
                     Type argType = source.GetElementType()!;
                     Ldind(il, argType);
-                    Convert(il, argType, target, isAddress);
+                    Convert(assembly, il, argType, target, isAddress);
+                    return;
+                }
+                if (source.IsPointer)
+                {
+                    Debug.Assert(target == typeof(object));
+                    EmitPointerConversion(il, source, PointerBoxMethod);
+                    return;
+                }
+                if (target.IsPointer)
+                {
+                    Debug.Assert(source == typeof(object));
+                    // To call the private UnboxPointer directly, the proxy assembly needs an IgnoresAccessChecksTo
+                    // attribute for System.Reflection.DispatchProxy, which EnsureTypeIsVisible adds.
+                    assembly.EnsureTypeIsVisible(typeof(DispatchProxyGenerator));
+                    EmitPointerConversion(il, target, UnboxPointerMethod);
                     return;
                 }
                 if (target.IsValueType)
@@ -687,8 +722,21 @@ namespace System.Reflection
                 }
             }
 
+            private static void EmitPointerConversion(ILGenerator il, Type type, MethodInfo conversion)
+            {
+                il.Emit(OpCodes.Ldtoken, type);
+                il.Emit(OpCodes.Call, s_getTypeFromHandleMethod);
+                il.Emit(OpCodes.Call, conversion);
+            }
+
             private static void Ldind(ILGenerator il, Type type)
             {
+                if (type.IsPointer)
+                {
+                    il.Emit(OpCodes.Ldind_I);
+                    return;
+                }
+
                 OpCode opCode = s_ldindOpCodes[GetTypeCode(type)];
                 if (!opCode.Equals(OpCodes.Nop))
                 {
@@ -702,6 +750,12 @@ namespace System.Reflection
 
             private static void Stind(ILGenerator il, Type type)
             {
+                if (type.IsPointer)
+                {
+                    il.Emit(OpCodes.Stind_I);
+                    return;
+                }
+
                 OpCode opCode = s_stindOpCodes[GetTypeCode(type)];
                 if (!opCode.Equals(OpCodes.Nop))
                 {
@@ -715,10 +769,12 @@ namespace System.Reflection
 
             private sealed class ParametersArray
             {
+                private readonly ProxyAssembly _assembly;
                 private readonly ILGenerator _il;
                 private readonly Type[] _paramTypes;
-                internal ParametersArray(ILGenerator il, Type[] paramTypes)
+                internal ParametersArray(ProxyAssembly assembly, ILGenerator il, Type[] paramTypes)
                 {
+                    _assembly = assembly;
                     _il = il;
                     _paramTypes = paramTypes;
                 }
@@ -737,17 +793,19 @@ namespace System.Reflection
                 {
                     Debug.Assert(_paramTypes[i].IsByRef);
                     Type argType = _paramTypes[i].GetElementType()!;
-                    Convert(_il, stackType, argType, false);
+                    Convert(_assembly, _il, stackType, argType, false);
                     Stind(_il, argType);
                 }
             }
 
             private sealed class GenericArray<T>
             {
+                private readonly ProxyAssembly _assembly;
                 private readonly ILGenerator _il;
                 private readonly LocalBuilder _lb;
-                internal GenericArray(ILGenerator il, int len)
+                internal GenericArray(ProxyAssembly assembly, ILGenerator il, int len)
                 {
+                    _assembly = assembly;
                     _il = il;
                     _lb = il.DeclareLocal(typeof(T[]));
 
@@ -776,7 +834,7 @@ namespace System.Reflection
 
                 internal void EndSet(Type stackType)
                 {
-                    Convert(_il, stackType, typeof(T), false);
+                    Convert(_assembly, _il, stackType, typeof(T), false);
                     _il.Emit(OpCodes.Stelem_Ref);
                 }
             }

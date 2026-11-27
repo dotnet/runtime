@@ -93,4 +93,12 @@ EXTERN_C void QCALLTYPE NativeRuntimeEventSource_LogWaitHandleWaitStop(uint16_t 
 {
 }
 
+EXTERN_C void QCALLTYPE NativeRuntimeEventSource_LogIncreaseMemoryPressure(uint64_t BytesAllocated)
+{
+}
+
+EXTERN_C void QCALLTYPE NativeRuntimeEventSource_LogDecreaseMemoryPressure(uint64_t BytesFreed)
+{
+}
+
 #endif // FEATURE_PERFTRACING

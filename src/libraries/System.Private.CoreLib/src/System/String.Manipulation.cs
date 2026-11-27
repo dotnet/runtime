@@ -2322,7 +2322,7 @@ namespace System
                 Vector128<ushort> v2 = Vector128.Create((ushort)c2);
                 Vector128<ushort> v3 = Vector128.Create((ushort)c3);
 
-                if (Sse2.IsSupported && PackedSpanHelpers.CanUsePackedIndexOf(c) && PackedSpanHelpers.CanUsePackedIndexOf(c2) && PackedSpanHelpers.CanUsePackedIndexOf(c3))
+                if (PackedSpanHelpers.PackedIndexOfIsSupported && PackedSpanHelpers.CanUsePackedIndexOf(c) && PackedSpanHelpers.CanUsePackedIndexOf(c2) && PackedSpanHelpers.CanUsePackedIndexOf(c3))
                 {
                     // Process in double chunks & check if either chunk is likely to contain matches at once.
                     // If we get multiple matches in a single chunk, we assume they're likely to be close &
@@ -2513,12 +2513,7 @@ namespace System
 
         public string Substring(int startIndex, int length)
         {
-#if TARGET_64BIT
-            // See comment in Span<T>.Slice for how this works.
-            if ((ulong)(uint)startIndex + (ulong)(uint)length > (ulong)(uint)Length)
-#else
             if ((uint)startIndex > (uint)Length || (uint)length > (uint)(Length - startIndex))
-#endif
             {
                 ThrowSubstringArgumentOutOfRange(startIndex, length, Length);
             }

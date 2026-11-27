@@ -45,11 +45,6 @@ namespace System.Threading
             return false;
         }
 
-        // Nothing can be waiting for the only thread to exit.
-        private void SetJoinHandle()
-        {
-        }
-
         internal static int GetCurrentProcessorNumber() => -1;
     }
 }

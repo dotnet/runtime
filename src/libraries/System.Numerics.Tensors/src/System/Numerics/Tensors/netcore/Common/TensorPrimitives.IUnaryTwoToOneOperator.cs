@@ -23,9 +23,9 @@ namespace System.Numerics.Tensors
 
         /// <summary>Performs an element-wise operation on <paramref name="x"/> and writes the results to <paramref name="destination"/>.</summary>
         /// <typeparam name="TInput">The element input type.</typeparam>
-        /// <typeparam name="TOutput">The element output type. Must be the same size as TInput if TInput and TOutput both support vectorization.</typeparam>
+        /// <typeparam name="TOutput">The element output type. Must be half the size of TInput.</typeparam>
         /// <typeparam name="TUnaryOperator">Specifies the operation to perform on each element loaded from <paramref name="x"/>.</typeparam>
-        /// <remarks>This should only be used when it's known that TInput/TOutput are vectorizable and the size of TInput is twice that of TOutput.</remarks>
+        /// <remarks>This should only be used when it's known that TInput/TOutput are vectorizable and the size of TInput is twice that of TOutput. Supports in-place narrowing when input and output start at the same address.</remarks>
         private static void InvokeSpanIntoSpan_2to1<TInput, TOutput, TUnaryOperator>(
             ReadOnlySpan<TInput> x, Span<TOutput> destination)
             where TUnaryOperator : struct, IUnaryTwoToOneOperator<TInput, TOutput>
@@ -49,6 +49,11 @@ namespace System.Numerics.Tensors
                 twoVectorsFromEnd = x.Length - (Vector512<TInput>.Count * 2);
                 if (i <= twoVectorsFromEnd)
                 {
+                    // Save the final result before any writes so narrowing can be performed in-place.
+                    Vector512<TOutput> end = TUnaryOperator.Invoke(
+                        Vector512.LoadUnsafe(ref xRef, (uint)twoVectorsFromEnd),
+                        Vector512.LoadUnsafe(ref xRef, (uint)(twoVectorsFromEnd + Vector512<TInput>.Count)));
+
                     // Loop handling two input vectors / one output vector at a time.
                     do
                     {
@@ -63,11 +68,7 @@ namespace System.Numerics.Tensors
                     // Handle any remaining elements with final vectors.
                     if (i != x.Length)
                     {
-                        i = x.Length - (Vector512<TInput>.Count * 2);
-
-                        TUnaryOperator.Invoke(
-                            Vector512.LoadUnsafe(ref xRef, (uint)i),
-                            Vector512.LoadUnsafe(ref xRef, (uint)(i + Vector512<TInput>.Count))).StoreUnsafe(ref destinationRef, (uint)i);
+                        end.StoreUnsafe(ref destinationRef, (uint)twoVectorsFromEnd);
                     }
 
                     return;
@@ -82,6 +83,10 @@ namespace System.Numerics.Tensors
                 twoVectorsFromEnd = x.Length - (Vector256<TInput>.Count * 2);
                 if (i <= twoVectorsFromEnd)
                 {
+                    Vector256<TOutput> end = TUnaryOperator.Invoke(
+                        Vector256.LoadUnsafe(ref xRef, (uint)twoVectorsFromEnd),
+                        Vector256.LoadUnsafe(ref xRef, (uint)(twoVectorsFromEnd + Vector256<TInput>.Count)));
+
                     // Loop handling two input vectors / one output vector at a time.
                     do
                     {
@@ -96,11 +101,7 @@ namespace System.Numerics.Tensors
                     // Handle any remaining elements with final vectors.
                     if (i != x.Length)
                     {
-                        i = x.Length - (Vector256<TInput>.Count * 2);
-
-                        TUnaryOperator.Invoke(
-                            Vector256.LoadUnsafe(ref xRef, (uint)i),
-                            Vector256.LoadUnsafe(ref xRef, (uint)(i + Vector256<TInput>.Count))).StoreUnsafe(ref destinationRef, (uint)i);
+                        end.StoreUnsafe(ref destinationRef, (uint)twoVectorsFromEnd);
                     }
 
                     return;
@@ -115,6 +116,10 @@ namespace System.Numerics.Tensors
                 twoVectorsFromEnd = x.Length - (Vector128<TInput>.Count * 2);
                 if (i <= twoVectorsFromEnd)
                 {
+                    Vector128<TOutput> end = TUnaryOperator.Invoke(
+                        Vector128.LoadUnsafe(ref xRef, (uint)twoVectorsFromEnd),
+                        Vector128.LoadUnsafe(ref xRef, (uint)(twoVectorsFromEnd + Vector128<TInput>.Count)));
+
                     // Loop handling two input vectors / one output vector at a time.
                     do
                     {
@@ -129,11 +134,7 @@ namespace System.Numerics.Tensors
                     // Handle any remaining elements with final vectors.
                     if (i != x.Length)
                     {
-                        i = x.Length - (Vector128<TInput>.Count * 2);
-
-                        TUnaryOperator.Invoke(
-                            Vector128.LoadUnsafe(ref xRef, (uint)i),
-                            Vector128.LoadUnsafe(ref xRef, (uint)(i + Vector128<TInput>.Count))).StoreUnsafe(ref destinationRef, (uint)i);
+                        end.StoreUnsafe(ref destinationRef, (uint)twoVectorsFromEnd);
                     }
 
                     return;

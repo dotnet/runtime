@@ -30,8 +30,7 @@
   <ItemGroup>
       <NativeCMakeArg Condition="'$(_IcuDir)' != ''" Include="-cmakeargs &quot;-DCMAKE_ICU_DIR=$(_IcuDir)&quot;" />
       <NativeCMakeArg Condition="'$(_TzdDir)' != ''" Include="-cmakeargs &quot;-DCMAKE_TZD_DIR=$(_TzdDir)&quot;" />
-      <NativeCMakeArg Condition="'$(RuntimeFlavor)' == 'Mono'" Include="-cmakeargs &quot;-DCLR_CMAKE_RUNTIME_MONO=1&quot;" />
-      <NativeCMakeArg Condition="'$(RuntimeFlavor)' == 'CoreCLR'" Include="-cmakeargs &quot;-DCLR_CMAKE_RUNTIME_CORECLR=1&quot;" />
+      <NativeCMakeArg Include="-cmakeargs &quot;-DCLR_CMAKE_RUNTIME_CORECLR=1&quot;" />
       <NativeCMakeArg Include="-cmakeargs &quot;-DCMAKE_PRODUCT_VERSION=$(ProductVersion)&quot;" />
       <NativeCMakeArg Include="-cmakeargs &quot;-DCMAKE_CONTINUOUS_INTEGRATION_BUILD=$(ContinuousIntegrationBuild)&quot;" />
       <NativeCMakeArg Include="-cmakeargs &quot;-DCMAKE_NET_CORE_APP_CURRENT_VERSION=$(NetCoreAppCurrentVersion)&quot;" />
@@ -44,34 +43,38 @@
     <BrowserHostStackSize Condition="'$(BrowserHostStackSize)' == ''">2MB</BrowserHostStackSize>
   </PropertyGroup>
 
+  <!-- Baseline wasm features for wasm-opt. emcc strips the target_features section, so wasm-opt must be told
+       what the module uses; sign-ext and mutable-globals are already binaryen defaults. Runtime-specific
+       features (relaxed SIMD, threads) and optimization/debug/strip options are added by each consumer. -->
+  <ItemGroup>
+    <_WasmOptBaselineFeatureFlag Include="--enable-exception-handling;--enable-reference-types;--enable-multivalue;--enable-simd;--enable-bulk-memory;--enable-nontrapping-float-to-int" />
+  </ItemGroup>
+
   <!-- Remaining settings baked into the prebuilt CoreCLR runtime pack. These are only consumed by
        the CoreCLR app relink registry below, so keep the BrowserHost names distinct from the
        app-facing properties they are compared against. -->
-  <PropertyGroup Condition="'$(TargetsBrowser)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'">
+  <PropertyGroup Condition="'$(TargetsBrowser)' == 'true'">
     <BrowserHostInvariantGlobalization Condition="'$(BrowserHostInvariantGlobalization)' == ''">false</BrowserHostInvariantGlobalization>
     <BrowserHostInvariantTimezone Condition="'$(BrowserHostInvariantTimezone)' == ''">false</BrowserHostInvariantTimezone>
     <BrowserHostEnableDiagnostics Condition="'$(BrowserHostEnableDiagnostics)' == ''">false</BrowserHostEnableDiagnostics>
-    <BrowserHostEnableRelaxedSimd Condition="'$(BrowserHostEnableRelaxedSimd)' == ''">false</BrowserHostEnableRelaxedSimd>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(TargetsBrowser)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'">
+  <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
     <_CoreCLRPropertyThatTriggersRelinking Include="InvariantGlobalization" RuntimePackValue="$(BrowserHostInvariantGlobalization)" />
     <_CoreCLRPropertyThatTriggersRelinking Include="InvariantTimezone" RuntimePackValue="$(BrowserHostInvariantTimezone)" />
     <_CoreCLRPropertyThatTriggersRelinking Include="EnableDiagnostics" RuntimePackValue="$(BrowserHostEnableDiagnostics)" />
-    <_CoreCLRPropertyThatTriggersRelinking Include="WasmEnableRelaxedSimd" RuntimePackValue="$(BrowserHostEnableRelaxedSimd)" />
     <_CoreCLRPropertyThatTriggersRelinking Include="WasmInitialHeapSize" RuntimePackValue="$(BrowserHostInitialHeapSize)" />
     <_CoreCLRPropertyThatTriggersRelinking Include="EmccMaximumHeapSize" RuntimePackValue="$(BrowserHostMaximumHeapSize)" />
     <_CoreCLRPropertyThatTriggersRelinking Include="EmccStackSize" RuntimePackValue="$(BrowserHostStackSize)" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetsBrowser)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'">
-      <NativeCMakeArg Include="-cmakeargs &quot;-DBUILD_LIBS_NATIVE_BROWSER=1&quot;" />
+  <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
       <NativeCMakeArg Include="-cmakeargs &quot;-DGEN_PINVOKE=1&quot;" />
       <NativeCMakeArg Include="-cmakeargs &quot;-DFEATURE_PERFTRACING_PAL_WS=1&quot;" />
       <NativeCMakeArg Include="-cmakeargs &quot;-DFEATURE_PERFTRACING_DISABLE_PERFTRACING_LISTEN_PORTS=1&quot;" />
       <NativeCMakeArg Include="-cmakeargs &quot;-DFEATURE_PERFTRACING_DISABLE_DEFAULT_LISTEN_PORT=1&quot;" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWasi)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'">
+  <ItemGroup Condition="'$(TargetsWasi)' == 'true'">
       <NativeCMakeArg Include="-cmakeargs &quot;-DGEN_PINVOKE=1&quot;" />
       <!-- WASI has no AF_UNIX sockets, so build the TCP flavor of the diagnostic
            server PAL. Listen and connect ports stay disabled until a WASI

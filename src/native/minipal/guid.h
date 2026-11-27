@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#ifndef MINIPAL_GUID_H
-#define MINIPAL_GUID_H
+#ifndef HAVE_MINIPAL_GUID_H
+#define HAVE_MINIPAL_GUID_H
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -75,4 +75,4 @@ inline bool operator!=(GUID const& a, GUID const& b)
 #endif // _WIN32
 #endif // __cplusplus
 
-#endif // MINIPAL_GUID_H
+#endif // HAVE_MINIPAL_GUID_H

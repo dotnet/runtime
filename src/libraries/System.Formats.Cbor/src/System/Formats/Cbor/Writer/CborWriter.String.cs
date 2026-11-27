@@ -68,7 +68,7 @@ namespace System.Formats.Cbor
         /// </remarks>
         public void WriteStartIndefiniteLengthByteString()
         {
-            if (!ConvertIndefiniteLengthEncodings && CborConformanceModeHelpers.RequiresDefiniteLengthItems(ConformanceMode))
+            if (!ConvertIndefiniteLengthEncodings && _requiresDefiniteLengthItems)
             {
                 throw new InvalidOperationException(SR.Format(SR.Cbor_ConformanceMode_IndefiniteLengthItemsNotSupported, ConformanceMode));
             }
@@ -85,7 +85,7 @@ namespace System.Formats.Cbor
 
             EnsureWriteCapacity(1);
             WriteInitialByte(new CborInitialByte(CborMajorType.ByteString, CborAdditionalInfo.IndefiniteLength));
-            PushDataItem(CborMajorType.ByteString, definiteLength: null);
+            PushDataItem(CborMajorType.ByteString, definiteLength: NoDefiniteLength);
         }
 
         /// <summary>Writes the end of an indefinite-length byte string (major type 2).</summary>
@@ -122,7 +122,7 @@ namespace System.Formats.Cbor
         /// <para>The written data is not accepted under the current conformance mode.</para></exception>
         public void WriteTextString(ReadOnlySpan<char> value)
         {
-            Encoding utf8Encoding = CborConformanceModeHelpers.GetUtf8Encoding(ConformanceMode);
+            Encoding utf8Encoding = _encoding;
 
             int length;
             try
@@ -143,7 +143,7 @@ namespace System.Formats.Cbor
                 // the string will be converted to a definite-length encoding later,
                 // so we need to record the ranges of each chunk
                 Debug.Assert(_currentIndefiniteLengthStringRanges != null);
-                _currentIndefiniteLengthStringRanges.Add((_offset, value.Length));
+                _currentIndefiniteLengthStringRanges.Add((_offset, length));
             }
 
             utf8Encoding.GetBytes(value, _buffer.AsSpan(_offset, length));
@@ -164,7 +164,7 @@ namespace System.Formats.Cbor
         /// </remarks>
         public void WriteStartIndefiniteLengthTextString()
         {
-            if (!ConvertIndefiniteLengthEncodings && CborConformanceModeHelpers.RequiresDefiniteLengthItems(ConformanceMode))
+            if (!ConvertIndefiniteLengthEncodings && _requiresDefiniteLengthItems)
             {
                 throw new InvalidOperationException(SR.Format(SR.Cbor_ConformanceMode_IndefiniteLengthItemsNotSupported, ConformanceMode));
             }
@@ -181,7 +181,7 @@ namespace System.Formats.Cbor
 
             EnsureWriteCapacity(1);
             WriteInitialByte(new CborInitialByte(CborMajorType.TextString, CborAdditionalInfo.IndefiniteLength));
-            PushDataItem(CborMajorType.TextString, definiteLength: null);
+            PushDataItem(CborMajorType.TextString, definiteLength: NoDefiniteLength);
         }
 
         /// <summary>Writes the end of an indefinite-length UTF-8 string (major type 3).</summary>

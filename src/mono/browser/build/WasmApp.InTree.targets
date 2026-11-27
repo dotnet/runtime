@@ -1,16 +1,34 @@
 <Project>
-  <!-- This depends on the root Directory.Build.targets imported this file -->
-  <UsingTask TaskName="MonoAOTCompiler" AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" TaskFactory="TaskHostFactory" />
-  <UsingTask TaskName="ILStrip" AssemblyFile="$(MonoTargetsTasksAssemblyPath)" TaskFactory="TaskHostFactory" />
-
   <Import Sdk="Microsoft.NET.Sdk.WebAssembly" Project="Sdk.targets" Condition="'$(UsingNativeAOT)' != 'true' and '$(UsingMicrosoftNETSdkWebAssembly)' == 'true'" />
 
   <!-- TODO: this breaks runtime tests on Helix due to the file not being there for some reason. Once this is fixed we can remove the UpdateRuntimePack target here -->
   <Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" Condition="'$(TargetingpacksTargetsImported)' != 'true' and '$(ImportTargetingPacksTargetsInWasmAppTargets)' == 'true'"/>
-  <Import Project="$(MSBuildThisFileDirectory)BrowserWasmApp.targets" Condition="'$(UsingNativeAOT)' != 'true' and '$(RuntimeFlavor)' == 'Mono'" />
-  <Import Project="$(MSBuildThisFileDirectory)BrowserWasmApp.CoreCLR.targets" Condition="'$(UsingNativeAOT)' != 'true' and '$(RuntimeFlavor)' == 'CoreCLR'" />
+  <Import Project="$(MSBuildThisFileDirectory)BrowserWasmApp.CoreCLR.targets" Condition="'$(UsingNativeAOT)' != 'true'" />
   <Import Project="$(MSBuildThisFileDirectory)EmSdkRepo.Defaults.props" Condition="'$(UsingNativeAOT)' == 'true' and '$(EMSDK_PATH)' != ''" />
   <Import Project="$(MSBuildThisFileDirectory)WasmApp.InTree.CI.targets" Condition="'$(ContinuousIntegrationBuild)' == 'true'" />
+
+  <Import Project="$(MSBuildThisFileDirectory)WasmProducersSource.targets" />
+
+  <Target Name="_ConfigureWasmProducersSource"
+          Condition="'$(_TargetingNET120OrLater)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(WasmEmitProducersSection)' == 'true' and
+                     '$(_WasmProducersSourcePath)' == '$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet-producers.s' and !Exists('$(_WasmProducersSourcePath)')">
+    <PropertyGroup>
+      <_WasmEmitProducersSection>true</_WasmEmitProducersSection>
+      <_WasmProducersSourcePath>$(_WasmIntermediateOutputPath)dotnet-producers.s</_WasmProducersSourcePath>
+      <_WasmProducersSourceRuntimeName>CoreCLR</_WasmProducersSourceRuntimeName>
+      <_WasmProducersSourceVersion>$(Version)</_WasmProducersSourceVersion>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="_WasmEmitProducersSource"
+          BeforeTargets="_CoreCLRWriteLinkRsp"
+          DependsOnTargets="_ConfigureWasmProducersSource;_WriteWasmProducersSource"
+          Condition="'$(_TargetingNET120OrLater)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(WasmEmitProducersSection)' == 'true' and
+                     '$(_WasmProducersSourcePath)' == '$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet-producers.s' and !Exists('$(_WasmProducersSourcePath)')">
+    <ItemGroup>
+      <FileWrites Include="$(_WasmProducersSourcePath)" />
+    </ItemGroup>
+  </Target>
 
   <Target Name="CopyAppZipToHelixTestDir"
           Condition="'$(WasmCopyAppZipToHelixTestDir)' == 'true' and '$(WasmBuildingForNestedPublish)' != 'true'"

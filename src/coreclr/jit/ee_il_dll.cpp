@@ -866,7 +866,11 @@ void Compiler::eeDispVar(ICorDebugInfo::NativeVarInfo* var)
     {
         case CodeGenInterface::VLT_REG:
         case CodeGenInterface::VLT_REG_BYREF:
+#if defined(TARGET_WASM)
+            printf("$%u", (unsigned)var->loc.vlReg.vlrReg - ICorDebugInfo::WASM_LOCAL_REGNUM_BASE);
+#else
             printf("%s", getRegName(var->loc.vlReg.vlrReg));
+#endif
             if (var->loc.vlType == (ICorDebugInfo::VarLocType)CodeGenInterface::VLT_REG_BYREF)
             {
                 printf(" byref");

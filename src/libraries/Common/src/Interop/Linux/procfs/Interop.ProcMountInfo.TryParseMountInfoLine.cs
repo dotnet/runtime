@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
+using System.Text;
 
 internal static partial class Interop
 {
@@ -9,6 +11,8 @@ internal static partial class Interop
     {
         internal ref struct ParsedMount
         {
+            public required ReadOnlySpan<char> MountId { get; init; }
+            public required ReadOnlySpan<char> ParentId { get; init; }
             public required ReadOnlySpan<char> Root { get; init; }
             public required ReadOnlySpan<char> MountPoint { get; init; }
             public required ReadOnlySpan<char> FileSystemType { get; init; }
@@ -28,9 +32,21 @@ internal static partial class Interop
             MemoryExtensions.SpanSplitEnumerator<char> fields = line.Split(' ');
 
             // (1) mount ID
+            if (!fields.MoveNext())
+            {
+                return false;
+            }
+            ReadOnlySpan<char> mountId = line[fields.Current];
+
             // (2) parent ID
+            if (!fields.MoveNext())
+            {
+                return false;
+            }
+            ReadOnlySpan<char> parentId = line[fields.Current];
+
             // (3) major:minor
-            if (!fields.MoveNext() || !fields.MoveNext() || !fields.MoveNext())
+            if (!fields.MoveNext())
             {
                 return false;
             }
@@ -81,12 +97,52 @@ internal static partial class Interop
 
             result = new ParsedMount()
             {
-                Root = root,
-                MountPoint = mountPoint,
+                MountId = mountId,
+                ParentId = parentId,
+                Root = root.Contains('\\') ? UnescapePath(root) : root,
+                MountPoint = mountPoint.Contains('\\') ? UnescapePath(mountPoint) : mountPoint,
                 FileSystemType = fileSystemType,
                 SuperOptions = superOptions
             };
             return true;
+
+            static string UnescapePath(ReadOnlySpan<char> path)
+            {
+                Debug.Assert(path.Contains('\\'));
+
+                // Linux mount table paths escape spaces, tabs, newlines, and backslashes:
+                // https://man7.org/linux/man-pages/man3/getmntent.3.html
+                const int EscapeLength = 4;
+                const int StackBufferSize = 256;
+                ValueStringBuilder builder = path.Length <= StackBufferSize ?
+                    new ValueStringBuilder(stackalloc char[StackBufferSize]) :
+                    new ValueStringBuilder(path.Length);
+
+                while (!path.IsEmpty)
+                {
+                    int index = path.IndexOf('\\');
+                    if (index < 0)
+                    {
+                        builder.Append(path);
+                        break;
+                    }
+
+                    builder.Append(path.Slice(0, index));
+                    path = path.Slice(index);
+                    char value = path.Length < EscapeLength ? '\0' : path.Slice(0, EscapeLength) switch
+                    {
+                        "\\040" => ' ',
+                        "\\011" => '\t',
+                        "\\012" => '\n',
+                        "\\134" => '\\',
+                        _ => '\0'
+                    };
+                    builder.Append(value is '\0' ? '\\' : value);
+                    path = path.Slice(value is '\0' ? 1 : EscapeLength);
+                }
+
+                return builder.ToString();
+            }
         }
     }
 }

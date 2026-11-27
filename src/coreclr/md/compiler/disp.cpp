@@ -34,7 +34,6 @@ Disp::Disp() : m_cRef(0)
     m_OptionValue.m_ErrorIfEmitOutOfOrder = MDErrorOutOfOrderDefault;
     m_OptionValue.m_ThreadSafetyOptions = MDThreadSafetyDefault;
     m_OptionValue.m_GenerateTCEAdapters = FALSE;
-    m_OptionValue.m_ImportOption = MDImportOptionDefault;
     m_OptionValue.m_LinkerOption = MDAssembly;
     m_OptionValue.m_RuntimeVersion = NULL;
     m_OptionValue.m_MetadataVersion = MDDefaultVersion;
@@ -568,13 +567,12 @@ Disp::SetOption(
         m_OptionValue.m_UpdateMode = V_UI4(pvalue);
     }
     else if (optionid == MetaDataImportOption)
-    {   // Allows enumeration of EnC deleted items by Import API
+    {   // Accepted for compatibility; importers now enumerate all records.
         if (V_VT(pvalue) != VT_UI4)
         {
             _ASSERTE(!"Invalid Variant Type value!");
             IfFailGo(E_INVALIDARG);
         }
-        m_OptionValue.m_ImportOption = (CorImportOptions) V_UI4(pvalue);
     }
     else if (optionid == MetaDataLinkerOptions)
     {   // Used only by code:RegMeta::UnmarkAll (code:IMetaDataFilter::UnmarkAll)
@@ -629,11 +627,12 @@ Disp::SetOption(
         }
         else
         {
-            INT32 len = WideCharToMultiByte(CP_UTF8, 0, V_BSTR(pvalue), -1, NULL, 0, NULL, NULL);
+            size_t cchVersion = u16_strlen(V_BSTR(pvalue)) + 1;
+            size_t len = minipal_get_length_utf16_to_utf8((const CHAR16_T*)V_BSTR(pvalue), cchVersion, 0);
             m_OptionValue.m_RuntimeVersion = new (nothrow) char[len];
             if (m_OptionValue.m_RuntimeVersion == NULL)
             IfFailGo(E_INVALIDARG);
-            WideCharToMultiByte(CP_UTF8, 0, V_BSTR(pvalue), -1, m_OptionValue.m_RuntimeVersion, len, NULL, NULL);
+            minipal_convert_utf16_to_utf8((const CHAR16_T*)V_BSTR(pvalue), cchVersion, m_OptionValue.m_RuntimeVersion, len, 0);
         }
     }
     else if (optionid == MetaDataInitialSize)

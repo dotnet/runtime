@@ -69,13 +69,6 @@ namespace System.Text.Json.Reflection
             return null;
         }
 
-#if !BUILDING_SOURCE_GENERATOR
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
-            Justification = "The 'interfaceType' must exist and so trimmer kept it. In which case " +
-                "It also kept it on any type which implements it. The below call to GetInterfaces " +
-                "may return fewer results when trimmed but it will return the 'interfaceType' " +
-                "if the type implemented it, even after trimming.")]
-#endif
         public static Type? GetCompatibleGenericInterface(this Type type, Type? interfaceType)
         {
             if (interfaceType is null)
@@ -99,19 +92,8 @@ namespace System.Text.Json.Reflection
                 return type;
             }
 
-            foreach (Type typeToCheck in type.GetInterfaces())
-            {
-                if (typeToCheck.IsGenericType)
-                {
-                    Type genericInterfaceToCheck = typeToCheck.GetGenericTypeDefinition();
-                    if (genericInterfaceToCheck == interfaceType)
-                    {
-                        return typeToCheck;
-                    }
-                }
-            }
-
-            return null;
+            Type[] interfaces = type.GetInterfacesWithSameMetadataDefinitionAs(interfaceType);
+            return interfaces.Length > 0 ? interfaces[0] : null;
         }
 
         public static bool IsImmutableDictionaryType(this Type type)
@@ -131,6 +113,9 @@ namespace System.Text.Json.Reflection
                     return false;
             }
         }
+
+        public static bool IsImmutableSortedDictionaryType(this Type type)
+            => type.IsImmutableDictionaryType() && GetBaseNameFromGenericType(type) == ImmutableSortedDictionaryGenericTypeName;
 
         public static bool IsImmutableEnumerableType(this Type type)
         {

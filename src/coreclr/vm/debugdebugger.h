@@ -20,6 +20,108 @@ extern "C" void QCALLTYPE DebugDebugger_CustomNotification(QCall::ObjectHandleOn
 extern "C" BOOL QCALLTYPE DebugDebugger_IsLoggingHelper();
 extern "C" BOOL QCALLTYPE DebugDebugger_IsManagedDebuggerAttached();
 
+#ifdef DEBUGGING_SUPPORTED
+class DebuggerEval;
+class ExternalMemoryHandle;
+struct DebuggerFuncEvalArgument;
+
+HRESULT ValidateObject(Object* objPtr);
+
+// Values must match DebuggerIPCE_FuncEvalType (DB_IPCE_FET_*) and
+// Debugger.FunctionEvaluation.EvaluationKind in CoreLib.
+enum class DebuggerFuncEvalKind : UINT32
+{
+    Normal,
+    NewObject,
+    NewObjectNoConstructor,
+    NewString,
+    NewArray,
+};
+
+struct DebuggerFuncEvalCapturedArgument
+{
+#if BIGENDIAN
+    SIZE_T high;
+    SIZE_T low;
+#else
+    SIZE_T low;
+    SIZE_T high;
+#endif
+
+    BYTE* GetAddress(UINT32 size)
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(size <= sizeof(*this));
+        BYTE* address = reinterpret_cast<BYTE*>(this);
+#if BIGENDIAN
+        address += sizeof(*this) - size;
+#endif
+        return address;
+    }
+};
+
+struct DebuggerFuncEvalContext
+{
+    DebuggerEval* pEval;
+    DebuggerFuncEvalArgument* pArguments;
+    void** pInteriors;
+    void** pHomes;
+    DebuggerFuncEvalCapturedArgument* pCapturedArguments;
+    ExternalMemoryHandle* pTemporaryResult;
+    void** pResultByRefs;
+    void* pResultData;
+    void* resultHandle;
+    Assembly* pAssembly;
+    BYTE* pTypeArguments;
+    void* pEvaluationData;
+    SIZE_T stringSize;
+    SIZE_T arrayRank;
+    UINT32 argumentCount;
+    UINT32 parameterCount;
+    UINT32 flags;
+    mdToken memberToken;
+    uint32_t genericArgsCount;
+    uint32_t genericArgsNodeCount;
+    DebuggerFuncEvalKind kind;
+};
+
+enum DebuggerFuncEvalFlags
+{
+    FuncEvalNewObject = 1,
+    FuncEvalExternalResult = 2,
+    FuncEvalValueTypeResult = 4,
+};
+
+struct DebuggerFuncEvalArgument
+{
+    BYTE* pLiteral;
+    BYTE* pTypeData;
+    UINT32 elementType;
+    UINT32 flags;
+    UINT32 typeNodeCount;
+};
+
+enum DebuggerFuncEvalArgumentFlags
+{
+    FuncEvalLiteral = 1,
+    FuncEvalHandle = 2,
+    FuncEvalMemory = 4,
+    FuncEvalRegister = 8,
+};
+
+extern "C" void QCALLTYPE DebugDebugger_PrepareFuncEvalResult(
+    DebuggerFuncEvalContext* pContext, QCall::TypeHandle resultType,
+    QCallExceptionStatus* qcallError);
+extern "C" BOOL QCALLTYPE DebugDebugger_ReadFuncEvalPrimitiveRegister(
+    DebuggerFuncEvalContext* pContext, UINT32 index, UINT64* pValue);
+extern "C" void QCALLTYPE DebugDebugger_WriteFuncEvalObjectRegister(
+    DebuggerFuncEvalContext* pContext, UINT32 index, QCall::ObjectHandleOnStack value,
+    QCallExceptionStatus* qcallError);
+extern "C" void QCALLTYPE DebugDebugger_WriteFuncEvalRegister(
+    DebuggerFuncEvalContext* pContext, UINT32 index, void* pValue, UINT32 size,
+    QCallExceptionStatus* qcallError);
+#endif // DEBUGGING_SUPPORTED
+
 class StackFrameHelper : public Object
 {
     // READ ME:

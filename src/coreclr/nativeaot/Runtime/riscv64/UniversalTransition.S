@@ -89,26 +89,12 @@
         PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, STACK_SIZE
 
         # Floating point registers
-        fsd         fa0, FLOAT_ARG_OFFSET(sp)
-        fsd         fa1, FLOAT_ARG_OFFSET + 0x08(sp)
-        fsd         fa2, FLOAT_ARG_OFFSET + 0x10(sp)
-        fsd         fa3, FLOAT_ARG_OFFSET + 0x18(sp)
-        fsd         fa4, FLOAT_ARG_OFFSET + 0x20(sp)
-        fsd         fa5, FLOAT_ARG_OFFSET + 0x28(sp)
-        fsd         fa6, FLOAT_ARG_OFFSET + 0x30(sp)
-        fsd         fa7, FLOAT_ARG_OFFSET + 0x38(sp)
+        SAVE_FLOAT_ARGUMENT_REGISTERS sp, FLOAT_ARG_OFFSET
 
         # Space for return block data (0x10 bytes)
 
         # Save argument registers
-        sd          a0, ARGUMENT_REGISTERS_OFFSET(sp)
-        sd          a1, ARGUMENT_REGISTERS_OFFSET + 0x08(sp)
-        sd          a2, ARGUMENT_REGISTERS_OFFSET + 0x10(sp)
-        sd          a3, ARGUMENT_REGISTERS_OFFSET + 0x18(sp)
-        sd          a4, ARGUMENT_REGISTERS_OFFSET + 0x20(sp)
-        sd          a5, ARGUMENT_REGISTERS_OFFSET + 0x28(sp)
-        sd          a6, ARGUMENT_REGISTERS_OFFSET + 0x30(sp)
-        sd          a7, ARGUMENT_REGISTERS_OFFSET + 0x38(sp)
+        SAVE_ARGUMENT_REGISTERS sp, ARGUMENT_REGISTERS_OFFSET
 
 #ifdef TRASH_SAVED_ARGUMENT_REGISTERS
         PREPARE_EXTERNAL_VAR RhpFpTrashValues, a1
@@ -143,24 +129,10 @@ ALTERNATE_ENTRY ReturnFrom\FunctionName
         mv          t2, a0
 
         # Restore floating point registers
-        fld         fa0, FLOAT_ARG_OFFSET(sp)
-        fld         fa1, FLOAT_ARG_OFFSET + 0x08(sp)
-        fld         fa2, FLOAT_ARG_OFFSET + 0x10(sp)
-        fld         fa3, FLOAT_ARG_OFFSET + 0x18(sp)
-        fld         fa4, FLOAT_ARG_OFFSET + 0x20(sp)
-        fld         fa5, FLOAT_ARG_OFFSET + 0x28(sp)
-        fld         fa6, FLOAT_ARG_OFFSET + 0x30(sp)
-        fld         fa7, FLOAT_ARG_OFFSET + 0x38(sp)
+        RESTORE_FLOAT_ARGUMENT_REGISTERS sp, FLOAT_ARG_OFFSET
 
         # Restore the argument registers
-        ld          a0, ARGUMENT_REGISTERS_OFFSET(sp)
-        ld          a1, ARGUMENT_REGISTERS_OFFSET + 0x08(sp)
-        ld          a2, ARGUMENT_REGISTERS_OFFSET + 0x10(sp)
-        ld          a3, ARGUMENT_REGISTERS_OFFSET + 0x18(sp)
-        ld          a4, ARGUMENT_REGISTERS_OFFSET + 0x20(sp)
-        ld          a5, ARGUMENT_REGISTERS_OFFSET + 0x28(sp)
-        ld          a6, ARGUMENT_REGISTERS_OFFSET + 0x30(sp)
-        ld          a7, ARGUMENT_REGISTERS_OFFSET + 0x38(sp)
+        RESTORE_ARGUMENT_REGISTERS sp, ARGUMENT_REGISTERS_OFFSET
 
         # Restore FP and RA registers, and free the allocated stack block
         ld          ra, 0x08(sp)

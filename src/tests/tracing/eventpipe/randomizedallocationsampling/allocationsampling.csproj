@@ -4,13 +4,10 @@
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <!-- TODO: Re-enable when browser diagnostics emits randomized allocation-sampling events.
          Tracked by https://github.com/dotnet/runtime/issues/131321. -->
-    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'">true</CLRTestTargetUnsupported>
+    <CLRTestTargetUnsupported Condition="'$(TargetOS)' == 'browser'">true</CLRTestTargetUnsupported>
     <TargetFrameworkIdentifier>.NETCoreApp</TargetFrameworkIdentifier>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
-
-    <!-- Not AllocationSampled with Mono runtime -->
-    <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'mono'">true</DisableProjectBuild>
   </PropertyGroup>
 
   <ItemGroup>

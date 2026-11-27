@@ -46,11 +46,11 @@ UnlockedLoaderHeapBase::~UnlockedLoaderHeapBase()
 }
 
 
-void ReleaseReservedMemory(BYTE* value) noexcept
+void ReleaseReservedMemory(BYTE* value, size_t size) noexcept
 {
     if (value)
     {
-        ExecutableAllocator::Instance()->Release(value);
+        ExecutableAllocator::Instance()->Release(value, size);
     }
 }
 #endif // DACCESS_COMPILE

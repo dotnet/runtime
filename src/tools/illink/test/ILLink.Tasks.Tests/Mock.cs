@@ -4,10 +4,12 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using Microsoft.Build.Framework;
+using Microsoft.NET.Build.Tasks;
 using Mono.Linker;
 using Mono.Linker.Steps;
 
@@ -27,13 +29,12 @@ namespace ILLink.Tasks.Tests
             commandLine = string.IsNullOrEmpty(commandLine) ? string.Empty : " " + commandLine;
             object[] arguments = {
                 pathToTool,
-                AdjustCommandsForOperatingSystem(commandLine),
                 AdjustCommandsForOperatingSystem(GenerateResponseFileCommands()),
-                null
+                AdjustCommandsForOperatingSystem(commandLine)
             };
-            bool result = (bool)typeof(ILLink).GetMethod("TryComputeCacheKey", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(this, arguments);
-            key = (string)arguments[3];
-            return result;
+            var invocation = (InvocationDescription)typeof(ILLink).GetMethod("DescribeInvocation", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(this, arguments);
+            key = string.Empty;
+            return invocation is not null && InvocationCache.TryComputeKey(Log, "ILLink", invocation, out key);
         }
 
         public MockTask()
@@ -53,6 +54,10 @@ namespace ILLink.Tasks.Tests
                 return new MockDriver(arguments);
             }
         }
+
+        public string GetToolPath() => GenerateFullPathToTool();
+
+        public ProcessStartInfo GetStartInfo() => GetProcessStartInfo(GetToolPath(), "", "");
 
         public static string[] OptimizationNames
         {
@@ -92,13 +97,35 @@ namespace ILLink.Tasks.Tests
         protected override void LogEventsFromTextOutput(string singleLine, MessageImportance messageImportance) => Messages.Add((messageImportance, singleLine));
     }
 
+    [MSBuildMultiThreadableTask]
+    public class XmlBindingTask : ILLink
+    {
+        [Output]
+        public string ResponseFile { get; set; }
+
+        [Output]
+        public string CommandLine { get; set; }
+
+        [Output]
+        public int TaskProcessId { get; set; }
+
+        public override bool Execute()
+        {
+            ResponseFile = GenerateResponseFileCommands();
+            CommandLine = GenerateCommandLineCommands();
+            TaskProcessId = Environment.ProcessId;
+            return true;
+        }
+    }
+
     public class MockBuildEngine : IBuildEngine
     {
         public List<BuildErrorEventArgs> Errors { get; } = new List<BuildErrorEventArgs>();
+        public List<BuildWarningEventArgs> Warnings { get; } = new();
         public List<BuildMessageEventArgs> Messages { get; } = new();
 
         public void LogErrorEvent(BuildErrorEventArgs e) => Errors.Add(e);
-        public void LogWarningEvent(BuildWarningEventArgs e) { }
+        public void LogWarningEvent(BuildWarningEventArgs e) => Warnings.Add(e);
         public void LogMessageEvent(BuildMessageEventArgs e) => Messages.Add(e);
         public void LogCustomEvent(CustomBuildEventArgs e) { }
         public bool BuildProjectFile(string projectFileName, string[] targetNames, IDictionary globalProperties, IDictionary targetOutputs) => false;
@@ -106,6 +133,29 @@ namespace ILLink.Tasks.Tests
         public int LineNumberOfTaskNode => 0;
         public int ColumnNumberOfTaskNode => 0;
         public string ProjectFileOfTaskNode => null;
+    }
+
+    internal sealed class WarningPolicyBuildEngine : MockBuildEngine, IBuildEngine8
+    {
+        internal bool TreatWarningsAsErrors { get; set; }
+        internal string WarningsAsErrors { get; set; }
+        internal string WarningsNotAsErrors { get; set; }
+
+        public bool ShouldTreatWarningAsError(string warningCode) =>
+            warningCode != WarningsNotAsErrors && (TreatWarningsAsErrors || warningCode == WarningsAsErrors);
+
+        public bool IsRunningMultipleNodes => false;
+        public bool AllowFailureWithoutError { get; set; }
+        public void Yield() { }
+        public void Reacquire() { }
+        public void LogTelemetry(string eventName, IDictionary<string, string> properties) { }
+        public IReadOnlyDictionary<string, string> GetGlobalProperties() => new Dictionary<string, string>();
+        public void RegisterTaskObject(object key, object obj, RegisteredTaskObjectLifetime lifetime, bool allowEarlyCollection) => throw new NotSupportedException();
+        public object GetRegisteredTaskObject(object key, RegisteredTaskObjectLifetime lifetime) => throw new NotSupportedException();
+        public object UnregisterTaskObject(object key, RegisteredTaskObjectLifetime lifetime) => throw new NotSupportedException();
+        public bool BuildProjectFile(string projectFileName, string[] targetNames, IDictionary globalProperties, IDictionary targetOutputs, string toolsVersion) => throw new NotSupportedException();
+        public bool BuildProjectFilesInParallel(string[] projectFileNames, string[] targetNames, IDictionary[] globalProperties, IDictionary[] targetOutputs, string[] toolsVersion, bool useResultsCache, bool unloadProjectsOnCompletion) => throw new NotSupportedException();
+        public BuildEngineResult BuildProjectFilesInParallel(string[] projectFileNames, string[] targetNames, IDictionary[] globalProperties, IList<string>[] removeGlobalProperties, string[] toolsVersion, bool returnTargetOutputs) => throw new NotSupportedException();
     }
 
     public class MockDriver : Driver

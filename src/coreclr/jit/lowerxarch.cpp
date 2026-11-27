@@ -384,7 +384,7 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
     assert(blkNode->OperIs(GT_STORE_BLK) && (blkNode->gtBlkOpKind == GenTreeBlk::BlkOpKindUnroll));
     assert(size < INT32_MAX);
 
-    if (addr->OperIs(GT_LCL_ADDR) && IsContainableLclAddr(addr->AsLclFld(), size))
+    if (addr->OperIs(GT_LCL_ADDR) && IsContainableLclAddr(addr->AsLclFld(), ValueSize(size)))
     {
         addr->SetContained();
         return;
@@ -2885,6 +2885,10 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
                             node->Op(1) = nestedOp1;
                             node->Op(2) = nestedOp2;
 
+                            // nestedOp2 may have been contained by the AND, which doesn't imply it is safe
+                            // to contain by the PTEST (it's now evaluated later). Let PTEST decide again.
+                            nestedOp2->ClearContained();
+
                             BlockRange().Remove(op1);
                             BlockRange().Remove(op2);
 
@@ -2906,6 +2910,7 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
 
                             node->Op(1) = nestedOp1;
                             node->Op(2) = nestedOp2;
+                            nestedOp2->ClearContained();
 
                             BlockRange().Remove(op1);
                             BlockRange().Remove(op2);
@@ -5324,6 +5329,13 @@ GenTree* Lowering::LowerHWIntrinsicWithElement(GenTreeHWIntrinsic* node)
     GenTree*            tmp2   = nullptr;
     GenTreeHWIntrinsic* result = node;
 
+    unsigned op1TempNum = BAD_VAR_NUM;
+    // Preserve the source vector across value-operand side effects.
+    if ((simdSize > 16) && op1->OperIs(GT_LCL_VAR) && !IsInvariantInRange(op1, op3))
+    {
+        op1TempNum = m_compiler->lvaGrabTemp(true DEBUGARG("WithElement source vector"));
+    }
+
     if (simdType == TYP_SIMD64)
     {
         // If we have a simd64 WithElement, we will spill the original
@@ -5346,7 +5358,7 @@ GenTree* Lowering::LowerHWIntrinsicWithElement(GenTreeHWIntrinsic* node)
 
         // TODO-CQ: move the tmp64 node closer to the final InsertVector128.
         LIR::Use op1Use(BlockRange(), &node->Op(1), node);
-        ReplaceWithLclVar(op1Use);
+        ReplaceWithLclVar(op1Use, op1TempNum);
         GenTree* tmp64 = node->Op(1);
 
         op1 = m_compiler->gtClone(tmp64);
@@ -5430,7 +5442,7 @@ GenTree* Lowering::LowerHWIntrinsicWithElement(GenTreeHWIntrinsic* node)
 
         // TODO-CQ: move the tmp32 node closer to the final InsertVector128.
         LIR::Use op1Use(BlockRange(), &node->Op(1), node);
-        ReplaceWithLclVar(op1Use);
+        ReplaceWithLclVar(op1Use, op1TempNum);
         GenTree* tmp32 = node->Op(1);
 
         op1 = m_compiler->gtClone(tmp32);
@@ -7582,7 +7594,8 @@ void Lowering::ContainCheckIndir(GenTreeIndir* node)
         // The address of an indirection that requires its address in a reg.
         // Skip any further processing that might otherwise make it contained.
     }
-    else if (addr->OperIs(GT_LCL_ADDR) && !node->IsVolatile() && IsContainableLclAddr(addr->AsLclFld(), node->Size()))
+    else if (addr->OperIs(GT_LCL_ADDR) && !node->IsVolatile() &&
+             IsContainableLclAddr(addr->AsLclFld(), node->ValueSize()))
     {
         // These nodes go into an addr mode:
         // - GT_LCL_ADDR is a stack addr mode.
@@ -8117,12 +8130,14 @@ void Lowering::ContainCheckDivOrMod(GenTreeOp* node)
     }
 #endif
 
-    // divisor can be an r/m, but the memory indirection must be of the same size as the divide
+    // divisor can be an r/m, but the memory operand must be of the same size as the divide,
+    // whether it is contained or reg-optional (a reg-optional local may be used from its stack home).
     if (IsContainableMemoryOp(divisor) && (divisor->TypeGet() == node->TypeGet()) && IsInvariantInRange(divisor, node))
     {
         MakeSrcContained(node, divisor);
     }
-    else if (divisorCanBeRegOptional && IsSafeToMarkRegOptional(node, divisor))
+    else if (divisorCanBeRegOptional && IsContainableMemoryOpSize(node, divisor) &&
+             IsSafeToMarkRegOptional(node, divisor))
     {
         // If there are no containable operands, we can make an operand reg optional.
         // Div instruction allows only divisor to be a memory op.
@@ -8625,7 +8640,7 @@ bool Lowering::LowerRMWMemOp(GenTreeIndir* storeInd)
         // If it is a GT_LCL_VAR, it still needs the reg to hold the address.
         // We would still need a reg for GT_CNS_INT if it doesn't fit within addressing mode base.
         if (indirCandidateChild->OperIs(GT_LCL_ADDR) &&
-            IsContainableLclAddr(indirCandidateChild->AsLclFld(), storeInd->Size()))
+            IsContainableLclAddr(indirCandidateChild->AsLclFld(), storeInd->ValueSize()))
         {
             indirDst->SetContained();
         }
@@ -9559,7 +9574,7 @@ void Lowering::TryMakeSrcContainedOrRegOptional(GenTreeHWIntrinsic* parentNode, 
 void Lowering::ContainCheckHWIntrinsicAddr(GenTreeHWIntrinsic* node, GenTree* addr, unsigned size)
 {
     assert((genActualType(addr) == TYP_I_IMPL) || addr->TypeIs(TYP_BYREF));
-    if ((addr->OperIs(GT_LCL_ADDR) && IsContainableLclAddr(addr->AsLclFld(), size)) ||
+    if ((addr->OperIs(GT_LCL_ADDR) && IsContainableLclAddr(addr->AsLclFld(), ValueSize(size))) ||
         (addr->IsCnsIntOrI() && addr->AsIntConCommon()->FitsInAddrBase(m_compiler)))
     {
         MakeSrcContained(node, addr);

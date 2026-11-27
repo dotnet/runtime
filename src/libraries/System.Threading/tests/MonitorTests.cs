@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -10,6 +12,192 @@ namespace System.Threading.Tests
     public static class MonitorTests
     {
         private const int FailTimeoutMilliseconds = 30000;
+
+        [Theory]
+        [InlineData(1, false, false)]
+        [InlineData(64, false, false)]
+        [InlineData(65, false, false)]
+        [InlineData(65, true, false)]
+        [InlineData(64, false, true)]
+        [InlineData(65, true, true)]
+        public static void HeaderStateSurvivesRecursionAndHashCode(int depth, bool hashBefore, bool finalizable)
+        {
+            object obj = finalizable ? new FinalizableLockObject() : new object();
+            if (finalizable)
+            {
+                GC.SuppressFinalize(obj);
+            }
+
+            int hashCode = hashBefore ? RuntimeHelpers.GetHashCode(obj) : 0;
+            int entered = 0;
+            try
+            {
+                while (entered < depth)
+                {
+                    Monitor.Enter(obj);
+                    entered++;
+                    Assert.True(Monitor.IsEntered(obj));
+                }
+
+                if (!hashBefore)
+                {
+                    hashCode = RuntimeHelpers.GetHashCode(obj);
+                }
+
+                GC.Collect();
+                Assert.Equal(hashCode, RuntimeHelpers.GetHashCode(obj));
+                Assert.True(Monitor.IsEntered(obj));
+            }
+            finally
+            {
+                while (entered != 0)
+                {
+                    Monitor.Exit(obj);
+                    entered--;
+                    Assert.Equal(entered != 0, Monitor.IsEntered(obj));
+                }
+            }
+        }
+
+        private sealed class FinalizableLockObject
+        {
+            ~FinalizableLockObject() => GC.KeepAlive(this);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void PulseRequiresOwnershipWithoutWaiters(bool pulseAll)
+        {
+            object obj = new();
+            Assert.Throws<SynchronizationLockException>(Pulse);
+            lock (obj)
+            {
+                Pulse();
+            }
+            Assert.Throws<SynchronizationLockException>(Pulse);
+
+            void Pulse()
+            {
+                if (pulseAll)
+                {
+                    Monitor.PulseAll(obj);
+                }
+                else
+                {
+                    Monitor.Pulse(obj);
+                }
+            }
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+        [InlineData(-2)]
+        [InlineData(-1)]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(20)]
+        public static void SingleThreadedWaitValidatesBeforeBlocking(int millisecondsTimeout)
+        {
+            object obj = new();
+            Assert.Throws<ArgumentNullException>(() => Monitor.Wait(null, millisecondsTimeout));
+            if (millisecondsTimeout < Timeout.Infinite)
+            {
+                Assert.Throws<ArgumentOutOfRangeException>(() => Monitor.Wait(obj, millisecondsTimeout));
+            }
+            else
+            {
+                Assert.Throws<SynchronizationLockException>(() => Monitor.Wait(obj, millisecondsTimeout));
+            }
+
+            lock (obj)
+            {
+                if (millisecondsTimeout < Timeout.Infinite)
+                {
+                    Assert.Throws<ArgumentOutOfRangeException>(() => Monitor.Wait(obj, millisecondsTimeout));
+                }
+                else if (millisecondsTimeout != Timeout.Infinite)
+                {
+                    lock (obj)
+                    {
+                        Stopwatch stopwatch = Stopwatch.StartNew();
+                        Assert.False(Monitor.Wait(obj, millisecondsTimeout));
+                        Assert.InRange(stopwatch.Elapsed.TotalMilliseconds, Math.Max(0, millisecondsTimeout - 1), double.MaxValue);
+                        Assert.True(Monitor.IsEntered(obj));
+                    }
+                }
+                else
+                {
+                    Assert.Throws<PlatformNotSupportedException>(() => Monitor.Wait(obj, millisecondsTimeout));
+                }
+                Assert.True(Monitor.IsEntered(obj));
+            }
+            Assert.False(Monitor.IsEntered(obj));
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsWasmThreadingSupported))]
+        [InlineData(0)]
+        [InlineData(20)]
+        public static void WaitOnJSInteropThreadHonorsFiniteTimeouts(int millisecondsTimeout)
+        {
+            object obj = new();
+            ThreadTestHelpers.RunWithJSInteropBlockingPolicy(() =>
+            {
+                lock (obj)
+                {
+                    lock (obj)
+                    {
+                        Stopwatch stopwatch = Stopwatch.StartNew();
+                        Assert.False(Monitor.Wait(obj, millisecondsTimeout));
+                        Assert.InRange(stopwatch.Elapsed.TotalMilliseconds, Math.Max(0, millisecondsTimeout - 1), double.MaxValue);
+                        stopwatch.Restart();
+                        Assert.False(Monitor.Wait(obj, TimeSpan.FromMilliseconds(millisecondsTimeout)));
+                        Assert.InRange(stopwatch.Elapsed.TotalMilliseconds, Math.Max(0, millisecondsTimeout - 1), double.MaxValue);
+                        Assert.Throws<PlatformNotSupportedException>(() => Monitor.Wait(obj));
+                    }
+                    Assert.True(Monitor.IsEntered(obj));
+                }
+                Assert.False(Monitor.IsEntered(obj));
+            });
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsWasmThreadingSupported))]
+        public static void WaitOnJSInteropThreadRestoresRecursiveOwnership()
+        {
+            object obj = new();
+            using ManualResetEventSlim ready = new(false);
+            Thread thread = ThreadTestHelpers.CreateGuardedThread(out Action waitForThread, () =>
+            {
+                ready.CheckedWait();
+                lock (obj)
+                {
+                    Monitor.Pulse(obj);
+                    Thread.Sleep(100);
+                }
+            });
+            thread.IsBackground = true;
+            thread.Start();
+            try
+            {
+                ThreadTestHelpers.RunWithJSInteropBlockingPolicy(() =>
+                {
+                    lock (obj)
+                    {
+                        lock (obj)
+                        {
+                            ready.Set();
+                            Assert.True(Monitor.Wait(obj, FailTimeoutMilliseconds));
+                            Assert.True(Monitor.IsEntered(obj));
+                        }
+                        Assert.True(Monitor.IsEntered(obj));
+                    }
+                    Assert.False(Monitor.IsEntered(obj));
+                });
+            }
+            finally
+            {
+                waitForThread();
+            }
+        }
 
         // Attempts a single recursive acquisition/release cycle of a newly-created lock.
         [Fact]
@@ -421,7 +609,8 @@ namespace System.Threading.Tests
             {
                 Assert.False(Monitor.Wait(obj, 0));
                 Assert.False(Monitor.Wait(obj, TimeSpan.Zero));
-                Assert.Throws<PlatformNotSupportedException>(() => Monitor.Wait(obj, 1));
+                Assert.False(Monitor.Wait(obj, 1));
+                Assert.False(Monitor.Wait(obj, TimeSpan.FromMilliseconds(1)));
                 Assert.Throws<PlatformNotSupportedException>(() => Monitor.Wait(obj));
             }
         }

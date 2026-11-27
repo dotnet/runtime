@@ -3,6 +3,7 @@
 
 #include "rejitprofiler.h"
 #include "ilrewriter.h"
+#include <algorithm>
 #include <iostream>
 #include <utility>
 #include <vector>
@@ -264,6 +265,8 @@ bool ReJITProfiler::FunctionSeen(FunctionID functionId)
     {
         INFO(L"Revert trigger method jitting finished: " << functionName);
 
+        CheckILToNativeMapping2(_targetFuncId);
+
         INFO(L"Requesting revert for method " << GetFunctionIDName(_targetFuncId));
         INFO(L"ModuleID=" << std::hex << _targetModuleId << L" and MethodDef=" << std::hex << _targetMethodDef);
         _profInfo10->RequestRevert(1, &_targetModuleId, &_targetMethodDef, nullptr);
@@ -287,6 +290,112 @@ bool ReJITProfiler::FunctionSeen(FunctionID functionId)
     }
 
     return false;
+}
+
+static HRESULT GetMapForReJITID(ICorProfilerInfo15* info, FunctionID functionId, ReJITID rejitId, vector<COR_DEBUG_IL_TO_NATIVE_MAP>& map)
+{
+    ULONG32 count = 0;
+    HRESULT hr = info->GetILToNativeMapping2(functionId, rejitId, 0, &count, NULL);
+    if (SUCCEEDED(hr))
+    {
+        map.resize(count);
+        hr = info->GetILToNativeMapping2(functionId, rejitId, count, &count, map.data());
+    }
+    return hr;
+}
+
+static HRESULT GetMapForCodeStart(ICorProfilerInfo15* info, UINT_PTR codeStart, vector<COR_DEBUG_IL_TO_NATIVE_MAP>& map)
+{
+    ULONG32 count = 0;
+    HRESULT hr = info->GetILToNativeMapping3(codeStart, 0, &count, NULL);
+    if (SUCCEEDED(hr))
+    {
+        map.resize(count);
+        hr = info->GetILToNativeMapping3(codeStart, count, &count, map.data());
+    }
+    return hr;
+}
+
+static bool SameMap(const vector<COR_DEBUG_IL_TO_NATIVE_MAP>& a, const vector<COR_DEBUG_IL_TO_NATIVE_MAP>& b)
+{
+    return a.size() == b.size() && std::equal(a.begin(), a.end(), b.begin(),
+        [](const COR_DEBUG_IL_TO_NATIVE_MAP& x, const COR_DEBUG_IL_TO_NATIVE_MAP& y)
+        {
+            return x.ilOffset == y.ilOffset && x.nativeStartOffset == y.nativeStartOffset && x.nativeEndOffset == y.nativeEndOffset;
+        });
+}
+
+void ReJITProfiler::CheckILToNativeMapping2(FunctionID functionId)
+{
+    ULONG rejitCount = 0;
+    HRESULT hr = pCorProfilerInfo->GetReJITIDs(functionId, 0, &rejitCount, NULL);
+    vector<ReJITID> rejitIds(rejitCount);
+    if (SUCCEEDED(hr) && rejitCount > 0)
+    {
+        hr = pCorProfilerInfo->GetReJITIDs(functionId, rejitCount, &rejitCount, rejitIds.data());
+    }
+    if (FAILED(hr) || rejitIds.empty())
+    {
+        _failures++;
+        FAIL(L"No ReJIT IDs to check GetILToNativeMapping2 with, hr=" << std::hex << hr);
+        return;
+    }
+
+    for (ReJITID rejitId : rejitIds)
+    {
+        vector<COR_DEBUG_IL_TO_NATIVE_MAP> map;
+        hr = GetMapForReJITID(pCorProfilerInfo, functionId, rejitId, map);
+        if (FAILED(hr))
+        {
+            _failures++;
+            FAIL(L"GetILToNativeMapping2 failed for ReJIT ID " << rejitId << L" with hr=" << std::hex << hr);
+            continue;
+        }
+
+        ULONG32 addressCount = 0;
+        hr = pCorProfilerInfo->GetNativeCodeStartAddresses(functionId, rejitId, 0, &addressCount, NULL);
+        vector<UINT_PTR> addresses(addressCount);
+        if (SUCCEEDED(hr) && addressCount > 0)
+        {
+            hr = pCorProfilerInfo->GetNativeCodeStartAddresses(functionId, rejitId, addressCount, &addressCount, addresses.data());
+        }
+        if (FAILED(hr))
+        {
+            _failures++;
+            FAIL(L"GetNativeCodeStartAddresses failed for ReJIT ID " << rejitId << L" with hr=" << std::hex << hr);
+            continue;
+        }
+
+        bool found = false;
+        for (UINT_PTR address : addresses)
+        {
+            vector<COR_DEBUG_IL_TO_NATIVE_MAP> codeMap;
+            found = found || (SUCCEEDED(GetMapForCodeStart(pCorProfilerInfo, address, codeMap)) && SameMap(map, codeMap));
+        }
+
+        if (!found)
+        {
+            _failures++;
+            FAIL(L"GetILToNativeMapping2 for ReJIT ID " << rejitId << L" returned a map of no code of that ReJIT version");
+        }
+    }
+
+    // The default version has code, so an unknown ReJIT ID must not fall back to it.
+    vector<COR_DEBUG_IL_TO_NATIVE_MAP> map;
+    hr = GetMapForReJITID(pCorProfilerInfo, functionId, 0, map);
+    if (FAILED(hr))
+    {
+        _failures++;
+        FAIL(L"GetILToNativeMapping2 failed for the default version with hr=" << std::hex << hr);
+    }
+
+    ReJITID unknownId = *std::max_element(rejitIds.begin(), rejitIds.end()) + 1;
+    hr = GetMapForReJITID(pCorProfilerInfo, functionId, unknownId, map);
+    if (hr != E_INVALIDARG)
+    {
+        _failures++;
+        FAIL(L"GetILToNativeMapping2 returned hr=" << std::hex << hr << L" for an unknown ReJIT ID, expected E_INVALIDARG");
+    }
 }
 
 HRESULT STDMETHODCALLTYPE ReJITProfiler::JITCompilationFinished(FunctionID functionId, HRESULT hrStatus, BOOL fIsSafeToBlock)

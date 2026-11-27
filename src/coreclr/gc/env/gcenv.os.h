@@ -408,6 +408,10 @@ public:
     //  Size of the cache
     static size_t GetCacheSizePerLogicalCpu(bool trueSize = true);
 
+    // Check if the OS supports setting the calling thread's affinity to a specific processor.
+    // The server GC relies on this, together with CanGetCurrentProcessorNumber, to map processors to heaps.
+    static bool CanSetThreadAffinity();
+
     // Sets the calling thread's affinity to only run on the processor specified.
     // Parameters:
     //  procNo - The requested affinity for the calling thread.

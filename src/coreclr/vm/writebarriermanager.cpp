@@ -9,6 +9,7 @@
 // is currently in use, and patching all related constants.
 
 #include "common.h"
+#include <minipal/instructioncache.h>
 #include "jitinterface.h"
 #include "eeconfig.h"
 #include "excep.h"
@@ -1110,7 +1111,7 @@ int StompWriteBarrierResize(bool isRuntimeSuspended, bool bReqUpperBoundsCheck)
 void FlushWriteBarrierInstructionCache()
 {
     if (IsWriteBarrierCopyEnabled())
-        FlushInstructionCache(GetCurrentProcess(), GetWriteBarrierCodeLocation((PVOID)JIT_WriteBarrier), g_WriteBarrierManager.GetCurrentWriteBarrierSize());
+        minipal_flush_instruction_cache(GetWriteBarrierCodeLocation((PVOID)JIT_WriteBarrier), g_WriteBarrierManager.GetCurrentWriteBarrierSize());
 }
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP

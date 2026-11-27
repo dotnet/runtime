@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Xml;
@@ -226,7 +225,7 @@ namespace System.Runtime.Serialization.DataContracts
                     bool enumMemberValid = false;
                     if (_hasDataContract)
                     {
-                        object[] memberAttributes = field.GetCustomAttributes(typeof(EnumMemberAttribute), false).ToArray();
+                        object[] memberAttributes = field.GetCustomAttributes(typeof(EnumMemberAttribute), false);
                         if (memberAttributes != null && memberAttributes.Length > 0)
                         {
                             if (memberAttributes.Length > 1)
@@ -247,7 +246,7 @@ namespace System.Runtime.Serialization.DataContracts
                             enumMemberValid = true;
                         }
 
-                        object[] dataMemberAttributes = field.GetCustomAttributes(typeof(DataMemberAttribute), false).ToArray();
+                        object[] dataMemberAttributes = field.GetCustomAttributes(typeof(DataMemberAttribute), false);
                         if (dataMemberAttributes != null && dataMemberAttributes.Length > 0)
                             ThrowInvalidDataContractException(SR.Format(SR.DataMemberOnEnumField, DataContract.GetClrTypeFullName(field.DeclaringType!), field.Name));
                     }
@@ -429,13 +428,8 @@ namespace System.Runtime.Serialization.DataContracts
                     }
                     Array.Sort(memberNames1);
                     Array.Sort(memberNames2);
-                    for (int i = 0; i < Members.Count; i++)
-                    {
-                        if (memberNames1[i] != memberNames2[i])
-                            return false;
-                    }
 
-                    return (IsFlags == enumContract.IsFlags);
+                    return memberNames1.AsSpan().SequenceEqual(memberNames2) && (IsFlags == enumContract.IsFlags);
                 }
             }
             return false;

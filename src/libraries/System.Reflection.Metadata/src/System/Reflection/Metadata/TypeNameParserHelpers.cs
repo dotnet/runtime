@@ -16,7 +16,7 @@ namespace System.Reflection.Metadata
         internal const int ByRef = -3;
         private const char EscapeCharacter = '\\';
 
-        private static readonly SearchValues<char> s_endOfFullTypeNameDelimiterChars = SearchValues.Create("[]&*,+\\");
+        private static readonly SearchValues<char> s_endOfFullTypeNameDelimiterChars = SearchValues.Create("[]&*,+\\\0");
 
         /// <returns>Positive length or negative value for invalid name</returns>
         internal static int GetFullTypeNameLength(ReadOnlySpan<char> input, out bool isNestedType)
@@ -59,6 +59,7 @@ namespace System.Reflection.Metadata
                         offset++; // skip the escaped char
 
                         if (offset == input.Length || // invalid name that ends with escape character
+                            input[offset] == '\0' ||
                             !s_endOfFullTypeNameDelimiterChars.Contains(input[offset])) // invalid name, escapes a char that does not need escaping
                         {
                             return -1;
@@ -431,6 +432,31 @@ namespace System.Reflection.Metadata
         }
 
 #if SYSTEM_REFLECTION_METADATA
+        internal static string Escape(string metadataName)
+        {
+            int indexOfCharToEscape = metadataName.AsSpan().IndexOfAny(s_endOfFullTypeNameDelimiterChars);
+            if (indexOfCharToEscape < 0)
+            {
+                return metadataName;
+            }
+
+            var sb = new ValueStringBuilder(stackalloc char[64]);
+            sb.EnsureCapacity(metadataName.Length + 1);
+            sb.Append(metadataName.AsSpan(0, indexOfCharToEscape));
+
+            for (int i = indexOfCharToEscape; i < metadataName.Length; i++)
+            {
+                char c = metadataName[i];
+                if (c != '\0' && s_endOfFullTypeNameDelimiterChars.Contains(c))
+                {
+                    sb.Append(EscapeCharacter);
+                }
+                sb.Append(c);
+            }
+
+            return sb.ToString();
+        }
+
         [DoesNotReturn]
         internal static void ThrowInvalidOperation_NotSimpleName(string fullName)
         {

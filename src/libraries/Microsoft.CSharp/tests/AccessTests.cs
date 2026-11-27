@@ -159,12 +159,25 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         }
 
         [Fact]
-        public void PointerArrayToArrayType() => Assert.Equal(4, Container.PointerArray().Length);
+        public void PointerArrayToArrayType()
+        {
+            // SAFETY: To be audited
+            unsafe
+            {
+                Assert.Equal(4, Container.PointerArray().Length);
+            }
+        }
 
         [Fact]
         public void PointerArrayNotCastToIndexableType()
         {
-            dynamic array = Container.PointerArray();
+            dynamic array;
+            // SAFETY: To be audited
+            unsafe
+            {
+                array = Container.PointerArray();
+            }
+
             Assert.Throws<RuntimeBinderException>(() => array[0]);
         }
 

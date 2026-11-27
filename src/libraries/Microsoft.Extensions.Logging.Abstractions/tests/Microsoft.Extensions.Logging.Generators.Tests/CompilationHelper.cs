@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
@@ -24,6 +25,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             refs.Add(MetadataReference.CreateFromFile(corelib));
             refs.Add(MetadataReference.CreateFromFile(Path.Combine(runtimeDir, "netstandard.dll")));
             refs.Add(MetadataReference.CreateFromFile(Path.Combine(runtimeDir, "System.Runtime.dll")));
+            refs.Add(MetadataReference.CreateFromFile(typeof(GeneratedCodeAttribute).Assembly.Location));
             refs.Add(MetadataReference.CreateFromFile(typeof(ILogger).Assembly.Location));
             refs.Add(MetadataReference.CreateFromFile(typeof(LoggerMessageAttribute).Assembly.Location));
 

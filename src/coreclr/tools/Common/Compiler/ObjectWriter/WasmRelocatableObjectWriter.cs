@@ -17,8 +17,17 @@ namespace ILCompiler.ObjectWriter
 {
     internal sealed partial class WasmRelocatableObjectWriter : WasmObjectWriter
     {
+        private protected override string WasmProducerName => "ILCompiler";
+
+        private readonly InstructionSetSupport _instructionSetSupport;
         private WasmDataSection _dataSection;
         private DwarfBuilder _dwarfBuilder;
+        private SectionWriter _pdataSectionWriter;
+        private SectionWriter _xdataSectionWriter;
+        private uint _nextVirtualIP = 1; // Zero marks an invalid stack frame.
+        private readonly Dictionary<Utf8String, uint> _methodStartVirtualIPs = new();
+        private static readonly Utf8String RestoreContextTagName = new("__nativeaot_wasm_restore_context_tag");
+        private static readonly ObjectNodeSection HydrationTargetSection = new(".bss.hydrated", SectionType.Uninitialized);
 
         // https://github.com/WebAssembly/tool-conventions/blob/main/Linking.md
         private enum SymbolKind : byte
@@ -34,6 +43,7 @@ namespace ILCompiler.ObjectWriter
         private const uint UndefinedSymbol = 0x10; // WASM_SYM_UNDEFINED
         private const uint LocalSymbol = 0x2; // WASM_SYM_BINDING_LOCAL
         private const uint ExportedSymbol = 0x20; // WASM_SYM_EXPORTED
+        private const uint ExplicitNameSymbol = 0x40; // WASM_SYM_EXPLICIT_NAME
         private const byte SegmentInfoSubsection = 5; // WASM_SEGMENT_INFO
         private const byte SymbolTableSubsection = 8; // WASM_SYMBOL_TABLE
         private const uint LinkingVersion = 2;
@@ -50,6 +60,7 @@ namespace ILCompiler.ObjectWriter
             GlobalIndexLeb = 7, // R_WASM_GLOBAL_INDEX_LEB
             FunctionOffsetI32 = 8, // R_WASM_FUNCTION_OFFSET_I32
             SectionOffsetI32 = 9, // R_WASM_SECTION_OFFSET_I32
+            TagIndexLeb = 10, // R_WASM_TAG_INDEX_LEB
             MemoryAddrRelSleb = 11, // R_WASM_MEMORY_ADDR_REL_SLEB
             MemoryAddrI64 = 16, // R_WASM_MEMORY_ADDR_I64
             TableIndexI64 = 19, // R_WASM_TABLE_INDEX_I64
@@ -60,12 +71,19 @@ namespace ILCompiler.ObjectWriter
         private readonly Dictionary<int, List<SymbolicRelocation>> _relocations = new();
         private readonly Dictionary<int, long> _functionOffsets = new();
 
-        public WasmRelocatableObjectWriter(NodeFactory factory, ObjectWritingOptions options, OutputInfoBuilder outputInfoBuilder = null) : base(factory, options, outputInfoBuilder)
+        public WasmRelocatableObjectWriter(NodeFactory factory, ObjectWritingOptions options, InstructionSetSupport instructionSetSupport, OutputInfoBuilder outputInfoBuilder = null) : base(factory, options, outputInfoBuilder)
         {
+            _instructionSetSupport = instructionSetSupport;
         }
 
         private protected override ObjectNodeSection GetEmitSection(ObjectNodeSection section)
         {
+            if (section == ObjectNodeSection.HydrationTargetSection)
+            {
+                // wasm-ld omits zero-initialized segments whose names start with ".bss".
+                return HydrationTargetSection;
+            }
+
             if (section == ObjectNodeSection.TextSection ||
                 section == ObjectNodeSection.ManagedCodeUnixContentSection ||
                 section == ObjectNodeSection.ManagedCodeWindowsContentSection)
@@ -78,6 +96,13 @@ namespace ILCompiler.ObjectWriter
 
         private protected override void EmitSectionsAndLayout()
         {
+            if (_options.HasFlag(ObjectWritingOptions.GenerateUnwindInfo))
+            {
+                _pdataSectionWriter.WriteLittleEndian<uint>(_nextVirtualIP);
+                _pdataSectionWriter.WriteLittleEndian<uint>(0);
+                _pdataSectionWriter.EmitSymbolDefinition(new Utf8String("__pdata_end"), global: true);
+            }
+
             List<IWasmDataSegment> dataSegments = new();
             foreach (SectionDataEmitter section in _sections.Sections)
             {
@@ -138,6 +163,12 @@ namespace ILCompiler.ObjectWriter
 
             using MemoryStream linking = CreateLinkingSection(fileSectionIndices);
             sections.Add(new WasmCustomSection(linking, new Utf8String("linking"), sections.Count));
+            using MemoryStream producers = CreateProducersSectionPayload();
+            // Metadata custom sections are not linkable sections. Emit them after the mandatory
+            // linking section without adding it to the linking symbol table or relocation bookkeeping.
+            sections.Add(new WasmCustomSection(producers, new Utf8String("producers"), sections.Count));
+            using MemoryStream targetFeatures = CreateTargetFeaturesSectionPayload();
+            sections.Add(new WasmCustomSection(targetFeatures, new Utf8String("target_features"), sections.Count));
             Dictionary<int, (string Name, MemoryStream Entries, int Count)> relocationSections = new();
             try
             {
@@ -197,6 +228,38 @@ namespace ILCompiler.ObjectWriter
                     relocationSection.Entries.Dispose();
                 }
             }
+        }
+
+        private MemoryStream CreateTargetFeaturesSectionPayload()
+        {
+            // https://github.com/WebAssembly/tool-conventions/blob/main/Linking.md#target-features-section
+            // These features are used by the JIT, stubs, and object format. SIMD128 is also used by
+            // the v128 ABI even when SIMD instruction selection is disabled.
+            List<string> features =
+            [
+                "bulk-memory",
+                "exception-handling",
+                "mutable-globals",
+                "nontrapping-fptoint",
+                "reference-types",
+                "sign-ext",
+                "simd128",
+                "tail-call",
+            ];
+            if (_instructionSetSupport.IsInstructionSetOptimisticallySupported(InstructionSet.Wasm32_RelaxedSimd))
+            {
+                features.Add("relaxed-simd");
+            }
+
+            MemoryStream payload = new();
+            WriteULEB128(payload, (ulong)features.Count);
+            foreach (string feature in features)
+            {
+                payload.WriteByte((byte)'+');
+                WriteName(payload, new Utf8String(feature));
+            }
+            payload.Position = 0;
+            return payload;
         }
 
         private MemoryStream CreateLinkingSection(Dictionary<int, int> fileSectionIndices)
@@ -299,6 +362,10 @@ namespace ILCompiler.ObjectWriter
                 _ => throw new UnreachableException(),
             };
             uint flags = symbol.IsImport ? UndefinedSymbol : 0;
+            if (symbol.HasExplicitName)
+            {
+                flags |= ExplicitNameSymbol;
+            }
             if (!symbol.IsImport && _definedSymbols.TryGetValue(symbol.Name, out SymbolDefinition definition) && definition.Global)
             {
                 flags |= ExportedSymbol;
@@ -306,17 +373,10 @@ namespace ILCompiler.ObjectWriter
             entries.WriteByte((byte)kind); // kind: the symbol type.
             WriteULEB128(entries, flags); // flags: a bitfield containing flags for this symbol.
             WriteULEB128(entries, (ulong)symbol.Index); // index: the index of the Wasm object corresponding to the symbol.
-            if (!symbol.IsImport)
+            if (!symbol.IsImport || symbol.HasExplicitName)
             {
-                WriteName(entries, symbol.Name); // name_len/name_data: the optional UTF-8 symbol name, omitted for imports.
+                WriteName(entries, symbol.Name); // name_len/name_data: the UTF-8 symbol name, omitted for imports without an explicit name.
             }
-        }
-
-        private static void WriteULEB128(Stream stream, ulong value)
-        {
-            Span<byte> buffer = stackalloc byte[10];
-            int size = DwarfHelper.WriteULEB128(buffer, value);
-            stream.Write(buffer.Slice(0, size));
         }
 
         private static void WriteSLEB128(Stream stream, long value)
@@ -324,12 +384,6 @@ namespace ILCompiler.ObjectWriter
             Span<byte> buffer = stackalloc byte[10];
             int size = DwarfHelper.WriteSLEB128(buffer, value);
             stream.Write(buffer.Slice(0, size));
-        }
-
-        private static void WriteName(Stream stream, Utf8String name)
-        {
-            WriteULEB128(stream, (ulong)name.Length); // name_len: the length of name_data in bytes.
-            stream.Write(name.AsSpan()); // name_data: UTF-8 encoding of the name.
         }
 
         private static void WriteSubsection(Stream stream, byte kind, MemoryStream payload)
@@ -368,8 +422,18 @@ namespace ILCompiler.ObjectWriter
                 fixed (byte* pData = relocScratchBuffer)
                 {
                     long addend = reloc.Addend + Relocation.ReadValue(reloc.Type, pData);
-                    if (reloc.Type is RelocType.WASM_METHOD_RELATIVE_VIRTUAL_IP_I32 or RelocType.WASM_METHOD_FRAME_IDENTITY_SLEB)
+                    if (reloc.Type is RelocType.WASM_METHOD_RELATIVE_VIRTUAL_IP_I32)
                     {
+                        Relocation.WriteValue(reloc.Type, pData, checked(_methodStartVirtualIPs[reloc.SymbolName] + addend));
+                        sectionStream.Position = reloc.Offset;
+                        sectionStream.Write(relocScratchBuffer.AsSpan(0, size));
+                        continue;
+                    }
+                    if (reloc.Type is RelocType.WASM_METHOD_FRAME_IDENTITY_SLEB)
+                    {
+                        Debug.Assert(addend == 0);
+                        // Check that the method start fits alongside the frame-identity tag, then encode its i32 bits.
+                        addend = unchecked((int)checked(_methodStartVirtualIPs[reloc.SymbolName] * 2 + 1));
                         Relocation.WriteValue(reloc.Type, pData, addend);
                         sectionStream.Position = reloc.Offset;
                         sectionStream.Write(relocScratchBuffer.AsSpan(0, size));
@@ -385,6 +449,7 @@ namespace ILCompiler.ObjectWriter
                         RelocType.WASM_FUNCTION_INDEX_LEB => WasmRelocationType.FunctionIndexLeb,
                         RelocType.WASM_TYPE_INDEX_LEB => WasmRelocationType.TypeIndexLeb,
                         RelocType.WASM_GLOBAL_INDEX_LEB => WasmRelocationType.GlobalIndexLeb,
+                        RelocType.WASM_CLR_RESTORE_CONTEXT_EXCEPTION_TAG_LEB => WasmRelocationType.TagIndexLeb,
                         RelocType.WASM_TABLE_INDEX_SLEB => WasmRelocationType.TableIndexSleb,
                         RelocType.WASM_TABLE_INDEX_I32 => WasmRelocationType.TableIndexI32,
                         RelocType.WASM_TABLE_INDEX_I64 => WasmRelocationType.TableIndexI64,
@@ -402,6 +467,11 @@ namespace ILCompiler.ObjectWriter
                         _ => throw new NotSupportedException($"Relocation type {reloc.Type} for symbol '{reloc.SymbolName}' in section {section.SectionName} not yet implemented"),
                     };
                     Utf8String symbolName = reloc.SymbolName;
+                    if (reloc.Type == RelocType.WASM_CLR_RESTORE_CONTEXT_EXCEPTION_TAG_LEB)
+                    {
+                        symbolName = RestoreContextTagName;
+                        symbol = _wasmSymbolManager.GetSymbol(symbolName);
+                    }
                     if (isFunction && type != WasmRelocationType.FunctionOffsetI32 && addend != 0)
                     {
                         // The JIT encodes funclet references as parent + ordinal, but the linker can reorder table entries.
@@ -433,7 +503,7 @@ namespace ILCompiler.ObjectWriter
 
                     long value = type switch
                     {
-                        WasmRelocationType.FunctionIndexLeb or WasmRelocationType.TypeIndexLeb or WasmRelocationType.GlobalIndexLeb => symbol.Index,
+                        WasmRelocationType.FunctionIndexLeb or WasmRelocationType.TypeIndexLeb or WasmRelocationType.GlobalIndexLeb or WasmRelocationType.TagIndexLeb => symbol.Index,
                         WasmRelocationType.FunctionOffsetI32 => codeSectionPrefixSize + _functionOffsets[symbol.Index] + addend,
                         WasmRelocationType.SectionOffsetI32 => addend,
                         _ => 0,
@@ -479,6 +549,8 @@ namespace ILCompiler.ObjectWriter
             WriteImport(new WasmImport("env", WasmWellKnownGlobalSymbolNode.AsyncContinuationName, import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Mut)));
             WriteImport(new WasmImport("env", "__indirect_function_table", new WasmTableImportType()));
             WriteImport(new WasmImport("env", "memory", new WasmMemoryImportType(WasmLimitType.HasMin, 0)));
+            int tagType = RegisterSignature(new WasmFuncType(new([]), new([])));
+            WriteImport(new WasmImport("env", RestoreContextTagName.ToString(), new WasmTagImportType(tagType)));
         }
 
         private protected override void WriteExports()
@@ -551,7 +623,7 @@ namespace ILCompiler.ObjectWriter
                 _functionOffsets[functionIndex] = checked(methodSymbol.Value + bodyStart);
                 _dwarfBuilder.EmitSectionInfo(functionName, (ulong)bodySize);
                 // Wasm variable locations are not described yet.
-                _dwarfBuilder.EmitSubprogramInfo(methodName, functionName, 0, bodySize, methodTypeIndex, [], []);
+                _dwarfBuilder.EmitSubprogramInfo(methodName, functionName, 0, bodySize, methodTypeIndex, [], [], []);
 
                 List<NativeSequencePoint> functionPoints = new();
                 while (sequencePointIndex < sequencePoints.Count && sequencePoints[sequencePointIndex].NativeOffset < bodyEnd)
@@ -579,13 +651,18 @@ namespace ILCompiler.ObjectWriter
 
         private protected override void EmitDebugSections(IDictionary<Utf8String, SymbolDefinition> definedSymbols)
         {
+            bool useDwarf5 = _dwarfBuilder.UseDwarf5;
             SectionWriter info = GetOrCreateSection(new ObjectNodeSection(".debug_info", SectionType.Debug));
             SectionWriter strings = GetOrCreateSection(new ObjectNodeSection(".debug_str", SectionType.Debug));
             SectionWriter abbrev = GetOrCreateSection(new ObjectNodeSection(".debug_abbrev", SectionType.Debug));
-            SectionWriter loc = GetOrCreateSection(new ObjectNodeSection(".debug_loc", SectionType.Debug));
-            SectionWriter ranges = GetOrCreateSection(new ObjectNodeSection(".debug_ranges", SectionType.Debug));
+            SectionWriter loc = GetOrCreateSection(new ObjectNodeSection(useDwarf5 ? ".debug_loclists" : ".debug_loc", SectionType.Debug));
+            SectionWriter ranges = GetOrCreateSection(new ObjectNodeSection(useDwarf5 ? ".debug_rnglists" : ".debug_ranges", SectionType.Debug));
             SectionWriter lines = GetOrCreateSection(new ObjectNodeSection(".debug_line", SectionType.Debug));
             SectionWriter aranges = GetOrCreateSection(new ObjectNodeSection(".debug_aranges", SectionType.Debug));
+            if (useDwarf5)
+            {
+                _dwarfBuilder.WriteAddressTable(GetOrCreateSection(new ObjectNodeSection(".debug_addr", SectionType.Debug)));
+            }
             _dwarfBuilder.Write(info, strings, abbrev, loc, ranges, lines, aranges, _ => (default, 0));
         }
 
@@ -594,10 +671,61 @@ namespace ILCompiler.ObjectWriter
             INodeWithCodeInfo nodeWithCodeInfo,
             Utf8String currentSymbolName)
         {
+            if (nodeWithCodeInfo.FrameInfos is not FrameInfo[] frames || frames.Length == 0)
+            {
+                return;
+            }
+
+            // Bit 31 is reserved by the managed stack-trace resolver for StackTraceHidden.
+            _methodStartVirtualIPs.Add(currentSymbolName, checked((uint)(int)_nextVirtualIP));
+            Span<byte> indexBuffer = stackalloc byte[16];
+            for (int i = 0; i < frames.Length; i++)
+            {
+                FrameInfo frame = frames[i];
+                uint frameSize = checked((uint)DwarfHelper.ReadULEB128(frame.BlobData, out int bytesRead));
+                Debug.Assert(frameSize % _nodeFactory.Target.PointerSize == 0);
+                uint virtualSize = checked((uint)DwarfHelper.ReadULEB128(frame.BlobData.AsSpan(bytesRead)));
+                Debug.Assert(virtualSize != 0);
+                uint virtualStart = _nextVirtualIP;
+                _nextVirtualIP = checked(virtualStart + virtualSize);
+
+                _utf8StringBuilder.Clear()
+                    .Append("_unwind"u8)
+                    .Append(FormatUtf8Int(indexBuffer, i))
+                    .Append(currentSymbolName);
+                Utf8String unwindSymbolName = _utf8StringBuilder.ToUtf8String();
+                _xdataSectionWriter.EmitSymbolDefinition(unwindSymbolName);
+                _xdataSectionWriter.WriteUnsigned(frameSize / (uint)_nodeFactory.Target.PointerSize);
+                FrameInfoFlags flags = frame.Flags;
+                if (i == 0 && nodeWithCodeInfo.EHInfo is not null)
+                    flags |= FrameInfoFlags.HasEHInfo;
+                _xdataSectionWriter.WriteByte((byte)flags);
+
+                if (i == 0)
+                {
+                    if (nodeWithCodeInfo.EHInfo is not null)
+                    {
+                        _xdataSectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_HIGHLOW, GetMangledName(nodeWithCodeInfo.EHInfo));
+                    }
+                    _xdataSectionWriter.Write(nodeWithCodeInfo.GCInfo);
+                }
+                else
+                {
+                    _xdataSectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_HIGHLOW, GetFuncletName(currentSymbolName, i - 1));
+                }
+
+                // Keep in sync with WasmRuntimeFunction in the NativeAOT code manager.
+                _pdataSectionWriter.WriteLittleEndian<uint>(virtualStart);
+                _pdataSectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_HIGHLOW, unwindSymbolName);
+            }
         }
 
         private protected override void CreateEhSections()
         {
+            _pdataSectionWriter = GetOrCreateSection(new ObjectNodeSection(".pdata", SectionType.ReadOnly));
+            _pdataSectionWriter.EmitAlignment(sizeof(uint));
+            _pdataSectionWriter.EmitSymbolDefinition(new Utf8String("__pdata_start"), global: true);
+            _xdataSectionWriter = GetOrCreateSection(new ObjectNodeSection(".xdata", SectionType.ReadOnly));
         }
     }
 }

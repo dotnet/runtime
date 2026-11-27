@@ -50,6 +50,7 @@ RangeCheck::RangeCheck(Compiler* pCompiler)
     : m_preferredBound(ValueNumStore::NoVN)
     , m_pRangeMap(nullptr)
     , m_pSearchPath(nullptr)
+    , m_pRejectNegativeSearchPath(nullptr)
     , m_compiler(pCompiler)
     , m_alloc(pCompiler->getAllocator(CMK_RangeCheck))
     , m_nVisitBudget(MAX_VISIT_BUDGET)
@@ -95,6 +96,20 @@ void RangeCheck::ClearSearchPath()
     {
         m_pSearchPath->RemoveAll();
     }
+
+    if (m_pRejectNegativeSearchPath != nullptr)
+    {
+        m_pRejectNegativeSearchPath->RemoveAll();
+    }
+}
+
+RangeCheck::SearchPath* RangeCheck::GetRejectNegativeSearchPath()
+{
+    if (m_pRejectNegativeSearchPath == nullptr)
+    {
+        m_pRejectNegativeSearchPath = new (m_alloc) SearchPath(m_alloc);
+    }
+    return m_pRejectNegativeSearchPath;
 }
 
 // Get the length of the array vn, if it is new.
@@ -392,20 +407,29 @@ bool RangeCheck::IsMonotonicallyIncreasing(GenTree* expr, bool rejectNegativeCon
     }
     m_nVisitBudget--;
 
-    // Add hashtable entry for expr.
-    bool alreadyPresent = GetSearchPath()->Set(expr, nullptr, SearchPath::Overwrite);
+    // Add hashtable entry for expr. A tree visited without rejectNegativeConst may
+    // still have a negative constant input, so track the two kinds of walks separately.
+    SearchPath* const searchPath     = rejectNegativeConst ? GetRejectNegativeSearchPath() : GetSearchPath();
+    bool              alreadyPresent = searchPath->Set(expr, nullptr, SearchPath::Overwrite);
     if (alreadyPresent)
     {
         return true;
     }
 
     // Remove hashtable entry for expr when we exit the present scope.
-    auto code = [this, expr] {
-        GetSearchPath()->Remove(expr);
+    auto code = [searchPath, expr] {
+        searchPath->Remove(expr);
     };
     jitstd::utility::scoped_code<decltype(code)> finally(code);
 
-    if (GetSearchPath()->GetCount() > MAX_SEARCH_DEPTH)
+    // Both search paths may have been consulted, so the recursion depth is their combined size.
+    unsigned depth = GetSearchPath()->GetCount();
+    if (HasRejectNegativeSearchPath())
+    {
+        depth += GetRejectNegativeSearchPath()->GetCount();
+    }
+
+    if (depth > MAX_SEARCH_DEPTH)
     {
         return false;
     }
@@ -440,7 +464,7 @@ bool RangeCheck::IsMonotonicallyIncreasing(GenTree* expr, bool rejectNegativeCon
         for (GenTreePhi::Use& use : expr->AsPhi()->Uses())
         {
             // If the arg is already in the path, skip.
-            if (GetSearchPath()->Lookup(use.GetNode()))
+            if (searchPath->Lookup(use.GetNode()))
             {
                 continue;
             }
@@ -910,38 +934,52 @@ Range RangeCheck::GetRangeFromAssertionsWorker(
 
                     result = RangeOps::EvalRelop(cmpOper, isUnsigned, r1, r2);
 
-                    // Example: "(uint)(length - 4) > (uint)length" folds to false when
-                    // length >= 4 (the typical Slice(length - cns) bounds check).
-                    if (!result.IsSingleValueConstant() && (genActualType(vnType) == TYP_INT))
+                    // "X + c1" vs "X + c2" folds when neither side can overflow (or be negative for unsigned
+                    // compares), e.g. "(uint)(len - 8) > (uint)(len - 4)" in Span.Slice when len >= 8.
+                    ValueNum op1VN = funcApp.GetArg(0);
+                    ValueNum op2VN = funcApp.GetArg(1);
+                    ValueNum base1 = op1VN;
+                    ValueNum base2 = op2VN;
+                    int      cns1  = 0;
+                    int      cns2  = 0;
+                    if (!result.IsSingleValueConstant())
                     {
-                        ValueNum op1VN = funcApp.GetArg(0);
-                        ValueNum op2VN = funcApp.GetArg(1);
-                        ValueNum addOpVN;
-                        int      addCns;
+                        comp->vnStore->IsVNBinFuncWithConst(op1VN, VNF_ADD, &base1, &cns1);
+                        comp->vnStore->IsVNBinFuncWithConst(op2VN, VNF_ADD, &base2, &cns2);
 
-                        if (comp->vnStore->IsVNBinFuncWithConst(op1VN, VNF_ADD, &addOpVN, &addCns) &&
-                            (addOpVN == op2VN) && (addCns < 0) && (addCns > INT32_MIN))
+                        // "(t + c) vs t" where t is itself "X + c'": use t as the common base.
+                        if ((base1 != base2) && (base1 == op2VN))
                         {
-                            if (r2.LowerLimit().IsConstant() && (r2.LowerLimit().GetConstant() >= -addCns))
+                            base2 = op2VN;
+                            cns2  = 0;
+                        }
+                        else if ((base1 != base2) && (base2 == op1VN))
+                        {
+                            base1 = op1VN;
+                            cns1  = 0;
+                        }
+                    }
+
+                    if (!result.IsSingleValueConstant() && (base1 == base2) &&
+                        (comp->vnStore->TypeOfVN(base1) == TYP_INT))
+                    {
+                        Range baseRange = (base1 == op1VN) ? r1 : r2;
+                        if ((base1 != op1VN) && (base1 != op2VN))
+                        {
+                            // r1/r2 may have already visited a PHI base.
+                            ValueNumStore::SmallValueNumSet baseVisited;
+                            baseRange = GetRangeFromAssertionsWorker(comp, base1, assertions, --budget, &baseVisited);
+                        }
+
+                        if (baseRange.IsConstantRange())
+                        {
+                            int64_t lo = static_cast<int64_t>(baseRange.LowerLimit().GetConstant()) + min(cns1, cns2);
+                            int64_t hi = static_cast<int64_t>(baseRange.UpperLimit().GetConstant()) + max(cns1, cns2);
+                            if ((lo >= (isUnsigned ? 0 : INT32_MIN)) && (hi <= INT32_MAX))
                             {
-                                // ADD(A, K) < A is proven (both signed and unsigned).
-                                switch (cmpOper)
-                                {
-                                    case GT_LT:
-                                    case GT_LE:
-                                    case GT_NE:
-                                        result = Range(Limit(Limit::keConstant, 1));
-                                        break;
-
-                                    case GT_GT:
-                                    case GT_GE:
-                                    case GT_EQ:
-                                        result = Range(Limit(Limit::keConstant, 0));
-                                        break;
-
-                                    default:
-                                        break;
-                                }
+                                result = RangeOps::EvalRelop(cmpOper, /* isUnsigned */ false,
+                                                             Range(Limit(Limit::keConstant, cns1)),
+                                                             Range(Limit(Limit::keConstant, cns2)));
                             }
                         }
                     }
@@ -2132,7 +2170,7 @@ Range RangeCheck::ComputeRangeForLocalDef(GenTreeLclVarCommon* lcl, bool monIncr
 }
 
 // Get the limit's maximum possible value.
-bool RangeCheck::GetLimitMax(Limit& limit, int* pMax)
+bool RangeCheck::GetLimitMax(const Limit& limit, int* pMax)
 {
     int& max1 = *pMax;
     switch (limit.type)
@@ -2176,22 +2214,30 @@ bool RangeCheck::GetLimitMax(Limit& limit, int* pMax)
     return true;
 }
 
+// Get the limit's minimum possible value, or INT_MIN if it is not known.
+int RangeCheck::GetLimitMin(const Limit& limit)
+{
+    // $bnd is never negative, so "$bnd + cns" can't wrap and is at least cns when cns <= 0.
+    if (limit.IsConstant() || (limit.IsBinOpArray() && (limit.GetConstant() <= 0)))
+    {
+        return limit.GetConstant();
+    }
+    return INT_MIN;
+}
+
 // Check if the arithmetic overflows.
-bool RangeCheck::AddOverflows(Limit& limit1, Limit& limit2)
+bool RangeCheck::AddOverflows(const Range& range1, const Range& range2)
 {
     int max1;
-    if (!GetLimitMax(limit1, &max1))
-    {
-        return true;
-    }
-
     int max2;
-    if (!GetLimitMax(limit2, &max2))
+    if (!GetLimitMax(range1.UpperLimit(), &max1) || !GetLimitMax(range2.UpperLimit(), &max2) ||
+        IntAddOverflows(max1, max2))
     {
         return true;
     }
 
-    return IntAddOverflows(max1, max2);
+    // An underflow wraps to large values and invalidates the upper limit as well.
+    return IntAddOverflows(GetLimitMin(range1.LowerLimit()), GetLimitMin(range2.LowerLimit()));
 }
 
 // Check if the arithmetic overflows.
@@ -2218,16 +2264,6 @@ bool RangeCheck::DoesBinOpOverflow(BasicBlock* block, GenTreeOp* binop, const Ra
     GenTree* op1 = binop->gtGetOp1();
     GenTree* op2 = binop->gtGetOp2();
 
-    if (!GetSearchPath()->Lookup(op1) && ComputeDoesOverflow(block, op1, range))
-    {
-        return true;
-    }
-
-    if (!GetSearchPath()->Lookup(op2) && ComputeDoesOverflow(block, op2, range))
-    {
-        return true;
-    }
-
     // Get the cached ranges of op1
     Range* op1Range = nullptr;
     if (!GetRangeMap()->Lookup(op1, &op1Range))
@@ -2241,12 +2277,26 @@ bool RangeCheck::DoesBinOpOverflow(BasicBlock* block, GenTreeOp* binop, const Ra
         return true;
     }
 
+    // An overflow in an operand only matters for the range this binop used for it.
+    // A dependent range is passed as is: Widen assumes that nothing overflows.
+    const bool keepRange = range.LowerLimit().IsDependent() || range.UpperLimit().IsDependent();
+
+    if (!GetSearchPath()->Lookup(op1) && ComputeDoesOverflow(block, op1, keepRange ? range : *op1Range))
+    {
+        return true;
+    }
+
+    if (!GetSearchPath()->Lookup(op2) && ComputeDoesOverflow(block, op2, keepRange ? range : *op2Range))
+    {
+        return true;
+    }
+
     JITDUMP("Checking bin op overflow %s %s %s\n", GenTree::OpName(binop->OperGet()), op1Range->ToString(m_compiler),
             op2Range->ToString(m_compiler));
 
     if (binop->OperIs(GT_ADD))
     {
-        return AddOverflows(op1Range->UpperLimit(), op2Range->UpperLimit());
+        return AddOverflows(*op1Range, *op2Range);
     }
     if (binop->OperIs(GT_MUL))
     {
@@ -2291,9 +2341,9 @@ bool RangeCheck::DoesVarDefOverflow(BasicBlock* block, GenTreeLclVarCommon* lcl,
     Range assertionRange = Range(Limit(Limit::keUnknown));
     MergeAssertion(block, lcl, &assertionRange DEBUGARG(0));
 
-    // But only if the range from the assertion is more strict than the global
-    // range computed; otherwise we might still have used the def's value to
-    // tighten the range of the global range. A dependent limit doesn't qualify:
+    // But only if the range from the assertion is at least as strict as the range
+    // assumed for the local by its user; otherwise we might still have used the def's
+    // value to tighten that range. A dependent limit doesn't qualify:
     // Widen resolves it later assuming the defs don't overflow.
     Range merged = RangeOps::Merge(range, assertionRange, false);
     if (!range.LowerLimit().IsDependent() && !range.UpperLimit().IsDependent() &&
@@ -2378,9 +2428,9 @@ bool RangeCheck::ComputeDoesOverflow(BasicBlock* block, GenTree* expr, const Ran
     {
         overflows = DoesBinOpOverflow(block, expr->AsOp(), range);
     }
-    // These operators don't overflow themselves, but their ranges are derived from the operands'
-    // ranges, so an overflow in an operand's def chain still invalidates the result.
-    else if (expr->OperIs(GT_AND, GT_RSH, GT_RSZ, GT_UMOD, GT_NEG) || expr->OperIsCompare())
+    // These operators don't overflow themselves, but their ranges may be derived from the operands'
+    // ranges, so conservatively check for overflow in the operands' def chains too.
+    else if (expr->OperIs(GT_AND, GT_RSH, GT_RSZ, GT_UMOD, GT_NEG, GT_BSWAP, GT_BSWAP16) || expr->OperIsCompare())
     {
         overflows = false;
         for (GenTree* operand : expr->Operands())

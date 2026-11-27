@@ -58,6 +58,18 @@
 #include "tailcallhelp.h"
 #include "patchpointinfo.h"
 
+#ifdef FEATURE_INTERPRETER_DIRECT_CALLS
+using RuntimeCodeGenInfo = CInterpreterJitInfo;
+static_assert(!std::is_polymorphic<ICorStaticInfo>::value);
+static_assert(!std::is_polymorphic<ICorDynamicInfo>::value);
+static_assert(!std::is_polymorphic<ICorJitInfo>::value);
+static_assert(!std::is_polymorphic<CInterpreterJitInfo>::value);
+#else
+using RuntimeCodeGenInfo = CEECodeGenInfo;
+static_assert(std::is_polymorphic<ICorJitInfo>::value);
+static_assert(std::is_polymorphic<CEECodeGenInfo>::value);
+#endif
+
 #if defined(FEATURE_INTERPRETER) && defined(FEATURE_PORTABLE_ENTRYPOINTS)
 void ExecuteInterpretedMethodWithArgs_PortableEntryPoint(PCODE portableEntrypoint, TransitionBlock* block, size_t argsSize, int8_t* retBuff);
 #endif
@@ -105,7 +117,7 @@ int64_t AtomicLoad64WithoutTearing(int64_t volatile *valueRef)
 #endif // TARGET_64BIT
 }
 
-FCIMPL1(INT64, GetCompiledILBytes, FC_BOOL_ARG currentThread)
+FCIMPL1(INT64, JitInfo_GetCompiledILBytes, FC_BOOL_ARG currentThread)
 {
     FCALL_CONTRACT;
 
@@ -113,7 +125,7 @@ FCIMPL1(INT64, GetCompiledILBytes, FC_BOOL_ARG currentThread)
 }
 FCIMPLEND
 
-FCIMPL1(INT64, GetCompiledMethodCount, FC_BOOL_ARG currentThread)
+FCIMPL1(INT64, JitInfo_GetCompiledMethodCount, FC_BOOL_ARG currentThread)
 {
     FCALL_CONTRACT;
 
@@ -121,7 +133,7 @@ FCIMPL1(INT64, GetCompiledMethodCount, FC_BOOL_ARG currentThread)
 }
 FCIMPLEND
 
-FCIMPL1(INT64, GetCompilationTimeInTicks, FC_BOOL_ARG currentThread)
+FCIMPL1(INT64, JitInfo_GetCompilationTimeInTicks, FC_BOOL_ARG currentThread)
 {
     FCALL_CONTRACT;
 
@@ -1068,6 +1080,12 @@ void CEEInfo::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken
                 // we cannot resolve to an Async variant in such case.
                 // return NULL, so that caller would re-resolve as a regular method call
                 pMD = pMD->ReturnsTaskOrValueTask() ? pMD->GetAsyncVariant(/*allowInstParam*/FALSE) : NULL;
+                if (pMD != NULL && pMD->IsCovariantForwardingThunk())
+                {
+                    // This variant preserves the base slot's return type and dispatches virtually.
+                    // It cannot replace a direct await or a nonvirtual call to the ordinary variant.
+                    pMD = NULL;
+                }
             }
             break;
 
@@ -1434,10 +1452,10 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
                     // For windows x64/x86/arm64, linux x64/arm64/loongarch64/riscv64:
                     // We convert the TLS access to the optimized helper where we will store
                     // the static blocks in TLS directly and access them via inline code.
+                    // The _OPTIMIZED helpers share their implementation with the _NOCTOR_OPTIMIZED ones;
+                    // only the JIT's model differs, since they may run the class constructor.
                     if ((pResult->helper == CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE_NOCTOR) ||
-                        (pResult->helper == CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE) ||
-                        (pResult->helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR) ||
-                        (pResult->helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE))
+                        (pResult->helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR))
                     {
                         fieldAccessor = CORINFO_FIELD_STATIC_TLS_MANAGED;
                         pResult->helper = CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED;
@@ -1449,13 +1467,23 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
                             pResult->helper = CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2;
                         }
                     }
+                    else if ((pResult->helper == CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE) ||
+                             (pResult->helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE))
+                    {
+                        fieldAccessor = CORINFO_FIELD_STATIC_TLS_MANAGED;
+                        pResult->helper = CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_OPTIMIZED;
+                    }
                     else if ((pResult->helper == CORINFO_HELP_GET_GCTHREADSTATIC_BASE_NOCTOR) ||
-                            (pResult->helper == CORINFO_HELP_GET_GCTHREADSTATIC_BASE) ||
-                            (pResult->helper == CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR) ||
-                            (pResult->helper == CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE))
+                             (pResult->helper == CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR))
                     {
                         fieldAccessor = CORINFO_FIELD_STATIC_TLS_MANAGED;
                         pResult->helper = CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED;
+                    }
+                    else if ((pResult->helper == CORINFO_HELP_GET_GCTHREADSTATIC_BASE) ||
+                             (pResult->helper == CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE))
+                    {
+                        fieldAccessor = CORINFO_FIELD_STATIC_TLS_MANAGED;
+                        pResult->helper = CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_OPTIMIZED;
                     }
                     else if (pResult->helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2_NOJITOPT)
                     {
@@ -3645,6 +3673,48 @@ bool CEEInfo::isValueClass(CORINFO_CLASS_HANDLE clsHnd)
 }
 
 /*********************************************************************/
+bool CEEInfo::isByRefLike(CORINFO_CLASS_HANDLE clsHnd)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    bool result;
+
+    JIT_TO_EE_TRANSITION_LEAF();
+
+    _ASSERTE(clsHnd);
+    result = TypeHandle(clsHnd).IsByRefLike();
+
+    EE_TO_JIT_TRANSITION_LEAF();
+
+    return result;
+}
+
+/*********************************************************************/
+bool CEEInfo::isSharedInst(CORINFO_CLASS_HANDLE clsHnd)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    bool result;
+
+    JIT_TO_EE_TRANSITION_LEAF();
+
+    _ASSERTE(clsHnd);
+    result = TypeHandle(clsHnd).IsCanonicalSubtype();
+
+    EE_TO_JIT_TRANSITION_LEAF();
+
+    return result;
+}
+
+/*********************************************************************/
 uint32_t CEEInfo::getClassAttribs (CORINFO_CLASS_HANDLE clsHnd)
 {
     STANDARD_VM_CONTRACT;
@@ -3908,45 +3978,6 @@ exit: ;
     EE_TO_JIT_TRANSITION();
 
     return (CorInfoInitClassResult)result;
-}
-
-
-
-void CEEInfo::classMustBeLoadedBeforeCodeIsRun (CORINFO_CLASS_HANDLE typeToLoadHnd)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    JIT_TO_EE_TRANSITION_LEAF();
-
-    TypeHandle th = TypeHandle(typeToLoadHnd);
-
-    // Type handles returned to JIT at runtime are always fully loaded. Verify that it is the case.
-    _ASSERTE(th.IsFullyLoaded());
-
-    EE_TO_JIT_TRANSITION_LEAF();
-}
-
-/*********************************************************************/
-void CEEInfo::methodMustBeLoadedBeforeCodeIsRun (CORINFO_METHOD_HANDLE methHnd)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    JIT_TO_EE_TRANSITION_LEAF();
-
-    MethodDesc *pMD = (MethodDesc*) methHnd;
-
-    // MethodDescs returned to JIT at runtime are always fully loaded. Verify that it is the case.
-    _ASSERTE(pMD->GetMethodTable()->IsFullyLoaded());
-
-    EE_TO_JIT_TRANSITION_LEAF();
 }
 
 /*********************************************************************/
@@ -5843,8 +5874,6 @@ CorInfoHelpFunc CEEInfo::getUnBoxHelper(CORINFO_CLASS_HANDLE clsHnd)
 {
     LIMITED_METHOD_CONTRACT;
 
-    classMustBeLoadedBeforeCodeIsRun(clsHnd);
-
     TypeHandle VMClsHnd(clsHnd);
     if (Nullable::IsNullableType(VMClsHnd))
         return CORINFO_HELP_UNBOX_NULLABLE;
@@ -6289,9 +6318,19 @@ bool CEEInfo::canValueClassInstancePointerEscape(CORINFO_METHOD_HANDLE ftn)
 
     // ECMA augment III.1.7.7 allows making this escaping assumption based on
     // RefSafetyRules and UnscopedRef attributes.
-    if (pMD->GetModule()->OptsIntoRefSafetyRulesV11())
+    Module* pModule = pMD->GetModule();
+    if (pModule->OptsIntoRefSafetyRulesV11())
     {
-        result = (pMD->GetCustomAttribute(WellKnownAttribute::UnscopedRef, NULL, NULL) == S_OK);
+        mdMethodDef md = pMD->GetMemberDef();
+        result = (pModule->GetCustomAttribute(md, WellKnownAttribute::UnscopedRef, NULL, NULL) == S_OK);
+
+        // C# emits [UnscopedRef] for properties on the property rather than on its accessors.
+        mdProperty pd;
+        if (!result && IsMdSpecialName(pMD->GetAttrs()) &&
+            (pModule->GetMDImport()->GetPropertyInfoForMethodDef(md, &pd, NULL, NULL) == S_OK))
+        {
+            result = (pModule->GetCustomAttribute(pd, WellKnownAttribute::UnscopedRef, NULL, NULL) == S_OK);
+        }
     }
 
     EE_TO_JIT_TRANSITION();
@@ -9073,7 +9112,15 @@ void CEEInfo::getFunctionFixedEntryPoint(CORINFO_METHOD_HANDLE   ftn,
     MethodDesc * pMD = GetMethod(ftn);
 
     if (isUnsafeFunctionPointer)
+    {
         pMD->PrepareForUseAsAFunctionPointer();
+    }
+    else
+    {
+        // Delegate targets can be called from precompiled code without a call-site signature
+        // load, so the target must be ready for prestub stack walks before it is published.
+        pMD->PrepareForUseAsACallTargetOfANativeImage();
+    }
 
     pResult->accessType = IAT_VALUE;
     pResult->addr = (void*)pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_UNMANAGED_CALLER_MAYBE);
@@ -9504,11 +9551,7 @@ CorInfoTypeWithMod CEEInfo::getArgType (
             // NOTE: in some IJW cases, when the type pointed at is unmanaged,
             // the GetTypeHandle may fail, because there is no TypeDef for such type.
             // Usage of GetTypeHandleThrowing would lead to class load exception
-            TypeHandle thPtr = ptr.GetTypeHandleNT(pModule, &typeContext);
-            if(!thPtr.IsNull())
-            {
-                classMustBeLoadedBeforeCodeIsRun(CORINFO_CLASS_HANDLE(thPtr.AsPtr()));
-            }
+            ptr.GetTypeHandleNT(pModule, &typeContext);
         }
         FALLTHROUGH;
 
@@ -10760,7 +10803,7 @@ static CORJIT_FLAGS GetCompileFlags(PrepareCodeConfig* prepareConfig, MethodDesc
         else
         {
             if (!flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_TIER0))
-                flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBOPT);
+                flags.Set(CORJIT_FLAGS::CORJIT_FLAG_PGO_OPT);
         }
 
         if (optType == OPT_SIZE)
@@ -10791,11 +10834,11 @@ static CORJIT_FLAGS GetCompileFlags(PrepareCodeConfig* prepareConfig, MethodDesc
 
     if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ReadPGOData) > 0)
     {
-        flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBOPT);
+        flags.Set(CORJIT_FLAGS::CORJIT_FLAG_PGO_OPT);
     }
     else if (g_pConfig->TieredPGO() && flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_TIER1))
     {
-        flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBOPT);
+        flags.Set(CORJIT_FLAGS::CORJIT_FLAG_PGO_OPT);
     }
 
 #endif
@@ -11596,7 +11639,8 @@ void CEECodeGenInfo::CompressDebugInfo(PCODE nativeEntry, NativeCodeVersion nati
     EX_TRY
     {
         const InstrumentedILOffsetMapping *pILOffsetMapping = NULL;
-        InstrumentedILOffsetMapping loadTimeMapping;
+        // Owns the copy of the load-time map. The ReJIT map is borrowed and must not be freed.
+        InstrumentedILOffsetMappingHolder loadTimeMapping;
 #ifdef FEATURE_REJIT
         ILCodeVersion ilVersion;
 
@@ -11617,8 +11661,8 @@ void CEECodeGenInfo::CompressDebugInfo(PCODE nativeEntry, NativeCodeVersion nati
             // if there is a profiler load-time mapping and not a rejit mapping, apply that instead
             loadTimeMapping =
                 m_pMethodBeingCompiled->GetAssembly()->GetModule()->GetInstrumentedILOffsetMapping(m_pMethodBeingCompiled->GetMemberDef());
-            if (!loadTimeMapping.IsNull())
-                pILOffsetMapping = &loadTimeMapping;
+            if (!loadTimeMapping.Get().IsNull())
+                pILOffsetMapping = &loadTimeMapping.Get();
         }
 
         PTR_BYTE pDebugInfo = CompressDebugInfo::Compress(
@@ -11630,7 +11674,11 @@ void CEECodeGenInfo::CompressDebugInfo(PCODE nativeEntry, NativeCodeVersion nati
             &m_dbgAsyncInfo, m_dbgAsyncSuspensionPoints, m_dbgAsyncContinuationVars, m_numAsyncContinuationVars,
             m_pMethodBeingCompiled->GetLoaderAllocator()->GetLowFrequencyHeap());
 
+#ifdef FEATURE_INTERPRETER_DIRECT_CALLS
+        static_cast<CInterpreterJitInfo*>(this)->SetDebugInfo(pDebugInfo);
+#else
         SetDebugInfo(pDebugInfo);
+#endif
     }
     EX_CATCH
     {
@@ -12119,18 +12167,23 @@ void CEEJitInfo::recordRelocation(void *       location,
             // Target is out of 32-bit range
             // If we're fixing up a jump, try jumping through a stub
             PCODE jumpStubAddr = (PCODE)NULL;
-            if ((fRelocType == CorInfoReloc::RISCV64_CALL_PLT) && !m_fJumpStubOverflow)
+            if (fRelocType == CorInfoReloc::RISCV64_CALL_PLT)
             {
-                BYTE* loAddr = (BYTE*)location - (1ll << 31) - (1ll << 11);
-                BYTE* hiAddr = (BYTE*)location + (1ll << 31) - (1ll << 11) - 1;
+                // Once an overflow has been recorded the code is thrown away and recompiled, so do not allocate
+                // more jump stubs; keep counting them so that the retry reserves enough space.
+                if (!m_fJumpStubOverflow)
+                {
+                    BYTE* loAddr = (BYTE*)location - (1ll << 31) - (1ll << 11);
+                    BYTE* hiAddr = (BYTE*)location + (1ll << 31) - (1ll << 11) - 1;
 
-                // Check for the wrap around cases
-                if (loAddr > location)
-                    loAddr = (BYTE*)UINT64_MIN; // overflow
-                if (hiAddr < location)
-                    hiAddr = (BYTE*)UINT64_MAX; // overflow
+                    // Check for the wrap around cases
+                    if (loAddr > location)
+                        loAddr = (BYTE*)UINT64_MIN; // overflow
+                    if (hiAddr < location)
+                        hiAddr = (BYTE*)UINT64_MAX; // overflow
 
-                PCODE jumpStubAddr = ExecutionManager::jumpStub(m_pMethodBeingCompiled, (PCODE)target, loAddr, hiAddr, nullptr);
+                    jumpStubAddr = ExecutionManager::jumpStub(m_pMethodBeingCompiled, (PCODE)target, loAddr, hiAddr, nullptr);
+                }
 
                 // Keep track of conservative estimate of how much memory may be needed by jump stubs. We will use it
                 // to reserve extra memory on retry to increase chances that the retry succeeds.
@@ -12475,7 +12528,8 @@ bool CEEInfo::getObjectContent(CORINFO_OBJECT_HANDLE handle, uint8_t* buffer, in
     _ASSERTE(objRef != NULL);
 
     // TODO: support types containing GC pointers
-    if (bufferSize + valueOffset <= (int)objRef->GetSize())
+    size_t objSize = objRef->GetSize();
+    if ((size_t)bufferSize <= objSize && (size_t)valueOffset <= objSize - (size_t)bufferSize)
     {
         Object* obj = OBJECTREFToObject(objRef);
         PTR_MethodTable type = obj->GetMethodTable();
@@ -12676,14 +12730,13 @@ HRESULT CEECodeGenInfo::getPgoInstrumentationResults(
     if (pDataCur == nullptr)
     {
         // If not found in previous list, gather it here, and add to linked list
-        NewHolder<ComputedPgoData> newPgoData = new ComputedPgoData(pMD);
+        NewHolder<ComputedPgoData> newPgoData(new ComputedPgoData(pMD));
         newPgoData->m_next = m_foundPgoData;
-        m_foundPgoData = newPgoData;
-        newPgoData.SuppressRelease();
+        pDataCur = newPgoData.Detach();
+        m_foundPgoData = pDataCur;
 
-        newPgoData->m_hr = PgoManager::getPgoInstrumentationResults(pMD, m_ILHeader, &newPgoData->m_allocatedData, &newPgoData->m_schema,
-            &newPgoData->m_cSchemaElems, &newPgoData->m_pInstrumentationData, &newPgoData->m_pgoSource);
-        pDataCur = m_foundPgoData;
+        pDataCur->m_hr = PgoManager::getPgoInstrumentationResults(pMD, m_ILHeader, &pDataCur->m_allocatedData, &pDataCur->m_schema,
+            &pDataCur->m_cSchemaElems, &pDataCur->m_pInstrumentationData, &pDataCur->m_pgoSource);
     }
 
     *pSchema = pDataCur->m_schema;
@@ -12982,7 +13035,7 @@ void CEECodeGenInfo::getEHinfo(
 }
 
 static CorJitResult invokeCompileMethod(EECodeGenManager *jitMgr,
-                                       CEECodeGenInfo *comp,
+                                       RuntimeCodeGenInfo *comp,
                                        BYTE **nativeEntry,
                                        uint32_t *nativeSizeOfCode,
                                        NativeCodeVersion nativeCodeVersion)
@@ -13190,7 +13243,7 @@ void ThrowExceptionForJit(HRESULT res)
 
 static TADDR UnsafeJitFunctionWorker(
     EECodeGenManager *pJitMgr,
-    CEECodeGenInfo *pJitInfo,
+    RuntimeCodeGenInfo *pJitInfo,
     NativeCodeVersion nativeCodeVersion,
     _Out_ ULONG* pSizeOfCode)
 {
@@ -13518,6 +13571,12 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
         if (ret)
         {
             sizeOfILCode = interpreterJitInfo.getMethodInfoInternal()->ILCodeSize;
+
+#ifdef FEATURE_READYTORUN_AUXILIARY_MODULES
+            // Passing auxiliary state through the JIT-EE interface would allow direct
+            // emission. Backpatch before publication to avoid extending that interface.
+            reinterpret_cast<InterpByteCodeStart*>(ret)->InitializeAuxiliaryEntry(config->GetAuxiliaryActivationFlag());
+#endif // FEATURE_READYTORUN_AUXILIARY_MODULES
 
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
             PCODE portableEntryPoint = ftn->GetPortableEntryPoint();
@@ -14047,7 +14106,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             _ASSERTE(pInfoModule->IsFullModule());
             pMD = MemberLoader::GetMethodDescFromMethodDef(static_cast<Module*>(pInfoModule), MethodDef, FALSE);
 
-            pMD->PrepareForUseAsADependencyOfANativeImage();
+            pMD->PrepareForUseAsACallTargetOfANativeImage();
 
             if (g_fEEStarted)
             {
@@ -14068,7 +14127,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             MemberLoader::GetDescFromMemberRef(pInfoModule, MemberRef, &pMD, &pFD, &typeContext, FALSE /* strict metadata checks */, &th);
             _ASSERTE(pMD != NULL);
 
-            pMD->PrepareForUseAsADependencyOfANativeImage();
+            pMD->PrepareForUseAsACallTargetOfANativeImage();
 
             if (g_fEEStarted)
             {
@@ -14082,6 +14141,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
     case READYTORUN_FIXUP_MethodEntry:
         {
             pMD = ZapSig::DecodeMethod(currentModule, pInfoModule, pBlob);
+            pMD->PrepareForUseAsACallTargetOfANativeImage();
 
             if (g_fEEStarted)
             {
@@ -14097,6 +14157,8 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
     case READYTORUN_FIXUP_MethodEntry_ReadyToRun:
         {
             pMD = ZapSig::DecodeMethod(currentModule, pInfoModule, pBlob);
+            if (pMD->IsWrapperStub() || pMD->IsVtableMethod())
+                pMD->PrepareForUseAsADependencyOfANativeImage();
 
             if (!pMD->GetModule()->IsReadyToRun())
             {
@@ -14621,6 +14683,15 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                 DWORD instructionSetEncoded = CorSigUncompressData(pBlob);
                 bool mustInstructionSetBeSupported = !!(instructionSetEncoded & 1);
                 ReadyToRunInstructionSet instructionSet = (ReadyToRunInstructionSet)(instructionSetEncoded >> 1);
+#ifdef TARGET_WASM
+                // Other images must match the instruction sets CoreLib was compiled for.
+                if (mustInstructionSetBeSupported && currentModule->IsSystem())
+                {
+                    ExecutionManager::GetEEJitManager()->SetInstructionSetFromCoreLib(InstructionSetFromR2RInstructionSet(instructionSet));
+                    corjitFlags = ExecutionManager::GetEEJitManager()->GetCPUCompileFlags();
+                    continue;
+                }
+#endif // TARGET_WASM
                 if (IsInstructionSetSupported(corjitFlags, instructionSet) != mustInstructionSetBeSupported)
                 {
                     return FALSE;
@@ -14960,7 +15031,7 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub(void** entryPoint)
 
     if (msig.HasGenericContextArg())
     {
-        pCode->EmitLDC(0);
+        pCode->EmitLDC_I(0);
         pCode->EmitCALL(METHOD__RUNTIME_HELPERS__SET_NEXT_CALL_GENERIC_CONTEXT, 1, 0);
     }
 
@@ -14973,8 +15044,7 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub(void** entryPoint)
     {
         if (md->GetMethodTable()->IsValueType())
         {
-            pCode->EmitLDC(0);
-            pCode->EmitCONV_U();
+            pCode->EmitLDC_I(0);
         }
         else
         {
@@ -14991,8 +15061,7 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub(void** entryPoint)
         TypeHandle tyHnd = msig.GetLastTypeHandleThrowing();
         if (tyHnd.IsByRef())
         {
-            pCode->EmitLDC(0);
-            pCode->EmitCONV_U();
+            pCode->EmitLDC_I(0);
         }
         else
         {
@@ -15018,7 +15087,7 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub(void** entryPoint)
         // expects and then delegating back into the OSR version (knowing to do
         // so through information stored in the continuation).
         _ASSERTE(m_pPatchpointInfoFromRuntime != NULL);
-        pCode->EmitLDC((DWORD_PTR)m_pPatchpointInfoFromRuntime->GetTier0EntryPoint());
+        pCode->EmitLDC_I((DWORD_PTR)m_pPatchpointInfoFromRuntime->GetTier0EntryPoint());
 #else // !FEATURE_ON_STACK_REPLACEMENT
         _ASSERTE(!"Unexpected optimization tier with OSR disabled");
 #endif // FEATURE_ON_STACK_REPLACEMENT
@@ -15030,7 +15099,7 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub(void** entryPoint)
             m_finalCodeAddressSlot = (PCODE*)amTracker.Track(m_pMethodBeingCompiled->GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(PCODE))));
         }
 
-        pCode->EmitLDC((DWORD_PTR)m_finalCodeAddressSlot);
+        pCode->EmitLDC_I((DWORD_PTR)m_finalCodeAddressSlot);
         pCode->EmitLDIND_I();
     }
 
@@ -15338,6 +15407,14 @@ void CEEInfo::recordWasmManagedCallSig(
     // No-op for the VM. Only meaningful for ReadyToRun Wasm compilation.
 }
 
+void CEEInfo::recordWasmVirtualFunctionPointerLookup(
+        CORINFO_METHOD_HANDLE method        /* IN */
+        )
+{
+    LIMITED_METHOD_CONTRACT;
+    // No-op for the VM. Only meaningful for ReadyToRun Wasm compilation.
+}
+
 void CEEInfo::recordRelocation(
         void *                 location,   /* IN  */
         void *                 locationRW, /* IN  */
@@ -15495,6 +15572,7 @@ EECodeInfo::EECodeInfo()
 
     m_pFunctionEntry = NULL;
     m_isFuncletCache = IsFuncletCache::NotSet;
+    m_gcInfoToken = { NULL, 0 };
 
 #ifdef TARGET_X86
     m_hdrInfoTable = NULL;
@@ -15520,6 +15598,7 @@ void EECodeInfo::Init(PCODE codeAddress, ExecutionManager::ScanFlag scanFlag)
 
     m_codeAddress = codeAddress;
     m_isFuncletCache = IsFuncletCache::NotSet;
+    m_gcInfoToken = { NULL, 0 };
 
 #ifdef TARGET_X86
     m_hdrInfoTable = NULL;
@@ -15540,6 +15619,7 @@ Invalid:
     m_pMD = NULL;
     m_relOffset = 0;
     m_pFunctionEntry = NULL;
+    m_gcInfoToken = { NULL, 0 };
 }
 
 TADDR EECodeInfo::GetSavedMethodCode()
@@ -15596,6 +15676,15 @@ NativeCodeVersion EECodeInfo::GetNativeCodeVersion() const
     {
         return NativeCodeVersion();
     }
+
+#if defined(HAVE_GCCOVER) && defined(FEATURE_READYTORUN)
+    // R2R code is the default version, even when its entry point was registered
+    // by a different instantiation or by diagnostic enumeration before publication.
+    if (m_pJM == ExecutionManager::GetReadyToRunJitManager())
+    {
+        return NativeCodeVersion(pMD);
+    }
+#endif // HAVE_GCCOVER && FEATURE_READYTORUN
 
 #ifdef FEATURE_CODE_VERSIONING
     if (pMD->IsVersionable())

@@ -119,6 +119,55 @@ namespace System.Net.WebSockets.Tests
             });
         }
 
+        [Theory]
+        [InlineData(new byte[] { 0xc2 })]
+        [InlineData(new byte[] { 0xe2 })]
+        [InlineData(new byte[] { 0xe2, 0x82 })]
+        [InlineData(new byte[] { 0xf0 })]
+        [InlineData(new byte[] { 0xf0, 0x9f })]
+        [InlineData(new byte[] { 0xf0, 0x9f, 0x98 })]
+        public async Task ValidateIncompleteSequenceWithEmptyFinalSegment_Invalid(byte[] data)
+        {
+            foreach (bool useEmptyReceiveBuffer in new[] { false, true })
+            {
+                await WithConnectedWebSockets(async (sender, receiver) =>
+                {
+                    Assert.True(await IsValidUtf8Async(sender, receiver, data, endOfMessage: false));
+                    Assert.True(await IsValidUtf8Async(sender, receiver, Memory<byte>.Empty, endOfMessage: false));
+
+                    await sender.SendAsync(Memory<byte>.Empty, WebSocketMessageType.Text, endOfMessage: true, CancellationToken.None);
+                    Memory<byte> receiveBuffer = useEmptyReceiveBuffer ? Memory<byte>.Empty : new byte[1];
+                    WebSocketException ex = await Assert.ThrowsAsync<WebSocketException>(async () =>
+                        await receiver.ReceiveAsync(receiveBuffer, CancellationToken.None));
+
+                    Assert.Equal(WebSocketError.Faulted, ex.WebSocketErrorCode);
+                    Assert.Equal(SR.net_Websockets_InvalidTextPayload, ex.Message);
+                    Assert.Equal(WebSocketState.Aborted, receiver.State);
+
+                    WebSocketReceiveResult closeResult = await sender.ReceiveAsync(new ArraySegment<byte>(new byte[128]), CancellationToken.None);
+                    Assert.Equal(WebSocketMessageType.Close, closeResult.MessageType);
+                    Assert.Equal(WebSocketCloseStatus.InvalidPayloadData, closeResult.CloseStatus);
+                });
+            }
+        }
+
+        [Theory]
+        [InlineData(new byte[] { })]
+        [InlineData(new byte[] { 0x61 })]
+        [InlineData(new byte[] { 0xc2, 0xb5 })]
+        [InlineData(new byte[] { 0xe2, 0x82, 0xac })]
+        [InlineData(new byte[] { 0xf0, 0x9f, 0x98, 0x80 })]
+        public async Task ValidateCompleteSequenceWithEmptyFinalSegment_Valid(byte[] data)
+        {
+            await WithConnectedWebSockets(async (sender, receiver) =>
+            {
+                Assert.True(await IsValidUtf8Async(sender, receiver, data, endOfMessage: false));
+                Assert.True(await IsValidUtf8Async(sender, receiver, Memory<byte>.Empty, endOfMessage: false));
+                Assert.True(await IsValidUtf8Async(sender, receiver, Memory<byte>.Empty, endOfMessage: true));
+                Assert.True(await IsValidUtf8Async(sender, receiver, data, endOfMessage: true));
+            });
+        }
+
         private static async ValueTask<bool> IsValidUtf8Async(WebSocket sender, WebSocket receiver, Memory<byte> buffer, bool endOfMessage)
         {
             await sender.SendAsync(buffer, WebSocketMessageType.Text, endOfMessage, CancellationToken.None).ConfigureAwait(false);
