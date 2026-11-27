@@ -1417,7 +1417,7 @@ static_assert(DBG_TARGET_REGNUM_AMBIENT_SP == ICorDebugInfo::REGNUM_AMBIENT_SP);
 static_assert(DBG_TARGET_REGNUM_SP == ICorDebugInfo::REGNUM_SP);
 static_assert(DBG_TARGET_REGNUM_AMBIENT_SP == ICorDebugInfo::REGNUM_AMBIENT_SP);
 #endif
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
 #define DBG_TARGET_REGNUM_SP 0
 #define DBG_TARGET_REGNUM_AMBIENT_SP 0
 #else

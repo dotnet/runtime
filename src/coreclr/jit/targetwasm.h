@@ -2,12 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 #pragma once
 
-#if !defined(TARGET_WASM)
+#if !defined(TARGET_WASMARCH)
 #error The file should not be included for this platform.
 #endif
 
 // clang-format off
-#ifdef TARGET_WASM32
+#ifdef TARGET_WASM
 #define CORINFO_ARCH_TARGET      CORINFO_ARCH_WASM32
 #else
 #error NYI: WASM64
@@ -40,7 +40,7 @@
 
 #define NOGC_WRITE_BARRIERS      0       // No specialized WriteBarrier JIT Helpers
 #define USER_ARGS_COME_LAST      1
-#ifdef TARGET_WASM32
+#ifdef TARGET_WASM
 #define TARGET_POINTER_SIZE      4       // equal to sizeof(void*) and the managed pointer size in bytes for this target
 #else
 #define TARGET_POINTER_SIZE      8       // equal to sizeof(void*) and the managed pointer size in bytes for this target

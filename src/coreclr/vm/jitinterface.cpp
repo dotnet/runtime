@@ -14409,13 +14409,13 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             ReadyToRunInfo * pR2RInfo = currentModule->GetReadyToRunInfo();
 
             DWORD stubRVA = GET_UNALIGNED_VAL32(pBlob);
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
             // Wasm code is a function-table index, not imageBase+RVA; resolve like a method entry point.
             //
             PCODE stubEntryPoint = pR2RInfo->GetMinFunctionTableIndex() + stubRVA;
 #else
             PCODE stubEntryPoint = dac_cast<TADDR>(pR2RInfo->GetImage()->GetBase()) + stubRVA;
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
 
             pR2RInfo->RegisterResumptionStub(stubEntryPoint);
 
@@ -14435,12 +14435,12 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             DWORD locationRVA = GET_UNALIGNED_VAL32(pBlob);
             pBlob += sizeof(DWORD);
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
             // Wasm code is a function-table index, not imageBase+RVA; but what we actually need is the virtual ip
             PCODE targetEntryPoint = pR2RInfo->R2RRelativeFunctionIndexToVirtualIP(targetRVA);
 #else
             PCODE targetEntryPoint = dac_cast<TADDR>(pR2RInfo->GetImage()->GetBase()) + targetRVA;
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
 
             // The target entry point must already have been registered (e.g. by the
             // READYTORUN_FIXUP_ResumptionStubEntryPoint fixup, which is ordered before this one).
@@ -14683,7 +14683,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                 DWORD instructionSetEncoded = CorSigUncompressData(pBlob);
                 bool mustInstructionSetBeSupported = !!(instructionSetEncoded & 1);
                 ReadyToRunInstructionSet instructionSet = (ReadyToRunInstructionSet)(instructionSetEncoded >> 1);
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
                 // Other images must match the instruction sets CoreLib was compiled for.
                 if (mustInstructionSetBeSupported && currentModule->IsSystem())
                 {
@@ -14691,7 +14691,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                     corjitFlags = ExecutionManager::GetEEJitManager()->GetCPUCompileFlags();
                     continue;
                 }
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
                 if (IsInstructionSetSupported(corjitFlags, instructionSet) != mustInstructionSetBeSupported)
                 {
                     return FALSE;
@@ -15467,7 +15467,7 @@ uint32_t CEEInfo::getExpectedTargetArchitecture()
     return CORINFO_ARCH_LOONGARCH64;
 #elif defined(TARGET_RISCV64)
     return CORINFO_ARCH_RISCV64;
-#elif defined(TARGET_WASM32)
+#elif defined(TARGET_WASM)
     return CORINFO_ARCH_WASM32;
 #else
     PORTABILITY_ASSERT("NYI: CEEInfo::getExpectedTargetArchitecture");

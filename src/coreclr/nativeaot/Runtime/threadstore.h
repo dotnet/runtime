@@ -48,7 +48,7 @@ public:
     static Thread *         RawGetCurrentThread();
     static Thread *         GetCurrentThread();
     static Thread *         GetCurrentThreadIfAvailable();
-#if defined(TARGET_UNIX) && !defined(TARGET_WASM)
+#if defined(TARGET_UNIX) && !defined(TARGET_WASMARCH)
     static Thread *         GetCurrentThreadIfAvailableAsyncSafe();
 #endif
     static PTR_Thread       GetSuspendingThread();

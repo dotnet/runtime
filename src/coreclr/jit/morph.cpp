@@ -309,7 +309,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
             // Overflow-checked casts must NOT be clamped here: the outer
             // CAST_OVF(smallType <- int) is responsible for throwing OverflowException
             // when the value is out of range.
-#if defined(FEATURE_HW_INTRINSICS) || defined(TARGET_WASM)
+#if defined(FEATURE_HW_INTRINSICS) || defined(TARGET_WASMARCH)
             if (!tree->gtOverflow())
             {
                 double smallMin;
@@ -339,12 +339,12 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
                     // WASM defines FEATURE_HW_INTRINSICS but gtNewSimdMinMaxNativeNode is
                     // NYI there, so it uses scalar GT_INTRINSIC MaxNative/MinNative nodes
                     // (which lower to native WebAssembly min/max) instead.
-#if defined(FEATURE_HW_INTRINSICS) && !defined(TARGET_WASM)
+#if defined(FEATURE_HW_INTRINSICS) && !defined(TARGET_WASMARCH)
                 oper = gtNewSimdMinMaxNativeNode(srcType, gtNewDconNode(smallMin, srcType), oper, srcType,
                                                  /* simdSize */ 0, /* isMax */ true);
                 oper = gtNewSimdMinMaxNativeNode(srcType, gtNewDconNode(smallMax, srcType), oper, srcType,
                                                  /* simdSize */ 0, /* isMax */ false);
-#else  // TARGET_WASM
+#else  // TARGET_WASMARCH
        // WASM f32.min/f64.min propagate NaN; use GT_INTRINSIC nodes which
        // lower to native WebAssembly min/max instructions.
                 const CORINFO_CONST_LOOKUP nullEntry = {IAT_VALUE};
@@ -352,14 +352,14 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
                                                                  NI_System_Math_MaxNative, nullptr R2RARG(nullEntry));
                 oper = new (this, GT_INTRINSIC) GenTreeIntrinsic(srcType, gtNewDconNode(smallMax, srcType), oper,
                                                                  NI_System_Math_MinNative, nullptr R2RARG(nullEntry));
-#endif // FEATURE_HW_INTRINSICS && !TARGET_WASM
+#endif // FEATURE_HW_INTRINSICS && !TARGET_WASMARCH
             }
 #elif defined(TARGET_ARM) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
             // Integer-domain clamp is applied after R -> int below.
 #else
 #error "New JIT target: add saturating float-to-small-int support. Either add a float-domain clamp " \
        "(as for xarch/arm64/wasm) or an integer-domain saturating operation (as for arm32/riscv64/la64)."
-#endif // FEATURE_HW_INTRINSICS || TARGET_WASM
+#endif // FEATURE_HW_INTRINSICS || TARGET_WASMARCH
 
             oper = gtNewCastNodeL(TYP_INT, oper, /* fromUnsigned */ false, TYP_INT);
             oper->gtFlags |= (tree->gtFlags & (GTF_OVERFLOW | GTF_EXCEPT));
@@ -974,7 +974,7 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
         }
     }
 
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
 
     // Wasm passes the shadow stack pointer as an implicit first argument, and GT_LCLHEAP
     // updates it. Arguments are pushed onto the Wasm operand stack in order, so any
@@ -994,7 +994,7 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
 
     const bool hasStackArgsWeCareAbout = m_hasStackArgs;
 
-#endif // defined(TARGET_WASM)
+#endif // defined(TARGET_WASMARCH)
 
     // If we have any stack args we have to force the evaluation
     // of any arguments passed in registers that might throw an exception
@@ -1723,7 +1723,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
 
     bool addStubCellArg = true;
 
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
     // The portable entrypoint carries enough information to recover the dispatch cell.
     addStubCellArg = false;
 #elif defined(TARGET_X86)
@@ -1756,8 +1756,8 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
     }
 #if defined(FEATURE_READYTORUN)
 
-#ifdef TARGET_WASM
-    // TARGET_WASM does not use an explicit indirection cell arg for the R2R calling convention since
+#ifdef TARGET_WASMARCH
+    // TARGET_WASMARCH does not use an explicit indirection cell arg for the R2R calling convention since
     // the address of the indirection cell is recoverable from the portable entrypoint which
     // we pass already as part of the Wasm managed calling convention (See LowerPEPCall).
     bool needsIndirectionCellArg = false;
@@ -1797,14 +1797,14 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
     }
 #endif // defined(FEATURE_READYTORUN)
 
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
     // On WASM, we need to add an initial argument for the stack pointer for managed calls.
     if (!call->IsUnmanaged())
     {
         GenTree* const stackPointer = comp->gtNewLclVarNode(comp->lvaWasmSpArg, TYP_I_IMPL);
         PushFront(comp, NewCallArg::Primitive(stackPointer).WellKnown(WellKnownArg::WasmShadowStackPointer));
     }
-#endif // defined(TARGET_WASM)
+#endif // defined(TARGET_WASMARCH)
 
     ClassifierInfo info;
     info.CallConv = call->GetUnmanagedCallConv();
@@ -3180,7 +3180,7 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
     {
         groupArrayRefWithIndex = false;
     }
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
     // Keep the constant offset outermost so it can fold into the memory instruction's memarg.
     groupArrayRefWithIndex = varTypeIsGC(arrRef) && !varTypeIsStruct(elemTyp);
 #endif
@@ -4349,13 +4349,13 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
     // as non-interruptible for fast tail calls.
     //
     // Wasm passes args via fresh wasm locals, not the caller's stack, so this check doesn't apply.
-#ifndef TARGET_WASM
+#ifndef TARGET_WASMARCH
     if (calleeArgStackSize > callerArgStackSize)
     {
         reportFastTailCallDecision("Not enough incoming arg space");
         return false;
     }
-#endif // !TARGET_WASM
+#endif // !TARGET_WASMARCH
 
     // For Windows some struct parameters are copied on the local frame
     // and then passed by reference. We cannot fast tail call in these situation
@@ -7095,7 +7095,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, bool* optAssertionPropDone)
         case GT_MUL:
             noway_assert(op2 != nullptr);
 
-#if !defined(TARGET_64BIT) && !defined(TARGET_WASM)
+#if !defined(TARGET_64BIT) && !defined(TARGET_WASMARCH)
             if (typ == TYP_LONG)
             {
                 // For (long)int1 * (long)int2, we dont actually do the
@@ -7130,9 +7130,9 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, bool* optAssertionPropDone)
                     goto USE_HELPER_FOR_ARITH;
                 }
             }
-#endif // !defined(TARGET_64BIT) && !defined(TARGET_WASM)
+#endif // !defined(TARGET_64BIT) && !defined(TARGET_WASMARCH)
 
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
             if (tree->gtOverflow())
             {
                 // For long multiply with overflow, call the helper.
@@ -7205,7 +7205,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, bool* optAssertionPropDone)
                 return fgMorphSmpOp(tree);
             }
 
-#if !defined(TARGET_64BIT) && !defined(TARGET_WASM)
+#if !defined(TARGET_64BIT) && !defined(TARGET_WASMARCH)
             if (typ == TYP_LONG)
             {
                 helper = CORINFO_HELP_LDIV;
@@ -7219,12 +7219,12 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, bool* optAssertionPropDone)
                 goto USE_HELPER_FOR_ARITH;
             }
 #endif
-#endif // !defined(TARGET_64BIT) && !defined(TARGET_WASM)
+#endif // !defined(TARGET_64BIT) && !defined(TARGET_WASMARCH)
             break;
 
         case GT_UDIV:
 
-#if !defined(TARGET_64BIT) && !defined(TARGET_WASM)
+#if !defined(TARGET_64BIT) && !defined(TARGET_WASMARCH)
             if (typ == TYP_LONG)
             {
                 helper = CORINFO_HELP_ULDIV;
@@ -7237,7 +7237,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, bool* optAssertionPropDone)
                 goto USE_HELPER_FOR_ARITH;
             }
 #endif
-#endif // !defined(TARGET_64BIT) && !defined(TARGET_WASM)
+#endif // !defined(TARGET_64BIT) && !defined(TARGET_WASMARCH)
             break;
 
         case GT_MOD:
@@ -7344,7 +7344,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, bool* optAssertionPropDone)
                 }
             }
 
-#if !defined(TARGET_64BIT) && !defined(TARGET_WASM)
+#if !defined(TARGET_64BIT) && !defined(TARGET_WASMARCH)
             if (typ == TYP_LONG)
             {
                 helper = (oper == GT_UMOD) ? CORINFO_HELP_ULMOD : CORINFO_HELP_LMOD;
@@ -7367,7 +7367,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, bool* optAssertionPropDone)
                 }
             }
 #endif // TARGET_ARM
-#endif // !defined(TARGET_64BIT) && !defined(TARGET_WASM)
+#endif // !defined(TARGET_64BIT) && !defined(TARGET_WASMARCH)
 
             if (tree->OperIs(GT_UMOD) && op2->IsIntegralConstUnsignedPow2())
             {
@@ -7656,9 +7656,9 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, bool* optAssertionPropDone)
         }
     }
 
-#if !defined(TARGET_64BIT) && !defined(TARGET_WASM)
+#if !defined(TARGET_64BIT) && !defined(TARGET_WASMARCH)
 DONE_MORPHING_CHILDREN:
-#endif // !defined(TARGET_64BIT) && !defined(TARGET_WASM)
+#endif // !defined(TARGET_64BIT) && !defined(TARGET_WASMARCH)
 
     gtUpdateNodeOperSideEffects(tree);
 
@@ -7843,14 +7843,14 @@ DONE_MORPHING_CHILDREN:
 
         case GT_MUL:
 
-#if !defined(TARGET_64BIT) && !defined(TARGET_WASM)
+#if !defined(TARGET_64BIT) && !defined(TARGET_WASMARCH)
             if (typ == TYP_LONG)
             {
                 // This must be GTF_MUL_64RSLT
                 INDEBUG(tree->AsOp()->DebugCheckLongMul());
                 return tree;
             }
-#endif // !defined(TARGET_64BIT) && !defined(TARGET_WASM)
+#endif // !defined(TARGET_64BIT) && !defined(TARGET_WASMARCH)
             goto CM_OVF_OP;
 
         case GT_SUB:
@@ -10706,7 +10706,7 @@ GenTree* Compiler::fgOptimizeMultiply(GenTreeOp* mul)
 {
     assert(mul->OperIs(GT_MUL));
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
     // TODO-WASM: code below doesn't support a 32 bit target with 64 bit integer ops.
     // For example, for wasm32 op2->IsCnsIntOrI() will return false for long constants,
     // since both "int" and "I" are int32.
@@ -11913,7 +11913,7 @@ GenTree* Compiler::fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree)
 
     switch (intrinsic)
     {
-#if !defined(TARGET_WASM)
+#if !defined(TARGET_WASMARCH)
         case NI_Vector_CreateGeometricSequence:
         {
             assert(tree->GetOperandCount() == 2);
@@ -11939,7 +11939,7 @@ GenTree* Compiler::fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree)
             }
             break;
         }
-#endif // !TARGET_WASM
+#endif // !TARGET_WASMARCH
 
         default:
         {
@@ -14525,7 +14525,7 @@ void Compiler::fgMergeBlockReturn(BasicBlock* block)
 
 void Compiler::fgSetOptions()
 {
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
     // Wasm requires GC polls, and only supports partially interruptible GC reporting.
     optMethodFlags |= OMF_NEEDS_GCPOLLS;
     assert(!GetInterruptible());
@@ -14545,7 +14545,7 @@ void Compiler::fgSetOptions()
         assert(!codeGen->isGCTypeFixed());
         SetInterruptible(true); // debugging is easier this way ...
     }
-#endif // defined(TARGET_WASM)
+#endif // defined(TARGET_WASMARCH)
 
     /* Assume we won't need an explicit stack frame if this is allowed */
 
@@ -15746,14 +15746,14 @@ GenTree* Compiler::fgMorphReduceAddOps(GenTree* tree)
         return tree;
     }
 
-#if !defined(TARGET_64BIT) && !defined(TARGET_WASM)
+#if !defined(TARGET_64BIT) && !defined(TARGET_WASMARCH)
     // Transforming 64-bit ADD to 64-bit MUL on 32-bit system results in replacing
     // ADD ops with a helper function call. Don't apply optimization in that case.
     if (tree->TypeIs(TYP_LONG))
     {
         return tree;
     }
-#endif // !defined(TARGET_64BIT) && !defined(TARGET_WASM)
+#endif // !defined(TARGET_64BIT) && !defined(TARGET_WASMARCH)
 
     GenTree* lclVarTree = tree->AsOp()->gtOp2;
     GenTree* consTree   = tree->AsOp()->gtOp1;

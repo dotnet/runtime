@@ -313,7 +313,7 @@ inline TADDR GetRegdisplayStackMark(REGDISPLAY *display) {
     return GetSP(display->pCallerContext);
 }
 
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
 struct REGDISPLAY : public REGDISPLAY_BASE {
     REGDISPLAY()
     {
@@ -419,9 +419,9 @@ inline void FillContextPointers(PT_KNONVOLATILE_CONTEXT_POINTERS pCtxPtrs, PT_CO
     *(&pCtxPtrs->Tp) = &pCtx->Tp;
     *(&pCtxPtrs->Fp) = &pCtx->Fp;
     *(&pCtxPtrs->Ra) = &pCtx->Ra;
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
     // Wasm doesn't have registers
-#else // TARGET_WASM
+#else // TARGET_WASMARCH
     PORTABILITY_ASSERT("FillContextPointers");
 #endif // _TARGET_???_ (ELSE)
 }

@@ -976,9 +976,9 @@ CDAC_TYPE_FIELD(ReadyToRunInfo, T_POINTER, RuntimeFunctions, cdac_data<ReadyToRu
 CDAC_TYPE_FIELD(ReadyToRunInfo, T_UINT32, NumHotColdMap, cdac_data<ReadyToRunInfo>::NumHotColdMap)
 CDAC_TYPE_FIELD(ReadyToRunInfo, T_POINTER, HotColdMap, cdac_data<ReadyToRunInfo>::HotColdMap)
 #endif // FEATURE_COLD_R2R_CODE
-#ifndef TARGET_WASM
+#ifndef TARGET_WASMARCH
 CDAC_TYPE_FIELD(ReadyToRunInfo, T_POINTER, DelayLoadMethodCallThunks, cdac_data<ReadyToRunInfo>::DelayLoadMethodCallThunks)
-#endif // !TARGET_WASM
+#endif // !TARGET_WASMARCH
 CDAC_TYPE_FIELD(ReadyToRunInfo, T_POINTER, DebugInfoSection, cdac_data<ReadyToRunInfo>::DebugInfoSection)
 CDAC_TYPE_FIELD(ReadyToRunInfo, T_POINTER, ExceptionInfoSection, cdac_data<ReadyToRunInfo>::ExceptionInfoSection)
 CDAC_TYPE_FIELD(ReadyToRunInfo, T_POINTER, ImportSections, cdac_data<ReadyToRunInfo>::ImportSections)
@@ -986,12 +986,12 @@ CDAC_TYPE_FIELD(ReadyToRunInfo, T_UINT32, NumImportSections, cdac_data<ReadyToRu
 CDAC_TYPE_FIELD(ReadyToRunInfo, TYPE(HashMap), EntryPointToMethodDescMap, cdac_data<ReadyToRunInfo>::EntryPointToMethodDescMap)
 CDAC_TYPE_FIELD(ReadyToRunInfo, T_POINTER, LoadedImageBase, cdac_data<ReadyToRunInfo>::LoadedImageBase)
 CDAC_TYPE_FIELD(ReadyToRunInfo, T_POINTER, Composite, cdac_data<ReadyToRunInfo>::Composite)
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
 CDAC_TYPE_FIELD(ReadyToRunInfo, T_POINTER, MinVirtualIP, cdac_data<ReadyToRunInfo>::MinVirtualIP)
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
 CDAC_TYPE_END(ReadyToRunInfo)
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
 CDAC_TYPE_BEGIN(VirtualIPRangeSection)
 CDAC_TYPE_INDETERMINATE(VirtualIPRangeSection)
 CDAC_TYPE_FIELD(VirtualIPRangeSection, TYPE(RangeSection), RangeSection, cdac_data<VirtualIPRangeSection>::RangeSection)
@@ -1005,7 +1005,7 @@ CDAC_TYPE_FIELD(FunctionTableIndexRangeSection, T_UINT32, NumRuntimeFunctions, c
 CDAC_TYPE_FIELD(FunctionTableIndexRangeSection, T_POINTER, R2RModule, cdac_data<FunctionTableIndexRangeSection>::R2RModule)
 CDAC_TYPE_FIELD(FunctionTableIndexRangeSection, T_POINTER, Next, cdac_data<FunctionTableIndexRangeSection>::Next)
 CDAC_TYPE_END(FunctionTableIndexRangeSection)
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
 
 CDAC_TYPE_BEGIN(ReadyToRunHeader)
 CDAC_TYPE_INDETERMINATE(ReadyToRunHeader)
@@ -1319,12 +1319,12 @@ CDAC_TYPE_END(InterpreterFrame)
 CDAC_TYPE_BEGIN(TransitionBlock)
 CDAC_TYPE_SIZE(sizeof(TransitionBlock))
 CDAC_TYPE_FIELD(TransitionBlock, TYPE(CodePointer), ReturnAddress, offsetof(TransitionBlock, m_ReturnAddress))
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
 CDAC_TYPE_FIELD(TransitionBlock, T_POINTER, StackPointer, offsetof(TransitionBlock, m_StackPointer))
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
 CDAC_TYPE_FIELD(TransitionBlock, TYPE(CalleeSavedRegisters), CalleeSavedRegisters, offsetof(TransitionBlock, m_calleeSavedRegisters))
 // Offset to argument registers and first GCRefMap slot (platform-specific)
-#if (defined(TARGET_AMD64) && !defined(UNIX_AMD64_ABI)) || defined(TARGET_WASM)
+#if (defined(TARGET_AMD64) && !defined(UNIX_AMD64_ABI)) || defined(TARGET_WASMARCH)
 CDAC_TYPE_FIELD(TransitionBlock, T_UINT32, ArgumentRegisters, sizeof(TransitionBlock))
 CDAC_TYPE_FIELD(TransitionBlock, T_UINT32, FirstGCRefMapSlot, sizeof(TransitionBlock))
 #elif defined(TARGET_ARM64)
@@ -1721,7 +1721,7 @@ CDAC_GLOBAL_STRING(Architecture, arm64)
 CDAC_GLOBAL_STRING(Architecture, loongarch64)
 #elif defined(TARGET_RISCV64)
 CDAC_GLOBAL_STRING(Architecture, riscv64)
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
 CDAC_GLOBAL_STRING(Architecture, wasm)
 #else
 #error TARGET_{ARCH} define is not recognized by the cDAC. Update this switch and the enum values in IRuntimeInfo.cs
@@ -1863,10 +1863,10 @@ CDAC_GLOBAL_POINTER(EEJitManagerAddress, cdac_data<ExecutionManager>::EEJitManag
 #ifdef FEATURE_INTERPRETER
 CDAC_GLOBAL_POINTER(InterpreterJitManagerAddress, cdac_data<ExecutionManager>::InterpreterJitManagerAddress)
 #endif // FEATURE_INTERPRETER
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
 CDAC_GLOBAL_POINTER(VirtualIPRangeList, cdac_data<ExecutionManager>::VirtualIPRangeListAddress)
 CDAC_GLOBAL_POINTER(FunctionTableIndexRangeList, cdac_data<ExecutionManager>::FunctionTableIndexRangeListAddress)
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
 CDAC_GLOBAL_POINTER(PlatformMetadata, &::g_cdacPlatformMetadata)
 #ifdef PROFILING_SUPPORTED
 CDAC_GLOBAL_POINTER(ProfilerControlBlock, &::g_profControlBlock)

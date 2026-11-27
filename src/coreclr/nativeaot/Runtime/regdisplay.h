@@ -287,7 +287,7 @@ struct REGDISPLAY
     inline void SetSP(uintptr_t SP) { this->SP = SP; }
 };
 
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
 
 struct REGDISPLAY
 {

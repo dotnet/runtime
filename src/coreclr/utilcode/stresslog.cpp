@@ -24,7 +24,7 @@
 #ifdef __APPLE__
 #include <mach-o/dyld.h>
 #include <mach-o/loader.h>
-#elif !defined(TARGET_WASM)
+#elif !defined(TARGET_WASMARCH)
 #include <link.h>
 #endif
 #endif // !HOST_WINDOWS
@@ -388,7 +388,7 @@ static void HandleImageRange(uint8_t* source_start, size_t size, CopyModuleDataP
     param->result = max(param->result, (int)(source_end - param->module_base));
 }
 
-#if !defined(__APPLE__) && !defined(TARGET_WASM)
+#if !defined(__APPLE__) && !defined(TARGET_WASMARCH)
 static int CopyModuleDataCallback(struct dl_phdr_info *info, size_t size, void *data)
 {
     CopyModuleDataParam* param = (CopyModuleDataParam*)data;
@@ -454,7 +454,7 @@ static int CopyModuleData(void* moduleBase, uint8_t* destinationBufferStart, uin
             }
         }
     }
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
     _ASSERTE(!"CopyModuleData not implemented for wasm");
 #else
     dl_iterate_phdr(CopyModuleDataCallback, &param);
@@ -465,7 +465,7 @@ static int CopyModuleData(void* moduleBase, uint8_t* destinationBufferStart, uin
 
 void StressLog::AddModule(uint8_t* moduleBase)
 {
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
     return; // no modules on wasm
 #endif
     unsigned moduleIndex = 0;

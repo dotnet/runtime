@@ -23,6 +23,6 @@ MONO_API_FUNCTION(int, monovm_runtimeconfig_initialize, (MonovmRuntimeConfigArgu
 // The wrapper MonoCoreRuntimeProperties struct can be stack-allocated or freed, but the structs inside it _must_ be heap-allocated and never freed, as they are not copied to avoid extra allocations
 MONO_API_FUNCTION(int, monovm_initialize_preparsed, (MonoCoreRuntimeProperties *parsed_properties, int propertyCount, const char **propertyKeys, const char **propertyValues))
 
-//#ifdef HOST_WASM
+//#ifdef HOST_WASMARCH
 MONO_API_FUNCTION(void, mono_wasm_install_get_native_to_interp_tramp, (MonoWasmGetNativeToInterpTramp cb))
 //#endif

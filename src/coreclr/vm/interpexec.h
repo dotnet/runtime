@@ -115,9 +115,9 @@ EXTERN_C FCDECL2(ContinuationObject*, AsyncHelpers_ResumeInterpreterContinuation
 
 extern "C" void LookupUnmanagedCallersOnlyMethodByName(const char* fullQualifiedTypeName, const char* methodName, MethodDesc** ppMD);
 extern "C" void* ExecuteInterpretedMethodFromUnmanaged(MethodDesc* pMD, int8_t* args, size_t argSize, int8_t* ret, PCODE callerIp);
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
 extern "C" void* GetR2RNativeCodeForUnmanagedCallersOnly(MethodDesc* pMD);
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
 
 CallStubHeader *CreateNativeToInterpreterCallStub(InterpMethod* pInterpMethod);
 

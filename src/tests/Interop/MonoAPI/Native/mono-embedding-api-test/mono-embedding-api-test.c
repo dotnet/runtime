@@ -837,7 +837,7 @@ mono_test_init_symbols (void)
 
 typedef void (*VoidVoidCallback) (void);
 
-#ifndef TARGET_WASM
+#ifndef TARGET_WASMARCH
 
 static jmp_buf test_jmp_buf;
 static uint32_t test_gchandle;

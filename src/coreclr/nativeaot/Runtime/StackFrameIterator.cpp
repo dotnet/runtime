@@ -642,7 +642,7 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PAL_LIMITED_CO
 // thunks report a conservative range).
 void StackFrameIterator::InternalInit(Thread * pThreadToWalk, NATIVE_CONTEXT* pCtx, uint32_t dwFlags)
 {
-#ifdef HOST_WASM
+#ifdef HOST_WASMARCH
     PORTABILITY_ASSERT("StackFrameIterator::InternalInit with native context");
 #else
     ASSERT((dwFlags & MethodStateCalculated) == 0);
@@ -866,7 +866,7 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, NATIVE_CONTEXT* pC
 
     // adjust for thunks, if needed
     EnsureInitializedToManagedFrame();
-#endif // HOST_WASM
+#endif // HOST_WASMARCH
 }
 
 void StackFrameIterator::EnsureInitializedToManagedFrame()
@@ -1601,7 +1601,7 @@ public:
         pRegisterSet->pA7 = GET_POINTER_TO_FIELD(m_intArgRegs[7]);
     }
 
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
 private:
     // WASMTODO: #error NYI for this arch
     uintptr_t m_stackPassedArgs[1];        // Placeholder

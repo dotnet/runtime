@@ -3610,7 +3610,7 @@ void emitter::emitSetSecondRetRegGCType(instrDescCGCA* id, emitAttr secondRetSiz
 }
 #endif // MULTIREG_HAS_SECOND_GC_RET
 
-#ifndef TARGET_WASM
+#ifndef TARGET_WASMARCH
 //------------------------------------------------------------------------
 // emitIns_ShortJ: Emit a 'forced' short jump.
 //
@@ -3797,7 +3797,7 @@ emitter::instrDesc* emitter::emitNewInstrCallDir(int              argCnt,
     }
 }
 
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
 
 /*****************************************************************************
  *
@@ -3894,7 +3894,7 @@ const size_t hexEncodingSize = 19;
 #elif defined(TARGET_RISCV64)
 const size_t basicIndent     = 12;
 const size_t hexEncodingSize = 19;
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
 const size_t basicIndent     = 12;
 const size_t hexEncodingSize = 19; // 8 bytes (wasm-objdump default) + 1 space.
 #endif
@@ -4591,7 +4591,7 @@ void emitter::emitDispCommentForHandle(size_t handle, size_t cookie, GenTreeFlag
 {
 #if defined(TARGET_XARCH)
     const char* commentPrefix = "      ;";
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
     const char* commentPrefix = "      ;;";
 #else
     const char* commentPrefix = "      //";
@@ -5533,7 +5533,7 @@ AGAIN:
         assert((sizeDif == 4) || (sizeDif == 8));
 #elif defined(TARGET_RISCV64)
         assert((sizeDif == 0) || (sizeDif == 4) || (sizeDif == 8));
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
         // We should never call emitJumpDistBind() for wasm, as wasm has no variable-length jumps.
         unreached();
 #else
@@ -7681,7 +7681,7 @@ unsigned emitter::emitEndCodeGen(Compiler*             comp,
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
                     // For LoongArch64 and RiscV64 `emitFwdJumps` is always false.
                     unreached();
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
                     unreached();
 #else
 #error Unsupported or unset target architecture
@@ -7697,7 +7697,7 @@ unsigned emitter::emitEndCodeGen(Compiler*             comp,
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
                     // For LoongArch64 and RiscV64 `emitFwdJumps` is always false.
                     unreached();
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
                     unreached();
 #else
 #error Unsupported or unset target architecture
@@ -8524,7 +8524,7 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, AllocMemChunk* chunks)
 
                 // Async call may have been removed very late, after we have introduced suspension/resumption.
                 // In those cases just encode null.
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
                 BYTE* target = emitLoc->Valid() && m_compiler->IsReadyToRun() ? emitCodeBlock : nullptr;
 #else
                 BYTE* target = emitLoc->Valid() ? emitOffsetToPtr(emitLoc->CodeOffset(this)) : nullptr;
@@ -8537,7 +8537,7 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, AllocMemChunk* chunks)
                     emitRecordRelocation(&aDstRW[i].Resume, emitAsyncResumeStubEntryPoint, CorInfoReloc::DIRECT);
                     if (target != nullptr)
                     {
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
                         emitRecordRelocation(&aDstRW[i].DiagnosticIP, target,
                                              CorInfoReloc::WASM_METHOD_RELATIVE_VIRTUAL_IP_I32);
 #else

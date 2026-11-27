@@ -468,7 +468,7 @@ void UnwindContextToWinContext(unw_cursor_t *cursor, CONTEXT *winContext)
     unw_get_reg(cursor, UNW_PPC64_R28, (unw_word_t *) &winContext->R28);
     unw_get_reg(cursor, UNW_PPC64_R29, (unw_word_t *) &winContext->R29);
     unw_get_reg(cursor, UNW_PPC64_R30, (unw_word_t *) &winContext->R30);
-#elif defined(HOST_WASM)
+#elif defined(HOST_WASMARCH)
     ASSERT("UnwindContextToWinContext not implemented for WASM");
 #else
 #error unsupported architecture

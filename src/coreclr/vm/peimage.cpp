@@ -47,9 +47,9 @@ void PEImage::Startup()
     s_ijwFixupDataHash = ::new PtrHashMap;
     s_ijwFixupDataHash->Init(CompareIJWDataBase, FALSE, &ijwLock);
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
     PEImageLayout::Startup();
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
 
     _ASSERTE(CheckStartup());
 }

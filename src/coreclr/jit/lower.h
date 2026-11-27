@@ -153,7 +153,7 @@ private:
     bool     LowerCallMemcmp(GenTreeCall* call, GenTree** next);
     bool     LowerCallMemset(GenTreeCall* call, GenTree** next);
     void     LowerCFGCall(GenTreeCall* call);
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
     void AddWasmPortableEntryPointArg(GenTreeCall* call, GenTree* value);
     void LowerPEPCall(GenTreeCall* call);
     void TryMoveWasmSelectCondition(GenTreeConditional* select);
@@ -447,7 +447,7 @@ private:
     GenTree* TryLowerMulWithConstant(GenTreeOp* node);
 #endif // TARGET_XARCH
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
     static void      SetMultiplyUsed(GenTree* node DEBUGARG(const char* reason));
     GenTreeAddrMode* GetFoldableAddrMode(GenTreeIndir* indirNode);
     void             TryFoldLclAddrOffset(GenTreeIndir* indirNode);
@@ -520,7 +520,7 @@ private:
     GenTree* LowerCnsMask(GenTreeMskCon* mask);
     bool     TryLowerAddForPossibleContainment(GenTreeOp* node, GenTree** next);
     void     StoreFFRValue(GenTreeHWIntrinsic* node);
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
     GenTree* LowerHWIntrinsicCompareUnsignedLong(GenTreeHWIntrinsic* node);
     GenTree* LowerHWIntrinsicWithImm(GenTreeHWIntrinsic* node);
     GenTree* LowerHWIntrinsicNativeShuffle(GenTreeHWIntrinsic* node);

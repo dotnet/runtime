@@ -191,7 +191,7 @@ struct PAL_LIMITED_CONTEXT
     uintptr_t GetFp() const { return Rbp; }
     void SetIp(uintptr_t ip) { IP = ip; }
     void SetSp(uintptr_t sp) { Rsp = sp; }
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
     uintptr_t IP;
     uintptr_t SP;
 

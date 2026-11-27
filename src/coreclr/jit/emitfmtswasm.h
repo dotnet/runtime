@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 // clang-format off
-#if !defined(TARGET_WASM)
+#if !defined(TARGET_WASMARCH)
 #error Unexpected target type
 #endif
 

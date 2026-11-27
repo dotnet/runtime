@@ -90,7 +90,7 @@ class ProfileSynthesis;    // defined in profilesynthesis.h
 class PerLoopInfo;         // defined in inductionvariableopts.cpp
 class RangeCheck;          // defined in rangecheck.h
 struct KnownBits;          // defined in knownbits.h
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
 class WasmInterval; // defined in fgwasm.h
 enum class WasmValueType : unsigned;
 #endif
@@ -585,9 +585,9 @@ public:
                                           // in earlier phase and the information might not be appropriate
                                           // in LSRA.
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
     unsigned char lvWasmGCWriteThru : 1; // GC register candidate with an up-to-date pinned shadow-stack home.
-#endif                                   // TARGET_WASM
+#endif                                   // TARGET_WASMARCH
 
     unsigned char lvHasExceptionalUsesHint : 1; // hint for CopyProp
 
@@ -1252,12 +1252,12 @@ public:
     //
     bool IsAlwaysAliveInMemory() const
     {
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
         if (lvWasmGCWriteThru)
         {
             return true;
         }
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
         return IsLiveInOutOfHandler() || lvSpillAtSingleDef;
     }
 
@@ -1871,7 +1871,7 @@ struct FuncInfoDsc
     bool                 IsMethod() const { return funKind == FUNC_ROOT; }
 
 
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
     struct WasmLocalsDecl
     {
         WasmValueType Type;
@@ -1888,7 +1888,7 @@ struct FuncInfoDsc
     unsigned endVirtualIP;
 
     void ensureUnwindableFrame(Compiler* comp);
-#endif // defined(TARGET_WASM)
+#endif // defined(TARGET_WASMARCH)
 
 #if defined(TARGET_AMD64)
 
@@ -3207,7 +3207,7 @@ public:
     bool     ehAnyFunclets();  // Are there any funclets in this function?
     unsigned ehFuncletCount(); // Return the count of funclets in the function.
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
     // Once we have run wasm layout, try regions may no longer be contiguous.
     //
     bool fgTrysContiguous() { return fgIndexToBlockMap == nullptr; }
@@ -3475,7 +3475,7 @@ public:
     GenTreeCall* gtNewHelperCallNode(
         unsigned helper, var_types type, GenTree* arg1 = nullptr, GenTree* arg2 = nullptr, GenTree* arg3 = nullptr, GenTree* arg4 = nullptr);
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
     // On wasm these helpers return void* (InitHelpers.InitClass/InitInstantiatedClass). Model them as
     // value-returning so the call_indirect signature matches the compiled managed helper; the value is unused.
     static constexpr var_types HelperInitClassRetType = TYP_I_IMPL;
@@ -3485,7 +3485,7 @@ public:
 #else
     static constexpr var_types HelperInitClassRetType      = TYP_VOID;
     static constexpr var_types HelperUnboxDiscardedRetType = TYP_VOID;
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
 
     GenTreeCall* gtNewVirtualFunctionLookupHelperCallNode(
         unsigned helper, var_types type, GenTree* thisPtr, GenTree* methHnd, GenTree* clsHnd = nullptr);
@@ -3809,14 +3809,14 @@ public:
                                   unsigned    simdSize,
                                   bool        isShuffleNative);
 
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
     GenTree* gtNewSimdWasmTwoSourceShuffleNode(var_types       type,
                                                GenTree*        op1,
                                                GenTree*        op2,
                                                const uint32_t* selectors,
                                                var_types       simdBaseType,
                                                unsigned        simdSize);
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
 
     GenTree* gtNewSimdSqrtNode(
         var_types type, GenTree* op1, var_types simdBaseType, unsigned simdSize);
@@ -4443,7 +4443,7 @@ public:
                                       // arguments
 #endif                                // TARGET_X86
 
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
     unsigned lvaWasmSpArg = BAD_VAR_NUM; // lcl var index of Wasm stack pointer arg
     unsigned lvaWasmPortableEntryPointArg = BAD_VAR_NUM; // lcl var index of the incoming portable entrypoint
     unsigned lvaWasmVirtualIP = BAD_VAR_NUM; // Wasm virtual IP slot
@@ -4460,7 +4460,7 @@ public:
     BitVec* m_wasmGCRefCandidates = nullptr;
     ArrayStack<BasicBlock*>* m_wasmLocalCopyBlocks = nullptr; // Blocks with local-to-local copies, set by lowering
     ArrayStack<BasicBlock*>* m_wasmRematBlocks     = nullptr; // Blocks with stores of invariant values, set by lowering
-#endif // defined(TARGET_WASM)
+#endif // defined(TARGET_WASMARCH)
 
     unsigned lvaInlinedPInvokeFrameVar = BAD_VAR_NUM; // variable representing the InlinedCallFrame
     unsigned lvaReversePInvokeFrameVar = BAD_VAR_NUM; // variable representing the reverse PInvoke frame
@@ -4837,11 +4837,11 @@ public:
     void lvaInitVarArgsHandle(unsigned* curVarNum);
     void lvaInitAsyncContinuation(unsigned* curVarNum);
 
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
     void lvaInitWasmStackPtrArg(unsigned* curVarNum);
     void lvaAllocWasmStackPtr();
     void lvaInitWasmPortableEntryPtr(unsigned* curVarNum);
-#endif // defined(TARGET_WASM)
+#endif // defined(TARGET_WASMARCH)
 
     void lvaInitVarDsc(LclVarDsc*              varDsc,
                        unsigned                varNum,
@@ -6087,7 +6087,7 @@ public:
 
     unsigned     fgBBNumMax = 0;           // The max bbNum that has been assigned to basic blocks
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
     jitstd::vector<WasmInterval*>* fgWasmIntervals = nullptr;
     BasicBlock** fgIndexToBlockMap = nullptr;
     bool fgWasmHasCatchResumptions = false;
@@ -7074,7 +7074,7 @@ public:
 
     PhaseStatus fgFindOperOrder();
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
     PhaseStatus fgWasmEhFlow();
     void fgWasmEhTransformTry(ArrayStack<BasicBlock*>* catchRetBlocks, unsigned regionIndex, unsigned catchRetIndexLocalNum);
     PhaseStatus fgWasmControlFlow();
@@ -7092,7 +7092,7 @@ public:
     void fgDumpWasmControlFlow();
     void fgDumpWasmControlFlowDot();
 #endif // DEBUG
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
 
     PhaseStatus fgSetBlockOrder();
     bool fgHasCycleWithoutGCSafePoint();
@@ -9754,12 +9754,12 @@ public:
 
     CORINFO_ASYNC_INFO* eeGetAsyncInfo();
 
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
     CORINFO_WASM_WELLKNOWN_GLOBALS wasmWellKnownGlobals;
     bool                           wasmWellKnownGlobalsInitialized = false;
 
     CORINFO_WASM_WELLKNOWN_GLOBALS* eeGetWasmWellKnownGlobals();
-#endif // defined(TARGET_WASM)
+#endif // defined(TARGET_WASMARCH)
 
     // Gets the offset of a SDArray's first element
     static unsigned eeGetArrayDataOffset();
@@ -9807,7 +9807,7 @@ public:
 #elif defined(TARGET_RISCV64)
             reg     = REG_T5;
             regMask = RBM_T5;
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
             reg     = REG_NA;
             regMask = RBM_NONE;
 #else
@@ -10517,7 +10517,7 @@ public:
 
                 return FP_REGSIZE_BYTES;
             }
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
         // TODO-WASM: Verify if we need a more complicated condition here
         return FP_REGSIZE_BYTES;
 #else
@@ -10573,7 +10573,7 @@ public:
         {
             return XMM_REGSIZE_BYTES;
         }
-#elif defined(TARGET_ARM64) || defined(TARGET_WASM)
+#elif defined(TARGET_ARM64) || defined(TARGET_WASMARCH)
         return FP_REGSIZE_BYTES;
 #else
         assert(!"getMaxVectorByteLength() unimplemented on target arch");
@@ -10671,7 +10671,7 @@ public:
 
         // Return 0 if size is even less than XMM, otherwise - XMM
         return (size >= XMM_REGSIZE_BYTES) ? XMM_REGSIZE_BYTES : 0;
-#elif defined(TARGET_ARM64) || defined(TARGET_WASM)
+#elif defined(TARGET_ARM64) || defined(TARGET_WASMARCH)
         assert(getMaxVectorByteLength() == FP_REGSIZE_BYTES);
         return (size >= FP_REGSIZE_BYTES) ? FP_REGSIZE_BYTES : 0;
 #else
@@ -11354,7 +11354,7 @@ public:
     // Request stack security for this method. Returns false if security cannot be enabled.
     bool setNeedsGSSecurityCookie()
     {
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
         INDEBUG(compGSSecurityCheckBlocker = "Not currently enabled for Wasm";)
         return false;
 #endif
@@ -13678,7 +13678,7 @@ inline unsigned FuncInfoDsc::GetFuncletIdx(Compiler* comp) const
     return funcletIdx;
 }
 
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
 inline void FuncInfoDsc::ensureUnwindableFrame(Compiler* comp)
 {
     if (!needsUnwindableFrame)
@@ -13688,7 +13688,7 @@ inline void FuncInfoDsc::ensureUnwindableFrame(Compiler* comp)
         needsUnwindableFrame = true;
     }
 }
-#endif // defined(TARGET_WASM)
+#endif // defined(TARGET_WASMARCH)
 
 // FuncInfoRange: adapter class for forward or reverse iteration of a contiguous range of function/funclet
 // descriptors using range-based `for`, e.g.:
@@ -14021,7 +14021,7 @@ const instruction INS_SQRT       = INS_fsqrt_d; // NOTE: default is double.
 const instruction INS_BREAKPOINT = INS_ebreak;
 #endif // TARGET_RISCV64
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
 const instruction INS_BREAKPOINT = INS_unreachable;
 #endif
 

@@ -56,7 +56,7 @@ inline ReadyToRunCrossModuleInlineFlags operator &( const ReadyToRunCrossModuleI
     return static_cast<ReadyToRunCrossModuleInlineFlags>(static_cast<uint32_t>(left) & static_cast<uint32_t>(right));
 }
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
 // why was it defined only for x86 before?
 typedef DPTR(RUNTIME_FUNCTION) PTR_RUNTIME_FUNCTION;
 #endif

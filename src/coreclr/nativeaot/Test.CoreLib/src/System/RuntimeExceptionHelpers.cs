@@ -61,7 +61,7 @@ namespace System
                     case ExceptionIDs.NullReference:
                         return new NullReferenceException();
 
-#if !TARGET_WASM
+#if !TARGET_WASMARCH
                     case ExceptionIDs.DataMisaligned:
                         // We don't have this in Test.CoreLib
                         return new PlatformNotSupportedException();

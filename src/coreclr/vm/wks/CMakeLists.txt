@@ -8,7 +8,7 @@ add_library_clr(cee_wks_core OBJECT ${VM_SOURCES_WKS} ${VM_SOURCES_WKS_ARCH_ASM}
 add_library_clr(cee_wks OBJECT ${VM_SOURCES_WKS_SPECIAL})
 add_library_clr(cee_wks_mergeable OBJECT ${VM_SOURCES_WKS_SPECIAL})
 
-if (CLR_CMAKE_TARGET_ARCH_WASM AND VM_SOURCES_WKS_GEN)
+if (CLR_CMAKE_TARGET_ARCH_WASMARCH AND VM_SOURCES_WKS_GEN)
     add_library_clr(cee_wks_gen OBJECT ${VM_SOURCES_WKS_GEN})
 endif()
 

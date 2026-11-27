@@ -41,7 +41,7 @@ if (CLR_CMAKE_HOST_WIN32)
     set_property(DIRECTORY PROPERTY CLR_EH_OPTION /EHa) # enable C++ EH (w/ SEH exceptions)
 endif()
 
-if(CLR_CMAKE_TARGET_ARCH_WASM)
+if(CLR_CMAKE_TARGET_ARCH_WASMARCH)
     # WebAssembly has no dynamic loading, so a test's native code is linked into a test-specific
     # corerun instead (see src/tests/Common/CLRTest.WasmCorerun.targets).
     set(TEST_LIB_TYPE STATIC)
@@ -83,7 +83,7 @@ MACRO(ADDSUBDIR_REC  curdir)
     ENDFOREACH()
 ENDMACRO()
 
-if(CLR_CMAKE_TARGET_ARCH_WASM AND NOT _TESTS_WASM_BUILDS_CORERUN)
+if(CLR_CMAKE_TARGET_ARCH_WASMARCH AND NOT _TESTS_WASM_BUILDS_CORERUN)
     # Nothing links the native test libraries here, so walking the whole tree would cost a full
     # compile of every one of them for nothing.
     add_subdirectory(JIT/interpreter)

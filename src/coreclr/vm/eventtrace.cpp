@@ -2827,7 +2827,7 @@ VOID ETW::ExceptionLog::ExceptionThrown(CrawlFrame  *pCf, BOOL bIsReThrownExcept
         // This check has been copied from StackTraceInfo::AppendElement
         if (!(pCf->HasFaulted() || pCf->IsIPadjusted()) && exceptionEIP != 0)
         {
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
             if (!ExecutionManager::IsVirtualIP((PCODE)exceptionEIP))
 #endif
             {

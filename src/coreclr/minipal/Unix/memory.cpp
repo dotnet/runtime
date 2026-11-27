@@ -87,7 +87,7 @@ bool VMToOSInterface::GetFileSize(MemoryMapHandle fileHandle, uint64_t* size)
     return true;
 }
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
 bool VMToOSInterface::ReadFile(MemoryMapHandle fileHandle, uint64_t offset, void* buffer, size_t size)
 {
     uint8_t* destination = static_cast<uint8_t*>(buffer);
@@ -118,7 +118,7 @@ bool VMToOSInterface::ReadFile(MemoryMapHandle fileHandle, uint64_t offset, void
 
     return true;
 }
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
 
 #if defined(HOST_OSX) && defined(HOST_ARM64)
 #include <assert.h>
@@ -145,7 +145,7 @@ void VMToOSInterface::JitWriteProtect(bool writeEnable)
 }
 #endif // HOST_OSX && HOST_ARM64
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
 #include <errno.h>
 #include <string.h>
 #include <minipal/ospagesize.h>
@@ -266,7 +266,7 @@ bool VMToOSInterface::ReleaseMemoryReservation(void* address, size_t size)
     free(address);
     return true;
 }
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
 
 void* VMToOSInterface::AlignedAllocate(size_t alignment, size_t size)
 {

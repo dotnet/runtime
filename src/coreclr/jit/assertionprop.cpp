@@ -450,7 +450,7 @@ static void optAssertionProp_HWIntrinsic(Compiler* comp, GenTreeHWIntrinsic* tre
                 case NI_AVX_MoveMask:
                 case NI_AVX2_MoveMask:
                 case NI_AVX512_MoveMask:
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
                 case NI_PackedSimd_Bitmask:
 #endif
                 case NI_Vector_ExtractMostSignificantBits:
@@ -486,7 +486,7 @@ static void optAssertionProp_HWIntrinsic(Compiler* comp, GenTreeHWIntrinsic* tre
                 case NI_ArmBase_LeadingZeroCount:
                 case NI_ArmBase_Arm64_LeadingZeroCount:
                 case NI_ArmBase_Arm64_LeadingSignCount:
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
                 // TODO-WASM: See if we can support CTZ/CLZ ranges here
 #else
 #error Unsupported platform

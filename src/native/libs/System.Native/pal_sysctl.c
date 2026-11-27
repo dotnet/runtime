@@ -23,7 +23,7 @@ int32_t SystemNative_Sysctl(int* name, unsigned int namelen, void* value, size_t
     void* newp = NULL;
     size_t newlen = 0;
 
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
     return sysctl(name, (int)(namelen), value, len, newp, newlen);
 #else
     return sysctl(name, namelen, value, len, newp, newlen);

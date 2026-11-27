@@ -28,9 +28,9 @@
 #include "strsafe.h"
 
 #include "configuration.h"
-#if !defined(DACCESS_COMPILE) && !defined(TARGET_WASM)
+#if !defined(DACCESS_COMPILE) && !defined(TARGET_WASMARCH)
 #include "../debug/ee/executioncontrol.h"
-#endif // !DACCESS_COMPILE && !TARGET_WASM
+#endif // !DACCESS_COMPILE && !TARGET_WASMARCH
 
 #include <minipal/cpufeatures.h>
 #include <minipal/cpuid.h>
@@ -61,11 +61,11 @@ SVAL_IMPL(RangeSectionMapData, ExecutionManager, g_codeRangeMap);
 VOLATILE_SVAL_IMPL_INIT(LONG, ExecutionManager, m_dwReaderCount, 0);
 VOLATILE_SVAL_IMPL_INIT(LONG, ExecutionManager, m_dwWriterLock, 0);
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
 VirtualIPRangeSection* ExecutionManager::s_pVirtualIPRangeList = nullptr;
 FunctionTableIndexRangeSection* ExecutionManager::s_pFunctionTableIndexRangeList = nullptr;
 static TADDR s_nextVirtualIP = ExecutionManager::WasmInitialVirtualIP;
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
 
 #ifndef DACCESS_COMPILE
 
@@ -1301,7 +1301,7 @@ PTR_VOID GetUnwindDataBlob(TADDR moduleBase, PTR_RUNTIME_FUNCTION pRuntimeFuncti
     *pSize = size;
     return xdata;
 
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
     PTR_BYTE pUnwindInfo(dac_cast<PTR_BYTE>(moduleBase + pRuntimeFunction->UnwindData));
     PTR_BYTE pUnwindData = pUnwindInfo;
     DecodeULEB128AsU32(&pUnwindData); // Skip the count of bytes to unwind
@@ -1499,7 +1499,7 @@ void EEJitManager::SetCpuInfo()
     }
 #endif
 
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
     CPUCompileFlags.Set(InstructionSet_WasmBase);
     CPUCompileFlags.Set(InstructionSet_PackedSimd);
 #endif
@@ -4818,13 +4818,13 @@ void InterpreterJitManager::JitTokenToMethodRegionInfo(const METHODTOKEN& Method
     methodRegionInfo->coldSize         = 0;
 }
 
-#if !defined(DACCESS_COMPILE) && !defined(TARGET_WASM)
+#if !defined(DACCESS_COMPILE) && !defined(TARGET_WASMARCH)
 IExecutionControl* InterpreterJitManager::GetExecutionControl()
 {
     LIMITED_METHOD_CONTRACT;
     return InterpreterExecutionControl::GetInstance();
 }
-#endif // !DACCESS_COMPILE && !TARGET_WASM
+#endif // !DACCESS_COMPILE && !TARGET_WASMARCH
 
 #endif // FEATURE_INTERPRETER
 
@@ -5373,7 +5373,7 @@ ExecutionManager::FindCodeRange(PCODE currentPC, ScanFlag scanFlag)
     if (currentPC == (PCODE)NULL)
         return NULL;
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
     if (IsVirtualIP(currentPC))
     {
         VirtualIPRangeSection* pVIPRange = FindVirtualIPRangeSection(currentPC);
@@ -5381,7 +5381,7 @@ ExecutionManager::FindCodeRange(PCODE currentPC, ScanFlag scanFlag)
             return &pVIPRange->rangeSection;
         return NULL;
     }
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
 
     if (scanFlag == ScanReaderLock)
         return FindCodeRangeWithLock(currentPC);
@@ -5548,13 +5548,13 @@ BOOL ExecutionManager::IsManagedCodeWorker(PCODE currentPC, RangeSectionLockStat
     // the range section from underneath us.
 
     RangeSection* pRS;
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
     if (IsVirtualIP(currentPC))
     {
         pRS = FindCodeRange(currentPC, ScanNoReaderLock);
     }
     else
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
     {
         pRS = GetRangeSection(currentPC, pLockState);
     }
@@ -5835,7 +5835,7 @@ void ExecutionManager::AddCodeRange(TADDR          pStartRange,
         ThrowOutOfMemory();
 }
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
 TADDR ExecutionManager::AddVirtualIPRange(UINT32 numVirtualIPs,
                                           IJitManager* pJit,
                                           PTR_Module pModule)
@@ -6081,7 +6081,7 @@ TADDR ExecutionManager::GetWasmFunctionTableIndexFromVirtualIP(TADDR virtualIP)
 
     return pR2RInfo->GetMinFunctionTableIndex() + low;
 }
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
 
 // Deletes a single range starting at pStartRange
 void ExecutionManager::DeleteRange(TADDR pStartRange)
@@ -6939,7 +6939,7 @@ PTR_EXCEPTION_CLAUSE_TOKEN ReadyToRunJitManager::GetNextEHClause(EH_CLAUSE_ENUME
     pEHClauseOut->Flags = pClause->Flags;
     pEHClauseOut->FilterOffset = pClause->FilterOffset;
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
     // Wasm Virtual IPs are encoded with half their virtual IP value
     pEHClauseOut->TryStartPC *= 2;
     pEHClauseOut->TryEndPC *= 2;
@@ -6954,7 +6954,7 @@ PTR_EXCEPTION_CLAUSE_TOKEN ReadyToRunJitManager::GetNextEHClause(EH_CLAUSE_ENUME
 
 StubCodeBlockKind ReadyToRunJitManager::GetStubCodeBlockKind(RangeSection * pRangeSection, PCODE currentPC)
 {
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
     return STUB_CODE_BLOCK_UNKNOWN;
 #else
     CONTRACTL
@@ -6979,7 +6979,7 @@ StubCodeBlockKind ReadyToRunJitManager::GetStubCodeBlockKind(RangeSection * pRan
     }
 
     return STUB_CODE_BLOCK_UNKNOWN;
-#endif // !TARGET_WASM
+#endif // !TARGET_WASMARCH
 }
 
 #ifndef DACCESS_COMPILE
@@ -7432,7 +7432,7 @@ BOOL ReadyToRunJitManager::IsFilterFunclet(EECodeInfo * pCodeInfo)
     if (!pCodeInfo->IsFunclet())
         return FALSE;
 
-#if defined(TARGET_X86) || defined(TARGET_WASM)
+#if defined(TARGET_X86) || defined(TARGET_WASMARCH)
     // x86 and wasm don't use personality routines in unwind data, so we have to fallback to
     // the slow implementation
     return IJitManager::IsFilterFunclet(pCodeInfo);

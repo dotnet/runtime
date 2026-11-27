@@ -6,7 +6,7 @@
 
 #include "corjit.h"
 
-#if defined (TARGET_WASM)
+#if defined (TARGET_WASMARCH)
 // TODO: Set this value to 0 for Wasm
 #define MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT (1024 - 1)
 #elif defined (TARGET_UNIX)
@@ -96,10 +96,10 @@ EXTERN_C FCDECL1(PCODE, JIT_PatchpointForced, int ilOffset);
 
 EXTERN_C FCDECL0(void, RhpGcPoll);
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
 // WASM EventPipe CPU-sampling samplepoint helper (defined in vm/wasm/helpers.cpp).
 EXTERN_C FCDECL0(void, JIT_WasmProfSamplepoint);
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
 
 #ifdef FEATURE_IJW
 EXTERN_C FCDECL1(void*, JIT_GetStaticFieldAddr_Tls, FieldDesc* pField);
@@ -1044,9 +1044,9 @@ struct VMHELPDEF
     const char* name;
 #endif // _DEBUG
 
-#if defined(_DEBUG) || defined(TARGET_WASM)
+#if defined(_DEBUG) || defined(TARGET_WASMARCH)
     bool _isDynamicHelper;
-#endif // _DEBUG || TARGET_WASM
+#endif // _DEBUG || TARGET_WASMARCH
 
     bool IsDynamicHelper(DynamicCorInfoHelpFunc* dynamicFtnNum) const;
 };

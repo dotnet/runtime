@@ -256,7 +256,7 @@ void GenTree::InitNodeSize()
     GenTree::s_gtNodeSizes[GT_QMARK]         = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_INTRINSIC]     = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_ALLOCOBJ]      = TREE_NODE_SZ_LARGE;
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
     GenTree::s_gtNodeSizes[GT_HWINTRINSIC]   = TREE_NODE_SZ_LARGE;
 #endif
 #if USE_HELPERS_FOR_INT_DIV
@@ -331,9 +331,9 @@ void GenTree::InitNodeSize()
 
 // On Wasm, GenTreeJitIntrinsic has embedded inline GenTrees which are both bigger than on native platforms.
 // This is because regNumSmall is 4 bytes instead of 1 due to 'unlimited' registers.
-#if defined(FEATURE_HW_INTRINSICS) && !defined(TARGET_WASM)
+#if defined(FEATURE_HW_INTRINSICS) && !defined(TARGET_WASMARCH)
     static_assert(sizeof(GenTreeHWIntrinsic)     <= TREE_NODE_SZ_SMALL);
-#elif defined(FEATURE_HW_INTRINSICS) && defined(TARGET_WASM)
+#elif defined(FEATURE_HW_INTRINSICS) && defined(TARGET_WASMARCH)
     static_assert(sizeof(GenTreeHWIntrinsic)     <= TREE_NODE_SZ_LARGE);
 #endif // FEATURE_HW_INTRINSICS
     // clang-format on
@@ -1024,7 +1024,7 @@ bool GenTree::NeedsConsecutiveRegisters() const
 }
 #endif
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
 //-----------------------------------------------------------------------------------
 // GetImmOp: Get the single immediate operand of this hardware intrinsic node.
 //
@@ -1045,7 +1045,7 @@ GenTree* GenTreeHWIntrinsic::GetImmOp() const
 
     return Op(imm1Pos);
 }
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
 
 #if HAS_FIXED_REGISTER_SET
 //---------------------------------------------------------------
@@ -2364,11 +2364,11 @@ bool GenTreeCall::HasNonStandardAddedArgs(Compiler* compiler) const
 //
 int GenTreeCall::GetNonStandardAddedArgCount(Compiler* compiler) const
 {
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
     // TODO-WASM: may need adjustments for other hidden args
     // For now: managed calls get extra SP + PortableEntryPoint args.
     return IsUnmanaged() ? 0 : 2;
-#endif // defined(TARGET_WASM)
+#endif // defined(TARGET_WASMARCH)
 
     if (IsUnmanaged() && !compiler->opts.ShouldUsePInvokeHelpers())
     {
@@ -5035,7 +5035,7 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
         // We want the more complex tree to be evaluated first.
         if ((level < lvl2) && !multiOp->AsHWIntrinsic()->IsUserCall() && gtCanSwapOrder(op1, op2))
         {
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
             // TODO-WASM-CQ: Wasm's stack-machine codegen requires operands to be evaluated in
             // source order, so we cannot honor GTF_REVERSE_OPS here. For commutative HW
             // intrinsics we could instead physically swap multiOp->Op(1)/Op(2) to retain the
@@ -5052,7 +5052,7 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
             }
 
             std::swap(level, lvl2);
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
         }
 
         if (level < 1)
@@ -5921,7 +5921,7 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
                 addrModeCostSz += 4;
             }
         }
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
         // Only "base + cns" is an addressing mode on Wasm. The constant folds into the memarg, which grows by
         // the size of its ULEB encoding.
         //
@@ -6042,7 +6042,7 @@ static void SetIndirectStoreEvalOrder(Compiler* comp, GenTreeIndir* store, bool*
 {
     assert(store->OperIs(GT_STORE_BLK, GT_STOREIND));
 
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
     *allowReversal = false;
     return;
 #endif
@@ -6404,7 +6404,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 }
                 goto COMMON_CNS;
             }
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
             case GT_CNS_STR:
                 costEx = IND_COST_EX + 2;
                 costSz = 7;
@@ -6495,7 +6495,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 // TODO-RISCV64-CQ: tune the costs.
                 costEx = 2;
                 costSz = 8;
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
                 costEx = 2;
                 costSz = tree->TypeIs(TYP_FLOAT) ? 5 : 9;
 #else
@@ -7064,7 +7064,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     // TODO-RISCV64-CQ: tune the costs.
                     costEx = 1;
                     costSz = 4;
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
                     // TODO-WASM: Determine if we need a better costing model for casts.
                     // Some operations may use 2-byte opcodes, and some operations may need
                     // multiple wasm instructions.
@@ -7587,7 +7587,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                         level++;
                         break;
                     }
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
                     // WASM lowers MaxNative/MinNative to native min/max instructions. Used
                     // both by user calls and by morph's float -> small int saturating clamp.
                     case NI_System_Math_MaxNative:
@@ -7596,7 +7596,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                         level++;
                         break;
                     }
-#endif // TARGET_RISCV64 || TARGET_WASM
+#endif // TARGET_RISCV64 || TARGET_WASMARCH
 
                     default:
                         assert(!"Unknown binary GT_INTRINSIC operator");
@@ -7739,7 +7739,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 
                     default:
 
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
                         // For WASM if we can't swap the operands or swap the operator, don't swap.
 #else
                         // Mark the operand's evaluation order to be swapped.
@@ -8096,7 +8096,7 @@ unsigned Compiler::gtSetEvalOrderMinOpts(GenTree* tree)
                 else
                 {
 
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
                     // For WASM if we can't swap the operands or swap the operator, don't swap.
 #else
                     // Mark the operand's evaluation order to be swapped.
@@ -8358,7 +8358,7 @@ bool Compiler::gtTreeHasLocalStore(GenTree* tree, unsigned lclNum)
 #ifdef DEBUG
 bool GenTree::OperSupportsReverseOpEvalOrder(Compiler* comp) const
 {
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
     return false;
 #endif
 
@@ -8598,7 +8598,7 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
             case GT_SELECT_INV:
             case GT_SELECT_INC:
 #endif
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
             case GT_WASM_SELECT:
 #endif
             case GT_SELECT:
@@ -9396,7 +9396,7 @@ GenTree::VtablePtr GenTree::GetVtableForOper(genTreeOps oper)
         }
         break;
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
         case GT_WASM_SELECT:
         {
             GenTreeConditional gt;
@@ -12367,9 +12367,9 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_PHI_ARG:
         case GT_JMPTABLE:
         case GT_PHYSREG:
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
         case GT_FRAME_SIZE:
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
         case GT_IL_OFFSET:
         case GT_RECORD_ASYNC_RESUME:
         case GT_NOP:
@@ -12504,7 +12504,7 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
             assert(*m_edge != nullptr);
             m_advance = &GenTreeUseEdgeIterator::AdvanceConditional;
             return;
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
         case GT_WASM_SELECT:
             m_edge = &m_node->AsConditional()->gtOp1;
             assert(*m_edge != nullptr);
@@ -12629,7 +12629,7 @@ void GenTreeUseEdgeIterator::AdvanceConditional()
     assert(*m_edge != nullptr);
 }
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
 //------------------------------------------------------------------------
 // GenTreeUseEdgeIterator::AdvanceWasmSelect: produces the next operand in Wasm stack order.
 //
@@ -12652,7 +12652,7 @@ void GenTreeUseEdgeIterator::AdvanceWasmSelect()
 
     assert(*m_edge != nullptr);
 }
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
 
 //------------------------------------------------------------------------
 // GenTreeUseEdgeIterator::AdvanceBinOp: produces the next operand of a binary node and advances the state.
@@ -13808,7 +13808,7 @@ void Compiler::gtGetLclVarNameInfo(unsigned lclNum, const char** ilKindOut, cons
     const char* ilName = nullptr;
 
     unsigned ilNum = compMap2ILvarNum(lclNum);
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
     int wasmSpillSlotIndex = -1;
     if (m_wasmSpillSlots != nullptr)
     {
@@ -13936,7 +13936,7 @@ void Compiler::gtGetLclVarNameInfo(unsigned lclNum, const char** ilKindOut, cons
         }
     }
 
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
     if (lclNum == lvaWasmSpArg)
     {
         ilName = "SP";
@@ -13954,7 +13954,7 @@ void Compiler::gtGetLclVarNameInfo(unsigned lclNum, const char** ilKindOut, cons
         ilKind = "spill";
         ilNum  = wasmSpillSlotIndex;
     }
-#endif // defined(TARGET_WASM)
+#endif // defined(TARGET_WASMARCH)
 
     *ilKindOut = ilKind;
     *ilNameOut = ilName;
@@ -14890,7 +14890,7 @@ void Compiler::gtDispTree(GenTree*                    tree,
                         printf(" (Loop)");
                         break;
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
                     case GenTreeBlk::BlkOpKindNativeOpcode:
                         printf(" (memory.%s)", tree->OperIsCopyBlkOp() ? "copy" : "fill");
                         break;
@@ -15334,14 +15334,14 @@ void Compiler::gtDispTree(GenTree*                    tree,
             break;
 
         case GT_SELECT:
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
         case GT_WASM_SELECT:
 #endif
             gtDispCommonEndLine(tree);
 
             if (!topOnly)
             {
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
                 if (tree->OperIs(GT_WASM_SELECT))
                 {
                     gtDispChild(tree->AsConditional()->gtOp1, indentStack, IIArc, childMsg, topOnly);
@@ -23852,7 +23852,7 @@ GenTree* Compiler::gtNewSimdAbsNode(var_types type, GenTree* op1, var_types simd
 
     assert(intrinsic != NI_Illegal);
     return gtNewSimdHWIntrinsicNode(type, op1, intrinsic, simdBaseType, simdSize);
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
     return gtNewSimdHWIntrinsicNode(type, op1, NI_PackedSimd_Abs, simdBaseType, simdSize);
 #else
 #error Unsupported platform
@@ -24303,7 +24303,7 @@ GenTree* Compiler::gtNewSimdBinOpNode(
 
         case GT_MUL:
         {
-#if defined(TARGET_XARCH) || defined(TARGET_WASM)
+#if defined(TARGET_XARCH) || defined(TARGET_WASMARCH)
             if (varTypeIsByte(simdBaseType))
             {
                 // If we can widen to the next vector size up, we can get by
@@ -24556,7 +24556,7 @@ GenTree* Compiler::gtNewSimdCeilNode(var_types type, GenTree* op1, var_types sim
     {
         intrinsic = NI_AdvSimd_Ceiling;
     }
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
     intrinsic = NI_PackedSimd_Ceiling;
 #else
 #error Unsupported platform
@@ -24716,7 +24716,7 @@ GenTree* Compiler::gtNewSimdCvtNode(
     {
         return gtNewSimdCvtNativeNode(type, fixupVal, simdTargetBaseType, simdSourceBaseType, simdSize);
     }
-#elif defined(TARGET_ARM64) || defined(TARGET_WASM)
+#elif defined(TARGET_ARM64) || defined(TARGET_WASMARCH)
     return gtNewSimdCvtNativeNode(type, op1, simdTargetBaseType, simdSourceBaseType, simdSize);
 #else
 #error Unsupported platform
@@ -24957,7 +24957,7 @@ GenTree* Compiler::gtNewSimdCvtNativeNode(
         default:
             unreached();
     }
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
     NamedIntrinsic intrinsic = NI_Illegal;
 
     switch (simdTargetBaseType)
@@ -25063,7 +25063,7 @@ GenTree* Compiler::gtNewSimdCmpOpNode(
     assert(varTypeIsIntegral(simdBaseType));
     assert(!canUseEvexEncodingDebugOnly());
     assert((simdSize == 16) || ((simdSize == 32) && compOpportunisticallyDependsOn(InstructionSet_AVX2)));
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
     assert(simdBaseType == TYP_ULONG);
 #endif
 
@@ -25123,8 +25123,8 @@ GenTree* Compiler::gtNewSimdCmpOpNode(
         }
 #endif // TARGET_XARCH
 
-#if defined(TARGET_XARCH) || defined(TARGET_WASM)
-#if defined(TARGET_WASM)
+#if defined(TARGET_XARCH) || defined(TARGET_WASMARCH)
+#if defined(TARGET_WASMARCH)
         case GT_GE:
         case GT_LE:
 #endif
@@ -25196,7 +25196,7 @@ GenTree* Compiler::gtNewSimdCmpOpNode(
 
             return gtNewSimdCmpOpNode(op, type, op1, op2, simdBaseType, simdSize);
         }
-#endif // TARGET_XARCH || TARGET_WASM
+#endif // TARGET_XARCH || TARGET_WASMARCH
 
         case GT_NE:
         {
@@ -25377,7 +25377,7 @@ GenTree* Compiler::gtNewSimdCndSelNode(
 
     NamedIntrinsic intrinsic = NI_Illegal;
 
-#if defined(TARGET_XARCH) || defined(TARGET_WASM)
+#if defined(TARGET_XARCH) || defined(TARGET_WASMARCH)
     return gtNewSimdHWIntrinsicNode(type, op1, op2, op3, NI_Vector_ConditionalSelect, simdBaseType, simdSize);
 #elif defined(TARGET_ARM64)
     if (simdSize == SIZE_UNKNOWN)
@@ -26127,7 +26127,7 @@ GenTree* Compiler::gtNewSimdFloorNode(var_types type, GenTree* op1, var_types si
     {
         intrinsic = NI_AdvSimd_Floor;
     }
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
     intrinsic = NI_PackedSimd_Floor;
 #else
 #error Unsupported platform
@@ -26184,12 +26184,12 @@ GenTree* Compiler::gtNewSimdFmaNode(
     // We expect op1 and op2 to have already been spilled
 
     std::swap(op1, op3);
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
     // Wasm has no single rounding FMA, and this should be guarded against already in import.
     unreached();
 #else
 #error Unsupported platform
-#endif // !TARGET_XARCH && !TARGET_ARM64 && !TARGET_WASM
+#endif // !TARGET_XARCH && !TARGET_ARM64 && !TARGET_WASMARCH
 
     assert(intrinsic != NI_Illegal);
     return gtNewSimdHWIntrinsicNode(type, op1, op2, op3, intrinsic, simdBaseType, simdSize);
@@ -27048,7 +27048,7 @@ GenTree* Compiler::gtNewSimdLoadAlignedNode(var_types type, GenTree* op1, var_ty
 
     assert(intrinsic != NI_Illegal);
     return gtNewSimdHWIntrinsicNode(type, op1, intrinsic, simdBaseType, simdSize);
-#elif defined(TARGET_ARM64) || defined(TARGET_WASM)
+#elif defined(TARGET_ARM64) || defined(TARGET_WASMARCH)
     // ARM64/WASM doesn't have aligned loads, but aligned loads are only validated to be
     // aligned when optimizations are disable, so only skip the intrinsic handling
     // if optimizations are enabled
@@ -27128,7 +27128,7 @@ GenTree* Compiler::gtNewSimdLoadNonTemporalNode(var_types type, GenTree* op1, va
 
     assert(intrinsic != NI_Illegal);
     return gtNewSimdHWIntrinsicNode(type, op1, intrinsic, simdBaseType, simdSize);
-#elif defined(TARGET_ARM64) || defined(TARGET_WASM)
+#elif defined(TARGET_ARM64) || defined(TARGET_WASMARCH)
     // ARM64/WASM doesn't have aligned loads, but aligned loads are only validated to be
     // aligned when optimizations are disable, so only skip the intrinsic handling
     // if optimizations are enabled
@@ -27666,7 +27666,7 @@ GenTree* Compiler::gtNewSimdMinMaxNode(var_types type,
             op1 = gtNewSimdCreateScalarUnsafeNode(type, op1, simdBaseType, simdSize);
             op2 = gtNewSimdCreateScalarUnsafeNode(type, op2, simdBaseType, simdSize);
         }
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
         if (isScalar)
         {
             simdSize = 16;
@@ -27954,7 +27954,7 @@ GenTree* Compiler::gtNewSimdMinMaxNativeNode(
             intrinsic = isMax ? NI_AdvSimd_Max : NI_AdvSimd_Min;
         }
     }
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
     if (isScalar)
     {
         simdSize = 16;
@@ -28015,7 +28015,7 @@ GenTree* Compiler::gtNewSimdNarrowNode(
 
     assert(varTypeIsArithmetic(simdBaseType) && !varTypeIsLong(simdBaseType));
 
-#if !defined(TARGET_WASM)
+#if !defined(TARGET_WASMARCH)
     GenTree* tmp1;
     GenTree* tmp2;
 #endif
@@ -28473,7 +28473,7 @@ GenTree* Compiler::gtNewSimdNarrowNode(
 
         return gtNewSimdHWIntrinsicNode(type, tmp2, NI_AdvSimd_ExtractNarrowingLower, simdBaseType, simdSize);
     }
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
     if (varTypeIsFloating(simdBaseType))
     {
         assert(simdBaseType == TYP_FLOAT);
@@ -28793,7 +28793,7 @@ GenTree* Compiler::gtNewSimdCreateAlternatingSequenceNode(
     return gtNewSimdZipNode(type, even, odd, simdBaseType, simdSize, false);
 }
 
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
 //----------------------------------------------------------------------------------------------
 // Compiler::gtNewSimdWasmTwoSourceShuffleNode: Builds a two-source constant permute for WASM
 //
@@ -28855,7 +28855,7 @@ GenTree* Compiler::gtNewSimdWasmTwoSourceShuffleNode(
 
     return gtNewSimdBinOpNode(GT_OR, type, scatter1, scatter2, simdBaseType, simdSize);
 }
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
 
 //----------------------------------------------------------------------------------------------
 // Compiler::gtNewSimdConcatNode: Creates a new simd ConcatLowerLower/... node
@@ -28937,7 +28937,7 @@ GenTree* Compiler::gtNewSimdConcatNode(var_types type,
         return gtNewSimdHWIntrinsicNode(type, op1, op2, gtNewIconNode(immediate), NI_X86Base_Shuffle, TYP_FLOAT,
                                         simdSize);
     }
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
     // WASM has no native cross-vector concat. The lower result half comes from op1 and the upper
     // from op2, so build the selectors and let the shared two-source shuffle scatter them.
 
@@ -29108,7 +29108,7 @@ GenTree* Compiler::gtNewSimdZipNode(
 #elif defined(TARGET_ARM64)
     NamedIntrinsic intrinsic = upper ? NI_AdvSimd_Arm64_ZipHigh : NI_AdvSimd_Arm64_ZipLow;
     return gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsic, simdBaseType, simdSize);
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
     // WASM lacks a native interleave. Even lanes come from op1 and odd lanes from op2, so build the
     // selectors and let the shared two-source shuffle scatter them.
 
@@ -29124,7 +29124,7 @@ GenTree* Compiler::gtNewSimdZipNode(
     return gtNewSimdWasmTwoSourceShuffleNode(type, op1, op2, selectors, simdBaseType, simdSize);
 #else
 #error Unsupported platform
-#endif // !TARGET_XARCH && !TARGET_ARM64 && !TARGET_WASM
+#endif // !TARGET_XARCH && !TARGET_ARM64 && !TARGET_WASMARCH
 
 #if defined(TARGET_XARCH)
     // var lower = Zip(left, right, upper: false);
@@ -29324,7 +29324,7 @@ GenTree* Compiler::gtNewSimdUnzipNode(
             ? gtNewSimdHWIntrinsicNode(type, lower, NI_Vector_ToVector256Unsafe, simdBaseType, simdSize / 2)
             : gtNewSimdHWIntrinsicNode(type, lower, NI_Vector_ToVector512Unsafe, simdBaseType, simdSize / 2);
     return gtNewSimdWithUpperNode(type, result, higher, simdBaseType, simdSize);
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
     // WASM lacks a native deinterleave. The lower result half gathers op1's even/odd elements and
     // the upper half gathers op2's, so build the selectors and let the shared two-source shuffle
     // scatter them.
@@ -29341,7 +29341,7 @@ GenTree* Compiler::gtNewSimdUnzipNode(
     return gtNewSimdWasmTwoSourceShuffleNode(type, op1, op2, selectors, simdBaseType, simdSize);
 #else
 #error Unsupported platform
-#endif // !TARGET_XARCH && !TARGET_ARM64 && !TARGET_WASM
+#endif // !TARGET_XARCH && !TARGET_ARM64 && !TARGET_WASMARCH
 }
 
 //----------------------------------------------------------------------------------------------
@@ -29462,7 +29462,7 @@ GenTree* Compiler::gtNewSimdRoundNode(var_types type, GenTree* op1, var_types si
     {
         intrinsic = (simdSize == SIZE_UNKNOWN) ? NI_Sve_RoundToNearest : NI_AdvSimd_RoundToNearest;
     }
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
     intrinsic = NI_PackedSimd_RoundToNearest;
 #else
 #error Unsupported platform
@@ -29539,7 +29539,7 @@ GenTree* Compiler::gtNewSimdShuffleVariableNode(
     if (!isShuffleNative)
 #elif defined(TARGET_ARM64)
     if ((!isShuffleNative) && (elementSize > 1))
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
     if ((!isShuffleNative) && (elementSize > 1))
 #else
 #error Unsupported platform
@@ -30007,7 +30007,7 @@ GenTree* Compiler::gtNewSimdShuffleVariableNode(
     }
 
     retNode = gtNewSimdHWIntrinsicNode(type, op1, op2, lookupIntrinsic, simdBaseType, simdSize);
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
     assert(simdSize == 16);
 
     // Swizzle (i8x16.swizzle) operates on byte indices, so for non-byte element types we expand each
@@ -30076,7 +30076,7 @@ GenTree* Compiler::gtNewSimdShuffleVariableNode(
     if (!isShuffleNative)
 #elif defined(TARGET_ARM64)
     if ((!isShuffleNative) && (elementSize > 1))
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
     if ((!isShuffleNative) && (elementSize > 1))
 #else
 #error Unsupported platform
@@ -30757,7 +30757,7 @@ GenTree* Compiler::gtNewSimdShuffleNode(
     op2->AsVecCon()->gtSimdVal = vecCns;
 
     return gtNewSimdHWIntrinsicNode(type, op1, op2, lookupIntrinsic, simdBaseType, simdSize);
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
     assert(simdSize == 16);
 
     uint64_t value  = 0;
@@ -30836,7 +30836,7 @@ GenTree* Compiler::gtNewSimdSqrtNode(var_types type, GenTree* op1, var_types sim
     {
         intrinsic = NI_AdvSimd_Arm64_Sqrt;
     }
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
     intrinsic = NI_PackedSimd_Sqrt;
 #else
 #error Unsupported platform
@@ -30924,7 +30924,7 @@ GenTree* Compiler::gtNewSimdStoreAlignedNode(
     }
 
     return gtNewSimdHWIntrinsicNode(TYP_VOID, op1, op2, intrinsic, simdBaseType, simdSize);
-#elif defined(TARGET_ARM64) || defined(TARGET_WASM)
+#elif defined(TARGET_ARM64) || defined(TARGET_WASMARCH)
     // ARM64/WASM doesn't have aligned stores, but aligned stores are only validated to be
     // aligned when optimizations are disable, so only skip the intrinsic handling
     // if optimizations are enabled
@@ -30982,7 +30982,7 @@ GenTree* Compiler::gtNewSimdStoreNonTemporalNode(
     }
 
     return gtNewSimdHWIntrinsicNode(TYP_VOID, op1, op2, intrinsic, simdBaseType, simdSize);
-#elif defined(TARGET_ARM64) || defined(TARGET_WASM)
+#elif defined(TARGET_ARM64) || defined(TARGET_WASMARCH)
     // ARM64/WASM doesn't have aligned stores, but aligned stores are only validated to be
     // aligned when optimizations are disable, so only skip the intrinsic handling
     // if optimizations are enabled
@@ -31253,7 +31253,7 @@ GenTree* Compiler::gtNewSimdSumNode(var_types type, GenTree* op1, var_types simd
             unreached();
         }
     }
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
     // WASM only has V128 and no native horizontal reduction, so reduce via a shuffle + add
     // tree, reading lane 0 at the end. Using increasing strides keeps the grouping identical
     // to the software `Sum(lower) + Sum(upper)` fallback, which matters for floating-point
@@ -31415,7 +31415,7 @@ GenTree* Compiler::gtNewSimdTruncNode(var_types type, GenTree* op1, var_types si
     {
         intrinsic = (simdSize == SIZE_UNKNOWN) ? NI_Sve_RoundToZero : NI_AdvSimd_RoundToZero;
     }
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
     intrinsic = NI_PackedSimd_Truncate;
 #else
 #error Unsupported platform
@@ -31714,7 +31714,7 @@ GenTree* Compiler::gtNewSimdWidenLowerNode(var_types type, GenTree* op1, var_typ
     }
 
     return tmp1;
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
     if (varTypeIsFloating(simdBaseType))
     {
         assert(simdBaseType == TYP_FLOAT);
@@ -31962,7 +31962,7 @@ GenTree* Compiler::gtNewSimdWidenUpperNode(var_types type, GenTree* op1, var_typ
         GenTree* tmp1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, intrinsic, simdBaseType, simdSize);
         return gtNewSimdGetUpperNode(TYP_SIMD8, tmp1, simdBaseType, 16);
     }
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
     if (varTypeIsFloating(simdBaseType))
     {
         assert(simdBaseType == TYP_FLOAT);
@@ -32037,7 +32037,7 @@ GenTree* Compiler::gtNewSimdWithElementNode(
     }
 
     hwIntrinsicID = NI_AdvSimd_Insert;
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
     // Keep the platform-neutral NI_Vector_WithElement so that constant folding
     // (gtFoldExprHWIntrinsic) and value numbering apply; it is rewritten to
     // NI_PackedSimd_ReplaceScalar during lowering.
@@ -32300,7 +32300,7 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad(GenTree** pAddr) const
 {
     GenTree* addr = nullptr;
 
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_WASM)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_WASMARCH)
     NamedIntrinsic      intrinsicId = GetHWIntrinsicId();
     HWIntrinsicCategory category    = HWIntrinsicInfo::lookupCategory(intrinsicId);
 
@@ -32490,7 +32490,7 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad(GenTree** pAddr) const
         }
     }
 #endif // TARGET_XARCH
-#endif // TARGET_XARCH || TARGET_ARM64 || TARGET_WASM
+#endif // TARGET_XARCH || TARGET_ARM64 || TARGET_WASMARCH
 
     if (pAddr != nullptr)
     {
@@ -32557,7 +32557,7 @@ bool GenTreeHWIntrinsic::OperIsMemoryStore(GenTree** pAddr) const
 {
     GenTree* addr = nullptr;
 
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_WASM)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_WASMARCH)
     NamedIntrinsic      intrinsicId = GetHWIntrinsicId();
     HWIntrinsicCategory category    = HWIntrinsicInfo::lookupCategory(intrinsicId);
 
@@ -32630,7 +32630,7 @@ bool GenTreeHWIntrinsic::OperIsMemoryStore(GenTree** pAddr) const
         }
     }
 #endif // TARGET_XARCH
-#endif // TARGET_XARCH || TARGET_ARM64 || TARGET_WASM
+#endif // TARGET_XARCH || TARGET_ARM64 || TARGET_WASMARCH
 
     if (pAddr != nullptr)
     {
@@ -33024,7 +33024,7 @@ void GenTreeHWIntrinsic::SetHWIntrinsicId(NamedIntrinsic intrinsicId)
     assert((oldOperandCount == static_cast<size_t>(newOperandCount)) || newCountUnknown);
 
     // All ids being set must be valid
-#ifndef TARGET_WASM
+#ifndef TARGET_WASMARCH
     // TODO-WASM: Re-enable once we have more intrinsics implemented.
     assert(!HWIntrinsicInfo::IsInvalidNodeId(intrinsicId));
 #endif
@@ -33204,7 +33204,7 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(bool* isScalar, bool getE
 genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_types simdBaseType, bool* isScalar)
 {
     *isScalar = false;
-#ifndef TARGET_WASM
+#ifndef TARGET_WASMARCH
     switch (id)
     {
 #if defined(TARGET_XARCH)
@@ -33705,7 +33705,7 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_ty
             return GT_NONE;
         }
     }
-#endif // !defined(TARGET_WASM)
+#endif // !defined(TARGET_WASMARCH)
     return GT_NONE;
 }
 
@@ -33783,7 +33783,7 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForUnOp(
             {
                 id = NI_AdvSimd_Negate;
             }
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
             id = NI_PackedSimd_Negate;
 #elif !defined(TARGET_XARCH)
 #error Unsupported platform
@@ -33797,7 +33797,7 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForUnOp(
 
 #if defined(TARGET_ARM64)
             id = (simdSize == SIZE_UNKNOWN) ? NI_Sve_Not : NI_AdvSimd_Not;
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
             id = NI_PackedSimd_Not;
 #elif !defined(TARGET_XARCH)
 #error Unsupported platform
@@ -33923,7 +33923,7 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
             {
                 id = NI_AdvSimd_Add;
             }
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
             id = NI_PackedSimd_Add;
 #else
 #error Unsupported platform
@@ -33959,7 +33959,7 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
             }
 #elif defined(TARGET_ARM64)
             id = NI_AdvSimd_And;
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
             id = NI_PackedSimd_And;
 #else
 #error Unsupported platform
@@ -34006,7 +34006,7 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
             assert(simdSize == 16 || simdSize == 8);
 
             id = NI_AdvSimd_BitwiseClear;
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
             id = NI_PackedSimd_AndNot;
 #else
 #error Unsupported platform
@@ -34048,7 +34048,7 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
             {
                 id = NI_AdvSimd_Arm64_Divide;
             }
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
             id = NI_PackedSimd_Divide;
 #else
 #error Unsupported platform
@@ -34104,7 +34104,7 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
             {
                 id = op2->IsCnsIntOrI() ? NI_AdvSimd_ShiftLeftLogical : NI_AdvSimd_ShiftLogical;
             }
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
             id = NI_PackedSimd_ShiftLeft;
 #else
 #error Unsupported platform
@@ -34168,7 +34168,7 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
             {
                 id = isFullVectorOp(op2) ? NI_AdvSimd_Multiply : NI_AdvSimd_MultiplyByScalar;
             }
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
             if (!varTypeIsByte(simdBaseType))
             {
                 id = NI_PackedSimd_Multiply;
@@ -34207,7 +34207,7 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
             }
 #elif defined(TARGET_ARM64)
             id = NI_AdvSimd_Or;
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
             id = NI_PackedSimd_Or;
 #else
 #error Unsupported platform
@@ -34296,7 +34296,7 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
             {
                 id = op2->IsCnsIntOrI() ? NI_AdvSimd_ShiftRightArithmetic : NI_AdvSimd_ShiftArithmetic;
             }
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
             id = NI_PackedSimd_ShiftRightArithmetic;
 #else
 #error Unsupported platform
@@ -34352,7 +34352,7 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
             {
                 id = varTypeIsInt(op2) ? NI_AdvSimd_ShiftRightLogical : NI_AdvSimd_ShiftLogical;
             }
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
             id = NI_PackedSimd_ShiftRightLogical;
 #else
 #error Unsupported platform
@@ -34398,7 +34398,7 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
             {
                 id = NI_AdvSimd_Subtract;
             }
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
             id = NI_PackedSimd_Subtract;
 #else
 #error Unsupported platform
@@ -34434,7 +34434,7 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
             }
 #elif defined(TARGET_ARM64)
             id = NI_AdvSimd_Xor;
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
             id = NI_PackedSimd_Xor;
 #else
 #error Unsupported platform
@@ -34609,7 +34609,7 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(Compiler*  comp,
             {
                 id = NI_AdvSimd_CompareEqual;
             }
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
             id = NI_PackedSimd_CompareEqual;
 #else
 #error Unsupported platform
@@ -34653,7 +34653,7 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(Compiler*  comp,
             {
                 id = NI_AdvSimd_CompareGreaterThanOrEqual;
             }
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
             if (simdBaseType != TYP_ULONG)
             {
                 id = NI_PackedSimd_CompareGreaterThanOrEqual;
@@ -34714,7 +34714,7 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(Compiler*  comp,
             {
                 id = NI_AdvSimd_CompareGreaterThan;
             }
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
             if (simdBaseType != TYP_ULONG)
             {
                 id = NI_PackedSimd_CompareGreaterThan;
@@ -34761,7 +34761,7 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(Compiler*  comp,
             {
                 id = NI_AdvSimd_CompareLessThanOrEqual;
             }
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
             if (simdBaseType != TYP_ULONG)
             {
                 id = NI_PackedSimd_CompareLessThanOrEqual;
@@ -34824,7 +34824,7 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(Compiler*  comp,
             {
                 id = NI_AdvSimd_CompareLessThan;
             }
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
             if (simdBaseType != TYP_ULONG)
             {
                 id = NI_PackedSimd_CompareLessThan;
@@ -34859,7 +34859,7 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(Compiler*  comp,
             }
 #elif defined(TARGET_ARM64)
             id = NI_Illegal;
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
             id = NI_PackedSimd_CompareNotEqual;
 #else
 #error Unsupported platform
@@ -35292,7 +35292,7 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler*                comp,
                 m_regType[i] = comp->getJitGCType(gcPtrs[i]);
             }
 
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
 
             // For Wasm, structs are either returned by-ref or as primitives.
             unreached();
@@ -36702,7 +36702,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                 case NI_X86Base_MoveMask:
                 case NI_AVX_MoveMask:
                 case NI_AVX2_MoveMask:
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
                 case NI_PackedSimd_Bitmask:
 #endif
                 {
@@ -36770,7 +36770,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                 }
 #endif // TARGET_XARCH
 
-#ifndef TARGET_WASM
+#ifndef TARGET_WASMARCH
 #ifdef TARGET_ARM64
                 case NI_ArmBase_LeadingZeroCount:
 #elif defined(TARGET_XARCH)
@@ -36827,7 +36827,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 #elif defined(TARGET_ARM64)
                 case NI_Vector_GetLower:
                 case NI_Vector_ToVector128Unsafe:
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
                 case NI_Vector_AsVector2:
 #else
 #error Unsupported platform
@@ -37969,7 +37969,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
         assert(opCount == 3);
         switch (ni)
         {
-#if defined(TARGET_XARCH) || defined(TARGET_WASM)
+#if defined(TARGET_XARCH) || defined(TARGET_WASMARCH)
             case NI_Vector_ConditionalSelect:
 #elif defined(TARGET_ARM64)
             case NI_AdvSimd_BitwiseSelect:

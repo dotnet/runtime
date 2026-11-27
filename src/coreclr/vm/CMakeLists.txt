@@ -17,7 +17,7 @@ include_directories(${CLR_SRC_NATIVE_DIR}/libs/Common)
 add_definitions(-DUNICODE)
 add_definitions(-D_UNICODE)
 
-if(NOT CLR_CMAKE_TARGET_APPLE AND NOT CLR_CMAKE_TARGET_ARCH_WASM AND NOT CLR_CMAKE_TARGET_OPENBSD)
+if(NOT CLR_CMAKE_TARGET_APPLE AND NOT CLR_CMAKE_TARGET_ARCH_WASMARCH AND NOT CLR_CMAKE_TARGET_OPENBSD)
     add_definitions(-DFEATURE_READONLY_GS_COOKIE)
 endif()
 
@@ -415,7 +415,7 @@ if (FEATURE_VARARGS)
     )
 endif()
 
-if (CLR_CMAKE_TARGET_UNIX AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
+if (CLR_CMAKE_TARGET_UNIX AND NOT CLR_CMAKE_TARGET_ARCH_WASMARCH)
     list(APPEND VM_SOURCES_WKS
         ${RUNTIME_DIR}/SignalSafeThreadMap.cpp
     )
@@ -518,7 +518,7 @@ if (FEATURE_VARARGS)
     )
 endif()
 
-if (CLR_CMAKE_TARGET_UNIX AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
+if (CLR_CMAKE_TARGET_UNIX AND NOT CLR_CMAKE_TARGET_ARCH_WASMARCH)
     list(APPEND VM_HEADERS_WKS
         ${RUNTIME_DIR}/SignalSafeThreadMap.h
     )
@@ -674,7 +674,7 @@ if (FEATURE_PORTABLE_HELPERS)
         ${PORTABLE_VM_SOURCES_DIR}/AllocSlow.cpp
     )
 
-    if(CLR_CMAKE_TARGET_ARCH_WASM)
+    if(CLR_CMAKE_TARGET_ARCH_WASMARCH)
     else()
         list(APPEND VM_SOURCES_WKS
             ${PORTABLE_SOURCES_DIR}/WriteBarriers.cpp
@@ -957,7 +957,7 @@ elseif(CLR_CMAKE_TARGET_ARCH_RISCV64)
         ${ARCH_SOURCES_DIR}/singlestepper.cpp
         gcinfodecoder.cpp
     )
-elseif(CLR_CMAKE_TARGET_ARCH_WASM)
+elseif(CLR_CMAKE_TARGET_ARCH_WASMARCH)
     set(VM_HEADERS_WKS_ARCH_ASM
         ${ARCH_SOURCES_DIR}/entrypoints.h
         ${ARCH_SOURCES_DIR}/asmconstants.h
@@ -1113,7 +1113,7 @@ if(FEATURE_SVR_GC)
     add_pgo(vm_gc_svr)
 endif()
 
-if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
+if (NOT CLR_CMAKE_TARGET_ARCH_WASMARCH)
     add_library_clr(cee_dac ${VM_SOURCES_DAC})
     add_dependencies(cee_dac eventing_headers)
     set_target_properties(cee_dac PROPERTIES DAC_COMPONENT TRUE)

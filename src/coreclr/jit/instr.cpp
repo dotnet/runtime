@@ -85,7 +85,7 @@ const char* CodeGen::genInsName(instruction ins)
         #define INST(id, nm, ldst, e1) nm,
         #include "instrs.h"
 
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
         #define INST(id, nm, info, fmt, opcode         ) nm,
         #define INST2(id, nm, info, fmt, prefix, opcode) nm,
         #include "instrs.h"
@@ -608,7 +608,7 @@ bool CodeGenInterface::instHasPseudoName(instruction ins)
 }
 #endif // TARGET_XARCH
 
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
 uint8_t CodeGenInterface::instSimdElemSize(instruction ins)
 {
     assert((unsigned)ins < ArrLen(instInfo));
@@ -2057,7 +2057,7 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
 {
     // TODO-Cleanup: split this function across target-specific files (e. g. emit<target>.cpp).
 
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
     switch (srcType)
     {
         case TYP_REF:
@@ -2090,7 +2090,7 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
         default:
             unreached();
     }
-#endif // defined(TARGET_WASM)
+#endif // defined(TARGET_WASMARCH)
 
     if (varTypeUsesIntReg(srcType))
     {
@@ -2475,7 +2475,7 @@ instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false
 {
     // TODO-Cleanup: split this function across target-specific files (e. g. emit<target>.cpp).
 
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
     switch (dstType)
     {
         case TYP_REF:
@@ -2502,7 +2502,7 @@ instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false
         default:
             unreached();
     }
-#endif // defined(TARGET_WASM)
+#endif // defined(TARGET_WASMARCH)
 
     if (varTypeUsesIntReg(dstType))
     {

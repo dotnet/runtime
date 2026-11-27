@@ -41,11 +41,11 @@ public:
     static bool CloseFile(MemoryMapHandle fileHandle);
     static bool GetFileSize(MemoryMapHandle fileHandle, uint64_t* size);
     static int32_t GetLastMemoryMappingError();
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
     static bool ReadFile(MemoryMapHandle fileHandle, uint64_t offset, void* buffer, size_t size);
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
 
-#ifndef TARGET_WASM
+#ifndef TARGET_WASMARCH
     static MemoryMapHandle CreateMemoryMapping(MemoryMapHandle fileHandle, uint64_t size, MemoryProtection protection);
     static bool CloseMemoryMapping(MemoryMapHandle mapping);
 
@@ -54,7 +54,7 @@ public:
 
     // Windows executable backing allows later executable views without making this view executable.
     static void* MapAnonymousMemory(size_t size, MemoryProtection protection, bool executableBacking = false);
-#endif // !TARGET_WASM
+#endif // !TARGET_WASMARCH
 
     // Allocate zero-initialized, page-aligned memory.
     // The size must be a nonzero multiple of the system page size.
@@ -91,7 +91,7 @@ public:
     static bool DecommitMemory(void* address, size_t size);
     static bool ReleaseMemoryReservation(void* address, size_t size);
 
-#ifndef TARGET_WASM
+#ifndef TARGET_WASMARCH
     // Use placeholders to map file-backed sections at fixed offsets within one contiguous address range.
     // Replacing parts of the reservation preserves ownership of those addresses, avoiding races with other
     // allocations and allowing unmodified file-backed pages to stay shared instead of copying the image.
@@ -173,9 +173,9 @@ public:
         void* GetValue() const { return m_address; }
         size_t GetSize() const { return m_size; }
     };
-#endif // !TARGET_WASM
+#endif // !TARGET_WASMARCH
 
-#if defined(TARGET_UNIX) && !defined(TARGET_WASM)
+#if defined(TARGET_UNIX) && !defined(TARGET_WASMARCH)
     // Returns an error number directly, without discarding modified private pages.
     static int MarkMemoryAsNotNeeded(void* address, size_t size);
 
@@ -196,7 +196,7 @@ public:
     // Gets the address range that ReserveMemoryFromExecutableAllocatorWithinRange prefers to allocate
     // from, which may include this library's own loaded range if that range is nearby.
     static void GetExecutableMemoryAllocatorPreferredRange(void** start, void** end);
-#endif // TARGET_UNIX && !TARGET_WASM
+#endif // TARGET_UNIX && !TARGET_WASMARCH
 
 #ifdef TARGET_APPLE
     static bool IsMapJitFlagNeeded();

@@ -16,7 +16,7 @@ extern "C" int32_t QCALLTYPE Thread_GetOptimalMaxSpinWaitsPerSpinIteration();
 
 // WASM-TODO: once we have R2R stack walking working we should be able to set pTransitionBlock to &transitionBlock unconditionally
 
-#if defined(TARGET_WASM) && !defined(TARGET_NATIVEAOT)
+#if defined(TARGET_WASMARCH) && !defined(TARGET_NATIVEAOT)
 #define PREPARE_TRANSITION_ARG() \
 TransitionBlock transitionBlock; \
 transitionBlock.m_ReturnAddress = 0; \

@@ -93,7 +93,7 @@
 #include "MiscNativeHelpers.h"
 #include "ProcessEnvironment.h"
 
-#if !defined(TARGET_WASM) || !GEN_PINVOKE
+#if !defined(TARGET_WASMARCH) || !GEN_PINVOKE
 // Keep entries sorted by name using strcmp ordering for binary search.
 static const Entry s_RuntimeHelpers[] =
 {
@@ -861,4 +861,4 @@ const void* ResolveRuntimeHelperEntrypoint(const char* name)
     const Entry* entry = search.Find(&key);
     return entry != nullptr ? entry->method : nullptr;
 }
-#endif // !defined(TARGET_WASM) || !GEN_PINVOKE
+#endif // !defined(TARGET_WASMARCH) || !GEN_PINVOKE

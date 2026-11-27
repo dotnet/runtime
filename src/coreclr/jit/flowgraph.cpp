@@ -863,7 +863,7 @@ void Compiler::fgSetPreferredInitCctor()
 //
 GenTreeCall* Compiler::fgGetSharedCCtor(CORINFO_CLASS_HANDLE cls)
 {
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
     // CoreCLR Wasm does not support dynamically created helpers.
     if (!IsNativeAot())
     {
@@ -1127,7 +1127,7 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
     }
 
 #ifdef FEATURE_READYTORUN
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
     // Wasm can't use the dynamically composed ReadyToRun delegate constructor helpers,
     // so ReadyToRun uses GetDelegateCtor below, like the JIT.
     if (IsAot() && IsTargetAbi(CORINFO_NATIVEAOT_ABI))
@@ -1181,7 +1181,7 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
             }
         }
         // ReadyToRun has this optimization for a non-virtual function pointers only for now.
-#ifndef TARGET_WASM
+#ifndef TARGET_WASMARCH
         else if ((oper == GT_FTN_ADDR) && (ldftnToken != nullptr))
         {
             JITDUMP("optimized\n");
@@ -2636,7 +2636,7 @@ PhaseStatus Compiler::fgAddInternal()
     CORINFO_JUST_MY_CODE_HANDLE* pDbgHandle = nullptr;
     CORINFO_JUST_MY_CODE_HANDLE  dbgHandle  = nullptr;
 
-#if !defined(TARGET_WASM)
+#if !defined(TARGET_WASMARCH)
     if (opts.compDbgCode && !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB))
     {
         dbgHandle = info.compCompHnd->getJustMyCodeHandle(info.compMethodHnd, &pDbgHandle);
@@ -3179,14 +3179,14 @@ PhaseStatus Compiler::fgCreateFunclets()
     // Setup the root FuncInfoDsc and prepare to start associating
     // FuncInfoDsc's with their corresponding EH region
     memset((void*)funcInfo, 0, funcCnt * sizeof(FuncInfoDsc));
-#if !HAS_FIXED_REGISTER_SET || defined(TARGET_WASM)
+#if !HAS_FIXED_REGISTER_SET || defined(TARGET_WASMARCH)
     for (unsigned i = 0; i < funcCnt; i++)
     {
 #if !HAS_FIXED_REGISTER_SET
         funcInfo[i].funStackPointerReg = REG_NA;
         funcInfo[i].funFramePointerReg = REG_NA;
 #endif
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
         funcInfo[i].funWasmLocalDecls       = nullptr;
         funcInfo[i].funWasmExnRefLocalIndex = UINT_MAX;
 #endif
@@ -4189,7 +4189,7 @@ PhaseStatus Compiler::fgSetBlockOrder()
 
     if (fgHasCycleWithoutGCSafePoint())
     {
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
         // TODO-WASM: insert GC polls for loops, and arrange it so the
         // polling overhead is tolerable.
         //
@@ -4199,7 +4199,7 @@ PhaseStatus Compiler::fgSetBlockOrder()
         JITDUMP("Marking method as fully interruptible\n");
         SetInterruptible(true);
 
-#endif // defined(TARGET_WASM)
+#endif // defined(TARGET_WASMARCH)
     }
 
     for (BasicBlock* const block : Blocks())

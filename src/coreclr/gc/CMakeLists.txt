@@ -21,7 +21,7 @@ set(GC_SOURCES
   gcbridge.cpp
   handletablecache.cpp)
 
-if(CLR_CMAKE_TARGET_ARCH_WASM)
+if(CLR_CMAKE_TARGET_ARCH_WASMARCH)
   add_subdirectory(wasm)
 elseif(CLR_CMAKE_HOST_UNIX)
   add_subdirectory(unix)

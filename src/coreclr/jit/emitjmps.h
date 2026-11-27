@@ -59,7 +59,7 @@ JMP_SMALL(jmp   , jmp   , j      )
 JMP_SMALL(eq    , ne    , beq    )  // EQ
 JMP_SMALL(ne    , eq    , bne    )  // NE
 
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
 
 JMP_SMALL(jmp   , br    , br     )
 JMP_SMALL(jmpif , br_if , br_if  )
