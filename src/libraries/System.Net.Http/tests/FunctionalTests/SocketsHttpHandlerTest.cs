@@ -875,6 +875,37 @@ namespace System.Net.Http.Functional.Tests
     {
         public SocketsHttpHandler_HttpClientHandler_Proxy_Test(ITestOutputHelper output) : base(output) { }
 
+        [Fact]
+        public async Task ProxyTunnelFailure_RedactsUriInException()
+        {
+            await LoopbackServer.CreateClientAndServerAsync(async proxyAddress =>
+            {
+                Uri proxyUri = new UriBuilder(proxyAddress)
+                {
+                    UserName = "PRIVATE_USER",
+                    Password = "PLACEHOLDER",
+                    Path = "/proxy",
+                    Query = "token=PRIVATE_QUERY",
+                    Fragment = "PRIVATE_FRAGMENT"
+                }.Uri;
+
+                using var handler = new SocketsHttpHandler { Proxy = new UseSpecifiedUriWebProxy(proxyUri) };
+                using var client = new HttpClient(handler);
+                HttpRequestException exception = await Assert.ThrowsAsync<HttpRequestException>(
+                    () => client.GetAsync("https://example.com/"));
+
+                Assert.Equal(HttpRequestError.ProxyTunnelError, exception.HttpRequestError);
+                Assert.Equal(HttpStatusCode.Forbidden, exception.StatusCode);
+                Assert.Contains($"{proxyAddress.GetLeftPart(UriPartial.Authority)}/proxy?*", exception.Message);
+
+                string exceptionText = exception.ToString();
+                Assert.DoesNotContain("PRIVATE_USER", exceptionText);
+                Assert.DoesNotContain("PLACEHOLDER", exceptionText);
+                Assert.DoesNotContain("PRIVATE_QUERY", exceptionText);
+                Assert.DoesNotContain("PRIVATE_FRAGMENT", exceptionText);
+            }, server => server.HandleRequestAsync(HttpStatusCode.Forbidden));
+        }
+
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsTlsSupported))]
         [InlineData(true)]
         [InlineData(false)]
