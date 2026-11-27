@@ -210,7 +210,7 @@ pal::architecture get_current_arch()
     return pal::architecture::s390X;
 #elif defined(TARGET_POWERPC64)
     return pal::architecture::ppc64le;
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
     return pal::architecture::wasm;
 #else
 #error "Unknown target"

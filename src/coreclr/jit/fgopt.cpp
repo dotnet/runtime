@@ -1706,11 +1706,11 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
         blockRange = &LIR::AsRange(block);
         switchTree = blockRange->LastNode();
 
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
         assert(switchTree->OperIs(GT_SWITCH));
 #else
         assert(switchTree->OperIs(GT_SWITCH_TABLE));
-#endif // defined(TARGET_WASM)
+#endif // defined(TARGET_WASMARCH)
     }
     else
     {
@@ -1814,7 +1814,7 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
         GenTree* switchVal = switchTree->AsOp()->gtOp1;
         noway_assert(genActualTypeIsIntOrI(switchVal->TypeGet()));
 
-#if !defined(TARGET_WASM)
+#if !defined(TARGET_WASMARCH)
         // If we are in LIR, remove the jump table from the block.
         if (block->IsLIR())
         {
@@ -1822,7 +1822,7 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
             assert(jumpTable->OperIs(GT_JMPTABLE));
             blockRange->Remove(jumpTable);
         }
-#endif // !defined(TARGET_WASM)
+#endif // !defined(TARGET_WASMARCH)
 
         // Change the GT_SWITCH(switchVal) into GT_JTRUE(GT_EQ(switchVal==0)).
         // Also mark the node as GTF_DONT_CSE as further down JIT is not capable of handling it.
@@ -4645,14 +4645,14 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPh
 
                     bool optimizeJump = isJumpAroundEmpty || isJumpToJoinFree;
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
                     // Don't reverse a wasm try/catch header's GT_WASM_JEXCEPT.
                     //
                     if (block->lastNode()->OperIs(GT_WASM_JEXCEPT))
                     {
                         optimizeJump = false;
                     }
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
 
                     // We do not optimize jumps between two different try regions.
                     // However jumping to a block that is not in any try region is OK

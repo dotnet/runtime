@@ -41,7 +41,7 @@
 
     <!-- Determine if we support running the .NET SDK on the target platform -->
     <_SdkToolsSupportedOS Condition="'$(TargetsMobile)' != 'true' and '$(TargetsLinuxBionic)' != 'true'">true</_SdkToolsSupportedOS>
-    <_SdkToolsSupportedArch Condition="'$(TargetArchitecture)' != 'armel' and '$(TargetsWasm)' != 'true'">true</_SdkToolsSupportedArch>
+    <_SdkToolsSupportedArch Condition="'$(TargetArchitecture)' != 'armel' and '$(TargetsWasmArch)' != 'true'">true</_SdkToolsSupportedArch>
     <SdkToolsSupported Condition="'$(_SdkToolsSupportedOS)' == 'true' and '$(_SdkToolsSupportedArch)' == 'true'">true</SdkToolsSupported>
 
     <_UseNativeAotForComponentsCrossOS Condition="'$(CrossBuild)' == 'true' and '$(_hostArchitecture)' == '$(_targetArchitecture)' and '$(_hostOS)' != 'windows'">true</_UseNativeAotForComponentsCrossOS>
@@ -55,11 +55,11 @@
 
   <PropertyGroup>
     <DefaultSubsets>clr+libs+tools+host+packs</DefaultSubsets>
-    <DefaultSubsets Condition="('$(TargetsMobile)' == 'true' and '$(TargetsWasm)' != 'true') or '$(TargetsLinuxBionic)' == 'true'">clr+libs+host+packs</DefaultSubsets>
+    <DefaultSubsets Condition="('$(TargetsMobile)' == 'true' and '$(TargetsWasmArch)' != 'true') or '$(TargetsLinuxBionic)' == 'true'">clr+libs+host+packs</DefaultSubsets>
     <DefaultSubsets Condition="('$(TargetsAndroid)' == 'true' or '$(TargetsLinuxBionic)' == 'true') and '$(CoreCLRSupported)' != 'true' and '$(NativeAotSupported)' == 'true'">clr.nativeaotruntime+clr.nativeaotlibs+clr.packages+libs+packs</DefaultSubsets>
     <!-- OHOS builds CoreCLR and NativeAOT. -->
     <DefaultSubsets Condition="'$(TargetsOpenHarmony)' == 'true'">clr.nativeaotruntime+clr.nativeaotlibs+clr+libs+host+packs</DefaultSubsets>
-    <DefaultSubsets Condition="'$(TargetsWasm)' == 'true'">clr+libs+tools+host+packs</DefaultSubsets>
+    <DefaultSubsets Condition="'$(TargetsWasmArch)' == 'true'">clr+libs+tools+host+packs</DefaultSubsets>
     <DefaultSubsets Condition="'$(DotNetBuildSourceOnly)' == 'true'">clr+libs+tools+host+packs</DefaultSubsets>
 
     <!-- In the Win-x86 BuildPass2 job in the VMR, we want to build the cross-OS DACs and pack them. -->
@@ -666,7 +666,7 @@
       </PropertyGroup>
 
       <PropertyGroup Condition="'$(DotNetBuildAllRuntimePacks)' == 'true' and '$(DotNetBuildSourceOnly)' != 'true'">
-        <_BuildCoreCLRRuntimePack Condition="'$(CoreCLRSupported)' == 'true' and '$(TargetsWasm)' != 'true'">true</_BuildCoreCLRRuntimePack>
+        <_BuildCoreCLRRuntimePack Condition="'$(CoreCLRSupported)' == 'true' and '$(TargetsWasmArch)' != 'true'">true</_BuildCoreCLRRuntimePack>
       </PropertyGroup>
 
       <PropertyGroup Condition="'$(DotNetBuildAllRuntimePacks)' == 'true' and '$(DotNetBuildSourceOnly)' == 'true'">

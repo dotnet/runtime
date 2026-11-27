@@ -57,7 +57,7 @@ extern "C" void STDCALL VarargPInvokeStub_RetBuffArg(void);
 extern "C" PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBlock, TADDR pIndirection, DWORD sectionIndex, Module * pModule);
 
 #ifdef FEATURE_READYTORUN
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
 // Wasm requires the signatures to be identical since the implementation is actually in C++
 struct READYTORUN_IMPORT_THUNK_PORTABLE_ENTRYPOINT;
 extern "C" PCODE STDCALL DelayLoad_MethodCall(TransitionBlock* pTransitionBlock, READYTORUN_IMPORT_THUNK_PORTABLE_ENTRYPOINT* pImportThunkEntry, uint8_t *moduleBase, int32_t rvaOfModuleFixup);
@@ -65,7 +65,7 @@ extern "C" PCODE STDCALL DelayLoad_MethodCall(TransitionBlock* pTransitionBlock,
 extern "C" void STDCALL DelayLoad_MethodCall();
 #endif
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
 extern "C" SIZE_T STDCALL DelayLoad_Helper(TransitionBlock* pTransitionBlock, READYTORUN_IMPORT_THUNK_PORTABLE_ENTRYPOINT* pImportThunkEntry, uint8_t *moduleBase, int32_t rvaOfModuleFixup);
 #else
 extern "C" void STDCALL DelayLoad_Helper();

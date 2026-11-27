@@ -469,7 +469,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
             ContainCheckNeg(node->AsOp());
         }
 #endif
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
             return LowerNeg(node->AsOp());
 #endif
             break;
@@ -712,7 +712,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
             return LowerCnsMask(node->AsMskCon());
 #endif // FEATURE_HW_INTRINSICS && TARGET_ARM64
 
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
         case GT_INDEX_ADDR:
             LowerIndexAddr(node->AsIndexAddr());
             break;
@@ -720,7 +720,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
         case GT_CKFINITE:
             LowerCkfinite(node->AsOp());
             break;
-#endif // defined(TARGET_WASM)
+#endif // defined(TARGET_WASMARCH)
 
         default:
             break;
@@ -924,11 +924,11 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
 
     noway_assert(jumpCnt >= 2);
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
     // Wasm's br_table maps exactly to GT_SWITCH
     //
     return node->gtNext;
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
 
     // Spill the argument to the switch node into a local so that it can be used later.
     LIR::Use use(switchBBRange, &(node->AsOp()->gtOp1), node);
@@ -1584,7 +1584,7 @@ void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg)
     JITDUMP("Passed in ");
     DBEXEC(m_compiler->verbose, abiInfo.Dump());
 
-#if !defined(TARGET_64BIT) && !defined(TARGET_WASM)
+#if !defined(TARGET_64BIT) && !defined(TARGET_WASMARCH)
     if (m_compiler->opts.compUseSoftFP && arg->TypeIs(TYP_DOUBLE))
     {
         // Unlike TYP_LONG we do no decomposition for doubles, yet we maintain
@@ -1618,7 +1618,7 @@ void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg)
 
         JITDUMP("Transformed long arg on 32-bit to FIELD_LIST node\n");
     }
-#endif // !defined(TARGET_64BIT) && !defined(TARGET_WASM)
+#endif // !defined(TARGET_64BIT) && !defined(TARGET_WASMARCH)
 
 #if FEATURE_ARG_SPLIT
     // Structs can be split into register(s) and stack on some targets
@@ -2004,7 +2004,7 @@ void Lowering::LowerArgsForCall(GenTreeCall* call)
     AfterLowerArgsForCall(call);
 }
 
-#if !defined(TARGET_WASM)
+#if !defined(TARGET_WASMARCH)
 
 //------------------------------------------------------------------------
 // AfterLowerArgsForCall: post processing after call args are lowered
@@ -2017,7 +2017,7 @@ void Lowering::AfterLowerArgsForCall(GenTreeCall* call)
     // no-op for non-Wasm targets
 }
 
-#endif // !defined(TARGET_WASM)
+#endif // !defined(TARGET_WASMARCH)
 
 #if defined(TARGET_X86) && defined(FEATURE_IJW)
 //------------------------------------------------------------------------
@@ -2788,7 +2788,7 @@ GenTree* Lowering::LowerCall(GenTree* node)
     assert(!call->IsRuntimeLookupHelperCall(m_compiler) ||
            (call->gtCallDebugFlags & GTF_CALL_MD_RUNTIME_LOOKUP_EXPANDED) != 0);
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
     // Wasm ReadyToRun looks up virtual function pointers with CORINFO_HELP_VIRTUAL_FUNC_PTR instead of a
     // VirtualEntry dynamic helper cell, so report each lookup that survived to lowering to let the EE add
     // the dependencies the cell would have carried.
@@ -2806,7 +2806,7 @@ GenTree* Lowering::LowerCall(GenTree* node)
                 (CORINFO_METHOD_HANDLE)methodHandle->AsIntCon()->GetCompileTimeHandle());
         }
     }
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
 
     // Also, always expand static cctor helper for NativeAOT, see
     // https://github.com/dotnet/runtime/issues/68278#issuecomment-1543322819
@@ -3002,7 +3002,7 @@ GenTree* Lowering::LowerCall(GenTree* node)
         }
     }
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
     // For any type of managed call, if we have portable entry points enabled, we need to lower
     // the call according to the portable entrypoint abi
     if (!call->IsUnmanaged() && m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PORTABLE_ENTRY_POINTS))
@@ -3030,7 +3030,7 @@ GenTree* Lowering::LowerCall(GenTree* node)
             LowerPEPCall(call);
         }
     }
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
 
     if (varTypeIsStruct(call))
     {
@@ -4710,7 +4710,7 @@ GenTree* Lowering::LowerCompare(GenTree* cmp)
     return cmp->gtNext;
 }
 
-#if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64) && !defined(TARGET_WASM)
+#if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64) && !defined(TARGET_WASMARCH)
 //------------------------------------------------------------------------
 // Lowering::LowerJTrue: Lowers a JTRUE node.
 //
@@ -4806,7 +4806,7 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
 
     return nullptr;
 }
-#endif // !TARGET_LOONGARCH64 && !TARGET_RISCV64 && !defined(TARGET_WASM)
+#endif // !TARGET_LOONGARCH64 && !TARGET_RISCV64 && !defined(TARGET_WASMARCH)
 
 //----------------------------------------------------------------------------------------------
 // LowerSelect: Lower a GT_SELECT node.
@@ -4827,7 +4827,7 @@ GenTree* Lowering::LowerSelect(GenTreeConditional* select)
     DISPTREERANGE(BlockRange(), select);
     JITDUMP("\n");
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
     TryMoveWasmSelectCondition(select);
 #endif
 
@@ -4864,7 +4864,7 @@ GenTree* Lowering::LowerSelect(GenTreeConditional* select)
     }
 #endif
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
     assert(newSelect == nullptr);
     select->SetOper(GT_WASM_SELECT);
 #endif
@@ -4890,7 +4890,7 @@ bool Lowering::TryLowerConditionToFlagsNode(GenTree*      parent,
                                             GenCondition* cond,
                                             bool          allowMultipleFlagsChecks)
 {
-#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASM)
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASMARCH)
     // These architectures have no status/flag register.
     return false;
 #else
@@ -4974,7 +4974,7 @@ bool Lowering::TryLowerConditionToFlagsNode(GenTree*      parent,
     {
         assert((condition->gtPrev->gtFlags & GTF_SET_FLAGS) != 0);
         GenTree* flagsDef = condition->gtPrev;
-#if defined(TARGET_ARM64) || defined(TARGET_AMD64) && !defined(TARGET_WASM)
+#if defined(TARGET_ARM64) || defined(TARGET_AMD64) && !defined(TARGET_WASMARCH)
         // CCMP is a flag producing node that also consumes flags, so find the
         // "root" of the flags producers and move the entire range.
         // We limit this to 10 nodes look back to avoid quadratic behavior.
@@ -4991,7 +4991,7 @@ bool Lowering::TryLowerConditionToFlagsNode(GenTree*      parent,
 
         *cond = condition->AsCC()->gtCondition;
 
-#if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64) && !defined(TARGET_WASM)
+#if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64) && !defined(TARGET_WASMARCH)
         if (!allowMultipleFlagsChecks)
         {
             const GenConditionDesc& desc = GenConditionDesc::Get(*cond);
@@ -5687,7 +5687,7 @@ GenTree* Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
             {
                 if (slotCount > 1)
                 {
-#if !defined(TARGET_RISCV64) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_WASM)
+#if !defined(TARGET_RISCV64) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_WASMARCH)
                     assert(call->HasMultiRegRetVal());
 #endif
                 }
@@ -5730,10 +5730,10 @@ GenTree* Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
             // A SIMD struct is zero-initialized from a properly-typed SIMD zero.
             retypeZeroToRegType = varTypeIsSIMD(lclRegType);
 #endif // FEATURE_SIMD
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
             // A Wasm struct is zero-initialized from a properly-typed zero.
             retypeZeroToRegType |= (lclRegType != src->TypeGet());
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
 
             if (retypeZeroToRegType)
             {
@@ -5909,12 +5909,12 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
                 // (e.g. LONG) integer struct return. Retype it to the native return type
                 // so that targets with a typed value stack (Wasm) emit e.g. an i64.const
                 // rather than an i32.const. Mirrors the float/double case above.
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
                 if ((genActualType(retVal) != genActualType(nativeReturnType)) && retVal->IsIntegralConst(0))
                 {
                     retVal->BashToZeroConst(nativeReturnType);
                 }
-#endif // defined(TARGET_WASM)
+#endif // defined(TARGET_WASMARCH)
             }
             break;
         }
@@ -6279,7 +6279,7 @@ void Lowering::LowerStoreSingleRegCallStruct(GenTreeBlk* store)
 
     if (regType != TYP_UNDEF)
     {
-#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASM)
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASMARCH)
         if (varTypeIsFloating(call->TypeGet()))
         {
             regType = call->TypeGet();
@@ -6399,7 +6399,7 @@ GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
             // For JIT helper based tailcall (only used on x86) the target
             // address is passed as an arg to the helper so we want a node for
             // it.
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
             if (m_compiler->IsReadyToRun())
             {
                 // IAT_VALUE identifies a directly callable symbol rather than a portable entrypoint cell.
@@ -6421,14 +6421,14 @@ GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
 
         case IAT_PVALUE:
         {
-#ifndef TARGET_WASM
+#ifndef TARGET_WASMARCH
             // If we are using an indirection cell for a direct call then apply
             // an optimization that loads the call target directly from the
             // indirection cell, instead of duplicating the tree.
             bool hasIndirectionCell = call->GetIndirectionCellArgKind() != WellKnownArg::None;
 
             if (!hasIndirectionCell)
-#endif // !TARGET_WASM
+#endif // !TARGET_WASMARCH
             {
                 // Non-virtual direct calls to addresses accessed by
                 // a single indirection.
@@ -8122,7 +8122,7 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
     }
 #endif
 
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
     if (node->OperIs(GT_ADD))
     {
         LowerBinaryArithmetic(node);
@@ -8505,13 +8505,13 @@ bool Lowering::TryLowerConstIntDivOrMod(GenTree* node, GenTree** nextNode)
     assert(!node->OperIs(GT_MOD));
 #endif // TARGET_ARMARCH
 
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
     // TODO-Wasm: evaluate if this is worth doing for Wasm, since some cases will increase
     // code size and the underlying engine may do something similar. If it is worth doing,
     // fix the code below to work properly for a 32 bit target that supports 64 bit math.
     //
     return false;
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
 
     if (!divisor->IsCnsIntOrI())
     {
@@ -8674,7 +8674,7 @@ bool Lowering::TryLowerConstIntDivOrMod(GenTree* node, GenTree** nextNode)
 #elif defined(TARGET_ARM)
         // Currently there's no GT_MULHI for ARM32
         return false;
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
         // TODO-WASM: it is not clear this whole transformation is profitable on WASM, since it increases
         // code size while the WASM VM should be perfectly capable of expanding the DIV/MOD by itself.
         NYI_WASM("Lowering::TryLowerConstIntDivOrMod");
@@ -8788,7 +8788,7 @@ GenTree* Lowering::LowerSignedDivOrMod(GenTree* node)
     return node->gtNext;
 }
 
-#ifndef TARGET_WASM
+#ifndef TARGET_WASMARCH
 //------------------------------------------------------------------------
 // LowerDivOrMod: Lowers a GT_[U]DIV/GT_[U]MOD node.
 //
@@ -8802,7 +8802,7 @@ void Lowering::LowerDivOrMod(GenTreeOp* divMod)
 {
     ContainCheckDivOrMod(divMod);
 }
-#endif // !TARGET_WASM
+#endif // !TARGET_WASMARCH
 
 //------------------------------------------------------------------------
 // TryFoldBinop: Try removing a binop node by constant folding.
@@ -9261,7 +9261,7 @@ void Lowering::CheckNode(Compiler* compiler, GenTree* node)
         case GT_HWINTRINSIC:
             // TODO-WASM: SIMD12 is still maintained through lowering.
             // Fix the below once we've determined our lowering path for SIMD12.
-#ifndef TARGET_WASM
+#ifndef TARGET_WASMARCH
             assert(!node->TypeIs(TYP_SIMD12));
 #endif
             break;
@@ -9289,7 +9289,7 @@ void Lowering::CheckNode(Compiler* compiler, GenTree* node)
         {
             const GenTreeLclVarCommon* lclVarAddr = node->AsLclVarCommon();
             const LclVarDsc*           varDsc     = compiler->lvaGetDesc(lclVarAddr);
-#if !defined(TARGET_WASM)
+#if !defined(TARGET_WASMARCH)
             if (((lclVarAddr->gtFlags & GTF_VAR_DEF) != 0) && varDsc->HasGCPtr())
             {
                 // Emitter does not correctly handle live updates for LCL_ADDR
@@ -9302,7 +9302,7 @@ void Lowering::CheckNode(Compiler* compiler, GenTree* node)
                 assert(lclVarAddr->isContained() || !varDsc->lvTracked || varTypeIsStruct(varDsc));
                 // TODO: support this assert for uses, see https://github.com/dotnet/runtime/issues/51900.
             }
-#endif // !TARGET_WASM
+#endif // !TARGET_WASMARCH
 
             assert(varDsc->lvDoNotEnregister);
             break;
@@ -9381,14 +9381,14 @@ void Lowering::LowerBlock(BasicBlock* block)
     assert(CheckBlock(m_compiler, block));
 }
 
-#ifndef TARGET_WASM
+#ifndef TARGET_WASMARCH
 //------------------------------------------------------------------------
 // AfterLowerBlocks: target-specific post-processing of the lowered blocks.
 //
 void Lowering::AfterLowerBlocks()
 {
 }
-#endif // !TARGET_WASM
+#endif // !TARGET_WASMARCH
 
 /** Verifies if both of these trees represent the same indirection.
  * Used by Lower to annotate if CodeGen generate an instruction of the
@@ -10218,7 +10218,7 @@ void Lowering::LowerCopyBlockStore(GenTreeBlk* blkNode)
     bool         doCpObj   = layout->HasGCPtr();
     const bool   isNotHeap = blkNode->IsAddressNotOnHeap(m_compiler);
 
-#ifndef TARGET_WASM
+#ifndef TARGET_WASMARCH
     // x86/x64 has a SIMD-aware Memcpy unroll threshold; SIMD is only usable
     // when we are not going through the per-slot write-barrier path.
     const bool     canUseSimd  = !doCpObj || isNotHeap;
@@ -10228,7 +10228,7 @@ void Lowering::LowerCopyBlockStore(GenTreeBlk* blkNode)
 #if !defined(JIT32_GCENCODER)
     if (doCpObj && isNotHeap)
     {
-#if !defined(TARGET_WASM)
+#if !defined(TARGET_WASMARCH)
         // No write barriers are needed for a stack destination, but only take this shortcut when the
         // copy is small enough to be unrolled into a single non-interruptible region. Otherwise it is
         // lowered to CORINFO_HELP_MEMCPY (Memmove), a GC-safe point that could observe torn GC pointers
@@ -10241,11 +10241,11 @@ void Lowering::LowerCopyBlockStore(GenTreeBlk* blkNode)
             // references held in its temporary register(s).
             blkNode->gtBlkOpGcUnsafe = true;
         }
-#else  // TARGET_WASM
+#else  // TARGET_WASMARCH
        // WASM lowers this to a single `memory.copy` opcode (not a GC-safe point), so it is safe for
        // any size.
         doCpObj = false;
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
     }
 #endif // !JIT32_GCENCODER
 
@@ -10261,7 +10261,7 @@ void Lowering::LowerCopyBlockStore(GenTreeBlk* blkNode)
         return;
     }
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
     // Use the wasm `memory.copy` instruction.
     blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindNativeOpcode;
     if (src->OperIs(GT_IND) && ((src->gtFlags & GTF_IND_NONFAULTING) == 0))
@@ -10287,10 +10287,10 @@ void Lowering::LowerCopyBlockStore(GenTreeBlk* blkNode)
 
     // Use memcpy
     LowerBlockStoreAsHelperCall(blkNode);
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
 }
 
-#ifndef TARGET_WASM
+#ifndef TARGET_WASMARCH
 //------------------------------------------------------------------------
 // LowerInitBlockStore: Shared lowering of a block init store (memset).
 //
@@ -10384,7 +10384,7 @@ void Lowering::LowerInitBlockStore(GenTreeBlk* blkNode)
         LowerBlockStoreAsHelperCall(blkNode);
     }
 }
-#endif // !TARGET_WASM
+#endif // !TARGET_WASMARCH
 
 //------------------------------------------------------------------------
 // LowerBlockStoreAsHelperCall: Lower a block store node as a memset/memcpy call
@@ -11378,7 +11378,7 @@ GenTree* Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
 
     if (m_compiler->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(ind))
     {
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
         return LowerStoreIndir(ind);
 #else
         return ind->gtNext;
@@ -12176,7 +12176,7 @@ void Lowering::TransformUnusedIndirection(GenTreeIndir* ind, Compiler* m_compile
 
     ind->ChangeType(m_compiler->gtTypeForNullCheck(ind));
 
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASM)
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASMARCH)
     bool useNullCheck = true;
 #elif defined(TARGET_ARM)
     bool useNullCheck = false;

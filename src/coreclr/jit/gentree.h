@@ -3038,7 +3038,7 @@ class GenTreeUseEdgeIterator final
     void AdvanceFieldList();
     void AdvancePhi();
     void AdvanceConditional();
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
     void AdvanceWasmSelect();
 #endif
 
@@ -5140,7 +5140,7 @@ struct GenTreeCall final : public GenTree
 {
     CallArgs gtArgs;
 
-#if defined(DEBUG) || defined(TARGET_WASM)
+#if defined(DEBUG) || defined(TARGET_WASMARCH)
     // Used to register callsites with the EE
     CORINFO_SIG_INFO* callSig;
 #endif
@@ -6768,9 +6768,9 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
 
     NamedIntrinsic GetHWIntrinsicId() const;
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
     GenTree* GetImmOp() const;
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
 
     //---------------------------------------------------------------------------------------
     // ChangeHWIntrinsicId: Change the intrinsic id for this node.
@@ -8232,7 +8232,7 @@ public:
         BlkOpKindLoop,
         BlkOpKindUnroll,
         BlkOpKindUnrollMemmove,
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
         BlkOpKindNativeOpcode,
 #endif
     } gtBlkOpKind;

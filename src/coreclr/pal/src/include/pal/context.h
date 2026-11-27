@@ -267,7 +267,7 @@ struct sve_context {
 
 #endif // TARGET_FREEBSD
 
-#elif defined(HOST_WASM)
+#elif defined(HOST_WASMARCH)
 
 #define MCREG_Sp(mc)      0
 #define MCREG_Pc(mc)      0
@@ -1511,7 +1511,7 @@ inline static DWORD64 CONTEXTGetPC(LPCONTEXT pContext)
     return pContext->PSWAddr;
 #elif defined(HOST_POWERPC64)
     return pContext->Nip;
-#elif defined(HOST_WASM)
+#elif defined(HOST_WASMARCH)
     return pContext->InterpreterIP;
 #else
     return pContext->Pc;
@@ -1526,7 +1526,7 @@ inline static void CONTEXTSetPC(LPCONTEXT pContext, DWORD64 pc)
     pContext->PSWAddr = pc;
 #elif defined(HOST_POWERPC64)
     pContext->Nip = pc;
-#elif defined(HOST_WASM)
+#elif defined(HOST_WASMARCH)
     pContext->InterpreterIP = pc;
 #else
     pContext->Pc = pc;
@@ -1543,7 +1543,7 @@ inline static DWORD64 CONTEXTGetFP(LPCONTEXT pContext)
     return pContext->R11;
 #elif defined(HOST_POWERPC64)
     return pContext->R31;
-#elif defined(HOST_WASM)
+#elif defined(HOST_WASMARCH)
     return pContext->InterpreterFP;
 #else
     return pContext->Fp;

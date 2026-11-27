@@ -166,7 +166,7 @@ void Compiler::lvaInitTypeRef()
         info.compArgsCount++;
     }
 
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
     if (!opts.IsReversePInvoke())
     {
         // Managed Wasm ABI passes stack pointer as first arg...
@@ -331,7 +331,7 @@ void Compiler::lvaInitTypeRef()
     // emitter when the varNum is greater that 32767 (see emitLclVarAddr::initLclVarAddr)
     lvaAllocOutgoingArgSpaceVar();
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
     lvaAllocWasmStackPtr();
 #endif
 
@@ -360,7 +360,7 @@ void Compiler::lvaInitArgs(bool hasRetBuffArg)
 
     unsigned varNum = 0;
 
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
     if (!opts.IsReversePInvoke())
     {
         // Wasm stack pointer is first arg
@@ -427,7 +427,7 @@ void Compiler::lvaInitArgs(bool hasRetBuffArg)
     lvaInitVarArgsHandle(&varNum);
 #endif
 
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
     if (!opts.IsReversePInvoke())
     {
         // Wasm portable entry point is the very last arg
@@ -470,7 +470,7 @@ void Compiler::lvaInitThisPtr(unsigned* curVarNum)
 
     lvaArg0Var = info.compThisArg = *curVarNum;
 
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
     noway_assert(info.compThisArg == 1);
 #else
     noway_assert(info.compThisArg == 0);
@@ -504,7 +504,7 @@ void Compiler::lvaInitRetBuffArg(unsigned* curVarNum, bool useFixedRetBufReg)
     (*curVarNum)++;
 }
 
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
 
 //-----------------------------------------------------------------------------
 // lvaInitWasmStackPtr: set up the wasm stack pointer argument
@@ -569,7 +569,7 @@ void Compiler::lvaInitWasmPortableEntryPtr(unsigned* curVarNum)
     }
 }
 
-#endif // defined(TARGET_WASM)
+#endif // defined(TARGET_WASMARCH)
 
 //-----------------------------------------------------------------------------
 // lvaInitUserArgs:
@@ -1280,12 +1280,12 @@ unsigned Compiler::compMap2ILvarNum(unsigned varNum) const
         return (unsigned)ICorDebugInfo::ASYNC_CONTINUATION_ILNUM;
     }
 
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
     if ((varNum == lvaWasmSpArg) || (varNum == lvaWasmPortableEntryPointArg))
     {
         return (unsigned)ICorDebugInfo::UNKNOWN_ILNUM;
     }
-#endif // defined(TARGET_WASM)
+#endif // defined(TARGET_WASMARCH)
 
     unsigned originalVarNum = varNum;
 
@@ -1314,7 +1314,7 @@ unsigned Compiler::compMap2ILvarNum(unsigned varNum) const
         varNum--;
     }
 
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
     if (lvaWasmSpArg != BAD_VAR_NUM && originalVarNum > lvaWasmSpArg && lvaGetDesc(lvaWasmSpArg)->lvIsParam)
     {
         varNum--;
@@ -4538,7 +4538,7 @@ void Compiler::lvaFixVirtualFrameOffsets()
 
         JITDUMP("--- delta bump %d for FP frame\n", delta);
     }
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
     else
     {
         // The FP always points at the bottom of the fixed portion of the frame.
@@ -5301,7 +5301,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
             }
 #endif
 
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
             // These Wasm locals must be allocated last.
             if ((lclNum == lvaWasmVirtualIP) || (lclNum == lvaWasmResumeIP) || (lclNum == lvaWasmFunctionIndex))
             {
@@ -5642,7 +5642,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     }
 #endif // FEATURE_FIXED_OUT_ARGS
 
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
     // These Wasm locals must be allocated last
     //
     if (lvaWasmResumeIP != BAD_VAR_NUM)
@@ -5837,7 +5837,7 @@ int Compiler::lvaAllocLocalAndSetVirtualOffset(unsigned lclNum, unsigned size, i
     noway_assert(lclNum != BAD_VAR_NUM);
 
     LclVarDsc* lcl = lvaGetDesc(lclNum);
-#if defined(TARGET_64BIT) || defined(TARGET_WASM)
+#if defined(TARGET_64BIT) || defined(TARGET_WASMARCH)
     // Align >=8 byte locals to 8 bytes.
     //
     // Before final frame layout, assume the worst case, that every >=8 byte local will need
@@ -5911,7 +5911,7 @@ int Compiler::lvaAllocLocalAndSetVirtualOffset(unsigned lclNum, unsigned size, i
         }
 #endif
     }
-#endif // TARGET_64BIT || TARGET_WASM
+#endif // TARGET_64BIT || TARGET_WASMARCH
 
     /* Reserve space on the stack by bumping the frame size */
 
@@ -6130,7 +6130,7 @@ void Compiler::lvaAlignFrame()
             lvaIncrementFrameSize(STACK_ALIGN - (adjustFrameSize % STACK_ALIGN));
         }
     }
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
     // Keep the stack aligned to STACK_ALIGN.
     unsigned pad = 0;
     if ((compLclFrameSize % STACK_ALIGN) != 0)
@@ -6179,7 +6179,7 @@ void Compiler::lvaAssignFrameOffsetsToPromotedStructs()
         // This is not true for the System V systems since there is no
         // outgoing args space. Assign the dependently promoted fields properly.
 
-#if defined(UNIX_AMD64_ABI) || defined(TARGET_ARM) || defined(TARGET_X86) || defined(TARGET_WASM)
+#if defined(UNIX_AMD64_ABI) || defined(TARGET_ARM) || defined(TARGET_X86) || defined(TARGET_WASMARCH)
         // ARM: lo/hi parts of a promoted long arg need to be updated.
         //
         // For System V platforms there is no outgoing args space.
@@ -6198,7 +6198,7 @@ void Compiler::lvaAssignFrameOffsetsToPromotedStructs()
         // OSR/Swift must also assign offsets here.
         //
         const bool mustProcessParams = opts.IsOSR() || (info.compCallConv == CorInfoCallConvExtension::Swift);
-#endif // defined(UNIX_AMD64_ABI) || defined(TARGET_ARM) || defined(TARGET_X86) || defined(TARGET_WASM)
+#endif // defined(UNIX_AMD64_ABI) || defined(TARGET_ARM) || defined(TARGET_X86) || defined(TARGET_WASMARCH)
 
         if (varDsc->lvIsStructField && (!varDsc->lvIsParam || mustProcessParams))
         {

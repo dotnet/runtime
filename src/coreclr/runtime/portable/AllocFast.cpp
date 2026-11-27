@@ -25,7 +25,7 @@ static Thread* GetThread()
     return ThreadStore::GetCurrentThread();
 }
 
-#ifdef HOST_WASM
+#ifdef HOST_WASMARCH
 // This managed helper reuses the caller's shadow stack and never returns to the native allocation frames.
 EXTERN_C [[noreturn]] void RhExceptionHandling_FailedAllocation(uintptr_t sp, MethodTable* pMT, bool isOverflow);
 #define PREPARE_TRANSITION_ARG() \
@@ -35,7 +35,7 @@ EXTERN_C [[noreturn]] void RhExceptionHandling_FailedAllocation(uintptr_t sp, Me
 #else
 #define PREPARE_TRANSITION_ARG() do { } while (0)
 #define TRANSITION_ARG_PARAM nullptr
-#endif // HOST_WASM
+#endif // HOST_WASMARCH
 #else
 #include <fcall.h>
 #include <gcinterface.h>
@@ -51,24 +51,24 @@ EXTERN_C void RhExceptionHandling_FailedAllocation_Helper(MethodTable* pMT, bool
 #define TRANSITION_ARG_TYPE TransitionBlock*
 #endif // FEATURE_NATIVEAOT
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
 #define CALLER_STACK_POINTER_ARG_DECL , uintptr_t callersStackPointer
 #define CALLER_STACK_POINTER_ARG_PASSTHRU , callersStackPointer
 #else
 #define CALLER_STACK_POINTER_ARG_DECL
 #define CALLER_STACK_POINTER_ARG_PASSTHRU
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
 
 EXTERN_C Object* RhpGcAlloc(MethodTable* pMT, uint32_t uFlags, uintptr_t numElements, TRANSITION_ARG_TYPE pTransitionArg);
 
 static void FailedAllocation(MethodTable* pMT, bool isOverflow CALLER_STACK_POINTER_ARG_DECL)
 {
 #ifdef FEATURE_NATIVEAOT
-#ifdef HOST_WASM
+#ifdef HOST_WASMARCH
     RhExceptionHandling_FailedAllocation(callersStackPointer, pMT, isOverflow);
 #else
     ASSERT_UNCONDITIONALLY("NYI"); // TODO: Throw overflow or OOM
-#endif // HOST_WASM
+#endif // HOST_WASMARCH
 #else
     PREPARE_TRANSITION_ARG();
     RhExceptionHandling_FailedAllocation_Helper(pMT, isOverflow, TRANSITION_ARG_PARAM);

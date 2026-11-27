@@ -72,7 +72,7 @@
     <DefineConstants>$(DefineConstants);TARGET_RISCV64</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'wasm'">
-    <DefineConstants>$(DefineConstants);TARGET_WASM</DefineConstants>
+    <DefineConstants>$(DefineConstants);TARGET_WASMARCH</DefineConstants>
   </PropertyGroup>
 
   <!-- Configuration specific properties -->

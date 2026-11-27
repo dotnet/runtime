@@ -38,7 +38,7 @@
 #define EMIT_INSTLIST_VERBOSE (m_compiler->verbose)
 #endif
 
-#if defined(TARGET_XARCH) || defined(TARGET_WASM)
+#if defined(TARGET_XARCH) || defined(TARGET_WASMARCH)
 #define EMIT_BACKWARDS_NAVIGATION 1 // If 1, enable backwards navigation code for MIR (insGroup/instrDesc).
 #else
 #define EMIT_BACKWARDS_NAVIGATION 0
@@ -491,7 +491,7 @@ struct EmitCallParams
     // If this call should have managed return value debug info associated with it, this is the call to associate it
     // with.
     GenTreeCall* returnValueCall = nullptr;
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
     CORINFO_WASM_TYPE_SYMBOL_HANDLE wasmSignature = nullptr;
 #endif
 };
@@ -649,7 +649,7 @@ protected:
         CORINFO_SIG_INFO* idCallSig     = nullptr;   // Used to report native call site signatures to the EE
         BasicBlock*       idTargetBlock = nullptr;   // Target block for branches
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
         int      lclBaseIndex = 0;           // Base index of the WASM locals being declared
         unsigned idLclNum     = BAD_VAR_NUM; // LclVar number for this instruction
         unsigned idLclOffset  = 0;           // LclVar field offset for this instruction
@@ -691,7 +691,7 @@ protected:
         // TODO-LoongArch64: not include SIMD-vector.
         static_assert(INS_count <= 512);
         instruction _idIns : 9;
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
         static_assert(INS_count <= 512);
         instruction _idIns : 9;
 #else
@@ -937,7 +937,7 @@ protected:
 #define ID_EXTRA_BITFIELD_BITS (18)
 #elif defined(TARGET_AMD64)
 #define ID_EXTRA_BITFIELD_BITS (20)
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
 #define ID_EXTRA_BITFIELD_BITS (-1)
 #else
 #error Unsupported or unset target architecture
@@ -1053,9 +1053,9 @@ protected:
             BasicBlock* iiaBBlabel;
             insGroup*   iiaIGlabel;
             BYTE*       iiaAddr;
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
             CORINFO_WASM_TYPE_SYMBOL_HANDLE iiaWasmSignature;
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
 #ifdef TARGET_XARCH
             emitAddrMode iiaAddrMode;
 #endif // TARGET_XARCH
@@ -1287,7 +1287,7 @@ protected:
             assert(sz <= 32);
             _idCodeSize = sz;
         }
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
         unsigned idCodeSize() const;
 #endif
 
@@ -1319,7 +1319,7 @@ protected:
             assert(reg == _idReg1);
         }
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
         bool idIsLclVarDecl() const
         {
             return _idInsFmt == IF_LOCAL_DECL;
@@ -2224,7 +2224,7 @@ protected:
 #define PERFSCORE_LATENCY_WR_GENERAL       PERFSCORE_LATENCY_1C
 #define PERFSCORE_LATENCY_RD_WR_GENERAL    PERFSCORE_LATENCY_4C
 
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
 // Latencies for an "average" physical target.
 //
 // a read,write or modify from stack location, possible def to use latency from L0 cache
@@ -2400,7 +2400,7 @@ protected:
     };
 #endif
 
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
     struct instrDescLclVarDecl : instrDesc
     {
         instrDescLclVarDecl() = delete;
@@ -2470,7 +2470,7 @@ protected:
             return lane;
         }
     };
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
 
 #ifdef TARGET_RISCV64
     struct instrDescLoadImm : instrDescCns

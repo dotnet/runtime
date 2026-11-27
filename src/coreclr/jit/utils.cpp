@@ -1620,7 +1620,7 @@ void HelperCallProperties::init()
             // byref on win-x64 and on wasm (the wasm ABI passes any struct
             // without a single scalar lowering by reference).
             case CORINFO_HELP_GETREFANY:
-#if !defined(WINDOWS_AMD64_ABI) && !defined(TARGET_WASM)
+#if !defined(WINDOWS_AMD64_ABI) && !defined(TARGET_WASMARCH)
                 isPure = true;
 #endif
                 break;

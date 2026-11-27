@@ -213,7 +213,7 @@ namespace Internal.StackTraceMetadata
 
         private static DiagnosticMethodInfo GetDiagnosticMethodInfoFromFunctionPointerIfAvailable(IntPtr functionPointer)
         {
-#if TARGET_WASM
+#if TARGET_WASMARCH
             foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules())
             {
                 PerModuleMethodNameResolver resolver = _perModuleMethodNameResolverHashtable.GetOrCreateValue(module.Handle.GetIntPtrUNSAFE());
@@ -388,7 +388,7 @@ namespace Internal.StackTraceMetadata
             /// </summary>
             private readonly StackTraceData[] _stacktraceDatas;
 
-#if TARGET_WASM
+#if TARGET_WASMARCH
             private readonly Dictionary<IntPtr, int> _functionPointerToRva = new Dictionary<IntPtr, int>();
 #endif
 
@@ -492,7 +492,7 @@ namespace Internal.StackTraceMetadata
                         currentMethodInst = new Handle(HandleType.ConstantStringArray, (int)NativePrimitiveDecoder.DecodeUnsigned(ref pCurrent)).ToConstantStringArrayHandle(Reader);
                     }
 
-#if TARGET_WASM
+#if TARGET_WASMARCH
                     void* pMethod = (void*)(nuint)NativePrimitiveDecoder.ReadUInt32(ref pCurrent);
 #else
                     void* pMethod = ReadRelPtr32(pCurrent);
@@ -502,7 +502,7 @@ namespace Internal.StackTraceMetadata
                     Debug.Assert((nint)pMethod > handle.OsModuleBase);
                     int methodRva = (int)((nint)pMethod - handle.OsModuleBase);
 
-#if TARGET_WASM
+#if TARGET_WASMARCH
                     if ((command & StackTraceDataCommand.HasFunctionPointer) != 0)
                     {
                         IntPtr functionPointer = (IntPtr)(nuint)NativePrimitiveDecoder.ReadUInt32(ref pCurrent);
@@ -520,7 +520,7 @@ namespace Internal.StackTraceMetadata
                         GenericArguments = currentMethodInst,
                     };
 
-#if !TARGET_WASM
+#if !TARGET_WASMARCH
                     static void* ReadRelPtr32(byte* address)
                         => address + *(int*)address;
 #endif
@@ -531,7 +531,7 @@ namespace Internal.StackTraceMetadata
                 Array.Sort(_stacktraceDatas);
             }
 
-#if TARGET_WASM
+#if TARGET_WASMARCH
             public bool TryGetStackTraceDataFromFunctionPointer(IntPtr functionPointer, out StackTraceData data)
             {
                 if (_functionPointerToRva.TryGetValue(functionPointer, out int rva))
@@ -568,7 +568,7 @@ namespace Internal.StackTraceMetadata
 
             public struct StackTraceData : IComparable<StackTraceData>
             {
-#if TARGET_WASM
+#if TARGET_WASMARCH
                 private const int IsHiddenFlag = unchecked((int)0x80000000);
 #else
                 private const int IsHiddenFlag = 0x2;

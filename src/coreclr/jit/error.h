@@ -217,7 +217,7 @@ extern void notYetImplemented(const char* msg, const char* file, unsigned line);
 #define NYI_RISCV64(msg) NYIRAW("NYI_RISCV64: " msg)
 #define NYI_WASM(msg) do { } while (0)
 
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
 #define NYI_AMD64(msg)  do { } while (0)
 #define NYI_X86(msg)    do { } while (0)
 #define NYI_ARM(msg)    do { } while (0)

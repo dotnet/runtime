@@ -17,7 +17,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "emit.h"
 #include "codegen.h"
 
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
 class WasmInterval;
 #endif
 
@@ -113,7 +113,7 @@ void CodeGen::genInitialize()
     // variable needs home and so its stack offset.
     SetStackLevel(0);
 
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
     // Wasm control flow is stack based.
     //
     // We have pre computed the set of intervals that require control flow
@@ -465,14 +465,14 @@ void CodeGen::genCodeForBlock(BasicBlock* block)
     }
 #endif
 
-#ifndef TARGET_WASM // TODO-WASM: enable genPoisonFrame
+#ifndef TARGET_WASMARCH // TODO-WASM: enable genPoisonFrame
     // Emit poisoning into the init BB that comes right after prolog.
     // We cannot emit this code in the prolog as it might use a helper call that kills argument regs.
     if (m_compiler->compShouldPoisonFrame() && block->IsFirst())
     {
         genPoisonFrame(newLiveRegSet);
     }
-#endif // !TARGET_WASM
+#endif // !TARGET_WASMARCH
 
     // Traverse the block in linear order, generating code for each node as we
     // as we encounter it.
@@ -804,7 +804,7 @@ void CodeGen::genEmitEndBlock(BasicBlock* block)
 
         case BBJ_THROW:
         {
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
             // Wasm validator needs an `unreachable` after the throw so the
             // fall-through stack is polymorphic.
             //
@@ -817,7 +817,7 @@ void CodeGen::genEmitEndBlock(BasicBlock* block)
             {
                 genEmitFunctionEnd(/* emitTerminalUnreachable */ false);
             }
-#else  // !TARGET_WASM
+#else  // !TARGET_WASMARCH
 
             // If we have a throw at the end of a function or funclet, we need to emit another instruction
             // afterwards to help the OS unwinder determine the correct context during unwind.
@@ -850,7 +850,7 @@ void CodeGen::genEmitEndBlock(BasicBlock* block)
                     }
                 }
             }
-#endif // !TARGET_WASM
+#endif // !TARGET_WASMARCH
 
             break;
         }
@@ -918,7 +918,7 @@ void CodeGen::genEmitEndBlock(BasicBlock* block)
             SetLoopAlignBackEdge(block, block->GetTarget());
 #endif // FEATURE_LOOP_ALIGN
 
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
             // If this BBJ_ALWAYS is the last block of the function or funclet
             // (e.g., backedge of an infinite loop), close any still-open
             // wasm intervals and emit the function-body terminator.
@@ -927,7 +927,7 @@ void CodeGen::genEmitEndBlock(BasicBlock* block)
             {
                 genEmitFunctionEnd();
             }
-#endif // defined(TARGET_WASM)
+#endif // defined(TARGET_WASMARCH)
 
             break;
 
@@ -1025,7 +1025,7 @@ bool CodeGen::genIsCatchRetTargetWithoutCode(BasicBlock* block)
 // 2. Everything else stays here.
 // 3. codegenlinear.cpp gets renamed to codegennative.cpp.
 //
-#ifndef TARGET_WASM
+#ifndef TARGET_WASMARCH
 
 //------------------------------------------------------------------------
 // genEmitStartBlock: prepare for codegen in a block
@@ -1037,7 +1037,7 @@ void CodeGen::genEmitStartBlock(BasicBlock* block)
 {
 }
 
-#endif // !TARGET_WASM
+#endif // !TARGET_WASMARCH
 
 //------------------------------------------------------------------------
 // genRecordAsyncResume:
@@ -1186,7 +1186,7 @@ void CodeGenInterface::genUpdateVarReg(LclVarDsc* varDsc, GenTree* tree)
     varDsc->SetRegNum(tree->GetRegNum());
 }
 
-#ifndef TARGET_WASM
+#ifndef TARGET_WASMARCH
 //------------------------------------------------------------------------
 // genUnspillLocal: Reload a register candidate local into a register, if needed.
 //
@@ -1481,7 +1481,7 @@ void CodeGen::genConsumeRegAndCopy(GenTree* node, regNumber needReg)
     genConsumeReg(node);
     genCopyRegIfNeeded(node, needReg);
 }
-#endif // !TARGET_WASM
+#endif // !TARGET_WASMARCH
 
 // Check that registers are consumed in the right order for the current node being generated.
 #ifdef DEBUG
@@ -1535,7 +1535,7 @@ void CodeGen::genCheckConsumeNode(GenTree* const node)
 }
 #endif // DEBUG
 
-#ifndef TARGET_WASM
+#ifndef TARGET_WASMARCH
 //--------------------------------------------------------------------
 // genConsumeReg: Do liveness update for a single register of a multireg child node
 //                that is being consumed by codegen.
@@ -1604,7 +1604,7 @@ regNumber CodeGen::genConsumeReg(GenTree* tree, unsigned multiRegIndex)
     }
     return reg;
 }
-#endif // !TARGET_WASM
+#endif // !TARGET_WASMARCH
 
 //--------------------------------------------------------------------
 // genConsumeReg: Do liveness update for a subnode that is being
@@ -1889,7 +1889,7 @@ void CodeGen::genConsumeMultiOpOperands(GenTreeMultiOp* tree)
 }
 #endif // defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
 
-#ifndef TARGET_WASM
+#ifndef TARGET_WASMARCH
 //------------------------------------------------------------------------
 // genConsumePutStructArgStk: Do liveness update for the operands of a PutArgStk node.
 //                      Also loads in the right register the addresses of the
@@ -2067,7 +2067,7 @@ void CodeGen::genSpillLocal(unsigned varNum, var_types type, GenTreeLclVar* lclN
                                   regNum, varNum, 0);
     }
 }
-#endif // !TARGET_WASM
+#endif // !TARGET_WASMARCH
 
 //-------------------------------------------------------------------------
 // genProduceReg: do liveness update for register produced by the current
@@ -2241,7 +2241,7 @@ void CodeGen::genProduceReg(GenTree* tree)
 #endif // EMIT_GENERATE_GCINFO
 }
 
-#ifndef TARGET_WASM
+#ifndef TARGET_WASMARCH
 // transfer gc/byref status of src reg to dst reg
 void CodeGen::genTransferRegGCState(regNumber dst, regNumber src)
 {
@@ -2319,12 +2319,12 @@ void CodeGen::genCodeForCast(GenTreeOp* tree)
         // Casts int32/uint32/int64/uint64 --> float/double
         genIntToFloatCast(tree);
     }
-#if !defined(TARGET_64BIT) && !defined(TARGET_WASM)
+#if !defined(TARGET_64BIT) && !defined(TARGET_WASMARCH)
     else if (varTypeIsLong(tree->gtOp1))
     {
         genLongToIntCast(tree);
     }
-#endif // !TARGET_64BIT && !TARGET_WASM
+#endif // !TARGET_64BIT && !TARGET_WASMARCH
     else
     {
         // Casts int <--> int
@@ -2348,7 +2348,7 @@ CodeGen::GenIntCastDesc::GenIntCastDesc(GenTreeCast* cast)
     const bool      castIsLoad   = !src->isUsedFromReg();
 
     assert(castIsLoad == src->isUsedFromMemory());
-#ifndef TARGET_WASM
+#ifndef TARGET_WASMARCH
     assert((srcSize == 4) || (srcSize == genTypeSize(TYP_I_IMPL)));
     assert((dstSize == 4) || (dstSize == genTypeSize(TYP_I_IMPL)));
 #else
@@ -2382,7 +2382,7 @@ CodeGen::GenIntCastDesc::GenIntCastDesc(GenTreeCast* cast)
             m_extendSrcSize = castSize;
         }
     }
-#if defined(TARGET_64BIT) || defined(TARGET_WASM)
+#if defined(TARGET_64BIT) || defined(TARGET_WASMARCH)
     // castType cannot be (U)LONG on 32 bit targets, such casts should have been decomposed.
     // srcType cannot be a small int type since it's the "actual type" of the cast operand.
     // This means that widening casts do not occur on 32 bit targets.
@@ -2514,7 +2514,7 @@ CodeGen::GenIntCastDesc::GenIntCastDesc(GenTreeCast* cast)
     }
 }
 
-#ifndef TARGET_WASM
+#ifndef TARGET_WASMARCH
 #if !defined(TARGET_64BIT)
 //------------------------------------------------------------------------
 // genStoreLongLclVar: Generate code to store a non-enregistered long lclVar
@@ -2620,7 +2620,7 @@ void CodeGen::genCodeForSetcc(GenTreeCC* setcc)
     genProduceReg(setcc);
 }
 #endif // !TARGET_LOONGARCH64 && !TARGET_RISCV64
-#endif // !TARGET_WASM
+#endif // !TARGET_WASMARCH
 
 /*****************************************************************************
  * Unit testing of the emitter: If JitEmitUnitTests is set for this function, generate
@@ -2657,7 +2657,7 @@ void CodeGen::genEmitterUnitTests()
 
     // Jump over the generated tests as they are not intended to be run.
     BasicBlock* skipLabel = genCreateTempLabel();
-#ifndef TARGET_WASM
+#ifndef TARGET_WASMARCH
     inst_JMP(EJ_jmp, skipLabel);
 #else
     // On Wasm, we skip over the generated emitter test code by nesting it in a block where the
@@ -2723,7 +2723,7 @@ void CodeGen::genEmitterUnitTests()
         genArm64EmitterUnitTestsPac();
     }
 
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
     if (unitTestSectionAll || (strstr(unitTestSection, "simd") != nullptr))
     {
         genWasmEmitterUnitTestsSimd();

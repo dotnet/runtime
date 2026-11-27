@@ -1004,7 +1004,7 @@ TADDR GetDiagnosticCodeStartFromEntryPoint(MethodDesc* pMD, TADDR entryPoint)
 
     TADDR start = GetInterpreterCodeFromEntryPointIfPresent(entryPoint);
 
-#if defined(TARGET_WASM) && defined(FEATURE_PORTABLE_ENTRYPOINTS)
+#if defined(TARGET_WASMARCH) && defined(FEATURE_PORTABLE_ENTRYPOINTS)
     if (start == entryPoint && entryPoint == pMD->GetPortableEntryPointIfExists() &&
         PortableEntryPoint::HasNativeEntryPoint((PCODE)entryPoint))
     {
@@ -1018,7 +1018,7 @@ TADDR GetDiagnosticCodeStartFromEntryPoint(MethodDesc* pMD, TADDR entryPoint)
             start = virtualIP;
         }
     }
-#endif // TARGET_WASM && FEATURE_PORTABLE_ENTRYPOINTS
+#endif // TARGET_WASMARCH && FEATURE_PORTABLE_ENTRYPOINTS
 
     return start;
 }

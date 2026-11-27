@@ -1,6 +1,6 @@
 # IMPORTANT: do not use add_compile_options(), add_definitions() or similar functions here since it will leak to the including projects
 
-if(NOT CLR_CMAKE_TARGET_ARCH_WASM)
+if(NOT CLR_CMAKE_TARGET_ARCH_WASMARCH)
   include_directories(BEFORE "${CMAKE_CURRENT_LIST_DIR}/llvm-libunwind/include")
 endif()
 

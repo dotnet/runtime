@@ -657,7 +657,7 @@ static StackWalkAction TAStackCrawlCallBackWorker(CrawlFrame* pCf, StackCrawlCon
         // we can't use it to directly compare against the EH ranges because we
         // may be in an cloned finally which has a call as the last instruction.
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
         // On Wasm, R2R code with virtual ips should not have its ip adjusted
         if (!ExecutionManager::IsVirtualIP(GetControlPC(pCf->GetRegisterSet())))
 #endif

@@ -302,7 +302,7 @@ void CallCountingStub::StaticInitialize()
         // This should fail if the template is used on a platform which doesn't support the supported page size for templates
         ThrowHR(COR_E_EXECUTIONENGINE);
     }
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
     // CallCountingStub is not implemented on WASM
 #else
     _ASSERTE((SIZE_T)((BYTE*)CallCountingStubCode_End - (BYTE*)CallCountingStubCode) <= CallCountingStub::CodeSize);

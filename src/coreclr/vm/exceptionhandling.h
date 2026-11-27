@@ -76,9 +76,9 @@ public:
     }
 };
 
-#ifndef HOST_WASM
+#ifndef HOST_WASMARCH
 VOID DECLSPEC_NORETURN RethrowResumeAfterCatchExceptionSkipManagedFrames(const ResumeAfterCatchException& ex, CONTEXT *pContext, TADDR ssp, bool isInterruptedContext = false);
-#endif // HOST_WASM
+#endif // HOST_WASMARCH
 
 #endif // FEATURE_INTERPRETER
 

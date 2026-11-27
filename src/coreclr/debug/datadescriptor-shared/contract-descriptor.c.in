@@ -48,8 +48,8 @@ extern void* EMSCRIPTEN_KEEPALIVE GETTER_NAME(CONTRACT_NAME)()
 // Without an export rooting it, --gc-sections removes the descriptor from the final module (the
 // emscripten path above relies on EMSCRIPTEN_KEEPALIVE for the same reason).
 //
-// This intentionally keys on the compiler-provided __wasm__ rather than the CoreCLR TARGET_WASM
-// define. datadescriptor-shared is compiled by multiple consumers and TARGET_WASM (set only by
+// This intentionally keys on the compiler-provided __wasm__ rather than the CoreCLR TARGET_WASMARCH
+// define. datadescriptor-shared is compiled by multiple consumers and TARGET_WASMARCH (set only by
 // CoreCLR's configurecompiler.cmake, and gated on IGNORE_DEFAULT_TARGET_ARCH) is not guaranteed to
 // reach every one of them. Since the whole point of this branch is to keep the descriptor alive on
 // any wasm toolchain, it must depend on a macro that is always defined when targeting wasm; __wasm__

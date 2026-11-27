@@ -22,7 +22,7 @@ extern "C" {
  *
  * @return The page size in bytes.
  */
-#if defined(HOST_WASM)
+#if defined(HOST_WASMARCH)
 inline uint32_t minipal_getpagesize(void)
 {
     // WASM has no hardware pages; getpagesize() returns the 64KB memory.grow granularity,

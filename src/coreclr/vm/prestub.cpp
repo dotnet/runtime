@@ -30,7 +30,7 @@
 #include "interpexec.h"
 #endif
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
 #include "wasmasynccontinuation.h"
 #include "wasm/helpers.hpp"
 #endif
@@ -2114,7 +2114,7 @@ FORCEINLINE static void* ExecuteInterpretedMethodBody(
     pArgumentRegisters->r[2] = (INT64)*frames.interpreterFrame.GetContinuationPtr();
 #elif defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
     pArgumentRegisters->a[2] = (INT64)*frames.interpreterFrame.GetContinuationPtr();
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
     // Wasm has no async-continuation-return register; write the value to the
     // shared `asyncContinuation` global (see wasmasynccontinuation.h) that the
     // R2R caller reads after the call. The transition-block register area is
@@ -2231,7 +2231,7 @@ void ExecuteInterpretedMethodWithArgs(TADDR targetIp, int8_t* args, size_t argSi
 
     TransitionBlock block{};
     block.m_ReturnAddress = (TADDR)callerIp;
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
     // m_StackPointer is in a union, and doesn't get zero-initialized by the {} initializer, so we need to explicitly set it to 0 here.
     // The WebAssembly codegen will use this field to determine where the stack base is, and if it's not set to 0 then the WebAssembly
     // codegen will think that the stack base is at some random offset from the actual stack base, which will cause stack accesses to
@@ -2299,21 +2299,21 @@ void ExecuteInterpretedMethodWithArgs_PortableEntryPoint_Complex(PCODE portableE
                 pPFrame->MarkPrestubComplete();
                 Object* continuationRet = nullptr;
                 Object** pContinuationRet = nullptr;
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
                 // Gate on IsAsyncMethod to match InvokeManagedMethod/InvokeCalliStub; don't preload
                 // the global, InvokeCalliStub publishes the callee's continuation into continuationRet.
                 if (pTargetMethod->IsAsyncMethod())
                 {
                     pContinuationRet = &continuationRet;
                 }
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
                 InvokeManagedMethod(pTargetMethod, args, retBuff, (PCODE)targetIp, pContinuationRet);
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
                 if (pContinuationRet != nullptr)
                 {
                     RuntimeAsync_StoreAsyncContinuation((uint32_t)(uintptr_t)continuationRet);
                 }
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
             }
 
             UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
@@ -2406,7 +2406,7 @@ extern "C" void* ExecuteInterpretedMethodFromUnmanaged(MethodDesc* pMD, int8_t* 
         // The g_ReverseThunks reverse thunk is handed out for UnmanagedCallersOnly methods that are executed
         // by the interpreter. Native code may keep calling it after the method switches to native code, for
         // example when delayed R2R code is activated and the interpreter code is poisoned.
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
         void* nativeCode = GetR2RNativeCodeForUnmanagedCallersOnly(pMD);
         if (nativeCode == nullptr)
         {
@@ -2417,7 +2417,7 @@ extern "C" void* ExecuteInterpretedMethodFromUnmanaged(MethodDesc* pMD, int8_t* 
 #else
         _ASSERTE(!"ExecuteInterpretedMethodFromUnmanaged: method has no interpreter code");
         return NULL;
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
     }
 
     (void)ExecuteInterpretedMethodWithArgs((TADDR)targetIp, args, argSize, ret, callerIp);
@@ -3181,7 +3181,7 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(
 #endif
 #if defined(FEATURE_CACHED_INTERFACE_DISPATCH)
             {
-#ifndef TARGET_WASM
+#ifndef TARGET_WASMARCH
                 if (ALIGN_UP(rva, sizeof(TADDR) * 2) == rva && pImportSection->EntrySize == sizeof(TADDR) * 2)
                 {
                     // The entry is aligned and the size is correct, so we can use the cached interface dispatch mechanism
@@ -3211,7 +3211,7 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(
                     }
 #endif
                 }
-#endif // !TARGET_WASM
+#endif // !TARGET_WASMARCH
 
                 // We lost the race or the R2R image was generated without cached interface dispatch support, simply do the resolution in pure C++
                 MethodTable* objectType;
@@ -3753,7 +3753,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
 
     switch (kind)
     {
-#ifndef TARGET_WASM
+#ifndef TARGET_WASMARCH
     case READYTORUN_FIXUP_NewObject:
         th = ZapSig::DecodeType(pModule, pInfoModule, pBlob);
         th.AsMethodTable()->EnsureInstanceActive();
@@ -3822,7 +3822,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
             pMD->EnsureActive();
         }
         break;
-#endif // !TARGET_WASM
+#endif // !TARGET_WASMARCH
     case READYTORUN_FIXUP_ThisObjDictionaryLookup:
     case READYTORUN_FIXUP_TypeDictionaryLookup:
     case READYTORUN_FIXUP_MethodDictionaryLookup:
@@ -3843,7 +3843,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
         {
             switch (kind)
             {
-#ifndef TARGET_WASM
+#ifndef TARGET_WASMARCH
             case READYTORUN_FIXUP_IsInstanceOf:
             case READYTORUN_FIXUP_ChkCast:
                 {
@@ -3933,7 +3933,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
                     }
                 }
                 break;
-#endif // !TARGET_WASM
+#endif // !TARGET_WASMARCH
             default:
                 UNREACHABLE();
             }
@@ -3957,7 +3957,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
     {
         switch (kind)
         {
-#ifndef TARGET_WASM
+#ifndef TARGET_WASMARCH
         case READYTORUN_FIXUP_NewObject:
             {
                 bool fHasSideEffectsUnused;
@@ -4031,7 +4031,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
                 }
             }
             break;
-#endif // !TARGET_WASM
+#endif // !TARGET_WASMARCH
         case READYTORUN_FIXUP_ThisObjDictionaryLookup:
         case READYTORUN_FIXUP_TypeDictionaryLookup:
         case READYTORUN_FIXUP_MethodDictionaryLookup:

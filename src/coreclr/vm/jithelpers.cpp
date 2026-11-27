@@ -400,7 +400,7 @@ DictionaryEntry GenericHandleWorkerCore(MethodDesc * pMD, MethodTable * pMT, LPV
 #ifdef _DEBUG
             // Only in R2R mode are the module, dictionary index and dictionary slot provided as an input
             _ASSERTE(dictionaryIndexAndSlot != (DWORD)-1);
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
             // On wasm, R2R code lives in the function table and data in linear memory, so
             // FindReadyToRunModule (a code-range lookup) can't resolve the signature's data address.
             // Check that the signature lies within pModule's R2R image bounds instead.
@@ -648,7 +648,7 @@ FCIMPLEND
 /*************************************************************/
 
 EXTERN_C FCDECL1(void, IL_Throw,  Object* obj);
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
 void IL_Throw_Impl(Object* obj, TransitionBlock* transitionBlock)
 #else
 EXTERN_C FCDECL2(void, IL_Throw_Impl,  Object* obj, TransitionBlock* transitionBlock);
@@ -681,14 +681,14 @@ FCIMPL2(void, IL_Throw_Impl,  Object* obj, TransitionBlock* transitionBlock)
     FC_CAN_TRIGGER_GC_END();
     UNREACHABLE();
 }
-#ifndef TARGET_WASM
+#ifndef TARGET_WASMARCH
 FCIMPLEND
 #endif
 
 /*************************************************************/
 
 EXTERN_C FCDECL0(void, IL_Rethrow);
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
 void IL_Rethrow_Impl(TransitionBlock* transitionBlock)
 #else
 EXTERN_C FCDECL1(void, IL_Rethrow_Impl, TransitionBlock* transitionBlock);
@@ -712,13 +712,13 @@ FCIMPL1(void, IL_Rethrow_Impl, TransitionBlock* transitionBlock)
     FC_CAN_TRIGGER_GC_END();
     UNREACHABLE();
 }
-#ifndef TARGET_WASM
+#ifndef TARGET_WASMARCH
 FCIMPLEND
 #endif
 
 
 EXTERN_C FCDECL1(void, IL_ThrowExact,  Object* obj);
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
 void IL_ThrowExact_Impl(Object* obj, TransitionBlock* transitionBlock)
 #else
 EXTERN_C FCDECL2(void, IL_ThrowExact_Impl,  Object* obj, TransitionBlock* transitionBlock);
@@ -747,12 +747,12 @@ FCIMPL2(void, IL_ThrowExact_Impl,  Object* obj, TransitionBlock* transitionBlock
     FC_CAN_TRIGGER_GC_END();
     UNREACHABLE();
 }
-#ifndef TARGET_WASM
+#ifndef TARGET_WASMARCH
 FCIMPLEND
 #endif
 
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
 // WASM doesn't have assembly stubs, but the FCALL calling convention passes the callersStackPointer in as a hidden argument.
 // WASM-TODO At the moment actual handling of the R2R stack walk isn't implemented, so if there isn't an actual R2R stack
 // just pass NULL for the transition block, but the check is left in place for future implementation of R2R stack walking on WASM.
@@ -790,7 +790,7 @@ FCIMPL1(void, IL_ThrowExact, Object* obj)
     IL_ThrowExact_Impl(obj, (callersStackPointer == 0 || *(int*)callersStackPointer == TERMINATE_R2R_STACK_WALK) ? NULL : &block);
 }
 FCIMPLEND
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
 
 #ifndef STATUS_STACK_BUFFER_OVERRUN  // Not defined yet in CESDK includes
 # define STATUS_STACK_BUFFER_OVERRUN      ((NTSTATUS)0xC0000409L)
@@ -2296,7 +2296,7 @@ enum __CorInfoHelpFunc {
 
 #ifdef _DEBUG
 #define HELPERDEF(code, lpv, isDynamicHelper) { (PCODE)(lpv), #code, isDynamicHelper },
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
 #define HELPERDEF(code, lpv, isDynamicHelper) { (PCODE)(lpv), isDynamicHelper },
 #else // !_DEBUG
 #define HELPERDEF(code, lpv, isDynamicHelper) { (PCODE)(lpv) },
@@ -2339,19 +2339,19 @@ bool VMHELPDEF::IsDynamicHelper(DynamicCorInfoHelpFunc* dynamicFtnNum) const
     size_t dynamicFtnNumMaybe = (size_t)pfnHelper - 1;
 
     bool isDynamic;
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
     // Functions on Wasm are ordinal values, not memory addresses.
     // On Wasm, we need some metadata to indicate whether the helper is a dynamic helper.
     isDynamic = _isDynamicHelper;
-#else // !TARGET_WASM
+#else // !TARGET_WASMARCH
     // If pfnHelper is an index into the dynamic helper table, it should be less
     // than DYNAMIC_CORINFO_HELP_COUNT.
     isDynamic = (dynamicFtnNumMaybe < DYNAMIC_CORINFO_HELP_COUNT);
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
 
-#if defined(_DEBUG) || defined(TARGET_WASM)
+#if defined(_DEBUG) || defined(TARGET_WASMARCH)
     _ASSERTE(isDynamic == _isDynamicHelper);
-#endif // _DEBUG || TARGET_WASM
+#endif // _DEBUG || TARGET_WASMARCH
 
     if (isDynamic)
         *dynamicFtnNum = (DynamicCorInfoHelpFunc)dynamicFtnNumMaybe;

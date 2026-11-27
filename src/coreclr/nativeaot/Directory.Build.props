@@ -56,7 +56,7 @@
   </PropertyGroup>
   <PropertyGroup>
     <FeatureComWrappers>true</FeatureComWrappers>
-    <FeatureComWrappers Condition="'$(TargetsWasm)' == 'true'">false</FeatureComWrappers>
+    <FeatureComWrappers Condition="'$(TargetsWasmArch)' == 'true'">false</FeatureComWrappers>
     <DefineConstants Condition="'$(FeatureComWrappers)' == 'true'">FEATURE_COMWRAPPERS;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup>
@@ -79,7 +79,7 @@
 
   <!-- Platform specific properties -->
   <PropertyGroup Condition="'$(Platform)' == 'wasm'">
-    <DefineConstants>TARGET_32BIT;TARGET_WASM;$(DefineConstants)</DefineConstants>
+    <DefineConstants>TARGET_32BIT;TARGET_WASMARCH;TARGET_WASM;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'x64'">
     <DefineConstants>TARGET_64BIT;TARGET_AMD64;$(DefineConstants)</DefineConstants>

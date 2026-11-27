@@ -52,7 +52,7 @@ if(CLR_CMAKE_HOST_WIN32)
         target_link_options(corerun PRIVATE "/CETCOMPAT")
     endif()
 else()
-    if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
+    if (NOT CLR_CMAKE_TARGET_ARCH_WASMARCH)
         target_link_libraries(corerun PRIVATE ${CMAKE_DL_LIBS})
         # Required to expose symbols for global symbol discovery
         target_link_libraries(corerun PRIVATE -rdynamic)
@@ -61,11 +61,11 @@ else()
     # Android implements pthread natively.
     # WASM, linking against pthreads indicates Node.js workers are
     # enabled and not suitable for the browser.
-    if(NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
+    if(NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_ARCH_WASMARCH)
         target_link_libraries(corerun PRIVATE pthread)
     endif()
     # Static linking
-    if (CLR_CMAKE_TARGET_ARCH_WASM)
+    if (CLR_CMAKE_TARGET_ARCH_WASMARCH)
         # target_sources() is what compiles the file into corerun. The list(APPEND)
         # cannot do that -- the target was already created from CORERUN_SOURCES above --
         # it only updates the variable that corerun_kit_export() passes to SOURCES below,

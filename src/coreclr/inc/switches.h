@@ -40,7 +40,7 @@
 #define GC_STATS
 #endif
 
-#if defined(TARGET_X86) || defined(TARGET_ARM) || defined(TARGET_WASM)
+#if defined(TARGET_X86) || defined(TARGET_ARM) || defined(TARGET_WASMARCH)
     #define USE_LAZY_PREFERRED_RANGE       0
 
 #elif defined(TARGET_64BIT)
@@ -144,7 +144,7 @@
 #endif
 
 // Some 32-bit platform ABIs require that 64-bit primitive types and composite types containing them are aligned at 64-bit boundaries.
-#if defined(TARGET_ARM) || defined(TARGET_WASM)
+#if defined(TARGET_ARM) || defined(TARGET_WASMARCH)
 #define FEATURE_64BIT_ALIGNMENT
 #endif
 
@@ -174,6 +174,6 @@
 // of stub-based interface dispatch.
 //#define STUB_LOGGING
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
 #define PEIMAGE_FLAT_LAYOUT_ONLY
-#endif // !TARGET_WASM
+#endif // !TARGET_WASMARCH

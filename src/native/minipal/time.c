@@ -155,7 +155,7 @@ uint64_t minipal_get_system_time(void)
 
 void minipal_sleep(uint32_t milliseconds)
 {
-#if defined(TARGET_WASM) && !defined(FEATURE_MULTITHREADING)
+#if defined(TARGET_WASMARCH) && !defined(FEATURE_MULTITHREADING)
     (void)milliseconds;
 #elif HOST_WINDOWS
     Sleep(milliseconds);
@@ -203,7 +203,7 @@ bool minipal_switch_to_thread(uint32_t switchCount)
 
 #if HOST_WINDOWS
     return SwitchToThread() != 0;
-#elif defined(TARGET_WASM) && !defined(FEATURE_MULTITHREADING)
+#elif defined(TARGET_WASMARCH) && !defined(FEATURE_MULTITHREADING)
     return false;
 #else
     return sched_yield() == 0;

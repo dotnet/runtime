@@ -330,7 +330,7 @@ namespace Internal.Runtime.CompilerHelpers
             }
 
             static void* ReadFixup(void* address)
-#if TARGET_WASM
+#if TARGET_WASMARCH
                 => *(void**)address;
 #else
                 => (byte*)address + *(int*)address;

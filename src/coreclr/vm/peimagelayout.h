@@ -56,10 +56,10 @@ public:
 
 public:
 #ifndef DACCESS_COMPILE
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
     // One-time initialization of the lock guarding webcil relocation de-duplication.
     static void Startup();
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
     static PEImageLayout* CreateFromByteArray(PEImage* pOwner, const BYTE* array, COUNT_T size);
 #ifndef TARGET_UNIX
     static PEImageLayout* CreateFromHMODULE(HMODULE hModule,PEImage* pOwner);
@@ -293,18 +293,18 @@ public:
     FlatImageLayout(PEImage* pOwner);
     FlatImageLayout(PEImage* pOwner, const BYTE* array, COUNT_T size);
     void* LoadImageByCopyingParts(PEImagePart* imageParts) const;
-#if !defined(TARGET_WASM)
+#if !defined(TARGET_WASMARCH)
     void* LoadImageByMappingParts(PEImagePart* imageParts) const;
 #endif
 #endif
 
 private:
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
     NewArrayHolder<BYTE> m_wasmData;
 #else
     VMToOSInterface::MemoryMappedViewHolder m_fileView;
     VMToOSInterface::MemoryMappingHolder m_fileMapping;
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
 };
 
 // ConvertedImageView is for the case when we construct a loaded

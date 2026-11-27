@@ -780,7 +780,7 @@ uint8_t emitter::GetWasmValueTypeCode(WasmValueType type)
     return typecode_mapping[static_cast<unsigned>(type)];
 }
 
-#ifdef TARGET_WASM32
+#ifdef TARGET_WASM
 // NOTE: Keep in sync with Relocation.cs
 static const unsigned PADDED_RELOC_SIZE = 5;
 #else

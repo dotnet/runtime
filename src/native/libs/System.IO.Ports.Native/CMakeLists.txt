@@ -1,6 +1,6 @@
 project(System.IO.Ports.Native C)
 
-if(CLR_CMAKE_TARGET_ARCH_WASM)
+if(CLR_CMAKE_TARGET_ARCH_WASMARCH)
     message(FATAL_ERROR "Not implemented for WASM")
 endif()
 

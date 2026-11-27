@@ -438,7 +438,7 @@ Compiler::Compiler(ArenaAllocator*       arena,
 
     compMaxUncheckedOffsetForNullObject = eeInfo->maxUncheckedOffsetForNullObject;
 
-#if defined(DEBUG) && defined(TARGET_WASM)
+#if defined(DEBUG) && defined(TARGET_WASMARCH)
     // TODO-WASM: remove once we no longer need to use x86/arm collections for wasm replay
     // if we are cross-replaying wasm, override compMaxUncheckedOffsetForNullObject
     if (!info.compMatchedVM)
@@ -756,7 +756,7 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
     }
     assert(structSize > 0);
 
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
     CorInfoWasmType abiType = info.compCompHnd->getWasmLowering(clsHnd);
 
     // A struct wider than the wasm value it lowers to is split across several of them when
@@ -790,7 +790,7 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
         });
     }
 #endif // DEBUG
-#endif // defined(TARGET_WASM)
+#endif // defined(TARGET_WASMARCH)
 
 #ifdef SWIFT_SUPPORT
     if (callConv == CorInfoCallConvExtension::Swift)
@@ -1936,7 +1936,7 @@ void Compiler::compSetProcessor()
     // Add virtual vector ISAs. These are both supported as part of the required baseline.
     instructionSetFlags.AddInstructionSet(InstructionSet_Vector64);
     instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
     // Ensure required baseline ISAs are supported in JIT code, even if not passed in by the VM.
     instructionSetFlags.AddInstructionSet(InstructionSet_WasmBase);
     instructionSetFlags.AddInstructionSet(InstructionSet_PackedSimd);
@@ -5003,7 +5003,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_GS_COOKIE, &Compiler::gsPhase);
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
     // Make EH continuation flow explicit
     //
     DoPhase(this, PHASE_WASM_EH_FLOW, &Compiler::fgWasmEhFlow);
@@ -5048,7 +5048,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_LCLVARLIVENESS, &Compiler::fgLateLiveness);
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
     // Forward single-use local copies and rematerialize single-use invariant
     // locals recorded by lowering, using the ref counts and last-use flags
     // computed by late liveness.
@@ -5073,7 +5073,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     FinalizeEH();
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
     // Reorder blocks for wasm and figure out wasm control flow nesting.
     // Note: This phase is ordered after FinalizeEH since the
     // pass shouldn't alter EH structure.
@@ -5097,7 +5097,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Copied from rpPredictRegUse()
     SetFullPtrRegMapRequired(codeGen->GetInterruptible() || !codeGen->isFramePointerUsed());
 
-#ifndef TARGET_WASM
+#ifndef TARGET_WASMARCH
     if (opts.OptimizationEnabled())
     {
         // We won't introduce new blocks from here on out,
@@ -5113,7 +5113,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         //
         DoPhase(this, PHASE_DETERMINE_FIRST_COLD_BLOCK, &Compiler::fgDetermineFirstColdBlock);
     }
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
 
 #if FEATURE_LOOP_ALIGN
     // Place loop alignment instructions

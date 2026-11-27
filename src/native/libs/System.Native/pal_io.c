@@ -160,7 +160,7 @@ c_static_assert(PAL_S_IFSOCK == S_IFSOCK);
 // WebAssembly (BROWSER) has dirent d_type but is not correct
 // by returning UNKNOWN the managed code properly stats the file
 // to detect if entry is directory or not.
-#if (defined(DT_UNKNOWN) || defined(TARGET_WASM)) && !defined(TARGET_WASI)
+#if (defined(DT_UNKNOWN) || defined(TARGET_WASMARCH)) && !defined(TARGET_WASI)
 c_static_assert((int)PAL_DT_UNKNOWN == (int)DT_UNKNOWN);
 c_static_assert((int)PAL_DT_FIFO == (int)DT_FIFO);
 c_static_assert((int)PAL_DT_CHR == (int)DT_CHR);
@@ -354,7 +354,7 @@ static int32_t ConvertOpenFlagsAndAddDefaults(int32_t flags)
     // Prevent terminal devices from becoming the controlling terminal of this process.
     // WASM (browser/WASI) has no controlling terminals, and WASMFS's doOpen rejects any
     // flag outside its known set (O_NOCTTY is not among them), so skip it there.
-#ifndef TARGET_WASM
+#ifndef TARGET_WASMARCH
     flags |= O_NOCTTY;
 #endif
     return flags;
@@ -563,7 +563,7 @@ static void ConvertDirent(const struct dirent* entry, DirectoryEntry* outputEntr
     // the start of the unmanaged string. Give the caller back a pointer to the
     // location of the start of the string that exists in their own byte buffer.
     outputEntry->Name = entry->d_name;
-#if !defined(DT_UNKNOWN) || defined(TARGET_WASM)
+#if !defined(DT_UNKNOWN) || defined(TARGET_WASMARCH)
     // AIX has no d_type, and since we can't get the directory that goes with
     // the filename from ReadDir, we can't stat the file. Return unknown and
     // hope that managed code can properly stat the file.
@@ -646,13 +646,13 @@ int32_t SystemNative_IsAtomicNonInheritablePipeCreationSupported(void)
 
 int32_t SystemNative_Pipe(int32_t pipeFds[2], int32_t flags)
 {
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
     // Pipe is not supported on Wasm (browser or WASI)
     (void)pipeFds;
     (void)flags;
     errno = ENOTSUP;
     return -1;
-#else // TARGET_WASM
+#else // TARGET_WASMARCH
     if ((flags & ~(PAL_O_CLOEXEC | PAL_O_NONBLOCK_READ | PAL_O_NONBLOCK_WRITE)) != 0)
     {
         assert_msg(false, "Unknown pipe flag", (int)flags);
@@ -723,7 +723,7 @@ int32_t SystemNative_Pipe(int32_t pipeFds[2], int32_t flags)
     }
 
     return result;
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
 }
 
 int32_t SystemNative_FcntlSetFD(intptr_t fd, int32_t flags)
@@ -1277,13 +1277,13 @@ int32_t SystemNative_MAdvise(void* address, uint64_t length, int32_t advice)
     switch (advice)
     {
         case PAL_MADV_DONTFORK:
-#if defined(MADV_DONTFORK) && !defined(TARGET_WASM)
+#if defined(MADV_DONTFORK) && !defined(TARGET_WASMARCH)
             return madvise(address, (size_t)length, MADV_DONTFORK);
 #else
             (void)address, (void)length, (void)advice;
             errno = ENOTSUP;
             return -1;
-#endif // MADV_DONTFORK && !TARGET_WASM
+#endif // MADV_DONTFORK && !TARGET_WASMARCH
         default:
             break; // fall through to error
     }
@@ -1822,7 +1822,7 @@ int32_t SystemNative_GetPeerID(intptr_t socket, uid_t* euid)
     // but getting peer credentials won't work for WebAssembly anyway
     // ucred also causes OpeBSD to fail because the struct definition is named
     // differently and on OpenBSD we can use getpeereid(3) instead anyways.
-#if defined(SO_PEERCRED) && !defined(TARGET_WASM) && !defined(TARGET_OPENBSD)
+#if defined(SO_PEERCRED) && !defined(TARGET_WASMARCH) && !defined(TARGET_OPENBSD)
     struct ucred creds;
     socklen_t len = sizeof(creds);
     if (getsockopt(fd, SOL_SOCKET, SO_PEERCRED, &creds, &len) == 0)
@@ -1891,7 +1891,7 @@ static uint32_t FileSystemNameSupportsLocking(const char* fileSystemName)
 uint32_t SystemNative_FileSystemSupportsLocking(intptr_t fd, int32_t lockOperation, int32_t accessWrite)
 {
     assert(lockOperation == PAL_LOCK_SH || lockOperation == PAL_LOCK_EX);
-#if defined(TARGET_WASI) || defined(TARGET_WASM)
+#if defined(TARGET_WASI) || defined(TARGET_WASMARCH)
     return 0; // WASI/WASM doesn't support locking.
 #else
     if (lockOperation == PAL_LOCK_EX || accessWrite == 0)
@@ -2236,7 +2236,7 @@ int64_t SystemNative_PReadV(intptr_t fd, IOVector* vectors, int32_t vectorCount,
 
     int64_t count = 0;
     int fileDescriptor = ToFileDescriptor(fd);
-#if HAVE_PREADV && !defined(TARGET_WASM) // preadv is buggy on WASM
+#if HAVE_PREADV && !defined(TARGET_WASMARCH) // preadv is buggy on WASM
     int allowedVectorCount = GetAllowedVectorCount(vectors, vectorCount);
     while ((count = preadv(fileDescriptor, (struct iovec*)vectors, allowedVectorCount, (off_t)fileOffset)) < 0 && errno == EINTR);
 #else
@@ -2317,7 +2317,7 @@ int64_t SystemNative_PWriteV(intptr_t fd, IOVector* vectors, int32_t vectorCount
 
     int64_t count = 0;
     int fileDescriptor = ToFileDescriptor(fd);
-#if HAVE_PWRITEV && !defined(TARGET_WASM) // pwritev is buggy on WASM
+#if HAVE_PWRITEV && !defined(TARGET_WASMARCH) // pwritev is buggy on WASM
     int allowedVectorCount = GetAllowedVectorCount(vectors, vectorCount);
     while ((count = pwritev(fileDescriptor, (struct iovec*)vectors, allowedVectorCount, (off_t)fileOffset)) < 0 && errno == EINTR);
 #else

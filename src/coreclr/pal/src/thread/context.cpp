@@ -307,7 +307,7 @@ typedef int __ptrace_request;
     ASSIGN_REG(R29)     \
     ASSIGN_REG(R30)
 
-#elif defined(HOST_WASM)
+#elif defined(HOST_WASMARCH)
 #define ASSIGN_CONTROL_REGS  \
     ASSERT("WASM does not have registers");
 #define ASSIGN_INTEGER_REGS  \

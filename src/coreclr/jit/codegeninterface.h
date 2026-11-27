@@ -194,7 +194,7 @@ private:
 #if defined(TARGET_XARCH)
     static const insFlags instInfo[INS_count];
 #elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) ||        \
-    defined(TARGET_WASM)
+    defined(TARGET_WASMARCH)
     static const BYTE instInfo[INS_count];
 #else
 #error Unsupported target architecture
@@ -214,7 +214,7 @@ public:
 
     bool IsEmbeddedBroadcastEnabled(instruction ins, GenTree* op);
 #endif // TARGET_XARCH
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
     // On wasm, we store the simd element size in the upper 7 bits of the instruction info.
     // The lower bit is reserved as an FP flag.
     static constexpr unsigned InstInfoElemSizeShift = 1;

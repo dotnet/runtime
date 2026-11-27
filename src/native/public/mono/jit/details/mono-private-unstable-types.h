@@ -61,7 +61,7 @@ typedef unsigned char* (*MonoLoadAotDataFunc)          (MonoAssembly *assembly, 
 /* Not yet used */
 typedef void  (*MonoFreeAotDataFunc)          (MonoAssembly *assembly, int size, void* user_data, void *handle);
 
-//#ifdef HOST_WASM
+//#ifdef HOST_WASMARCH
 typedef void* (*MonoWasmGetNativeToInterpTramp) (MonoMethod *method, void *extra_arg);
 typedef void* (*MonoWasmNativeToInterpCallback) (char * cookie);
 //#endif

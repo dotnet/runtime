@@ -187,7 +187,7 @@ inline CORINFO_ASYNC_INFO* Compiler::eeGetAsyncInfo()
     return &asyncInfo;
 }
 
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
 inline CORINFO_WASM_WELLKNOWN_GLOBALS* Compiler::eeGetWasmWellKnownGlobals()
 {
     if (!wasmWellKnownGlobalsInitialized)
@@ -198,7 +198,7 @@ inline CORINFO_WASM_WELLKNOWN_GLOBALS* Compiler::eeGetWasmWellKnownGlobals()
 
     return &wasmWellKnownGlobals;
 }
-#endif // defined(TARGET_WASM)
+#endif // defined(TARGET_WASMARCH)
 
 /*****************************************************************************
  *

@@ -1556,13 +1556,13 @@ void Compiler::fgSetThrowHelpBlockLiveness(BasicBlock* block)
         VarSetOps::AddElemD(this, block->bbLiveOut, thisVarIndex);
     }
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
     LclVarDsc* wasmSpVarDsc = lvaGetDesc(lvaWasmSpArg);
     if (wasmSpVarDsc->lvTracked)
     {
         VarSetOps::AddElemD(this, block->bbLiveOut, wasmSpVarDsc->lvVarIndex);
     }
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
 
     if (block->HasPotentialEHSuccs(this))
     {

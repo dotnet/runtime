@@ -15,11 +15,11 @@ class ClosedStaticRetBufPortableEntryPoint;
 // No-op on non-WASM platforms.
 void InitializePregeneratedStringThunkHash();
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
 // Look up a pregenerated thunk by its string key.
 // Returns NULL if the string is not found in the table.
 PCODE LookupPregeneratedThunkByString(const char* str);
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
 
 // Process a READYTORUN_FIXUP_InjectStringThunks fixup, adding new entries to the global hash.
 // On non-WASM platforms this is a no-op.

@@ -374,7 +374,7 @@ void Rationalizer::RewriteHWIntrinsicAsUserCall(GenTree**             use,
         }
 #endif // TARGET_XARCH
 
-#if !defined(TARGET_WASM)
+#if !defined(TARGET_WASMARCH)
         case NI_Vector_CreateGeometricSequence:
         {
             assert(operandCount == 2);
@@ -410,7 +410,7 @@ void Rationalizer::RewriteHWIntrinsicAsUserCall(GenTree**             use,
             }
             break;
         }
-#endif // !TARGET_WASM
+#endif // !TARGET_WASMARCH
 
         case NI_Vector_Shuffle:
         case NI_Vector_ShuffleNative:
@@ -2834,7 +2834,7 @@ void Rationalizer::RewriteParameterField(BasicBlock* block, GenTreeLclFld* fld)
         // width is shorter, because various places in the JIT will type
         // accesses larger to generate smaller code.
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
         var_types fullWidthType = genActualType(regSegment->GetRegisterType());
 #else
         var_types fullWidthType = TYP_I_IMPL;
@@ -2864,7 +2864,7 @@ void Rationalizer::RewriteParameterField(BasicBlock* block, GenTreeLclFld* fld)
 
     GenTree* value = m_compiler->gtNewLclVarNode(remappedLclNum);
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
     if (varTypeIsSIMD(value) && !varTypeIsSIMD(fld))
     {
         // Unlike native targets, wasm cannot reinterpret a v128 local access as a scalar.
@@ -2880,7 +2880,7 @@ void Rationalizer::RewriteParameterField(BasicBlock* block, GenTreeLclFld* fld)
     else if (varTypeUsesFloatReg(value))
 #else
     if (varTypeUsesFloatReg(value))
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
     {
         assert(fld->GetLclOffs() == regSegment->Offset);
 

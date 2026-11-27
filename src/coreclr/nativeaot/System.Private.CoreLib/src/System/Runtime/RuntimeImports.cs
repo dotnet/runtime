@@ -26,7 +26,7 @@ namespace System.Runtime
     {
         internal const string RuntimeLibrary = "*";
 
-#if TARGET_X86 || TARGET_WASM
+#if TARGET_X86 || TARGET_WASMARCH
         private const bool UseMathHelpers = true;
 #else
         private const bool UseMathHelpers = false;

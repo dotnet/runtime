@@ -74,7 +74,7 @@ uint32_t CLREventBase::Wait(uint32_t milliseconds, bool alertable)
 
     while (!eventData->state)
     {
-#if defined(TARGET_WASM) && !defined(FEATURE_MULTITHREADING)
+#if defined(TARGET_WASMARCH) && !defined(FEATURE_MULTITHREADING)
         if (milliseconds != 0)
         {
             assert(!"Cannot block on an event wait in single-threaded mode");

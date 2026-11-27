@@ -39,7 +39,7 @@ namespace Internal.Runtime.TypeLoader
             TargetArchitecture.X86,
 #elif TARGET_AMD64
             TargetArchitecture.X64,
-#elif TARGET_WASM
+#elif TARGET_WASMARCH
             TargetArchitecture.Wasm32,
 #elif TARGET_LOONGARCH64
             TargetArchitecture.LoongArch64,

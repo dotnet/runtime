@@ -2046,13 +2046,13 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrow(OBJECTREF throwable)
     GCPROTECT_END();
 }
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
 EXCEPTION_DISPOSITION SetTargetFrame(PAL_SEHException& ex, UINT_PTR targetSP)
 {
     ex.TargetFrameSp = targetSP;
     return EXCEPTION_CONTINUE_SEARCH;
 }
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
 
 VOID DECLSPEC_NORETURN __fastcall PropagateExceptionThroughNativeFrames(Object *exceptionObj, UINT_PTR targetSP)
 {
@@ -2064,7 +2064,7 @@ VOID DECLSPEC_NORETURN __fastcall PropagateExceptionThroughNativeFrames(Object *
     }
     CONTRACTL_END;
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
     // On WASM, the exception needs to keep propagating until it reaches the target frame. On other platforms,
     // this is ensured by unwinding stack up to the target frame before propagating the exception. This
     // difference is due to the fact that on WASM we don't have native stack unwinding support.
@@ -2079,15 +2079,15 @@ VOID DECLSPEC_NORETURN __fastcall PropagateExceptionThroughNativeFrames(Object *
         OBJECTREF throwable = ObjectToOBJECTREF(pParam->exceptionObj);
 #else
         OBJECTREF throwable = ObjectToOBJECTREF(exceptionObj);
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
         RealCOMPlusThrowWorker(throwable);
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
     }
     PAL_EXCEPT(SetTargetFrame(ex, __param->targetSP))
     {
     }
     PAL_ENDTRY
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
     UNREACHABLE();
 }
 
@@ -2560,7 +2560,7 @@ void StackTraceInfo::AppendElement(OBJECTREF pThrowable, UINT_PTR currentIP, UIN
         }
         else if (!pCf->HasFaulted() && stackTraceElem.ip != 0)
         {
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
             if (!ExecutionManager::IsVirtualIP(stackTraceElem.ip))
 #endif
             {
@@ -9959,7 +9959,7 @@ void SoftwareExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-#ifndef TARGET_WASM
+#ifndef TARGET_WASMARCH
 #define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContext->regname = *dac_cast<PTR_SIZE_T>((TADDR)m_ContextPointers.regname);
     ENUM_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
@@ -9977,11 +9977,11 @@ void SoftwareExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
 #define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContext->regname = m_Context.regname;
     ENUM_FP_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
-#else // TARGET_WASM
+#else // TARGET_WASMARCH
 #define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContext->regname = m_Context.regname;
     ENUM_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
-#endif // !TARGET_WASM
+#endif // !TARGET_WASMARCH
 
     SetIP(pRD->pCurrentContext, ::GetIP(&m_Context));
     SetSP(pRD->pCurrentContext, ::GetSP(&m_Context));
@@ -10000,11 +10000,11 @@ void SoftwareExceptionFrame::SetContext(T_CONTEXT *pContext)
 
     m_Context = *pContext;
 
-#ifndef TARGET_WASM
+#ifndef TARGET_WASMARCH
 #define CALLEE_SAVED_REGISTER(regname) m_ContextPointers.regname = &m_Context.regname;
     ENUM_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
-#endif // !TARGET_WASM
+#endif // !TARGET_WASMARCH
 
     m_ReturnAddress = ::GetIP(&m_Context);
 }
@@ -10406,7 +10406,7 @@ void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *p
     m_ReturnAddress = pTransitionBlock->m_ReturnAddress;
 }
 
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
 void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *pTransitionBlock)
 {
     LIMITED_METHOD_CONTRACT;

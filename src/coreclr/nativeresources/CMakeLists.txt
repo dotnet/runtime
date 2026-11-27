@@ -12,6 +12,6 @@ add_library_clr(nativeresourcestring
 
 install_clr (TARGETS nativeresourcestring DESTINATIONS lib)
 
-if (CLR_CMAKE_TARGET_ARCH_WASM)
+if (CLR_CMAKE_TARGET_ARCH_WASMARCH)
   install_clr(TARGETS nativeresourcestring DESTINATIONS sharedFramework COMPONENT runtime)
-endif (CLR_CMAKE_TARGET_ARCH_WASM)
+endif (CLR_CMAKE_TARGET_ARCH_WASMARCH)

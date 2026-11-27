@@ -638,7 +638,7 @@ namespace Internal.Runtime.Augments
 
         public static IntPtr GetTargetOfWrapperStub(IntPtr functionPointer, bool includeInstantiatingStubs, out bool isInstantiatingStub)
         {
-#if TARGET_WASM
+#if TARGET_WASMARCH
             return UnboxingStubMap.GetTarget(functionPointer, includeInstantiatingStubs, out isInstantiatingStub);
 #else
             isInstantiatingStub = false;
