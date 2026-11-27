@@ -241,21 +241,6 @@ The `LibraryTestsCoreCLR_WASI_R2R` CI job uses this configuration to run
 `System.Collections.Tests`; the existing interpreter smoke job continues to run the broader
 `System.Runtime.Tests` suite separately.
 
-## AOT library tests
-
-- Building library tests with AOT, and (even) with `EnableAggressiveTrimming` takes 3-9mins on CI, and that adds up for all the assemblies, causing
-a large build time. To circumvent that on CI, we build the test assemblies on the build machine, but skip the WasmApp build part of it, since
-that includes the expensive AOT step.
-
-- Instead, we take the built test assembly+dependencies, and enough related bits to be able to run the `WasmBuildApp` target, with the original
-inputs.
-
-- To recreate a similar build+test run locally, add `/p:BuildAOTTestsOnHelix=true` to the usual command line.
-- For example, with `./dotnet.sh build /t:Test src/libraries/System.AppContext/tests /p:TargetOS=browser /p:TargetArchitecture=wasm /p:Configuration=Release`
-
-    - AOT:  add `/p:EnableAggressiveTrimming=true /p:RunAOTCompilation=true /p:BuildAOTTestsOnHelix=true`
-    - Only trimming (helpful to isolate issues caused by trimming):
-        - add `/p:EnableAggressiveTrimming=true /p:BuildAOTTestsOnHelix=true`
 ## Debugging
 
 ### Getting more information

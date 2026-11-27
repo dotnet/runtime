@@ -200,7 +200,7 @@ public sealed class JsonManifestReaderTests
 
 	[Theory]
 	[InlineData("""{ "items": { "WasmOptConfigurationFlags": [ "" ] } }""")]
-	[InlineData("""{ "items": { "WasmOptConfigurationFlags": [ { "value": "missing identity" } ] } }""")]
+	[InlineData("""{ "items": { "WasmOptConfigurationFlags": [ { "value": "missing identity" } ] }""")]
 	public void InvalidJsonReturnsFalseAndLogsError(string json)
 	{
 		using var directory = new TempDirectory();

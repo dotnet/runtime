@@ -21,7 +21,7 @@ namespace Wasm.Build.Tests
         {
         }
 
-        [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+        [Theory]
         [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { false })]
         [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { true })]
         [TestCategory("native"), TestCategory("coreclr"), TestCategory("workload"), TestCategory("wasm-opt")]
@@ -51,7 +51,7 @@ namespace Wasm.Build.Tests
             Assert.Contains(result.TestOutput, line => line.Contains("QCall trimming sample passed", StringComparison.Ordinal));
         }
 
-        [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+        [Theory]
         [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { false, false })]
         [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { true, false })]
         [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { false, true })]
@@ -108,7 +108,7 @@ namespace Wasm.Build.Tests
             Assert.Contains(result.TestOutput, line => line.Contains("CoreLib entrypoint trimming sample passed", StringComparison.Ordinal));
         }
 
-        [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+        [Theory]
         [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { false, "entry" })]
         [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { true, "entry" })]
         [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { true, "list" })]
@@ -145,7 +145,7 @@ namespace Wasm.Build.Tests
             Assert.Contains(result.TestOutput, line => line.Contains("DirectPInvoke sample passed", StringComparison.Ordinal));
         }
 
-        [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+        [Theory]
         [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { false })]
         [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { true })]
         [TestCategory("native"), TestCategory("coreclr"), TestCategory("workload")]
@@ -406,105 +406,6 @@ namespace Wasm.Build.Tests
         }
 
         [Theory]
-        [BuildAndRun()]
-        // The test fetches WasmAppBuilder.dll from the Microsoft.NET.Runtime.WebAssembly.Sdk
-        // workload pack, which is not present in the NoWorkload (CoreCLR-Wasm) Helix payload.
-        [TestCategory("mono")]
-        public void IcallWithOverloadedParametersAndEnum(Configuration config, bool aot)
-        {
-            string appendToTheEnd =
-            """
-                <UsingTask TaskName="ManagedToNativeGenerator" AssemblyFile="###WasmAppBuilder###" />
-                <Target Name="Build">
-                  <PropertyGroup>
-                    <WasmPInvokeTablePath>pinvoke-table.h</WasmPInvokeTablePath>
-                    <WasmInterpToNativeTablePath>wasm_m2n_invoke.g.h</WasmInterpToNativeTablePath>
-                    <WasmRuntimeICallTablePath>runtime-icall-table.h</WasmRuntimeICallTablePath>
-                  </PropertyGroup>
-
-                  <ItemGroup>
-                    <WasmPInvokeModule Include="libSystem.Native" />
-                    ###WasmPInvokeModule###
-                  </ItemGroup>
-
-                  <ManagedToNativeGenerator
-                    Assemblies="@(WasmPInvokeAssembly)"
-                    PInvokeModules="@(WasmPInvokeModule)"
-                    PInvokeOutputPath="$(WasmPInvokeTablePath)"
-                    RuntimeIcallTableFile="$(WasmRuntimeICallTablePath)"
-                    InterpToNativeOutputPath="$(WasmInterpToNativeTablePath)">
-                    <Output TaskParameter="FileWrites" ItemName="FileWrites" />
-                  </ManagedToNativeGenerator>
-                </Target>
-            """;
-
-            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "icall_enum", insertAtEnd: appendToTheEnd);
-            // build a library containing icalls with overloaded parameters.
-            ReplaceFile(Path.Combine("..", "Library", "Library.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "ICall_Lib.cs"));
-            // temporarily change the project directory to build the library
-            _projectDir = Path.Combine(_projectDir, "..", "Library");
-            bool isPublish = false;
-            // libraries do not have framework dirs
-            string hypotheticalFrameworkDir = Path.Combine(GetBinFrameworkDir(config, isPublish));
-            string libAssemblyPath = Path.Combine(hypotheticalFrameworkDir, "..", "..");
-            BuildProject(info, config, new BuildOptions(AssertAppBundle: false, AOT: aot));
-            // restore the project directory
-            _projectDir = Path.Combine(_projectDir, "..", "App");
-
-            string icallTable =
-            """
-            [
-             { "klass":"Interop", "icalls": [{} 	,{ "name": "Square(Numbers)", "func": "ves_abc", "handles": false }
-            	,{ "name": "Add(Numbers,Numbers)", "func": "ves_def", "handles": false }
-            ]}
-            ]
-
-            """;
-            UpdateFile(Path.Combine(_projectDir, "runtime-icall-table.h"), icallTable);
-
-            string tasksBaseDir = Path.Combine(s_buildEnv.WorkloadPacksDir,
-                                                "Microsoft.NET.Runtime.WebAssembly.Sdk",
-                                                s_buildEnv.GetRuntimePackVersion(DefaultTargetFramework),
-                                                "tasks");
-            if (!Directory.Exists(tasksBaseDir))
-                throw new DirectoryNotFoundException($"Could not find tasks base directory {tasksBaseDir}");
-
-            string[] taskDirectories = Directory.GetDirectories(tasksBaseDir);
-            // select the first non-net4.x directory
-            string? tasksDir = taskDirectories.FirstOrDefault(dir =>
-            {
-                string tfm = Path.GetFileName(dir);
-                return tfm.StartsWith("net", StringComparison.OrdinalIgnoreCase) && !tfm.StartsWith("net4", StringComparison.OrdinalIgnoreCase);
-            });
-
-            if (string.IsNullOrEmpty(tasksDir))
-                throw new DirectoryNotFoundException($"Could not find any valid TFM directories in {tasksBaseDir} : {string.Join(", ", taskDirectories)}");
-
-            string? taskPath = Directory.EnumerateFiles(tasksDir, "WasmAppBuilder.dll", SearchOption.AllDirectories)
-                                            .FirstOrDefault();
-            if (string.IsNullOrEmpty(taskPath))
-                throw new FileNotFoundException($"Could not find WasmAppBuilder.dll in {tasksDir}");
-
-            _testOutput.WriteLine("Using WasmAppBuilder.dll from {0}", taskPath);
-
-            string AddAssembly(string assemblyLocation, string name) => $"<WasmPInvokeAssembly Include=\"{Path.Combine(assemblyLocation, name + ".dll")}\" />";
-            string frameworkDir = Path.Combine(GetBinFrameworkDir(config, isPublish));
-            string appAssemblyPath = Path.Combine(frameworkDir, "..", "..");
-            string pinvokeReplacement =
-                AddAssembly(appAssemblyPath, "System.Private.CoreLib") +
-                AddAssembly(appAssemblyPath, "System.Runtime") +
-                AddAssembly(libAssemblyPath, "Library");
-            UpdateFile("WasmBasicTestApp.csproj", new Dictionary<string, string> {
-                { "###WasmPInvokeModule###", pinvokeReplacement },
-                { "###WasmAppBuilder###", taskPath }
-            });
-
-            // Build a project with ManagedToNativeGenerator task reading icalls from the above library and runtime-icall-table.h
-            (_, string output) = BuildProject(info, config, new BuildOptions(UseCache: false, AOT: aot));
-            Assert.DoesNotMatch(".*warning.*Numbers", output);
-        }
-
-        [Theory]
         [BuildAndRun(parameters: new object[] { "tr_TR.UTF-8" })]
         public async Task BuildNativeInNonEnglishCulture(Configuration config, bool aot, string culture)
         {
@@ -562,13 +463,10 @@ namespace Wasm.Build.Tests
             // FIXME: Not possible in in-process mode for some reason, even with verbosity at "diagnostic"
             // Assert.Contains("Adding pinvoke signature FD for method 'Test.", output);
 
-            string pinvokeTableFileName = IsCoreClrRuntime ? "callhelpers-pinvoke.cpp" : "pinvoke-table.h";
-            string pinvokeTable = File.ReadAllText(Path.Combine(objDir, pinvokeTableFileName));
+            string pinvokeTable = File.ReadAllText(Path.Combine(objDir, "callhelpers-pinvoke.cpp"));
             // Verify that the invoke is in the pinvoke table. Under various circumstances we will silently skip it,
             //  for example if the module isn't found
-            string pinvokeTableEntry = IsCoreClrRuntime
-                ? "{ \"accept_double_struct_and_return_float_struct\", (void*)&direct_pinvoke::accept_double_struct_and_return_float_struct }"
-                : "\"accept_double_struct_and_return_float_struct\", accept_double_struct_and_return_float_struct";
+            string pinvokeTableEntry = "{ \"accept_double_struct_and_return_float_struct\", (void*)&direct_pinvoke::accept_double_struct_and_return_float_struct }";
             Assert.Contains(pinvokeTableEntry, pinvokeTable);
             // Verify the signature of the C function prototype. Wasm ABI specifies that the structs should both decompose into scalars.
             Assert.Contains("float accept_double_struct_and_return_float_struct (double)", pinvokeTable);
@@ -639,17 +537,12 @@ namespace Wasm.Build.Tests
             Assert.DoesNotContain("WASM0001", output);
 
             string objDir = Path.Combine(_projectDir, "obj", config.ToString(), DefaultTargetFramework, "wasm", "for-build");
-            string pinvokeTableFileName = IsCoreClrRuntime ? "callhelpers-pinvoke.cpp" : "pinvoke-table.h";
-            string pinvokeTable = File.ReadAllText(Path.Combine(objDir, pinvokeTableFileName));
+            string pinvokeTable = File.ReadAllText(Path.Combine(objDir, "callhelpers-pinvoke.cpp"));
 
-            string includedPInvokeTableEntry = IsCoreClrRuntime
-                ? "{ \"versioned_browser_add\", (void*)&direct_pinvoke::versioned_browser_add }"
-                : "\"versioned_browser_add\", versioned_browser_add";
+            string includedPInvokeTableEntry = "{ \"versioned_browser_add\", (void*)&direct_pinvoke::versioned_browser_add }";
             Assert.Contains(includedPInvokeTableEntry, pinvokeTable);
 
-            string excludedPInvokeTableEntry = IsCoreClrRuntime
-                ? "\"versioned_windows_add\""
-                : "\"versioned_windows_add\", versioned_windows_add";
+            string excludedPInvokeTableEntry = "\"versioned_windows_add\"";
             Assert.DoesNotContain(excludedPInvokeTableEntry, pinvokeTable);
 
             RunResult result = await RunForBuildWithDotnetRun(new BrowserRunOptions(config, TestScenario: "DotnetRun", ExpectedExitCode: 42));

@@ -43,7 +43,7 @@ namespace Wasm.Build.Tests
         public async Task RelinkingWithoutAOT(Configuration config, bool aot, bool? invariantGlobalization)
             => await TestInvariantGlobalization(config, aot, invariantGlobalization, isNativeBuild: true);
 
-        [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+        [Theory]
         [BuildAndRun(aot: false, config: Configuration.Release)]
         [TestCategory("workload")]
         public void CoreCLRInvariantGlobalizationDoesNotLinkGlobalizationNative(Configuration config, bool aot)

@@ -83,7 +83,7 @@ namespace Wasm.Build.Tests
         public Task PublishRunAllPagesNativeRelink(Configuration config, bool trimmed)
             => PublishRunAllPagesCore(config, trimmed, nativeRelink: true, composite: false);
 
-        [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+        [Theory]
         [InlineData(Configuration.Debug, false, false, null, null, "", false, false)]
         [InlineData(Configuration.Release, false, false, null, null, "", true, true)]
         [InlineData(Configuration.Release, false, true, null, null, "", false, false)]
@@ -233,7 +233,7 @@ namespace Wasm.Build.Tests
             AssertPerAppCrossgenRan(config, expected: false);
         }
 
-        [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+        [Theory]
         [InlineData(false)]
         [InlineData(true)]
         [TestCategory("no-workload")]
