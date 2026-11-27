@@ -316,12 +316,12 @@ namespace System.Runtime
 #else
             Exception? e = id switch
             {
-#if !TARGET_WASM
+#if !TARGET_WASM && !TARGET_WASM64
                 ExceptionIDs.AccessViolation => new AccessViolationException(),
 #endif
                 ExceptionIDs.AmbiguousImplementation => new AmbiguousImplementationException(),
                 ExceptionIDs.ArrayTypeMismatch => new ArrayTypeMismatchException(),
-#if !TARGET_WASM
+#if !TARGET_WASM && !TARGET_WASM64
                 ExceptionIDs.DataMisaligned => new DataMisalignedException(),
                 ExceptionIDs.DivideByZero => new DivideByZeroException(),
 #endif
@@ -330,7 +330,7 @@ namespace System.Runtime
                 ExceptionIDs.InvalidCast => new InvalidCastException(),
                 ExceptionIDs.NullReference => new NullReferenceException(),
                 ExceptionIDs.OutOfMemory => new OutOfMemoryException(),
-#if !TARGET_WASM
+#if !TARGET_WASM && !TARGET_WASM64
                 ExceptionIDs.Overflow => new OverflowException(),
 #pragma warning disable CS0618 // ExecutionEngineException is obsolete
                 ExceptionIDs.IllegalInstruction => new ExecutionEngineException("Illegal instruction: Attempted to execute an instruction code not defined by the processor."),
@@ -430,7 +430,7 @@ namespace System.Runtime
 #endif
 #endif // NATIVEAOT
 
-#if !TARGET_WASM
+#if !TARGET_WASM && !TARGET_WASM64
         private enum HwExceptionCode : uint
         {
             STATUS_NATIVEAOT_NULL_REFERENCE = 0x00000000u,
@@ -572,7 +572,7 @@ namespace System.Runtime
             return pExInfo != null ? pExInfo->ThrownException : null;
         }
 
-#if !TARGET_WASM
+#if !TARGET_WASM && !TARGET_WASM64
         //
         // Called by RhpThrowHwEx
         //

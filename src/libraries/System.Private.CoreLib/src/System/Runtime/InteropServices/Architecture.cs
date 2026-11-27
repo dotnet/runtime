@@ -28,7 +28,7 @@ namespace System.Runtime.InteropServices
         /// </summary>
         Arm64,
         /// <summary>
-        /// The WebAssembly platform.
+        /// The 32-bit WebAssembly platform.
         /// </summary>
         Wasm,
         /// <summary>
@@ -57,5 +57,9 @@ namespace System.Runtime.InteropServices
         /// This value indicates RV64GC set of extensions.
         /// </remarks>
         RiscV64,
+        /// <summary>
+        /// The 64-bit WebAssembly platform.
+        /// </summary>
+        Wasm64,
     }
 }
