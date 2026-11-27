@@ -264,6 +264,7 @@ namespace CorUnix
         void* m_stackLimit;
         // Signal handler's alternate stack to help with stack overflow
         void* m_alternateStack;
+        size_t m_alternateStackSize;
 
         //
         // The thread entry routine (called from InternalCreateThread)
@@ -316,7 +317,8 @@ namespace CorUnix
             m_fStartStatusSet(FALSE),
             m_stackBase(NULL),
             m_stackLimit(NULL),
-            m_alternateStack(NULL)
+            m_alternateStack(NULL),
+            m_alternateStackSize(0)
         {
         };
 
