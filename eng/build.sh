@@ -542,19 +542,15 @@ if [ ${#actInt[@]} -eq 0 ]; then
     arguments=("-restore" "-build" ${arguments[@]+"${arguments[@]}"})
 fi
 
+if [[ -z "${passedArch:-}" && ( "$os" == "browser" || "$os" == "wasi" ) ]]; then
+    # the host arch default doesn't apply to WebAssembly targets
+    arch=wasm
+fi
 if [[ "$os" == "browser" ]]; then
-    # Keep the existing wasm default unless wasm64 was explicitly requested.
-    if [[ "$arch" != "wasm64" ]]; then
-        arch=wasm
-    fi
     # because on docker instance without swap file, MSBuild nodes need to make some room for LLVM
     # https://github.com/dotnet/runtime/issues/113724
     # this is hexa percentage: 46-> 70%
     export DOTNET_GCHeapHardLimitPercent="46"
-fi
-if [[ "$os" == "wasi" ]]; then
-    # override default arch for wasi, we only support wasm
-    arch=wasm
 fi
 
 # Default dynamiccodecompiled based on target OS if not explicitly set
