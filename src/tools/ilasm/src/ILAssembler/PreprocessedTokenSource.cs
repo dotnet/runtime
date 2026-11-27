@@ -205,9 +205,10 @@ namespace Microsoft.DotNet.ILAssembler
                     ReportPreprocessorSyntaxError(nextToken);
                     return NextTokenWithoutNestedEof(false);
                 }
+                _activeIfDefBlocks.Pop();
                 var (source, activeIfDef, includedFromFile, includedFromLine) = _includeSourceStack.Pop();
                 _includeSourceStack.Push((source, --activeIfDef, includedFromFile, includedFromLine));
-                return NextTokenWithoutNestedEof(activeIfDef != 0);
+                return NextToken();
             }
             else if (nextToken.Type == CILLexer.ID && _definedVars.TryGetValue(nextToken.Text, out string? newValue) && newValue is not null)
             {
@@ -287,7 +288,7 @@ namespace Microsoft.DotNet.ILAssembler
                 // then we'll only check syntax of preprocessor tokens and ignore all other tokens until we've seen a matching #endif
                 if (numNestedPreprocessorBlocks > 0)
                 {
-                    if (nextToken.Type == CILLexer.PP_IFDEF || nextToken.Type == CILLexer.PP_ENDIF)
+                    if (nextToken.Type == CILLexer.PP_IFDEF || nextToken.Type == CILLexer.PP_IFNDEF)
                     {
                         IToken identifier = NextTokenWithoutNestedEof(errorOnEof: true);
                         if (identifier.Type != CILLexer.ID)
@@ -315,9 +316,9 @@ namespace Microsoft.DotNet.ILAssembler
                     var (source, activeIfDef, includedFromFile, includedFromLine) = _includeSourceStack.Pop();
                     _includeSourceStack.Push((source, ++activeIfDef, includedFromFile, includedFromLine));
 
-                    return NextTokenWithoutNestedEof(errorOnEof: true);
+                    return NextToken();
                 }
-                if (nextToken.Type == CILLexer.PP_IFDEF || nextToken.Type == CILLexer.PP_ENDIF)
+                if (nextToken.Type == CILLexer.PP_IFDEF || nextToken.Type == CILLexer.PP_IFNDEF)
                 {
                     numNestedPreprocessorBlocks++;
                 }
@@ -329,7 +330,7 @@ namespace Microsoft.DotNet.ILAssembler
                 var (source, activeIfDef, includedFromFile, includedFromLine) = _includeSourceStack.Pop();
                 _includeSourceStack.Push((source, --activeIfDef, includedFromFile, includedFromLine));
             }
-            return NextTokenWithoutNestedEof(ActiveIfDefBlocksInCurrentSource != 0);
+            return NextToken();
         }
 
         public event Action<string, int, int, string>? OnPreprocessorSyntaxError;

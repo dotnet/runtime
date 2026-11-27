@@ -16,7 +16,7 @@ parameters:
 
 steps:
   - ${{ if eq(parameters.osGroup, 'windows') }}:
-    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(crossArg) ci -arch ${{ parameters.archType }} $(buildConfigUpper) $(_nativeSanitizersArg) $(priorityArg) $(runtimeFlavorArgs) ${{ parameters.testBuildArgs }} $(runtimeVariantArg) $(librariesConfigurationArg)
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(crossArg) ci -arch ${{ parameters.archType }} $(buildConfigUpper) $(_nativeSanitizersArg) $(priorityArg) $(useNativeAotRuntimeArg) ${{ parameters.testBuildArgs }} $(runtimeVariantArg) $(librariesConfigurationArg)
       displayName: Build Tests
       condition: and(succeeded(), ${{ parameters.condition }})
       env:
@@ -24,7 +24,7 @@ steps:
           BuildAllTestsAsStandalone: true
 
   - ${{ if ne(parameters.osGroup, 'windows') }}:
-    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(crossArg) ci os ${{ parameters.osGroup }} -arch ${{ parameters.archType }} $(buildConfigUpper) $(_nativeSanitizersArg) $(priorityArg) $(runtimeFlavorArgs) ${{ parameters.testBuildArgs }} $(runtimeVariantArg) $(librariesConfigurationArg)
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(crossArg) ci os ${{ parameters.osGroup }} -arch ${{ parameters.archType }} $(buildConfigUpper) $(_nativeSanitizersArg) $(priorityArg) $(useNativeAotRuntimeArg) ${{ parameters.testBuildArgs }} $(runtimeVariantArg) $(librariesConfigurationArg)
       displayName: Build Tests
       condition: and(succeeded(), ${{ parameters.condition }})
       env:

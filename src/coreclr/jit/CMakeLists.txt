@@ -157,6 +157,7 @@ set( JIT_SOURCES
   jiteh.cpp
   jithashtable.cpp
   jitmetadata.cpp
+  knownbitsanalysis.cpp
   layout.cpp
   lclmorph.cpp
   lclvars.cpp
@@ -387,6 +388,8 @@ set( JIT_HEADERS
   jitmetadatalist.h
   jitpch.h
   jitstd.h
+  knownbits.h
+  knownbitsanalysis.h
   lir.h
   loopcloning.h
   loopcloningopts.h
@@ -692,8 +695,6 @@ function(add_jit jitName)
     if (CLR_CMAKE_HOST_WIN32)
         link_natvis_sources_for_target(${jitName} PRIVATE clrjit.natvis)
     endif()
-
-    target_compile_definitions(${jitName} PRIVATE JIT_STANDALONE_BUILD)
 
     # add the install targets
     if (${jitName} MATCHES "clrjit_universal_wasm")

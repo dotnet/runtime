@@ -16,7 +16,6 @@ parameters:
         eng/testing/workloads-browser.targets
         eng/testing/workloads-testing.targets
         eng/testing/workloads-wasi.targets
-        eng/testing/workloads-wasm.targets
         src/libraries/sendtohelix-browser.targets
         src/libraries/sendtohelix-wasi.targets
         src/libraries/sendtohelix-wasm.targets
@@ -179,6 +178,7 @@ jobs:
       include:
       - src/native/managed/cdac/*
       - src/coreclr/debug/runtimeinfo/*
+      - src/tools/StressLogAnalyzer/*
 
     - subset: installer
       include:
@@ -233,15 +233,12 @@ jobs:
       - eng/testing/workloads-browser.targets
       - eng/testing/workloads-testing.targets
       - eng/testing/workloads-wasi.targets
-      - eng/testing/workloads-wasm.targets
       - src/installer/pkg/sfx/Microsoft.NETCore.App/*
       - src/libraries/sendtohelix*
       - src/libraries/System.Net.WebSockets.Client/*
       - src/libraries/System.Runtime.InteropServices/*
       - src/libraries/System.Runtime.InteropServices.JavaScript/*
       - src/mono/mono/*
-      - src/mono/mono.proj
-      - src/mono/monoaotcross.proj
       - src/mono/nuget/Microsoft.NET.Runtime.MonoAOTCompiler.Task/*
       - src/mono/nuget/Microsoft.NET.Runtime.MonoTargets.Sdk/*
       - src/mono/nuget/Microsoft.NET.Runtime.WebAssembly.Sdk/*
@@ -266,28 +263,6 @@ jobs:
       - src/tasks/*
       - ${{ parameters._const_paths._wasm_pipelines }}
       exclude:
-      - ${{ parameters._const_paths._always_exclude }}
-      - ${{ parameters._const_paths._perf_pipeline_specific_only }}
-
-    # wasm/runtimetests mono need to be run
-    - subset: wasm_mono_runtimetests
-      combined: true
-      include:
-      - src/tests/*
-      - src/mono/*
-      - ${{ parameters._const_paths._wasm_src_native }}
-      exclude:
-      - src/mono/nuget/*
-      - src/mono/sample/*
-      - src/mono/tests/*
-      - src/mono/tools/*
-      - src/mono/wasi/*
-      - src/mono/browser/debugger/*
-      - src/mono/wasm/host/*
-      - src/mono/wasm/templates/*
-      - src/mono/wasm/testassets/*
-      - src/mono/wasm/Wasm.Build.Tests/*
-      - ${{ parameters._const_paths._wasm_pipelines }}
       - ${{ parameters._const_paths._always_exclude }}
       - ${{ parameters._const_paths._perf_pipeline_specific_only }}
 
@@ -336,7 +311,6 @@ jobs:
       - eng/testing/workloads-browser.targets
       - eng/testing/workloads-testing.targets
       - eng/testing/workloads-wasi.targets
-      - eng/testing/workloads-wasm.targets
       - src/mono/mono/component/mini-wasm-debugger.c
       - src/mono/browser/debugger/*
       - src/mono/wasm/host/*

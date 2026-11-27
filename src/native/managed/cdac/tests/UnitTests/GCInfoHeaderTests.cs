@@ -6,6 +6,7 @@ using Microsoft.Diagnostics.DataContractReader.Contracts.GCInfoHelpers;
 using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 using Moq;
 using Xunit;
+using Amd64Decoder = Microsoft.Diagnostics.DataContractReader.Contracts.GCInfoHelpers.GcInfoDecoder<Microsoft.Diagnostics.DataContractReader.Contracts.GCInfoHelpers.AMD64GCInfoTraits>;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
@@ -49,6 +50,41 @@ public class GCInfoHeaderTests
         GCInfoHeader header = decoder.GetHeader();
         Assert.Equal(8u, header.CodeSize);
         Assert.Equal(0u, header.SizeOfStackParameterArea);
+    }
+
+    [Fact]
+    public void ReadyToRunAccessorsExposeHeaderAndSlotTable()
+    {
+        // Fat AMD64 header: stack base register RBP, EnC preserved area 2, reverse P/Invoke slot -7,
+        // then RAX (interior), sp+8 and an untracked pinned caller.sp-16.
+        Amd64Decoder decoder = (Amd64Decoder)CreateDecoder(RuntimeInfoArchitecture.X64,
+            [0x81, 0x46, 0x00, 0x22, 0x07, 0x60, 0x26, 0xA8, 0x00, 0xF8, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00]);
+
+        Assert.False(decoder.IsSlimHeader);
+        Assert.True(decoder.HasStackBaseRegister);
+        Assert.Equal(2u, decoder.SizeOfEditAndContinuePreservedArea);
+        Assert.Equal(-56, decoder.ReversePInvokeFrameStackSlot);
+        Assert.Equal(1u, decoder.NumRegisters);
+        Assert.Equal(1u, decoder.NumUntrackedSlots);
+        Assert.Equal(2u, decoder.NumTrackedSlots);
+        Assert.Equal(new Amd64Decoder.GcSlotDesc[]
+        {
+            Amd64Decoder.GcSlotDesc.CreateRegisterSlot(0, Amd64Decoder.GcSlotFlags.GC_SLOT_INTERIOR),
+            Amd64Decoder.GcSlotDesc.CreateStackSlot(8, Amd64Decoder.GcStackSlotBase.GC_SP_REL, Amd64Decoder.GcSlotFlags.GC_SLOT_BASE),
+            Amd64Decoder.GcSlotDesc.CreateStackSlot(-16, Amd64Decoder.GcStackSlotBase.GC_CALLER_SP_REL, Amd64Decoder.GcSlotFlags.GC_SLOT_PINNED),
+        }, decoder.Slots);
+    }
+
+    [Fact]
+    public void ReadyToRunAccessorsReportAbsentOptionalFields()
+    {
+        Amd64Decoder decoder = (Amd64Decoder)CreateDecoder(RuntimeInfoArchitecture.X64,
+            [0x03, 0x40, 0x30, 0x00, 0x00, 0x00, 0x00, 0x00]);
+
+        Assert.False(decoder.HasStackBaseRegister);
+        Assert.Null(decoder.SizeOfEditAndContinuePreservedArea);
+        Assert.Null(decoder.ReversePInvokeFrameStackSlot);
+        Assert.Empty(decoder.Slots);
     }
 
     private static IGCInfoDecoder CreateDecoder(RuntimeInfoArchitecture architecture, byte[] encoded)

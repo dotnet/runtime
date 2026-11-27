@@ -154,10 +154,10 @@ void FixContext(PCONTEXT pContextRecord)
 #undef FIXUPREG
 }
 
-#ifdef TARGET_UNIX
+#if defined(TARGET_UNIX) && !defined(TARGET_WASM)
 BOOL HandleHardwareException(PAL_SEHException* ex);
 BOOL IsSafeToHandleHardwareException(PCONTEXT contextRecord, PEXCEPTION_RECORD exceptionRecord);
-#endif // TARGET_UNIX
+#endif // TARGET_UNIX && !TARGET_WASM
 
 static inline void UpdatePerformanceMetrics(CrawlFrame *pcfThisFrame, BOOL bIsRethrownException, BOOL bIsNewException)
 {
@@ -174,13 +174,13 @@ void InitializeExceptionHandling()
 
     CLRAddVectoredHandlers();
 
-#ifdef TARGET_UNIX
+#if defined(TARGET_UNIX) && !defined(TARGET_WASM)
     // Register handler of hardware exceptions like null reference in PAL
     PAL_SetHardwareExceptionHandler(HandleHardwareException, IsSafeToHandleHardwareException);
 
     // Register handler for determining whether the specified IP has code that is a GC marker for GCCover
     PAL_SetGetGcMarkerExceptionCode(GetGcMarkerExceptionCode);
-#endif // TARGET_UNIX
+#endif // TARGET_UNIX && !TARGET_WASM
 }
 
 //static
@@ -543,6 +543,17 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord,
     else
     {
         void *sp = (void*)GetSP(pContextRecord);
+#ifdef FEATURE_HIJACK
+        Frame* pFrame = pThread->GetFrame();
+        if ((pFrame < sp) && (pFrame->GetFrameIdentifier() == FrameIdentifier::RedirectedThreadFrame))
+        {
+            // The exception came from a thread interrupted in managed code, so this context
+            // points to the interrupted instruction, not a return address.
+            _ASSERTE(GetSP(static_cast<RedirectedThreadFrame*>(pFrame)->GetContext()) == GetSP(pContextRecord));
+            _ASSERTE(GetIP(static_cast<RedirectedThreadFrame*>(pFrame)->GetContext()) == GetIP(pContextRecord));
+            pContextRecord->ContextFlags |= CONTEXT_EXCEPTION_ACTIVE;
+        }
+#endif
         PopExplicitFrames(pThread, sp, NULL /* targetCallerSp */, false /* popGCFrames */);
         ExInfo::PopExInfos(pThread, sp);
 
@@ -907,6 +918,7 @@ bool IsDivByZeroAnIntegerOverflow(PCONTEXT pContext)
 }
 #endif // TARGET_AMD64
 
+#ifndef TARGET_WASM
 BOOL IsSafeToCallExecutionManager()
 {
     Thread *pThread = GetThreadNULLOk();
@@ -1122,6 +1134,7 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
 
     return FALSE;
 }
+#endif // !TARGET_WASM
 
 #endif // TARGET_UNIX
 

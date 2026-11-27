@@ -26,7 +26,6 @@ SET_DEFAULT_DEBUG_CHANNEL(EXCEPT); // some headers have code with asserts, so do
 #include "pal/utils.h"
 #include "pal/context.h"
 #include "pal/process.h"
-#include "pal/environ.h"
 
 #include <minipal/debugger.h>
 #include <minipal/utils.h>
@@ -171,11 +170,10 @@ GetExceptionMask()
     {
         exMode = MachException_Default;
 
-        char* exceptionSettings = EnvironGetenv(PAL_MACH_EXCEPTION_MODE);
+        const char* exceptionSettings = getenv(PAL_MACH_EXCEPTION_MODE);
         if (exceptionSettings)
         {
             exMode = (MachExceptionMode)atoi(exceptionSettings);
-            free(exceptionSettings);
         }
         else
         {

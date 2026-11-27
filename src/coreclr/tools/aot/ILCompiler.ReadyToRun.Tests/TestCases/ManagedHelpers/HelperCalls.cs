@@ -32,4 +32,16 @@ public static class HelperCalls
 
         return result;
     }
+
+    public static int SumWithFinally(int count)
+    {
+        try
+        {
+            return Sum(count);
+        }
+        finally
+        {
+            System.Console.WriteLine(count);
+        }
+    }
 }

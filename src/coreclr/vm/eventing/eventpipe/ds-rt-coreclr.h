@@ -11,6 +11,7 @@
 #include "ep-rt-coreclr.h"
 #include <clrconfignocache.h>
 #include <generatedumpflags.h>
+#include "ProcessEnvironment.h"
 #include <minipal/log.h>
 #include <eventpipe/ds-process-protocol.h>
 #include <eventpipe/ds-profiler-protocol.h>
@@ -141,32 +142,6 @@ ds_rt_generate_core_dump (
 }
 
 /*
- * DiagnosticsIpc.
- */
-
-static
-inline
-bool
-ds_rt_transport_get_default_name (
-	ep_char8_t *name,
-	int32_t name_len,
-	const ep_char8_t *prefix,
-	int32_t id,
-	const ep_char8_t *group_id,
-	const ep_char8_t *suffix)
-{
-	STATIC_CONTRACT_NOTHROW;
-
-#ifdef TARGET_UNIX
-	// PAL_GetTransportName returns void, but sets name[0] to '\0' when it fails to generate a name.
-	PAL_GetTransportName (name_len, name, prefix, id, group_id, suffix);
-	return name [0] != '\0';
-#else
-	return false;
-#endif
-}
-
-/*
 * DiagnosticsProfiler.
 */
 #ifdef PROFILING_SUPPORTED
@@ -227,7 +202,8 @@ static
 uint32_t
 ds_rt_set_environment_variable (const ep_char16_t *name, const ep_char16_t *value)
 {
-	return SetEnvironmentVariableW(reinterpret_cast<LPCWSTR>(name), reinterpret_cast<LPCWSTR>(value)) ? S_OK : HRESULT_FROM_WIN32(GetLastError());
+	uint32_t error = ProcessEnvironment_SetVariable((const CHAR16_T*)name, (const CHAR16_T*)value);
+	return HRESULT_FROM_WIN32(error);
 }
 
 static
@@ -317,11 +293,7 @@ ds_rt_server_log_pause_message (void)
 	STATIC_CONTRACT_NOTHROW;
 
 	const char diagPortsName[] = "DiagnosticPorts";
-#ifdef HOST_WINDOWS
     CLRConfigNoCache diagPorts = CLRConfigNoCache::Get(diagPortsName);
-#else
-    CLRConfigNoCache diagPorts = CLRConfigNoCache::Get(diagPortsName, /* noPrefix */ false, &PAL_getenv);
-#endif
 	LPCSTR ports = nullptr;
 	if (diagPorts.IsSet())
 	{

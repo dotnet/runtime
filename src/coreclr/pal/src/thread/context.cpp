@@ -20,6 +20,7 @@ SET_DEFAULT_DEBUG_CHANNEL(THREAD); // some headers have code with asserts, so do
 #include "pal/palinternal.h"
 #include "pal/context.h"
 #include "pal/debug.h"
+#include "pal/process.h"
 #include "pal/thread.hpp"
 #include "pal/utils.h"
 #include <minipal/ospagesize.h>
@@ -30,9 +31,6 @@ SET_DEFAULT_DEBUG_CHANNEL(THREAD); // some headers have code with asserts, so do
 #endif
 #include <errno.h>
 #include <unistd.h>
-#if defined(HOST_APPLE) && !defined(HOST_OSX)
-#include <libkern/OSCacheControl.h>
-#endif
 
 extern PGET_GCMARKER_EXCEPTION_CODE g_getGcMarkerExceptionCode;
 
@@ -414,7 +412,7 @@ BOOL CONTEXT_GetRegisters(DWORD processId, LPCONTEXT lpContext)
 #endif  // HAVE_BSD_REGS_T
     BOOL bRet = FALSE;
 
-    if (processId == GetCurrentProcessId())
+    if (processId == gPID)
     {
         CONTEXT_CaptureContext(lpContext);
     }
@@ -485,7 +483,7 @@ CONTEXT_GetThreadContext(
        Unfortunately, these two methods only depend on process ID, not on
        thread ID. */
 
-    if (dwProcessId == GetCurrentProcessId())
+    if (dwProcessId == gPID)
     {
         if (self != pthread_self())
         {
@@ -558,7 +556,7 @@ CONTEXT_SetThreadContext(
        Unfortunately, these two methods only depend on process ID, not on
        thread ID. */
 
-    if (dwProcessId == GetCurrentProcessId())
+    if (dwProcessId == gPID)
     {
         // Need to implement SetThreadContext(current thread) for the IX architecture; look at common_signal_handler.
         _ASSERT(FALSE);
@@ -803,7 +801,7 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
 
             dest = FPREG_Xstate_Ymmh(native, &size);
             _ASSERT(size == (sizeof(M128A) * 16));
-            memcpy_s(dest, sizeof(M128A) * 16, &lpContext->Ymm0H, sizeof(M128A) * 16);
+            memcpy(dest, &lpContext->Ymm0H, sizeof(M128A) * 16);
 
             if (FPREG_HasAvx512Registers(native))
             {
@@ -811,15 +809,15 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
 
                 dest = FPREG_Xstate_Opmask(native, &size);
                 _ASSERT(size == (sizeof(DWORD64) * 8));
-                memcpy_s(dest, sizeof(DWORD64) * 8, &lpContext->KMask0, sizeof(DWORD64) * 8);
+                memcpy(dest, &lpContext->KMask0, sizeof(DWORD64) * 8);
 
                 dest = FPREG_Xstate_ZmmHi256(native, &size);
                 _ASSERT(size == (sizeof(M256) * 16));
-                memcpy_s(dest, sizeof(M256) * 16, &lpContext->Zmm0H, sizeof(M256) * 16);
+                memcpy(dest, &lpContext->Zmm0H, sizeof(M256) * 16);
 
                 dest = FPREG_Xstate_Hi16Zmm(native, &size);
                 _ASSERT(size == (sizeof(M512) * 16));
-                memcpy_s(dest, sizeof(M512) * 16, &lpContext->Zmm16, sizeof(M512) * 16);
+                memcpy(dest, &lpContext->Zmm16, sizeof(M512) * 16);
             }
 #ifndef TARGET_OSX
             // APX xstate handling is compiled only for non-macOS targets.
@@ -829,7 +827,7 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
 
                 dest = FPREG_Xstate_Egpr(native, &size);
                 _ASSERT(size == (sizeof(DWORD64) * 16));
-                memcpy_s(dest, sizeof(DWORD64) * 16, &lpContext->R16, sizeof(DWORD64) * 16);
+                memcpy(dest, &lpContext->R16, sizeof(DWORD64) * 16);
             }
 #endif //  !TARGET_OSX
         }
@@ -1189,7 +1187,7 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
 
             src = FPREG_Xstate_Ymmh(native, &size);
             _ASSERT(size == (sizeof(M128A) * 16));
-            memcpy_s(&lpContext->Ymm0H, sizeof(M128A) * 16, src, sizeof(M128A) * 16);
+            memcpy(&lpContext->Ymm0H, src, sizeof(M128A) * 16);
 
             lpContext->XStateFeaturesMask |= XSTATE_MASK_AVX;
 
@@ -1197,15 +1195,15 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
             {
                 src = FPREG_Xstate_Opmask(native, &size);
                 _ASSERT(size == (sizeof(DWORD64) * 8));
-                memcpy_s(&lpContext->KMask0, sizeof(DWORD64) * 8, src, sizeof(DWORD64) * 8);
+                memcpy(&lpContext->KMask0, src, sizeof(DWORD64) * 8);
 
                 src = FPREG_Xstate_ZmmHi256(native, &size);
                 _ASSERT(size == (sizeof(M256) * 16));
-                memcpy_s(&lpContext->Zmm0H, sizeof(M256) * 16, src, sizeof(M256) * 16);
+                memcpy(&lpContext->Zmm0H, src, sizeof(M256) * 16);
 
                 src = FPREG_Xstate_Hi16Zmm(native, &size);
                 _ASSERT(size == (sizeof(M512) * 16));
-                memcpy_s(&lpContext->Zmm16, sizeof(M512) * 16, src, sizeof(M512) * 16);
+                memcpy(&lpContext->Zmm16, src, sizeof(M512) * 16);
 
                 lpContext->XStateFeaturesMask |= XSTATE_MASK_AVX512;
             }
@@ -1214,7 +1212,7 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
             {
                 src = FPREG_Xstate_Egpr(native, &size);
                 _ASSERT(size == (sizeof(DWORD64) * 16));
-                memcpy_s(&lpContext->R16, sizeof(DWORD64) * 16, src, sizeof(DWORD64) * 16);
+                memcpy(&lpContext->R16, src, sizeof(DWORD64) * 16);
 
                 lpContext->XStateFeaturesMask |= XSTATE_MASK_APX;
             }
@@ -1656,7 +1654,7 @@ CONTEXT_GetThreadContext(
         goto EXIT;
     }
 
-    if (GetCurrentProcessId() == dwProcessId)
+    if (gPID == dwProcessId)
     {
         if (self != pthread_self())
         {
@@ -1891,7 +1889,7 @@ CONTEXT_SetThreadContext(
         goto EXIT;
     }
 
-    if (dwProcessId != GetCurrentProcessId())
+    if (dwProcessId != gPID)
     {
         // GetThreadContext() of a thread in another process
         ASSERT("Cross-process GetThreadContext() is not supported\n");
@@ -1922,58 +1920,6 @@ EXIT:
 
 #endif // !HAVE_MACH_EXCEPTIONS
 
-/*++
-Function:
-  DBG_FlushInstructionCache: processor-specific portion of
-  FlushInstructionCache
-
-See MSDN doc.
---*/
-BOOL
-DBG_FlushInstructionCache(
-                          IN LPCVOID lpBaseAddress,
-                          IN SIZE_T dwSize)
-{
-#if defined(__linux__) && defined(HOST_ARM)
-    // On Linux/arm (at least on 3.10) we found that there is a problem with __do_cache_op (arch/arm/kernel/traps.c)
-    // implementing cacheflush syscall. cacheflush flushes only the first page in range [lpBaseAddress, lpBaseAddress + dwSize)
-    // and leaves other pages in undefined state which causes random tests failures (often due to SIGSEGV) with no particular pattern.
-    //
-    // As a workaround, we call __builtin___clear_cache on each page separately.
-
-    const SIZE_T pageSize = minipal_getpagesize();
-    UINT_PTR begin = (UINT_PTR)lpBaseAddress;
-    const UINT_PTR end = begin + dwSize;
-
-    while (begin < end)
-    {
-        UINT_PTR endOrNextPageBegin = ALIGN_UP(begin + 1, pageSize);
-        if (endOrNextPageBegin > end)
-            endOrNextPageBegin = end;
-
-        __builtin___clear_cache((char *)begin, (char *)endOrNextPageBegin);
-        begin = endOrNextPageBegin;
-    }
-#elif defined(HOST_RISCV64)
-    // __clear_cache() expanded from __builtin___clear_cache() is not implemented
-    // on Linux/RISCV64, at least in Clang 14, and we have to make syscall directly.
-    //
-    // TODO-RISCV64: use __builtin___clear_cache() in future. See https://github.com/llvm/llvm-project/issues/63551
-
-#ifndef __NR_riscv_flush_icache
-    #define __NR_riscv_flush_icache 259
-#endif
-
-    syscall(__NR_riscv_flush_icache, (char *)lpBaseAddress, (char *)((INT_PTR)lpBaseAddress + dwSize), 0 /* all harts */);
-#elif defined(HOST_WASM)
-    // do nothing, no instruction cache to flush
-#elif defined(HOST_APPLE) && !defined(HOST_OSX)
-    sys_icache_invalidate((void *)lpBaseAddress, dwSize);
-#else
-    __builtin___clear_cache((char *)lpBaseAddress, (char *)((INT_PTR)lpBaseAddress + dwSize));
-#endif
-    return TRUE;
-}
 
 #ifdef HOST_AMD64
 CONTEXT& CONTEXT::operator=(const CONTEXT& ctx)

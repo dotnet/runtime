@@ -38,6 +38,47 @@ public class R2RTestSuites
     [ConditionalTheory(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
     [InlineData(false)]
     [InlineData(true)]
+    public void WasmSingleVirtualIPNeedsNoFrameStore(bool optimize)
+    {
+        CompiledAssembly input = new()
+        {
+            AssemblyName = nameof(WasmSingleVirtualIPNeedsNoFrameStore),
+            SourceResourceNames = ["ManagedHelpers/HelperCalls.cs"],
+        };
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(WasmSingleVirtualIPNeedsNoFrameStore),
+            [
+                new(nameof(WasmSingleVirtualIPNeedsNoFrameStore), [new CrossgenAssembly(input)])
+                {
+                    Options = optimize ? [Crossgen2Option.Optimize] : [],
+                    OutputFileExtension = ".wasm",
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            WebcilImageReader webcilReader = Assert.IsType<WebcilImageReader>(reader.CompositeReader);
+            List<ReadyToRunMethod> methods = R2RAssert.GetAllMethods(reader);
+            foreach ((string name, bool hasEH) in new[] { ("Sum", false), ("SumWithFinally", true) })
+            {
+                ReadyToRunMethod method = Assert.Single(methods,
+                    method => method.SignatureString.Contains($"HelperCalls.{name}(", StringComparison.Ordinal));
+                RuntimeFunction root = method.RuntimeFunctions[0];
+                ILCompiler.Reflection.ReadyToRun.Wasm32.UnwindInfo unwind =
+                    Assert.IsType<ILCompiler.Reflection.ReadyToRun.Wasm32.UnwindInfo>(root.UnwindInfo);
+                Assert.Equal(!hasEH, unwind.VirtualIPCount == 4);
+                WebcilImageReader.WasmFunctionInfo body = ResolveWasmBody(reader, webcilReader, method);
+                ReadOnlySpan<byte> code = body.Image.AsSpan(body.InstructionOffset, body.InstructionLength);
+                // i32.store with alignment 1 and frame-header offset 4.
+                Assert.Equal(hasEH, code.IndexOf(new byte[] { 0x36, 0x00, 0x04 }) >= 0);
+            }
+        }
+    }
+
+    [ConditionalTheory(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
+    [InlineData(false)]
+    [InlineData(true)]
     public void OptionalPInvokeTargetsAreNotEager(bool directModule)
     {
         List<string> additionalArgs =
@@ -962,6 +1003,22 @@ public class R2RTestSuites
     }
 
     [Fact]
+    public void GenericParameterNamesDoNotCollide()
+    {
+        var assembly = new CompiledAssembly
+        {
+            AssemblyName = nameof(GenericParameterNamesDoNotCollide),
+            SourceResourceNames = ["VirtualMethodGenerics/GenericParameterNames.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(GenericParameterNamesDoNotCollide),
+            [
+                new(nameof(GenericParameterNamesDoNotCollide), [new CrossgenAssembly(assembly)])
+            ]));
+    }
+
+    [Fact]
     public void GenericTypeConstraintsAllowVariantParameters()
     {
         var genericTypeConstraints = new CompiledAssembly
@@ -1353,6 +1410,59 @@ public class R2RTestSuites
         {
             Directory.Delete(directory, recursive: true);
         }
+    }
+
+    [ConditionalTheory(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
+    [InlineData("StoreReference", 1)]
+    [InlineData("CopyReferences", 2)]
+    public void WasmHelperCellLoadsFoldOffsets(string methodName, int expectedLoads)
+    {
+        CompiledAssembly input = new()
+        {
+            AssemblyName = nameof(WasmHelperCellLoadsFoldOffsets),
+            SourceResourceNames = ["Webcil/WasmWebcilModule.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(WasmHelperCellLoadsFoldOffsets),
+            [
+                new(nameof(WasmHelperCellLoadsFoldOffsets), [new CrossgenAssembly(input)])
+                {
+                    OutputFileExtension = ".wasm",
+                    Options = [Crossgen2Option.Optimize],
+                    Validate = reader =>
+                    {
+                        ReadyToRunMethod method = Assert.Single(R2RAssert.GetAllMethods(reader),
+                            method => method.SignatureString.Contains(methodName, StringComparison.Ordinal));
+                        RuntimeFunction root = Assert.Single(method.RuntimeFunctions);
+                        WebcilImageReader webcilReader = Assert.IsType<WebcilImageReader>(reader.CompositeReader);
+                        uint tableIndex = checked(reader.WasmMinFunctionTableIndex + (uint)root.Id);
+                        int functionIndex = webcilReader.GetFunctionIndexFromTableIndex(tableIndex);
+                        WebcilImageReader.WasmFunctionInfo body =
+                            Assert.IsType<WebcilImageReader.WasmFunctionInfo>(webcilReader.GetWasmFunctionBody(functionIndex));
+                        ReadOnlySpan<byte> code = body.Image.AsSpan(body.InstructionOffset, body.InstructionLength);
+
+                        // global.get imageBase; i32.load align=1, followed by its relocated offset.
+                        ReadOnlySpan<byte> prefix = [0x23, 0x01, 0x28, 0x00];
+                        int loads = 0;
+                        while (code.IndexOf(prefix) is int position && position >= 0)
+                        {
+                            code = code[(position + prefix.Length)..];
+                            int offset = 0;
+                            while ((code[offset++] & 0x80) != 0)
+                            {
+                            }
+                            // Loading the entrypoint immediately follows the helper-cell load.
+                            if (code[offset..] is [0x28, 0x00, 0x00, 0x11, ..])
+                            {
+                                Assert.NotEqual((byte)0, code[0]);
+                                loads++;
+                            }
+                        }
+                        Assert.Equal(expectedLoads, loads);
+                    },
+                },
+            ]));
     }
 
     [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
@@ -1764,11 +1874,11 @@ public class R2RTestSuites
 
             static void AssertFrameGcSlot(ReadyToRunMethod method, NativeVarInfo record)
             {
-                ILCompiler.Reflection.ReadyToRun.Amd64.GcInfo gcInfo =
-                    Assert.IsType<ILCompiler.Reflection.ReadyToRun.Amd64.GcInfo>(method.GcInfo);
-                Assert.Equal(0u, gcInfo.SlotTable.NumRegisters);
-                ILCompiler.Reflection.ReadyToRun.Amd64.GcSlotTable.GcSlot slot = Assert.Single(
-                    gcInfo.SlotTable.GcSlots,
+                ILCompiler.Reflection.ReadyToRun.Cdac.CdacGcInfo gcInfo =
+                    Assert.IsType<ILCompiler.Reflection.ReadyToRun.Cdac.CdacGcInfo>(method.GcInfo);
+                Assert.Equal(0u, gcInfo.NumRegisters);
+                ILCompiler.Reflection.ReadyToRun.Cdac.CdacGcSlot slot = Assert.Single(
+                    gcInfo.Slots,
                     candidate => candidate.StackSlot?.SpOffset == record.VariableLocation.Data2);
                 Assert.Equal(GcStackSlotBase.GC_FRAMEREG_REL, slot.StackSlot.Base);
             }

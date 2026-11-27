@@ -653,13 +653,15 @@ namespace System.Threading.Tasks.Tests
 
         // NOTE: This depends on private implementation details generally only used by the debugger.
         // If those ever change, this test will need to be updated as well.
+        /// <safety>Returns a ref to the static bool field Task.s_asyncDebuggingEnabled; the runtime checks the field type and any bool value is valid.</safety>
         [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "s_asyncDebuggingEnabled")]
-        private extern static ref bool AsyncDebuggingEnabled(Task t);
+        private safe extern static ref bool AsyncDebuggingEnabled(Task t);
 
         // NOTE: This depends on private implementation details generally only used by the debugger.
         // If those ever change, this test will need to be updated as well.
+        /// <safety>Returns a ref to the static field Task.s_currentActiveTasks; the runtime checks the field type, so only a correctly typed dictionary or null can be stored.</safety>
         [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "s_currentActiveTasks")]
-        private extern static ref Dictionary<int, Task>? CurrentActiveTasks(Task t);
+        private safe extern static ref Dictionary<int, Task>? CurrentActiveTasks(Task t);
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void AsyncTaskMethodBuilder_Completed_RemovedFromTracking()

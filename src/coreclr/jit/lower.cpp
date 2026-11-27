@@ -2968,8 +2968,8 @@ GenTree* Lowering::LowerCall(GenTree* node)
         call->gtControlExpr = controlExpr;
 
 #ifdef TARGET_RISCV64
-        // If controlExpr is a constant, we should contain it inside the call so that we can move the lower 12-bits of
-        // the value to call instruction's (JALR) offset.
+        // If controlExpr is a constant, contain it inside the call so that codegen emits a direct call to it
+        // (auipc + jalr with a relocation) instead of materializing the address in a register.
         if (controlExpr->IsCnsIntOrI() && !controlExpr->AsIntCon()->ImmedValNeedsReloc(m_compiler) &&
             !call->IsFastTailCall())
         {
@@ -4827,6 +4827,10 @@ GenTree* Lowering::LowerSelect(GenTreeConditional* select)
     DISPTREERANGE(BlockRange(), select);
     JITDUMP("\n");
 
+#ifdef TARGET_WASM
+    TryMoveWasmSelectCondition(select);
+#endif
+
     // Do not transform GT_SELECT with GTF_SET_FLAGS into GT_SELECTCC; this
     // node is used by decomposition on x86.
     // TODO-CQ: If we allowed multiple nodes to consume the same CPU flags then
@@ -4858,6 +4862,11 @@ GenTree* Lowering::LowerSelect(GenTreeConditional* select)
     {
         TryLowerCnsIntCselToCinc(select, cond);
     }
+#endif
+
+#ifdef TARGET_WASM
+    assert(newSelect == nullptr);
+    select->SetOper(GT_WASM_SELECT);
 #endif
 
     return newSelect != nullptr ? newSelect->gtNext : select->gtNext;
@@ -6104,13 +6113,17 @@ void Lowering::LowerReturnSuspend(GenTree* node)
     if (!block->KindIs(BBJ_RETURN))
     {
         bool profileInconsistent = false;
+
+        // A self-edge can change the block weight as we visit its successors.
+        weight_t const blockWeight = block->bbWeight;
+
         for (BasicBlock* const succBlock : block->Succs())
         {
             FlowEdge* const succEdge = m_compiler->fgRemoveAllRefPreds(succBlock, block);
 
             if (block->hasProfileWeight() && succBlock->hasProfileWeight())
             {
-                succBlock->decreaseBBProfileWeight(succEdge->getLikelyWeight());
+                succBlock->decreaseBBProfileWeight(succEdge->getLikelihood() * blockWeight);
                 profileInconsistent |= (succBlock->NumSucc() > 0);
             }
         }
@@ -7972,24 +7985,27 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
         // It is not the best place to do such simple arithmetic optimizations,
         // but it allows us to avoid `LEA(addr, 0)` nodes and doing that in morph
         // requires more changes. Delete that part if we get an expression optimizer.
-        if (op2->IsIntegralConst(0))
+        if (op2->IsIntegralConst(0) || (op1->IsIntegralConst(0) && !varTypeIsGC(op1)))
         {
+            GenTree* zero = op2->IsIntegralConst(0) ? op2 : op1;
+            GenTree* val  = (zero == op2) ? op1 : op2;
+
             JITDUMP("Lower: optimize val + 0: ");
             DISPNODE(node);
             JITDUMP("Replaced with: ");
-            DISPNODE(op1);
+            DISPNODE(val);
             if (BlockRange().TryGetUse(node, &use))
             {
-                use.ReplaceWith(op1);
+                use.ReplaceWith(val);
             }
             else
             {
-                op1->SetUnusedValue();
+                val->SetUnusedValue();
             }
             GenTree* next = node->gtNext;
-            BlockRange().Remove(op2);
+            BlockRange().Remove(zero);
             BlockRange().Remove(node);
-            JITDUMP("Remove [%06u], [%06u]\n", op2->gtTreeID, node->gtTreeID);
+            JITDUMP("Remove [%06u], [%06u]\n", zero->gtTreeID, node->gtTreeID);
             return next;
         }
 
@@ -11370,7 +11386,7 @@ GenTree* Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
     }
 
 #ifndef TARGET_XARCH
-    if (ind->Data()->IsIconHandle(GTF_ICON_OBJ_HDL))
+    if (!ind->IsVolatile() && ind->Data()->IsIconHandle(GTF_ICON_OBJ_HDL))
     {
         const ssize_t handle = ind->Data()->AsIntCon()->IconValue();
         if (!m_compiler->info.compCompHnd->isObjectImmutable(reinterpret_cast<CORINFO_OBJECT_HANDLE>(handle)))

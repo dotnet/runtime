@@ -37,29 +37,63 @@ typedef struct _minipal_nonrecursive_mutex
     MINIPAL_NONRECURSIVE_MUTEX_IMPL _impl;
 } minipal_nonrecursive_mutex;
 
-// Initialize the mutex.
+/**
+ * Initialize the mutex.
+ *
+ * @param mt The mutex.
+ * @return true on success, false otherwise.
+ */
 bool minipal_mutex_init(minipal_mutex* mt) MINIPAL_MUTEX_NOEXCEPT;
 
-// Initialize a non-recursive mutex.
+/**
+ * Initialize a non-recursive mutex.
+ *
+ * @param mt The mutex.
+ * @return true on success, false otherwise.
+ */
 bool minipal_nonrecursive_mutex_init(minipal_nonrecursive_mutex* mt) MINIPAL_MUTEX_NOEXCEPT;
 
-// Destroy the mutex.
+/**
+ * Destroy the mutex.
+ *
+ * @param mt The mutex.
+ */
 void minipal_mutex_destroy(minipal_mutex* mt) MINIPAL_MUTEX_NOEXCEPT;
 
-// Destroy the non-recursive mutex.
+/**
+ * Destroy the non-recursive mutex.
+ *
+ * @param mt The mutex.
+ */
 void minipal_nonrecursive_mutex_destroy(minipal_nonrecursive_mutex* mt) MINIPAL_MUTEX_NOEXCEPT;
 
-// Enter the mutex. Blocks until the mutex can be entered.
-// Recursive enters are allowed.
+/**
+ * Enter the mutex. Blocks until the mutex can be entered.
+ * Recursive enters are allowed.
+ *
+ * @param mt The mutex.
+ */
 void minipal_mutex_enter(minipal_mutex* mt) MINIPAL_MUTEX_NOEXCEPT;
 
-// Enter the non-recursive mutex. Blocks until the mutex can be entered.
+/**
+ * Enter the non-recursive mutex. Blocks until the mutex can be entered.
+ *
+ * @param mt The mutex.
+ */
 void minipal_nonrecursive_mutex_enter(minipal_nonrecursive_mutex* mt) MINIPAL_MUTEX_NOEXCEPT;
 
-// Leave the mutex.
+/**
+ * Leave the mutex.
+ *
+ * @param mt The mutex.
+ */
 void minipal_mutex_leave(minipal_mutex* mt) MINIPAL_MUTEX_NOEXCEPT;
 
-// Leave the non-recursive mutex.
+/**
+ * Leave the non-recursive mutex.
+ *
+ * @param mt The mutex.
+ */
 void minipal_nonrecursive_mutex_leave(minipal_nonrecursive_mutex* mt) MINIPAL_MUTEX_NOEXCEPT;
 
 #ifdef __cplusplus

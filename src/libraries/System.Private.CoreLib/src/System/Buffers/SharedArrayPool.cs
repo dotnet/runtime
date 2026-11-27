@@ -27,8 +27,10 @@ namespace System.Buffers
         /// <summary>A per-thread array of arrays, to cache one array per array size per thread.</summary>
         [ThreadStatic]
         private static SharedArrayPoolThreadLocalArray[]? t_tlsBuckets;
+#if FEATURE_MULTITHREADING
         /// <summary>Used to keep track of all thread local buckets for trimming if needed.</summary>
         private readonly ConditionalWeakTable<SharedArrayPoolThreadLocalArray[], object?> _allTlsBuckets = new ConditionalWeakTable<SharedArrayPoolThreadLocalArray[], object?>();
+#endif
         /// <summary>
         /// An array of per-core partitions. The slots are lazily initialized to avoid creating
         /// lots of overhead for unused array sizes.
@@ -217,16 +219,28 @@ namespace System.Buffers
             {
                 if (!log.IsEnabled())
                 {
+#if FEATURE_MULTITHREADING
                     foreach (KeyValuePair<SharedArrayPoolThreadLocalArray[], object?> tlsBuckets in _allTlsBuckets)
                     {
                         Array.Clear(tlsBuckets.Key);
                     }
+#else
+                    if (t_tlsBuckets is SharedArrayPoolThreadLocalArray[] buckets)
+                    {
+                        Array.Clear(buckets);
+                    }
+#endif
                 }
                 else
                 {
+#if FEATURE_MULTITHREADING
                     foreach (KeyValuePair<SharedArrayPoolThreadLocalArray[], object?> tlsBuckets in _allTlsBuckets)
                     {
                         SharedArrayPoolThreadLocalArray[] buckets = tlsBuckets.Key;
+#else
+                    if (t_tlsBuckets is SharedArrayPoolThreadLocalArray[] buckets)
+                    {
+#endif
                         for (int i = 0; i < buckets.Length; i++)
                         {
                             if (Interlocked.Exchange(ref buckets[i].Array, null) is T[] buffer)
@@ -249,9 +263,14 @@ namespace System.Buffers
                     _ => 30_000,
                 };
 
+#if FEATURE_MULTITHREADING
                 foreach (KeyValuePair<SharedArrayPoolThreadLocalArray[], object?> tlsBuckets in _allTlsBuckets)
                 {
                     SharedArrayPoolThreadLocalArray[] buckets = tlsBuckets.Key;
+#else
+                if (t_tlsBuckets is SharedArrayPoolThreadLocalArray[] buckets)
+                {
+#endif
                     for (int i = 0; i < buckets.Length; i++)
                     {
                         if (buckets[i].Array is null)
@@ -290,7 +309,9 @@ namespace System.Buffers
             var tlsBuckets = new SharedArrayPoolThreadLocalArray[NumBuckets];
             t_tlsBuckets = tlsBuckets;
 
+#if FEATURE_MULTITHREADING
             _allTlsBuckets.Add(tlsBuckets, null);
+#endif
             if (!Interlocked.Exchange(ref _trimCallbackCreated, true))
             {
                 Gen2GcCallback.Register(s => ((SharedArrayPool<T>)s).Trim(), this);

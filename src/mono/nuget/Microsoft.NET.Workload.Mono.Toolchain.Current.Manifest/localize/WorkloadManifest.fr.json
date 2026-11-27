@@ -1,4 +1,0 @@
-﻿{
-  "workloads/wasm-tools/description": "Outils de build .NET WebAssembly",
-  "workloads/wasm-experimental/description": "Outils expérimentaux .NET WebAssembly"
-}

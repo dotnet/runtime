@@ -11,6 +11,7 @@
 
 #ifndef PRIMITIVES_H_
 #define PRIMITIVES_H_
+#include <minipal/instructioncache.h>
 
 #ifndef CORDB_ADDRESS_TYPE
 typedef const BYTE                  CORDB_ADDRESS_TYPE;
@@ -200,7 +201,7 @@ inline void CORDbgInsertBreakpoint(UNALIGNED CORDB_ADDRESS_TYPE *address)
     LIMITED_METHOD_CONTRACT;
 
     *((unsigned char*)address) = 0xCC; // int 3 (single byte patch)
-    FlushInstructionCache(GetCurrentProcess(), address, 1);
+    minipal_flush_instruction_cache(address, 1);
 
 }
 
@@ -212,7 +213,7 @@ inline void CORDbgSetInstruction(UNALIGNED CORDB_ADDRESS_TYPE* address,
 
     *((unsigned char*)address) =
         (unsigned char) instruction;    // setting one byte is important
-    FlushInstructionCache(GetCurrentProcess(), address, 1);
+    minipal_flush_instruction_cache(address, 1);
 
 }
 

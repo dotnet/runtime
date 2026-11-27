@@ -75,7 +75,13 @@ endif()
 
 if (CMAKE_CONFIGURATION_TYPES) # multi-configuration generator?
     set(CMAKE_CONFIGURATION_TYPES "Debug;Checked;Release;RelWithDebInfo" CACHE STRING "" FORCE)
-endif (CMAKE_CONFIGURATION_TYPES)
+else ()
+    # Set the values to display when interactively configuring CMAKE_BUILD_TYPE.
+    set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug;Checked;Release;RelWithDebInfo")
+endif ()
+
+# Use uppercase CMAKE_BUILD_TYPE for the string comparisons below
+string(TOUPPER "${CMAKE_BUILD_TYPE}" UPPERCASE_CMAKE_BUILD_TYPE)
 
 set(CMAKE_C_FLAGS_CHECKED "")
 set(CMAKE_CXX_FLAGS_CHECKED "")
@@ -185,12 +191,6 @@ if (MSVC)
   add_linker_flag(/OPT:ICF RELWITHDEBINFO)
 
 elseif (CLR_CMAKE_HOST_UNIX)
-  # Set the values to display when interactively configuring CMAKE_BUILD_TYPE
-  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "DEBUG;CHECKED;RELEASE;RELWITHDEBINFO")
-
-  # Use uppercase CMAKE_BUILD_TYPE for the string comparisons below
-  string(TOUPPER ${CMAKE_BUILD_TYPE} UPPERCASE_CMAKE_BUILD_TYPE)
-
   if(CLR_CMAKE_HOST_BROWSER OR CLR_CMAKE_HOST_WASI)
     # The emscripten build has additional warnings so -Werror breaks
     add_compile_options(-Wno-unused-parameter)
@@ -1136,7 +1136,6 @@ endif()
 if(CLR_CMAKE_ENABLE_CODE_COVERAGE)
 
   if(CLR_CMAKE_HOST_UNIX)
-    string(TOUPPER ${CMAKE_BUILD_TYPE} UPPERCASE_CMAKE_BUILD_TYPE)
     if(NOT UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG)
       message( WARNING "Code coverage results with an optimised (non-Debug) build may be misleading" )
     endif(NOT UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG)

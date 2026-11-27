@@ -16,7 +16,9 @@
 #include <functional>
 #include <memory>
 #include <minipal/utils.h>
+#include <minipal/environ.h>
 #include <minipal/utf8.h>
+#include <minipal/thread.h>
 
 // Class used to perform specific actions.
 class platform_specific_actions;
@@ -73,25 +75,25 @@ namespace pal
     inline bool is_cli_option(const char_t option_maybe) { return option_maybe == W('-') || option_maybe == W('/'); }
     inline string_t getenv(const char_t* var)
     {
-        DWORD needed = ::GetEnvironmentVariableW(var, nullptr, 0);
+        uint32_t needed = minipal_environ_get_variable_u16((const CHAR16_T*)var, nullptr, 0);
         if (needed == 0)
             return {};
 
         malloc_ptr<char_t> buffer{ (char_t*)::malloc(needed * sizeof(char_t)) };
         assert(buffer != nullptr);
-        DWORD wrote = ::GetEnvironmentVariableW(var, buffer.get(), needed);
+        uint32_t wrote = minipal_environ_get_variable_u16((const CHAR16_T*)var, (CHAR16_T*)buffer.get(), needed);
         assert(wrote < needed);
         return { buffer.get() };
     }
     inline string_utf8_t getenvA(const char* var)
     {
-        DWORD needed = ::GetEnvironmentVariableA(var, nullptr, 0);
+        uint32_t needed = minipal_environ_get_variable(var, nullptr, 0);
         if (needed == 0)
             return {};
 
         malloc_ptr<char> buffer{ (char*)::malloc(needed * sizeof(char)) };
         assert(buffer != nullptr);
-        DWORD wrote = ::GetEnvironmentVariableA(var, buffer.get(), needed);
+        uint32_t wrote = minipal_environ_get_variable(var, buffer.get(), needed);
         assert(wrote < needed);
         return { buffer.get() };
     }
@@ -492,7 +494,7 @@ namespace pal
 
     inline uint32_t get_process_id()
     {
-        return (uint32_t)getpid();
+        return minipal_get_current_process_id();
     }
 
     inline bool does_file_exist(const char_t* file_path)

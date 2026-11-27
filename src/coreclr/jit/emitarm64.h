@@ -1528,8 +1528,9 @@ void emitIns_R_R(instruction     ins,
                  emitAttr        attr,
                  regNumber       reg1,
                  regNumber       reg2,
-                 insOpts         opt  = INS_OPTS_NONE,
-                 insScalableOpts sopt = INS_SCALABLE_OPTS_NONE);
+                 insOpts         opt         = INS_OPTS_NONE,
+                 insScalableOpts sopt        = INS_SCALABLE_OPTS_NONE,
+                 bool            canPeephole = true);
 
 void emitInsSve_R_R(instruction     ins,
                     emitAttr        attr,
@@ -1559,8 +1560,9 @@ void emitIns_R_R_I(instruction     ins,
                    regNumber       reg1,
                    regNumber       reg2,
                    ssize_t         imm,
-                   insOpts         opt  = INS_OPTS_NONE,
-                   insScalableOpts sopt = INS_SCALABLE_OPTS_NONE);
+                   insOpts         opt         = INS_OPTS_NONE,
+                   insScalableOpts sopt        = INS_SCALABLE_OPTS_NONE,
+                   bool            canPeephole = true);
 
 void emitInsSve_R_R_I(instruction     ins,
                       emitAttr        attr,
@@ -1774,7 +1776,7 @@ void emitIns_C(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fdlHnd, int 
 
 void emitIns_S(instruction ins, emitAttr attr, int varx, int offs);
 
-void emitIns_S_R(instruction ins, emitAttr attr, regNumber ireg, int varx, int offs);
+void emitIns_S_R(instruction ins, emitAttr attr, regNumber ireg, int varx, int offs, bool canPeephole = true);
 
 void emitIns_S_S_R_R(
     instruction ins, emitAttr attr, emitAttr attr2, regNumber ireg, regNumber ireg2, int varx, int offs);
@@ -1792,7 +1794,7 @@ void emitIns_R_R_R_I_LdStPair(instruction ins,
                               int         offs2 = -1 DEBUG_ARG(unsigned var1RefsOffs = BAD_IL_OFFSET)
                                               DEBUG_ARG(unsigned var2RefsOffs = BAD_IL_OFFSET));
 
-void emitIns_R_S(instruction ins, emitAttr attr, regNumber ireg, int varx, int offs);
+void emitIns_R_S(instruction ins, emitAttr attr, regNumber ireg, int varx, int offs, bool canPeephole = true);
 
 void emitIns_R_R_S_S(
     instruction ins, emitAttr attr, emitAttr attr2, regNumber ireg, regNumber ireg2, int varx, int offs);

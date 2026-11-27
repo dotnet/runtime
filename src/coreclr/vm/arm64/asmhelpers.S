@@ -150,7 +150,11 @@ NESTED_ENTRY OnHijackTripThread, _TEXT, NoHandler
     ldr x16, [sp, #192]
     EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr,   208
     cbz x16, LOCAL_LABEL(HijackReturn)
-    autia lr, x16
+    // Code compiled with return address signing can run on hardware without pointer authentication,
+    // where autia is undefined. autia1716 is in the hint space, so it is a NOP there.
+    mov x17, lr
+    autia1716
+    mov lr, x17
 LOCAL_LABEL(HijackReturn):
     EPILOG_RETURN
 NESTED_END OnHijackTripThread, _TEXT

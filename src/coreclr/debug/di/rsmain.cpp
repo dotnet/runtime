@@ -8,6 +8,7 @@
 //*****************************************************************************
 
 #include "stdafx.h"
+#include <minipal/thread.h>
 #include "primitives.h"
 #include "safewrap.h"
 
@@ -60,7 +61,7 @@ DbgRSThread::DbgRSThread()
 
     // Initialize Identity info
     m_Cookie = COOKIE_VALUE;
-    m_tid = GetCurrentThreadId();
+    m_tid = minipal_get_current_thread_id();
 }
 
 // NotifyTakeLock & NotifyReleaseLock are called by RSLock to update the per-thread locking context.
@@ -1028,7 +1029,7 @@ void CheckMemLeaks()
 // any resources that we're about to release.
 HRESULT Cordb::Terminate()
 {
-    LOG((LF_CORDB, LL_INFO10000, "[%x] Terminating Cordb\n", GetCurrentThreadId()));
+    LOG((LF_CORDB, LL_INFO10000, "[%zx] Terminating Cordb\n", minipal_get_current_thread_id()));
 
     if (!m_initialized)
         return E_FAIL;

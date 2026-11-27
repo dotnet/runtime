@@ -1280,14 +1280,16 @@ bool Compiler::optTryUnrollLoop(FlowGraphNaturalLoop* loop, bool* changedIR)
     // FlowGraphNaturalLoop::AnalyzeIteration ensures it is an exit but we must
     // make sure it is a backedge so that we can legally redirect it to the
     // next iteration. If it isn't a backedge then redirecting it would skip
-    // all code between the loop test and the backedge.
-    assert(loop->ContainsBlock(iterInfo.TestBlock->GetTrueTarget()) !=
-           loop->ContainsBlock(iterInfo.TestBlock->GetFalseTarget()));
+    // all code between the loop test and the backedge. Note that both of its
+    // successors may be outside the loop (e.g. when the only path back to the
+    // header is through a handler).
     if (!iterInfo.TestBlock->TrueTargetIs(loop->GetHeader()) && !iterInfo.TestBlock->FalseTargetIs(loop->GetHeader()))
     {
         JITDUMP("Failed to unroll loop " FMT_LP ": test block is not a backedge\n", loop->GetIndex());
         return false;
     }
+    assert(loop->ContainsBlock(iterInfo.TestBlock->GetTrueTarget()) !=
+           loop->ContainsBlock(iterInfo.TestBlock->GetFalseTarget()));
 
     // Get the loop data:
     //  - initial constant
@@ -5007,6 +5009,11 @@ bool Compiler::optVNIsLoopInvariant(ValueNum vn, FlowGraphNaturalLoop* loop, VNS
                 res = !loop->ContainsLoop(otherLoop);
             }
         }
+        else if (funcApp.FuncIs(VNF_ByrefExposedStore))
+        {
+            // The opaque memory value identifies the loop where the store happens.
+            res = optVNIsLoopInvariant(funcApp.GetArg(3), loop, loopVnInvariantCache);
+        }
         else
         {
             for (unsigned i = 0; i < funcApp.GetArity(); i++)
@@ -5736,9 +5743,16 @@ void Compiler::optRemoveRedundantZeroInits()
 
                 switch (tree->gtOper)
                 {
+                    case GT_LCL_ADDR:
+                        if ((tree->gtFlags & GTF_VAR_DEF) != 0)
+                        {
+                            // Counted as a definition of the node that defines the local.
+                            break;
+                        }
+                        FALLTHROUGH;
+
                     case GT_LCL_VAR:
                     case GT_LCL_FLD:
-                    case GT_LCL_ADDR:
                     case GT_STORE_LCL_VAR:
                     case GT_STORE_LCL_FLD:
                     {
@@ -5803,8 +5817,7 @@ void Compiler::optRemoveRedundantZeroInits()
                         }
 
                         // TODO-Cleanup: there is potential for cleaning this algorithm up by deleting
-                        // double lookups of various reference counts. This is complicated somewhat by
-                        // the present of LCL_ADDR (GTF_CALL_M_RETBUFFARG_LCLOPT) definitions.
+                        // double lookups of various reference counts.
                         pRefCount = refCounts.LookupPointer(lclNum);
                         if (*pRefCount != 1)
                         {
@@ -5902,6 +5915,35 @@ void Compiler::optRemoveRedundantZeroInits()
                         break;
                     }
                     default:
+                        // Count definitions made by other nodes so that later stores to the same locals are
+                        // not treated as their first reference.
+                        tree->VisitLogicalLocalDefs(this, [&](const auto& def) {
+                            unsigned  lclNum    = def.GetLclNum();
+                            unsigned* pRefCount = refCounts.LookupPointer(lclNum);
+                            if (pRefCount != nullptr)
+                            {
+                                *pRefCount = (*pRefCount) + 1;
+                            }
+                            else
+                            {
+                                refCounts.Set(lclNum, 1);
+                            }
+
+                            if (lvaGetDesc(lclNum)->lvTracked)
+                            {
+                                unsigned* pDefsCount = defsInBlock.LookupPointer(lclNum);
+                                if (pDefsCount != nullptr)
+                                {
+                                    *pDefsCount = (*pDefsCount) + 1;
+                                }
+                                else
+                                {
+                                    defsInBlock.Set(lclNum, 1);
+                                }
+                            }
+
+                            return GenTree::VisitResult::Continue;
+                        });
                         break;
                 }
             }

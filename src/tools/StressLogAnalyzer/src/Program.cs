@@ -471,7 +471,7 @@ public static class Program
         return filter;
     }
 
-    private static unsafe (Func<Target> targetFactory, StressLogHeader.ModuleTable table, TargetPointer logs) CreateTarget(SafeMemoryMappedViewHandle handle)
+    internal static unsafe (Func<Target> targetFactory, StressLogHeader.ModuleTable table, TargetPointer logs) CreateTarget(SafeMemoryMappedViewHandle handle)
     {
         byte* buffer = null;
         handle.AcquirePointer(ref buffer);
@@ -531,7 +531,7 @@ public static class Program
     private static ContractDescriptorParser.ContractDescriptor BaseContractDescriptor = ContractDescriptorParser.ParseCompact(
             """"
             {
-                "version": 0,
+                "version": 2,
                 "baseline": "empty",
                 "types": {
                     "StressLog": {
@@ -580,8 +580,9 @@ public static class Program
                 "globals": {
                     "StressLogEnabled": [ "0x1", "uint8" ],
                     "StressLogHasModuleTable": [ "0x1", "uint8" ],
-                    "StressLogMaxModules": [ "0x5", "uint64" ],
+                    "StressLogMaxModules": [ "0x5", "nuint" ],
                     "StressLogChunkSize": [ "0x8000", "uint32" ],
+                    "StressLogValidChunkSig": [ "0xCFCFCFCF", "uint32" ],
                     "StressLogMaxMessageSize": [ "0x208", "uint64" ],
                     "StressLogModuleTable": [[ 1 ], "pointer" ],
                 },

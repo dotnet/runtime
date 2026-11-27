@@ -753,6 +753,13 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
     GenTreeIntCon* offsetNode = addr->AsOp()->gtGetOp2()->AsIntCon();
     ssize_t        offset     = offsetNode->IconValue();
 
+    // A constant that needs a relocation, such as a frozen object's handle, cannot be folded into the
+    // address mode: the offset is emitted as a plain immediate, without the relocation.
+    if (offsetNode->ImmedValNeedsReloc(m_compiler))
+    {
+        return;
+    }
+
 #ifdef TARGET_ARM
     // All integer load/store instructions on Arm support offsets in range -255..255.
     // Of course, this is a rather conservative check.
@@ -1589,7 +1596,9 @@ bool Lowering::TryLowerSvePredicateBitwiseClear(GenTreeHWIntrinsic* node, NamedI
         }
     }
 
-    if ((notNode != nullptr) && op1->IsSveMaskOperand() && op2->IsSveMaskOperand())
+    // Vector zero operands are SVE mask operands even when SVE is not available.
+    if ((notNode != nullptr) && op1->CanBeSveMask() && op2->CanBeSveMask() &&
+        m_compiler->compOpportunisticallyDependsOn(InstructionSet_Sve))
     {
         // Reinterpreting a mask vector can change its element width. Removing the
         // conversion in that case would not preserve the replicated vector bits.

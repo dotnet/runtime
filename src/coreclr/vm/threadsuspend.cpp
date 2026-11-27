@@ -8,6 +8,7 @@
 // (class Thread, class ThreadStore, etc.). They should be eventually refactored into class ThreadSuspend.
 
 #include "common.h"
+#include <minipal/instructioncache.h>
 #include "CLREventBase.h"
 
 #include "threadsuspend.h"
@@ -1083,7 +1084,7 @@ void Thread::SetAbortEndTime(ULONGLONG endTime, BOOL fRudeAbort)
     LIMITED_METHOD_CONTRACT;
 
     {
-        AbortRequestLockHolder lh(this);
+        AbortRequestLockHolder lh = TakeAbortRequestLock();
         if (fRudeAbort)
         {
             if (endTime < m_RudeAbortEndTime)
@@ -1127,7 +1128,7 @@ Thread::UserAbort(EEPolicy::ThreadAbortTypes abortType, DWORD timeout)
 
     BOOL fHoldingThreadStoreLock = ThreadStore::HoldingThreadStore();
 
-    AbortControlHolder AbortController(this);
+    AbortControlHolder AbortController = TakeAbortControl();
 
     // Swap in timeout
     if (timeout != INFINITE)
@@ -1637,7 +1638,7 @@ void Thread::MarkThreadForAbort(EEPolicy::ThreadAbortTypes abortType)
     }
     CONTRACTL_END;
 
-    AbortRequestLockHolder lh(this);
+    AbortRequestLockHolder lh = TakeAbortRequestLock();
 
 #ifdef _DEBUG
     if (abortType == EEPolicy::TA_Rude)
@@ -1724,7 +1725,7 @@ void Thread::UnmarkThreadForAbort(EEPolicy::ThreadAbortTypes abortType /* = EEPo
     }
     CONTRACTL_END;
 
-    AbortRequestLockHolder lh(this);
+    AbortRequestLockHolder lh = TakeAbortRequestLock();
 
     if (m_AbortType > (DWORD)abortType)
     {
@@ -3291,7 +3292,7 @@ void ThreadSuspend::SuspendAllThreads()
         // We will not do this often though, since this can introduce arbitrary delays.
         if (usecsSinceYield > 1000)
         {
-            SwitchToThread();
+            minipal_switch_to_thread(0);
             usecsSinceYield = 0;
         }
     }
@@ -3485,7 +3486,7 @@ void Thread::CommitGCStressInstructionUpdate()
 
 #endif
 
-        FlushInstructionCache(GetCurrentProcess(), (LPCVOID)pbDestCode, 4);
+        minipal_flush_instruction_cache((LPCVOID)pbDestCode, 4);
     }
 }
 

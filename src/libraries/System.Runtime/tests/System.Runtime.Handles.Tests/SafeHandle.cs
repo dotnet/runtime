@@ -109,7 +109,7 @@ public partial class SafeHandleTests
     }
 
     [DllImport("Kernel32", SetLastError = true)]
-    private static extern void SetLastError(int error);
+    private static unsafe extern void SetLastError(int error);
 
     private class LastErrorSafeHandle : SafeHandle
     {
@@ -122,7 +122,12 @@ public partial class SafeHandleTests
 
         protected override bool ReleaseHandle()
         {
-            SetLastError(-1);
+            // SAFETY: To be audited
+            unsafe
+            {
+                SetLastError(-1);
+            }
+
             return true;
         }
     }
@@ -137,7 +142,12 @@ public partial class SafeHandleTests
         handle.DangerousAddRef(ref success);
         handle.Dispose();
 
-        SetLastError(42);
+        // SAFETY: To be audited
+        unsafe
+        {
+            SetLastError(42);
+        }
+
         handle.DangerousRelease();
 
         int error = Marshal.GetLastPInvokeError();

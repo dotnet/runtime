@@ -47,6 +47,36 @@ namespace Microsoft.DotNet.ILAssembler.Tests
 
 
         [Fact]
+        public void EmptyParenthesesAreAcceptedWithoutSpace()
+        {
+            // "()" is two tokens: empty arrays in verbal custom attributes, an empty switch and empty signatures.
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly Test { }
+                .class public auto ansi A extends [mscorlib]System.Attribute
+                {
+                    .method public specialname rtspecialname instance void .ctor(int32[] a, string[] b) cil managed { ret }
+                }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .custom instance void A::.ctor(int32[], string[]) = { int32[0]() string[-1]() }
+                    .method public static void M() cil managed
+                    {
+                        ldc.i4.0
+                        switch ()
+                        call void Test::M()
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var ca = reader.GetCustomAttribute(reader.GetCustomAttributes(MetadataTokens.TypeDefinitionHandle(3)).Single());
+            Assert.Equal(new byte[] { 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00 }, reader.GetBlobBytes(ca.Value));
+        }
+
+        [Fact]
         public void HexByteBlob_DigitLetterPairsCorrect()
         {
             string source = """
@@ -529,11 +559,48 @@ namespace Microsoft.DotNet.ILAssembler.Tests
         }
 
         [Theory]
-        [InlineData("", "PublicKeyToken=null")]
-        [InlineData(".publickeytoken = (B7 7A 5C 56 19 34 E0 89)", "PublicKeyToken=b77a5c561934e089")]
-        [InlineData(".publickey = (01 02 03 04)", "PublicKey=01020304")]
+        [InlineData(".class public '<>Mangled' { }", "'<>Mangled'", "<>Mangled")]
+        [InlineData(".class public Contoso.Target { }", "Contoso.Target", "Contoso.Target")]
+        [InlineData(".class public Outer { .class nested public Inner { } }", "Outer/Inner", "Outer+Inner")]
+        [InlineData(".class public Contoso.Outer { .class nested public Inner { } }", "Contoso.Outer/Inner", "Contoso.Outer+Inner")]
+        public void CustomAttribute_DebuggerTypeProxy_EmitsReflectionTypeName(
+            string declaration, string typeName, string expectedName)
+        {
+            string source = $$"""
+                .assembly extern mscorlib { }
+                .assembly test { }
+                {{declaration}}
+                .class public Test extends [mscorlib]System.Object
+                {
+                    .custom instance void [mscorlib]System.Diagnostics.DebuggerTypeProxyAttribute::.ctor(class [mscorlib]System.Type) = {
+                        type({{typeName}})
+                    }
+                }
+                """;
+
+            using PEReader pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            MetadataReader reader = pe.GetMetadataReader();
+            TypeDefinitionHandle testType = reader.TypeDefinitions
+                .Single(handle => reader.GetString(reader.GetTypeDefinition(handle).Name) == "Test");
+            CustomAttribute attribute = reader.GetCustomAttribute(Assert.Single(reader.GetCustomAttributes(testType)));
+            BlobReader blob = reader.GetBlobReader(attribute.Value);
+
+            Assert.Equal(1, blob.ReadUInt16());
+            Assert.Equal(expectedName, blob.ReadSerializedString());
+            Assert.Equal(0, blob.ReadUInt16());
+            Assert.Equal(0, blob.RemainingBytes);
+            Assert.Equal(expectedName, Assert.Single(attribute.DecodeValue(DocumentCompilerTestHelpers.Decoder).FixedArguments).Value);
+        }
+
+        [Theory]
+        [InlineData("Contoso.ExternalType", "", "PublicKeyToken=null")]
+        [InlineData("Contoso.ExternalType", ".publickeytoken = (B7 7A 5C 56 19 34 E0 89)", "PublicKeyToken=b77a5c561934e089")]
+        [InlineData("Contoso.ExternalType", ".publickey = (01 02 03 04)", "PublicKey=01020304")]
+        [InlineData("'<>Mangled'", "", "PublicKeyToken=null")]
+        [InlineData("'<>Mangled'", ".publickeytoken = (B7 7A 5C 56 19 34 E0 89)", "PublicKeyToken=b77a5c561934e089")]
+        [InlineData("'<>Mangled'", ".publickey = (01 02 03 04)", "PublicKey=01020304")]
         public void CustomAttribute_VerbalTypeArgumentFromUnversionedAssemblyReference_EmitsAssemblyQualifiedTypeName(
-            string keyDeclaration, string expectedKey)
+            string typeName, string keyDeclaration, string expectedKey)
         {
             string source = $$"""
                 .assembly extern mscorlib { }
@@ -551,7 +618,7 @@ namespace Microsoft.DotNet.ILAssembler.Tests
                 .class public auto ansi Test extends [mscorlib]System.Object
                 {
                     .custom instance void TypeAttribute::.ctor(class [mscorlib]System.Type) = {
-                        type([External.Assembly]Contoso.ExternalType)
+                        type([External.Assembly]{{typeName}})
                     }
                 }
                 """;
@@ -571,7 +638,7 @@ namespace Microsoft.DotNet.ILAssembler.Tests
             var argument = Assert.Single(value.FixedArguments);
             Assert.Equal("System.Type", argument.Type);
             Assert.Equal(
-                "Contoso.ExternalType, External.Assembly, " + expectedKey,
+                $"{typeName.Trim('\'')}, External.Assembly, {expectedKey}",
                 argument.Value);
             Assert.Empty(value.NamedArguments);
         }
@@ -1167,6 +1234,27 @@ namespace Microsoft.DotNet.ILAssembler.Tests
 
             Assert.Equal(expected, testType.Attributes & expected);
             Assert.Empty(testType.GetCustomAttributes());
+        }
+
+        [Theory]
+        [InlineData("mdtoken(0x02000002)")]
+        [InlineData("method mdtoken(0x02000002)")]
+        [InlineData("method NumericOwner")]
+        public void PseudoCustomAttribute_NumericTypeOwner_LowersToFlag(string owner)
+        {
+            string source = $$"""
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test extends [mscorlib]System.Object { }
+                .typedef method mdtoken(0x02000002) as NumericOwner
+                .custom ({{owner}}) instance void [mscorlib]System.SerializableAttribute::.ctor() = ( 01 00 00 00 )
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options { PseudoAttributes = true });
+            TypeDefinition type = GetTestType(pe.GetMetadataReader());
+
+            Assert.Equal(TypeAttributes.Serializable, type.Attributes & TypeAttributes.Serializable);
+            Assert.Empty(type.GetCustomAttributes());
         }
 
         [Theory]
