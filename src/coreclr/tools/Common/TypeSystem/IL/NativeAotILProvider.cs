@@ -369,9 +369,7 @@ namespace Internal.IL
                 if (wrappedIL == null)
                     return null;
 
-                return wrappedIL is IEcmaMethodIL ecmaIL
-                    ? new EcmaAsyncMethodIL(asyncVariantImpl, ecmaIL)
-                    : new AsyncMethodIL(asyncVariantImpl, wrappedIL);
+                return AsyncMethodIL.Create(asyncVariantImpl, wrappedIL);
             }
             else
             {

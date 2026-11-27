@@ -259,9 +259,7 @@ namespace Internal.IL
                 if (asyncTargetMethodIL == null)
                     return null;
 
-                return asyncTargetMethodIL is IEcmaMethodIL ecmaIL
-                    ? new EcmaAsyncMethodIL(amv, ecmaIL)
-                    : new AsyncMethodIL(amv, asyncTargetMethodIL);
+                return AsyncMethodIL.Create(amv, asyncTargetMethodIL);
             }
             else if (method is MethodForInstantiatedType || method is InstantiatedMethod)
             {
