@@ -653,15 +653,25 @@ emit_sri_vector128 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature 
 			else if (arg_size == 4) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I4_CREATE_SCALAR;
 			else if (arg_size == 8) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I8_CREATE_SCALAR;
 			break;
-		case SN_Equals:
-			atype = resolve_native_size (atype);
+		case SN_Equals: {
+			// Vector.Equals (Vector<float>, Vector<float>) returns Vector<int> (and the double overload
+			// returns Vector<long>), so the comparison must use the operand element type, not the return type.
+			MonoTypeEnum op_type = atype;
+			if (csignature->param_count == 2 && csignature->params [0]->type == MONO_TYPE_GENERICINST) {
+				MonoClass *op_klass = mono_class_from_mono_type_internal (csignature->params [0]);
+				if (!mono_class_is_ginst (op_klass))
+					return FALSE;
+				op_type = mono_class_get_context (op_klass)->class_inst->type_argv [0]->type;
+			}
+			op_type = resolve_native_size (op_type);
 			simd_opcode = MINT_SIMD_INTRINS_P_PP;
-			if (atype == MONO_TYPE_I1 || atype == MONO_TYPE_U1) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I1_EQUALS;
-			else if (atype == MONO_TYPE_I2 || atype == MONO_TYPE_U2) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I2_EQUALS;
-			else if (atype == MONO_TYPE_I4 || atype == MONO_TYPE_U4) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I4_EQUALS;
-			else if (atype == MONO_TYPE_I8 || atype == MONO_TYPE_U8) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I8_EQUALS;
-			else if (atype == MONO_TYPE_R4) simd_intrins = INTERP_SIMD_INTRINSIC_V128_R4_EQUALS;
+			if (op_type == MONO_TYPE_I1 || op_type == MONO_TYPE_U1) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I1_EQUALS;
+			else if (op_type == MONO_TYPE_I2 || op_type == MONO_TYPE_U2) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I2_EQUALS;
+			else if (op_type == MONO_TYPE_I4 || op_type == MONO_TYPE_U4) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I4_EQUALS;
+			else if (op_type == MONO_TYPE_I8 || op_type == MONO_TYPE_U8) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I8_EQUALS;
+			else if (op_type == MONO_TYPE_R4) simd_intrins = INTERP_SIMD_INTRINSIC_V128_R4_EQUALS;
 			break;
+		}
 		case SN_EqualsAny:
 			atype = resolve_native_size (atype);
 			simd_opcode = MINT_SIMD_INTRINS_P_PP;

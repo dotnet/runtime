@@ -2419,6 +2419,20 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        public void VectorEqualsSingleSignedZeroAndNaN()
+        {
+            Assert.Equal(Vector<int>.AllBitsSet, Vector.Equals(new Vector<float>(0.0f), new Vector<float>(-0.0f)));
+            Assert.Equal(Vector<int>.Zero, Vector.Equals(new Vector<float>(float.NaN), new Vector<float>(float.NaN)));
+        }
+
+        [Fact]
+        public void VectorEqualsDoubleSignedZeroAndNaN()
+        {
+            Assert.Equal(Vector<long>.AllBitsSet, Vector.Equals(new Vector<double>(0.0), new Vector<double>(-0.0)));
+            Assert.Equal(Vector<long>.Zero, Vector.Equals(new Vector<double>(double.NaN), new Vector<double>(double.NaN)));
+        }
+
+        [Fact]
         public void VectorEqualsAnyByte() { TestVectorEqualsAny<byte>(); }
         [Fact]
         public void VectorEqualsAnySByte() { TestVectorEqualsAny<sbyte>(); }
