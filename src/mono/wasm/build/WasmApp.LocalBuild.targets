@@ -21,6 +21,7 @@
 -->
 <Project>
   <Import Project="$(_WasmTargetsDir)$(_TargetsBaseName).targets" />
+  <Import Project="$(_WasmTargetsDir)BrowserWasmApp.JSExport.targets" Condition="'$(RuntimeIdentifier)' == 'browser-wasm' and '$(_BrowserWasmAppJSExportTargetsImported)' != 'true'" />
 
   <UsingTask TaskName="MonoAOTCompiler" AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" TaskFactory="TaskHostFactory" />
   <UsingTask TaskName="ILStrip" AssemblyFile="$(MonoTargetsTasksAssemblyPath)" TaskFactory="TaskHostFactory" />

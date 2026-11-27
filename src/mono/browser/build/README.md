@@ -2,6 +2,43 @@
 
 This usually consists of taking the built assemblies, and related files, and generating an app bundle.
 
+Runtime discovery reads only the requested assembly's local type map, including
+its ReadyToRun map when available. It does not follow assembly-target edges or
+require unrelated lazy assemblies to have been downloaded. For trimmed publishes,
+see [rooting JSExport type maps](../../wasm/features.md#rooting-jsexport-type-maps).
+
+The Browser build supplies an external linker descriptor for the native
+`BindAssemblyExports` callback. This is separate from application type-map roots:
+the interop assembly might not have any managed callers to activate an embedded
+descriptor.
+
+One generated provider per assembly uses the assembly name as its type-map key.
+Its `ReadOnlySpan<string> GetExportNames()` catalog supplies fully qualified, hash-qualified names without
+enumerating the type map. Discovery activates the provider and publishes deferred
+functions without binding methods. The generated catalog method registers signature
+metadata through an internal unsafe-accessor bridge. JavaScript copies that metadata
+before the temporary native buffers are freed and creates marshalers on first use.
+Managed discovery forwards the catalog strings
+unchanged to JavaScript, which derives the export paths, hashes, method IDs and aliases
+using the CoreCLR interop parser. The first overload in catalog order supplies
+the plain-name alias. Each pending invocation handle identifies the provider and
+its catalog index. CoreCLR invokes that provider's `Bind(string methodId)`
+inside the first actual managed invocation, preserving
+synchronous return values and stable function identities without JavaScript proxies.
+Method IDs are invariant decimal catalog indexes, local to the generated assembly
+build rather than stable names or signature hashes. A generated string switch binds
+only the selected method. No managed preflight call or binder delegate is required.
+Async exports use their normal invocation path.
+Legacy assemblies retain their existing registration path.
+Assemblies without a provider or legacy initializer return empty exports on CoreCLR.
+Failed or reentrant binding releases unconsumed argument payloads without
+calling the generated wrapper; subsequent invocations can retry binding.
+Private and protected nested exports use managed unsafe accessors to their generated
+wrappers when the declaring type is a reference type. Inaccessible value types and
+generic or file-local containing types use the diagnostic and reflection fallback.
+Exports in error-obsolete types also avoid direct references to their declaring
+type, using an unsafe accessor or reflection as appropriate.
+
 Wasm app build can run in two scenarios:
 
 1. After build, eg. when running the app in VS, or `dotnet build foo.csproj`

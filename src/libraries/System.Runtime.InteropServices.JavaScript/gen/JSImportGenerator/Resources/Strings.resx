@@ -229,4 +229,13 @@
   <data name="JSExportRequiresAllowUnsafeBlocksTitle" xml:space="preserve">
     <value>JSExportAttribute requires unsafe code. For more information see https://aka.ms/dotnet-wasm-jsinterop</value>
   </data>
+  <data name="JSExportInaccessibleNestedTypeDescription" xml:space="preserve">
+    <value>The generated registration cannot directly bind this export because of its containing type, so the export is bound using reflection, which is not trimming friendly.</value>
+  </data>
+  <data name="JSExportInaccessibleNestedTypeMessage" xml:space="preserve">
+    <value>'{0}' is bound using reflection. To avoid this, use a non-generic, non-file-local containing type and make it accessible or use a reference type.</value>
+  </data>
+  <data name="JSExportInaccessibleNestedTypeTitle" xml:space="preserve">
+    <value>JSExport is bound using reflection because of its containing type</value>
+  </data>
 </root>

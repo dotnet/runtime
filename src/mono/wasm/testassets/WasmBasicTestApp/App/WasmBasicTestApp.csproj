@@ -15,6 +15,8 @@
     <LazyAssemblyExtension Condition="'$(LazyLoadingTestExtension)' == 'wasm'">.wasm</LazyAssemblyExtension>
     <LazyAssemblyExtension Condition="'$(LazyLoadingTestExtension)' == 'NoExtension'"></LazyAssemblyExtension>
     <LazyAssemblyExtension Condition="'$(LazyLoadingTestExtension)' == ''">$(WasmAssemblyExtension)</LazyAssemblyExtension>
+    <!-- Keep the LazyLibrary JSExport map without loading it during app export discovery. https://github.com/dotnet/runtime/issues/138321 -->
+    <_ExtraTrimmerArgs Condition="'$(TestLazyLoading)' == 'true'">$(_ExtraTrimmerArgs) --action copy LazyLibrary</_ExtraTrimmerArgs>
   </PropertyGroup>
 
   <ItemGroup>

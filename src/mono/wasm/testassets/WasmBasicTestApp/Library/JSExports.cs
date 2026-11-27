@@ -1,0 +1,45 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System.Runtime.InteropServices.JavaScript;
+using System.Runtime.Versioning;
+using System.Threading.Tasks;
+
+[assembly: SupportedOSPlatform("browser")]
+
+namespace AssemblyProviderTest;
+
+public static partial class Exports
+{
+    [JSExport]
+    public static int Add(int left, int right) => left + right;
+
+    [JSExport]
+    public static int Add(int value) => value + 1;
+
+    [JSExport]
+    public static string Echo(string value) => value;
+
+    [JSExport]
+    public static async Task<int> AddAsync(int left, int right)
+    {
+        await Task.Yield();
+        return left + right;
+    }
+
+}
+
+public partial class InaccessibleExports
+{
+    private static partial class Private
+    {
+        [JSExport]
+        public static int Add(int left, int right) => left + right;
+    }
+
+    protected static partial class Protected
+    {
+        [JSExport]
+        public static int Negate(int value) => -value;
+    }
+}

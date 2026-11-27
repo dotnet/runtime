@@ -3,6 +3,7 @@
 
 import { dotnet, exit } from './_framework/dotnet.js'
 import { saveProfile } from './profiler.js'
+import { runJSExportTest } from './js-export-tests.js'
 
 // Read test case from query string
 const params = new URLSearchParams(location.search);
@@ -385,6 +386,11 @@ const assemblyExtension = Object.keys(config.resources.coreAssembly)[0].endsWith
 // Run the test case
 try {
     switch (testCase) {
+        case "DeferredJSExports":
+        case "LegacyJSExports": {
+            await runJSExportTest(testCase, getAssemblyExports);
+            break;
+        }
         case "ConfigLoadedCallbacks":
             testOutput("ConfigLoaded: ready");
             exit(0);

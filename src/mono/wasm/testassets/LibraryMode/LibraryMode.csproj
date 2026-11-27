@@ -4,6 +4,7 @@
     <TargetFramework>net12.0</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <OutputType>Library</OutputType>
+    <TypeMapEntryAssembly>$(MSBuildProjectName)</TypeMapEntryAssembly>
     <OverrideHtmlAssetPlaceholders>true</OverrideHtmlAssetPlaceholders>
   </PropertyGroup>
 </Project>

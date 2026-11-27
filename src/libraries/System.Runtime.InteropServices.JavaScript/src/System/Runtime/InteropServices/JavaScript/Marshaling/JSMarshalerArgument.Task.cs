@@ -33,6 +33,29 @@ namespace System.Runtime.InteropServices.JavaScript
         [EditorBrowsableAttribute(EditorBrowsableState.Never)]
         public delegate void ArgumentToJSCallback<T>(ref JSMarshalerArgument arg, T value);
 
+        private unsafe void ReleaseJSExportPromise()
+        {
+            JSProxyContext context = ToManagedContext;
+#if FEATURE_WASM_MANAGED_THREADS
+            lock (context)
+#endif
+            {
+                PromiseHolder holder = context.GetPromiseHolder(slot.GCHandle);
+                // Drain the completion payload without creating a Task no caller can observe.
+                holder.Callback = static arguments =>
+                {
+                    if (arguments != null)
+                    {
+                        int payloadIndex = arguments[3].slot.Type == MarshalerType.None ? 4 : 3;
+                        arguments[payloadIndex].ReleaseJSExportArgument();
+                    }
+                };
+#if FEATURE_WASM_MANAGED_THREADS
+                holder.CallbackReady?.Set();
+#endif
+            }
+        }
+
         /// <summary>
         /// Implementation of the argument marshaling.
         /// This API is used by JSImport code generator and should not be used by developers in source code.

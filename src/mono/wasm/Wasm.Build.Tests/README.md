@@ -124,9 +124,52 @@ Managed JSON parsing remains the consumer's responsibility.
 
 ## How to add tests
 
+`WasmTemplateTests.LibraryMode` verifies build and publish for libraries with and
+without the WebAssembly SDK. The fixture explicitly selects its own assembly
+as the linker type-map root so CoreCLR can invoke its JSExport after a trimmed
+publish without a managed entry point.
+
 Blazor specific tests should be located in `Blazor` directory. New test classes are picked up automatically - the per-class Helix work item list is generated from the built test assembly, so there is no list to update. Annotate classes and test methods that only apply to one runtime with `[TestCategory("mono")]` or `[TestCategory("coreclr")]`, and they will be left out of the other flavor's runs. If you are adding a new test to an existing class, make sure it does not prolong the execution time significantly. Tests run on parallel on CI and having one class running much longer than the average prolongs the total execution time.
 
 Native relinking tests can run on both runtimes. For theories that also cover Mono AOT, use runtime-aware test data to keep the non-AOT cases on CoreCLR without removing the existing Mono cases. Incremental rebuild assertions must track the appropriate runtime's generated files: CoreCLR uses the portable call-helper sources and objects rather than Mono's P/Invoke tables and driver objects.
+
+`LibraryInitializerTests.JSExportFromLegacyLibrary` checks binary compatibility with the released
+.NET 10 JSExport generator. It builds the `LegacyExports` library against the pinned 10.0.0
+targeting pack, without the in-tree pack overrides, then references its DLL from a trimmed
+current-framework browser app. The targeting pack (including its generator) is restored as needed;
+no legacy SDK or browser workload is required. It also tests `net11.0` with the pinned
+`11.0.0` targeting pack and generator. Both legacy libraries are built
+separately and referenced unchanged by the current app. The test runs in the CoreCLR
+`no-workload` CI lane.
+`WasmBasicTestApp/JSExportTests.targets` opts into the binary reference and trimming
+root. Legacy compilation remains isolated from parent build imports and stages
+the unchanged DLL under `LegacyExports/staging`. Its build binlog is written to
+the test log directory and uploaded as a Helix artifact.
+
+`LibraryInitializerTests.JSExportFromAssemblyProvider` checks a library reached only from
+JavaScript through one generated type-map provider per assembly. It covers multiple
+exports, overloads, and repeated assembly lookup in a trimmed publish. The fixture
+uses ILLink's `copy` action for the two provider libraries, preserving their maps
+without adding traversal edges. The existing lazy-loading fixture also copies its
+exporting lazy library to preserve its map until [#138321](https://github.com/dotnet/runtime/issues/138321).
+The provider's `ReadOnlySpan<string>` catalog supports discovery without enumerating
+the type map, and `Bind(string methodId)` dispatches on invariant decimal catalog indexes.
+On CoreCLR, a counting provider verifies one activation at discovery, no binding at discovery or
+property read, exactly one binding on first invocation, stable aliases, and an
+unused method that must never be bound. Reentrant binding is rejected, and an
+async binding failure must reject its Promise and permit retry.
+Signature metadata is published during discovery, while marshalers and managed
+callbacks remain lazy. Private and protected nested exports exercise generated
+unsafe accessors on CoreCLR.
+The existing `WasmBasicTestApp` hosts these scenarios through an opt-in targets
+file and a separate `js-export-tests.js` module. Its existing HTML, runtime
+bootstrap, and TestOutput helper are reused. The counting project and provider
+references are enabled only by `TestJSExportProviders`; legacy references use
+`TestLegacyExports`, leaving unrelated scenarios unchanged.
+Both child libraries inherit the current targeting pack and generator from the
+shared no-workload `Directory.Build.targets`, without needing a browser RID.
+Detailed generated-source assertions live in the generator unit tests;
+WBT verifies behavior, not generated implementation spelling.
 
 `Blazor.AssetCachingTests` exercises the browser HTTP cache using the hosted
 `BlazorWebWasm` test asset. Its recovery cases seed cacheable invalid boot

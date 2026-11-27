@@ -1,0 +1,17 @@
+<Project>
+  <PropertyGroup Condition="'$(MSBuildProjectName)' == 'WasmBasicTestApp' and '$(TestJSExportProviders)' == 'true'">
+    <!-- Preserve the provider maps without adding runtime traversal edges. https://github.com/dotnet/runtime/issues/138321 -->
+    <_ExtraTrimmerArgs>$(_ExtraTrimmerArgs) --action copy Library --action copy CountingLibrary</_ExtraTrimmerArgs>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(MSBuildProjectName)' == 'WasmBasicTestApp' and '$(TestJSExportProviders)' == 'true'">
+    <ProjectReference Include="$(MSBuildThisFileDirectory)Library\Library.csproj" AdditionalProperties="TestJSExportProviders=true" />
+    <!-- The provider links TestOutput, which the app also compiles. Keep that duplicate type out of its global namespace. -->
+    <ProjectReference Include="$(MSBuildThisFileDirectory)CountingLibrary\CountingLibrary.csproj" Aliases="CountingLibrary" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(MSBuildProjectName)' == 'WasmBasicTestApp' and '$(TestLegacyExports)' == 'true'">
+    <Reference Include="LegacyExports">
+      <HintPath>$(MSBuildThisFileDirectory)LegacyExports\staging\LegacyExports.dll</HintPath>
+    </Reference>
+    <TrimmerRootAssembly Include="LegacyExports" />
+  </ItemGroup>
+</Project>

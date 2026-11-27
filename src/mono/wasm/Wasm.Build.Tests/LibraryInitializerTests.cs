@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
@@ -74,5 +73,62 @@ public partial class LibraryInitializerTests : WasmTemplateTestsBase
         RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(config, TestScenario: "InvokeLibraryInitializersTest"));
         Assert.Contains("customHookCalled=true", result.TestOutput);
         Assert.Contains("resources.libraryInitializers.length=1", result.TestOutput);
+    }
+
+    [Fact, TestCategory("no-workload"), TestCategory("coreclr")]
+    public async Task JSExportFromAssemblyProvider()
+    {
+        Configuration config = Configuration.Debug;
+        ProjectInfo info = CopyTestAsset(
+            config, false, TestAsset.WasmBasicTestApp, "mapped_exports",
+            extraProperties: "<PublishTrimmed>true</PublishTrimmed><TestJSExportProviders>true</TestJSExportProviders>",
+            insertAtEnd: """<Import Project="..\JSExportTests.targets" />""");
+        PublishProject(info, config);
+        RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(config, TestScenario: "DeferredJSExports"));
+        Assert.Contains("Empty BCL exports passed", result.TestOutput);
+        Assert.Contains("Mapped JSExports passed", result.TestOutput);
+        Assert.Equal(
+            new[] { "lazy:constructor", "lazy:discovered", "lazy:read", "lazy:bind", "lazy:first", "lazy:repeated" },
+            result.TestOutput.Where(static message => message.StartsWith("lazy:", StringComparison.Ordinal)));
+    }
+
+    [Theory, TestCategory("no-workload"), TestCategory("coreclr")]
+    [InlineData(Configuration.Debug, "net10.0", "10.0.0")]
+    [InlineData(Configuration.Release, "net10.0", "10.0.0")]
+    [InlineData(Configuration.Debug, "net11.0", "11.0.0")]
+    [InlineData(Configuration.Release, "net11.0", "11.0.0")]
+    public async Task JSExportFromLegacyLibrary(Configuration config, string targetFramework, string targetingPackVersion)
+    {
+        ProjectInfo info = CopyTestAsset(
+            config, false, TestAsset.WasmBasicTestApp, "legacy_exports",
+            extraProperties: "<PublishTrimmed>true</PublishTrimmed><TestLegacyExports>true</TestLegacyExports>",
+            insertAtEnd: """<Import Project="..\JSExportTests.targets" />""");
+        string libraryDir = Path.Combine(_projectDir, "..", "LegacyExports");
+
+        // Do not let the parent WBT overrides substitute the in-tree targeting pack or generator.
+        using (ToolCommand cmd = new DotNetCommand(s_buildEnv, _testOutput)
+            .WithWorkingDirectory(libraryDir)
+            .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir))
+        {
+            cmd.ExecuteWithCapturedOutput(
+                $"build -c {config} -bl:\"{Path.Combine(_logPath, "LegacyExports.binlog")}\"",
+                $"-p:ImportDirectoryBuildProps=false -p:ImportDirectoryBuildTargets=false -p:LegacyTargetFramework={targetFramework} -p:LegacyTargetingPackVersion={targetingPackVersion}")
+                .EnsureSuccessful();
+        }
+
+        string generatedFile = Directory.GetFiles(Path.Combine(libraryDir, "obj"), "JSExports.g.cs", SearchOption.AllDirectories).Single();
+        string generatedCode = File.ReadAllText(generatedFile);
+        Assert.Contains("JSFunctionBinding.BindManagedFunction(", generatedCode);
+        Assert.Contains("static void __Register_()", generatedCode);
+        Assert.DoesNotContain("RegisterAssemblyExports", generatedCode);
+        Assert.DoesNotContain("JSExportProvider", generatedCode);
+
+        string libraryPath = Path.Combine(libraryDir, "staging", "LegacyExports.dll");
+        byte[] libraryBytes = File.ReadAllBytes(libraryPath);
+        PublishProject(info, config);
+        Assert.Equal(libraryBytes, File.ReadAllBytes(libraryPath));
+
+        RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(config, TestScenario: "LegacyJSExports"));
+        Assert.Contains("Legacy JSExports passed", result.TestOutput);
     }
 }
