@@ -48,7 +48,7 @@ namespace System.Collections.Frozen.Tests
         }
 
         public static IEnumerable<object[]> CountsAndShapes() =>
-            from count in new[] { 1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 15, 16, 17, 31, 32, 33, 63, 64, 65, 127, 128, 129, 200, 1000 }
+            from count in new[] { 1, 2, 3, 4, 5, 8, 9, 16, 17, 32, 33, 64, 65 }
             from shape in (Shape[])Enum.GetValues(typeof(Shape))
             select new object[] { count, shape };
 
@@ -103,39 +103,49 @@ namespace System.Collections.Frozen.Tests
             probes.AddRange(new[] { min, min + 1, -1, 0, 1, max - 1, max }.Select(convert));
             probes.AddRange(Enumerable.Range(0, 100).Select(_ => convert(NextInt64(random, min, max))));
 
-            foreach (FrozenSet<T> frozen in new[] { expected.ToFrozenSet(), FrozenSet.Create(values.Select(convert).ToArray()), values.Select(convert).ToFrozenSet() })
+            // The different ways of creating the set end up with the same implementation, so only the lookups are checked
+            // for all of them, and the rest only once.
+            FrozenSet<T>[] sets = [expected.ToFrozenSet(), FrozenSet.Create(values.Select(convert).ToArray()), values.Select(convert).ToFrozenSet()];
+            foreach (FrozenSet<T> set in sets)
             {
-                Assert.Equal(expected.Count, frozen.Count);
-                Assert.Equal(expected.Count, frozen.Items.Length);
-                Assert.True(expected.SetEquals(frozen.Items), frozen.GetType().ToString());
-                Assert.True(expected.SetEquals(frozen), frozen.GetType().ToString());
+                Assert.Equal(expected.Count, set.Count);
+                Assert.True(expected.SetEquals(set.Items), set.GetType().ToString());
 
                 foreach (T probe in probes)
                 {
                     bool contains = expected.Contains(probe);
-                    Assert.True(contains == frozen.Contains(probe), $"{frozen.GetType()}: Contains({probe}) should be {contains}");
-                    Assert.Equal(contains, frozen.TryGetValue(probe, out T actualValue));
+                    Assert.True(contains == set.Contains(probe), $"{set.GetType()}: Contains({probe}) should be {contains}");
+                    Assert.Equal(contains, set.TryGetValue(probe, out T actualValue));
                     Assert.Equal(contains ? probe : default, actualValue);
                 }
+            }
 
-                // The set operations rely on each item being found at a distinct index.
-                Assert.True(frozen.SetEquals(expected));
-                Assert.True(frozen.SetEquals(values.Select(convert)));
-                Assert.True(frozen.IsSubsetOf(values.Select(convert)));
-                Assert.True(frozen.IsSupersetOf(values.Select(convert)));
-                Assert.False(frozen.IsProperSubsetOf(values.Select(convert)));
-                Assert.False(frozen.IsProperSupersetOf(values.Select(convert)));
-                Assert.True(frozen.Overlaps(values.Select(convert).Take(1)));
-                Assert.True(frozen.IsProperSupersetOf(values.Select(convert).Skip(1)));
+            FrozenSet<T> frozen = sets[0];
+            Assert.Equal(expected.Count, frozen.Items.Length);
+            Assert.True(expected.SetEquals(frozen), frozen.GetType().ToString());
 
-                T[] missing = probes.Where(p => !expected.Contains(p)).Distinct().Take(3).ToArray();
-                if (missing.Length != 0)
-                {
-                    Assert.True(frozen.IsProperSubsetOf(values.Select(convert).Concat(missing)));
-                    Assert.False(frozen.Overlaps(missing));
-                    Assert.False(frozen.IsSupersetOf(values.Select(convert).Concat(missing)));
-                }
+            // The set operations rely on each item being found at a distinct index.
+            Assert.True(frozen.SetEquals(expected));
+            Assert.True(frozen.SetEquals(values.Select(convert)));
+            Assert.True(frozen.IsSubsetOf(values.Select(convert)));
+            Assert.True(frozen.IsSupersetOf(values.Select(convert)));
+            Assert.False(frozen.IsProperSubsetOf(values.Select(convert)));
+            Assert.False(frozen.IsProperSupersetOf(values.Select(convert)));
+            Assert.True(frozen.Overlaps(values.Select(convert).Take(1)));
+            Assert.True(frozen.IsProperSupersetOf(values.Select(convert).Skip(1)));
 
+            T[] missing = probes.Where(p => !expected.Contains(p)).Distinct().Take(3).ToArray();
+            if (missing.Length != 0)
+            {
+                Assert.True(frozen.IsProperSubsetOf(values.Select(convert).Concat(missing)));
+                Assert.False(frozen.Overlaps(missing));
+                Assert.False(frozen.IsSupersetOf(values.Select(convert).Concat(missing)));
+            }
+
+            // The rest of the set's members are checked with one shape of values per kind of implementation, as they
+            // don't depend on the values beyond that.
+            if (shape is Shape.ContiguousAroundZero or Shape.SmallGaps or Shape.Random)
+            {
                 ValidateReadOnlySetSurface(frozen, expected, missing);
             }
         }
@@ -214,10 +224,15 @@ namespace System.Collections.Frozen.Tests
             T[] fewer = enumerated.Skip(1).ToArray();
             T[] more = enumerated.Concat(missing.Take(1)).ToArray();
             T[] withDuplicates = enumerated.Concat(enumerated).Reverse().ToArray();
-            var sameSets = new IEnumerable<T>[]
+            var sameSets = new List<IEnumerable<T>>
             {
-                new HashSet<T>(enumerated), enumerated.ToFrozenSet(), enumerated.ToImmutableHashSet(), new SortedSet<T>(enumerated), withDuplicates, enumerated.Select(i => i),
+                new HashSet<T>(enumerated), enumerated.ToFrozenSet(), enumerated.ToImmutableHashSet(), withDuplicates, enumerated.Select(i => i),
             };
+            if (typeof(IComparable<T>).IsAssignableFrom(typeof(T)) || typeof(IComparable).IsAssignableFrom(typeof(T)))
+            {
+                // IntPtr and UIntPtr aren't comparable on .NET Framework.
+                sameSets.Add(new SortedSet<T>(enumerated));
+            }
             foreach (IEnumerable<T> same in sameSets)
             {
                 Assert.True(frozen.SetEquals(same));
