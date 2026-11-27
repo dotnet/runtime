@@ -316,10 +316,10 @@ int LinearScan::BuildNode(GenTree* tree)
 
 #if !defined(TARGET_64BIT)
         case GT_ADD_LO:
-        case GT_ADD_HI:
         case GT_SUB_LO:
-        case GT_SUB_HI:
 #endif
+        case GT_ADD_HI:
+        case GT_SUB_HI:
         case GT_ADD:
         case GT_SUB:
         case GT_AND:

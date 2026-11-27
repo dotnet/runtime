@@ -201,6 +201,18 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
 }
 
 //------------------------------------------------------------------------
+// TryGetCarryOp: Get the add/subtract with carry that computes "x + (cond + k)" or "x - (cond + k)"
+//    after a compare that sets the borrow iff "cond" (or iff "!cond").
+//
+// Return Value:
+//    Always false, there is no flags register.
+//
+bool Lowering::TryGetCarryOp(bool isAdd, bool borrowIsCond, ssize_t k, genTreeOps* carryOper, ssize_t* imm)
+{
+    return false;
+}
+
+//------------------------------------------------------------------------
 // LowerBinaryArithmetic: lowers the given binary arithmetic node.
 //
 // Arguments:
