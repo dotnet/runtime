@@ -56,7 +56,7 @@ void minipal_flush_instruction_cache(const void* address, size_t size)
 #endif
 
     syscall(__NR_riscv_flush_icache, (char *)address, (char *)address + size, 0 /* all harts */);
-#elif defined(HOST_WASM)
+#elif defined(HOST_WASMARCH)
     // Nothing to do, there is no instruction cache to flush.
     (void)size;
 #elif defined(HOST_APPLE) && !defined(HOST_OSX)

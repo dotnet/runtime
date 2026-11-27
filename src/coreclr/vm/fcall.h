@@ -128,7 +128,7 @@
 
 #endif // !SWIZZLE_REGARG_ORDER
 
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
 
 #define FCDECL0(rettype, funcname) rettype F_CALL_CONV funcname(uintptr_t callersStackPointer, PCODE portableEntryPointContext); rettype F_CALL_CONV funcname ## _IMPL(uintptr_t callersStackPointer, PCODE portableEntryPointContext)
 #define FCDECL1(rettype, funcname, a1) rettype F_CALL_CONV funcname(uintptr_t callersStackPointer, a1, PCODE portableEntryPointContext); rettype F_CALL_CONV funcname ## _IMPL(uintptr_t callersStackPointer, a1, PCODE portableEntryPointContext)
@@ -315,7 +315,7 @@ public:
 
 #endif // !SWIZZLE_REGARG_ORDER
 
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
 
 #define WASM_WRAPPER_FUNC_INITIAL \
 { \

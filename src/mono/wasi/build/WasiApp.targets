@@ -33,18 +33,16 @@
 
     <WasiWriteRspForLinkingDependsOn>
       $(WasiWriteRspForLinkingDependsOn);
-      _WasmSelectRuntimeComponentsForLinking;
       _WasiGetWasiOutputFileName;
     </WasiWriteRspForLinkingDependsOn>
     <WasiWriteRspForLinkingDependsOn Condition="'$(UsingWasiRuntimeWorkload)' == 'true'">
       $(WasiWriteRspForLinkingDependsOn);
-      _MonoSelectRuntimeComponents;
     </WasiWriteRspForLinkingDependsOn>
 
     <SelfContained Condition="'$(IsWasiProject)' == 'true'">true</SelfContained>
 
     <!-- Temporarily `false`, till sdk gets a fix for supporting the new file -->
-    <WasmEmitSymbolMap Condition="'$(WasmEmitSymbolMap)' == '' and '$(RunAOTCompilation)' != 'true'">false</WasmEmitSymbolMap>
+    <WasmEmitSymbolMap Condition="'$(WasmEmitSymbolMap)' == ''">false</WasmEmitSymbolMap>
     <TrimMode Condition="'$(TrimMode)' == ''">full</TrimMode>
 
     <WasmRunWasmOpt Condition="'$(WasmRunWasmOpt)' == ''">false</WasmRunWasmOpt>
@@ -191,7 +189,6 @@
            Text="$(_ToolchainMissingErrorMessage) SDK is required for building native files." />
 
     <PropertyGroup>
-      <_MonoAotCrossCompilerPath>@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','wasi-wasm'))</_MonoAotCrossCompilerPath>
       <_WasmDefaultFlagsRsp>$([MSBuild]::NormalizePath($(_WasmRuntimePackSrcDir), 'wasi-default.rsp'))</_WasmDefaultFlagsRsp>
       <_WasmDefaultLinkFlagsRsp>$([MSBuild]::NormalizePath($(_WasmRuntimePackSrcDir), 'wasi-link.rsp'))</_WasmDefaultLinkFlagsRsp>
       <_WasmLlvmSizeRsp>$(_WasmIntermediateOutputPath)emcc-llvmsize.rsp</_WasmLlvmSizeRsp>
@@ -376,20 +373,10 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <_MonoRuntimeComponentDontLink Include="libmono-component-diagnostics_tracing-static.a" Condition="'$(EnableDiagnostics)' != 'true'" />
-      <_MonoRuntimeComponentDontLink Include="libmono-component-diagnostics_tracing-stub-static.lib" Condition="'$(EnableDiagnostics)' == 'true'" />
-      <_MonoRuntimeComponentDontLink Include="libSystem.Native.TimeZoneData.Invariant.a" Condition="'$(InvariantTimezone)' != 'true'" />
-      <_MonoRuntimeComponentDontLink Include="libSystem.Native.TimeZoneData.a" Condition="'$(InvariantTimezone)' == 'true'" />
-    </ItemGroup>
-
-    <ItemGroup>
       <!-- using relative paths fixes https://github.com/dotnet/runtime/issues/106845 -->
       <RelativeBitcodeFiles Include="%(_BitcodeFile.ObjectFile)" Condition="'%(_BitcodeFile.ObjectFile)' != ''">
         <RelativePath>$([System.IO.Path]::GetRelativePath('$(MSBuildProjectDirectory)', '%(Identity)'))</RelativePath>
       </RelativeBitcodeFiles>
-      <RelativeWasmObjectFiles Include="@(_WasmObjectFilesForBundle)" Condition="'%(_WasmObjectFilesForBundle.Identity)' != ''">
-        <RelativePath>$([System.IO.Path]::GetRelativePath('$(MSBuildProjectDirectory)', '%(Identity)'))</RelativePath>
-      </RelativeWasmObjectFiles>
     </ItemGroup>
 
     <ItemGroup>
@@ -398,8 +385,7 @@
       <!--<_WasmNativeFileForLinking Include="%(_WasmSourceFileToCompile.ObjectFile)" />-->
 
       <_WasmNativeFileForLinking
-          Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)*.a"
-          Exclude="@(_MonoRuntimeComponentDontLink->'$(MicrosoftNetCoreAppRuntimePackRidNativeDir)%(Identity)')" />
+          Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)*.a" />
       <_WasmNativeFileForLinking Condition="'$(_WasmEHLib)' != ''" Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(_WasmEHLib)" />
       <_WasmNativeFileForLinking Condition="'$(_WasmSIMDLib)' != ''" Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(_WasmSIMDLib)" />
       <_WasmNativeFileForLinking Remove="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(_WasmEHLibToExclude)" />
@@ -500,5 +486,4 @@
     </PropertyGroup>
   </Target>
 
-  <!--<Target Name="_WasmCalculateInitialHeapSize" />-->
 </Project>

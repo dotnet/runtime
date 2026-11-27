@@ -50,6 +50,7 @@ namespace Wasm.Build.Tests
         [MemberData(nameof(MainMethodSimdTestData), parameters: new object[] { /*aot*/ true, /* simd */ true })]
         [MemberData(nameof(MainMethodSimdTestData), parameters: new object[] { /*aot*/ false, /* simd */ true })]
         [MemberData(nameof(MainMethodSimdTestData), parameters: new object[] { /*aot*/ true, /* simd */ false })]
+        // TODO-WASM: https://github.com/dotnet/runtime/issues/135046
         [TestCategory("native"), TestCategory("mono")]
         public async Task PublishSIMD_AOT(Configuration config, bool aot, bool simd)
         {
@@ -67,12 +68,12 @@ namespace Wasm.Build.Tests
         }
 
         [Fact]
-        [TestCategory("coreclr"), TestCategory("wasm-opt")]
+        [TestCategory("wasm-opt")]
         public Task PublishRelaxedSimdCoreClr() => PublishRelaxedSimdCoreClrCore(relaxedSimd: false);
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/137571")]
-        [TestCategory("coreclr"), TestCategory("wasm-opt")]
+        [TestCategory("wasm-opt")]
         public Task PublishRelaxedSimdEnabledCoreClr() => PublishRelaxedSimdCoreClrCore(relaxedSimd: true);
 
         private async Task PublishRelaxedSimdCoreClrCore(bool relaxedSimd)

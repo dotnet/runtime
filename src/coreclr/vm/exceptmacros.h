@@ -218,7 +218,7 @@ VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFra
 class ResumeAfterCatchException;
 #endif
 
-#if defined(FEATURE_INTERPRETER) && !defined(HOST_WASM)
+#if defined(FEATURE_INTERPRETER) && !defined(HOST_WASMARCH)
 VOID DECLSPEC_NORETURN RethrowResumeAfterCatchException(const ResumeAfterCatchException& ex, Frame *pFrame, TADDR ssp);
 
 #if defined(HOST_AMD64) && defined(HOST_WINDOWS)
@@ -284,13 +284,13 @@ VOID DECLSPEC_NORETURN RethrowResumeAfterCatchException(const ResumeAfterCatchEx
             RethrowResumeAfterCatchException(ex, __pResumeAfterCatchFrame, __pResumeAfterCatchSSP);                 \
         }
 
-#else // FEATURE_INTERPRETER && !HOST_WASM
+#else // FEATURE_INTERPRETER && !HOST_WASMARCH
 #define INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(pFrame)
 #define INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_CONTEXT(pContext, ssp)
 #define INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_INTERRUPTED_CONTEXT(pContext, ssp)
 #define UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME
 #define UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_CONTEXT
-#endif // FEATURE_INTERPRETER && !HOST_WASM
+#endif // FEATURE_INTERPRETER && !HOST_WASMARCH
 
 #ifdef TARGET_UNIX
 VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHardwareException);

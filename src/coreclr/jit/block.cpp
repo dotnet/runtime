@@ -16,7 +16,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #endif
 
 #include "jitstd/algorithm.h"
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
 #include "fgwasm.h" // for WasmInterval, used in CanRemoveJumpToNext
 #endif
 
@@ -428,7 +428,7 @@ bool BasicBlock::CanRemoveJumpToTarget(BasicBlock* target, Compiler* compiler) c
     {
         return false;
     }
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
     // Fall-through across a Try/ExnRefWrapper end injects an `unreachable`
     // or an exnref `local.set` that would trap or fail validation.
     //

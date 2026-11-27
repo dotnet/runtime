@@ -2341,7 +2341,7 @@ public:
         return m_CPUCompileFlags;
     }
 
-#if defined(TARGET_WASM) && !defined(DACCESS_COMPILE)
+#if defined(TARGET_WASMARCH) && !defined(DACCESS_COMPILE)
     // Wasm cannot detect instruction sets at run time; CoreLib's ReadyToRun image defines them.
     void SetInstructionSetFromCoreLib(CORINFO_InstructionSet instructionSet)
     {
@@ -2405,7 +2405,7 @@ struct cdac_data<LoaderCodeHeap>
 //
 //*****************************************************************************
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
 struct VirtualIPRangeSection
 {
     VirtualIPRangeSection(Range range, IJitManager* pJit, RangeSection::RangeSectionFlags flags, PTR_Module pR2RModule) : rangeSection(range, pJit, flags, pR2RModule), pNext(nullptr)
@@ -2435,7 +2435,7 @@ struct FunctionTableIndexRangeSection
     PTR_Module          pR2RModule;             // Module owning this range
     FunctionTableIndexRangeSection* pNext;      // Next entry in the linked list
 };
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
 
 //*****************************************************************************
 //
@@ -2575,7 +2575,7 @@ public:
                                        RangeSection::RangeSectionFlags flags,
                                        PTR_Module pModule);
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
     // Register a virtual IP range for a WASM R2R module.
     // Returns the start virtual IP assigned to this module.
     static constexpr TADDR WasmInitialVirtualIP = (static_cast<TADDR>(1) << (sizeof(TADDR) * 8 - 1)) | 1;
@@ -2611,7 +2611,7 @@ public:
     static TADDR          GetWasmVirtualIPFromFunctionTableIndex(DWORD functionIndex, bool* pHasSingleVirtualIP = nullptr);
     static TADDR          GetWasmVirtualIPFromCoreLibRuntimeFunctionIndex(DWORD functionIndex, bool* pHasSingleVirtualIP = nullptr);
     static TADDR          GetWasmFunctionTableIndexFromVirtualIP(TADDR virtualIP);
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
 
     static void           DeleteRange(TADDR StartRange);
 
@@ -2660,10 +2660,10 @@ private:
     SPTR_DECL(InterpreterCodeManager, m_pInterpreterCodeMan);
 #endif
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
     static VirtualIPRangeSection* s_pVirtualIPRangeList;
     static FunctionTableIndexRangeSection* s_pFunctionTableIndexRangeList;
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
 
     static CrstStatic       m_JumpStubCrst;
     static CrstStatic       m_RangeCrst;        // Acquire before writing into m_CodeRangeList and m_DataRangeList
@@ -2797,13 +2797,13 @@ struct cdac_data<ExecutionManager>
 #ifdef FEATURE_INTERPRETER
     static constexpr PTR_InterpreterJitManager* InterpreterJitManagerAddress = &ExecutionManager::m_pInterpreterJitManager;
 #endif // FEATURE_INTERPRETER
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
     static constexpr VirtualIPRangeSection** VirtualIPRangeListAddress = &ExecutionManager::s_pVirtualIPRangeList;
     static constexpr FunctionTableIndexRangeSection** FunctionTableIndexRangeListAddress = &ExecutionManager::s_pFunctionTableIndexRangeList;
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
 };
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
 template<>
 struct cdac_data<VirtualIPRangeSection>
 {
@@ -2819,7 +2819,7 @@ struct cdac_data<FunctionTableIndexRangeSection>
     static constexpr size_t R2RModule = offsetof(FunctionTableIndexRangeSection, pR2RModule);
     static constexpr size_t Next = offsetof(FunctionTableIndexRangeSection, pNext);
 };
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
 #endif
 
 inline CodeHeader * EEJitManager::GetCodeHeader(const METHODTOKEN& MethodToken)
@@ -3113,10 +3113,10 @@ public:
         return STUB_CODE_BLOCK_UNKNOWN;
     }
 
-#if !defined(DACCESS_COMPILE) && !defined(TARGET_WASM)
+#if !defined(DACCESS_COMPILE) && !defined(TARGET_WASMARCH)
     // Return execution control for interpreter bytecode breakpoints
     virtual IExecutionControl* GetExecutionControl();
-#endif // !DACCESS_COMPILE && !TARGET_WASM
+#endif // !DACCESS_COMPILE && !TARGET_WASMARCH
 
 #if defined(DACCESS_COMPILE)
 
@@ -3302,7 +3302,7 @@ private:
     PTR_CBYTE   DecodeGCHdrInfoHelper(hdrInfo   ** infoPtr);
 #endif // TARGET_X86
 
-#if defined(TARGET_WASM)
+#if defined(TARGET_WASMARCH)
 ULONG       GetFixedStackSize();
 #endif
 

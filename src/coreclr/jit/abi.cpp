@@ -122,7 +122,7 @@ var_types ABIPassingSegment::GetRegisterType() const
                 return TYP_FLOAT;
             case 8:
                 return TYP_DOUBLE;
-#if defined(FEATURE_SIMD) && defined(TARGET_WASM)
+#if defined(FEATURE_SIMD) && defined(TARGET_WASMARCH)
             case 12:
 #endif
 #ifdef FEATURE_SIMD
@@ -145,7 +145,7 @@ var_types ABIPassingSegment::GetRegisterType() const
             case 3:
             case 4:
                 return TYP_INT;
-#if defined(TARGET_64BIT) || defined(TARGET_WASM)
+#if defined(TARGET_64BIT) || defined(TARGET_WASMARCH)
             case 5:
             case 6:
             case 7:

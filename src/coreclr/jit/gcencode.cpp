@@ -4094,7 +4094,7 @@ void GCInfo::gcMakeRegPtrTable(
     GCENCODER_WITH_LOGGING(gcInfoEncoderWithLog, gcInfoEncoder);
 
     // TODO-WASM: Enable tracked GC slots for precise GC
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
     const bool noTrackedGCSlots = true;
 #else
     const bool noTrackedGCSlots = m_compiler->opts.MinOpts();
@@ -4189,9 +4189,9 @@ void GCInfo::gcMakeRegPtrTable(
 
             // Per the wasm ABI refs homed on the linear stack are reported pinned, since copies of them
             //  on the wasm operand stack are invisible to the GC. See "GC References at Call Sites".
-#ifndef TARGET_WASM
+#ifndef TARGET_WASMARCH
             if (varDsc->lvPinned)
-#endif // !TARGET_WASM
+#endif // !TARGET_WASMARCH
             {
                 // Or in pinned_OFFSET_FLAG for 'pinned' pointer tracking
                 flags = (GcSlotFlags)(flags | GC_SLOT_PINNED);

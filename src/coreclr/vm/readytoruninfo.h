@@ -29,9 +29,9 @@ class ReadyToRunCoreInfo
 private:
     PTR_ReadyToRunLoadedImage       m_pLayout;
     PTR_READYTORUN_CORE_HEADER      m_pCoreHeader;
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
     TADDR                           m_minVirtualIP = 0;
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
     Volatile<bool>                  m_fForbidLoadILBodyFixups;
     friend struct ::cdac_data<ReadyToRunCoreInfo>;
 
@@ -43,7 +43,7 @@ public:
     IMAGE_DATA_DIRECTORY * FindSection(ReadyToRunSectionType type) const;
     void ForbidProcessMoreILBodyFixups() { m_fForbidLoadILBodyFixups = true; }
     bool IsForbidProcessMoreILBodyFixups() { return m_fForbidLoadILBodyFixups; }
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
     bool MinVirtualIPSet() const { return m_minVirtualIP != 0; }
     void SetMinVirtualIP(TADDR minVirtualIP) { m_minVirtualIP = minVirtualIP; }
     TADDR GetMinVirtualIP() const
@@ -51,7 +51,7 @@ public:
         _ASSERTE(MinVirtualIPSet());
         return m_minVirtualIP;
     }
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
 
     PTR_ReadyToRunLoadedImage GetImage() const
     {
@@ -197,19 +197,19 @@ class ReadyToRunInfo
     PTR_RUNTIME_FUNCTION            m_pRuntimeFunctions;
     DWORD                           m_nRuntimeFunctions;
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
     DWORD                           m_minFunctionTableIndex;
     TADDR                           m_minVirtualIP = 0;
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
 
 #ifdef FEATURE_COLD_R2R_CODE
     PTR_ULONG                       m_pHotColdMap;
     DWORD                           m_nHotColdMap;
 #endif // FEATURE_COLD_R2R_CODE
 
-#ifndef TARGET_WASM
+#ifndef TARGET_WASMARCH
     PTR_IMAGE_DATA_DIRECTORY        m_pSectionDelayLoadMethodCallThunks;
-#endif // !TARGET_WASM
+#endif // !TARGET_WASMARCH
     PTR_IMAGE_DATA_DIRECTORY        m_pSectionDebugInfo;
     PTR_IMAGE_DATA_DIRECTORY        m_pSectionExceptionInfo;
 
@@ -264,9 +264,9 @@ public:
 
     PTR_READYTORUN_HEADER GetReadyToRunHeader() const { return m_pHeader; }
 
-#ifndef TARGET_WASM
+#ifndef TARGET_WASMARCH
     PTR_IMAGE_DATA_DIRECTORY GetDelayMethodCallThunksSection() const { return m_pSectionDelayLoadMethodCallThunks; }
-#endif // !TARGET_WASM
+#endif // !TARGET_WASMARCH
 
     PTR_IMAGE_DATA_DIRECTORY GetExceptionInfoSection() const { return m_pSectionExceptionInfo; }
 
@@ -278,7 +278,7 @@ public:
     PTR_RUNTIME_FUNCTION GetRuntimeFunctions() const { return m_pRuntimeFunctions; }
     DWORD GetRuntimeFunctionCount() const { return m_nRuntimeFunctions; }
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
     DWORD GetMinFunctionTableIndex() const { return m_minFunctionTableIndex; }
     TADDR GetMinVirtualIP() const
     {
@@ -292,7 +292,7 @@ public:
         return (PCODE)(GetMinVirtualIP() + RUNTIME_FUNCTION__BeginAddress(&m_pRuntimeFunctions[r2rFunctionIndex]));
     }
     void RegisterVirtualIPRange(Module* pModule);
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
 
     void RegisterResumptionStub(PCODE stubEntryPoint);
 
@@ -524,9 +524,9 @@ struct cdac_data<ReadyToRunInfo>
     static constexpr size_t NumHotColdMap = offsetof(ReadyToRunInfo, m_nHotColdMap);
     static constexpr size_t HotColdMap = offsetof(ReadyToRunInfo, m_pHotColdMap);
 #endif // FEATURE_COLD_R2R_CODE
-#ifndef TARGET_WASM
+#ifndef TARGET_WASMARCH
     static constexpr size_t DelayLoadMethodCallThunks = offsetof(ReadyToRunInfo, m_pSectionDelayLoadMethodCallThunks);
-#endif // !TARGET_WASM
+#endif // !TARGET_WASMARCH
     static constexpr size_t DebugInfoSection = offsetof(ReadyToRunInfo, m_pSectionDebugInfo);
     static constexpr size_t ExceptionInfoSection = offsetof(ReadyToRunInfo, m_pSectionExceptionInfo);
     static constexpr size_t ImportSections = offsetof(ReadyToRunInfo, m_pImportSections);
@@ -534,9 +534,9 @@ struct cdac_data<ReadyToRunInfo>
     static constexpr size_t EntryPointToMethodDescMap = offsetof(ReadyToRunInfo, m_entryPointToMethodDescMap);
     static constexpr size_t LoadedImageBase = offsetof(ReadyToRunInfo, m_pLoadedImageBase);
     static constexpr size_t Composite = offsetof(ReadyToRunInfo, m_pComposite);
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
     static constexpr size_t MinVirtualIP = offsetof(ReadyToRunInfo, m_minVirtualIP);
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
 };
 
 class DynamicHelpers

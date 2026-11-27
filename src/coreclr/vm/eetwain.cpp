@@ -714,7 +714,7 @@ bool EECodeManager::IsGcSafe( EECodeInfo     *pCodeInfo,
     return false;
 }
 
-// FIXME-WASM: Add TARGET_WASM once we implement tail calls on Wasm.
+// FIXME-WASM: Add TARGET_WASMARCH once we implement tail calls on Wasm.
 #if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 bool EECodeManager::HasTailCalls( EECodeInfo     *pCodeInfo)
 {
@@ -1232,9 +1232,9 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
         // Wasm R2R does not have fully interruptible reporting, so the aborted
         // parent frame cannot report its roots. Report the always-live untracked
         // slots from the filter instead.
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
         if (!ExecutionManager::IsVirtualIP(pCodeInfo->GetCodeAddress()))
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
         {
             flags |= NoReportUntracked;
         }
@@ -1823,17 +1823,17 @@ EXTERN_C UINT_PTR F_CALL_CONV CallEHFunclet(Object *pThrowable, UINT_PTR pFuncle
 // This is an assembly helper that enables us to call into EH filter funclets.
 EXTERN_C int F_CALL_CONV CallEHFilterFunclet(Object *pThrowable, CONTEXT *pContext, UINT_PTR pFuncletToInvoke, UINT_PTR *pFuncletCallerSP);
 
-#ifndef TARGET_WASM
+#ifndef TARGET_WASMARCH
 typedef DWORD_PTR (HandlerFn)(UINT_PTR uStackFrame, Object* pExceptionObj);
 #else
 typedef TADDR HandlerFn;
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
 
 static inline UINT_PTR CastHandlerFn(HandlerFn *pfnHandler)
 {
 #ifdef TARGET_ARM
     return DataPointerToThumbCode<UINT_PTR, HandlerFn *>(pfnHandler);
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
     return (TADDR)ExecutionManager::GetWasmFunctionTableIndexFromVirtualIP((TADDR)pfnHandler);
 #else
     return (UINT_PTR)pfnHandler;
@@ -1942,10 +1942,10 @@ void EECodeManager::UpdateSSP(PREGDISPLAY pRD)
 
 #ifdef FEATURE_INTERPRETER
 
-#if !defined(TARGET_WASM)
+#if !defined(TARGET_WASMARCH)
 // ASM helper that creates a TransitionBlock and calls CallInterpreterFuncletWorker
 extern "C" DWORD_PTR STDCALL CallInterpreterFunclet(OBJECTREF throwable, void* pHandler, REGDISPLAY *pRD, ExInfo *pExInfo, bool isFilter);
-#endif // !TARGET_WASM
+#endif // !TARGET_WASMARCH
 
 // Worker function that executes an interpreter funclet with a TransitionBlock
 // On non-WASM platforms, this is called from the ASM helper CallInterpreterFunclet
@@ -2009,7 +2009,7 @@ extern "C" DWORD_PTR STDCALL CallInterpreterFuncletWorker(OBJECTREF throwable, v
 
 DWORD_PTR InterpreterCodeManager::CallFunclet(OBJECTREF throwable, void* pHandler, REGDISPLAY *pRD, ExInfo *pExInfo, bool isFilter)
 {
-#if !defined(TARGET_WASM)
+#if !defined(TARGET_WASMARCH)
     // Call the ASM helper which creates a real TransitionBlock
     return CallInterpreterFunclet(throwable, pHandler, pRD, pExInfo, isFilter);
 #else

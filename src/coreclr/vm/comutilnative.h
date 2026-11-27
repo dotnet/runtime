@@ -236,9 +236,9 @@ extern "C"
     FCDECL2(INT32, Interlocked_Exchange32, INT32 *location, INT32 value);
     FCDECL2_IV(INT64, Interlocked_Exchange64, INT64 *location, INT64 value);
     FCDECL3(INT32, Interlocked_CompareExchange32, INT32* location, INT32 value, INT32 comparand);
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
     decltype(Interlocked_CompareExchange32) Interlocked_CompareExchange32Pointer;
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
     FCDECL3_IVV(INT64, Interlocked_CompareExchange64, INT64* location, INT64 value, INT64 comparand);
     FCDECL2(LPVOID, Interlocked_ExchangeObject, LPVOID* location, LPVOID value);
     FCDECL3(LPVOID, Interlocked_CompareExchangeObject, LPVOID* location, LPVOID value, LPVOID comparand);

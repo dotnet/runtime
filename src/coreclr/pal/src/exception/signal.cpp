@@ -222,7 +222,7 @@ BOOL SEHInitializeSignals(CorUnix::CPalThread *pthrCurrent, DWORD flags)
             return FALSE;
         }
 
-#ifndef TARGET_WASM
+#ifndef TARGET_WASMARCH
         // create a guard page for the alternate stack
         int st = mprotect((void*)g_stackOverflowHandlerStack, minipal_getpagesize(), PROT_NONE);
         if (st != 0)
@@ -230,7 +230,7 @@ BOOL SEHInitializeSignals(CorUnix::CPalThread *pthrCurrent, DWORD flags)
             munmap((void*)g_stackOverflowHandlerStack, stackOverflowStackSize);
             return FALSE;
         }
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
 
         g_stackOverflowHandlerStack = (void*)((size_t)g_stackOverflowHandlerStack + stackOverflowStackSize);
 #endif // HAVE_MACH_EXCEPTIONS

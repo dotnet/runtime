@@ -21,7 +21,6 @@ namespace Wasm.Build.Tests
     // CoreCLR browser-wasm ships ReadyToRun images as webcil-in-wasm; a non-zero R2R table size in the
     // System.Private.CoreLib webcil is the marker that R2R was produced and staged. These tests cover R2R in
     // both build and publish, with and without IL trimming, driving all pages in a real browser. CoreCLR only.
-    [TestCategory("coreclr")]
     // Keeps this class out of the CoreCLR no-workload Helix work item, which runs it in a separate one by
     // class name instead (see _SplitOutReadyToRunTests in src/libraries/sendtohelix-wasm.targets).
     [TestCategory("r2r")]
@@ -83,7 +82,7 @@ namespace Wasm.Build.Tests
         public Task PublishRunAllPagesNativeRelink(Configuration config, bool trimmed)
             => PublishRunAllPagesCore(config, trimmed, nativeRelink: true, composite: false);
 
-        [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+        [Theory]
         [InlineData(Configuration.Debug, false, false, null, null, "", false, false)]
         [InlineData(Configuration.Release, false, false, null, null, "", true, true)]
         [InlineData(Configuration.Release, false, true, null, null, "", false, false)]
@@ -233,7 +232,7 @@ namespace Wasm.Build.Tests
             AssertPerAppCrossgenRan(config, expected: false);
         }
 
-        [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+        [Theory]
         [InlineData(false)]
         [InlineData(true)]
         [TestCategory("no-workload")]

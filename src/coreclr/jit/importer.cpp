@@ -2704,7 +2704,7 @@ GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
         call = gtNewVirtualFunctionLookupHelperCallNode(CORINFO_HELP_GVMLOOKUP_FOR_SLOT, TYP_I_IMPL, thisPtr,
                                                         dispatchCell);
     }
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
     else if (IsNativeAot() && isInterface)
     {
         GenTree* dispatchCell = impLookupToTree(&pCallInfo->codePointerLookup, GTF_ICON_GLOBAL_PTR, nullptr);
@@ -2724,7 +2724,7 @@ GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
     // relies on DelayLoad_Helper_Obj dynamic-helper thunks, which are not implemented on wasm.
     // Fall through to the runtime CORINFO_HELP_VIRTUAL_FUNC_PTR helper instead.
 #ifdef FEATURE_READYTORUN
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
     else if (IsNativeAot())
 #else
     else if (IsAot())
@@ -2732,7 +2732,7 @@ GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
     {
         if (!pCallInfo->exactContextNeedsRuntimeLookup)
         {
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
             call = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR, TYP_I_IMPL);
             call->gtArgs.PushFront(this, NewCallArg::Primitive(thisPtr).WellKnown(WellKnownArg::ThisPointer));
             call->gtFlags |= GTF_CALL_NULLCHECK | (thisPtr->gtFlags & GTF_ALL_EFFECT);

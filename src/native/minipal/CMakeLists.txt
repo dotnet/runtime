@@ -8,6 +8,7 @@ set(SOURCES
     descriptorlimit.c
     entrypoints.c
     environ.c
+    fileio.c
     getexepath.c
     memorybarrierprocesswide.c
     mutex.c
@@ -41,7 +42,7 @@ include_directories(${CLR_SRC_NATIVE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
 add_library(minipal_objects OBJECT ${SOURCES})
 
 if (WIN32)
-    target_link_libraries(minipal_objects PUBLIC bcrypt)
+    target_link_libraries(minipal_objects PUBLIC advapi32 bcrypt)
 endif()
 
 if (CLR_CMAKE_HOST_NETBSD)
@@ -57,7 +58,7 @@ add_library(aotminipal STATIC ${SOURCES})
 set_target_properties(aotminipal PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
 
 if (WIN32)
-    target_link_libraries(aotminipal PUBLIC bcrypt)
+    target_link_libraries(aotminipal PUBLIC advapi32 bcrypt)
 endif()
 
 if (CLR_CMAKE_HOST_NETBSD)
@@ -87,6 +88,6 @@ endif()
 # in a non-sanitized build.
 set_target_properties(minipal_sanitizer_support PROPERTIES EXCLUDE_FROM_ALL ON)
 
-if(CLR_CMAKE_TARGET_ARCH_WASM)
+if(CLR_CMAKE_TARGET_ARCH_WASMARCH)
     install(TARGETS minipal DESTINATION sharedFramework COMPONENT runtime)
-endif(CLR_CMAKE_TARGET_ARCH_WASM)
+endif(CLR_CMAKE_TARGET_ARCH_WASMARCH)

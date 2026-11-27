@@ -1465,7 +1465,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
         }
     }
 
-#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_WASM)
+#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_WASMARCH)
     if (bmtProp.fIsIntrinsicType && !bmtGenerics->HasInstantiation())
     {
         LPCUTF8 nameSpace;
@@ -1493,7 +1493,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
         // All the functions in System.Runtime.Intrinsics.<arch> are hardware intrinsics.
 #if defined(TARGET_ARM64)
         if (hr == S_OK && strcmp(nameSpace, "System.Runtime.Intrinsics.Arm") == 0)
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
         if (hr == S_OK && strcmp(nameSpace, "System.Runtime.Intrinsics.Wasm") == 0)
 #else
         if (hr == S_OK && (strcmp(nameSpace, "System.Runtime.Intrinsics.X86") == 0))
@@ -11101,7 +11101,7 @@ void MethodTableBuilder::CheckForSystemTypes()
                 return;
             }
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
             // System.Numerics.Vector<T> is a v128 value on wasm, so it needs the same 16-byte
             // alignment as System.Runtime.Intrinsics.Vector128<T> above. Its metadata layout is
             // already 16 bytes (two UInt64 fields), but those only give it 8-byte alignment,
@@ -11111,7 +11111,7 @@ void MethodTableBuilder::CheckForSystemTypes()
                 pClass->GetLayoutInfo()->SetAlignmentRequirement(16); // sizeof(v128)
                 return;
             }
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
         }
 
         if (g_pNullableClass != NULL)
@@ -11181,7 +11181,7 @@ void MethodTableBuilder::CheckForSystemTypes()
                     pLayout->SetAlignmentRequirement(8);
 #elif defined(TARGET_64BIT) || defined(TARGET_X86)
                     pLayout->SetAlignmentRequirement(16); // sizeof(_Decimal128)
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
                     // The Wasm Basic C ABI does not define a decimal type; it tracks what the
                     // clang/LLVM Wasm backend implements, and clang has no _Decimal128. Match
                     // __int128_t, the only other 16 byte scalar it does define, which is 16 byte
@@ -11237,7 +11237,7 @@ void MethodTableBuilder::CheckForSystemTypes()
             // although applying 16 byte alignment is consistent with treatment of 128 bit SSE types
             // even on X86
             pLayout->SetAlignmentRequirement(16); // sizeof(__int128)
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
             pLayout->SetAlignmentRequirement(16); // sizeof(v128)
 #else
 #error Unknown architecture

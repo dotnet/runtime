@@ -29,8 +29,6 @@ public class SimpleRunTests : BlazorWasmTestBase
             { Configuration.Debug, false },
             { Configuration.Release, false },
         };
-        if (!IsCoreClrRuntime)
-            data.Add(Configuration.Release, true);
         return data;
     }
 

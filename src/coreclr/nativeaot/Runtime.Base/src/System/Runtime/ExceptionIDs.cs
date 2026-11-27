@@ -12,13 +12,13 @@ namespace System.Runtime
         InvalidCast = 6,
         Overflow = 7,
         NullReference = 8,
-#if !TARGET_WASM
+#if !TARGET_WASMARCH
         AccessViolation = 9,
         DataMisaligned = 10,
 #endif
         EntrypointNotFound = 11,
         AmbiguousImplementation = 12,
-#if !TARGET_WASM
+#if !TARGET_WASMARCH
         IllegalInstruction = 13,
         PrivilegedInstruction = 14,
         InPageError = 15,

@@ -71,9 +71,6 @@ if [%WASM_RUN_WASM_OPT%] == [true] (
 ) else (
    set USE_WASM_OPT_FOR_TESTS=false
 )
-if [%RUNTIME_FLAVOR%] NEQ [] (
-   set RUNTIME_FLAVOR_FOR_TESTS=%RUNTIME_FLAVOR%
-)
 
 if [%HELIX_CORRELATION_PAYLOAD%] NEQ [] (
     robocopy /mt /np /nfl /NDL /nc /e %BASE_DIR%\%SDK_DIR_NAME% %EXECUTION_DIR%\%SDK_DIR_NAME%

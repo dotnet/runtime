@@ -16,7 +16,7 @@
 #include "emitloongarch64.h"
 #elif defined(TARGET_RISCV64)
 #include "emitriscv64.h"
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
 #include "emitwasm.h"
 #else
 #error Unsupported or unset target architecture

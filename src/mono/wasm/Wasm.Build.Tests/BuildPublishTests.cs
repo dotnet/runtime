@@ -22,16 +22,6 @@ namespace Wasm.Build.Tests
         }
 
         [Theory]
-        [BuildAndRun(config: Configuration.Debug, aot: true)]
-        [TestCategory("native"), TestCategory("mono")]
-        public void Wasm_CannotAOT_InDebug(Configuration config, bool aot)
-        {
-            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "no_aot_in_debug");
-            (string _, string buildOutput) = PublishProject(info, config, new PublishOptions(AOT: aot, ExpectSuccess: false));
-            Assert.Contains("AOT is not supported in debug configuration", buildOutput);
-        }
-
-        [Theory]
         [BuildAndRun(config: Configuration.Release)]
         [BuildAndRun(config: Configuration.Debug)]
         public async Task BuildThenPublishNoAOT(Configuration config, bool aot)
@@ -51,6 +41,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(config: Configuration.Release, aot: true)]
+        // TODO-WASM: https://github.com/dotnet/runtime/issues/135046
         [TestCategory("native"), TestCategory("mono")]
         public async Task BuildThenPublishWithAOT(Configuration config, bool aot)
         {

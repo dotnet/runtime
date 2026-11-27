@@ -11,7 +11,7 @@ namespace Internal.Runtime.CompilerServices
 {
     public static class FunctionPointerOps
     {
-#if TARGET_WASM
+#if TARGET_WASMARCH
         private const int FatFunctionPointerOffset = 1 << 31;
 #else
         private const int FatFunctionPointerOffset = 2;

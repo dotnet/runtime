@@ -39,8 +39,7 @@
   </Target>
 
   <!--
-    CoreCLR-WASI app-builder targets. Sibling of Mono's WasiApp.targets, mirroring the
-    browser split (BrowserWasmApp.targets vs BrowserWasmApp.CoreCLR.targets).
+    CoreCLR-WASI app-builder targets.
 
     Performs a per-app native link of the shipping wasihost corehost (libWasiHost.a, from
     src/native/corehost/wasihost) so reverse P/Invoke thunks for the app/test
@@ -173,10 +172,6 @@
       <WasmNativeAsset Include="@(WasmIcuDataFileNames)" />
     </ItemGroup>
   </Target>
-
-  <!-- CoreCLR-WASI doesn't relink with emcc, so the Mono emcc prop blob (wasm-props.json)
-       isn't in the pack; no-op _ReadWasmProps so the build doesn't fail looking for it. -->
-  <Target Name="_ReadWasmProps" />
 
   <!-- The framework, including System.Private.CoreLib.dll, comes from the resolved runtime pack
        through the publish list, so trimming and ReadyToRun see the whole closure. Place
@@ -361,11 +356,12 @@
       <_WasiRelinkCompileFlags Include="-DHOST_32BIT=1" />
       <_WasiRelinkCompileFlags Include="-DHOST_UNIX" />
       <_WasiRelinkCompileFlags Include="-DHOST_WASM" />
+      <_WasiRelinkCompileFlags Include="-DHOST_WASMARCH" />
       <_WasiRelinkCompileFlags Include="-DTARGET_32BIT" />
       <_WasiRelinkCompileFlags Include="-DTARGET_UNIX" />
       <_WasiRelinkCompileFlags Include="-DTARGET_WASI" />
       <_WasiRelinkCompileFlags Include="-DTARGET_WASM" />
-      <_WasiRelinkCompileFlags Include="-DTARGET_WASM32" />
+      <_WasiRelinkCompileFlags Include="-DTARGET_WASMARCH" />
       <_WasiRelinkCompileFlags Include="-DUNICODE" />
       <_WasiRelinkCompileFlags Include="-D_UNICODE" />
       <_WasiRelinkCompileFlags Include="-DURTBLDENV_FRIENDLY=Retail" />

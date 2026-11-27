@@ -25,17 +25,17 @@ where `<TARGET_OS>` is one of the following:
 - tvos
 
 and `<TARGET_ARCHITECTURE>` is one of the following:
-- x64
-- arm64 (for device)
+- x64 (for MacCatalyst on x64 hosts)
+- arm64 (for devices and simulators)
 
 e.g., to build for an iOS simulator, run:
 ```
-./build.sh clr+clr.runtime+libs+packs -os iossimulator -arch x64 -cross
+./build.sh clr+clr.runtime+libs+packs -os iossimulator -arch arm64 -cross
 ```
 
 Run tests one by one for each test suite on a simulator:
 ```
-./build.sh libs.tests -os iossimulator -arch x64 -test
+./build.sh libs.tests -os iossimulator -arch arm64 -test
 ```
 
 ### Building for a device
@@ -46,7 +46,7 @@ In order to run the tests on a device:
 
 For example:
 ```
-./build.sh libs.tests -os ios -arch x64 -test /p:DevTeamProvisioning=H1A2B3C4D5
+./build.sh libs.tests -os ios -arch arm64 -test /p:DevTeamProvisioning=H1A2B3C4D5
 ```
 Other possible options are:
 - to sign with an adhoc key by setting `/p:DevTeamProvisioning=adhoc`
@@ -58,7 +58,7 @@ Other possible options are:
 
 - The following shows how to run tests for a specific library:
 ```
-./dotnet.sh build src/libraries/System.Numerics.Vectors/tests /t:Test /p:TargetOS=ios /p:TargetArchitecture=x64
+./dotnet.sh build src/libraries/System.Numerics.Vectors/tests /t:Test /p:TargetOS=ios /p:TargetArchitecture=arm64
 ```
 
 Also you can run the built test app through Xcode by opening the corresponding `.xcodeproj` and setting up the right scheme, app, and even signing if using a local device.
@@ -84,7 +84,7 @@ There are [functional tests](https://github.com/dotnet/runtime/tree/main/src/tes
 
 A functional test can be run the same way as any library test suite, e.g.:
 ```
-./dotnet.sh build /t:Test -c Release /p:TargetOS=iossimulator /p:TargetArchitecture=x64 src/tests/FunctionalTests/AppleMobile/PInvoke/PInvoke.Test.csproj
+./dotnet.sh build /t:Test -c Release /p:TargetOS=iossimulator /p:TargetArchitecture=arm64 src/tests/FunctionalTests/AppleMobile/PInvoke/PInvoke.Test.csproj
 ```
 
 Currently functional tests are expected to return `42` as a success code so please be careful when adding a new one.

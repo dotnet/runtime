@@ -3,7 +3,7 @@
   <Import Project="$(MSBuildThisFileDirectory)..\Directory.Build.props" />
   <PropertyGroup>
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
-    <CLRTestTargetUnsupported Condition="'$(TargetsMobile)' == 'true' or '$(TargetsWasm)' == 'true'">true</CLRTestTargetUnsupported>
+    <CLRTestTargetUnsupported Condition="'$(TargetsMobile)' == 'true' or '$(TargetsWasmArch)' == 'true'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)common\NativeTestProcess.cs" />

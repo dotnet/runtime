@@ -30,7 +30,7 @@
 #define ENREGISTERED_RETURNTYPE_MAXSIZE
 #define ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE
 #define ENREGISTERED_PARAMTYPE_MAXSIZE
-#elif TARGET_WASM
+#elif TARGET_WASMARCH
 #elif TARGET_LOONGARCH64 || TARGET_RISCV64
 #define HAS_FLOAT_ARGUMENT_REGISTERS               // Calling convention has floating-point argument registers
 #define ENREGISTERED_RETURNTYPE_MAXSIZE
@@ -269,7 +269,7 @@ namespace Internal.Runtime
         public static int StackElemSize(int size) { return (((size) + STACK_ELEM_SIZE - 1) & ~(STACK_ELEM_SIZE - 1)); }
     }
 
-#elif TARGET_WASM
+#elif TARGET_WASMARCH
     [StructLayout(LayoutKind.Sequential)]
     internal struct ReturnBlock
     {
@@ -485,7 +485,7 @@ namespace Internal.Runtime
         }
 
         public IntPtr m_alignmentPad;
-#elif TARGET_WASM
+#elif TARGET_WASMARCH
         public ReturnBlock m_returnBlock;
         public static unsafe int GetOffsetOfReturnValuesBlock()
         {

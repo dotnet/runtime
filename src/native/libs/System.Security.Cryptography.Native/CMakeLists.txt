@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.10..3.26)
 
 project(System.Security.Cryptography.Native C)
 
-if(CLR_CMAKE_TARGET_ARCH_WASM)
+if(CLR_CMAKE_TARGET_ARCH_WASMARCH)
     message(FATAL_ERROR "Not implemented for WASM")
 endif()
 

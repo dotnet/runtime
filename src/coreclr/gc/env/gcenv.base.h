@@ -188,10 +188,10 @@ typedef DWORD (WINAPI *PTHREAD_START_ROUTINE)(void* lpThreadParameter);
  #define MemoryBarrier __sync_synchronize
 #endif // __riscv
 
-#ifdef HOST_WASM
+#ifdef HOST_WASMARCH
   #define YieldProcessor()
   #define MemoryBarrier __sync_synchronize
-#endif // HOST_WASM
+#endif // HOST_WASMARCH
 
 #endif // _MSC_VER
 

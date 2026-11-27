@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#if defined(FEATURE_INTERPRETER) && !defined(TARGET_WASM)
+#if defined(FEATURE_INTERPRETER) && !defined(TARGET_WASMARCH)
 
 #include "common.h"
 #include "callstubgenerator.h"
@@ -3638,4 +3638,4 @@ void CallStubGenerator::EmitSwiftReturnLoweringRoutines(PCODE *pRoutines)
 }
 #endif // TARGET_APPLE && TARGET_ARM64
 
-#endif // FEATURE_INTERPRETER && !TARGET_WASM
+#endif // FEATURE_INTERPRETER && !TARGET_WASMARCH

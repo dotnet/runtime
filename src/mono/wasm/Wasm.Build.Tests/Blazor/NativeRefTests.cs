@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.IO;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -9,6 +8,7 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.Tests.Blazor;
 
+// TODO-WASM: https://github.com/dotnet/runtime/issues/135046
 [TestCategory("native"), TestCategory("mono")]
 public class NativeTests : BlazorWasmTestBase
 {
@@ -51,16 +51,5 @@ public class NativeTests : BlazorWasmTestBase
         BlazorPublish(info, config, new PublishOptions(AOT: true), isNativeBuild: true);
         // no aot!
         BlazorPublish(info, config, isNativeBuild: true);
-    }
-
-    [Theory]
-    [InlineData(Configuration.Release)]
-    public void BlazorWasm_CannotAOT_WithNoTrimming(Configuration config)
-    {
-        string extraProperties = "<PublishTrimmed>false</PublishTrimmed><RunAOTCompilation>true</RunAOTCompilation>";
-        ProjectInfo info = CopyTestAsset(config, aot: true, TestAsset.BlazorBasicTestApp, "blazorwasm_aot", extraProperties: extraProperties);
-
-        (string _, string output) = BlazorPublish(info, config, new PublishOptions(ExpectSuccess: false));
-        Assert.Contains("AOT is not supported without IL trimming", output);
     }
 }

@@ -147,13 +147,13 @@ void ThreadStore::AttachCurrentThread(bool fAcquireThreadStoreLock)
 
     pTS->m_ThreadList.InsertHead(pAttachingThread);
 
-#if defined(TARGET_UNIX) && !defined(TARGET_WASM)
+#if defined(TARGET_UNIX) && !defined(TARGET_WASMARCH)
     if (!InsertThreadIntoSignalSafeMap(pAttachingThread->m_threadId, pAttachingThread))
     {
         PalPrintFatalError("\nFailed to insert thread into signal-safe map due to out of memory.\n");
         RhFailFast();
     }
-#endif // TARGET_UNIX && !TARGET_WASM
+#endif // TARGET_UNIX && !TARGET_WASMARCH
 }
 
 // static
@@ -199,7 +199,7 @@ void ThreadStore::DetachCurrentThread()
         ASSERT(removed);
         // tidy up GC related stuff (release allocation context, etc..)
         pDetachingThread->Detach();
-#if defined(TARGET_UNIX) && !defined(TARGET_WASM)
+#if defined(TARGET_UNIX) && !defined(TARGET_WASMARCH)
         RemoveThreadFromSignalSafeMap(pDetachingThread->m_threadId, pDetachingThread);
 #endif
     }
@@ -376,12 +376,12 @@ EXTERN_C RuntimeThreadLocals* RhpGetThread()
     return &tls_CurrentThread;
 }
 
-#if defined(TARGET_UNIX) && !defined(TARGET_WASM)
+#if defined(TARGET_UNIX) && !defined(TARGET_WASMARCH)
 Thread * ThreadStore::GetCurrentThreadIfAvailableAsyncSafe()
 {
     return (Thread*)FindThreadInSignalSafeMap(minipal_get_current_thread_id_no_cache());
 }
-#endif // TARGET_UNIX && !TARGET_WASM
+#endif // TARGET_UNIX && !TARGET_WASMARCH
 
 #endif // !DACCESS_COMPILE
 

@@ -154,10 +154,10 @@ void FixContext(PCONTEXT pContextRecord)
 #undef FIXUPREG
 }
 
-#if defined(TARGET_UNIX) && !defined(TARGET_WASM)
+#if defined(TARGET_UNIX) && !defined(TARGET_WASMARCH)
 BOOL HandleHardwareException(PAL_SEHException* ex);
 BOOL IsSafeToHandleHardwareException(PCONTEXT contextRecord, PEXCEPTION_RECORD exceptionRecord);
-#endif // TARGET_UNIX && !TARGET_WASM
+#endif // TARGET_UNIX && !TARGET_WASMARCH
 
 static inline void UpdatePerformanceMetrics(CrawlFrame *pcfThisFrame, BOOL bIsRethrownException, BOOL bIsNewException)
 {
@@ -174,13 +174,13 @@ void InitializeExceptionHandling()
 
     CLRAddVectoredHandlers();
 
-#if defined(TARGET_UNIX) && !defined(TARGET_WASM)
+#if defined(TARGET_UNIX) && !defined(TARGET_WASMARCH)
     // Register handler of hardware exceptions like null reference in PAL
     PAL_SetHardwareExceptionHandler(HandleHardwareException, IsSafeToHandleHardwareException);
 
     // Register handler for determining whether the specified IP has code that is a GC marker for GCCover
     PAL_SetGetGcMarkerExceptionCode(GetGcMarkerExceptionCode);
-#endif // TARGET_UNIX && !TARGET_WASM
+#endif // TARGET_UNIX && !TARGET_WASMARCH
 }
 
 //static
@@ -297,7 +297,7 @@ void ExInfo::UpdateNonvolatileRegisters(CONTEXT *pContextRecord, REGDISPLAY *pRe
     UPDATEREG(S11);
     UPDATEREG(Fp);
 
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
     // nothing to do, wasm doesn't have registers
 #else
     PORTABILITY_ASSERT("ExInfo::UpdateNonvolatileRegisters");
@@ -918,7 +918,7 @@ bool IsDivByZeroAnIntegerOverflow(PCONTEXT pContext)
 }
 #endif // TARGET_AMD64
 
-#ifndef TARGET_WASM
+#ifndef TARGET_WASMARCH
 BOOL IsSafeToCallExecutionManager()
 {
     Thread *pThread = GetThreadNULLOk();
@@ -1134,11 +1134,11 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
 
     return FALSE;
 }
-#endif // !TARGET_WASM
+#endif // !TARGET_WASMARCH
 
 #endif // TARGET_UNIX
 
-#if defined(FEATURE_INTERPRETER) && !defined(HOST_WASM)
+#if defined(FEATURE_INTERPRETER) && !defined(HOST_WASMARCH)
 
 // The ssp argument needs to match the pContext (SSP register value at that context)
 // isInterruptedContext: the context is where a thread was interrupted and redirected, not a call site. No shadow stack slot
@@ -1215,7 +1215,7 @@ VOID DECLSPEC_NORETURN RethrowResumeAfterCatchException(const ResumeAfterCatchEx
     RethrowResumeAfterCatchExceptionSkipManagedFrames(ex, rd.pCurrentContext, ssp);
 }
 
-#endif // FEATURE_INTERPRETER && !HOST_WASM
+#endif // FEATURE_INTERPRETER && !HOST_WASMARCH
 
 void FirstChanceExceptionNotification()
 {
@@ -2920,12 +2920,12 @@ void CallCatchFunclet(BYTE* pHandlerIP, REGDISPLAY* pvRegDisplay, ExInfo* exInfo
 #endif
         {
             STRESS_LOG2(LF_EH, LL_INFO100, "Resuming propagation of managed exception through native frames at IP=%p, SP=%p\n", (void*)GetIP(pvRegDisplay->pCurrentContext), (void*)GetSP(pvRegDisplay->pCurrentContext));
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
             // wasm cannot unwind frames, so we let C++ exception handling do all the work
             PropagateExceptionThroughNativeFrames(OBJECTREFToObject(throwable), targetSp);
-#else // !TARGET_WASM
+#else // !TARGET_WASMARCH
             ExecuteFunctionBelowContext((PCODE)PropagateExceptionThroughNativeFrames, pvRegDisplay->pCurrentContext, targetSSP, (size_t)OBJECTREFToObject(throwable));
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
         }
 #undef FIRST_ARG_REG
     }
@@ -3496,7 +3496,7 @@ CLR_BOOL SfiInitWorker(StackFrameIterator* pThis, CONTEXT* pStackwalkCtx, CLR_BO
 
         if (!pThis->m_crawl.HasFaulted() && !pThis->m_crawl.IsIPadjusted())
         {
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
             // On Wasm, R2R code with virtual ips should not have its ip adjusted
             if (!ExecutionManager::IsVirtualIP(controlPC))
 #endif
@@ -3808,7 +3808,7 @@ Exit:;
         TADDR controlPC = pThis->m_crawl.GetRegisterSet()->ControlPC;
         if (!pThis->m_crawl.HasFaulted() && !pThis->m_crawl.IsIPadjusted())
         {
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
             // On Wasm, R2R code with virtual ips should not have its ip adjusted
             if (!ExecutionManager::IsVirtualIP(controlPC))
 #endif

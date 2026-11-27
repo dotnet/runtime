@@ -78,11 +78,6 @@ filtering and test execution.
 The test cannot be compiled or run under NativeAOT mode. This affects build and
 execution filtering.
 
-### 13. Project sets `<MonoAotIncompatible>true</MonoAotIncompatible>`
-
-The test is incompatible with Mono's AOT compiler. This affects build and execution
-filtering for Mono AOT test runs.
-
 ### 14. Project sets `<IsLongRunningGCTest>true</IsLongRunningGCTest>`
 
 The test is a long-running GC test that should only execute when `RunningLongGCTests`
@@ -212,7 +207,6 @@ If the project file contains **any** of the following MSBuild properties or item
 | `CLRTestExecutionArguments` (non-empty) | Per-process invocation arguments |
 | `CLRTestTargetUnsupported` | Build/execution filtering |
 | `NativeAotIncompatible` | Build/execution filtering |
-| `MonoAotIncompatible` | Build/execution filtering |
 | `CrossGenTest` (set to `false`) | Crossgen skip needed |
 | `AppManifest` | Per-process manifest |
 | `IlcMultiModule` | Incompatible build mode |

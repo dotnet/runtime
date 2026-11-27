@@ -175,12 +175,12 @@ static void StgIOCloseFile(STGIO_FILE hFile)
     fclose(hFile);
 }
 
-#ifndef TARGET_WASM
+#ifndef TARGET_WASMARCH
 static VMToOSInterface::MemoryMapHandle StgIOGetMappableFile(STGIO_FILE hFile)
 {
     return fileno(hFile);
 }
-#endif // !TARGET_WASM
+#endif // !TARGET_WASMARCH
 
 static HRESULT StgIOLastFileError()
 {
@@ -938,7 +938,7 @@ HRESULT StgIO::MapFileToMem(            // Return code.
         _ASSERTE(m_hFile != STGIO_INVALID_FILE || m_iType == STGIO_STREAM);
         _ASSERTE(m_rgPageMap == 0);
 
-#ifndef TARGET_WASM
+#ifndef TARGET_WASMARCH
         // For read mode, use a memory mapped file since the size will never
         // change for the life of the handle.
         if ((m_fFlags & DBPROP_TMODEF_WRITE) == 0 && m_iType != STGIO_STREAM)
@@ -975,7 +975,7 @@ HRESULT StgIO::MapFileToMem(            // Return code.
         // throw away our cached copy.  Memory mapped files are not good for this
         // case due to poor write characteristics.
         else
-#endif // !TARGET_WASM
+#endif // !TARGET_WASMARCH
         {
             ULONG iMaxSize;         // How much memory required for file.
 
@@ -1010,10 +1010,10 @@ ErrExit:
     // Check for errors and clean up.
     if (FAILED(hr))
     {
-#ifndef TARGET_WASM
+#ifndef TARGET_WASMARCH
         if (m_hMapping != VMToOSInterface::InvalidMemoryMapHandle)
             VMToOSInterface::CloseMemoryMapping(m_hMapping);
-#endif // !TARGET_WASM
+#endif // !TARGET_WASMARCH
         m_hMapping = VMToOSInterface::InvalidMemoryMapHandle;
         m_pBaseData = m_pData = 0;
         m_cbData = 0;
@@ -1134,13 +1134,13 @@ HRESULT StgIO::GetPtrForMem(            // Return code.
                 return (hr);
             }
 
-#ifndef TARGET_WASM
+#ifndef TARGET_WASMARCH
             // Change the memory to read only to avoid any modifications.  Any faults
             // that occur indicate a bug whereby the engine is trying to write to
             // protected memory.
             _ASSERTE(VMToOSInterface::ProtectMemory((void *) ((DWORD_PTR) m_pData + iOffset),
                     iSize, VMToOSInterface::MemoryProtection::ReadOnly));
-#endif // !TARGET_WASM
+#endif // !TARGET_WASMARCH
 
             // Record each new loaded page.
             for (;  j<i;  j++)
@@ -1333,14 +1333,14 @@ void StgIO::FreePageMap()
     // If a small file was allocated, then free that memory.
     if (m_bFreeMem && m_pBaseData)
         FreeMemory(m_pBaseData);
-#ifndef TARGET_WASM
+#ifndef TARGET_WASMARCH
     // For mmf, close handles and free resources.
     else if (m_hMapping != VMToOSInterface::InvalidMemoryMapHandle && m_pBaseData)
     {
         VERIFY(VMToOSInterface::UnmapMemory(m_pBaseData, m_cbMapping) == 0);
         VERIFY(VMToOSInterface::CloseMemoryMapping(m_hMapping));
     }
-#endif // !TARGET_WASM
+#endif // !TARGET_WASMARCH
     // For our own system, free memory.
     else if (m_rgPageMap && m_pBaseData)
     {

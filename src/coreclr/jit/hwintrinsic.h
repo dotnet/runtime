@@ -69,7 +69,7 @@ enum HWIntrinsicCategory : uint8_t
     // - have to be addressed specially
     HW_Category_Special
 };
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
 enum HWIntrinsicCategory : uint8_t
 {
     // Operations which operate on one or more SIMD values
@@ -260,7 +260,7 @@ enum HWIntrinsicFlag : uint64_t
     // operations into mask operations when the intrinsic is operating on mask vectors (mainly bitwise operations).
     HW_Flag_HasAllMaskVariant = 0x4000000,
 
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
     // The intrinsic supports some sort of containment analysis
     HW_Flag_SupportsContainment   = 0x400,
     HW_Flag_ReturnsPerElementMask = 0x800,
@@ -577,7 +577,7 @@ struct HWIntrinsicInfo
 #elif defined(TARGET_ARM64)
     static void lookupImmBounds(
         NamedIntrinsic intrinsic, int simdSize, var_types baseType, int immNumber, int* lowerBound, int* upperBound);
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
     static int lookupImmUpperBound(NamedIntrinsic intrinsic, unsigned int simdSize, var_types baseType);
 #else
 #error Unsupported platform
@@ -721,7 +721,7 @@ struct HWIntrinsicInfo
         HWIntrinsicFlag flags = lookupFlags(id);
 #if defined(TARGET_XARCH)
         return (flags & HW_Flag_MaybeCommutative) != 0;
-#elif defined(TARGET_ARM64) || defined(TARGET_WASM)
+#elif defined(TARGET_ARM64) || defined(TARGET_WASMARCH)
         return false;
 #else
 #error Unsupported platform
@@ -739,7 +739,7 @@ struct HWIntrinsicInfo
         HWIntrinsicFlag flags = lookupFlags(id);
 #if defined(TARGET_XARCH)
         return (flags & HW_Flag_NoContainment) == 0;
-#elif defined(TARGET_ARM64) || defined(TARGET_WASM)
+#elif defined(TARGET_ARM64) || defined(TARGET_WASMARCH)
         return (flags & HW_Flag_SupportsContainment) != 0;
 #else
 #error Unsupported platform
@@ -749,7 +749,7 @@ struct HWIntrinsicInfo
     static bool ReturnsPerElementMask(NamedIntrinsic id)
     {
         HWIntrinsicFlag flags = lookupFlags(id);
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_WASM)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_WASMARCH)
         return (flags & HW_Flag_ReturnsPerElementMask) != 0;
 #else
 #error Unsupported platform
@@ -859,7 +859,7 @@ struct HWIntrinsicInfo
         return (flags & HW_Flag_NoRMWSemantics) == 0;
 #elif defined(TARGET_ARM64)
         return (flags & HW_Flag_HasRMWSemantics) != 0;
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
         // WASM doesn't have Read/Modify/Write semantics
         return false;
 #else
@@ -1006,7 +1006,7 @@ struct HWIntrinsicInfo
 
     static bool HasImmediateOperand(NamedIntrinsic id)
     {
-#if defined(TARGET_ARM64) || defined(TARGET_WASM)
+#if defined(TARGET_ARM64) || defined(TARGET_WASMARCH)
         const HWIntrinsicFlag flags = lookupFlags(id);
         return ((flags & HW_Flag_HasImmediateOperand) != 0);
 #elif defined(TARGET_XARCH)
@@ -1308,7 +1308,7 @@ struct HWIntrinsicInfo
             }
         }
     }
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
     //------------------------------------------------------------------------------------------------
     // GetImmOpPositions: Get the positions of the immediate operands in the signature of an intrinsic
     // with an immediate.
@@ -1352,7 +1352,7 @@ struct HWIntrinsicInfo
             }
         }
     }
-#endif // TARGET_ARM64 || TARGET_WASM
+#endif // TARGET_ARM64 || TARGET_WASMARCH
 };
 
 #ifdef TARGET_ARM64
@@ -1458,7 +1458,7 @@ private:
         }
     }
 };
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
 struct HWIntrinsic final
 {
     HWIntrinsic(const GenTreeHWIntrinsic* node)
@@ -1575,7 +1575,7 @@ private:
     }
 };
 
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
 
 #endif // FEATURE_HW_INTRINSICS
 

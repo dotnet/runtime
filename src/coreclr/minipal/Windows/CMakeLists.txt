@@ -6,7 +6,7 @@ set(SOURCES
     memory.cpp
 )
 
-if(NOT CLR_CMAKE_TARGET_ARCH_WASM)
+if(NOT CLR_CMAKE_TARGET_ARCH_WASMARCH)
     list(APPEND SOURCES
         mapping.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/../mappingholders.cpp

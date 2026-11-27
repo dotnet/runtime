@@ -1159,7 +1159,7 @@ static bool ProbeMemory(const void *start, size_t len, bool writeAccess)
 
 #if defined(TARGET_BROWSER)
     return (uintptr_t)start + len <= emscripten_get_heap_size();
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
     // wasm linear memory is one contiguous region (64 KiB pages).
     return (uintptr_t)start + len <= __builtin_wasm_memory_size(0) * 65536;
 #else

@@ -268,7 +268,7 @@ public:
         REGNUM_T5,
         REGNUM_T6,
         REGNUM_PC,
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
         REGNUM_PC, // wasm doesn't have registers
 #else
         PORTABILITY_WARNING("Register numbers not defined on this platform")
@@ -299,11 +299,11 @@ public:
 
     };
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
     // WASM has no physical registers. A register field in a variable location holds a wasm
     // local index biased past the reserved RegNum values above.
     static constexpr uint32_t WASM_LOCAL_REGNUM_BASE = REGNUM_AMBIENT_SP + 1;
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
 
     // VarLoc describes the location of a native variable.  Note that currently, VLT_REG_BYREF and VLT_STK_BYREF
     // are only used for value types on X64.

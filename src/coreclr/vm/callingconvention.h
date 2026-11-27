@@ -115,7 +115,7 @@ struct ArgLocDesc
     }
 };
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
 #define TARGET_REGISTER_SIZE INTERP_STACK_SLOT_SIZE
 #else
 #define TARGET_REGISTER_SIZE TARGET_POINTER_SIZE
@@ -202,7 +202,7 @@ struct TransitionBlock
     };
     TADDR padding; // Keep size of TransitionBlock as multiple of 16-byte. Simplifies code in PROLOG_WITH_TRANSITION_BLOCK
     ArgumentRegisters       m_argumentRegisters;
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
     // No transition block on WASM yet
     union {
         CalleeSavedRegisters m_calleeSavedRegisters;
@@ -261,7 +261,7 @@ struct TransitionBlock
         // on wasm we don't have registers, so instead we put the arguments
         // which would be in registers on other architectures
         // on the stack right after the transition block
-#if (defined(TARGET_AMD64) && !defined(UNIX_AMD64_ABI)) || defined(TARGET_WASM)
+#if (defined(TARGET_AMD64) && !defined(UNIX_AMD64_ABI)) || defined(TARGET_WASMARCH)
         offs = sizeof(TransitionBlock);
 #else
         offs = offsetof(TransitionBlock, m_argumentRegisters);
@@ -960,14 +960,14 @@ public:
 
 #endif // TARGET_LOONGARCH64 || TARGET_RISCV64
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
 
     // Get layout information for the argument that the ArgIterator is currently visiting.
     void GetArgLoc(int argOffset, ArgLocDesc *pLoc)
     {
         _ASSERTE(!"GetArgLoc not implemented for WASM");
     }
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
 
 protected:
     DWORD               m_dwFlags;              // Cached flags
@@ -1324,7 +1324,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
         m_idxGenReg = numRegistersUsed;
         m_ofsStack = 0;
         m_idxFPReg = 0;
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
         // we put everything on the stack, we don't have registers
         // so we put the this and retbuf arguments first, based on the numRegistersUsed count calculated above
         m_ofsStack = numRegistersUsed * INTERP_STACK_SLOT_SIZE;
@@ -1903,7 +1903,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
     m_ofsStack += ALIGN_UP(cbArg, TARGET_POINTER_SIZE);
 
     return argOfs;
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
 
     unsigned align;
     if (argType == ELEMENT_TYPE_VALUETYPE)
@@ -2068,7 +2068,7 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ComputeReturnFlags()
         break;
     }
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
     // WebAssembly ArgIterator follows the Interpreter calling convention which does not use a return buffer arg in the normal argument stream
     flags &= ~RETURN_HAS_RET_BUFFER;
 #endif
@@ -2228,14 +2228,14 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ForceSigWalk()
     // Clear the iterator started flag
     m_dwFlags &= ~ITERATION_STARTED;
 
-#ifdef TARGET_WASM
+#ifdef TARGET_WASMARCH
     if (this->NumFixedArgs() == 0)
     {
         // We have zero arguments, but we still need to reserve space for hidden arguments which are in registers on other architectures
         // in non-zero argument cases, the offset is already included in first argument offset.
         maxOffset += m_ofsStack;
     }
-#endif // TARGET_WASM
+#endif // TARGET_WASMARCH
 
     int nSizeOfArgStack = maxOffset - TransitionBlock::GetOffsetOfArgs();
 

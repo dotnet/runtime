@@ -27,7 +27,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 internal struct WasmContext : IPlatformContext
 {
     // Field order and size mirror the native wasm T_CONTEXT (src/coreclr/pal/inc/pal.h,
-    // HOST_WASM branch) so that a serialized WasmContext is byte-compatible with the
+    // HOST_WASMARCH branch) so that a serialized WasmContext is byte-compatible with the
     // runtime's context blob:
     //   ContextFlags @0, InterpreterWalkFramePointer @4, InterpreterSP @8,
     //   InterpreterFP @12, InterpreterIP @16  (20 bytes, all 32-bit / wasm32).

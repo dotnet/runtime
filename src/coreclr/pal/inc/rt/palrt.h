@@ -902,7 +902,7 @@ typedef struct _DISPATCHER_CONTEXT {
     DWORD Reserved;
 } DISPATCHER_CONTEXT, *PDISPATCHER_CONTEXT;
 
-#elif defined(HOST_WASM)
+#elif defined(HOST_WASMARCH)
 
 typedef struct _DISPATCHER_CONTEXT {
     // WASM does not build the JIT at this point,

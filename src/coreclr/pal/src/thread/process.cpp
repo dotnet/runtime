@@ -651,7 +651,7 @@ PROCLaunchCreateDump(
     LPSTR errorMessageBuffer,
     INT cbErrorMessageBuffer)
 {
-#if defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_WASM)
+#if defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_WASMARCH)
     return FALSE;
 #else
     _ASSERTE(argv[0] != nullptr);
@@ -808,7 +808,7 @@ PROCLaunchCreateDump(
         }
     }
     return true;
-#endif // !TARGET_IOS && !TARGET_TVOS && !TARGET_WASM
+#endif // !TARGET_IOS && !TARGET_TVOS && !TARGET_WASMARCH
 }
 
 /*++

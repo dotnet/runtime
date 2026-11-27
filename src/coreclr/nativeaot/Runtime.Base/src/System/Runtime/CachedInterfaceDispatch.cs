@@ -108,7 +108,7 @@ namespace System.Runtime
             return pTargetCode;
         }
 
-#if TARGET_WASM
+#if TARGET_WASMARCH
         [RuntimeExport("RhpDispatchResolve")]
         private static IntPtr RhpDispatchResolve(object pObject, IntPtr pCell)
         {
@@ -198,7 +198,7 @@ namespace System.Runtime
                                                                                     DispatchResolve.ResolveFlags.IDynamicInterfaceCastable,
                                                                                     ppGenericContext);
 
-#if TARGET_WASM
+#if TARGET_WASMARCH
             const int RequiresInstantiatingThunkFlag = DispatchMapCodePointerFlags.RequiresInstantiatingThunkFlagWasm;
 #else
             const int RequiresInstantiatingThunkFlag = DispatchMapCodePointerFlags.RequiresInstantiatingThunkFlag;

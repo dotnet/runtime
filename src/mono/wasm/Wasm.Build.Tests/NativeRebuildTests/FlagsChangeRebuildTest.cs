@@ -29,10 +29,7 @@ namespace Wasm.Build.NativeRebuild.Tests
             ).UnwrapItemsAsArrays();
 
         public static IEnumerable<object?[]> FlagsChangesForCurrentRuntime()
-        {
-            IEnumerable<object?[]> data = FlagsChangesForNativeRelinkingData(aot: false);
-            return IsCoreClrRuntime ? data : data.Concat(FlagsChangesForNativeRelinkingData(aot: true));
-        }
+            => FlagsChangesForNativeRelinkingData(aot: false);
 
         [Theory]
         [MemberData(nameof(FlagsChangesForCurrentRuntime))]
@@ -41,28 +38,23 @@ namespace Wasm.Build.NativeRebuild.Tests
             ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "rebuild_flags");
             BuildPaths paths = await FirstNativeBuildAndRun(info, config, aot, requestNativeRelink: true, invariant: false);
             var pathsDict = GetFilesTable(info.ProjectName, aot, paths, unchanged: true);
-            // With these defaults, Mono already compiles with -g; CoreCLR does not.
-            bool dotnetNativeFilesUnchanged = extraLDFlags.Length == 0 && !(IsCoreClrRuntime && extraCFlags.Length > 0);
+            bool dotnetNativeFilesUnchanged = extraLDFlags.Length == 0 && extraCFlags.Length == 0;
             if (!dotnetNativeFilesUnchanged)
             {
                 pathsDict.UpdateTo(unchanged: false, "dotnet.native.wasm", "dotnet.native.js");
-                if (IsCoreClrRuntime)
-                    pathsDict.UpdateTo(unchanged: false, "dotnet.native.js.symbols");
+                pathsDict.UpdateTo(unchanged: false, "dotnet.native.js.symbols");
             }
 
-            if (IsCoreClrRuntime)
+            if (extraCFlags.Length > 0)
             {
-                if (extraCFlags.Length > 0)
-                {
-                    pathsDict.UpdateTo(unchanged: false,
-                        "callhelpers-interp-to-managed.o",
-                        "callhelpers-pinvoke.o",
-                        "callhelpers-reverse.o",
-                        "emcc-compile-generated.rsp");
-                }
-                if (extraLDFlags.Length > 0)
-                    pathsDict.UpdateTo(unchanged: false, "emcc-link.rsp");
+                pathsDict.UpdateTo(unchanged: false,
+                    "callhelpers-interp-to-managed.o",
+                    "callhelpers-pinvoke.o",
+                    "callhelpers-reverse.o",
+                    "emcc-compile-generated.rsp");
             }
+            if (extraLDFlags.Length > 0)
+                pathsDict.UpdateTo(unchanged: false, "emcc-link.rsp");
 
             var originalStat = StatFiles(pathsDict);
 
@@ -83,10 +75,7 @@ namespace Wasm.Build.NativeRebuild.Tests
                 Assert.DoesNotContain("var PIPEFS", dotnetNativeJs);
             }
 
-            string pinvokeCompileMessage = IsCoreClrRuntime
-                ? "callhelpers-pinvoke.cpp -> callhelpers-pinvoke.o"
-                : "pinvoke.c -> pinvoke.o";
-            TestUtils.AssertSubstring(pinvokeCompileMessage, output, contains: extraCFlags.Length > 0);
+            TestUtils.AssertSubstring("callhelpers-pinvoke.cpp -> callhelpers-pinvoke.o", output, contains: extraCFlags.Length > 0);
 
             // ldflags: link step args change, so it should trigger relink
             TestUtils.AssertSubstring("Linking with emcc", output, contains: !dotnetNativeFilesUnchanged);

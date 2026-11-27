@@ -1,7 +1,7 @@
 project(Runtime)
 
 set(FEATURE_PORTABLE_HELPERS 0)
-if(CLR_CMAKE_TARGET_ARCH_WASM)
+if(CLR_CMAKE_TARGET_ARCH_WASMARCH)
   set(FEATURE_PORTABLE_HELPERS 1)
 endif()
 
@@ -82,7 +82,7 @@ set(COMMON_RUNTIME_SOURCES
     ${CLR_SRC_NATIVE_DIR}/minipal/xoshiro128pp.c
 )
 
-if (CLR_CMAKE_TARGET_UNIX AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
+if (CLR_CMAKE_TARGET_UNIX AND NOT CLR_CMAKE_TARGET_ARCH_WASMARCH)
     list(APPEND COMMON_RUNTIME_SOURCES
         ${RUNTIME_DIR}/SignalSafeThreadMap.cpp
     )
@@ -182,7 +182,7 @@ else()
 
   include(${GC_DIR}/unix/configure.cmake)
 
-  if(CLR_CMAKE_TARGET_ARCH_WASM)
+  if(CLR_CMAKE_TARGET_ARCH_WASMARCH)
     include_directories($ENV{EMSCRIPTEN/system/lib/libcxxabi/include})
   endif()
 
@@ -214,7 +214,7 @@ else()
     ${GC_DIR}/unix/events.cpp
   )
 
-  if(CLR_CMAKE_TARGET_ARCH_WASM)
+  if(CLR_CMAKE_TARGET_ARCH_WASMARCH)
     list(APPEND COMMON_RUNTIME_SOURCES
       wasm/ExceptionHandling.cpp
       wasm/MiscStubs.cpp
@@ -243,7 +243,7 @@ else()
     include(${CLR_SRC_NATIVE_DIR}/external/llvm-libunwind.cmake)
 
     set(NATIVEAOT_LOCALIZE_LIBUNWIND_SYMBOLS OFF)
-    if(CLR_CMAKE_TARGET_UNIX AND NOT CLR_CMAKE_TARGET_APPLE AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
+    if(CLR_CMAKE_TARGET_UNIX AND NOT CLR_CMAKE_TARGET_APPLE AND NOT CLR_CMAKE_TARGET_ARCH_WASMARCH)
       set(NATIVEAOT_LOCALIZE_LIBUNWIND_SYMBOLS ON)
     endif()
 
@@ -322,11 +322,11 @@ if(NOT FEATURE_PORTABLE_HELPERS)
   endif()
 endif()
 
-if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
+if (NOT CLR_CMAKE_TARGET_ARCH_WASMARCH)
   list(APPEND RUNTIME_SOURCES_ARCH_ASM
     ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/EHHelpers.${ASM_SUFFIX}
   )
-endif (NOT CLR_CMAKE_TARGET_ARCH_WASM)
+endif (NOT CLR_CMAKE_TARGET_ARCH_WASMARCH)
 
 # Add architecture specific folder for looking up headers.
 convert_to_absolute_path(ARCH_SOURCES_DIR ${ARCH_SOURCES_DIR})
@@ -343,7 +343,7 @@ if(FEATURE_EVENT_TRACE)
   add_definitions(-DFEATURE_EVENT_TRACE)
 endif()
 
-if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
+if (NOT CLR_CMAKE_TARGET_ARCH_WASMARCH)
   add_definitions(-DFEATURE_HIJACK)
 endif()
 
@@ -352,7 +352,7 @@ if(CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGE
   add_definitions(-DFEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP)
   add_definitions(-DFEATURE_MANUALLY_MANAGED_CARD_BUNDLES)
 endif()
-if(CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_WASM)
+if(CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_WASMARCH)
   add_definitions(-DFEATURE_64BIT_ALIGNMENT)
 endif()
 
@@ -360,7 +360,7 @@ add_definitions(-DFEATURE_NATIVEAOT)
 add_definitions(-DVERIFY_HEAP)
 add_definitions(-DNATIVEAOT)
 add_definitions(-D_LIB)
-if(NOT CLR_CMAKE_TARGET_ARCH_WASM)
+if(NOT CLR_CMAKE_TARGET_ARCH_WASMARCH)
   add_definitions(-DGC_DESCRIPTOR)
 endif()
 
@@ -381,7 +381,7 @@ else()
   # OpenBSD marks the main executable's read-only segments immutable (mimmutable) at load,
   # so the runtime cannot mprotect the read-only GS cookie page to writable to initialize it.
   # Keep the cookie in writable memory there, like Apple.
-  if(NOT CLR_CMAKE_TARGET_APPLE AND NOT CLR_CMAKE_TARGET_ARCH_WASM AND NOT CLR_CMAKE_TARGET_OPENBSD)
+  if(NOT CLR_CMAKE_TARGET_APPLE AND NOT CLR_CMAKE_TARGET_ARCH_WASMARCH AND NOT CLR_CMAKE_TARGET_OPENBSD)
     add_definitions(-DFEATURE_READONLY_GS_COOKIE)
   endif()
   include(unix/configure.cmake)
@@ -543,7 +543,7 @@ if(NOT FEATURE_PORTABLE_HELPERS)
 endif()
 install_static_library(Runtime.WorkstationGC aotsdk nativeaot)
 
-if(FEATURE_MULTITHREADING AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
+if(FEATURE_MULTITHREADING AND NOT CLR_CMAKE_TARGET_ARCH_WASMARCH)
   add_library(Runtime.GC.Server OBJECT ${GC_WKS_SVR_SOURCES})
   if(FEATURE_PERFTRACING)
     add_dependencies(Runtime.GC.Server aot_eventing_headers)
@@ -576,7 +576,7 @@ if(FEATURE_EVENT_TRACE AND CLR_CMAKE_TARGET_WIN32)
 endif()
 install_static_library(standalonegc-disabled aotsdk nativeaot)
 
-if(NOT CLR_CMAKE_TARGET_ARCH_WASM)
+if(NOT CLR_CMAKE_TARGET_ARCH_WASMARCH)
   add_library(standalonegc-enabled STATIC ${STANDALONEGC_ENABLED_SOURCES})
   if(FEATURE_PERFTRACING)
     add_dependencies(standalonegc-enabled aot_eventing_headers)

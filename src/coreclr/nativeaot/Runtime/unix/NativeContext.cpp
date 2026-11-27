@@ -125,7 +125,7 @@
     MCREG_A0(nativeContext->uc_mcontext) = arg0Reg;       \
     MCREG_A1(nativeContext->uc_mcontext) = arg1Reg;
 
-#elif defined(HOST_WASM)
+#elif defined(HOST_WASMARCH)
     // TODO: determine how unwinding will work on WebAssembly
 #define ASSIGN_CONTROL_REGS
 #define ASSIGN_INTEGER_REGS

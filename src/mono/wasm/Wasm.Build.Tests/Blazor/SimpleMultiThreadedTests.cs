@@ -13,6 +13,7 @@ using Xunit.Sdk;
 
 namespace Wasm.Build.Tests.MT.Blazor;
 
+// TODO-WASM: https://github.com/dotnet/runtime/issues/135046
 [TestCategory("mono")]
 public class SimpleMultiThreadedTests : BlazorWasmTestBase
 {

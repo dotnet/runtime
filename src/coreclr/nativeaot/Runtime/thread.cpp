@@ -1304,7 +1304,7 @@ FCIMPL1(void, RhpReversePInvokeReturn, ReversePInvokeFrame * pFrame)
 }
 FCIMPLEND
 
-#if defined(FEATURE_PORTABLE_HELPERS) && !defined(HOST_WASM)
+#if defined(FEATURE_PORTABLE_HELPERS) && !defined(HOST_WASMARCH)
 
 FCIMPL1(void, RhpPInvoke, PInvokeTransitionFrame* pFrame)
 {
@@ -1320,7 +1320,7 @@ FCIMPL1(void, RhpPInvokeReturn, PInvokeTransitionFrame* pFrame)
 }
 FCIMPLEND
 
-#endif // FEATURE_PORTABLE_HELPERS && !HOST_WASM
+#endif // FEATURE_PORTABLE_HELPERS && !HOST_WASMARCH
 
 #endif // !DACCESS_COMPILE
 

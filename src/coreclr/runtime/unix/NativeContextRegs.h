@@ -113,7 +113,7 @@
 #define MCREG_Xer(mc)       ((mc).gp_regs[37])
 #define MCREG_Ccr(mc)       ((mc).gp_regs[38])
 #endif // TARGET_FREEBSD
-#elif defined(HOST_WASM)
+#elif defined(HOST_WASMARCH)
 #define MCREG_Sp(mc)      0
 #define MCREG_Pc(mc)      0
 #elif HAVE___GREGSET_T

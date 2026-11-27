@@ -11,7 +11,7 @@ typedef uint32_t UIntTarget;
 typedef uint32_t UIntTarget;
 #elif defined(TARGET_ARM64)
 typedef uint64_t UIntTarget;
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
 typedef uint32_t UIntTarget;
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 typedef uint64_t UIntTarget;

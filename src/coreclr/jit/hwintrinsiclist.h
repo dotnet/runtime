@@ -269,7 +269,7 @@ HARDWARE_INTRINSIC(Vector,          op_UnsignedRightShift,                      
 #include "hwintrinsiclistxarch.h"
 #elif defined(TARGET_ARM64)
 #include "hwintrinsiclistarm64.h"
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASMARCH)
 #include "hwintrinsiclistwasm.h"
 #else
 #error Unsupported platform

@@ -31,6 +31,7 @@ public class MiscTests : BlazorWasmTestBase
     [InlineData(Configuration.Release, true)]
     [InlineData(Configuration.Release, false)]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/103566")]
+    // TODO-WASM: https://github.com/dotnet/runtime/issues/135046
     [TestCategory("native"), TestCategory("mono")]
     public void NativeBuild_WithDeployOnBuild_UsedByVS(Configuration config, bool nativeRelink)
     {
@@ -59,6 +60,7 @@ public class MiscTests : BlazorWasmTestBase
 
     [Theory]
     [InlineData(Configuration.Release)]
+    // TODO-WASM: https://github.com/dotnet/runtime/issues/135046
     [TestCategory("native"), TestCategory("mono")]
     public void DefaultTemplate_AOT_InProjectFile(Configuration config)
     {

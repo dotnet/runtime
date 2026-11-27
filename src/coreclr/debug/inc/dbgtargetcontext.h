@@ -49,7 +49,7 @@
 #define DTCONTEXT_IS_LOONGARCH64
 #elif defined (TARGET_RISCV64)
 #define DTCONTEXT_IS_RISCV64
-#elif defined (TARGET_WASM)
+#elif defined (TARGET_WASMARCH)
 #define DTCONTEXT_IS_WASM
 #endif
 

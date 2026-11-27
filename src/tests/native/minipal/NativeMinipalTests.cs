@@ -7,6 +7,7 @@ using Xunit;
 public class NativeMinipalTests
 {
     [Theory]
+    [InlineData("fileio")]
     [InlineData("utf8")]
     [InlineData("u16")]
     public static void RunSuite(string group)

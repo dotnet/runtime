@@ -124,7 +124,7 @@ public class DebugLevelTests : WasmTemplateTestsBase
     [InlineData(null, true, true)]
     [InlineData(true, false, true)]
     [InlineData(false, false, true)]
-    [TestCategory("coreclr"), TestCategory("no-workload")]
+    [TestCategory("no-workload")]
     public async Task StackTraceLineNumbersBuildPublishBuild(bool? lineNumberSupport, bool noBuild, bool useMSBuild)
     {
         Configuration configuration = Configuration.Debug;
@@ -183,7 +183,7 @@ public class DebugLevelTests : WasmTemplateTestsBase
         }
     }
 
-    [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+    [Theory]
     [InlineData(false)]
     [InlineData(true)]
     [TestCategory("no-workload")]
