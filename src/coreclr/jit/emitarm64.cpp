@@ -15041,8 +15041,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
 
     if (addr->isContained())
     {
-        if (addr->IsIconHandle(GTF_ICON_FTN_ADDR, GTF_ICON_CONST_PTR, GTF_ICON_STATIC_HDL, GTF_ICON_STATIC_BOX_PTR,
-                               GTF_ICON_STATIC_ADDR_PTR, GTF_ICON_GLOBAL_PTR, GTF_ICON_STR_HDL))
+        if (addr->IsIconHandle() && !addr->IsIconHandle(GTF_ICON_TLS_HDL))
         {
             assert(ins == INS_ldr && EA_SIZE(attr) == EA_PTRSIZE && !EA_IS_BYREF(attr));
             GenTreeIntCon* cell      = addr->AsIntCon();

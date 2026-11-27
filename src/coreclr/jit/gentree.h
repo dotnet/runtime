@@ -3345,7 +3345,7 @@ struct GenTreeIntConCommon : public GenTree
     bool ImmedValNeedsReloc(Compiler* comp) const;
     bool ImmedValCanBeFolded(Compiler* comp, genTreeOps op);
 
-#if defined(TARGET_XARCH) || defined(TARGET_RISCV64)
+#if defined(TARGET_XARCH) || defined(TARGET_RISCV64) || defined(TARGET_ARM64)
     bool FitsInAddrBase(Compiler* comp);
     bool AddrNeedsReloc(Compiler* comp);
 #endif
