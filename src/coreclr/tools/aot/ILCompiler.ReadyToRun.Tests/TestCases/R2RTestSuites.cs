@@ -3093,6 +3093,56 @@ public class R2RTestSuites
     }
 
     /// <summary>
+    /// The Task-returning thunk of an in-module runtime-async method has no IL body at runtime, so a
+    /// cross-module compiled instantiation of it must use the async variant for its own IL body fixup.
+    /// </summary>
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsNotWasmTarget))]
+    public void RuntimeAsyncThunkILBodyFixup()
+    {
+        var asm = new CompiledAssembly
+        {
+            AssemblyName = nameof(RuntimeAsyncThunkILBodyFixup),
+            SourceResourceNames =
+            [
+                "RuntimeAsync/AsyncThunkOverCoreLibGeneric.cs",
+            ],
+            Features = { RuntimeAsyncFeature },
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(RuntimeAsyncThunkILBodyFixup),
+            [
+                new(nameof(RuntimeAsyncThunkILBodyFixup), [new CrossgenAssembly(asm)])
+                {
+                    Options = [Crossgen2Option.Optimize],
+                    AdditionalArgs = ["--opt-cross-module", "*"],
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            var formattingOptions = new SignatureFormattingOptions();
+            List<ReadyToRunMethod> thunks = R2RAssert.GetAllMethods(reader)
+                .Where(m => m.Name == "PassThrough"
+                    && m.SignatureString.Contains("ValueTuple", StringComparison.Ordinal)
+                    && !m.SignatureString.Contains("[ASYNC]", StringComparison.Ordinal)
+                    && !m.SignatureString.Contains("[RESUME]", StringComparison.Ordinal))
+                .ToList();
+            Assert.True(thunks.Count == 1,
+                $"Expected one Task-returning PassThrough over ValueTuple, found: [{string.Join(", ", thunks.Select(m => m.SignatureString))}]");
+
+            List<string> ilBodyFixups = (thunks[0].Fixups ?? Array.Empty<FixupCell>())
+                .Where(f => f.Signature?.FixupKind == ReadyToRunFixupKind.Check_IL_Body)
+                .Select(f => f.Signature.ToString(formattingOptions))
+                .Where(s => s.Contains("AsyncThunkOverCoreLibGeneric.PassThrough", StringComparison.Ordinal))
+                .ToList();
+            Assert.True(ilBodyFixups.Count == 1 && ilBodyFixups[0].StartsWith("[ASYNC] ", StringComparison.Ordinal),
+                $"Expected one Check_IL_Body fixup for the async variant of PassThrough, found: [{string.Join(", ", ilBodyFixups)}]");
+        }
+    }
+
+    /// <summary>
     /// Validates that ResumptionStubEntryPoint fixups are deduplicated for a method:
     /// even with multiple suspension points and forced compilation retries (via
     /// --determinism-stress), each compiled method should have exactly one
