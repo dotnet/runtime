@@ -165,6 +165,7 @@ enum class ReadyToRunSectionType : uint32_t
     TypeMapAssemblyTargets      = 126, // Added in V18.3
     WasmAsyncResumeInfo         = 127, // Added in V29
     AuxiliaryModuleMetadata     = 128, // Added in V34.1
+    WasmGCInfo                  = 129,
 
     // If you add a new section consider whether it is a breaking or non-breaking change.
     // Usually it is non-breaking, but if it is preferable to have older runtimes fail

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
@@ -86,6 +87,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         public const int GuidByteSize = 16;
 
         private const string SystemModuleName = "System.Private.CoreLib";
+        private const int WasmRuntimeFunctionGroupSize = 128;
 
         /// <summary>
         /// MetadataReader for the system module (normally System.Private.CoreLib)
@@ -834,11 +836,81 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// </summary>
         internal int CalculateRuntimeFunctionSize()
         {
+            if (Machine == WasmMachine.Wasm32)
+            {
+                return sizeof(int);
+            }
             if (Machine == Machine.Amd64)
             {
                 return 3 * sizeof(int);
             }
             return 2 * sizeof(int);
+        }
+
+        /// <summary>
+        /// Gets the number of logical runtime-function entries represented by a WebAssembly runtime-functions section,
+        /// including padding entries.
+        /// </summary>
+        /// <param name="section">The runtime-functions section.</param>
+        /// <returns>The number of entries.</returns>
+        /// <exception cref="BadImageFormatException">The section size is not a valid number of WebAssembly runtime-function groups.</exception>
+        public static int GetWasmRuntimeFunctionCount(ReadyToRunSection section)
+        {
+            if (section.Size < 0 || section.Size % WasmRuntimeFunctionGroupSize != 0)
+            {
+                throw new BadImageFormatException($"Invalid Wasm runtime function section size: {section.Size}.");
+            }
+
+            return section.Size / sizeof(int);
+        }
+
+        /// <summary>
+        /// Reads a WebAssembly runtime-function entry.
+        /// </summary>
+        /// <param name="ordinal">The zero-based entry ordinal.</param>
+        /// <param name="beginAddress">Receives the virtual instruction pointer for a non-padding entry.</param>
+        /// <param name="unwindRva">Receives the unwind information RVA for a non-padding entry.</param>
+        /// <param name="isFunclet">Receives whether the entry represents a funclet.</param>
+        /// <returns><see langword="true"/> if the entry contains a runtime function; otherwise, <see langword="false"/> if it is padding.</returns>
+        /// <exception cref="BadImageFormatException">The ordinal or entry encoding is invalid.</exception>
+        public bool TryReadWasmRuntimeFunction(int ordinal, out int beginAddress, out int unwindRva, out bool isFunclet)
+        {
+            ReadyToRunSection section = ReadyToRunHeader.Sections[ReadyToRunSectionType.RuntimeFunctions];
+            int count = GetWasmRuntimeFunctionCount(section);
+            if (ordinal < 0 || ordinal >= count)
+            {
+                throw new BadImageFormatException($"Invalid Wasm runtime function ordinal: {ordinal}.");
+            }
+
+            int groupOffset = checked(CompositeReader.GetOffset(section.RelativeVirtualAddress) + (ordinal / 32) * WasmRuntimeFunctionGroupSize);
+            ReadOnlySpan<byte> group = Image.AsSpan(groupOffset, WasmRuntimeFunctionGroupSize);
+            int index = ordinal & 31;
+            beginAddress = 0;
+            unwindRva = 0;
+            isFunclet = (BinaryPrimitives.ReadUInt32LittleEndian(group.Slice(4)) & (1u << index)) != 0;
+            if (group[32 + index] == byte.MaxValue)
+            {
+                return false;
+            }
+
+            beginAddress = checked((int)BinaryPrimitives.ReadUInt32LittleEndian(group) + group[32 + index] + index * 4);
+            uint high = (uint)(group[8 + index / 2] >> ((index & 1) * 4)) & 0xF;
+            uint unwindOffset = ((uint)group[64 + index] << 8) | group[96 + index];
+            if (high == 0xF)
+            {
+                if (index == 31 || group[32 + 31] != byte.MaxValue)
+                {
+                    throw new BadImageFormatException("Invalid Wasm runtime function unwind escape.");
+                }
+                unwindOffset |= ((uint)group[64 + 31] << 24) | ((uint)group[96 + 31] << 16);
+            }
+            else
+            {
+                unwindOffset |= high << 16;
+            }
+
+            unwindRva = checked(ReadyToRunHeader.Sections[ReadyToRunSectionType.WasmGCInfo].RelativeVirtualAddress + (int)unwindOffset);
+            return true;
         }
 
         private uint? _wasmMinFunctionTableIndex;
@@ -1235,7 +1307,19 @@ namespace ILCompiler.Reflection.ReadyToRun
             for (int i = 0; i < nRuntimeFunctions; i++)
             {
                 int entryOffset = runtimeFunctionsOffset + i * runtimeFunctionSize;
-                uint beginAddress = BitConverter.ToUInt32(Image, entryOffset);
+                uint beginAddress;
+                if (Machine == WasmMachine.Wasm32)
+                {
+                    if (!TryReadWasmRuntimeFunction(i, out int virtualIP, out _, out _))
+                    {
+                        continue;
+                    }
+                    beginAddress = checked((uint)virtualIP);
+                }
+                else
+                {
+                    beginAddress = BitConverter.ToUInt32(Image, entryOffset);
+                }
                 stubRvaToMethodIndexMap[beginAddress] = i;
             }
 
@@ -1291,7 +1375,10 @@ namespace ILCompiler.Reflection.ReadyToRun
                 int i = runtimeFunctionId;
                 do
                 {
-                    count++;
+                    if (Machine != WasmMachine.Wasm32 || TryReadWasmRuntimeFunction(i, out _, out _, out _))
+                    {
+                        count++;
+                    }
                     i++;
                 } while (i < isEntryPoint.Length && !isEntryPoint[i] && i < firstColdRuntimeFunction);
 

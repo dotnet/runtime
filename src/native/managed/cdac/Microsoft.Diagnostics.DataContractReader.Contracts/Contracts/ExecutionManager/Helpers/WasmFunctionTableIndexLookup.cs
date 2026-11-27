@@ -61,8 +61,8 @@ internal sealed class WasmFunctionTableIndexLookup
         return _target.ProcessedData.GetOrAdd<Data.ReadyToRunInfo>(module.ReadyToRunInfo);
     }
 
-    private Data.RuntimeFunction GetRuntimeFunction(Data.ReadyToRunInfo r2rInfo, uint localIndex)
-        => _runtimeFunctions.GetRuntimeFunction(r2rInfo.RuntimeFunctions, localIndex);
+    private TargetPointer GetRuntimeFunction(Data.ReadyToRunInfo r2rInfo, uint localIndex)
+        => _runtimeFunctions.GetRuntimeFunctionAddress(r2rInfo.RuntimeFunctions, localIndex);
 
     // Mirrors ExecutionManager::GetWasmVirtualIPFromFunctionTableIndex.
     public bool TryGetVirtualIPBase(uint functionTableIndex, out ulong baseVirtualIP)
@@ -83,10 +83,13 @@ internal sealed class WasmFunctionTableIndexLookup
         // Funclets' function-local virtual IPs are relative to their controlling function, so index
         // backwards past funclet entries to the controlling (non-funclet) function.
         uint localIndex = functionTableIndex - section.MinFunctionTableIndex;
+        if (_runtimeFunctions.IsSkip(GetRuntimeFunction(r2rInfo, localIndex)))
+            return false;
+
         while (true)
         {
-            Data.RuntimeFunction runtimeFunction = GetRuntimeFunction(r2rInfo, localIndex);
-            if (_runtimeFunctions.IsFunclet(runtimeFunction))
+            TargetPointer runtimeFunction = GetRuntimeFunction(r2rInfo, localIndex);
+            if (_runtimeFunctions.IsSkip(runtimeFunction) || _runtimeFunctions.IsFunclet(runtimeFunction))
             {
                 if (localIndex == 0)
                     return false;
@@ -95,36 +98,9 @@ internal sealed class WasmFunctionTableIndexLookup
             }
 
             baseVirtualIP = minVirtualIP.Value + _runtimeFunctions.GetBeginAddress(runtimeFunction);
-            unwindDataAddress = r2rInfo.LoadedImageBase + runtimeFunction.UnwindData;
+            unwindDataAddress = r2rInfo.GetWasmGCInfoBase() + _runtimeFunctions.GetUnwindData(runtimeFunction);
             return true;
         }
-    }
-
-    // Mirrors ExecutionManager::IsFuncletFunctionIndex.
-    public bool TryIsFunclet(uint functionTableIndex, out bool isFunclet)
-    {
-        isFunclet = false;
-        Data.FunctionTableIndexRangeSection? section = FindSection(functionTableIndex);
-        if (section is null)
-            return false;
-
-        Data.ReadyToRunInfo r2rInfo = GetReadyToRunInfo(section);
-        isFunclet = _runtimeFunctions.IsFunclet(GetRuntimeFunction(r2rInfo, functionTableIndex - section.MinFunctionTableIndex));
-        return true;
-    }
-
-    public bool TryGetUnwindData(uint functionTableIndex, out TargetPointer unwindDataAddress)
-    {
-        unwindDataAddress = TargetPointer.Null;
-        Data.FunctionTableIndexRangeSection? section = FindSection(functionTableIndex);
-        if (section is null)
-            return false;
-
-        Data.ReadyToRunInfo r2rInfo = GetReadyToRunInfo(section);
-        uint localIndex = functionTableIndex - section.MinFunctionTableIndex;
-        Data.RuntimeFunction runtimeFunction = GetRuntimeFunction(r2rInfo, localIndex);
-        unwindDataAddress = new TargetPointer(r2rInfo.LoadedImageBase.Value + runtimeFunction.UnwindData);
-        return true;
     }
 
     public bool TryGetCoreLibVirtualIPBase(uint runtimeFunctionIndex, out ulong baseVirtualIP, out TargetPointer unwindDataAddress)
@@ -148,12 +124,12 @@ internal sealed class WasmFunctionTableIndexLookup
                 if (runtimeFunctionIndex >= r2rInfo.NumRuntimeFunctions)
                     return false;
 
-                Data.RuntimeFunction runtimeFunction = GetRuntimeFunction(r2rInfo, runtimeFunctionIndex);
-                if (_runtimeFunctions.IsFunclet(runtimeFunction))
+                TargetPointer runtimeFunction = GetRuntimeFunction(r2rInfo, runtimeFunctionIndex);
+                if (_runtimeFunctions.IsSkip(runtimeFunction) || _runtimeFunctions.IsFunclet(runtimeFunction))
                     return false;
 
                 baseVirtualIP = minVirtualIP.Value + _runtimeFunctions.GetBeginAddress(runtimeFunction);
-                unwindDataAddress = r2rInfo.LoadedImageBase + runtimeFunction.UnwindData;
+                unwindDataAddress = r2rInfo.GetWasmGCInfoBase() + _runtimeFunctions.GetUnwindData(runtimeFunction);
                 return true;
             }
 
@@ -162,5 +138,4 @@ internal sealed class WasmFunctionTableIndexLookup
 
         return false;
     }
-
 }

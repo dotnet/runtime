@@ -10,6 +10,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
+using System.Text;
 using ILCompiler.ReadyToRun.Tests.TestCasesRunner;
 using ILCompiler.Reflection.ReadyToRun;
 using Internal.ReadyToRunConstants;
@@ -1413,6 +1414,127 @@ public class R2RTestSuites
     }
 
     [ConditionalTheory(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void WasmRuntimeFunctionPaddingPreservesTableSlots(bool composite)
+    {
+        string directory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        Directory.CreateDirectory(directory);
+        try
+        {
+            StringBuilder source = new("public static class PaddingMethods { public static int Step(int value) => (value * 3) ^ (value >> 1);");
+            for (int method = 0; method < 4; method++)
+            {
+                source.Append($"public static int M{method}(int value) {{");
+                // Disjoint EH regions force a virtual-IP span that requires interior padding.
+                for (int statement = 0; statement < 64; statement++)
+                {
+                    source.Append("try { value = Step(value); } finally { value = Step(value); }");
+                }
+                source.Append("return value; }");
+            }
+            source.Append('}');
+
+            string input = Path.Combine(directory, "PaddingMethods.dll");
+            string output = Path.Combine(directory, "composite-r2r.wasm");
+            R2RTestCaseCompiler compiler = new([TestPaths.SystemPrivateCoreLibPath]);
+            compiler.CompileAssembly("PaddingMethods", [source.ToString()], input);
+            List<string> args =
+            [
+                input, "-r", Path.Combine(TestPaths.LibrariesDir, "*.dll"),
+                "--targetos", TestPaths.TargetOS, "--targetarch", TestPaths.TargetArchitecture,
+                "--out", output, "--optimize-disabled",
+            ];
+            if (composite)
+            {
+                args.Add("--composite");
+            }
+
+            R2RCompilationResult result = new R2RDriver(_output).Compile(args);
+            Assert.True(result.Success, result.StandardError + result.StandardOutput);
+            ReadyToRunReader reader = new(new SimpleAssemblyResolver([TestPaths.SystemPrivateCoreLibPath, input]), output);
+            List<ReadyToRunMethod> methods = R2RAssert.GetAllMethods(reader)
+                .Where(method => method.Name.StartsWith("M", StringComparison.Ordinal))
+                .ToList();
+            Assert.Equal(4, methods.Count);
+            int[] ordinals = methods.SelectMany(method => method.RuntimeFunctions)
+                .Select(function => function.Id)
+                .Order()
+                .ToArray();
+            Assert.Contains(Enumerable.Range(1, ordinals.Length - 1), index => ordinals[index] > ordinals[index - 1] + 1);
+            WasmR2RAssert.AssertRuntimeFunctionGroups(reader);
+            WasmR2RAssert.AssertRuntimeFunctionDump(reader);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [ConditionalTheory(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
+    public void WasmSectionContentsDump(bool composite, bool noMethods)
+    {
+        CompiledAssembly input = new()
+        {
+            AssemblyName = nameof(WasmSectionContentsDump),
+            SourceResourceNames = ["Webcil/WasmWebcilModule.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(WasmSectionContentsDump),
+            [
+                new(nameof(WasmSectionContentsDump), [new CrossgenAssembly(input)])
+                {
+                    Options = composite ? [Crossgen2Option.Composite] : [],
+                    AdditionalArgs = noMethods ? ["--compile-no-methods"] : [],
+                    OutputFileExtension = ".wasm",
+                    Validate = noMethods ? WasmR2RAssert.AssertEmptyRuntimeFunctionDump : WasmR2RAssert.AssertGCInfoDump,
+                },
+            ]));
+    }
+
+    [ConditionalTheory(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void WasmStructGCFieldsArePinned(bool optimize)
+    {
+        CompiledAssembly input = new()
+        {
+            AssemblyName = nameof(WasmStructGCFieldsArePinned),
+            SourceResourceNames = ["Webcil/WasmWebcilModule.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(WasmStructGCFieldsArePinned),
+            [
+                new(nameof(WasmStructGCFieldsArePinned), [new CrossgenAssembly(input)])
+                {
+                    Options = optimize ? [Crossgen2Option.Optimize] : [],
+                    AdditionalArgs = optimize ? [] : ["--optimize-disabled"],
+                    OutputFileExtension = ".wasm",
+                    Validate = reader =>
+                    {
+                        ReadyToRunMethod method = Assert.Single(R2RAssert.GetAllMethods(reader),
+                            method => method.SignatureString.Contains(".StructGCFields(", StringComparison.Ordinal));
+                        ILCompiler.Reflection.ReadyToRun.Cdac.CdacGcInfo gcInfo =
+                            Assert.IsType<ILCompiler.Reflection.ReadyToRun.Cdac.CdacGcInfo>(method.GcInfo);
+                        Assert.True(gcInfo.NumUntrackedSlots >= 2);
+                        Assert.Contains(gcInfo.Slots,
+                            slot => (slot.Flags & GcSlotFlags.GC_SLOT_INTERIOR) != 0);
+                        Assert.Contains(gcInfo.Slots,
+                            slot => (slot.Flags & GcSlotFlags.GC_SLOT_INTERIOR) == 0);
+                        Assert.All(gcInfo.Slots, slot =>
+                            Assert.Equal(GcSlotFlags.GC_SLOT_PINNED, slot.Flags & GcSlotFlags.GC_SLOT_PINNED));
+                    },
+                },
+            ]));
+    }
+
+    [ConditionalTheory(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
     [InlineData("StoreReference", 1)]
     [InlineData("CopyReferences", 2)]
     public void WasmHelperCellLoadsFoldOffsets(string methodName, int expectedLoads)
@@ -1545,6 +1667,7 @@ public class R2RTestSuites
             const int WasmEncodedFrameBase = 2;
             const int WasmLocalRegisterBase = 3;
 
+            WasmR2RAssert.AssertRuntimeFunctionGroups(reader);
             var webcilReader = Assert.IsType<WebcilImageReader>(reader.CompositeReader);
             WasmR2RAssert.AssertFrameIdentityPrologs(webcilReader);
             Assert.True(webcilReader.IsWasmWrapped);

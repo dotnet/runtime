@@ -8,14 +8,14 @@ using ILCompiler.Reflection.ReadyToRun;
 
 namespace R2RDump
 {
-    internal abstract class Dumper
+    public abstract class Dumper
     {
         protected readonly ReadyToRunReader _r2r;
         protected TextWriter _writer;
-        protected readonly Disassembler _disassembler;
+        private protected readonly Disassembler _disassembler;
         protected readonly DumpModel _model;
 
-        public Dumper(ReadyToRunReader r2r, TextWriter writer, Disassembler disassembler, DumpModel model)
+        private protected Dumper(ReadyToRunReader r2r, TextWriter writer, Disassembler disassembler, DumpModel model)
         {
             _r2r = r2r;
             _writer = writer;
@@ -70,6 +70,6 @@ namespace R2RDump
         public TextWriter Writer => _writer;
         public DumpModel Model => _model;
         public ReadyToRunReader Reader => _r2r;
-        public Disassembler Disassembler => _disassembler;
+        internal Disassembler Disassembler => _disassembler;
     }
 }

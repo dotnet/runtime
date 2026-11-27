@@ -54,6 +54,8 @@ NativeImage::NativeImage(AssemblyBinder *pAssemblyBinder, ReadyToRunLoadedImage 
 
     m_pAssemblyBinder = pAssemblyBinder;
     m_pImageLayout = pImageLayout;
+    m_pReadyToRunInfo = nullptr;
+    m_pManifestMetadata = nullptr;
     m_fileName = imageFileName;
     m_eagerFixupsHaveRun = false;
     m_readyToRunCodeDisabled = false;

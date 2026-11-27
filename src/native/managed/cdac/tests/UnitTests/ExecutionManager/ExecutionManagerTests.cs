@@ -40,6 +40,8 @@ public class ExecutionManagerTests
         };
 
         types[DataType.RuntimeFunction] = TargetTestHelpers.CreateTypeInfo(emBuilder.RuntimeFunctionLayout);
+        if (emBuilder.WasmRuntimeFunctionGroupLayout is Layout groupLayout)
+            types[DataType.WasmRuntimeFunctionGroup] = TargetTestHelpers.CreateTypeInfo(groupLayout);
         types[DataType.UnwindInfo] = TargetTestHelpers.CreateTypeInfo(emBuilder.UnwindInfoLayout);
 
         return types;
@@ -466,7 +468,7 @@ public class ExecutionManagerTests
             {
                 MockExecutionManagerBuilder.JittedCodeRange virtualIPRange =
                     emBuilder.AllocateJittedCodeRange(VirtualIPRangeStart, VirtualIPRangeSize);
-                MockReadyToRunInfo r2rInfo = emBuilder.AddReadyToRunInfo([0x80, FunctionBeginAddress, 0x200], []);
+                MockReadyToRunInfo r2rInfo = emBuilder.AddReadyToRunInfo([0x80, FunctionBeginAddress, 0x170], []);
                 r2rInfo.MinVirtualIP = VirtualIPRangeStart;
 
                 // A component assembly of a composite image leaves LoadedImageBase unset; the image base
@@ -474,13 +476,13 @@ public class ExecutionManagerTests
                 MockReadyToRunInfo compositeInfo = r2rInfo;
                 if (compositeComponent)
                 {
-                    compositeInfo = emBuilder.AddReadyToRunInfo([0x80, FunctionBeginAddress, 0x200], []);
+                    compositeInfo = emBuilder.AddReadyToRunInfo([0x80, FunctionBeginAddress, 0x170], []);
                     r2rInfo.CompositeInfo = compositeInfo.Address;
                 }
                 compositeInfo.LoadedImageBase = LoadedImageBase;
                 runtimeFunctionsAddress = r2rInfo.RuntimeFunctions;
                 runtimeFunctionSize = emBuilder.RuntimeFunctionLayout.Size;
-                Assert.Equal(8, runtimeFunctionSize);
+                Assert.Equal(MockWasmRuntimeFunctions.EntrySize, runtimeFunctionSize);
                 Assert.DoesNotContain(emBuilder.RuntimeFunctionLayout.Fields, field => field.Name == "EndAddress");
                 Assert.DoesNotContain(emBuilder.ReadyToRunInfoLayout.Fields,
                     field => field.Name is "NumHotColdMap" or "HotColdMap" or "DelayLoadMethodCallThunks");
@@ -502,7 +504,7 @@ public class ExecutionManagerTests
         Assert.NotNull(handle);
         Assert.Equal(new TargetPointer(ExpectedMethodDescAddress), em.GetMethodDesc(handle.Value));
         Assert.Equal(new TargetPointer(CapturedVirtualIP), em.GetStartAddress(handle.Value));
-        Assert.Equal(new TargetPointer(LoadedImageBase), em.GetUnwindInfoBaseAddress(handle.Value));
+        Assert.Equal(new TargetPointer(MockWasmRuntimeFunctions.DefaultGCInfoBase), em.GetUnwindInfoBaseAddress(handle.Value));
         Assert.Equal(new TargetPointer(runtimeFunctionsAddress + (ulong)runtimeFunctionSize), em.GetUnwindInfo(handle.Value));
         Assert.Equal(new TargetPointer(moduleAddress), em.FindReadyToRunModule(new TargetPointer(CapturedVirtualIP)));
         Assert.Equal(CodeKind.ReadyToRun, em.GetCodeKind(virtualIP));
@@ -540,13 +542,14 @@ public class ExecutionManagerTests
     [InlineData(21, 5u)]
     [InlineData(32, 5u)]
     [InlineData(33, 5u)]
-    public void GetGCInfo_R2R_WasmVirtualIPUsesLoadedImageBase(ushort majorVersion, uint expectedGCVersion)
+    public void GetGCInfo_R2R_WasmVirtualIPUsesGCInfoBase(ushort majorVersion, uint expectedGCVersion)
     {
         MockTarget.Architecture wasmArch = new() { IsLittleEndian = true, Is64Bit = false };
 
         const ulong VirtualIPRangeStart = 0x8001_0001;
         const uint FunctionBeginAddress = 0x108;
         const ulong LoadedImageBase = 0x0090_0000;
+        const ulong GCInfoBase = MockWasmRuntimeFunctions.DefaultGCInfoBase;
         const uint UnwindDataRva = 0x80;
         const ulong MethodDescAddress = 0x0101_aaa0;
         const ulong JitManagerAddress = 0x000b_ff00;
@@ -566,7 +569,7 @@ public class ExecutionManagerTests
         emBuilder.SetRuntimeFunctionUnwindData(r2rInfo, index: 0, UnwindDataRva);
         emBuilder.Builder.AddHeapFragment(new MockMemorySpace.HeapFragment
         {
-            Address = LoadedImageBase + UnwindDataRva,
+            Address = GCInfoBase + UnwindDataRva,
             // Frame size 128, function length 32, followed by the GC info.
             Data = [0x80, 0x01, 0x20, ExpectedGCInfoByte],
             Name = "WASM unwind and GC info",
@@ -581,7 +584,7 @@ public class ExecutionManagerTests
 
         IGCInfoHandle gcInfoHandle = Mock.Of<IGCInfoHandle>();
         Mock<IGCInfo> gcInfoContract = new(MockBehavior.Strict);
-        gcInfoContract.Setup(c => c.DecodePlatformSpecificGCInfo(new TargetPointer(LoadedImageBase + UnwindDataRva + 3), expectedGCVersion))
+        gcInfoContract.Setup(c => c.DecodePlatformSpecificGCInfo(new TargetPointer(GCInfoBase + UnwindDataRva + 3), expectedGCVersion))
             .Returns(gcInfoHandle);
         gcInfoContract.Setup(c => c.GetCodeLength(gcInfoHandle)).Returns(32u);
         Target target = CreateTarget(
@@ -595,13 +598,42 @@ public class ExecutionManagerTests
 
         Assert.NotNull(handle);
         em.GetGCInfo(handle.Value, out TargetPointer gcInfo, out uint gcVersion);
-        Assert.Equal(new TargetPointer(LoadedImageBase + UnwindDataRva + 3), gcInfo);
+        Assert.Equal(new TargetPointer(GCInfoBase + UnwindDataRva + 3), gcInfo);
         Assert.Equal(expectedGCVersion, gcVersion);
         Assert.Equal(ExpectedGCInfoByte, target.Read<byte>(gcInfo));
         em.GetMethodRegionInfo(handle.Value, out uint hotSize, out TargetPointer coldStart, out uint coldSize);
         Assert.Equal(32u, hotSize);
         Assert.Equal(TargetPointer.Null, coldStart);
         Assert.Equal(0u, coldSize);
+    }
+
+    [Fact]
+    public void GetUnwindInfoBaseAddress_R2R_WasmRejectsNullGCInfoBase()
+    {
+        const ulong VirtualIPRangeStart = 0x8001_0001;
+        const uint FunctionBeginAddress = 0x100;
+        const ulong MethodDescAddress = 0x0101_aaa0;
+        const ulong JitManagerAddress = 0x000b_ff00;
+        MockTarget.Architecture wasmArch = new() { IsLittleEndian = true, Is64Bit = false };
+        MockExecutionManagerBuilder emBuilder = new(
+            "c1", wasmArch, MockExecutionManagerBuilder.DefaultAllocationRange, isWasm: true);
+        MockExecutionManagerBuilder.JittedCodeRange virtualIPRange =
+            emBuilder.AllocateJittedCodeRange(VirtualIPRangeStart, 0x400);
+        MockReadyToRunInfo r2rInfo = emBuilder.AddReadyToRunInfo([FunctionBeginAddress], []);
+        r2rInfo.MinVirtualIP = VirtualIPRangeStart;
+        r2rInfo.LoadedImageBase = 0x0090_0000;
+        r2rInfo.GCInfoBase = 0;
+        new MockHashMapBuilder(emBuilder.Builder).PopulatePtrMap(
+            r2rInfo.EntryPointToMethodDescMapAddress,
+            [(VirtualIPRangeStart + FunctionBeginAddress, MethodDescAddress)]);
+        MockLoaderModule r2rModule = emBuilder.AddReadyToRunModule(r2rInfo.Address);
+        emBuilder.AddVirtualIPRangeSection(virtualIPRange, JitManagerAddress, r2rModule.Address);
+        IExecutionManager em = CreateTarget(emBuilder, targetArchitecture: RuntimeInfoArchitecture.Wasm).Contracts.ExecutionManager;
+        CodeBlockHandle? handle = em.GetCodeBlockHandle(new TargetCodePointer(VirtualIPRangeStart + FunctionBeginAddress));
+
+        Assert.NotNull(handle);
+        Assert.Throws<InvalidOperationException>(() => em.GetUnwindInfoBaseAddress(handle.Value));
+        Assert.Throws<InvalidOperationException>(() => em.GetGCInfo(handle.Value, out _, out _));
     }
 
     [Fact]
@@ -969,7 +1001,7 @@ public class ExecutionManagerTests
     }
 
     [Fact]
-    public void GetMethodDesc_R2R_WasmFuncletUsesMaskedBeginAddressAndControllingMethodDesc()
+    public void GetMethodDesc_R2R_WasmFuncletUsesGroupedBeginAddressAndControllingMethodDesc()
     {
         MockTarget.Architecture wasmArch = new() { IsLittleEndian = true, Is64Bit = false };
 
@@ -989,8 +1021,12 @@ public class ExecutionManagerTests
             {
                 MockExecutionManagerBuilder.JittedCodeRange virtualIPRange =
                     emBuilder.AllocateJittedCodeRange(VirtualIPRangeStart, 0x400);
-                MockReadyToRunInfo r2rInfo =
-                    emBuilder.AddReadyToRunInfo([RootBeginAddress, FlaggedFuncletBeginAddress, 0x180], []);
+                uint[] functions = new uint[34];
+                Array.Fill(functions, uint.MaxValue);
+                functions[0] = RootBeginAddress;
+                functions[32] = FlaggedFuncletBeginAddress;
+                functions[33] = 0x180;
+                MockReadyToRunInfo r2rInfo = emBuilder.AddReadyToRunInfo(functions, []);
                 r2rInfo.MinVirtualIP = VirtualIPRangeStart;
                 r2rInfo.LoadedImageBase = 0x0090_0000;
                 runtimeFunctionsAddress = r2rInfo.RuntimeFunctions;
@@ -1016,7 +1052,7 @@ public class ExecutionManagerTests
         Assert.True(em.IsFunclet(funclet.Value));
         Assert.Equal(em.GetStartAddress(root.Value), em.GetStartAddress(funclet.Value));
         Assert.Equal(new TargetPointer(VirtualIPRangeStart + FuncletBeginAddress), em.GetFuncletStartAddress(funclet.Value));
-        Assert.Equal(new TargetPointer(runtimeFunctionsAddress + (ulong)runtimeFunctionSize), em.GetUnwindInfo(funclet.Value));
+        Assert.Equal(new TargetPointer(runtimeFunctionsAddress + 32 * (ulong)runtimeFunctionSize), em.GetUnwindInfo(funclet.Value));
     }
 
     [Theory]
@@ -2140,7 +2176,7 @@ public class ExecutionManagerTests
 
         MockMemorySpace.HeapFragment section = allocator.Allocate(sectionLayout.Stride, "FunctionTableIndexRangeSection");
         helpers.Write(section.Data.AsSpan(sectionLayout.Fields[nameof(Data.FunctionTableIndexRangeSection.MinFunctionTableIndex)].Offset, sizeof(uint)), PortableMinFunctionTableIndex);
-        helpers.Write(section.Data.AsSpan(sectionLayout.Fields[nameof(Data.FunctionTableIndexRangeSection.NumRuntimeFunctions)].Offset, sizeof(uint)), 3u);
+        helpers.Write(section.Data.AsSpan(sectionLayout.Fields[nameof(Data.FunctionTableIndexRangeSection.NumRuntimeFunctions)].Offset, sizeof(uint)), r2rInfo.NumRuntimeFunctions);
         helpers.WritePointer(section.Data.AsSpan(sectionLayout.Fields[nameof(Data.FunctionTableIndexRangeSection.R2RModule)].Offset, helpers.PointerSize), module.Address);
         helpers.WritePointer(
             section.Data.AsSpan(sectionLayout.Fields[nameof(Data.FunctionTableIndexRangeSection.Next)].Offset, helpers.PointerSize),

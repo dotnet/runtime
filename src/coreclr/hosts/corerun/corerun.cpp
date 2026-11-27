@@ -370,7 +370,7 @@ namespace wasi_r2r
 {
 extern "C"
 {
-alignas(16) uint8_t g_wasi_r2r_image[WASI_R2R_IMAGE_CAP] = {};
+alignas(128) uint8_t g_wasi_r2r_image[WASI_R2R_IMAGE_CAP] = {};
 uint32_t g_wasi_r2r_image_cap = sizeof(g_wasi_r2r_image);
 }
 }

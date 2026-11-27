@@ -1,5 +1,7 @@
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
+if (NOT CLR_CMAKE_HOST_ARCH_ARMV6 AND NOT CLR_CMAKE_HOST_ARCH_WASM)
+
 include_directories("./jitstd")
 include_directories("../inc")
 include_directories("../jitshared")
@@ -731,6 +733,8 @@ endif()
 # Enable profile guided optimization
 add_pgo(clrjit)
 
+if (CLR_CMAKE_HOST_WITH_DOTNET_SDK)
+
 if (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
   create_standalone_jit(TARGET clrjit_universal_arm64_${ARCH_HOST_NAME} OS universal ARCH arm64)
   create_standalone_jit(TARGET clrjit_universal_wasm_${ARCH_HOST_NAME} OS universal ARCH wasm)
@@ -779,6 +783,8 @@ if (CLR_CMAKE_TARGET_WIN32)
     endif()
 endif()
 
+endif()
+
 if (CLR_CMAKE_TARGET_WIN32 AND CLR_CMAKE_PGO_INSTRUMENT)
   # Copy PGO dependency to target dir
   set(PGORT_DLL "pgort140.dll")
@@ -792,3 +798,5 @@ if (CLR_CMAKE_TARGET_WIN32 AND CLR_CMAKE_PGO_INSTRUMENT)
   install(FILES "${PGORT_DIR}/${PGORT_DLL}" DESTINATION ${CMAKE_INSTALL_PREFIX})
   install(FILES "${PGORT_DIR}/${PGORT_DLL}" DESTINATION ${CMAKE_INSTALL_PREFIX}/sharedFramework)
 endif ()
+
+endif()

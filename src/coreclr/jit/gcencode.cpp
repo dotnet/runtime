@@ -4278,6 +4278,13 @@ void GCInfo::gcMakeRegPtrTable(
                     flags = (GcSlotFlags)(flags | GC_SLOT_INTERIOR);
                 }
 
+#ifdef TARGET_WASM
+                // Pin value-type fields like scalar locals: Wasm filters and their parents
+                // can report the same slots, which must not be relocated twice.
+                // See dotnet/runtime#131374, dotnet/runtime#133932, and dotnet/runtime#134769.
+                flags = static_cast<GcSlotFlags>(flags | GC_SLOT_PINNED);
+#endif // TARGET_WASM
+
                 GcStackSlotBase stackSlotBase = GC_SP_REL;
                 if (varDsc->lvFramePointerBased)
                 {

@@ -15,6 +15,55 @@ namespace ILCompiler.ReadyToRun.Tests;
 public class GcInfoRegressionTests
 {
     [Theory]
+    [InlineData(Machine.Amd64, 3, 5u, "RBP", 1)]
+    [InlineData(Machine.Amd64, 5, 5u, "RBP", 1)]
+    [InlineData(Machine.ArmThumb2, 5, 11u, "R11", 2)]
+    [InlineData(Machine.Arm64, 5, 29u, "X29", 4)]
+    [InlineData(Machine.LoongArch64, 5, 22u, "Fp", 4)]
+    [InlineData(Machine.RiscV64, 5, 8u, "Fp", 2)]
+    [InlineData(WasmMachine.Wasm32, 5, 0u, "0", 1)]
+    public void SlimHeaderDenormalizesFrameRegister(
+        Machine machine, int version, uint expectedRegister, string registerName, int instructionSize)
+    {
+        int codeLengthEncoding = machine switch
+        {
+            Machine.ArmThumb2 => 7,
+            WasmMachine.Wasm32 => 6,
+            _ => 8,
+        };
+        int safePointCountEncoding = machine switch
+        {
+            Machine.Amd64 => 2,
+            WasmMachine.Wasm32 => 4,
+            _ => 3,
+        };
+
+        foreach (bool hasStackBaseRegister in new[] { false, true })
+        {
+            BitWriter writer = new();
+            writer.Write(0, 1);
+            writer.Write(hasStackBaseRegister ? 1 : 0, 1);
+            if (version is 2 or 3)
+                writer.Write(0, 2);
+            writer.WriteUnsigned(8, codeLengthEncoding);
+            writer.WriteUnsigned(1, safePointCountEncoding);
+            writer.Write(3, 3);
+            writer.Write(0, 2);
+
+            CdacGcInfo info = Assert.IsType<CdacGcInfo>(DecodeCdac(writer, machine, version));
+            Assert.Equal(hasStackBaseRegister ? expectedRegister : null, info.StackBaseRegister);
+            Assert.Equal(8 * instructionSize, info.CodeLength);
+            Assert.Equal((uint)(3 * instructionSize + (version < 4 ? 1 : 0)), Assert.Single(info.SafePoints));
+            Assert.Empty(info.Slots);
+            Assert.Equal(writer.ByteCount, info.Size);
+            if (hasStackBaseRegister)
+                Assert.Contains($"StackBaseRegister: {registerName}", info.ToString());
+            else
+                Assert.DoesNotContain("StackBaseRegister:", info.ToString());
+        }
+    }
+
+    [Theory]
     [InlineData(Machine.LoongArch64, 0, 22u)]
     [InlineData(Machine.LoongArch64, 1, 3u)]
     [InlineData(Machine.RiscV64, 0, 8u)]
@@ -57,6 +106,58 @@ public class GcInfoRegressionTests
         Assert.Empty(info.SafePoints);
         Assert.Empty(info.InterruptibleRanges);
         Assert.Empty(info.Slots);
+        Assert.Equal(writer.ByteCount, info.Size);
+    }
+
+    [Theory]
+    [InlineData(Machine.Amd64, false, 8)]
+    [InlineData(Machine.Amd64, true, 8)]
+    [InlineData(Machine.ArmThumb2, false, 4)]
+    [InlineData(Machine.ArmThumb2, true, 4)]
+    public void StackSlotDeltasAreUnsigned(Machine machine, bool untracked, int slotSize)
+    {
+        const int SlotCount = 4;
+        BitWriter writer = new();
+        writer.Write(0, 1);
+        writer.Write(1, 1);
+        writer.WriteUnsigned(32, machine == Machine.ArmThumb2 ? 7 : 8);
+        writer.WriteUnsigned(1, machine == Machine.Amd64 ? 2 : 3);
+        writer.Write(3, 5);
+        writer.Write(0, 1);
+        writer.Write(1, 1);
+        writer.WriteUnsigned(untracked ? 0 : SlotCount, machine == Machine.ArmThumb2 ? 3 : 2);
+        writer.WriteUnsigned(untracked ? SlotCount : 0, machine == Machine.ArmThumb2 ? 3 : 1);
+        writer.Write((int)GcStackSlotBase.GC_FRAMEREG_REL, 2);
+        writer.WriteSigned(-16, 6);
+        writer.Write(0, 2);
+        foreach (int delta in new[] { 7, 8, 128 })
+        {
+            writer.Write((int)GcStackSlotBase.GC_FRAMEREG_REL, 2);
+            writer.WriteUnsigned(delta, 4);
+        }
+        if (!untracked)
+        {
+            writer.Write(0, 1);
+            writer.Write(0b1111, SlotCount);
+        }
+
+        CdacGcInfo info = Assert.IsType<CdacGcInfo>(DecodeCdac(writer, machine));
+        Assert.Equal(SlotCount, info.Slots.Count);
+        int[] normalizedOffsets = [-16, -9, -1, 127];
+        for (int i = 0; i < SlotCount; i++)
+        {
+            CdacGcSlot slot = info.Slots[i];
+            Assert.Equal(normalizedOffsets[i] * slotSize, slot.StackSlot.SpOffset);
+            Assert.Equal(GcStackSlotBase.GC_FRAMEREG_REL, slot.StackSlot.Base);
+            Assert.Equal(untracked ? GcSlotFlags.GC_SLOT_UNTRACKED : GcSlotFlags.GC_SLOT_BASE, slot.Flags);
+        }
+        if (!untracked)
+        {
+            List<BaseGcSlot> liveSlots = Assert.Single(info.LiveSlotsAtSafepoints);
+            Assert.Equal(SlotCount, liveSlots.Count);
+            for (int i = 0; i < SlotCount; i++)
+                Assert.Same(info.Slots[i], liveSlots[i]);
+        }
         Assert.Equal(writer.ByteCount, info.Size);
     }
 

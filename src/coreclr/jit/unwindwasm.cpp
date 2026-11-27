@@ -61,6 +61,7 @@ void Compiler::unwindReserveFunc(FuncInfoDsc* func)
     bool isFunclet  = func->IsFunclet();
     bool isColdCode = false;
     assert(func->endVirtualIP > func->startVirtualIP);
+    assert(func->endVirtualIP - func->startVirtualIP >= 2);
     ULONG encodedSize = emitter::SizeOfULEB128(func->funWasmFrameSize) +
                         emitter::SizeOfULEB128(func->endVirtualIP - func->startVirtualIP);
 
@@ -113,6 +114,7 @@ void Compiler::unwindEmitFunc(FuncInfoDsc* func, void* pHotCode, void* pColdCode
     uint8_t buffer[10];
     size_t  index = 0;
     assert(func->endVirtualIP > func->startVirtualIP);
+    assert(func->endVirtualIP - func->startVirtualIP >= 2);
     index += GetEmitter()->emitOutputULEB128(buffer + index, func->funWasmFrameSize);
     index += GetEmitter()->emitOutputULEB128(buffer + index, func->endVirtualIP - func->startVirtualIP);
     assert(index <= sizeof(buffer));

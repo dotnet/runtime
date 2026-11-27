@@ -197,6 +197,7 @@ namespace ILCompiler.Reflection.ReadyToRun.Cdac
             Machine.Arm64 => ((Arm64.Registers)registerNumber).ToString(),
             Machine.LoongArch64 => ((LoongArch64.Registers)registerNumber).ToString(),
             Machine.RiscV64 => ((RiscV64.Registers)registerNumber).ToString(),
+            WasmMachine.Wasm32 => registerNumber.ToString(),
             _ => $"r{registerNumber}",
         };
 

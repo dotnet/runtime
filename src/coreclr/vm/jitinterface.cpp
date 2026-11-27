@@ -11689,6 +11689,7 @@ void CEECodeGenInfo::CompressDebugInfo(PCODE nativeEntry, NativeCodeVersion nati
     EE_TO_JIT_TRANSITION();
 }
 
+#ifdef FEATURE_JIT_UNWIND_INFO
 void reservePersonalityRoutineSpace(uint32_t &unwindSize)
 {
 #ifdef TARGET_AMD64
@@ -11909,6 +11910,8 @@ void CEEJitInfo::allocUnwindInfo (
 
     EE_TO_JIT_TRANSITION();
 }
+
+#endif // FEATURE_JIT_UNWIND_INFO
 
 void CEEJitInfo::recordCallSite(uint32_t              instrOffset,
                                 CORINFO_SIG_INFO *    callSig,
@@ -15730,6 +15733,21 @@ PTR_RUNTIME_FUNCTION EECodeInfo::GetFunctionEntry()
         m_pFunctionEntry = m_pJM->LazyGetFunctionEntry(this);
     return m_pFunctionEntry;
 }
+
+#ifdef TARGET_WASM
+TADDR EECodeInfo::GetUnwindInfoBase()
+{
+    WRAPPER_NO_CONTRACT;
+
+    const METHODTOKEN& methodToken = GetMethodToken();
+    if ((methodToken.m_pRangeSection->_flags & RangeSection::RANGE_SECTION_VIRTUALIP) != 0)
+    {
+        return methodToken.m_pRangeSection->_pR2RModule->GetReadyToRunInfo()->GetGCInfoBase();
+    }
+
+    return GetModuleBase();
+}
+#endif // TARGET_WASM
 
 BOOL EECodeInfo::IsFunclet()
 {
