@@ -376,8 +376,16 @@ namespace ILCompiler
             if (!string.IsNullOrEmpty(jitPath))
                 ((RyuJitCompilationBuilder)builder).UseJitPath(jitPath);
 
+            bool respectPlatformAttributes = Get(_command.DirectPInvokeRespectPlatformAttributes);
+            if (respectPlatformAttributes && targetOS is not (TargetOS.Browser or TargetOS.Wasi))
+            {
+                // Other targets may require OS name normalization and platform inclusion rules the attribute matcher does not apply.
+                throw new CommandLineException("--directpinvoke-respect-platform-attributes is only supported for browser and wasi targets.");
+            }
+
             PInvokeILEmitterConfiguration pinvokePolicy = new ConfigurablePInvokePolicy(typeSystemContext.Target,
-                Get(_command.DirectPInvokes), Get(_command.DirectPInvokeLists));
+                Get(_command.DirectPInvokes), Get(_command.DirectPInvokeLists),
+                targetOS: respectPlatformAttributes ? Get(_command.TargetOS) ?? targetOS.ToString() : null);
 
             var featureSwitches = new Dictionary<string, bool>();
             foreach (var switchPair in Get(_command.FeatureSwitches))

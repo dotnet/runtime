@@ -126,8 +126,7 @@ namespace ILCompiler.PortableCallHelpers
     /// </summary>
     internal sealed class PInvokeCollector(InteropLogger log, string targetOS)
     {
-        private readonly Dictionary<TypeDesc, bool> _typeUnsupportedOnPlatform = [];
-        private readonly Dictionary<EcmaAssembly, bool> _assemblyUnsupportedOnPlatform = [];
+        private readonly OSPlatformSupport _platformSupport = new(targetOS);
 
         public void CollectPInvokes(List<PInvokeInfo> pinvokes, List<PInvokeCallback> callbacks, Dictionary<string, MethodDesc> signatures, EcmaType type)
         {
@@ -168,7 +167,7 @@ namespace ILCompiler.PortableCallHelpers
                 if (!method.IsPInvoke)
                     return;
 
-                if (IsUnsupportedOnPlatform(method))
+                if (_platformSupport.IsUnsupportedOnPlatform(method))
                     return;
 
                 PInvokeMetadata metadata = method.GetPInvokeMethodMetadata();
@@ -210,7 +209,7 @@ namespace ILCompiler.PortableCallHelpers
                     continue;
                 }
 
-                if (IsUnsupportedOnPlatform(method))
+                if (_platformSupport.IsUnsupportedOnPlatform(method))
                     return;
 
                 // A signature over the enclosing generic parameters has no single native shape.
@@ -266,100 +265,10 @@ namespace ILCompiler.PortableCallHelpers
             if (!method.IsUnmanagedCallersOnly)
                 return false;
 
-            if (IsUnsupportedOnPlatform(method))
+            if (_platformSupport.IsUnsupportedOnPlatform(method))
                 return false;
 
             return true;
-        }
-
-        private bool IsUnsupportedOnPlatform(EcmaMethod method)
-            => EvaluatePlatformAttributes(method.GetDecodedCustomAttributes) switch
-            {
-                PlatformSupport.Unsupported => true,
-                PlatformSupport.Supported => false,
-                _ => IsUnsupportedOnPlatform(method.OwningType)
-            };
-
-        private bool IsUnsupportedOnPlatform(TypeDesc type)
-        {
-            if (type is not EcmaType ecmaType)
-                return false;
-
-            if (_typeUnsupportedOnPlatform.TryGetValue(type, out bool cached))
-                return cached;
-
-            bool value = EvaluatePlatformAttributes(ecmaType.GetDecodedCustomAttributes) switch
-            {
-                PlatformSupport.Unsupported => true,
-                PlatformSupport.Supported => false,
-                _ when ecmaType.ContainingType is not null => IsUnsupportedOnPlatform(ecmaType.ContainingType),
-                _ => IsAssemblyUnsupportedOnPlatform((EcmaAssembly)ecmaType.Module)
-            };
-
-            _typeUnsupportedOnPlatform[type] = value;
-            return value;
-        }
-
-        private bool IsAssemblyUnsupportedOnPlatform(EcmaAssembly assembly)
-        {
-            if (!_assemblyUnsupportedOnPlatform.TryGetValue(assembly, out bool value))
-            {
-                _assemblyUnsupportedOnPlatform[assembly] =
-                    value = EvaluatePlatformAttributes(assembly.GetDecodedCustomAttributes) == PlatformSupport.Unsupported;
-            }
-
-            return value;
-        }
-
-        private enum PlatformSupport
-        {
-            Unknown,     // No platform attributes were observed at this scope
-            Supported,   // Explicitly supported here (target appears in a SupportedOSPlatform list)
-            Unsupported, // Explicitly unsupported here (target matches UnsupportedOSPlatform, or
-                         // SupportedOSPlatform is present and does not list the target)
-        }
-
-        private PlatformSupport EvaluatePlatformAttributes(
-            Func<string, string, IEnumerable<CustomAttributeValue<TypeDesc>>> getAttributes)
-        {
-            const string Namespace = "System.Runtime.Versioning";
-
-            foreach (var attribute in getAttributes(Namespace, "UnsupportedOSPlatformAttribute"))
-            {
-                if (MatchesTargetOS(attribute))
-                    return PlatformSupport.Unsupported;
-            }
-
-            bool hasSupportedOSPlatform = false;
-            foreach (var attribute in getAttributes(Namespace, "SupportedOSPlatformAttribute"))
-            {
-                if (attribute.FixedArguments.Length == 0)
-                    continue;
-
-                hasSupportedOSPlatform = true;
-                if (MatchesTargetOS(attribute))
-                    return PlatformSupport.Supported;
-            }
-
-            return hasSupportedOSPlatform ? PlatformSupport.Unsupported : PlatformSupport.Unknown;
-
-            bool MatchesTargetOS(CustomAttributeValue<TypeDesc> attribute)
-            {
-                if (attribute.FixedArguments.Length == 0)
-                    return false;
-
-                string platformName = attribute.FixedArguments[0].Value?.ToString();
-                if (string.Equals(platformName, targetOS, StringComparison.OrdinalIgnoreCase))
-                    return true;
-
-                // A platform name may carry a version, as in [SupportedOSPlatform("browser1.0")].
-                // Nothing generated here varies by platform version, so a versioned name still
-                // names the target as long as a version is all that follows it.
-                if (platformName?.StartsWith(targetOS, StringComparison.OrdinalIgnoreCase) != true)
-                    return false;
-
-                return Version.TryParse(platformName.AsSpan(targetOS.Length), out _);
-            }
         }
     }
 }

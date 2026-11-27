@@ -15,17 +15,24 @@ namespace ILCompiler
     {
         private readonly TargetDetails _target;
         private readonly DirectPInvokeSet _directPInvokes;
+        private readonly OSPlatformSupport _platformSupport;
 
-        public ConfigurablePInvokePolicy(TargetDetails target, IReadOnlyList<string> directPInvokes, IReadOnlyList<string> directPInvokeLists)
+        public ConfigurablePInvokePolicy(TargetDetails target, IReadOnlyList<string> directPInvokes, IReadOnlyList<string> directPInvokeLists, string targetOS = null)
         {
             _directPInvokes = new DirectPInvokeSet(target, directPInvokes, directPInvokeLists);
+            _platformSupport = targetOS is null ? null : new OSPlatformSupport(targetOS);
             _target = target;
         }
 
         public override LinkageMetadata GetLinkageMetadata(MethodDesc method)
         {
-            var pInvokeMetadata = method.GetPInvokeMethodMetadata();
             MethodDesc target = method is PInvokeTargetNativeMethod nativeMethod ? nativeMethod.Target : method;
+            if (_platformSupport?.IsUnsupportedOnPlatform(target) == true)
+            {
+                return null;
+            }
+
+            var pInvokeMetadata = method.GetPInvokeMethodMetadata();
             if (_target.IsWasm && target.HasCustomAttribute("System.Runtime.InteropServices", "WasmImportLinkageAttribute"))
             {
                 Utf8String importName = pInvokeMetadata.Name is null
