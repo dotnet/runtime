@@ -420,6 +420,9 @@ public:
     //  true if setting the affinity was successful, false otherwise.
     static bool SetThreadAffinity(uint16_t procNo);
 
+    // Restore the main thread's current affinity on platforms where GC threads inherit affinity.
+    static bool ResetThreadAffinity();
+
     // Boosts the calling thread's thread priority to a level higher than the default
     // for new threads.
     // Parameters:

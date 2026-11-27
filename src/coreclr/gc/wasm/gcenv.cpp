@@ -288,6 +288,11 @@ bool GCToOSInterface::SetThreadAffinity(uint16_t procNo)
     return false;
 }
 
+bool GCToOSInterface::ResetThreadAffinity()
+{
+    return true;
+}
+
 bool GCToOSInterface::BoostThreadPriority()
 {
     // No thread priority on WASM
