@@ -460,6 +460,31 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [ConditionalFact]
+        [PlatformSpecific(TestPlatforms.Android)]
+        public void TcpFastOpen_Backlog_Roundtrip_Succeeds()
+        {
+            using (Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                listener.Listen();
+
+                const int backlog = 5;
+                listener.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.FastOpen, backlog);
+                Assert.Equal(backlog, (int)listener.GetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.FastOpen));
+
+                listener.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.FastOpen, BitConverter.GetBytes(backlog));
+                Assert.Equal(backlog, (int)listener.GetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.FastOpen));
+
+                byte[] optionValue = listener.GetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.FastOpen, sizeof(int));
+                Assert.Equal(backlog, BitConverter.ToInt32(optionValue, 0));
+
+                optionValue = new byte[sizeof(int)];
+                listener.GetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.FastOpen, optionValue);
+                Assert.Equal(backlog, BitConverter.ToInt32(optionValue, 0));
+            }
+        }
+
         [Fact]
         [PlatformSpecific(TestPlatforms.Linux | TestPlatforms.OSX)]
         public unsafe void ReuseAddressUdp()

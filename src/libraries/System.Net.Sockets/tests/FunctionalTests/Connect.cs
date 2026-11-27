@@ -439,6 +439,38 @@ namespace System.Net.Sockets.Tests
             Assert.False(c.DualMode);
         }
 
+        [ConditionalFact]
+        [PlatformSpecific(TestPlatforms.Android)]
+        public async Task MultiConnect_TcpFastOpenOption_Preserved()
+        {
+            if (UsesEap) throw new SkipTestException("EAP does not support IPAddress[] connect");
+
+            int port = -1;
+            using PortBlocker portBlocker = new PortBlocker(() =>
+            {
+                Socket listener = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp);
+                port = listener.BindToAnonymousPort(IPAddress.IPv6Loopback);
+                return listener;
+            });
+
+            Socket listeningSocket = portBlocker.MainSocket;
+            listeningSocket.Listen();
+            _ = listeningSocket.AcceptAsync();
+
+            using Socket client = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp)
+            {
+                DualMode = false
+            };
+            const int fastOpenValue = 5;
+            client.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.FastOpen, BitConverter.GetBytes(fastOpenValue));
+
+            IPAddress[] addresses = [IPAddress.Parse("fc00:1:2:3:4:5:6:7"), IPAddress.IPv6Loopback];
+            await client.ConnectAsync(addresses, port);
+
+            Assert.True(client.Connected);
+            Assert.Equal(fastOpenValue, (int)client.GetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.FastOpen));
+        }
+
         private async Task MultiConnectTestImpl(bool dnsConnect, Action<Socket> setupSocket, Action<Socket> validateSocket)
         {
             if (UsesEap && !dnsConnect)

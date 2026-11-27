@@ -1327,6 +1327,28 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Android)]
+        public void ReceiveMessageFrom_BoundToMappedV4_IPv6AnyRemoteEndPoint_ReturnsPacketInformation()
+        {
+            // Only IP_PKTINFO is enabled, even though the remote endpoint passed in is IPv6.
+            using Socket receiver = new Socket(AddressFamily.InterNetworkV6, SocketType.Dgram, ProtocolType.Udp);
+            using Socket sender = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            receiver.DualMode = true;
+            receiver.ReceiveTimeout = TestSettings.PassingTestTimeout;
+            int port = receiver.BindToAnonymousPort(IPAddress.Loopback.MapToIPv6());
+            receiver.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.PacketInformation, true);
+
+            sender.SendTo(new byte[1], new IPEndPoint(IPAddress.Loopback, port));
+
+            EndPoint remoteEP = new IPEndPoint(IPAddress.IPv6Any, 0);
+            SocketFlags socketFlags = SocketFlags.None;
+            Assert.Equal(1, receiver.ReceiveMessageFrom(new byte[1], 0, 1, ref socketFlags, ref remoteEP, out IPPacketInformation packetInfo));
+
+            Assert.NotNull(packetInfo.Address);
+            Assert.Equal(IPAddress.Loopback, packetInfo.Address.IsIPv4MappedToIPv6 ? packetInfo.Address.MapToIPv4() : packetInfo.Address);
+        }
+
         private void ReceiveMessageFrom_Helper(IPAddress listenOn, IPAddress connectTo, bool expectedToTimeout = false)
         {
             using (Socket serverSocket = new Socket(SocketType.Dgram, ProtocolType.Udp))
