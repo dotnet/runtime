@@ -106,11 +106,6 @@
   -->
   <Choose>
     <When Condition="'$(EnableDefaultRidSpecificArtifacts)' == 'true'">
-      <ItemGroup Condition="'$(TargetRid)' == 'ios-arm64'">
-        <PackageArtifacts
-          Include="$(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.LibraryBuilder.Sdk.*.nupkg;
-                  $(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.MonoTargets.Sdk.*.nupkg" />
-      </ItemGroup>
       <ItemGroup Condition="'$(TargetRid)' == 'wasi-wasm'">
         <PackageArtifacts
           Include="$(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.WebAssembly.Wasi.Sdk.*.nupkg" />

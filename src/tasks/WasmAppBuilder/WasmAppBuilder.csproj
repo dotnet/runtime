@@ -57,6 +57,4 @@
     </ItemGroup>
   </Target>
 
-  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.Mono.ManagedToNativeGenerator" TaskFactory="TaskHostFactory" AssemblyFile="$(OutputPath)net\WasmAppBuilder.dll" Condition="'$(RuntimeFlavor)' == 'Mono'" />
-
 </Project>
