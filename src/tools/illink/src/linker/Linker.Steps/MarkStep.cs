@@ -4110,31 +4110,16 @@ namespace Mono.Linker.Steps
                             break;
                         case Code.Isinst:
                         case Code.Castclass:
-                            if (operand is GenericParameter)
+                            if (Context.TryResolve(operand) is not TypeDefinition type)
                                 break;
-
-                            TypeDefinition? type = operand is TypeSpecification
-                                ? Context.TryResolve(operand)
-                                : Context.Resolve(operand);
-                            if (type == null)
-                            {
-                                if (operand is TypeSpecification)
-                                    break;
-
-                                return;
-                            }
 
                             _typeMapHandler.ProcessType(type);
 
-                            if (operand is TypeSpecification ||
-                                instruction.OpCode.Code is not Code.Isinst ||
-                                !Context.CanApplyOptimization(CodeOptimizations.UnusedTypeChecks, method.DeclaringType.Module.Assembly) ||
-                                type.IsInterface)
-                            {
-                                break;
-                            }
-
-                            if (!Annotations.IsInstantiated(type))
+                            if (instruction.OpCode.Code is Code.Isinst &&
+                                operand is not TypeSpecification &&
+                                !type.IsInterface &&
+                                Context.CanApplyOptimization(CodeOptimizations.UnusedTypeChecks, method.DeclaringType.Module.Assembly) &&
+                                !Annotations.IsInstantiated(type))
                             {
                                 _pending_isinst_instr.Add((type, method.Body, instruction));
                                 return;
