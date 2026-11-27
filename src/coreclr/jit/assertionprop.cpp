@@ -170,8 +170,21 @@ bool Compiler::optIsBoundInvariantInLoopsOf(ValueNum xVN, ValueNum bndVN)
         }
         else if (vnStore->GetVNFunc(vn, &funcApp))
         {
+            // MemOpaque's only argument is a loop index, not a value number, and it has no
+            // SSA definitions to walk.
+            if (funcApp.FuncIs(VNF_MemOpaque))
+            {
+                continue;
+            }
+
             for (unsigned i = 0; i < funcApp.GetArity(); i++)
             {
+                // MapStore's 4th argument is a loop index, not a value number.
+                if (funcApp.FuncIs(VNF_MapStore) && (i == 3))
+                {
+                    break;
+                }
+
                 ValueNum argVN = funcApp.GetArg(i);
                 if (!vnStore->IsVNConstant(argVN) && visited.Add(this, argVN))
                 {
