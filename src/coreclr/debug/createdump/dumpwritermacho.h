@@ -20,6 +20,16 @@ struct ThreadCommand
 #endif
 };
 
+// Payload of LLDB's version 4 "addrable bits" LC_NOTE: the number of valid
+// address bits for low (user) and high (kernel) addresses.
+struct AddressableBitsPayload
+{
+    uint32_t version;
+    uint32_t lowAddressBits;
+    uint32_t highAddressBits;
+    uint32_t reserved;
+};
+
 class DumpWriter
 {
 private:
@@ -30,6 +40,9 @@ private:
     std::vector<ThreadCommand> m_threadLoadCommands;
     note_command m_processMetadataNote{};
     std::string m_processMetadata;
+    note_command m_addressableBitsNote{};
+    AddressableBitsPayload m_addressableBits{};
+    bool m_hasAddressableBitsNote = false;
     BYTE m_tempBuffer[0x4000];
 
     // no public copy constructor
@@ -45,6 +58,7 @@ public:
 
 private:
     bool WriteDiagInfo(size_t size);
+    void BuildAddressableBitsNote();
     void BuildProcessMetadataNote();
     void BuildSegmentLoadCommands();
     void BuildThreadLoadCommands();
