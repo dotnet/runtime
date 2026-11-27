@@ -12115,14 +12115,22 @@ void CEEJitInfo::recordRelocation(void *       location,
             pages = 1 << 20;
         }
 #endif
-        if (m_fAllowOptionalRelocs && !FitsInArm64PageDelta(pages))
+        if (!FitsInArm64PageDelta(pages))
         {
-            // The instruction address is known only after allocation. Discard this
-            // compilation and use absolute cell addresses on the retry.
-            m_fJumpStubOverflow = TRUE;
-            break;
+            if (m_fAllowOptionalRelocs)
+            {
+                // The instruction address is known only after allocation. Discard this
+                // compilation and use absolute cell addresses on the retry.
+                m_fJumpStubOverflow = TRUE;
+                break;
+            }
+
+            // Only hint gated emission produces this relocation at runtime, so arriving
+            // here without the retry available is a JIT bug. Truncating the page delta
+            // would silently address the wrong page.
+            _ASSERTE(!"ARM64_PAGEBASE_REL21 out of range with optional relocs disabled");
+            EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
         }
-        _ASSERTE(FitsInArm64PageDelta(pages));
         INT32 imm21 = (INT32)pages & 0x1FFFFF;
         PutArm64Rel21((UINT32 *)locationRW, imm21);
         break;
