@@ -77,8 +77,8 @@ namespace System.Runtime.CompilerServices
             {
                 Debug.Assert(source is IValueTaskSource<T>);
                 IValueTaskSource<T> typedSource = Unsafe.As<object, IValueTaskSource<T>>(ref source);
-                T result = typedSource.GetResult(token);
-                Unsafe.As<byte, T>(ref GetResultStorage(next, ref taskResult)) = result;
+                ref T result = ref Unsafe.As<byte, T>(ref GetResultStorage(next, ref taskResult));
+                result = typedSource.GetResult(token);
             }
 
             private static class ValueTaskSourceContinuationResume

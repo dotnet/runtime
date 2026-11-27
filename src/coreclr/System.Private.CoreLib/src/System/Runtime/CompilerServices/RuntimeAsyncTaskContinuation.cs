@@ -139,8 +139,9 @@ namespace System.Runtime.CompilerServices
             Debug.Assert(task is Task<T>);
 
             Task<T> taskOfT = Unsafe.As<Task, Task<T>>(ref task);
+            ref T result = ref Unsafe.As<byte, T>(ref GetResultStorage(next, ref taskResult));
             TaskAwaiter.ValidateEnd(taskOfT);
-            Unsafe.As<byte, T>(ref GetResultStorage(next, ref taskResult)) = taskOfT.ResultOnSuccess;
+            result = taskOfT.ResultOnSuccess;
         }
 
         private static class TaskContinuationResume
