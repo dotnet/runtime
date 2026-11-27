@@ -213,35 +213,41 @@ namespace System.Diagnostics.Tests
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestSetEnvironmentOnChildProcess()
         {
-            const string name = "b5a715d3-d74f-465d-abb7-2abe844750c9";
-            Environment.SetEnvironmentVariable(name, "parent-process-value");
-
-            Process p = CreateProcess(() =>
+            RemoteExecutor.Invoke(static () =>
             {
-                if (Environment.GetEnvironmentVariable(name) != "child-process-value")
-                    return 1;
+                using var tests = new ProcessStartInfoTests();
+                const string name = "b5a715d3-d74f-465d-abb7-2abe844750c9";
+                Environment.SetEnvironmentVariable(name, "parent-process-value");
 
-                return RemoteExecutor.SuccessExitCode;
-            });
-            p.StartInfo.Environment.Add(name, "child-process-value");
-            p.Start();
+                Process p = tests.CreateProcess(() =>
+                {
+                    if (Environment.GetEnvironmentVariable(name) != "child-process-value")
+                        return 1;
 
-            Assert.True(p.WaitForExit(WaitInMS));
-            Assert.Equal(RemoteExecutor.SuccessExitCode, p.ExitCode);
+                    return RemoteExecutor.SuccessExitCode;
+                });
+                p.StartInfo.Environment.Add(name, "child-process-value");
+                p.Start();
+
+                Assert.True(p.WaitForExit(WaitInMS));
+                Assert.Equal(RemoteExecutor.SuccessExitCode, p.ExitCode);
+            }).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestEnvironmentOfChildProcess()
         {
-            const string ExtraEnvVar = "TestEnvironmentOfChildProcess_SpecialStuff";
-            Environment.SetEnvironmentVariable(ExtraEnvVar, "\x1234" + Environment.NewLine + "\x5678"); // ensure some Unicode characters and newlines are in the output
-            const string EmptyEnvVar = "TestEnvironmentOfChildProcess_Empty";
-            Environment.SetEnvironmentVariable(EmptyEnvVar, "");
-            try
+            RemoteExecutor.Invoke(static () =>
             {
+                using var tests = new ProcessStartInfoTests();
+                const string ExtraEnvVar = "TestEnvironmentOfChildProcess_SpecialStuff";
+                Environment.SetEnvironmentVariable(ExtraEnvVar, "\x1234" + Environment.NewLine + "\x5678"); // ensure some Unicode characters and newlines are in the output
+                const string EmptyEnvVar = "TestEnvironmentOfChildProcess_Empty";
+                Environment.SetEnvironmentVariable(EmptyEnvVar, "");
+
                 // Schedule a process to see what env vars it gets.  Have it write out those variables
                 // to its output stream so we can read them.
-                Process p = CreateProcess(() =>
+                Process p = tests.CreateProcess(() =>
                 {
                     Console.Write(string.Join(ItemSeparator, Environment.GetEnvironmentVariables().Cast<DictionaryEntry>().Select(e => Convert.ToBase64String(Encoding.UTF8.GetBytes(e.Key + "=" + e.Value)))));
                     return RemoteExecutor.SuccessExitCode;
@@ -272,22 +278,19 @@ namespace System.Diagnostics.Tests
                         string.Join(", ", envEnv.Except(actualEnv)),
                         Environment.NewLine,
                         string.Join(", ", actualEnv.Except(envEnv))));
-            }
-            finally
-            {
-                Environment.SetEnvironmentVariable(ExtraEnvVar, null);
-                Environment.SetEnvironmentVariable(EmptyEnvVar, null);
-            }
+            }).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void EnvironmentNullValue()
         {
-            const string NullEnvVar = "TestEnvironmentOfChildProcess_Null";
-            Environment.SetEnvironmentVariable(NullEnvVar, "");
-            try
+            RemoteExecutor.Invoke(static () =>
             {
-                Process p = CreateProcess(() =>
+                using var tests = new ProcessStartInfoTests();
+                const string NullEnvVar = "TestEnvironmentOfChildProcess_Null";
+                Environment.SetEnvironmentVariable(NullEnvVar, "");
+
+                Process p = tests.CreateProcess(() =>
                 {
                     // Verify that setting the value to null in StartInfo is going to remove the process environment.
                     Assert.Null(Environment.GetEnvironmentVariable(NullEnvVar));
@@ -297,11 +300,7 @@ namespace System.Diagnostics.Tests
                 Assert.Null(p.StartInfo.Environment[NullEnvVar]);
                 p.Start();
                 Assert.True(p.WaitForExit(WaitInMS));
-            }
-            finally
-            {
-                Environment.SetEnvironmentVariable(NullEnvVar, null);
-            }
+            }).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]

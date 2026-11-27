@@ -3,8 +3,10 @@
 
 using Xunit;
 
-// Process tests can conflict with each other, as they modify ambient state
-// like the console code page and environment variables
+#if TARGET_OSX
+// Retain serialization until process-management hangs under concurrent test classes on macOS are resolved.
+// https://github.com/dotnet/runtime/issues/135294
 [assembly: CollectionBehavior(CollectionBehavior.CollectionPerAssembly)]
+#endif
 
 [assembly: SkipOnPlatform(TestPlatforms.Browser, "System.Diagnostics.Process is not supported on Browser.")]
