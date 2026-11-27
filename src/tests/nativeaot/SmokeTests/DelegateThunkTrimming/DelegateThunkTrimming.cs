@@ -27,12 +27,10 @@ public class DelegateThunkTrimming
             bool hasThunk = (IntPtr)getThunk.Invoke(d, new object[] { thunkKind }) != IntPtr.Zero;
             if (hasThunk != ExpectThunks)
             {
-                Console.WriteLine($"Thunk {thunkKind}: expected presence {ExpectThunks}, got {hasThunk}");
                 return 2;
             }
         }
 
-        Console.WriteLine("Delegate thunk checks passed");
         return 100;
     }
 
