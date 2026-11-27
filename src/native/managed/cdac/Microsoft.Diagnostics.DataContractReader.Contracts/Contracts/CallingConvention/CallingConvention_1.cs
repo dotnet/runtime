@@ -164,7 +164,7 @@ internal sealed class CallingConvention_1 : ICallingConvention
 
         CdacTypeHandle returnType = new CdacTypeHandle(methodSig.ReturnType, _target, this);
 
-        TransitionBlock transitionBlock = BuildTransitionBlock(runtimeInfo, _target.PointerSize);
+        TransitionBlock transitionBlock = BuildTransitionBlock();
 
         CallingConventions callingConventions = hasThis
             ? CallingConventions.ManagedInstance
@@ -311,8 +311,9 @@ internal sealed class CallingConvention_1 : ICallingConvention
         return new ArgumentLayout(arguments, cbStackPop);
     }
 
-    private static TransitionBlock BuildTransitionBlock(IRuntimeInfo runtimeInfo, int pointerSize)
+    private TransitionBlock BuildTransitionBlock()
     {
+        IRuntimeInfo runtimeInfo = _target.Contracts.RuntimeInfo;
         RuntimeInfoArchitecture arch = runtimeInfo.GetTargetArchitecture();
         RuntimeInfoOperatingSystem os = runtimeInfo.GetTargetOperatingSystem();
 
@@ -324,7 +325,7 @@ internal sealed class CallingConvention_1 : ICallingConvention
             RuntimeInfoArchitecture.Arm64 => Internal.TypeSystem.TargetArchitecture.ARM64,
             RuntimeInfoArchitecture.LoongArch64 => Internal.TypeSystem.TargetArchitecture.LoongArch64,
             RuntimeInfoArchitecture.RiscV64 => Internal.TypeSystem.TargetArchitecture.RiscV64,
-            RuntimeInfoArchitecture.Wasm => pointerSize == sizeof(ulong)
+            RuntimeInfoArchitecture.Wasm => _target.PointerSize == sizeof(ulong)
                 ? Internal.TypeSystem.TargetArchitecture.Wasm64
                 : Internal.TypeSystem.TargetArchitecture.Wasm32,
             _ => throw new NotSupportedException($"Unsupported architecture: {arch}"),
@@ -369,7 +370,7 @@ internal sealed class CallingConvention_1 : ICallingConvention
         bool isX86 = arch is RuntimeInfoArchitecture.X86;
 
         int pointerSize = _target.PointerSize;
-        TransitionBlock tb = BuildTransitionBlock(runtimeInfo, _target.PointerSize);
+        TransitionBlock tb = BuildTransitionBlock();
 
         SortedDictionary<int, GCRefMapToken> tokens = new();
         ArgumentLayout enumeration = GetArgumentLayout(methodDesc);
