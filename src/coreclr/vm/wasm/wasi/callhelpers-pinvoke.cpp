@@ -148,7 +148,6 @@ namespace direct_pinvoke {
     int32_t SystemNative_FcntlSetFD (void *, int32_t) __asm__("SystemNative_FcntlSetFD");
     int32_t SystemNative_FileSystemSupportsLocking (void *, int32_t, int32_t) __asm__("SystemNative_FileSystemSupportsLocking");
     void SystemNative_Free (void *) __asm__("SystemNative_Free");
-    void SystemNative_FreeCommandLine (void *) __asm__("SystemNative_FreeCommandLine");
     void SystemNative_FreeHostEntry (void *) __asm__("SystemNative_FreeHostEntry");
     void SystemNative_FreeLibrary (void *) __asm__("SystemNative_FreeLibrary");
     int32_t SystemNative_GetAddressFamily (void *, int32_t, void *) __asm__("SystemNative_GetAddressFamily");
@@ -412,7 +411,6 @@ static const Entry s_libSystem_Native [] = {
     { "SystemNative_FcntlSetFD", (void*)&direct_pinvoke::SystemNative_FcntlSetFD }, // System.IO.MemoryMappedFiles
     { "SystemNative_FileSystemSupportsLocking", (void*)&direct_pinvoke::SystemNative_FileSystemSupportsLocking }, // System.Private.CoreLib
     { "SystemNative_Free", (void*)&direct_pinvoke::SystemNative_Free }, // System.Private.CoreLib
-    { "SystemNative_FreeCommandLine", (void*)&direct_pinvoke::SystemNative_FreeCommandLine }, // System.Private.CoreLib
     { "SystemNative_FreeHostEntry", (void*)&direct_pinvoke::SystemNative_FreeHostEntry }, // System.Net.NameResolution
     { "SystemNative_FreeLibrary", (void*)&direct_pinvoke::SystemNative_FreeLibrary }, // System.Private.CoreLib
     { "SystemNative_GetAddressFamily", (void*)&direct_pinvoke::SystemNative_GetAddressFamily }, // System.Net.Primitives, System.Net.Sockets
@@ -591,7 +589,7 @@ typedef struct PInvokeTable {
 static PInvokeTable s_PInvokeTables[] = {
     {"libSystem.Globalization.Native", s_libSystem_Globalization_Native, 34},
     {"libSystem.IO.Compression.Native", s_libSystem_IO_Compression_Native, 52},
-    {"libSystem.Native", s_libSystem_Native, 139},
+    {"libSystem.Native", s_libSystem_Native, 138},
     {"wasi:clocks/monotonic-clock@0.2.8", s_wasi_3A_clocks_2F_monotonic_clock_40_0_2_8, 4},
     {"wasi:http/outgoing-handler@0.2.8", s_wasi_3A_http_2F_outgoing_handler_40_0_2_8, 1},
     {"wasi:http/types@0.2.8", s_wasi_3A_http_2F_types_40_0_2_8, 26},

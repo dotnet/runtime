@@ -159,8 +159,3 @@ char** SystemNative_GetCommandLine(int32_t* argc)
     *argc = (int32_t)count;
     return result;
 }
-
-void SystemNative_FreeCommandLine(char** buffer)
-{
-    free(buffer);
-}

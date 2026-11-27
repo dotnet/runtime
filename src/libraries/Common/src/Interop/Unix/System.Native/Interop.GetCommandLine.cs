@@ -9,8 +9,5 @@ internal static partial class Interop
     {
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetCommandLine")]
         internal static unsafe partial byte** GetCommandLine(out int count);
-
-        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_FreeCommandLine")]
-        internal static unsafe partial void FreeCommandLine(byte** buffer);
     }
 }

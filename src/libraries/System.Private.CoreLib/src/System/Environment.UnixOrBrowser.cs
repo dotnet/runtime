@@ -104,10 +104,7 @@ namespace System
             byte** nativeArgv = Interop.Sys.GetCommandLine(out int argc);
             if (nativeArgv == null || argc <= 0)
             {
-                if (nativeArgv != null)
-                {
-                    Interop.Sys.FreeCommandLine(nativeArgv);
-                }
+                NativeMemory.Free(nativeArgv);
 
                 // Keep the contract that the first element is the program name, even if it is unknown.
                 return [string.Empty];
@@ -125,7 +122,7 @@ namespace System
             }
             finally
             {
-                Interop.Sys.FreeCommandLine(nativeArgv);
+                NativeMemory.Free(nativeArgv);
             }
         }
     }

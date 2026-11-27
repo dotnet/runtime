@@ -1663,8 +1663,3 @@ char** SystemNative_GetCommandLine(int32_t* argc)
     return NULL;
 #endif
 }
-
-void SystemNative_FreeCommandLine(char** buffer)
-{
-    free(buffer);
-}
