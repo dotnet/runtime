@@ -354,48 +354,21 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
             Path.Combine(paths.BinFrameworkDir, "dotnet.native.js"),
         ];
 
-        if (BuildTestBase.IsCoreClrRuntime)
-        {
-            string[] generatedFiles =
-            [
-                "callhelpers-generator.rsp",
-                "callhelpers-interp-to-managed.cpp",
-                "callhelpers-interp-to-managed.o",
-                "callhelpers-pinvoke.cpp",
-                "callhelpers-pinvoke.o",
-                "callhelpers-reverse.cpp",
-                "callhelpers-reverse.o",
-                "dotnet.native.js.symbols",
-                "emcc-compile-generated.rsp",
-                "emcc-link.rsp",
-            ];
-            TestUtils.AssertFilesExist(paths.ObjWasmDir, generatedFiles);
-            files.AddRange(generatedFiles.Select(file => Path.Combine(paths.ObjWasmDir, file)));
-        }
-        else
-        {
-            files.AddRange(new[]
-            {
-                Path.Combine(paths.ObjWasmDir, "driver.o"),
-                Path.Combine(paths.ObjWasmDir, "runtime.o"),
-                Path.Combine(paths.ObjWasmDir, "corebindings.o"),
-                Path.Combine(paths.ObjWasmDir, "pinvoke.o"),
-                Path.Combine(paths.ObjWasmDir, "icall-table.h"),
-                Path.Combine(paths.ObjWasmDir, "pinvoke-table.h"),
-                Path.Combine(paths.ObjWasmDir, "driver-gen.c"),
-            });
-
-            if (isAOT)
-            {
-                files.AddRange(new[]
-                {
-                    Path.Combine(paths.ObjWasmDir, $"{projectName}.dll.bc"),
-                    Path.Combine(paths.ObjWasmDir, $"{projectName}.dll.o"),
-                    Path.Combine(paths.ObjWasmDir, $"System.Private.CoreLib.dll.bc"),
-                    Path.Combine(paths.ObjWasmDir, $"System.Private.CoreLib.dll.o"),
-                });
-            }
-        }
+        string[] generatedFiles =
+        [
+            "callhelpers-generator.rsp",
+            "callhelpers-interp-to-managed.cpp",
+            "callhelpers-interp-to-managed.o",
+            "callhelpers-pinvoke.cpp",
+            "callhelpers-pinvoke.o",
+            "callhelpers-reverse.cpp",
+            "callhelpers-reverse.o",
+            "dotnet.native.js.symbols",
+            "emcc-compile-generated.rsp",
+            "emcc-link.rsp",
+        ];
+        TestUtils.AssertFilesExist(paths.ObjWasmDir, generatedFiles);
+        files.AddRange(generatedFiles.Select(file => Path.Combine(paths.ObjWasmDir, file)));
 
         var dict = new Dictionary<string, (string fullPath, bool unchanged)>();
         foreach (var file in files)
@@ -510,10 +483,9 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         }
     }
 
-    // Extract the runtime pack root that the build actually resolved (printed by
-    // BrowserWasmApp.targets / BrowserWasmApp.CoreCLR.targets as
-    // "** MicrosoftNetCoreAppRuntimePackDir : '<path>'"). Returns null when the line is
-    // not present (e.g. assertions running off a cached output that didn't capture it).
+    // Extract the runtime pack root that the build actually resolved
+    // (printed by BrowserWasmApp.CoreCLR.targets as "** MicrosoftNetCoreAppRuntimePackDir : '<path>'").
+    // Returns null when the line is not present (e.g. assertions running off a cached output that didn't capture it).
     public static string? TryGetRuntimePackDirFromBuildOutput(string? buildOutput)
     {
         if (string.IsNullOrEmpty(buildOutput))
@@ -585,16 +557,16 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         if (assertOptions.BuildOptions.GlobalizationMode is GlobalizationMode.Custom)
         {
             string srcPath = assertOptions.BuildOptions.CustomIcuFile!;
-            // Prefer the runtime-pack root the build actually resolved (from MSBuild output),
-            // since that is the same pack the publish output was produced from. The SDK's
-            // workload-pack dir (GetRuntimeNativeDir) can diverge from it on CoreCLR no-workload
-            // runs where the publish-time pack comes from a per-test NuGet cache.
-            string runtimePackDir = !string.IsNullOrEmpty(assertOptions.RuntimePackDir)
-                ? Path.Combine(assertOptions.RuntimePackDir, "runtimes", BuildEnvironment.DefaultRuntimeIdentifier, "native")
-                : BuildTestBase.s_buildEnv.GetRuntimeNativeDir(assertOptions.BuildOptions.TargetFramework, assertOptions.BuildOptions.RuntimeType);
-            if (!Path.IsPathRooted(srcPath))
-                srcPath = Path.Combine(runtimePackDir, assertOptions.BuildOptions.CustomIcuFile!);
-            TestUtils.AssertSameFile(srcPath, actual.Single());
+            if (Path.IsPathRooted(srcPath))
+            {
+                TestUtils.AssertSameFile(srcPath, actual.Single());
+            }
+            else
+            {
+                var runtimePack = new RuntimePackAssets(assertOptions.RuntimePackDir ??
+                    BuildTestBase.s_buildEnv.GetRuntimePackDir(assertOptions.BuildOptions.TargetFramework, assertOptions.BuildOptions.RuntimeType));
+                runtimePack.AssertFileSize(RuntimePackAssets.GetNativePath(srcPath), actual.Single());
+            }
         }
     }
 

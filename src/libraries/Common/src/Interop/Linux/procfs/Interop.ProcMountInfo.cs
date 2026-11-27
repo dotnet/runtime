@@ -19,45 +19,10 @@ internal static partial class Interop
             {
                 try
                 {
-                    ReadOnlySpan<char> currentFormat = default;
-                    int currentBestLength = 0;
-
-                    using StreamReader reader = new(ProcMountInfoFilePath);
-
-                    string? line;
-                    while ((line = reader.ReadLine()) is not null)
+                    string? fileSystemType = GetFileSystemTypeForPath(path, File.ReadLines(ProcMountInfoFilePath));
+                    if (fileSystemType is not null)
                     {
-                        if (TryParseMountInfoLine(line, out ParsedMount mount))
-                        {
-                            if (mount.MountPoint.Length < currentBestLength)
-                            {
-                                continue;
-                            }
-
-                            if (!path.StartsWith(mount.MountPoint))
-                            {
-                                continue;
-                            }
-
-                            if (mount.MountPoint.Length == path.Length)
-                            {
-                                currentFormat = mount.FileSystemType;
-                                break;
-                            }
-
-                            if (mount.MountPoint.Length > 1 && path[mount.MountPoint.Length] != '/')
-                            {
-                                continue;
-                            }
-
-                            currentBestLength = mount.MountPoint.Length;
-                            currentFormat = mount.FileSystemType;
-                        }
-                    }
-
-                    if (currentFormat.Length > 0)
-                    {
-                        format = currentFormat.ToString();
+                        format = fileSystemType;
                         return Error.SUCCESS;
                     }
                     return Error.ENOENT;

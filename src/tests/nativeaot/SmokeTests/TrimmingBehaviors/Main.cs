@@ -9,7 +9,7 @@ success &= RunTest(DeadCodeElimination.Run);
 success &= RunTest(FeatureSwitches.Run);
 success &= RunTest(ILLinkDescriptor.Run);
 success &= RunTest(DependencyInjectionPattern.Run);
-if (!OperatingSystem.IsWasi())
+if (!OperatingSystem.IsWasi() && !OperatingSystem.IsBrowser())
 {
     success &= RunTest(UnmanagedCallersOnlyAssociatedSourceType.Run);
 }

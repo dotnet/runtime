@@ -37,6 +37,7 @@ namespace Wasm.Build.NativeRebuild.Tests
         }
 
         [Fact]
+        // TODO-WASM: https://github.com/dotnet/runtime/issues/135046
         [TestCategory("mono")]
         public void NativeRelinkFailsWithInvariant()
         {

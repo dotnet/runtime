@@ -20,11 +20,10 @@ public class IcuShardingTests : IcuTestsBase
         : base(output, buildContext) { }
 
     public static IEnumerable<object[]> IcuExpectedAndMissingCustomShardTestData(Configuration config) =>
-        from aot in boolOptions
-            from onlyPredefinedCultures in boolOptions
-            // isOnlyPredefinedCultures = true fails with wasmbrowser: https://github.com/dotnet/runtime/issues/108272
-            where !(onlyPredefinedCultures)
-            select new object[] { config, aot, CustomIcuPath, s_customIcuTestedLocales, onlyPredefinedCultures };
+        from onlyPredefinedCultures in boolOptions
+        // isOnlyPredefinedCultures = true fails with wasmbrowser: https://github.com/dotnet/runtime/issues/108272
+        where !(onlyPredefinedCultures)
+        select new object[] { config, CustomIcuPath, s_customIcuTestedLocales, onlyPredefinedCultures };
 
     public static IEnumerable<object[]> IcuExpectedAndMissingAutomaticShardTestData(Configuration config)
     {
@@ -34,20 +33,19 @@ public class IcuShardingTests : IcuTestsBase
             { "ja-JP", GetCjkTestedLocales(SundayNames.Japanese) },
             { "sk-SK", GetNocjkTestedLocales(SundayNames.Slovak) }
         }; 
-        return from aot in boolOptions
-            from locale in locales
-            select new object[] { config, aot, locale.Key, locale.Value };
+        return from locale in locales
+            select new object[] { config, locale.Key, locale.Value };
     }
 
     [Theory]
     [MemberData(nameof(IcuExpectedAndMissingCustomShardTestData), parameters: new object[] { Configuration.Release })]
     [TestCategory("native")]
-    public async Task CustomIcuShard(Configuration config, bool aot, string customIcuPath, string customLocales, bool onlyPredefinedCultures) =>
-        await TestIcuShards(config, Template.WasmBrowser, aot, customIcuPath, customLocales, GlobalizationMode.Custom, onlyPredefinedCultures);
+    public async Task CustomIcuShard(Configuration config, string customIcuPath, string customLocales, bool onlyPredefinedCultures) =>
+        await TestIcuShards(config, Template.WasmBrowser, customIcuPath, customLocales, GlobalizationMode.Custom, onlyPredefinedCultures);
 
     [Theory]
     [MemberData(nameof(IcuExpectedAndMissingAutomaticShardTestData), parameters: new object[] { Configuration.Release })]
     [TestCategory("native")]
-    public async Task AutomaticShardSelectionDependingOnEnvLocale(Configuration config, bool aot, string environmentLocale, string testedLocales) =>
-        await PublishAndRunIcuTest(config, Template.WasmBrowser, aot, testedLocales, GlobalizationMode.Sharded, locale: environmentLocale);
+    public async Task AutomaticShardSelectionDependingOnEnvLocale(Configuration config, string environmentLocale, string testedLocales) =>
+        await PublishAndRunIcuTest(config, Template.WasmBrowser, testedLocales, GlobalizationMode.Sharded, locale: environmentLocale);
 }

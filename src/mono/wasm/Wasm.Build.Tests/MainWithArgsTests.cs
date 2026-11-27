@@ -29,10 +29,7 @@ namespace Wasm.Build.Tests
                 .UnwrapItemsAsArrays();
 
         public static IEnumerable<object?[]> MainWithArgsTestDataForCurrentRuntime()
-        {
-            IEnumerable<object?[]> data = MainWithArgsTestData(aot: false);
-            return IsCoreClrRuntime ? data : data.Concat(MainWithArgsTestData(aot: true));
-        }
+            => MainWithArgsTestData(aot: false);
 
         [Theory]
         [MemberData(nameof(MainWithArgsTestDataForCurrentRuntime))]

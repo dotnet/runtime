@@ -38,42 +38,7 @@ add_executable_clr(paltests
   EXCLUDE_FROM_ALL
   paltests.cpp
   common/palsuite.cpp
-  c_runtime/sscanf_s/test1/test1.cpp
-  c_runtime/sscanf_s/test10/test10.cpp
-  c_runtime/sscanf_s/test11/test11.cpp
-  c_runtime/sscanf_s/test12/test12.cpp
-  c_runtime/sscanf_s/test13/test13.cpp
-  c_runtime/sscanf_s/test14/test14.cpp
-  c_runtime/sscanf_s/test15/test15.cpp
-  c_runtime/sscanf_s/test16/test16.cpp
-  c_runtime/sscanf_s/test17/test17.cpp
-  c_runtime/sscanf_s/test2/test2.cpp
-  c_runtime/sscanf_s/test3/test3.cpp
-  c_runtime/sscanf_s/test4/test4.cpp
-  c_runtime/sscanf_s/test5/test5.cpp
-  c_runtime/sscanf_s/test6/test6.cpp
-  c_runtime/sscanf_s/test7/test7.cpp
-  c_runtime/sscanf_s/test8/test8.cpp
-  c_runtime/sscanf_s/test9/test9.cpp
-  c_runtime/_vsnprintf_s/test1/test1.cpp
-  c_runtime/_vsnprintf_s/test10/test10.cpp
-  c_runtime/_vsnprintf_s/test11/test11.cpp
-  c_runtime/_vsnprintf_s/test12/test12.cpp
-  c_runtime/_vsnprintf_s/test13/test13.cpp
-  c_runtime/_vsnprintf_s/test14/test14.cpp
-  c_runtime/_vsnprintf_s/test15/test15.cpp
-  c_runtime/_vsnprintf_s/test16/test16.cpp
-  c_runtime/_vsnprintf_s/test17/test17.cpp
-  c_runtime/_vsnprintf_s/test18/test18.cpp
-  c_runtime/_vsnprintf_s/test19/test19.cpp
-  c_runtime/_vsnprintf_s/test2/test2.cpp
-  c_runtime/_vsnprintf_s/test4/test4.cpp
-  c_runtime/_vsnprintf_s/test6/test6.cpp
-  c_runtime/_vsnprintf_s/test8/test8.cpp
-  c_runtime/_vsnprintf_s/test9/test9.cpp
-  c_runtime/_wcslwr_s/test1/test1.cpp
   #debug_api/DebugBreak/test1/test1.cpp
-  debug_api/OutputDebugStringW/test1/test1.cpp
   #exception_handling/pal_except/test1/test1.cpp
   #exception_handling/pal_except/test2/test2.cpp
   #exception_handling/pal_except/test3/test3.cpp
@@ -100,24 +65,18 @@ add_executable_clr(paltests
 #  filemapping_memmgt/FreeLibrary/test1/dlltest.cpp
   filemapping_memmgt/FreeLibrary/test1/FreeLibrary.cpp
   filemapping_memmgt/FreeLibrary/test2/test2.cpp
-  filemapping_memmgt/GetModuleFileNameA/test1/GetModuleFileNameA.cpp
-  filemapping_memmgt/GetModuleFileNameA/test2/GetModuleFileNameA.cpp
   filemapping_memmgt/GetModuleFileNameW/test1/GetModuleFileNameW.cpp
   filemapping_memmgt/GetModuleFileNameW/test2/GetModuleFileNameW.cpp
   filemapping_memmgt/GetProcAddress/test1/test1.cpp
 #  filemapping_memmgt/GetProcAddress/test1/testlib.cpp
   filemapping_memmgt/GetProcAddress/test2/test2.cpp
 #  filemapping_memmgt/GetProcAddress/test2/testlib.cpp
-  filemapping_memmgt/ProbeMemory/ProbeMemory_neg1/ProbeMemory_neg.cpp
-  filemapping_memmgt/ProbeMemory/test1/ProbeMemory.cpp
   loader/LoadLibraryW/test1/LoadLibraryW.cpp
   loader/LoadLibraryW/test2/loadlibraryw.cpp
   loader/LoadLibraryW/test3/loadlibraryw.cpp
   loader/LoadLibraryW/test5/loadlibraryw.cpp
   miscellaneous/CloseHandle/test2/test.cpp
-  miscellaneous/FlushInstructionCache/test1/test1.cpp
   miscellaneous/GetLastError/test1/test.cpp
-  miscellaneous/GetSystemInfo/test1/test.cpp
   miscellaneous/InterlockedCompareExchange/test1/test.cpp
   miscellaneous/InterlockedCompareExchange/test2/test.cpp
   miscellaneous/InterlockedCompareExchange64/test1/test.cpp
@@ -151,14 +110,10 @@ add_executable_clr(paltests
   threading/ExitProcess/test3/test3.cpp
   threading/ExitThread/test1/test1.cpp
   threading/GetCurrentProcess/test1/process.cpp
-  threading/GetCurrentProcessId/test1/processId.cpp
   threading/GetCurrentThread/test1/thread.cpp
   threading/GetCurrentThread/test2/test2.cpp
-  threading/GetCurrentThreadId/test1/threadId.cpp
-  threading/QueryThreadCycleTime/test1/test1.cpp
   threading/ResumeThread/test1/test1.cpp
   threading/RuntimeEvent/test1/test1.cpp
-  threading/SwitchToThread/test1/test1.cpp
   threading/TerminateProcess/test1/TerminateProcess.cpp
   threading/ThreadPriority/test1/ThreadPriority.cpp
   threading/YieldProcessor/test1/test1.cpp

@@ -404,7 +404,7 @@ namespace System.Reflection.Metadata.Ecma335
         public int GetAlignedHeapSize(HeapIndex index)
         {
             int i = (int)index;
-            if (i < 0 || i > HeapSizes.Length)
+            if (i < 0 || i >= HeapSizes.Length)
             {
                 Throw.ArgumentOutOfRange(nameof(index));
             }

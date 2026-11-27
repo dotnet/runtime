@@ -24,7 +24,7 @@
     <DirectPInvoke Include="__Internal" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(UseMonoRuntime)' != 'true' and '$(UseNativeAOTRuntime)' != 'true' and '$(PublishReadyToRun)' == 'true'">
+  <ItemGroup Condition="'$(UseNativeAOTRuntime)' != 'true' and '$(PublishReadyToRun)' == 'true'">
     <EnvironmentVariables Include="TEST_READY_TO_RUN_MODE=1" />
   </ItemGroup>
 
@@ -41,10 +41,10 @@
     <!-- running aot-helix tests locally, so we can test with the same project file as CI -->
     <_AOTBuildCommand Condition="'$(ContinuousIntegrationBuild)' != 'true'">$(_AOTBuildCommand) /p:RuntimeSrcDir=$(RepoRoot) /p:RuntimeConfig=$(Configuration)</_AOTBuildCommand>
     <!-- The command below sets default properties for runtime and library tests -->
-    <_AOTBuildCommand>$(_AOTBuildCommand) /p:XHARNESS_EXECUTION_DIR=&quot;$XHARNESS_EXECUTION_DIR&quot; /p:RunAOTCompilation=$(RunAOTCompilation) /p:UseNativeAOTRuntime=$(UseNativeAOTRuntime) /p:TargetOS=$(TargetOS) /p:TargetArchitecture=$(TargetArchitecture) /p:UseMonoRuntime=$(UseMonoRuntime) /p:MonoForceInterpreter=$(MonoForceInterpreter) /p:DevTeamProvisioning=$(DevTeamProvisioning) /p:UsePortableRuntimePack=$(UsePortableRuntimePack) /p:Configuration=$(Configuration) /p:TargetFramework=$(NetCoreAppCurrent)</_AOTBuildCommand>
+    <_AOTBuildCommand>$(_AOTBuildCommand) /p:XHARNESS_EXECUTION_DIR=&quot;$XHARNESS_EXECUTION_DIR&quot; /p:UseNativeAOTRuntime=$(UseNativeAOTRuntime) /p:TargetOS=$(TargetOS) /p:TargetArchitecture=$(TargetArchitecture) /p:DevTeamProvisioning=$(DevTeamProvisioning) /p:UsePortableRuntimePack=$(UsePortableRuntimePack) /p:Configuration=$(Configuration) /p:TargetFramework=$(NetCoreAppCurrent)</_AOTBuildCommand>
     <_AOTBuildCommand Condition="'$(NativeLib)' != ''">$(_AOTBuildCommand) /p:NativeLib=$(NativeLib) /p:BundlesResources=$(BundlesResources) /p:ForceLibraryModeGenerateAppBundle=$(ForceLibraryModeGenerateAppBundle)</_AOTBuildCommand>
     <!-- Pass R2R properties for CoreCLR builds that are built on Helix -->
-    <_AOTBuildCommand Condition="'$(UseMonoRuntime)' != 'true' and '$(UseNativeAOTRuntime)' != 'true'">$(_AOTBuildCommand) /p:PublishReadyToRun=true /p:PublishReadyToRunComposite=true /p:PublishReadyToRunContainerFormat=macho /p:StripSymbols=true</_AOTBuildCommand>
+    <_AOTBuildCommand Condition="'$(UseNativeAOTRuntime)' != 'true'">$(_AOTBuildCommand) /p:PublishReadyToRun=true /p:PublishReadyToRunComposite=true /p:PublishReadyToRunContainerFormat=macho /p:StripSymbols=true</_AOTBuildCommand>
     <_AOTBuildCommand>$(_AOTBuildCommand) </_AOTBuildCommand>
 
     <_ResetSimulatorSwitch Condition="('$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvossimulator') and '$(IncludesTestRunner)' == 'true'">--reset-simulator</_ResetSimulatorSwitch>
@@ -65,7 +65,6 @@
     <RunScriptCommand>$(_AOTBuildCommand) $(_AfterBuildCommands)</RunScriptCommand>
   </PropertyGroup>
 
-  <Import Project="$(MonoProjectRoot)\msbuild\common\LibraryBuilder.props" />
   <Import Project="$(MonoProjectRoot)\msbuild\apple\build\AppleBuild.props" />
   <Import Project="$(MonoProjectRoot)\msbuild\apple\build\AppleBuild.InTree.targets"
           Condition="'$(BuildTestsOn)' == 'local'" />
@@ -150,10 +149,8 @@
       <_ApplePropertyNames Include="IncludesTestRunner" />
       <_ApplePropertyNames Include="EnableAppSandbox" />
       <_ApplePropertyNames Include="MainLibraryFileName" />
-      <_ApplePropertyNames Include="ShouldILStrip" />
       <_ApplePropertyNames Include="PublishReadyToRunStripILBodies" />
       <_ApplePropertyNames Include="UseConsoleUITemplate" />
-      <_ApplePropertyNames Include="UseRuntimeComponents" />
       <_ApplePropertyNames Include="DynamicCodeSupport" />
       <_ApplePropertyNames Include="EventSourceSupport" />
       <_ApplePropertyNames Include="_SuppressNativeLibEventSourceWarning" />
@@ -220,7 +217,6 @@
 
     <ItemGroup>
       <AppleAssembliesToBundle Include="@(NativeLibraries->'$(PublishDir)%(Identity)')">
-        <_InternalForceInterpret>true</_InternalForceInterpret>
         <_IsNative>true</_IsNative>
       </AppleAssembliesToBundle>
 
@@ -228,7 +224,6 @@
       <_SatelliteAssemblies Include="$(PublishDir)\**\*.resources.dll" />
 
       <AppleAssembliesToBundle Include="@(_PublishAssemblies)">
-        <_InternalForceInterpret Condition="'$(UseMonoJustInterp)' == 'true' and '%(FileName)%(Extension)' != 'System.Private.CoreLib.dll'">true</_InternalForceInterpret>
         <_IsNative>false</_IsNative>
       </AppleAssembliesToBundle>
 

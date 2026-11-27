@@ -76,7 +76,7 @@ namespace System.Formats.Cbor
 
         private void WriteStartMapIndefiniteLength()
         {
-            if (!ConvertIndefiniteLengthEncodings && CborConformanceModeHelpers.RequiresDefiniteLengthItems(ConformanceMode))
+            if (!ConvertIndefiniteLengthEncodings && _requiresDefiniteLengthItems)
             {
                 throw new InvalidOperationException(SR.Format(SR.Cbor_ConformanceMode_IndefiniteLengthItemsNotSupported, ConformanceMode));
             }
@@ -84,7 +84,7 @@ namespace System.Formats.Cbor
             EnsureMaxDepthNotExceeded();
             EnsureWriteCapacity(1);
             WriteInitialByte(new CborInitialByte(CborMajorType.Map, CborAdditionalInfo.IndefiniteLength));
-            PushDataItem(CborMajorType.Map, definiteLength: null);
+            PushDataItem(CborMajorType.Map, definiteLength: NoDefiniteLength);
             _currentKeyOffset = _offset;
         }
 
@@ -94,13 +94,13 @@ namespace System.Formats.Cbor
 
         private void HandleMapKeyWritten()
         {
-            Debug.Assert(_currentKeyOffset != null && _currentValueOffset == null);
+            Debug.Assert(_currentKeyOffset != NoOffset && _currentValueOffset == NoOffset);
 
-            if (CborConformanceModeHelpers.RequiresUniqueKeys(ConformanceMode))
+            if (_requiresUniqueKeys)
             {
                 HashSet<(int Offset, int Length)> keyEncodingRanges = GetKeyEncodingRanges();
 
-                (int Offset, int Length) currentKey = (_currentKeyOffset.Value, _offset - _currentKeyOffset.Value);
+                (int Offset, int Length) currentKey = (_currentKeyOffset, _offset - _currentKeyOffset);
 
                 if (!keyEncodingRanges.Add(currentKey))
                 {
@@ -118,16 +118,16 @@ namespace System.Formats.Cbor
 
         private void HandleMapValueWritten()
         {
-            Debug.Assert(_currentKeyOffset != null && _currentValueOffset != null);
+            Debug.Assert(_currentKeyOffset != NoOffset && _currentValueOffset != NoOffset);
 
-            if (CborConformanceModeHelpers.RequiresSortedKeys(ConformanceMode))
+            if (_requiresSortedKeys)
             {
                 List<KeyValuePairEncodingRange> keyValuePairEncodingRanges = GetKeyValueEncodingRanges();
 
                 var currentKeyValueRange = new KeyValuePairEncodingRange(
-                    offset: _currentKeyOffset.Value,
-                    keyLength: _currentValueOffset.Value - _currentKeyOffset.Value,
-                    totalLength: _offset - _currentKeyOffset.Value);
+                    offset: _currentKeyOffset,
+                    keyLength: _currentValueOffset - _currentKeyOffset,
+                    totalLength: _offset - _currentKeyOffset);
 
                 // Check that the keys are written in sorted order.
                 // Once invalidated, declare that the map requires sorting,
@@ -144,7 +144,7 @@ namespace System.Formats.Cbor
 
             // update offset state to the next key
             _currentKeyOffset = _offset;
-            _currentValueOffset = null;
+            _currentValueOffset = NoOffset;
         }
 
         private void CompleteMapWrite()

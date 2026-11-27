@@ -22,7 +22,7 @@ public class AppSettingsTests : WasmTemplateTestsBase
     {
     }
 
-    [Theory, TestCategory("coreclr"), TestCategory("no-workload")]
+    [Theory, TestCategory("no-workload")]
     [InlineData(false, false, false, false, null)]
     [InlineData(true, false, false, false, null)]
     [InlineData(false, false, false, true, "default")]

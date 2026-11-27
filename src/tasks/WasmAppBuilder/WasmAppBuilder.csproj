@@ -25,6 +25,7 @@
   <ItemGroup>
     <Compile Include="..\Common\Utils.cs" />
     <Compile Include="..\Common\LogAsErrorException.cs" />
+    <Compile Include="..\Common\RuntimeConfigProperties.cs" />
     <Compile Include="..\Common\TempFileName.cs" />
     <Compile Include="..\Common\JoinedString.cs" />
     <Compile Include="..\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\ArtifactWriter.cs" />
@@ -38,7 +39,7 @@
     <!-- Reference Microsoft.Build.Tasks.Core directly to avoid bringing in it's package closure.
          This assembly is provided by MSBuild.  -->
     <PackageDownloadAndReference Include="Microsoft.Build.Tasks.Core" Version="$(MicrosoftBuildTasksCoreVersion)" Folder="ref/net472" Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net472'))" />
-    <PackageDownloadAndReference Include="Microsoft.Build.Tasks.Core" Version="$(MicrosoftBuildTasksCoreVersion)" Folder="ref/net8.0" Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))" />
+    <PackageDownloadAndReference Include="Microsoft.Build.Tasks.Core" Version="$(MicrosoftBuildTasksCoreVersion)" Folder="ref/net10.0" Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net10.0'))" />
   </ItemGroup>
 
   <Target Name="GetFilesToPackage" Returns="@(FilesToPackage)">
@@ -55,7 +56,5 @@
                       TargetPath="tasks\netframework" />
     </ItemGroup>
   </Target>
-
-  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.Mono.ManagedToNativeGenerator" TaskFactory="TaskHostFactory" AssemblyFile="$(OutputPath)net\WasmAppBuilder.dll" Condition="'$(RuntimeFlavor)' == 'Mono'" />
 
 </Project>

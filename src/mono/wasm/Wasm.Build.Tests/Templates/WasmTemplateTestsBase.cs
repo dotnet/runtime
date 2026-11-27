@@ -46,7 +46,7 @@ public class WasmTemplateTestsBase : BuildTestBase
             { "Hello, Browser!", "TestOutput -> Hello, Browser!" }
         };
 
-    private string GetProjectName(string idPrefix, Configuration config, bool aot, bool appendUnicodeToPath, bool avoidAotLongPathIssue = false) =>
+    private string GetProjectName(string idPrefix, bool aot, Configuration config, bool appendUnicodeToPath, bool avoidAotLongPathIssue = false) =>
         avoidAotLongPathIssue ? // https://github.com/dotnet/runtime/issues/103625
             $"{GetRandomId()}" :
             appendUnicodeToPath ?
@@ -55,7 +55,7 @@ public class WasmTemplateTestsBase : BuildTestBase
 
     private (string projectName, string logPath, string nugetDir) InitProjectLocation(string idPrefix, Configuration config, bool aot, bool appendUnicodeToPath, bool avoidAotLongPathIssue = false)
     {
-        string projectName = GetProjectName(idPrefix, config, aot, appendUnicodeToPath, avoidAotLongPathIssue);
+        string projectName = GetProjectName(idPrefix, aot, config, appendUnicodeToPath, avoidAotLongPathIssue);
         (string logPath, string nugetDir) = InitPaths(projectName);
         InitProjectDir(_projectDir, addNuGetSourceForLocalPackages: true);
         return (projectName, logPath, nugetDir);
@@ -64,7 +64,6 @@ public class WasmTemplateTestsBase : BuildTestBase
     public ProjectInfo CreateWasmTemplateProject(
         Template template,
         Configuration config,
-        bool aot,
         string idPrefix = "wbt",
         bool? appendUnicodeToPath = null,
         string extraArgs = "",
@@ -75,7 +74,7 @@ public class WasmTemplateTestsBase : BuildTestBase
         string insertAtEnd = "")
     {
         (string projectName, string logPath, string nugetDir) =
-            InitProjectLocation(idPrefix, config, aot, appendUnicodeToPath ?? s_buildEnv.IsRunningOnCI);
+            InitProjectLocation(idPrefix, config, false, appendUnicodeToPath ?? s_buildEnv.IsRunningOnCI);
 
         if (addFrameworkArg) {
             var defaultTarget = template switch
@@ -164,15 +163,8 @@ public class WasmTemplateTestsBase : BuildTestBase
 
     protected static void AddCoreClrProjectProperties(ref string extraProperties, ref string extraItems, ref string insertAtEnd)
     {
-        if (!s_buildEnv.IsCoreClrRuntime)
-            return;
-
         string runtimePackVersion = s_buildEnv.GetRuntimePackVersion(DefaultTargetFramework);
 
-        extraProperties +=
-        """
-            <UseMonoRuntime>false</UseMonoRuntime>
-        """;
         foreach (string targetFramework in new[] { DefaultTargetFramework, DefaultTargetFrameworkForBlazorTemplate }.Distinct())
         {
             extraItems +=
@@ -580,8 +572,11 @@ public class WasmTemplateTestsBase : BuildTestBase
         if (runOptions is BlazorRunOptions blazorOp && blazorOp.Test is not null)
             await blazorOp.Test(page);
 
-        _testOutput.WriteLine($"Waiting for additional 10secs to see if any errors are reported");
-        int exitCode = await runner.WaitForExitMessageAsync(TimeSpan.FromSeconds(runOptions.TimeoutSeconds ?? 10));
+        // The app may still be downloading assets and booting the runtime at this point,
+        // which can take well over 10s on loaded CI machines (especially untrimmed CoreCLR builds).
+        int timeoutSeconds = runOptions.TimeoutSeconds ?? 60;
+        _testOutput.WriteLine($"Waiting up to {timeoutSeconds}s for the 'WASM EXIT' message");
+        int exitCode = await runner.WaitForExitMessageAsync(TimeSpan.FromSeconds(timeoutSeconds));
         if (runOptions.ExpectedExitCode is not null && exitCode != runOptions.ExpectedExitCode)
             throw new Exception($"Expected exit code {runOptions.ExpectedExitCode} but got {exitCode}.\nconsoleOutput={string.Join("\n", consoleOutput)}");
 

@@ -519,7 +519,8 @@ HRESULT
 CMiniMdBase::SchemaPopulate(
     const void *pvData,     // Pointer to the buffer.
     ULONG       cbData,     // Size of the buffer.
-    ULONG      *pcbUsed)    // Put size of the header here.
+    ULONG      *pcbUsed,    // Put size of the header here.
+    bool        fIsDelta)   // Is this metadata being loaded to apply an EnC delta?
 {
     HRESULT hr;
     ULONG   cb;         // Bytes read for header.
@@ -552,6 +553,13 @@ CMiniMdBase::SchemaPopulate(
             Debug_ReportError("Unsupported version of MetaData.");
             return PostError(CLDB_E_FILE_OLDVER, m_Schema.m_major, m_Schema.m_minor);
         }
+    }
+
+    // Delta-only metadata is valid only when loading a delta for application.
+    if (!fIsDelta && (m_Schema.m_heaps & CMiniMdSchema::DELTA_ONLY) != 0)
+    {
+        Debug_ReportError("EnC delta metadata is not supported outside of delta application.");
+        return PostError(CLDB_E_FILE_CORRUPT);
     }
 
     // Populate the schema, based on the row counts and heap sizes.

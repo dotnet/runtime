@@ -132,7 +132,6 @@ public class ModuleConfigTests : WasmTemplateTestsBase
     [InlineData("not-found", true)]
     [InlineData("network", true)]
     [InlineData("none", false)]
-    [TestCategory("coreclr")]
     public async Task NativeSymbolsDownloadDoesNotHang(string failure, bool ignorePdbLoadErrors)
     {
         Configuration config = Configuration.Release;
@@ -182,7 +181,7 @@ public class ModuleConfigTests : WasmTemplateTestsBase
         );
     }
 
-	[Theory, TestCategory("coreclr"), TestCategory("no-workload")]
+	[Theory, TestCategory("no-workload")]
 	[InlineData(false, null, null, true, true)]
 	[InlineData(true, null, null, true, true)]
 	[InlineData(false, true, null, true, true)]
@@ -275,7 +274,6 @@ public class ModuleConfigTests : WasmTemplateTestsBase
         => SymbolMapFileEmittedCore(emitSymbolMap: false, isPublish);
 
     [Fact]
-    [TestCategory("coreclr")]
     public void RuntimePackSymbolMapMatchesFinalWasm()
     {
         (byte[] wasmBytes, byte[] symbolsBytes) = ReadRuntimePackNativeSymbols();
@@ -303,7 +301,6 @@ public class ModuleConfigTests : WasmTemplateTestsBase
     }
 
     [Fact]
-    [TestCategory("coreclr")]
     public void RuntimePackSymbolMapRejectsIndexAndIdentityMismatches()
     {
         (byte[] wasmBytes, byte[] symbolsBytes) = ReadRuntimePackNativeSymbols();
@@ -352,19 +349,10 @@ public class ModuleConfigTests : WasmTemplateTestsBase
             $"Microsoft.NETCore.App.Runtime.browser-wasm.{runtimePackVersion}.nupkg");
 
         using ZipArchive package = ZipFile.OpenRead(packagePath);
+        var runtimePack = new RuntimePackAssets(packagePath, package);
         return (
-            ReadEntry("runtimes/browser-wasm/native/dotnet.native.wasm"),
-            ReadEntry("runtimes/browser-wasm/native/dotnet.native.js.symbols"));
-
-        byte[] ReadEntry(string entryName)
-        {
-            ZipArchiveEntry? entry = package.GetEntry(entryName);
-            Assert.NotNull(entry);
-            using Stream stream = entry.Open();
-            using MemoryStream buffer = new(checked((int)entry.Length));
-            stream.CopyTo(buffer);
-            return buffer.ToArray();
-        }
+            runtimePack.ReadBytes(RuntimePackAssets.GetNativePath("dotnet.native.wasm")),
+            runtimePack.ReadBytes(RuntimePackAssets.GetNativePath("dotnet.native.js.symbols")));
     }
 
     private void SymbolMapFileEmittedCore(bool emitSymbolMap, bool isPublish)

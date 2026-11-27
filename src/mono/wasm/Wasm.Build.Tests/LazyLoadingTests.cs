@@ -74,6 +74,7 @@ public class LazyLoadingTests : WasmTemplateTestsBase
     }
 
     [Fact]
+    // TODO-WASM: https://github.com/dotnet/runtime/issues/135046
     [TestCategory("native"), TestCategory("mono")]
     public async Task LoadLazyAssemblyWithAOT()
     {

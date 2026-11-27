@@ -3,8 +3,8 @@
 Microsoft.NET.Sdk.WebAssembly.Browser.CoreCLR.targets
 
 ReadyToRun for CoreCLR browser-wasm. See dotnet/runtime#121257 for the full design.
-MUST be a .targets (not .props) and import on '== false' (not '!= true'): the WasmSdk defaults
-UseMonoRuntime=true (SDK Sdk.props), so CoreCLR is the explicit '== false' opt-in.
+MUST be a .targets (not .props) and import on '== false' (not '!= true') so older SDKs that
+still target Mono do not accidentally import the CoreCLR targets.
 
 Copyright (c) .NET Foundation. All rights reserved.
 ***********************************************************************************************
@@ -351,4 +351,5 @@ Copyright (c) .NET Foundation. All rights reserved.
     <Delete Files="@(_WasmStalePerAppR2R)" />
   </Target>
 
+  <Import Project="Microsoft.NET.Sdk.WebAssembly.Browser.Precompressed.targets" />
 </Project>

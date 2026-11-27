@@ -171,6 +171,50 @@ namespace System.Net.Primitives.Functional.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        public static void SetCookies_ExpiresAndMaxAge_MaxAgeTakesPrecedence(bool expiresFirst)
+        {
+            // RFC 6265 section 5.3 step 3: Max-Age wins over Expires, whatever the order.
+            Uri uri = new Uri("https://example.com/");
+            string expires = "expires=" + DateTime.UtcNow.AddMinutes(-5).ToString("R");
+            const string MaxAge = "max-age=300";
+            string cookieHeader = expiresFirst ?
+                $"name=value; {expires}; {MaxAge}; path=/" :
+                $"name=value; {MaxAge}; {expires}; path=/";
+
+            CookieContainer cc = new CookieContainer();
+            DateTime before = DateTime.UtcNow;
+            cc.SetCookies(uri, cookieHeader);
+            DateTime after = DateTime.UtcNow;
+
+            Cookie cookie = Assert.Single(cc.GetCookies(uri));
+            DateTime cookieExpires = cookie.Expires.ToUniversalTime();
+            Assert.InRange(cookieExpires, before.AddSeconds(299), after.AddSeconds(301));
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static void SetCookies_MaxAgeZeroAndFutureExpires_RemovesCookie(bool expiresFirst)
+        {
+            // RFC 6265 section 5.3 step 3: Max-Age=0 expires the cookie even when Expires is in the future.
+            Uri uri = new Uri("https://example.com/");
+            CookieContainer cc = new CookieContainer();
+            cc.SetCookies(uri, "session=abc; path=/");
+            Assert.Single(cc.GetCookies(uri));
+
+            string expires = "expires=" + DateTime.UtcNow.AddDays(1).ToString("R");
+            const string MaxAge = "max-age=0";
+            string cookieHeader = expiresFirst ?
+                $"session=; {expires}; {MaxAge}; path=/" :
+                $"session=; {MaxAge}; {expires}; path=/";
+
+            cc.SetCookies(uri, cookieHeader);
+            Assert.Empty(cc.GetCookies(uri));
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
         public static void AddCookies_CapacityReached_OldCookiesRemoved(bool isFromSameDomain)
         {
             const int Capacity = 10;

@@ -185,7 +185,7 @@ namespace Wasm.Build.Tests
                 AssertTargetSkipped(secondBinlog, "_ConvertBuildDllsToWebcil");
         }
 
-		[Theory, TestCategory("coreclr"), TestCategory("no-workload")]
+		[Theory, TestCategory("no-workload")]
 		[InlineData(false)]
 		[InlineData(true)]
 		public void IncrementalIntegrityCheckConfiguration(bool publish)

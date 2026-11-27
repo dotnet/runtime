@@ -650,6 +650,18 @@ void InlinedCallFrame::UpdateFloatingPointRegisters_Impl(const PREGDISPLAY pRD, 
 #endif // #ifndef DACCESS_COMPILE
 
 #ifdef FEATURE_INTERPRETER
+BOOL FaultingExceptionFrame::IsInInterpreter()
+{
+    if ((m_Next != FRAME_TOP) && (m_Next->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame))
+    {
+        PTR_InterpreterFrame pInterpreterFrame = (PTR_InterpreterFrame)m_Next;
+        // The context is in the interpreter when its SP matches the top method context frame
+        return dac_cast<TADDR>(pInterpreterFrame->GetTopInterpMethodContextFrame()) == ::GetSP(&m_ctx);
+    }
+
+    return FALSE;
+}
+
 BOOL InlinedCallFrame::IsInInterpreter()
 {
     PTR_InterpreterFrame pInterpreterFrame = NULL;

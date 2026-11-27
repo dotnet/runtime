@@ -42,6 +42,6 @@ internal static partial class Interop
         internal static unsafe partial uint crc32(uint crc, byte* buffer, int len);
 
         [LibraryImport(Libraries.CompressionNative, EntryPoint = "CompressionNative_CompressBound")]
-        internal static partial uint compressBound(uint sourceLen);
+        internal static unsafe partial uint compressBound(uint sourceLen);
     }
 }

@@ -24,6 +24,10 @@
 #include "interoplibinterface.h"
 #include "assemblynative.hpp"
 
+#if defined(_DEBUG) && defined(DEBUGGING_SUPPORTED)
+#include "../debug/inc/dbgipcevents.h"
+#endif
+
 //
 // Retrieve structures from ID.
 //

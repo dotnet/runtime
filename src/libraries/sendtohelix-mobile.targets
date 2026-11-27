@@ -52,7 +52,6 @@
 
     <PropertyGroup Condition="'$(TargetsAppleMobile)' == 'true'">
       <iOSLikeBuildTargetsDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'msbuild', 'apple', 'build'))</iOSLikeBuildTargetsDir>
-      <iOSLikeLibraryBuilderTargetsDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'msbuild', 'common'))</iOSLikeLibraryBuilderTargetsDir>
       <WorkItemPrefix Condition="'$(Scenario)' == 'BuildiOSApps' and '$(TestUsingWorkloads)' != 'true'">$(TargetOS)-</WorkItemPrefix>
 
       <CMakeUrl>https://netcorenativeassets.blob.core.windows.net/resource-packages/external/macos/cmake/cmake-3.28.0-macos-universal.tar.gz</CMakeUrl>
@@ -60,31 +59,17 @@
       <_XHarnessAppleCustomCommand Condition="'$(NeedsiOSSDK)' == 'true'">
         source build-apple-app.sh
       </_XHarnessAppleCustomCommand>
-      <_RuntimeComponentManifestDir>$([MSBuild]::NormalizeDirectory('$(MonoArtifactsPath)', 'build'))</_RuntimeComponentManifestDir>
     </PropertyGroup>
 
     <ItemGroup Condition="'$(NeedsiOSSDK)' == 'true'">
       <HelixCorrelationPayload Include="cmake" Uri="$(CMakeUrl)"                 Destination="build/cmake" />
       <HelixCorrelationPayload Include="$(AppleAppBuilderDir)"                   Destination="build/AppleAppBuilder" />
-      <HelixCorrelationPayload Include="$(LibraryBuilderDir)"                    Destination="build/LibraryBuilder" />
-      <HelixCorrelationPayload Include="$(MonoAOTCompilerDir)"                   Condition="'$(RuntimeFlavor)' == 'mono'"
-                                                                                 Destination="build/MonoAOTCompiler" />
       <HelixCorrelationPayload Include="$(MicrosoftNetCoreAppRuntimePackDir)"    Destination="build/microsoft.netcore.app.runtime.$(TargetOS)-$(TargetArchitecture.ToLower())" />
-      <HelixCorrelationPayload Include="$(_RuntimeComponentManifestDir)"         Condition="'$(RuntimeFlavor)' == 'mono'"
-                                                                                 Destination="build/microsoft.netcore.app.runtime.$(TargetOS)-$(TargetArchitecture.ToLower())/runtimes/$(TargetOS)-$(TargetArchitecture.ToLower())/build" />
       <HelixCorrelationPayload Include="$(iOSLikeBuildTargetsDir)"               Destination="build/apple" />
-      <HelixCorrelationPayload Include="$(iOSLikeLibraryBuilderTargetsDir)"      Destination="build/common" />
-      <HelixCorrelationPayload Include="$(MonoAotCrossDir)"                      Condition="'$(RuntimeFlavor)' == 'mono'"
-                                                                                 Destination="build/cross" />
-      <HelixCorrelationPayload Include="$(MonoTargetsTasksDir)"                  Destination="build/MonoTargetsTasks" />
-      <HelixCorrelationPayload Include="$(CoreCLRCrossILCompilerDir)"            Condition="'$(RuntimeFlavor)' == 'coreclr'"
-                                                                                 Destination="build/ilc" />
-      <HelixCorrelationPayload Include="$(CoreCLRBuildIntegrationDir)"           Condition="'$(RuntimeFlavor)' == 'coreclr'"
-                                                                                 Destination="build/BuildIntegration" />
-      <HelixCorrelationPayload Include="$(CoreCLRAotSdkDir)"                     Condition="'$(RuntimeFlavor)' == 'coreclr'"
-                                                                                 Destination="build/aotsdk" />
-      <HelixCorrelationPayload Include="$(Crossgen2InBuildDir)"                  Condition="'$(RuntimeFlavor)' == 'coreclr'"
-                                                                                 Destination="build/crossgen2" />
+      <HelixCorrelationPayload Include="$(CoreCLRCrossILCompilerDir)"            Destination="build/ilc" />
+      <HelixCorrelationPayload Include="$(CoreCLRBuildIntegrationDir)"           Destination="build/BuildIntegration" />
+      <HelixCorrelationPayload Include="$(CoreCLRAotSdkDir)"                     Destination="build/aotsdk" />
+      <HelixCorrelationPayload Include="$(Crossgen2InBuildDir)"                  Destination="build/crossgen2" />
       <HelixCorrelationPayload Include="$(ToolsILLinkDir)"                       Destination="build" />
     </ItemGroup>
 
@@ -131,7 +116,7 @@
 
     <ItemGroup Condition="'$(TargetsAppleMobile)' == 'true'">
       <XHarnessAppBundleToTest Update="@(XHarnessAppBundleToTest)"
-                              Condition="$([System.String]::Copy('%(Filename)').StartsWith('iOS.InProcCrashReport.'))">
+                              Condition="$([System.String]::Copy('%(Filename)').StartsWith('InProcCrashReport.'))">
         <ExpectedExitCode>100</ExpectedExitCode>
       </XHarnessAppBundleToTest>
     </ItemGroup>

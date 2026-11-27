@@ -101,14 +101,6 @@ The following packages will be created under `artifacts\packages\<configuration>
 - `transport.Microsoft.NETCore.Runtime.Mono.<version>-dev.<number>.1.nupkg`
 - `transport.runtime.<OS>.Microsoft.NETCore.Runtime.Mono.<version>-dev.<number>.1.nupkg`
 
-## To get started with "Hello World"
-
-Try the sample at `src/mono/sample/HelloWorld`.
-To run this sample, from the above folder
-```cd ../..
-make run
-```
-
 ## Important Notes
 
 Test binaries are not yet available for mono.

@@ -56,6 +56,7 @@ namespace System.Text.Json.Serialization.Converters
             else
             {
                 int parameterCount = parameters.Length;
+                bool hasOutParameter = false;
 
                 foreach (ParameterInfo parameter in parameters)
                 {
@@ -63,6 +64,7 @@ namespace System.Text.Json.Serialization.Converters
                     // and may reference unsupported types (e.g. Task).
                     if (parameter.IsOut)
                     {
+                        hasOutParameter = true;
                         continue;
                     }
 
@@ -77,7 +79,7 @@ namespace System.Text.Json.Serialization.Converters
                     JsonTypeInfo.ValidateType(parameterType);
                 }
 
-                if (parameterCount <= JsonConstants.UnboxedParameterCountThreshold)
+                if (parameterCount <= JsonConstants.UnboxedParameterCountThreshold && !hasOutParameter)
                 {
                     Type placeHolderType = typeof(object);
                     Type[] typeArguments = new Type[JsonConstants.UnboxedParameterCountThreshold + 1];

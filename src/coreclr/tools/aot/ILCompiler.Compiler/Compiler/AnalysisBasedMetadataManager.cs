@@ -91,15 +91,8 @@ namespace ILCompiler
                 _reflectableFields.Add(refField.Entity, refField.Category);
             }
 
-            foreach (var refAttribute in reflectableAttributes)
-            {
-                _reflectableAttributes.Add(refAttribute);
-            }
-
-            foreach (var refParameter in reflectableParameters)
-            {
-                _reflectableParameters.Add(refParameter);
-            }
+            _reflectableAttributes.UnionWith(reflectableAttributes);
+            _reflectableParameters.UnionWith(reflectableParameters);
 
 #if DEBUG
             HashSet<ModuleDesc> moduleHash = new HashSet<ModuleDesc>(_modulesWithMetadata);

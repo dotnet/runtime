@@ -253,12 +253,6 @@ switch (testCase) {
             },
         });
         break;
-    case "InterpPgoTest":
-        dotnet
-            .withConfig({ forwardConsole: true })
-            .withRuntimeOptions(['--interp-pgo-logging'])
-            .withInterpreterPgo(true);
-        break;
     case "DownloadThenInit":
         let dtConfigLoadedCalled = false;
         dotnet.withConfigLoaded(() => {
@@ -540,21 +534,6 @@ try {
             break;
         case "StackTraceTest":
             exports.StackTraceTest.Run();
-            exit(0);
-            break;
-        case "InterpPgoTest":
-            setModuleImports('main.js', {
-                window: {
-                    location: {
-                        href: () => globalThis.window.location.href
-                    }
-                }
-            });
-            const iterationCount = params.get("iterationCount") ?? 70;
-            for (let i = 0; i < iterationCount; i++) {
-                exports.InterpPgoTest.Greeting();
-            };
-            await INTERNAL.interp_pgo_save_data();
             exit(0);
             break;
         case "DownloadThenInit":

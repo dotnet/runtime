@@ -1030,6 +1030,20 @@ int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*
         ins->opcode = opcode;
         ins->data[0] = fSize;
     }
+    else if (opcode == INTOP_LDIND_THIS_OFFSET)
+    {
+        // Revert opcode emit
+        ip--;
+
+        opcode = INTOP_LDIND_I;
+        *ip++ = opcode;
+        *ip++ = m_pVars[ins->dVar].offset;
+        *ip++ = m_pVars[ins->sVars[0]].offset;
+        *ip++ = m_pVars[0].offset;
+
+        ins->opcode = opcode;
+        ins->data[0] = m_pVars[0].offset;
+    }
     else if (opcode == INTOP_LDLOCA)
     {
         // This opcode references a var, int sVars[0], but it is not registered as a source for it
@@ -2067,6 +2081,10 @@ InterpMethod* InterpCompiler::FinalizeMethodData(void* baseAddressRW, void* base
     new (pMethodRW) InterpMethod(m_methodHnd, m_ILLocalsOffset, m_totalVarsStackSize, pDataItems,
                                   m_initLocals, m_unmanagedCallersOnly, m_publishSecretStubParam,
                                   m_methodCodeSize);
+#ifdef FEATURE_READYTORUN_AUXILIARY_MODULES
+    assert(m_pEntrySafepointIns != nullptr);
+    pMethodRW->auxiliaryEntryOpcodeIndex = m_pEntrySafepointIns->nativeOffset;
+#endif // FEATURE_READYTORUN_AUXILIARY_MODULES
 
     // Copy async suspend data and fix up pointers
     uint32_t currentAsyncOffset = asyncSuspendDataOffset;
@@ -3131,7 +3149,21 @@ void InterpCompiler::EmitLoadVar(int32_t var)
         AddIns(INTOP_LOAD_FRAMEVAR);
         PushInterpType(InterpTypeI, NULL);
         m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
-        EmitLdind(interpType, clsHnd, m_pVars[var].offset);
+        if (var == 0 && m_shadowCopyOfThisPointerHasVar)
+        {
+            // When a shadow copy variable exists for `this`, its final offset (either 0 or the shadow slot)
+            // is only decided at the end of GenerateCode. Defer resolving m_pVars[0].offset until EmitCodeIns.
+            assert(interpType == InterpTypeO);
+            m_pStackPointer--;
+            AddIns(INTOP_LDIND_THIS_OFFSET);
+            m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
+            PushInterpType(interpType, NULL);
+            m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+        }
+        else
+        {
+            EmitLdind(interpType, clsHnd, m_pVars[var].offset);
+        }
         return;
     }
 
@@ -8959,7 +8991,13 @@ void InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
 
     // Safepoint at each method entry. This could be done as part of a call, rather than
     // adding an opcode.
+#ifdef FEATURE_READYTORUN_AUXILIARY_MODULES
+    // Reserve a second word so methods with an auxiliary activation flag can be patched before publication.
+    m_pEntrySafepointIns = AddIns(INTOP_SAFEPOINT_AND_SKIP);
+    m_pEntrySafepointIns->data[0] = 0;
+#else
     AddIns(INTOP_SAFEPOINT);
+#endif // FEATURE_READYTORUN_AUXILIARY_MODULES
 #ifdef PERFTRACING_DISABLE_THREADS
     if (m_emitSamplingProfiler)
         AddIns(INTOP_PROF_SAMPLEPOINT);

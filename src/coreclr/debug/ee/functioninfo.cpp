@@ -894,7 +894,7 @@ void DebuggerJitInfo::LazyInitBounds()
         LOG((LF_CORDB,LL_EVERYTHING, "DJI::LazyInitBounds: this=%p GetBoundariesAndVars success=%s\n",
             this, (fSuccess ? "true" : "false")));
 
-        Debugger::DebuggerDataLockHolder debuggerDataLockHolder(g_pDebugger);
+        Debugger::DebuggerDataLockHolder debuggerDataLockHolder = Debugger::TakeDebuggerDataLock(g_pDebugger);
 
         if (!m_fAttemptInit)
         {
@@ -1645,7 +1645,7 @@ DebuggerJitInfo *DebuggerMethodInfo::CreateInitAndAddJitInfo(NativeCodeVersion n
     //<TODO>@TODO : _ASSERTE(EnC);</TODO>
     //
     {
-        Debugger::DebuggerDataLockHolder debuggerDataLockHolder(g_pDebugger);
+        Debugger::DebuggerDataLockHolder debuggerDataLockHolder = Debugger::TakeDebuggerDataLock(g_pDebugger);
 
         // We need to ensure that another thread didn't go in and add this exact same DJI?
         {
@@ -1716,7 +1716,7 @@ void DebuggerMethodInfo::DeleteJitInfo(DebuggerJitInfo *dji)
     }
     CONTRACTL_END;
 
-    Debugger::DebuggerDataLockHolder debuggerDataLockHolder(g_pDebugger);
+    Debugger::DebuggerDataLockHolder debuggerDataLockHolder = Debugger::TakeDebuggerDataLock(g_pDebugger);
 
     LOG((LF_CORDB,LL_INFO10000,"DMI:DJI: dji:0x%p\n", dji));
 
@@ -1770,7 +1770,7 @@ void DebuggerMethodInfo::DeleteJitInfoList(void)
     }
     CONTRACTL_END;
 
-    Debugger::DebuggerDataLockHolder debuggerDataLockHolder(g_pDebugger);
+    Debugger::DebuggerDataLockHolder debuggerDataLockHolder = Debugger::TakeDebuggerDataLock(g_pDebugger);
 
     while(m_latestJitInfo != NULL)
     {
@@ -1998,11 +1998,6 @@ void DebuggerMethodInfo::CreateDJIsForNativeBlobs(AppDomain * pAppDomain, Method
         while (it.Next(&pAssembly))
         {
             MethodDesc * pDesc = it.Current();
-            if (!pDesc->HasNativeCode())
-            {
-                continue;
-            }
-
             Module * pLoaderModule = pDesc->GetLoaderModule();
 
             // Skip modules that are unloaded, but still hanging around. Note that we can't use DebuggerModule for this check
@@ -2010,7 +2005,21 @@ void DebuggerMethodInfo::CreateDJIsForNativeBlobs(AppDomain * pAppDomain, Method
             if (pLoaderModule->GetLoaderAllocator()->IsUnloaded())
                 continue;
 
-            CreateDJIsForMethodDesc(pDesc);
+            if (pDesc->HasNativeCode())
+            {
+                CreateDJIsForMethodDesc(pDesc);
+            }
+
+            // A non-generic method's async variant may have been jitted before attach,
+            // even when its ordinary variant has no native code.
+            if (!pDesc->IsAsyncVariantMethod() && pDesc->ReturnsTaskOrValueTask())
+            {
+                MethodDesc * pAsyncVariant = pDesc->GetAsyncVariantNoCreate();
+                if (pAsyncVariant != nullptr && pAsyncVariant->HasNativeCode())
+                {
+                    CreateDJIsForMethodDesc(pAsyncVariant);
+                }
+            }
         }
     }
 }

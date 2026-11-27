@@ -742,16 +742,10 @@ internal sealed class DsesFilterAndTransform : IDisposable
                     if (propertyName == EnumeratePropertyName)
                     {
                         // If there are multiple implementations of IEnumerable<T>, this arbitrarily uses the first one
-                        foreach (Type iFaceType in typeInfo.GetInterfaces())
+                        Type[] enumerableInterfaces = type.GetInterfacesWithSameMetadataDefinitionAs(typeof(IEnumerable<>));
+                        if (enumerableInterfaces.Length > 0)
                         {
-                            TypeInfo iFaceTypeInfo = iFaceType.GetTypeInfo();
-                            if (!iFaceTypeInfo.IsGenericType ||
-                                iFaceTypeInfo.GetGenericTypeDefinition() != typeof(IEnumerable<>))
-                            {
-                                continue;
-                            }
-
-                            return CreateEnumeratePropertyFetch(type, iFaceTypeInfo);
+                            return CreateEnumeratePropertyFetch(type, enumerableInterfaces[0].GetTypeInfo());
                         }
 
                         // no implementation of IEnumerable<T> found, return a null fetcher

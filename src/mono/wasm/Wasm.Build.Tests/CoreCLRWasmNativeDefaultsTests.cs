@@ -21,7 +21,6 @@ namespace Wasm.Build.Tests
     // in that situation must fail the build rather than silently produce an app whose configuration
     // does not match the prebuilt dotnet.native.wasm.
     [TestCategory("workload")]
-    [TestCategory("coreclr")]
     public class CoreCLRWasmNativeDefaultsTests : WasmTemplateTestsBase
     {
         private static readonly Regex s_regex = new("\\*\\* WasmBuildNative:.*");
@@ -126,6 +125,48 @@ namespace Wasm.Build.Tests
                     ExtraMSBuildArgs: "-t:CheckCoreClrWebcilVersion -p:RuntimeFlavor="));
 
             Assert.Contains("Stopping after validating CoreCLR WebCIL version", output);
+        }
+
+        [Theory, TestCategory("no-workload")]
+        [InlineData("DirectPInvoke", false)]
+        [InlineData("DirectPInvoke", true)]
+        [InlineData("NativeFileReference", false)]
+        [InlineData("NativeLibrary", true)]
+        public void NativeItemsRequireWorkload(string itemType, bool fromDirectoryBuildTargets)
+        {
+            string item = $"<{itemType} Include=\"{(itemType == "DirectPInvoke" ? "libc!strlen" : "native-lib.o")}\" />";
+            CopyTestAsset(
+                Configuration.Debug,
+                aot: false,
+                TestAsset.WasmBasicTestApp,
+                $"coreclr_{itemType}_noworkload_{fromDirectoryBuildTargets}",
+                extraItems: fromDirectoryBuildTargets ? "" : item);
+            if (fromDirectoryBuildTargets)
+            {
+                // Imported after the workload manifest, like items from NuGet package targets.
+                string targetsPath = Path.Combine(_projectDir, "..", "Directory.Build.targets");
+                File.WriteAllText(targetsPath, File.ReadAllText(targetsPath).Replace("</Project>", $"<ItemGroup>{item}</ItemGroup></Project>"));
+            }
+
+            using DotNetCommand build = new DotNetCommand(s_buildEnv, _testOutput);
+            CommandResult buildResult = build.WithWorkingDirectory(_projectDir)
+                .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
+                .ExecuteWithCapturedOutput("build");
+            Assert.NotEqual(0, buildResult.ExitCode);
+            Assert.Contains("following workloads must be installed: wasm-tools", buildResult.Output);
+
+            // Visual Studio offers to install the workloads this target returns. Until the SDK checks for
+            // missing packs after its BeforeTargets run (dotnet/sdk#57257), it only sees items added before
+            // the workload manifest is imported.
+            if (fromDirectoryBuildTargets)
+                return;
+
+            using DotNetCommand suggest = new DotNetCommand(s_buildEnv, _testOutput);
+            CommandResult suggestResult = suggest.WithWorkingDirectory(_projectDir)
+                .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
+                .ExecuteWithCapturedOutput("msbuild", "-t:GetSuggestedWorkloads", "-p:DesignTimeBuild=true", "-getItem:SuggestedWorkload");
+            suggestResult.EnsureSuccessful();
+            Assert.Contains("\"Identity\": \"wasm-tools\"", suggestResult.Output);
         }
 
         // Mirrors the Mono path's WithNativeReference test: a project that references a native

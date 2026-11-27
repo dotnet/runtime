@@ -44,9 +44,9 @@ endif()
 # work in combination with other languages within the same library.
 if (NOT SWIFT_COMPILER_TARGET)
 
-    if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    if (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL "DEBUG")
         set(SWIFT_OPTIMIZATION_FLAG "-Onone")
-    elseif (CMAKE_BUILD_TYPE STREQUAL "Release")
+    elseif (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL "RELEASE")
         set(SWIFT_OPTIMIZATION_FLAG "-O")
     endif()
 

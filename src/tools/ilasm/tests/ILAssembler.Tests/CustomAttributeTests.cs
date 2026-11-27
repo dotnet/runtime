@@ -47,6 +47,36 @@ namespace Microsoft.DotNet.ILAssembler.Tests
 
 
         [Fact]
+        public void EmptyParenthesesAreAcceptedWithoutSpace()
+        {
+            // "()" is two tokens: empty arrays in verbal custom attributes, an empty switch and empty signatures.
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly Test { }
+                .class public auto ansi A extends [mscorlib]System.Attribute
+                {
+                    .method public specialname rtspecialname instance void .ctor(int32[] a, string[] b) cil managed { ret }
+                }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .custom instance void A::.ctor(int32[], string[]) = { int32[0]() string[-1]() }
+                    .method public static void M() cil managed
+                    {
+                        ldc.i4.0
+                        switch ()
+                        call void Test::M()
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var ca = reader.GetCustomAttribute(reader.GetCustomAttributes(MetadataTokens.TypeDefinitionHandle(3)).Single());
+            Assert.Equal(new byte[] { 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00 }, reader.GetBlobBytes(ca.Value));
+        }
+
+        [Fact]
         public void HexByteBlob_DigitLetterPairsCorrect()
         {
             string source = """
@@ -1204,6 +1234,27 @@ namespace Microsoft.DotNet.ILAssembler.Tests
 
             Assert.Equal(expected, testType.Attributes & expected);
             Assert.Empty(testType.GetCustomAttributes());
+        }
+
+        [Theory]
+        [InlineData("mdtoken(0x02000002)")]
+        [InlineData("method mdtoken(0x02000002)")]
+        [InlineData("method NumericOwner")]
+        public void PseudoCustomAttribute_NumericTypeOwner_LowersToFlag(string owner)
+        {
+            string source = $$"""
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test extends [mscorlib]System.Object { }
+                .typedef method mdtoken(0x02000002) as NumericOwner
+                .custom ({{owner}}) instance void [mscorlib]System.SerializableAttribute::.ctor() = ( 01 00 00 00 )
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options { PseudoAttributes = true });
+            TypeDefinition type = GetTestType(pe.GetMetadataReader());
+
+            Assert.Equal(TypeAttributes.Serializable, type.Attributes & TypeAttributes.Serializable);
+            Assert.Empty(type.GetCustomAttributes());
         }
 
         [Theory]

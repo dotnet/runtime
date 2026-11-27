@@ -1,5 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <Import Condition="'$(RuntimeFlavor)' == 'CoreCLR'" Project="$(RepositoryEngineeringDir)restore\browserWasmMibcProfile.props" />
+  <Import Project="$(RepositoryEngineeringDir)restore\browserWasmMibcProfile.props" />
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <SkipXunitTrimmerDescriptor>true</SkipXunitTrimmerDescriptor>
@@ -15,8 +15,7 @@
     <!-- This project should not build against the live built .NETCoreApp targeting pack as it contributes to the build itself. -->
     <UseLocalTargetingRuntimePack>false</UseLocalTargetingRuntimePack>
 
-    <TestUsingWorkloads Condition="'$(TestUsingWorkloads)' == '' and '$(RuntimeFlavor)' == 'CoreCLR'">false</TestUsingWorkloads>
-    <TestUsingWorkloads Condition="'$(TestUsingWorkloads)' == ''">true</TestUsingWorkloads>
+    <TestUsingWorkloads Condition="'$(TestUsingWorkloads)' == ''">false</TestUsingWorkloads>
     <!-- these are imported in this project instead -->
     <SkipWorkloadsTestingTargetsImport>false</SkipWorkloadsTestingTargetsImport>
     <InstallWorkloadForTesting>true</InstallWorkloadForTesting>
@@ -55,21 +54,25 @@
     <PackageReference Include="MSBuild.StructuredLogger" Version="2.2.350" />
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="3.1.10" />
     <ProjectReference Include="$(RepoRoot)src\tasks\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks.csproj" />
-    <ProjectReference Include="$(RepoTasksDir)MonoTargetsTasks\MonoTargetsTasks.csproj" />
     <!-- Only needed to build the task used by GenerateHelixJobsList below. -->
     <ProjectReference Include="$(RepoTasksDir)WasmBuildTasks\WasmBuildTasks.csproj" ReferenceOutputAssembly="false" />
 
     <!-- Referenced so dotnet-pgo is restored and built for _AddDotnetPgoToTestPayload. Private="false"
          keeps its apphost and dependencies out of $(OutDir) so they don't collide with the dotnet-pgo/
          subfolder that target creates there. -->
-    <ProjectReference Condition="'$(RuntimeFlavor)' == 'CoreCLR'"
-                      Include="$(RepoRoot)src\coreclr\tools\dotnet-pgo\dotnet-pgo.csproj"
+    <ProjectReference Include="$(RepoRoot)src\coreclr\tools\dotnet-pgo\dotnet-pgo.csproj"
                       ReferenceOutputAssembly="false"
                       Private="false" />
 
     <None Include="$(BrowserProjectRoot)\test-main.mjs" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\testassets\**\*" Link="testassets\%(RecursiveDir)%(FileName)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <None Include="data\**\*" Link="data\%(RecursiveDir)%(FileName)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="$(MonoProjectRoot)nuget\Microsoft.NET.Sdk.WebAssembly.Pack\build\Microsoft.NET.Sdk.WebAssembly.Browser.targets;
+                   $(MonoProjectRoot)nuget\Microsoft.NET.Sdk.WebAssembly.Pack\build\Microsoft.NET.Sdk.WebAssembly.Browser.CoreCLR.targets;
+                   $(MonoProjectRoot)nuget\Microsoft.NET.Sdk.WebAssembly.Pack\build\Microsoft.NET.Sdk.WebAssembly.Browser.Precompressed.targets"
+          Link="data\precompressed\%(FileName)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="$(RepositoryEngineeringDir)WasmRuntimePack.targets"
+          Link="data\precompressed\WasmRuntimePack.targets" CopyToOutputDirectory="PreserveNewest" />
     <None Include="$(BrowserWasmMibcProfile)"
           Condition="'$(BrowserWasmMibcProfile)' != ''"
           Link="data\DotNet_Blazor_Wasm.mibc"
@@ -81,7 +84,7 @@
        than a post-Build copy into OutDir) so they flow into the Helix test payload, exactly like the
        testassets/data items above; a plain copy into OutDir is not part of the browser test archive.
        dotnet-pgo is built explicitly because ProjectReferences aren't resolved this early in the build. -->
-  <Target Name="_AddDotnetPgoToTestPayload" Condition="'$(RuntimeFlavor)' == 'CoreCLR'" BeforeTargets="AssignTargetPaths">
+  <Target Name="_AddDotnetPgoToTestPayload" BeforeTargets="AssignTargetPaths">
     <MSBuild Projects="$(RepoRoot)src\coreclr\tools\dotnet-pgo\dotnet-pgo.csproj" Targets="Build">
       <Output TaskParameter="TargetOutputs" ItemName="_DotnetPgoBuiltAssembly" />
     </MSBuild>
@@ -147,8 +150,7 @@
       <_XUnitTraitArg Condition="'$(WasmFingerprintAssets)' == 'false'">$(_XUnitTraitArg) -trait category=no-fingerprinting</_XUnitTraitArg>
       <_XUnitTraitArg Condition="'$(WasmBundlerFriendlyBootConfig)' == 'true'">$(_XUnitTraitArg) -trait category=bundler-friendly</_XUnitTraitArg>
       <_XUnitTraitArg Condition="'$(WasmRunWasmOpt)' == 'true'">$(_XUnitTraitArg) -trait category=wasm-opt</_XUnitTraitArg>
-      <_XUnitTraitArg Condition="'$(RuntimeFlavor)' == 'CoreCLR'">$(_XUnitTraitArg) -notrait category=mono</_XUnitTraitArg>
-      <_XUnitTraitArg Condition="'$(RuntimeFlavor)' != 'CoreCLR'">$(_XUnitTraitArg) -notrait category=coreclr</_XUnitTraitArg>
+      <_XUnitTraitArg>$(_XUnitTraitArg) -notrait category=mono</_XUnitTraitArg>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(ContinuousIntegrationBuild)' != 'true'">
@@ -280,8 +282,7 @@
         these categories would only produce a work item that runs nothing.
       -->
       <_HelixJobsListExcludedCategory Include="no-workload;IgnoreForCI;failing" />
-      <_HelixJobsListExcludedCategory Include="mono" Condition="'$(RuntimeFlavor)' == 'CoreCLR'" />
-      <_HelixJobsListExcludedCategory Include="coreclr" Condition="'$(RuntimeFlavor)' != 'CoreCLR'" />
+      <_HelixJobsListExcludedCategory Include="mono" />
     </ItemGroup>
 
     <GenerateXunitTestClassList Assembly="$(TargetPath)"

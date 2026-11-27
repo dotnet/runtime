@@ -15,7 +15,7 @@ You can build and run the library tests:
 
 Run the following command in a terminal:
 ```
-./build.sh mono+libs -os <TARGET_OS> -arch <TARGET_ARCHITECTURE>
+./build.sh clr+clr.runtime+libs+packs -os <TARGET_OS> -arch <TARGET_ARCHITECTURE> -cross
 ```
 where `<TARGET_OS>` is one of the following:
 - iossimulator
@@ -25,17 +25,17 @@ where `<TARGET_OS>` is one of the following:
 - tvos
 
 and `<TARGET_ARCHITECTURE>` is one of the following:
-- x64
-- arm64 (for device)
+- x64 (for MacCatalyst on x64 hosts)
+- arm64 (for devices and simulators)
 
 e.g., to build for an iOS simulator, run:
 ```
-./build.sh mono+libs -os iossimulator -arch x64
+./build.sh clr+clr.runtime+libs+packs -os iossimulator -arch arm64 -cross
 ```
 
 Run tests one by one for each test suite on a simulator:
 ```
-./build.sh libs.tests -os iossimulator -arch x64 -test
+./build.sh libs.tests -os iossimulator -arch arm64 -test
 ```
 
 ### Building for a device
@@ -46,7 +46,7 @@ In order to run the tests on a device:
 
 For example:
 ```
-./build.sh libs.tests -os ios -arch x64 -test /p:DevTeamProvisioning=H1A2B3C4D5
+./build.sh libs.tests -os ios -arch arm64 -test /p:DevTeamProvisioning=H1A2B3C4D5
 ```
 Other possible options are:
 - to sign with an adhoc key by setting `/p:DevTeamProvisioning=adhoc`
@@ -58,7 +58,7 @@ Other possible options are:
 
 - The following shows how to run tests for a specific library:
 ```
-./dotnet.sh build src/libraries/System.Numerics.Vectors/tests /t:Test /p:TargetOS=ios /p:TargetArchitecture=x64
+./dotnet.sh build src/libraries/System.Numerics.Vectors/tests /t:Test /p:TargetOS=ios /p:TargetArchitecture=arm64
 ```
 
 Also you can run the built test app through Xcode by opening the corresponding `.xcodeproj` and setting up the right scheme, app, and even signing if using a local device.
@@ -84,7 +84,7 @@ There are [functional tests](https://github.com/dotnet/runtime/tree/main/src/tes
 
 A functional test can be run the same way as any library test suite, e.g.:
 ```
-./dotnet.sh build /t:Test -c Release /p:TargetOS=iossimulator /p:TargetArchitecture=x64 src/tests/FunctionalTests/iOS/Simulator/PInvoke/iOS.Simulator.PInvoke.Test.csproj
+./dotnet.sh build /t:Test -c Release /p:TargetOS=iossimulator /p:TargetArchitecture=arm64 src/tests/FunctionalTests/AppleMobile/PInvoke/PInvoke.Test.csproj
 ```
 
 Currently functional tests are expected to return `42` as a success code so please be careful when adding a new one.
@@ -95,8 +95,8 @@ Currently, only the `tracing/eventpipe` subset of runtime tests is enabled on iO
 
 The subset of runtime tests can be built by executing the following shell script:
 ```sh
-./build.sh -arch arm64 -os ios -s mono+libs -c Release
-./src/tests/build.sh -os ios -arch arm64 Release -mono tree tracing/eventpipe /p:LibrariesConfiguration=Release
+./build.sh clr+clr.runtime+libs+packs -os ios -arch arm64 -cross -c Release
+./src/tests/build.sh -os ios -arch arm64 Release tree tracing/eventpipe /p:LibrariesConfiguration=Release
 ```
 
 The script generates an Apple bundle that can be executed using Xcode or XHarness.
@@ -108,26 +108,10 @@ The script generates an Apple bundle that can be executed using Xcode or XHarnes
 
 ### Testing various configurations
 
-It's possible to test various configurations by setting a combination of additional MSBuild properties such as `RunAOTCompilation`,`MonoEnableInterpreter`, and some more.
-
-1. Interpreter Only
-
-This configuration is necessary for hot reload scenarios.
-
-To enable the interpreter, add `/p:RunAOTCompilation=true /p:MonoEnableInterpreter=true` to a build command.
-
-2. AOT only
-
-To build for AOT only mode, add `/p:RunAOTCompilation=true /p:MonoEnableInterpreter=false` to a build command.
-
-3. App Sandbox
+It's possible to test additional configurations by setting MSBuild properties.
 
 To build the test app bundle with the App Sandbox entitlement, add `/p:EnableAppSandbox=true` to a build command.
 
 ### Test App Design
-iOS/tvOS `*.app` (or `*.ipa`) is basically a simple [ObjC app](https://github.com/dotnet/runtime/blob/main/src/tasks/AppleAppBuilder/Templates/main-console.m) that inits the Mono Runtime. This Mono Runtime starts a simple xunit test
+iOS/tvOS `*.app` (or `*.ipa`) is a simple [Objective-C app](https://github.com/dotnet/runtime/blob/main/src/tasks/AppleAppBuilder/Templates/main-console.m) that initializes the .NET runtime. The runtime starts a simple xunit test
 runner called XHarness.TestRunner (see https://github.com/dotnet/xharness) which runs tests for all `*.Tests.dll` libs in the bundle. There is also XHarness.CLI tool to deploy `*.app` and `*.ipa` to a target (device or simulator) and listens for logs via network sockets.
-
-### Existing Limitations
-- Simulator uses JIT mode only at the moment (to be extended with FullAOT and Interpreter)
-- Interpreter is not enabled yet.

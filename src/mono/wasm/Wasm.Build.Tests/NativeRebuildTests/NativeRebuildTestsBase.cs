@@ -33,12 +33,6 @@ namespace Wasm.Build.NativeRebuild.Tests
             data.AddRange(GetData(aot: false, nativeRelinking: true, invariant: false));
             data.AddRange(GetData(aot: false, nativeRelinking: true, invariant: true));
 
-            if (!IsCoreClrRuntime)
-            {
-                // aot
-                data.AddRange(GetData(aot: true, nativeRelinking: false, invariant: false));
-            }
-
             return data;
 
             IEnumerable<object?[]> GetData(bool aot, bool nativeRelinking, bool invariant)
