@@ -92,6 +92,18 @@ public partial class ClassWithPrimaryConstructorAndField(ILogger logger)
 }
 #endif
 
+// No explicit tests use the following type, but the fact that it is here
+// means we exercise that a logging method declared directly in a type
+// other than a class is ignored by the generator.
+// If the generator ever fails on it, nothing gets generated for any type
+// and compilation fails with:
+// error CS8795: Partial method must have an implementation part because it has accessibility modifiers.
+public partial record RecordWithLoggingMethod
+{
+    [LoggerMessage(0, LogLevel.Debug, "Test.")]
+    static partial void Test(ILogger logger);
+}
+
 // Used to test use outside of a namespace
 internal static partial class NoNamespace
 {
