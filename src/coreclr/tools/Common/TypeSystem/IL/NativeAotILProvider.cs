@@ -369,7 +369,7 @@ namespace Internal.IL
                 if (wrappedIL == null)
                     return null;
 
-                return wrappedIL is EcmaMethodIL ecmaIL
+                return wrappedIL is IEcmaMethodIL ecmaIL
                     ? new EcmaAsyncMethodIL(asyncVariantImpl, ecmaIL)
                     : new AsyncMethodIL(asyncVariantImpl, wrappedIL);
             }
@@ -378,38 +378,6 @@ namespace Internal.IL
                 Debug.Assert(!(method is PInvokeTargetNativeMethod), "Who is asking for IL of PInvokeTargetNativeMethod?");
                 return null;
             }
-        }
-
-        private class AsyncMethodIL : MethodIL
-        {
-            private readonly AsyncMethodVariant _variant;
-            private readonly MethodIL _wrappedIL;
-
-            public AsyncMethodIL(AsyncMethodVariant variant, MethodIL wrappedIL)
-                => (_variant, _wrappedIL) = (variant, wrappedIL);
-
-            // This is the reason we need this class - the method that owns the IL is the variant.
-            public override MethodDesc OwningMethod => _variant;
-
-            // Everything else dispatches to the wrapped IL
-            public override MethodDebugInformation GetDebugInfo() => _wrappedIL.GetDebugInfo();
-            public override ILExceptionRegion[] GetExceptionRegions() => _wrappedIL.GetExceptionRegions();
-            public override byte[] GetILBytes() => _wrappedIL.GetILBytes();
-            public override LocalVariableDefinition[] GetLocals() => _wrappedIL.GetLocals();
-            public override object GetObject(int token, NotFoundBehavior notFoundBehavior = NotFoundBehavior.Throw) => _wrappedIL.GetObject(token, notFoundBehavior);
-            public override bool IsInitLocals => _wrappedIL.IsInitLocals;
-            public override int MaxStack => _wrappedIL.MaxStack;
-        }
-
-        private sealed class EcmaAsyncMethodIL : AsyncMethodIL, IEcmaMethodIL
-        {
-            public EcmaAsyncMethodIL(AsyncMethodVariant variant, EcmaMethodIL wrappedIL)
-                : base(variant, wrappedIL)
-            {
-                Module = wrappedIL.Module;
-            }
-
-            public IEcmaModule Module { get; }
         }
     }
 }
