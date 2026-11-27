@@ -3917,7 +3917,7 @@ namespace Internal.JitInterface
                     //    of the build finishes, it will then compute the IL bodies for those methods, then run the compilation again.
 
                     if (needsTokenTranslation && !(methodIL is IMethodTokensAreUseableInCompilation)
-                        && (methodIL is EcmaMethodIL || methodIL is ReadyToRunILProvider.AsyncMethodIL))
+                        && methodIL is IEcmaMethodIL)
                     {
                         // We may have already acquired the right type of MethodIL here, or be working with a method that is an IL Intrinsic.
                         // Add the typicalMethod (which may be an AsyncMethodVariant) so that
