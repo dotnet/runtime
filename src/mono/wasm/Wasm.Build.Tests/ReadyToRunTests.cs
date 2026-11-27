@@ -21,7 +21,6 @@ namespace Wasm.Build.Tests
     // CoreCLR browser-wasm ships ReadyToRun images as webcil-in-wasm; a non-zero R2R table size in the
     // System.Private.CoreLib webcil is the marker that R2R was produced and staged. These tests cover R2R in
     // both build and publish, with and without IL trimming, driving all pages in a real browser. CoreCLR only.
-    [TestCategory("coreclr")]
     // Keeps this class out of the CoreCLR no-workload Helix work item, which runs it in a separate one by
     // class name instead (see _SplitOutReadyToRunTests in src/libraries/sendtohelix-wasm.targets).
     [TestCategory("r2r")]

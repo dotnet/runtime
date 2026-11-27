@@ -25,7 +25,9 @@ public class MemoryTests : WasmTemplateTestsBase
     public async Task AllocateLargeHeapThenRepeatedlyInterop_NoWorkload() =>
         await AllocateLargeHeapThenRepeatedlyInterop();
 
-    [Fact, TestCategory("mono")] // TODO-WASM https://github.com/dotnet/runtime/issues/132555
+    // TODO-WASM: https://github.com/dotnet/runtime/issues/135046
+    // TODO-WASM: https://github.com/dotnet/runtime/issues/132555
+    [Fact, TestCategory("mono")]
     public async Task AllocateLargeHeapThenRepeatedlyInterop()
     {
         Configuration config = Configuration.Release;

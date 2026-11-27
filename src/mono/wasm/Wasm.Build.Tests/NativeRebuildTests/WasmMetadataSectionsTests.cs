@@ -24,7 +24,6 @@ namespace Wasm.Build.NativeRebuild.Tests
     // Workload-free cases validate metadata already present in runtime-pack files. Native re-link cases
     // run in workload lanes and also validate that Emscripten assembles the producers source and preserves it.
     [TestCategory("native")]
-    [TestCategory("coreclr")]
     public class WasmMetadataSectionsTests : NativeRebuildTestsBase
     {
         public WasmMetadataSectionsTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)

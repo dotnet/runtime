@@ -25,14 +25,8 @@ namespace Wasm.Build.Tests
             ProjectWithNativeReferenceCore(config, aot);
 
         [Theory]
-        [BuildAndRun(config: Configuration.Release, aot: true)]
-        [TestCategory("native"), TestCategory("mono")]
-        public Task ProjectWithNativeReference_AOT(Configuration config, bool aot) =>
-            ProjectWithNativeReferenceCore(config, aot);
-
-        [Theory]
         [InlineData(Configuration.Release)]
-        [TestCategory("native"), TestCategory("coreclr"), TestCategory("workload"), TestCategory("wasm-opt")]
+        [TestCategory("native"), TestCategory("workload"), TestCategory("wasm-opt")]
         public Task ProjectWithNativeReference_ReadyToRun(Configuration config) =>
             ProjectWithNativeReferenceCore(config, aot: false, readyToRun: true);
 
@@ -104,13 +98,6 @@ namespace Wasm.Build.Tests
         public Task ProjectUsingSkiaSharp(Configuration config, bool aot) =>
             ProjectUsingSkiaSharpCore(config, aot);
 
-        [Theory]
-        [BuildAndRun(config: Configuration.Release, aot: true)]
-        [TestCategory("native"), TestCategory("mono")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/103566")]
-        public Task ProjectUsingSkiaSharp_AOT(Configuration config, bool aot) =>
-            ProjectUsingSkiaSharpCore(config, aot);
-
         private async Task ProjectUsingSkiaSharpCore(Configuration config, bool aot)
         {
             string prefix = $"AppUsingSkiaSharp";
@@ -132,12 +119,6 @@ namespace Wasm.Build.Tests
         public Task ProjectUsingBrowserNativeCrypto(Configuration config, bool aot) =>
             ProjectUsingBrowserNativeCryptoCore(config, aot);
 
-        [Theory]
-        [BuildAndRun(config: Configuration.Release, aot: true)]
-        [TestCategory("native"), TestCategory("mono")]
-        public Task ProjectUsingBrowserNativeCrypto_AOT(Configuration config, bool aot) =>
-            ProjectUsingBrowserNativeCryptoCore(config, aot);
-
         private async Task ProjectUsingBrowserNativeCryptoCore(Configuration config, bool aot)
         {
             ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "AppUsingBrowserNativeCrypto");
@@ -156,12 +137,6 @@ namespace Wasm.Build.Tests
         [Theory]
         [BuildAndRun(aot: false)]
         public Task ProjectWithNativeLibrary(Configuration config, bool aot) =>
-            ProjectWithNativeLibraryCore(config, aot);
-
-        [Theory]
-        [BuildAndRun(config: Configuration.Release, aot: true)]
-        [TestCategory("native"), TestCategory("mono")]
-        public Task ProjectWithNativeLibrary_AOT(Configuration config, bool aot) =>
             ProjectWithNativeLibraryCore(config, aot);
 
         private async Task ProjectWithNativeLibraryCore(Configuration config, bool aot)

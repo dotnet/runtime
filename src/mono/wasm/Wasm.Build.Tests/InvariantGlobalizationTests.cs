@@ -28,14 +28,6 @@ namespace Wasm.Build.Tests
                 .Where(item => !(item.ElementAt(0) is Configuration config && config == Configuration.Debug && item.ElementAt(1) is bool aotValue && aotValue))
                 .UnwrapItemsAsArrays();
 
-        // TODO: check that icu bits have been linked out
-        [Theory]
-        [MemberData(nameof(InvariantGlobalizationTestData), parameters: new object[] { /*aot*/ false })]
-        [MemberData(nameof(InvariantGlobalizationTestData), parameters: new object[] { /*aot*/ true })]
-        [TestCategory("native"), TestCategory("mono")]
-        public async Task AOT_InvariantGlobalization(Configuration config, bool aot, bool? invariantGlobalization)
-            => await TestInvariantGlobalization(config, aot, invariantGlobalization);
-
         // TODO: What else should we use to verify a relinked build?
         [Theory]
         [MemberData(nameof(InvariantGlobalizationTestData), parameters: new object[] { /*aot*/ false })]

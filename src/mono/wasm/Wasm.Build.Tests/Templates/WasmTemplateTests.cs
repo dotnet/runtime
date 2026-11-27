@@ -23,7 +23,7 @@ namespace Wasm.Build.Tests
         {
         }
 
-        [Fact, TestCategory("coreclr")]
+        [Fact]
         public void CoreClrProjectProperties_UseCurrentPacksForBootstrapFramework()
         {
             string properties = string.Empty;
@@ -55,7 +55,7 @@ namespace Wasm.Build.Tests
             }
         }
 
-        [Fact, TestCategory("coreclr")]
+        [Fact]
         public void BrowserTemplateUsesCoreClr()
         {
             ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, Configuration.Debug, "coreclr_library");
@@ -73,7 +73,7 @@ namespace Wasm.Build.Tests
             BuildProject(info, Configuration.Debug);
         }
 
-        [Fact, TestCategory("coreclr")]
+        [Fact]
         public void ReferencedBrowserLibraryUsesCoreClr()
         {
             CopyTestAsset(Configuration.Debug, aot: false, TestAsset.WasmBasicTestApp, "coreclr_library");

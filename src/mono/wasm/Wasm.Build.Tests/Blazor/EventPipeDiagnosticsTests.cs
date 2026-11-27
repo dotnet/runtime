@@ -33,11 +33,6 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
         _enablePerTestCleanup = true;
     }
 
-
-    [Fact]
-    [TestCategory("native"), TestCategory("mono")]
-    public Task BlazorEventPipeTestWithCpuSamplesAOT() => BlazorEventPipeTestWithCpuSamplesCore(Configuration.Release, aot: true, readyToRun: false);
-
     [Theory]
     [InlineData(Configuration.Debug, false)]
     [InlineData(Configuration.Release, false)]

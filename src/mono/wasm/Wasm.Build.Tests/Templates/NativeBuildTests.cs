@@ -24,6 +24,7 @@ namespace Wasm.Build.Templates.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        // TODO-WASM: https://github.com/dotnet/runtime/issues/135046
         [TestCategory("mono")]
         public void BuildWithUndefinedNativeSymbol(bool allowUndefined)
         {
