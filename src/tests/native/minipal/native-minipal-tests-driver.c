@@ -5,8 +5,10 @@
 
 DEFINE_TEST_GROUP_INIT_H(minipal_utf8_tests_init);
 DEFINE_TEST_GROUP_INIT_H(minipal_u16_tests_init);
+DEFINE_TEST_GROUP_INIT_H(minipal_fileio_tests_init);
 
 static const Group test_groups[] = {
+    {"fileio", minipal_fileio_tests_init, true},
     {"utf8", minipal_utf8_tests_init, true},
     {"u16", minipal_u16_tests_init, true},
     {NULL, NULL, false}

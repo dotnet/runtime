@@ -45,7 +45,7 @@
           Command='powershell -ExecutionPolicy ByPass -NoProfile -command "&amp; $(_DotNetInstallScriptPath) -InstallDir $(_SdkWithNoWorkloadPath) -Runtime aspnetcore -SkipNonVersionedFiles %(AdditionalSharedFrameworkToInstallArguments.Identity)"' />
   </Target>
 
-  <Import Project="$(MonoProjectRoot)nuget\Microsoft.NET.Runtime.WorkloadTesting.Internal\Sdk\WorkloadTesting.Core.targets" />
+  <Import Project="$(MSBuildThisFileDirectory)workloads-testing.core.targets" />
   <Import Project="$(MSBuildThisFileDirectory)workloads-wasi.targets" Condition="'$(RIDForWorkload)' == 'wasi-wasm'" />
   <Import Project="$(MSBuildThisFileDirectory)workloads-browser.targets" Condition="'$(RIDForWorkload)' == 'browser-wasm'" />
 </Project>

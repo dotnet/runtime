@@ -685,8 +685,8 @@ Copyright (c) .NET Foundation. All rights reserved.
   </Target>
 
   <!-- CoreCLR: transform WasmPerformanceInstrumentation into a MethodSet filter.
-       Mono handles this in WasmApp.Common.targets with "eventpipe,callspec=" prefix, so skip for Mono.
-       UseMonoRuntime=false indicates CoreCLR; when true or unset, Mono workload targets handle it. -->
+       Mono handles this in WasmApp.Common.targets with "eventpipe,callspec=" prefix, so skip for
+       older SDKs that still target Mono. -->
   <Target Name="_AddWasmPerformanceInstrumentationEnvironmentVariables"
           Condition="'$(UseMonoRuntime)' == 'false' and '$(WasmPerformanceInstrumentation)' != ''"
           DependsOnTargets="_ValidateWasmPerformanceInstrumentation">
@@ -1534,7 +1534,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     </ItemGroup>
   </Target>
 
-  <!-- CoreCLR browser-wasm R2R, isolated from Mono. '== false' (not '!= true'): the WasmSdk defaults UseMonoRuntime=true, so CoreCLR is the explicit opt-in. -->
+  <!-- CoreCLR browser-wasm R2R, isolated from older SDKs that still target Mono. -->
   <Import Project="$(MSBuildThisFileDirectory)Microsoft.NET.Sdk.WebAssembly.Browser.CoreCLR.targets"
           Condition="'$(UseMonoRuntime)' == 'false'" />
 </Project>

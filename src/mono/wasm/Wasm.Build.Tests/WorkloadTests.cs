@@ -16,6 +16,7 @@ using Xunit.Sdk;
 
 namespace Wasm.Build.Tests
 {
+    // TODO-WASM: https://github.com/dotnet/runtime/issues/135046
     [TestCategory("native"), TestCategory("mono")]
     public class WorkloadTests : WasmTemplateTestsBase
     {

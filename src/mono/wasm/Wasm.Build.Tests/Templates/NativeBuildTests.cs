@@ -24,6 +24,7 @@ namespace Wasm.Build.Templates.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        // TODO-WASM: https://github.com/dotnet/runtime/issues/135046
         [TestCategory("mono")]
         public void BuildWithUndefinedNativeSymbol(bool allowUndefined)
         {
@@ -43,7 +44,6 @@ namespace Wasm.Build.Templates.Tests
             ProjectInfo info = CreateWasmTemplateProject(
                 Template.WasmBrowser,
                 config,
-                aot: false,
                 $"UndefinedNativeSymbol_{(allowUndefined ? "allowed" : "disabled")}",
                 extraItems: extraItems,
                 extraProperties: extraProperties
@@ -70,16 +70,12 @@ namespace Wasm.Build.Templates.Tests
             ProjectInfo info = CreateWasmTemplateProject(
                 Template.WasmBrowser,
                 config,
-                aot: false,
                 "dllimport_incompatible",
                 extraItems: extraItems
             );
             string nativeCode = "void call_needing_marhsal_ilgen(void *x) {}";
             File.WriteAllText(path: Path.Combine(_projectDir, nativeSourceFilename), nativeCode);
-            if (IsCoreClrRuntime)
-                ReplaceMainJsWithMinimalRunMain();
-            else
-                UpdateBrowserMainJs();
+            ReplaceMainJsWithMinimalRunMain();
             ReplaceFile("Program.cs", Path.Combine(BuildEnvironment.TestAssetsPath, "marshal_ilgen_test.cs"));
 
             (string _, string buildOutput) = BuildProject(info, config, new BuildOptions(AssertAppBundle: false), isNativeBuild: true);

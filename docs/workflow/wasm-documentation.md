@@ -112,7 +112,6 @@ See the [WebAssembly Debugging](debugging/mono/wasm-debugging.md#collecting-stac
 
 ### How do I run tests with different configurations?
 
-- **With AOT**: Add `/p:RunAOTCompilation=true`
 - **With trimming**: Add `/p:EnableAggressiveTrimming=true`
 - **Different JS engine**: Add `/p:JSEngine=SpiderMonkey`
 - **Outer loop tests**: Add `/p:Outerloop=true`

@@ -26,7 +26,6 @@ parameters:
         src/mono/nuget/Microsoft.NET.Runtime.wasm.Sample.Mono/*
         src/mono/nuget/Microsoft.NET.Sdk.WebAssembly.Pack/*
         src/mono/nuget/Microsoft.NETCore.BrowserDebugHost.Transport/*
-        src/mono/nuget/Microsoft.NET.Runtime.WorkloadTesting.Internal/**/*
         src/mono/nuget/Microsoft.NET.Workload*
         src/mono/sample/wasm/*
         src/mono/browser/*
@@ -229,7 +228,7 @@ jobs:
       - eng/wasm/*
       - eng/testing/tests.browser.targets
       - eng/testing/tests.was*.targets
-      - src/mono/nuget/Microsoft.NET.Runtime.WorkloadTesting.Internal/Sdk/WorkloadTesting.Core.targets
+      - eng/testing/workloads-testing.core.targets
       - eng/testing/workloads-browser.targets
       - eng/testing/workloads-testing.targets
       - eng/testing/workloads-wasi.targets
@@ -239,8 +238,6 @@ jobs:
       - src/libraries/System.Runtime.InteropServices/*
       - src/libraries/System.Runtime.InteropServices.JavaScript/*
       - src/mono/mono/*
-      - src/mono/nuget/Microsoft.NET.Runtime.MonoAOTCompiler.Task/*
-      - src/mono/nuget/Microsoft.NET.Runtime.MonoTargets.Sdk/*
       - src/mono/nuget/Microsoft.NET.Runtime.WebAssembly.Sdk/*
       - src/mono/nuget/Microsoft.NET.Runtime.WebAssembly.Wasi.Sdk/*
       - src/mono/nuget/Microsoft.NET.Sdk.WebAssembly.Pack/*
@@ -307,7 +304,7 @@ jobs:
       # other paths that should also trigger wasm jobs
       - src/mono/*
       exclude:
-      - src/mono/nuget/Microsoft.NET.Runtime.WorkloadTesting.Internal/Sdk/WorkloadTesting.Core.targets
+      - eng/testing/workloads-testing.core.targets
       - eng/testing/workloads-browser.targets
       - eng/testing/workloads-testing.targets
       - eng/testing/workloads-wasi.targets
@@ -341,9 +338,7 @@ jobs:
       - eng/testing/tests.mobile.targets
       - src/mono/*
       - src/tasks/AndroidAppBuilder/*
-      - src/tasks/AotCompilerTask/*
       - src/tasks/AppleAppBuilder/*
-      - src/tasks/MonoTargetsTasks/*
       - src/tasks/WasmAppBuilder/*
       - src/tasks/WasmBuildTasks/*
       - src/tasks/WorkloadBuildTasks/*

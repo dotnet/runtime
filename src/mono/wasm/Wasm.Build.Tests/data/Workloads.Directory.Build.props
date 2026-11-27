@@ -1,5 +1,5 @@
 <Project>
-  <PropertyGroup Condition="'$(RUNTIME_FLAVOR_FOR_TESTS)' == 'CoreCLR'">
+  <PropertyGroup>
     <UseMonoRuntime>false</UseMonoRuntime>
   </PropertyGroup>
 </Project>

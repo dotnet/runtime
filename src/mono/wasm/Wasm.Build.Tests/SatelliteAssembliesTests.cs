@@ -30,18 +30,12 @@ namespace Wasm.Build.Tests
                     .UnwrapItemsAsArrays();
 
         public static IEnumerable<object?[]> MainAssemblyTestDataForCurrentRuntime()
-        {
-            IEnumerable<object?[]> data = SatelliteAssemblyTestData(aot: false, relinking: false)
+            => SatelliteAssemblyTestData(aot: false, relinking: false)
                 .Concat(SatelliteAssemblyTestData(aot: false, relinking: true));
-            return IsCoreClrRuntime ? data : data.Concat(SatelliteAssemblyTestData(aot: true, relinking: false));
-        }
 
         public static IEnumerable<object?[]> ProjectReferenceTestDataForCurrentRuntime()
-        {
-            IEnumerable<object?[]> data = SatelliteAssemblyTestData(aot: false, relinking: false)
+            => SatelliteAssemblyTestData(aot: false, relinking: false)
                 .Concat(SatelliteAssemblyTestData(aot: false, relinking: true));
-            return IsCoreClrRuntime ? data : data.Concat(SatelliteAssemblyTestData(aot: true, relinking: true));
-        }
 
         [Theory]
         [MemberData(nameof(MainAssemblyTestDataForCurrentRuntime))]
@@ -92,9 +86,9 @@ namespace Wasm.Build.Tests
             CreateProgramForCultureTest("LibraryWithResources.resx.words", "LibraryWithResources.Class1");
             // move src/mono/wasm/testassets/SatelliteAssemblyFromProjectRef/LibraryWithResources to the test project
             // Only runtime selection belongs in the root props; targets use the non-Wasm targeting-pack setup.
-            File.WriteAllText(Path.Combine(_projectDir, "..", "Directory.Build.props"), IsCoreClrRuntime
-                ? "<Project><PropertyGroup><UseMonoRuntime>false</UseMonoRuntime></PropertyGroup></Project>"
-                : "<Project />");
+            File.WriteAllText(
+                Path.Combine(_projectDir, "..", "Directory.Build.props"),
+                "<Project><PropertyGroup><UseMonoRuntime>false</UseMonoRuntime></PropertyGroup></Project>");
             File.Copy(
                 Path.Combine(BuildEnvironment.TestDataPath, "Local.Directory.Build.targets"),
                 Path.Combine(_projectDir, "..", "Directory.Build.targets"));
@@ -109,6 +103,7 @@ namespace Wasm.Build.Tests
 #pragma warning disable xUnit1026
         [Theory]
         [BuildAndRun(aot: true, config: Configuration.Release)]
+        // TODO-WASM: https://github.com/dotnet/runtime/issues/135046
         [TestCategory("native"), TestCategory("mono")]
         public void CheckThatSatelliteAssembliesAreNotAOTed(Configuration config, bool aot)
         {

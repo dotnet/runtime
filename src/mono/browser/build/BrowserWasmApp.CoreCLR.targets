@@ -62,10 +62,7 @@
 
     <!--
       - For regular builds, it will use the symbols file from the runtime pack.
-      - for AOT builds on CI, we avoid WasmNativeDebugSymbols and we WasmNativeStrip so that we don't run OOM on helix during wasm-opt
     -->
-    <WasmNativeStrip Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(RunAOTCompilation)' == 'true'">true</WasmNativeStrip>
-    <WasmNativeDebugSymbols Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(RunAOTCompilation)' == 'true'">false</WasmNativeDebugSymbols>
     <WasmNativeDebugSymbols Condition="'$(DebuggerSupport)' == 'true' and '$(WasmNativeDebugSymbols)' == ''">true</WasmNativeDebugSymbols>
 
     <!-- Executable extension for cross-platform compat (e.g., node.exe on Windows) -->
@@ -73,8 +70,8 @@
   </PropertyGroup>
 
   <!-- EmccInitialHeapSize is the documented browser property (src/mono/browser/README.md) and
-       EmccTotalMemory is its legacy alias; the Mono path collapses both into WasmInitialHeapSize
-       (BrowserWasmApp.targets). Do the same here at evaluation time so the relink registry in
+       EmccTotalMemory is its legacy alias; the Mono path used to collapse both into WasmInitialHeapSize.
+       Do the same here at evaluation time so the relink registry in
        native.wasm.targets compares the effective value and the emcc link below uses it. -->
   <PropertyGroup Condition="'$(IsBrowserWasmProject)' == 'true'">
     <EmccInitialHeapSize Condition="'$(EmccInitialHeapSize)' == ''">$(EmccTotalMemory)</EmccInitialHeapSize>
