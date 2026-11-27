@@ -1629,9 +1629,13 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr       size,
     // reg cannot be a FP register
     assert(!genIsValidFloatReg(reg));
 
-    if (!m_compiler->opts.compReloc)
+    if (!m_compiler->opts.compReloc && !EA_IS_RELOC(size))
     {
-        size = EA_SIZE(size); // Strip any Reloc flags from size if we aren't doing relocs
+        // Strip the GC flags so a move wide chain stays untyped, a register holding a
+        // partial address must never be scanned as a reference. A caller that tagged the
+        // attr deliberately takes the reloc path below, where only the trailing ADD
+        // carries the GC type.
+        size = EA_SIZE(size);
     }
 
     if (EA_IS_RELOC(size))
@@ -1754,10 +1758,8 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                 if ((fill.zeros < 2) && (fill.ones < 2) &&
                     (m_compiler->eeGetRelocTypeHint((void*)cnsVal) == CorInfoReloc::ARM64_PAGEBASE_REL21))
                 {
-                    GetEmitter()->emitIns_R_AI(INS_adrp, EA_SET_FLG(attr, EA_DSP_RELOC_FLG), targetReg,
-                                               cnsVal DEBUGARG(con->GetTargetHandle()) DEBUGARG(con->gtFlags));
-                    regSet.verifyRegUsed(targetReg);
-                    break;
+                    // Tag the attr and fall through to the same reloc materialization AOT uses.
+                    attr = EA_SET_FLG(attr, EA_CNS_RELOC_FLG);
                 }
             }
 
