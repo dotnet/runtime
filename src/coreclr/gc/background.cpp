@@ -992,8 +992,8 @@ void gc_heap::bgc_thread_stub (void* arg)
     dprintf (6666, ("h%d %s", heap->heap_number, (wait_p ? "waited" : "did not wait")));
 #endif
 
-#if defined(MULTIPLE_HEAPS) && defined(TARGET_UNIX) && !defined(TARGET_WASM)
-    // Background GC threads inherit the affinity of the server GC thread that creates them.
+#ifdef MULTIPLE_HEAPS
+    // On Linux, background GC threads inherit the affinity of the server GC thread that creates them.
     if (!gc_thread_no_affinitize_p && !GCToOSInterface::ResetThreadAffinity())
     {
         dprintf (1, ("Failed to reset affinity for background GC thread %d", heap->heap_number));

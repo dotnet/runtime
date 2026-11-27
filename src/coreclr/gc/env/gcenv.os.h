@@ -420,10 +420,8 @@ public:
     //  true if setting the affinity was successful, false otherwise.
     static bool SetThreadAffinity(uint16_t procNo);
 
-#if defined(TARGET_UNIX) && !defined(TARGET_WASM)
-    // Restore the main thread's current affinity on the calling thread.
+    // Restore the main thread's current affinity on platforms where GC threads inherit affinity.
     static bool ResetThreadAffinity();
-#endif
 
     // Boosts the calling thread's thread priority to a level higher than the default
     // for new threads.
