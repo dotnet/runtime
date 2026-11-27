@@ -201,6 +201,9 @@ category conventions above.
   that state but cannot create it. Prefer external observations for assertions.
   Preserve binlog artifacts for diagnosis. Property/argument checks do not
   replace browser execution or bundle checks for changed runtime behavior.
+  Before adding internal-state assertions, identify what they prove beyond the
+  behavioral checks. Retain checks for distinct build/artifact contracts:
+  runtime output cannot prove, for example, that a no-op publish reused an object.
 - Keep detailed generated-source shape assertions in generator unit tests.
   Integration tests should exercise trimming, loading, binding and invocation,
   with only the output-shape checks needed to establish compatibility, such as
