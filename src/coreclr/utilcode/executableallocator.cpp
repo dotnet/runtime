@@ -340,12 +340,12 @@ bool ExecutableAllocator::IsPreferredExecutableRange(void * p)
 
 #ifdef TARGET_ARM64
 #ifdef _DEBUG
-void ExecutableAllocator::GetStressCodeRange(bool far, const BYTE*& lo, const BYTE*& hi)
+void ExecutableAllocator::GetStressCodeRange(bool preferFarHeap, const BYTE*& lo, const BYTE*& hi)
 {
     LIMITED_METHOD_CONTRACT;
     lo = g_preferredRangeMin;
     hi = g_preferredRangeMax;
-    if (far && lo < hi)
+    if (preferFarHeap && lo < hi)
     {
         // An approved target may itself be up to 4 GiB outside the preferred range.
         const UINT_PTR gap = 8ull << 30;

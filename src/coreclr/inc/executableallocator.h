@@ -243,7 +243,7 @@ public:
     // Can ADRP reach the target from every page in the preferred code range?
     static bool IsInPreferredPageRelativeRange(void* target);
 #if defined(_DEBUG) && !defined(FEATURE_PORTABLE_ENTRYPOINTS)
-    static void GetStressCodeRange(bool far, const BYTE*& lo, const BYTE*& hi);
+    static void GetStressCodeRange(bool preferFarHeap, const BYTE*& lo, const BYTE*& hi);
 #endif
 #endif
 

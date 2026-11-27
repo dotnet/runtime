@@ -2679,10 +2679,10 @@ void * LoaderCodeHeap::AllocMemForCode_NoThrow(size_t header, size_t size, DWORD
 }
 
 #if defined(_DEBUG) && defined(TARGET_ARM64) && !defined(FEATURE_PORTABLE_ENTRYPOINTS)
-void CodeHeapRequestInfo::SetStressCodeRange(bool far)
+void CodeHeapRequestInfo::SetStressCodeRange(bool preferFarHeap)
 {
     LIMITED_METHOD_CONTRACT;
-    ExecutableAllocator::GetStressCodeRange(far, m_loAddr, m_hiAddr);
+    ExecutableAllocator::GetStressCodeRange(preferFarHeap, m_loAddr, m_hiAddr);
 }
 #endif
 

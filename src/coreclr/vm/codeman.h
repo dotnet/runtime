@@ -463,7 +463,7 @@ public:
     void   SetDynamicDomain()                   { m_isDynamicDomain = true;    }
 
 #if defined(_DEBUG) && defined(TARGET_ARM64) && !defined(FEATURE_PORTABLE_ENTRYPOINTS)
-    void SetStressCodeRange(bool far);
+    void SetStressCodeRange(bool preferFarHeap);
     void ClearStressCodeRange() { m_loAddr = m_hiAddr = nullptr; }
 #endif
     const BYTE* GetLoAddr()                     { return m_loAddr;             }
