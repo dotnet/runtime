@@ -50,5 +50,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             NewObjectFixupSignature otherNode = (NewObjectFixupSignature)other;
             return comparer.Compare(_typeDesc, otherNode._typeDesc);
         }
+
+        protected override void ComputeNonRelocationBasedDependencies(DependencySink sink, NodeFactory factory)
+        {
+            base.ComputeNonRelocationBasedDependencies(sink, factory);
+            factory.AddVirtualMethodDiscoveryDependencies(sink, _typeDesc);
+        }
     }
 }

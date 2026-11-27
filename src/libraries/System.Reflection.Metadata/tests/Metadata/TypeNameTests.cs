@@ -74,6 +74,20 @@ namespace System.Reflection.Metadata.Tests
         [InlineData("EscapeNonSpecialChar\\a")]
         [InlineData("EscapeNonSpecialChar\\0")]
         [InlineData("DoubleNestingChar++Bla")]
+        [InlineData("\0")]
+        [InlineData("\0System.Int32")]
+        [InlineData("System.In\0t32")]
+        [InlineData("System.Int32\0")]
+        [InlineData("System.Int32\0junk")]
+        [InlineData("System.Environment\0x+SpecialFolder")]
+        [InlineData("System.Environment+SpecialFolder\0x")]
+        [InlineData("System.Collections.Generic.List`1[System.Int32\0zz]")]
+        [InlineData("System.Collections.Generic.List`1[[System.Int32\0zz]]")]
+        [InlineData("System.Collections.Generic.List`1[[System.Int32\0zz, System.Private.CoreLib]]")]
+        [InlineData("System.Diagnostics.Process\0x, System.Diagnostics.Process")]
+        [InlineData("System.Int32, System.Private.CoreLib\0x")]
+        [InlineData("Escaped\\+Name\0junk")]
+        [InlineData("Escaped\\\0Name")]
         public void InvalidTypeNamesAreNotAllowed(string input)
         {
             Assert.Throws<ArgumentException>(() => TypeName.Parse(input.AsSpan()));
@@ -721,6 +735,169 @@ namespace System.Reflection.Metadata.Tests
             TypeName made = parsed.WithAssemblyName(assemblyName);
 
             VerifyNestedNames(parsed, made, assemblyName);
+        }
+
+        [Theory]
+        [InlineData("System.Int32", "System.Int32", "System", "Int32")]
+        [InlineData("Int32", "Int32", "", "Int32")]
+        [InlineData("Name, WithComma", "Name\\, WithComma", "", "Name\\, WithComma")]
+        [InlineData("NotNested+Name", "NotNested\\+Name", "", "NotNested\\+Name")]
+        [InlineData("Ns.Type[]&*", "Ns.Type\\[\\]\\&\\*", "Ns", "Type\\[\\]\\&\\*")]
+        [InlineData("Ns.Back\\slash", "Ns.Back\\\\slash", "Ns", "Back\\\\slash")]
+        public void CreateSimpleTypeName(string metadataName, string expectedFullName, string expectedNamespace, string expectedName)
+        {
+            TypeName created = TypeName.CreateSimpleTypeName(metadataName);
+
+            Assert.Equal(expectedFullName, created.FullName);
+            Assert.Equal(expectedFullName, created.AssemblyQualifiedName);
+            Assert.Equal(expectedNamespace, created.Namespace);
+            Assert.Equal(expectedName, created.Name);
+            Assert.Equal(metadataName, TypeName.Unescape(created.FullName));
+            Assert.True(created.IsSimple);
+            Assert.False(created.IsNested);
+            Assert.Null(created.AssemblyName);
+            Assert.Equal(1, created.GetNodeCount());
+
+            TypeName parsed = TypeName.Parse(created.FullName.AsSpan());
+            Assert.Equal(created.FullName, parsed.FullName);
+            Assert.Equal(created.Name, parsed.Name);
+            Assert.False(parsed.IsNested);
+
+            AssemblyNameInfo assemblyName = new("Lib");
+            TypeName withAssembly = TypeName.CreateSimpleTypeName(metadataName, assemblyInfo: assemblyName);
+            Assert.Same(assemblyName, withAssembly.AssemblyName);
+            Assert.Equal($"{expectedFullName}, {assemblyName.FullName}", withAssembly.AssemblyQualifiedName);
+        }
+
+        [Theory]
+        [InlineData("Ns.Declaring")]
+        [InlineData("Ns.Declaring+Deep")]
+        [InlineData("Ns.Declaring+Deep+Deeper, Lib")]
+        public void CreateSimpleTypeName_NestedNames(string declaringTypeName)
+        {
+            TypeName declaringType = TypeName.Parse(declaringTypeName.AsSpan());
+            TypeName created = TypeName.CreateSimpleTypeName("Nested", declaringType);
+            TypeName parsed = TypeName.Parse($"{declaringType.FullName}+Nested".AsSpan());
+
+            Assert.Same(declaringType.AssemblyName, created.AssemblyName);
+            Assert.True(created.IsNested);
+            Assert.True(created.IsSimple);
+            Assert.Equal(declaringType.GetNodeCount() + 1, created.GetNodeCount());
+            while (true)
+            {
+                Assert.Equal(parsed.Name, created.Name);
+                Assert.Equal(parsed.FullName, created.FullName);
+                if (!parsed.IsNested)
+                {
+                    Assert.Equal(parsed.Namespace, created.Namespace);
+                    break;
+                }
+
+                Assert.Throws<InvalidOperationException>(() => created.Namespace);
+                parsed = parsed.DeclaringType;
+                created = created.DeclaringType;
+            }
+        }
+
+        [Fact]
+        public void CreateSimpleTypeName_NestedInCreated()
+        {
+            TypeName declaring = TypeName.CreateSimpleTypeName("Ns.Declaring");
+            TypeName deep = TypeName.CreateSimpleTypeName("Deep+Name", declaring);
+            TypeName nested = TypeName.CreateSimpleTypeName("Nested", deep);
+
+            Assert.Equal("Ns.Declaring+Deep\\+Name+Nested", nested.FullName);
+            Assert.Equal("Nested", nested.Name);
+            Assert.Equal("Deep\\+Name", nested.DeclaringType.Name);
+            Assert.Equal("Declaring", nested.DeclaringType.DeclaringType.Name);
+            Assert.Equal("Ns", nested.DeclaringType.DeclaringType.Namespace);
+            Assert.Equal(3, nested.GetNodeCount());
+            Assert.Same(deep, nested.DeclaringType);
+            Assert.Same(declaring, deep.DeclaringType);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void CreateSimpleTypeName_NestedDerivedNames(bool fullNameFirst)
+        {
+            TypeName nested = TypeName.CreateSimpleTypeName("Nested", TypeName.CreateSimpleTypeName("Ns.Declaring"));
+            if (fullNameFirst)
+            {
+                Assert.Equal("Ns.Declaring+Nested", nested.FullName);
+            }
+
+            TypeName array = nested.MakeSZArrayTypeName();
+            Assert.Equal("Nested[]", array.Name);
+            Assert.Equal("Ns.Declaring+Nested[]", array.FullName);
+
+            TypeName generic = nested.MakeGenericTypeName(ImmutableArray.Create(TypeName.Parse("Arg".AsSpan())));
+            Assert.Equal("Nested", generic.Name);
+            Assert.Equal("Ns.Declaring+Nested[[Arg]]", generic.FullName);
+
+            AssemblyNameInfo assemblyName = new("Lib");
+            TypeName withAssembly = nested.WithAssemblyName(assemblyName);
+            Assert.Equal("Nested", withAssembly.Name);
+            Assert.Equal("Ns.Declaring+Nested", withAssembly.FullName);
+            Assert.Equal("Ns.Declaring+Nested, Lib", withAssembly.AssemblyQualifiedName);
+            Assert.Same(assemblyName, withAssembly.DeclaringType.AssemblyName);
+            Assert.Equal("Nested[]", withAssembly.MakeSZArrayTypeName().Name);
+
+            Assert.Equal("Ns.Declaring+Nested", nested.AssemblyQualifiedName);
+        }
+
+        [Theory]
+        [InlineData("SZArray[]")]
+        [InlineData("Pointer*")]
+        [InlineData("ByRef&")]
+        [InlineData("Generic`1[[GenericArg]]")]
+        public void CreateSimpleTypeName_ThrowsForNonSimpleDeclaringType(string declaringTypeName)
+        {
+            TypeName declaringType = TypeName.Parse(declaringTypeName.AsSpan());
+
+            AssertExtensions.Throws<ArgumentException>("declaringType", () => TypeName.CreateSimpleTypeName("Nested", declaringType));
+        }
+
+        [Theory]
+        [InlineData("Ns.Declaring")]
+        [InlineData("Ns.Declaring, Lib")]
+        public void CreateSimpleTypeName_ThrowsForNestedWithAssemblyInfo(string declaringTypeName)
+        {
+            TypeName declaringType = TypeName.Parse(declaringTypeName.AsSpan());
+            AssemblyNameInfo assemblyInfo = AssemblyNameInfo.Parse("Lib".AsSpan());
+
+            AssertExtensions.Throws<ArgumentException>("assemblyInfo", () => TypeName.CreateSimpleTypeName("Nested", declaringType, assemblyInfo));
+        }
+
+        [Fact]
+        public void CreateSimpleTypeName_ThrowsForNullOrEmptyName()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("metadataName", () => TypeName.CreateSimpleTypeName(null!));
+            AssertExtensions.Throws<ArgumentException>("metadataName", () => TypeName.CreateSimpleTypeName(""));
+        }
+
+        [Theory]
+        [InlineData("\0", "\0")]
+        [InlineData("\0Name", "\0Name")]
+        [InlineData("Na\0me", "Na\0me")]
+        [InlineData("Name\0", "Name\0")]
+        [InlineData("Name+\0", "Name\\+\0")]
+        [InlineData("Name\\\0", "Name\\\\\0")]
+        [InlineData("\0+Name", "\0\\+Name")]
+        public void CreateSimpleTypeName_PreservesNullCharacter(string metadataName, string expectedFullName)
+        {
+            TypeName declaringType = TypeName.CreateSimpleTypeName("Declaring");
+            foreach (string prefix in new[] { "", new string('a', 128) })
+            {
+                string name = prefix + metadataName;
+                TypeName created = TypeName.CreateSimpleTypeName(name);
+                Assert.Equal(prefix + expectedFullName, created.FullName);
+                Assert.Equal(name, TypeName.Unescape(created.FullName));
+
+                TypeName nested = TypeName.CreateSimpleTypeName(name, declaringType);
+                Assert.Equal("Declaring+" + prefix + expectedFullName, nested.FullName);
+                Assert.Same(declaringType, nested.DeclaringType);
+            }
         }
 
         [Theory]

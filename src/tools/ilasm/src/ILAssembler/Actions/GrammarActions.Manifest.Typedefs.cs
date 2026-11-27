@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Reflection.Metadata;
 using Antlr4.Runtime;
 
-namespace ILAssembler;
+namespace Microsoft.DotNet.ILAssembler;
 
 #pragma warning disable CA1822 // Parser actions are invoked through the per-parser GrammarActions instance.
 internal sealed partial class GrammarActions
@@ -50,12 +50,15 @@ internal sealed partial class GrammarActions
                 _typedefs[type.Alias] = new TypedefEntry.Type(ResolveClassName(type.Type));
                 break;
             case MemberTypedefDeclarationValue member:
-                _typedefs[member.Alias] =
-                    new TypedefEntry.Member(MaterializeMemberReference(member.Member));
+                _typedefs[member.Alias] = new TypedefEntry.Member(member.Member switch
+                {
+                    MethodMemberReferenceValue { Method: TokenMethodReferenceValue token } => new EntityRegistry.LiteralTokenEntity(token.Token),
+                    _ => MaterializeMemberReference(member.Member)
+                });
                 break;
             case CustomAttributeTypedefDeclarationValue customAttribute:
                 EntityRegistry.CustomAttributeEntity attribute =
-                    MaterializeCustomAttribute(customAttribute.Attribute);
+                    MaterializeCustomAttribute(customAttribute.Attribute, customAttribute.Location);
                 EntityRegistry.EntityBase? owner = attribute.Owner;
                 attribute.Owner = null;
                 _typedefs[customAttribute.Alias] =

@@ -167,6 +167,7 @@ bool        IsRedundantMov(
 bool EmitMovsxAsCwde(instruction ins, emitAttr size, regNumber dst, regNumber src);
 
 bool IsRedundantStackMov(instruction ins, insFormat fmt, emitAttr size, regNumber ireg, int varx, int offs);
+bool TryEmitLclAddrAsMov(emitAttr attr, regNumber ireg, int varx, int offs);
 
 static bool IsJccInstruction(instruction ins);
 static bool IsJmpInstruction(instruction ins);
@@ -217,6 +218,7 @@ static insTupleType insTupleTypeInfo(instruction ins);
 #define REX2_PREFIX_CODE_2BYTE 0xD50000000000ULL
 
 bool TakesRex2Prefix(const instrDesc* id) const;
+bool NeedsLegacyOperandSizePrefix(const instrDesc* id) const;
 //------------------------------------------------------------------------
 // hasEvexPrefix: Returns true if the instruction encoding already
 // contains Evex prefix.

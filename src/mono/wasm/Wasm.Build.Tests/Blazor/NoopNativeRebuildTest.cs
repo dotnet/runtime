@@ -60,9 +60,7 @@ namespace Wasm.Build.Tests.Blazor
             string objDir = Path.Combine(_projectDir, "obj", config.ToString(), DefaultTargetFrameworkForBlazor, "wasm");
             var pathsDict = _provider.GetFilesTable(true, objDir);
             pathsDict.Remove("runtime-icall-table.h");
-            pathsDict.UpdateTo(unchanged: false, "dotnet.native.wasm", "dotnet.native.js", "emcc-link.rsp");
-            if (IsCoreClrRuntime)
-                pathsDict.UpdateTo(unchanged: false, "dotnet.native.js.symbols");
+            pathsDict.UpdateTo(unchanged: false, "dotnet.native.wasm", "dotnet.native.js", "dotnet.native.js.symbols", "emcc-link.rsp");
             var originalStat = _provider.StatFiles(pathsDict);
 
             // build again

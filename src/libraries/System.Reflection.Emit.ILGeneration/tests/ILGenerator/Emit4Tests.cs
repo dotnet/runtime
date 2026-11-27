@@ -13,6 +13,7 @@ namespace System.Reflection.Emit.Tests
     public class ILGeneratorEmit4
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/133123", TestPlatforms.Wasi, TargetFrameworkMonikers.Any, TestRuntimes.CoreCLR)]
         public void TestEmitCalliBlittable()
         {
             int a = 1, b = 1, result = 2;
@@ -81,6 +82,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/133123", TestPlatforms.Wasi, TargetFrameworkMonikers.Any, TestRuntimes.CoreCLR)]
         public void TestDynamicMethodEmitCalliBlittable()
         {
             int a = 1, b = 1, result = 2;
@@ -193,6 +195,7 @@ namespace System.Reflection.Emit.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/124149", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/133123", TestPlatforms.Wasi, TargetFrameworkMonikers.Any, TestRuntimes.CoreCLR)]
         public void TestDynamicMethodEmitCalliFnPtrStdCall()
         {
             int a = 1, b = 1, result = 2;
@@ -292,9 +295,9 @@ namespace System.Reflection.Emit.Tests
 
         private static string StringReverse(string a) => string.Join("", a.Reverse());
 
-        private unsafe static int ComplexSignature(delegate* unmanaged[Stdcall, MemberFunction]<short, bool> arg) => 5;
+        private static int ComplexSignature(delegate* unmanaged[Stdcall, MemberFunction]<short, bool> arg) => 5;
 
-        private unsafe static delegate*<delegate* unmanaged[Stdcall, MemberFunction]<short, bool>, int> EvenMoreComplexSignature(
+        private static delegate*<delegate* unmanaged[Stdcall, MemberFunction]<short, bool>, int> EvenMoreComplexSignature(
             delegate* unmanaged[Cdecl]<delegate*<delegate* unmanaged[Fastcall, SuppressGCTransition]<List<short>*>>> arg) => &ComplexSignature;
     }
 }

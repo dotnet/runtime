@@ -15,13 +15,12 @@ namespace Wasm.Build.Tests.Blazor;
 
 public class WorkloadRequiredTests : BlazorWasmTestBase
 {
-    /* Keep in sync with settings in browser.proj, and WasmApp.Native.targets .
+    /* Keep in sync with the relink properties in eng/native.wasm.targets and BrowserWasmApp.CoreCLR.targets.
      * The `triggerValue` here is opposite of the default used when building the runtime pack
-     * (see browser.proj), and thus requiring a native build
+     * and thus requires a native build.
      */
     public static (string propertyName, bool triggerValue)[] PropertiesWithTriggerValues = new[]
     {
-        ("RunAOTCompilation", true),
         ("WasmEnableSIMD", false),
         ("WasmEnableExceptionHandling", false),
         ("InvariantTimezone", true),
@@ -88,36 +87,12 @@ public class WorkloadRequiredTests : BlazorWasmTestBase
     [Theory, TestCategory("no-workload")]
     [InlineData(Configuration.Debug)]
     [InlineData(Configuration.Release)]
-    public void NativeRef_EmitsWarningBecauseItRequiresWorkload(Configuration config)
+    public void NativeRef_RequiresWorkload(Configuration config)
     {
         CommandResult res = PublishForRequiresWorkloadTest(config, extraItems: "<NativeFileReference Include=\"native-lib.o\" />");
-        res.EnsureSuccessful();
-        Assert.Matches("warning : .*but the native references won't be linked in", res.Output);
-    }
-
-    [Theory, TestCategory("no-workload")]
-    [InlineData(Configuration.Debug)]
-    [InlineData(Configuration.Release)]
-    public void AOT_FailsBecauseItRequiresWorkload(Configuration config)
-    {
-        CommandResult res = PublishForRequiresWorkloadTest(config, extraProperties: "<RunAOTCompilation>true</RunAOTCompilation>");
         Assert.NotEqual(0, res.ExitCode);
         Assert.Contains("following workloads must be installed: wasm-tools", res.Output);
     }
-
-    [Theory, TestCategory("no-workload")]
-    [InlineData(Configuration.Debug)]
-    [InlineData(Configuration.Release)]
-    public void AOT_And_NativeRef_FailBecauseTheyRequireWorkload(Configuration config)
-    {
-        CommandResult res = PublishForRequiresWorkloadTest(config,
-                                extraProperties: "<RunAOTCompilation>true</RunAOTCompilation>",
-                                extraItems: "<NativeFileReference Include=\"native-lib.o\" />");
-
-        Assert.NotEqual(0, res.ExitCode);
-        Assert.Contains("following workloads must be installed: wasm-tools", res.Output);
-    }
-
 
     [Theory, TestCategory("no-workload")]
     [MemberData(nameof(InvariantGlobalizationTestData), parameters: /*publish*/ false)]

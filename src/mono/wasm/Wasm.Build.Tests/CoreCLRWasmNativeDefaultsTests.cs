@@ -26,6 +26,8 @@ namespace Wasm.Build.Tests
     {
         private static readonly Regex s_regex = new("\\*\\* WasmBuildNative:.*");
         private static readonly Regex s_r2rDirectoryRegex = new("\\*\\* WasmPublishR2RDir: '([^']*)'");
+        private static readonly Regex s_r2rExtraArgsRegex = new("\\*\\* R2RExtraArgs: '([^']*)'");
+        private static readonly Regex s_r2rPgoFilesRegex = new("\\*\\* R2RPgoFiles: '([^']*)'");
 
         public CoreCLRWasmNativeDefaultsTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
             : base(output, buildContext)
@@ -60,10 +62,6 @@ namespace Wasm.Build.Tests
             // comparison is textual, so a numerically equal but differently spelled size counts as
             // a mismatch. That only costs an unnecessary relink, never a mismatched binary.
             { "<EmccStackSize>2097152</EmccStackSize>", true },
-            // WasmPerformanceInstrumentation would force a relink, but that defaulting is temporarily
-            // disabled in BrowserWasmApp.CoreCLR.targets pending https://github.com/dotnet/runtime/issues/132772,
-            // so it currently does not relink.
-            { "<WasmPerformanceInstrumentation>all</WasmPerformanceInstrumentation>", false },
         };
 
         [Theory]
@@ -100,6 +98,76 @@ namespace Wasm.Build.Tests
 
             Assert.NotNull(line);
             Assert.Contains("** WasmBuildNative: 'false'", line);
+        }
+
+        [Fact, TestCategory("no-workload")]
+        public void WebcilVersionDoesNotRequireRuntimeFlavor()
+        {
+            ProjectInfo info = CopyTestAsset(
+                Configuration.Debug,
+                aot: false,
+                TestAsset.WasmBasicTestApp,
+                "coreclr_webcil_version",
+                extraProperties: "<PublishReadyToRun>false</PublishReadyToRun>",
+                insertAtEnd: """
+                    <Target Name="CheckCoreClrWebcilVersion" DependsOnTargets="_ResolveWasmConfiguration">
+                        <Error Condition="'$(UseMonoRuntime)' != 'false'" Text="The test must select CoreCLR." />
+                        <Error Condition="'$(RuntimeFlavor)' != ''" Text="The test must not set RuntimeFlavor." />
+                        <Error Condition="'$(_WasmWebcilVersion)' != '1'" Text="CoreCLR requires WebCIL version 1." />
+                        <Error Text="Stopping after validating CoreCLR WebCIL version" />
+                    </Target>
+                    """);
+
+            (string _, string output) = BuildProject(
+                info,
+                Configuration.Debug,
+                new BuildOptions(
+                    ExpectSuccess: false,
+                    ExtraMSBuildArgs: "-t:CheckCoreClrWebcilVersion -p:RuntimeFlavor="));
+
+            Assert.Contains("Stopping after validating CoreCLR WebCIL version", output);
+        }
+
+        [Theory, TestCategory("no-workload")]
+        [InlineData("DirectPInvoke", false)]
+        [InlineData("DirectPInvoke", true)]
+        [InlineData("NativeFileReference", false)]
+        [InlineData("NativeLibrary", true)]
+        public void NativeItemsRequireWorkload(string itemType, bool fromDirectoryBuildTargets)
+        {
+            string item = $"<{itemType} Include=\"{(itemType == "DirectPInvoke" ? "libc!strlen" : "native-lib.o")}\" />";
+            CopyTestAsset(
+                Configuration.Debug,
+                aot: false,
+                TestAsset.WasmBasicTestApp,
+                $"coreclr_{itemType}_noworkload_{fromDirectoryBuildTargets}",
+                extraItems: fromDirectoryBuildTargets ? "" : item);
+            if (fromDirectoryBuildTargets)
+            {
+                // Imported after the workload manifest, like items from NuGet package targets.
+                string targetsPath = Path.Combine(_projectDir, "..", "Directory.Build.targets");
+                File.WriteAllText(targetsPath, File.ReadAllText(targetsPath).Replace("</Project>", $"<ItemGroup>{item}</ItemGroup></Project>"));
+            }
+
+            using DotNetCommand build = new DotNetCommand(s_buildEnv, _testOutput);
+            CommandResult buildResult = build.WithWorkingDirectory(_projectDir)
+                .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
+                .ExecuteWithCapturedOutput("build");
+            Assert.NotEqual(0, buildResult.ExitCode);
+            Assert.Contains("following workloads must be installed: wasm-tools", buildResult.Output);
+
+            // Visual Studio offers to install the workloads this target returns. Until the SDK checks for
+            // missing packs after its BeforeTargets run (dotnet/sdk#57257), it only sees items added before
+            // the workload manifest is imported.
+            if (fromDirectoryBuildTargets)
+                return;
+
+            using DotNetCommand suggest = new DotNetCommand(s_buildEnv, _testOutput);
+            CommandResult suggestResult = suggest.WithWorkingDirectory(_projectDir)
+                .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
+                .ExecuteWithCapturedOutput("msbuild", "-t:GetSuggestedWorkloads", "-p:DesignTimeBuild=true", "-getItem:SuggestedWorkload");
+            suggestResult.EnsureSuccessful();
+            Assert.Contains("\"Identity\": \"wasm-tools\"", suggestResult.Output);
         }
 
         // Mirrors the Mono path's WithNativeReference test: a project that references a native
@@ -155,6 +223,95 @@ namespace Wasm.Build.Tests
             Match match = s_r2rDirectoryRegex.Match(output);
             Assert.True(match.Success, output);
             Assert.Equal(Path.Combine(GetObjDir(config), "R2R") + Path.DirectorySeparatorChar, match.Groups[1].Value);
+        }
+
+        // Verify that explicit PGO items remain available to the SDK ReadyToRun pipeline and enable
+        // --partial only when ReadyToRun is on. Stops before crossgen2; the compiler arguments only let
+        // restore resolve a compiler (in-build when BASE_DIR is set, SDK pack otherwise).
+        [Theory]
+        [InlineData(/*profileSet*/ true,  /*r2r*/ true,  /*expectPartial*/ true)]
+        [InlineData(/*profileSet*/ false, /*r2r*/ true,  /*expectPartial*/ false)]
+        [InlineData(/*profileSet*/ true,  /*r2r*/ false, /*expectPartial*/ false)]
+        [InlineData(/*profileSet*/ false, /*r2r*/ false, /*expectPartial*/ false)]
+        public void PublishReadyToRunPgoFilesControlsPartialCompilation(bool profileSet, bool r2r, bool expectPartial)
+        {
+            Configuration config = Configuration.Release;
+            string profilePath = Path.Combine(BuildEnvironment.TestDataPath, "DotNet_Blazor_Wasm.mibc");
+            string printValueTarget = """
+                <Target Name="PrintR2RProfileFlow"
+                        DependsOnTargets="_WasmCoreClrSelectR2RDirectories;_WasmCoreClrConfigureReadyToRunPgo">
+                    <Message Text="** R2RExtraArgs: '$(PublishReadyToRunCrossgen2ExtraArgs)'" Importance="High" />
+                    <Message Text="** R2RPgoFiles: '@(PublishReadyToRunPgoFiles)'" Importance="High" />
+                    <Error Text="Stopping after validating the R2R profile flow" />
+                </Target>
+                """;
+
+            string profileItem = profileSet ? $"<PublishReadyToRunPgoFiles Include=\"{profilePath}\" />" : "";
+            ProjectInfo info = CopyTestAsset(
+                config,
+                aot: false,
+                TestAsset.WasmBasicTestApp,
+                $"coreclr_r2r_profile_{profileSet}_{r2r}",
+                extraProperties: $"<PublishReadyToRun>{r2r}</PublishReadyToRun>",
+                extraItems: profileItem,
+                insertAtEnd: printValueTarget);
+
+            (string _, string output) = BuildProject(
+                info,
+                config,
+                new BuildOptions(
+                    ExpectSuccess: false,
+                    ExtraMSBuildArgs: $"-t:PrintR2RProfileFlow {ReadyToRunTests.GetR2RBuildArgs(config)}"));
+
+            Assert.Contains("Stopping after validating the R2R profile flow", output);
+
+            Match extraArgs = s_r2rExtraArgsRegex.Match(output);
+            Match pgoFiles = s_r2rPgoFilesRegex.Match(output);
+            Assert.True(extraArgs.Success, output);
+            Assert.True(pgoFiles.Success, output);
+
+            if (expectPartial)
+            {
+                Assert.Contains("--partial", extraArgs.Groups[1].Value);
+            }
+            else
+            {
+                Assert.DoesNotContain("--partial", extraArgs.Groups[1].Value);
+            }
+
+            if (profileSet)
+            {
+                Assert.Equal(profilePath, pgoFiles.Groups[1].Value);
+            }
+            else
+            {
+                Assert.Equal("", pgoFiles.Groups[1].Value);
+            }
+        }
+
+        [Fact]
+        public void PublishReadyToRunPgoFileMustExist()
+        {
+            Configuration config = Configuration.Release;
+            const string profilePath = "missing-profile.mibc";
+            ProjectInfo info = CopyTestAsset(
+                config,
+                aot: false,
+                TestAsset.WasmBasicTestApp,
+                "coreclr_r2r_missing_profile",
+                extraProperties: $"""
+                    <PublishReadyToRun>true</PublishReadyToRun>
+                    """,
+                extraItems: $"<PublishReadyToRunPgoFiles Include=\"{profilePath}\" />");
+
+            (string _, string output) = BuildProject(
+                info,
+                config,
+                new BuildOptions(
+                    ExpectSuccess: false,
+                    ExtraMSBuildArgs: ReadyToRunTests.GetR2RBuildArgs(config)));
+
+            Assert.Contains($"PublishReadyToRunPgoFiles item '{profilePath}' does not exist.", output);
         }
 
         [Theory]

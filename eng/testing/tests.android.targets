@@ -3,7 +3,6 @@
     <BundleTestAppTargets>$(BundleTestAppTargets);BundleTestAndroidApp</BundleTestAppTargets>
   </PropertyGroup>
 
-  <Import Project="$(MonoProjectRoot)\msbuild\common\LibraryBuilder.props" />
   <Import Project="$(MonoProjectRoot)\msbuild\android\build\AndroidBuild.props" />
   <Import Project="$(MonoProjectRoot)\msbuild\android\build\AndroidBuild.InTree.targets" />
 
@@ -63,7 +62,6 @@
 
     <ItemGroup>
       <AndroidAssembliesToBundle Include="@(NativeLibraries->'$(PublishDir)%(Identity)')">
-        <_InternalForceInterpret>true</_InternalForceInterpret>
         <_IsNative>true</_IsNative>
       </AndroidAssembliesToBundle>
 
@@ -71,7 +69,6 @@
       <_SatelliteAssemblies Include="$(PublishDir)\**\*.resources.dll" />
 
       <AndroidAssembliesToBundle Include="@(_PublishAssemblies)">
-        <_InternalForceInterpret Condition="'$(UseMonoJustInterp)' == 'true' and '%(FileName)%(Extension)' != 'System.Private.CoreLib.dll'">true</_InternalForceInterpret>
         <_IsNative>false</_IsNative>
       </AndroidAssembliesToBundle>
 

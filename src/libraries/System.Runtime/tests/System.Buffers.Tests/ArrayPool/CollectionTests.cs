@@ -111,7 +111,12 @@ namespace System.Buffers.ArrayPool.Tests
 
                 do
                 {
-                    Span<byte> native = new Span<byte>(Marshal.AllocHGlobal(AllocSize).ToPointer(), AllocSize);
+                    Span<byte> native;
+                    // SAFETY: To be audited
+                    unsafe
+                    {
+                        native = new Span<byte>(Marshal.AllocHGlobal(AllocSize).ToPointer(), AllocSize);
+                    }
 
                     // Touch the pages to bring them into physical memory
                     for (int i = 0; i < native.Length; i += PageSize)

@@ -14,6 +14,8 @@ namespace Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers;
 /// </summary>
 internal sealed class WasmFunctionTableIndexLookup
 {
+    private const ulong WasmInitialVirtualIP = 0x8000_0001;
+
     // Reader resource budget, not a limit imposed by native range registration.
     private const int MaxFunctionTableIndexRangeNodes = 65_536;
 
@@ -64,8 +66,12 @@ internal sealed class WasmFunctionTableIndexLookup
 
     // Mirrors ExecutionManager::GetWasmVirtualIPFromFunctionTableIndex.
     public bool TryGetVirtualIPBase(uint functionTableIndex, out ulong baseVirtualIP)
+        => TryGetVirtualIPBase(functionTableIndex, out baseVirtualIP, out _);
+
+    public bool TryGetVirtualIPBase(uint functionTableIndex, out ulong baseVirtualIP, out TargetPointer unwindDataAddress)
     {
         baseVirtualIP = 0;
+        unwindDataAddress = TargetPointer.Null;
         Data.FunctionTableIndexRangeSection? section = FindSection(functionTableIndex);
         if (section is null)
             return false;
@@ -89,8 +95,22 @@ internal sealed class WasmFunctionTableIndexLookup
             }
 
             baseVirtualIP = minVirtualIP.Value + _runtimeFunctions.GetBeginAddress(runtimeFunction);
+            unwindDataAddress = r2rInfo.LoadedImageBase + runtimeFunction.UnwindData;
             return true;
         }
+    }
+
+    // Mirrors ExecutionManager::IsFuncletFunctionIndex.
+    public bool TryIsFunclet(uint functionTableIndex, out bool isFunclet)
+    {
+        isFunclet = false;
+        Data.FunctionTableIndexRangeSection? section = FindSection(functionTableIndex);
+        if (section is null)
+            return false;
+
+        Data.ReadyToRunInfo r2rInfo = GetReadyToRunInfo(section);
+        isFunclet = _runtimeFunctions.IsFunclet(GetRuntimeFunction(r2rInfo, functionTableIndex - section.MinFunctionTableIndex));
+        return true;
     }
 
     public bool TryGetUnwindData(uint functionTableIndex, out TargetPointer unwindDataAddress)
@@ -106,4 +126,41 @@ internal sealed class WasmFunctionTableIndexLookup
         unwindDataAddress = new TargetPointer(r2rInfo.LoadedImageBase.Value + runtimeFunction.UnwindData);
         return true;
     }
+
+    public bool TryGetCoreLibVirtualIPBase(uint runtimeFunctionIndex, out ulong baseVirtualIP, out TargetPointer unwindDataAddress)
+    {
+        baseVirtualIP = 0;
+        unwindDataAddress = TargetPointer.Null;
+        if (!_target.TryReadGlobalPointer(Constants.Globals.FunctionTableIndexRangeList, out TargetPointer? listHeadSlot))
+            return false;
+
+        TargetPointer current = _target.ReadPointer(listHeadSlot.Value);
+        HashSet<TargetPointer> visited = new();
+        while (current != TargetPointer.Null)
+        {
+            if (visited.Count == MaxFunctionTableIndexRangeNodes || !visited.Add(current))
+                return false;
+
+            Data.FunctionTableIndexRangeSection section = _target.ProcessedData.GetOrAdd<Data.FunctionTableIndexRangeSection>(current);
+            Data.ReadyToRunInfo r2rInfo = GetReadyToRunInfo(section);
+            if (r2rInfo.MinVirtualIP is TargetPointer minVirtualIP && minVirtualIP.Value == WasmInitialVirtualIP)
+            {
+                if (runtimeFunctionIndex >= r2rInfo.NumRuntimeFunctions)
+                    return false;
+
+                Data.RuntimeFunction runtimeFunction = GetRuntimeFunction(r2rInfo, runtimeFunctionIndex);
+                if (_runtimeFunctions.IsFunclet(runtimeFunction))
+                    return false;
+
+                baseVirtualIP = minVirtualIP.Value + _runtimeFunctions.GetBeginAddress(runtimeFunction);
+                unwindDataAddress = r2rInfo.LoadedImageBase + runtimeFunction.UnwindData;
+                return true;
+            }
+
+            current = section.Next;
+        }
+
+        return false;
+    }
+
 }

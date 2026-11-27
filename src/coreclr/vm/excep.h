@@ -106,11 +106,9 @@ EXTERN_C VOID STDCALL ResetCurrentContext();
 
 void UnwindFrameChain(Thread *pThread, LPVOID pvLimitSP) noexcept;
 DWORD MapWin32FaultToCOMPlusException(EXCEPTION_RECORD *pExceptionRecord);
-DWORD ComputeEnclosingHandlerNestingLevel(IJitManager *pIJM, const METHODTOKEN& mdTok, SIZE_T offsNat);
 BOOL IsException(MethodTable *pMT);
 BOOL IsExceptionOfType(RuntimeExceptionKind reKind, OBJECTREF *pThrowable);
 BOOL IsExceptionOfType(RuntimeExceptionKind reKind, Exception *pException);
-BOOL IsUncatchable(OBJECTREF *pThrowable);
 VOID FixupOnRethrow(Thread *pCurThread, EXCEPTION_POINTERS *pExceptionPointers);
 BOOL UpdateCurrentThrowable(PEXCEPTION_RECORD pExceptionRecord);
 BOOL IsStackOverflowException(Thread* pThread, EXCEPTION_RECORD* pExceptionRecord);
@@ -120,12 +118,6 @@ BOOL ExceptionTypeOverridesStackTraceGetter(PTR_MethodTable pMT);
 
 // Removes source file names/paths and line information from a stack trace.
 void StripFileInfoFromStackTrace(SString &ssStackTrace);
-
-#ifdef _DEBUG
-// C++ EH cracking material gleaned from the debugger:
-// (DO NOT USE THIS KNOWLEDGE IN NON-DEBUG CODE!!!)
-void *DebugGetCxxException(EXCEPTION_RECORD* pExceptionRecord);
-#endif
 
 
 #ifdef _DEBUG_IMPL
@@ -143,16 +135,14 @@ BOOL InstallUnhandledExceptionFilter();
 // thing in the .text section. Reason for opting out of this approach was that BBT can move code
 // within a section, no matter where it was located - and for this case, we need the UEF code
 // at the right location to ensure that we can check the memory protection of its following
-// section so that shouldnt affect UEF's memory protection. For details, read the comment in
-// ClrVirtualProtect.
+// section so that shouldnt affect UEF's memory protection.
 //
 // Keeping UEF in its own section helps prevent code movement as BBT does not reorder
 // sections. As per my understanding of the linker, ".text" section always comes first,
 // followed by other "executable" sections (like our UEF section) and then ".data", etc.
 // The order of user defined executable sections is typically defined by the linker
 // in terms of which section it sees first. So, if there is another custom executable
-// section that comes after UEF section, it can affect the UEF section and we will
-// assert about it in ClrVirtualProtect.
+// section that comes after UEF section, it can affect the UEF section.
 #define CLR_UEF_SECTION_NAME ".CLR_UEF"
 #endif //!defined(TARGET_UNIX)
 LONG __stdcall COMUnhandledExceptionFilter(EXCEPTION_POINTERS *pExceptionInfo);
@@ -168,6 +158,11 @@ bool GenerateDump(LPCWSTR dumpName, INT dumpType, ULONG32 flags, LPSTR errorMess
 void CrashDumpAndTerminateProcess(UINT exitCode);
 
 LONG ThreadBaseExceptionAppDomainFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID pvParam);
+
+#ifndef DACCESS_COMPILE
+struct NotifyOfCHFFilterWrapperParam { void *pFrame; };
+LONG NotifyOfCHFFilterWrapper(EXCEPTION_POINTERS *pExceptionInfo, PVOID pNotifyOfCHFFilterWrapperParam);
+#endif // !DACCESS_COMPILE
 
 void STDMETHODCALLTYPE DefaultCatchHandler(PEXCEPTION_POINTERS pExceptionInfo,
                                            OBJECTREF *Throwable = NULL,
@@ -288,7 +283,6 @@ ULONG GetExceptionMessage(OBJECTREF throwable,
 void GetExceptionMessage(OBJECTREF throwable, SString &result);
 STRINGREF GetExceptionMessage(OBJECTREF throwable);
 HRESULT GetExceptionHResult(OBJECTREF throwable);
-DWORD GetExceptionXCode(OBJECTREF throwable);
 
 void ExceptionPreserveStackTrace(OBJECTREF throwable);
 
@@ -617,8 +611,6 @@ LONG WatsonLastChance(
     EXCEPTION_POINTERS  *pExceptionInfo,
     TypeOfReportedError tore);
 
-bool DebugIsEECxxException(EXCEPTION_RECORD* pExceptionRecord);
-
 inline void CopyOSContext(T_CONTEXT* pDest, T_CONTEXT* pSrc)
 {
     memcpyNoGCRefs(pDest, pSrc, sizeof(T_CONTEXT));
@@ -628,11 +620,6 @@ inline void CopyOSContext(T_CONTEXT* pDest, T_CONTEXT* pSrc)
 }
 
 void SaveCurrentExceptionInfo(PEXCEPTION_RECORD pRecord, PT_CONTEXT pContext);
-
-// See implementation for detailed comments in excep.cpp
-LONG ReflectionInvocationExceptionFilter(
-    EXCEPTION_POINTERS *pExceptionInfo, // the pExceptionInfo passed to a filter function.
-    PVOID               pParam);
 
 #ifndef DACCESS_COMPILE
 // exception filter invoked for unhandled exceptions on the entry point thread (thread 0)

@@ -2,16 +2,19 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices;
 using System.Text;
 using Antlr4.Runtime;
+using LabelHandle = Microsoft.DotNet.ILAssembler.MethodBodyWriter.Label;
 
-namespace ILAssembler;
+namespace Microsoft.DotNet.ILAssembler;
 
 internal sealed partial class GrammarActions
 {
@@ -64,9 +67,9 @@ internal sealed partial class GrammarActions
         }
         else
         {
-            for (int i = method.LocalsScopes.Count - 1; i >= 0; i--)
+            for (int i = method.OpenScopes.Count - 1; i >= 0; i--)
             {
-                if (method.LocalsScopes[i].TryGetValue(variableName, out int localIndex))
+                if (method.OpenScopes[i].Names.TryGetValue(variableName, out int localIndex))
                 {
                     index = localIndex;
                     break;
@@ -95,7 +98,7 @@ internal sealed partial class GrammarActions
         int value = ParseInt32(valueToken);
         if (instruction.OpCode is ILOpCode.Ldc_i4 or ILOpCode.Ldc_i4_s)
         {
-            instruction.Method.Definition.MethodBody.LoadConstantI4(value);
+            instruction.Method.Definition.MethodBody.LoadConstantI4(instruction.OpCode, value, _options.Optimize);
             return;
         }
 
@@ -141,17 +144,9 @@ internal sealed partial class GrammarActions
             return;
         }
 
-        InstructionEncoder body = instruction.Method.Definition.MethodBody;
         int offset = ParseInt32(offsetToken);
-        body.OpCode(instruction.OpCode);
-        if (instruction.OpCode.GetBranchOperandSize() == 1)
-        {
-            body.CodeBuilder.WriteSByte(unchecked((sbyte)offset));
-        }
-        else
-        {
-            body.CodeBuilder.WriteInt32(offset);
-        }
+        instruction.Method.Definition.MethodBody.Branch(instruction.OpCode, offset,
+            _options.Optimize, Location.From(opcodeToken, _documents));
     }
 
     internal void EmitBranchLabelInstruction(IToken opcodeToken, IToken labelToken)
@@ -165,7 +160,8 @@ internal sealed partial class GrammarActions
         string labelName = ParseIdentifier(labelToken);
         LabelHandle label = GetOrCreateMethodLabel(method, labelName, opcodeToken);
 
-        method.Definition.MethodBody.Branch(instruction.OpCode, label);
+        method.Definition.MethodBody.Branch(instruction.OpCode, label,
+            _options.Optimize, Location.From(opcodeToken, _documents));
     }
 
     internal void EmitRawFloatingInstruction(
@@ -207,7 +203,7 @@ internal sealed partial class GrammarActions
             return;
         }
 
-        string value = MemoryMarshal.Cast<byte, char>(bytes.AsSpan()).ToString();
+        string value = ReadUtf16String(bytes.AsSpan());
         instruction.Method.Definition.MethodBody.LoadString(_metadataBuilder.GetOrAddUserString(value));
     }
 
@@ -231,7 +227,26 @@ internal sealed partial class GrammarActions
 
         Span<byte> utf8Bytes = new byte[byteCount];
         Encoding.UTF8.GetBytes(value, utf8Bytes);
-        EmitStringInstruction(opcodeToken, new string(MemoryMarshal.Cast<byte, char>(utf8Bytes)));
+        string text = ReadUtf16String(utf8Bytes);
+        EmitStringInstruction(opcodeToken, text);
+    }
+
+    private static string ReadUtf16String(ReadOnlySpan<byte> bytes)
+    {
+        ReadOnlySpan<char> chars = MemoryMarshal.Cast<byte, char>(bytes);
+        if (!BitConverter.IsLittleEndian)
+        {
+            // IL string bytes are little-endian, regardless of the assembler's host.
+            char[] swapped = chars.ToArray();
+            for (int i = 0; i < swapped.Length; i++)
+            {
+                swapped[i] = (char)BinaryPrimitives.ReverseEndianness((ushort)swapped[i]);
+            }
+
+            chars = swapped;
+        }
+
+        return chars.ToString();
     }
 
     internal void EmitRawTokenInstruction(IToken opcodeToken, IToken valueToken)
@@ -258,12 +273,31 @@ internal sealed partial class GrammarActions
         }
     }
 
-    internal void SetEntryPoint()
+    internal void SetEntryPoint(IToken directiveToken)
     {
-        if (_currentMethod is not null)
+        if (_currentMethod is null)
         {
-            _entityRegistry.EntryPoint = _currentMethod.Definition;
+            return;
         }
+
+        if (_entityRegistry.EntryPoint is not null)
+        {
+            ReportError(
+                DiagnosticIds.DuplicateEntryPoint,
+                DiagnosticMessageTemplates.DuplicateEntryPoint,
+                directiveToken);
+            return;
+        }
+
+        if (!_currentMethod.Definition.MethodAttributes.HasFlag(MethodAttributes.Static))
+        {
+            ReportError(
+                DiagnosticIds.InstanceEntryPoint,
+                DiagnosticMessageTemplates.InstanceEntryPoint,
+                directiveToken);
+        }
+
+        _entityRegistry.EntryPoint = _currentMethod.Definition;
     }
 
     internal void SetZeroInit()
@@ -318,7 +352,7 @@ internal sealed partial class GrammarActions
         {
             if (isOffset)
             {
-                labels.Add((method.Definition.MethodBody.DefineLabel(), ParseInt32(token)));
+                labels.Add((default, ParseInt32(token)));
                 continue;
             }
 
@@ -331,29 +365,15 @@ internal sealed partial class GrammarActions
             labels.Add((label, null));
         }
 
-        if (labels.Count > 0)
-        {
-            SwitchInstructionEncoder switchEncoder = method.Definition.MethodBody.Switch(labels.Count);
-            foreach ((LabelHandle label, _) in labels)
-            {
-                switchEncoder.Branch(label);
-            }
-        }
-        else
-        {
-            method.Definition.MethodBody.OpCode(ILOpCode.Switch);
-            method.Definition.MethodBody.CodeBuilder.WriteInt32(0);
-        }
-
-        foreach ((LabelHandle label, int? offset) in labels)
-        {
-            if (offset is int value)
-            {
-                method.Definition.MethodBody.MarkLabel(label, method.Definition.MethodBody.Offset + value);
-            }
-        }
+        method.Definition.MethodBody.Switch(labels, Location.From(builder.OpcodeToken, _documents));
     }
 
+    /// <summary>
+    /// Starts emitting an instruction into the current method: records its sequence point at the current IL offset
+    /// (<see cref="RecordSequencePoint"/>) and parses its opcode. Every instruction passes through here before its
+    /// bytes are written, and the caller must write them.
+    /// </summary>
+    /// <returns>The current method and the opcode, or <see langword="null"/> outside a method body.</returns>
     private (CurrentMethodContext Method, ILOpCode OpCode)? StartInstruction(IToken opcodeToken)
     {
         if (_currentMethod is not { } method)
@@ -362,21 +382,12 @@ internal sealed partial class GrammarActions
         }
 
         ILOpCode opcode = ParseOpCodeFromToken(opcodeToken);
+        RecordSequencePoint(method, opcodeToken);
         return (method, opcode);
     }
 
-    private static void WriteVariableIndex(CurrentMethodContext method, ILOpCode opcode, int index)
-    {
-        method.Definition.MethodBody.OpCode(opcode);
-        if (opcode.ToString().EndsWith("_s", StringComparison.Ordinal))
-        {
-            method.Definition.MethodBody.CodeBuilder.WriteByte((byte)index);
-        }
-        else
-        {
-            method.Definition.MethodBody.CodeBuilder.WriteInt32(index);
-        }
-    }
+    private void WriteVariableIndex(CurrentMethodContext method, ILOpCode opcode, int index)
+        => method.Definition.MethodBody.Variable(opcode, index, _options.Optimize);
 
     private static void WriteFloatingInstruction(CurrentMethodContext method, ILOpCode opcode, double value)
     {
@@ -393,21 +404,21 @@ internal sealed partial class GrammarActions
     private static ILOpCode ParseOpCodeFromToken(IToken token)
     {
         string text = token.Text.TrimEnd('.');
-        if (text == "unused")
+        return text switch
         {
-            return ILOpCode.Unused;
-        }
-
-        string normalized = text.Replace('.', '_');
-        normalized = normalized switch
-        {
-            "ldelem_u8" => "ldelem_i8",
-            "ldind_u8" => "ldind_i8",
-            "endfault" => "endfinally",
-            _ => normalized
+            "unused" => ILOpCode.Unused,
+            "no" => ILOpCode.No,
+            "brnull" or "brzero" => ILOpCode.Brfalse,
+            "brnull.s" or "brzero.s" => ILOpCode.Brfalse_s,
+            "brinst" => ILOpCode.Brtrue,
+            "brinst.s" => ILOpCode.Brtrue_s,
+            "ldelem.u8" => ILOpCode.Ldelem_i8,
+            "ldind.u8" => ILOpCode.Ldind_i8,
+            "ldelem.any" => ILOpCode.Ldelem,
+            "stelem.any" => ILOpCode.Stelem,
+            "endfault" => ILOpCode.Endfinally,
+            _ => Enum.Parse<ILOpCode>(text.Replace('.', '_'), ignoreCase: true),
         };
-
-        return (ILOpCode)Enum.Parse(typeof(ILOpCode), normalized, ignoreCase: true);
     }
 
     internal EntityRegistry.EntityBase ResolveMetadataToken(CILParser.MdtokenContext context)

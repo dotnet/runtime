@@ -183,10 +183,8 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Theory]
-        [InlineData("$['$type']", """{ "$type" : "derivedClass1", "Number" : 42 }""")]
         [InlineData("$._case", """{ "_case" : "derivedClass1", "_case" : "derivedClass1", "Number" : 42 }""")]
         [InlineData("$._case", """{ "_case" : "derivedClass1", "Number" : 42, "_case" : "derivedClass1"}""")]
-        [InlineData("$['$type']", """{ "_case" : "derivedClass1", "Number" : 42, "$type" : "derivedClass1"}""")]
         [InlineData("$['$id']", """{ "_case" : "derivedClass1", "Number" : 42, "$id" : "referenceId"}""")]
         [InlineData("$['$id']", """{ "_case" : "derivedClass1", "" : 42, "$id" : "referenceId"}""")]
         [InlineData("$['$values']", """{ "_case" : "derivedClass1", "Number" : 42, "$values" : [] }""")]
@@ -260,10 +258,8 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Theory]
-        [InlineData("$['$type']", """{ "$type" : "derivedClass1", "Number" : 42 }""")]
         [InlineData("$._case", """{ "_case" : "derivedClass1", "_case" : "derivedClass1", "Number" : 42 }""")]
         [InlineData("$._case", """{ "_case" : "derivedClass1", "Number" : 42, "_case" : "derivedClass1"}""")]
-        [InlineData("$['$type']", """{ "_case" : "derivedClass1", "Number" : 42, "$type" : "derivedClass1"}""")]
         [InlineData("$['$id']", """{ "_case" : "derivedClass1", "Number" : 42, "$id" : "referenceId"}""")]
         [InlineData("$['$id']", """{ "_case" : "derivedClass1", "" : 42, "$id" : "referenceId"}""")]
         [InlineData("$['$values']", """{ "_case" : "derivedClass1", "Number" : 42, "$values" : [] }""")]
@@ -279,6 +275,40 @@ namespace System.Text.Json.Serialization.Tests
         {
             JsonException exception = await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<PolymorphicClass>(json, PolymorphicClass.CustomConfigWithBaseTypeFallback));
             Assert.Equal(expectedJsonPath, exception.Path);
+        }
+
+        [Theory]
+        [InlineData("""{"$type":"ordinary","Number":42}""")]
+        [InlineData("""{"_case":"derivedClass1","$type":"ordinary","Number":42}""")]
+        [InlineData("""{"_case":"derivedClass1","Number":42,"$type":"ordinary"}""")]
+        [InlineData("""{"_case":"derivedClass1","Number":42,"\u0024type":"ordinary"}""")]
+        public async Task PolymorphicClass_CustomDiscriminator_DefaultDiscriminatorIsNotMetadata(string json)
+        {
+            foreach (bool allowOutOfOrderMetadata in new[] { false, true })
+            {
+                JsonSerializerOptions options = new(PolymorphicClass.CustomConfigWithBaseTypeFallback)
+                {
+                    AllowOutOfOrderMetadataProperties = allowOutOfOrderMetadata
+                };
+                PolymorphicClass result = await Serializer.DeserializeWrapper<PolymorphicClass>(json, options);
+                Assert.Equal(42, result.Number);
+                Assert.Equal(json.Contains("_case") ? typeof(PolymorphicClass.DerivedClass1_TypeDiscriminator) : typeof(PolymorphicClass), result.GetType());
+            }
+        }
+
+        [Theory]
+        [InlineData("""{"$type":"derivedClass1","$custom":"ordinary","Number":42}""")]
+        [InlineData("""{"$type":"derivedClass1","Number":42,"$custom":"ordinary"}""")]
+        [InlineData("""{"$type":"derivedClass1","Number":42,"\u0024custom":"ordinary"}""")]
+        public async Task PolymorphicClass_NonMetadataPropertyWithLeadingDollarSignIsAccepted(string json)
+        {
+            foreach (bool allowOutOfOrderMetadata in new[] { false, true })
+            {
+                JsonSerializerOptions options = new() { AllowOutOfOrderMetadataProperties = allowOutOfOrderMetadata };
+                PolymorphicClass result = await Serializer.DeserializeWrapper<PolymorphicClass>(json, options);
+                Assert.IsType<PolymorphicClass.DerivedClass1_TypeDiscriminator>(result);
+                Assert.Equal(42, result.Number);
+            }
         }
 
         [Theory]

@@ -136,15 +136,6 @@ namespace System.Threading
 
         #region Public Wait/Pulse methods
 
-        [UnsupportedOSPlatform("browser")]
-        public static bool Wait(object obj, int millisecondsTimeout)
-        {
-            ArgumentNullException.ThrowIfNull(obj);
-            RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
-
-            return GetLockObject(obj).Wait(millisecondsTimeout, obj);
-        }
-
         public static void Pulse(object obj)
         {
             ArgumentNullException.ThrowIfNull(obj);

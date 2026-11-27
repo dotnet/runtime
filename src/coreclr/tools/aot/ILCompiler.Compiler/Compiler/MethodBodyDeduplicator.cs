@@ -3,10 +3,12 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 using ILCompiler.DependencyAnalysis;
 
 using Internal.IL.Stubs;
+using Internal.JitInterface;
 using Internal.TypeSystem;
 
 namespace ILCompiler
@@ -50,7 +52,7 @@ namespace ILCompiler
                 if (!factory.GetSymbolAlternateName(body, out _).IsNull)
                     continue;
 
-                var key = new MethodInternKey(body, factory);
+                var key = new MethodInternKey(body, factory, previousSymbolRemapping);
                 if (methodHash.TryGetValue(key, out MethodInternKey found))
                 {
                     symbolRemapping.TryAdd(body, found.Method);
@@ -64,17 +66,54 @@ namespace ILCompiler
             _previousHashCount = methodHash.Count;
         }
 
+        private static bool IsSelfFrameIdentityRelocation(Relocation reloc, ISymbolNode owner)
+            => owner is not null
+                && reloc.RelocType == RelocType.WASM_METHOD_FRAME_IDENTITY_SLEB
+                && reloc.Target == owner;
+
         private sealed class MethodInternKey
         {
             public IMethodBodyNode Method { get; }
             public int HashCode { get; }
 
-            public MethodInternKey(IMethodBodyNode node, NodeFactory factory)
+            public MethodInternKey(IMethodBodyNode node, NodeFactory factory, Dictionary<ISymbolNode, ISymbolNode> interner)
             {
                 ObjectNode.ObjectData data = ((ObjectNode)node).GetData(factory, relocsOnly: false);
 
                 var hashCode = default(HashCode);
                 hashCode.AddBytes(data.Data);
+
+                if (factory.Target.IsWasm)
+                    hashCode.Add(WasmLowering.GetSignature(node.Method).FuncType);
+
+                // Hash relocations consistently with MethodInternComparer.AreSame so that bodies that only differ
+                // in their relocation targets (e.g. instantiations over different struct state machines)
+                // don't all end up in the same bucket.
+                foreach (Relocation reloc in data.Relocs)
+                {
+                    hashCode.Add((int)reloc.RelocType);
+                    hashCode.Add(reloc.Offset);
+
+                    // The folded body will use the canonical method's frame identity.
+                    if (IsSelfFrameIdentityRelocation(reloc, node))
+                        continue;
+
+                    ISymbolNode target = reloc.Target;
+                    if (target is MethodReadOnlyDataNode rodata)
+                    {
+                        // AreSame considers read-only data nodes with the same contents equal
+                        hashCode.AddBytes(rodata.GetData(factory, relocsOnly: false).Data);
+                    }
+                    else
+                    {
+                        // AreSame considers targets equal if they got interned to the same body, so
+                        // hash the body this target maps to.
+                        if (interner != null && interner.TryGetValue(target, out ISymbolNode internedTarget))
+                            target = internedTarget;
+
+                        hashCode.Add(RuntimeHelpers.GetHashCode(target));
+                    }
+                }
 
                 var nodeWithCodeInfo = (INodeWithCodeInfo)node;
 
@@ -106,7 +145,10 @@ namespace ILCompiler
 
             private static bool AreSame(ReadOnlySpan<byte> o1, ReadOnlySpan<byte> o2) => o1.SequenceEqual(o2);
 
-            private bool AreSame(ObjectNode.ObjectData o1, ObjectNode.ObjectData o2)
+            private ISymbolNode GetRepresentative(ISymbolNode node)
+                => _interner.TryGetValue(node, out ISymbolNode representative) ? representative : node;
+
+            private bool AreSame(ObjectNode.ObjectData o1, ObjectNode.ObjectData o2, ISymbolNode owner1 = null, ISymbolNode owner2 = null)
             {
                 if (AreSame(o1.Data, o2.Data) && o1.Relocs.Length == o2.Relocs.Length)
                 {
@@ -120,6 +162,16 @@ namespace ILCompiler
                             return false;
                         }
 
+                        bool selfFrameIdentity1 = IsSelfFrameIdentityRelocation(r1, owner1);
+                        bool selfFrameIdentity2 = IsSelfFrameIdentityRelocation(r2, owner2);
+                        if (selfFrameIdentity1 || selfFrameIdentity2)
+                        {
+                            if (selfFrameIdentity1 != selfFrameIdentity2)
+                                return false;
+
+                            continue;
+                        }
+
                         if (r1.Target != r2.Target)
                         {
                             if (r1.Target is MethodReadOnlyDataNode rodata1
@@ -129,10 +181,10 @@ namespace ILCompiler
                                 // We can consider same MethodReadOnlyDataNode the same.
                             }
                             else if (_interner != null &&
-                                ((_interner.TryGetValue(r1.Target, out ISymbolNode t1) && r2.Target == t1)
-                                || (_interner.TryGetValue(r2.Target, out ISymbolNode t2) && r1.Target == t2)))
+                                GetRepresentative(r1.Target) == GetRepresentative(r2.Target))
                             {
-                                // These got already interned
+                                // Both targets were already interned to the same body. This covers one
+                                // being folded into the other as well as both being folded into a third.
                             }
                             else
                             {
@@ -156,10 +208,15 @@ namespace ILCompiler
                     && a.Method.Method.GetTypicalMethodDefinition() != b.Method.Method.GetTypicalMethodDefinition())
                     return false;
 
+                // Identical WASM bodies can still have different types when some parameters are unused.
+                if (_factory.Target.IsWasm
+                    && !WasmLowering.GetSignature(a.Method.Method).FuncType.Equals(WasmLowering.GetSignature(b.Method.Method).FuncType))
+                    return false;
+
                 ObjectNode.ObjectData o1data = ((ObjectNode)a.Method).GetData(_factory, relocsOnly: false);
                 ObjectNode.ObjectData o2data = ((ObjectNode)b.Method).GetData(_factory, relocsOnly: false);
 
-                if (!AreSame(o1data, o2data))
+                if (!AreSame(o1data, o2data, a.Method, b.Method))
                     return false;
 
                 var o1codeinfo = (INodeWithCodeInfo)a.Method;

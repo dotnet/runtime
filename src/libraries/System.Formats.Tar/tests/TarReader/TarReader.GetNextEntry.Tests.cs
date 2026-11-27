@@ -44,8 +44,7 @@ namespace System.Formats.Tar.Tests
         public async Task MalformedArchive_HeaderSize(bool async)
         {
             using MemoryStream malformed = new MemoryStream();
-            byte[] buffer = new byte[512]; // Minimum length of any header
-            Array.Fill<byte>(buffer, 0x1);
+            byte[] buffer = Array.CreateFilled<byte>(512, 0x1); // Minimum length of any header
             malformed.Write(buffer);
             malformed.Seek(0, SeekOrigin.Begin);
 
@@ -81,6 +80,22 @@ namespace System.Formats.Tar.Tests
 
         [Theory]
         [MemberData(nameof(GetBooleanData))]
+        public async Task MalformedArchive_SizeFieldExceedsStreamLength_NoCopyData(bool async)
+        {
+            using MemoryStream malformed = new MemoryStream();
+            // Header declares a huge size, but no actual data follows it in the stream.
+            WriteRawTarHeader(malformed, "file.txt", mode: 0, uid: 0, gid: 0,
+                size: long.MaxValue / 512, mtime: 0, typeflag: '0', linkname: string.Empty);
+            malformed.Seek(0, SeekOrigin.Begin);
+
+            await using TarReaderHolder readerHolder = CreateTarReader(malformed, async, leaveOpen: false);
+            TarReader reader = readerHolder;
+
+            await Assert.ThrowsAsync<InvalidDataException>(() => GetNextEntry(reader, async: async, copyData: false));
+        }
+
+        [Theory]
+        [MemberData(nameof(GetBooleanData))]
         public async Task LongEndMarkers_DoNotAdvanceStream(bool async)
         {
             using MemoryStream archive = new MemoryStream();
@@ -92,8 +107,7 @@ namespace System.Formats.Tar.Tests
                 await WriteEntry(writer, entry, async);
             }
 
-            byte[] buffer = new byte[2048]; // Four additional end markers (512 each)
-            Array.Fill<byte>(buffer, 0x0);
+            byte[] buffer = Array.CreateFilled<byte>(2048, 0x0); // Four additional end markers (512 each)
             archive.Write(buffer);
             archive.Seek(0, SeekOrigin.Begin);
 
@@ -337,8 +351,7 @@ namespace System.Formats.Tar.Tests
         [InlineData(1023, true, true)]
         public async Task BlockAlignmentPadding_DoesNotAffectNextEntries(int contentSize, bool copyData, bool async)
         {
-            byte[] fileContents = new byte[contentSize];
-            Array.Fill<byte>(fileContents, 0x1);
+            byte[] fileContents = Array.CreateFilled<byte>(contentSize, 0x1);
 
             using MemoryStream archive = new MemoryStream();
             {
@@ -544,9 +557,8 @@ namespace System.Formats.Tar.Tests
         [MemberData(nameof(EASizeOverrideData))]
         public void PaxReader_EASizeOverridesHeaderSize(int actualDataSize, long headerSize, long eaSize)
         {
-            byte[] actualData = new byte[actualDataSize];
-            Array.Fill<byte>(actualData, (byte)'X');
-
+            byte[] actualData = Array.CreateFilled(actualDataSize, (byte)'X');
+            
             byte[] archive = BuildRawPaxArchiveWithSizeOverride("file.bin", "file.bin", actualData, headerSize, eaSize);
 
             using var stream = new MemoryStream(archive);

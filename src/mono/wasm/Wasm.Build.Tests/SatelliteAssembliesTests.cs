@@ -30,18 +30,12 @@ namespace Wasm.Build.Tests
                     .UnwrapItemsAsArrays();
 
         public static IEnumerable<object?[]> MainAssemblyTestDataForCurrentRuntime()
-        {
-            IEnumerable<object?[]> data = SatelliteAssemblyTestData(aot: false, relinking: false)
+            => SatelliteAssemblyTestData(aot: false, relinking: false)
                 .Concat(SatelliteAssemblyTestData(aot: false, relinking: true));
-            return IsCoreClrRuntime ? data : data.Concat(SatelliteAssemblyTestData(aot: true, relinking: false));
-        }
 
         public static IEnumerable<object?[]> ProjectReferenceTestDataForCurrentRuntime()
-        {
-            IEnumerable<object?[]> data = SatelliteAssemblyTestData(aot: false, relinking: false)
+            => SatelliteAssemblyTestData(aot: false, relinking: false)
                 .Concat(SatelliteAssemblyTestData(aot: false, relinking: true));
-            return IsCoreClrRuntime ? data : data.Concat(SatelliteAssemblyTestData(aot: true, relinking: true));
-        }
 
         [Theory]
         [MemberData(nameof(MainAssemblyTestDataForCurrentRuntime))]
@@ -91,9 +85,13 @@ namespace Wasm.Build.Tests
                 Path.Combine(_projectDir, "..", "LibraryWithResources"));
             CreateProgramForCultureTest("LibraryWithResources.resx.words", "LibraryWithResources.Class1");
             // move src/mono/wasm/testassets/SatelliteAssemblyFromProjectRef/LibraryWithResources to the test project
-            // The root D.B* should be empty
-            File.WriteAllText(Path.Combine(_projectDir, "..", "Directory.Build.props"), "<Project />");
-            File.WriteAllText(Path.Combine(_projectDir, "..", "Directory.Build.targets"), "<Project />");
+            // Only runtime selection belongs in the root props; targets use the non-Wasm targeting-pack setup.
+            File.WriteAllText(
+                Path.Combine(_projectDir, "..", "Directory.Build.props"),
+                "<Project><PropertyGroup><UseMonoRuntime>false</UseMonoRuntime></PropertyGroup></Project>");
+            File.Copy(
+                Path.Combine(BuildEnvironment.TestDataPath, "Local.Directory.Build.targets"),
+                Path.Combine(_projectDir, "..", "Directory.Build.targets"));
             // NativeFilesType dotnetWasmFileType = nativeRelink ? NativeFilesType.Relinked : aot ? NativeFilesType.AOT : NativeFilesType.FromRuntimePack;
             
             PublishProject(info, config, new PublishOptions(AOT: aot), isNativeBuild: nativeRelink);

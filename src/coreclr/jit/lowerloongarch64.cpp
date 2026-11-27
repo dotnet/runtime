@@ -294,7 +294,7 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
     assert(blkNode->OperIs(GT_STORE_BLK) && (blkNode->gtBlkOpKind == GenTreeBlk::BlkOpKindUnroll));
     assert(size < INT32_MAX);
 
-    if (addr->OperIs(GT_LCL_ADDR) && IsContainableLclAddr(addr->AsLclFld(), size))
+    if (addr->OperIs(GT_LCL_ADDR) && IsContainableLclAddr(addr->AsLclFld(), ValueSize(size)))
     {
         addr->SetContained();
         return;
@@ -307,6 +307,13 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
 
     GenTreeIntCon* offsetNode = addr->AsOp()->gtGetOp2()->AsIntCon();
     ssize_t        offset     = offsetNode->IconValue();
+
+    // A constant that needs a relocation, such as a frozen object's handle, cannot be folded into the
+    // address mode: the offset is emitted as a plain immediate, without the relocation.
+    if (offsetNode->ImmedValNeedsReloc(m_compiler))
+    {
+        return;
+    }
 
     // TODO-LoongArch64: not including the ldptr and SIMD offset which not used right now.
     if (!emitter::isValidSimm12(offset) || !emitter::isValidSimm12(offset + static_cast<int>(size)))
@@ -373,7 +380,7 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgNode)
 
         // Codegen supports containment of local addresses under BLKs.
         if (src->OperIs(GT_BLK) && src->AsBlk()->Addr()->IsLclVarAddr() &&
-            IsContainableLclAddr(src->AsBlk()->Addr()->AsLclFld(), src->AsBlk()->Size()))
+            IsContainableLclAddr(src->AsBlk()->Addr()->AsLclFld(), src->AsBlk()->ValueSize()))
         {
             // TODO-LOONGARCH64-CQ: support containment of LCL_ADDR with non-zero offset too.
             MakeSrcContained(src, src->AsBlk()->Addr());
@@ -582,7 +589,7 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
     {
         MakeSrcContained(indirNode, addr);
     }
-    else if (addr->OperIs(GT_LCL_ADDR) && IsContainableLclAddr(addr->AsLclFld(), indirNode->Size()))
+    else if (addr->OperIs(GT_LCL_ADDR) && IsContainableLclAddr(addr->AsLclFld(), indirNode->ValueSize()))
     {
         // These nodes go into an addr mode:
         // - GT_LCL_ADDR is a stack addr mode.
@@ -663,7 +670,8 @@ void Lowering::ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc) const
     assert(storeLoc->OperIsLocalStore());
     GenTree* op1 = storeLoc->gtGetOp1();
 
-    if (op1->OperIs(GT_BITCAST))
+    // A small store implicitly truncates its source, so it cannot store directly from the other type.
+    if (op1->OperIs(GT_BITCAST) && !varTypeIsSmall(storeLoc))
     {
         // If we know that the source of the bitcast will be in a register, then we can make
         // the bitcast itself contained. This will allow us to store directly from the other

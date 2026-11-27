@@ -559,53 +559,18 @@ typedef unsigned int ALG_ID;
 
 
 #ifdef __cplusplus
-/*
-  Safe CRT functions are not available (yet) on all platforms, so we use our own implementations from safecrt.h.
-*/
-#define _CRT_ALTERNATIVE_INLINES
-#define _SAFECRT_NO_INCLUDES 1
-#define _SAFECRT_USE_INLINES 1
-#define _SAFECRT_SET_ERRNO 0
-#define _SAFECRT_DEFINE_MBS_FUNCTIONS 0
-#define _SAFECRT_DEFINE_TCS_MACROS 1
-#include "safecrt.h"
 #include "specstrings.h"
 
 /*
 The wrappers below are simple implementations that may not be as robust as complete functions in the Secure CRT library.
-Remember to fix the errcode definition in safecrt.h.
 */
 
 #define fopen_s _fopen_unsafe
 
-#define _vscprintf _vscprintf_unsafe
 
 extern "C++" {
 
 #include <safemath.h>
-
-inline int __cdecl _vscprintf_unsafe(const char *_Format, va_list _ArgList)
-{
-    int guess = 10;
-
-    while (true)
-    {
-        char *buf = (char *)malloc(guess * sizeof(char));
-        if(buf == nullptr)
-            return 0;
-
-        va_list argListCopy;
-        va_copy(argListCopy, _ArgList);
-        int ret = _vsnprintf_s(buf, guess, _TRUNCATE, _Format, argListCopy);
-        free(buf);
-        va_end(argListCopy);
-
-        if ((ret != -1) && (ret < guess))
-            return ret;
-
-        guess *= 2;
-    }
-}
 
 inline errno_t __cdecl _fopen_unsafe(FILE * *ff, const char *fileName, const char *mode)
 {
@@ -919,22 +884,6 @@ typedef struct _DISPATCHER_CONTEXT {
     PEXCEPTION_ROUTINE LanguageHandler;
     PVOID HandlerData;
     PVOID HistoryTable;
-} DISPATCHER_CONTEXT, *PDISPATCHER_CONTEXT;
-
-#elif defined(HOST_X86)
-
-typedef struct _DISPATCHER_CONTEXT {
-    DWORD ControlPc;
-    DWORD ImageBase;
-    PRUNTIME_FUNCTION FunctionEntry;
-    DWORD EstablisherFrame;
-    DWORD TargetIp;
-    PKNONVOLATILE_CONTEXT CurrentNonVolatileContextRecord;
-    PCONTEXT ContextRecord;
-    PEXCEPTION_ROUTINE LanguageHandler;
-    PVOID HandlerData;
-    PVOID HistoryTable;
-    BOOLEAN ControlPcIsUnwound;
 } DISPATCHER_CONTEXT, *PDISPATCHER_CONTEXT;
 
 #elif defined(HOST_S390X)

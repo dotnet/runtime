@@ -1,14 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 // ===========================================================================
 // File: ReadyToRunInfo.cpp
-//
-
 //
 // Runtime support for Ready to Run
 // ===========================================================================
 
 #include "common.h"
+#include <minipal/thread.h>
 
 #include "dbginterface.h"
 #include "versionresilienthashcode.h"
@@ -420,15 +420,15 @@ static void LogR2r(const char *msg, PEAssembly *pPEAssembly)
     if (r2rLogFile == (FILE *)(-1))
     {
         // Initialize Ready to Run logging. Any errors cause logging to be disabled.
-        NewArrayHolder<WCHAR> wszReadyToRunLogFile;
+        WStringHolder wszReadyToRunLogFile;
         if (SUCCEEDED(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ReadyToRunLogFile, &wszReadyToRunLogFile)) && wszReadyToRunLogFile)
         {
             // Append process ID to the log file name, so multiple processes can log at the same time.
             StackSString fullname;
-            fullname.Append(wszReadyToRunLogFile.GetValue());
+            fullname.Append(wszReadyToRunLogFile);
 
             WCHAR pidSuffix[ARRAY_SIZE(".") + MaxUnsigned32BitDecString] = W(".");
-            DWORD pid = GetCurrentProcessId();
+            DWORD pid = minipal_get_current_process_id();
             FormatInteger(pidSuffix + 1, ARRAY_SIZE(pidSuffix) - 1, "%u", pid);
             fullname.Append(pidSuffix);
             if (fopen_lp(&r2rLogFile, fullname.GetUnicode(), W("w")) != 0)
@@ -649,12 +649,36 @@ PTR_ReadyToRunInfo ReadyToRunInfo::Initialize(Module * pModule, AllocMemTracker 
     }
 #endif // FEATURE_DYNAMIC_CODE_COMPILED
 
+    // Single-threaded runtimes lay out [ThreadStatic] fields as regular statics, so the image's static field
+    // layout is only valid if it was compiled for the same threading model.
+#ifdef FEATURE_MULTITHREADING
+    if ((pHeader->CoreHeader.Flags & READYTORUN_FLAG_SINGLE_THREADED) != 0)
+    {
+        DoLog("Ready to Run disabled - image was compiled for a single-threaded runtime");
+        return NULL;
+    }
+#else
+    if ((pHeader->CoreHeader.Flags & READYTORUN_FLAG_SINGLE_THREADED) == 0)
+    {
+        DoLog("Ready to Run disabled - image was not compiled for a single-threaded runtime");
+        return NULL;
+    }
+#endif // FEATURE_MULTITHREADING
+
     // Ignore the content if the image major version is higher or lower than the major version currently supported by the runtime
     if (pHeader->MajorVersion < MINIMUM_READYTORUN_MAJOR_VERSION || pHeader->MajorVersion > READYTORUN_MAJOR_VERSION)
     {
         DoLog("Ready to Run disabled - unsupported header version");
         return NULL;
     }
+
+#ifdef TARGET_WASM
+    if (pHeader->MajorVersion < 32)
+    {
+        DoLog("Ready to Run disabled - unsupported Wasm frame identity encoding");
+        return NULL;
+    }
+#endif // TARGET_WASM
 
     LoaderHeap *pHeap = pModule->GetLoaderAllocator()->GetHighFrequencyHeap();
 
@@ -857,7 +881,7 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
                 const GUID *componentMvids = (const GUID *)m_pComposite->GetLayout()->GetDirectoryData(pComponentAssemblyMvids);
                 // Take load lock so that DeclareDependencyOnMvid can be called
 
-                AppDomain::LoadLockHolder lock(AppDomain::GetCurrentDomain(), pNativeImage == NULL); // LoadLock is already held for composite images
+                AppDomain::LoadLockHolder lock = AppDomain::GetCurrentDomain()->TakeLoadLock(pNativeImage == NULL); // LoadLock is already held for composite images
                 AppDomain::GetCurrentDomain()->AssertLoadLockHeld();
 
                 while (pNativeMDImport->EnumNext(&assemblyEnum, &assemblyRef))
@@ -1056,6 +1080,41 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
     {
         pModule->m_pMethodIsGenericMap = (ReadyToRun_MethodIsGenericMap*)m_pComposite->GetImage()->GetDirectoryData(methodIsGenericMap);
     }
+
+#ifdef FEATURE_READYTORUN_AUXILIARY_MODULES
+    if (m_isComponentAssembly)
+        m_pAuxiliaryModuleMetadata = m_pCompositeInfo->GetAuxiliaryModuleMetadata();
+
+    IMAGE_DATA_DIRECTORY *auxiliaryModuleMetadata = m_component.FindSection(ReadyToRunSectionType::AuxiliaryModuleMetadata);
+    if (auxiliaryModuleMetadata == NULL && m_pAuxiliaryModuleMetadata == nullptr)
+    {
+        // Fake an AuxiliaryModuleMetadata for now.
+        size_t metadataSize = sizeof(ReadyToRun_AuxiliaryModuleMetadata) + sizeof(ReadyToRun_AuxiliaryModuleMetadataEntry);
+        BYTE* metadata = static_cast<BYTE*>(pamTracker->Track(
+            pLoaderAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(metadataSize))));
+        m_pAuxiliaryModuleMetadata = new (metadata) ReadyToRun_AuxiliaryModuleMetadata
+            {
+                0, // EntryPointsFilenameRVA
+                0, // InstanceMethodEntryPointsRVA
+                0, // MethodDefEntryPointsInfoRVA
+                1, // EntryPointsModuleActivationStatus
+                0, // PrimaryModuleMethodCount
+                1  // AuxiliaryModuleCount
+            };
+        new (m_pAuxiliaryModuleMetadata->GetAuxiliaryModuleMetadataEntries())
+            ReadyToRun_AuxiliaryModuleMetadataEntry
+            {
+                0,                   // FileNameRVA
+                0,                   // RelativeTableBase
+                m_nRuntimeFunctions, // MethodCount
+                1                    // ActivationStatus
+            };
+    }
+    else if (m_pAuxiliaryModuleMetadata == nullptr)
+    {
+        m_pAuxiliaryModuleMetadata = (ReadyToRun_AuxiliaryModuleMetadata*)m_pComposite->GetImage()->GetDirectoryData(auxiliaryModuleMetadata);
+    }
+#endif // FEATURE_READYTORUN_AUXILIARY_MODULES
 }
 
 static bool SigMatchesMethodDesc(MethodDesc* pMD, SigPointer &sig, ModuleBase * pModule)
@@ -1253,7 +1312,12 @@ void ReadyToRunInfo::RegisterResumptionStub(PCODE stubEntryPoint)
 
     // Use the entry point hashtable to check if another thread already registered a MethodDesc
     if (m_pCompositeInfo->GetMethodDescForEntryPointInNativeImage(stubEntryPoint) != NULL)
+    {
+#ifdef HAVE_GCCOVER
+        MethodDesc::SetupGcCoverageForPrecompiledCode(stubEntryPoint);
+#endif // HAVE_GCCOVER
         return;
+    }
 
     MethodDesc* pStubMD = pStubCache->CreateR2RBackedILStub(
         pLoaderAllocator,
@@ -1277,6 +1341,9 @@ void ReadyToRunInfo::RegisterResumptionStub(PCODE stubEntryPoint)
     {
         amTracker.SuppressRelease();
     }
+#ifdef HAVE_GCCOVER
+    MethodDesc::SetupGcCoverageForPrecompiledCode(stubEntryPoint);
+#endif // HAVE_GCCOVER
 }
 
 PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig, BOOL fFixups)
@@ -1302,12 +1369,12 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
     if (ReadyToRunCodeDisabled())
         goto done;
 
-    // Return-dropping async thunks are VM-synthesized. They share the same metadata
-    // token and signature shape as a regular async variant, so the R2R lookup below
+    // Return-dropping and covariant forwarding async thunks are VM-synthesized. They share the
+    // same metadata token and signature shape as a regular async variant, so the R2R lookup below
     // would incorrectly bind the thunk to the non-thunk's compiled code and bypass
     // the virtual dispatch the thunk performs. Crossgen2 does not emit R2R code for
     // these thunks; fall back to transient IL generation in the prestub.
-    if (pMD->IsReturnDroppingThunk())
+    if (pMD->IsReturnDroppingThunk() || pMD->IsCovariantForwardingThunk())
         goto done;
 
     ETW::MethodLog::GetR2RGetEntryPointStart(pMD);
@@ -1318,33 +1385,46 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
         || pMD->IsAsyncVariantMethod()
         || pMD->IsUnboxingStub())
     {
-        if (m_instMethodEntryPoints.IsNull())
-            goto done;
-
-        NativeHashtable::Enumerator lookup = m_instMethodEntryPoints.Lookup(GetVersionResilientMethodHashCode(pMD));
-        NativeParser entryParser;
         offset = (uint)-1;
-        while (lookup.GetNext(entryParser))
+        if (!m_instMethodEntryPoints.IsNull())
         {
-            PCCOR_SIGNATURE pBlob = (PCCOR_SIGNATURE)entryParser.GetBlob();
-            SigPointer sig(pBlob);
-            if (SigMatchesMethodDesc(pMD, sig, m_pModule))
+            NativeHashtable::Enumerator lookup = m_instMethodEntryPoints.Lookup(GetVersionResilientMethodHashCode(pMD));
+            NativeParser entryParser;
+            while (lookup.GetNext(entryParser))
             {
-                // Get the updated SigPointer location, so we can calculate the size of the blob,
-                // in order to skip the blob and find the entry point data.
-                offset = entryParser.GetOffset() + (uint)(sig.GetPtr() - pBlob);
-                break;
+                PCCOR_SIGNATURE pBlob = (PCCOR_SIGNATURE)entryParser.GetBlob();
+                SigPointer sig(pBlob);
+                if (SigMatchesMethodDesc(pMD, sig, m_pModule))
+                {
+                    // Get the updated SigPointer location, so we can calculate the size of the blob,
+                    // in order to skip the blob and find the entry point data.
+                    offset = entryParser.GetOffset() + (uint)(sig.GetPtr() - pBlob);
+                    break;
+                }
             }
         }
-
-        if (offset == (uint)-1)
-            goto done;
     }
     else
     {
         if (!m_methodDefEntryPoints.TryGetAt(rid - 1, &offset))
-            goto done;
+            offset = (uint)-1;
     }
+
+#ifdef FEATURE_READYTORUN_AUXILIARY_MODULES
+    if (offset == (uint)-1 && m_pAuxiliaryModuleMetadata != nullptr &&
+        VolatileLoad(&m_pAuxiliaryModuleMetadata->EntryPointsModuleActivationStatus) == 0)
+    {
+        if (pMD->GetModule() == m_pModule)
+        {
+            pConfig->SetAuxiliaryActivationFlag(&m_pAuxiliaryModuleMetadata->EntryPointsModuleActivationStatus);
+        }
+        goto done;
+    }
+    // TODO: Lookup in auxiliary EntryPoints module's MethodDefEntryPoints and InstanceMethodEntryPoints
+#endif // FEATURE_READYTORUN_AUXILIARY_MODULES
+
+    if (offset == (uint)-1)
+        goto done;
 
 #ifdef PROFILING_SUPPORTED
         {
@@ -1366,27 +1446,17 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
 #endif // PROFILING_SUPPORTED
 
     uint id;
+    bool hasFixups;
     offset = m_nativeReader.DecodeUnsigned(offset, &id);
+    hasFixups = (id & 1) != 0;
 
-    if (id & 1)
+    if (hasFixups)
     {
         if (id & 2)
         {
             uint val;
             m_nativeReader.DecodeUnsigned(offset, &val);
             offset -= val;
-        }
-
-        if (fFixups)
-        {
-            BOOL mayUsePrecompiledPInvokeMethods = TRUE;
-            mayUsePrecompiledPInvokeMethods = !pConfig->IsForMulticoreJit();
-
-            if (!m_pModule->FixupDelayList(dac_cast<TADDR>(GetImage()->GetBase()) + offset, mayUsePrecompiledPInvokeMethods))
-            {
-                pConfig->SetReadyToRunRejectedPrecompiledCode();
-                goto done;
-            }
         }
 
         id >>= 2;
@@ -1397,6 +1467,49 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
     }
 
     _ASSERTE(id < m_nRuntimeFunctions);
+
+#ifdef FEATURE_READYTORUN_AUXILIARY_MODULES
+    // Ensure the auxiliary module is activated before attempting fixups
+    if (m_pAuxiliaryModuleMetadata != nullptr && id >= m_pAuxiliaryModuleMetadata->PrimaryModuleMethodCount)
+    {
+        uint32_t auxModuleCount = m_pAuxiliaryModuleMetadata->AuxiliaryModuleCount;
+        _ASSERTE(auxModuleCount == 1); // Only one auxiliary module is currently supported
+        ReadyToRun_AuxiliaryModuleMetadataEntry* entries = m_pAuxiliaryModuleMetadata->GetAuxiliaryModuleMetadataEntries();
+        uint32_t entryBase = m_pAuxiliaryModuleMetadata->PrimaryModuleMethodCount;
+        if (auxModuleCount == 1 && id - entryBase < entries[0].MethodCount)
+        {
+            if (VolatileLoad(&entries[0].ActivationStatus) == 0)
+            {
+                if (pMD->GetModule() == m_pModule)
+                {
+                    pConfig->SetAuxiliaryActivationFlag(entries[0].GetActivationFlag());
+                }
+                goto done;
+            }
+            // Module is activated, continue
+        }
+        else
+        {
+            // AuxModuleMetadata says it's nowhere to be found
+            // This maybe should be validated at image load time to ensure all method IDs are accounted for
+            pConfig->SetReadyToRunRejectedPrecompiledCode();
+            goto done;
+        }
+    }
+#endif // FEATURE_READYTORUN_AUXILIARY_MODULES
+
+    if (hasFixups && fFixups)
+    {
+        BOOL mayUsePrecompiledPInvokeMethods = TRUE;
+        mayUsePrecompiledPInvokeMethods = !pConfig->IsForMulticoreJit();
+
+        if (!m_pModule->FixupDelayList(dac_cast<TADDR>(GetImage()->GetBase()) + offset, mayUsePrecompiledPInvokeMethods))
+        {
+            pConfig->SetReadyToRunRejectedPrecompiledCode();
+            goto done;
+        }
+    }
+
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS
     pEntryPoint = dac_cast<TADDR>(GetImage()->GetBase()) + RUNTIME_FUNCTION__BeginAddress(&m_pRuntimeFunctions[id]);
 #ifdef TARGET_ARM
@@ -1420,6 +1533,11 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
 #error "ReadyToRun and PortableEntryPoints are not currently compatible on non-WASM targets, as the R2R image layout would need to be changed to support this scenario."
 #endif
 #endif
+
+#ifdef HAVE_GCCOVER
+    // Instrument before any caller can publish or execute the entry point.
+    MethodDesc::SetupGcCoverageForPrecompiledCode(pEntryPoint);
+#endif // HAVE_GCCOVER
 
 #ifdef PROFILING_SUPPORTED
         {
@@ -2419,25 +2537,6 @@ bool ReadyToRun_TypeGenericInfoMap::IsGeneric(mdTypeDef input, IMDInternalImport
         return pImport->EnumGetCount(&hEnumTyPars) != 0;
     }
     return !!((uint8_t)typeGenericInfo & (uint8_t)ReadyToRunTypeGenericInfo::GenericCountMask);
-}
-
-HRESULT ReadyToRun_TypeGenericInfoMap::IsGenericNoThrow(mdTypeDef input, bool *pIsGeneric, IMDInternalImport* pImport) const
-{
-    bool foundResult;
-    bool result;
-    HRESULT hr;
-    ReadyToRunTypeGenericInfo typeGenericInfo = GetTypeGenericInfo(input, &foundResult);
-    if (!foundResult)
-    {
-        HENUMInternalHolder hEnumTyPars(pImport);
-        IfFailRet(hEnumTyPars.EnumInitNoThrow(mdtGenericParam, input));
-        result = (pImport->EnumGetCount(&hEnumTyPars) != 0);
-    }
-    else
-        result = !!((uint8_t)typeGenericInfo & (uint8_t)ReadyToRunTypeGenericInfo::GenericCountMask);
-
-    *pIsGeneric = result;
-    return S_OK;
 }
 
 uint32_t ReadyToRun_TypeGenericInfoMap::GetGenericArgumentCount(mdTypeDef input, IMDInternalImport* pImport) const

@@ -51,8 +51,10 @@ function set_env_vars()
         export USE_JAVASCRIPT_BUNDLER_FOR_TESTS=false
     fi
 
-    if [[ -n "$RUNTIME_FLAVOR" ]]; then
-        export RUNTIME_FLAVOR_FOR_TESTS=$RUNTIME_FLAVOR
+    if [ "x$WASM_RUN_WASM_OPT" = "xtrue" ]; then
+        export USE_WASM_OPT_FOR_TESTS=true
+    else
+        export USE_WASM_OPT_FOR_TESTS=false
     fi
 
     local _SDK_DIR=

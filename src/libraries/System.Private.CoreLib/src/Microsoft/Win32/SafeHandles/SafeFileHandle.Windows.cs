@@ -24,7 +24,7 @@ namespace Microsoft.Win32.SafeHandles
 
         public static partial void CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle, bool asyncRead, bool asyncWrite)
         {
-            Interop.Kernel32.SECURITY_ATTRIBUTES securityAttributes = default;
+            Interop.Kernel32.SECURITY_ATTRIBUTES securityAttributes = Interop.Kernel32.SECURITY_ATTRIBUTES.Create();
             SafeFileHandle? tempReadHandle;
             SafeFileHandle? tempWriteHandle;
 

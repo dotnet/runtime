@@ -6,6 +6,7 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Metadata;
 using System.Threading;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
@@ -32,7 +33,7 @@ namespace ILCompiler
         public bool CompileGenericDependenciesFromVersionBubbleModuleSet;
         public bool CompileAllPossibleCrossModuleCode;
         public InstructionSetSupport InstructionSetSupport;
-        public IEnumerable<string> DirectPInvokeModules = Array.Empty<string>();
+        public DirectPInvokeSet DirectPInvokes;
     }
 
     public abstract class ReadyToRunCompilationModuleGroupBase : CompilationModuleGroup
@@ -68,7 +69,8 @@ namespace ILCompiler
         private readonly Func<EcmaMethod, bool> _tokenTranslationFreeNonVersionableUncached;
         private bool CompileAllPossibleCrossModuleCode = false;
         private InstructionSetSupport _instructionSetSupport;
-        private readonly HashSet<string> _directPInvokeModules;
+        private readonly DirectPInvokeSet _directPInvokes;
+        private readonly ConcurrentDictionary<EcmaModule, HashSet<string>> _wasmIncompatibleDirectEntryPoints = new();
 
         public ReadyToRunCompilationModuleGroupBase(ReadyToRunCompilationModuleGroupConfig config)
         {
@@ -89,7 +91,7 @@ namespace ILCompiler
             _crossModuleInlineableModuleSet.UnionWith(_versionBubbleModuleSet);
 
             _compileGenericDependenciesFromVersionBubbleModuleSet = config.CompileGenericDependenciesFromVersionBubbleModuleSet;
-            _directPInvokeModules = new HashSet<string>(config.DirectPInvokeModules, StringComparer.Ordinal);
+            _directPInvokes = config.DirectPInvokes ?? new DirectPInvokeSet(config.Context.Target, [], []);
 
             _tokenResolver = new ModuleTokenResolver(this, config.Context);
 
@@ -114,21 +116,60 @@ namespace ILCompiler
                 return true;
             }
 
-            string module = method.GetPInvokeMethodMetadata().Module;
-            if (module is "*" or "QCall")
+            if (method.GetPInvokeMethodMetadata().Module == "QCall")
             {
                 return true;
             }
 
-            foreach (string variation in MarshalHelpers.GetPInvokeModuleNameVariations(method.Context.Target, module))
+            if (!_directPInvokes.TryGetDirectEntryPoint(method, out _))
             {
-                if (_directPInvokeModules.Contains(variation))
+                return false;
+            }
+
+            // The wasm call-helper table skips entry points it can't declare with a single native signature, so calls to
+            // them fail at run time. Don't bind them directly: a direct call's fixup would fail the whole calling method.
+            return !method.Context.Target.IsWasm
+                || method.GetTypicalMethodDefinition() is not EcmaMethod ecmaMethod
+                || !_wasmIncompatibleDirectEntryPoints.GetOrAdd(ecmaMethod.Module, GetWasmIncompatibleDirectEntryPoints).Contains(GetEntryPointName(method));
+        }
+
+        private static string GetEntryPointName(MethodDesc method) => method.GetPInvokeMethodMetadata().Name ?? method.GetName();
+
+        private HashSet<string> GetWasmIncompatibleDirectEntryPoints(EcmaModule module)
+        {
+            var methodsByEntryPoint = new Dictionary<string, List<MethodDesc>>(StringComparer.Ordinal);
+            foreach (MethodDefinitionHandle handle in module.MetadataReader.MethodDefinitions)
+            {
+                MethodDesc method = module.GetMethod(handle);
+                if (!method.IsPInvoke
+                    || method.HasCustomAttribute("System.Runtime.InteropServices", "WasmImportLinkageAttribute")
+                    || method.GetPInvokeMethodMetadata().Module == "QCall"
+                    || !_directPInvokes.TryGetDirectEntryPoint(method, out _))
                 {
-                    return true;
+                    continue;
+                }
+
+                string entryPoint = GetEntryPointName(method);
+                if (!methodsByEntryPoint.TryGetValue(entryPoint, out List<MethodDesc> methods))
+                    methodsByEntryPoint[entryPoint] = methods = [];
+                methods.Add(method);
+            }
+
+            var incompatible = new HashSet<string>(StringComparer.Ordinal);
+            foreach ((string entryPoint, List<MethodDesc> methods) in methodsByEntryPoint)
+            {
+                try
+                {
+                    if (PortableCallHelpers.PInvokeTableGenerator.HasIncompatibleSignatures(methods))
+                        incompatible.Add(entryPoint);
+                }
+                catch (TypeSystemException)
+                {
+                    // A signature that doesn't resolve fails the P/Invoke when it is compiled or called.
                 }
             }
 
-            return false;
+            return incompatible;
         }
 
         public sealed override bool ContainsMethodBody(MethodDesc method, bool unboxingStub)
@@ -946,6 +987,15 @@ namespace ILCompiler
                         {
                             if (genericParam.HasReferenceTypeConstraint)
                                 return false;
+
+                            // C# encodes the 'struct' and 'unmanaged' constraints as a System.ValueType type constraint.
+                            // Every primitive satisfies it, and it exposes nothing beyond what an unconstrained
+                            // type parameter already can, so only other (interface or class) constraints disqualify.
+                            foreach (TypeDesc constraint in genericParam.TypeConstraints)
+                            {
+                                if (!constraint.IsWellKnownType(WellKnownType.ValueType))
+                                    return false;
+                            }
                         }
                         else
                         {
@@ -955,11 +1005,11 @@ namespace ILCompiler
 
                             if (instType.IsString && genericParam.HasDefaultConstructorConstraint)
                                 return false;
-                        }
 
-                        // This checks to see if the type constraints list is empty
-                        if (genericParam.TypeConstraints.GetEnumerator().MoveNext())
-                            return false;
+                            // This checks to see if the type constraints list is empty
+                            if (genericParam.TypeConstraints.GetEnumerator().MoveNext())
+                                return false;
+                        }
                     }
                     else
                     {

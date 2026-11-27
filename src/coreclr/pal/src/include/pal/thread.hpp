@@ -2,18 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*++
-
-
-
 Module Name:
-
     include/pal/thread.hpp
 
 Abstract:
     Header file for thread structures
-
-
-
 --*/
 
 #ifndef _PAL_THREAD_HPP_
@@ -83,14 +76,6 @@ namespace CorUnix
         );
 
     PAL_ERROR
-    InternalCreateDummyThread(
-        CPalThread *pThread,
-        LPSECURITY_ATTRIBUTES lpThreadAttributes,
-        CPalThread **ppDummyThread,
-        HANDLE *phThread
-        );
-
-    PAL_ERROR
     CreateThreadData(
         CPalThread **ppThread
         );
@@ -101,12 +86,6 @@ namespace CorUnix
         CPalThread *pNewThread,
         HANDLE *phThread
         );
-
-    BOOL
-    GetThreadTimesInternal(
-        IN HANDLE hThread,
-        OUT LPFILETIME lpKernelTime,
-        OUT LPFILETIME lpUserTime);
 
 #if HAVE_MACH_EXCEPTIONS
 
@@ -164,15 +143,6 @@ namespace CorUnix
                 DWORD,
                 SIZE_T*,
                 HANDLE*
-                );
-
-        friend
-            PAL_ERROR
-            InternalCreateDummyThread(
-                CPalThread *pThread,
-                LPSECURITY_ATTRIBUTES lpThreadAttributes,
-                CPalThread **ppDummyThread,
-                HANDLE *phThread
                 );
 
         friend
@@ -273,6 +243,7 @@ namespace CorUnix
         void* m_stackLimit;
         // Signal handler's alternate stack to help with stack overflow
         void* m_alternateStack;
+        size_t m_alternateStackSize;
 
         //
         // The thread entry routine (called from InternalCreateThread)
@@ -325,7 +296,8 @@ namespace CorUnix
             m_fStartStatusSet(FALSE),
             m_stackBase(NULL),
             m_stackLimit(NULL),
-            m_alternateStack(NULL)
+            m_alternateStack(NULL),
+            m_alternateStackSize(0)
         {
         };
 

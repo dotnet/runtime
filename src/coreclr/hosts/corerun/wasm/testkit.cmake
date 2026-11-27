@@ -1,10 +1,10 @@
 # Licensed to the .NET Foundation under one or more agreements.
 # The .NET Foundation licenses this file to you under the MIT license.
 
-# Corerun test link kit (browser-wasm only).
+# Corerun test link kit (browser-wasm and wasi-wasm).
 #
 # WASM has no dynamic library loading, so a runtime test that P/Invokes into its
-# own native library cannot run against the prebuilt corerun.js -- the test's
+# own native library cannot run against the prebuilt corerun -- the test's
 # native code, and the call tables generated for it, have to be linked into the
 # host itself. The runtime test build therefore re-links a test-specific corerun
 # outside of CMake (see src/tests/Common/CLRTest.WasmCorerun.targets).
@@ -15,7 +15,8 @@
 #   * every static archive corerun links against, except coreclr_gen_static
 #     (the checked-in framework call tables), which the per-test build replaces
 #     with tables generated for that test's assemblies.
-#   * the JavaScript libraries corerun links in.
+#   * the JavaScript libraries corerun links in (browser), or any other file its
+#     link options name, such as the wasi:http world (WASI).
 #   * the headers the generated call tables include.
 #   * response files carrying the exact compile and link flags CMake would use.
 #
@@ -84,7 +85,7 @@ function(_corerun_kit_visit target)
             _corerun_kit_visit(${dependency})
         elseif(dependency MATCHES "^\\$<")
             # Generator expressions cannot be resolved at configure time. None are
-            # expected on the browser link line, so fail loudly rather than
+            # expected on the wasm link line, so fail loudly rather than
             # silently shipping a kit that is missing a link input.
             message(FATAL_ERROR
                 "corerun test kit: cannot resolve generator expression '${dependency}' "
@@ -135,14 +136,21 @@ endfunction()
 # libraries, the headers the generated call tables include, and the response
 # files describing how to compile and link them.
 #
-#   COMPONENT       -- the install component the kit belongs to
-#   SOURCES         -- corerun's own sources (compiled into libcorerun_static.a)
-#   LINK_OPTIONS    -- the emcc link options this directory adds to corerun; the
-#                      ones it inherits are picked up from the directory property
-#   JS_LIBRARIES    -- --js-library inputs
-#   EXTERN_POST_JS  -- --extern-post-js input
+#   COMPONENT        -- the install component the kit belongs to
+#   SOURCES          -- corerun's own sources (compiled into libcorerun_static.a)
+#   LINK_OPTIONS     -- the link options this directory adds to corerun; the ones
+#                       it inherits are picked up from the directory property.
+#                       They must not name absolute paths: refer to EXTRA_FILES by
+#                       file name instead.
+#   COMPILE_OPTIONS  -- the code generation options every object linked into the
+#                       test corerun has to agree on, the exception model above all
+#   JS_LIBRARIES     -- --js-library inputs (browser)
+#   EXTERN_POST_JS   -- --extern-post-js input (browser)
+#   EXTRA_FILES      -- other files the link options name, copied into the kit
+#   WHOLE_ARCHIVE_HOST -- link all of corerun's objects. wasi-libc only references
+#                       main weakly, so it would not pull main out of an archive.
 function(corerun_kit_export)
-    cmake_parse_arguments(KIT "" "COMPONENT;EXTERN_POST_JS" "SOURCES;LINK_OPTIONS;JS_LIBRARIES" ${ARGN})
+    cmake_parse_arguments(KIT "WHOLE_ARCHIVE_HOST" "COMPONENT;EXTERN_POST_JS" "SOURCES;LINK_OPTIONS;COMPILE_OPTIONS;JS_LIBRARIES;EXTRA_FILES" ${ARGN})
 
     set(kitDestination "corerun-link")
 
@@ -155,6 +163,10 @@ function(corerun_kit_export)
     target_include_directories(corerun_static PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/wasm/)
     get_target_property(corerunLinkLibraries corerun LINK_LIBRARIES)
     target_link_libraries(corerun_static PRIVATE ${corerunLinkLibraries})
+    get_target_property(corerunCompileDefinitions corerun COMPILE_DEFINITIONS)
+    if(corerunCompileDefinitions)
+        target_compile_definitions(corerun_static PRIVATE ${corerunCompileDefinitions})
+    endif()
 
     corerun_kit_collect_link_inputs(corerun kitInputs)
 
@@ -181,7 +193,11 @@ function(corerun_kit_export)
     endforeach()
 
     list(PREPEND kitLibraries corerun_static)
-    list(PREPEND kitLinkInputs "\"$<TARGET_FILE_NAME:corerun_static>\"")
+    if(KIT_WHOLE_ARCHIVE_HOST)
+        list(PREPEND kitLinkInputs "-Wl,--whole-archive" "\"$<TARGET_FILE_NAME:corerun_static>\"" "-Wl,--no-whole-archive")
+    else()
+        list(PREPEND kitLinkInputs "\"$<TARGET_FILE_NAME:corerun_static>\"")
+    endif()
 
     # Nothing links corerun_static, so without this the component target would
     # try to install an archive that was never built.
@@ -199,7 +215,7 @@ function(corerun_kit_export)
     # reach the response file, because the kit is consumed from a different
     # machine than the one that built it. Paths into the kit are therefore
     # written relative to it, which is the working directory the consumer runs
-    # em++ from.
+    # the compiler from.
     get_directory_property(inheritedLinkOptions LINK_OPTIONS)
     string(TOUPPER "${CMAKE_BUILD_TYPE}" configurationName)
     separate_arguments(configuredLinkerFlags NATIVE_COMMAND
@@ -207,14 +223,21 @@ function(corerun_kit_export)
 
     set(linkResponse "")
     foreach(option IN LISTS configuredLinkerFlags inheritedLinkOptions KIT_LINK_OPTIONS)
+        # The consumer chooses the linker: init-compiler.sh adds -fuse-ld=lld to LDFLAGS on Linux,
+        # which would replace the WASI component linker the consumer passes before this file.
+        if(option MATCHES "^-fuse-ld=")
+            continue()
+        endif()
         string(APPEND linkResponse "${option}\n")
     endforeach()
     foreach(jsLibrary IN LISTS KIT_JS_LIBRARIES)
         get_filename_component(jsName "${jsLibrary}" NAME)
         string(APPEND linkResponse "--js-library\n\"${jsName}\"\n")
     endforeach()
-    get_filename_component(externPostName "${KIT_EXTERN_POST_JS}" NAME)
-    string(APPEND linkResponse "--extern-post-js\n\"${externPostName}\"\n")
+    if(KIT_EXTERN_POST_JS)
+        get_filename_component(externPostName "${KIT_EXTERN_POST_JS}" NAME)
+        string(APPEND linkResponse "--extern-post-js\n\"${externPostName}\"\n")
+    endif()
     foreach(input IN LISTS kitLinkInputs)
         string(APPEND linkResponse "${input}\n")
     endforeach()
@@ -236,9 +259,9 @@ function(corerun_kit_export)
     # call tables (BrowserWasmApp.CoreCLR.targets: _EmccCFlags vs _EmccCFlagsGenerated).
     set(userCompileResponse "")
     string(APPEND userCompileResponse "-O2\n")
-    string(APPEND userCompileResponse "-fwasm-exceptions\n")
-    string(APPEND userCompileResponse "-sWASM_LEGACY_EXCEPTIONS=0\n")
-    string(APPEND userCompileResponse "-msimd128\n")
+    foreach(option IN LISTS KIT_COMPILE_OPTIONS)
+        string(APPEND userCompileResponse "${option}\n")
+    endforeach()
     string(APPEND userCompileResponse "-DGEN_PINVOKE=1\n")
 
     # The generated call tables additionally force-include coreclr_compat.h (which
@@ -262,7 +285,7 @@ function(corerun_kit_export)
         install(FILES "$<TARGET_FILE:${library}>" DESTINATION ${kitDestination} COMPONENT ${KIT_COMPONENT})
     endforeach()
     install(FILES ${kitFiles} DESTINATION ${kitDestination} COMPONENT ${KIT_COMPONENT})
-    install(FILES ${KIT_JS_LIBRARIES} "${KIT_EXTERN_POST_JS}" DESTINATION ${kitDestination} COMPONENT ${KIT_COMPONENT})
+    install(FILES ${KIT_JS_LIBRARIES} ${KIT_EXTERN_POST_JS} ${KIT_EXTRA_FILES} DESTINATION ${kitDestination} COMPONENT ${KIT_COMPONENT})
     install(FILES "${generatedDirectory}/corerun-link.rsp" "${generatedDirectory}/corerun-compile.rsp"
                   "${generatedDirectory}/corerun-compile-user.rsp"
             DESTINATION ${kitDestination} COMPONENT ${KIT_COMPONENT})

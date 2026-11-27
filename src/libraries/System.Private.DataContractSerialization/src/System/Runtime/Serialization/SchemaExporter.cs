@@ -347,7 +347,7 @@ namespace System.Runtime.Serialization
             Collection<Type> knownTypes = new Collection<Type>();
             if (_dataContractSet.SerializationExtendedSurrogateProvider != null)
                 DataContractSurrogateCaller.GetKnownCustomDataTypes(_dataContractSet.SerializationExtendedSurrogateProvider, knownTypes);
-            DataContractSerializer serializer = new DataContractSerializer(Globals.TypeOfObject,
+            DataContractSerializer serializer = new DataContractSerializer(typeof(object),
                 SurrogateDataAnnotationName.Name, SurrogateDataAnnotationName.Namespace, knownTypes,
                 ignoreExtensionDataObject: false, preserveObjectReferences: true);
             serializer.WriteObject(xmlWriter, surrogateData);
@@ -604,7 +604,7 @@ namespace System.Runtime.Serialization
         {
             xsdType = null;
             hasRoot = true;
-            object[] attrs = clrType.GetCustomAttributes(Globals.TypeOfXmlSchemaProviderAttribute, false);
+            object[] attrs = clrType.GetCustomAttributes(typeof(XmlSchemaProviderAttribute), false);
             if (attrs == null || attrs.Length == 0)
             {
                 xmlName = DataContract.GetDefaultXmlName(clrType);
@@ -630,8 +630,8 @@ namespace System.Runtime.Serialization
                 if (getMethod == null)
                     throw new InvalidDataContractException(SR.Format(SR.MissingGetSchemaMethod, DataContract.GetClrTypeFullName(clrType), methodName));
 
-                if (!(Globals.TypeOfXmlQualifiedName.IsAssignableFrom(getMethod.ReturnType)) && !(Globals.TypeOfXmlSchemaType.IsAssignableFrom(getMethod.ReturnType)))
-                    throw new InvalidDataContractException(SR.Format(SR.InvalidReturnTypeOnGetSchemaMethod, DataContract.GetClrTypeFullName(clrType), methodName, DataContract.GetClrTypeFullName(getMethod.ReturnType), DataContract.GetClrTypeFullName(Globals.TypeOfXmlQualifiedName), typeof(XmlSchemaType)));
+                if (!(typeof(XmlQualifiedName).IsAssignableFrom(getMethod.ReturnType)) && !(typeof(XmlSchemaType).IsAssignableFrom(getMethod.ReturnType)))
+                    throw new InvalidDataContractException(SR.Format(SR.InvalidReturnTypeOnGetSchemaMethod, DataContract.GetClrTypeFullName(clrType), methodName, DataContract.GetClrTypeFullName(getMethod.ReturnType), DataContract.GetClrTypeFullName(typeof(XmlQualifiedName)), typeof(XmlSchemaType)));
 
                 object? typeInfo = getMethod.Invoke(null, new object[] { schemas });
 
@@ -745,10 +745,10 @@ namespace System.Runtime.Serialization
         {
             xsdType = null;
             hasRoot = true;
-            if (type == Globals.TypeOfXmlElement || type == Globals.TypeOfXmlNodeArray)
+            if (type == typeof(XmlElement) || type == typeof(XmlNode[]))
             {
                 string? name;
-                if (type == Globals.TypeOfXmlElement)
+                if (type == typeof(XmlElement))
                 {
                     xsdType = CreateAnyElementType();
                     name = "XmlElement";

@@ -1,5 +1,10 @@
 # SharedFX Lookup
 
+> [!NOTE]
+> This document describes the original SharedFX lookup design. Starting in .NET 12,
+> `rollForwardOnNoCandidateFx` and `applyPatches` are ignored. Use `rollForward` to configure framework
+> version resolution.
+
 ## Introduction
 
 There are two main ways of running .NET Applications: through `dotnet` or through the `apphost` executables. The executable is in charge of finding and loading `hostfxr`. `hostfxr`, in turn, must find and load `hostpolicy`. It is also responsible for searching for the SDK when running .NET SDK commands. Finally, `hostpolicy` must find and load the runtime (`coreclr`). See [host components](host-components.md) for details.

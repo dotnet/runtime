@@ -20,6 +20,25 @@ namespace
         trace::error(_X("It is invalid to specify values for properties populated by the hosting layer in the application's .runtimeconfig.json"));
     }
 
+    std::string reconstruct_tpa_property(const hostpolicy_context_t* context)
+    {
+        std::string value;
+        for (const char* name : context->tpa_names)
+        {
+            std::unordered_map<std::string, hostpolicy_context_t::tpa_path_t>::const_iterator path = context->tpa_paths.find(name);
+            assert(path != context->tpa_paths.end());
+
+            if (!value.empty())
+                value.push_back(static_cast<char>(PATH_SEPARATOR));
+
+            assert(path->second.directory[0] != '\0' && path->second.directory[strlen(path->second.directory) - 1] == static_cast<char>(DIR_SEPARATOR));
+            value.append(path->second.directory);
+            value.append(path->second.file_name);
+        }
+
+        return value;
+    }
+
     // bundle_probe:
     // Probe the app-bundle for the file 'path' and return its location ('offset', 'size') if found.
     //
@@ -120,6 +139,20 @@ namespace
     {
         hostpolicy_context_t* context = static_cast<hostpolicy_context_t*>(contract_context);
 
+        if (::strcmp(key, HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES) == 0)
+        {
+            const pal::char_t* configuredValue;
+            if (context->coreclr_properties.try_get(_STRINGIFY(HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES), &configuredValue))
+                return pal::pal_utf8string(configuredValue, value_buffer, value_buffer_size);
+
+            std::string value = reconstruct_tpa_property(context);
+            size_t requiredSize = value.size() + 1;
+            if (value_buffer_size >= requiredSize)
+                memcpy(value_buffer, value.c_str(), requiredSize);
+
+            return requiredSize;
+        }
+
         // Properties computed on demand by the host
         if (::strcmp(key, HOST_PROPERTY_ENTRY_ASSEMBLY_NAME) == 0)
         {
@@ -159,6 +192,50 @@ namespace
 
         return -1;
     }
+
+    bool HOST_CONTRACT_CALLTYPE get_assembly_names(
+        const char* const** names,
+        size_t* count,
+        void* contract_context)
+    {
+        if (names == nullptr || count == nullptr)
+            return false;
+
+        hostpolicy_context_t* context = static_cast<hostpolicy_context_t*>(contract_context);
+
+        // Custom host explicitly set the assemblies via a property string
+        if (context->coreclr_properties.contains(_STRINGIFY(HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES)))
+            return false;
+
+        *names = context->tpa_names.data();
+        *count = context->tpa_names.size();
+        return true;
+    }
+
+    bool HOST_CONTRACT_CALLTYPE resolve_assembly_to_path(
+        const char* simple_name,
+        const char** directory,
+        const char** file_name,
+        void* contract_context)
+    {
+        if (directory == nullptr || file_name == nullptr)
+            return false;
+
+        hostpolicy_context_t* context = static_cast<hostpolicy_context_t*>(contract_context);
+
+        // Custom host explicitly set the assemblies via a property string
+        if (context->coreclr_properties.contains(_STRINGIFY(HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES)))
+            return false;
+
+        std::unordered_map<std::string, hostpolicy_context_t::tpa_path_t>::const_iterator entry =
+            context->tpa_paths.find(simple_name);
+        if (entry == context->tpa_paths.end())
+            return false;
+
+        *directory = entry->second.directory;
+        *file_name = entry->second.file_name.c_str();
+        return true;
+    }
 }
 
 bool hostpolicy_context_t::should_read_rid_fallback_graph(const hostpolicy_init_t &init)
@@ -172,6 +249,20 @@ bool hostpolicy_context_t::should_read_rid_fallback_graph(const hostpolicy_init_
 
     // Reading the RID fallback graph is disabled by default
     return false;
+}
+
+const pal::string_t& hostpolicy_context_t::get_reconstructed_tpa_property()
+{
+    assert(!coreclr_properties.contains(_STRINGIFY(HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES)));
+
+    std::call_once(reconstructed_tpa_property_once, [this]()
+    {
+        std::string value = reconstruct_tpa_property(this);
+        bool converted = pal::clr_palstring(value.c_str(), &reconstructed_tpa_property);
+        assert(converted);
+    });
+
+    return reconstructed_tpa_property;
 }
 
 int hostpolicy_context_t::initialize(const hostpolicy_init_t &hostpolicy_init, const arguments_t &args, bool enable_breadcrumbs)
@@ -243,12 +334,7 @@ int hostpolicy_context_t::initialize(const hostpolicy_init_t &hostpolicy_init, c
         append_path(&corelib_path, CORELIB_NAME);
 
         // Append CoreLib path
-        if (!probe_paths.tpa.empty() && probe_paths.tpa.back() != PATH_SEPARATOR)
-        {
-            probe_paths.tpa.push_back(PATH_SEPARATOR);
-        }
-
-        probe_paths.tpa.append(corelib_path);
+        probe_paths.tpa.add(std::move(corelib_path));
     }
 
     pal::string_t fx_deps_str;
@@ -282,7 +368,6 @@ int hostpolicy_context_t::initialize(const hostpolicy_init_t &hostpolicy_init, c
     // Build properties for CoreCLR instantiation
     pal::string_t app_base;
     resolver.get_app_dir(&app_base);
-    coreclr_properties.add(common_property::TrustedPlatformAssemblies, probe_paths.tpa.c_str());
     coreclr_properties.add(common_property::NativeDllSearchDirectories, probe_paths.native.c_str());
     coreclr_properties.add(common_property::PlatformResourceRoots, probe_paths.resources.c_str());
     coreclr_properties.add(common_property::AppContextBaseDirectory, app_base.c_str());
@@ -298,6 +383,12 @@ int hostpolicy_context_t::initialize(const hostpolicy_init_t &hostpolicy_init, c
     {
         // Provide opt-in compatible behavior by using the switch to set APP_PATHS
         const pal::char_t *key = hostpolicy_init.cfg_keys[i].c_str();
+        if (pal::strcmp(key, _STRINGIFY(HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES)) == 0)
+        {
+            log_duplicate_property_error(key);
+            return StatusCode::LibHostDuplicateProperty;
+        }
+
         if (pal::strcasecmp(key, _X("Microsoft.NETCore.DotNetHostPolicy.SetAppPaths")) == 0)
         {
             set_app_paths = (pal::strcasecmp(hostpolicy_init.cfg_values[i].data(), _X("true")) == 0);
@@ -320,6 +411,38 @@ int hostpolicy_context_t::initialize(const hostpolicy_init_t &hostpolicy_init, c
             log_duplicate_property_error(coreclr_property_bag_t::common_property_to_string(common_property::AppPaths));
             return StatusCode::LibHostDuplicateProperty;
         }
+    }
+
+    tpa_directories.reserve(probe_paths.tpa.directories.size());
+    for (size_t directory_entry_index : probe_paths.tpa.directories)
+    {
+        const probe_paths_t::tpa_t::entry_t& entry = probe_paths.tpa.entries[directory_entry_index];
+        assert(entry.file_name_offset != 0 && entry.path[entry.file_name_offset - 1] == DIR_SEPARATOR);
+        tpa_directories.push_back(
+            pal::pal_utf8string(entry.path.data(), entry.file_name_offset));
+    }
+
+    tpa_names.reserve(probe_paths.tpa.entries.size());
+    tpa_paths.reserve(probe_paths.tpa.entries.size());
+    for (const probe_paths_t::tpa_t::entry_t& entry : probe_paths.tpa.entries)
+    {
+        assert(entry.directory_index < tpa_directories.size());
+        tpa_path_t path{
+            tpa_directories[entry.directory_index].c_str(),
+            pal::pal_utf8string(
+                entry.path.data() + entry.file_name_offset,
+                entry.path.size() - entry.file_name_offset)
+        };
+        size_t extension_offset = entry.path.rfind(_X('.'));
+        size_t name_length =
+            extension_offset == pal::string_t::npos || extension_offset < entry.file_name_offset
+                ? entry.path.size() - entry.file_name_offset
+                : extension_offset - entry.file_name_offset;
+        std::string name = pal::pal_utf8string(entry.path.data() + entry.file_name_offset, name_length);
+        std::pair<std::unordered_map<std::string, tpa_path_t>::iterator, bool> result =
+            tpa_paths.emplace(std::move(name), std::move(path));
+        if (result.second)
+            tpa_names.push_back(result.first->first.c_str());
     }
 
     // Startup hooks
@@ -349,6 +472,8 @@ int hostpolicy_context_t::initialize(const hostpolicy_init_t &hostpolicy_init, c
         }
 
         host_contract.get_runtime_property = &get_runtime_property;
+        host_contract.get_assembly_names = &get_assembly_names;
+        host_contract.resolve_assembly_to_path = &resolve_assembly_to_path;
         pal::char_t ptr_to_string_buffer[STRING_LENGTH("0xffffffffffffffff") + 1];
         pal::snwprintf(ptr_to_string_buffer, ARRAY_SIZE(ptr_to_string_buffer), _X("0x%zx"), (size_t)(&host_contract));
         if (!coreclr_properties.add(_STRINGIFY(HOST_PROPERTY_RUNTIME_CONTRACT), ptr_to_string_buffer))

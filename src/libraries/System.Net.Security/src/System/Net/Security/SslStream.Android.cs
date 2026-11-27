@@ -45,6 +45,32 @@ namespace System.Net.Security
             };
         }
 
+        private static bool CanQueryConnectionInfoDuringCertificateValidation()
+        {
+            if (OperatingSystem.IsAndroidVersionAtLeast(29))
+            {
+                // API 29+ can read the negotiated cipher from the handshake session.
+                return true;
+            }
+
+            if (OperatingSystem.IsAndroidVersionAtLeast(27))
+            {
+                // API 27 can dereference a null cipher and cause SIGSEGV.
+                // API 28 reports SSL_NULL_WITH_NULL_NULL instead.
+                // Both must wait for handshake completion.
+                return false;
+            }
+
+            if (OperatingSystem.IsAndroidVersionAtLeast(26))
+            {
+                // API 26 exposes an intermediate handshake session with a valid cipher.
+                return true;
+            }
+
+            // API 24-25 report (NONE) before certificate validation completes.
+            return false;
+        }
+
         private bool ShouldRespectPlatformValidation()
         {
             // Android platform trust is part of default/callback-only validation, but explicit
@@ -78,6 +104,7 @@ namespace System.Net.Security
 
             public Exception? ValidationException { get; private set; }
             public RemoteCertificateValidationResult? ValidationResult { get; private set; }
+            internal IntPtr PlatformTrustAnchor { get; private set; }
 
             public JavaProxy(SslStream sslStream)
             {
@@ -103,7 +130,7 @@ namespace System.Net.Security
             }
 
             [UnmanagedCallersOnly]
-            private static bool VerifyRemoteCertificate(IntPtr sslStreamProxyHandle, IntPtr platformValidationError)
+            private static bool VerifyRemoteCertificate(IntPtr sslStreamProxyHandle, IntPtr platformValidationError, IntPtr platformTrustAnchor)
             {
                 var proxy = (JavaProxy?)GCHandle.FromIntPtr(sslStreamProxyHandle).Target;
                 Debug.Assert(proxy is not null);
@@ -111,6 +138,7 @@ namespace System.Net.Security
 
                 try
                 {
+                    proxy.PlatformTrustAnchor = platformTrustAnchor;
                     proxy.ValidationResult = proxy._sslStream.VerifyRemoteCertificate(platformValidationError);
                     return proxy.ValidationResult.IsValid;
                 }
@@ -118,6 +146,10 @@ namespace System.Net.Security
                 {
                     proxy.ValidationException = exception;
                     return false;
+                }
+                finally
+                {
+                    proxy.PlatformTrustAnchor = IntPtr.Zero;
                 }
             }
 

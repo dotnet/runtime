@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Runtime.CompilerServices;
 using ILLink.Shared.TypeSystemProxy;
 using Microsoft.CodeAnalysis;
 
@@ -9,11 +10,50 @@ namespace ILLink.RoslynAnalyzer
 {
     internal static class ITypeSymbolExtensions
     {
+        private const int MaxCachedTypeClassificationsPerAssembly = 32768;
+        private static readonly ConditionalWeakTable<IAssemblySymbol, HierarchyFlagsCache> s_hierarchyCaches = new();
+
         [Flags]
         private enum HierarchyFlags
         {
             IsSystemType = 0x01,
             IsSystemReflectionIReflect = 0x02,
+        }
+
+        private sealed class CachedHierarchyFlags
+        {
+            public CachedHierarchyFlags(HierarchyFlags flags) => Flags = flags;
+
+            public HierarchyFlags Flags { get; }
+        }
+
+        private sealed class HierarchyFlagsCache
+        {
+            // Weak keys avoid retaining symbols or compilations after analysis.
+            private readonly ConditionalWeakTable<INamedTypeSymbol, CachedHierarchyFlags> _flagsByType = new();
+            private readonly object _gate = new();
+            private int _cachedTypes;
+
+            public HierarchyFlags GetFlags(INamedTypeSymbol type)
+            {
+                if (_flagsByType.TryGetValue(type, out CachedHierarchyFlags? cached))
+                    return cached.Flags;
+
+                HierarchyFlags flags = ComputeFlags(type);
+                lock (_gate)
+                {
+                    if (_flagsByType.TryGetValue(type, out cached))
+                        return cached.Flags;
+
+                    if (_cachedTypes < MaxCachedTypeClassificationsPerAssembly)
+                    {
+                        _flagsByType.Add(type, new CachedHierarchyFlags(flags));
+                        _cachedTypes++;
+                    }
+                }
+
+                return flags;
+            }
         }
 
         public static bool IsTypeInterestingForDataflow(this ITypeSymbol type, bool isByRef)
@@ -29,6 +69,14 @@ namespace ILLink.RoslynAnalyzer
         }
 
         private static HierarchyFlags GetFlags(INamedTypeSymbol type)
+        {
+            if (type.ContainingAssembly is not IAssemblySymbol assembly)
+                return ComputeFlags(type);
+
+            return s_hierarchyCaches.GetValue(assembly, static _ => new HierarchyFlagsCache()).GetFlags(type);
+        }
+
+        private static HierarchyFlags ComputeFlags(INamedTypeSymbol type)
         {
             HierarchyFlags flags = 0;
             if (type.IsTypeOf(WellKnownType.System_Reflection_IReflect))
@@ -61,24 +109,30 @@ namespace ILLink.RoslynAnalyzer
 
         public static bool IsTypeOf(this ITypeSymbol symbol, string @namespace, string name)
         {
-            return symbol.ContainingNamespace?.GetDisplayName() == @namespace && symbol.MetadataName == name;
+            return symbol.MetadataName == name && symbol.ContainingNamespace?.GetDisplayName() == @namespace;
         }
 
         public static bool IsTypeOf(this ITypeSymbol symbol, WellKnownType wellKnownType)
         {
-            return symbol.TryGetWellKnownType() == wellKnownType;
-        }
-
-        public static WellKnownType? TryGetWellKnownType(this ITypeSymbol symbol)
-        {
-            return symbol.SpecialType switch
+            switch (symbol.SpecialType)
             {
-                SpecialType.System_String => WellKnownType.System_String,
-                SpecialType.System_Nullable_T => WellKnownType.System_Nullable_T,
-                SpecialType.System_Array => WellKnownType.System_Array,
-                SpecialType.System_Object => WellKnownType.System_Object,
-                _ => WellKnownTypeExtensions.GetWellKnownType(symbol.ContainingNamespace?.GetDisplayName() ?? "", symbol.MetadataName)
-            };
+                case SpecialType.System_String:
+                    return wellKnownType == WellKnownType.System_String;
+                case SpecialType.System_Nullable_T:
+                    return wellKnownType == WellKnownType.System_Nullable_T;
+                case SpecialType.System_Array:
+                    return wellKnownType == WellKnownType.System_Array;
+                case SpecialType.System_Object:
+                    return wellKnownType == WellKnownType.System_Object;
+            }
+
+            if ((uint)wellKnownType >= (uint)WellKnownType.NextAvailable)
+            {
+                return false;
+            }
+
+            (string @namespace, string name) = wellKnownType.GetNamespaceAndName();
+            return symbol.IsTypeOf(@namespace, name);
         }
     }
 }

@@ -214,6 +214,34 @@ namespace System.Text.Json.Schema.Tests
             AssertDoesNotMatchSchema(schema, jsonWithUnmappedProperties);
         }
 
+        [Theory]
+        [InlineData(JsonUnmappedMemberHandling.Skip)]
+        [InlineData(JsonUnmappedMemberHandling.Disallow)]
+        public void TypeWithExtensionData_GlobalUnmappedMemberHandling_AllowsAdditionalProperties(JsonUnmappedMemberHandling unmappedMemberHandling)
+        {
+            const string Json = """{"Name":"name","x":42}""";
+            JsonSerializerOptions options = new(Serializer.DefaultOptions) { UnmappedMemberHandling = unmappedMemberHandling };
+            JsonTypeInfo<PocoWithExtensionDataProperty> typeInfo = Serializer.GetTypeInfo<PocoWithExtensionDataProperty>(options);
+
+            PocoWithExtensionDataProperty? value = JsonSerializer.Deserialize(Json, typeInfo);
+            Assert.NotNull(value);
+            Assert.NotNull(value.ExtensionData);
+            Assert.Equal(42, Assert.IsType<JsonElement>(value.ExtensionData["x"]).GetInt32());
+
+            string serialized = JsonSerializer.Serialize(value, typeInfo);
+            JsonTestHelper.AssertJsonEqual(Json, serialized);
+
+            foreach (JsonNode schema in new[]
+            {
+                options.GetJsonSchemaAsNode(typeof(PocoWithExtensionDataProperty)),
+                typeInfo.GetJsonSchemaAsNode()
+            })
+            {
+                Assert.False(schema.AsObject().ContainsKey("additionalProperties"));
+                AssertDocumentMatchesSchema(schema, JsonNode.Parse(serialized));
+            }
+        }
+
         [Fact]
         public void GetJsonSchemaAsNode_NullInputs_ThrowsArgumentNullException()
         {
@@ -409,5 +437,28 @@ namespace System.Text.Json.Schema.Tests
 
         private string FormatJson(JsonNode? node) =>
             JsonSerializer.Serialize(node, _indentedOptions.GetTypeInfo<JsonNode>());
+
+        [Theory]
+        [InlineData("1E4")]
+        [InlineData("1e-4")]
+        [InlineData("1.23E+4")]
+        [InlineData("-1.23e-4")]
+        public void Decimal_AllowReadingFromString_MatchesScientificNotation(string decimalString)
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/130868
+            var options = new JsonSerializerOptions
+            {
+                TypeInfoResolver = Serializer.DefaultOptions.TypeInfoResolver,
+                NumberHandling = JsonNumberHandling.AllowReadingFromString
+            };
+
+            JsonNode schema = options.GetJsonSchemaAsNode(typeof(decimal));
+            string pattern = schema["pattern"]!.GetValue<string>();
+            Assert.Matches(pattern, decimalString);
+
+            decimal parsed = JsonSerializer.Deserialize<decimal>($"\"{decimalString}\"", options);
+            Assert.True(decimal.TryParse(decimalString, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out decimal expected));
+            Assert.Equal(expected, parsed);
+        }
     }
 }

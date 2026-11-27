@@ -1054,7 +1054,7 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public static void CheckIsSupported()
         {
-            bool expectedIsSupported = !PlatformDetection.IsBrowser;
+            bool expectedIsSupported = !PlatformDetection.IsWasm;
 
             Assert.Equal(expectedIsSupported, AesGcm.IsSupported);
         }

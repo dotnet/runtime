@@ -29,12 +29,8 @@ HRESULT _FillMDDefaultValue(
 __checkReturn
 HRESULT TranslateSigHelper(                 // S_OK or error.
     IMDInternalImport       *pImport,       // [IN] import scope.
-    IMDInternalImport       *pAssemImport,  // [IN] import assembly scope.
-    const void              *pbHashValue,   // [IN] hash value for the import assembly.
-    ULONG                   cbHashValue,    // [IN] count of bytes in the hash value.
     PCCOR_SIGNATURE         pbSigBlob,      // [IN] signature in the importing scope
     ULONG                   cbSigBlob,      // [IN] count of bytes of signature
-    IMDInternalEmit         *pAssemEmit,    // [IN] assembly emit scope.
     IMDInternalEmit         *emit,          // [IN] emit interface
     CQuickBytes             *pqkSigEmit,    // [OUT] buffer to hold translated signature
     ULONG                   *pcbSig);       // [OUT] count of bytes in the translated signature
@@ -46,7 +42,8 @@ HRESULT GetInternalWithRWFormat(
     ULONG       cbData,
     DWORD       flags,                  // [IN] MDInternal_OpenForRead or MDInternal_OpenForENC
     REFIID      riid,                   // [in] The interface desired.
-    void        **ppIUnk);              // [out] Return interface on success.
+    void        **ppIUnk,               // [out] Return interface on success.
+    bool        fIsDelta);              // Is this metadata being loaded to apply an EnC delta.
 
 // forward declaration
 __checkReturn
@@ -132,24 +129,16 @@ HRESULT MDInternalRO::Init(
 //*****************************************************************************
 __checkReturn
 HRESULT MDInternalRO::TranslateSigWithScope(
-    IMDInternalImport*      pAssemImport,   // [IN] import assembly scope.
-    const void*             pbHashValue,    // [IN] hash value for the import assembly.
-    ULONG                   cbHashValue,    // [IN] count of bytes in the hash value.
     PCCOR_SIGNATURE         pbSigBlob,      // [IN] signature in the importing scope
     ULONG                   cbSigBlob,      // [IN] count of bytes of signature
-    IMDInternalEmit*        pAssemEmit,     // [IN] assembly emit scope.
     IMDInternalEmit*        emit,           // [IN] emit interface
     CQuickBytes*            pqkSigEmit,     // [OUT] buffer to hold translated signature
     ULONG*                  pcbSig)         // [OUT] count of bytes in the translated signature
 {
     return TranslateSigHelper(
                 this,
-                pAssemImport,
-                pbHashValue,
-                cbHashValue,
                 pbSigBlob,
                 cbSigBlob,
-                pAssemEmit,
                 emit,
                 pqkSigEmit,
                 pcbSig);
@@ -1894,7 +1883,7 @@ HRESULT MDInternalRO::GetPropertyInfoForMethodDef(  // Result.
     // Lazy initialization of m_pMethodSemanticsMap
     if ((ridMax > 10) && (m_pMethodSemanticsMap == NULL))
     {
-        NewArrayHolder<CMethodSemanticsMap> pMethodSemanticsMap = new (nothrow) CMethodSemanticsMap[ridMax];
+        NewArrayHolder<CMethodSemanticsMap> pMethodSemanticsMap(new (nothrow) CMethodSemanticsMap[ridMax]);
         if (pMethodSemanticsMap != NULL)
         {
             // Fill the table in MethodSemantics order.
@@ -1912,7 +1901,7 @@ HRESULT MDInternalRO::GetPropertyInfoForMethodDef(  // Result.
             if (InterlockedCompareExchangeT<CMethodSemanticsMap *>(
                 &m_pMethodSemanticsMap, pMethodSemanticsMap, NULL) == NULL)
             {   // The exchange did happen, suppress of the allocated map
-                pMethodSemanticsMap.SuppressRelease();
+                pMethodSemanticsMap.Detach();
             }
         }
     }
@@ -2586,29 +2575,6 @@ HRESULT MDInternalRO::GetAllAssociates(
 
 
 //*****************************************************************************
-// Get the Action and Permissions blob for a given PermissionSet.
-//*****************************************************************************
-__checkReturn
-HRESULT MDInternalRO::GetPermissionSetProps(
-    mdPermission pm,                    // [IN] the permission token.
-    DWORD       *pdwAction,             // [OUT] CorDeclSecurity.
-    void const  **ppvPermission,        // [OUT] permission blob.
-    ULONG       *pcbPermission)         // [OUT] count of bytes of pvPermission.
-{
-    HRESULT hr;
-    _ASSERTE(TypeFromToken(pm) == mdtPermission);
-    _ASSERTE(pdwAction && ppvPermission && pcbPermission);
-
-    DeclSecurityRec *pPerm;
-
-    IfFailRet(m_LiteWeightStgdb.m_MiniMd.GetDeclSecurityRecord(RidFromToken(pm), &pPerm));
-    *pdwAction = m_LiteWeightStgdb.m_MiniMd.getActionOfDeclSecurity(pPerm);
-    IfFailRet(m_LiteWeightStgdb.m_MiniMd.getPermissionSetOfDeclSecurity(pPerm, (const BYTE **)ppvPermission, pcbPermission));
-
-    return S_OK;
-} // MDInternalRO::GetPermissionSetProps
-
-//*****************************************************************************
 // Get the String given the String token.
 // Return a pointer to the string, or NULL in case of error.
 //*****************************************************************************
@@ -3256,7 +3222,7 @@ HRESULT MDInternalRO::ApplyEditAndContinue(
 
     IMDInternalImportENC *pDeltaMDImport = NULL;
 
-    IfFailGo(GetInternalWithRWFormat(pDeltaMD, cbDeltaMD, 0, IID_IMDInternalImportENC, (void**)&pDeltaMDImport));
+    IfFailGo(GetInternalWithRWFormat(pDeltaMD, cbDeltaMD, 0, IID_IMDInternalImportENC, (void**)&pDeltaMDImport, true));
 
     *ppv = this;
     IfFailGo(MDApplyEditAndContinue(ppv, pDeltaMDImport));

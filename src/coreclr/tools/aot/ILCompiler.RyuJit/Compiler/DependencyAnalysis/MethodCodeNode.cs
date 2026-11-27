@@ -10,7 +10,8 @@ using Internal.IL;
 using Internal.Text;
 using Internal.TypeSystem;
 
-using CombinedDependencyList = System.Collections.Generic.List<ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.CombinedDependencyListEntry>;
+using CombinedDependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.CombinedDependencyList;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -22,6 +23,7 @@ namespace ILCompiler.DependencyAnalysis
         private FrameInfo[] _frameInfos;
         private byte[] _gcInfo;
         private MethodExceptionHandlingInfoNode _ehInfo;
+        private FuncletKind[] _funcletKinds;
         private DebugLocInfo[] _debugLocInfos;
         private DebugVarInfo[] _debugVarInfos;
         private DebugEHClauseInfo[] _debugEHClauseInfos;
@@ -49,8 +51,12 @@ namespace ILCompiler.DependencyAnalysis
 
         public override ObjectNodeSection GetSection(NodeFactory factory)
         {
-            return factory.Target.IsWindows ?
-                ObjectNodeSection.ManagedCodeWindowsContentSection : ObjectNodeSection.ManagedCodeUnixContentSection;
+            return factory.Target switch
+            {
+                { IsWasm: true } => ObjectNodeSection.WasmCodeSection,
+                { IsWindows: true } => ObjectNodeSection.ManagedCodeWindowsContentSection,
+                _ => ObjectNodeSection.ManagedCodeUnixContentSection
+            };
         }
 
         public override bool StaticDependenciesAreComputed => _methodCode != null;
@@ -66,37 +72,73 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool HasConditionalStaticDependencies => CodeBasedDependencyAlgorithm.HasConditionalDependenciesDueToMethodCodePresence(_method);
 
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory factory)
         {
-            CombinedDependencyList dependencies = null;
-            CodeBasedDependencyAlgorithm.AddConditionalDependenciesDueToMethodCodePresence(ref dependencies, factory, _method);
-            return dependencies ?? (IEnumerable<CombinedDependencyListEntry>)Array.Empty<CombinedDependencyListEntry>();
+            CodeBasedDependencyAlgorithm.AddConditionalDependenciesDueToMethodCodePresence(sink, factory, _method);
         }
 
-        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
+        public void AddRuntimeDeterminedStaticDependencies(DependencySink sink, NodeFactory factory, MethodDesc concreteMethod)
         {
-            DependencyList dependencies = _nonRelocationDependencies != null ? new DependencyList(_nonRelocationDependencies) : null;
+            if (_nonRelocationDependencies is not null)
+            {
+                foreach (DependencyListEntry dependency in _nonRelocationDependencies)
+                {
+                    AddRuntimeDeterminedDependency(sink, factory, concreteMethod, dependency.Node);
+                }
+            }
+
+            if (_methodCode.Relocs is not null)
+            {
+                foreach (Relocation relocation in _methodCode.Relocs)
+                {
+                    AddRuntimeDeterminedDependency(sink, factory, concreteMethod, relocation.Target);
+                }
+            }
+        }
+
+        public void AddRuntimeDeterminedConditionalDependencies(DependencySink sink, NodeFactory factory, MethodDesc concreteMethod)
+        {
+        }
+
+        private static void AddRuntimeDeterminedDependency(DependencySink sink, NodeFactory factory, MethodDesc concreteMethod, object dependency)
+        {
+            if (dependency is INodeWithRuntimeDeterminedDependencies runtimeDeterminedDependency)
+            {
+                runtimeDeterminedDependency.AddDependencies(
+                    sink,
+                    factory,
+                    concreteMethod.OwningType.Instantiation,
+                    concreteMethod.Instantiation,
+                    isConcreteInstantiation: !concreteMethod.IsSharedByGenericInstantiations,
+                    otherReasonNode: null);
+            }
+        }
+
+        protected override void ComputeNonRelocationBasedDependencies(DependencySink sink, NodeFactory factory)
+        {
+            if (_nonRelocationDependencies is not null)
+            {
+                foreach (DependencyListEntry dependency in _nonRelocationDependencies)
+                {
+                    sink.Add(dependency);
+                }
+            }
 
             TypeDesc owningType = _method.OwningType;
             if (factory.PreinitializationManager.HasEagerStaticConstructor(owningType))
             {
-                dependencies ??= new DependencyList();
-                dependencies.Add(factory.EagerCctorIndirection(owningType.GetStaticConstructor()), "Eager .cctor");
+                sink.Add(factory.EagerCctorIndirection(owningType.GetStaticConstructor()), "Eager .cctor");
             }
 
             if (_ehInfo != null)
             {
-                dependencies ??= new DependencyList();
-                dependencies.Add(_ehInfo, "Exception handling information");
+                sink.Add(_ehInfo, "Exception handling information");
             }
 
             if (MethodAssociatedDataNode.MethodHasAssociatedData(this))
             {
-                dependencies ??= new DependencyList();
-                dependencies.Add(new DependencyListEntry(factory.MethodAssociatedData(this), "Method associated data"));
+                sink.Add(new DependencyListEntry(factory.MethodAssociatedData(this), "Method associated data"));
             }
-
-            return dependencies;
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly)
@@ -118,8 +160,13 @@ namespace ILCompiler.DependencyAnalysis
         public byte[] GCInfo => _gcInfo;
         public MethodExceptionHandlingInfoNode EHInfo => _ehInfo;
 
-        // TODO-WASM: Appropriately extract funclet kinds from eh clause info
-        public FuncletKind[] GetFuncletKinds() => throw new NotImplementedException();
+        public FuncletKind[] GetFuncletKinds() => _funcletKinds ?? [];
+
+        public void InitializeFuncletKinds(FuncletKind[] funcletKinds)
+        {
+            Debug.Assert(_funcletKinds is null);
+            _funcletKinds = funcletKinds;
+        }
 
         public ISymbolNode GetAssociatedDataNode(NodeFactory factory)
         {
@@ -297,11 +344,22 @@ namespace ILCompiler.DependencyAnalysis
             int previousNativeOffset = -1;
             string previousDocument = null;
             int previousLineNumber = -1;
+            bool isWasm = _method.Context.Target.IsWasm;
+            int nextFuncletIndex = 1;
             // OffsetMapping is sorted in order of increasing native offset (but not necessarily by IL offset)
             foreach (var nativeMapping in _debugLocInfos)
             {
                 if (nativeMapping.NativeOffset == previousNativeOffset)
                     continue;
+
+                while (isWasm && nextFuncletIndex < _frameInfos.Length &&
+                    nativeMapping.NativeOffset >= _frameInfos[nextFuncletIndex].StartOffset)
+                {
+                    // Wasm funclets are separate functions and need their own initial source mapping.
+                    previousDocument = null;
+                    previousLineNumber = -1;
+                    nextFuncletIndex++;
+                }
 
                 var sequencePoint = sequencePoints[Math.Min(nativeMapping.ILOffset, sequencePoints.Length - 1)];
                 // Emit sequence point if its line number or document differ from the previous one.

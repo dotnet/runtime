@@ -89,6 +89,8 @@ namespace ILCompiler
             }
             bool targetAllowsRuntimeCodeGeneration = Get(_command.TargetAllowsRuntimeCodeGeneration)
                 ?? GetTargetAllowsRuntimeCodeGeneration(targetOS, targetArchitecture);
+            bool targetIsSingleThreaded = Get(_command.TargetSingleThreaded)
+                ?? GetTargetIsSingleThreaded(targetArchitecture);
 
             // Crossgen2 is partial AOT and its pre-compiled methods can be thrown away at runtime if
             // they mismatch in required ISAs or computed layouts of structs. On targets that allow
@@ -158,6 +160,7 @@ namespace ILCompiler
             //
             _typeSystemContext = new ReadyToRunCompilerContext(targetDetails, genericsMode, versionBubbleIncludesCoreLib,
                 targetAllowsRuntimeCodeGeneration,
+                targetIsSingleThreaded,
                 instructionSetSupport,
                 oldTypeSystemContext: null);
 
@@ -291,6 +294,7 @@ namespace ILCompiler
                 {
                     OutputDirectory = _generatePortableCallHelpers,
                     PInvokeModules = Get(_command.DirectPInvoke),
+                    PInvokeModuleLists = Get(_command.DirectPInvokeList),
                     // The normalized name, so that platform attributes match regardless of how
                     // --targetos was spelled on the command line.
                     TargetOS = targetOS.ToString().ToLowerInvariant(),
@@ -315,6 +319,7 @@ namespace ILCompiler
 
                         typeSystemContext = new ReadyToRunCompilerContext(targetDetails, genericsMode, singleCompilationVersionBubbleIncludesCoreLib,
                             targetAllowsRuntimeCodeGeneration,
+                            targetIsSingleThreaded,
                             _typeSystemContext.InstructionSetSupport,
                             _typeSystemContext);
                         typeSystemContext.InputFilePaths = singleCompilationInputFilePaths;
@@ -470,6 +475,11 @@ namespace ILCompiler
                         }
                     }
 
+                    if (!composite && Get(_command.StripILBodies))
+                    {
+                        throw new Exception(SR.ErrorStripILBodiesRequiresComposite);
+                    }
+
                     bool compileBubbleGenerics = Get(_command.CompileBubbleGenerics);
                     ReadyToRunCompilationModuleGroupBase compilationGroup;
                     List<ICompilationRootProvider> compilationRoots = new List<ICompilationRootProvider>();
@@ -485,7 +495,7 @@ namespace ILCompiler
                     groupConfig.CrossModuleInlineable = crossModuleInlineableCode;
                     groupConfig.CompileAllPossibleCrossModuleCode = false;
                     groupConfig.InstructionSetSupport = instructionSetSupport;
-                    groupConfig.DirectPInvokeModules = Get(_command.DirectPInvoke);
+                    groupConfig.DirectPInvokes = new DirectPInvokeSet(typeSystemContext.Target, Get(_command.DirectPInvoke), Get(_command.DirectPInvokeList));
 
                     // Handle non-local generics command line option
                     ModuleDesc nonLocalGenericsHome = compileBubbleGenerics ? inputModules[0] : null;
@@ -694,6 +704,7 @@ namespace ILCompiler
                         .UsePdbFile(Get(_command.Pdb), Get(_command.PdbPath))
                         .UsePerfMapFile(Get(_command.PerfMap), Get(_command.PerfMapPath), Get(_command.PerfMapFormatVersion))
                         .UseWasmDebugInfo(Get(_command.WasmDebugInfoOption))
+                        .UseDeferredWasmCalls(!Get(_command.DisableDeferredWasmCalls))
                         .UseProfileFile(jsonProfile != null)
                         .UseProfileData(profileDataManager)
                         .UseNodeFactoryOptimizationFlags(nodeFactoryFlags)
@@ -743,6 +754,12 @@ namespace ILCompiler
         {
             return operatingSystem is not (TargetOS.iOS or TargetOS.iOSSimulator or TargetOS.MacCatalyst or TargetOS.tvOS or TargetOS.tvOSSimulator or TargetOS.Browser or TargetOS.Wasi)
                 && architecture is not TargetArchitecture.Wasm32;
+        }
+
+        // CoreCLR on WebAssembly is built without FEATURE_MULTITHREADING by default.
+        private static bool GetTargetIsSingleThreaded(TargetArchitecture architecture)
+        {
+            return architecture is TargetArchitecture.Wasm32;
         }
 
         private void CheckManagedCppInputFiles(IEnumerable<string> inputPaths)

@@ -754,13 +754,13 @@ namespace System.Diagnostics.Tests
         }
 
         // Move test case back into Ctor_Async_TestData once enabled.
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsRuntimeAsyncSupported))]
+        [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/131123", typeof(PlatformDetection), nameof(PlatformDetection.IsCoreClrInterpreter))]
         public Task ToString_Async_ThrowsSoonValueTaskSource() =>
             ToString_Async(V2Methods.ThrowsSoonValueTaskSource, MethodExceptionStrings["ThrowsSoonValueTaskSource"]);
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsRuntimeAsyncSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
+        [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsWasm))]
         [MemberData(nameof(Ctor_Async_TestData))]
         [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
         public async Task ToString_Async(Func<Task> asyncMethod, string[] expectedPatterns)
@@ -805,7 +805,7 @@ namespace System.Diagnostics.Tests
         private static StackTrace TwoParameters(int x, string y) => new StackTrace();
 
         [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
-        private unsafe static StackTrace FunctionPointerParameter(delegate*<void> x) => new StackTrace();
+        private static StackTrace FunctionPointerParameter(delegate*<void> x) => new StackTrace();
 
         [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
         private static StackTrace Generic<T>() => new StackTrace();

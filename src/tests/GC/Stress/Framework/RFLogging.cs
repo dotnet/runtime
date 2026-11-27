@@ -337,14 +337,14 @@ internal class RFLogging
     {
         if (File.Exists(Environment.ExpandEnvironmentVariables("%SCRIPTSDIR%\\record.js")))
         {
-            ProcessStartInfo psi = new ProcessStartInfo("cscript.exe", Environment.ExpandEnvironmentVariables("//b //nologo %SCRIPTSDIR%\\record.js -i %STRESSID% -a UPDATE_RECORD -s RUNNING"));
-            psi.UseShellExecute = false;
-            psi.RedirectStandardOutput = true;
+            ProcessStartInfo psi = new ProcessStartInfo("cscript.exe",
+                ["//b", "//nologo", Environment.ExpandEnvironmentVariables("%SCRIPTSDIR%\\record.js"),
+                 "-i", Environment.ExpandEnvironmentVariables("%STRESSID%"), "-a", "UPDATE_RECORD", "-s", "RUNNING"]);
+            psi.InheritedHandles = [];
+            using Microsoft.Win32.SafeHandles.SafeFileHandle nullHandle = File.OpenNullHandle();
+            psi.StandardOutputHandle = nullHandle;
 
-            Process p = Process.Start(psi);
-            p.StandardOutput.ReadToEnd();
-            p.WaitForExit();
-            p.Dispose();
+            Process.Run(psi);
         }
     }
 
@@ -380,8 +380,10 @@ internal class RFLogging
             {
                 if (File.Exists(Environment.ExpandEnvironmentVariables("%SCRIPTSDIR%\\record.js")))
                 {
-                    ProcessStartInfo psi = new ProcessStartInfo("cscript.exe", Environment.ExpandEnvironmentVariables("//b //nologo %SCRIPTSDIR%\\record.js -i %STRESSID% -a UPDATE_RECORD -s RUNNING"));
-                    psi.UseShellExecute = false;
+                    ProcessStartInfo psi = new ProcessStartInfo("cscript.exe",
+                        ["//b", "//nologo", Environment.ExpandEnvironmentVariables("%SCRIPTSDIR%\\record.js"),
+                         "-i", Environment.ExpandEnvironmentVariables("%STRESSID%"), "-a", "UPDATE_RECORD", "-s", "RUNNING"]);
+                    psi.InheritedHandles = [];
                     psi.RedirectStandardOutput = true;
                     psi.RedirectStandardError = true;
 
@@ -454,4 +456,3 @@ internal class RFLogging
         }
     }
 }
-

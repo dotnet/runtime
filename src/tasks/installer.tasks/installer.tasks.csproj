@@ -15,6 +15,7 @@
     <Reference Include="$(NetCoreSdkRoot)Microsoft.Extensions.DependencyModel.dll" Private="false" />
     <Reference Include="$(NetCoreSdkRoot)Newtonsoft.Json.dll" Private="false" />
     <Reference Include="$(NetCoreSdkRoot)NuGet.Packaging.dll" Private="false" />
+    <Reference Include="$(NetCoreSdkRoot)NuGet.Versioning.dll" Private="false" />
   </ItemGroup>
 
 </Project>

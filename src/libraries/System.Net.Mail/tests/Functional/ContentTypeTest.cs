@@ -204,5 +204,32 @@ namespace System.Net.Mime.Tests
             Assert.Equal("application/xml", ct.MediaType);
             Assert.Equal("us-ascii", ct.CharSet);
         }
+
+        [Theory]
+        [InlineData("=?utf-8?B?SGVsbG8=?=")]
+        [InlineData("=?utf-8?Q?Hello=20world?=")]
+        [InlineData("=?utf-8?B?SGVsbG8=?=\r\n =?utf-8?B?d29ybGQ=?=")]
+        [InlineData("=?utf-8?Q?foo?=?bar\"; filename=\"foo.txt")]
+        [InlineData("=?utf-8?B?Zm9v?=\"; filename=\"foo.txt")]
+        [InlineData("=?utf-8?Q?foo\\\\?=")]
+        [InlineData("=?utf-8?Q?foo\";filename=\"foo.txt?=")]
+        [InlineData("=?utf-8?Q?foo\"; filename=\"foo.txt?=")]
+        [InlineData("=?utf-8?Q?foo\"bar?=")]
+        [InlineData("=?utf-8?B?Zm9v?=trailing")]
+        public static void Name_MultiWordAndEscaping(string input)
+        {
+            var ct = new ContentType("application/octet-stream");
+            ct.Name = input;
+
+            // Property roundtrip
+            Assert.Equal(input, ct.Parameters["name"]);
+            Assert.Equal(1, ct.Parameters.Count);
+
+            // Serialize/parse roundtrip
+            var serialized = ct.ToString();
+            var reparsed = new ContentType(serialized);
+            Assert.Equal(1, reparsed.Parameters.Count);
+            Assert.Equal(input, reparsed.Parameters["name"]);
+        }
     }
 }

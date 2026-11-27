@@ -1,11 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
-// File: StubGen.h
-//
-
-//
-
 
 #ifndef __STUBGEN_H__
 #define __STUBGEN_H__
@@ -736,9 +730,6 @@ protected:
         UINT_PTR    uArg;
     };
 
-    static void PatchInstructionArgument(ILCodeLabel* pLabel, UINT_PTR uNewArg
-        DEBUG_ARG(UINT16 uExpectedInstruction));
-
 #ifdef _DEBUG
     bool IsInCodeStreamList(ILCodeStream* pcs);
 #endif // _DEBUG
@@ -1004,7 +995,8 @@ public:
     void EmitJMP        (int token);
     void EmitLDARG      (unsigned uArgIdx);
     void EmitLDARGA     (unsigned uArgIdx);
-    void EmitLDC        (DWORD_PTR uConst);
+    void EmitLDC_I4     (INT32 iConst);
+    void EmitLDC_I      (UINT_PTR uConst);
     void EmitLDC_R4     (float fConst);
     void EmitLDC_R8     (double dConst);
     void EmitLDELEMA    (int token);
@@ -1076,7 +1068,6 @@ public:
     void EmitLabel(ILCodeLabel* pLabel);
     void EmitLoadThis ();
     void EmitLoadSecretStubArgument();
-    void EmitLoadNullPtr();
 
     ILCodeLabel* NewCodeLabel();
 

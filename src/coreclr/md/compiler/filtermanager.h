@@ -1,13 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //*****************************************************************************
 // FilterManager.h
 //
-
-//
 // Contains utility code for MD directory
-//
 //*****************************************************************************
+
 #ifndef __FilterManager__h__
 #define __FilterManager__h__
 
@@ -48,7 +47,6 @@ private:
 
         HRESULT MarkCustomAttributesWithParentToken(mdToken tkParent);
         HRESULT MarkDeclSecuritiesWithParentToken(mdToken tkParent);
-        HRESULT MarkMemberRefsWithParentToken(mdToken tk);
 
         HRESULT MarkParam(mdParamDef pd);
         HRESULT MarkMethod(mdMethodDef md);

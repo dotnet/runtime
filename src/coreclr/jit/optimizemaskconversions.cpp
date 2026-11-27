@@ -120,7 +120,6 @@ public:
     {
         DoPreOrder        = true,
         UseExecutionOrder = true,
-        DoLclVarsOnly     = true,
     };
 
     MaskConversionsCheckVisitor(Compiler* compiler, weight_t bbWeight, MaskConversionsWeightTable* weightsTable)
@@ -132,7 +131,26 @@ public:
 
     Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
     {
-        GenTreeLclVarCommon* lclOp  = (*use)->AsLclVarCommon();
+        GenTree* node = *use;
+        if (!node->OperIsNonPhiLocal() && !node->OperIs(GT_LCL_ADDR))
+        {
+            // Other definitions of locals (e.g. by calls) are not handled.
+            node->VisitLogicalLocalDefs(m_compiler, [=](const auto& def) {
+                unsigned lclNum = def.GetLclNum();
+                if (varTypeIsSIMDOrMask(m_compiler->lvaGetDesc(lclNum)))
+                {
+                    JITDUMP("%s defining V%02d at [%06u] is unhandled. ", GenTree::OpName(node->OperGet()), lclNum,
+                            m_compiler->dspTreeID(node));
+                    weightsTable->LookupPointerOrAdd(lclNum, MaskConversionsWeight())->InvalidateWeight();
+                }
+
+                return GenTree::VisitResult::Continue;
+            });
+
+            return fgWalkResult::WALK_CONTINUE;
+        }
+
+        GenTreeLclVarCommon* lclOp  = node->AsLclVarCommon();
         LclVarDsc*           varDsc = m_compiler->lvaGetDesc(lclOp);
 
         if (!varTypeIsSIMDOrMask(varDsc))

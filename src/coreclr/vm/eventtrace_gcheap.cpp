@@ -4,6 +4,7 @@
 #include "common.h"
 
 #include "eventtrace.h"
+#include "gcenv.h"
 #include "winbase.h"
 #include "contract.h"
 #include "ex.h"

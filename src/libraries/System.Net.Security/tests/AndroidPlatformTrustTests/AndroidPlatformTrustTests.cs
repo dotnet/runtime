@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.IO;
 using System.Net.Sockets;
 using System.Security.Authentication;
@@ -28,8 +29,23 @@ namespace System.Net.Security.Tests
     /// </summary>
     public class AndroidPlatformTrustTests
     {
-        [Fact]
-        public async Task SslStream_CustomRootTrust_NoChainErrors()
+        public static IEnumerable<object[]> ConnectionInfoProtocols()
+        {
+            foreach (SslProtocols protocol in new[] { SslProtocols.Tls12, SslProtocols.None, SslProtocols.Tls13 })
+            {
+                if (protocol != SslProtocols.Tls13 || PlatformDetection.SupportsTls13)
+                {
+                    foreach (bool mutualAuthentication in new[] { false, true })
+                    {
+                        yield return new object[] { protocol, mutualAuthentication };
+                    }
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(ConnectionInfoProtocols))]
+        public async Task SslStream_CustomRootTrust_NoChainErrors(SslProtocols protocol, bool mutualAuthentication)
         {
             // The server uses testservereku.contoso.com.pfx signed by the NDX Test Root CA.
             // CustomRootTrust is configured with the NDX root so managed validation accepts.
@@ -37,7 +53,10 @@ namespace System.Net.Security.Tests
             // pre-seed RemoteCertificateChainErrors.
 
             using X509Certificate2 rootCertificate = GetRootCertificate();
+            using X509Certificate2 clientCertificate = Configuration.Certificates.GetSelfSignedClientCertificate();
             SslPolicyErrors? reportedErrors = null;
+            int callbacks = 0;
+            int serverCallbacks = 0;
 
             (SslStream client, SslStream server) = GetConnectedSslStreams();
             using (client)
@@ -47,15 +66,26 @@ namespace System.Net.Security.Tests
                 var serverOptions = new SslServerAuthenticationOptions
                 {
                     ServerCertificate = serverCertificate,
+                    EnabledSslProtocols = protocol,
                 };
 
                 var clientOptions = new SslClientAuthenticationOptions
                 {
                     TargetHost = "testservereku.contoso.com",
+                    EnabledSslProtocols = protocol,
                     RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) =>
                     {
                         reportedErrors = sslPolicyErrors;
-                        return true;
+                        Assert.Same(client, sender);
+                        Assert.NotNull(certificate);
+                        Assert.Equal(serverCertificate.RawData, certificate.GetRawCertData());
+                        Assert.NotNull(chain);
+                        Assert.Equal(SslPolicyErrors.None, sslPolicyErrors);
+
+                        AssertConnectionInfo(client);
+
+                        callbacks++;
+                        return sslPolicyErrors == SslPolicyErrors.None;
                     },
                     CertificateChainPolicy = new X509ChainPolicy
                     {
@@ -65,13 +95,263 @@ namespace System.Net.Security.Tests
                     },
                 };
 
-                await Task.WhenAll(
-                    client.AuthenticateAsClientAsync(clientOptions),
-                    server.AuthenticateAsServerAsync(serverOptions)).WaitAsync(TimeSpan.FromSeconds(30));
+                if (mutualAuthentication)
+                {
+                    clientOptions.RemoteCertificateValidationCallback = null;
+                    clientOptions.ClientCertificates = new X509CertificateCollection { clientCertificate };
+                    serverOptions.ClientCertificateRequired = true;
+                    serverOptions.CertificateChainPolicy = new X509ChainPolicy
+                    {
+                        RevocationMode = X509RevocationMode.NoCheck,
+                        TrustMode = X509ChainTrustMode.CustomRootTrust,
+                        CustomTrustStore = { clientCertificate },
+                    };
+                    serverOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, errors) =>
+                    {
+                        reportedErrors = errors;
+                        Assert.Same(server, sender);
+                        Assert.NotNull(certificate);
+                        Assert.Equal(clientCertificate.RawData, certificate.GetRawCertData());
+                        Assert.NotNull(chain);
+                        Assert.Equal(SslPolicyErrors.None, errors);
+                        AssertConnectionInfo(server);
+                        serverCallbacks++;
+                        return errors == SslPolicyErrors.None;
+                    };
+                }
+
+                Task clientAuthentication = client.AuthenticateAsClientAsync(clientOptions);
+                Task serverAuthentication = server.AuthenticateAsServerAsync(serverOptions);
+                await TaskTimeoutExtensions.WhenAllOrAnyFailed(
+                    clientAuthentication, serverAuthentication, millisecondsTimeout: 30_000);
+
+                Assert.True(client.IsAuthenticated);
+                Assert.True(server.IsAuthenticated);
+                Assert.NotEqual(SslProtocols.None, client.SslProtocol);
+                if (protocol != SslProtocols.None)
+                {
+                    Assert.Equal(protocol, client.SslProtocol);
+                }
+                Assert.Equal(client.SslProtocol, server.SslProtocol);
+                Assert.NotEqual(default, client.NegotiatedCipherSuite);
+                Assert.True(Enum.IsDefined(client.NegotiatedCipherSuite));
+                Assert.Equal(server.NegotiatedCipherSuite, client.NegotiatedCipherSuite);
+
+                await VerifyDataExchange(client, server);
+                await VerifyDataExchange(server, client);
+
+                Assert.Equal(mutualAuthentication ? 0 : 1, callbacks);
+                Assert.Equal(mutualAuthentication ? 1 : 0, serverCallbacks);
             }
 
             Assert.NotNull(reportedErrors);
             Assert.Equal(SslPolicyErrors.None, reportedErrors.Value & SslPolicyErrors.RemoteCertificateChainErrors);
+
+            void AssertConnectionInfo(SslStream stream)
+            {
+                if (!OperatingSystem.IsAndroidVersionAtLeast(26) ||
+                    (OperatingSystem.IsAndroidVersionAtLeast(27) && !OperatingSystem.IsAndroidVersionAtLeast(29)))
+                {
+                    Assert.Throws<InvalidOperationException>(() => stream.SslProtocol);
+                    Assert.Throws<InvalidOperationException>(() => stream.NegotiatedCipherSuite);
+                }
+                else
+                {
+                    Assert.NotEqual(SslProtocols.None, stream.SslProtocol);
+                    if (protocol != SslProtocols.None)
+                    {
+                        Assert.Equal(protocol, stream.SslProtocol);
+                    }
+                    Assert.NotEqual(default, stream.NegotiatedCipherSuite);
+                    Assert.True(Enum.IsDefined(stream.NegotiatedCipherSuite));
+                }
+            }
+
+            static async Task VerifyDataExchange(SslStream sender, SslStream receiver)
+            {
+                byte[] expected = { 1, 2, 3, 4 };
+                byte[] actual = new byte[expected.Length];
+                await TaskTimeoutExtensions.WhenAllOrAnyFailed(
+                    sender.WriteAsync(expected).AsTask(),
+                    receiver.ReadExactlyAsync(actual).AsTask(),
+                    millisecondsTimeout: 30_000);
+                Assert.Equal(expected, actual);
+            }
+        }
+
+        [Fact]
+        [OuterLoop]
+        public async Task SslStream_SystemTrust_RootHintPreservesCallbackCertificates()
+        {
+            Uri endpoint = Configuration.Http.SecureRemoteEchoServer;
+            string host = endpoint.Host;
+            X509Certificate2? rootCertificate = null;
+            var retainedCertificates = new System.Collections.Generic.List<(X509Certificate2 Certificate, byte[] RawData)>();
+            int callbacks = 0;
+
+            try
+            {
+                await Connect(new X509ChainPolicy { RevocationMode = X509RevocationMode.NoCheck }, (sender, certificate, chain, errors) =>
+                {
+                    callbacks++;
+                    Assert.Equal(SslPolicyErrors.None, errors);
+                    Assert.NotNull(chain);
+                    rootCertificate = new X509Certificate2(chain.ChainElements[chain.ChainElements.Count - 1].Certificate);
+                    RetainCertificates(chain, 0);
+                    return true;
+                });
+
+                Assert.NotNull(rootCertificate);
+                X509ChainPolicy policy = new X509ChainPolicy
+                {
+                    RevocationMode = X509RevocationMode.NoCheck,
+                    ExtraStore = { rootCertificate },
+                };
+
+                await Connect(policy, (sender, certificate, chain, errors) =>
+                {
+                    callbacks++;
+                    Assert.Equal(SslPolicyErrors.None, errors);
+                    Assert.NotNull(certificate);
+                    Assert.NotNull(chain);
+                    Assert.NotSame(policy, chain.ChainPolicy);
+                    Assert.True(chain.ChainPolicy.ExtraStore.Count > policy.ExtraStore.Count);
+                    for (int i = 0; i < policy.ExtraStore.Count; i++)
+                    {
+                        Assert.Same(policy.ExtraStore[i], chain.ChainPolicy.ExtraStore[i]);
+                    }
+
+                    Assert.Equal(certificate.GetRawCertData(), chain.ChainPolicy.ExtraStore[policy.ExtraStore.Count].RawData);
+                    RetainCertificates(chain, policy.ExtraStore.Count);
+                    return true;
+                });
+
+                Assert.Equal(2, callbacks);
+                Assert.Single(policy.ExtraStore);
+                Assert.Same(rootCertificate, policy.ExtraStore[0]);
+                AssertCertificateUsable(rootCertificate, rootCertificate.RawData);
+                foreach (var retained in retainedCertificates)
+                {
+                    AssertCertificateUsable(retained.Certificate, retained.RawData);
+                }
+            }
+            finally
+            {
+                foreach (var retained in retainedCertificates)
+                {
+                    retained.Certificate.Dispose();
+                }
+
+                rootCertificate?.Dispose();
+            }
+
+            void RetainCertificates(X509Chain chain, int callerCertificateCount)
+            {
+                for (int i = callerCertificateCount; i < chain.ChainPolicy.ExtraStore.Count; i++)
+                {
+                    X509Certificate2 certificate = chain.ChainPolicy.ExtraStore[i];
+                    retainedCertificates.Add((certificate, certificate.RawData));
+                }
+
+                foreach (X509ChainElement element in chain.ChainElements)
+                {
+                    retainedCertificates.Add((element.Certificate, element.Certificate.RawData));
+                }
+            }
+
+            static void AssertCertificateUsable(X509Certificate2 certificate, byte[] expectedRawData)
+            {
+                Assert.Equal(expectedRawData, certificate.RawData);
+                using (var copy = new X509Certificate2(certificate))
+                {
+                    Assert.Equal(expectedRawData, copy.RawData);
+                }
+            }
+
+            async Task Connect(X509ChainPolicy policy, RemoteCertificateValidationCallback callback)
+            {
+                using (System.Net.Sockets.TcpClient client = new System.Net.Sockets.TcpClient())
+                {
+                    await client.ConnectAsync(host, endpoint.Port).WaitAsync(TimeSpan.FromSeconds(30));
+                    using (SslStream stream = new SslStream(client.GetStream()))
+                    {
+                        await stream.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
+                        {
+                            TargetHost = host,
+                            CertificateChainPolicy = policy,
+                            RemoteCertificateValidationCallback = callback,
+                        }).WaitAsync(TimeSpan.FromSeconds(30));
+                    }
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData(false, false, false, SslPolicyErrors.None)]
+        [InlineData(true, false, false, SslPolicyErrors.RemoteCertificateNameMismatch)]
+        [InlineData(true, false, true, SslPolicyErrors.RemoteCertificateNameMismatch)]
+        [InlineData(false, true, false, SslPolicyErrors.RemoteCertificateChainErrors)]
+        [InlineData(false, true, true, SslPolicyErrors.RemoteCertificateChainErrors)]
+        public async Task SslStream_CustomRootTrust_EnforcesNameAndPolicy(
+            bool wrongHost,
+            bool wrongPolicy,
+            bool acceptErrors,
+            SslPolicyErrors expectedErrors)
+        {
+            using (X509Certificate2 rootCertificate = GetRootCertificate())
+            using (X509Certificate2 serverCertificate = Configuration.Certificates.GetServerCertificate())
+            {
+                (SslStream client, SslStream server) = GetConnectedSslStreams();
+                using (client)
+                using (server)
+                {
+                    SslPolicyErrors? reportedErrors = null;
+                    X509ChainPolicy policy = new X509ChainPolicy
+                    {
+                        RevocationMode = X509RevocationMode.NoCheck,
+                        TrustMode = X509ChainTrustMode.CustomRootTrust,
+                        CustomTrustStore = { rootCertificate },
+                        ExtraStore = { rootCertificate },
+                    };
+                    policy.ApplicationPolicy.Add(new Oid(wrongPolicy ? "1.2.3.4" : "1.3.6.1.5.5.7.3.1"));
+
+                    SslClientAuthenticationOptions options = new SslClientAuthenticationOptions
+                    {
+                        TargetHost = wrongHost ? "wrong.example" : "testservereku.contoso.com",
+                        CertificateChainPolicy = policy,
+                        RemoteCertificateValidationCallback = (sender, certificate, chain, errors) =>
+                        {
+                            reportedErrors = errors;
+                            Assert.NotNull(chain);
+                            Assert.Equal(rootCertificate, chain.ChainPolicy.ExtraStore[0]);
+                            return acceptErrors || errors == SslPolicyErrors.None;
+                        },
+                    };
+
+                    Task serverAuthentication = server.AuthenticateAsServerAsync(new SslServerAuthenticationOptions
+                    {
+                        ServerCertificate = serverCertificate,
+                    });
+                    Task clientAuthentication = client.AuthenticateAsClientAsync(options);
+
+                    if (acceptErrors || expectedErrors == SslPolicyErrors.None)
+                    {
+                        await Task.WhenAll(clientAuthentication, serverAuthentication).WaitAsync(TimeSpan.FromSeconds(30));
+                    }
+                    else
+                    {
+                        await Assert.ThrowsAsync<AuthenticationException>(
+                            () => clientAuthentication.WaitAsync(TimeSpan.FromSeconds(30)));
+                        client.Dispose();
+                        Exception? serverError = await Record.ExceptionAsync(
+                            () => serverAuthentication.WaitAsync(TimeSpan.FromSeconds(30)));
+                        Assert.True(serverError is null or AuthenticationException or IOException, serverError?.ToString());
+                    }
+
+                    Assert.Equal(expectedErrors, reportedErrors);
+                    Assert.Equal(rootCertificate.RawData, policy.ExtraStore[0].RawData);
+                }
+            }
         }
 
         [Fact]

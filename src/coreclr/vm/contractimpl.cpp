@@ -91,10 +91,13 @@ PTR_MethodTable TypeIDMap::LookupType(UINT32 id)
 // If useFatPointerDispatch = true, return the next Fat ID of the type.
 UINT32 TypeIDMap::GetTypeID(PTR_MethodTable pMT, bool useFatPointerDispatch)
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         THROWS;
         GC_TRIGGERS;
-    } CONTRACTL_END;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     // Lookup the value.
     UINT32 id = LookupTypeID(pMT);
@@ -311,6 +314,7 @@ DispatchMap::CreateEncodedMapping(
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(CheckPointer(pMapBuilder));
         PRECONDITION(CheckPointer(pAllocator));
         PRECONDITION(CheckPointer(ppbMap));
@@ -322,12 +326,16 @@ DispatchMap::CreateEncodedMapping(
 
     UINT32 cNumTypes = 0;
     UINT32 cNumEntries = 0;
+    UINT32 cClassAliases = 0;
 
     {
         DispatchMapBuilder::Iterator it(pMapBuilder);
-        // We don't want to record overrides or methodImpls in the dispatch map since
-        // we have vtables to track this information.
-        it.SkipThisTypeEntries();
+        while (it.IsValid() && it.GetTypeID().IsThisClass())
+        {
+            if (it.GetSlotNumber() != it.GetTargetSlot())
+                cClassAliases++;
+            it.Next();
+        }
         if (it.IsValid())
         {
             DispatchMapTypeID curType = DispatchMapTypeID::FromUINT32(INVALIDENTRY);
@@ -351,7 +359,8 @@ DispatchMap::CreateEncodedMapping(
     // some working space for createing the encoded map in.
     // Sizes: flag==UINT32, typeID==UINT32, slot==UINT32, index/slot==UINT32
 
-    S_UINT32 scbMap = S_UINT32(sizeof(UINT32)) +
+    S_UINT32 scbMap = S_UINT32(2 * sizeof(UINT32)) +
+                   S_UINT32(cClassAliases) * S_UINT32(2 * sizeof(UINT32)) +
                    S_UINT32(cNumTypes) * S_UINT32(sizeof(UINT32)) +
                    S_UINT32(cNumEntries) * S_UINT32((sizeof(UINT32) + sizeof(UINT32)));
 
@@ -363,8 +372,22 @@ DispatchMap::CreateEncodedMapping(
     {
         // Create the encoder over the newly allocated memory
         Encoder e(pbMap);
-        // Encode the count of type entries
-        e.Encode((unsigned)cNumTypes);
+        // The low header bit announces the sparse class-alias section.
+        e.Encode((unsigned)((cNumTypes << 1) | (cClassAliases != 0 ? 1 : 0)));
+        if (cClassAliases != 0)
+        {
+            e.Encode(cClassAliases);
+            DispatchMapBuilder::Iterator aliases(pMapBuilder);
+            while (aliases.IsValid() && aliases.GetTypeID().IsThisClass())
+            {
+                if (aliases.GetSlotNumber() != aliases.GetTargetSlot())
+                {
+                    e.Encode(aliases.GetSlotNumber());
+                    e.Encode(aliases.GetTargetSlot());
+                }
+                aliases.Next();
+            }
+        }
         // Start encoding the map
         DispatchMapBuilder::Iterator it(pMapBuilder);
         it.SkipThisTypeEntries();
@@ -520,7 +543,17 @@ void DispatchMap::EncodedMapIterator::Init(PTR_BYTE pbMap)
     {
         // Initialize the map decoder
         m_d.Init(pbMap);
-        m_numTypes = m_d.Next();
+        UINT32 header = m_d.Next();
+        m_numTypes = header >> 1;
+        if ((header & 1) != 0)
+        {
+            UINT32 aliases = m_d.Next();
+            while (aliases-- != 0)
+            {
+                m_d.Next();
+                m_d.Next();
+            }
+        }
         m_curType = -1;
         m_curTypeId = DispatchMapTypeID::FromUINT32(static_cast<UINT32>(-1));
         m_numEntries = 0;
@@ -636,10 +669,7 @@ BOOL DispatchMap::EncodedMapIterator::Next()
 DispatchMap::Iterator::Iterator(MethodTable * pMT)
     : m_mapIt(pMT)
 {
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-    } CONTRACTL_END;
+    WRAPPER_NO_CONTRACT;
 }
 
 //--------------------------------------------------------------------
