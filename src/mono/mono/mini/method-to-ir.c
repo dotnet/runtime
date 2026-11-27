@@ -4838,6 +4838,9 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 
 	g_assert (cfg->exception_type == MONO_EXCEPTION_NONE);
 
+	if (G_UNLIKELY (cmethod->iflags & METHOD_IMPL_ATTRIBUTE_ASYNC))
+		return 0;
+
 #if (MONO_INLINE_CALLED_LIMITED_METHODS)
 	if ((! inline_always) && ! check_inline_called_method_name_limit (cmethod))
 		return 0;
@@ -6513,11 +6516,12 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	dont_verify_stloc |= method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED;
 	dont_verify_stloc |= method->wrapper_type == MONO_WRAPPER_STELEMREF;
 
-	header = mono_method_get_header_checked (method, cfg->error);
+	const gboolean runtime_async = (method->iflags & METHOD_IMPL_ATTRIBUTE_ASYNC) != 0;
+	header = runtime_async ? cfg->header : mono_method_get_header_checked (method, cfg->error);
 	if (!header) {
 		mono_cfg_set_exception (cfg, MONO_EXCEPTION_MONO_ERROR);
 		goto exception_exit;
-	} else {
+	} else if (!runtime_async) {
 		cfg->headers_to_free = g_slist_prepend_mempool (cfg->mempool, cfg->headers_to_free, header);
 	}
 
@@ -7015,6 +7019,23 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	ADD_BBLOCK (cfg, tblock);
 
 	CHECK_CFG_EXCEPTION;
+
+	if (G_UNLIKELY (runtime_async)) {
+		MonoInst *literal [1], *args [2];
+		MonoClass *exception_class = mono_class_load_from_name (mono_defaults.corlib, "System", "PlatformNotSupportedException");
+		char *message = mini_get_runtime_async_error_message (method, TRUE);
+		EMIT_NEW_LDSTRLITCONST (cfg, literal [0], mono_mem_manager_strdup (cfg->mem_manager, message));
+		g_free (message);
+		EMIT_NEW_ICONST (cfg, args [0], m_class_get_type_token (exception_class));
+		args [1] = mono_emit_jit_icall (cfg, mono_string_new_wrapper_internal, literal);
+		ins = mono_emit_jit_icall (cfg, mono_create_corlib_exception_1, args);
+		MONO_EMIT_NEW_UNALU (cfg, OP_THROW, -1, ins->dreg);
+		MONO_INST_NEW (cfg, ins, OP_NOT_REACHED);
+		MONO_ADD_INS (cfg->cbb, ins);
+		link_bblock (cfg, cfg->cbb, end_bblock);
+		ip = end;
+		goto all_bbs_done;
+	}
 
 	if (header->code_size == 0)
 		UNVERIFIED;

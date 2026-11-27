@@ -3381,7 +3381,27 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 		return cfg;
 	}
 
-	header = cfg->header = mono_method_get_header_checked (cfg->method, cfg->error);
+	if (G_UNLIKELY (method->iflags & METHOD_IMPL_ATTRIBUTE_ASYNC)) {
+		if (!compile_aot) {
+			char *message = mini_get_runtime_async_error_message (method, FALSE);
+			mono_error_set_platform_not_supported (cfg->error, message);
+			g_free (message);
+			mono_cfg_set_exception (cfg, MONO_EXCEPTION_MONO_ERROR);
+			if (MONO_METHOD_COMPILE_END_ENABLED ())
+				MONO_PROBE_METHOD_COMPILE_END (method, FALSE);
+			return cfg;
+		}
+
+		/* The throw body must not inherit the original method's locals or exception handlers. */
+		static const guint8 stub_code [] = { CEE_NOP };
+		header = g_new0 (MonoMethodHeader, 1);
+		header->code = stub_code;
+		header->code_size = sizeof (stub_code);
+		header->is_transient = TRUE;
+		cfg->header = header;
+	} else {
+		header = cfg->header = mono_method_get_header_checked (cfg->method, cfg->error);
+	}
 	if (!header) {
 		mono_cfg_set_exception (cfg, MONO_EXCEPTION_MONO_ERROR);
 		if (MONO_METHOD_COMPILE_END_ENABLED ())

@@ -3056,6 +3056,9 @@ interp_method_check_inlining (TransformData *td, MonoMethod *method, MonoMethodS
 	if (csignature->call_convention == MONO_CALL_VARARG)
 		return FALSE;
 
+	if (G_UNLIKELY (method->iflags & METHOD_IMPL_ATTRIBUTE_ASYNC))
+		return FALSE;
+
 	if (!mono_method_get_header_summary (method, &header))
 		return FALSE;
 
@@ -10040,6 +10043,13 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 	InterpMethod *real_imethod;
 
 	error_init (error);
+
+	if (G_UNLIKELY (method->iflags & METHOD_IMPL_ATTRIBUTE_ASYNC)) {
+		char *message = mini_get_runtime_async_error_message (method, FALSE);
+		mono_error_set_platform_not_supported (error, message);
+		g_free (message);
+		return;
+	}
 
 	mono_metadata_update_thread_expose_published ();
 

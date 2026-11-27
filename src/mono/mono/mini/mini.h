@@ -2240,6 +2240,7 @@ void      mono_linear_scan                  (MonoCompile *cfg, GList *vars, GLis
 void      mono_global_regalloc              (MonoCompile *cfg);
 void      mono_create_jump_table            (MonoCompile *cfg, MonoInst *label, MonoBasicBlock **bbs, int num_blocks);
 MonoCompile *mini_method_compile            (MonoMethod *method, guint32 opts, JitFlags flags, int parts, int aot_method_index);
+char* mini_get_runtime_async_error_message (MonoMethod *method, gboolean aot);
 void      mono_destroy_compile              (MonoCompile *cfg);
 void      mono_empty_compile              (MonoCompile *cfg);
 MonoJitICallInfo *mono_find_jit_opcode_emulation (int opcode);

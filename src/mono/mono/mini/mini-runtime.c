@@ -2478,6 +2478,17 @@ unregister_method_for_compile (MonoMethod *method)
 	unlock_compilation_data ();
 }
 
+char*
+mini_get_runtime_async_error_message (MonoMethod *method, gboolean aot)
+{
+	MonoImage *image = m_class_get_image (method->klass);
+	char *method_name = mono_method_get_full_name (method);
+	char *message = g_strdup_printf ("Mono does not support runtime-async method '%s' in assembly '%s'%s. Rebuild the assembly without runtime-async.",
+		method_name, image->assembly_name ? image->assembly_name : image->name, aot ? " (compiled with Mono AOT)" : "");
+	g_free (method_name);
+	return message;
+}
+
 static MonoJitInfo*
 create_jit_info_for_trampoline (MonoMethod *wrapper, MonoTrampInfo *info)
 {

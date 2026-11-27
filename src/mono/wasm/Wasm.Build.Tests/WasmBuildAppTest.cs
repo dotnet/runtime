@@ -1,10 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Threading.Tasks;
 using System.Linq;
+using System.Reflection;
+using System.Reflection.Metadata;
+using System.Reflection.PortableExecutable;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -17,6 +21,108 @@ namespace Wasm.Build.Tests
         // similar to MainWithArgsTests.cs, consider merging
         public WasmBuildAppTest(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext) : base(output, buildContext)
         {}
+
+        [Fact]
+        [TestCategory("mono")]
+        public Task RuntimeAsyncMethodIsRejected()
+            => TestRuntimeAsyncMethod(aot: false);
+
+        [Fact]
+        [TestCategory("native-mono")]
+        public Task RuntimeAsyncMethodIsRejected_AOT()
+            => TestRuntimeAsyncMethod(aot: true);
+
+        private async Task TestRuntimeAsyncMethod(bool aot)
+        {
+            Configuration config = aot ? Configuration.Release : Configuration.Debug;
+            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "runtime_async_dependency",
+                extraProperties: aot ? "<WasmStripILAfterAOT>true</WasmStripILAfterAOT>" : "",
+                extraItems: """<ProjectReference Include="..\Library\Library.csproj" />""");
+            UpdateFile(Path.Combine("..", "Library", "Library.csproj"), new Dictionary<string, string>
+            {
+                { "</PropertyGroup>", "<Features>$(Features);runtime-async=on</Features></PropertyGroup>" }
+            });
+            UpdateFile(Path.Combine("..", "Library", "Library.cs"), """
+                using System;
+                using System.Threading.Tasks;
+
+                public class AsyncDependency
+                {
+                    public static int Ordinary() => 42;
+
+                    public static async Task<int> Unsupported()
+                    {
+                        Console.WriteLine("TestOutput -> unsupported body ran");
+                        int value = 1;
+                        return await Task.FromResult(Read(ref value));
+                    }
+
+                    private static int Read(ref int value) => value;
+                }
+                """);
+            UpdateFile(Path.Combine("Common", "Program.cs"), """
+                using System;
+
+                public class TestClass
+                {
+                    public static int Main()
+                    {
+                        Console.WriteLine($"TestOutput -> ordinary result: {AsyncDependency.Ordinary()}");
+                        try
+                        {
+                            Console.WriteLine(AsyncDependency.Unsupported().GetAwaiter().GetResult());
+                            return 1;
+                        }
+                        catch (PlatformNotSupportedException ex)
+                        {
+                            Console.WriteLine($"TestOutput -> {ex.Message}");
+                            return 0;
+                        }
+                    }
+                }
+                """);
+            if (aot)
+            {
+                PublishProject(info, config, new PublishOptions(AOT: true));
+                string strippedLibrary = Path.Combine(GetObjDir(config), "wasm", "for-publish", "stripped", "Library.dll");
+                AssertRuntimeAsyncMethod(strippedLibrary, expectStripped: true);
+            }
+            else
+            {
+                BuildProject(info, config);
+            }
+
+            string libraryPath = Path.Combine(_projectDir, "..", "Library", "bin", config.ToString(), DefaultTargetFramework, "Library.dll");
+            AssertRuntimeAsyncMethod(libraryPath, expectStripped: false);
+
+            BrowserRunOptions options = new(config, TestScenario: "DotnetRun", ExpectedExitCode: 0);
+            RunResult result = aot
+                ? await RunForPublishWithWebServer(options)
+                : await RunForBuildWithDotnetRun(options);
+            Assert.Contains("ordinary result: 42", result.TestOutput);
+            Assert.DoesNotContain("unsupported body ran", result.TestOutput);
+            string diagnostic = Assert.Single(result.TestOutput, message =>
+                message.Contains("Mono does not support runtime-async method", StringComparison.Ordinal) &&
+                message.Contains("AsyncDependency:Unsupported", StringComparison.Ordinal) &&
+                message.Contains("assembly 'Library'", StringComparison.Ordinal));
+            // Stripped IL proves compilation, but only the generated throw body emits the AOT diagnostic.
+            if (aot)
+                Assert.Contains("(compiled with Mono AOT)", diagnostic, StringComparison.Ordinal);
+            else
+                Assert.DoesNotContain("(compiled with Mono AOT)", diagnostic, StringComparison.Ordinal);
+        }
+
+        private static void AssertRuntimeAsyncMethod(string assemblyPath, bool expectStripped)
+        {
+            using var stream = File.OpenRead(assemblyPath);
+            using var peReader = new PEReader(stream);
+            MetadataReader metadata = peReader.GetMetadataReader();
+            MethodDefinitionHandle handle = metadata.MethodDefinitions.Single(candidate =>
+                metadata.GetString(metadata.GetMethodDefinition(candidate).Name) == "Unsupported");
+            MethodDefinition method = metadata.GetMethodDefinition(handle);
+            Assert.True((method.ImplAttributes & MethodImplAttributes.Async) != 0);
+            Assert.Equal(expectStripped, peReader.GetMethodBody(method.RelativeVirtualAddress).GetILContent().IsEmpty);
+        }
 
         [Theory]
         [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ true })]
