@@ -24,7 +24,7 @@ namespace Wasm.Build.Tests
         [Theory]
         [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { false })]
         [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { true })]
-        [TestCategory("native"), TestCategory("coreclr"), TestCategory("workload"), TestCategory("wasm-opt")]
+        [TestCategory("native"), TestCategory("workload"), TestCategory("wasm-opt")]
         public async Task UnusedQCallsAreTrimmed(Configuration config, bool aot, bool useQCall)
         {
             string extraProperties = "<WasmBuildNative>true</WasmBuildNative><WasmEmitSymbolMap>true</WasmEmitSymbolMap>";
@@ -56,7 +56,7 @@ namespace Wasm.Build.Tests
         [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { true, false })]
         [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { false, true })]
         [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { true, true })]
-        [TestCategory("native"), TestCategory("coreclr"), TestCategory("workload")]
+        [TestCategory("native"), TestCategory("workload")]
         public async Task UnusedCoreLibEntryPointsAreTrimmed(Configuration config, bool aot, bool useEntryPoints, bool readyToRun)
         {
             string extraProperties = $"<WasmBuildNative>true</WasmBuildNative><WasmEmitSymbolMap>true</WasmEmitSymbolMap><AllowUnsafeBlocks>true</AllowUnsafeBlocks><PublishTrimmed>true</PublishTrimmed><PublishReadyToRun>{readyToRun}</PublishReadyToRun>";
@@ -113,7 +113,7 @@ namespace Wasm.Build.Tests
         [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { true, "entry" })]
         [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { true, "list" })]
         [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { true, "module" })]
-        [TestCategory("native"), TestCategory("coreclr"), TestCategory("workload")]
+        [TestCategory("native"), TestCategory("workload")]
         public async Task DirectPInvokeBindsListedEntryPoints(Configuration config, bool aot, bool readyToRun, string form)
         {
             const string ListFileName = "direct-pinvokes.txt";
@@ -148,7 +148,7 @@ namespace Wasm.Build.Tests
         [Theory]
         [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { false })]
         [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { true })]
-        [TestCategory("native"), TestCategory("coreclr"), TestCategory("workload")]
+        [TestCategory("native"), TestCategory("workload")]
         public async Task DirectPInvokeSkipsIncompatibleSignatures(Configuration config, bool aot, bool readyToRun)
         {
             ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, $"directpinvoke_incompatible_{readyToRun}",

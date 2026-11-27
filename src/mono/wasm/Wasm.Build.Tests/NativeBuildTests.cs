@@ -22,7 +22,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [InlineData(Configuration.Release)]
-        [TestCategory("native"), TestCategory("coreclr"), TestCategory("workload")]
+        [TestCategory("native"), TestCategory("workload")]
         public async Task NativeRelinkWithoutManagedTimers(Configuration config)
         {
             ProjectInfo info = CreateWasmTemplateProject(

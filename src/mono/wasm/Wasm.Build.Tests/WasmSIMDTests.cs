@@ -67,12 +67,12 @@ namespace Wasm.Build.Tests
         }
 
         [Fact]
-        [TestCategory("coreclr"), TestCategory("wasm-opt")]
+        [TestCategory("wasm-opt")]
         public Task PublishRelaxedSimdCoreClr() => PublishRelaxedSimdCoreClrCore(relaxedSimd: false);
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/137571")]
-        [TestCategory("coreclr"), TestCategory("wasm-opt")]
+        [TestCategory("wasm-opt")]
         public Task PublishRelaxedSimdEnabledCoreClr() => PublishRelaxedSimdCoreClrCore(relaxedSimd: true);
 
         private async Task PublishRelaxedSimdCoreClrCore(bool relaxedSimd)

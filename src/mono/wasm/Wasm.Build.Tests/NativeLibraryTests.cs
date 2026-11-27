@@ -32,7 +32,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [InlineData(Configuration.Release)]
-        [TestCategory("native"), TestCategory("coreclr"), TestCategory("workload"), TestCategory("wasm-opt")]
+        [TestCategory("native"), TestCategory("workload"), TestCategory("wasm-opt")]
         public Task ProjectWithNativeReference_ReadyToRun(Configuration config) =>
             ProjectWithNativeReferenceCore(config, aot: false, readyToRun: true);
 
