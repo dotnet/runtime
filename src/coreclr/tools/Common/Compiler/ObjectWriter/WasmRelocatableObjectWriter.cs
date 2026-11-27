@@ -19,7 +19,7 @@ namespace ILCompiler.ObjectWriter
     {
         private protected override string WasmProducerName => "ILCompiler";
 
-        private readonly bool _useRelaxedSimd;
+        private readonly InstructionSetSupport _instructionSetSupport;
         private WasmDataSection _dataSection;
         private DwarfBuilder _dwarfBuilder;
         private SectionWriter _pdataSectionWriter;
@@ -73,7 +73,7 @@ namespace ILCompiler.ObjectWriter
 
         public WasmRelocatableObjectWriter(NodeFactory factory, ObjectWritingOptions options, InstructionSetSupport instructionSetSupport, OutputInfoBuilder outputInfoBuilder = null) : base(factory, options, outputInfoBuilder)
         {
-            _useRelaxedSimd = instructionSetSupport.IsInstructionSetOptimisticallySupported(InstructionSet.Wasm32_RelaxedSimd);
+            _instructionSetSupport = instructionSetSupport;
         }
 
         private protected override ObjectNodeSection GetEmitSection(ObjectNodeSection section)
@@ -246,7 +246,7 @@ namespace ILCompiler.ObjectWriter
                 "simd128",
                 "tail-call",
             ];
-            if (_useRelaxedSimd)
+            if (_instructionSetSupport.IsInstructionSetOptimisticallySupported(InstructionSet.Wasm32_RelaxedSimd))
             {
                 features.Add("relaxed-simd");
             }
