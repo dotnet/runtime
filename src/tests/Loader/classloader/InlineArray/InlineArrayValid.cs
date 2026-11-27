@@ -361,7 +361,7 @@ public unsafe class Validate
     }
 
     [StructLayout(LayoutKind.Explicit)]
-    struct OverlappingInlineArray
+    ref struct OverlappingInlineArray
     {
         [FieldOffset(0)] public object Reference;
         [FieldOffset(0)] public MyArray<object> Array;
